@@ -8,4 +8,6 @@ compile_commands.json
 *.exe
 *.gguf
 *.bin
-models/
+*.safetensors
+*.ckpt
+*.pt
