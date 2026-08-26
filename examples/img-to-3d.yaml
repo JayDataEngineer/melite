@@ -1,0 +1,17 @@
+name: img-to-3d
+nodes:
+  - id: encode_image
+    type: sd_cpp
+    model: models/sd-v1-5
+
+  - id: generate_mesh
+    type: trellis_cpp
+    model: models/trellis-2
+    input_from:
+      - encode_image.image_rgb
+
+  - id: describe
+    type: llama_cpp
+    model: models/llama-7b
+    params:
+      n_gpu_layers: 32
