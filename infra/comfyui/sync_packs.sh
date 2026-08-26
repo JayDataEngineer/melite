@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Stage in-tree extension packs into ./custom_nodes/ before a docker build.
 # Source of truth for WHICH packs: plugins/gens/nodes/extensions.yaml.
-# Source of the pack CODE: the ray checkout (until ray retires; flip
-# RAY_ROOT when the packs move in-tree here).
+# Source of the pack CODE: custom_nodes/ (git-tracked in this repo).
+# NOTE: This script is legacy — packs are now tracked in git.
+# Use setup.sh for new clones, or: cp -a custom_nodes/* /path/to/ComfyUI/custom_nodes/
 set -eo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 INF="$(cd "$HERE/../.." && pwd)"

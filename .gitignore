@@ -11,5 +11,9 @@ compile_commands.json
 *.safetensors
 *.ckpt
 *.pt
-custom_nodes/
+# custom_nodes are project-specific code — tracked in git.
+# Native .so binaries (trelliscpp) are also tracked (prebuilt, no upstream).
+!custom_nodes/melite-trelliscpp-nodes/native/*.so
+!custom_nodes/melite-trelliscpp-nodes/native/*.so.*
 build-asan/
+__pycache__/

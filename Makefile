@@ -86,6 +86,33 @@ compose-logs:
 clean:
 	rm -rf $(BUILD_DIR)
 
+# ---- IaC / Provisioning ----
+
+.PHONY: setup
+setup:
+	./setup.sh
+
+.PHONY: setup-server
+setup-server:
+	./setup.sh --server
+
+.PHONY: setup-comfyui
+setup-comfyui:
+	./setup.sh --comfyui
+
+.PHONY: comfyui
+comfyui:
+	@echo "Starting ComfyUI on :18465..."
+	cd /opt/ComfyUI 2>/dev/null && python3 main.py --listen --port 18465 || \
+	  echo "ComfyUI not found at /opt/ComfyUI — run: make setup-comfyui"
+
+.PHONY: stack
+stack: build
+	@echo "Starting full stack (ComfyUI :18465 + inference :18090)..."
+	cd /opt/ComfyUI 2>/dev/null && python3 main.py --listen --port 18465 &
+	@sleep 3
+	cd $(BUILD_DIR) && LD_LIBRARY_PATH=. ./inference_cli serve --port 18090 --plugin-dir . --catalog-dir ..
+
 # ---- Dev helpers ----
 
 .PHONY: serve
