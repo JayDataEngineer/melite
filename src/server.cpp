@@ -10,6 +10,41 @@
 #include <string.h>
 #include <pthread.h>
 #include <time.h>
+#include <sys/stat.h>
+
+/* C helpers (local impl — plugin_helpers.h is C-only, static inline) */
+static int inf_json_string(const char *json, const char *key, char *out, size_t cap) {
+    char pat[128];
+    snprintf(pat, sizeof(pat), "\"%s\"", key);
+    const char *p = strstr(json, pat);
+    if (!p) return -1;
+    p += strlen(pat);
+    while (*p == ' ' || *p == '\t') p++;
+    if (*p != ':') return -1;
+    p++;
+    while (*p == ' ' || *p == '\t') p++;
+    if (*p != '"') return -1;
+    p++;
+    size_t i = 0;
+    while (*p && *p != '"' && i < cap - 1) {
+        if (*p == '\\' && p[1]) { p++; if (i < cap - 1) out[i++] = *p++; continue; }
+        out[i++] = *p++;
+    }
+    out[i] = 0;
+    return 0;
+}
+static int inf_json_int(const char *json, const char *key, int fallback) {
+    char pat[128];
+    snprintf(pat, sizeof(pat), "\"%s\"", key);
+    const char *p = strstr(json, pat);
+    if (!p) return fallback;
+    p += strlen(pat);
+    while (*p == ' ' || *p == '\t') p++;
+    if (*p != ':') return fallback;
+    p++;
+    while (*p == ' ' || *p == '\t') p++;
+    return (int)strtol(p, NULL, 10);
+}
 
 /*
  * inference.cpp — unified HTTP server.
@@ -100,6 +135,276 @@ static void handle_models(const httplib::Request &req,
     (void)req;
     /* Return both our custom format and enough for OpenAI compatibility */
     res.set_content("{\"object\":\"list\",\"data\":[]}", "application/json");
+}
+
+/* ---- DSH serving surface: run registry + async run door + drafts ----
+ * Wire contract mirrors the ray gateway the DSH melite lane speaks:
+ *   POST /v1/pipelines/start   {"model":"krea-2","prompt":...,"seed":...} -> {"run_id"}
+ *   GET  /v1/pipelines/status/{run_id}  -> {status, artifacts:[{name,path,bytes}]}
+ *   POST /v1/pipelines/drafts  {intent, stages:[...]} -> {draftId, stages}
+ * Execution happens on detached pthreads against the same runner/engines.
+ */
+
+#define RUNREG_MAX 64
+#define RUN_ARTIFACTS_MAX 16
+
+typedef struct {
+    char run_id[48];
+    char state[16];          /* queued|running|success|error */
+    char error[256];
+    char out_dir[512];
+    char yaml[2048];         /* the pipeline YAML this run executes */
+    time_t created;
+} run_entry;
+
+static run_entry g_runs[RUNREG_MAX];
+static size_t g_n_runs = 0;
+static pthread_mutex_t g_runs_mu = PTHREAD_MUTEX_INITIALIZER;
+
+static void run_set_state(size_t idx, const char *state, const char *err) {
+    pthread_mutex_lock(&g_runs_mu);
+    snprintf(g_runs[idx].state, sizeof(g_runs[idx].state), "%s", state);
+    if (err) snprintf(g_runs[idx].error, sizeof(g_runs[idx].error), "%s", err);
+    pthread_mutex_unlock(&g_runs_mu);
+}
+
+/* scan out_dir for artifacts -> JSON array string (caller frees) */
+static char *run_artifacts_json(const char *out_dir) {
+    char cmd[1024];
+    snprintf(cmd, sizeof(cmd), "ls -1 '%s' 2>/dev/null", out_dir);
+    FILE *fp = popen(cmd, "r");
+    if (!fp) return strdup("[]");
+    size_t cap = 4096, len = 0;
+    char *buf = (char *)malloc(cap);
+    len += (size_t)snprintf(buf + len, cap - len, "[");
+    char line[512];
+    int first = 1;
+    while (fgets(line, sizeof(line), fp)) {
+        size_t ll = strlen(line);
+        while (ll && (line[ll-1] == '\n' || line[ll-1] == '\r')) line[--ll] = 0;
+        if (!ll) continue;
+        char path[1024], szcmd[1200];
+        snprintf(path, sizeof(path), "%s/%s", out_dir, line);
+        snprintf(szcmd, sizeof(szcmd), "stat -c %%s '%s' 2>/dev/null", path);
+        FILE *sf = popen(szcmd, "r");
+        long bytes = -1;
+        if (sf) { if (fscanf(sf, "%ld", &bytes) != 1) bytes = -1; pclose(sf); }
+        while (len + 600 > cap) { cap *= 2; buf = (char *)realloc(buf, cap); }
+        if (!first) len += (size_t)snprintf(buf + len, cap - len, ",");
+        first = 0;
+        len += (size_t)snprintf(buf + len, cap - len,
+            "{\"name\":\"%s\",\"path\":\"%s\",\"bytes\":%ld}", line, path, bytes);
+    }
+    pclose(fp);
+    snprintf(buf + len, cap - len, "]");
+    return buf;
+}
+
+/* thread body: execute the run's pipeline YAML */
+typedef struct { size_t idx; } run_thread_arg;
+
+static void *run_thread_fn(void *argp) {
+    run_thread_arg a = *(run_thread_arg *)argp;
+    free(argp);
+    size_t idx = a.idx;
+
+    run_set_state(idx, "running", NULL);
+    inference_dag *dag = dag_parse_string(g_runs[idx].yaml, strlen(g_runs[idx].yaml));
+    if (!dag) {
+        run_set_state(idx, "error", "dag parse failed");
+        return NULL;
+    }
+    char *result = NULL;
+    int rc = runner_execute(g_server_runner, dag, NULL, 0, &result);
+    dag_free(dag);
+    if (rc < 0) {
+        run_set_state(idx, "error", "pipeline execution failed");
+        inference_free(result);
+        return NULL;
+    }
+    inference_free(result);
+    run_set_state(idx, "success", NULL);
+    return NULL;
+}
+
+/* JSON-escape src into a malloc'd C string literal (with quotes) */
+static char *json_quote(const char *src) {
+    size_t n = strlen(src);
+    char *out = (char *)malloc(2 * n + 3);
+    size_t o = 0;
+    out[o++] = '"';
+    for (size_t i = 0; i < n; i++) {
+        unsigned char c = (unsigned char)src[i];
+        if (c == '"' || c == '\\') { out[o++] = '\\'; out[o++] = (char)c; }
+        else if (c == '\n') { out[o++] = '\\'; out[o++] = 'n'; }
+        else if (c == '\r') { out[o++] = '\\'; out[o++] = 'r'; }
+        else if (c == '\t') { out[o++] = '\\'; out[o++] = 't'; }
+        else if (c >= 0x20) out[o++] = (char)c;
+    }
+    out[o++] = '"';
+    out[o] = 0;
+    return out;
+}
+
+static void handle_pipelines_start(const httplib::Request &req,
+                                   httplib::Response &res) {
+    /* flat generation body: {"model":..., "prompt":..., "seed":..., "workflow_file"?...} */
+    char model[64] = "krea-2", prompt[2048] = "", wf[512] = "";
+    long seed = -1;
+
+    {
+        const char *m = strstr(req.body.c_str(), "\"model\"");
+        const char *p = strstr(req.body.c_str(), "\"prompt\"");
+        const char *s = strstr(req.body.c_str(), "\"seed\"");
+        const char *w = strstr(req.body.c_str(), "\"workflow_file\"");
+        char tmp[2048];
+        if (m && inf_json_string(req.body.c_str(), "model", tmp, sizeof(tmp)) == 0)
+            snprintf(model, sizeof(model), "%s", tmp);
+        if (p && inf_json_string(req.body.c_str(), "prompt", tmp, sizeof(tmp)) == 0)
+            snprintf(prompt, sizeof(prompt), "%s", tmp);
+        if (w && inf_json_string(req.body.c_str(), "workflow_file", tmp, sizeof(tmp)) == 0)
+            snprintf(wf, sizeof(wf), "%s", tmp);
+        if (s) seed = inf_json_int(req.body.c_str(), "seed", -1);
+    }
+    if (!prompt[0]) {
+        res.status = 400;
+        res.set_content("{\"error\":\"missing prompt\"}", "application/json");
+        return;
+    }
+    if (!wf[0])
+        snprintf(wf, sizeof(wf), "../plugins/gens/pipelines/krea-txt2img/workflow.json");
+
+    /* register the run */
+    pthread_mutex_lock(&g_runs_mu);
+    if (g_n_runs >= RUNREG_MAX) {
+        /* recycle: compact finished entries */
+        size_t w2 = 0;
+        for (size_t i = 0; i < g_n_runs; i++)
+            if (strcmp(g_runs[i].state, "success") != 0 && strcmp(g_runs[i].state, "error") != 0)
+                g_runs[w2++] = g_runs[i];
+        g_n_runs = w2;
+        if (g_n_runs >= RUNREG_MAX) {
+            pthread_mutex_unlock(&g_runs_mu);
+            res.status = 503;
+            res.set_content("{\"error\":\"run registry full\"}", "application/json");
+            return;
+        }
+    }
+    size_t idx = g_n_runs++;
+    snprintf(g_runs[idx].run_id, sizeof(g_runs[idx].run_id), "run-%lx-%lx",
+             (unsigned long)time(NULL), (unsigned long)pthread_self());
+    snprintf(g_runs[idx].state, sizeof(g_runs[idx].state), "queued");
+    g_runs[idx].error[0] = 0;
+    snprintf(g_runs[idx].out_dir, sizeof(g_runs[idx].out_dir), "./output/%s",
+             g_runs[idx].run_id);
+    g_runs[idx].created = time(NULL);
+    pthread_mutex_unlock(&g_runs_mu);
+
+    /* compose the pipeline YAML with baked inject literals */
+    char *qp = json_quote(prompt);
+    char seedclause[160] = "";
+    if (seed >= 0)
+        snprintf(seedclause, sizeof(seedclause), ",\"KSampler.0.seed\":%ld", seed);
+    snprintf(g_runs[idx].yaml, sizeof(g_runs[idx].yaml),
+        "name: %s\n"
+        "description: \"server-generated run\"\n"
+        "nodes:\n"
+        "  - id: generate\n"
+        "    type: comfyui\n"
+        "    params: {\"server_url\":\"http://127.0.0.1:18465\",\"workflow_file\":\"%s\",\"out_dir\":\"%s\",\"timeout_s\":300,\"inject\":{\"CLIPTextEncode.0.text\":%s%s}}\n",
+        g_runs[idx].run_id, wf, g_runs[idx].out_dir, qp, seedclause);
+    free(qp);
+
+    run_thread_arg *ta = (run_thread_arg *)malloc(sizeof(*ta));
+    ta->idx = idx;
+    pthread_t th;
+    pthread_create(&th, NULL, run_thread_fn, ta);
+    pthread_detach(th);
+
+    char out[256];
+    snprintf(out, sizeof(out), "{\"run_id\":\"%s\",\"status\":\"queued\"}",
+             g_runs[idx].run_id);
+    res.status = 202;
+    res.set_content(out, "application/json");
+}
+
+static void handle_pipelines_status(const httplib::Request &req,
+                                    httplib::Response &res) {
+    std::string rid = req.path_params.at("run_id");
+    pthread_mutex_lock(&g_runs_mu);
+    int found = -1;
+    for (size_t i = 0; i < g_n_runs; i++)
+        if (rid == g_runs[i].run_id) { found = (int)i; break; }
+    if (found < 0) {
+        pthread_mutex_unlock(&g_runs_mu);
+        res.status = 404;
+        res.set_content("{\"error\":\"unknown run_id\"}", "application/json");
+        return;
+    }
+    char outdir[512], state[16], err[256], yamlhead[80];
+    snprintf(outdir, sizeof(outdir), "%s", g_runs[found].out_dir);
+    snprintf(state, sizeof(state), "%s", g_runs[found].state);
+    snprintf(err, sizeof(err), "%s", g_runs[found].error);
+    snprintf(yamlhead, sizeof(yamlhead), "%.60s", g_runs[found].run_id);
+    pthread_mutex_unlock(&g_runs_mu);
+
+    char *arts = run_artifacts_json(outdir);
+    size_t cap = strlen(arts) + 700;
+    char *out = (char *)malloc(cap);
+    snprintf(out, cap,
+        "{\"run_id\":\"%s\",\"status\":\"%s\",\"artifacts\":%s,\"error\":\"%s\"}",
+        yamlhead, state, arts, err);
+    res.set_content(out, "application/json");
+    free(arts);
+    free(out);
+}
+
+static void handle_pipelines_drafts(const httplib::Request &req,
+                                    httplib::Response &res) {
+    /* DSH build_pipeline contract: {intent, stages:[...]} -> {draftId, stages} */
+    if (req.body.empty()) {
+        res.status = 400;
+        res.set_content("{\"error\":\"empty body\"}", "application/json");
+        return;
+    }
+    mkdir("./drafts", 0755);
+    char id[64];
+    snprintf(id, sizeof(id), "draft-%lx-%lx",
+             (unsigned long)time(NULL), (unsigned long)pthread_self());
+    char path[256];
+    snprintf(path, sizeof(path), "./drafts/%s.json", id);
+    FILE *f = fopen(path, "w");
+    if (!f) {
+        res.status = 500;
+        res.set_content("{\"error\":\"cannot persist draft\"}", "application/json");
+        return;
+    }
+    fwrite(req.body.c_str(), 1, req.body.size(), f);
+    fclose(f);
+
+    /* echo the stages array back verbatim from the request */
+    const char *sp = strstr(req.body.c_str(), "\"stages\"");
+    char stages[8192] = "[]";
+    if (sp) {
+        const char *c = sp;
+        while (*c && *c != '[') c++;
+        if (*c == '[') {
+            const char *e = c + 1;
+            int depth = 1;
+            while (*e && depth > 0) {
+                if (*e == '[') depth++;
+                else if (*e == ']') depth--;
+                e++;
+            }
+            size_t n = (size_t)(e - c);
+            if (n >= sizeof(stages)) n = sizeof(stages) - 1;
+            memcpy(stages, c, n);
+            stages[n] = 0;
+        }
+    }
+    char out[9000];
+    snprintf(out, sizeof(out), "{\"draftId\":\"%s\",\"stages\":%s}", id, stages);
+    res.set_content(out, "application/json");
 }
 
 static void handle_pipelines(const httplib::Request &req,
@@ -861,6 +1166,9 @@ inference_server *server_create(int port) {
     s->srv.Get("/v1/health",              handle_health);
     s->srv.Get("/v1/models",             handle_models);
     s->srv.Post("/v1/pipelines",         handle_pipelines);
+    s->srv.Post("/v1/pipelines/start",   handle_pipelines_start);
+    s->srv.Get("/v1/pipelines/status/:run_id", handle_pipelines_status);
+    s->srv.Post("/v1/pipelines/drafts",  handle_pipelines_drafts);
     s->srv.Get("/v1/model-catalog",      handle_catalog);
     s->srv.Get("/v1/model/:id",          handle_catalog_model);
     s->srv.Get("/v1/agent-manifest",     handle_agent_manifest);

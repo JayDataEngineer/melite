@@ -193,7 +193,20 @@ static catalog_model *parse_model_yaml(const char *yaml) {
                     m->default_vals = realloc(m->default_vals, cap_def * sizeof(char *));
                 }
                 m->default_keys[m->n_defaults] = strndup(s, klen);
-                m->default_vals[m->n_defaults] = ystrdup(v);
+                {
+                    /* strip one pair of surrounding YAML quotes */
+                    size_t vlen = strlen(v);
+                    char *vc = (char *)malloc(vlen + 1);
+                    memcpy(vc, v, vlen + 1);
+                    if (vlen >= 2 && ((vc[0] == '"' && vc[vlen-1] == '"')
+                                   || (vc[0] == '\'' && vc[vlen-1] == '\''))) {
+                        vc[vlen-1] = 0;
+                        m->default_vals[m->n_defaults] = ystrdup(vc + 1);
+                    } else {
+                        m->default_vals[m->n_defaults] = ystrdup(vc);
+                    }
+                    free(vc);
+                }
                 m->n_defaults++;
             }
         }
@@ -589,7 +602,7 @@ char *catalog_model_to_json(const catalog_model *m) {
     if (!m) return strdup("{}");
 
     char esc[2048];
-    size_t cap = 4096;
+    size_t cap = 32768;
     char *json = malloc(cap);
     int off = 0;
 
@@ -603,6 +616,9 @@ char *catalog_model_to_json(const catalog_model *m) {
     off += snprintf(json + off, cap - off, "\"genre\":\"");
     json_escape(esc, sizeof(esc), m->genre);
     off += snprintf(json + off, cap - off, "%s\",", esc);
+
+    json_escape(esc, sizeof(esc), m->id);
+    off += snprintf(json + off, cap - off, "\"family\":\"%s\",", esc);
 
     off += snprintf(json + off, cap - off, "\"label\":\"");
     json_escape(esc, sizeof(esc), m->label);
@@ -678,7 +694,7 @@ char *catalog_card_to_json(const catalog_card *c) {
     if (!c) return strdup("{}");
 
     char esc[2048];
-    size_t cap = 4096;
+    size_t cap = 32768;
     char *json = malloc(cap);
     int off = 0;
 
@@ -744,15 +760,19 @@ char *catalog_card_to_json(const catalog_card *c) {
 }
 
 char *catalog_to_json(const inference_catalog *cat) {
-    if (!cat) return strdup("{\"models\":[],\"cards\":[]}");
+    if (!cat) return strdup("{\"models\":{},\"families\":{},\"cards\":[]}");
 
-    size_t cap = cat->n_models * 2048 + cat->n_cards * 2048 + 256;
-    char *json = malloc(cap);
+    size_t cap = cat->n_models * 2048 + cat->n_cards * 2048 + 1024;
+    char *json = (char *)malloc(cap);
     int off = 0;
+    char esc[2048];
 
-    off += snprintf(json + off, cap - off, "{\"models\":[");
+    /* models: MAP keyed by family id (ray/DSH wire contract) */
+    off += snprintf(json + off, cap - off, "{\"models\":{");
     for (size_t i = 0; i < cat->n_models; i++) {
         if (i) json[off++] = ',';
+        json_escape(esc, sizeof(esc), cat->models[i].id);
+        off += snprintf(json + off, cap - off, "\"%s\":", esc);
         char *mjson = catalog_model_to_json(&cat->models[i]);
         size_t mlen = strlen(mjson);
         if (off + mlen < cap) {
@@ -761,8 +781,20 @@ char *catalog_to_json(const inference_catalog *cat) {
         }
         free(mjson);
     }
-    off += snprintf(json + off, cap - off, "],\"cards\":[");
 
+    /* families: MAP keyed by family id -> {label, genre} */
+    off += snprintf(json + off, cap - off, "},\"families\":{");
+    for (size_t i = 0; i < cat->n_models; i++) {
+        if (i) json[off++] = ',';
+        json_escape(esc, sizeof(esc), cat->models[i].id);
+        off += snprintf(json + off, cap - off, "\"%s\":{\"label\":\"", esc);
+        json_escape(esc, sizeof(esc), cat->models[i].label);
+        off += snprintf(json + off, cap - off, "%s\",\"genre\":\"", esc);
+        json_escape(esc, sizeof(esc), cat->models[i].genre);
+        off += snprintf(json + off, cap - off, "%s\"}", esc);
+    }
+
+    off += snprintf(json + off, cap - off, "},\"cards\":[");
     for (size_t i = 0; i < cat->n_cards; i++) {
         if (i) json[off++] = ',';
         char *cjson = catalog_card_to_json(&cat->cards[i]);

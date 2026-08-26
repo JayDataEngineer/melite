@@ -170,18 +170,43 @@ static int cmd_run(int argc, char **argv) {
                 fprintf(stderr, "input '%s': %zu bytes from file\n",
                         name, nread);
             } else {
-                /* Treat as inline float value */
-                float val_f = (float)atof(val);
-                input_bufs[n_initial][0] = val_f;
+                /* Numeric -> f32 scalar; anything else -> u8 text tensor */
+                int numeric = (*val != 0);
+                for (const char *c = val; *c; c++) {
+                    if (!( (*c >= '0' && *c <= '9')
+                        || *c == '.' || *c == '-'
+                        || *c == '+' || *c == 'e'
+                        || *c == 'E' )) { numeric = 0; break; }
+                }
+                if (numeric) {
+                    float val_f = (float)atof(val);
+                    input_bufs[n_initial][0] = val_f;
 
-                initial_inputs[n_initial].name   = strdup(name);
-                initial_inputs[n_initial].dtype  = "f32";
-                initial_inputs[n_initial].ndim   = 1;
-                initial_inputs[n_initial].shape[0] = 1;
-                initial_inputs[n_initial].data   = &input_bufs[n_initial][0];
-                initial_inputs[n_initial].nbytes = sizeof(float);
-                n_initial++;
-                fprintf(stderr, "input '%s': %f\n", name, val_f);
+                    initial_inputs[n_initial].name   = strdup(name);
+                    initial_inputs[n_initial].dtype  = "f32";
+                    initial_inputs[n_initial].ndim   = 1;
+                    initial_inputs[n_initial].shape[0] = 1;
+                    initial_inputs[n_initial].data   = &input_bufs[n_initial][0];
+                    initial_inputs[n_initial].nbytes = sizeof(float);
+                    n_initial++;
+                    fprintf(stderr, "input '%s': %f\n", name, val_f);
+                } else {
+                    size_t tlen = strlen(val);
+                    if (tlen > sizeof(input_bufs[n_initial]) - 1)
+                        tlen = sizeof(input_bufs[n_initial]) - 1;
+                    memcpy(input_bufs[n_initial], val, tlen);
+                    input_bufs[n_initial][tlen] = 0;
+
+                    initial_inputs[n_initial].name   = strdup(name);
+                    initial_inputs[n_initial].dtype  = "u8";
+                    initial_inputs[n_initial].ndim   = 1;
+                    initial_inputs[n_initial].shape[0] = tlen + 1;
+                    initial_inputs[n_initial].data   = input_bufs[n_initial];
+                    initial_inputs[n_initial].nbytes = tlen + 1;
+                    n_initial++;
+                    fprintf(stderr, "input '%s': text (%zu bytes)\n",
+                            name, tlen + 1);
+                }
             }
         }
     }
