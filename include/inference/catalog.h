@@ -12,8 +12,13 @@ extern "C" {
  * metadata, and serves a unified index.
  *
  *   plugins/<owner>/models/<genre>/<model-id>/model.yaml  — engine metadata
- *   plugins/<owner>/models/<genre>/<model-id>/agents/     — AGENT.md docs
  *   plugins/<owner>/cards/<card-id>/card.yaml             — action cards (owner = category)
+ *   plugins/<owner>/pipelines/<pipeline-id>/pipeline.yaml — pipelines
+ *
+ * Unit-asset law — every unit folder (model / card / pipeline) may carry:
+ *   agents/AGENT.md       LLM-facing docs (progressive disclosure)
+ *   inference.yaml        prompt-upscale + parameter-agentry recipe
+ *   grading_rubric.yaml   output judging criteria (gates, retry rules)
  */
 
 /* ---- Source declaration (where to download weights) ---- */
@@ -78,6 +83,10 @@ typedef struct catalog_model {
 
     /* Agent bundle path (may be NULL) */
     char *agent_md_path;
+
+    /* Unit assets (may be NULL) */
+    char *inference_path;
+    char *rubric_path;
 } catalog_model;
 
 /* ---- Card entry (parsed from cards/<action>/card.yaml) ---- */
@@ -105,6 +114,10 @@ typedef struct catalog_card {
     char **skill_ids;
     char **skill_labels;
     size_t n_skills;
+
+    /* Unit assets (may be NULL) */
+    char *inference_path;
+    char *rubric_path;
 } catalog_card;
 
 /* ---- Full catalog ---- */

@@ -94,7 +94,7 @@ serve: build
 
 .PHONY: run
 run: build
-	cd $(BUILD_DIR) && LD_LIBRARY_PATH=. ./inference_cli run ../plugins/core/pipelines/echo-chain.yaml --input data=42.0
+	cd $(BUILD_DIR) && LD_LIBRARY_PATH=. ./inference_cli run ../plugins/core/pipelines/echo-chain/pipeline.yaml --input data=42.0
 
 .PHONY: lint
 lint:

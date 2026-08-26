@@ -121,6 +121,8 @@ static void free_model(catalog_model *m) {
     free(m->default_vals);
     free(m->engine_plugin);
     free(m->agent_md_path);
+    free(m->inference_path);
+    free(m->rubric_path);
 }
 
 static catalog_model *parse_model_yaml(const char *yaml) {
@@ -230,6 +232,8 @@ static void free_card(catalog_card *c) {
     }
     free(c->skill_ids);
     free(c->skill_labels);
+    free(c->inference_path);
+    free(c->rubric_path);
 }
 
 static catalog_card *parse_card_yaml(const char *yaml) {
@@ -340,6 +344,16 @@ static catalog_card *parse_card_yaml(const char *yaml) {
  *   plugins/core/pipelines/*.yaml                        cross-plugin pipelines
  */
 
+/* Return strdup'd path if <dir>/<name> exists, else NULL */
+static char *probe_unit_file(const char *dir, const char *name) {
+    char path[1024];
+    snprintf(path, sizeof(path), "%s/%s", dir, name);
+    FILE *f = fopen(path, "r");
+    if (!f) return NULL;
+    fclose(f);
+    return strdup(path);
+}
+
 /* Register one model directory (model.yaml + agents/AGENT.md inside) */
 static void scan_model_dir(inference_catalog *cat, const char *dir) {
     char path[1024];
@@ -368,6 +382,10 @@ static void scan_model_dir(inference_catalog *cat, const char *dir) {
         m->agent_md_path = strdup(agent_path);
     }
 
+    /* Unit assets: inference recipe + grading rubric */
+    m->inference_path = probe_unit_file(dir, "inference.yaml");
+    m->rubric_path = probe_unit_file(dir, "grading_rubric.yaml");
+
     cat->n_models++;
     cat->models = realloc(cat->models,
                           cat->n_models * sizeof(catalog_model));
@@ -387,6 +405,9 @@ static void scan_card_dir(inference_catalog *cat, const char *dir) {
     free(yaml);
 
     if (c && c->id) {
+        /* Unit assets: inference recipe + grading rubric */
+        c->inference_path = probe_unit_file(dir, "inference.yaml");
+        c->rubric_path = probe_unit_file(dir, "grading_rubric.yaml");
         cat->n_cards++;
         cat->cards = realloc(cat->cards,
                              cat->n_cards * sizeof(catalog_card));
@@ -643,6 +664,12 @@ char *catalog_model_to_json(const catalog_model *m) {
         off += snprintf(json + off, cap - off, ",\"has_agent\":true");
     }
 
+    /* Unit assets */
+    off += snprintf(json + off, cap - off,
+                    ",\"has_inference\":%s,\"has_rubric\":%s",
+                    m->inference_path ? "true" : "false",
+                    m->rubric_path ? "true" : "false");
+
     off += snprintf(json + off, cap - off, "}");
     return json;
 }
@@ -705,6 +732,12 @@ char *catalog_card_to_json(const catalog_card *c) {
         off += snprintf(json + off, cap - off, "%s\"}", esc);
     }
     off += snprintf(json + off, cap - off, "]");
+
+    /* Unit assets */
+    off += snprintf(json + off, cap - off,
+                    ",\"has_inference\":%s,\"has_rubric\":%s",
+                    c->inference_path ? "true" : "false",
+                    c->rubric_path ? "true" : "false");
 
     off += snprintf(json + off, cap - off, "}");
     return json;
