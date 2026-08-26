@@ -132,6 +132,7 @@ static catalog_model *parse_model_yaml(const char *yaml) {
     char *buf = strdup(yaml);
     char *saveptr = NULL;
     char *line = strtok_r(buf, "\n", &saveptr);
+    catalog_variant_option *cur_opt = NULL;
 
     int section = 0;  /* 0=none, 1=family, 2=source, 3=defaults, 4=engine */
     int in_source = 0;
@@ -216,6 +217,67 @@ static catalog_model *parse_model_yaml(const char *yaml) {
             if ((val = ykv(s, "plugin")) != NULL) {
                 free(m->engine_plugin);
                 m->engine_plugin = ystrdup(val);
+            }
+        }
+
+        /* Variant groups (section 5): "  - name: <g>" opens a group,
+         * "      - id: <opt>" opens an option, deeper k:v attach to it. */
+        if (section == 5) {
+            if (indent == 2 && s[0] == '-') {
+                char gname[64] = "";
+                const char *nm = strstr(s, "name:");
+                if (nm) {
+                    nm += 5;
+                    while (*nm == ' ') nm++;
+                    size_t nl = strlen(nm);
+                    while (nl && nm[nl-1] == ' ') nl--;
+                    if (nl >= sizeof(gname)) nl = sizeof(gname) - 1;
+                    memcpy(gname, nm, nl);
+                    gname[nl] = 0;
+                    if (nl >= 2 && gname[0] == '"' && gname[nl-1] == '"') {
+                        gname[nl-1] = 0;
+                        memmove(gname, gname + 1, nl);
+                    }
+                }
+                if (m->n_variant_groups == 0)
+                    m->variant_groups = calloc(4, sizeof(catalog_variant_group));
+                catalog_variant_group *vg =
+                    &m->variant_groups[m->n_variant_groups];
+                memset(vg, 0, sizeof(*vg));
+                vg->name = ystrdup(gname);
+                vg->options = calloc(8, sizeof(catalog_variant_option));
+                m->n_variant_groups++;
+                cur_opt = NULL;
+            } else if (indent == 6 && s[0] == '-' &&
+                       m->n_variant_groups > 0) {
+                catalog_variant_group *vg =
+                    &m->variant_groups[m->n_variant_groups - 1];
+                const char *idp = strstr(s, "id:");
+                if (idp) {
+                    idp += 3;
+                    while (*idp == ' ') idp++;
+                    size_t il = strlen(idp);
+                    while (il && idp[il-1] == ' ') il--;
+                    char idv[128];
+                    if (il >= sizeof(idv)) il = sizeof(idv) - 1;
+                    memcpy(idv, idp, il);
+                    idv[il] = 0;
+                    if (il >= 2 && idv[0] == '"' && idv[il-1] == '"') {
+                        idv[il-1] = 0;
+                        memmove(idv, idv + 1, il);
+                    }
+                    catalog_variant_option *op = &vg->options[vg->n_options];
+                    memset(op, 0, sizeof(*op));
+                    op->id = ystrdup(idv);
+                    vg->n_options++;
+                    cur_opt = op;
+                }
+            } else if (indent == 8 && m->n_variant_groups > 0 &&
+                       cur_opt != NULL) {
+                if ((val = ykv(s, "filename")) != NULL) {
+                    free(cur_opt->filename);
+                    cur_opt->filename = ystrdup(val);
+                }
             }
         }
 

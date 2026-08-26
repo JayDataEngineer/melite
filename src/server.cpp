@@ -10,6 +10,9 @@
 #include <string.h>
 #include <pthread.h>
 #include <time.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <sys/stat.h>
 
 /* C helpers (local impl — plugin_helpers.h is C-only, static inline) */
@@ -142,6 +145,13 @@ static void handle_models(const httplib::Request &req,
  *   POST /v1/pipelines/start   {"model":"krea-2","prompt":...,"seed":...} -> {"run_id"}
  *   GET  /v1/pipelines/status/{run_id}  -> {status, artifacts:[{name,path,bytes}]}
  *   POST /v1/pipelines/drafts  {intent, stages:[...]} -> {draftId, stages}
+ *   GET  /v1/pipelines/runs    -> {runs:[...]} (gallery; disk-scanned from
+ *                                  ./output/run-<id>/_pipeline.json sidecars -
+ *                                  restart-safe; every run persists its spec)
+ *   GET  /editor/assets/runs/{run}/{file} -> artifact bytes (media tree)
+ *   GET  /v1/form-spec?model=  -> {defaults, variants, enhance_prompts}
+ *   POST /v1/models/provision  -> {queued, manager:{accepted,...}} (async)
+ *   GET  /v1/models/provision/status -> {jobs:[...]}
  * Execution happens on detached pthreads against the same runner/engines.
  */
 
@@ -162,6 +172,9 @@ typedef struct {
     char error[256];
     char out_dir[512];
     char yaml[2048];         /* the pipeline YAML this run executes */
+    char model[64];          /* requested model (spec persistence) */
+    char prompt[2048];       /* requested prompt (spec persistence) */
+    long seed;               /* requested seed, -1 = unset */
     time_t created;
     run_input inputs[16];
     size_t n_inputs;
@@ -171,20 +184,75 @@ static run_entry g_runs[RUNREG_MAX];
 static size_t g_n_runs = 0;
 static pthread_mutex_t g_runs_mu = PTHREAD_MUTEX_INITIALIZER;
 
+static void run_write_sidecar(size_t idx);
+
 static void run_set_state(size_t idx, const char *state, const char *err) {
     pthread_mutex_lock(&g_runs_mu);
     snprintf(g_runs[idx].state, sizeof(g_runs[idx].state), "%s", state);
     if (err) snprintf(g_runs[idx].error, sizeof(g_runs[idx].error), "%s", err);
     pthread_mutex_unlock(&g_runs_mu);
+    run_write_sidecar(idx);   /* the spec sidecar carries live status */
 }
 
 /* scan out_dir for artifacts -> JSON array string (caller frees) */
+/* artifact kind by extension (gallery picks thumbnails by type) */
+static const char *artifact_type(const char *name) {
+    const char *e = strrchr(name, '.');
+    if (!e) return "file";
+    e++;
+    if (!strcasecmp(e,"png") || !strcasecmp(e,"jpg") || !strcasecmp(e,"jpeg") ||
+        !strcasecmp(e,"webp") || !strcasecmp(e,"gif") || !strcasecmp(e,"svg"))
+        return "image";
+    if (!strcasecmp(e,"wav") || !strcasecmp(e,"flac") || !strcasecmp(e,"mp3") ||
+        !strcasecmp(e,"ogg") || !strcasecmp(e,"m4a") || !strcasecmp(e,"aac"))
+        return "audio";
+    if (!strcasecmp(e,"mp4") || !strcasecmp(e,"webm") || !strcasecmp(e,"mkv") ||
+        !strcasecmp(e,"mov"))
+        return "video";
+    if (!strcasecmp(e,"glb") || !strcasecmp(e,"gltf")) return "model";
+    if (!strcasecmp(e,"json")) return "spec";
+    if (!strcasecmp(e,"txt") || !strcasecmp(e,"md") || !strcasecmp(e,"yaml"))
+        return "text";
+    return "file";
+}
+
+static const char *content_type_of(const char *name) {
+    const char *e = strrchr(name, '.');
+    if (!e) return "application/octet-stream";
+    e++;
+    if (!strcasecmp(e,"png"))  return "image/png";
+    if (!strcasecmp(e,"jpg") || !strcasecmp(e,"jpeg")) return "image/jpeg";
+    if (!strcasecmp(e,"webp")) return "image/webp";
+    if (!strcasecmp(e,"gif"))  return "image/gif";
+    if (!strcasecmp(e,"svg"))  return "image/svg+xml";
+    if (!strcasecmp(e,"wav"))  return "audio/wav";
+    if (!strcasecmp(e,"flac")) return "audio/flac";
+    if (!strcasecmp(e,"mp3"))  return "audio/mpeg";
+    if (!strcasecmp(e,"ogg"))  return "audio/ogg";
+    if (!strcasecmp(e,"m4a"))  return "audio/mp4";
+    if (!strcasecmp(e,"mp4"))  return "video/mp4";
+    if (!strcasecmp(e,"webm")) return "video/webm";
+    if (!strcasecmp(e,"glb"))  return "model/gltf-binary";
+    if (!strcasecmp(e,"gltf")) return "model/gltf+json";
+    if (!strcasecmp(e,"json")) return "application/json";
+    if (!strcasecmp(e,"txt") || !strcasecmp(e,"md")) return "text/plain; charset=utf-8";
+    if (!strcasecmp(e,"yaml")) return "text/yaml";
+    return "application/octet-stream";
+}
+
+/* last path component of a dir path (run id from ./output/<run_id>) */
+static const char *path_basename(const char *p) {
+    const char *s = strrchr(p, '/');
+    return s ? s + 1 : p;
+}
+
 static char *run_artifacts_json(const char *out_dir) {
     char cmd[1024];
     snprintf(cmd, sizeof(cmd), "ls -1 '%s' 2>/dev/null", out_dir);
     FILE *fp = popen(cmd, "r");
     if (!fp) return strdup("[]");
-    size_t cap = 4096, len = 0;
+    const char *rid = path_basename(out_dir);
+    size_t cap = 8192, len = 0;
     char *buf = (char *)malloc(cap);
     len += (size_t)snprintf(buf + len, cap - len, "[");
     char line[512];
@@ -199,11 +267,13 @@ static char *run_artifacts_json(const char *out_dir) {
         FILE *sf = popen(szcmd, "r");
         long bytes = -1;
         if (sf) { if (fscanf(sf, "%ld", &bytes) != 1) bytes = -1; pclose(sf); }
-        while (len + 600 > cap) { cap *= 2; buf = (char *)realloc(buf, cap); }
+        while (len + 900 > cap) { cap *= 2; buf = (char *)realloc(buf, cap); }
         if (!first) len += (size_t)snprintf(buf + len, cap - len, ",");
         first = 0;
         len += (size_t)snprintf(buf + len, cap - len,
-            "{\"name\":\"%s\",\"path\":\"%s\",\"bytes\":%ld}", line, path, bytes);
+            "{\"name\":\"%s\",\"path\":\"%s\",\"bytes\":%ld,"
+            "\"url\":\"/editor/assets/runs/%s/%s\",\"type\":\"%s\",\"size\":%ld}",
+            line, path, bytes, rid, line, artifact_type(line), bytes);
     }
     pclose(fp);
     snprintf(buf + len, cap - len, "]");
@@ -311,6 +381,38 @@ static char *json_quote(const char *src) {
     return out;
 }
 
+/* Write the generation-spec sidecar <out_dir>/_pipeline.json - the recovery
+ * record. Everything needed to re-issue the run lives here: model, prompt,
+ * seed, the exact pipeline YAML, and the live status (updated on every
+ * run_set_state). /v1/pipelines/runs rebuilds the run list from these. */
+static void run_write_sidecar(size_t idx) {
+    pthread_mutex_lock(&g_runs_mu);
+    char dir[512], rid[48], model[64], state[16], err[256];
+    long seed = g_runs[idx].seed;
+    long created = (long)g_runs[idx].created;
+    snprintf(dir, sizeof(dir), "%s", g_runs[idx].out_dir);
+    snprintf(rid, sizeof(rid), "%s", g_runs[idx].run_id);
+    snprintf(model, sizeof(model), "%s", g_runs[idx].model);
+    snprintf(state, sizeof(state), "%s", g_runs[idx].state);
+    snprintf(err, sizeof(err), "%s", g_runs[idx].error);
+    char *yamlq = json_quote(g_runs[idx].yaml);
+    char *promptq = json_quote(g_runs[idx].prompt);
+    char *errq = err[0] ? json_quote(err) : NULL;
+    pthread_mutex_unlock(&g_runs_mu);
+
+    char path[600];
+    snprintf(path, sizeof(path), "%s/_pipeline.json", dir);
+    FILE *f = fopen(path, "w");
+    if (!f) { free(yamlq); free(promptq); free(errq); return; }
+    fprintf(f, "{\"run_id\":\"%s\",\"model\":\"%s\",\"prompt\":%s,"
+               "\"seed\":%ld,\"created\":%ld,\"status\":\"%s\","
+               "\"error\":%s,\"yaml\":%s}",
+            rid, model, promptq, seed, created, state,
+            errq ? errq : "null", yamlq);
+    fclose(f);
+    free(yamlq); free(promptq); free(errq);
+}
+
 static void handle_pipelines_start(const httplib::Request &req,
                                    httplib::Response &res) {
     /* flat generation body: {"model":..., "prompt":..., "seed":..., "workflow_file"?...} */
@@ -363,7 +465,15 @@ static void handle_pipelines_start(const httplib::Request &req,
     snprintf(g_runs[idx].out_dir, sizeof(g_runs[idx].out_dir), "./output/%s",
              g_runs[idx].run_id);
     g_runs[idx].created = time(NULL);
+    snprintf(g_runs[idx].model, sizeof(g_runs[idx].model), "%s", model);
+    snprintf(g_runs[idx].prompt, sizeof(g_runs[idx].prompt), "%s", prompt);
+    g_runs[idx].seed = seed;
     pthread_mutex_unlock(&g_runs_mu);
+
+    /* the spec sidecar exists from the moment the run is registered */
+    mkdir("./output", 0755);
+    mkdir(g_runs[idx].out_dir, 0755);
+    run_write_sidecar(idx);
 
     /* Harvested lane? execute the pinned pipeline with initial inputs
      * (prompt/lyrics/negative_prompt as text tensors, seed as f32) */
@@ -747,6 +857,463 @@ static void handle_download_all(const httplib::Request &req,
     snprintf(result, sizeof(result),
         "{\"status\":\"ok\",\"downloaded\":%d}", n);
     res.set_content(result, "application/json");
+}
+
+/* ---- DSH recovery surface: runs list, artifact tree, form-spec,
+ *      async provisioning. The gallery/deck speak these verbatim. ---- */
+
+/* minimal JSON string-field extraction from a sidecar we wrote ourselves */
+static int sidecar_str(const char *json, const char *key, char *out, size_t cap) {
+    char pat[64];
+    snprintf(pat, sizeof(pat), "\"%s\":\"", key);
+    const char *p = strstr(json, pat);
+    if (!p) return -1;
+    p += strlen(pat);
+    size_t o = 0;
+    while (*p && *p != '"' && o + 1 < cap) {
+        if (*p == '\\' && p[1]) {
+            p++;
+            switch (*p) {
+            case 'n': out[o++] = '\n'; break;
+            case 'r': out[o++] = '\r'; break;
+            case 't': out[o++] = '\t'; break;
+            default:  out[o++] = *p;   break;   /* covers \" and \\ */
+            }
+            p++;
+        } else {
+            out[o++] = *p++;
+        }
+    }
+    out[o] = 0;
+    return 0;
+}
+
+static long sidecar_num(const char *json, const char *key, long dflt) {
+    char pat[64];
+    snprintf(pat, sizeof(pat), "\"%s\":", key);
+    const char *p = strstr(json, pat);
+    if (!p) return dflt;
+    p += strlen(pat);
+    return strtol(p, NULL, 10);
+}
+
+/* one thumbnail URL for a run dir: first image file found */
+static int run_thumbnail(const char *dir, char *out, size_t cap) {
+    char cmd[600];
+    snprintf(cmd, sizeof(cmd), "ls -1 '%s' 2>/dev/null", dir);
+    FILE *fp = popen(cmd, "r");
+    if (!fp) return -1;
+    char line[512];
+    int found = -1;
+    while (fgets(line, sizeof(line), fp)) {
+        size_t ll = strlen(line);
+        while (ll && (line[ll-1] == '\n' || line[ll-1] == '\r')) line[--ll] = 0;
+        if (!ll) continue;
+        if (strcmp(artifact_type(line), "image") == 0) {
+            snprintf(out, cap, "/editor/assets/runs/%s/%s",
+                     path_basename(dir), line);
+            found = 0;
+            break;
+        }
+    }
+    pclose(fp);
+    return found;
+}
+
+typedef struct { char dir[64]; long created; } run_dir_ent;
+
+static int rundir_cmp(const void *a, const void *b) {
+    const run_dir_ent *x = (const run_dir_ent *)a;
+    const run_dir_ent *y = (const run_dir_ent *)b;
+    if (y->created > x->created) return 1;
+    if (y->created < x->created) return -1;
+    return 0;
+}
+
+/* GET /v1/pipelines/runs - gallery list, disk-scanned from ./output/run-*
+ * sidecars: survives restarts; live status is mirrored into the sidecars
+ * by run_set_state, so the disk is always current. */
+static void handle_pipelines_runs(const httplib::Request &req,
+                                  httplib::Response &res) {
+    (void)req;
+    run_dir_ent ents[256];
+    size_t n = 0;
+    DIR *d = opendir("./output");
+    if (d) {
+        struct dirent *e;
+        while ((e = readdir(d)) != NULL && n < 256) {
+            if (strncmp(e->d_name, "run-", 4) != 0) continue;
+            char sd[640], buf[8192];
+            snprintf(sd, sizeof(sd), "./output/%s/_pipeline.json", e->d_name);
+            long created = 0;
+            FILE *f = fopen(sd, "rb");
+            if (f) {
+                size_t got = fread(buf, 1, sizeof(buf) - 1, f);
+                fclose(f);
+                buf[got] = 0;
+                created = sidecar_num(buf, "created", 0);
+            }
+            snprintf(ents[n].dir, sizeof(ents[n].dir), "%s", e->d_name);
+            ents[n].created = created;
+            n++;
+        }
+        closedir(d);
+    }
+    qsort(ents, n, sizeof(ents[0]), rundir_cmp);
+
+    size_t cap = 16384, len = 0;
+    char *out = (char *)malloc(cap);
+    len += (size_t)snprintf(out + len, cap - len, "{\"runs\":[");
+    for (size_t i = 0; i < n && i < 100; i++) {
+        char dir[600], sd[640], buf[8192];
+        snprintf(dir, sizeof(dir), "./output/%s", ents[i].dir);
+        snprintf(sd, sizeof(sd), "%s/_pipeline.json", dir);
+        char model[64] = "", prompt[2048] = "", status[16] = "unknown";
+        long seed = -1, created = ents[i].created;
+        FILE *f = fopen(sd, "rb");
+        if (f) {
+            size_t got = fread(buf, 1, sizeof(buf) - 1, f);
+            fclose(f);
+            buf[got] = 0;
+            sidecar_str(buf, "model", model, sizeof(model));
+            sidecar_str(buf, "prompt", prompt, sizeof(prompt));
+            sidecar_str(buf, "status", status, sizeof(status));
+            seed = sidecar_num(buf, "seed", -1);
+            created = sidecar_num(buf, "created", created);
+        } else {
+            /* legacy run dir predating sidecars: report what exists */
+            snprintf(status, sizeof(status), "success");
+        }
+        char thumb[600] = "";
+        run_thumbnail(dir, thumb, sizeof(thumb));
+        char *arts = run_artifacts_json(dir);
+        char *promptq = json_quote(prompt);
+        char *modelq = json_quote(model);
+        while (len + strlen(arts) + strlen(promptq) + 1600 > cap) {
+            cap *= 2; out = (char *)realloc(out, cap);
+        }
+        len += (size_t)snprintf(out + len, cap - len,
+            "%s{\"run_id\":\"%s\",\"name\":%s,\"pipeline\":%s,"
+            "\"status\":\"%s\",\"created_at\":%ld,\"prompt\":%s,"
+            "\"seed\":%ld,\"thumbnail\":\"%s\",\"artifacts\":%s,"
+            "\"params\":{\"seed\":%ld}}",
+            i ? "," : "", ents[i].dir, modelq, modelq, status, created,
+            promptq, seed, thumb, arts, seed);
+        free(arts); free(promptq); free(modelq);
+    }
+    len += (size_t)snprintf(out + len, cap - len, "]}");
+    res.set_content(out, "application/json");
+    free(out);
+}
+
+/* GET /editor/assets/runs/<run_id>/<file> - the artifact media tree the
+ * gallery + deck proxies stream from (path-traversal guarded). */
+static void handle_asset(const httplib::Request &req, httplib::Response &res) {
+    std::string rel = req.matches[1];
+    if (rel.empty() || rel.find("..") != std::string::npos) {
+        res.status = 400;
+        res.set_content("{\"error\":\"bad path\"}", "application/json");
+        return;
+    }
+    char path[1200];
+    snprintf(path, sizeof(path), "./output/%s", rel.c_str());
+    FILE *f = fopen(path, "rb");
+    if (!f) {
+        res.status = 404;
+        res.set_content("{\"error\":\"artifact not found\"}",
+                        "application/json");
+        return;
+    }
+    fseek(f, 0, SEEK_END);
+    long sz = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    const char *ctype = content_type_of(rel.c_str());
+    res.set_content_provider((size_t)sz, ctype,
+        [f](size_t offset, size_t length, httplib::DataSink &sink) {
+            char chunk[65536];
+            size_t want = length < sizeof(chunk) ? length : sizeof(chunk);
+            fseek(f, (long)offset, SEEK_SET);
+            size_t got = fread(chunk, 1, want, f);
+            if (got > 0) sink.write(chunk, got);
+            return true;
+        },
+        [f](bool) { fclose(f); });
+}
+
+/* GET /v1/form-spec?model=<id> - defaults + variants + the enhance recipe
+ * (parsed from the unit's inference.yaml prompt_upscale block). */
+static void handle_form_spec(const httplib::Request &req,
+                             httplib::Response &res) {
+    if (!g_catalog) {
+        res.status = 500;
+        res.set_content("{\"error\":\"no catalog loaded\"}",
+                        "application/json");
+        return;
+    }
+    std::string model = req.get_param_value("model");
+    if (model.empty()) {
+        res.status = 400;
+        res.set_content("{\"error\":\"missing model param\"}",
+                        "application/json");
+        return;
+    }
+    const catalog_model *m = catalog_find_model(g_catalog, model.c_str());
+    if (!m) {
+        res.status = 404;
+        res.set_content("{\"error\":\"model not found\"}",
+                        "application/json");
+        return;
+    }
+
+    /* enhance recipe: the prompt_upscale block of inference.yaml, verbatim */
+    char recipe[4096] = "";
+    if (m->inference_path) {
+        FILE *f = fopen(m->inference_path, "rb");
+        if (f) {
+            char line[512];
+            int in_block = 0;
+            size_t o = 0;
+            while (fgets(line, sizeof(line), f) != NULL &&
+                   o + 600 < sizeof(recipe)) {
+                if (strncmp(line, "prompt_upscale:", 15) == 0) {
+                    in_block = 1;
+                    continue;
+                }
+                if (in_block) {
+                    if (line[0] != ' ' && line[0] != '#' && line[0] != '\t' &&
+                        line[0] != '\n' && line[0] != 0)
+                        break;                      /* next top-level key */
+                    const char *p = line;
+                    while (*p == ' ' || *p == '\t') p++;
+                    size_t ll = strlen(p);
+                    while (ll && (p[ll-1] == '\n' || p[ll-1] == '\r')) ll--;
+                    if (ll) o += (size_t)snprintf(recipe + o,
+                                                  sizeof(recipe) - o,
+                                                  "%s%.*s", o ? "; " : "",
+                                                  (int)ll, p);
+                }
+            }
+            fclose(f);
+        }
+    }
+    char *recipeq = json_quote(recipe);
+    char *labelq = json_quote(m->label ? m->label : m->id);
+
+    size_t cap = 8192 + strlen(recipeq) + strlen(labelq);
+    char *out = (char *)malloc(cap);
+    size_t len = 0;
+    len += (size_t)snprintf(out + len, cap - len,
+        "{\"model\":\"%s\",\"label\":%s,\"genre\":\"%s\","
+        "\"engine\":\"%s\",\"defaults\":{",
+        m->id, labelq, m->genre ? m->genre : "",
+        m->engine_plugin ? m->engine_plugin : "");
+    for (size_t i = 0; i < m->n_defaults; i++)
+        len += (size_t)snprintf(out + len, cap - len, "%s\"%s\":\"%s\"",
+                                i ? "," : "", m->default_keys[i],
+                                m->default_vals[i]);
+    len += (size_t)snprintf(out + len, cap - len, "},\"variants\":[");
+    for (size_t g = 0; g < m->n_variant_groups; g++) {
+        const catalog_variant_group *vg = &m->variant_groups[g];
+        len += (size_t)snprintf(out + len, cap - len,
+                                "%s{\"name\":\"%s\",\"options\":[",
+                                g ? "," : "", vg->name ? vg->name : "");
+        for (size_t o = 0; o < vg->n_options; o++)
+            len += (size_t)snprintf(out + len, cap - len, "%s\"%s\"",
+                                    o ? "," : "",
+                                    vg->options[o].id ? vg->options[o].id : "");
+        len += (size_t)snprintf(out + len, cap - len, "]}");
+    }
+    len += (size_t)snprintf(out + len, cap - len,
+        "],\"enhance_prompts\":{\"prompt\":%s}}", recipeq);
+    res.set_content(out, "application/json");
+    free(out); free(recipeq); free(labelq);
+}
+
+
+/* ---- Provisioning: Manager-style async weight downloads ---- */
+
+#define PROV_MAX 32
+typedef struct {
+    char model[64];
+    char filename[256];
+    char state[16];          /* queued|downloading|done|error */
+    long enqueued;
+} prov_job;
+
+static prov_job g_prov[PROV_MAX];
+static size_t g_n_prov = 0;
+static pthread_mutex_t g_prov_mu = PTHREAD_MUTEX_INITIALIZER;
+
+static void prov_set_state(const char *model, const char *state) {
+    pthread_mutex_lock(&g_prov_mu);
+    for (size_t i = 0; i < g_n_prov; i++)
+        if (strcmp(g_prov[i].model, model) == 0)
+            snprintf(g_prov[i].state, sizeof(g_prov[i].state), "%s", state);
+    pthread_mutex_unlock(&g_prov_mu);
+}
+
+typedef struct { char model[64]; char filename[256]; } prov_arg;
+
+static void *prov_thread_fn(void *argp) {
+    prov_arg *a = (prov_arg *)argp;
+    if (!g_download_cfg) g_download_cfg = download_config_create(NULL);
+    const catalog_model *m = g_catalog ? catalog_find_model(g_catalog, a->model)
+                                       : NULL;
+    if (m) {
+        prov_set_state(a->model, "downloading");
+        download_ws_progress ctx = {"prov"};
+        int rc = download_model(g_download_cfg, &m->source, a->filename,
+                                download_progress_ws, &ctx);
+        prov_set_state(a->model, rc < 0 ? "error" : "done");
+    } else {
+        prov_set_state(a->model, "error");
+    }
+    free(a);
+    return NULL;
+}
+
+/* POST /v1/models/provision {model, variant?} - queue the download,
+ * answer immediately with the Manager-shaped verdict. */
+static void handle_provision(const httplib::Request &req,
+                             httplib::Response &res) {
+    if (!g_catalog) {
+        res.status = 500;
+        res.set_content("{\"error\":\"no catalog loaded\"}",
+                        "application/json");
+        return;
+    }
+    char model[64] = "", variant[64] = "";
+    inf_json_string(req.body.c_str(), "model", model, sizeof(model));
+    inf_json_string(req.body.c_str(), "variant", variant, sizeof(variant));
+    if (!model[0]) {
+        res.status = 400;
+        res.set_content("{\"error\":\"missing model\"}", "application/json");
+        return;
+    }
+    const catalog_model *m = catalog_find_model(g_catalog, model);
+    if (!m) {
+        res.status = 404;
+        char out[256];
+        snprintf(out, sizeof(out), "{\"error\":\"unknown model: %s\"}",
+                 model);
+        res.set_content(out, "application/json");
+        return;
+    }
+    if (!m->source.type || strcmp(m->source.type, "builtin") == 0) {
+        res.status = 422;
+        char out[300];
+        snprintf(out, sizeof(out),
+                 "{\"error\":\"model %s declares no downloadable source\"}",
+                 model);
+        res.set_content(out, "application/json");
+        return;
+    }
+
+    char fn[256];
+    if (m->source.filename)
+        snprintf(fn, sizeof(fn), "%s", m->source.filename);
+    else
+        snprintf(fn, sizeof(fn), "%s.gguf", m->id);
+    /* the YAML parser keeps surrounding quotes on scalars - strip them */
+    {
+        size_t fl = strlen(fn);
+        if (fl >= 2 && fn[0] == '"' && fn[fl-1] == '"') {
+            memmove(fn, fn + 1, fl - 2);
+            fn[fl-2] = 0;
+        }
+    }
+    /* {variant} template: use the requested variant, else the first
+     * declared option (the catalog's default pick) */
+    if (strstr(fn, "{variant}")) {
+        if (!variant[0] && m->n_variant_groups > 0 &&
+            m->variant_groups[0].n_options > 0 &&
+            m->variant_groups[0].options[0].id)
+            snprintf(variant, sizeof(variant), "%s",
+                     m->variant_groups[0].options[0].id);
+        if (variant[0]) {
+            /* an option matching the variant may carry its own exact
+             * filename - that beats the source template */
+            const char *exact = NULL;
+            for (size_t g = 0; g < m->n_variant_groups && !exact; g++) {
+                for (size_t o = 0; o < m->variant_groups[g].n_options; o++) {
+                    const catalog_variant_option *op =
+                        &m->variant_groups[g].options[o];
+                    if (op->id && op->filename && op->filename[0] &&
+                        strcmp(op->id, variant) == 0)
+                        exact = op->filename;
+                }
+            }
+            if (exact) {
+                snprintf(fn, sizeof(fn), "%s", exact);
+                size_t fl = strlen(fn);
+                if (fl >= 2 && fn[0] == '"' && fn[fl-1] == '"') {
+                    memmove(fn, fn + 1, fl - 2);
+                    fn[fl-2] = 0;
+                }
+            } else {
+                char *p = strstr(fn, "{variant}");
+                char tail[256];
+                snprintf(tail, sizeof(tail), "%s%s", variant, p + 9);
+                *p = 0;
+                snprintf(fn + strlen(fn), sizeof(fn) - strlen(fn), "%s", tail);
+            }
+        } else {
+            res.status = 422;
+            res.set_content("{\"error\":\"variant required but none declared\"}",
+                            "application/json");
+            return;
+        }
+    }
+
+    pthread_mutex_lock(&g_prov_mu);
+    if (g_n_prov < PROV_MAX) {
+        snprintf(g_prov[g_n_prov].model, sizeof(g_prov[0].model), "%s", model);
+        snprintf(g_prov[g_n_prov].filename, sizeof(g_prov[0].filename), "%s",
+                 fn);
+        snprintf(g_prov[g_n_prov].state, sizeof(g_prov[0].state), "queued");
+        g_prov[g_n_prov].enqueued = (long)time(NULL);
+        g_n_prov++;
+    }
+    pthread_mutex_unlock(&g_prov_mu);
+
+    prov_arg *a = (prov_arg *)malloc(sizeof(*a));
+    snprintf(a->model, sizeof(a->model), "%s", model);
+    snprintf(a->filename, sizeof(a->filename), "%s", fn);
+    pthread_t th;
+    pthread_create(&th, NULL, prov_thread_fn, a);
+    pthread_detach(th);
+
+    if (!g_download_cfg) g_download_cfg = download_config_create(NULL);
+    char *cache = download_cache_path(g_download_cfg, fn);
+    char out[900];
+    snprintf(out, sizeof(out),
+        "{\"queued\":true,\"model\":\"%s\",\"variant\":\"%s\","
+        "\"manager\":{\"accepted\":true,\"worker_kicked\":true,"
+        "\"status\":\"download queued\"},"
+        "\"payload\":{\"filename\":\"%s\",\"save_path\":\"%s\"}}",
+        model, variant, fn, cache ? cache : "");
+    res.set_content(out, "application/json");
+    free(cache);
+}
+
+/* GET /v1/models/provision/status - the queue snapshot */
+static void handle_provision_status(const httplib::Request &req,
+                                    httplib::Response &res) {
+    (void)req;
+    size_t cap = 8192, len = 0;
+    char *out = (char *)malloc(cap);
+    len += (size_t)snprintf(out + len, cap - len, "{\"jobs\":[");
+    pthread_mutex_lock(&g_prov_mu);
+    for (size_t i = 0; i < g_n_prov; i++)
+        len += (size_t)snprintf(out + len, cap - len,
+            "%s{\"model\":\"%s\",\"filename\":\"%s\","
+            "\"state\":\"%s\",\"enqueued\":%ld}",
+            i ? "," : "", g_prov[i].model, g_prov[i].filename,
+            g_prov[i].state, g_prov[i].enqueued);
+    pthread_mutex_unlock(&g_prov_mu);
+    len += (size_t)snprintf(out + len, cap - len, "]}");
+    res.set_content(out, "application/json");
+    free(out);
 }
 
 /* ==================================================================
@@ -1270,6 +1837,11 @@ inference_server *server_create(int port) {
     s->srv.Post("/v1/pipelines/start",   handle_pipelines_start);
     s->srv.Get("/v1/pipelines/status/:run_id", handle_pipelines_status);
     s->srv.Post("/v1/pipelines/drafts",  handle_pipelines_drafts);
+    s->srv.Get("/v1/pipelines/runs",     handle_pipelines_runs);
+    s->srv.Get(R"(/editor/assets/runs/(.+))", handle_asset);
+    s->srv.Get("/v1/form-spec",          handle_form_spec);
+    s->srv.Post("/v1/models/provision",  handle_provision);
+    s->srv.Get("/v1/models/provision/status", handle_provision_status);
     s->srv.Get("/v1/model-catalog",      handle_catalog);
     s->srv.Get("/v1/model/:id",          handle_catalog_model);
     s->srv.Get("/v1/agent-manifest",     handle_agent_manifest);
