@@ -1,0 +1,63 @@
+card:
+  id: text-gen
+  label: "Text Generation"
+  description: "Generate text from prompts using language models"
+  genre: text
+  icon: "type"
+
+families:
+  - id: llama
+    label: "LLaMA / Mistral / Qwen"
+    description: "GGUF language models via llama.cpp"
+
+principles:
+  - "Always stream long responses for better UX"
+  - "Default to 2048 max tokens unless the user specifies more"
+  - "Use temperature 0.7 for creative tasks, 0.1 for factual"
+  - "Include the model name in response metadata"
+
+parameters:
+  prompt:
+    type: text
+    label: "Prompt"
+    required: true
+    placeholder: "Enter your prompt..."
+    tooltip: "The text prompt to generate from"
+
+  model:
+    type: select
+    label: "Model"
+    family: llama
+    default: "llama-3.2-3b"
+
+  max_tokens:
+    type: int
+    label: "Max Tokens"
+    default: 2048
+    min: 1
+    max: 32768
+
+  temperature:
+    type: float
+    label: "Temperature"
+    default: 0.7
+    min: 0.0
+    max: 2.0
+
+  top_p:
+    type: float
+    label: "Top P"
+    default: 0.9
+    min: 0.0
+    max: 1.0
+
+  seed:
+    type: int
+    label: "Seed"
+    default: -1
+    tooltip: "-1 for random"
+
+skills:
+  - id: prompt-enhance
+    label: "Enhance Prompt"
+    description: "Rewrite a rough idea into a well-structured prompt"

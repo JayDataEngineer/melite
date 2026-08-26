@@ -1,0 +1,76 @@
+family:
+  id: sd
+  genre: image
+  label: Stable Diffusion
+  description: "Text-to-image and image-to-image via stable-diffusion.cpp. Supports SD 1.x, SDXL, SD3, FLUX, and more."
+
+source:
+  type: huggingface
+  repo_id: "leejet/stable-diffusion.cpp"
+  filename: "sd-{variant}.gguf"
+  quantizations:
+    - id: f16
+      label: "F16 — full precision"
+      size_gb: 8.0
+    - id: q8_0
+      label: "Q8_0 — quantized"
+      size_gb: 4.5
+    - id: q4_0
+      label: "Q4_0 — smallest"
+      size_gb: 2.5
+
+variant_groups:
+  - name: model
+    label: Model
+    options:
+      - id: sd15
+        label: "SD 1.5"
+        filename: "sd-v1-5.gguf"
+      - id: sdxl
+        label: "SDXL 1.0"
+        filename: "sdxl-base-1.0.gguf"
+      - id: sd3
+        label: "SD 3 Medium"
+        filename: "sd3-medium.gguf"
+      - id: flux-dev
+        label: "FLUX.1 Dev"
+        filename: "flux1-dev.gguf"
+
+lora_catalog:
+  - id: none
+    label: "No LoRA"
+    category: base
+  - id: add-detail
+    label: "Add More Details"
+    category: enhancement
+    source:
+      type: huggingface
+      repo_id: "civitai/add-details-lora"
+      filename: "add_detail_xl.safetensors"
+      size_gb: 0.144
+  - id: pixel-art
+    label: "Pixel Art Style"
+    category: style
+    source:
+      type: huggingface
+      repo_id: "civitai/pixel-art-lora"
+      filename: "pixel_art_xl.safetensors"
+      size_gb: 0.144
+
+defaults:
+  width: 1024
+  height: 1024
+  steps: 20
+  cfg_scale: 7.0
+  sampler: euler_a
+  seed: -1
+  n_threads: 4
+
+engine:
+  plugin: sd_cpp
+  config_keys:
+    model_path: "source.filename"
+    width: "width"
+    height: "height"
+    steps: "steps"
+    cfg_scale: "cfg_scale"

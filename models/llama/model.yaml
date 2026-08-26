@@ -1,0 +1,61 @@
+family:
+  id: llama
+  genre: text
+  label: LLaMA
+  description: "GGUF text generation via llama.cpp. Supports any GGUF-compatible LLM (LLaMA, Mistral, Qwen, Phi, Gemma, etc.)."
+
+source:
+  type: huggingface
+  repo_id: "ggml-org/llama.cpp"
+  filename: "llama-{variant}.gguf"
+  quantizations:
+    - id: Q4_K_M
+      label: "Q4_K_M — balanced quality/speed"
+      size_gb: 4.5
+    - id: Q5_K_M
+      label: "Q5_K_M — higher quality"
+      size_gb: 5.5
+    - id: Q8_0
+      label: "Q8_0 — near-lossless"
+      size_gb: 10.0
+    - id: Q2_K
+      label: "Q2_K — smallest/fastest"
+      size_gb: 3.0
+
+variant_groups:
+  - name: model
+    label: Model
+    options:
+      - id: llama-3.2-3b
+        label: "LLaMA 3.2 3B"
+        filename: "llama-3.2-3b-Q4_K_M.gguf"
+      - id: llama-3.1-8b
+        label: "LLaMA 3.1 8B"
+        filename: "llama-3.1-8b-Q4_K_M.gguf"
+      - id: mistral-7b
+        label: "Mistral 7B"
+        filename: "mistral-7b-instruct-v0.3-Q4_K_M.gguf"
+      - id: qwen2.5-7b
+        label: "Qwen 2.5 7B"
+        filename: "qwen2.5-7b-instruct-Q4_K_M.gguf"
+
+lora_catalog:
+  - id: none
+    label: "No LoRA"
+    category: base
+
+defaults:
+  n_gpu_layers: 32
+  n_ctx: 4096
+  n_batch: 512
+  temperature: 0.7
+  top_p: 0.9
+  max_tokens: 2048
+  seed: -1
+
+engine:
+  plugin: llama_cpp
+  config_keys:
+    model_path: "source.filename"
+    n_gpu_layers: "n_gpu_layers"
+    n_ctx: "n_ctx"

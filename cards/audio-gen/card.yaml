@@ -1,0 +1,64 @@
+card:
+  id: audio-gen
+  label: "Audio Generation"
+  description: "Generate audio, speech, and music"
+  genre: audio
+  icon: "music"
+
+families:
+  - id: audio
+    label: "Audio Engine"
+    description: "TTS, ASR, music generation, voice conversion, source separation"
+
+principles:
+  - "Match the task to the correct sub-engine (tts vs asr vs music vs vc)"
+  - "Default output format: WAV for quality, MP3 for size"
+  - "For TTS, default sample rate to 22050 Hz"
+  - "For music, always specify genre if known"
+
+parameters:
+  text:
+    type: text
+    label: "Text"
+    required: true
+    placeholder: "Text to speak or lyrics..."
+    tooltip: "Input text for TTS, lyrics for music, or transcript for ASR"
+
+  task:
+    type: select
+    label: "Task"
+    default: "tts"
+    options:
+      - id: tts
+        label: "Text to Speech"
+      - id: asr
+        label: "Speech to Text"
+      - id: music
+        label: "Music Generation"
+      - id: vc
+        label: "Voice Conversion"
+      - id: sep
+        label: "Source Separation"
+
+  family:
+    type: select
+    label: "Engine Family"
+    family: audio
+    tooltip: "Which sub-engine to use"
+
+  language:
+    type: select
+    label: "Language"
+    default: "english"
+    options:
+      - id: english
+        label: "English"
+      - id: chinese
+        label: "Chinese"
+      - id: multilingual
+        label: "Multilingual"
+
+skills:
+  - id: music-caption-rewriter
+    label: "Enhance Music Caption"
+    description: "Rewrite a rough idea into a structured music caption"
