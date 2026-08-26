@@ -1,0 +1,60 @@
+family:
+  id: sam
+  genre: segmentation
+  label: "SAM — Segment Anything"
+  description: "Meta's Segment Anything Model for image/video segmentation. Supports point, box, and text prompts."
+
+source:
+  type: huggingface
+  repo_id: "segmind/sam-2.1-hiera-tiny"
+  filename: "sam2.1_hiera_tiny_f16.ggml"
+  quantizations:
+    - id: f16
+      label: "FP16"
+      size_bytes: 38900000
+    - id: q8_0
+      label: "Q8_0"
+      size_bytes: 25600000
+    - id: q4_0
+      label: "Q4_0"
+      size_bytes: 17500000
+
+variant_groups:
+  - name: model_size
+    label: "Model Size"
+    options:
+      - id: hiera_tiny
+        label: "SAM 2.1 Hiera Tiny (39M)"
+        filename: "sam2.1_hiera_tiny_f16.ggml"
+      - id: hiera_small
+        label: "SAM 2.1 Hiera Small (46M)"
+        filename: "sam2.1_hiera_small_f16.ggml"
+      - id: hiera_base_plus
+        label: "SAM 2.1 Hiera Base+ (80M)"
+        filename: "sam2.1_hiera_base_plus_f16.ggml"
+      - id: hiera_large
+        label: "SAM 2.1 Hiera Large (224M)"
+        filename: "sam2.1_hiera_large_f16.ggml"
+
+  - name: prompt_type
+    label: "Prompt Type"
+    options:
+      - id: point
+        label: "Point Prompt (x, y, label)"
+        description: "Click on object to segment"
+      - id: box
+        label: "Box Prompt (x0, y0, x1, y1)"
+        description: "Bounding box around object"
+      - id: text
+        label: "Text Prompt (SAM 3 only)"
+        description: "Text description of object"
+
+defaults:
+  use_gpu: true
+  n_threads: 4
+  score_threshold: 0.5
+
+engine:
+  plugin: "sam3_cpp"
+
+lora_catalog: []

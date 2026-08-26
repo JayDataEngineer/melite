@@ -1,0 +1,61 @@
+family:
+  id: sam3
+  genre: segmentation
+  label: "SAM 3 — Text-Prompted Segmentation"
+  description: "SAM 3 with native text prompts. Type 'yellow jacket' to segment without bounding boxes or point clicks."
+
+source:
+  type: huggingface
+  repo_id: "PABannier/sam3-vit_b"
+  filename: "sam3_vit_b_f16.ggml"
+  quantizations:
+    - id: f16
+      label: "FP16"
+      size_bytes: 350000000
+    - id: q8_0
+      label: "Q8_0"
+      size_bytes: 230000000
+    - id: q4_0
+      label: "Q4_0"
+      size_bytes: 160000000
+
+variant_groups:
+  - name: architecture
+    label: "Architecture"
+    options:
+      - id: vit_b
+        label: "ViT-B (86M params)"
+        filename: "sam3_vit_b_f16.ggml"
+      - id: vit_l
+        label: "ViL-L (307M params)"
+        filename: "sam3_vit_l_f16.ggml"
+      - id: vit_h
+        label: "ViT-H (636M params)"
+        filename: "sam3_vit_h_f16.ggml"
+
+  - name: prompt_type
+    label: "Prompt Type"
+    options:
+      - id: text
+        label: "Text Prompt"
+        description: "Type description to segment (e.g. 'red car')"
+      - id: exemplar
+        label: "Visual Exemplar"
+        description: "Provide image crop to match"
+      - id: point
+        label: "Point Prompt"
+        description: "Click coordinates"
+      - id: box
+        label: "Box Prompt"
+        description: "Bounding box"
+
+defaults:
+  use_gpu: true
+  n_threads: 4
+  score_threshold: 0.5
+  nms_threshold: 0.1
+
+engine:
+  plugin: "sam3_cpp"
+
+lora_catalog: []

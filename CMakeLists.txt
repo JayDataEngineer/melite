@@ -297,3 +297,14 @@ set_target_properties(bridge_plugin PROPERTIES
     PREFIX ""
     POSITION_INDEPENDENT_CODE ON
 )
+
+# ---------------------------------------------------------------------------
+# Crop-stitch plugin (always built — crop, feather, alpha blend)
+# ---------------------------------------------------------------------------
+add_library(crop_stitch_plugin SHARED plugins/crop_stitch/crop_stitch_plugin.c)
+target_include_directories(crop_stitch_plugin PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(crop_stitch_plugin PRIVATE m)
+set_target_properties(crop_stitch_plugin PROPERTIES
+    PREFIX ""
+    POSITION_INDEPENDENT_CODE ON
+)
