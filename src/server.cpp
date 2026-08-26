@@ -61,7 +61,10 @@ static int inf_json_int(const char *json, const char *key, int fallback) {
  *   GET  /v1/model/:id             — single model
  *   GET  /v1/agent-manifest        — agent bundles
  *   POST /v1/models/download       — download a model
- *   POST /v1/models/download-all   — download all catalog models
+ *   POST /v1/models/download-all   — download all catalog models *   GET  /v1/skills             -> progressive-disclosure skill index
+ *   GET  /v1/skills/<id>        -> full skill body (ledgered on read)
+ *   GET  /v1/ledger             -> tail of output/_ledger.jsonl
+
  *   GET  /openapi.json             — OpenAPI 3.1 spec
  *
  *   --- OpenAI-compatible ---
@@ -185,6 +188,8 @@ static size_t g_n_runs = 0;
 static pthread_mutex_t g_runs_mu = PTHREAD_MUTEX_INITIALIZER;
 
 static void run_write_sidecar(size_t idx);
+static void ledger_log(const char *event, const char *data_json);
+static char *json_quote(const char *src);
 
 static void run_set_state(size_t idx, const char *state, const char *err) {
     pthread_mutex_lock(&g_runs_mu);
@@ -192,6 +197,15 @@ static void run_set_state(size_t idx, const char *state, const char *err) {
     if (err) snprintf(g_runs[idx].error, sizeof(g_runs[idx].error), "%s", err);
     pthread_mutex_unlock(&g_runs_mu);
     run_write_sidecar(idx);   /* the spec sidecar carries live status */
+    {   /* every state change lands in the append-only file ledger */
+        char eb[600];
+        char *eq = (err && err[0]) ? json_quote(err) : NULL;
+        snprintf(eb, sizeof(eb),
+                 "{\"run_id\":\"%s\",\"state\":\"%s\",\"error\":%s}",
+                 g_runs[idx].run_id, state, eq ? eq : "null");
+        ledger_log("run.state", eb);
+        free(eq);
+    }
 }
 
 /* scan out_dir for artifacts -> JSON array string (caller frees) */
@@ -474,6 +488,13 @@ static void handle_pipelines_start(const httplib::Request &req,
     mkdir("./output", 0755);
     mkdir(g_runs[idx].out_dir, 0755);
     run_write_sidecar(idx);
+    {   /* registration lands in the file ledger */
+        char rb[400];
+        snprintf(rb, sizeof(rb),
+                 "{\"run_id\":\"%s\",\"model\":\"%s\",\"seed\":%ld}",
+                 g_runs[idx].run_id, g_runs[idx].model, g_runs[idx].seed);
+        ledger_log("run.registered", rb);
+    }
 
     /* Harvested lane? execute the pinned pipeline with initial inputs
      * (prompt/lyrics/negative_prompt as text tensors, seed as f32) */
@@ -1130,6 +1151,313 @@ static void handle_form_spec(const httplib::Request &req,
 }
 
 
+
+/* ==================================================================
+ * SKILLS — progressive disclosure over markdown docs
+ *
+ * Tier 1 (index): GET /v1/skills        -> one cheap row per skill
+ *                                          (id/name/description +
+ *                                           genre/model when scoped)
+ * Tier 2 (body):  GET /v1/skills/<id>   -> the full markdown body,
+ *                                          loaded ONLY on demand
+ *
+ * Skill ids:
+ *   <stem>              global lane doc   ./skills/<stem>.md or
+ *                                         ../skills/<stem>.md
+ *   model:<mid>         model card doc    <model>/agents/AGENT.md
+ *   model:<mid>:<stem>  per-model skill   <model>/agents/skills/<stem>.md
+ *
+ * Every tier-2 read is ledgered (skill.read) so usage is auditable.
+ * ================================================================== */
+
+/* copy a frontmatter value [v, nl) into dst, trim + strip one quote pair */
+static void fm_val(const char *v, const char *nl, char *dst, size_t cap) {
+    while (*v == ' ') v++;
+    size_t n = (size_t)(nl - v);
+    if (n >= cap) n = cap - 1;
+    memcpy(dst, v, n);
+    dst[n] = 0;
+    for (size_t i = strlen(dst); i > 0 && (dst[i-1] == ' ' || dst[i-1] == '\r'); i--)
+        dst[i-1] = 0;
+    size_t l = strlen(dst);
+    if (l >= 2 && ((dst[0] == '"' && dst[l-1] == '"') ||
+                   (dst[0] == '\'' && dst[l-1] == '\''))) {
+        memmove(dst, dst + 1, l - 2);
+        dst[l-2] = 0;
+    }
+}
+
+/* parse --- frontmatter --- for name/description; 0 when a fence exists */
+static int md_frontmatter(const char *path, char *name, size_t ncap,
+                          char *desc, size_t dcap) {
+    name[0] = 0; desc[0] = 0;
+    FILE *f = fopen(path, "r");
+    if (!f) return -1;
+    char buf[8192];
+    size_t got = fread(buf, 1, sizeof(buf) - 1, f);
+    fclose(f);
+    buf[got] = 0;
+    if (strncmp(buf, "---", 3) != 0) return -1;
+    char *end = strstr(buf + 3, "\n---");
+    if (!end) return -1;
+    char *p = buf + 3;
+    while (p < end) {
+        while (*p == '\n' || *p == '\r') p++;
+        if (p >= end) break;
+        char *nl = strchr(p, '\n');
+        if (!nl || nl > end) nl = end;
+        if (strncmp(p, "name:", 5) == 0 && name[0] == 0)
+            fm_val(p + 5, nl, name, ncap);
+        else if (strncmp(p, "description:", 12) == 0 && desc[0] == 0)
+            fm_val(p + 12, nl, desc, dcap);
+        if (nl == end) break;
+        p = nl + 1;
+    }
+    return 0;
+}
+
+/* read a whole md file; return malloc'd BODY (frontmatter stripped) */
+static char *md_body(const char *path) {
+    FILE *f = fopen(path, "r");
+    if (!f) return NULL;
+    char *buf = (char *)malloc(512 * 1024);
+    size_t got = fread(buf, 1, 512 * 1024 - 1, f);
+    fclose(f);
+    buf[got] = 0;
+    if (strncmp(buf, "---", 3) == 0) {
+        char *end = strstr(buf + 3, "\n---");
+        if (end) {
+            char *body = strchr(end + 4, '\n');
+            if (body) {
+                char *dup = strdup(body + 1);
+                free(buf);
+                return dup;
+            }
+        }
+    }
+    return buf;
+}
+
+/* append one index row; len advances; *first tracks the comma */
+static size_t skills_row(char *out, size_t cap, size_t len, int *first,
+                         const char *id, const char *name,
+                         const char *desc, const char *genre,
+                         const char *model) {
+    char *nq = json_quote(name[0] ? name : id);
+    char *dq = json_quote(desc);
+    len += (size_t)snprintf(out + len, cap - len,
+                            "%s{\"id\":\"%s\",\"name\":%s,"
+                            "\"description\":%s",
+                            *first ? "" : ",", id, nq, dq);
+    if (genre && genre[0])
+        len += (size_t)snprintf(out + len, cap - len,
+                                ",\"genre\":\"%s\"", genre);
+    if (model && model[0])
+        len += (size_t)snprintf(out + len, cap - len,
+                                ",\"model\":\"%s\"", model);
+    len += (size_t)snprintf(out + len, cap - len, "}");
+    *first = 0;
+    free(nq); free(dq);
+    return len;
+}
+
+/* scan <dir>/*.md as global skills (id = file stem) */
+static size_t skills_scan_global(char *out, size_t cap, size_t len, int *first,
+                                 const char *dir) {
+    DIR *d = opendir(dir);
+    if (!d) return len;
+    struct dirent *de;
+    while ((de = readdir(d)) != NULL) {
+        const char *e = strrchr(de->d_name, '.');
+        if (!e || strcasecmp(e, ".md") != 0) continue;
+        char stem[128];
+        size_t sl = (size_t)(e - de->d_name);
+        if (sl >= sizeof(stem)) continue;
+        memcpy(stem, de->d_name, sl);
+        stem[sl] = 0;
+        char idbuf[160];
+        snprintf(idbuf, sizeof(idbuf), "\"id\":\"%s\"", stem);
+        if (strstr(out, idbuf)) continue;   /* first dir wins */
+        char path[600], name[128], desc[512];
+        snprintf(path, sizeof(path), "%s/%s", dir, de->d_name);
+        if (md_frontmatter(path, name, sizeof(name), desc, sizeof(desc)) != 0)
+            snprintf(name, sizeof(name), "%s", stem);
+        len = skills_row(out, cap, len, first, stem, name, desc, NULL, NULL);
+    }
+    closedir(d);
+    return len;
+}
+
+/* GET /v1/skills — tier 1: the cheap index */
+static void handle_skills_index(const httplib::Request &req,
+                                httplib::Response &res) {
+    (void)req;
+    size_t cap = 64 * 1024, len = 0;
+    char *out = (char *)malloc(cap);
+    int first = 1;
+    len += (size_t)snprintf(out + len, cap - len, "{\"skills\":[");
+    if (g_catalog) {
+        for (size_t i = 0; i < g_catalog->n_models; i++) {
+            const catalog_model *m = &g_catalog->models[i];
+            if (!m->id) continue;
+            /* the model card doc (AGENT.md) */
+            if (m->agent_md_path) {
+                char name[128], desc[512];
+                md_frontmatter(m->agent_md_path, name, sizeof(name),
+                               desc, sizeof(desc));
+                char idbuf[96];
+                snprintf(idbuf, sizeof(idbuf), "model:%s", m->id);
+                len = skills_row(out, cap, len, &first, idbuf,
+                                 name[0] ? name : m->id, desc,
+                                 m->genre ? m->genre : "", m->id);
+            }
+            /* per-model skill files: <agents>/skills/*.md */
+            if (m->agent_md_path) {
+                char sdir[600];
+                size_t al = strlen(m->agent_md_path);
+                size_t keep = al > 9 ? al - 9 : 0;   /* strip AGENT.md */
+                snprintf(sdir, sizeof(sdir), "%.*s/skills", (int)keep,
+                         m->agent_md_path);
+                DIR *d = opendir(sdir);
+                if (d) {
+                    struct dirent *de;
+                    while ((de = readdir(d)) != NULL) {
+                        const char *e = strrchr(de->d_name, '.');
+                        if (!e || strcasecmp(e, ".md") != 0) continue;
+                        char stem[128];
+                        size_t sl = (size_t)(e - de->d_name);
+                        if (sl >= sizeof(stem)) continue;
+                        memcpy(stem, de->d_name, sl);
+                        stem[sl] = 0;
+                        char path[900], name[128], desc[512], idbuf[224];
+                        snprintf(path, sizeof(path), "%s/%s", sdir, de->d_name);
+                        snprintf(idbuf, sizeof(idbuf), "model:%s:%s",
+                                 m->id, stem);
+                        if (md_frontmatter(path, name, sizeof(name),
+                                           desc, sizeof(desc)) != 0)
+                            snprintf(name, sizeof(name), "%s", stem);
+                        len = skills_row(out, cap, len, &first, idbuf,
+                                         name, desc,
+                                         m->genre ? m->genre : "", m->id);
+                    }
+                    closedir(d);
+                }
+            }
+        }
+    }
+    len = skills_scan_global(out, cap, len, &first, "./skills");
+    len = skills_scan_global(out, cap, len, &first, "../skills");
+    len += (size_t)snprintf(out + len, cap - len, "]}");
+    res.set_content(out, "application/json");
+    free(out);
+}
+
+/* GET /v1/skills/<id> — tier 2: the full body, ledgered on read */
+static void handle_skill_read(const httplib::Request &req,
+                              httplib::Response &res) {
+    std::string id = req.matches.size() > 1 ? req.matches[1].str() : "";
+    if (id.empty() || id.find("..") != std::string::npos) {
+        res.status = 400;
+        res.set_content("{\"error\":\"bad skill id\"}", "application/json");
+        return;
+    }
+    char path[900] = "";
+    char genre[32] = "", model[64] = "";
+    if (id.rfind("model:", 0) == 0) {
+        std::string rest = id.substr(6);
+        size_t c = rest.find(':');
+        std::string mid = c == std::string::npos ? rest : rest.substr(0, c);
+        std::string stem = c == std::string::npos ? "" : rest.substr(c + 1);
+        const catalog_model *m =
+            g_catalog ? catalog_find_model(g_catalog, mid.c_str()) : NULL;
+        if (!m) {
+            res.status = 404;
+            res.set_content("{\"error\":\"unknown model\"}",
+                            "application/json");
+            return;
+        }
+        snprintf(model, sizeof(model), "%s", m->id ? m->id : "");
+        snprintf(genre, sizeof(genre), "%s", m->genre ? m->genre : "");
+        if (stem.empty()) {
+            if (!m->agent_md_path) {
+                res.status = 404;
+                res.set_content("{\"error\":\"no agent doc for model\"}",
+                                "application/json");
+                return;
+            }
+            snprintf(path, sizeof(path), "%s", m->agent_md_path);
+        } else {
+            size_t al = m->agent_md_path ? strlen(m->agent_md_path) : 0;
+            size_t keep = al > 9 ? al - 9 : 0;
+            if (!al) {
+                res.status = 404;
+                res.set_content("{\"error\":\"no skill dir for model\"}",
+                                "application/json");
+                return;
+            }
+            snprintf(path, sizeof(path), "%.*s/skills/%s.md", (int)keep,
+                     m->agent_md_path, stem.c_str());
+        }
+    } else {
+        snprintf(path, sizeof(path), "./skills/%s.md", id.c_str());
+        FILE *probe = fopen(path, "r");
+        if (probe) fclose(probe);
+        else snprintf(path, sizeof(path), "../skills/%s.md", id.c_str());
+    }
+    char name[128], desc[512];
+    if (md_frontmatter(path, name, sizeof(name), desc, sizeof(desc)) != 0)
+        name[0] = 0, desc[0] = 0;
+    char *body = md_body(path);
+    if (!body) {
+        res.status = 404;
+        res.set_content("{\"error\":\"skill not found\"}",
+                        "application/json");
+        return;
+    }
+    {   /* tier-2 reads are part of the audit trail */
+        char lb[300];
+        char *iq = json_quote(id.c_str());
+        snprintf(lb, sizeof(lb), "{\"id\":%s}", iq);
+        ledger_log("skill.read", lb);
+        free(iq);
+    }
+    char *nq = json_quote(name);
+    char *dq = json_quote(desc);
+    char *bq = json_quote(body);
+    size_t cap = strlen(bq) + strlen(dq) + strlen(nq) + 512;
+    char *out = (char *)malloc(cap);
+    snprintf(out, cap,
+             "{\"id\":\"%s\",\"name\":%s,\"description\":%s,"
+             "\"genre\":\"%s\",\"model\":\"%s\",\"content\":%s}",
+             id.c_str(), nq, dq, genre, model, bq);
+    res.set_content(out, "application/json");
+    free(out); free(bq); free(dq); free(nq); free(body);
+}
+
+/* ==================================================================
+ * FILE LEDGER — append-only activity journal at output/_ledger.jsonl
+ *
+ * One JSON object per line: {"ts":<epoch>,"event":"<name>,"data":{...}}.
+ * Events: server.boot, run.registered, run.state, prov.state,
+ * skill.read. The ledger is the SSOT for "what happened here":
+ * /v1/ledger tails it for the agent, and boot recovery rebuilds the
+ * in-memory provision table from it (restart-safe, like run sidecars).
+ * ================================================================== */
+static pthread_mutex_t g_ledger_mu = PTHREAD_MUTEX_INITIALIZER;
+
+static void ledger_log(const char *event, const char *data_json) {
+    pthread_mutex_lock(&g_ledger_mu);
+    mkdir("./output", 0755);
+    FILE *f = fopen("./output/_ledger.jsonl", "a");
+    if (f) {
+        fprintf(f, "{\"ts\":%ld,\"event\":\"%s\",\"data\":%s}\n",
+                (long)time(NULL), event,
+                data_json && data_json[0] ? data_json : "{}");
+        fclose(f);   /* close-per-line keeps every event durable */
+    }
+    pthread_mutex_unlock(&g_ledger_mu);
+}
+
 /* ---- Provisioning: Manager-style async weight downloads ---- */
 
 #define PROV_MAX 32
@@ -1145,11 +1473,22 @@ static size_t g_n_prov = 0;
 static pthread_mutex_t g_prov_mu = PTHREAD_MUTEX_INITIALIZER;
 
 static void prov_set_state(const char *model, const char *state) {
+    char fn[256] = "";
     pthread_mutex_lock(&g_prov_mu);
     for (size_t i = 0; i < g_n_prov; i++)
-        if (strcmp(g_prov[i].model, model) == 0)
+        if (strcmp(g_prov[i].model, model) == 0) {
             snprintf(g_prov[i].state, sizeof(g_prov[i].state), "%s", state);
+            if (!fn[0])
+                snprintf(fn, sizeof(fn), "%s", g_prov[i].filename);
+        }
     pthread_mutex_unlock(&g_prov_mu);
+    if (fn[0]) {   /* every provision transition hits the file ledger */
+        char pb[420];
+        snprintf(pb, sizeof(pb),
+                 "{\"model\":\"%s\",\"filename\":\"%s\",\"state\":\"%s\"}",
+                 model, fn, state);
+        ledger_log("prov.state", pb);
+    }
 }
 
 typedef struct { char model[64]; char filename[256]; } prov_arg;
@@ -1314,6 +1653,133 @@ static void handle_provision_status(const httplib::Request &req,
     len += (size_t)snprintf(out + len, cap - len, "]}");
     res.set_content(out, "application/json");
     free(out);
+}
+
+/* ---- Ledger boot + tail ---- */
+
+/* boot: rebuild the provision table from the ledger (last state per
+ * model+filename wins) so /v1/models/provision/status survives restarts,
+ * then stamp server.boot. Called once at serve start; reads silently. */
+static void ledger_boot(void) {
+    FILE *f = fopen("./output/_ledger.jsonl", "r");
+    if (f) {
+        struct prov_last {
+            char model[64];
+            char filename[256];
+            char state[16];
+        } last[PROV_MAX];
+        size_t n_last = 0;
+        char line[1024];
+        while (fgets(line, sizeof(line), f)) {
+            if (!strstr(line, "\"event\":\"prov.state\""))
+                continue;
+            char model[64] = "", filename[256] = "", state[16] = "";
+            sidecar_str(line, "model", model, sizeof(model));
+            sidecar_str(line, "filename", filename, sizeof(filename));
+            sidecar_str(line, "state", state, sizeof(state));
+            if (!model[0] || !filename[0] || !state[0])
+                continue;
+            size_t k;
+            for (k = 0; k < n_last; k++)
+                if (strcmp(last[k].model, model) == 0 &&
+                    strcmp(last[k].filename, filename) == 0)
+                    break;
+            if (k == n_last && n_last < PROV_MAX)
+                n_last++;
+            if (k < n_last) {
+                snprintf(last[k].model, sizeof(last[k].model), "%s", model);
+                snprintf(last[k].filename, sizeof(last[k].filename), "%s",
+                         filename);
+                snprintf(last[k].state, sizeof(last[k].state), "%s", state);
+            }
+        }
+        fclose(f);
+        pthread_mutex_lock(&g_prov_mu);
+        for (size_t k = 0; k < n_last; k++) {
+            size_t j;
+            for (j = 0; j < g_n_prov; j++)
+                if (strcmp(g_prov[j].model, last[k].model) == 0 &&
+                    strcmp(g_prov[j].filename, last[k].filename) == 0)
+                    break;
+            if (j == g_n_prov && g_n_prov < PROV_MAX)
+                g_n_prov++;
+            if (j < g_n_prov) {
+                snprintf(g_prov[j].model, sizeof(g_prov[j].model), "%s",
+                         last[k].model);
+                snprintf(g_prov[j].filename, sizeof(g_prov[j].filename), "%s",
+                         last[k].filename);
+                snprintf(g_prov[j].state, sizeof(g_prov[j].state), "%s",
+                         last[k].state);
+                g_prov[j].enqueued = 0;   /* recovered, not live-queued */
+            }
+        }
+        pthread_mutex_unlock(&g_prov_mu);
+    }
+    {   /* the boot stamp anchors the timeline for ledger readers */
+        char pb[96];
+        snprintf(pb, sizeof(pb), "{\"pid\":%ld}", (long)getpid());
+        ledger_log("server.boot", pb);
+    }
+}
+
+/* GET /v1/ledger?limit=N&event=prefix - tail of the append-only journal.
+ * Entries come back oldest -> newest within the tail. */
+static void handle_ledger(const httplib::Request &req,
+                          httplib::Response &res) {
+    long limit = 50;
+    if (req.has_param("limit")) {
+        char *e = NULL;
+        long v = strtol(req.get_param_value("limit").c_str(), &e, 10);
+        if (e && *e == 0 && v > 0)
+            limit = v;
+    }
+    if (limit > 500)
+        limit = 500;
+    char ev[64] = "";
+    if (req.has_param("event"))
+        snprintf(ev, sizeof(ev), "%s", req.get_param_value("event").c_str());
+
+    FILE *f = fopen("./output/_ledger.jsonl", "r");
+    if (!f) {
+        res.set_content("{\"entries\":[],\"shown\":0,\"matched\":0}",
+                        "application/json");
+        return;
+    }
+    char(*ring)[1024] = (char(*)[1024])calloc((size_t)limit, sizeof(*ring));
+    if (!ring) {
+        fclose(f);
+        res.status = 500;
+        res.set_content("{\"error\":\"oom\"}", "application/json");
+        return;
+    }
+    char needle[96], line[1024];
+    snprintf(needle, sizeof(needle), "\"event\":\"%s", ev);
+    size_t n = 0, total = 0;
+    while (fgets(line, sizeof(line), f)) {
+        if (ev[0] && !strstr(line, needle))
+            continue;
+        total++;
+        snprintf(ring[n % (size_t)limit], 1024, "%s", line);
+        size_t l = strlen(ring[n % (size_t)limit]);
+        if (l && ring[n % (size_t)limit][l - 1] == '\n')
+            ring[n % (size_t)limit][l - 1] = 0;
+        n++;
+    }
+    fclose(f);
+    size_t shown = n < (size_t)limit ? n : (size_t)limit;
+    size_t cap = 128 + shown * 1100;
+    char *out = (char *)malloc(cap);
+    size_t len = (size_t)snprintf(out, cap, "{\"entries\":[");
+    for (size_t i = 0; i < shown; i++) {
+        size_t idx = (n - shown + i) % (size_t)limit;
+        len += (size_t)snprintf(out + len, cap - len, "%s%s",
+                                i ? "," : "", ring[idx]);
+    }
+    len += (size_t)snprintf(out + len, cap - len,
+                            "],\"shown\":%zu,\"matched\":%zu}", shown, total);
+    res.set_content(out, "application/json");
+    free(out);
+    free(ring);
 }
 
 /* ==================================================================
@@ -1847,6 +2313,10 @@ inference_server *server_create(int port) {
     s->srv.Get("/v1/agent-manifest",     handle_agent_manifest);
     s->srv.Post("/v1/models/download",   handle_download);
     s->srv.Post("/v1/models/download-all", handle_download_all);
+    s->srv.Get("/v1/skills",               handle_skills_index);
+    s->srv.Get(R"(/v1/skills/(.+))",       handle_skill_read);
+    s->srv.Get("/v1/ledger",               handle_ledger);
+    ledger_boot();   /* recover prov jobs from the ledger + stamp boot */
 
     /* ---- OpenAPI ---- */
     s->srv.Get("/openapi.json",          handle_openapi);
