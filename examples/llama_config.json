@@ -1,9 +1,0 @@
-{
-  "model": "/path/to/model.gguf",
-  "n_gpu_layers": 32,
-  "n_ctx": 4096,
-  "n_threads": 4,
-  "temperature": 0.7,
-  "top_p": 0.9,
-  "max_tokens": 512
-}

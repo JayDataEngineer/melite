@@ -48,7 +48,7 @@ uninstall:
 	rm -f $(INSTALL_DIR)/bin/inference_cli
 	rm -f $(INSTALL_DIR)/lib/libinference.a
 	rm -f $(INSTALL_DIR)/lib/libecho_plugin.so
-	rm -f $(INSTALL_DIR)/lib/libbridge_plugin.so
+	rm -f $(INSTALL_DIR)/lib/libcomfyui_plugin.so
 
 # ---- Docker ----
 
@@ -94,7 +94,7 @@ serve: build
 
 .PHONY: run
 run: build
-	cd $(BUILD_DIR) && LD_LIBRARY_PATH=. ./inference_cli run ../examples/echo-chain.yaml --input data=42.0
+	cd $(BUILD_DIR) && LD_LIBRARY_PATH=. ./inference_cli run ../plugins/core/pipelines/echo-chain.yaml --input data=42.0
 
 .PHONY: lint
 lint:

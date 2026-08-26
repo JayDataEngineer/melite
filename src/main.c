@@ -89,13 +89,11 @@ static int cmd_serve(int argc, char **argv) {
 
     g_server_runner = runner;
 
-    /* Scan model catalog */
-    char models_path[1024], cards_path[1024], agents_path[1024];
+    /* Scan model catalog from the plugins/ tree */
+    char plugins_path[1024];
     const char *base = catalog_dir ? catalog_dir : ".";
-    snprintf(models_path, sizeof(models_path), "%s/models", base);
-    snprintf(cards_path, sizeof(cards_path), "%s/cards", base);
-    snprintf(agents_path, sizeof(agents_path), "%s/agents", base);
-    g_catalog = catalog_scan(models_path, cards_path, agents_path);
+    snprintf(plugins_path, sizeof(plugins_path), "%s/plugins", base);
+    g_catalog = catalog_scan(plugins_path);
     if (g_catalog) {
         fprintf(stderr, "catalog: %zu models, %zu cards loaded\n",
                 g_catalog->n_models, g_catalog->n_cards);

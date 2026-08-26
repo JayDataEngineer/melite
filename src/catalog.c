@@ -1,4 +1,5 @@
 #include "inference/catalog.h"
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -328,159 +329,166 @@ static catalog_card *parse_card_yaml(const char *yaml) {
     return c;
 }
 
-/* ---- Catalog scan ---- */
+/* ---- Catalog scan ----
+ *
+ * Layout (ray plugin law — everything under plugins/<owner>/):
+ *   plugins/<owner>/plugin.yaml                          owner manifest
+ *   plugins/<owner>/engines/<engine-id>/                 engine code (.c -> .so)
+ *   plugins/<owner>/models/<genre>/<model-id>/model.yaml model family
+ *   plugins/<owner>/models/<genre>/<model-id>/agents/    AGENT.md next to model
+ *   plugins/<owner>/cards/<category>/<card-id>/card.yaml action cards
+ *   plugins/core/pipelines/*.yaml                        cross-plugin pipelines
+ */
 
-static void scan_models(inference_catalog *cat, const char *models_dir) {
-    DIR *d = opendir(models_dir);
-    if (!d) {
-        fprintf(stderr, "catalog: cannot open %s\n", models_dir);
+/* Register one model directory (model.yaml + agents/AGENT.md inside) */
+static void scan_model_dir(inference_catalog *cat, const char *dir) {
+    char path[1024];
+    snprintf(path, sizeof(path), "%s/model.yaml", dir);
+
+    char *yaml = read_file(path);
+    if (!yaml) return;
+
+    fprintf(stderr, "catalog: found %s (%zu bytes)\n", path, strlen(yaml));
+
+    catalog_model *m = parse_model_yaml(yaml);
+    free(yaml);
+
+    if (!m || !m->id) {
+        fprintf(stderr, "catalog: skip %s (no id)\n", dir);
+        if (m) { free_model(m); free(m); }
         return;
     }
 
-    fprintf(stderr, "catalog: scanning %s\n", models_dir);
-    struct dirent *ent;
-    while ((ent = readdir(d)) != NULL) {
-        if (ent->d_name[0] == '.') continue;
+    /* Agent docs live next to the model (progressive disclosure) */
+    char agent_path[1024];
+    snprintf(agent_path, sizeof(agent_path), "%s/agents/AGENT.md", dir);
+    FILE *af = fopen(agent_path, "r");
+    if (af) {
+        fclose(af);
+        m->agent_md_path = strdup(agent_path);
+    }
 
-        /* Check if this entry is a directory using full path */
-        char dirpath[1024];
-        snprintf(dirpath, sizeof(dirpath), "%s/%s", models_dir, ent->d_name);
-        if (!is_dir(dirpath)) {
-            fprintf(stderr, "catalog: skip %s (not a dir)\n", ent->d_name);
-            continue;
-        }
+    cat->n_models++;
+    cat->models = realloc(cat->models,
+                          cat->n_models * sizeof(catalog_model));
+    cat->models[cat->n_models - 1] = *m;
+    free(m);
+}
 
-        char path[1024];
-        snprintf(path, sizeof(path), "%s/%s/model.yaml", models_dir, ent->d_name);
+/* Register one card directory (card.yaml inside) */
+static void scan_card_dir(inference_catalog *cat, const char *dir) {
+    char path[1024];
+    snprintf(path, sizeof(path), "%s/card.yaml", dir);
 
-        char *yaml = read_file(path);
-        if (!yaml) {
-            fprintf(stderr, "catalog: skip %s (no model.yaml)\n", ent->d_name);
-            continue;
-        }
+    char *yaml = read_file(path);
+    if (!yaml) return;
 
-        fprintf(stderr, "catalog: found %s/%s/model.yaml (%zu bytes)\n",
-                models_dir, ent->d_name, strlen(yaml));
+    catalog_card *c = parse_card_yaml(yaml);
+    free(yaml);
 
-        catalog_model *m = parse_model_yaml(yaml);
-        free(yaml);
+    if (c && c->id) {
+        cat->n_cards++;
+        cat->cards = realloc(cat->cards,
+                             cat->n_cards * sizeof(catalog_card));
+        cat->cards[cat->n_cards - 1] = *c;
+        free(c);
+    } else {
+        if (c) { free_card(c); free(c); }
+    }
+}
 
-        fprintf(stderr, "catalog: parsed %s -> id=%s\n",
-                ent->d_name, m && m->id ? m->id : "NULL");
+/* Walk plugins/<owner>/models/<genre>/<model-id>/ */
+static void scan_models(inference_catalog *cat, const char *plugins_dir) {
+    DIR *od = opendir(plugins_dir);
+    if (!od) {
+        fprintf(stderr, "catalog: cannot open %s\n", plugins_dir);
+        return;
+    }
 
-        if (m && m->id) {
-            /* Check for agent.md */
-            char agent_path[1024];
-            snprintf(agent_path, sizeof(agent_path), "%s/%s/agents/AGENT.md",
-                     models_dir, ent->d_name);
-            /* Check if file exists */
-            FILE *af = fopen(agent_path, "r");
-            if (af) {
-                fclose(af);
-                m->agent_md_path = strdup(agent_path);
+    fprintf(stderr, "catalog: scanning %s\n", plugins_dir);
+    struct dirent *owner;
+    while ((owner = readdir(od)) != NULL) {
+        if (owner->d_name[0] == '.') continue;
+
+        char models_dir[1024];
+        snprintf(models_dir, sizeof(models_dir), "%s/%s/models",
+                 plugins_dir, owner->d_name);
+        if (!is_dir(models_dir)) continue;
+
+        DIR *gd = opendir(models_dir);
+        if (!gd) continue;
+        struct dirent *genre;
+        while ((genre = readdir(gd)) != NULL) {
+            if (genre->d_name[0] == '.') continue;
+
+            char genre_dir[1024];
+            snprintf(genre_dir, sizeof(genre_dir), "%s/%s",
+                     models_dir, genre->d_name);
+            if (!is_dir(genre_dir)) continue;
+
+            DIR *md = opendir(genre_dir);
+            if (!md) continue;
+            struct dirent *mid;
+            while ((mid = readdir(md)) != NULL) {
+                if (mid->d_name[0] == '.') continue;
+
+                char model_dir[1024];
+                snprintf(model_dir, sizeof(model_dir), "%s/%s",
+                         genre_dir, mid->d_name);
+                if (!is_dir(model_dir)) continue;
+
+                scan_model_dir(cat, model_dir);
             }
-
-            /* Grow array */
-            cat->n_models++;
-            cat->models = realloc(cat->models,
-                                  cat->n_models * sizeof(catalog_model));
-            cat->models[cat->n_models - 1] = *m;
-            free(m);
-        } else {
-            if (m) free_model(m);
-            free(m);
+            closedir(md);
         }
+        closedir(gd);
     }
-    closedir(d);
+    closedir(od);
 }
 
-static void scan_cards(inference_catalog *cat, const char *cards_dir) {
-    DIR *d = opendir(cards_dir);
-    if (!d) {
-        fprintf(stderr, "catalog: cannot open %s\n", cards_dir);
-        return;
-    }
+/* Walk plugins/<owner>/cards/<card-id>/ — the owner IS the category */
+static void scan_cards(inference_catalog *cat, const char *plugins_dir) {
+    DIR *od = opendir(plugins_dir);
+    if (!od) return;
 
-    struct dirent *ent;
-    while ((ent = readdir(d)) != NULL) {
-        if (ent->d_name[0] == '.') continue;
+    struct dirent *owner;
+    while ((owner = readdir(od)) != NULL) {
+        if (owner->d_name[0] == '.') continue;
 
-        /* Check if this entry is a directory using full path */
-        char dirpath[1024];
-        snprintf(dirpath, sizeof(dirpath), "%s/%s", cards_dir, ent->d_name);
-        if (!is_dir(dirpath)) continue;
+        char cards_dir[1024];
+        snprintf(cards_dir, sizeof(cards_dir), "%s/%s/cards",
+                 plugins_dir, owner->d_name);
+        if (!is_dir(cards_dir)) continue;
 
-        char path[1024];
-        snprintf(path, sizeof(path), "%s/%s/card.yaml", cards_dir, ent->d_name);
+        DIR *cd = opendir(cards_dir);
+        if (!cd) continue;
+        struct dirent *cid;
+        while ((cid = readdir(cd)) != NULL) {
+            if (cid->d_name[0] == '.') continue;
 
-        char *yaml = read_file(path);
-        if (!yaml) continue;
+            char card_dir[1024];
+            snprintf(card_dir, sizeof(card_dir), "%s/%s",
+                     cards_dir, cid->d_name);
+            if (!is_dir(card_dir)) continue;
 
-        catalog_card *c = parse_card_yaml(yaml);
-        free(yaml);
-
-        if (c && c->id) {
-            cat->n_cards++;
-            cat->cards = realloc(cat->cards,
-                                 cat->n_cards * sizeof(catalog_card));
-            cat->cards[cat->n_cards - 1] = *c;
-            free(c);
-        } else {
-            if (c) free_card(c);
-            free(c);
+            scan_card_dir(cat, card_dir);
         }
+        closedir(cd);
     }
-    closedir(d);
+    closedir(od);
 }
 
-inference_catalog *catalog_scan(const char *models_dir,
-                                const char *cards_dir,
-                                const char *agents_dir) {
+inference_catalog *catalog_scan(const char *plugins_dir) {
     inference_catalog *cat = calloc(1, sizeof(*cat));
     if (!cat) return NULL;
 
-    cat->models_dir = ystrdup(models_dir);
-    cat->cards_dir = ystrdup(cards_dir);
-    cat->agents_dir = ystrdup(agents_dir);
+    cat->plugins_dir = ystrdup(plugins_dir);
 
-    scan_models(cat, models_dir);
-    scan_cards(cat, cards_dir);
+    scan_models(cat, plugins_dir);
+    scan_cards(cat, plugins_dir);
 
-    /* Scan agents directory and link to models */
-    if (agents_dir) {
-        DIR *ad = opendir(agents_dir);
-        if (ad) {
-            struct dirent *ent;
-            while ((ent = readdir(ad)) != NULL) {
-                if (ent->d_name[0] == '.') continue;
-                char dirpath[1024];
-                snprintf(dirpath, sizeof(dirpath), "%s/%s", agents_dir, ent->d_name);
-                if (!is_dir(dirpath)) continue;
-
-                /* Look for AGENT.md */
-                char agent_file[1024];
-                snprintf(agent_file, sizeof(agent_file), "%s/%s/AGENT.md",
-                         agents_dir, ent->d_name);
-                FILE *af = fopen(agent_file, "r");
-                if (!af) continue;
-                fclose(af);
-
-                /* Link to matching model */
-                for (size_t i = 0; i < cat->n_models; i++) {
-                    if (cat->models[i].id &&
-                        strcmp(cat->models[i].id, ent->d_name) == 0) {
-                        if (!cat->models[i].agent_md_path)
-                            cat->models[i].agent_md_path = strdup(agent_file);
-                        break;
-                    }
-                }
-            }
-            closedir(ad);
-        }
-    }
-
-    fprintf(stderr, "catalog: scanned %zu models, %zu cards\n",
-            cat->n_models, cat->n_cards);
+    fprintf(stderr, "catalog: scanned %zu models, %zu cards from %s\n",
+            cat->n_models, cat->n_cards, plugins_dir);
     return cat;
 }
 
@@ -536,6 +544,25 @@ static void json_escape(char *dst, size_t cap, const char *src) {
     }
     dst[j] = '\0';
 }
+
+/* Emit a scalar YAML value as JSON: numbers/bools raw, the rest quoted */
+static void json_value(char *dst, size_t cap, const char *v) {
+    if (!v || !*v) { snprintf(dst, cap, "null"); return; }
+    if (strcmp(v, "true") == 0 || strcmp(v, "false") == 0 ||
+        strcmp(v, "null") == 0) {
+        snprintf(dst, cap, "%s", v);
+        return;
+    }
+    if (isdigit((unsigned char)*v) || *v == '-' || *v == '+') {
+        char *end = NULL;
+        (void)strtod(v, &end);
+        if (end && *end == '\0') { snprintf(dst, cap, "%s", v); return; }
+    }
+    char tmp[512];
+    json_escape(tmp, sizeof(tmp), v);
+    snprintf(dst, cap, "\"%s\"", tmp);
+}
+
 
 char *catalog_model_to_json(const catalog_model *m) {
     if (!m) return strdup("{}");
@@ -601,7 +628,7 @@ char *catalog_model_to_json(const catalog_model *m) {
         off += snprintf(json + off, cap - off, "\"");
         json_escape(esc, sizeof(esc), m->default_keys[i]);
         off += snprintf(json + off, cap - off, "%s\":", esc);
-        json_escape(esc, sizeof(esc), m->default_vals[i]);
+        json_value(esc, sizeof(esc), m->default_vals[i]);
         off += snprintf(json + off, cap - off, "%s", esc);
     }
     off += snprintf(json + off, cap - off, "},");
@@ -726,8 +753,6 @@ void catalog_free(inference_catalog *cat) {
     for (size_t i = 0; i < cat->n_cards; i++)
         free_card(&cat->cards[i]);
     free(cat->cards);
-    free(cat->models_dir);
-    free(cat->cards_dir);
-    free(cat->agents_dir);
+    free(cat->plugins_dir);
     free(cat);
 }

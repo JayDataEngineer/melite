@@ -8,13 +8,12 @@ extern "C" {
 #endif
 
 /*
- * Model catalog — scans models/ and cards/ directories, parses YAML
+ * Model catalog — scans the plugins/ tree (ray plugin law), parses YAML
  * metadata, and serves a unified index.
  *
- * Architecture mirrors Ray's card system:
- *   cards/<action>/card.yaml     — action declaration (what user sees)
- *   models/<engine>/model.yaml   — engine metadata (HF links, LoRAs)
- *   agents/<engine>/AGENT.md     — LLM-facing docs (optional)
+ *   plugins/<owner>/models/<genre>/<model-id>/model.yaml  — engine metadata
+ *   plugins/<owner>/models/<genre>/<model-id>/agents/     — AGENT.md docs
+ *   plugins/<owner>/cards/<card-id>/card.yaml             — action cards (owner = category)
  */
 
 /* ---- Source declaration (where to download weights) ---- */
@@ -115,15 +114,11 @@ typedef struct inference_catalog {
     size_t n_models;
     catalog_card *cards;
     size_t n_cards;
-    char *models_dir;
-    char *cards_dir;
-    char *agents_dir;
+    char *plugins_dir;
 } inference_catalog;
 
-/* Scan directories and build the catalog. Returns NULL on error. */
-inference_catalog *catalog_scan(const char *models_dir,
-                                const char *cards_dir,
-                                const char *agents_dir);
+/* Scan the plugins/ tree and build the catalog. Returns NULL on error. */
+inference_catalog *catalog_scan(const char *plugins_dir);
 
 /* Find a model by family id. Returns NULL if not found. */
 const catalog_model *catalog_find_model(const inference_catalog *cat,
