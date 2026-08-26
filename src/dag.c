@@ -122,8 +122,11 @@ inference_dag *dag_parse_string(const char *yaml, size_t len) {
             continue;
         }
 
-        /* Node-level keys */
-        if (cur.id && !in_input_from) {
+        /* Node-level keys (order-insensitive: a key line after an
+         * input_from list must still parse — the list only consumes
+         * "- " item lines, so params/type/model after the list land
+         * here and are not skipped) */
+        if (cur.id) {
             if ((val = parse_kv(s, "type")) != NULL) {
                 free(cur.type);
                 cur.type = strdup(val);
