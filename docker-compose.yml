@@ -1,0 +1,53 @@
+version: "3.8"
+
+services:
+  inference:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"   # HTTP API
+      - "8081:8081"   # WebSocket
+    volumes:
+      - model-cache:/root/.cache/inference.cpp
+      - ./models:/opt/inference/models:ro
+      - ./cards:/opt/inference/cards:ro
+      - ./agents:/opt/inference/agents:ro
+    environment:
+      - HOME=/root
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # CUDA variant — uncomment and use: docker compose --profile cuda up
+  inference-cuda:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime-cuda
+    profiles:
+      - cuda
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    volumes:
+      - model-cache:/root/.cache/inference.cpp
+      - ./models:/opt/inference/models:ro
+      - ./cards:/opt/inference/cards:ro
+      - ./agents:/opt/inference/agents:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - HOME=/root
+    restart: unless-stopped
+
+volumes:
+  model-cache:
