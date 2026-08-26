@@ -1,0 +1,117 @@
+# ComfyUI extra model paths — melite-managed SINGLE SOURCE OF TRUTH.
+#
+# This file defines where ComfyUI looks for models on the single shared
+# volume (/mnt/data/models). It is authoritative in two places:
+#   1. At build time: infra/docker/setup_comfyui.py reads it and writes the
+#      generated file into the ComfyUI image (Dockerfile.comfyui).
+#   2. At runtime: docker-compose.yml mounts it over the baked copy in the
+#      inference-comfyui container (`:ro`), so a redeploy never silently
+#      reverts to a stale image-baked mapping.
+#
+# On bare metal (task dev) the paths resolve identically, since
+# /mnt/data/models is the canonical store and is bind-mounted read-only
+# into the container.
+#
+# Directory structure under /mnt/data/models:
+#
+#   image-gen/comfyui/       ← ComfyUI-canonical subdirs (the download targets)
+#     checkpoints/           z_image_turbo, ltx, qwen, SDXL, GGUF quants
+#     clip/                  qwen_3_4b, gemma-3-12b, qwen_2.5_vl
+#     clip_vision/           CLIP-ViT-H
+#     controlnet/            sdpose_wholebody, AnytestV4, IllustriousXL_openpose
+#     diffusion_models/      Wan2.2 VACE, ideogram4, seedvr2, unet GGUFs
+#     loras/                 ALL loras — comfyui-native + per-model symlinks
+#     text_encoders/         gemma-3-12b-it, umt5-xxl, …
+#     unet/                  qwen-image-edit GGUF, z-image unet
+#     latent_upscale_models/ LTX spatial/temporal upscalers (LatentUpscaleModelLoader)
+#     vae/                   ae.safetensors, Wan2.1/2.2 VAE, qwen_image_vae
+#
+#   mask/                    ← SAM segmenters            (sams)
+#   wav2vec/                 ← wav2vec2 audio encoders    (audio_encoders)
+#   audio/                   ← audiocpp-fork engine weights (GGUFs) — the
+#                             `audiocpp` folder below
+#   image-gen/comfyui/audio/qwen3-tts/hf/
+#                            ← Voice Studio Python-engine HF source dirs —
+#                             the `qwen3_tts` folder below
+#
+# NOTE: 3d/, video/, motion/, avatar/, vendor-models/ are consumed by our
+# ComfyUI custom nodes via explicit absolute paths under the same volume, so
+# a user building their own workflow can reference them directly too.
+
+ray_models:
+  base_path: /mnt/data/models/image-gen/comfyui
+  checkpoints: checkpoints
+  clip: clip
+  clip_vision: clip_vision
+  controlnet: controlnet
+  diffusion_models: diffusion_models
+  loras: loras
+  text_encoders: text_encoders
+  unet: unet
+  # Latent upscalers live in latent_upscale_models/ (LatentUpscaleModelLoader
+  # → LTXVLatentUpsampler), NOT upscale_models/ — must match the registry
+  # download paths.
+  upscale_models: latent_upscale_models
+  # The latent_upscale_models KEY itself (2026-08-16): the ltx builder loads
+  # the spatial upscaler via nodes.LatentUpscaleModelLoader, whose enum scans
+  # the ``latent_upscale_models`` folder_paths key. Unmapped, that key fell
+  # back to the image-baked /root/ComfyUI/models/latent_upscale_models/ (a
+  # marker file — EMPTY), so /object_info/LatentUpscaleModelLoader listed no
+  # options and the run door correctly BLOCKED ltx-director-distilled ("is
+  # missing on the remote") even though the weights were on the volume —
+  # they were reachable only through the upscale_models key (the append
+  # mapping above). Map the key to the same host dir so BOTH loaders see
+  # the LTX upscalers.
+  latent_upscale_models: latent_upscale_models
+  vae: vae
+  # Qwen-Image ControlNets (Union + DiffSynth inpaint) are DiT model-patches,
+  # loaded via ModelPatchLoader (scans the "model_patches" folder_paths key).
+  # Without this mapping, ModelPatchLoader only finds files in vendor_models'
+  # controlnet/ dir (top-level) and misses Qwen CNs under image-gen/comfyui/.
+  # ComfyUI APPENDS directories for the same key, so both paths are scanned.
+  model_patches: controlnet
+  # Impact Pack assets. FaceDetailer / UltralyticsDetectorProvider scan
+  # the ``ultralytics_bbox`` / ``ultralytics_segm`` folders (one level
+  # deeper than ``ultralytics/``) for YOLO face/body detectors.
+  # SAMLoader + FaceDetailer's sam_model_opt scan ``sams``.
+  # Impact Subpack ALSO adds ``$models_dir/ultralytics/{bbox,segm}``
+  # at import time, but those default to ``/root/ComfyUI/models/...``
+  # which is empty on this image — without these mappings, bbox
+  # detection silently fails with "FaceDetailer.0: bbox_detector"
+  # validation errors.
+  ultralytics: ultralytics
+  ultralytics_bbox: ultralytics/bbox
+  ultralytics_segm: ultralytics/segm
+  sams: sams
+  # Voice Studio qwen3-tts Python-engine HF source dirs (config.json +
+  # model.safetensors + speech_tokenizer/). Declared like any other model
+  # folder so custom_nodes/melite-audio-nodes resolves it via folder_paths
+  # instead of hardcoded paths. Host-side provisioning targets the same
+  # location (media/inference/model_catalog.py QWEN3_HF_ROOT).
+  qwen3_tts: audio/qwen3-tts/hf
+
+# Pixel-space upscalers (APISR, RealESRGAN, DAT) live in the standard
+# upscale_models/ directory. ComfyUI's folder_paths APPENDS directories for
+# the same key, so both latent_upscale_models/ and upscale_models/ are
+# scanned. This makes APISR models discoverable by ImageUpscaleWithModel
+# (the user's Step 1 blueprint: "Upscale Image (using Model)" node).
+ray_pixel_upscalers:
+  base_path: /mnt/data/models/image-gen/comfyui
+  upscale_models: upscale_models
+
+# Vendor models that live at the top level of the shared volume.
+vendor_models:
+  base_path: /mnt/data/models
+  audio_encoders: wav2vec
+  # Z-Image Fun ControlNet Union lives at top-level controlnet/ (not under
+  # image-gen/comfyui/), so we add it here for ComfyUI to discover.
+  controlnet: controlnet
+  # The Z-Image Fun ControlNet Union is a DiT model-patch, not a UNet
+  # ControlNet. ComfyUI loads it via ModelPatchLoader which scans the
+  # "model_patches" folder_paths key. Map it to the same controlnet/
+  # directory so the file is discoverable by BOTH paths.
+  model_patches: controlnet
+  # audiocpp-fork engine weights (qwen3-tts / moss-tts / moss-sfx GGUFs).
+  # Declared like any other model folder — custom_nodes/melite-audio-nodes
+  # resolves it via folder_paths, never a hardcoded path.
+  audiocpp: audio

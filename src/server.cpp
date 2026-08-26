@@ -149,12 +149,22 @@ static void handle_models(const httplib::Request &req,
 #define RUN_ARTIFACTS_MAX 16
 
 typedef struct {
+    char name[64];
+    char dtype[8];           /* "f32" or "u8" */
+    float f;
+    char *bytes;             /* malloc'd; owned by the entry, freed post-run */
+    size_t nbytes;
+} run_input;
+
+typedef struct {
     char run_id[48];
     char state[16];          /* queued|running|success|error */
     char error[256];
     char out_dir[512];
     char yaml[2048];         /* the pipeline YAML this run executes */
     time_t created;
+    run_input inputs[16];
+    size_t n_inputs;
 } run_entry;
 
 static run_entry g_runs[RUNREG_MAX];
@@ -200,6 +210,45 @@ static char *run_artifacts_json(const char *out_dir) {
     return buf;
 }
 
+/* read a harvested lane pipeline for a catalog model into out; NULL if none */
+static char *pipeline_yaml_for_model(const char *model, char *out, size_t cap) {
+    for (const char *p = model; *p; p++)
+        if (!((*p >= 'a' && *p <= 'z') || (*p >= '0' && *p <= '9') ||
+              *p == '-' || *p == '_' || *p == '.'))
+            return NULL;                    /* path safety: slug chars only */
+    char path[600];
+    snprintf(path, sizeof(path), "../plugins/gens/pipelines/%s/pipeline.yaml", model);
+    FILE *fp = fopen(path, "rb");
+    if (!fp) return NULL;
+    size_t n = fread(out, 1, cap - 1, fp);
+    fclose(fp);
+    if (n == 0 || n >= cap - 1) return NULL;
+    out[n] = 0;
+    return out;
+}
+
+static void add_run_input_text(size_t idx, const char *name, const char *s) {
+    if (g_runs[idx].n_inputs >= 16) return;
+    run_input *ri = &g_runs[idx].inputs[g_runs[idx].n_inputs++];
+    snprintf(ri->name, sizeof(ri->name), "%s", name);
+    snprintf(ri->dtype, sizeof(ri->dtype), "u8");
+    ri->f = 0;
+    ri->nbytes = strlen(s);
+    ri->bytes = (char *)malloc(ri->nbytes ? ri->nbytes : 1);
+    memcpy(ri->bytes, s, ri->nbytes);
+}
+
+static void add_run_input_f32(size_t idx, const char *name, float f) {
+    if (g_runs[idx].n_inputs >= 16) return;
+    run_input *ri = &g_runs[idx].inputs[g_runs[idx].n_inputs++];
+    snprintf(ri->name, sizeof(ri->name), "%s", name);
+    snprintf(ri->dtype, sizeof(ri->dtype), "f32");
+    ri->f = f;
+    ri->bytes = (char *)malloc(4);
+    memcpy(ri->bytes, &f, 4);
+    ri->nbytes = 4;
+}
+
 /* thread body: execute the run's pipeline YAML */
 typedef struct { size_t idx; } run_thread_arg;
 
@@ -214,9 +263,25 @@ static void *run_thread_fn(void *argp) {
         run_set_state(idx, "error", "dag parse failed");
         return NULL;
     }
+    inference_tensor tensors[16];
+    size_t n_in = g_runs[idx].n_inputs;
+    for (size_t i = 0; i < n_in; i++) {
+        run_input *ri = &g_runs[idx].inputs[i];
+        memset(&tensors[i], 0, sizeof(tensors[i]));
+        tensors[i].name = ri->name;
+        tensors[i].dtype = ri->dtype;
+        tensors[i].ndim = 1;
+        tensors[i].shape[0] = (long)ri->nbytes;
+        tensors[i].data = ri->bytes;
+        tensors[i].nbytes = ri->nbytes;
+    }
     char *result = NULL;
-    int rc = runner_execute(g_server_runner, dag, NULL, 0, &result);
+    int rc = runner_execute(g_server_runner, dag,
+                            n_in ? tensors : NULL, n_in, &result);
     dag_free(dag);
+    for (size_t i = 0; i < g_runs[idx].n_inputs; i++)
+        free(g_runs[idx].inputs[i].bytes);
+    g_runs[idx].n_inputs = 0;
     if (rc < 0) {
         run_set_state(idx, "error", "pipeline execution failed");
         inference_free(result);
@@ -300,20 +365,56 @@ static void handle_pipelines_start(const httplib::Request &req,
     g_runs[idx].created = time(NULL);
     pthread_mutex_unlock(&g_runs_mu);
 
-    /* compose the pipeline YAML with baked inject literals */
-    char *qp = json_quote(prompt);
-    char seedclause[160] = "";
-    if (seed >= 0)
-        snprintf(seedclause, sizeof(seedclause), ",\"KSampler.0.seed\":%ld", seed);
-    snprintf(g_runs[idx].yaml, sizeof(g_runs[idx].yaml),
-        "name: %s\n"
-        "description: \"server-generated run\"\n"
-        "nodes:\n"
-        "  - id: generate\n"
-        "    type: comfyui\n"
-        "    params: {\"server_url\":\"http://127.0.0.1:18465\",\"workflow_file\":\"%s\",\"out_dir\":\"%s\",\"timeout_s\":300,\"inject\":{\"CLIPTextEncode.0.text\":%s%s}}\n",
-        g_runs[idx].run_id, wf, g_runs[idx].out_dir, qp, seedclause);
-    free(qp);
+    /* Harvested lane? execute the pinned pipeline with initial inputs
+     * (prompt/lyrics/negative_prompt as text tensors, seed as f32) */
+    char tmpin[2048];
+    char *piped = pipeline_yaml_for_model(model, g_runs[idx].yaml,
+                                          sizeof(g_runs[idx].yaml));
+    if (piped) {
+        /* route artifacts into this run's dir: swap every out_dir literal */
+        {
+            char fixed[2048];
+            size_t o = 0;
+            const char *p = g_runs[idx].yaml;
+            const char needle[] = "\"out_dir\":\"./output\"";
+            while (*p && o < sizeof(fixed) - 128) {
+                if (strncmp(p, needle, sizeof(needle) - 1) == 0) {
+                    o += (size_t)snprintf(fixed + o, sizeof(fixed) - o,
+                                          "\"out_dir\":\"%s\"",
+                                          g_runs[idx].out_dir);
+                    p += sizeof(needle) - 1;
+                } else {
+                    fixed[o++] = *p++;
+                }
+            }
+            fixed[o] = 0;
+            snprintf(g_runs[idx].yaml, sizeof(g_runs[idx].yaml), "%s", fixed);
+        }
+        if (prompt[0]) add_run_input_text(idx, "prompt", prompt);
+        if (inf_json_string(req.body.c_str(), "lyrics",
+                            tmpin, sizeof(tmpin)) == 0 && tmpin[0])
+            add_run_input_text(idx, "lyrics", tmpin);
+        if (inf_json_string(req.body.c_str(), "negative_prompt",
+                            tmpin, sizeof(tmpin)) == 0 && tmpin[0])
+            add_run_input_text(idx, "negative_prompt", tmpin);
+        if (seed >= 0) add_run_input_f32(idx, "seed", (float)seed);
+    } else {
+        /* legacy: compose a krea-style single-node YAML with baked injects */
+        char *qp = json_quote(prompt);
+        char seedclause[160] = "";
+        if (seed >= 0)
+            snprintf(seedclause, sizeof(seedclause),
+                     ",\"KSampler.0.seed\":%ld", seed);
+        snprintf(g_runs[idx].yaml, sizeof(g_runs[idx].yaml),
+            "name: %s\n"
+            "description: \"server-generated run\"\n"
+            "nodes:\n"
+            "  - id: generate\n"
+            "    type: comfyui\n"
+            "    params: {\"server_url\":\"http://127.0.0.1:18465\",\"workflow_file\":\"%s\",\"out_dir\":\"%s\",\"timeout_s\":300,\"inject\":{\"CLIPTextEncode.0.text\":%s%s}}\n",
+            g_runs[idx].run_id, wf, g_runs[idx].out_dir, qp, seedclause);
+        free(qp);
+    }
 
     run_thread_arg *ta = (run_thread_arg *)malloc(sizeof(*ta));
     ta->idx = idx;
