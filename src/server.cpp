@@ -204,6 +204,9 @@ typedef struct {
     run_stage stages[RUN_STAGES_MAX];
     size_t n_stages;
     int  stop_req;           /* per-run cooperative stop request */
+    int  th_done;            /* run thread fully drained; slot reusable.
+                              * A terminal state alone is NOT enough: a
+                              * stopped run's thread drains asynchronously. */
     /* resume support: prior outputs loaded from a previous run's
      * artifacts + the topo index to resume from */
 #define RUN_PRIOR_MAX 16
@@ -232,6 +235,42 @@ static int    g_gpu_serving = 0;
 static pthread_mutex_t g_gpu_mu  = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  g_gpu_cv  = PTHREAD_COND_INITIALIZER;
 
+/* Live ticket-queue depth: runs holding or waiting for the GPU. */
+static int gpu_queue_depth(void) {
+    pthread_mutex_lock(&g_gpu_mu);
+    int d = g_gpu_tickets - g_gpu_serving;
+    pthread_mutex_unlock(&g_gpu_mu);
+    return d < 0 ? 0 : d;
+}
+
+/* Release the GPU ticket and wake the next waiter. Every path in
+ * run_thread_fn that acquired a ticket MUST call this exactly once. */
+static void gpu_ticket_release(void) {
+    pthread_mutex_lock(&g_gpu_mu);
+    g_gpu_serving++;
+    pthread_cond_broadcast(&g_gpu_cv);
+    pthread_mutex_unlock(&g_gpu_mu);
+}
+
+/* Free leftover heap state on a registry slot. Callers hold g_runs_mu
+ * (registrars) or own the slot exclusively (run thread, terminal). */
+static void run_slot_release_heap(size_t idx) {
+    for (size_t i = 0; i < g_runs[idx].n_inputs; i++)
+        free(g_runs[idx].inputs[i].bytes);
+    g_runs[idx].n_inputs = 0;
+    for (size_t p = 0; p < g_runs[idx].n_prior; p++)
+        free(g_runs[idx].prior[p].data);
+    g_runs[idx].n_prior = 0;
+}
+
+/* Mark a slot's thread as fully drained. Registrars only reuse slots
+ * with th_done == 1, so no live thread ever touches a recycled slot. */
+static void run_mark_th_done(size_t idx) {
+    pthread_mutex_lock(&g_runs_mu);
+    g_runs[idx].th_done = 1;
+    pthread_mutex_unlock(&g_runs_mu);
+}
+
 static void run_write_sidecar(size_t idx);
 static void ledger_log(const char *event, const char *data_json);
 static char *json_quote(const char *src);
@@ -256,6 +295,16 @@ static void run_set_state(size_t idx, const char *state, const char *err) {
 /* ---- Per-stage tracking ----
  * Parse the node ids out of a pipeline YAML (lines matching "  - id: X")
  * so a run can report stages[] before/while it executes. */
+/* Editor status vocabulary mapper: internal success/error/done states map
+ * onto the wire vocabulary the card system polls (completed/failed). */
+static const char *wire_state(const char *s) {
+    if (!s) return "unknown";
+    if (strcmp(s, "success") == 0 || strcmp(s, "done") == 0) return "completed";
+    if (strcmp(s, "error") == 0) return "failed";
+    if (!s[0]) return "unknown";
+    return s;
+}
+
 static void run_parse_stages(size_t idx) {
     const char *p = g_runs[idx].yaml;
     size_t n = 0;
@@ -464,6 +513,68 @@ static char *pipeline_yaml_for_model(const char *model, char *out, size_t cap) {
     return out;
 }
 
+/* ── Timeline studio calls compile ─────────────────────────────────────
+ * The video-timeline card body carries calls:[{text, beats:[{text, ...}]}]
+ * instead of a flat prompt. Studio law: the compiler cuts windows at CALL
+ * boundaries — each call becomes ONE window prompt (its beats joined, or
+ * the call text alone). Feeds the prompt..prompt4 wire the multi-window
+ * engine already speaks. Returns window count (0..4). */
+static char g_tl_wins[4][2048];
+static int  g_tl_nw = 0;
+
+static int compile_calls_windows(const char *body, char out[4][2048]) {
+    const char *key = strstr(body, "\"calls\"");
+    if (!key) return 0;
+    const char *calls = strchr(key + 7, '[');
+    if (!calls) return 0;
+    int depth = 0, in_str = 0, esc = 0, n = 0;
+    const char *obj_start = NULL;
+    for (const char *p = calls; *p; p++) {
+        if (esc) { esc = 0; continue; }
+        if (in_str && *p == '\\') { esc = 1; continue; }
+        if (*p == '"') { in_str = !in_str; continue; }
+        if (in_str) continue;
+        if (*p == '[' || *p == '{') {
+            if (*p == '{' && depth == 1 && !obj_start) obj_start = p;
+            depth++;
+        } else if (*p == ']' || *p == '}') {
+            depth--;
+            if (*p == '}' && obj_start && depth == 1) {
+                if (n < 4) {
+                    size_t len = (size_t)(p - obj_start + 2);
+                    char *obj = (char *)malloc(len + 1);
+                    if (obj) {
+                        memcpy(obj, obj_start, len); obj[len] = 0;
+                        out[n][0] = 0; size_t o = 0;
+                        const char *q = obj;
+                        while ((q = strstr(q, "\"text\":\"")) != NULL &&
+                               o + 300 < 2048) {
+                            q += 8;
+                            if (o) o += (size_t)snprintf(out[n] + o,
+                                                2048 - o, "  ");
+                            while (*q && *q != '"' && o + 4 < 2048) {
+                                if (*q == '\\' && q[1]) {
+                                    q++;
+                                    if (*q == 'n') out[n][o++] = ' ';
+                                    else if (*q == '"') out[n][o++] = '"';
+                                    else if (*q == '\\') out[n][o++] = '\\';
+                                    q++; continue;
+                                }
+                                out[n][o++] = *q++;
+                            }
+                            out[n][o] = 0;
+                        }
+                        free(obj);
+                        if (out[n][0]) n++;
+                    }
+                }
+                obj_start = NULL;
+            }
+            if (depth == 0) break;
+        }
+    }
+    return n;
+}
 static void add_run_input_text(size_t idx, const char *name, const char *s) {
     if (g_runs[idx].n_inputs >= 16) return;
     run_input *ri = &g_runs[idx].inputs[g_runs[idx].n_inputs++];
@@ -493,6 +604,13 @@ static void add_run_extra_inputs(size_t idx, const char *body,
     for (int i = 0; names[i]; i++)
         if (inf_json_string(body, names[i], tmp, tmpcap) == 0 && tmp[0])
             add_run_input_text(idx, names[i], tmp);
+    /* Timeline studio compiled windows (calls -> per-call prompts):
+     * the card body carries no prompt2..4 keys - feed from the compile. */
+    if (g_tl_nw > 1) {
+        for (int i = 1; i < g_tl_nw && i < 4; i++)
+            add_run_input_text(idx, names[i - 1], g_tl_wins[i]);
+        g_tl_nw = 0;  /* one-shot: never leak into the next run */
+    }
 }
 
 /* thread body: execute the run's pipeline YAML */
@@ -510,27 +628,41 @@ static void *run_thread_fn(void *argp) {
         pthread_cond_wait(&g_gpu_cv, &g_gpu_mu);
     pthread_mutex_unlock(&g_gpu_mu);
 
-    /* Per-run stop may have arrived while we were queued */
+    /* Per-run stop may have arrived while we were queued. The check and
+     * our queued->running transition happen in ONE critical section:
+     * handle_pipelines_stop sets stop_req and re-reads the state under
+     * the same mutex, so a stop can never slip between the check and
+     * the transition (audit H2). */
     runner_clear_stop(g_server_runner);
-    if (g_runs[idx].stop_req) {
+    int stop_early;
+    pthread_mutex_lock(&g_runs_mu);
+    stop_early = g_runs[idx].stop_req;
+    if (!stop_early)
+        snprintf(g_runs[idx].state, sizeof(g_runs[idx].state), "running");
+    pthread_mutex_unlock(&g_runs_mu);
+    if (stop_early) {
         run_set_state(idx, "stopped", NULL);
-        /* Release our FIFO ticket so the next waiter proceeds */
-        pthread_mutex_lock(&g_gpu_mu);
-        g_gpu_serving++;
-        pthread_cond_broadcast(&g_gpu_cv);
-        pthread_mutex_unlock(&g_gpu_mu);
+        pthread_mutex_lock(&g_runs_mu);
+        run_slot_release_heap(idx);
+        pthread_mutex_unlock(&g_runs_mu);
+        run_mark_th_done(idx);
+        gpu_ticket_release();
         return NULL;
     }
-    run_set_state(idx, "running", NULL);
+    run_set_state(idx, "running", NULL);  /* sidecar + ledger bookkeeping */
+    /* Real queue telemetry on the WS bus (audit M3) */
+    if (g_ws_server)
+        ws_send_status(g_ws_server, gpu_queue_depth());
     inference_dag *dag = dag_parse_string(g_runs[idx].yaml, strlen(g_runs[idx].yaml));
     if (!dag) {
         run_set_state(idx, "error", "dag parse failed");
         /* MUST release the FIFO ticket or every queued run behind us
          * deadlocks forever */
-        pthread_mutex_lock(&g_gpu_mu);
-        g_gpu_serving++;
-        pthread_cond_broadcast(&g_gpu_cv);
-        pthread_mutex_unlock(&g_gpu_mu);
+        pthread_mutex_lock(&g_runs_mu);
+        run_slot_release_heap(idx);
+        pthread_mutex_unlock(&g_runs_mu);
+        run_mark_th_done(idx);
+        gpu_ticket_release();
         return NULL;
     }
     inference_tensor tensors[16];
@@ -618,11 +750,12 @@ static void *run_thread_fn(void *argp) {
                 fr ? std::to_string(fr->status).c_str() : "no response");
     }
 
-    /* GPU FIFO: release and wake next waiter */
-    pthread_mutex_lock(&g_gpu_mu);
-    g_gpu_serving++;
-    pthread_cond_broadcast(&g_gpu_cv);
-    pthread_mutex_unlock(&g_gpu_mu);
+    /* GPU FIFO: release and wake next waiter, then mark the slot fully
+     * drained so a registrar may recycle it (th_done gate, audit M2). */
+    gpu_ticket_release();
+    if (g_ws_server)
+        ws_send_status(g_ws_server, gpu_queue_depth());
+    run_mark_th_done(idx);
     return NULL;
 }
 
@@ -671,8 +804,8 @@ static void run_write_sidecar(size_t idx) {
         for (size_t s = 0; s < g_runs[idx].n_stages; s++) {
             run_stage *st = &g_runs[idx].stages[s];
             so += (size_t)snprintf(stages_json + so, sizeof(stages_json) - so,
-                "%s{\"id\":\"%s\",\"state\":\"%s\",\"artifacts\":[",
-                s ? "," : "", st->id, st->state);
+                "%s{\"id\":\"%s\",\"name\":\"%s\",\"index\":%d,\"status\":\"%s\",\"artifacts\":[",
+                s ? "," : "", st->id, st->id, (int)s, wire_state(st->state));
             for (size_t a = 0; a < st->n_arts; a++)
                 so += (size_t)snprintf(stages_json + so,
                                       sizeof(stages_json) - so,
@@ -708,6 +841,7 @@ static void handle_pipelines_start(const httplib::Request &req,
      *   {model,...}             - flat generation (default)
      */
     char model[64] = "krea-2", prompt[2048] = "", wf[512] = "";
+    g_tl_nw = 0;
     long seed = -1;
     char yaml_override[4096] = "";
     const char *body = req.body.c_str();
@@ -779,6 +913,12 @@ static void handle_pipelines_start(const httplib::Request &req,
             snprintf(wf, sizeof(wf), "%s", tmp);
         if (s) seed = inf_json_int(req.body.c_str(), "seed", -1);
     }
+    /* Timeline studio shape: {model, calls:[...]} with no flat prompt -
+     * compile the calls into window prompts (prompt..prompt4). */
+    if (!prompt[0] && strstr(body, "\"calls\"")) {
+        g_tl_nw = compile_calls_windows(body, g_tl_wins);
+        if (g_tl_nw > 0) snprintf(prompt, sizeof(prompt), "%s", g_tl_wins[0]);
+    }
     if (!prompt[0]) {
         res.status = 400;
         res.set_content("{\"error\":\"missing prompt\"}", "application/json");
@@ -789,14 +929,16 @@ static void handle_pipelines_start(const httplib::Request &req,
 
     /* register the run */
     pthread_mutex_lock(&g_runs_mu);
-    /* Find a slot: first available terminal entry, else append.
-    * Never compact — it shifts indices and breaks runner threads that
-     * hold old indices. */
+    /* Find a slot: first terminal entry whose thread has fully drained,
+     * else append. Never compact — it shifts indices and breaks runner
+     * threads that hold old indices. th_done gates reuse: a terminal
+     * state alone does not mean the thread stopped touching the slot
+     * (a stopped run drains asynchronously). */
     size_t idx = (size_t)-1;
     for (size_t i = 0; i < g_n_runs; i++) {
-        if (strcmp(g_runs[i].state, "success") == 0 ||
-            strcmp(g_runs[i].state, "error") == 0 ||
-            strcmp(g_runs[i].state, "stopped") == 0) {
+        if ((strcmp(g_runs[i].state, "success") == 0 ||
+             strcmp(g_runs[i].state, "error") == 0 ||
+             strcmp(g_runs[i].state, "stopped") == 0) && g_runs[i].th_done) {
             idx = i;
             break;
         }
@@ -809,6 +951,8 @@ static void handle_pipelines_start(const httplib::Request &req,
             return;
         }
         idx = g_n_runs++;
+    } else {
+        run_slot_release_heap(idx);  /* drop any leaked inputs/prior */
     }
     snprintf(g_runs[idx].run_id, sizeof(g_runs[idx].run_id), "run-%lx-%lx",
              (unsigned long)time(NULL), (unsigned long)pthread_self());
@@ -821,6 +965,8 @@ static void handle_pipelines_start(const httplib::Request &req,
     snprintf(g_runs[idx].prompt, sizeof(g_runs[idx].prompt), "%s", prompt);
     g_runs[idx].seed = seed;
     g_runs[idx].stop_req = 0;
+    g_runs[idx].th_done = 0;
+    g_runs[idx].n_inputs = 0;
     g_runs[idx].n_stages = 0;
     g_runs[idx].n_prior = 0;
     g_runs[idx].start_from = 0;
@@ -913,7 +1059,20 @@ static void handle_pipelines_start(const httplib::Request &req,
     run_thread_arg *ta = (run_thread_arg *)malloc(sizeof(*ta));
     ta->idx = idx;
     pthread_t th;
-    pthread_create(&th, NULL, run_thread_fn, ta);
+    if (pthread_create(&th, NULL, run_thread_fn, ta) != 0) {
+        /* No thread will ever drain this slot: fail it loudly instead
+         * of leaving a ghost "queued" entry (audit M2). */
+        free(ta);
+        pthread_mutex_lock(&g_runs_mu);
+        run_slot_release_heap(idx);
+        pthread_mutex_unlock(&g_runs_mu);
+        run_set_state(idx, "error", "thread spawn failed");
+        run_mark_th_done(idx);
+        res.status = 503;
+        res.set_content("{\"error\":\"thread spawn failed\"}",
+                        "application/json");
+        return;
+    }
     pthread_detach(th);
 
     char out[256];
@@ -968,8 +1127,8 @@ static void handle_pipelines_status(const httplib::Request &req,
         for (size_t s = 0; s < g_runs[found].n_stages; s++) {
             run_stage *st = &g_runs[found].stages[s];
             so += (size_t)snprintf(stages_json + so, sizeof(stages_json) - so,
-                "%s{\"id\":\"%s\",\"state\":\"%s\"}",
-                s ? "," : "", st->id, st->state);
+                "%s{\"id\":\"%s\",\"name\":\"%s\",\"index\":%d,\"status\":\"%s\"}",
+                s ? "," : "", st->id, st->id, (int)s, wire_state(st->state));
             if (so >= sizeof(stages_json) - 8) break;
         }
         stages_json[so++] = ']';
@@ -982,7 +1141,7 @@ static void handle_pipelines_status(const httplib::Request &req,
     char *out = (char *)malloc(cap);
     snprintf(out, cap,
         "{\"run_id\":\"%s\",\"status\":\"%s\",\"stages\":%s,\"artifacts\":%s,\"error\":\"%s\"}",
-        yamlhead, state, stages_json, arts, err);
+        yamlhead, wire_state(state), stages_json, arts, err);
     res.set_content(out, "application/json");
     free(arts);
     free(out);
@@ -1866,7 +2025,7 @@ static void handle_form_spec(const httplib::Request &req,
         len += (size_t)snprintf(out + len, cap - len, "]}");
     }
     len += (size_t)snprintf(out + len, cap - len,
-        "],\"enhance_prompts\":{\"prompt\":%s}}", recipeq);
+        "],\"features\":{},\"enhance_prompts\":{\"prompt\":%s}}", recipeq);
     res.set_content(out, "application/json");
     free(out); free(recipeq); free(labelq);
 }
@@ -2259,23 +2418,23 @@ static prov_job g_prov[PROV_MAX];
 static size_t g_n_prov = 0;
 static pthread_mutex_t g_prov_mu = PTHREAD_MUTEX_INITIALIZER;
 
-static void prov_set_state(const char *model, const char *state) {
-    char fn[256] = "";
+static void prov_set_state(const char *model, const char *filename,
+                           const char *state) {
     pthread_mutex_lock(&g_prov_mu);
     for (size_t i = 0; i < g_n_prov; i++)
-        if (strcmp(g_prov[i].model, model) == 0) {
+        if (strcmp(g_prov[i].model, model) == 0 &&
+            strcmp(g_prov[i].filename, filename) == 0) {
             snprintf(g_prov[i].state, sizeof(g_prov[i].state), "%s", state);
-            if (!fn[0])
-                snprintf(fn, sizeof(fn), "%s", g_prov[i].filename);
+            pthread_mutex_unlock(&g_prov_mu);
+            /* every provision transition hits the file ledger */
+            char pb[420];
+            snprintf(pb, sizeof(pb),
+                     "{\"model\":\"%s\",\"filename\":\"%s\",\"state\":\"%s\"}",
+                     model, filename, state);
+            ledger_log("prov.state", pb);
+            return;
         }
     pthread_mutex_unlock(&g_prov_mu);
-    if (fn[0]) {   /* every provision transition hits the file ledger */
-        char pb[420];
-        snprintf(pb, sizeof(pb),
-                 "{\"model\":\"%s\",\"filename\":\"%s\",\"state\":\"%s\"}",
-                 model, fn, state);
-        ledger_log("prov.state", pb);
-    }
 }
 
 typedef struct { char model[64]; char filename[256]; } prov_arg;
@@ -2286,13 +2445,13 @@ static void *prov_thread_fn(void *argp) {
     const catalog_model *m = g_catalog ? catalog_find_model(g_catalog, a->model)
                                        : NULL;
     if (m) {
-        prov_set_state(a->model, "downloading");
+        prov_set_state(a->model, a->filename, "downloading");
         download_ws_progress ctx = {"prov"};
         int rc = download_model(g_download_cfg, &m->source, a->filename,
                                 download_progress_ws, &ctx);
-        prov_set_state(a->model, rc < 0 ? "error" : "done");
+        prov_set_state(a->model, a->filename, rc < 0 ? "error" : "done");
     } else {
-        prov_set_state(a->model, "error");
+        prov_set_state(a->model, a->filename, "error");
     }
     free(a);
     return NULL;
@@ -2391,26 +2550,65 @@ static void handle_provision(const httplib::Request &req,
         }
     }
 
+    if (!g_download_cfg) g_download_cfg = download_config_create(NULL);
+    char *cache = download_cache_path(g_download_cfg, fn);
+
     pthread_mutex_lock(&g_prov_mu);
-    if (g_n_prov < PROV_MAX) {
-        snprintf(g_prov[g_n_prov].model, sizeof(g_prov[0].model), "%s", model);
-        snprintf(g_prov[g_n_prov].filename, sizeof(g_prov[0].filename), "%s",
-                 fn);
-        snprintf(g_prov[g_n_prov].state, sizeof(g_prov[0].state), "queued");
-        g_prov[g_n_prov].enqueued = (long)time(NULL);
-        g_n_prov++;
+    size_t row = (size_t)-1;
+    for (size_t i = 0; i < g_n_prov; i++)
+        if (strcmp(g_prov[i].model, model) == 0 &&
+            strcmp(g_prov[i].filename, fn) == 0) { row = i; break; }
+    if (row != (size_t)-1 &&
+        (strcmp(g_prov[row].state, "queued") == 0 ||
+         strcmp(g_prov[row].state, "downloading") == 0)) {
+        /* Dedup: one live download per model+filename. A second thread
+         * would race the first on the same target file (audit M1). */
+        pthread_mutex_unlock(&g_prov_mu);
+        char out[900];
+        snprintf(out, sizeof(out),
+            "{\"queued\":true,\"model\":\"%s\",\"variant\":\"%s\","
+            "\"manager\":{\"accepted\":true,\"worker_kicked\":false,"
+            "\"status\":\"already downloading\"},"
+            "\"payload\":{\"filename\":\"%s\",\"save_path\":\"%s\"}}",
+            model, variant, fn, cache ? cache : "");
+        res.set_content(out, "application/json");
+        free(cache);
+        return;
     }
+    if (row == (size_t)-1) {
+        if (g_n_prov >= PROV_MAX) {
+            /* Honest refusal: previously the row was silently dropped
+             * but the download still ran, invisible to /status. */
+            pthread_mutex_unlock(&g_prov_mu);
+            free(cache);
+            res.status = 503;
+            res.set_content("{\"error\":\"provision table full\"}",
+                            "application/json");
+            return;
+        }
+        row = g_n_prov++;
+    }
+    snprintf(g_prov[row].model, sizeof(g_prov[0].model), "%s", model);
+    snprintf(g_prov[row].filename, sizeof(g_prov[0].filename), "%s", fn);
+    snprintf(g_prov[row].state, sizeof(g_prov[0].state), "queued");
+    g_prov[row].enqueued = (long)time(NULL);
     pthread_mutex_unlock(&g_prov_mu);
 
     prov_arg *a = (prov_arg *)malloc(sizeof(*a));
     snprintf(a->model, sizeof(a->model), "%s", model);
     snprintf(a->filename, sizeof(a->filename), "%s", fn);
     pthread_t th;
-    pthread_create(&th, NULL, prov_thread_fn, a);
+    if (pthread_create(&th, NULL, prov_thread_fn, a) != 0) {
+        free(a);
+        prov_set_state(model, fn, "error");
+        free(cache);
+        res.status = 503;
+        res.set_content("{\"error\":\"thread spawn failed\"}",
+                        "application/json");
+        return;
+    }
     pthread_detach(th);
 
-    if (!g_download_cfg) g_download_cfg = download_config_create(NULL);
-    char *cache = download_cache_path(g_download_cfg, fn);
     char out[900];
     snprintf(out, sizeof(out),
         "{\"queued\":true,\"model\":\"%s\",\"variant\":\"%s\","
@@ -2426,16 +2624,26 @@ static void handle_provision(const httplib::Request &req,
 static void handle_provision_status(const httplib::Request &req,
                                     httplib::Response &res) {
     (void)req;
-    size_t cap = 8192, len = 0;
+    size_t cap = 16384, len = 0;
     char *out = (char *)malloc(cap);
+    if (!out) { res.status = 500; return; }
     len += (size_t)snprintf(out + len, cap - len, "{\"jobs\":[");
     pthread_mutex_lock(&g_prov_mu);
-    for (size_t i = 0; i < g_n_prov; i++)
-        len += (size_t)snprintf(out + len, cap - len,
+    for (size_t i = 0; i < g_n_prov; i++) {
+        /* Build each row in a bounded local buffer and check fit BEFORE
+         * touching out: feeding snprintf's return straight into len lets
+         * len pass cap, after which cap - len underflows and out + len
+         * writes past the heap block (audit H3). */
+        char row[640];
+        int rl = snprintf(row, sizeof(row),
             "%s{\"model\":\"%s\",\"filename\":\"%s\","
             "\"state\":\"%s\",\"enqueued\":%ld}",
             i ? "," : "", g_prov[i].model, g_prov[i].filename,
             g_prov[i].state, g_prov[i].enqueued);
+        if (len + (size_t)rl + 3 >= cap) break;  /* room for "]}"+NUL */
+        memcpy(out + len, row, (size_t)rl + 1);
+        len += (size_t)rl;
+    }
     pthread_mutex_unlock(&g_prov_mu);
     len += (size_t)snprintf(out + len, cap - len, "]}");
     res.set_content(out, "application/json");
@@ -3057,8 +3265,10 @@ static void handle_sse_events(const httplib::Request &req,
                 "event: connected\ndata: {\"status\":\"ok\",\"version\":\"0.1.0\"}\n\n";
             sink.write(connected, strlen(connected));
 
-            const char *status =
-                "event: status\ndata: {\"queue_remaining\":0}\n\n";
+            char status[96];
+            snprintf(status, sizeof(status),
+                     "event: status\ndata: {\"queue_remaining\":%d}\n\n",
+                     gpu_queue_depth());
             sink.write(status, strlen(status));
 
             const char *ka = ": heartbeat\n\n";
@@ -3092,14 +3302,29 @@ static void handle_pipelines_stop(const httplib::Request &req,
     pthread_mutex_unlock(&g_runs_mu);
 
     if (strcmp(state, "queued") == 0 || strcmp(state, "running") == 0) {
-        /* queued: thread sees stop_req before acquiring the GPU FIFO.
-         * running: cooperative stop fires at the next node boundary. */
+        /* Set stop_req and re-read the CURRENT state inside ONE critical
+         * section (audit H2). run_thread_fn flips queued->running under
+         * g_runs_mu only while stop_req == 0, so:
+         *   still "queued"     -> the thread is guaranteed to take the
+         *                        stopped path at the ticket head; calling
+         *                        runner_request_stop now would kill the
+         *                        WRONG (currently running) run;
+         *   already "running"  -> the cooperative stop below lands at
+         *                        the next node boundary;
+         *   terminal in between-> nothing left to stop. */
         pthread_mutex_lock(&g_runs_mu);
         g_runs[found].stop_req = 1;
+        char now[16];
+        snprintf(now, sizeof(now), "%s", g_runs[found].state);
         pthread_mutex_unlock(&g_runs_mu);
-        if (strcmp(state, "running") == 0)
+        if (strcmp(now, "running") == 0) {
             runner_request_stop(g_server_runner);
-        run_set_state(found, "stopped", NULL);
+        } else if (strcmp(now, "queued") == 0) {
+            /* Responsive UX: mark it now; the thread re-affirms when it
+             * drains. Slot reuse is gated on th_done, so no registrar
+             * can recycle this slot under the live thread. */
+            run_set_state(found, "stopped", NULL);
+        }
         char out[128];
         snprintf(out, sizeof(out), "{\"run_id\":\"%s\",\"status\":\"stopped\"}",
                  rid.c_str());
@@ -3238,24 +3463,33 @@ static void handle_pipelines_resume(const httplib::Request &req,
         return;
     }
 
-    /* Register a new run with the same spec */
+    /* Register a new run with the same spec. Same slot policy as
+     * handle_pipelines_run: reuse a fully-drained terminal slot, else
+     * append. NEVER compact — compaction shifts g_runs indices under
+     * threads parked on the GPU ticket and under executing runs
+     * (audit C1). */
     pthread_mutex_lock(&g_runs_mu);
-    if (g_n_runs >= RUNREG_MAX) {
-        size_t w = 0;
-        for (size_t i = 0; i < g_n_runs; i++)
-            if (strcmp(g_runs[i].state, "success") != 0 &&
-                strcmp(g_runs[i].state, "error") != 0 &&
-                strcmp(g_runs[i].state, "stopped") != 0)
-                g_runs[w++] = g_runs[i];
-        g_n_runs = w;
+    size_t idx = (size_t)-1;
+    for (size_t i = 0; i < g_n_runs; i++) {
+        if ((strcmp(g_runs[i].state, "success") == 0 ||
+             strcmp(g_runs[i].state, "error") == 0 ||
+             strcmp(g_runs[i].state, "stopped") == 0) && g_runs[i].th_done) {
+            idx = i;
+            break;
+        }
     }
-    if (g_n_runs >= RUNREG_MAX) {
-        pthread_mutex_unlock(&g_runs_mu);
-        res.status = 503;
-        res.set_content("{\"error\":\"run registry full\"}", "application/json");
-        return;
+    if (idx == (size_t)-1) {
+        if (g_n_runs >= RUNREG_MAX) {
+            pthread_mutex_unlock(&g_runs_mu);
+            res.status = 503;
+            res.set_content("{\"error\":\"run registry full\"}",
+                            "application/json");
+            return;
+        }
+        idx = g_n_runs++;
+    } else {
+        run_slot_release_heap(idx);  /* drop any leaked inputs/prior */
     }
-    size_t idx = g_n_runs++;
     snprintf(g_runs[idx].run_id, sizeof(g_runs[idx].run_id), "run-%lx-%lx",
              (unsigned long)time(NULL), (unsigned long)pthread_self());
     snprintf(g_runs[idx].state, sizeof(g_runs[idx].state), "queued");
@@ -3267,6 +3501,8 @@ static void handle_pipelines_resume(const httplib::Request &req,
     snprintf(g_runs[idx].prompt, sizeof(g_runs[idx].prompt), "%s", prompt);
     g_runs[idx].seed = seed;
     g_runs[idx].stop_req = 0;
+    g_runs[idx].th_done = 0;
+    g_runs[idx].n_inputs = 0;
     g_runs[idx].n_stages = 0;
     g_runs[idx].n_prior = 0;
     g_runs[idx].start_from = 0;
@@ -3289,6 +3525,13 @@ static void handle_pipelines_resume(const httplib::Request &req,
         char *piped = pipeline_yaml_for_model(model, g_runs[idx].yaml,
                                               sizeof(g_runs[idx].yaml));
         if (!piped) {
+            /* Fail the registered run instead of leaving a ghost
+             * "queued" entry with no thread behind it (audit M2). */
+            pthread_mutex_lock(&g_runs_mu);
+            run_slot_release_heap(idx);
+            pthread_mutex_unlock(&g_runs_mu);
+            run_set_state(idx, "error", "no pipeline for model");
+            run_mark_th_done(idx);
             res.status = 400;
             res.set_content("{\"error\":\"cannot resume: no pipeline for model\"}",
                             "application/json");
@@ -3381,7 +3624,20 @@ static void handle_pipelines_resume(const httplib::Request &req,
     run_thread_arg *ta = (run_thread_arg *)malloc(sizeof(*ta));
     ta->idx = idx;
     pthread_t th;
-    pthread_create(&th, NULL, run_thread_fn, ta);
+    if (pthread_create(&th, NULL, run_thread_fn, ta) != 0) {
+        /* No thread will ever drain this slot: fail it loudly instead
+         * of leaving a ghost "queued" entry (audit M2). */
+        free(ta);
+        pthread_mutex_lock(&g_runs_mu);
+        run_slot_release_heap(idx);
+        pthread_mutex_unlock(&g_runs_mu);
+        run_set_state(idx, "error", "thread spawn failed");
+        run_mark_th_done(idx);
+        res.status = 503;
+        res.set_content("{\"error\":\"thread spawn failed\"}",
+                        "application/json");
+        return;
+    }
     pthread_detach(th);
 
     char out[256];
