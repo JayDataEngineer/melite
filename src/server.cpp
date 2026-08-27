@@ -14,6 +14,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <vector>
+#include <algorithm>
 
 /* C helpers (local impl — plugin_helpers.h is C-only, static inline) */
 static int inf_json_string(const char *json, const char *key, char *out, size_t cap) {
@@ -1031,6 +1033,114 @@ static void handle_pipelines_drafts(const httplib::Request &req,
     }
     char out[9000];
     snprintf(out, sizeof(out), "{\"draftId\":\"%s\",\"stages\":%s}", id, stages);
+    res.set_content(out, "application/json");
+}
+
+/* Aux draft tree: the ray-era draft files the editor cards still address.
+ * Read-only data reuse (the JSON files are assets, like model weights) —
+ * the ray SYSTEM is not running and is not needed. */
+static const char *drafts_aux_dir(void) {
+    const char *env = getenv("DRAFTS_AUX_DIR");
+    return (env && *env) ? env
+        : "/home/user/Documents/programs/ray/data/pipeline-drafts";
+}
+
+/* defined below (runs-list helper); needed early by the draft lister */
+static int sidecar_str(const char *json, const char *key, char *out, size_t cap);
+
+/* Strict id charset — no path traversal from the wire. */
+static int draft_id_ok(const std::string &id) {
+    if (id.empty() || id.size() > 96) return 0;
+    for (size_t i = 0; i < id.size(); i++) {
+        char c = id[i];
+        if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+              (c >= '0' && c <= '9') || c == '_' || c == '-')) return 0;
+    }
+    return 1;
+}
+
+/* GET /v1/pipelines/drafts/:id — one draft doc, verbatim bytes. */
+static void handle_draft_get(const httplib::Request &req,
+                             httplib::Response &res) {
+    std::string id = req.path_params.at("id");
+    if (!draft_id_ok(id)) {
+        res.status = 400;
+        res.set_content("{\"error\":\"bad id\"}", "application/json");
+        return;
+    }
+    char path[512];
+    snprintf(path, sizeof(path), "./drafts/%s.json", id.c_str());
+    FILE *f = fopen(path, "rb");
+    if (!f) {
+        snprintf(path, sizeof(path), "%s/%s.json", drafts_aux_dir(), id.c_str());
+        f = fopen(path, "rb");
+    }
+    if (!f) {
+        res.status = 404;
+        res.set_content("{\"error\":\"draft not found\"}", "application/json");
+        return;
+    }
+    std::string body;
+    char buf[65536];
+    size_t n;
+    while ((n = fread(buf, 1, sizeof(buf), f)) > 0) body.append(buf, n);
+    fclose(f);
+    res.set_content(body, "application/json");
+}
+
+/* GET /v1/pipelines/drafts — merged index (newest-first by mtime), with the
+ * model/name strings when the doc carries them, so clients can map a run's
+ * model (e.g. h3-timeline) to its draft. */
+static void handle_draft_list(const httplib::Request &req,
+                              httplib::Response &res) {
+    (void)req;
+    struct ent { char id[112]; long mt; char model[80]; char name[160]; };
+    std::vector<ent> ents;
+    const char *dirs[2] = { "./drafts", drafts_aux_dir() };
+    for (int d = 0; d < 2; d++) {
+        DIR *dr = opendir(dirs[d]);
+        if (!dr) continue;
+        struct dirent *e;
+        while ((e = readdir(dr)) != NULL) {
+            size_t L = strlen(e->d_name);
+            if (L < 6 || L > 110 || strncmp(e->d_name + L - 5, ".json", 5) != 0)
+                continue;
+            char id[112], ppath[512];
+            snprintf(id, sizeof(id), "%.*s", (int)(L - 5), e->d_name);
+            if (!draft_id_ok(std::string(id))) continue;
+            snprintf(ppath, sizeof(ppath), "%s/%s", dirs[d], e->d_name);
+            struct stat st;
+            if (stat(ppath, &st) != 0) continue;
+            ent one = {};
+            snprintf(one.id, sizeof(one.id), "%s", id);
+            one.mt = (long)st.st_mtime;
+            FILE *f = fopen(ppath, "rb");
+            if (f) {
+                char buf[8192] = "";
+                size_t got = fread(buf, 1, sizeof(buf) - 1, f);
+                fclose(f);
+                buf[got] = 0;
+                sidecar_str(buf, "model", one.model, sizeof(one.model));
+                sidecar_str(buf, "name", one.name, sizeof(one.name));
+            }
+            ents.push_back(one);
+        }
+        closedir(dr);
+    }
+    std::sort(ents.begin(), ents.end(), [](const ent &a, const ent &b) {
+        return a.mt > b.mt;
+    });
+    std::string out = "{\"count\":" + std::to_string(ents.size()) + ",\"drafts\":[";
+    bool first = true;
+    for (size_t i = 0; i < ents.size() && i < 600; i++) {
+        char row[420];
+        snprintf(row, sizeof(row),
+                 "%s{\"draft_id\":\"%s\",\"model\":\"%s\",\"name\":\"%s\"}",
+                 first ? "" : ",", ents[i].id, ents[i].model, ents[i].name);
+        first = false;
+        out += row;
+    }
+    out += "]}";
     res.set_content(out, "application/json");
 }
 
@@ -3137,6 +3247,8 @@ inference_server *server_create(int port) {
     s->srv.Post("/v1/pipelines/stop/:run_id",   handle_pipelines_stop);
     s->srv.Post("/v1/pipelines/resume/:run_id", handle_pipelines_resume);
     s->srv.Post("/v1/pipelines/drafts",  handle_pipelines_drafts);
+    s->srv.Get("/v1/pipelines/drafts/:id", handle_draft_get);
+    s->srv.Get("/v1/pipelines/drafts",     handle_draft_list);
     s->srv.Get("/v1/pipelines/runs",     handle_pipelines_runs);
     s->srv.Get(R"(/editor/assets/runs/(.+))", handle_asset);
     s->srv.Get("/v1/form-spec",          handle_form_spec);
