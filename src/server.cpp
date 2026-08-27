@@ -406,14 +406,20 @@ static char *run_artifacts_json(const char *out_dir) {
     len += (size_t)snprintf(buf + len, cap - len, "[");
     char line[512];
     int first = 1;
-    int listed = 0, total = 0;
-    const int MAX_ARTS = 60;   /* sidebar payload cap - keeps JSON valid+small */
+    int listed = 0, total = 0, imgs = 0;
+    const int MAX_IMGS = 3;      /* payload diet: sidebar lists media + 3 frames */
     while (fgets(line, sizeof(line), fp)) {
         size_t ll = strlen(line);
         while (ll && (line[ll-1] == '\n' || line[ll-1] == '\r')) line[--ll] = 0;
         if (!ll) continue;
         total++;
-        if (listed >= MAX_ARTS) continue;
+        if (line[0] == '_') continue;   /* sidecars + generated _poster.jpg */
+        const char *t = artifact_type(line);
+        if (strcmp(t, "image") == 0) {
+            if (++imgs > MAX_IMGS) continue;
+        } else if (strcmp(t, "video") != 0 && strcmp(t, "audio") != 0) {
+            continue;            /* not media: not listed */
+        }
         listed++;
         char path[1024], szcmd[1200];
         snprintf(path, sizeof(path), "%s/%s", out_dir, line);
@@ -430,9 +436,11 @@ static char *run_artifacts_json(const char *out_dir) {
             line, path, bytes, rid, line, artifact_type(line), bytes);
     }
     pclose(fp);
-    if (total > listed)
+    if (total > listed) {
+        if (!first) len += (size_t)snprintf(buf + len, cap - len, ",");
         len += (size_t)snprintf(buf + len, cap - len,
-            ",{\"truncated\":true,\"listed\":%d,\"total\":%d}", listed, total);
+            "{\"truncated\":true,\"listed\":%d,\"total\":%d}", listed, total);
+    }
     snprintf(buf + len, cap - len, "]");
     return buf;
 }
@@ -1305,8 +1313,17 @@ static long sidecar_num(const char *json, const char *key, long dflt) {
     return strtol(p, NULL, 10);
 }
 
-/* one thumbnail URL for a run dir: first image file found */
+/* one thumbnail URL for a run dir: prefers the cached _previews/poster.jpg,
+ * falls back to the first image file found */
 static int run_thumbnail(const char *dir, char *out, size_t cap) {
+    char poster[760];
+    snprintf(poster, sizeof(poster), "%s/_poster.jpg", dir);
+    struct stat pst;
+    if (stat(poster, &pst) == 0) {
+        snprintf(out, cap, "/editor/assets/runs/%s/_poster.jpg",
+                 path_basename(dir));
+        return 0;
+    }
     char cmd[600];
     snprintf(cmd, sizeof(cmd), "ls -1 '%s' 2>/dev/null", dir);
     FILE *fp = popen(cmd, "r");
@@ -1326,6 +1343,39 @@ static int run_thumbnail(const char *dir, char *out, size_t cap) {
     }
     pclose(fp);
     return found;
+}
+
+/* lazily build the small preview cache for a run dir: _previews/poster.jpg
+ * (first video frame, else first image; ~480px wide jpeg, q4 — one ffmpeg
+ * fork per run, cached on disk forever; no libwebp in this ffmpeg build). */
+static void ensure_run_previews(const char *dir) {
+    char poster[760];
+    snprintf(poster, sizeof(poster), "%s/_poster.jpg", dir);
+    struct stat st;
+    if (stat(poster, &st) == 0) return;                 /* already cached */
+    char cmd[700];
+    snprintf(cmd, sizeof(cmd), "ls -1 '%s' 2>/dev/null", dir);
+    FILE *fp = popen(cmd, "r");
+    if (!fp) return;
+    char line[512], video[1024] = "", image[1024] = "";
+    while (fgets(line, sizeof(line), fp)) {
+        size_t ll = strlen(line);
+        while (ll && (line[ll-1] == '\n' || line[ll-1] == '\r')) line[--ll] = 0;
+        if (!ll) continue;
+        const char *t = artifact_type(line);
+        if (strcmp(t, "video") == 0 && !video[0])
+            snprintf(video, sizeof(video), "%s/%s", dir, line);
+        else if (strcmp(t, "image") == 0 && !image[0])
+            snprintf(image, sizeof(image), "%s/%s", dir, line);
+    }
+    pclose(fp);
+    const char *src = video[0] ? video : image;
+    if (!src[0]) return;
+    char ff[1900];
+    snprintf(ff, sizeof(ff),
+        "ffmpeg -y -loglevel error -i '%s' -frames:v 1 -vf scale=480:-2 "
+        "-q:v 4 '%s' >/dev/null 2>&1", src, poster);
+    if (system(ff) != 0) unlink(poster);                /* failed: no poster */
 }
 
 typedef struct { char dir[64]; long created; } run_dir_ent;
@@ -1399,6 +1449,7 @@ static void handle_pipelines_runs(const httplib::Request &req,
             snprintf(status, sizeof(status), "success");
         }
         char thumb[600] = "";
+        ensure_run_previews(dir);
         run_thumbnail(dir, thumb, sizeof(thumb));
         char *arts = run_artifacts_json(dir);
         char *promptq = json_quote(prompt);
