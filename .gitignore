@@ -1,19 +1,24 @@
+# Build output
 build/
+build-asan/
 cmake-build-*/
+
+# CMake
 .cache/
 compile_commands.json
+
+# Compiled objects
 *.o
 *.so
 *.dylib
 *.exe
+
+# Model weights (too large for git)
 *.gguf
 *.bin
 *.safetensors
 *.ckpt
 *.pt
-# custom_nodes are project-specific code — tracked in git.
-# Native .so binaries (trelliscpp) are also tracked (prebuilt, no upstream).
-!custom_nodes/melite-trelliscpp-nodes/native/*.so
-!custom_nodes/melite-trelliscpp-nodes/native/*.so.*
-build-asan/
+
+# Python
 __pycache__/
