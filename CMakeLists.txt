@@ -183,7 +183,7 @@ if(INFERENCE_BUILD_SAM3_PLUGIN)
     set(SAM3_BUILD_TESTS OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(sam3_cpp)
 
-    add_library(sam3_plugin SHARED plugins/vision/engines/sam3/sam3_plugin.c)
+    add_library(sam3_plugin SHARED plugins/sam3/engines/sam3/sam3_plugin.c)
     target_include_directories(sam3_plugin PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${sam3_cpp_SOURCE_DIR}
@@ -209,7 +209,7 @@ if(INFERENCE_BUILD_TRELLIS2_PLUGIN)
     set(TRELLIS2_BUILD_TESTS OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(trellis2_cpp)
 
-    add_library(trellis2_plugin SHARED plugins/3d/engines/trellis2/trellis2_plugin.c)
+    add_library(trellis2_plugin SHARED plugins/trellis2/engines/trellis2/trellis2_plugin.c)
     target_include_directories(trellis2_plugin PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${trellis2_cpp_SOURCE_DIR}
@@ -236,7 +236,7 @@ if(INFERENCE_BUILD_SD_PLUGIN)
     set(SD_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(sd_cpp)
 
-    add_library(sd_plugin SHARED plugins/image/engines/sd/sd_plugin.c)
+    add_library(sd_plugin SHARED plugins/sd/engines/sd/sd_plugin.c)
     target_include_directories(sd_plugin PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${sd_cpp_SOURCE_DIR}/include
@@ -253,7 +253,7 @@ endif()
 # ---------------------------------------------------------------------------
 if(INFERENCE_BUILD_TRELLIS_PLUGIN)
     message(STATUS "Building trellis.cpp native plugin (in-process dlopen)...")
-    add_library(trellis_native_plugin SHARED plugins/3d/engines/trellis2/trellis2_plugin.c)
+    add_library(trellis_native_plugin SHARED plugins/trellis2/engines/trellis2/trellis2_plugin.c)
     target_include_directories(trellis_native_plugin PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_link_libraries(trellis_native_plugin PRIVATE ${CMAKE_DL_LIBS})
     set_target_properties(trellis_native_plugin PROPERTIES
@@ -267,7 +267,7 @@ endif()
 # ---------------------------------------------------------------------------
 if(INFERENCE_BUILD_AUDIO_PLUGIN)
     message(STATUS "Building audio.cpp plugin (subprocess wrapper)...")
-    add_library(audio_plugin SHARED plugins/audio/engines/audio/audio_plugin.c)
+    add_library(audio_plugin SHARED plugins/audio-cpp/engines/audio/audio_plugin.c)
     target_include_directories(audio_plugin PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
     set_target_properties(audio_plugin PROPERTIES
         PREFIX ""
@@ -278,7 +278,7 @@ endif()
 # ---------------------------------------------------------------------------
 # ComfyUI engine plugin (always built — ComfyUI as a managed engine, peer of the C-ABI plugins)
 # ---------------------------------------------------------------------------
-add_library(comfyui_plugin SHARED plugins/gens/engines/comfyui/comfyui_plugin.c)
+add_library(comfyui_plugin SHARED plugins/comfyui/engines/comfyui/comfyui_plugin.c)
 target_include_directories(comfyui_plugin PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set_target_properties(comfyui_plugin PROPERTIES
     PREFIX ""
@@ -286,7 +286,7 @@ set_target_properties(comfyui_plugin PROPERTIES
 )
 
 # Kimodo.cpp engine plugin (always built — kimodo.cpp as a managed engine)
-add_library(kimodo_engine_plugin SHARED plugins/gens/engines/kimodo/kimodo_engine.c)
+add_library(kimodo_engine_plugin SHARED plugins/kimodo/engines/kimodo_engine/kimodo_engine.c)
 target_include_directories(kimodo_engine_plugin PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set_target_properties(kimodo_engine_plugin PROPERTIES
     PREFIX ""
@@ -300,7 +300,7 @@ target_link_libraries(kimodo_engine_plugin PRIVATE m)
 # ---------------------------------------------------------------------------
 # Crop-stitch plugin (always built — crop, feather, alpha blend)
 # ---------------------------------------------------------------------------
-add_library(crop_stitch_plugin SHARED plugins/vision/engines/crop_stitch/crop_stitch_plugin.c)
+add_library(crop_stitch_plugin SHARED plugins/sam3/engines/crop_stitch/crop_stitch_plugin.c)
 target_include_directories(crop_stitch_plugin PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(crop_stitch_plugin PRIVATE m)
 set_target_properties(crop_stitch_plugin PROPERTIES
