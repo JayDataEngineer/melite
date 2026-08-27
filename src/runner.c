@@ -224,6 +224,38 @@ static void persist_outputs(inference_runner *r, const char *node_id,
             fprintf(stderr, "runner: saved output %s (%zu bytes)\n",
                     path, t->nbytes);
         fclose(f);
+
+        /* latent seam tensors carry a local .h3latent file PATH as text:
+         * copy the actual pack into the run dir so the card keeps the seam
+         * artifact even after ComfyUI's output dir rotates. */
+        if (strcmp(t->name, "latent_last") == 0 && t->nbytes > 5 &&
+            (((const char *)t->data)[0] == '/' ||
+             (((const char *)t->data)[0] == '.' &&
+              ((const char *)t->data)[1] == '/'))) {
+            char lsrc[768], ldst[768];
+            size_t lp = t->nbytes < sizeof(lsrc) - 1 ? t->nbytes : sizeof(lsrc) - 1;
+            memcpy(lsrc, t->data, lp); lsrc[lp] = 0;
+            if (!strstr(lsrc, ".h3latent")) continue;
+            snprintf(ldst, sizeof(ldst), "%s/%s_latent_last.h3latent",
+                     r->out_dir, node_id);
+            FILE *in = fopen(lsrc, "rb");
+            if (in) {
+                FILE *o = fopen(ldst, "wb");
+                if (o) {
+                    char buf[65536]; size_t got, total = 0;
+                    while ((got = fread(buf, 1, sizeof(buf), in)) > 0) {
+                        fwrite(buf, 1, got, o); total += got;
+                    }
+                    fclose(o);
+                    fprintf(stderr,
+                            "runner: persisted latent seam %s (%zu bytes)\n",
+                            ldst, total);
+                }
+                fclose(in);
+            } else {
+                fprintf(stderr, "runner: latent seam src unreadable: %s\n", lsrc);
+            }
+        }
     }
 }
 

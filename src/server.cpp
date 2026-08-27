@@ -219,6 +219,11 @@ typedef struct {
     } prior[RUN_PRIOR_MAX];
     size_t n_prior;
     int  start_from;
+    /* action-card write-back: when a run belongs to a draft card, the
+     * terminal state is written back into the draft JSON so reopening the
+     * card shows films + latent seams from the latest run */
+    char draft_id[80];
+    int  draft_stage;
 } run_entry;
 
 static run_entry g_runs[RUNREG_MAX];
@@ -616,6 +621,137 @@ static void add_run_extra_inputs(size_t idx, const char *body,
 /* thread body: execute the run's pipeline YAML */
 typedef struct { size_t idx; } run_thread_arg;
 
+/* Action-card write-back: rewrite the linked draft card's stage result
+ * with this run's artifacts (stitch film, window films, latent seams) and
+ * append a history row, so reopening the card shows the latest state.
+ * Targets the FIRST stage carrying a "result" block (timeline card). */
+static void draft_writeback(size_t idx, const char *wire) {
+    if (!g_runs[idx].draft_id[0]) return;
+    char path[256];
+    snprintf(path, sizeof(path), "./drafts/%s.json", g_runs[idx].draft_id);
+    FILE *f = fopen(path, "rb");
+    if (!f) return;
+    static char buf[32768];
+    size_t n = fread(buf, 1, sizeof(buf) - 1, f);
+    fclose(f);
+    buf[n] = 0;
+
+    const char *rid = g_runs[idx].run_id;
+    const char *outdir = g_runs[idx].out_dir;
+    char stitch[640] = "", wf[3][640] = {{0}, {0}, {0}};
+    char seam[2][640] = {{0}, {0}};
+    char p[768];
+    const char *wins[3] = {"window1", "window2", "window3"};
+    snprintf(p, sizeof(p), "%s/stitch_video_0.mp4", outdir);
+    if (access(p, R_OK) == 0)
+        snprintf(stitch, sizeof(stitch), "/editor/assets/runs/%s/stitch_video_0.mp4", rid);
+    for (int w = 0; w < 3; w++) {
+        snprintf(p, sizeof(p), "%s/%s_video_0.mp4", outdir, wins[w]);
+        if (access(p, R_OK) == 0)
+            snprintf(wf[w], sizeof(wf[w]), "/editor/assets/runs/%s/%s_video_0.mp4", rid, wins[w]);
+        if (w < 2) {
+            snprintf(p, sizeof(p), "%s/%s_latent_last.h3latent", outdir, wins[w]);
+            if (access(p, R_OK) == 0)
+                snprintf(seam[w], sizeof(seam[w]), "/editor/assets/runs/%s/%s_latent_last.h3latent", rid, wins[w]);
+        }
+    }
+    long dur = (long)(time(NULL) - g_runs[idx].created);
+    if (dur < 0) dur = 0;
+
+    /* splice the new result block over the first "result":{...} span */
+    char res[4096];
+    int ro = 0;
+    ro += snprintf(res + ro, sizeof(res) - ro,
+        "{\"assetUrls\":[%s%s],\"artifacts\":{"
+        "\"video\":\"%s\","
+        "\"video_w1_main\":\"%s\",\"video_w2_main\":\"%s\",\"video_w3_main\":\"%s\","
+        "\"seam_w1\":\"%s\",\"seam_w2\":\"%s\"},"
+        "\"metadata\":{\"runId\":\"%s\",\"seam\":\"latent\"},"
+        "\"completedAt\":%ld,\"durationSec\":%ld}",
+        stitch[0] ? "\"" : "", stitch,
+        stitch[0] ? "\"" : "",
+        stitch, wf[0], wf[1], wf[2], seam[0], seam[1], rid,
+        (long)time(NULL) * 1000, dur);
+
+    const char *rp = strstr(buf, "\"result\"");
+    char out[36864];
+    size_t oo = 0;
+    if (rp) {
+        const char *ob = strchr(rp, '{');
+        const char *oe = ob;
+        int depth = 0;
+        while (*oe) {
+            if (*oe == '{') depth++;
+            else if (*oe == '}') { depth--; if (!depth) break; }
+            oe++;
+        }
+        if (ob && *oe == '}') {
+            size_t head = (size_t)(ob - buf);
+            memcpy(out, buf, head); oo = head;
+            memcpy(out + oo, res, strlen(res)); oo += strlen(res);
+            oo += snprintf(out + oo, sizeof(out) - oo, "%s", oe);   /* rest incl. '}' and beyond */
+            out[oo] = 0;
+        } else {
+            return;
+        }
+    } else {
+        return;   /* draft has no result block: not a card we understand */
+    }
+
+    /* runStatus -> wire state (done | error) */
+    char *rs = strstr(out, "\"runStatus\"");
+    if (rs) {
+        char *vs = strchr(rs + 11, '"');
+        if (vs) {
+            char *ve = strchr(vs + 1, '"');
+            if (ve) {
+                size_t vl = (size_t)(ve - vs - 1);
+                const char *nw = strcmp(wire, "completed") == 0 ? "done" : "error";
+                memmove(vs + 1 + strlen(nw), vs + 1 + vl, strlen(vs + 1 + vl) + 1);
+                memcpy(vs + 1, nw, strlen(nw));
+            }
+        }
+    }
+
+    /* history row at draft root */
+    char hrow[1024];
+    snprintf(hrow, sizeof(hrow),
+             "{\"runId\":\"%s\",\"status\":\"%s\",\"at\":%ld,\"durationSec\":%ld,"
+             "\"video\":\"%s\"},",
+             rid, wire, (long)time(NULL), dur, stitch);
+    char *hp = strstr(out, "\"history\"");
+    if (hp) {
+        char *hb = strchr(hp, '[');
+        if (hb) {
+            hb++;
+            size_t head = (size_t)(hb - out);
+            char tmp2[36864];
+            snprintf(tmp2, sizeof(tmp2), "%.*s%s%s", (int)head, out, hrow, hb);
+            snprintf(out, sizeof(out), "%s", tmp2);
+        }
+    } else {
+        char *last = strrchr(out, '}');
+        if (last) {
+            char tmp2[36864];
+            size_t head = (size_t)(last - out);
+            snprintf(tmp2, sizeof(tmp2), "%.*s,\"history\":[%s]}%s", (int)head, out,
+                     hrow, last + 1);
+            snprintf(out, sizeof(out), "%s", tmp2);
+        }
+    }
+
+    char tmp_path[280];
+    snprintf(tmp_path, sizeof(tmp_path), "%s.tmp", path);
+    FILE *o = fopen(tmp_path, "w");
+    if (o) {
+        fwrite(out, 1, strlen(out), o);
+        fclose(o);
+        rename(tmp_path, path);
+        fprintf(stderr, "[draft] wrote run %s back into %s (%s)\n",
+                rid, path, wire);
+    }
+}
+
 static void *run_thread_fn(void *argp) {
     run_thread_arg a = *(run_thread_arg *)argp;
     free(argp);
@@ -717,9 +853,11 @@ static void *run_thread_fn(void *argp) {
     } else if (rc < 0) {
         run_set_state(idx, "error", "pipeline execution failed");
         inference_free(result);
+        draft_writeback(idx, "failed");
     } else {
         inference_free(result);
         run_set_state(idx, "success", NULL);
+        draft_writeback(idx, "completed");
     }
 
         /* Queue hygiene: ask ComfyUI to drop cached model weights BEFORE
@@ -978,6 +1116,16 @@ static void handle_pipelines_start(const httplib::Request &req,
     mkdir("./output", 0755);
     mkdir(g_runs[idx].out_dir, 0755);
     run_write_sidecar(idx);
+    /* action-card linkage: timeline card runs (params carry "calls")
+     * persist their result back into the timeline draft card */
+    if (strstr(req.body.c_str(), "\"calls\"") &&
+        access("./drafts/draft-timeline-h3.json", R_OK) == 0) {
+        snprintf(g_runs[idx].draft_id, sizeof(g_runs[idx].draft_id),
+                 "draft-timeline-h3");
+        g_runs[idx].draft_stage = 0;
+        fprintf(stderr, "[draft] run %s linked to card draft-timeline-h3\n",
+                g_runs[idx].run_id);
+    }
     {   /* registration lands in the file ledger */
         char rb[400];
         snprintf(rb, sizeof(rb),
@@ -1088,18 +1236,24 @@ static void handle_queue(const httplib::Request &, httplib::Response &res) {
     pthread_mutex_lock(&g_runs_mu);
     int queued = 0, running = 0;
     char active_id[64] = "";
+    char qids[4096]; size_t qo = 0;
+    qids[0] = 0;
     for (size_t i = 0; i < g_n_runs; i++) {
-        if (strcmp(g_runs[i].state, "queued") == 0) queued++;
+        if (strcmp(g_runs[i].state, "queued") == 0) {
+            queued++;
+            qo += (size_t)snprintf(qids + qo, sizeof(qids) - qo,
+                                   "%s\"%s\"", qo ? "," : "", g_runs[i].run_id);
+        }
         if (strcmp(g_runs[i].state, "running") == 0) {
             running++;
             snprintf(active_id, sizeof(active_id), "%s", g_runs[i].run_id);
         }
     }
     pthread_mutex_unlock(&g_runs_mu);
-    char out[256];
+    char out[4600];
     snprintf(out, sizeof(out),
-        "{\"queued\":%d,\"running\":%d,\"active\":\"%s\"}",
-        queued, running, active_id);
+        "{\"queued\":%d,\"running\":%d,\"active\":\"%s\",\"queued_ids\":[%s]}",
+        queued, running, active_id, qids);
     res.set_content(out, "application/json");
 }
 
@@ -1112,6 +1266,47 @@ static void handle_pipelines_status(const httplib::Request &req,
         if (rid == g_runs[i].run_id) { found = (int)i; break; }
     if (found < 0) {
         pthread_mutex_unlock(&g_runs_mu);
+        /* Registry is in-memory: after a gateway restart, resurrect the run
+         * from its on-disk sidecar so history panels keep working. */
+        char sc[640];
+        snprintf(sc, sizeof(sc), "./output/%s/_pipeline.json", rid.c_str());
+        FILE *fp = fopen(sc, "r");
+        if (fp) {
+            static char sb[65536];
+            size_t n = fread(sb, 1, sizeof(sb) - 1, fp);
+            fclose(fp);
+            sb[n] = 0;
+            char st[24] = "unknown", ev[256] = "";
+            long created = 0, dur = 0;
+            const char *qq = strstr(sb, "\"status\"");
+            if (qq) {
+                const char *c = strchr(qq + 8, '"');
+                if (c) {
+                    const char *e = strchr(c + 1, '"');
+                    if (e) { size_t L = (size_t)(e - c - 1);
+                        if (L < sizeof(st)) { memcpy(st, c + 1, L); st[L] = 0; } }
+                }
+            }
+            /* raw sidecar state -> editor wire state */
+            if (!strcmp(st, "success")) snprintf(st, sizeof(st), "completed");
+            else if (!strcmp(st, "error")) snprintf(st, sizeof(st), "failed");
+            qq = strstr(sb, "\"error\":\"");
+            if (qq) {
+                const char *c = qq + 8;
+                const char *e = strchr(c, '"');
+                if (e) { size_t L = (size_t)(e - c);
+                    if (L < sizeof(ev)) { memcpy(ev, c, L); ev[L] = 0; } }
+            }
+            qq = strstr(sb, "\"created\"");     if (qq) { const char *c = strchr(qq, ':'); if (c) created = strtol(c + 1, NULL, 10); }
+            qq = strstr(sb, "\"durationSec\""); if (qq) { const char *c = strchr(qq, ':'); if (c) dur = strtol(c + 1, NULL, 10); }
+            char out2[1024];
+            snprintf(out2, sizeof(out2),
+                "{\"run_id\":\"%s\",\"status\":\"%s\",\"state\":\"%s\",\"error\":\"%s\",\"created\":%ld,\"durationSec\":%ld,\"restored_from_sidecar\":true,\"artifacts\":[]}",
+                rid.c_str(), st, st, ev, created, dur);
+            res.status = 200;
+            res.set_content(out2, "application/json");
+            return;
+        }
         res.status = 404;
         res.set_content("{\"error\":\"unknown run_id\"}", "application/json");
         return;
