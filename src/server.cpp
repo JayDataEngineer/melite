@@ -468,6 +468,15 @@ static void add_run_input_f32(size_t idx, const char *name, float f) {
     ri->nbytes = 4;
 }
 
+/* extra beat fields the timeline card carries (multi-window prompts) */
+static void add_run_extra_inputs(size_t idx, const char *body,
+                                 char *tmp, size_t tmpcap) {
+    static const char *names[] = {"prompt2", "prompt3", "prompt4", NULL};
+    for (int i = 0; names[i]; i++)
+        if (inf_json_string(body, names[i], tmp, tmpcap) == 0 && tmp[0])
+            add_run_input_text(idx, names[i], tmp);
+}
+
 /* thread body: execute the run's pipeline YAML */
 typedef struct { size_t idx; } run_thread_arg;
 
@@ -825,6 +834,7 @@ static void handle_pipelines_start(const httplib::Request &req,
                             tmpin, sizeof(tmpin)) == 0 && tmpin[0])
             add_run_input_text(idx, "negative_prompt", tmpin);
         if (seed >= 0) add_run_input_f32(idx, "seed", (float)seed);
+        add_run_extra_inputs(idx, req.body.c_str(), tmpin, sizeof(tmpin));
     } else {
     char *piped = pipeline_yaml_for_model(model, g_runs[idx].yaml,
                                           sizeof(g_runs[idx].yaml));
@@ -859,6 +869,7 @@ static void handle_pipelines_start(const httplib::Request &req,
         if (inf_json_string(req.body.c_str(), "image",
                             tmpin, sizeof(tmpin)) == 0 && tmpin[0])
             add_run_input_text(idx, "image", tmpin);
+        add_run_extra_inputs(idx, req.body.c_str(), tmpin, sizeof(tmpin));
     } else {
         /* legacy: compose a krea-style single-node YAML with baked injects */
         char *qp = json_quote(prompt);
@@ -3113,6 +3124,8 @@ inference_server *server_create(int port) {
 int server_start(inference_server *s) {
     if (!s) return -1;
     s->running = 1;
+    /* run artifacts over HTTP — /media/<run_id>/<file> (mp4/png/flac) */
+    s->srv.set_mount_point("/media", "./output");
     fprintf(stderr, "server: listening on http://127.0.0.1:%d\n", s->port);
     s->srv.listen("127.0.0.1", s->port);
     return 0;
