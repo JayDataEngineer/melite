@@ -14,7 +14,6 @@ option(INFERENCE_METAL   "Enable Metal backend"   OFF)
 option(INFERENCE_HIP     "Enable HIP/ROCm backend" OFF)
 option(INFERENCE_BUILD_TESTS "Build tests"        ON)
 option(INFERENCE_BUILD_LLAMA_PLUGIN "Build llama.cpp plugin (requires llama.cpp)" OFF)
-option(INFERENCE_BUILD_KIMODO_PLUGIN "Build kimodo.cpp plugin (requires kimodo.cpp)" OFF)
 option(INFERENCE_BUILD_SAM3_PLUGIN "Build sam3.cpp plugin (requires sam3.cpp)" OFF)
 option(INFERENCE_BUILD_TRELLIS2_PLUGIN "Build trellis2cpp plugin (requires trellis2cpp)" OFF)
 option(INFERENCE_BUILD_SD_PLUGIN "Build sd.cpp plugin (requires stable-diffusion.cpp)" OFF)
@@ -170,32 +169,6 @@ if(INFERENCE_BUILD_LLAMA_PLUGIN)
 endif()
 
 # ---------------------------------------------------------------------------
-# kimodo.cpp plugin (opt-in, fetches kimodo.cpp via FetchContent)
-# ---------------------------------------------------------------------------
-if(INFERENCE_BUILD_KIMODO_PLUGIN)
-    message(STATUS "Building kimodo.cpp plugin — fetching kimodo.cpp...")
-    FetchContent_Declare(
-        kimodo_cpp
-        GIT_REPOSITORY https://github.com/localai-org/kimodo.cpp.git
-        GIT_TAG        main
-        GIT_SHALLOW    TRUE
-    )
-    set(KIMODO_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-    set(KIMODO_BUILD_DEMO OFF CACHE BOOL "" FORCE)
-    FetchContent_MakeAvailable(kimodo_cpp)
-
-    add_library(kimodo_plugin SHARED plugins/motion/engines/kimodo/kimodo_plugin.c)
-    target_include_directories(kimodo_plugin PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${kimodo_cpp_SOURCE_DIR}/include
-    )
-    target_link_libraries(kimodo_plugin PRIVATE inference kimodo)
-    set_target_properties(kimodo_plugin PROPERTIES
-        PREFIX ""
-        POSITION_INDEPENDENT_CODE ON
-    )
-endif()
-
 # ---------------------------------------------------------------------------
 # sam3.cpp plugin (opt-in, fetches sam3.cpp via FetchContent)
 # ---------------------------------------------------------------------------
@@ -311,6 +284,18 @@ set_target_properties(comfyui_plugin PROPERTIES
     PREFIX ""
     POSITION_INDEPENDENT_CODE ON
 )
+
+# Kimodo.cpp engine plugin (always built — kimodo.cpp as a managed engine)
+add_library(kimodo_engine_plugin SHARED plugins/gens/engines/kimodo/kimodo_engine.c)
+target_include_directories(kimodo_engine_plugin PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+set_target_properties(kimodo_engine_plugin PROPERTIES
+    PREFIX ""
+    OUTPUT_NAME "kimodo_engine"
+    SUFFIX "${CMAKE_SHARED_LIBRARY_SUFFIX}"
+    POSITION_INDEPENDENT_CODE ON
+)
+target_link_libraries(kimodo_engine_plugin PRIVATE m)
+
 
 # ---------------------------------------------------------------------------
 # Crop-stitch plugin (always built — crop, feather, alpha blend)
