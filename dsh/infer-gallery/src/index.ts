@@ -32,8 +32,8 @@ timeoutMs?: number
 }
 
 const DEFAULT_GATEWAY_URL = 'http://localhost:18090'
-const DEFAULT_TIMEOUT_MS = 8_000
-const RUNS_UPSTREAM = '/v1/pipelines/runs'
+const DEFAULT_TIMEOUT_MS = 15_000
+const RUNS_UPSTREAM = '/v1/pipelines/runs?limit=50'
 /** The only gateway tree the artifact proxy may touch. */
 const ASSET_PREFIX = '/editor/assets/runs/'
 

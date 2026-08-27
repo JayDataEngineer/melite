@@ -406,10 +406,15 @@ static char *run_artifacts_json(const char *out_dir) {
     len += (size_t)snprintf(buf + len, cap - len, "[");
     char line[512];
     int first = 1;
+    int listed = 0, total = 0;
+    const int MAX_ARTS = 60;   /* sidebar payload cap - keeps JSON valid+small */
     while (fgets(line, sizeof(line), fp)) {
         size_t ll = strlen(line);
         while (ll && (line[ll-1] == '\n' || line[ll-1] == '\r')) line[--ll] = 0;
         if (!ll) continue;
+        total++;
+        if (listed >= MAX_ARTS) continue;
+        listed++;
         char path[1024], szcmd[1200];
         snprintf(path, sizeof(path), "%s/%s", out_dir, line);
         snprintf(szcmd, sizeof(szcmd), "stat -c %%s '%s' 2>/dev/null", path);
@@ -425,6 +430,9 @@ static char *run_artifacts_json(const char *out_dir) {
             line, path, bytes, rid, line, artifact_type(line), bytes);
     }
     pclose(fp);
+    if (total > listed)
+        len += (size_t)snprintf(buf + len, cap - len,
+            ",{\"truncated\":true,\"listed\":%d,\"total\":%d}", listed, total);
     snprintf(buf + len, cap - len, "]");
     return buf;
 }
