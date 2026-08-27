@@ -7,4 +7,4 @@ description: "music lane. WAS MiniMax Music3 (comfy) — REMAPPED to native ACE-
 nodes:
   - id: generate
     type: audio_cpp
-    params: {"task": "gen", "family": "ace_step", "model": "/mnt/data/models/audio/acestep-cpp-converted/ace-step-1.5-sft-q8_0.gguf", "backend": "cuda"}
+    params: {"task": "gen", "family": "minimax_music3", "model": "/home/user/Documents/programs/vendor/my-stuff/audiocpp-fork/models/MiniMax-Music3-GGUF", "backend": "cuda", "lyrics": "[verse] Rain on neon, engines hum. [chorus] We ride the pulse till morning comes.", "duration_sec": 30}
