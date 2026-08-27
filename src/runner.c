@@ -183,12 +183,19 @@ static size_t resolve_inputs(const runner_node *all_nodes, size_t n_nodes,
 static const char *out_ext(const inference_tensor *t) {
     const uint8_t *b = (const uint8_t *)t->data;
     if (t->name && strcmp(t->name, "audio") == 0) return "wav";
+    if (t->name && strcmp(t->name, "video") == 0) return "mp4";
     if (t->nbytes > 8 && b[0] == 0x89 && b[1] == 'P' && b[2] == 'N' && b[3] == 'G')
         return "png";
     if (t->nbytes > 3 && b[0] == 0xFF && b[1] == 0xD8 && b[2] == 0xFF)
         return "jpg";
     if (t->nbytes > 12 && b[0] == 'R' && b[1] == 'I' && b[2] == 'F' && b[3] == 'F')
         return "wav";
+    if (t->nbytes > 4 && b[0] == 'f' && b[1] == 'L' && b[2] == 'a' && b[3] == 'C')
+        return "flac";
+    if (t->nbytes > 12 && b[4] == 'f' && b[5] == 't' && b[6] == 'y' && b[7] == 'p')
+        return "mp4";
+    if (t->nbytes > 4 && b[0] == 'O' && b[1] == 'g' && b[2] == 'g' && b[3] == 'S')
+        return "ogg";
     if (t->nbytes > 4 && b[0] == 'g' && b[1] == 'l' && b[2] == 'T' && b[3] == 'F')
         return "glb";
     if (t->dtype && strcmp(t->dtype, "f32") == 0) return "f32";
