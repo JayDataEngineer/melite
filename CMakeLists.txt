@@ -156,7 +156,7 @@ if(INFERENCE_BUILD_LLAMA_PLUGIN)
     set(LLAMA_BUILD_SERVER OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(llama_cpp)
 
-    add_library(llama_plugin SHARED plugins/text/engines/llama/llama_plugin.c)
+    add_library(llama_plugin SHARED plugins/llama/engines/llama/llama_plugin.c)
     target_include_directories(llama_plugin PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${llama_cpp_SOURCE_DIR}/include
