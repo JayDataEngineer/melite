@@ -824,9 +824,11 @@ static void run_write_sidecar(size_t idx) {
     FILE *f = fopen(path, "w");
     if (!f) { free(yamlq); free(promptq); free(errq); return; }
     fprintf(f, "{\"run_id\":\"%s\",\"model\":\"%s\",\"prompt\":%s,"
-               "\"seed\":%ld,\"created\":%ld,\"status\":\"%s\","
+               "\"seed\":%ld,\"created\":%ld,\"ended\":%ld,\"durationSec\":%ld,"
+               "\"status\":\"%s\","
                "\"error\":%s,\"stages\":%s,\"yaml\":%s}",
-            rid, model, promptq, seed, created, state,
+            rid, model, promptq, seed, created, (long)time(NULL),
+            (long)time(NULL) - created, state,
             errq ? errq : "null", stages_json, yamlq);
     fclose(f);
     free(yamlq); free(promptq); free(errq);

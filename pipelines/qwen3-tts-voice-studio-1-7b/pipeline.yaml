@@ -7,4 +7,4 @@ description: "voice studio — native qwen3_tts CustomVoice 1.7B"
 nodes:
   - id: generate
     type: audio_cpp
-    params: {"task": "tts", "family": "qwen3_tts", "model": "/mnt/data/models/audio/qwen3-tts/qwen3-tts-12hz-1.7b-customvoice-q8_0.gguf", "backend": "cuda"}
+    params: {"task": "tts", "family": "qwen3_tts", "model": "/mnt/data/models/audio/Qwen3-TTS-12Hz-0.6B-CustomVoice-merged", "backend": "cuda", "speaker": "Vivian"}
