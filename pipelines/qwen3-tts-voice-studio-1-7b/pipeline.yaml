@@ -1,0 +1,10 @@
+name: qwen3-tts-voice-studio-1-7b
+description: "voice studio — native qwen3_tts CustomVoice 1.7B"
+
+# NATIVE LANE (2026-08-27): audio runs OUTSIDE ComfyUI via audio_cpp ->
+# audiocpp_cli (audio.cpp fork, CUDA ggml). The old comfyui workflow.json
+# (AudiocoreMusic/AudiocoreTTS nodes from melite-audio-nodes) is DELETED.
+nodes:
+  - id: generate
+    type: audio_cpp
+    params: {"task": "tts", "family": "qwen3_tts", "model": "/mnt/data/models/audio/qwen3-tts/qwen3-tts-12hz-1.7b-customvoice-q8_0.gguf", "backend": "cuda"}

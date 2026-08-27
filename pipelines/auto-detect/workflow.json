@@ -1,0 +1,75 @@
+{
+ "UltralyticsDetectorProvider.0": {
+  "class_type": "UltralyticsDetectorProvider",
+  "inputs": {
+   "model_name": "bbox/face_yolov8m.pt"
+  }
+ },
+ "LoadImage.0": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": ""
+  }
+ },
+ "SAMLoader.0": {
+  "class_type": "SAMLoader",
+  "inputs": {
+   "model_name": "sam_vit_b_01ec64.pth",
+   "device_mode": "CPU"
+  }
+ },
+ "ImpactSimpleDetectorSEGS.0": {
+  "class_type": "ImpactSimpleDetectorSEGS",
+  "inputs": {
+   "bbox_threshold": 0.35,
+   "bbox_dilation": 0,
+   "crop_factor": 3,
+   "drop_size": 10,
+   "sub_threshold": 0.93,
+   "sub_dilation": 0,
+   "sub_bbox_expansion": 0,
+   "sam_mask_hint_threshold": 0.7,
+   "post_dilation": 0,
+   "bbox_detector": [
+    "UltralyticsDetectorProvider.0",
+    0
+   ],
+   "image": [
+    "LoadImage.0",
+    0
+   ],
+   "sam_model_opt": [
+    "SAMLoader.0",
+    0
+   ]
+  }
+ },
+ "SegsToCombinedMask.0": {
+  "class_type": "SegsToCombinedMask",
+  "inputs": {
+   "segs": [
+    "ImpactSimpleDetectorSEGS.0",
+    0
+   ]
+  }
+ },
+ "MaskToImage.0": {
+  "class_type": "MaskToImage",
+  "inputs": {
+   "mask": [
+    "SegsToCombinedMask.0",
+    0
+   ]
+  }
+ },
+ "SaveImage.0": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "filename_prefix": "auto_detect",
+   "images": [
+    "MaskToImage.0",
+    0
+   ]
+  }
+ }
+}

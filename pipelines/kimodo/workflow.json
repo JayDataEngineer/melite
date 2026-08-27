@@ -1,0 +1,29 @@
+{
+ "KimodoLoader.0": {
+  "class_type": "KimodoLoader",
+  "inputs": {
+   "model_name": "Kimodo-SOMA-RP-v1.1"
+  }
+ },
+ "KimodoTextToPose.0": {
+  "class_type": "KimodoTextToPose",
+  "inputs": {
+   "prompt": "harvest probe",
+   "seed": 2042826478,
+   "duration_sec": 6,
+   "diffusion_steps": 25,
+   "num_samples": 1,
+   "num_transition_frames": 30,
+   "cfg_type": "separated",
+   "cfg_weight_a": 2,
+   "cfg_weight_b": 2,
+   "prev_motion_npz": "",
+   "motion_constraints": "",
+   "motion_prompts": "",
+   "model": [
+    "KimodoLoader.0",
+    0
+   ]
+  }
+ }
+}

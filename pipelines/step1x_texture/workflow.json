@@ -1,0 +1,16 @@
+{
+ "Step1XTextureSynthesis.0": {
+  "class_type": "Step1XTextureSynthesis",
+  "inputs": {
+   "model_folder": "step1x-3d-texture",
+   "mesh_glb": "probe.glb",
+   "reference_image": "probe.png",
+   "seed": 1029275078,
+   "remove_bg": false,
+   "texture_size": 2048,
+   "render_size": 2048,
+   "diffusion_size": 768,
+   "filename_prefix": "step1x_texture"
+  }
+ }
+}

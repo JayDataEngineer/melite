@@ -1,0 +1,7 @@
+name: trellis_native
+description: "3D lane — TRELLIS.2 image-to-mesh via NATIVE trellis.cpp engine (in-process libtrellis_native.so, CUDA ggml). Full pipeline: dinov3 cond -> ss flow/dec -> shape flow 512(/1024) -> remesh -> decimate ~146k faces -> xatlas UV -> texture bake -> GLB. ComfyUI LAW: 3D never touches ComfyUI. Weights /mnt/data/models/trellis-cpp/q8. Proven: 42.9s, GLB 4976740B magic glTF."
+
+nodes:
+  - id: generate
+    type: trellis_native
+    params: {"models_dir":"/mnt/data/models/trellis-cpp/q8","res":512,"seed":42,"gpu":0,"image_path":"/opt/ComfyUI/input/dshA_sam3_test.png"}

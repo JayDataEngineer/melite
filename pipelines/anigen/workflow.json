@@ -1,0 +1,37 @@
+{
+ "AnigenLoader.0": {
+  "class_type": "AnigenLoader",
+  "inputs": {
+   "ckpt_root": "/mnt/data/models/3d/anigen/ckpts",
+   "ss_flow_path": "ckpts/anigen/ss_flow_duet",
+   "slat_flow_path": "ckpts/anigen/slat_flow_auto"
+  }
+ },
+ "LoadImage.0": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": ""
+  }
+ },
+ "AnigenImageToRigged3D.0": {
+  "class_type": "AnigenImageToRigged3D",
+  "inputs": {
+   "seed": 1935895546,
+   "cfg_scale_ss": 7.5,
+   "cfg_scale_slat": 3,
+   "steps_ss": 25,
+   "steps_slat": 25,
+   "joints_density": 1,
+   "simplify_ratio": 0.95,
+   "texture_size": 1024,
+   "pipeline": [
+    "AnigenLoader.0",
+    0
+   ],
+   "image": [
+    "LoadImage.0",
+    0
+   ]
+  }
+ }
+}

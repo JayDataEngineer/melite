@@ -1,0 +1,7 @@
+name: seedvr2_ema_7b
+description: "seedvr2_upscale lane — graph harvested from ray compose dry-run, pinned + injected"
+
+nodes:
+  - id: generate
+    type: comfyui
+    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/seedvr2_ema_7b/workflow.json","out_dir":"./output","timeout_s":1200,"inject":{"LoadImage.0.image": "$image", "SeedVR2VideoUpscaler.0.seed": "$seed"}}

@@ -1,0 +1,33 @@
+{
+  "CheckpointLoaderSimple.0": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {"ckpt_name": "sam3.1_multiplex_fp16.safetensors"}
+  },
+  "CLIPTextEncode.0": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {"clip": ["CheckpointLoaderSimple.0", 1], "text": "a red square"}
+  },
+  "LoadImage.0": {
+    "class_type": "LoadImage",
+    "inputs": {"image": "dshA_sam3_test.png"}
+  },
+  "SAM3_Detect.0": {
+    "class_type": "SAM3_Detect",
+    "inputs": {
+      "model": ["CheckpointLoaderSimple.0", 0],
+      "image": ["LoadImage.0", 0],
+      "conditioning": ["CLIPTextEncode.0", 0],
+      "threshold": 0.5,
+      "refine_iterations": 2,
+      "individual_masks": false
+    }
+  },
+  "MaskToImage.0": {
+    "class_type": "MaskToImage",
+    "inputs": {"mask": ["SAM3_Detect.0", 0]}
+  },
+  "SaveImage.0": {
+    "class_type": "SaveImage",
+    "inputs": {"images": ["MaskToImage.0", 0], "filename_prefix": "sam3_mask"}
+  }
+}

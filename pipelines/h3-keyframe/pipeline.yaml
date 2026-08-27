@@ -1,0 +1,7 @@
+name: h3-keyframe
+description: "H3 video from a keyframe image on disk: path tensor uploads to ComfyUI input and wires into MiniMaxH3ImageToVideo first_frame (identity anchor). Companion to img-edit: sheet -> pose edit -> animate."
+
+nodes:
+  - id: generate
+    type: comfyui
+    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/h3-keyframe/workflow.json","out_dir":"./output","timeout_s":1800,"inject":{"MiniMaxH3ImageToVideo.0.prompt":"$prompt","LoadImage.1.image":"$image","KSampler.0.seed":"$seed"},"fps":24,"mux":1}

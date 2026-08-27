@@ -1,0 +1,9 @@
+{
+ "KimodoTransferWeights.0": {
+  "class_type": "KimodoTransferWeights",
+  "inputs": {
+   "rigged_path": "probe.glb",
+   "target_path": "probe.glb"
+  }
+ }
+}

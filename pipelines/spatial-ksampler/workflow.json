@@ -1,0 +1,163 @@
+{
+ "CheckpointLoaderSimple.0": {
+  "class_type": "CheckpointLoaderSimple",
+  "inputs": {
+   "ckpt_name": "sd_xl_base_1.0.safetensors"
+  }
+ },
+ "CLIPTextEncode.0": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "clip": [
+    "CheckpointLoaderSimple.0",
+    1
+   ],
+   "text": ""
+  }
+ },
+ "CLIPTextEncode.1": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "clip": [
+    "CheckpointLoaderSimple.0",
+    1
+   ],
+   "text": ""
+  }
+ },
+ "UpscaleModelLoader.0": {
+  "class_type": "UpscaleModelLoader",
+  "inputs": {
+   "model_name": "2x_APISR_RRDB_GAN_generator.pth",
+   "upscale_model": "4xNomos2_hq_dat2.pth"
+  }
+ },
+ "VHS_LoadVideo.0": {
+  "class_type": "VHS_LoadVideo",
+  "inputs": {
+   "video": "probe.mp4",
+   "force_rate": 24,
+   "custom_width": 0,
+   "custom_height": 0,
+   "frame_load_cap": 0,
+   "skip_first_frames": 0,
+   "select_every_nth": 1,
+   "format": "AnimateDiff"
+  }
+ },
+ "ImageUpscaleWithModelBatched.0": {
+  "class_type": "ImageUpscaleWithModelBatched",
+  "inputs": {
+   "per_batch": 16,
+   "downscale_ratio": 1,
+   "downscale_method": "lanczos",
+   "precision": "float32",
+   "upscale_model": [
+    "UpscaleModelLoader.0",
+    0
+   ],
+   "image": [
+    "VHS_LoadVideo.0",
+    0
+   ]
+  }
+ },
+ "ImageScaleToTotalPixels.0": {
+  "class_type": "ImageScaleToTotalPixels",
+  "inputs": {
+   "upscale_method": "nearest-exact",
+   "megapixels": 1,
+   "resolution_steps": 1,
+   "image": [
+    "ImageUpscaleWithModelBatched.0",
+    0
+   ],
+   "upscale_to_total_pixels": 1166400
+  }
+ },
+ "VAEEncode.0": {
+  "class_type": "VAEEncode",
+  "inputs": {
+   "pixels": [
+    "ImageScaleToTotalPixels.0",
+    0
+   ],
+   "vae": [
+    "CheckpointLoaderSimple.0",
+    2
+   ]
+  }
+ },
+ "KSampler.0": {
+  "class_type": "KSampler",
+  "inputs": {
+   "seed": 1016634148,
+   "steps": 20,
+   "cfg": 4,
+   "sampler_name": "dpmpp_2m",
+   "scheduler": "karras",
+   "denoise": 0.3,
+   "model": [
+    "CheckpointLoaderSimple.0",
+    0
+   ],
+   "positive": [
+    "CLIPTextEncode.0",
+    0
+   ],
+   "negative": [
+    "CLIPTextEncode.1",
+    0
+   ],
+   "latent_image": [
+    "VAEEncode.0",
+    0
+   ]
+  }
+ },
+ "VAEDecode.0": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "KSampler.0",
+    0
+   ],
+   "vae": [
+    "CheckpointLoaderSimple.0",
+    2
+   ]
+  }
+ },
+ "ColorMatch.0": {
+  "class_type": "ColorMatch",
+  "inputs": {
+   "method": "mkl",
+   "strength": 1,
+   "multithread": true,
+   "image_target": [
+    "VAEDecode.0",
+    0
+   ],
+   "image_ref": [
+    "VHS_LoadVideo.0",
+    0
+   ]
+  }
+ },
+ "VHS_VideoCombine.0": {
+  "class_type": "VHS_VideoCombine",
+  "inputs": {
+   "frame_rate": 8,
+   "loop_count": 0,
+   "filename_prefix": "upscaled_video",
+   "format": "image/gif",
+   "pingpong": false,
+   "save_output": true,
+   "images": [
+    "ColorMatch.0",
+    0
+   ],
+   "fps": 24
+  }
+ }
+}

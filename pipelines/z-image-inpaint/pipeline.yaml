@@ -1,0 +1,7 @@
+name: z-image-inpaint
+description: "inpaint lane — graph harvested from ray compose dry-run, pinned + injected"
+
+nodes:
+  - id: generate
+    type: comfyui
+    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/z-image-inpaint/workflow.json","out_dir":"./output","timeout_s":900,"inject":{"CLIPTextEncode.0.text": "$prompt", "CLIPTextEncode.1.text": "$prompt", "LoadImage.0.image": "$image", "LoadImage.1.image": "$image"}}

@@ -1,0 +1,7 @@
+name: step1x_texture
+description: "step1x_texture lane — graph harvested from ray compose dry-run, pinned + injected"
+
+nodes:
+  - id: generate
+    type: comfyui
+    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/step1x_texture/workflow.json","out_dir":"./output","timeout_s":600,"inject":{"Step1XTextureSynthesis.0.seed": "$seed"}}

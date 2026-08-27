@@ -1,0 +1,29 @@
+{
+ "LoadImage.0": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "probe.png"
+  }
+ },
+ "ImageScaleBy.0": {
+  "class_type": "ImageScaleBy",
+  "inputs": {
+   "upscale_method": "lanczos",
+   "scale_by": 0.5,
+   "image": [
+    "LoadImage.0",
+    0
+   ]
+  }
+ },
+ "SaveImage.0": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "filename_prefix": "scaled",
+   "images": [
+    "ImageScaleBy.0",
+    0
+   ]
+  }
+ }
+}

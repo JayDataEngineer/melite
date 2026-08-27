@@ -1,0 +1,7 @@
+name: h3
+description: "MiniMax H3 video+audio lane — NATIVE ComfyUI nodes (comfy_extras/nodes_minimax_h3.py, sanctioned: video = comfy type). fl2va checkpoint int8-convrot pruned for 24GB. Joint AV latent: KSampler on NestedTensor -> VAEDecode video + VAEDecodeAudio audio (both artifacts). Draft preset 768x448x22f/10 steps for proof; production 1344x768x124f/30 steps."
+
+nodes:
+  - id: generate
+    type: comfyui
+    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/h3/workflow.json","out_dir":"./output","timeout_s":1800,"inject":{"MiniMaxH3ImageToVideo.0.prompt":"$prompt","KSampler.0.seed":"$seed"},"fps":24,"mux":1}

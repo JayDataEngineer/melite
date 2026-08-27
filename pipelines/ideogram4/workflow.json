@@ -1,0 +1,140 @@
+{
+ "RandomNoise.0": {
+  "class_type": "RandomNoise",
+  "inputs": {
+   "noise_seed": 0,
+   "seed": 299801961
+  }
+ },
+ "UNETLoader.0": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "ideogram4_fp8_scaled.safetensors",
+   "weight_dtype": "default"
+  }
+ },
+ "CLIPLoader.0": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen3vl_8b_nvfp4.safetensors",
+   "type": "ideogram4",
+   "device": "default"
+  }
+ },
+ "CLIPTextEncode.0": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "text": "harvest probe",
+   "clip": [
+    "CLIPLoader.0",
+    0
+   ]
+  }
+ },
+ "CLIPTextEncode.1": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "text": "",
+   "clip": [
+    "CLIPLoader.0",
+    0
+   ]
+  }
+ },
+ "CFGGuider.0": {
+  "class_type": "CFGGuider",
+  "inputs": {
+   "cfg": 5,
+   "model": [
+    "UNETLoader.0",
+    0
+   ],
+   "positive": [
+    "CLIPTextEncode.0",
+    0
+   ],
+   "negative": [
+    "CLIPTextEncode.1",
+    0
+   ]
+  }
+ },
+ "KSamplerSelect.0": {
+  "class_type": "KSamplerSelect",
+  "inputs": {
+   "sampler_name": "euler"
+  }
+ },
+ "Ideogram4Scheduler.0": {
+  "class_type": "Ideogram4Scheduler",
+  "inputs": {
+   "steps": 25,
+   "width": 1024,
+   "height": 1024,
+   "mu": 0,
+   "std": 1.75
+  }
+ },
+ "EmptyLatentImage.0": {
+  "class_type": "EmptyLatentImage",
+  "inputs": {
+   "width": 1024,
+   "height": 1024,
+   "batch_size": 1
+  }
+ },
+ "SamplerCustomAdvanced.0": {
+  "class_type": "SamplerCustomAdvanced",
+  "inputs": {
+   "noise": [
+    "RandomNoise.0",
+    0
+   ],
+   "guider": [
+    "CFGGuider.0",
+    0
+   ],
+   "sampler": [
+    "KSamplerSelect.0",
+    0
+   ],
+   "sigmas": [
+    "Ideogram4Scheduler.0",
+    0
+   ],
+   "latent_image": [
+    "EmptyLatentImage.0",
+    0
+   ]
+  }
+ },
+ "VAELoader.0": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "flux2-vae.safetensors"
+  }
+ },
+ "VAEDecode.0": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "SamplerCustomAdvanced.0",
+    0
+   ],
+   "vae": [
+    "VAELoader.0",
+    0
+   ]
+  }
+ },
+ "SaveImage.0": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "filename_prefix": "image",
+   "images": [
+    "VAEDecode.0",
+    0
+   ]
+  }
+ }
+}

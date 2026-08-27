@@ -1,0 +1,7 @@
+name: kimodo
+description: "kimodo lane — text-to-motion via kimodo.cpp engine"
+
+nodes:
+  - id: generate
+    type: kimodo_engine
+    params: {"server_url":"http://127.0.0.1:8094","out_dir":"./output","model":"soma-rp-v1.1","model_dir":"/mnt/data/models/motion/kimodo","text_bundle":"/mnt/data/models/motion/kimodo/llm2vec-text-bundle","poll_ms":500,"timeout_s":300}

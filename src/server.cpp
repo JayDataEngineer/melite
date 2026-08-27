@@ -436,7 +436,7 @@ static char *pipeline_yaml_for_model(const char *model, char *out, size_t cap) {
               *p == '-' || *p == '_' || *p == '.'))
             return NULL;                    /* path safety: slug chars only */
     char path[600];
-    snprintf(path, sizeof(path), "../plugins/gens/pipelines/%s/pipeline.yaml", model);
+    snprintf(path, sizeof(path), "../pipelines/%s/pipeline.yaml", model);
     FILE *fp = fopen(path, "rb");
     if (!fp) return NULL;
     size_t n = fread(out, 1, cap - 1, fp);
@@ -702,7 +702,7 @@ static void handle_pipelines_start(const httplib::Request &req,
                 return;
             }
         char path[600];
-        snprintf(path, sizeof(path), "../plugins/gens/pipelines/%s/pipeline.yaml", yaml_name);
+        snprintf(path, sizeof(path), "../pipelines/%s/pipeline.yaml", yaml_name);
         FILE *fp = fopen(path, "rb");
         if (!fp) {
             res.status = 404;
@@ -758,7 +758,7 @@ static void handle_pipelines_start(const httplib::Request &req,
         return;
     }
     if (!wf[0])
-        snprintf(wf, sizeof(wf), "../plugins/gens/pipelines/krea-txt2img/workflow.json");
+        snprintf(wf, sizeof(wf), "../pipelines/krea-txt2img/workflow.json");
 
     /* register the run */
     pthread_mutex_lock(&g_runs_mu);

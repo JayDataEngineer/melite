@@ -1,0 +1,129 @@
+{
+ "UNETLoader.0": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "ApexQwenEdit2511_int8_convrot.safetensors",
+   "weight_dtype": "default"
+  }
+ },
+ "ModelSamplingAuraFlow.0": {
+  "class_type": "ModelSamplingAuraFlow",
+  "inputs": {
+   "shift": 3,
+   "model": [
+    "UNETLoader.0",
+    0
+   ]
+  }
+ },
+ "CLIPLoader.0": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+   "type": "qwen_image",
+   "device": "default"
+  }
+ },
+ "VAELoader.0": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "qwen_image_vae.safetensors"
+  }
+ },
+ "TextEncodeQwenImageEditPlusAdvance_lrzjason.0": {
+  "class_type": "TextEncodeQwenImageEditPlusAdvance_lrzjason",
+  "inputs": {
+   "target_size": 1024,
+   "target_vl_size": 392,
+   "upscale_method": "lanczos",
+   "crop_method": "center",
+   "instruction": "Describe the key features of the input image (color, shape, size, texture, objects, background), then explain how the user's text instruction should alter or modify the image. Generate a new image that meets the user's requirements while maintaining consistency with the original input where appropriate.",
+   "clip": [
+    "CLIPLoader.0",
+    0
+   ],
+   "prompt": "harvest probe",
+   "vae": [
+    "VAELoader.0",
+    0
+   ]
+  }
+ },
+ "FluxKontextMultiReferenceLatentMethod.0": {
+  "class_type": "FluxKontextMultiReferenceLatentMethod",
+  "inputs": {
+   "reference_latents_method": "index_timestep_zero",
+   "conditioning": [
+    "TextEncodeQwenImageEditPlusAdvance_lrzjason.0",
+    0
+   ]
+  }
+ },
+ "ConditioningZeroOut.0": {
+  "class_type": "ConditioningZeroOut",
+  "inputs": {
+   "conditioning": [
+    "FluxKontextMultiReferenceLatentMethod.0",
+    0
+   ]
+  }
+ },
+ "EmptyLatentImage.0": {
+  "class_type": "EmptyLatentImage",
+  "inputs": {
+   "width": 1024,
+   "height": 1024,
+   "batch_size": 1
+  }
+ },
+ "KSampler.0": {
+  "class_type": "KSampler",
+  "inputs": {
+   "seed": 1021943706,
+   "steps": 8,
+   "cfg": 1,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "denoise": 1,
+   "model": [
+    "ModelSamplingAuraFlow.0",
+    0
+   ],
+   "positive": [
+    "FluxKontextMultiReferenceLatentMethod.0",
+    0
+   ],
+   "negative": [
+    "ConditioningZeroOut.0",
+    0
+   ],
+   "latent_image": [
+    "EmptyLatentImage.0",
+    0
+   ]
+  }
+ },
+ "VAEDecode.0": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "KSampler.0",
+    0
+   ],
+   "vae": [
+    "VAELoader.0",
+    0
+   ]
+  }
+ },
+ "SaveImage.0": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "filename_prefix": "image",
+   "images": [
+    "VAEDecode.0",
+    0
+   ]
+  }
+ }
+}

@@ -1,0 +1,7 @@
+name: auto-detect
+description: "detect lane — graph harvested from ray compose dry-run, pinned + injected"
+
+nodes:
+  - id: generate
+    type: comfyui
+    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/auto-detect/workflow.json","out_dir":"./output","timeout_s":600,"inject":{"LoadImage.0.image": "$image"}}

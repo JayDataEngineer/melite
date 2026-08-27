@@ -1,0 +1,10 @@
+name: ace-step-base
+description: "ACE-STEP 1.5 base q8 — native audio.cpp music lane"
+
+# NATIVE LANE (2026-08-27): audio runs OUTSIDE ComfyUI via audio_cpp ->
+# audiocpp_cli (audio.cpp fork, CUDA ggml). The old comfyui workflow.json
+# (AudiocoreMusic/AudiocoreTTS nodes from melite-audio-nodes) is DELETED.
+nodes:
+  - id: generate
+    type: audio_cpp
+    params: {"task": "gen", "family": "ace_step", "model": "/mnt/data/models/audio/acestep-cpp-converted/ace-step-1.5-base-q8_0.gguf", "backend": "cuda"}

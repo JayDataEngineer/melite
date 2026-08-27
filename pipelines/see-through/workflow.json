@@ -1,0 +1,24 @@
+{
+ "LoadImage.0": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": ""
+  }
+ },
+ "SeeThroughDecompose.0": {
+  "class_type": "SeeThroughDecompose",
+  "inputs": {
+   "seed": 577212901,
+   "resolution": 1280,
+   "resolution_depth": 768,
+   "inference_steps": 30,
+   "tblr_split": false,
+   "layerdiff_path": "/mnt/data/models/image/see-through/layerdiff3d",
+   "marigold_path": "/mnt/data/models/image/see-through/marigold",
+   "image": [
+    "LoadImage.0",
+    0
+   ]
+  }
+ }
+}

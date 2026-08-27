@@ -1,0 +1,13 @@
+name: h3-timeline
+description: "Two-window H3 timeline (ray video-timeline port): window1 t2v -> window2 fl2va conditioned on window1's LAST frame (image_last seam tensor, PNG upload chain). Each window generates its own audio segment (audio split across generations); concat downstream. 56f x2 @ 768x448."
+
+nodes:
+  - id: window1
+    type: comfyui
+    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/h3-timeline/window1.json","out_dir":"./output","timeout_s":1800,"inject":{"KSampler.0.seed":"$seed"},"fps":24,"mux":1}
+
+  - id: window2
+    type: comfyui
+    input_from:
+      - window1.image_last
+    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/h3-timeline/window2.json","out_dir":"./output","timeout_s":1800,"inject":{"KSampler.0.seed":"$seed","LoadImage.1.image":"$image_last"},"fps":24,"mux":1}
