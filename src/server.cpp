@@ -666,7 +666,11 @@ static void draft_writeback(size_t idx, const char *wire) {
     /* existing root history rows (raw JSON text, already valid) */
     char oldh[8192] = "";
     {
-        const char *hp0 = strstr(buf, "\"history\"");
+        /* ROOT history = the LAST "history" key (result.metadata.history
+         * sits earlier in the doc and is rebuilt by this write-back) */
+        const char *hp0 = NULL;
+        for (const char *q = strstr(buf, "\"history\""); q; q = strstr(q + 1, "\"history\""))
+            hp0 = q;
         if (hp0) {
             const char *ab = strchr(hp0, '[');
             if (ab) {
@@ -747,7 +751,11 @@ static void draft_writeback(size_t idx, const char *wire) {
     }
 
     /* history row at draft root (no trailing comma: the array may be empty) */
-    char *hp = strstr(out, "\"history\"");
+    /* ROOT history again — the LAST key (metadata.history inside the
+     * freshly spliced result block comes first in the doc) */
+    char *hp = NULL;
+    for (char *q = strstr(out, "\"history\""); q; q = strstr(q + 1, "\"history\""))
+        hp = q;
     if (hp) {
         char *hb = strchr(hp, '[');
         if (hb) {
