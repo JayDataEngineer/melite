@@ -97,8 +97,9 @@ export function apply(ctx: Context, config: Config): void {
             }
           }
         }
-        res.writeHead(200, JSON_HEADERS)
-        res.end(JSON.stringify({ gateway: gatewayUrl, runs }))
+        const runsBody = JSON.stringify({ gateway: gatewayUrl, runs })
+        res.writeHead(200, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(runsBody)) })
+        res.end(Buffer.from(runsBody))
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         ctx.logger.warn('infer-gallery: gateway unreachable: %s', message)
@@ -143,6 +144,9 @@ export function apply(ctx: Context, config: Config): void {
         res.writeHead(response.status, {
           'content-type': response.headers.get('content-type') ?? 'application/octet-stream',
           'cache-control': 'no-store',
+          // explicit length: remote proxies (tailscale serve) mishandle chunked
+          // framing on lossy links — a known length lets them buffer instead.
+          'content-length': String(buffer.byteLength),
         })
         res.end(buffer)
       } catch (error) {
