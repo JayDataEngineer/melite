@@ -276,6 +276,20 @@ if(INFERENCE_BUILD_SD_PLUGIN)
 endif()
 
 # ---------------------------------------------------------------------------
+# trellis.cpp native plugin (opt-in, in-process dlopen — no library dependency)
+# ---------------------------------------------------------------------------
+if(INFERENCE_BUILD_TRELLIS_PLUGIN)
+    message(STATUS "Building trellis.cpp native plugin (in-process dlopen)...")
+    add_library(trellis_native_plugin SHARED plugins/3d/engines/trellis2/trellis2_plugin.c)
+    target_include_directories(trellis_native_plugin PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_link_libraries(trellis_native_plugin PRIVATE ${CMAKE_DL_LIBS})
+    set_target_properties(trellis_native_plugin PROPERTIES
+        PREFIX ""
+        POSITION_INDEPENDENT_CODE ON
+    )
+endif()
+
+# ---------------------------------------------------------------------------
 # audio.cpp plugin (opt-in, subprocess wrapper — no library dependency)
 # ---------------------------------------------------------------------------
 if(INFERENCE_BUILD_AUDIO_PLUGIN)
