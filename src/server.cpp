@@ -4009,7 +4009,8 @@ inference_server *server_create(int port) {
     /* every unmatched route answers with VALID JSON so client-side
      * res.json() never trips on an empty body */
     s->srv.set_error_handler([](const auto &req, auto &res) {
-        if (res.body.empty() || res.body[0] != '"') {
+        char b0 = res.body.empty() ? 0 : res.body[0];
+        if (b0 != '{' && b0 != '[') {   /* keep handler-provided JSON bodies */
             res.status = res.status ? res.status : 404;
             res.set_content("{\"error\":\"not found\",\"path\":" + JQ(req.path) + "}", "application/json");
         }
