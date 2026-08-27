@@ -166,7 +166,7 @@ static void handle_models(const httplib::Request &req,
  * Execution happens on detached pthreads against the same runner/engines.
  */
 
-#define RUNREG_MAX 64
+#define RUNREG_MAX 256
 #define RUN_ARTIFACTS_MAX 16
 
 typedef struct {
@@ -546,6 +546,12 @@ static void *run_thread_fn(void *argp) {
     for (size_t p = 0; p < g_runs[idx].n_prior; p++)
         free(g_runs[idx].prior[p].data);
     g_runs[idx].n_prior = 0;
+    /* Read server_url into locals BEFORE the final state change so the
+     * slot can be recycled by a concurrent registrar without corrupting
+     * the /free call. */
+    char free_url[256] = "http://127.0.0.1:18465";
+    inf_json_string(g_runs[idx].yaml, "server_url", free_url, sizeof(free_url));
+
     if (rc == 1) {
         run_set_state(idx, "stopped", NULL);
         inference_free(result);
@@ -558,17 +564,11 @@ static void *run_thread_fn(void *argp) {
     }
 
         /* Queue hygiene: ask ComfyUI to drop cached model weights BEFORE
-     * handing the GPU ticket to the next queued job. Without this, the
-     * previous job's ~22.7GB weight cache stays resident and the next
-     * job OOMs on a marginal allocation (observed: KSampler +80MB alloc
-     * failing with 70MB free). Each queued job then starts from a clean
-     * VRAM budget (minus persistent workers like the trellis one). */
+     * handing the GPU ticket to the next queued job. */
     {
-        char url[256] = "http://127.0.0.1:18465";
-        inf_json_string(g_runs[idx].yaml, "server_url", url, sizeof(url));
         char host[128] = "127.0.0.1";
         int port = 18465;
-        const char *pp = strstr(url, "://");
+        const char *pp = strstr(free_url, "://");
         if (pp) {
             pp += 3;
             const char *colon = strchr(pp, ':');
@@ -762,23 +762,27 @@ static void handle_pipelines_start(const httplib::Request &req,
 
     /* register the run */
     pthread_mutex_lock(&g_runs_mu);
-    if (g_n_runs >= RUNREG_MAX) {
-        /* recycle: compact finished entries */
-        size_t w2 = 0;
-        for (size_t i = 0; i < g_n_runs; i++)
-            if (strcmp(g_runs[i].state, "success") != 0 &&
-                strcmp(g_runs[i].state, "error") != 0 &&
-                strcmp(g_runs[i].state, "stopped") != 0)
-                g_runs[w2++] = g_runs[i];
-        g_n_runs = w2;
+    /* Find a slot: first available terminal entry, else append.
+    * Never compact — it shifts indices and breaks runner threads that
+     * hold old indices. */
+    size_t idx = (size_t)-1;
+    for (size_t i = 0; i < g_n_runs; i++) {
+        if (strcmp(g_runs[i].state, "success") == 0 ||
+            strcmp(g_runs[i].state, "error") == 0 ||
+            strcmp(g_runs[i].state, "stopped") == 0) {
+            idx = i;
+            break;
+        }
+    }
+    if (idx == (size_t)-1) {
         if (g_n_runs >= RUNREG_MAX) {
             pthread_mutex_unlock(&g_runs_mu);
             res.status = 503;
-            res.set_content("{\"error\":\"run registry full\"}", "application/json");
+            res.set_content("run registry full", "text/plain");
             return;
         }
+        idx = g_n_runs++;
     }
-    size_t idx = g_n_runs++;
     snprintf(g_runs[idx].run_id, sizeof(g_runs[idx].run_id), "run-%lx-%lx",
              (unsigned long)time(NULL), (unsigned long)pthread_self());
     snprintf(g_runs[idx].state, sizeof(g_runs[idx].state), "queued");
@@ -887,6 +891,25 @@ static void handle_pipelines_start(const httplib::Request &req,
     snprintf(out, sizeof(out), "{\"run_id\":\"%s\",\"status\":\"queued\"}",
              g_runs[idx].run_id);
     res.status = 202;
+    res.set_content(out, "application/json");
+}
+
+static void handle_queue(const httplib::Request &, httplib::Response &res) {
+    pthread_mutex_lock(&g_runs_mu);
+    int queued = 0, running = 0;
+    char active_id[64] = "";
+    for (size_t i = 0; i < g_n_runs; i++) {
+        if (strcmp(g_runs[i].state, "queued") == 0) queued++;
+        if (strcmp(g_runs[i].state, "running") == 0) {
+            running++;
+            snprintf(active_id, sizeof(active_id), "%s", g_runs[i].run_id);
+        }
+    }
+    pthread_mutex_unlock(&g_runs_mu);
+    char out[256];
+    snprintf(out, sizeof(out),
+        "{\"queued\":%d,\"running\":%d,\"active\":\"%s\"}",
+        queued, running, active_id);
     res.set_content(out, "application/json");
 }
 
@@ -2974,6 +2997,7 @@ inference_server *server_create(int port) {
     s->srv.Post("/v1/pipelines/generate", handle_pipelines_start);
     s->srv.Post("/v1/run",               handle_pipelines_start);
     s->srv.Get("/v1/pipelines/status/:run_id", handle_pipelines_status);
+    s->srv.Get("/v1/queue",                handle_queue);
     s->srv.Post("/v1/pipelines/stop/:run_id",   handle_pipelines_stop);
     s->srv.Post("/v1/pipelines/resume/:run_id", handle_pipelines_resume);
     s->srv.Post("/v1/pipelines/drafts",  handle_pipelines_drafts);
