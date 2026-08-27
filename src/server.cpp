@@ -187,6 +187,19 @@ static run_entry g_runs[RUNREG_MAX];
 static size_t g_n_runs = 0;
 static pthread_mutex_t g_runs_mu = PTHREAD_MUTEX_INITIALIZER;
 
+/* ---- GPU FIFO: serial execution, one run at a time ----
+ * Ticket-based queue: each thread gets a monotonically increasing ticket
+ * and waits until g_gpu_serving reaches its ticket. After execution it
+ * increments g_gpu_serving and broadcasts so the next waiter proceeds.
+ */
+static int    g_gpu_tickets = 0;
+static int    g_gpu_serving = 0;
+static pthread_mutex_t g_gpu_mu  = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  g_gpu_cv  = PTHREAD_COND_INITIALIZER;
+
+/* ---- Stop/resume support ---- */
+static volatile int g_stop_requested = 0;  /* set by stop handler, checked at stage boundaries */
+
 static void run_write_sidecar(size_t idx);
 static void ledger_log(const char *event, const char *data_json);
 static char *json_quote(const char *src);
@@ -341,6 +354,23 @@ static void *run_thread_fn(void *argp) {
     free(argp);
     size_t idx = a.idx;
 
+    /* GPU FIFO: wait for our ticket before touching the GPU */
+    pthread_mutex_lock(&g_gpu_mu);
+    int my_ticket = g_gpu_tickets++;
+    while (g_gpu_serving != my_ticket)
+        pthread_cond_wait(&g_gpu_cv, &g_gpu_mu);
+    pthread_mutex_unlock(&g_gpu_mu);
+
+    /* Check if stop was requested while we were queued */
+    if (g_stop_requested) {
+        run_set_state(idx, "stopped", NULL);
+        /* Release our FIFO ticket so the next waiter proceeds */
+        pthread_mutex_lock(&g_gpu_mu);
+        g_gpu_serving++;
+        pthread_cond_broadcast(&g_gpu_cv);
+        pthread_mutex_unlock(&g_gpu_mu);
+        return NULL;
+    }
     run_set_state(idx, "running", NULL);
     inference_dag *dag = dag_parse_string(g_runs[idx].yaml, strlen(g_runs[idx].yaml));
     if (!dag) {
@@ -369,10 +399,16 @@ static void *run_thread_fn(void *argp) {
     if (rc < 0) {
         run_set_state(idx, "error", "pipeline execution failed");
         inference_free(result);
-        return NULL;
+    } else {
+        inference_free(result);
+        run_set_state(idx, "success", NULL);
     }
-    inference_free(result);
-    run_set_state(idx, "success", NULL);
+
+    /* GPU FIFO: release and wake next waiter */
+    pthread_mutex_lock(&g_gpu_mu);
+    g_gpu_serving++;
+    pthread_cond_broadcast(&g_gpu_cv);
+    pthread_mutex_unlock(&g_gpu_mu);
     return NULL;
 }
 
@@ -429,9 +465,69 @@ static void run_write_sidecar(size_t idx) {
 
 static void handle_pipelines_start(const httplib::Request &req,
                                    httplib::Response &res) {
-    /* flat generation body: {"model":..., "prompt":..., "seed":..., "workflow_file"?...} */
+    /* Wire shapes (parity with ray gateway):
+     *   {pipeline:{steps:[...]}} - inline doc, single-step mapped to model
+     *   {yaml:"name"}           - resolve pipeline YAML by name
+     *   {route:true}            - 501 (routing not ported)
+     *   {model,...}             - flat generation (default)
+     */
     char model[64] = "krea-2", prompt[2048] = "", wf[512] = "";
     long seed = -1;
+    char yaml_override[4096] = "";
+    const char *body = req.body.c_str();
+
+    /* Shape: {route:true} -> 501 */
+    if (strstr(body, "\"route\"") && strstr(body, "true")) {
+        res.status = 501;
+        res.set_content("{\"error\":\"Runner not yet ported (auto-route shape)\",\"shape\":\"route\"}", "application/json");
+        return;
+    }
+
+    /* Shape: {yaml:"name"} -> resolve from pipelines dir */
+    char yaml_name[256] = "";
+    if (inf_json_string(body, "yaml", yaml_name, sizeof(yaml_name)) == 0 && yaml_name[0]) {
+        for (const char *p = yaml_name; *p; p++)
+            if (!((*p >= 'a' && *p <= 'z') || (*p >= '0' && *p <= '9') || *p == '-' || *p == '_')) {
+                res.status = 400;
+                res.set_content("{\"error\":\"invalid pipeline name\"}", "application/json");
+                return;
+            }
+        char path[600];
+        snprintf(path, sizeof(path), "../plugins/gens/pipelines/%s/pipeline.yaml", yaml_name);
+        FILE *fp = fopen(path, "rb");
+        if (!fp) {
+            res.status = 404;
+            char err[300];
+            snprintf(err, sizeof(err), "{\"error\":\"pipeline YAML not found: %s\"}", yaml_name);
+            res.set_content(err, "application/json");
+            return;
+        }
+        size_t n = fread(yaml_override, 1, sizeof(yaml_override) - 1, fp);
+        fclose(fp);
+        yaml_override[n] = 0;
+        /* Extract model name from pipeline YAML */
+        const char *nm = strstr(yaml_override, "name:");
+        if (nm) {
+            nm += 5;
+            while (*nm == ' ') nm++;
+            size_t i = 0;
+            while (nm[i] && nm[i] != '\n' && i < sizeof(model) - 1) { model[i] = nm[i]; i++; }
+            model[i] = 0;
+        }
+    }
+
+    /* Shape: {pipeline:{steps:[...]}} -> extract first step family as model */
+    if (strstr(body, "\"pipeline\"") && !yaml_override[0]) {
+        const char *fam = strstr(body, "\"family\"");
+        if (fam) {
+            fam += 8;
+            while (*fam == ' ' || *fam == ':' || *fam == '"') fam++;
+            size_t i = 0;
+            while (fam[i] && fam[i] != '"' && i < sizeof(model) - 1) { model[i] = fam[i]; i++; }
+            model[i] = 0;
+        }
+    }
+
 
     {
         const char *m = strstr(req.body.c_str(), "\"model\"");
@@ -499,6 +595,18 @@ static void handle_pipelines_start(const httplib::Request &req,
     /* Harvested lane? execute the pinned pipeline with initial inputs
      * (prompt/lyrics/negative_prompt as text tensors, seed as f32) */
     char tmpin[2048];
+    /* If yaml_override is set (from {yaml:name} or {pipeline} shape), use it directly */
+    if (yaml_override[0]) {
+        snprintf(g_runs[idx].yaml, sizeof(g_runs[idx].yaml), "%s", yaml_override);
+        if (prompt[0]) add_run_input_text(idx, "prompt", prompt);
+        if (inf_json_string(req.body.c_str(), "lyrics",
+                            tmpin, sizeof(tmpin)) == 0 && tmpin[0])
+            add_run_input_text(idx, "lyrics", tmpin);
+        if (inf_json_string(req.body.c_str(), "negative_prompt",
+                            tmpin, sizeof(tmpin)) == 0 && tmpin[0])
+            add_run_input_text(idx, "negative_prompt", tmpin);
+        if (seed >= 0) add_run_input_f32(idx, "seed", (float)seed);
+    } else {
     char *piped = pipeline_yaml_for_model(model, g_runs[idx].yaml,
                                           sizeof(g_runs[idx].yaml));
     if (piped) {
@@ -546,6 +654,7 @@ static void handle_pipelines_start(const httplib::Request &req,
             g_runs[idx].run_id, wf, g_runs[idx].out_dir, qp, seedclause);
         free(qp);
     }
+    } /* end if(!yaml_override) */
 
     run_thread_arg *ta = (run_thread_arg *)malloc(sizeof(*ta));
     ta->idx = idx;
@@ -2285,6 +2394,228 @@ static void handle_sse_events(const httplib::Request &req,
     );
 }
 
+
+
+static void handle_pipelines_stop(const httplib::Request &req,
+                                  httplib::Response &res) {
+    std::string rid = req.path_params.at("run_id");
+    pthread_mutex_lock(&g_runs_mu);
+    int found = -1;
+    for (size_t i = 0; i < g_n_runs; i++)
+        if (rid == g_runs[i].run_id) { found = (int)i; break; }
+    if (found < 0) {
+        pthread_mutex_unlock(&g_runs_mu);
+        res.status = 404;
+        res.set_content("{\"error\":\"unknown run_id\"}", "application/json");
+        return;
+    }
+    char state[16];
+    snprintf(state, sizeof(state), "%s", g_runs[found].state);
+    pthread_mutex_unlock(&g_runs_mu);
+
+    if (strcmp(state, "queued") == 0 || strcmp(state, "running") == 0) {
+        g_stop_requested = 1;
+        run_set_state(found, "stopped", NULL);
+        char out[128];
+        snprintf(out, sizeof(out), "{\"run_id\":\"%s\",\"status\":\"stopped\"}",
+                 rid.c_str());
+        res.set_content(out, "application/json");
+    } else {
+        res.status = 400;
+        char out[200];
+        snprintf(out, sizeof(out),
+                 "{\"error\":\"cannot stop run in state %s\"}", state);
+        res.set_content(out, "application/json");
+    }
+}
+
+/* ---- COMPOSE (dry-run) handler ---- */
+static void handle_compose(const httplib::Request &req,
+                           httplib::Response &res) {
+    char model[64] = "krea-2";
+    char body_tmp[2048] = "";
+    if (req.body.size() < sizeof(body_tmp))
+        snprintf(body_tmp, sizeof(body_tmp), "%s", req.body.c_str());
+    char tmp[256];
+    if (inf_json_string(body_tmp, "model", tmp, sizeof(tmp)) == 0)
+        snprintf(model, sizeof(model), "%s", tmp);
+
+    char yaml_buf[4096] = "";
+    char *piped = pipeline_yaml_for_model(model, yaml_buf, sizeof(yaml_buf));
+    if (!piped) {
+        res.status = 404;
+        char err[200];
+        snprintf(err, sizeof(err),
+                 "{\"error\":\"no pipeline for model: %s\"}", model);
+        res.set_content(err, "application/json");
+        return;
+    }
+    /* Extract workflow_file value: find the key:value pair in the embedded JSON */
+    char wf_path[512] = "";
+    const char *marker = strstr(yaml_buf, "workflow_file\"");
+    if (marker) {
+        /* Walk past the key and its closing quote, find the colon, then the value opening quote */
+        const char *val_start = strchr(marker, ':');
+        if (val_start) {
+            val_start++; /* skip ':' */
+            while (*val_start == ' ') val_start++; /* skip whitespace */
+            if (*val_start == '"') {
+                val_start++; /* skip opening quote */
+                size_t i = 0;
+                while (*val_start && *val_start != '"' && i < sizeof(wf_path) - 1) {
+                    wf_path[i++] = *val_start++;
+                }
+                wf_path[i] = 0;
+            }
+        }
+    }
+    if (!wf_path[0]) {
+        res.status = 404;
+        res.set_content("{\"error\":\"no workflow_file in pipeline\"}", "application/json");
+        return;
+    }
+    FILE *fp = fopen(wf_path, "rb");
+    if (!fp) {
+        res.status = 404;
+        char err[300];
+        snprintf(err, sizeof(err),
+                 "{\"error\":\"workflow not found: %s\"}", wf_path);
+        res.set_content(err, "application/json");
+        return;
+    }
+    fseek(fp, 0, SEEK_END);
+    long fsize = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    char *json = (char *)malloc(fsize + 1);
+    (void)fread(json, 1, fsize, fp);
+    json[fsize] = 0;
+    fclose(fp);
+
+    size_t rlen = strlen(json) + 200;
+    char *resp = (char *)malloc(rlen);
+    snprintf(resp, rlen,
+             "{\"model\":\"%s\",\"status\":\"dry_run\",\"workflow\":%s}",
+             model, json);
+    free(json);
+    res.set_content(resp, "application/json");
+    free(resp);
+}
+
+
+/* ---- RESUME handler ---- */
+static void handle_pipelines_resume(const httplib::Request &req,
+                                    httplib::Response &res) {
+    std::string rid = req.path_params.at("run_id");
+    /* Find the stopped run's sidecar to get the spec */
+    char sidecar_path[600];
+    snprintf(sidecar_path, sizeof(sidecar_path), "./output/%s/_pipeline.json",
+             rid.c_str());
+    FILE *fp = fopen(sidecar_path, "rb");
+    if (!fp) {
+        res.status = 404;
+        res.set_content("{\"error\":\"run sidecar not found\"}", "application/json");
+        return;
+    }
+    fseek(fp, 0, SEEK_END);
+    long fsize = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    char *spec = (char *)malloc(fsize + 1);
+    (void)fread(spec, 1, fsize, fp);
+    spec[fsize] = 0;
+    fclose(fp);
+
+    /* Extract model, prompt, seed, yaml from the sidecar */
+    char model[64] = "", prompt[2048] = "", yaml_buf[4096] = "";
+    long seed = -1;
+    inf_json_string(spec, "model", model, sizeof(model));
+    inf_json_string(spec, "prompt", prompt, sizeof(prompt));
+    seed = inf_json_int(spec, "seed", -1);
+    inf_json_string(spec, "yaml", yaml_buf, sizeof(yaml_buf));
+    free(spec);
+
+    if (!model[0]) {
+        res.status = 400;
+        res.set_content("{\"error\":\"cannot resume: no model in sidecar\"}",
+                        "application/json");
+        return;
+    }
+
+    /* Register a new run with the same spec */
+    pthread_mutex_lock(&g_runs_mu);
+    if (g_n_runs >= RUNREG_MAX) {
+        size_t w = 0;
+        for (size_t i = 0; i < g_n_runs; i++)
+            if (strcmp(g_runs[i].state, "success") != 0 &&
+                strcmp(g_runs[i].state, "error") != 0 &&
+                strcmp(g_runs[i].state, "stopped") != 0)
+                g_runs[w++] = g_runs[i];
+        g_n_runs = w;
+    }
+    if (g_n_runs >= RUNREG_MAX) {
+        pthread_mutex_unlock(&g_runs_mu);
+        res.status = 503;
+        res.set_content("{\"error\":\"run registry full\"}", "application/json");
+        return;
+    }
+    size_t idx = g_n_runs++;
+    snprintf(g_runs[idx].run_id, sizeof(g_runs[idx].run_id), "run-%lx-%lx",
+             (unsigned long)time(NULL), (unsigned long)pthread_self());
+    snprintf(g_runs[idx].state, sizeof(g_runs[idx].state), "queued");
+    g_runs[idx].error[0] = 0;
+    snprintf(g_runs[idx].out_dir, sizeof(g_runs[idx].out_dir), "./output/%s",
+             g_runs[idx].run_id);
+    g_runs[idx].created = time(NULL);
+    snprintf(g_runs[idx].model, sizeof(g_runs[idx].model), "%s", model);
+    snprintf(g_runs[idx].prompt, sizeof(g_runs[idx].prompt), "%s", prompt);
+    g_runs[idx].seed = seed;
+    pthread_mutex_unlock(&g_runs_mu);
+
+    mkdir("./output", 0755);
+    mkdir(g_runs[idx].out_dir, 0755);
+    run_write_sidecar(idx);
+    { char rb[400];
+      snprintf(rb, sizeof(rb),
+               "{\"run_id\":\"%s\",\"model\":\"%s\",\"seed\":%ld}",
+               g_runs[idx].run_id, g_runs[idx].model, g_runs[idx].seed);
+      ledger_log("run.registered", rb); }
+
+    /* Use saved YAML or resolve from model */
+    char tmpin[2048];
+    if (yaml_buf[0]) {
+        snprintf(g_runs[idx].yaml, sizeof(g_runs[idx].yaml), "%s", yaml_buf);
+    } else {
+        char *piped = pipeline_yaml_for_model(model, g_runs[idx].yaml,
+                                              sizeof(g_runs[idx].yaml));
+        if (!piped) {
+            res.status = 400;
+            res.set_content("{\"error\":\"cannot resume: no pipeline for model\"}",
+                            "application/json");
+            return;
+        }
+    }
+    if (prompt[0]) add_run_input_text(idx, "prompt", prompt);
+    if (inf_json_string(req.body.c_str(), "lyrics",
+                        tmpin, sizeof(tmpin)) == 0 && tmpin[0])
+        add_run_input_text(idx, "lyrics", tmpin);
+    if (inf_json_string(req.body.c_str(), "negative_prompt",
+                        tmpin, sizeof(tmpin)) == 0 && tmpin[0])
+        add_run_input_text(idx, "negative_prompt", tmpin);
+    if (seed >= 0) add_run_input_f32(idx, "seed", (float)seed);
+
+    g_stop_requested = 0;
+    run_thread_arg *ta = (run_thread_arg *)malloc(sizeof(*ta));
+    ta->idx = idx;
+    pthread_t th;
+    pthread_create(&th, NULL, run_thread_fn, ta);
+    pthread_detach(th);
+
+    char out[256];
+    snprintf(out, sizeof(out), "{\"run_id\":\"%s\",\"status\":\"queued\"}",
+             g_runs[idx].run_id);
+    res.status = 202;
+    res.set_content(out, "application/json");
+}
+
 /* ==================================================================
  * SERVER LIFECYCLE
  * ================================================================== */
@@ -2301,7 +2632,11 @@ inference_server *server_create(int port) {
     s->srv.Get("/v1/models",             handle_models);
     s->srv.Post("/v1/pipelines",         handle_pipelines);
     s->srv.Post("/v1/pipelines/start",   handle_pipelines_start);
+    s->srv.Post("/v1/pipelines/generate", handle_pipelines_start);
+    s->srv.Post("/v1/run",               handle_pipelines_start);
     s->srv.Get("/v1/pipelines/status/:run_id", handle_pipelines_status);
+    s->srv.Post("/v1/pipelines/stop/:run_id",   handle_pipelines_stop);
+    s->srv.Post("/v1/pipelines/resume/:run_id", handle_pipelines_resume);
     s->srv.Post("/v1/pipelines/drafts",  handle_pipelines_drafts);
     s->srv.Get("/v1/pipelines/runs",     handle_pipelines_runs);
     s->srv.Get(R"(/editor/assets/runs/(.+))", handle_asset);
@@ -2316,6 +2651,7 @@ inference_server *server_create(int port) {
     s->srv.Get("/v1/skills",               handle_skills_index);
     s->srv.Get(R"(/v1/skills/(.+))",       handle_skill_read);
     s->srv.Get("/v1/ledger",               handle_ledger);
+    s->srv.Post("/v1/compose",              handle_compose);
     ledger_boot();   /* recover prov jobs from the ledger + stamp boot */
 
     /* ---- OpenAPI ---- */
