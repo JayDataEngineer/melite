@@ -47,7 +47,7 @@ SCENES = [
      "BEAT 3: the reactor core ignites behind her as she dives for the pod, bass drop and static"),
 ]
 
-TERMINAL = ("success", "done", "failed", "error", "cancelled", "canceled")
+TERMINAL = ("success", "failed", "error", "cancelled", "canceled", "stopped")
 
 
 def http_json(url, payload=None, timeout=30):
@@ -115,20 +115,24 @@ def main():
             idx += 1
             continue
 
-        first_running = None
+        first_running = submitted
         status = ""
+        sidecar = os.path.join("build", "output", rid, "_pipeline.json")
+        st = {}
         while True:
             time.sleep(5)
             try:
-                st = http_json(f"{base}/v1/pipelines/status/{rid}", timeout=15)
-            except Exception as e:
-                st = {"error": str(e)}
-            blob = json.dumps(st).lower()
-            status = next((w for w in TERMINAL if w in blob), "")
-            if not first_running and ("running" in blob or "active" in blob):
-                first_running = time.time()
-            if status:
-                break
+                with open(sidecar) as f:
+                    st = json.load(f)
+                status = str(st.get("status") or st.get("state") or "")
+                if status in TERMINAL:
+                    break
+            except FileNotFoundError:
+                if time.time() - submitted > 120:
+                    status = "no_sidecar"
+                    break
+            except Exception:
+                pass
             if time.time() - submitted > 2400:
                 status = "timeout"
                 break
@@ -136,13 +140,19 @@ def main():
         rec.update({
             "status": status,
             "wall_s": round(done - submitted, 1),
-            "queue_wait_s": round((first_running or submitted) - submitted, 1),
+            "queue_wait_s": round(first_running - submitted, 1),
         })
         art = None
-        if isinstance(st, dict):
-            arts = st.get("artifacts") or []
-            vids = [a for a in arts if isinstance(a, dict) and a.get("type") == "video"]
-            art = vids[0] if vids else (arts[0] if arts else None)
+        run_dir = os.path.join("build", "output", rid)
+        if status == "success":
+            try:
+                vids = [f for f in os.listdir(run_dir)
+                        if f.endswith(".mp4") and not f.startswith("_")]
+                if vids:
+                    p = max(vids, key=lambda f: os.path.getsize(os.path.join(run_dir, f)))
+                    art = {"path": os.path.join(run_dir, p)}
+            except Exception:
+                pass
         if art and status == "success":
             p = art.get("path") or ""
             if p and os.path.exists(p):
