@@ -1,0 +1,47 @@
+# inference.cpp ComfyUI node estate — git IaC manifest
+# One pack per line: <dir-name><TAB><git origin>
+# These origins are harvested from the LIVE /opt/ComfyUI estate (verified
+# remotes, 2026-08-27). bootstrap.sh clones each into infra/comfyui/nodes/
+# and symlinks into $COMFYUI_ROOT/custom_nodes/, then pip-installs each
+# pack's requirements into the ComfyUI venv. Idempotent: re-run skips.
+#
+# Lane-critical packs for the h3-timeline mega-inference:
+ComfyUI-Manager	https://github.com/Comfy-Org/ComfyUI-Manager.git
+comfyui-lanpaint	https://github.com/scraed/LanPaint.git
+Comfyui-QwenEditUtils	https://github.com/lrzjason/Comfyui-QwenEditUtils
+ComfyUI-GGUF	https://github.com/city96/ComfyUI-GGUF.git
+comfyui-videohelpersuite	https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite
+#
+# Wider estate present on this machine (clone on demand):
+ComfyUI-AnimateDiff-Evolved	https://github.com/Kosinkadink/ComfyUI-AnimateDiff-Evolved
+ComfyUI-basic_data_handling	https://github.com/StableLlama/ComfyUI-basic_data_handling
+ComfyUI_Comfyroll_CustomNodes	https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes
+comfyui_controlnet_aux	https://github.com/Fannovel16/comfyui_controlnet_aux.git
+comfyui-crop-and-stitch	https://github.com/comfyorg/comfyui-crop-and-stitch
+ComfyUI-Easy-Use	https://github.com/yolain/ComfyUI-Easy-Use
+ComfyUI-Frame-Interpolation	https://github.com/Fannovel16/ComfyUI-Frame-Interpolation
+ComfyUI-HY-Motion1	https://github.com/jtydhr88/ComfyUI-HY-Motion1
+comfyui-impact-pack	https://github.com/ltdrdata/ComfyUI-Impact-Pack
+comfyui-impact-subpack	https://github.com/ltdrdata/ComfyUI-Impact-Subpack
+comfyui-inspire-pack	https://github.com/ltdrdata/ComfyUI-Inspire-Pack
+ComfyUI_IPAdapter_plus	https://github.com/cubiq/ComfyUI_IPAdapter_plus.git
+ComfyUI-KJNodes	https://github.com/kijai/ComfyUI-KJNodes
+comfyui_LLM_party	https://github.com/heshengtao/comfyui_LLM_party
+ComfyUI-LTXVideo	https://github.com/Lightricks/ComfyUI-LTXVideo
+ComfyUI-Panorama-Stickers	https://github.com/nomadoor/ComfyUI-Panorama-Stickers
+COMFYUI-PBRFusion4	https://github.com/Night1099/COMFYUI-PBRFusion4.git
+ComfyUI-QFX-PBRGenerator	https://github.com/qornflex/ComfyUI-QFX-PBRGenerator.git
+ComfyUI-seamless-tiling	https://github.com/spinagon/ComfyUI-seamless-tiling
+rgthree-comfy	https://github.com/rgthree/rgthree-comfy
+was-node-suite-comfyui	https://github.com/WASasquatch/was-node-suite-comfyui
+#
+# NOT git-managed (local code, not IaC'd here): ray-*-nodes, melite-*-nodes,
+# vnccs*, Nvidia_RTX_Nodes, WhatDreamsCost, ComfyUI-TRELLIS2, qweneditutils
+# (duplicate of Comfyui-QwenEditUtils), LanPaint (duplicate of
+# comfyui-lanpaint), websocket_image_save.py — these live in the ray/melite
+# repos or are local copies, synced by ray's sync_packs.sh.
+# The h3 lane needs NONE of them: H3 nodes are native to the ComfyUI fork,
+# attention comes from the pip-installed comfy-kitchen.
+#
+# pip layer (installed into the ComfyUI venv):
+#   comfy-kitchen==0.2.31   (h3_attention: kitchen — the 4-step turbo path)
