@@ -452,8 +452,8 @@ static void add_run_input_text(size_t idx, const char *name, const char *s) {
     snprintf(ri->name, sizeof(ri->name), "%s", name);
     snprintf(ri->dtype, sizeof(ri->dtype), "u8");
     ri->f = 0;
-    ri->nbytes = strlen(s);
-    ri->bytes = (char *)malloc(ri->nbytes ? ri->nbytes : 1);
+    ri->nbytes = strlen(s) + 1;  /* +1: NUL for C-string ops (access, curl) */
+    ri->bytes = (char *)malloc(ri->nbytes);
     memcpy(ri->bytes, s, ri->nbytes);
 }
 
@@ -852,6 +852,9 @@ static void handle_pipelines_start(const httplib::Request &req,
                             tmpin, sizeof(tmpin)) == 0 && tmpin[0])
             add_run_input_text(idx, "negative_prompt", tmpin);
         if (seed >= 0) add_run_input_f32(idx, "seed", (float)seed);
+        if (inf_json_string(req.body.c_str(), "image",
+                            tmpin, sizeof(tmpin)) == 0 && tmpin[0])
+            add_run_input_text(idx, "image", tmpin);
     } else {
         /* legacy: compose a krea-style single-node YAML with baked injects */
         char *qp = json_quote(prompt);
