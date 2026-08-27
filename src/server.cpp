@@ -656,18 +656,54 @@ static void draft_writeback(size_t idx, const char *wire) {
     long dur = (long)(time(NULL) - g_runs[idx].created);
     if (dur < 0) dur = 0;
 
+    /* history row (also stamped into result.metadata.history so the card
+     * can render prior runs without draft-root access) */
+    char hrow[1024];
+    snprintf(hrow, sizeof(hrow),
+             "{\"runId\":\"%s\",\"status\":\"%s\",\"at\":%ld,\"durationSec\":%ld,"
+             "\"video\":\"%s\"}",
+             rid, wire, (long)time(NULL), dur, stitch);
+    /* existing root history rows (raw JSON text, already valid) */
+    char oldh[8192] = "";
+    {
+        const char *hp0 = strstr(buf, "\"history\"");
+        if (hp0) {
+            const char *ab = strchr(hp0, '[');
+            if (ab) {
+                const char *ae = ab + 1;
+                int depth = 0;
+                while (*ae) {
+                    if (*ae == '[') depth++;
+                    else if (*ae == ']') { if (depth == 0) break; depth--; }
+                    ae++;
+                }
+                size_t L = (size_t)(ae - ab - 1);
+                if (L >= sizeof(oldh)) L = sizeof(oldh) - 1;
+                memcpy(oldh, ab + 1, L);
+                oldh[L] = 0;
+            }
+        }
+    }
+    char mhist[9216];
+    {
+        const char *t = oldh;
+        while (*t == ' ' || *t == 10 || *t == 9 || *t == 13) t++;
+        snprintf(mhist, sizeof(mhist), "%s%s%s", hrow,
+                 (*t && *t != ']') ? "," : "", oldh);
+    }
+
     /* splice the new result block over the first "result":{...} span */
-    char res[4096];
+    char res[12288];
     int ro = 0;
     ro += snprintf(res + ro, sizeof(res) - ro,
         "{\"assetUrls\":[%s%s%s],\"artifacts\":{"
         "\"video\":\"%s\","
         "\"video_w1_main\":\"%s\",\"video_w2_main\":\"%s\",\"video_w3_main\":\"%s\","
         "\"seam_w1\":\"%s\",\"seam_w2\":\"%s\",\"seam_w3\":\"%s\"},"
-        "\"metadata\":{\"runId\":\"%s\",\"seam\":\"latent\"},"
+        "\"metadata\":{\"runId\":\"%s\",\"seam\":\"latent\",\"history\":[%s]},"
         "\"completedAt\":%ld,\"durationSec\":%ld}",
         stitch[0] ? "\"" : "", stitch, stitch[0] ? "\"" : "",
-        stitch, wf[0], wf[1], wf[2], seam[0], seam[1], seam[2], rid,
+        stitch, wf[0], wf[1], wf[2], seam[0], seam[1], seam[2], rid, mhist,
         (long)time(NULL) * 1000, dur);
 
     const char *rp = strstr(buf, "\"result\"");
@@ -711,11 +747,6 @@ static void draft_writeback(size_t idx, const char *wire) {
     }
 
     /* history row at draft root (no trailing comma: the array may be empty) */
-    char hrow[1024];
-    snprintf(hrow, sizeof(hrow),
-             "{\"runId\":\"%s\",\"status\":\"%s\",\"at\":%ld,\"durationSec\":%ld,"
-             "\"video\":\"%s\"}",
-             rid, wire, (long)time(NULL), dur, stitch);
     char *hp = strstr(out, "\"history\"");
     if (hp) {
         char *hb = strchr(hp, '[');
