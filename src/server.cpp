@@ -2030,6 +2030,117 @@ static int rundir_cmp(const void *a, const void *b) {
     return 0;
 }
 
+/* GET /v1/pipelines/yaml/list - the editor Pipelines library section.
+ * Contract (editorClient.listChains): {pipelines:[{filename,name,path}]}
+ * built from ../pipelines/<dir>/pipeline.yaml. Sorted by name for a stable UI. */
+static int yaml_ent_cmp(const void *a, const void *b) {
+    return strcmp((const char *)a, (const char *)b);
+}
+
+static std::string JQ(const std::string &s);  /* json quote helper, defined below */
+static void handle_yaml_list(const httplib::Request &, httplib::Response &res) {
+    static char names[256][80];
+    size_t n = 0;
+    DIR *d = opendir("../pipelines");
+    if (d) {
+        struct dirent *e;
+        while ((e = readdir(d)) != NULL && n < 256) {
+            if (e->d_name[0] == '.') continue;
+            char py[512];
+            snprintf(py, sizeof(py), "../pipelines/%s/pipeline.yaml", e->d_name);
+            if (access(py, R_OK) != 0) continue;
+            snprintf(names[n], sizeof(names[n]), "%s", e->d_name);
+            n++;
+        }
+        closedir(d);
+    }
+    qsort(names, n, sizeof(names[0]), yaml_ent_cmp);
+    std::string out = "{\"pipelines\":[";
+    for (size_t i = 0; i < n; i++) {
+        if (i) out += ",";
+        out += "{\"filename\":" + JQ(std::string(names[i]) + ".yaml") + ",\"name\":" +
+               JQ(std::string(names[i])) + ",\"path\":" +
+               JQ(std::string("../pipelines/") + names[i] + "/pipeline.yaml") + "}";
+    }
+    out += "]}";
+    res.set_content(out, "application/json");
+}
+
+/* small JSON string-quote helper for the handlers above */
+static std::string JQ(const std::string &s) {
+    std::string o;
+    o.push_back('"');
+    static const char *hx = "0123456789abcdef";
+    for (char c : s) {
+        if (c == '"' || c == '\\') { o.push_back('\\'); o.push_back(c); }
+        else if ((unsigned char)c < 0x20) {  /* JSON: control chars MUST be \u-escaped */
+            o += "\\u00"; o.push_back(hx[(c >> 4) & 0xf]); o.push_back(hx[c & 0xf]);
+        }
+        else o.push_back(c);
+    }
+    o.push_back('"');
+    return o;
+}
+
+/* GET /v1/pipelines/yaml/detail?yaml=<name>[.yaml] - name, first
+ * description line, node id list, raw spec text. */
+static void handle_yaml_detail(const httplib::Request &req,
+                               httplib::Response &res) {
+    if (!req.has_param("yaml")) {
+        res.status = 400;
+        res.set_content("{\"error\":\"missing yaml param\"}", "application/json");
+        return;
+    }
+    std::string name = req.get_param_value("yaml");
+    size_t dot = name.rfind(".yaml");
+    if (dot != std::string::npos) name = name.substr(0, dot);
+    char py[512];
+    snprintf(py, sizeof(py), "../pipelines/%s/pipeline.yaml", name.c_str());
+    FILE *f = fopen(py, "rb");
+    if (!f) {
+        res.status = 404;
+        res.set_content("{\"error\":\"no such pipeline\"}", "application/json");
+        return;
+    }
+    static char buf[65536];
+    size_t bn = fread(buf, 1, sizeof(buf) - 1, f);
+    fclose(f);
+    buf[bn] = 0;
+    char desc[256] = "";
+    const char *dp = strstr(buf, "description:");
+    if (dp) {
+        const char *v = dp + 12;
+        while (*v == ' ' || *v == '"') v++;
+        size_t L = 0;
+        while (v[L] && v[L] != 10 && v[L] != '"' && L < sizeof(desc) - 1) L++;
+        memcpy(desc, v, L); desc[L] = 0;
+    }
+    std::string nodes = "[";
+    const char *p = buf;
+    int first = 1;
+    while (*p) {
+        const char *eol = strchr(p, 10);
+        if (!eol) eol = p + strlen(p);
+        size_t indent = 0;
+        while (p + indent < eol && p[indent] == ' ') indent++;
+        if ((size_t)(eol - p) > indent + 6 && strncmp(p + indent, "- id: ", 6) == 0) {
+            const char *v = p + indent + 6;
+            size_t L = 0;
+            while (v + L < eol && v[L] != ' ' && v[L] != 13) L++;
+            if (L) {
+                if (!first) nodes += ",";
+                first = 0;
+                nodes += "{\"id\":" + JQ(std::string(v, L)) + "}";
+            }
+        }
+        p = eol + 1;
+    }
+    nodes += "]";
+    std::string out = "{\"name\":" + JQ(name) + ",\"description\":" + JQ(desc) +
+                      ",\"nodes\":" + nodes + ",\"yaml\":" + JQ(buf) + "}";
+    res.set_content(out, "application/json");
+}
+
 /* GET /v1/pipelines/runs - gallery list, disk-scanned from ./output/run-*
  * sidecars: survives restarts; live status is mirrored into the sidecars
  * by run_set_state, so the disk is always current. */
@@ -3878,6 +3989,8 @@ inference_server *server_create(int port) {
     s->srv.Post("/v1/pipelines/drafts",  handle_pipelines_drafts);
     s->srv.Get("/v1/pipelines/drafts/:id", handle_draft_get);
     s->srv.Get("/v1/pipelines/drafts",     handle_draft_list);
+    s->srv.Get("/v1/pipelines/yaml/list",  handle_yaml_list);
+    s->srv.Get("/v1/pipelines/yaml/detail", handle_yaml_detail);
     s->srv.Get("/v1/pipelines/runs",     handle_pipelines_runs);
     s->srv.Get(R"(/editor/assets/runs/(.+))", handle_asset);
     s->srv.Get("/v1/form-spec",          handle_form_spec);
@@ -3893,6 +4006,14 @@ inference_server *server_create(int port) {
     s->srv.Get(R"(/v1/skills/(.+))",       handle_skill_read);
     s->srv.Get("/v1/ledger",               handle_ledger);
     s->srv.Post("/v1/compose",              handle_compose);
+    /* every unmatched route answers with VALID JSON so client-side
+     * res.json() never trips on an empty body */
+    s->srv.set_error_handler([](const auto &req, auto &res) {
+        if (res.body.empty() || res.body[0] != '"') {
+            res.status = res.status ? res.status : 404;
+            res.set_content("{\"error\":\"not found\",\"path\":" + JQ(req.path) + "}", "application/json");
+        }
+    });
     ledger_boot();   /* recover prov jobs from the ledger + stamp boot */
 
     /* ---- OpenAPI ---- */
