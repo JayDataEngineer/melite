@@ -686,7 +686,7 @@ static void draft_writeback(size_t idx, const char *wire) {
             size_t head = (size_t)(ob - buf);
             memcpy(out, buf, head); oo = head;
             memcpy(out + oo, res, strlen(res)); oo += strlen(res);
-            oo += snprintf(out + oo, sizeof(out) - oo, "%s", oe);   /* rest incl. '}' and beyond */
+            oo += snprintf(out + oo, sizeof(out) - oo, "%s", oe + 1);   /* res carries its own braces */
             out[oo] = 0;
         } else {
             return;
@@ -1317,6 +1317,14 @@ static void handle_pipelines_status(const httplib::Request &req,
     snprintf(state, sizeof(state), "%s", g_runs[found].state);
     snprintf(err, sizeof(err), "%s", g_runs[found].error);
     snprintf(yamlhead, sizeof(yamlhead), "%.60s", g_runs[found].run_id);
+    /* queue position: how many queued runs registered before this one */
+    int qpos = 0;
+    if (strcmp(state, "queued") == 0) {
+        for (size_t i = 0; i < g_n_runs; i++) {
+            if ((long)i == (long)found) break;
+            if (strcmp(g_runs[i].state, "queued") == 0) qpos++;
+        }
+    }
     /* stages snapshot for the response */
     char stages_json[8192];
     {
@@ -1338,8 +1346,8 @@ static void handle_pipelines_status(const httplib::Request &req,
     size_t cap = strlen(arts) + strlen(stages_json) + 700;
     char *out = (char *)malloc(cap);
     snprintf(out, cap,
-        "{\"run_id\":\"%s\",\"status\":\"%s\",\"stages\":%s,\"artifacts\":%s,\"error\":\"%s\"}",
-        yamlhead, wire_state(state), stages_json, arts, err);
+        "{\"run_id\":\"%s\",\"status\":\"%s\",\"stages\":%s,\"artifacts\":%s,\"error\":\"%s\",\"queue_position\":%d}",
+        yamlhead, wire_state(state), stages_json, arts, err, qpos);
     res.set_content(out, "application/json");
     free(arts);
     free(out);
