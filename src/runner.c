@@ -44,6 +44,17 @@ struct inference_runner {
     size_t           n_nodes;
     /* Execution context for progress events */
     char             prompt_id[64];
+    /* Stage-level control (see runner.h) */
+    runner_stage_cb  stage_cb;
+    void            *stage_ctx;
+    volatile int     stop_flag;
+    /* Output persistence: when set, node output tensors are written to
+     * <out_dir>/<node_id>_<name>.<ext> after successful execution so the
+     * server's artifact attribution (out_dir scan) can pick them up.
+     * Engines that persist their own files (comfyui plugin writes images
+     * itself and returns metadata-only tensors with data==NULL) are
+     * skipped by the data!=NULL guard. */
+    char             out_dir[512];
 };
 
 inference_runner *runner_create(size_t vram_budget_bytes, inference_ws *ws) {
@@ -168,11 +179,83 @@ static size_t resolve_inputs(const runner_node *all_nodes, size_t n_nodes,
     return count;
 }
 
+/* Choose a file extension for an output tensor. */
+static const char *out_ext(const inference_tensor *t) {
+    const uint8_t *b = (const uint8_t *)t->data;
+    if (t->name && strcmp(t->name, "audio") == 0) return "wav";
+    if (t->nbytes > 8 && b[0] == 0x89 && b[1] == 'P' && b[2] == 'N' && b[3] == 'G')
+        return "png";
+    if (t->nbytes > 3 && b[0] == 0xFF && b[1] == 0xD8 && b[2] == 0xFF)
+        return "jpg";
+    if (t->nbytes > 12 && b[0] == 'R' && b[1] == 'I' && b[2] == 'F' && b[3] == 'F')
+        return "wav";
+    if (t->nbytes > 4 && b[0] == 'g' && b[1] == 'l' && b[2] == 'T' && b[3] == 'F')
+        return "glb";
+    if (t->dtype && strcmp(t->dtype, "f32") == 0) return "f32";
+    if (t->dtype && strcmp(t->dtype, "i32") == 0) return "i32";
+    return "bin";
+}
+
+/* Persist output tensors of a completed node into r->out_dir. */
+static void persist_outputs(inference_runner *r, const char *node_id,
+                            const inference_tensor *outs, size_t n) {
+    if (!r->out_dir[0]) return;
+    for (size_t j = 0; j < n; j++) {
+        const inference_tensor *t = &outs[j];
+        if (!t->data || t->nbytes == 0 || !t->name) continue;
+        char path[768];
+        snprintf(path, sizeof(path), "%s/%s_%s.%s",
+                 r->out_dir, node_id, t->name, out_ext(t));
+        FILE *f = fopen(path, "wb");
+        if (!f) {
+            fprintf(stderr, "runner: cannot write output %s\n", path);
+            continue;
+        }
+        if (fwrite(t->data, 1, t->nbytes, f) != t->nbytes)
+            fprintf(stderr, "runner: short write on %s\n", path);
+        else
+            fprintf(stderr, "runner: saved output %s (%zu bytes)\n",
+                    path, t->nbytes);
+        fclose(f);
+    }
+}
+
+void runner_set_outdir(inference_runner *r, const char *dir) {
+    if (!r) return;
+    if (!dir) { r->out_dir[0] = '\0'; return; }
+    snprintf(r->out_dir, sizeof(r->out_dir), "%s", dir);
+}
+
+void runner_set_stage_cb(inference_runner *r, runner_stage_cb cb, void *ctx) {
+    if (!r) return;
+    r->stage_cb = cb;
+    r->stage_ctx = ctx;
+}
+
+void runner_request_stop(inference_runner *r) {
+    if (r) r->stop_flag = 1;
+}
+
+void runner_clear_stop(inference_runner *r) {
+    if (r) r->stop_flag = 0;
+}
+
 int runner_execute(inference_runner *r,
                    const inference_dag *dag,
                    const inference_tensor *initial_inputs, size_t n_initial,
                    char **result_json) {
+    return runner_execute_ex(r, dag, initial_inputs, n_initial,
+                             NULL, 0, 0, result_json);
+}
+
+int runner_execute_ex(inference_runner *r,
+                      const inference_dag *dag,
+                      const inference_tensor *initial_inputs, size_t n_initial,
+                      const runner_prior_output *prior, size_t n_prior,
+                      int start_from,
+                      char **result_json) {
     if (!r || !dag) return -1;
+    if (start_from < 0) start_from = 0;
 
     /* Generate prompt ID for this execution */
     static int prompt_counter = 0;
@@ -186,6 +269,12 @@ int runner_execute(inference_runner *r,
     }
 
     /* Topological sort */
+    if (dag->n_nodes == 0) {
+        /* empty/garbage DAG - error out, never index order[n-1] */
+        if (r->ws) ws_send_execution_error(r->ws, r->prompt_id, "",
+                                            "dag has no nodes");
+        return -2;
+    }
     size_t *order = malloc(dag->n_nodes * sizeof(size_t));
     if (!order) return -1;
     if (dag_topo_sort(dag, order) < 0) {
@@ -199,6 +288,7 @@ int runner_execute(inference_runner *r,
     r->nodes = calloc(r->n_nodes, sizeof(runner_node));
 
     /* Execute in topo order */
+    int stopped_rc = 0;
     for (size_t i = 0; i < r->n_nodes; i++) {
         size_t idx = order[i];
         dag_node *dnode = &dag->nodes[idx];
@@ -207,8 +297,56 @@ int runner_execute(inference_runner *r,
         rnode->id = dnode->id;
         rnode->type_id = dnode->type;
 
+        /* Cooperative stop - checked at every node boundary */
+        if (r->stop_flag) {
+            fprintf(stderr, "runner: cooperative stop before node %s\n",
+                    dnode->id);
+            stopped_rc = 1;
+            break;
+        }
+
+        /* Resume: skip nodes whose prior outputs are available */
+        if ((int)i < start_from) {
+            size_t n_have = 0;
+            for (size_t p = 0; p < n_prior; p++)
+                if (prior && prior[p].node_id &&
+                    strcmp(prior[p].node_id, dnode->id) == 0)
+                    n_have++;
+            if (n_have > 0) {
+                /* Allocate output slots and fill from prior outputs */
+                rnode->outputs = calloc(16, sizeof(inference_tensor));
+                rnode->n_outputs = 16;
+                size_t slot = 0;
+                for (size_t p = 0; p < n_prior && slot < 16; p++) {
+                    if (!prior || !prior[p].node_id) continue;
+                    if (strcmp(prior[p].node_id, dnode->id) != 0) continue;
+                    inference_tensor *t = &rnode->outputs[slot++];
+                    memset(t, 0, sizeof(*t));
+                    t->name = (char *)prior[p].tensor_name;
+                    t->dtype = (char *)prior[p].dtype;
+                    t->ndim = 1;
+                    t->shape[0] = (long)prior[p].nbytes;
+                    t->data = (void *)prior[p].data;
+                    t->nbytes = prior[p].nbytes;
+                }
+                rnode->n_outputs = slot;
+                fprintf(stderr, "runner: [%zu/%zu] %s SKIPPED (%zu prior outputs)\n",
+                        i + 1, r->n_nodes, dnode->id, slot);
+                if (r->stage_cb)
+                    r->stage_cb(r->stage_ctx, dnode->id, (int)i,
+                                (int)r->n_nodes, RUNNER_STAGE_SKIPPED);
+                continue;
+            }
+            fprintf(stderr, "runner: [%zu/%zu] %s has no prior outputs - executing\n",
+                    i + 1, r->n_nodes, dnode->id);
+        }
+
         fprintf(stderr, "runner: [%zu/%zu] %s (type=%s)\n",
                 i + 1, r->n_nodes, dnode->id, dnode->type);
+
+        if (r->stage_cb)
+            r->stage_cb(r->stage_ctx, dnode->id, (int)i,
+                        (int)r->n_nodes, RUNNER_STAGE_STARTED);
 
         /* Emit executing event — node started */
         if (r->ws) {
@@ -288,6 +426,9 @@ int runner_execute(inference_runner *r,
 
         if (rc < 0) {
             fprintf(stderr, "runner: node_execute failed for %s\n", dnode->id);
+            if (r->stage_cb)
+                r->stage_cb(r->stage_ctx, dnode->id, (int)i,
+                            (int)r->n_nodes, RUNNER_STAGE_ERROR);
             if (r->ws) ws_send_execution_error(r->ws, r->prompt_id, dnode->id,
                                                "node_execute failed");
             free(order);
@@ -308,6 +449,25 @@ int runner_execute(inference_runner *r,
 
         fprintf(stderr, "runner: %s completed (%zu outputs)\n",
                 dnode->id, rnode->n_outputs);
+
+        /* Persist output tensors BEFORE the DONE callback so the server's
+         * artifact attribution (out_dir scan) sees the files. */
+        persist_outputs(r, dnode->id, rnode->outputs, rnode->n_outputs);
+
+        if (r->stage_cb)
+            r->stage_cb(r->stage_ctx, dnode->id, (int)i,
+                        (int)r->n_nodes, RUNNER_STAGE_DONE);
+    }
+
+    /* Cooperatively stopped: emit error-side event and bail */
+    if (stopped_rc == 1) {
+        if (r->ws) {
+            ws_send_execution_error(r->ws, r->prompt_id, "",
+                                    "cooperative stop");
+            ws_send_status(r->ws, 0);
+        }
+        free(order);
+        return 1;
     }
 
     /* Build result JSON from last node's outputs */

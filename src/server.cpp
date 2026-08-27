@@ -30,7 +30,15 @@ static int inf_json_string(const char *json, const char *key, char *out, size_t 
     p++;
     size_t i = 0;
     while (*p && *p != '"' && i < cap - 1) {
-        if (*p == '\\' && p[1]) { p++; if (i < cap - 1) out[i++] = *p++; continue; }
+        if (*p == '\\' && p[1]) {
+            p++;
+            if (*p == 'n') out[i++] = '\n';
+            else if (*p == 't') out[i++] = '\t';
+            else if (*p == 'r') out[i++] = '\r';
+            else out[i++] = *p;
+            p++;
+            continue;
+        }
         out[i++] = *p++;
     }
     out[i] = 0;
@@ -169,9 +177,19 @@ typedef struct {
     size_t nbytes;
 } run_input;
 
+#define RUN_STAGES_MAX 8
+#define RUN_STAGE_ARTS_MAX 4
+
+typedef struct {
+    char id[64];             /* node id from the pipeline YAML */
+    char state[16];          /* pending|running|done|skipped|error */
+    char arts[RUN_STAGE_ARTS_MAX][160];  /* artifacts attributed to this stage */
+    size_t n_arts;
+} run_stage;
+
 typedef struct {
     char run_id[48];
-    char state[16];          /* queued|running|success|error */
+    char state[16];          /* queued|running|success|error|stopped */
     char error[256];
     char out_dir[512];
     char yaml[2048];         /* the pipeline YAML this run executes */
@@ -181,6 +199,21 @@ typedef struct {
     time_t created;
     run_input inputs[16];
     size_t n_inputs;
+    run_stage stages[RUN_STAGES_MAX];
+    size_t n_stages;
+    int  stop_req;           /* per-run cooperative stop request */
+    /* resume support: prior outputs loaded from a previous run's
+     * artifacts + the topo index to resume from */
+#define RUN_PRIOR_MAX 16
+    struct {
+        char node_id[64];
+        char tensor_name[32];
+        char dtype[8];
+        char *data;           /* malloc'd; owned by the entry, freed post-run */
+        size_t nbytes;
+    } prior[RUN_PRIOR_MAX];
+    size_t n_prior;
+    int  start_from;
 } run_entry;
 
 static run_entry g_runs[RUNREG_MAX];
@@ -196,9 +229,6 @@ static int    g_gpu_tickets = 0;
 static int    g_gpu_serving = 0;
 static pthread_mutex_t g_gpu_mu  = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  g_gpu_cv  = PTHREAD_COND_INITIALIZER;
-
-/* ---- Stop/resume support ---- */
-static volatile int g_stop_requested = 0;  /* set by stop handler, checked at stage boundaries */
 
 static void run_write_sidecar(size_t idx);
 static void ledger_log(const char *event, const char *data_json);
@@ -219,6 +249,98 @@ static void run_set_state(size_t idx, const char *state, const char *err) {
         ledger_log("run.state", eb);
         free(eq);
     }
+}
+
+/* ---- Per-stage tracking ----
+ * Parse the node ids out of a pipeline YAML (lines matching "  - id: X")
+ * so a run can report stages[] before/while it executes. */
+static void run_parse_stages(size_t idx) {
+    const char *p = g_runs[idx].yaml;
+    size_t n = 0;
+    while (*p && n < RUN_STAGES_MAX) {
+        /* a stage line: newline, spaces, "- id: " (YAML list of nodes) */
+        const char *line = p;
+        while (*p && *p != '\n') p++;
+        const char *eol = p;
+        size_t indent = 0;
+        while (line + indent < eol && line[indent] == ' ') indent++;
+        if (eol - line > (long)(indent + 6) &&
+            strncmp(line + indent, "- id: ", 6) == 0) {
+            const char *v = line + indent + 6;
+            size_t len = 0;
+            while (v + len < eol && v[len] != ' ' && v[len] != '\r') len++;
+            if (len > 0 && len < sizeof(g_runs[idx].stages[n].id)) {
+                snprintf(g_runs[idx].stages[n].id,
+                         sizeof(g_runs[idx].stages[n].id), "%.*s", (int)len, v);
+                snprintf(g_runs[idx].stages[n].state,
+                         sizeof(g_runs[idx].stages[n].state), "pending");
+                g_runs[idx].stages[n].n_arts = 0;
+                n++;
+            }
+        }
+        if (*p) p++;
+    }
+    g_runs[idx].n_stages = n;
+}
+
+/* Attribute not-yet-attributed artifacts in out_dir to the stage that just
+ * finished. Called from the stage callback at RUNNER_STAGE_DONE. */
+static void stage_attribute_artifacts(size_t idx, size_t stage_i) {
+    if (stage_i >= RUN_STAGES_MAX) return;
+    char seen[64][160];
+    size_t n_seen = 0;
+    /* collect already-attributed names across all stages */
+    for (size_t s = 0; s < g_runs[idx].n_stages; s++)
+        for (size_t a = 0; a < g_runs[idx].stages[s].n_arts && n_seen < 64; a++)
+            snprintf(seen[n_seen++], sizeof(seen[0]), "%s",
+                     g_runs[idx].stages[s].arts[a]);
+    DIR *d = opendir(g_runs[idx].out_dir);
+    if (!d) return;
+    struct dirent *e;
+    run_stage *st = &g_runs[idx].stages[stage_i];
+    while ((e = readdir(d)) != NULL) {
+        if (e->d_name[0] == '.') continue;
+        if (strcmp(e->d_name, "_pipeline.json") == 0) continue;
+        int attr = 0;
+        for (size_t k = 0; k < n_seen; k++)
+            if (strcmp(seen[k], e->d_name) == 0) { attr = 1; break; }
+        if (attr) continue;
+        if (st->n_arts >= RUN_STAGE_ARTS_MAX) break;
+        snprintf(st->arts[st->n_arts++], sizeof(st->arts[0]), "%s", e->d_name);
+        snprintf(seen[n_seen < 64 ? n_seen : 63], sizeof(seen[0]), "%s", e->d_name);
+        if (n_seen < 64) n_seen++;
+    }
+    closedir(d);
+}
+
+/* Stage callback ctx = the run registry index (as a size_t*). */
+static void run_stage_cb(void *ctx, const char *node_id,
+                         int index, int total, int state) {
+    (void)index; (void)total;
+    size_t *idxp = (size_t *)ctx;
+    size_t idx = *idxp;
+    const char *sname =
+        state == RUNNER_STAGE_STARTED  ? "running" :
+        state == RUNNER_STAGE_DONE     ? "done" :
+        state == RUNNER_STAGE_SKIPPED  ? "skipped" :
+        state == RUNNER_STAGE_ERROR    ? "error" : "pending";
+    pthread_mutex_lock(&g_runs_mu);
+    for (size_t s = 0; s < g_runs[idx].n_stages; s++) {
+        if (strcmp(g_runs[idx].stages[s].id, node_id) == 0) {
+            snprintf(g_runs[idx].stages[s].state,
+                     sizeof(g_runs[idx].stages[s].state), "%s", sname);
+            if (state == RUNNER_STAGE_DONE)
+                stage_attribute_artifacts(idx, s);
+            break;
+        }
+    }
+    pthread_mutex_unlock(&g_runs_mu);
+    run_write_sidecar(idx);
+    char eb[400];
+    snprintf(eb, sizeof(eb),
+             "{\"run_id\":\"%s\",\"stage\":\"%s\",\"state\":\"%s\"}",
+             g_runs[idx].run_id, node_id, sname);
+    ledger_log("run.stage", eb);
 }
 
 /* scan out_dir for artifacts -> JSON array string (caller frees) */
@@ -361,8 +483,9 @@ static void *run_thread_fn(void *argp) {
         pthread_cond_wait(&g_gpu_cv, &g_gpu_mu);
     pthread_mutex_unlock(&g_gpu_mu);
 
-    /* Check if stop was requested while we were queued */
-    if (g_stop_requested) {
+    /* Per-run stop may have arrived while we were queued */
+    runner_clear_stop(g_server_runner);
+    if (g_runs[idx].stop_req) {
         run_set_state(idx, "stopped", NULL);
         /* Release our FIFO ticket so the next waiter proceeds */
         pthread_mutex_lock(&g_gpu_mu);
@@ -375,6 +498,12 @@ static void *run_thread_fn(void *argp) {
     inference_dag *dag = dag_parse_string(g_runs[idx].yaml, strlen(g_runs[idx].yaml));
     if (!dag) {
         run_set_state(idx, "error", "dag parse failed");
+        /* MUST release the FIFO ticket or every queued run behind us
+         * deadlocks forever */
+        pthread_mutex_lock(&g_gpu_mu);
+        g_gpu_serving++;
+        pthread_cond_broadcast(&g_gpu_cv);
+        pthread_mutex_unlock(&g_gpu_mu);
         return NULL;
     }
     inference_tensor tensors[16];
@@ -390,18 +519,76 @@ static void *run_thread_fn(void *argp) {
         tensors[i].nbytes = ri->nbytes;
     }
     char *result = NULL;
-    int rc = runner_execute(g_server_runner, dag,
-                            n_in ? tensors : NULL, n_in, &result);
+    size_t cb_idx = idx;
+    runner_set_stage_cb(g_server_runner, run_stage_cb, &cb_idx);
+    /* Persist native-engine output tensors into this run's dir so the
+     * artifact attribution scan sees them (comfyui writes its own files). */
+    runner_set_outdir(g_server_runner, g_runs[idx].out_dir);
+    runner_prior_output prior[RUN_PRIOR_MAX];
+    size_t n_prior = g_runs[idx].n_prior;
+    if (n_prior > RUN_PRIOR_MAX) n_prior = RUN_PRIOR_MAX;
+    for (size_t p = 0; p < n_prior; p++) {
+        prior[p].node_id = g_runs[idx].prior[p].node_id;
+        prior[p].tensor_name = g_runs[idx].prior[p].tensor_name;
+        prior[p].dtype = g_runs[idx].prior[p].dtype;
+        prior[p].data = g_runs[idx].prior[p].data;
+        prior[p].nbytes = g_runs[idx].prior[p].nbytes;
+    }
+    int rc = runner_execute_ex(g_server_runner, dag,
+                               n_in ? tensors : NULL, n_in,
+                               n_prior ? prior : NULL, n_prior,
+                               g_runs[idx].start_from, &result);
+    runner_set_stage_cb(g_server_runner, NULL, NULL);
     dag_free(dag);
     for (size_t i = 0; i < g_runs[idx].n_inputs; i++)
         free(g_runs[idx].inputs[i].bytes);
     g_runs[idx].n_inputs = 0;
-    if (rc < 0) {
+    for (size_t p = 0; p < g_runs[idx].n_prior; p++)
+        free(g_runs[idx].prior[p].data);
+    g_runs[idx].n_prior = 0;
+    if (rc == 1) {
+        run_set_state(idx, "stopped", NULL);
+        inference_free(result);
+    } else if (rc < 0) {
         run_set_state(idx, "error", "pipeline execution failed");
         inference_free(result);
     } else {
         inference_free(result);
         run_set_state(idx, "success", NULL);
+    }
+
+        /* Queue hygiene: ask ComfyUI to drop cached model weights BEFORE
+     * handing the GPU ticket to the next queued job. Without this, the
+     * previous job's ~22.7GB weight cache stays resident and the next
+     * job OOMs on a marginal allocation (observed: KSampler +80MB alloc
+     * failing with 70MB free). Each queued job then starts from a clean
+     * VRAM budget (minus persistent workers like the trellis one). */
+    {
+        char url[256] = "http://127.0.0.1:18465";
+        inf_json_string(g_runs[idx].yaml, "server_url", url, sizeof(url));
+        char host[128] = "127.0.0.1";
+        int port = 18465;
+        const char *pp = strstr(url, "://");
+        if (pp) {
+            pp += 3;
+            const char *colon = strchr(pp, ':');
+            if (colon) {
+                size_t hl = (size_t)(colon - pp);
+                if (hl >= sizeof(host)) hl = sizeof(host) - 1;
+                snprintf(host, hl + 1, "%s", pp);
+                port = atoi(colon + 1);
+            } else {
+                snprintf(host, sizeof(host), "%s", pp);
+            }
+        }
+        httplib::Client cli(host, (uint16_t)port);
+        cli.set_connection_timeout(5);
+        cli.set_read_timeout(120);
+        auto fr = cli.Post("/free",
+                           "{\"unload_models\":true,\"free_memory\":true}",
+                           "application/json");
+        fprintf(stderr, "[vram] comfy /free (%s:%d) -> %s\n", host, port,
+                fr ? std::to_string(fr->status).c_str() : "no response");
     }
 
     /* GPU FIFO: release and wake next waiter */
@@ -448,6 +635,28 @@ static void run_write_sidecar(size_t idx) {
     char *yamlq = json_quote(g_runs[idx].yaml);
     char *promptq = json_quote(g_runs[idx].prompt);
     char *errq = err[0] ? json_quote(err) : NULL;
+
+    /* stages snapshot (per-stage state + attributed artifacts) */
+    char stages_json[8192];
+    {
+        size_t so = 0;
+        stages_json[so++] = '[';
+        for (size_t s = 0; s < g_runs[idx].n_stages; s++) {
+            run_stage *st = &g_runs[idx].stages[s];
+            so += (size_t)snprintf(stages_json + so, sizeof(stages_json) - so,
+                "%s{\"id\":\"%s\",\"state\":\"%s\",\"artifacts\":[",
+                s ? "," : "", st->id, st->state);
+            for (size_t a = 0; a < st->n_arts; a++)
+                so += (size_t)snprintf(stages_json + so,
+                                      sizeof(stages_json) - so,
+                                      "%s\"%s\"", a ? "," : "", st->arts[a]);
+            so += (size_t)snprintf(stages_json + so, sizeof(stages_json) - so,
+                                   "]}");
+            if (so >= sizeof(stages_json) - 8) break;
+        }
+        stages_json[so++] = ']';
+        stages_json[so] = 0;
+    }
     pthread_mutex_unlock(&g_runs_mu);
 
     char path[600];
@@ -456,9 +665,9 @@ static void run_write_sidecar(size_t idx) {
     if (!f) { free(yamlq); free(promptq); free(errq); return; }
     fprintf(f, "{\"run_id\":\"%s\",\"model\":\"%s\",\"prompt\":%s,"
                "\"seed\":%ld,\"created\":%ld,\"status\":\"%s\","
-               "\"error\":%s,\"yaml\":%s}",
+               "\"error\":%s,\"stages\":%s,\"yaml\":%s}",
             rid, model, promptq, seed, created, state,
-            errq ? errq : "null", yamlq);
+            errq ? errq : "null", stages_json, yamlq);
     fclose(f);
     free(yamlq); free(promptq); free(errq);
 }
@@ -557,7 +766,9 @@ static void handle_pipelines_start(const httplib::Request &req,
         /* recycle: compact finished entries */
         size_t w2 = 0;
         for (size_t i = 0; i < g_n_runs; i++)
-            if (strcmp(g_runs[i].state, "success") != 0 && strcmp(g_runs[i].state, "error") != 0)
+            if (strcmp(g_runs[i].state, "success") != 0 &&
+                strcmp(g_runs[i].state, "error") != 0 &&
+                strcmp(g_runs[i].state, "stopped") != 0)
                 g_runs[w2++] = g_runs[i];
         g_n_runs = w2;
         if (g_n_runs >= RUNREG_MAX) {
@@ -578,6 +789,10 @@ static void handle_pipelines_start(const httplib::Request &req,
     snprintf(g_runs[idx].model, sizeof(g_runs[idx].model), "%s", model);
     snprintf(g_runs[idx].prompt, sizeof(g_runs[idx].prompt), "%s", prompt);
     g_runs[idx].seed = seed;
+    g_runs[idx].stop_req = 0;
+    g_runs[idx].n_stages = 0;
+    g_runs[idx].n_prior = 0;
+    g_runs[idx].start_from = 0;
     pthread_mutex_unlock(&g_runs_mu);
 
     /* the spec sidecar exists from the moment the run is registered */
@@ -656,6 +871,9 @@ static void handle_pipelines_start(const httplib::Request &req,
     }
     } /* end if(!yaml_override) */
 
+    /* stage list comes from the final YAML (reported while queued too) */
+    run_parse_stages(idx);
+
     run_thread_arg *ta = (run_thread_arg *)malloc(sizeof(*ta));
     ta->idx = idx;
     pthread_t th;
@@ -687,14 +905,29 @@ static void handle_pipelines_status(const httplib::Request &req,
     snprintf(state, sizeof(state), "%s", g_runs[found].state);
     snprintf(err, sizeof(err), "%s", g_runs[found].error);
     snprintf(yamlhead, sizeof(yamlhead), "%.60s", g_runs[found].run_id);
+    /* stages snapshot for the response */
+    char stages_json[8192];
+    {
+        size_t so = 0;
+        stages_json[so++] = '[';
+        for (size_t s = 0; s < g_runs[found].n_stages; s++) {
+            run_stage *st = &g_runs[found].stages[s];
+            so += (size_t)snprintf(stages_json + so, sizeof(stages_json) - so,
+                "%s{\"id\":\"%s\",\"state\":\"%s\"}",
+                s ? "," : "", st->id, st->state);
+            if (so >= sizeof(stages_json) - 8) break;
+        }
+        stages_json[so++] = ']';
+        stages_json[so] = 0;
+    }
     pthread_mutex_unlock(&g_runs_mu);
 
     char *arts = run_artifacts_json(outdir);
-    size_t cap = strlen(arts) + 700;
+    size_t cap = strlen(arts) + strlen(stages_json) + 700;
     char *out = (char *)malloc(cap);
     snprintf(out, cap,
-        "{\"run_id\":\"%s\",\"status\":\"%s\",\"artifacts\":%s,\"error\":\"%s\"}",
-        yamlhead, state, arts, err);
+        "{\"run_id\":\"%s\",\"status\":\"%s\",\"stages\":%s,\"artifacts\":%s,\"error\":\"%s\"}",
+        yamlhead, state, stages_json, arts, err);
     res.set_content(out, "application/json");
     free(arts);
     free(out);
@@ -1065,7 +1298,13 @@ static int rundir_cmp(const void *a, const void *b) {
  * by run_set_state, so the disk is always current. */
 static void handle_pipelines_runs(const httplib::Request &req,
                                   httplib::Response &res) {
-    (void)req;
+    /* ?limit=N - clamp 1..500, default 200 (parity with ray gateway) */
+    int limit = 200;
+    if (req.has_param("limit")) {
+        limit = atoi(req.get_param_value("limit").c_str());
+        if (limit < 1) limit = 1;
+        if (limit > 500) limit = 500;
+    }
     run_dir_ent ents[256];
     size_t n = 0;
     DIR *d = opendir("./output");
@@ -1093,8 +1332,8 @@ static void handle_pipelines_runs(const httplib::Request &req,
 
     size_t cap = 16384, len = 0;
     char *out = (char *)malloc(cap);
-    len += (size_t)snprintf(out + len, cap - len, "{\"runs\":[");
-    for (size_t i = 0; i < n && i < 100; i++) {
+    len += (size_t)snprintf(out + len, cap - len, "{\"count\":%zu,\"runs\":[", n);
+    for (size_t i = 0; i < n && i < (size_t)limit; i++) {
         char dir[600], sd[640], buf[8192];
         snprintf(dir, sizeof(dir), "./output/%s", ents[i].dir);
         snprintf(sd, sizeof(sd), "%s/_pipeline.json", dir);
@@ -2414,7 +2653,13 @@ static void handle_pipelines_stop(const httplib::Request &req,
     pthread_mutex_unlock(&g_runs_mu);
 
     if (strcmp(state, "queued") == 0 || strcmp(state, "running") == 0) {
-        g_stop_requested = 1;
+        /* queued: thread sees stop_req before acquiring the GPU FIFO.
+         * running: cooperative stop fires at the next node boundary. */
+        pthread_mutex_lock(&g_runs_mu);
+        g_runs[found].stop_req = 1;
+        pthread_mutex_unlock(&g_runs_mu);
+        if (strcmp(state, "running") == 0)
+            runner_request_stop(g_server_runner);
         run_set_state(found, "stopped", NULL);
         char out[128];
         snprintf(out, sizeof(out), "{\"run_id\":\"%s\",\"status\":\"stopped\"}",
@@ -2531,6 +2776,20 @@ static void handle_pipelines_resume(const httplib::Request &req,
     inf_json_string(spec, "prompt", prompt, sizeof(prompt));
     seed = inf_json_int(spec, "seed", -1);
     inf_json_string(spec, "yaml", yaml_buf, sizeof(yaml_buf));
+    /* copy the stages array out so spec can be freed now (error paths
+     * below must not leak it) */
+    char stages_buf[8192] = "";
+    {
+        const char *sp = strstr(spec, "\"stages\":[");
+        if (sp) {
+            const char *se = strchr(sp + 9, ']');
+            if (se) {
+                size_t L = (size_t)(se - sp + 1);
+                if (L >= sizeof(stages_buf)) L = sizeof(stages_buf) - 1;
+                snprintf(stages_buf, L + 1, "%.*s", (int)L, sp);
+            }
+        }
+    }
     free(spec);
 
     if (!model[0]) {
@@ -2568,6 +2827,10 @@ static void handle_pipelines_resume(const httplib::Request &req,
     snprintf(g_runs[idx].model, sizeof(g_runs[idx].model), "%s", model);
     snprintf(g_runs[idx].prompt, sizeof(g_runs[idx].prompt), "%s", prompt);
     g_runs[idx].seed = seed;
+    g_runs[idx].stop_req = 0;
+    g_runs[idx].n_stages = 0;
+    g_runs[idx].n_prior = 0;
+    g_runs[idx].start_from = 0;
     pthread_mutex_unlock(&g_runs_mu);
 
     mkdir("./output", 0755);
@@ -2602,7 +2865,80 @@ static void handle_pipelines_resume(const httplib::Request &req,
         add_run_input_text(idx, "negative_prompt", tmpin);
     if (seed >= 0) add_run_input_f32(idx, "seed", (float)seed);
 
-    g_stop_requested = 0;
+    /* stage list from the (possibly saved) YAML */
+    run_parse_stages(idx);
+
+    /* start_from: resume from topo index N (default 0 = re-run everything).
+     * Stages before N with recorded artifacts in the ORIGINAL run's dir
+     * are injected as prior outputs so the runner can skip them. */
+    int start_from = inf_json_int(req.body.c_str(), "start_from", 0);
+    if (start_from < 0) start_from = 0;
+    if (start_from > 0 && stages_buf[0]) {
+        const char *cur = stages_buf;
+        if (cur) {
+            cur += 10;
+            int stage_i = 0;
+            while (*cur == '{' && stage_i < start_from) {
+                char sid[64] = "";
+                const char *idp = strstr(cur, "\"id\":\"");
+                const char *objend = strchr(cur, '}');
+                if (!objend) break;
+                if (idp && idp < objend) {
+                    idp += 6;
+                    size_t L = 0;
+                    while (idp[L] && idp[L] != '"' && L < sizeof(sid) - 1) L++;
+                    snprintf(sid, sizeof(sid), "%.*s", (int)L, idp);
+                }
+                /* artifacts recorded for this stage */
+                const char *arts = strstr(cur, "\"artifacts\":[");
+                if (sid[0] && arts && arts < objend) {
+                    arts += 14;
+                    int art_i = 0;
+                    while (*arts == '"' && g_runs[idx].n_prior < RUN_PRIOR_MAX) {
+                        char aname[192];
+                        size_t L = 0;
+                        arts++;
+                        while (arts[L] && arts[L] != '"' &&
+                               L < sizeof(aname) - 1) L++;
+                        snprintf(aname, sizeof(aname), "%.*s", (int)L, arts);
+                        arts += L;
+                        if (*arts == '"') arts++;
+                        while (*arts == ',' || *arts == ' ') arts++;
+                        /* load the bytes from the ORIGINAL run dir */
+                        char apath[900];
+                        snprintf(apath, sizeof(apath), "./output/%s/%s",
+                                 rid.c_str(), aname);
+                        FILE *af = fopen(apath, "rb");
+                        if (af) {
+                            fseek(af, 0, SEEK_END);
+                            long asz = ftell(af);
+                            fseek(af, 0, SEEK_SET);
+                            char *abytes = (char *)malloc(asz > 0 ? asz : 1);
+                            (void)fread(abytes, 1, asz, af);
+                            fclose(af);
+                            size_t pi = g_runs[idx].n_prior++;
+                            snprintf(g_runs[idx].prior[pi].node_id,
+                                     sizeof(g_runs[idx].prior[pi].node_id),
+                                     "%s", sid);
+                            snprintf(g_runs[idx].prior[pi].tensor_name,
+                                     sizeof(g_runs[idx].prior[pi].tensor_name),
+                                     "image_%d", art_i);
+                            snprintf(g_runs[idx].prior[pi].dtype,
+                                     sizeof(g_runs[idx].prior[pi].dtype), "u8");
+                            g_runs[idx].prior[pi].data = abytes;
+                            g_runs[idx].prior[pi].nbytes = (size_t)asz;
+                            art_i++;
+                        }
+                    }
+                }
+                cur = objend + 1;
+                while (*cur == ',') cur++;
+                stage_i++;
+            }
+        }
+    }
+    g_runs[idx].start_from = start_from;
+
     run_thread_arg *ta = (run_thread_arg *)malloc(sizeof(*ta));
     ta->idx = idx;
     pthread_t th;

@@ -35,7 +35,15 @@ static inline const char *inf_json_string(const char *json, const char *key,
     p++;
     size_t i = 0;
     while (*p && *p != '"' && i < buflen - 1) {
-        if (*p == '\\' && p[1]) p++;
+        if (*p == '\\' && p[1]) {
+            p++;
+            if (*p == 'n') buf[i++] = '\n';
+            else if (*p == 't') buf[i++] = '\t';
+            else if (*p == 'r') buf[i++] = '\r';
+            else buf[i++] = *p;
+            p++;
+            continue;
+        }
         buf[i++] = *p++;
     }
     buf[i] = '\0';

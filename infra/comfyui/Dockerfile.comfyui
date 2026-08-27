@@ -115,12 +115,8 @@ COPY infra/comfyui/extension_lane.py /tmp/extension_lane.py
 COPY infra/comfyui/setup_comfyui.py /tmp/setup_comfyui.py
 # In-tree node packs (no git URL — deployed from the repo's custom_nodes/
 # url-less lane entries (mirrored by sync_packs.sh — the list there is authoritative)
-COPY custom_nodes/melite-audio-nodes /tmp/in-tree-packs/melite-audio-nodes
-COPY custom_nodes/melite-trelliscpp-nodes /tmp/in-tree-packs/melite-trelliscpp-nodes
 COPY custom_nodes/melite-anigen-nodes /tmp/in-tree-packs/melite-anigen-nodes
 COPY custom_nodes/melite-autorig-nodes /tmp/in-tree-packs/melite-autorig-nodes
-COPY custom_nodes/melite-hymotion-nodes /tmp/in-tree-packs/melite-hymotion-nodes
-COPY custom_nodes/melite-kimodo-nodes /tmp/in-tree-packs/melite-kimodo-nodes
 COPY custom_nodes/melite-seethrough-nodes /tmp/in-tree-packs/melite-seethrough-nodes
 COPY custom_nodes/melite-step1x-nodes /tmp/in-tree-packs/melite-step1x-nodes
 COPY custom_nodes/melite-stretchy-nodes /tmp/in-tree-packs/melite-stretchy-nodes
