@@ -81,6 +81,18 @@ typedef struct catalog_model {
     /* Engine binding */
     char *engine_plugin;
 
+    /* Editor form routing (e.g. form_video_director) — the card surface the
+     * editor must mount for this model; without it the client contract
+     * refuses to route or render the model. May be NULL. */
+    char *form;
+
+    /* Card studio body claim (e.g. melite-video/video_timeline) — the
+     * editor's studio-tenant resolver reads families[id].studio.tenant
+     * from /v1/model-catalog and mounts that card component INSTEAD of
+     * the schema form (precedence 100). May be NULL. */
+    char *studio_tenant;
+    int studio_owns_params;
+
     /* Agent bundle path (may be NULL) */
     char *agent_md_path;
 

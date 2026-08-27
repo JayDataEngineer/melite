@@ -1046,6 +1046,173 @@ static const char *drafts_aux_dir(void) {
 }
 
 /* defined below (runs-list helper); needed early by the draft lister */
+
+
+/* == Kinds lane (the fourth lane) ======================================
+
+ * GET /v1/kinds - card kind BEHAVIOR FLAGS as data: the file stem IS the
+
+ * kind string (persisted wire vocabulary). Sources: kinds dirs under
+
+ * ../plugins/<plugin>/kinds and ./kinds. Wire contract mirrors the ray gateway
+
+ * ({kinds:[{kind,runnable,executable,formSpec,compound,opensStudio,
+
+ * badgeTone,icon?,plugin}]}) so the editor cardSeam store registers
+
+ * runnability instead of rendering unknown kinds fail-safe (not runnable -
+
+ * the Run/Re-run buttons die with it). */
+
+static void kinds_parse_file(const char *path, const char *plugin,
+
+                              std::string &out, int &n) {
+
+    FILE *f = fopen(path, "rb");
+
+    if (!f) return;
+
+    char line[256];
+
+    int runnable = 0, executable = 0, form_spec = 0, compound = 0, opens = 0;
+
+    char tone[32] = "default", icon[64] = "";
+
+    while (fgets(line, sizeof(line), f)) {
+
+        char *nl = strchr(line, 10); if (nl) *nl = 0;
+
+        char *v;
+
+        if ((v = strstr(line, "runnable:")) == line) {
+
+            runnable = strstr(v, "true") != NULL;
+
+        } else if ((v = strstr(line, "executable:")) == line) {
+
+            executable = strstr(v, "true") != NULL;
+
+        } else if ((v = strstr(line, "formSpec:")) == line) {
+
+            form_spec = strstr(v, "true") != NULL;
+
+        } else if ((v = strstr(line, "compound:")) == line) {
+
+            compound = strstr(v, "true") != NULL;
+
+        } else if ((v = strstr(line, "opensStudio:")) == line) {
+
+            opens = strstr(v, "true") != NULL;
+
+        } else if ((v = strstr(line, "badgeTone:")) == line) {
+
+            sscanf(v + 10, "%31s", tone);
+
+        } else if ((v = strstr(line, "icon:")) == line) {
+
+            sscanf(v + 5, "%63s", icon);
+
+        }
+
+    }
+
+    fclose(f);
+
+    const char *stem = strrchr(path, '/');
+
+    stem = stem ? stem + 1 : path;
+
+    char kind[96];
+
+    snprintf(kind, sizeof(kind), "%s", stem);
+
+    char *dot = strrchr(kind, '.');
+
+    if (dot) *dot = 0;
+
+    if (n++) out += ",";
+
+    out += "{\"kind\":\"" + std::string(kind) + "\",\"runnable\":" +
+
+           (runnable ? "true" : "false") + ",\"executable\":" +
+
+           (executable ? "true" : "false") + ",\"formSpec\":" +
+
+           (form_spec ? "true" : "false") + ",\"compound\":" +
+
+           (compound ? "true" : "false") + ",\"opensStudio\":" +
+
+           (opens ? "true" : "false") + ",\"badgeTone\":\"" + tone + "\"";
+
+    if (icon[0]) out += ",\"icon\":\"" + std::string(icon) + "\"";
+
+    out += ",\"plugin\":\"" + std::string(plugin) + "\"}";
+
+}
+
+
+
+static void handle_kinds(const httplib::Request &req,
+
+                         httplib::Response &res) {
+
+    std::string out = "{\"kinds\":[";
+
+    int n = 0;
+
+    const char *roots[2] = { "../plugins", "." };
+
+    for (int r = 0; r < 2; r++) {
+
+        DIR *[REDACTED 2026-11-05] = opendir(roots[r]);
+
+        if (![REDACTED 2026-11-05]) continue;
+
+        struct dirent *pe;
+
+        while ((pe = readdir([REDACTED 2026-11-05])) != NULL) {
+
+            if (pe->d_name[0] == '.') continue;
+
+            char kd[512];
+
+            snprintf(kd, sizeof(kd), "%s/%s/kinds", roots[r], pe->d_name);
+
+            DIR *d = opendir(kd);
+
+            if (!d) continue;
+
+            struct dirent *e;
+
+            while ((e = readdir(d)) != NULL) {
+
+                size_t len = strlen(e->d_name);
+
+                if (len < 6 || strcmp(e->d_name + len - 5, ".yaml") != 0) continue;
+
+                char path[600];
+
+                snprintf(path, sizeof(path), "%s/%s", kd, e->d_name);
+
+                kinds_parse_file(path, pe->d_name, out, n);
+
+            }
+
+            closedir(d);
+
+        }
+
+        closedir([REDACTED 2026-11-05]);
+
+    }
+
+    out += "]}";
+
+    res.set_content(out, "application/json");
+
+}
+
+
 static int sidecar_str(const char *json, const char *key, char *out, size_t cap);
 
 /* Strict id charset — no path traversal from the wire. */
@@ -3255,6 +3422,7 @@ inference_server *server_create(int port) {
     s->srv.Post("/v1/models/provision",  handle_provision);
     s->srv.Get("/v1/models/provision/status", handle_provision_status);
     s->srv.Get("/v1/model-catalog",      handle_catalog);
+    s->srv.Get("/v1/kinds",              handle_kinds);
     s->srv.Get("/v1/model/:id",          handle_catalog_model);
     s->srv.Get("/v1/agent-manifest",     handle_agent_manifest);
     s->srv.Post("/v1/models/download",   handle_download);

@@ -120,6 +120,8 @@ static void free_model(catalog_model *m) {
     free(m->default_keys);
     free(m->default_vals);
     free(m->engine_plugin);
+    free(m->form);
+    free(m->studio_tenant);
     free(m->agent_md_path);
     free(m->inference_path);
     free(m->rubric_path);
@@ -160,7 +162,14 @@ static catalog_model *parse_model_yaml(const char *yaml) {
             else if (strcmp(s, "engine:") == 0)      { section = 4; }
             else if (strncmp(s, "variant_groups:", 15) == 0) { section = 5; }
             else if (strncmp(s, "lora_catalog:", 13) == 0) { section = 6; }
+            else if (strncmp(s, "studio:", 7) == 0)    { section = 7; }
             else { section = 0; }
+            /* form: is a top-level scalar, not a section */
+            const char *val0 = ykv(s, "form");
+            if (val0 != NULL) {
+                free(m->form);
+                m->form = ystrdup(val0);
+            }
         }
 
         const char *val;
@@ -217,6 +226,17 @@ static catalog_model *parse_model_yaml(const char *yaml) {
             if ((val = ykv(s, "plugin")) != NULL) {
                 free(m->engine_plugin);
                 m->engine_plugin = ystrdup(val);
+            }
+        }
+
+        /* Studio body claim section (7): tenant + owns_params */
+        if (section == 7 && indent == 2) {
+            if ((val = ykv(s, "tenant")) != NULL) {
+                free(m->studio_tenant);
+                m->studio_tenant = ystrdup(val);
+            }
+            if ((val = ykv(s, "owns_params")) != NULL) {
+                m->studio_owns_params = (strcmp(val, "true") == 0 || strcmp(val, "1") == 0);
             }
         }
 
@@ -675,6 +695,14 @@ char *catalog_model_to_json(const catalog_model *m) {
     json_escape(esc, sizeof(esc), m->id);
     off += snprintf(json + off, cap - off, "%s\",", esc);
 
+    /* Self-referencing family pointer — the editor's alias resolver
+     * (FO) reads models[id].family to find the families row (studio
+     * tenant, label). Without it only the direct-id fallback paths
+     * work and studio claims never resolve. */
+    off += snprintf(json + off, cap - off, "\"family\":\"");
+    json_escape(esc, sizeof(esc), m->id);
+    off += snprintf(json + off, cap - off, "%s\",", esc);
+
     off += snprintf(json + off, cap - off, "\"genre\":\"");
     json_escape(esc, sizeof(esc), m->genre);
     off += snprintf(json + off, cap - off, "%s\",", esc);
@@ -736,6 +764,13 @@ char *catalog_model_to_json(const catalog_model *m) {
     off += snprintf(json + off, cap - off, "\"engine\":\"");
     json_escape(esc, sizeof(esc), m->engine_plugin);
     off += snprintf(json + off, cap - off, "%s\"", esc);
+
+    /* Editor form routing (the card surface contract key) */
+    if (m->form && *m->form) {
+        off += snprintf(json + off, cap - off, ",\"form\":\"");
+        json_escape(esc, sizeof(esc), m->form);
+        off += snprintf(json + off, cap - off, "%s\"", esc);
+    }
 
     /* Agent */
     if (m->agent_md_path) {
@@ -844,7 +879,7 @@ char *catalog_to_json(const inference_catalog *cat) {
         free(mjson);
     }
 
-    /* families: MAP keyed by family id -> {label, genre} */
+    /* families: MAP keyed by family id -> {label, genre, studio?} */
     off += snprintf(json + off, cap - off, "},\"families\":{");
     for (size_t i = 0; i < cat->n_models; i++) {
         if (i) json[off++] = ',';
@@ -853,7 +888,20 @@ char *catalog_to_json(const inference_catalog *cat) {
         json_escape(esc, sizeof(esc), cat->models[i].label);
         off += snprintf(json + off, cap - off, "%s\",\"genre\":\"", esc);
         json_escape(esc, sizeof(esc), cat->models[i].genre);
-        off += snprintf(json + off, cap - off, "%s\"}", esc);
+        off += snprintf(json + off, cap - off, "%s\"", esc);
+        /* Studio body claim — the editor's studio-tenant resolver keys off
+         * families[id].studio.tenant (precedence 100, replaces the schema
+         * form for the card body). Only models declaring studio: emit it. */
+        if (cat->models[i].studio_tenant && *cat->models[i].studio_tenant) {
+            off += snprintf(json + off, cap - off,
+                            ",\"studio\":{\"tenant\":\"");
+            json_escape(esc, sizeof(esc), cat->models[i].studio_tenant);
+            off += snprintf(json + off, cap - off,
+                            "%s\",\"owns_params\":%s,\"writes\":[]}",
+                            esc,
+                            cat->models[i].studio_owns_params ? "true" : "false");
+        }
+        off += snprintf(json + off, cap - off, "}");
     }
 
     off += snprintf(json + off, cap - off, "},\"cards\":[");
