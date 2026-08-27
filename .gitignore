@@ -1,24 +1,24 @@
-# Build output
+
+*.bin
 build/
 build-asan/
-cmake-build-*/
-
-# CMake
+# Build output
 .cache/
+*.ckpt
+# CMake
+cmake-build-*/
 compile_commands.json
-
 # Compiled objects
-*.o
-*.so
+dsh/infer-gallery/lib/
+dsh/infer-gallery/node_modules/
+dsh/node_modules/
 *.dylib
 *.exe
-
-# Model weights (too large for git)
 *.gguf
-*.bin
-*.safetensors
-*.ckpt
+# Model weights (too large for git)
+*.o
 *.pt
-
-# Python
 __pycache__/
+# Python
+*.safetensors
+*.so

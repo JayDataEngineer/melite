@@ -1,0 +1,15 @@
+# inference.cpp standalone DSH extension overlay — the media sidebar
+# (runs gallery) served from THIS repo, no ray dependency.
+# Applied with: dsh --profile web --patch <this file> --port 3080
+# HOST rows need the ABSOLUTE path of the built node artifact; CLIENT rows
+# use the package name (served via the profile bundle table).
+
+- insert:
+    - id: infer-gallery-host
+      name: /home/user/Documents/programs/active/inference.cpp/dsh/infer-gallery/lib/index.js
+      config:
+        gatewayUrl: http://localhost:18090
+    - id: infer-gallery-client
+      name: '@infer-media/dsh-gallery'
+      config:
+        clientRowOnly: true
