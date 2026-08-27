@@ -639,7 +639,7 @@ static void draft_writeback(size_t idx, const char *wire) {
     const char *rid = g_runs[idx].run_id;
     const char *outdir = g_runs[idx].out_dir;
     char stitch[640] = "", wf[3][640] = {{0}, {0}, {0}};
-    char seam[2][640] = {{0}, {0}};
+    char seam[3][640] = {{0}, {0}, {0}};
     char p[768];
     const char *wins[3] = {"window1", "window2", "window3"};
     snprintf(p, sizeof(p), "%s/stitch_video_0.mp4", outdir);
@@ -649,11 +649,9 @@ static void draft_writeback(size_t idx, const char *wire) {
         snprintf(p, sizeof(p), "%s/%s_video_0.mp4", outdir, wins[w]);
         if (access(p, R_OK) == 0)
             snprintf(wf[w], sizeof(wf[w]), "/editor/assets/runs/%s/%s_video_0.mp4", rid, wins[w]);
-        if (w < 2) {
-            snprintf(p, sizeof(p), "%s/%s_latent_last.h3latent", outdir, wins[w]);
-            if (access(p, R_OK) == 0)
-                snprintf(seam[w], sizeof(seam[w]), "/editor/assets/runs/%s/%s_latent_last.h3latent", rid, wins[w]);
-        }
+        snprintf(p, sizeof(p), "%s/%s_latent_last.h3latent", outdir, wins[w]);
+        if (access(p, R_OK) == 0)
+            snprintf(seam[w], sizeof(seam[w]), "/editor/assets/runs/%s/%s_latent_last.h3latent", rid, wins[w]);
     }
     long dur = (long)(time(NULL) - g_runs[idx].created);
     if (dur < 0) dur = 0;
@@ -662,15 +660,14 @@ static void draft_writeback(size_t idx, const char *wire) {
     char res[4096];
     int ro = 0;
     ro += snprintf(res + ro, sizeof(res) - ro,
-        "{\"assetUrls\":[%s%s],\"artifacts\":{"
+        "{\"assetUrls\":[%s%s%s],\"artifacts\":{"
         "\"video\":\"%s\","
         "\"video_w1_main\":\"%s\",\"video_w2_main\":\"%s\",\"video_w3_main\":\"%s\","
-        "\"seam_w1\":\"%s\",\"seam_w2\":\"%s\"},"
+        "\"seam_w1\":\"%s\",\"seam_w2\":\"%s\",\"seam_w3\":\"%s\"},"
         "\"metadata\":{\"runId\":\"%s\",\"seam\":\"latent\"},"
         "\"completedAt\":%ld,\"durationSec\":%ld}",
-        stitch[0] ? "\"" : "", stitch,
-        stitch[0] ? "\"" : "",
-        stitch, wf[0], wf[1], wf[2], seam[0], seam[1], rid,
+        stitch[0] ? "\"" : "", stitch, stitch[0] ? "\"" : "",
+        stitch, wf[0], wf[1], wf[2], seam[0], seam[1], seam[2], rid,
         (long)time(NULL) * 1000, dur);
 
     const char *rp = strstr(buf, "\"result\"");
@@ -713,20 +710,24 @@ static void draft_writeback(size_t idx, const char *wire) {
         }
     }
 
-    /* history row at draft root */
+    /* history row at draft root (no trailing comma: the array may be empty) */
     char hrow[1024];
     snprintf(hrow, sizeof(hrow),
              "{\"runId\":\"%s\",\"status\":\"%s\",\"at\":%ld,\"durationSec\":%ld,"
-             "\"video\":\"%s\"},",
+             "\"video\":\"%s\"}",
              rid, wire, (long)time(NULL), dur, stitch);
     char *hp = strstr(out, "\"history\"");
     if (hp) {
         char *hb = strchr(hp, '[');
         if (hb) {
             hb++;
-            size_t head = (size_t)(hb - out);
+            const char *nx = hb;
+            while (*nx == ' ' || *nx == '\n' || *nx == '\t' || *nx == '\r') nx++;
+            char sep[2] = "";
+            if (*nx && *nx != ']') sep[0] = ',';
             char tmp2[36864];
-            snprintf(tmp2, sizeof(tmp2), "%.*s%s%s", (int)head, out, hrow, hb);
+            size_t head = (size_t)(hb - out);
+            snprintf(tmp2, sizeof(tmp2), "%.*s%s%s%s", (int)head, out, hrow, sep, hb);
             snprintf(out, sizeof(out), "%s", tmp2);
         }
     } else {
