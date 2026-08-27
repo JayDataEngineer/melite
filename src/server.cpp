@@ -1635,6 +1635,17 @@ static size_t skills_row(char *out, size_t cap, size_t len, int *first,
     return len;
 }
 
+static int skills_nested(char *dst, size_t cap, const char *dir,
+                           const char *stem) {
+    char p[900];
+    snprintf(p, sizeof(p), "%s/%s/SKILL.md", dir, stem);
+    FILE *fp = fopen(p, "r");
+    if (!fp) return 0;
+    fclose(fp);
+    snprintf(dst, cap, "%s", p);
+    return 1;
+}
+
 /* scan <dir>/*.md as global skills (id = file stem) */
 static size_t skills_scan_global(char *out, size_t cap, size_t len, int *first,
                                  const char *dir) {
@@ -1642,18 +1653,38 @@ static size_t skills_scan_global(char *out, size_t cap, size_t len, int *first,
     if (!d) return len;
     struct dirent *de;
     while ((de = readdir(d)) != NULL) {
-        const char *e = strrchr(de->d_name, '.');
-        if (!e || strcasecmp(e, ".md") != 0) continue;
         char stem[128];
-        size_t sl = (size_t)(e - de->d_name);
-        if (sl >= sizeof(stem)) continue;
-        memcpy(stem, de->d_name, sl);
-        stem[sl] = 0;
+        const char *e = strrchr(de->d_name, '.');
+        if (e && strcasecmp(e, ".md") == 0) {
+            size_t sl = (size_t)(e - de->d_name);
+            if (sl >= sizeof(stem)) continue;
+            memcpy(stem, de->d_name, sl);
+            stem[sl] = 0;
+        } else {
+            size_t sl = strlen(de->d_name);
+            if (sl == 0 || sl >= sizeof(stem)) continue;
+            memcpy(stem, de->d_name, sl);
+            stem[sl] = 0;
+        }
         char idbuf[160];
         snprintf(idbuf, sizeof(idbuf), "\"id\":\"%s\"", stem);
         if (strstr(out, idbuf)) continue;   /* first dir wins */
         char path[600], name[128], desc[512];
         snprintf(path, sizeof(path), "%s/%s", dir, de->d_name);
+        struct stat stb;
+        if (stat(path, &stb) == 0 && S_ISDIR(stb.st_mode)) {
+            /* nested skill bundle: <dir>/<stem>/SKILL.md */
+            char nested[900];
+            if (!skills_nested(nested, sizeof(nested), dir, stem)) continue;
+            char nname[128], ndesc[512];
+            char idn[160];
+            snprintf(idn, sizeof(idn), "\"id\":\"%s\"", stem);
+            if (strstr(out, idn)) continue;
+            if (md_frontmatter(nested, nname, sizeof(nname), ndesc, sizeof(ndesc)) != 0)
+                snprintf(nname, sizeof(nname), "%s", stem);
+            len = skills_row(out, cap, len, first, stem, nname, ndesc, NULL, NULL);
+            continue;
+        }
         if (md_frontmatter(path, name, sizeof(name), desc, sizeof(desc)) != 0)
             snprintf(name, sizeof(name), "%s", stem);
         len = skills_row(out, cap, len, first, stem, name, desc, NULL, NULL);
@@ -1695,16 +1726,36 @@ static void handle_skills_index(const httplib::Request &req,
                 DIR *d = opendir(sdir);
                 if (d) {
                     struct dirent *de;
-                    while ((de = readdir(d)) != NULL) {
-                        const char *e = strrchr(de->d_name, '.');
-                        if (!e || strcasecmp(e, ".md") != 0) continue;
-                        char stem[128];
-                        size_t sl = (size_t)(e - de->d_name);
-                        if (sl >= sizeof(stem)) continue;
-                        memcpy(stem, de->d_name, sl);
-                        stem[sl] = 0;
+                        while ((de = readdir(d)) != NULL) {
+                            char stem[128];
+                            const char *e = strrchr(de->d_name, '.');
+                            if (e && strcasecmp(e, ".md") == 0) {
+                                size_t sl = (size_t)(e - de->d_name);
+                                if (sl >= sizeof(stem)) continue;
+                                memcpy(stem, de->d_name, sl);
+                                stem[sl] = 0;
+                            } else {
+                                size_t sl = strlen(de->d_name);
+                                if (sl == 0 || sl >= sizeof(stem)) continue;
+                                memcpy(stem, de->d_name, sl);
+                                stem[sl] = 0;
+                            }
                         char path[900], name[128], desc[512], idbuf[224];
                         snprintf(path, sizeof(path), "%s/%s", sdir, de->d_name);
+                        struct stat stb;
+                        if (stat(path, &stb) == 0 && S_ISDIR(stb.st_mode)) {
+                            char nested[900];
+                            if (!skills_nested(nested, sizeof(nested), sdir, stem)) continue;
+                            char idn[224];
+                            snprintf(idn, sizeof(idn), "\"id\":\"model:%s:%s\"", m->id, stem);
+                            if (strstr(out, idn)) continue;
+                            if (md_frontmatter(nested, name, sizeof(name), desc, sizeof(desc)) != 0)
+                                snprintf(name, sizeof(name), "%s", stem);
+                            snprintf(idbuf, sizeof(idbuf), "model:%s:%s", m->id, stem);
+                            len = skills_row(out, cap, len, &first, idbuf, name, desc,
+                                             m->genre ? m->genre : "", m->id);
+                            continue;
+                        }
                         snprintf(idbuf, sizeof(idbuf), "model:%s:%s",
                                  m->id, stem);
                         if (md_frontmatter(path, name, sizeof(name),
@@ -1769,14 +1820,29 @@ static void handle_skill_read(const httplib::Request &req,
                                 "application/json");
                 return;
             }
-            snprintf(path, sizeof(path), "%.*s/skills/%s.md", (int)keep,
-                     m->agent_md_path, stem.c_str());
+            char sdir2[600];
+            snprintf(sdir2, sizeof(sdir2), "%.*s/skills", (int)keep,
+                     m->agent_md_path);
+            snprintf(path, sizeof(path), "%s/%s.md", sdir2, stem.c_str());
+            FILE *np = fopen(path, "r");
+            if (np) fclose(np);
+            else {
+                char nested[900];
+                if (!skills_nested(nested, sizeof(nested), sdir2, stem.c_str())) {
+                    /* keep flat path for the 404 message */
+                } else snprintf(path, sizeof(path), "%s", nested);
+            }
         }
     } else {
         snprintf(path, sizeof(path), "./skills/%s.md", id.c_str());
         FILE *probe = fopen(path, "r");
         if (probe) fclose(probe);
-        else snprintf(path, sizeof(path), "../skills/%s.md", id.c_str());
+        else {
+            char nested[900];
+            if (skills_nested(nested, sizeof(nested), "./skills", id.c_str()))
+                snprintf(path, sizeof(path), "%s", nested);
+            else snprintf(path, sizeof(path), "../skills/%s.md", id.c_str());
+        }
     }
     char name[128], desc[512];
     if (md_frontmatter(path, name, sizeof(name), desc, sizeof(desc)) != 0)
