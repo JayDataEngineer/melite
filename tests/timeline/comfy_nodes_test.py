@@ -61,5 +61,70 @@ except ImportError:
     print("INFO torch not on this python; run under /opt/ComfyUI/venv/bin/python for the torch arm")
     check("torch.first_frame_slice", True)
 
+# ── SEAM CONTEXT layout math (2026-08-28): multi-frame head pin + backwards
+# audio window. Exercises PackedLayout directly — pure torch, no models.
+try:
+    import torch
+    # the source-contract stubs above shadow the real package — drop bare
+    # stubs so the genuine comfy tree (sys.path has COMFY) imports through
+    for _m in [k for k, v in sys.modules.items()
+               if k == "comfy" or k.startswith("comfy.") and isinstance(v, types.ModuleType)
+               and getattr(v, "__file__", None) is None]:
+        del sys.modules[_m]
+    from comfy.ldm.minimax import model as hm
+
+    TEXT, LT, LH, LW, AT = 320, 37, 28, 48, 207
+    FRAME_ROWS = (LH // 2) * (LW // 2)
+    L, A = 6, 40
+
+    # multi-frame video kf + backwards audio kf in ONE keyframe dict
+    kf = {"resolved_frame_index": 0,
+          "latent": torch.zeros(1, 24, L, LH, LW),
+          "audio_latent": torch.zeros(1, 32, 2, A),
+          "audio_rt": A, "audio_backwards": True}
+    lay = hm.PackedLayout(TEXT, LT, LH, LW, AT, keyframes=[kf], frame_count=124)
+
+    # cond rows: L frame-grids at the TARGET grid's head times
+    # (img_pos/img_update are FLAT cats: cond video rows = ~update)
+    cond_rows = lay.img_pos[~lay.img_update]
+    want_t = hm._video_t_grid(L, float(TEXT)).repeat_interleave(FRAME_ROWS)
+    got_t = lay.position_ids[cond_rows][: L * FRAME_ROWS, 0]
+    check("grid.multiframe_head_pin_times", torch.equal(got_t.double(), want_t),
+          f"got {got_t[:3].tolist()} want {want_t[:3].tolist()}")
+    check("grid.multiframe_row_count", cond_rows.shape[0] == L * FRAME_ROWS,
+          f"{cond_rows.shape[0]} vs {L * FRAME_ROWS}")
+    check("grid.multiframe_all_cond", bool((~lay.img_update[: L * FRAME_ROWS]).all()),
+          "context rows must be conditioning, not generation")
+
+    # backwards audio: window ENDS at the join, tiles flush with target audio
+    cond_a = lay.audio_pos[~lay.audio_update]
+    arows = lay.position_ids[cond_a]
+    at = arows[:, 0]
+    check("grid.audio_backwards_end_at_join", float(at.max()) == float(TEXT) - 1.0,
+          f"max t {float(at.max())} should be join-1 ({TEXT - 1.0})")
+    check("grid.audio_backwards_span", float(at.min()) == float(TEXT) - A,
+          f"min t {float(at.min())} should be {TEXT - A}")
+    check("grid.audio_rows_packed", arows.shape[0] == A * 2, f"{arows.shape[0]} vs {A * 2}")
+    tgt_a = lay.position_ids[lay.audio_pos[lay.audio_update]]
+    check("grid.audio_flush_tiling", float(tgt_a[:, 0].min()) == float(TEXT),
+          f"target audio must start exactly at the join ({TEXT}); got {float(tgt_a[:, 0].min())}")
+
+    # cond row count must match a patchified multi-frame pack (t-major order)
+    rows = hm.patchify_video(torch.zeros(1, 24, L, LH, LW), hm.PackedLayout and (1, 2, 2))
+    check("grid.patchify_rows_match", rows.shape[0] == L * FRAME_ROWS,
+          f"{rows.shape[0]} vs {L * FRAME_ROWS}")
+
+    # single-frame seam (context_steps=1) must be byte-identical to the classic
+    kf1 = {"resolved_frame_index": 0, "latent": torch.zeros(1, 24, 1, LH, LW)}
+    lay1 = hm.PackedLayout(TEXT, LT, LH, LW, AT, keyframes=[kf1], frame_count=124)
+    cond1 = lay1.img_pos[~lay1.img_update]
+    check("grid.single_frame_compat",
+          cond1.shape[0] == FRAME_ROWS and
+          float(lay1.position_ids[cond1][0, 0]) == float(TEXT))
+except ImportError as e:
+    print(f"INFO layout math needs the comfy import surface ({e}); run under the ComfyUI venv")
+except Exception as e:
+    check("grid.layout_math", False, f"{type(e).__name__}: {e}")
+
 print("SUITE comfy_nodes: " + ("PASS" if not fails else f"FAIL {fails}"))
 sys.exit(1 if fails else 0)

@@ -20,6 +20,13 @@ nodes:
 
   - id: stitch
     type: ffmpeg_concat
+    # SEAM CONTEXT (2026-08-28): windows 2/3 pin the prior tail (context_steps=7
+    # latent steps = 22 pixel frames = 0.91667s @ 24fps) as their head and
+    # REGENERATE it; trim_heads drops that pinned span (video+audio, same
+    # wall-time) before concat so joins don't double-play. audio_context_steps=40
+    # (1s @ 40Hz) pins tail SOUND ending at the join (backwards window) so the
+    # next window continues the same recording instead of a sound-alike take.
+    params: {"trim_heads":[0, 0.91667, 0.91667]}
     input_from:
       - window1.video_0
       - window2.video_0

@@ -56,6 +56,8 @@
    "width": 768,
    "height": 448,
    "length": 124,
+   "context_steps": 7,
+   "audio_context_steps": 40,
    "first_frame_latent": [
     "MiniMaxH3LoadLatent.0",
     0
