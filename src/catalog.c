@@ -904,6 +904,38 @@ char *catalog_to_json(const inference_catalog *cat) {
         off += snprintf(json + off, cap - off, "}");
     }
 
+    /* capabilities: MAP keyed by capability id — the cards-tab rail
+     * (LibrarySidebar) buckets cat.capabilities by their default family's
+     * genre into the tile groups (click = card lands on canvas, drag =
+     * capability MIME). One entry per NON-ai_generated family (those render
+     * in the separate AI Generated section): CapabilityEntry wire shape
+     * (@melite/contracts) — {label, default_family, families, kind}. */
+    off += snprintf(json + off, cap - off, "},\"capabilities\":{");
+    {
+        char esc2[2048];
+        int first_cap = 1;
+        for (size_t i = 0; i < cat->n_models; i++) {
+            if (!cat->models[i].genre[0]) continue;
+            if (strstr(cat->models[i].genre, "ai_generated")) continue;
+            if (!first_cap) json[off++] = ',';
+            first_cap = 0;
+            json_escape(esc2, sizeof(esc2), cat->models[i].id);
+            json_escape(esc, sizeof(esc), cat->models[i].label);
+            off += snprintf(json + off, cap - off,
+                            "\"%s\":{\"label\":\"%s\",\"description\":\"",
+                            esc2, esc);
+            if (cat->models[i].description && *cat->models[i].description)
+                json_escape(esc, sizeof(esc), cat->models[i].description);
+            else
+                esc[0] = 0;
+            off += snprintf(json + off, cap - off,
+                            "%s\",\"default_family\":\"%s\","
+                            "\"families\":[\"%s\"],\"kind\":\"generation\","
+                            "\"resolved\":{\"family\":\"%s\",\"model\":\"%s\",\"params\":{}}}",
+                            esc, esc2, esc2, esc2, esc2);
+        }
+    }
+
     off += snprintf(json + off, cap - off, "},\"cards\":[");
     for (size_t i = 0; i < cat->n_cards; i++) {
         if (i) json[off++] = ',';
