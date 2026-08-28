@@ -103,6 +103,7 @@ struct inference_server {
     httplib::Server srv;
     int port;
     int ws_port;
+    char bind_addr[64];
     volatile int running;
 };
 
@@ -151,6 +152,47 @@ static void handle_models(const httplib::Request &req,
     (void)req;
     /* Return both our custom format and enough for OpenAI compatibility */
     res.set_content("{\"object\":\"list\",\"data\":[]}", "application/json");
+}
+
+/* ---- Engine web-UI registry ----
+ *   GET /v1/apps  -> JSON list of registered engine webui endpoints
+ *   GET /apps     -> HTML index page linking to each webui
+ *   Source of truth: static/apps.json (regenerate via scripts/generate-apps-json)
+ */
+
+static std::string read_file_str(const char *path, size_t max_bytes) {
+    FILE *f = fopen(path, "rb");
+    if (!f) return std::string();
+    std::string buf;
+    buf.resize(max_bytes);
+    size_t n = fread(&buf[0], 1, max_bytes, f);
+    fclose(f);
+    buf.resize(n);
+    return buf;
+}
+
+static void handle_apps(const httplib::Request &req,
+                        httplib::Response &res) {
+    (void)req;
+    std::string body = read_file_str("./static/apps.json", 65536);
+    if (body.empty()) {
+        res.status = 500;
+        res.set_content("{\"error\":\"apps.json not found\"}", "application/json");
+        return;
+    }
+    res.set_content(body, "application/json");
+}
+
+static void handle_apps_index(const httplib::Request &req,
+                              httplib::Response &res) {
+    (void)req;
+    std::string body = read_file_str("./static/apps.html", 256 * 1024);
+    if (body.empty()) {
+        res.status = 500;
+        res.set_content("<h1>apps.html not found</h1>", "text/html");
+        return;
+    }
+    res.set_content(body, "text/html");
 }
 
 /* ---- DSH serving surface: run registry + async run door + drafts ----
@@ -931,8 +973,6 @@ static void *run_thread_fn(void *argp) {
     /* Read server_url into locals BEFORE the final state change so the
      * slot can be recycled by a concurrent registrar without corrupting
      * the /free call. */
-    char free_url[256] = "http://127.0.0.1:18465";
-    inf_json_string(g_runs[idx].yaml, "server_url", free_url, sizeof(free_url));
 
     if (rc == 1) {
         run_set_state(idx, "stopped", NULL);
@@ -947,33 +987,10 @@ static void *run_thread_fn(void *argp) {
         draft_writeback(idx, "completed");
     }
 
-        /* Queue hygiene: ask ComfyUI to drop cached model weights BEFORE
-     * handing the GPU ticket to the next queued job. */
-    {
-        char host[128] = "127.0.0.1";
-        int port = 18465;
-        const char *pp = strstr(free_url, "://");
-        if (pp) {
-            pp += 3;
-            const char *colon = strchr(pp, ':');
-            if (colon) {
-                size_t hl = (size_t)(colon - pp);
-                if (hl >= sizeof(host)) hl = sizeof(host) - 1;
-                snprintf(host, hl + 1, "%s", pp);
-                port = atoi(colon + 1);
-            } else {
-                snprintf(host, sizeof(host), "%s", pp);
-            }
-        }
-        httplib::Client cli(host, (uint16_t)port);
-        cli.set_connection_timeout(5);
-        cli.set_read_timeout(120);
-        auto fr = cli.Post("/free",
-                           "{\"unload_models\":true,\"free_memory\":true}",
-                           "application/json");
-        fprintf(stderr, "[vram] comfy /free (%s:%d) -> %s\n", host, port,
-                fr ? std::to_string(fr->status).c_str() : "no response");
-    }
+    /* VRAM management belongs to ComfyUI itself: model_management keeps
+     * weights cached between executions and evicts under pressure. The
+     * wrapper NEVER unloads — the /free hack is deleted (1:1 node law,
+     * 2026-08-28). */
 
     /* GPU FIFO: release and wake next waiter, then mark the slot fully
      * drained so a registrar may recycle it (th_done gate, audit M2). */
@@ -1688,6 +1705,302 @@ static int draft_id_ok(const std::string &id) {
               (c >= '0' && c <= '9') || c == '_' || c == '-')) return 0;
     }
     return 1;
+}
+
+/* ── Draft stage PATCH (2026-08-30) ────────────────────────────────────
+ * PATCH /v1/pipelines/drafts/{id}/stages/{sid}
+ * Body (any subset, ray-gateway parity):
+ *   {"params":{...}}        key-wise MERGE into the stage's params object
+ *   {"inputs":[...],"inputOutputs":[...]}   wire arrays (verbatim replace)
+ *   {"result":{...},"runStatus":"done"}     render state (verbatim replace)
+ * 200 → the updated draft doc; 400 empty/invalid patch; 404 unknown
+ * draft/stage. THIS is the editor studio's only param persistence channel
+ * (onSave PATCHes here) — a 404 makes the client roll the edit back,
+ * which is why card-side edits (e.g. the route select) "didn't stick". */
+struct jmember { char key[128]; const char *vs; const char *ve; };
+
+static const char *j_skip_ws(const char *p, const char *e) {
+    while (p < e && (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r')) p++;
+    return p;
+}
+
+/* one-past-the-end of the JSON value starting at p (strings, numbers,
+ * true/false/null, balanced arrays/objects — string-aware). NULL if the
+ * span never closes inside (p,e). */
+static const char *j_value_end(const char *p, const char *e) {
+    p = j_skip_ws(p, e);
+    if (p >= e) return NULL;
+    if (*p == '"') {
+        p++;
+        while (p < e) {
+            if (*p == '\\') { p += 2; continue; }
+            if (*p == '"') return p + 1;
+            p++;
+        }
+        return NULL;
+    }
+    if (*p == '{' || *p == '[') {
+        const char open = *p, close = (open == '{') ? '}' : ']';
+        int depth = 0, in_str = 0, esc = 0;
+        for (; p < e; p++) {
+            if (esc) { esc = 0; continue; }
+            if (in_str) {
+                if (*p == '\\') esc = 1;
+                else if (*p == '"') in_str = 0;
+                continue;
+            }
+            if (*p == '"') { in_str = 1; continue; }
+            if (*p == open) depth++;
+            else if (*p == close && --depth == 0) return p + 1;
+        }
+        return NULL;
+    }
+    const char *q = p;
+    while (q < e && ((*q >= 'a' && *q <= 'z') || (*q >= 'A' && *q <= 'Z') ||
+                     (*q >= '0' && *q <= '9') || *q == '-' || *q == '+' || *q == '.')) q++;
+    return (q > p) ? q : NULL;
+}
+
+/* depth-1 members of the object spanning [os..oe) (os at '{'). Fills arr,
+ * returns count (capped). Tolerant: stops at the first malformed member. */
+static int j_object_members(const char *os, const char *oe,
+                            struct jmember *arr, int cap) {
+    int n = 0;
+    const char *p = j_skip_ws(os + 1, oe);
+    while (p < oe && *p != '}') {
+        if (*p != '"') return n;
+        const char *ks = p + 1, *ke = ks;
+        while (ke < oe && *ke != '"') {
+            if (*ke == '\\' && ke + 1 < oe) ke++;
+            ke++;
+        }
+        if (ke >= oe) return n;
+        struct jmember m;
+        size_t kl = (size_t)(ke - ks);
+        if (kl >= sizeof(m.key)) kl = sizeof(m.key) - 1;
+        memcpy(m.key, ks, kl); m.key[kl] = 0;
+        p = j_skip_ws(ke + 1, oe);
+        if (p >= oe || *p != ':') return n;
+        const char *ve = j_value_end(p + 1, oe);
+        if (!ve) return n;
+        m.vs = j_skip_ws(p + 1, oe);
+        m.ve = ve;
+        if (n < cap) arr[n++] = m;
+        p = j_skip_ws(ve, oe);
+        if (p < oe && *p == ',') p = j_skip_ws(p + 1, oe);
+    }
+    return n;
+}
+
+static std::string j_span(const std::string &doc, const struct jmember *m) {
+    return doc.substr((size_t)(m->vs - doc.data()), (size_t)(m->ve - m->vs));
+}
+
+/* find the params/inputs/result members of a patch body without a full
+ * JSON parse (span surgery, same style as the rest of this file) */
+static void handle_draft_stage_patch(const httplib::Request &req,
+                                     httplib::Response &res) {
+    std::string id = req.path_params.at("id");
+    std::string sid = req.path_params.at("sid");
+    if (!draft_id_ok(id) || sid.empty() ||
+        sid.find_first_not_of(
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_")
+            != std::string::npos) {
+        res.status = 400;
+        res.set_content("{\"error\":\"bad id\"}", "application/json");
+        return;
+    }
+    if (req.body.empty() || req.body[0] != '{') {
+        res.status = 400;
+        res.set_content("{\"error\":\"invalid patch body\"}", "application/json");
+        return;
+    }
+    /* patch body spans (kept as offsets into req.body) */
+    struct jmember pb[16];
+    int npb = j_object_members(req.body.c_str(),
+                               req.body.c_str() + req.body.size(), pb, 16);
+    const struct jmember *p_params = NULL, *p_inputs = NULL,
+                         *p_io = NULL, *p_result = NULL, *p_status = NULL;
+    for (int i = 0; i < npb; i++) {
+        if (!strcmp(pb[i].key, "params")) p_params = &pb[i];
+        else if (!strcmp(pb[i].key, "inputs")) p_inputs = &pb[i];
+        else if (!strcmp(pb[i].key, "inputOutputs")) p_io = &pb[i];
+        else if (!strcmp(pb[i].key, "result")) p_result = &pb[i];
+        else if (!strcmp(pb[i].key, "runStatus")) p_status = &pb[i];
+    }
+    if (!p_params && !p_inputs && !p_result) {
+        res.status = 400;
+        res.set_content("{\"error\":\"Empty patch body\"}", "application/json");
+        return;
+    }
+
+    /* load the draft: native dir first, then the aux tree. A patch on an
+     * aux-tree draft COPY-WRITES into ./drafts (every reader prefers it). */
+    char path[512];
+    snprintf(path, sizeof(path), "./drafts/%s.json", id.c_str());
+    FILE *f = fopen(path, "rb");
+    if (!f) {
+        snprintf(path, sizeof(path), "%s/%s.json", drafts_aux_dir(), id.c_str());
+        f = fopen(path, "rb");
+    }
+    if (!f) {
+        res.status = 404;
+        res.set_content("{\"error\":\"draft not found\"}", "application/json");
+        return;
+    }
+    std::string doc;
+    char rbuf[65536];
+    size_t rn;
+    while ((rn = fread(rbuf, 1, sizeof(rbuf), f)) > 0) doc.append(rbuf, rn);
+    fclose(f);
+    if (doc.empty() || doc[0] != '{') {
+        res.status = 500;
+        res.set_content("{\"error\":\"draft unreadable\"}", "application/json");
+        return;
+    }
+
+    const char *ds = doc.c_str(), *de = ds + doc.size();
+    struct jmember top[32];
+    int ntop = j_object_members(ds, de, top, 32);
+    const struct jmember *m_stages = NULL;
+    for (int i = 0; i < ntop; i++)
+        if (!strcmp(top[i].key, "stages")) { m_stages = &top[i]; break; }
+    const char *stage_os = NULL, *stage_oe = NULL;
+    if (m_stages && *j_skip_ws(m_stages->vs, de) == '[') {
+        const char *as = j_skip_ws(m_stages->vs, de);
+        const char *p = j_skip_ws(as + 1, de);
+        while (p < de && *p != ']') {
+            const char *ve = j_value_end(p, de);
+            if (!ve) break;
+            if (*p == '{') {
+                struct jmember sm[32];
+                int nsm = j_object_members(p, ve, sm, 32);
+                for (int i = 0; i < nsm; i++) {
+                    if (!strcmp(sm[i].key, "id")) {
+                        const char *v = j_skip_ws(sm[i].vs, ve);
+                        size_t vl = (size_t)(sm[i].ve - v);
+                        if (vl >= 2 && v[0] == '"' &&
+                            (size_t)(vl - 2) == sid.size() &&
+                            !memcmp(v + 1, sid.c_str(), sid.size())) {
+                            stage_os = p; stage_oe = ve;
+                        }
+                        break;
+                    }
+                }
+            }
+            if (stage_os) break;
+            p = j_skip_ws(ve, de);
+            if (p < de && *p == ',') p = j_skip_ws(p + 1, de);
+        }
+    }
+    if (!stage_os) {
+        char emsg[256];
+        snprintf(emsg, sizeof(emsg),
+                 "{\"error\":\"Stage %s not found in draft %s\"}",
+                 sid.c_str(), id.c_str());
+        res.status = 404;
+        res.set_content(emsg, "application/json");
+        return;
+    }
+
+    /* rebuild the stage object member-by-member */
+    struct jmember sm[96];
+    int nsm = j_object_members(stage_os, stage_oe, sm, 96);
+    std::string inner;
+    const struct jmember *old_params = NULL, *old_inputs = NULL,
+                         *old_io = NULL, *old_result = NULL, *old_status = NULL;
+    for (int i = 0; i < nsm; i++) {
+        if (!strcmp(sm[i].key, "params")) old_params = &sm[i];
+        else if (!strcmp(sm[i].key, "inputs")) old_inputs = &sm[i];
+        else if (!strcmp(sm[i].key, "inputOutputs")) old_io = &sm[i];
+        else if (!strcmp(sm[i].key, "result")) old_result = &sm[i];
+        else if (!strcmp(sm[i].key, "runStatus")) old_status = &sm[i];
+    }
+    auto append_member = [&](const std::string &k, const std::string &v) {
+        if (!inner.empty()) inner += ',';
+        inner += "\"" + k + "\":" + v;
+    };
+    /* pass 1: keep every member EXCEPT the ones this patch replaces */
+    for (int i = 0; i < nsm; i++) {
+        const char *k = sm[i].key;
+        if (p_params && !strcmp(k, "params")) continue;
+        if (p_inputs && (!strcmp(k, "inputs") || !strcmp(k, "inputOutputs"))) continue;
+        if (p_result && (!strcmp(k, "result") || !strcmp(k, "runStatus"))) continue;
+        append_member(k, j_span(doc, &sm[i]));
+    }
+    /* pass 2: apply the patch */
+    if (p_params) {
+        /* key-wise merge into the old params object: old members minus the
+         * incoming keys, then the incoming members (newest wins) */
+        struct jmember pm[96], nm[96];
+        int npm = 0, nnm = 0;
+        if (old_params && *j_skip_ws(old_params->vs, stage_oe) == '{') {
+            const char *ps = j_skip_ws(old_params->vs, stage_oe);
+            npm = j_object_members(ps, old_params->ve, pm, 96);
+        }
+        nnm = j_object_members(p_params->vs, p_params->ve, nm, 96);
+        auto has_key = [&](const char *k) {
+            for (int i = 0; i < nnm; i++)
+                if (!strcmp(nm[i].key, k)) return 1;
+            return 0;
+        };
+        std::string pins;
+        auto append_p = [&](const std::string &k, const std::string &v) {
+            if (!pins.empty()) pins += ',';
+            pins += "\"" + k + "\":" + v;
+        };
+        for (int i = 0; i < npm; i++)
+            if (!has_key(pm[i].key))
+                append_p(pm[i].key, j_span(doc, &pm[i]));
+        for (int i = 0; i < nnm; i++)
+            append_p(nm[i].key, j_span(req.body, &nm[i]));
+        append_member("params", "{" + pins + "}");
+    }
+    if (p_inputs) {
+        std::string iv = j_span(req.body, p_inputs);
+        std::string iov;
+        if (p_io) iov = j_span(req.body, p_io);
+        else {
+            /* ray parity: inputOutputs absent → paired nulls */
+            int cnt = 0;
+            const char *p = j_skip_ws(p_inputs->vs, p_inputs->ve);
+            while (p < p_inputs->ve && *p != ']') {
+                const char *ve = j_value_end(p, p_inputs->ve);
+                if (!ve) break;
+                cnt++;
+                p = j_skip_ws(ve, p_inputs->ve);
+                if (p < p_inputs->ve && *p == ',') p = j_skip_ws(p + 1, p_inputs->ve);
+            }
+            iov = "[";
+            for (int i = 0; i < cnt; i++) { if (i) iov += ","; iov += "null"; }
+            iov += "]";
+        }
+        append_member("inputs", iv);
+        append_member("inputOutputs", iov);
+    }
+    if (p_result) {
+        append_member("result", j_span(req.body, p_result));
+        append_member("runStatus",
+            p_status ? j_span(req.body, p_status) : std::string("\"done\""));
+    }
+
+    /* splice: doc[0..stage_os) + "{" + inner + "}" + doc[stage_oe..] */
+    std::string out(doc, 0, (size_t)(stage_os - ds));
+    out += "{" + inner + "}";
+    out.append(doc, (size_t)(stage_oe - ds), std::string::npos);
+
+    mkdir("./drafts", 0755);
+    snprintf(path, sizeof(path), "./drafts/%s.json", id.c_str());
+    FILE *o = fopen(path, "wb");
+    if (!o) {
+        res.status = 500;
+        res.set_content("{\"error\":\"cannot persist draft\"}", "application/json");
+        return;
+    }
+    fwrite(out.data(), 1, out.size(), o);
+    fclose(o);
+    res.status = 200;
+    res.set_content(out, "application/json");
 }
 
 /* GET /v1/pipelines/drafts/:id — one draft doc, verbatim bytes. */
@@ -3300,6 +3613,13 @@ static void handle_openapi(const httplib::Request &req,
         "summary": "SSE event stream for progress",
         "responses": {"200": {"description": "SSE stream", "content": {"text/event-stream": {"schema": {"type": "string"}}}}}
       }
+    },
+    "/v1/apps": {
+      "get": {
+        "operationId": "listApps",
+        "summary": "Engine web-UI registry — all vendored engines that expose a web interface",
+        "responses": {"200": {"description": "App registry", "content": {"application/json": {"schema": {"type": "object", "properties": {"apps": {"type": "array", "items": {"type": "object", "properties": {"id": {"type": "string"}, "label": {"type": "string"}, "description": {"type": "string"}, "url": {"type": "string", "format": "uri"}, "icon": {"type": "string"}, "features": {"type": "array", "items": {"type": "string"}}}}}}}}}}}
+      }
     }
   },
   "components": {
@@ -4067,11 +4387,13 @@ static void handle_pipelines_resume(const httplib::Request &req,
  * SERVER LIFECYCLE
  * ================================================================== */
 
-inference_server *server_create(int port) {
+inference_server *server_create(int port, const char *bind_addr) {
     inference_server *s = new inference_server;
     if (!s) return NULL;
     s->port    = port;
     s->ws_port = port + 1;
+    snprintf(s->bind_addr, sizeof(s->bind_addr), "%s",
+             bind_addr && bind_addr[0] ? bind_addr : "127.0.0.1");
     s->running = 0;
 
     /* ---- Custom endpoints ---- */
@@ -4087,6 +4409,8 @@ inference_server *server_create(int port) {
     s->srv.Post("/v1/pipelines/resume/:run_id", handle_pipelines_resume);
     s->srv.Post("/v1/pipelines/drafts",  handle_pipelines_drafts);
     s->srv.Get("/v1/pipelines/drafts/:id", handle_draft_get);
+    s->srv.Patch("/v1/pipelines/drafts/:id/stages/:sid",
+                 handle_draft_stage_patch);
     s->srv.Get("/v1/pipelines/drafts",     handle_draft_list);
     s->srv.Get("/v1/pipelines/yaml/list",  handle_yaml_list);
     s->srv.Get("/v1/pipelines/yaml/detail", handle_yaml_detail);
@@ -4104,6 +4428,8 @@ inference_server *server_create(int port) {
     s->srv.Get("/v1/skills",               handle_skills_index);
     s->srv.Get(R"(/v1/skills/(.+))",       handle_skill_read);
     s->srv.Get("/v1/ledger",               handle_ledger);
+    s->srv.Get("/v1/apps",                 handle_apps);
+    s->srv.Get("/apps",                    handle_apps_index);
     s->srv.Post("/v1/compose",              handle_compose);
     /* every unmatched route answers with VALID JSON so client-side
      * res.json() never trips on an empty body */
@@ -4148,8 +4474,8 @@ int server_start(inference_server *s) {
     s->running = 1;
     /* run artifacts over HTTP — /media/<run_id>/<file> (mp4/png/flac) */
     s->srv.set_mount_point("/media", "./output");
-    fprintf(stderr, "server: listening on http://127.0.0.1:%d\n", s->port);
-    s->srv.listen("127.0.0.1", s->port);
+    fprintf(stderr, "server: listening on http://%s:%d\n", s->bind_addr, s->port);
+    s->srv.listen(s->bind_addr, s->port);
     return 0;
 }
 
