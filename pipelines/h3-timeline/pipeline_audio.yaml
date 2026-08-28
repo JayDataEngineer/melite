@@ -1,0 +1,26 @@
+name: h3-timeline-audio
+description: "Three-window H3 mega inference (turbo-4): window1 t2v -> window2/window3 fl2va chained on image_last latent-keyframe seams -> ffmpeg_concat auto-stitch. One run = one queue item = clean cut film with native H3 audio per window. Beats arrive as prompt/prompt2/prompt3 text tensors; optional keyframe via image path tensor. 124f (5.17s) windows @ 768x448, turbo v4 LoRA, 4 steps, kitchen attention in ComfyUI."
+
+nodes:
+  - id: window1
+    type: comfyui
+    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/h3-timeline/window1_t4_audio.json","out_dir":"./output","timeout_s":1800,"inject":{"KSampler.0.seed":"$seed","MiniMaxH3ImageToVideo.0.prompt":"$prompt","LoadAudio.0.audio":"$audio"},"fps":24,"mux":1}
+
+  - id: window2
+    type: comfyui
+    input_from:
+      - window1.latent_last
+    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/h3-timeline/window2_t4.json","out_dir":"./output","input_dir":"/opt/ComfyUI/input","timeout_s":1800,"inject":{"KSampler.0.seed":"$seed","MiniMaxH3ImageToVideo.0.prompt":"$prompt2","MiniMaxH3LoadLatent.0.latent":"$latent_last"},"fps":24,"mux":1}
+
+  - id: window3
+    type: comfyui
+    input_from:
+      - window2.latent_last
+    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/h3-timeline/window3_t4.json","out_dir":"./output","input_dir":"/opt/ComfyUI/input","timeout_s":1800,"inject":{"KSampler.0.seed":"$seed","MiniMaxH3ImageToVideo.0.prompt":"$prompt3","MiniMaxH3LoadLatent.0.latent":"$latent_last"},"fps":24,"mux":1}
+
+  - id: stitch
+    type: ffmpeg_concat
+    input_from:
+      - window1.video_0
+      - window2.video_0
+      - window3.video_0

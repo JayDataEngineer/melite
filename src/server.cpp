@@ -501,14 +501,26 @@ static char *run_artifacts_json(const char *out_dir) {
     return buf;
 }
 
-/* read a harvested lane pipeline for a catalog model into out; NULL if none */
-static char *pipeline_yaml_for_model(const char *model, char *out, size_t cap) {
+/* read a harvested lane pipeline for a catalog model into out; NULL if none.
+ * audio_guided: when the caller body carries {audio:"/abs/file"} and the
+ * lane ships a pipeline_audio.yaml sibling, prefer that variant graph. */
+static char *pipeline_yaml_for_model_ex(const char *model, const char *body,
+                                        char *out, size_t cap) {
     for (const char *p = model; *p; p++)
         if (!((*p >= 'a' && *p <= 'z') || (*p >= '0' && *p <= '9') ||
               *p == '-' || *p == '_' || *p == '.'))
             return NULL;                    /* path safety: slug chars only */
     char path[600];
     snprintf(path, sizeof(path), "../pipelines/%s/pipeline.yaml", model);
+    if (body) {
+        char aud[1024], apath[600];
+        if (inf_json_string(body, "audio", aud, sizeof(aud)) == 0 && aud[0] &&
+            access(aud, R_OK) == 0) {
+            snprintf(apath, sizeof(apath), "../pipelines/%s/pipeline_audio.yaml", model);
+            if (access(apath, R_OK) == 0)
+                snprintf(path, sizeof(path), "%s", apath);
+        }
+    }
     FILE *fp = fopen(path, "rb");
     if (!fp) return NULL;
     size_t n = fread(out, 1, cap - 1, fp);
@@ -516,6 +528,10 @@ static char *pipeline_yaml_for_model(const char *model, char *out, size_t cap) {
     if (n == 0 || n >= cap - 1) return NULL;
     out[n] = 0;
     return out;
+}
+
+static char *pipeline_yaml_for_model(const char *model, char *out, size_t cap) {
+    return pipeline_yaml_for_model_ex(model, NULL, out, cap);
 }
 
 /* ── Timeline studio calls compile ─────────────────────────────────────
@@ -615,6 +631,37 @@ static void add_run_extra_inputs(size_t idx, const char *body,
         for (int i = 1; i < g_tl_nw && i < 4; i++)
             add_run_input_text(idx, names[i - 1], g_tl_wins[i]);
         g_tl_nw = 0;  /* one-shot: never leak into the next run */
+    }
+    /* audio guide track: stage the file into ComfyUI's input dir and expose
+     * the bare filename as the "audio" run input (pipeline_audio.yaml
+     * injects it into LoadAudio.0.audio). Missing file: loud stderr, no
+     * tensor - the plain pipeline then runs unchanged. */
+    {
+        char aud[1024];
+        if (inf_json_string(body, "audio", aud, sizeof(aud)) == 0 && aud[0]) {
+            if (access(aud, R_OK) == 0) {
+                const char *base = strrchr(aud, '/');
+                base = base ? base + 1 : aud;
+                char dst[640];
+                snprintf(dst, sizeof(dst), "/opt/ComfyUI/input/guide_%lx_%s",
+                         (unsigned long)time(NULL), base);
+                FILE *src = fopen(aud, "rb"), *o = fopen(dst, "wb");
+                if (src && o) {
+                    char buf[65536];
+                    size_t r;
+                    while ((r = fread(buf, 1, sizeof(buf), src)) > 0)
+                        fwrite(buf, 1, r, o);
+                }
+                if (src) fclose(src);
+                if (o) fclose(o);
+                const char *db = strrchr(dst, '/');
+                db = db ? db + 1 : dst;
+                add_run_input_text(idx, "audio", db);
+                fprintf(stderr, "[timeline] audio guide staged: %s -> %s" "\n", aud, db);
+            } else {
+                fprintf(stderr, "[timeline] audio param set but file unreadable: %s" "\n", aud);
+            }
+        }
     }
 }
 
@@ -1044,6 +1091,18 @@ static void handle_pipelines_start(const httplib::Request &req,
             }
         char path[600];
         snprintf(path, sizeof(path), "../pipelines/%s/pipeline.yaml", yaml_name);
+        /* audio-guided variant: body {audio:"/abs/path.wav"} + a sibling
+         * pipeline_audio.yaml -> run that graph instead. Regression-safe:
+         * no audio param keeps the stock pipeline byte-identical. */
+        {
+            char aud[1024], apath[600];
+            if (inf_json_string(body, "audio", aud, sizeof(aud)) == 0 && aud[0] &&
+                access(aud, R_OK) == 0) {
+                snprintf(apath, sizeof(apath), "../pipelines/%s/pipeline_audio.yaml", yaml_name);
+                if (access(apath, R_OK) == 0)
+                    snprintf(path, sizeof(path), "%s", apath);
+            }
+        }
         FILE *fp = fopen(path, "rb");
         if (!fp) {
             res.status = 404;
@@ -1190,8 +1249,9 @@ static void handle_pipelines_start(const httplib::Request &req,
         if (seed >= 0) add_run_input_f32(idx, "seed", (float)seed);
         add_run_extra_inputs(idx, req.body.c_str(), tmpin, sizeof(tmpin));
     } else {
-    char *piped = pipeline_yaml_for_model(model, g_runs[idx].yaml,
-                                          sizeof(g_runs[idx].yaml));
+    char *piped = pipeline_yaml_for_model_ex(model, req.body.c_str(),
+                                             g_runs[idx].yaml,
+                                             sizeof(g_runs[idx].yaml));
     if (piped) {
         /* route artifacts into this run's dir: swap every out_dir literal */
         {

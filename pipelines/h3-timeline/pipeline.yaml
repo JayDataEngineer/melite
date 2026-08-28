@@ -16,7 +16,7 @@ nodes:
     type: comfyui
     input_from:
       - window2.latent_last
-    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/h3-timeline/window2_t4.json","out_dir":"./output","input_dir":"/opt/ComfyUI/input","timeout_s":1800,"inject":{"KSampler.0.seed":"$seed","MiniMaxH3ImageToVideo.0.prompt":"$prompt3","MiniMaxH3LoadLatent.0.latent":"$latent_last"},"fps":24,"mux":1}
+    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/h3-timeline/window3_t4.json","out_dir":"./output","input_dir":"/opt/ComfyUI/input","timeout_s":1800,"inject":{"KSampler.0.seed":"$seed","MiniMaxH3ImageToVideo.0.prompt":"$prompt3","MiniMaxH3LoadLatent.0.latent":"$latent_last"},"fps":24,"mux":1}
 
   - id: stitch
     type: ffmpeg_concat
