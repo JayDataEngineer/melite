@@ -138,6 +138,7 @@ window.__ModuleLoader__.load({
 						poster,
 						head,
 						final: isFinal,
+						runId: String(run.run_id ?? ""),
 						time: timeLabel(run.created_at),
 						file,
 						created: typeof run.created_at === "number" ? run.created_at : 0
@@ -334,6 +335,13 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
+		/** Wand ("Open as cards"): the editor page must come from the RAY gateway
+		*  origin (:33081) — the GUI host's /v1 proxy points at inference.cpp
+		*  (:18090), whose run universe cannot hydrate ray runs (2026-08-29 wand
+		*  incident: "unknown run_id"). Same hostname as this page, gateway port. */
+		function wandOpen(runId) {
+			window.open("http://" + window.location.hostname + ":33081/editor/?revive=" + encodeURIComponent(runId), "_blank");
+		}
 		function MediaPanel() {
 			const [runs, setRuns] = (0, react.useState)([]);
 			const [loading, setLoading] = (0, react.useState)(true);
@@ -433,6 +441,7 @@ window.__ModuleLoader__.load({
 					boxSizing: "border-box"
 				},
 				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("style", { children: ".im-tile{position:relative}.im-wand{position:absolute;right:6px;top:6px;z-index:3;opacity:0;transition:opacity .12s;display:flex;align-items:center;gap:4px;border:0;border-radius:6px;padding:4px 6px;background:rgba(2,6,23,0.82);color:#fde68a;font-size:9px;font-weight:700;letter-spacing:.4px;cursor:pointer;font-family:inherit}.im-tile:hover .im-wand{opacity:1}.im-wand:hover{background:rgba(250,204,21,0.95);color:#422006}" }),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						style: {
 							display: "flex",
@@ -556,6 +565,7 @@ window.__ModuleLoader__.load({
 							gap: 10
 						},
 						children: shown.map((it) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+							className: "im-tile",
 							onClick: () => {
 								setPreview(it);
 							},
@@ -618,6 +628,23 @@ window.__ModuleLoader__.load({
 										letterSpacing: .4
 									},
 									children: "FINAL FILM"
+								}) : null,
+								it.runId !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									role: "button",
+									tabIndex: 0,
+									className: "im-wand",
+									title: "Open as cards — edit this run's parameters",
+									onClick: (e) => {
+										e.stopPropagation();
+										wandOpen(it.runId);
+									},
+									onKeyDown: (e) => {
+										if (e.key === "Enter") {
+											e.stopPropagation();
+											wandOpen(it.runId);
+										}
+									},
+									children: "✦ CARDS"
 								}) : null,
 								it.poster === "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									style: { color: "rgba(148,163,184,0.55)" },

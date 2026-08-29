@@ -42,6 +42,7 @@ interface MediaItem {
   poster: string
   head: string
   final: boolean
+  runId: string
   time: string
   file: string
   created: number
@@ -134,6 +135,7 @@ function flatten(runs: RunRow[]): MediaItem[] {
         poster,
         head,
         final: isFinal,
+        runId: String(run.run_id ?? ''),
         time: timeLabel(run.created_at),
         file,
         created: typeof run.created_at === 'number' ? run.created_at : 0,
@@ -235,6 +237,14 @@ export function MediaTabIcon({ size }: { size: number }) {
   )
 }
 
+/** Wand ("Open as cards"): the editor page must come from the RAY gateway
+ *  origin (:33081) — the GUI host's /v1 proxy points at inference.cpp
+ *  (:18090), whose run universe cannot hydrate ray runs (2026-08-29 wand
+ *  incident: "unknown run_id"). Same hostname as this page, gateway port. */
+function wandOpen(runId: string): void {
+  window.open('http://' + window.location.hostname + ':33081/editor/?revive=' + encodeURIComponent(runId), '_blank')
+}
+
 export function MediaPanel(): JSX.Element {
   const [runs, setRuns] = useState<RunRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -312,6 +322,11 @@ export function MediaPanel(): JSX.Element {
 
   return (
     <div data-infer-media-panel="1" style={{ padding: 14, fontFamily: 'system-ui, -apple-system, Segoe UI, Roboto, sans-serif', color: 'rgb(226,232,240)', height: '100%', overflowY: 'auto', boxSizing: 'border-box' }}>
+      {/* WAND ("Open as cards", 2026-08-29): hovering a tile reveals the
+          wand — clicking opens /editor/?revive=<run_id>, the editor's card
+          canvas hydrated with THIS run's authored pipeline (same action as
+          the old sidebar wand) so parameters are filled in and editable. */}
+      <style>{'.im-tile{position:relative}.im-wand{position:absolute;right:6px;top:6px;z-index:3;opacity:0;transition:opacity .12s;display:flex;align-items:center;gap:4px;border:0;border-radius:6px;padding:4px 6px;background:rgba(2,6,23,0.82);color:#fde68a;font-size:9px;font-weight:700;letter-spacing:.4px;cursor:pointer;font-family:inherit}.im-tile:hover .im-wand{opacity:1}.im-wand:hover{background:rgba(250,204,21,0.95);color:#422006}'}</style>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
         <span style={{ fontWeight: 700, fontSize: 14 }}>Infer Media</span>
         <span style={{ fontSize: 11, color: 'rgba(148,163,184,0.9)' }}>
@@ -359,6 +374,7 @@ export function MediaPanel(): JSX.Element {
                   {shown.map((it) => (
                     <button
                       key={it.id}
+                      className="im-tile"
                       onClick={() => { setPreview(it) }}
                       style={{
                         position: 'relative', aspectRatio: '16 / 9', borderRadius: 10, overflow: 'hidden',
@@ -387,6 +403,26 @@ export function MediaPanel(): JSX.Element {
                               color: '#422006', borderRadius: 5, padding: '2px 6px',
                               fontSize: 9, fontWeight: 700, letterSpacing: 0.4,
                             }}>FINAL FILM</span>
+                          )
+                        : null}
+                      {it.runId !== ''
+                        ? (
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              className="im-wand"
+                              title="Open as cards — edit this run's parameters"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                wandOpen(it.runId)
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.stopPropagation()
+                                  wandOpen(it.runId)
+                                }
+                              }}
+                            >✦ CARDS</span>
                           )
                         : null}
                       {it.poster === ''
