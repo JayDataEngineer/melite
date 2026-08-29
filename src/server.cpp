@@ -14,6 +14,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <signal.h>   /* (audit F13) sigwait shutdown thread */
+#include <stdarg.h>   /* (audit F28) jappend va_list */
 #include <vector>
 #include <algorithm>
 
@@ -94,6 +96,11 @@ static int inf_json_int(const char *json, const char *key, int fallback) {
  */
 
 inference_runner *g_server_runner = NULL;
+
+/* poser_handlers.cpp — ANNY poser routes (ray /poser/skin/* parity) */
+void handle_poser_identity_space(const httplib::Request &, httplib::Response &);
+void handle_poser_mesh(const httplib::Request &, httplib::Response &);
+
 inference_catalog *g_catalog = NULL;
 inference_ws *g_ws_server = NULL;
 download_config *g_download_cfg = NULL;
@@ -197,7 +204,7 @@ static void handle_apps_index(const httplib::Request &req,
 
 /* ---- DSH serving surface: run registry + async run door + drafts ----
  * Wire contract mirrors the ray gateway the DSH melite lane speaks:
- *   POST /v1/pipelines/start   {"model":"krea-2","prompt":...,"seed":...} -> {"run_id"}
+ *   POST /v1/pipelines/start   {"yaml":"<name>","prompt":...,"seed":...} -> {"run_id"}
  *   GET  /v1/pipelines/status/{run_id}  -> {status, artifacts:[{name,path,bytes}]}
  *   POST /v1/pipelines/drafts  {intent, stages:[...]} -> {draftId, stages}
  *   GET  /v1/pipelines/runs    -> {runs:[...]} (gallery; disk-scanned from
@@ -227,6 +234,7 @@ typedef struct {
 typedef struct {
     char id[64];             /* node id from the pipeline YAML */
     char state[16];          /* pending|running|done|skipped|error */
+    char error[2048];        /* exact error message (written to sidecar ledger) */
     char arts[RUN_STAGE_ARTS_MAX][160];  /* artifacts attributed to this stage */
     size_t n_arts;
 } run_stage;
@@ -236,7 +244,10 @@ typedef struct {
     char state[16];          /* queued|running|success|error|stopped */
     char error[256];
     char out_dir[512];
-    char yaml[2048];         /* the pipeline YAML this run executes */
+    /* (audit F31, 2026-08-29) 4096 to match yaml_override[4096]: the old
+     * 2048 cap silently truncated pipelines (h3-timeline-b4 sits at 2020
+     * bytes — 28 from a silent dag-parse failure). */
+    char yaml[4096];         /* the pipeline YAML this run executes */
     char model[64];          /* requested model (spec persistence) */
     char prompt[2048];       /* requested prompt (spec persistence) */
     long seed;               /* requested seed, -1 = unset */
@@ -246,6 +257,12 @@ typedef struct {
     run_stage stages[RUN_STAGES_MAX];
     size_t n_stages;
     int  stop_req;           /* per-run cooperative stop request */
+    /* (audit M4, 2026-08-29) FIFO ticket assigned AT REGISTRATION under
+     * g_gpu_mu — strict submission order (was: taken inside the spawned
+     * thread, i.e. scheduler order). has_ticket=1 until the run thread (or
+     * a spawn-failure path) releases it. */
+    int  ticket;
+    int  has_ticket;
     int  th_done;            /* run thread fully drained; slot reusable.
                               * A terminal state alone is NOT enough: a
                               * stopped run's thread drains asynchronously. */
@@ -321,6 +338,29 @@ static void run_mark_th_done(size_t idx) {
 static void run_write_sidecar(size_t idx);
 static void ledger_log(const char *event, const char *data_json);
 static char *json_quote(const char *src);
+static int  boot_patch_sidecar(const char *path, const char *why); /* audit F6/F7 */
+
+/* (audit F28, 2026-08-29) Bounded-growth JSON appender. The old
+ * "len += snprintf(buf + len, cap - len, ...)" idiom lets a truncated
+ * snprintf return the WOULD-BE length, so len can pass cap and the next
+ * cap-len underflows to a huge size_t — an unbounded heap write (the H3
+ * class). jappend grows the buffer and RETRIES; snprintf never truncates. */
+static size_t jappend(char **buf, size_t *cap, size_t len,
+                      const char *fmt, ...) {
+    va_list ap;
+    for (;;) {
+        va_start(ap, fmt);
+        int n = vsnprintf(*buf + len, *cap - len, fmt, ap);
+        va_end(ap);
+        if (n < 0) return len;                    /* encoding error: skip */
+        if ((size_t)n < *cap - len) return len + (size_t)n;
+        size_t need = *cap * 2 + (size_t)n + 64;
+        char *nb = (char *)realloc(*buf, need);
+        if (!nb) return len;                      /* OOM: keep valid prefix */
+        *buf = nb;
+        *cap = need;
+    }
+}
 
 static void run_set_state(size_t idx, const char *state, const char *err) {
     pthread_mutex_lock(&g_runs_mu);
@@ -411,6 +451,14 @@ static void stage_attribute_artifacts(size_t idx, size_t stage_i) {
     closedir(d);
 }
 
+/* Runner writes its last_error here before the stage_cb fires
+ * so the callback can propagate it into the sidecar ledger. */
+static char g_runner_error_buf[2048] = "";
+extern "C" void runner_set_error_for_cb(const char *msg) {
+    if (msg) snprintf(g_runner_error_buf, sizeof(g_runner_error_buf), "%s", msg);
+    else g_runner_error_buf[0] = 0;
+}
+
 /* Stage callback ctx = the run registry index (as a size_t*). */
 static void run_stage_cb(void *ctx, const char *node_id,
                          int index, int total, int state) {
@@ -427,6 +475,10 @@ static void run_stage_cb(void *ctx, const char *node_id,
         if (strcmp(g_runs[idx].stages[s].id, node_id) == 0) {
             snprintf(g_runs[idx].stages[s].state,
                      sizeof(g_runs[idx].stages[s].state), "%s", sname);
+            if (state == RUNNER_STAGE_ERROR && g_runner_error_buf[0])
+                snprintf(g_runs[idx].stages[s].error,
+                         sizeof(g_runs[idx].stages[s].error), "%s",
+                         g_runner_error_buf);
             if (state == RUNNER_STAGE_DONE)
                 stage_attribute_artifacts(idx, s);
             break;
@@ -525,21 +577,20 @@ static char *run_artifacts_json(const char *out_dir) {
         FILE *sf = popen(szcmd, "r");
         long bytes = -1;
         if (sf) { if (fscanf(sf, "%ld", &bytes) != 1) bytes = -1; pclose(sf); }
-        while (len + 900 > cap) { cap *= 2; buf = (char *)realloc(buf, cap); }
-        if (!first) len += (size_t)snprintf(buf + len, cap - len, ",");
+        if (!first) len = jappend(&buf, &cap, len, ",");
         first = 0;
-        len += (size_t)snprintf(buf + len, cap - len,
+        len = jappend(&buf, &cap, len,
             "{\"name\":\"%s\",\"path\":\"%s\",\"bytes\":%ld,"
             "\"url\":\"/editor/assets/runs/%s/%s\",\"type\":\"%s\",\"size\":%ld}",
             line, path, bytes, rid, line, artifact_type(line), bytes);
     }
     pclose(fp);
     if (total > listed) {
-        if (!first) len += (size_t)snprintf(buf + len, cap - len, ",");
-        len += (size_t)snprintf(buf + len, cap - len,
+        if (!first) len = jappend(&buf, &cap, len, ",");
+        len = jappend(&buf, &cap, len,
             "{\"truncated\":true,\"listed\":%d,\"total\":%d}", listed, total);
     }
-    snprintf(buf + len, cap - len, "]");
+    len = jappend(&buf, &cap, len, "]");
     return buf;
 }
 
@@ -582,10 +633,11 @@ static char *pipeline_yaml_for_model(const char *model, char *out, size_t cap) {
  * boundaries — each call becomes ONE window prompt (its beats joined, or
  * the call text alone). Feeds the prompt..prompt4 wire the multi-window
  * engine already speaks. Returns window count (0..4). */
-static char g_tl_wins[4][2048];
-static int  g_tl_nw = 0;
+/* (audit F2, 2026-08-29) was global g_tl_wins/g_tl_nw — two concurrent
+ * POSTs could cross-wire their window prompts. Now compiled into a
+ * LOCAL array at the registration call site and passed as a parameter. */
 
-static int compile_calls_windows(const char *body, char out[4][2048]) {
+static int compile_calls_windows(const char *body, char out[4][2048], int lens[4]) {
     const char *key = strstr(body, "\"calls\"");
     if (!key) return 0;
     const char *calls = strchr(key + 7, '[');
@@ -627,7 +679,22 @@ static int compile_calls_windows(const char *body, char out[4][2048]) {
                             }
                             out[n][o] = 0;
                         }
+                        /* calls-length law (2026-08-30): each window renders
+                         * its call span + the seam overlap
+                         * (first_frame_prev_sec x fps) so the in-graph trim
+                         * can remove the pinned head and land the exact
+                         * tile. Lens land in the pipeline inject map. */
+                        {
+                            int sf=0, ef=0, pv=0;
+                            const char *m = strstr(obj, "start_frame");
+                            if (m) sf = atoi(strchr(m, ':') + 1);
+                            m = strstr(obj, "end_frame");
+                            if (m) ef = atoi(strchr(m, ':') + 1);
+                            m = strstr(obj, "first_frame_prev_sec");
+                            if (m) pv = atoi(strchr(m, ':') + 1);
+                            lens[n] = (ef > sf ? ef - sf : 0) + pv * 24;
                         free(obj);
+                        }
                         if (out[n][0]) n++;
                     }
                 }
@@ -660,19 +727,21 @@ static void add_run_input_f32(size_t idx, const char *name, float f) {
     ri->nbytes = 4;
 }
 
-/* extra beat fields the timeline card carries (multi-window prompts) */
+/* extra beat fields the timeline card carries (multi-window prompts).
+ * (audit F2) tl_wins/tl_nw are the CALLER'S LOCAL compile output — no
+ * shared state, concurrent registrations cannot cross-wire prompts. */
 static void add_run_extra_inputs(size_t idx, const char *body,
-                                 char *tmp, size_t tmpcap) {
+                                 char *tmp, size_t tmpcap,
+                                 char tl_wins[4][2048], int tl_nw) {
     static const char *names[] = {"prompt2", "prompt3", "prompt4", NULL};
     for (int i = 0; names[i]; i++)
         if (inf_json_string(body, names[i], tmp, tmpcap) == 0 && tmp[0])
             add_run_input_text(idx, names[i], tmp);
     /* Timeline studio compiled windows (calls -> per-call prompts):
      * the card body carries no prompt2..4 keys - feed from the compile. */
-    if (g_tl_nw > 1) {
-        for (int i = 1; i < g_tl_nw && i < 4; i++)
-            add_run_input_text(idx, names[i - 1], g_tl_wins[i]);
-        g_tl_nw = 0;  /* one-shot: never leak into the next run */
+    if (tl_nw > 1) {
+        for (int i = 1; i < tl_nw && i < 4; i++)
+            add_run_input_text(idx, names[i - 1], tl_wins[i]);
     }
     /* audio guide track: stage the file into ComfyUI's input dir and expose
      * the bare filename as the "audio" run input (pipeline_audio.yaml
@@ -881,14 +950,54 @@ static void draft_writeback(size_t idx, const char *wire) {
     }
 }
 
+
+/* (audit M4, 2026-08-29) Wait OUR ticket turn inline, then fail the run
+ * and release — used when pthread_create failed so NO run thread exists.
+ * Releasing out of turn would starve earlier waiters (serving skips past
+ * their tickets), so the abandonment still respects strict FIFO order.
+ * Rare path (EAGAIN under thread exhaustion); the handler blocks until
+ * the queue drains to this run's turn, then replies. */
+static void run_abandon_ticket_ordered(size_t idx) {
+    pthread_mutex_lock(&g_gpu_mu);
+    int tk = g_runs[idx].ticket;
+    while (g_gpu_serving != tk)
+        pthread_cond_wait(&g_gpu_cv, &g_gpu_mu);
+    pthread_mutex_unlock(&g_gpu_mu);
+    run_set_state(idx, "error", "thread spawn failed (ticket drained in order)");
+    run_mark_th_done(idx);
+    gpu_ticket_release();
+}
+
+/* (audit M4) spawn a run thread with bounded retry; on persistent failure
+ * the registration-time ticket is abandoned IN ORDER and the caller is
+ * told to reply 503. Returns 0 on success. */
+static int run_spawn_thread(size_t idx, void *(*fn)(void *)) {
+    run_thread_arg *ta = (run_thread_arg *)malloc(sizeof(*ta));
+    if (!ta) return -1;
+    ta->idx = idx;
+    for (int attempt = 0; attempt < 3; attempt++) {
+        pthread_t th;
+        if (pthread_create(&th, NULL, fn, ta) == 0) {
+                    return 0;
+        }
+        fprintf(stderr, "run: pthread_create failed (attempt %d)\n", attempt + 1);
+        usleep(250 * 1000);
+    }
+    free(ta);
+    run_abandon_ticket_ordered(idx);
+    return -1;
+}
+
 static void *run_thread_fn(void *argp) {
     run_thread_arg a = *(run_thread_arg *)argp;
     free(argp);
     size_t idx = a.idx;
 
-    /* GPU FIFO: wait for our ticket before touching the GPU */
+    /* GPU FIFO: wait for OUR ticket before touching the GPU. The ticket
+     * was assigned AT REGISTRATION (audit M4) — the queue serves runs in
+     * exact submission order, independent of thread scheduling. */
     pthread_mutex_lock(&g_gpu_mu);
-    int my_ticket = g_gpu_tickets++;
+    int my_ticket = g_runs[idx].ticket;
     while (g_gpu_serving != my_ticket)
         pthread_cond_wait(&g_gpu_cv, &g_gpu_mu);
     pthread_mutex_unlock(&g_gpu_mu);
@@ -914,6 +1023,7 @@ static void *run_thread_fn(void *argp) {
         gpu_ticket_release();
         return NULL;
     }
+    g_runner_error_buf[0] = '\0';  /* clear stale error from prior run */
     run_set_state(idx, "running", NULL);  /* sidecar + ledger bookkeeping */
     /* Real queue telemetry on the WS bus (audit M3) */
     if (g_ws_server)
@@ -978,7 +1088,9 @@ static void *run_thread_fn(void *argp) {
         run_set_state(idx, "stopped", NULL);
         inference_free(result);
     } else if (rc < 0) {
-        run_set_state(idx, "error", "pipeline execution failed");
+        const char *errmsg = g_runner_error_buf[0]
+            ? g_runner_error_buf : "pipeline execution failed";
+        run_set_state(idx, "error", errmsg);
         inference_free(result);
         draft_writeback(idx, "failed");
     } else {
@@ -993,11 +1105,13 @@ static void *run_thread_fn(void *argp) {
      * 2026-08-28). */
 
     /* GPU FIFO: release and wake next waiter, then mark the slot fully
-     * drained so a registrar may recycle it (th_done gate, audit M2). */
+     * drained so a registrar may recycle it (th_done gate, audit M2).
+     * th_done BEFORE release: no window where the ticket is free but the
+     * slot looks occupied (prevents spurious 503 under concurrent load). */
+    run_mark_th_done(idx);
     gpu_ticket_release();
     if (g_ws_server)
         ws_send_status(g_ws_server, gpu_queue_depth());
-    run_mark_th_done(idx);
     return NULL;
 }
 
@@ -1045,9 +1159,13 @@ static void run_write_sidecar(size_t idx) {
         stages_json[so++] = '[';
         for (size_t s = 0; s < g_runs[idx].n_stages; s++) {
             run_stage *st = &g_runs[idx].stages[s];
+            char *sterrq = st->error[0] ? json_quote(st->error) : NULL;
             so += (size_t)snprintf(stages_json + so, sizeof(stages_json) - so,
-                "%s{\"id\":\"%s\",\"name\":\"%s\",\"index\":%d,\"status\":\"%s\",\"artifacts\":[",
-                s ? "," : "", st->id, st->id, (int)s, wire_state(st->state));
+                "%s{\"id\":\"%s\",\"name\":\"%s\",\"index\":%d,\"status\":\"%s\"%s%s,\"artifacts\":[",
+                s ? "," : "", st->id, st->id, (int)s, wire_state(st->state),
+                sterrq ? ",\"error\":" : "",
+                sterrq ? sterrq : "");
+            if (sterrq) free(sterrq);
             for (size_t a = 0; a < st->n_arts; a++)
                 so += (size_t)snprintf(stages_json + so,
                                       sizeof(stages_json) - so,
@@ -1061,18 +1179,24 @@ static void run_write_sidecar(size_t idx) {
     }
     pthread_mutex_unlock(&g_runs_mu);
 
-    char path[600];
+    /* ATOMIC WRITE (audit F1, 2026-08-29): a crash or concurrent read
+     * mid-write must never see a truncated sidecar. Write to .tmp then
+     * rename() — readers always see either the old or the new file. */
+    char path[600], tmp_path[620];
     snprintf(path, sizeof(path), "%s/_pipeline.json", dir);
-    FILE *f = fopen(path, "w");
+    snprintf(tmp_path, sizeof(tmp_path), "%s.tmp", path);
+    FILE *f = fopen(tmp_path, "w");
     if (!f) { free(yamlq); free(promptq); free(errq); return; }
-    fprintf(f, "{\"run_id\":\"%s\",\"model\":\"%s\",\"prompt\":%s,"
+    int wok = fprintf(f, "{\"run_id\":\"%s\",\"model\":\"%s\",\"prompt\":%s,"
                "\"seed\":%ld,\"created\":%ld,\"ended\":%ld,\"durationSec\":%ld,"
                "\"status\":\"%s\","
                "\"error\":%s,\"stages\":%s,\"yaml\":%s}",
             rid, model, promptq, seed, created, (long)time(NULL),
             (long)time(NULL) - created, state,
-            errq ? errq : "null", stages_json, yamlq);
-    fclose(f);
+            errq ? errq : "null", stages_json, yamlq) > 0;
+    wok = (fclose(f) == 0) && wok;
+    if (wok) rename(tmp_path, path);
+    else unlink(tmp_path);
     free(yamlq); free(promptq); free(errq);
 }
 
@@ -1084,8 +1208,10 @@ static void handle_pipelines_start(const httplib::Request &req,
      *   {route:true}            - 501 (routing not ported)
      *   {model,...}             - flat generation (default)
      */
-    char model[64] = "krea-2", prompt[2048] = "", wf[512] = "";
-    g_tl_nw = 0;
+    char model[64] = "", prompt[2048] = "";
+    char tl_wins[4][2048];   /* (audit F2) LOCAL: per-request window prompts */
+    int  tl_wins_len[4] = {0,0,0,0}; /* calls-length law: render length per window */
+    int  tl_nw = 0;
     long seed = -1;
     char yaml_override[4096] = "";
     const char *body = req.body.c_str();
@@ -1159,29 +1285,54 @@ static void handle_pipelines_start(const httplib::Request &req,
         const char *m = strstr(req.body.c_str(), "\"model\"");
         const char *p = strstr(req.body.c_str(), "\"prompt\"");
         const char *s = strstr(req.body.c_str(), "\"seed\"");
-        const char *w = strstr(req.body.c_str(), "\"workflow_file\"");
         char tmp[2048];
         if (m && inf_json_string(req.body.c_str(), "model", tmp, sizeof(tmp)) == 0)
             snprintf(model, sizeof(model), "%s", tmp);
         if (p && inf_json_string(req.body.c_str(), "prompt", tmp, sizeof(tmp)) == 0)
             snprintf(prompt, sizeof(prompt), "%s", tmp);
-        if (w && inf_json_string(req.body.c_str(), "workflow_file", tmp, sizeof(tmp)) == 0)
-            snprintf(wf, sizeof(wf), "%s", tmp);
         if (s) seed = inf_json_int(req.body.c_str(), "seed", -1);
     }
-    /* Timeline studio shape: {model, calls:[...]} with no flat prompt -
-     * compile the calls into window prompts (prompt..prompt4). */
-    if (!prompt[0] && strstr(body, "\"calls\"")) {
-        g_tl_nw = compile_calls_windows(body, g_tl_wins);
-        if (g_tl_nw > 0) snprintf(prompt, sizeof(prompt), "%s", g_tl_wins[0]);
+    /* Timeline studio shape: {model, calls:[...]} - compile the calls
+     * into window prompts (prompt..prompt4).
+     * (audit F34) compile even when a flat prompt rides along: a body
+     * carrying BOTH prompt (window-0 text) AND calls must still feed
+     * tl_wins[1..3] to prompt2..4 - the old !prompt[0] gate dropped
+     * every window past the first whenever prompt was present. */
+    if (strstr(body, "\"calls\"")) {
+        tl_nw = compile_calls_windows(body, tl_wins, tl_wins_len);
+        if (!prompt[0] && tl_nw > 0) snprintf(prompt, sizeof(prompt), "%s", tl_wins[0]);
     }
     if (!prompt[0]) {
         res.status = 400;
         res.set_content("{\"error\":\"missing prompt\"}", "application/json");
         return;
     }
-    if (!wf[0])
-        snprintf(wf, sizeof(wf), "../pipelines/krea-txt2img/workflow.json");
+
+    /* LAW (operator order, 2026-08-30): "No legacy. No fallbacks. No
+     * hardcodes. These are banned." The run spec must resolve EXPLICITLY
+     * -- a {yaml:name} pipeline, a {pipeline:{steps}} card, or a {model}
+     * that maps to pipelines/<model>/pipeline.yaml on disk. The legacy
+     * composed graph with a baked-in executor address is deleted; an
+     * unresolvable request is rejected here, BEFORE any run is
+     * registered, so no zombie slots or sidecars are manufactured. */
+    if (!yaml_override[0]) {
+        if (!model[0]) {
+            res.status = 400;
+            res.set_content("{\"error\":\"no pipeline selected: provide yaml, pipeline, or model (no fallback by law)\"}", "application/json");
+            return;
+        }
+        char probe[512];
+        if (!pipeline_yaml_for_model_ex(model, body, probe, sizeof(probe))) {
+            res.status = 404;
+            char err[300];
+            snprintf(err, sizeof(err),
+                     "{\"error\":\"no pipeline for model: %s\"}", model);
+            res.set_content(err, "application/json");
+            return;
+        }
+    }
+    /* (law 2026-08-30) the hardcoded workflow_file default is gone:
+     * a run names its pipeline explicitly or it does not start. */
 
     /* register the run */
     pthread_mutex_lock(&g_runs_mu);
@@ -1232,6 +1383,20 @@ static void handle_pipelines_start(const httplib::Request &req,
     mkdir("./output", 0755);
     mkdir(g_runs[idx].out_dir, 0755);
     run_write_sidecar(idx);
+    /* (2026-08-30 forever-truth law) the VERBATIM start request — every
+     * prompt, every input — is persisted beside the run at registration.
+     * The card that launched the run can always be reconstructed exactly
+     * from disk; no future run can lose its authored parameters. */
+    {
+        char rqpath[600];
+        snprintf(rqpath, sizeof(rqpath), "%s/_request.json",
+                 g_runs[idx].out_dir);
+        FILE *rf = fopen(rqpath, "wb");
+        if (rf) {
+            fwrite(req.body.c_str(), 1, req.body.size(), rf);
+            fclose(rf);
+        }
+    }
     /* action-card linkage: timeline card runs (params carry "calls")
      * persist their result back into the timeline draft card */
     if (strstr(req.body.c_str(), "\"calls\"") &&
@@ -1241,6 +1406,30 @@ static void handle_pipelines_start(const httplib::Request &req,
         g_runs[idx].draft_stage = 0;
         fprintf(stderr, "[draft] run %s linked to card draft-timeline-h3\n",
                 g_runs[idx].run_id);
+    }
+    /* (2026-08-30 cards-button law) the CARD document for this run - what
+     * the DSH "Cards" button rebuilds the exact action card from: model +
+     * pipeline + the verbatim start request as a first-class JSON value +
+     * the draft linkage. Written at registration so it exists in every run
+     * state, success or failure, alongside _request.json (forever-truth). */
+    {
+        char cpath[600];
+        snprintf(cpath, sizeof(cpath), "%s/card.json",
+                 g_runs[idx].out_dir);
+        FILE *cf = fopen(cpath, "wb");
+        if (cf) {
+            fprintf(cf,
+                "{\"card_version\":1,\"run_id\":\"%s\",\"model\":\"%s\","
+                "\"pipeline\":\"%s\",\"seed\":%ld,\"created\":%lld,"
+                "\"source\":\"queue\",\"linked_draft\":\"%s\",\"request\":",
+                g_runs[idx].run_id, model,
+                model,
+                seed, (long long)time(NULL),
+                g_runs[idx].draft_id[0] ? g_runs[idx].draft_id : "");
+            fwrite(req.body.c_str(), 1, req.body.size(), cf);
+            fputc('}', cf);
+            fclose(cf);
+        }
     }
     {   /* registration lands in the file ledger */
         char rb[400];
@@ -1264,7 +1453,7 @@ static void handle_pipelines_start(const httplib::Request &req,
                             tmpin, sizeof(tmpin)) == 0 && tmpin[0])
             add_run_input_text(idx, "negative_prompt", tmpin);
         if (seed >= 0) add_run_input_f32(idx, "seed", (float)seed);
-        add_run_extra_inputs(idx, req.body.c_str(), tmpin, sizeof(tmpin));
+        add_run_extra_inputs(idx, req.body.c_str(), tmpin, sizeof(tmpin), tl_wins, tl_nw);
     } else {
     char *piped = pipeline_yaml_for_model_ex(model, req.body.c_str(),
                                              g_runs[idx].yaml,
@@ -1300,47 +1489,74 @@ static void handle_pipelines_start(const httplib::Request &req,
         if (inf_json_string(req.body.c_str(), "image",
                             tmpin, sizeof(tmpin)) == 0 && tmpin[0])
             add_run_input_text(idx, "image", tmpin);
-        add_run_extra_inputs(idx, req.body.c_str(), tmpin, sizeof(tmpin));
+        add_run_extra_inputs(idx, req.body.c_str(), tmpin, sizeof(tmpin), tl_wins, tl_nw);
     } else {
-        /* legacy: compose a krea-style single-node YAML with baked injects */
-        char *qp = json_quote(prompt);
-        char seedclause[160] = "";
-        if (seed >= 0)
-            snprintf(seedclause, sizeof(seedclause),
-                     ",\"KSampler.0.seed\":%ld", seed);
-        snprintf(g_runs[idx].yaml, sizeof(g_runs[idx].yaml),
-            "name: %s\n"
-            "description: \"server-generated run\"\n"
-            "nodes:\n"
-            "  - id: generate\n"
-            "    type: comfyui\n"
-            "    params: {\"server_url\":\"http://127.0.0.1:18465\",\"workflow_file\":\"%s\",\"out_dir\":\"%s\",\"timeout_s\":300,\"inject\":{\"CLIPTextEncode.0.text\":%s%s}}\n",
-            g_runs[idx].run_id, wf, g_runs[idx].out_dir, qp, seedclause);
-        free(qp);
+        /* (operator law, 2026-08-30: no legacy, no fallbacks, no
+         * hardcodes) the composed krea-style graph with its BAKED-IN
+         * executor address is deleted. Unreachable behind the early
+         * gate; if it ever fires anyway, fail the run LOUDLY. */
+        pthread_mutex_lock(&g_runs_mu);
+        g_runs[idx].th_done = 1;   /* no thread will drain this slot */
+        pthread_mutex_unlock(&g_runs_mu);
+        run_set_state(idx, "error",
+                       "pipeline resolution failed at dispatch "
+                       "(no fallback by law)");
+        res.status = 500;
+        res.set_content("{\"error\":\"pipeline resolution failed at dispatch (no fallback by law)\"}",
+                        "application/json");
+        return;
     }
     } /* end if(!yaml_override) */
 
+    /* calls-length law (2026-08-30): each window renders its call span
+     * plus the seam overlap (first_frame_prev_sec x fps); the in-graph
+     * pack-trim removes the pinned head and lands the exact tile. Splice
+     * the literal length into each window node's inject map, anchored on
+     * its KSampler.0.seed entry (one per window node, in file order). */
+    if (tl_nw > 0) {
+        char inj[64];
+        const char *needle = "\"KSampler.0.seed\"";
+        int wi = 0;
+        char *q = strstr(g_runs[idx].yaml, needle);
+        while (q && wi < tl_nw) {
+            if (tl_wins_len[wi] > 0) {
+                snprintf(inj, sizeof(inj),
+                         "\"MiniMaxH3ImageToVideo.0.length\":%d,",
+                         tl_wins_len[wi]);
+                size_t il = strlen(inj);
+                size_t used = strlen(g_runs[idx].yaml);
+                size_t off = (size_t)(q - g_runs[idx].yaml);
+                if (used + il < sizeof(g_runs[idx].yaml) - 1) {
+                    memmove(q + il, q, used - off + 1);
+                    memcpy(q, inj, il);
+                    q += il;
+                }
+            }
+            wi++;
+            q = strstr(q + strlen(needle), needle);
+        }
+    }
     /* stage list comes from the final YAML (reported while queued too) */
     run_parse_stages(idx);
 
-    run_thread_arg *ta = (run_thread_arg *)malloc(sizeof(*ta));
-    ta->idx = idx;
-    pthread_t th;
-    if (pthread_create(&th, NULL, run_thread_fn, ta) != 0) {
-        /* No thread will ever drain this slot: fail it loudly instead
-         * of leaving a ghost "queued" entry (audit M2). */
-        free(ta);
+    /* (audit M4, 2026-08-29) FIFO ticket at REGISTRATION: strict
+     * submission order, independent of thread scheduling. */
+    {
+        pthread_mutex_lock(&g_gpu_mu);
+        g_runs[idx].ticket = g_gpu_tickets++;
+        g_runs[idx].has_ticket = 1;
+        pthread_mutex_unlock(&g_gpu_mu);
+    }
+    if (run_spawn_thread(idx, run_thread_fn) != 0) {
+        /* the ticket was abandoned IN ORDER by the helper; fail loudly */
         pthread_mutex_lock(&g_runs_mu);
         run_slot_release_heap(idx);
         pthread_mutex_unlock(&g_runs_mu);
-        run_set_state(idx, "error", "thread spawn failed");
-        run_mark_th_done(idx);
         res.status = 503;
         res.set_content("{\"error\":\"thread spawn failed\"}",
                         "application/json");
         return;
     }
-    pthread_detach(th);
 
     char out[256];
     snprintf(out, sizeof(out), "{\"run_id\":\"%s\",\"status\":\"queued\"}",
@@ -1374,6 +1590,8 @@ static void handle_queue(const httplib::Request &, httplib::Response &res) {
     res.set_content(out, "application/json");
 }
 
+static int sidecar_str(const char *json, const char *key, char *out, size_t cap);
+
 static void handle_pipelines_status(const httplib::Request &req,
                                     httplib::Response &res) {
     std::string rid = req.path_params.at("run_id");
@@ -1389,7 +1607,10 @@ static void handle_pipelines_status(const httplib::Request &req,
         snprintf(sc, sizeof(sc), "./output/%s/_pipeline.json", rid.c_str());
         FILE *fp = fopen(sc, "r");
         if (fp) {
-            static char sb[65536];
+            /* (chaos C11, 2026-08-30) was STATIC: two concurrent
+             * restores cross-wired this buffer and the response
+             * stopped being valid JSON. Stack per request thread. */
+            char sb[65536]; /* chaos C11: static removed - shared under concurrent restores */
             size_t n = fread(sb, 1, sizeof(sb) - 1, fp);
             fclose(fp);
             sb[n] = 0;
@@ -1416,23 +1637,163 @@ static void handle_pipelines_status(const httplib::Request &req,
             }
             qq = strstr(sb, "\"created\"");     if (qq) { const char *c = strchr(qq, ':'); if (c) created = strtol(c + 1, NULL, 10); }
             qq = strstr(sb, "\"durationSec\""); if (qq) { const char *c = strchr(qq, ':'); if (c) dur = strtol(c + 1, NULL, 10); }
-            char out2[1024];
-            snprintf(out2, sizeof(out2),
-                "{\"run_id\":\"%s\",\"status\":\"%s\",\"state\":\"%s\",\"error\":\"%s\",\"created\":%ld,\"durationSec\":%ld,\"restored_from_sidecar\":true,\"artifacts\":[]}",
-                rid.c_str(), st, st, ev, created, dur);
+            char *evq = json_quote(ev);   /* (audit F26) sidecar errors carry quotes */
+            /* (2026-08-30) restored runs must revive in the cards editor:
+             * status.stages comes from the run dir's card.json when present
+             * (the editor's revive reads exactly this field — without it
+             * every restored run is "Run has no stages"), and artifacts
+             * come from a real scan instead of a hardcoded empty array. */
+            char odir[512];
+            snprintf(odir, sizeof(odir), "./output/%s", rid.c_str());
+            char *arts2 = run_artifacts_json(odir);
+            char stages2[24576] = "[]";
+            {
+                /* priority: run-dir card.json (explicit card), else the
+                 * sidecar's own stages snapshot — VERBATIM from disk, never
+                 * hand-composed. */
+                char cpath[600];
+                snprintf(cpath, sizeof(cpath), "%s/card.json", odir);
+                FILE *cf = fopen(cpath, "rb");
+                const char *src = NULL;
+                char *cbuf = (char *)malloc(sizeof(stages2));
+                if (cf && cbuf) {
+                    size_t cg = fread(cbuf, 1, sizeof(stages2) - 1, cf);
+                    cbuf[cg] = 0;
+                    src = cbuf;
+                }
+                if (cf) fclose(cf);
+                if (!src && cbuf) { snprintf(cbuf, sizeof(stages2), "%s", sb); src = cbuf; }
+                if (src) {
+                    const char *sp = strstr(src, "\"stages\"");
+                    if (sp) {
+                        const char *c = sp;
+                        while (*c && *c != '[') c++;
+                        if (*c == '[') {
+                            const char *e2 = c + 1;
+                            int depth = 1;
+                            while (*e2 && depth > 0) {
+                                if (*e2 == '[') depth++;
+                                else if (*e2 == ']') depth--;
+                                e2++;
+                            }
+                            size_t Ln = (size_t)(e2 - c);
+                            if (Ln >= sizeof(stages2)) Ln = sizeof(stages2) - 1;
+                            memcpy(stages2, c, Ln);
+                            stages2[Ln] = 0;
+                        }
+                    }
+                }
+                if (cbuf) free(cbuf);
+            }
+            /* chain runs revive through the spec: yaml_filename = the
+             * sidecar's model (the pipeline name the run started with) */
+            char yfn2[80] = "";
+            sidecar_str(sb, "model", yfn2, sizeof(yfn2));
+            /* (placeholder-prompt fix, 2026-08-30) the editor merges
+             * status.stages[i].params OVER the spec card — without a
+             * params.prompt the card renders the editor default
+             * ("A single shot — describe…"). Inject the run's REAL
+             * values: seed + prompt (per-stage when the verbatim request
+             * was persisted; the sidecar prompt otherwise). */
+            {
+                char rprom[1024] = "";
+                sidecar_str(sb, "prompt", rprom, sizeof(rprom));
+                long rseed = 0;
+                {
+                    const char *sg = strstr(sb, "\"seed\"");
+                    if (sg) rseed = strtol(strchr(sg, ':') + 1, NULL, 10);
+                }
+                char *reqbuf = (char *)malloc(65536);
+                if (reqbuf) {
+                    char rqp[600];
+                    snprintf(rqp, sizeof(rqp), "%s/_request.json", odir);
+                    FILE *rf = fopen(rqp, "rb");
+                    if (rf) {
+                        size_t rg = fread(reqbuf, 1, 65535, rf);
+                        reqbuf[rg] = 0;
+                        fclose(rf);
+                    } else {
+                        reqbuf[0] = 0;
+                    }
+                }
+                char *walk = stages2;
+                while (walk && *walk) {
+                    char *ob = strchr(walk, '{');
+                    if (!ob) break;
+                    char *cb = ob + 1;
+                    while (*cb && *cb != '}') cb++;
+                    if (!*cb) break;
+                    char sid[64] = "";
+                    {
+                        const char *ip = strstr(ob, "\"id\":\"");
+                        if (ip && ip < cb) {
+                            const char *v = ip + 5;
+                            size_t L = 0;
+                            while (v + L < cb && v[L] != '"' && L < sizeof(sid) - 1) L++;
+                            memcpy(sid, v, L); sid[L] = 0;
+                        }
+                    }
+                    char pkey[24] = "prompt";
+                    {
+                        const char *w = strstr(sid, "window");
+                        if (w) {
+                            long n = strtol(w + 6, NULL, 10);
+                            if (n > 1 && n < 20) snprintf(pkey, sizeof(pkey), "prompt%ld", n);
+                        }
+                    }
+                    char spro[1024] = "";
+                    int have = 0;
+                    if (reqbuf && reqbuf[0]) {
+                        char probe[24];
+                        snprintf(probe, sizeof(probe), "\"%s\"", pkey);
+                        if (strstr(reqbuf, probe)) {
+                            sidecar_str(reqbuf, pkey, spro, sizeof(spro));
+                            have = spro[0] != 0;
+                        }
+                    }
+                    if (!have && rprom[0]) { snprintf(spro, sizeof(spro), "%s", rprom); have = 1; }
+                    char pjson[4200];
+                    if (have) {
+                        char *pq = json_quote(spro);
+                        snprintf(pjson, sizeof(pjson),
+                                 ",\"params\":{\"prompt\":%s,\"seed\":%ld}",
+                                 pq ? pq : "\"\"", rseed);
+                        if (pq) free(pq);
+                    } else {
+                        snprintf(pjson, sizeof(pjson),
+                                 ",\"params\":{\"seed\":%ld}", rseed);
+                    }
+                    size_t pl = strlen(pjson);
+                    size_t tail = strlen(cb);
+                    if (strlen(stages2) + pl + 1 < sizeof(stages2)) {
+                        memmove(cb + pl, cb, tail + 1);
+                        memcpy(cb, pjson, pl);
+                        walk = cb + pl + 1;
+                    } else break;
+                }
+                if (reqbuf) free(reqbuf);
+            }
+            size_t cap2 = strlen(arts2) + strlen(stages2) + strlen(evq) + 800;
+            char *out2 = (char *)malloc(cap2);
+            snprintf(out2, cap2,
+                "{\"run_id\":\"%s\",\"status\":\"%s\",\"state\":\"%s\",\"error\":%s,\"created\":%ld,\"durationSec\":%ld,\"restored_from_sidecar\":true,\"artifacts\":%s,\"stages\":%s,\"yaml_filename\":\"%s\"}",
+                rid.c_str(), st, st, evq, created, dur, arts2, stages2, yfn2);
+            free(evq); free(arts2);
             res.status = 200;
             res.set_content(out2, "application/json");
+            free(out2);
             return;
         }
         res.status = 404;
         res.set_content("{\"error\":\"unknown run_id\"}", "application/json");
         return;
     }
-    char outdir[512], state[16], err[256], yamlhead[80];
+    char outdir[512], state[16], err[256], yamlhead[80], modelh[80];
     snprintf(outdir, sizeof(outdir), "%s", g_runs[found].out_dir);
     snprintf(state, sizeof(state), "%s", g_runs[found].state);
     snprintf(err, sizeof(err), "%s", g_runs[found].error);
     snprintf(yamlhead, sizeof(yamlhead), "%.60s", g_runs[found].run_id);
+    snprintf(modelh, sizeof(modelh), "%.76s", g_runs[found].model);
     /* queue position: how many queued runs registered before this one */
     int qpos = 0;
     if (strcmp(state, "queued") == 0) {
@@ -1459,14 +1820,18 @@ static void handle_pipelines_status(const httplib::Request &req,
     pthread_mutex_unlock(&g_runs_mu);
 
     char *arts = run_artifacts_json(outdir);
-    size_t cap = strlen(arts) + strlen(stages_json) + 700;
+    /* (audit F26, 2026-08-29) the exact-error law pipes RAW plugin/ComfyUI
+     * stderr into run.error — it routinely contains double quotes. Quote
+     * it for JSON or the whole status response becomes unparseable (this
+     * is exactly what broke the queue test at char 236). */
+    char *errq = json_quote(err);
+    size_t cap = strlen(arts) + strlen(stages_json) + strlen(errq) + 700;
     char *out = (char *)malloc(cap);
     snprintf(out, cap,
-        "{\"run_id\":\"%s\",\"status\":\"%s\",\"stages\":%s,\"artifacts\":%s,\"error\":\"%s\",\"queue_position\":%d}",
-        yamlhead, wire_state(state), stages_json, arts, err, qpos);
+        "{\"run_id\":\"%s\",\"status\":\"%s\",\"stages\":%s,\"artifacts\":%s,\"error\":%s,\"queue_position\":%d,\"yaml_filename\":\"%s\"}",
+        yamlhead, wire_state(state), stages_json, arts, errq, qpos, modelh);
     res.set_content(out, "application/json");
-    free(arts);
-    free(out);
+    free(arts); free(errq); free(out);
 }
 
 static void handle_pipelines_drafts(const httplib::Request &req,
@@ -1478,9 +1843,16 @@ static void handle_pipelines_drafts(const httplib::Request &req,
         return;
     }
     mkdir("./drafts", 0755);
-    char id[64];
-    snprintf(id, sizeof(id), "draft-%lx-%lx",
-             (unsigned long)time(NULL), (unsigned long)pthread_self());
+    /* (audit F32, 2026-08-29) time+thread collided for two drafts created
+     * in the same second on the same handler thread — the second fopen
+     * silently OVERWROTE the first card. A monotonic sequence under an
+     * atomic makes ids unique forever. */
+    static int64_t dseq = 0;
+    int64_t seq = __atomic_add_fetch(&dseq, 1, __ATOMIC_RELAXED);
+    char id[80];
+    snprintf(id, sizeof(id), "draft-%lx-%lx-%llx",
+             (unsigned long)time(NULL), (unsigned long)pthread_self(),
+             (unsigned long long)seq);
     char path[256];
     snprintf(path, sizeof(path), "./drafts/%s.json", id);
     FILE *f = fopen(path, "w");
@@ -2066,6 +2438,17 @@ static void handle_draft_list(const httplib::Request &req,
                 buf[got] = 0;
                 sidecar_str(buf, "model", one.model, sizeof(one.model));
                 sidecar_str(buf, "name", one.name, sizeof(one.name));
+                /* ray-era draft cards carry no top-level model/name: the
+                 * card title lives in intent (or the first stage title) and
+                 * the lane in the first stage service. Without these
+                 * fallbacks the whole card index reads empty (the 2026-08-30
+                 * "cards view reconstructs nothing" migration break). */
+                if (!one.name[0])
+                    sidecar_str(buf, "intent", one.name, sizeof(one.name));
+                if (!one.name[0])
+                    sidecar_str(buf, "title", one.name, sizeof(one.name));
+                if (!one.model[0])
+                    sidecar_str(buf, "service", one.model, sizeof(one.model));
             }
             ents.push_back(one);
         }
@@ -2451,7 +2834,9 @@ static int yaml_ent_cmp(const void *a, const void *b) {
 
 static std::string JQ(const std::string &s);  /* json quote helper, defined below */
 static void handle_yaml_list(const httplib::Request &, httplib::Response &res) {
-    static char names[256][80];
+    /* (chaos C12, 2026-08-30) was STATIC: concurrent list GETs
+     * cross-wired the names table. Stack per request thread. */
+    char names[256][80];
     size_t n = 0;
     DIR *d = opendir("../pipelines");
     if (d) {
@@ -2514,7 +2899,9 @@ static void handle_yaml_detail(const httplib::Request &req,
         res.set_content("{\"error\":\"no such pipeline\"}", "application/json");
         return;
     }
-    static char buf[65536];
+    /* (chaos C12, 2026-08-30) was STATIC: concurrent detail GETs
+     * cross-wired the spec text. Stack per request thread. */
+    char buf[65536];
     size_t bn = fread(buf, 1, sizeof(buf) - 1, f);
     fclose(f);
     buf[bn] = 0;
@@ -2527,29 +2914,99 @@ static void handle_yaml_detail(const httplib::Request &req,
         while (v[L] && v[L] != 10 && v[L] != '"' && L < sizeof(desc) - 1) L++;
         memcpy(desc, v, L); desc[L] = 0;
     }
+    /* (2026-08-30 permanent card law) the editor's chain revive reads
+     * `steps[]` (hydrateSpecSteps: family/title/params[{name,value}]/outputs)
+     * — an id-only node list hydrated every card EMPTY and the editor fell
+     * back to placeholder prompts ("A single shot…"). Serve the authored
+     * shape verbatim: per node, the id, its type (family/service) and the
+     * single-line JSON params object exactly as authored in the yaml. */
+    std::string steps = "[";
     std::string nodes = "[";
     const char *p = buf;
-    int first = 1;
+    int first = 1, nfirst = 1;
+    std::string cur_id, cur_type;
+    std::string cur_params;
+    auto flush_node = [&]() {
+        if (cur_id.empty()) return;
+        if (!nfirst) nodes += ",";
+        nfirst = 0;
+        nodes += "{\"id\":" + JQ(cur_id) + "}";
+        std::string fam = cur_type.empty() ? "node" : cur_type;
+        std::string step = "{\"family\":" + JQ(fam) +
+                           ",\"service\":" + JQ(fam) +
+                           ",\"title\":" + JQ(cur_id) +
+                           ",\"params\":" + cur_params + "}";
+        if (!first) steps += ",";
+        first = 0;
+        steps += step;
+        cur_id.clear(); cur_type.clear(); cur_params = "[]";
+    };
+    cur_params = "[]";
     while (*p) {
         const char *eol = strchr(p, 10);
         if (!eol) eol = p + strlen(p);
         size_t indent = 0;
         while (p + indent < eol && p[indent] == ' ') indent++;
-        if ((size_t)(eol - p) > indent + 6 && strncmp(p + indent, "- id: ", 6) == 0) {
+        size_t ll = (size_t)(eol - p);
+        if (ll > indent + 6 && strncmp(p + indent, "- id: ", 6) == 0) {
+            flush_node();
             const char *v = p + indent + 6;
             size_t L = 0;
             while (v + L < eol && v[L] != ' ' && v[L] != 13) L++;
-            if (L) {
-                if (!first) nodes += ",";
-                first = 0;
-                nodes += "{\"id\":" + JQ(std::string(v, L)) + "}";
+            cur_id.assign(v, L);
+        } else if (!cur_id.empty() && ll > indent + 6 &&
+                   strncmp(p + indent, "type: ", 6) == 0) {
+            const char *v = p + indent + 6;
+            size_t L = 0;
+            while (v + L < eol && v[L] != ' ' && v[L] != 13) L++;
+            cur_type.assign(v, L);
+        } else if (!cur_id.empty() && ll > indent + 8 &&
+                   strncmp(p + indent, "params: ", 8) == 0) {
+            /* single-line JSON object -> params:[{name,value},...] */
+            const char *v = p + indent + 8;
+            if (*v == '{') {
+                int depth = 0; const char *e = v; bool instr = false;
+                while (*e) {
+                    if (instr) { if (*e == '\\' && e[1]) e++; else if (*e == '"') instr = false; }
+                    else { if (*e == '"') instr = true; else if (*e == '{') depth++; else if (*e == '}') { depth--; if (!depth) { e++; break; } } }
+                    e++;
+                }
+                /* shallow-walk top-level "key":value pairs */
+                std::string ps = "[";
+                const char *c = v + 1; bool pfirst = true;
+                while (c < e - 1) {
+                    if (*c != '"') { c++; continue; }
+                    const char *k = c + 1; const char *ke = k;
+                    while (*ke && *ke != '"') { if (*ke == '\\' && ke[1]) ke++; ke++; }
+                    std::string key(k, (size_t)(ke - k));
+                    c = ke + 1;
+                    while (c < e && (*c == ' ' || *c == ':')) c++;
+                    const char *vs = c; int d2 = 0; bool in2 = false;
+                    while (c < e) {
+                        if (in2) { if (*c == '\\' && c[1]) c++; else if (*c == '"') in2 = false; }
+                        else { if (*c == '"') { in2 = true; c++; continue; }
+                               if (*c == '{' || *c == '[') d2++;
+                               else if (*c == '}' || *c == ']') { if (!d2) break; d2--; }
+                               else if (*c == ',' && !d2) break; }
+                        c++;
+                    }
+                    std::string val(vs, (size_t)(c - vs));
+                    if (!pfirst) ps += ",";
+                    pfirst = false;
+                    ps += "{\"name\":" + JQ(key) + ",\"value\":" + val + "}";
+                }
+                ps += "]";
+                cur_params = ps;
             }
         }
         p = eol + 1;
     }
+    flush_node();
+    steps += "]";
     nodes += "]";
     std::string out = "{\"name\":" + JQ(name) + ",\"description\":" + JQ(desc) +
-                      ",\"nodes\":" + nodes + ",\"yaml\":" + JQ(buf) + "}";
+                      ",\"nodes\":" + nodes + ",\"steps\":" + steps +
+                      ",\"yaml\":" + JQ(buf) + "}";
     res.set_content(out, "application/json");
 }
 
@@ -2592,7 +3049,7 @@ static void handle_pipelines_runs(const httplib::Request &req,
 
     size_t cap = 16384, len = 0;
     char *out = (char *)malloc(cap);
-    len += (size_t)snprintf(out + len, cap - len, "{\"count\":%zu,\"runs\":[", n);
+    len = jappend(&out, &cap, len, "{\"count\":%zu,\"runs\":[", n);
     for (size_t i = 0; i < n && i < (size_t)limit; i++) {
         char dir[600], sd[640], buf[8192];
         snprintf(dir, sizeof(dir), "./output/%s", ents[i].dir);
@@ -2609,6 +3066,36 @@ static void handle_pipelines_runs(const httplib::Request &req,
             sidecar_str(buf, "status", status, sizeof(status));
             seed = sidecar_num(buf, "seed", -1);
             created = sidecar_num(buf, "created", created);
+            /* ZOMBIE SWEEP (2026-08-29): a "running" sidecar with no matching
+             * live g_runs[] entry is a stale leftover from a prior crash/restart.
+             * Self-heal at read time: patch sidecar to "failed" so zombies never
+             * accumulate.  Uses a temp-file rename for atomicity (no binary patch). */
+            if (strcmp(status, "running") == 0) {
+                int live = 0;
+                for (size_t j = 0; j < g_n_runs; j++)
+                    if (strcmp(g_runs[j].run_id, ents[i].dir) == 0 &&
+                        strcmp(g_runs[j].state, "running") == 0) { live = 1; break; }
+                if (!live) {
+                    snprintf(status, sizeof(status), "failed");
+                    /* (audit F6 rev2, 2026-08-29) sweep the FILE too — a
+                     * zombie sidecar must never keep lying on disk. Same
+                     * all-occurrences patcher as the boot sweep (top-level
+                     * AND per-stage statuses; idempotent — a swept file is
+                     * never re-swept). */
+                    char sc_path[700];
+                    snprintf(sc_path, sizeof(sc_path), "%s/_pipeline.json", dir);
+                    if (boot_patch_sidecar(
+                            sc_path,
+                            "read-time sweep: stale running sidecar, no live registry entry")) {
+                        char eb[400];
+                        snprintf(eb, sizeof(eb),
+                                 "{\"run_id\":\"%s\",\"state\":\"failed\","
+                                 "\"error\":\"zombie swept at read time\"}",
+                                 ents[i].dir);
+                        ledger_log("run.swept", eb);
+                    }
+                }
+            }
         } else {
             /* legacy run dir predating sidecars: report what exists */
             snprintf(status, sizeof(status), "success");
@@ -2619,10 +3106,7 @@ static void handle_pipelines_runs(const httplib::Request &req,
         char *arts = run_artifacts_json(dir);
         char *promptq = json_quote(prompt);
         char *modelq = json_quote(model);
-        while (len + strlen(arts) + strlen(promptq) + 1600 > cap) {
-            cap *= 2; out = (char *)realloc(out, cap);
-        }
-        len += (size_t)snprintf(out + len, cap - len,
+        len = jappend(&out, &cap, len,
             "%s{\"run_id\":\"%s\",\"name\":%s,\"pipeline\":%s,"
             "\"status\":\"%s\",\"created_at\":%ld,\"prompt\":%s,"
             "\"seed\":%ld,\"thumbnail\":\"%s\",\"artifacts\":%s,"
@@ -2631,7 +3115,7 @@ static void handle_pipelines_runs(const httplib::Request &req,
             promptq, seed, thumb, arts, seed);
         free(arts); free(promptq); free(modelq);
     }
-    len += (size_t)snprintf(out + len, cap - len, "]}");
+    len = jappend(&out, &cap, len, "]}");
     res.set_content(out, "application/json");
     free(out);
 }
@@ -2689,6 +3173,30 @@ static void handle_form_spec(const httplib::Request &req,
     }
     const catalog_model *m = catalog_find_model(g_catalog, model.c_str());
     if (!m) {
+        /* (2026-08-30 form-spec fix) the editor asks form-specs for node
+         * FAMILY names too (comfyui, ffmpeg_concat…) — not catalog models.
+         * A 404 here spammed "modifiers may be missing" on every revived
+         * card. Family names (verified against pipeline `type:` values on
+         * disk) get a minimal valid spec; anything else still 404s.
+         * Display wire only — the run door's no-fallback law is untouched. */
+        int safe = !model.empty() && model.size() < 64;
+        for (size_t i = 0; safe && i < model.size(); i++) {
+            char c = model[i];
+            if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                  (c >= '0' && c <= '9') || c == '_' || c == '-')) safe = 0;
+        }
+        if (safe) {
+            char probe[256];
+            snprintf(probe, sizeof(probe),
+                     "grep -q 'type: %s' ../pipelines/*/pipeline.yaml 2>/dev/null",
+                     model.c_str());
+            if (system(probe) == 0) {
+                res.set_content(
+                    "{\"defaults\":{},\"variants\":[],\"enhance_prompts\":\"\"}",
+                    "application/json");
+                return;
+            }
+        }
         res.status = 404;
         res.set_content("{\"error\":\"model not found\"}",
                         "application/json");
@@ -2732,28 +3240,28 @@ static void handle_form_spec(const httplib::Request &req,
     size_t cap = 8192 + strlen(recipeq) + strlen(labelq);
     char *out = (char *)malloc(cap);
     size_t len = 0;
-    len += (size_t)snprintf(out + len, cap - len,
+    len = jappend(&out, &cap, len,
         "{\"model\":\"%s\",\"label\":%s,\"genre\":\"%s\","
         "\"engine\":\"%s\",\"defaults\":{",
         m->id, labelq, m->genre ? m->genre : "",
         m->engine_plugin ? m->engine_plugin : "");
     for (size_t i = 0; i < m->n_defaults; i++)
-        len += (size_t)snprintf(out + len, cap - len, "%s\"%s\":\"%s\"",
+        len = jappend(&out, &cap, len, "%s\"%s\":\"%s\"",
                                 i ? "," : "", m->default_keys[i],
                                 m->default_vals[i]);
-    len += (size_t)snprintf(out + len, cap - len, "},\"variants\":[");
+    len = jappend(&out, &cap, len, "},\"variants\":[");
     for (size_t g = 0; g < m->n_variant_groups; g++) {
         const catalog_variant_group *vg = &m->variant_groups[g];
-        len += (size_t)snprintf(out + len, cap - len,
+        len = jappend(&out, &cap, len,
                                 "%s{\"name\":\"%s\",\"options\":[",
                                 g ? "," : "", vg->name ? vg->name : "");
         for (size_t o = 0; o < vg->n_options; o++)
-            len += (size_t)snprintf(out + len, cap - len, "%s\"%s\"",
+            len = jappend(&out, &cap, len, "%s\"%s\"",
                                     o ? "," : "",
                                     vg->options[o].id ? vg->options[o].id : "");
-        len += (size_t)snprintf(out + len, cap - len, "]}");
+        len = jappend(&out, &cap, len, "]}");
     }
-    len += (size_t)snprintf(out + len, cap - len,
+    len = jappend(&out, &cap, len,
         "],\"features\":{},\"enhance_prompts\":{\"prompt\":%s}}", recipeq);
     res.set_content(out, "application/json");
     free(out); free(recipeq); free(labelq);
@@ -2854,17 +3362,17 @@ static size_t skills_row(char *out, size_t cap, size_t len, int *first,
                          const char *model) {
     char *nq = json_quote(name[0] ? name : id);
     char *dq = json_quote(desc);
-    len += (size_t)snprintf(out + len, cap - len,
+    len = jappend(&out, &cap, len,
                             "%s{\"id\":\"%s\",\"name\":%s,"
                             "\"description\":%s",
                             *first ? "" : ",", id, nq, dq);
     if (genre && genre[0])
-        len += (size_t)snprintf(out + len, cap - len,
+        len = jappend(&out, &cap, len,
                                 ",\"genre\":\"%s\"", genre);
     if (model && model[0])
-        len += (size_t)snprintf(out + len, cap - len,
+        len = jappend(&out, &cap, len,
                                 ",\"model\":\"%s\"", model);
-    len += (size_t)snprintf(out + len, cap - len, "}");
+    len = jappend(&out, &cap, len, "}");
     *first = 0;
     free(nq); free(dq);
     return len;
@@ -2935,7 +3443,7 @@ static void handle_skills_index(const httplib::Request &req,
     size_t cap = 64 * 1024, len = 0;
     char *out = (char *)malloc(cap);
     int first = 1;
-    len += (size_t)snprintf(out + len, cap - len, "{\"skills\":[");
+    len = jappend(&out, &cap, len, "{\"skills\":[");
     if (g_catalog) {
         for (size_t i = 0; i < g_catalog->n_models; i++) {
             const catalog_model *m = &g_catalog->models[i];
@@ -3007,7 +3515,7 @@ static void handle_skills_index(const httplib::Request &req,
     }
     len = skills_scan_global(out, cap, len, &first, "./skills");
     len = skills_scan_global(out, cap, len, &first, "../skills");
-    len += (size_t)snprintf(out + len, cap - len, "]}");
+    len = jappend(&out, &cap, len, "]}");
     res.set_content(out, "application/json");
     free(out);
 }
@@ -3356,7 +3864,7 @@ static void handle_provision_status(const httplib::Request &req,
     size_t cap = 16384, len = 0;
     char *out = (char *)malloc(cap);
     if (!out) { res.status = 500; return; }
-    len += (size_t)snprintf(out + len, cap - len, "{\"jobs\":[");
+    len = jappend(&out, &cap, len, "{\"jobs\":[");
     pthread_mutex_lock(&g_prov_mu);
     for (size_t i = 0; i < g_n_prov; i++) {
         /* Build each row in a bounded local buffer and check fit BEFORE
@@ -3374,7 +3882,7 @@ static void handle_provision_status(const httplib::Request &req,
         len += (size_t)rl;
     }
     pthread_mutex_unlock(&g_prov_mu);
-    len += (size_t)snprintf(out + len, cap - len, "]}");
+    len = jappend(&out, &cap, len, "]}");
     res.set_content(out, "application/json");
     free(out);
 }
@@ -3496,10 +4004,10 @@ static void handle_ledger(const httplib::Request &req,
     size_t len = (size_t)snprintf(out, cap, "{\"entries\":[");
     for (size_t i = 0; i < shown; i++) {
         size_t idx = (n - shown + i) % (size_t)limit;
-        len += (size_t)snprintf(out + len, cap - len, "%s%s",
+        len = jappend(&out, &cap, len, "%s%s",
                                 i ? "," : "", ring[idx]);
     }
-    len += (size_t)snprintf(out + len, cap - len,
+    len = jappend(&out, &cap, len,
                             "],\"shown\":%zu,\"matched\":%zu}", shown, total);
     res.set_content(out, "application/json");
     free(out);
@@ -3860,6 +4368,10 @@ static void handle_embeddings(const httplib::Request &req,
  * MCP (Model Context Protocol) ENDPOINTS
  * ================================================================== */
 
+/* forward declarations for MCP tool handlers */
+static void handle_pipelines_stop(const httplib::Request &req,
+                                  httplib::Response &res);
+
 static void handle_mcp_sse(const httplib::Request &req,
                            httplib::Response &res) {
     (void)req;
@@ -3881,7 +4393,13 @@ static void handle_mcp_sse(const httplib::Request &req,
                 "{\"name\":\"execute_pipeline\",\"description\":\"Execute a DAG pipeline\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"yaml\":{\"type\":\"string\"}},\"required\":[\"yaml\"]}},"
                 "{\"name\":\"list_models\",\"description\":\"List available models\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},"
                 "{\"name\":\"download_model\",\"description\":\"Download a model\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"model_id\":{\"type\":\"string\"}},\"required\":[\"model_id\"]}},"
-                "{\"name\":\"get_catalog\",\"description\":\"Get model catalog\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}}"
+                "{\"name\":\"get_catalog\",\"description\":\"Get model catalog\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},"
+                "{\"name\":\"start_pipeline\",\"description\":\"Start a pipeline run\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"yaml\":{\"type\":\"string\"},\"model\":{\"type\":\"string\"},\"prompt\":{\"type\":\"string\"},\"seed\":{\"type\":\"integer\"},\"calls\":{\"type\":\"array\"}}}},"
+                "{\"name\":\"get_run_status\",\"description\":\"Get run status\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"run_id\":{\"type\":\"string\"}},\"required\":[\"run_id\"]}},"
+                "{\"name\":\"stop_pipeline\",\"description\":\"Stop a running pipeline\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"run_id\":{\"type\":\"string\"}},\"required\":[\"run_id\"]}},"
+                "{\"name\":\"list_runs\",\"description\":\"List pipeline runs\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"limit\":{\"type\":\"integer\"}}}},"
+                "{\"name\":\"list_pipelines\",\"description\":\"List available pipeline YAMLs\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},"
+                "{\"name\":\"describe_model\",\"description\":\"Describe a model from the catalog\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"model_id\":{\"type\":\"string\"}},\"required\":[\"model_id\"]}}"
                 "]}}\n\n";
             sink.write(tools, strlen(tools));
 
@@ -3925,7 +4443,13 @@ static void handle_mcp_message(const httplib::Request &req,
             "{\"name\":\"execute_pipeline\",\"description\":\"Execute a DAG pipeline\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"yaml\":{\"type\":\"string\"}},\"required\":[\"yaml\"]}},"
             "{\"name\":\"list_models\",\"description\":\"List available models\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},"
             "{\"name\":\"download_model\",\"description\":\"Download a model\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"model_id\":{\"type\":\"string\"}},\"required\":[\"model_id\"]}},"
-            "{\"name\":\"get_catalog\",\"description\":\"Get model catalog\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}}"
+            "{\"name\":\"get_catalog\",\"description\":\"Get model catalog\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},"
+            "{\"name\":\"start_pipeline\",\"description\":\"Start a pipeline run\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"yaml\":{\"type\":\"string\"},\"model\":{\"type\":\"string\"},\"prompt\":{\"type\":\"string\"},\"seed\":{\"type\":\"integer\"},\"calls\":{\"type\":\"array\"}}}},"
+            "{\"name\":\"get_run_status\",\"description\":\"Get run status\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"run_id\":{\"type\":\"string\"}},\"required\":[\"run_id\"]}},"
+            "{\"name\":\"stop_pipeline\",\"description\":\"Stop a running pipeline\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"run_id\":{\"type\":\"string\"}},\"required\":[\"run_id\"]}},"
+            "{\"name\":\"list_runs\",\"description\":\"List pipeline runs\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"limit\":{\"type\":\"integer\"}}}},"
+            "{\"name\":\"list_pipelines\",\"description\":\"List available pipeline YAMLs\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},"
+            "{\"name\":\"describe_model\",\"description\":\"Describe a model from the catalog\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"model_id\":{\"type\":\"string\"}},\"required\":[\"model_id\"]}}"
             "]}}",
             "application/json");
         return;
@@ -3968,6 +4492,63 @@ static void handle_mcp_message(const httplib::Request &req,
                     "\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{}\"}]}}",
                     "application/json");
             }
+            return;
+        }
+
+        if (tool_name == "start_pipeline") {
+            auto pp = body.find('\"params\":');
+            std::string rb = "{}";
+            if (pp != std::string::npos) {
+                auto os = body.find('{', pp);
+                if (os != std::string::npos) {
+                    int d = 0; bool in_s = false; bool esc = false;
+                    size_t oe = os;
+                    for (size_t k = os; k < body.size(); k++) {
+                        char c = body[k];
+                        if (esc) { esc = false; continue; }
+                        if (in_s && c == '\\') { esc = true; continue; }
+                        if (c == '"') { in_s = !in_s; continue; }
+                        if (in_s) continue;
+                        if (c == '{') d++;
+                        else if (c == '}') { d--; if (d == 0) { oe = k; break; } }
+                    }
+                    rb = body.substr(os, oe - os + 1);
+                }
+            } else { rb = body; }
+            httplib::Request fReq; httplib::Response fRes;
+            fReq.body = rb;
+            handle_pipelines_start(fReq, fRes);
+            res.set_content(
+                "{\"jsonrpc\":\"2.0\",\"id\":" + id + ","
+                "\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"\"" +
+                json_escape(fRes.body.c_str()) + "}]}}",
+                "application/json");
+            return;
+        }
+
+        if (tool_name == "get_run_status") {
+            std::string rid = extract_field("run_id");
+            httplib::Request fReq; httplib::Response fRes;
+            fReq.path_params["run_id"] = rid;
+            handle_pipelines_status(fReq, fRes);
+            res.set_content(
+                "{\"jsonrpc\":\"2.0\",\"id\":" + id + ","
+                "\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"\"" +
+                json_escape(fRes.body.c_str()) + "}]}}",
+                "application/json");
+            return;
+        }
+
+        if (tool_name == "stop_pipeline") {
+            std::string rid = extract_field("run_id");
+            httplib::Request fReq; httplib::Response fRes;
+            fReq.path_params["run_id"] = rid;
+            handle_pipelines_stop(fReq, fRes);
+            res.set_content(
+                "{\"jsonrpc\":\"2.0\",\"id\":" + id + ","
+                "\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"\"" +
+                json_escape(fRes.body.c_str()) + "}]}}",
+                "application/json");
             return;
         }
 
@@ -4077,13 +4658,18 @@ static void handle_pipelines_stop(const httplib::Request &req,
 /* ---- COMPOSE (dry-run) handler ---- */
 static void handle_compose(const httplib::Request &req,
                            httplib::Response &res) {
-    char model[64] = "krea-2";
+    char model[64] = "";   /* (law 2026-08-30) no default model */
     char body_tmp[2048] = "";
     if (req.body.size() < sizeof(body_tmp))
         snprintf(body_tmp, sizeof(body_tmp), "%s", req.body.c_str());
     char tmp[256];
     if (inf_json_string(body_tmp, "model", tmp, sizeof(tmp)) == 0)
         snprintf(model, sizeof(model), "%s", tmp);
+    if (!model[0]) {
+        res.status = 400;
+        res.set_content("{\"error\":\"missing model (no default by law)\"}", "application/json");
+        return;
+    }
 
     char yaml_buf[4096] = "";
     char *piped = pipeline_yaml_for_model(model, yaml_buf, sizeof(yaml_buf));
@@ -4357,24 +4943,24 @@ static void handle_pipelines_resume(const httplib::Request &req,
     }
     g_runs[idx].start_from = start_from;
 
-    run_thread_arg *ta = (run_thread_arg *)malloc(sizeof(*ta));
-    ta->idx = idx;
-    pthread_t th;
-    if (pthread_create(&th, NULL, run_thread_fn, ta) != 0) {
-        /* No thread will ever drain this slot: fail it loudly instead
-         * of leaving a ghost "queued" entry (audit M2). */
-        free(ta);
+    /* (audit M4, 2026-08-29) FIFO ticket at REGISTRATION: strict
+     * submission order, independent of thread scheduling. */
+    {
+        pthread_mutex_lock(&g_gpu_mu);
+        g_runs[idx].ticket = g_gpu_tickets++;
+        g_runs[idx].has_ticket = 1;
+        pthread_mutex_unlock(&g_gpu_mu);
+    }
+    if (run_spawn_thread(idx, run_thread_fn) != 0) {
+        /* the ticket was abandoned IN ORDER by the helper; fail loudly */
         pthread_mutex_lock(&g_runs_mu);
         run_slot_release_heap(idx);
         pthread_mutex_unlock(&g_runs_mu);
-        run_set_state(idx, "error", "thread spawn failed");
-        run_mark_th_done(idx);
         res.status = 503;
         res.set_content("{\"error\":\"thread spawn failed\"}",
                         "application/json");
         return;
     }
-    pthread_detach(th);
 
     char out[256];
     snprintf(out, sizeof(out), "{\"run_id\":\"%s\",\"status\":\"queued\"}",
@@ -4387,7 +4973,151 @@ static void handle_pipelines_resume(const httplib::Request &req,
  * SERVER LIFECYCLE
  * ================================================================== */
 
+/* ==================================================================
+ * (audit F7/F13, 2026-08-29) BOOT SWEEP + CLEAN SHUTDOWN
+ * ================================================================== */
+
+/* Patch one stale sidecar (running/queued with no live owner after a
+ * crash or kill -9) to failed, atomically. Returns 1 if patched.
+ * (audit F7 rev2, 2026-08-29) replaces EVERY status occurrence — the
+ * top-level status AND per-stage statuses — because a first-match-only
+ * rewrite left stage entries claiming "running" and the next boot
+ * re-swept the same file forever. The reason is appended as a new
+ * "sweep" key before the closing brace (no duplicate keys). */
+static int boot_patch_sidecar(const char *path, const char *why) {
+    FILE *f = fopen(path, "rb");
+    if (!f) return 0;
+    fseek(f, 0, SEEK_END); long sz = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    if (sz <= 0 || sz > 8 * 1024 * 1024) { fclose(f); return 0; }
+    char *buf = (char *)malloc((size_t)sz + 1);
+    if (!buf) { fclose(f); return 0; }
+    size_t rd = fread(buf, 1, (size_t)sz, f);
+    buf[rd] = 0;
+    fclose(f);
+    if (!strstr(buf, "\"status\":\"running\"") &&
+        !strstr(buf, "\"status\":\"queued\"")) { free(buf); return 0; }
+    /* cap the reason to plain ASCII without quotes for safe embedding */
+    char note[160];
+    { size_t i = 0;
+      for (const char *s = why; s && *s && i < sizeof(note) - 1; s++)
+          note[i++] = (*s == '"' || (unsigned char)*s < 32) ? ' ' : *s;
+      note[i] = 0; }
+    char *fixed = (char *)malloc(rd + strlen(note) + 64);
+    if (!fixed) { free(buf); return 0; }
+    const char *r = buf; size_t w = 0;
+    while (*r) {
+        if (strncmp(r, "\"status\":\"running\"", 18) == 0) {
+            memcpy(fixed + w, "\"status\":\"failed\"", 17); w += 17; r += 18;
+        } else if (strncmp(r, "\"status\":\"queued\"", 17) == 0) {
+            memcpy(fixed + w, "\"status\":\"failed\"", 17); w += 17; r += 17;
+        } else {
+            fixed[w++] = *r++;
+        }
+    }
+    fixed[w] = 0;
+    /* append the sweep note before the final closing brace */
+    char *last = strrchr(fixed, '}');
+    if (last) {
+        size_t pos = (size_t)(last - fixed);
+        char tail[256];
+        int tl = snprintf(tail, sizeof(tail),
+                          ",\"sweep\":\"%s\"}", note);
+        memmove(fixed + pos + (size_t)tl, fixed + pos + 1, strlen(fixed + pos + 1) + 1);
+        memcpy(fixed + pos, tail, (size_t)tl);
+    }
+    char tmp[720];
+    snprintf(tmp, sizeof(tmp), "%s.tmp", path);
+    FILE *o = fopen(tmp, "w");
+    int ok = 0;
+    if (o) {
+        fputs(fixed, o);
+        if (fclose(o) == 0) ok = (rename(tmp, path) == 0);
+    }
+    if (!ok) unlink(tmp);
+    free(fixed); free(buf);
+    return ok;
+}
+
+/* Boot-time zombie sweep: every sidecar still claiming running/queued
+ * belongs to a DEAD process (we just started — nothing is live yet).
+ * Sweep them to failed BEFORE the server accepts traffic, so the ledger
+ * never shows phantom active runs after a crash/restart. */
+static void boot_sweep_stale_sidecars(void) {
+    DIR *d = opendir("./output");
+    if (!d) return;
+    struct dirent *e;
+    int swept = 0;
+    while ((e = readdir(d)) != NULL) {
+        if (strncmp(e->d_name, "run-", 4) != 0) continue;
+        char path[760];
+        snprintf(path, sizeof(path), "./output/%s/_pipeline.json", e->d_name);
+        if (boot_patch_sidecar(path, "gateway restarted (boot sweep): stale active sidecar from a dead process")) {
+            char eb[400];
+            snprintf(eb, sizeof(eb),
+                     "{\"run_id\":\"%s\",\"state\":\"failed\","
+                     "\"error\":\"boot sweep\"}", e->d_name);
+            ledger_log("run.swept", eb);
+            swept++;
+        }
+    }
+    closedir(d);
+    if (swept)
+        fprintf(stderr, "[boot-sweep] patched %d stale sidecar(s) to failed\n", swept);
+}
+
+/* Clean-shutdown thread (audit F13): SIGTERM/SIGINT are BLOCKED in every
+ * thread (mask inherited from this one); this thread sigwait()s for them.
+ * On receipt: every queued/running run is marked stopped with the reason,
+ * sidecars + ledger written, then exit(0). No run is ever left claiming
+ * "running" after a deliberate shutdown. */
+static void *shutdown_signal_thread(void *arg) {
+    (void)arg;
+    int sig;
+    sigset_t set;
+    sigemptyset(&set);
+    sigaddset(&set, SIGTERM);
+    sigaddset(&set, SIGINT);
+    for (;;) {
+        if (sigwait(&set, &sig) != 0) continue;
+        fprintf(stderr, "[shutdown] caught signal %d — marking active runs stopped\n", sig);
+        pthread_mutex_lock(&g_runs_mu);
+        size_t marked[64]; size_t n_marked = 0;
+        for (size_t i = 0; i < g_n_runs && n_marked < 64; i++)
+            if (strcmp(g_runs[i].state, "queued") == 0 ||
+                strcmp(g_runs[i].state, "running") == 0)
+                marked[n_marked++] = i;
+        pthread_mutex_unlock(&g_runs_mu);
+        for (size_t k = 0; k < n_marked; k++)
+            run_set_state(marked[k], "stopped",
+                          "gateway shutdown (operator signal)");
+        ledger_log("server.shutdown", "{\"reason\":\"signal\"}");
+        exit(0);
+    }
+    return NULL;
+}
+
 inference_server *server_create(int port, const char *bind_addr) {
+    /* (audit F13) Block SIGTERM/SIGINT BEFORE any thread exists — every
+     * thread inherits this mask, and the dedicated shutdown thread below
+     * catches the signals via sigwait(). A Ctrl+C or systemd stop can
+     * never kill a run thread mid-sidecar-write. */
+    {
+        sigset_t set;
+        sigemptyset(&set);
+        sigaddset(&set, SIGTERM);
+        sigaddset(&set, SIGINT);
+        pthread_sigmask(SIG_BLOCK, &set, NULL);
+        pthread_t sth;
+        if (pthread_create(&sth, NULL, shutdown_signal_thread, NULL) == 0)
+            pthread_detach(sth);
+        else
+            fprintf(stderr, "[shutdown] WARNING: signal thread spawn failed\n");
+    }
+
+    /* (audit F7) sweep stale active sidecars from any dead process */
+    boot_sweep_stale_sidecars();
+
     inference_server *s = new inference_server;
     if (!s) return NULL;
     s->port    = port;
@@ -4431,6 +5161,10 @@ inference_server *server_create(int port, const char *bind_addr) {
     s->srv.Get("/v1/apps",                 handle_apps);
     s->srv.Get("/apps",                    handle_apps_index);
     s->srv.Post("/v1/compose",              handle_compose);
+
+    /* ---- ANNY poser (ray Body Studio parity — native C++ backend) ---- */
+    s->srv.Get("/poser/skin/identity-space", handle_poser_identity_space);
+    s->srv.Post("/poser/skin/mesh",          handle_poser_mesh);
     /* every unmatched route answers with VALID JSON so client-side
      * res.json() never trips on an empty body */
     s->srv.set_error_handler([](const auto &req, auto &res) {

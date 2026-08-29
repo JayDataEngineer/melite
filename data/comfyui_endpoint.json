@@ -1,0 +1,4 @@
+{
+  "url": "http://127.0.0.1:18465",
+  "boot_cmd": "cd /opt/ComfyUI && .venv/bin/python main.py --listen 127.0.0.1 --port 18465 --enable-triton-backend"
+}
