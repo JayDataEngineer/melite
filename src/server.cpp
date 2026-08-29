@@ -797,13 +797,13 @@ static void draft_writeback(size_t idx, const char *wire) {
     const char *rid = g_runs[idx].run_id;
     const char *outdir = g_runs[idx].out_dir;
     char stitch[640] = "", wf[3][640] = {{0}, {0}, {0}};
-    char seam[3][640] = {{0}, {0}, {0}};
+    char seam[4][640] = {{0}, {0}, {0}, {0}};
     char p[768];
-    const char *wins[3] = {"window1", "window2", "window3"};
+    const char *wins[4] = {"window1", "window2", "window3", "window4"};
     snprintf(p, sizeof(p), "%s/stitch_video_0.mp4", outdir);
     if (access(p, R_OK) == 0)
         snprintf(stitch, sizeof(stitch), "/editor/assets/runs/%s/stitch_video_0.mp4", rid);
-    for (int w = 0; w < 3; w++) {
+    for (int w = 0; w < 4; w++) {
         snprintf(p, sizeof(p), "%s/%s_video_0.mp4", outdir, wins[w]);
         if (access(p, R_OK) == 0)
             snprintf(wf[w], sizeof(wf[w]), "/editor/assets/runs/%s/%s_video_0.mp4", rid, wins[w]);
@@ -865,7 +865,7 @@ static void draft_writeback(size_t idx, const char *wire) {
         "\"metadata\":{\"runId\":\"%s\",\"seam\":\"latent\",\"history\":[%s]},"
         "\"completedAt\":%ld,\"durationSec\":%ld}",
         stitch[0] ? "\"" : "", stitch, stitch[0] ? "\"" : "",
-        stitch, wf[0], wf[1], wf[2], seam[0], seam[1], seam[2], rid, mhist,
+        stitch, wf[0], wf[1], wf[2], seam[0], seam[1], seam[2], seam[3], rid, mhist,
         (long)time(NULL) * 1000, dur);
 
     const char *rp = strstr(buf, "\"result\"");
@@ -1331,6 +1331,71 @@ static void handle_pipelines_start(const httplib::Request &req,
             return;
         }
     }
+    /* context engine (cross-run continuation, 2026-08-30): continue_from
+     * seeds window1 with the prior run's durable last context (window4
+     * tail h3latent). Unresolved refs are rejected BEFORE registration
+     * (queue lane law: no zombie slots, no silent fallbacks). */
+    char ctx_prev_run[128] = "";
+    {
+        char cfr[128] = "";
+        if (inf_json_string(body, "continue_from", cfr, sizeof(cfr)) == 0 && cfr[0]) {
+            for (const char *p2 = cfr; *p2; p2++)
+                if (!((*p2 >= 'a' && *p2 <= 'z') || (*p2 >= '0' && *p2 <= '9') || *p2 == '-')) {
+                    res.status = 400;
+                    res.set_content("{\"error\":\"invalid continue_from run id\"}", "application/json");
+                    return;
+                }
+            snprintf(ctx_prev_run, sizeof(ctx_prev_run), "%s", cfr);
+            char clp[600];
+            snprintf(clp, sizeof(clp), "./output/%s/window4_latent_last.h3latent", cfr);
+            if (access(clp, R_OK) != 0) {
+                res.status = 404;
+                char err[400];
+                snprintf(err, sizeof(err),
+                         "{\"error\":\"continue_from run has no window4 context\",\"run\":\"%s\",\"missing\":\"window4_latent_last.h3latent\"}", cfr);
+                res.set_content(err, "application/json");
+                return;
+            }
+            if (yaml_override[0]) {
+                char abs_lat[4096];
+                if (realpath(clp, abs_lat)) {
+                    /* capacity law: the swap + inject must fit the buffer.
+                     * A run may NEVER overflow the server (resilience law).
+                     * Reject loudly instead. */
+                    const char *wf0 = strstr(yaml_override, "window1_t4.json");
+                    const char *inj0 = wf0 ? strstr(yaml_override, "\"inject\":{") : NULL;
+                    size_t need = strlen(yaml_override) + 2 + 60 + strlen(abs_lat);
+                    if (!wf0 || !inj0 || need >= sizeof(yaml_override)) {
+                        res.status = 400;
+                        res.set_content("{\"error\":{\"continue_from: composed pipeline too large for context injection\"}}", "application/json");
+                        return;
+                    }
+                    /* swap window1 to the load variant (first occurrence) */
+                    const char *wf = strstr(yaml_override, "window1_t4.json");
+                    if (wf) {
+                        const char rep[] = "window1_load.json";
+                        const char old[] = "window1_t4.json";
+                        size_t ol = sizeof(old) - 1, nl = sizeof(rep) - 1;
+                        memmove((char *)wf + nl, wf + ol, strlen(wf + ol) + 1);
+                        memcpy((char *)wf, rep, nl);
+                        /* inject the abs latent path into window1's params:
+                         * the first inject map gains the loader key */
+                        const char *inj = strstr(yaml_override, "\"inject\":{");
+                        if (inj) {
+                            const char *brace = inj + strlen("\"inject\":{");
+                            char kv[4200];
+                            snprintf(kv, sizeof(kv),
+                                     "\"MiniMaxH3MotionContextLoadLatent.0.latent_path\":\"%s\"," , abs_lat);
+                            size_t kvl = strlen(kv), tail = strlen(brace) + 1;
+                            memmove((char *)brace + kvl, brace, tail);
+                            memcpy((char *)brace, kv, kvl);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /* (law 2026-08-30) the hardcoded workflow_file default is gone:
      * a run names its pipeline explicitly or it does not start. */
 

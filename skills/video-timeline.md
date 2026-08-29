@@ -73,6 +73,30 @@ with first_frame_prev_sec: 2 -> drop the field at scene changes (or pin
 last_frame for a frame-exact cut) -> state in the plan which cuts are
 seamless and which are hard.
 
+## CONTEXT ENGINE (continuation across runs)
+
+Every timeline run emits durable per-window context beside the video:
+<window>_image_last.png (last rendered frame) and
+<window>_latent_last.h3latent (the tail motion latent). window4's context
+is the RUN's continuation point.
+
+A continuation card opens from a prior run's ending:
+
+    {yaml: "h3-timeline", continue_from: "<run-id>", calls: [...]}
+
+- continue_from swaps window1 to the load variant and seeds it with the
+  prior run's window4 tail latent: motion, scene, and pacing carry into
+  the new run's first call. Write the first call's text as a CONTINUATION
+  ("the rain has stopped...", not a fresh establishing shot).
+- The queue rejects loudly (404) if the prior run has no window4 context
+  — fix the run id, never retry blind.
+- Combined with first_frame_prev_sec seams INSIDE a run, the fabric is
+  continuous across runs: run N's ending is run N+1's opening.
+- card.json captures continue_from verbatim; the continuation is
+  reconstructable forever from the run dir.
+- Series recipe: each episode card sets continue_from to the previous
+  episode's run id and ends on a strong, describable final shot.
+
 ## ACTION CARD PILOTING (the card is the unit)
 
 The timeline action card composes via the build_pipeline TOOL — the same
