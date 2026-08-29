@@ -796,7 +796,7 @@ static void draft_writeback(size_t idx, const char *wire) {
 
     const char *rid = g_runs[idx].run_id;
     const char *outdir = g_runs[idx].out_dir;
-    char stitch[640] = "", wf[3][640] = {{0}, {0}, {0}};
+    char stitch[640] = "", wf[4][640] = {{0}, {0}, {0}, {0}};
     char seam[4][640] = {{0}, {0}, {0}, {0}};
     char p[768];
     const char *wins[4] = {"window1", "window2", "window3", "window4"};
@@ -861,7 +861,7 @@ static void draft_writeback(size_t idx, const char *wire) {
         "{\"assetUrls\":[%s%s%s],\"artifacts\":{"
         "\"video\":\"%s\","
         "\"video_w1_main\":\"%s\",\"video_w2_main\":\"%s\",\"video_w3_main\":\"%s\","
-        "\"seam_w1\":\"%s\",\"seam_w2\":\"%s\",\"seam_w3\":\"%s\"},"
+        "\"seam_w1\":\"%s\",\"seam_w2\":\"%s\",\"seam_w3\":\"%s\",\"seam_w4\":\"%s\"},"
         "\"metadata\":{\"runId\":\"%s\",\"seam\":\"latent\",\"history\":[%s]},"
         "\"completedAt\":%ld,\"durationSec\":%ld}",
         stitch[0] ? "\"" : "", stitch, stitch[0] ? "\"" : "",
