@@ -323,41 +323,54 @@ disabled.
 infrastructure. The queue is the SSOT for asset requests regardless of
 which repo hosts the scripts.
 
-## DSH Headless Profile — build_pipeline Tool Unavailable (2026-08-30)
+## DSH Headless Profile — Loading build_pipeline (SOLVED, 2026-08-30)
 
-**Problem:** The consumer agent (headless dsh) does NOT have the `build_pipeline` tool.
-The prompt tells it to use `build_pipeline` but the tool is not in its toolset.
+**Problem:** The headless consumer had no build_pipeline tool, so consumers
+hand-rolled gateway JSON with curl — wrong shapes, lost timing context, 6.6s
+videos where 15s was specified.
 
-**Root cause:** `build_pipeline` is registered by the `@melite-plugin/dsh-tools` cordis
-plugin. This plugin is loaded by the web profile through `dsh-web-ui-all` (which has it
-as a transitive dependency, and cordis auto-discovers it). The headless profile uses
-`@deepseek-ai/dsh-base` + `@deepseek-ai/dsh-headless` — neither loads melite-tools.
+**Root cause:** build_pipeline comes from the @melite-plugin/dsh-tools cordis
+plugin. The web profile loads it through dsh-web-ui-all's dependency tree. The
+headless profile only loads its bundle list — and DSH bundles are **cordis
+patch layers**, not npm dependency scanners. Being in node_modules does
+NOTHING; a plugin loads only when a patch INSERTS it.
 
-**Attempted fixes (all failed):**
-1. Adding `@melite-plugin/dsh-tools` to headless bundles → cordis rejects it (not a bundle)
-2. Adding `dsh.bundle: true` to melite-tools package.json → resolver expects `dsh.bundle.patch` path
-3. Creating a shim bundle that depends on melite-tools → loads but cordis doesn't discover the plugin
-4. Removing `webServer` and `llm` from inject array → plugin still not discovered by cordis
+**The mechanism (see dsh-base/cordis.patch.yml):**
 
-**Why it fails:** DSH headless cordis does NOT auto-discover plugins from node_modules.
-The web profile's `dsh-web-ui-all` bundle triggers full cordis plugin scanning. The
-headless profile uses minimal cordis with only the base + headless bundles. Third-party
-cordis plugins need to be explicitly loaded via `ctx.loader.create()`, which only the
-web bundle does.
+    - insert:
+        - id: some-id
+          name: '@package/plugin-name'   # resolved from install + profile node_modules
+          config: {...}
 
-**Impact:** The consumer agent uses curl to POST directly to the gateway API instead of
-using `build_pipeline`. This bypasses the action card system — no draft, no card
-document, no proper motion context.
+**The fix — a shim bundle (dsh/melite-tools-shim/):**
+- package.json: dsh.bundle.patch = "./patch.yml" (REQUIRED field —
+  "dsh.bundle: true" is meaningless; the loader wants dsh.bundle.patch)
+- patch.yml: TWO insert rows —
+  1. @deepseek-ai/dsh-host-webserver with port: 0, host: '127.0.0.1'
+     (OS assigns a free port; the plugin's webServer inject is satisfied)
+  2. @melite-plugin/dsh-tools with gatewayUrl config
+- Headless profile package.json: shim in dsh.profile.bundles + link: dep;
+  melite-tools symlinked into the profile's node_modules/@melite-plugin/
 
-**Consumer curl workaround:** The agent can create drafts via `POST /v1/pipelines/drafts`
-and start via `POST /v1/pipelines/start` with `draft_id`. The prompt must include exact
-curl instructions with the motion context from the request YAML.
+**Cordis inject laws learned the hard way:**
+- Property access ctx.webServer THROWS "cannot get property without inject"
+  if not declared — even ctx.webServer?. (the proxy guards the getter)
+- This cordis version has NO optional injects
+- A required inject that no service ever provides = "entry did not activate"
+- Solution: PROVIDE the service in the same patch (the webserver row above)
 
-**To fix properly:** Either modify the DSH headless runtime to support third-party cordis
-plugins, or add a `ctx.loader.create({ name: '@melite-plugin/dsh-tools' })` call in the
-headless boot sequence.
+**Proof:** headless agent answered "build_pipeline, model_catalog" when asked
+for its pipeline/catalog tools, then CALLED build_pipeline — a real draft id
+came back. Consumer session shows 5 build_pipeline invocations; runs now carry
+a proper calls document linked to a tool-composed draft.
+
+**Lesson (operator order):** SOLVE IN TOOLS FIRST, PROMPTS LAST. Every prompt
+rewrite (curl shapes, per-shot splitting) was a band-aid over a missing tool.
+The tool composes correct shapes; the prompt only chooses content. A prompt
+that references an unavailable tool is worse than none.
 
 ---
+
 
 ## Gateway Runs-Dir Scan Cap (2026-08-30)
 
