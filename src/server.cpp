@@ -1473,18 +1473,301 @@ static void run_write_sidecar(size_t idx) {
     int wok = fprintf(f, "{\"run_id\":\"%s\",\"model\":\"%s\",\"prompt\":%s,"
                "\"seed\":%ld,\"created\":%ld,\"ended\":%ld,\"durationSec\":%ld,"
                "\"status\":\"%s\","
-               "\"error\":%s,\"stages\":%s,\"yaml\":%s}",
+               "\"error\":%s,\"stages\":%s,\"yaml\":%s,"
+               "\"draft_id\":\"%s\"}",
             rid, model, promptq, seed, created, (long)time(NULL),
             (long)time(NULL) - created, state,
-            errq ? errq : "null", stages_json, yamlq) > 0;
+            errq ? errq : "null", stages_json, yamlq,
+            g_runs[idx].draft_id) > 0;
     wok = (fclose(f) == 0) && wok;
     if (wok) rename(tmp_path, path);
     else unlink(tmp_path);
     free(yamlq); free(promptq); free(errq);
 }
 
+/* ===================== LANE LAW (2026-08-31) =====================
+ * ONE lane = ONE card = ONE tool = ONE prompt file. A lane session is
+ * spawned by the agent door with MELITE_CARD_TOOLS_LANE set, so the
+ * melite-tools plugin mounts EXACTLY the lane's card tool and nothing
+ * else (no build_pipeline, no catalog, no skills door, no other
+ * cards). The prompt it receives is the lane's AGENT.md file — the
+ * audited surface. Every session is tracked; a session may compose
+ * exactly ONE card (second compose 409s) and may NEVER touch the
+ * pipeline start door directly (403) — the gateway arms the card run
+ * itself on first compose. Impossibility by mounting, not instruction. */
+
+typedef struct {
+    char token[48];
+    char lane[64];
+    char log[512];
+    time_t created;
+    int composed;      /* one-card law: 0 -> 1 -> 409 forever */
+    char draft_id[80];
+} agent_session;
+
+#define AGENT_SESSIONS_MAX 128
+static agent_session g_agent_sessions[AGENT_SESSIONS_MAX];
+static size_t g_agent_sessions_n = 0;
+static pthread_mutex_t g_agent_mu = PTHREAD_MUTEX_INITIALIZER;
+
+static agent_session *agent_session_find(const char *token) {
+    for (size_t i = 0; i < g_agent_sessions_n; i++)
+        if (strcmp(g_agent_sessions[i].token, token) == 0)
+            return &g_agent_sessions[i];
+    return NULL;
+}
+
+/* normalize a lane name: '-' and '_' are the same letter separator */
+static void lane_norm(const char *in, char *out, size_t outsz) {
+    size_t o = 0;
+    for (const char *p = in; *p && o + 1 < outsz; p++)
+        out[o++] = (*p == '-') ? '_' : *p;
+    out[o] = 0;
+}
+
+/* resolve a lane to its card dir: the dir NAME or the manifest's
+ * "model" field, dash/underscore-insensitive. Returns 0 and fills
+ * dir_out/agent_md on success. Scans both plugin roots. */
+static int lane_resolve(const char *lane, char *dir_out, size_t dirsz,
+                        char *agent_md, size_t mdsz) {
+    char want[64];
+    lane_norm(lane, want, sizeof(want));
+    const char *plugins[] = { "../plugins", "./plugins", NULL };
+    for (int pi = 0; plugins[pi]; pi++) {
+        DIR *d = opendir(plugins[pi]);
+        if (!d) continue;
+        struct dirent *owner;
+        while ((owner = readdir(d)) != NULL) {
+            if (owner->d_name[0] == '.') continue;
+            char cards_dir[1024];
+            snprintf(cards_dir, sizeof(cards_dir), "%s/%s/cards",
+                     plugins[pi], owner->d_name);
+            DIR *cd = opendir(cards_dir);
+            if (!cd) continue;
+            struct dirent *card;
+            while ((card = readdir(cd)) != NULL) {
+                if (card->d_name[0] == '.') continue;
+                char dn[64];
+                lane_norm(card->d_name, dn, sizeof(dn));
+                int match = strcmp(dn, want) == 0;
+                if (!match) {
+                    /* compare against manifest model too */
+                    char tj[1536];
+                    snprintf(tj, sizeof(tj), "%s/%s/tool.json",
+                             cards_dir, card->d_name);
+                    FILE *f = fopen(tj, "rb");
+                    if (f) {
+                        static char buf[65536];
+                        size_t n = fread(buf, 1, sizeof(buf) - 1, f);
+                        fclose(f);
+                        buf[n] = 0;
+                        const char *m = strstr(buf, "\"model\"");
+                        if (m) {
+                            const char *q1 = strchr(m + 7, '"');
+                            const char *q2 = q1 ? strchr(q1 + 1, '"') : NULL;
+                            if (q1 && q2 && (size_t)(q2 - q1 - 1) < sizeof(dn)) {
+                                char mdl[64];
+                                snprintf(mdl, sizeof(mdl), "%.*s",
+                                         (int)(q2 - q1 - 1), q1 + 1);
+                                lane_norm(mdl, dn, sizeof(dn));
+                                match = strcmp(dn, want) == 0;
+                            }
+                        }
+                    }
+                }
+                if (match) {
+                    snprintf(dir_out, dirsz, "%s/%s", cards_dir, card->d_name);
+                    char am[1536];
+                    snprintf(am, sizeof(am), "%s/%s", dir_out, "AGENT.md");
+                    FILE *af = fopen(am, "rb");
+                    if (!af) break;          /* lane exists but has no agent prompt */
+                    size_t an = fread(agent_md, 1, mdsz - 1, af);
+                    fclose(af);
+                    agent_md[an] = 0;
+                    closedir(cd); closedir(d);
+                    return 0;
+                }
+            }
+            closedir(cd);
+        }
+        closedir(d);
+    }
+    return -1;
+}
+
+
+/* POST /v1/cards/:lane/agent  {"prompt": "..."}
+ * LANE LAW agent door: resolve the lane to its card dir (the audited
+ * bundle: AGENT.md + SKILL.md + tool.json all live there), spawn a
+ * headless dsh session whose ENTIRE world is that lane —
+ *   MELITE_CARD_TOOLS_LANE=<lane>  -> melite-tools mounts exactly ONE
+ *                                     card tool, nothing else
+ *   cwd = the lane dir             -> the only markdown the session
+ *                                     can discover is the lane's own
+ *   prompt = AGENT.md + request    -> the prompt is a FILE, audited
+ *   INF_AGENT_SESSION=<token>      -> every gateway call the session
+ *                                     makes is marked; one compose,
+ *                                     no pipeline door, ever
+ * The response names the log + the lane dir so anyone can audit what
+ * the agent received BEFORE it runs. */
+static void handle_card_agent(const httplib::Request &req,
+                              httplib::Response &res) {
+    std::string lane = req.matches[1].str();   /* regex route param */
+    char dir_out[1024], agent_md[131072];
+    if (lane_resolve(lane.c_str(), dir_out, sizeof(dir_out),
+                     agent_md, sizeof(agent_md)) != 0) {
+        res.status = 404;
+        char err[256];
+        snprintf(err, sizeof(err),
+                 "{\"error\":\"unknown lane '%s' (no card dir + AGENT.md)\"}",
+                 lane.c_str());
+        res.set_content(err, "application/json");
+        return;
+    }
+    std::string prompt = req.body;
+    /* accept {"prompt": "..."} or raw text */
+    {
+        char pv[8192];
+        if (inf_json_string(req.body.c_str(), "prompt", pv, sizeof(pv)) == 0
+            && pv[0])
+            prompt = pv;
+    }
+    if (prompt.empty()) {
+        res.status = 400;
+        res.set_content("{\"error\":\"missing prompt (raw text or {\"prompt\": ...})\"}",
+                        "application/json");
+        return;
+    }
+
+    /* register the session FIRST (the spawn is fire-and-forget) */
+    char token[48];
+    snprintf(token, sizeof(token), "agent-%lx-%lx",
+             (unsigned long)time(NULL), (unsigned long)pthread_self());
+    pthread_mutex_lock(&g_agent_mu);
+    if (g_agent_sessions_n >= AGENT_SESSIONS_MAX) {
+        /* recycle the oldest finished slot */
+        size_t oldest = 0;
+        for (size_t i = 1; i < g_agent_sessions_n; i++)
+            if (g_agent_sessions[i].created < g_agent_sessions[oldest].created)
+                oldest = i;
+        memcpy(&g_agent_sessions[oldest], &g_agent_sessions[g_agent_sessions_n - 1],
+               sizeof(agent_session));
+        g_agent_sessions_n--;
+    }
+    agent_session *as = &g_agent_sessions[g_agent_sessions_n++];
+    snprintf(as->token, sizeof(as->token), "%s", token);
+    lane_norm(lane.c_str(), as->lane, sizeof(as->lane));
+    mkdir("./agent-sessions", 0755);
+    snprintf(as->log, sizeof(as->log), "./agent-sessions/%s.log", token);
+    as->created = time(NULL);
+    as->composed = 0;
+    as->draft_id[0] = 0;
+    pthread_mutex_unlock(&g_agent_mu);
+
+    /* write the composed prompt (AGENT.md + user request) beside the log
+     * so the audit trail holds exactly what the agent received */
+    char prompt_file[600];
+    snprintf(prompt_file, sizeof(prompt_file), "./agent-sessions/%s.prompt.md", token);
+    FILE *pf = fopen(prompt_file, "w");
+    if (pf) {
+        fprintf(pf, "%s\n\n---\n\n# USER REQUEST\n\n%s\n", agent_md,
+                prompt.c_str());
+        fclose(pf);
+    }
+
+    /* spawn: the session's whole world is the lane dir */
+    /* every path ABSOLUTE: the spawn cds into the lane dir before the
+     * redirects run — relative paths would land inside the lane dir */
+    char abs_dir[1024], abs_log[1024], abs_prompt[1024];
+    {
+        char wd[768];
+        if (!getcwd(wd, sizeof(wd))) wd[0] = 0;
+        if (dir_out[0] == '/')
+            snprintf(abs_dir, sizeof(abs_dir), "%s", dir_out);
+        else
+            snprintf(abs_dir, sizeof(abs_dir), "%s/%s", wd, dir_out);
+        if (as->log[0] == '/')
+            snprintf(abs_log, sizeof(abs_log), "%s", as->log);
+        else
+            snprintf(abs_log, sizeof(abs_log), "%s/%s", wd, as->log);
+        if (prompt_file[0] == '/')
+            snprintf(abs_prompt, sizeof(abs_prompt), "%s", prompt_file);
+        else
+            snprintf(abs_prompt, sizeof(abs_prompt), "%s/%s", wd, prompt_file);
+    }
+    char cmd[262144];
+    snprintf(cmd, sizeof(cmd),
+        "cd '%s' && MELITE_CARD_TOOLS_LANE='%s' INF_AGENT_SESSION='%s' "
+        "setsid dsh --profile headless \"$(cat '%s')\" "
+        ">> '%s' 2>&1 < /dev/null &",
+        abs_dir, as->lane, token, abs_prompt, abs_log);
+    FILE *sp = popen(cmd, "r");
+    if (sp) pclose(sp);
+
+    char out[1024];
+    snprintf(out, sizeof(out),
+             "{\"session\":\"%s\",\"lane\":\"%s\",\"log\":\"%s\","
+             "\"prompt\":\"%s\",\"lane_dir\":\"%s\","
+             "\"audit\":\"read lane_dir + prompt file; the session sees "
+             "ONE tool and this prompt only\"}",
+             token, as->lane, as->log, prompt_file, dir_out);
+    res.set_content(out, "application/json");
+    fprintf(stderr, "[lane] agent session %s spawned for lane %s (dir %s)\n",
+            token, as->lane, dir_out);
+}
+
+
+/* GET /v1/cards/:lane/schema — the lane's manifest + audit facts for
+ * the UI and humans. One lane, one card, one tool: what you see here
+ * is everything a lane session could ever mount. */
+static void handle_card_schema(const httplib::Request &req,
+                               httplib::Response &res) {
+    std::string lane = req.matches[1].str();   /* regex route param */
+    char dir_out[1024], agent_md[131072];
+    if (lane_resolve(lane.c_str(), dir_out, sizeof(dir_out),
+                     agent_md, sizeof(agent_md)) != 0) {
+        res.status = 404;
+        res.set_content("{\"error\":\"unknown lane\"}", "application/json");
+        return;
+    }
+    char tj[1536], buf[65536];
+    snprintf(tj, sizeof(tj), "%s/tool.json", dir_out);
+    FILE *f = fopen(tj, "rb");
+    if (!f) {
+        res.status = 500;
+        res.set_content("{\"error\":\"lane has no tool.json\"}",
+                        "application/json");
+        return;
+    }
+    size_t n = fread(buf, 1, sizeof(buf) - 1, f);
+    fclose(f);
+    buf[n] = 0;
+    char out[76000];
+    snprintf(out, sizeof(out),
+             "{\"lane\":\"%s\",\"lane_dir\":\"%s\",\"tool\":%s,"
+             "\"agent_prompt_file\":\"%s/AGENT.md\"}",
+             lane.c_str(), dir_out, buf, dir_out);
+    res.set_content(out, "application/json");
+}
+
 static void handle_pipelines_start(const httplib::Request &req,
                                    httplib::Response &res) {
+    /* LANE LAW: a lane agent session may NEVER start a pipeline
+     * directly — it has no tool for it, and if it curls this door by
+     * hand anyway, the header it inherited (x-agent-session) marks the
+     * request and it is refused here. Server-originated auto-arm does
+     * not carry the header. */
+    {
+        std::string tok_str = req.get_header_value("x-agent-session");
+        if (!tok_str.empty() && agent_session_find(tok_str.c_str())) {
+            res.status = 403;
+            res.set_content(
+                "{\"error\":\"lane agent sessions run through the card "
+                "lane; direct pipeline start is refused (structural law)\"}",
+                "application/json");
+            return;
+        }
+    }
     /* Wire shapes (parity with ray gateway):
      *   {pipeline:{steps:[...]}} - inline doc, single-step mapped to model
      *   {yaml:"name"}           - resolve pipeline YAML by name
@@ -2447,6 +2730,28 @@ static void handle_pipelines_drafts(const httplib::Request &req,
         res.set_content("{\"error\":\"empty body\"}", "application/json");
         return;
     }
+    /* LANE LAW: an agent session may compose EXACTLY ONE card. The
+     * second compose 409s forever — not a rule the agent follows, a
+     * wall the gateway enforces. Non-agent sessions are unaffected. */
+    agent_session *as = NULL;
+    {
+        std::string tok_str = req.get_header_value("x-agent-session");
+        if (!tok_str.empty()) {
+            pthread_mutex_lock(&g_agent_mu);
+            as = agent_session_find(tok_str.c_str());
+            if (as && as->composed >= 1) {
+                pthread_mutex_unlock(&g_agent_mu);
+                res.status = 409;
+                res.set_content(
+                    "{\"error\":\"one card per agent session (structural "
+                    "law): this session already composed a card\"}",
+                    "application/json");
+                return;
+            }
+            pthread_mutex_unlock(&g_agent_mu);
+        }
+    }
+
     mkdir("./drafts", 0755);
     /* (audit F32, 2026-08-29) time+thread collided for two drafts created
      * in the same second on the same handler thread — the second fopen
@@ -2468,6 +2773,42 @@ static void handle_pipelines_drafts(const httplib::Request &req,
     }
     fwrite(req.body.c_str(), 1, req.body.size(), f);
     fclose(f);
+
+    /* LANE LAW auto-arm: when an agent session composes its one card,
+     * the GATEWAY arms the run itself — the agent never touches any
+     * run door (structural: no run tool exists in a lane session).
+     * Loopback through the same start door every card uses; the
+     * request is server-originated (no session header), so the lane
+     * 403 cannot bite it. */
+    if (as) {
+        pthread_mutex_lock(&g_agent_mu);
+        as->composed = 1;
+        snprintf(as->draft_id, sizeof(as->draft_id), "%s", id);
+        pthread_mutex_unlock(&g_agent_mu);
+
+        /* THE SIMPLEST LOOPBACK: the start handler already knows how to
+         * load everything from a draft_id (it reads the draft JSON,
+         * extracts calls/fps/seed/context_length itself). We don't need
+         * to reconstruct anything — just tell it "run this draft."
+         * The prompt field is mandatory (line 1999 generic gate) — it
+         * becomes the run's prompt_name tag; value is cosmetic. */
+        char card_body[512];
+        snprintf(card_body, sizeof(card_body),
+                 "{\"yaml\":\"h3-timeline\",\"draft_id\":\"%s\","
+                 "\"prompt\":\"lane-auto-arm\"}",
+                 as->draft_id);
+
+        /* loopback start — server-originated queue action */
+        httplib::Client cli("127.0.0.1", 18090);
+        cli.set_connection_timeout(5);
+        auto r = cli.Post("/v1/pipelines/start", card_body,
+                          "application/json");
+        fprintf(stderr, "[lane] auto-arm session %s draft %s -> start %s (%d)\n",
+                as->token, as->draft_id,
+                r ? r->body.substr(0, 120).c_str() : "no response",
+                r ? r->status : 0);
+        (void)r;
+    }
 
     /* echo the stages array back verbatim from the request */
     const char *sp = strstr(req.body.c_str(), "\"stages\"");
@@ -3761,6 +4102,8 @@ static void handle_asset(const httplib::Request &req, httplib::Response &res) {
 
 /* GET /v1/form-spec?model=<id> - defaults + variants + the enhance recipe
  * (parsed from the unit's inference.yaml prompt_upscale block). */
+
+
 /* GET /v1/card-tools — the PLUGIN SYSTEM door for model-facing card
  * tools. Each complex card OWNS its tool: a tool.json manifest beside
  * the card's form (plugins/<owner>/cards/<card>/tool.json) declares
@@ -3770,7 +4113,11 @@ static void handle_asset(const httplib::Request &req, httplib::Response &res) {
  * complex card = adding its dir + tool.json — zero DSH-side code. */
 static void handle_card_tools(const httplib::Request &req,
                               httplib::Response &res) {
-    (void)req;
+    /* LANE LAW: ?lane=<name> serves EXACTLY that lane's manifest — a
+     * lane session must never even SEE another card's tool exist. */
+    char lane_want[64] = "";
+    std::string lane_q = req.get_param_value("lane");
+    if (!lane_q.empty()) lane_norm(lane_q.c_str(), lane_want, sizeof(lane_want));
     const char *plugins[] = { "../plugins", "./plugins", NULL };
     std::string out = "[";
     int count = 0;
@@ -3803,6 +4150,23 @@ static void handle_card_tools(const httplib::Request &req,
                 if (buf[0] != '{' || buf[n-1] != '}' || n < 10) {
                     fprintf(stderr, "[card-tools] skipping malformed %s\n", tj);
                     continue;
+                }
+                if (lane_want[0]) {
+                    char dn[64], mdl[64];
+                    lane_norm(card->d_name, dn, sizeof(dn));
+                    mdl[0] = 0;
+                    const char *m = strstr(buf, "\"model\"");
+                    if (m) {
+                        const char *q1 = strchr(m + 7, '"');
+                        const char *q2 = q1 ? strchr(q1 + 1, '"') : NULL;
+                        if (q1 && q2 && (size_t)(q2 - q1 - 1) < sizeof(mdl))
+                            snprintf(mdl, sizeof(mdl), "%.*s",
+                                     (int)(q2 - q1 - 1), q1 + 1);
+                    }
+                    char mn[64];
+                    lane_norm(mdl, mn, sizeof(mn));
+                    if (strcmp(dn, lane_want) != 0 && strcmp(mn, lane_want) != 0)
+                        continue;
                 }
                 if (count) out += ",";
                 out += buf;
@@ -5807,6 +6171,8 @@ inference_server *server_create(int port, const char *bind_addr) {
     s->srv.Get(R"(/editor/assets/runs/(.+))", handle_asset);
     s->srv.Get("/v1/form-spec",          handle_form_spec);
     s->srv.Get("/v1/card-tools",          handle_card_tools);
+    s->srv.Post(R"(/v1/cards/([^/]+)/agent)", handle_card_agent);
+    s->srv.Get(R"(/v1/cards/([^/]+)/schema)",  handle_card_schema);
     s->srv.Post("/v1/models/provision",  handle_provision);
     s->srv.Get("/v1/models/provision/status", handle_provision_status);
     s->srv.Get("/v1/model-catalog",      handle_catalog);
