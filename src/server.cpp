@@ -637,9 +637,106 @@ static char *pipeline_yaml_for_model(const char *model, char *out, size_t cap) {
  * POSTs could cross-wire their window prompts. Now compiled into a
  * LOCAL array at the registration call site and passed as a parameter. */
 
+/* ── (2026-08-31 GRID LAW) ──────────────────────────────────────────
+ * H3 snaps every clip length UP to the 17k+5 frame grid (5,22,39,56,
+ * 73,90,107,124... — align_frame_count, ComfyUI nodes_minimax_h3.py).
+ * The h3_motion_context pack trims EXACTLY context_length frames off
+ * each seam window's pinned head (pack nodes.py: trim = span) and pins
+ * the previous clip's last context_length latent frames. Zero-skip
+ * tiling therefore REQUIRES the sampled length ON-GRID with
+ *     tile = sampled - trim     (seam windows, n > 0)
+ *     tile = sampled            (window 1, no pin)
+ * so the next window's pin covers exactly the tile's FINAL trim frames
+ * and the film loses no frame of motion at any join. Seam tiles are
+ * multiples of 17; window-1 tiles are 17k+5. Requested spans snap to
+ * the NEAREST grid point (the skill teaches grid-conformant spans, so
+ * the snap normally changes nothing). */
+static int tl_snap_grid(int n, int resid) {
+    int k = (n - resid + 8) / 17;      /* nearest k */
+    int v = 17 * k + resid;
+    return v < resid ? resid : v;
+}
+
+/* The seam trim is the motion-context pack's context_length WIDGET in
+ * the seam template — the single source of truth, never a hardcoded 22
+ * (queue-lane law: no hardcodes). Read once, cached.
+ * -1 = graph unreadable (start door rejects loudly). */
+static int tl_scan_context_length(const char *body, char *out, size_t outsz);
+static int tl_seam_trim_cache = -2;   /* -2 unloaded, -1 error, >=0 frames */
+static pthread_mutex_t tl_trim_mu = PTHREAD_MUTEX_INITIALIZER;
+static int tl_seam_trim(void) {
+    pthread_mutex_lock(&tl_trim_mu);
+    if (tl_seam_trim_cache == -2) {
+        tl_seam_trim_cache = -1;
+        static const char *paths[] = {
+            "../pipelines/h3-timeline/window2_t4.json",
+            "pipelines/h3-timeline/window2_t4.json",
+        };
+        for (size_t pi = 0; pi < 2 && tl_seam_trim_cache < 0; pi++) {
+            FILE *f = fopen(paths[pi], "rb");
+            if (!f) continue;
+            char buf[8192];
+            size_t r = fread(buf, 1, sizeof(buf) - 1, f);
+            fclose(f); buf[r] = 0;
+            char *mc = strstr(buf, "\"MiniMaxH3MotionContext.0\"");
+            if (!mc) continue;
+            char *cl = strstr(mc, "\"context_length\"");
+            if (!cl) continue;
+            /* the widget is a string enum ("22") — scan, not atoi, so the
+             * quoted form parses (atoi(" \"22\"") is 0 and read as absent) */
+            char cv[32];
+            if (tl_scan_context_length(cl, cv, sizeof cv)) {
+                int v = atoi(cv);
+                if (v > 0) tl_seam_trim_cache = v;
+            }
+        }
+    }
+    int v = tl_seam_trim_cache;
+    pthread_mutex_unlock(&tl_trim_mu);
+    return v;
+}
+
+/* Card-level context_length override (5/22/39/56 — the pack's pin
+ * windows). Accepts "22" or 22. The needle is quote-delimited so the
+ * audio_context_length key can never match. */
+static int tl_scan_context_length(const char *body, char *out, size_t outsz) {
+    out[0] = 0;
+    if (!body) return 0;
+    const char *k = strstr(body, "\"context_length\"");
+    if (!k) return 0;
+    const char *v = k + strlen("\"context_length\"");
+    while (*v == ' ' || *v == '\t' || *v == '\n' || *v == '\r') v++;
+    if (*v != ':') return 0;
+    v++;
+    while (*v == ' ' || *v == '\t' || *v == '\n' || *v == '\r') v++;
+    if (*v == '"') {
+        v++;
+        size_t o = 0;
+        while (*v && *v != '"' && o + 1 < outsz) out[o++] = *v++;
+        out[o] = 0;
+    } else {
+        snprintf(out, outsz, "%d", atoi(v));
+    }
+    return out[0] != 0;
+}
+
 static int compile_calls_windows(const char *body, char out[4][2048], int lens[4], int spans_out[4]) {
     const char *key = strstr(body, "\"calls\"");
     if (!key) return 0;
+    /* (grid law) the seam trim: card-level override, else the pack's
+     * widget in the seam template. Returns -1 = seam graph unreadable,
+     * -2 = pin window off the pack's grid (must be 5/22/39/56). */
+    int trim = -1;
+    {
+        char cv[32];
+        if (tl_scan_context_length(body, cv, sizeof cv))
+            trim = atoi(cv);
+        else
+            trim = tl_seam_trim();
+        if (trim <= 0) return -1;
+        if (trim != 5 && trim != 22 && trim != 39 && trim != 56)
+            return -2;
+    }
     /* (2026-08-30 string-form law) callers send calls EITHER as a JSON
      * array OR as a JSON-encoded STRING (the h3_timeline_card tool and
      * the drafts door store the document as a string). Escaped quotes
@@ -721,34 +818,30 @@ static int compile_calls_windows(const char *body, char out[4][2048], int lens[4
                             }
                             out[n][o] = 0;
                         }
-                        /* calls-length law (2026-08-30): each window renders
-                         * its call span + the seam overlap
-                         * (first_frame_prev_sec x fps) so the in-graph trim
-                         * can remove the pinned head and land the exact
-                         * tile. Lens land in the pipeline inject map. */
+                        /* (2026-08-31 GRID LAW — replaces the empirical
+                         * 19/22 head guess, which was wrong twice: H3
+                         * rounds any off-grid length UP (109 -> 124), so
+                         * the film kept the tile's first frames but the
+                         * next pin continued from the SAMPLED tail —
+                         * every join skipped (sampled - span - trim)
+                         * frames of motion). Now: sampled ON-GRID,
+                         * tile = sampled - trim (seams) / sampled (w1),
+                         * spans report the ACTUAL tiles so the stitch
+                         * cut is a no-op safety. */
                         {
-                            int sf=0, ef=0, pv=0;
+                            int sf=0, ef=0;
                             const char *m = strstr(obj, "start_frame");
                             if (m) sf = atoi(strchr(m, ':') + 1);
                             m = strstr(obj, "end_frame");
                             if (m) ef = atoi(strchr(m, ':') + 1);
-                            m = strstr(obj, "first_frame_prev_sec");
-                            if (m) pv = atoi(strchr(m, ':') + 1);
-                            /* (2026-08-30 seam-head law, empirical) the
-                             * in-graph Trim removes ~19 frames on seam
-                             * windows that carry a first_frame_prev_sec load
-                             * (the skill's "~19f = 0.8s" note; measured:
-                             * 138 rendered -> 119 landed) and ~22 on default
-                             * t4 seams (90 -> 68). pv sets the motion PIN
-                             * (conditioning), NOT the output length -- so the
-                             * render length is span + trim, and the tile
-                             * lands exact. */
-                            {
-                                int head = 0;
-                                if (n > 0)
-                                    head = pv > 0 ? 19 : 22;
-                                lens[n] = (ef > sf ? ef - sf : 0) + head;
-                                if (spans_out) spans_out[n] = ef > sf ? ef - sf : 0;
+                            int span = ef > sf ? ef - sf : 0;
+                            if (n == 0) {
+                                lens[n] = tl_snap_grid(span, 5);
+                                if (spans_out) spans_out[n] = lens[n];
+                            } else {
+                                int tile = tl_snap_grid(span, 0);
+                                lens[n] = tile + trim;
+                                if (spans_out) spans_out[n] = tile;
                             }
                         free(obj);
                         }
@@ -1296,8 +1389,9 @@ static void handle_pipelines_start(const httplib::Request &req,
      */
     char model[64] = "", prompt[2048] = "";
     char tl_wins[4][2048];   /* (audit F2) LOCAL: per-request window prompts */
-    int  tl_wins_len[4] = {0,0,0,0}; /* calls-length law: render length per window */
-    int  tl_spans[4] = {0,0,0,0};    /* exact-tile law: declared span per window */
+    int  tl_wins_len[4] = {0,0,0,0}; /* grid law: ON-GRID sampled length per window */
+    int  tl_spans[4] = {0,0,0,0};    /* grid law: ACTUAL tile per window (sampled - trim) */
+    char tl_cctx_draft[32] = {0};    /* grid law: card-level pin-window override from the draft */
     int  tl_nw = 0;
     long seed = -1;
     char yaml_override[4096] = "";
@@ -1387,6 +1481,20 @@ static void handle_pipelines_start(const httplib::Request &req,
      * every window past the first whenever prompt was present. */
     if (strstr(body, "\"calls\"")) {
         tl_nw = compile_calls_windows(body, tl_wins, tl_wins_len, tl_spans);
+        /* (grid law) seam-graph resolution failures are loud, before any
+         * run registers: -1 = the pack's context_length widget is not
+         * readable in the seam template; -2 = card-level context_length
+         * is not one of the pack's pin windows (5/22/39/56). */
+        if (tl_nw == -1) {
+            res.status = 500;
+            res.set_content("{\"error\":\"h3-timeline seam graph unreadable: MiniMaxH3MotionContext.0.context_length not found in pipelines/h3-timeline/window2_t4.json\"}", "application/json");
+            return;
+        }
+        if (tl_nw == -2) {
+            res.status = 400;
+            res.set_content("{\"error\":\"context_length must be one of the motion-context pack's pin windows: 5, 22, 39 or 56\"}", "application/json");
+            return;
+        }
         /* (2026-08-30 queue-lane law) a calls array longer than the 4-window
          * graph is a shape error, never a silent truncation: reject BEFORE
          * any run is registered. The caller splits into chained runs
@@ -1401,11 +1509,16 @@ static void handle_pipelines_start(const httplib::Request &req,
                 /* (string-form law) count form-agnostically: the key
                  * name followed (within quotes/ws) by a colon. */
                 while ((w = strstr(w, "start_frame")) != NULL) {
-                    const char *k2 = w + 10;
+                    /* "start_frame" is ELEVEN chars — the old +10 put k2 on
+                     * the final 'e', ':' never matched, the counter read 0
+                     * on EVERY body and >4 calls silently truncated to the
+                     * 4-window graph (queue-lane law breach, caught live by
+                     * the loader probe 2026-08-31). */
+                    const char *k2 = w + 11;
                     while (*k2 == ' ' || *k2 == '\t' || *k2 == '"' ||
                            *k2 == '\\') k2++;
                     if (*k2 == ':') total_calls++;
-                    w += 10;
+                    w += 11;
                 }
                 if (total_calls > 4) {
                     res.status = 400;
@@ -1466,6 +1579,19 @@ static void handle_pipelines_start(const httplib::Request &req,
                 fclose(df); dbuf[dn] = 0;
                 tl_nw = compile_calls_windows(dbuf, tl_wins, tl_wins_len,
                                               tl_spans);
+                /* (grid law) same loud guards as the body path; the card
+                 * doc may carry its own context_length override. */
+                if (tl_nw == -1) {
+                    res.status = 500;
+                    res.set_content("{\"error\":\"h3-timeline seam graph unreadable: MiniMaxH3MotionContext.0.context_length not found in pipelines/h3-timeline/window2_t4.json\"}", "application/json");
+                    return;
+                }
+                if (tl_nw == -2) {
+                    res.status = 400;
+                    res.set_content("{\"error\":\"card context_length must be one of the motion-context pack's pin windows: 5, 22, 39 or 56\"}", "application/json");
+                    return;
+                }
+                tl_scan_context_length(dbuf, tl_cctx_draft, sizeof tl_cctx_draft);
                 if (tl_nw == 0)
                     fprintf(stderr,
                             "[draft] card %s carries no parsable calls\n", did);
@@ -1790,21 +1916,34 @@ static void handle_pipelines_start(const httplib::Request &req,
     }
     } /* end if(!yaml_override) */
 
-    /* calls-length law (2026-08-30): each window renders its call span
-     * plus the seam overlap (first_frame_prev_sec x fps); the in-graph
-     * pack-trim removes the pinned head and lands the exact tile. Splice
-     * the literal length into each window node's inject map, anchored on
-     * its KSampler.0.seed entry (one per window node, in file order). */
+    /* (grid law, 2026-08-31) each window samples its ON-GRID tile length
+     * (window 1) or tile + pack-trim (seam windows); the in-graph pack
+     * trim then delivers exactly the tile. Splice the literal length
+     * into each window node's inject map, anchored on its KSampler.0.seed
+     * entry (one per window node, in file order). A card-level
+     * context_length override also lands in each SEAM window's
+     * MiniMaxH3MotionContext widget (string form — the combo validates
+     * strings, apply() ints either way). */
     if (tl_nw > 0) {
-        char inj[64];
+        char inj[160];
+        char cctx[32] = {0};
+        if (!tl_scan_context_length(req.body.c_str(), cctx, sizeof cctx))
+            snprintf(cctx, sizeof cctx, "%s", tl_cctx_draft);
+        int has_cctx = cctx[0] != 0;
         const char *needle = "\"KSampler.0.seed\"";
         int wi = 0;
         char *q = strstr(g_runs[idx].yaml, needle);
         while (q && wi < tl_nw) {
             if (tl_wins_len[wi] > 0) {
-                snprintf(inj, sizeof(inj),
-                         "\"MiniMaxH3ImageToVideo.0.length\":%d,",
-                         tl_wins_len[wi]);
+                if (wi > 0 && has_cctx)
+                    snprintf(inj, sizeof(inj),
+                             "\"MiniMaxH3ImageToVideo.0.length\":%d,"
+                             "\"MiniMaxH3MotionContext.0.context_length\":\"%s\",",
+                             tl_wins_len[wi], cctx);
+                else
+                    snprintf(inj, sizeof(inj),
+                             "\"MiniMaxH3ImageToVideo.0.length\":%d,",
+                             tl_wins_len[wi]);
                 size_t il = strlen(inj);
                 size_t used = strlen(g_runs[idx].yaml);
                 size_t off = (size_t)(q - g_runs[idx].yaml);
@@ -1818,10 +1957,10 @@ static void handle_pipelines_start(const httplib::Request &req,
             q = strstr(q + strlen(needle), needle);
         }
     }
-    /* exact-tile law (2026-08-30): the stitch cuts each window to its
-     * DECLARED call span so the film lands the calls tiles exactly,
-     * whatever the in-graph seam trim removed (observed 7-22f variance).
-     * Spans go into the ffmpeg_concat node's params beside trim_heads. */
+    /* (grid law) the stitch span-cut is now a NO-OP SAFETY: each window
+     * is delivered at exactly its tile by the pack's in-graph trim, so
+     * the spans equal the tiles. They stay wired so a grid drift fails
+     * as a shortened tile, never as an overlapped film. */
     if (tl_nw > 0) {
         int tlfps = inf_json_int(body, "fps", 24);
         if (tlfps <= 0) tlfps = 24;
@@ -1844,6 +1983,25 @@ static void handle_pipelines_start(const httplib::Request &req,
                     memcpy(te + 1, spansj, il);
                 }
             }
+        }
+        /* loud tiling evidence: what the film will actually be */
+        {
+            char cv[32];
+            int trimeff = tl_scan_context_length(req.body.c_str(), cv, sizeof cv)
+                              ? atoi(cv)
+                              : (tl_cctx_draft[0] ? atoi(tl_cctx_draft)
+                                                  : tl_seam_trim());
+            int tot = 0;
+            for (int i = 0; i < tl_nw; i++) tot += tl_spans[i];
+            fprintf(stderr,
+                    "[timeline] grid law: trim=%d tiles=[%d,%d,%d,%d] "
+                    "sampled=[%d,%d,%d,%d] total=%df/%.3fs\n",
+                    trimeff,
+                    tl_spans[0], tl_nw > 1 ? tl_spans[1] : -1,
+                    tl_nw > 2 ? tl_spans[2] : -1, tl_nw > 3 ? tl_spans[3] : -1,
+                    tl_wins_len[0], tl_nw > 1 ? tl_wins_len[1] : -1,
+                    tl_nw > 2 ? tl_wins_len[2] : -1, tl_nw > 3 ? tl_wins_len[3] : -1,
+                    tot, (double)tot / tlfps);
         }
     }
     /* stage list comes from the final YAML (reported while queued too) */
