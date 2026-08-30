@@ -662,9 +662,21 @@ static int compile_calls_windows(const char *body, char out[4][2048], int lens[4
                         memcpy(obj, obj_start, len); obj[len] = 0;
                         out[n][0] = 0; size_t o = 0;
                         const char *q = obj;
-                        while ((q = strstr(q, "\"text\":\"")) != NULL &&
-                               o + 300 < 2048) {
-                            q += 8;
+                        /* (2026-08-30 whitespace law) accept "text" with any
+                         * spacing around the colon -- callers serialize with
+                         * json.dumps (space after colon); the old byte-exact
+                         * match silently produced zero windows and default
+                         * 1.66s renders on full-length specs. */
+                        while (q && o + 300 < 2048) {
+                            q = strstr(q, "\"text\"");
+                            if (!q) break;
+                            const char *r = q + 6;
+                            while (*r == ' ' || *r == '\t' || *r == '\n' || *r == '\r') r++;
+                            if (*r != ':') { q += 6; continue; }
+                            r++;
+                            while (*r == ' ' || *r == '\t' || *r == '\n' || *r == '\r') r++;
+                            if (*r != '"') { q += 6; continue; }
+                            q = r + 1;
                             if (o) o += (size_t)snprintf(out[n] + o,
                                                 2048 - o, "  ");
                             while (*q && *q != '"' && o + 4 < 2048) {
@@ -692,7 +704,22 @@ static int compile_calls_windows(const char *body, char out[4][2048], int lens[4
                             if (m) ef = atoi(strchr(m, ':') + 1);
                             m = strstr(obj, "first_frame_prev_sec");
                             if (m) pv = atoi(strchr(m, ':') + 1);
-                            lens[n] = (ef > sf ? ef - sf : 0) + pv * 24;
+                            /* (2026-08-30 seam-head law) seam windows (index
+                             * > 0) render their span PLUS the pinned head the
+                             * in-graph Trim removes, so the tile lands exact.
+                             * The h3-timeline window*_t4 workflows pin 22
+                             * frames (0.91667s @ 24fps) on every seam window;
+                             * an explicit first_frame_prev_sec in the call
+                             * overrides (seconds x 24). Without this the seam
+                             * windows land 22 frames short each (observed:
+                             * 294/360 on a 15s spec). */
+                            {
+                                int head = 0;
+                                if (n > 0)
+                                    head = pv > 0 ? pv * 24
+                                                  : 22 /* graph pin */;
+                                lens[n] = (ef > sf ? ef - sf : 0) + head;
+                            }
                         free(obj);
                         }
                         if (out[n][0]) n++;
@@ -1300,6 +1327,37 @@ static void handle_pipelines_start(const httplib::Request &req,
      * every window past the first whenever prompt was present. */
     if (strstr(body, "\"calls\"")) {
         tl_nw = compile_calls_windows(body, tl_wins, tl_wins_len);
+        /* (2026-08-30 queue-lane law) a calls array longer than the 4-window
+         * graph is a shape error, never a silent truncation: reject BEFORE
+         * any run is registered. The caller splits into chained runs
+         * (continue_from). A calls array that parses to zero windows is also
+         * rejected loudly. */
+        {
+            const char *ck = strstr(body, "\"calls\"");
+            const char *arr = ck ? strchr(ck + 7, '[') : NULL;
+            if (arr) {
+                int total_calls = 0;
+                const char *w = arr;
+                while ((w = strstr(w, "\"start_frame\"")) != NULL) {
+                    total_calls++;
+                    w += 12;
+                }
+                if (total_calls > 4) {
+                    res.status = 400;
+                    char err[240];
+                    snprintf(err, sizeof(err),
+                             "{\"error\":\"calls document has %d calls but the h3-timeline graph renders max 4 windows per run; split into chained runs (continue_from)\"}",
+                             total_calls);
+                    res.set_content(err, "application/json");
+                    return;
+                }
+                if (tl_nw == 0 && total_calls > 0) {
+                    res.status = 400;
+                    res.set_content("{\"error\":\"calls document present but no windows parsed (bad calls shape)\"}", "application/json");
+                    return;
+                }
+            }
+        }
         if (!prompt[0] && tl_nw > 0) snprintf(prompt, sizeof(prompt), "%s", tl_wins[0]);
     }
     if (!prompt[0]) {
