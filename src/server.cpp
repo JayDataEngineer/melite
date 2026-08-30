@@ -3087,12 +3087,12 @@ static void handle_pipelines_runs(const httplib::Request &req,
         if (limit < 1) limit = 1;
         if (limit > 500) limit = 500;
     }
-    run_dir_ent ents[256];
+    run_dir_ent ents[8192];
     size_t n = 0;
     DIR *d = opendir("./output");
     if (d) {
         struct dirent *e;
-        while ((e = readdir(d)) != NULL && n < 256) {
+        while ((e = readdir(d)) != NULL && n < 8192) {
             if (strncmp(e->d_name, "run-", 4) != 0) continue;
             char sd[640], buf[8192];
             snprintf(sd, sizeof(sd), "./output/%s/_pipeline.json", e->d_name);
