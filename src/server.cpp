@@ -217,7 +217,7 @@ static void handle_apps_index(const httplib::Request &req,
  * Execution happens on detached pthreads against the same runner/engines.
  */
 
-#define RUNREG_MAX 256
+#define RUNREG_MAX 128   /* N-window law: bigger entries, halved registry (slots recycle) */
 #define RUN_ARTIFACTS_MAX 16
 
 typedef struct {
@@ -228,13 +228,16 @@ typedef struct {
     size_t nbytes;
 } run_input;
 
-#define RUN_STAGES_MAX 8
+/* (N-window law, 2026-08-31) ONE timeline card = N calls = ONE run:
+ * stages hold every window + stitch. error copy 2048->768 to keep the
+ * registry affordable at this depth (sidecar ledger keeps full text). */
+#define RUN_STAGES_MAX 136
 #define RUN_STAGE_ARTS_MAX 4
 
 typedef struct {
     char id[64];             /* node id from the pipeline YAML */
     char state[16];          /* pending|running|done|skipped|error */
-    char error[2048];        /* exact error message (written to sidecar ledger) */
+    char error[768];         /* exact error message (full text in sidecar ledger) */
     char arts[RUN_STAGE_ARTS_MAX][160];  /* artifacts attributed to this stage */
     size_t n_arts;
 } run_stage;
@@ -244,15 +247,16 @@ typedef struct {
     char state[16];          /* queued|running|success|error|stopped */
     char error[256];
     char out_dir[512];
-    /* (audit F31, 2026-08-29) 4096 to match yaml_override[4096]: the old
-     * 2048 cap silently truncated pipelines (h3-timeline-b4 sits at 2020
-     * bytes — 28 from a silent dag-parse failure). */
-    char yaml[4096];         /* the pipeline YAML this run executes */
+    /* (audit F31, 2026-08-29) sized to never truncate (h3-timeline-b4
+     * sat 28 bytes from a silent dag-parse failure at the old 2048).
+     * (N-window law, 2026-08-31) 128KB: ONE card with up to 128 calls
+     * expands to N window stages INSIDE this buffer. */
+    char yaml[131072];       /* the pipeline YAML this run executes */
     char model[64];          /* requested model (spec persistence) */
     char prompt[2048];       /* requested prompt (spec persistence) */
     long seed;               /* requested seed, -1 = unset */
     time_t created;
-    run_input inputs[16];
+    run_input inputs[144];   /* N-window law: prompt..promptN + globals */
     size_t n_inputs;
     run_stage stages[RUN_STAGES_MAX];
     size_t n_stages;
@@ -720,7 +724,111 @@ static int tl_scan_context_length(const char *body, char *out, size_t outsz) {
     return out[0] != 0;
 }
 
-static int compile_calls_windows(const char *body, char out[4][2048], int lens[4], int spans_out[4]) {
+#define TL_MAX_WINDOWS 128   /* N-window law: ONE card = N calls = ONE run.
+                               * Buffer-derived engineering bound (128KB run
+                               * yaml), stated loudly — never a product cap
+                               * on film length. 128 calls ~ 7.5 min film. */
+
+/* (N-window law, 2026-08-31) ONE card = N calls = ONE run. The static
+ * pipeline.yaml ships 4 window stages; this expands the run graph
+ * in-place to nw windows by cloning the window2 seam prototype: clone k
+ * gets a unique stage id, its own prompt inject key ($promptK), and
+ * clip-slot injects (LoadLatent K-1 / SaveLatent K — the same workflow
+ * file for every seam; indices ride the inject map). The stitch
+ * input_from list is rebuilt for N inputs. Returns 0 on success; -1 on
+ * any anchor or buffer failure — the caller fails the run LOUDLY, never
+ * a silent truncation. nw <= 4 is a no-op (the static graph covers it,
+ * the proven path). */
+static int tl_expand_windows(char *yaml, size_t cap, int nw) {
+    if (nw <= 4) return 0;
+    if (nw > TL_MAX_WINDOWS) return -1;
+
+    const char *w2 = strstr(yaml, "- id: window2");
+    const char *w3 = strstr(yaml, "- id: window3");
+    const char *st = strstr(yaml, "- id: stitch");
+    const char *inf = st ? strstr(st, "input_from:") : NULL;
+    if (!w2 || !w3 || !st || !inf || w3 < w2 || st < w3 || inf < st)
+        return -1;
+
+    /* input_from entry list: starts after the colon, ends at the first
+     * line that does not begin with a '-' entry */
+    const char *il = inf + strlen("input_from:");
+    const char *ie = il;
+    {
+        const char *q = il;
+        while (*q) {
+            while (*q == ' ' || *q == '\t' || *q == '\n' || *q == '\r') q++;
+            if (*q == '-') {
+                while (*q && *q != '\n') q++;
+                if (*q) q++;
+                ie = q;
+            } else break;
+        }
+    }
+
+    size_t proto_len = (size_t)(w3 - w2);
+    size_t head_len  = (size_t)(w2 - yaml);
+    size_t stch_len  = (size_t)(il - st);          /* stitch block header */
+    size_t tail_len  = strlen(ie);
+    size_t need = head_len + stch_len + tail_len + 64;
+    for (int k = 2; k <= nw; k++) need += proto_len + 200;
+    need += (size_t)nw * 26;                        /* input_from lines */
+    if (need + 64 >= cap) return -1;
+
+    char *out = (char *)malloc(need + 256);
+    if (!out) return -1;
+    size_t o = 0;
+
+    memcpy(out, yaml, head_len); o = head_len;
+
+    for (int k = 2; k <= nw; k++) {
+        size_t i = 0;
+        while (i < proto_len) {
+            if (strncmp(w2 + i, "- id: window2", 13) == 0) {
+                o += (size_t)snprintf(out + o, 32, "- id: window%d", k);
+                i += 13;
+            } else if (strncmp(w2 + i, "$prompt2", 8) == 0) {
+                o += (size_t)snprintf(out + o, 32, "$prompt%d", k);
+                i += 8;
+                /* the first '}' after the needle closes the INJECT MAP.
+                 * Copy the span up to it VERBATIM — the value's closing
+                 * quote lives in that span; eating it corrupts the JSON
+                 * and the plugin skips the whole inject map (proven live
+                 * 2026-08-31: "$prompt5, — windows 2-6 ran on baked
+                 * defaults, byte-identical). Then ride the clip slots
+                 * in before the brace. */
+                const char *cl = w2 + i;
+                while (cl < w3 && *cl != '}') cl++;
+                if (cl >= w3 || *cl != '}') { free(out); return -1; }
+                size_t span = (size_t)(cl - (w2 + i));
+                memcpy(out + o, w2 + i, span); o += span;
+                o += (size_t)snprintf(out + o, 200,
+                        ",\"MiniMaxH3MotionContextLoadLatent.0.clip_index\":%d,"
+                        "\"MiniMaxH3MotionContextSaveLatent.0.clip_index\":%d",
+                        k - 1, k);
+                out[o++] = *cl;
+                i = (size_t)(cl - w2) + 1;
+            } else {
+                out[o++] = w2[i++];
+            }
+        }
+        if (o + 2 >= need + 256) { free(out); return -1; }
+    }
+
+    /* stitch block header (through "input_from:"), then N entries */
+    memcpy(out + o, st, stch_len); o += stch_len;
+    for (int k = 1; k <= nw; k++)
+        o += (size_t)snprintf(out + o, 32, "\n      - window%d.video_0", k);
+    memcpy(out + o, ie, tail_len); o += tail_len;
+    out[o] = 0;
+
+    snprintf(yaml, cap, "%s", out);
+    free(out);
+    return 0;
+}
+
+static int compile_calls_windows(const char *body, char out[TL_MAX_WINDOWS][2048],
+                                 int lens[TL_MAX_WINDOWS], int spans_out[TL_MAX_WINDOWS]) {
     const char *key = strstr(body, "\"calls\"");
     if (!key) return 0;
     /* (grid law) the seam trim: card-level override, else the pack's
@@ -782,7 +890,7 @@ static int compile_calls_windows(const char *body, char out[4][2048], int lens[4
         } else if (*p == ']' || *p == '}') {
             depth--;
             if (*p == '}' && obj_start && depth == 1) {
-                if (n < 4) {
+                if (n < TL_MAX_WINDOWS) {
                     size_t len = (size_t)(p - obj_start + 2);
                     char *obj = (char *)malloc(len + 1);
                     if (obj) {
@@ -856,7 +964,7 @@ static int compile_calls_windows(const char *body, char out[4][2048], int lens[4
     return n;
 }
 static void add_run_input_text(size_t idx, const char *name, const char *s) {
-    if (g_runs[idx].n_inputs >= 16) return;
+    if (g_runs[idx].n_inputs >= 144) return;
     run_input *ri = &g_runs[idx].inputs[g_runs[idx].n_inputs++];
     snprintf(ri->name, sizeof(ri->name), "%s", name);
     snprintf(ri->dtype, sizeof(ri->dtype), "u8");
@@ -867,7 +975,7 @@ static void add_run_input_text(size_t idx, const char *name, const char *s) {
 }
 
 static void add_run_input_f32(size_t idx, const char *name, float f) {
-    if (g_runs[idx].n_inputs >= 16) return;
+    if (g_runs[idx].n_inputs >= 144) return;
     run_input *ri = &g_runs[idx].inputs[g_runs[idx].n_inputs++];
     snprintf(ri->name, sizeof(ri->name), "%s", name);
     snprintf(ri->dtype, sizeof(ri->dtype), "f32");
@@ -882,16 +990,12 @@ static void add_run_input_f32(size_t idx, const char *name, float f) {
  * shared state, concurrent registrations cannot cross-wire prompts. */
 static void add_run_extra_inputs(size_t idx, const char *body,
                                  char *tmp, size_t tmpcap,
-                                 char tl_wins[4][2048], int tl_nw) {
-    static const char *names[] = {"prompt2", "prompt3", "prompt4", NULL};
-    for (int i = 0; names[i]; i++)
-        if (inf_json_string(body, names[i], tmp, tmpcap) == 0 && tmp[0])
-            add_run_input_text(idx, names[i], tmp);
-    /* Timeline studio compiled windows (calls -> per-call prompts):
-     * the card body carries no prompt2..4 keys - feed from the compile. */
-    if (tl_nw > 1) {
-        for (int i = 1; i < tl_nw && i < 4; i++)
-            add_run_input_text(idx, names[i - 1], tl_wins[i]);
+                                 char tl_wins[TL_MAX_WINDOWS][2048], int tl_nw) {
+    /* (N-window law) prompt2..promptN for EVERY window of the card. */
+    for (int i = 1; i < tl_nw; i++) {
+        char nm[24];
+        snprintf(nm, sizeof(nm), "prompt%d", i + 1);
+        add_run_input_text(idx, nm, tl_wins[i]);
     }
     /* audio guide track: stage the file into ComfyUI's input dir and expose
      * the bare filename as the "audio" run input (pipeline_audio.yaml
@@ -1388,13 +1492,16 @@ static void handle_pipelines_start(const httplib::Request &req,
      *   {model,...}             - flat generation (default)
      */
     char model[64] = "", prompt[2048] = "";
-    char tl_wins[4][2048];   /* (audit F2) LOCAL: per-request window prompts */
-    int  tl_wins_len[4] = {0,0,0,0}; /* grid law: ON-GRID sampled length per window */
-    int  tl_spans[4] = {0,0,0,0};    /* grid law: ACTUAL tile per window (sampled - trim) */
+    /* (audit F2) LOCAL per-request window prompts. (N-window law) sized
+     * to TL_MAX_WINDOWS: one card may carry up to 128 calls. */
+    static thread_local char tl_wins[TL_MAX_WINDOWS][2048];
+    int  tl_wins_len[TL_MAX_WINDOWS];
+    int  tl_spans[TL_MAX_WINDOWS];
+    for (int i = 0; i < TL_MAX_WINDOWS; i++) { tl_wins_len[i] = 0; tl_spans[i] = 0; }
     char tl_cctx_draft[32] = {0};    /* grid law: card-level pin-window override from the draft */
     int  tl_nw = 0;
     long seed = -1;
-    char yaml_override[4096] = "";
+    char yaml_override[131072] = "";   /* N-window law: holds expanded graphs */
     const char *body = req.body.c_str();
 
     /* Shape: {route:true} -> 501 */
@@ -1520,12 +1627,16 @@ static void handle_pipelines_start(const httplib::Request &req,
                     if (*k2 == ':') total_calls++;
                     w += 11;
                 }
-                if (total_calls > 4) {
+                /* (N-window law, 2026-08-31) the 4-call cap is DEAD: ONE
+                 * card carries every call and the gateway EXPANDS the run
+                 * graph to N windows. The only remaining bound is the
+                 * run-yaml buffer (TL_MAX_WINDOWS), stated loudly. */
+                if (total_calls > TL_MAX_WINDOWS) {
                     res.status = 400;
                     char err[240];
                     snprintf(err, sizeof(err),
-                             "{\"error\":\"calls document has %d calls but the h3-timeline graph renders max 4 windows per run; split into chained runs (continue_from)\"}",
-                             total_calls);
+                             "{\"error\":\"calls document has %d calls; the run graph buffer holds %d windows per run (engineering bound, not a card limit)\"}",
+                             total_calls, TL_MAX_WINDOWS);
                     res.set_content(err, "application/json");
                     return;
                 }
@@ -1869,13 +1980,22 @@ static void handle_pipelines_start(const httplib::Request &req,
     if (piped) {
         /* route artifacts into this run's dir: swap every out_dir literal */
         {
-            char fixed[2048];
+            /* (N-window law) heap: the expanded yaml can be 100KB+ */
+            size_t fixedcap = sizeof(g_runs[idx].yaml) + 512;
+            char *fixed = (char *)malloc(fixedcap);
+            if (!fixed) {
+                run_set_state(idx, "error", "out_dir rewrite OOM");
+                res.status = 500;
+                res.set_content("{\"error\":\"out_dir rewrite OOM\"}",
+                                "application/json");
+                return;
+            }
             size_t o = 0;
             const char *p = g_runs[idx].yaml;
             const char needle[] = "\"out_dir\":\"./output\"";
-            while (*p && o < sizeof(fixed) - 128) {
+            while (*p && o < fixedcap - 128) {
                 if (strncmp(p, needle, sizeof(needle) - 1) == 0) {
-                    o += (size_t)snprintf(fixed + o, sizeof(fixed) - o,
+                    o += (size_t)snprintf(fixed + o, fixedcap - o,
                                           "\"out_dir\":\"%s\"",
                                           g_runs[idx].out_dir);
                     p += sizeof(needle) - 1;
@@ -1885,6 +2005,7 @@ static void handle_pipelines_start(const httplib::Request &req,
             }
             fixed[o] = 0;
             snprintf(g_runs[idx].yaml, sizeof(g_runs[idx].yaml), "%s", fixed);
+            free(fixed);
         }
         if (prompt[0]) add_run_input_text(idx, "prompt", prompt);
         if (inf_json_string(req.body.c_str(), "lyrics",
@@ -1915,6 +2036,23 @@ static void handle_pipelines_start(const httplib::Request &req,
         return;
     }
     } /* end if(!yaml_override) */
+
+    /* (N-window law, 2026-08-31) ONE card = N calls = ONE run: expand the
+     * static 4-window graph to tl_nw windows BEFORE the per-window inject
+     * splices (which then anchor on every clone's seed key). Failure is
+     * loud — a card with more calls than the buffer holds is rejected,
+     * never silently truncated. */
+    if (tl_nw > 0 && tl_expand_windows(g_runs[idx].yaml,
+                                       sizeof(g_runs[idx].yaml), tl_nw) != 0) {
+        run_set_state(idx, "error",
+                      "timeline N-window expansion failed (graph anchors "
+                      "or run-yaml buffer)");
+        res.status = 500;
+        res.set_content(
+            "{\"error\":\"timeline N-window expansion failed (graph anchors or run-yaml buffer)\"}",
+            "application/json");
+        return;
+    }
 
     /* (grid law, 2026-08-31) each window samples its ON-GRID tile length
      * (window 1) or tile + pack-trim (seam windows); the in-graph pack
@@ -1964,7 +2102,7 @@ static void handle_pipelines_start(const httplib::Request &req,
     if (tl_nw > 0) {
         int tlfps = inf_json_int(body, "fps", 24);
         if (tlfps <= 0) tlfps = 24;
-        char spansj[128];
+        char spansj[1280];   /* N-window law: up to 128 spans */
         int so = snprintf(spansj, sizeof(spansj), ",\"spans\":[");
         for (int i = 0; i < tl_nw; i++)
             so += snprintf(spansj + so, sizeof(spansj) - so, "%s%.4f",
@@ -1994,13 +2132,12 @@ static void handle_pipelines_start(const httplib::Request &req,
             int tot = 0;
             for (int i = 0; i < tl_nw; i++) tot += tl_spans[i];
             fprintf(stderr,
-                    "[timeline] grid law: trim=%d tiles=[%d,%d,%d,%d] "
-                    "sampled=[%d,%d,%d,%d] total=%df/%.3fs\n",
-                    trimeff,
+                    "[timeline] grid law: windows=%d trim=%d "
+                    "tiles=[%d,%d,%d,%d%s] total=%df/%.3fs\n",
+                    tl_nw, trimeff,
                     tl_spans[0], tl_nw > 1 ? tl_spans[1] : -1,
                     tl_nw > 2 ? tl_spans[2] : -1, tl_nw > 3 ? tl_spans[3] : -1,
-                    tl_wins_len[0], tl_nw > 1 ? tl_wins_len[1] : -1,
-                    tl_nw > 2 ? tl_wins_len[2] : -1, tl_nw > 3 ? tl_wins_len[3] : -1,
+                    tl_nw > 4 ? ",..." : "",
                     tot, (double)tot / tlfps);
         }
     }

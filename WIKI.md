@@ -584,3 +584,33 @@ the designed escape working as intended). FIX: scan the quoted value
 (tl_scan_context_length) in the loader too. LESSON: ComfyUI combo
 widgets are strings even when they carry numbers - never atoi a
 widget value you have not type-checked.
+
+## THE 4-CALL CAP WAS PACKAGING, NOT A LAW (N-WINDOW LAW, 2026-08-31)
+
+The card's contract: ONE card = N calls = ONE run = ONE film. The static
+pipeline.yaml shipped 4 hand-wired window stages, and the >4 guard
+existed to enforce that artifact. Fixing the dead counter made the lie
+louder; the right fix was deleting the cap. Now `tl_expand_windows()`
+expands the run graph in-memory: the window2 stage is the seam PROTOTYPE;
+clone k gets a unique id, its own `$promptK` key, and clip-slot injects
+(LoadLatent k-1 / SaveLatent k); the stitch input_from is rebuilt for N.
+Buffers resized to hold it (yaml 128KB, stages 136, inputs 144,
+CONCAT_MAX_IN 160). The only bound left is TL_MAX_WINDOWS=128 — a
+buffer-derived engineering bound, stated loudly in the reject, never a
+product limit on film length. Proof run-6a941418: 6 calls -> windows
+90/85/85/85/85/85, stitch 515f/21.458333s EXACT, 5x length=107 injects,
+every window carrying its own prompt, one run id, one film delivered.
+
+## THE EATEN QUOTE (2026-08-31)
+
+The first expansion attempt corrupted every clone stage: the patch scan
+jumped from the `$promptK` needle straight to the closing `}` of the
+inject map, eating the value's closing quote. `"$prompt5,` is not JSON;
+the plugin's law (corrupt/unresolved inject -> workflow default stands)
+silently dropped the WHOLE inject map, so windows 2-6 rendered on baked
+defaults (length 56, slot 1->2, same seed) -> byte-identical 34-frame
+windows (56 sampled - 22 trim). Caught via the run sidecar
+`_pipeline.json`: the raw yaml held the poison. Two lessons: (1) validate
+generated JSON by PARSING it, never by regex-groping keys — the first
+sim "passed" while emitting broken JSON; (2) the sidecar yaml is ground
+truth for what the runner actually executed.
