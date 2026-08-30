@@ -3556,7 +3556,7 @@ static void handle_form_spec(const httplib::Request &req,
                      model.c_str());
             if (system(probe) == 0) {
                 res.set_content(
-                    "{\"defaults\":{},\"variants\":[],\"enhance_prompts\":\"\"}",
+                    "{\"defaults\":{},\"variants\":[],\"features\":{},\"enhance_prompts\":\"\"}",
                     "application/json");
                 return;
             }
