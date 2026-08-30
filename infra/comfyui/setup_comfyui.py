@@ -113,8 +113,8 @@ def apply_patches(name, patches_rel, target):
     """Run a post-clone patch script against a freshly cloned extension.
 
     The ``patches`` field in a plugin nodes/extensions.yaml entry names a shell script
-    (relative to infra/docker/patches/) that applies melite-fork patches to
-    the upstream clone. The Dockerfile COPYs infra/docker/patches/ →
+    (relative to infra/comfyui/patches/) that applies melite-fork patches to
+    the upstream clone. The Dockerfile COPYs infra/comfyui/patches/ →
     /tmp/patches/. This function runs the script with the extension's
     custom_nodes/ directory as the working tree.
 
@@ -156,9 +156,10 @@ def main():
         if not url:
             # In-tree extension (no git repo to clone). Copy from the
             # Docker build context staging directory into custom_nodes/.
-            # The Dockerfile COPYs custom_nodes/<name> →
-            # /tmp/in-tree-packs/<name> (the list there MUST mirror the
-            # url-less lane entries).
+            # The Dockerfile COPYs plugins/comfyui/custom_nodes/<name> →
+            # /tmp/in-tree-packs/<name> (ONE PATTERN: the url-less lane
+            # entries in plugins/comfyui/nodes/extensions.yaml are the
+            # authoritative list).
             source = os.path.join("/tmp/in-tree-packs", name)
             if os.path.isdir(target):
                 shutil.rmtree(target)

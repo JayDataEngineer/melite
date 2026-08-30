@@ -1,0 +1,163 @@
+From b518a9009fa2abf43d857a9f64f9d18aacaf8738 Mon Sep 17 00:00:00 2001
+From: JayDataEngineer <262154717+JayDataEngineer@users.noreply.github.com>
+Date: Fri, 28 Aug 2026 03:51:09 +0000
+Subject: [PATCH 3/3] h3: seam context - multi-frame head pin keyframes +
+ backwards audio window (ends at join)
+
+---
+ comfy/ldm/minimax/model.py       | 35 +++++++++++++++++-----
+ comfy_extras/nodes_minimax_h3.py | 51 +++++++++++++++++++++++++++++---
+ 2 files changed, 74 insertions(+), 12 deletions(-)
+
+diff --git a/comfy/ldm/minimax/model.py b/comfy/ldm/minimax/model.py
+index 3e38e15..4d7701a 100644
+--- a/comfy/ldm/minimax/model.py
++++ b/comfy/ldm/minimax/model.py
+@@ -307,6 +307,19 @@ class PackedLayout:
+             # fl2va: keyframe cond rows right after text, sharing the target spatial grid.
+             # Audio-only keyframes (soundtrack anchors without a visual guide)
+             # contribute audio rows at the anchor time and no visual rows.
++            #
++            # SEAM CONTEXT (2026-08-28): a keyframe "latent" may carry a
++            # MULTI-FRAME tail pack [1,24,L,h,w] — L latent frames from the
++            # previous window's end. Those L frames pin at this clip's HEAD
++            # times (_video_t_grid(L, cond_t), identical to the target grid's
++            # first L frames) so the model regenerates the carried motion;
++            # the gateway trims those frames from the delivery before concat.
++            # A keyframe with audio_backwards=True places its audio window
++            # ENDING at the join (cursor cond_t-rt) instead of starting at
++            # it: rows tile flush against this clip's target audio
++            # [cond_t, ...) with no overlap, so the model reads them as
++            # "this clip, earlier" — a continuation — rather than "a
++            # separate clip that sounds like this" — a sound-alike take.
+             for kf in keyframes:
+                 pixel_index = kf["resolved_frame_index"]
+                 if pixel_index == 0:
+@@ -316,20 +329,26 @@ class PackedLayout:
+                 else:
+                     raise ValueError("only first/last keyframe anchors are supported")
+                 if "latent" in kf:
+-                    g = torch.empty(frame_rows, 3, dtype=torch.float64)
+-                    g[:, 0] = cond_t
+-                    g[:, 1:] = frame
+-                    segments.append(("cond", frame_rows))
++                    z = kf["latent"]
++                    n_ctx = int(z.shape[2]) if z.dim() == 5 else 1
++                    g = torch.empty(n_ctx * frame_rows, 3, dtype=torch.float64)
++                    if n_ctx > 1:
++                        g[:, 0] = _video_t_grid(n_ctx, cond_t).repeat_interleave(frame_rows)
++                    else:
++                        g[:, 0] = cond_t
++                    g[:, 1:] = frame.repeat(n_ctx, 1)
++                    segments.append(("cond", n_ctx * frame_rows))
+                     pos.append(g)
+-                    img_pos.append(torch.arange(row, row + frame_rows))
+-                    img_update.append(torch.zeros(frame_rows, dtype=torch.bool))
+-                    row += frame_rows
++                    img_pos.append(torch.arange(row, row + n_ctx * frame_rows))
++                    img_update.append(torch.zeros(n_ctx * frame_rows, dtype=torch.bool))
++                    row += n_ctx * frame_rows
+                 if kf.get("audio_latent") is not None:
+                     rt = int(kf.get("audio_rt", 0))
+                     if rt > 0:
+                         # same row kind as ref audio blocks: tag 2, packed audio rows
+                         segments.append(("ref_audio", rt * 2))
+-                        pos.append(_audio_grid(cond_t, rt, *target_audio_w))
++                        acursor = cond_t - rt if kf.get("audio_backwards") else cond_t
++                        pos.append(_audio_grid(acursor, rt, *target_audio_w))
+                         audio_pos.append(torch.arange(row, row + rt * 2))
+                         audio_update.append(torch.zeros(rt * 2, dtype=torch.bool))
+                         row += rt * 2
+diff --git a/comfy_extras/nodes_minimax_h3.py b/comfy_extras/nodes_minimax_h3.py
+index 5bc1dfc..23eb85b 100644
+--- a/comfy_extras/nodes_minimax_h3.py
++++ b/comfy_extras/nodes_minimax_h3.py
+@@ -92,6 +92,36 @@ def _seam_latent(prev_samples):
+     return video[:, :, -1:, :, :]
+ 
+ 
++def _seam_tail(prev_samples, video_steps, audio_steps):
++    """Slice a motion-context tail (video) + a backwards audio window from a
++    prior window's AV latent pack. video_steps L: latent frames from the end
++    (1 = the classic single-frame seam). audio_steps A: audio latent steps
++    from the end (0 = none). Returns (video_tail, audio_tail) raw latents —
++    no decode, no re-encode; the numbers the model produced are the numbers
++    the next window is conditioned on."""
++    s = prev_samples["samples"] if isinstance(prev_samples, dict) else prev_samples
++    if getattr(s, "is_nested", False):
++        parts = s.unbind()
++        video, audio = parts[0], parts[1]
++    else:
++        raise ValueError("seam context expects the joint AV pack (video+audio)")
++    if video.ndim != 5 or video.shape[1] != 24:
++        raise ValueError("first_frame_latent expects a MiniMax H3 AV latent (video [B,24,T,h,w])")
++    L = max(1, int(video_steps))
++    if L > video.shape[2]:
++        raise ValueError("context_steps {} exceeds the prior window's latent depth {}".format(L, video.shape[2]))
++    video_tail = video[:, :, -L:, :, :]
++    audio_tail = None
++    A = int(audio_steps)
++    if A > 0:
++        if audio is None or audio.dim() != 4:
++            raise ValueError("audio_context_steps > 0 needs the prior pack's audio stream [B,32,2,T]")
++        if A > audio.shape[-1]:
++            raise ValueError("audio_context_steps {} exceeds the prior window's audio depth {}".format(A, audio.shape[-1]))
++        audio_tail = audio[:, :, :, -A:]
++    return video_tail, audio_tail
++
++
+ def _empty_av_latent(width, height, length, batch_size=1):
+     frame_count, latent_t, audio_t = temporal_shape(length)
+     video = torch.zeros([batch_size, 24, latent_t, height // 16, width // 16],
+@@ -143,13 +173,18 @@ class MiniMaxH3ImageToVideo(io.ComfyNode):
+                 io.Image.Input("last_frame", optional=True),
+                 io.Latent.Input("first_frame_latent", optional=True,
+                                 tooltip="Prior window's H3 AV latent: its raw last-frame video latent is injected as the frame-0 keyframe with NO decode/encode roundtrip (decoded once only for the vision tokens). Canvas must match."),
++                io.Int.Input("context_steps", default=1, min=1, max=32,
++                             tooltip="Latent frames of the prior window's tail to pin as this clip's motion context (1 = single-frame seam; 6-7 ≈ 22 pixel frames ≈ 0.9s is the field-tested sweet spot). The pinned head regenerates the carried motion; the gateway trims it from delivery."),
++                io.Int.Input("audio_context_steps", default=0, min=0, max=160,
++                             tooltip="Audio latent steps of tail sound to pin ENDING at the join (40 = 1s at 40Hz). Backwards-reaching window: the model continues the same recording instead of writing a sound-alike. 0 = off."),
+             ],
+             outputs=[io.Conditioning.Output(display_name="positive"), io.Latent.Output()],
+         )
+ 
+     @classmethod
+     def execute(cls, clip, vae, prompt, width, height, length,
+-                first_frame=None, last_frame=None, first_frame_latent=None) -> io.NodeOutput:
++                first_frame=None, last_frame=None, first_frame_latent=None,
++                context_steps=1, audio_context_steps=0) -> io.NodeOutput:
+         latent, frame_count = _empty_av_latent(width, height, length)
+ 
+         images = []
+@@ -168,17 +203,25 @@ class MiniMaxH3ImageToVideo(io.ComfyNode):
+         if first_frame_latent is not None:
+             if first_frame is not None:
+                 raise ValueError("give either first_frame (image) or first_frame_latent, not both")
+-            seam = _seam_latent(first_frame_latent)
++            seam, seam_audio = _seam_tail(first_frame_latent, context_steps, audio_context_steps)
+             if tuple(seam.shape[3:5]) != (height // 16, width // 16):
+                 raise ValueError("first_frame_latent is {}x{} but the canvas is {}x{}; match the window canvas".format(
+                     seam.shape[4] * 16, seam.shape[3] * 16, width, height))
+-            img = vae.decode(seam)
++            img = vae.decode(seam[:, :, -1:, :, :])
+             if img.ndim == 5:
+                 # comfy VAE wrapper: [B, T, H, W, C] with T=1 for a single-frame latent
+                 img = img[:, 0]
+             img = _resize(img, width, height, "disabled")
+             images.append(img)
+-            keyframes.append({"resolved_frame_index": 0, "latent": seam})  # raw latent: no encode
++            # SEAM CONTEXT: the multi-frame tail pins at this clip's head;
++            # the tail-audio window rides as a backwards-reaching keyframe
++            # (ends at the join — continuation, not a reference take).
++            kf = {"resolved_frame_index": 0, "latent": seam}  # raw latent: no encode
++            if seam_audio is not None:
++                kf["audio_latent"] = seam_audio
++                kf["audio_rt"] = int(seam_audio.shape[-1])
++                kf["audio_backwards"] = True
++            keyframes.append(kf)
+ 
+         tokens = clip.tokenize(prompt, images=images)
+         cond = clip.encode_from_tokens_scheduled(tokens)
+-- 
+2.53.0
+

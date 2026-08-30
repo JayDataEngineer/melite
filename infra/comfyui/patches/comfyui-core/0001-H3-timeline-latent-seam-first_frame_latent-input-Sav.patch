@@ -1,0 +1,281 @@
+From c37888e30894e6a3a639d7102f552c21f8c788b1 Mon Sep 17 00:00:00 2001
+From: ray <ray@local>
+Date: Thu, 27 Aug 2026 20:31:35 +0000
+Subject: [PATCH 1/3] H3 timeline latent seam: first_frame_latent input,
+ SaveLatent/LoadLatent .h3latent pack nodes, AddGuide backport
+
+---
+ comfy_extras/nodes_minimax_h3.py | 199 ++++++++++++++++++++++++++++++-
+ 1 file changed, 197 insertions(+), 2 deletions(-)
+
+diff --git a/comfy_extras/nodes_minimax_h3.py b/comfy_extras/nodes_minimax_h3.py
+index 0b1840e..b182f35 100644
+--- a/comfy_extras/nodes_minimax_h3.py
++++ b/comfy_extras/nodes_minimax_h3.py
+@@ -10,9 +10,14 @@ audio stream's shifted schedule internally).
+ """
+ 
+ import math
++import os
++import hashlib
+ 
+ import torch
+ import torchaudio
++import safetensors.torch
++
++import folder_paths
+ 
+ import nodes
+ import comfy.model_management
+@@ -20,6 +25,7 @@ import comfy.model_sampling
+ import comfy.nested_tensor
+ import comfy.utils
+ import node_helpers
++from comfy.ldm.minimax.model import FRAME_PER_TOKEN, FRAME_RESCALE
+ from comfy_api.latest import ComfyExtension, io
+ 
+ CANVAS_MULTIPLE = 32
+@@ -67,6 +73,25 @@ def _resize(image, width, height, crop):
+     return samples.movedim(1, -1)
+ 
+ 
++def _encode_ref_audio(audio_vae, audio):
++    waveform = audio["waveform"]  # [B, C, L]
++    sr = audio["sample_rate"]
++    vae_sr = getattr(audio_vae, "audio_sample_rate", 32000)
++    if sr != vae_sr:
++        waveform = torchaudio.functional.resample(waveform, sr, vae_sr)
++    z = audio_vae.encode(waveform[:1].movedim(1, -1))  # [1, 32, 2, T]
++    return z, z.shape[-1]
++
++
++def _seam_latent(prev_samples):
++    """Extract the raw last-video-frame latent from a prior window's AV pack."""
++    s = prev_samples["samples"] if isinstance(prev_samples, dict) else prev_samples
++    video = s.unbind()[0] if getattr(s, "is_nested", False) else s
++    if video.ndim != 5 or video.shape[1] != 24:
++        raise ValueError("first_frame_latent expects a MiniMax H3 AV latent (video [B,24,T,h,w])")
++    return video[:, :, -1:, :, :]
++
++
+ def _empty_av_latent(width, height, length, batch_size=1):
+     frame_count, latent_t, audio_t = temporal_shape(length)
+     video = torch.zeros([batch_size, 24, latent_t, height // 16, width // 16],
+@@ -116,13 +141,15 @@ class MiniMaxH3ImageToVideo(io.ComfyNode):
+                 io.Int.Input("length", default=124, min=5, max=3600, step=17, tooltip="Frame count at 24 fps, snapped up to the model's 17k+5 grid (124 = ~5s; trained range is ~124-362, longer is untested)"),
+                 io.Image.Input("first_frame", optional=True),
+                 io.Image.Input("last_frame", optional=True),
++                io.Latent.Input("first_frame_latent", optional=True,
++                                tooltip="Prior window's H3 AV latent: its raw last-frame video latent is injected as the frame-0 keyframe with NO decode/encode roundtrip (decoded once only for the vision tokens). Canvas must match."),
+             ],
+             outputs=[io.Conditioning.Output(display_name="positive"), io.Latent.Output()],
+         )
+ 
+     @classmethod
+     def execute(cls, clip, vae, prompt, width, height, length,
+-                first_frame=None, last_frame=None) -> io.NodeOutput:
++                first_frame=None, last_frame=None, first_frame_latent=None) -> io.NodeOutput:
+         latent, frame_count = _empty_av_latent(width, height, length)
+ 
+         images = []
+@@ -138,12 +165,28 @@ class MiniMaxH3ImageToVideo(io.ComfyNode):
+             images.append(img)
+             keyframes.append({"resolved_frame_index": frame_count - 1, "image": img})
+ 
++        if first_frame_latent is not None:
++            if first_frame is not None:
++                raise ValueError("give either first_frame (image) or first_frame_latent, not both")
++            seam = _seam_latent(first_frame_latent)
++            if tuple(seam.shape[3:5]) != (height // 16, width // 16):
++                raise ValueError("first_frame_latent is {}x{} but the canvas is {}x{}; match the window canvas".format(
++                    seam.shape[4] * 16, seam.shape[3] * 16, width, height))
++            img = vae.decode(seam)
++            if img.ndim == 5:
++                # comfy VAE wrapper: [B, T, H, W, C] with T=1 for a single-frame latent
++                img = img[:, 0]
++            img = _resize(img, width, height, "disabled")
++            images.append(img)
++            keyframes.append({"resolved_frame_index": 0, "latent": seam})  # raw latent: no encode
++
+         tokens = clip.tokenize(prompt, images=images)
+         cond = clip.encode_from_tokens_scheduled(tokens)
+ 
+         if keyframes:
+             for kf in keyframes:
+-                kf["latent"] = vae.encode(kf.pop("image"))
++                if "latent" not in kf:
++                    kf["latent"] = vae.encode(kf.pop("image"))
+             cond = node_helpers.conditioning_set_values(cond, {
+                 "minimax_keyframes": keyframes,
+                 "minimax_frame_count": frame_count,
+@@ -280,6 +323,155 @@ class MiniMaxH3ReferenceToVideo(io.ComfyNode):
+         return io.NodeOutput(cond, latent)
+ 
+ 
++class MiniMaxH3AddGuide(io.ComfyNode):
++    """Anchor image and/or audio guides at an arbitrary pixel frame of the target video."""
++
++    @classmethod
++    def define_schema(cls):
++        return io.Schema(
++            node_id="MiniMaxH3AddGuide",
++            display_name="Add Guide for MiniMax H3",
++            category="model/conditioning/minimax",
++            description="Anchor an image, a short clip, audio, or a clip with its soundtrack at any frame of a MiniMax H3 video. Chain several nodes to anchor several frames.",
++            inputs=[
++                io.Conditioning.Input("positive"),
++                io.Vae.Input("vae", optional=True, tooltip="Video VAE, needed when an image is connected."),
++                io.Vae.Input("audio_vae", optional=True, tooltip="Audio VAE, needed when an audio is connected."),
++                io.Latent.Input("latent"),
++                io.Image.Input("image", optional=True, tooltip="Image or video frames to anchor. Multi-frame batches are anchored as a clip and cropped down to the model's valid clip lengths: 5, 22, 39... (17k + 5) frames. Batches shorter than 5 frames use only the first image."),
++                io.Audio.Input("audio", optional=True,
++                               tooltip="Soundtrack to anchor starting at the same frame index, cropped to the video's remaining duration."),
++                io.Int.Input("frame_idx", default=0, min=-9999, max=9999,
++                             tooltip="Frame index to anchor the image or the clip's first frame at. Negative values are counted from the end of the video."),
++            ],
++            outputs=[io.Conditioning.Output(display_name="positive")],
++        )
++
++    @classmethod
++    def execute(cls, positive, latent, frame_idx, vae=None, audio_vae=None, image=None, audio=None) -> io.NodeOutput:
++        samples = latent["samples"]
++        if not samples.is_nested or len(samples.tensors) != 2 or samples.tensors[0].ndim != 5 or samples.tensors[0].shape[1] != 24:
++            raise ValueError("MiniMaxH3AddGuide expects a MiniMax H3 AV latent")
++        if image is None and audio is None:
++            raise ValueError("MiniMaxH3AddGuide needs an image or an audio to anchor")
++        video = samples.tensors[0]
++        height = video.shape[3] * 16
++        width = video.shape[4] * 16
++        frame_count = sum(FRAME_PER_TOKEN[k % 5] for k in range(video.shape[2]))
++
++        guide_frames = 1
++        if image is not None:
++            if vae is None:
++                raise ValueError("anchoring guide frames needs the vae input")
++            guide_frames = image.shape[0]
++            if guide_frames < 5:
++                guide_frames = 1
++            else:
++                while guide_frames % 17 != 5:
++                    guide_frames -= 1
++
++        resolved_frame_index = frame_idx if frame_idx >= 0 else frame_count + frame_idx
++        if resolved_frame_index < 0 or resolved_frame_index + guide_frames > frame_count:
++            if guide_frames == 1:
++                raise ValueError("frame_idx {} is outside the video's {} frames".format(frame_idx, frame_count))
++            raise ValueError("a {} frame guide clip at frame_idx {} does not fit in the video's {} frames".format(
++                guide_frames, frame_idx, frame_count))
++
++        keyframe = {"resolved_frame_index": resolved_frame_index}
++        if image is not None:
++            frames = _resize(image[:guide_frames], width, height, "center")
++            keyframe["latent"] = vae.encode(frames)
++
++        if audio is not None:
++            if audio_vae is None:
++                raise ValueError("anchoring guide audio needs the audio_vae input")
++            audio_latent, audio_rt = _encode_ref_audio(audio_vae, audio)
++            max_rt = math.floor(samples.tensors[1].shape[-1] - FRAME_RESCALE * resolved_frame_index)
++            if max_rt < 1:
++                raise ValueError("frame_idx {} is past the end of the video's audio track".format(frame_idx))
++            if audio_rt > max_rt:
++                audio_latent = audio_latent[..., :max_rt].clone()
++            keyframe["audio_latent"] = audio_latent
++
++        keyframes = list(positive[0][1].get("minimax_keyframes", []))
++        keyframes.append(keyframe)
++        positive = node_helpers.conditioning_set_values(positive, {"minimax_keyframes": keyframes})
++        return io.NodeOutput(positive)
++
++
++class MiniMaxH3SaveLatent(io.ComfyNode):
++    """Persist a MiniMax H3 AV latent pack (video+audio NestedTensor) to disk."""
++
++    @classmethod
++    def define_schema(cls):
++        return io.Schema(
++            node_id="MiniMaxH3SaveLatent",
++            display_name="Save MiniMax H3 Latent",
++            category="model/latent/minimax",
++            description="Writes the joint video+audio H3 latent pack as a .h3latent safetensors file (video + audio tensors) for lossless cross-run seams.",
++            inputs=[
++                io.Latent.Input("samples"),
++                io.String.Input("filename_prefix", default="h3latents/seam"),
++            ],
++            outputs=[io.Latent.Output()],
++            is_output_node=True,
++        )
++
++    @classmethod
++    def execute(cls, samples, filename_prefix) -> io.NodeOutput:
++        s = samples["samples"]
++        if not getattr(s, "is_nested", False) or len(s.tensors) != 2:
++            raise ValueError("MiniMaxH3SaveLatent expects a MiniMax H3 AV latent pack")
++        out_dir = folder_paths.get_output_directory()
++        full_dir, filename, counter, subfolder, prefix = folder_paths.get_save_image_path(filename_prefix, out_dir)
++        file = "{}_{:05}_.h3latent".format(filename, counter)
++        path = os.path.join(full_dir, file)
++        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
++        safetensors.torch.save_file({
++            "video": s.tensors[0].detach().to("cpu", torch.float32, non_blocking=False).contiguous(),
++            "audio": s.tensors[1].detach().to("cpu", torch.float32, non_blocking=False).contiguous(),
++            "format": torch.tensor([]),
++        }, path)
++        return io.NodeOutput(samples, ui={"h3latents": [{"filename": file, "subfolder": subfolder, "type": "output"}]})
++
++
++
++class MiniMaxH3LoadLatent(io.ComfyNode):
++    """Load a MiniMax H3 AV latent pack saved by MiniMaxH3SaveLatent."""
++
++    @classmethod
++    def define_schema(cls):
++        return io.Schema(
++            node_id="MiniMaxH3LoadLatent",
++            display_name="Load MiniMax H3 Latent",
++            category="model/latent/minimax",
++            description="Reads a .h3latent pack back as an H3 AV latent (NestedTensor video+audio).",
++            inputs=[
++                io.String.Input("latent", default="", multiline=False,
++                                tooltip=".h3latent filename inside ComfyUI's input directory"),
++            ],
++            outputs=[io.Latent.Output()],
++        )
++
++    @classmethod
++    def execute(cls, latent) -> io.NodeOutput:
++        path = folder_paths.get_annotated_filepath(latent)
++        data = safetensors.torch.load_file(path, device="cpu")
++        if "video" not in data or "audio" not in data:
++            raise ValueError("{} is not a .h3latent pack".format(latent))
++        dev = comfy.model_management.intermediate_device()
++        pack = comfy.nested_tensor.NestedTensor((data["video"].to(dev), data["audio"].to(dev)))
++        return io.NodeOutput({"samples": pack})
++
++    @classmethod
++    def IS_CHANGED(cls, latent):
++        path = folder_paths.get_annotated_filepath(latent)
++        m = hashlib.sha256()
++        with open(path, 'rb') as f:
++            m.update(f.read())
++        return m.digest().hex()
++
++
+ class MiniMaxH3SigmaShift(io.ComfyNode):
+     """Set the video/audio flow shifts coherently.
+ 
+@@ -329,8 +521,11 @@ class MiniMaxH3Extension(ComfyExtension):
+         return [
+             EmptyMiniMaxH3LatentAV,
+             MiniMaxH3ImageToVideo,
++            MiniMaxH3AddGuide,
+             MiniMaxH3ReferenceToVideo,
+             MiniMaxH3SigmaShift,
++            MiniMaxH3SaveLatent,
++            MiniMaxH3LoadLatent,
+             ]
+ 
+ 
+-- 
+2.53.0
+

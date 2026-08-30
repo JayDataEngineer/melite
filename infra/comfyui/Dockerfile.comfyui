@@ -1,6 +1,8 @@
 # inference.cpp ComfyUI image — adapted from ray's Tech Noir image (2026-08-26).
-# The extension lane SSOT now lives HERE: plugins/gens/nodes/extensions.yaml.
-# Build prep: bash infra/comfyui/sync_packs.sh (stages in-tree packs + paths).
+# The extension lane SSOT: plugins/comfyui/nodes/extensions.yaml
+# (ONE PATTERN — every extension link lives there; no manifests, no
+# mirrors). In-tree pack code is git-tracked at
+# plugins/comfyui/custom_nodes/ and COPYd below — no staging step.
 #
 # One image, one GPU owner: a pinned upstream ComfyUI with the ComfyUI-Manager
 # baked in, plus every custom-node pack the plugins declare in their lane
@@ -32,15 +34,17 @@
 #   the server-js graph DSL emits exactly that, so the pin is load-bearing.
 #
 # Build (repo root as context):
-#   docker build -f infra/docker/Dockerfile.comfyui \
+#   docker build -f infra/comfyui/Dockerfile.comfyui \
 #     -t forge-reg.local:30500/tech-noir/comfyui:cu130 .
 #   → `docker compose up -d inference-comfyui` serves it at :18465.
 #
-# To add an extension: edit the owning plugin's nodes/extensions.yaml
+# To add an extension: edit plugins/comfyui/nodes/extensions.yaml
 # (name/url/ref/pip/patches). This file never changes for new content.
 #
-# Host dev without Docker: `task dev:comfyui` provisions /opt/ComfyUI at the
-# same pin (dev_bootstrap_comfyui.py) + the same lane (sync_local_comfyui.py).
+# Host dev without Docker: infra/comfyui/bootstrap.sh --core --lane
+# provisions /opt/ComfyUI at the HOST pin (2f35f4a + seam patches — see
+# patches/comfyui-core/PIN.md; note this image's pin below is a
+# different, upstream-only feature set).
 
 FROM yanwk/comfyui-boot:cu130-megapak-pt211
 
@@ -113,13 +117,13 @@ COPY infra/comfyui/stage/extra_model_paths.yaml /tmp/extra_model_paths.yaml
 COPY infra/comfyui/patches/ /tmp/patches/
 COPY infra/comfyui/extension_lane.py /tmp/extension_lane.py
 COPY infra/comfyui/setup_comfyui.py /tmp/setup_comfyui.py
-# In-tree node packs (no git URL — deployed from the repo's custom_nodes/
-# url-less lane entries (mirrored by sync_packs.sh — the list there is authoritative)
-COPY custom_nodes/melite-anigen-nodes /tmp/in-tree-packs/melite-anigen-nodes
-COPY custom_nodes/melite-autorig-nodes /tmp/in-tree-packs/melite-autorig-nodes
-COPY custom_nodes/melite-seethrough-nodes /tmp/in-tree-packs/melite-seethrough-nodes
-COPY custom_nodes/melite-step1x-nodes /tmp/in-tree-packs/melite-step1x-nodes
-COPY custom_nodes/melite-stretchy-nodes /tmp/in-tree-packs/melite-stretchy-nodes
+# In-tree node packs (no git URL — declared url-less in the lane;
+# code is git-tracked at plugins/comfyui/custom_nodes/<name>)
+COPY plugins/comfyui/custom_nodes/melite-anigen-nodes /tmp/in-tree-packs/melite-anigen-nodes
+COPY plugins/comfyui/custom_nodes/melite-autorig-nodes /tmp/in-tree-packs/melite-autorig-nodes
+COPY plugins/comfyui/custom_nodes/melite-seethrough-nodes /tmp/in-tree-packs/melite-seethrough-nodes
+COPY plugins/comfyui/custom_nodes/melite-step1x-nodes /tmp/in-tree-packs/melite-step1x-nodes
+COPY plugins/comfyui/custom_nodes/melite-stretchy-nodes /tmp/in-tree-packs/melite-stretchy-nodes
 RUN python3 /tmp/setup_comfyui.py && rm -rf /tmp/setup_comfyui.py /tmp/extension_lane.py /tmp/melite-plugins /tmp/in-tree-packs
 
 # The base image's entrypoint handles auto-start + supervisor; the port is

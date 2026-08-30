@@ -1,0 +1,16 @@
+diff --git a/comfy/ldm/minimax/model.py b/comfy/ldm/minimax/model.py
+index 4d7701a..6f52930 100644
+--- a/comfy/ldm/minimax/model.py
++++ b/comfy/ldm/minimax/model.py
+@@ -330,7 +330,10 @@ class PackedLayout:
+                     raise ValueError("only first/last keyframe anchors are supported")
+                 if "latent" in kf:
+                     z = kf["latent"]
+-                    n_ctx = int(z.shape[2]) if z.dim() == 5 else 1
++                    # len(shape) instead of Tensor.dim(): the h3_motion_context
++                    # layout self-test drives this path with a shape-only
++                    # stub latent, and torch tensors give the same answer.
++                    n_ctx = int(z.shape[2]) if len(z.shape) == 5 else 1
+                     g = torch.empty(n_ctx * frame_rows, 3, dtype=torch.float64)
+                     if n_ctx > 1:
+                         g[:, 0] = _video_t_grid(n_ctx, cond_t).repeat_interleave(frame_rows)

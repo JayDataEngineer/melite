@@ -46,60 +46,13 @@ if $DO_SERVER; then
   info "Server binary: build/inference_cli"
 fi
 
-# --- 4. ComfyUI setup ---
+# --- 4. ComfyUI setup (delegates to infra/comfyui/bootstrap.sh) ---
 if $DO_COMFYUI; then
-  COMFYUI_DIR="${COMFYUI_DIR:-/opt/ComfyUI}"
-  info "ComfyUI setup..."
-  if [ ! -d "$COMFYUI_DIR" ]; then
-    info "  Cloning ComfyUI to $COMFYUI_DIR..."
-    git clone https://github.com/comfyanonymous/ComfyUI.git "$COMFYUI_DIR"
-  fi
-  cd "$COMFYUI_DIR"
-  pip install -r requirements.txt 2>/dev/null || pip3 install -r requirements.txt
-  MANAGER="$COMFYUI_DIR/custom_nodes/ComfyUI-Manager"
-  if [ ! -d "$MANAGER" ]; then
-    info "  Installing ComfyUI-Manager..."
-    git clone https://github.com/ltdrdata/ComfyUI-Manager.git "$MANAGER"
-  fi
-  cd "$HERE"
-
-  # Install custom node packs from extensions.yaml
-  info "  Installing custom node packs into ComfyUI..."
-  python3 - "$COMFYUI_DIR" "$HERE" << 'INSTPY'
-import yaml, subprocess, sys, os
-comfyui_dir = sys.argv[1]
-project_dir = sys.argv[2]
-custom_nodes = os.path.join(comfyui_dir, "custom_nodes")
-ext_yaml = os.path.join(project_dir, "plugins/gens/nodes/extensions.yaml")
-if not os.path.exists(ext_yaml):
-    print(f"WARN: {ext_yaml} not found"); sys.exit(0)
-data = yaml.safe_load(open(ext_yaml))
-for ext in data.get("extensions", []):
-    name = ext["name"]
-    target = os.path.join(custom_nodes, name)
-    url = ext.get("url")
-    ref = ext.get("ref")
-    if url:
-        if not os.path.isdir(target):
-            print(f"  Cloning {name}")
-            subprocess.run(["git", "clone", url, target], check=True)
-            if ref:
-                subprocess.run(["git", "-C", target, "checkout", ref], check=True)
-    else:
-        source = os.path.join(project_dir, "custom_nodes", name)
-        if os.path.isdir(source) and not os.path.isdir(target):
-            print(f"  Symlinking {name}")
-            os.symlink(source, target)
-        elif os.path.isdir(target):
-            print(f"  {name} already present")
-        else:
-            print(f"  WARN: {name} source not found at {source}")
-    for pip_req in ext.get("pip", []):
-        print(f"  pip install {pip_req}")
-        subprocess.run([sys.executable, "-m", "pip", "install", pip_req], check=False)
-print("Custom node setup complete.")
-INSTPY
-  info "  ComfyUI ready at $COMFYUI_DIR"
+  info "ComfyUI setup (core @pin + lane SSOT + models)..."
+  bash "$HERE/infra/comfyui/bootstrap.sh" --core || error "bootstrap --core failed (see bootstrap output)"
+  bash "$HERE/infra/comfyui/bootstrap.sh" --lane || error "bootstrap --lane failed (see bootstrap output)"
+  bash "$HERE/infra/comfyui/bootstrap.sh" --models || error "bootstrap --models failed (see bootstrap output)"
+  info "  ComfyUI lane ready (core + $(grep -c 'name:' plugins/comfyui/nodes/extensions.yaml) declared packs + lane models)"
 fi
 
 # --- 5. Model provisioning ---
