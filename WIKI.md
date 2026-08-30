@@ -447,3 +447,37 @@ shell mid-command, leaving the real gateways alive.
 -f), then VERIFY with ss -tlnp that exactly ONE listener holds the port
 before believing any test result. NEVER pkill -x node on a DSH host —
 the harness itself is node.
+
+## CARD LAW MACHINERY (2026-08-30, PROVEN: 15.000s exact)
+
+The full chain, proven end-to-end on chase-scene-15s-v8:
+queue -> consumer -> skill_read(video-timeline) -> h3_timeline_card TOOL
+-> start {yaml, name, calls, seed, fps, draft_id} -> card-linked run ->
+exact-tile stitch (ffprobe 15.000000) -> deliver -> MCP complete.
+
+Laws (all machinery, prompts can no longer break them):
+1. PLUGIN SYSTEM: complex cards own their tools. tool.json sits BESIDE
+   the card's form (plugins/<owner>/cards/<card>/); GET /v1/card-tools
+   serves manifests; the DSH plugin registers one tool per manifest
+   (src/tools/card-tools.ts). Adding a card = adding its dir. NO godfile.
+2. CARD-LINKED RUNS: draft_id in the start body wins (with -1 stage
+   suffix resolution); the hardcoded draft-timeline-h3 fallback fires
+   only when no draft_id was sent.
+3. CARD-EXECUTES: a body with draft_id but no calls loads the calls
+   from the card document itself - the card IS the run definition.
+4. 400 ON CARD-LESS TIMELINE RUNS: bare prompt/params.prompt2..4 bodies
+   (consumer model improvisation, observed twice) are rejected loudly.
+5. EXACT-TILE STITCH: ffmpeg_concat gained "spans" (per-input -t cut);
+   the start door injects spans = call spans / fps. The in-graph seam
+   trim VARIES (7-22f observed) - only the stitch cut lands the tile.
+6. SEAM-HEAD RENDER LAW: seam windows render span + 19f (pv load) or
+   +22f (default t4) - pv sets the motion pin, NOT the output length.
+7. STRING-FORM CALLS: calls arrives either as array or JSON-encoded
+   string; escaped quotes (") broke the parser silently -> 1.66s stubs.
+   compile_calls_windows unescapes the string form first.
+8. QUEUE SNAPSHOT ITERATION: consumer iterates the pending SNAPSHOT;
+   a rejected request is skipped this pass. Loop-back-to-list caused
+   head-of-line starvation (19 rejections of the-last-signal while v8
+   waited behind it).
+9. The concat plugin .so has NO cmake target - build it by hand:
+   gcc -shared -fPIC -O2 -Iinclude plugins/ffmpeg/engines/concat/ffmpeg_concat_plugin.c -o build/ffmpeg_concat_plugin.so -lm
