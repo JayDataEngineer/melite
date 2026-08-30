@@ -99,35 +99,35 @@ A continuation card opens from a prior run's ending:
 
 ## ACTION CARD PILOTING (the card is the unit)
 
-The timeline action card composes via the build_pipeline TOOL — the same
-composer the GUI uses, with catalog defaults (seed 42, fps 24). It is a
-plain tool call, NOT MCP. MCP belongs to the ASSET QUEUE only
-(claim_asset_request / complete_asset_request).
+The timeline card composes via the READY-MADE CUSTOM TOOL
+`h3_timeline_card` — the tool the model receives for this complex
+non-form card (progressive disclosure: this skill names it; the tool's
+schema IS the card document). It is a plain tool call, NOT MCP. MCP
+belongs to the ASSET QUEUE only (claim_asset_request /
+complete_asset_request).
 
 The loop (agent law):
 
-1. COMPOSE: build_pipeline(model: "h3-timeline", params: {calls: [...],
-   seed: N, fps: 24}). ONE card carries ALL shots — never split a video
-   into multiple cards or runs. The tool lands a durable draft; the card
-   tile is the artifact of record.
+1. COMPOSE: h3_timeline_card(intent, calls: [...], seed?, fps?) — ONE
+   card carries ALL shots; the tool VALIDATES the document (contiguous
+   tiling from 0, seam law, artifact names not URLs, window budgets)
+   and returns the durable draft + runPlan (runs of 4 windows; chained
+   runs for longer films). Never split a video into multiple cards.
 2. RUN: submit the card's params to the queue start door —
-   POST /v1/pipelines/start {yaml: "h3-timeline", calls: [...], seed, fps}.
-   The run registers card-linked (draft linkage + card.json sidecar +
-   write-back on completion).
+   POST /v1/pipelines/start {yaml: "h3-timeline", calls: [...], seed,
+   fps, draft_id: "<the card's draftId>"} — the run registers
+   card-linked (draft linkage + card.json sidecar + write-back on
+   completion; the film lands INSIDE the card). For >4 calls follow
+   the returned runPlan: chained runs with continue_from, same
+   draft_id on every run.
 3. MONITOR: GET /v1/pipelines/status/<run_id> every 10 s. States:
    queued -> running -> completed | error. Plain HTTP.
-4. FIX: on error, read the exact stage error from the status doc, fix THE
-   CARD's params (prompts, calls, seams), resubmit. Max 3 retries.
+4. FIX: on error, read the exact stage error from the status doc, fix
+   THE CARD's params (prompts, calls, seams), resubmit. Max 3 retries.
 5. DELIVER: verify bytes on disk (ffprobe duration, md5), then — for
-   queue-born work — complete_asset_request(run_id, sha16 = first 16 hex
-   of the artifact's sha256). Never claim delivery without verified bytes.
-
-Rules:
-- Catalog defaults fill anything you omit; only author what differs.
-- The card draft + card.json sidecar + _request.json mean every run is
-  reconstructable forever — do not improvise side channels.
-- A re-run of an edited card re-renders only changed calls (per-window
-  cache): fix the shot that is wrong, keep the rest.
+   queue-born work — complete_asset_request(run_id, sha16 = first 16
+   hex of the artifact's sha256). Never claim delivery without
+   verified bytes.
 
 ## The loop
 

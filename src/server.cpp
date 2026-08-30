@@ -637,11 +637,41 @@ static char *pipeline_yaml_for_model(const char *model, char *out, size_t cap) {
  * POSTs could cross-wire their window prompts. Now compiled into a
  * LOCAL array at the registration call site and passed as a parameter. */
 
-static int compile_calls_windows(const char *body, char out[4][2048], int lens[4]) {
+static int compile_calls_windows(const char *body, char out[4][2048], int lens[4], int spans_out[4]) {
     const char *key = strstr(body, "\"calls\"");
     if (!key) return 0;
-    const char *calls = strchr(key + 7, '[');
-    if (!calls) return 0;
+    /* (2026-08-30 string-form law) callers send calls EITHER as a JSON
+     * array OR as a JSON-encoded STRING (the h3_timeline_card tool and
+     * the drafts door store the document as a string). Escaped quotes
+     * (\"start_frame\") make the array walker see one giant string and
+     * parse zero windows -> default 1.66s stub renders. Unescape the
+     * string form first so both shapes hit the same parser. */
+    char scratch[16384];
+    const char *calls = NULL;
+    {
+        const char *v = key + 7;                     /* past "calls" */
+        while (*v == ' ' || *v == '\t' || *v == '\n') v++;
+        if (*v == ':') v++;
+        while (*v == ' ' || *v == '\t' || *v == '\n') v++;
+        if (*v == '"') {                             /* string form */
+            size_t o = 0; v++;
+            while (*v && *v != '"' && o + 1 < sizeof(scratch)) {
+                if (*v == '\\' && v[1]) {
+                    char c2 = v[1];
+                    v += 2;
+                    if (c2 == 'n') scratch[o++] = '\n';
+                    else if (c2 == 't') scratch[o++] = '\t';
+                    else scratch[o++] = c2;          /* \" \\ etc: the char */
+                } else scratch[o++] = *v++;
+            }
+            scratch[o] = 0;
+            calls = strchr(scratch, '[');
+            if (!calls) return 0;
+        } else {
+            calls = strchr(key + 7, '[');
+            if (!calls) return 0;
+        }
+    }
     int depth = 0, in_str = 0, esc = 0, n = 0;
     const char *obj_start = NULL;
     for (const char *p = calls; *p; p++) {
@@ -704,21 +734,21 @@ static int compile_calls_windows(const char *body, char out[4][2048], int lens[4
                             if (m) ef = atoi(strchr(m, ':') + 1);
                             m = strstr(obj, "first_frame_prev_sec");
                             if (m) pv = atoi(strchr(m, ':') + 1);
-                            /* (2026-08-30 seam-head law) seam windows (index
-                             * > 0) render their span PLUS the pinned head the
-                             * in-graph Trim removes, so the tile lands exact.
-                             * The h3-timeline window*_t4 workflows pin 22
-                             * frames (0.91667s @ 24fps) on every seam window;
-                             * an explicit first_frame_prev_sec in the call
-                             * overrides (seconds x 24). Without this the seam
-                             * windows land 22 frames short each (observed:
-                             * 294/360 on a 15s spec). */
+                            /* (2026-08-30 seam-head law, empirical) the
+                             * in-graph Trim removes ~19 frames on seam
+                             * windows that carry a first_frame_prev_sec load
+                             * (the skill's "~19f = 0.8s" note; measured:
+                             * 138 rendered -> 119 landed) and ~22 on default
+                             * t4 seams (90 -> 68). pv sets the motion PIN
+                             * (conditioning), NOT the output length -- so the
+                             * render length is span + trim, and the tile
+                             * lands exact. */
                             {
                                 int head = 0;
                                 if (n > 0)
-                                    head = pv > 0 ? pv * 24
-                                                  : 22 /* graph pin */;
+                                    head = pv > 0 ? 19 : 22;
                                 lens[n] = (ef > sf ? ef - sf : 0) + head;
+                                if (spans_out) spans_out[n] = ef > sf ? ef - sf : 0;
                             }
                         free(obj);
                         }
@@ -917,7 +947,36 @@ static void draft_writeback(size_t idx, const char *wire) {
             return;
         }
     } else {
-        return;   /* draft has no result block: not a card we understand */
+        /* (2026-08-30 card-birth law) a freshly composed card (a
+         * build_pipeline draft) has no result block yet — SEED one into
+         * the first stage instead of ignoring the card. The card is
+         * BORN with this run: runStatus + result + (below) history. */
+        const char *st = strstr(buf, "\"stages\"");
+        const char *sb = st ? strchr(st, '{') : NULL;
+        if (!sb) return;
+        size_t head = (size_t)(sb - buf) + 1;   /* past stage's '{' */
+        char seed[64];
+        snprintf(seed, sizeof(seed), "\"runStatus\":\"%s\",\"result\":",
+                 strcmp(wire, "completed") == 0 ? "done" : "error");
+        if (head + strlen(seed) + strlen(res) + strlen(sb + 1) + 8
+                >= sizeof(out)) return;
+        memcpy(out, buf, head); oo = head;
+        memcpy(out + oo, seed, strlen(seed)); oo += strlen(seed);
+        memcpy(out + oo, res, strlen(res)); oo += strlen(res);
+        out[oo++] = ',';
+        oo += (size_t)snprintf(out + oo, sizeof(out) - oo, "%s", sb + 1);
+        out[oo] = 0;
+        /* root status: ready (Ray card parity) when the draft lacks it */
+        if (!strstr(out, "\"status\"")) {
+            char *root = strchr(out, '{');
+            if (root) {
+                char tmp3[36864];
+                size_t h2 = (size_t)(root - out) + 1;
+                snprintf(tmp3, sizeof(tmp3), "%.*s\"status\":\"ready\",%s",
+                         (int)h2, out, out + h2);
+                snprintf(out, sizeof(out), "%s", tmp3);
+            }
+        }
     }
 
     /* runStatus -> wire state (done | error) */
@@ -1238,6 +1297,7 @@ static void handle_pipelines_start(const httplib::Request &req,
     char model[64] = "", prompt[2048] = "";
     char tl_wins[4][2048];   /* (audit F2) LOCAL: per-request window prompts */
     int  tl_wins_len[4] = {0,0,0,0}; /* calls-length law: render length per window */
+    int  tl_spans[4] = {0,0,0,0};    /* exact-tile law: declared span per window */
     int  tl_nw = 0;
     long seed = -1;
     char yaml_override[4096] = "";
@@ -1326,7 +1386,7 @@ static void handle_pipelines_start(const httplib::Request &req,
      * tl_wins[1..3] to prompt2..4 - the old !prompt[0] gate dropped
      * every window past the first whenever prompt was present. */
     if (strstr(body, "\"calls\"")) {
-        tl_nw = compile_calls_windows(body, tl_wins, tl_wins_len);
+        tl_nw = compile_calls_windows(body, tl_wins, tl_wins_len, tl_spans);
         /* (2026-08-30 queue-lane law) a calls array longer than the 4-window
          * graph is a shape error, never a silent truncation: reject BEFORE
          * any run is registered. The caller splits into chained runs
@@ -1338,9 +1398,14 @@ static void handle_pipelines_start(const httplib::Request &req,
             if (arr) {
                 int total_calls = 0;
                 const char *w = arr;
-                while ((w = strstr(w, "\"start_frame\"")) != NULL) {
-                    total_calls++;
-                    w += 12;
+                /* (string-form law) count form-agnostically: the key
+                 * name followed (within quotes/ws) by a colon. */
+                while ((w = strstr(w, "start_frame")) != NULL) {
+                    const char *k2 = w + 10;
+                    while (*k2 == ' ' || *k2 == '\t' || *k2 == '"' ||
+                           *k2 == '\\') k2++;
+                    if (*k2 == ':') total_calls++;
+                    w += 10;
                 }
                 if (total_calls > 4) {
                     res.status = 400;
@@ -1359,6 +1424,59 @@ static void handle_pipelines_start(const httplib::Request &req,
             }
         }
         if (!prompt[0] && tl_nw > 0) snprintf(prompt, sizeof(prompt), "%s", tl_wins[0]);
+    }
+    /* (2026-08-30 CARD LAW, operator order) a timeline-graph run without
+     * its card is REJECTED before registration: compose via the
+     * h3_timeline_card tool (draft_id) or carry the calls document.
+     * Hand-rolled params.prompt2..4 bodies (consumer model improvisation,
+     * observed twice) produce silent 1.66s stubs — never again. */
+    if (yaml_override[0] && strstr(yaml_override, "window1") &&
+        tl_nw == 0) {
+        char did[96] = "";
+        int card_ok = 0;
+        if (inf_json_string(body, "draft_id", did, sizeof(did)) == 0 && did[0]) {
+            char dp[256];
+            snprintf(dp, sizeof(dp), "./drafts/%s.json", did);
+            if (access(dp, R_OK) == 0) card_ok = 1;
+            else {
+                snprintf(dp, sizeof(dp), "./drafts/%s-1.json", did);
+                if (access(dp, R_OK) == 0) card_ok = 1;
+            }
+        }
+        if (!card_ok) {
+            res.status = 400;
+            res.set_content(
+                "{\"error\":\"timeline runs require their action card: compose via the h3_timeline_card tool and send draft_id, or carry the calls document. Bare prompt/params bodies are rejected (card law)\"}",
+                "application/json");
+            return;
+        }
+        /* THE CARD IS THE RUN DEFINITION: when the body carries no calls,
+         * load them from the card document itself (stages[0].params.calls
+         * — string or array form; the compiler handles both). seed/fps
+         * ride from the card when the body omits them. */
+        {
+            char dp[256];
+            snprintf(dp, sizeof(dp), "./drafts/%s.json", did);
+            if (access(dp, R_OK) != 0)
+                snprintf(dp, sizeof(dp), "./drafts/%s-1.json", did);
+            static char dbuf[32768];
+            FILE *df = fopen(dp, "rb");
+            if (df) {
+                size_t dn = fread(dbuf, 1, sizeof(dbuf) - 1, df);
+                fclose(df); dbuf[dn] = 0;
+                tl_nw = compile_calls_windows(dbuf, tl_wins, tl_wins_len,
+                                              tl_spans);
+                if (tl_nw == 0)
+                    fprintf(stderr,
+                            "[draft] card %s carries no parsable calls\n", did);
+                else
+                    fprintf(stderr,
+                            "[draft] run executes card %s (%d calls)\n",
+                            did, tl_nw);
+                if (seed < 0) seed = inf_json_int(dbuf, "seed", -1);
+                if (seed < 0) seed = 42;
+            }
+        }
     }
     if (!prompt[0]) {
         res.status = 400;
@@ -1520,15 +1638,56 @@ static void handle_pipelines_start(const httplib::Request &req,
             fclose(rf);
         }
     }
-    /* action-card linkage: timeline card runs (params carry "calls")
-     * persist their result back into the timeline draft card */
-    if (strstr(req.body.c_str(), "\"calls\"") &&
-        access("./drafts/draft-timeline-h3.json", R_OK) == 0) {
-        snprintf(g_runs[idx].draft_id, sizeof(g_runs[idx].draft_id),
-                 "draft-timeline-h3");
-        g_runs[idx].draft_stage = 0;
-        fprintf(stderr, "[draft] run %s linked to card draft-timeline-h3\n",
-                g_runs[idx].run_id);
+    /* action-card linkage (2026-08-30 card law, Ray parity): the run
+     * belongs to THE CARD the request names. draft_id in the start body
+     * (from the build_pipeline tool / drafts door) wins; the legacy
+     * draft-timeline-h3 fallback fires ONLY when no draft_id was sent.
+     * The write-back below then persists this run's artifacts + history
+     * INTO that card — the card is the artifact of record. */
+    {
+        char rid_draft[96] = "";
+        int have_draft = inf_json_string(req.body.c_str(), "draft_id",
+                                         rid_draft, sizeof(rid_draft)) == 0
+                         && rid_draft[0];
+        if (have_draft) {
+            /* sanitize: [A-Za-z0-9_-] only (path safety) */
+            for (const char *p = rid_draft; *p; p++)
+                if (!((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') ||
+                      (*p >= '0' && *p <= '9') || *p == '-' || *p == '_')) {
+                    have_draft = 0;
+                    break;
+                }
+            char dpath[256];
+            if (have_draft) {
+                snprintf(dpath, sizeof(dpath), "./drafts/%s.json", rid_draft);
+                if (access(dpath, R_OK) != 0) {
+                    /* (2026-08-30 suffix law) the drafts door persists ids
+                     * with a stage suffix (-1); callers may send the bare
+                     * id. Resolve the canonical single-stage form rather
+                     * than dropping the card. */
+                    char alt[128];
+                    snprintf(alt, sizeof(alt), "%s-1", rid_draft);
+                    char apath[256];
+                    snprintf(apath, sizeof(apath), "./drafts/%s.json", alt);
+                    if (access(apath, R_OK) == 0)
+                        snprintf(rid_draft, sizeof(rid_draft), "%s", alt);
+                    else have_draft = 0;
+                }
+            }
+        }
+        if (!have_draft &&
+            strstr(req.body.c_str(), "\"calls\"") &&
+            access("./drafts/draft-timeline-h3.json", R_OK) == 0) {
+            snprintf(rid_draft, sizeof(rid_draft), "draft-timeline-h3");
+            have_draft = 1;
+        }
+        if (have_draft) {
+            snprintf(g_runs[idx].draft_id, sizeof(g_runs[idx].draft_id),
+                     "%s", rid_draft);
+            g_runs[idx].draft_stage = 0;
+            fprintf(stderr, "[draft] run %s linked to card %s\n",
+                    g_runs[idx].run_id, rid_draft);
+        }
     }
     /* (2026-08-30 cards-button law) the CARD document for this run - what
      * the DSH "Cards" button rebuilds the exact action card from: model +
@@ -1657,6 +1816,34 @@ static void handle_pipelines_start(const httplib::Request &req,
             }
             wi++;
             q = strstr(q + strlen(needle), needle);
+        }
+    }
+    /* exact-tile law (2026-08-30): the stitch cuts each window to its
+     * DECLARED call span so the film lands the calls tiles exactly,
+     * whatever the in-graph seam trim removed (observed 7-22f variance).
+     * Spans go into the ffmpeg_concat node's params beside trim_heads. */
+    if (tl_nw > 0) {
+        int tlfps = inf_json_int(body, "fps", 24);
+        if (tlfps <= 0) tlfps = 24;
+        char spansj[128];
+        int so = snprintf(spansj, sizeof(spansj), ",\"spans\":[");
+        for (int i = 0; i < tl_nw; i++)
+            so += snprintf(spansj + so, sizeof(spansj) - so, "%s%.4f",
+                           i ? "," : "", (double)tl_spans[i] / tlfps);
+        snprintf(spansj + so, sizeof(spansj) - so, "]");
+        char *th = strstr(g_runs[idx].yaml, "\"trim_heads\"");
+        if (th) {
+            char *tb = strchr(th, '[');
+            char *te = tb ? strchr(tb, ']') : NULL;
+            if (tb && te) {
+                size_t il = strlen(spansj);
+                size_t used = strlen(g_runs[idx].yaml);
+                size_t off = (size_t)(te + 1 - g_runs[idx].yaml);
+                if (used + il + 1 < sizeof(g_runs[idx].yaml)) {
+                    memmove(te + 1 + il, te + 1, used - off + 1);
+                    memcpy(te + 1, spansj, il);
+                }
+            }
         }
     }
     /* stage list comes from the final YAML (reported while queued too) */
@@ -3279,6 +3466,60 @@ static void handle_asset(const httplib::Request &req, httplib::Response &res) {
 
 /* GET /v1/form-spec?model=<id> - defaults + variants + the enhance recipe
  * (parsed from the unit's inference.yaml prompt_upscale block). */
+/* GET /v1/card-tools — the PLUGIN SYSTEM door for model-facing card
+ * tools. Each complex card OWNS its tool: a tool.json manifest beside
+ * the card's form (plugins/<owner>/cards/<card>/tool.json) declares
+ * name/description/model + the params schema + constraint vocabulary.
+ * This handler scans the card dirs and serves the manifests verbatim;
+ * the DSH side registers one tool per manifest dynamically. Adding a
+ * complex card = adding its dir + tool.json — zero DSH-side code. */
+static void handle_card_tools(const httplib::Request &req,
+                              httplib::Response &res) {
+    (void)req;
+    const char *plugins[] = { "../plugins", "./plugins", NULL };
+    std::string out = "[";
+    int count = 0;
+    for (int pi = 0; plugins[pi]; pi++) {
+        DIR *d = opendir(plugins[pi]);
+        if (!d) continue;
+        struct dirent *owner;
+        while ((owner = readdir(d)) != NULL) {
+            if (owner->d_name[0] == '.') continue;
+            char cards_dir[1024];
+            snprintf(cards_dir, sizeof(cards_dir), "%s/%s/cards",
+                     plugins[pi], owner->d_name);
+            DIR *cd = opendir(cards_dir);
+            if (!cd) continue;
+            struct dirent *card;
+            while ((card = readdir(cd)) != NULL) {
+                if (card->d_name[0] == '.') continue;
+                char tj[1536];
+                snprintf(tj, sizeof(tj), "%s/%s/tool.json",
+                         cards_dir, card->d_name);
+                FILE *f = fopen(tj, "rb");
+                if (!f) continue;
+                static char buf[65536];
+                size_t n = fread(buf, 1, sizeof(buf) - 1, f);
+                fclose(f);
+                buf[n] = 0;
+                /* serve verbatim if it starts '{' and ends '}' */
+                while (n && (buf[n-1] == '\n' || buf[n-1] == '\r' ||
+                             buf[n-1] == ' ' || buf[n-1] == '\t')) buf[--n] = 0;
+                if (buf[0] != '{' || buf[n-1] != '}' || n < 10) {
+                    fprintf(stderr, "[card-tools] skipping malformed %s\n", tj);
+                    continue;
+                }
+                if (count) out += ",";
+                out += buf;
+                count++;
+            }
+            closedir(cd);
+        }
+        closedir(d);
+    }
+    out += "]";
+    res.set_content(out, "application/json");
+}
 static void handle_form_spec(const httplib::Request &req,
                              httplib::Response &res) {
     if (!g_catalog) {
@@ -5270,6 +5511,7 @@ inference_server *server_create(int port, const char *bind_addr) {
     s->srv.Get("/v1/pipelines/runs",     handle_pipelines_runs);
     s->srv.Get(R"(/editor/assets/runs/(.+))", handle_asset);
     s->srv.Get("/v1/form-spec",          handle_form_spec);
+    s->srv.Get("/v1/card-tools",          handle_card_tools);
     s->srv.Post("/v1/models/provision",  handle_provision);
     s->srv.Get("/v1/models/provision/status", handle_provision_status);
     s->srv.Get("/v1/model-catalog",      handle_catalog);
