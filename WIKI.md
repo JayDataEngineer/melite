@@ -468,10 +468,15 @@ Laws (all machinery, prompts can no longer break them):
 4. 400 ON CARD-LESS TIMELINE RUNS: bare prompt/params.prompt2..4 bodies
    (consumer model improvisation, observed twice) are rejected loudly.
 5. EXACT-TILE STITCH: ffmpeg_concat gained "spans" (per-input -t cut);
-   the start door injects spans = call spans / fps. The in-graph seam
-   trim VARIES (7-22f observed) - only the stitch cut lands the tile.
+   the start door injects spans = ACTUAL tiles / fps. [SUPERSEDED
+   2026-08-31 by the GRID LAW section below: the in-graph trim does NOT
+   vary - it is exactly context_length; the 7-22f "variance" was grid
+   round-up. Spans stay wired as a no-op safety.]
 6. SEAM-HEAD RENDER LAW: seam windows render span + 19f (pv load) or
    +22f (default t4) - pv sets the motion pin, NOT the output length.
+   [SUPERSEDED 2026-08-31: the pin is context_length frames exactly;
+   sampled = tile + trim, on the H3 grid. first_frame_prev_sec is
+   DELETED from the card schema.]
 7. STRING-FORM CALLS: calls arrives either as array or JSON-encoded
    string; escaped quotes (") broke the parser silently -> 1.66s stubs.
    compile_calls_windows unescapes the string form first.
@@ -481,3 +486,101 @@ Laws (all machinery, prompts can no longer break them):
    waited behind it).
 9. The concat plugin .so has NO cmake target - build it by hand:
    gcc -shared -fPIC -O2 -Iinclude plugins/ffmpeg/engines/concat/ffmpeg_concat_plugin.c -o build/ffmpeg_concat_plugin.so -lm
+
+## THE 12-FRAME SEAM SKIP — GRID LAW (2026-08-31, SOLVED)
+
+The seam the operator called "really bad, I don't think it even
+exists": every join SKIPPED 12 frames of motion. Root cause chain,
+proven from inf49.log + pack logs:
+
+1. H3 core aligns EVERY clip length UP to the 17k+5 grid
+   (align_frame_count in nodes_minimax_h3.py: 5, 22, 39, 56, 73, 90,
+   107, 124 ...). The gateway injected span+trim (90+19=109); H3
+   snapped 109 -> 124; the pack trimmed exactly 22 -> delivered 102;
+   the concat span-cut chopped to 90. The film showed frames 0..111
+   of a 124-frame sample; the next pin continued from frame 123.
+   12 frames of motion vanished at EVERY seam.
+2. FIX (grid law, src/server.cpp compile_calls_windows): the gateway
+   now computes ON-GRID sampled lengths itself - window 1 samples
+   snap(span, resid=5) (a 17k+5 value), seam windows sample
+   tile + trim where tile = snap(span, resid=0) (multiple of 17) and
+   trim = the pack's context_length WIDGET read from the seam
+   template (tl_seam_trim) or the card's context_length override
+   (never hardcoded - lane law). Injects: 90/107/107/107 for a
+   90/85/85/85 film. The stitch spans are now the ACTUAL tiles
+   (the cut is a no-op safety).
+3. Composition law: 17k (tile) + (17m+5) (any pin window 5/22/39/56)
+   = 17(k+m)+5 - every pin window keeps seam samples on-grid.
+4. PROOF (run-6a94062c, chase_scene_gridlaw_v10): injects 90/107x3,
+   pack logs "107 frame clip, trim 22" on all three seams, windows
+   decode 90/85/85/85 EXACT, stitch 345f/14.375000s EXACT, seam
+   diffs 5.4/2.8 vs motion baseline 2.6/2.2 (the old hard-cut seam
+   measured 42.6). One join per film may still jump ~30 when the
+   model pivots content at the first free frame - that is prompt
+   authoring (the skill's "airlock" rule), not machinery.
+5. tiling evidence line: "[timeline] grid law: trim=22 tiles=[...]
+   sampled=[...] total=..." lands in the gateway log every run.
+
+## THE MUXER'S -shortest FRAME THEFT (2026-08-31, SOLVED)
+
+After the grid fix, seam windows delivered 84 frames, not 85. The
+pack's match_tail audio was CORRECT (3.541656s = 85 frames - one
+sample short); the comfyui plugin's ffmpeg mux ran -shortest, and AAC
+encoder priming made the audio track a hair shorter in the muxer's
+accounting -> the video stream was cut to 3.500s = 84 frames. ONE
+frame eaten per seam window, deterministic.
+
+FIX: video-mastered mux (comfyui_plugin.c): -shortest replaced by
+-t <frame_count/fps>. The frame count is the truth; audio runs its
+natural, hair-shorter length. v10 proves it: 85/85/85 windows.
+
+## THE DEAD >4-CALLS COUNTER (2026-08-31, CAUGHT LIVE)
+
+The >4-calls guard counted "start_frame" occurrences - but the key
+is ELEVEN chars and the scanner advanced 10, then demanded ':' at
+the final 'e'. total_calls read 0 on EVERY body: a 31-call document
+QUEUED and silently truncated to the 4-window graph instead of
+rejecting. Found by accident (a free "loader probe" with 31 calls
+was expected to 400 and instead registered a run - stopped via the
+stop door, 0.3s, then the counter fixed and re-proven: 6 calls ->
+exact 400). LESSON: a guard that has never fired is not a guard -
+probe it with the shape it exists to reject.
+
+## PACK COEXISTENCE, NOT SUPERSESSION (2026-08-31, OPERATOR CORRECTION)
+
+model.yaml declared MultiRef "SUPERSEDES h3_motion_context base
+pack"; comfyui-setup.sh even disabled the base pack as a "conflict";
+a later edit flipped to "MultiRef RETIRED". ALL WRONG - the packs
+were never either/or. The seitanism fork is a SUPERSET built ON TOP
+of the base pack: same four class names PLUS ~37 uniquely-named
+additions (V2V latent motion transfer, masked/keyframed contexts,
+music-video + AV-extension controllers, streaming VHS, de-rope
+continuation).
+
+Truth, verified from live object_info (Update 8, 5839d45):
+- BOTH packs enabled: the four shared names (MiniMaxH3MotionContext/
+  Trim/SaveLatent/LoadLatent) resolve to the BASE pack (loader
+  iterates sorted dir names; ComfyUI-... registers before h3_...,
+  so the base's mapping lands last and owns the keys - confirmed by
+  signature: base's context_length is the ["22","5","39","56"]
+  string combo, the fork's target_start is absent).
+- The fork contributes all its extra nodes alongside.
+- Every window*_t4.json graph edge validates against the combined
+  node set (checked offline, free, no GPU).
+Docs now state coexistence in model.yaml requires, extensions.yaml,
+and comfyui-setup.sh verification (base pack CONFLICT check deleted).
+Old disable_pack logic is gone; the fork clone was dirty with a
+pre-Update-8 backport (archived to
+custom_nodes/multiref_local_mods_20260830.patch) before pulling U8.
+
+## THE STRING-WIDGET LOADER (2026-08-31, SOLVED)
+
+tl_seam_trim read the template's context_length widget with
+atoi(colon+1) - but the widget is a STRING ("22"), and
+atoi(" \"22\"") is 0, read as absent -> "seam graph unreadable" 500
+on any calls body without a card-level context_length (the consumer
+hit it live on v9's first start and escaped via the card override -
+the designed escape working as intended). FIX: scan the quoted value
+(tl_scan_context_length) in the loader too. LESSON: ComfyUI combo
+widgets are strings even when they carry numbers - never atoi a
+widget value you have not type-checked.
