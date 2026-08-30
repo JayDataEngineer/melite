@@ -37,6 +37,23 @@ PROMPTS_LOCK = threading.Lock()
 HOLD_DELAY = 1.2        # seconds the fake comfy holds each /prompt
 INTERRUPTS = []         # recorded /hold/interrupt POSTs (stop-door proof)
 
+# Fake /object_info manifest: filled in main() from the real
+# krea-txt2img workflow.json the fixtures reference (the gateway
+# pre-validates class_types against it before registering a run).
+OBJECT_INFO = {}
+
+
+def build_object_info(repo):
+    global OBJECT_INFO
+    wf = os.path.join(repo, "pipelines", "krea-txt2img", "workflow.json")
+    try:
+        graph = json.load(open(wf))
+        OBJECT_INFO = {n.get("class_type", "?"): {} for n in graph.values()
+                       if isinstance(n, dict)}
+    except Exception as e:            # pragma: no cover - fixture rot
+        print("FATAL cannot build fake /object_info from %s: %s" % (wf, e))
+        sys.exit(2)
+
 
 class FakeComfy(BaseHTTPRequestHandler):
     def _reply(self, code, body=b"{}"):
@@ -70,6 +87,12 @@ class FakeComfy(BaseHTTPRequestHandler):
             self.end_headers()
 
     def do_GET(self):
+        if self.path == "/object_info":
+            # node-manifest fidelity: the gateway pre-validates every
+            # workflow class_type against /object_info before a run
+            # registers — the fake must speak it too.
+            self._reply(200, json.dumps(OBJECT_INFO).encode())
+            return
         if self.path.startswith("/hold/history"):
             self._reply(200, b"{}")   # never completes -> plugin polls
             return
@@ -172,6 +195,7 @@ def main():
     ap.add_argument("--build-dir", required=True)
     args = ap.parse_args()
     repo = os.path.abspath(args.repo_dir)
+    build_object_info(repo)
     build = os.path.abspath(args.build_dir)
     fixture = os.path.join(repo, "pipelines", "_queue_test")
     binpath = os.path.join(build, "inference_cli")

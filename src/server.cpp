@@ -247,6 +247,19 @@ typedef struct {
     char state[16];          /* queued|running|success|error|stopped */
     char error[256];
     char out_dir[512];
+    /* (latent-chain law, 2026-08-30) the run's PLAN — what the compile
+     * computed at registration. tl_n = window count (0 = not a timeline
+     * run); tl_trims = carried head frames per window (window 1 = 0);
+     * tl_spans = delivered tile frames per window. Two consumers:
+     * the post-run META CROSS-CHECK (each chain node's <tail>.meta.json
+     * carried_pixel_frames must equal tl_trims or the run is an error —
+     * a drift means the film double-plays or skips at the joins) and the
+     * card reconstruction (params.calls rebuilt 1:1 from these + the
+     * actual prompt run inputs). */
+#define RUN_TL_MAX 128
+    int  tl_n;
+    int  tl_trims[RUN_TL_MAX];
+    int  tl_spans[RUN_TL_MAX];
     /* (audit F31, 2026-08-29) sized to never truncate (h3-timeline-b4
      * sat 28 bytes from a silent dag-parse failure at the old 2048).
      * (N-window law, 2026-08-31) 128KB: ONE card with up to 128 calls
@@ -641,74 +654,91 @@ static char *pipeline_yaml_for_model(const char *model, char *out, size_t cap) {
  * POSTs could cross-wire their window prompts. Now compiled into a
  * LOCAL array at the registration call site and passed as a parameter. */
 
-/* ── (2026-08-31 GRID LAW) ──────────────────────────────────────────
+/* ── (2026-08-31 GRID LAW / 2026-08-30 LATENT-CHAIN LAW) ────────────
  * H3 snaps every clip length UP to the 17k+5 frame grid (5,22,39,56,
  * 73,90,107,124... — align_frame_count, ComfyUI nodes_minimax_h3.py).
- * The h3_motion_context pack trims EXACTLY context_length frames off
- * each seam window's pinned head (pack nodes.py: trim = span) and pins
- * the previous clip's last context_length latent frames. Zero-skip
- * tiling therefore REQUIRES the sampled length ON-GRID with
- *     tile = sampled - trim     (seam windows, n > 0)
- *     tile = sampled            (window 1, no pin)
- * so the next window's pin covers exactly the tile's FINAL trim frames
- * and the film loses no frame of motion at any join. Seam tiles are
- * multiples of 17; window-1 tiles are 17k+5. Requested spans snap to
- * the NEAREST grid point (the skill teaches grid-conformant spans, so
- * the snap normally changes nothing). */
+ * The exterminated motion-context pack is GONE: seams are TRUE latent
+ * chains now (RayH3SaveLatentTail -> RayH3ChainLatentAV, in-tree pack
+ * plugins/comfyui/custom_nodes/melite-h3-motion-nodes). Each seam
+ * window splices the previous window's SAMPLED latent tail
+ * (carry_latent_frames slots) into its head — bit-exact carry — and
+ * REGENERATES those frames as its decoded head. Zero-skip tiling
+ * therefore REQUIRES the concat to trim EXACTLY carried_pixel_frames
+ * off each seam window's head and to deliver the whole remainder:
+ *     tile = sampled - carried_px   (seam windows, n > 0; 17k multiple)
+ *     tile = sampled                (window 1, no carry)
+ * A tail span-cut below sampled - carried_px would skip motion (the
+ * next carry comes from the SAMPLED tail, past the cut) — never do it.
+ * The chain node writes <tail>.meta.json with the exact numbers; the
+ * plan math below mirrors _carried_pixel_frames() in h3_chain.py and
+ * a mismatch is a hard error at the stitch. */
 static int tl_snap_grid(int n, int resid) {
     int k = (n - resid + 8) / 17;      /* nearest k */
     int v = 17 * k + resid;
     return v < resid ? resid : v;
 }
 
-/* The seam trim is the motion-context pack's context_length WIDGET in
- * the seam template — the single source of truth, never a hardcoded 22
+/* grid math mirrors h3_chain.py (_video_latent_t / _carried_pixel_frames):
+ * video latent slots for a sampled frame count; pixel frames covered by
+ * the LAST carry slots of a window with total_slots slots. */
+static int tl_slots_for(int frames) {
+    return frames <= 5 ? 2 : ((frames - 5) / 17) * 5 + 2;
+}
+static int tl_carried_px(int carry, int total_slots) {
+    if (total_slots <= 2 || carry >= total_slots)
+        return total_slots == 2 ? 5 : 5 + (total_slots - 2) * 17 / 5;
+    int head = carry < 2 ? carry : 2;
+    int tail = carry - head;
+    return head * 5 / 2 + tail * 17 / 5;
+}
+
+/* The seam carry is the RayH3ChainLatentAV carry_latent_frames WIDGET in
+ * the seam template — the single source of truth, never a hardcoded 6
  * (queue-lane law: no hardcodes). Read once, cached.
  * -1 = graph unreadable (start door rejects loudly). */
-static int tl_scan_context_length(const char *body, char *out, size_t outsz);
-static int tl_seam_trim_cache = -2;   /* -2 unloaded, -1 error, >=0 frames */
-static pthread_mutex_t tl_trim_mu = PTHREAD_MUTEX_INITIALIZER;
-static int tl_seam_trim(void) {
-    pthread_mutex_lock(&tl_trim_mu);
-    if (tl_seam_trim_cache == -2) {
-        tl_seam_trim_cache = -1;
+static int tl_scan_carry(const char *body, char *out, size_t outsz);
+static int tl_carry_cache = -2;   /* -2 unloaded, -1 error, >=0 slots */
+static pthread_mutex_t tl_carry_mu = PTHREAD_MUTEX_INITIALIZER;
+static int tl_carry_default(void) {
+    pthread_mutex_lock(&tl_carry_mu);
+    if (tl_carry_cache == -2) {
+        tl_carry_cache = -1;
         static const char *paths[] = {
             "../pipelines/h3-timeline/window2_t4.json",
             "pipelines/h3-timeline/window2_t4.json",
         };
-        for (size_t pi = 0; pi < 2 && tl_seam_trim_cache < 0; pi++) {
+        for (size_t pi = 0; pi < 2 && tl_carry_cache < 0; pi++) {
             FILE *f = fopen(paths[pi], "rb");
             if (!f) continue;
-            char buf[8192];
+            char buf[16384];
             size_t r = fread(buf, 1, sizeof(buf) - 1, f);
             fclose(f); buf[r] = 0;
-            char *mc = strstr(buf, "\"MiniMaxH3MotionContext.0\"");
-            if (!mc) continue;
-            char *cl = strstr(mc, "\"context_length\"");
+            char *ch = strstr(buf, "\"RayH3ChainLatentAV.0\"");
+            if (!ch) continue;
+            char *cl = strstr(ch, "\"carry_latent_frames\"");
             if (!cl) continue;
-            /* the widget is a string enum ("22") — scan, not atoi, so the
-             * quoted form parses (atoi(" \"22\"") is 0 and read as absent) */
+            /* INT widget — scan past the colon for the number */
             char cv[32];
-            if (tl_scan_context_length(cl, cv, sizeof cv)) {
+            if (tl_scan_carry(cl, cv, sizeof cv)) {
                 int v = atoi(cv);
-                if (v > 0) tl_seam_trim_cache = v;
+                if (v >= 1 && v <= 64) tl_carry_cache = v;
             }
         }
     }
-    int v = tl_seam_trim_cache;
-    pthread_mutex_unlock(&tl_trim_mu);
+    int v = tl_carry_cache;
+    pthread_mutex_unlock(&tl_carry_mu);
     return v;
 }
 
-/* Card-level context_length override (5/22/39/56 — the pack's pin
- * windows). Accepts "22" or 22. The needle is quote-delimited so the
- * audio_context_length key can never match. */
-static int tl_scan_context_length(const char *body, char *out, size_t outsz) {
+/* Card-level carry_latent_frames override (latent TAIL SLOTS, 1..64 —
+ * the node's own range; 6 slots ≈ 18px ≈ 0.75s at the default widget).
+ * Accepts "6" or 6. */
+static int tl_scan_carry(const char *body, char *out, size_t outsz) {
     out[0] = 0;
     if (!body) return 0;
-    const char *k = strstr(body, "\"context_length\"");
+    const char *k = strstr(body, "\"carry_latent_frames\"");
     if (!k) return 0;
-    const char *v = k + strlen("\"context_length\"");
+    const char *v = k + strlen("\"carry_latent_frames\"");
     while (*v == ' ' || *v == '\t' || *v == '\n' || *v == '\r') v++;
     if (*v != ':') return 0;
     v++;
@@ -732,9 +762,10 @@ static int tl_scan_context_length(const char *body, char *out, size_t outsz) {
 /* (N-window law, 2026-08-31) ONE card = N calls = ONE run. The static
  * pipeline.yaml ships 4 window stages; this expands the run graph
  * in-place to nw windows by cloning the window2 seam prototype: clone k
- * gets a unique stage id, its own prompt inject key ($promptK), and
- * clip-slot injects (LoadLatent K-1 / SaveLatent K — the same workflow
- * file for every seam; indices ride the inject map). The stitch
+ * gets a unique stage id, its own prompt inject key ($promptK), and its
+ * own latent-tail inject keys ($tailpathK save / $tailpathK-1 chain —
+ * the same workflow file for every seam; the .pt paths ride the inject
+ * map and resolve from run inputs at execute time). The stitch
  * input_from list is rebuilt for N inputs. Returns 0 on success; -1 on
  * any anchor or buffer failure — the caller fails the run LOUDLY, never
  * a silent truncation. nw <= 4 is a no-op (the static graph covers it,
@@ -791,21 +822,28 @@ static int tl_expand_windows(char *yaml, size_t cap, int nw) {
                 o += (size_t)snprintf(out + o, 32, "$prompt%d", k);
                 i += 8;
                 /* the first '}' after the needle closes the INJECT MAP.
-                 * Copy the span up to it VERBATIM — the value's closing
-                 * quote lives in that span; eating it corrupts the JSON
+                 * Copy the span up to it with the prototype's tail-path
+                 * vars REWRITTEN to this clone's own ($tailpath2 is the
+                 * prototype's save var, $tailpath1 its chain source).
+                 * Never eat the closing quote — that corrupts the JSON
                  * and the plugin skips the whole inject map (proven live
                  * 2026-08-31: "$prompt5, — windows 2-6 ran on baked
-                 * defaults, byte-identical). Then ride the clip slots
-                 * in before the brace. */
+                 * defaults, byte-identical). */
                 const char *cl = w2 + i;
                 while (cl < w3 && *cl != '}') cl++;
                 if (cl >= w3 || *cl != '}') { free(out); return -1; }
-                size_t span = (size_t)(cl - (w2 + i));
-                memcpy(out + o, w2 + i, span); o += span;
-                o += (size_t)snprintf(out + o, 200,
-                        ",\"MiniMaxH3MotionContextLoadLatent.0.clip_index\":%d,"
-                        "\"MiniMaxH3MotionContextSaveLatent.0.clip_index\":%d",
-                        k - 1, k);
+                const char *s = w2 + i;
+                while (s < cl) {
+                    if (strncmp(s, "$tailpath2", 10) == 0) {
+                        o += (size_t)snprintf(out + o, 32, "$tailpath%d", k);
+                        s += 10;
+                    } else if (strncmp(s, "$tailpath1", 10) == 0) {
+                        o += (size_t)snprintf(out + o, 32, "$tailpath%d", k - 1);
+                        s += 10;
+                    } else {
+                        out[o++] = *s++;
+                    }
+                }
                 out[o++] = *cl;
                 i = (size_t)(cl - w2) + 1;
             } else {
@@ -828,22 +866,22 @@ static int tl_expand_windows(char *yaml, size_t cap, int nw) {
 }
 
 static int compile_calls_windows(const char *body, char out[TL_MAX_WINDOWS][2048],
-                                 int lens[TL_MAX_WINDOWS], int spans_out[TL_MAX_WINDOWS]) {
+                                 int lens[TL_MAX_WINDOWS], int spans_out[TL_MAX_WINDOWS],
+                                 int trims_out[TL_MAX_WINDOWS]) {
     const char *key = strstr(body, "\"calls\"");
     if (!key) return 0;
-    /* (grid law) the seam trim: card-level override, else the pack's
-     * widget in the seam template. Returns -1 = seam graph unreadable,
-     * -2 = pin window off the pack's grid (must be 5/22/39/56). */
-    int trim = -1;
+    /* (latent-chain law) the seam carry: card-level override, else the
+     * RayH3ChainLatentAV widget in the seam template. Returns
+     * -1 = seam graph unreadable, -2 = carry off the node's 1..64 range. */
+    int carry = -1;
     {
         char cv[32];
-        if (tl_scan_context_length(body, cv, sizeof cv))
-            trim = atoi(cv);
+        if (tl_scan_carry(body, cv, sizeof cv))
+            carry = atoi(cv);
         else
-            trim = tl_seam_trim();
-        if (trim <= 0) return -1;
-        if (trim != 5 && trim != 22 && trim != 39 && trim != 56)
-            return -2;
+            carry = tl_carry_default();
+        if (carry <= 0) return -1;
+        if (carry < 1 || carry > 64) return -2;
     }
     /* (2026-08-30 string-form law) callers send calls EITHER as a JSON
      * array OR as a JSON-encoded STRING (the h3_timeline_card tool and
@@ -890,7 +928,14 @@ static int compile_calls_windows(const char *body, char out[TL_MAX_WINDOWS][2048
         } else if (*p == ']' || *p == '}') {
             depth--;
             if (*p == '}' && obj_start && depth == 1) {
-                if (n < TL_MAX_WINDOWS) {
+                if (n >= TL_MAX_WINDOWS) {
+                    /* (no silent caps law, 2026-08-30) a card with more
+                     * calls than the window array must REJECT, not
+                     * silently truncate: a dropped call is a dropped
+                     * shot, and the film would lie about its own length */
+                    return -4;
+                }
+                {
                     size_t len = (size_t)(p - obj_start + 2);
                     char *obj = (char *)malloc(len + 1);
                     if (obj) {
@@ -926,16 +971,17 @@ static int compile_calls_windows(const char *body, char out[TL_MAX_WINDOWS][2048
                             }
                             out[n][o] = 0;
                         }
-                        /* (2026-08-31 GRID LAW — replaces the empirical
-                         * 19/22 head guess, which was wrong twice: H3
-                         * rounds any off-grid length UP (109 -> 124), so
-                         * the film kept the tile's first frames but the
-                         * next pin continued from the SAMPLED tail —
-                         * every join skipped (sampled - span - trim)
-                         * frames of motion). Now: sampled ON-GRID,
-                         * tile = sampled - trim (seams) / sampled (w1),
-                         * spans report the ACTUAL tiles so the stitch
-                         * cut is a no-op safety. */
+                        /* (LATENT-CHAIN LAW — replaces the pack's in-graph
+                         * trim): sampled ON-GRID at 17k+5, the chain node
+                         * carries `carry` tail slots from the previous
+                         * window's SAMPLED tail and regenerates them as
+                         * this window's head; the concat trims EXACTLY
+                         * carried_px off the head and delivers the whole
+                         * remainder (a tail span-cut would skip motion —
+                         * the next carry starts at the sampled tail).
+                         * sampled = smallest grid point covering
+                         * tile + carried_px(sampled) — a fixpoint (the
+                         * carry math depends on the sampled slot count). */
                         {
                             int sf=0, ef=0;
                             const char *m = strstr(obj, "start_frame");
@@ -946,10 +992,58 @@ static int compile_calls_windows(const char *body, char out[TL_MAX_WINDOWS][2048
                             if (n == 0) {
                                 lens[n] = tl_snap_grid(span, 5);
                                 if (spans_out) spans_out[n] = lens[n];
+                                if (trims_out) trims_out[n] = 0;
                             } else {
                                 int tile = tl_snap_grid(span, 0);
-                                lens[n] = tile + trim;
-                                if (spans_out) spans_out[n] = tile;
+                                /* THE NODE'S OWN CLAMP — the plan must carry
+                                 * EXACTLY what RayH3ChainLatentAV will splice:
+                                 *   c = max(1, min(carry, total_slots-1,
+                                 *                   tail_slots))
+                                 * total_slots = slots(sampled) (this head);
+                                 * tail_slots = slots(lens[n-1]) (the previous
+                                 * window's SAMPLED tail). Planning with the
+                                 * RAW carry diverges from the node's meta and
+                                 * the film double-plays at the join. */
+                                int tail_S = tl_slots_for(lens[n - 1]);
+                                int sampled = tile;
+                                int cp = 0;
+                                for (int it = 0; it < 8; it++) {
+                                    int S = tl_slots_for(sampled);
+                                    int c_eff = carry;
+                                    if (c_eff > S - 1) c_eff = S - 1;
+                                    if (c_eff > tail_S) c_eff = tail_S;
+                                    if (c_eff < 1) c_eff = 1;
+                                    cp = tl_carried_px(c_eff, S);
+                                    int want = tl_snap_grid(tile + cp, 5);
+                                    if (want == sampled) break;
+                                    sampled = want;
+                                }
+                                /* cover-or-reject (queue lane law): growing
+                                 * the sample cannot outrun a carry that eats
+                                 * every new slot — for carry near the tile's
+                                 * slot demand NO grid point covers the tile.
+                                 * Bump until covered or past the grid
+                                 * ceiling; still uncovered = 4xx, never a
+                                 * silent motion-skipping span. */
+                                int covered = 0;
+                                for (int bump = 0; bump < 220; bump++) {
+                                    int S = tl_slots_for(sampled);
+                                    int c_eff = carry;
+                                    if (c_eff > S - 1) c_eff = S - 1;
+                                    if (c_eff > tail_S) c_eff = tail_S;
+                                    if (c_eff < 1) c_eff = 1;
+                                    cp = tl_carried_px(c_eff, S);
+                                    if (sampled - cp >= tile) { covered = 1; break; }
+                                    if (sampled >= 17 * 128 + 5) break;
+                                    sampled = tl_snap_grid(sampled + 17, 5);
+                                }
+                                if (!covered) {
+                                    free(obj);
+                                    return -3;   /* carry/tile incompatible */
+                                }
+                                lens[n] = sampled;
+                                if (spans_out) spans_out[n] = sampled - cp;
+                                if (trims_out) trims_out[n] = cp;
                             }
                         free(obj);
                         }
@@ -991,7 +1085,10 @@ static void add_run_input_f32(size_t idx, const char *name, float f) {
 static void add_run_extra_inputs(size_t idx, const char *body,
                                  char *tmp, size_t tmpcap,
                                  char tl_wins[TL_MAX_WINDOWS][2048], int tl_nw) {
-    /* (N-window law) prompt2..promptN for EVERY window of the card. */
+    /* (N-window law) prompt2..promptN for EVERY window of the card.
+     * (The tailpath inject vars are NOT run inputs: the 144-input cap
+     * would silently drop them past ~70 windows — the registration
+     * pass resolves them to literal absolute paths in the run yaml.) */
     for (int i = 1; i < tl_nw; i++) {
         char nm[24];
         snprintf(nm, sizeof(nm), "prompt%d", i + 1);
@@ -1050,20 +1147,34 @@ static void draft_writeback(size_t idx, const char *wire) {
 
     const char *rid = g_runs[idx].run_id;
     const char *outdir = g_runs[idx].out_dir;
-    char stitch[640] = "", wf[4][640] = {{0}, {0}, {0}, {0}};
-    char seam[4][640] = {{0}, {0}, {0}, {0}};
+    char stitch[640] = "";
+    /* (reconstruction law, 2026-08-30) ALL N windows — the fixed-4 scan
+     * was the "1/4 of the h3 model calls" lie: a 12-call card showed 4
+     * films. ONE call = ONE window = ONE model call; the card must list
+     * every film and every latent seam that actually ran. Scan the
+     * out_dir for window%_video_0.mp4 / window%_tail.pt up to 128. */
+    static char wf[RUN_TL_MAX][640];
+    static char seam[RUN_TL_MAX][640];
+    int nwin = 0;
     char p[768];
-    const char *wins[4] = {"window1", "window2", "window3", "window4"};
     snprintf(p, sizeof(p), "%s/stitch_video_0.mp4", outdir);
     if (access(p, R_OK) == 0)
         snprintf(stitch, sizeof(stitch), "/editor/assets/runs/%s/stitch_video_0.mp4", rid);
-    for (int w = 0; w < 4; w++) {
-        snprintf(p, sizeof(p), "%s/%s_video_0.mp4", outdir, wins[w]);
+    for (int k = 1; nwin < RUN_TL_MAX; k++) {
+        snprintf(p, sizeof(p), "%s/window%d_video_0.mp4", outdir, k);
+        if (access(p, R_OK) != 0) {
+            if (k > nwin + 2 || k > 8) break;  /* past the contiguous tail */
+            continue;
+        }
+        snprintf(wf[nwin], sizeof(wf[0]),
+                 "/editor/assets/runs/%s/window%d_video_0.mp4", rid, k);
+        snprintf(p, sizeof(p), "%s/window%d_tail.pt", outdir, k);
         if (access(p, R_OK) == 0)
-            snprintf(wf[w], sizeof(wf[w]), "/editor/assets/runs/%s/%s_video_0.mp4", rid, wins[w]);
-        snprintf(p, sizeof(p), "%s/%s_latent_last.h3latent", outdir, wins[w]);
-        if (access(p, R_OK) == 0)
-            snprintf(seam[w], sizeof(seam[w]), "/editor/assets/runs/%s/%s_latent_last.h3latent", rid, wins[w]);
+            snprintf(seam[nwin], sizeof(seam[0]),
+                     "/editor/assets/runs/%s/window%d_tail.pt", rid, k);
+        else
+            seam[nwin][0] = 0;
+        nwin++;
     }
     long dur = (long)(time(NULL) - g_runs[idx].created);
     if (dur < 0) dur = 0;
@@ -1109,17 +1220,60 @@ static void draft_writeback(size_t idx, const char *wire) {
     }
 
     /* splice the new result block over the first "result":{...} span */
-    char res[12288];
+    static char res[32768];
     int ro = 0;
+    /* (2026-08-30 ray parity + reconstruction law) assetUrls lists EVERY
+     * run output — the stitch film AND ALL N window clips — the way ray
+     * done-cards list all outputs; one model call = one window film.
+     * artifacts keeps the legacy w1..w4 keys (editor compat) and adds
+     * windowFilms/seams arrays with EVERY window. */
+    static char urls[16384];
+    urls[0] = 0;
+    {
+        size_t uo = 0;
+        if (stitch[0])
+            uo += (size_t)snprintf(urls + uo, sizeof(urls) - uo, "\"%s\"", stitch);
+        for (int w = 0; w < nwin; w++) {
+            if (!wf[w][0]) continue;
+            if (uo) urls[uo++] = ',';
+            uo += (size_t)snprintf(urls + uo, sizeof(urls) - uo, "\"%s\"", wf[w]);
+            if (uo >= sizeof(urls) - 96) break;   /* truncation guard */
+        }
+    }
+    static char wfilms[16384], seamsj[16384];
+    {
+        size_t fo = (size_t)snprintf(wfilms, sizeof(wfilms), "[");
+        size_t so2 = (size_t)snprintf(seamsj, sizeof(seamsj), "[");
+        for (int w = 0; w < nwin; w++) {
+            if (w) { wfilms[fo++] = ','; seamsj[so2++] = ','; }
+            fo += (size_t)snprintf(wfilms + fo, sizeof(wfilms) - fo,
+                                   "\"%s\"", wf[w]);
+            so2 += (size_t)snprintf(seamsj + so2, sizeof(seamsj) - so2,
+                                    "\"%s\"", seam[w][0] ? seam[w] : "");
+            if (fo >= sizeof(wfilms) - 96 || so2 >= sizeof(seamsj) - 96) break;
+        }
+        snprintf(wfilms + fo, sizeof(wfilms) - fo, "]");
+        snprintf(seamsj + so2, sizeof(seamsj) - so2, "]");
+    }
     ro += snprintf(res + ro, sizeof(res) - ro,
-        "{\"assetUrls\":[%s%s%s],\"artifacts\":{"
+        "{\"assetUrls\":[%s],\"artifacts\":{"
         "\"video\":\"%s\","
-        "\"video_w1_main\":\"%s\",\"video_w2_main\":\"%s\",\"video_w3_main\":\"%s\","
-        "\"seam_w1\":\"%s\",\"seam_w2\":\"%s\",\"seam_w3\":\"%s\",\"seam_w4\":\"%s\"},"
-        "\"metadata\":{\"runId\":\"%s\",\"seam\":\"latent\",\"history\":[%s]},"
+        "\"video_w1_main\":\"%s\",\"video_w2_main\":\"%s\",\"video_w3_main\":\"%s\",\"video_w4_main\":\"%s\","
+        "\"seam_w1\":\"%s\",\"seam_w2\":\"%s\",\"seam_w3\":\"%s\",\"seam_w4\":\"%s\","
+        "\"windowFilms\":%s,\"seams\":%s},"
+        "\"metadata\":{\"runId\":\"%s\",\"seam\":\"latent-chain\",\"windows\":%d,"
+        "\"history\":[%s]},"
         "\"completedAt\":%ld,\"durationSec\":%ld}",
-        stitch[0] ? "\"" : "", stitch, stitch[0] ? "\"" : "",
-        stitch, wf[0], wf[1], wf[2], seam[0], seam[1], seam[2], seam[3], rid, mhist,
+        urls,
+        stitch,
+        nwin > 0 ? wf[0] : "", nwin > 1 ? wf[1] : "",
+        nwin > 2 ? wf[2] : "", nwin > 3 ? wf[3] : "",
+        nwin > 0 ? (seam[0][0] ? seam[0] : "") : "",
+        nwin > 1 ? (seam[1][0] ? seam[1] : "") : "",
+        nwin > 2 ? (seam[2][0] ? seam[2] : "") : "",
+        nwin > 3 ? (seam[3][0] ? seam[3] : "") : "",
+        wfilms, seamsj,
+        rid, nwin, mhist,
         (long)time(NULL) * 1000, dur);
 
     const char *rp = strstr(buf, "\"result\"");
@@ -1220,6 +1374,48 @@ static void draft_writeback(size_t idx, const char *wire) {
             snprintf(out, sizeof(out), "%s", tmp2);
         }
     }
+
+    /* (2026-08-30 doc-version contract) createdAt IS the doc version:
+     * the studio's hydrate gate re-hydrates a same-id draft only when
+     * the incoming createdAt is strictly newer. Every server-side
+     * rewrite stamps a fresh createdAt so an already-open card picks
+     * up the run result / contract fix instead of early-returning on
+     * the stale stored copy. */
+    {
+        char *cp = strstr(out, "\"createdAt\":");
+        if (cp) {
+            char *ns = cp + strlen("\"createdAt\":");
+            while (*ns == ' ') ns++;
+            char *ne = ns;
+            while (*ne >= '0' && *ne <= '9') ne++;
+            if (ne > ns) {
+                char nb[32];
+                int nl = snprintf(nb, sizeof(nb), "%ld",
+                                  (long)time(NULL) * 1000);
+                size_t tail = strlen(ne);
+                if ((size_t)(ns - out) + nl + tail < sizeof(out) - 1) {
+                    memmove(ns + nl, ne, tail + 1);
+                    memcpy(ns, nb, (size_t)nl);
+                }
+            }
+        }
+    }
+
+    /* (2026-08-30 reconstruction law, v2) the card's params.calls are
+     * the AUTHORED TRUTH and stay VERBATIM: compile_calls_windows maps
+     * ONE call -> ONE window -> ONE model call (1:1, always), so the
+     * authored document IS the actual call list. The old synthetic
+     * split (padding M-N calls with copied text) was itself a
+     * reconstruction lie — it fabricated calls that were never
+     * authored. What the card ALSO shows now: every window film and
+     * every latent seam that ran (windowFilms/seams above), so N calls
+     * on the card always face N films in the artifacts. */
+    { char logmsg[128];
+      snprintf(logmsg, sizeof(logmsg),
+               "[draft] reconstruction: %d calls (verbatim) <-> %d window films",
+               g_runs[idx].tl_n, nwin);
+      fprintf(stderr, "%s\n", logmsg); }
+    (void)0;
 
     char tmp_path[280];
     snprintf(tmp_path, sizeof(tmp_path), "%s.tmp", path);
@@ -1323,11 +1519,31 @@ static void *run_thread_fn(void *argp) {
         gpu_ticket_release();
         return NULL;
     }
-    inference_tensor tensors[16];
+    /* (crash law, 2026-08-30 #3) this was tensors[16] — a FIXED stack
+     * array smashed by any run whose inputs exceed 16: every timeline
+     * window contributes a prompt input tensor, so a 31-call card
+     * (the asset-queue consumer's 95 s film) wrote past the array and
+     * the fortify build ABORTED the whole gateway mid-registration
+     * (ASAN: memset WRITE 104 bytes past tensors[16], server.cpp:1519).
+     * 5-call runs sat at ~8 inputs and never saw the cliff. The array
+     * is now EXACTLY n_inputs — a run can never outgrow its own input
+     * list. */
     size_t n_in = g_runs[idx].n_inputs;
+    inference_tensor *tensors =
+        n_in ? (inference_tensor *)calloc(n_in, sizeof(inference_tensor))
+             : NULL;
+    if (n_in && !tensors) {
+        run_set_state(idx, "error", "input tensor alloc OOM");
+        pthread_mutex_lock(&g_runs_mu);
+        run_slot_release_heap(idx);
+        pthread_mutex_unlock(&g_runs_mu);
+        run_mark_th_done(idx);
+        gpu_ticket_release();
+        dag_free(dag);
+        return NULL;
+    }
     for (size_t i = 0; i < n_in; i++) {
         run_input *ri = &g_runs[idx].inputs[i];
-        memset(&tensors[i], 0, sizeof(tensors[i]));
         tensors[i].name = ri->name;
         tensors[i].dtype = ri->dtype;
         tensors[i].ndim = 1;
@@ -1357,6 +1573,7 @@ static void *run_thread_fn(void *argp) {
                                g_runs[idx].start_from, &result);
     runner_set_stage_cb(g_server_runner, NULL, NULL);
     dag_free(dag);
+    free(tensors);
     for (size_t i = 0; i < g_runs[idx].n_inputs; i++)
         free(g_runs[idx].inputs[i].bytes);
     g_runs[idx].n_inputs = 0;
@@ -1378,8 +1595,61 @@ static void *run_thread_fn(void *argp) {
         draft_writeback(idx, "failed");
     } else {
         inference_free(result);
-        run_set_state(idx, "success", NULL);
-        draft_writeback(idx, "completed");
+        /* (latent-chain law) META CROSS-CHECK before success is
+         * declared: every seam window's chain node wrote
+         * window{k}_tail.pt.meta.json with the EXACT carried_pixel_
+         * frames it spliced. The plan (tl_trims, mirroring
+         * _carried_pixel_frames in h3_chain.py) drove the concat
+         * trim_heads — if the node's truth disagrees with the plan,
+         * the film double-plays or skips at the joins: the run is an
+         * ERROR with the exact diff, never a quiet success. */
+        char chain_err[512] = "";
+        {
+            int n = g_runs[idx].tl_n;
+            int bad_k = 0, bad_meta = 0, bad_plan = 0, missing_k = 0;
+            for (int k = 2; k <= n; k++) {
+                char mp[760];
+                snprintf(mp, sizeof(mp), "%s/window%d_tail.pt.meta.json",
+                         g_runs[idx].out_dir, k - 1);
+                FILE *mf = fopen(mp, "rb");
+                if (!mf) { missing_k = k; break; }
+                char mb[2048];
+                size_t mr = fread(mb, 1, sizeof(mb) - 1, mf);
+                fclose(mf);
+                mb[mr] = 0;
+                const char *cp = strstr(mb, "\"carried_pixel_frames\"");
+                if (!cp) { bad_k = k; break; }
+                const char *c = strchr(cp + 22, ':');
+                if (!c) { bad_k = k; break; }
+                bad_meta = atoi(c + 1);
+                bad_plan = g_runs[idx].tl_trims[k - 1];
+                if (bad_meta != bad_plan) { bad_k = k; break; }
+                bad_meta = bad_plan = 0;
+            }
+            if (missing_k > 0 || bad_k > 0) {
+                if (missing_k > 0)
+                    snprintf(chain_err, sizeof(chain_err),
+                             "latent-chain meta cross-check: window%d chain "
+                             "meta missing (window%d_tail.pt.meta.json not "
+                             "fetched into the run dir — the save node did "
+                             "not author it or the /view fetch failed)",
+                             missing_k, missing_k - 1);
+                else
+                    snprintf(chain_err, sizeof(chain_err),
+                             "latent-chain meta cross-check: window%d meta "
+                             "carried_pixel_frames=%d but the plan trimmed "
+                             "%d — the film would double-play/skip at the "
+                             "join; concat trims and chain math diverged",
+                             bad_k, bad_meta, bad_plan);
+            }
+        }
+        if (chain_err[0]) {
+            run_set_state(idx, "error", chain_err);
+            draft_writeback(idx, "failed");
+        } else {
+            run_set_state(idx, "success", NULL);
+            draft_writeback(idx, "completed");
+        }
     }
 
     /* VRAM management belongs to ComfyUI itself: model_management keeps
@@ -1507,6 +1777,12 @@ typedef struct {
 
 #define AGENT_SESSIONS_MAX 128
 static agent_session g_agent_sessions[AGENT_SESSIONS_MAX];
+
+/* (lane-law fix, 2026-08-31) loopback target for the auto-arm: THIS
+ * server, not a hardcoded port. Set at boot before listen; handlers
+ * read it only while serving. */
+static int g_loop_port = 0;
+static char g_loop_host[64] = "127.0.0.1";
 static size_t g_agent_sessions_n = 0;
 static pthread_mutex_t g_agent_mu = PTHREAD_MUTEX_INITIALIZER;
 
@@ -1528,11 +1804,96 @@ static void lane_norm(const char *in, char *out, size_t outsz) {
 /* resolve a lane to its card dir: the dir NAME or the manifest's
  * "model" field, dash/underscore-insensitive. Returns 0 and fills
  * dir_out/agent_md on success. Scans both plugin roots. */
+/* Plain file copy (continue_from tail staging): 0 on success. */
+static int inf_copy_file(const char *src, const char *dst) {
+    FILE *in = fopen(src, "rb");
+    if (!in) return -1;
+    FILE *out = fopen(dst, "wb");
+    if (!out) { fclose(in); return -1; }
+    char buf[65536];
+    size_t n;
+    int ok = 1;
+    while ((n = fread(buf, 1, sizeof(buf), in)) > 0)
+        if (fwrite(buf, 1, n, out) != n) { ok = 0; break; }
+    fclose(in);
+    if (fclose(out) != 0) ok = 0;
+    return ok ? 0 : -1;
+}
+
+/* (lane SSOT law, 2026-08-30) a card's MODEL TRUTH is the models list
+ * in its card.yaml (one card may serve several models — image_card:
+ * krea-2 default, z-image override). tool.json carries a single
+ * derived "model" string; resolving a lane against only that field
+ * breaks the card for every other model it serves (proven: the z-image
+ * lane resolved nothing once tool.json said krea-2). This helper
+ * matches a lane against EVERY model the card declares. */
+static int lane_card_models_match(const char *card_dir, const char *want) {
+    const char *cands[] = { "card.yaml", "card.json", NULL };
+    char wantn[64];
+    char wtmp[72];
+    snprintf(wtmp, sizeof(wtmp), "%s", want);
+    lane_norm(wtmp, wantn, sizeof(wantn));
+    for (int i = 0; cands[i]; i++) {
+        char p[1536];
+        snprintf(p, sizeof(p), "%s/%s", card_dir, cands[i]);
+        FILE *f = fopen(p, "rb");
+        if (!f) continue;
+        static char buf[131072];
+        size_t n = fread(buf, 1, sizeof(buf) - 1, f);
+        fclose(f);
+        buf[n] = 0;
+        /* yaml list entries "  - id: <model>" */
+        const char *q = buf;
+        while ((q = strstr(q, "id:")) != NULL) {
+            const char *v = q + 3;
+            while (*v == ' ' || *v == '\t') v++;
+            const char *e = v;
+            while (*e && *e != '\n' && *e != ',' && *e != ']' &&
+                   *e != '}' && *e != '"') e++;
+            char mdl[64];
+            size_t L = (size_t)(e - v) < sizeof(mdl) - 1
+                ? (size_t)(e - v) : sizeof(mdl) - 1;
+            memcpy(mdl, v, L);
+            mdl[L] = 0;
+            char mn[64];
+            lane_norm(mdl, mn, sizeof(mn));
+            if (mn[0] && strcmp(mn, wantn) == 0)
+                return 1;
+            q = e;
+        }
+        /* json variant: "id": "model" */
+        q = buf;
+        while ((q = strstr(q, "\"id\"")) != NULL) {
+            const char *v = strchr(q + 4, '"');
+            const char *e = v ? strchr(v + 1, '"') : NULL;
+            if (v && e && (size_t)(e - v - 1) < 64) {
+                char mdl[64], mn[64];
+                snprintf(mdl, sizeof(mdl), "%.*s", (int)(e - v - 1), v + 1);
+                lane_norm(mdl, mn, sizeof(mn));
+                if (mn[0] && strcmp(mn, wantn) == 0)
+                    return 1;
+            }
+            q += 4;
+        }
+    }
+    return 0;
+}
+
 static int lane_resolve(const char *lane, char *dir_out, size_t dirsz,
                         char *agent_md, size_t mdsz) {
     char want[64];
     lane_norm(lane, want, sizeof(want));
+    /* (lane SSOT, 2026-08-30) multi-match arbitration: when more than
+     * one card dir claims the lane (video-gen AND video_timeline both
+     * model h3-timeline), the lane's OWN tool wins — the dir whose
+     * tool.json name normalizes to "<lane>_card". First pass takes the
+     * name match; the old first-match behavior stands when only one
+     * dir matches (image/z-image, image-edit/img-edit unchanged). */
     const char *plugins[] = { "../plugins", "./plugins", NULL };
+    char best_md_dir[1024] = "";
+    static char name_matched_md[65536];
+    name_matched_md[0] = 0;
+    for (int pass = 0; pass < 2; pass++) {
     for (int pi = 0; plugins[pi]; pi++) {
         DIR *d = opendir(plugins[pi]);
         if (!d) continue;
@@ -1550,6 +1911,13 @@ static int lane_resolve(const char *lane, char *dir_out, size_t dirsz,
                 char dn[64];
                 lane_norm(card->d_name, dn, sizeof(dn));
                 int match = strcmp(dn, want) == 0;
+                int name_match = 0;
+                if (!match) {
+                    char card_path[1024];
+                    snprintf(card_path, sizeof(card_path), "%s/%s",
+                             cards_dir, card->d_name);
+                    match = lane_card_models_match(card_path, want);
+                }
                 if (!match) {
                     /* compare against manifest model too */
                     char tj[1536];
@@ -1573,17 +1941,46 @@ static int lane_resolve(const char *lane, char *dir_out, size_t dirsz,
                                 match = strcmp(dn, want) == 0;
                             }
                         }
+                        if (match) {
+                            /* tool "<lane>_card" names the lane's own card */
+                            const char *tn = strstr(buf, "\"name\"");
+                            if (tn) {
+                                const char *r1 = strchr(tn + 6, '"');
+                                const char *r2 = r1 ? strchr(r1 + 1, '"') : NULL;
+                                if (r1 && r2 && (size_t)(r2 - r1 - 1) < sizeof(dn)) {
+                                    char tname[64], tnorm[64];
+                                    snprintf(tname, sizeof(tname), "%.*s",
+                                             (int)(r2 - r1 - 1), r1 + 1);
+                                    lane_norm(tname, tnorm, sizeof(tnorm));
+                                    char wantcard[72];
+                                    snprintf(wantcard, sizeof(wantcard),
+                                             "%s_card", want);
+                                    name_match = strcmp(tnorm, wantcard) == 0;
+                                }
+                            }
+                        }
                     }
                 }
+                if ((pass == 0) != (name_match != 0))
+                    continue;         /* pass 0: name matches only */
                 if (match) {
                     snprintf(dir_out, dirsz, "%s/%s", cards_dir, card->d_name);
                     char am[1536];
                     snprintf(am, sizeof(am), "%s/%s", dir_out, "AGENT.md");
                     FILE *af = fopen(am, "rb");
                     if (!af) break;          /* lane exists but has no agent prompt */
-                    size_t an = fread(agent_md, 1, mdsz - 1, af);
+                    size_t an = fread(pass == 0 ? name_matched_md : agent_md,
+                                      1, mdsz - 1, af);
                     fclose(af);
-                    agent_md[an] = 0;
+                    if (pass == 0) {
+                        name_matched_md[an] = 0;
+                        snprintf(best_md_dir, sizeof(best_md_dir), "%s", dir_out);
+                        closedir(cd); closedir(d);
+                        /* name match is final: publish and stop */
+                        snprintf(dir_out, dirsz, "%s", best_md_dir);
+                        snprintf(agent_md, mdsz, "%s", name_matched_md);
+                        return 0;
+                    }
                     closedir(cd); closedir(d);
                     return 0;
                 }
@@ -1591,6 +1988,7 @@ static int lane_resolve(const char *lane, char *dir_out, size_t dirsz,
             closedir(cd);
         }
         closedir(d);
+    }
     }
     return -1;
 }
@@ -1698,9 +2096,15 @@ static void handle_card_agent(const httplib::Request &req,
     char cmd[262144];
     snprintf(cmd, sizeof(cmd),
         "cd '%s' && MELITE_CARD_TOOLS_LANE='%s' INF_AGENT_SESSION='%s' "
-        "setsid dsh --profile headless \"$(cat '%s')\" "
+        /* the task argv gets a safe label prefix: the prompt FILE
+         * begins with the lane AGENT.md's YAML frontmatter ('---'),
+         * and the headless CLI parses a leading-dash task as an
+         * option and dies instantly (replicated 2026-08-30, agent
+         * door; `--` is not honored by the variadic parser). The
+         * audited prompt file stays verbatim — only argv is labeled. */
+        "setsid dsh --profile headless \"$(printf 'lane session: %s\\n'; cat '%s')\" "
         ">> '%s' 2>&1 < /dev/null &",
-        abs_dir, as->lane, token, abs_prompt, abs_log);
+        abs_dir, as->lane, token, as->lane, abs_prompt, abs_log);
     FILE *sp = popen(cmd, "r");
     if (sp) pclose(sp);
 
@@ -1780,8 +2184,10 @@ static void handle_pipelines_start(const httplib::Request &req,
     static thread_local char tl_wins[TL_MAX_WINDOWS][2048];
     int  tl_wins_len[TL_MAX_WINDOWS];
     int  tl_spans[TL_MAX_WINDOWS];
-    for (int i = 0; i < TL_MAX_WINDOWS; i++) { tl_wins_len[i] = 0; tl_spans[i] = 0; }
-    char tl_cctx_draft[32] = {0};    /* grid law: card-level pin-window override from the draft */
+    int  tl_trims[TL_MAX_WINDOWS];
+    for (int i = 0; i < TL_MAX_WINDOWS; i++) { tl_wins_len[i] = 0; tl_spans[i] = 0; tl_trims[i] = 0; }
+    char tl_carry_draft[32] = {0};    /* latent-chain law: card-level carry override from the draft */
+    char prior_tail_path[1024] = ""; /* continue_from: prior run's tail .pt on disk (host side) */
     int  tl_nw = 0;
     long seed = -1;
     char yaml_override[131072] = "";   /* N-window law: holds expanded graphs */
@@ -1870,19 +2276,37 @@ static void handle_pipelines_start(const httplib::Request &req,
      * tl_wins[1..3] to prompt2..4 - the old !prompt[0] gate dropped
      * every window past the first whenever prompt was present. */
     if (strstr(body, "\"calls\"")) {
-        tl_nw = compile_calls_windows(body, tl_wins, tl_wins_len, tl_spans);
-        /* (grid law) seam-graph resolution failures are loud, before any
-         * run registers: -1 = the pack's context_length widget is not
-         * readable in the seam template; -2 = card-level context_length
-         * is not one of the pack's pin windows (5/22/39/56). */
+        tl_nw = compile_calls_windows(body, tl_wins, tl_wins_len, tl_spans,
+                                      tl_trims);
+        /* (latent-chain law) seam-graph resolution failures are loud,
+         * before any run registers: -1 = the RayH3ChainLatentAV
+         * carry widget is not readable in the seam template;
+         * -2 = card-level carry_latent_frames outside the node's
+         * 1..64 range. */
         if (tl_nw == -1) {
             res.status = 500;
-            res.set_content("{\"error\":\"h3-timeline seam graph unreadable: MiniMaxH3MotionContext.0.context_length not found in pipelines/h3-timeline/window2_t4.json\"}", "application/json");
+            res.set_content("{\"error\":\"h3-timeline seam graph unreadable: RayH3ChainLatentAV.0.carry_latent_frames not found in pipelines/h3-timeline/window2_t4.json\"}", "application/json");
             return;
         }
         if (tl_nw == -2) {
             res.status = 400;
-            res.set_content("{\"error\":\"context_length must be one of the motion-context pack's pin windows: 5, 22, 39 or 56\"}", "application/json");
+            res.set_content("{\"error\":\"carry_latent_frames must be 1..64 (latent tail slots; RayH3ChainLatentAV range)\"}", "application/json");
+            return;
+        }
+        if (tl_nw == -3) {
+            res.status = 400;
+            res.set_content("{\"error\":\"carry_latent_frames too large for a tile: the carried head would swallow every new frame (no grid point covers tile + carried head) — lower the carry or lengthen the shortest call\"}", "application/json");
+            return;
+        }
+        if (tl_nw == -4) {
+            res.status = 400;
+            char err[128];
+            snprintf(err, sizeof(err),
+                     "{\"error\":\"%d calls exceeds TL_MAX_WINDOWS (%d): "
+                     "one card may carry up to 128 calls\"}",
+                     /* we can't easily recount here, but the reject is
+                      * by definition > 128 */ 129, 128);
+            res.set_content(err, "application/json");
             return;
         }
         /* (2026-08-30 queue-lane law) a calls array longer than the 4-window
@@ -1930,7 +2354,11 @@ static void handle_pipelines_start(const httplib::Request &req,
                 }
             }
         }
-        if (!prompt[0] && tl_nw > 0) snprintf(prompt, sizeof(prompt), "%s", tl_wins[0]);
+        /* (prompt law, 2026-08-30) FIRST CALL'S TEXT IS WINDOW 1'S PROMPT.
+         * Applied ONCE below, after BOTH compile paths (body calls AND
+         * draft card doc) — an in-branch copy here missed the draft_id
+         * path, and auto-arm's "lane-auto-arm" label stole window 1
+         * again (proven in the 19:52 ASAN run inject log). */
     }
     /* (2026-08-30 CARD LAW, operator order) a timeline-graph run without
      * its card is REJECTED before registration: compose via the
@@ -1972,20 +2400,30 @@ static void handle_pipelines_start(const httplib::Request &req,
                 size_t dn = fread(dbuf, 1, sizeof(dbuf) - 1, df);
                 fclose(df); dbuf[dn] = 0;
                 tl_nw = compile_calls_windows(dbuf, tl_wins, tl_wins_len,
-                                              tl_spans);
-                /* (grid law) same loud guards as the body path; the card
-                 * doc may carry its own context_length override. */
+                                              tl_spans, tl_trims);
+                /* (latent-chain law) same loud guards as the body path;
+                 * the card doc may carry its own carry override. */
                 if (tl_nw == -1) {
                     res.status = 500;
-                    res.set_content("{\"error\":\"h3-timeline seam graph unreadable: MiniMaxH3MotionContext.0.context_length not found in pipelines/h3-timeline/window2_t4.json\"}", "application/json");
+                    res.set_content("{\"error\":\"h3-timeline seam graph unreadable: RayH3ChainLatentAV.0.carry_latent_frames not found in pipelines/h3-timeline/window2_t4.json\"}", "application/json");
                     return;
                 }
                 if (tl_nw == -2) {
                     res.status = 400;
-                    res.set_content("{\"error\":\"card context_length must be one of the motion-context pack's pin windows: 5, 22, 39 or 56\"}", "application/json");
+                    res.set_content("{\"error\":\"card carry_latent_frames must be 1..64 (latent tail slots; RayH3ChainLatentAV range)\"}", "application/json");
                     return;
                 }
-                tl_scan_context_length(dbuf, tl_cctx_draft, sizeof tl_cctx_draft);
+                if (tl_nw == -3) {
+                    res.status = 400;
+                    res.set_content("{\"error\":\"card carry_latent_frames too large for a tile: the carried head would swallow every new frame — lower the carry or lengthen the shortest call\"}", "application/json");
+                    return;
+                }
+                if (tl_nw == -4) {
+                    res.status = 400;
+                    res.set_content("{\"error\":\"card calls exceed TL_MAX_WINDOWS (128): one card may carry up to 128 calls\"}", "application/json");
+                    return;
+                }
+                tl_scan_carry(dbuf, tl_carry_draft, sizeof tl_carry_draft);
                 if (tl_nw == 0)
                     fprintf(stderr,
                             "[draft] card %s carries no parsable calls\n", did);
@@ -2027,10 +2465,12 @@ static void handle_pipelines_start(const httplib::Request &req,
             return;
         }
     }
-    /* context engine (cross-run continuation, 2026-08-30): continue_from
-     * seeds window1 with the prior run's durable last context (window4
-     * tail h3latent). Unresolved refs are rejected BEFORE registration
-     * (queue lane law: no zombie slots, no silent fallbacks). */
+    /* context engine (cross-run continuation, 2026-08-30; latent-chain
+     * law 2026-08-30): continue_from seeds window1 with the prior run's
+     * LAST window tail (window{N}_tail.pt — the sampled AV latent the
+     * chain nodes write into the run out_dir). Unresolved refs are
+     * rejected BEFORE registration (queue lane law: no zombie slots,
+     * no silent fallbacks). */
     char ctx_prev_run[128] = "";
     {
         char cfr[128] = "";
@@ -2042,53 +2482,243 @@ static void handle_pipelines_start(const httplib::Request &req,
                     return;
                 }
             snprintf(ctx_prev_run, sizeof(ctx_prev_run), "%s", cfr);
+            /* find the prior run's HIGHEST window tail (window1_load
+             * chains from the film's final motion) */
             char clp[600];
-            snprintf(clp, sizeof(clp), "./output/%s/window4_latent_last.h3latent", cfr);
-            if (access(clp, R_OK) != 0) {
+            snprintf(clp, sizeof(clp), "./output/%s", cfr);
+            int last_win = 0;
+            {
+                DIR *d = opendir(clp);
+                if (d) {
+                    struct dirent *e;
+                    while ((e = readdir(d)) != NULL) {
+                        int wk = 0;
+                        if (sscanf(e->d_name, "window%d_tail.pt", &wk) == 1
+                            && wk > last_win && wk <= RUN_TL_MAX)
+                            last_win = wk;
+                    }
+                    closedir(d);
+                }
+            }
+            if (last_win > 0)
+                snprintf(clp, sizeof(clp), "./output/%s/window%d_tail.pt",
+                         cfr, last_win);
+            else
+                clp[0] = 0;
+            if (!clp[0] || access(clp, R_OK) != 0) {
                 res.status = 404;
                 char err[400];
                 snprintf(err, sizeof(err),
-                         "{\"error\":\"continue_from run has no window4 context\",\"run\":\"%s\",\"missing\":\"window4_latent_last.h3latent\"}", cfr);
+                         "{\"error\":\"continue_from run has no window tail latent\",\"run\":\"%s\",\"missing\":\"windowN_tail.pt\"}", cfr);
                 res.set_content(err, "application/json");
                 return;
             }
             if (yaml_override[0]) {
-                char abs_lat[4096];
-                if (realpath(clp, abs_lat)) {
-                    /* capacity law: the swap + inject must fit the buffer.
-                     * A run may NEVER overflow the server (resilience law).
-                     * Reject loudly instead. */
-                    const char *wf0 = strstr(yaml_override, "window1_t4.json");
-                    const char *inj0 = wf0 ? strstr(yaml_override, "\"inject\":{") : NULL;
-                    size_t need = strlen(yaml_override) + 2 + 60 + strlen(abs_lat);
-                    if (!wf0 || !inj0 || need >= sizeof(yaml_override)) {
-                        res.status = 400;
-                        res.set_content("{\"error\":{\"continue_from: composed pipeline too large for context injection\"}}", "application/json");
-                        return;
-                    }
-                    /* swap window1 to the load variant (first occurrence) */
-                    const char *wf = strstr(yaml_override, "window1_t4.json");
-                    if (wf) {
-                        const char rep[] = "window1_load.json";
-                        const char old[] = "window1_t4.json";
-                        size_t ol = sizeof(old) - 1, nl = sizeof(rep) - 1;
-                        memmove((char *)wf + nl, wf + ol, strlen(wf + ol) + 1);
-                        memcpy((char *)wf, rep, nl);
-                        /* inject the abs latent path into window1's params:
-                         * the first inject map gains the loader key */
-                        const char *inj = strstr(yaml_override, "\"inject\":{");
-                        if (inj) {
-                            const char *brace = inj + strlen("\"inject\":{");
-                            char kv[4200];
-                            snprintf(kv, sizeof(kv),
-                                     "\"MiniMaxH3MotionContextLoadLatent.0.latent_path\":\"%s\"," , abs_lat);
-                            size_t kvl = strlen(kv), tail = strlen(brace) + 1;
-                            memmove((char *)brace + kvl, brace, tail);
-                            memcpy((char *)brace, kv, kvl);
-                        }
+                /* (container law 2026-08-30) the prior tail crosses to
+                 * ComfyUI the same way fresh tails do: copied into THIS
+                 * run's out_dir at registration, uploaded via /upload
+                 * before window 1, and referenced by its run-scoped
+                 * RELATIVE path. The $priortail token resolves in the
+                 * registration tailpath pass (run_id + out_dir live
+                 * there); no realpath anywhere. */
+                const char *wf0 = strstr(yaml_override, "window1_t4.json");
+                const char *inj0 = wf0 ? strstr(yaml_override, "\"inject\":{") : NULL;
+                if (!wf0 || !inj0) {
+                    res.status = 400;
+                    res.set_content("{\"error\":{\"continue_from: composed pipeline too large for context injection\"}}", "application/json");
+                    return;
+                }
+                snprintf(prior_tail_path, sizeof(prior_tail_path), "%s", clp);
+                /* swap window1 to the load variant (first occurrence) */
+                const char *wf = strstr(yaml_override, "window1_t4.json");
+                if (wf) {
+                    const char rep[] = "window1_load.json";
+                    const char old[] = "window1_t4.json";
+                    size_t ol = sizeof(old) - 1, nl = sizeof(rep) - 1;
+                    memmove((char *)wf + nl, wf + ol, strlen(wf + ol) + 1);
+                    memcpy((char *)wf, rep, nl);
+                    /* inject the prior tail into window1's chain node:
+                     * the first inject map gains the tail_path key */
+                    const char *inj = strstr(yaml_override, "\"inject\":{");
+                    if (inj) {
+                        const char *brace = inj + strlen("\"inject\":{");
+                        char kv[64];
+                        snprintf(kv, sizeof(kv),
+                                 "\"RayH3ChainLatentAV.0.tail_path\":\"$priortail\",");
+                        size_t kvl = strlen(kv), tail = strlen(brace) + 1;
+                        memmove((char *)brace + kvl, brace, tail);
+                        memcpy((char *)brace, kv, kvl);
                     }
                 }
             }
+        }
+    }
+
+    /* (prompt law, 2026-08-30, unified) FIRST CALL'S TEXT IS WINDOW 1'S
+     * PROMPT — unconditionally, whichever path compiled the windows
+     * (body calls OR the draft card doc). Without this, a flat body
+     * prompt — the auto-arm label "lane-auto-arm", a card title —
+     * steals window 1 while windows 2..N get their call texts: the
+     * film's first window renders the label, not the call (proven in
+     * the 19:52 ASAN run: inject MiniMaxH3ImageToVideo.0.prompt =
+     * "lane-auto-arm" on a 5-call card). The calls document ALWAYS
+     * wins; a flat prompt may only label the run. */
+    if (tl_nw > 0) snprintf(prompt, sizeof(prompt), "%s", tl_wins[0]);
+
+    /* (queue-lane law, 2026-08-30) PRE-REGISTRATION NODE VALIDATION:
+     * every workflow file the run graph references must be readable and
+     * EVERY class_type inside must exist in the LIVE backend's
+     * /object_info. The extermination incident (templates still naming
+     * MiniMaxH3SaveLatent after the pack was removed) produced a
+     * REGISTERED run that died at ComfyUI submit — a zombie slot with a
+     * half-dead sidecar. Now the door rejects 4xx BEFORE the run
+     * registers, naming the missing classes. Unreachable backend is
+     * also a 4xx: the run could never execute. */
+    if (yaml_override[0] && strstr(yaml_override, "workflow_file")) {
+        char surl[256] = "";
+        {
+            const char *su = strstr(yaml_override, "\"server_url\"");
+            if (su) {
+                const char *q = strchr(su + 12, '"');
+                const char *q2 = q ? strchr(q + 1, '"') : NULL;
+                if (q && q2 && (size_t)(q2 - q - 1) < sizeof(surl))
+                    snprintf(surl, (size_t)(q2 - q - 1) + 1, "%s", q + 1);
+            }
+        }
+        char host[128];
+        int port = 0;
+        if (sscanf(surl, "http://%127[^:/]:%d", host, &port) != 2 || port <= 0) {
+            res.status = 400;
+            char eb[420];
+            snprintf(eb, sizeof(eb),
+                     "{\"error\":\"workflow graph has no usable server_url (got '%s') — cannot validate nodes\"}",
+                     surl);
+            res.set_content(eb, "application/json");
+            return;
+        }
+        /* collect distinct class_type names across all referenced
+         * workflow files (deduped; cloned windows share one file) */
+        static char classes[96][96];
+        int n_classes = 0;
+        char missing_files[512] = "";
+        {
+            static char wfbuf[32768];
+            const char *wf = strstr(yaml_override, "workflow_file");
+            while (wf && n_classes < 96) {
+                /* value = first quoted string after the colon following
+                 * the key (handles "key":"v" and key: "v" forms) */
+                const char *colon = strchr(wf, ':');
+                const char *q = colon ? strchr(colon, '"') : NULL;
+                const char *q2 = q ? strchr(q + 1, '"') : NULL;
+                if (!q || !q2) break;
+                char rel[300];
+                size_t rl = (size_t)(q2 - q - 1);
+                if (rl >= sizeof(rel)) { wf = strstr(q2, "workflow_file"); continue; }
+                memcpy(rel, q + 1, rl); rel[rl] = 0;
+                /* read the workflow (repo-relative or build-relative) */
+                FILE *ff = NULL;
+                char pp[600];
+                const char *prefs[] = {"", "../", "pipelines/", NULL};
+                for (int pi = 0; pi < 3 && !ff; pi++) {
+                    snprintf(pp, sizeof(pp), "%s%s", prefs[pi], rel);
+                    if (prefs[pi][0] == 0 && rel[0] != '/')
+                        snprintf(pp, sizeof(pp), "%s", rel);
+                    ff = fopen(pp, "rb");
+                }
+                if (!ff) {
+                    if (!missing_files[0])
+                        snprintf(missing_files, sizeof(missing_files), "%s", rel);
+                    wf = strstr(q2, "workflow_file");
+                    continue;
+                }
+                size_t fr = fread(wfbuf, 1, sizeof(wfbuf) - 1, ff);
+                fclose(ff);
+                wfbuf[fr] = 0;
+                for (const char *ct = strstr(wfbuf, "\"class_type\"");
+                     ct && n_classes < 96;
+                     ct = strstr(ct + 1, "\"class_type\"")) {
+                    const char *cq = strchr(ct + 12, '"');
+                    const char *cq2 = cq ? strchr(cq + 1, '"') : NULL;
+                    if (!cq || !cq2) continue;
+                    size_t cl = (size_t)(cq2 - cq - 1);
+                    if (cl == 0 || cl >= 95) continue;
+                    char cname[96];
+                    memcpy(cname, cq + 1, cl); cname[cl] = 0;
+                    int dup = 0;
+                    for (int ci = 0; ci < n_classes; ci++)
+                        if (strcmp(classes[ci], cname) == 0) { dup = 1; break; }
+                    if (!dup)
+                        snprintf(classes[n_classes++], 96, "%s", cname);
+                }
+                wf = strstr(q2, "workflow_file");
+            }
+        }
+        if (missing_files[0]) {
+            res.status = 400;
+            char eb[640];
+            snprintf(eb, sizeof(eb),
+                     "{\"error\":\"workflow file not found on disk: %s\"}",
+                     missing_files);
+            res.set_content(eb, "application/json");
+            return;
+        }
+        /* one object_info fetch validates everything */
+        httplib::Client cli(host, port);
+        cli.set_connection_timeout(5, 0);
+        cli.set_read_timeout(10, 0);
+        auto oi = cli.Get("/object_info");
+        if (!oi || oi->status != 200) {
+            res.status = 400;
+            char eb[420];
+            snprintf(eb, sizeof(eb),
+                     "{\"error\":\"comfyui backend unreachable at %s — cannot validate workflow nodes (run rejected before registration)\"}",
+                     surl);
+            res.set_content(eb, "application/json");
+            return;
+        }
+        static char oibuf[1 << 21];
+        size_t oilen = oi->body.size();
+        if (oilen >= sizeof(oibuf)) oilen = sizeof(oibuf) - 1;
+        memcpy(oibuf, oi->body.data(), oilen);
+        oibuf[oilen] = 0;
+        char miss[512];
+        size_t ml = 0;
+        miss[0] = 0;
+        for (int ci = 0; ci < n_classes; ci++) {
+            /* whitespace-tolerant match: real ComfyUI serializes
+             * compact ("C":{) but json.dumps backends use ": {" */
+            const char *p2 = strstr(oibuf, classes[ci]);
+            int found = 0;
+            while (p2) {
+                if (p2 > oibuf && p2[-1] == '"') {
+                    const char *e = p2 + strlen(classes[ci]);
+                    if (*e == '"') {          /* closing quote of the key */
+                        e++;
+                        while (*e == ' ' || *e == '\t') e++;
+                        if (*e == ':') {
+                            e++;
+                            while (*e == ' ' || *e == '\t') e++;
+                            if (*e == '{') { found = 1; break; }
+                        }
+                    }
+                }
+                p2 = strstr(p2 + 1, classes[ci]);
+            }
+            if (!found) {
+                int w = snprintf(miss + ml, sizeof(miss) - ml, "%s%s",
+                                 ml ? "," : "", classes[ci]);
+                if (w > 0) ml += (size_t)w;
+                if (ml >= sizeof(miss) - 96) break;
+            }
+        }
+        if (miss[0]) {
+            res.status = 400;
+            char eb[760];
+            snprintf(eb, sizeof(eb),
+                     "{\"error\":\"workflow references node classes missing from the live backend at %s: [%s] — the lane SSOT and the deployed packs diverged (run rejected before registration)\"}",
+                     surl, miss);
+            res.set_content(eb, "application/json");
+            return;
         }
     }
 
@@ -2138,6 +2768,13 @@ static void handle_pipelines_start(const httplib::Request &req,
     g_runs[idx].n_stages = 0;
     g_runs[idx].n_prior = 0;
     g_runs[idx].start_from = 0;
+    /* (latent-chain law) persist the COMPILE PLAN: the meta cross-check
+     * and the 1:1 card reconstruction read these, not re-derivation. */
+    g_runs[idx].tl_n = tl_nw > 0 ? tl_nw : 0;
+    for (int i = 0; i < RUN_TL_MAX; i++) {
+        g_runs[idx].tl_trims[i] = i < tl_nw ? tl_trims[i] : 0;
+        g_runs[idx].tl_spans[i] = i < tl_nw ? tl_spans[i] : 0;
+    }
     pthread_mutex_unlock(&g_runs_mu);
 
     /* the spec sidecar exists from the moment the run is registered */
@@ -2247,6 +2884,42 @@ static void handle_pipelines_start(const httplib::Request &req,
     /* If yaml_override is set (from {yaml:name} or {pipeline} shape), use it directly */
     if (yaml_override[0]) {
         snprintf(g_runs[idx].yaml, sizeof(g_runs[idx].yaml), "%s", yaml_override);
+        /* (artifact law 2026-08-30) yaml_override runs get the SAME
+         * per-run artifact routing as {model} runs: every
+         * "out_dir":"./output" literal is swapped to this run's dir.
+         * Without it the comfyui plugin staged downloads into the
+         * shared ./output root — outside the run's ledger, invisible
+         * to artifact attribution, and colliding across concurrent
+         * runs. The latent-chain tail contract (canonical
+         * out_dir/window<k>_tail.pt) rides on this too. */
+        {
+            size_t fixedcap = strlen(g_runs[idx].yaml) + 512;
+            char *fixed = (char *)malloc(fixedcap);
+            if (!fixed) {
+                run_set_state(idx, "error", "out_dir rewrite OOM");
+                res.status = 500;
+                res.set_content("{\"error\":\"out_dir rewrite OOM\"}",
+                                "application/json");
+                return;
+            }
+            size_t o = 0;
+            const char *p = g_runs[idx].yaml;
+            const char needle[] = "\"out_dir\":\"./output\"";
+            while (*p && o < fixedcap - 128) {
+                if (strncmp(p, needle, sizeof(needle) - 1) == 0) {
+                    o += (size_t)snprintf(fixed + o, fixedcap - o,
+                                          "\"out_dir\":\"%s\"",
+                                          g_runs[idx].out_dir);
+                    p += sizeof(needle) - 1;
+                } else {
+                    fixed[o++] = *p++;
+                }
+            }
+            fixed[o] = 0;
+            snprintf(g_runs[idx].yaml, sizeof(g_runs[idx].yaml), "%s",
+                     fixed);
+            free(fixed);
+        }
         if (prompt[0]) add_run_input_text(idx, "prompt", prompt);
         if (inf_json_string(req.body.c_str(), "lyrics",
                             tmpin, sizeof(tmpin)) == 0 && tmpin[0])
@@ -2337,34 +3010,116 @@ static void handle_pipelines_start(const httplib::Request &req,
         return;
     }
 
-    /* (grid law, 2026-08-31) each window samples its ON-GRID tile length
-     * (window 1) or tile + pack-trim (seam windows); the in-graph pack
-     * trim then delivers exactly the tile. Splice the literal length
-     * into each window node's inject map, anchored on its KSampler.0.seed
-     * entry (one per window node, in file order). A card-level
-     * context_length override also lands in each SEAM window's
-     * MiniMaxH3MotionContext widget (string form — the combo validates
-     * strings, apply() ints either way). */
+    /* (latent-chain law, container edition 2026-08-30) resolve every
+     * $tailpathK inject var to the LITERAL run-scoped RELATIVE path
+     * "<run_id>/windowK_tail.pt". ComfyUI runs CONTAINERIZED with an
+     * overlay view of the repo — an absolute repo path wrote the tail
+     * into the container's own layer and the bytes never reached the
+     * host (proven live 2026-08-30: tails existed only under
+     * /proc/<comfy>/root/...). Tails now travel ComfyUI's artifact
+     * doors: the save node writes <output>/<run_id>/windowK_tail.pt and
+     * returns it as a UI output (the plugin fetches via /view into the
+     * run dir); the plugin uploads the fetched tail via /upload into
+     * <input>/<run_id>/ before each seam window, and the chain node
+     * resolves the same relative path against the INPUT directory.
+     * run_id names the subfolder — unique per run, known here, and no
+     * realpath anywhere (the sub-PATH_MAX realpath buffer was a fortify
+     * abort: chaos C16). */
     if (tl_nw > 0) {
-        char inj[160];
-        char cctx[32] = {0};
-        if (!tl_scan_context_length(req.body.c_str(), cctx, sizeof cctx))
-            snprintf(cctx, sizeof cctx, "%s", tl_cctx_draft);
-        int has_cctx = cctx[0] != 0;
+        /* continue_from: stage the prior tail (+meta) into THIS run's
+         * dir and resolve $priortail to the run-scoped relative path —
+         * the plugin uploads it before window 1 exactly like a fresh
+         * tail. */
+        if (prior_tail_path[0]) {
+            const char *pb = strrchr(prior_tail_path, '/');
+            pb = pb ? pb + 1 : prior_tail_path;
+            char dst[768];
+            snprintf(dst, sizeof(dst), "%s/%s", g_runs[idx].out_dir, pb);
+            mkdir(g_runs[idx].out_dir, 0755);
+            if (inf_copy_file(prior_tail_path, dst) == 0) {
+                char pmeta[1100], dmeta[800];
+                snprintf(pmeta, sizeof(pmeta), "%s.meta.json", prior_tail_path);
+                snprintf(dmeta, sizeof(dmeta), "%s/%s.meta.json",
+                         g_runs[idx].out_dir, pb);
+                inf_copy_file(pmeta, dmeta);   /* optional: meta may be absent */
+                char *pq = strstr(g_runs[idx].yaml, "$priortail");
+                if (pq) {
+                    char lit[192];
+                    snprintf(lit, sizeof(lit), "%s/%s", g_runs[idx].run_id, pb);
+                    size_t vl = strlen("$priortail"), ll = strlen(lit);
+                    size_t used = strlen(g_runs[idx].yaml);
+                    size_t off = (size_t)(pq - g_runs[idx].yaml);
+                    if (used + (ll - vl) + 1 < sizeof(g_runs[idx].yaml)) {
+                        memmove(pq + ll, pq + vl, used - off - vl + 1);
+                        memcpy(pq, lit, ll);
+                    }
+                }
+                fprintf(stderr, "[timeline] continue_from staged %s -> %s\n",
+                        prior_tail_path, dst);
+            }
+        }
+        for (int k = 1; k <= tl_nw; k++) {
+            char var[24], lit[192];
+            snprintf(var, sizeof(var), "$tailpath%d", k);
+            snprintf(lit, sizeof(lit), "%s/window%d_tail.pt",
+                     g_runs[idx].run_id, k);
+            size_t vl = strlen(var), ll = strlen(lit);
+            char *q = strstr(g_runs[idx].yaml, var);
+            while (q) {
+                /* only whole tokens: the char after the var must not be
+                 * a digit ($tailpath1 must not hit $tailpath12) */
+                if (!(q[vl] >= '0' && q[vl] <= '9')) {
+                    size_t used = strlen(g_runs[idx].yaml);
+                    size_t off = (size_t)(q - g_runs[idx].yaml);
+                    if (used + (ll - vl) + 1 >= sizeof(g_runs[idx].yaml))
+                        break;   /* buffer law: loud failure at expand */
+                    memmove(q + ll, q + vl, used - off - vl + 1);
+                    memcpy(q, lit, ll);
+                    q = strstr(q + ll, var);
+                } else {
+                    q = strstr(q + 1, var);
+                }
+            }
+        }
+    }
+
+    /* (latent-chain law, 2026-08-30) each window samples its ON-GRID
+     * length (window 1: tile; seams: tile + carried_px). Splice the
+     * literal length into each window node's inject map, anchored on its
+     * KSampler.0.seed entry (one per window node, in file order). A
+     * card-level carry_latent_frames override also lands in each SEAM
+     * window's RayH3ChainLatentAV widget (INT form). */
+    if (tl_nw > 0) {
+        char inj[256];
+        char carry[32] = {0};
+        if (!tl_scan_carry(req.body.c_str(), carry, sizeof carry)) {
+            if (tl_carry_draft[0])
+                snprintf(carry, sizeof carry, "%s", tl_carry_draft);
+            else
+                snprintf(carry, sizeof carry, "%d", tl_carry_default());
+        }
+        /* (container law 2026-08-30) the SAVE node authors the tail's
+         * .meta.json from its carry widget — so EVERY window (window 1
+         * included) gets the plan's carry injected into
+         * RayH3SaveLatentTail.0.carry_latent_frames; seams additionally
+         * carry it into the chain node. One carry literal per run, fed
+         * to every consumer: save, chain, plan, stitch must agree. */
         const char *needle = "\"KSampler.0.seed\"";
         int wi = 0;
         char *q = strstr(g_runs[idx].yaml, needle);
         while (q && wi < tl_nw) {
             if (tl_wins_len[wi] > 0) {
-                if (wi > 0 && has_cctx)
+                if (wi > 0)
                     snprintf(inj, sizeof(inj),
                              "\"MiniMaxH3ImageToVideo.0.length\":%d,"
-                             "\"MiniMaxH3MotionContext.0.context_length\":\"%s\",",
-                             tl_wins_len[wi], cctx);
+                             "\"RayH3SaveLatentTail.0.carry_latent_frames\":%s,"
+                             "\"RayH3ChainLatentAV.0.carry_latent_frames\":%s,",
+                             tl_wins_len[wi], carry, carry);
                 else
                     snprintf(inj, sizeof(inj),
-                             "\"MiniMaxH3ImageToVideo.0.length\":%d,",
-                             tl_wins_len[wi]);
+                             "\"MiniMaxH3ImageToVideo.0.length\":%d,"
+                             "\"RayH3SaveLatentTail.0.carry_latent_frames\":%s,",
+                             tl_wins_len[wi], carry);
                 size_t il = strlen(inj);
                 size_t used = strlen(g_runs[idx].yaml);
                 size_t off = (size_t)(q - g_runs[idx].yaml);
@@ -2378,46 +3133,71 @@ static void handle_pipelines_start(const httplib::Request &req,
             q = strstr(q + strlen(needle), needle);
         }
     }
-    /* (grid law) the stitch span-cut is now a NO-OP SAFETY: each window
-     * is delivered at exactly its tile by the pack's in-graph trim, so
-     * the spans equal the tiles. They stay wired so a grid drift fails
-     * as a shortened tile, never as an overlapped film. */
+    /* (latent-chain law) THE STITCH TRIM IS LIVE: each seam window
+     * regenerates the previous window's carried tail as its head; the
+     * concat must drop EXACTLY carried_px frames (picture+sound) from
+     * each seam head or every join double-plays. trim_heads comes from
+     * the plan math (tl_trims — mirrors _carried_pixel_frames); the
+     * chain node's <tail>.meta.json carries the same number and the
+     * meta cross-check below hard-errors on any drift. spans stay the
+     * delivered tiles: sampled - carried_px (seams) / sampled (w1). */
     if (tl_nw > 0) {
         int tlfps = inf_json_int(body, "fps", 24);
         if (tlfps <= 0) tlfps = 24;
-        char spansj[1280];   /* N-window law: up to 128 spans */
-        int so = snprintf(spansj, sizeof(spansj), ",\"spans\":[");
+        char trimsj[1280];   /* N-window law: up to 128 trims */
+        int to = snprintf(trimsj, sizeof(trimsj), "[");
         for (int i = 0; i < tl_nw; i++)
-            so += snprintf(spansj + so, sizeof(spansj) - so, "%s%.4f",
-                           i ? "," : "", (double)tl_spans[i] / tlfps);
-        snprintf(spansj + so, sizeof(spansj) - so, "]");
+            to += snprintf(trimsj + to, sizeof(trimsj) - to, "%s%.4f",
+                           i ? "," : "", (double)tl_trims[i] / tlfps);
+        snprintf(trimsj + to, sizeof(trimsj) - to, "]");
         char *th = strstr(g_runs[idx].yaml, "\"trim_heads\"");
         if (th) {
             char *tb = strchr(th, '[');
             char *te = tb ? strchr(tb, ']') : NULL;
             if (tb && te) {
-                size_t il = strlen(spansj);
+                /* replace the whole array (brackets included): the shipped
+                 * [0,0,0,0] placeholder makes room; memmove handles the
+                 * overlap, and the buffer law rejects the impossible. */
                 size_t used = strlen(g_runs[idx].yaml);
-                size_t off = (size_t)(te + 1 - g_runs[idx].yaml);
-                if (used + il + 1 < sizeof(g_runs[idx].yaml)) {
-                    memmove(te + 1 + il, te + 1, used - off + 1);
-                    memcpy(te + 1, spansj, il);
+                size_t cut = (size_t)(te + 1 - tb);
+                size_t il = strlen(trimsj);
+                if (used - cut + il + 1 < sizeof(g_runs[idx].yaml)) {
+                    memmove(tb + il, te + 1, used - cut + 1);
+                    memcpy(tb, trimsj, il);
+                }
+                /* spans ride in after the (now replaced) trim array */
+                char spansj[1280];
+                int so = snprintf(spansj, sizeof(spansj), ",\"spans\":[");
+                for (int i = 0; i < tl_nw; i++)
+                    so += snprintf(spansj + so, sizeof(spansj) - so, "%s%.4f",
+                                   i ? "," : "", (double)tl_spans[i] / tlfps);
+                snprintf(spansj + so, sizeof(spansj) - so, "]");
+                size_t sil = strlen(spansj);
+                used = strlen(g_runs[idx].yaml);
+                size_t off = (size_t)(tb + il - g_runs[idx].yaml);
+                if (used + sil + 1 < sizeof(g_runs[idx].yaml)) {
+                    memmove(tb + il + sil, tb + il, used - off + 1);
+                    memcpy(tb + il, spansj, sil);
                 }
             }
         }
         /* loud tiling evidence: what the film will actually be */
         {
             char cv[32];
-            int trimeff = tl_scan_context_length(req.body.c_str(), cv, sizeof cv)
-                              ? atoi(cv)
-                              : (tl_cctx_draft[0] ? atoi(tl_cctx_draft)
-                                                  : tl_seam_trim());
+            int carry = tl_scan_carry(req.body.c_str(), cv, sizeof cv)
+                            ? atoi(cv)
+                            : (tl_carry_draft[0] ? atoi(tl_carry_draft)
+                                                 : tl_carry_default());
             int tot = 0;
             for (int i = 0; i < tl_nw; i++) tot += tl_spans[i];
             fprintf(stderr,
-                    "[timeline] grid law: windows=%d trim=%d "
-                    "tiles=[%d,%d,%d,%d%s] total=%df/%.3fs\n",
-                    tl_nw, trimeff,
+                    "[timeline] latent-chain law: windows=%d carry=%dslots "
+                    "trims=[%d,%d,%d,%d%s] tiles=[%d,%d,%d,%d%s] "
+                    "total=%df/%.3fs\n",
+                    tl_nw, carry,
+                    tl_trims[0], tl_nw > 1 ? tl_trims[1] : -1,
+                    tl_nw > 2 ? tl_trims[2] : -1, tl_nw > 3 ? tl_trims[3] : -1,
+                    tl_nw > 4 ? ",..." : "",
                     tl_spans[0], tl_nw > 1 ? tl_spans[1] : -1,
                     tl_nw > 2 ? tl_spans[2] : -1, tl_nw > 3 ? tl_spans[3] : -1,
                     tl_nw > 4 ? ",..." : "",
@@ -2577,6 +3357,11 @@ static void handle_pipelines_status(const httplib::Request &req,
              * sidecar's model (the pipeline name the run started with) */
             char yfn2[80] = "";
             sidecar_str(sb, "model", yfn2, sizeof(yfn2));
+            /* card linkage on the restore path too (2026-08-30): after a
+             * restart every historical run serves from here — the wand's
+             * run→card resolution must not depend on the live registry. */
+            char did2[96] = "";
+            sidecar_str(sb, "draft_id", did2, sizeof(did2));
             /* (placeholder-prompt fix, 2026-08-30) the editor merges
              * status.stages[i].params OVER the spec card — without a
              * params.prompt the card renders the editor default
@@ -2664,10 +3449,11 @@ static void handle_pipelines_status(const httplib::Request &req,
             size_t cap2 = strlen(arts2) + strlen(stages2) + strlen(evq) + 800;
             char *out2 = (char *)malloc(cap2);
             snprintf(out2, cap2,
-                "{\"run_id\":\"%s\",\"status\":\"%s\",\"state\":\"%s\",\"error\":%s,\"created\":%ld,\"durationSec\":%ld,\"restored_from_sidecar\":true,\"artifacts\":%s,\"stages\":%s,\"yaml_filename\":\"%s\"}",
-                rid.c_str(), st, st, evq, created, dur, arts2, stages2, yfn2);
+                "{\"run_id\":\"%s\",\"status\":\"%s\",\"state\":\"%s\",\"error\":%s,\"created\":%ld,\"durationSec\":%ld,\"restored_from_sidecar\":true,\"artifacts\":%s,\"stages\":%s,\"yaml_filename\":\"%s\",\"draft_id\":\"%s\"}",
+                rid.c_str(), st, st, evq, created, dur, arts2, stages2, yfn2, did2);
             free(evq); free(arts2);
             res.status = 200;
+            res.set_header("Cache-Control", "no-store");
             res.set_content(out2, "application/json");
             free(out2);
             return;
@@ -2677,11 +3463,16 @@ static void handle_pipelines_status(const httplib::Request &req,
         return;
     }
     char outdir[512], state[16], err[256], yamlhead[80], modelh[80];
+    char didh[96] = "";
     snprintf(outdir, sizeof(outdir), "%s", g_runs[found].out_dir);
     snprintf(state, sizeof(state), "%s", g_runs[found].state);
     snprintf(err, sizeof(err), "%s", g_runs[found].error);
     snprintf(yamlhead, sizeof(yamlhead), "%.60s", g_runs[found].run_id);
     snprintf(modelh, sizeof(modelh), "%.76s", g_runs[found].model);
+    /* card linkage (2026-08-30 full-flow): the replay surfaces (media
+     * sidebar wand) resolve a run -> its action card through draft_id. */
+    if (g_runs[found].draft_id[0])
+        snprintf(didh, sizeof(didh), "%s", g_runs[found].draft_id);
     /* queue position: how many queued runs registered before this one */
     int qpos = 0;
     if (strcmp(state, "queued") == 0) {
@@ -2716,11 +3507,31 @@ static void handle_pipelines_status(const httplib::Request &req,
     size_t cap = strlen(arts) + strlen(stages_json) + strlen(errq) + 700;
     char *out = (char *)malloc(cap);
     snprintf(out, cap,
-        "{\"run_id\":\"%s\",\"status\":\"%s\",\"stages\":%s,\"artifacts\":%s,\"error\":%s,\"queue_position\":%d,\"yaml_filename\":\"%s\"}",
-        yamlhead, wire_state(state), stages_json, arts, errq, qpos, modelh);
+        "{\"run_id\":\"%s\",\"status\":\"%s\",\"stages\":%s,\"artifacts\":%s,\"error\":%s,\"queue_position\":%d,\"yaml_filename\":\"%s\",\"draft_id\":\"%s\"}",
+        yamlhead, wire_state(state), stages_json, arts, errq, qpos, modelh, didh);
+    res.set_header("Cache-Control", "no-store");
     res.set_content(out, "application/json");
     free(arts); free(errq); free(out);
 }
+
+/* == Ray 1:1 card birth (server-js routes/pipeline/drafts.ts createDraft) ==
+ *
+ * The studio's hydrateDraft maps the doc ONLY when it carries the ray birth
+ * fields — draft_id at root, id/inputs/provenance per stage (the stage
+ * view-model does stage.inputs.map(...) unguarded: a missing inputs array
+ * crashes the card render; a missing draft_id leaves the composing
+ * skeleton up forever). The 2026-08-30 compose door persisted the raw tool
+ * body ({intent,stages}) — every /editor/?meliteCards surface froze. This
+ * composer rewrites the incoming body into the FULL ray contract before
+ * persistence:
+ *   root {draft_id,intent,stages,status:"ready",createdAt,completedAt:null}
+ *   stage {id:"s_<i>",inputs:[""],provenance:"agent",...} (injected only
+ *         when absent — idempotent against bodies already carrying them)
+ * Unknown root members are preserved AFTER the contract keys (no data
+ * loss; ray consumers read named keys only). Key order matches ray's
+ * createDraft exactly. */
+static std::string ray_compose_draft_doc(const std::string &body,
+                                         const char *draft_id);
 
 static void handle_pipelines_drafts(const httplib::Request &req,
                                     httplib::Response &res) {
@@ -2765,13 +3576,16 @@ static void handle_pipelines_drafts(const httplib::Request &req,
              (unsigned long long)seq);
     char path[256];
     snprintf(path, sizeof(path), "./drafts/%s.json", id);
+    /* RAY 1:1 (2026-08-30 "nothing less than 1:1 Ray functionality"): the
+     * doc is BORN with the full card contract — not the raw tool body. */
+    std::string doc = ray_compose_draft_doc(req.body, id);
     FILE *f = fopen(path, "w");
     if (!f) {
         res.status = 500;
         res.set_content("{\"error\":\"cannot persist draft\"}", "application/json");
         return;
     }
-    fwrite(req.body.c_str(), 1, req.body.size(), f);
+    fwrite(doc.c_str(), 1, doc.size(), f);
     fclose(f);
 
     /* LANE LAW auto-arm: when an agent session composes its one card,
@@ -2799,7 +3613,7 @@ static void handle_pipelines_drafts(const httplib::Request &req,
                  as->draft_id);
 
         /* loopback start — server-originated queue action */
-        httplib::Client cli("127.0.0.1", 18090);
+        httplib::Client cli(g_loop_host, g_loop_port);
         cli.set_connection_timeout(5);
         auto r = cli.Post("/v1/pipelines/start", card_body,
                           "application/json");
@@ -2810,8 +3624,9 @@ static void handle_pipelines_drafts(const httplib::Request &req,
         (void)r;
     }
 
-    /* echo the stages array back verbatim from the request */
-    const char *sp = strstr(req.body.c_str(), "\"stages\"");
+    /* echo the stages array back verbatim from the COMPOSED doc (the ray
+     * response contract {draftId, stages} reads the birth-time stages) */
+    const char *sp = strstr(doc.c_str(), "\"stages\"");
     char stages[8192] = "[]";
     if (sp) {
         const char *c = sp;
@@ -3321,6 +4136,136 @@ static void handle_draft_stage_patch(const httplib::Request &req,
     res.set_content(out, "application/json");
 }
 
+/* Ray 1:1 calls normalization: the tool schema (cards/video_timeline/
+ * tool.json) declares calls as an ARRAY, and the studio parses it as one
+ * — a JSON-encoded STRING parses to zero calls and the editor silently
+ * renders its default placeholder call ("A single shot — describe…").
+ * Inference-era writers stringified it; the composer un-stringifies at
+ * birth: params.calls:"[…]" → params.calls:[…]. Arrays pass through
+ * untouched. Returns the (possibly rewritten) stage-body text. */
+static std::string ray_unwrap_calls(const std::string &inner) {
+    const char *hs = inner.c_str();
+    const char *he = hs + inner.size();
+    const char *key = NULL;
+    for (const char *q = hs; (q = strstr(q, "\"calls\"")) != NULL; q++) {
+        const char *c = j_skip_ws(q + 7, he);
+        if (c < he && *c == ':') { key = q; break; }
+    }
+    if (!key) return inner;
+    const char *vs = j_skip_ws(strchr(key, ':') + 1, he);
+    if (vs >= he || *vs != '"') return inner;   /* already an array */
+    const char *ve = j_value_end(vs, he);
+    if (!ve) return inner;
+    /* unescape the embedded JSON text */
+    std::string raw(vs + 1, (size_t)(ve - 1 - (vs + 1)));
+    std::string un;
+    un.reserve(raw.size());
+    for (size_t i = 0; i < raw.size(); i++) {
+        if (raw[i] == '\\' && i + 1 < raw.size()) {
+            char nx = raw[i + 1];
+            if (nx == '"' || nx == '\\') { un += nx; i++; continue; }
+            if (nx == 'n') { un += '\n'; i++; continue; }
+            if (nx == 't') { un += '\t'; i++; continue; }
+            if (nx == 'r') { un += '\r'; i++; continue; }
+        }
+        un += raw[i];
+    }
+    /* validate: must parse as a JSON array (the calls document) */
+    const char *us = un.c_str();
+    const char *p0 = j_skip_ws(us, us + un.size());
+    if (*p0 != '[' || !j_value_end(p0, us + un.size()))
+        return inner;
+    std::string out(inner, 0, (size_t)(vs - hs));
+    out += un;
+    out.append(ve, (size_t)(he - ve));
+    return out;
+}
+
+static std::string ray_compose_draft_doc(const std::string &body,
+                                         const char *draft_id) {
+    const char *bs = body.c_str();
+    const char *be = bs + body.size();
+    struct jmember ms[24];
+    int n = j_object_members(bs, be, ms, 24);
+    std::string intent = "\"\"", stages = "[]", extras;
+    for (int i = 0; i < n; i++) {
+        std::string key = ms[i].key;
+        if (key == "intent") {
+            intent.assign(ms[i].vs, (size_t)(ms[i].ve - ms[i].vs));
+        } else if (key == "stages") {
+            stages.assign(ms[i].vs, (size_t)(ms[i].ve - ms[i].vs));
+        } else if (key != "draft_id" && key != "status" &&
+                   key != "createdAt" && key != "completedAt") {
+            extras += ",\"";
+            extras += key;
+            extras += "\":";
+            extras.append(ms[i].vs, (size_t)(ms[i].ve - ms[i].vs));
+        }
+    }
+
+    /* per-stage birth fields: s_-ids, the ""-padded input slot, agent
+     * provenance (createDraft lines 197-232). Span surgery preserves each
+     * stage's authored members verbatim (params stays exactly as sent). */
+    std::string stg = "[";
+    const char *as = stages.c_str(), *ae = as + stages.size();
+    const char *p = j_skip_ws(as + (*as == '[' ? 1 : 0), ae);
+    int idx = 0;
+    while (p < ae && *p != ']') {
+        if (*p == ',') { p = j_skip_ws(p + 1, ae); continue; }
+        if (*p != '{') break;               /* tolerant: stop at malformed */
+        const char *ve = j_value_end(p, ae);
+        if (!ve) break;
+        if (idx > 0) stg += ',';
+        struct jmember sm[48];
+        int sn = j_object_members(p, ve, sm, 48);
+        bool has_id = false, has_inputs = false, has_prov = false;
+        for (int k = 0; k < sn; k++) {
+            std::string kk = sm[k].key;
+            if (kk == "id") has_id = true;
+            else if (kk == "inputs") has_inputs = true;
+            else if (kk == "provenance") has_prov = true;
+        }
+        std::string inner(p + 1, (size_t)(ve - 1 - (p + 1)));
+        while (!inner.empty() && (inner.back() == ' ' || inner.back() == '\n' ||
+               inner.back() == '\t' || inner.back() == '\r'))
+            inner.pop_back();
+        inner = ray_unwrap_calls(inner);
+        char sid[32];
+        snprintf(sid, sizeof(sid), "s_%d", idx);
+        stg += '{';
+        bool c = false;
+        if (!has_id) { stg += "\"id\":\""; stg += sid; stg += "\""; c = true; }
+        if (!inner.empty()) { if (c) stg += ','; stg += inner; c = true; }
+        if (!has_inputs) {
+            if (c) stg += ',';
+            stg += "\"inputs\":[\"\"]";
+            c = true;
+        }
+        if (!has_prov) {
+            if (c) stg += ',';
+            stg += "\"provenance\":\"agent\"";
+            c = true;
+        }
+        stg += '}';
+        p = j_skip_ws(ve, ae);
+        idx++;
+    }
+    stg += ']';
+
+    std::string out = "{\"draft_id\":\"";
+    out += draft_id;
+    out += "\",\"intent\":";
+    out += intent;
+    out += ",\"stages\":";
+    out += stg;
+    out += ",\"status\":\"ready\",\"createdAt\":";
+    out += std::to_string((long long)time(NULL) * 1000);
+    out += ",\"completedAt\":null";
+    out += extras;
+    out += "}";
+    return out;
+}
+
 /* GET /v1/pipelines/drafts/:id — one draft doc, verbatim bytes. */
 static void handle_draft_get(const httplib::Request &req,
                              httplib::Response &res) {
@@ -3347,7 +4292,169 @@ static void handle_draft_get(const httplib::Request &req,
     size_t n;
     while ((n = fread(buf, 1, sizeof(buf), f)) > 0) body.append(buf, n);
     fclose(f);
+    /* (2026-08-30 doc-version contract) createdAt is the doc version and
+     * the studio's refresh gate keys on it — a browser-HTTP-cached copy
+     * would freeze the card at a stale version forever (the write-back
+     * bump can never arrive). Drafts are cheap local reads: never
+     * cacheable. */
+    res.set_header("Cache-Control", "no-store");
     res.set_content(body, "application/json");
+}
+
+/* (2026-08-30 clip-loss gates) count video files (stitch + windows) that
+ * exist in a run dir, and build the ray-named artifact map from disk.
+ * The run registry on disk is the source of truth — a doc or snapshot
+ * that lists fewer clips than the run produced is DEGRADED and must be
+ * healed, never trusted. */
+static int run_dir_clip_names(const char *rdir, char names[6][64],
+                              char keys[6][40]) {
+    int n = 0;
+    char stitch[96] = "";
+    int winmask = 0;
+    DIR *d = opendir(rdir);
+    if (!d) return 0;
+    struct dirent *e;
+    while ((e = readdir(d)) != NULL) {
+        const char *nm = e->d_name;
+        size_t l = strlen(nm);
+        if (l < 5 || strcmp(nm + l - 4, ".mp4") != 0) continue;
+        if (strncmp(nm, "stitch_video", 12) == 0) {
+            snprintf(stitch, sizeof(stitch), "%s", nm);
+            continue;
+        }
+        int wi = 0;
+        if (sscanf(nm, "window%d_video", &wi) == 1 && wi >= 1 && wi <= 4)
+            winmask |= 1 << wi;
+    }
+    closedir(d);
+    if (stitch[0]) {
+        snprintf(names[n], 64, "%s", stitch);
+        snprintf(keys[n], 40, "video");
+        n++;
+    }
+    for (int w = 1; w <= 4; w++) {
+        if (!(winmask & (1 << w))) continue;
+        /* match the exact window video (windowN_video_*.mp4) */
+        DIR *d2 = opendir(rdir);
+        if (!d2) continue;
+        struct dirent *e2;
+        while ((e2 = readdir(d2)) != NULL) {
+            char pat[24];
+            snprintf(pat, sizeof(pat), "window%d_video", w);
+            size_t l2 = strlen(e2->d_name);
+            if (strncmp(e2->d_name, pat, strlen(pat)) == 0 && l2 > 4 &&
+                strcmp(e2->d_name + l2 - 4, ".mp4") == 0 && n < 6) {
+                snprintf(names[n], 64, "%s", e2->d_name);
+                snprintf(keys[n], 40, "video_w%d_main", w);
+                n++;
+                break;
+            }
+        }
+        closedir(d2);
+    }
+    return n;
+}
+
+/* GET /v1/pipelines/drafts/:id/stages/:sid/result — ray's MISSING-RESULT
+ * HEAL door (pipelineRunSlice._healStageResults). Rebuilds the stage
+ * result from the run registry on disk (the SSOT): the doc's
+ * result.metadata.runId when present, else the newest sidecar carrying
+ * this draft_id. Emits {found:true,result:{assetUrls,artifacts,
+ * metadata:{runId}}} — the studio then re-renders every clip. A doc that
+ * lost clips heals; a snapshot that lost clips heals; clip loss can no
+ * longer survive a card re-open. */
+static long sidecar_num(const char *json, const char *key, long dflt);
+static void handle_stage_result(const httplib::Request &req,
+                                httplib::Response &res) {
+    std::string id = req.path_params.at("id");
+    std::string sid = req.path_params.at("sid");
+    if (!draft_id_ok(id)) {
+        res.status = 400;
+        res.set_content("{\"error\":\"bad id\"}", "application/json");
+        return;
+    }
+    /* resolve the run: the doc's result.metadata.runId, else the newest
+     * sidecar with draft_id == id */
+    char rid[128] = "";
+    char path[512];
+    snprintf(path, sizeof(path), "./drafts/%s.json", id.c_str());
+    FILE *f = fopen(path, "rb");
+    if (f) {
+        std::string body;
+        char buf[65536];
+        size_t n;
+        while ((n = fread(buf, 1, sizeof(buf), f)) > 0) body.append(buf, n);
+        fclose(f);
+        const char *rp = strstr(body.c_str(), "\"runId\"");
+        if (rp) {
+            const char *q1 = strchr(rp, '"') ? strchr(strchr(rp, '"') + 1, '"') : NULL;
+            /* skip to the value quote after "runId": */
+            const char *c = strchr(rp, ':');
+            if (c) {
+                const char *vs = strchr(c, '"');
+                const char *ve = vs ? strchr(vs + 1, '"') : NULL;
+                if (vs && ve && (size_t)(ve - vs - 1) < sizeof(rid))
+                    snprintf(rid, sizeof(rid), "%.*s", (int)(ve - vs - 1), vs + 1);
+            }
+            (void)q1;
+        }
+    }
+    if (!rid[0]) {
+        /* scan sidecars newest-first for this draft */
+        struct ent { char dir[128]; long created; } ents[512];
+        int n2 = 0;
+        DIR *d = opendir("./output");
+        if (d) {
+            struct dirent *e;
+            while (e = readdir(d)) {
+                if (strncmp(e->d_name, "run-", 4) != 0 || n2 >= 512) continue;
+                char sd[640], sbuf[8192];
+                snprintf(sd, sizeof(sd), "./output/%s/_pipeline.json", e->d_name);
+                FILE *sf = fopen(sd, "rb");
+                if (!sf) continue;
+                size_t got = fread(sbuf, 1, sizeof(sbuf) - 1, sf);
+                fclose(sf);
+                sbuf[got] = 0;
+                char dr[96] = "";
+                sidecar_str(sbuf, "draft_id", dr, sizeof(dr));
+                if (strcmp(dr, id.c_str()) != 0) continue;
+                snprintf(ents[n2].dir, sizeof(ents[n2].dir), "%s", e->d_name);
+                ents[n2].created = sidecar_num(sbuf, "created", 0);
+                n2++;
+            }
+            closedir(d);
+        }
+        if (n2 == 0) {
+            res.set_content("{\"found\":false}", "application/json");
+            return;
+        }
+        int best = 0;
+        for (int i = 1; i < n2; i++)
+            if (ents[i].created > ents[best].created) best = i;
+        snprintf(rid, sizeof(rid), "%s", ents[best].dir);
+    }
+    char rdir[600];
+    snprintf(rdir, sizeof(rdir), "./output/%s", rid);
+    char names[6][64], keys[6][40];
+    int ncl = run_dir_clip_names(rdir, names, keys);
+    if (ncl == 0) {
+        res.set_content("{\"found\":false}", "application/json");
+        return;
+    }
+    std::string out = "{\"found\":true,\"result\":{\"assetUrls\":[";
+    for (int i = 0; i < ncl; i++) {
+        if (i) out += ",";
+        out += "\"/editor/assets/runs/" + std::string(rid) + "/" + names[i] + "\"";
+    }
+    out += "],\"artifacts\":{";
+    for (int i = 0; i < ncl; i++) {
+        if (i) out += ",";
+        out += "\"" + std::string(keys[i]) + "\":\"/editor/assets/runs/" +
+               std::string(rid) + "/" + names[i] + "\"";
+    }
+    out += "},\"metadata\":{\"runId\":\"" + std::string(rid) + "\"}}}";
+    res.set_header("Cache-Control", "no-store");
+    res.set_content(out, "application/json");
 }
 
 /* GET /v1/pipelines/drafts — merged index (newest-first by mtime), with the
@@ -3414,6 +4521,7 @@ static void handle_draft_list(const httplib::Request &req,
         out += row;
     }
     out += "]}";
+    res.set_header("Cache-Control", "no-store");
     res.set_content(out, "application/json");
 }
 
@@ -3455,6 +4563,61 @@ static void handle_pipelines(const httplib::Request &req,
     res.set_content(result ? result : "{\"error\":\"no output\"}",
                     "application/json");
     inference_free(result);
+}
+
+/* == Ray 1:1 family param schemas (server-js routes/catalog/
+ * family_schemas.ts + media/comfyui/schema/family_schema.ts) ============
+ * GET /v1/pipelines/families/param-schemas  → always 200 {family_id:
+ * schema} for every catalog family. GET /v1/pipelines/families/{family_id}
+ * /param-schema → the schema, or 404 {error,family_id} for an unknown
+ * family. The envelope mirrors the ray derivation exactly — no family
+ * declares a paramSchema, so the derived schema is the pydantic-style
+ * envelope with empty properties (ray parity, wire-shape identical). */
+static void handle_family_param_schemas(const httplib::Request &req,
+                                        httplib::Response &res) {
+    (void)req;
+    std::string out = "{";
+    if (g_catalog) {
+        for (size_t i = 0; i < g_catalog->n_models; i++) {
+            const catalog_model *m = &g_catalog->models[i];
+            if (!m->id || !*m->id) continue;
+            if (out.size() > 1) out += ',';
+            out += "\"";
+            out += m->id;
+            out += "\":{\"title\":\"";
+            out += m->id;
+            out += "_Params\",\"type\":\"object\","
+                   "\"additionalProperties\":false,"
+                   "\"properties\":{},\"required\":[]}";
+        }
+    }
+    out += "}";
+    res.set_content(out, "application/json");
+}
+
+static void handle_family_param_schema(const httplib::Request &req,
+                                       httplib::Response &res) {
+    std::string id = req.path_params.at("family_id");
+    if (g_catalog) {
+        for (size_t i = 0; i < g_catalog->n_models; i++) {
+            const catalog_model *m = &g_catalog->models[i];
+            if (m->id && id == m->id) {
+                std::string out = "{\"title\":\"";
+                out += m->id;
+                out += "_Params\",\"type\":\"object\","
+                       "\"additionalProperties\":false,"
+                       "\"properties\":{},\"required\":[]}";
+                res.set_content(out, "application/json");
+                return;
+            }
+        }
+    }
+    res.status = 404;
+    char out[320];
+    snprintf(out, sizeof(out),
+             "{\"error\":\"Unknown family_id '%s'\",\"family_id\":\"%s\"}",
+             id.c_str(), id.c_str());
+    res.set_content(out, "application/json");
 }
 
 static void handle_catalog(const httplib::Request &req,
@@ -3792,6 +4955,14 @@ static void handle_yaml_list(const httplib::Request &, httplib::Response &res) {
             char py[512];
             snprintf(py, sizeof(py), "../pipelines/%s/pipeline.yaml", e->d_name);
             if (access(py, R_OK) != 0) continue;
+            /* API gate: only list pipelines with api: true */
+            FILE *pf = fopen(py, "r");
+            if (!pf) continue;
+            char pbuf[4096];
+            size_t pn = fread(pbuf, 1, sizeof(pbuf) - 1, pf);
+            fclose(pf);
+            pbuf[pn] = 0;
+            if (!strstr(pbuf, "api: true")) continue;
             snprintf(names[n], sizeof(names[n]), "%s", e->d_name);
             n++;
         }
@@ -4001,6 +5172,7 @@ static void handle_pipelines_runs(const httplib::Request &req,
         snprintf(dir, sizeof(dir), "./output/%s", ents[i].dir);
         snprintf(sd, sizeof(sd), "%s/_pipeline.json", dir);
         char model[64] = "", prompt[2048] = "", status[16] = "unknown";
+        char draft[96] = "";
         long seed = -1, created = ents[i].created;
         FILE *f = fopen(sd, "rb");
         if (f) {
@@ -4010,6 +5182,7 @@ static void handle_pipelines_runs(const httplib::Request &req,
             sidecar_str(buf, "model", model, sizeof(model));
             sidecar_str(buf, "prompt", prompt, sizeof(prompt));
             sidecar_str(buf, "status", status, sizeof(status));
+            sidecar_str(buf, "draft_id", draft, sizeof(draft));
             seed = sidecar_num(buf, "seed", -1);
             created = sidecar_num(buf, "created", created);
             /* ZOMBIE SWEEP (2026-08-29): a "running" sidecar with no matching
@@ -4056,12 +5229,13 @@ static void handle_pipelines_runs(const httplib::Request &req,
             "%s{\"run_id\":\"%s\",\"name\":%s,\"pipeline\":%s,"
             "\"status\":\"%s\",\"created_at\":%ld,\"prompt\":%s,"
             "\"seed\":%ld,\"thumbnail\":\"%s\",\"artifacts\":%s,"
-            "\"params\":{\"seed\":%ld}}",
+            "\"params\":{\"seed\":%ld},\"draft_id\":\"%s\"}",
             i ? "," : "", ents[i].dir, modelq, modelq, status, created,
-            promptq, seed, thumb, arts, seed);
+            promptq, seed, thumb, arts, seed, draft);
         free(arts); free(promptq); free(modelq);
     }
     len = jappend(&out, &cap, len, "]}");
+    res.set_header("Cache-Control", "no-store");
     res.set_content(out, "application/json");
     free(out);
 }
@@ -4111,16 +5285,23 @@ static void handle_asset(const httplib::Request &req, httplib::Response &res) {
  * This handler scans the card dirs and serves the manifests verbatim;
  * the DSH side registers one tool per manifest dynamically. Adding a
  * complex card = adding its dir + tool.json — zero DSH-side code. */
-static void handle_card_tools(const httplib::Request &req,
-                              httplib::Response &res) {
-    /* LANE LAW: ?lane=<name> serves EXACTLY that lane's manifest — a
-     * lane session must never even SEE another card's tool exist. */
-    char lane_want[64] = "";
-    std::string lane_q = req.get_param_value("lane");
-    if (!lane_q.empty()) lane_norm(lane_q.c_str(), lane_want, sizeof(lane_want));
-    const char *plugins[] = { "../plugins", "./plugins", NULL };
-    std::string out = "[";
+/* append every tool.json matching lane_want (empty lane = ALL tools):
+ * card manifests under plugins/<owner>/cards/<card>/tool.json and
+ * curated pipeline manifests under pipelines/<name>/tool.json.
+ * LANE LAW: with a lane set, a session must never even SEE another
+ * lane's tool exist. */
+static void lane_tools_append(std::string &out, const char *lane_want) {
     int count = 0;
+    const char *plugins[] = { "../plugins", "./plugins", NULL };
+    /* (lane SSOT, 2026-08-30) same arbitration as lane_resolve: when a
+     * lane matches several card dirs by model, the lane's OWN tool
+     * ("<lane>_card") is the one manifest served — melite-tools refuses
+     * multi-manifest lanes, and a session must see EXACTLY one tool.
+     * Pass 0: name matches only; pass 1: the old first-match behavior. */
+    char wantcard[72];
+    snprintf(wantcard, sizeof(wantcard), "%s_card", lane_want);
+    for (int pass = 0; pass < 2; pass++) {
+    if (pass == 1 && count) break;   /* pass 0 already found the lane's own tool */
     for (int pi = 0; plugins[pi]; pi++) {
         DIR *d = opendir(plugins[pi]);
         if (!d) continue;
@@ -4140,19 +5321,19 @@ static void handle_card_tools(const httplib::Request &req,
                          cards_dir, card->d_name);
                 FILE *f = fopen(tj, "rb");
                 if (!f) continue;
-                static char buf[65536];
-                size_t n = fread(buf, 1, sizeof(buf) - 1, f);
+                char *buf = (char *)malloc(65536);
+                size_t n = fread(buf, 1, 65535, f);
                 fclose(f);
                 buf[n] = 0;
-                /* serve verbatim if it starts '{' and ends '}' */
-                while (n && (buf[n-1] == '\n' || buf[n-1] == '\r' ||
-                             buf[n-1] == ' ' || buf[n-1] == '\t')) buf[--n] = 0;
+                while (n && (buf[n-1] == 10 || buf[n-1] == 13 ||
+                             buf[n-1] == ' ' || buf[n-1] == 9)) buf[--n] = 0;
                 if (buf[0] != '{' || buf[n-1] != '}' || n < 10) {
                     fprintf(stderr, "[card-tools] skipping malformed %s\n", tj);
+                    free(buf);
                     continue;
                 }
                 if (lane_want[0]) {
-                    char dn[64], mdl[64];
+                    char dn[64], mdl[64], tnorm[64];
                     lane_norm(card->d_name, dn, sizeof(dn));
                     mdl[0] = 0;
                     const char *m = strstr(buf, "\"model\"");
@@ -4165,20 +5346,106 @@ static void handle_card_tools(const httplib::Request &req,
                     }
                     char mn[64];
                     lane_norm(mdl, mn, sizeof(mn));
-                    if (strcmp(dn, lane_want) != 0 && strcmp(mn, lane_want) != 0)
+                    tnorm[0] = 0;
+                    const char *tn = strstr(buf, "\"name\"");
+                    if (tn) {
+                        const char *r1 = strchr(tn + 6, '"');
+                        const char *r2 = r1 ? strchr(r1 + 1, '"') : NULL;
+                        if (r1 && r2 && (size_t)(r2 - r1 - 1) < sizeof(tnorm))
+                            snprintf(tnorm, sizeof(tnorm), "%.*s",
+                                     (int)(r2 - r1 - 1), r1 + 1);
+                        for (char *c2 = tnorm; *c2; c2++)
+                            if (*c2 == '-') *c2 = '_';
+                    }
+                    int lane_match = strcmp(dn, lane_want) == 0 ||
+                                     strcmp(mn, lane_want) == 0;
+                    if (!lane_match) {
+                        /* (lane SSOT law) card.yaml may declare more
+                         * models than tool.json's single string */
+                        char card_path[1024];
+                        snprintf(card_path, sizeof(card_path), "%s/%s",
+                                 cards_dir, card->d_name);
+                        lane_match = lane_card_models_match(card_path,
+                                                           lane_want);
+                    }
+                    int name_match = strcmp(tnorm, wantcard) == 0;
+                    if (!lane_match ||
+                        ((pass == 0) != (name_match != 0))) {
+                        free(buf);
                         continue;
+                    }
                 }
                 if (count) out += ",";
                 out += buf;
                 count++;
+                free(buf);
             }
             closedir(cd);
         }
         closedir(d);
     }
+    }
+    /* curated pipeline manifests: pipelines/<name>/tool.json */
+    const char *pdirs[] = { "../pipelines", "./pipelines", NULL };
+    for (int pi = 0; pdirs[pi]; pi++) {
+        DIR *d = opendir(pdirs[pi]);
+        if (!d) continue;
+        struct dirent *ent;
+        while ((ent = readdir(d)) != NULL) {
+            if (ent->d_name[0] == '.') continue;
+            char tj[900];
+            snprintf(tj, sizeof(tj), "%s/%s/tool.json", pdirs[pi], ent->d_name);
+            FILE *f = fopen(tj, "rb");
+            if (!f) continue;
+            char *buf = (char *)malloc(65536);
+            size_t n = fread(buf, 1, 65535, f);
+            fclose(f);
+            buf[n] = 0;
+            while (n && (buf[n-1] == 10 || buf[n-1] == 13 ||
+                         buf[n-1] == ' ' || buf[n-1] == 9)) buf[--n] = 0;
+            if (buf[0] != '{' || buf[n-1] != '}' || n < 10) {
+                free(buf);
+                continue;
+            }
+            if (lane_want[0]) {
+                char dn[64], mdl[64];
+                lane_norm(ent->d_name, dn, sizeof(dn));
+                mdl[0] = 0;
+                const char *m = strstr(buf, "\"model\"");
+                if (m) {
+                    const char *q1 = strchr(m + 7, '"');
+                    const char *q2 = q1 ? strchr(q1 + 1, '"') : NULL;
+                    if (q1 && q2 && (size_t)(q2 - q1 - 1) < sizeof(mdl))
+                        snprintf(mdl, sizeof(mdl), "%.*s",
+                                 (int)(q2 - q1 - 1), q1 + 1);
+                }
+                char mn[64];
+                lane_norm(mdl, mn, sizeof(mn));
+                if (strcmp(dn, lane_want) != 0 && strcmp(mn, lane_want) != 0) {
+                    free(buf);
+                    continue;
+                }
+            }
+            if (count) out += ",";
+            out += buf;
+            count++;
+            free(buf);
+        }
+        closedir(d);
+    }
+}
+
+static void handle_card_tools(const httplib::Request &req,
+                              httplib::Response &res) {
+    char lane_want[64] = "";
+    std::string lane_q = req.get_param_value("lane");
+    if (!lane_q.empty()) lane_norm(lane_q.c_str(), lane_want, sizeof(lane_want));
+    std::string out = "[";
+    lane_tools_append(out, lane_want);
     out += "]";
     res.set_content(out, "application/json");
 }
+
 static void handle_form_spec(const httplib::Request &req,
                              httplib::Response &res) {
     if (!g_catalog) {
@@ -4460,18 +5727,239 @@ static size_t skills_scan_global(char *out, size_t cap, size_t len, int *first,
 }
 
 /* GET /v1/skills — tier 1: the cheap index */
+/* ---------- LANE BUNDLES --------------------------------------------
+ * BUNDLE LAW: every endpoint serves its OWN tools + skills. A timeline
+ * lane never sees an image skill; an image lane never sees a video
+ * tool. The full index (no ?lane=) stays complete for the GUI. */
+
+/* row appender with grow-and-retry (jappend) — char** so reallocs
+ * propagate, unlike skills_row's by-value buffer. */
+static size_t bundle_row(char **buf, size_t *cap, size_t len, int *first,
+                         const char *id, const char *name,
+                         const char *desc, const char *genre,
+                         const char *model) {
+    char *nq = json_quote(name && name[0] ? name : id);
+    char *dq = json_quote(desc ? desc : "");
+    len = jappend(buf, cap, len,
+                  "%s{\"id\":\"%s\",\"name\":%s,\"description\":%s",
+                  *first ? "" : ",", id, nq, dq);
+    if (genre && genre[0])
+        len = jappend(buf, cap, len, ",\"genre\":\"%s\"", genre);
+    if (model && model[0])
+        len = jappend(buf, cap, len, ",\"model\":\"%s\"", model);
+    len = jappend(buf, cap, len, "}");
+    *first = 0;
+    free(nq); free(dq);
+    return len;
+}
+
+/* scan one unit's agents dir: <agents>/AGENT.md as <prefix>:<uid> plus
+ * every <agents>/skills/<stem>.md (or <stem>/SKILL.md) as
+ * <prefix>:<uid>:<stem>. prefix is "card", "pipeline" or "model". */
+static size_t bundle_scan_unit(char **buf, size_t *cap, size_t len,
+                               int *first, const char *agents_dir,
+                               const char *uid, const char *prefix,
+                               const char *genre) {
+    char agmd[900];
+    snprintf(agmd, sizeof(agmd), "%s/AGENT.md", agents_dir);
+    {
+        char name[128], desc[512], idbuf[224];
+        if (md_frontmatter(agmd, name, sizeof(name), desc, sizeof(desc)) == 0) {
+            snprintf(idbuf, sizeof(idbuf), "%s:%s", prefix, uid);
+            len = bundle_row(buf, cap, len, first, idbuf,
+                             name[0] ? name : uid, desc, genre, NULL);
+        }
+    }
+    char sdir[900];
+    snprintf(sdir, sizeof(sdir), "%s/skills", agents_dir);
+    DIR *d = opendir(sdir);
+    if (!d) return len;
+    struct dirent *de;
+    while ((de = readdir(d)) != NULL) {
+        char stem[128];
+        const char *e = strrchr(de->d_name, '.');
+        if (e && strcasecmp(e, ".md") == 0) {
+            size_t sl = (size_t)(e - de->d_name);
+            if (sl >= sizeof(stem)) continue;
+            memcpy(stem, de->d_name, sl);
+            stem[sl] = 0;
+        } else {
+            size_t sl = strlen(de->d_name);
+            if (sl == 0 || sl >= sizeof(stem)) continue;
+            memcpy(stem, de->d_name, sl);
+            stem[sl] = 0;
+        }
+        char path[1200], name[128], desc[512], idbuf[300];
+        struct stat stb;
+        snprintf(path, sizeof(path), "%s/%s", sdir, de->d_name);
+        if (stat(path, &stb) == 0 && S_ISDIR(stb.st_mode)) {
+            char nested[1200];
+            if (!skills_nested(nested, sizeof(nested), sdir, stem)) continue;
+            snprintf(idbuf, sizeof(idbuf), "%s:%s:%s", prefix, uid, stem);
+            if (md_frontmatter(nested, name, sizeof(name), desc, sizeof(desc)) != 0)
+                snprintf(name, sizeof(name), "%s", stem);
+            len = bundle_row(buf, cap, len, first, idbuf, name, desc, genre, NULL);
+            continue;
+        }
+        snprintf(idbuf, sizeof(idbuf), "%s:%s:%s", prefix, uid, stem);
+        if (md_frontmatter(path, name, sizeof(name), desc, sizeof(desc)) != 0)
+            snprintf(name, sizeof(name), "%s", stem);
+        len = bundle_row(buf, cap, len, first, idbuf, name, desc, genre, NULL);
+    }
+    closedir(d);
+    return len;
+}
+
+/* parse card.yaml top-level "families:" and "skills:" lists of the
+ * form "  - id: <value>" (quotes optional). */
+static int card_yaml_sections(const char *path,
+                              char fams[][64], size_t *nf, size_t maxf,
+                              char skls[][64], size_t *ns, size_t maxs) {
+    *nf = 0;
+    *ns = 0;
+    FILE *f = fopen(path, "rb");
+    if (!f) return -1;
+    char line[600];
+    int section = 0;   /* 0 none, 1 families, 2 skills */
+    while (fgets(line, sizeof(line), f)) {
+        if (line[0] && line[0] != ' ' && line[0] != 9 &&
+            line[0] != '#' && line[0] != 10 && line[0] != 13) {
+            if (strncmp(line, "families:", 9) == 0) section = 1;
+            else if (strncmp(line, "skills:", 7) == 0) section = 2;
+            else section = 0;
+            continue;
+        }
+        if (section != 1 && section != 2) continue;
+        const char *p = line;
+        while (*p == ' ' || *p == 9) p++;
+        if (strncmp(p, "- id:", 5) != 0) continue;
+        p += 5;
+        while (*p == ' ') p++;
+        char val[64];
+        size_t vl = 0;
+        while (*p && *p != 10 && *p != 13 && vl < sizeof(val) - 1)
+            val[vl++] = *p++;
+        val[vl] = 0;
+        if (vl >= 2 && val[0] == val[vl-1] && (val[0] == '"' || val[0] == 39)) {
+            val[vl-1] = 0;
+            memmove(val, val + 1, vl);
+        }
+        if (!val[0]) continue;
+        if (section == 1 && *nf < maxf)
+            snprintf(fams[(*nf)++], 64, "%s", val);
+        else if (section == 2 && *ns < maxs)
+            snprintf(skls[(*ns)++], 64, "%s", val);
+    }
+    fclose(f);
+    return 0;
+}
+
+/* the bundle for ONE lane: card-local skills + skills the card
+ * declares from the global pile + the family models' own skills —
+ * or, for a pipeline lane, the pipeline's own agents bundle. */
+static size_t skills_lane_bundle(char **buf, size_t *cap, size_t len,
+                                 int *first, const char *lane) {
+    char card_dir[1024], agent_md[131072];
+    if (lane_resolve(lane, card_dir, sizeof(card_dir),
+                     agent_md, sizeof(agent_md)) == 0) {
+        char uid[64];
+        const char *slash = strrchr(card_dir, '/');
+        snprintf(uid, sizeof(uid), "%s", slash ? slash + 1 : card_dir);
+        char agdir[1024];
+        snprintf(agdir, sizeof(agdir), "%s/agents", card_dir);
+        len = bundle_scan_unit(buf, cap, len, first, agdir, uid, "card", NULL);
+        /* card.yaml: declared skills + families */
+        char cy[1100];
+        snprintf(cy, sizeof(cy), "%s/card.yaml", card_dir);
+        char fams[12][64]; size_t nf;
+        char skls[12][64]; size_t ns;
+        if (card_yaml_sections(cy, fams, &nf, 12, skls, &ns, 12) == 0) {
+            for (size_t i = 0; i < ns; i++) {
+                char cand[4][700];
+                snprintf(cand[0], sizeof(cand[0]), "./skills/%s.md", skls[i]);
+                snprintf(cand[1], sizeof(cand[1]), "../skills/%s.md", skls[i]);
+                snprintf(cand[2], sizeof(cand[2]), "./skills/%s/SKILL.md", skls[i]);
+                snprintf(cand[3], sizeof(cand[3]), "../skills/%s/SKILL.md", skls[i]);
+                const char *found = NULL;
+                for (int c = 0; c < 4 && !found; c++)
+                    if (access(cand[c], R_OK) == 0) found = cand[c];
+                if (!found) continue;
+                char name[128], desc[512];
+                if (md_frontmatter(found, name, sizeof(name),
+                                   desc, sizeof(desc)) == 0)
+                    len = bundle_row(buf, cap, len, first, skls[i],
+                                     name, desc, NULL, NULL);
+            }
+            for (size_t i = 0; i < nf; i++) {
+                /* several model dirs share one family id (variants);
+                 * take the FIRST one that carries an agents bundle */
+                const catalog_model *m = NULL;
+                if (g_catalog)
+                    for (size_t k = 0; k < g_catalog->n_models; k++) {
+                        const catalog_model *cand = &g_catalog->models[k];
+                        if (cand->id && strcmp(cand->id, fams[i]) == 0
+                            && cand->agent_md_path) { m = cand; break; }
+                    }
+                if (!m) continue;
+                size_t al = strlen(m->agent_md_path);
+                size_t keep = al > 9 ? al - 9 : 0;
+                char magents[600];
+                snprintf(magents, sizeof(magents), "%.*s", (int)keep,
+                         m->agent_md_path);
+                len = bundle_scan_unit(buf, cap, len, first, magents,
+                                       m->id, "model",
+                                       m->genre ? m->genre : "");
+            }
+        }
+        return len;
+    }
+    /* pipeline lane? disk folders use dashes, lane_norm makes
+     * underscores — probe BOTH forms under both pipeline roots. */
+    char want[64];
+    lane_norm(lane, want, sizeof(want));
+    char pdir[600];
+    pdir[0] = 0;
+    {
+        const char *proots[] = { "../pipelines", "./pipelines", NULL };
+        const char *names[] = { lane, want, NULL };
+        for (int r = 0; r < 2 && !pdir[0]; r++)
+            for (int n = 0; n < 2 && !pdir[0]; n++) {
+                char probe[600];
+                snprintf(probe, sizeof(probe), "%s/%s/agents",
+                         proots[r], names[n]);
+                if (access(probe, R_OK) == 0)
+                    snprintf(pdir, sizeof(pdir), "%s", probe);
+            }
+    }
+    if (pdir[0])
+        len = bundle_scan_unit(buf, cap, len, first, pdir, want,
+                               "pipeline", NULL);
+    return len;
+}
+
 static void handle_skills_index(const httplib::Request &req,
                                 httplib::Response &res) {
-    (void)req;
+    /* BUNDLE LAW: ?lane=<name> serves EXACTLY that lane's bundle — a
+     * lane session never sees another endpoint's skills. */
+    char lane_want[64] = "";
+    std::string lane_q = req.get_param_value("lane");
+    if (!lane_q.empty()) lane_norm(lane_q.c_str(), lane_want, sizeof(lane_want));
     size_t cap = 64 * 1024, len = 0;
     char *out = (char *)malloc(cap);
     int first = 1;
     len = jappend(&out, &cap, len, "{\"skills\":[");
+    if (lane_want[0]) {
+        len = skills_lane_bundle(&out, &cap, len, &first,
+                                 lane_q.c_str());   /* RAW: pipelines keep dashes */
+        len = jappend(&out, &cap, len, "]}");
+        res.set_content(out, "application/json");
+        free(out);
+        return;
+    }
     if (g_catalog) {
         for (size_t i = 0; i < g_catalog->n_models; i++) {
             const catalog_model *m = &g_catalog->models[i];
             if (!m->id) continue;
-            /* the model card doc (AGENT.md) */
             if (m->agent_md_path) {
                 char name[128], desc[512];
                 md_frontmatter(m->agent_md_path, name, sizeof(name),
@@ -4482,7 +5970,6 @@ static void handle_skills_index(const httplib::Request &req,
                                  name[0] ? name : m->id, desc,
                                  m->genre ? m->genre : "", m->id);
             }
-            /* per-model skill files: <agents>/skills/*.md */
             if (m->agent_md_path) {
                 char sdir[600];
                 size_t al = strlen(m->agent_md_path);
@@ -4536,6 +6023,54 @@ static void handle_skills_index(const httplib::Request &req,
             }
         }
     }
+    /* card bundles: plugins/<owner>/cards/<card>/agents - ids card:<folder>:* */
+    {
+        const char *plugins[] = { "../plugins", "./plugins", NULL };
+        for (int pi = 0; plugins[pi]; pi++) {
+            DIR *d = opendir(plugins[pi]);
+            if (!d) continue;
+            struct dirent *owner;
+            while ((owner = readdir(d)) != NULL) {
+                if (owner->d_name[0] == '.') continue;
+                char cards_dir[1024];
+                snprintf(cards_dir, sizeof(cards_dir), "%s/%s/cards",
+                         plugins[pi], owner->d_name);
+                DIR *cd = opendir(cards_dir);
+                if (!cd) continue;
+                struct dirent *card;
+                while ((card = readdir(cd)) != NULL) {
+                    if (card->d_name[0] == '.') continue;
+                    char agdir[1024];
+                    snprintf(agdir, sizeof(agdir), "%s/%s/agents",
+                             cards_dir, card->d_name);
+                    if (access(agdir, R_OK) != 0) continue;
+                    len = bundle_scan_unit(&out, &cap, len, &first,
+                                           agdir, card->d_name, "card", NULL);
+                }
+                closedir(cd);
+            }
+            closedir(d);
+        }
+    }
+    /* pipeline bundles: pipelines/<name>/agents - ids pipeline:<name>:* */
+    {
+        const char *pdirs[] = { "../pipelines", "./pipelines", NULL };
+        for (int pi = 0; pdirs[pi]; pi++) {
+            DIR *d = opendir(pdirs[pi]);
+            if (!d) continue;
+            struct dirent *ent;
+            while ((ent = readdir(d)) != NULL) {
+                if (ent->d_name[0] == '.') continue;
+                char agdir[600];
+                snprintf(agdir, sizeof(agdir), "%s/%s/agents",
+                         pdirs[pi], ent->d_name);
+                if (access(agdir, R_OK) != 0) continue;
+                len = bundle_scan_unit(&out, &cap, len, &first,
+                                       agdir, ent->d_name, "pipeline", NULL);
+            }
+            closedir(d);
+        }
+    }
     len = skills_scan_global(out, cap, len, &first, "./skills");
     len = skills_scan_global(out, cap, len, &first, "../skills");
     len = jappend(&out, &cap, len, "]}");
@@ -4559,8 +6094,21 @@ static void handle_skill_read(const httplib::Request &req,
         size_t c = rest.find(':');
         std::string mid = c == std::string::npos ? rest : rest.substr(0, c);
         std::string stem = c == std::string::npos ? "" : rest.substr(c + 1);
-        const catalog_model *m =
-            g_catalog ? catalog_find_model(g_catalog, mid.c_str()) : NULL;
+        /* (bundle-law fix, 2026-08-31) several model dirs share one id
+         * (variants); catalog_find_model returns the FIRST which may
+         * lack an agents bundle - the advertised model:<id> row comes
+         * from the variant WITH one, so resolve the same way. */
+        const catalog_model *m = NULL;
+        if (g_catalog) {
+            const catalog_model *fallback =
+                catalog_find_model(g_catalog, mid.c_str());
+            for (size_t k = 0; k < g_catalog->n_models; k++) {
+                const catalog_model *cand = &g_catalog->models[k];
+                if (cand->id && strcmp(cand->id, mid.c_str()) == 0
+                    && cand->agent_md_path) { m = cand; break; }
+            }
+            m = m ? m : fallback;
+        }
         if (!m) {
             res.status = 404;
             res.set_content("{\"error\":\"unknown model\"}",
@@ -4598,6 +6146,81 @@ static void handle_skill_read(const httplib::Request &req,
                     /* keep flat path for the 404 message */
                 } else snprintf(path, sizeof(path), "%s", nested);
             }
+        }
+    } else if (id.rfind("pipeline:", 0) == 0) {
+        /* (bundle-law fix, 2026-08-31) the bundle doors advertise
+         * pipeline:<name>[:<stem>] ids; the reader must resolve the
+         * SAME ids or the bundle promises skills it cannot serve.
+         * Disk dirs keep dashes, ids normalize to underscores -
+         * probe both, exactly like the bundle scanner. */
+        std::string rest = id.substr(9);
+        size_t c = rest.find(':');
+        std::string pname = c == std::string::npos ? rest : rest.substr(0, c);
+        std::string stem = c == std::string::npos ? "" : rest.substr(c + 1);
+        char pnorm[80], pdash[80];
+        lane_norm(pname.c_str(), pnorm, sizeof(pnorm));
+        /* disk dirs keep dashes while ids normalize to underscores:
+         * probe BOTH spellings across both roots (4 cells) */
+        snprintf(pdash, sizeof(pdash), "%s", pnorm);
+        for (char *p = pdash; *p; p++)
+            if (*p == '_') *p = '-';
+        const char *roots[] = { "./pipelines", "../pipelines" };
+        const char *names[] = { pnorm, pdash };
+        char agents[600] = "";
+        for (int r = 0; r < 2 && !agents[0]; r++)
+            for (int nm = 0; nm < 2 && !agents[0]; nm++) {
+                char p2[768];
+                snprintf(p2, sizeof(p2), "%s/%s/agents",
+                         roots[r], names[nm]);
+                char probe0[900];
+                snprintf(probe0, sizeof(probe0), "%s/AGENT.md", p2);
+                FILE *f0 = fopen(probe0, "r");
+                if (f0) { fclose(f0); snprintf(agents, sizeof(agents), "%s", p2); }
+            }
+        if (!agents[0]) {
+            res.status = 404;
+            res.set_content("{\"error\":\"unknown pipeline lane\"}",
+                            "application/json");
+            return;
+        }
+        if (stem.empty()) {
+            snprintf(path, sizeof(path), "%s/AGENT.md", agents);
+        } else {
+            char nested[900], sdir2[700];
+            snprintf(sdir2, sizeof(sdir2), "%s/skills", agents);
+            snprintf(path, sizeof(path), "%s/%s.md", sdir2, stem.c_str());
+            FILE *np = fopen(path, "r");
+            if (np) fclose(np);
+            else if (skills_nested(nested, sizeof(nested), sdir2,
+                                   stem.c_str()))
+                snprintf(path, sizeof(path), "%s", nested);
+        }
+    } else if (id.rfind("card:", 0) == 0) {
+        /* card:<lane>[:<stem>] - the card-local skill namespace the
+         * bundle scanner serves. Lane-resolve to the audited dir. */
+        std::string rest = id.substr(5);
+        size_t c = rest.find(':');
+        std::string lane = c == std::string::npos ? rest : rest.substr(0, c);
+        std::string stem = c == std::string::npos ? "" : rest.substr(c + 1);
+        char dir_out[1024], agent_md[4096];
+        if (lane_resolve(lane.c_str(), dir_out, sizeof(dir_out),
+                         agent_md, sizeof(agent_md)) != 0) {
+            res.status = 404;
+            res.set_content("{\"error\":\"unknown card lane\"}",
+                            "application/json");
+            return;
+        }
+        if (stem.empty()) {
+            snprintf(path, sizeof(path), "%s/AGENT.md", dir_out);
+        } else {
+            char nested[1500], sdir2[1300];
+            snprintf(sdir2, sizeof(sdir2), "%s/agents/skills", dir_out);
+            snprintf(path, sizeof(path), "%s/%s.md", sdir2, stem.c_str());
+            FILE *np = fopen(path, "r");
+            if (np) fclose(np);
+            else if (skills_nested(nested, sizeof(nested), sdir2,
+                                   stem.c_str()))
+                snprintf(path, sizeof(path), "%s", nested);
         }
     } else {
         snprintf(path, sizeof(path), "./skills/%s.md", id.c_str());
@@ -4719,6 +6342,29 @@ static void *prov_thread_fn(void *argp) {
 
 /* POST /v1/models/provision {model, variant?} - queue the download,
  * answer immediately with the Manager-shaped verdict. */
+/* GET /v1/cards/<lane>/bundle — the LANE DOOR: one call returns the
+ * lane's tool manifest(s) AND its skill bundle. Nothing belonging to
+ * any other endpoint ever appears here. */
+static void handle_lane_bundle(const httplib::Request &req,
+                               httplib::Response &res) {
+    std::string lane = req.matches[1].str();
+    char lane_want[64] = "";
+    lane_norm(lane.c_str(), lane_want, sizeof(lane_want));
+    std::string tools;
+    lane_tools_append(tools, lane_want);
+    size_t cap = 64 * 1024, len = 0;
+    char *out = (char *)malloc(cap);
+    int first = 1;
+    len = jappend(&out, &cap, len, "{\"lane\":\"%s\",\"tools\":[", lane_want);
+    len = jappend(&out, &cap, len, "%s", tools.c_str());
+    len = jappend(&out, &cap, len, "],\"skills\":[");
+    len = skills_lane_bundle(&out, &cap, len, &first,
+                             lane.c_str());       /* RAW: pipelines keep dashes */
+    len = jappend(&out, &cap, len, "]}");
+    res.set_content(out, "application/json");
+    free(out);
+}
+
 static void handle_provision(const httplib::Request &req,
                              httplib::Response &res) {
     if (!g_catalog) {
@@ -5851,6 +7497,7 @@ static void handle_pipelines_resume(const httplib::Request &req,
     g_runs[idx].n_stages = 0;
     g_runs[idx].n_prior = 0;
     g_runs[idx].start_from = 0;
+    g_runs[idx].tl_n = 0;    /* resume door: no fresh compile plan */
     pthread_mutex_unlock(&g_runs_mu);
 
     mkdir("./output", 0755);
@@ -6144,6 +7791,9 @@ inference_server *server_create(int port, const char *bind_addr) {
     inference_server *s = new inference_server;
     if (!s) return NULL;
     s->port    = port;
+    g_loop_port = port;
+    if (bind_addr && *bind_addr && strcmp(bind_addr, "0.0.0.0") != 0)
+        snprintf(g_loop_host, sizeof(g_loop_host), "%s", bind_addr);
     s->ws_port = port + 1;
     snprintf(s->bind_addr, sizeof(s->bind_addr), "%s",
              bind_addr && bind_addr[0] ? bind_addr : "127.0.0.1");
@@ -6162,6 +7812,8 @@ inference_server *server_create(int port, const char *bind_addr) {
     s->srv.Post("/v1/pipelines/resume/:run_id", handle_pipelines_resume);
     s->srv.Post("/v1/pipelines/drafts",  handle_pipelines_drafts);
     s->srv.Get("/v1/pipelines/drafts/:id", handle_draft_get);
+    s->srv.Get(
+        "/v1/pipelines/drafts/:id/stages/:sid/result", handle_stage_result);
     s->srv.Patch("/v1/pipelines/drafts/:id/stages/:sid",
                  handle_draft_stage_patch);
     s->srv.Get("/v1/pipelines/drafts",     handle_draft_list);
@@ -6172,10 +7824,15 @@ inference_server *server_create(int port, const char *bind_addr) {
     s->srv.Get("/v1/form-spec",          handle_form_spec);
     s->srv.Get("/v1/card-tools",          handle_card_tools);
     s->srv.Post(R"(/v1/cards/([^/]+)/agent)", handle_card_agent);
+    s->srv.Get(R"(/v1/cards/([^/]+)/bundle)", handle_lane_bundle);
     s->srv.Get(R"(/v1/cards/([^/]+)/schema)",  handle_card_schema);
     s->srv.Post("/v1/models/provision",  handle_provision);
     s->srv.Get("/v1/models/provision/status", handle_provision_status);
     s->srv.Get("/v1/model-catalog",      handle_catalog);
+    s->srv.Get("/v1/pipelines/families/param-schemas",
+               handle_family_param_schemas);
+    s->srv.Get("/v1/pipelines/families/:family_id/param-schema",
+               handle_family_param_schema);
     s->srv.Get("/v1/kinds",              handle_kinds);
     s->srv.Get("/v1/model/:id",          handle_catalog_model);
     s->srv.Get("/v1/agent-manifest",     handle_agent_manifest);

@@ -10,6 +10,13 @@ RC=0
 echo "== draft invariants (pure JSON, no server) =="
 python3 "$HERE/draft_invariants.py" || RC=1
 
+echo "== latent-chain templates + seam math (pure, no server) =="
+python3 "$HERE/test_chain_templates.py" || RC=1
+python3 "$HERE/test_h3_chain_nodes.py" || RC=1
+
+echo "== live node manifest (talks to ComfyUI; snapshot fallback) =="
+python3 "$HERE/live_node_manifest.py" || RC=1
+
 echo "== api contract (live gateway) =="
 bash "$HERE/api_contract.sh" || RC=1
 

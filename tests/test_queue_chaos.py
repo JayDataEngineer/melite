@@ -43,7 +43,9 @@ import sys
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
+import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HOLD_DELAY = 1.2        # default /prompt hold before the 500
@@ -54,6 +56,37 @@ INTERRUPTS = []         # (path, time)
 RACE_SUBMIT = {}        # prompt_id -> completion timestamp
 RACE_LOCK = threading.Lock()
 ERR2_BODY = None        # built in main(): the hostile error document
+
+# Fake /object_info manifest: filled in main() from the real
+# krea-txt2img workflow.json the fixtures reference (the gateway
+# pre-validates class_types against it before registering a run).
+OBJECT_INFO = {}
+
+
+def build_object_info(repo):
+    global OBJECT_INFO
+    wf = os.path.join(repo, "pipelines", "krea-txt2img", "workflow.json")
+    try:
+        graph = json.load(open(wf))
+        OBJECT_INFO = {n.get("class_type", "?"): {} for n in graph.values()
+                       if isinstance(n, dict)}
+    except Exception as e:            # pragma: no cover - fixture rot
+        print("FATAL cannot build fake /object_info from %s: %s" % (wf, e))
+        sys.exit(2)
+    # C16: the h3-timeline window templates' classes must exist on the
+    # fake backend too, or the pre-registration node guard 400s the very
+    # start we are trying to crash-test.
+    tl_dir = os.path.join(repo, "pipelines", "h3-timeline")
+    for wf_name in sorted(os.listdir(tl_dir)):
+        if not (wf_name.startswith("window") and wf_name.endswith(".json")):
+            continue
+        try:
+            g = json.load(open(os.path.join(tl_dir, wf_name)))
+        except Exception:
+            continue
+        for n in g.values():
+            if isinstance(n, dict) and "class_type" in n:
+                OBJECT_INFO.setdefault(n["class_type"], {})
 
 
 class FakeComfy(BaseHTTPRequestHandler):
@@ -101,6 +134,12 @@ class FakeComfy(BaseHTTPRequestHandler):
             self._reply(200)
 
     def do_GET(self):
+        if self.path == "/object_info":
+            # node-manifest fidelity: the gateway pre-validates every
+            # workflow class_type against /object_info before a run
+            # registers — the fake must speak it too (C14).
+            self._reply(200, json.dumps(OBJECT_INFO).encode())
+            return
         if self.path.startswith("/race/history/"):
             pid = self.path.rsplit("/", 1)[-1]
             with RACE_LOCK:
@@ -127,6 +166,118 @@ def free_port():
     p = s.getsockname()[1]
     s.close()
     return p
+
+
+# ============ C17: the containerized comfy fake ============================
+# The executor runs in a CONTAINER with an overlay view of the repo:
+# node writes to absolute repo paths never reach the host (proven live
+# 2026-08-30 — tails existed only inside /proc/<comfy>/root). The lawful
+# route is ComfyUI's own artifact doors: save node UI outputs -> /view
+# fetch into the run dir -> /upload into the input dir -> chain reads.
+# TLComfy fakes BOTH doors and asserts the seam contract.
+TL_TAIL_BYTES = b"PK-fake-tail-0123456789abcdef"
+TL_META_BYTES = (b'{"carried_video_slots":6,"carried_audio_frames":34,'
+                 b'"carried_pixel_frames":18,"total_video_slots":26}')
+UPLOADS = {}          # (subfolder, filename) -> bytes
+UPLOAD_ORDER = []     # [(subfolder, filename)] in arrival order
+UPLOAD_VIOLATIONS = []  # seam prompts whose tail was never uploaded
+TL_PROMPTS = {}       # prompt_id -> {"tail": (subfolder, filename) or None}
+
+
+class TLComfy(FakeComfy):
+    def _tl_graph(self, body):
+        try:
+            prompt = json.loads(body)
+            return prompt.get("prompt", prompt)
+        except ValueError:
+            return {}
+
+    def do_POST(self):
+        n = int(self.headers.get("Content-Length", 0) or 0)
+        raw = self.rfile.read(n)
+        body = raw.decode("utf-8", "replace")
+        if self.path == "/upload/image":
+            m = re.search(rb'filename="([^"]+)"', raw)
+            sub = re.search(rb'name="subfolder"\r\n\r\n([^\r]+)', raw)
+            fname = m.group(1).decode() if m else "?"
+            subfolder = sub.group(1).decode() if sub else ""
+            payload = raw.split(b"\r\n\r\n", 1)[1]
+            payload = payload.rsplit(b"\r\n--", 1)[0]
+            UPLOADS[(subfolder, fname)] = payload
+            UPLOAD_ORDER.append((subfolder, fname))
+            self._reply(200, json.dumps({"name": fname,
+                                         "subfolder": subfolder}).encode())
+            return
+        if self.path == "/prompt":
+            self._record(self.path, body)
+            g = self._tl_graph(body)
+            pid = "tl-%04d" % (len(TL_PROMPTS) + 1)
+            tail = None
+            chain = None
+            for node in g.values():
+                if not isinstance(node, dict):
+                    continue
+                ct = node.get("class_type", "")
+                if ct == "RayH3SaveLatentTail":
+                    p = node.get("inputs", {}).get("path", "")
+                    tail = (p.rsplit("/", 1)[0], p.rsplit("/", 1)[-1])
+                elif ct == "RayH3ChainLatentAV":
+                    chain = node.get("inputs", {}).get("tail_path", "")
+            if chain:
+                want = (chain.rsplit("/", 1)[0], chain.rsplit("/", 1)[-1])
+                if UPLOADS.get(want) is None:
+                    UPLOAD_VIOLATIONS.append((pid, chain))
+            TL_PROMPTS[pid] = {"tail": tail}
+            self._reply(200, json.dumps({"prompt_id": pid}).encode())
+            return
+        if self.path.endswith("/interrupt"):
+            self._reply(200)
+            return
+        self._reply(200)
+
+    def do_GET(self):
+        if self.path == "/object_info":
+            self._reply(200, json.dumps(OBJECT_INFO).encode())
+            return
+        if "/history/" in self.path:
+            pid = self.path.rsplit("/", 1)[-1]
+            info = TL_PROMPTS.get(pid)
+            if info is None:
+                self._reply(200, b"{}")
+                return
+            outputs = {}
+            if info.get("tail"):
+                sub, fname = info["tail"]
+                outputs["RayH3SaveLatentTail.0"] = {
+                    "images": [
+                        {"filename": fname, "subfolder": sub,
+                         "type": "output"},
+                        {"filename": fname + ".meta.json", "subfolder": sub,
+                         "type": "output"},
+                    ]}
+            self._reply(200, json.dumps({
+                pid: {"prompt": [0, pid, {}], "outputs": outputs,
+                      "status": {"status_str": "success",
+                                 "completed": True,
+                                 "messages": [["execution_success",
+                                               {"prompt_id": pid}]]}}
+            }).encode())
+            return
+        if self.path.startswith("/view"):
+            qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            fname = (qs.get("filename") or [""])[0]
+            sub = (qs.get("subfolder") or [""])[0]
+            if fname.endswith(".meta.json"):
+                self._reply(200, TL_META_BYTES)
+            elif fname:
+                self._reply(200, TL_TAIL_BYTES)
+            else:
+                self._reply(404)
+            return
+        self._reply(404)
+
+    def log_message(self, *a):
+        pass
 
 
 class Api:
@@ -244,6 +395,7 @@ def main():
     if not os.path.exists(binpath):
         print("SKIP: inference_cli not built")
         return 0
+    build_object_info(repo)
 
     global ERR2_BODY
     ERR2_BODY = json.dumps({"error": (
@@ -277,6 +429,47 @@ def main():
     fixture_yaml("_chaos_slow", "/slow", timeout_s=3)
     fixture_yaml("_chaos_err2", "/err2")
 
+    # C14 fixture: a workflow naming a class the backend does NOT have
+    # (the 2026-08-30 extermination incident shape — the run must die
+    # at the DOOR with 4xx, never register a zombie slot)
+    dead_wf = os.path.join(repo, "pipelines", "_chaos_deadnode",
+                           "dead_workflow.json")
+    os.makedirs(os.path.dirname(dead_wf), exist_ok=True)
+    with open(dead_wf, "w") as f:
+        json.dump({
+            "n1": {"class_type": "CheckpointLoaderSimple",
+                   "inputs": {"ckpt_name": "x.safetensors"}},
+            "n2": {"class_type": "MiniMaxH3SaveLatent",
+                   "inputs": {"latent": ["n1", 0]}},
+        }, f)
+    with open(os.path.join(repo, "pipelines", "_chaos_deadnode",
+                           "pipeline.yaml"), "w") as f:
+        f.write(
+            "name: _chaos_deadnode\n"
+            "description: \"queue chaos fixture - dead node class\"\n"
+            "nodes:\n"
+            "  - id: generate\n"
+            "    type: comfyui\n"
+            "    params: {\"server_url\":\"http://127.0.0.1:%d\","
+            "\"workflow_file\":\"../pipelines/_chaos_deadnode/"
+            "dead_workflow.json\",\"out_dir\":\"./output\","
+            "\"timeout_s\":30}\n" % comfy_port)
+
+    # C16 fixture: the REAL h3-timeline lane shape (window templates,
+    # $tailpath inject vars, trim_heads stitch) against the FAKE comfy —
+    # reproduces the 2026-08-30 19:52/20:12 registration crash class
+    # (fortify abort after "[draft] run ... linked to card", before the
+    # first window ever executes) with zero GPU exposure.
+    tl_yaml = open(os.path.join(repo, "pipelines", "h3-timeline",
+                                "pipeline.yaml")).read()
+    tl_yaml = tl_yaml.replace("name: h3-timeline", "name: _chaos_tl")
+    tl_yaml = tl_yaml.replace("http://127.0.0.1:18465",
+                              "http://127.0.0.1:%d" % comfy_port)
+    os.makedirs(os.path.join(repo, "pipelines", "_chaos_tl"), exist_ok=True)
+    with open(os.path.join(repo, "pipelines", "_chaos_tl",
+                           "pipeline.yaml"), "w") as f:
+        f.write(tl_yaml)
+
     port = free_port()
     srv_log = "/tmp/chaos_srv_%d.log" % port
     srv = subprocess.Popen(
@@ -286,7 +479,8 @@ def main():
     api = Api("http://127.0.0.1:%d" % port)
     run_ids = []
     made_fixtures = ["_queue_test", "_chaos_hold", "_chaos_race",
-                     "_chaos_slow", "_chaos_err2"]
+                     "_chaos_slow", "_chaos_err2", "_chaos_deadnode",
+                     "_chaos_tl"]
     failures = []
     n_pass = [0]
 
@@ -924,6 +1118,320 @@ def main():
         check(not poll_violations,
               "CX: all %d polled 200-responses parsed as JSON (%r)" %
               (poll_count[0], poll_violations[:3]))
+
+        # ================= C14: dead-node door guard (2026-08-30) ==
+        # A workflow naming a class missing from the live /object_info
+        # (the extermination incident) must be rejected 4xx BEFORE any
+        # run registers: no zombie slot, no sidecar, queue untouched.
+        print("\n-- C14 dead-node door guard (pre-registration 4xx)")
+        q_before = api.queue()
+        code, body = api.submit_yaml("_chaos_deadnode", "dead-node-victim")
+        q_after = api.queue()
+        try:
+            err = json.loads(body).get("error", "")
+        except ValueError:
+            err = body[:120]
+        check(code == 400,
+              "C14: dead-class submit rejected 4xx (got %d)" % code)
+        check("MiniMaxH3SaveLatent" in err,
+              "C14: 4xx names the missing class (%r)" % err[:120])
+        check(len(q_after.get("runs", q_after.get("queue", []))) ==
+              len(q_before.get("runs", q_before.get("queue", []))),
+              "C14: no run registered for the rejected graph")
+        check(not any("dead-node-victim" in str(r) for r in
+                      q_after.get("runs", q_after.get("queue", []))),
+              "C14: rejected prompt absent from the queue")
+        # and the happy path still passes the same door (C1 fixtures run
+        # through the same validation against the same fake manifest)
+
+        # ============ C15: lane manifest arbitration (2026-08-30) ==
+        # Two card dirs may legitimately declare the same pipeline model
+        # (video-gen's video_card and video_timeline's h3_timeline_card
+        # both say "h3-timeline"). The lane law needs EXACTLY ONE
+        # manifest per lane: melite-tools refuses to mount a session
+        # whose lane resolves N>1 (proven live: agent door spawn died
+        # with 'resolved 2 manifests (must be exactly 1)'). The lane's
+        # OWN tool — the dir whose tool.json name is "<lane>_card" —
+        # must win; single-match lanes stay byte-identical.
+        print("\n-- C15 lane manifest arbitration")
+        code, body = api._req("GET", "/v1/card-tools?lane=h3_timeline")
+        try:
+            manifests = json.loads(body)
+            names = [m.get("name") for m in manifests]
+        except ValueError:
+            manifests, names = None, [body[:80]]
+        check(code == 200 and isinstance(manifests, list),
+              "C15: lane card-tools 200 JSON (got %d %r)" % (code, body[:80]))
+        check(names == ["h3_timeline_card"],
+              "C15: h3_timeline resolves EXACTLY its own tool %r" % names)
+        # a single-match lane (model z-image -> image_card) is unchanged
+        code, body = api._req("GET", "/v1/card-tools?lane=z-image")
+        try:
+            names2 = [m.get("name") for m in json.loads(body)]
+        except ValueError:
+            names2 = [body[:80]]
+        check(code == 200 and names2 == ["image_card"],
+              "C15: single-match lane z-image still image_card %r" % names2)
+        # laneless listing still serves every card (no filter regressions)
+        code, body = api._req("GET", "/v1/card-tools")
+        try:
+            all_names = sorted(m.get("name") for m in json.loads(body))
+        except ValueError:
+            all_names = []
+        check(code == 200 and "h3_timeline_card" in all_names and
+              "image_card" in all_names,
+              "C15: laneless card-tools serves all cards %r" % all_names)
+
+        # ============ C16: 5-window draft registration (2026-08-30) ==
+        # The auto-arm start shape ({"yaml":..,"draft_id":..,"prompt":
+        # "lane-auto-arm"}) against a 5-call card document crashed the
+        # gateway TWICE live (19:52, 20:12): fortify abort after
+        # "[draft] run ... linked to card", before any window executed.
+        # Same draft (verbatim params), fake backend, zero GPU: the
+        # start must return 2xx, register the run, and the gateway must
+        # SURVIVE (resilience law: no code path may abort the server).
+        print("\n-- C16 five-window draft registration survives")
+        crash_draft_src = None
+        for cand in sorted(os.listdir(os.path.join(build, "drafts")),
+                           reverse=True):
+            if not cand.startswith("draft-"):
+                continue
+            try:
+                dd = json.load(open(os.path.join(build, "drafts", cand)))
+                calls = dd["stages"][0]["params"]["calls"]
+            except Exception:
+                continue
+            if isinstance(calls, list) and len(calls) == 5:
+                crash_draft_src = os.path.join(build, "drafts", cand)
+                break
+        check(crash_draft_src is not None,
+              "C16: found a 5-call draft doc to replay (%s)" %
+              (crash_draft_src or "none in build/drafts"))
+        if crash_draft_src:
+            dd = json.load(open(crash_draft_src))
+            card = {
+                "draft_id": "_chaos_tl_card",
+                "intent": dd.get("intent", "chaos replay"),
+                "stages": [{
+                    "id": "compose", "title": "chaos replay",
+                    "kind": "card", "service": "h3-timeline",
+                    "params": dd["stages"][0]["params"],
+                    "inputs": [], "provenance": "chaos-replay",
+                }],
+                "status": "ready",
+            }
+            with open(os.path.join(build, "drafts",
+                                   "_chaos_tl_card.json"), "w") as f:
+                json.dump(card, f)
+            code, body = api.submit_yaml(
+                "_chaos_tl", "lane-auto-arm",
+                raw_body={"yaml": "_chaos_tl",
+                          "draft_id": "_chaos_tl_card",
+                          "prompt": "lane-auto-arm"})
+            registered = None
+            try:
+                registered = json.loads(body).get("run_id")
+            except ValueError:
+                pass
+            check(code in (200, 202) and registered,
+                  "C16: 5-call auto-arm start 2xx + run_id (got %d %r)" %
+                  (code, body[:120]))
+            if registered:
+                run_ids.append(registered)
+                api.stop(registered)
+                wait_for(lambda: api.status(registered).get("status") in
+                         ("stopped", "error", "failed", "completed"),
+                         30, "chaos tl run terminal")
+            # the gateway process itself must still be alive
+            check(srv.poll() is None,
+                  "C16: gateway process survived registration "
+                  "(exit=%r)" % srv.poll())
+            code, body = api._req("GET", "/v1/queue")
+            check(code == 200, "C16: queue still served after 5-window "
+                  "registration (got %d)" % code)
+            # registration evidence: the run's yaml carries resolved
+            # ABSOLUTE tail paths (no $tailpath vars left behind)
+            if registered:
+                sc_path = os.path.join(build, "output", registered,
+                                       "_pipeline.json")
+                try:
+                    y = json.load(open(sc_path)).get("yaml", "")
+                except Exception:
+                    y = ""
+                check("$tailpath" not in y,
+                      "C16: run yaml has literal tail paths")
+                check(y.count("_tail.pt") >= 5,
+                      "C16: five tail paths present (%d)" %
+                      y.count("_tail.pt"))
+            try:
+                os.unlink(os.path.join(build, "drafts",
+                                       "_chaos_tl_card.json"))
+            except OSError:
+                pass
+
+        # ====== C17: container-boundary tail law (/view + /upload) ==
+        # The executor is containerized: node writes to absolute repo
+        # paths stay in its overlay. Tails must travel the artifact
+        # doors: save node UI outputs -> plugin /view fetch -> canonical
+        # out_dir/window<k>_tail.pt -> plugin /upload (input dir) ->
+        # chain node reads. TLComfy fakes the doors and records every
+        # upload; a seam prompt whose tail was never uploaded is a
+        # VIOLATION. The stitch stage failing afterwards (no real
+        # videos) is expected — C17 asserts the boundary facts.
+        if crash_draft_src:
+            print("\n-- C17 container-boundary tail law")
+            tl_comfy = ThreadingHTTPServer(("127.0.0.1", 0), TLComfy)
+            tl_port = tl_comfy.server_address[1]
+            threading.Thread(target=tl_comfy.serve_forever,
+                             daemon=True).start()
+            tl2_yaml = tl_yaml.replace(
+                "http://127.0.0.1:%d" % comfy_port,
+                "http://127.0.0.1:%d" % tl_port).replace(
+                "name: _chaos_tl", "name: _chaos_tl2")
+            os.makedirs(os.path.join(repo, "pipelines", "_chaos_tl2"),
+                        exist_ok=True)
+            with open(os.path.join(repo, "pipelines", "_chaos_tl2",
+                                   "pipeline.yaml"), "w") as f:
+                f.write(tl2_yaml)
+            made_fixtures.append("_chaos_tl2")
+            dd = json.load(open(crash_draft_src))
+            card2 = {
+                "draft_id": "_chaos_tl_card2",
+                "intent": "container boundary replay",
+                "stages": [{"id": "compose", "title": "cb replay",
+                            "kind": "card", "service": "h3-timeline",
+                            "params": dd["stages"][0]["params"],
+                            "inputs": [], "provenance": "chaos-replay"}],
+                "status": "ready",
+            }
+            with open(os.path.join(build, "drafts",
+                                   "_chaos_tl_card2.json"), "w") as f:
+                json.dump(card2, f)
+            UPLOADS.clear(); UPLOAD_ORDER.clear()
+            UPLOAD_VIOLATIONS.clear(); TL_PROMPTS.clear()
+            code, body = api.submit_yaml(
+                "_chaos_tl2", "lane-auto-arm",
+                raw_body={"yaml": "_chaos_tl2",
+                          "draft_id": "_chaos_tl_card2",
+                          "prompt": "lane-auto-arm"})
+            tl_rid = None
+            try:
+                tl_rid = json.loads(body).get("run_id")
+            except ValueError:
+                pass
+            check(code in (200, 202) and tl_rid,
+                  "C17: boundary run registered (got %d %r)" %
+                  (code, body[:100]))
+            if tl_rid:
+                run_ids.append(tl_rid)
+                try:
+                    wait_for(lambda: api.status(tl_rid).get("status") in
+                             ("failed", "completed", "stopped", "error"),
+                             240, "tl2 run terminal")
+                except AssertionError:
+                    api.stop(tl_rid)
+                out2 = os.path.join(build, "output", tl_rid)
+                # 1) tails fetched from the OUTPUT door under canonical
+                #    names (window1..4 tails; w5's is fetched too but the
+                #    stitch failure may cut the run before w5's stage —
+                #    every COMPLETED window's tail must be on disk)
+                n_tails = len([f for f in os.listdir(out2)
+                               if re.match(r"window\d+_tail\.pt$", f)])
+                n_metas = len([f for f in os.listdir(out2)
+                               if re.match(r"window\d+_tail\.pt\.meta\.json$",
+                                           f)])
+                check(n_tails >= 2,
+                      "C17: tails fetched via /view into run dir (%d)" %
+                      n_tails)
+                check(n_metas >= 2,
+                      "C17: tail metas fetched via /view (%d)" % n_metas)
+                if n_tails:
+                    t0 = open(os.path.join(out2, "window1_tail.pt"),
+                              "rb").read()
+                    check(t0 == TL_TAIL_BYTES,
+                          "C17: fetched tail bytes match the /view source")
+                # 2) every seam prompt's tail went through /upload FIRST
+                check(not UPLOAD_VIOLATIONS,
+                      "C17: no seam rendered without its uploaded tail %r" %
+                      (UPLOAD_VIOLATIONS[:2],))
+                ups = [f for (_, f) in UPLOAD_ORDER
+                       if re.match(r"window\d+_tail\.pt$", f)]
+                check(len(ups) >= 2,
+                      "C17: tails uploaded to the input door (%d)" %
+                      len(ups))
+                subs = {s for (s, _) in UPLOAD_ORDER}
+                check(all(s and s.startswith("run-") for s in subs),
+                      "C17: uploads carry the run-scoped subfolder %r" %
+                      sorted(subs)[:3])
+                api.stop(tl_rid)
+            try:
+                os.unlink(os.path.join(build, "drafts",
+                                       "_chaos_tl_card2.json"))
+            except OSError:
+                pass
+            tl_comfy.shutdown()
+
+        # ====== C18: crash-law — N>16 inputs + >128 calls rejection ===
+        # tensors[16] was a FIXED stack array smashed by any run whose
+        # inputs exceeded 16 (31-window asset-queue card → gateway ABORT
+        # via fortify, 2026-08-30). The heap fix (calloc n_inputs) must
+        # survive beyond 16. Separately, compile_calls_windows silently
+        # dropped calls past TL_MAX_WINDOWS (128) — a truncated card
+        # would lie about its own length. Both must be LOUD before any
+        # run registers.
+        print("\n-- C18 crash-law: dynamic inputs + 128-call ceiling")
+        # (a) 20-call body: registers (20 inputs fit the dynamic array)
+        #     and the gateway stays alive — no fortify abort.
+        #     Use the chaos fixture (server_url → fake comfy) so graph
+        #     validation passes against the FakeComfy /object_info.
+        calls20 = [{"text": "c%d" % i, "start_frame": i*30,
+                    "end_frame": (i+1)*30} for i in range(20)]
+        code, body = api._req("POST", "/v1/pipelines/start",
+                              {"yaml": "_chaos_tl",
+                               "calls": calls20,
+                               "seed": 99, "fps": 24,
+                               "prompt": "twenty-call test"})
+        try:
+            j20 = json.loads(body)
+        except ValueError:
+            j20 = {}
+        r20 = j20.get("run_id")
+        check(code in (200, 202) and r20,
+              "C18a: 20-call card registered (got %d %s)" %
+              (code, body[:80]))
+        if r20:
+            run_ids.append(r20)
+            try:
+                api.stop(r20)
+            except Exception:
+                pass
+        # gateway still alive after 20-call registration (no abort)
+        code2, _ = api._req("GET", "/v1/queue")
+        check(code2 == 200,
+              "C18b: gateway survived 20-call registration (queue %d)" %
+              code2)
+        # (b) 130-call body: 4xx BEFORE any run registers
+        calls130 = [{"text": "x%d" % i, "start_frame": i*10,
+                     "end_frame": (i+1)*10} for i in range(130)]
+        code, body = api._req("POST", "/v1/pipelines/start",
+                              {"yaml": "_chaos_tl",
+                               "calls": calls130,
+                               "seed": 99, "fps": 24,
+                               "prompt": "ceiling test"})
+        check(code == 400 and "TL_MAX_WINDOWS" in body,
+              "C18c: 130-call card rejected 4xx (got %d %s)" %
+              (code, body[:120]))
+        # the 20-call run may still be settling through the fake
+        # comfy's 500-response + plugin retries; poll until idle
+        try:
+            wait_for(lambda: json.loads(
+                api._req("GET", "/v1/queue")[1]).get("running", 0) == 0,
+                60, "C18d queue idle")
+            q2 = json.loads(api._req("GET", "/v1/queue")[1])
+            check(q2.get("running", 0) == 0,
+                  "C18d: no run registered for the rejected card")
+        except (AssertionError, OSError) as ex:
+            check(False, "C18d: " + str(ex))
 
     except AssertionError as ex:
         failures.append(str(ex))

@@ -52,12 +52,21 @@
     "VAELoader.0",
     0
    ],
-   "prompt": "WINDOW 2 (turbo-4): replace via inject",
+   "prompt": "WINDOW 1 (continue: chains the prior run's tail) (turbo-4, latent-chain): replace via inject",
    "width": 768,
    "height": 448,
-   "length": 124,
-   "context_steps": 22,
-   "audio_context_steps": 40
+   "length": 56
+  }
+ },
+ "RayH3ChainLatentAV.0": {
+  "class_type": "RayH3ChainLatentAV",
+  "inputs": {
+   "latent": [
+    "MiniMaxH3ImageToVideo.0",
+    1
+   ],
+   "tail_path": "REPLACED_BY_INJECT",
+   "carry_latent_frames": 6
   }
  },
  "MiniMaxH3SigmaShift.0": {
@@ -79,7 +88,7 @@
     0
    ],
    "positive": [
-    "MiniMaxH3MotionContext.0",
+    "MiniMaxH3ImageToVideo.0",
     0
    ],
    "negative": [
@@ -92,17 +101,28 @@
    "sampler_name": "euler",
    "scheduler": "simple",
    "latent_image": [
-    "MiniMaxH3ImageToVideo.0",
-    1
+    "RayH3ChainLatentAV.0",
+    0
    ],
    "denoise": 1
+  }
+ },
+ "RayH3SaveLatentTail.0": {
+  "class_type": "RayH3SaveLatentTail",
+  "inputs": {
+   "latent": [
+    "KSampler.0",
+    0
+   ],
+   "path": "REPLACED_BY_INJECT",
+   "carry_latent_frames": 6
   }
  },
  "VAEDecode.0": {
   "class_type": "VAEDecode",
   "inputs": {
    "samples": [
-    "KSampler.0",
+    "RayH3SaveLatentTail.0",
     0
    ],
    "vae": [
@@ -115,17 +135,17 @@
   "class_type": "SaveImage",
   "inputs": {
    "images": [
-    "MiniMaxH3MotionContextTrim.0",
+    "VAEDecode.0",
     0
    ],
-   "filename_prefix": "h3_t4_w1l"
+   "filename_prefix": "h3_t4_w1"
   }
  },
  "VAEDecodeAudio.0": {
   "class_type": "VAEDecodeAudio",
   "inputs": {
    "samples": [
-    "KSampler.0",
+    "RayH3SaveLatentTail.0",
     0
    ],
    "vae": [
@@ -138,80 +158,10 @@
   "class_type": "SaveAudio",
   "inputs": {
    "audio": [
-    "MiniMaxH3MotionContextTrim.0",
-    1
-   ],
-   "filename_prefix": "h3_t4_w1l_audio"
-  }
- },
- "MiniMaxH3SaveLatent.0": {
-  "class_type": "MiniMaxH3SaveLatent",
-  "inputs": {
-   "samples": [
-    "KSampler.0",
-    0
-   ],
-   "filename_prefix": "h3tl/w1l_seam"
-  }
- },
- "MiniMaxH3MotionContextLoadLatent.0": {
-  "class_type": "MiniMaxH3MotionContextLoadLatent",
-  "inputs": {
-   "latent_path": "h3_context",
-   "clip_index": 3
-  }
- },
- "MiniMaxH3MotionContext.0": {
-  "class_type": "MiniMaxH3MotionContext",
-  "inputs": {
-   "conditioning": [
-    "MiniMaxH3ImageToVideo.0",
-    0
-   ],
-   "vae": [
-    "VAELoader.0",
-    0
-   ],
-   "latent": [
-    "MiniMaxH3ImageToVideo.0",
-    1
-   ],
-   "context_latent": [
-    "MiniMaxH3MotionContextLoadLatent.0",
-    0
-   ],
-   "context_length": "22",
-   "audio_context_length": 24
-  }
- },
- "MiniMaxH3MotionContextTrim.0": {
-  "class_type": "MiniMaxH3MotionContextTrim",
-  "inputs": {
-   "images": [
-    "VAEDecode.0",
-    0
-   ],
-   "trim_frames": [
-    "MiniMaxH3MotionContext.0",
-    1
-   ],
-   "audio": [
     "VAEDecodeAudio.0",
     0
    ],
-   "fps": 24,
-   "match_tail": true
-  }
- },
- "MiniMaxH3MotionContextSaveLatent.0": {
-  "class_type": "MiniMaxH3MotionContextSaveLatent",
-  "inputs": {
-   "latent": [
-    "KSampler.0",
-    0
-   ],
-   "filename_prefix": "h3_context/clip",
-   "clip_index": 4
+   "filename_prefix": "h3_t4_w1_audio"
   }
  }
 }
