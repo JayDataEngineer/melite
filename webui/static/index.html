@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>inference.cpp Dashboard</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface-hover: #1c2333;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-hover: #79b8ff;
+      --green: #3fb950;
+      --red: #f85149;
+      --yellow: #d29922;
+      --purple: #bc8cff;
+      --radius: 8px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 {
+      font-size: 20px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 4px;
+    }
+    .dot-green { background: var(--green); }
+    .dot-red { background: var(--red); }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+    }
+    .stat-card .label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .stat-card .value {
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .green { color: var(--green); }
+    .red { color: var(--red); }
+    .blue { color: var(--accent); }
+    .yellow { color: var(--yellow); }
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .section-head h2 { font-size: 16px; font-weight: 600; }
+    .badge {
+      background: var(--border);
+      color: var(--text-muted);
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    table.q {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      border-collapse: collapse;
+    }
+    table.q th {
+      text-align: left;
+      padding: 10px 16px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      background: rgba(0,0,0,0.2);
+      border-bottom: 1px solid var(--border);
+    }
+    table.q td {
+      padding: 10px 16px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+    }
+    table.q tr:last-child td { border-bottom: none; }
+    table.q tr:hover td { background: var(--surface-hover); }
+    table.q .empty td {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 32px;
+      font-style: italic;
+    }
+    .st {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .st-pending { background: rgba(210,153,34,0.15); color: var(--yellow); }
+    .st-active { background: rgba(88,166,255,0.15); color: var(--accent); }
+    .st-done { background: rgba(63,185,80,0.15); color: var(--green); }
+    .st-error { background: rgba(248,81,73,0.15); color: var(--red); }
+    .st-claiming { background: rgba(188,140,255,0.15); color: var(--purple); }
+    .mono {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .subapps {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: border-color 0.15s;
+    }
+    .card:hover { border-color: var(--accent); }
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .card-top h3 {
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .card-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+    .card-meta {
+      display: flex;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+    .card-meta span { display: flex; align-items: center; gap: 4px; }
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .btn:hover { background: var(--surface-hover); border-color: var(--text-muted); }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .btn-danger { color: var(--red); border-color: rgba(248,81,73,0.3); }
+    .btn-danger:hover { background: rgba(248,81,73,0.1); border-color: var(--red); }
+    .btn-success { color: var(--green); border-color: rgba(63,185,80,0.3); }
+    .btn-success:hover { background: rgba(63,185,80,0.1); border-color: var(--green); }
+    .btn-sm { padding: 4px 10px; font-size: 11px; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(63,185,80,0.3);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .running {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--green);
+    }
+    .log-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--text-muted);
+    }
+    .log-panel .ln { white-space: pre-wrap; word-break: break-all; }
+    .log-panel .ln.err { color: var(--red); }
+    .log-panel .ln.ok { color: var(--green); }
+    .log-panel .ln.info { color: var(--accent); }
+    .refresh-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .refresh-btn:hover { color: var(--text); border-color: var(--text-muted); }
+    @media (max-width: 768px) {
+      .container { padding: 16px; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .subapps { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1><span class="logo">&#9889;</span> inference.cpp</h1>
+  <div class="header-right">
+    <span><span class="dot dot-green" id="gw-dot"></span> Gateway <span id="gw-status">checking...</span></span>
+    <span id="last-refresh"></span>
+    <button class="refresh-btn" onclick="refreshAll()">&#8635; Refresh</button>
+  </div>
+</header>
+<div class="container">
+  <div class="stats-row">
+    <div class="stat-card"><div class="label">Queue Pending</div><div class="value blue" id="s-queue">—</div></div>
+    <div class="stat-card"><div class="label">Active Request</div><div class="value green" id="s-active">—</div></div>
+    <div class="stat-card"><div class="label">Completed</div><div class="value" id="s-done">—</div></div>
+    <div class="stat-card"><div class="label">Failed</div><div class="value red" id="s-fail">—</div></div>
+    <div class="stat-card"><div class="label">Subapps</div><div class="value" id="s-count">—</div></div>
+    <div class="stat-card"><div class="label">Running</div><div class="value green" id="s-run">—</div></div>
+  </div>
+  <div style="margin-bottom:32px">
+    <div class="section-head"><h2>&#128203; Queue</h2><span class="badge" id="q-badge">0</span></div>
+    <table class="q">
+      <thead><tr><th>ID</th><th>Asset</th><th>Class</th><th>Priority</th><th>Status</th><th>Submitted</th></tr></thead>
+      <tbody id="q-body"><tr class="empty"><td colspan="6">Queue is empty</td></tr></tbody>
+    </table>
+  </div>
+  <div>
+    <div class="section-head"><h2>&#129513; Subapps</h2><span class="badge" id="sa-badge">0</span></div>
+    <div class="subapps" id="sa-grid"></div>
+  </div>
+  <div style="margin-top:32px">
+    <div class="section-head"><h2>&#128221; Activity Log</h2><button class="refresh-btn" onclick="document.getElementById('log').innerHTML=''">Clear</button></div>
+    <div class="log-panel" id="log"><div class="ln info">Dashboard ready. Auto-refreshes every 10s.</div></div>
+  </div>
+</div>
+<script>
+const GW = location.origin;
+const SUBAPPS = [
+  {id:'comfyui',name:'ComfyUI',icon:'&#127912;',url:'http://localhost:8188',desc:'Node-based Stable Diffusion. Image & video generation.',port:8188,bg:'#1a1a2e'},
+  {id:'forge',name:'SD Forge',icon:'&#128293;',url:'http://localhost:7860',desc:'Optimised SD WebUI fork. Memory efficient, ControlNet.',port:7860,bg:'#2d1810'},
+  {id:'trellis',name:'TRELLIS',icon:'&#129482;',url:'http://localhost:5000',desc:'3D asset generation. Text/image to GLB mesh.',port:5000,bg:'#0d2137'},
+  {id:'acestep',name:'ACE-STEP',icon:'&#127925;',url:'http://localhost:7865',desc:'AI music generation. Text-to-song with lyrics.',port:7865,bg:'#1a0d2e'},
+  {id:'qwen3tts',name:'Qwen3-TTS',icon:'&#129307;',url:'http://localhost:8000',desc:'Text-to-speech. Custom voices, emotion control.',port:8000,bg:'#0d2e1a'},
+  {id:'mosssfx',name:'MOSS-SFX',icon:'&#128264;',url:'http://localhost:7870',desc:'Sound effects. Combat, creature, foley, ambience.',port:7870,bg:'#2e2a0d'},
+  {id:'zimage',name:'Z-Image',icon:'&#128444;',url:'http://localhost:8189',desc:'Fast image generation for game art & concepts.',port:8189,bg:'#1a2e0d'},
+  {id:'music3',name:'Music3',icon:'&#127926;',url:'http://localhost:7866',desc:'Structured music. Genre, vocals, arrangement.',port:7866,bg:'#2e0d1a'}
+];
+let subappStatus = {};
+
+function log(msg, cls) {
+  const p = document.getElementById('log');
+  const d = document.createElement('div');
+  d.className = 'ln ' + (cls || '');
+  d.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+  p.appendChild(d);
+  p.scrollTop = p.scrollHeight;
+}
+
+function renderQueue(reqs) {
+  const tb = document.getElementById('q-body');
+  const badge = document.getElementById('q-badge');
+  if (!reqs || !reqs.length) {
+    tb.innerHTML = '<tr class="empty"><td colspan="6">Queue is empty</td></tr>';
+    badge.textContent = '0';
+    document.getElementById('s-queue').textContent = '0';
+    document.getElementById('s-active').textContent = '0';
+    document.getElementById('s-done').textContent = '0';
+    document.getElementById('s-fail').textContent = '0';
+    return;
+  }
+  let p = 0, a = 0, d = 0, f = 0;
+  tb.innerHTML = reqs.map(function(r) {
+    var s = r.status || 'unknown';
+    if (s === 'pending') p++;
+    else if (s === 'active' || s === 'claiming') a++;
+    else if (s === 'done' || s === 'completed') d++;
+    else if (s === 'error' || s === 'failed') f++;
+    var cls = {pending:'st-pending',active:'st-active',claiming:'st-claiming',done:'st-done',completed:'st-done',error:'st-error',failed:'st-error'}[s] || 'st-pending';
+    var t = r.created_at ? new Date(r.created_at).toLocaleString() : '—';
+    return '<tr><td class="mono">' + (r.id||'').slice(0,8) + '</td><td>' + (r.asset_id||'—') + '</td><td>' + (r.asset_class||'—') + '</td><td>' + (r.priority!==undefined ? 'P'+r.priority : '—') + '</td><td><span class="st ' + cls + '">' + s + '</span></td><td>' + t + '</td></tr>';
+  }).join('');
+  badge.textContent = reqs.length;
+  document.getElementById('s-queue').textContent = p;
+  document.getElementById('s-active').textContent = a;
+  document.getElementById('s-done').textContent = d;
+  document.getElementById('s-fail').textContent = f;
+}
+
+function renderSubapps() {
+  var g = document.getElementById('sa-grid');
+  var badge = document.getElementById('sa-badge');
+  var running = 0;
+  g.innerHTML = SUBAPPS.map(function(app) {
+    var up = subappStatus[app.id] === 'running';
+    if (up) running++;
+    return '<div class="card"><div class="card-top"><h3><span class="card-icon" style="background:' + app.bg + '">' + app.icon + '</span>' + app.name + '</h3>' +
+      (up ? '<span class="running"><span class="spinner"></span> Running</span>' : '<span class="st st-error">Stopped</span>') +
+      '</div><div class="card-desc">' + app.desc + '</div><div class="card-meta"><span>&#128279; Port ' + app.port + '</span><span>' + app.url + '</span></div><div class="card-actions">' +
+      (up ? '<a href="' + app.url + '" target="_blank" class="btn btn-primary btn-sm">Open UI &#8599;</a><button class="btn btn-danger btn-sm" onclick="stopApp('' + app.id + '')">&#9209; Stop</button>'
+           : '<button class="btn btn-success btn-sm" onclick="startApp('' + app.id + '')">&#9654; Start</button><button class="btn btn-sm" disabled>UI unavailable</button>') +
+      '</div></div>';
+  }).join('');
+  badge.textContent = SUBAPPS.length;
+  document.getElementById('s-count').textContent = SUBAPPS.length;
+  document.getElementById('s-run').textContent = running;
+}
+
+async function probe(app) {
+  try {
+    var c = new AbortController();
+    setTimeout(function() { c.abort(); }, 2500);
+    await fetch(app.url, {mode:'no-cors', signal:c.signal});
+    subappStatus[app.id] = 'running';
+  } catch(e) {
+    subappStatus[app.id] = 'stopped';
+  }
+}
+
+function startApp(id) {
+  var a = SUBAPPS.find(function(x){return x.id===id;});
+  if (!a) return;
+  log('Starting ' + a.name + '...', 'info');
+  subappStatus[id] = 'running';
+  renderSubapps();
+  log(a.name + ' marked running.', 'ok');
+}
+
+function stopApp(id) {
+  var a = SUBAPPS.find(function(x){return x.id===id;});
+  if (!a) return;
+  log('Stopping ' + a.name + '...', 'info');
+  subappStatus[id] = 'stopped';
+  renderSubapps();
+  log(a.name + ' stopped.', 'info');
+}
+
+async function fetchQueue() {
+  try {
+    var r = await fetch(GW + '/v1/asset-requests?queue=all');
+    if (r.ok) {
+      var d = await r.json();
+      renderQueue(d.requests || d);
+      log('Fetched ' + (d.requests ? d.requests.length : 0) + ' queue items.');
+    } else {
+      var r2 = await fetch(GW + '/v1/registry');
+      if (r2.ok) {
+        var d2 = await r2.json();
+        renderQueue(d2.requests || Object.values(d2).flat());
+      } else {
+        log('Gateway offline.', 'err');
+      }
+    }
+  } catch(e) {
+    log('Queue fetch failed: ' + e.message, 'err');
+  }
+}
+
+async function refreshAll() {
+  await fetchQueue();
+  await Promise.all(SUBAPPS.map(probe));
+  renderSubapps();
+  document.getElementById('last-refresh').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  document.getElementById('gw-status').textContent = 'connected';
+  document.getElementById('gw-dot').className = 'dot dot-green';
+}
+
+refreshAll();
+setInterval(refreshAll, 10000);
+</script>
+</body>
+</html>

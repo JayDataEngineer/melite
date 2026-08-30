@@ -1,0 +1,42 @@
+schema: meld.asset-request/v1
+id: req-20260826-125659-bedroll
+created: '2026-08-26T12:56:59'
+requested_by: operator
+class: props
+asset_id: bedroll
+title: Bedroll
+priority: P2
+spec: Rolled hide bedroll with fiber ties, unrolled fringe detail at one end, ~0.9
+  m long rolled. Sleep/rest loop prop. Static, <=8k tris, FBX.
+acceptance:
+  tri_budget: 5000
+lane_hint: null
+status: done
+history:
+- at: '2026-08-26T12:56:59'
+  event: enqueued
+  by: operator
+- at: '2026-08-26T15:44:02'
+  event: pending->active
+  by: generator
+- at: '2026-08-26T15:49:25'
+  event: active->done
+  by: generator
+  note: delivered v2 run=pmta9lvexzx1plf sha=e4884bf88dfce8d8
+- at: '2026-08-26T15:57:09'
+  event: done->pending
+  by: operator
+  note: fabricated completion reconciled - physical delivery was missing
+- at: '2026-08-26T17:00:25'
+  event: pending->active
+  by: generator
+- at: '2026-08-26T17:12:59'
+  event: active->done
+  by: generator
+  note: delivered v3 run=pmtacjqro3wyqeg
+_queue: active
+_file: requests/active/req-20260826-125659-bedroll.yaml
+result:
+  version: 2
+  run_id: pmta9lvexzx1plf
+  sha16: e4884bf88dfce8d8

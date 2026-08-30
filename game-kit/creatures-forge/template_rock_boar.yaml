@@ -1,0 +1,26 @@
+# @meta {"description": "Route B articulated creature: rock_boar. CPU-only build + agent-eyes turntable gate.", "status": "production-candidate"}
+output_dir: ./data/test-output/pipelines/pipeline_rock_boar
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+steps:
+  - family: anycreature
+    phase: build
+    title: "anyCreature — rock_boar build"
+    consumes: []
+    inputs: []
+    outputs: [creature_glb]
+    params:
+      spec_path: references/anycreature/game/rock_boar.json
+      output_artifact: creature_glb
+      timeout_ms: 180000
+
+  - family: render_glb_views
+    phase: review
+    title: "Turntable renders (feeds agent eyes)"
+    consumes: [comfy_url]
+    inputs: [creature_glb]
+    outputs: [creature_views]
+    params:
+      glb_artifact: creature_glb

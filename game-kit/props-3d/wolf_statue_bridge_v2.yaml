@@ -1,0 +1,32 @@
+# @meta {"description": "Path (a) pairing v2: level-stance stone wolf statue (v2) bound onto dune_hound anyCreature rig.", "status": "proof"}
+# wolf_statue_bridge_v2.yaml - pairing with the pose-corrected statue mesh
+# (level quadruped stance; all three gate views read wolf).
+
+output_dir: ./data/test-output/pipelines/pipeline_wolf_statue_bridge_v2
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+steps:
+  - family: creature_rig_bridge
+    phase: bridge
+    title: "Bind v2 statue onto dune_hound skeleton"
+    consumes: [comfy_url]
+    inputs: []
+    outputs: [bridged_glb]
+    params:
+      creature_path: ./data/runs/pmt8he9dbiq8g6i/anycreature/creature.glb
+      mesh_path: ./data/runs/pmt8lfuczcasocl/trellis_pmt8lfuczcasocl_s19_asset_glb.glb
+      height_ratio: 1.0
+      max_influences: 3
+      strip_body: true
+      output_artifact: bridged_glb
+
+  - family: render_glb_views
+    phase: review
+    title: "Turntable renders (feeds agent eyes)"
+    consumes: [comfy_url]
+    inputs: [bridged_glb]
+    outputs: [bridged_views]
+    params:
+      glb_artifact: bridged_glb

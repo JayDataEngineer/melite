@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>inference.cpp — Engine Web UIs</title>
+<style>
+  :root {
+    --bg: #0c0e14;
+    --panel: #141821;
+    --border: #1e2636;
+    --text: #e4e8f0;
+    --muted: #7a8599;
+    --accent: #5ee6be;
+    --accent-dim: #2a7a62;
+    --tag-bg: #1a2533;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem 1.5rem;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+  header h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.4rem;
+  }
+  header p {
+    color: var(--muted);
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+  header code {
+    background: var(--tag-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    font-family: 'Fira Code', ui-monospace, monospace;
+  }
+  .host-badge {
+    display: inline-block;
+    margin-top: 0.6rem;
+    padding: 4px 12px;
+    border-radius: 99px;
+    background: var(--tag-bg);
+    border: 1px solid var(--border);
+    font-size: 0.75rem;
+    font-family: 'Fira Code', ui-monospace, monospace;
+    color: var(--accent);
+  }
+  #apps {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    width: 100%;
+    max-width: 720px;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .card:hover {
+    border-color: var(--accent-dim);
+    box-shadow: 0 0 20px rgba(94, 230, 190, 0.06);
+  }
+  .card-head {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+  .card-icon {
+    font-size: 1.5rem;
+    width: 2.2rem;
+    height: 2.2rem;
+    display: grid;
+    place-items: center;
+    background: var(--tag-bg);
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+  .card-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .card-desc {
+    color: var(--muted);
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+  .card-tags {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-top: auto;
+  }
+  .tag {
+    font-size: 0.7rem;
+    background: var(--tag-bg);
+    color: var(--muted);
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-family: 'Fira Code', ui-monospace, monospace;
+    letter-spacing: 0.02em;
+  }
+  .tag-url {
+    color: var(--accent);
+  }
+  .error {
+    color: #ffacac;
+    text-align: center;
+    padding: 2rem;
+  }
+  #loading {
+    color: var(--muted);
+    text-align: center;
+    padding: 2rem;
+  }
+  footer {
+    margin-top: 3rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
+  footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Engine Web UIs</h1>
+    <p>Direct links to each vendored engine's standalone web interface.<br>
+    Point a proxy (<code>Caddy</code>, <code>DSH infer-apps</code>) at these backends.</p>
+    <div class="host-badge" id="host-badge"></div>
+  </header>
+  <div id="loading">Loading…</div>
+  <div id="apps"></div>
+  <footer>
+    <p>Served by <a href="/openapi.json">inference.cpp</a> gateway
+    &middot; <code>GET /v1/apps</code> for JSON</p>
+  </footer>
+<script>
+(async () => {
+  const el = document.getElementById('apps');
+  const loading = document.getElementById('loading');
+  const badge = document.getElementById('host-badge');
+
+  // Rewrite 127.0.0.1 URLs to the hostname the browser actually reached.
+  // Works transparently for localhost, Tailscale IPs, LAN IPs, and hostnames.
+  const serveHost = window.location.hostname || '127.0.0.1';
+  badge.textContent = 'Serving from ' + serveHost;
+
+  try {
+    const r = await fetch('/v1/apps');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    const apps = data.apps || data;
+    loading.remove();
+    if (!apps.length) {
+      el.innerHTML = '<p class="error">No engine web UIs registered.</p>';
+      return;
+    }
+    el.innerHTML = apps.map(a => {
+      // Rewrite URL: swap 127.0.0.1 for the actual serving hostname,
+      // preserving the port.  If the hostname IS 127.0.0.1 (local),
+      // this is a no-op.
+      const url = new URL(a.url);
+      url.hostname = serveHost;
+      const displayUrl = url.toString();
+
+      const tags = (a.features || []).map(f =>
+        '<span class="tag">' + esc(f) + '</span>'
+      ).join('');
+      return '<a class="card" href="' + esc(displayUrl) + '" target="_blank" rel="noopener">'
+        + '<div class="card-head">'
+        + '<div class="card-icon">' + a.icon + '</div>'
+        + '<span class="card-title">' + esc(a.label) + '</span>'
+        + '</div>'
+        + '<div class="card-desc">' + esc(a.description) + '</div>'
+        + '<div class="card-tags">'
+        + '<span class="tag tag-url">' + esc(displayUrl) + '</span>'
+        + tags
+        + '</div>'
+        + '</a>';
+    }).join('');
+  } catch (e) {
+    loading.remove();
+    el.innerHTML = '<p class="error">Failed to load app registry: ' + esc(e.message) + '</p>';
+  }
+  function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+schema: meld.asset-request/v1
+id: req-20260826-125659-keeper_leather_armor
+created: '2026-08-26T12:56:59'
+requested_by: operator
+class: humanoids
+asset_id: keeper_leather_armor
+title: Keeper in layered leather wrap
+priority: P1
+spec: 'Full-body armored variant of the keeper: layered hide+fiber wrap over the existing
+  lean wanderer look, satchel kept, machete sheath on hip. MUST reuse the base_human
+  rig (Generic; U-027 loop-bake idle+move pair named <rigname>|idle_x / <rigname>|move_x).
+  glb+fbx pair. On delivery swap the ''model'' field in keeper.json (both copies).
+  Style family with keeper_bone_plate (shared suffix + seed base).'
+acceptance:
+  tri_budget: 8000
+lane_hint: null
+status: rejected
+history:
+- at: '2026-08-26T12:56:59'
+  event: enqueued
+  by: operator
+- at: '2026-08-26T15:32:08'
+  event: pending->active
+  by: generator
+- at: '2026-08-26T15:32:20'
+  event: active->pending
+  by: generator
+  note: 'operator ordering: props wave first'
+- at: '2026-08-26T15:33:06'
+  event: pending->active
+  by: generator
+- at: '2026-08-26T15:33:15'
+  event: active->pending
+  by: generator
+  note: needs operator-driven lane (taste gates)
+- at: '2026-08-26T15:33:30'
+  event: pending->active
+  by: generator
+- at: '2026-08-26T15:33:41'
+  event: active->pending
+  by: generator
+  note: needs operator-driven lane (taste gates)
+- at: '2026-08-26T16:56:29'
+  event: pending->active
+  by: generator
+- at: '2026-08-26T16:56:34'
+  event: active->pending
+  by: generator
+  note: needs operator-driven lane (taste gates)
+- at: '2026-08-26T16:56:42'
+  event: pending->active
+  by: generator
+- at: '2026-08-26T16:57:39'
+  event: active->pending
+  by: generator
+  note: needs operator-driven lane (taste gates)
+- at: '2026-08-26T16:57:44'
+  event: pending->active
+  by: generator
+- at: '2026-08-26T16:58:33'
+  event: active->active
+  by: generator
+- at: '2026-08-26T17:00:25'
+  event: active->pending
+  by: generator
+  note: needs operator-driven lane (taste gates)
+- at: '2026-08-26T17:17:30'
+  event: pending->active
+  by: generator
+- at: '2026-08-26T17:17:34'
+  event: active->pending
+  by: generator
+  note: needs operator-driven lane (taste gates)
+- at: '2026-08-26T17:17:37'
+  event: pending->active
+  by: generator
+- at: '2026-08-26T17:17:50'
+  event: active->pending
+  by: generator
+  note: needs operator-driven lane (taste gates)
+- at: '2026-08-26T17:18:01'
+  event: pending->active
+  by: generator
+- at: '2026-08-26T17:18:09'
+  event: active->pending
+  by: generator
+  note: needs operator-driven lane (taste gates)
+- at: '2026-08-26T17:18:09'
+  event: pending->active
+  by: generator
+- at: '2026-08-26T17:19:37'
+  event: active->pending
+  by: test
+  note: test
+- at: '2026-08-26T17:19:45'
+  event: pending->active
+  by: generator
+- at: '2026-08-26T17:19:49'
+  event: active->pending
+  by: generator
+  note: needs operator-driven lane (taste gates)
+- at: '2026-08-26T17:19:49'
+  event: pending->active
+  by: generator
+- at: '2026-08-26T17:19:58'
+  event: active->rejected
+  by: generator
+  note: needs operator-driven lane (taste gates)
+_queue: active
+_file: requests/active/req-20260826-125659-keeper_leather_armor.yaml

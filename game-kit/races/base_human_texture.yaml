@@ -1,0 +1,37 @@
+# @meta {"description": "base_human texture lane: Step1X-3D ig2mv texture synthesis onto the delivered rigged base mesh (identity lock on the ORIGINAL keeper-v2 z-image concept, run pmt7vpqda2hylck). Inputs ride served run-asset URLs; the brick uploads them to ComfyUI itself.", "status": "production-candidate"}
+# base_human_texture.yaml - game-kit/races textured-base recipe (step 1).
+#
+# MESH: data/delivery/unity/humanoids/base_human/base_human.glb (keeper v2,
+# 93 mixamorig joints, UVMap present, audited NO-TEX) staged verbatim under
+# its source run dir so resolveInputSource's run-asset branch can serve it.
+# REFERENCE: front-view crop of the SAME concept sheet the mesh was
+# TRELLIS'd from - identity lock (docs/asset-pipelines/3d-humanoid.md
+# hybrid-lane law). No geometry regeneration: this lane textures ONLY.
+#
+# FAMILY LAW (plugins/melite-3d/families/step1x_texture.ts):
+#   model is REQUIRED (no silent fallback); rig stays untouched; output GLB
+#   keeps skin + morphs-free base topology. First run JIT-compiles two C++
+#   CUDA extensions (~60s) then loads the 3.5B ig2mv pipeline.
+
+output_dir: ./data/test-output/pipelines/base_human_texture
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+steps:
+  - family: step1x_texture
+    phase: texture
+    title: "Step1X-3D Texture - identity-locked bake onto keeper v2 body"
+    consumes: [comfy_url]
+    inputs: []
+    outputs: [glb]
+    params:
+      model: step1x_texture
+      mesh_artifact: "/editor/assets/runs/pmt7vpqda2hylck/base_human.glb"
+      reference_artifact: "/editor/assets/runs/pmt7vpqda2hylck/concept_front.png"
+      texture_size: 2048
+      render_size: 2048
+      seed: 20260826
+      remove_bg: false
+      filename_prefix: "base_human_tex"
+      output_artifact: glb

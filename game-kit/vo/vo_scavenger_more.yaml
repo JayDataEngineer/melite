@@ -1,0 +1,59 @@
+# @meta {"description": "Scavenger follow-up lines - qwen3-tts CustomVoice (aiden) with locked instruct DNA, matches existing 2 clips.", "status": "production-candidate"}
+# vo_scavenger_more.yaml - ART-MANIFEST P2. Same persona DNA as
+# vo_scavenger_lines.yaml (aiden + instruct direction per line).
+
+output_dir: ./data/test-output/pipelines/pipeline_vo_scavenger_more
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+steps:
+  - family: audio_tts
+    phase: vo
+    title: "Line - campfire rumor"
+    consumes: [comfy_url]
+    outputs: [v1]
+    params:
+      model: qwen3-tts
+      seed: 1703
+      output_artifact: v1
+      qwen3_variant: CustomVoice
+      voice: aiden
+      instruct: >-
+        conspiratorial, leaning closer, half-smile
+      prompt: >-
+        Word at the fire is there's a working still buried out past the
+        ridgeline. Nobody who went to check came back thirsty, if you take
+        my meaning.
+  - family: audio_tts
+    phase: vo
+    title: "Line - prowlers at dusk"
+    consumes: [comfy_url]
+    outputs: [v2]
+    params:
+      model: qwen3-tts
+      seed: 1704
+      output_artifact: v2
+      qwen3_variant: CustomVoice
+      voice: aiden
+      instruct: >-
+        serious, low warning, glancing at the darkening dunes
+      prompt: >-
+        Prowlers hunt the hour the sun dies. Light your fire early, keep
+        your back to the stone, and don't chase what you hear breathing.
+  - family: audio_tts
+    phase: vo
+    title: "Line - trader's price"
+    consumes: [comfy_url]
+    outputs: [v3]
+    params:
+      model: qwen3-tts
+      seed: 1705
+      output_artifact: v3
+      qwen3_variant: CustomVoice
+      voice: aiden
+      instruct: >-
+        wry, tapping a invisible ledger, unhurried
+      prompt: >-
+        Everything's got a price out here. Water costs trust. Steel costs
+        blood. Your silence? That one I'll trade for free.

@@ -1,0 +1,17 @@
+schema: meld.asset-request/v1
+id: req-20260828-203759-env_cactus
+created: '2026-08-28T20:37:59'
+requested_by: unity-mcp
+class: props
+asset_id: env_cactus
+title: desert barrel cactus
+priority: P2
+spec: Barrel-type desert cactus, squat round shape with spines, PBR textures. Static
+  prop, 300-1k tris, GLB+FBX. Desert scatter vegetation.
+acceptance: {}
+lane_hint: null
+status: pending
+history:
+- at: '2026-08-28T20:37:59'
+  event: enqueued
+  by: unity-mcp

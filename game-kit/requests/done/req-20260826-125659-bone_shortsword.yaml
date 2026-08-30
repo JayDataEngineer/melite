@@ -1,0 +1,43 @@
+schema: meld.asset-request/v1
+id: req-20260826-125659-bone_shortsword
+created: '2026-08-26T12:56:59'
+requested_by: operator
+class: props
+asset_id: bone_shortsword
+title: Bone shortsword
+priority: P1
+spec: 'Short sword ground from sun-bleached knuckle-bone, bruise-violet cord wrap,
+  ~0.5 m. Same style family as scrap_machete. Static prop, <=5k tris, flat-shaded.
+  Delivery: FBX.'
+acceptance:
+  tri_budget: 5000
+lane_hint: null
+status: done
+history:
+- at: '2026-08-26T12:56:59'
+  event: enqueued
+  by: operator
+- at: '2026-08-26T14:54:18'
+  event: pending->active
+  by: generator
+- at: '2026-08-26T15:13:19'
+  event: active->pending
+  by: generator
+  note: 'lane DONE + vision GREEN (run pmta83n5aa6od2u, 4692/5000 tris, STATIC-PASS,
+    FBX converted, staged data/delivery/unity/props/bone_shortsword/) — Path A game-repo
+    copy sandbox-denied (workspace-write; escalation channel closed): re-run deliver_asset.py
+    --run-id pmta83n5aa6od2u --manifest-id bone_shortsword --kind prop --static unsandboxed,
+    then complete'
+- at: '2026-08-26T15:30:17'
+  event: pending->active
+  by: generator
+- at: '2026-08-26T15:30:17'
+  event: active->done
+  by: generator
+  note: delivered v3 run=pmta83n5aa6od2u sha=1c1a7694f669f7f5
+_queue: active
+_file: requests/active/req-20260826-125659-bone_shortsword.yaml
+result:
+  version: 3
+  run_id: pmta83n5aa6od2u
+  sha16: 1c1a7694f669f7f5

@@ -1,0 +1,24 @@
+# @meta {"description": "Arena crowd roar bed for req-20260827-190320-sfx_arena_crowd - one moss-sfx event, describe-the-SOUND law.", "status": "production"}
+# sfx_arena_crowd.yaml - single-brick SFX lane (audio_sfx_wave.yaml pattern).
+# SOUND described, not scene: dry mid-heavy human crowd swell, no distinct
+# words, sparse clapping on wood, dust-dry open air, distant. ~6-8s loopable
+# tail per request. Plays on bout spawn + first KO.
+
+output_dir: ./data/test-output/pipelines/pipeline_sfx_arena_crowd
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+steps:
+  - family: audio_sfx
+    phase: crowd
+    title: "Arena crowd roar"
+    consumes: [comfy_url]
+    outputs: [a1]
+    params:
+      model: moss-sfx
+      seed: 921
+      output_artifact: a1
+      prompt: >-
+        small desert crowd roaring at a beast fight, dry mid-heavy human
+        swell, distant open air, sparse clapping on wood, no words

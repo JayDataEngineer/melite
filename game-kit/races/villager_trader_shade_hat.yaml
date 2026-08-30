@@ -1,0 +1,85 @@
+# @meta {"description": "Race attachment lane: cat ears costume prop (z-image concept -> TRELLIS static GLB -> turntable review). Self-contained machete pattern; the mesh is socketed to mixamorig:Head later via scripts/delivery/socket_to_bone.py.", "status": "production-candidate"}
+# villager_trader_shade_hat.yaml - game-kit/races attachment lane #1.
+#
+# SELF-CONTAINED (scrap_machete.yaml pattern): concept + mesh in one lane so
+# any agent can run it standalone. First production instance ran 2026-08-25:
+# concept run pmt8ot1qthn8ucs (z-image seed 401, eyes-gated PASS) ->
+# trellis run pmt8ovxmvmpfepa (seed 7). This copy re-runs the same
+# prompt/seeds inline; expect the same asset family, not byte-identical.
+#
+# GATE: agent eyes on the turntable (views must agree on ONE subject =
+# "cat ears" / "ears"). verify_glb/blind_read bricks intentionally absent
+# (retired by operator order 2026-08-25; static floors uncalibrated).
+#
+# SOCKET LAW (3d-races.md Tier B - helmet method generalized): this GLB is a
+# STATIC prop. Binding happens at assembly time in container blender
+# (scripts/delivery/socket_to_bone.py): ONE vertex group named after the
+# target bone, every vertex weight 1.0, armature modifier on the character's
+# armature. Never transfer_rig an attachment onto the body rig.
+
+output_dir: ./data/test-output/pipelines/pipeline_villager_trader_shade_hat
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+steps:
+  # -- CONCEPT ------------------------------------------------------------
+  - family: generate_image
+    phase: concept
+    title: "Concept - wide-brim woven shade hat with neck cord"
+    consumes: [comfy_url]
+    inputs: []
+    outputs: [asset_image]
+    params:
+      model: z-image
+      seed: 720
+      output_artifact: asset_image
+      prompt: >-
+        Wide-brim woven shade hat with neck cord, detached costume prop, plain solid mid-grey background, flat even studio lighting with no shadows, bold readable silhouette, stylized fantasy game asset, full object centered in frame. Low-poly flat-shaded desert villager gear, muted ochre and bone tones, soft dusk light.
+      negative_prompt: >-
+        person, face, head, body, hair on a head, scene, environment,
+        ground, text, watermark, cropped, busy background.
+
+  # -- MESH ----------------------------------------------------------------
+  # -- MESH (native trellis.cpp; torch lane retired 2026-08-26) ----
+  - family: trellis_native
+    phase: mesh
+    title: "Mesh - native (Trellis - villager_trader_shade_hat static GLB (no rig))"
+    consumes: [comfy_url]
+    inputs: [asset_image]
+    outputs: [asset_glb_raw]
+    params:
+      # torch lane retired 2026-08-26 (confetti): preset/background_color/rig_with_somax dropped - the native node
+      # enforces the reference defaults (BiRefNet auto matte,
+      # QEM 300K @1024, xatlas, trilinear PBR bake).
+      model: trellis_native
+      seed: 23
+      resolution: "1024"
+      texture_size: 2048
+      bg_removal: auto
+      image_artifact: asset_image
+      dump_post: enable
+      output_artifact: asset_glb_raw
+
+  - family: trellis_native_replay
+    phase: budget
+    title: "Budget - QEM 40000 faces"
+    consumes: [comfy_url]
+    inputs: [asset_glb_raw]
+    outputs: [asset_glb]
+    params:
+      model: trellis_native_replay
+      faces_target: 40000
+      atlas: 2048
+      glb_artifact: asset_glb_raw
+      dump_artifact: asset_glb_raw_dump
+      output_artifact: asset_glb
+
+  - family: render_glb_views
+    phase: review
+    title: "Turntable renders - villager_trader_shade_hat (feeds agent eyes)"
+    consumes: [comfy_url]
+    inputs: [asset_glb]
+    outputs: [asset_views]
+    params:
+      glb_artifact: asset_glb

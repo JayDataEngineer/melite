@@ -1,0 +1,69 @@
+# rock_slab v2 — two-object bold composition (spec: req-20260826-165609)
+# Prior v1 (8203) and retry (8303) both RED — amorphous single blob.
+# NEW: two overlapping stone objects reading as ONE silhouette.
+output_dir: ./data/test-output/pipelines/pipeline_props_rocks_rock_slab_v2
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+steps:
+  - family: generate_image
+    phase: concept
+    title: "Concept - rock slab v2"
+    consumes: [comfy_url]
+    outputs: [asset_image]
+    params:
+      model: z-image
+      seed: 8204
+      output_artifact: asset_image
+      prompt: >-
+        two chunky weathered sandstone slabs leaning together forming one
+        solid silhouette, one flat tilted slab propped against a rounded
+        shoulder stone, thick angular broken edges, hard planar faces,
+        sun-bleached bone-white surface with ochre dust veins in the
+        cracks, isolated game prop, centered, plain white background,
+        stylized realistic game asset, bold readable silhouette
+      negative_prompt: >-
+        text, watermark, busy background, drop shadow, scene, multiple
+        separated objects, cropped, round blob, smooth amorphous,
+        thin delicate shapes
+
+  - family: trellis_native
+    phase: mesh
+    title: "Mesh - rock slab v2"
+    consumes: [comfy_url]
+    inputs: [asset_image]
+    outputs: [asset_glb]
+    params:
+      model: trellis_native
+      seed: 34
+      image_artifact: asset_image
+      resolution: "512"
+      atlas_px: 1024
+      dump_post: enable
+      output_artifact: asset_glb
+
+  - family: trellis_native_replay
+    phase: budget
+    title: "Budget - rock slab v2"
+    consumes: [comfy_url]
+    inputs: [asset_glb]
+    outputs: [prop_glb]
+    params:
+      model: trellis_native_replay
+      faces_target: 5000
+      atlas: 1024
+      glb_artifact: asset_glb
+      dump_artifact: asset_glb_dump
+      output_artifact: prop_glb
+
+  - family: render_glb_views
+    phase: review
+    title: "Views - rock slab v2"
+    consumes: [comfy_url]
+    inputs: [prop_glb]
+    outputs: [views]
+    params:
+      model: render_glb_views
+      glb_artifact: prop_glb
+      output_artifact: views

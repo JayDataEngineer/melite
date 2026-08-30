@@ -1,0 +1,32 @@
+schema: meld.asset-request/v1
+id: req-20260829-144227-villager_farmer
+created: '2026-08-29T14:42:27'
+requested_by: operator
+class: humanoids
+asset_id: villager_farmer
+title: villager_farmer — weathered male farmer figure
+priority: P0
+spec: 'Weathered male farmer figure, 1.70m lean build, simple homespun clothing aesthetic
+  appropriate for a post-collapse settlement. MUST be SOMA-Mixamo 77-joint rigged
+  GLB conforming to the SOMA template rest pose. Deliver: rigged GLB + name-matched
+  idle.bvh and walk.bvh (joint names must match the GLB rig). Must pass §4.38 bounds
+  gate (animated height constant within 10%) and vision gate (head, limbs, normal
+  proportions).'
+acceptance: {}
+lane_hint: null
+status: done
+history:
+- at: '2026-08-29T14:42:27'
+  event: enqueued
+  by: operator
+- at: '2026-08-29T15:31:22'
+  event: pending->active
+  by: generator
+- at: '2026-08-29T15:43:34'
+  event: active->done
+  by: queue-consumer
+  note: delivered v2 run=pmtejhaf3dz4t83 sha=074aefc8f6e4d42c
+result:
+  version: 2
+  run_id: pmtejhaf3dz4t83
+  sha16: 074aefc8f6e4d42c

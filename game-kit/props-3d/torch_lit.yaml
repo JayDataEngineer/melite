@@ -1,0 +1,71 @@
+# torch_lit.yaml — game-kit-v1 prop. Static-lane: z-image concept -> TRELLIS static GLB -> turntable.
+# Spec: Sturdy hand torch, charred fiber-wrapped head on worn wood handle, ~0.6 m long.
+# Light source prop (night loop). Static prop, bold cylindrical volume.
+
+output_dir: ./data/test-output/pipelines/pipeline_torch_lit
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+steps:
+  # -- CONCEPT ------------------------------------------------------------
+  - family: generate_image
+    phase: concept
+    title: "Concept — hanging torch_lit"
+    consumes: [comfy_url]
+    inputs: []
+    outputs: [asset_image]
+    params:
+      model: z-image
+      seed: 167
+      output_artifact: asset_image
+      prompt: >-
+        Sturdy hand torch prop, thick cylindrical charred fiber-wrapped head on a plain worn wood handle, bold simple silhouette, roughly 0.6 meters long, plain solid mid-grey background, flat even studio lighting with no shadows, stylized fantasy game asset, full object centered in frame.
+      negative_prompt: >-
+        scene, environment, ground, hand, hands, person, multiple objects,
+        text, watermark, cropped, busy background, drop shadow, vignette,
+        photorealistic, blurry, low contrast, wet, dripping, liquid.
+
+  # -- MESH ----------------------------------------------------------------
+  # -- MESH (native trellis.cpp; torch lane retired 2026-08-26) ----
+  - family: trellis_native
+    phase: mesh
+    title: "Mesh - native (Trellis — static GLB (no rig, ≤5k tris))"
+    consumes: [comfy_url]
+    inputs: [asset_image]
+    outputs: [asset_glb_raw]
+    params:
+      # torch lane retired 2026-08-26 (confetti): preset/background_color/rig_with_somax dropped - the native node
+      # enforces the reference defaults (BiRefNet auto matte,
+      # QEM 300K @1024, xatlas, trilinear PBR bake).
+      model: trellis_native
+      seed: 37
+      resolution: "1024"
+      texture_size: 1024
+      bg_removal: auto
+      image_artifact: asset_image
+      dump_post: enable
+      output_artifact: asset_glb_raw
+
+  - family: trellis_native_replay
+    phase: budget
+    title: "Budget - QEM 40000 faces"
+    consumes: [comfy_url]
+    inputs: [asset_glb_raw]
+    outputs: [asset_glb]
+    params:
+      model: trellis_native_replay
+      faces_target: 40000
+      atlas: 1024
+      glb_artifact: asset_glb_raw
+      dump_artifact: asset_glb_raw_dump
+      output_artifact: asset_glb
+
+  - family: render_glb_views
+    phase: review
+    title: "Turntable renders (feeds agent eyes)"
+    consumes: [comfy_url]
+    inputs: [asset_glb]
+    outputs: [asset_views]
+    params:
+      glb_artifact: asset_glb

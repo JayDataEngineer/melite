@@ -1,0 +1,33 @@
+schema: meld.asset-request/v1
+id: req-20260827-061247-cardino-card-judgment-of-the-sky
+created: '2026-08-27T06:12:47'
+requested_by: unity-mcp
+class: icons
+asset_id: cardino-card-judgment-of-the-sky
+title: cardino card judgment of the sky
+priority: P2
+spec: 'MTG-style card art: divine judgment from storm clouds, lightning and holy fire
+  raining down, dark fantasy painterly style | Card art composition, dramatic lighting,
+  centered subject, detailed brushwork'
+acceptance: {}
+lane_hint: null
+status: rejected
+history:
+- at: '2026-08-27T06:12:47'
+  event: enqueued
+  by: unity-mcp
+- at: '2026-08-27T06:21:19'
+  event: pending->pending
+  by: generator
+  note: ComfyUI (:18465) not reachable - z-image generation requires GPU inference
+    backend
+- at: '2026-08-27T19:54:13'
+  event: pending->rejected
+  by: generator
+  note: 'AUDIT 2026-08-27: stale wave — asset_id slugs come from an outdated card
+    list (15 match no live cards.ts id, the rest predate renames) and class icons
+    misroutes delivery to the meld UI-icons lane which cardino art cannot consume.
+    Superseded by the fresh sprites_2d cardino-card-<id> wave driven through cardino-lanes
+    (art lane + UI img support landed 2026-08-27).'
+_queue: pending
+_file: requests/pending/req-20260827-061247-cardino-card-judgment-of-the-sky.yaml

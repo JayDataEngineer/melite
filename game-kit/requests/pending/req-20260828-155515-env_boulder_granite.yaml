@@ -1,0 +1,17 @@
+schema: meld.asset-request/v1
+id: req-20260828-155515-env_boulder_granite
+created: '2026-08-28T15:55:15'
+requested_by: unity-mcp
+class: props
+asset_id: env_boulder_granite
+title: Desert boulder — granite weathered PBR
+priority: P2
+spec: Single desert boulder, granite texture, weathered erosion marks, PBR albedo+normal.
+  0.5-1.2m footprint. Under 8K tris.
+acceptance: {}
+lane_hint: null
+status: pending
+history:
+- at: '2026-08-28T15:55:15'
+  event: enqueued
+  by: unity-mcp

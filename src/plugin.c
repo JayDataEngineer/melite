@@ -20,6 +20,7 @@ struct inference_plugin {
                    const inference_tensor *, size_t,
                    inference_tensor *, size_t);
     void (*unload)(inference_context *);
+    int (*stop)(inference_context *);   /* OPTIONAL (audit F3) */
 };
 
 inference_plugin *plugin_load(const char *so_path) {
@@ -56,6 +57,9 @@ inference_plugin *plugin_load(const char *so_path) {
 
 #undef RESOLVE
 
+    /* OPTIONAL: node_stop (audit F3) — absent in older plugins, never fatal */
+    p->stop = (int (*)(inference_context *))dlsym(h, "node_stop");
+
     return p;
 }
 
@@ -74,6 +78,11 @@ int plugin_execute(const inference_plugin *p,
                    const inference_tensor *in, size_t n_in,
                    inference_tensor *out, size_t n_out) {
     return p->execute(ctx, in, n_in, out, n_out);
+}
+
+int plugin_stop(const inference_plugin *p, inference_context *ctx) {
+    if (p && p->stop && ctx) return p->stop(ctx);
+    return 0;   /* plugin predates the hook: stop lands at node boundary */
 }
 
 void plugin_unload_model(const inference_plugin *p, inference_context *ctx) {

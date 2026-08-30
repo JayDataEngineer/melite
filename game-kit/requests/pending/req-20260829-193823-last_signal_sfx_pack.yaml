@@ -1,0 +1,20 @@
+schema: meld.asset-request/v1
+id: req-20260829-193823-last_signal_sfx_pack
+created: '2026-08-29T19:38:23'
+requested_by: unity-mcp
+class: sfx
+asset_id: last_signal_sfx_pack
+title: last signal sfx pack
+priority: P2
+spec: 'Five-event SFX pack for THE LAST SIGNAL film mix: (1) holographic billboard
+  hum+flicker 4s, (2) rain-on-metal alley ambience 8s loopable, (3) archive-hall fire
+  whoosh low 3s, (4) seed-crystal bloom shimmer 5s bright tonal riser, (5) dawn sea
+  shore distant waves 6s. Lane: moss-sfx, one event per call, short captions describing
+  the SOUND not the scene, 48kHz mono stems for film mix.'
+acceptance: {}
+lane_hint: null
+status: pending
+history:
+- at: '2026-08-29T19:38:23'
+  event: enqueued
+  by: unity-mcp

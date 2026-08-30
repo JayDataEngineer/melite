@@ -1,0 +1,6 @@
+name: ls-tts-06
+description: "THE LAST SIGNAL dialogue 6/11 — MARA @ 55s"
+nodes:
+  - id: generate
+    type: audio_cpp
+    params: {"task": "tts", "family": "qwen3_tts", "model": "/mnt/data/models/audio/Qwen3-TTS-12Hz-0.6B-CustomVoice-merged", "backend": "cuda", "cli": "/home/user/Documents/programs/vendor/my-stuff/audiocpp-fork/build/bin/audiocpp_cli", "speaker": "serena", "instruct": "quiet intensity, haunted", "out_dir": "./output"}

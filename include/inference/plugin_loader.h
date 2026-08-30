@@ -26,6 +26,10 @@ int plugin_execute(const inference_plugin *p,
                    inference_context *ctx,
                    const inference_tensor *in, size_t n_in,
                    inference_tensor *out, size_t n_out);
+/* Optional cooperative-stop hook (audit F3): forwards to node_stop when
+ * the plugin exports it; returns 0 (no-op) when it does not. */
+int plugin_stop(const inference_plugin *p, inference_context *ctx);
+
 void plugin_unload_model(const inference_plugin *p, inference_context *ctx);
 void plugin_unload(inference_plugin *p);
 

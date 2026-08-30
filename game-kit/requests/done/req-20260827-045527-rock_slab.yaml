@@ -1,0 +1,39 @@
+schema: meld.asset-request/v1
+id: req-20260827-045527-rock_slab
+created: '2026-08-27T04:55:27'
+requested_by: unity-mcp
+class: props
+asset_id: rock_slab
+title: rock slab
+priority: P0
+spec: 'rock_slab — leaning flat sandstone slab, tilted cover piece. FOURTH of the
+  world scatter rocks family (rock_small/large/cluster delivered GREEN/STATIC-PASS).
+  Style law: ONE style family, shared z-image style suffix, seed family 82xx (v1 seed
+  8203 and retry 8303 both gated RED — do NOT re-roll the same single-object brief).
+  Required lane change per ART-MANIFEST: bolder TWO-OBJECT composition (e.g. a large
+  tilted slab leaning against a lower wedging stone so all views agree on silhouette)
+  or manual mesh. Palette anchor Resources/palette.png — desaturated desert-dusk ochres,
+  bone-whites, bruise-violet accents. Pipeline: z-image concept → TRELLIS → FBX only,
+  static prop (no rig/clips per law 4). Tri budget ≤5k (instancing-heavy dresser).
+  Turntable-gated (gamekit-vision-gate neutral three-view reads, retry-once). Delivery
+  via scripts/deliver_asset.py --kind prop --static into Resources/models.'
+acceptance: {}
+lane_hint: null
+status: done
+history:
+- at: '2026-08-27T04:55:27'
+  event: enqueued
+  by: unity-mcp
+- at: '2026-08-27T04:56:05'
+  event: pending->active
+  by: generator
+- at: '2026-08-27T05:06:07'
+  event: active->done
+  by: generator
+  note: delivered v4 run=pmtb21pml1gikmc sha=4a180ea96b2cdeba
+_queue: active
+_file: requests/active/req-20260827-045527-rock_slab.yaml
+result:
+  version: 4
+  run_id: pmtb21pml1gikmc
+  sha16: 4a180ea96b2cdeba

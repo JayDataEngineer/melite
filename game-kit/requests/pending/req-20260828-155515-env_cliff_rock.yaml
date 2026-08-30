@@ -1,0 +1,17 @@
+schema: meld.asset-request/v1
+id: req-20260828-155515-env_cliff_rock
+created: '2026-08-28T15:55:15'
+requested_by: unity-mcp
+class: props
+asset_id: env_cliff_rock
+title: Cliff rock face — brown sandstone
+priority: P2
+spec: Vertical cliff rock face, brown sandstone, layered sediment lines, PBR. 1-2m
+  height. Under 8K tris.
+acceptance: {}
+lane_hint: null
+status: pending
+history:
+- at: '2026-08-28T15:55:15'
+  event: enqueued
+  by: unity-mcp

@@ -1,0 +1,34 @@
+# Melite overlay — inference.cpp local copy (2026-08-30)
+# All plugins live in inference.cpp/dsh/, gateway at localhost:18090.
+# No ray dependency.
+
+- insert:
+    - id: infer-hello
+      name: /home/user/Documents/programs/active/inference.cpp/dsh/melite-hello/lib/index.mjs
+      config:
+        greeting: 'Inference lane online'
+    - id: infer-tools
+      name: /home/user/Documents/programs/active/inference.cpp/dsh/melite-tools/lib/index.mjs
+      config:
+        gatewayUrl: http://localhost:18090
+    - id: infer-card-view-host
+      name: /home/user/Documents/programs/active/inference.cpp/dsh/melite-card-view/lib/index.js
+      config:
+        gatewayUrl: 'http://localhost:18090'
+    - id: infer-card-view-client
+      name: '@melite-plugin/dsh-card-view'
+      config:
+        clientRowOnly: true
+    - id: infer-gallery-host
+      name: /home/user/Documents/programs/active/inference.cpp/dsh/infer-gallery/lib/index.js
+      config:
+        gatewayUrl: 'http://localhost:18090'
+    - id: infer-media
+      name: '@infer-media/dsh-media'
+      config:
+        gateways:
+          - 'http://localhost:18090'
+    - id: infer-card-deck
+      name: '@melite-plugin/dsh-card-deck'
+      config:
+        gatewayUrl: 'http://localhost:18090'

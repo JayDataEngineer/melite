@@ -56,6 +56,14 @@ int node_execute(inference_context *ctx,
 
 void node_unload(inference_context *ctx);
 
+/* ---------- optional extension (audit F3, 2026-08-29) ----------
+ * node_stop: called from ANOTHER thread while node_execute is in flight
+ * (e.g. the operator pressed stop mid-render). Implementations should set
+ * an internal stop flag their execute loop polls, cancel any remote work,
+ * and make execute return promptly. Absent symbol = cooperative stop at
+ * node boundaries only (legacy behavior). Never fatal to load. */
+void node_stop(inference_context *ctx);
+
 /* ---------- helpers for string ownership ---------- */
 
 void inference_free(void *ptr);

@@ -1,0 +1,45 @@
+schema: meld.asset-request/v1
+id: req-20260828-lorekeep_keeper
+created: '2026-08-28T08:00:00'
+requested_by: operator
+class: humanoids
+asset_id: lorekeep_keeper
+title: lorekeep keeper animated character
+priority: P0
+spec: Lorekeep keeper — weathered male traveler archetype. Bald, athletic muscular
+  build (hero preset). Worn leather travel coat with lowered hood, heavy brown-grey
+  canvas, brass buckles, repaired patches. Desert-dusk palette, bone-white cloth accents.
+  Needs walk cycle + idle loop animations baked into FBX. Rigged to base_human generic
+  rig. Deliver GLB + FBX.
+acceptance: {}
+lane_hint: character_keeper.yaml
+status: done
+history:
+- at: '2026-08-28T08:00:00'
+  event: enqueued
+  by: operator
+- at: '2026-08-28T17:49:06'
+  event: pending->active
+  by: generator
+- at: '2026-08-28T18:42:06'
+  event: active->done
+  by: generator
+  note: delivered v1 run=race_lorekeep_keeper sha=d56dfc028288e469
+- at: '2026-08-28T18:45:40'
+  event: done->pending
+  by: generator
+  note: 'MCP stamp at 18:42 referenced lorekeep_keeper_socketed.fbx: static debug
+    export that FAILED the FBX referee (bind 2.37m) and carried 0 clips; request spec
+    requires walk+idle baked. Superseding with referee-PASS animated v2 (BIND 0.0000m,
+    clips idle+move).'
+- at: '2026-08-28T18:45:47'
+  event: pending->active
+  by: generator
+- at: '2026-08-28T18:45:47'
+  event: active->done
+  by: generator
+  note: delivered v2 run=pmtd991qsemrqzd sha=957b34ae0800aa16
+result:
+  version: 2
+  run_id: pmtd991qsemrqzd
+  sha16: 957b34ae0800aa16

@@ -1,0 +1,17 @@
+schema: meld.asset-request/v1
+id: req-20260828-155515-env_dead_log
+created: '2026-08-28T15:55:15'
+requested_by: unity-mcp
+class: props
+asset_id: env_dead_log
+title: Fallen dead tree log
+priority: P2
+spec: Fallen dead tree log, bark peeling, bleached wood, PBR. 2-3m length. Under 8K
+  tris.
+acceptance: {}
+lane_hint: null
+status: pending
+history:
+- at: '2026-08-28T15:55:15'
+  event: enqueued
+  by: unity-mcp

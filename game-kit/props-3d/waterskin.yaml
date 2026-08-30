@@ -1,0 +1,76 @@
+# waterskin.yaml — game-kit-v1 prop. Static-lane: z-image concept -> TRELLIS static GLB -> turntable.
+# Spec: Hanging waterskin: hide bladder + bone-spout cork + fiber sling strap, ~0.35 m tall.
+# Desert-survival signature item (hydration loop). Static prop, <=5k tris, flat-shaded.
+
+output_dir: ./data/test-output/pipelines/pipeline_waterskin
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+steps:
+  # -- CONCEPT ------------------------------------------------------------
+  - family: generate_image
+    phase: concept
+    title: "Concept — hanging waterskin"
+    consumes: [comfy_url]
+    inputs: []
+    outputs: [asset_image]
+    params:
+      model: z-image
+      seed: 141
+      output_artifact: asset_image
+      prompt: >-
+        Chunky fat oval waterskin prop, bulbous tan hide bladder with one
+        stitched seam, short bone-spout cork at top, thick fiber sling strap,
+        bold simple silhouette, roughly 0.35 meters tall, plain solid
+        mid-grey background, flat even studio lighting with no shadows, bold
+        readable silhouette, stylized fantasy game asset, clean details,
+        full object centered in frame.
+      negative_prompt: >-
+        scene, environment, ground, hand, hands, person, multiple objects,
+        text, watermark, cropped, busy background, drop shadow, vignette,
+        photorealistic, blurry, low contrast, wet, dripping, liquid.
+
+  # -- MESH ----------------------------------------------------------------
+  # -- MESH (native trellis.cpp; torch lane retired 2026-08-26) ----
+  - family: trellis_native
+    phase: mesh
+    title: "Mesh - native (Trellis — static GLB (no rig, ≤5k tris))"
+    consumes: [comfy_url]
+    inputs: [asset_image]
+    outputs: [asset_glb_raw]
+    params:
+      # torch lane retired 2026-08-26 (confetti): preset/background_color/rig_with_somax dropped - the native node
+      # enforces the reference defaults (BiRefNet auto matte,
+      # QEM 300K @1024, xatlas, trilinear PBR bake).
+      model: trellis_native
+      seed: 23
+      resolution: "1024"
+      texture_size: 1024
+      bg_removal: auto
+      image_artifact: asset_image
+      dump_post: enable
+      output_artifact: asset_glb_raw
+
+  - family: trellis_native_replay
+    phase: budget
+    title: "Budget - QEM 40000 faces"
+    consumes: [comfy_url]
+    inputs: [asset_glb_raw]
+    outputs: [asset_glb]
+    params:
+      model: trellis_native_replay
+      faces_target: 40000
+      atlas: 1024
+      glb_artifact: asset_glb_raw
+      dump_artifact: asset_glb_raw_dump
+      output_artifact: asset_glb
+
+  - family: render_glb_views
+    phase: review
+    title: "Turntable renders (feeds agent eyes)"
+    consumes: [comfy_url]
+    inputs: [asset_glb]
+    outputs: [asset_views]
+    params:
+      glb_artifact: asset_glb

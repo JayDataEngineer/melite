@@ -1,0 +1,39 @@
+# @meta {"description": "MELD TCG card art - card_plains (Plains land) z-image 576x800 per request spec, painterly golden-light family.", "status": "production"}
+# sprites_card_plains.yaml — single card illustration for the meld game's
+# card set (request req-20260829-072920-card_plains, class sprites_2d,
+# non-cardino lane: game-kit/sprites-2d/<yaml from spec>).
+# Card wave style law: ONE shared style suffix across all card_* requests;
+# seeds 6xx sprites band, card sub-family base 610 (610=plains).
+# v2 (gate rework): seed 610 attempt painted the card title "Murnd Plains"
+# onto the art (agent-eyes reads pmte2swl3126rgt + pmte2t5f1cjqrbp agree).
+# "MTG card art" phrasing removed — it invites title text; negative prompt
+# hardened with words/typography/title terms.
+
+output_dir: ./data/test-output/pipelines/pipeline_sprites_card_plains
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+steps:
+  - family: generate_image
+    phase: card
+    title: "Card art - plains land"
+    consumes: [comfy_url]
+    outputs: [card_plains]
+    params:
+      model: z-image
+      seed: 611
+      width: 576
+      height: 800
+      output_artifact: card_plains
+      prompt: >-
+        full-bleed fantasy card illustration, no letters anywhere: a vast
+        golden grassy plains landscape stretching to the horizon under a
+        dramatic sky, peaceful grassland with distant mountains, warm golden
+        light falling evenly across the land, painterly fantasy illustration,
+        rich visible brushwork, iconic centered composition, portrait card
+        format
+      negative_prompt: >-
+        text, words, letters, numbers, typography, title, caption,
+        inscription, signature, watermark, logo, border, frame, card layout,
+        UI elements, photorealistic, people, buildings

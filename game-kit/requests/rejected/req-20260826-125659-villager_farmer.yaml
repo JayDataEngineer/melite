@@ -1,0 +1,27 @@
+schema: meld.asset-request/v1
+id: req-20260826-125659-villager_farmer
+created: '2026-08-26T12:56:59'
+requested_by: operator
+class: humanoids
+asset_id: villager_farmer
+title: Village farmer
+priority: P2
+spec: 'Hamlet NPC: straw-ish shade wrap, mud-caked lower wraps, hand hoe slung on
+  back. Same rig/U-027/family laws as villager_trader. glb+fbx pair.'
+acceptance:
+  tri_budget: 8000
+lane_hint: null
+status: rejected
+history:
+- at: '2026-08-26T12:56:59'
+  event: enqueued
+  by: operator
+- at: '2026-08-26T17:20:14'
+  event: pending->active
+  by: generator
+- at: '2026-08-26T17:20:18'
+  event: active->rejected
+  by: generator
+  note: needs operator-driven lane (taste gates)
+_queue: active
+_file: requests/active/req-20260826-125659-villager_farmer.yaml

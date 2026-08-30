@@ -1,0 +1,62 @@
+schema: meld.asset-request/v1
+id: req-20260827-190320-arena_banner
+created: '2026-08-27T19:03:20'
+requested_by: unity-mcp
+class: props
+asset_id: arena_banner
+title: arena banner pole
+priority: P1
+spec: 'Banner pole for the arena pit mouth — replaces grey-box pole+flag Blocks. Style
+  DNA: desaturated desert-dusk ochres, bone-whites, bruise-violet accents; palette
+  anchor Resources/palette.png. Pipeline law: z-image concept → TRELLIS → FBX ONLY
+  (one clean mesh, no Icosphere/helper geometry, generic rig never Humanoid), static
+  prop no clips. Tri budget ≤5k (instancing-heavy dresser: 4+ stands per arena). Dimensions:
+  3.0m tall pole (0.1m shaft) with a 1.1m x 0.7m hanging cloth banner at 2.6m, cloth
+  slightly weathered with a simple painted sigil (abstract sun-disc, NOT a letterform).
+  ONE mesh, pole+banner fused. Cloth hangs straight down (no physics bake needed).'
+acceptance: {}
+lane_hint: null
+status: done
+history:
+- at: '2026-08-27T19:03:20'
+  event: enqueued
+  by: unity-mcp
+- at: '2026-08-28T01:03:37'
+  event: pending->active
+  by: generator
+- at: '2026-08-28T01:12:01'
+  event: active->pending
+  by: generator
+  note: 'arena_banner generated+gated YELLOW (run pmtc90ldmr4qzvo, seed 7302, 4892
+    tris, front/back read ''banner stand'', 4/4 diagonals ''banner stand'', side views
+    edge-on ''cotton swab'' per flat-cloth spec) — DELIVERY blocked. [door ok:false]
+    REFUSED: blender FBX conversion failed (container comfy-fbx-blender = Blender
+    3.3.1 rejects EXT_texture_webp — every TRELLIS replay GLB carries WebP atlas textures;
+    door output verbatim: "REFUSED: blender FBX conversion failed for trellis_native_replay_pmtc90ldmr4qzvo_trellis_native_replay_prop_glb.glb:").
+    Prop GLB delivery infra-blocked until the blender container is upgraded (>=3.5)
+    or the trelliscpp node emits PNG atlas. Do NOT regenerate — the asset lane is
+    fine; the door is not.'
+- at: '2026-08-28T02:32:47'
+  event: pending->active
+  by: queue-consumer
+- at: '2026-08-28T02:34:42'
+  event: active->pending
+  by: queue-consumer
+  note: 'DELIVERY BLOCKED (door ok:false, 2026-08-28 02:31): deliver_asset.py inside
+    the gateway died at the game-repo copy — OSError: [Errno 30] Read-only file system:
+    /home/user/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/arena_banner.glb.
+    Root fs is mounted ro machine-wide (findmnt: ext4 ro,nosuid,nodev); webp->PNG
+    transcode + FBX conversion both SUCCEEDED this time (door log: transcode 2 textures,
+    fbx 1160124 B) so the 2026-08-28 webp bug is fixed — this is a NEW block: read-only
+    game repo. Asset itself is generated+gated YELLOW (run pmtc90ldmr4qzvo, seed 7302,
+    4892 tris) and ready; DO NOT regenerate. Retry delivery only after the operator
+    remounts the game repo rw.'
+- at: '2026-08-28T02:40:21'
+  event: pending->active
+  by: operator-redeliver
+- at: '2026-08-28T02:40:22'
+  event: active->done
+  by: generator
+  note: delivered v1 run=pmtc90ldmr4qzvo
+_queue: active
+_file: requests/active/req-20260827-190320-arena_banner.yaml

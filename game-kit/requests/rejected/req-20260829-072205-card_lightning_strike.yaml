@@ -1,0 +1,23 @@
+schema: meld.asset-request/v1
+id: req-20260829-072205-card_lightning_strike
+created: '2026-08-29T07:22:05'
+requested_by: unity-mcp
+class: sprites_2d
+asset_id: card_lightning_strike
+title: card lightning strike
+priority: P1
+spec: 'MTG card art for Lightning Strike instant. A powerful crackling lightning bolt
+  striking from dark storm clouds, electric blue-white energy. Style: painterly, dramatic
+  storm. Dimensions: 576x800 pixels. No text, no border.'
+acceptance: {}
+lane_hint: null
+status: rejected
+history:
+- at: '2026-08-29T07:22:05'
+  event: enqueued
+  by: unity-mcp
+- at: '2026-08-29T07:45:43'
+  event: pending->rejected
+  by: generator
+  note: Wrong spec - generated full card with frame/text. Resubmitting with corrected
+    spec.

@@ -64,6 +64,7 @@ add_library(inference STATIC
     src/catalog.c
     src/download.c
     src/server.cpp
+    src/poser_handlers.cpp
     src/ws_server.c
 )
 
@@ -117,6 +118,17 @@ set_target_properties(echo_plugin PROPERTIES
 )
 
 # ---------------------------------------------------------------------------
+# ANNY plugin (native shape morphing, no external deps)
+# ---------------------------------------------------------------------------
+add_library(anny_plugin SHARED plugins/anny/engines/anny/anny_plugin.c)
+target_include_directories(anny_plugin PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(anny_plugin PRIVATE m)
+set_target_properties(anny_plugin PROPERTIES
+    PREFIX ""
+    POSITION_INDEPENDENT_CODE ON
+)
+
+# ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
 if(INFERENCE_BUILD_TESTS)
@@ -138,6 +150,28 @@ if(INFERENCE_BUILD_TESTS)
     target_link_libraries(test_runner PRIVATE inference)
     target_link_libraries(test_runner PRIVATE ${CMAKE_DL_LIBS})
     add_test(NAME test_runner COMMAND test_runner)
+
+    # Black-box queue regression suite (GPU FIFO, stop-while-queued,
+    # slot recycling, SSE depth). Boots inference_cli + a fake ComfyUI;
+    # see docs/queue-audit-fixes.md for the invariants it pins down.
+    find_package(Python3 COMPONENTS Interpreter QUIET)
+    if(Python3_FOUND)
+        add_test(NAME test_queue
+                 COMMAND ${Python3_EXECUTABLE}
+                         ${CMAKE_SOURCE_DIR}/tests/test_queue.py
+                         --repo-dir ${CMAKE_SOURCE_DIR}
+                         --build-dir ${CMAKE_BINARY_DIR})
+        set_tests_properties(test_queue PROPERTIES TIMEOUT 300)
+        # CHAOS layer: concurrent storms, stop-vs-completion races,
+        # timeout interrupts, malformed-input barrage, kill -9 sidecar
+        # atomicity, SIGINT, boot-sweep matrix, concurrent read storms.
+        add_test(NAME test_queue_chaos
+                 COMMAND ${Python3_EXECUTABLE}
+                         ${CMAKE_SOURCE_DIR}/tests/test_queue_chaos.py
+                         --repo-dir ${CMAKE_SOURCE_DIR}
+                         --build-dir ${CMAKE_BINARY_DIR})
+        set_tests_properties(test_queue_chaos PROPERTIES TIMEOUT 600)
+    endif()
 endif()
 
 # ---------------------------------------------------------------------------

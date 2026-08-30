@@ -1,0 +1,49 @@
+{
+  "apps": [
+    {
+      "id": "audio-cpp",
+      "label": "Audio Studio",
+      "description": "TTS, SFX, music generation — 50+ audio model families",
+      "url": "http://127.0.0.1:8091",
+      "icon": "🎵",
+      "features": []
+    },
+    {
+      "id": "comfyui",
+      "label": "ComfyUI Graph Editor",
+      "description": "Node-based diffusion workflow editor — queue jobs, wire nodes, watch live preview",
+      "url": "http://127.0.0.1:18465",
+      "icon": "🎨",
+      "features": [
+        "websocket",
+        "sse"
+      ]
+    },
+    {
+      "id": "kimodo",
+      "label": "Kimodo Motion",
+      "description": "Text-to-motion generation — type a prompt, get a SMPL-X skeleton animation",
+      "url": "http://127.0.0.1:8094",
+      "icon": "🏃",
+      "features": []
+    },
+    {
+      "id": "llama",
+      "label": "llama-server",
+      "description": "llama.cpp built-in chat playground — talk to any GGUF LLM",
+      "url": "http://127.0.0.1:8080",
+      "icon": "🦙",
+      "features": [
+        "sse"
+      ]
+    },
+    {
+      "id": "trellis2",
+      "label": "Trellis Studio",
+      "description": "Image-to-3D mesh generation — drop an image, get a textured GLB",
+      "url": "http://127.0.0.1:8092",
+      "icon": "◇",
+      "features": []
+    }
+  ]
+}

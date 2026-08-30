@@ -1,0 +1,64 @@
+schema: meld.asset-request/v1
+id: req-20260827-192053-ground_sand
+created: '2026-08-27T19:20:53'
+requested_by: operator
+class: ground_textures
+asset_id: ground_sand
+title: seamless sand ground texture set
+priority: P1
+spec: 'Seamless sand ground-texture SET (albedo + normal + roughness PNGs) — fourth
+  set of the delivered ground family (ground_cracked / ground_gravel / ground_stone,
+  2026-08-27: seamless via offset-half + feather-256 blend, vision-gated on 2x2 sheets,
+  seam metrics in per-texture report.json). Style DNA: desaturated desert-dusk ochres,
+  bone-whites per Resources/palette.png; must read distinct from ground_gravel — fine
+  wind-borne grain, NO stones. HARD LINEAGE LAW — do NOT re-roll z-image seeds: four
+  honest FAILs already (wave seed 401 ''rippled'' FAIL; retry 405 ''ripples+pebbles''
+  FAIL; rewave 405 ''criss-cross'' new-family FAIL — dominant axis + cross seams on
+  _sheet gate; rewave-retry 406 ''zero-ripple speckle'' FAIL — star-pattern ripple
+  center + seams). z-image prompt families are EXHAUSTED for this surface — approach
+  must switch generator or use a hand-authored/procedural-noise base (ART-MANIFEST
+  ground-textures law, 2026-08-27). Delivery category textures/; Unity wiring automatic
+  (ArtKitImport.EnsureGroundMaterials -> Resources/textures/ground_sand/ + Ground/ground_sand.mat;
+  TerrainStreamer basin/flats bands consume it).'
+acceptance:
+  sheet_gate: '2x2 seamless: no directional axis, no cross/star ripple artifacts,
+    no visible seams; metrics in report.json'
+lane_hint: null
+status: done
+history:
+- at: '2026-08-27T19:20:53'
+  event: enqueued
+  by: operator
+- at: '2026-08-28T02:36:11'
+  event: pending->pending
+  by: queue-consumer
+  note: needs operator-driven lane (taste gates)
+- at: '2026-08-28T03:26:31'
+  event: pending->active
+  by: generator
+- at: '2026-08-28T03:26:31'
+  event: active->pending
+  by: generator
+  note: needs operator-driven lane (taste gates)
+- at: '2026-08-28T04:08:16'
+  event: pending->active
+  by: generator
+- at: '2026-08-28T04:08:20'
+  event: active->pending
+  by: consumer
+  note: needs operator-driven lane (taste gates)
+- at: '2026-08-28T07:18:09'
+  event: pending->pending
+  by: consumer
+  note: needs operator-driven lane (taste gates)
+- at: '2026-08-28T18:54:02'
+  event: pending->active
+  by: generator
+- at: '2026-08-28T18:56:44'
+  event: active->done
+  by: generator
+  note: delivered v1 run=ground_sand_proc sha=629d6e367a546393
+result:
+  version: 1
+  run_id: ground_sand_proc
+  sha16: 629d6e367a546393

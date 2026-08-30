@@ -1,0 +1,30 @@
+# arena_stand_concept_gate — diagnose WHICH stage lost the bleacher read:
+# the z-image concept (seed 7301, run pmtby5jhzyqfxk6) or the TRELLIS mesh.
+# Context-free blind_read on the concept image alone.
+output_dir: ./data/test-output/pipelines/pipeline_props_arena_stand_concept_gate
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+steps:
+  - family: input
+    phase: gate
+    title: "Import concept image"
+    consumes: [comfy_url]
+    outputs: [concept]
+    params:
+      model: input
+      source: /editor/assets/runs/pmtby5jhzyqfxk6/generate_image_pmtby5jhzyqfxk6_z-image_s7301_asset_image.png
+      output_artifact: concept
+
+  - family: blind_read
+    phase: gate
+    title: "Recognised gate - concept"
+    consumes: [comfy_url]
+    inputs: [concept]
+    params:
+      model: blind_read
+      images: [concept]
+      expect: [stand, bench, bleacher, seating, grandstand, stairs, chair]
+      fail_on: never
+      output_artifact: blind_read

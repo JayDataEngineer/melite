@@ -1,0 +1,36 @@
+schema: meld.asset-request/v1
+id: req-20260828-181858-shell_shack
+created: '2026-08-28T18:18:58'
+requested_by: unity-mcp
+class: props
+asset_id: shell_shack
+title: shell_shack building shell
+priority: P1
+spec: 'Starter habitation shell — small single-room desert wattle-and-daub shack,
+  low doorway, slightly sagging thatch roof, weathered timber posts. Whole-building
+  monolithic shell (exterior walls + roofline in one closed mesh, door opening modeled
+  as recessed archway). Kenshi-style outpost scale: squat, humble, iconic silhouette.
+  ≤15K tris, single mesh, flat bottom at y=0, footprint ~4x4m. Style DNA: desert-dusk
+  palette, bone-white cloth accents, repaired patches.'
+acceptance: {}
+lane_hint: null
+status: pending
+history:
+- at: '2026-08-28T18:18:58'
+  event: enqueued
+  by: unity-mcp
+- at: '2026-08-28T19:09:29'
+  event: pending->active
+  by: generator
+- at: '2026-08-29T07:21:21'
+  event: active->pending
+  by: lease-sweep
+  note: 'active-lease expired: no lifecycle activity for 731 min (lease 90 min) —
+    claimant presumed dead, requeued'
+- at: '2026-08-29T07:58:21'
+  event: pending->active
+  by: generator
+- at: '2026-08-29T08:16:13'
+  event: active->pending
+  by: generator
+  note: consumer killed mid-claim (registry cleanup 2026-08-29) — requeued intact

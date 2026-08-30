@@ -1,0 +1,33 @@
+schema: meld.asset-request/v1
+id: req-20260827-061213-cardino-card-spider-pack
+created: '2026-08-27T06:12:13'
+requested_by: unity-mcp
+class: icons
+asset_id: cardino-card-spider-pack
+title: cardino card spider pack
+priority: P2
+spec: 'MTG-style card art: swarm of giant spiders in dark web-filled forest, glowing
+  eyes, dark fantasy style, detailed illustration | Style: dark fantasy TCG card art,
+  painterly digital art, dramatic lighting, card frame composition'
+acceptance: {}
+lane_hint: null
+status: rejected
+history:
+- at: '2026-08-27T06:12:13'
+  event: enqueued
+  by: unity-mcp
+- at: '2026-08-27T06:21:17'
+  event: pending->pending
+  by: generator
+  note: ComfyUI (:18465) not reachable - z-image generation requires GPU inference
+    backend
+- at: '2026-08-27T19:54:12'
+  event: pending->rejected
+  by: generator
+  note: 'AUDIT 2026-08-27: stale wave — asset_id slugs come from an outdated card
+    list (15 match no live cards.ts id, the rest predate renames) and class icons
+    misroutes delivery to the meld UI-icons lane which cardino art cannot consume.
+    Superseded by the fresh sprites_2d cardino-card-<id> wave driven through cardino-lanes
+    (art lane + UI img support landed 2026-08-27).'
+_queue: pending
+_file: requests/pending/req-20260827-061213-cardino-card-spider-pack.yaml

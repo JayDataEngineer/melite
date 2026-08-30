@@ -1,0 +1,51 @@
+# @meta {"description": "Motion pair lane for lorekeep_keeper: kimodo walk + idle NPZs (SOMA-77). NPZ-only (no renders) - the clips bake onto the assembled socketed GLB via RaySomaxBake afterwards.", "status": "production-candidate"}
+# lorekeep_keeper_motion.yaml - game-kit/races motion lane for
+# req-20260828-lorekeep_keeper (P0, operator).
+#
+# WHY A SEPARATE LANE: bake_motion requires its GLB input to be a ctx
+# artifact of the SAME run, but the socketed assembly is a host-side
+# numpy pass (socket_prop_node.py) between pipelines. So this lane
+# produces the two SOMA-77 motion NPZs (walk = the operator's proven
+# character_cards walk prompt; idle = standing weight-shift loop); the
+# RaySomaxBake CPU node then bakes them onto the assembled GLB (same
+# node the bake_motion family wraps - evidence captured in the run log).
+#
+# Clip naming follows the delivered-creature convention (idle + move) so
+# the ingest gate's idle/move loop detection matches.
+
+output_dir: ./data/test-output/pipelines/pipeline_lorekeep_keeper_motion
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+steps:
+  - family: kimodo_motion
+    phase: motion
+    title: "Motion: walk cycle (move clip)"
+    consumes: [comfy_url]
+    inputs: []
+    outputs: [walk_motion]
+    params:
+      prompt: >-
+        A person walking forward at a steady pace, natural arm swing,
+        confident stride, looking ahead.
+      seed: 42
+      duration_sec: 5.0
+      diffusion_steps: 25
+      output_artifact: walk_motion
+
+  - family: kimodo_motion
+    phase: motion
+    title: "Motion: idle loop (idle clip)"
+    consumes: [comfy_url]
+    inputs: []
+    outputs: [idle_motion]
+    params:
+      prompt: >-
+        A person standing still in a relaxed idle stance, subtle weight
+        shifting between feet, gentle breathing motion, calm steady
+        gaze ahead.
+      seed: 43
+      duration_sec: 5.0
+      diffusion_steps: 25
+      output_artifact: idle_motion

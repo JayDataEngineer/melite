@@ -1,0 +1,34 @@
+schema: meld.asset-request/v1
+id: req-20260829-144217-base_human
+created: '2026-08-29T14:42:17'
+requested_by: operator
+class: humanoids
+asset_id: base_human
+title: 'base_human — standard humanoid rig (shared by 6 kinds: village_elder, ash_nomad,
+  caravan_trader, cherusci_scrivener, amf_warden, arena_factor)'
+priority: P0
+spec: 'Standard male humanoid figure, 1.75m athletic build, weathered desert survivor
+  aesthetic. MUST be SOMA-Mixamo 77-joint rigged GLB conforming to the SOMA template
+  rest pose (bind must match the template — see §4.38 qualification gate: bounds gate
+  catches bind non-conformance). Deliver: rigged GLB + name-matched idle.bvh and walk.bvh
+  (joint names must match the GLB rig). The figure must pass bounds gate (animated
+  height constant within 10% of bind) and vision gate (head, limbs, normal proportions).
+  This is the SHARED base for 6 human character kinds.'
+acceptance: {}
+lane_hint: null
+status: done
+history:
+- at: '2026-08-29T14:42:17'
+  event: enqueued
+  by: operator
+- at: '2026-08-29T14:51:21'
+  event: pending->active
+  by: generator
+- at: '2026-08-29T15:31:09'
+  event: active->done
+  by: queue-consumer
+  note: delivered v2 run=pmtei0oqgg6joew sha=2debb023e3e5e1dd
+result:
+  version: 2
+  run_id: pmtei0oqgg6joew
+  sha16: 2debb023e3e5e1dd

@@ -1,0 +1,75 @@
+# arena_ring_retry — RED-gate rework v2 (spec: req-20260827-190320-arena_ring).
+# v1 (seed 7303, run pmtcdraoiwtmxaf) BLOCK: blind reads 'Chalk'/'castle
+# model'/'Bone'/'marshmallow wall'/'Candle' — pale smooth mass, no stone
+# wall read. v2: warmer ochre individual stones, deeper joints, bolder
+# horizontal mass. Seed band 73xx (arena wave), style suffix unchanged.
+output_dir: ./data/test-output/pipelines/pipeline_props_arena_ring_v2
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+steps:
+  - family: generate_image
+    phase: concept
+    title: "Concept - arena ring segment v2"
+    consumes: [comfy_url]
+    outputs: [asset_image]
+    params:
+      model: z-image
+      seed: 7304
+      output_artifact: asset_image
+      prompt: >-
+        single low long boundary wall segment, a short curved row of large
+        chunky individual desert stones stacked together and bound with dark
+        rope, a thick rope line running along the flat stone top, warm
+        ochre-brown weathered stones with deep dark shadows between each
+        rock, bruise-violet rope lashings, flat level bottom, low wide
+        horizontal mass of heavy rocks, bold silhouette that reads clearly
+        from far away, one single unified object, isolated game prop,
+        centered, plain white background, stylized realistic game asset,
+        bold readable silhouette
+      negative_prompt: >-
+        text, watermark, busy background, drop shadow, scene, multiple
+        separated objects, cropped, full circle, closed ring, people,
+        figures, sand, ground, terrain, thin delicate shapes, pale white
+        stones, snow, candle, bone, smooth polished surface
+
+  - family: trellis_native
+    phase: mesh
+    title: "Mesh - arena ring segment v2"
+    consumes: [comfy_url]
+    inputs: [asset_image]
+    outputs: [asset_glb]
+    params:
+      model: trellis_native
+      seed: 22
+      image_artifact: asset_image
+      resolution: "512"
+      atlas_px: 1024
+      dump_post: enable
+      output_artifact: asset_glb
+
+  - family: trellis_native_replay
+    phase: budget
+    title: "Budget - arena ring segment v2 (QEM 5000, spec <=5k)"
+    consumes: [comfy_url]
+    inputs: [asset_glb]
+    outputs: [prop_glb]
+    params:
+      model: trellis_native_replay
+      faces_target: 5000
+      atlas: 1024
+      glb_artifact: asset_glb
+      dump_artifact: asset_glb_dump
+      output_artifact: prop_glb
+
+  - family: render_glb_views
+    phase: review
+    title: "Views - arena ring segment v2"
+    consumes: [comfy_url]
+    inputs: [prop_glb]
+    outputs: [views]
+    params:
+      model: render_glb_views
+      glb_artifact: prop_glb
+      output_artifact: views

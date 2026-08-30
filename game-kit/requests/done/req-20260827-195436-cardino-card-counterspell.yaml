@@ -1,0 +1,44 @@
+schema: meld.asset-request/v1
+id: req-20260827-195436-cardino-card-counterspell
+created: '2026-08-27T19:54:36'
+requested_by: operator
+class: sprites_2d
+asset_id: cardino-card-counterspell
+title: cardino card art Counterspell
+priority: P2
+spec: 'Card art for the cardino digital TCG card ''Counterspell'' (instant). Subject
+  from the card identity only — do not invent rivals. Flavor anchor: "No.". Painterly
+  dark-fantasy MTG-style illustration, dramatic lighting, centered subject, detailed
+  brushwork, reads at small card size. Square 1024x1024 PNG via z-image. Style family:
+  ONE shared card-art style across the wave (shared style suffix, seed family base
+  71xx per cardino-lanes README). Delivery law: class sprites_2d OPERATOR lane — deliver
+  via cardino-lanes/deliver_card_art.py into cardino public/cards/counterspell.png
+  (NOT the meld icons lane); UI falls back to glyphs until the png lands.'
+acceptance: {}
+lane_hint: cardino-lanes
+status: done
+history:
+- at: '2026-08-27T19:54:36'
+  event: enqueued
+  by: operator
+- at: '2026-08-28T01:12:10'
+  event: pending->pending
+  by: generator
+  note: '[door ok:false] sprites cannot pass the delivery door: kind=sprite refused
+    verbatim {"ok":false,"errors":["kind: creature|buildable|prop|icon"]} (probed
+    live 2026-08-28, zero side effects); openapi.json is 500 (bridge ModuleNotFoundError:
+    core) so no kind discovery; kind=icon also refused on probe (deliverable resolver
+    requires a .glb artifact — PNG sprite runs die "produced no .glb artifact"; icon
+    builds no delivery pairs). Sprite lane needs a door PNG path (operator). NOT GENERATED
+    — do not burn GPU until the door accepts sprites.'
+- at: '2026-08-28T03:58:42'
+  event: pending->active
+  by: cardino-lane
+- at: '2026-08-28T03:58:42'
+  event: active->done
+  by: cardino-lane
+  note: delivered v1 run=pmtcf90go2qkcyg sha=9ccc5a831bbea9eb
+result:
+  version: 1
+  run_id: pmtcf90go2qkcyg
+  sha16: 9ccc5a831bbea9eb

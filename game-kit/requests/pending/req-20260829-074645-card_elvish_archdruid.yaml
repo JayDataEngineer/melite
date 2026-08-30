@@ -1,0 +1,28 @@
+schema: meld.asset-request/v1
+id: req-20260829-074645-card_elvish_archdruid
+created: '2026-08-29T07:46:45'
+requested_by: unity-mcp
+class: sprites_2d
+asset_id: card_elvish_archdruid
+title: card elvish archdruid
+priority: P0
+spec: 'full-bleed fantasy card illustration, no letters anywhere: an ancient elven
+  archdruid channeling nature magic in an enchanted forest, glowing green runes, massive
+  tree roots, painterly fantasy illustration, rich visible brushwork, iconic centered
+  composition, portrait card format. NEGATIVE: text, words, letters, numbers, typography,
+  title, border, frame, card layout, UI elements, signature, watermark, logo'
+acceptance: {}
+lane_hint: null
+status: pending
+history:
+- at: '2026-08-29T07:46:45'
+  event: enqueued
+  by: unity-mcp
+- at: '2026-08-29T07:55:26'
+  event: pending->pending
+  by: queue-consumer
+  note: 'Class-level door gap (probe evidence on req-20260829-074644-card_island,
+    live 2026-08-29): non-cardino card art has NO delivery door — kind=card refuses
+    non-cardino manifest ids verbatim; kind=prop refuses PNG-only runs (no .glb);
+    meld ingest has no sprites classifier. NOT GENERATED (no GPU churn). Needs operator
+    door; drain continues on workable requests by id.'

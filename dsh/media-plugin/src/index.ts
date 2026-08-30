@@ -31,7 +31,7 @@ export interface Config {
   limit?: number
 }
 
-const DEFAULT_GATEWAYS = ['http://localhost:18090', 'http://localhost:33081']
+const DEFAULT_GATEWAYS = ['http://localhost:18090']
 const DEFAULT_TIMEOUT_MS = 15_000
 const DEFAULT_LIMIT = 200
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }

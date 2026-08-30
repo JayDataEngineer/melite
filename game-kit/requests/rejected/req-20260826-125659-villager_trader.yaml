@@ -1,0 +1,29 @@
+schema: meld.asset-request/v1
+id: req-20260826-125659-villager_trader
+created: '2026-08-26T12:56:59'
+requested_by: operator
+class: humanoids
+asset_id: villager_trader
+title: Village trader
+priority: P1
+spec: 'Hamlet NPC: heavy merchant cloak + trader''s strap with pouches + wide-brim
+  shade hat, reads friendly at 1.0-1.2 m like ash_nomad stock. base_human rig, U-027
+  loop-bake idle+move pair. glb+fbx pair. ALL THREE villagers share ONE style family
+  (same suffix + seed base) so the hamlet reads as one culture.'
+acceptance:
+  tri_budget: 8000
+lane_hint: null
+status: rejected
+history:
+- at: '2026-08-26T12:56:59'
+  event: enqueued
+  by: operator
+- at: '2026-08-26T17:20:03'
+  event: pending->active
+  by: generator
+- at: '2026-08-26T17:20:05'
+  event: active->rejected
+  by: generator
+  note: needs operator-driven lane (taste gates)
+_queue: active
+_file: requests/active/req-20260826-125659-villager_trader.yaml

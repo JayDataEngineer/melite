@@ -1,0 +1,18 @@
+schema: meld.asset-request/v1
+id: req-20260828-203759-ground_sand
+created: '2026-08-28T20:37:59'
+requested_by: unity-mcp
+class: ground_textures
+asset_id: ground_sand
+title: desert sand ground texture
+priority: P1
+spec: 'Tileable desert sand texture 512x512, desaturated ochre, subtle wind-ripple
+  surface detail, dry cracked patches. PBR: albedo + normal + roughness maps. Kenshi/Elden
+  Ring desert reference.'
+acceptance: {}
+lane_hint: null
+status: pending
+history:
+- at: '2026-08-28T20:37:59'
+  event: enqueued
+  by: unity-mcp

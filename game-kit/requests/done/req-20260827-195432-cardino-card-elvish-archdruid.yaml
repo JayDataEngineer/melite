@@ -1,0 +1,54 @@
+schema: meld.asset-request/v1
+id: req-20260827-195432-cardino-card-elvish-archdruid
+created: '2026-08-27T19:54:32'
+requested_by: operator
+class: sprites_2d
+asset_id: cardino-card-elvish-archdruid
+title: cardino card art Elvish Archdruid
+priority: P2
+spec: 'Card art for the cardino digital TCG card ''Elvish Archdruid'' (creature).
+  Subject from the card identity only — do not invent rivals. Flavor anchor: "The
+  forest speaks through those who listen.". Painterly dark-fantasy MTG-style illustration,
+  dramatic lighting, centered subject, detailed brushwork, reads at small card size.
+  Square 1024x1024 PNG via z-image. Style family: ONE shared card-art style across
+  the wave (shared style suffix, seed family base 71xx per cardino-lanes README).
+  Delivery law: class sprites_2d OPERATOR lane — deliver via cardino-lanes/deliver_card_art.py
+  into cardino public/cards/elvish-archdruid.png (NOT the meld icons lane); UI falls
+  back to glyphs until the png lands.'
+acceptance: {}
+lane_hint: cardino-lanes
+status: done
+history:
+- at: '2026-08-27T19:54:32'
+  event: enqueued
+  by: operator
+- at: '2026-08-28T01:12:07'
+  event: pending->pending
+  by: generator
+  note: '[door ok:false] sprites cannot pass the delivery door: kind=sprite refused
+    verbatim {"ok":false,"errors":["kind: creature|buildable|prop|icon"]} (probed
+    live 2026-08-28, zero side effects); openapi.json is 500 (bridge ModuleNotFoundError:
+    core) so no kind discovery; kind=icon also refused on probe (deliverable resolver
+    requires a .glb artifact — PNG sprite runs die "produced no .glb artifact"; icon
+    builds no delivery pairs). Sprite lane needs a door PNG path (operator). NOT GENERATED
+    — do not burn GPU until the door accepts sprites.'
+- at: '2026-08-28T03:52:16'
+  event: pending->pending
+  by: generator
+  note: TEST visibility check
+- at: '2026-08-28T03:54:48'
+  event: pending->pending
+  by: generator
+  note: 'agent-eyes gate fail x2 (reads: None / [''Forest king'']); rework-once exhausted,
+    needs operator'
+- at: '2026-08-28T04:00:47'
+  event: pending->active
+  by: cardino-lane
+- at: '2026-08-28T04:00:47'
+  event: active->done
+  by: cardino-lane
+  note: delivered v1 run=pmtcedvzdpw7h5j sha=ce6866df752d8506
+result:
+  version: 1
+  run_id: pmtcedvzdpw7h5j
+  sha16: ce6866df752d8506

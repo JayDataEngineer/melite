@@ -1,0 +1,61 @@
+# shell_shack — habitation shell (spec: req-20260828-181858-shell_shack).
+# ONE fused monolithic shell mesh, flat base. Budget ≤15K. Seed band 77xx (shell wave).
+output_dir: ./data/test-output/pipelines/pipeline_props_shell_shack
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+steps:
+  - family: generate_image
+    phase: concept
+    title: "Concept - Starter habitation shell - desert wattle-and-daub shack"
+    consumes: [comfy_url]
+    outputs: [asset_image]
+    params:
+      model: z-image
+      seed: 773
+      output_artifact: asset_image
+      prompt: >-
+        small squat single-room desert wattle-and-daub shack with a low doorway recessed archway, slightly sagging thatch roof, weathered timber corner posts, bone-white cloth repair patch, humble outpost scale, monolithic closed building shell with walls and roofline one solid object, perfectly flat level base, iconic simple silhouette, isolated game prop, centered, plain white background, stylized realistic game asset, bold readable silhouette
+      negative_prompt: >-
+        text, watermark, busy background, drop shadow, scene, multiple separated objects, cropped, people, figures, windows, thin delicate shapes, trees, ground
+
+  - family: trellis_native
+    phase: mesh
+    title: "Mesh - Starter habitation shell - desert wattle-and-daub shack"
+    consumes: [comfy_url]
+    inputs: [asset_image]
+    outputs: [asset_glb]
+    params:
+      model: trellis_native
+      seed: 22
+      image_artifact: asset_image
+      resolution: "512"
+      atlas_px: 1024
+      dump_post: enable
+      output_artifact: asset_glb
+
+  - family: trellis_native_replay
+    phase: budget
+    title: "Budget - Starter habitation shell - desert wattle-and-daub shack (QEM 15000, spec <=15K)"
+    consumes: [comfy_url]
+    inputs: [asset_glb]
+    outputs: [prop_glb]
+    params:
+      model: trellis_native_replay
+      faces_target: 15000
+      atlas: 1024
+      glb_artifact: asset_glb
+      dump_artifact: asset_glb_dump
+      output_artifact: prop_glb
+
+  - family: render_glb_views
+    phase: review
+    title: "Views - Starter habitation shell - desert wattle-and-daub shack"
+    consumes: [comfy_url]
+    inputs: [prop_glb]
+    outputs: [views]
+    params:
+      model: render_glb_views
+      glb_artifact: prop_glb
+      output_artifact: views

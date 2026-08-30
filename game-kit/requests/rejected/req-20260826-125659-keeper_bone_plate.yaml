@@ -1,0 +1,28 @@
+schema: meld.asset-request/v1
+id: req-20260826-125659-keeper_bone_plate
+created: '2026-08-26T12:56:59'
+requested_by: operator
+class: humanoids
+asset_id: keeper_bone_plate
+title: Keeper in bone plate
+priority: P2
+spec: 'Mid-tier armored keeper: sun-bleached bone-plate mantle + limb guards over
+  wraps, heavier read than leather tier. Same base_human rig + U-027 loop law as keeper_leather_armor.
+  glb+fbx pair. Same style family.'
+acceptance:
+  tri_budget: 8000
+lane_hint: null
+status: rejected
+history:
+- at: '2026-08-26T12:56:59'
+  event: enqueued
+  by: operator
+- at: '2026-08-26T17:20:07'
+  event: pending->active
+  by: generator
+- at: '2026-08-26T17:20:10'
+  event: active->rejected
+  by: generator
+  note: needs operator-driven lane (taste gates)
+_queue: active
+_file: requests/active/req-20260826-125659-keeper_bone_plate.yaml

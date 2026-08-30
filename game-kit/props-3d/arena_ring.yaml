@@ -1,0 +1,71 @@
+# arena_ring — arena pit boundary segment (spec: req-20260827-190320-arena_ring).
+# ONE quarter-arc segment (~2.2m x 0.35m), lashed desert stones + rope
+# top-rail, flat-bottomed, instanced 12-14x around the pit. Budget ≤5k.
+# Seed band 73xx (arena wave).
+output_dir: ./data/test-output/pipelines/pipeline_props_arena_ring
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+steps:
+  - family: generate_image
+    phase: concept
+    title: "Concept - arena ring segment"
+    consumes: [comfy_url]
+    outputs: [asset_image]
+    params:
+      model: z-image
+      seed: 7303
+      output_artifact: asset_image
+      prompt: >-
+        single low curved boundary wall segment, one short quarter-arc of
+        chunky lashed desert stones bound with rope, a thick rope top-rail
+        running along the top, sun-bleached bone-white stones with ochre
+        dust and bruise-violet rope accents, flat level bottom, low and
+        wide, bold chunky silhouette that reads clearly from far away, one
+        single unified object, isolated game prop, centered, plain white
+        background, stylized realistic game asset, bold readable silhouette
+      negative_prompt: >-
+        text, watermark, busy background, drop shadow, scene, multiple
+        separated objects, cropped, full circle, closed ring, people,
+        figures, sand, ground, terrain, thin delicate shapes
+
+  - family: trellis_native
+    phase: mesh
+    title: "Mesh - arena ring segment"
+    consumes: [comfy_url]
+    inputs: [asset_image]
+    outputs: [asset_glb]
+    params:
+      model: trellis_native
+      seed: 22
+      image_artifact: asset_image
+      resolution: "512"
+      atlas_px: 1024
+      dump_post: enable
+      output_artifact: asset_glb
+
+  - family: trellis_native_replay
+    phase: budget
+    title: "Budget - arena ring segment (QEM 5000, spec <=5k)"
+    consumes: [comfy_url]
+    inputs: [asset_glb]
+    outputs: [prop_glb]
+    params:
+      model: trellis_native_replay
+      faces_target: 5000
+      atlas: 1024
+      glb_artifact: asset_glb
+      dump_artifact: asset_glb_dump
+      output_artifact: prop_glb
+
+  - family: render_glb_views
+    phase: review
+    title: "Views - arena ring segment"
+    consumes: [comfy_url]
+    inputs: [prop_glb]
+    outputs: [views]
+    params:
+      model: render_glb_views
+      glb_artifact: prop_glb
+      output_artifact: views

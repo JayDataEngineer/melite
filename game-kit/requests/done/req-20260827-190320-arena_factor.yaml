@@ -1,0 +1,55 @@
+schema: meld.asset-request/v1
+id: req-20260827-190320-arena_factor
+created: '2026-08-27T19:03:20'
+requested_by: unity-mcp
+class: humanoids
+asset_id: arena_factor
+title: arena factor body
+priority: P1
+spec: 'Body model for the arena_factor NPC kind (the pit fight-master who keeps the
+  §4.32 T3 venue; currently spawns on base_human). Derive from base_human (SAME topology/rig
+  — this is a costume variant like keeper_bone_plate, not a new race): scarred bare-forearm
+  fight-master look — wrapped leather chest, one brass armband, hand-wraps, belt with
+  shell-token pouch. Desaturated desert-dusk palette, bone-white cloth accents. Rigged
+  to the base_human generic rig so LocoController drives it; needs idle/move looping
+  clips baked per U-027 law if animated.'
+acceptance: {}
+lane_hint: null
+status: done
+history:
+- at: '2026-08-27T19:03:20'
+  event: enqueued
+  by: unity-mcp
+- at: '2026-08-28T02:36:11'
+  event: pending->pending
+  by: queue-consumer
+  note: needs operator-driven lane (taste gates)
+- at: '2026-08-28T03:26:31'
+  event: pending->active
+  by: generator
+- at: '2026-08-28T03:26:31'
+  event: active->pending
+  by: generator
+  note: needs operator-driven lane (taste gates)
+- at: '2026-08-28T04:08:04'
+  event: pending->active
+  by: generator
+- at: '2026-08-28T04:08:07'
+  event: active->pending
+  by: consumer
+  note: needs operator-driven lane (taste gates)
+- at: '2026-08-28T07:18:09'
+  event: pending->pending
+  by: consumer
+  note: needs operator-driven lane (taste gates)
+- at: '2026-08-28T18:45:59'
+  event: pending->active
+  by: generator
+- at: '2026-08-28T18:53:09'
+  event: active->done
+  by: generator
+  note: delivered v1 run=pmtdb1fk7xnyqh3 sha=4e5faf2ae4b905e4
+result:
+  version: 1
+  run_id: pmtdb1fk7xnyqh3
+  sha16: 4e5faf2ae4b905e4

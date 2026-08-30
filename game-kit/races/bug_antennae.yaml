@@ -1,0 +1,69 @@
+# @meta {"description": "insect antennae pair prop attachment lane (z-image concept -> trellis static GLB -> turntable). Socket to mixamorig:Head via socket_to_bone.py.", "status": "production-candidate"}
+# bug_antennae.yaml - game-kit/races attachment lane (cat_ears pattern).
+
+output_dir: ./data/test-output/pipelines/pipeline_bug_antennae
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+steps:
+  - family: generate_image
+    phase: concept
+    title: "Concept - insect antennae pair prop"
+    consumes: [comfy_url]
+    inputs: []
+    outputs: [asset_image]
+    params:
+      model: z-image
+      seed: 407
+      output_artifact: asset_image
+      prompt: >-
+        pair of long segmented insect antennae with small spherical tips, chitinous dark brown, detached costume prop,
+        symmetrical, plain white background, 45 degree view, stylized
+        game asset
+      negative_prompt: >-
+        person, face, head, body, scene, environment, ground, text,
+        watermark, cropped, busy background.
+
+  # -- MESH (native trellis.cpp; torch lane retired 2026-08-26) ----
+  - family: trellis_native
+    phase: mesh
+    title: "Mesh - native (Trellis - insect antennae pair prop static GLB)"
+    consumes: [comfy_url]
+    inputs: [asset_image]
+    outputs: [asset_glb_raw]
+    params:
+      # torch lane retired 2026-08-26 (confetti): preset/background_color/rig_with_somax dropped - the native node
+      # enforces the reference defaults (BiRefNet auto matte,
+      # QEM 300K @1024, xatlas, trilinear PBR bake).
+      model: trellis_native
+      seed: 7
+      resolution: "1024"
+      texture_size: 2048
+      bg_removal: auto
+      image_artifact: asset_image
+      dump_post: enable
+      output_artifact: asset_glb_raw
+
+  - family: trellis_native_replay
+    phase: budget
+    title: "Budget - QEM 40000 faces"
+    consumes: [comfy_url]
+    inputs: [asset_glb_raw]
+    outputs: [asset_glb]
+    params:
+      model: trellis_native_replay
+      faces_target: 40000
+      atlas: 2048
+      glb_artifact: asset_glb_raw
+      dump_artifact: asset_glb_raw_dump
+      output_artifact: asset_glb
+
+  - family: render_glb_views
+    phase: review
+    title: "Turntable renders (feeds agent eyes)"
+    consumes: [comfy_url]
+    inputs: [asset_glb]
+    outputs: [asset_views]
+    params:
+      glb_artifact: asset_glb

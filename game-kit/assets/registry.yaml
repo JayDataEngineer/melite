@@ -1,0 +1,3567 @@
+# registry.yaml — THE game-asset source of truth (ADR-ASSET-REGISTRY).
+# One entry per asset id. versions[] is APPEND-ONLY: a redelivery with
+# new content appends v+1; history rows are never mutated; an
+# identical-sha redelivery is a no-op. Writers MUST go through
+# scripts/asset_registry.py (lock + atomic write).
+# provenance: recorded = stamped by a delivery tool; imported =
+# backfilled from pre-registry ledgers (less detail, cited evidence).
+
+schema: meld.asset-registry/v1
+updated: '2026-08-29T15:48:24'
+kits:
+- kit: v1
+  date: '2026-08-25'
+  manifest_sha16: e54aa09e0982a1a6
+  ingested: '2026-08-25'
+  files: 11 new, 5 updated
+  note: driver:1, staged:15
+  evidence: art-kit.md Delivery log
+- kit: v1-promote
+  date: '2026-08-25'
+  manifest_sha16: c9bc08a3de90374a
+  ingested: '2026-08-25'
+  files: 6 new, 0 updated
+  note: promoted:6
+  evidence: art-kit.md Delivery log
+- kit: glb-prune
+  date: '2026-08-25'
+  manifest_sha16: '4847363784911325'
+  ingested: '2026-08-25'
+  files: 0 new, 14 updated
+  note: pruned-glb:14
+  evidence: art-kit.md Delivery log
+- kit: artkit-2026-08-26
+  date: '2026-08-26'
+  manifest_sha16: 48bcb60ffc564728
+  ingested: '2026-08-26'
+  files: 41 new, 0 updated
+  note: creature:1, icon:6, audio:11, staged:23
+  evidence: art-kit.md Delivery log
+- kit: artkit-2026-08-26-promote
+  date: '2026-08-26'
+  manifest_sha16: 1fcaddec6ae63f99
+  ingested: '2026-08-26'
+  files: 0 new, 0 updated
+  note: ''
+  evidence: art-kit.md Delivery log
+- kit: artkit-2026-08-27-promote
+  date: '2026-08-26'
+  manifest_sha16: e6d7da8d4a5b50f8
+  ingested: '2026-08-26'
+  files: 0 new, 0 updated
+  note: ''
+  evidence: art-kit.md Delivery log
+- kit: replacement-r1
+  date: '2026-08-26'
+  manifest_sha16: 2a0901c9790245ab
+  ingested: '2026-08-26'
+  files: 4 new, 0 updated
+  note: creature:2, staged:2
+  evidence: art-kit.md Delivery log
+- kit: artkit-2026-08-27
+  date: '2026-08-27'
+  manifest_sha16: 10ba00743b010b61
+  ingested: '2026-08-26'
+  files: 1 new, 1 updated
+  note: staged:2
+  evidence: art-kit.md Delivery log
+assets:
+- id: ash_prowler
+  class: creatures
+  title: ash prowler
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-25'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 2786c70f344878cd
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/ash_prowler.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: base_human
+  class: humanoids
+  title: base human
+  status: delivered
+  current_version: 2
+  versions:
+  - v: 1
+    date: '2026-08-25'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 903222d9230893a0
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/base_human.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+  - v: 2
+    date: '2026-08-29'
+    provenance: recorded
+    run_id: pmtei0oqgg6joew
+    lane: race_base_body.yaml
+    seeds:
+    - '42'
+    - '43'
+    sha16: 2debb023e3e5e1dd
+    gate: 'PASS: body 1.951m, 77 mixamorig joints, SOMA-Mixamo skin, Walk+Idle animations
+      baked, BVH pair with mixamorig:* names'
+    delivery:
+      route: single
+      game_path: /home/user/Documents/programs/ray/data/delivery/unity/humanoids/base_human/base_human.glb
+    evidence: request req-20260829-144217-base_human completed via process_requests
+    note: Fresh base_human via race_base_body.yaml pipeline (7 GPU stages, ~28 min).
+      Body 1.951m, 77 mixamorig joints, SOMA-Mixamo skin. Walk+Idle NPZs baked via
+      somax_bake_named.py, BVH exported via glb_anim_to_bvh.py with mixamorig:* joint
+      names. FBX not generated (Blender unavailable). Old FBX (base_human.fbx) retained
+      for reference.
+- id: base_human_races
+  class: unclassified
+  title: base human races
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: f33b660fe59ec444
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/base_human_races.fbx
+    evidence: model file on disk (mtime+sha)
+    note: 'fix-me: model not in backfill name maps'
+- id: base_human_textured
+  class: humanoids
+  title: base human textured
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-25'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 7ad48fdbe6ca7e11
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/base_human_textured.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: blue_flower
+  class: props
+  title: blue flower
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: a61f84dd33f4639f
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/blue_flower.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: bone
+  class: props
+  title: bone
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 7810779841294ece
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/bone.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: bone_crane
+  class: creatures
+  title: bone crane
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-25'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 36ccea22155b5ec9
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/bone_crane.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: campfire_unlit
+  class: props
+  title: campfire unlit
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 0c96e370708899ea
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/campfire_unlit.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: drying_rack
+  class: props
+  title: drying rack
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: cb6fcf8d0c882cde
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/drying_rack.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: dune_hound
+  class: creatures
+  title: dune hound
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-25'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 0ddada239c7b9e51
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/dune_hound.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: emberwing
+  class: creatures
+  title: emberwing
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 78437a429c1c7986
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/emberwing.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: fiber
+  class: props
+  title: fiber
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: baeb08f83962b1a9
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/fiber.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: gloom_tortoise
+  class: creatures
+  title: gloom tortoise
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-25'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 66692cf0f8721ddb
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/gloom_tortoise.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: hide_wrap
+  class: props
+  title: hide wrap
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 9a7db64d5fda549c
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/hide_wrap.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: husk_stalker
+  class: creatures
+  title: husk stalker
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-25'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: bb090d74fa2939de
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/husk_stalker.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: hut_large
+  class: props
+  title: hut large
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 5a5550d8ffd99bd3
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/hut_large.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: hut_small
+  class: props
+  title: hut small
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 6f4a3d570d902839
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/hut_small.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: keeper
+  class: humanoids
+  title: keeper
+  status: delivered
+  current_version: 2
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 0fff69b09c645721
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/keeper.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+  - v: 2
+    date: '2026-08-29'
+    provenance: lane
+    run_id: pmt7vpqda2hylck
+    lane: somax
+    seeds: []
+    sha16: 25c2c6b8e6418bf2
+    gate: PASS
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/keeper.fbx
+      promote_commit: 0433b47
+    evidence: byte-exact restore of ArtKitImport-verified replacement-r2 blobs (7940719);
+      accidental clobber in 97592d9 reverted; ci.sh 7 passed
+    note: SOMAX keeper v2 (keeper_v2_rigged2.glb lineage, animated walk+idle)
+- id: market_stall
+  class: props
+  title: market stall
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: ba14626b41dd682a
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/market_stall.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: marrow_raider
+  class: creatures
+  title: marrow raider
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 9690b2da8162726b
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/marrow_raider.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: meld_creature
+  class: unclassified
+  title: meld creature
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-25'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: d70bdf900eb51eca
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/meld_creature.fbx
+    evidence: model file on disk (mtime+sha)
+    note: 'fix-me: model not in backfill name maps'
+- id: moss_elk
+  class: creatures
+  title: moss elk
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-25'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: ef7c2fac5c4ccae6
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/moss_elk.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: ration
+  class: unclassified
+  title: ration
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: e3ec5cdb6a1aacac
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/ration.fbx
+    evidence: model file on disk (mtime+sha)
+    note: 'fix-me: model not in backfill name maps'
+- id: ridge_lizard
+  class: creatures
+  title: ridge lizard
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-25'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 6d30bf90a30d4963
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/ridge_lizard.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: rock_boar
+  class: creatures
+  title: rock boar
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-25'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: bd70e4d54771898d
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/rock_boar.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: rock_cluster
+  class: unclassified
+  title: rock cluster
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 7de4547d0c175a57
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/rock_cluster.fbx
+    evidence: model file on disk (mtime+sha)
+    note: 'fix-me: model not in backfill name maps'
+- id: rock_large
+  class: unclassified
+  title: rock large
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 8a6c8c92d4395e3e
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/rock_large.fbx
+    evidence: model file on disk (mtime+sha)
+    note: 'fix-me: model not in backfill name maps'
+- id: rock_small
+  class: unclassified
+  title: rock small
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 199bb13a818f949d
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/rock_small.fbx
+    evidence: model file on disk (mtime+sha)
+    note: 'fix-me: model not in backfill name maps'
+- id: sand_skimmer
+  class: creatures
+  title: sand skimmer
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-25'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 9a9a2f6c177e4764
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/sand_skimmer.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: stick
+  class: props
+  title: stick
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 670baa7d4d4041ee
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/stick.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: trough
+  class: props
+  title: trough
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 4150d9b656ba94fb
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/trough.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: ward_stone
+  class: props
+  title: ward stone
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 1cef7d3e36ed3ab9
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/ward_stone.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: well_head
+  class: props
+  title: well head
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 133ca47cdc7bba73
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/well_head.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: wood
+  class: props
+  title: wood
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 8d929227eed0d2e3
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/wood.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: workbench
+  class: props
+  title: workbench
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: f6286a80080f71a7
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/models/workbench.fbx
+    evidence: model file on disk (mtime+sha)
+    note: null
+- id: campfire
+  class: icons
+  title: campfire
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-25'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: a8232e6faaca5922
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/UI/icons/icon_campfire.png
+    evidence: icon file on disk (mtime+sha)
+    note: null
+- id: fang
+  class: icons
+  title: fang
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-25'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 35429aff96e577f4
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/UI/icons/icon_fang.png
+    evidence: icon file on disk (mtime+sha)
+    note: null
+- id: flask
+  class: icons
+  title: flask
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-25'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: a7a1b120baffa621
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/UI/icons/icon_flask.png
+    evidence: icon file on disk (mtime+sha)
+    note: null
+- id: machete
+  class: icons
+  title: machete
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-25'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 30a5d4f0d9f56f24
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/UI/icons/icon_machete.png
+    evidence: icon file on disk (mtime+sha)
+    note: null
+- id: trail_ration
+  class: icons
+  title: trail ration
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: b9407eb378cdcc5c
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/UI/icons/icon_trail_ration.png
+    evidence: icon file on disk (mtime+sha)
+    note: null
+- id: music_tension_loop
+  class: music
+  title: music tension loop
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 068cb17256d8695b
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/music/music_tension_loop.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: survival_theme_draft
+  class: music
+  title: survival theme draft
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: c6d9d11cc9febd67
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/music/survival_theme_draft.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: survival_theme_final
+  class: music
+  title: survival theme final
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 6a7c042433dea420
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/music/survival_theme_final.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_bone_crane
+  class: sfx
+  title: sfx bone crane
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: f8aa0ba880edcc50
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_bone_crane.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_combat_block
+  class: sfx
+  title: sfx combat block
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: cd083d1b719cb04b
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_combat_block.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_combat_death_bleedout
+  class: sfx
+  title: sfx combat death bleedout
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 5ef0245f0c0e1d90
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_combat_death_bleedout.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_combat_flee
+  class: sfx
+  title: sfx combat flee
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 114de5d3e8df54dd
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_combat_flee.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_combat_ko
+  class: sfx
+  title: sfx combat ko
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: a5fb8436d803e53d
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_combat_ko.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_craft_success
+  class: sfx
+  title: sfx craft success
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 26f9582fcd712c78
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_craft_success.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_creature_eat
+  class: sfx
+  title: sfx creature eat
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: b63ddff8d699cd86
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_creature_eat.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_desert_day_amb
+  class: sfx
+  title: sfx desert day amb
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 49ad8526a9a3bfad
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_desert_day_amb.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_desert_night_amb
+  class: sfx
+  title: sfx desert night amb
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: d68fb89f197033fd
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_desert_night_amb.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_dune_hound
+  class: sfx
+  title: sfx dune hound
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: d02a74bd321e46a0
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_dune_hound.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_footsteps_gravel
+  class: sfx
+  title: sfx footsteps gravel
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: a2de278b95b508c9
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_footsteps_gravel.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_gloom_tortoise
+  class: sfx
+  title: sfx gloom tortoise
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 6440fd5d7f7f6ad2
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_gloom_tortoise.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_item_pickup
+  class: sfx
+  title: sfx item pickup
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 2f2eb77f3059e4ed
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_item_pickup.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_machete_hit
+  class: sfx
+  title: sfx machete hit
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 294abee70958e5c7
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_machete_hit.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_machete_swing
+  class: sfx
+  title: sfx machete swing
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 9864eedfb8fd5713
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_machete_swing.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_moss_elk
+  class: sfx
+  title: sfx moss elk
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 598592dcd0246387
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_moss_elk.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_predator_snarl
+  class: sfx
+  title: sfx predator snarl
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 947732eb43041480
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_predator_snarl.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_quest_step
+  class: sfx
+  title: sfx quest step
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: c5791754f57cb8d9
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_quest_step.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_ridge_lizard
+  class: sfx
+  title: sfx ridge lizard
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: c0ba17ca9ca77a14
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_ridge_lizard.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_sand_skimmer
+  class: sfx
+  title: sfx sand skimmer
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 4d92c288cd4382cf
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_sand_skimmer.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_ui_click
+  class: sfx
+  title: sfx ui click
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 9ce92ccf7de01d57
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_ui_click.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_ui_modal_close
+  class: sfx
+  title: sfx ui modal close
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 571e9fa111f8cf20
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_ui_modal_close.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_ui_modal_open
+  class: sfx
+  title: sfx ui modal open
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 9c97c4cb511b933b
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_ui_modal_open.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_wind_gust_a
+  class: sfx
+  title: sfx wind gust a
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 5c384220d4926e39
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_wind_gust_a.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: sfx_wind_gust_b
+  class: sfx
+  title: sfx wind gust b
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 00b78b97f40f2617
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/sfx/sfx_wind_gust_b.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: vo_scavenger_campfire_rumor
+  class: vo
+  title: vo scavenger campfire rumor
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: e2a0dc06c4c66381
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/vo/vo_scavenger_campfire_rumor.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: vo_scavenger_prowlers
+  class: vo
+  title: vo scavenger prowlers
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 5cf3da06e1a9e089
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/vo/vo_scavenger_prowlers.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: vo_scavenger_reunion
+  class: vo
+  title: vo scavenger reunion
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: ac2178bc7c98534c
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/vo/vo_scavenger_reunion.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: vo_scavenger_storm
+  class: vo
+  title: vo scavenger storm
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: 8a190115c65e724f
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/vo/vo_scavenger_storm.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: vo_scavenger_traders_price
+  class: vo
+  title: vo scavenger traders price
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: null
+    lane: null
+    seeds: []
+    sha16: ea3fd76715f7fec0
+    gate: null
+    delivery:
+      game_path: unity/Assets/PhaseB/Resources/audio/vo/vo_scavenger_traders_price.ogg
+    evidence: ingest-stamps.json (source-flac sha)
+    note: sha is the ingest DEDUP key, not the ogg bytes
+- id: icon_campfire
+  class: icons
+  title: icon_campfire
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: kit-615d013688e6
+    lane: kit
+    seeds: []
+    sha16: a8232e6faaca5922
+    gate: kit-verify-PASS
+    delivery:
+      route: kit
+      game_path: ~/unity/Assets/PhaseB/Resources/UI/icons/icon_campfire.png
+      evidence: docs/art-kit.md delivery log + ingest-stamps.json
+    evidence: docs/art-kit.md delivery log + ingest-stamps.json
+    note: bulk ingest kit=v1
+- id: icon_fang
+  class: icons
+  title: icon_fang
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: kit-615d013688e6
+    lane: kit
+    seeds: []
+    sha16: 35429aff96e577f4
+    gate: kit-verify-PASS
+    delivery:
+      route: kit
+      game_path: ~/unity/Assets/PhaseB/Resources/UI/icons/icon_fang.png
+      evidence: docs/art-kit.md delivery log + ingest-stamps.json
+    evidence: docs/art-kit.md delivery log + ingest-stamps.json
+    note: bulk ingest kit=v1
+- id: icon_flask
+  class: icons
+  title: icon_flask
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: kit-615d013688e6
+    lane: kit
+    seeds: []
+    sha16: a7a1b120baffa621
+    gate: kit-verify-PASS
+    delivery:
+      route: kit
+      game_path: ~/unity/Assets/PhaseB/Resources/UI/icons/icon_flask.png
+      evidence: docs/art-kit.md delivery log + ingest-stamps.json
+    evidence: docs/art-kit.md delivery log + ingest-stamps.json
+    note: bulk ingest kit=v1
+- id: icon_machete
+  class: icons
+  title: icon_machete
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: kit-615d013688e6
+    lane: kit
+    seeds: []
+    sha16: 30a5d4f0d9f56f24
+    gate: kit-verify-PASS
+    delivery:
+      route: kit
+      game_path: ~/unity/Assets/PhaseB/Resources/UI/icons/icon_machete.png
+      evidence: docs/art-kit.md delivery log + ingest-stamps.json
+    evidence: docs/art-kit.md delivery log + ingest-stamps.json
+    note: bulk ingest kit=v1
+- id: bone_shortsword
+  class: props
+  title: bone_shortsword
+  status: delivered
+  current_version: 3
+  versions:
+  - v: 3
+    date: '2026-08-26'
+    provenance: recorded
+    run_id: pmta83n5aa6od2u
+    lane: null
+    seeds: []
+    sha16: 1c1a7694f669f7f5
+    gate: STATIC-PASS (skinning skipped by design — lane b)
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/bone_shortsword.fbx
+    evidence: deliver_asset.py ledger row 2026-08-26
+    note: glb ee180b8a801170cd
+- id: scrap_machete
+  class: props
+  title: scrap machete
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: recorded
+    run_id: pmt8hrzfp1xgmqw
+    lane: null
+    seeds: []
+    sha16: 0a8e9b8c16b01691
+    gate: STATIC-PASS (skinning skipped by design — lane b)
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/scrap_machete.fbx
+    evidence: deliver_asset.py ledger row 2026-08-26
+    note: glb 11b8dc66a9ae0992
+- id: waterskin
+  class: props
+  title: waterskin
+  status: delivered
+  current_version: 2
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: recorded
+    run_id: pmtabsyk96ddedy
+    lane: null
+    seeds: []
+    sha16: cb4d9fb07a09b956
+    gate: STATIC-PASS (skinning skipped by design — lane b)
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/waterskin.fbx
+    evidence: deliver_asset.py ledger row 2026-08-26
+    note: glb 3cb092d581c3a4a7
+  - v: 2
+    date: '2026-08-26'
+    provenance: recorded
+    run_id: pmtabsyk96ddedy
+    lane: props-3d-native
+    seeds: []
+    sha16: 3cb092d581c3a4a7
+    gate: STATIC-PASS
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/waterskin.glb
+    evidence: request req-20260826-125659-waterskin completed via MCP
+    note: 'Native trellis.cpp lane: 38880 tris (40K budget), 3 physical components
+      (torch lane was 15088), 3-view vision gate clean. GLB+FBX delivered, ledger
+      stamped.'
+- id: bedroll
+  class: props
+  title: bedroll
+  status: delivered
+  current_version: 3
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: recorded
+    run_id: pmta9lvexzx1plf
+    lane: null
+    seeds: []
+    sha16: 3fff1dabc836f9c1
+    gate: STATIC-PASS (skinning skipped by design — lane b)
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/bedroll.fbx
+    evidence: deliver_asset.py ledger row 2026-08-26
+    note: glb e4884bf88dfce8d8
+  - v: 2
+    date: '2026-08-26'
+    provenance: recorded
+    run_id: pmtacjqro3wyqeg
+    lane: null
+    seeds: []
+    sha16: 2862a77bd23ecd94
+    gate: STATIC-PASS (skinning skipped by design — lane b)
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/bedroll.fbx
+    evidence: deliver_asset.py ledger row 2026-08-26
+    note: glb 9512df2583686d8b
+  - v: 3
+    date: '2026-08-26'
+    provenance: recorded
+    run_id: pmtacjqro3wyqeg
+    lane: props-3d-native
+    seeds: []
+    sha16: 9512df2583686d8b
+    gate: STATIC-PASS
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/bedroll.glb
+    evidence: request req-20260826-125659-bedroll completed via MCP
+    note: 'Retry after lane fix: duplicate prompt key (negative list overwrote prompt)
+      + waterskin copy-paste header repaired in bedroll+torch_lit. Rolled cylinder
+      1.0x0.25x0.28m, 39672 tris, 2 components, vision gate clean on targeted read.'
+- id: torch_lit
+  class: props
+  title: torch lit
+  status: delivered
+  current_version: 2
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: recorded
+    run_id: pmtacjvaomhwkx2
+    lane: null
+    seeds: []
+    sha16: b2120e6337ec325c
+    gate: STATIC-PASS (skinning skipped by design — lane b)
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/torch_lit.fbx
+    evidence: deliver_asset.py ledger row 2026-08-26
+    note: glb b7139010fe069e79
+  - v: 2
+    date: '2026-08-26'
+    provenance: recorded
+    run_id: pmtacjvaomhwkx2
+    lane: props-3d-native
+    seeds: []
+    sha16: b7139010fe069e79
+    gate: STATIC-PASS
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/torch_lit.glb
+    evidence: request req-20260826-125659-torch_lit completed via MCP
+    note: Post lane-fix run (duplicate prompt key repaired). Torch 1.0m, 37628 tris,
+      3 components, two-view vision gate clean. Physical files verified in Unity models/.
+- id: rock_slab
+  class: props
+  title: rock slab
+  status: delivered
+  current_version: 4
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: recorded
+    run_id: pmtad1ocy5j2s0j
+    lane: null
+    seeds: []
+    sha16: 4a07d9565ab58d7c
+    gate: STATIC-PASS (skinning skipped by design — lane b)
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/rock_slab.fbx
+    evidence: deliver_asset.py ledger row 2026-08-26
+    note: glb 092337a968b522bd
+  - v: 2
+    date: '2026-08-26'
+    provenance: recorded
+    run_id: pmtad1ocy5j2s0j
+    lane: 'rocks_rock_slab_v2: z-image seed 8204 -> trellis_native seed 34 -> replay
+      5k -> render views'
+    seeds: []
+    sha16: 092337a968b522bd
+    gate: green
+    delivery:
+      route: single
+    evidence: request req-20260826-165609-rock_slab completed via process_requests
+    note: '[audit 2026-08-27: bytes unlocated — GLB later overwritten by v4; sha unverifiable]'
+  - v: 3
+    date: '2026-08-27'
+    provenance: recorded
+    run_id: pmtb21pml1gikmc
+    lane: null
+    seeds: []
+    sha16: cce5e5afabcbdc62
+    gate: STATIC-PASS (skinning skipped by design — lane b)
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/rock_slab.fbx
+    evidence: deliver_asset.py ledger row 2026-08-27
+    note: glb 4a180ea96b2cdeba
+  - v: 4
+    date: '2026-08-27'
+    provenance: recorded
+    run_id: pmtb21pml1gikmc
+    lane: 'rocks_rock_slab_v3: z-image seed 8205 -> trellis_native seed 22 -> replay
+      5k (4876 tris) -> render views'
+    seeds:
+    - '8205'
+    - '22'
+    sha16: 4a180ea96b2cdeba
+    gate: green
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/rock_slab.glb
+    evidence: request req-20260827-045527-rock_slab completed via process_requests
+    note: 'two-object lane change per ART-MANIFEST: tilted slab + wedge stone; delivered
+      via gateway door (DELIVERED, registry stamped)'
+- id: keeper_leather_armor
+  class: humanoids
+  title: keeper leather armor
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: pmtactrp8a13zci
+    lane: kit
+    seeds: []
+    sha16: 9a19faea7f7f6c0a
+    gate: RIGGED-SOCKET-PASS
+    delivery:
+      route: kit
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/keeper_leather_armor.fbx
+      evidence: assembled + socketed + refereed 2026-08-26
+    evidence: assembled + socketed + refereed 2026-08-26
+    note: GLB node-parented (spec-eval rides Spine1); FBX skin-bound reseat verified
+      by Blender referee (bind=band, pose ride OK)
+- id: villager_trader
+  class: humanoids
+  title: villager trader
+  status: delivered
+  current_version: 3
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: pmtadxu68j19lab
+    lane: kit
+    seeds: []
+    sha16: a8bed3ccffbafe90
+    gate: RIGGED-SOCKET-PASS-PARTIAL
+    delivery:
+      route: kit
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/villager_trader.fbx
+      evidence: assembled + morphed + socketed + refereed 2026-08-26
+    evidence: assembled + morphed + socketed + refereed 2026-08-26
+    note: shade_hat + trader_heft delivered; pouch_strap FAILED subject gate x2 (figure,
+      then mask) - excluded, needs concept re-spec
+  - v: 2
+    date: '2026-08-26'
+    provenance: imported
+    run_id: pmtafjscf999avc
+    lane: kit
+    seeds: []
+    sha16: 55e8d9c5082cfeca
+    gate: 'RIGGED-SOCKET-PASS (pouch_strap GREEN 3-view vision (front/left/back agree:
+      detached pouch bandolier, no figure, no confetti); socketed on Spine2 (band
+      0.008,1.47,0.044 vs ref 0.007,1.47,0.047 within 3mm); FBX bind=Spine2 band,
+      pose ride confirmed ratio 0.93)'
+    delivery:
+      route: kit
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/villager_trader.fbx
+      evidence: pouch_strap added v2 + refereed 2026-08-26
+    evidence: pouch_strap added v2 + refereed 2026-08-26
+    note: closes the pouch_strap gap
+  - v: 3
+    date: '2026-08-26'
+    provenance: imported
+    run_id: pmtafjscf999avc
+    lane: kit
+    seeds: []
+    sha16: be7cd9f554dffa7a
+    gate: RIGGED-SOCKET-PASS-FIX
+    delivery:
+      route: kit
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/villager_trader.fbx
+      evidence: 'corrective restage 2026-08-26: GLB rebuilt via node-parented door
+        after spec-LBS showed skin-bound intermediate floated sockets +4m'
+    evidence: 'corrective restage 2026-08-26: GLB rebuilt via node-parented door after
+      spec-LBS showed skin-bound intermediate floated sockets +4m'
+    note: 'supersedes sha 55e8d9c5082cfeca (broken GLB); FBX unchanged a8a8829e7534c149
+      [audit 2026-08-27: disk bytes are a8a8829e7534c149 — matches NO stamped row;
+      the 2026-08-26 18:57 GLB-corrective restage claimed "FBX unchanged" but bytes
+      drifted post-stamp. Needs a reconcile-stamp delivery or operator acceptance;
+      sha rows left untouched]'
+- id: keeper_bone_plate
+  class: humanoids
+  title: keeper bone plate
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: pmtae7saw7dwkdr
+    lane: kit
+    seeds: []
+    sha16: 19964ad8060d54e0
+    gate: RIGGED-SOCKET-PASS
+    delivery:
+      route: kit
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/keeper_bone_plate.fbx
+      evidence: assembled + socketed (joint-anchor fix) + refereed 2026-08-26
+    evidence: assembled + socketed (joint-anchor fix) + refereed 2026-08-26
+    note: socket_prop_node.py gained --anchor-joint (Spine2 weight band skewed 10cm;
+      skeleton midline used instead)
+- id: villager_farmer
+  class: humanoids
+  title: villager farmer
+  status: delivered
+  current_version: 2
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: pmtaeke9frc52co
+    lane: kit
+    seeds: []
+    sha16: 7888bcc804c8ac27
+    gate: RIGGED-SOCKET-PASS
+    delivery:
+      route: kit
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/villager_farmer.fbx
+      evidence: assembled + morphed + dual-socketed + refereed 2026-08-26
+    evidence: assembled + morphed + dual-socketed + refereed 2026-08-26
+    note: shade_wrap + hoe + farmer_frame morph; hoe reads axe-family (back-carried
+      tool, accepted)
+  - v: 2
+    date: '2026-08-29'
+    provenance: recorded
+    run_id: pmtejhaf3dz4t83
+    lane: race_base_body.yaml
+    seeds:
+    - '42'
+    - '43'
+    sha16: 074aefc8f6e4d42c
+    gate: 'PASS: body 1.949m, 77 mixamorig joints, SOMA-Mixamo skin, Walk+Idle animations
+      baked, BVH pair with mixamorig:* names'
+    delivery:
+      route: single
+      game_path: /home/user/Documents/programs/ray/data/delivery/unity/humanoids/villager_farmer/villager_farmer.glb
+    evidence: request req-20260829-144227-villager_farmer completed via process_requests
+    note: Fresh villager_farmer via race_base_body.yaml (inline, farmer-specific prompt).
+      Body 1.949m, 77 mixamorig joints, SOMA-Mixamo skin. Walk+Idle NPZs baked via
+      somax_bake_named.py, BVH exported via glb_anim_to_bvh.py with mixamorig:* joint
+      names. Old FBX retained; new FBX not generated (Blender unavailable).
+- id: villager_elder
+  class: humanoids
+  title: villager elder
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: imported
+    run_id: pmtaeufucxty092
+    lane: kit
+    seeds: []
+    sha16: a6b0a05f9977d92d
+    gate: RIGGED-SOCKET-PASS
+    delivery:
+      route: kit
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/villager_elder.fbx
+      evidence: assembled + morphed + dual-socketed + refereed 2026-08-26
+    evidence: assembled + morphed + dual-socketed + refereed 2026-08-26
+    note: 'bead_strands + staff (retry 1: figure -> clean) + elder_hunch/elder_gaunt
+      morphs'
+- id: villager_trader_pouch_strap
+  class: humanoids
+  title: villager trader pouch strap
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-26'
+    provenance: recorded
+    run_id: pmtafjscf999avc
+    lane: game-kit/races/villager_trader_pouch_strap.yaml
+    seeds: []
+    sha16: 55e8d9c5082cfeca
+    gate: 'RIGGED-SOCKET-PASS (pouch_strap GREEN 3-view vision (front/left/back agree:
+      detached pouch bandolier, no figure, no confetti); socketed on Spine2 (band
+      0.008,1.47,0.044 vs ref 0.007,1.47,0.047 within 3mm); FBX bind=Spine2 band,
+      pose ride confirmed ratio 0.93)'
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/villager_trader.fbx
+    evidence: request req-20260826-182855-villager_trader_pouch_strap completed via
+      process_requests
+    note: '[audit 2026-08-27: disk bytes are a8a8829e7534c149 — matches NO stamped
+      row; the 2026-08-26 18:57 GLB-corrective restage claimed "FBX unchanged" but
+      bytes drifted post-stamp. Needs a reconcile-stamp delivery or operator acceptance;
+      sha rows left untouched]'
+- id: goods_crate
+  class: props
+  title: goods crate
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcbcvfnmbc5m6
+    lane: null
+    seeds: []
+    sha16: c81fb3fa0e7367de
+    gate: STATIC-PASS (skinning skipped by design — lane b)
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/goods_crate.fbx
+    evidence: deliver_asset.py ledger row 2026-08-28
+    note: glb f02233a7174787e0
+- id: cardino-card-forest
+  class: sprites_2d
+  title: cardino card art Forest
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcbuu7ptmgo4m
+    lane: cardino-lanes
+    seeds:
+    - '7100'
+    sha16: df0e6bb4b83dbea4
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/forest.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: arena_banner
+  class: props
+  title: arena banner
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtc90ldmr4qzvo
+    lane: null
+    seeds: []
+    sha16: 541286d8abe44fae
+    gate: STATIC-PASS (skinning skipped by design — lane b)
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/arena_banner.fbx
+    evidence: deliver_asset.py ledger row 2026-08-28
+    note: glb 8a12564b6b3a109c
+- id: cardino-card-mountain
+  class: sprites_2d
+  title: cardino card art Mountain
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcdmes54zc0q3
+    lane: cardino-lanes
+    seeds:
+    - '7101'
+    sha16: 2da1c428eb5fb1f4
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/mountain.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-island
+  class: sprites_2d
+  title: cardino card art Island
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtce9ogjq82gnj
+    lane: cardino-lanes
+    seeds:
+    - '7102'
+    sha16: 1112bffa5cd67d71
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/island.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-plains
+  class: sprites_2d
+  title: cardino card art Plains
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcec893ixlhke
+    lane: cardino-lanes
+    seeds:
+    - '7103'
+    sha16: b588209c8ed927b0
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/plains.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-swamp
+  class: sprites_2d
+  title: cardino card art Swamp
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtceckrn7sg9d2
+    lane: cardino-lanes
+    seeds:
+    - '7104'
+    sha16: 8496853352974ee5
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/swamp.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-vampire-lord
+  class: sprites_2d
+  title: cardino card art Vampire Lord
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcecu8gjab9g4
+    lane: cardino-lanes
+    seeds:
+    - '7105'
+    sha16: e597c0a678eed08e
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/vampire-lord.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-bone-rattler
+  class: sprites_2d
+  title: cardino card art Bone Rattler
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtced3osvjej20
+    lane: cardino-lanes
+    seeds:
+    - '7106'
+    sha16: 38b400b5950b4f14
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/bone-rattler.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-dark-ritual
+  class: sprites_2d
+  title: cardino card art Dark Ritual
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcedd4qh249a2
+    lane: cardino-lanes
+    seeds:
+    - '7107'
+    sha16: 0ba1fb6a7d76d6c4
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/dark-ritual.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-dread-wraith
+  class: sprites_2d
+  title: cardino card art Dread Wraith
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcedmjxwrrfdf
+    lane: cardino-lanes
+    seeds:
+    - '7108'
+    sha16: e1b7fb999011c897
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/dread-wraith.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-rise-again
+  class: sprites_2d
+  title: cardino card art Rise Again
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtceeeo7b76zc8
+    lane: cardino-lanes
+    seeds:
+    - '7110'
+    sha16: 8fe0b6289a7adb1b
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/rise-again.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-shadow-assassin
+  class: sprites_2d
+  title: cardino card art Shadow Assassin
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtceeo3tl4oxct
+    lane: cardino-lanes
+    seeds:
+    - '7111'
+    sha16: 4ebefb96affd2a37
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/shadow-assassin.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-undead-plague
+  class: sprites_2d
+  title: cardino card art Undead Plague
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcef0mhnkqifj
+    lane: cardino-lanes
+    seeds:
+    - '7112'
+    sha16: dc9bfbbfdb431b59
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/undead-plague.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-beast-token
+  class: sprites_2d
+  title: cardino card art Beast
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcefvti1tz130
+    lane: cardino-lanes
+    seeds:
+    - '7114'
+    sha16: 1bf1da949c8f069d
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/beast-token.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-bloodlust-berserker
+  class: sprites_2d
+  title: cardino card art Bloodlust Berserker
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtceg599h4zi7y
+    lane: cardino-lanes
+    seeds:
+    - '7115'
+    sha16: e07fe633717a29df
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/bloodlust-berserker.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-feral-instinct
+  class: sprites_2d
+  title: cardino card art Feral Instinct
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcegep7s9ycxv
+    lane: cardino-lanes
+    seeds:
+    - '7116'
+    sha16: ca01b5abeaacb532
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/feral-instinct.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-goblin-raider
+  class: sprites_2d
+  title: cardino card art Goblin Raider
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtceh6tauu40sg
+    lane: cardino-lanes
+    seeds:
+    - '7118'
+    sha16: d608cda8327f6aec
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/goblin-raider.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-rampant-growth
+  class: sprites_2d
+  title: cardino card art Rampant Growth
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcehyxgbi8msq
+    lane: cardino-lanes
+    seeds:
+    - '7120'
+    sha16: 2ab49c2481c9b161
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/rampant-growth.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-savage-bite
+  class: sprites_2d
+  title: cardino card art Savage Bite
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtceintuvn1lqy
+    lane: cardino-lanes
+    seeds:
+    - '7152'
+    sha16: 8b1ca99e1da47968
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/savage-bite.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-spider-pack
+  class: sprites_2d
+  title: cardino card art Spider Pack
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtceix9wimzj7h
+    lane: cardino-lanes
+    seeds:
+    - '7122'
+    sha16: 9a1fa0733db4a70b
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/spider-pack.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-titanic-charger
+  class: sprites_2d
+  title: cardino card art Titanic Charger
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcej6pfq410ru
+    lane: cardino-lanes
+    seeds:
+    - '7123'
+    sha16: 5d040d29d5938a7d
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/titanic-charger.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-angel-of-dawn
+  class: sprites_2d
+  title: cardino card art Angel of Dawn
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcejg4p28o7m3
+    lane: cardino-lanes
+    seeds:
+    - '7124'
+    sha16: 1e2fc5f0cb9782c9
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/angel-of-dawn.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-ember-dragon
+  class: sprites_2d
+  title: cardino card art Ember Dragon
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcejpkfqg3ges
+    lane: cardino-lanes
+    seeds:
+    - '7125'
+    sha16: 048598a8554e0aa7
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/ember-dragon.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-fire-elemental
+  class: sprites_2d
+  title: cardino card art Fire Elemental
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcejz00yxf4v7
+    lane: cardino-lanes
+    seeds:
+    - '7126'
+    sha16: 86a98f39f2535af6
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/fire-elemental.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-flame-wave
+  class: sprites_2d
+  title: cardino card art Flame Wave
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcek8g2nfbcng
+    lane: cardino-lanes
+    seeds:
+    - '7127'
+    sha16: e9f718ed2e8360ef
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/flame-wave.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-lightning-strike
+  class: sprites_2d
+  title: cardino card art Lightning Strike
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcel0klbtjmuk
+    lane: cardino-lanes
+    seeds:
+    - '7129'
+    sha16: ba4c79433fb25f67
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/lightning-strike.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-loyal-sentry
+  class: sprites_2d
+  title: cardino card art Loyal Sentry
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcela05d23kon
+    lane: cardino-lanes
+    seeds:
+    - '7130'
+    sha16: 9c1bcc401272b14f
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/loyal-sentry.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-pegasus-rider
+  class: sprites_2d
+  title: cardino card art Pegasus Rider
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtceljgxwk4ihk
+    lane: cardino-lanes
+    seeds:
+    - '7131'
+    sha16: 2783b4efcfc09f86
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/pegasus-rider.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-sunlit-knight
+  class: sprites_2d
+  title: cardino card art Sunlit Knight
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcelsx0r0qgmw
+    lane: cardino-lanes
+    seeds:
+    - '7132'
+    sha16: 116888a953820729
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/sunlit-knight.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-azure-drake
+  class: sprites_2d
+  title: cardino card art Azure Drake
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcem2d351525j
+    lane: cardino-lanes
+    seeds:
+    - '7133'
+    sha16: 1395c08c814cc9f7
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/azure-drake.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-wind-drake
+  class: sprites_2d
+  title: cardino card art Wind Drake
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtceo84mgedwqn
+    lane: cardino-lanes
+    seeds:
+    - '7139'
+    sha16: f56b74fbffd59083
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/wind-drake.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-deep-sea-serpent
+  class: sprites_2d
+  title: cardino card art Deep Sea Serpent
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtceps1flqvspl
+    lane: cardino-lanes
+    seeds:
+    - '7141'
+    sha16: 5811023a6ebe8aba
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/deep-sea-serpent.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-tidal-lock
+  class: sprites_2d
+  title: cardino card art Tidal Lock
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtceqzm3ep978g
+    lane: cardino-lanes
+    seeds:
+    - '7143'
+    sha16: 1a265650e6817bae
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/tidal-lock.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-tidal-vision
+  class: sprites_2d
+  title: cardino card art Tidal Vision
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcerup57q4amf
+    lane: cardino-lanes
+    seeds:
+    - '7158'
+    sha16: 845397f676539249
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/tidal-vision.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-unsummon
+  class: sprites_2d
+  title: cardino card art Unsummon
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtces4608vsnhl
+    lane: cardino-lanes
+    seeds:
+    - '7145'
+    sha16: ebe76cf47bf3b275
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/unsummon.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-lilianas-command
+  class: sprites_2d
+  title: cardino card art Liliana's Command
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcesdm6bj9w5w
+    lane: cardino-lanes
+    seeds:
+    - '7146'
+    sha16: b7730aa9c1a91081
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/lilianas-command.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-mist-veil
+  class: sprites_2d
+  title: cardino card art Mist Veil
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcf5dr40nbsl9
+    lane: cardino-lanes
+    seeds:
+    - '7162'
+    sha16: 403dbd1f841d4f4d
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/mist-veil.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-honor-guard
+  class: sprites_2d
+  title: cardino card art Honor Guard
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcf6iat1hglyw
+    lane: cardino-lanes
+    seeds:
+    - '7135'
+    sha16: a60e2304712d1aa8
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/honor-guard.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-sacred-light
+  class: sprites_2d
+  title: cardino card art Sacred Light
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcf8kt9l5hvd1
+    lane: cardino-lanes
+    seeds:
+    - '7167'
+    sha16: 201d6347440dd9c0
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/sacred-light.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-counterspell
+  class: sprites_2d
+  title: cardino card art Counterspell
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcf90go2qkcyg
+    lane: cardino-lanes
+    seeds:
+    - '7168'
+    sha16: 9ccc5a831bbea9eb
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/counterspell.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-giant-growth
+  class: sprites_2d
+  title: cardino card art Giant Growth
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcego4rypd3e5
+    lane: cardino-lanes
+    seeds:
+    - '7117'
+    sha16: f6f6135d8fdedbf1
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/giant-growth.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-inspiration
+  class: sprites_2d
+  title: cardino card art Inspiration
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtceq1huc1s200
+    lane: cardino-lanes
+    seeds:
+    - '7142'
+    sha16: a7a93681e4dd1cba
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/inspiration.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-elvish-archdruid
+  class: sprites_2d
+  title: cardino card art Elvish Archdruid
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcedvzdpw7h5j
+    lane: cardino-lanes
+    seeds:
+    - '7109'
+    sha16: ce6866df752d8506
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/elvish-archdruid.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-mana-r
+  class: sprites_2d
+  title: cardino mana r
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcfhqcronem3y
+    lane: cardino-lanes
+    seeds:
+    - '7120'
+    sha16: d48aafed55e72c26
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/mana-r.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-hero-portrait-liliana
+  class: sprites_2d
+  title: cardino hero portrait liliana
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcfni4g9wek1s
+    lane: cardino-lanes
+    seeds:
+    - '7113'
+    sha16: 126fdc1c99a7c5d0
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/hero-portrait-liliana.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-hero-portrait-thorne
+  class: sprites_2d
+  title: cardino hero portrait thorne
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcfuhfg6kf3gm
+    lane: cardino-lanes
+    seeds:
+    - '7172'
+    sha16: 838fa7b63c9b849d
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/hero-portrait-thorne.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-hero-portrait-aurelia
+  class: sprites_2d
+  title: cardino hero portrait aurelia
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcfvckdtyefft
+    lane: cardino-lanes
+    seeds:
+    - '7174'
+    sha16: ed8bcd6158b16143
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/hero-portrait-aurelia.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-hero-portrait-ignis
+  class: sprites_2d
+  title: cardino hero portrait ignis
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcfvm0u1halr7
+    lane: cardino-lanes
+    seeds:
+    - '7175'
+    sha16: e5883afd4e9cb8cc
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/hero-portrait-ignis.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-mana-b
+  class: sprites_2d
+  title: cardino mana b
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcfwazr1y02rj
+    lane: cardino-lanes
+    seeds:
+    - '7177'
+    sha16: 4f7a198bf197294e
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/mana-b.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-mana-u
+  class: sprites_2d
+  title: cardino mana u
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcfwkglxc1qga
+    lane: cardino-lanes
+    seeds:
+    - '7178'
+    sha16: 4762a587d2049d44
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/mana-u.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-mana-w
+  class: sprites_2d
+  title: cardino mana w
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcfwtwywl6flj
+    lane: cardino-lanes
+    seeds:
+    - '7179'
+    sha16: bbe3e7873f829a11
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/mana-w.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-mana-g
+  class: sprites_2d
+  title: cardino mana g
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcfx3djg779m7
+    lane: cardino-lanes
+    seeds:
+    - '7180'
+    sha16: 9d9d21665c67b7c5
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/mana-g.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-icon-power-aurelia
+  class: sprites_2d
+  title: cardino icon power aurelia
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcfxcu4hpl8la
+    lane: cardino-lanes
+    seeds:
+    - '7181'
+    sha16: 9aeefe503ed88ac6
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/icon-power-aurelia.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-icon-power-ignis
+  class: sprites_2d
+  title: cardino icon power ignis
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcfxpdgkiuiw2
+    lane: cardino-lanes
+    seeds:
+    - '7182'
+    sha16: 541375cfb57baee0
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/icon-power-ignis.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-logo
+  class: sprites_2d
+  title: cardino logo
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcfz37u28002s
+    lane: cardino-lanes
+    seeds:
+    - '7186'
+    sha16: 074b73d6aac5afd5
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/logo.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-wild-beast
+  class: sprites_2d
+  title: cardino card art Wild Beast
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcfzlyq1k6ix3
+    lane: cardino-lanes
+    seeds: &id001
+    - '7187'
+    sha16: 7556ee2fa4e80b5b
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/card-wild-beast.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+  - date: '2026-08-28'
+    run_id: pmtcfzlyq1k6ix3
+    seeds: *id001
+    sha16: 7556ee2fa4e80b5b
+    gate: PATH-FIX
+    lane: cardino-lanes
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/wild-beast.png
+    evidence: 'correction: delivered png was misnamed card-<id>.png (stem-rule bug,
+      fixed + pinned by test_stem_naming.py); content sha unchanged, file renamed
+      on disk'
+- id: cardino-card-judgment-of-the-sky
+  class: sprites_2d
+  title: cardino card art Judgment of the Sky
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcg1ibhv8i356
+    lane: cardino-lanes
+    seeds: &id002
+    - '7190'
+    sha16: 881ea8a7b04023df
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/card-judgment-of-the-sky.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+  - date: '2026-08-28'
+    run_id: pmtcg1ibhv8i356
+    seeds: *id002
+    sha16: 881ea8a7b04023df
+    gate: PATH-FIX
+    lane: cardino-lanes
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/judgment-of-the-sky.png
+    evidence: 'correction: delivered png was misnamed card-<id>.png (stem-rule bug,
+      fixed + pinned by test_stem_naming.py); content sha unchanged, file renamed
+      on disk'
+- id: cardino-hero-portrait-nyx
+  class: sprites_2d
+  title: cardino hero portrait nyx
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcfvykaaw4h8s
+    lane: cardino-lanes
+    seeds:
+    - '7176'
+    sha16: ea8cf9faabe3c053
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/hero-portrait-nyx.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-icon-power-nyx
+  class: sprites_2d
+  title: cardino icon power nyx
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcfy867ye8ose
+    lane: cardino-lanes
+    seeds:
+    - '7184'
+    sha16: f79385d348338ceb
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/icon-power-nyx.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-icon-power-thorne
+  class: sprites_2d
+  title: cardino icon power thorne
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcfyqscqtxu3k
+    lane: cardino-lanes
+    seeds:
+    - '7185'
+    sha16: 9c7fc279844c4716
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/icon-power-thorne.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-natures-fury
+  class: sprites_2d
+  title: cardino card art Nature's Fury
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcg2w2kzh7idn
+    lane: cardino-lanes
+    seeds:
+    - '7192'
+    sha16: 7a4ac2df4430895a
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/natures-fury.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-banish
+  class: sprites_2d
+  title: cardino card art Banish
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcg0qet4ohhyq
+    lane: cardino-lanes
+    seeds:
+    - '7189'
+    sha16: f1da84371cad45b6
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/banish.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-bg-battlefield
+  class: sprites_2d
+  title: cardino bg battlefield
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcg81b5mdlq4i
+    lane: cardino-lanes
+    seeds:
+    - '7193'
+    sha16: cd0db041e6ffbfd9
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/bg-battlefield.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-lava-spike
+  class: sprites_2d
+  title: cardino card art Lava Spike
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcmj2zr7npiey
+    lane: cardino-lanes
+    seeds:
+    - '7194'
+    sha16: 155c7868cec9e328
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/lava-spike.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-card-mist-barrier
+  class: sprites_2d
+  title: cardino card art Mist Barrier
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcmlftjlfsred
+    lane: cardino-lanes
+    seeds:
+    - '7195'
+    sha16: dacd7a0ac2144435
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/mist-barrier.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: cardino-icon-power-liliana
+  class: sprites_2d
+  title: cardino icon power liliana
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtcmnmng5uxr6h
+    lane: cardino-lanes
+    seeds:
+    - '7196'
+    sha16: b4c273f928378c99
+    gate: GREEN
+    delivery:
+      route: cardino-lane
+      game_path: ~/Documents/programs/games/cardino/public/cards/icon-power-liliana.png
+    evidence: card art PNG on disk (mtime+sha)
+    note: null
+- id: lorekeep_keeper
+  class: humanoids
+  title: lorekeep keeper animated character
+  status: delivered
+  current_version: 5
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: race_lorekeep_keeper
+    lane: race-forge (anny base + morphs + TRELLIS coat socket)
+    seeds: []
+    sha16: d56dfc028288e469
+    gate: PASS
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/ray/data/delivery/unity/humanoids/lorekeep_keeper/lorekeep_keeper_socketed.fbx
+    evidence: request req-20260828-lorekeep_keeper completed via MCP
+    note: Static rigged character (no motion baked - motion is a separate Kimodo lane
+      per operator law). 93 mixamorig joints, travel_coat socketed as rigid child
+      of mixamorig:Spine1, materials FULL-PBR-non. GLB 17.0MB + FBX 7.6MB.
+  - v: 2
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtd991qsemrqzd
+    lane: lorekeep_keeper_coat.yaml
+    seeds:
+    - '741'
+    - '44'
+    sha16: 957b34ae0800aa16
+    gate: 'GREEN: agent-eyes 3-view read of shipped FBX (final_gate/fin_az0/90/180.png)
+      - garment consistent across all rotations; FBX referee PASS (BIND 0.0000m tol
+      2mm, POSE drift 1.1mm, CLIP-OK idle+move); walk frames 0/37/75/112 cycle verified'
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/ray/data/delivery/unity/humanoids/lorekeep_keeper/lorekeep_keeper.fbx
+    evidence: request req-20260828-lorekeep_keeper completed via process_requests
+    note: 'Keeper v2 animated: walk clip from real kimodo NPZ (run pmtcwwu45mn7qgm,
+      seed 42, completed 2026-08-28) baked via somax_bake_named.py --zero-base; idle
+      loop procedural breathing (synth_idle_npz.py --bind-hold, 151f loop-closed)
+      - kimodo_motion cold-load blocked by venv skew (transformers 5.15.0 vs safetensors
+      0.8.0 backend kwarg, operator fix needed). Clips: move(93ch)+idle(93ch). travel_coat
+      socket OBJECT-parented to Armature at mixamorig:Spine1 band per wave FBX convention
+      (rigid during strong bends - FBX round-trip drops 54/93 vgroups, endemic). Coat
+      reads trench-length (~1.0m) vs spec hip-length; palette sun-bleached paler.
+      Materials FULL-PBR-non. Delivered: lorekeep_keeper.glb (17.6MB, sha16 8b204fdb7a58c280)
+      + lorekeep_keeper.fbx (9.1MB, sha16 957b34ae0800aa16) + .fbx.sockets.json sidecar.
+      Supersedes MCP v1 stamp (static, referee-fail). GLB SSOT: data/runs/race_lorekeep_keeper/lorekeep_keeper_anim.glb'
+  - v: 3
+    date: '2026-08-29'
+    provenance: recorded
+    run_id: race_lorekeep_keeper
+    lane: null
+    seeds: []
+    sha16: 3f8fe3d5f5e773ed
+    gate: 'REVOCATION RECORD: v2 baked-motion delivery REVOKED (operator motion-separate
+      law). Static v1 restored to delivery path. Unity exposure: ZERO meld/Assets
+      references to baked v2 (grep-verified) — nothing imported.'
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/ray/data/delivery/unity/humanoids/lorekeep_keeper/lorekeep_keeper_socketed.fbx
+    evidence: request req-20260829-081155-lorekeep_keeper completed via MCP
+    note: 'v3 = v1 static restored (sha16 3f8fe3d5f5e773ed). v2 (baked walk+idle,
+      somax_bake_named --zero-base) QUARANTINED at data/quarantine/keeper_v2_BAKED_MOTION/WHY.txt.
+      Motion lane = BVH ONLY: keeper_walk.bvh via kimodo motion_convert. ONE way (operator
+      law 2026-08-29).'
+  - v: 4
+    date: '2026-08-29'
+    provenance: imported
+    run_id: kit-cfcb7dbddbb7
+    lane: kit
+    seeds: []
+    sha16: 957b34ae0800aa16
+    gate: kit-verify-PASS
+    delivery:
+      route: kit
+      game_path: ~/unity/Assets/PhaseB/Resources/models/lorekeep_keeper.fbx
+      evidence: docs/art-kit.md delivery log + ingest-stamps.json
+    evidence: docs/art-kit.md delivery log + ingest-stamps.json
+    note: bulk ingest kit=lorekeep-keeper-v2-2026-08-29
+  - v: 5
+    date: '2026-08-29'
+    provenance: recorded
+    run_id: race_lorekeep_keeper_v3
+    lane: lorekeep_keeper_v3.yaml
+    seeds:
+    - '42'
+    - '43'
+    sha16: 097e2f3a1e70fbb3
+    gate: 'PASS: body 1.985m, walk+idle animations, 77 mixamorig joints, PNG texture,
+      coat->Spine1 socket'
+    delivery:
+      route: single
+      game_path: /home/user/Documents/programs/ray/data/delivery/unity/humanoids/lorekeep_keeper/lorekeep_keeper_socketed.glb
+    evidence: request req-20260829-083300-lorekeep_keeper completed via process_requests
+    note: v4 remake delivered from v3 run (race_lorekeep_keeper_v3). Body 1.985m (spec
+      1.6-2.0m), walk+idle baked as glTF animations, BVH pair (keeper_walk_v3.bvh
+      + keeper_idle_v3.bvh) with mixamorig:* joint names matching GLB, coat socketed
+      to mixamorig:Spine1 via node-parenting, PNG textures. Unity consume test pending
+      operator verification.
+- id: arena_factor
+  class: humanoids
+  title: arena factor body
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtdb1fk7xnyqh3
+    lane: arena_factor_chest.yaml
+    seeds:
+    - '761'
+    - '44'
+    sha16: 4e5faf2ae4b905e4
+    gate: 'GREEN: turntable 3-view (front/right/back) single-subject agreement no
+      contamination; shipped-FBX 3-view read garment worn consistently (cross-strap
+      top + belted harness all rotations); FBX referee PASS (BIND 0.0000m tol 2mm,
+      POSE drift 1.1mm, CLIP-OK idle+move)'
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/ray/data/delivery/unity/humanoids/arena_factor/arena_factor.fbx
+    evidence: request req-20260827-190320-arena_factor completed via process_requests
+    note: 'arena_factor v1: unified torso garment = wrapped leather chest harness
+      + integrated low belt with shell-token pouch (ONE TRELLIS object per rock_slab
+      law). Brass armband + hand-wraps DEFERRED (sub-socket budget) - honest scope
+      cut. Palette reads cream/bone-white lean (turntable), paler than ochre anchor.
+      Walk clip from real kimodo NPZ (run pmtcwwu45mn7qgm, seed 42, completed 2026-08-28)
+      via somax_bake_named.py --zero-base; idle procedural breathing (synth_idle_npz.py
+      --bind-hold). Clips: move(93ch)+idle(93ch). arena_chest socket OBJECT-parented
+      at mixamorig:Spine1 band (wave FBX convention, rigid under strong bends). Lane:
+      concept run pmtdazg6jntulqv seed 761; first mesh attempt failed trellis shape_dec
+      alloc (VRAM) - recovered via /free eviction + q4 retry, mesh run pmtdb1fk7xnyqh3
+      seed 44. Materials FULL-PBR-non. Delivered: arena_factor.glb 18.5MB (sha16 aefcc048f868c781)
+      + arena_factor.fbx 9.3MB (sha16 4e5faf2ae4b905e4) + sidecar. GLB SSOT: data/runs/race_arena_factor/arena_factor_anim.glb'
+- id: ground_sand
+  class: ground_textures
+  title: seamless sand ground texture set
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: ground_sand_proc
+    lane: ground_textures_procedural
+    seeds:
+    - '410'
+    sha16: 629d6e367a546393
+    gate: 'GREEN: unprimed neutral read of single tile + 2x2 sheet: ''no straight
+      lines, grid, cross, stripes/banding, or directional pattern; no stones or pebbles'';
+      QUANTITATIVE: wrap-adjacency delta equals interior gradient (lr 6.23 vs 6.39,
+      tb 6.40 vs 6.40), edge luminance == center (158.1 vs 157.5) - tiling continuous
+      by construction (integer FFT lattice). NOTE: a primed ''2x2 tiled sheet'' prompt
+      elicited a hallucinated cross on the same pixels - primed reads are unreliable
+      on near-uniform speckle; unprimed read + metrics are the evidence'
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/ray/data/delivery/ground-textures-kit/textures/ground_sand/ground_sand_albedo.png
+    evidence: request req-20260827-192053-ground_sand completed via process_requests
+    note: 'ground_sand v1 PROCEDURAL per lineage law (4 z-image FAILs exhausted: seeds
+      401/405/405/406 ripple/cross/star): FFT ring-spectrum isotropic noise (scripts/delivery/synth_ground_sand.py)
+      - periodic by construction, no dominant axis possible, no ripple trains. 3 octaves:
+      2-4px wind-borne speckle (0.62), 42px grain clumps (0.28), 280px gentle undulation
+      (0.10). Palette ochre (148,120,92) to bone-white (214,198,172), mean (182,160,134).
+      Post-process via lane tool make_tiling.py --feather 0 (offset-half blend CREATES
+      a center band on already-tileable input - first attempt gated RED on exactly
+      that, evidence in note). Seam metrics: raw 6.23/6.40 blended 6.05/6.33 - BETTER
+      than delivered ground_cracked (8.2/11.6 blended). Set: ground_sand_{albedo,normal,roughness,sheet}.png
+      + report.json in ground-textures-kit/textures/ground_sand/ (s405 z-image FAIL
+      lineage files retained in same dir). No GPU consumed (CPU procedural); distinct
+      from ground_gravel by construction (no stone octave)'
+- id: shell_dome
+  class: props
+  title: shell dome
+  status: delivered
+  current_version: 2
+  versions:
+  - v: 1
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtdbnkqkovio3c
+    lane: null
+    seeds: []
+    sha16: 3020bc1e28b73863
+    gate: STATIC-PASS (skinning skipped by design — lane b)
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/shell_dome.fbx
+    evidence: deliver_asset.py ledger row 2026-08-28
+    note: glb 22084927ae0e864b
+  - v: 2
+    date: '2026-08-28'
+    provenance: recorded
+    run_id: pmtdbnkqkovio3c
+    lane: shell_dome.yaml
+    seeds:
+    - '771'
+    - '22'
+    sha16: 22084927ae0e864b
+    gate: 'GREEN: 3-view read (front/right/back) single unified dome-shaped shelter,
+      flat wide base, no text/watermark/floaters/broken geometry'
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/games/meld/unity/Assets/PhaseB/Resources/models/shell_dome.glb
+    evidence: request req-20260828-181858-shell_dome completed via process_requests
+    note: 'shell_dome v1 via reopened prop door (host-blender FBX fallback added to
+      deliver_asset.py 2026-08-28 after comfy container absent; door output: converted
+      699500 B FBX, registry stamped, inbox pushed, DELIVERED). Concept run pmtdbmdrz2hwidg
+      s771; mesh+views run pmtdbnkqkovio3c s22 (first mesh attempt VRAM ''c2s: alloc
+      failed'' -> /free eviction + resume; one run interruption recovered via /v1/pipelines/resume).
+      Static lane b: skinning skipped by design, verdict STATIC-PASS. Reads dome-house
+      w/ flat base (vision: ''igloo-style shelter, single unified structure''); arched
+      entry + rooftop terrace read is soft at distance - honest note. Tri budget within
+      spec (QEM 15000 target)'
+- id: keeper_walk
+  class: motion
+  title: keeper walk
+  status: delivered
+  current_version: 2
+  versions:
+  - v: 1
+    date: '2026-08-29'
+    provenance: recorded
+    run_id: pmtcwwu45mn7qgm
+    lane: null
+    seeds: []
+    sha16: d7b328ea61b1025d
+    gate: PASS 150 frames, 77 joints
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/games/meld/unity/Assets/Resources/motion/keeper_walk.npz
+    evidence: deliver_asset.py motion lane 2026-08-29
+    note: raw kimodo npz from kimodo_motion_pmtcwwu45mn7qgm_s42_walk_motion.npz
+  - v: 2
+    date: '2026-08-29'
+    provenance: recorded
+    run_id: pmtdyppk4ryqcp0
+    lane: null
+    seeds: []
+    sha16: 11ac2ddc5ec89a8f
+    gate: PASS 150 frames, 77 joints
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/games/meld/unity/Assets/Resources/motion/keeper_walk.npz
+    evidence: deliver_asset.py motion lane 2026-08-29
+    note: raw kimodo npz from kimodo_motion_pmtdyppk4ryqcp0_s42_motion_npz.npz
+- id: keeper_idle
+  class: motion
+  title: keeper idle
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-29'
+    provenance: recorded
+    run_id: null
+    lane: synth_idle_npz.py --bind-hold (procedural breathing loop, no gateway run)
+    seeds: []
+    sha16: a06f1c3235735fea
+    gate: PASS 151 frames, 77 joints
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/games/meld/unity/Assets/Resources/motion/keeper_idle.npz
+    evidence: hand-delivered 2026-08-29 (meld d4be2bf); stamped retroactively
+    note: procedural idle — NOT kimodo diffusion; loop-closed 151f
+- id: lorekeep_keeper_walk
+  class: motion
+  title: lorekeep keeper walk
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-29'
+    provenance: recorded
+    run_id: pmtdyppk4ryqcp0
+    lane: null
+    seeds: []
+    sha16: 0513cfd199caac5e
+    gate: PASS 150 frames, 77 joints | BVH 150 frames, 78 joints
+    delivery:
+      route: single
+      game_path: ~/Documents/programs/games/meld/unity/Assets/Resources/motion/lorekeep_keeper_walk.bvh
+    evidence: deliver_asset.py motion lane 2026-08-29 (BVH law)
+    note: BVH via kimodo motion_convert (ONE WAY, operator law 2026-08-29); raw npz
+      SSOT kimodo_motion_pmtdyppk4ryqcp0_s42_motion_npz.npz
+- id: ground_dirt
+  class: ground_textures
+  title: dark earth dirt texture
+  status: delivered
+  current_version: 1
+  versions:
+  - v: 1
+    date: '2026-08-29'
+    provenance: recorded
+    run_id: pmtejykgrfpccom
+    lane: ground_textures_wave.yaml
+    seeds:
+    - '405'
+    sha16: 967f3bba9e710463
+    gate: 'PASS: 2x2 tiled sheet continuous, no visible seams, dark earth with pebbles
+      + root fibers, albedo+normal+roughness maps generated'
+    delivery:
+      route: single
+      game_path: /home/user/Documents/programs/ray/data/delivery/unity/textures/ground_dirt/ground_dirt_albedo.png
+    evidence: request req-20260828-203759-ground_dirt completed via process_requests
+    note: 'Dark earth dirt texture via z-image (seed 405). Post-processed: make_tiling.py
+      -> albedo + normal + roughness. Vision gate passed on 2x2 sheet.'

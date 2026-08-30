@@ -1,0 +1,80 @@
+schema: meld.asset-request/v1
+id: req-20260829-083214-the-last-signal-90s
+created: '2026-08-29T08:32:14'
+requested_by: unity-mcp
+class: motion
+asset_id: the-last-signal-90s
+title: The Last Signal - 90s film with dialogue (render in flight, mux+deliver)
+priority: P0
+spec: 'FILM: The Last Signal - 90.0s single-clip story with TTS dialogue (operator
+  oath: productions/last_signal_90s/OATH.md).
+
+  STATE (2026-08-29 08:3x): video render ALREADY RUNNING as ray gateway run pmte4473ldcedyl
+  (31 windows x 70f @24fps, h3-timeline, seed 42, max_window_seconds 3, extend+24f
+  latent carry; full params cloned from pmtdeh3yi775rjo, tracked in productions/last_signal_90s/params.json).
+  DO NOT restart or resubmit the video run.
+
+  REMAINING PHASES after render completes:
+
+  1. Dialogue TTS: a gated launcher (setsid python3 -u productions/last_signal_90s/tts_launch.py,
+  log tts.log) fires 11 lines via model ''qwen3-tts'' (dash form!) once NO runs are
+  active. Cast personas + timestamps in SCRIPT.md / tts_launch.py. Output: dialogue_manifest.json.
+  If the launcher died: rerun it.
+
+  2. Mux: bash productions/last_signal_90s/mux.sh (concat film from data/runs/pmte4473ldcedyl/video_timeline_*_video.mp4
+  -> trim to exactly 90.0s, dialogue at scripted timestamps over 0.22 ambient bed,
+  loudnorm, faststart) -> THE_LAST_SIGNAL_90s.mp4.
+
+  3. Acceptance + delivery: bash productions/last_signal_90s/acceptance.sh (ffprobe
+  89.5-90.5s, audible dialogue mean_volume > -50dB in 2-5s window, 31 window mp4s
+  + carry hooks present, synthetic final run dir data/runs/last_signal_90s_final/
+  for panel visibility without gateway restart, DELIVERY.md).
+
+  ACCEPTANCE: single mp4 90.0s +/-0.5s, 31 chained windows no hard cuts, 11 audible
+  dialogue lines, evidence files in productions/last_signal_90s/.'
+acceptance: {}
+lane_hint: null
+status: pending
+history:
+- at: '2026-08-29T08:32:14'
+  event: enqueued
+  by: unity-mcp
+- at: '2026-08-29T08:33:27'
+  event: pending->active
+  by: last-signal-film-director
+- at: '2026-08-29T08:37:34'
+  event: active->pending
+  by: generator
+  note: 'Render pmte4473ldcedyl killed per operator INFERENCE LAW (2026-08-29: all
+    inference via queue/action cards, never direct). 2 of 31 windows rendered before
+    stop. Relaunch pending operator: action card with the full 31-window recipe (params
+    tracked in productions/last_signal_90s/params.json), then TTS dialogue via card,
+    then mux+acceptance. Recipe and all scripts intact on disk.'
+- at: '2026-08-29T12:11:31'
+  event: pending->active
+  by: generator
+- at: '2026-08-29T12:12:47'
+  event: active->pending
+  by: queue-consumer
+  note: 'NOT DISPATCHABLE this pass, no GPU churn: (1) spec''s phase scripts are GONE
+    — productions/last_signal_90s/ does not exist (OATH.md, params.json, tts_launch.py,
+    mux.sh, acceptance.sh, SCRIPT.md all missing; wide find over /home/user finds
+    none); (2) the 31-window render relaunch ALREADY FAILED — run pmte63q2bia29kj
+    status=failed, video_timeline_0 error ''ComfyUI workflow failed'' execution_error
+    KSampler.0 in window w1, only w0 mp4 on disk; (3) class=motion maps to inline
+    kimodo_motion (prompt/seed/duration_sec from spec) but this spec is a film state
+    machine with NO motion params — a kimodo run would be a fabricated substitute.
+    Needs operator: restore the production tree (or repost the action-card recipe)
+    before the queue can drive phases 2-3.'
+- at: '2026-08-29T14:43:12'
+  event: pending->active
+  by: generator
+- at: '2026-08-29T14:43:30'
+  event: active->pending
+  by: generator
+  note: 'NOT DISPATCHABLE (3rd pass, no GPU churn): (1) production tree productions/last_signal_90s/
+    still absent — OATH.md, params.json, scripts all missing; (2) prior render relaunch
+    failed (run pmte63q2bia29kj, ComfyUI KSampler error); (3) class=motion spec is
+    a film state machine, not kimodo params — dispatching kimodo would be a fabricated
+    substitute. Needs operator: restore production tree + action-card recipe before
+    queue can drive phases.'

@@ -61,7 +61,7 @@ except ImportError:
     print("INFO torch not on this python; run under /opt/ComfyUI/venv/bin/python for the torch arm")
     check("torch.first_frame_slice", True)
 
-# ── SEAM CONTEXT layout math (2026-08-28): multi-frame head pin + backwards
+# ── SEAM CONTEXT layout math (2026-08-28): multi-frame head pin + forward
 # audio window. Exercises PackedLayout directly — pure torch, no models.
 try:
     import torch
@@ -77,11 +77,13 @@ try:
     FRAME_ROWS = (LH // 2) * (LW // 2)
     L, A = 6, 40
 
-    # multi-frame video kf + backwards audio kf in ONE keyframe dict
+    # multi-frame video kf + FORWARD audio kf in ONE keyframe dict:
+    # B re-renders A's tail sound at [cond_t, cond_t+A), then continues.
+    # (backwards windows measured mute-prone: post-event silence law)
     kf = {"resolved_frame_index": 0,
           "latent": torch.zeros(1, 24, L, LH, LW),
           "audio_latent": torch.zeros(1, 32, 2, A),
-          "audio_rt": A, "audio_backwards": True}
+          "audio_rt": A, "audio_backwards": False}
     lay = hm.PackedLayout(TEXT, LT, LH, LW, AT, keyframes=[kf], frame_count=124)
 
     # cond rows: L frame-grids at the TARGET grid's head times
@@ -96,18 +98,18 @@ try:
     check("grid.multiframe_all_cond", bool((~lay.img_update[: L * FRAME_ROWS]).all()),
           "context rows must be conditioning, not generation")
 
-    # backwards audio: window ENDS at the join, tiles flush with target audio
+    # forward audio: window STARTS at the join, re-rendering A's tail sound
     cond_a = lay.audio_pos[~lay.audio_update]
     arows = lay.position_ids[cond_a]
     at = arows[:, 0]
-    check("grid.audio_backwards_end_at_join", float(at.max()) == float(TEXT) - 1.0,
-          f"max t {float(at.max())} should be join-1 ({TEXT - 1.0})")
-    check("grid.audio_backwards_span", float(at.min()) == float(TEXT) - A,
-          f"min t {float(at.min())} should be {TEXT - A}")
+    check("grid.audio_forward_start_at_join", float(at.min()) == float(TEXT),
+          f"min t {float(at.min())} should be the join ({TEXT})")
+    check("grid.audio_forward_span", float(at.max()) == float(TEXT) + A - 1,
+          f"max t {float(at.max())} should be {TEXT + A - 1}")
     check("grid.audio_rows_packed", arows.shape[0] == A * 2, f"{arows.shape[0]} vs {A * 2}")
     tgt_a = lay.position_ids[lay.audio_pos[lay.audio_update]]
-    check("grid.audio_flush_tiling", float(tgt_a[:, 0].min()) == float(TEXT),
-          f"target audio must start exactly at the join ({TEXT}); got {float(tgt_a[:, 0].min())}")
+    check("grid.audio_target_full_clip", float(tgt_a[:, 0].min()) == float(TEXT),
+          f"target audio spans the clip from the join ({TEXT}); got {float(tgt_a[:, 0].min())}")
 
     # cond row count must match a patchified multi-frame pack (t-major order)
     rows = hm.patchify_video(torch.zeros(1, 24, L, LH, LW), hm.PackedLayout and (1, 2, 2))

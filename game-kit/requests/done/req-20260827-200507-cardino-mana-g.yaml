@@ -1,0 +1,61 @@
+schema: meld.asset-request/v1
+id: req-20260827-200507-cardino-mana-g
+created: '2026-08-27T20:05:07'
+requested_by: unity-mcp
+class: sprites_2d
+asset_id: cardino-mana-g
+title: cardino mana g
+priority: P2
+spec: 'UI icon: green mana gem — verdant emerald crystal orb with a coiling vine inside,
+  dark fantasy faceted cut, on transparent-safe dark backdrop. Painterly dark-fantasy
+  MTG-style illustration, dramatic lighting, centered subject, detailed brushwork,
+  reads at small size. Square 1024x1024 PNG via z-image. Style family: ONE shared
+  cardino art style (shared style suffix, seed family base 71xx). Delivery law: class
+  sprites_2d OPERATOR lane — deliver via cardino-lanes/deliver_card_art.py into cardino
+  public/cards/<asset stem>.png. NOT the meld icons lane.'
+acceptance: {}
+lane_hint: null
+status: done
+history:
+- at: '2026-08-27T20:05:07'
+  event: enqueued
+  by: unity-mcp
+- at: '2026-08-28T01:12:13'
+  event: pending->pending
+  by: generator
+  note: '[door ok:false] sprites cannot pass the delivery door: kind=sprite refused
+    verbatim {"ok":false,"errors":["kind: creature|buildable|prop|icon"]} (probed
+    live 2026-08-28, zero side effects); openapi.json is 500 (bridge ModuleNotFoundError:
+    core) so no kind discovery; kind=icon also refused on probe (deliverable resolver
+    requires a .glb artifact — PNG sprite runs die "produced no .glb artifact"; icon
+    builds no delivery pairs). Sprite lane needs a door PNG path (operator). NOT GENERATED
+    — do not burn GPU until the door accepts sprites.'
+- at: '2026-08-28T02:36:01'
+  event: pending->pending
+  by: queue-consumer
+  note: 'no delivery route: spec names cardino-lanes/deliver_card_art.py, but that
+    script hardcodes asset_id ''cardino-card-<cards.ts id>'' (README lane law) and
+    refuses every non-card stem — live probe 2026-08-28 02:33: REFUSED: no open request
+    for cardino-card-hero-portrait-liliana (exit 1, no state changed; same refusal
+    applies to this stem by code). Additional transient block: cardino repo dir is
+    on the ro root today (touch ../games/cardino/public/cards/.probe -> EROFS). Needs
+    operator: extend the lane script to non-card stems (or re-spec); do not generate
+    unattended.'
+- at: '2026-08-28T03:35:22'
+  event: pending->pending
+  by: generator
+  note: 'no delivery route for non-card stems (cardino-lanes README lane law = cardino-card-<cards.ts
+    id> ONLY; deliver_card_art.py refuses other stems, live-probed 02:33). Needs operator:
+    extend the card lane to mana/icon-power/logo stems or re-spec; do not generate
+    unattended.'
+- at: '2026-08-28T04:17:22'
+  event: pending->active
+  by: cardino-lane
+- at: '2026-08-28T04:17:22'
+  event: active->done
+  by: cardino-lane
+  note: delivered v1 run=pmtcfx3djg779m7 sha=9d9d21665c67b7c5
+result:
+  version: 1
+  run_id: pmtcfx3djg779m7
+  sha16: 9d9d21665c67b7c5

@@ -1,0 +1,33 @@
+# @meta {"description": "ground_sand rewave - multi-directional-grain prompt family (manifest law: v1 wind-ripple axis read as a landmark), seed 405.", "status": "production-candidate"}
+# ground_sand_rewave.yaml - honest-FAIL follow-up per ART-MANIFEST ground
+# textures note: NOT a re-roll of the v1 lane. New prompt family whose
+# grain has no dominant direction (criss-crossing micro-ripples + even
+# wind-hammered speckle), new 400-family seed (405). Post-process +
+# gate unchanged: scripts/textures/make_tiling.py -> _sheet.png gate.
+output_dir: ./data/test-output/pipelines/pipeline_ground_sand_rewave
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+steps:
+  - family: generate_image
+    phase: ground
+    title: "Ground - desert sand rewave"
+    consumes: [comfy_url]
+    outputs: [ground_sand]
+    params:
+      model: z-image
+      seed: 405
+      width: 1024
+      height: 1024
+      output_artifact: ground_sand
+      prompt: >-
+        seamless tileable desert sand ground texture, fine granular grain with
+        subtle multi-directional micro-ripples criss-crossing without any
+        dominant direction, even wind-hammered speckle across the whole surface,
+        warm ochre sand with pale bone-tone highlights, top-down flat diffuse
+        view, uniform lighting, no shadows, stylized realistic game ground material
+      negative_prompt: >-
+        text, watermark, visible seams, border, frame, objects, props, scene,
+        horizon, vignette, directional shadows, dune ridges, directional ripples,
+        photorealistic lens artifacts

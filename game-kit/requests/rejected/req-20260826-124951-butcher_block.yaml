@@ -1,0 +1,25 @@
+schema: meld.asset-request/v1
+id: req-20260826-124951-butcher_block
+created: '2026-08-26T12:49:51'
+requested_by: live-verify
+class: props
+asset_id: butcher_block
+title: Butcher block table
+priority: P2
+spec: low-poly butcher block work table, ochre-stained wood, ~1.8x0.8x0.9 m, flat-shaded
+acceptance: {}
+lane_hint: null
+status: rejected
+history:
+- at: '2026-08-26T12:49:51'
+  event: enqueued
+  by: live-verify
+- at: '2026-08-26T12:50:03'
+  event: pending->active
+  by: generator
+- at: '2026-08-26T12:50:24'
+  event: active->rejected
+  by: generator
+  note: live-verify round-trip artifact, not an operator ask
+_queue: active
+_file: requests/active/req-20260826-124951-butcher_block.yaml

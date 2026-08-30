@@ -1,0 +1,20 @@
+schema: meld.asset-request/v1
+id: req-20260829-193823-last_signal_vo_master
+created: '2026-08-29T19:38:23'
+requested_by: unity-mcp
+class: vo
+asset_id: last_signal_vo_master
+title: last signal vo master
+priority: P1
+spec: 'Master VO kit for THE LAST SIGNAL: 11 dialogue lines, 3 voices already proven
+  in production (serena, uncle_fu, ono_anna - lowercase snake spk_ids ONLY, config
+  talker_config/spk_id law). Full line list + timestamps in productions/last_signal_90s/tts_manifest.json.
+  qwen3_tts CustomVoice lane, seed 42, locked instruct DNA per character, one line
+  per brick. Deliver re-mixable stems aligned to film timecode (t values in manifest).'
+acceptance: {}
+lane_hint: null
+status: pending
+history:
+- at: '2026-08-29T19:38:23'
+  event: enqueued
+  by: unity-mcp

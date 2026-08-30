@@ -1,0 +1,73 @@
+# @meta {"description": "Gameplay SFX wave - 5 moss-sfx events (combat, foley, ambience). Run SERIALLY by design; audio loads contend.", "status": "production"}
+# audio_sfx_wave.yaml - survival-kit SFX. Describe the sound, not the scene;
+# one event per brick. See skill melite-sfx.
+
+output_dir: ./data/test-output/pipelines/pipeline_audio_sfx_wave
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+steps:
+  - family: audio_sfx
+    phase: combat
+    title: "Machete swing"
+    consumes: [comfy_url]
+    outputs: [a1]
+    params:
+      model: moss-sfx
+      seed: 909
+      output_artifact: a1
+      prompt: >-
+        heavy iron machete swing, single fast whoosh arc through air,
+        close mic, dry
+
+  - family: audio_sfx
+    phase: combat
+    title: "Machete impact"
+    consumes: [comfy_url]
+    outputs: [a2]
+    params:
+      model: moss-sfx
+      seed: 909
+      output_artifact: a2
+      prompt: >-
+        machete blade impact into rotten wood, metallic chunk with debris
+        scatter, close mic
+
+  - family: audio_sfx
+    phase: creature
+    title: "Predator snarl"
+    consumes: [comfy_url]
+    outputs: [a3]
+    params:
+      model: moss-sfx
+      seed: 909
+      output_artifact: a3
+      prompt: >-
+        large desert predator snarl, low guttural growl rising into a short
+        bark, close mic, dry open air
+
+  - family: audio_sfx
+    phase: foley
+    title: "Gravel footsteps"
+    consumes: [comfy_url]
+    outputs: [a4]
+    params:
+      model: moss-sfx
+      seed: 909
+      output_artifact: a4
+      prompt: >-
+        boots walking on loose gravel and sand, six slow steps, close mic, dry
+
+  - family: audio_sfx
+    phase: ambient
+    title: "Desert night bed"
+    consumes: [comfy_url]
+    outputs: [a5]
+    params:
+      model: moss-sfx
+      seed: 909
+      output_artifact: a5
+      prompt: >-
+        steady light wind over desert sand at night, distant insects, sparse
+        dry scrub rustle, continuous ambience bed

@@ -12,7 +12,7 @@ typedef struct inference_server inference_server;
 /* Global runner for the HTTP server (single-process). Set before server_start. */
 extern inference_runner *g_server_runner;
 
-inference_server *server_create(int port);
+inference_server *server_create(int port, const char *bind_addr);
 int server_start(inference_server *s);
 void server_stop(inference_server *s);
 void server_destroy(inference_server *s);

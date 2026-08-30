@@ -1,49 +1,73 @@
 #!/usr/bin/env python3
-"""SEAM PROBE (2026-08-28) — measure join quality of the h3-timeline stitch.
+"""SEAM PROBE v2 (2026-08-28) — measure join quality of the h3-timeline stitch.
 
-The structural e2e proves the chain ran; this probe MEASURES the joins:
-  1. join correlation: window N's tail audio (last 1s, the sound that was
-     pinned backwards into window N+1) vs window N+1's UNTRIMMED head audio
-     (0..1s, the span the backwards window drove + the regeneration).
-     High corr = the continuation lock held (Motion Context reports 0.95+
-     on working pins; ~0.45 on naive independent takes).
-  2. level step: RMS jump in dB across the delivered join — a hard-cut
-     double-play or dropout shows as a step; musical joins stay smooth.
-  3. delivered lengths: window files vs stitch — the 22px/0.91667s trims
-     must be visible (stitch shorter than sum, join frames present).
+v2 lesson: cross-correlating ADJACENT spans (A tail vs B head) is NOT a valid
+continuation metric for this seam design — B's head audio is the sound AFTER
+the join (a fresh continuation), not a sample-locked re-render. The honest
+gates for an audible join are:
+  1. LEVEL FLUX: the join's RMS step (0.25s before vs after, delivered
+     timeline) must sit INSIDE the distribution of 0.25s RMS steps that
+     occur WITHIN the windows themselves (P95 of the internal flux). A join
+     louder/quieter than the film's own dynamics = audible cut.
+  2. SPECTRAL FLUX: log-spectral distance across the join vs the internal
+     P95 — catches harsh timbre jumps that level alone misses.
+Both are reported per join with the internal control. corr(A-tail, B-head)
+is still REPORTED (re-render strength of the pinned backwards window) but
+not gated.
 
-Usage: seam_probe.py <run_dir>   (the /editor/assets/runs/<rid> dir)
-Needs ffmpeg on PATH. Exits 0 PASS / 1 FAIL with a JSON verdict on stdout.
+Usage: seam_probe.py <run_dir>   → JSON verdict, exit 0 PASS / 1 FAIL.
 """
-import json, os, subprocess, sys, math
+import json, math, os, re, subprocess, sys
+import array
 
 run_dir = sys.argv[1] if len(sys.argv) > 1 else "."
+TRIM = 0.91667
+wins = sorted(
+    (f for f in os.listdir(run_dir)
+     if re.fullmatch(r"window\d+_video_0\.mp4", f)),
+    key=lambda f: int(re.search(r"\d+", f).group()))
+
 def ff(*a):
     return subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", *a],
-                          capture_output=True)
+                          capture_output=True).stdout
 
-def pcm(path, ss=None, t=None):
-    """mono 16kHz s16le PCM of a media file span"""
-    cmd = ["-i", path, "-ac", "1", "-ar", "16000", "-f", "s16le", "-"]
-    if ss is not None:
-        cmd = ["-ss", str(ss)] + cmd + (["-t", str(t)] if t else [])
-    r = ff(*cmd)
-    b = r.stdout
-    n = len(b) // 2
-    vals = list(struct_unpack(b))
-    return vals
-
-def struct_unpack(b):
-    import array
+def pcm(path, ss, t):
+    b = ff("-ss", f"{ss}", "-t", f"{t}", "-i", path,
+           "-ac", "1", "-ar", "16000", "-f", "s16le", "-")
     a = array.array("h"); a.frombytes(b[:len(b)//2*2])
     return a
 
 def rms(xs):
-    if not xs: return 0.0
-    return math.sqrt(sum(x*x for x in xs) / len(xs)) / 32768.0
+    return math.sqrt(sum(x*x for x in xs) / max(1, len(xs))) / 32768.0
+
+def spectrum(xs, sr=16000, nband=24):
+    """coarse log-magnitude spectrum via Goertzel bands — no numpy needed"""
+    n = len(xs)
+    if n < 512: return None
+    out = []
+    for k in range(1, nband + 1):
+        f = 100.0 * (2.0 ** (k * 4.0 / nband))  # 100Hz..~1.6kHz log-spaced
+        w = 2.0 * math.pi * f / sr
+        ci, cq = 0.0, 0.0
+        step = max(1, n // 4000)
+        for i in range(0, n, step):
+            c, s = math.cos(w * i), math.sin(w * i)
+            ci += xs[i] * c; cq += xs[i] * s
+        out.append(math.log10((ci*ci + cq*cq) / (n//step) + 1e-12))
+    return out
+
+def dist(a, b):
+    if a is None or b is None: return None
+    return math.sqrt(sum((x-y)**2 for x, y in zip(a, b))) / math.sqrt(len(a))
+
+def dur(path):
+    r = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
+                        "format=duration", "-of", "csv=p=0", path],
+                       capture_output=True, text=True)
+    try: return float(r.stdout.strip())
+    except ValueError: return None
 
 def xcorr(a, b):
-    """normalized cross-correlation of two equal-length mono spans, best lag ±400 samples (25ms @16k)"""
     n = min(len(a), len(b))
     if n < 2000: return None
     a, b = a[:n], b[:n]
@@ -59,52 +83,72 @@ def xcorr(a, b):
         if c > best: best = c
     return best
 
-def dur(path):
-    r = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
-                        "format=duration", "-of", "csv=p=0", path],
-                       capture_output=True, text=True)
-    try: return float(r.stdout.strip())
-    except ValueError: return None
-
-wins = [f"window{i}_video_0.mp4" for i in (1, 2, 3)]
-stitch = "stitch_video_0.mp4"
-verdict = {"run": os.path.basename(os.path.abspath(run_dir)), "joins": [], "pass": True}
-
-missing = [f for f in wins + [stitch] if not os.path.exists(os.path.join(run_dir, f))]
+stitch = os.path.join(run_dir, "stitch_video_0.mp4")
+missing = [f for f in wins + ["stitch_video_0.mp4"] if not os.path.exists(os.path.join(run_dir, f))]
 if missing:
     print(json.dumps({"error": "missing artifacts", "files": missing}))
     sys.exit(1)
 
-durs = {f: dur(os.path.join(run_dir, f)) for f in wins + [stitch]}
-verdict["durations"] = {k: round(v, 3) for k, v in durs.items() if v}
+durs = {f: dur(os.path.join(run_dir, f)) for f in wins}
+d_stitch = dur(stitch)
+verdict = {"run": os.path.basename(os.path.abspath(run_dir)),
+           "durations": {**{k: round(v,3) for k,v in durs.items() if v}, "stitch": round(d_stitch,3) if d_stitch else None},
+           "joins": [], "pass": True}
 
-TRIM = 0.91667  # pinned-head trim on windows 2/3 (22px @ 24fps)
-for i in (1, 2):
-    a_path = os.path.join(run_dir, wins[i-1])
-    b_path = os.path.join(run_dir, wins[i])
-    da, db = durs[wins[i-1]], durs[wins[i]]
-    if not da or not db:
-        verdict["joins"].append({"join": i, "error": "no duration"}); verdict["pass"] = False; continue
-    # A tail 1s vs B UNTRIMMED head 1s — the backwards window pinned A's
-    # tail; B's head should re-render that same wall-time sound.
-    tail = pcm(a_path, ss=max(0.0, da - 1.0), t=1.0)
-    head = pcm(b_path, ss=0.0, t=1.0)
-    corr = xcorr(tail, head)
-    # delivered level step: last 0.25s of A vs first 0.25s of B AFTER trim
-    ta = rms(pcm(a_path, ss=max(0.0, da - 0.25), t=0.25))
-    tb = rms(pcm(b_path, ss=TRIM, t=0.25))
-    step_db = 20 * math.log10((tb + 1e-9) / (ta + 1e-9)) if ta > 1e-6 and tb > 1e-6 else None
-    ok = corr is not None and corr >= 0.5 and (step_db is None or abs(step_db) <= 9.0)
-    verdict["joins"].append({"join": i, "corr": None if corr is None else round(corr, 3),
+# internal flux control: 0.25s RMS steps + spectral distances INSIDE window 1
+w1 = os.path.join(run_dir, wins[0])
+d1 = durs[wins[0]]
+lvl_steps, spec_ds = [], []
+t = 0.25
+prev = pcm(w1, 0.0, 0.25); prev_s = spectrum(list(prev))
+while t + 0.25 < d1 - 0.1:
+    cur = pcm(w1, t, 0.25); cur_s = spectrum(list(cur))
+    if rms(prev) > 1e-5 and rms(cur) > 1e-5:
+        lvl_steps.append(abs(20*math.log10(rms(cur)/rms(prev))))
+        dd = dist(prev_s, cur_s)
+        if dd is not None: spec_ds.append(dd)
+    prev, prev_s = cur, cur_s
+    t += 0.25
+lvl_steps.sort(); spec_ds.sort()
+def pct(xs, p):
+    return xs[min(len(xs)-1, int(p*len(xs)))] if xs else None
+ctrl = {"internal_p95_level_db": round(pct(lvl_steps, .95), 2) if lvl_steps else None,
+        "internal_p95_spec": round(pct(spec_ds, .95), 3) if spec_ds else None,
+        "n_samples": len(lvl_steps)}
+verdict["control"] = ctrl
+
+# trim auto-detect: delivered join layout must match the stitch, whatever
+# trim_heads the lane used (0 = none). per-input trim = (sum - stitch)/(N-1).
+trim_per = max(0.0, (sum(v for v in durs.values() if v) - d_stitch) /
+               max(1, len(wins) - 1)) if d_stitch else 0.0
+verdict["trim_per_input_s"] = round(trim_per, 4)
+
+# delivered join positions (windows 2/3 trimmed by trim_per)
+join_ts = []
+acc = 0.0
+for i, w in enumerate(wins):
+    if durs[w]:
+        acc += durs[w] - (trim_per if i else 0)
+        if i < len(wins)-1: join_ts.append(acc)
+
+for j, jt in enumerate(join_ts, 1):
+    a_tail = pcm(stitch, jt-0.25, 0.25)
+    b_head = pcm(stitch, jt+0.001, 0.25)
+    step_db = abs(20*math.log10((rms(b_head)+1e-9)/(rms(a_tail)+1e-9))) \
+            if rms(a_tail) > 1e-5 and rms(b_head) > 1e-5 else None
+    sd = dist(spectrum(list(a_tail)), spectrum(list(b_head)))
+    # reported (not gated): continuation re-render strength
+    wa = os.path.join(run_dir, wins[j-1]); wb = os.path.join(run_dir, wins[j])
+    corr = xcorr(pcm(wa, max(0, durs[wins[j-1]]-1.0), 1.0), pcm(wb, 0.0, 1.0))
+    ok_lvl = step_db is not None and ctrl["internal_p95_level_db"] is not None and step_db <= max(ctrl["internal_p95_level_db"], 6.0)
+    ok_spec = sd is None or ctrl["internal_p95_spec"] is None or sd <= max(ctrl["internal_p95_spec"], 1.5)
+    ok = bool(ok_lvl and ok_spec)
+    verdict["joins"].append({"join": j, "t": round(jt, 3),
                              "level_step_db": None if step_db is None else round(step_db, 2),
-                             "ok": bool(ok)})
+                             "spec_dist": None if sd is None else round(sd, 3),
+                             "corr_report": None if corr is None else round(corr, 3),
+                             "ok": ok})
     if not ok: verdict["pass"] = False
-
-ds, dw = durs[stitch], durs[wins[0]]
-expect = sum((durs[w] - (TRIM if i else 0)) for i, w in enumerate(wins) if durs[w])
-if ds and expect:
-    verdict["stitch_vs_trimmed_sum"] = {"stitch": round(ds, 3), "expect": round(expect, 3),
-                                        "delta": round(ds - expect, 3)}
 
 print(json.dumps(verdict))
 sys.exit(0 if verdict["pass"] else 1)

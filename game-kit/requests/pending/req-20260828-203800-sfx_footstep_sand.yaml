@@ -1,0 +1,17 @@
+schema: meld.asset-request/v1
+id: req-20260828-203800-sfx_footstep_sand
+created: '2026-08-28T20:38:00'
+requested_by: unity-mcp
+class: sfx
+asset_id: sfx_footstep_sand
+title: footstep on dry sand
+priority: P2
+spec: Single footstep on dry loose sand, gritty crunch. 0.2-0.4 seconds, 44.1kHz,
+  WAV.
+acceptance: {}
+lane_hint: null
+status: pending
+history:
+- at: '2026-08-28T20:38:00'
+  event: enqueued
+  by: unity-mcp

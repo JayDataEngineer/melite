@@ -1,0 +1,17 @@
+schema: meld.asset-request/v1
+id: req-20260828-203800-sfx_campfire
+created: '2026-08-28T20:38:00'
+requested_by: unity-mcp
+class: sfx
+asset_id: sfx_campfire
+title: crackling campfire
+priority: P2
+spec: Crackling campfire ambience, 10-second seamless loop. Wood snaps, soft ember
+  hiss. 44.1kHz, WAV.
+acceptance: {}
+lane_hint: null
+status: pending
+history:
+- at: '2026-08-28T20:38:00'
+  event: enqueued
+  by: unity-mcp

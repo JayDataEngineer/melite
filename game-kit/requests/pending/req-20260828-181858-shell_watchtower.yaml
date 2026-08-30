@@ -1,0 +1,18 @@
+schema: meld.asset-request/v1
+id: req-20260828-181858-shell_watchtower
+created: '2026-08-28T18:18:58'
+requested_by: unity-mcp
+class: props
+asset_id: shell_watchtower
+title: shell_watchtower building shell
+priority: P1
+spec: Defense watchtower shell — 2-story timber/stone watchtower with open top platform,
+  crenellated rail, single door at base, ladder shaft implied inside. Monolithic closed
+  shell, flat bottom y=0, footprint ~3x3m, height ~7m, ≤15K tris.
+acceptance: {}
+lane_hint: null
+status: pending
+history:
+- at: '2026-08-28T18:18:58'
+  event: enqueued
+  by: unity-mcp

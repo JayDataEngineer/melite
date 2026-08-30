@@ -42,10 +42,14 @@ verdict = {"run": os.path.basename(os.path.abspath(run_dir)), "probes": [], "pas
 durs = {w: dur(os.path.join(run_dir, w)) for w in wins}
 d1 = durs[wins[0]]
 # delivered join positions in the stitch: w1 full, then each trimmed
+# trim auto-detect (see seam_probe): join layout follows the stitch duration
+d_stitch = dur(stitch)
+trim_per = max(0.0, (sum(v for v in durs.values() if v) - d_stitch) /
+               max(1, len(wins) - 1)) if d_stitch else 0.0
 join_ts = [d1]
-if durs[wins[1]]: join_ts.append(d1 + durs[wins[1]] - TRIM)
-acc = d1 + (durs[wins[1]] - TRIM if durs[wins[1]] else 0)
-if durs[wins[2]]: join_ts.append(acc + durs[wins[2]] - TRIM)
+if durs[wins[1]]: join_ts.append(d1 + durs[wins[1]] - trim_per)
+acc = d1 + (durs[wins[1]] - trim_per if durs[wins[1]] else 0)
+if durs[wins[2]]: join_ts.append(acc + durs[wins[2]] - trim_per)
 
 mid_t = d1 / 2.0  # control: window 1 midpoint motion
 ctrl = motion(frames_gray(stitch, max(0, mid_t - 0.75), 1.5))
@@ -55,7 +59,11 @@ for i, jt in enumerate(join_ts, 1):
     m = motion(frames_gray(stitch, max(0, jt - 0.75), 1.5))
     row = {"join": i, "t": round(jt, 3),
            "motion": None if m is None else round(m, 4)}
-    if m is None or ctrl is None:
+    if i == len(join_ts):
+        # the stitch END is not a seam - report, never gate (endings hold)
+        row["ok"] = True
+        row["note"] = "end-of-stitch (reported only)"
+    elif m is None or ctrl is None:
         row["ok"] = False; verdict["pass"] = False
     else:
         row["ratio_vs_control"] = round(m / max(ctrl, 1e-6), 3)

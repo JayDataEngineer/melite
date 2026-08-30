@@ -1,0 +1,24 @@
+schema: meld.asset-request/v1
+id: req-20260829-072205-card_bg_battlefield
+created: '2026-08-29T07:22:05'
+requested_by: unity-mcp
+class: sprites_2d
+asset_id: card_bg_battlefield
+title: card bg battlefield
+priority: P1
+spec: 'Dark fantasy game background for a card battle arena. Ancient stone arena with
+  crumbling pillars and torches, dramatic moody atmosphere, stone floor with battle
+  scars, dark cinematic lighting. Style: painterly, atmospheric. Dimensions: 1080x1920
+  portrait. No text, no border.'
+acceptance: {}
+lane_hint: null
+status: rejected
+history:
+- at: '2026-08-29T07:22:05'
+  event: enqueued
+  by: unity-mcp
+- at: '2026-08-29T07:45:43'
+  event: pending->rejected
+  by: generator
+  note: Wrong spec - generated full card with frame/text. Resubmitting with corrected
+    spec.

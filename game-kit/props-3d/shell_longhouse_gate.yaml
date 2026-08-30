@@ -1,0 +1,53 @@
+# shell_longhouse_gate — context-free RECOGNISED gate (gamekit-vision-gate law)
+# for run pmte22tfj5d7nqb (shell_longhouse, seed 772 -> trellis s22 -> QEM 15000).
+# Three canonical views (front/left/back) in ONE batch, context-free reader
+# (keystore active key), retry-on-empty built in (3 attempts per view),
+# fail_on MISS. Blank-frame stdev pre-checked: 71.66 / 65.22 / 70.22
+# (all >> 1 — no render defect).
+output_dir: ./data/test-output/pipelines/pipeline_props_shell_longhouse_gate
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+steps:
+  - family: input
+    phase: gate
+    title: "Import front view"
+    consumes: [comfy_url]
+    outputs: [front]
+    params:
+      model: input
+      source: /editor/assets/runs/pmte22tfj5d7nqb/render_glb_views_pmte22tfj5d7nqb_render_glb_views_front_mesh.png
+      output_artifact: front
+
+  - family: input
+    phase: gate
+    title: "Import left view"
+    consumes: [comfy_url]
+    outputs: [left]
+    params:
+      model: input
+      source: /editor/assets/runs/pmte22tfj5d7nqb/render_glb_views_pmte22tfj5d7nqb_render_glb_views_left_mesh.png
+      output_artifact: left
+
+  - family: input
+    phase: gate
+    title: "Import back view"
+    consumes: [comfy_url]
+    outputs: [back]
+    params:
+      model: input
+      source: /editor/assets/runs/pmte22tfj5d7nqb/render_glb_views_pmte22tfj5d7nqb_render_glb_views_back_mesh.png
+      output_artifact: back
+
+  - family: blind_read
+    phase: gate
+    title: "Recognised gate - longhouse"
+    consumes: [comfy_url]
+    inputs: [front, left, back]
+    params:
+      model: blind_read
+      images: [front, left, back]
+      expect: [longhouse, house, building, barn, barracks, cabin, hut, dwelling, shed, lodge]
+      fail_on: MISS
+      output_artifact: blind_read

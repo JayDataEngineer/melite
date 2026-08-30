@@ -1,0 +1,17 @@
+schema: meld.asset-request/v1
+id: req-20260828-203800-sfx_ui_click
+created: '2026-08-28T20:38:00'
+requested_by: unity-mcp
+class: sfx
+asset_id: sfx_ui_click
+title: UI button click
+priority: P2
+spec: Short UI button click feedback, dry tap sound, leather-on-wood feel. 0.1 seconds,
+  44.1kHz, WAV.
+acceptance: {}
+lane_hint: null
+status: pending
+history:
+- at: '2026-08-28T20:38:00'
+  event: enqueued
+  by: unity-mcp

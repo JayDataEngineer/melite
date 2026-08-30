@@ -1,0 +1,23 @@
+schema: meld.asset-request/v1
+id: req-20260829-072204-card_island
+created: '2026-08-29T07:22:04'
+requested_by: unity-mcp
+class: sprites_2d
+asset_id: card_island
+title: card island
+priority: P1
+spec: 'MTG card art for Island land card. A mysterious island surrounded by dark waters
+  at twilight, rocky shores with crashing waves, moody ocean scene, fantasy illustration.
+  Style: painterly, dark atmospheric. Dimensions: 576x800 pixels. No text, no border.'
+acceptance: {}
+lane_hint: null
+status: rejected
+history:
+- at: '2026-08-29T07:22:04'
+  event: enqueued
+  by: unity-mcp
+- at: '2026-08-29T07:45:43'
+  event: pending->rejected
+  by: generator
+  note: Wrong spec - generated full card with frame/text. Resubmitting with corrected
+    spec.

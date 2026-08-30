@@ -1,0 +1,79 @@
+{
+  "title": "The Last Signal",
+  "duration_seconds": 30,
+  "fps": 24,
+  "total_frames": 720,
+  "style": "cyberpunk noir",
+  "color_palette": ["#0a0a0f", "#ff0066", "#00ccff", "#ff9900", "#1a1a2e"],
+  "windows": [
+    {
+      "id": "w0",
+      "name": "The City",
+      "start_frame": 0,
+      "end_frame": 70,
+      "transition": "none",
+      "prompt": "wide establishing shot of a rain-soaked cyberpunk megacity at night, towering holographic advertisements flickering across wet streets, neon blues and pinks reflecting off puddles, massive corporate buildings disappearing into low clouds, a small figure in a red hooded jacket walks alone through the empty street, cinematic composition, atmospheric fog, rain particles, moody noir lighting, 8k quality",
+      "camera": "slow dolly push-in",
+      "mood": "isolation, scale, atmosphere"
+    },
+    {
+      "id": "w1",
+      "name": "The Message",
+      "start_frame": 70,
+      "end_frame": 140,
+      "transition": "extend",
+      "first_frame_prev_sec": 1,
+      "prompt": "medium shot at a neon-lit noodle stall, a courier in a red windbreaker stops, a glitching holographic display flickers to life beside him casting blue light on his face, rain drips from the stall awning, steam rises from bowls, the courier looks conflicted as holographic text appears, cyberpunk street vendor scene, moody atmospheric lighting, rain particles, neon reflections",
+      "camera": "static with subtle handheld sway",
+      "mood": "mystery, obligation"
+    },
+    {
+      "id": "w2",
+      "name": "The Chase Begins",
+      "start_frame": 140,
+      "end_frame": 210,
+      "transition": "extend",
+      "first_frame_prev_sec": 1,
+      "prompt": "dynamic tracking shot of a courier in red windbreaker running through a narrow cyberpunk alley, security drone searchlights sweep across graffiti-covered walls, neon signs blur past, rain streaks horizontally from wind, the courier vaults over obstacles, motion blur on edges, urgent handheld camera movement, cyberpunk action scene, dramatic lighting, rain particles",
+      "camera": "dynamic tracking, handheld, motion blur",
+      "mood": "urgency, danger"
+    },
+    {
+      "id": "w3",
+      "name": "The Chase Continues",
+      "start_frame": 210,
+      "end_frame": 280,
+      "transition": "extend",
+      "first_frame_prev_sec": 1,
+      "prompt": "courier in red jacket slides under a closing security gate in a cyberpunk alley, sparks fly from metal, drones swarm above with red scanning lasers, neon reflections on wet ground, debris scattered, the courier pushes forward desperately, dynamic action composition, rain and particles, dramatic backlighting, cyberpunk chase sequence",
+      "camera": "low angle tracking, fast movement",
+      "mood": "desperation, escape"
+    },
+    {
+      "id": "w4",
+      "name": "The Rooftop",
+      "start_frame": 280,
+      "end_frame": 350,
+      "transition": "extend",
+      "first_frame_prev_sec": 1,
+      "prompt": "courier in red windbreaker reaches a rooftop edge overlooking a massive cyberpunk cityscape, the city sprawls below with millions of lights, holographic billboards float between buildings, rain falls steadily, the courier catches his breath looking out at the vast indifferent city, contemplative wide shot, atmospheric perspective, neon horizon, moody noir lighting",
+      "camera": "steady wide shot, slight crane up",
+      "mood": "contemplation, scale"
+    },
+    {
+      "id": "w5",
+      "name": "The Choice",
+      "start_frame": 350,
+      "end_frame": 420,
+      "transition": "extend",
+      "first_frame_prev_sec": 1,
+      "prompt": "close-up of a courier's hand holding a small glowing data chip, the chip emits a soft cyan light, rain droplets catch the light, the courier's face is partially visible in shadow with determination in his eyes, the massive city reflects in his eyes, intimate character moment, shallow depth of field, cyberpunk noir close-up, emotional lighting, rain particles",
+      "camera": "slow push-in to close-up",
+      "mood": "resolve, determination"
+    }
+  ],
+  "concat": {
+    "method": "fade",
+    "fade_frames": 6
+  }
+}

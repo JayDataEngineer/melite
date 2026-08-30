@@ -1,0 +1,123 @@
+/* pipeline cards toolview — SEAMLESS (2026-08-22 "window in window"
+   verdict): no border, no box, no fixed height. The frame fits its
+   content and the cards read as listed in the chat. The wrapper keeps
+   only flow spacing. */
+.card {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 4px 0;
+  min-width: 0;
+}
+
+.load {
+  color: var(--dsw-alias-label-secondary, #9a9aa5);
+  padding: 2px 0;
+}
+
+.head {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.badge {
+  background: var(--dsw-alias-fill-subtle, #23232b);
+  border-radius: 4px;
+  flex: none;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 1px 6px;
+  text-transform: uppercase;
+}
+
+.model {
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.state {
+  border-radius: 999px;
+  flex: none;
+  margin-left: auto;
+  padding: 1px 8px;
+}
+.state[data-state='completed'] { color: var(--dsw-alias-state-success-primary, #3fb96f); }
+.state[data-state='running'], .state[data-state='queued'], .state[data-state='pending'], .state[data-state='starting'], .state[data-state='draft'] { color: var(--dsw-alias-state-warn-primary, #d9a53f); }
+.state[data-state='failed'], .state[data-state='error'], .state[data-state='stopped'], .state[data-state='interrupted'] { color: var(--dsw-alias-state-error-primary, #e05656); }
+
+.prompt {
+  color: var(--dsw-alias-text-secondary, #9a9aa5);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.meta {
+  align-items: center;
+  color: var(--dsw-alias-text-tertiary, #77777f);
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+}
+
+.runId {
+  font-family: ui-monospace, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress { flex: none; }
+
+.error {
+  color: var(--dsw-alias-label-error, #e05656);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.link {
+  color: var(--dsw-alias-state-business-primary, #5aa2e8);
+  text-decoration: none;
+}
+.link:hover { text-decoration: underline; }
+
+/* USER-GESTURE run affordance (2026-08-22): the only door to the GPU run. */
+.runBtn {
+  background: var(--dsw-alias-state-business-primary, #4f7bd8);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--dsw-alias-label-primary-foreground, #ffffff);
+  cursor: pointer;
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  margin-left: auto;
+  padding: 5px 14px;
+}
+.runBtn:hover { background: var(--dsw-alias-button-info-hover, var(--dsw-alias-state-business-primary, #4f7bd8)); }
+.runBtn:disabled { cursor: default; opacity: 0.6; }
+
+/* THE action cards: the embedded editor surface (InlinePipelineCards —
+   the SAME PipelineTileGrid the Library renders; ONE card design).
+   Seamless: borderless, transparent, auto height set from JS (the fit
+   poll); the DSW bg alias only as a paint fallback before first fit. */
+.frame {
+  background: transparent;
+  border: none;
+  display: block;
+  width: 100%;
+}

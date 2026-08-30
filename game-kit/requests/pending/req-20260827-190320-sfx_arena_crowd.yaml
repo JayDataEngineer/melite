@@ -1,0 +1,55 @@
+schema: meld.asset-request/v1
+id: req-20260827-190320-sfx_arena_crowd
+created: '2026-08-27T19:03:20'
+requested_by: unity-mcp
+class: sfx
+asset_id: sfx_arena_crowd
+title: arena crowd roar
+priority: P2
+spec: 'Crowd reaction bed for arena bouts (§4.32 T3): the SOUND of a small desert
+  gathering roaring at a beast fight — 15-25 voices, dust-dry open air, distant. Describe-the-SOUND
+  law: dry mid-heavy human crowd swell, no distinct words, no music, sparse clapping
+  on wood. ~6-8s, loopable tail. Plays on bout spawn + first KO.'
+acceptance: {}
+lane_hint: null
+status: pending
+history:
+- at: '2026-08-27T19:03:20'
+  event: enqueued
+  by: unity-mcp
+- at: '2026-08-28T02:36:11'
+  event: pending->pending
+  by: queue-consumer
+  note: needs operator-driven lane (taste gates)
+- at: '2026-08-28T03:29:45'
+  event: pending->active
+  by: generator
+- at: '2026-08-28T03:29:45'
+  event: active->pending
+  by: generator
+  note: needs operator-driven lane (taste gates)
+- at: '2026-08-28T04:15:14'
+  event: pending->active
+  by: generator
+- at: '2026-08-28T04:15:14'
+  event: active->pending
+  by: consumer
+  note: needs operator-driven lane (taste gates)
+- at: '2026-08-28T07:18:09'
+  event: pending->pending
+  by: consumer
+  note: needs operator-driven lane (taste gates)
+- at: '2026-08-28T18:56:49'
+  event: pending->active
+  by: generator
+- at: '2026-08-28T19:01:44'
+  event: active->pending
+  by: consumer
+  note: 'sfx lane infra-blocked (live proof 18:57-19:00, run pmtdbcrf5m87dri): moss_sfx_v2
+    model load fails - ComfyUI journal verbatim ''moss_sfx_v2 torch load failed: No
+    module named audiotools'' -> node RuntimeError ''Failed to load moss_sfx_v2 from
+    /mnt/data/models/audio/MOSS-SoundEffect-v2.0-src''. Same venv-skew family as the
+    kimodo safetensors backend=pt issue: /opt/ComfyUI/.venv missing/broken audiotools
+    after the 18:03 operator restart. OPERATOR FIX NEEDED (pip audiotools into the
+    venv + ComfyUI restart) - consumer may never touch the venv or restart backends.
+    Applies to sfx_arena_gong equally (same family)'

@@ -1,0 +1,81 @@
+# @meta {"description": "2D desert tileset + parallax layers - z-image sheet, qwen-img-edit alpha, pack_sprites.py slicing.", "status": "production-candidate"}
+# sprites_desert_set.yaml — first 2D set: top-down tileset sheet + two
+# parallax layers. Seeds: 6xx band (601 tileset, 602/603 parallax).
+
+output_dir: ./data/test-output/pipelines/pipeline_sprites_desert
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+steps:
+  - family: generate_image
+    phase: tileset
+    title: "Tileset - desert top-down 4x4"
+    consumes: [comfy_url]
+    outputs: [tileset_raw]
+    params:
+      model: z-image
+      seed: 601
+      width: 1024
+      height: 1024
+      output_artifact: tileset_raw
+      prompt: >-
+        top-down game tileset sprite sheet, 4 by 4 grid of square tiles,
+        each cell one terrain piece: sand, cracked earth, gravel, stone
+        slab, dune edge, bone scatter, scrub patch, dry riverbed, uniform
+        cell size with no gaps and no borders, desert-dusk ochre palette,
+        stylized realistic 2D game art
+      negative_prompt: >-
+        text, watermark, perspective, isometric, shadows, scene, vignette,
+        uneven grid, overlapping tiles
+
+  - family: edit_image
+    phase: tileset
+    title: "Tileset - alpha"
+    consumes: [comfy_url]
+    inputs: [tileset_raw]
+    outputs: [tileset_sheet]
+    params:
+      model: qwen-img-edit-2511
+      seed: 601
+      input_artifact: tileset_raw
+      output_artifact: tileset_sheet
+      prompt: >-
+        remove background completely, make it fully transparent, keep the
+        tile sprites exactly as they are
+
+  - family: generate_image
+    phase: parallax
+    title: "Parallax - far dunes"
+    consumes: [comfy_url]
+    outputs: [para_far]
+    params:
+      model: z-image
+      seed: 602
+      width: 1024
+      height: 512
+      output_artifact: para_far
+      prompt: >-
+        wide seamless horizontal parallax background layer, distant desert
+        dune ridgeline silhouette band, pale dusk sky is transparent,
+        muted ochre and bone tones, flat 2D game background art
+      negative_prompt: >-
+        text, watermark, ground foreground, characters, buildings, frame
+
+  - family: generate_image
+    phase: parallax
+    title: "Parallax - near scrub"
+    consumes: [comfy_url]
+    outputs: [para_near]
+    params:
+      model: z-image
+      seed: 603
+      width: 1024
+      height: 512
+      output_artifact: para_near
+      prompt: >-
+        near-ground parallax layer for a 2D side-view game, sparse desert
+        scrub, dry twigs and bone fragments along the bottom edge only,
+        everything above transparent, stylized realistic 2D game art
+      negative_prompt: >-
+        text, watermark, sky, clouds, full ground fill, characters, frame

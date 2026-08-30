@@ -1,0 +1,61 @@
+# shell_watchtower — habitation shell (spec: req-20260828-181858-shell_watchtower).
+# ONE fused monolithic shell mesh, flat base. Budget ≤15K. Seed band 77xx (shell wave).
+output_dir: ./data/test-output/pipelines/pipeline_props_shell_watchtower
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+steps:
+  - family: generate_image
+    phase: concept
+    title: "Concept - Defense watchtower shell - timber and stone"
+    consumes: [comfy_url]
+    outputs: [asset_image]
+    params:
+      model: z-image
+      seed: 774
+      output_artifact: asset_image
+      prompt: >-
+        two-story timber and stone watchtower with an open top platform, crenellated wooden rail around the platform, single door at the base, stone footing lower story, timber upper story, tall and narrow, monolithic closed building shell, perfectly flat level base, taller than wide, iconic simple silhouette, isolated game prop, centered, plain white background, stylized realistic game asset, bold readable silhouette
+      negative_prompt: >-
+        text, watermark, busy background, drop shadow, scene, multiple separated objects, cropped, people, figures, windows, thin delicate shapes, trees, ground
+
+  - family: trellis_native
+    phase: mesh
+    title: "Mesh - Defense watchtower shell - timber and stone"
+    consumes: [comfy_url]
+    inputs: [asset_image]
+    outputs: [asset_glb]
+    params:
+      model: trellis_native
+      seed: 22
+      image_artifact: asset_image
+      resolution: "512"
+      atlas_px: 1024
+      dump_post: enable
+      output_artifact: asset_glb
+
+  - family: trellis_native_replay
+    phase: budget
+    title: "Budget - Defense watchtower shell - timber and stone (QEM 15000, spec <=15K)"
+    consumes: [comfy_url]
+    inputs: [asset_glb]
+    outputs: [prop_glb]
+    params:
+      model: trellis_native_replay
+      faces_target: 15000
+      atlas: 1024
+      glb_artifact: asset_glb
+      dump_artifact: asset_glb_dump
+      output_artifact: prop_glb
+
+  - family: render_glb_views
+    phase: review
+    title: "Views - Defense watchtower shell - timber and stone"
+    consumes: [comfy_url]
+    inputs: [prop_glb]
+    outputs: [views]
+    params:
+      model: render_glb_views
+      glb_artifact: prop_glb
+      output_artifact: views

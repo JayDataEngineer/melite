@@ -1,0 +1,62 @@
+schema: meld.asset-request/v1
+id: req-20260827-061213-cardino-card-elvish-archdruid
+created: '2026-08-27T06:12:13'
+requested_by: unity-mcp
+class: icons
+asset_id: cardino-card-elvish-archdruid
+title: cardino card elvish archdruid
+priority: P2
+spec: 'MTG-style card art: wise elven archdruid with antler crown in an ancient forest,
+  glowing green magic, dark fantasy style, detailed illustration | Style: dark fantasy
+  TCG card art, painterly digital art, dramatic lighting, card frame composition'
+acceptance: {}
+lane_hint: null
+status: rejected
+history:
+- at: '2026-08-27T06:12:13'
+  event: enqueued
+  by: unity-mcp
+- at: '2026-08-27T06:12:27'
+  event: pending->active
+  by: generator
+- at: '2026-08-27T06:20:17'
+  event: active->pending
+  by: generator
+  note: ComfyUI (:18465) not reachable - z-image generation requires GPU inference
+    backend
+- at: '2026-08-27T06:20:41'
+  event: pending->active
+  by: generator
+- at: '2026-08-27T06:20:59'
+  event: active->pending
+  by: generator
+  note: ComfyUI (:18465) not reachable - z-image generation requires GPU inference
+    backend
+- at: '2026-08-27T06:21:17'
+  event: pending->pending
+  by: generator
+  note: ComfyUI (:18465) not reachable - z-image generation requires GPU inference
+    backend
+- at: '2026-08-27T06:46:03'
+  event: pending->active
+  by: dshA-verify
+- at: '2026-08-27T06:48:12'
+  event: active->done
+  by: generator
+  note: delivered v1 run=run-6a8fdd6c-7357ff7f66c0
+- at: '2026-08-27T17:59:29'
+  event: done->pending
+  by: queue-audit
+  note: 're-opened: prior done was a full-loop TEST (gate=verified-loop-test, run-6a8fdd6c-7357ff7f66c0,
+    1512233B PNG tracked nowhere); registry row purged by audit — needs a real delivery
+    with verifiable bytes'
+- at: '2026-08-27T19:54:12'
+  event: pending->rejected
+  by: generator
+  note: 'AUDIT 2026-08-27: stale wave — asset_id slugs come from an outdated card
+    list (15 match no live cards.ts id, the rest predate renames) and class icons
+    misroutes delivery to the meld UI-icons lane which cardino art cannot consume.
+    Superseded by the fresh sprites_2d cardino-card-<id> wave driven through cardino-lanes
+    (art lane + UI img support landed 2026-08-27).'
+_queue: pending
+_file: requests/pending/req-20260827-061213-cardino-card-elvish-archdruid.yaml

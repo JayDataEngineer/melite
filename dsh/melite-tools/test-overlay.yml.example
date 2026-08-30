@@ -1,0 +1,19 @@
+# LOCAL OVERLAY TEMPLATE — copy to the same name without .example and replace
+# $MELITE_REPO with this repo's absolute path. The dsh loader resolves HOST-row
+# entry paths against the profile dir, so real paths MUST be absolute — which
+# is exactly why the real file is gitignored (privacy hook: /home/<user>).
+
+# W2 melite-tools boot-verification overlay — disposable port so the live GUI
+# (:3080) is never touched. Entry paths are ABSOLUTE: the loader resolves
+# relative names against the profile dir (~/.dsh/profiles/web/), not this
+# file (W0-VERIFICATION.md failure-path #1).
+- id: webserver
+  config:
+    host: 127.0.0.1
+    port: 3082
+
+- insert:
+    - id: melite-tools
+      name: $MELITE_REPO/dsh/melite-tools/lib/index.mjs
+      config:
+        gatewayUrl: http://localhost:33081

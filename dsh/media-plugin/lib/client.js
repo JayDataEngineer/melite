@@ -335,12 +335,66 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		/** Wand ("Open as cards"): the editor page must come from the RAY gateway
-		*  origin (:33081) — the GUI host's /v1 proxy points at inference.cpp
-		*  (:18090), whose run universe cannot hydrate ray runs (2026-08-29 wand
-		*  incident: "unknown run_id"). Same hostname as this page, gateway port. */
-		function wandOpen(runId) {
-			window.open("http://" + window.location.hostname + ":33081/editor/?revive=" + encodeURIComponent(runId), "_blank");
+		/** Cards overlay ("Open as cards", 2026-08-30 operator order: THE CARD VIEW
+		*  OPENS ON THIS PAGE — no popup, no foreign origin). The editor mounts
+		*  same-origin at /editor/ (deck host serves the dist + proxies /v1 to the
+		*  inference gateway :18090). The old ray-gateway (:33081) popup is
+		*  EXTERMINATED along with the ray gateway itself. */
+		function CardsOverlay({ runId, onClose }) {
+			return (0, react_dom.createPortal)(/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				role: "dialog",
+				"aria-modal": "true",
+				onClick: onClose,
+				style: {
+					position: "fixed",
+					inset: 0,
+					zIndex: 2147482e3,
+					display: "flex",
+					flexDirection: "column",
+					background: "rgba(2,6,23,0.94)"
+				},
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					style: {
+						display: "flex",
+						alignItems: "center",
+						gap: 8,
+						padding: "8px 12px"
+					},
+					onClick: (e) => {
+						e.stopPropagation();
+					},
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+						style: {
+							color: "#dde",
+							fontSize: 13,
+							fontWeight: 600
+						},
+						children: ["Action cards — ", runId]
+					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+						onClick: onClose,
+						style: {
+							marginLeft: "auto",
+							padding: "4px 12px",
+							fontSize: 12,
+							border: "1px solid rgba(128,128,128,.6)",
+							borderRadius: 6,
+							background: "rgba(20,22,28,.85)",
+							color: "#dde",
+							cursor: "pointer"
+						},
+						children: "close ✕"
+					})]
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("iframe", {
+					src: "/editor/?revive=" + encodeURIComponent(runId),
+					title: "pipeline action cards",
+					style: {
+						flex: 1,
+						width: "100%",
+						border: "none",
+						background: "#0b0d11"
+					}
+				})]
+			}), document.body);
 		}
 		function MediaPanel() {
 			const [runs, setRuns] = (0, react.useState)([]);
@@ -350,6 +404,7 @@ window.__ModuleLoader__.load({
 			const [cat, setCat] = (0, react.useState)("all");
 			const [search, setSearch] = (0, react.useState)("");
 			const [preview, setPreview] = (0, react.useState)(null);
+			const [cardsRun, setCardsRun] = (0, react.useState)(null);
 			const load = (0, react.useCallback)(() => {
 				setLoading(true);
 				setError("");
@@ -636,12 +691,12 @@ window.__ModuleLoader__.load({
 									title: "Open as cards — edit this run's parameters",
 									onClick: (e) => {
 										e.stopPropagation();
-										wandOpen(it.runId);
+										setCardsRun(it.runId);
 									},
 									onKeyDown: (e) => {
 										if (e.key === "Enter") {
 											e.stopPropagation();
-											wandOpen(it.runId);
+											setCardsRun(it.runId);
 										}
 									},
 									children: "✦ CARDS"
@@ -675,6 +730,12 @@ window.__ModuleLoader__.load({
 						item: preview,
 						onClose: () => {
 							setPreview(null);
+						}
+					}) : null,
+					cardsRun !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CardsOverlay, {
+						runId: cardsRun,
+						onClose: () => {
+							setCardsRun(null);
 						}
 					}) : null
 				]

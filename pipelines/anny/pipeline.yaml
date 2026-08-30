@@ -1,0 +1,12 @@
+name: anny
+description: "anny lane — real-time humanoid shape morphing via native C plugin"
+
+nodes:
+  - id: morph
+    type: anny
+    params:
+      basis_file: "$basis_file"
+      shape_names: "$shape_names"
+      output_glb: "$output_glb"
+    input_from:
+      - "morph.sliders"

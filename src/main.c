@@ -22,7 +22,7 @@ static void usage(void) {
         "inference.cpp v0.1.0\n"
         "\n"
         "Usage:\n"
-        "  inference_cli serve [--port PORT] [--plugin-dir DIR] [--vram MB]\n"
+        "  inference_cli serve [--port PORT] [--bind ADDR] [--plugin-dir DIR] [--vram MB]\n"
         "  inference_cli run   <pipeline.yaml> [--plugin-dir DIR] [--vram MB]\n"
         "                      [--input NAME=FILE] [--input NAME=VALUE]\n"
         "  inference_cli load  <plugin.so>\n"
@@ -65,10 +65,13 @@ static int cmd_serve(int argc, char **argv) {
     size_t vram_bytes = 0;
     const char *plugin_dir = NULL;
     const char *catalog_dir = NULL;
+    const char *bind_addr = NULL;
 
     for (int i = 2; i < argc; i++) {
         if (strcmp(argv[i], "--port") == 0 && i + 1 < argc)
             port = atoi(argv[++i]);
+        else if (strcmp(argv[i], "--bind") == 0 && i + 1 < argc)
+            bind_addr = argv[++i];
         else if (strcmp(argv[i], "--plugin-dir") == 0 && i + 1 < argc)
             plugin_dir = argv[++i];
         else if (strcmp(argv[i], "--catalog-dir") == 0 && i + 1 < argc)
@@ -99,7 +102,7 @@ static int cmd_serve(int argc, char **argv) {
                 g_catalog->n_models, g_catalog->n_cards);
     }
 
-    inference_server *srv = server_create(port);
+    inference_server *srv = server_create(port, bind_addr);
     if (!srv) {
         fprintf(stderr, "failed to create server\n");
         runner_destroy(runner);

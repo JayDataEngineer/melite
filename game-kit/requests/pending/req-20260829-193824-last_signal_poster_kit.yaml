@@ -1,0 +1,21 @@
+schema: meld.asset-request/v1
+id: req-20260829-193824-last_signal_poster_kit
+created: '2026-08-29T19:38:24'
+requested_by: unity-mcp
+class: sprites_2d
+asset_id: last_signal_poster_kit
+title: last signal poster kit
+priority: P2
+spec: 'Poster + title kit for THE LAST SIGNAL: (1) 2:3 vertical key art - courier
+  in red windbreaker on rain-soaked megacity rooftop, holographic billboards, seed-crystal
+  light bloom, no text; (2) 16:9 horizontal banner variant; (3) clean title lockup
+  layer ''THE LAST SIGNAL'' thin neon type. Lane: z-image, identical style suffix
+  across set, base-seed 42 family, transparent-sprite post-process notes for the title
+  layer.'
+acceptance: {}
+lane_hint: null
+status: pending
+history:
+- at: '2026-08-29T19:38:24'
+  event: enqueued
+  by: unity-mcp

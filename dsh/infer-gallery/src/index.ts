@@ -29,6 +29,8 @@ export interface Config {
 gatewayUrl?: string
 /** Upstream fetch timeout in milliseconds. */
 timeoutMs?: number
+/** Directory holding run-<id>/_pipeline.json sidecars (the gateway's output tree). */
+pipelineDir?: string
 }
 
 const DEFAULT_GATEWAY_URL = 'http://localhost:18090'
@@ -36,6 +38,8 @@ const DEFAULT_TIMEOUT_MS = 15_000
 const RUNS_UPSTREAM = '/v1/pipelines/runs?limit=50'
 /** The only gateway tree the artifact proxy may touch. */
 const ASSET_PREFIX = '/editor/assets/runs/'
+/** Sidecar tree default: the inference.cpp build output dir. */
+const DEFAULT_PIPELINE_DIR = '/home/user/Documents/programs/active/inference.cpp/build/output'
 
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }
 
@@ -48,11 +52,52 @@ function proxyAssetUrl(path: unknown): string {
 export function apply(ctx: Context, config: Config): void {
   const gatewayUrl = (config.gatewayUrl ?? DEFAULT_GATEWAY_URL).replace(/\/+$/, '')
   const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS
+  const pipelineDir = config.pipelineDir ?? DEFAULT_PIPELINE_DIR
 
   const upstream = (path: string): Promise<Response> =>
     fetch(`${gatewayUrl}${path}`, { signal: AbortSignal.timeout(timeoutMs) })
 
   ctx.logger.info('infer-gallery proxying %s (gateway %s)', RUNS_UPSTREAM, gatewayUrl)
+
+  /* The params round-trip door: serve one run's _pipeline.json sidecar so
+   * the media panel can rehydrate the generation as an editable card.
+   * Legacy sidecars written by the pre-2026-08-27 binary carry a doubled
+   * quote before `seed`/`error` (`,""seed":`) — repaired on read, so even
+   * yesterday's films round-trip. run_id is strictly [A-Za-z0-9_-]. */
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: '/infer-gallery/pipeline',
+    handler: async (req, res) => {
+      const url = new URL(req.url ?? '/', 'http://infer-gallery.invalid')
+      const runId = url.searchParams.get('run_id') ?? ''
+      const fail = (status: number, code: string, message: string): void => {
+        const b = JSON.stringify({ error: code, message })
+        res.writeHead(status, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(b)) })
+        res.end(Buffer.from(b))
+      }
+      if (!/^[A-Za-z0-9_-]+$/.test(runId)) {
+        fail(400, 'bad_run_id', 'run_id must be [A-Za-z0-9_-]+')
+        return
+      }
+      try {
+        const fs = await import('node:fs/promises')
+        const raw = await fs.readFile(`${pipelineDir}/${runId}/_pipeline.json`, 'utf8')
+        let doc: unknown
+        try {
+          doc = JSON.parse(raw)
+        } catch {
+          doc = JSON.parse(raw.replaceAll(',""', ',"'))
+        }
+        const body = JSON.stringify({ run_id: runId, pipeline: doc })
+        res.writeHead(200, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(body)) })
+        res.end(Buffer.from(body))
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        ctx.logger.warn('infer-gallery: pipeline doc read failed: %s', message)
+        fail(404, 'no_sidecar', `no readable _pipeline.json for ${runId}`)
+      }
+    },
+  }), 'infer-gallery: /infer-gallery/pipeline route')
 
   ctx.effect(() => ctx.webServer.register({
     kind: 'exact',

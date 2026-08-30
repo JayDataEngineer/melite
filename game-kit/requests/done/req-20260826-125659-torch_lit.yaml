@@ -1,0 +1,43 @@
+schema: meld.asset-request/v1
+id: req-20260826-125659-torch_lit
+created: '2026-08-26T12:56:59'
+requested_by: operator
+class: props
+asset_id: torch_lit
+title: Torch (unlit mesh, lit state wired)
+priority: P2
+spec: 'Hand torch: dry-fiber-wrapped stick, charred head. Deliver UNLIT mesh; lit
+  state = emissive head + particle flame on the same mesh (campfire_unlit precedent
+  - volumetric flame meshes are a rejected TRELLIS class). ~0.6 m, <=5k tris, FBX.'
+acceptance:
+  tri_budget: 5000
+lane_hint: null
+status: done
+history:
+- at: '2026-08-26T12:56:59'
+  event: enqueued
+  by: operator
+- at: '2026-08-26T15:49:58'
+  event: pending->active
+  by: generator
+- at: '2026-08-26T15:53:15'
+  event: active->done
+  by: generator
+  note: delivered v2 run=pmta9t067wyeaxl sha=9c270aa3579f6ed7
+- at: '2026-08-26T15:57:09'
+  event: done->pending
+  by: operator
+  note: fabricated completion reconciled - physical delivery was missing
+- at: '2026-08-26T17:13:47'
+  event: pending->active
+  by: dsh-agent
+- at: '2026-08-26T17:13:47'
+  event: active->done
+  by: generator
+  note: delivered v2 run=pmtacjvaomhwkx2
+_queue: active
+_file: requests/active/req-20260826-125659-torch_lit.yaml
+result:
+  version: 2
+  run_id: pmta9t067wyeaxl
+  sha16: 9c270aa3579f6ed7
