@@ -408,3 +408,42 @@ completion response. Same shape for images, video, audio, 3D. Commit `3adb5819`.
 **The pattern:** Every completion returns artifact gateway URLs so the caller can
 fetch any artifact directly. No special cases per asset type.
 
+
+---
+
+## The 6.6s Stub — Three Compounding Causes (2026-08-30, SOLVED)
+
+Symptom: every queue render came out 6.656s regardless of spec duration.
+
+1. **No tool** (fixed first): consumer had no build_pipeline -> hand-rolled
+   curl bodies with no calls document -> default 4 x 1.66s windows.
+   Fix: shim bundle (see SOLVED section above).
+2. **Whitespace parser bug** (gateway): compile_calls_windows required
+   byte-exact "text":" but json.dumps emits "text": " (space) -> tl_nw=0
+   -> prompts AND lengths silently dropped. Fix: whitespace-tolerant parse.
+3. **Seam-head law missing** (gateway): window*_t4 workflows Trim 22 pinned
+   head frames on every seam window in-graph; the compiler computed
+   lens = span only -> seam windows landed 22 frames short each
+   (90+3x68=294 -> 12.32s on a 15s spec). Fix: seam windows render
+   span+22 (or first_frame_prev_sec x 24 when the call declares it) so
+   the trim lands the exact tile. Observed injects: 90,112,112,112 ->
+   delivered 15s-class stitch.
+
+Also: >4-call documents now reject LOUDLY (400 + split guidance) instead
+of silently truncating to 4 windows — queue-lane law.
+
+## Zombie Gateway Herd (2026-08-30, AGAIN)
+
+Three inference_cli processes shared :18090 simultaneously (SO_REUSEPORT
+semantics); requests were served by whichever old binary accepted first.
+The seam-head fix "didn't work" for an hour because a 02:09-era process
+was still answering runs.
+
+**Why pkill kept failing:** pkill -f 'inference_cli serve' matches YOUR
+OWN bash -c command string (it contains the pattern) and kills your own
+shell mid-command, leaving the real gateways alive.
+
+**The law:** kill by exact process name (pkill -9 -x inference_cli — no
+-f), then VERIFY with ss -tlnp that exactly ONE listener holds the port
+before believing any test result. NEVER pkill -x node on a DSH host —
+the harness itself is node.
