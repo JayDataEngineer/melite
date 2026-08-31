@@ -70,9 +70,12 @@ now latent chaining between windows, nothing external):
   window's final JOINT video+audio latent run is copied directly into
   the new window's prefix, both streams protected, audio released over
   8 half-cosine ticks (~0.2 s at H3's 40 Hz audio rate) so the model
-  CONTINUES the sound. Valid context runs are 5/22/39/... — the seam
-  rides 22. No pixel round trip, no external frames: the chain is
-  latent-space end to end.
+  CONTINUES the sound. The JOINT video+audio prefix must satisfy BOTH
+  grids (his _snap_context_length law): at 24 fps the shared boundaries
+  are 39/90/141/192 — MINIMUM 39 — and the seam RIDES 39. An
+  off-grid seam_carry SNAPS down to the nearest boundary (compose does
+  it, 1:1 his node). No pixel round trip: the chain is latent-space end
+  to end.
 - Slot law (his Motion-Context pack): window k saves slot k
   (MiniMaxH3MotionContextSaveLatent, run dir h3_context/clip_%05d.
   safetensors), window k+1 loads slot k. `calls[i].seam_carry` tunes
@@ -84,9 +87,9 @@ now latent chaining between windows, nothing external):
   time (music/dialogue track = Layer A); without it the chain spine
   alone runs and each window GENERATES its own audio. ONE card either
   way — the layer is add/not-add, never two cards.
-- The carried head is trimmed at the stitch: every window is delivered
-  as exactly its tile (songless seams trim the 22-grid; song seams ride
-  the carry) — meta cross-check hard-errors on any drift.
+- The carried head is trimmed at the stitch (songless: 39 frames =
+  1.625 s per seam; song: the carry rides the MV slice) — the film map
+  invariants are test-enforced (docSpan = len − trim, sum = total).
 - Executor boundary law: tails travel ComfyUI's own artifact doors —
   save node UI outputs → /view fetch into the run dir → /upload into
   the input dir → chain reads. Relative paths only; the executor is
