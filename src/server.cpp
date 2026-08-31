@@ -2213,8 +2213,7 @@ static void handle_pipelines_start(const httplib::Request &req,
      * h3_timeline_card tool (draft_id) or carry the calls document.
      * Hand-rolled params.prompt2..4 bodies (consumer model improvisation,
      * observed twice) produce silent 1.66s stubs — never again. */
-    if (yaml_override[0] && strstr(yaml_override, "window1") &&
-        tl_nw == 0) {
+    if (yaml_override[0] && tl_nw == 0) {
         char did[96] = "";
         int card_ok = 0;
         if (inf_json_string(body, "draft_id", did, sizeof(did)) == 0 && did[0]) {
@@ -2327,12 +2326,30 @@ static void handle_pipelines_start(const httplib::Request &req,
          * GPU through other compose paths, hiding it). Run-yaml scale. */
         char probe[131072];
         if (!pipeline_yaml_for_model_ex(model, body, probe, sizeof(probe))) {
-            res.status = 404;
-            char err[300];
-            snprintf(err, sizeof(err),
-                     "{\"error\":\"no pipeline for model: %s\"}", model);
-            res.set_content(err, "application/json");
-            return;
+            /* CARD PATH: no pipeline.yaml on disk — this is a card-only
+             * model whose card_compose plugin generates the full graph.
+             * Seed a minimal yaml with engine type so phase-2 plugin
+             * fires and generates the real graph from the card body. */
+            char did_check[96] = "";
+            int have_draft = (inf_json_string(body, "draft_id",
+                                              did_check, sizeof(did_check)) == 0
+                              && did_check[0]);
+            int have_calls = (strstr(body, "\"calls\"") != NULL);
+            if (have_draft || have_calls) {
+                snprintf(yaml_override, sizeof(yaml_override),
+                         "name: %s\ntype: comfyui\n"
+                         "description: card-composed\n\nnodes:\n", model);
+                fprintf(stderr, "[card-path] no pipeline.yaml for %s "
+                        "(draft=%d calls=%d) — plugin generates graph\n",
+                        model, have_draft, have_calls);
+            } else {
+                res.status = 404;
+                char err[300];
+                snprintf(err, sizeof(err),
+                         "{\"error\":\"no pipeline for model: %s\"}", model);
+                res.set_content(err, "application/json");
+                return;
+            }
         }
     }
     /* context engine (cross-run continuation, 2026-08-30; latent-chain
@@ -3420,11 +3437,47 @@ static void handle_pipelines_drafts(const httplib::Request &req,
          * to reconstruct anything — just tell it "run this draft."
          * The prompt field is mandatory (line 1999 generic gate) — it
          * becomes the run's prompt_name tag; value is cosmetic. */
+        /* Auto-arm uses {model} path (card compose), NOT {yaml} (pipeline).
+         * The model is read from the card's tool.json. */
+        char auto_model[128] = "";
+        {
+            /* scan plugin card dirs for this lane's tool.json */
+            char tj_path[512] = "";
+            const char *card_bases[] = {
+                "plugins/comfyui/cards", "../plugins/comfyui/cards", NULL
+            };
+            for (int bi = 0; card_bases[bi] && !tj_path[0]; bi++) {
+                char try_path[512];
+                snprintf(try_path, sizeof(try_path), "%s/%s/tool.json",
+                         card_bases[bi], as->lane);
+                if (access(try_path, R_OK) == 0)
+                    snprintf(tj_path, sizeof(tj_path), "%s", try_path);
+            }
+            if (tj_path[0]) {
+                FILE *tjf = fopen(tj_path, "rb");
+                if (tjf) {
+                    char tjbuf[4096];
+                    size_t tjn = fread(tjbuf, 1, sizeof(tjbuf) - 1, tjf);
+                    fclose(tjf); tjbuf[tjn] = 0;
+                    const char *mm = strstr(tjbuf, "\"model\"");
+                    if (mm) {
+                        const char *mq = strchr(mm + 7, '"');
+                        const char *mq2 = mq ? strchr(mq + 1, '"') : NULL;
+                        if (mq && mq2 && (size_t)(mq2 - mq - 1) < sizeof(auto_model) - 1) {
+                            memcpy(auto_model, mq + 1, (size_t)(mq2 - mq - 1));
+                            auto_model[mq2 - mq - 1] = 0;
+                        }
+                    }
+                }
+            }
+            if (!auto_model[0])
+                snprintf(auto_model, sizeof(auto_model), "h3-timeline");
+        }
         char card_body[512];
         snprintf(card_body, sizeof(card_body),
-                 "{\"yaml\":\"h3-timeline\",\"draft_id\":\"%s\","
+                 "{\"model\":\"%s\",\"draft_id\":\"%s\","
                  "\"prompt\":\"lane-auto-arm\"}",
-                 as->draft_id);
+                 auto_model, as->draft_id);
 
         /* loopback start — server-originated queue action */
         httplib::Client cli(g_loop_host, g_loop_port);

@@ -16,7 +16,8 @@
 download_config *download_config_create(const char *cache_dir) {
     download_config *cfg = calloc(1, sizeof(download_config));
     if (!cfg) return NULL;
-    cfg->cache_dir = cache_dir ? strdup(cache_dir) : strdup("~/.cache/inference.cpp");
+    cfg->cache_dir = cache_dir ? strdup(cache_dir)
+        : strdup(getenv("INFERENCE_CACHE_DIR") ? getenv("INFERENCE_CACHE_DIR") : "~/.cache/inference.cpp");
     cfg->max_retries = 3;
     cfg->follow_redirects = 1;
     return cfg;
@@ -138,9 +139,11 @@ static void resolve_hf_url(const download_config *cfg,
                            const char *repo_id,
                            const char *filename,
                            char *url, size_t url_len) {
+    const char *base = getenv("HF_ENDPOINT");
+    if (!base || !base[0]) base = "https://huggingface.co";
     snprintf(url, url_len,
-             "https://huggingface.co/%s/resolve/main/%s",
-             repo_id, filename);
+             "%s/%s/resolve/main/%s",
+             base, repo_id, filename);
 }
 
 /* ---- High-level API ---- */
