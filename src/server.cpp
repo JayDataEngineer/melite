@@ -1229,6 +1229,64 @@ static void add_run_extra_inputs(size_t idx, const char *body,
     }
 }
 
+/* (root-history law, 2026-08-31, proven by the lifecycle suite) a card
+ * has TWO history arrays: the root one and result.metadata.history
+ * (rebuilt on every write-back). "The last history key in the doc" is
+ * NOT the root one — on a fresh card the only history key sits INSIDE
+ * the freshly spliced result block, so the append pass wrote the row
+ * into metadata a second time and the root history was never created
+ * (duplicates compounding run over run). The root array is the last
+ * "history" key at BRACE DEPTH 1. Strings are skipped while tracking
+ * depth. Returns the '[' of its value, or NULL when the card has no
+ * root history yet. */
+static char *root_history_span(char *doc) {
+    char *best = NULL;
+    int depth = 0, in_str = 0, esc = 0;
+    for (char *p = doc; *p; p++) {
+        if (in_str) {
+            if (esc) esc = 0;
+            else if (*p == '\\') esc = 1;
+            else if (*p == '"') in_str = 0;
+            continue;
+        }
+        if (*p == '"') {
+            /* (root-history law) at depth 1 a "history" key is the
+             * ROOT array — match it BEFORE entering string mode */
+            if (depth == 1 && strncmp(p, "\"history\"", 9) == 0) {
+                char *v = p + 9;
+                int saw_colon = 0;
+                while (*v && *v != '[') {
+                    if (*v == ':') {
+                        if (saw_colon) break;
+                        saw_colon = 1;
+                    } else if (*v != ' ' && *v != '\t') break;
+                    v++;
+                }
+                if (*v == '[') { best = v; p = v - 1; continue; }
+            }
+            in_str = 1;
+            continue;
+        }
+        if (*p == '{' || *p == '[') depth++;
+        else if (*p == '}' || *p == ']') depth--;
+        else if (depth == 1 && *p == '"' &&
+                 strncmp(p, "\"history\"", 9) == 0) {
+            /* value must be an array: only ':' and spaces between the
+             * key and its '[' */
+            char *v = p + 9;
+            int saw_colon = 0;
+            while (*v && *v != '[') {
+                if (*v == ':') { if (saw_colon) break; saw_colon = 1; }
+                else if (*v != ' ' && *v != '\t') break;
+                v++;
+            }
+            if (*v == '[') { best = v; p = v - 1; }
+            else p += 8;   /* skip the matched token */
+        }
+    }
+    return best;
+}
+
 /* thread body: execute the run's pipeline YAML */
 typedef struct { size_t idx; } run_thread_arg;
 
@@ -1308,26 +1366,21 @@ static void draft_writeback(size_t idx, const char *wire) {
     if (!oldh) return;
     oldh[0] = 0;
     {
-        /* ROOT history = the LAST "history" key (result.metadata.history
-         * sits earlier in the doc and is rebuilt by this write-back) */
-        const char *hp0 = NULL;
-        for (const char *q = strstr(buf, "\"history\""); q; q = strstr(q + 1, "\"history\""))
-            hp0 = q;
-        if (hp0) {
-            const char *ab = strchr(hp0, '[');
-            if (ab) {
-                const char *ae = ab + 1;
-                int depth = 0;
-                while (*ae) {
-                    if (*ae == '[') depth++;
-                    else if (*ae == ']') { if (depth == 0) break; depth--; }
-                    ae++;
-                }
-                size_t L = (size_t)(ae - ab - 1);
-                if (L > buf_len) L = buf_len;
-                memcpy(oldh, ab + 1, L);
-                oldh[L] = 0;
+        /* (root-history law) the ROOT array only — never the metadata
+         * copy inside result, which is rebuilt below */
+        char *ab = root_history_span(buf);
+        if (ab) {
+            char *ae = ab + 1;
+            int depth2 = 0;
+            while (*ae) {
+                if (*ae == '[') depth2++;
+                else if (*ae == ']') { if (depth2 == 0) break; depth2--; }
+                ae++;
             }
+            size_t L = (size_t)(ae - ab - 1);
+            if (L > buf_len) L = buf_len;
+            memcpy(oldh, ab + 1, L);
+            oldh[L] = 0;
         }
     }
     size_t mcap = strlen(hrow) + strlen(oldh) + 8;
@@ -1503,33 +1556,30 @@ static void draft_writeback(size_t idx, const char *wire) {
         }
     }
 
-    /* history row at draft root (no trailing comma: the array may be empty) */
-    /* ROOT history again — the LAST key (metadata.history inside the
-     * freshly spliced result block comes first in the doc).
+    /* history row at draft ROOT (no trailing comma: the array may be
+     * empty). (root-history law) depth-aware: the metadata copy inside
+     * the spliced result block is NOT the root — appending there
+     * duplicated every row. If the card has no root history yet, the
+     * else branch creates one.
      * (stack-smash law, 2026-08-31) exact-size heap splice: the old
      * tmp2[36864] + `snprintf(out, sizeof(out), ...)` — sizeof of the
      * now-heap pointer is 8 — truncated the card to 7 bytes whenever
      * this path ran. */
-    char *hp = NULL;
-    for (char *q = strstr(out, "\"history\""); q; q = strstr(q + 1, "\"history\""))
-        hp = q;
-    if (hp) {
-        char *hb = strchr(hp, '[');
-        if (hb) {
-            hb++;
-            const char *nx = hb;
-            while (*nx == ' ' || *nx == '\n' || *nx == '\t' || *nx == '\r') nx++;
-            char sep[2] = "";
-            if (*nx && *nx != ']') sep[0] = ',';
-            size_t head = (size_t)(hb - out);
-            size_t ol = strlen(out);
-            char *tmp2 = (char *)malloc(ol + strlen(hrow) + 8);
-            if (tmp2) {
-                snprintf(tmp2, ol + strlen(hrow) + 8, "%.*s%s%s%s",
-                         (int)head, out, hrow, sep, hb);
-                free(out);
-                out = tmp2;
-            }
+    char *hb = root_history_span(out);
+    if (hb) {
+        hb++;
+        const char *nx = hb;
+        while (*nx == ' ' || *nx == '\n' || *nx == '\t' || *nx == '\r') nx++;
+        char sep[2] = "";
+        if (*nx && *nx != ']') sep[0] = ',';
+        size_t head = (size_t)(hb - out);
+        size_t ol = strlen(out);
+        char *tmp2 = (char *)malloc(ol + strlen(hrow) + 8);
+        if (tmp2) {
+            snprintf(tmp2, ol + strlen(hrow) + 8, "%.*s%s%s%s",
+                     (int)head, out, hrow, sep, hb);
+            free(out);
+            out = tmp2;
         }
     } else {
         char *last = strrchr(out, '}');
@@ -4553,6 +4603,11 @@ static std::string ray_compose_draft_doc(const std::string &body,
 }
 
 /* GET /v1/pipelines/drafts/:id — one draft doc, verbatim bytes. */
+/* forward decls (defined near the boot lint): the GET door below uses
+ * them for the runtime card-heal law */
+static int jscan_doc(const char *doc, size_t len, size_t *bad_at);
+static int draft_lint_one(const char *path, const char *id);
+
 static void handle_draft_get(const httplib::Request &req,
                              httplib::Response &res) {
     std::string id = req.path_params.at("id");
@@ -4578,6 +4633,26 @@ static void handle_draft_get(const httplib::Request &req,
     size_t n;
     while ((n = fread(buf, 1, sizeof(buf), f)) > 0) body.append(buf, n);
     fclose(f);
+    /* (runtime card-heal law, 2026-08-31) the boot lint repairs cards
+     * at REBOOT — but a card corrupted MID-SESSION (a future write-back
+     * bug, a partial disk write) served unparseable bytes to every
+     * click until someone restarted the gateway. The click door itself
+     * now validates what it serves: one O(n) scan, and a damaged doc
+     * is healed IN PLACE by the same lint, then re-read. The click can
+     * never again be the place a corruption is discovered. */
+    {
+        size_t bad_at = 0;
+        if (jscan_doc(body.c_str(), body.size(), &bad_at) != 0) {
+            draft_lint_one(path, id.c_str());
+            FILE *f2 = fopen(path, "rb");
+            if (f2) {
+                body.clear();
+                while ((n = fread(buf, 1, sizeof(buf), f2)) > 0)
+                    body.append(buf, n);
+                fclose(f2);
+            }
+        }
+    }
     /* (2026-08-30 doc-version contract) createdAt is the doc version and
      * the studio's refresh gate keys on it — a browser-HTTP-cached copy
      * would freeze the card at a stale version forever (the write-back

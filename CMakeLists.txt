@@ -171,6 +171,14 @@ if(INFERENCE_BUILD_TESTS)
                          --repo-dir ${CMAKE_SOURCE_DIR}
                          --build-dir ${CMAKE_BINARY_DIR})
         set_tests_properties(test_queue_chaos PROPERTIES TIMEOUT 600)
+        # CARD LIFECYCLE layer: the real-world card path end to end —
+        # birth, a run with REAL ffmpeg-muxed artifacts, artifact-door
+        # byte fidelity, long-history survival, runtime corruption
+        # heal-on-click, crash+card recovery, stop leaves a valid card.
+        add_test(NAME test_card_lifecycle
+                 COMMAND ${Python3_EXECUTABLE}
+                         ${CMAKE_SOURCE_DIR}/tests/test_card_lifecycle.py)
+        set_tests_properties(test_card_lifecycle PROPERTIES TIMEOUT 300)
         # BUNDLE LAW: per-endpoint tool+skill bundles (lane doors,
         # isolation, two-door consistency, api gating). Pure catalog
         # surface - boots inference_cli alone, no engine needed.
