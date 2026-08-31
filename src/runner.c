@@ -234,8 +234,11 @@ static size_t resolve_inputs(const runner_node *all_nodes, size_t n_nodes,
     }
 
     /* If no input_from references resolved anything and there are initial
-       inputs, pass them through directly (first node gets raw inputs) */
-    if (count == 0 && n_initial > 0) {
+       inputs, pass them through directly (first node gets raw inputs).
+       Skip for non-first nodes: sending prompt/seed garbage to a
+       variadic stitch node is always wrong (causes "input too small"
+       failures when upstream video_0 tensor is missing). */
+    if (count == 0 && n_initial > 0 && dnode == &all_nodes[0]) {
         for (size_t i = 0; i < n_initial && i < 32; i++) {
             resolved[count++] = initial[i];
         }
