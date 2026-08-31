@@ -9,12 +9,6 @@
 #include <pthread.h>
 #include <unistd.h>   /* dup/dup2/close for stderr capture */
 
-/* Defined in server.cpp — propagates runner error into stage_cb sidecar ledger. */
-#ifdef __cplusplus
-extern "C"
-#endif
-void runner_set_error_for_cb(const char *msg);
-
 /*
  * DAG runner — loads plugins, wires tensors, executes in topo order,
  * manages VRAM via LRU eviction.
@@ -342,6 +336,17 @@ void runner_set_stage_cb(inference_runner *r, runner_stage_cb cb, void *ctx) {
     r->stage_ctx = ctx;
 }
 
+void runner_set_error(inference_runner *r, const char *msg) {
+    if (!r) return;
+    if (msg) snprintf(r->last_error, sizeof(r->last_error), "%s", msg);
+    else r->last_error[0] = '\0';
+}
+
+const char *runner_get_error(inference_runner *r) {
+    if (!r) return "";
+    return r->last_error;
+}
+
 void runner_request_stop(inference_runner *r) {
     if (!r) return;
     __atomic_store_n(&r->stop_flag, 1, __ATOMIC_RELEASE);
@@ -607,7 +612,7 @@ int runner_execute_ex(inference_runner *r,
                     dnode->type);
             { char _emsg[256]; snprintf(_emsg, sizeof(_emsg),
                 "no plugin registered for type: %s", dnode->type);
-              runner_set_error_for_cb(_emsg); }
+              runner_set_error(r, _emsg); }
             if (r->ws) ws_send_execution_error(r->ws, r->prompt_id, dnode->id,
                                                "no plugin registered");
             free(order);
@@ -631,7 +636,7 @@ int runner_execute_ex(inference_runner *r,
             fprintf(stderr, "runner: failed to load plugin %s\n", so_path);
             { char _emsg[256]; snprintf(_emsg, sizeof(_emsg),
                 "plugin load failed: %s", so_path);
-              runner_set_error_for_cb(_emsg); }
+              runner_set_error(r, _emsg); }
             if (r->ws) ws_send_execution_error(r->ws, r->prompt_id, dnode->id,
                                                "plugin load failed");
             free(order);
@@ -648,7 +653,7 @@ int runner_execute_ex(inference_runner *r,
             fprintf(stderr, "runner: node_load failed for %s\n", dnode->id);
             { char _emsg[256]; snprintf(_emsg, sizeof(_emsg),
                 "node_load failed for %s: plugin params missing or invalid", dnode->id);
-              runner_set_error_for_cb(_emsg); }
+              runner_set_error(r, _emsg); }
             if (r->ws) ws_send_execution_error(r->ws, r->prompt_id, dnode->id,
                                                "node_load failed");
             plugin_unload(rnode->plugin);
@@ -780,7 +785,6 @@ have_model:
                 free(order);
                 return 1;
             }
-            runner_set_error_for_cb(r->last_error);
             if (r->stage_cb)
                 r->stage_cb(r->stage_ctx, dnode->id, (int)i,
                             (int)r->n_nodes, RUNNER_STAGE_ERROR);

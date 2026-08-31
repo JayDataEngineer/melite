@@ -12,9 +12,15 @@
  * but the mesh now comes from anny_plugin.so in <1ms instead of a
  * round-trip through ComfyUI + PyTorch + py-soma-x.
  *
+ * PLUGIN ARCHITECTURE LAW: data files live in the plugin that owns the
+ * lane. We resolve them relative to the plugin's own directory by
+ * walking up from the .so path (plugins/<name>/engines/<name>/<name>.so
+ * -> plugins/<name>/data/). No shared root data/ directory.
+ *
  * Data files (single source of truth, no embedded JSON in C):
- *   data/anny_identity_space.json   — dimension metadata (served verbatim)
- *   data/anny_shape_basis_names.json — slider names (coeff → slider mapping)
+ *   plugins/anny/data/anny_identity_space.json   — dimension metadata
+ *   plugins/anny/data/anny_shape_basis_names.json — slider names
+ *   plugins/anny/data/anny_shape_basis.bin        — vertex deltas
  *
  * The anny plugin is loaded ONCE and cached (the basis is ~10MB; reload
  * per request would burn 10ms+ of disk for every slider drag).
@@ -22,12 +28,54 @@
 
 #include "inference/server.h"
 #include "inference/plugin.h"
+#include "inference/plugin_loader.h"
 #include "httplib.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <dlfcn.h>
+
+/* ---- plugin data directory resolution (PLUGIN ARCHITECTURE LAW) ----
+ *
+ * Data lives in plugins/anny/data/, resolved by probing the plugin tree.
+ * After plugin_load(), we also derive the path from the .so location.
+ */
+static char g_anny_data_dir[512] = "";
+
+static const char *anny_data_dir(void) {
+    if (g_anny_data_dir[0]) return g_anny_data_dir;
+    /* Probe the plugin tree for the data file (ground truth) */
+    const char *candidates[] = {
+        "plugins/anny/data",
+        NULL
+    };
+    for (int i = 0; candidates[i]; i++) {
+        char path[640];
+        snprintf(path, sizeof(path), "%s/anny_shape_basis_names.json", candidates[i]);
+        FILE *f = fopen(path, "r");
+        if (f) {
+            fclose(f);
+            snprintf(g_anny_data_dir, sizeof(g_anny_data_dir), "%s/", candidates[i]);
+            return g_anny_data_dir;
+        }
+    }
+    fprintf(stderr, "poser: WARNING - anny data not found in plugins/anny/data/\n");
+    return "";
+}
+
+/* Derive plugin data dir from a .so path (called after plugin_load) */
+static void anny_data_dir_from_so(const char *so_path) {
+    if (!so_path || g_anny_data_dir[0]) return;
+    const char *plug = strstr(so_path, "plugins/");
+    if (plug) {
+        const char *name_start = plug + 8;
+        const char *slash = strchr(name_start, '/');
+        if (slash) {
+            snprintf(g_anny_data_dir, sizeof(g_anny_data_dir),
+                     "%.*s/data/", (int)(slash - plug), plug);
+        }
+    }
+}
 
 /* ---- cached identity-space JSON (loaded once) ---- */
 static char *g_identity_space_json = NULL;
@@ -35,7 +83,10 @@ static pthread_mutex_t g_poser_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static const char *load_identity_space(void) {
     if (g_identity_space_json) return g_identity_space_json;
-    FILE *f = fopen("data/anny_identity_space.json", "rb");
+    const char *dir = anny_data_dir();
+    char path[640];
+    snprintf(path, sizeof(path), "%sanny_identity_space.json", dir);
+    FILE *f = fopen(path, "rb");
     if (!f) return NULL;
     fseek(f, 0, SEEK_END);
     long sz = ftell(f);
@@ -53,7 +104,10 @@ static int g_n_sliders = 0;
 
 static int load_slider_names(void) {
     if (g_n_sliders) return g_n_sliders;
-    FILE *f = fopen("data/anny_shape_basis_names.json", "rb");
+    const char *dir = anny_data_dir();
+    char path[640];
+    snprintf(path, sizeof(path), "%sanny_shape_basis_names.json", dir);
+    FILE *f = fopen(path, "rb");
     if (!f) return 0;
     fseek(f, 0, SEEK_END);
     long sz = ftell(f);
@@ -86,41 +140,37 @@ static int slider_index(const char *name) {
 }
 
 /* ---- cached anny plugin handle (loaded once) ---- */
-static void *g_anny_handle = NULL;
-typedef int (*anny_load_fn)(const char *, size_t, inference_context **);
-typedef int (*anny_exec_fn)(inference_context *, const inference_tensor *,
-                            size_t, inference_tensor *, size_t);
-typedef void (*anny_unload_fn)(inference_context *);
-static anny_load_fn   g_anny_load;
-static anny_exec_fn   g_anny_exec;
-static anny_unload_fn g_anny_unload;
+static inference_plugin *g_anny_plugin = NULL;
 static inference_context *g_anny_ctx = NULL;
 
 static int anny_plugin_init(void) {
     if (g_anny_ctx) return 0;   /* already loaded */
-    if (!g_anny_handle) {
+    if (!g_anny_plugin) {
         const char *paths[] = { "./anny_plugin.so", "./build/anny_plugin.so",
                                 "plugins/anny/engines/anny/anny_plugin.so", NULL };
         for (int i = 0; paths[i]; i++) {
-            g_anny_handle = dlopen(paths[i], RTLD_LAZY);
-            if (g_anny_handle) break;
+            g_anny_plugin = plugin_load(paths[i]);
+            if (g_anny_plugin) {
+                /* PLUGIN ARCHITECTURE LAW: derive data dir from .so path */
+                anny_data_dir_from_so(plugin_so_path(g_anny_plugin));
+                break;
+            }
         }
-        if (!g_anny_handle) {
-            fprintf(stderr, "poser: anny plugin not found (%s)\n", dlerror());
-            return -1;
-        }
-        g_anny_load   = (anny_load_fn)dlsym(g_anny_handle, "node_load");
-        g_anny_exec   = (anny_exec_fn)dlsym(g_anny_handle, "node_execute");
-        g_anny_unload = (anny_unload_fn)dlsym(g_anny_handle, "node_unload");
-        if (!g_anny_load || !g_anny_exec || !g_anny_unload) {
-            fprintf(stderr, "poser: anny plugin missing ABI symbols\n");
+        if (!g_anny_plugin) {
+            fprintf(stderr, "poser: anny plugin not found\n");
             return -1;
         }
     }
     /* shape_names come from the names file — build the config by reading
      * it verbatim so C never embeds the 64-name array. */
+    const char *dir = anny_data_dir();
+    char names_path[640];
+    snprintf(names_path, sizeof(names_path), "%sanny_shape_basis_names.json", dir);
+    char basis_path[640];
+    snprintf(basis_path, sizeof(basis_path), "%sanny_shape_basis.bin", dir);
+
     char config[8192];
-    FILE *f = fopen("data/anny_shape_basis_names.json", "rb");
+    FILE *f = fopen(names_path, "rb");
     if (!f) return -1;
     char names[4096] = "";
     size_t rd = fread(names, 1, sizeof(names) - 1, f);
@@ -140,11 +190,11 @@ static int anny_plugin_init(void) {
                 compact[ci++] = names[i];
         compact[ci] = 0;
         snprintf(config, sizeof(config),
-                 "{\"basis_file\":\"data/anny_shape_basis.bin\","
-                 "\"shape_names\":%s}", compact);
+                 "{\"basis_file\":\"%s\",\"shape_names\":%s}",
+                 basis_path, compact);
     }
     inference_context *ctx = NULL;
-    if (g_anny_load(config, strlen(config), &ctx) != 0 || !ctx) {
+    if (plugin_load_model(g_anny_plugin, config, strlen(config), &ctx) != 0 || !ctx) {
         fprintf(stderr, "poser: anny plugin load failed\n");
         return -1;
     }
@@ -184,7 +234,7 @@ void handle_poser_identity_space(const httplib::Request &req,
     const char *json = load_identity_space();
     if (!json) {
         res.status = 500;
-        res.set_content("{\"error\":\"identity space file missing (data/anny_identity_space.json)\"}",
+        res.set_content("{\"error\":\"identity space file missing (plugins/anny/data/anny_identity_space.json)\"}",
                         "application/json");
         return;
     }
@@ -214,7 +264,7 @@ void handle_poser_mesh(const httplib::Request &req,
     if (load_slider_names() == 0) {
         pthread_mutex_unlock(&g_poser_lock);
         res.status = 500;
-        res.set_content("{\"error\":\"slider names file missing (data/anny_shape_basis_names.json)\"}",
+        res.set_content("{\"error\":\"slider names file missing (plugins/anny/data/anny_shape_basis_names.json)\"}",
                         "application/json");
         return;
     }
@@ -283,7 +333,7 @@ void handle_poser_mesh(const httplib::Request &req,
     inputs[0].data = (void *)slider_json;
     inputs[0].nbytes = strlen(slider_json) + 1;
 
-    if (g_anny_exec(g_anny_ctx, inputs, 1, outputs, 2) != 0) {
+    if (plugin_execute(g_anny_plugin, g_anny_ctx, inputs, 1, outputs, 2) != 0) {
         pthread_mutex_unlock(&g_poser_lock);
         res.status = 500;
         res.set_content("{\"error\":\"anny execute failed\"}", "application/json");
@@ -320,3 +370,4 @@ void handle_poser_mesh(const httplib::Request &req,
 
     pthread_mutex_unlock(&g_poser_lock);
 }
+

@@ -90,7 +90,7 @@ static int cmd_serve(int argc, char **argv) {
         register_plugins_from_dir(runner, ".");
     }
 
-    g_server_runner = runner;
+    server_set_runner(runner);
 
     /* Scan model catalog from the plugins/ tree */
     char plugins_path[1024];
@@ -115,7 +115,7 @@ static int cmd_serve(int argc, char **argv) {
 
     server_stop(srv);
     server_destroy(srv);
-    g_server_runner = NULL;
+    server_set_runner(NULL);
     runner_destroy(runner);
     if (g_catalog) { catalog_free(g_catalog); g_catalog = NULL; }
     return 0;

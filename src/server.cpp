@@ -96,7 +96,10 @@ static int inf_json_int(const char *json, const char *key, int fallback) {
  *   ws://host:PORT+1/ws            — ComfyUI-compatible progress
  */
 
-inference_runner *g_server_runner = NULL;
+static inference_runner *g_server_runner = NULL;
+
+inference_runner *server_get_runner(void) { return g_server_runner; }
+void server_set_runner(inference_runner *r) { g_server_runner = r; }
 
 /* poser_handlers.cpp — ANNY poser routes (ray /poser/skin/* parity) */
 void handle_poser_identity_space(const httplib::Request &, httplib::Response &);
@@ -469,14 +472,6 @@ static void stage_attribute_artifacts(size_t idx, size_t stage_i) {
     closedir(d);
 }
 
-/* Runner writes its last_error here before the stage_cb fires
- * so the callback can propagate it into the sidecar ledger. */
-static char g_runner_error_buf[2048] = "";
-extern "C" void runner_set_error_for_cb(const char *msg) {
-    if (msg) snprintf(g_runner_error_buf, sizeof(g_runner_error_buf), "%s", msg);
-    else g_runner_error_buf[0] = 0;
-}
-
 /* Stage callback ctx = the run registry index (as a size_t*). */
 static void run_stage_cb(void *ctx, const char *node_id,
                          int index, int total, int state) {
@@ -493,10 +488,12 @@ static void run_stage_cb(void *ctx, const char *node_id,
         if (strcmp(g_runs[idx].stages[s].id, node_id) == 0) {
             snprintf(g_runs[idx].stages[s].state,
                      sizeof(g_runs[idx].stages[s].state), "%s", sname);
-            if (state == RUNNER_STAGE_ERROR && g_runner_error_buf[0])
-                snprintf(g_runs[idx].stages[s].error,
-                         sizeof(g_runs[idx].stages[s].error), "%s",
-                         g_runner_error_buf);
+            if (state == RUNNER_STAGE_ERROR) {
+                const char *err = runner_get_error(g_server_runner);
+                if (err && err[0])
+                    snprintf(g_runs[idx].stages[s].error,
+                             sizeof(g_runs[idx].stages[s].error), "%s", err);
+            }
             if (state == RUNNER_STAGE_DONE)
                 stage_attribute_artifacts(idx, s);
             break;
@@ -1346,7 +1343,7 @@ static void *run_thread_fn(void *argp) {
         gpu_ticket_release();
         return NULL;
     }
-    g_runner_error_buf[0] = '\0';  /* clear stale error from prior run */
+    runner_set_error(g_server_runner, NULL);  /* clear stale error from prior run */
     run_set_state(idx, "running", NULL);  /* sidecar + ledger bookkeeping */
     /* Real queue telemetry on the WS bus (audit M3) */
     if (g_ws_server)
@@ -1432,8 +1429,8 @@ static void *run_thread_fn(void *argp) {
         run_set_state(idx, "stopped", NULL);
         inference_free(result);
     } else if (rc < 0) {
-        const char *errmsg = g_runner_error_buf[0]
-            ? g_runner_error_buf : "pipeline execution failed";
+        const char *errmsg = runner_get_error(g_server_runner);
+        if (!errmsg || !errmsg[0]) errmsg = "pipeline execution failed";
         run_set_state(idx, "error", errmsg);
         inference_free(result);
         draft_writeback(idx, "failed");

@@ -9,8 +9,10 @@ extern "C" {
 
 typedef struct inference_server inference_server;
 
-/* Global runner for the HTTP server (single-process). Set before server_start. */
-extern inference_runner *g_server_runner;
+/* Accessor for the process-global runner (single-process law).
+ * Set before server_start; valid until server_destroy. */
+inference_runner *server_get_runner(void);
+void server_set_runner(inference_runner *r);
 
 inference_server *server_create(int port, const char *bind_addr);
 int server_start(inference_server *s);

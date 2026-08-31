@@ -97,6 +97,11 @@ int runner_execute_ex(inference_runner *r, const inference_dag *dag,
 /* Get the VRAM tracker from a runner (may be NULL if budget was 0). */
 inference_vram *runner_get_vram(inference_runner *r);
 
+/* Error detail: set/get the last node-level error message.
+ * The runner owns the buffer; valid until the next error or runner_destroy. */
+void runner_set_error(inference_runner *r, const char *msg);
+const char *runner_get_error(inference_runner *r);
+
 /* Destroy the runner, unloading all plugins and freeing VRAM. */
 void runner_destroy(inference_runner *r);
 
