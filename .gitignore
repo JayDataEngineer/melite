@@ -1,25 +1,71 @@
-
-*.bin
+# === Build artifacts ===
 build/
 build-asan/
-# Build output
-.cache/
-*.ckpt
-# CMake
 cmake-build-*/
 compile_commands.json
-# Compiled objects
-dsh/infer-gallery/lib/
-dsh/infer-gallery/node_modules/
-dsh/node_modules/
-*.dylib
-*.exe
-*.gguf
-# Model weights (too large for git)
+.cache/
+
+# === Compiled objects ===
 *.o
-*.pt
-__pycache__/
-# Python
-*.safetensors
 *.so
+*.dylib
+*.dll
+*.exe
+
+# === Model weights (too large for git) ===
+*.bin
+*.ckpt
+*.pt
+*.safetensors
+*.gguf
+*.onnx
+
+# === Media artifacts (queue output) ===
+*.mp4
+*.mov
+*.avi
+*.wav
+*.mp3
+*.flac
+*.jpg
+*.jpeg
+*.png
+*.gif
+productions/
+output/
+downloaded_files/
+
+# === Runtime / scratch ===
+.dsh_work/
+Testing/Temporary/
+
+# === Node.js ===
+**/node_modules/
+
+# === Python ===
+__pycache__/
+*.pyc
+
+# === Secrets / credentials ===
+data/llm_keystore.*
+.env
+.env.*
+
+# === OS / editor ===
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+*.swo
+*~
+
+# === Logs ===
+*.log
+
+# === Infra: ComfyUI nodes (installed, not authored) ===
 infra/comfyui/nodes/
+
+# === Archives ===
+*.tar.gz
+*.zip
+*.7z
