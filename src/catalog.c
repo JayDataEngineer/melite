@@ -373,6 +373,7 @@ static catalog_card *parse_card_yaml(const char *yaml) {
             if ((val = ykv(s, "description")) != NULL) { free(c->description); c->description = ystrdup(val); }
             if ((val = ykv(s, "genre")) != NULL)       { free(c->genre); c->genre = ystrdup(val); }
             if ((val = ykv(s, "icon")) != NULL)        { free(c->icon); c->icon = ystrdup(val); }
+            if ((val = ykv(s, "api")) != NULL)          { c->api = (val[0] == 't' || val[0] == '1'); }
         }
 
         /* Families section */
@@ -500,6 +501,8 @@ static void scan_card_dir(inference_catalog *cat, const char *dir) {
     free(yaml);
 
     if (c && c->id) {
+        /* API gate: only cards with api: true are served */
+        if (!c->api) { free_card(c); free(c); return; }
         /* Unit assets: inference recipe + grading rubric */
         c->inference_path = probe_unit_file(dir, "inference.yaml");
         c->rubric_path = probe_unit_file(dir, "grading_rubric.yaml");

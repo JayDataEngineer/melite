@@ -15,7 +15,7 @@
  */
 import { createRoot } from 'react-dom/client'
 import css from './deck.module.css'
-import { DeckCanvas } from './DeckCanvas.tsx'
+import { DeckCanvas, setPendingDraft, OPEN_DRAFT_EVENT } from './DeckCanvas.tsx'
 import { mountSidebarEntry } from './sidebar-entry-core.ts'
 
 /** The mounted deck container (taskboard-style overlay child of the column). */
@@ -80,7 +80,7 @@ function closeDeck(): void {
  * @returns disposer removing the row.
  */
 export function mountCardsSidebarEntry(): () => void {
-  return mountSidebarEntry({
+  const dispose = mountSidebarEntry({
     rowAttribute: 'data-melite-cards-entry',
     rowSelector: '[data-melite-cards-entry]',
     icon: ICON,
@@ -102,4 +102,25 @@ export function mountCardsSidebarEntry(): () => void {
       isOpen,
     },
   })
+
+  /* CARD REPLAY DOOR (2026-08-30, additive): other bundles (the media
+   * panel's wand) open THE STUDIO with one draft loaded — the editor's
+   * ?meliteCards=<id> hydration. Closed deck: park the draft, open (the
+   * canvas consumes it at mount). Open deck: hand it to the live canvas. */
+  ;(window as unknown as Record<string, unknown>).__meliteDeckOpenWithDraft =
+    (draftId: string): boolean => {
+      if (typeof draftId !== 'string' || draftId === '') return false
+      if (isOpen()) {
+        document.dispatchEvent(new CustomEvent(OPEN_DRAFT_EVENT, { detail: { draftId } }))
+      } else {
+        setPendingDraft(draftId)
+        openDeck()
+      }
+      return true
+    }
+
+  return () => {
+    delete (window as unknown as Record<string, unknown>).__meliteDeckOpenWithDraft
+    dispose()
+  }
 }

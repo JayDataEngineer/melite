@@ -139,6 +139,7 @@ window.__ModuleLoader__.load({
 						head,
 						final: isFinal,
 						runId: String(run.run_id ?? ""),
+						draftId: typeof run.draft_id === "string" ? run.draft_id : "",
 						time: timeLabel(run.created_at),
 						file,
 						created: typeof run.created_at === "number" ? run.created_at : 0
@@ -335,67 +336,6 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		/** Cards overlay ("Open as cards", 2026-08-30 operator order: THE CARD VIEW
-		*  OPENS ON THIS PAGE — no popup, no foreign origin). The editor mounts
-		*  same-origin at /editor/ (deck host serves the dist + proxies /v1 to the
-		*  inference gateway :18090). The old ray-gateway (:33081) popup is
-		*  EXTERMINATED along with the ray gateway itself. */
-		function CardsOverlay({ runId, onClose }) {
-			return (0, react_dom.createPortal)(/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				role: "dialog",
-				"aria-modal": "true",
-				onClick: onClose,
-				style: {
-					position: "fixed",
-					inset: 0,
-					zIndex: 2147482e3,
-					display: "flex",
-					flexDirection: "column",
-					background: "rgba(2,6,23,0.94)"
-				},
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					style: {
-						display: "flex",
-						alignItems: "center",
-						gap: 8,
-						padding: "8px 12px"
-					},
-					onClick: (e) => {
-						e.stopPropagation();
-					},
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-						style: {
-							color: "#dde",
-							fontSize: 13,
-							fontWeight: 600
-						},
-						children: ["Action cards — ", runId]
-					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-						onClick: onClose,
-						style: {
-							marginLeft: "auto",
-							padding: "4px 12px",
-							fontSize: 12,
-							border: "1px solid rgba(128,128,128,.6)",
-							borderRadius: 6,
-							background: "rgba(20,22,28,.85)",
-							color: "#dde",
-							cursor: "pointer"
-						},
-						children: "close ✕"
-					})]
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("iframe", {
-					src: "/editor/?revive=" + encodeURIComponent(runId),
-					title: "pipeline action cards",
-					style: {
-						flex: 1,
-						width: "100%",
-						border: "none",
-						background: "#0b0d11"
-					}
-				})]
-			}), document.body);
-		}
 		function MediaPanel() {
 			const [runs, setRuns] = (0, react.useState)([]);
 			const [loading, setLoading] = (0, react.useState)(true);
@@ -404,7 +344,6 @@ window.__ModuleLoader__.load({
 			const [cat, setCat] = (0, react.useState)("all");
 			const [search, setSearch] = (0, react.useState)("");
 			const [preview, setPreview] = (0, react.useState)(null);
-			const [cardsRun, setCardsRun] = (0, react.useState)(null);
 			const load = (0, react.useCallback)(() => {
 				setLoading(true);
 				setError("");
@@ -439,6 +378,28 @@ window.__ModuleLoader__.load({
 					window.removeEventListener("focus", refresh);
 				};
 			}, [load]);
+			/** CARD REPLAY (final wiring, 2026-08-30): the wand opens THE CARDS
+			*  STUDIO — the left-sidebar Cards tab itself — by clicking its row,
+			*  exactly as the operator does. The studio opens with its own embed
+			*  bridge and full card system, untouched. No iframe here, no editor
+			*  dependency in this panel; the row is the deck bundle's own entry
+			*  ([data-melite-cards-entry]). The run→card link is the draft_id the
+			*  gateway's runs list carries per row (same payload this panel already
+			*  loaded — no extra fetch, no gallery route). Missing link or missing
+			*  row = honest inline error. */
+			const openCards = (runId, draftId) => {
+				if (runId === "") return;
+				if (draftId === "") {
+					setError("run has no action card (no draft_id in its run row)");
+					return;
+				}
+				const open = window.__meliteDeckOpenWithDraft;
+				if (typeof open !== "function") {
+					setError("Cards studio unavailable (deck plugin not loaded)");
+					return;
+				}
+				if (!open(draftId)) setError("Cards studio refused to open");
+			};
 			const items = (0, react.useMemo)(() => flatten(runs), [runs]);
 			const counts = (0, react.useMemo)(() => {
 				const c = {
@@ -688,15 +649,16 @@ window.__ModuleLoader__.load({
 									role: "button",
 									tabIndex: 0,
 									className: "im-wand",
-									title: "Open as cards — edit this run's parameters",
+									title: it.draftId !== "" ? "Open as cards — this run’s card, setup and ready" : "No action card linked to this run",
+									style: { opacity: it.draftId !== "" ? 1 : .35 },
 									onClick: (e) => {
 										e.stopPropagation();
-										setCardsRun(it.runId);
+										openCards(it.runId, it.draftId);
 									},
 									onKeyDown: (e) => {
 										if (e.key === "Enter") {
 											e.stopPropagation();
-											setCardsRun(it.runId);
+											openCards(it.runId, it.draftId);
 										}
 									},
 									children: "✦ CARDS"
@@ -730,12 +692,6 @@ window.__ModuleLoader__.load({
 						item: preview,
 						onClose: () => {
 							setPreview(null);
-						}
-					}) : null,
-					cardsRun !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CardsOverlay, {
-						runId: cardsRun,
-						onClose: () => {
-							setCardsRun(null);
 						}
 					}) : null
 				]

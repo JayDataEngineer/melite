@@ -1,29 +1,33 @@
 name: h3-timeline
-description: "H3 timeline: chained windows with motion-context seams; concat trims+level-matches joins"
+description: "H3 timeline: latent-chain windows (RayH3SaveLatentTail -> RayH3ChainLatentAV); concat trims carried heads + level-matches joins"
 
 nodes:
   - id: window1
     type: comfyui
-    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/h3-timeline/window1_t4.json","out_dir":"./output","timeout_s":1800,"inject":{"KSampler.0.seed":"$seed","MiniMaxH3ImageToVideo.0.prompt":"$prompt"},"fps":24,"mux":1}
+    # chain SOURCE: samples fresh, saves its AV latent tail for window2's splice
+    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/h3-timeline/window1_t4.json","out_dir":"./output","timeout_s":1800,"inject":{"KSampler.0.seed":"$seed","MiniMaxH3ImageToVideo.0.prompt":"$prompt","RayH3SaveLatentTail.0.path":"$tailpath1"},"fps":24,"mux":1}
 
   - id: window2
     type: comfyui
-    # chains from window1 via h3_motion_context clip slot 1 (saved in-graph)
-    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/h3-timeline/window2_t4.json","out_dir":"./output","input_dir":"/opt/ComfyUI/input","timeout_s":1800,"inject":{"KSampler.0.seed":"$seed","MiniMaxH3ImageToVideo.0.prompt":"$prompt2"},"fps":24,"mux":1}
+    # chains from window1's tail .pt (latent splice, bit-exact carry)
+    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/h3-timeline/window2_t4.json","out_dir":"./output","input_dir":"/opt/ComfyUI/input","timeout_s":1800,"inject":{"KSampler.0.seed":"$seed","MiniMaxH3ImageToVideo.0.prompt":"$prompt2","RayH3SaveLatentTail.0.path":"$tailpath2","RayH3ChainLatentAV.0.tail_path":"$tailpath1"},"fps":24,"mux":1}
 
   - id: window3
     type: comfyui
-    # chains from window2 via h3_motion_context clip slot 2
-    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/h3-timeline/window3_t4.json","out_dir":"./output","input_dir":"/opt/ComfyUI/input","timeout_s":1800,"inject":{"KSampler.0.seed":"$seed","MiniMaxH3ImageToVideo.0.prompt":"$prompt3"},"fps":24,"mux":1}
+    # chains from window2's tail .pt
+    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/h3-timeline/window3_t4.json","out_dir":"./output","input_dir":"/opt/ComfyUI/input","timeout_s":1800,"inject":{"KSampler.0.seed":"$seed","MiniMaxH3ImageToVideo.0.prompt":"$prompt3","RayH3SaveLatentTail.0.path":"$tailpath3","RayH3ChainLatentAV.0.tail_path":"$tailpath2"},"fps":24,"mux":1}
 
   - id: window4
     type: comfyui
-    # chains from window3 via h3_motion_context clip slot 3
-    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/h3-timeline/window4_t4.json","out_dir":"./output","input_dir":"/opt/ComfyUI/input","timeout_s":1800,"inject":{"KSampler.0.seed":"$seed","MiniMaxH3ImageToVideo.0.prompt":"$prompt4"},"fps":24,"mux":1}
+    # chains from window3's tail .pt
+    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/h3-timeline/window4_t4.json","out_dir":"./output","input_dir":"/opt/ComfyUI/input","timeout_s":1800,"inject":{"KSampler.0.seed":"$seed","MiniMaxH3ImageToVideo.0.prompt":"$prompt4","RayH3SaveLatentTail.0.path":"$tailpath4","RayH3ChainLatentAV.0.tail_path":"$tailpath3"},"fps":24,"mux":1}
 
   - id: stitch
     type: ffmpeg_concat
-    # seam law: pack Trim removes pinned heads in-graph; join loudness match here
+    # seam law (latent-chain): each seam window REGENERATES the previous
+    # window's carried tail as its head — the gateway splices the EXACT
+    # per-window head trims (frames/fps from the plan math, cross-checked
+    # against <tail>.meta.json) into trim_heads; join loudness matched here
     params: {"trim_heads":[0, 0, 0, 0], "match_level":true}
     input_from:
       - window1.video_0

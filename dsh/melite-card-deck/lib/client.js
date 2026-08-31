@@ -389,8 +389,34 @@ window.__ModuleLoader__.load({
 		* tokens and strips its own chrome -- the canvas rides DSH's sidebar and
 		* details column, it does not bring its own frame.
 		*/
+		/** CARD REPLAY (2026-08-30, additive): a surface may ask the studio to
+		* open with ONE draft loaded — the editor's own /editor/?meliteCards=<id>
+		* mode (it fetches the draft and hydrateDraft()s the card with every
+		* parameter filled). Parked here BEFORE mount by deck-sidebar-entry's
+		* openDeckWithDraft(); consumed once by the canvas below. */
+		let pendingDraftId = "";
+		function setPendingDraft(draftId) {
+			pendingDraftId = draftId;
+		}
+		/** Live-open event while the canvas is already mounted. */
+		const OPEN_DRAFT_EVENT = "melite-cards-deck-open-draft";
 		function DeckCanvas() {
 			const frameRef = (0, react.useRef)(null);
+			const [draftId, setDraftId] = (0, react.useState)(() => {
+				const d = pendingDraftId;
+				pendingDraftId = "";
+				return d;
+			});
+			(0, react.useEffect)(() => {
+				const onOpenDraft = (e) => {
+					const d = e.detail?.draftId;
+					if (typeof d === "string" && d !== "") setDraftId(d);
+				};
+				document.addEventListener(OPEN_DRAFT_EVENT, onOpenDraft);
+				return () => {
+					document.removeEventListener(OPEN_DRAFT_EVENT, onOpenDraft);
+				};
+			}, []);
 			(0, react.useEffect)(() => {
 				const frame = frameRef.current;
 				if (!frame) return;
@@ -421,7 +447,7 @@ window.__ModuleLoader__.load({
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("iframe", {
 					ref: frameRef,
 					className: deck_module_css_default.canvasIframe,
-					src: "/editor/",
+					src: draftId === "" ? "/editor/" : "/editor/?meliteCards=" + encodeURIComponent(draftId),
 					title: "Melite card canvas",
 					allow: "clipboard-read; clipboard-write"
 				})
@@ -597,7 +623,7 @@ window.__ModuleLoader__.load({
 		* @returns disposer removing the row.
 		*/
 		function mountCardsSidebarEntry() {
-			return mountSidebarEntry({
+			const dispose = mountSidebarEntry({
 				rowAttribute: "data-melite-cards-entry",
 				rowSelector: "[data-melite-cards-entry]",
 				icon: ICON,
@@ -623,6 +649,19 @@ window.__ModuleLoader__.load({
 					isOpen
 				}
 			});
+			window.__meliteDeckOpenWithDraft = (draftId) => {
+				if (typeof draftId !== "string" || draftId === "") return false;
+				if (isOpen()) document.dispatchEvent(new CustomEvent(OPEN_DRAFT_EVENT, { detail: { draftId } }));
+				else {
+					setPendingDraft(draftId);
+					openDeck();
+				}
+				return true;
+			};
+			return () => {
+				delete window.__meliteDeckOpenWithDraft;
+				dispose();
+			};
 		}
 		//#endregion
 		//#region src/client/deck-fullbleed.ts
@@ -747,323 +786,6 @@ window.__ModuleLoader__.load({
 				window.removeEventListener("resize", settle);
 				setActive(false);
 			};
-		}
-		//#endregion
-		//#region src/client/assets-tab.tsx
-		/**
-		* assets-tab — RAY MEDIA + RAY CARDS in the DSH right sidebar
-		* (dsh-better-sidebar). TWO tabs, because they were TWO things
-		* (operator 2026-08-22: "media and the cards to make action cards were
-		* different"):
-		*
-		*   Melite Media — the MEDIA ARCHIVE (what we made): an iframe of
-		*     /editor/?meliteAssets=media rendering the REAL SidebarBody (search,
-		*     sort, upload, category groups, virtualized). Tiles drag the asset
-		*     MIME (application/tech-noir-asset) — drop attaches to a card slot
-		*     or spawns an Ops input card.
-		*   Melite Cards — the CAPABILITY LIBRARY (what we can make): an iframe of
-		*     /editor/?meliteAssets=cards rendering the REAL LibrarySidebar
-		*     (search, genre groups, provenance badges, studio tiles). Tiles
-		*     drag the capability MIME (application/tech-noir-capability) —
-		*     drop lands an action card.
-		*   Melite ComfyUI (2026-08-25) — the ComfyUI MANAGEMENT surface: an iframe
-		*     of /editor/?meliteAssets=comfy rendering the REAL ComfyManagerRailPanel
-		*     (backend endpoint door + Manager upkeep readout/actions) — the old
-		*     standalone ComfyUI-Manager plugin, mirrored as a third tab.
-		*   Melite Pipelines (2026-08-25) — the PIPELINE TEMPLATES: an iframe of
-		*     /editor/?meliteAssets=pipelines rendering the REAL PipelinesSection
-		*     under its own search (PipelinesPane). Click loads a spec in-frame;
-		*     the row DRAGS application/tech-noir-pipeline — dropping it on the
-		*     deck canvas or chat cards lands the WHOLE spec as its action cards
-		*     (the drag is what crosses frames; clicks cannot).
-		*
-		* THE REAL components, MOVED — no reimplementation. Native HTML5 drags
-		* cross same-origin frames, so tiles drag from these panels onto the
-		* Cards takeover canvas and the chat cards. Both registered on the
-		* PUBLIC registry (ctx.betterSidebar.registerTab); DSH theming is LIVE
-		* via the ONE embed-bridge each tab runs on its iframe.
-		*/
-		/** One tab body: an iframe host for one REAL sidebar + the theme bridge. */
-		function SidebarFrame({ src, title, marker }) {
-			const frameRef = (0, react.useRef)(null);
-			(0, react.useEffect)(() => {
-				if (frameRef.current === null) return;
-				const bridge = startEmbedBridge(frameRef.current);
-				return () => {
-					bridge.stop();
-				};
-			}, []);
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("iframe", {
-				ref: frameRef,
-				src,
-				title,
-				className: deck_module_css_default.assetsFrame,
-				"data-melite-frame": marker
-			});
-		}
-		function MediaPanelLegacy() {
-			/** The persistent overlay frame: built once from the FIRST preview. */
-			const [frame, setFrame] = (0, react.useState)(null);
-			/** The asset the user wants on screen right now (null = closed). */
-			const [target, setTarget] = (0, react.useState)(null);
-			/** The last asset the overlay page confirmed ready (echoed id). */
-			const [readyId, setReadyId] = (0, react.useState)(null);
-			const frameRef = (0, react.useRef)(null);
-			(0, react.useEffect)(() => {
-				const onMsg = (e) => {
-					const d = e.data;
-					if (d === null || typeof d !== "object") return;
-					if (d.type === "melite-preview-open" && typeof d.asset?.id === "string") {
-						const id = d.asset.id;
-						console.warn("[MediaPanel] open", id.split("/").pop());
-						setFrame((f) => f ?? {
-							src: "/editor/?melitePreview=" + encodeURIComponent(id),
-							bootAssetId: id
-						});
-						setTarget(id);
-					} else if (d.type === "melite-preview-close") {
-						console.warn("[MediaPanel] close");
-						setTarget(null);
-					} else if (d.type === "melite-preview-ready") {
-						console.warn("[MediaPanel] ready echo", d.assetId);
-						if (typeof d.assetId === "string") setReadyId(d.assetId);
-					}
-				};
-				window.addEventListener("message", onMsg);
-				return () => {
-					window.removeEventListener("message", onMsg);
-				};
-			}, []);
-			(0, react.useEffect)(() => {
-				console.warn("[MediaPanel] nav-effect", JSON.stringify({
-					target,
-					readyId
-				}));
-				if (target === null || readyId === null || readyId === target) return;
-				const win = frameRef.current?.contentWindow;
-				console.warn("[MediaPanel] posting navigate to", win ? "live win" : "NO WIN");
-				win?.postMessage({
-					type: "melite-preview-navigate",
-					assetId: target
-				}, window.location.origin);
-			}, [target, readyId]);
-			(0, react.useEffect)(() => {
-				if (target === null || readyId === target) return;
-				const t = window.setTimeout(() => setReadyId(target), 7e3);
-				return () => window.clearTimeout(t);
-			}, [target, readyId]);
-			const revealed = target !== null && readyId === target;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SidebarFrame, {
-				src: "/editor/?meliteAssets=media",
-				title: "Melite Media",
-				marker: "media"
-			}), frame !== null && (0, react_dom.createPortal)(/* @__PURE__ */ (0, react_jsx_runtime.jsx)("iframe", {
-				ref: frameRef,
-				src: frame.src,
-				title: "Melite Media preview",
-				style: {
-					position: "fixed",
-					inset: "0",
-					width: "100vw",
-					height: "100vh",
-					border: "0",
-					zIndex: 2147483e3,
-					background: "#000",
-					opacity: revealed ? 1 : 0,
-					transition: revealed ? "opacity 140ms ease-out" : "none",
-					pointerEvents: revealed ? "auto" : "none"
-				}
-			}), document.body)] });
-		}
-		const CardsPanel = () => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SidebarFrame, {
-			src: "/editor/?meliteAssets=cards",
-			title: "Melite Cards",
-			marker: "cards"
-		});
-		const ComfyPanel = () => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SidebarFrame, {
-			src: "/editor/?meliteAssets=comfy",
-			title: "Melite ComfyUI",
-			marker: "comfy"
-		});
-		const PipelinesPanel = () => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SidebarFrame, {
-			src: "/editor/?meliteAssets=pipelines",
-			title: "Melite Pipelines",
-			marker: "pipelines"
-		});
-		/** The picture glyph — the media archive (what we made). */
-		function MediaIcon({ size }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
-				width: size,
-				height: size,
-				viewBox: "0 0 16 16",
-				fill: "none",
-				"aria-hidden": "true",
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-						x: "2",
-						y: "3",
-						width: "12",
-						height: "10",
-						rx: "1.5",
-						stroke: "currentColor",
-						strokeWidth: "1.3"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "5.6",
-						cy: "6.4",
-						r: "1",
-						fill: "currentColor"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", {
-						d: "M2.6 11.4l3.2-3.2 2.4 2.4 2.2-2.2 3 3",
-						stroke: "currentColor",
-						strokeWidth: "1.3",
-						strokeLinecap: "round",
-						strokeLinejoin: "round"
-					})
-				]
-			});
-		}
-		/** The stacked-cards glyph — the capability library (action cards). */
-		function CardsIcon({ size }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
-				width: size,
-				height: size,
-				viewBox: "0 0 16 16",
-				fill: "none",
-				"aria-hidden": "true",
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-					x: "5.5",
-					y: "2.5",
-					width: "8",
-					height: "8",
-					rx: "1.5",
-					stroke: "currentColor",
-					strokeWidth: "1.3"
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-					x: "2.5",
-					y: "5.5",
-					width: "8",
-					height: "8",
-					rx: "1.5",
-					stroke: "currentColor",
-					strokeWidth: "1.3",
-					fill: "var(--dsw-alias-bg-base, #17171c)"
-				})]
-			});
-		}
-		/** The server-rack glyph — ComfyUI management (the GPU backend + its upkeep). */
-		function ComfyIcon({ size }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
-				width: size,
-				height: size,
-				viewBox: "0 0 16 16",
-				fill: "none",
-				"aria-hidden": "true",
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-						x: "2.5",
-						y: "2.5",
-						width: "11",
-						height: "4.6",
-						rx: "1.2",
-						stroke: "currentColor",
-						strokeWidth: "1.3"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-						x: "2.5",
-						y: "8.9",
-						width: "11",
-						height: "4.6",
-						rx: "1.2",
-						stroke: "currentColor",
-						strokeWidth: "1.3"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "5.1",
-						cy: "4.8",
-						r: "0.9",
-						fill: "currentColor"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "5.1",
-						cy: "11.2",
-						r: "0.9",
-						fill: "currentColor"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", {
-						d: "M8.2 4.8h3.2M8.2 11.2h3.2",
-						stroke: "currentColor",
-						strokeWidth: "1.3",
-						strokeLinecap: "round"
-					})
-				]
-			});
-		}
-		/** The connected-nodes glyph — pipeline templates (one spec, N steps). */
-		function PipelinesIcon({ size }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
-				width: size,
-				height: size,
-				viewBox: "0 0 16 16",
-				fill: "none",
-				"aria-hidden": "true",
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-						x: "2",
-						y: "2.5",
-						width: "5",
-						height: "4",
-						rx: "1",
-						stroke: "currentColor",
-						strokeWidth: "1.3"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-						x: "9",
-						y: "9.5",
-						width: "5",
-						height: "4",
-						rx: "1",
-						stroke: "currentColor",
-						strokeWidth: "1.3"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", {
-						d: "M4.5 6.5v3a2 2 0 0 0 2 2H9",
-						stroke: "currentColor",
-						strokeWidth: "1.3",
-						strokeLinecap: "round"
-					})
-				]
-			});
-		}
-		function register(ctx, id, title, order, icon, component) {
-			ctx.effect(() => {
-				const dispose = ctx.betterSidebar.registerTab({
-					id,
-					title: () => title,
-					icon,
-					order,
-					single: true,
-					component
-				});
-				return typeof dispose === "function" ? dispose : () => {};
-			}, "melite-card-deck: " + id + " tab");
-		}
-		/** Register ALL FOUR tabs on the better-sidebar registry. */
-		function registerRayAssetsTab(ctx) {
-			register(ctx, "melite-card-deck:media", "Melite Media", 60, (s) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(MediaIcon, { size: s }), MediaPanelLegacy);
-			register(ctx, "melite-card-deck:cards", "Melite Cards", 61, (s) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CardsIcon, { size: s }), CardsPanel);
-			register(ctx, "melite-card-deck:comfy", "Melite ComfyUI", 62, (s) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ComfyIcon, { size: s }), ComfyPanel);
-			register(ctx, "melite-card-deck:pipelines", "Melite Pipelines", 63, (s) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PipelinesIcon, { size: s }), PipelinesPanel);
-			let tries = 0;
-			const timer = window.setInterval(() => {
-				tries++;
-				if (tries > 250 || document.querySelector("[data-melite-frame='cards']")) {
-					window.clearInterval(timer);
-					return;
-				}
-				ctx.betterSidebar.openTab?.({ type: "melite-card-deck:cards" });
-			}, 700);
 		}
 		//#endregion
 		//#region \0dsh-css:melite-card-deck/src/client/ideoField.module.css.mjs
@@ -4022,11 +3744,6 @@ window.__ModuleLoader__.load({
 				ctx.effect(() => mountDeckFullbleed(), "melite-card-deck: full-bleed");
 			} catch (error) {
 				console.error("[melite-card-deck] full-bleed mount failed:", error);
-			}
-			try {
-				registerRayAssetsTab(ctx);
-			} catch (error) {
-				console.error("[melite-card-deck] assets tab registration failed:", error);
 			}
 		}
 		//#endregion

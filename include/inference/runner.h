@@ -27,6 +27,17 @@ inference_runner *runner_create(size_t vram_budget_bytes, inference_ws *ws);
 int runner_register_plugin(inference_runner *r,
                            const char *type_id, const char *so_path);
 
+/* (validation law, 2026-08-30) Query a registered plugin's declared
+ * schema (inputs/outputs/params JSON) WITHOUT executing anything.
+ * Returns the length written to out (which holds a NUL-terminated
+ * schema JSON), or -1 when the type is not registered / has no
+ * schema. Registration-time input-coverage checks call this so a
+ * card that cannot satisfy a node's REQUIRED inputs is rejected 4xx
+ * BEFORE any run registers (queue lane law) instead of burning a
+ * queue slot and dying at execution. */
+int runner_schema_for_type(inference_runner *r, const char *type_id,
+                           char *out, size_t cap);
+
 /* Execute a DAG. Returns 0 on success, negative on error.
  * On success, *result_json is set to a malloc'd JSON string with output
  * tensor metadata. Caller frees with inference_free(). */

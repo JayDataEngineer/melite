@@ -1,7 +1,7 @@
 //#region src/index.ts
 const name = "infer-media";
 const inject = ["webServer"];
-const DEFAULT_GATEWAYS = ["http://localhost:18090", "http://localhost:33081"];
+const DEFAULT_GATEWAYS = ["http://localhost:18090"];
 const DEFAULT_TIMEOUT_MS = 15e3;
 const DEFAULT_LIMIT = 200;
 const JSON_HEADERS = {

@@ -48,7 +48,8 @@ import urllib.request
 import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-HOLD_DELAY = 1.2        # default /prompt hold before the 500
+HOLD_DELAY = 0.3        # default /prompt hold before the 500
+                        # (2026-08-31 speed law: was 1.2 — pure sleep tax)
 RACE_WORK = 1.6         # /race executor "render" duration
 PROMPTS = []            # (path, body) in arrival order
 PROMPTS_LOCK = threading.Lock()
@@ -300,8 +301,20 @@ class Api:
             return -1, str(e)
 
     def queue(self):
-        _, body = self._req("GET", "/v1/queue")
-        return json.loads(body)
+        code, body = self._req("GET", "/v1/queue")
+        if code == -1:
+            # transport failure (server mid kill/reboot): NOT a JSON
+            # contract violation — pollers treat down-as-legal. Signal
+            # it with an impossible sentinel so wait_for keeps polling.
+            return {"queued": -1, "running": -1, "active": "",
+                    "queued_ids": []}
+        try:
+            return json.loads(body)
+        except ValueError:
+            # (2026-08-31, proven) a transport-error string reached
+            # json.loads and killed the suite mid-C7 — raw bytes now.
+            print("\n!! /v1/queue unparseable body: %r" % body[:200])
+            raise
 
     def submit(self, prompt):
         _, body = self._req("POST", "/v1/pipelines/start",
@@ -347,15 +360,22 @@ def tstatus(api, rid):
 
 
 def _healthy(api):
+    code, body = api._req("GET", "/v1/queue")
+    if code != 200:
+        return False
     try:
-        api.queue()
+        json.loads(body)
         return True
-    except Exception:
+    except ValueError:
         return False
 
 
-def parse_all_sidecars(build):
-    """Every _pipeline.json under output/ must parse (F1 atomicity)."""
+def parse_all_sidecars(build, since=None):
+    """Every _pipeline.json under output/ must parse (F1 atomicity).
+    (speed law, 2026-08-31) with `since`: only sidecars this suite run
+    wrote — the shared build/output tree carries hundreds of older
+    runs (prod history lives there); re-parsing all of them per kill
+    cycle added minutes of pure waste with zero extra guarantee."""
     out = os.path.join(build, "output")
     bad = []
     n = 0
@@ -363,6 +383,11 @@ def parse_all_sidecars(build):
         return n, bad
     for d in os.listdir(out):
         p = os.path.join(out, d, "_pipeline.json")
+        try:
+            if since is not None and os.path.getmtime(p) < since:
+                continue
+        except OSError:
+            continue
         if not os.path.isfile(p):
             continue
         n += 1
@@ -385,6 +410,7 @@ def swept_count(build, rid):
 
 def main():
     global HOLD_DELAY
+    T_START = time.time()   # speed law: sidecar parses filter to this run
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo-dir", required=True)
     ap.add_argument("--build-dir", required=True)
@@ -424,7 +450,12 @@ def main():
                 % (comfy_port, url_path, timeout_s))
 
     fixture_yaml("_queue_test", "")
-    fixture_yaml("_chaos_hold", "/hold")
+    # hold timeout 6s: since the queue-recovery law (2026-08-31) a
+    # kill -9 victim RESURRECTS at reboot and re-occupies the serial
+    # GPU until its timeout — 6s drains it fast enough that later
+    # checks never queue behind a zombie hold.
+    fixture_yaml("_chaos_hold", "/hold", timeout_s=6)
+    fixture_yaml("_chaos_hold60", "/hold", timeout_s=60)
     fixture_yaml("_chaos_race", "/race")
     fixture_yaml("_chaos_slow", "/slow", timeout_s=3)
     fixture_yaml("_chaos_err2", "/err2")
@@ -478,7 +509,8 @@ def main():
         stderr=open(srv_log, "ab"))
     api = Api("http://127.0.0.1:%d" % port)
     run_ids = []
-    made_fixtures = ["_queue_test", "_chaos_hold", "_chaos_race",
+    made_fixtures = ["_queue_test", "_chaos_hold", "_chaos_hold60",
+                     "_chaos_race",
                      "_chaos_slow", "_chaos_err2", "_chaos_deadnode",
                      "_chaos_tl"]
     failures = []
@@ -617,7 +649,7 @@ def main():
 
         # ================= C2: stop storm on queued runs ============
         print("\n-- C2 stop storm (10 submit, 8 simultaneous stops)")
-        HOLD_DELAY = 3.0
+        HOLD_DELAY = 3.0   # C2 shield: holder must pin the GPU while 8 stops land
         h = json.loads(api.submit_yaml("_chaos_hold", "storm-holder")[1]
                        )["run_id"]
         run_ids.append(h)
@@ -904,7 +936,7 @@ def main():
 
         # ================= C7: kill -9 sidecar atomicity ============
         print("\n-- C7 kill -9 mid-run x5 (sidecar atomicity)")
-        HOLD_DELAY = 2.5
+        HOLD_DELAY = 1.0
         kill_delays = [0.15, 0.4, 0.9, 1.4, 2.0]
         random.seed(7)
         for kd in kill_delays:
@@ -914,7 +946,7 @@ def main():
                      "victim running")
             time.sleep(kd)
             kill_hard(srv)
-            n, bad = parse_all_sidecars(build)
+            n, bad = parse_all_sidecars(build, since=T_START)
             check(not bad,
                   "C7: after kill@%.2fs all %d sidecars parse (%r)" %
                   (kd, n, bad[:2]))
@@ -1432,6 +1464,300 @@ def main():
                   "C18d: no run registered for the rejected card")
         except (AssertionError, OSError) as ex:
             check(False, "C18d: " + str(ex))
+
+        # C18e (write-back law, proven 2026-08-31 on draft-timeline-h3):
+        # a run whose windows ALL error (fake comfy 500s) has ZERO
+        # artifacts — the write-back's urls accumulator never receives
+        # an append and used to publish UNINITIALIZED heap bytes into
+        # the card ("assetUrls":[X\x04]) — the click then died. Every
+        # write-back must leave a parseable doc with an EMPTY list.
+        code, body = api._req("POST", "/v1/pipelines/drafts",
+                              {"intent": "wb-law-%d" % int(time.time()),
+                               "stages": [{"id": "s_0", "inputs": [""],
+                                           "provenance": "agent"}]})
+        wbid = (json.loads(body).get("draftId")
+                if code in (200, 201) else None)
+        check(bool(wbid), "C18e1: draft created for write-back law "
+              "(got %d %s)" % (code, body[:60]))
+        if wbid:
+            code, body = api._req("POST", "/v1/pipelines/start",
+                                  {"yaml": "_chaos_tl", "draft_id": wbid,
+                                   "calls": [{"text": "a",
+                                              "start_frame": 0,
+                                              "end_frame": 24}],
+                                   "seed": 7, "fps": 24,
+                                   "prompt": "wb-law"})
+            wbrun = (json.loads(body).get("run_id")
+                     if code in (200, 202) else None)
+            check(bool(wbrun), "C18e2: errored-window run accepted "
+                  "(got %d %s)" % (code, body[:60]))
+            if wbrun:
+                run_ids.append(wbrun)
+                try:
+                    wait_for(lambda r=wbrun: terminal(api.status(r)),
+                             60, "C18e run terminal")
+                    code, body = api._req(
+                        "GET", "/v1/pipelines/drafts/" + wbid)
+                    try:
+                        wd = json.loads(body)
+                        urls = (wd.get("stages", [{}])[0]
+                                .get("result", {}).get("assetUrls"))
+                        check(code == 200 and (urls is None or urls == []),
+                              "C18e3: write-back left a parseable card, "
+                              "assetUrls clean (got %s)"
+                              % repr(urls)[:60])
+                    except ValueError:
+                        check(False, "C18e3: card UNPARSEABLE after "
+                              "write-back: %r" % body[:120])
+                except AssertionError as ex:
+                    check(False, "C18e3: " + str(ex))
+            try:
+                os.remove(os.path.join(build, "drafts",
+                                       wbid + ".json"))
+            except OSError:
+                pass
+
+        # ==== C19: validation law — schema-driven input coverage ====
+        # PROVEN FAILURE (2026-08-30): six motion-card runs registered,
+        # burned queue slots, then died at EXECUTION ("[kimodo] no text
+        # input") because the gateway never wired the card's "text"
+        # param into the engine's REQUIRED "text" input. Engines
+        # declare their schemas; registration must now WIRE same-named
+        # body fields and REJECT unsatisfiable required inputs 4xx
+        # BEFORE any ticket/thread/sidecar commits.
+        print("\n-- C19 validation law: schema-driven input coverage")
+        # hermetic kimodo fixture: dead server_url (the engine POSTs to
+        # server_url/api/generate first — connection refused errors in
+        # <1s; no real GPU contact)
+        os.makedirs(os.path.join(repo, "pipelines", "_chaos_kim"),
+                    exist_ok=True)
+        made_fixtures.append("_chaos_kim")
+        with open(os.path.join(repo, "pipelines", "_chaos_kim",
+                               "pipeline.yaml"), "w") as f:
+            f.write(
+                "name: _chaos_kim\n"
+                "description: chaos — kimodo lane input coverage\n"
+                "nodes:\n"
+                "  - id: generate\n"
+                "    type: kimodo_engine\n"
+                "    params: {\"server_url\":\"http://127.0.0.1:9\","
+                "\"model\":\"soma-rp-v1.1\","
+                "\"model_dir\":\"/tmp/none\","
+                "\"text_bundle\":\"/tmp/none\","
+                "\"poll_ms\":100,\"timeout_s\":5}\n")
+        # (a) no text -> 4xx naming the node and the input (the body
+        # carries prompt+seed the way a real motion card does — the
+        # earlier "missing prompt" door must NOT mask the coverage 4xx)
+        code, body = api._req("POST", "/v1/pipelines/start",
+                              {"yaml": "_chaos_kim",
+                               "model": "soma-rp-v1.1",
+                               "prompt": "sword block motion",
+                               "seed": 7})
+        check(code == 400 and "requires input 'text'" in body
+              and "generate" in body,
+              "C19a: textless kimodo card 4xx with node+input (got %d %s)"
+              % (code, body[:120]))
+        # (b) no zombie: no run_id, queue still idle-consistent
+        try:
+            jz = json.loads(body)
+        except ValueError:
+            jz = {}
+        check("run_id" not in jz,
+              "C19b: rejection carries no run_id (got %s)" % body[:80])
+        # (c) with text -> registers; the wiring delivered the field
+        code, body = api._req("POST", "/v1/pipelines/start",
+                              {"yaml": "_chaos_kim",
+                               "model": "soma-rp-v1.1",
+                               "prompt": "sword block motion",
+                               "text": "a person raises a sword into a "
+                                       "high block parry",
+                               "seed": 7})
+        try:
+            jk = json.loads(body)
+        except ValueError:
+            jk = {}
+        rk = jk.get("run_id")
+        check(code in (200, 202) and rk,
+              "C19c: text-bearing kimodo card registered (got %d %s)"
+              % (code, body[:100]))
+        if rk:
+            run_ids.append(rk)
+            # (d) the run must die on the DEAD server (submit failure),
+            # NOT on "no text input" — proving the wiring worked
+            try:
+                st = wait_for(lambda: tstatus(api, rk), 20,
+                              "C19d kimodo run terminal")
+                err = str(st.get("error", ""))
+                check("no text input" not in err,
+                      "C19d: engine got the wired text (err: %s)"
+                      % err[:90])
+            except AssertionError as ex:
+                check(False, "C19d: " + str(ex))
+
+        # ==== C20: stack-smash law — unbounded stage snapshots ====
+        # PROVEN FAILURE (2026-08-31, gateway run-6a94bc7a killed by
+        # "*** buffer overflow detected ***"): run_write_sidecar built
+        # stages_json in a fixed char[8192] with `so += snprintf`
+        # appends — snprintf's WOULD-BE return pushed `so` past the
+        # array and the trailing ']' wrote past the stack buffer,
+        # mid-run, at stage 31 of a 25-window card (the status door
+        # carried the same fixed array). Replicated here with 60 echo
+        # nodes carrying 60-char ids: stage headers + errors exceed
+        # 8192 bytes deterministically with NO comfy dependency.
+        print("\n-- C20 stack-smash law: sidecar + status stage lists")
+        os.makedirs(os.path.join(repo, "pipelines", "_chaos_many"),
+                    exist_ok=True)
+        made_fixtures.append("_chaos_many")
+        sid = "st" + "x" * 58          # 60-char stage id (id[64] cap)
+        with open(os.path.join(repo, "pipelines", "_chaos_many",
+                               "pipeline.yaml"), "w") as f:
+            f.write("name: _chaos_many\n"
+                    "description: chaos — stage-dense run\n"
+                    "nodes:\n")
+            for i in range(60):
+                f.write("  - id: %s%02d\n    type: echo\n"
+                        % (sid, i))
+        code, body = api._req("POST", "/v1/pipelines/start",
+                              {"yaml": "_chaos_many", "prompt": "dense"})
+        try:
+            jm = json.loads(body)
+        except ValueError:
+            jm = {}
+        rm2 = jm.get("run_id")
+        check(code in (200, 202) and rm2,
+              "C20a: 60-stage run registered (got %d %s)"
+              % (code, body[:100]))
+        if rm2:
+            run_ids.append(rm2)
+            try:
+                st2 = wait_for(lambda: tstatus(api, rm2), 30,
+                               "C20b 60-stage run terminal")
+                check(st2.get("status") in ("error", "failed",
+                                            "success", "completed"),
+                      "C20b: run reached terminal (got %s)"
+                      % st2.get("status"))
+                # sidecar must PARSE and carry ALL 60 stages — the old
+                # fixed 8192 builder smashed the stack here
+                sc = json.load(open(os.path.join(
+                    build, "output", rm2, "_pipeline.json")))
+                check(len(sc.get("stages", [])) == 60,
+                      "C20c: sidecar lists all 60 stages (got %d)"
+                      % len(sc.get("stages", [])))
+                # status door: same stage list, unbounded
+                check(len(st2.get("stages", [])) == 60,
+                      "C20d: status lists all 60 stages (got %d)"
+                      % len(st2.get("stages", [])))
+            except AssertionError as ex:
+                check(False, "C20b-d: " + str(ex))
+            except ValueError as ex:
+                check(False, "C20c: sidecar unparseable: " + str(ex))
+        # gateway outlived the stage-dense run either way
+        try:
+            wait_for(lambda: _healthy(api), 10, "C20e gateway healthy")
+            check(True, "C20e: gateway alive after 60-stage run")
+        except AssertionError as ex:
+            check(False, "C20e: " + str(ex))
+
+        # ==== C21: draft lint law — corrupt cards self-heal at boot ====
+        # PROVEN FAILURE (2026-08-31): the sidebar card click GETs the
+        # draft verbatim; the old fixed-buffer write-back cut live
+        # cards mid-string (draft-timeline-h3.json, history row cut
+        # inside a URL) — the click opened NOTHING. At every boot each
+        # draft is structurally scanned and a cut document is repaired
+        # (truncate at the damage, null a dangling key, close the
+        # bracket stack) so the card surface can never stay dead.
+        print("\n-- C21 draft lint: corrupt card repaired at boot")
+        fx = os.path.join(build, "drafts", "draft-lint-fixture.json")
+        with open(fx, "w") as f:
+            # exactly the proven shape: cut mid-string, no closers
+            f.write('{"draftId":"draft-lint-fixture","intent":"card",'
+                    '"stages":[{"id":"s_0","inputs":[""],"provenance":'
+                    '"agent"}],"status":"ready","history":[{"runId":'
+                    '"run-dead","status":"completed","at":1,'
+                    '"durationSec":9,"video":"/editor/assets/ru')
+        kill_hard(srv)
+        srv = boot()
+        wait_for(lambda: _healthy(api), 15, "C21 reboot")
+        try:
+            doc = json.load(open(fx))
+            check(doc.get("draftId") == "draft-lint-fixture" and
+                  isinstance(doc.get("stages"), list) and
+                  doc.get("stages"),
+                  "C21a: corrupt draft repaired to valid JSON "
+                  "(stages survived)")
+            code, body = api._req("GET",
+                                  "/v1/pipelines/drafts/draft-lint-fixture")
+            ok = False
+            try:
+                ok = code == 200 and json.loads(body).get("draftId") == \
+                    "draft-lint-fixture"
+            except ValueError:
+                pass
+            check(ok, "C21b: the sidebar door serves the repaired card "
+                  "(got %d)" % code)
+            hist = doc.get("history")
+            check(isinstance(hist, list) and len(hist) == 1 and
+                  hist[0].get("video") is None,
+                  "C21c: cut history row healed (video nulled, row kept)")
+        except ValueError as ex:
+            check(False, "C21a: draft still corrupt after boot: %s" % ex)
+        os.remove(fx)
+        # C21d (regression, proven 2026-08-31): a naive grammar rule
+        # mass-quarantined 1860 HEALTHY ray-era drafts ('{"a":{}}' —
+        # outer close after nested close read as invalid). A healthy
+        # nested-empty-object draft must survive a boot BYTE-IDENTICAL.
+        fx2 = os.path.join(build, "drafts", "draft-lint-healthy.json")
+        healthy = ('{"draftId":"draft-lint-healthy","intent":"nest",'
+                   '"meta":{"a":{},"b":[]},"stages":[],"num":123,'
+                   '"neg":-4,"f":1.5e3,"t":true,"status":"ready",'
+                   '"history":[]}')
+        with open(fx2, "w") as f:
+            f.write(healthy)
+        kill_hard(srv)
+        srv = boot()
+        wait_for(lambda: _healthy(api), 15, "C21d reboot")
+        got = open(fx2).read()
+        check(got == healthy and json.loads(got).get("num") == 123,
+              "C21d: healthy nested/empty/number draft untouched at boot")
+        os.remove(fx2)
+
+        # ==== C22: queue recovery law — a crash must not eat the queue
+        # PROVEN (2026-08-31): the fortify crash killed the gateway
+        # with a live queue; at reboot every queued/running run was
+        # lost (swept to failed). Since the sidecar carries the FULLY
+        # COMPOSED yaml, boot now RESURRECTS queued/running runs under
+        # their original run_ids and re-arms them.
+        print("\n-- C22 queue recovery: kill -9 with a live queue")
+        code, body = api.submit_yaml("_chaos_hold60", "recover-victim")
+        rv = json.loads(body)["run_id"]
+        run_ids.append(rv)
+        wait_for(lambda: api.queue().get("running") == 1, 15,
+                 "C22 victim running")
+        # a second run sits QUEUED behind it
+        code, body = api.submit_yaml("_queue_test", "recover-waiter")
+        rw = json.loads(body)["run_id"]
+        run_ids.append(rw)
+        wait_for(lambda: api.queue().get("queued") == 1, 15,
+                 "C22 waiter queued")
+        kill_hard(srv)
+        srv = boot()
+        wait_for(lambda: _healthy(api), 15, "C22 reboot")
+        q = api.queue()
+        ids_live = [q.get("active", "")] + list(q.get("queued_ids", []))
+        check(rv in ids_live,
+              "C22a: killed RUNNING run resurrected (queue %s)" % q)
+        check(rw in ids_live,
+              "C22b: QUEUED run survived the crash (queue %s)" % q)
+        # both drainable through the ordinary stop door
+        for r in (rv, rw):
+            api.stop(r)
+        try:
+            wait_for(lambda: api.queue().get("running", 0) == 0 and
+                     api.queue().get("queued", 0) == 0, 30,
+                     "C22c queue drained")
+            check(True, "C22c: recovered runs stoppable, queue drains")
+        except AssertionError as ex:
+            check(False, "C22c: " + str(ex))
 
     except AssertionError as ex:
         failures.append(str(ex))

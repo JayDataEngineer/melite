@@ -374,12 +374,13 @@ window.__ModuleLoader__.load({
 				if (part === null || typeof part !== "object") continue;
 				const text = part.text;
 				if (typeof text !== "string") continue;
-				const at = text.indexOf("draft ");
+				const atCard = text.indexOf("card ");
+				const at = atCard >= 0 ? atCard : text.indexOf("draft ");
 				if (at < 0) continue;
-				const rest = text.slice(at + 6);
+				const rest = text.slice(at + (atCard >= 0 ? 5 : 6));
 				const end = rest.indexOf(" ");
 				const tok = end < 0 ? rest : rest.slice(0, end);
-				if (tok.startsWith("p_") && tok.length > 2) {
+				if ((tok.startsWith("draft-") || tok.startsWith("p_")) && tok.length > 2) {
 					draftId = tok;
 					break;
 				}

@@ -21,11 +21,30 @@ import sys
 # Ensure core deps (the megapak base may be missing some for newer ComfyUI)
 subprocess.run([sys.executable, "-m", "pip", "install", "--no-cache-dir", "psutil"], check=False)
 
-# The base may not have yaml installed; install if missing
+# The base may not have yaml installed; install if missing.
+# The megapak's system python3 may lack the pip module while the `pip` binary
+# on PATH belongs to a different python. Strategy: try -m pip → ensurepip →
+# cross-interpreter --target install. Re-exec once so sys.path picks up the
+# fresh site-packages.
+def _install_pyyaml():
+    import site
+    if subprocess.run([sys.executable, "-m", "pip", "install", "pyyaml"], check=False).returncode == 0:
+        return
+    subprocess.run([sys.executable, "-m", "ensurepip", "--upgrade"], check=False)
+    if subprocess.run([sys.executable, "-m", "pip", "install", "pyyaml"], check=False).returncode == 0:
+        return
+    sp = site.getsitepackages()[0]
+    if subprocess.run(["pip", "install", "--no-cache-dir", "--target", sp, "pyyaml"], check=False).returncode == 0:
+        return
+    raise SystemExit("setup_comfyui: could not install pyyaml for " + sys.executable)
+
 try:
     import yaml
 except ImportError:
-    subprocess.run([sys.executable, "-m", "pip", "install", "pyyaml"], check=True)
+    _install_pyyaml()
+    if os.environ.get("_SETUP_COMFYUI_REEXEC") != "1":
+        os.environ["_SETUP_COMFYUI_REEXEC"] = "1"
+        os.execv(sys.executable, [sys.executable] + sys.argv)
     import yaml
 
 CUSTOM_NODES = "/root/ComfyUI/custom_nodes"

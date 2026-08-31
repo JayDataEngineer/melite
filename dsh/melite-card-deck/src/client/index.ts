@@ -13,7 +13,6 @@ import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import { claimDeckApply, releaseDeckApply } from './apply-guard.ts'
 import { mountCardsSidebarEntry } from './deck-sidebar-entry.tsx'
 import { mountDeckFullbleed } from './deck-fullbleed.ts'
-import { registerRayAssetsTab } from './assets-tab.tsx'
 // The native form-card renderer + its ideogram_canvas slot (the advanced
 // Ideogram mode import). Exported so the bundle CARRIES them for any DSH
 // surface that mounts action-form cards; FormCard dispatches IdeoCanvasField
@@ -51,12 +50,9 @@ export function apply(ctx: ClientContext): void {
     console.error('[melite-card-deck] full-bleed mount failed:', error)
   }
 
-  // Melite Assets — the old asset sidebar reborn in the better-sidebar (the
-  // public registry; a first-class + menu tab). Draggable model tiles that
-  // land as action cards on any card view. Logged, never thrown.
-  try {
-    registerRayAssetsTab(ctx as unknown as Parameters<typeof registerRayAssetsTab>[0])
-  } catch (error) {
-    console.error('[melite-card-deck] assets tab registration failed:', error)
-  }
+  // ONE SIDEBAR (operator order 2026-08-30: "stop with the three — make ONE
+  // sidebar with all the features"): the ray-era Melite Assets right-sidebar
+  // tabs are REMOVED. The ONE media sidebar is @infer-media/dsh-media's
+  // "Media" tab (runs grid + playback + recreate); the deck keeps only its
+  // left-sidebar canvas row. assets-tab.tsx was deleted — single pattern.
 }

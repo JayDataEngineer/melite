@@ -5,13 +5,41 @@
  * tokens and strips its own chrome -- the canvas rides DSH's sidebar and
  * details column, it does not bring its own frame.
  */
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import css from './deck.module.css'
 import { startEmbedBridge, type EmbedHandle } from './embed-bridge.ts'
 import { createZoomPromotion, PREVIEW_DIALOG_SELECTOR, ZOOM_OVERLAY_SELECTOR } from '../../../melite-card-view/src/client/zoomPromotion.ts'
 
+/** CARD REPLAY (2026-08-30, additive): a surface may ask the studio to
+ * open with ONE draft loaded — the editor's own /editor/?meliteCards=<id>
+ * mode (it fetches the draft and hydrateDraft()s the card with every
+ * parameter filled). Parked here BEFORE mount by deck-sidebar-entry's
+ * openDeckWithDraft(); consumed once by the canvas below. */
+let pendingDraftId = ''
+
+export function setPendingDraft(draftId: string): void {
+  pendingDraftId = draftId
+}
+
+/** Live-open event while the canvas is already mounted. */
+export const OPEN_DRAFT_EVENT = 'melite-cards-deck-open-draft'
+
 export function DeckCanvas() {
   const frameRef = useRef<HTMLIFrameElement>(null)
+  const [draftId, setDraftId] = useState(() => {
+    const d = pendingDraftId
+    pendingDraftId = ''
+    return d
+  })
+
+  useEffect(() => {
+    const onOpenDraft = (e: Event): void => {
+      const d = (e as CustomEvent<{ draftId?: unknown }>).detail?.draftId
+      if (typeof d === 'string' && d !== '') setDraftId(d)
+    }
+    document.addEventListener(OPEN_DRAFT_EVENT, onOpenDraft)
+    return () => { document.removeEventListener(OPEN_DRAFT_EVENT, onOpenDraft) }
+  }, [])
 
   useEffect(() => {
     const frame = frameRef.current
@@ -60,7 +88,7 @@ export function DeckCanvas() {
       <iframe
         ref={frameRef}
         className={css.canvasIframe}
-        src="/editor/"
+        src={draftId === '' ? '/editor/' : '/editor/?meliteCards=' + encodeURIComponent(draftId)}
         title="Melite card canvas"
         allow="clipboard-read; clipboard-write"
       />

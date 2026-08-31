@@ -171,6 +171,15 @@ if(INFERENCE_BUILD_TESTS)
                          --repo-dir ${CMAKE_SOURCE_DIR}
                          --build-dir ${CMAKE_BINARY_DIR})
         set_tests_properties(test_queue_chaos PROPERTIES TIMEOUT 600)
+        # BUNDLE LAW: per-endpoint tool+skill bundles (lane doors,
+        # isolation, two-door consistency, api gating). Pure catalog
+        # surface - boots inference_cli alone, no engine needed.
+        add_test(NAME test_bundles
+                 COMMAND ${Python3_EXECUTABLE}
+                         ${CMAKE_SOURCE_DIR}/tests/test_bundles.py
+                         --repo-dir ${CMAKE_SOURCE_DIR}
+                         --build-dir ${CMAKE_BINARY_DIR})
+        set_tests_properties(test_bundles PROPERTIES TIMEOUT 120)
     endif()
 endif()
 

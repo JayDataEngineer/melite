@@ -10,6 +10,7 @@
  *   "first 48 chars of the prompt…" — Aug 28, 05:01 AM · filename.mp4
  * Runs with an empty prompt fall back to run name/pipeline.
  */
+import * as React from 'react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 
@@ -30,6 +31,9 @@ interface RunRow {
   thumbnail?: string
   artifacts?: RunArtifact[]
   source?: string
+  /** Card linkage served by the gateway's runs list (2026-08-30 full
+   *  flow): the action card this run belongs to, for wand replay. */
+  draft_id?: string
 }
 
 type Kind = 'video' | 'image' | 'audio'
@@ -43,6 +47,7 @@ interface MediaItem {
   head: string
   final: boolean
   runId: string
+  draftId: string
   time: string
   file: string
   created: number
@@ -136,6 +141,7 @@ function flatten(runs: RunRow[]): MediaItem[] {
         head,
         final: isFinal,
         runId: String(run.run_id ?? ''),
+        draftId: typeof run.draft_id === 'string' ? run.draft_id : '',
         time: timeLabel(run.created_at),
         file,
         created: typeof run.created_at === 'number' ? run.created_at : 0,
@@ -237,42 +243,6 @@ export function MediaTabIcon({ size }: { size: number }) {
   )
 }
 
-/** Cards overlay ("Open as cards", 2026-08-30 operator order: THE CARD VIEW
- *  OPENS ON THIS PAGE — no popup, no foreign origin). The editor mounts
- *  same-origin at /editor/ (deck host serves the dist + proxies /v1 to the
- *  inference gateway :18090). The old ray-gateway (:33081) popup is
- *  EXTERMINATED along with the ray gateway itself. */
-function CardsOverlay({ runId, onClose }: { runId: string; onClose: () => void }): JSX.Element {
-  return createPortal(
-    <div
-      role="dialog"
-      aria-modal="true"
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 2147482000, display: 'flex', flexDirection: 'column',
-        background: 'rgba(2,6,23,0.94)',
-      }}
-    >
-      <div
-        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px' }}
-        onClick={(e) => { e.stopPropagation() }}
-      >
-        <span style={{ color: '#dde', fontSize: 13, fontWeight: 600 }}>Action cards — {runId}</span>
-        <button
-          onClick={onClose}
-          style={{ marginLeft: 'auto', padding: '4px 12px', fontSize: 12, border: '1px solid rgba(128,128,128,.6)', borderRadius: 6, background: 'rgba(20,22,28,.85)', color: '#dde', cursor: 'pointer' }}
-        >close ✕</button>
-      </div>
-      <iframe
-        src={'/editor/?revive=' + encodeURIComponent(runId)}
-        title="pipeline action cards"
-        style={{ flex: 1, width: '100%', border: 'none', background: '#0b0d11' }}
-      />
-    </div>,
-    document.body,
-  )
-}
-
 export function MediaPanel(): JSX.Element {
   const [runs, setRuns] = useState<RunRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -281,7 +251,6 @@ export function MediaPanel(): JSX.Element {
   const [cat, setCat] = useState<Cat>('all')
   const [search, setSearch] = useState('')
   const [preview, setPreview] = useState<MediaItem | null>(null)
-  const [cardsRun, setCardsRun] = useState<string | null>(null)
 
   const load = useCallback(() => {
     setLoading(true)
@@ -318,6 +287,31 @@ export function MediaPanel(): JSX.Element {
     }
   }, [load])
 
+  /** CARD REPLAY (final wiring, 2026-08-30): the wand opens THE CARDS
+   *  STUDIO — the left-sidebar Cards tab itself — by clicking its row,
+   *  exactly as the operator does. The studio opens with its own embed
+   *  bridge and full card system, untouched. No iframe here, no editor
+   *  dependency in this panel; the row is the deck bundle's own entry
+   *  ([data-melite-cards-entry]). The run→card link is the draft_id the
+   *  gateway's runs list carries per row (same payload this panel already
+   *  loaded — no extra fetch, no gallery route). Missing link or missing
+   *  row = honest inline error. */
+  const openCards = (runId: string, draftId: string): void => {
+    if (runId === '') return
+    if (draftId === '') {
+      setError('run has no action card (no draft_id in its run row)')
+      return
+    }
+    const open = (window as unknown as Record<string, unknown>).__meliteDeckOpenWithDraft
+    if (typeof open !== 'function') {
+      setError('Cards studio unavailable (deck plugin not loaded)')
+      return
+    }
+    if (!(open as (id: string) => boolean)(draftId)) {
+      setError('Cards studio refused to open')
+    }
+  }
+
   const items = useMemo(() => flatten(runs), [runs])
   const counts = useMemo(() => {
     const c: Record<Cat, number> = { all: items.length, video: 0, image: 0, audio: 0 }
@@ -351,10 +345,10 @@ export function MediaPanel(): JSX.Element {
 
   return (
     <div data-infer-media-panel="1" style={{ padding: 14, fontFamily: 'system-ui, -apple-system, Segoe UI, Roboto, sans-serif', color: 'rgb(226,232,240)', height: '100%', overflowY: 'auto', boxSizing: 'border-box' }}>
-      {/* WAND ("Open as cards", 2026-08-29): hovering a tile reveals the
-          wand — clicking opens /editor/?revive=<run_id>, the editor's card
-          canvas hydrated with THIS run's authored pipeline (same action as
-          the old sidebar wand) so parameters are filled in and editable. */}
+      {/* ✦ CARDS — card replay: opens THE CARDS TAB with this run's exact
+          card loaded (sidecar → draft_id → the deck canvas' native card
+          view: intent, shots, fps, seed, ▶ Run through the queue door).
+          No editor SPA — that page renders blank on this origin. */}
       <style>{'.im-tile{position:relative}.im-wand{position:absolute;right:6px;top:6px;z-index:3;opacity:0;transition:opacity .12s;display:flex;align-items:center;gap:4px;border:0;border-radius:6px;padding:4px 6px;background:rgba(2,6,23,0.82);color:#fde68a;font-size:9px;font-weight:700;letter-spacing:.4px;cursor:pointer;font-family:inherit}.im-tile:hover .im-wand{opacity:1}.im-wand:hover{background:rgba(250,204,21,0.95);color:#422006}'}</style>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
         <span style={{ fontWeight: 700, fontSize: 14 }}>Infer Media</span>
@@ -440,15 +434,18 @@ export function MediaPanel(): JSX.Element {
                               role="button"
                               tabIndex={0}
                               className="im-wand"
-                              title="Open as cards — edit this run's parameters"
+                              title={it.draftId !== ''
+                                ? 'Open as cards — this run\u2019s card, setup and ready'
+                                : 'No action card linked to this run'}
+                              style={{ opacity: it.draftId !== '' ? 1 : 0.35 }}
                               onClick={(e) => {
                                 e.stopPropagation()
-                                setCardsRun(it.runId)
+                                openCards(it.runId, it.draftId)
                               }}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                   e.stopPropagation()
-                                  setCardsRun(it.runId)
+                                  openCards(it.runId, it.draftId)
                                 }
                               }}
                             >✦ CARDS</span>
@@ -471,7 +468,6 @@ export function MediaPanel(): JSX.Element {
               )}
 
       {preview !== null ? <Overlay item={preview} onClose={() => { setPreview(null) }} /> : null}
-      {cardsRun !== null ? <CardsOverlay runId={cardsRun} onClose={() => { setCardsRun(null) }} /> : null}
     </div>
   )
 }

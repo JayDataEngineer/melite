@@ -1,0 +1,17 @@
+{
+  "name": "humanoid_flow",
+  "version": 1,
+  "kind": "pipeline",
+  "model": "humanoid-flow",
+  "stage_title": "Humanoid Flow",
+  "description": "The humanoid pipeline: ANNY body sculpt -> SOMAX rig -> texture -> 8 review views. Composes the character, 3d, and image cards internally. Start with {yaml: humanoid-flow} through the queue door.",
+  "params_schema": {
+    "type": "object",
+    "properties": {
+      "coeffs": { "type": "array", "description": "11 ANNY identity dims: gender, age, muscle, weight, height, proportions, cupsize, firmness, african, asian, caucasian." },
+      "preset": { "type": "string", "description": "Gender/age preset to start from." },
+      "face_budget": { "type": "integer", "description": "Mesh budget after decimation. Default 50000." },
+      "seed": { "type": "integer", "description": "Locks texture world across re-rolls." }
+    }
+  }
+}

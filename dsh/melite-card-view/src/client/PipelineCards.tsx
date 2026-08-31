@@ -70,13 +70,17 @@ export function parseCardsBlock(block: ToolCallBlockView): {
       if (part === null || typeof part !== 'object') continue
       const text = (part as { text?: unknown }).text
       if (typeof text !== 'string') continue
-      // render line: "cards draft <p_id> — N card(s) — slice the token"
-      const at = text.indexOf('draft ')
+      // render line (wire contract, h3_timeline_card): "card <draftId>
+      // (model) — N shots, 1 run" — the gateway mints draft-<time>-<tid>-<seq>
+      // ids. Older ray-era renders said "cards draft <p_id> — …". Accept BOTH:
+      // the token after 'card ' or after 'draft ' is the draft id either way.
+      const atCard = text.indexOf('card ')
+      const at = atCard >= 0 ? atCard : text.indexOf('draft ')
       if (at < 0) continue
-      const rest = text.slice(at + 6)
+      const rest = text.slice(at + (atCard >= 0 ? 5 : 6))
       const end = rest.indexOf(' ')
       const tok = end < 0 ? rest : rest.slice(0, end)
-      if (tok.startsWith('p_') && tok.length > 2) { draftId = tok; break }
+      if ((tok.startsWith('draft-') || tok.startsWith('p_')) && tok.length > 2) { draftId = tok; break }
     }
   }
   return { draftId, model, settled, isError: block.isError === true }

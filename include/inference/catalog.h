@@ -99,6 +99,8 @@ typedef struct catalog_model {
     /* Unit assets (may be NULL) */
     char *inference_path;
     char *rubric_path;
+    int api;
+
 } catalog_model;
 
 /* ---- Card entry (parsed from cards/<action>/card.yaml) ---- */
@@ -130,6 +132,8 @@ typedef struct catalog_card {
     /* Unit assets (may be NULL) */
     char *inference_path;
     char *rubric_path;
+    int api;
+
 } catalog_card;
 
 /* ---- Full catalog ---- */

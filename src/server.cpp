@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 #include <signal.h>   /* (audit F13) sigwait shutdown thread */
 #include <stdarg.h>   /* (audit F28) jappend va_list */
+#include <atomic>    /* (id-uniqueness law) g_run_seq */
 #include <vector>
 #include <algorithm>
 
@@ -1079,13 +1080,114 @@ static void add_run_input_f32(size_t idx, const char *name, float f) {
     ri->nbytes = 4;
 }
 
+/* (validation law, 2026-08-30) schema-driven input coverage.
+ *
+ * PROVEN FAILURE (2026-08-30, six dead runs): the motion card submits
+ * params {text, model, frames, ...}; the kimodo pipeline's node
+ * declares a REQUIRED "text" input; the gateway registered the run
+ * with prompt/seed inputs only and let it burn a queue slot to die at
+ * EXECUTION ("[kimodo] no text input"). Same class: anny "sliders".
+ * The engine schemas were always queryable — nothing asked.
+ *
+ * This pass runs AFTER input registration, BEFORE the FIFO ticket:
+ *   1. WIRING — for every node's REQUIRED input with no run input
+ *      of that name, if the request body carries a string field with
+ *      that exact name, register it as the run input (schema-driven,
+ *      no per-lane hardcode: the card's field IS the engine's input).
+ *   2. COVERAGE — a required input still unsatisfied (no run input,
+ *      no cross-node input_from ref naming it) rejects the request
+ *      4xx BEFORE any ticket/thread/sidecar is committed (queue lane
+ *      law: no zombie slots). Engines with runtime name aliasing
+ *      (audio: text|prompt|lyrics) declare their inputs optional —
+ *      validation defers to the engine's own loud error. */
+static int run_input_has(size_t idx, const char *name) {
+    for (size_t i = 0; i < g_runs[idx].n_inputs; i++)
+        if (g_runs[idx].inputs[i].name &&
+            strcmp(g_runs[idx].inputs[i].name, name) == 0)
+            return 1;
+    return 0;
+}
+
+/* Returns 0 = coverage OK (wiring applied as needed); -1 = rejection
+ * message written to err. */
+static int run_validate_input_coverage(size_t idx, const char *body,
+                                       char *err, size_t errsz) {
+    if (!g_server_runner) return 0;   /* no plugin registry: skip */
+    inference_dag *dag = dag_parse_string(g_runs[idx].yaml,
+                                          strlen(g_runs[idx].yaml));
+    if (!dag) {
+        snprintf(err, errsz, "dag parse failed before validation");
+        return -1;
+    }
+    int rc = 0;
+    for (size_t n = 0; n < dag->n_nodes && rc == 0; n++) {
+        dag_node *dn = &dag->nodes[n];
+        if (!dn->type || !dn->id) continue;
+        char sch[4096];
+        if (runner_schema_for_type(g_server_runner, dn->type,
+                                   sch, sizeof sch) <= 0)
+            continue;   /* native/unknown type: nothing declared */
+        const char *ip = strstr(sch, "\"inputs\"");
+        if (!ip) continue;
+        ip = strchr(ip, '[');
+        if (!ip) continue;
+        for (;;) {
+            const char *o = strstr(ip, "{\"name\":\"");
+            if (!o) break;
+            o += strlen("{\"name\":\"");
+            char nm[64];
+            size_t nl = 0;
+            while (*o && *o != '"' && nl < sizeof nm - 1) nm[nl++] = *o++;
+            nm[nl] = 0;
+            const char *e = strchr(o, '}');
+            if (!e) break;
+            int required = 0;
+            for (const char *q = o; q < e; q++)
+                if (strncmp(q, "\"required\":true", 15) == 0 ||
+                    strncmp(q, "\"required\": true", 16) == 0) {
+                    required = 1;
+                    break;
+                }
+            ip = e;
+            if (!required || !nm[0]) continue;
+            if (run_input_has(idx, nm)) continue;
+            /* cross-node reference naming this tensor? */
+            int refed = 0;
+            for (size_t ri = 0; ri < dn->n_inputs; ri++) {
+                if (!dn->input_from[ri]) continue;
+                const char *dot = strrchr(dn->input_from[ri], '.');
+                if (dot && strcmp(dot + 1, nm) == 0) { refed = 1; break; }
+            }
+            if (refed) continue;
+            /* schema-driven wiring: the body's same-named field */
+            char val[8192];
+            if (inf_json_string(body, nm, val, sizeof val) == 0 && val[0]) {
+                add_run_input_text(idx, nm, val);
+                fprintf(stderr,
+                        "[validation] wired body field '%s' -> run input "
+                        "for node '%s' (type %s)\n",
+                        nm, dn->id, dn->type);
+                continue;
+            }
+            snprintf(err, errsz,
+                     "pipeline node '%s' (type %s) requires input '%s': "
+                     "no run input, cross-node ref, or request field "
+                     "provides it",
+                     dn->id, dn->type, nm);
+            rc = -1;
+            break;
+        }
+    }
+    dag_free(dag);
+    return rc;
+}
+
 /* extra beat fields the timeline card carries (multi-window prompts).
  * (audit F2) tl_wins/tl_nw are the CALLER'S LOCAL compile output — no
  * shared state, concurrent registrations cannot cross-wire prompts. */
 static void add_run_extra_inputs(size_t idx, const char *body,
                                  char *tmp, size_t tmpcap,
-                                 char tl_wins[TL_MAX_WINDOWS][2048], int tl_nw) {
-    /* (N-window law) prompt2..promptN for EVERY window of the card.
+                                 char tl_wins[TL_MAX_WINDOWS][2048], int tl_nw) {    /* (N-window law) prompt2..promptN for EVERY window of the card.
      * (The tailpath inject vars are NOT run inputs: the 144-input cap
      * would silently drop them past ~70 windows — the registration
      * pass resolves them to literal absolute paths in the run yaml.) */
@@ -1140,8 +1242,16 @@ static void draft_writeback(size_t idx, const char *wire) {
     snprintf(path, sizeof(path), "./drafts/%s.json", g_runs[idx].draft_id);
     FILE *f = fopen(path, "rb");
     if (!f) return;
-    static char buf[32768];
-    size_t n = fread(buf, 1, sizeof(buf) - 1, f);
+    /* (stack-smash + reconstruction law, 2026-08-31) the draft is read
+     * WHOLE: the old fixed buf[32768] truncated any 26+ call card mid-
+     * document and wrote the truncated copy back — card corruption. */
+    size_t fsz = 0;
+    if (fseek(f, 0, SEEK_END) == 0) fsz = (size_t)ftell(f);
+    rewind(f);
+    if (fsz < 64) fsz = 64;
+    char *buf = (char *)malloc(fsz + 1);
+    if (!buf) { fclose(f); return; }
+    size_t n = fread(buf, 1, fsz, f);
     fclose(f);
     buf[n] = 0;
 
@@ -1187,7 +1297,16 @@ static void draft_writeback(size_t idx, const char *wire) {
              "\"video\":\"%s\"}",
              rid, wire, (long)time(NULL), dur, stitch);
     /* existing root history rows (raw JSON text, already valid) */
-    char oldh[8192] = "";
+    /* (stack-smash law, round 2, 2026-08-31) the ORIGINAL card-killing
+     * corruption was exactly here: oldh was a fixed 8192 with a blind
+     * clamp — a card whose history exceeded the cap was cut MID-ROW
+     * (unterminated string), the doc stopped parsing, and the sidebar
+     * click died. History length is bounded by the draft file size,
+     * so allocate that much and never cut. */
+    size_t buf_len = strlen(buf);
+    char *oldh = (char *)malloc(buf_len + 16);
+    if (!oldh) return;
+    oldh[0] = 0;
     {
         /* ROOT history = the LAST "history" key (result.metadata.history
          * sits earlier in the doc and is rebuilt by this write-back) */
@@ -1205,57 +1324,75 @@ static void draft_writeback(size_t idx, const char *wire) {
                     ae++;
                 }
                 size_t L = (size_t)(ae - ab - 1);
-                if (L >= sizeof(oldh)) L = sizeof(oldh) - 1;
+                if (L > buf_len) L = buf_len;
                 memcpy(oldh, ab + 1, L);
                 oldh[L] = 0;
             }
         }
     }
-    char mhist[9216];
+    size_t mcap = strlen(hrow) + strlen(oldh) + 8;
+    char *mhist = (char *)malloc(mcap);
+    if (!mhist) { free(oldh); return; }
     {
         const char *t = oldh;
         while (*t == ' ' || *t == 10 || *t == 9 || *t == 13) t++;
-        snprintf(mhist, sizeof(mhist), "%s%s%s", hrow,
-                 (*t && *t != ']') ? "," : "", oldh);
+        snprintf(mhist, mcap, "%s%s%s", hrow,
+                 (*t && *t != ']') ? "," : "", t);
     }
 
     /* splice the new result block over the first "result":{...} span */
-    static char res[32768];
-    int ro = 0;
     /* (2026-08-30 ray parity + reconstruction law) assetUrls lists EVERY
      * run output — the stitch film AND ALL N window clips — the way ray
      * done-cards list all outputs; one model call = one window film.
      * artifacts keeps the legacy w1..w4 keys (editor compat) and adds
-     * windowFilms/seams arrays with EVERY window. */
-    static char urls[16384];
-    urls[0] = 0;
+     * windowFilms/seams arrays with EVERY window.
+     * (stack-smash law, 2026-08-31) jappend heap accumulators: the old
+     * 16384 fixeds silently DROPPED windows past their cap (the "1/4
+     * of the model calls" lie reborn) and their would-be-length `+=
+     * snprintf` appends indexed past the buffer on long paths. */
+    size_t uc = 1024, fc = 1024, sc = 1024;
+    char *urls = (char *)malloc(uc);
+    char *wfilms = (char *)malloc(fc);
+    char *seamsj = (char *)malloc(sc);
+    if (!urls || !wfilms || !seamsj) {
+        free(buf); free(oldh); free(mhist); free(urls); free(wfilms); free(seamsj);
+        return;
+    }
+    /* (write-back law, proven 2026-08-31 on draft-timeline-h3) a run
+     * with NO artifacts (errored window lane) never appends to urls,
+     * leaving the malloc'd buffer UNTERMINATED — the "%s" below then
+     * published raw heap bytes into the card ("assetUrls":[X\x04]).
+     * Every accumulator starts as an empty string. */
+    urls[0] = 0; wfilms[0] = 0; seamsj[0] = 0;
     {
         size_t uo = 0;
         if (stitch[0])
-            uo += (size_t)snprintf(urls + uo, sizeof(urls) - uo, "\"%s\"", stitch);
+            uo = jappend(&urls, &uc, uo, "\"%s\"", stitch);
         for (int w = 0; w < nwin; w++) {
             if (!wf[w][0]) continue;
-            if (uo) urls[uo++] = ',';
-            uo += (size_t)snprintf(urls + uo, sizeof(urls) - uo, "\"%s\"", wf[w]);
-            if (uo >= sizeof(urls) - 96) break;   /* truncation guard */
+            if (uo) uo = jappend(&urls, &uc, uo, ",");
+            uo = jappend(&urls, &uc, uo, "\"%s\"", wf[w]);
         }
     }
-    static char wfilms[16384], seamsj[16384];
     {
-        size_t fo = (size_t)snprintf(wfilms, sizeof(wfilms), "[");
-        size_t so2 = (size_t)snprintf(seamsj, sizeof(seamsj), "[");
+        size_t fo = jappend(&wfilms, &fc, 0, "[");
+        size_t so2 = jappend(&seamsj, &sc, 0, "[");
         for (int w = 0; w < nwin; w++) {
-            if (w) { wfilms[fo++] = ','; seamsj[so2++] = ','; }
-            fo += (size_t)snprintf(wfilms + fo, sizeof(wfilms) - fo,
-                                   "\"%s\"", wf[w]);
-            so2 += (size_t)snprintf(seamsj + so2, sizeof(seamsj) - so2,
-                                    "\"%s\"", seam[w][0] ? seam[w] : "");
-            if (fo >= sizeof(wfilms) - 96 || so2 >= sizeof(seamsj) - 96) break;
+            if (w) {
+                fo = jappend(&wfilms, &fc, fo, ",");
+                so2 = jappend(&seamsj, &sc, so2, ",");
+            }
+            fo = jappend(&wfilms, &fc, fo, "\"%s\"", wf[w]);
+            so2 = jappend(&seamsj, &sc, so2, "\"%s\"",
+                          seam[w][0] ? seam[w] : "");
         }
-        snprintf(wfilms + fo, sizeof(wfilms) - fo, "]");
-        snprintf(seamsj + so2, sizeof(seamsj) - so2, "]");
+        jappend(&wfilms, &fc, fo, "]");
+        jappend(&seamsj, &sc, so2, "]");
     }
-    ro += snprintf(res + ro, sizeof(res) - ro,
+    size_t rc = 4096;
+    char *res = (char *)malloc(rc);
+    if (!res) { free(buf); free(oldh); free(mhist); free(urls); free(wfilms); free(seamsj); return; }
+    jappend(&res, &rc, 0,
         "{\"assetUrls\":[%s],\"artifacts\":{"
         "\"video\":\"%s\","
         "\"video_w1_main\":\"%s\",\"video_w2_main\":\"%s\",\"video_w3_main\":\"%s\",\"video_w4_main\":\"%s\","
@@ -1277,8 +1414,11 @@ static void draft_writeback(size_t idx, const char *wire) {
         (long)time(NULL) * 1000, dur);
 
     const char *rp = strstr(buf, "\"result\"");
-    char out[36864];
-    size_t oo = 0;
+    /* (stack-smash law, 2026-08-31) exact-size heap splice + slack for
+     * the in-place memmoves below: the old out[36864] received an
+     * UNGUARDED memcpy of res (up to 32KB) + draft head + tail — a
+     * large card smashed the stack. */
+    char *out = NULL;
     if (rp) {
         const char *ob = strchr(rp, '{');
         const char *oe = ob;
@@ -1288,15 +1428,20 @@ static void draft_writeback(size_t idx, const char *wire) {
             else if (*oe == '}') { depth--; if (!depth) break; }
             oe++;
         }
-        if (ob && *oe == '}') {
-            size_t head = (size_t)(ob - buf);
-            memcpy(out, buf, head); oo = head;
-            memcpy(out + oo, res, strlen(res)); oo += strlen(res);
-            oo += snprintf(out + oo, sizeof(out) - oo, "%s", oe + 1);   /* res carries its own braces */
-            out[oo] = 0;
-        } else {
+        if (!(ob && *oe == '}')) {
+            free(buf); free(oldh); free(mhist); free(urls); free(wfilms); free(seamsj); free(res);
             return;
         }
+        size_t head = (size_t)(ob - buf);
+        size_t rlen = strlen(res), tlen = strlen(oe + 1);
+        out = (char *)malloc(head + rlen + tlen + 64);
+        if (!out) {
+            free(buf); free(oldh); free(mhist); free(urls); free(wfilms); free(seamsj); free(res);
+            return;
+        }
+        memcpy(out, buf, head);
+        memcpy(out + head, res, rlen);
+        memcpy(out + head + rlen, oe + 1, tlen + 1);
     } else {
         /* (2026-08-30 card-birth law) a freshly composed card (a
          * build_pipeline draft) has no result block yet — SEED one into
@@ -1304,31 +1449,44 @@ static void draft_writeback(size_t idx, const char *wire) {
          * BORN with this run: runStatus + result + (below) history. */
         const char *st = strstr(buf, "\"stages\"");
         const char *sb = st ? strchr(st, '{') : NULL;
-        if (!sb) return;
+        if (!sb) {
+            free(buf); free(oldh); free(mhist); free(urls); free(wfilms); free(seamsj); free(res);
+            return;
+        }
         size_t head = (size_t)(sb - buf) + 1;   /* past stage's '{' */
         char seed[64];
         snprintf(seed, sizeof(seed), "\"runStatus\":\"%s\",\"result\":",
                  strcmp(wire, "completed") == 0 ? "done" : "error");
-        if (head + strlen(seed) + strlen(res) + strlen(sb + 1) + 8
-                >= sizeof(out)) return;
-        memcpy(out, buf, head); oo = head;
-        memcpy(out + oo, seed, strlen(seed)); oo += strlen(seed);
-        memcpy(out + oo, res, strlen(res)); oo += strlen(res);
-        out[oo++] = ',';
-        oo += (size_t)snprintf(out + oo, sizeof(out) - oo, "%s", sb + 1);
-        out[oo] = 0;
+        size_t slen = strlen(seed), rlen = strlen(res),
+               blen = strlen(sb + 1);
+        out = (char *)malloc(head + slen + rlen + 1 + blen + 64);
+        if (!out) {
+            free(buf); free(oldh); free(mhist); free(urls); free(wfilms); free(seamsj); free(res);
+            return;
+        }
+        memcpy(out, buf, head);
+        memcpy(out + head, seed, slen);
+        memcpy(out + head + slen, res, rlen);
+        out[head + slen + rlen] = ',';
+        memcpy(out + head + slen + rlen + 1, sb + 1, blen + 1);
         /* root status: ready (Ray card parity) when the draft lacks it */
         if (!strstr(out, "\"status\"")) {
             char *root = strchr(out, '{');
             if (root) {
-                char tmp3[36864];
                 size_t h2 = (size_t)(root - out) + 1;
-                snprintf(tmp3, sizeof(tmp3), "%.*s\"status\":\"ready\",%s",
-                         (int)h2, out, out + h2);
-                snprintf(out, sizeof(out), "%s", tmp3);
+                size_t ol = strlen(out);
+                char *tmp3 = (char *)malloc(ol + 32);
+                if (tmp3) {
+                    snprintf(tmp3, ol + 32, "%.*s\"status\":\"ready\",%s",
+                             (int)h2, out, out + h2);
+                    free(out);
+                    out = tmp3;
+                }
             }
         }
     }
+    free(buf); free(oldh); free(mhist); free(urls); free(wfilms); free(seamsj); free(res);
+    if (!out) return;
 
     /* runStatus -> wire state (done | error) */
     char *rs = strstr(out, "\"runStatus\"");
@@ -1347,7 +1505,11 @@ static void draft_writeback(size_t idx, const char *wire) {
 
     /* history row at draft root (no trailing comma: the array may be empty) */
     /* ROOT history again — the LAST key (metadata.history inside the
-     * freshly spliced result block comes first in the doc) */
+     * freshly spliced result block comes first in the doc).
+     * (stack-smash law, 2026-08-31) exact-size heap splice: the old
+     * tmp2[36864] + `snprintf(out, sizeof(out), ...)` — sizeof of the
+     * now-heap pointer is 8 — truncated the card to 7 bytes whenever
+     * this path ran. */
     char *hp = NULL;
     for (char *q = strstr(out, "\"history\""); q; q = strstr(q + 1, "\"history\""))
         hp = q;
@@ -1359,19 +1521,29 @@ static void draft_writeback(size_t idx, const char *wire) {
             while (*nx == ' ' || *nx == '\n' || *nx == '\t' || *nx == '\r') nx++;
             char sep[2] = "";
             if (*nx && *nx != ']') sep[0] = ',';
-            char tmp2[36864];
             size_t head = (size_t)(hb - out);
-            snprintf(tmp2, sizeof(tmp2), "%.*s%s%s%s", (int)head, out, hrow, sep, hb);
-            snprintf(out, sizeof(out), "%s", tmp2);
+            size_t ol = strlen(out);
+            char *tmp2 = (char *)malloc(ol + strlen(hrow) + 8);
+            if (tmp2) {
+                snprintf(tmp2, ol + strlen(hrow) + 8, "%.*s%s%s%s",
+                         (int)head, out, hrow, sep, hb);
+                free(out);
+                out = tmp2;
+            }
         }
     } else {
         char *last = strrchr(out, '}');
         if (last) {
-            char tmp2[36864];
             size_t head = (size_t)(last - out);
-            snprintf(tmp2, sizeof(tmp2), "%.*s,\"history\":[%s]}%s", (int)head, out,
-                     hrow, last + 1);
-            snprintf(out, sizeof(out), "%s", tmp2);
+            size_t ol = strlen(out);
+            char *tmp2 = (char *)malloc(ol + strlen(hrow) + 16);
+            if (tmp2) {
+                snprintf(tmp2, ol + strlen(hrow) + 16,
+                         "%.*s,\"history\":[%s]}%s", (int)head, out,
+                         hrow, last + 1);
+                free(out);
+                out = tmp2;
+            }
         }
     }
 
@@ -1393,7 +1565,23 @@ static void draft_writeback(size_t idx, const char *wire) {
                 int nl = snprintf(nb, sizeof(nb), "%ld",
                                   (long)time(NULL) * 1000);
                 size_t tail = strlen(ne);
-                if ((size_t)(ns - out) + nl + tail < sizeof(out) - 1) {
+                /* grow-aware: the memmove may need a few extra bytes
+                 * (old stamp shorter than the new one) */
+                if ((size_t)(ns - out) + (size_t)nl + tail + 1
+                        > strlen(out) + 1) {
+                    /* would write past the NUL: re-seat into a fresh
+                     * allocation with slack */
+                    size_t off = (size_t)(ns - out);
+                    size_t need = off + (size_t)nl + tail + 64;
+                    char *nb2 = (char *)malloc(need);
+                    if (nb2) {
+                        memcpy(nb2, out, off);
+                        memcpy(nb2 + off, nb, (size_t)nl);
+                        memcpy(nb2 + off + nl, ne, tail + 1);
+                        free(out);
+                        out = nb2;
+                    }
+                } else {
                     memmove(ns + nl, ne, tail + 1);
                     memcpy(ns, nb, (size_t)nl);
                 }
@@ -1427,6 +1615,7 @@ static void draft_writeback(size_t idx, const char *wire) {
         fprintf(stderr, "[draft] wrote run %s back into %s (%s)\n",
                 rid, path, wire);
     }
+    free(out);
 }
 
 
@@ -1705,30 +1894,38 @@ static void run_write_sidecar(size_t idx) {
     char *promptq = json_quote(g_runs[idx].prompt);
     char *errq = err[0] ? json_quote(err) : NULL;
 
-    /* stages snapshot (per-stage state + attributed artifacts) */
-    char stages_json[8192];
-    {
-        size_t so = 0;
-        stages_json[so++] = '[';
+    /* stages snapshot (per-stage state + attributed artifacts).
+     * (stack-smash law, 2026-08-31) was `char stages_json[8192]` with
+     * `so += snprintf` appends: snprintf returns the WOULD-BE length,
+     * so a stage header crossing the cap advanced `so` past the array
+     * bound and the trailing ']' then wrote PAST the stack buffer —
+     * "*** buffer overflow detected ***" killed the gateway mid-run on
+     * a 25-window card (run-6a94bc7a; the sidecar froze mid-stage,
+     * evidence `"artifacts":,` at the smash boundary). jappend
+     * grows-and-retries (audit F28): no fixed ceiling, no truncation,
+     * no out-of-bounds index — a 100-window run reports all stages. */
+    size_t sj_cap = 1024;
+    char *stages_json = (char *)malloc(sj_cap);
+    size_t so = 0;
+    if (stages_json) {
+        so = jappend(&stages_json, &sj_cap, so, "[");
         for (size_t s = 0; s < g_runs[idx].n_stages; s++) {
             run_stage *st = &g_runs[idx].stages[s];
             char *sterrq = st->error[0] ? json_quote(st->error) : NULL;
-            so += (size_t)snprintf(stages_json + so, sizeof(stages_json) - so,
-                "%s{\"id\":\"%s\",\"name\":\"%s\",\"index\":%d,\"status\":\"%s\"%s%s,\"artifacts\":[",
+            so = jappend(&stages_json, &sj_cap, so,
+                "%s{\"id\":\"%s\",\"name\":\"%s\",\"index\":%d,"
+                "\"status\":\"%s\"%s%s,\"artifacts\":[",
                 s ? "," : "", st->id, st->id, (int)s, wire_state(st->state),
                 sterrq ? ",\"error\":" : "",
                 sterrq ? sterrq : "");
             if (sterrq) free(sterrq);
             for (size_t a = 0; a < st->n_arts; a++)
-                so += (size_t)snprintf(stages_json + so,
-                                      sizeof(stages_json) - so,
-                                      "%s\"%s\"", a ? "," : "", st->arts[a]);
-            so += (size_t)snprintf(stages_json + so, sizeof(stages_json) - so,
-                                   "]}");
-            if (so >= sizeof(stages_json) - 8) break;
+                so = jappend(&stages_json, &sj_cap, so, "%s\"%s\"",
+                             a ? "," : "", st->arts[a]);
+            so = jappend(&stages_json, &sj_cap, so, "]}");
         }
-        stages_json[so++] = ']';
-        stages_json[so] = 0;
+        so = jappend(&stages_json, &sj_cap, so, "]");
+        (void)so;
     }
     pthread_mutex_unlock(&g_runs_mu);
 
@@ -1739,7 +1936,11 @@ static void run_write_sidecar(size_t idx) {
     snprintf(path, sizeof(path), "%s/_pipeline.json", dir);
     snprintf(tmp_path, sizeof(tmp_path), "%s.tmp", path);
     FILE *f = fopen(tmp_path, "w");
-    if (!f) { free(yamlq); free(promptq); free(errq); return; }
+    if (!f) {
+        free(yamlq); free(promptq); free(errq);
+        free(stages_json);
+        return;
+    }
     int wok = fprintf(f, "{\"run_id\":\"%s\",\"model\":\"%s\",\"prompt\":%s,"
                "\"seed\":%ld,\"created\":%ld,\"ended\":%ld,\"durationSec\":%ld,"
                "\"status\":\"%s\","
@@ -1747,12 +1948,14 @@ static void run_write_sidecar(size_t idx) {
                "\"draft_id\":\"%s\"}",
             rid, model, promptq, seed, created, (long)time(NULL),
             (long)time(NULL) - created, state,
-            errq ? errq : "null", stages_json, yamlq,
+            errq ? errq : "null",
+            stages_json ? stages_json : "[]", yamlq,
             g_runs[idx].draft_id) > 0;
     wok = (fclose(f) == 0) && wok;
     if (wok) rename(tmp_path, path);
     else unlink(tmp_path);
     free(yamlq); free(promptq); free(errq);
+    free(stages_json);
 }
 
 /* ===================== LANE LAW (2026-08-31) =====================
@@ -2494,8 +2697,19 @@ static void handle_pipelines_start(const httplib::Request &req,
                     while ((e = readdir(d)) != NULL) {
                         int wk = 0;
                         if (sscanf(e->d_name, "window%d_tail.pt", &wk) == 1
-                            && wk > last_win && wk <= RUN_TL_MAX)
-                            last_win = wk;
+                            && wk > last_win && wk <= RUN_TL_MAX) {
+                            /* sscanf quirk: it returns 1 for
+                             * "window4_video_0.mp4" because %d consumed
+                             * the digit and sscanf doesn't require the
+                             * rest of the format to match. Verify the
+                             * tail file actually exists before accepting
+                             * the candidate. */
+                            char probe[700];
+                            snprintf(probe, sizeof(probe),
+                                     "%s/window%d_tail.pt", clp, wk);
+                            if (access(probe, R_OK) == 0)
+                                last_win = wk;
+                        }
                     }
                     closedir(d);
                 }
@@ -2752,8 +2966,16 @@ static void handle_pipelines_start(const httplib::Request &req,
     } else {
         run_slot_release_heap(idx);  /* drop any leaked inputs/prior */
     }
-    snprintf(g_runs[idx].run_id, sizeof(g_runs[idx].run_id), "run-%lx-%lx",
-             (unsigned long)time(NULL), (unsigned long)pthread_self());
+    /* (id-uniqueness law, proven 2026-08-31 by chaos C2) run ids were
+     * time+tid — but httplib REUSES pool worker threads, so two
+     * submissions in the same second on the same worker minted the
+     * SAME id: duplicate queue entries, two stops on one run, the
+     * second rejected 400 "cannot stop run in state stopped". A
+     * process-wide sequence number makes ids collision-free. */
+    static std::atomic<unsigned long> g_run_seq{0};
+    snprintf(g_runs[idx].run_id, sizeof(g_runs[idx].run_id), "run-%lx-%lx-%lx",
+             (unsigned long)time(NULL), (unsigned long)pthread_self(),
+             g_run_seq.fetch_add(1, std::memory_order_relaxed));
     snprintf(g_runs[idx].state, sizeof(g_runs[idx].state), "queued");
     g_runs[idx].error[0] = 0;
     snprintf(g_runs[idx].out_dir, sizeof(g_runs[idx].out_dir), "./output/%s",
@@ -3058,7 +3280,23 @@ static void handle_pipelines_start(const httplib::Request &req,
                         prior_tail_path, dst);
             }
         }
-        for (int k = 1; k <= tl_nw; k++) {
+        /* Count the ACTUAL window nodes in the DAG yaml — the base
+         * template always defines window1..4 even when tl_nw < 4 (e.g.
+         * a 2-call continuation has 4 windows but tl_nw=2). The old
+         * loop iterated only 1..tl_nw, leaving $tailpath3/$tailpath4
+         * as raw tokens — ComfyUI could not resolve them and the last
+         * window's chain node failed. */
+        int yaml_nw = tl_nw;
+        {
+            const char *yp = g_runs[idx].yaml;
+            while ((yp = strstr(yp, "- id: window")) != NULL) {
+                int wnum = 0;
+                if (sscanf(yp + 12, "%d", &wnum) == 1 && wnum > yaml_nw)
+                    yaml_nw = wnum;
+                yp++;
+            }
+        }
+        for (int k = 1; k <= yaml_nw; k++) {
             char var[24], lit[192];
             snprintf(var, sizeof(var), "$tailpath%d", k);
             snprintf(lit, sizeof(lit), "%s/window%d_tail.pt",
@@ -3207,6 +3445,33 @@ static void handle_pipelines_start(const httplib::Request &req,
     /* stage list comes from the final YAML (reported while queued too) */
     run_parse_stages(idx);
 
+    /* (validation law, 2026-08-30) schema-driven input coverage: wire
+     * body fields to declared required inputs, then REJECT any node
+     * input that remains unsatisfied — BEFORE the FIFO ticket, thread,
+     * or queue entry exists. The spec sidecar written at registration
+     * is removed so no zombie dir survives in the runs listing. */
+    {
+        char verr[512];
+        if (run_validate_input_coverage(idx, body, verr, sizeof verr) != 0) {
+            char sc_path[512];
+            snprintf(sc_path, sizeof(sc_path), "%s/_pipeline.json",
+                     g_runs[idx].out_dir);
+            unlink(sc_path);
+            rmdir(g_runs[idx].out_dir);   /* empty at this point */
+            pthread_mutex_lock(&g_runs_mu);
+            run_slot_release_heap(idx);
+            /* recycle-invisible: terminal + done, no sidecar on disk */
+            snprintf(g_runs[idx].state, sizeof(g_runs[idx].state), "error");
+            g_runs[idx].th_done = 1;
+            pthread_mutex_unlock(&g_runs_mu);
+            res.status = 400;
+            char ej[640];
+            snprintf(ej, sizeof(ej), "{\"error\":\"%s\"}", verr);
+            res.set_content(ej, "application/json");
+            return;
+        }
+    }
+
     /* (audit M4, 2026-08-29) FIFO ticket at REGISTRATION: strict
      * submission order, independent of thread scheduling. */
     {
@@ -3237,13 +3502,21 @@ static void handle_queue(const httplib::Request &, httplib::Response &res) {
     pthread_mutex_lock(&g_runs_mu);
     int queued = 0, running = 0;
     char active_id[64] = "";
-    char qids[4096]; size_t qo = 0;
-    qids[0] = 0;
+    /* (stack-smash law, 2026-08-31) jappend heap accumulator: the old
+     * qids[4096] fixed underflowed once >~114 runs sat queued (128
+     * slots x ~36B ids) — snprintf's would-be return pushed qo past
+     * the array and the next append wrote unbounded. This door is
+     * polled constantly; it must never be the crash surface. */
+    size_t qcap = 1024;
+    char *qids = (char *)malloc(qcap);
+    size_t qo = 0;
+    if (qids) qids[0] = 0;
     for (size_t i = 0; i < g_n_runs; i++) {
         if (strcmp(g_runs[i].state, "queued") == 0) {
             queued++;
-            qo += (size_t)snprintf(qids + qo, sizeof(qids) - qo,
-                                   "%s\"%s\"", qo ? "," : "", g_runs[i].run_id);
+            if (qids)
+                qo = jappend(&qids, &qcap, qo, "%s\"%s\"",
+                             qo ? "," : "", g_runs[i].run_id);
         }
         if (strcmp(g_runs[i].state, "running") == 0) {
             running++;
@@ -3251,11 +3524,16 @@ static void handle_queue(const httplib::Request &, httplib::Response &res) {
         }
     }
     pthread_mutex_unlock(&g_runs_mu);
-    char out[4600];
-    snprintf(out, sizeof(out),
-        "{\"queued\":%d,\"running\":%d,\"active\":\"%s\",\"queued_ids\":[%s]}",
-        queued, running, active_id, qids);
-    res.set_content(out, "application/json");
+    size_t ocap = (qids ? strlen(qids) : 0) + 256;
+    char *out = (char *)malloc(ocap);
+    if (out)
+        snprintf(out, ocap,
+            "{\"queued\":%d,\"running\":%d,\"active\":\"%s\",\"queued_ids\":[%s]}",
+            queued, running, active_id, qids ? qids : "");
+    res.set_content(out ? out : "{\"queued\":0,\"running\":0,\"active\":\"\",\"queued_ids\":[]}",
+                    "application/json");
+    free(qids);
+    free(out);
 }
 
 static int sidecar_str(const char *json, const char *key, char *out, size_t cap);
@@ -3481,20 +3759,25 @@ static void handle_pipelines_status(const httplib::Request &req,
             if (strcmp(g_runs[i].state, "queued") == 0) qpos++;
         }
     }
-    /* stages snapshot for the response */
-    char stages_json[8192];
-    {
-        size_t so = 0;
-        stages_json[so++] = '[';
+    /* stages snapshot for the response.
+     * (stack-smash law, 2026-08-31) twin of the sidecar builder: the
+     * fixed 8192 array + would-be-length `so += snprintf` appends
+     * indexed past the stack on stage-dense runs — and this door runs
+     * on every status POLL. jappend: grow-and-retry, unbounded. */
+    size_t sj_cap = 1024;
+    char *stages_json = (char *)malloc(sj_cap);
+    size_t so = 0;
+    if (stages_json) {
+        so = jappend(&stages_json, &sj_cap, so, "[");
         for (size_t s = 0; s < g_runs[found].n_stages; s++) {
             run_stage *st = &g_runs[found].stages[s];
-            so += (size_t)snprintf(stages_json + so, sizeof(stages_json) - so,
-                "%s{\"id\":\"%s\",\"name\":\"%s\",\"index\":%d,\"status\":\"%s\"}",
+            so = jappend(&stages_json, &sj_cap, so,
+                "%s{\"id\":\"%s\",\"name\":\"%s\",\"index\":%d,"
+                "\"status\":\"%s\"}",
                 s ? "," : "", st->id, st->id, (int)s, wire_state(st->state));
-            if (so >= sizeof(stages_json) - 8) break;
         }
-        stages_json[so++] = ']';
-        stages_json[so] = 0;
+        so = jappend(&stages_json, &sj_cap, so, "]");
+        (void)so;
     }
     pthread_mutex_unlock(&g_runs_mu);
 
@@ -3504,14 +3787,17 @@ static void handle_pipelines_status(const httplib::Request &req,
      * it for JSON or the whole status response becomes unparseable (this
      * is exactly what broke the queue test at char 236). */
     char *errq = json_quote(err);
-    size_t cap = strlen(arts) + strlen(stages_json) + strlen(errq) + 700;
+    size_t cap = strlen(arts) + strlen(stages_json ? stages_json : "[]")
+                 + strlen(errq) + 700;
     char *out = (char *)malloc(cap);
     snprintf(out, cap,
         "{\"run_id\":\"%s\",\"status\":\"%s\",\"stages\":%s,\"artifacts\":%s,\"error\":%s,\"queue_position\":%d,\"yaml_filename\":\"%s\",\"draft_id\":\"%s\"}",
-        yamlhead, wire_state(state), stages_json, arts, errq, qpos, modelh, didh);
+        yamlhead, wire_state(state),
+        stages_json ? stages_json : "[]", arts, errq, qpos, modelh, didh);
     res.set_header("Cache-Control", "no-store");
     res.set_content(out, "application/json");
     free(arts); free(errq); free(out);
+    free(stages_json);
 }
 
 /* == Ray 1:1 card birth (server-js routes/pipeline/drafts.ts createDraft) ==
@@ -4668,17 +4954,26 @@ static void handle_agent_manifest(const httplib::Request &req,
         const catalog_model *m = &g_catalog->models[i];
         if (!m->agent_md_path) continue;
 
-        if (!first) json[off++] = ',';
+        /* (stack-smash law, 2026-08-31) clamp the would-be return so
+         * off can never pass cap — the old `off += snprintf` let a
+         * long id/label push off past the allocation and the next
+         * `json[off++] = ','` wrote past the heap. */
+        if (!first) {
+            if ((size_t)off + 2 < cap) json[off++] = ',';
+            else break;
+        }
         first = 0;
-
-        off += snprintf(json + off, cap - off,
+        int rn = snprintf(json + off, cap - (size_t)off,
             "{\"id\":\"%s\",\"label\":\"%s\",\"genre\":\"%s\"}",
             m->id ? m->id : "",
             m->label ? m->label : "",
             m->genre ? m->genre : "");
+        if (rn < 0 || (size_t)rn >= cap - 1 - (size_t)off) break;
+        off += rn;
     }
 
-    off += snprintf(json + off, cap - off, "]}");
+    if ((size_t)off < cap)
+        snprintf(json + off, cap - (size_t)off, "]}");
     res.set_content(json, "application/json");
     free(json);
 }
@@ -5515,10 +5810,20 @@ static void handle_form_spec(const httplib::Request &req,
                     while (*p == ' ' || *p == '\t') p++;
                     size_t ll = strlen(p);
                     while (ll && (p[ll-1] == '\n' || p[ll-1] == '\r')) ll--;
-                    if (ll) o += (size_t)snprintf(recipe + o,
-                                                  sizeof(recipe) - o,
-                                                  "%s%.*s", o ? "; " : "",
-                                                  (int)ll, p);
+                    if (ll) {
+                        /* (stack-smash law, 2026-08-31) clamp the
+                         * would-be return: a long AGENT.md recipe block
+                         * pushed o past the 4096 array and the next
+                         * append underflowed sizeof-o into an
+                         * unbounded stack write. */
+                        int rn = snprintf(recipe + o, sizeof(recipe) - o,
+                                          "%s%.*s", o ? "; " : "",
+                                          (int)ll, p);
+                        if (rn > 0)
+                            o += (size_t)rn < sizeof(recipe) - 1 - o
+                                     ? (size_t)rn
+                                     : sizeof(recipe) - 1 - o;
+                    }
                 }
             }
             fclose(f);
@@ -7481,8 +7786,16 @@ static void handle_pipelines_resume(const httplib::Request &req,
     } else {
         run_slot_release_heap(idx);  /* drop any leaked inputs/prior */
     }
-    snprintf(g_runs[idx].run_id, sizeof(g_runs[idx].run_id), "run-%lx-%lx",
-             (unsigned long)time(NULL), (unsigned long)pthread_self());
+    /* (id-uniqueness law, proven 2026-08-31 by chaos C2) run ids were
+     * time+tid — but httplib REUSES pool worker threads, so two
+     * submissions in the same second on the same worker minted the
+     * SAME id: duplicate queue entries, two stops on one run, the
+     * second rejected 400 "cannot stop run in state stopped". A
+     * process-wide sequence number makes ids collision-free. */
+    static std::atomic<unsigned long> g_run_seq{0};
+    snprintf(g_runs[idx].run_id, sizeof(g_runs[idx].run_id), "run-%lx-%lx-%lx",
+             (unsigned long)time(NULL), (unsigned long)pthread_self(),
+             g_run_seq.fetch_add(1, std::memory_order_relaxed));
     snprintf(g_runs[idx].state, sizeof(g_runs[idx].state), "queued");
     g_runs[idx].error[0] = 0;
     snprintf(g_runs[idx].out_dir, sizeof(g_runs[idx].out_dir), "./output/%s",
@@ -7767,6 +8080,430 @@ static void *shutdown_signal_thread(void *arg) {
     return NULL;
 }
 
+/* ===================== DRAFT LINT LAW (2026-08-31) =====================
+ * The media sidebar's card click GETs ./drafts/<id>.json verbatim; a
+ * structurally-broken draft (unterminated string / unbalanced braces)
+ * kills the hydrate and the card NEVER OPENS. PROVEN (2026-08-31):
+ * the old fixed-buffer write-back cut two live cards mid-string
+ * (draft-timeline-h3.json history row truncated inside a URL). The
+ * write-back is now unbounded, but any future writer must not be able
+ * to brick the card surface permanently: at every boot each draft is
+ * structurally scanned; a CUT document is repaired by truncating at
+ * the damaged token, nulling a dangling key and closing the open
+ * structure stack — authored intent/stages/params survive, only the
+ * corrupt tail is dropped. Every repair is ledgered (draft.repaired);
+ * an unrepairable doc is quarantined to .corrupt-<ts> with a minimal
+ * valid stub left in its place (the click still opens SOMETHING). */
+/* One structural scanner used everywhere in the lint: a real JSON
+ * grammar state machine (not just bracket balance). Catches both
+ * crash classes: cut-mid-string (bad_at=len) and balanced-but-
+ * malformed shapes like '"runStatus":"done",{' (the old seed-splice
+ * bug, proven 2026-08-31 in draft-6a93ea45). LESSON from the same
+ * day: a naive "after , in object expect a key" rule FALSE-POSITIVED
+ * on '{"a":{}}' (outer close after nested close) and mass-quarantined
+ * 1860 healthy ray-era drafts — this machine tracks container state
+ * properly instead. Returns 0 when valid; else 1 and *bad_at. */
+static int jscan_doc(const char *doc, size_t len, size_t *bad_at) {
+    enum { S_NEED_KEY, S_NEED_COLON, S_NEED_VALUE, S_AFTER_VALUE } st_cur;
+    struct frame { int is_obj; int fresh; } st[128];
+    int ns = 0;
+    int in_str = 0, esc = 0, lit = 0;
+    st_cur = S_NEED_VALUE;      /* at top level a value is expected */
+    /* top level = implicit array-of-one semantics: keys not allowed */
+    for (size_t i = 0; i < len; i++) {
+        char c = doc[i];
+        if (lit) {
+            /* inside a number/true/false/null token: only token chars
+             * may continue it; a delimiter ends it (handled below by
+             * the normal switch). Token chars are exactly the JSON
+             * grammar's [0-9+-.eEtTrRuUeEfFaAlLsSnN] — a stray 'X'
+             * (uninitialized heap published as "assetUrls":[X\x04],
+             * proven 2026-08-31) is NOT a literal and must fail. */
+            if (c == ',' || c == '}' || c == ']' || c == ' ' ||
+                c == '\t' || c == '\n' || c == '\r') {
+                lit = 0;        /* fall through to normal handling */
+            } else if (strchr("0123456789+-.eEtTrRuUeEfFaAlLsSnN", c)
+                       && (unsigned char)c >= 0x20) {
+                continue;       /* still inside the literal token */
+            } else {
+                *bad_at = i; return 1;
+            }
+        }
+        if (in_str) {
+            if (esc) esc = 0;
+            else if (c == '\\') esc = 1;
+            else if (c == '"') {
+                in_str = 0;
+                /* a string is either a key (object, NEED_KEY) or a
+                 * value (NEED_VALUE / after-value) */
+                if (st_cur == S_NEED_KEY) st_cur = S_NEED_COLON;
+                else st_cur = S_AFTER_VALUE;
+                if (ns > 0) st[ns - 1].fresh = 0;
+            } else if ((unsigned char)c < 0x20) {
+                /* raw control byte inside a string: illegal strict
+                 * JSON, python rejects — so do we (heap-garbage law) */
+                *bad_at = i; return 1;
+            }
+            continue;
+        }
+        if (c == '"') {
+            if (st_cur == S_NEED_COLON || st_cur == S_AFTER_VALUE) {
+                *bad_at = i; return 1;   /* key w/o colon / missing , */
+            }
+            in_str = 1;                  /* key string or value string */
+            continue;
+        }
+        if (c == '{' || c == '[') {
+            if (st_cur == S_NEED_KEY || st_cur == S_NEED_COLON ||
+                st_cur == S_AFTER_VALUE) {
+                *bad_at = i; return 1;   /* '...",{': THE proven class */
+            }
+            if (ns < 128) {
+                st[ns].is_obj = (c == '{');
+                st[ns].fresh = 1;
+                ns++;
+            } else {
+                *bad_at = i; return 1;   /* nesting too deep */
+            }
+            st_cur = st[ns - 1].is_obj ? S_NEED_KEY : S_NEED_VALUE;
+            continue;
+        }
+        if (c == '}' || c == ']') {
+            if (ns == 0) { *bad_at = i; return 1; }
+            int want_obj = (c == '}');
+            if (st[ns - 1].is_obj != want_obj) { *bad_at = i; return 1; }
+            if (st[ns - 1].fresh) {
+                /* empty container close: {}, [] */
+            } else if (st_cur == S_AFTER_VALUE) {
+                /* normal close after a value */
+            } else {
+                *bad_at = i; return 1;   /* dangling , : etc. */
+            }
+            ns--;
+            st_cur = S_AFTER_VALUE;
+            if (ns > 0) st[ns - 1].fresh = 0;
+            continue;
+        }
+        if (c == ',') {
+            if (st_cur != S_AFTER_VALUE) { *bad_at = i; return 1; }
+            if (ns == 0) { *bad_at = i; return 1; }   /* top-level , */
+            st_cur = st[ns - 1].is_obj ? S_NEED_KEY : S_NEED_VALUE;
+            st[ns - 1].fresh = 0;
+            continue;
+        }
+        if (c == ':') {
+            if (st_cur != S_NEED_COLON) { *bad_at = i; return 1; }
+            st_cur = S_NEED_VALUE;
+            continue;
+        }
+        if (c == ' ' || c == '\t' || c == '\n' || c == '\r') continue;
+        /* literal token start (number/true/false/null) */
+        if (st_cur != S_NEED_VALUE ||
+            !strchr("0123456789+-.tTfFnN", c)) {
+            *bad_at = i; return 1;       /* bare garbage / value as key */
+        }
+        lit = 1;
+        st_cur = S_AFTER_VALUE;
+        if (ns > 0) st[ns - 1].fresh = 0;
+    }
+    if (in_str || lit || ns != 0) { *bad_at = len; return 1; }
+    if (st_cur != S_AFTER_VALUE) { *bad_at = len; return 1; }
+    return 0;
+}
+
+static int draft_lint_one(const char *path, const char *id) {
+    FILE *f = fopen(path, "rb");
+    if (!f) return 0;
+    fseek(f, 0, SEEK_END);
+    long fsz = ftell(f);
+    rewind(f);
+    if (fsz < 2 || fsz > 8 * 1024 * 1024) { fclose(f); return 0; }
+    char *doc = (char *)malloc((size_t)fsz + 64);
+    if (!doc) { fclose(f); return 0; }
+    size_t len = fread(doc, 1, (size_t)fsz, f);
+    fclose(f);
+    doc[len] = 0;
+
+    /* structural scan */
+    size_t bad_at = 0;
+    int in_str = 0, esc = 0;
+    if (jscan_doc(doc, len, &bad_at) == 0) { free(doc); return 0; }
+
+    /* find EOF-in-string / bad token details for the repair cut */
+    size_t cut = bad_at, last_quote = 0;
+    {
+        int s = 0, e = 0;
+        for (size_t i = 0; i < len; i++) {
+            char c = doc[i];
+            if (s) {
+                if (e) e = 0;
+                else if (c == '\\') e = 1;
+                else if (c == '"') s = 0;
+            } else if (c == '"') { s = 1; last_quote = i; }
+        }
+        in_str = s;
+        (void)esc;
+    }
+
+    /* repair: drop the unterminated string (or the bad token onward) */
+    size_t nl = in_str ? last_quote : cut;
+    while (nl > 0 && (doc[nl-1] == ' ' || doc[nl-1] == '\n' ||
+                      doc[nl-1] == '\r' || doc[nl-1] == '\t' ||
+                      doc[nl-1] == ','))
+        nl--;
+    if (nl == 0) { free(doc); goto quarantine; }
+
+    /* rebuild closer stack over the surviving prefix */
+    {
+        int st[128], ns = 0;
+        int s2 = 0, e2 = 0;
+        for (size_t i = 0; i < nl; i++) {
+            char c = doc[i];
+            if (s2) {
+                if (e2) e2 = 0;
+                else if (c == '\\') e2 = 1;
+                else if (c == '"') s2 = 0;
+            } else if (c == '"') s2 = 1;
+            else if (c == '{' || c == '[') {
+                if (ns < 128) st[ns++] = (c == '{');
+            } else if (c == '}' || c == ']') {
+                if (ns > 0) ns--;
+            }
+        }
+        size_t wo = nl;
+        if (doc[wo-1] == ':') {
+            memcpy(doc + wo, "null", 4);
+            wo += 4;
+        }
+        for (int k = ns - 1; k >= 0; k--)
+            doc[wo++] = st[k] ? '}' : ']';
+        doc[wo] = 0;
+
+        /* final validation of the repaired doc (full grammar scan) */
+        size_t dummy = 0;
+        if (jscan_doc(doc, wo, &dummy) != 0) { free(doc); goto quarantine; }
+
+        char tmp[600];
+        snprintf(tmp, sizeof(tmp), "%s.tmp", path);
+        FILE *o = fopen(tmp, "w");
+        if (!o) { free(doc); return 0; }
+        fwrite(doc, 1, wo, o);
+        fclose(o);
+        rename(tmp, path);
+        char eb[512];
+        snprintf(eb, sizeof(eb),
+                 "{\"draft\":\"%s\",\"was\":%zu,\"now\":%zu}",
+                 id, len, wo);
+        ledger_log("draft.repaired", eb);
+        fprintf(stderr, "[draft-lint] repaired %s (%zu -> %zu bytes)\n",
+                id, len, wo);
+        free(doc);
+        return 1;
+    }
+
+quarantine:
+    {
+        char qpath[600];
+        snprintf(qpath, sizeof(qpath), "%s.corrupt-%ld", path,
+                 (long)time(NULL));
+        rename(path, qpath);
+        char stub[512];
+        snprintf(stub, sizeof(stub),
+                 "{\"draftId\":\"%s\",\"intent\":\"(recovered from a "
+                 "corrupt card)\",\"stages\":[],\"status\":\"ready\","
+                 "\"history\":[]}", id);
+        FILE *o = fopen(path, "w");
+        if (o) { fputs(stub, o); fclose(o); }
+        char eb[512];
+        snprintf(eb, sizeof(eb), "{\"draft\":\"%s\",\"kept\":\"%s\"}",
+                 id, qpath);
+        ledger_log("draft.quarantined", eb);
+        fprintf(stderr, "[draft-lint] quarantined %s -> %s\n", id, qpath);
+        return 1;
+    }
+}
+
+static void boot_lint_drafts(void) {
+    const char *aux = drafts_aux_dir();
+    const char *scan[3] = { "./drafts", (aux && aux[0]) ? aux : NULL,
+                            NULL };
+    int repaired = 0;
+    for (int t = 0; t < 2 && scan[t]; t++) {
+        DIR *d = opendir(scan[t]);
+        if (!d) continue;
+        struct dirent *e;
+        while ((e = readdir(d)) != NULL) {
+            size_t l = strlen(e->d_name);
+            if (l < 6 || strcmp(e->d_name + l - 5, ".json") != 0) continue;
+            if (strstr(e->d_name, ".corrupt-")) continue;
+            char path[600];
+            snprintf(path, sizeof(path), "%s/%s", scan[t], e->d_name);
+            char id[240];
+            snprintf(id, sizeof(id), "%.*s", (int)(l - 5), e->d_name);
+            repaired += draft_lint_one(path, id);
+        }
+        closedir(d);
+    }
+    if (repaired)
+        fprintf(stderr, "[draft-lint] %d draft(s) repaired at boot\n",
+                repaired);
+}
+
+/* ===================== QUEUE RECOVERY LAW (2026-08-31) =================
+ * "Queues should be recoverable — if the system crashes, the progress
+ * and queue is not lost" (operator order, after the 2026-08-31 fortify
+ * crash ate a live queue). The sidecar is the truth ledger: every run
+ * carries its FULLY COMPOSED yaml (windows resolved, tailpaths bound
+ * to its own out_dir), model, seed, prompt and draft link. At boot,
+ * before the stale-sweep, any sidecar still claiming queued/running
+ * is RESURRECTED into the live registry under its ORIGINAL run_id and
+ * re-armed as queued — the operator's card runs again without anyone
+ * re-submitting. (A mid-flight run restarts from its first node; its
+ * own artifacts overwrite in place. The FIFO order follows recovery
+ * order = original registration order via the created timestamp.) */
+static void boot_recover_queue(void) {
+    DIR *d = opendir("./output");
+    if (!d) return;
+    /* pass 1: collect live sidecars with mtimes (submission order —
+     * readdir order is arbitrary; FIFO law requires original order) */
+    struct rl { char name[256]; long mtime; };
+    struct rl *live = NULL;
+    size_t nlive = 0, cap = 0;
+    struct dirent *e;
+    while ((e = readdir(d)) != NULL) {
+        if (strncmp(e->d_name, "run-", 4) != 0) continue;
+        char spath[760];
+        snprintf(spath, sizeof(spath), "./output/%s/_pipeline.json",
+                 e->d_name);
+        FILE *f = fopen(spath, "rb");
+        if (!f) continue;
+        static char sb[1 << 20];   /* composed yamls are 100KB-class */
+        size_t n = fread(sb, 1, sizeof(sb) - 1, f);
+        fclose(f);
+        sb[n] = 0;
+        char st[32];
+        if (sidecar_str(sb, "status", st, sizeof st) != 0) continue;
+        if (strcmp(st, "queued") != 0 && strcmp(st, "running") != 0)
+            continue;
+        char rid[64];
+        if (sidecar_str(sb, "run_id", rid, sizeof rid) != 0 ||
+            strcmp(rid, e->d_name) != 0) continue;   /* not its own */
+        struct stat fst;
+        long mt = 0;
+        if (stat(spath, &fst) == 0) mt = (long)fst.st_mtime;
+        if (nlive == cap) {
+            cap = cap ? cap * 2 : 16;
+            struct rl *tmp = (struct rl *)realloc(live, cap * sizeof(*live));
+            if (!tmp) break;
+            live = tmp;
+        }
+        snprintf(live[nlive].name, sizeof(live[nlive].name), "%s", e->d_name);
+        live[nlive].mtime = mt;
+        nlive++;
+    }
+    closedir(d);
+    if (!nlive) return;
+
+    /* FIFO law: resurrect oldest-first (original submission order) */
+    for (size_t a = 0; a + 1 < nlive; a++)
+        for (size_t b = 0; b + 1 < nlive - a; b++)
+            if (live[b].mtime > live[b + 1].mtime) {
+                struct rl t = live[b]; live[b] = live[b + 1];
+                live[b + 1] = t;
+            }
+
+    int recovered = 0;
+    for (size_t li = 0; li < nlive; li++) {
+        const char *rname = live[li].name;
+        char spath[760];
+        snprintf(spath, sizeof(spath), "./output/%s/_pipeline.json", rname);
+        FILE *f = fopen(spath, "rb");
+        if (!f) continue;
+        static char sb[1 << 20];
+        size_t n = fread(sb, 1, sizeof(sb) - 1, f);
+        fclose(f);
+        sb[n] = 0;
+        char st[32];
+        if (sidecar_str(sb, "status", st, sizeof st) != 0) continue;
+        if (strcmp(st, "queued") != 0 && strcmp(st, "running") != 0)
+            continue;
+        char rid[64], model[80], prompt[4096], seedS[32], draft[96];
+        if (sidecar_str(sb, "run_id", rid, sizeof rid) != 0 ||
+            strcmp(rid, rname) != 0) continue;   /* not its own */
+        static char ybuf[1 << 20];   /* composed yamls are 100KB-class */
+        if (sidecar_str(sb, "yaml", ybuf, sizeof(ybuf)) != 0) continue;
+        if (sidecar_str(sb, "model", model, sizeof model) != 0) model[0] = 0;
+        if (sidecar_str(sb, "prompt", prompt, sizeof prompt) != 0) prompt[0] = 0;
+        long seed = 0;
+        if (sidecar_str(sb, "seed", seedS, sizeof seedS) == 0)
+            seed = atol(seedS);
+        if (sidecar_str(sb, "draft_id", draft, sizeof draft) != 0)
+            draft[0] = 0;
+
+        pthread_mutex_lock(&g_runs_mu);
+        /* same slot policy as the start handler: recycle a drained
+         * terminal slot, else append (boot registry is empty anyway) */
+        size_t idx = (size_t)-1;
+        for (size_t i = 0; i < g_n_runs; i++) {
+            if ((strcmp(g_runs[i].state, "success") == 0 ||
+                 strcmp(g_runs[i].state, "error") == 0 ||
+                 strcmp(g_runs[i].state, "stopped") == 0) &&
+                g_runs[i].th_done) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == (size_t)-1) {
+            if (g_n_runs >= RUNREG_MAX) {
+                pthread_mutex_unlock(&g_runs_mu);
+                break;
+            }
+            idx = g_n_runs++;
+        } else {
+            run_slot_release_heap(idx);
+        }
+        snprintf(g_runs[idx].run_id, sizeof(g_runs[idx].run_id), "%s", rid);
+        snprintf(g_runs[idx].out_dir, sizeof(g_runs[idx].out_dir),
+                 "./output/%s", rid);
+        snprintf(g_runs[idx].yaml, sizeof(g_runs[idx].yaml), "%s", ybuf);
+        snprintf(g_runs[idx].model, sizeof(g_runs[idx].model), "%s", model);
+        snprintf(g_runs[idx].prompt, sizeof(g_runs[idx].prompt), "%s", prompt);
+        g_runs[idx].seed = seed;
+        snprintf(g_runs[idx].draft_id, sizeof(g_runs[idx].draft_id),
+                 "%s", draft);
+        snprintf(g_runs[idx].state, sizeof(g_runs[idx].state), "queued");
+        g_runs[idx].error[0] = 0;
+        g_runs[idx].th_done = 0;
+        g_runs[idx].created = time(NULL);
+        /* FIFO LAW (proven 2026-08-31 by chaos C7): a recovered run
+         * MUST hold a registration-time ticket exactly like a fresh
+         * submission. Ticket 0-by-default collided with the first new
+         * registration's ticket 0 — two runs on one ticket = parallel
+         * GPU (serial law broken) and a queue that never showed a
+         * single active run. */
+        g_runs[idx].ticket = g_gpu_tickets++;
+        g_runs[idx].has_ticket = 1;
+        run_parse_stages(idx);
+        pthread_mutex_unlock(&g_runs_mu);
+        if (run_spawn_thread(idx, run_thread_fn) != 0) {
+            pthread_mutex_lock(&g_runs_mu);
+            run_slot_release_heap(idx);
+            pthread_mutex_unlock(&g_runs_mu);
+            continue;
+        }
+        char eb[400];
+        snprintf(eb, sizeof(eb),
+                 "{\"run_id\":\"%s\",\"prior_state\":\"%s\"}", rid, st);
+        ledger_log("run.recovered", eb);
+        fprintf(stderr, "[recover] resurrected %s (was %s)\n", rid, st);
+        recovered++;
+    }
+    free(live);
+    if (recovered)
+        fprintf(stderr, "[recover] %d run(s) re-armed from sidecars\n",
+                recovered);
+}
+
 inference_server *server_create(int port, const char *bind_addr) {
     /* (audit F13) Block SIGTERM/SIGINT BEFORE any thread exists — every
      * thread inherits this mask, and the dedicated shutdown thread below
@@ -7785,8 +8522,18 @@ inference_server *server_create(int port, const char *bind_addr) {
             fprintf(stderr, "[shutdown] WARNING: signal thread spawn failed\n");
     }
 
+    /* (queue recovery law, 2026-08-31) resurrect queued/running runs
+     * from their sidecars FIRST — the sweep below must only see what
+     * recovery refused (malformed / unresurrectable), never eat a
+     * live queue again. */
+    boot_recover_queue();
+
     /* (audit F7) sweep stale active sidecars from any dead process */
     boot_sweep_stale_sidecars();
+
+    /* (draft lint law, 2026-08-31) no corrupt draft may survive a
+     * reboot: the sidebar card click must always open a valid doc. */
+    boot_lint_drafts();
 
     inference_server *s = new inference_server;
     if (!s) return NULL;

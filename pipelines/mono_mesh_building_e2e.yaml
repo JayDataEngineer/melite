@@ -1,0 +1,54 @@
+output_dir: ./data/test-output/pipelines/pipeline_mono_mesh_building_e2e
+
+shared:
+  comfy_url: http://127.0.0.1:18465
+
+name: Mono Mesh Building (E2E)
+steps:
+  - family: generate_image
+    phase: concept
+    title: Concept - stone watchtower
+    consumes: [comfy_url]
+    outputs: [asset_image]
+    params:
+      model: z-image
+      seed: 4242
+      output_artifact: asset_image
+      prompt: >-
+        full concept of a small stone watchtower with a wooden roof, chunky
+        stylized proportions, thick walls, arched doorway, crenellated top,
+        weathered grey stone with moss patches, plain white background,
+        three-quarter view, stylized game asset, evenly lit, fully visible
+      negative_prompt: >-
+        front view only, cropped, multiple buildings, background scene, text,
+        watermark, shadows on background, photorealistic
+  - family: trellis_native
+    phase: surface
+    title: Trellis.cpp native - watchtower surface GLB
+    consumes: [comfy_url]
+    outputs: [asset_glb]
+    params:
+      image_artifact: asset_image
+      seed: 21
+      resolution: "1024"
+      simplify_target: 60000
+      texture_size: 2048
+      quant: q8
+      bg_removal: auto
+      output_artifact: asset_glb
+  - family: mesh_clean
+    phase: clean
+    title: Mono clean - weld/repair/decimate to building budget
+    consumes: [comfy_url]
+    outputs: [clean_glb]
+    params:
+      glb_artifact: asset_glb
+      target_faces: 5000
+      output_artifact: clean_glb
+  - family: render_glb_views
+    phase: gate
+    title: Turntable review views (post-budget shape check)
+    consumes: [comfy_url]
+    outputs: [asset_views]
+    params:
+      glb_artifact: clean_glb

@@ -21,3 +21,13 @@
 {"ts":1788001768,"event":"server.boot","data":{"pid":3100126}}
 {"ts":1788001886,"event":"server.shutdown","data":{"reason":"signal"}}
 {"ts":1788052822,"event":"server.boot","data":{"pid":4139085}}
+{"ts":1788115911,"event":"server.boot","data":{"pid":2150165}}
+{"ts":1788116028,"event":"server.shutdown","data":{"reason":"signal"}}
+{"ts":1788116040,"event":"server.boot","data":{"pid":2159633}}
+{"ts":1788116162,"event":"server.shutdown","data":{"reason":"signal"}}
+{"ts":1788116268,"event":"server.boot","data":{"pid":2178140}}
+{"ts":1788116401,"event":"server.shutdown","data":{"reason":"signal"}}
+{"ts":1788116417,"event":"server.boot","data":{"pid":2188899}}
+{"ts":1788116465,"event":"server.shutdown","data":{"reason":"signal"}}
+{"ts":1788116465,"event":"server.boot","data":{"pid":2192337}}
+{"ts":1788116560,"event":"server.shutdown","data":{"reason":"signal"}}

@@ -124,6 +124,7 @@ COPY plugins/comfyui/custom_nodes/melite-autorig-nodes /tmp/in-tree-packs/melite
 COPY plugins/comfyui/custom_nodes/melite-seethrough-nodes /tmp/in-tree-packs/melite-seethrough-nodes
 COPY plugins/comfyui/custom_nodes/melite-step1x-nodes /tmp/in-tree-packs/melite-step1x-nodes
 COPY plugins/comfyui/custom_nodes/melite-stretchy-nodes /tmp/in-tree-packs/melite-stretchy-nodes
+COPY plugins/comfyui/custom_nodes/melite-poser-nodes /tmp/in-tree-packs/melite-poser-nodes
 RUN python3 /tmp/setup_comfyui.py && rm -rf /tmp/setup_comfyui.py /tmp/extension_lane.py /tmp/melite-plugins /tmp/in-tree-packs
 
 # The base image's entrypoint handles auto-start + supervisor; the port is

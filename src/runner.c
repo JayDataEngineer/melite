@@ -111,6 +111,32 @@ static const char *find_plugin_path(const inference_runner *r,
     return NULL;
 }
 
+/* (validation law, 2026-08-30) schema query for registration-time
+ * input-coverage checks — dlopen the .so, read node_schema, unload.
+ * Registration is not the hot path; the cost is one dlopen per
+ * validated node type. */
+int runner_schema_for_type(inference_runner *r, const char *type_id,
+                           char *out, size_t cap) {
+    if (!r || !type_id || !out || cap == 0) return -1;
+    const char *path = find_plugin_path(r, type_id);
+    if (!path) return -1;
+    inference_plugin *p = plugin_load(path);
+    if (!p) return -1;
+    int rc = -1;
+    const char *tid = plugin_type_id(p);
+    if (tid && strcmp(tid, type_id) == 0) {
+        inference_schema s = plugin_schema(p);
+        if (s.json && s.len > 0) {
+            snprintf(out, cap, "%.*s", (int)(s.len < cap - 1 ? s.len : cap - 1),
+                     s.json);
+            rc = (int)strlen(out);
+        }
+        if (s.json) inference_free((void *)s.json);
+    }
+    plugin_unload(p);
+    return rc;
+}
+
 /* Build a config JSON by merging node model + params */
 static char *build_config(const dag_node *node) {
     /* If params_json already contains everything, use it */
