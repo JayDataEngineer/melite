@@ -2334,6 +2334,97 @@ static int bdl_model_base(const char *model_dir, char *out, size_t outsz) {
     return found ? 0 : -1;
 }
 
+/* (audio card path, 2026-09-01) Does the model dir carry a card_knobs.yaml?
+ * Reuses bdl_find_model_dir's directory-scanning approach -- scans
+ * plugins/<plugin>/models/<genre>/<model>/ looking for card_knobs.yaml. */
+static int model_has_card_knobs(const char *model) {
+    const char *bases[] = { "plugins", "../plugins", NULL };
+    for (int bi = 0; bases[bi]; bi++) {
+        DIR *d = opendir(bases[bi]);
+        if (!d) continue;
+        struct dirent *pe;
+        while ((pe = readdir(d)) != NULL) {
+            if (pe->d_name[0] == '.') continue;
+            char md[768];
+            snprintf(md, sizeof(md), "%s/%s/models", bases[bi], pe->d_name);
+            DIR *g = opendir(md);
+            if (!g) continue;
+            struct dirent *ge;
+            while ((ge = readdir(g)) != NULL) {
+                if (ge->d_name[0] == '.') continue;
+                char genre_dir[1024];
+                snprintf(genre_dir, sizeof(genre_dir), "%s/%s", md, ge->d_name);
+                DIR *mm = opendir(genre_dir);
+                if (!mm) continue;
+                struct dirent *me;
+                while ((me = readdir(mm)) != NULL) {
+                    if (strcmp(me->d_name, model) != 0) continue;
+                    char kn[1400];
+                    snprintf(kn, sizeof(kn), "%s/%s/card_knobs.yaml",
+                             genre_dir, me->d_name);
+                    FILE *kf = fopen(kn, "rb");
+                    if (kf) {
+                        fclose(kf);
+                        closedir(mm); closedir(g); closedir(d);
+                        return 1;
+                    }
+                }
+                closedir(mm);
+            }
+            closedir(g);
+        }
+        closedir(d);
+    }
+    return 0;
+}
+
+/* (audio card path, 2026-09-01) Read engine.plugin from model.yaml.
+ * Finds plugins/<plugin>/models/<genre>/<model>/model.yaml, parses the
+ * top-level "engine:" section's "plugin:" key (2-space indent). Returns
+ * 0 on success (out populated), -1 if model dir or engine.plugin not found. */
+static int model_engine_plugin(const char *model, char *out, size_t cap) {
+    /* Find the model dir via bdl_find_model_dir */
+    char mdir[1024];
+    if (bdl_find_model_dir(model, mdir, sizeof(mdir)) != 0)
+        return -1;
+    char ypath[1400];
+    snprintf(ypath, sizeof(ypath), "%s/model.yaml", mdir);
+    FILE *f = fopen(ypath, "rb");
+    if (!f) return -1;
+    char line[512];
+    int in_engine = 0;
+    while (fgets(line, sizeof(line), f)) {
+        /* top-level key detection (no leading space) */
+        if (line[0] != ' ' && line[0] != '\t' && line[0] != '#' &&
+            line[0] != '\n' && line[0] != 0) {
+            in_engine = (strncmp(line, "engine:", 7) == 0);
+            if (in_engine) continue;  /* next line is inside engine block */
+            if (strstr(line, "plugin:")) break; /* passed it without finding */
+            continue;
+        }
+        if (!in_engine) continue;
+        const char *p = strstr(line, "plugin:");
+        if (p) {
+            p += 7;
+            while (*p == ' ' || *p == '\t') p++;
+            const char *e = p;
+            while (*e && *e != '\n' && *e != '\r' && *e != ' ' &&
+                   *e != '\t' && *e != '"') e++;
+            if (e > p && (size_t)(e - p) < cap) {
+                memcpy(out, p, (size_t)(e - p));
+                out[e - p] = 0;
+                fclose(f);
+                return 0;
+            }
+            break;
+        }
+        /* if line is a new top-level key, engine block ended */
+        if (line[0] != ' ') break;
+    }
+    fclose(f);
+    return -1;
+}
+
 /* THE lane bundle: lane unit + model unit + base-family unit */
 static int bdl_find_model_dir(const char *model, char *out, size_t outsz);
 static int bdl_model_base(const char *model_dir, char *out, size_t outsz);
@@ -2805,13 +2896,27 @@ static void handle_pipelines_start(const httplib::Request &req,
                                               did_check, sizeof(did_check)) == 0
                               && did_check[0]);
             int have_calls = (strstr(body, "\"calls\"") != NULL);
-            if (have_draft || have_calls) {
+            int card_model = model_has_card_knobs(model);
+            if (have_draft || have_calls || card_model) {
+                /* Read engine type from model.yaml instead of guessing */
+                char etype[64] = "";
+                if (model_engine_plugin(model, etype, sizeof(etype)) != 0) {
+                    res.status = 404;
+                    char err[400];
+                    snprintf(err, sizeof(err),
+                             "{\"error\":\"model '%s' declares no engine plugin "
+                             "(model.yaml engine.plugin) — refusing to guess\"}",
+                             model);
+                    res.set_content(err, "application/json");
+                    return;
+                }
                 snprintf(yaml_override, sizeof(yaml_override),
-                         "name: %s\ntype: comfyui\n"
-                         "description: card-composed\n\nnodes:\n", model);
+                         "name: %s\ntype: %s\n"
+                         "description: card-composed\n\nnodes:\n", model, etype);
                 fprintf(stderr, "[card-path] no pipeline.yaml for %s "
-                        "(draft=%d calls=%d) — plugin generates graph\n",
-                        model, have_draft, have_calls);
+                        "(draft=%d calls=%d card_knobs=%d) engine=%s "
+                        "— plugin generates graph\n",
+                        model, have_draft, have_calls, card_model, etype);
             } else {
                 res.status = 404;
                 char err[300];
@@ -2822,12 +2927,18 @@ static void handle_pipelines_start(const httplib::Request &req,
             }
         }
     }
-    /* (2026-08-31 hard-error law) CALLS VALIDATION — runs AFTER model
+    /* (2026-08-31 hard-error law) CARD COMPOSE — runs AFTER model
      * resolution so card-path models (no pipeline.yaml; the plugin
      * generates the graph) have yaml_override seeded with the engine
      * type. Before this move, h3-timeline direct-calls requests never
-     * resolved an engine type and validation silently never ran. */
-    if (strstr(body, "\"calls\"")) {
+     * resolved an engine type and validation silently never ran.
+     * (2026-09-01) Also fires for card_knobs models (no "calls" in
+     * body) — the plugin's phase-1 handles call-less bodies natively. */
+    {
+        int have_calls = (strstr(body, "\"calls\"") != NULL);
+        int have_card  = (yaml_override[0] &&
+                          strstr(yaml_override, "card-composed"));
+        if (have_calls || have_card) {
         char etype0[64] = "";
         {
             /* yaml_override first (card path + {model} both carry
@@ -2922,6 +3033,7 @@ static void handle_pipelines_start(const httplib::Request &req,
                 pv[pl] = 0;
                 if (pl) snprintf(prompt, sizeof prompt, "%s", pv);
             }
+        }
         }
     }
     if (!prompt[0]) {
@@ -8238,7 +8350,7 @@ static void handle_mcp_message(const httplib::Request &req,
         }
 
         if (tool_name == "start_pipeline") {
-            auto pp = body.find('\"params\":');
+            auto pp = body.find("\"params\":");
             std::string rb = "{}";
             if (pp != std::string::npos) {
                 auto os = body.find('{', pp);
