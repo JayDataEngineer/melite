@@ -196,6 +196,13 @@ if(INFERENCE_BUILD_TESTS)
                          --repo-dir ${CMAKE_SOURCE_DIR}
                          --build-dir ${CMAKE_BINARY_DIR})
         set_tests_properties(test_bundles PROPERTIES TIMEOUT 120)
+        # LAYER AUDIT: Layers A/B card knobs vs the h3-timeline backend
+        # truth, 1:1. Fails with a named diff on any silent drift
+        # (operator order 2026-08-31: "we cannot hide features").
+        add_test(NAME test_layer_audit
+                 COMMAND ${Python3_EXECUTABLE}
+                         ${CMAKE_SOURCE_DIR}/tools/layer_audit.py)
+        set_tests_properties(test_layer_audit PROPERTIES TIMEOUT 30)
     endif()
 endif()
 
