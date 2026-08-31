@@ -5,17 +5,19 @@ description: "Authoring multi-shot video on the h3-timeline card — the calls d
 
 # Skill: authoring multi-shot video (the h3-timeline card)
 
-> **OPERATOR DIRECTIVE 2026-09-01 — PlagueKind 1:1, 15 seconds.**
-> The next timeline video: **15 s** on the delivered lattice — author 4
-> calls at `0-90 / 90-179 / 179-268 / 268-357` (= 90+89×3 = 357 f =
-> 14.875 s, the closest on-grid 15 s). Parameters ride the t4 template
-> defaults — that IS the original PlagueKind workflow 1:1 (turbo-4 LoRA,
-> euler/simple, steps 4, cfg 1, shifts 12/3, 768×448, SLA sparse
-> attention on: 0.9/32/8192/comfy_kitchen, protect_audio +
-> stabilize_motion). **Motion context = seam_carry, and the default 6 is
-> the original workflow's carry_latent_frames — DO NOT override it.**
-> Send no exotic knobs; every deviation from the template is a deviation
-> from 1:1. Do NOT send `context_length` (retired, compose error -17).
+> **OPERATOR DIRECTIVE 2026-08-31 — PlagueKind 1:1, VERIFIED RECIPE.**
+> The lane is 1:1 his AV Extension (stitch-diffed pre-GPU, 16/16
+> params): ref2va UNET + int8_convrot CLIP + MiniMaxH3ReferenceToVideo
+> (audio_vae wired, ref_image_size match), LoRA fl2v_turbo_8step @
+> **0.95**, ModelAttentionBackend **comfy kitchen attention**,
+> **res_multistep/simple/20**/denoise 1, SigmaShift 12/3, **960×544**,
+> output **VHS h264-mp4 yuv420p crf 19 @ 24 fps, trim_to_audio**.
+> Parameters ride the t4 template defaults — every deviation from the
+> template is a deviation from 1:1. **The prompt law is compose-owned**:
+> preambles ride every window automatically — your call `text` is ONLY
+> the scene/action (window 1 = establish, windows 2+ = the CHANGE).
+> Spans are FRAMES on the joint-AV grid 39/90/141/192 (start_frame /
+> end_frame, end exclusive, contiguous).
 
 Domain knowledge for the timeline card — the ONLY surface that makes
 multi-shot video in one run. Use it when the user asks for a VIDEO WITH

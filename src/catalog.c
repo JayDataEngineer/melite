@@ -14,7 +14,20 @@
 /* ---- Minimal YAML helpers ---- */
 
 static char *ystrdup(const char *s) {
-    return s ? strdup(s) : NULL;
+    if (!s) return NULL;
+    /* (manifest law, 2026-08-31) strip ONE layer of wrapping yaml
+     * quotes — `label: "SAM 3 — ..."` parsed verbatim poisons every
+     * JSON door downstream with unescaped quotes. */
+    size_t n = strlen(s);
+    if (n >= 2 && ((s[0] == '"' && s[n-1] == '"') ||
+                   (s[0] == '\'' && s[n-1] == '\''))) {
+        char *out = (char *)malloc(n - 1);
+        if (!out) return NULL;
+        memcpy(out, s + 1, n - 2);
+        out[n - 2] = 0;
+        return out;
+    }
+    return strdup(s);
 }
 
 static char *ystrip(char *s) {

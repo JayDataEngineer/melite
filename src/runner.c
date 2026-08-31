@@ -322,6 +322,12 @@ static const char *out_ext(const inference_tensor *t) {
         return "mp4";
     if (t->nbytes > 4 && b[0] == 'O' && b[1] == 'g' && b[2] == 'g' && b[3] == 'S')
         return "ogg";
+    /* (music lane law, 2026-08-31) mp3 magic: ID3v2 tag or an MPEG
+     * frame sync — the song artifact persists as .mp3, not .bin. */
+    if (t->nbytes > 3 && b[0] == 'I' && b[1] == 'D' && b[2] == '3')
+        return "mp3";
+    if (t->nbytes > 2 && b[0] == 0xFF && (b[1] & 0xE0) == 0xE0)
+        return "mp3";
     if (t->nbytes > 4 && b[0] == 'g' && b[1] == 'l' && b[2] == 'T' && b[3] == 'F')
         return "glb";
     if (t->dtype && strcmp(t->dtype, "f32") == 0) return "f32";
