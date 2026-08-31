@@ -82,6 +82,10 @@ clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git \
       "$CUSTOM_NODES/ComfyUI-VideoHelperSuite"
 clone https://github.com/kijai/ComfyUI-SolAttn_triton.git \
       "$CUSTOM_NODES/ComfyUI-SolAttn_triton"
+clone https://github.com/rgthree/rgthree-comfy.git \
+      "$CUSTOM_NODES/rgthree-comfy"
+clone https://github.com/Comfy-Org/Nvidia_RTX_Nodes_ComfyUI.git \
+      "$CUSTOM_NODES/Nvidia_RTX_Nodes_ComfyUI"
 
 # ─── 2. Node Dependencies (pip) ──────────────────────────────────
 echo ""
@@ -90,7 +94,9 @@ for req in \
   "$CUSTOM_NODES/ComfyUI-H3-Motion-Context-MultiRef/requirements.txt" \
   "$CUSTOM_NODES/ComfyUI-KJNodes/requirements.txt" \
   "$CUSTOM_NODES/Comfyui-PlagueKind-Nodes/requirements.txt" \
-  "$CUSTOM_NODES/ComfyUI-SolAttn_triton/requirements.txt"; do
+  "$CUSTOM_NODES/ComfyUI-SolAttn_triton/requirements.txt" \
+  "$CUSTOM_NODES/rgthree-comfy/requirements.txt" \
+  "$CUSTOM_NODES/Nvidia_RTX_Nodes_ComfyUI/requirements.txt"; do
   if [ -f "$req" ]; then
     name=$(basename $(dirname "$req"))
     "$VENV_PYTHON" -m pip install -q -r "$req" 2>/dev/null && \
@@ -168,7 +174,7 @@ FAIL=0
 # ENABLED — the base pack owns the four shared class names, the
 # MultiRef superset fork adds its uniquely-named nodes. Neither pack
 # disabled, neither "supersedes" the other.
-for d in h3_motion_context ComfyUI-H3-Motion-Context-MultiRef Comfyui-PlagueKind-Nodes ComfyUI-KJNodes ComfyUI-VideoHelperSuite ComfyUI-SolAttn_triton; do
+for d in h3_motion_context ComfyUI-H3-Motion-Context-MultiRef Comfyui-PlagueKind-Nodes ComfyUI-KJNodes ComfyUI-VideoHelperSuite ComfyUI-SolAttn_triton rgthree-comfy Nvidia_RTX_Nodes_ComfyUI; do
   [ -d "$CUSTOM_NODES/$d" ] && [ -f "$CUSTOM_NODES/$d/__init__.py" ] && ok "$d" || { echo "  [MISSING] $d"; FAIL=1; }
 done
 
