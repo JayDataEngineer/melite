@@ -106,6 +106,18 @@ WITNESS = {
 # the 1:1 law: they are authored data the compose path consumes by design).
 DOC_KEYS = {"calls", "keyframes", "document"}
 
+# ── reverse direction (operator order: "we cannot hide features") ────────
+# Backend workflow inputs that are REAL knobs (values the GPU receives)
+# mapped to the card knob that exposes them; None = HIDDEN — a backend
+# capability no Layer A/B control offers. Runtime wiring (prompt/seed/
+# latent plumbing) is not a knob and never appears here.
+BACKEND_KNOBS = {
+    "denoise":             None,   # KSampler denoise — no card control
+    "length":              "fps",  # window frames — derived from calls' spans
+    "carry_latent_frames": None,   # chain seam depth — hardcoded 22
+    "weight_dtype":        None,   # loader dtype — no card control
+}
+
 
 def backend_truth():
     chunks = {}
@@ -150,6 +162,8 @@ def main():
         "live": live,
         "dead": dead,
         "unmapped_needs_witness": unmapped,
+        "hidden_backend_knobs": sorted(k for k, v in BACKEND_KNOBS.items()
+                                       if v is None),
     }
     pin_path = os.path.join(ROOT, "docs", "LAYER_AUDIT.json")
     if "--update" in sys.argv:
@@ -171,7 +185,8 @@ def main():
     if pin != report:
         print("LAYER AUDIT DRIFT — card and pin disagree. If the change "
               "was deliberate, re-run with --update and commit both.")
-        for k in ("card_knobs", "live", "dead", "unmapped_needs_witness"):
+        for k in ("card_knobs", "live", "dead", "unmapped_needs_witness",
+                  "hidden_backend_knobs"):
             if pin.get(k) != report.get(k):
                 a = set(pin.get(k) or ()) - set(report.get(k) or ())
                 b = set(report.get(k) or ()) - set(pin.get(k) or ())
