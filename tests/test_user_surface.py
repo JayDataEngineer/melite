@@ -192,6 +192,45 @@ def main():
         code, _ = get(base, "/v1/form-spec?model=no-such-lane-xyz")
         check("S7 unknown form-spec still 404", code == 404, f"code={code}")
 
+        # ── S8: timeline-sync heal (durationSec = film truth) ───────────
+        # a card carrying a WALL-CLOCK durationSec (152 on a 17.2s film —
+        # the desync the user saw: playhead 8.9x off, windows piled at
+        # wrong offsets) must be healed at serve time from the card's own
+        # frame plan: ceil(max end_frame / fps). The heal must leave the
+        # doc PARSEABLE (the first version of this heal spliced at a
+        # wrong offset and stripped a quote — caught as unparseable).
+        sid = "draft-surf-heal-test-1"
+        card = {
+            "draft_id": sid, "intent": "surface heal probe", "stages": [{
+                "id": "s1", "result": {
+                    "assetUrls": [], "artifacts": {},
+                    "metadata": {"runId": "r", "history": []},
+                    "completedAt": 1, "durationSec": 152},
+                "params": {"calls": [
+                    {"start_frame": 0, "end_frame": 56, "text": "a"},
+                    {"start_frame": 56, "end_frame": 412, "text": "b"}]},
+            }],
+            "fps": 24, "status": "completed", "history": []}
+        with open(os.path.join(BUILD, "drafts", sid + ".json"), "w") as f:
+            json.dump(card, f, separators=(",", ":"))
+        try:
+            code, body = get(base, "/v1/pipelines/drafts/" + sid)
+            ok, healed = False, None
+            if code == 200:
+                try:
+                    d = json.loads(body)
+                    healed = d["stages"][0]["result"]["durationSec"]
+                    ok = healed == 18      # ceil(412/24)
+                except Exception:
+                    ok = False
+            check("S8 durationSec healed to film truth, doc parses",
+                  ok, f"code={code} healed={healed} (want 18, was 152)")
+        finally:
+            try:
+                os.remove(os.path.join(BUILD, "drafts", sid + ".json"))
+            except OSError:
+                pass
+
     finally:
         try:
             os.killpg(os.getpgid(proc.pid), signal.SIGKILL)

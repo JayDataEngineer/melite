@@ -1346,6 +1346,30 @@ static void draft_writeback(size_t idx, const char *wire) {
     }
     long dur = (long)(time(NULL) - g_runs[idx].created);
     if (dur < 0) dur = 0;
+    /* (timeline-sync law, 2026-08-31) the CARD's durationSec drives the
+     * viewer's preview↔timeline sync. It must be FILM TRUTH — the card's
+     * own frame plan (max end_frame / fps) — never the run's wall clock:
+     * a 152s wall time on a 17.2s film desynced the playhead 8.9x and
+     * piled window previews at wrong offsets. The LEDGER row below keeps
+     * the wall time (that is what a run row means); only the card's
+     * result metadata carries film seconds. */
+    long film_dur = dur;
+    {
+        long fend = 0, fpsv = 0;
+        for (const char *q = buf; (q = strstr(q, "\"end_frame\"")) != NULL; ) {
+            const char *c = strchr(q + 10, ':');
+            long v = c ? strtol(c + 1, NULL, 10) : 0;
+            if (v > fend) fend = v;
+            q += 11;
+        }
+        const char *fq = strstr(buf, "\"fps\"");
+        if (fq) {
+            const char *c = strchr(fq + 5, ':');
+            fpsv = c ? strtol(c + 1, NULL, 10) : 0;
+        }
+        if (fend > 0 && fpsv > 0)
+            film_dur = (fend + fpsv - 1) / fpsv; /* ceil: last frame plays */
+    }
 
     /* history row (also stamped into result.metadata.history so the card
      * can render prior runs without draft-root access) */
@@ -1464,7 +1488,7 @@ static void draft_writeback(size_t idx, const char *wire) {
         nwin > 3 ? (seam[3][0] ? seam[3] : "") : "",
         wfilms, seamsj,
         rid, nwin, mhist,
-        (long)time(NULL) * 1000, dur);
+        (long)time(NULL) * 1000, film_dur);
 
     const char *rp = strstr(buf, "\"result\"");
     /* (stack-smash law, 2026-08-31) exact-size heap splice + slack for
@@ -4650,6 +4674,72 @@ static void handle_draft_get(const httplib::Request &req,
                 while ((n = fread(buf, 1, sizeof(buf), f2)) > 0)
                     body.append(buf, n);
                 fclose(f2);
+            }
+        }
+    }
+    /* (timeline-sync heal, 2026-08-31) cards written before the
+     * timeline-sync law carry durationSec = the run's WALL CLOCK (152
+     * on a 17.2s film) — the viewer scales its preview↔timeline sync by
+     * that number and desyncs 8.9x. Serve-time heal: recompute from the
+     * card's own frame plan (max end_frame / fps) and patch in place
+     * when it disagrees. Same class as the corruption heal above: the
+     * click must never serve a known-wrong number. */
+    {
+        long fend = 0, fpsv = 0;
+        for (const char *q = body.c_str();
+             (q = strstr(q, "\"end_frame\"")) != NULL; ) {
+            const char *c = strchr(q + 10, ':');
+            long v = c ? strtol(c + 1, NULL, 10) : 0;
+            if (v > fend) fend = v;
+            q += 11;
+        }
+        const char *fq = strstr(body.c_str(), "\"fps\"");
+        if (fq) {
+            const char *c = strchr(fq + 5, ':');
+            fpsv = c ? strtol(c + 1, NULL, 10) : 0;
+        }
+        if (fend > 0 && fpsv > 0) {
+            long film = (fend + fpsv - 1) / fpsv;
+            const char *dq = body.c_str();
+            long n_patch = 0;
+            while ((dq = strstr(dq, "\"durationSec\"")) != NULL) {
+                const char *c = strchr(dq + 13, ':');
+                if (!c) break;
+                long stored = strtol(c + 1, NULL, 10);
+                if (stored != film) n_patch++;
+                dq += 13;
+            }
+            if (n_patch > 0) {
+                std::string fixed;
+                fixed.reserve(body.size() + 32);
+                size_t pos = 0;
+                const char *p = body.c_str();
+                while ((p = strstr(p, "\"durationSec\"")) != NULL) {
+                    size_t at = (size_t)(p - body.c_str());
+                    const char *c = strchr(p + 13, ':');
+                    if (!c) break;
+                    long stored = strtol(c + 1, NULL, 10);
+                    const char *ve = c + 1;
+                    while (*ve == ' ') ve++;
+                    while (*ve && *ve != ',' && *ve != '}') ve++;
+                    fixed.append(body, pos, at + 14 - pos);
+                    if (stored != film)
+                        fixed += std::to_string(film);
+                    else {
+                        char keep[32];
+                        snprintf(keep, sizeof(keep), "%ld", stored);
+                        fixed += keep;
+                    }
+                    pos = (size_t)(ve - body.c_str());
+                    p = ve;
+                }
+                fixed.append(body, pos, body.size() - pos);
+                FILE *wf = fopen(path, "wb");
+                if (wf) {
+                    fwrite(fixed.data(), 1, fixed.size(), wf);
+                    fclose(wf);
+                    body.swap(fixed);
+                }
             }
         }
     }
