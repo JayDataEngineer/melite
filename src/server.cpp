@@ -2610,7 +2610,7 @@ static void handle_pipelines_start(const httplib::Request &req,
                 if (ml) {
                     char out[600];
                     snprintf(out, sizeof out, "{\"error\":\"%s\"}", m);
-                    res.status = (ph1 <= -2 && ph1 >= -10)
+                    res.status = (ph1 <= -2 && ph1 >= -13)
                                      ? 400 : 500;
                     res.set_content(out, "application/json");
                     return;
@@ -2722,7 +2722,7 @@ static void handle_pipelines_start(const httplib::Request &req,
                         if (ml) snprintf(out, sizeof out,
                                          "{\"error\":\"%s\"}", m);
                     }
-                    res.status = (ph1 <= -2 && ph1 >= -10)
+                    res.status = (ph1 <= -2 && ph1 >= -13)
                                      ? 400 : 500;
                     res.set_content(out, "application/json");
                     return;
