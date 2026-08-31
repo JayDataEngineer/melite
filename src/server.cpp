@@ -1097,6 +1097,10 @@ static void draft_writeback(size_t idx, const char *wire) {
             seam[nwin][0] = 0;
         nwin++;
     }
+    /* (davinci 1:1 law) the film-space map from the probes below —
+     * empty string when probing failed (the tenant then falls back to
+     * plan space). */
+    char film_map_buf[RUN_TL_MAX * 96 + 128] = "";
     long dur = (long)(time(NULL) - g_runs[idx].created);
     if (dur < 0) dur = 0;
     /* (timeline-sync law, 2026-08-31) the CARD's durationSec drives the
@@ -1122,6 +1126,77 @@ static void draft_writeback(size_t idx, const char *wire) {
         }
         if (fend > 0 && fpsv > 0)
             film_dur = (fend + fpsv - 1) / fpsv; /* ceil: last frame plays */
+
+        /* (davinci 1:1 law, 2026-09-01) FILM TRUTH MAP: the plan space
+         * (spans/trims) and the film's real grid DIVERGE — the engine
+         * grid-snaps windows (ramen: 345 plan frames -> 390 film
+         * frames). A playhead synced to the PLAYER can only be 1:1 in
+         * FILM space, so the truth is probed from the rendered files
+         * and rides result.metadata.film:
+         *   windows[k] = {start (film space, post-trim new content),
+         *                 len (real frames), trim (carried head),
+         *                 docStart/docSpan (the plan frames it covers)}
+         * Emitted ONLY when every window probed — a partial map is a
+         * lie; the tenant falls back to plan space without it. */
+        if (fpsv > 0 && nwin > 0) {
+            int flen[RUN_TL_MAX], fstart[RUN_TL_MAX], dstart[RUN_TL_MAX];
+            int dacc = 0, ftotal = 0, probed = 1;
+            for (int k = 0; k < nwin && probed; k++) {
+                char wp[768], cmd[900], ob[128];
+                snprintf(wp, sizeof wp, "%s/window%d_video_0.mp4",
+                         outdir, k + 1);
+                snprintf(cmd, sizeof cmd,
+                    "ffprobe -v quiet -show_entries format=duration "
+                    "-of csv=p=0 '%s' 2>/dev/null", wp);
+                FILE *pf = popen(cmd, "r");
+                if (!pf || !fgets(ob, sizeof ob, pf)) { probed = 0; }
+                else { flen[k] = (int)(atof(ob) * (double)fpsv + 0.5); }
+                if (pf) pclose(pf);
+                if (probed && flen[k] <= 0) probed = 0;
+                dstart[k] = dacc;
+                dacc += (k < RUN_TL_MAX) ? g_runs[idx].tl_spans[k] : 0;
+            }
+            if (probed) {
+                size_t fc2 = 1024;
+                char *fmap = (char *)malloc(fc2);
+                if (fmap) {
+                    size_t o2 = (size_t)snprintf(fmap, fc2,
+                        "\"film\":{\"fps\":%ld,\"windows\":[", fpsv);
+                    int ftot = 0;
+                    for (int k = 0; k < nwin; k++) {
+                        int trim = g_runs[idx].tl_trims[k];
+                        if (trim > flen[k]) trim = flen[k];
+                        if (k) o2 = jappend(&fmap, &fc2, o2, ",");
+                        o2 = jappend(&fmap, &fc2, o2,
+                            "{\"start\":%d,\"len\":%d,\"trim\":%d,"
+                            "\"docStart\":%d,\"docSpan\":%d}",
+                            ftot, flen[k], trim, dstart[k],
+                            g_runs[idx].tl_spans[k]);
+                        ftot += flen[k] - trim;
+                    }
+                    o2 = jappend(&fmap, &fc2, o2, "],\"totalFrames\":%d}",
+                                 ftot);
+                    film_map_buf[0] = 0;
+                    snprintf(film_map_buf, sizeof film_map_buf, "%s", fmap);
+                    free(fmap);
+                    /* cross-check the stitch: real film seconds feed
+                     * durationSec (window truths are direct probes and
+                     * stay authoritative for the map). */
+                    char sp2[768], scmd[900], sob[128];
+                    snprintf(sp2, sizeof sp2, "%s/stitch_video_0.mp4", outdir);
+                    snprintf(scmd, sizeof scmd,
+                        "ffprobe -v quiet -show_entries format=duration "
+                        "-of csv=p=0 '%s' 2>/dev/null", sp2);
+                    FILE *sf = popen(scmd, "r");
+                    if (sf && fgets(sob, sizeof sob, sf)) {
+                        double sd = atof(sob);
+                        if (sd > 0)
+                            film_dur = (long)(sd + 0.999); /* ceil */
+                    }
+                    if (sf) pclose(sf);
+                }
+            }
+        }
     }
 
     /* history row (also stamped into result.metadata.history so the card
@@ -1262,10 +1337,11 @@ static void draft_writeback(size_t idx, const char *wire) {
         "{\"assetUrls\":[%s],\"artifacts\":{%s,"
         "\"windowFilms\":%s,\"seams\":%s},"
         "\"metadata\":{\"runId\":\"%s\",\"seam\":\"latent-chain\",\"windows\":%d,"
-        "\"history\":[%s]},"
+        "\"history\":[%s]%s%s},"
         "\"completedAt\":%ld,\"durationSec\":%ld}",
         urls, wkeys, wfilms, seamsj,
         rid, nwin, mhist,
+        film_map_buf[0] ? "," : "", film_map_buf,
         (long)time(NULL) * 1000, film_dur);
     free(wkeys);
 
