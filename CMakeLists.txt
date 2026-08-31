@@ -106,6 +106,8 @@ endif()
 # ---------------------------------------------------------------------------
 add_executable(inference_cli src/main.c)
 target_link_libraries(inference_cli PRIVATE inference)
+# server.cpp (card input registration) parses card payloads with cJSON
+target_link_libraries(inference PUBLIC cjson)
 
 # ---------------------------------------------------------------------------
 # Echo plugin (proof-of-concept)
@@ -352,10 +354,20 @@ if(INFERENCE_BUILD_AUDIO_PLUGIN)
 endif()
 
 # ---------------------------------------------------------------------------
+# cJSON (vendored, v1.7.19, MIT) — strict JSON parse for the card input
+# registration path and the plugin's spliced-workflow validation gate.
+# The hand-rolled scanners it replaces dropped inputs SILENTLY (see
+# src/server.cpp card_register_extra_inputs history).
+# ---------------------------------------------------------------------------
+add_library(cjson STATIC third_party/cjson/cJSON.c)
+target_include_directories(cjson PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cjson)
+
+# ---------------------------------------------------------------------------
 # ComfyUI engine plugin (always built — ComfyUI as a managed engine, peer of the C-ABI plugins)
 # ---------------------------------------------------------------------------
 add_library(comfyui_plugin SHARED plugins/comfyui/engines/comfyui/comfyui_plugin.c)
 target_include_directories(comfyui_plugin PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(comfyui_plugin PRIVATE cjson)
 set_target_properties(comfyui_plugin PROPERTIES
     PREFIX ""
     POSITION_INDEPENDENT_CODE ON

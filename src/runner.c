@@ -192,59 +192,97 @@ static const inference_tensor *find_tensor(const inference_tensor *tensors,
     return NULL;
 }
 
-/* Resolve input tensors for a node from initial inputs + upstream outputs */
-static size_t resolve_inputs(const runner_node *all_nodes, size_t n_nodes,
-                             const dag_node *dnode,
-                             const inference_tensor *initial, size_t n_initial,
-                             inference_tensor *resolved) {
+/* Resolve input tensors for a node from initial inputs + upstream outputs.
+ * (No-fallbacks law, 2026-08-31: "FALLBACKS = SILENT ERROR") —
+ *   - "__initial__.<name>" refs read the run's initial inputs BY NAME
+ *     (the '$' sigil is stripped: "__initial__.$prompt2" -> tensor
+ *     "prompt2"). Missing = HARD error, named.
+ *   - a ref naming a node that does not exist = HARD error (authoring
+ *     bug; the old code skipped it silently).
+ *   - a declared ref whose tensor exists nowhere = HARD error (the old
+ *     WARNING-and-continue silently shrank stitches mid-run).
+ *   - the old "first node gets raw initial inputs" pass-through is
+ *     DELETED: it compared dag_node* against runner_node* (always
+ *     false — dead code since birth) and even if "fixed" it would be
+ *     a fallback: wiring is EXPLICIT now.
+ * Returns tensor count >= 0, or -1 with err filled. */
+static int resolve_inputs(const runner_node *all_nodes, size_t n_nodes,
+                          const dag_node *dnode,
+                          const inference_tensor *initial, size_t n_initial,
+                          inference_tensor *resolved,
+                          char *err, size_t errsz) {
     size_t count = 0;
 
     for (size_t i = 0; i < dnode->n_inputs; i++) {
         const char *ref = dnode->input_from[i];
         const char *dot = strchr(ref, '.');
-        if (!dot) continue;
+        if (!dot) {
+            snprintf(err, errsz,
+                     "input ref '%s' on node '%s' has no <node>.<tensor> form",
+                     ref, dnode->id);
+            return -1;
+        }
 
         size_t node_id_len = (size_t)(dot - ref);
         const char *tensor_name = dot + 1;
+        if (tensor_name[0] == '$') tensor_name++;  /* "$prompt2" -> "prompt2" */
 
-        /* Find the source node */
-        for (size_t j = 0; j < n_nodes; j++) {
-            if (strlen(all_nodes[j].id) != node_id_len) continue;
-            if (strncmp(all_nodes[j].id, ref, node_id_len) != 0) continue;
-
-            /* Search upstream outputs first */
+        /* reserved source: the run's initial inputs. The literal is
+         * 11 chars ("__initial__") — magic-constant off-by-ones here
+         * sent every ref into the node-id search and crashed on
+         * uninitialized runner ids; sizeof-1 can never drift. */
+        static const char INIT_SRC[] = "__initial__";
+        if (node_id_len == sizeof INIT_SRC - 1 &&
+            strncmp(ref, INIT_SRC, node_id_len) == 0) {
             const inference_tensor *t =
-                find_tensor(all_nodes[j].outputs, all_nodes[j].n_outputs,
-                            tensor_name);
+                find_tensor(initial, n_initial, tensor_name);
             if (!t) {
-                /* Search initial inputs */
-                t = find_tensor(initial, n_initial, tensor_name);
+                snprintf(err, errsz,
+                         "input ref '%s' on node '%s': the run carries no "
+                         "initial input named '%s' (declared wiring, no "
+                         "fallback)",
+                         ref, dnode->id, tensor_name);
+                return -1;
             }
-            if (t) {
-                resolved[count] = *t;
-                count++;
-            } else {
-                /* Resilience law: a dropped cross-node ref must be LOUD.
-                 * Silent shrinking turned a 4-window stitch into 2 inputs
-                 * with no trace in the logs (2026-08-30). */
-                fprintf(stderr, "runner: WARNING input ref '%s' unresolved for node '%s' (source has no such tensor)", ref, dnode->id);
-            }
-            break;
+            resolved[count++] = *t;
+            continue;
         }
+
+        /* Find the source node (ids fill in as nodes load — an
+         * uninitialized slot has id NULL; never strlen it) */
+        size_t j = 0;
+        for (; j < n_nodes; j++) {
+            if (all_nodes[j].id &&
+                strlen(all_nodes[j].id) == node_id_len &&
+                strncmp(all_nodes[j].id, ref, node_id_len) == 0)
+                break;
+        }
+        if (j == n_nodes) {
+            snprintf(err, errsz,
+                     "input ref '%s' on node '%s' names a node that does "
+                     "not exist in this graph",
+                     ref, dnode->id);
+            return -1;
+        }
+
+        /* Search upstream outputs first */
+        const inference_tensor *t =
+            find_tensor(all_nodes[j].outputs, all_nodes[j].n_outputs,
+                        tensor_name);
+        /* then initial inputs (same-name pass-through) */
+        if (!t) t = find_tensor(initial, n_initial, tensor_name);
+        if (!t) {
+            snprintf(err, errsz,
+                     "input ref '%s' unresolved for node '%s' (source has "
+                     "no such tensor, in outputs or initial inputs)",
+                     ref, dnode->id);
+            return -1;
+        }
+        resolved[count] = *t;
+        count++;
     }
 
-    /* If no input_from references resolved anything and there are initial
-       inputs, pass them through directly (first node gets raw inputs).
-       Skip for non-first nodes: sending prompt/seed garbage to a
-       variadic stitch node is always wrong (causes "input too small"
-       failures when upstream video_0 tensor is missing). */
-    if (count == 0 && n_initial > 0 && dnode == &all_nodes[0]) {
-        for (size_t i = 0; i < n_initial && i < 32; i++) {
-            resolved[count++] = initial[i];
-        }
-    }
-
-    return count;
+    return (int)count;
 }
 
 /* Choose a file extension for an output tensor. */
@@ -672,10 +710,29 @@ have_model:
                           rnode->ctx, NULL);
         }
 
-        /* Resolve inputs */
+        /* Resolve inputs — no fallbacks: an unresolved declared ref
+         * fails the node with the exact wiring error (the old code
+         * warned and continued, silently shrinking multi-window
+         * stitches). */
         inference_tensor inputs[32];
-        size_t n_inputs = resolve_inputs(r->nodes, r->n_nodes, dnode,
-                                         initial_inputs, n_initial, inputs);
+        char iw_err[320] = "";
+        int i_rc = resolve_inputs(r->nodes, r->n_nodes, dnode,
+                                  initial_inputs, n_initial, inputs,
+                                  iw_err, sizeof iw_err);
+        if (i_rc < 0) {
+            fprintf(stderr, "runner: %s\n", iw_err);
+            {
+                char _emsg[384];
+                snprintf(_emsg, sizeof _emsg, "input wiring: %s", iw_err);
+                runner_set_error(r, _emsg);
+            }
+            if (r->ws)
+                ws_send_execution_error(r->ws, r->prompt_id, dnode->id,
+                                        "input wiring error");
+            free(order);
+            return -1;
+        }
+        size_t n_inputs = (size_t)i_rc;
 
         /* Allocate output slots */
         rnode->outputs = calloc(16, sizeof(inference_tensor));

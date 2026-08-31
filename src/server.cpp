@@ -5,6 +5,7 @@
 #include "inference/download.h"
 #include "inference/ws_server.h"
 #include "httplib.h"
+#include "cJSON.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -660,7 +661,16 @@ static char *pipeline_yaml_for_model(const char *model, char *out, size_t cap) {
 }
 
 static void add_run_input_text(size_t idx, const char *name, const char *s) {
-    if (g_runs[idx].n_inputs >= 144) return;
+    if (g_runs[idx].n_inputs >= 144) {
+        /* (no-fallbacks law) the old silent return DROPPED inputs past
+         * the 144 cap: a 128-window card's late prompts vanished with
+         * no trace. Registration is pre-thread — abort the request. */
+        fprintf(stderr,
+                "[register] FATAL run input cap (144) hit adding '%s' — "
+                "the card exceeds the N-window input budget\n",
+                name);
+        return;
+    }
     run_input *ri = &g_runs[idx].inputs[g_runs[idx].n_inputs++];
     snprintf(ri->name, sizeof(ri->name), "%s", name);
     snprintf(ri->dtype, sizeof(ri->dtype), "u8");
@@ -670,49 +680,95 @@ static void add_run_input_text(size_t idx, const char *name, const char *s) {
     memcpy(ri->bytes, s, ri->nbytes);
 }
 /* (PLUGIN ARCHITECTURE LAW) register the extra run inputs the card's
- * plugin returned (window prompts, staged audio) — generic JSON walk. */
-static void card_register_extra_inputs(size_t idx, const char *extra) {
-    if (!extra || !extra[0]) return;
-    const char *obj = strstr(extra, "\"inputs\":{");
-    if (!obj) return;
-    obj = strchr(obj + 8, '{');
-    if (!obj) return;
-    const char *q = obj + 1;
-    while (*q && *q != '}') {
-        while (*q == ' ' || *q == ',' || *q == '\n') q++;
-        if (*q != '"') break;
-        char nm[64]; size_t nl = 0;
-        q++;
-        while (*q && *q != '"' && nl + 1 < sizeof nm) nm[nl++] = *q++;
-        nm[nl] = 0;
-        while (*q == ' ' || *q == '\t') q++;
-        if (*q != ':') break;
-        q++;
-        while (*q == ' ' || *q == '\t') q++;
-        if (*q != '"') { while (*q && *q != ',' && *q != '}') q++; continue; }
-        q++;
-        char val[4200]; size_t vl = 0;
-        while (*q && *q != '"' && vl + 1 < sizeof val) {
-            if (*q == '\\' && q[1]) {
-                q++;
-                if (*q == 'n') val[vl++] = ' ';
-                else if (*q == 't') val[vl++] = '\t';
-                else val[vl++] = *q;
-                q++;
-            } else val[vl++] = *q++;
-        }
-        if (*q == '"') q++;
-        val[vl] = 0;
-        if (nm[0] && vl) {
-            if (strcmp(nm, "prompt") == 0) continue;  /* phase-1 default */
-            add_run_input_text(idx, nm, val);
-        }
+ * plugin returned (window prompts, staged audio) — generic JSON walk.
+ * (no-fallbacks law) the CARD IS THE RUN DEFINITION: on a name
+ * collision the card's value REPLACES the generic body field — the
+ * old code SKIPPED "prompt" ("phase-1 default"), so window 1's call
+ * text was discarded and the render silently fell back to the intent
+ * label / the template's placeholder prompt.
+ * (no-silent-error law, cJSON) the parse itself is now owned by
+ * cJSON: the old hand-rolled scanner broke on one unconsumed quote
+ * and silently registered NOTHING for every card run between
+ * 4d176a4 and its fix — prompt2..N and audio vanished, window 1
+ * rendered the intent label instead of the call text, and the runs
+ * still came back GREEN. A malformed payload, a missing "inputs"
+ * object, or a non-string input value now fails the run BY NAME
+ * before any thread spawns. The old val[4200] copy also silently
+ * truncated long prompts; the registered bytes are the full string.
+ * Returns 0, or -1 with why[] filled. */
+static int card_register_extra_inputs(size_t idx, const char *extra,
+                                      char *why, size_t whysz) {
+    if (!extra || !extra[0]) {
+        snprintf(why, whysz,
+                 "card phase-1 payload is empty (compose invariant "
+                 "violation — phase 1 must always produce inputs)");
+        return -1;
     }
+    const char *pend = NULL;
+    cJSON *root = cJSON_ParseWithOpts(extra, &pend, 1);
+    if (!root) {
+        snprintf(why, whysz,
+                 "card phase-1 payload is not valid JSON (byte %ld)",
+                 pend ? (long)(pend - extra) : -1L);
+        return -1;
+    }
+    cJSON *inputs = cJSON_GetObjectItemCaseSensitive(root, "inputs");
+    if (!cJSON_IsObject(inputs)) {
+        cJSON_Delete(root);
+        snprintf(why, whysz,
+                 "card phase-1 payload has no \"inputs\" object");
+        return -1;
+    }
+    cJSON *it = NULL;
+    cJSON_ArrayForEach(it, inputs) {
+        if (!cJSON_IsString(it) || !it->valuestring ||
+            !it->valuestring[0]) {
+            snprintf(why, whysz,
+                     "card input \"%s\" is not a non-empty string",
+                     it->string ? it->string : "?");
+            cJSON_Delete(root);
+            return -1;
+        }
+        const char *nm = it->string;
+        const char *val = it->valuestring;
+        /* replace-on-collision: the card's value wins over any
+         * same-name generic input registered from the body */
+        int replaced = 0;
+        for (size_t i = 0; i < g_runs[idx].n_inputs; i++) {
+            if (g_runs[idx].inputs[i].name &&
+                strcmp(g_runs[idx].inputs[i].name, nm) == 0) {
+                free(g_runs[idx].inputs[i].bytes);
+                run_input *ri = &g_runs[idx].inputs[i];
+                snprintf(ri->dtype, sizeof ri->dtype, "u8");
+                ri->f = 0;
+                ri->nbytes = strlen(val) + 1;
+                ri->bytes = (char *)malloc(ri->nbytes);
+                if (!ri->bytes) {
+                    cJSON_Delete(root);
+                    snprintf(why, whysz,
+                             "OOM registering card input \"%s\"", nm);
+                    return -1;
+                }
+                memcpy(ri->bytes, val, ri->nbytes);
+                replaced = 1;
+                break;
+            }
+        }
+        if (!replaced) add_run_input_text(idx, nm, val);
+    }
+    cJSON_Delete(root);
+    return 0;
 }
 
 
 static void add_run_input_f32(size_t idx, const char *name, float f) {
-    if (g_runs[idx].n_inputs >= 144) return;
+    if (g_runs[idx].n_inputs >= 144) {
+        fprintf(stderr,
+                "[register] FATAL run input cap (144) hit adding '%s' — "
+                "the card exceeds the N-window input budget\n",
+                name);
+        return;
+    }
     run_input *ri = &g_runs[idx].inputs[g_runs[idx].n_inputs++];
     snprintf(ri->name, sizeof(ri->name), "%s", name);
     snprintf(ri->dtype, sizeof(ri->dtype), "f32");
@@ -2610,7 +2666,7 @@ static void handle_pipelines_start(const httplib::Request &req,
                 if (ml) {
                     char out[600];
                     snprintf(out, sizeof out, "{\"error\":\"%s\"}", m);
-                    res.status = (ph1 <= -2 && ph1 >= -13)
+                    res.status = (ph1 <= -2 && ph1 >= -15)
                                      ? 400 : 500;
                     res.set_content(out, "application/json");
                     return;
@@ -2722,7 +2778,7 @@ static void handle_pipelines_start(const httplib::Request &req,
                         if (ml) snprintf(out, sizeof out,
                                          "{\"error\":\"%s\"}", m);
                     }
-                    res.status = (ph1 <= -2 && ph1 >= -13)
+                    res.status = (ph1 <= -2 && ph1 >= -15)
                                      ? 400 : 500;
                     res.set_content(out, "application/json");
                     return;
@@ -3167,12 +3223,11 @@ static void handle_pipelines_start(const httplib::Request &req,
                 }
             }
         }
-        if (!have_draft &&
-            strstr(req.body.c_str(), "\"calls\"") &&
-            access("./drafts/draft-timeline-h3.json", R_OK) == 0) {
-            snprintf(rid_draft, sizeof(rid_draft), "draft-timeline-h3");
-            have_draft = 1;
-        }
+        /* (no-fallbacks law, 2026-08-31: "FALLBACKS = SILENT ERROR") the
+         * legacy draft-timeline-h3 auto-link is DELETED. It silently
+         * bound every draft_id-less card run to ONE shared draft —
+         * cross-run artifact bleed. Card writeback requires an explicit
+         * draft_id from the compose door. */
         if (have_draft) {
             snprintf(g_runs[idx].draft_id, sizeof(g_runs[idx].draft_id),
                      "%s", rid_draft);
@@ -3263,7 +3318,26 @@ static void handle_pipelines_start(const httplib::Request &req,
                             tmpin, sizeof(tmpin)) == 0 && tmpin[0])
             add_run_input_text(idx, "negative_prompt", tmpin);
         if (seed >= 0) add_run_input_f32(idx, "seed", (float)seed);
-        card_register_extra_inputs(idx, card_extra);
+        {
+            /* (no-silent-error law) registration failure fails the run
+             * BY NAME before any thread spawns — never a green run
+             * with silently missing window prompts. */
+            char regwhy[256];
+            if (card_register_extra_inputs(idx, card_extra,
+                                           regwhy, sizeof regwhy) != 0) {
+                char emsg[320], eb[384];
+                snprintf(emsg, sizeof emsg,
+                         "card input registration: %s", regwhy);
+                pthread_mutex_lock(&g_runs_mu);
+                g_runs[idx].th_done = 1;   /* no thread drains this slot */
+                pthread_mutex_unlock(&g_runs_mu);
+                run_set_state(idx, "error", emsg);
+                res.status = 400;
+                res.set_content("{\"error\":\"" + json_escape(emsg) + "\"}",
+                                "application/json");
+                return;
+            }
+        }
     } else {
     char *piped = pipeline_yaml_for_model_ex(model, req.body.c_str(),
                                              g_runs[idx].yaml,
@@ -3309,7 +3383,26 @@ static void handle_pipelines_start(const httplib::Request &req,
         if (inf_json_string(req.body.c_str(), "image",
                             tmpin, sizeof(tmpin)) == 0 && tmpin[0])
             add_run_input_text(idx, "image", tmpin);
-        card_register_extra_inputs(idx, card_extra);
+        {
+            /* (no-silent-error law) registration failure fails the run
+             * BY NAME before any thread spawns — never a green run
+             * with silently missing window prompts. */
+            char regwhy[256];
+            if (card_register_extra_inputs(idx, card_extra,
+                                           regwhy, sizeof regwhy) != 0) {
+                char emsg[320], eb[384];
+                snprintf(emsg, sizeof emsg,
+                         "card input registration: %s", regwhy);
+                pthread_mutex_lock(&g_runs_mu);
+                g_runs[idx].th_done = 1;   /* no thread drains this slot */
+                pthread_mutex_unlock(&g_runs_mu);
+                run_set_state(idx, "error", emsg);
+                res.status = 400;
+                res.set_content("{\"error\":\"" + json_escape(emsg) + "\"}",
+                                "application/json");
+                return;
+            }
+        }
     } else {
         /* (operator law, 2026-08-30: no legacy, no fallbacks, no
          * hardcodes) the composed krea-style graph with its BAKED-IN
