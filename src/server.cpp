@@ -1886,34 +1886,230 @@ static int lane_resolve(const char *lane, char *dir_out, size_t dirsz,
 }
 
 
-/* (bundle law, 2026-08-31 operator: "make sure the agent GETS THE
- * BUNDLE") Append every SKILL.md under the lane's agents/ tree to the
- * agent prompt FILE. Without this the session silently composed one
- * big window — the skill that teaches window chaining (motion-context
- * latents, first_frame_prev_sec seams) sat on disk unread. A silent
- * knowledge gap is a silent error: the bundle rides the prompt. */
-static void lane_append_skills(FILE *pf, const char *lane_dir) {
-    const char *rels[] = { "agents/skills", "agents", NULL };
-    for (int ri = 0; rels[ri]; ri++) {
+/* (bundle law, 2026-08-31 operator: "this needs to be fixed for ALL
+ * [REDACTED 2026-11-05] bundles — the bundle system has a HUGE HOLE") The agent's
+ * bundle is the FULL chain, not just the lane tree:
+ *
+ *   lane AGENT.md + lane skills            every SKILL.md under
+ *                                          the lane's agents tree
+ *   model AGENT.md + model skills          the model the lane's
+ *                                          tool.json names
+ *   base-family AGENT.md + base skills     family.base: <id> in the
+ *                                          model's model.yaml
+ *
+ * Before this, the model card docs (h3-prompt-writing, prompt-enhance,
+ * advanced-usage — the law that teaches how to WRITE a window prompt)
+ * sat on disk unread while the agent composed prompts blind. Generic
+ * by PLUGIN ARCHITECTURE LAW: the server knows the SHAPE of the chain
+ * (tool -> model -> declared base), never a lane or model name. */
+
+/* dedupe: (name, content hash) pairs already in the prompt — a skill
+ * mirrored in two trees is appended ONCE; same name with different
+ * content is appended (provenance headers distinguish them). */
+#define BUNDLE_DEDUPE_MAX 96
+static unsigned long bdl_names[BUNDLE_DEDUPE_MAX];
+static unsigned long bdl_hashes[BUNDLE_DEDUPE_MAX];
+static int bdl_n = 0;
+
+static unsigned long bdl_hash(const char *s) {
+    unsigned long h = 5381;
+    while (*s) h = h * 33 + (unsigned char)*s++;
+    return h;
+}
+static int bdl_seen(const char *name, const char *body) {
+    unsigned long hn = bdl_hash(name), hb = bdl_hash(body);
+    for (int i = 0; i < bdl_n; i++)
+        if (bdl_names[i] == hn && bdl_hashes[i] == hb) return 1;
+    if (bdl_n < BUNDLE_DEDUPE_MAX) {
+        bdl_names[bdl_n] = hn;
+        bdl_hashes[bdl_n] = hb;
+        bdl_n++;
+    }
+    return 0;
+}
+
+/* append one markdown file under a provenance header */
+static void bdl_append_md(FILE *pf, const char *path, const char *header,
+                          const char *key) {
+    FILE *sf = fopen(path, "rb");
+    if (!sf) return;
+    char buf[32768];
+    size_t sn = fread(buf, 1, sizeof(buf) - 1, sf);
+    fclose(sf);
+    buf[sn] = 0;
+    if (!sn) return;
+    if (key && bdl_seen(key, buf)) return;   /* mirrored already in */
+    fprintf(pf, "\n---\n\n%s\n\n", header);
+    fwrite(buf, 1, sn, pf);
+}
+
+/* one bundle UNIT: <root>/AGENT.md (if any; the lane's own AGENT.md is
+ * written by the caller, so units opt in) + every <root>/agents
+ * two-level SKILL.md, all tagged with the provenance */
+static void bdl_append_unit(FILE *pf, const char *root, const char *prov,
+                            int with_agent_md) {
+    char p[1024];
+    if (with_agent_md) {
+        char hdr[300];
+        /* the lane keeps AGENT.md at its root; MODELS keep their card
+         * doc inside their agents tree — probe both, no assumption */
+        snprintf(p, sizeof(p), "%s/AGENT.md", root);
+        FILE *probe = fopen(p, "rb");
+        if (!probe) {
+            snprintf(p, sizeof(p), "%s/agents/AGENT.md", root);
+            probe = fopen(p, "rb");
+        }
+        if (probe) fclose(probe);
+        snprintf(hdr, sizeof(hdr), "# MODEL CARD [%s]", prov);
+        bdl_append_md(pf, p, hdr, NULL);
+    }
+    /* skills: <root>/agents/<name>/SKILL.md and
+     * <root>/agents/skills/<name>/SKILL.md */
+    const char *tiers[] = { "agents", "agents/skills", NULL };
+    for (int ti = 0; tiers[ti]; ti++) {
         char sd[1024];
-        snprintf(sd, sizeof(sd), "%s/%s", lane_dir, rels[ri]);
+        snprintf(sd, sizeof(sd), "%s/%s", root, tiers[ti]);
         DIR *d = opendir(sd);
         if (!d) continue;
         struct dirent *de;
         while ((de = readdir(d)) != NULL) {
             if (de->d_name[0] == '.') continue;
-            char sk[1200];
-            snprintf(sk, sizeof(sk), "%s/%s/SKILL.md", sd, de->d_name);
-            FILE *sf = fopen(sk, "rb");
-            if (!sf) continue;               /* not a skill dir */
-            fprintf(pf, "\n---\n\n# SKILL: %s\n\n", de->d_name);
-            char sbuf[16384];
-            size_t sn = fread(sbuf, 1, sizeof(sbuf) - 1, sf);
-            fclose(sf);
-            sbuf[sn] = 0;
-            fwrite(sbuf, 1, sn, pf);
+            char hdr[300], key[160];
+            snprintf(p, sizeof(p), "%s/%s/SKILL.md", sd, de->d_name);
+            snprintf(hdr, sizeof(hdr), "# SKILL [%s]: %s", prov, de->d_name);
+            snprintf(key, sizeof(key), "%s:%s", prov, de->d_name);
+            bdl_append_md(pf, p, hdr, key);
         }
         closedir(d);
+    }
+}
+
+/* find a model's dir across plugin roots (plugin / models / genre / id) */
+static int bdl_find_model_dir(const char *model, char *out, size_t outsz) {
+    const char *bases[] = { "plugins", "../plugins", NULL };
+    for (int bi = 0; bases[bi]; bi++) {
+        DIR *d = opendir(bases[bi]);
+        if (!d) continue;
+        struct dirent *pe;
+        while ((pe = readdir(d)) != NULL) {
+            if (pe->d_name[0] == '.') continue;
+            char md[768];
+            snprintf(md, sizeof(md), "%s/%s/models", bases[bi], pe->d_name);
+            DIR *g = opendir(md);
+            if (!g) continue;
+            struct dirent *ge;
+            while ((ge = readdir(g)) != NULL) {
+                if (ge->d_name[0] == '.') continue;
+                char genre_dir[1024];
+                snprintf(genre_dir, sizeof(genre_dir), "%s/%s", md, ge->d_name);
+                DIR *mm = opendir(genre_dir);
+                if (!mm) continue;
+                struct dirent *me;
+                while ((me = readdir(mm)) != NULL) {
+                    if (strcmp(me->d_name, model) != 0) continue;
+                    /* a dir named <model> is THE model only when it
+                     * carries model.yaml — plugins keep fragments
+                     * (nodes.yaml-only shadows) under other trees, and
+                     * the catalog itself keys on the manifest. Caught
+                     * by the dry-fire suite: kimodo resolved to the
+                     * comfyui fragment instead of its real home. */
+                    char man[1400];
+                    snprintf(man, sizeof(man), "%s/%s/model.yaml",
+                             genre_dir, me->d_name);
+                    FILE *mf = fopen(man, "rb");
+                    if (!mf) continue;
+                    fclose(mf);
+                    snprintf(out, outsz, "%s/%s", genre_dir, me->d_name);
+                    closedir(mm); closedir(g); closedir(d);
+                    return 0;
+                }
+                closedir(mm);
+            }
+            closedir(g);
+        }
+        closedir(d);
+    }
+    return -1;
+}
+
+/* the model's declared base family: family.base: <id> in model.yaml
+ * (indent-aware scrape of the family block) */
+static int bdl_model_base(const char *model_dir, char *out, size_t outsz) {
+    char p[1024];
+    snprintf(p, sizeof(p), "%s/model.yaml", model_dir);
+    FILE *f = fopen(p, "rb");
+    if (!f) return -1;
+    char line[512];
+    int in_family = 0, found = 0;
+    while (fgets(line, sizeof(line), f)) {
+        if (line[0] != ' ' && line[0] != '\t' && line[0] != '#' &&
+            line[0] != '\n' && line[0] != 0) {
+            in_family = (strncmp(line, "family:", 7) == 0);
+            if (found) break;
+            continue;
+        }
+        if (!in_family) continue;
+        const char *b = strstr(line, "base:");
+        if (!b) continue;
+        b += 5;
+        while (*b == ' ' || *b == '\t') b++;
+        const char *e = b;
+        while (*e && *e != '\n' && *e != '\r' && *e != ' ' && *e != '\t' && *e != '"') e++;
+        if (e > b && (size_t)(e - b) < outsz) {
+            memcpy(out, b, (size_t)(e - b));
+            out[e - b] = 0;
+            found = 1;
+        }
+    }
+    fclose(f);
+    return found ? 0 : -1;
+}
+
+/* THE lane bundle: lane unit + model unit + base-family unit */
+static int bdl_find_model_dir(const char *model, char *out, size_t outsz);
+static int bdl_model_base(const char *model_dir, char *out, size_t outsz);
+static void bundle_for_lane(FILE *pf, const char *lane_dir) {
+    bdl_n = 0;
+    char prov[160];
+    /* 1. the lane's own bundle */
+    snprintf(prov, sizeof(prov), "lane");
+    bdl_append_unit(pf, lane_dir, prov, 0);   /* lane AGENT.md already in prompt */
+    /* 2. the model the lane's card tool names */
+    char model[128] = "", tj[1024], mdir[1024];
+    snprintf(tj, sizeof(tj), "%s/tool.json", lane_dir);
+    FILE *tf = fopen(tj, "rb");
+    if (tf) {
+        char tb[8192];
+        size_t tn = fread(tb, 1, sizeof(tb) - 1, tf);
+        fclose(tf); tb[tn] = 0;
+        const char *mm = strstr(tb, "\"model\"");
+        if (mm) {
+            const char *q1 = strchr(mm + 7, '"');
+            const char *q2 = q1 ? strchr(q1 + 1, '"') : NULL;
+            if (q1 && q2 && (size_t)(q2 - q1 - 1) < sizeof(model)) {
+                memcpy(model, q1 + 1, (size_t)(q2 - q1 - 1));
+                model[q2 - q1 - 1] = 0;
+            }
+        }
+    }
+    if (!model[0]) return;
+    if (bdl_find_model_dir(model, mdir, sizeof(mdir)) != 0) {
+        fprintf(pf, "\n---\n\n# BUNDLE WARNING: model '%s' named by the "
+                "lane tool has no model dir on disk\n", model);
+        return;
+    }
+    snprintf(prov, sizeof(prov), "model:%s", model);
+    bdl_append_unit(pf, mdir, prov, 1);
+    /* 3. the model's declared base family (the prompt law often lives
+     * on the base model while variants add their own skills) */
+    char base[128];
+    if (bdl_model_base(mdir, base, sizeof(base)) == 0 && base[0] &&
+        strcmp(base, model) != 0) {
+        char bdir[1024];
+        if (bdl_find_model_dir(base, bdir, sizeof(bdir)) == 0) {
+            snprintf(prov, sizeof(prov), "model:%s", base);
+            bdl_append_unit(pf, bdir, prov, 1);
+        }
     }
 }
 
@@ -1960,6 +2156,62 @@ static void handle_card_agent(const httplib::Request &req,
         return;
     }
 
+    /* (dry-fire law, 2026-08-31 operator: "we need dry-fire testing
+     * around this") DRY RUN: compose the FULL bundle exactly as a real
+     * spawn would, but spawn NOTHING and burn no LLM/GPU. Returns the
+     * chain inventory so tests + operators can audit every lane's
+     * bundle without a live agent. Same code path as the spawn —
+     * the only difference is the file it lands in. */
+    if (strstr(req.body.c_str(), "\"dry_run\"")) {
+        mkdir("./agent-sessions", 0755);
+        char audit_file[600];
+        snprintf(audit_file, sizeof(audit_file),
+                 "./agent-sessions/audit-%s.md", lane.c_str());
+        FILE *af = fopen(audit_file, "w");
+        if (!af) {
+            res.status = 500;
+            res.set_content("{\"error\":\"cannot write audit file\"}",
+                            "application/json");
+            return;
+        }
+        fprintf(af, "%s\n", agent_md);
+        bundle_for_lane(af, dir_out);
+        fprintf(af, "\n---\n\n# USER REQUEST\n\n%s\n", prompt.c_str());
+        fclose(af);
+        /* inventory: every provenance header + the byte count */
+        char inv[4096]; size_t io = 0;
+        inv[0] = 0;
+        io += (size_t)snprintf(inv + io, sizeof(inv) - io,
+                               "{\"lane\":\"%s\",\"file\":\"%s\",\"bundle\":[",
+                               lane.c_str(), audit_file);
+        FILE *rf = fopen(audit_file, "r");
+        int first = 1;
+        if (rf) {
+            char ln[512];
+            while (fgets(ln, sizeof(ln), rf)) {
+                if (strncmp(ln, "# SKILL ", 8) == 0 ||
+                    strncmp(ln, "# MODEL CARD ", 13) == 0 ||
+                    strncmp(ln, "# BUNDLE ", 9) == 0) {
+                    size_t ll = strlen(ln);
+                    while (ll && (ln[ll-1] == '\n' || ln[ll-1] == '\r')) ll--;
+                    if (!first)
+                        io += (size_t)snprintf(inv + io, sizeof(inv) - io, ",");
+                    first = 0;
+                    io += (size_t)snprintf(inv + io, sizeof(inv) - io,
+                                           "\"%.*s\"", (int)ll, ln);
+                }
+            }
+            fclose(rf);
+        }
+        struct stat stb;
+        stat(audit_file, &stb);
+        io += (size_t)snprintf(inv + io, sizeof(inv) - io,
+                               "],\"bytes\":%ld}", (long)stb.st_size);
+        res.status = 200;
+        res.set_content(inv, "application/json");
+        return;
+    }
+
     /* register the session FIRST (the spawn is fire-and-forget) */
     char token[48];
     snprintf(token, sizeof(token), "agent-%lx-%lx",
@@ -1994,7 +2246,7 @@ static void handle_card_agent(const httplib::Request &req,
     FILE *pf = fopen(prompt_file, "w");
     if (pf) {
         fprintf(pf, "%s\n", agent_md);
-        lane_append_skills(pf, dir_out);
+        bundle_for_lane(pf, dir_out);
         fprintf(pf, "\n---\n\n# USER REQUEST\n\n%s\n", prompt.c_str());
         fclose(pf);
     }

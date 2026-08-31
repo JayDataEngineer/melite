@@ -196,6 +196,16 @@ if(INFERENCE_BUILD_TESTS)
                          --repo-dir ${CMAKE_SOURCE_DIR}
                          --build-dir ${CMAKE_BINARY_DIR})
         set_tests_properties(test_bundles PROPERTIES TIMEOUT 120)
+        # BUNDLE CHAIN (dry-fire): the agent door's prompt carries the
+        # FULL chain - lane bundle + the tool's model bundle + the
+        # declared base family. Exercises the real assembly through
+        # the dry_run door: no dsh spawn, no LLM, no GPU, seconds.
+        add_test(NAME test_agent_bundle_chain
+                 COMMAND ${Python3_EXECUTABLE}
+                         ${CMAKE_SOURCE_DIR}/tests/test_agent_bundle_chain.py
+                         --repo-dir ${CMAKE_SOURCE_DIR}
+                         --build-dir ${CMAKE_BINARY_DIR})
+        set_tests_properties(test_agent_bundle_chain PROPERTIES TIMEOUT 120)
         # LAYER AUDIT: Layers A/B card knobs vs the h3-timeline backend
         # truth, 1:1. Fails with a named diff on any silent drift
         # (operator order 2026-08-31: "we cannot hide features").
