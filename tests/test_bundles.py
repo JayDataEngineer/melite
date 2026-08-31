@@ -53,7 +53,8 @@ EXPECTED_CARD_LANES = {
     "video-gen", "image-gen", "image-edit", "tts", "sfx",
     "voice-lock", "music", "3d-gen", "motion-gen", "body",
 }
-EXPECTED_PIPELINE_LANES = {"humanoid-flow", "non-humanoid-flow"}
+EXPECTED_PIPELINE_LANES = {"humanoid-flow", "non-humanoid-flow",
+                             "sprite-sheet"}   # 3rd curated lane, 2026-09-01
 EXPECTED_LANES = EXPECTED_CARD_LANES | EXPECTED_PIPELINE_LANES
 
 # foreign-genre terms that must NEVER appear in a lane's bundle
@@ -77,6 +78,8 @@ FORBIDDEN = {
     "body":              VIDEO + AUDIO + IMAGE,
     "humanoid-flow":     VIDEO + AUDIO,
     "non-humanoid-flow": VIDEO + AUDIO,
+    # sprite-sheet is an image-only lane (3rd curated flow, 2026-09-01)
+    "sprite-sheet":      VIDEO + AUDIO + THREED,
 }
 
 
@@ -343,7 +346,7 @@ def main():
         yl = get("/v1/pipelines/yaml/list")
         names = {p["name"] for p in yl.get("pipelines", [])}
         check(names == EXPECTED_PIPELINE_LANES,
-              "D8: yaml list == the two flows (got %s)" % sorted(names))
+              "D8: yaml list == the curated flows (got %s)" % sorted(names))
 
         cat = get("/v1/model-catalog")
         cat_cards = {c["id"] for c in cat.get("cards", [])}

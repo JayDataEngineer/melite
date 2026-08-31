@@ -389,7 +389,12 @@ static size_t jappend(char **buf, size_t *cap, size_t len,
         if ((size_t)n < *cap - len) return len + (size_t)n;
         size_t need = *cap * 2 + (size_t)n + 64;
         char *nb = (char *)realloc(*buf, need);
-        if (!nb) return len;                      /* OOM: keep valid prefix */
+        if (!nb) { fprintf(stderr,
+            "[jappend] OOM at %zu/%zu bytes - JSON accumulator TRUNCATED "
+            "(the built prefix stays valid but data after this append is "
+            "lost; treat adjacent artifacts/stages lists as incomplete)\n",
+            *cap, need);
+            return len; }                    /* OOM: keep valid prefix */
         *buf = nb;
         *cap = need;
     }
@@ -660,24 +665,34 @@ static char *pipeline_yaml_for_model(const char *model, char *out, size_t cap) {
     return pipeline_yaml_for_model_ex(model, NULL, out, cap);
 }
 
-static void add_run_input_text(size_t idx, const char *name, const char *s) {
+/* returns 0 ok, -1 refused (cap hit / OOM) — the caller ABORTS the
+ * registration with a named 4xx: an input the card asked for can
+ * never be silently dropped (silent-drop audit F3/F4, 2026-09-01). */
+static int add_run_input_text(size_t idx, const char *name, const char *s) {
     if (g_runs[idx].n_inputs >= 144) {
-        /* (no-fallbacks law) the old silent return DROPPED inputs past
-         * the 144 cap: a 128-window card's late prompts vanished with
-         * no trace. Registration is pre-thread — abort the request. */
         fprintf(stderr,
-                "[register] FATAL run input cap (144) hit adding '%s' — "
+                "[register] run input cap (144) hit adding '%s' — "
                 "the card exceeds the N-window input budget\n",
                 name);
-        return;
+        return -1;
     }
-    run_input *ri = &g_runs[idx].inputs[g_runs[idx].n_inputs++];
+    run_input *ri = &g_runs[idx].inputs[g_runs[idx].n_inputs];
     snprintf(ri->name, sizeof(ri->name), "%s", name);
     snprintf(ri->dtype, sizeof(ri->dtype), "u8");
     ri->f = 0;
     ri->nbytes = strlen(s) + 1;  /* +1: NUL for C-string ops (access, curl) */
     ri->bytes = (char *)malloc(ri->nbytes);
+    if (!ri->bytes) {
+        /* (resilience + silent-drop law) OOM must not crash the
+         * gateway nor admit a garbage input — refuse loudly. */
+        ri->nbytes = 0;
+        fprintf(stderr,
+                "[register] OOM adding run input '%s' — refusing\n", name);
+        return -1;
+    }
     memcpy(ri->bytes, s, ri->nbytes);
+    g_runs[idx].n_inputs++;
+    return 0;
 }
 /* (PLUGIN ARCHITECTURE LAW) register the extra run inputs the card's
  * plugin returned (window prompts, staged audio) — generic JSON walk.
@@ -754,7 +769,15 @@ static int card_register_extra_inputs(size_t idx, const char *extra,
                 break;
             }
         }
-        if (!replaced) add_run_input_text(idx, nm, val);
+        if (!replaced && add_run_input_text(idx, nm, val) != 0) {
+            cJSON_Delete(root);
+            snprintf(why, whysz,
+                     "run input '%s' REFUSED (144-cap or OOM) - the card "
+                     "asks for more inputs than the run budget allows; "
+                     "refusing rather than dropping it silently",
+                     nm);
+            return -1;
+        }
     }
     cJSON_Delete(root);
     return 0;
@@ -808,6 +831,68 @@ static int run_input_has(size_t idx, const char *name) {
 
 /* Returns 0 = coverage OK (wiring applied as needed); -1 = rejection
  * message written to err. */
+/* (schema-wiring law, 2026-09-01) the coverage validator registers a
+ * body field as a RUN INPUT — but the runner only delivers tensors a
+ * node DECLARES via input_from. kimodo's "text" was registered, never
+ * delivered: the engine died "[kimodo] no text input" with the input
+ * sitting in the run's table (chaos C19d, the original 2026-08-30
+ * failure class reborn one layer up). This splice adds the explicit
+ * `__initial__.$<name>` ref to the node's input_from in the RUN-OWNED
+ * yaml copy (the pipeline file on disk is never touched). */
+static int wire_initial_ref(size_t idx, const char *node_id, const char *nm) {
+    char idline[160];
+    snprintf(idline, sizeof(idline), "- id: %s", node_id);
+    char *nid = strstr(g_runs[idx].yaml, idline);
+    if (!nid) return -1;
+    /* bound the node block at the next top-level "  - id:" or EOF */
+    char *nend = strstr(nid + 5, "\n  - id:");
+    if (!nend) nend = nid + strlen(nid);
+    /* insertion point: before "    params:" inside this block */
+    char *par = strstr(nid, "    params:");
+    if (!par || par > nend) return -1;
+    /* existing input_from list? extend it; else create one */
+    char *il = strstr(nid, "    input_from:");
+    char ref[96];
+    snprintf(ref, sizeof(ref), "      - __initial__.$%s\n", nm);
+    size_t need = strlen(g_runs[idx].yaml) + strlen(ref) + 64;
+    char *out = (char *)malloc(need);
+    if (!out) return -1;
+    size_t o = 0;
+    if (il && il < nend) {
+        /* append after the LAST "      - " line of the list */
+        char *last = NULL;
+        for (char *q = il; q && q < nend; ) {
+            char *cand = strstr(q, "      - ");
+            if (!cand || cand >= nend) break;
+            last = cand;
+            q = cand + 8;
+        }
+        char *at = last ? strchr(last, '\n') : strchr(il, '\n');
+        if (!at) { free(out); return -1; }
+        at++;                                  /* start of next line */
+        size_t head = (size_t)(at - g_runs[idx].yaml);
+        memcpy(out, g_runs[idx].yaml, head); o = head;
+        o += (size_t)snprintf(out + o, need - o, "%s", ref);
+        o += (size_t)snprintf(out + o, need - o, "%s", at);
+    } else {
+        size_t head = (size_t)(par - g_runs[idx].yaml);
+        memcpy(out, g_runs[idx].yaml, head); o = head;
+        o += (size_t)snprintf(out + o, need - o,
+                              "    input_from:\n%s", ref);
+        o += (size_t)snprintf(out + o, need - o, "%s", par);
+    }
+    out[o] = 0;
+    if (o >= sizeof(g_runs[idx].yaml)) {
+        free(out);
+        return -1;
+    }
+    snprintf(g_runs[idx].yaml, sizeof(g_runs[idx].yaml), "%s", out);
+    free(out);
+    fprintf(stderr, "[validation] wired node '%s' input_from "
+                    "__initial__.$%s\n", node_id, nm);
+    return 0;
+}
+
 static int run_validate_input_coverage(size_t idx, const char *body,
                                        char *err, size_t errsz) {
     if (!g_server_runner) return 0;   /* no plugin registry: skip */
@@ -860,11 +945,28 @@ static int run_validate_input_coverage(size_t idx, const char *body,
             /* schema-driven wiring: the body's same-named field */
             char val[8192];
             if (inf_json_string(body, nm, val, sizeof val) == 0 && val[0]) {
-                add_run_input_text(idx, nm, val);
+                if (add_run_input_text(idx, nm, val) != 0) {
+                    snprintf(err, errsz,
+                             "run input '%s' REFUSED (144-cap or OOM) - "
+                             "refusing rather than dropping it silently",
+                             nm);
+                    return -1;
+                }
                 fprintf(stderr,
                         "[validation] wired body field '%s' -> run input "
                         "for node '%s' (type %s)\n",
                         nm, dn->id, dn->type);
+                /* AND deliver it: splice the __initial__ ref into the
+                 * node's input_from (schema-wiring law, 2026-09-01) —
+                 * registration alone starves the engine */
+                if (wire_initial_ref(idx, dn->id, nm) != 0) {
+                    snprintf(err, errsz,
+                             "run input '%s' wired but node '%s' could "
+                             "not be given an input_from ref "
+                             "(yaml splice failed)",
+                             nm, dn->id);
+                    return -1;
+                }
                 continue;
             }
             snprintf(err, errsz,
@@ -1367,12 +1469,33 @@ static void draft_writeback(size_t idx, const char *wire) {
     char tmp_path[280];
     snprintf(tmp_path, sizeof(tmp_path), "%s.tmp", path);
     FILE *o = fopen(tmp_path, "w");
-    if (o) {
-        fwrite(out, 1, strlen(out), o);
-        fclose(o);
-        rename(tmp_path, path);
-        fprintf(stderr, "[draft] wrote run %s back into %s (%s)\n",
-                rid, path, wire);
+    if (!o) {
+        /* (silent-drop audit F6, 2026-09-01) a skipped write-back
+         * leaves the card showing STALE state after a green run —
+         * never silent. */
+        fprintf(stderr,
+                "[draft] run %s: write-back OPEN FAILED (%s: %s) - the "
+                "card will show STALE state, artifacts remain in the "
+                "run dir + runs list\n",
+                rid, tmp_path, strerror(errno));
+    } else {
+        size_t ol2 = strlen(out);
+        int wok2 = fwrite(out, 1, ol2, o) == ol2;
+        wok2 = (fclose(o) == 0) && wok2;
+        if (!wok2) {
+            /* (silent-drop audit F2) a PARTIAL write must never be
+             * renamed over the card — truncated JSON = unrecoverable
+             * card, the exact corruption class. */
+            unlink(tmp_path);
+            fprintf(stderr,
+                    "[draft] run %s: write-back WRITE FAILED PARTIALLY "
+                    "(%s) - tmp discarded, card keeps prior state\n",
+                    rid, tmp_path);
+        } else {
+            rename(tmp_path, path);
+            fprintf(stderr, "[draft] wrote run %s back into %s (%s)\n",
+                    rid, path, wire);
+        }
     }
     free(out);
 }
@@ -2663,7 +2786,16 @@ static void handle_pipelines_start(const httplib::Request &req,
             tl_nw = strstr(card_extra, "\"prompt\"") ? 1 : 0;  /* marker */
         if (ph1 < 0) {
             /* runner_card_compose now writes a named error into card_extra
-             * for every failure path.  Extract and relay it. */
+             * for every failure path.  Relay it VERBATIM when it is a
+             * full JSON object — the strict gate's violations array
+             * (JSON paths + hints) is part of the contract, and the
+             * old string-extract here silently dropped it (C23 law:
+             * rejections NAME the path). */
+            if (card_extra[0] == '{') {
+                res.status = (ph1 <= -2 && ph1 >= -19) ? 400 : 500;
+                res.set_content(card_extra, "application/json");
+                return;
+            }
             const char *e = strstr(card_extra, "\"error\":\"");
             if (e) {
                 e += 9;
@@ -2674,7 +2806,7 @@ static void handle_pipelines_start(const httplib::Request &req,
                 if (ml) {
                     char out[600];
                     snprintf(out, sizeof out, "{\"error\":\"%s\"}", m);
-                    res.status = (ph1 <= -2 && ph1 >= -17)
+                    res.status = (ph1 <= -2 && ph1 >= -19)
                                      ? 400 : 500;
                     res.set_content(out, "application/json");
                     return;
@@ -2730,7 +2862,9 @@ static void handle_pipelines_start(const httplib::Request &req,
      * window nodes) need the card — plain comfyui/echo pipelines must
      * pass through.  The window1 sentinel was lost in 4015945; restored
      * to unblock non-timeline yaml_regression tests. */
-    if (yaml_override[0] && strstr(yaml_override, "window1") &&
+    if (yaml_override[0] &&
+        (strstr(yaml_override, "window1") ||
+         strstr(yaml_override, "card-composed")) &&   /* card path */
         tl_nw == 0) {
         char did[96] = "";
         int card_ok = 0;
@@ -2787,6 +2921,14 @@ static void handle_pipelines_start(const httplib::Request &req,
                 if (ph1 == 0 && strstr(card_extra, "\"prompt\""))
                     tl_nw = 1;   /* marker: windows compiled */
                 if (ph1 < 0) {
+                    /* (C23 law) relay the strict gate's FULL JSON —
+                     * violations paths are part of the contract */
+                    if (card_extra[0] == '{') {
+                        res.status = (ph1 <= -2 && ph1 >= -19)
+                                         ? 400 : 500;
+                        res.set_content(card_extra, "application/json");
+                        return;
+                    }
                     const char *e = strstr(card_extra, "\"error\":\"");
                     char out[640] = "{\"error\":\"card compose failed (plugin hook)\"}";
                     if (e) {
@@ -2798,7 +2940,7 @@ static void handle_pipelines_start(const httplib::Request &req,
                         if (ml) snprintf(out, sizeof out,
                                          "{\"error\":\"%s\"}", m);
                     }
-                    res.status = (ph1 <= -2 && ph1 >= -17)
+                    res.status = (ph1 <= -2 && ph1 >= -19)
                                      ? 400 : 500;
                     res.set_content(out, "application/json");
                     return;
@@ -3422,13 +3564,57 @@ static void handle_pipelines_start(const httplib::Request &req,
                      fixed);
             free(fixed);
         }
-        if (prompt[0]) add_run_input_text(idx, "prompt", prompt);
+        /* (silent-drop audit F3/F4 fallout, 2026-09-01) a refused
+         * input aborts the registration by name - the plain-run path
+         * follows the same law as the card path. */
+        if (prompt[0] && add_run_input_text(idx, "prompt", prompt) != 0) {
+            pthread_mutex_lock(&g_runs_mu);
+            g_runs[idx].th_done = 1;   /* no thread drains this slot */
+            pthread_mutex_unlock(&g_runs_mu);
+            run_set_state(idx, "error",
+                          "run input 'prompt' refused (144-cap or OOM)");
+            res.status = 400;
+            res.set_content("{\"error\":\"run input 'prompt' refused "
+                            "(144-cap or OOM) - aborting rather than "
+                            "dropping it silently\"}",
+                            "application/json");
+            return;
+        }
         if (inf_json_string(req.body.c_str(), "lyrics",
-                            tmpin, sizeof(tmpin)) == 0 && tmpin[0])
-            add_run_input_text(idx, "lyrics", tmpin);
+                            tmpin, sizeof(tmpin)) == 0 && tmpin[0] &&
+            add_run_input_text(idx, "lyrics", tmpin) != 0) {
+            res.status = 400;
+            pthread_mutex_lock(&g_runs_mu);
+            g_runs[idx].th_done = 1;   /* no thread drains this slot */
+            pthread_mutex_unlock(&g_runs_mu);
+            run_set_state(idx, "error",
+                          "run input 'lyrics' refused (144-cap or OOM)");
+            res.status = 400;
+            res.set_content("{\"error\":\"run input 'lyrics' refused "
+                            "(144-cap or OOM) - aborting rather than "
+                            "dropping it silently\"}",
+                            "application/json");
+            return;
+        }
         if (inf_json_string(req.body.c_str(), "negative_prompt",
-                            tmpin, sizeof(tmpin)) == 0 && tmpin[0])
-            add_run_input_text(idx, "negative_prompt", tmpin);
+                            tmpin, sizeof(tmpin)) == 0 && tmpin[0] &&
+            add_run_input_text(idx, "negative_prompt", tmpin) != 0) {
+            pthread_mutex_lock(&g_runs_mu);
+            g_runs[idx].th_done = 1;   /* no thread drains this slot */
+            pthread_mutex_unlock(&g_runs_mu);
+            pthread_mutex_lock(&g_runs_mu);
+            g_runs[idx].th_done = 1;   /* no thread drains this slot */
+            pthread_mutex_unlock(&g_runs_mu);
+            run_set_state(idx, "error",
+                          "run input 'negative_prompt' refused "
+                          "(144-cap or OOM)");
+            res.status = 400;
+            res.set_content("{\"error\":\"run input 'negative_prompt' "
+                            "refused (144-cap or OOM) - aborting rather "
+                            "than dropping it silently\"}",
+                            "application/json");
+            return;
+        }
         if (seed >= 0) add_run_input_f32(idx, "seed", (float)seed);
         {
             /* (no-silent-error law) registration failure fails the run
@@ -3485,17 +3671,73 @@ static void handle_pipelines_start(const httplib::Request &req,
             snprintf(g_runs[idx].yaml, sizeof(g_runs[idx].yaml), "%s", fixed);
             free(fixed);
         }
-        if (prompt[0]) add_run_input_text(idx, "prompt", prompt);
+        /* (silent-drop audit F3/F4 fallout, 2026-09-01) a refused
+         * input aborts the registration by name - the plain-run path
+         * follows the same law as the card path. */
+        if (prompt[0] && add_run_input_text(idx, "prompt", prompt) != 0) {
+            pthread_mutex_lock(&g_runs_mu);
+            g_runs[idx].th_done = 1;   /* no thread drains this slot */
+            pthread_mutex_unlock(&g_runs_mu);
+            run_set_state(idx, "error",
+                          "run input 'prompt' refused (144-cap or OOM)");
+            res.status = 400;
+            res.set_content("{\"error\":\"run input 'prompt' refused "
+                            "(144-cap or OOM) - aborting rather than "
+                            "dropping it silently\"}",
+                            "application/json");
+            return;
+        }
         if (inf_json_string(req.body.c_str(), "lyrics",
-                            tmpin, sizeof(tmpin)) == 0 && tmpin[0])
-            add_run_input_text(idx, "lyrics", tmpin);
+                            tmpin, sizeof(tmpin)) == 0 && tmpin[0] &&
+            add_run_input_text(idx, "lyrics", tmpin) != 0) {
+            res.status = 400;
+            pthread_mutex_lock(&g_runs_mu);
+            g_runs[idx].th_done = 1;   /* no thread drains this slot */
+            pthread_mutex_unlock(&g_runs_mu);
+            run_set_state(idx, "error",
+                          "run input 'lyrics' refused (144-cap or OOM)");
+            res.status = 400;
+            res.set_content("{\"error\":\"run input 'lyrics' refused "
+                            "(144-cap or OOM) - aborting rather than "
+                            "dropping it silently\"}",
+                            "application/json");
+            return;
+        }
         if (inf_json_string(req.body.c_str(), "negative_prompt",
-                            tmpin, sizeof(tmpin)) == 0 && tmpin[0])
-            add_run_input_text(idx, "negative_prompt", tmpin);
+                            tmpin, sizeof(tmpin)) == 0 && tmpin[0] &&
+            add_run_input_text(idx, "negative_prompt", tmpin) != 0) {
+            pthread_mutex_lock(&g_runs_mu);
+            g_runs[idx].th_done = 1;   /* no thread drains this slot */
+            pthread_mutex_unlock(&g_runs_mu);
+            pthread_mutex_lock(&g_runs_mu);
+            g_runs[idx].th_done = 1;   /* no thread drains this slot */
+            pthread_mutex_unlock(&g_runs_mu);
+            run_set_state(idx, "error",
+                          "run input 'negative_prompt' refused "
+                          "(144-cap or OOM)");
+            res.status = 400;
+            res.set_content("{\"error\":\"run input 'negative_prompt' "
+                            "refused (144-cap or OOM) - aborting rather "
+                            "than dropping it silently\"}",
+                            "application/json");
+            return;
+        }
         if (seed >= 0) add_run_input_f32(idx, "seed", (float)seed);
         if (inf_json_string(req.body.c_str(), "image",
-                            tmpin, sizeof(tmpin)) == 0 && tmpin[0])
-            add_run_input_text(idx, "image", tmpin);
+                            tmpin, sizeof(tmpin)) == 0 && tmpin[0] &&
+            add_run_input_text(idx, "image", tmpin) != 0) {
+            pthread_mutex_lock(&g_runs_mu);
+            g_runs[idx].th_done = 1;   /* no thread drains this slot */
+            pthread_mutex_unlock(&g_runs_mu);
+            run_set_state(idx, "error",
+                          "run input 'image' refused (144-cap or OOM)");
+            res.status = 400;
+            res.set_content("{\"error\":\"run input 'image' refused "
+                            "(144-cap or OOM) - aborting rather than "
+                            "dropping it silently\"}",
+                            "application/json");
+            return;
+        }
         {
             /* (no-silent-error law) registration failure fails the run
              * BY NAME before any thread spawns — never a green run
@@ -4489,8 +4731,13 @@ static void handle_draft_stage_patch(const httplib::Request &req,
     snprintf(path, sizeof(path), "./drafts/%s.json", id.c_str());
     FILE *f = fopen(path, "rb");
     if (!f) {
-        snprintf(path, sizeof(path), "%s/%s.json", drafts_aux_dir(), id.c_str());
-        f = fopen(path, "rb");
+        /* aux tree is OPTIONAL (NULL when DRAFTS_AUX_DIR is unset —
+         * never feed NULL into a path format, 2026-09-01) */
+        const char *auxd = drafts_aux_dir();
+        if (auxd && auxd[0]) {
+            snprintf(path, sizeof(path), "%s/%s.json", auxd, id.c_str());
+            f = fopen(path, "rb");
+        }
     }
     if (!f) {
         res.status = 404;
@@ -4800,8 +5047,13 @@ static void handle_draft_get(const httplib::Request &req,
     snprintf(path, sizeof(path), "./drafts/%s.json", id.c_str());
     FILE *f = fopen(path, "rb");
     if (!f) {
-        snprintf(path, sizeof(path), "%s/%s.json", drafts_aux_dir(), id.c_str());
-        f = fopen(path, "rb");
+        /* aux tree is OPTIONAL (NULL when DRAFTS_AUX_DIR is unset —
+         * never feed NULL into a path format, 2026-09-01) */
+        const char *auxd = drafts_aux_dir();
+        if (auxd && auxd[0]) {
+            snprintf(path, sizeof(path), "%s/%s.json", auxd, id.c_str());
+            f = fopen(path, "rb");
+        }
     }
     if (!f) {
         res.status = 404;
@@ -5074,6 +5326,13 @@ static void handle_draft_list(const httplib::Request &req,
     std::vector<ent> ents;
     const char *dirs[2] = { "./drafts", drafts_aux_dir() };
     for (int d = 0; d < 2; d++) {
+        /* (resilience law, 2026-09-01) drafts_aux_dir() is NULL when
+         * DRAFTS_AUX_DIR is unset — opendir(NULL) SEGFAULTED the
+         * gateway on this door since 0b76c91 (proven: gdb backtrace
+         * __opendir(name=0x0) from handle_draft_list; the lifecycle
+         * suite's L6 "index door DEAD beside a corrupt card" was
+         * THIS crash, not the corrupt card). Skip absent dirs. */
+        if (!dirs[d] || !dirs[d][0]) continue;
         DIR *dr = opendir(dirs[d]);
         if (!dr) continue;
         struct dirent *e;
@@ -5120,10 +5379,14 @@ static void handle_draft_list(const httplib::Request &req,
     std::string out = "{\"count\":" + std::to_string(ents.size()) + ",\"drafts\":[";
     bool first = true;
     for (size_t i = 0; i < ents.size() && i < 600; i++) {
-        char row[420];
-        snprintf(row, sizeof(row),
-                 "%s{\"draft_id\":\"%s\",\"model\":\"%s\",\"name\":\"%s\"}",
-                 first ? "" : ",", ents[i].id, ents[i].model, ents[i].name);
+        /* (parseable-surface law, 2026-09-01) model/name come from the
+         * card bytes VERBATIM — a name with quotes ('recovery contract
+         * "escapes"') spliced raw made the whole index unparseable
+         * (lifecycle L6a "DEAD" — json.loads threw). Escape at splice. */
+        std::string row = (first ? std::string("") : std::string(",")) +
+            "{\"draft_id\":" + json_escape(ents[i].id) +
+            ",\"model\":" + json_escape(ents[i].model) +
+            ",\"name\":" + json_escape(ents[i].name) + "}";
         first = false;
         out += row;
     }
@@ -8913,6 +9176,51 @@ static void boot_recover_queue(void) {
         g_runs[idx].ticket = g_gpu_tickets++;
         g_runs[idx].has_ticket = 1;
         run_parse_stages(idx);
+        /* (recovery input law, 2026-09-01) THE RESURRECTION BUG: the
+         * slot was re-armed with yaml/model/prompt but NO INPUT
+         * TENSORS — the first node's '$prompt' ref found an empty
+         * input table, the re-run failed on wiring within
+         * milliseconds, and the queue read 0/0 (chaos C22a/b,
+         * lifecycle L8 "recovered run back in queue" timeout).
+         * Recovery must re-register what a fresh start registers:
+         * the prompt tensor from the sidecar, plus every body input
+         * the saved _request.json still covers. A card run's
+         * plugin-computed extras (window prompts) are re-derivable
+         * only through compose — out of scope here, noted loudly. */
+        if (prompt[0] && add_run_input_text(idx, "prompt", prompt) != 0) {
+            snprintf(g_runs[idx].state, sizeof(g_runs[idx].state),
+                     "error");
+            snprintf(g_runs[idx].error, sizeof(g_runs[idx].error),
+                     "recovery: run input 'prompt' refused "
+                     "(144-cap or OOM)");
+            g_runs[idx].th_done = 1;
+            pthread_mutex_unlock(&g_runs_mu);
+            fprintf(stderr, "[recover] %s: prompt input refused — "
+                            "marked error, not queued\n", rid);
+            run_write_sidecar(idx);
+            continue;
+        }
+        {
+            char rqpath[600];
+            snprintf(rqpath, sizeof(rqpath),
+                     "./output/%s/_request.json", rname);
+            FILE *rf = fopen(rqpath, "rb");
+            if (rf) {
+                static char rqbuf[131072];
+                size_t rn = fread(rqbuf, 1, sizeof(rqbuf) - 1, rf);
+                fclose(rf);
+                rqbuf[rn] = 0;
+                char verr[256] = "";
+                if (run_validate_input_coverage(idx, rqbuf, verr,
+                                                sizeof verr) != 0) {
+                    /* body fields the graph needs are gone from the
+                     * saved request — recover what we can, log the
+                     * rest; the run still re-arms (prompt above). */
+                    fprintf(stderr, "[recover] %s: partial input "
+                                    "coverage: %s\n", rid, verr);
+                }
+            }
+        }
         pthread_mutex_unlock(&g_runs_mu);
         if (run_spawn_thread(idx, run_thread_fn) != 0) {
             pthread_mutex_lock(&g_runs_mu);

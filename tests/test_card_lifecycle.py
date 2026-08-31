@@ -140,7 +140,7 @@ class OkComfy(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/object_info":
             wf = os.path.join(HERE, os.pardir, "pipelines",
-                              "krea-txt2img", "workflow.json")
+                              "sprite-sheet", "workflow.json")
             try:
                 graph = json.load(open(wf))
                 classes = {v.get("class_type", "?"): {}
@@ -192,7 +192,7 @@ class HoldComfy(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/object_info":
             wf = os.path.join(HERE, os.pardir, "pipelines",
-                              "krea-txt2img", "workflow.json")
+                              "sprite-sheet", "workflow.json")
             try:
                 graph = json.load(open(wf))
                 classes = {v.get("class_type", "?"): {}
@@ -313,8 +313,10 @@ def main():
             return (
                 "  - id: %s\n"
                 "    type: comfyui\n"
+                "    input_from:\n"
+                "      - __initial__.$prompt\n"
                 "    params: {\"server_url\":\"%s\","
-                "\"workflow_file\":\"../pipelines/krea-txt2img/"
+                "\"workflow_file\":\"../pipelines/sprite-sheet/"
                 "workflow.json\",\"out_dir\":\"./output\","
                 "\"timeout_s\":%d,\"inject\":{"
                 "\"CLIPTextEncode.0.text\":\"$prompt\"}}\n"

@@ -380,7 +380,8 @@ target_include_directories(cjson PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/
 # ---------------------------------------------------------------------------
 add_library(comfyui_plugin SHARED
     plugins/comfyui/engines/comfyui/comfyui_plugin.c
-    plugins/comfyui/engines/comfyui/h3_card.c)
+    plugins/comfyui/engines/comfyui/h3_card.c
+    plugins/comfyui/engines/comfyui/strict_validate.c)
 target_include_directories(comfyui_plugin PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(comfyui_plugin PRIVATE cjson)
 set_target_properties(comfyui_plugin PROPERTIES

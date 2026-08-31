@@ -48,7 +48,10 @@ function isOpen(): boolean {
 function openDeck(): void {
   if (isOpen()) return
   const column = document.querySelector<HTMLElement>(COLUMN_SEL)
-  if (column === null) return
+  if (column === null) {
+    console.warn('[melite-cards] deck cannot mount: center column not found (' + COLUMN_SEL + ') - shell DOM changed or still loading')
+    return
+  }
   const container = document.createElement('div')
   container.setAttribute(CONTAINER_SEL.slice(1, -1), '')
   // Task-board overlay geometry: the column is position:relative while any

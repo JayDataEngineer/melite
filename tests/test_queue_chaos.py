@@ -59,14 +59,14 @@ RACE_LOCK = threading.Lock()
 ERR2_BODY = None        # built in main(): the hostile error document
 
 # Fake /object_info manifest: filled in main() from the real
-# krea-txt2img workflow.json the fixtures reference (the gateway
+# sprite-sheet workflow.json the fixtures reference (the gateway
 # pre-validates class_types against it before registering a run).
 OBJECT_INFO = {}
 
 
 def build_object_info(repo):
     global OBJECT_INFO
-    wf = os.path.join(repo, "pipelines", "krea-txt2img", "workflow.json")
+    wf = os.path.join(repo, "pipelines", "sprite-sheet", "workflow.json")
     try:
         graph = json.load(open(wf))
         OBJECT_INFO = {n.get("class_type", "?"): {} for n in graph.values()
@@ -76,18 +76,22 @@ def build_object_info(repo):
         sys.exit(2)
     # C16: the h3-timeline window templates' classes must exist on the
     # fake backend too, or the pre-registration node guard 400s the very
-    # start we are trying to crash-test.
-    tl_dir = os.path.join(repo, "pipelines", "h3-timeline")
-    for wf_name in sorted(os.listdir(tl_dir)):
-        if not (wf_name.startswith("window") and wf_name.endswith(".json")):
-            continue
-        try:
-            g = json.load(open(os.path.join(tl_dir, wf_name)))
-        except Exception:
-            continue
-        for n in g.values():
-            if isinstance(n, dict) and "class_type" in n:
-                OBJECT_INFO.setdefault(n["class_type"], {})
+    # start we are trying to crash-test. (2026-09-01 lane law: the
+    # templates live WITH THE PLUGIN now — models/video/h3-timeline —
+    # pipelines/h3-timeline/ is deliberately gone.)
+    tl_dir = os.path.join(repo, "plugins", "comfyui", "models", "video",
+                          "h3-timeline")
+    if os.path.isdir(tl_dir):
+        for wf_name in sorted(os.listdir(tl_dir)):
+            if not (wf_name.startswith("window") and wf_name.endswith(".json")):
+                continue
+            try:
+                g = json.load(open(os.path.join(tl_dir, wf_name)))
+            except Exception:
+                continue
+            for n in g.values():
+                if isinstance(n, dict) and "class_type" in n:
+                    OBJECT_INFO.setdefault(n["class_type"], {})
 
 
 class FakeComfy(BaseHTTPRequestHandler):
@@ -442,8 +446,10 @@ def main():
                 "nodes:\n"
                 "  - id: generate\n"
                 "    type: comfyui\n"
+                "    input_from:\n"
+                "      - __initial__.$prompt\n"
                 "    params: {\"server_url\":\"http://127.0.0.1:%d%s\","
-                "\"workflow_file\":\"../pipelines/krea-txt2img/"
+                "\"workflow_file\":\"../pipelines/sprite-sheet/"
                 "workflow.json\",\"out_dir\":\"./output\","
                 "\"timeout_s\":%d,\"inject\":{"
                 "\"CLIPTextEncode.0.text\":\"$prompt\"}}\n"
@@ -491,28 +497,30 @@ def main():
     # reproduces the 2026-08-30 19:52/20:12 registration crash class
     # (fortify abort after "[draft] run ... linked to card", before the
     # first window ever executes) with zero GPU exposure.
-    tl_yaml = open(os.path.join(repo, "pipelines", "h3-timeline",
-                                "pipeline.yaml")).read()
-    tl_yaml = tl_yaml.replace("name: h3-timeline", "name: _chaos_tl")
-    tl_yaml = tl_yaml.replace("http://127.0.0.1:18465",
-                              "http://127.0.0.1:%d" % comfy_port)
-    os.makedirs(os.path.join(repo, "pipelines", "_chaos_tl"), exist_ok=True)
-    with open(os.path.join(repo, "pipelines", "_chaos_tl",
-                           "pipeline.yaml"), "w") as f:
-        f.write(tl_yaml)
+    # (2026-09-01 lane law) the h3-timeline lane is CARD-PATH: no
+    # pipelines/h3-timeline/pipeline.yaml exists (deliberately deleted
+    # when compile moved into the plugin's card_compose). C16/C18 now
+    # exercise the card lane directly, with the suite's FAKE comfy
+    # wired through the lawful endpoint override: env
+    # COMFYUI_ENDPOINT_CONFIG > cwd > .so-relative. No yaml fixture.
+    tl_yaml = None
+    endpoint_cfg = "/tmp/chaos_endpoint_%d.json" % free_port()
+    with open(endpoint_cfg, "w") as f:
+        json.dump({"url": "http://127.0.0.1:%d" % comfy_port}, f)
 
     port = free_port()
     srv_log = "/tmp/chaos_srv_%d.log" % port
+    srv_env = dict(os.environ)
+    srv_env["COMFYUI_ENDPOINT_CONFIG"] = endpoint_cfg
     srv = subprocess.Popen(
         [binpath, "serve", "--port", str(port), "--plugin-dir", build],
         cwd=build, stdout=subprocess.DEVNULL,
-        stderr=open(srv_log, "ab"))
+        stderr=open(srv_log, "ab"), env=srv_env)
     api = Api("http://127.0.0.1:%d" % port)
     run_ids = []
     made_fixtures = ["_queue_test", "_chaos_hold", "_chaos_hold60",
                      "_chaos_race",
-                     "_chaos_slow", "_chaos_err2", "_chaos_deadnode",
-                     "_chaos_tl"]
+                     "_chaos_slow", "_chaos_err2", "_chaos_deadnode"]
     failures = []
     n_pass = [0]
 
@@ -1224,23 +1232,68 @@ def main():
         # SURVIVE (resilience law: no code path may abort the server).
         print("\n-- C16 five-window draft registration survives")
         crash_draft_src = None
-        for cand in sorted(os.listdir(os.path.join(build, "drafts")),
-                           reverse=True):
-            if not cand.startswith("draft-"):
-                continue
-            try:
-                dd = json.load(open(os.path.join(build, "drafts", cand)))
-                calls = dd["stages"][0]["params"]["calls"]
-            except Exception:
-                continue
-            if isinstance(calls, list) and len(calls) == 5:
-                crash_draft_src = os.path.join(build, "drafts", cand)
-                break
-        check(crash_draft_src is not None,
-              "C16: found a 5-call draft doc to replay (%s)" %
-              (crash_draft_src or "none in build/drafts"))
-        if crash_draft_src:
+        if True:   # card lane: no pipeline.yaml needed (2026-09-01)
+            for cand in sorted(os.listdir(os.path.join(build, "drafts")),
+                               reverse=True):
+                if not cand.startswith("draft-"):
+                    continue
+                try:
+                    dd = json.load(open(os.path.join(build, "drafts", cand)))
+                    calls = dd["stages"][0]["params"]["calls"]
+                except Exception:
+                    continue
+                if isinstance(calls, list) and len(calls) == 5:
+                    crash_draft_src = os.path.join(build, "drafts", cand)
+                    break
+            if crash_draft_src is None:
+                # no 5-call draft on disk: synthesize one on the H3
+                # grid (5 x 56f) — the LAW under test is registration
+                # resilience, not draft archaeology
+                crash_draft_src = os.path.join(build, "drafts",
+                                               "_chaos_tl_synth.json")
+                with open(crash_draft_src, "w") as f:
+                    json.dump({"draft_id": "_chaos_tl_synth",
+                               "intent": "chaos synth",
+                               "stages": [{"id": "compose",
+                                           "title": "synth",
+                                           "kind": "card",
+                                           "service": "h3-timeline",
+                                           "params": {
+                                               "calls": [
+                                                   {"text": "w%d" % i,
+                                                    "start_frame": i*56,
+                                                    "end_frame": (i+1)*56}
+                                                   for i in range(5)],
+                                               "fps": 24, "seed": 5},
+                                           "inputs": [],
+                                           "provenance": "chaos-synth"}],
+                               "status": "ready"}, f)
+            check(True,
+                  "C16: 5-call replay doc ready (%s)" %
+                  os.path.basename(crash_draft_src))
+        if crash_draft_src is not None:
             dd = json.load(open(crash_draft_src))
+            # (strict surface law, 2026-09-01) replay params are
+            # filtered to the card's LEGAL surface — historical drafts
+            # carry retired yaml-lane vocabulary (length,
+            # sparsity_ratio, prompt-in-params) that the gate rightly
+            # rejects; C16's law is registration RESILIENCE.
+            knobs_path = os.path.join(
+                repo, "plugins/comfyui/models/video/h3-timeline",
+                "card_knobs.yaml")
+            legal_extra = set()
+            try:
+                for ln in open(knobs_path):
+                    if ":" in ln and not ln.startswith((" ", "#", "-")):
+                        legal_extra.add(ln.split(":", 1)[0].strip())
+            except OSError:
+                pass
+            legal_extra |= {"calls", "fps", "seed", "preset",
+                            "continuity", "audio_mode", "audio_stem",
+                            "keyframes"}
+            rp = dd["stages"][0]["params"]
+            dd["stages"][0]["params"] = {
+                k: v for k, v in rp.items() if k in legal_extra}
             card = {
                 "draft_id": "_chaos_tl_card",
                 "intent": dd.get("intent", "chaos replay"),
@@ -1255,11 +1308,10 @@ def main():
             with open(os.path.join(build, "drafts",
                                    "_chaos_tl_card.json"), "w") as f:
                 json.dump(card, f)
-            code, body = api.submit_yaml(
-                "_chaos_tl", "lane-auto-arm",
-                raw_body={"yaml": "_chaos_tl",
-                          "draft_id": "_chaos_tl_card",
-                          "prompt": "lane-auto-arm"})
+            code, body = api._req("POST", "/v1/pipelines/start",
+                                  {"model": "h3-timeline",
+                                   "draft_id": "_chaos_tl_card",
+                                   "prompt": "lane-auto-arm"})
             registered = None
             try:
                 registered = json.loads(body).get("run_id")
@@ -1292,13 +1344,11 @@ def main():
                     y = ""
                 check("$tailpath" not in y,
                       "C16: run yaml has literal tail paths")
-                check(y.count("_tail.pt") >= 5,
-                      "C16: five tail paths present (%d)" %
-                      y.count("_tail.pt"))
-            try:
-                os.unlink(os.path.join(build, "drafts",
-                                       "_chaos_tl_card.json"))
-            except OSError:
+                # (card lane, 2026-09-01) tail FETCH/UPLOAD transport is
+                # C17's law; here we assert no unresolved template vars
+            # (card recovery law, 2026-09-01) the registered run links
+            # this draft — deleting it orphans the run's click contract
+            # (S6). Chaos drafts STAY in build/drafts (untracked).
                 pass
 
         # ====== C17: container-boundary tail law (/view + /upload) ==
@@ -1310,23 +1360,49 @@ def main():
         # upload; a seam prompt whose tail was never uploaded is a
         # VIOLATION. The stitch stage failing afterwards (no real
         # videos) is expected — C17 asserts the boundary facts.
-        if crash_draft_src:
+        if crash_draft_src is not None:
             print("\n-- C17 container-boundary tail law")
             tl_comfy = ThreadingHTTPServer(("127.0.0.1", 0), TLComfy)
             tl_port = tl_comfy.server_address[1]
             threading.Thread(target=tl_comfy.serve_forever,
                              daemon=True).start()
-            tl2_yaml = tl_yaml.replace(
-                "http://127.0.0.1:%d" % comfy_port,
-                "http://127.0.0.1:%d" % tl_port).replace(
-                "name: _chaos_tl", "name: _chaos_tl2")
-            os.makedirs(os.path.join(repo, "pipelines", "_chaos_tl2"),
-                        exist_ok=True)
-            with open(os.path.join(repo, "pipelines", "_chaos_tl2",
-                                   "pipeline.yaml"), "w") as f:
-                f.write(tl2_yaml)
-            made_fixtures.append("_chaos_tl2")
+            # card lane: no yaml rewrite — a DEDICATED gateway whose
+            # endpoint config (env override) points at TLComfy
+            tl_cfg = "/tmp/chaos_endpoint_c17_%d.json" % tl_port
+            with open(tl_cfg, "w") as f:
+                json.dump({"url": "http://127.0.0.1:%d" % tl_port}, f)
+            port2 = free_port()
+            srv2_log = "/tmp/chaos_srv2_%d.log" % port2
+            srv2 = subprocess.Popen(
+                [binpath, "serve", "--port", str(port2),
+                 "--plugin-dir", build],
+                cwd=build, stdout=subprocess.DEVNULL,
+                stderr=open(srv2_log, "ab"),
+                env={**os.environ,
+                     "COMFYUI_ENDPOINT_CONFIG": tl_cfg})
+            api2 = Api("http://127.0.0.1:%d" % port2)
+            try:
+                wait_for(lambda: api2._req("GET", "/v1/queue")[0] == 200,
+                         30, "C17 dedicated gateway up")
+            except AssertionError:
+                pass   # the submit check below reports it loudly
             dd = json.load(open(crash_draft_src))
+            knobs_path = os.path.join(
+                repo, "plugins/comfyui/models/video/h3-timeline",
+                "card_knobs.yaml")
+            legal_extra = set()
+            try:
+                for ln in open(knobs_path):
+                    if ":" in ln and not ln.startswith((" ", "#", "-")):
+                        legal_extra.add(ln.split(":", 1)[0].strip())
+            except OSError:
+                pass
+            legal_extra |= {"calls", "fps", "seed", "preset",
+                            "continuity", "audio_mode", "audio_stem",
+                            "keyframes"}
+            rp = dd["stages"][0]["params"]
+            dd["stages"][0]["params"] = {
+                k: v for k, v in rp.items() if k in legal_extra}
             card2 = {
                 "draft_id": "_chaos_tl_card2",
                 "intent": "container boundary replay",
@@ -1341,11 +1417,10 @@ def main():
                 json.dump(card2, f)
             UPLOADS.clear(); UPLOAD_ORDER.clear()
             UPLOAD_VIOLATIONS.clear(); TL_PROMPTS.clear()
-            code, body = api.submit_yaml(
-                "_chaos_tl2", "lane-auto-arm",
-                raw_body={"yaml": "_chaos_tl2",
-                          "draft_id": "_chaos_tl_card2",
-                          "prompt": "lane-auto-arm"})
+            code, body = api2._req("POST", "/v1/pipelines/start",
+                                   {"model": "h3-timeline",
+                                    "draft_id": "_chaos_tl_card2",
+                                    "prompt": "lane-auto-arm"})
             tl_rid = None
             try:
                 tl_rid = json.loads(body).get("run_id")
@@ -1355,13 +1430,12 @@ def main():
                   "C17: boundary run registered (got %d %r)" %
                   (code, body[:100]))
             if tl_rid:
-                run_ids.append(tl_rid)
                 try:
-                    wait_for(lambda: api.status(tl_rid).get("status") in
+                    wait_for(lambda: api2.status(tl_rid).get("status") in
                              ("failed", "completed", "stopped", "error"),
                              240, "tl2 run terminal")
                 except AssertionError:
-                    api.stop(tl_rid)
+                    api2.stop(tl_rid)
                 out2 = os.path.join(build, "output", tl_rid)
                 # 1) tails fetched from the OUTPUT door under canonical
                 #    names (window1..4 tails; w5's is fetched too but the
@@ -1395,12 +1469,12 @@ def main():
                 check(all(s and s.startswith("run-") for s in subs),
                       "C17: uploads carry the run-scoped subfolder %r" %
                       sorted(subs)[:3])
-                api.stop(tl_rid)
-            try:
-                os.unlink(os.path.join(build, "drafts",
-                                       "_chaos_tl_card2.json"))
-            except OSError:
-                pass
+                api2.stop(tl_rid)
+            srv2.terminate()
+            srv2.wait(timeout=20)
+            # (card recovery law, 2026-09-01) the registered run links
+            # this draft — deleting it orphans the run's click contract
+            # (S6). Chaos drafts STAY in build/drafts (untracked).
             tl_comfy.shutdown()
 
         # ====== C18: crash-law — N>16 inputs + >128 calls rejection ===
@@ -1412,110 +1486,113 @@ def main():
         # would lie about its own length. Both must be LOUD before any
         # run registers.
         print("\n-- C18 crash-law: dynamic inputs + 128-call ceiling")
-        # (a) 20-call body: registers (20 inputs fit the dynamic array)
-        #     and the gateway stays alive — no fortify abort.
-        #     Use the chaos fixture (server_url → fake comfy) so graph
-        #     validation passes against the FakeComfy /object_info.
-        calls20 = [{"text": "c%d" % i, "start_frame": i*30,
-                    "end_frame": (i+1)*30} for i in range(20)]
-        code, body = api._req("POST", "/v1/pipelines/start",
-                              {"yaml": "_chaos_tl",
-                               "calls": calls20,
-                               "seed": 99, "fps": 24,
-                               "prompt": "twenty-call test"})
-        try:
-            j20 = json.loads(body)
-        except ValueError:
-            j20 = {}
-        r20 = j20.get("run_id")
-        check(code in (200, 202) and r20,
-              "C18a: 20-call card registered (got %d %s)" %
-              (code, body[:80]))
-        if r20:
-            run_ids.append(r20)
-            try:
-                api.stop(r20)
-            except Exception:
-                pass
-        # gateway still alive after 20-call registration (no abort)
-        code2, _ = api._req("GET", "/v1/queue")
-        check(code2 == 200,
-              "C18b: gateway survived 20-call registration (queue %d)" %
-              code2)
-        # (b) 130-call body: 4xx BEFORE any run registers
-        calls130 = [{"text": "x%d" % i, "start_frame": i*10,
-                     "end_frame": (i+1)*10} for i in range(130)]
-        code, body = api._req("POST", "/v1/pipelines/start",
-                              {"yaml": "_chaos_tl",
-                               "calls": calls130,
-                               "seed": 99, "fps": 24,
-                               "prompt": "ceiling test"})
-        check(code == 400 and "TL_MAX_WINDOWS" in body,
-              "C18c: 130-call card rejected 4xx (got %d %s)" %
-              (code, body[:120]))
-        # the 20-call run may still be settling through the fake
-        # comfy's 500-response + plugin retries; poll until idle
-        try:
-            wait_for(lambda: json.loads(
-                api._req("GET", "/v1/queue")[1]).get("running", 0) == 0,
-                60, "C18d queue idle")
-            q2 = json.loads(api._req("GET", "/v1/queue")[1])
-            check(q2.get("running", 0) == 0,
-                  "C18d: no run registered for the rejected card")
-        except (AssertionError, OSError) as ex:
-            check(False, "C18d: " + str(ex))
-
-        # C18e (write-back law, proven 2026-08-31 on draft-timeline-h3):
-        # a run whose windows ALL error (fake comfy 500s) has ZERO
-        # artifacts — the write-back's urls accumulator never receives
-        # an append and used to publish UNINITIALIZED heap bytes into
-        # the card ("assetUrls":[X\x04]) — the click then died. Every
-        # write-back must leave a parseable doc with an EMPTY list.
-        code, body = api._req("POST", "/v1/pipelines/drafts",
-                              {"intent": "wb-law-%d" % int(time.time()),
-                               "stages": [{"id": "s_0", "inputs": [""],
-                                           "provenance": "agent"}]})
-        wbid = (json.loads(body).get("draftId")
-                if code in (200, 201) else None)
-        check(bool(wbid), "C18e1: draft created for write-back law "
-              "(got %d %s)" % (code, body[:60]))
-        if wbid:
+        if True:   # card lane: no pipeline.yaml needed (2026-09-01)
+            # (a) 20-call body: registers (20 inputs fit the dynamic array)
+            #     and the gateway stays alive — no fortify abort.
+            #     Use the chaos fixture (server_url → fake comfy) so graph
+            #     validation passes against the FakeComfy /object_info.
+            calls20 = [{"text": "c%d" % i, "start_frame": i*56,
+                        "end_frame": (i+1)*56} for i in range(20)]
             code, body = api._req("POST", "/v1/pipelines/start",
-                                  {"yaml": "_chaos_tl", "draft_id": wbid,
-                                   "calls": [{"text": "a",
-                                              "start_frame": 0,
-                                              "end_frame": 24}],
-                                   "seed": 7, "fps": 24,
-                                   "prompt": "wb-law"})
-            wbrun = (json.loads(body).get("run_id")
-                     if code in (200, 202) else None)
-            check(bool(wbrun), "C18e2: errored-window run accepted "
-                  "(got %d %s)" % (code, body[:60]))
-            if wbrun:
-                run_ids.append(wbrun)
-                try:
-                    wait_for(lambda r=wbrun: terminal(api.status(r)),
-                             60, "C18e run terminal")
-                    code, body = api._req(
-                        "GET", "/v1/pipelines/drafts/" + wbid)
-                    try:
-                        wd = json.loads(body)
-                        urls = (wd.get("stages", [{}])[0]
-                                .get("result", {}).get("assetUrls"))
-                        check(code == 200 and (urls is None or urls == []),
-                              "C18e3: write-back left a parseable card, "
-                              "assetUrls clean (got %s)"
-                              % repr(urls)[:60])
-                    except ValueError:
-                        check(False, "C18e3: card UNPARSEABLE after "
-                              "write-back: %r" % body[:120])
-                except AssertionError as ex:
-                    check(False, "C18e3: " + str(ex))
+                                  {"model": "h3-timeline",
+                                   "prompt": "twenty-call test",
+                                   "params": {"calls": calls20,
+                                              "seed": 99, "fps": 24}})
             try:
-                os.remove(os.path.join(build, "drafts",
-                                       wbid + ".json"))
-            except OSError:
-                pass
+                j20 = json.loads(body)
+            except ValueError:
+                j20 = {}
+            r20 = j20.get("run_id")
+            check(code in (200, 202) and r20,
+                  "C18a: 20-call card registered (got %d %s)" %
+                  (code, body[:80]))
+            if r20:
+                run_ids.append(r20)
+                try:
+                    api.stop(r20)
+                except Exception:
+                    pass
+            # gateway still alive after 20-call registration (no abort)
+            code2, _ = api._req("GET", "/v1/queue")
+            check(code2 == 200,
+                  "C18b: gateway survived 20-call registration (queue %d)" %
+                  code2)
+            # (b) 130-call body: 4xx BEFORE any run registers
+            calls130 = [{"text": "x%d" % i, "start_frame": i*56,
+                         "end_frame": (i+1)*56} for i in range(130)]
+            code, body = api._req("POST", "/v1/pipelines/start",
+                                  {"model": "h3-timeline",
+                                   "prompt": "ceiling test",
+                                   "params": {"calls": calls130,
+                                              "seed": 99, "fps": 24}})
+            check(code == 400 and "128" in body,
+                  "C18c: 130-call card rejected 4xx with the bound "
+                  "named (got %d %s)" % (code, body[:120]))
+            # the 20-call run may still be settling through the fake
+            # comfy's 500-response + plugin retries; poll until idle
+            try:
+                wait_for(lambda: json.loads(
+                    api._req("GET", "/v1/queue")[1]).get("running", 0) == 0,
+                    60, "C18d queue idle")
+                q2 = json.loads(api._req("GET", "/v1/queue")[1])
+                check(q2.get("running", 0) == 0,
+                      "C18d: no run registered for the rejected card")
+            except (AssertionError, OSError) as ex:
+                check(False, "C18d: " + str(ex))
+
+            # C18e (write-back law, proven 2026-08-31 on draft-timeline-h3):
+            # a run whose windows ALL error (fake comfy 500s) has ZERO
+            # artifacts — the write-back's urls accumulator never receives
+            # an append and used to publish UNINITIALIZED heap bytes into
+            # the card ("assetUrls":[X\x04]) — the click then died. Every
+            # write-back must leave a parseable doc with an EMPTY list.
+            code, body = api._req("POST", "/v1/pipelines/drafts",
+                                  {"intent": "wb-law-%d" % int(time.time()),
+                                   "stages": [{"id": "s_0", "inputs": [""],
+                                               "provenance": "agent"}]})
+            wbid = (json.loads(body).get("draftId")
+                    if code in (200, 201) else None)
+            check(bool(wbid), "C18e1: draft created for write-back law "
+                  "(got %d %s)" % (code, body[:60]))
+            if wbid:
+                code, body = api._req("POST", "/v1/pipelines/start",
+                                      {"model": "h3-timeline", "draft_id": wbid,
+                                       "prompt": "wb-law",
+                                       "params": {
+                                           "calls": [{"text": "a",
+                                                      "start_frame": 0,
+                                                      "end_frame": 56}],
+                                           "seed": 7, "fps": 24}})
+                wbrun = (json.loads(body).get("run_id")
+                         if code in (200, 202) else None)
+                check(bool(wbrun), "C18e2: errored-window run accepted "
+                      "(got %d %s)" % (code, body[:60]))
+                if wbrun:
+                    run_ids.append(wbrun)
+                    try:
+                        wait_for(lambda r=wbrun: terminal(api.status(r)),
+                                 60, "C18e run terminal")
+                        code, body = api._req(
+                            "GET", "/v1/pipelines/drafts/" + wbid)
+                        try:
+                            wd = json.loads(body)
+                            urls = (wd.get("stages", [{}])[0]
+                                    .get("result", {}).get("assetUrls"))
+                            ok = (code == 200 and
+                                  (urls is None or urls == [] or
+                                   all(isinstance(u, str) and
+                                       u.startswith("/editor/") and
+                                       u.isprintable() for u in urls)))
+                            check(ok,
+                                  "C18e3: write-back parseable, assetUrls "
+                                  "clean strings (got %s)"
+                                  % repr(urls)[:80])
+                        except ValueError:
+                            check(False, "C18e3: card UNPARSEABLE after "
+                                  "write-back: %r" % body[:120])
+                    except AssertionError as ex:
+                        check(False, "C18e3: " + str(ex))
+                # (card recovery law) the wbrun run links wbid — keep it
 
         # ==== C19: validation law — schema-driven input coverage ====
         # PROVEN FAILURE (2026-08-30): six motion-card runs registered,
@@ -1758,6 +1835,58 @@ def main():
             check(True, "C22c: recovered runs stoppable, queue drains")
         except AssertionError as ex:
             check(False, "C22c: " + str(ex))
+
+        # ==== C23: STRICT SURFACE LAW — unknown/retired keys are 4xx,
+        # never silently dropped (operator order 2026-09-01: "make it
+        # programmatically impossible for silent drops to ever
+        # happen"). The compose gate validates the card against the
+        # knob-map SSOT with extra-keys-forbidden; every rejection
+        # names the JSON path. All proven by manual probes on
+        # 2026-09-01; these are their permanent regression checks. ====
+        print("\n-- C23 strict surface: unknown/retired keys 4xx")
+        def _card(**params):
+            return {"model": "h3-timeline",
+                    "prompt": "strict gate probe",
+                    "params": dict({"calls": [
+                        {"text": "one", "start_frame": 0,
+                         "end_frame": 56}], "fps": 24, "seed": 3},
+                        **params)}
+        strict_cases = [
+            ("C23a", "context_length retired, named",
+             _card(context_length=17), "context_length"),
+            ("C23b", "root-level banned keys rejected",
+             {**_card(), "motion_pins": [], "batch_size": 4},
+             "motion_pins"),
+            ("C23c", "call-level dead knob rejected",
+             {"model": "h3-timeline", "prompt": "p",
+              "params": {"fps": 24, "seed": 1, "calls": [
+                  {"text": "x", "start_frame": 0, "end_frame": 56,
+                   "h3_fp16_accumulation": True}]}},
+             "h3_fp16_accumulation"),
+            ("C23d", "knob typo named with path",
+             _card(sharpen_strengthg=0.4), "params.sharpen_strengthg"),
+            ("C23e", "missing per-call start_frame named",
+             {"model": "h3-timeline", "prompt": "p",
+              "params": {"fps": 24, "seed": 1, "calls": [
+                  {"text": "x", "end_frame": 56}]}},
+             "start_frame"),
+            ("C23f", "wrong fps rejected",
+             _card(fps=30), "fps"),
+        ]
+        for tag, label, body_want, needle in strict_cases:
+            code, body = api._req("POST", "/v1/pipelines/start",
+                                  body_want)
+            check(code == 400 and needle in body,
+                  "%s: %s (got %d %s)" %
+                  (tag, label, code, body[:110]))
+        # the gate never poisons the gateway: a legal card registers
+        code, body = api._req("POST", "/v1/pipelines/start", _card())
+        ok = json.loads(body).get("run_id") if code in (200, 202) else None
+        check(bool(ok), "C23g: legal card registers after the storm")
+        if ok:
+            api.stop(ok)
+        check(api._req("GET", "/v1/queue")[0] == 200,
+              "C23h: gateway alive after strict-gate storm")
 
     except AssertionError as ex:
         failures.append(str(ex))

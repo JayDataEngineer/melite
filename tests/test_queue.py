@@ -38,14 +38,14 @@ HOLD_DELAY = 1.2        # seconds the fake comfy holds each /prompt
 INTERRUPTS = []         # recorded /hold/interrupt POSTs (stop-door proof)
 
 # Fake /object_info manifest: filled in main() from the real
-# krea-txt2img workflow.json the fixtures reference (the gateway
+# sprite-sheet workflow.json the fixtures reference (the gateway
 # pre-validates class_types against it before registering a run).
 OBJECT_INFO = {}
 
 
 def build_object_info(repo):
     global OBJECT_INFO
-    wf = os.path.join(repo, "pipelines", "krea-txt2img", "workflow.json")
+    wf = os.path.join(repo, "pipelines", "sprite-sheet", "workflow.json")
     try:
         graph = json.load(open(wf))
         OBJECT_INFO = {n.get("class_type", "?"): {} for n in graph.values()
@@ -200,7 +200,7 @@ def main():
     fixture = os.path.join(repo, "pipelines", "_queue_test")
     binpath = os.path.join(build, "inference_cli")
     if not os.path.exists(binpath):
-        print("SKIP: inference_cli not built"); return 0
+        print("FAIL: inference_cli not built - refusing to pass green on a skip (silent-drop audit F8)"); return 1
 
     comfy = ThreadingHTTPServer(("127.0.0.1", 0), FakeComfy)
     comfy_port = comfy.server_address[1]
@@ -214,8 +214,10 @@ def main():
             "nodes:\n"
             "  - id: generate\n"
             "    type: comfyui\n"
+            "    input_from:\n"
+            "      - __initial__.$prompt\n"
             "    params: {\"server_url\":\"http://127.0.0.1:%d\","
-            "\"workflow_file\":\"../pipelines/krea-txt2img/workflow.json\","
+            "\"workflow_file\":\"../pipelines/sprite-sheet/workflow.json\","
             "\"out_dir\":\"./output\",\"timeout_s\":30,"
             "\"inject\":{\"CLIPTextEncode.0.text\":\"$prompt\"}}\n"
             % comfy_port)
@@ -233,8 +235,10 @@ def main():
                 "nodes:\n"
                 "  - id: generate\n"
                 "    type: comfyui\n"
+                "    input_from:\n"
+                "      - __initial__.$prompt\n"
                 "    params: {\"server_url\":\"http://127.0.0.1:%d%s\","
-                "\"workflow_file\":\"../pipelines/krea-txt2img/"
+                "\"workflow_file\":\"../pipelines/sprite-sheet/"
                 "workflow.json\",\"out_dir\":\"./output\","
                 "\"timeout_s\":30%s}\n"
                 % (comfy_port, url_suffix, extra))
