@@ -1888,6 +1888,60 @@ def main():
         check(api._req("GET", "/v1/queue")[0] == 200,
               "C23h: gateway alive after strict-gate storm")
 
+        # ==== C24: TOOL-SURFACE AUDIT LAW (operator, 2026-09-01:
+        # "THE PROBLEM IS THE TOOL ... deterministic beforehand, .1s")
+        # Every lane's tool.json offered surface must be a subset of
+        # what the compose gate accepts for its model (card_knobs.yaml
+        # + structural). Divergence = the agent is TAUGHT to compose
+        # cards the gate 400s — proven live: context_length +
+        # h3_fp16_accumulation sat in video_timeline's tool.json after
+        # retirement; video-gen offered length/sparsity_ratio from the
+        # pre-calls shape. The plugin cross-checks at dlopen (boot,
+        # before traffic) and poisons divergent lanes; this is the
+        # same check in python so CI catches it before boot. ====
+        print("\n-- C24 tool-surface audit: tool.json ⊆ gate")
+        import glob as _glob
+        structural_card = {
+            "calls", "fps", "seed", "preset", "continuity",
+            "audio_mode", "audio_stem", "keyframes", "refs", "intent",
+            "model", "prompt", "draft_id", "continue_from",
+            "server_url", "audio", "image", "h3_attention"}
+        structural_call = {
+            "text", "beats", "start_frame", "end_frame", "knobs",
+            "seam_carry", "image", "last_frame", "clip", "audio",
+            "first_frame_prev_sec"}
+        lanes = _glob.glob(os.path.join(repo, "plugins/*/cards/*/tool.json"))
+        check(len(lanes) >= 10,
+              "C24a: found the lane fleet (%d tool.json)" % len(lanes))
+        retired = {"context_length", "h3_fp16_accumulation",
+                   "h3_torch_compile"}
+        for tj in lanes:
+            lane = os.path.basename(os.path.dirname(tj))
+            doc = json.load(open(tj))
+            model = doc.get("model", "")
+            km = _glob.glob(os.path.join(repo, "plugins/*/models/video",
+                                         model, "card_knobs.yaml"))
+            if not km:
+                continue          # non-card lane: no gate to diverge from
+            legal = set(re.findall(r"card:\s*(\w+)", open(km[0]).read()))
+            props = doc.get("params_schema", {}).get("properties", {})
+            calls = props.get("calls", {})
+            cprops = (calls.get("properties") or
+                      calls.get("items", {}).get("properties") or {})
+            for k in props:
+                if k == "calls":
+                    continue
+                check(k in legal or k in structural_card,
+                      "C24b: %s card-level '%s' is gate-legal"
+                      % (lane, k))
+                check(k not in retired,
+                      "C24c: %s does not offer RETIRED knob '%s'"
+                      % (lane, k))
+            for k in cprops:
+                check(k in legal or k in structural_call,
+                      "C24d: %s call-level '%s' is gate-legal"
+                      % (lane, k))
+
     except AssertionError as ex:
         failures.append(str(ex))
         print("  FAIL  " + str(ex))
