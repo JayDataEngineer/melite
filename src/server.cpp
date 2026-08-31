@@ -1205,6 +1205,14 @@ static void draft_writeback(size_t idx, const char *wire) {
         const char *sb = st ? strchr(st, '{') : NULL;
         if (!sb) {
             free(buf); free(oldh); free(mhist); free(urls); free(wfilms); free(seamsj); free(res);
+            /* honest, not silent: a per-run direct-calls draft is a
+             * REPLAY SOURCE (the verbatim card body) with no stage
+             * structure — films stay in the run dir + runs list. */
+            fprintf(stderr,
+                    "[draft] %s: card %s carries neither result nor "
+                    "stages - write-back skipped (per-run direct-calls "
+                    "draft: replay source, not film-history card)\n",
+                    g_runs[idx].run_id, g_runs[idx].draft_id);
             return;
         }
         size_t head = (size_t)(sb - buf) + 1;   /* past stage's '{' */
@@ -3246,6 +3254,57 @@ static void handle_pipelines_start(const httplib::Request &req,
             g_runs[idx].draft_stage = 0;
             fprintf(stderr, "[draft] run %s linked to card %s\n",
                     g_runs[idx].run_id, rid_draft);
+        } else if (strstr(req.body.c_str(), "\"calls\"")) {
+            /* (card-is-the-run-definition law, 2026-09-01) a
+             * direct-calls card run CARRIES its own card: the request
+             * body IS the card document. Persist it as a PER-RUN draft
+             * (unique id = run_id) so replay, write-back and the UI
+             * wand linkage work 1:1 for every run — this is NOT the
+             * deleted shared-draft fallback (which bound ALL runs to
+             * one draft and bled artifacts across them); each run gets
+             * its own file holding its own bytes. */
+            const char *parse_end = NULL;
+            cJSON *chk = cJSON_ParseWithOpts(req.body.c_str(),
+                                             &parse_end, 1);
+            if (chk) {
+                char dpath[300], dtmp[320];
+                snprintf(dpath, sizeof dpath, "./drafts/%s.json",
+                         g_runs[idx].run_id);
+                snprintf(dtmp, sizeof dtmp, "%s.tmp", dpath);
+                FILE *df = fopen(dtmp, "wb");
+                int wok = 0;
+                if (df) {
+                    size_t bl = req.body.size();
+                    wok = fwrite(req.body.c_str(), 1, bl, df) == bl;
+                    wok = (fclose(df) == 0) && wok;
+                }
+                if (wok) {
+                    rename(dtmp, dpath);
+                    snprintf(g_runs[idx].draft_id,
+                             sizeof(g_runs[idx].draft_id), "%s",
+                             g_runs[idx].run_id);
+                    g_runs[idx].draft_stage = 0;
+                    fprintf(stderr,
+                            "[draft] run %s persisted its own card "
+                            "(direct calls) -> %s\n",
+                            g_runs[idx].run_id, dpath);
+                } else {
+                    unlink(dtmp);
+                    fprintf(stderr,
+                            "[draft] run %s: card persist FAILED (%s) "
+                            "- replay via draft unavailable\n",
+                            g_runs[idx].run_id, dpath);
+                }
+                cJSON_Delete(chk);
+            } else {
+                fprintf(stderr,
+                        "[draft] run %s: body carries calls but is not "
+                        "valid JSON - NOT persisted as a card (replay "
+                        "unavailable; byte %ld)\n",
+                        g_runs[idx].run_id,
+                        parse_end
+                            ? (long)(parse_end - req.body.c_str()) : -1L);
+            }
         }
     }
     /* (2026-08-30 cards-button law) the CARD document for this run - what
@@ -3335,7 +3394,8 @@ static void handle_pipelines_start(const httplib::Request &req,
              * BY NAME before any thread spawns — never a green run
              * with silently missing window prompts. */
             char regwhy[256];
-            if (card_register_extra_inputs(idx, card_extra,
+            if (card_extra[0] &&
+                card_register_extra_inputs(idx, card_extra,
                                            regwhy, sizeof regwhy) != 0) {
                 char emsg[320], eb[384];
                 snprintf(emsg, sizeof emsg,
@@ -3398,9 +3458,13 @@ static void handle_pipelines_start(const httplib::Request &req,
         {
             /* (no-silent-error law) registration failure fails the run
              * BY NAME before any thread spawns — never a green run
-             * with silently missing window prompts. */
+             * with silently missing window prompts.
+             * Guard: only enforce when card_compose actually produced
+             * extra inputs (card_extra non-empty). Plain {model}
+             * pipelines carry no card_extra and must pass through. */
             char regwhy[256];
-            if (card_register_extra_inputs(idx, card_extra,
+            if (card_extra[0] &&
+                card_register_extra_inputs(idx, card_extra,
                                            regwhy, sizeof regwhy) != 0) {
                 char emsg[320], eb[384];
                 snprintf(emsg, sizeof emsg,
