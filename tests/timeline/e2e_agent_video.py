@@ -119,8 +119,16 @@ def main():
         runs = st.get("runs", st if isinstance(st, list) else [])
         for rr in runs:
             did = rr.get("draft_id") or ""
+            # (discovery law, 2026-08-31) this e2e watches THE LANE'S
+            # OWN run only. A concurrent test suite on the shared
+            # gateway (chaos / card-lifecycle scratch boots share
+            # build/output) registers fresh-draft runs inside any 60s
+            # window — an unfiltered scan locked onto a foreign
+            # _lc_ok fixture run and graded it against this lane's
+            # expectations (14 bogus failures, real run ignored).
             if (did and did not in drafts_before
                     and (rr.get("created_at") or 0) > spawn_ts - 60
+                    and rr.get("pipeline") == "h3-timeline"
                     and rr.get("status") in ("queued", "running",
                                              "success", "completed",
                                              "error", "failed")):
