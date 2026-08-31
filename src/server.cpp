@@ -1043,41 +1043,67 @@ static void draft_writeback(size_t idx, const char *wire) {
     {
         size_t fo = jappend(&wfilms, &fc, 0, "[");
         size_t so2 = jappend(&seamsj, &sc, 0, "[");
+        int ffirst = 1, sfirst = 1;
         for (int w = 0; w < nwin; w++) {
-            if (w) {
-                fo = jappend(&wfilms, &fc, fo, ",");
-                so2 = jappend(&seamsj, &sc, so2, ",");
+            /* (no-fake-data law, 2026-08-31 operator: "hard errors, not
+             * silent errors EVER") a window that produced NO film or a
+             * seam that never ran is OMITTED — never an empty-string
+             * placeholder. The old w1..w4 fixed keys painted "" tiles
+             * the editor rendered as broken video players. */
+            if (wf[w][0]) {
+                if (!ffirst) fo = jappend(&wfilms, &fc, fo, ",");
+                fo = jappend(&wfilms, &fc, fo, "\"%s\"", wf[w]);
+                ffirst = 0;
             }
-            fo = jappend(&wfilms, &fc, fo, "\"%s\"", wf[w]);
-            so2 = jappend(&seamsj, &sc, so2, "\"%s\"",
-                          seam[w][0] ? seam[w] : "");
+            if (seam[w][0]) {
+                if (!sfirst) so2 = jappend(&seamsj, &sc, so2, ",");
+                so2 = jappend(&seamsj, &sc, so2, "\"%s\"", seam[w]);
+                sfirst = 0;
+            }
         }
         jappend(&wfilms, &fc, fo, "]");
         jappend(&seamsj, &sc, so2, "]");
     }
+    /* per-window named keys: ONLY windows that actually rendered —
+     * accumulated, not fixed slots, so a 1-window card carries exactly
+     * one video_w key and zero seam keys */
+    size_t kc = 1024;
+    char *wkeys = (char *)malloc(kc);
+    if (!wkeys) {
+        free(buf); free(oldh); free(mhist); free(urls); free(wfilms); free(seamsj);
+        return;
+    }
+    {
+        size_t ko = jappend(&wkeys, &kc, 0, "\"video\":\"%s\"", stitch);
+        if (!stitch[0]) ko = jappend(&wkeys, &kc, ko, ",\"videoError\":\"stitch produced no film\"");
+        for (int w = 0; w < nwin; w++) {
+            if (!wf[w][0]) continue;
+            ko = jappend(&wkeys, &kc, ko,
+                         ",\"video_w%d_main\":\"%s\"", w + 1, wf[w]);
+        }
+        for (int w = 0; w < nwin; w++) {
+            if (!seam[w][0]) continue;
+            ko = jappend(&wkeys, &kc, ko,
+                         ",\"seam_w%d\":\"%s\"", w + 1, seam[w]);
+        }
+    }
     size_t rc = 4096;
     char *res = (char *)malloc(rc);
-    if (!res) { free(buf); free(oldh); free(mhist); free(urls); free(wfilms); free(seamsj); return; }
+    if (!res) {
+        free(buf); free(oldh); free(mhist); free(urls); free(wfilms);
+        free(seamsj); free(wkeys);
+        return;
+    }
     jappend(&res, &rc, 0,
-        "{\"assetUrls\":[%s],\"artifacts\":{"
-        "\"video\":\"%s\","
-        "\"video_w1_main\":\"%s\",\"video_w2_main\":\"%s\",\"video_w3_main\":\"%s\",\"video_w4_main\":\"%s\","
-        "\"seam_w1\":\"%s\",\"seam_w2\":\"%s\",\"seam_w3\":\"%s\",\"seam_w4\":\"%s\","
+        "{\"assetUrls\":[%s],\"artifacts\":{%s,"
         "\"windowFilms\":%s,\"seams\":%s},"
         "\"metadata\":{\"runId\":\"%s\",\"seam\":\"latent-chain\",\"windows\":%d,"
         "\"history\":[%s]},"
         "\"completedAt\":%ld,\"durationSec\":%ld}",
-        urls,
-        stitch,
-        nwin > 0 ? wf[0] : "", nwin > 1 ? wf[1] : "",
-        nwin > 2 ? wf[2] : "", nwin > 3 ? wf[3] : "",
-        nwin > 0 ? (seam[0][0] ? seam[0] : "") : "",
-        nwin > 1 ? (seam[1][0] ? seam[1] : "") : "",
-        nwin > 2 ? (seam[2][0] ? seam[2] : "") : "",
-        nwin > 3 ? (seam[3][0] ? seam[3] : "") : "",
-        wfilms, seamsj,
+        urls, wkeys, wfilms, seamsj,
         rid, nwin, mhist,
         (long)time(NULL) * 1000, film_dur);
+    free(wkeys);
 
     const char *rp = strstr(buf, "\"result\"");
     /* (stack-smash law, 2026-08-31) exact-size heap splice + slack for
@@ -1860,6 +1886,37 @@ static int lane_resolve(const char *lane, char *dir_out, size_t dirsz,
 }
 
 
+/* (bundle law, 2026-08-31 operator: "make sure the agent GETS THE
+ * BUNDLE") Append every SKILL.md under the lane's agents/ tree to the
+ * agent prompt FILE. Without this the session silently composed one
+ * big window — the skill that teaches window chaining (motion-context
+ * latents, first_frame_prev_sec seams) sat on disk unread. A silent
+ * knowledge gap is a silent error: the bundle rides the prompt. */
+static void lane_append_skills(FILE *pf, const char *lane_dir) {
+    const char *rels[] = { "agents/skills", "agents", NULL };
+    for (int ri = 0; rels[ri]; ri++) {
+        char sd[1024];
+        snprintf(sd, sizeof(sd), "%s/%s", lane_dir, rels[ri]);
+        DIR *d = opendir(sd);
+        if (!d) continue;
+        struct dirent *de;
+        while ((de = readdir(d)) != NULL) {
+            if (de->d_name[0] == '.') continue;
+            char sk[1200];
+            snprintf(sk, sizeof(sk), "%s/%s/SKILL.md", sd, de->d_name);
+            FILE *sf = fopen(sk, "rb");
+            if (!sf) continue;               /* not a skill dir */
+            fprintf(pf, "\n---\n\n# SKILL: %s\n\n", de->d_name);
+            char sbuf[16384];
+            size_t sn = fread(sbuf, 1, sizeof(sbuf) - 1, sf);
+            fclose(sf);
+            sbuf[sn] = 0;
+            fwrite(sbuf, 1, sn, pf);
+        }
+        closedir(d);
+    }
+}
+
 /* POST /v1/cards/:lane/agent  {"prompt": "..."}
  * LANE LAW agent door: resolve the lane to its card dir (the audited
  * bundle: AGENT.md + SKILL.md + tool.json all live there), spawn a
@@ -1928,14 +1985,17 @@ static void handle_card_agent(const httplib::Request &req,
     as->draft_id[0] = 0;
     pthread_mutex_unlock(&g_agent_mu);
 
-    /* write the composed prompt (AGENT.md + user request) beside the log
-     * so the audit trail holds exactly what the agent received */
+    /* write the composed prompt (AGENT.md + SKILL bundle + user request)
+     * beside the log so the audit trail holds exactly what the agent
+     * received — the BUNDLE rides the prompt; nothing on disk is left
+     * to be silently undiscovered */
     char prompt_file[600];
     snprintf(prompt_file, sizeof(prompt_file), "./agent-sessions/%s.prompt.md", token);
     FILE *pf = fopen(prompt_file, "w");
     if (pf) {
-        fprintf(pf, "%s\n\n---\n\n# USER REQUEST\n\n%s\n", agent_md,
-                prompt.c_str());
+        fprintf(pf, "%s\n", agent_md);
+        lane_append_skills(pf, dir_out);
+        fprintf(pf, "\n---\n\n# USER REQUEST\n\n%s\n", prompt.c_str());
         fclose(pf);
     }
 
@@ -2189,89 +2249,9 @@ static void handle_pipelines_start(const httplib::Request &req,
             snprintf(prompt, sizeof(prompt), "%s", tmp);
         if (s) seed = inf_json_int(req.body.c_str(), "seed", -1);
     }
-    if (strstr(body, "\"calls\"")) {
-        char etype0[64] = "";
-        {
-            char probe_y[131072];
-            const char *ysrc = yaml_override;
-            if (!ysrc[0] && model[0])
-                ysrc = pipeline_yaml_for_model_ex(model, body,
-                                                  probe_y, sizeof probe_y);
-            const char *tt = ysrc ? strstr(ysrc, "type: ") : NULL;
-            if (tt) {
-                size_t e = 0;
-                for (const char *c = tt + 6;
-                     e + 1 < sizeof etype0 && *c && *c != '\n' &&
-                     *c != ' ' && *c != '\"'; c++)
-                    etype0[e++] = *c;
-                etype0[e] = 0;
-            }
-        }
-        int ph1 = etype0[0]
-            ? runner_card_compose(g_server_runner, etype0, body,
-                                  model, "", NULL, NULL, 0,
-                                  card_extra, sizeof card_extra)
-            : -5;
-        if (ph1 == 0 && card_extra[0])
-            tl_nw = strstr(card_extra, "\"prompt\"") ? 1 : 0;  /* marker */
-        if (ph1 < 0) {
-            /* plugin supplied the message: relay verbatim.
-             * -2/-3/-4 = card's fault (400); -1/-5 = infra (500). */
-            const char *emsg = "card compose failed";
-            {
-                const char *e = strstr(card_extra, "\"error\":\"");
-                if (e) {
-                    e += 9;
-                    char m[512]; size_t ml = 0;
-                    while (*e && *e != '"' && ml < sizeof m - 1)
-                        m[ml++] = *e++;
-                    m[ml] = 0;
-                    if (ml) {
-                        char out[600];
-                        snprintf(out, sizeof out, "{\"error\":\"%s\"}", m);
-                        res.status = (ph1 == -2 || ph1 == -3 || ph1 == -4)
-                                         ? 400 : 500;
-                        res.set_content(out, "application/json");
-                        return;
-                    }
-                }
-            }
-            res.status = 500;
-            res.set_content("{\"error\":\"card compose failed (plugin hook)\"}",
-                            "application/json");
-            return;
-        }
-        if (tl_nw > 0) {
-            /* window prompts live in card_extra: register inputs (the
-             * generic "prompt" input is seeded at registration from the
-             * body; prompt1 here is the compile's first window text,
-             * used as the prompt default when the body named none). */
-            char pv[4200];
-            const char *e = strstr(card_extra, "\"prompt\":\"");
-            if (e && !prompt[0]) {
-                e += 9; size_t pl = 0;
-                while (*e && *e != '"' && pl + 1 < sizeof pv) {
-                    if (*e == '\\' && e[1]) {
-                        e++;
-                        if (*e == 'n') pv[pl++] = ' ';
-                        else if (*e == '"') pv[pl++] = '"';
-                        else pv[pl++] = *e;
-                        e++;
-                    } else pv[pl++] = *e++;
-                }
-                pv[pl] = 0;
-                if (pl) snprintf(prompt, sizeof prompt, "%s", pv);
-            }
-        }
-    }
-
     /* (moved: card compose gate runs AFTER model resolution so
-     * yaml_override is set for {model} requests too) */
-    if (!prompt[0]) {
-        res.status = 400;
-        res.set_content("{\"error\":\"missing prompt\"}", "application/json");
-        return;
-    }
+     * yaml_override is set for {model} requests too; the prompt gate
+     * moved below it — the calls compile seeds the prompt fallback) */
 
     /* LAW (operator order, 2026-08-30): "No legacy. No fallbacks. No
      * hardcodes. These are banned." The run spec must resolve EXPLICITLY
@@ -2321,6 +2301,97 @@ static void handle_pipelines_start(const httplib::Request &req,
             }
         }
     }
+    /* (2026-08-31 hard-error law) CALLS VALIDATION — runs AFTER model
+     * resolution so card-path models (no pipeline.yaml; the plugin
+     * generates the graph) have yaml_override seeded with the engine
+     * type. Before this move, h3-timeline direct-calls requests never
+     * resolved an engine type and validation silently never ran. */
+    if (strstr(body, "\"calls\"")) {
+        char etype0[64] = "";
+        {
+            /* yaml_override first (card path + {model} both carry
+             * "type: "), then the pipeline.yaml probe */
+            const char *ysrc = yaml_override[0] ? yaml_override : NULL;
+            if (!ysrc && model[0]) {
+                static char probe_y[131072];
+                ysrc = pipeline_yaml_for_model_ex(model, body,
+                                                  probe_y, sizeof probe_y);
+            }
+            const char *tt = ysrc ? strstr(ysrc, "type: ") : NULL;
+            if (tt) {
+                size_t e = 0;
+                for (const char *c = tt + 6;
+                     e + 1 < sizeof etype0 && *c && *c != '\n' &&
+                     *c != ' ' && *c != '\"'; c++)
+                    etype0[e++] = *c;
+                etype0[e] = 0;
+            }
+        }
+        if (!etype0[0]) {
+            res.status = 500;
+            res.set_content(
+                "{\"error\":\"card compose: no engine type resolved for model "
+                "(card-path yaml missing 'type:')\"}", "application/json");
+            return;
+        }
+        int ph1 = runner_card_compose(g_server_runner, etype0, body,
+                                      model, "", NULL, NULL, 0,
+                                      card_extra, sizeof card_extra);
+        if (ph1 == 0 && card_extra[0])
+            tl_nw = strstr(card_extra, "\"prompt\"") ? 1 : 0;  /* marker */
+        if (ph1 < 0) {
+            /* plugin supplied the message: relay verbatim.
+             * -2..-6 = the card's fault (400); -1/-7 = infra (500). */
+            const char *e = strstr(card_extra, "\"error\":\"");
+            if (e) {
+                e += 9;
+                char m[512]; size_t ml = 0;
+                while (*e && *e != '"' && ml < sizeof m - 1)
+                    m[ml++] = *e++;
+                m[ml] = 0;
+                if (ml) {
+                    char out[600];
+                    snprintf(out, sizeof out, "{\"error\":\"%s\"}", m);
+                    res.status = (ph1 <= -2 && ph1 >= -6)
+                                     ? 400 : 500;
+                    res.set_content(out, "application/json");
+                    return;
+                }
+            }
+            res.status = 500;
+            res.set_content("{\"error\":\"card compose failed (plugin hook)\"}",
+                            "application/json");
+            return;
+        }
+        if (tl_nw > 0) {
+            /* window prompts live in card_extra: register inputs (the
+             * generic "prompt" input is seeded at registration from the
+             * body; prompt1 here is the compile's first window text,
+             * used as the prompt default when the body named none). */
+            char pv[4200];
+            const char *e = strstr(card_extra, "\"prompt\":\"");
+            if (e && !prompt[0]) {
+                e += 9; size_t pl = 0;
+                while (*e && *e != '"' && pl + 1 < sizeof pv) {
+                    if (*e == '\\' && e[1]) {
+                        e++;
+                        if (*e == 'n') pv[pl++] = ' ';
+                        else if (*e == '"') pv[pl++] = '"';
+                        else pv[pl++] = *e;
+                        e++;
+                    } else pv[pl++] = *e++;
+                }
+                pv[pl] = 0;
+                if (pl) snprintf(prompt, sizeof prompt, "%s", pv);
+            }
+        }
+    }
+    if (!prompt[0]) {
+        res.status = 400;
+        res.set_content("{\"error\":\"missing prompt\"}", "application/json");
+        return;
+    }
+
     /* (2026-08-30 CARD LAW, operator order, 2026-08-31 MOVED after
      * model resolution so {model} requests get yaml_override set first)
      * a timeline-graph run without its card is REJECTED before
@@ -2393,7 +2464,7 @@ static void handle_pipelines_start(const httplib::Request &req,
                         if (ml) snprintf(out, sizeof out,
                                          "{\"error\":\"%s\"}", m);
                     }
-                    res.status = (ph1 == -2 || ph1 == -3 || ph1 == -4)
+                    res.status = (ph1 <= -2 && ph1 >= -6)
                                      ? 400 : 500;
                     res.set_content(out, "application/json");
                     return;
@@ -3494,7 +3565,9 @@ static void handle_pipelines_drafts(const httplib::Request &req,
          * extracts calls/fps/seed/context_length itself). We don't need
          * to reconstruct anything — just tell it "run this draft."
          * The prompt field is mandatory (line 1999 generic gate) — it
-         * becomes the run's prompt_name tag; value is cosmetic. */
+         * labels the run in the queue + media surfaces. Use the draft's
+         * INTENT (what the agent composed) so the media bar shows the
+         * piece's name, not the machinery label. */
         /* Auto-arm uses {model} path (card compose), NOT {yaml} (pipeline).
          * The model is read from the card's tool.json. */
         char auto_model[128] = "";
@@ -3531,11 +3604,38 @@ static void handle_pipelines_drafts(const httplib::Request &req,
             if (!auto_model[0])
                 snprintf(auto_model, sizeof(auto_model), "h3-timeline");
         }
-        char card_body[512];
+        /* the run label: the draft's intent, JSON-unescaped, capped. The
+         * prompt law (start handler) keeps this from ever reaching a
+         * window — the first call's text always wins — so this is purely
+         * the name the queue, sidecar, and media bar display. */
+        char auto_prompt[256] = "lane-auto-arm";
+        {
+            const char *ip = strstr(doc.c_str(), "\"intent\":\"");
+            if (ip) {
+                ip += 10;
+                char pv[256]; size_t pl = 0;
+                while (*ip && *ip != '"' && pl + 1 < sizeof pv) {
+                    if (*ip == '\\' && ip[1]) {
+                        ip++;
+                        if (*ip == 'n') pv[pl++] = ' ';
+                        else if (*ip == '"') pv[pl++] = '"';
+                        else pv[pl++] = *ip;
+                        ip++;
+                    } else {
+                        pv[pl++] = *ip++;
+                    }
+                }
+                pv[pl] = 0;
+                if (pl) snprintf(auto_prompt, sizeof auto_prompt, "%s", pv);
+            }
+        }
+        char card_body[640];
+        char *qp = json_quote(auto_prompt);
         snprintf(card_body, sizeof(card_body),
                  "{\"model\":\"%s\",\"draft_id\":\"%s\","
-                 "\"prompt\":\"lane-auto-arm\"}",
-                 auto_model, as->draft_id);
+                 "\"prompt\":%s}",
+                 auto_model, as->draft_id, qp ? qp : "\"lane-auto-arm\"");
+        free(qp);
 
         /* loopback start — server-originated queue action */
         httplib::Client cli(g_loop_host, g_loop_port);
