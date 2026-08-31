@@ -75,6 +75,7 @@ inference_plugin *plugin_load(const char *so_path) {
 
 const char *plugin_type_id(const inference_plugin *p)  { return p->type_id(); }
 const char *plugin_version(const inference_plugin *p)  { return p->version(); }
+const char *plugin_so_path(const inference_plugin *p)   { return p ? p->path : NULL; }
 inference_schema plugin_schema(const inference_plugin *p) { return p->schema(); }
 
 int plugin_load_model(const inference_plugin *p,

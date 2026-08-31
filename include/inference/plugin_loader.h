@@ -16,6 +16,7 @@ inference_plugin *plugin_load(const char *so_path);
 /* Query a loaded plugin */
 const char *plugin_type_id(const inference_plugin *p);
 const char *plugin_version(const inference_plugin *p);
+const char *plugin_so_path(const inference_plugin *p);
 inference_schema plugin_schema(const inference_plugin *p);
 
 /* Lifecycle */

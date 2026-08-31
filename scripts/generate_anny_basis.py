@@ -216,7 +216,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generate ANNY shape basis file')
     parser.add_argument('--shapes', type=int, default=64, help='Number of shape basis vectors')
     parser.add_argument('--vertices', type=int, default=13380, help='Number of vertices')
-    parser.add_argument('--output', type=str, default='data/anny_shape_basis.bin', help='Output path')
+    parser.add_argument('--output', type=str, default='plugins/anny/data/anny_shape_basis.bin', help='Output path')
     args = parser.parse_args()
 
     os.makedirs(os.path.dirname(args.output) or '.', exist_ok=True)

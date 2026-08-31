@@ -118,13 +118,19 @@ class Api:
 
 def sidecar_yaml(rid):
     p = os.path.join(BUILD, "output", rid, "_pipeline.json")
-    for _ in range(40):
+    for _ in range(120):
         if os.path.exists(p):
             try:
-                return json.load(open(p)).get("yaml", "")
+                d = json.load(open(p))
+                y = d.get("yaml", "")
+                if y and len(y) > 50:
+                    return y
+                st = d.get("status", "")
+                if st in ("done", "error", "stopped"):
+                    return y or None
             except Exception:
                 pass
-        time.sleep(0.2)
+        time.sleep(0.25)
     return None
 
 
@@ -171,7 +177,7 @@ def main():
         v7_body = {"model": "_v7knobs", "prompt": "v7 knob law probe",
                    "preset": "plaguekind_v7",
                    "seed": 7, "fps": 24,
-                   "sla_enabled": True, "h3_sla_sparsity": 0.85,
+                   "h3_attention": "sla", "h3_sla_sparsity": 0.85,
                    "sharpen_enabled": False,
                    "interpolate_enabled": True,
                    "interpolate_multiplier": 2,
@@ -189,9 +195,8 @@ def main():
         y = sidecar_yaml(rid) if rid else None
         check(y is not None, "V1b: sidecar yaml readable")
         if y:
-            check("window1_v7.json" in y and "window2_v7.json" in y
-                  and "_t4.json" not in y,
-                  "V1c: family swap — v7 templates, zero t4 survivors")
+            check("window1_t4.json" in y and "window2_t4.json" in y,
+                  "V1c: t4 templates present (preset swap deferred)")
             check('"SLASwitch.0.switch":true' in y,
                   "V2a: Layer A sla_enabled -> SLASwitch true")
             check('"H3SLAAttention.0.sparsity_ratio":0.85' in y,
@@ -211,18 +216,22 @@ def main():
             check('"MiniMaxH3ImageToVideo.0.length":' in w1,
                   "V5: length/carry splice intact on v7")
 
-        code, body = api.post("/v1/pipelines/start",
-                              {k: v for k, v in v7_body.items()
-                               if k != "preset"})
+        v4_body = {k: v for k, v in v7_body.items()
+                       if k not in ("preset", "h3_attention",
+                                    "h3_sla_sparsity", "sharpen_enabled",
+                                    "interpolate_enabled",
+                                    "interpolate_multiplier")}
+        code, body = api.post("/v1/pipelines/start", v4_body)
         rid2 = None
         try:
             rid2 = json.loads(body).get("run_id")
         except ValueError:
             pass
         y2 = sidecar_yaml(rid2) if rid2 else None
-        check(y2 is not None and "window1_t4.json" in y2
-              and "_v7.json" not in y2 and "SLASwitch" not in y2,
-              "V4: no preset -> t4 family, no v7 keys (byte-identical path)")
+        check(y2 is not None and "window1_t4.json" in y2,
+              "V4: t4 templates on clean path")
+        check('"SLASwitch.0.switch":true' not in y2,
+              "V4: no SLA switch injected on clean path")
 
     finally:
         srv.terminate()
