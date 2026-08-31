@@ -179,6 +179,14 @@ if(INFERENCE_BUILD_TESTS)
                  COMMAND ${Python3_EXECUTABLE}
                          ${CMAKE_SOURCE_DIR}/tests/test_card_lifecycle.py)
         set_tests_properties(test_card_lifecycle PROPERTIES TIMEOUT 300)
+        # USER SURFACE layer: the DSH media-sidebar contract — catalog
+        # non-empty on build-cwd boot, pipeline-lane form-spec, the nine
+        # editor registry lanes, fixture runs never listed, every listed
+        # draft opens.
+        add_test(NAME test_user_surface
+                 COMMAND ${Python3_EXECUTABLE}
+                         ${CMAKE_SOURCE_DIR}/tests/test_user_surface.py)
+        set_tests_properties(test_user_surface PROPERTIES TIMEOUT 120)
         # BUNDLE LAW: per-endpoint tool+skill bundles (lane doors,
         # isolation, two-door consistency, api gating). Pure catalog
         # surface - boots inference_cli alone, no engine needed.

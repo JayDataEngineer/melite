@@ -5197,10 +5197,15 @@ static void handle_download_all(const httplib::Request &req,
 /* minimal JSON string-field extraction from a sidecar we wrote ourselves */
 static int sidecar_str(const char *json, const char *key, char *out, size_t cap) {
     char pat[64];
-    snprintf(pat, sizeof(pat), "\"%s\":\"", key);
+    snprintf(pat, sizeof(pat), "\"%s\":", key);
     const char *p = strstr(json, pat);
     if (!p) return -1;
     p += strlen(pat);
+    /* (2026-08-31) tolerate pretty-printed sidecars: skip spaces between
+     * the colon and the opening quote before expecting the value. */
+    while (*p == ' ' || *p == '\t') p++;
+    if (*p != '"') return -1;
+    p++;
     size_t o = 0;
     while (*p && *p != '"' && o + 1 < cap) {
         if (*p == '\\' && p[1]) {
@@ -5537,6 +5542,11 @@ static void handle_pipelines_runs(const httplib::Request &req,
     size_t cap = 16384, len = 0;
     char *out = (char *)malloc(cap);
     len = jappend(&out, &cap, len, "{\"count\":%zu,\"runs\":[", n);
+    /* (2026-08-31) emitted-count drives the row separator: the
+     * underscore-hide filter may skip rows, so a positional i>0 test
+     * emits a leading comma after a skipped first row → unparseable
+     * listing. */
+    size_t emitted = 0;
     for (size_t i = 0; i < n && i < (size_t)limit; i++) {
         char dir[600], sd[640], buf[8192];
         snprintf(dir, sizeof(dir), "./output/%s", ents[i].dir);
@@ -5550,6 +5560,14 @@ static void handle_pipelines_runs(const httplib::Request &req,
             fclose(f);
             buf[got] = 0;
             sidecar_str(buf, "model", model, sizeof(model));
+            /* (user-surface law, 2026-08-31) test-fixture pipelines are
+             * named with a LEADING UNDERSCORE by repo convention
+             * (_lc_ok, _chaos_*, _queue_test, _rc_hold, ...). Their runs
+             * share ./output with real work but must NEVER surface in a
+             * user-facing listing: a leaked test run on top of the media
+             * sidebar buried the user's real cards, and clicking its
+             * deleted draft 404'd ("card does not recover"). */
+            if (model[0] == '_') continue;
             sidecar_str(buf, "prompt", prompt, sizeof(prompt));
             sidecar_str(buf, "status", status, sizeof(status));
             sidecar_str(buf, "draft_id", draft, sizeof(draft));
@@ -5600,8 +5618,9 @@ static void handle_pipelines_runs(const httplib::Request &req,
             "\"status\":\"%s\",\"created_at\":%ld,\"prompt\":%s,"
             "\"seed\":%ld,\"thumbnail\":\"%s\",\"artifacts\":%s,"
             "\"params\":{\"seed\":%ld},\"draft_id\":\"%s\"}",
-            i ? "," : "", ents[i].dir, modelq, modelq, status, created,
+            emitted ? "," : "", ents[i].dir, modelq, modelq, status, created,
             promptq, seed, thumb, arts, seed, draft);
+        emitted++;
         free(arts); free(promptq); free(modelq);
     }
     len = jappend(&out, &cap, len, "]}");
@@ -5816,6 +5835,80 @@ static void handle_card_tools(const httplib::Request &req,
     res.set_content(out, "application/json");
 }
 
+/* (editor lane law, 2026-08-31) The Tech Noir editor (served by the card
+ * deck at /editor) syncs its registries through a fixed set of /v1 lanes.
+ * The deck proxies the WHOLE /v1 prefix here, so every lane the editor
+ * names must answer — a 404 makes the editor's plugin registry sync die
+ * ("registry untouched") and its surfaces render empty. These nine were
+ * missing; each answers with the exact envelope the editor parses
+ * ({entries|panes|uiSlots|themes|tags|services|tools|plugins|forms:[...]}).
+ * Real data where the gateway owns it; empty arrays are VALID registries
+ * (the editor treats them as "nothing registered", never as an error). */
+static void handle_lane_registry(const httplib::Request &req,
+                                 httplib::Response &res) {
+    std::string path = req.path;
+    std::string body;
+    if (path == "/v1/forms") {
+        /* the compose-form list: one entry per lane pipeline, same names
+         * the card tools door already publishes */
+        body = "{\"forms\":[";
+        DIR *[REDACTED 2026-11-05] = opendir("../pipelines");
+        int n = 0;
+        if ([REDACTED 2026-11-05]) {
+            struct dirent *e;
+            while ((e = readdir([REDACTED 2026-11-05])) != NULL) {
+                char p[600];
+                snprintf(p, sizeof(p), "../pipelines/%s/pipeline.yaml",
+                         e->d_name);
+                struct stat st;
+                if (e->d_name[0] == '_' || e->d_name[0] == '.'
+                        || stat(p, &st) != 0)
+                    continue;
+                char safe[256];
+                snprintf(safe, sizeof(safe), "%s", e->d_name);
+                for (char *c = safe; *c; c++)
+                    if ((unsigned char)*c < 0x20 || *c == '"' || *c == '\\')
+                        *c = '_';
+                body += (n ? "," : "");
+                body += "{\"id\":\"" + std::string(safe)
+                      + "\",\"name\":\"" + std::string(safe) + "\"}";
+                n++;
+            }
+            closedir([REDACTED 2026-11-05]);
+        }
+        body += "]}";
+    } else if (path == "/v1/shell") {
+        body = "{\"entries\":[]}";
+    } else if (path == "/v1/right-panes") {
+        body = "{\"panes\":[]}";
+    } else if (path == "/v1/ui-slots") {
+        body = "{\"uiSlots\":[]}";
+    } else if (path == "/v1/themes") {
+        body = "{\"themes\":[]}";
+    } else if (path == "/v1/tags") {
+        body = "{\"tags\":[]}";
+    } else if (path == "/v1/services") {
+        body = "{\"services\":[]}";
+    } else if (path == "/v1/tools") {
+        body = "{\"tools\":[]}";
+    } else if (path == "/v1/plugins") {
+        body = "{\"plugins\":[]}";
+    } else if (path == "/v1/llm/keys/active") {
+        /* the LLM lane lives in DSH, not this gateway: report no active
+         * key so the editor falls back to its embed banner instead of
+         * erroring the sync loop */
+        body = "{\"key\":null,\"error\":\"no_active_key\"}";
+    } else if (path == "/v1/llm/health") {
+        body = "{\"connected\":false}";
+    } else {
+        res.status = 404;
+        res.set_content("{\"error\":\"not_found\"}", "application/json");
+        return;
+    }
+    res.set_header("Cache-Control", "no-store");
+    res.set_content(body, "application/json");
+}
+
 static void handle_form_spec(const httplib::Request &req,
                              httplib::Response &res) {
     if (!g_catalog) {
@@ -5846,6 +5939,21 @@ static void handle_form_spec(const httplib::Request &req,
                   (c >= '0' && c <= '9') || c == '_' || c == '-')) safe = 0;
         }
         if (safe) {
+            /* (2026-08-31 lane-spec law) the editor also asks form-specs
+             * for PIPELINE LANE names (h3-timeline, …) — card lanes, not
+             * catalog models. A lane with pipelines/<name>/pipeline.yaml
+             * on disk gets a minimal valid spec so its card renders;
+             * unknown names still 404. Display wire only. */
+            char lane[300];
+            snprintf(lane, sizeof(lane), "../pipelines/%s/pipeline.yaml",
+                     model.c_str());
+            struct stat lst;
+            if (stat(lane, &lst) == 0) {
+                res.set_content(
+                    "{\"defaults\":{},\"variants\":[],\"features\":{},\"enhance_prompts\":\"\"}",
+                    "application/json");
+                return;
+            }
             char probe[256];
             snprintf(probe, sizeof(probe),
                      "grep -q 'type: %s' ../pipelines/*/pipeline.yaml 2>/dev/null",
@@ -8623,6 +8731,11 @@ inference_server *server_create(int port, const char *bind_addr) {
 
     /* ---- Custom endpoints ---- */
     s->srv.Get("/v1/health",              handle_health);
+    for (const char *lane : {"/v1/forms", "/v1/shell", "/v1/right-panes",
+                             "/v1/ui-slots", "/v1/themes", "/v1/tags",
+                             "/v1/services", "/v1/tools", "/v1/plugins",
+                             "/v1/llm/keys/active", "/v1/llm/health"})
+        s->srv.Get(lane, handle_lane_registry);
     s->srv.Get("/v1/models",             handle_models);
     s->srv.Post("/v1/pipelines",         handle_pipelines);
     s->srv.Post("/v1/pipelines/start",   handle_pipelines_start);
