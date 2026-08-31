@@ -773,6 +773,16 @@ have_model:
               FILE *cap = fopen(cap_path, "r");
               if (cap) { size_t n = fread(r->last_error, 1,
                              sizeof(r->last_error) - 2, cap);
+                         /* (exact-error law) keep the TAIL: the final
+                          * lines carry the diagnosis (the plugin's
+                          * EXECUTION ERROR line), the head is inject
+                          * chatter that starved it before. */
+                         if (n >= sizeof(r->last_error) - 2) {
+                             memmove(r->last_error,
+                                     r->last_error + n - (sizeof(r->last_error) - 3),
+                                     sizeof(r->last_error) - 2);
+                             n = sizeof(r->last_error) - 2;
+                         }
                          r->last_error[n] = 0; fclose(cap); }
               else snprintf(r->last_error, sizeof(r->last_error),
                             "node_execute failed for %s (no capture)", dnode->id);

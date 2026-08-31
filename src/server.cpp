@@ -501,9 +501,15 @@ static void run_stage_cb(void *ctx, const char *node_id,
                      sizeof(g_runs[idx].stages[s].state), "%s", sname);
             if (state == RUNNER_STAGE_ERROR) {
                 const char *err = runner_get_error(g_server_runner);
-                if (err && err[0])
+                if (err && err[0]) {
+                    /* (exact-error law) keep the TAIL — the final line
+                     * is the diagnosis; inject chatter heads get cut. */
+                    size_t el = strlen(err);
+                    size_t keep = sizeof(g_runs[idx].stages[s].error) - 1;
+                    if (el > keep) err += el - keep;
                     snprintf(g_runs[idx].stages[s].error,
                              sizeof(g_runs[idx].stages[s].error), "%s", err);
+                }
             }
             if (state == RUNNER_STAGE_DONE)
                 stage_attribute_artifacts(idx, s);
@@ -2604,7 +2610,7 @@ static void handle_pipelines_start(const httplib::Request &req,
                 if (ml) {
                     char out[600];
                     snprintf(out, sizeof out, "{\"error\":\"%s\"}", m);
-                    res.status = (ph1 <= -2 && ph1 >= -6)
+                    res.status = (ph1 <= -2 && ph1 >= -10)
                                      ? 400 : 500;
                     res.set_content(out, "application/json");
                     return;
@@ -2716,7 +2722,7 @@ static void handle_pipelines_start(const httplib::Request &req,
                         if (ml) snprintf(out, sizeof out,
                                          "{\"error\":\"%s\"}", m);
                     }
-                    res.status = (ph1 <= -2 && ph1 >= -6)
+                    res.status = (ph1 <= -2 && ph1 >= -10)
                                      ? 400 : 500;
                     res.set_content(out, "application/json");
                     return;
