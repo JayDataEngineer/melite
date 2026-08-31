@@ -20,6 +20,12 @@ compile_commands.json
 *.gguf
 *.onnx
 
+# === Pipeline output (artifacts, not source) ===
+data/delivery/
+data/input/
+output/
+productions/
+
 # === Media artifacts (queue output) ===
 *.mp4
 *.mov
@@ -31,8 +37,6 @@ compile_commands.json
 *.jpeg
 *.png
 *.gif
-productions/
-output/
 downloaded_files/
 
 # === Runtime / scratch ===
@@ -47,7 +51,8 @@ __pycache__/
 *.pyc
 
 # === Secrets / credentials ===
-data/llm_keystore.*
+data/llm_keystore.json
+data/llm_keystore.key
 .env
 .env.*
 
@@ -61,9 +66,6 @@ Thumbs.db
 
 # === Logs ===
 *.log
-
-# === Infra: ComfyUI nodes (installed, not authored) ===
-infra/comfyui/nodes/
 
 # === Archives ===
 *.tar.gz
