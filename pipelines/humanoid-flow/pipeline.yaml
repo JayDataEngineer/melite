@@ -4,9 +4,10 @@ description: "Humanoid character pipeline — ANNY body sculpt → SOMAX rig →
 
 steps:
   - id: body
-    type: anny
+    type: script
+    script: build_anny_person.py
     plugin: anny
-    description: "Define character shape via ANNY phenotype sliders"
+    description: "Sculpt character mesh via ANNY Body Studio (build_anny_person.py: POST /poser/skin/mesh → /poser/skin/bind_pose → bare GLB)"
 
   - id: rig
     type: somax
