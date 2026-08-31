@@ -3256,28 +3256,77 @@ static void handle_pipelines_start(const httplib::Request &req,
                     g_runs[idx].run_id, rid_draft);
         } else if (strstr(req.body.c_str(), "\"calls\"")) {
             /* (card-is-the-run-definition law, 2026-09-01) a
-             * direct-calls card run CARRIES its own card: the request
-             * body IS the card document. Persist it as a PER-RUN draft
-             * (unique id = run_id) so replay, write-back and the UI
-             * wand linkage work 1:1 for every run — this is NOT the
-             * deleted shared-draft fallback (which bound ALL runs to
-             * one draft and bled artifacts across them); each run gets
-             * its own file holding its own bytes. */
+             * direct-calls card run CARRIES its own card: persist a
+             * CANONICAL draft (the BackendDraft schema the editor's
+             * hydrateDraft parses — draft_id/intent/stages/status, with
+             * the body's params verbatim inside stages[0].params) so
+             * the run is RECOVERABLE 1:1 from the runs list / wand:
+             * the editor opens ?meliteCards=<run_id> and the card
+             * comes up with every call + knob. A raw body here would
+             * hydrate to an EMPTY card (no stages) — the exact
+             * "card does not come up" failure. The stage shape also
+             * arms draft_writeback: it seeds run results (films) into
+             * stages[0] on completion. NOT the deleted shared-draft
+             * fallback — one unique file per run, its own bytes. */
             const char *parse_end = NULL;
-            cJSON *chk = cJSON_ParseWithOpts(req.body.c_str(),
-                                             &parse_end, 1);
-            if (chk) {
+            cJSON *bodyj = cJSON_ParseWithOpts(req.body.c_str(),
+                                               &parse_end, 1);
+            if (!bodyj) {
+                fprintf(stderr,
+                        "[draft] run %s: body carries calls but is not "
+                        "valid JSON - NOT persisted as a card (replay "
+                        "unavailable; byte %ld)\n",
+                        g_runs[idx].run_id,
+                        parse_end
+                            ? (long)(parse_end - req.body.c_str()) : -1L);
+            } else {
+                const char *prompt = "", *model = "";
+                cJSON *jpr = cJSON_GetObjectItem(bodyj, "prompt");
+                cJSON *jmo = cJSON_GetObjectItem(bodyj, "model");
+                cJSON *jpa = cJSON_GetObjectItem(bodyj, "params");
+                if (cJSON_IsString(jpr)) prompt = jpr->valuestring;
+                if (cJSON_IsString(jmo)) model = jmo->valuestring;
+                if (!jpa || !cJSON_IsObject(jpa)) jpa = NULL;
+                /* assemble the canonical BackendDraft with cJSON — no
+                 * manual string escaping anywhere (a quote inside the
+                 * prompt must never corrupt the doc) */
+                cJSON *stage = cJSON_CreateObject();
+                cJSON_AddStringToObject(stage, "id", "compose");
+                cJSON_AddStringToObject(stage, "title", prompt);
+                cJSON_AddStringToObject(stage, "kind", "card");
+                cJSON_AddStringToObject(stage, "service", model);
+                cJSON_AddItemToObject(stage, "params",
+                                      jpa ? cJSON_Duplicate(jpa, 1)
+                                          : cJSON_CreateObject());
+                cJSON_AddItemToObject(stage, "inputs",
+                                      cJSON_CreateArray());
+                cJSON_AddStringToObject(stage, "provenance",
+                                        "run-recovery");
+                cJSON *doc = cJSON_CreateObject();
+                cJSON_AddStringToObject(doc, "draft_id",
+                                         g_runs[idx].run_id);
+                cJSON_AddStringToObject(doc, "intent", prompt);
+                cJSON *stages = cJSON_CreateArray();
+                cJSON_AddItemToArray(stages, stage);
+                cJSON_AddItemToObject(doc, "stages", stages);
+                cJSON_AddStringToObject(doc, "status", "ready");
+                char *outj = cJSON_PrintUnformatted(doc);
+                cJSON_Delete(doc);
                 char dpath[300], dtmp[320];
                 snprintf(dpath, sizeof dpath, "./drafts/%s.json",
                          g_runs[idx].run_id);
                 snprintf(dtmp, sizeof dtmp, "%s.tmp", dpath);
                 FILE *df = fopen(dtmp, "wb");
                 int wok = 0;
-                if (df) {
-                    size_t bl = req.body.size();
-                    wok = fwrite(req.body.c_str(), 1, bl, df) == bl;
+                if (df && outj) {
+                    size_t ol = strlen(outj);
+                    wok = fwrite(outj, 1, ol, df) == ol &&
+                          fwrite("\n", 1, 1, df) == 1;
                     wok = (fclose(df) == 0) && wok;
+                } else if (df) {
+                    fclose(df);
                 }
+                if (outj) cJSON_free(outj);
                 if (wok) {
                     rename(dtmp, dpath);
                     snprintf(g_runs[idx].draft_id,
@@ -3286,7 +3335,7 @@ static void handle_pipelines_start(const httplib::Request &req,
                     g_runs[idx].draft_stage = 0;
                     fprintf(stderr,
                             "[draft] run %s persisted its own card "
-                            "(direct calls) -> %s\n",
+                            "(direct calls, canonical schema) -> %s\n",
                             g_runs[idx].run_id, dpath);
                 } else {
                     unlink(dtmp);
@@ -3295,15 +3344,7 @@ static void handle_pipelines_start(const httplib::Request &req,
                             "- replay via draft unavailable\n",
                             g_runs[idx].run_id, dpath);
                 }
-                cJSON_Delete(chk);
-            } else {
-                fprintf(stderr,
-                        "[draft] run %s: body carries calls but is not "
-                        "valid JSON - NOT persisted as a card (replay "
-                        "unavailable; byte %ld)\n",
-                        g_runs[idx].run_id,
-                        parse_end
-                            ? (long)(parse_end - req.body.c_str()) : -1L);
+                cJSON_Delete(bodyj);
             }
         }
     }

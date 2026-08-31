@@ -216,6 +216,14 @@ if(INFERENCE_BUILD_TESTS)
         # disk has drifted (sharpen knobs dead there — dotted group
         # targets unresolved) and is unreachable data; audit polices the
         # LIVE surface. Fix or delete v7 before auditing it too.
+        # CARD RECOVERY CONTRACT: every direct-calls run leaves a draft
+        # the editor hydrates 1:1 (canonical BackendDraft schema), and
+        # completion seeds run results into that same stage — the
+        # recoverable-artifact law (operator order 2026-09-01).
+        add_test(NAME test_card_recovery
+                 COMMAND ${Python3_EXECUTABLE}
+                         ${CMAKE_SOURCE_DIR}/tests/test_card_recovery.py)
+        set_tests_properties(test_card_recovery PROPERTIES TIMEOUT 420)
         add_test(NAME test_layer_audit
                  COMMAND ${Python3_EXECUTABLE}
                          ${CMAKE_SOURCE_DIR}/tools/layer_audit.py --t4-only)
