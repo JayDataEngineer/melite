@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
-# inference.cpp — One-shot bootstrap from a clean git clone.
-# Usage: ./setup.sh [--server] [--comfyui] [--provision]
+# inference.cpp — Unified bootstrap. One path, one truth.
+#
+# Reads all plugin declarations (nodes.yaml + model.yaml + CMakeLists.txt)
+# and installs everything. Docker and bare metal call the same script.
+#
+# Usage:
+#   ./setup.sh                    # everything
+#   ./setup.sh --server           # C++ server only
+#   ./setup.sh --extensions       # ComfyUI extensions only
+#   ./setup.sh --models           # model downloads only
+#   ./setup.sh --server --extensions --models  # explicit all
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 cd "$HERE"
@@ -10,28 +19,26 @@ info()  { echo -e "${GREEN}[setup]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[setup]${NC} $*"; }
 error() { echo -e "${RED}[setup]${NC} $*" >&2; exit 1; }
 
-DO_SERVER=true; DO_COMFYUI=true; DO_PROVISION=false
+# ── Flags ──────────────────────────────────────────────────────────
+DO_SERVER=false; DO_EXT=false; DO_MODELS=false; DO_ALL=true
 for arg in "$@"; do
   case "$arg" in
-    --server)    DO_COMFYUI=false ;;
-    --comfyui)   DO_SERVER=false ;;
-    --provision) DO_PROVISION=true ;;
-    --help|-h)   echo "Usage: $0 [--server] [--comfyui] [--provision]"; exit 0 ;;
+    --server)      DO_SERVER=true; DO_ALL=false ;;
+    --extensions)  DO_EXT=true; DO_ALL=false ;;
+    --models)      DO_MODELS=true; DO_ALL=false ;;
+    --help|-h)     echo "Usage: $0 [--server] [--extensions] [--models]"; exit 0 ;;
     *) error "Unknown flag: $arg" ;;
   esac
 done
+if $DO_ALL; then
+  DO_SERVER=true; DO_EXT=true; DO_MODELS=true
+fi
 
-# --- 1. Submodules ---
+# ── 1. Submodules ──────────────────────────────────────────────────
 info "Ensuring git submodules..."
 git submodule update --init --recursive 2>/dev/null || warn "Submodule update failed"
 
-# --- 2. Custom nodes check ---
-if [ ! -d custom_nodes/melite-audio-nodes ]; then
-  error "custom_nodes not found. Run: git clone --recursive <repo>"
-fi
-info "Custom nodes: $(ls -d custom_nodes/*/ | wc -l) packs present"
-
-# --- 3. C++ server build ---
+# ── 2. C++ server build ───────────────────────────────────────────
 if $DO_SERVER; then
   info "Building inference.cpp server..."
   CUDA_FLAG=""
@@ -46,21 +53,136 @@ if $DO_SERVER; then
   info "Server binary: build/inference_cli"
 fi
 
-# --- 4. ComfyUI setup (delegates to infra/comfyui/bootstrap.sh) ---
-if $DO_COMFYUI; then
-  info "ComfyUI setup (core @pin + lane SSOT + models)..."
-  bash "$HERE/infra/comfyui/bootstrap.sh" --core || error "bootstrap --core failed (see bootstrap output)"
-  bash "$HERE/infra/comfyui/bootstrap.sh" --lane || error "bootstrap --lane failed (see bootstrap output)"
-  bash "$HERE/infra/comfyui/bootstrap.sh" --models || error "bootstrap --models failed (see bootstrap output)"
-  info "  ComfyUI lane ready (core + $(grep -c 'name:' plugins/comfyui/nodes/extensions.yaml) declared packs + lane models)"
+# ── 3. ComfyUI extensions ─────────────────────────────────────────
+if $DO_EXT; then
+  COMFYUI_DIR="${COMFYUI_DIR:-/opt/ComfyUI}"
+  CUSTOM_NODES="$COMFYUI_DIR/custom_nodes"
+  VENV_PYTHON="$COMFYUI_DIR/.venv/bin/python"
+
+  if [ ! -d "$COMFYUI_DIR" ]; then
+    warn "ComfyUI dir $COMFYUI_DIR not found — skipping extensions"
+  else
+    info "Merging plugin extensions..."
+    MERGED=$(python3 "$HERE/infra/extension_lane.py" --repo "$HERE" 2>&1) \
+      || error "extension_lane.py failed"
+
+    # Parse merged YAML — extract required extensions
+    EXTS=$(echo "$MERGED" | python3 -c "
+import sys, yaml
+data = yaml.safe_load(sys.stdin.read())
+exts = data.get('extensions', [])
+for e in exts:
+    if e.get('required', False):
+        name = e['name']
+        url = e.get('url', '')
+        ref = e.get('ref', '')
+        pip_deps = e.get('pip', [])
+        print(f'{name}|{url}|{ref}|{\";\".join(pip_deps)}')
+" 2>/dev/null) || error "Failed to parse merged extensions"
+
+    INSTALLED=0; SKIPPED=0; FAILED=0
+    while IFS='|' read -r name url ref pip_deps; do
+      [ -z "$name" ] && continue
+      DEST="$CUSTOM_NODES/$name"
+
+      # In-tree packs (no url) — skip clone, just verify
+      if [ -z "$url" ]; then
+        if [ -d "$DEST" ]; then
+          info "  [OK] $name (in-tree)"
+          ((SKIPPED++))
+        else
+          warn "  [MISSING] $name (in-tree, no url)"
+          ((FAILED++))
+        fi
+        continue
+      fi
+
+      # Already present
+      if [ -d "$DEST" ]; then
+        info "  [SKIP] $name (exists)"
+        ((SKIPPED++))
+        continue
+      fi
+
+      # Clone
+      info "  [CLONE] $name ..."
+      flags="--depth 1"
+      [ -n "$ref" ] && flags="$flags --branch $ref"
+      if git clone $flags "$url" "$DEST" 2>&1 | tail -1; then
+        info "  [OK] $name"
+        ((INSTALLED++))
+      else
+        warn "  [FAIL] $name"
+        ((FAILED++))
+        continue
+      fi
+
+      # Pip deps
+      if [ -n "$pip_deps" ] && [ -f "$DEST/requirements.txt" ]; then
+        IFS=';' read -ra DEPS <<< "$pip_deps"
+        for dep in "${DEPS[@]}"; do
+          [ -z "$dep" ] && continue
+          "$VENV_PYTHON" -m pip install -q "$dep" 2>/dev/null \
+            && info "    pip: $dep" || warn "    pip: $dep (failed)"
+        done
+      fi
+    done <<< "$EXTS"
+
+    info "Extensions: $INSTALLED installed, $SKIPPED skipped, $FAILED failed"
+  fi
 fi
 
-# --- 5. Model provisioning ---
-if $DO_PROVISION; then
-  info "Model provisioning: use POST /v1/models/provision after servers are running"
+# ── 4. Model downloads ────────────────────────────────────────────
+if $DO_MODELS; then
+  info "Model provisioning..."
+  # Walk all model.yaml provisions and download missing files
+  python3 -c "
+import glob, os, sys, yaml, subprocess, hashlib
+
+repo = '$HERE'
+comfyui_root = os.environ.get('COMFYUI_DIR', '/opt/ComfyUI')
+pattern = os.path.join(repo, 'plugins', '*', 'models', '**', 'model.yaml')
+downloaded = 0; skipped = 0; failed = 0
+
+for path in sorted(glob.glob(pattern, recursive=True)):
+    with open(path) as f:
+        cfg = yaml.safe_load(f) or {}
+    fam = cfg.get('family') or {}
+    provisions = fam.get('provisions') or cfg.get('provisions') or []
+    for p in provisions:
+        name = p.get('name', '')
+        url = p.get('url', '')
+        sha = p.get('sha256', '')
+        sub = (p.get('dest') or {}).get('sub', '')
+        if not url or not name:
+            continue
+        dest = os.path.join(comfyui_root, 'models', sub, name) if sub else \
+               os.path.join(comfyui_root, 'models', name)
+        if os.path.exists(dest):
+            skipped += 1
+            continue
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        print(f'  [DL] {name} -> models/{sub}/', flush=True)
+        try:
+            subprocess.run(['curl', '-sL', '--retry', '3', '--retry-delay', '5',
+                           '-o', dest, url], check=True, timeout=600)
+            if sha:
+                h = hashlib.sha256(open(dest, 'rb').read()).hexdigest()
+                if h != sha:
+                    print(f'  [FAIL] {name}: sha256 mismatch', file=sys.stderr)
+                    os.remove(dest)
+                    failed += 1
+                    continue
+            downloaded += 1
+        except Exception as e:
+            print(f'  [FAIL] {name}: {e}', file=sys.stderr)
+            failed += 1
+
+print(f'Models: {downloaded} downloaded, {skipped} skipped, {failed} failed')
+" || warn "Model download encountered errors"
 fi
 
-# --- 6. Done ---
+# ── 5. Done ────────────────────────────────────────────────────────
 info "=========================================="
 info "Setup complete!"
 info "=========================================="
