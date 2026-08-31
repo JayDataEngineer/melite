@@ -137,6 +137,28 @@ int runner_schema_for_type(inference_runner *r, const char *type_id,
     return rc;
 }
 
+/* (PLUGIN ARCHITECTURE LAW, 2026-08-31) card-compose dispatch: hand the
+ * CARD's own semantics to the plugin that owns the lane's engine type.
+ * The plugin rewrites the run graph in place (Layer A globals / Layer B
+ * per-call overrides from the card's plugin-owned knob map). Absent
+ * hook = no card semantics: plain run, no-op. The server NEVER names a
+ * lane or an engine — it passes the graph's own node type through. */
+int runner_card_compose(inference_runner *r, const char *type_id,
+                        const char *body, const char *model,
+                        const char *run_id, char *yaml, size_t cap,
+                        const char *prior_tail, char *extra_json,
+                        size_t extra_cap) {
+    if (!r || !type_id) return -1;
+    const char *path = find_plugin_path(r, type_id);
+    if (!path) return -1;
+    inference_plugin *p = plugin_load(path);
+    if (!p) return -1;
+    int rc = plugin_card_compose(p, body, model, run_id, yaml, cap,
+                                 prior_tail, extra_json, extra_cap);
+    plugin_unload(p);
+    return rc;
+}
+
 /* Build a config JSON by merging node model + params */
 static char *build_config(const dag_node *node) {
     /* If params_json already contains everything, use it */

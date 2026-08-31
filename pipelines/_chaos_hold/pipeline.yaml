@@ -1,0 +1,6 @@
+name: _chaos_hold
+description: "queue chaos fixture _chaos_hold"
+nodes:
+  - id: generate
+    type: comfyui
+    params: {"server_url":"http://127.0.0.1:39965/hold","workflow_file":"../pipelines/krea-txt2img/workflow.json","out_dir":"./output","timeout_s":6,"inject":{"CLIPTextEncode.0.text":"$prompt"}}

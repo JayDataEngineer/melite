@@ -101,6 +101,14 @@ inference_vram *runner_get_vram(inference_runner *r);
 void runner_destroy(inference_runner *r);
 
 #ifdef __cplusplus
+/* (PLUGIN ARCHITECTURE LAW, 2026-08-31) dispatch the card's compose
+ * semantics to the plugin owning the lane's engine type; no-op when the
+ * plugin exports no card_compose hook. */
+int runner_card_compose(inference_runner *r, const char *type_id,
+                        const char *body, const char *model,
+                        const char *run_id, char *yaml, size_t cap,
+                        const char *prior_tail, char *extra_json,
+                        size_t extra_cap);
 }
 #endif
 

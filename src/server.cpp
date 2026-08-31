@@ -645,419 +645,6 @@ static char *pipeline_yaml_for_model(const char *model, char *out, size_t cap) {
     return pipeline_yaml_for_model_ex(model, NULL, out, cap);
 }
 
-/* ── Timeline studio calls compile ─────────────────────────────────────
- * The video-timeline card body carries calls:[{text, beats:[{text, ...}]}]
- * instead of a flat prompt. Studio law: the compiler cuts windows at CALL
- * boundaries — each call becomes ONE window prompt (its beats joined, or
- * the call text alone). Feeds the prompt..prompt4 wire the multi-window
- * engine already speaks. Returns window count (0..4). */
-/* (audit F2, 2026-08-29) was global g_tl_wins/g_tl_nw — two concurrent
- * POSTs could cross-wire their window prompts. Now compiled into a
- * LOCAL array at the registration call site and passed as a parameter. */
-
-/* ── (2026-08-31 GRID LAW / 2026-08-30 LATENT-CHAIN LAW) ────────────
- * H3 snaps every clip length UP to the 17k+5 frame grid (5,22,39,56,
- * 73,90,107,124... — align_frame_count, ComfyUI nodes_minimax_h3.py).
- * The exterminated motion-context pack is GONE: seams are TRUE latent
- * chains now (RayH3SaveLatentTail -> RayH3ChainLatentAV, in-tree pack
- * plugins/comfyui/custom_nodes/melite-h3-motion-nodes). Each seam
- * window splices the previous window's SAMPLED latent tail
- * (carry_latent_frames slots) into its head — bit-exact carry — and
- * REGENERATES those frames as its decoded head. Zero-skip tiling
- * therefore REQUIRES the concat to trim EXACTLY carried_pixel_frames
- * off each seam window's head and to deliver the whole remainder:
- *     tile = sampled - carried_px   (seam windows, n > 0; 17k multiple)
- *     tile = sampled                (window 1, no carry)
- * A tail span-cut below sampled - carried_px would skip motion (the
- * next carry comes from the SAMPLED tail, past the cut) — never do it.
- * The chain node writes <tail>.meta.json with the exact numbers; the
- * plan math below mirrors _carried_pixel_frames() in h3_chain.py and
- * a mismatch is a hard error at the stitch. */
-static int tl_snap_grid(int n, int resid) {
-    int k = (n - resid + 8) / 17;      /* nearest k */
-    int v = 17 * k + resid;
-    return v < resid ? resid : v;
-}
-
-/* grid math mirrors h3_chain.py (_video_latent_t / _carried_pixel_frames):
- * video latent slots for a sampled frame count; pixel frames covered by
- * the LAST carry slots of a window with total_slots slots. */
-static int tl_slots_for(int frames) {
-    return frames <= 5 ? 2 : ((frames - 5) / 17) * 5 + 2;
-}
-static int tl_carried_px(int carry, int total_slots) {
-    if (total_slots <= 2 || carry >= total_slots)
-        return total_slots == 2 ? 5 : 5 + (total_slots - 2) * 17 / 5;
-    int head = carry < 2 ? carry : 2;
-    int tail = carry - head;
-    return head * 5 / 2 + tail * 17 / 5;
-}
-
-/* The seam carry is the RayH3ChainLatentAV carry_latent_frames WIDGET in
- * the seam template — the single source of truth, never a hardcoded 6
- * (queue-lane law: no hardcodes). Read once, cached.
- * -1 = graph unreadable (start door rejects loudly). */
-static int tl_scan_carry(const char *body, char *out, size_t outsz);
-static int tl_carry_cache = -2;   /* -2 unloaded, -1 error, >=0 slots */
-static pthread_mutex_t tl_carry_mu = PTHREAD_MUTEX_INITIALIZER;
-static int tl_carry_default(void) {
-    pthread_mutex_lock(&tl_carry_mu);
-    if (tl_carry_cache == -2) {
-        tl_carry_cache = -1;
-        static const char *paths[] = {
-            "../pipelines/h3-timeline/window2_t4.json",
-            "pipelines/h3-timeline/window2_t4.json",
-        };
-        for (size_t pi = 0; pi < 2 && tl_carry_cache < 0; pi++) {
-            FILE *f = fopen(paths[pi], "rb");
-            if (!f) continue;
-            char buf[16384];
-            size_t r = fread(buf, 1, sizeof(buf) - 1, f);
-            fclose(f); buf[r] = 0;
-            char *ch = strstr(buf, "\"RayH3ChainLatentAV.0\"");
-            if (!ch) continue;
-            char *cl = strstr(ch, "\"carry_latent_frames\"");
-            if (!cl) continue;
-            /* INT widget — scan past the colon for the number */
-            char cv[32];
-            if (tl_scan_carry(cl, cv, sizeof cv)) {
-                int v = atoi(cv);
-                if (v >= 1 && v <= 64) tl_carry_cache = v;
-            }
-        }
-    }
-    int v = tl_carry_cache;
-    pthread_mutex_unlock(&tl_carry_mu);
-    return v;
-}
-
-/* Card-level carry_latent_frames override (latent TAIL SLOTS, 1..64 —
- * the node's own range; 6 slots ≈ 18px ≈ 0.75s at the default widget).
- * Accepts "6" or 6. */
-static int tl_scan_carry(const char *body, char *out, size_t outsz) {
-    out[0] = 0;
-    if (!body) return 0;
-    const char *k = strstr(body, "\"carry_latent_frames\"");
-    if (!k) return 0;
-    const char *v = k + strlen("\"carry_latent_frames\"");
-    while (*v == ' ' || *v == '\t' || *v == '\n' || *v == '\r') v++;
-    if (*v != ':') return 0;
-    v++;
-    while (*v == ' ' || *v == '\t' || *v == '\n' || *v == '\r') v++;
-    if (*v == '"') {
-        v++;
-        size_t o = 0;
-        while (*v && *v != '"' && o + 1 < outsz) out[o++] = *v++;
-        out[o] = 0;
-    } else {
-        snprintf(out, outsz, "%d", atoi(v));
-    }
-    return out[0] != 0;
-}
-
-#define TL_MAX_WINDOWS 128   /* N-window law: ONE card = N calls = ONE run.
-                               * Buffer-derived engineering bound (128KB run
-                               * yaml), stated loudly — never a product cap
-                               * on film length. 128 calls ~ 7.5 min film. */
-
-/* (N-window law, 2026-08-31) ONE card = N calls = ONE run. The static
- * pipeline.yaml ships 4 window stages; this expands the run graph
- * in-place to nw windows by cloning the window2 seam prototype: clone k
- * gets a unique stage id, its own prompt inject key ($promptK), and its
- * own latent-tail inject keys ($tailpathK save / $tailpathK-1 chain —
- * the same workflow file for every seam; the .pt paths ride the inject
- * map and resolve from run inputs at execute time). The stitch
- * input_from list is rebuilt for N inputs. Returns 0 on success; -1 on
- * any anchor or buffer failure — the caller fails the run LOUDLY, never
- * a silent truncation. nw <= 4 is a no-op (the static graph covers it,
- * the proven path). */
-static int tl_expand_windows(char *yaml, size_t cap, int nw) {
-    if (nw <= 4) return 0;
-    if (nw > TL_MAX_WINDOWS) return -1;
-
-    const char *w2 = strstr(yaml, "- id: window2");
-    const char *w3 = strstr(yaml, "- id: window3");
-    const char *st = strstr(yaml, "- id: stitch");
-    const char *inf = st ? strstr(st, "input_from:") : NULL;
-    if (!w2 || !w3 || !st || !inf || w3 < w2 || st < w3 || inf < st)
-        return -1;
-
-    /* input_from entry list: starts after the colon, ends at the first
-     * line that does not begin with a '-' entry */
-    const char *il = inf + strlen("input_from:");
-    const char *ie = il;
-    {
-        const char *q = il;
-        while (*q) {
-            while (*q == ' ' || *q == '\t' || *q == '\n' || *q == '\r') q++;
-            if (*q == '-') {
-                while (*q && *q != '\n') q++;
-                if (*q) q++;
-                ie = q;
-            } else break;
-        }
-    }
-
-    size_t proto_len = (size_t)(w3 - w2);
-    size_t head_len  = (size_t)(w2 - yaml);
-    size_t stch_len  = (size_t)(il - st);          /* stitch block header */
-    size_t tail_len  = strlen(ie);
-    size_t need = head_len + stch_len + tail_len + 64;
-    for (int k = 2; k <= nw; k++) need += proto_len + 200;
-    need += (size_t)nw * 26;                        /* input_from lines */
-    if (need + 64 >= cap) return -1;
-
-    char *out = (char *)malloc(need + 256);
-    if (!out) return -1;
-    size_t o = 0;
-
-    memcpy(out, yaml, head_len); o = head_len;
-
-    for (int k = 2; k <= nw; k++) {
-        size_t i = 0;
-        while (i < proto_len) {
-            if (strncmp(w2 + i, "- id: window2", 13) == 0) {
-                o += (size_t)snprintf(out + o, 32, "- id: window%d", k);
-                i += 13;
-            } else if (strncmp(w2 + i, "$prompt2", 8) == 0) {
-                o += (size_t)snprintf(out + o, 32, "$prompt%d", k);
-                i += 8;
-                /* the first '}' after the needle closes the INJECT MAP.
-                 * Copy the span up to it with the prototype's tail-path
-                 * vars REWRITTEN to this clone's own ($tailpath2 is the
-                 * prototype's save var, $tailpath1 its chain source).
-                 * Never eat the closing quote — that corrupts the JSON
-                 * and the plugin skips the whole inject map (proven live
-                 * 2026-08-31: "$prompt5, — windows 2-6 ran on baked
-                 * defaults, byte-identical). */
-                const char *cl = w2 + i;
-                while (cl < w3 && *cl != '}') cl++;
-                if (cl >= w3 || *cl != '}') { free(out); return -1; }
-                const char *s = w2 + i;
-                while (s < cl) {
-                    if (strncmp(s, "$tailpath2", 10) == 0) {
-                        o += (size_t)snprintf(out + o, 32, "$tailpath%d", k);
-                        s += 10;
-                    } else if (strncmp(s, "$tailpath1", 10) == 0) {
-                        o += (size_t)snprintf(out + o, 32, "$tailpath%d", k - 1);
-                        s += 10;
-                    } else {
-                        out[o++] = *s++;
-                    }
-                }
-                out[o++] = *cl;
-                i = (size_t)(cl - w2) + 1;
-            } else {
-                out[o++] = w2[i++];
-            }
-        }
-        if (o + 2 >= need + 256) { free(out); return -1; }
-    }
-
-    /* stitch block header (through "input_from:"), then N entries */
-    memcpy(out + o, st, stch_len); o += stch_len;
-    for (int k = 1; k <= nw; k++)
-        o += (size_t)snprintf(out + o, 32, "\n      - window%d.video_0", k);
-    memcpy(out + o, ie, tail_len); o += tail_len;
-    out[o] = 0;
-
-    snprintf(yaml, cap, "%s", out);
-    free(out);
-    return 0;
-}
-
-static int compile_calls_windows(const char *body, char out[TL_MAX_WINDOWS][2048],
-                                 int lens[TL_MAX_WINDOWS], int spans_out[TL_MAX_WINDOWS],
-                                 int trims_out[TL_MAX_WINDOWS]) {
-    const char *key = strstr(body, "\"calls\"");
-    if (!key) return 0;
-    /* (latent-chain law) the seam carry: card-level override, else the
-     * RayH3ChainLatentAV widget in the seam template. Returns
-     * -1 = seam graph unreadable, -2 = carry off the node's 1..64 range. */
-    int carry = -1;
-    {
-        char cv[32];
-        if (tl_scan_carry(body, cv, sizeof cv))
-            carry = atoi(cv);
-        else
-            carry = tl_carry_default();
-        if (carry <= 0) return -1;
-        if (carry < 1 || carry > 64) return -2;
-    }
-    /* (2026-08-30 string-form law) callers send calls EITHER as a JSON
-     * array OR as a JSON-encoded STRING (the h3_timeline_card tool and
-     * the drafts door store the document as a string). Escaped quotes
-     * (\"start_frame\") make the array walker see one giant string and
-     * parse zero windows -> default 1.66s stub renders. Unescape the
-     * string form first so both shapes hit the same parser. */
-    char scratch[16384];
-    const char *calls = NULL;
-    {
-        const char *v = key + 7;                     /* past "calls" */
-        while (*v == ' ' || *v == '\t' || *v == '\n') v++;
-        if (*v == ':') v++;
-        while (*v == ' ' || *v == '\t' || *v == '\n') v++;
-        if (*v == '"') {                             /* string form */
-            size_t o = 0; v++;
-            while (*v && *v != '"' && o + 1 < sizeof(scratch)) {
-                if (*v == '\\' && v[1]) {
-                    char c2 = v[1];
-                    v += 2;
-                    if (c2 == 'n') scratch[o++] = '\n';
-                    else if (c2 == 't') scratch[o++] = '\t';
-                    else scratch[o++] = c2;          /* \" \\ etc: the char */
-                } else scratch[o++] = *v++;
-            }
-            scratch[o] = 0;
-            calls = strchr(scratch, '[');
-            if (!calls) return 0;
-        } else {
-            calls = strchr(key + 7, '[');
-            if (!calls) return 0;
-        }
-    }
-    int depth = 0, in_str = 0, esc = 0, n = 0;
-    const char *obj_start = NULL;
-    for (const char *p = calls; *p; p++) {
-        if (esc) { esc = 0; continue; }
-        if (in_str && *p == '\\') { esc = 1; continue; }
-        if (*p == '"') { in_str = !in_str; continue; }
-        if (in_str) continue;
-        if (*p == '[' || *p == '{') {
-            if (*p == '{' && depth == 1 && !obj_start) obj_start = p;
-            depth++;
-        } else if (*p == ']' || *p == '}') {
-            depth--;
-            if (*p == '}' && obj_start && depth == 1) {
-                if (n >= TL_MAX_WINDOWS) {
-                    /* (no silent caps law, 2026-08-30) a card with more
-                     * calls than the window array must REJECT, not
-                     * silently truncate: a dropped call is a dropped
-                     * shot, and the film would lie about its own length */
-                    return -4;
-                }
-                {
-                    size_t len = (size_t)(p - obj_start + 2);
-                    char *obj = (char *)malloc(len + 1);
-                    if (obj) {
-                        memcpy(obj, obj_start, len); obj[len] = 0;
-                        out[n][0] = 0; size_t o = 0;
-                        const char *q = obj;
-                        /* (2026-08-30 whitespace law) accept "text" with any
-                         * spacing around the colon -- callers serialize with
-                         * json.dumps (space after colon); the old byte-exact
-                         * match silently produced zero windows and default
-                         * 1.66s renders on full-length specs. */
-                        while (q && o + 300 < 2048) {
-                            q = strstr(q, "\"text\"");
-                            if (!q) break;
-                            const char *r = q + 6;
-                            while (*r == ' ' || *r == '\t' || *r == '\n' || *r == '\r') r++;
-                            if (*r != ':') { q += 6; continue; }
-                            r++;
-                            while (*r == ' ' || *r == '\t' || *r == '\n' || *r == '\r') r++;
-                            if (*r != '"') { q += 6; continue; }
-                            q = r + 1;
-                            if (o) o += (size_t)snprintf(out[n] + o,
-                                                2048 - o, "  ");
-                            while (*q && *q != '"' && o + 4 < 2048) {
-                                if (*q == '\\' && q[1]) {
-                                    q++;
-                                    if (*q == 'n') out[n][o++] = ' ';
-                                    else if (*q == '"') out[n][o++] = '"';
-                                    else if (*q == '\\') out[n][o++] = '\\';
-                                    q++; continue;
-                                }
-                                out[n][o++] = *q++;
-                            }
-                            out[n][o] = 0;
-                        }
-                        /* (LATENT-CHAIN LAW — replaces the pack's in-graph
-                         * trim): sampled ON-GRID at 17k+5, the chain node
-                         * carries `carry` tail slots from the previous
-                         * window's SAMPLED tail and regenerates them as
-                         * this window's head; the concat trims EXACTLY
-                         * carried_px off the head and delivers the whole
-                         * remainder (a tail span-cut would skip motion —
-                         * the next carry starts at the sampled tail).
-                         * sampled = smallest grid point covering
-                         * tile + carried_px(sampled) — a fixpoint (the
-                         * carry math depends on the sampled slot count). */
-                        {
-                            int sf=0, ef=0;
-                            const char *m = strstr(obj, "start_frame");
-                            if (m) sf = atoi(strchr(m, ':') + 1);
-                            m = strstr(obj, "end_frame");
-                            if (m) ef = atoi(strchr(m, ':') + 1);
-                            int span = ef > sf ? ef - sf : 0;
-                            if (n == 0) {
-                                lens[n] = tl_snap_grid(span, 5);
-                                if (spans_out) spans_out[n] = lens[n];
-                                if (trims_out) trims_out[n] = 0;
-                            } else {
-                                int tile = tl_snap_grid(span, 0);
-                                /* THE NODE'S OWN CLAMP — the plan must carry
-                                 * EXACTLY what RayH3ChainLatentAV will splice:
-                                 *   c = max(1, min(carry, total_slots-1,
-                                 *                   tail_slots))
-                                 * total_slots = slots(sampled) (this head);
-                                 * tail_slots = slots(lens[n-1]) (the previous
-                                 * window's SAMPLED tail). Planning with the
-                                 * RAW carry diverges from the node's meta and
-                                 * the film double-plays at the join. */
-                                int tail_S = tl_slots_for(lens[n - 1]);
-                                int sampled = tile;
-                                int cp = 0;
-                                for (int it = 0; it < 8; it++) {
-                                    int S = tl_slots_for(sampled);
-                                    int c_eff = carry;
-                                    if (c_eff > S - 1) c_eff = S - 1;
-                                    if (c_eff > tail_S) c_eff = tail_S;
-                                    if (c_eff < 1) c_eff = 1;
-                                    cp = tl_carried_px(c_eff, S);
-                                    int want = tl_snap_grid(tile + cp, 5);
-                                    if (want == sampled) break;
-                                    sampled = want;
-                                }
-                                /* cover-or-reject (queue lane law): growing
-                                 * the sample cannot outrun a carry that eats
-                                 * every new slot — for carry near the tile's
-                                 * slot demand NO grid point covers the tile.
-                                 * Bump until covered or past the grid
-                                 * ceiling; still uncovered = 4xx, never a
-                                 * silent motion-skipping span. */
-                                int covered = 0;
-                                for (int bump = 0; bump < 220; bump++) {
-                                    int S = tl_slots_for(sampled);
-                                    int c_eff = carry;
-                                    if (c_eff > S - 1) c_eff = S - 1;
-                                    if (c_eff > tail_S) c_eff = tail_S;
-                                    if (c_eff < 1) c_eff = 1;
-                                    cp = tl_carried_px(c_eff, S);
-                                    if (sampled - cp >= tile) { covered = 1; break; }
-                                    if (sampled >= 17 * 128 + 5) break;
-                                    sampled = tl_snap_grid(sampled + 17, 5);
-                                }
-                                if (!covered) {
-                                    free(obj);
-                                    return -3;   /* carry/tile incompatible */
-                                }
-                                lens[n] = sampled;
-                                if (spans_out) spans_out[n] = sampled - cp;
-                                if (trims_out) trims_out[n] = cp;
-                            }
-                        free(obj);
-                        }
-                        if (out[n][0]) n++;
-                    }
-                }
-                obj_start = NULL;
-            }
-            if (depth == 0) break;
-        }
-    }
-    return n;
-}
 static void add_run_input_text(size_t idx, const char *name, const char *s) {
     if (g_runs[idx].n_inputs >= 144) return;
     run_input *ri = &g_runs[idx].inputs[g_runs[idx].n_inputs++];
@@ -1068,6 +655,47 @@ static void add_run_input_text(size_t idx, const char *name, const char *s) {
     ri->bytes = (char *)malloc(ri->nbytes);
     memcpy(ri->bytes, s, ri->nbytes);
 }
+/* (PLUGIN ARCHITECTURE LAW) register the extra run inputs the card's
+ * plugin returned (window prompts, staged audio) — generic JSON walk. */
+static void card_register_extra_inputs(size_t idx, const char *extra) {
+    if (!extra || !extra[0]) return;
+    const char *obj = strstr(extra, "\"inputs\":{");
+    if (!obj) return;
+    obj = strchr(obj + 8, '{');
+    if (!obj) return;
+    const char *q = obj + 1;
+    while (*q && *q != '}') {
+        while (*q == ' ' || *q == ',' || *q == '\n') q++;
+        if (*q != '"') break;
+        char nm[64]; size_t nl = 0;
+        q++;
+        while (*q && *q != '"' && nl + 1 < sizeof nm) nm[nl++] = *q++;
+        nm[nl] = 0;
+        while (*q == ' ' || *q == '\t') q++;
+        if (*q != ':') break;
+        q++;
+        while (*q == ' ' || *q == '\t') q++;
+        if (*q != '"') { while (*q && *q != ',' && *q != '}') q++; continue; }
+        q++;
+        char val[4200]; size_t vl = 0;
+        while (*q && *q != '"' && vl + 1 < sizeof val) {
+            if (*q == '\\' && q[1]) {
+                q++;
+                if (*q == 'n') val[vl++] = ' ';
+                else if (*q == 't') val[vl++] = '\t';
+                else val[vl++] = *q;
+                q++;
+            } else val[vl++] = *q++;
+        }
+        if (*q == '"') q++;
+        val[vl] = 0;
+        if (nm[0] && vl) {
+            if (strcmp(nm, "prompt") == 0) continue;  /* phase-1 default */
+            add_run_input_text(idx, nm, val);
+        }
+    }
+}
+
 
 static void add_run_input_f32(size_t idx, const char *name, float f) {
     if (g_runs[idx].n_inputs >= 144) return;
@@ -1180,53 +808,6 @@ static int run_validate_input_coverage(size_t idx, const char *body,
     }
     dag_free(dag);
     return rc;
-}
-
-/* extra beat fields the timeline card carries (multi-window prompts).
- * (audit F2) tl_wins/tl_nw are the CALLER'S LOCAL compile output — no
- * shared state, concurrent registrations cannot cross-wire prompts. */
-static void add_run_extra_inputs(size_t idx, const char *body,
-                                 char *tmp, size_t tmpcap,
-                                 char tl_wins[TL_MAX_WINDOWS][2048], int tl_nw) {    /* (N-window law) prompt2..promptN for EVERY window of the card.
-     * (The tailpath inject vars are NOT run inputs: the 144-input cap
-     * would silently drop them past ~70 windows — the registration
-     * pass resolves them to literal absolute paths in the run yaml.) */
-    for (int i = 1; i < tl_nw; i++) {
-        char nm[24];
-        snprintf(nm, sizeof(nm), "prompt%d", i + 1);
-        add_run_input_text(idx, nm, tl_wins[i]);
-    }
-    /* audio guide track: stage the file into ComfyUI's input dir and expose
-     * the bare filename as the "audio" run input (pipeline_audio.yaml
-     * injects it into LoadAudio.0.audio). Missing file: loud stderr, no
-     * tensor - the plain pipeline then runs unchanged. */
-    {
-        char aud[1024];
-        if (inf_json_string(body, "audio", aud, sizeof(aud)) == 0 && aud[0]) {
-            if (access(aud, R_OK) == 0) {
-                const char *base = strrchr(aud, '/');
-                base = base ? base + 1 : aud;
-                char dst[640];
-                snprintf(dst, sizeof(dst), "/opt/ComfyUI/input/guide_%lx_%s",
-                         (unsigned long)time(NULL), base);
-                FILE *src = fopen(aud, "rb"), *o = fopen(dst, "wb");
-                if (src && o) {
-                    char buf[65536];
-                    size_t r;
-                    while ((r = fread(buf, 1, sizeof(buf), src)) > 0)
-                        fwrite(buf, 1, r, o);
-                }
-                if (src) fclose(src);
-                if (o) fclose(o);
-                const char *db = strrchr(dst, '/');
-                db = db ? db + 1 : dst;
-                add_run_input_text(idx, "audio", db);
-                fprintf(stderr, "[timeline] audio guide staged: %s -> %s" "\n", aud, db);
-            } else {
-                fprintf(stderr, "[timeline] audio param set but file unreadable: %s" "\n", aud);
-            }
-        }
-    }
 }
 
 /* (root-history law, 2026-08-31, proven by the lifecycle suite) a card
@@ -2456,19 +2037,17 @@ static void handle_pipelines_start(const httplib::Request &req,
      *   {model,...}             - flat generation (default)
      */
     char model[64] = "", prompt[2048] = "";
-    /* (audit F2) LOCAL per-request window prompts. (N-window law) sized
-     * to TL_MAX_WINDOWS: one card may carry up to 128 calls. */
-    static thread_local char tl_wins[TL_MAX_WINDOWS][2048];
-    int  tl_wins_len[TL_MAX_WINDOWS];
-    int  tl_spans[TL_MAX_WINDOWS];
-    int  tl_trims[TL_MAX_WINDOWS];
-    for (int i = 0; i < TL_MAX_WINDOWS; i++) { tl_wins_len[i] = 0; tl_spans[i] = 0; tl_trims[i] = 0; }
-    char tl_carry_draft[32] = {0};    /* latent-chain law: card-level carry override from the draft */
+    /* (PLUGIN ARCHITECTURE LAW, 2026-08-31) the card's window/knob
+     * semantics live in the lane's plugin. PHASE 1 runs before any
+     * registration: the plugin compiles the calls document and hands
+     * back the extra run inputs (window prompts, staged audio). */
+    char card_extra[65536] = "";
     char prior_tail_path[1024] = ""; /* continue_from: prior run's tail .pt on disk (host side) */
     int  tl_nw = 0;
     long seed = -1;
     char yaml_override[131072] = "";   /* N-window law: holds expanded graphs */
     const char *body = req.body.c_str();
+    const char *card_body = body;   /* the CARD document: body calls or draft doc */
 
     /* Shape: {route:true} -> 501 */
     if (strstr(body, "\"route\"") && strstr(body, "true")) {
@@ -2546,96 +2125,80 @@ static void handle_pipelines_start(const httplib::Request &req,
             snprintf(prompt, sizeof(prompt), "%s", tmp);
         if (s) seed = inf_json_int(req.body.c_str(), "seed", -1);
     }
-    /* Timeline studio shape: {model, calls:[...]} - compile the calls
-     * into window prompts (prompt..prompt4).
-     * (audit F34) compile even when a flat prompt rides along: a body
-     * carrying BOTH prompt (window-0 text) AND calls must still feed
-     * tl_wins[1..3] to prompt2..4 - the old !prompt[0] gate dropped
-     * every window past the first whenever prompt was present. */
     if (strstr(body, "\"calls\"")) {
-        tl_nw = compile_calls_windows(body, tl_wins, tl_wins_len, tl_spans,
-                                      tl_trims);
-        /* (latent-chain law) seam-graph resolution failures are loud,
-         * before any run registers: -1 = the RayH3ChainLatentAV
-         * carry widget is not readable in the seam template;
-         * -2 = card-level carry_latent_frames outside the node's
-         * 1..64 range. */
-        if (tl_nw == -1) {
-            res.status = 500;
-            res.set_content("{\"error\":\"h3-timeline seam graph unreadable: RayH3ChainLatentAV.0.carry_latent_frames not found in pipelines/h3-timeline/window2_t4.json\"}", "application/json");
-            return;
-        }
-        if (tl_nw == -2) {
-            res.status = 400;
-            res.set_content("{\"error\":\"carry_latent_frames must be 1..64 (latent tail slots; RayH3ChainLatentAV range)\"}", "application/json");
-            return;
-        }
-        if (tl_nw == -3) {
-            res.status = 400;
-            res.set_content("{\"error\":\"carry_latent_frames too large for a tile: the carried head would swallow every new frame (no grid point covers tile + carried head) — lower the carry or lengthen the shortest call\"}", "application/json");
-            return;
-        }
-        if (tl_nw == -4) {
-            res.status = 400;
-            char err[128];
-            snprintf(err, sizeof(err),
-                     "{\"error\":\"%d calls exceeds TL_MAX_WINDOWS (%d): "
-                     "one card may carry up to 128 calls\"}",
-                     /* we can't easily recount here, but the reject is
-                      * by definition > 128 */ 129, 128);
-            res.set_content(err, "application/json");
-            return;
-        }
-        /* (2026-08-30 queue-lane law) a calls array longer than the 4-window
-         * graph is a shape error, never a silent truncation: reject BEFORE
-         * any run is registered. The caller splits into chained runs
-         * (continue_from). A calls array that parses to zero windows is also
-         * rejected loudly. */
+        char etype0[64] = "";
         {
-            const char *ck = strstr(body, "\"calls\"");
-            const char *arr = ck ? strchr(ck + 7, '[') : NULL;
-            if (arr) {
-                int total_calls = 0;
-                const char *w = arr;
-                /* (string-form law) count form-agnostically: the key
-                 * name followed (within quotes/ws) by a colon. */
-                while ((w = strstr(w, "start_frame")) != NULL) {
-                    /* "start_frame" is ELEVEN chars — the old +10 put k2 on
-                     * the final 'e', ':' never matched, the counter read 0
-                     * on EVERY body and >4 calls silently truncated to the
-                     * 4-window graph (queue-lane law breach, caught live by
-                     * the loader probe 2026-08-31). */
-                    const char *k2 = w + 11;
-                    while (*k2 == ' ' || *k2 == '\t' || *k2 == '"' ||
-                           *k2 == '\\') k2++;
-                    if (*k2 == ':') total_calls++;
-                    w += 11;
-                }
-                /* (N-window law, 2026-08-31) the 4-call cap is DEAD: ONE
-                 * card carries every call and the gateway EXPANDS the run
-                 * graph to N windows. The only remaining bound is the
-                 * run-yaml buffer (TL_MAX_WINDOWS), stated loudly. */
-                if (total_calls > TL_MAX_WINDOWS) {
-                    res.status = 400;
-                    char err[240];
-                    snprintf(err, sizeof(err),
-                             "{\"error\":\"calls document has %d calls; the run graph buffer holds %d windows per run (engineering bound, not a card limit)\"}",
-                             total_calls, TL_MAX_WINDOWS);
-                    res.set_content(err, "application/json");
-                    return;
-                }
-                if (tl_nw == 0 && total_calls > 0) {
-                    res.status = 400;
-                    res.set_content("{\"error\":\"calls document present but no windows parsed (bad calls shape)\"}", "application/json");
-                    return;
-                }
+            char probe_y[131072];
+            const char *ysrc = yaml_override;
+            if (!ysrc[0] && model[0])
+                ysrc = pipeline_yaml_for_model_ex(model, body,
+                                                  probe_y, sizeof probe_y);
+            const char *tt = ysrc ? strstr(ysrc, "type: ") : NULL;
+            if (tt) {
+                size_t e = 0;
+                for (const char *c = tt + 6;
+                     e + 1 < sizeof etype0 && *c && *c != '\n' &&
+                     *c != ' ' && *c != '\"'; c++)
+                    etype0[e++] = *c;
+                etype0[e] = 0;
             }
         }
-        /* (prompt law, 2026-08-30) FIRST CALL'S TEXT IS WINDOW 1'S PROMPT.
-         * Applied ONCE below, after BOTH compile paths (body calls AND
-         * draft card doc) — an in-branch copy here missed the draft_id
-         * path, and auto-arm's "lane-auto-arm" label stole window 1
-         * again (proven in the 19:52 ASAN run inject log). */
+        int ph1 = etype0[0]
+            ? runner_card_compose(g_server_runner, etype0, body,
+                                  model, "", NULL, NULL, 0,
+                                  card_extra, sizeof card_extra)
+            : -5;
+        if (ph1 == 0 && card_extra[0])
+            tl_nw = strstr(card_extra, "\"prompt\"") ? 1 : 0;  /* marker */
+        if (ph1 < 0) {
+            /* plugin supplied the message: relay verbatim.
+             * -2/-3/-4 = card's fault (400); -1/-5 = infra (500). */
+            const char *emsg = "card compose failed";
+            {
+                const char *e = strstr(card_extra, "\"error\":\"");
+                if (e) {
+                    e += 9;
+                    char m[512]; size_t ml = 0;
+                    while (*e && *e != '"' && ml < sizeof m - 1)
+                        m[ml++] = *e++;
+                    m[ml] = 0;
+                    if (ml) {
+                        char out[600];
+                        snprintf(out, sizeof out, "{\"error\":\"%s\"}", m);
+                        res.status = (ph1 == -2 || ph1 == -3 || ph1 == -4)
+                                         ? 400 : 500;
+                        res.set_content(out, "application/json");
+                        return;
+                    }
+                }
+            }
+            res.status = 500;
+            res.set_content("{\"error\":\"card compose failed (plugin hook)\"}",
+                            "application/json");
+            return;
+        }
+        if (tl_nw > 0) {
+            /* window prompts live in card_extra: register inputs (the
+             * generic "prompt" input is seeded at registration from the
+             * body; prompt1 here is the compile's first window text,
+             * used as the prompt default when the body named none). */
+            char pv[4200];
+            const char *e = strstr(card_extra, "\"prompt\":\"");
+            if (e && !prompt[0]) {
+                e += 9; size_t pl = 0;
+                while (*e && *e != '"' && pl + 1 < sizeof pv) {
+                    if (*e == '\\' && e[1]) {
+                        e++;
+                        if (*e == 'n') pv[pl++] = ' ';
+                        else if (*e == '"') pv[pl++] = '"';
+                        else pv[pl++] = *e;
+                        e++;
+                    } else pv[pl++] = *e++;
+                }
+                pv[pl] = 0;
+                if (pl) snprintf(prompt, sizeof prompt, "%s", pv);
+            }
+        }
     }
     /* (2026-08-30 CARD LAW, operator order) a timeline-graph run without
      * its card is REJECTED before registration: compose via the
@@ -2663,9 +2226,10 @@ static void handle_pipelines_start(const httplib::Request &req,
             return;
         }
         /* THE CARD IS THE RUN DEFINITION: when the body carries no calls,
-         * load them from the card document itself (stages[0].params.calls
-         * — string or array form; the compiler handles both). seed/fps
-         * ride from the card when the body omits them. */
+         * the CARD DOCUMENT is the compose body. (PLUGIN ARCHITECTURE
+         * LAW) phase 1 runs here — the plugin compiles and validates;
+         * the server relays its verdict verbatim. seed rides from the
+         * card when the body omits it. */
         {
             char dp[256];
             snprintf(dp, sizeof(dp), "./drafts/%s.json", did);
@@ -2676,37 +2240,51 @@ static void handle_pipelines_start(const httplib::Request &req,
             if (df) {
                 size_t dn = fread(dbuf, 1, sizeof(dbuf) - 1, df);
                 fclose(df); dbuf[dn] = 0;
-                tl_nw = compile_calls_windows(dbuf, tl_wins, tl_wins_len,
-                                              tl_spans, tl_trims);
-                /* (latent-chain law) same loud guards as the body path;
-                 * the card doc may carry its own carry override. */
-                if (tl_nw == -1) {
+                card_body = dbuf;
+                char etype0[64] = "";
+                const char *tt = strstr(yaml_override, "type: ");
+                if (tt) {
+                    size_t e = 0;
+                    for (const char *c = tt + 6;
+                         e + 1 < sizeof etype0 && *c && *c != '\n' &&
+                         *c != ' ' && *c != '"'; c++)
+                        etype0[e++] = *c;
+                    etype0[e] = 0;
+                }
+                if (!etype0[0]) {
                     res.status = 500;
-                    res.set_content("{\"error\":\"h3-timeline seam graph unreadable: RayH3ChainLatentAV.0.carry_latent_frames not found in pipelines/h3-timeline/window2_t4.json\"}", "application/json");
+                    res.set_content("{\"error\":\"card compose: no engine type in pipeline graph\"}", "application/json");
                     return;
                 }
-                if (tl_nw == -2) {
-                    res.status = 400;
-                    res.set_content("{\"error\":\"card carry_latent_frames must be 1..64 (latent tail slots; RayH3ChainLatentAV range)\"}", "application/json");
+                int ph1 = runner_card_compose(g_server_runner, etype0,
+                                              dbuf, model, "", NULL,
+                                              NULL, 0,
+                                              card_extra, sizeof card_extra);
+                if (ph1 == 0 && strstr(card_extra, "\"prompt\""))
+                    tl_nw = 1;   /* marker: windows compiled */
+                if (ph1 < 0) {
+                    const char *e = strstr(card_extra, "\"error\":\"");
+                    char out[640] = "{\"error\":\"card compose failed (plugin hook)\"}";
+                    if (e) {
+                        e += 9;
+                        char m[512]; size_t ml = 0;
+                        while (*e && *e != '"' && ml < sizeof m - 1)
+                            m[ml++] = *e++;
+                        m[ml] = 0;
+                        if (ml) snprintf(out, sizeof out,
+                                         "{\"error\":\"%s\"}", m);
+                    }
+                    res.status = (ph1 == -2 || ph1 == -3 || ph1 == -4)
+                                     ? 400 : 500;
+                    res.set_content(out, "application/json");
                     return;
                 }
-                if (tl_nw == -3) {
-                    res.status = 400;
-                    res.set_content("{\"error\":\"card carry_latent_frames too large for a tile: the carried head would swallow every new frame — lower the carry or lengthen the shortest call\"}", "application/json");
-                    return;
-                }
-                if (tl_nw == -4) {
-                    res.status = 400;
-                    res.set_content("{\"error\":\"card calls exceed TL_MAX_WINDOWS (128): one card may carry up to 128 calls\"}", "application/json");
-                    return;
-                }
-                tl_scan_carry(dbuf, tl_carry_draft, sizeof tl_carry_draft);
                 if (tl_nw == 0)
                     fprintf(stderr,
                             "[draft] card %s carries no parsable calls\n", did);
                 else
                     fprintf(stderr,
-                            "[draft] run executes card %s (%d calls)\n",
+                            "[draft] run executes card %s (%d windows)\n",
                             did, tl_nw);
                 if (seed < 0) seed = inf_json_int(dbuf, "seed", -1);
                 if (seed < 0) seed = 42;
@@ -2732,7 +2310,14 @@ static void handle_pipelines_start(const httplib::Request &req,
             res.set_content("{\"error\":\"no pipeline selected: provide yaml, pipeline, or model (no fallback by law)\"}", "application/json");
             return;
         }
-        char probe[512];
+        /* (2026-08-31 find-fail fix) this buffer is a VALIDITY PROBE —
+         * the resolved graph is loaded again into the run's yaml later.
+         * It was 512 bytes: every REAL pipeline.yaml (h3-timeline is
+         * ~4KB) failed `n >= cap-1` and the {model} door 404'd with
+         * "no pipeline for model" — the model path was broken for any
+         * lane whose graph exceeded half a KB (prod traffic reached the
+         * GPU through other compose paths, hiding it). Run-yaml scale. */
+        char probe[131072];
         if (!pipeline_yaml_for_model_ex(model, body, probe, sizeof(probe))) {
             res.status = 404;
             char err[300];
@@ -2851,7 +2436,24 @@ static void handle_pipelines_start(const httplib::Request &req,
      * the 19:52 ASAN run: inject MiniMaxH3ImageToVideo.0.prompt =
      * "lane-auto-arm" on a 5-call card). The calls document ALWAYS
      * wins; a flat prompt may only label the run. */
-    if (tl_nw > 0) snprintf(prompt, sizeof(prompt), "%s", tl_wins[0]);
+    if (tl_nw > 0 && card_extra[0]) {
+        const char *e = strstr(card_extra, "\"prompt\":\"");
+        if (e) {
+            e += 9;
+            char pv[4200]; size_t pl = 0;
+            while (*e && *e != '"' && pl + 1 < sizeof pv) {
+                if (*e == '\\' && e[1]) {
+                    e++;
+                    if (*e == 'n') pv[pl++] = ' ';
+                    else if (*e == '"') pv[pl++] = '"';
+                    else pv[pl++] = *e;
+                    e++;
+                } else pv[pl++] = *e++;
+            }
+            pv[pl] = 0;
+            if (pl) snprintf(prompt, sizeof prompt, "%s", pv);
+        }
+    }
 
     /* (queue-lane law, 2026-08-30) PRE-REGISTRATION NODE VALIDATION:
      * every workflow file the run graph references must be readable and
@@ -3065,11 +2667,36 @@ static void handle_pipelines_start(const httplib::Request &req,
     g_runs[idx].n_prior = 0;
     g_runs[idx].start_from = 0;
     /* (latent-chain law) persist the COMPILE PLAN: the meta cross-check
-     * and the 1:1 card reconstruction read these, not re-derivation. */
+     * and the 1:1 card reconstruction read these, not re-derivation.
+     * (PLUGIN ARCHITECTURE LAW) the plan ARRAYS come from the card's
+     * plugin (extra_json), never from lane math in this file. */
     g_runs[idx].tl_n = tl_nw > 0 ? tl_nw : 0;
-    for (int i = 0; i < RUN_TL_MAX; i++) {
-        g_runs[idx].tl_trims[i] = i < tl_nw ? tl_trims[i] : 0;
-        g_runs[idx].tl_spans[i] = i < tl_nw ? tl_spans[i] : 0;
+    {
+        int tl_trims[RUN_TL_MAX] = {0};
+        int tl_spans[RUN_TL_MAX] = {0};
+        for (const char *arr = card_extra; ; ) {
+            const char *a = strstr(arr, "\"trims\":[");
+            if (a) {
+                const char *n = a + 9; int i = 0;
+                while (*n && *n != ']' && i < RUN_TL_MAX) {
+                    tl_trims[i++] = (int)strtol(n, (char **)&n, 10);
+                    while (*n == ',' || *n == ' ') n++;
+                }
+            }
+            a = strstr(arr, "\"spans\":[");
+            if (a) {
+                const char *n = a + 9; int i = 0;
+                while (*n && *n != ']' && i < RUN_TL_MAX) {
+                    tl_spans[i++] = (int)strtol(n, (char **)&n, 10);
+                    while (*n == ',' || *n == ' ') n++;
+                }
+            }
+            break;
+        }
+        for (int i = 0; i < RUN_TL_MAX; i++) {
+            g_runs[idx].tl_trims[i] = i < tl_nw ? tl_trims[i] : 0;
+            g_runs[idx].tl_spans[i] = i < tl_nw ? tl_spans[i] : 0;
+        }
     }
     pthread_mutex_unlock(&g_runs_mu);
 
@@ -3224,7 +2851,7 @@ static void handle_pipelines_start(const httplib::Request &req,
                             tmpin, sizeof(tmpin)) == 0 && tmpin[0])
             add_run_input_text(idx, "negative_prompt", tmpin);
         if (seed >= 0) add_run_input_f32(idx, "seed", (float)seed);
-        add_run_extra_inputs(idx, req.body.c_str(), tmpin, sizeof(tmpin), tl_wins, tl_nw);
+        card_register_extra_inputs(idx, card_extra);
     } else {
     char *piped = pipeline_yaml_for_model_ex(model, req.body.c_str(),
                                              g_runs[idx].yaml,
@@ -3270,7 +2897,7 @@ static void handle_pipelines_start(const httplib::Request &req,
         if (inf_json_string(req.body.c_str(), "image",
                             tmpin, sizeof(tmpin)) == 0 && tmpin[0])
             add_run_input_text(idx, "image", tmpin);
-        add_run_extra_inputs(idx, req.body.c_str(), tmpin, sizeof(tmpin), tl_wins, tl_nw);
+        card_register_extra_inputs(idx, card_extra);
     } else {
         /* (operator law, 2026-08-30: no legacy, no fallbacks, no
          * hardcodes) the composed krea-style graph with its BAKED-IN
@@ -3289,233 +2916,48 @@ static void handle_pipelines_start(const httplib::Request &req,
     }
     } /* end if(!yaml_override) */
 
-    /* (N-window law, 2026-08-31) ONE card = N calls = ONE run: expand the
-     * static 4-window graph to tl_nw windows BEFORE the per-window inject
-     * splices (which then anchor on every clone's seed key). Failure is
-     * loud — a card with more calls than the buffer holds is rejected,
-     * never silently truncated. */
-    if (tl_nw > 0 && tl_expand_windows(g_runs[idx].yaml,
-                                       sizeof(g_runs[idx].yaml), tl_nw) != 0) {
-        run_set_state(idx, "error",
-                      "timeline N-window expansion failed (graph anchors "
-                      "or run-yaml buffer)");
-        res.status = 500;
-        res.set_content(
-            "{\"error\":\"timeline N-window expansion failed (graph anchors or run-yaml buffer)\"}",
-            "application/json");
-        return;
-    }
-
-    /* (latent-chain law, container edition 2026-08-30) resolve every
-     * $tailpathK inject var to the LITERAL run-scoped RELATIVE path
-     * "<run_id>/windowK_tail.pt". ComfyUI runs CONTAINERIZED with an
-     * overlay view of the repo — an absolute repo path wrote the tail
-     * into the container's own layer and the bytes never reached the
-     * host (proven live 2026-08-30: tails existed only under
-     * /proc/<comfy>/root/...). Tails now travel ComfyUI's artifact
-     * doors: the save node writes <output>/<run_id>/windowK_tail.pt and
-     * returns it as a UI output (the plugin fetches via /view into the
-     * run dir); the plugin uploads the fetched tail via /upload into
-     * <input>/<run_id>/ before each seam window, and the chain node
-     * resolves the same relative path against the INPUT directory.
-     * run_id names the subfolder — unique per run, known here, and no
-     * realpath anywhere (the sub-PATH_MAX realpath buffer was a fortify
-     * abort: chaos C16). */
+    /* (PLUGIN ARCHITECTURE LAW, 2026-08-31) PHASE 2: the plugin owns
+     * the whole graph rewrite — N-window expansion, tail-path
+     * literals, on-grid length/carry injects, Layer A/B knobs. The
+     * engine type is read FROM THE GRAPH; the core names no lane. */
     if (tl_nw > 0) {
-        /* continue_from: stage the prior tail (+meta) into THIS run's
-         * dir and resolve $priortail to the run-scoped relative path —
-         * the plugin uploads it before window 1 exactly like a fresh
-         * tail. */
-        if (prior_tail_path[0]) {
-            const char *pb = strrchr(prior_tail_path, '/');
-            pb = pb ? pb + 1 : prior_tail_path;
-            char dst[768];
-            snprintf(dst, sizeof(dst), "%s/%s", g_runs[idx].out_dir, pb);
-            mkdir(g_runs[idx].out_dir, 0755);
-            if (inf_copy_file(prior_tail_path, dst) == 0) {
-                char pmeta[1100], dmeta[800];
-                snprintf(pmeta, sizeof(pmeta), "%s.meta.json", prior_tail_path);
-                snprintf(dmeta, sizeof(dmeta), "%s/%s.meta.json",
-                         g_runs[idx].out_dir, pb);
-                inf_copy_file(pmeta, dmeta);   /* optional: meta may be absent */
-                char *pq = strstr(g_runs[idx].yaml, "$priortail");
-                if (pq) {
-                    char lit[192];
-                    snprintf(lit, sizeof(lit), "%s/%s", g_runs[idx].run_id, pb);
-                    size_t vl = strlen("$priortail"), ll = strlen(lit);
-                    size_t used = strlen(g_runs[idx].yaml);
-                    size_t off = (size_t)(pq - g_runs[idx].yaml);
-                    if (used + (ll - vl) + 1 < sizeof(g_runs[idx].yaml)) {
-                        memmove(pq + ll, pq + vl, used - off - vl + 1);
-                        memcpy(pq, lit, ll);
-                    }
-                }
-                fprintf(stderr, "[timeline] continue_from staged %s -> %s\n",
-                        prior_tail_path, dst);
-            }
-        }
-        /* Count the ACTUAL window nodes in the DAG yaml — the base
-         * template always defines window1..4 even when tl_nw < 4 (e.g.
-         * a 2-call continuation has 4 windows but tl_nw=2). The old
-         * loop iterated only 1..tl_nw, leaving $tailpath3/$tailpath4
-         * as raw tokens — ComfyUI could not resolve them and the last
-         * window's chain node failed. */
-        int yaml_nw = tl_nw;
+        char etype[64] = "";
         {
-            const char *yp = g_runs[idx].yaml;
-            while ((yp = strstr(yp, "- id: window")) != NULL) {
-                int wnum = 0;
-                if (sscanf(yp + 12, "%d", &wnum) == 1 && wnum > yaml_nw)
-                    yaml_nw = wnum;
-                yp++;
+            const char *tt = strstr(g_runs[idx].yaml, "type: ");
+            if (tt) {
+                size_t e = 0;
+                for (const char *c = tt + 6;
+                     e + 1 < sizeof etype && *c && *c != '\n' &&
+                     *c != ' ' && *c != '"'; c++)
+                    etype[e++] = *c;
+                etype[e] = 0;
             }
         }
-        for (int k = 1; k <= yaml_nw; k++) {
-            char var[24], lit[192];
-            snprintf(var, sizeof(var), "$tailpath%d", k);
-            snprintf(lit, sizeof(lit), "%s/window%d_tail.pt",
-                     g_runs[idx].run_id, k);
-            size_t vl = strlen(var), ll = strlen(lit);
-            char *q = strstr(g_runs[idx].yaml, var);
-            while (q) {
-                /* only whole tokens: the char after the var must not be
-                 * a digit ($tailpath1 must not hit $tailpath12) */
-                if (!(q[vl] >= '0' && q[vl] <= '9')) {
-                    size_t used = strlen(g_runs[idx].yaml);
-                    size_t off = (size_t)(q - g_runs[idx].yaml);
-                    if (used + (ll - vl) + 1 >= sizeof(g_runs[idx].yaml))
-                        break;   /* buffer law: loud failure at expand */
-                    memmove(q + ll, q + vl, used - off - vl + 1);
-                    memcpy(q, lit, ll);
-                    q = strstr(q + ll, var);
-                } else {
-                    q = strstr(q + 1, var);
-                }
+        if (etype[0]) {
+            char ex2[512] = "";
+            int crc = runner_card_compose(g_server_runner, etype,
+                                          card_body, model,
+                                          g_runs[idx].run_id,
+                                          g_runs[idx].yaml,
+                                          sizeof(g_runs[idx].yaml),
+                                          prior_tail_path[0]
+                                              ? prior_tail_path : NULL,
+                                          ex2, sizeof ex2);
+            if (crc != 0) {
+                run_set_state(idx, "error", "card compose failed (plugin hook)");
+                res.status = 500;
+                res.set_content(
+                    "{\"error\":\"card compose failed (plugin hook)\"}",
+                    "application/json");
+                return;
             }
         }
     }
+    /* (latent-chain law) THE STITCH TRIM IS LIVE — and it is PLUGIN
+     * owned (card_compose phase 2 splices the plan's trim_heads into
+     * the stitch node; the meta cross-check below still hard-errors on
+     * any drift between the plan and the chain node's own meta). */
 
-    /* (latent-chain law, 2026-08-30) each window samples its ON-GRID
-     * length (window 1: tile; seams: tile + carried_px). Splice the
-     * literal length into each window node's inject map, anchored on its
-     * KSampler.0.seed entry (one per window node, in file order). A
-     * card-level carry_latent_frames override also lands in each SEAM
-     * window's RayH3ChainLatentAV widget (INT form). */
-    if (tl_nw > 0) {
-        char inj[256];
-        char carry[32] = {0};
-        if (!tl_scan_carry(req.body.c_str(), carry, sizeof carry)) {
-            if (tl_carry_draft[0])
-                snprintf(carry, sizeof carry, "%s", tl_carry_draft);
-            else
-                snprintf(carry, sizeof carry, "%d", tl_carry_default());
-        }
-        /* (container law 2026-08-30) the SAVE node authors the tail's
-         * .meta.json from its carry widget — so EVERY window (window 1
-         * included) gets the plan's carry injected into
-         * RayH3SaveLatentTail.0.carry_latent_frames; seams additionally
-         * carry it into the chain node. One carry literal per run, fed
-         * to every consumer: save, chain, plan, stitch must agree. */
-        const char *needle = "\"KSampler.0.seed\"";
-        int wi = 0;
-        char *q = strstr(g_runs[idx].yaml, needle);
-        while (q && wi < tl_nw) {
-            if (tl_wins_len[wi] > 0) {
-                if (wi > 0)
-                    snprintf(inj, sizeof(inj),
-                             "\"MiniMaxH3ImageToVideo.0.length\":%d,"
-                             "\"RayH3SaveLatentTail.0.carry_latent_frames\":%s,"
-                             "\"RayH3ChainLatentAV.0.carry_latent_frames\":%s,",
-                             tl_wins_len[wi], carry, carry);
-                else
-                    snprintf(inj, sizeof(inj),
-                             "\"MiniMaxH3ImageToVideo.0.length\":%d,"
-                             "\"RayH3SaveLatentTail.0.carry_latent_frames\":%s,",
-                             tl_wins_len[wi], carry);
-                size_t il = strlen(inj);
-                size_t used = strlen(g_runs[idx].yaml);
-                size_t off = (size_t)(q - g_runs[idx].yaml);
-                if (used + il < sizeof(g_runs[idx].yaml) - 1) {
-                    memmove(q + il, q, used - off + 1);
-                    memcpy(q, inj, il);
-                    q += il;
-                }
-            }
-            wi++;
-            q = strstr(q + strlen(needle), needle);
-        }
-    }
-    /* (latent-chain law) THE STITCH TRIM IS LIVE: each seam window
-     * regenerates the previous window's carried tail as its head; the
-     * concat must drop EXACTLY carried_px frames (picture+sound) from
-     * each seam head or every join double-plays. trim_heads comes from
-     * the plan math (tl_trims — mirrors _carried_pixel_frames); the
-     * chain node's <tail>.meta.json carries the same number and the
-     * meta cross-check below hard-errors on any drift. spans stay the
-     * delivered tiles: sampled - carried_px (seams) / sampled (w1). */
-    if (tl_nw > 0) {
-        int tlfps = inf_json_int(body, "fps", 24);
-        if (tlfps <= 0) tlfps = 24;
-        char trimsj[1280];   /* N-window law: up to 128 trims */
-        int to = snprintf(trimsj, sizeof(trimsj), "[");
-        for (int i = 0; i < tl_nw; i++)
-            to += snprintf(trimsj + to, sizeof(trimsj) - to, "%s%.4f",
-                           i ? "," : "", (double)tl_trims[i] / tlfps);
-        snprintf(trimsj + to, sizeof(trimsj) - to, "]");
-        char *th = strstr(g_runs[idx].yaml, "\"trim_heads\"");
-        if (th) {
-            char *tb = strchr(th, '[');
-            char *te = tb ? strchr(tb, ']') : NULL;
-            if (tb && te) {
-                /* replace the whole array (brackets included): the shipped
-                 * [0,0,0,0] placeholder makes room; memmove handles the
-                 * overlap, and the buffer law rejects the impossible. */
-                size_t used = strlen(g_runs[idx].yaml);
-                size_t cut = (size_t)(te + 1 - tb);
-                size_t il = strlen(trimsj);
-                if (used - cut + il + 1 < sizeof(g_runs[idx].yaml)) {
-                    memmove(tb + il, te + 1, used - cut + 1);
-                    memcpy(tb, trimsj, il);
-                }
-                /* spans ride in after the (now replaced) trim array */
-                char spansj[1280];
-                int so = snprintf(spansj, sizeof(spansj), ",\"spans\":[");
-                for (int i = 0; i < tl_nw; i++)
-                    so += snprintf(spansj + so, sizeof(spansj) - so, "%s%.4f",
-                                   i ? "," : "", (double)tl_spans[i] / tlfps);
-                snprintf(spansj + so, sizeof(spansj) - so, "]");
-                size_t sil = strlen(spansj);
-                used = strlen(g_runs[idx].yaml);
-                size_t off = (size_t)(tb + il - g_runs[idx].yaml);
-                if (used + sil + 1 < sizeof(g_runs[idx].yaml)) {
-                    memmove(tb + il + sil, tb + il, used - off + 1);
-                    memcpy(tb + il, spansj, sil);
-                }
-            }
-        }
-        /* loud tiling evidence: what the film will actually be */
-        {
-            char cv[32];
-            int carry = tl_scan_carry(req.body.c_str(), cv, sizeof cv)
-                            ? atoi(cv)
-                            : (tl_carry_draft[0] ? atoi(tl_carry_draft)
-                                                 : tl_carry_default());
-            int tot = 0;
-            for (int i = 0; i < tl_nw; i++) tot += tl_spans[i];
-            fprintf(stderr,
-                    "[timeline] latent-chain law: windows=%d carry=%dslots "
-                    "trims=[%d,%d,%d,%d%s] tiles=[%d,%d,%d,%d%s] "
-                    "total=%df/%.3fs\n",
-                    tl_nw, carry,
-                    tl_trims[0], tl_nw > 1 ? tl_trims[1] : -1,
-                    tl_nw > 2 ? tl_trims[2] : -1, tl_nw > 3 ? tl_trims[3] : -1,
-                    tl_nw > 4 ? ",..." : "",
-                    tl_spans[0], tl_nw > 1 ? tl_spans[1] : -1,
-                    tl_nw > 2 ? tl_spans[2] : -1, tl_nw > 3 ? tl_spans[3] : -1,
-                    tl_nw > 4 ? ",..." : "",
-                    tot, (double)tot / tlfps);
-        }
-    }
     /* stage list comes from the final YAML (reported while queued too) */
     run_parse_stages(idx);
 

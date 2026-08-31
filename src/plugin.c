@@ -21,6 +21,10 @@ struct inference_plugin {
                    inference_tensor *, size_t);
     void (*unload)(inference_context *);
     int (*stop)(inference_context *);   /* OPTIONAL (audit F3) */
+    /* OPTIONAL card compose (PLUGIN ARCHITECTURE LAW, 2026-08-31):
+     * lane/card-specific run-graph rewrite, owned by the plugin. */
+    int (*card_compose)(const char *, const char *, const char *,
+                        char *, size_t, const char *, char *, size_t);
 };
 
 inference_plugin *plugin_load(const char *so_path) {
@@ -60,6 +64,12 @@ inference_plugin *plugin_load(const char *so_path) {
     /* OPTIONAL: node_stop (audit F3) — absent in older plugins, never fatal */
     p->stop = (int (*)(inference_context *))dlsym(h, "node_stop");
 
+    /* OPTIONAL: card_compose (PLUGIN ARCHITECTURE LAW) — absent = the
+     * lane has no card semantics; plain runs are unaffected. */
+    p->card_compose = (int (*)(const char *, const char *, const char *,
+                               char *, size_t, const char *,
+                               char *, size_t))dlsym(h, "card_compose");
+
     return p;
 }
 
@@ -98,4 +108,17 @@ void plugin_unload(inference_plugin *p) {
 
 void inference_free(void *ptr) {
     free(ptr);
+}
+
+/* Card compose dispatch (PLUGIN ARCHITECTURE LAW): the server NEVER
+ * names a lane. It finds the plugin that owns the run's engine type
+ * and, if that plugin implements card semantics, hands over the graph. */
+int plugin_card_compose(const inference_plugin *p, const char *body,
+                        const char *model, const char *run_id,
+                        char *yaml, size_t cap,
+                        const char *prior_tail, char *extra_json,
+                        size_t extra_cap) {
+    if (!p || !p->card_compose) return 0;   /* no card semantics: no-op */
+    return p->card_compose(body, model, run_id, yaml, cap,
+                           prior_tail, extra_json, extra_cap);
 }

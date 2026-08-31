@@ -30,6 +30,15 @@ int plugin_execute(const inference_plugin *p,
  * the plugin exports it; returns 0 (no-op) when it does not. */
 int plugin_stop(const inference_plugin *p, inference_context *ctx);
 
+/* Optional card-compose hook (PLUGIN ARCHITECTURE LAW, 2026-08-31):
+ * lane/card-specific run-graph rewrite, owned by the plugin. Returns 0
+ * when the plugin has no card semantics (plain run, no-op). */
+int plugin_card_compose(const inference_plugin *p, const char *body,
+                        const char *model, const char *run_id,
+                        char *yaml, size_t cap,
+                        const char *prior_tail, char *extra_json,
+                        size_t extra_cap);
+
 void plugin_unload_model(const inference_plugin *p, inference_context *ctx);
 void plugin_unload(inference_plugin *p);
 

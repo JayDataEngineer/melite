@@ -66,3 +66,26 @@ abandoned tickets drain in order), stop flags are C11 atomics, and all 24
 regression checks in tests/test_queue.py are green — the stop door lands
 in 0.3s with a witnessed /interrupt, SIGTERM manufactures zero zombies,
 and boot sweeps are idempotent.
+
+## PLUGIN ARCHITECTURE LAW (operator order, 2026-08-31, verbatim intent)
+
+> "ARE YOU WRITING THE H3 TIMELINE SPECIFIC THINGS IN SERVER.CPP?"
+
+- Lane/card-specific knowledge — calls→windows compile, grid math,
+  template expansion, inject splices, knob maps, template families —
+  lives in the PLUGIN that owns the lane (code + data), NEVER in
+  src/server.cpp. The core stays generic.
+- Enforcement shape: the optional `card_compose` C-ABI hook
+  (include/inference/plugin.h). Phase 1 (run_id="") compiles/validates
+  and returns extra run inputs; phase 2 rewrites the run graph in
+  place. The server reads the engine type FROM THE GRAPH — it names no
+  lane and no engine.
+- The card's knob map is DATA the plugin owns, next to its model:
+  plugins/<plugin>/models/video/<model>/card_knobs.yaml. A knob the
+  card offers must be in the map AND real in the lane's templates
+  (LAYER AUDIT enforces both directions; card_knobs.yaml is the SSOT
+  for what compose actually splices).
+- History note: the h3 timeline feature shipped 2026-08-30/31 with its
+  compile/grid/splice logic embedded in server.cpp — a regression this
+  law repaid. If a lane "needs" core changes to express its card, the
+  ABI is extended generically instead.

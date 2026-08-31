@@ -86,6 +86,12 @@ clone https://github.com/rgthree/rgthree-comfy.git \
       "$CUSTOM_NODES/rgthree-comfy"
 clone https://github.com/Comfy-Org/Nvidia_RTX_Nodes_ComfyUI.git \
       "$CUSTOM_NODES/Nvidia_RTX_Nodes_ComfyUI"
+clone https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler.git \
+      "$CUSTOM_NODES/ComfyUI-SeedVR2_VideoUpscaler"
+clone https://github.com/MrForExample/ComfyUI-3D-Pack.git \
+      "$CUSTOM_NODES/ComfyUI-3D-Pack"
+clone https://github.com/yuvraj108c/ComfyUI-Dwpose-Tensorrt.git \
+      "$CUSTOM_NODES/ComfyUI-Dwpose-Tensorrt"
 
 # ─── 2. Node Dependencies (pip) ──────────────────────────────────
 echo ""
@@ -96,7 +102,10 @@ for req in \
   "$CUSTOM_NODES/Comfyui-PlagueKind-Nodes/requirements.txt" \
   "$CUSTOM_NODES/ComfyUI-SolAttn_triton/requirements.txt" \
   "$CUSTOM_NODES/rgthree-comfy/requirements.txt" \
-  "$CUSTOM_NODES/Nvidia_RTX_Nodes_ComfyUI/requirements.txt"; do
+  "$CUSTOM_NODES/Nvidia_RTX_Nodes_ComfyUI/requirements.txt" \
+  "$CUSTOM_NODES/ComfyUI-SeedVR2_VideoUpscaler/requirements.txt" \
+  "$CUSTOM_NODES/ComfyUI-3D-Pack/requirements.txt" \
+  "$CUSTOM_NODES/ComfyUI-Dwpose-Tensorrt/requirements.txt"; do
   if [ -f "$req" ]; then
     name=$(basename $(dirname "$req"))
     "$VENV_PYTHON" -m pip install -q -r "$req" 2>/dev/null && \
@@ -109,6 +118,9 @@ echo ""
 echo "[3/6] Diffusion Models"
 comfy_dl \
   "https://huggingface.co/smhfacct/Minimax-H3-fl2va-ref2va-hybrid-models/resolve/main/minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors" \
+  "diffusion_models"
+comfy_dl \
+  "https://huggingface.co/smhfacct/Minimax-H3-fl2va-ref2va-hybrid-models/resolve/main/minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors" \
   "diffusion_models"
 comfy_dl \
   "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors" \
@@ -174,13 +186,18 @@ FAIL=0
 # ENABLED — the base pack owns the four shared class names, the
 # MultiRef superset fork adds its uniquely-named nodes. Neither pack
 # disabled, neither "supersedes" the other.
-for d in h3_motion_context ComfyUI-H3-Motion-Context-MultiRef Comfyui-PlagueKind-Nodes ComfyUI-KJNodes ComfyUI-VideoHelperSuite ComfyUI-SolAttn_triton rgthree-comfy Nvidia_RTX_Nodes_ComfyUI; do
+for d in h3_motion_context ComfyUI-H3-Motion-Context-MultiRef Comfyui-PlagueKind-Nodes ComfyUI-KJNodes ComfyUI-VideoHelperSuite ComfyUI-SolAttn_triton rgthree-comfy Nvidia_RTX_Nodes_ComfyUI ComfyUI-SeedVR2_VideoUpscaler ComfyUI-3D-Pack ComfyUI-Dwpose-Tensorrt; do
   [ -d "$CUSTOM_NODES/$d" ] && [ -f "$CUSTOM_NODES/$d/__init__.py" ] && ok "$d" || { echo "  [MISSING] $d"; FAIL=1; }
 done
 
 for m in \
   "$MODEL_ROOT/diffusion_models/minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors" \
+  "$MODEL_ROOT/diffusion_models/minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors" \
   "$MODEL_ROOT/loras/h3/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors" \
+  "$MODEL_ROOT/vae/minimax_h3_audio_vae_fp32.safetensors" \
+  "$MODEL_ROOT/vae/minimax_h3_video_vae_int8_convrot.safetensors" \
+  "$MODEL_ROOT/vae_approx/taeh3.safetensors" \
+  "$MODEL_ROOT/text_encoders/qwen3vl_32b_minimax_h3_int8_convrot.safetensors" \
   "$COMFYUI_DIR/models/frame_interpolation/film_net_fp16.safetensors"; do
   [ -f "$m" ] && ok "$(basename $m)" || { echo "  [MISSING] $m"; FAIL=1; }
 done

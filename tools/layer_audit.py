@@ -34,6 +34,11 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LANE = os.path.join(ROOT, "pipelines", "h3-timeline")
+# (PLUGIN ARCHITECTURE LAW 2026-08-31) the compose SSOT: what the plugin's
+# card_compose hook ACTUALLY splices. A knob in the map is wired by
+# construction; the templates below remain the "node really exists" proof.
+KNOBMAP = os.path.join(ROOT, "plugins", "comfyui", "models", "video",
+                       "h3-timeline", "card_knobs.yaml")
 CARD = "/home/user/Documents/programs/ray/plugins/melite-video/cards/video_timeline/form_video_timeline.yaml"
 
 # card knob -> regex over the backend truth text. A knob is LIVE iff any
@@ -121,8 +126,11 @@ BACKEND_KNOBS = {
 
 def backend_truth():
     chunks = {}
-    for f in sorted(glob.glob(os.path.join(LANE, "*.json"))) + \
-             sorted(glob.glob(os.path.join(LANE, "*.yaml"))):
+    srcs = sorted(glob.glob(os.path.join(LANE, "*.json"))) + \
+        sorted(glob.glob(os.path.join(LANE, "*.yaml")))
+    if os.path.exists(KNOBMAP):
+        srcs.append(KNOBMAP)   # compose SSOT (PLUGIN ARCHITECTURE LAW)
+    for f in srcs:
         try:
             chunks[os.path.basename(f)] = open(f, encoding="utf-8").read()
         except OSError:

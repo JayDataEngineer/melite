@@ -73,7 +73,7 @@
   "class_type": "MiniMaxH3SigmaShift",
   "inputs": {
    "model": [
-    "LoraLoader.0",
+    "SLASwitch.0",
     0
    ],
    "shift_video": 12,
@@ -135,7 +135,7 @@
   "class_type": "SaveImage",
   "inputs": {
    "images": [
-    "VAEDecode.0",
+    "InterpSwitch.0",
     0
    ],
    "filename_prefix": "h3_t4_w4"
@@ -162,6 +162,91 @@
     0
    ],
    "filename_prefix": "h3_t4_w4_audio"
+  }
+ },
+ "H3SLAAttention.0": {
+  "class_type": "H3SLAAttention",
+  "inputs": {
+   "model": [
+    "LoraLoader.0",
+    0
+   ],
+   "sparsity_ratio": 0.9,
+   "block_size": "32",
+   "min_seq_len": 8192,
+   "dense_last_steps": 0,
+   "protect_audio": true,
+   "enabled": true,
+   "dense_steps": "0",
+   "dense_backend": "comfy_kitchen",
+   "disable_fp16_accum": false,
+   "stabilize_motion": true,
+   "reference_protection": false
+  }
+ },
+ "SLASwitch.0": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "switch": false,
+   "on_false": [
+    "LoraLoader.0",
+    0
+   ],
+   "on_true": [
+    "H3SLAAttention.0",
+    0
+   ]
+  }
+ },
+ "ImageSharpenKJ.0": {
+  "class_type": "ImageSharpenKJ",
+  "inputs": {
+   "image": [
+    "VAEDecode.0",
+    0
+   ],
+   "method": "rcas",
+   "strength": 0.3
+  }
+ },
+ "SharpenSwitch.0": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "switch": false,
+   "on_false": [
+    "VAEDecode.0",
+    0
+   ],
+   "on_true": [
+    "ImageSharpenKJ.0",
+    0
+   ]
+  }
+ },
+ "FILMVFI.0": {
+  "class_type": "FILM VFI",
+  "inputs": {
+   "ckpt_name": "film_net_fp32.pt",
+   "frames": [
+    "SharpenSwitch.0",
+    0
+   ],
+   "clear_cache_after_n_frames": 10,
+   "multiplier": 2
+  }
+ },
+ "InterpSwitch.0": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "switch": false,
+   "on_false": [
+    "SharpenSwitch.0",
+    0
+   ],
+   "on_true": [
+    "FILMVFI.0",
+    0
+   ]
   }
  }
 }

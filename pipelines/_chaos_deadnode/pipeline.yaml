@@ -1,0 +1,6 @@
+name: _chaos_deadnode
+description: "queue chaos fixture - dead node class"
+nodes:
+  - id: generate
+    type: comfyui
+    params: {"server_url":"http://127.0.0.1:39965","workflow_file":"../pipelines/_chaos_deadnode/dead_workflow.json","out_dir":"./output","timeout_s":30}
