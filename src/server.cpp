@@ -1959,6 +1959,44 @@ static void handle_card_agent(const httplib::Request &req,
         else
             snprintf(abs_prompt, sizeof(abs_prompt), "%s/%s", wd, prompt_file);
     }
+
+    /* PRE-FLIGHT: verify dsh is available and the headless profile can
+     * reach an LLM BEFORE spawning. A silent hang wastes 300s of GPU
+     * queue time for zero output. */
+    {
+        int dsh_ok = (system("which dsh >/dev/null 2>&1") == 0);
+        if (!dsh_ok) {
+            fprintf(stderr, "[lane] AGENT FAILURE: 'dsh' not found on PATH\n");
+            char fail_out[512];
+            snprintf(fail_out, sizeof(fail_out),
+                     "{\"status\":\"failed\",\"error\":\"dsh not found on PATH. "
+                     "Install DeepSeek Harness first.\"}");
+            res.status = 503;
+            res.set_content(fail_out, "application/json");
+            return;
+        }
+        /* DSH headless uses mimo-v2.5 via opencode-go. If the API key
+         * is not set, DSH will start but hang forever with zero output.
+         * Check the key env var directly. */
+        const char *key = getenv("OPENCODE_GO_API_KEY");
+        if (!key || !key[0]) {
+            /* Also check DEEPSEEK_API_KEY as fallback */
+            key = getenv("DEEPSEEK_API_KEY");
+        }
+        if (!key || !key[0]) {
+            fprintf(stderr, "[lane] AGENT FAILURE: no LLM API key set. "
+                    "Required env: OPENCODE_GO_API_KEY or DEEPSEEK_API_KEY\n");
+            char fail_out[600];
+            snprintf(fail_out, sizeof(fail_out),
+                     "{\"status\":\"failed\",\"error\":\"No LLM API key set. "
+                     "Set OPENCODE_GO_API_KEY or DEEPSEEK_API_KEY env var, "
+                     "then restart the gateway.\"}");
+            res.status = 503;
+            res.set_content(fail_out, "application/json");
+            return;
+        }
+    }
+
     char cmd[262144];
     snprintf(cmd, sizeof(cmd),
         "cd '%s' && MELITE_CARD_TOOLS_LANE='%s' INF_AGENT_SESSION='%s' "
@@ -1974,13 +2012,53 @@ static void handle_card_agent(const httplib::Request &req,
     FILE *sp = popen(cmd, "r");
     if (sp) pclose(sp);
 
+    /* Health check: wait 3s, then verify the agent is alive and producing
+     * output. A silent hang (missing API key, missing dsh, profile broken)
+     * must be caught HERE — not after 300s of silence. */
+    sleep(3);
+    struct stat st;
+    int log_empty = (stat(as->log, &st) != 0 || st.st_size == 0);
+    /* Check if the DSH process is still running */
+    char ps_cmd[256];
+    snprintf(ps_cmd, sizeof(ps_cmd),
+             "pgrep -f 'INF_AGENT_SESSION=%s' >/dev/null 2>&1", token);
+    int still_running = (system(ps_cmd) == 0);
+
+    if (log_empty && !still_running) {
+        /* DSH died immediately — likely missing API key, broken profile,
+         * or dsh not installed. Read the last line of stderr if any. */
+        fprintf(stderr, "[lane] AGENT FAILURE: session %s — dsh process "
+                "died within 3s with empty log. Check:\n"
+                "  1. OPENCODE_GO_API_KEY env var is set\n"
+                "  2. dsh --profile headless works manually\n"
+                "  3. ~/.dsh/profiles/headless/ has valid config\n",
+                token);
+        char fail_out[1200];
+        snprintf(fail_out, sizeof(fail_out),
+                 "{\"session\":\"%s\",\"lane\":\"%s\",\"status\":\"failed\","
+                 "\"error\":\"agent process died within 3s (empty log). "
+                 "Check OPENCODE_GO_API_KEY is set and 'dsh --profile headless' "
+                 "works manually.\",\"log\":\"%s\",\"prompt\":\"%s\"}",
+                 token, as->lane, as->log, prompt_file);
+        res.set_content(fail_out, "application/json");
+        res.status = 503;
+        return;
+    }
+
+    if (log_empty && still_running) {
+        fprintf(stderr, "[lane] WARNING: session %s — dsh alive but no "
+                "output after 3s. LLM may be slow to respond.\n", token);
+    }
+
     char out[1024];
     snprintf(out, sizeof(out),
              "{\"session\":\"%s\",\"lane\":\"%s\",\"log\":\"%s\","
              "\"prompt\":\"%s\",\"lane_dir\":\"%s\","
+             "\"status\":\"%s\","
              "\"audit\":\"read lane_dir + prompt file; the session sees "
              "ONE tool and this prompt only\"}",
-             token, as->lane, as->log, prompt_file, dir_out);
+             token, as->lane, as->log, prompt_file, dir_out,
+             (log_empty && still_running) ? "starting" : "active");
     res.set_content(out, "application/json");
     fprintf(stderr, "[lane] agent session %s spawned for lane %s (dir %s)\n",
             token, as->lane, dir_out);
