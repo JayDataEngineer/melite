@@ -1960,9 +1960,7 @@ static void handle_card_agent(const httplib::Request &req,
             snprintf(abs_prompt, sizeof(abs_prompt), "%s/%s", wd, prompt_file);
     }
 
-    /* PRE-FLIGHT: verify dsh is available and the headless profile can
-     * reach an LLM BEFORE spawning. A silent hang wastes 300s of GPU
-     * queue time for zero output. */
+    /* PRE-FLIGHT: verify dsh is available BEFORE spawning. */
     {
         int dsh_ok = (system("which dsh >/dev/null 2>&1") == 0);
         if (!dsh_ok) {
@@ -1971,26 +1969,6 @@ static void handle_card_agent(const httplib::Request &req,
             snprintf(fail_out, sizeof(fail_out),
                      "{\"status\":\"failed\",\"error\":\"dsh not found on PATH. "
                      "Install DeepSeek Harness first.\"}");
-            res.status = 503;
-            res.set_content(fail_out, "application/json");
-            return;
-        }
-        /* DSH headless uses mimo-v2.5 via opencode-go. If the API key
-         * is not set, DSH will start but hang forever with zero output.
-         * Check the key env var directly. */
-        const char *key = getenv("OPENCODE_GO_API_KEY");
-        if (!key || !key[0]) {
-            /* Also check DEEPSEEK_API_KEY as fallback */
-            key = getenv("DEEPSEEK_API_KEY");
-        }
-        if (!key || !key[0]) {
-            fprintf(stderr, "[lane] AGENT FAILURE: no LLM API key set. "
-                    "Required env: OPENCODE_GO_API_KEY or DEEPSEEK_API_KEY\n");
-            char fail_out[600];
-            snprintf(fail_out, sizeof(fail_out),
-                     "{\"status\":\"failed\",\"error\":\"No LLM API key set. "
-                     "Set OPENCODE_GO_API_KEY or DEEPSEEK_API_KEY env var, "
-                     "then restart the gateway.\"}");
             res.status = 503;
             res.set_content(fail_out, "application/json");
             return;
