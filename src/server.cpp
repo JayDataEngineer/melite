@@ -2208,96 +2208,9 @@ static void handle_pipelines_start(const httplib::Request &req,
             }
         }
     }
-    /* (2026-08-30 CARD LAW, operator order) a timeline-graph run without
-     * its card is REJECTED before registration: compose via the
-     * h3_timeline_card tool (draft_id) or carry the calls document.
-     * Hand-rolled params.prompt2..4 bodies (consumer model improvisation,
-     * observed twice) produce silent 1.66s stubs — never again. */
-    if (yaml_override[0] && tl_nw == 0) {
-        char did[96] = "";
-        int card_ok = 0;
-        if (inf_json_string(body, "draft_id", did, sizeof(did)) == 0 && did[0]) {
-            char dp[256];
-            snprintf(dp, sizeof(dp), "./drafts/%s.json", did);
-            if (access(dp, R_OK) == 0) card_ok = 1;
-            else {
-                snprintf(dp, sizeof(dp), "./drafts/%s-1.json", did);
-                if (access(dp, R_OK) == 0) card_ok = 1;
-            }
-        }
-        if (!card_ok) {
-            res.status = 400;
-            res.set_content(
-                "{\"error\":\"timeline runs require their action card: compose via the h3_timeline_card tool and send draft_id, or carry the calls document. Bare prompt/params bodies are rejected (card law)\"}",
-                "application/json");
-            return;
-        }
-        /* THE CARD IS THE RUN DEFINITION: when the body carries no calls,
-         * the CARD DOCUMENT is the compose body. (PLUGIN ARCHITECTURE
-         * LAW) phase 1 runs here — the plugin compiles and validates;
-         * the server relays its verdict verbatim. seed rides from the
-         * card when the body omits it. */
-        {
-            char dp[256];
-            snprintf(dp, sizeof(dp), "./drafts/%s.json", did);
-            if (access(dp, R_OK) != 0)
-                snprintf(dp, sizeof(dp), "./drafts/%s-1.json", did);
-            static char dbuf[32768];
-            FILE *df = fopen(dp, "rb");
-            if (df) {
-                size_t dn = fread(dbuf, 1, sizeof(dbuf) - 1, df);
-                fclose(df); dbuf[dn] = 0;
-                card_body = dbuf;
-                char etype0[64] = "";
-                const char *tt = strstr(yaml_override, "type: ");
-                if (tt) {
-                    size_t e = 0;
-                    for (const char *c = tt + 6;
-                         e + 1 < sizeof etype0 && *c && *c != '\n' &&
-                         *c != ' ' && *c != '"'; c++)
-                        etype0[e++] = *c;
-                    etype0[e] = 0;
-                }
-                if (!etype0[0]) {
-                    res.status = 500;
-                    res.set_content("{\"error\":\"card compose: no engine type in pipeline graph\"}", "application/json");
-                    return;
-                }
-                int ph1 = runner_card_compose(g_server_runner, etype0,
-                                              dbuf, model, "", NULL,
-                                              NULL, 0,
-                                              card_extra, sizeof card_extra);
-                if (ph1 == 0 && strstr(card_extra, "\"prompt\""))
-                    tl_nw = 1;   /* marker: windows compiled */
-                if (ph1 < 0) {
-                    const char *e = strstr(card_extra, "\"error\":\"");
-                    char out[640] = "{\"error\":\"card compose failed (plugin hook)\"}";
-                    if (e) {
-                        e += 9;
-                        char m[512]; size_t ml = 0;
-                        while (*e && *e != '"' && ml < sizeof m - 1)
-                            m[ml++] = *e++;
-                        m[ml] = 0;
-                        if (ml) snprintf(out, sizeof out,
-                                         "{\"error\":\"%s\"}", m);
-                    }
-                    res.status = (ph1 == -2 || ph1 == -3 || ph1 == -4)
-                                     ? 400 : 500;
-                    res.set_content(out, "application/json");
-                    return;
-                }
-                if (tl_nw == 0)
-                    fprintf(stderr,
-                            "[draft] card %s carries no parsable calls\n", did);
-                else
-                    fprintf(stderr,
-                            "[draft] run executes card %s (%d windows)\n",
-                            did, tl_nw);
-                if (seed < 0) seed = inf_json_int(dbuf, "seed", -1);
-                if (seed < 0) seed = 42;
-            }
-        }
-    }
+
+    /* (moved: card compose gate runs AFTER model resolution so
+     * yaml_override is set for {model} requests too) */
     if (!prompt[0]) {
         res.status = 400;
         res.set_content("{\"error\":\"missing prompt\"}", "application/json");
@@ -2349,6 +2262,95 @@ static void handle_pipelines_start(const httplib::Request &req,
                          "{\"error\":\"no pipeline for model: %s\"}", model);
                 res.set_content(err, "application/json");
                 return;
+            }
+        }
+    }
+    /* (2026-08-30 CARD LAW, operator order, 2026-08-31 MOVED after
+     * model resolution so {model} requests get yaml_override set first)
+     * a timeline-graph run without its card is REJECTED before
+     * registration: compose via the card tool (draft_id) or carry the
+     * calls document. */
+    if (yaml_override[0] && tl_nw == 0) {
+        char did[96] = "";
+        int card_ok = 0;
+        if (inf_json_string(body, "draft_id", did, sizeof(did)) == 0 && did[0]) {
+            char dp[256];
+            snprintf(dp, sizeof(dp), "./drafts/%s.json", did);
+            if (access(dp, R_OK) == 0) card_ok = 1;
+            else {
+                snprintf(dp, sizeof(dp), "./drafts/%s-1.json", did);
+                if (access(dp, R_OK) == 0) card_ok = 1;
+            }
+        }
+        if (!card_ok) {
+            res.status = 400;
+            res.set_content(
+                "{\"error\":\"timeline runs require their action card: compose via the card tool and send draft_id, or carry the calls document\"}",
+                "application/json");
+            return;
+        }
+        /* THE CARD IS THE RUN DEFINITION: when the body carries no calls,
+         * the CARD DOCUMENT is the compose body. (PLUGIN ARCHITECTURE
+         * LAW) phase 1 runs here — the plugin compiles and validates;
+         * the server relays its verdict verbatim. */
+        {
+            char dp[256];
+            snprintf(dp, sizeof(dp), "./drafts/%s.json", did);
+            if (access(dp, R_OK) != 0)
+                snprintf(dp, sizeof(dp), "./drafts/%s-1.json", did);
+            static char dbuf[32768];
+            FILE *df = fopen(dp, "rb");
+            if (df) {
+                size_t dn = fread(dbuf, 1, sizeof(dbuf) - 1, df);
+                fclose(df); dbuf[dn] = 0;
+                card_body = dbuf;
+                char etype0[64] = "";
+                const char *tt = strstr(yaml_override, "type: ");
+                if (tt) {
+                    size_t e = 0;
+                    for (const char *c = tt + 6;
+                         e + 1 < sizeof etype0 && *c && *c != '\n' &&
+                         *c != ' ' && *c != '"'; c++)
+                        etype0[e++] = *c;
+                    etype0[e] = 0;
+                }
+                if (!etype0[0]) {
+                    res.status = 500;
+                    res.set_content("{\"error\":\"card compose: no engine type\"}", "application/json");
+                    return;
+                }
+                int ph1 = runner_card_compose(g_server_runner, etype0,
+                                              dbuf, model, "", NULL,
+                                              NULL, 0,
+                                              card_extra, sizeof card_extra);
+                if (ph1 == 0 && strstr(card_extra, "\"prompt\""))
+                    tl_nw = 1;   /* marker: windows compiled */
+                if (ph1 < 0) {
+                    const char *e = strstr(card_extra, "\"error\":\"");
+                    char out[640] = "{\"error\":\"card compose failed (plugin hook)\"}";
+                    if (e) {
+                        e += 9;
+                        char m[512]; size_t ml = 0;
+                        while (*e && *e != '"' && ml < sizeof m - 1)
+                            m[ml++] = *e++;
+                        m[ml] = 0;
+                        if (ml) snprintf(out, sizeof out,
+                                         "{\"error\":\"%s\"}", m);
+                    }
+                    res.status = (ph1 == -2 || ph1 == -3 || ph1 == -4)
+                                     ? 400 : 500;
+                    res.set_content(out, "application/json");
+                    return;
+                }
+                if (tl_nw == 0)
+                    fprintf(stderr,
+                            "[draft] card %s carries no parsable calls\n", did);
+                else
+                    fprintf(stderr,
+                            "[draft] card %s -> %d windows\n",
+                            did, tl_nw);
+                if (seed < 0) seed = inf_json_int(dbuf, "seed", -1);
+                if (seed < 0) seed = 42;
             }
         }
     }
