@@ -142,11 +142,31 @@ int runner_card_compose(inference_runner *r, const char *type_id,
                         const char *run_id, char *yaml, size_t cap,
                         const char *prior_tail, char *extra_json,
                         size_t extra_cap) {
-    if (!r || !type_id) return -1;
+    if (!r || !type_id) {
+        if (extra_json && extra_cap > 0)
+            snprintf(extra_json, extra_cap,
+                     "{\"error\":\"card compose: runner or engine type is NULL "
+                     "(internal error)\"}");
+        return -1;
+    }
     const char *path = find_plugin_path(r, type_id);
-    if (!path) return -1;
+    if (!path) {
+        if (extra_json && extra_cap > 0)
+            snprintf(extra_json, extra_cap,
+                     "{\"error\":\"engine type '%s' has no registered plugin "
+                     "(.so not found in plugin registry)\"}",
+                     type_id);
+        return -1;
+    }
     inference_plugin *p = plugin_load(path);
-    if (!p) return -1;
+    if (!p) {
+        if (extra_json && extra_cap > 0)
+            snprintf(extra_json, extra_cap,
+                     "{\"error\":\"failed to load plugin for engine type '%s' "
+                     "(path='%s', dlopen/dlsym failed — check stderr)\"}",
+                     type_id, path);
+        return -1;
+    }
     int rc = plugin_card_compose(p, body, model, run_id, yaml, cap,
                                  prior_tail, extra_json, extra_cap);
     plugin_unload(p);

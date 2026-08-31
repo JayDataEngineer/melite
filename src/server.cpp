@@ -2654,8 +2654,8 @@ static void handle_pipelines_start(const httplib::Request &req,
         if (ph1 == 0 && card_extra[0])
             tl_nw = strstr(card_extra, "\"prompt\"") ? 1 : 0;  /* marker */
         if (ph1 < 0) {
-            /* plugin supplied the message: relay verbatim.
-             * -2..-6 = the card's fault (400); -1/-7 = infra (500). */
+            /* runner_card_compose now writes a named error into card_extra
+             * for every failure path.  Extract and relay it. */
             const char *e = strstr(card_extra, "\"error\":\"");
             if (e) {
                 e += 9;
@@ -2666,15 +2666,23 @@ static void handle_pipelines_start(const httplib::Request &req,
                 if (ml) {
                     char out[600];
                     snprintf(out, sizeof out, "{\"error\":\"%s\"}", m);
-                    res.status = (ph1 <= -2 && ph1 >= -15)
+                    res.status = (ph1 <= -2 && ph1 >= -16)
                                      ? 400 : 500;
                     res.set_content(out, "application/json");
                     return;
                 }
             }
+            /* belt-and-suspenders: runner should always populate extra_json
+             * on failure, but if it somehow didn't, produce a named error
+             * with the failing step rather than a bare "plugin hook". */
+            char out[512];
+            snprintf(out, sizeof out,
+                     "{\"error\":\"card compose phase 1 failed for engine "
+                     "'%s' model '%s' (rc=%d, no error message from plugin — "
+                     "check gateway stderr)\"}",
+                     etype0, model, ph1);
             res.status = 500;
-            res.set_content("{\"error\":\"card compose failed (plugin hook)\"}",
-                            "application/json");
+            res.set_content(out, "application/json");
             return;
         }
         if (tl_nw > 0) {
@@ -2710,8 +2718,12 @@ static void handle_pipelines_start(const httplib::Request &req,
      * model resolution so {model} requests get yaml_override set first)
      * a timeline-graph run without its card is REJECTED before
      * registration: compose via the card tool (draft_id) or carry the
-     * calls document. */
-    if (yaml_override[0] && tl_nw == 0) {
+     * calls document.  Guard: only timeline pipelines (those carrying
+     * window nodes) need the card — plain comfyui/echo pipelines must
+     * pass through.  The window1 sentinel was lost in 4015945; restored
+     * to unblock non-timeline yaml_regression tests. */
+    if (yaml_override[0] && strstr(yaml_override, "window1") &&
+        tl_nw == 0) {
         char did[96] = "";
         int card_ok = 0;
         if (inf_json_string(body, "draft_id", did, sizeof(did)) == 0 && did[0]) {
@@ -2778,7 +2790,7 @@ static void handle_pipelines_start(const httplib::Request &req,
                         if (ml) snprintf(out, sizeof out,
                                          "{\"error\":\"%s\"}", m);
                     }
-                    res.status = (ph1 <= -2 && ph1 >= -15)
+                    res.status = (ph1 <= -2 && ph1 >= -16)
                                      ? 400 : 500;
                     res.set_content(out, "application/json");
                     return;
@@ -3439,7 +3451,7 @@ static void handle_pipelines_start(const httplib::Request &req,
             }
         }
         if (etype[0]) {
-            char ex2[512] = "";
+            char ex2[1024] = "";
             int crc = runner_card_compose(g_server_runner, etype,
                                           card_body, model,
                                           g_runs[idx].run_id,
@@ -3449,11 +3461,35 @@ static void handle_pipelines_start(const httplib::Request &req,
                                               ? prior_tail_path : NULL,
                                           ex2, sizeof ex2);
             if (crc != 0) {
-                run_set_state(idx, "error", "card compose failed (plugin hook)");
+                /* runner_card_compose now writes a named error into ex2
+                 * for every failure path (runner infra + plugin). */
+                const char *emsg = strstr(ex2, "\"error\":\"");
+                if (emsg) {
+                    emsg += 9;
+                    char m[512]; size_t ml = 0;
+                    while (*emsg && *emsg != '"' && ml < sizeof m - 1)
+                        m[ml++] = *emsg++;
+                    m[ml] = 0;
+                    if (ml) {
+                        run_set_state(idx, "error", m);
+                        char out[640];
+                        snprintf(out, sizeof out, "{\"error\":\"%s\"}", m);
+                        res.status = (crc <= -2 && crc >= -15)
+                                         ? 400 : 500;
+                        res.set_content(out, "application/json");
+                        return;
+                    }
+                }
+                /* belt-and-suspenders: should never reach here now */
+                char out[512];
+                snprintf(out, sizeof out,
+                         "{\"error\":\"card compose phase 2 failed for "
+                         "engine '%s' model '%s' run '%s' (rc=%d, no error "
+                         "message from plugin)\"}",
+                         etype, model, g_runs[idx].run_id, crc);
+                run_set_state(idx, "error", out + 11); /* skip {"error":" */
                 res.status = 500;
-                res.set_content(
-                    "{\"error\":\"card compose failed (plugin hook)\"}",
-                    "application/json");
+                res.set_content(out, "application/json");
                 return;
             }
         }

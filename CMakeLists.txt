@@ -365,12 +365,18 @@ target_include_directories(cjson PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/
 # ---------------------------------------------------------------------------
 # ComfyUI engine plugin (always built — ComfyUI as a managed engine, peer of the C-ABI plugins)
 # ---------------------------------------------------------------------------
-add_library(comfyui_plugin SHARED plugins/comfyui/engines/comfyui/comfyui_plugin.c)
+add_library(comfyui_plugin SHARED
+    plugins/comfyui/engines/comfyui/comfyui_plugin.c
+    plugins/comfyui/engines/comfyui/h3_card.c)
 target_include_directories(comfyui_plugin PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(comfyui_plugin PRIVATE cjson)
 set_target_properties(comfyui_plugin PROPERTIES
     PREFIX ""
     POSITION_INDEPENDENT_CODE ON
+    # (no-silent-error law) a plugin .so with unresolved symbols links
+    # fine and then dies at RUNTIME dlopen — surfacing only as a bare
+    # "card compose failed" 500. Fail the BUILD instead.
+    LINK_OPTIONS "-Wl,--no-undefined"
 )
 
 # Kimodo.cpp engine plugin (always built — kimodo.cpp as a managed engine)
