@@ -1,7 +1,0 @@
-name: seedvr2-video
-description: "video_upscale lane — graph harvested from ray compose dry-run, pinned + injected"
-
-nodes:
-  - id: generate
-    type: comfyui
-    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/seedvr2-video/workflow.json","out_dir":"./output","timeout_s":1200,"inject":{"SeedVR2VideoUpscaler.0.seed": "$seed"}}

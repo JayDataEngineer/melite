@@ -1,6 +1,0 @@
-name: keeper_trenchcoat_trellis
-description: "TRELLIS mesh for keeper trench coat"
-nodes:
-  - id: generate
-    type: trellis_native
-    params: {"models_dir":"/mnt/data/models/trellis-cpp/q8","res":512,"seed":42,"gpu":0,"image_path":"/home/user/Documents/programs/ray/infra/repos/ComfyUI/input/keeper_trenchcoat.png"}

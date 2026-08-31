@@ -1,7 +1,0 @@
-name: ideogram
-description: "ideogram lane — graph harvested from ray compose dry-run, pinned + injected"
-
-nodes:
-  - id: generate
-    type: comfyui
-    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/ideogram/workflow.json","out_dir":"./output","timeout_s":600,"inject":{"RandomNoise.0.seed": "$seed", "CLIPTextEncode.0.text": "$prompt", "CLIPTextEncode.1.text": "$prompt"}}

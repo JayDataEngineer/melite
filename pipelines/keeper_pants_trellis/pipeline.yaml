@@ -1,6 +1,0 @@
-name: keeper_pants_trellis
-description: "TRELLIS mesh for keeper pants"
-nodes:
-  - id: generate
-    type: trellis_native
-    params: {"models_dir":"/mnt/data/models/trellis-cpp/q8","res":512,"seed":43,"gpu":0,"image_path":"/home/user/Documents/programs/ray/infra/repos/ComfyUI/input/keeper_pants.png"}

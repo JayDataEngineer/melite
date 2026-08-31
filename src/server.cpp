@@ -2958,6 +2958,10 @@ static void handle_pipelines_start(const httplib::Request &req,
     /* stage list comes from the final YAML (reported while queued too) */
     run_parse_stages(idx);
 
+    /* Re-write sidecar now that yaml + card_compose are final (the
+     * initial write at registration time had an empty yaml buffer). */
+    run_write_sidecar(idx);
+
     /* (validation law, 2026-08-30) schema-driven input coverage: wire
      * body fields to declared required inputs, then REJECT any node
      * input that remains unsatisfied — BEFORE the FIFO ticket, thread,

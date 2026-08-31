@@ -1,7 +1,0 @@
-name: sam3
-description: "mask lane — SAM3 text-prompted segmentation via ComfyUI NATIVE SAM3_Detect (comfy_extras/nodes_sam3.py, ckpt sam3.1_multiplex_fp16). Image segmentation = image-type work: ComfyUI is the sanctioned engine. Proven: text 'a red square' -> mask bbox [120,359]x[121,359] vs drawn square [120,360)."
-
-nodes:
-  - id: generate
-    type: comfyui
-    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/sam3/workflow.json","out_dir":"./output","timeout_s":600,"inject":{"LoadImage.0.image": "$image","CLIPTextEncode.0.text": "$prompt"}}

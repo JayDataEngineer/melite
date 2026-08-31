@@ -1,6 +1,0 @@
-name: ls-tts-05
-description: "THE LAST SIGNAL dialogue 5/11 — DISPATCH @ 42s"
-nodes:
-  - id: generate
-    type: audio_cpp
-    params: {"task": "tts", "family": "qwen3_tts", "model": "/mnt/data/models/audio/Qwen3-TTS-12Hz-0.6B-CustomVoice-merged", "backend": "cuda", "cli": "/home/user/Documents/programs/vendor/my-stuff/audiocpp-fork/build/bin/audiocpp_cli", "speaker": "uncle_fu", "instruct": "gruff older male radio dispatcher, crackling radio distance, weary kindness underneath", "out_dir": "./output"}

@@ -65,7 +65,8 @@ class FakeComfy(BaseHTTPRequestHandler):
             self._reply(200, json.dumps(self.OBJ).encode())
             return
         if self.path.startswith("/history/"):
-            self._reply(200, b"{}")
+            pid = self.path.split("/history/", 1)[-1]
+            self._reply(200, json.dumps({pid: {"status": {"status_str": "success"}}}).encode())
             return
         if self.path.startswith("/view"):
             self._reply(200, b"\x00" * 64, ctype="application/octet-stream")

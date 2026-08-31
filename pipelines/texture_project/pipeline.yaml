@@ -1,7 +1,0 @@
-name: texture_project
-description: "texture_project lane — graph harvested from ray compose dry-run, pinned + injected"
-
-nodes:
-  - id: generate
-    type: comfyui
-    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/texture_project/workflow.json","out_dir":"./output","timeout_s":900,"inject":{"LoadImage.0.image": "$image", "LoadImage.1.image": "$image", "LoadImage.2.image": "$image", "LoadImage.3.image": "$image"}}

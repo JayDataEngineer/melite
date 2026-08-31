@@ -1,7 +1,0 @@
-name: probe-fit
-description: "VRAM fit probe: window1.json weights (fp16 vae, no lora)"
-
-nodes:
-  - id: window1
-    type: comfyui
-    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/h3-timeline/window1.json","out_dir":"./output","timeout_s":1800,"inject":{"KSampler.0.seed":"$seed","MiniMaxH3ImageToVideo.0.prompt":"$prompt"},"fps":24,"mux":1}

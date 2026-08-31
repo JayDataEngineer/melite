@@ -1,1 +1,0 @@
-{"n1": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": "x.safetensors"}}, "n2": {"class_type": "MiniMaxH3SaveLatent", "inputs": {"latent": ["n1", 0]}}}

@@ -1,7 +1,0 @@
-name: latentsync
-description: "latentsync lane — graph harvested from ray compose dry-run, pinned + injected"
-
-nodes:
-  - id: generate
-    type: comfyui
-    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/latentsync/workflow.json","out_dir":"./output","timeout_s":1200,"inject":{"TextEncodeQwenImageEditPlusAdvance_lrzjason.0.prompt": "$prompt", "KSampler.0.seed": "$seed"}}
