@@ -1,7 +1,0 @@
-name: img-edit
-description: "Qwen-Image-Edit 2511 lightning 4-step + vn_character_sheet LoRA: pose/restyle a character image from disk. Native TextEncodeQwenImageEdit; image arrives as a path tensor (auto-uploaded to ComfyUI input)."
-
-nodes:
-  - id: generate
-    type: comfyui
-    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/img-edit/workflow.json","out_dir":"./output","timeout_s":600,"inject":{"TextEncodeQwenImageEdit.0.prompt":"$prompt","LoadImage.0.image":"$image","KSampler.0.seed":"$seed"}}

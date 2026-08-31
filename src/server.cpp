@@ -62,6 +62,17 @@ static int inf_json_int(const char *json, const char *key, int fallback) {
     return (int)strtol(p, NULL, 10);
 }
 
+/* Configurable roots — env vars with sensible defaults */
+static const char *pipelines_root(void) {
+    const char *env = getenv("INFERENCE_PIPELINES_DIR");
+    return (env && *env) ? env : "../pipelines";
+}
+
+static const char *plugins_root(void) {
+    const char *env = getenv("INFERENCE_PLUGINS_DIR");
+    return (env && *env) ? env : "./plugins";
+}
+
 /*
  * inference.cpp — unified HTTP server.
  *
@@ -619,7 +630,7 @@ static char *pipeline_yaml_for_model_ex(const char *model, const char *body,
               *p == '-' || *p == '_' || *p == '.'))
             return NULL;                    /* path safety: slug chars only */
     char path[600];
-    snprintf(path, sizeof(path), "../pipelines/%s/pipeline.yaml", model);
+    snprintf(path, sizeof(path), "%s/%s/pipeline.yaml", pipelines_root(), model);
     if (body) {
         char aud[1024], apath[600];
         if (inf_json_string(body, "audio", aud, sizeof(aud)) == 0 && aud[0] &&
@@ -2563,7 +2574,7 @@ static void handle_pipelines_start(const httplib::Request &req,
             res.set_content(eb, "application/json");
             return;
         }
-        static char oibuf[1 << 21];
+        static char oibuf[1 << 23];  /* 8 MB — ComfyUI object_info is ~5 MB with 3k+ nodes */
         size_t oilen = oi->body.size();
         if (oilen >= sizeof(oibuf)) oilen = sizeof(oibuf) - 1;
         memcpy(oibuf, oi->body.data(), oilen);
@@ -3458,8 +3469,7 @@ static void handle_pipelines_drafts(const httplib::Request &req,
  * the ray SYSTEM is not running and is not needed. */
 static const char *drafts_aux_dir(void) {
     const char *env = getenv("DRAFTS_AUX_DIR");
-    return (env && *env) ? env
-        : "/home/user/Documents/programs/ray/data/pipeline-drafts";
+    return (env && *env) ? env : NULL;
 }
 
 /* defined below (runs-list helper); needed early by the draft lister */

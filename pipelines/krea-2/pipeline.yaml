@@ -1,7 +1,0 @@
-name: krea-2
-description: "krea-2 lane — graph harvested from ray compose dry-run, pinned + injected"
-
-nodes:
-  - id: generate
-    type: comfyui
-    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"../pipelines/krea-2/workflow.json","out_dir":"./output","timeout_s":600,"inject":{"CLIPTextEncode.0.text": "$prompt", "CLIPTextEncode.1.text": "$prompt", "KSampler.0.seed": "$seed"}}
