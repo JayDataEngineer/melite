@@ -931,7 +931,13 @@ char *catalog_to_json(const inference_catalog *cat) {
         char esc2[2048];
         int first_cap = 1;
         for (size_t i = 0; i < cat->n_models; i++) {
-            if (!cat->models[i].genre[0]) continue;
+            /* (resilience law, 2026-09-02) genre is OPTIONAL in a
+             * model.yaml — an infra entry (vibevoice_asr) ships none
+             * and m->genre stays NULL; this bare [0] deref SEGFAULTED
+             * the gateway on GET /v1/model-catalog. json_escape is
+             * NULL-safe; this direct deref was not. */
+            if (!cat->models[i].genre || !cat->models[i].genre[0])
+                continue;
             if (strstr(cat->models[i].genre, "ai_generated")) continue;
             if (!first_cap) json[off++] = ',';
             first_cap = 0;
