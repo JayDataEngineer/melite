@@ -1,10 +1,15 @@
 name: creature-flow
 api: true
 description: >-
-  Non-humanoid creature pipeline — concept image → Pixal3D mesh →
-  AutoRemesher (50K quads) → mesh refine → creature rig → turntable.
-  Medium polygon budget with optional skeleton injection.
+  Non-humanoid creature pipeline — concept image → Pixal3D mesh via
+  ComfyUI native nodes → AutoRemesher quad budget (20K) → UltraShape
+  refinement → optional anyCreature skeleton bridge → turntable review.
   NOTE: humanoid creatures use humanoid-flow, NOT this pipeline.
+
+# Plugin-field law: the plugin names the UPSTREAM SOURCE that owns
+# the compute — comfyui for every GPU node run (Pixal3D, UltraShape,
+# the /poser/bridge_creature rig endpoint in melite-poser-nodes),
+# melite-3d for its own pipeline-native CPU engines (autoremesher).
 
 steps:
   - id: concept
@@ -13,29 +18,36 @@ steps:
     description: Generate or provide a concept image
 
   - id: mesh
-    type: pixal3d
+    type: pixal3d_native
     plugin: comfyui
-    description: Generate 3D mesh from concept (Pixal3D, pixel-aligned)
+    description: Generate textured 3D mesh via ComfyUI native Pixal3D nodes
 
   - id: remesh
     type: autoremesher
     plugin: melite-3d
-    description: Quad remesh → triangulate (50K quads, creature preset)
+    description: >-
+      Quad remesh to the asset-class budget. Default preset: creature
+      (20K). Multi-part anatomy (dragons, bosses): preset:
+      complex_creature (50K). One-off override: target_quads.
     params:
-      target_quads: 50000
-      adaptivity: 1.0
-      anisotropy: 1.0
+      preset: creature
 
   - id: refine
     type: mesh_refine
     plugin: comfyui
-    description: UltraShape image-guided refinement (sharpens limbs, hard-surface edges)
+    description: UltraShape image-guided mesh refinement (optional)
     optional: true
 
   - id: rig
-    type: creature_rig
-    plugin: melite-3d
-    description: Apply anyCreature skeleton rig (optional)
+    type: creature_rig_bridge
+    plugin: comfyui
+    description: >-
+      Optional: skin the static mesh onto an anyCreature species skeleton
+      (species baked idle/move animations). The bridge POSTs to ComfyUI's
+      /poser/bridge_creature endpoint (melite-poser-nodes, CPU Blender
+      subprocess). Pass creature_path to the species GLB — breed one via
+      the anyCreature lane (procedural_creature.yaml) or pick from
+      references/anycreature example specs.
     optional: true
 
   - id: views

@@ -32,21 +32,42 @@ Every lane (model + card + templates + knobs) is a PLUGIN under
 `plugins/` — the core names no lane. Adding a lane = adding a plugin
 directory, never touching `src/`.
 
-### 2. DSH + SKILL setup (the interactive studio)
+### 2. DSH profile setup (the interactive studio)
 
 ```bash
-# install the Video Studio agent preset + the video-timeline skill
-./dsh/video-studio/install.sh
+# install the inference profile (tools + card view + gallery) into ~/.dsh
+./dsh/install-profile.sh          # Linux / macOS
+dsh\install-profile.bat           # Windows
 
-# start a DSH session and pick "Video Studio" in the preset picker.
-# Non-default gateway? export MELITE_GATEWAY=http://host:18090 first.
+# non-default gateway? export first:
+#   export MELITE_GATEWAY=http://host:18090      (bash)
+#   set MELITE_GATEWAY=http://host:18090         (cmd)
+
+# boot it
+dsh web --profile inference --port 3081
 ```
 
-That session is a live film studio: it loads the `video-timeline` skill
-(the calls document, the seam law — PlagueKind chain spine + the
-optional global layer — the grid law), refines your film
-conversationally (shots, spans, seams, music layer on/off), and only
-when you say go composes ONE action card:
+The profile source lives in `dsh/profile/` (fully in git); the
+installer renders it into `~/.dsh/profiles/inference/` and installs
+dependencies. Every session on the profile gets the tool surface —
+`lane_bundle` (list lanes / load a lane's manifest + skills),
+`build_pipeline` (compose an action card), `model_catalog`,
+`skill_index` / `skill_read`, `provision_model`, `enhance_prompt` —
+plus the card deck / card view / gallery UI, whatever agent preset the
+session uses. The agent flow:
+
+```
+lane_bundle()                  → list every lane
+lane_bundle("image-gen")       → the lane's params_schema + skills
+skill_read("model:krea-2:...") → the model's craft rules
+build_pipeline("krea-2", ...)  → ONE action card in the chat
+                                → you press Run; the queue renders
+```
+
+For multi-shot video the same session loads the `video-timeline` skill
+(the calls document, the seam law, the grid law), refines your film
+conversationally, and composes ONE card whose `calls` array carries
+every shot:
 
 ```bash
 curl -s -X POST localhost:18090/v1/pipelines/start \

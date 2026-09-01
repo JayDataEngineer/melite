@@ -1,30 +1,36 @@
 name: non-humanoid-flow
 api: true
-description: "Creature/prop pipeline — concept image → TRELLIS mesh → decimate → rig (optional) → 8 review views"
+description: >-
+  Creature/prop pipeline — concept image → Pixal3D mesh via ComfyUI
+  native nodes → AutoRemesher quad budget → 8 review views. For new
+  work prefer prop-flow (objects) or creature-flow (rigged creatures).
+
+# Plugin-field law: the plugin names the UPSTREAM SOURCE that owns
+# the compute — comfyui for GPU node runs, melite-3d for its own
+# pipeline-native CPU engines (vendored CLIs: autoremesher).
 
 steps:
   - id: concept
     type: image-gen
     plugin: comfyui
-    description: "Generate or provide a concept image"
+    description: Generate or provide a concept image
 
   - id: mesh
-    type: trellis_native
-    plugin: trellis2
-    description: "Generate 3D mesh from concept"
+    type: pixal3d_native
+    plugin: comfyui
+    description: >-
+      Generate textured 3D mesh via ComfyUI native Pixal3D nodes
+      (Trellis2Conditioning → KSampler → VaeDecodeShape → TextureStage
+       → VaeDecodeTexture → PaintMesh → SaveGLB)
 
-  - id: clean
-    type: clean_mesh
-    plugin: trellis2
-    description: "QEM decimate to face budget"
-
-  - id: rig
-    type: creature_rig
-    plugin: trellis2
-    description: "Apply anyCreature skeleton rig (optional)"
-    optional: true
+  - id: remesh
+    type: autoremesher
+    plugin: melite-3d
+    description: Quad remesh to the asset-class budget (preset selectable)
+    params:
+      preset: creature
 
   - id: views
     type: render_views
     plugin: comfyui
-    description: "Render 8 views for quality gate"
+    description: Render 8 turntable views for quality gate

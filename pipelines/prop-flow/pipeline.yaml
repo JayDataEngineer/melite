@@ -1,9 +1,14 @@
 name: prop-flow
 api: true
 description: >-
-  Static prop/weapon pipeline — concept image → Pixal3D mesh →
-  AutoRemesher (10K quads) → turntable review. Ultra-low polygon
-  budget for props, furniture, weapons, environment pieces.
+  Static prop/weapon pipeline — concept image → Pixal3D mesh via
+  ComfyUI native nodes → AutoRemesher quad budget → turntable review.
+  Budget class is data, not a hardcode: presets live in
+  plugins/melite-3d/models/3d/autoremesher/presets/.
+
+# Plugin-field law: the plugin names the UPSTREAM SOURCE that owns
+# the compute — comfyui for every GPU node run, melite-3d for its own
+# pipeline-native CPU engines (vendored CLIs: autoremesher, anycreature).
 
 steps:
   - id: concept
@@ -12,18 +17,19 @@ steps:
     description: Generate or provide a concept image
 
   - id: mesh
-    type: pixal3d
+    type: pixal3d_native
     plugin: comfyui
-    description: Generate 3D mesh from concept (Pixal3D, pixel-aligned)
+    description: Generate textured 3D mesh via ComfyUI native Pixal3D nodes
 
   - id: remesh
     type: autoremesher
     plugin: melite-3d
-    description: Quad remesh → triangulate (10K quads, prop preset)
+    description: >-
+      Quad remesh to the asset-class budget. Default preset: prop (10K).
+      For rocks/crates/coins pass preset: rock (5K); vehicles/buildings
+      preset: large_prop (20K). One-off override: target_quads.
     params:
-      target_quads: 10000
-      adaptivity: 1.0
-      anisotropy: 0.5
+      preset: prop
 
   - id: views
     type: render_views

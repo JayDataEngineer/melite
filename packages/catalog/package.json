@@ -1,0 +1,38 @@
+{
+  "name": "@melite/catalog",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "dependencies": {
+    "@melite/contracts": "workspace:*",
+    "@melite/ui": "workspace:*",
+    "zustand": "*",
+    "@melite/formats": "workspace:*"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./api": "./src/api.ts",
+    "./catalogContract": "./src/catalogContract.ts",
+    "./catalogContractStore": "./src/catalogContractStore.ts",
+    "./comfyEvents": "./src/comfyEvents.ts",
+    "./downloadClient": "./src/downloadClient.ts",
+    "./enhance": "./src/enhance.ts",
+    "./enhancement": "./src/enhancement.ts",
+    "./familyParamContract": "./src/familyParamContract.ts",
+    "./familyProvenance": "./src/familyProvenance.ts",
+    "./inputSlots": "./src/inputSlots.ts",
+    "./llmProviders": "./src/llmProviders.ts",
+    "./modelCatalog": "./src/modelCatalog.ts",
+    "./package.json": "./package.json",
+    "./pipelineProtocol": "./src/pipelineProtocol.ts",
+    "./preflightClient": "./src/preflightClient.ts",
+    "./runStatusContract": "./src/runStatusContract.ts",
+    "./runStatusContractStore": "./src/runStatusContractStore.ts",
+    "./serviceForms": "./src/serviceForms.ts",
+    "./tagMap": "./src/tagMap.ts",
+    "./text-to-pose": "./src/text-to-pose.ts",
+    "./waveform-peaks": "./src/waveform-peaks.ts"
+  },
+  "version": "0.1.0",
+  "types": "./src/index.ts"
+}
