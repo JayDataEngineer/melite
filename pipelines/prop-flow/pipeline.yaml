@@ -1,0 +1,31 @@
+name: prop-flow
+api: true
+description: >-
+  Static prop/weapon pipeline — concept image → Pixal3D mesh →
+  AutoRemesher (10K quads) → turntable review. Ultra-low polygon
+  budget for props, furniture, weapons, environment pieces.
+
+steps:
+  - id: concept
+    type: image-gen
+    plugin: comfyui
+    description: Generate or provide a concept image
+
+  - id: mesh
+    type: pixal3d
+    plugin: comfyui
+    description: Generate 3D mesh from concept (Pixal3D, pixel-aligned)
+
+  - id: remesh
+    type: autoremesher
+    plugin: melite-3d
+    description: Quad remesh → triangulate (10K quads, prop preset)
+    params:
+      target_quads: 10000
+      adaptivity: 1.0
+      anisotropy: 0.5
+
+  - id: views
+    type: render_views
+    plugin: comfyui
+    description: Render 8 turntable views for quality gate

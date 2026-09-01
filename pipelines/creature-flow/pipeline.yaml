@@ -1,0 +1,44 @@
+name: creature-flow
+api: true
+description: >-
+  Non-humanoid creature pipeline — concept image → Pixal3D mesh →
+  AutoRemesher (50K quads) → mesh refine → creature rig → turntable.
+  Medium polygon budget with optional skeleton injection.
+  NOTE: humanoid creatures use humanoid-flow, NOT this pipeline.
+
+steps:
+  - id: concept
+    type: image-gen
+    plugin: comfyui
+    description: Generate or provide a concept image
+
+  - id: mesh
+    type: pixal3d
+    plugin: comfyui
+    description: Generate 3D mesh from concept (Pixal3D, pixel-aligned)
+
+  - id: remesh
+    type: autoremesher
+    plugin: melite-3d
+    description: Quad remesh → triangulate (50K quads, creature preset)
+    params:
+      target_quads: 50000
+      adaptivity: 1.0
+      anisotropy: 1.0
+
+  - id: refine
+    type: mesh_refine
+    plugin: comfyui
+    description: UltraShape image-guided refinement (sharpens limbs, hard-surface edges)
+    optional: true
+
+  - id: rig
+    type: creature_rig
+    plugin: melite-3d
+    description: Apply anyCreature skeleton rig (optional)
+    optional: true
+
+  - id: views
+    type: render_views
+    plugin: comfyui
+    description: Render 8 turntable views for quality gate

@@ -1,0 +1,19 @@
+{
+  "name": "creature_flow",
+  "version": 1,
+  "kind": "pipeline",
+  "model": "creature-flow",
+  "stage_title": "Creature Flow",
+  "description": "The non-humanoid creature pipeline: concept image -> Pixal3D mesh -> quad remesh (50K) -> UltraShape refine -> optional anyCreature rig -> 8 turntable views. Humanoid creatures use humanoid-flow, NOT this pipeline. Composes the image and 3d cards internally. Start with {yaml: creature-flow} through the queue door.",
+  "params_schema": {
+    "type": "object",
+    "properties": {
+      "prompt": { "type": "string", "description": "Concept prompt when no image is supplied - flat background, full silhouette." },
+      "image": { "type": "string", "description": "Existing concept image path." },
+      "face_budget": { "type": "integer", "description": "Quad target for the remesh stage. Default 50000." },
+      "rig": { "type": "boolean", "description": "Apply the anyCreature skeleton rig. Default true." },
+      "background_color": { "type": "string", "description": "Must match the concept background." },
+      "seed": { "type": "integer", "description": "Locks concept world across re-rolls." }
+    }
+  }
+}

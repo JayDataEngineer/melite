@@ -54,7 +54,11 @@ EXPECTED_CARD_LANES = {
     "voice-lock", "music", "3d-gen", "motion-gen", "body",
 }
 EXPECTED_PIPELINE_LANES = {"humanoid-flow", "non-humanoid-flow",
-                             "sprite-sheet"}   # 3rd curated lane, 2026-09-01
+                           "sprite-sheet",     # 3rd curated lane, 2026-09-01
+                           "creature-flow",    # 4th/5th, 2026-09-02: the
+                           "prop-flow"}        # Pixal3D split (agent
+                                               # bundles completed
+                                               # same day)
 EXPECTED_LANES = EXPECTED_CARD_LANES | EXPECTED_PIPELINE_LANES
 
 # foreign-genre terms that must NEVER appear in a lane's bundle
@@ -80,6 +84,9 @@ FORBIDDEN = {
     "non-humanoid-flow": VIDEO + AUDIO,
     # sprite-sheet is an image-only lane (3rd curated flow, 2026-09-01)
     "sprite-sheet":      VIDEO + AUDIO + THREED,
+    # the Pixal3D creature/prop split (4th/5th flows, 2026-09-02)
+    "creature-flow":     VIDEO + AUDIO,
+    "prop-flow":         VIDEO + AUDIO,
 }
 
 
