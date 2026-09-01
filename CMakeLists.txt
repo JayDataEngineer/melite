@@ -175,12 +175,27 @@ if(INFERENCE_BUILD_TESTS)
                              ${CMAKE_SOURCE_DIR}/dsh/media-plugin/test/artifact-range.test.mjs)
             set_tests_properties(test_media_range PROPERTIES TIMEOUT 60)
         endif()
+        # PIPELINE YAML CRUD LAW: list/detail/save/rename/delete on the
+        # gateway's /v1/pipelines/yaml/* routes — the Media Templates tab
+        # contract. Scratch pipelines dir; the repo's is never touched.
+        add_test(NAME test_pipeline_crud
+                 COMMAND ${Python3_EXECUTABLE}
+                         ${CMAKE_SOURCE_DIR}/tests/test_pipeline_crud.py)
+        set_tests_properties(test_pipeline_crud PROPERTIES TIMEOUT 120)
         add_test(NAME test_queue
                  COMMAND ${Python3_EXECUTABLE}
                          ${CMAKE_SOURCE_DIR}/tests/test_queue.py
                          --repo-dir ${CMAKE_SOURCE_DIR}
                          --build-dir ${CMAKE_BINARY_DIR})
         set_tests_properties(test_queue PROPERTIES TIMEOUT 300)
+        # PLAGUEKIND PARITY (operator order 2026-09-02: "our timeline
+        # card is a wrapper around his work, all defaults his"): static
+        # diff of HIS V7 export vs our window*_t4* template bakes.
+        # Pure statics — no server, no GPU. Fails on ANY divergence.
+        add_test(NAME test_plaguekind_parity
+                 COMMAND ${Python3_EXECUTABLE}
+                         ${CMAKE_SOURCE_DIR}/tools/plaguekind_parity.py)
+        set_tests_properties(test_plaguekind_parity PROPERTIES TIMEOUT 60)
         # CHAOS layer: concurrent storms, stop-vs-completion races,
         # timeout interrupts, malformed-input barrage, kill -9 sidecar
         # atomicity, SIGINT, boot-sweep matrix, concurrent read storms.
