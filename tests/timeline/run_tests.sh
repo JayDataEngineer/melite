@@ -21,10 +21,15 @@ echo "== api contract (live gateway) =="
 bash "$HERE/api_contract.sh" || RC=1
 
 echo "== comfy node contracts (fork source + torch) =="
-CPY=""
-for c in /opt/ComfyUI/.venv/bin/python /opt/ComfyUI/venv/bin/python; do
-  [ -x "$c" ] && CPY="$c" && break
-done
+# COMFYUI_PYTHON env overrides the probe (portable hosts); historical
+# host paths remain the fallback.
+CPY="${COMFYUI_PYTHON:-}"
+if [ -z "$CPY" ] || [ ! -x "$CPY" ]; then
+  CPY=""
+  for c in /opt/ComfyUI/.venv/bin/python /opt/ComfyUI/venv/bin/python; do
+    if [ -x "$c" ]; then CPY="$c"; break; fi
+  done
+fi
 if [ -n "$CPY" ]; then
   "$CPY" "$HERE/comfy_nodes_test.py" || RC=1
 else
