@@ -8929,6 +8929,15 @@ static int boot_patch_sidecar(const char *path, const char *why) {
     return ok;
 }
 
+/* (queue recovery law, ENFORCED 2026-09-02) ids the boot recovery just
+ * re-armed — the sweep must NEVER patch a live-again queue member.
+ * lifecycle L8 caught the violation: recover resurrected the victim,
+ * then the sweep (running second) patched the same sidecar to failed,
+ * the resurrected thread saw a terminal sidecar, and /v1/queue read
+ * 0/0 for the full 30s wait. Recovery owns what it resurrects. */
+static char g_recovered_runs[64][80];
+static int  g_n_recovered_runs;
+
 /* Boot-time zombie sweep: every sidecar still claiming running/queued
  * belongs to a DEAD process (we just started — nothing is live yet).
  * Sweep them to failed BEFORE the server accepts traffic, so the ledger
@@ -8940,6 +8949,12 @@ static void boot_sweep_stale_sidecars(void) {
     int swept = 0;
     while ((e = readdir(d)) != NULL) {
         if (strncmp(e->d_name, "run-", 4) != 0) continue;
+        int resurrected = 0;
+        for (int i = 0; i < g_n_recovered_runs; i++)
+            if (strcmp(e->d_name, g_recovered_runs[i]) == 0) {
+                resurrected = 1; break;
+            }
+        if (resurrected) continue;   /* recovery re-armed it — it is live */
         char path[760];
         snprintf(path, sizeof(path), "./output/%s/_pipeline.json", e->d_name);
         if (boot_patch_sidecar(path, "gateway restarted (boot sweep): stale active sidecar from a dead process")) {
@@ -9448,6 +9463,13 @@ static void boot_recover_queue(void) {
                  "{\"run_id\":\"%s\",\"prior_state\":\"%s\"}", rid, st);
         ledger_log("run.recovered", eb);
         fprintf(stderr, "[recover] resurrected %s (was %s)\n", rid, st);
+        /* claim the sidecar for the sweep exclusion — this run is
+         * LIVE again; sweeping it back to failed would kill the very
+         * queue this recovery just rebuilt (lifecycle L8) */
+        if (g_n_recovered_runs < (int)(sizeof g_recovered_runs /
+                                       sizeof g_recovered_runs[0]))
+            snprintf(g_recovered_runs[g_n_recovered_runs++],
+                     sizeof g_recovered_runs[0], "%s", rname);
         recovered++;
     }
     free(live);

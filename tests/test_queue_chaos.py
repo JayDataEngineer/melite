@@ -1995,11 +1995,19 @@ def main():
             "calls", "fps", "seed", "preset", "continuity",
             "audio_mode", "audio_stem", "keyframes", "refs", "intent",
             "model", "prompt", "draft_id", "continue_from",
-            "server_url", "audio", "image", "h3_attention"}
+            "server_url", "audio", "image", "h3_attention",
+            # (2026-09-02, b11f5fb) document-DATA knobs the compose
+            # gate accepts but card_knobs.yaml never splices: identity
+            # refs are staged into LoadImage nodes, audio clips into
+            # the stitch overlay list — structure, not template knobs.
+            "h3_ref_images", "h3_ref_image_size", "audio_clips",
+            "h3_ref_videos", "h3_ref_audios", "h3_ref_video_audios"}
         structural_call = {
             "text", "beats", "start_frame", "end_frame", "knobs",
             "seam_carry", "image", "last_frame", "clip", "audio",
-            "first_frame_prev_sec"}
+            "first_frame_prev_sec",
+            # per-call identity refs (same staging path as card-level)
+            "refs"}
         lanes = _glob.glob(os.path.join(repo, "plugins/*/cards/*/tool.json"))
         check(len(lanes) >= 10,
               "C24a: found the lane fleet (%d tool.json)" % len(lanes))

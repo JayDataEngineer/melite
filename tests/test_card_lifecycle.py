@@ -181,6 +181,13 @@ class HoldComfy(BaseHTTPRequestHandler):
     def _reply(self, code, body=b"{}"):
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
+        # (leak-gate contract, fixed 2026-09-02) every test fake must
+        # prove itself: the sandboxed gateway probes /object_info and
+        # refuses to submit without this header. HoldComfy never
+        # carried it — L8's crash-recovery run died at the gate the
+        # instant it resurrected ("did not prove itself a test fake"),
+        # the queue read 0/0 and the test timed out.
+        self.send_header("X-Melite-Test-Fake", "1")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
