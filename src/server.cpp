@@ -9430,6 +9430,86 @@ static void boot_recover_queue(void) {
             run_write_sidecar(idx);
             continue;
         }
+        /* (recovery input law, 2026-09-02) THE __initial__ REF GAP —
+         * live-proven by a real kill -9 mid-render: a card graph
+         * wires nodes to __initial__.$seed (5 refs on a 4-window
+         * card), and at fresh start ONLY compose phase 1 fills the
+         * input table (card_register_extra_inputs: prompt, seed,
+         * prompt2..N). The coverage walker skips any name a node
+         * references (a cross-NODE ref means "provided upstream") —
+         * but an __initial__ ref means the TABLE must carry it, so
+         * the resurrected run died on wiring in milliseconds. The
+         * sidecar's scalar seed is NOT the source of truth (it reads
+         * 0 for card runs — the real seed lives in the card params
+         * and only compose resolves it). Generic repair, no lane
+         * knowledge (PLUGIN ARCHITECTURE LAW): re-run compose PHASE
+         * 1 on the saved draft — the compile is deterministic — and
+         * re-register its extras exactly as the start handler does. */
+        if (draft[0] && model[0]) {
+            char dp[600];
+            snprintf(dp, sizeof(dp), "./drafts/%s.json", draft);
+            if (access(dp, R_OK) != 0)
+                snprintf(dp, sizeof(dp), "./drafts/%s-1.json", draft);
+            FILE *df = fopen(dp, "rb");
+            if (df) {
+                static char dbuf[32768];
+                size_t dn = fread(dbuf, 1, sizeof(dbuf) - 1, df);
+                fclose(df);
+                dbuf[dn] = 0;
+                char etype[64] = "";
+                const char *tt = strstr(ybuf, "type: ");
+                if (tt) {
+                    size_t e = 0;
+                    for (const char *c = tt + 6;
+                         e + 1 < sizeof etype && *c && *c != '\n' &&
+                         *c != ' ' && *c != '"'; c++)
+                        etype[e++] = *c;
+                    etype[e] = 0;
+                }
+                if (etype[0] && g_server_runner) {
+                    char cex[65536];
+                    int ph1 = runner_card_compose(
+                        g_server_runner, etype, dbuf, model, "",
+                        NULL, NULL, 0, cex, sizeof(cex));
+                    char why[256] = "";
+                    /* only a REAL extras payload is fatal when its
+                     * registration fails — a lane whose phase 1
+                     * returns no "inputs" object (sandbox hold lanes)
+                     * simply keeps the prompt input (same as fresh
+                     * start, which never calls the registrar). */
+                    if (ph1 == 0 && strstr(cex, "\"inputs\"") &&
+                        card_register_extra_inputs(idx, cex, why,
+                                                   sizeof why) != 0) {
+                        snprintf(g_runs[idx].state,
+                                 sizeof(g_runs[idx].state), "error");
+                        snprintf(g_runs[idx].error,
+                                 sizeof(g_runs[idx].error),
+                                 "recovery: card extras refused: %s",
+                                 why);
+                        g_runs[idx].th_done = 1;
+                        pthread_mutex_unlock(&g_runs_mu);
+                        fprintf(stderr, "[recover] %s: extras refused "
+                                        "— marked error, not queued\n",
+                                rid);
+                        run_write_sidecar(idx);
+                        continue;
+                    }
+                    if (ph1 < 0)
+                        fprintf(stderr,
+                                "[recover] %s: compose phase-1 re-run "
+                                "failed (rc=%d) — inputs stay partial, "
+                                "coverage walker will name the gap\n",
+                                rid, ph1);
+                    else
+                        fprintf(stderr, "[recover] %s: re-registered "
+                                        "card extras from %s\n",
+                                rid, dp);
+                }
+            } else {
+                fprintf(stderr, "[recover] %s: draft %s unreadable — "
+                                "inputs stay partial\n", rid, draft);
+            }
+        }
         {
             char rqpath[600];
             snprintf(rqpath, sizeof(rqpath),
