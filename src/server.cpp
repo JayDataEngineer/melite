@@ -4228,6 +4228,107 @@ static void handle_queue(const httplib::Request &, httplib::Response &res) {
 
 static int sidecar_str(const char *json, const char *key, char *out, size_t cap);
 
+/* (workflow export law, 2026-09-02, Phase 4) GET
+ * /v1/pipelines/<run_id>/workflow — the EXACT ComfyUI prompt JSON the
+ * plugin submitted: template + injects + $tensor refs, all resolved.
+ * The plugin persists one file per window node
+ * (_comfyui_<window-template>.json) in the run's output dir. This
+ * endpoint reads them back. No window param → return an index of all
+ * available workflows; ?window=<name> → that file's bytes. */
+static void handle_pipelines_workflow(const httplib::Request &req,
+                                      httplib::Response &res) {
+    std::string rid = req.path_params.at("run_id");
+
+    /* path traversal guard (the asset door's law) */
+    for (char c : rid)
+        if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') ||
+              c == '-' || c == '_')) {
+            res.status = 400;
+            res.set_content("{\"error\":\"invalid run id\"}",
+                            "application/json");
+            return;
+        }
+
+    char dir[600];
+    snprintf(dir, sizeof(dir), "./output/%s", rid.c_str());
+    if (access(dir, R_OK) != 0) {
+        res.status = 404;
+        res.set_content("{\"error\":\"run not found\"}",
+                        "application/json");
+        return;
+    }
+
+    std::string window = req.get_param_value("window");
+
+    /* index mode: list all _comfyui_*.json files in the run dir */
+    if (window.empty()) {
+        DIR *d = opendir(dir);
+        if (!d) {
+            res.status = 404;
+            res.set_content("{\"error\":\"run dir unreadable\"}",
+                            "application/json");
+            return;
+        }
+        char *idx = NULL;
+        size_t ic = 0, io = 0;
+        io = jappend(&idx, &ic, io, "{\"run_id\":\"%s\",\"workflows\":[",
+                     rid.c_str());
+        struct dirent *e;
+        int first = 1;
+        while ((e = readdir(d)) != NULL) {
+            if (strncmp(e->d_name, "_comfyui_", 9) != 0) continue;
+            char *dot = strrchr(e->d_name, '.');
+            if (!dot || strcmp(dot, ".json") != 0) continue;
+            /* _comfyui_<name>.json → <name> */
+            char nm[128];
+            size_t nl = (size_t)(dot - e->d_name) - 9;
+            if (nl >= sizeof(nm)) continue;
+            memcpy(nm, e->d_name + 9, nl);
+            nm[nl] = 0;
+            char fp[700];
+            snprintf(fp, sizeof(fp), "%s/%s", dir, e->d_name);
+            struct stat fst;
+            long sz = stat(fp, &fst) == 0 ? (long)fst.st_size : 0;
+            io = jappend(&idx, &ic, io,
+                         "%s{\"window\":\"%s\",\"bytes\":%ld,"
+                         "\"path\":\"%s\"}",
+                         first ? "" : ",", nm, sz, fp);
+            first = 0;
+        }
+        closedir(d);
+        io = jappend(&idx, &ic, io, "]}");
+        (void)io;
+        res.set_content(idx ? idx : "{\"workflows\":[]}",
+                        "application/json");
+        free(idx);
+        return;
+    }
+
+    /* fetch mode: return one workflow's bytes */
+    char fp[700];
+    snprintf(fp, sizeof(fp), "%s/_comfyui_%s.json", dir, window.c_str());
+    FILE *f = fopen(fp, "rb");
+    if (!f) {
+        res.status = 404;
+        char msg[256];
+        snprintf(msg, sizeof(msg),
+                 "{\"error\":\"workflow '%s' not found for run '%s'\"}",
+                 window.c_str(), rid.c_str());
+        res.set_content(msg, "application/json");
+        return;
+    }
+    fseek(f, 0, SEEK_END);
+    long sz = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    char *buf = (char *)malloc((size_t)sz + 1);
+    if (!buf) { fclose(f); res.status = 500; return; }
+    size_t n = fread(buf, 1, (size_t)sz, f);
+    fclose(f);
+    buf[n] = 0;
+    res.set_content(buf, "application/json");
+    free(buf);
+}
+
 static void handle_pipelines_status(const httplib::Request &req,
                                     httplib::Response &res) {
     std::string rid = req.path_params.at("run_id");
@@ -9684,6 +9785,7 @@ inference_server *server_create(int port, const char *bind_addr) {
     s->srv.Post("/v1/pipelines/generate", handle_pipelines_start);
     s->srv.Post("/v1/run",               handle_pipelines_start);
     s->srv.Get("/v1/pipelines/status/:run_id", handle_pipelines_status);
+    s->srv.Get("/v1/pipelines/workflow/:run_id", handle_pipelines_workflow);
     s->srv.Get("/v1/queue",                handle_queue);
     s->srv.Post("/v1/pipelines/stop/:run_id",   handle_pipelines_stop);
     s->srv.Post("/v1/pipelines/resume/:run_id", handle_pipelines_resume);

@@ -670,6 +670,50 @@ def main():
             check(False, "L9b: card UNPARSEABLE after stop: %r"
                   % body[:120])
 
+        # ============ L10: workflow export (Phase 4) ==================
+        print("\n-- L10 workflow export: persist + GET door")
+        wpath = os.path.join(build, "output", rid,
+                             "_comfyui_workflow.json")
+        check(os.path.exists(wpath),
+              "L10a: run persisted the spliced ComfyUI prompt "
+              "(_comfyui_workflow.json in the run dir)")
+        code, body = api.get("/v1/pipelines/workflow/" + rid)
+        try:
+            wi = json.loads(body)
+            entries = wi.get("workflows", [])
+            ok = (code == 200 and isinstance(entries, list)
+                  and len(entries) >= 1
+                  and entries[0].get("bytes", 0) > 0)
+            check(ok, "L10b: workflow index lists the persisted "
+                  "graph (got %d %s)" % (code, body[:100]))
+        except ValueError:
+            check(False, "L10b: index UNPARSEABLE: %r" % body[:120])
+        wcode, wbody = api.get("/v1/pipelines/workflow/"
+                               + rid + "?window=workflow")
+        try:
+            wf = json.loads(wbody)
+            # the EXACT spliced graph: the injected prompt must be
+            # baked into CLIPTextEncode.0 (template default it ain't)
+            txt = (wf.get("CLIPTextEncode.0", {})
+                   .get("inputs", {}).get("text"))
+            check(wcode == 200 and txt == "lantern glow rain",
+                  "L10c: fetched workflow is the SPLICED graph — "
+                  "inject landed (text=%r)" % txt)
+        except ValueError:
+            check(False, "L10c: fetched workflow UNPARSEABLE: %r"
+                  % wbody[:120])
+        code, body = api.get("/v1/pipelines/workflow/"
+                             + rid + "?window=nope")
+        check(code == 404, "L10d: unknown window 404s (got %d)"
+              % code)
+        code, body = api.get("/v1/pipelines/workflow/..%2Fetc")
+        # httplib decodes %2F pre-route: a slash-bearing id never
+        # matches the route (its 404); one that routes hits our
+        # charset guard (400). Either way: NO content leaks.
+        check(code in (400, 404) and "passwd" not in body,
+              "L10e: traversal attempt leaks nothing (got %d)"
+              % code)
+
     finally:
         print("\n-- teardown")
         if gw:
