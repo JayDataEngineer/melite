@@ -100,6 +100,7 @@ class OkComfy(BaseHTTPRequestHandler):
     def _reply(self, code, body=b"{}", ctype="application/json"):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
+        self.send_header("X-Melite-Test-Fake", "1")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -279,11 +280,21 @@ def kill_hard(pid):
 
 
 def boot_gateway(port, log):
+    # (leak gate) every booted gateway carries the test sandbox: the
+    # only legal endpoint is this scratch config — never the on-disk
+    # default that points at the REAL ComfyUI. Runs that need comfy
+    # pass their own inline server_url (the fakes above).
+    cfg = "/tmp/cardlife_endpoint_%d.json" % port
+    with open(cfg, "w") as f:
+        json.dump({"url": "http://127.0.0.1:9"}, f)
+    genv = dict(os.environ)
+    genv["COMFYUI_ENDPOINT_CONFIG"] = cfg
+    genv["INFERENCE_TEST_SANDBOX"] = "1"
     p = subprocess.Popen(
         ["./inference_cli", "serve", "--port", str(port)],
         cwd=os.path.join(HERE, os.pardir, "build"),
         stdin=subprocess.DEVNULL, stdout=open(log, "ab"),
-        stderr=subprocess.STDOUT, start_new_session=True)
+        stderr=subprocess.STDOUT, start_new_session=True, env=genv)
     return p
 
 

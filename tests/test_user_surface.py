@@ -70,6 +70,13 @@ def main():
     base = f"http://127.0.0.1:{port}"
     log = tempfile.NamedTemporaryFile(delete=False, suffix=".log")
     env = dict(os.environ)
+    # (leak gate) sandbox: this gateway may never resolve the on-disk
+    # default endpoint (the REAL ComfyUI). Dead port = loud failure.
+    uscfg = "/tmp/usersurf_endpoint.json"
+    with open(uscfg, "w") as f:
+        json.dump({"url": "http://127.0.0.1:9"}, f)
+    env["COMFYUI_ENDPOINT_CONFIG"] = uscfg
+    env["INFERENCE_TEST_SANDBOX"] = "1"
     proc = subprocess.Popen(
         ["./inference_cli", "serve", "--port", str(port),
          "--catalog-dir", "..",

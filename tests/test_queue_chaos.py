@@ -32,6 +32,7 @@ Usage: test_queue_chaos.py --repo-dir REPO --build-dir BUILD
 
 import argparse
 import http.client
+import glob
 import json
 import os
 import random
@@ -98,6 +99,7 @@ class FakeComfy(BaseHTTPRequestHandler):
     def _reply(self, code, body=b"{}"):
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
+        self.send_header("X-Melite-Test-Fake", "1")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -219,6 +221,7 @@ class TLComfy(FakeComfy):
             pid = "tl-%04d" % (len(TL_PROMPTS) + 1)
             tail = None
             chain = None
+            family = "ray"
             for node in g.values():
                 if not isinstance(node, dict):
                     continue
@@ -226,13 +229,34 @@ class TLComfy(FakeComfy):
                 if ct == "RayH3SaveLatentTail":
                     p = node.get("inputs", {}).get("path", "")
                     tail = (p.rsplit("/", 1)[0], p.rsplit("/", 1)[-1])
+                elif ct == "MiniMaxH3MotionContextSaveLatent":
+                    # (2026-09-01) the context family: save node writes
+                    # "<prefix-base>_<clipidx:05d>.safetensors" under
+                    # subfolder=dirname(prefix) — nodes_minimax_h3 /
+                    # H3-Motion-Context-MultiRef save() convention. The
+                    # chain (CtxLoadLatent) reads it dir-relative from
+                    # the SHARED OUTPUT dir — no input-door travel.
+                    family = "ctx"
+                    pref = node.get("inputs", {}).get(
+                        "filename_prefix", "h3_context/clip")
+                    try:
+                        ci = int(node.get("inputs", {}).get(
+                            "clip_index", 0) or 0)
+                    except (TypeError, ValueError):
+                        ci = 0
+                    if "/" in pref:
+                        sub, base = pref.rsplit("/", 1)
+                    else:
+                        sub, base = "", pref
+                    tail = (sub, "%s_%05d.safetensors"
+                            % (base, ci if ci > 0 else 1))
                 elif ct == "RayH3ChainLatentAV":
                     chain = node.get("inputs", {}).get("tail_path", "")
             if chain:
                 want = (chain.rsplit("/", 1)[0], chain.rsplit("/", 1)[-1])
                 if UPLOADS.get(want) is None:
                     UPLOAD_VIOLATIONS.append((pid, chain))
-            TL_PROMPTS[pid] = {"tail": tail}
+            TL_PROMPTS[pid] = {"tail": tail, "family": family}
             self._reply(200, json.dumps({"prompt_id": pid}).encode())
             return
         if self.path.endswith("/interrupt"):
@@ -253,13 +277,20 @@ class TLComfy(FakeComfy):
             outputs = {}
             if info.get("tail"):
                 sub, fname = info["tail"]
-                outputs["RayH3SaveLatentTail.0"] = {
-                    "images": [
-                        {"filename": fname, "subfolder": sub,
-                         "type": "output"},
-                        {"filename": fname + ".meta.json", "subfolder": sub,
-                         "type": "output"},
-                    ]}
+                if info.get("family") == "ctx":
+                    outputs["CtxSaveLatent.0"] = {
+                        "images": [
+                            {"filename": fname, "subfolder": sub,
+                             "type": "output"},
+                        ]}
+                else:
+                    outputs["RayH3SaveLatentTail.0"] = {
+                        "images": [
+                            {"filename": fname, "subfolder": sub,
+                             "type": "output"},
+                            {"filename": fname + ".meta.json",
+                             "subfolder": sub, "type": "output"},
+                        ]}
             self._reply(200, json.dumps({
                 pid: {"prompt": [0, pid, {}], "outputs": outputs,
                       "status": {"status_str": "success",
@@ -504,14 +535,32 @@ def main():
     # wired through the lawful endpoint override: env
     # COMFYUI_ENDPOINT_CONFIG > cwd > .so-relative. No yaml fixture.
     tl_yaml = None
+    # (deterministic songless registration, 2026-09-01) the config
+    # MUST declare input_dir: the lane's dry-fire law refuses songless
+    # cards on a gateway with nowhere to stage the layer-off pin (the
+    # loud behavior is correct; the harness used to pass only when the
+    # newest 5-call draft happened to be a SONG draft, whose master-pin
+    # check is input_dir-guarded — drafts-landscape roulette).
+    chaos_input = "/tmp/chaos_input_%d" % free_port()
+    os.makedirs(chaos_input, exist_ok=True)
+    # (leak proof scoping) stale gateway logs from earlier runs would
+    # pollute the end-of-suite real-port scan — sweep them FIRST so
+    # the proof judges ONLY this run's gateways.
+    for stale in glob.glob("/tmp/chaos_srv*.log"):
+        try:
+            os.remove(stale)
+        except OSError:
+            pass
     endpoint_cfg = "/tmp/chaos_endpoint_%d.json" % free_port()
     with open(endpoint_cfg, "w") as f:
-        json.dump({"url": "http://127.0.0.1:%d" % comfy_port}, f)
+        json.dump({"url": "http://127.0.0.1:%d" % comfy_port,
+                   "input_dir": chaos_input}, f)
 
     port = free_port()
     srv_log = "/tmp/chaos_srv_%d.log" % port
     srv_env = dict(os.environ)
     srv_env["COMFYUI_ENDPOINT_CONFIG"] = endpoint_cfg
+    srv_env["INFERENCE_TEST_SANDBOX"] = "1"   # (leak gate) no fallback
     srv = subprocess.Popen(
         [binpath, "serve", "--port", str(port), "--plugin-dir", build],
         cwd=build, stdout=subprocess.DEVNULL,
@@ -532,10 +581,15 @@ def main():
             failures.append(label)
 
     def boot():
+        # (queue-law leak, 2026-09-01) boot() used to omit env= — the
+        # rebooted gateway inherited the bare environment, loaded the
+        # .so-relative DEFAULT config (the REAL ComfyUI on :18465),
+        # and every post-reboot run submitted REAL GPU renders. Tests
+        # may NEVER touch the live server (AGENTS.md INFERENCE LAW).
         return subprocess.Popen(
             [binpath, "serve", "--port", str(port), "--plugin-dir", build],
             cwd=build, stdout=subprocess.DEVNULL,
-            stderr=open(srv_log, "ab"))
+            stderr=open(srv_log, "ab"), env=srv_env)
 
     def kill_hard(p):
         p.kill()
@@ -1370,7 +1424,8 @@ def main():
             # endpoint config (env override) points at TLComfy
             tl_cfg = "/tmp/chaos_endpoint_c17_%d.json" % tl_port
             with open(tl_cfg, "w") as f:
-                json.dump({"url": "http://127.0.0.1:%d" % tl_port}, f)
+                json.dump({"url": "http://127.0.0.1:%d" % tl_port,
+                           "input_dir": chaos_input}, f)
             port2 = free_port()
             srv2_log = "/tmp/chaos_srv2_%d.log" % port2
             srv2 = subprocess.Popen(
@@ -1379,7 +1434,8 @@ def main():
                 cwd=build, stdout=subprocess.DEVNULL,
                 stderr=open(srv2_log, "ab"),
                 env={**os.environ,
-                     "COMFYUI_ENDPOINT_CONFIG": tl_cfg})
+                     "COMFYUI_ENDPOINT_CONFIG": tl_cfg,
+                     "INFERENCE_TEST_SANDBOX": "1"})
             api2 = Api("http://127.0.0.1:%d" % port2)
             try:
                 wait_for(lambda: api2._req("GET", "/v1/queue")[0] == 200,
@@ -1441,30 +1497,64 @@ def main():
                 #    names (window1..4 tails; w5's is fetched too but the
                 #    stitch failure may cut the run before w5's stage —
                 #    every COMPLETED window's tail must be on disk)
-                n_tails = len([f for f in os.listdir(out2)
-                               if re.match(r"window\d+_tail\.pt$", f)])
-                n_metas = len([f for f in os.listdir(out2)
-                               if re.match(r"window\d+_tail\.pt\.meta\.json$",
-                                           f)])
-                check(n_tails >= 2,
-                      "C17: tails fetched via /view into run dir (%d)" %
-                      n_tails)
-                check(n_metas >= 2,
-                      "C17: tail metas fetched via /view (%d)" % n_metas)
-                if n_tails:
-                    t0 = open(os.path.join(out2, "window1_tail.pt"),
-                              "rb").read()
-                    check(t0 == TL_TAIL_BYTES,
-                          "C17: fetched tail bytes match the /view source")
+                fams = {info.get("family", "ray")
+                        for info in TL_PROMPTS.values()}
+                if "ray" in fams:
+                    n_tails = len([f for f in os.listdir(out2)
+                                   if re.match(r"window\d+_tail\.pt$",
+                                               f)])
+                    n_metas = len([f for f in os.listdir(out2)
+                                   if re.match(
+                                       r"window\d+_tail\.pt\.meta\.json$",
+                                       f)])
+                    check(n_tails >= 2,
+                          "C17: tails fetched via /view into run dir (%d)"
+                          % n_tails)
+                    check(n_metas >= 2,
+                          "C17: tail metas fetched via /view (%d)" %
+                          n_metas)
+                    if n_tails:
+                        t0 = open(os.path.join(out2, "window1_tail.pt"),
+                                  "rb").read()
+                        check(t0 == TL_TAIL_BYTES,
+                              "C17: fetched tail bytes match the /view "
+                              "source")
+                else:
+                    # ctx family law: tails land under <rid>/h3_context
+                    # as <base>_<k:05d>.safetensors; NO meta siblings;
+                    # NO input-door travel (the chain reads the shared
+                    # output dir — production law, proven by the
+                    # run-6a960b6a film).
+                    ctx_dir = os.path.join(out2, "h3_context")
+                    ctx_files = []
+                    if os.path.isdir(ctx_dir):
+                        ctx_files = [f for f in os.listdir(ctx_dir)
+                                     if re.match(r".*_\d{5}\.safetensors$",
+                                                 f)]
+                    check(len(ctx_files) >= 2,
+                          "C17: ctx tails fetched via /view into run dir "
+                          "(%d)" % len(ctx_files))
+                    if ctx_files:
+                        c0 = open(os.path.join(ctx_dir, ctx_files[0]),
+                                  "rb").read()
+                        check(c0 == TL_TAIL_BYTES,
+                              "C17: fetched ctx tail bytes match the "
+                              "/view source")
                 # 2) every seam prompt's tail went through /upload FIRST
                 check(not UPLOAD_VIOLATIONS,
                       "C17: no seam rendered without its uploaded tail %r" %
                       (UPLOAD_VIOLATIONS[:2],))
-                ups = [f for (_, f) in UPLOAD_ORDER
-                       if re.match(r"window\d+_tail\.pt$", f)]
-                check(len(ups) >= 2,
-                      "C17: tails uploaded to the input door (%d)" %
-                      len(ups))
+                if "ray" in fams:
+                    ups = [f for (_, f) in UPLOAD_ORDER
+                           if re.match(r"window\d+_tail\.pt$", f)]
+                    check(len(ups) >= 2,
+                          "C17: tails uploaded to the input door (%d)" %
+                          len(ups))
+                else:
+                    check(not UPLOAD_ORDER,
+                          "C17: ctx family travels the shared output "
+                          "dir — no input-door uploads expected (%d)" %
+                          len(UPLOAD_ORDER))
                 subs = {s for (s, _) in UPLOAD_ORDER}
                 check(all(s and s.startswith("run-") for s in subs),
                       "C17: uploads carry the run-scoped subfolder %r" %
@@ -1962,6 +2052,36 @@ def main():
                     "run-sweep-malformed"):
             shutil.rmtree(os.path.join(build, "output", rid),
                           ignore_errors=True)
+
+    # ====== LEAK-GATE SELF-PROOF (operator order 2026-09-01): ======
+    # no gateway spawned by this suite may have EVER loaded the real
+    # ComfyUI endpoint. The gateway log records every config load; a
+    # single real-port hit anywhere = a queue-law violation = FAIL.
+    # the needle is DERIVED from the production config (SSOT) — no
+    # port literals in test code; if the real endpoint moves, this
+    # proof follows it automatically.
+    needle = None
+    try:
+        prod = open(os.path.join(
+            repo, "plugins/comfyui/data/comfyui_endpoint.json"),
+            errors="replace").read()
+        m = re.search(r'"url"\s*:\s*"http://[^:]+:(\d+)', prod)
+        if m:
+            needle = ":" + m.group(1)
+    except OSError:
+        pass
+    leak_hits = []
+    if needle:
+        for lg in sorted(glob.glob("/tmp/chaos_srv*.log")):
+            try:
+                txt = open(lg, errors="replace").read()
+            except OSError:
+                continue
+            if needle in txt:
+                leak_hits.append(os.path.basename(lg))
+    check(not leak_hits,
+          "LEAK PROOF: no gateway contacted the real ComfyUI (%r)"
+          % leak_hits[:3])
 
     total = n_pass[0] + len(failures)
     print("\n%d checks, %d failures" % (total, len(failures)))

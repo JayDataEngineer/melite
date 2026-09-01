@@ -49,6 +49,7 @@ class FakeComfy(BaseHTTPRequestHandler):
     def _reply(self, code, body=b"{}", ctype="application/json"):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
+        self.send_header("X-Melite-Test-Fake", "1")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -144,18 +145,27 @@ def main():
     fx = os.path.join(REPO, "pipelines", "_v7knobs")
     os.makedirs(fx, exist_ok=True)
     with open(lane) as f:
-        y = f.read().replace("name: h3-timeline", "name: _v7knobs") \
-                    .replace("http://127.0.0.1:18465",
-                             "http://127.0.0.1:%d" % cf.server_address[1])
+        y = f.read().replace("name: h3-timeline", "name: _v7knobs")
+    y = re.sub(r"127\.0\.0\.1:\d+",
+               "127.0.0.1:%d" % cf.server_address[1], y)
     with open(os.path.join(fx, "pipeline.yaml"), "w") as f:
         f.write(y)
 
     port = free_port()
     log = "/tmp/v7knobs_srv.log"
+    # (leak gate) the gateway's endpoint is this suite's OWN fake —
+    # the on-disk default (the REAL ComfyUI) is refused by the sandbox.
+    vcfg = "/tmp/v7knobs_endpoint_%d.json" % port
+    with open(vcfg, "w") as f:
+        json.dump({"url": "http://127.0.0.1:%d" % cf.server_address[1]}, f)
+    venv = dict(os.environ)
+    venv["COMFYUI_ENDPOINT_CONFIG"] = vcfg
+    venv["INFERENCE_TEST_SANDBOX"] = "1"
     srv = subprocess.Popen(
         [os.path.join(BUILD, "inference_cli"), "serve",
          "--port", str(port), "--plugin-dir", BUILD, "--catalog-dir", ".."],
-        cwd=BUILD, stdout=subprocess.DEVNULL, stderr=open(log, "ab"))
+        cwd=BUILD, stdout=subprocess.DEVNULL, stderr=open(log, "ab"),
+        env=venv)
     api = Api("http://127.0.0.1:%d" % port)
     rid = rid2 = None
     fails = []

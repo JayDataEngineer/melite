@@ -12,10 +12,13 @@ and is well-formed for EVERY run, not just draft-born ones.
 """
 import json
 import os
+import re
+import shutil
 import subprocess
 import sys
 import time
 import urllib.request
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUILD = os.path.join(REPO, "build")
@@ -51,18 +54,129 @@ def free_port() -> int:
     return p
 
 
+# ---------------- marked fake ComfyUI ----------------
+# (leak gate, 2026-09-01) this suite's runs used to COMPLETE against
+# the REAL ComfyUI — its gateway had no env override, so the default
+# .so-relative config (18465) served every card-lane window render.
+# Now: a marked fake (X-Melite-Test-Fake) serves real media bytes so
+# completion checks stay meaningful with zero GPU contact.
+PNG = b""
+WAV = b""
+VIEW_BYTES = {}
+OK_HIST = {}
+OK_SEQ = [0]
+
+
+def build_real_media():
+    global PNG, WAV
+    d = "/tmp/cardrec_media_%d" % os.getpid()
+    os.makedirs(d, exist_ok=True)
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error",
+                    "-f", "lavfi", "-i", "color=c=blue:s=64x48:d=0.2",
+                    "-r", "24", os.path.join(d, "f%05d.png")],
+                   check=True, capture_output=True)
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error",
+                    "-f", "lavfi", "-i", "sine=frequency=440:duration=0.3",
+                    os.path.join(d, "a.wav")],
+                   check=True, capture_output=True)
+    PNG = open(os.path.join(d, "f00001.png"), "rb").read()
+    WAV = open(os.path.join(d, "a.wav"), "rb").read()
+    shutil.rmtree(d, ignore_errors=True)
+
+
+class OkComfy(BaseHTTPRequestHandler):
+    def _reply(self, code, body=b"{}", ctype="application/json"):
+        self.send_response(code)
+        self.send_header("Content-Type", ctype)
+        self.send_header("X-Melite-Test-Fake", "1")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_POST(self):
+        n = int(self.headers.get("Content-Length", 0) or 0)
+        self.rfile.read(n)
+        if self.path == "/ok/prompt":
+            OK_SEQ[0] += 1
+            pid = "ok-%04d" % OK_SEQ[0]
+            files = []
+            for i in range(2):
+                fname = "f%05d.png" % i
+                VIEW_BYTES[pid + "/" + fname] = PNG
+                files.append((fname, PNG))
+            VIEW_BYTES[pid + "/a.wav"] = WAV
+            hist = {
+                pid: {
+                    "status": {"completed": True,
+                               "status_str": "success"},
+                    "outputs": {
+                        "n%d" % i: {"images": [
+                            {"filename": fn, "subfolder": "",
+                             "type": "output"}]}
+                        for i, (fn, _) in enumerate(files)
+                    } | {"na": {"audio": [
+                        {"filename": "a.wav", "subfolder": "",
+                         "type": "output"}]}},
+                }
+            }
+            body = json.dumps(hist).encode()
+            OK_HIST[pid] = body
+            self._reply(200, json.dumps({"prompt_id": pid}).encode())
+            return
+        self._reply(404)
+
+    def do_GET(self):
+        if self.path == "/object_info":
+            self._reply(200, b"{}")
+            return
+        if self.path.startswith("/ok/history/"):
+            pid = self.path.rsplit("/", 1)[-1]
+            self._reply(200, OK_HIST.get(pid, b"{}"))
+            return
+        if self.path.startswith("/ok/view"):
+            m = re.search(r"filename=([^&]+)", self.path)
+            if m:
+                base = m.group(1)
+                for k, v in VIEW_BYTES.items():
+                    if k.endswith("/" + base):
+                        self._reply(200, v, ctype="image/png"
+                                    if base.endswith(".png")
+                                    else "audio/wav")
+                        return
+            self._reply(404)
+            return
+        self._reply(404)
+
+    def log_message(self, *a):
+        pass
+
+
 def main() -> int:
     port = free_port()
     os.environ["CARD_REC_PORT"] = str(port)
     global PORT, BASE
     PORT, BASE = port, "http://127.0.0.1:%d" % port
     log = "/tmp/card_rec_%d.log" % port
+    # (leak gate) marked fake answers /ok/* on its own ephemeral port
+    build_real_media()
+    fport = free_port()
+    fake = ThreadingHTTPServer(("127.0.0.1", fport), OkComfy)
+    import threading
+    threading.Thread(target=fake.serve_forever, daemon=True).start()
+    cfg = "/tmp/cardrec_endpoint_%d.json" % port
+    os.makedirs("/tmp/cardrec_input_%d" % port, exist_ok=True)
+    with open(cfg, "w") as f:
+        json.dump({"url": "http://127.0.0.1:%d/ok" % fport,
+                   "input_dir": "/tmp/cardrec_input_%d" % port}, f)
+    genv = dict(os.environ)
+    genv["COMFYUI_ENDPOINT_CONFIG"] = cfg
+    genv["INFERENCE_TEST_SANDBOX"] = "1"
     srv = subprocess.Popen(
         [os.path.join(BUILD, "inference_cli"), "serve",
          "--port", str(port), "--plugin-dir", BUILD,
          "--catalog-dir", REPO],
         cwd=BUILD, stdout=subprocess.DEVNULL,
-        stderr=open(log, "ab"))
+        stderr=open(log, "ab"), env=genv)
     try:
         for _ in range(50):
             try:

@@ -173,6 +173,13 @@ if(INFERENCE_BUILD_TESTS)
                          --repo-dir ${CMAKE_SOURCE_DIR}
                          --build-dir ${CMAKE_BINARY_DIR})
         set_tests_properties(test_queue_chaos PROPERTIES TIMEOUT 600)
+        # LEAK GATE layer (operator order 2026-09-01: "no leaks, via
+        # proof and gates"): proof that no test can EVER reach the real
+        # ComfyUI — sandbox refusal, spawn-env static gate, port scan.
+        add_test(NAME test_no_live_contact
+                 COMMAND ${Python3_EXECUTABLE}
+                         ${CMAKE_SOURCE_DIR}/tests/test_no_live_contact.py)
+        set_tests_properties(test_no_live_contact PROPERTIES TIMEOUT 120)
         # CARD LIFECYCLE layer: the real-world card path end to end —
         # birth, a run with REAL ffmpeg-muxed artifacts, artifact-door
         # byte fidelity, long-history survival, runtime corruption

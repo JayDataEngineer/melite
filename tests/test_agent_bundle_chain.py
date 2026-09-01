@@ -142,10 +142,19 @@ def main():
         return 0
 
     port = free_port()
+    # (leak gate) sandbox env: this gateway may never resolve the real
+    # ComfyUI — dead-port endpoint, loud failure if anything tries.
+    cfg = "/tmp/abc_endpoint_%d.json" % port
+    with open(cfg, "w") as f:
+        json.dump({"url": "http://127.0.0.1:9"}, f)
+    genv = dict(os.environ)
+    genv["COMFYUI_ENDPOINT_CONFIG"] = cfg
+    genv["INFERENCE_TEST_SANDBOX"] = "1"
     srv = subprocess.Popen(
         [binpath, "serve", "--port", str(port), "--plugin-dir", build,
          "--catalog-dir", repo],
-        cwd=build, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        cwd=build, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        env=genv)
     base = "http://127.0.0.1:%d" % port
 
     def req(path, body=None, tries=50):

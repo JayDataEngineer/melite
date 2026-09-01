@@ -59,6 +59,7 @@ class FakeComfy(BaseHTTPRequestHandler):
     def _reply(self, code, body=b"{}"):
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
+        self.send_header("X-Melite-Test-Fake", "1")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -244,10 +245,19 @@ def main():
                 % (comfy_port, url_suffix, extra))
 
     port = free_port()
+    # (leak gate) the gateway's ONLY endpoint is this suite's own fake
+    # comfy — the on-disk default (real ComfyUI) is refused by the
+    # sandbox flag. Runs below pass inline server_url anyway.
+    qcfg = "/tmp/queue_endpoint_%d.json" % port
+    with open(qcfg, "w") as f:
+        json.dump({"url": "http://127.0.0.1:%d" % comfy_port}, f)
+    qenv = dict(os.environ)
+    qenv["COMFYUI_ENDPOINT_CONFIG"] = qcfg
+    qenv["INFERENCE_TEST_SANDBOX"] = "1"
     srv = subprocess.Popen(
         [binpath, "serve", "--port", str(port), "--plugin-dir", build],
         cwd=build,
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=qenv)
     api = Api("http://127.0.0.1:%d" % port)
     run_ids = []
     failures = []
@@ -458,7 +468,8 @@ def main():
         swept_before = _swept_now()
         srv = subprocess.Popen(          # restart after SIGTERM above
             [binpath, "serve", "--port", str(port), "--plugin-dir", build],
-            cwd=build, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            cwd=build, stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL, env=qenv)
         wait_for(lambda: _healthy(api), 15, "server reboot")
         try:
             with open(os.path.join(stale_dir, "_pipeline.json")) as f:
@@ -476,7 +487,8 @@ def main():
             srv.kill()
         srv = subprocess.Popen(
             [binpath, "serve", "--port", str(port), "--plugin-dir", build],
-            cwd=build, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            cwd=build, stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL, env=qenv)
         wait_for(lambda: _healthy(api), 15, "server reboot 2")
         ledger = os.path.join(build, "output", "_ledger.jsonl")
 

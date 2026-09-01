@@ -1621,11 +1621,33 @@ static void *run_thread_fn(void *argp) {
 
     /* GPU FIFO: wait for OUR ticket before touching the GPU. The ticket
      * was assigned AT REGISTRATION (audit M4) — the queue serves runs in
-     * exact submission order, independent of thread scheduling. */
+     * exact submission order, independent of thread scheduling.
+     * (stop-door latency law, 2026-09-01) a stop that lands while we
+     * are STILL QUEUED flips the observable state to "stopped"
+     * immediately — the run never touches the GPU either way; the
+     * ticket still drains strictly in order (the stop_early branch
+     * below releases it when our turn arrives, so waiters behind us
+     * are never skipped). Read stop_req atomically: taking g_runs_mu
+     * under g_gpu_mu would invert the registration lock order. */
+    int early_stop_seen = 0;
     pthread_mutex_lock(&g_gpu_mu);
     int my_ticket = g_runs[idx].ticket;
-    while (g_gpu_serving != my_ticket)
-        pthread_cond_wait(&g_gpu_cv, &g_gpu_mu);
+    while (g_gpu_serving != my_ticket) {
+        struct timespec ts;
+        clock_gettime(CLOCK_REALTIME, &ts);
+        ts.tv_nsec += 250L * 1000000L;
+        if (ts.tv_nsec >= 1000000000L) {
+            ts.tv_sec++; ts.tv_nsec -= 1000000000L;
+        }
+        (void)pthread_cond_timedwait(&g_gpu_cv, &g_gpu_mu, &ts);
+        if (!early_stop_seen &&
+            __atomic_load_n(&g_runs[idx].stop_req, __ATOMIC_ACQUIRE)) {
+            early_stop_seen = 1;
+            pthread_mutex_unlock(&g_gpu_mu);
+            run_set_state(idx, "stopped", NULL);   /* observable NOW */
+            pthread_mutex_lock(&g_gpu_mu);
+        }
+    }
     pthread_mutex_unlock(&g_gpu_mu);
 
     /* Per-run stop may have arrived while we were queued. The check and
@@ -1641,7 +1663,10 @@ static void *run_thread_fn(void *argp) {
         snprintf(g_runs[idx].state, sizeof(g_runs[idx].state), "running");
     pthread_mutex_unlock(&g_runs_mu);
     if (stop_early) {
-        run_set_state(idx, "stopped", NULL);
+        if (!early_stop_seen)
+            run_set_state(idx, "stopped", NULL);
+        /* else: already marked "stopped" while queued — no duplicate
+         * sidecar/ledger write; the cleanup below is idempotent */
         pthread_mutex_lock(&g_runs_mu);
         run_slot_release_heap(idx);
         pthread_mutex_unlock(&g_runs_mu);

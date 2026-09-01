@@ -67,6 +67,7 @@ class FakeComfy(BaseHTTPRequestHandler):
     def _reply(self, code, body=b"{}", ctype="application/json"):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
+        self.send_header("X-Melite-Test-Fake", "1")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -206,6 +207,7 @@ def main():
     env = dict(os.environ)
     env["COMFYUI_ENDPOINT_CONFIG"] = os.path.join(
         scratch, "data", "comfyui_endpoint.json")
+    env["INFERENCE_TEST_SANDBOX"] = "1"   # (leak gate)
     srv = subprocess.Popen(
         [os.path.join(BUILD, "inference_cli"), "serve",
          "--port", str(port), "--plugin-dir", BUILD, "--catalog-dir", ".."],
@@ -388,6 +390,146 @@ def main():
         # input naming): "ref_images.ref_image_0" -> ["LoadImage.0", 0]
         check(r2v.get("ref_images.ref_image_0") == ["LoadImage.0", 0],
               "R4: _t4r wires LoadImage.0 -> R2V ref_images.ref_image_0")
+
+        # ── MULTI-IMAGE REFERENCE (identity + per-call refs) ─────────
+        # Create additional ref image files for multi-ref tests
+        ref_png2 = "/tmp/musrefs_ref2.png"
+        with open(ref_png2, "wb") as f:
+            f.write(bytes.fromhex(
+                "89504e470d0a1a0a0000000d4948445200000001000000010806000000"
+                "1f15c4890000000a49444154789c6300010000050001".replace("", "")))
+
+        def tl_body_idrefs(id_refs, per_call_refs=None, extra_params=None):
+            """Build a timeline body with h3_ref_images and optional
+            per-call refs.images."""
+            calls = [
+                {"text": "window one", "start_frame": 0, "end_frame": 48},
+                {"text": "window two", "start_frame": 48, "end_frame": 96},
+            ]
+            if per_call_refs:
+                for idx, refs in per_call_refs.items():
+                    if idx < len(calls):
+                        calls[idx]["refs"] = {"images": refs}
+            params = {"seed": 9, "fps": 24, "calls": calls,
+                      "intent": "film", "continuity": "chain"}
+            if id_refs:
+                params["h3_ref_images"] = id_refs
+            if extra_params:
+                params.update(extra_params)
+            return {"model": "h3-timeline", "prompt": "multi-ref probe",
+                    "params": params}
+
+        # IR1: h3_ref_images with 2 real files → window1 _t4r, yaml
+        # contains BOTH LoadImage.1.image and LoadImage.2.image injects
+        # with staged names AND both ref_images.ref_image_1/2 wiring
+        # entries as arrays; staged files exist on disk.
+        code, body = api.post("/v1/pipelines/start",
+                              tl_body_idrefs(ref_png + "," + ref_png2))
+        ir1 = None
+        try:
+            ir1 = json.loads(body).get("run_id")
+        except ValueError:
+            pass
+        rids.append(ir1)
+        check(bool(ir1), "IR1a: identity ref card registered (%d %s)"
+              % (code, body[:70]))
+        yir1 = sidecar_yaml(ir1) if ir1 else None
+        if yir1:
+            check("window1_t4r.json" in yir1,
+                  "IR1b: window1 flips to _t4r with identity refs")
+            check('"LoadImage.1.image"' in yir1,
+                  "IR1c: LoadImage.1.image inject present")
+            check('"LoadImage.2.image"' in yir1,
+                  "IR1d: LoadImage.2.image inject present")
+            # wiring entries are arrays: ["LoadImage.1",0]
+            check('ref_images.ref_image_1' in yir1,
+                  "IR1e: ref_images.ref_image_1 wiring present")
+            check('ref_images.ref_image_2' in yir1,
+                  "IR1f: ref_images.ref_image_2 wiring present")
+            # staged files exist
+            idref_files = [f for f in os.listdir(scratch_in)
+                           if f.startswith("idref")]
+            check(len(idref_files) >= 2,
+                  "IR1g: staged identity ref files on disk (%d found)"
+                  % len(idref_files))
+            # window2 should NOT have identity ref injects (only window1)
+            w2_ir1 = yir1.split("- id: window2", 1)[-1].split("- id:", 1)[0]
+            check('"LoadImage.1.image"' not in w2_ir1,
+                  "IR1h: window2 has NO identity ref injects")
+
+        # IR2: calls[1].refs.images with 1 file → window2 flips to _t4r
+        # with wiring; window1 (no refs) does NOT flip.
+        code, body = api.post("/v1/pipelines/start",
+                              tl_body_idrefs(None, {1: ref_png}))
+        ir2 = None
+        try:
+            ir2 = json.loads(body).get("run_id")
+        except ValueError:
+            pass
+        rids.append(ir2)
+        check(bool(ir2), "IR2a: per-call ref card registered (%d %s)"
+              % (code, body[:70]))
+        yir2 = sidecar_yaml(ir2) if ir2 else None
+        if yir2:
+            check("window2_t4.json" in yir2 or "window2_t4r.json" in yir2,
+                  "IR2b: window2 present in yaml")
+            w2_ir2 = yir2.split("- id: window2", 1)[-1].split("- id:", 1)[0]
+            check("window2_t4r.json" in w2_ir2,
+                  "IR2c: window2 flips to _t4r with per-call refs")
+            check('"LoadImage.1.image"' in w2_ir2,
+                  "IR2d: window2 has LoadImage.1.image inject")
+            check('ref_images.ref_image_1' in w2_ir2,
+                  "IR2e: window2 has ref_images.ref_image_1 wiring")
+            # window1 should NOT flip to _t4r (no image, no per-call refs)
+            w1_ir2 = yir2.split("- id: window1", 1)[-1].split("- id:", 1)[0]
+            check("window1_t4.json" in w1_ir2,
+                  "IR2f: window1 stays _t4 (no refs)")
+
+        # IR3: no refs anywhere → yaml has NO ref_images.ref_image_
+        # wiring beyond nothing, no LoadImage.1+ injects (byte-law)
+        code, body = api.post("/v1/pipelines/start", tl_body_idrefs(None))
+        ir3 = None
+        try:
+            ir3 = json.loads(body).get("run_id")
+        except ValueError:
+            pass
+        rids.append(ir3)
+        yir3 = sidecar_yaml(ir3) if ir3 else None
+        if yir3:
+            check("ref_images.ref_image_1" not in yir3,
+                  "IR3a: no ref_images.ref_image_1 wiring without refs")
+            check('"LoadImage.1.image"' not in yir3,
+                  "IR3b: no LoadImage.1 inject without refs")
+
+        # IR4: 12 identity refs → loud named rejection (4xx/5xx),
+        # no run side effects.
+        twelve_refs = ",".join([ref_png] * 12)
+        code, body = api.post("/v1/pipelines/start",
+                              tl_body_idrefs(twelve_refs))
+        check(code in (400, 422, 500) and "refs" in body.lower(),
+              "IR4: 12 identity refs → loud rejection (%d %s)"
+              % (code, body[:120]))
+
+        # IR5: template data law — all four _t4r templates carry orphan
+        # LoadImage.1..9 and exactly one pre-wired ref_image_0.
+        for wi in range(1, 5):
+            tpl = json.load(open(os.path.join(
+                REPO, "plugins", "comfyui", "models", "video", "h3-timeline",
+                "window%d_t4r.json" % wi)))
+            r2v_inp = tpl.get("MiniMaxH3ReferenceToVideo.0", {}).get("inputs", {})
+            check(r2v_inp.get("ref_images.ref_image_0") == ["LoadImage.0", 0],
+                  "IR5a%d: window%d _t4r has ref_image_0 wired" % (wi, wi))
+            has_orphans = all("LoadImage.%d" % i in tpl for i in range(1, 10))
+            check(has_orphans,
+                  "IR5b%d: window%d _t4r has orphan LoadImage.1..9" % (wi, wi))
+
+        # IR6: missing identity ref file → loud named error (not silent)
+        code, body = api.post("/v1/pipelines/start",
+                              tl_body_idrefs("/nonexistent/fake.png"))
+        check(code in (400, 422, 500) and ("not found" in body.lower()
+              or "missing" in body.lower() or "file" in body.lower()),
+              "IR6: missing ref file → loud error (%d %s)"
+              % (code, body[:120]))
 
         # ── AUDIO CLIPS (Layer A overlay feature) ─────────────────────
         # A dummy audio file for artifact-resolution tests
