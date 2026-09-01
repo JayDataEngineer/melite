@@ -1,0 +1,9 @@
+# keep the docker context lean: the builder rebuilds everything it needs.
+# ggml/ STAYS: add_subdirectory(ggml) needs the sources in the context.
+build/
+build-dbg/
+.git/
+docs/
+output/
+*.log
+__pycache__/

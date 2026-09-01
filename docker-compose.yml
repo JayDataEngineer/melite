@@ -1,24 +1,23 @@
-version: "3.8"
+# ONE bootstrap path, two wrappers: bare metal runs bootstrap.py directly;
+# docker runs the same bootstrap inside images/containers. No parallel
+# provisioning exists anywhere.
 
 services:
-  # -- inference.cpp server (the HTTP/WS API) --
+  # -- inference.cpp gateway (C++ server; image builds via bootstrap.py) --
   inference:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "18090:8080"   # HTTP API
-      - "18091:8081"   # WebSocket
+      - "18090:18090"   # HTTP API
+      - "18091:18091"   # WebSocket
     volumes:
       - model-cache:/root/.cache/inference.cpp
-      - ./plugins:/opt/inference/plugins:ro
-      - ./custom_nodes:/opt/inference/custom_nodes:ro
-      - ./skills:/opt/inference/skills:ro
     environment:
       - HOME=/root
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/v1/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:18090/v1/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -26,7 +25,7 @@ services:
       comfyui:
         condition: service_healthy
 
-  # -- ComfyUI (the GPU engine) --
+  # -- ComfyUI executor (self-bootstraps extensions + models on boot) --
   comfyui:
     build:
       context: .
@@ -35,7 +34,8 @@ services:
       - "18465:18465"
     volumes:
       - comfyui-models:/root/ComfyUI/models
-      - ./plugins:/tmp/melite-plugins:ro
+      - .:/opt/inference-src:ro          # the bootstrap + declarations + patches
+      - comfyui-input:/root/ComfyUI/input
     deploy:
       resources:
         reservations:
@@ -45,13 +45,16 @@ services:
               capabilities: [gpu]
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
+      - COMFYUI_DIR=/root/ComfyUI
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:18465/system_stats"]
       interval: 30s
       timeout: 10s
       retries: 5
+      start_period: 120s
 
 volumes:
   model-cache:
   comfyui-models:
+  comfyui-input:

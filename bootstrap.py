@@ -198,8 +198,11 @@ def step_server() -> bool:
 
 
 def load_extensions() -> list[dict]:
-    """extension_lane.py merges all plugin declarations — the SSOT."""
-    r = sh([sys.executable, str(REPO / "infra" / "extension_lane.py"),
+    """extension_lane.py merges all plugin declarations — the SSOT.
+    The merger ALWAYS runs from THIS repo (it is the one implementation);
+    --repo redirects only which declarations get merged (e.g. ray's)."""
+    merger = Path(__file__).resolve().parent / "infra" / "extension_lane.py"
+    r = sh([sys.executable, str(merger),
             "--repo", str(REPO), "--format", "json"], timeout=120, force=True)
     try:
         return json.loads(r.stdout)
@@ -233,9 +236,14 @@ def link_in_tree(name: str, comfy_dir: Path) -> str:
     if (target / "__init__.py").exists():
         return "skipped"
     src = None
-    for cand in glob.glob(str(REPO / "plugins" / "*" / "custom_nodes" / name)):
-        if Path(cand, "__init__.py").is_file():
-            src = Path(cand)
+    # repo-root custom_nodes/<name> (ray layout) then plugins/*/custom_nodes
+    for pattern in (str(REPO / "custom_nodes" / name),
+                    str(REPO / "plugins" / "*" / "custom_nodes" / name)):
+        for cand in glob.glob(pattern):
+            if Path(cand, "__init__.py").is_file():
+                src = Path(cand)
+                break
+        if src:
             break
     if not src:
         warn(f"  [{name}] in-tree pack not found under plugins/*/custom_nodes")
@@ -403,15 +411,21 @@ def step_models(comfy_dir: Path, comfy: Path) -> bool:
 
 
 def main() -> int:
-    global DRY
+    global DRY, REPO
     ap = argparse.ArgumentParser(description="inference.cpp cross-platform bootstrap")
     ap.add_argument("--server", action="store_true", help="build the C++ server")
     ap.add_argument("--extensions", action="store_true", help="install ComfyUI extensions")
     ap.add_argument("--models", action="store_true", help="download declared models")
     ap.add_argument("--dry-run", action="store_true", help="print the plan, change nothing")
     ap.add_argument("--comfyui-dir", default=None, help="ComfyUI workspace path")
+    ap.add_argument("--repo", default=None,
+                    help="declarations repo (default: this checkout). Other "
+                         "repos (e.g. ray) delegate their provisioning here.")
     args = ap.parse_args()
     DRY = args.dry_run
+
+    if args.repo:
+        REPO = Path(args.repo).resolve()
 
     do_all = not (args.server or args.extensions or args.models)
     do_server = args.server or do_all

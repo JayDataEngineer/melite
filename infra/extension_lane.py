@@ -68,7 +68,22 @@ def merge_all(repo: str) -> list[dict]:
     files = find_nodes_yaml(repo)
     if not files:
         warn("No nodes.yaml files found")
+    return _merge_from(files)
 
+
+def merge_plugins_dir(plugins_root: str) -> list[dict]:
+    """Merge a bare plugins/ subtree (e.g. a docker bind mount like
+    /tmp/melite-plugins) — same law, plugin-id order, dup guard."""
+    pattern = os.path.join(plugins_root, "*", "nodes", "extensions.yaml")
+    files = []
+    for path in sorted(glob.glob(pattern)):
+        plugin_id = Path(path).parts[-4] if len(Path(path).parts) >= 4 else Path(path).parent.parent.parent.name
+        files.append((path, plugin_id))
+    files.sort(key=lambda x: x[1])
+    return _merge_from(files)
+
+
+def _merge_from(files: list[tuple[str, str]]) -> list[dict]:
     merged: list[dict] = []
     seen_names: dict[str, str] = {}  # name -> owning file
 
