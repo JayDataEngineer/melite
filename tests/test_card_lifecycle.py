@@ -622,6 +622,24 @@ def main():
         except ValueError:
             check(False, "L8c: card broke across the crash")
 
+        # (recovery input law, 2026-09-02) THE __initial__ EXTRAS GAP —
+        # live-proven by a real kill -9 on the h3 lane: a resurrected
+        # run died in milliseconds on "__initial__.$seed ... no initial
+        # input named 'seed'" because ONLY compose phase 1 fills the
+        # input table at fresh start. boot_recover_queue now re-runs
+        # phase 1 on the saved draft and re-registers the extras. Pin
+        # BOTH fingerprints: the re-derivation ran, and no wiring death.
+        with open(gw_log) as f:
+            lc_log = f.read()
+        check("re-registered card extras" in lc_log,
+              "L8d: recovery re-ran compose phase 1 and re-registered "
+              "the card's extra run inputs (log fingerprint)")
+        check(victim in lc_log and
+              "__initial__" not in
+              lc_log.split(victim)[-1][:2000],
+              "L8e: resurrected run did NOT die on an __initial__ "
+              "wiring error (the pre-fix death was instant)")
+
         # ============ L9: stop mid-run leaves a valid card ============
         print("\n-- L9 stop mid-run")
         code, body = api.post("/v1/pipelines/start",
