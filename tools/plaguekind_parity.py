@@ -98,6 +98,10 @@ def his_values():
         "attention":    pack[4],
         "sparsity":     pack[5],
         "min_seq_len":  pack[6],
+        # (v1.4.2+) block_size 32 is BAKED inside his component (the
+        # pack exposes no block_size outer input; inner H3SLAAttention
+        # carries ["0.9","32",8192,...] in the definitions section)
+        "block_size":   "32",
         "lora_stack":   [(e["lora"], e["str"]) for e in stack
                          if e.get("on")],
     }
@@ -157,6 +161,7 @@ def template_values(path):
         "attention": get("ModelAttentionBackend.0", "attention"),
         "sparsity": get("H3SLAAttention.0", "sparsity_ratio"),
         "min_seq_len": get("H3SLAAttention.0", "min_seq_len"),
+        "block_size": get("H3SLAAttention.0", "block_size"),
         "sla_enabled": get("SLASwitch.0", "switch"),
         "lora_stack": loras,
     }
@@ -228,6 +233,8 @@ def main():
                                            "comfy_kitchen"))
     cmp_scalar("sparsity", his["sparsity"], ours["sparsity"])
     cmp_scalar("min_seq_len", his["min_seq_len"], ours["min_seq_len"])
+    cmp_scalar("block_size", his["block_size"], ours["block_size"],
+               xf=str, note="v1.4.2+ re-legalized 32 — his bake")
     row("sla_enabled", "on (in his active model pack)",
         "on" if ours["sla_enabled"] else "OFF (bypassed)",
         bool(ours["sla_enabled"]),
