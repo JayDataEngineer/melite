@@ -2311,7 +2311,32 @@ static int bdl_find_model_dir(const char *model, char *out, size_t outsz) {
                              genre_dir, me->d_name);
                     FILE *mf = fopen(man, "rb");
                     if (!mf) continue;
+                    /* (2026-09-01 twin-mirror law) the manifest must
+                     * declare a top-level "engine:" block — catalog-
+                     * mirror trees (plugins/melite-audio carries full
+                     * model.yaml twins of the audio-cpp models for a
+                     * DIFFERENT estate) declare no engine. Without
+                     * this, readdir order decides which twin wins and
+                     * engine resolution nondeterministically fails
+                     * ("model 'qwen3-tts' declares no engine plugin")
+                     * while the real audio-cpp home sat one sibling
+                     * away. Same class as the kimodo fragment fix. */
+                    int has_engine = 0;
+                    {
+                        char ml[512];
+                        while (fgets(ml, sizeof ml, mf)) {
+                            if (ml[0] != ' ' && ml[0] != '\t' &&
+                                ml[0] != '#' && ml[0] != '\n' &&
+                                ml[0] != 0) {
+                                if (strncmp(ml, "engine:", 7) == 0) {
+                                    has_engine = 1;
+                                    break;
+                                }
+                            }
+                        }
+                    }
                     fclose(mf);
+                    if (!has_engine) continue;
                     snprintf(out, outsz, "%s/%s", genre_dir, me->d_name);
                     closedir(mm); closedir(g); closedir(d);
                     return 0;
@@ -2816,6 +2841,7 @@ static void handle_pipelines_start(const httplib::Request &req,
     char yaml_override[131072] = "";   /* N-window law: holds expanded graphs */
     const char *body = req.body.c_str();
     const char *card_body = body;   /* the CARD document: body calls or draft doc */
+    int card_path_skeleton = 0;     /* override is a card-path skeleton (no pipeline.yaml) */
 
     /* Shape: {route:true} -> 501 */
     if (strstr(body, "\"route\"") && strstr(body, "true")) {
@@ -2945,6 +2971,17 @@ static void handle_pipelines_start(const httplib::Request &req,
                 snprintf(yaml_override, sizeof(yaml_override),
                          "name: %s\ntype: %s\n"
                          "description: card-composed\n\nnodes:\n", model, etype);
+                /* (draft-arm repair, 2026-09-02) this skeleton carries
+                 * no "window1" — the timeline sentinel below would skip
+                 * the CARD-IS-THE-RUN-DEFINITION arm, so draft-only
+                 * starts for card-path models never fed their draft to
+                 * phase 1: the run registered, phase 2 never fired
+                 * (tl_nw==0), and the empty skeleton executed to a
+                 * generic failure (queue-law zombie shape; chaos C17
+                 * pinned it as 0 rendered windows). Flag the skeleton
+                 * GENERically — no lane name — and let the arm below
+                 * run the plugin's own compose verdict. */
+                card_path_skeleton = 1;
                 fprintf(stderr, "[card-path] no pipeline.yaml for %s "
                         "(draft=%d calls=%d card_knobs=%d) engine=%s "
                         "— plugin generates graph\n",
@@ -3088,10 +3125,22 @@ static void handle_pipelines_start(const httplib::Request &req,
      * timeline sentinel — every timeline graph carries window1_t4.json
      * or window1_load.json, so timeline protection is unchanged. */
     if (yaml_override[0] &&
-        strstr(yaml_override, "window1") &&
+        (card_path_skeleton || strstr(yaml_override, "window1")) &&
         tl_nw == 0) {
         char did[96] = "";
         int card_ok = 0;
+        /* (2026-09-01 audio-card law) a card-path skeleton whose
+         * compose phase 1 already ACCEPTED the body IS its own card:
+         * params-inline audio cards (tts/music/sfx) carry neither a
+         * draft_id nor calls — phase 1 consumed their params above
+         * and returned run inputs. Refusing them here re-blocked the
+         * audio lanes (the exact collateral the window1-only sentinel
+         * removed) while the draft-arm repair (2026-09-02) still gets
+         * its draft-only skeletons. Phase-1 refusals already returned
+         * 4xx above, so a non-error card_extra means accepted. */
+        if (card_path_skeleton && card_extra[0] == '{' &&
+            !strstr(card_extra, "\"error\""))
+            card_ok = 1;
         if (inf_json_string(body, "draft_id", did, sizeof(did)) == 0 && did[0]) {
             char dp[256];
             snprintf(dp, sizeof(dp), "./drafts/%s.json", did);
@@ -4007,8 +4056,17 @@ static void handle_pipelines_start(const httplib::Request &req,
     /* (PLUGIN ARCHITECTURE LAW, 2026-08-31) PHASE 2: the plugin owns
      * the whole graph rewrite — N-window expansion, tail-path
      * literals, on-grid length/carry injects, Layer A/B knobs. The
-     * engine type is read FROM THE GRAPH; the core names no lane. */
-    if (tl_nw > 0) {
+     * engine type is read FROM THE GRAPH; the core names no lane.
+     * (2026-09-01 audio-card law) phase 2 ALSO fires for an accepted
+     * card-path skeleton: tl_nw's "prompt" marker only matches
+     * timeline/music phase-1 outputs — a TTS phase 1 emits text/seed
+     * inputs, so tl_nw stayed 0, phase 2 never fired, and the EMPTY
+     * skeleton executed to a generic failure (generate/comfyui node,
+     * the chaos C17 zombie shape). A non-error card_extra from phase 1
+     * IS the acceptance signal: the plugin has a graph to write. */
+    if (tl_nw > 0 ||
+        (card_path_skeleton && card_extra[0] == '{' &&
+         !strstr(card_extra, "\"error\""))) {
         char etype[64] = "";
         {
             const char *tt = strstr(g_runs[idx].yaml, "type: ");
