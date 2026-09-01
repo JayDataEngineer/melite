@@ -163,6 +163,11 @@ def template_values(path):
         "min_seq_len": get("H3SLAAttention.0", "min_seq_len"),
         "block_size": get("H3SLAAttention.0", "block_size"),
         "sla_enabled": get("SLASwitch.0", "switch"),
+        "vram_chain": (
+            get("MiniMaxLowVRAMAttention.0", "head_chunks"),
+            get("MiniMaxChunkFeedForward.0", "chunks"),
+            get("MiniMaxChunkFeedForward.0", "seq_threshold"),
+            get("H3SLAAttention.0", "model", [None])[0]),
         "lora_stack": loras,
     }
 
@@ -235,6 +240,9 @@ def main():
     cmp_scalar("min_seq_len", his["min_seq_len"], ours["min_seq_len"])
     cmp_scalar("block_size", his["block_size"], ours["block_size"],
                xf=str, note="v1.4.2+ re-legalized 32 — his bake")
+    cmp_scalar("vram_chain", (4, 2, 4096, "UNETLoader.0"),
+               tuple(ours["vram_chain"]),
+               note="his pack: UNET->SLA->LowVRAM[4]->ChunkFF[2,4096]")
     row("sla_enabled", "on (in his active model pack)",
         "on" if ours["sla_enabled"] else "OFF (bypassed)",
         bool(ours["sla_enabled"]),
