@@ -3081,10 +3081,14 @@ static void handle_pipelines_start(const httplib::Request &req,
      * calls document.  Guard: only timeline pipelines (those carrying
      * window nodes) need the card — plain comfyui/echo pipelines must
      * pass through.  The window1 sentinel was lost in 4015945; restored
-     * to unblock non-timeline yaml_regression tests. */
+     * to unblock non-timeline yaml_regression tests.
+     * (2026-09-01) the "card-composed" alternative REMOVED: it
+     * collateral-blocked every audio-cpp card (tts/sfx lanes stamp
+     * card-composed on NON-timeline yamls). window1 is the sole
+     * timeline sentinel — every timeline graph carries window1_t4.json
+     * or window1_load.json, so timeline protection is unchanged. */
     if (yaml_override[0] &&
-        (strstr(yaml_override, "window1") ||
-         strstr(yaml_override, "card-composed")) &&   /* card path */
+        strstr(yaml_override, "window1") &&
         tl_nw == 0) {
         char did[96] = "";
         int card_ok = 0;
@@ -9575,6 +9579,15 @@ inference_server *server_create(int port, const char *bind_addr) {
         else
             fprintf(stderr, "[shutdown] WARNING: signal thread spawn failed\n");
     }
+
+    /* SIGHUP must NOT kill the gateway — the DSH web server sends HUP to
+     * reload config, and the media sidebar shows "all_gateways_unreachable"
+     * if the gateway dies. Ignore it (the restart path is SIGTERM → new
+     * process, not SIGHUP). */
+    signal(SIGHUP, SIG_IGN);
+    /* SIGUSR1 is used by some tools for log rotation — must not kill the
+     * gateway either. */
+    signal(SIGUSR1, SIG_IGN);
 
     /* (queue recovery law, 2026-08-31) resurrect queued/running runs
      * from their sidecars FIRST — the sweep below must only see what
