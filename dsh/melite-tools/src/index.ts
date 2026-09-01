@@ -46,11 +46,14 @@ import type { Context } from '@deepseek-ai/cordis'
 import { DEFAULT_GATEWAY_URL } from './gateway.ts'
 import { buildPipeline } from './tools/build-pipeline.ts'
 import { enhancePrompt } from './tools/enhance-prompt.ts'
+import { laneBundle } from './tools/lane-bundle.ts'
 import { modelCatalog } from './tools/model-catalog.ts'
 import { provisionModel } from './tools/provision-model.ts'
+import { refineDraft } from './tools/refine-draft.ts'
 import { skillIndex } from './tools/skill-index.ts'
 import { skillRead } from './tools/skill-read.ts'
 import { ledgerTail } from './tools/ledger-tail.ts'
+import { cardTools } from './tools/card-tools.ts'
 import type { ToolDefinition } from './types.ts'
 import { harnessEnhance, type LlmStreamSeam } from './llm-complete.ts'
 import { agenticSweep } from './enhance-agent.ts'
@@ -71,7 +74,8 @@ export interface Config {
 
 /** The tool names this plugin owns (the diagnostic route filters to these). */
 export const MELITE_TOOL_NAMES = [
-  'model_catalog', 'build_pipeline', 'enhance_prompt', 'provision_model',
+  'model_catalog', 'build_pipeline', 'refine_draft', 'lane_bundle',
+  'enhance_prompt', 'provision_model',
   'skill_index', 'skill_read', 'ledger_tail',
 ] as const
 
@@ -94,18 +98,53 @@ interface CtxView {
 }
 
 /** Register the Melite tools (+ the /melite-tools/catalog diagnostic route). */
-export function apply(ctx: Context, config: Config = {}): void {
+export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   const c = ctx as unknown as CtxView
-  const gatewayUrl = (config.gatewayUrl ?? DEFAULT_GATEWAY_URL).replace(/\/+$/, '')
+  // LANE-SPAWN LAW (2026-09-01): the gateway that spawns a lane agent
+  // owns that agent's composes — its door URL rides the spawn env, so
+  // the one-card wall + auto-arm bind to the spawning gateway instead
+  // of silently falling through to whatever this profile pins.
+  const envGw = process.env.MELITE_GATEWAY_URL || ''
+  const gatewayUrl = (envGw || config.gatewayUrl || DEFAULT_GATEWAY_URL).replace(/\/+$/, '')
+
+  // LANE MODE (2026-08-31): a scoped agent session mounts EXACTLY ONE
+  // card tool and NOTHING else — no build_pipeline, no model catalog,
+  // no provisioning, no skills door, no ledger, no other cards. The
+  // session cannot know another lane exists: impossibility by mounting,
+  // not by instruction. Set by the gateway's agent door spawn
+  // (MELITE_CARD_TOOLS_LANE=<lane>) — never by the session itself.
+  const lane = process.env.MELITE_CARD_TOOLS_LANE || (config as any).lane || ''
+  if (lane) {
+    const cardToolList = await cardTools(gatewayUrl, undefined, lane)
+    if (cardToolList.length !== 1)
+      throw new Error('melite-tools lane mode: lane "' + lane + '" must yield exactly 1 tool, got ' + String(cardToolList.length))
+    for (const t of cardToolList) c.tools.register(t as unknown as ToolDefinition)
+    c.logger.info('melite-tools LANE MODE (%s): 1 tool — %s', lane, cardToolList[0]?.name ?? '?')
+    return
+  }
+
   c.logger.info('melite-tools: registering %d tools against gateway %s', MELITE_TOOL_NAMES.length, gatewayUrl)
 
   c.tools.register(modelCatalog(gatewayUrl))
   c.tools.register(buildPipeline(gatewayUrl))
+  c.tools.register(refineDraft(gatewayUrl))
+  c.tools.register(laneBundle(gatewayUrl))
   c.tools.register(provisionModel(gatewayUrl))
   c.tools.register(enhancePrompt(gatewayUrl, c.llm))
   c.tools.register(skillIndex(gatewayUrl))
   c.tools.register(skillRead(gatewayUrl))
   c.tools.register(ledgerTail(gatewayUrl))
+  // THE PLUGIN SYSTEM (2026-08-30): complex cards OWN their tools —
+  // a tool.json manifest beside each card's form declares name/schema/
+  // constraints; register one DSH tool per manifest. Adding a complex
+  // card = adding its dir; zero godfile edits on this side.
+  try {
+    const cardToolList = await cardTools(gatewayUrl)
+    for (const t of cardToolList) c.tools.register(t as unknown as ToolDefinition)
+    c.logger.info('melite-tools: %d card tool(s) from /v1/card-tools', cardToolList.length)
+  } catch (e) {
+    c.logger.warn('melite-tools: card-tools manifest fetch failed: %s', e instanceof Error ? e.message : e)
+  }
 
   // Diagnostic surface: read the REAL registry back through ctx.tools.schemas()
   // so a booted instance can prove registration over HTTP (verification law).

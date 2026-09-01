@@ -8,7 +8,7 @@
     - id: infer-gallery-host
       name: /home/user/Documents/programs/active/inference.cpp/dsh/infer-gallery/lib/index.js
       config:
-        gatewayUrl: http://localhost:18090
+        gatewayUrl: http://localhost:33081
     - id: infer-gallery-client
       name: '@infer-media/dsh-gallery'
       config:

@@ -33,7 +33,7 @@ timeoutMs?: number
 pipelineDir?: string
 }
 
-const DEFAULT_GATEWAY_URL = 'http://localhost:18090'
+const DEFAULT_GATEWAY_URL = 'http://localhost:33081'
 const DEFAULT_TIMEOUT_MS = 15_000
 const RUNS_UPSTREAM = '/v1/pipelines/runs?limit=50'
 /** The only gateway tree the artifact proxy may touch. */
@@ -58,6 +58,68 @@ export function apply(ctx: Context, config: Config): void {
     fetch(`${gatewayUrl}${path}`, { signal: AbortSignal.timeout(timeoutMs) })
 
   ctx.logger.info('infer-gallery proxying %s (gateway %s)', RUNS_UPSTREAM, gatewayUrl)
+
+  /* The PIPELINES door: the drafts list (the composed action cards, the
+   * queue-native pipeline instances). /v1/pipelines/drafts is newest-first;
+   * DRAFTS_LIMIT caps the payload — the sidebar is a browser, not an
+   * archive (the full index stays reachable at the gateway itself).
+   * Draft rows are params docs: no artifact URLs to rewrite, unlike runs. */
+  const DRAFTS_UPSTREAM = '/v1/pipelines/drafts'
+  const DRAFTS_LIMIT = 200
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: '/infer-gallery/drafts',
+    handler: async (_req, res) => {
+      try {
+        const response = await upstream(DRAFTS_UPSTREAM)
+        const body = await response.text()
+        if (!response.ok) {
+          res.writeHead(response.status, JSON_HEADERS)
+          res.end(JSON.stringify({
+            error: 'gateway_error',
+            status: response.status,
+            upstream: `${gatewayUrl}${DRAFTS_UPSTREAM}`,
+            body: body.slice(0, 2_000),
+          }))
+          return
+        }
+        let payload: unknown
+        try {
+          payload = JSON.parse(body)
+        } catch {
+          res.writeHead(502, JSON_HEADERS)
+          res.end(JSON.stringify({
+            error: 'gateway_bad_payload',
+            message: 'upstream /v1/pipelines/drafts returned non-JSON body',
+            body: body.slice(0, 2_000),
+          }))
+          return
+        }
+        const all = Array.isArray((payload as { drafts?: unknown })?.drafts)
+          ? (payload as { drafts: Record<string, unknown>[] }).drafts
+          : []
+        const drafts = all.slice(0, DRAFTS_LIMIT)
+        const draftsBody = JSON.stringify({
+          gateway: gatewayUrl,
+          total: all.length,
+          truncated: all.length > drafts.length,
+          drafts,
+        })
+        res.writeHead(200, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(draftsBody)) })
+        res.end(Buffer.from(draftsBody))
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        ctx.logger.warn('infer-gallery: gateway unreachable: %s', message)
+        res.writeHead(502, JSON_HEADERS)
+        res.end(JSON.stringify({
+          error: 'gateway_unreachable',
+          message,
+          gatewayUrl,
+          upstream: `${gatewayUrl}${DRAFTS_UPSTREAM}`,
+        }))
+      }
+    },
+  }), 'infer-gallery: /infer-gallery/drafts route')
 
   /* The params round-trip door: serve one run's _pipeline.json sidecar so
    * the media panel can rehydrate the generation as an editable card.

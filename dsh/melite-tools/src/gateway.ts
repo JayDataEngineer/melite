@@ -39,7 +39,7 @@ export function normalizeGatewayUrl(gatewayUrl: string): string {
  */
 export async function gatewayRequest(
   gatewayUrl: string,
-  method: 'GET' | 'POST',
+  method: 'GET' | 'POST' | 'PATCH',
   path: string,
   body: unknown,
   execSignal: AbortSignal,

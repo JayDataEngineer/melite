@@ -1,7 +1,7 @@
 //#region src/index.ts
 const name = "infer-media";
 const inject = ["webServer"];
-const DEFAULT_GATEWAYS = ["http://localhost:18090"];
+const DEFAULT_GATEWAYS = ["http://localhost:33081"];
 const DEFAULT_TIMEOUT_MS = 15e3;
 const DEFAULT_LIMIT = 200;
 const JSON_HEADERS = {
@@ -27,6 +27,48 @@ function apply(ctx, config) {
 	const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 	const limit = config.limit ?? DEFAULT_LIMIT;
 	ctx.logger.info("infer-media merging gateways: %s", gateways.join(", "));
+	ctx.effect(() => ctx.webServer.register({
+		kind: "exact",
+		path: "/infer-media/drafts",
+		handler: async (_req, res) => {
+			const errors = [];
+			const drafts = [];
+			const seenIds = /* @__PURE__ */ new Set();
+			(await Promise.allSettled(gateways.map(async (gw) => {
+				const response = await fetch(gw + "/v1/pipelines/drafts", { signal: AbortSignal.timeout(timeoutMs) });
+				if (!response.ok) throw new Error("HTTP " + String(response.status));
+				const data = await response.json();
+				const list = Array.isArray(data.drafts) ? data.drafts : [];
+				for (const raw of list.slice(0, limit)) {
+					const draft = raw;
+					const id = typeof draft.draft_id === "string" ? draft.draft_id : "";
+					if (id !== "" && seenIds.has(id)) continue;
+					if (id !== "") seenIds.add(id);
+					draft.source = gw;
+					drafts.push(draft);
+				}
+			}))).forEach((r, i) => {
+				if (r.status === "rejected") errors.push({
+					gateway: gateways[i],
+					message: String(r.reason).slice(0, 300)
+				});
+			});
+			if (drafts.length === 0 && errors.length > 0) {
+				res.writeHead(502, JSON_HEADERS);
+				res.end(JSON.stringify({
+					error: "all_gateways_unreachable",
+					errors
+				}));
+				return;
+			}
+			res.writeHead(200, JSON_HEADERS);
+			res.end(JSON.stringify({
+				gateways,
+				errors,
+				drafts
+			}));
+		}
+	}), "infer-media: /infer-media/drafts route");
 	ctx.effect(() => ctx.webServer.register({
 		kind: "exact",
 		path: "/infer-media/runs",
@@ -96,7 +138,13 @@ function apply(ctx, config) {
 				return;
 			}
 			try {
-				const response = await fetch(src, { signal: AbortSignal.timeout(timeoutMs) });
+				const range = req.headers.range;
+				const fetchHeaders = {};
+				if (range) fetchHeaders["range"] = range;
+				const response = await fetch(src, {
+					signal: AbortSignal.timeout(timeoutMs),
+					headers: fetchHeaders
+				});
 				if (!response.ok) {
 					res.writeHead(response.status, {
 						"content-type": "text/plain",
@@ -105,13 +153,37 @@ function apply(ctx, config) {
 					res.end("upstream " + String(response.status));
 					return;
 				}
-				const buffer = Buffer.from(await response.arrayBuffer());
-				res.writeHead(response.status, {
+				const upstreamStatus = response.status;
+				const resHeaders = {
 					"content-type": response.headers.get("content-type") ?? "application/octet-stream",
 					"cache-control": "public, max-age=60",
-					"content-length": String(buffer.byteLength)
-				});
-				res.end(buffer);
+					"accept-ranges": "bytes"
+				};
+				const contentLength = response.headers.get("content-length");
+				if (contentLength) resHeaders["content-length"] = contentLength;
+				const contentRange = response.headers.get("content-range");
+				if (contentRange) resHeaders["content-range"] = contentRange;
+				res.writeHead(upstreamStatus, resHeaders);
+				const body = response.body;
+				if (body && typeof body.pipe === "function") body.pipe(res);
+				else if (body && typeof body.getReader === "function") {
+					const reader = body.getReader();
+					const pump = async () => {
+						const { done, value } = await reader.read();
+						if (done) {
+							res.end();
+							return;
+						}
+						res.write(Buffer.from(value));
+						return pump();
+					};
+					await pump();
+				} else {
+					const buffer = Buffer.from(await response.arrayBuffer());
+					resHeaders["content-length"] = String(buffer.byteLength);
+					res.writeHead(upstreamStatus, resHeaders);
+					res.end(buffer);
+				}
 			} catch (error) {
 				const message = error instanceof Error ? error.message : String(error);
 				res.writeHead(502, JSON_HEADERS);

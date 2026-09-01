@@ -75,9 +75,9 @@ export function parseCardsBlock(block: ToolCallBlockView): {
       // ids. Older ray-era renders said "cards draft <p_id> — …". Accept BOTH:
       // the token after 'card ' or after 'draft ' is the draft id either way.
       const atCard = text.indexOf('card ')
-      const at = atCard >= 0 ? atCard : text.indexOf('draft ')
-      if (at < 0) continue
-      const rest = text.slice(at + (atCard >= 0 ? 5 : 6))
+      const atIdx = atCard >= 0 ? atCard : text.indexOf('draft ')
+      if (atIdx < 0) continue
+      const rest = text.slice(atIdx + (atCard >= 0 ? 5 : 6))
       const end = rest.indexOf(' ')
       const tok = end < 0 ? rest : rest.slice(0, end)
       if ((tok.startsWith('draft-') || tok.startsWith('p_')) && tok.length > 2) { draftId = tok; break }

@@ -26,16 +26,28 @@ export const OPEN_DRAFT_EVENT = 'melite-cards-deck-open-draft'
 
 export function DeckCanvas() {
   const frameRef = useRef<HTMLIFrameElement>(null)
-  const [draftId, setDraftId] = useState(() => {
+  // RELOAD NONCE (cache fix, 2026-09-01): re-opening the SAME draft while
+  // the deck is mounted must REPLACE the card on screen — the user's local
+  // edits are discarded and the saved draft re-hydrates. A bare
+  // setDraftId(sameString) is a React no-op (identical state → identical
+  // iframe src → no navigation → the wand looks dead). The nonce bumps the
+  // iframe URL on EVERY open event, forcing a fresh editor boot and a
+  // re-fetch of the draft from the gateway.
+  const nonce = useRef(0)
+  const [open, setOpen] = useState<{ id: string; n: number }>(() => {
     const d = pendingDraftId
     pendingDraftId = ''
-    return d
+    nonce.current += 1
+    return { id: d, n: nonce.current }
   })
 
   useEffect(() => {
     const onOpenDraft = (e: Event): void => {
       const d = (e as CustomEvent<{ draftId?: unknown }>).detail?.draftId
-      if (typeof d === 'string' && d !== '') setDraftId(d)
+      if (typeof d === 'string' && d !== '') {
+        nonce.current += 1
+        setOpen({ id: d, n: nonce.current })
+      }
     }
     document.addEventListener(OPEN_DRAFT_EVENT, onOpenDraft)
     return () => { document.removeEventListener(OPEN_DRAFT_EVENT, onOpenDraft) }
@@ -88,7 +100,7 @@ export function DeckCanvas() {
       <iframe
         ref={frameRef}
         className={css.canvasIframe}
-        src={draftId === '' ? '/editor/' : '/editor/?meliteCards=' + encodeURIComponent(draftId)}
+        src={open.id === '' ? '/editor/' : '/editor/?meliteCards=' + encodeURIComponent(open.id) + '&_r=' + String(open.n)}
         title="Melite card canvas"
         allow="clipboard-read; clipboard-write"
       />

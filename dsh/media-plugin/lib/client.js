@@ -344,6 +344,8 @@ window.__ModuleLoader__.load({
 			const [cat, setCat] = (0, react.useState)("all");
 			const [search, setSearch] = (0, react.useState)("");
 			const [preview, setPreview] = (0, react.useState)(null);
+			const [drafts, setDrafts] = (0, react.useState)([]);
+			const [tab, setTab] = (0, react.useState)("artifacts");
 			const load = (0, react.useCallback)(() => {
 				setLoading(true);
 				setError("");
@@ -361,6 +363,18 @@ window.__ModuleLoader__.load({
 			(0, react.useEffect)(() => {
 				load();
 			}, [load]);
+			const loadDrafts = (0, react.useCallback)(() => {
+				fetch("/infer-media/drafts").then(async (r) => {
+					const data = await r.json();
+					if (!r.ok) throw new Error(String(data.error ?? r.status));
+					setDrafts(Array.isArray(data.drafts) ? data.drafts : []);
+				}).catch(() => {
+					setDrafts([]);
+				});
+			}, []);
+			(0, react.useEffect)(() => {
+				loadDrafts();
+			}, [loadDrafts]);
 			(0, react.useEffect)(() => {
 				let last = Date.now();
 				const refresh = () => {
@@ -393,6 +407,18 @@ window.__ModuleLoader__.load({
 					setError("run has no action card (no draft_id in its run row)");
 					return;
 				}
+				const open = window.__meliteDeckOpenWithDraft;
+				if (typeof open !== "function") {
+					setError("Cards studio unavailable (deck plugin not loaded)");
+					return;
+				}
+				if (!open(draftId)) setError("Cards studio refused to open");
+			};
+			/** PIPELINE OPEN: click a draft row → the Cards studio opens with THAT
+			*  card hydrated (same deck seam the run wand uses). The card is the
+			*  queue-native object: refine it there, press Run when ready. */
+			const openDraft = (draftId) => {
+				if (draftId === "") return;
 				const open = window.__meliteDeckOpenWithDraft;
 				if (typeof open !== "function") {
 					setError("Cards studio unavailable (deck plugin not loaded)");
@@ -488,6 +514,31 @@ window.__ModuleLoader__.load({
 								]
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { style: { flex: 1 } }),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								style: {
+									display: "flex",
+									gap: 4,
+									padding: 2,
+									border: "1px solid rgba(148,163,184,0.25)",
+									borderRadius: 999
+								},
+								children: ["pipelines", "artifacts"].map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+									onClick: () => {
+										setTab(t);
+									},
+									style: {
+										border: 0,
+										borderRadius: 999,
+										padding: "3px 10px",
+										fontSize: 12,
+										cursor: "pointer",
+										fontFamily: "inherit",
+										background: tab === t ? "rgba(59,130,246,0.18)" : "transparent",
+										color: tab === t ? "rgb(147,197,253)" : "rgb(203,213,225)"
+									},
+									children: t === "pipelines" ? "Pipelines " + String(drafts.length) : "Artifacts " + String(items.length)
+								}, t))
+							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
 								value: search,
 								onChange: (e) => {
@@ -538,7 +589,93 @@ window.__ModuleLoader__.load({
 							chip("audio", "Audio")
 						]
 					}),
-					gatewayErrors.length > 0 ? gatewayErrors.map((e) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					tab === "pipelines" ? drafts.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						style: {
+							color: "rgba(148,163,184,0.9)",
+							fontSize: 13,
+							padding: 20
+						},
+						children: "no composed cards yet — build one in a chat."
+					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						"data-infer-media-drafts": "1",
+						style: {
+							display: "flex",
+							flexDirection: "column",
+							gap: 6
+						},
+						children: drafts.map((d) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+							onClick: () => {
+								openDraft(d.draft_id ?? "");
+							},
+							"data-draft": d.draft_id,
+							style: {
+								display: "flex",
+								alignItems: "center",
+								gap: 10,
+								textAlign: "left",
+								border: "1px solid rgba(148,163,184,0.18)",
+								borderRadius: 10,
+								padding: "8px 12px",
+								background: "linear-gradient(160deg, #1e293b 0%, #0f172a 100%)",
+								cursor: "pointer",
+								color: "rgb(226,232,240)",
+								fontFamily: "inherit"
+							},
+							children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									style: {
+										fontSize: 15,
+										lineHeight: 0,
+										color: "rgba(250,204,21,0.9)"
+									},
+									children: "▸"
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									style: {
+										flex: 1,
+										minWidth: 0,
+										display: "flex",
+										flexDirection: "column",
+										gap: 2
+									},
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										style: {
+											fontSize: 13,
+											fontWeight: 600,
+											overflow: "hidden",
+											textOverflow: "ellipsis",
+											whiteSpace: "nowrap"
+										},
+										children: d.name || d.draft_id
+									}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+										style: {
+											fontSize: 10,
+											fontFamily: "ui-monospace, monospace",
+											color: "rgba(148,163,184,0.9)",
+											overflow: "hidden",
+											textOverflow: "ellipsis",
+											whiteSpace: "nowrap"
+										},
+										children: [
+											d.model || "card",
+											" · ",
+											d.draft_id
+										]
+									})]
+								}),
+								typeof d.source === "string" && d.source !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									style: {
+										fontSize: 9,
+										color: "rgba(148,163,184,0.75)",
+										border: "1px solid rgba(148,163,184,0.25)",
+										borderRadius: 6,
+										padding: "2px 6px"
+									},
+									children: d.source.replace(/^https?:\/\//, "")
+								}) : null
+							]
+						}, d.draft_id ?? Math.random()))
+					}) : gatewayErrors.length > 0 ? gatewayErrors.map((e) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						style: {
 							fontSize: 11,
 							color: "rgba(251,191,36,0.9)",
@@ -551,7 +688,7 @@ window.__ModuleLoader__.load({
 							e.message
 						]
 					}, e.gateway)) : null,
-					error !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					tab === "artifacts" && (error !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						style: {
 							padding: 14,
 							borderRadius: 8,
@@ -687,7 +824,7 @@ window.__ModuleLoader__.load({
 								})
 							]
 						}, it.id))
-					}),
+					})),
 					preview !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Overlay, {
 						item: preview,
 						onClose: () => {

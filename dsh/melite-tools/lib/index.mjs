@@ -119,7 +119,7 @@ function clean(value, seen) {
 //#endregion
 //#region src/tools/build-pipeline.ts
 const CATALOG_TIMEOUT_MS$1 = 15e3;
-const DRAFT_TIMEOUT_MS = 15e3;
+const DRAFT_TIMEOUT_MS$1 = 15e3;
 function buildPipeline(gatewayUrl) {
 	return {
 		name: "build_pipeline",
@@ -209,7 +209,7 @@ function buildPipeline(gatewayUrl) {
 					service: a.model,
 					params
 				}]
-			}, exec.signal, DRAFT_TIMEOUT_MS);
+			}, exec.signal, DRAFT_TIMEOUT_MS$1);
 			if (typeof draft.draftId !== "string" || draft.draftId === "") throw new Error("build_pipeline: gateway draft POST returned no draftId");
 			return jsonClean({
 				card: "draft",
@@ -481,6 +481,112 @@ function enhancePrompt(gatewayUrl, llm) {
 	};
 }
 //#endregion
+//#region src/tools/lane-bundle.ts
+const TIMEOUT_MS$1 = 15e3;
+function paramKeys(t) {
+	const sch = t.params_schema;
+	return sch && typeof sch.properties === "object" ? Object.keys(sch.properties) : [];
+}
+function laneBundle(gatewayUrl) {
+	return {
+		name: "lane_bundle",
+		description: "Load one inference lane's full bundle (tool manifest + skills), or LIST all lanes when called with no arguments. With {lane}: GET /v1/cards/<lane>/bundle → the lane's params_schema (the card's input contract) and its skill documents (rules, seam/grid laws, recipes) — read these BEFORE build_pipeline. Without arguments: one compact row per lane from the gateway's card catalog — lane key, card tool name, title, param keys. Lane keys resolve by card dir name (\"video-gen\", \"image-gen\", \"tts\", \"sfx\", \"music\", \"3d-gen\", \"motion-gen\", \"body\", \"humanoid-flow\") or by model id (\"krea-2\", \"qwen3-tts\", \"h3-timeline\").",
+		parameters: {
+			type: "object",
+			properties: { lane: {
+				type: "string",
+				description: "Optional lane key. Omit to LIST all lanes. Card-dir style (\"image-gen\", \"tts\") or model id (\"krea-2\", \"qwen3-tts\")."
+			} },
+			required: []
+		},
+		output: {
+			schema: {
+				type: "object",
+				additionalProperties: true,
+				properties: {
+					mode: {
+						type: "string",
+						description: "\"list\" (no lane given) or \"bundle\"."
+					},
+					lanes: {
+						type: "array",
+						description: "List mode: one row per lane {lane, card, title, description, params}."
+					},
+					lane: {
+						type: "string",
+						description: "Bundle mode: the resolved lane name."
+					},
+					tools: {
+						type: "array",
+						description: "Bundle mode: card manifests with params_schema + constraints."
+					},
+					skills: {
+						type: "array",
+						description: "Bundle mode: the lane's skill documents (id/name/description)."
+					}
+				},
+				required: ["mode"]
+			},
+			render: (_args, value) => {
+				const v = value;
+				if (v.mode === "list") {
+					const n = Array.isArray(v.lanes) ? v.lanes.length : 0;
+					return [{
+						type: "text",
+						text: "lane_bundle: " + String(n) + " lanes — " + (v.lanes ?? []).map((l) => String(l.lane ?? "?")).join(", ")
+					}];
+				}
+				const nTools = Array.isArray(v.tools) ? v.tools.length : 0;
+				const nSkills = Array.isArray(v.skills) ? v.skills.length : 0;
+				return [{
+					type: "text",
+					text: "lane_bundle " + String(v.lane ?? "?") + ": " + String(nTools) + " tool(s), " + String(nSkills) + " skill(s) — read the skills, then build_pipeline"
+				}];
+			}
+		},
+		async execute(args, exec) {
+			const a = args;
+			if (typeof a.lane !== "string" || a.lane.length === 0) {
+				const manifests = await gatewayRequest(gatewayUrl, "GET", "/v1/card-tools", void 0, exec.signal, TIMEOUT_MS$1);
+				const rows = (Array.isArray(manifests) ? manifests : []).filter((m) => typeof m?.name === "string" && typeof m?.model === "string").map((m) => ({
+					lane: String(m.model),
+					card: typeof m.name === "string" ? m.name : null,
+					title: typeof m.stage_title === "string" ? m.stage_title : null,
+					description: typeof m.description === "string" ? m.description : null,
+					params: paramKeys(m)
+				}));
+				return jsonClean({
+					mode: "list",
+					lanes: rows,
+					lane_count: rows.length
+				});
+			}
+			const lane = a.lane;
+			const res = await gatewayRequest(gatewayUrl, "GET", "/v1/cards/" + encodeURIComponent(lane) + "/bundle", void 0, exec.signal, TIMEOUT_MS$1);
+			const tools = Array.isArray(res.tools) ? res.tools.map((t) => ({
+				name: t.name,
+				model: t.model,
+				description: t.description,
+				params_schema: t.params_schema,
+				constraints: t.constraints
+			})) : [];
+			const skills = Array.isArray(res.skills) ? res.skills.map((s) => ({
+				id: s.id,
+				name: s.name,
+				description: s.description
+			})) : [];
+			return jsonClean({
+				mode: "bundle",
+				lane: res.lane ?? lane,
+				tools,
+				skills,
+				tool_count: tools.length,
+				skill_count: skills.length
+			});
+		}
+	};
+}
+//#endregion
 //#region src/tools/model-catalog.ts
 const CATALOG_TIMEOUT_MS = 2e4;
 const DEFAULT_LIMIT = 50;
@@ -683,6 +789,92 @@ function provisionModel(gatewayUrl) {
 	};
 }
 //#endregion
+//#region src/tools/refine-draft.ts
+const TIMEOUT_MS = 15e3;
+function refineDraft(gatewayUrl) {
+	return {
+		name: "refine_draft",
+		description: "EDIT an existing action card in place: key-wise MERGE params onto the draft's stage (the same PATCH channel the card editor's Save uses — the SAME card tile updates, nothing re-stacks). Use after build_pipeline when the user tweaks an existing card (\"seed 42\", \"make it snow\", \"drop the music layer\"). For a NEW generation or a different model, build_pipeline again instead. Args: draftId (from build_pipeline), params (the keys to merge — e.g. {\"seed\":42,\"prompt\":\"...\"}), optional stage id (default: the draft's first stage).",
+		parameters: {
+			type: "object",
+			properties: {
+				draftId: {
+					type: "string",
+					description: "The draft id from build_pipeline (e.g. \"draft-6a96...-1\")."
+				},
+				params: {
+					type: "object",
+					additionalProperties: true,
+					description: "The param keys to merge onto the card (e.g. {\"seed\":42} or {\"prompt\":\"a red fox in snow\"}). Unmentioned keys are left untouched."
+				},
+				stage: {
+					type: "string",
+					description: "Optional stage id within the draft. Omit to target the first stage (the normal one-card case)."
+				}
+			},
+			required: ["draftId", "params"]
+		},
+		output: {
+			schema: {
+				type: "object",
+				additionalProperties: true,
+				properties: {
+					card: {
+						type: "string",
+						description: "Always \"draft\" — still a card, never a run."
+					},
+					draftId: { type: "string" },
+					stage: {
+						type: "string",
+						description: "The stage id that was patched."
+					},
+					params: {
+						type: "object",
+						description: "The stage's full merged params after the patch."
+					}
+				},
+				required: [
+					"card",
+					"draftId",
+					"stage",
+					"params"
+				]
+			},
+			render: (_args, value) => {
+				const v = value;
+				return [{
+					type: "text",
+					text: "refine_draft " + String(v.draftId ?? "?") + " (stage " + String(v.stage ?? "?") + ") — card updated in place, the user presses Run when ready"
+				}];
+			}
+		},
+		async execute(args, exec) {
+			const a = args;
+			if (typeof a.draftId !== "string" || a.draftId.length === 0) throw new Error("refine_draft: \"draftId\" is required (the draft id from build_pipeline)");
+			if (a.params === null || typeof a.params !== "object" || Array.isArray(a.params)) throw new Error("refine_draft: \"params\" is required (an object of keys to merge, e.g. {\"seed\":42})");
+			let sid = typeof a.stage === "string" && a.stage.length > 0 ? a.stage : "";
+			if (!sid) {
+				const doc = await gatewayRequest(gatewayUrl, "GET", "/v1/pipelines/drafts/" + encodeURIComponent(a.draftId), void 0, exec.signal, TIMEOUT_MS);
+				const stages = Array.isArray(doc.stages) ? doc.stages : [];
+				if (stages.length === 0) throw new Error("refine_draft: draft \"" + a.draftId + "\" has no stages to patch");
+				const first = stages[0];
+				sid = typeof first.id === "string" && first.id.length > 0 ? first.id : "s_0";
+			}
+			const updated = await gatewayRequest(gatewayUrl, "PATCH", "/v1/pipelines/drafts/" + encodeURIComponent(a.draftId) + "/stages/" + encodeURIComponent(sid), { params: a.params }, exec.signal, TIMEOUT_MS);
+			const stages = Array.isArray(updated.stages) ? updated.stages : [];
+			const patched = stages.find((s) => s.id === sid) ?? stages[0] ?? {};
+			const params = patched.params !== null && typeof patched.params === "object" ? patched.params : {};
+			return jsonClean({
+				card: "draft",
+				draftId: updated.draft_id ?? a.draftId,
+				stage: sid,
+				intent: updated.intent ?? null,
+				params
+			});
+		}
+	};
+}
+//#endregion
 //#region src/tools/skill-index.ts
 const INDEX_TIMEOUT_MS = 15e3;
 function skillIndex(gatewayUrl) {
@@ -857,6 +1049,208 @@ function ledgerTail(gatewayUrl) {
 	};
 }
 //#endregion
+//#region src/tools/card-tools.ts
+/**
+* card-tools.ts — the PLUGIN SYSTEM registrar (2026-08-30).
+*
+* Complex cards OWN their tools: plugins/<owner>/cards/<card>/tool.json
+* (beside the card's form) declares name/description/model + the params
+* schema + a small constraint vocabulary. This module fetches
+* GET /v1/card-tools and registers ONE DSH tool per manifest — the
+* executor validates against the DECLARED schema/constraints and lands
+* a draft via the drafts door. Adding a complex card = adding its dir
+* + tool.json; the model receives the tool with ZERO DSH-side code.
+* No godfile: the timeline tool lives where the timeline is defined.
+*/
+const MANIFEST_TIMEOUT_MS = 15e3;
+const DRAFT_TIMEOUT_MS = 15e3;
+async function gwJson(gatewayUrl, method, path, body, signal, timeoutMs) {
+	const ctl = new AbortController();
+	const t = setTimeout(() => ctl.abort(), timeoutMs);
+	if (signal) signal.addEventListener("abort", () => ctl.abort(), { once: true });
+	const sessionHdr = { "content-type": "application/json" };
+	if (process.env.INF_AGENT_SESSION) sessionHdr["x-agent-session"] = process.env.INF_AGENT_SESSION;
+	try {
+		const r = await fetch(gatewayUrl.replace(/\/$/, "") + path, {
+			method,
+			headers: sessionHdr,
+			body: body === void 0 ? void 0 : JSON.stringify(body),
+			signal: ctl.signal
+		});
+		const text = await r.text();
+		if (!r.ok) throw new Error("gateway " + String(r.status) + ": " + text.slice(0, 300));
+		return JSON.parse(text);
+	} finally {
+		clearTimeout(t);
+	}
+}
+function fail(tool, msg) {
+	throw new Error(tool + ": " + msg);
+}
+/** Enforce the DECLARED constraint vocabulary. Machinery, not prompts. */
+function validateCardArgs(m, args) {
+	const name = m.name;
+	const sch = m.params_schema ?? {};
+	const props = sch.properties ?? {};
+	const req = sch.required ?? [];
+	for (const k of req) if (args[k] === void 0) fail(name, "\"" + k + "\" is required");
+	if (sch.additional_properties === false) {
+		for (const k of Object.keys(args)) if (!(k in props)) fail(name, "unknown field \"" + k + "\" (allowed: " + Object.keys(props).join(", ") + ")");
+	}
+	const out = {};
+	for (const [k, def] of Object.entries(props)) {
+		const v = args[k] === void 0 ? def.default : args[k];
+		if (v === void 0) continue;
+		const t = def.type;
+		if (t === "integer" && !(typeof v === "number" && Number.isInteger(v))) fail(name, k + " must be an integer");
+		if (t === "number" && typeof v !== "number") fail(name, k + " must be a number");
+		if (t === "string" && typeof v !== "string") fail(name, k + " must be a string");
+		if (t === "boolean" && typeof v !== "boolean") fail(name, k + " must be a boolean");
+		if (typeof v === "number" && def.min !== void 0 && v < def.min) fail(name, k + " must be >= " + String(def.min));
+		if (typeof v === "number" && def.max !== void 0 && v > def.max) fail(name, k + " must be <= " + String(def.max));
+		if (def.artifact_name === true && typeof v === "string" && (/^https?:\/\//.test(v) || v.includes("/"))) fail(name, k + " must be an artifact NAME (no URLs, no paths)");
+		out[k] = v;
+	}
+	const cons = m.constraints ?? {};
+	const callsProp = props.calls;
+	const calls = Array.isArray(args.calls) ? args.calls : fail(name, "calls[] is required");
+	if (callsProp?.min_items !== void 0 && calls.length < callsProp.min_items) fail(name, "calls needs at least " + String(callsProp.min_items) + " entry");
+	if (callsProp?.max_items !== void 0 && calls.length > callsProp.max_items) fail(name, "calls exceeds " + String(callsProp.max_items) + " entries");
+	const itemProps = callsProp?.items?.properties ?? {};
+	const itemReq = callsProp?.items?.required ?? [];
+	if (cons.xor_fields) for (const group of cons.xor_fields) {
+		group.filter((f2) => args.calls?.some?.((c2) => c2[f2] !== void 0));
+		for (let i = 0; i < calls.length; i++) {
+			const got = group.filter((f2) => calls[i][f2] !== void 0);
+			if (got.length === 0) fail(name, "calls[" + String(i) + "] needs one of: " + group.join(" / "));
+			if (got.length > 1) fail(name, "calls[" + String(i) + "] has both " + got.join(" + ") + " — exactly one");
+		}
+	}
+	for (let i = 0; i < calls.length; i++) {
+		const c2 = calls[i];
+		if (typeof c2 !== "object" || c2 === null) fail(name, "calls[" + String(i) + "] must be an object");
+		for (const k of itemReq) if (c2[k] === void 0) fail(name, "calls[" + String(i) + "]." + k + " is required");
+		if (callsProp?.items?.additional_properties === false) {
+			for (const k of Object.keys(c2)) if (!(k in itemProps)) fail(name, "calls[" + String(i) + "] unknown field \"" + k + "\"");
+		}
+		for (const [k, def] of Object.entries(itemProps)) {
+			const v = c2[k];
+			if (v === void 0) continue;
+			if (def.type === "integer" && !(typeof v === "number" && Number.isInteger(v))) fail(name, "calls[" + String(i) + "]." + k + " must be an integer");
+			if (def.type === "number" && typeof v !== "number") fail(name, "calls[" + String(i) + "]." + k + " must be a number");
+			if (typeof v === "number" && def.min !== void 0 && v < def.min) fail(name, "calls[" + String(i) + "]." + k + " must be >= " + String(def.min));
+			if (typeof v === "number" && def.max !== void 0 && v > def.max) fail(name, "calls[" + String(i) + "]." + k + " must be <= " + String(def.max));
+			if (def.artifact_name === true && typeof v === "string" && (/^https?:\/\//.test(v) || v.includes("/"))) fail(name, "calls[" + String(i) + "]." + k + " must be an artifact NAME");
+		}
+		if (cons.first_item_forbidden && i === 0) {
+			for (const k of cons.first_item_forbidden) if (c2[k] !== void 0) fail(name, "calls[0] must NOT set " + k + " — there is no previous window");
+		}
+	}
+	if (cons.tile) {
+		const t2 = cons.tile;
+		if (t2.from_zero && calls[0][t2.start] !== 0) fail(name, "calls[0]." + String(t2.start) + " must be 0 (the timeline starts at 0)");
+		for (let i = 1; i < calls.length; i++) if (calls[i][t2.start] !== calls[i - 1][t2.end]) fail(name, "calls[" + String(i) + "].start_frame " + String(calls[i][t2.start]) + " does not tile: previous ends at " + String(calls[i - 1][t2.end]));
+	}
+	if (cons.span) {
+		const s2 = cons.span;
+		for (let i = 0; i < calls.length; i++) {
+			const span = calls[i].end_frame - calls[i].start_frame;
+			if (span < s2.min) fail(name, "calls[" + String(i) + "] span " + String(span) + "f under the " + String(s2.min) + "f floor");
+			if (span > s2.max) fail(name, "calls[" + String(i) + "] span " + String(span) + "f exceeds one window (" + String(s2.max) + "f) — split the shot");
+		}
+	}
+	return {
+		params: out,
+		calls,
+		fps: typeof out.fps === "number" ? out.fps : 24
+	};
+}
+/** Fetch manifests + build one DSH tool per card. */
+async function cardTools(gatewayUrl, signal, lane) {
+	const manifests = await gwJson(gatewayUrl, "GET", lane ? "/v1/card-tools?lane=" + encodeURIComponent(lane) : "/v1/card-tools", void 0, signal, MANIFEST_TIMEOUT_MS);
+	if (!Array.isArray(manifests) || manifests.length === 0) {
+		if (lane) throw new Error("card-tools: lane \"" + lane + "\" has no manifest on the gateway");
+		return [];
+	}
+	if (lane && manifests.length !== 1) throw new Error("card-tools: lane \"" + lane + "\" resolved " + String(manifests.length) + " manifests (must be exactly 1)");
+	const tools = [];
+	for (const m of manifests) {
+		if (typeof m?.name !== "string" || !m.name || typeof m.model !== "string" || !m.model) continue;
+		const toolName = m.name;
+		const model = m.model;
+		const stageTitle = typeof m.stage_title === "string" && m.stage_title ? m.stage_title : model;
+		tools.push({
+			name: toolName,
+			description: String(m.description ?? toolName),
+			parameters: m.params_schema,
+			output: {
+				schema: {
+					type: "object",
+					additionalProperties: true,
+					properties: {
+						card: { type: "string" },
+						draftId: { type: "string" }
+					},
+					required: ["card", "draftId"]
+				},
+				render: (_a, v) => [{
+					type: "text",
+					text: "card " + String(v?.draftId ?? "?") + " (" + model + ") — " + String(v?.shots ?? "?") + " shots, 1 run"
+				}]
+			},
+			async execute(args, exec) {
+				const a = args ?? {};
+				const { params, calls, fps } = validateCardArgs(m, a);
+				const intent = typeof a.intent === "string" && a.intent ? a.intent : fail(toolName, "intent is required");
+				const doc = {
+					calls: JSON.stringify(calls),
+					fps,
+					intent
+				};
+				for (const [k, v] of Object.entries(params)) if (k !== "calls" && k !== "intent") doc[k] = v;
+				const draft = await gwJson(gatewayUrl, "POST", "/v1/pipelines/drafts", {
+					intent,
+					stages: [{
+						title: stageTitle,
+						kind: "generation",
+						service: model,
+						params: doc
+					}]
+				}, exec?.signal, DRAFT_TIMEOUT_MS);
+				if (typeof draft.draftId !== "string" || draft.draftId === "") fail(toolName, "gateway draft POST returned no draftId");
+				const totalFrames = calls[calls.length - 1].end_frame;
+				const seams = calls.filter((c3) => c3.first_frame_prev_sec !== void 0).length;
+				const clean = (x) => {
+					if (Array.isArray(x)) return x.map(clean);
+					if (x && typeof x === "object") {
+						const o = {};
+						for (const [k, v] of Object.entries(x)) {
+							const c4 = clean(v);
+							if (c4 !== void 0) o[k] = c4;
+						}
+						return o;
+					}
+					if (typeof x === "function" || x === void 0) return void 0;
+					return x;
+				};
+				return clean({
+					card: "draft",
+					draftId: draft.draftId,
+					model,
+					shots: calls.length,
+					totalFrames,
+					durationSec: Math.round(totalFrames / fps * 100) / 100,
+					motionSeams: seams,
+					hardCuts: calls.length - 1 - seams,
+					runs: 1,
+					stages: Array.isArray(draft.stages) ? draft.stages : []
+				});
+			}
+		});
+	}
+	return tools;
+}
+//#endregion
 //#region src/index.ts
 /** Cordis plugin name used by loader diagnostics. */
 const name = "melite-tools";
@@ -870,6 +1264,8 @@ const inject = [
 const MELITE_TOOL_NAMES = [
 	"model_catalog",
 	"build_pipeline",
+	"refine_draft",
+	"lane_bundle",
 	"enhance_prompt",
 	"provision_model",
 	"skill_index",
@@ -877,17 +1273,34 @@ const MELITE_TOOL_NAMES = [
 	"ledger_tail"
 ];
 /** Register the Melite tools (+ the /melite-tools/catalog diagnostic route). */
-function apply(ctx, config = {}) {
+async function apply(ctx, config = {}) {
 	const c = ctx;
-	const gatewayUrl = (config.gatewayUrl ?? "http://localhost:33081").replace(/\/+$/, "");
+	const gatewayUrl = (process.env.MELITE_GATEWAY_URL || config.gatewayUrl || "http://localhost:33081").replace(/\/+$/, "");
+	const lane = process.env.MELITE_CARD_TOOLS_LANE || config.lane || "";
+	if (lane) {
+		const cardToolList = await cardTools(gatewayUrl, void 0, lane);
+		if (cardToolList.length !== 1) throw new Error("melite-tools lane mode: lane \"" + lane + "\" must yield exactly 1 tool, got " + String(cardToolList.length));
+		for (const t of cardToolList) c.tools.register(t);
+		c.logger.info("melite-tools LANE MODE (%s): 1 tool — %s", lane, cardToolList[0]?.name ?? "?");
+		return;
+	}
 	c.logger.info("melite-tools: registering %d tools against gateway %s", MELITE_TOOL_NAMES.length, gatewayUrl);
 	c.tools.register(modelCatalog(gatewayUrl));
 	c.tools.register(buildPipeline(gatewayUrl));
+	c.tools.register(refineDraft(gatewayUrl));
+	c.tools.register(laneBundle(gatewayUrl));
 	c.tools.register(provisionModel(gatewayUrl));
 	c.tools.register(enhancePrompt(gatewayUrl, c.llm));
 	c.tools.register(skillIndex(gatewayUrl));
 	c.tools.register(skillRead(gatewayUrl));
 	c.tools.register(ledgerTail(gatewayUrl));
+	try {
+		const cardToolList = await cardTools(gatewayUrl);
+		for (const t of cardToolList) c.tools.register(t);
+		c.logger.info("melite-tools: %d card tool(s) from /v1/card-tools", cardToolList.length);
+	} catch (e) {
+		c.logger.warn("melite-tools: card-tools manifest fetch failed: %s", e instanceof Error ? e.message : e);
+	}
 	c.effect(() => c.webServer.register({
 		kind: "exact",
 		path: "/melite-tools/catalog",

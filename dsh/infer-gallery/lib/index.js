@@ -2,7 +2,7 @@
 const name = "infer-gallery";
 /** Routes arrive with the webServer service. */
 const inject = ["webServer"];
-const DEFAULT_GATEWAY_URL = "http://localhost:18090";
+const DEFAULT_GATEWAY_URL = "http://localhost:33081";
 const DEFAULT_TIMEOUT_MS = 15e3;
 const RUNS_UPSTREAM = "/v1/pipelines/runs?limit=50";
 /** The only gateway tree the artifact proxy may touch. */

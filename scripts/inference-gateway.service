@@ -1,0 +1,37 @@
+# inference-gateway.service — reference copy of the CANONICAL gateway unit
+#
+# STATUS 2026-09-02: this unit is INSTALLED and ACTIVE in the operator's
+# home (~/.config/systemd/user/inference-gateway.service), supervising
+# :33081 with Restart=always. This repo copy is the reference — the
+# home copy is authoritative.
+#
+# INCIDENT RECAP (why this matters): the unit originally targeted the
+# RETIRED :18090 while every skill and the dsh melite-card-deck proxy
+# point at http://localhost:33081 (the port inherited from the retired
+# ray melite-gw control plane). Result: a supervised, up-to-date
+# gateway that nothing talked to, plus recurring "stale 18090 process"
+# confusion — killing it just triggered Restart=always. The deck's
+# catalog 502 (gateway_unreachable) was the visible symptom. Fix:
+# re-point the unit to :33081 (ExecStart below), daemon-reload,
+# restart. mystery closed.
+#
+# If re-installing from this copy:
+#   cp scripts/inference-gateway.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user restart inference-gateway
+#
+# logs: journalctl --user -u inference-gateway -f
+
+[Unit]
+Description=inference.cpp gateway (canonical :33081 — queue + catalog)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Documents/programs/active/inference.cpp/build
+Environment=LD_LIBRARY_PATH=%h/Documents/programs/active/inference.cpp/build
+ExecStart=%h/Documents/programs/active/inference.cpp/build/inference_cli serve --port 33081 --plugin-dir . --catalog-dir ..
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target

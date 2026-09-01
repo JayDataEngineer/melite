@@ -375,9 +375,9 @@ window.__ModuleLoader__.load({
 				const text = part.text;
 				if (typeof text !== "string") continue;
 				const atCard = text.indexOf("card ");
-				const at = atCard >= 0 ? atCard : text.indexOf("draft ");
-				if (at < 0) continue;
-				const rest = text.slice(at + (atCard >= 0 ? 5 : 6));
+				const atIdx = atCard >= 0 ? atCard : text.indexOf("draft ");
+				if (atIdx < 0) continue;
+				const rest = text.slice(atIdx + (atCard >= 0 ? 5 : 6));
 				const end = rest.indexOf(" ");
 				const tok = end < 0 ? rest : rest.slice(0, end);
 				if ((tok.startsWith("draft-") || tok.startsWith("p_")) && tok.length > 2) {

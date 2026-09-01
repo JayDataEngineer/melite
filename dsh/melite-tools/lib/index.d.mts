@@ -1155,8 +1155,8 @@ interface Config {
   gatewayUrl?: string;
 }
 /** The tool names this plugin owns (the diagnostic route filters to these). */
-declare const MELITE_TOOL_NAMES: readonly ["model_catalog", "build_pipeline", "enhance_prompt", "provision_model", "skill_index", "skill_read", "ledger_tail"];
+declare const MELITE_TOOL_NAMES: readonly ["model_catalog", "build_pipeline", "refine_draft", "lane_bundle", "enhance_prompt", "provision_model", "skill_index", "skill_read", "ledger_tail"];
 /** Register the Melite tools (+ the /melite-tools/catalog diagnostic route). */
-declare function apply(ctx: Context, config?: Config): void;
+declare function apply(ctx: Context, config?: Config): Promise<void>;
 //#endregion
 export { Config, DEFAULT_GATEWAY_URL, MELITE_TOOL_NAMES, RayGatewayError, apply, inject, name, normalizeGatewayUrl };

@@ -85,6 +85,16 @@ function timeLabel(sec: unknown): string {
   }
 }
 
+/** One row of the gateway drafts list — a COMPOSED action card (a
+ * pipeline instance), not yet (or no longer) necessarily run. Click
+ * opens the Cards studio with this exact draft hydrated. */
+interface DraftRow {
+  draft_id?: string
+  name?: string
+  model?: string
+  source?: string
+}
+
 function flatten(runs: RunRow[]): MediaItem[] {
   const items: MediaItem[] = []
   const seen = new Set<string>()
@@ -251,6 +261,8 @@ export function MediaPanel(): JSX.Element {
   const [cat, setCat] = useState<Cat>('all')
   const [search, setSearch] = useState('')
   const [preview, setPreview] = useState<MediaItem | null>(null)
+  const [drafts, setDrafts] = useState<DraftRow[]>([])
+  const [tab, setTab] = useState<'artifacts' | 'pipelines'>('artifacts')
 
   const load = useCallback(() => {
     setLoading(true)
@@ -267,6 +279,20 @@ export function MediaPanel(): JSX.Element {
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  /* PIPELINES: the drafts archive loads independently of runs — one feed
+   * failing must never blank the other. Errors land in the shared error
+   * strip only if BOTH feeds are empty. */
+  const loadDrafts = useCallback(() => {
+    fetch('/infer-media/drafts')
+      .then(async (r) => {
+        const data = await r.json() as { drafts?: DraftRow[] }
+        if (!r.ok) throw new Error(String((data as { error?: string }).error ?? r.status))
+        setDrafts(Array.isArray(data.drafts) ? data.drafts : [])
+      })
+      .catch(() => { setDrafts([]) })  // runs view stays fully usable
+  }, [])
+  useEffect(() => { loadDrafts() }, [loadDrafts])
 
   // NEVER STALE: a new chat session does NOT reload the SPA — the panel would
   // sit on hour-old data while fresh runs exist. Refetch whenever the page
@@ -302,6 +328,21 @@ export function MediaPanel(): JSX.Element {
       setError('run has no action card (no draft_id in its run row)')
       return
     }
+    const open = (window as unknown as Record<string, unknown>).__meliteDeckOpenWithDraft
+    if (typeof open !== 'function') {
+      setError('Cards studio unavailable (deck plugin not loaded)')
+      return
+    }
+    if (!(open as (id: string) => boolean)(draftId)) {
+      setError('Cards studio refused to open')
+    }
+  }
+
+  /** PIPELINE OPEN: click a draft row → the Cards studio opens with THAT
+   *  card hydrated (same deck seam the run wand uses). The card is the
+   *  queue-native object: refine it there, press Run when ready. */
+  const openDraft = (draftId: string): void => {
+    if (draftId === '') return
     const open = (window as unknown as Record<string, unknown>).__meliteDeckOpenWithDraft
     if (typeof open !== 'function') {
       setError('Cards studio unavailable (deck plugin not loaded)')
@@ -356,6 +397,22 @@ export function MediaPanel(): JSX.Element {
           {runs.length} runs · {items.length} artifacts{gatewayErrors.length > 0 ? ' · ' + gatewayErrors.length + ' gateway down' : ''}
         </span>
         <span style={{ flex: 1 }} />
+        {/* PIPELINES ↔ ARTIFACTS: the two faces of the archive — composed
+            cards (drafts) vs rendered runs. Segmented like the cat chips. */}
+        <span style={{ display: 'flex', gap: 4, padding: 2, border: '1px solid rgba(148,163,184,0.25)', borderRadius: 999 }}>
+          {(['pipelines', 'artifacts'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => { setTab(t) }}
+              style={{
+                border: 0, borderRadius: 999, padding: '3px 10px', fontSize: 12, cursor: 'pointer',
+                fontFamily: 'inherit',
+                background: tab === t ? 'rgba(59,130,246,0.18)' : 'transparent',
+                color: tab === t ? 'rgb(147,197,253)' : 'rgb(203,213,225)',
+              }}
+            >{t === 'pipelines' ? 'Pipelines ' + String(drafts.length) : 'Artifacts ' + String(items.length)}</button>
+          ))}
+        </span>
         <input
           value={search}
 
@@ -377,14 +434,47 @@ export function MediaPanel(): JSX.Element {
         {chip('all', 'All')}{chip('video', 'Video')}{chip('image', 'Images')}{chip('audio', 'Audio')}
       </div>
 
-      {gatewayErrors.length > 0
+      {tab === 'pipelines'
+        ? (drafts.length === 0
+            ? <div style={{ color: 'rgba(148,163,184,0.9)', fontSize: 13, padding: 20 }}>no composed cards yet — build one in a chat.</div>
+            : <div data-infer-media-drafts="1" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {drafts.map((d) => (
+                  <button
+                    key={d.draft_id ?? Math.random()}
+                    onClick={() => { openDraft(d.draft_id ?? '') }}
+                    data-draft={d.draft_id}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left',
+                      border: '1px solid rgba(148,163,184,0.18)', borderRadius: 10, padding: '8px 12px',
+                      background: 'linear-gradient(160deg, #1e293b 0%, #0f172a 100%)', cursor: 'pointer',
+                      color: 'rgb(226,232,240)', fontFamily: 'inherit',
+                    }}
+                  >
+                    <span style={{ fontSize: 15, lineHeight: 0, color: 'rgba(250,204,21,0.9)' }}>▸</span>
+                    <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {d.name || d.draft_id}
+                      </span>
+                      <span style={{ fontSize: 10, fontFamily: 'ui-monospace, monospace', color: 'rgba(148,163,184,0.9)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {d.model || 'card'} · {d.draft_id}
+                      </span>
+                    </span>
+                    {typeof d.source === 'string' && d.source !== ''
+                      ? <span style={{ fontSize: 9, color: 'rgba(148,163,184,0.75)', border: '1px solid rgba(148,163,184,0.25)', borderRadius: 6, padding: '2px 6px' }}>
+                          {d.source.replace(/^https?:\/\//, '')}
+                        </span>
+                      : null}
+                  </button>
+                ))}
+              </div>)
+        : gatewayErrors.length > 0
         ? gatewayErrors.map((e) => (
             <div key={e.gateway} style={{ fontSize: 11, color: 'rgba(251,191,36,0.9)', marginBottom: 4 }}>
               gateway {e.gateway} unreachable — {e.message}
             </div>
           ))
         : null}
-      {error !== ''
+      {tab === 'artifacts' && (error !== ''
         ? <div style={{ padding: 14, borderRadius: 8, background: 'rgba(127,29,29,0.35)', border: '1px solid rgba(248,113,113,0.4)', fontSize: 13 }}>
             failed to load runs: {error}
           </div>
@@ -465,7 +555,7 @@ export function MediaPanel(): JSX.Element {
                     </button>
                   ))}
                 </div>
-              )}
+              ))}
 
       {preview !== null ? <Overlay item={preview} onClose={() => { setPreview(null) }} /> : null}
     </div>

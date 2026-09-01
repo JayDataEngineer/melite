@@ -1,3 +1,3 @@
-name: Inference Studio — the inference.cpp agent
-description: 推理工作室——inference.cpp 网关的完整多车道代理（视频/图像/语音/音效/音乐/3D/动效）：读目录选车道，装载对应技能，对话式打磨，一声令下 ONE CARD 过严格门与串行 GPU 队列，交付验过字节的产物。视频时间线只是其中一条车道。
+name: Inference Studio
+description: The inference.cpp agent — discovers lanes (lane_bundle), reads the craft skills (skill_read), composes ONE action card (build_pipeline) that renders in chat; only you press Run. All inference rides the serial GPU queue.
 order: 6

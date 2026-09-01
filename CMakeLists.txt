@@ -158,6 +158,23 @@ if(INFERENCE_BUILD_TESTS)
     # see docs/queue-audit-fixes.md for the invariants it pins down.
     find_package(Python3 COMPONENTS Interpreter QUIET)
     if(Python3_FOUND)
+        # PLUGIN FRESHNESS LAW: lib/ >= src/ for every dsh plugin, the
+        # editor dist >= its source, and content pins for the 2026-09-01
+        # fixes (wand reload nonce _r=, no shadowing 'const at ').
+        add_test(NAME test_plugin_freshness
+                 COMMAND ${Python3_EXECUTABLE}
+                         ${CMAKE_SOURCE_DIR}/tests/test_plugin_freshness.py)
+        set_tests_properties(test_plugin_freshness PROPERTIES TIMEOUT 60)
+        # MEDIA ARTIFACT RANGE LAW: the /infer-media/artifact proxy must
+        # forward Range and stream 206/content-range/accept-ranges —
+        # the video-seek fix, pinned against the real handler.
+        find_program(NODE_EXECUTABLE node)
+        if(NODE_EXECUTABLE)
+            add_test(NAME test_media_range
+                     COMMAND ${NODE_EXECUTABLE} --test
+                             ${CMAKE_SOURCE_DIR}/dsh/media-plugin/test/artifact-range.test.mjs)
+            set_tests_properties(test_media_range PROPERTIES TIMEOUT 60)
+        endif()
         add_test(NAME test_queue
                  COMMAND ${Python3_EXECUTABLE}
                          ${CMAKE_SOURCE_DIR}/tests/test_queue.py
@@ -196,6 +213,13 @@ if(INFERENCE_BUILD_TESTS)
                  COMMAND ${Python3_EXECUTABLE}
                          ${CMAKE_SOURCE_DIR}/tests/test_user_surface.py)
         set_tests_properties(test_user_surface PROPERTIES TIMEOUT 120)
+        # MEDIA GATEWAY HEALTH: the sidebar contract — gateway boots,
+        # survives SIGHUP/SIGUSR1, runs endpoint valid, concurrent
+        # requests don't crash. Prevents "all_gateways_unreachable".
+        add_test(NAME test_media_gateway
+                 COMMAND ${Python3_EXECUTABLE}
+                         ${CMAKE_SOURCE_DIR}/tests/test_media_gateway.py)
+        set_tests_properties(test_media_gateway PROPERTIES TIMEOUT 120)
         # BUNDLE LAW: per-endpoint tool+skill bundles (lane doors,
         # isolation, two-door consistency, api gating). Pure catalog
         # surface - boots inference_cli alone, no engine needed.
@@ -218,11 +242,8 @@ if(INFERENCE_BUILD_TESTS)
         # LAYER AUDIT: Layers A/B card knobs vs the h3-timeline backend
         # truth, 1:1. Fails with a named diff on any silent drift
         # (operator order 2026-08-31: "we cannot hide features").
-        # --t4-only: the card path loads window*_t4.json ONLY (missing
-        # t4 = compose error -14, no family fallback). The v7 family on
-        # disk has drifted (sharpen knobs dead there — dotted group
-        # targets unresolved) and is unreachable data; audit polices the
-        # LIVE surface. Fix or delete v7 before auditing it too.
+        # The v7 family was DELETED 2026-09-02 (node-migration move B)
+        # together with --t4-only: the t4/t4r pair is the whole surface.
         # CARD RECOVERY CONTRACT: every direct-calls run leaves a draft
         # the editor hydrates 1:1 (canonical BackendDraft schema), and
         # completion seeds run results into that same stage — the
@@ -233,7 +254,7 @@ if(INFERENCE_BUILD_TESTS)
         set_tests_properties(test_card_recovery PROPERTIES TIMEOUT 420)
         add_test(NAME test_layer_audit
                  COMMAND ${Python3_EXECUTABLE}
-                         ${CMAKE_SOURCE_DIR}/tools/layer_audit.py --t4-only)
+                         ${CMAKE_SOURCE_DIR}/tools/layer_audit.py)
         set_tests_properties(test_layer_audit PROPERTIES TIMEOUT 30)
     endif()
 endif()

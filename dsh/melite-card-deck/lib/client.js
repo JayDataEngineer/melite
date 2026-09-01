@@ -402,15 +402,26 @@ window.__ModuleLoader__.load({
 		const OPEN_DRAFT_EVENT = "melite-cards-deck-open-draft";
 		function DeckCanvas() {
 			const frameRef = (0, react.useRef)(null);
-			const [draftId, setDraftId] = (0, react.useState)(() => {
+			const nonce = (0, react.useRef)(0);
+			const [open, setOpen] = (0, react.useState)(() => {
 				const d = pendingDraftId;
 				pendingDraftId = "";
-				return d;
+				nonce.current += 1;
+				return {
+					id: d,
+					n: nonce.current
+				};
 			});
 			(0, react.useEffect)(() => {
 				const onOpenDraft = (e) => {
 					const d = e.detail?.draftId;
-					if (typeof d === "string" && d !== "") setDraftId(d);
+					if (typeof d === "string" && d !== "") {
+						nonce.current += 1;
+						setOpen({
+							id: d,
+							n: nonce.current
+						});
+					}
 				};
 				document.addEventListener(OPEN_DRAFT_EVENT, onOpenDraft);
 				return () => {
@@ -447,7 +458,7 @@ window.__ModuleLoader__.load({
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("iframe", {
 					ref: frameRef,
 					className: deck_module_css_default.canvasIframe,
-					src: draftId === "" ? "/editor/" : "/editor/?meliteCards=" + encodeURIComponent(draftId),
+					src: open.id === "" ? "/editor/" : "/editor/?meliteCards=" + encodeURIComponent(open.id) + "&_r=" + String(open.n),
 					title: "Melite card canvas",
 					allow: "clipboard-read; clipboard-write"
 				})
@@ -597,7 +608,10 @@ window.__ModuleLoader__.load({
 		function openDeck() {
 			if (isOpen()) return;
 			const column = document.querySelector(COLUMN_SEL$1);
-			if (column === null) return;
+			if (column === null) {
+				console.warn("[melite-cards] deck cannot mount: center column not found (" + COLUMN_SEL$1 + ") - shell DOM changed or still loading");
+				return;
+			}
 			const container = document.createElement("div");
 			container.setAttribute(CONTAINER_SEL.slice(1, -1), "");
 			container.style.position = "absolute";
