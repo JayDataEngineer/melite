@@ -2674,6 +2674,12 @@ static void handle_card_agent(const httplib::Request &req,
     char cmd[262144];
     snprintf(cmd, sizeof(cmd),
         "cd '%s' && MELITE_CARD_TOOLS_LANE='%s' INF_AGENT_SESSION='%s' "
+        /* (lane-spawn law) the agent's card tool MUST target THIS
+         * gateway: its one-card wall and auto-arm bind by session
+         * token in THIS registry. Without the URL the tool fell
+         * through to the profile-pinned production endpoint and the
+         * lane laws silently never applied. */
+        "MELITE_GATEWAY_URL='http://%s:%d' "
         /* the task argv gets a safe label prefix: the prompt FILE
          * begins with the lane AGENT.md's YAML frontmatter ('---'),
          * and the headless CLI parses a leading-dash task as an
@@ -2682,7 +2688,9 @@ static void handle_card_agent(const httplib::Request &req,
          * audited prompt file stays verbatim — only argv is labeled. */
         "setsid dsh --profile headless \"$(printf 'lane session: %s\\n'; cat '%s')\" "
         ">> '%s' 2>&1 < /dev/null &",
-        abs_dir, as->lane, token, as->lane, abs_prompt, abs_log);
+        abs_dir, as->lane, token,
+        g_loop_host, g_loop_port,
+        as->lane, abs_prompt, abs_log);
     FILE *sp = popen(cmd, "r");
     if (sp) pclose(sp);
 
