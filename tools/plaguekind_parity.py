@@ -131,14 +131,32 @@ def strip_prefix(s):
     return basename(str(s)).replace(".safetensors", "")
 
 
+import json as _json
+def _ltx_stack(path):
+    w = _json.load(open(path))
+    sd = w.get("LTX_lora_loader.0", {}).get("inputs", {}).get("stack_data", "[]")
+    try:
+        st = _json.loads(sd)
+    except Exception:
+        st = []
+    return [(os.path.basename(e.get("lora","")), e.get("str")) for e in st if e.get("on")]
+
+
 def template_values(path):
     """Read OUR template (API format) into the comparable shape."""
     w = json.load(open(path))
     get = lambda node, key, d=None: (
         w.get(node, {}).get("inputs", {}).get(key, d))
     loras = []
+    ltx = w.get("LTX_lora_loader.0", {}).get("inputs", {}).get("stack_data")
+    if ltx:
+        try:
+            loras = [(e.get("lora"), e.get("str"))
+                     for e in json.loads(ltx) if e.get("on")]
+        except Exception:
+            loras = []
     i = 0
-    while "LoraLoader.%d" % i in w:
+    while "LoraLoader.%d" % i in w:      # legacy chain form (pre-LTX)
         n = w["LoraLoader.%d" % i]["inputs"]
         loras.append((n.get("lora_name"), n.get("strength_model")))
         i += 1
