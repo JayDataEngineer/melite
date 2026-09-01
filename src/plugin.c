@@ -1,12 +1,13 @@
 #include "inference/plugin.h"
 #include "inference/plugin_loader.h"
-#include <dlfcn.h>
+#include "inference/dynlib.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 /*
- * Plugin loader — dlopen's shared libraries and resolves the C-ABI symbols.
+ * Plugin loader — loads shared libraries (dy_open shim: dlopen on POSIX,
+ * LoadLibrary on Windows) and resolves the C-ABI symbols.
  */
 
 struct inference_plugin {
@@ -30,25 +31,25 @@ struct inference_plugin {
 inference_plugin *plugin_load(const char *so_path) {
     if (!so_path) return NULL;
 
-    void *h = dlopen(so_path, RTLD_NOW | RTLD_LOCAL);
+    void *h = dy_open(so_path);
     if (!h) {
-        fprintf(stderr, "plugin: dlopen(%s): %s\n", so_path, dlerror());
+        fprintf(stderr, "plugin: dy_open(%s): %s\n", so_path, dy_err());
         return NULL;
     }
 
     inference_plugin *p = calloc(1, sizeof(*p));
-    if (!p) { dlclose(h); return NULL; }
+    if (!p) { dy_close(h); return NULL; }
 
     p->handle = h;
     p->path   = strdup(so_path);
 
 #define RESOLVE(name, sym)                                     \
     do {                                                       \
-        p->name = (typeof(p->name))dlsym(h, sym);             \
+        p->name = (typeof(p->name))dy_sym(h, sym);             \
         if (!p->name) {                                        \
             fprintf(stderr, "plugin: missing symbol %s in %s\n", \
                     sym, so_path);                             \
-            dlclose(h); free(p->path); free(p); return NULL;  \
+            dy_close(h); free(p->path); free(p); return NULL;  \
         }                                                      \
     } while (0)
 
@@ -62,13 +63,13 @@ inference_plugin *plugin_load(const char *so_path) {
 #undef RESOLVE
 
     /* OPTIONAL: node_stop (audit F3) — absent in older plugins, never fatal */
-    p->stop = (int (*)(inference_context *))dlsym(h, "node_stop");
+    p->stop = (int (*)(inference_context *))dy_sym(h, "node_stop");
 
     /* OPTIONAL: card_compose (PLUGIN ARCHITECTURE LAW) — absent = the
      * lane has no card semantics; plain runs are unaffected. */
     p->card_compose = (int (*)(const char *, const char *, const char *,
                                char *, size_t, const char *,
-                               char *, size_t))dlsym(h, "card_compose");
+                               char *, size_t))dy_sym(h, "card_compose");
 
     return p;
 }
@@ -102,7 +103,7 @@ void plugin_unload_model(const inference_plugin *p, inference_context *ctx) {
 
 void plugin_unload(inference_plugin *p) {
     if (!p) return;
-    if (p->handle) dlclose(p->handle);
+    if (p->handle) dy_close(p->handle);
     free(p->path);
     free(p);
 }

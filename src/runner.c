@@ -1,6 +1,7 @@
 #include "inference/runner.h"
 #include "inference/plugin.h"
 #include "inference/plugin_loader.h"
+#include "inference/paths.h"
 #include "inference/vram.h"
 #include "inference/ws_server.h"
 #include <stdio.h>
@@ -779,7 +780,8 @@ have_model:
              * other's error capture. */
             char cap_path[96];
             snprintf(cap_path, sizeof(cap_path),
-                     "/tmp/_runner_stderr_capture_%ld", (long)getpid());
+                     "%s/_runner_stderr_capture_%ld", inf_tmpdir(),
+                     (long)getpid());
             fflush(stderr);
             int saved_stderr = dup(2);
             FILE *cap = fopen(cap_path, "w");
@@ -852,7 +854,8 @@ have_model:
             fprintf(stderr, "runner: node_execute failed for %s\n", dnode->id);
             { char cap_path[96];
                 snprintf(cap_path, sizeof(cap_path),
-                         "/tmp/_runner_stderr_capture_%ld", (long)getpid());
+                         "%s/_runner_stderr_capture_%ld", inf_tmpdir(),
+                         (long)getpid());
               FILE *cap = fopen(cap_path, "r");
               if (cap) { size_t n = fread(r->last_error, 1,
                              sizeof(r->last_error) - 2, cap);

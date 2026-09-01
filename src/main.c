@@ -2,7 +2,8 @@
 #include "inference/plugin_loader.h"
 #include "inference/runner.h"
 #include "inference/catalog.h"
-#include <dlfcn.h>
+#include "inference/dynlib.h"
+#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,32 +30,43 @@ static void usage(void) {
     );
 }
 
-/* Scan a directory for .so files and register them with the runner */
+/* Scan a directory for plugin libraries (.so / .dll) and register them.
+ * opendir replaces the `ls %s/*.so` shell-out (portability pass
+ * 2026-09-01); sorted names preserve the old ls registration order. */
+static int path_strcmp(const void *a, const void *b) {
+    return strcmp((const char *)a, (const char *)b);
+}
+
 static void register_plugins_from_dir(inference_runner *r, const char *dir) {
-    char cmd[1024];
-    snprintf(cmd, sizeof(cmd), "ls %s/*.so 2>/dev/null", dir);
-
-    FILE *p = popen(cmd, "r");
-    if (!p) return;
-
-    char path[1024];
-    while (fgets(path, sizeof(path), p)) {
-        /* Strip newline */
-        size_t len = strlen(path);
-        while (len > 0 && (path[len-1] == '\n' || path[len-1] == '\r'))
-            path[--len] = '\0';
-        if (len == 0) continue;
-
+    DIR *d = opendir(dir);
+    if (!d) return;
+#ifdef _WIN32
+    static const char SUFFIX[] = ".dll";
+#else
+    static const char SUFFIX[] = ".so";
+#endif
+    static char paths[256][1024];   /* startup-only scan */
+    size_t n = 0;
+    struct dirent *de;
+    while ((de = readdir(d)) != NULL && n < 256) {
+        size_t len = strlen(de->d_name);
+        size_t sl = sizeof(SUFFIX) - 1;
+        if (len <= sl || strcmp(de->d_name + len - sl, SUFFIX) != 0) continue;
+        snprintf(paths[n], sizeof(paths[n]), "%s/%s", dir, de->d_name);
+        n++;
+    }
+    closedir(d);
+    qsort(paths, n, sizeof(paths[0]), path_strcmp);
+    for (size_t i = 0; i < n; i++) {
         /* Load plugin to get type_id, then register */
-        inference_plugin *pl = plugin_load(path);
+        inference_plugin *pl = plugin_load(paths[i]);
         if (pl) {
             const char *tid = plugin_type_id(pl);
-            fprintf(stderr, "registering plugin: %s -> %s\n", tid, path);
-            runner_register_plugin(r, tid, path);
+            fprintf(stderr, "registering plugin: %s -> %s\n", tid, paths[i]);
+            runner_register_plugin(r, tid, paths[i]);
             plugin_unload(pl);
         }
     }
-    pclose(p);
 }
 
 /* Forward declaration from server.cpp */

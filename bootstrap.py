@@ -255,6 +255,24 @@ def link_in_tree(name: str, comfy_dir: Path) -> str:
         return "installed"
 
 
+def url_dirname(url: str) -> str:
+    """Directory name comfy-cli/ComfyUI-Manager derives from a git URL."""
+    base = url.rstrip("/").split("/")[-1]
+    return base[:-4] if base.endswith(".git") else base
+
+
+def ext_installed_dir(comfy_dir: Path, name: str, url: str) -> Path | None:
+    """Installed check tolerates the THREE layouts: declared name, git
+    repo dirname, and the registry slug comfy-cli/Manager derives
+    (lowercase-dashed, e.g. comfyui-h3-motion-context)."""
+    slug = url_dirname(url).lower().replace("_", "-")
+    for cand in dict.fromkeys([name, url_dirname(url), slug]):
+        d = comfy_dir / "custom_nodes" / cand
+        if (d / "__init__.py").exists():
+            return d
+    return None
+
+
 def step_extensions(comfy_dir: Path, comfy: Path) -> bool:
     exts = load_extensions()
     info(f"{len(exts)} extensions declared")
@@ -270,8 +288,8 @@ def step_extensions(comfy_dir: Path, comfy: Path) -> bool:
             counts[link_in_tree(name, comfy_dir)] += 1
             continue
 
-        target = comfy_dir / "custom_nodes" / name
-        if (target / "__init__.py").exists():
+        installed = ext_installed_dir(comfy_dir, name, url)
+        if installed:
             counts["skipped"] += 1
             continue
 
@@ -280,6 +298,8 @@ def step_extensions(comfy_dir: Path, comfy: Path) -> bool:
             counts["failed"] += 1
             continue
         counts["installed"] += 1
+        target = ext_installed_dir(comfy_dir, name, url) \
+            or comfy_dir / "custom_nodes" / name
 
         # comfy-cli has no --ref: pin the declared commit ourselves
         if ref:

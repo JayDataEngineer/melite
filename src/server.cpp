@@ -18,6 +18,7 @@
 #include <signal.h>   /* (audit F13) sigwait shutdown thread */
 #include <stdarg.h>   /* (audit F28) jappend va_list */
 #include <atomic>    /* (id-uniqueness law) g_run_seq */
+#include <filesystem>
 #include <vector>
 #include <algorithm>
 
@@ -584,22 +585,22 @@ static const char *path_basename(const char *p) {
 }
 
 static char *run_artifacts_json(const char *out_dir) {
-    char cmd[1024];
-    snprintf(cmd, sizeof(cmd), "ls -1 '%s' 2>/dev/null", out_dir);
-    FILE *fp = popen(cmd, "r");
-    if (!fp) return strdup("[]");
     const char *rid = path_basename(out_dir);
     size_t cap = 8192, len = 0;
     char *buf = (char *)malloc(cap);
     len += (size_t)snprintf(buf + len, cap - len, "[");
-    char line[512];
     int first = 1;
     int listed = 0, total = 0, imgs = 0;
     const int MAX_IMGS = 3;      /* payload diet: sidebar lists media + 3 frames */
-    while (fgets(line, sizeof(line), fp)) {
-        size_t ll = strlen(line);
-        while (ll && (line[ll-1] == '\n' || line[ll-1] == '\r')) line[--ll] = 0;
-        if (!ll) continue;
+    /* std::filesystem replaces the `ls -1` + `stat -c %s` shell-outs
+     * (portability pass 2026-09-01); sorted entries = old ls order. */
+    std::vector<std::string> names;
+    std::error_code ec;
+    for (auto &e : std::filesystem::directory_iterator(out_dir, ec))
+        names.push_back(e.path().filename().string());
+    std::sort(names.begin(), names.end());
+    for (const std::string &name : names) {
+        const char *line = name.c_str();
         total++;
         if (line[0] == '_') continue;   /* sidecars + generated _poster.jpg */
         const char *t = artifact_type(line);
@@ -609,12 +610,11 @@ static char *run_artifacts_json(const char *out_dir) {
             continue;            /* not media: not listed */
         }
         listed++;
-        char path[1024], szcmd[1200];
+        char path[1024];
         snprintf(path, sizeof(path), "%s/%s", out_dir, line);
-        snprintf(szcmd, sizeof(szcmd), "stat -c %%s '%s' 2>/dev/null", path);
-        FILE *sf = popen(szcmd, "r");
-        long bytes = -1;
-        if (sf) { if (fscanf(sf, "%ld", &bytes) != 1) bytes = -1; pclose(sf); }
+        std::error_code szc;
+        long bytes = (long)std::filesystem::file_size(path, szc);
+        if (szc) bytes = -1;
         if (!first) len = jappend(&buf, &cap, len, ",");
         first = 0;
         len = jappend(&buf, &cap, len,
@@ -622,7 +622,6 @@ static char *run_artifacts_json(const char *out_dir) {
             "\"url\":\"/editor/assets/runs/%s/%s\",\"type\":\"%s\",\"size\":%ld}",
             line, path, bytes, rid, line, artifact_type(line), bytes);
     }
-    pclose(fp);
     if (total > listed) {
         if (!first) len = jappend(&buf, &cap, len, ",");
         len = jappend(&buf, &cap, len,
@@ -5942,25 +5941,21 @@ static int run_thumbnail(const char *dir, char *out, size_t cap) {
                  path_basename(dir));
         return 0;
     }
-    char cmd[600];
-    snprintf(cmd, sizeof(cmd), "ls -1 '%s' 2>/dev/null", dir);
-    FILE *fp = popen(cmd, "r");
-    if (!fp) return -1;
-    char line[512];
-    int found = -1;
-    while (fgets(line, sizeof(line), fp)) {
-        size_t ll = strlen(line);
-        while (ll && (line[ll-1] == '\n' || line[ll-1] == '\r')) line[--ll] = 0;
-        if (!ll) continue;
-        if (strcmp(artifact_type(line), "image") == 0) {
+    /* std::filesystem replaces the `ls -1` shell-out (portability pass
+     * 2026-09-01); sorted = old ls order, first image wins. */
+    std::vector<std::string> names;
+    std::error_code ec;
+    for (auto &e : std::filesystem::directory_iterator(dir, ec))
+        names.push_back(e.path().filename().string());
+    std::sort(names.begin(), names.end());
+    for (const std::string &name : names) {
+        if (strcmp(artifact_type(name.c_str()), "image") == 0) {
             snprintf(out, cap, "/editor/assets/runs/%s/%s",
-                     path_basename(dir), line);
-            found = 0;
-            break;
+                     path_basename(dir), name.c_str());
+            return 0;
         }
     }
-    pclose(fp);
-    return found;
+    return -1;
 }
 
 /* lazily build the small preview cache for a run dir: _previews/poster.jpg
@@ -5971,22 +5966,21 @@ static void ensure_run_previews(const char *dir) {
     snprintf(poster, sizeof(poster), "%s/_poster.jpg", dir);
     struct stat st;
     if (stat(poster, &st) == 0) return;                 /* already cached */
-    char cmd[700];
-    snprintf(cmd, sizeof(cmd), "ls -1 '%s' 2>/dev/null", dir);
-    FILE *fp = popen(cmd, "r");
-    if (!fp) return;
-    char line[512], video[1024] = "", image[1024] = "";
-    while (fgets(line, sizeof(line), fp)) {
-        size_t ll = strlen(line);
-        while (ll && (line[ll-1] == '\n' || line[ll-1] == '\r')) line[--ll] = 0;
-        if (!ll) continue;
-        const char *t = artifact_type(line);
+    /* std::filesystem replaces the `ls -1` shell-out (portability pass
+     * 2026-09-01); sorted = old ls order. */
+    std::vector<std::string> names;
+    std::error_code ec;
+    for (auto &e : std::filesystem::directory_iterator(dir, ec))
+        names.push_back(e.path().filename().string());
+    std::sort(names.begin(), names.end());
+    char video[1024] = "", image[1024] = "";
+    for (const std::string &name : names) {
+        const char *t = artifact_type(name.c_str());
         if (strcmp(t, "video") == 0 && !video[0])
-            snprintf(video, sizeof(video), "%s/%s", dir, line);
+            snprintf(video, sizeof(video), "%s/%s", dir, name.c_str());
         else if (strcmp(t, "image") == 0 && !image[0])
-            snprintf(image, sizeof(image), "%s/%s", dir, line);
+            snprintf(image, sizeof(image), "%s/%s", dir, name.c_str());
     }
-    pclose(fp);
     const char *src = video[0] ? video : image;
     if (!src[0]) return;
     char ff[1900];
