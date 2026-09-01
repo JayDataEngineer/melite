@@ -9,6 +9,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <unistd.h>   /* dup/dup2/close for stderr capture */
+#include <sys/stat.h> /* mkdir heal for restart-adopted runs */
 
 /*
  * DAG runner — loads plugins, wires tensors, executes in topo order,
@@ -340,6 +341,14 @@ static const char *out_ext(const inference_tensor *t) {
 static void persist_outputs(inference_runner *r, const char *node_id,
                             const inference_tensor *outs, size_t n) {
     if (!r->out_dir[0]) return;
+    /* (adopted-run heal, 2026-09-01) a run registered by a gateway that
+     * died mid-registration (restart race) is ADOPTED by the successor
+     * from the ledger and executed — but the successor never re-runs the
+     * registration-time mkdir, so every persist fopen() hits ENOENT and
+     * the run completes with ZERO artifacts on disk (run-6a96ceeb: all
+     * four windows rendered, nothing written). mkdir() here is idempotent
+     * (EEXIST is fine) and heals any adopted run. */
+    mkdir(r->out_dir, 0775);
     for (size_t j = 0; j < n; j++) {
         const inference_tensor *t = &outs[j];
         if (!t->data || t->nbytes == 0 || !t->name) continue;
