@@ -1,33 +1,45 @@
 #!/usr/bin/env python3
-"""Latent-chain template + seam-math contracts (CPU-only, no GPU).
+"""Live-lineage template contracts (CPU-only, no GPU).
 
-Guards the 2026-08-30 latent-chain law end to end at the file layer:
+Since the node-migration move B (2026-09-02) deleted the RayH3 latent
+weave and its dormant templates, this suite guards the LIVE surface —
+the PlagueKind t4/t4r family:
 
   1. PURITY: every window template is a pure ComfyUI node map — any
-     non-node key (like the "_law" docstring) breaks submission.
+     non-node key (like a "_law" docstring) breaks submission.
   2. EXTERMINATION: no template may reference a class from the dead
-     packs (MiniMaxH3MotionContext*, MiniMaxH3SaveLatent) or carry the
-     context_steps/audio_context_steps inputs that the live
-     MiniMaxH3ImageToVideo schema no longer has.
-  3. CHAIN WIRING: window1 saves a tail (RayH3SaveLatentTail) and does
-     NOT chain; every seam window chains (RayH3ChainLatentAV) AND saves
-     its own tail; the decoders read THROUGH the tail node (the save
-     must execute, not dangle).
-  4. INJECT MAPS: the pipeline yamls inject exactly the tail-path vars
-     the templates expect (window k saves $tailpathK, chains
-     $tailpath(k-1)) and never inject a dead node's key.
-  5. SEAM MATH: the gateway plan fixpoint (python mirror of the C++ in
-     server.cpp) must agree EXACTLY with the shipped plugin's
-     _carried_pixel_frames for a sweep of carries and tiles — the meta
-     cross-check's two sides.
+     packs (the retired Ray lineage, the old MiniMaxH3MotionContext*
+     core patch, MiniMaxH3SaveLatent) or carry the context_steps
+     inputs the live schema no longer has.
+  3. CHAIN WIRING (his chain spine): every window SAVES its clip
+     latent (CtxSaveLatent = MiniMaxH3MotionContextSaveLatent — the
+     base pack's node, ALIVE); windows 2-4 LOAD the prior clip
+     (CtxLoadLatent) and carry his in-between nodes (SongContext =
+     MiniMaxH3SongMaskedAVContext, GenChainCtx =
+     MiniMaxH3GeneratedAVMaskedContext); window1 has neither chain
+     node.
+  4. SLA SPINE (repair 2026-09-02): every template carries
+     H3SLAAttention (his pack) behind SLASwitch — on_true=SLA,
+     on_false=the kitchen default (ModelAttentionBackend), switch
+     feeds AdaLNFix. His V7 widget values are the template defaults.
+  5. BUNDLE BUS (move C): the t4r family carries PlagueKindBundleIn/
+     Out; R2V's ref_images.ref_image_0 and (chain windows)
+     SongContext.master_audio read THROUGH BundleOut; LoadImage slots
+     are exactly 0..8 (core R2V max ref_image_0..8 — the old
+     LoadImage.9 off-by-one is exterminated); LoadAudio.1..3 exist for
+     the identity audio refs (slots 16-18).
+  6. JOINT-AV GRID LAW (pure-python pin): the seam boundaries sit on
+     his shared AV grid — (v-5)%17==0 AND v%3==0, minimum 39 — the
+     same law the C++ emit snaps to (h3_card.c _snap equivalent).
 
 Run: python3 tests/timeline/test_chain_templates.py
 """
-import json, os, sys, glob, types, importlib.util
+import json, os, sys, glob
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
-TL = os.path.join(REPO, "pipelines", "h3-timeline")
+TL = os.path.join(REPO, "plugins", "comfyui", "models", "video",
+                  "h3-timeline")
 
 fails = []
 def check(name, cond, detail=""):
@@ -36,20 +48,20 @@ def check(name, cond, detail=""):
 
 DEAD_CLASSES = {
     "MiniMaxH3MotionContext", "MiniMaxH3MotionContextTrim",
-    "MiniMaxH3MotionContextSaveLatent", "MiniMaxH3MotionContextLoadLatent",
-    "MiniMaxH3SaveLatent", "H3SLAAttention",
+    "MiniMaxH3SaveLatent",                       # core patch, exterminated
+    "RayH3SaveLatentTail", "RayH3ChainLatentAV", # retired lineage (move B)
 }
 
-# ── 1+2+3: templates ────────────────────────────────────────────────────────
 templates = {}
-for f in sorted(glob.glob(os.path.join(TL, "window*.json"))):
+for f in sorted(glob.glob(os.path.join(TL, "window*_t4*.json"))):
     name = os.path.basename(f)
-    if name == "window1.json":      # probe-fit VRAM graph, no chain role
-        continue
-    with open(f) as fh:
-        d = json.load(fh)
-    templates[name] = d
+    templates[name] = json.load(open(f))
 
+check("template family discovered (t4+t4r)", len(templates) == 8,
+      sorted(templates))
+
+# ── 1+2+3+4+5: per-template laws ───────────────────────────────────────────
+for name, d in sorted(templates.items()):
     check(f"{name}: pure node map",
           all(isinstance(v, dict) and "class_type" in v for v in d.values()),
           [k for k, v in d.items() if not (isinstance(v, dict) and "class_type" in v)])
@@ -58,153 +70,119 @@ for f in sorted(glob.glob(os.path.join(TL, "window*.json"))):
     check(f"{name}: no exterminated classes", not (classes & DEAD_CLASSES),
           classes & DEAD_CLASSES)
 
-    itv = next((v for v in d.values() if v["class_type"] == "MiniMaxH3ImageToVideo"), None)
+    itv = next((v for v in d.values()
+                if v["class_type"] == "MiniMaxH3ImageToVideo"), None)
     if itv:
         check(f"{name}: ItV has no dead context inputs",
               "context_steps" not in itv["inputs"] and
               "audio_context_steps" not in itv["inputs"],
               [k for k in itv["inputs"] if "context" in k])
 
-    has_chain = "RayH3ChainLatentAV.0" in d
-    has_save = "RayH3SaveLatentTail.0" in d
+    # 3: chain wiring — his spine, the ORIGINAL nodeset
     is_w1 = name.startswith("window1")
-    is_seam = not is_w1
+    has_save = "CtxSaveLatent.0" in d
+    has_load = "CtxLoadLatent.0" in d
+    has_song = "SongContext.0" in d
+    has_gen  = "GenChainCtx.0" in d
+    if is_w1:
+        check(f"{name}: source window saves clip, no chain nodes",
+              has_save and not has_load and not has_song and not has_gen)
+    else:
+        check(f"{name}: seam window chains AND saves (his spine)",
+              has_save and has_load and has_song and has_gen)
 
-    if is_w1 and name != "window1_load.json":
-        check(f"{name}: source window saves tail, no chain", has_save and not has_chain)
-    elif is_seam or name == "window1_load.json":
-        check(f"{name}: seam window chains AND saves", has_chain and has_save)
+    # 4: SLA spine — his V7 widget defaults
+    sla = d.get("H3SLAAttention.0")
+    sw = d.get("SLASwitch.0")
+    if check(f"{name}: H3SLAAttention + SLASwitch present", sla and sw):
+        exp = {"sparsity_ratio": 0.9, "block_size": "64",
+               "min_seq_len": 8192, "dense_last_steps": 0,
+               "protect_audio": True, "enabled": True,
+               "dense_steps": "0", "dense_backend": "comfy_kitchen",
+               "disable_fp16_accum": True, "stabilize_motion": True,
+               "reference_protection": "Off"}
+        bad = {k: (sla["inputs"].get(k), v) for k, v in exp.items()
+               if sla["inputs"].get(k) != v}
+        check(f"{name}: SLA widgets = his V7 defaults (block 64: the "
+              "installed pack culled 32)", not bad, bad)
+        check(f"{name}: SLA model <- LoraLoader",
+              sla["inputs"].get("model") == ["LoraLoader.0", 0])
+        check(f"{name}: switch on_true=SLA on_false=kitchen",
+              sw["inputs"].get("on_true") == ["H3SLAAttention.0", 0] and
+              sw["inputs"].get("on_false") == ["ModelAttentionBackend.0", 0])
+        check(f"{name}: switch feeds AdaLNFix",
+              d["AdaLNFix.0"]["inputs"].get("model") == ["SLASwitch.0", 0])
 
-    if has_save:
-        # the decoders must read THROUGH the tail node (save executes)
-        dec = [v for v in d.values() if v["class_type"] in ("VAEDecode", "VAEDecodeAudio")]
-        check(f"{name}: decoders read through RayH3SaveLatentTail",
-              all(v["inputs"]["samples"][0] == "RayH3SaveLatentTail.0" for v in dec),
-              [v["class_type"] for v in dec
-               if v["inputs"]["samples"][0] != "RayH3SaveLatentTail.0"])
-        check(f"{name}: tail path is inject-managed",
-              d["RayH3SaveLatentTail.0"]["inputs"]["path"] == "REPLACED_BY_INJECT")
-        # (container law 2026-08-30) the save node AUTHORS the tail meta
-        # from its carry widget — the template must declare it so the
-        # gateway's carry splice validates
-        sc = d["RayH3SaveLatentTail.0"]["inputs"].get("carry_latent_frames")
-        check(f"{name}: save carry widget in 1..64",
-              isinstance(sc, int) and 1 <= sc <= 64, sc)
+    # 5: bundle bus (t4r family)
+    if name.endswith("_t4r.json"):
+        bin_, bout = d.get("PlagueKindBundleIn.0"), d.get("PlagueKindBundleOut.0")
+        if check(f"{name}: bundle pair present", bin_ and bout):
+            check(f"{name}: BundleOut reads the bundle",
+                  bout["inputs"].get("bundle") == ["PlagueKindBundleIn.0", 0])
+        r2v = d["MiniMaxH3ReferenceToVideo.0"]["inputs"]
+        check(f"{name}: R2V ref_image_0 reads BundleOut slot 1",
+              r2v.get("ref_images.ref_image_0") == ["PlagueKindBundleOut.0", 0])
+        if not is_w1:
+            check(f"{name}: master audio rides bundle slot 19",
+                  d["SongContext.0"]["inputs"].get("master_audio") ==
+                  ["PlagueKindBundleOut.0", 18])
+        li = sorted(int(k.split(".")[1]) for k in d if k.startswith("LoadImage."))
+        check(f"{name}: LoadImage slots exactly 0..8 (R2V max)",
+              li == list(range(9)), li)
+        la = sorted(int(k.split(".")[1]) for k in d if k.startswith("LoadAudio."))
+        la_exp = [0, 1, 2, 3] if not is_w1 else [1, 2, 3]
+        check(f"{name}: LoadAudio slots {la_exp} (0=master chain, 1-3=refs)",
+              la == la_exp, la)
+        vhs = sorted(int(k.split(".")[1]) for k in d if k.startswith("VHS_LoadVideoPath."))
+        check(f"{name}: VHS_LoadVideoPath slots exactly 0..2 (ref-video gap fix)",
+              vhs == [0, 1, 2], vhs)
+        check(f"{name}: VHS loaders dangle on placeholder (24fps/15s cap)",
+              all(d[f"VHS_LoadVideoPath.{i}"]["inputs"]["video"] == "REPLACED_BY_INJECT"
+                  and d[f"VHS_LoadVideoPath.{i}"]["inputs"]["force_rate"] == 24
+                  and d[f"VHS_LoadVideoPath.{i}"]["inputs"]["frame_load_cap"] == 360
+                  for i in range(3)))
+    else:
+        check(f"{name}: plain family carries no bundle",
+              "PlagueKindBundleIn.0" not in d and
+              "PlagueKindBundleOut.0" not in d)
+        check(f"{name}: plain family carries no VHS loaders",
+              not [k for k in d if k.startswith("VHS_LoadVideoPath.")])
 
-    if has_chain:
-        ch = d["RayH3ChainLatentAV.0"]["inputs"]
-        check(f"{name}: chain latent comes from ItV",
-              ch["latent"] == ["MiniMaxH3ImageToVideo.0", 1])
-        check(f"{name}: chain tail_path is inject-managed",
-              ch["tail_path"] == "REPLACED_BY_INJECT")
-        c = ch.get("carry_latent_frames")
-        check(f"{name}: carry widget in 1..64", isinstance(c, int) and 1 <= c <= 64, c)
-        # the sampler must consume the CHAINED latent
-        ks = next(v for v in d.values() if v["class_type"] == "KSampler")
-        check(f"{name}: KSampler samples the chained latent",
-              ks["inputs"]["latent_image"] == ["RayH3ChainLatentAV.0", 0])
+    # 5b: LIVE post chain (dead-wire regression 2026-09-02: the mux used
+    # to read raw VAEDecode, making sharpen/interpolate inject no-ops).
+    # Now: mux <- SRSwitch <- (upscaler | InterpSwitch <- sharpen chain).
+    mux = d.get("VHSVideoCombine.0")
+    if check(f"{name}: VHSVideoCombine present", mux):
+        check(f"{name}: mux consumes SRSwitch (post chain LIVE)",
+              mux["inputs"].get("images") == ["SRSwitch.0", 0],
+              mux["inputs"].get("images"))
+    sr_sw = d.get("SRSwitch.0")
+    if check(f"{name}: SRSwitch present (SeedVR2 gap fix)", sr_sw):
+        check(f"{name}: SRSwitch off by default, chain passthrough",
+              sr_sw["inputs"].get("switch") is False and
+              sr_sw["inputs"].get("on_false") == ["InterpSwitch.0", 0])
+        up = d.get("SeedVR2VideoUpscaler.0")
+        check(f"{name}: upscaler <- InterpSwitch + local loaders",
+              up and up["inputs"].get("image") == ["InterpSwitch.0", 0] and
+              up["inputs"].get("dit") == ["SeedVR2LoadDiTModel.0", 0] and
+              up["inputs"].get("vae") == ["SeedVR2LoadVAEModel.0", 0])
 
-# ── 4: pipeline yaml inject maps ────────────────────────────────────────────
-import re
-for yf in sorted(glob.glob(os.path.join(TL, "pipeline*.yaml"))):
-    y = open(yf).read()
-    check(f"{os.path.basename(yf)}: no dead inject keys",
-          "MotionContext" not in y and "MiniMaxH3SaveLatent" not in y)
-    # window k: save $tailpathK, chain $tailpath(k-1)
-    for wid in range(1, 5):
-        m = re.search(rf"id: window{wid}\b.*?params: \{{(.*?)\}}\n", y, re.S)
-        if not m:
-            continue
-        params = m.group(1)
-        check(f"{os.path.basename(yf)} w{wid}: saves $tailpath{wid}",
-              f'"RayH3SaveLatentTail.0.path":"$tailpath{wid}"' in params)
-        if wid > 1:
-            check(f"{os.path.basename(yf)} w{wid}: chains $tailpath{wid-1}",
-                  f'"RayH3ChainLatentAV.0.tail_path":"$tailpath{wid-1}"' in params)
+# ── 6: joint-AV grid law (pure-python pin of the C++ snap) ─────────────────
+def on_grid(v):
+    return ((v - 5) % 17 == 0) and (v % 3 == 0)
 
-# ── 5: seam math — gateway plan fixpoint vs the SHIPPED plugin ──────────────
-# (torch stubbed: the grid helpers are pure integer math)
-sys.modules.setdefault("torch", types.ModuleType("torch"))
-pack = os.path.join(REPO, "plugins", "comfyui", "custom_nodes",
-                    "melite-h3-motion-nodes")
-spec = importlib.util.spec_from_file_location(
-    "h3_chain", os.path.join(pack, "h3_chain.py"))
-h3_chain = importlib.util.module_from_spec(spec)
-try:
-    spec.loader.exec_module(h3_chain)
-except Exception as e:  # pragma: no cover
-    print(f"FAIL import h3_chain: {e}")
-    sys.exit(1)
-
-def snap(n, resid):    # mirror of tl_snap_grid (nearest grid point)
-    k = (n - resid + 8) // 17
-    return max(17 * k + resid, resid)
-
-def plan_window(tile, carry, prev_sampled):
-    """Mirror of the C++ seam branch in compile_calls_windows.
-
-    Carries EXACTLY what the node will splice:
-        c = max(1, min(carry, total_slots-1, tail_slots))
-    (tail_slots = slots of the PREVIOUS window's sampled tail), then
-    bumps until the tile is covered — or declares the combo impossible
-    (the C++ returns -3 -> 4xx)."""
-    tail_S = h3_chain._video_latent_t(prev_sampled)
-    sampled = tile
-    for _ in range(8):
-        S = h3_chain._video_latent_t(sampled)
-        c = max(1, min(carry, S - 1, tail_S))
-        cp = h3_chain._carried_pixel_frames(c, S)
-        want = snap(tile + cp, 5)
-        if want == sampled:
-            break
-        sampled = want
-    cp = 0
-    for _ in range(220):
-        S = h3_chain._video_latent_t(sampled)
-        c = max(1, min(carry, S - 1, tail_S))
-        cp = h3_chain._carried_pixel_frames(c, S)
-        if sampled - cp >= tile:
-            return sampled, cp            # covered
-        if sampled >= 17 * 128 + 5:
-            break
-        sampled = snap(sampled + 17, 5)
-    return None, None                     # -3: carry/tile incompatible
-
-ok = True
-for prev in (22, 56):                     # window1 sampled lengths
-    for carry in (1, 2, 3, 5, 6, 7, 10, 12, 20, 32, 64):
-        for tile in (17, 34, 51, 68, 85, 102, 119):
-            sampled, cp = plan_window(tile, carry, prev)
-            # invariants of the latent-chain law
-            if sampled is None:
-                # incompatible only when the carry can eat the whole tile
-                S_min = h3_chain._video_latent_t(tile)
-                if carry < (tile + 4) // 17 + 2:
-                    ok = False; print(f"FAIL spurious rejection (carry={carry}, tile={tile}, prev={prev})")
-                continue
-            if sampled % 17 != 5: ok = False; print(f"FAIL sampled {sampled} off-grid (carry={carry}, tile={tile})")
-            if sampled - cp < tile: ok = False; print(f"FAIL tile uncovered (carry={carry}, tile={tile})")
-            if cp <= 0: ok = False; print(f"FAIL non-positive trim (carry={carry}, tile={tile})")
-            # the trim must equal the plugin formula at the CLAMPED carry
-            S = h3_chain._video_latent_t(sampled)
-            tail_S = h3_chain._video_latent_t(prev)
-            c_eff = max(1, min(carry, S - 1, tail_S))
-            if cp != h3_chain._carried_pixel_frames(c_eff, S):
-                ok = False; print(f"FAIL trim mismatch (carry={carry}, tile={tile})")
-check("seam math: plan fixpoint == node-clamped plugin formula (154 cases)", ok)
-
-# THE FAIL THIS CATCHES: raw-carry planning (pre-fix) diverges from the
-# node's clamp at high carry — carry=32, tile=17, prev=22 MUST be
-# plannable with the clamp (c_eff <= tail_S=7 -> span grows) while the
-# raw-carry arithmetic can never cover the tile.
-s, cp = plan_window(17, 32, 22)
-check("high carry plans via the node clamp (32-slot carry, 17px tile)", s is not None and s - cp >= 17)
-# the plugin's grid inverse must round-trip with its align
-for f in (5, 22, 39, 56, 73, 90, 107, 124):
-    if h3_chain._align_frame_count(f) != f:
-        check("plugin align is identity on grid", False, f); break
-else:
-    check("plugin align is identity on grid", True)
+check("grid: 39/90/141/192 are boundaries",
+      all(on_grid(v) for v in (39, 90, 141, 192)))
+check("grid: 40 and 56 are NOT boundaries",
+      not on_grid(40) and not on_grid(56))
+def snap(v):
+    b = v
+    while b > 39 and not on_grid(b):
+        b -= 1
+    return max(b, 39)
+check("grid: snap(100)->90 snap(45)->39 snap(141)->141",
+      (snap(100), snap(45), snap(141)) == (90, 39, 141),
+      (snap(100), snap(45), snap(141)))
 
 print()
 if fails:

@@ -1,30 +1,33 @@
 #!/usr/bin/env python3
-"""V7 KNOB LAW suite (PlagueKind translation, 2026-08-31).
+"""T4 KNOB LAW suite (PlagueKind translation, 2026-08-31; t4-only since
+the node-migration move B deleted the v7 family 2026-09-02).
 
 Pins the Layer A/B knob splice end-to-end at the compose door:
 
-  V1  preset=plaguekind_v7 swaps the whole window family to the _v7
-      templates in the REGISTERED run graph (workflow_file carries
-      window*_v7.json; zero _t4.json survivors).
+  V1  a wire body (no preset) registers with the _t4 template family
+      in the REGISTERED run graph (workflow_file carries
+      window*_t4.json); a guide image flips its window to _t4r.
   V2  Layer A globals land as literal inject keys on EVERY window
-      (SLASwitch.0.switch from sla_enabled, sparsity from
+      (SLASwitch.0.switch from h3_attention=sla, sparsity from
       h3_sla_sparsity, sharpen/interp switches).
   V3  Layer B per-call overrides ride the SAME splice and WIN over
       Layer A for that window only (call 2's knobs.h3_sla_sparsity
       0.95 vs Layer A 0.85 -> window1 injects 0.85, window2 0.95).
-  V4  the t4 path is byte-identical: the same body WITHOUT preset
-      registers with _t4.json templates and NO v7 inject keys.
+  V4  the clean path (no h3_attention) injects NO SLA switch.
   V5  length/carry splice still rides ahead of the knobs (the chain
       law math is untouched by the knob fragment).
+  V6  (move C) the bundle bus: a guide run injects
+      PlagueKindBundleIn.0.input_1 <- LoadImage.0 AND the staged
+      filename; a h3_ref_audios body with a missing file is a NAMED
+      4xx (the staging path is live, no silent drop).
 
 Boots a scratch gateway + fake comfy (object_info auto-built from the
-REAL window templates, incl. _v7). No GPU. Registered-run graph is
-asserted from the run sidecar's yaml field — the exact bytes the
-plugin would execute.
+REAL window templates). No GPU. Registered-run graph is asserted from
+the run sidecar's yaml field — the exact bytes the plugin would
+execute.
 """
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -39,10 +42,13 @@ BUILD = os.path.join(REPO, "build")
 sys.path.insert(0, os.path.join(REPO, "tests"))
 from test_card_lifecycle import free_port, wait_for  # noqa: E402
 
+TL_DIR = os.path.join(REPO, "plugins", "comfyui", "models", "video",
+                      "h3-timeline")
+
 
 class FakeComfy(BaseHTTPRequestHandler):
     """Accepts any /prompt, completes immediately, serves object_info
-    built from every window template in the lane (t4 + v7)."""
+    built from every window template in the lane (t4 + t4r)."""
 
     OBJ = {}
 
@@ -79,13 +85,14 @@ class FakeComfy(BaseHTTPRequestHandler):
 
 
 def build_obj():
-    d = os.path.join(REPO, "pipelines", "h3-timeline")
+    """object_info from the LIVE template dir (t4/t4r family — the v7
+    lineage was deleted; pipelines/ provisioning was never real)."""
     obj = {}
-    for wf in sorted(os.listdir(d)):
+    for wf in sorted(os.listdir(TL_DIR)):
         if not (wf.startswith("window") and wf.endswith(".json")):
             continue
         try:
-            g = json.load(open(os.path.join(d, wf)))
+            g = json.load(open(os.path.join(TL_DIR, wf)))
         except Exception:
             continue
         for n in g.values():
@@ -141,23 +148,18 @@ def main():
     cf = ThreadingHTTPServer(("127.0.0.1", free_port()), FakeComfy)
     threading.Thread(target=cf.serve_forever, daemon=True).start()
 
-    lane = os.path.join(REPO, "pipelines", "h3-timeline", "pipeline.yaml")
-    fx = os.path.join(REPO, "pipelines", "_v7knobs")
-    os.makedirs(fx, exist_ok=True)
-    with open(lane) as f:
-        y = f.read().replace("name: h3-timeline", "name: _v7knobs")
-    y = re.sub(r"127\.0\.0\.1:\d+",
-               "127.0.0.1:%d" % cf.server_address[1], y)
-    with open(os.path.join(fx, "pipeline.yaml"), "w") as f:
-        f.write(y)
-
     port = free_port()
-    log = "/tmp/v7knobs_srv.log"
+    log = "/tmp/t4knobs_srv.log"
     # (leak gate) the gateway's endpoint is this suite's OWN fake —
     # the on-disk default (the REAL ComfyUI) is refused by the sandbox.
-    vcfg = "/tmp/v7knobs_endpoint_%d.json" % port
+    ind = "/tmp/t4knobs_input_%d" % port
+    shutil.rmtree(ind, ignore_errors=True)
+    os.makedirs(ind, exist_ok=True)
+    vcfg = "/tmp/t4knobs_endpoint_%d.json" % port
     with open(vcfg, "w") as f:
-        json.dump({"url": "http://127.0.0.1:%d" % cf.server_address[1]}, f)
+        json.dump({"url": "http://127.0.0.1:%d" % cf.server_address[1],
+                   "input_dir": ind,
+                   "input_dir_container": "/test/input"}, f)
     venv = dict(os.environ)
     venv["COMFYUI_ENDPOINT_CONFIG"] = vcfg
     venv["INFERENCE_TEST_SANDBOX"] = "1"
@@ -167,7 +169,7 @@ def main():
         cwd=BUILD, stdout=subprocess.DEVNULL, stderr=open(log, "ab"),
         env=venv)
     api = Api("http://127.0.0.1:%d" % port)
-    rid = rid2 = None
+    rid = rid2 = rid3 = None
     fails = []
     n = [0]
 
@@ -185,29 +187,29 @@ def main():
             {"text": "window two text", "start_frame": 56, "end_frame": 145,
              "knobs": {"h3_sla_sparsity": 0.95}},
         ]
-        v7_body = {"model": "_v7knobs", "prompt": "v7 knob law probe",
-                   "preset": "plaguekind_v7",
-                   "seed": 7, "fps": 24,
-                   "h3_attention": "sla", "h3_sla_sparsity": 0.85,
-                   "sharpen_enabled": False,
-                   "interpolate_enabled": True,
-                   "interpolate_multiplier": 2,
-                   "shift_video": 9, "cfg": 1,
-                   "calls": calls}
-        code, body = api.post("/v1/pipelines/start", v7_body)
+        sla_body = {"model": "h3-timeline", "prompt": "t4 knob law probe",
+                    "params": {
+                        "seed": 7, "fps": 24,
+                        "h3_attention": "sla", "h3_sla_sparsity": 0.85,
+                        "sharpen_enabled": False,
+                        "interpolate_enabled": True,
+                        "interpolate_multiplier": 2,
+                        "shift_video": 9,
+                        "calls": calls}}
+        code, body = api.post("/v1/pipelines/start", sla_body)
         rid = None
         try:
             rid = json.loads(body).get("run_id")
         except ValueError:
             pass
-        check(bool(rid), "V1a: v7 run registered (%d %s)"
+        check(bool(rid), "V1a: t4 run registered (%d %s)"
               % (code, body[:80]))
 
         y = sidecar_yaml(rid) if rid else None
         check(y is not None, "V1b: sidecar yaml readable")
         if y:
             check("window1_t4.json" in y and "window2_t4.json" in y,
-                  "V1c: t4 templates present (preset swap deferred)")
+                  "V1c: t4 templates present (no refs -> plain family)")
             check('"SLASwitch.0.switch":true' in y,
                   "V2a: Layer A sla_enabled -> SLASwitch true")
             check('"H3SLAAttention.0.sparsity_ratio":0.85' in y,
@@ -219,19 +221,22 @@ def main():
                   "V2d: Layer A interpolation on, x2")
             # V3: per-window values — window1 keeps 0.85, window2 has 0.95
             w1 = y.split("- id: window1")[1].split("- id: window2")[0]
-            w2 = y.split("- id: window2")[1]
+            w2 = y.split("- id: window2")[1].split("- id: stitch")[0]
             check('"H3SLAAttention.0.sparsity_ratio":0.85' in w1,
                   "V3a: window1 keeps Layer A 0.85")
             check('"H3SLAAttention.0.sparsity_ratio":0.95' in w2,
                   "V3b: window2 Layer B override 0.95 WINS")
-            check('"MiniMaxH3ImageToVideo.0.length":' in w1,
-                  "V5: length/carry splice intact on v7")
+            check('"MiniMaxH3ReferenceToVideo.0.length":' in w1,
+                  "V5: length/carry splice intact (R2V node)")
 
-        v4_body = {k: v for k, v in v7_body.items()
-                       if k not in ("preset", "h3_attention",
-                                    "h3_sla_sparsity", "sharpen_enabled",
-                                    "interpolate_enabled",
-                                    "interpolate_multiplier")}
+        v4_params = {k: v for k, v in sla_body["params"].items()
+                     if k not in ("h3_attention", "h3_sla_sparsity",
+                                  "sharpen_enabled",
+                                  "interpolate_enabled",
+                                  "interpolate_multiplier")}
+        v4_body = {"model": "h3-timeline",
+                   "prompt": sla_body["prompt"],
+                   "params": v4_params}
         code, body = api.post("/v1/pipelines/start", v4_body)
         rid2 = None
         try:
@@ -241,8 +246,121 @@ def main():
         y2 = sidecar_yaml(rid2) if rid2 else None
         check(y2 is not None and "window1_t4.json" in y2,
               "V4: t4 templates on clean path")
-        check('"SLASwitch.0.switch":true' not in y2,
+        check(y2 is None or '"SLASwitch.0.switch":true' not in y2,
               "V4: no SLA switch injected on clean path")
+
+        # V6a: bundle bus — guide image flips window1 to t4r with
+        # BundleIn.input_1 + the staged LoadImage.0 filename.
+        gfile = os.path.join(BUILD, "guide_probe.png")
+        with open(gfile, "wb") as f:
+            f.write(b"\x89PNG\r\n\x1a\n" + b"\x00" * 64)
+        g_body = {"model": "h3-timeline", "prompt": "guide probe",
+                  "params": {"calls": [
+                      {"text": "guide probe", "start_frame": 0,
+                       "end_frame": 48, "image": gfile}],
+                      "fps": 24, "seed": 11}}
+        code, body = api.post("/v1/pipelines/start", g_body)
+        rid3 = None
+        try:
+            rid3 = json.loads(body).get("run_id")
+        except ValueError:
+            pass
+        y3 = sidecar_yaml(rid3) if rid3 else None
+        check(y3 is not None and "window1_t4r.json" in y3,
+              "V6a1: guide flips window1 to _t4r")
+        if y3:
+            check('"PlagueKindBundleIn.0.input_1":["LoadImage.0",0]' in y3,
+                  "V6a2: guide rides bundle slot 1")
+            check('"LoadImage.0.image":"ref1_' in y3,
+                  "V6a3: staged guide filename injected")
+
+        # V6b: h3_ref_audios with a missing file = NAMED 4xx (the
+        # staging path is live; nothing silently drops).
+        a_body = {"model": "h3-timeline", "prompt": "audio ref probe",
+                  "params": {"calls": [
+                      {"text": "audio ref probe", "start_frame": 0,
+                       "end_frame": 48}],
+                      "fps": 24, "seed": 12,
+                      "h3_ref_audios": "missing_voice.flac"}}
+        code, body = api.post("/v1/pipelines/start", a_body)
+        check(400 <= code < 500 and "h3_ref_audios[0]" in body,
+              "V6b: missing ref audio = named 4xx, no run registered "
+              "(%d %s)" % (code, body[:90]))
+
+        # V7a: h3_ref_videos — one staged video flips window1 to t4r and
+        # wires the PAIRED bundle slots: frames input_10 -> ref_video_0,
+        # soundtrack input_11 -> ref_video_audio_0 (VHS_LoadVideoPath
+        # outputs 0 and 2), gap-fix 2026-09-02.
+        vfile = os.path.join(BUILD, "vid_probe.mp4")
+        with open(vfile, "wb") as f:
+            f.write(b"\x00\x00\x00\x18ftypmp42" + b"\x00" * 48)
+        v_body = {"model": "h3-timeline", "prompt": "video ref probe",
+                  "params": {"calls": [
+                      {"text": "video ref probe", "start_frame": 0,
+                       "end_frame": 48}],
+                      "fps": 24, "seed": 13,
+                      "h3_ref_videos": vfile}}
+        code, body = api.post("/v1/pipelines/start", v_body)
+        rid4 = None
+        try:
+            rid4 = json.loads(body).get("run_id")
+        except ValueError:
+            pass
+        y4 = sidecar_yaml(rid4) if rid4 else None
+        check(y4 is not None and "window1_t4r.json" in y4,
+              "V7a1: ref video flips window1 to _t4r")
+        if y4:
+            check('"VHS_LoadVideoPath.0.video":"/test/input/idvid0_' in y4,
+                  "V7a2: staged video injected at the EXECUTOR-side path")
+            check('"PlagueKindBundleIn.0.input_10":["VHS_LoadVideoPath.0",0]'
+                  in y4 and
+                  '"MiniMaxH3ReferenceToVideo.0.ref_videos.ref_video_0":'
+                  '["PlagueKindBundleOut.0",9]' in y4,
+                  "V7a3: frames ride slot 10 -> ref_video_0")
+            check('"PlagueKindBundleIn.0.input_11":["VHS_LoadVideoPath.0",2]'
+                  in y4 and
+                  '"MiniMaxH3ReferenceToVideo.0.ref_video_audios.'
+                  'ref_video_audio_0":["PlagueKindBundleOut.0",10]' in y4,
+                  "V7a4: soundtrack rides slot 11 -> ref_video_audio_0")
+
+        # V7b: h3_ref_videos with a missing file = NAMED 4xx (same
+        # staging law as audios/images; nothing silently drops).
+        vb_body = {"model": "h3-timeline", "prompt": "video ref bad",
+                   "params": {"calls": [
+                       {"text": "video ref bad", "start_frame": 0,
+                        "end_frame": 48}],
+                       "fps": 24, "seed": 14,
+                       "h3_ref_videos": "missing_clip.mp4"}}
+        code, body = api.post("/v1/pipelines/start", vb_body)
+        check(400 <= code < 500 and "h3_ref_videos[0]" in body,
+              "V7b: missing ref video = named 4xx, no run registered "
+              "(%d %s)" % (code, body[:90]))
+
+        # V8: SeedVR2 super-res knobs ride the map (SRSwitch +
+        # loader + resolution), and the POST CHAIN IS LIVE — the mux
+        # reads SRSwitch, so enabled sharpen/interp/superres actually
+        # reach the delivered frames (dead-wire regression 2026-09-02).
+        sr_body = {"model": "h3-timeline", "prompt": "sr probe",
+                   "params": {"calls": [
+                       {"text": "sr probe", "start_frame": 0,
+                        "end_frame": 48}],
+                       "fps": 24, "seed": 15,
+                       "superres_enabled": True,
+                       "superres_resolution": 1536}}
+        code, body = api.post("/v1/pipelines/start", sr_body)
+        rid5 = None
+        try:
+            rid5 = json.loads(body).get("run_id")
+        except ValueError:
+            pass
+        y5 = sidecar_yaml(rid5) if rid5 else None
+        check(y5 is not None and '"SRSwitch.0.switch":true' in y5,
+              "V8a: superres_enabled flips SRSwitch on")
+        check(y5 is not None and
+              '"SeedVR2VideoUpscaler.0.resolution":1536' in y5,
+              "V8b: superres_resolution reaches the upscaler")
+        check(y5 is not None and "window1_t4.json" in y5,
+              "V8c: superres alone keeps plain t4 family")
 
     finally:
         srv.terminate()
@@ -251,11 +369,19 @@ def main():
         except subprocess.TimeoutExpired:
             srv.kill()
         cf.shutdown()
-        shutil.rmtree(fx, ignore_errors=True)
-        for r in os.listdir(os.path.join(BUILD, "output")) if rid else []:
-            if r == rid or r == rid2:
-                shutil.rmtree(os.path.join(BUILD, "output", r),
-                              ignore_errors=True)
+        outd = os.path.join(BUILD, "output")
+        if os.path.isdir(outd):
+            for r in (rid, rid2, rid3, rid4, rid5):
+                if r:
+                    shutil.rmtree(os.path.join(outd, r),
+                                  ignore_errors=True)
+        for p in (os.path.join(BUILD, "guide_probe.png"),
+                  os.path.join(BUILD, "vid_probe.mp4")):
+            try:
+                os.remove(p)
+            except OSError:
+                pass
+        shutil.rmtree(ind, ignore_errors=True)
 
     print("\n%d checks, %d failures" % (n[0], len(fails)))
     for f in fails:
