@@ -6494,6 +6494,27 @@ static void handle_pipelines_runs(const httplib::Request &req,
             /* legacy run dir predating sidecars: report what exists */
             snprintf(status, sizeof(status), "success");
         }
+        /* (click-contract law, 2026-09-02) never advertise a draft_id
+         * the drafts GET would 404 on. Run sidecars outlive their
+         * draft docs by design (drafts are editable/ephemeral, the
+         * gallery is history); a history row whose card doc is gone
+         * must degrade to a draftless row, not a dead click —
+         * "card does not recover" (user-surface S6 pinned it). */
+        if (draft[0]) {
+            char dp[600];
+            struct stat dst;
+            snprintf(dp, sizeof dp, "./drafts/%s.json", draft);
+            if (stat(dp, &dst) != 0) {
+                const char *auxd = drafts_aux_dir();
+                int aux_ok = 0;
+                if (auxd && auxd[0]) {
+                    char ap[700];
+                    snprintf(ap, sizeof ap, "%s/%s.json", auxd, draft);
+                    aux_ok = (stat(ap, &dst) == 0);
+                }
+                if (!aux_ok) draft[0] = 0;
+            }
+        }
         char thumb[600] = "";
         ensure_run_previews(dir);
         run_thumbnail(dir, thumb, sizeof(thumb));

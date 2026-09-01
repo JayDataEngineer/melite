@@ -8,7 +8,7 @@ output duration and realtime factor. A human summary lives next to it
 (summary.txt). Touch build/output/soak/STOP to stop cleanly after the
 current run; 10 consecutive failures also aborts (dead-GPU guard).
 
-Usage: python3 scripts/soak_driver.py [--port 18090] [--max N] [--pause S]
+Usage: python3 scripts/soak_driver.py [--port 33081] [--max N] [--pause S]
 """
 import argparse
 import json
@@ -70,7 +70,9 @@ def duration_of(path):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--port", type=int, default=18090)
+    # (canonical-port law, 2026-09-02) 18090 is RETIRED — a stale soak
+    # orphaned on it caused a silent catalog 502 (deck proxies 33081).
+    ap.add_argument("--port", type=int, default=33081)
     ap.add_argument("--max", type=int, default=0, help="stop after N runs (0 = forever)")
     ap.add_argument("--pause", type=float, default=10.0, help="seconds between runs")
     args = ap.parse_args()

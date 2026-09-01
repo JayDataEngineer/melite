@@ -2085,7 +2085,14 @@ def main():
                 txt = open(lg, errors="replace").read()
             except OSError:
                 continue
-            if needle in txt:
+            # (2026-09-02) the REFUSED lines are PROOF OF DEFENSE, not
+            # contact: the resurrected-graph guard + the leak gate both
+            # NAME the offending endpoint they refused. A log whose
+            # only port mentions are refusals never touched the real
+            # server; scan the text MINUS refusal lines.
+            lines = [ln for ln in txt.splitlines()
+                     if "REFUSED" not in ln and "LEAK GATE" not in ln]
+            if needle in "\n".join(lines):
                 leak_hits.append(os.path.basename(lg))
     check(not leak_hits,
           "LEAK PROOF: no gateway contacted the real ComfyUI (%r)"
