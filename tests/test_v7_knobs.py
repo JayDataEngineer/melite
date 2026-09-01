@@ -169,7 +169,7 @@ def main():
         cwd=BUILD, stdout=subprocess.DEVNULL, stderr=open(log, "ab"),
         env=venv)
     api = Api("http://127.0.0.1:%d" % port)
-    rid = rid2 = rid3 = rid4 = rid5 = rid6 = None
+    rid = rid2 = rid3 = rid4 = rid5 = rid6 = rid7 = None
     fails = []
     n = [0]
 
@@ -416,6 +416,50 @@ def main():
               "V9d: per-call h3_attention refused by name (%d %s)"
               % (code, body[:90]))
 
+        # V10 (uploads parity, 2026-09-02): a data: URL ref — the
+        # studio's upload buttons ride inline — stages (base64 decode
+        # into the input dir, mime-derived extension) and wires the
+        # identity-ref bundle slots. Pre-parity this 4xx'd "file not
+        # found: data:image/png;...".
+        import base64 as _b64
+        tiny_png = _b64.b64encode(bytes.fromhex(
+            "89504e470d0a1a0a0000000d4948445200000001000000010806000000"
+            "1f15c4890000000d49444154789c626001000000ffff030000060005"
+            "57bfabd40000000049454e44ae426082")).decode()
+        up_body = {"model": "h3-timeline", "prompt": "upload ref probe",
+                   "params": {"calls": [
+                       {"text": "upload ref probe", "start_frame": 0,
+                        "end_frame": 48}],
+                       "fps": 24, "seed": 18,
+                       "h3_ref_images":
+                           "data:image/png;base64," + tiny_png}}
+        code, body = api.post("/v1/pipelines/start", up_body)
+        rid7 = None
+        try:
+            rid7 = json.loads(body).get("run_id")
+        except ValueError:
+            pass
+        check(bool(rid7), "V10a: data: URL ref accepted + staged "
+              "(%d %s)" % (code, body[:90]))
+        y7 = sidecar_yaml(rid7) if rid7 else None
+        if y7:
+            check('"LoadImage.2.image":"idref0_data' in y7,
+                  "V10b: decoded upload wired at identity-ref slot "
+                  "(LoadImage.2)")
+            check('"PlagueKindBundleIn.0.input_3":["LoadImage.2",0]' in y7,
+                  "V10c: upload rides bundle input_3 (slot law)")
+        # V10d: per-call refs.videos is a DEAD key (the bundle video bus
+        # is run-level) — refused by name, never a silent no-op.
+        dv_body = {"model": "h3-timeline", "prompt": "dead refs probe",
+                   "params": {"calls": [
+                       {"text": "x", "start_frame": 0, "end_frame": 48,
+                        "refs": {"videos": "clip.mp4"}}],
+                       "fps": 24, "seed": 19}}
+        code, body = api.post("/v1/pipelines/start", dv_body)
+        check(400 <= code < 500 and "videos" in body,
+              "V10d: per-call refs.videos refused as dead key (%d %s)"
+              % (code, body[:90]))
+
     finally:
         srv.terminate()
         try:
@@ -425,7 +469,7 @@ def main():
         cf.shutdown()
         outd = os.path.join(BUILD, "output")
         if os.path.isdir(outd):
-            for r in (rid, rid2, rid3, rid4, rid5, rid6):
+            for r in (rid, rid2, rid3, rid4, rid5, rid6, rid7):
                 if r:
                     shutil.rmtree(os.path.join(outd, r),
                                   ignore_errors=True)
