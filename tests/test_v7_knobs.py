@@ -169,7 +169,7 @@ def main():
         cwd=BUILD, stdout=subprocess.DEVNULL, stderr=open(log, "ab"),
         env=venv)
     api = Api("http://127.0.0.1:%d" % port)
-    rid = rid2 = rid3 = None
+    rid = rid2 = rid3 = rid4 = rid5 = rid6 = None
     fails = []
     n = [0]
 
@@ -362,6 +362,60 @@ def main():
         check(y5 is not None and "window1_t4.json" in y5,
               "V8c: superres alone keeps plain t4 family")
 
+        # V9 (UI↔AI parity, 2026-09-02): calls[i].transition is the
+        # studio's seam-mode vocabulary — the gate ACCEPTS it and
+        # cc_compile_calls translates: "cut" == seam_carry 0 (standalone
+        # window: snap-up grid length, NO carried head), absent/extend
+        # == the latent chain (carried-prefix overhead in the length).
+        # Regression shape: the pre-parity gate REFUSED "transition" by
+        # name — this whole submission 4xx'd.
+        tr_body = {"model": "h3-timeline", "prompt": "transition probe",
+                   "params": {"calls": [
+                       {"text": "open shot", "start_frame": 0,
+                        "end_frame": 73},
+                       {"text": "hard cut here", "start_frame": 73,
+                        "end_frame": 141, "transition": "cut"},
+                       {"text": "chained shot", "start_frame": 141,
+                        "end_frame": 209, "transition": "extend"}],
+                       "fps": 24, "seed": 16}}
+        code, body = api.post("/v1/pipelines/start", tr_body)
+        rid6 = None
+        try:
+            rid6 = json.loads(body).get("run_id")
+        except ValueError:
+            pass
+        check(bool(rid6), "V9a: calls[].transition accepted by the gate "
+              "(%d %s)" % (code, body[:90]))
+        y6 = sidecar_yaml(rid6) if rid6 else None
+        if y6:
+            import re as _re
+
+            def wlen(wid):
+                m = _re.search(r"- id: " + wid + r".*?"
+                               r'"MiniMaxH3ReferenceToVideo\.0\.length":(\d+)',
+                               y6, _re.S)
+                return int(m.group(1)) if m else -1
+            # cut (span 68) -> standalone: snap_grid(68,5) = 73 exactly
+            check(wlen("window2") == 73,
+                  "V9b: transition cut -> standalone snap-up length 73 "
+                  "(got %d)" % wlen("window2"))
+            # extend (span 68) -> chain: carried-prefix overhead pushes
+            # the render length strictly above the standalone 73
+            check(wlen("window3") > 73,
+                  "V9c: transition extend -> chain overhead (got %d)"
+                  % wlen("window3"))
+        # V9d: per-call h3_attention still REFUSED by name (Layer A
+        # only — the parity law cuts both ways).
+        bad_body = {"model": "h3-timeline", "prompt": "bad knob probe",
+                    "params": {"calls": [
+                        {"text": "x", "start_frame": 0, "end_frame": 73,
+                         "knobs": {"h3_attention": "sla"}}],
+                        "fps": 24, "seed": 17}}
+        code, body = api.post("/v1/pipelines/start", bad_body)
+        check(400 <= code < 500 and "h3_attention" in body,
+              "V9d: per-call h3_attention refused by name (%d %s)"
+              % (code, body[:90]))
+
     finally:
         srv.terminate()
         try:
@@ -371,7 +425,7 @@ def main():
         cf.shutdown()
         outd = os.path.join(BUILD, "output")
         if os.path.isdir(outd):
-            for r in (rid, rid2, rid3, rid4, rid5):
+            for r in (rid, rid2, rid3, rid4, rid5, rid6):
                 if r:
                     shutil.rmtree(os.path.join(outd, r),
                                   ignore_errors=True)
