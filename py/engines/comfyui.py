@@ -34,7 +34,19 @@ def _get(url, timeout=10):
 
 def _splice(workflow, inject):
     for slot, value in inject.items():
-        node_id, _, key = slot.partition(".")
+        # node ids may contain dots ("CLIPTextEncode.0") — the input key
+        # is always the segment AFTER the last dot.
+        key, _, _rev = slot.rpartition(".")
+        node_id, _, key2 = None, None, None
+        parts = slot.split(".")
+        for i in range(1, len(parts)):
+            cand = ".".join(parts[:i])
+            if cand in workflow:
+                node_id = cand
+                key = ".".join(parts[i:])
+        if node_id is None:
+            node_id = ".".join(parts[:-1])
+            key = parts[-1]
         if node_id not in workflow or not isinstance(workflow[node_id], dict):
             raise EngineError("inject %s: no workflow node %r" % (slot, node_id))
         if key not in workflow[node_id].get("inputs", {}):
