@@ -4,7 +4,7 @@
 Cross-platform (Linux / macOS / Windows) bootstrap for inference.cpp.
 
   extensions  comfy-cli `node install` from the plugin declarations,
-              ref-pinned via git, patches + pip deps applied after
+              ref-pinned via git, pip deps applied after
   models      comfy-cli `model download` from model.yaml provisions,
               sha256-verified after download
 
@@ -192,22 +192,6 @@ def load_extensions() -> list[dict]:
         fail(f"extension_lane.py failed:\n{(r.stderr or r.stdout)[-500:]}")
 
 
-def patch_roots() -> list[Path]:
-    roots = []
-    if os.environ.get("INFERENCE_PATCHES"):
-        roots.append(Path(os.environ["INFERENCE_PATCHES"]))
-    roots += [REPO / "infra" / "patches", REPO / "patches"]
-    return roots
-
-
-def find_patch(rel: str) -> Path | None:
-    for root in patch_roots():
-        p = root / rel
-        if p.is_file():
-            return p
-    return None
-
-
 def link_in_tree(name: str, comfy_dir: Path) -> str:
     """In-tree pack: plugins/*/custom_nodes/<name> -> custom_nodes link.
 
@@ -333,16 +317,6 @@ def step_extensions(comfy_dir: Path, comfy: Path) -> bool:
             vpy = venv_python(comfy_dir)
             if vpy:
                 sh([vpy, str(ipy)], cwd=target, env=env, timeout=900)
-
-        # declared patch (may live in the ops repo — skip loudly if absent)
-        rel = e.get("patches", "")
-        if rel:
-            p = find_patch(rel)
-            if p:
-                sh(["bash", str(p), str(target)], timeout=300)
-            else:
-                warn(f"  [{name}] patch '{rel}' not in any patch root "
-                     f"({', '.join(str(r) for r in patch_roots())}) — skipped")
 
         for dep in e.get("pip", []) or []:
             vpy = venv_python(comfy_dir)
