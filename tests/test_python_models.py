@@ -76,7 +76,7 @@ check("cell artifact validates", cell().artifact().size_bytes > 0)
 
 # ── 3. cross-validation: model defaults ⊆ card field domains ────────
 card = load_card_py(os.path.join(REPO, "plugins", "engines", "comfyui",
-                                 "cards", "image-gen", "card.py"))
+                                 "action_cards", "image-gen", "card.py"))
 checked = validate_against_cards({"krea-2": cls}, {"image-gen": card})
 check("cross-validation ran", checked == [("krea-2", "image-gen")],
       str(checked))

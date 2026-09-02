@@ -12,9 +12,9 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO / "plugins" / "engines" / "comfyui"))
+sys.path.insert(0, str(REPO / "plugins" / "engines" / "comfyui" / "compose"))
 
-from constructors.co_script import render, reachable, diff, CoScriptError
+from co_script import render, reachable, diff, CoScriptError
 
 MODEL_DIR = REPO / "plugins" / "engines" / "comfyui" / "models" / "video" / "h3-timeline"
 

@@ -6,13 +6,13 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO / "plugins" / "engines" / "comfyui"))
+sys.path.insert(0, str(REPO / "plugins" / "engines" / "comfyui" / "compose"))
 
-from constructors.co_script import (  # noqa: E402
+from co_script import (  # noqa: E402
     CoScriptError, ensure_nodes, pin_meta, require_nodes,
     isomorphic, diff, reachable,
 )
-from constructors.co_script.blocks import core as B  # noqa: E402
+from co_script.blocks import core as B  # noqa: E402
 
 PASS, FAIL = [], []
 

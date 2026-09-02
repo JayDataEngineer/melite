@@ -5,15 +5,20 @@ execution, card composition — ships INSIDE the plugin that owns the
 engine, next to its models/knob data, and is discovered from
 plugin-owned declarations:
 
-    plugins/<id>/engines/<dir>/engine.yaml    type: <engine type> (dir name
-                                               may differ from the type —
-                                               engines/audio owns audio_cpp)
-    plugins/<id>/engines/<dir>/engine.py      async execute(node, run_dir,
-                                               inputs, stop_event) -> dict
-                                               optional async stop(node, run_dir)
-    plugins/<id>/engines/<dir>/compose.py     card_compose(body, model,
-                                               run_id, yaml_text) — or a
-                                               compose/ package exporting it
+    Legacy shape (audio-cpp, ffmpeg):
+        plugins/<id>/engines/<dir>/engine.yaml    type: <engine type>
+        plugins/<id>/engines/<dir>/engine.py      async execute(...)
+        plugins/<id>/engines/<dir>/compose.py     card_compose(...)
+
+    Compose-first shape (comfyui — operator order 2026-09-02):
+        plugins/<id>/plugin.yaml                  engines: [type]
+        plugins/<id>/compose/                     card_compose + execute
+        plugins/<id>/models/                      self-contained model families
+        plugins/<id>/action_cards/                card defs + unique lane code
+
+    The gateway resolves engine type FROM THE GRAPH — it names no lane
+    and no engine. Compose-first plugins own execution via comfyui-mcp
+    (there is no engine.py in any plugin that uses this shape).
 
 No engine maps in the core (the SO_ENGINE_OWNERS hardcode is dead: a
 banned shape — lane names in the core). Duplicate type declarations
@@ -55,12 +60,13 @@ except Exception:
 # ---------------------------------------------------------------------------
 
 class EngineRef:
-    __slots__ = ("plugin_id", "engine_dir", "engine_type")
+    __slots__ = ("plugin_id", "engine_dir", "engine_type", "plugin_root")
 
-    def __init__(self, plugin_id, engine_dir, engine_type):
+    def __init__(self, plugin_id, engine_dir, engine_type, plugin_root=None):
         self.plugin_id = plugin_id
         self.engine_dir = engine_dir
         self.engine_type = engine_type
+        self.plugin_root = plugin_root or engine_dir.parents[1]
 
     def load(self, module_name):
         """Load engine.py/compose.py (standalone) or a compose/ package
@@ -74,14 +80,13 @@ class EngineRef:
                 m = types.ModuleType(parent)
                 m.__path__ = []
                 sys.modules[parent] = m
-        # Constructor packages (plugin-root libraries, e.g.
-        # constructors/co_script) import as
-        # plugin_engines.<plugin_id>.constructors.<kind> — the parent
+        # Compose packages (plugin-root libraries, e.g. compose/co_script)
+        # import as plugin_engines.<plugin_id>.compose.<kind> — the parent
         # package carries the plugin root on its path. Generic for every
         # plugin (PLUGIN ARCHITECTURE LAW extension rule): no constructor
         # is ever named in the core.
         parent_mod = sys.modules["plugin_engines." + self.plugin_id]
-        plugin_root = str(self.engine_dir.parents[1])
+        plugin_root = str(self.plugin_root)
         if plugin_root not in parent_mod.__path__:
             parent_mod.__path__.append(plugin_root)
         mod_dir = str(self.engine_dir)
@@ -159,6 +164,34 @@ def scan_engines():
                     "owner per engine (PLUGIN ARCHITECTURE LAW)" % (
                         etype, found[etype].engine_dir, engine_dir))
             found[etype] = EngineRef(plugin_dir.name, engine_dir, etype)
+    # Compose-first plugins: plugin.yaml declares engines: [...];
+    # compose/ package owns card_compose + optional execute (the
+    # comfyui-mcp boundary). No engines/<dir>/ needed.
+    for plugin_dir in _iter_plugin_dirs():
+        pyaml = plugin_dir / "plugin.yaml"
+        if not pyaml.is_file():
+            continue
+        declared = []
+        in_engines = False
+        for line in pyaml.read_text().splitlines():
+            s = line.strip()
+            if s == "engines:":
+                in_engines = True
+                continue
+            if in_engines:
+                if s.startswith("- "):
+                    declared.append(s[2:].strip())
+                elif not s.startswith(" ") and s:
+                    break
+        compose_dir = plugin_dir / "compose"
+        if not declared or not (compose_dir / "__init__.py").is_file():
+            continue
+        for etype in declared:
+            if etype in found:
+                continue  # legacy engines/<dir> already owns it
+            found[etype] = EngineRef(
+                plugin_dir.name, plugin_dir, etype,
+                plugin_root=plugin_dir)
     _engines = found
     return _engines
 
@@ -253,12 +286,18 @@ def load_engine(engine_type):
             "no engine plugin for type %r (no plugins/*/engines/*/engine.yaml "
             "declares it)" % engine_type)
     mod = ref.load("engine")
-    if mod is None or not hasattr(mod, "execute"):
-        raise ValidationError(
-            "engine %r (plugin %s) ships no engine.py execute() at %s" % (
-                engine_type, ref.plugin_id, ref.engine_dir / "engine.py"))
-    _engine_mods[engine_type] = mod
-    return mod
+    if mod is not None and hasattr(mod, "execute"):
+        _engine_mods[engine_type] = mod
+        return mod
+    # Compose-first fallback: the compose package may own execute
+    # (the comfyui-mcp boundary — operator order 2026-09-02).
+    cmod = ref.load("compose")
+    if cmod is not None and hasattr(cmod, "execute"):
+        _engine_mods[engine_type] = cmod
+        return cmod
+    raise ValidationError(
+        "engine %r (plugin %s) has no execute() in engine.py or "
+        "compose/ package" % (engine_type, ref.plugin_id))
 
 
 def load_compose(engine_type):

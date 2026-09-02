@@ -33,6 +33,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
 sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "plugins" / "engines" / "comfyui" / "compose"))
 
 import plugins  # noqa: E402
 
@@ -151,7 +152,7 @@ def run_case(rec):
             import sys as _s2
             if str(PLUGIN) not in _s2.path:
                 _s2.path.insert(0, str(PLUGIN))
-            from constructors.co_script.parity import diff, reachable
+            from co_script.parity import diff, reachable
             OI = _j2.loads((PLUGIN / "data" / "object_info.json").read_text())
             g_inputs = (rec.get("phase1", {}).get("extra") or {}).get("inputs", {})
             g_inputs = {k: _norm_str(v) for k, v in g_inputs.items()}

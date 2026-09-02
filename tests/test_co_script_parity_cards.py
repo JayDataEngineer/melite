@@ -18,9 +18,10 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 PLUGIN = REPO / "plugins" / "engines" / "comfyui"
 sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "plugins" / "engines" / "comfyui" / "compose"))
 sys.path.insert(0, str(PLUGIN))
 
-from constructors.co_script.parity import diff, reachable  # noqa: E402
+from co_script.parity import diff, reachable  # noqa: E402
 
 OI = json.loads((PLUGIN / "data" / "object_info.json").read_text())
 
@@ -119,8 +120,8 @@ _idir = Path("/tmp/parity_input_dir")
 _idir.mkdir(exist_ok=True)
 (_idir / "edit_parity_fox.png").write_bytes(b"fakepng")
 import importlib
-_ce = importlib.import_module("plugin_engines.comfyui.compose.card_edit")
-_ce.input_dir = lambda: str(_idir)
+import _config as _cfg
+_cfg._g = {"input_dir": str(_idir)}
 _ed_body = {"model": "img-edit", "params": {"prompt": "make it winter",
                                               "input_image": "edit_parity_fox.png",
                                               "shift": 2.5, "seed": 5}}
@@ -163,7 +164,7 @@ parity("music3 t1 instrumental", "models/audio/music3/music_t1.json",
        })
 
 # 6. LOUD gates: unsanctioned inject key refuses BY NAME
-from constructors.co_script.errors import CoScriptError  # noqa: E402
+from co_script.errors import CoScriptError  # noqa: E402
 import importlib as _imp
 _cs = _imp.import_module("plugin_engines.comfyui.compose._coscript")
 render_model = _cs.render_model  # noqa: E402
