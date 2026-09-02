@@ -651,10 +651,13 @@ def _scan_model_dir(model_dir):
     engine = os.path.basename(os.path.dirname(os.path.dirname(
         os.path.dirname(model_dir))))
     cls = load_model_py(mpy, engine)
-    meta = {"studio_tenant": None, "studio_owns_params": False}
+    meta = {"studio_tenant": None, "studio_owns_params": False,
+            "studio_writes": []}
     if isinstance(cls.studio, dict) and cls.studio.get("tenant"):
         meta = {"studio_tenant": cls.studio["tenant"],
-                "studio_owns_params": bool(cls.studio.get("owns_params"))}
+                "studio_owns_params": bool(cls.studio.get("owns_params")),
+                "studio_writes": [str(w) for w in
+                                  (cls.studio.get("writes") or ())]}
     return [(model_row(cls, model_dir), meta)]
 
 
@@ -816,7 +819,7 @@ def scan_catalog(repo_root):
             fam["studio"] = {
                 "tenant": meta["studio_tenant"],
                 "owns_params": bool(meta["studio_owns_params"]),
-                "writes": [],
+                "writes": list(meta["studio_writes"]),
             }
         families[row["id"]] = fam
 

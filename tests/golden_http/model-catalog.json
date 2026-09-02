@@ -211,222 +211,247 @@
     }
   ],
   "families": {
-    "ace-step": {
-      "genre": "audio",
-      "label": "ACE-Step 1.5 Turbo Q8"
-    },
-    "ace-step-base": {
-      "genre": "audio",
-      "label": "ACE-Step 1.5 Base Q8"
-    },
-    "ace-step-base-bf16": {
-      "genre": "audio",
-      "label": "ACE-Step 1.5 Base BF16"
-    },
-    "ace-step-bf16": {
-      "genre": "audio",
-      "label": "ACE-Step 1.5 Turbo BF16"
-    },
-    "ace-step-sft": {
-      "genre": "audio",
-      "label": "ACE-Step 1.5 SFT Q8"
-    },
-    "ace-step-xl": {
-      "genre": "audio",
-      "label": "ACE-Step 1.5 XL Turbo"
-    },
-    "anima": {
-      "genre": "image",
-      "label": "Anima"
-    },
-    "auto-detect": {
-      "genre": "image",
-      "label": "Auto Detect"
-    },
-    "basic_resize": {
-      "genre": "image",
-      "label": "Basic Resize"
+    "input": {
+      "label": "Input Prep",
+      "genre": "image"
     },
     "concat": {
-      "genre": "video",
-      "label": "Media Merge"
-    },
-    "dwpose": {
-      "genre": "",
-      "label": "DWPose"
-    },
-    "flux-fill-dev": {
-      "genre": "image",
-      "label": "Inpaint"
-    },
-    "gem_soma": {
-      "genre": "",
-      "label": "SOMA"
-    },
-    "h3": {
-      "genre": "video",
-      "label": "MiniMax H3"
-    },
-    "h3-keyframe": {
-      "genre": "video",
-      "label": "MiniMax H3 keyframe-to-video"
-    },
-    "h3-timeline": {
-      "genre": "video",
-      "label": "H3 Timeline (multi-window)",
-      "studio": {
-        "owns_params": true,
-        "tenant": "video/video_timeline",
-        "writes": []
-      }
-    },
-    "ideogram": {
-      "genre": "image",
-      "label": "Ideogram"
-    },
-    "img-edit": {
-      "genre": "image",
-      "label": "Qwen Image Edit 2511"
-    },
-    "input": {
-      "genre": "image",
-      "label": "Input Prep"
-    },
-    "krea-2": {
-      "genre": "image",
-      "label": "Krea 2"
-    },
-    "latentsync": {
-      "genre": "",
-      "label": "LatentSync"
-    },
-    "ltx-2-3": {
-      "genre": "video",
-      "label": "LTX 2.3"
-    },
-    "ltx-director-distilled": {
-      "genre": "video",
-      "label": "LTX 2.3"
-    },
-    "mask-studio": {
-      "genre": "image",
-      "label": "Mask"
-    },
-    "mesh_refine": {
-      "genre": "3d",
-      "label": "UltraShape Mesh Refine"
-    },
-    "moss-sfx": {
-      "genre": "audio",
-      "label": "MOSS-SFX v2"
-    },
-    "moss-tts": {
-      "genre": "audio",
-      "label": "MOSS-TTS Nano 100M"
-    },
-    "moss-tts-local": {
-      "genre": "audio",
-      "label": "MOSS-TTS Local v1.5"
-    },
-    "moss_voicegenerator": {
-      "genre": "audio",
-      "label": "MOSS VoiceGenerator"
-    },
-    "music3": {
-      "genre": "audio",
-      "label": "MiniMax Music 3"
-    },
-    "pixal3d": {
-      "genre": "3d",
-      "label": "Pixal3D"
-    },
-    "pixel_upscale": {
-      "genre": "image",
-      "label": "Pixel Upscaler"
-    },
-    "qwen-img-edit-2511": {
-      "genre": "image",
-      "label": "Image Edit"
-    },
-    "qwen3-tts": {
-      "genre": "audio",
-      "label": "Qwen3-TTS CustomVoice 1.7B"
-    },
-    "qwen3-tts-1-7b": {
-      "genre": "audio",
-      "label": "Qwen3-TTS CustomVoice 1.7B"
-    },
-    "qwen3-tts-base": {
-      "genre": "audio",
-      "label": "Qwen3-TTS Base 1.7B"
-    },
-    "qwen3-tts-voice-studio": {
-      "genre": "audio",
-      "label": "Qwen3-TTS CustomVoice 1.7B"
-    },
-    "qwen3-tts-voice-studio-1-7b": {
-      "genre": "audio",
-      "label": "Qwen3-TTS CustomVoice 1.7B"
-    },
-    "qwen3_tts_customvoice": {
-      "genre": "audio",
-      "label": "Qwen3-TTS CustomVoice 1.7B"
-    },
-    "qwen3_tts_voicedesign": {
-      "genre": "audio",
-      "label": "Qwen3-TTS VoiceDesign 1.7B"
+      "label": "Media Merge",
+      "genre": "video"
     },
     "rtx-vsr": {
-      "genre": "video",
-      "label": "Video Upscale"
-    },
-    "scail2-animate": {
-      "genre": "video",
-      "label": "SCAIL-2"
-    },
-    "see-through": {
-      "genre": "",
-      "label": "See-Through"
+      "label": "Video Upscale",
+      "genre": "video"
     },
     "seedvr2_ema": {
-      "genre": "image",
-      "label": "SeedVR2 Upscaler"
+      "label": "SeedVR2 Upscaler",
+      "genre": "image"
     },
-    "somax": {
-      "genre": "3d",
-      "label": "SOMAX"
+    "basic_resize": {
+      "label": "Basic Resize",
+      "genre": "image"
     },
-    "step1x_texture": {
-      "genre": "3d",
-      "label": "Step1X-3D Texture"
+    "pixel_upscale": {
+      "label": "Pixel Upscaler",
+      "genre": "image"
     },
-    "stretchy-rig": {
-      "genre": "",
-      "label": "Stretchy Rig"
+    "mask-studio": {
+      "label": "Mask",
+      "genre": "image"
     },
-    "transfer_rig": {
-      "genre": "3d",
-      "label": "Transfer Rig"
+    "auto-detect": {
+      "label": "Auto Detect",
+      "genre": "image"
     },
-    "trellis2-native": {
-      "genre": "3d",
-      "label": "TRELLIS.2 Native"
-    },
-    "trellis_native": {
-      "genre": "3d",
-      "label": "Trellis (Native)"
-    },
-    "txt2music": {
-      "genre": "audio",
-      "label": "MiniMax Music 3"
+    "flux-fill-dev": {
+      "label": "Inpaint",
+      "genre": "image"
     },
     "wan-vace": {
+      "label": "Wan2.2 VACE",
+      "genre": "video"
+    },
+    "h3-timeline": {
+      "label": "H3 Timeline (multi-window)",
       "genre": "video",
-      "label": "Wan2.2 VACE"
+      "studio": {
+        "tenant": "video/video_timeline",
+        "owns_params": true,
+        "writes": [
+          "calls",
+          "keyframes",
+          "preset",
+          "fps",
+          "seed",
+          "audio_mode",
+          "continuity",
+          "shift_video",
+          "shift_audio",
+          "sampler",
+          "scheduler",
+          "sampling_steps",
+          "width",
+          "height",
+          "h3_attention",
+          "h3_sage_attention",
+          "h3_fp16_accumulation",
+          "h3_torch_compile",
+          "sharpen_enabled",
+          "sharpen_strength",
+          "interpolate_enabled",
+          "interpolate_multiplier",
+          "audio_stem",
+          "document"
+        ]
+      }
+    },
+    "ltx-2-3": {
+      "label": "LTX 2.3",
+      "genre": "video"
+    },
+    "ltx-director-distilled": {
+      "label": "LTX 2.3",
+      "genre": "video"
+    },
+    "h3-keyframe": {
+      "label": "MiniMax H3 keyframe-to-video",
+      "genre": "video"
+    },
+    "scail2-animate": {
+      "label": "SCAIL-2",
+      "genre": "video"
+    },
+    "h3": {
+      "label": "MiniMax H3",
+      "genre": "video"
+    },
+    "trellis_native": {
+      "label": "Trellis (Native)",
+      "genre": "3d"
+    },
+    "trellis2-native": {
+      "label": "TRELLIS.2 Native",
+      "genre": "3d"
+    },
+    "pixal3d": {
+      "label": "Pixal3D",
+      "genre": "3d"
+    },
+    "step1x_texture": {
+      "label": "Step1X-3D Texture",
+      "genre": "3d"
+    },
+    "mesh_refine": {
+      "label": "UltraShape Mesh Refine",
+      "genre": "3d"
+    },
+    "somax": {
+      "label": "SOMAX",
+      "genre": "3d"
+    },
+    "transfer_rig": {
+      "label": "Transfer Rig",
+      "genre": "3d"
+    },
+    "qwen-img-edit-2511": {
+      "label": "Image Edit",
+      "genre": "image"
+    },
+    "see-through": {
+      "label": "See-Through",
+      "genre": ""
+    },
+    "stretchy-rig": {
+      "label": "Stretchy Rig",
+      "genre": ""
+    },
+    "latentsync": {
+      "label": "LatentSync",
+      "genre": ""
+    },
+    "gem_soma": {
+      "label": "SOMA",
+      "genre": ""
+    },
+    "dwpose": {
+      "label": "DWPose",
+      "genre": ""
+    },
+    "anima": {
+      "label": "Anima",
+      "genre": "image"
+    },
+    "ideogram": {
+      "label": "Ideogram",
+      "genre": "image"
     },
     "z-image": {
-      "genre": "image",
-      "label": "Z-Image"
+      "label": "Z-Image",
+      "genre": "image"
+    },
+    "krea-2": {
+      "label": "Krea 2",
+      "genre": "image"
+    },
+    "img-edit": {
+      "label": "Qwen Image Edit 2511",
+      "genre": "image"
+    },
+    "moss-tts-local": {
+      "label": "MOSS-TTS Local v1.5",
+      "genre": "audio"
+    },
+    "ace-step": {
+      "label": "ACE-Step 1.5 Turbo Q8",
+      "genre": "audio"
+    },
+    "ace-step-base": {
+      "label": "ACE-Step 1.5 Base Q8",
+      "genre": "audio"
+    },
+    "txt2music": {
+      "label": "MiniMax Music 3",
+      "genre": "audio"
+    },
+    "ace-step-base-bf16": {
+      "label": "ACE-Step 1.5 Base BF16",
+      "genre": "audio"
+    },
+    "qwen3-tts-base": {
+      "label": "Qwen3-TTS Base 1.7B",
+      "genre": "audio"
+    },
+    "qwen3-tts-1-7b": {
+      "label": "Qwen3-TTS CustomVoice 1.7B",
+      "genre": "audio"
+    },
+    "moss-sfx": {
+      "label": "MOSS-SFX v2",
+      "genre": "audio"
+    },
+    "ace-step-bf16": {
+      "label": "ACE-Step 1.5 Turbo BF16",
+      "genre": "audio"
+    },
+    "music3": {
+      "label": "MiniMax Music 3",
+      "genre": "audio"
+    },
+    "moss-tts": {
+      "label": "MOSS-TTS Nano 100M",
+      "genre": "audio"
+    },
+    "qwen3-tts": {
+      "label": "Qwen3-TTS CustomVoice 1.7B",
+      "genre": "audio"
+    },
+    "ace-step-xl": {
+      "label": "ACE-Step 1.5 XL Turbo",
+      "genre": "audio"
+    },
+    "moss_voicegenerator": {
+      "label": "MOSS VoiceGenerator",
+      "genre": "audio"
+    },
+    "qwen3_tts_voicedesign": {
+      "label": "Qwen3-TTS VoiceDesign 1.7B",
+      "genre": "audio"
+    },
+    "ace-step-sft": {
+      "label": "ACE-Step 1.5 SFT Q8",
+      "genre": "audio"
+    },
+    "qwen3-tts-voice-studio-1-7b": {
+      "label": "Qwen3-TTS CustomVoice 1.7B",
+      "genre": "audio"
+    },
+    "qwen3_tts_customvoice": {
+      "label": "Qwen3-TTS CustomVoice 1.7B",
+      "genre": "audio"
+    },
+    "qwen3-tts-voice-studio": {
+      "label": "Qwen3-TTS CustomVoice 1.7B",
+      "genre": "audio"
     }
   },
   "models": {
