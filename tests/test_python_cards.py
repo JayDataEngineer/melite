@@ -57,7 +57,7 @@ def deep_diff(a, b, path="$"):
 
 def main():
     card_py = os.path.join(REPO, "plugins", "engines", "comfyui",
-                           "action_cards", "image-gen", "card.py")
+                           "action_cards", "image", "image-gen", "card.py")
     check("image-gen card.py loads", os.path.isfile(card_py))
     cls = load_card_py(card_py, "comfyui")
     check("card id", cls.id == "image-gen", cls.id)
@@ -99,16 +99,21 @@ def main():
     # same way — class fragment == golden form-spec (captured from the
     # yaml-era serving BEFORE the parameters blocks died), and the
     # served route must be class-driven for each family model.
+    # (reorg 2026-09-02b: comfyui cards live under genre groups in
+    # action_cards/<genre>/<card>/; audio-cpp still rides cards/<cid>/)
     FLIPPED = [
-        ("image-edit", "comfyui", "img-edit"),
-        ("h3-timeline", "comfyui", "h3-timeline"),
-        ("tts", "audio-cpp", "qwen3-tts"),
-        ("voice-lock", "audio-cpp", "qwen3-tts-voicedesign"),
-        ("music", "audio-cpp", "music3"),
+        ("image-edit", "comfyui", "img-edit",
+         ("action_cards", "image", "image-edit")),
+        ("h3-timeline", "comfyui", "h3-timeline",
+         ("action_cards", "video", "h3-timeline")),
+        ("tts", "audio-cpp", "qwen3-tts", ("cards", "tts")),
+        ("voice-lock", "audio-cpp", "qwen3-tts-voicedesign",
+         ("cards", "voice-lock")),
+        ("music", "audio-cpp", "music3", ("cards", "music")),
     ]
-    for cid, engine, model in FLIPPED:
-        cpath = os.path.join(REPO, "plugins", "engines", engine, "cards",
-                             cid, "card.py")
+    for cid, engine, model, home in FLIPPED:
+        cpath = os.path.join(REPO, "plugins", "engines", engine, *home,
+                             "card.py")
         fcls = load_card_py(cpath, engine)
         check("%s id" % cid, fcls.id == cid, fcls.id)
         gpath = os.path.join(REPO, "tests", "golden_http",
@@ -139,9 +144,11 @@ def main():
     models = {mid: cls for mid, (_p, cls)
               in scan_engine_models(REPO).items()}
     cards = {}
-    for cid, engine, model in [("image-gen", "comfyui", "krea-2")] + FLIPPED:
+    for cid, engine, model, home in [("image-gen", "comfyui", "krea-2",
+                                      ("action_cards", "image",
+                                       "image-gen"))] + FLIPPED:
         cards[cid] = load_card_py(os.path.join(
-            REPO, "plugins", "engines", engine, "cards", cid, "card.py"),
+            REPO, "plugins", "engines", engine, *home, "card.py"),
             engine)
     import importlib.util as _ilu
     _spec = _ilu.spec_from_file_location(

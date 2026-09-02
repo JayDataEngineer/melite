@@ -666,11 +666,11 @@ def _scan_cards(plugins_dir):
     # 2026-09-02).  Both subtrees are scanned.
     eng_root = os.path.join(plugins_dir, "engines")
     try:
-        owners = os.scandir(eng_root)
+        with os.scandir(eng_root) as it:
+            owners = sorted(it, key=lambda e: e.name)
     except OSError:
         return rows, capabilities
-    with owners:
-        for owner in owners:
+    for owner in owners:
             if owner.name.startswith("."):
                 continue
             for subdir in ("cards", "action_cards"):
@@ -678,7 +678,12 @@ def _scan_cards(plugins_dir):
                 if not os.path.isdir(cards_dir):
                     continue
                 with os.scandir(cards_dir) as cids:
-                    for cid in cids:
+                    # SORTED walk (2026-09-02 reorg): the raw-readdir
+                    # mirror was a C fossil — machine-dependent order
+                    # goldens cannot survive. Sorted = deterministic
+                    # across machines; the card order the editor sees
+                    # is stable regardless of who cloned when.
+                    for cid in sorted(cids, key=lambda e: e.name):
                         if cid.name.startswith("."):
                             continue
                         card_dir = os.path.join(cards_dir, cid.name)
@@ -690,10 +695,11 @@ def _scan_cards(plugins_dir):
                             rows.append(row)
                         if cap_key is not None:
                             capabilities[cap_key] = cap_entry
-                        # group layer (melite-* tenants): nested dirs
-                        # the editor's cardStudios glob also walks.
+                        # genre group layer (image/ video/ 3d/ motion/
+                        # mask/): nested card dirs the editor's
+                        # cardStudios glob also walks.
                         with os.scandir(card_dir) as subs:
-                            for sub in subs:
+                            for sub in sorted(subs, key=lambda e: e.name):
                                 if sub.name.startswith("."):
                                     continue
                                 sub_dir = os.path.join(card_dir, sub.name)
@@ -724,7 +730,13 @@ def _scan_card_dir(card_dir, card_name):
         raise ValidationError(
             "%s carries BOTH card.py and card.yaml — the identity rung "
             "moved card.yaml onto the class; delete the yaml" % mpy)
-    engine_dir = os.path.dirname(os.path.dirname(os.path.dirname(mpy)))
+    # engine dir: one hop above the cards/action_cards segment for
+    # depth-1 card dirs, two for genre-grouped
+    # (action_cards/<genre>/<card>/, 2026-09-02 reorg)
+    _d = os.path.dirname(card_dir)
+    engine_dir = (os.path.dirname(_d)
+                  if os.path.basename(_d) in ("cards", "action_cards")
+                  else os.path.dirname(os.path.dirname(_d)))
     repo_root = os.path.dirname(os.path.dirname(os.path.dirname(
         engine_dir)))
     _py = os.path.join(repo_root, "py")

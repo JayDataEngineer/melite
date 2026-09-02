@@ -613,7 +613,9 @@ def _find_card_yaml(repo_root, model):
     identity-only cards (sfx) stay non-candidates exactly as the yaml
     era served them (no parameters block → skip). Scan depth is the
     engine layout: plugins/engines/<engine>/cards/ AND
-    plugins/engines/<engine>/action_cards/ (comfyui migrated 2026-09-02)."""
+    plugins/engines/<engine>/action_cards/<genre>/<card>/ (comfyui
+    regrouped 2026-09-02 — same two-level walk the catalog and the
+    editor's cardStudios glob do)."""
     candidate = None
     nmodel = _norm(model)
     for _engine, edir in _iter_plugin_engines(repo_root):
@@ -621,10 +623,18 @@ def _find_card_yaml(repo_root, model):
             cdir = os.path.join(edir, subdir)
             if not os.path.isdir(cdir):
                 continue
+            paths = []
             for card in _scandir(cdir):
                 if card.startswith('.'):
                     continue
-                mpy = os.path.join(cdir, card, "card.py")
+                paths.append(os.path.join(cdir, card, "card.py"))
+                card_path = os.path.join(cdir, card)
+                if os.path.isdir(card_path):
+                    for sub in _scandir(card_path):
+                        if not sub.startswith('.'):
+                            paths.append(os.path.join(card_path, sub,
+                                                      "card.py"))
+            for mpy in paths:
                 if not os.path.isfile(mpy):
                     continue
                 cls = _load_card_class(mpy)
@@ -833,9 +843,15 @@ def _families_keep(field, nmodel):
 
 
 def _engine_dir_of_card(card_yaml_path):
-    """.../<engine>/cards/<card>/card.yaml -> .../<engine> (the engine that
-    owns the card — vocabulary and lanes resolve relative to it)."""
-    return os.path.dirname(os.path.dirname(os.path.dirname(card_yaml_path)))
+    """.../<engine>/{cards,action_cards}/<card>/card.py -> .../<engine>
+    (the engine that owns the card — vocabulary and lanes resolve
+    relative to it). Genre-grouped cards (action_cards/<genre>/<card>/,
+    2026-09-02 reorg) sit one deeper: hop above the cards/action_cards
+    segment either way."""
+    d2 = os.path.dirname(os.path.dirname(card_yaml_path))
+    if os.path.basename(d2) in ("cards", "action_cards"):
+        return os.path.dirname(d2)              # flat: d2 IS the cards root
+    return os.path.dirname(os.path.dirname(d2))  # genre: d2 is the group
 
 
 _MELITE_CARDS_PATH = os.path.join("py")

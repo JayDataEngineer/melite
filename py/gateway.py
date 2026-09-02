@@ -257,9 +257,15 @@ def _find_card_requires(mid, plugins_dir=None):
     nmid = mid.replace("_", "-")
     for cpy in sorted(
         list(plugins_dir.glob("engines/*/cards/*/card.py"))
-        + list(plugins_dir.glob("engines/*/action_cards/*/card.py"))):
+        + list(plugins_dir.glob("engines/*/action_cards/*/card.py"))
+        + list(plugins_dir.glob("engines/*/action_cards/*/*/card.py"))):
         try:
-            engine = cpy.parent.parent.parent.name
+            # depth-1 card dir → engine 3 hops up; genre-grouped
+            # (action_cards/<genre>/<card>/) → 4 (2026-09-02 reorg)
+            pdir = cpy.parent
+            engine = (pdir.parent.parent.name
+                      if pdir.parent.name in ("cards", "action_cards")
+                      else pdir.parent.parent.parent.name)
             cls = load_card_py(str(cpy), engine)
         except Exception:
             continue

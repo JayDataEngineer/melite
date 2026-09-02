@@ -2,7 +2,7 @@
   "capabilities": {
     "h3-timeline": {
       "default_family": "h3-timeline",
-      "description": "THE video interface \u2014 multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
+      "description": "THE video interface — multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
       "families": [
         "h3-timeline"
       ],
@@ -17,7 +17,7 @@
     },
     "image-edit": {
       "default_family": "img-edit",
-      "description": "Instruction-driven image editing \u2014 the edit_image family card (build_img2img_edit); up to three input images + reference list, mask-aware region editing, LanPaint tuning",
+      "description": "Instruction-driven image editing — the edit_image family card (build_img2img_edit); up to three input images + reference list, mask-aware region editing, LanPaint tuning",
       "families": [
         "img-edit"
       ],
@@ -32,7 +32,7 @@
     },
     "image-gen": {
       "default_family": "krea-2",
-      "description": "Text-to-image generation \u2014 the generate_image family card (build_txt2img); img2img + LanPaint inpaint ride the same card via input_image / lanpaint_mask",
+      "description": "Text-to-image generation — the generate_image family card (build_txt2img); img2img + LanPaint inpaint ride the same card via input_image / lanpaint_mask",
       "families": [
         "krea-2"
       ],
@@ -47,7 +47,7 @@
     },
     "music": {
       "default_family": "music3",
-      "description": "Generate music \u2014 MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
+      "description": "Generate music — MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
       "families": [
         "music3"
       ],
@@ -62,7 +62,7 @@
     },
     "tts": {
       "default_family": "qwen3-tts",
-      "description": "Text-to-speech \u2014 Qwen3-TTS with CustomVoice personas and instruct-text emotion control",
+      "description": "Text-to-speech — Qwen3-TTS with CustomVoice personas and instruct-text emotion control",
       "families": [
         "qwen3_tts"
       ],
@@ -77,7 +77,7 @@
     },
     "voice-lock": {
       "default_family": "qwen3_tts_voicedesign",
-      "description": "Lock a voice persona \u2014 design, export, and reuse .qvoice embeddings for consistent character voices",
+      "description": "Lock a voice persona — design, export, and reuse .qvoice embeddings for consistent character voices",
       "families": [
         "qwen3_tts_voicedesign"
       ],
@@ -93,98 +93,7 @@
   },
   "cards": [
     {
-      "description": "Text-to-image generation \u2014 the generate_image family card (build_txt2img); img2img + LanPaint inpaint ride the same card via input_image / lanpaint_mask",
-      "families": [
-        "krea-2"
-      ],
-      "genre": "image",
-      "has_inference": false,
-      "has_rubric": false,
-      "id": "image-gen",
-      "label": "Image",
-      "principles": [
-        "prompt is required \u2014 an empty/whitespace prompt is rejected loud, never sampled with empty conditioning",
-        "Defaults are shape, not value: resolution/steps/cfg come from the model folder (defaults:/presets), merged at serve time",
-        "Sampler and scheduler option lists resolve from the ONE vocabulary (media.comfyui.sampler_vocab) \u2014 never hand-copied",
-        "A preset fills untouched fields; values you have set win",
-        "input_image + lanpaint_mask switches the builder to LanPaintKSampler",
-        "Mask prep (grow/feather/threshold/invert) and outpaint pads are applied host-side before the run \u2014 no silent param drops"
-      ],
-      "skills": []
-    },
-    {
-      "description": "THE video interface \u2014 multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
-      "families": [
-        "h3-timeline"
-      ],
-      "genre": "video",
-      "has_inference": false,
-      "has_rubric": false,
-      "id": "h3-timeline",
-      "label": "H3 Timeline",
-      "principles": [
-        "Describe MOTION and SOUND together \u2014 H3 generates both in one pass",
-        "Draft at 768x448x56f (~2.3s); produce at 1344x768x124f (~5.2s)",
-        "Length snaps to the 17k+5 frame grid at 24fps",
-        "For timelines: repeat the ambient soundscape verbatim in every window; add one new layer where the story needs it",
-        "Same seed across a shot's re-rolls keeps the world texture",
-        "SLA at sparsity 0.90 gives ~1.75x speedup with no quality loss \u2014 use it by default"
-      ],
-      "skills": []
-    },
-    {
-      "description": "Instruction-driven image editing \u2014 the edit_image family card (build_img2img_edit); up to three input images + reference list, mask-aware region editing, LanPaint tuning",
-      "families": [
-        "img-edit"
-      ],
-      "genre": "image",
-      "has_inference": false,
-      "has_rubric": false,
-      "id": "image-edit",
-      "label": "Image Edit",
-      "principles": [
-        "input_image is required \u2014 the edit is anchored on it (input_param: input_artifact, slots image1..image3)",
-        "Qwen-Image-Edit uses low CFG (flow-matching) \u2014 the Guidance Scale slider tops out at 10.0",
-        "A lanpaint_mask alongside input_image patches the model with the DiffSynth inpaint ControlNet",
-        "Region Mode controls how the mask is honored: auto / crop_stitch / full_frame",
-        "Mask prep (grow/feather/threshold/invert) uses the same host-side chain the Inpaint card uses",
-        "Iterate HERE, not in video \u2014 an edit costs seconds, a render minutes; name what changes, state the rest as unchanged"
-      ],
-      "skills": []
-    },
-    {
-      "description": "Lock a voice persona \u2014 design, export, and reuse .qvoice embeddings for consistent character voices",
-      "families": [
-        "qwen3_tts_voicedesign"
-      ],
-      "genre": "audio",
-      "has_inference": false,
-      "has_rubric": false,
-      "id": "voice-lock",
-      "label": "Voice Lock",
-      "principles": [],
-      "skills": []
-    },
-    {
-      "description": "Text-to-speech \u2014 Qwen3-TTS with CustomVoice personas and instruct-text emotion control",
-      "families": [
-        "qwen3_tts"
-      ],
-      "genre": "audio",
-      "has_inference": false,
-      "has_rubric": false,
-      "id": "tts",
-      "label": "TTS",
-      "principles": [
-        "text is required \u2014 empty text fails",
-        "Use Voice Embedding (.qvoice) for consistent character voices",
-        "Style Instruction controls emotion and delivery",
-        "One line per call \u2014 serial execution for multi-line sequences"
-      ],
-      "skills": []
-    },
-    {
-      "description": "Generate music \u2014 MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
+      "description": "Generate music — MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
       "families": [
         "music3"
       ],
@@ -197,7 +106,7 @@
       "skills": []
     },
     {
-      "description": "Generate sound effects \u2014 MOSS-SFX v2, describe the SOUND not the scene",
+      "description": "Generate sound effects — MOSS-SFX v2, describe the SOUND not the scene",
       "families": [
         "moss_sfx_v2"
       ],
@@ -207,6 +116,97 @@
       "id": "sfx",
       "label": "Sound Effects",
       "principles": [],
+      "skills": []
+    },
+    {
+      "description": "Text-to-speech — Qwen3-TTS with CustomVoice personas and instruct-text emotion control",
+      "families": [
+        "qwen3_tts"
+      ],
+      "genre": "audio",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "tts",
+      "label": "TTS",
+      "principles": [
+        "text is required — empty text fails",
+        "Use Voice Embedding (.qvoice) for consistent character voices",
+        "Style Instruction controls emotion and delivery",
+        "One line per call — serial execution for multi-line sequences"
+      ],
+      "skills": []
+    },
+    {
+      "description": "Lock a voice persona — design, export, and reuse .qvoice embeddings for consistent character voices",
+      "families": [
+        "qwen3_tts_voicedesign"
+      ],
+      "genre": "audio",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "voice-lock",
+      "label": "Voice Lock",
+      "principles": [],
+      "skills": []
+    },
+    {
+      "description": "Instruction-driven image editing — the edit_image family card (build_img2img_edit); up to three input images + reference list, mask-aware region editing, LanPaint tuning",
+      "families": [
+        "img-edit"
+      ],
+      "genre": "image",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "image-edit",
+      "label": "Image Edit",
+      "principles": [
+        "input_image is required — the edit is anchored on it (input_param: input_artifact, slots image1..image3)",
+        "Qwen-Image-Edit uses low CFG (flow-matching) — the Guidance Scale slider tops out at 10.0",
+        "A lanpaint_mask alongside input_image patches the model with the DiffSynth inpaint ControlNet",
+        "Region Mode controls how the mask is honored: auto / crop_stitch / full_frame",
+        "Mask prep (grow/feather/threshold/invert) uses the same host-side chain the Inpaint card uses",
+        "Iterate HERE, not in video — an edit costs seconds, a render minutes; name what changes, state the rest as unchanged"
+      ],
+      "skills": []
+    },
+    {
+      "description": "Text-to-image generation — the generate_image family card (build_txt2img); img2img + LanPaint inpaint ride the same card via input_image / lanpaint_mask",
+      "families": [
+        "krea-2"
+      ],
+      "genre": "image",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "image-gen",
+      "label": "Image",
+      "principles": [
+        "prompt is required — an empty/whitespace prompt is rejected loud, never sampled with empty conditioning",
+        "Defaults are shape, not value: resolution/steps/cfg come from the model folder (defaults:/presets), merged at serve time",
+        "Sampler and scheduler option lists resolve from the ONE vocabulary (media.comfyui.sampler_vocab) — never hand-copied",
+        "A preset fills untouched fields; values you have set win",
+        "input_image + lanpaint_mask switches the builder to LanPaintKSampler",
+        "Mask prep (grow/feather/threshold/invert) and outpaint pads are applied host-side before the run — no silent param drops"
+      ],
+      "skills": []
+    },
+    {
+      "description": "THE video interface — multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
+      "families": [
+        "h3-timeline"
+      ],
+      "genre": "video",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "h3-timeline",
+      "label": "H3 Timeline",
+      "principles": [
+        "Describe MOTION and SOUND together — H3 generates both in one pass",
+        "Draft at 768x448x56f (~2.3s); produce at 1344x768x124f (~5.2s)",
+        "Length snaps to the 17k+5 frame grid at 24fps",
+        "For timelines: repeat the ambient soundscape verbatim in every window; add one new layer where the story needs it",
+        "Same seed across a shot's re-rolls keeps the world texture",
+        "SLA at sparsity 0.90 gives ~1.75x speedup with no quality loss — use it by default"
+      ],
       "skills": []
     }
   ],
@@ -276,7 +276,7 @@
       "label": "H3 Timeline (multi-window)",
       "studio": {
         "owns_params": true,
-        "tenant": "melite-video/video_timeline",
+        "tenant": "video/video_timeline",
         "writes": []
       }
     },
@@ -599,7 +599,7 @@
         "sam_dilation": 0,
         "sam_threshold": 0.93
       },
-      "description": "Auto Detect \u2014 automatically selects the best model and conditioning for a given input.",
+      "description": "Auto Detect — automatically selects the best model and conditioning for a given input.",
       "engine": "",
       "family": "auto-detect",
       "form": "form_detect",
@@ -713,7 +713,7 @@
         "seed": 42,
         "steps": 20
       },
-      "description": "Dual-engine masked region inpainting \u2014 FLUX.1-Fill (dedicated fill arch) or LanPaint on any base model.",
+      "description": "Dual-engine masked region inpainting — FLUX.1-Fill (dedicated fill arch) or LanPaint on any base model.",
       "engine": "",
       "family": "flux-fill-dev",
       "form": "form_inpaint",
@@ -794,7 +794,7 @@
         "upscale_steps": 10,
         "width": 1344
       },
-      "description": "MiniMax H3 joint video + audio generation. Native AV output \u2014 describe both motion and",
+      "description": "MiniMax H3 joint video + audio generation. Native AV output — describe both motion and",
       "engine": "",
       "family": "h3",
       "form": "form_video_director",
@@ -977,7 +977,7 @@
         "steps": 25,
         "width": 1024
       },
-      "description": "LatentSync \u2014 local-only lip-sync that aligns mouth shapes to audio in a video.",
+      "description": "LatentSync — local-only lip-sync that aligns mouth shapes to audio in a video.",
       "engine": "",
       "family": "latentsync",
       "form": "form_edit",
@@ -1102,7 +1102,7 @@
         "sam_dilation": 0,
         "sam_threshold": 0.93
       },
-      "description": "Selection-only mask card: YOLO+SAM segmentation \u2192 named class masks.",
+      "description": "Selection-only mask card: YOLO+SAM segmentation → named class masks.",
       "engine": "",
       "family": "mask-studio",
       "form": "form_mask_studio",
@@ -1137,7 +1137,7 @@
         "seed": 42,
         "steps": 50
       },
-      "description": "Image-guided coarse-mesh refinement (UltraShape 1.0 DiT) \u2014 carves sharp limb separation + hard-surface edges into blobby TRELLIS output using the SAME guide image the mesh was generated from. The pre-rig cleanup step: run BEFORE SOMAX so proximity-based weight transfer can't glue arm vertices to torso bones.",
+      "description": "Image-guided coarse-mesh refinement (UltraShape 1.0 DiT) — carves sharp limb separation + hard-surface edges into blobby TRELLIS output using the SAME guide image the mesh was generated from. The pre-rig cleanup step: run BEFORE SOMAX so proximity-based weight transfer can't glue arm vertices to torso bones.",
       "engine": "",
       "family": "mesh_refine",
       "form": "form_3d_mesh_refine",
@@ -1336,7 +1336,7 @@
         "vl_encoder_size": 392,
         "width": 1024
       },
-      "description": "Image Edit \u2014 instruction-driven image editing and manipulation (Qwen-Image-Edit 2511 is",
+      "description": "Image Edit — instruction-driven image editing and manipulation (Qwen-Image-Edit 2511 is",
       "engine": "",
       "family": "qwen-img-edit-2511",
       "form": "form_edit",
@@ -1554,7 +1554,7 @@
         "upscale_steps": 10,
         "width": 832
       },
-      "description": "SCAIL-2 character animation \u2014 drives a reference character from a video and colored mask.",
+      "description": "SCAIL-2 character animation — drives a reference character from a video and colored mask.",
       "engine": "",
       "family": "scail2-animate",
       "form": "form_video_director",
@@ -1577,7 +1577,7 @@
         "seed": 42,
         "tblr_split": false
       },
-      "description": "See-Through anime layer decomposition \u2014 splits an image into character, clothing, and background layers.",
+      "description": "See-Through anime layer decomposition — splits an image into character, clothing, and background layers.",
       "engine": "",
       "family": "see-through",
       "form": "form_image_seethrough",
@@ -1631,7 +1631,7 @@
         "in_place": true,
         "preserve_texture": true
       },
-      "description": "TRELLIS \u2192 SOMA weight transfer \u2014 image to SOMAX rigged GLB with anatomically correct SOMA-77 skeleton weights.",
+      "description": "TRELLIS → SOMA weight transfer — image to SOMAX rigged GLB with anatomically correct SOMA-77 skeleton weights.",
       "engine": "",
       "family": "somax",
       "form": "form_3d_somax",
@@ -1655,7 +1655,7 @@
         "seed": 2025,
         "texture_size": 2048
       },
-      "description": "Diffusion-based 3D texture synthesis \u2014 1 reference image \u2192 6 multi-view images via SDXL ig2mv pipeline \u2192 baked onto UV atlas. Fills ALL surfaces (no coverage gaps unlike camera projection). 3.5B model, ~15s on 4090.",
+      "description": "Diffusion-based 3D texture synthesis — 1 reference image → 6 multi-view images via SDXL ig2mv pipeline → baked onto UV atlas. Fills ALL surfaces (no coverage gaps unlike camera projection). 3.5B model, ~15s on 4090.",
       "engine": "",
       "family": "step1x_texture",
       "form": "form_3d_step1x_texture",
@@ -1674,7 +1674,7 @@
         "dwpose_precision": "fp32",
         "yolox_precision": "fp16"
       },
-      "description": "Stretchy Studio auto-rig \u2014 DWPose TensorRT whole-body keypoints for 2D character animation.",
+      "description": "Stretchy Studio auto-rig — DWPose TensorRT whole-body keypoints for 2D character animation.",
       "engine": "",
       "family": "stretchy-rig",
       "form": "form_image_stretchy_rig",
@@ -1739,7 +1739,7 @@
         "texture_size": 2048,
         "webp_quality": 90
       },
-      "description": "Native trellis.cpp GGML engine \u2014 image to UV-textured GLB with the reference-parity C++ postprocess (weld, fill, DC remesh, CuMesh QEM, xatlas, trilinear PBR bake). 50s per asset on the 4090; no confetti.",
+      "description": "Native trellis.cpp GGML engine — image to UV-textured GLB with the reference-parity C++ postprocess (weld, fill, DC remesh, CuMesh QEM, xatlas, trilinear PBR bake). 50s per asset on the 4090; no confetti.",
       "engine": "",
       "family": "trellis_native",
       "form": "form_3d_trellis_native",

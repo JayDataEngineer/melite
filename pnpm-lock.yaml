@@ -14,10 +14,10 @@ importers:
     dependencies:
       '@melite-plugin/3d':
         specifier: workspace:*
-        version: link:melite-3d/ui
+        version: link:3d/ui
       '@melite-plugin/timeline':
         specifier: workspace:*
-        version: link:h3-timeline/ui
+        version: link:video/h3-timeline/ui
       '@melite/catalog':
         specifier: workspace:*
         version: link:../../../web/ui_components/catalog
@@ -67,6 +67,42 @@ importers:
         specifier: '*'
         version: 5.0.15(@types/react@19.2.18)(immer@10.2.0)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
 
+  plugins/engines/comfyui/action_cards/3d/ui:
+    dependencies:
+      '@melite/catalog':
+        specifier: workspace:*
+        version: link:../../../../../web/ui_components/catalog
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../../../../web/ui_components/contracts
+      '@melite/formats':
+        specifier: workspace:*
+        version: link:../../../../../web/ui_components/formats
+      '@melite/ui':
+        specifier: workspace:*
+        version: link:../../../../../web/ui_components/ui
+      '@react-three/drei':
+        specifier: '*'
+        version: 10.7.8(@react-three/fiber@9.7.0(@types/react@19.2.18)(immer@10.2.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(three@0.184.0))(@types/react@19.2.18)(@types/three@0.184.1)(immer@10.2.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(three@0.184.0)
+      '@react-three/fiber':
+        specifier: '*'
+        version: 9.7.0(@types/react@19.2.18)(immer@10.2.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(three@0.184.0)
+      lucide-react:
+        specifier: '*'
+        version: 1.39.0(react@18.3.1)
+      react:
+        specifier: '*'
+        version: 18.3.1
+      react-dom:
+        specifier: '*'
+        version: 18.3.1(react@18.3.1)
+      three:
+        specifier: '*'
+        version: 0.184.0
+      zustand:
+        specifier: '*'
+        version: 5.0.15(@types/react@19.2.18)(immer@10.2.0)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))
+
   plugins/engines/comfyui/action_cards/audio/ui:
     dependencies:
       '@melite/contracts':
@@ -85,67 +121,7 @@ importers:
         specifier: '*'
         version: 7.12.11
 
-  plugins/engines/comfyui/action_cards/h3-timeline/ui:
-    dependencies:
-      '@melite/catalog':
-        specifier: workspace:*
-        version: link:../../../../../web/ui_components/catalog
-      '@melite/contracts':
-        specifier: workspace:*
-        version: link:../../../../../web/ui_components/contracts
-      '@melite/ui':
-        specifier: workspace:*
-        version: link:../../../../../web/ui_components/ui
-      lucide-react:
-        specifier: '*'
-        version: 1.39.0(react@19.2.8)
-      react:
-        specifier: '*'
-        version: 19.2.8
-      react-dom:
-        specifier: '*'
-        version: 19.2.8(react@19.2.8)
-      zustand:
-        specifier: '*'
-        version: 5.0.15(@types/react@19.2.18)(immer@10.2.0)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
-
-  plugins/engines/comfyui/action_cards/melite-3d/ui:
-    dependencies:
-      '@melite/catalog':
-        specifier: workspace:*
-        version: link:../../../../../web/ui_components/catalog
-      '@melite/contracts':
-        specifier: workspace:*
-        version: link:../../../../../web/ui_components/contracts
-      '@melite/formats':
-        specifier: workspace:*
-        version: link:../../../../../web/ui_components/formats
-      '@melite/ui':
-        specifier: workspace:*
-        version: link:../../../../../web/ui_components/ui
-      '@react-three/drei':
-        specifier: '*'
-        version: 10.7.8(@react-three/fiber@9.7.0(@types/react@19.2.18)(immer@10.2.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(three@0.184.0))(@types/react@19.2.18)(@types/three@0.184.1)(immer@10.2.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(three@0.184.0)
-      '@react-three/fiber':
-        specifier: '*'
-        version: 9.7.0(@types/react@19.2.18)(immer@10.2.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(three@0.184.0)
-      lucide-react:
-        specifier: '*'
-        version: 1.39.0(react@19.2.8)
-      react:
-        specifier: '*'
-        version: 19.2.8
-      react-dom:
-        specifier: '*'
-        version: 19.2.8(react@19.2.8)
-      three:
-        specifier: '*'
-        version: 0.184.0
-      zustand:
-        specifier: '*'
-        version: 5.0.15(@types/react@19.2.18)(immer@10.2.0)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
-
-  plugins/engines/comfyui/action_cards/melite-motion/ui:
+  plugins/engines/comfyui/action_cards/motion/ui:
     dependencies:
       '@melite/contracts':
         specifier: workspace:*
@@ -158,40 +134,64 @@ importers:
         version: link:../../../../../web/ui_components/ui
       '@react-three/drei':
         specifier: '*'
-        version: 10.7.8(@react-three/fiber@9.7.0(@types/react@19.2.18)(immer@10.2.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(three@0.184.0))(@types/react@19.2.18)(@types/three@0.184.1)(immer@10.2.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(three@0.184.0)
+        version: 10.7.8(@react-three/fiber@9.7.0(@types/react@19.2.18)(immer@10.2.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(three@0.184.0))(@types/react@19.2.18)(@types/three@0.184.1)(immer@10.2.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(three@0.184.0)
       '@react-three/fiber':
         specifier: '*'
-        version: 9.7.0(@types/react@19.2.18)(immer@10.2.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(three@0.184.0)
+        version: 9.7.0(@types/react@19.2.18)(immer@10.2.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(three@0.184.0)
       lucide-react:
         specifier: '*'
-        version: 1.39.0(react@19.2.8)
+        version: 1.39.0(react@18.3.1)
       react:
         specifier: '*'
-        version: 19.2.8
+        version: 18.3.1
       react-dom:
         specifier: '*'
-        version: 19.2.8(react@19.2.8)
+        version: 18.3.1(react@18.3.1)
       three:
         specifier: '*'
         version: 0.184.0
       zustand:
         specifier: '*'
-        version: 5.0.15(@types/react@19.2.18)(immer@10.2.0)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
+        version: 5.0.15(@types/react@19.2.18)(immer@10.2.0)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))
 
-  plugins/engines/comfyui/action_cards/melite-video/ui:
+  plugins/engines/comfyui/action_cards/video/h3-timeline/ui:
+    dependencies:
+      '@melite/catalog':
+        specifier: workspace:*
+        version: link:../../../../../../web/ui_components/catalog
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../../../../../web/ui_components/contracts
+      '@melite/ui':
+        specifier: workspace:*
+        version: link:../../../../../../web/ui_components/ui
+      lucide-react:
+        specifier: '*'
+        version: 1.39.0(react@18.3.1)
+      react:
+        specifier: '*'
+        version: 18.3.1
+      react-dom:
+        specifier: '*'
+        version: 18.3.1(react@18.3.1)
+      zustand:
+        specifier: '*'
+        version: 5.0.15(@types/react@19.2.18)(immer@10.2.0)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))
+
+  plugins/engines/comfyui/action_cards/video/ui:
     dependencies:
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../../../../web/ui_components/contracts
       lucide-react:
         specifier: '*'
-        version: 1.39.0(react@19.2.8)
+        version: 1.39.0(react@18.3.1)
       react:
         specifier: '*'
-        version: 19.2.8
+        version: 18.3.1
       react-dom:
         specifier: '*'
-        version: 19.2.8(react@19.2.8)
+        version: 18.3.1(react@18.3.1)
 
   plugins/harness/dsh/melite-preset: {}
 
@@ -518,19 +518,19 @@ importers:
         version: 5.3.0
       '@melite-plugin/3d':
         specifier: workspace:*
-        version: link:../../engines/comfyui/action_cards/melite-3d/ui
+        version: link:../../engines/comfyui/action_cards/3d/ui
       '@melite-plugin/audio':
         specifier: workspace:*
         version: link:../../engines/comfyui/action_cards/audio/ui
       '@melite-plugin/motion':
         specifier: workspace:*
-        version: link:../../engines/comfyui/action_cards/melite-motion/ui
+        version: link:../../engines/comfyui/action_cards/motion/ui
       '@melite-plugin/timeline':
         specifier: workspace:*
-        version: link:../../engines/comfyui/action_cards/h3-timeline/ui
+        version: link:../../engines/comfyui/action_cards/video/h3-timeline/ui
       '@melite-plugin/video':
         specifier: workspace:*
-        version: link:../../engines/comfyui/action_cards/melite-video/ui
+        version: link:../../engines/comfyui/action_cards/video/ui
       '@melite/catalog':
         specifier: workspace:*
         version: link:../ui_components/catalog
@@ -8503,6 +8503,39 @@ snapshots:
 
   '@radix-ui/rect@1.1.3': {}
 
+  '@react-three/drei@10.7.8(@react-three/fiber@9.7.0(@types/react@19.2.18)(immer@10.2.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(three@0.184.0))(@types/react@19.2.18)(@types/three@0.184.1)(immer@10.2.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(three@0.184.0)':
+    dependencies:
+      '@babel/runtime': 7.29.7
+      '@mediapipe/tasks-vision': 0.10.17
+      '@monogrid/gainmap-js': 3.4.0(three@0.184.0)
+      '@react-three/fiber': 9.7.0(@types/react@19.2.18)(immer@10.2.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(three@0.184.0)
+      '@use-gesture/react': 10.3.1(react@18.3.1)
+      camera-controls: 3.1.2(three@0.184.0)
+      cross-env: 7.0.3
+      detect-gpu: 5.0.70
+      glsl-noise: 0.0.0
+      hls.js: 1.7.2
+      maath: 0.10.8(@types/three@0.184.1)(three@0.184.0)
+      meshline: 3.3.1(three@0.184.0)
+      react: 18.3.1
+      stats-gl: 2.4.2(@types/three@0.184.1)(three@0.184.0)
+      stats.js: 0.17.0
+      suspend-react: 0.1.3(react@18.3.1)
+      three: 0.184.0
+      three-mesh-bvh: 0.8.3(three@0.184.0)
+      three-stdlib: 2.36.1(three@0.184.0)
+      troika-three-text: 0.52.5(three@0.184.0)
+      tunnel-rat: 0.1.2(@types/react@19.2.18)(immer@10.2.0)(react@18.3.1)
+      use-sync-external-store: 1.6.0(react@18.3.1)
+      utility-types: 3.11.0
+      zustand: 5.0.15(@types/react@19.2.18)(immer@10.2.0)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))
+    optionalDependencies:
+      react-dom: 18.3.1(react@18.3.1)
+    transitivePeerDependencies:
+      - '@types/react'
+      - '@types/three'
+      - immer
+
   '@react-three/drei@10.7.8(@react-three/fiber@9.7.0(@types/react@19.2.18)(immer@10.2.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(three@0.184.0))(@types/react@19.2.18)(@types/three@0.184.1)(immer@10.2.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(three@0.184.0)':
     dependencies:
       '@babel/runtime': 7.29.7
@@ -8534,6 +8567,26 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
       - '@types/three'
+      - immer
+
+  '@react-three/fiber@9.7.0(@types/react@19.2.18)(immer@10.2.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(three@0.184.0)':
+    dependencies:
+      '@babel/runtime': 7.29.7
+      '@types/webxr': 0.5.24
+      base64-js: 1.5.1
+      buffer: 6.0.3
+      its-fine: 2.0.0(@types/react@19.2.18)(react@18.3.1)
+      react: 18.3.1
+      react-use-measure: 2.1.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      scheduler: 0.27.0
+      suspend-react: 0.1.3(react@18.3.1)
+      three: 0.184.0
+      use-sync-external-store: 1.6.0(react@18.3.1)
+      zustand: 5.0.15(@types/react@19.2.18)(immer@10.2.0)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))
+    optionalDependencies:
+      react-dom: 18.3.1(react@18.3.1)
+    transitivePeerDependencies:
+      - '@types/react'
       - immer
 
   '@react-three/fiber@9.7.0(@types/react@19.2.18)(immer@10.2.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(three@0.184.0)':
@@ -9093,6 +9146,11 @@ snapshots:
       d3-transition: 3.0.1(d3-selection@3.0.0)
 
   '@use-gesture/core@10.3.1': {}
+
+  '@use-gesture/react@10.3.1(react@18.3.1)':
+    dependencies:
+      '@use-gesture/core': 10.3.1
+      react: 18.3.1
 
   '@use-gesture/react@10.3.1(react@19.2.8)':
     dependencies:
@@ -10461,6 +10519,13 @@ snapshots:
 
   isexe@3.1.5: {}
 
+  its-fine@2.0.0(@types/react@19.2.18)(react@18.3.1):
+    dependencies:
+      '@types/react-reconciler': 0.28.9(@types/react@19.2.18)
+      react: 18.3.1
+    transitivePeerDependencies:
+      - '@types/react'
+
   its-fine@2.0.0(@types/react@19.2.18)(react@19.2.8):
     dependencies:
       '@types/react-reconciler': 0.28.9(@types/react@19.2.18)
@@ -10688,6 +10753,10 @@ snapshots:
   lucide-react@0.542.0(react@19.2.8):
     dependencies:
       react: 19.2.8
+
+  lucide-react@1.39.0(react@18.3.1):
+    dependencies:
+      react: 18.3.1
 
   lucide-react@1.39.0(react@19.2.8):
     dependencies:
@@ -11575,6 +11644,12 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
 
+  react-use-measure@2.1.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+    dependencies:
+      react: 18.3.1
+    optionalDependencies:
+      react-dom: 18.3.1(react@18.3.1)
+
   react-use-measure@2.1.7(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
     dependencies:
       react: 19.2.8
@@ -12051,6 +12126,10 @@ snapshots:
 
   stylis@4.4.0: {}
 
+  suspend-react@0.1.3(react@18.3.1):
+    dependencies:
+      react: 18.3.1
+
   suspend-react@0.1.3(react@19.2.8):
     dependencies:
       react: 19.2.8
@@ -12213,6 +12292,14 @@ snapshots:
 
   tslib@2.8.1: {}
 
+  tunnel-rat@0.1.2(@types/react@19.2.18)(immer@10.2.0)(react@18.3.1):
+    dependencies:
+      zustand: 4.5.7(@types/react@19.2.18)(immer@10.2.0)(react@18.3.1)
+    transitivePeerDependencies:
+      - '@types/react'
+      - immer
+      - react
+
   tunnel-rat@0.1.2(@types/react@19.2.18)(immer@10.2.0)(react@19.2.8):
     dependencies:
       zustand: 4.5.7(@types/react@19.2.18)(immer@10.2.0)(react@19.2.8)
@@ -12367,6 +12454,10 @@ snapshots:
       '@types/react': 19.2.18
 
   use-sync-external-store@1.2.0(react@18.3.1):
+    dependencies:
+      react: 18.3.1
+
+  use-sync-external-store@1.6.0(react@18.3.1):
     dependencies:
       react: 18.3.1
 
@@ -12566,6 +12657,14 @@ snapshots:
       immer: 10.2.0
       react: 18.3.1
 
+  zustand@4.5.7(@types/react@19.2.18)(immer@10.2.0)(react@18.3.1):
+    dependencies:
+      use-sync-external-store: 1.6.0(react@18.3.1)
+    optionalDependencies:
+      '@types/react': 19.2.18
+      immer: 10.2.0
+      react: 18.3.1
+
   zustand@4.5.7(@types/react@19.2.18)(immer@10.2.0)(react@19.2.8):
     dependencies:
       use-sync-external-store: 1.6.0(react@19.2.8)
@@ -12573,6 +12672,13 @@ snapshots:
       '@types/react': 19.2.18
       immer: 10.2.0
       react: 19.2.8
+
+  zustand@5.0.15(@types/react@19.2.18)(immer@10.2.0)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1)):
+    optionalDependencies:
+      '@types/react': 19.2.18
+      immer: 10.2.0
+      react: 18.3.1
+      use-sync-external-store: 1.6.0(react@18.3.1)
 
   zustand@5.0.15(@types/react@19.2.18)(immer@10.2.0)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8)):
     optionalDependencies:
