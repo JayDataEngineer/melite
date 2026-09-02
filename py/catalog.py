@@ -838,12 +838,16 @@ def scan_catalog(repo_root):
 def to_json(catalog):
     """catalog_to_json + catalog_abilities_splice (the served shape):
     {"models":{…},"families":{…},"capabilities":{…},"cards":[…]} in the
-    C emit order, compact separators."""
+    C emit order, compact separators. Plus input_vocabulary (2026-09-02,
+    the gap-3 port): the slot SSOT from py/slot_kinds.py — the editor's
+    setInputVocabulary replaces its fallbacks field-by-field with this."""
+    import slot_kinds
     obj = {
         "models": catalog["models"],
         "families": catalog["families"],
         "capabilities": catalog["capabilities"],
         "cards": catalog["cards"],
+        "input_vocabulary": slot_kinds.input_vocabulary(),
     }
     return json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
 

@@ -35,11 +35,13 @@ from the graph.
 from __future__ import annotations
 
 import asyncio
+import base64
 import importlib.util
 import json
 import os
 import re
 import signal
+import struct
 import sys
 import time
 import uuid
@@ -464,6 +466,32 @@ class Gateway:
         self.runs = {}
         self.order = []
         self.active = None
+        # ── the events bus (2026-09-02, the streaming restoration) ──
+        # run_id -> set of subscriber queues; the WS door
+        # (/v1/pipelines/events/<run_id>) feeds here and the engine
+        # report contract publishes here. The 700ms status poll stays
+        # the terminal authority; the bus carries the intra-tick frames
+        # (per-step progress, activity flips) the poll cannot.
+        self.subscribers = {}
+
+    def subscribe(self, run_id):
+        q = asyncio.Queue()
+        self.subscribers.setdefault(run_id, set()).add(q)
+        return q
+
+    def unsubscribe(self, run_id, q):
+        subs = self.subscribers.get(run_id)
+        if subs is not None:
+            subs.discard(q)
+            if not subs:
+                self.subscribers.pop(run_id, None)
+
+    def publish(self, run_id, event):
+        for q in list(self.subscribers.get(run_id, ())):
+            try:
+                q.put_nowait(event)
+            except Exception:
+                pass
 
     async def submit(self, body):
         resolved = resolve_request(body)
@@ -520,6 +548,10 @@ class Gateway:
                 run.error = "%s: %s" % (type(e).__name__, e)
             finally:
                 sidecar(run)
+                # terminal broadcast: every subscriber gets the final
+                # status exactly once, then the door closes the socket.
+                self.publish(run.run_id, {"type": "run",
+                                          "status": run.status})
                 self.active = None
 
     async def execute(self, run):
@@ -539,13 +571,29 @@ class Gateway:
             node = run.graph["nodes"][stage["index"]]
             stage["status"] = "running"
             sidecar(run)
+            self.publish(run.run_id, {"type": "stage",
+                                      "stage": stage["id"],
+                                      "index": stage["index"],
+                                      "status": "running"})
+            # the REPORT CONTRACT (generic — no lane knowledge): the
+            # engine may call report({progress|activity}) during
+            # execution; the gateway folds it into the stage dict (the
+            # status poll serves it), the sidecar (survives restarts),
+            # and the events bus (the WS door streams it live).
+            def _report(updates, _run=run, _stage=stage):
+                _stage.update(updates)
+                sidecar(_run)
+                self.publish(_run.run_id, {"type": "stage",
+                                           "stage": _stage["id"],
+                                           "index": _stage["index"],
+                                           **updates})
             try:
                 inputs = resolve_inputs(node, dict(initial, **carry))
                 params = expand_inject(node.get("params", {}), inputs)
                 engine = load_engine(node["type"])
                 result = await engine.execute(
                     {"id": node["id"], "type": node["type"], "params": params},
-                    str(run.dir), inputs, run.stop_event,
+                    str(run.dir), inputs, run.stop_event, report=_report,
                 )
                 if result:
                     for k, v in result.get("outputs", {}).items():
@@ -553,9 +601,16 @@ class Gateway:
                         carry["%s.%s" % (node["id"], k)] = v
                     run.artifacts.extend(result.get("artifacts", []))
                 stage["status"] = "completed"
+                stage.pop("progress", None)
+                stage.pop("activity", None)
             except Exception as e:
                 stage["status"] = "failed"
                 stage["error"] = "%s: %s" % (type(e).__name__, e)
+                self.publish(run.run_id, {"type": "stage",
+                                          "stage": stage["id"],
+                                          "index": stage["index"],
+                                          "status": "failed",
+                                          "error": stage["error"]})
                 raise
             sidecar(run)
 
@@ -735,6 +790,153 @@ def atomic_write(path, obj):
 # http — stdlib asyncio, no framework
 # ---------------------------------------------------------------------------
 
+_WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+
+
+def _ws_accept(key: str) -> str:
+    import hashlib
+    return base64.b64encode(
+        hashlib.sha1((key + _WS_GUID).encode()).digest()).decode()
+
+
+def _ws_frame(payload: bytes) -> bytes:
+    """One server->client TEXT frame (server frames are unmasked)."""
+    b1 = 0x81
+    n = len(payload)
+    if n < 126:
+        return bytes([b1, n]) + payload
+    if n < 65536:
+        return bytes([b1, 126]) + struct.pack(">H", n) + payload
+    return bytes([b1, 127]) + struct.pack(">Q", n) + payload
+
+
+async def ws_events_door(gw, reader, writer, headers, run_id):
+    """GET /v1/pipelines/events/<run_id> with Upgrade: websocket.
+
+    The streaming door (2026-09-02): subscribes to the run's event bus
+    and pushes every frame live — stage flips, per-step progress,
+    activity, the terminal run status. Late joiners hydrate from the
+    current run/stage snapshot first. The 700ms status poll remains the
+    recovery channel (a dropped socket must never lose a run).
+    """
+    import hashlib
+    key = headers.get("sec-websocket-key", "")
+    if not key:
+        writer.close()
+        return
+    accept = base64.b64encode(
+        hashlib.sha1((key + _WS_GUID).encode()).digest()).decode()
+    writer.write((
+        "HTTP/1.1 101 Switching Protocols\r\n"
+        "Upgrade: websocket\r\n"
+        "Connection: Upgrade\r\n"
+        "Sec-WebSocket-Accept: %s\r\n\r\n" % accept).encode())
+    await writer.drain()
+
+    q = gw.subscribe(run_id)
+
+    def send(obj):
+        writer.write(_ws_frame(json.dumps(obj, default=str).encode()))
+        return writer.drain()
+
+    try:
+        # hydrate: the snapshot BEFORE the subscription would race;
+        # subscribe() happened first, so anything between snapshot and
+        # now also arrives on the queue (worst case: one dup frame,
+        # which consumers treat as an idempotent patch).
+        run = gw.runs.get(run_id)
+        if run is None:
+            await send({"type": "run", "status": "unknown"})
+        else:
+            await send({"type": "run", "status": run.status})
+            for st in run.stages:
+                patch = {"type": "stage", "stage": st["id"],
+                         "status": st["status"]}
+                if st.get("progress"):
+                    patch["progress"] = st["progress"]
+                if st.get("activity"):
+                    patch["activity"] = st["activity"]
+                if run.status in ("completed", "failed", "stopped"):
+                    await send(patch)
+        # the read side is ONE persistent task, re-armed only when the
+        # client actually speaks (close/ping). Cancelling a readexactly
+        # mid-frame and re-creating it each loop iteration proved
+        # fragile on 3.14 — a cancelled StreamReader read can surface as
+        # a spurious connection teardown. The q.get() waiter is the only
+        # thing cancelled per round, and every cancellation is AWAITED
+        # (a fire-and-forget cancel can smuggle the CancelledError into
+        # the next await point of THIS coroutine).
+        read_fr = asyncio.ensure_future(_ws_read_client(reader))
+        try:
+            while True:
+                get_ev = asyncio.ensure_future(q.get())
+                done, pending = await asyncio.wait(
+                    {get_ev, read_fr},
+                    return_when=asyncio.FIRST_COMPLETED)
+                if read_fr in done:
+                    opcode = read_fr.result()
+                    if opcode == 0x8:      # client close
+                        get_ev.cancel()
+                        await _swallow(get_ev)
+                        return
+                    if opcode == 0x9:      # ping -> pong (server unmasked)
+                        writer.write(bytes([0x8A, 0x00]))
+                        await writer.drain()
+                    read_fr = asyncio.ensure_future(_ws_read_client(reader))
+                    if get_ev not in done:
+                        get_ev.cancel()
+                        await _swallow(get_ev)
+                        continue
+                elif get_ev in done:
+                    pass                    # fall through to the event send
+                else:                       # unreachable, kept honest
+                    get_ev.cancel()
+                    await _swallow(get_ev)
+                    continue
+                ev = get_ev.result()
+                await send(ev)
+                if ev.get("type") == "run" and ev.get("status") in (
+                        "completed", "failed", "stopped", "unknown"):
+                    read_fr.cancel()
+                    await _swallow(read_fr)
+                    return
+        finally:
+            read_fr.cancel()
+    except (ConnectionError, OSError, asyncio.IncompleteReadError):
+        pass  # client went away
+    finally:
+        gw.unsubscribe(run_id, q)
+        try:
+            writer.close()
+        except Exception:
+            pass
+
+
+async def _swallow(task):
+    """Await a cancelled/failed child cleanly so its exception can never
+    leak into the next await of the caller (reaped, not propagated)."""
+    try:
+        await task
+    except (asyncio.CancelledError, Exception):
+        pass
+
+
+async def _ws_read_client(reader):
+    """Read ONE client frame -> opcode (0x8 close, 0x9 ping, ...).
+    Client frames are masked; payload is discarded (we never need it)."""
+    b1 = (await reader.readexactly(1))[0]
+    b2 = (await reader.readexactly(1))[0]
+    length = b2 & 0x7F
+    if length == 126:
+        length = struct.unpack(">H", await reader.readexactly(2))[0]
+    elif length == 127:
+        length = struct.unpack(">Q", await reader.readexactly(8))[0]
+    if b2 & 0x80:
+        await reader.readexactly(4)   # mask key
+    if length:
+        await reader.readexactly(length)
+    return b1 & 0x0F
+
 
 async def handle(gw, reader, writer):
     try:
@@ -753,6 +955,15 @@ async def handle(gw, reader, writer):
             headers[hk.strip().lower()] = hv.strip()
         length = int(headers.get("content-length", 0) or 0)
         body = await reader.readexactly(length) if length else b""
+        # the WS door hijacks the connection BEFORE routing (an Upgrade
+        # request must never fall through to a JSON response).
+        if headers.get("upgrade", "").lower() == "websocket":
+            wsm = re.match(r"^/v1/pipelines/events/(.+)$",
+                           target.split("?")[0].rstrip("/"))
+            if wsm and method == "GET":
+                await ws_events_door(gw, reader, writer, headers,
+                                     wsm.group(1))
+                return
         status, payload = await route(gw, method, target, body)
     except Exception as e:
         status, payload = 500, {"error": "%s: %s" % (type(e).__name__, e)}
