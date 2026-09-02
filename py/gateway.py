@@ -80,6 +80,7 @@ def parse_pipeline_text(text):
     current = None
     in_params = False
     pending_list = None
+    pending_map = None
     for lineno, raw in enumerate(text.splitlines(), 1):
         line = raw.rstrip()
         if not line.strip() or line.strip().startswith("#"):
@@ -100,6 +101,8 @@ def parse_pipeline_text(text):
             current[pending_list].append(item)
             continue
         if stripped.startswith("- id:") or stripped.startswith("-id:"):
+            pending_list = None
+            pending_map = None
             current = {"id": stripped.split(":", 1)[1].strip(), "type": "", "input_from": [], "params": {}}
             nodes.append(current)
             in_params = False
@@ -112,9 +115,23 @@ def parse_pipeline_text(text):
         key, _, rest = stripped.partition(":")
         key = key.strip()
         if key == "params":
-            current["params"] = parse_params_scalar(rest)
+            inline = rest.strip()
+            if inline:
+                current["params"] = parse_params_scalar(inline)
+            else:
+                current["params"] = {}
+                pending_map = "params"
             in_params = True
             continue
+        NODE_KEYS = ("id", "type", "model", "description", "input_from", "params", "plugin", "optional")
+        if pending_map == "params" and current is not None and not stripped.startswith("- ") and key not in NODE_KEYS and ":" in stripped:
+            pk, _, pv = stripped.partition(":")
+            if pk and pv.strip() and ":" in stripped:
+                try:
+                    current["params"][pk.strip()] = json.loads(pv.strip())
+                except json.JSONDecodeError:
+                    current["params"][pk.strip()] = pv.strip().strip('"').strip("'")
+                continue
         if key in ("id", "type", "model", "description"):
             current[key] = rest.strip()
             in_params = False
