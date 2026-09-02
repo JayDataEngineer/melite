@@ -622,47 +622,36 @@ except Exception:
 
 
 def _scan_model_dir(model_dir):
-    """scan_model_dir (catalog.c:467): model.yaml -> row; no family id ->
-    skipped (catalog.c:479); unit assets probed next to the yaml.
+    """scan_model_dir (catalog.c:467, superseded): model.py class → row;
+    unit assets (agents/inference/rubric) probed next to the class.
 
-    (2026-09-02) The PYTHON FLIP: model.py WINS when present — the
-    cascade is a class tree (plugins/web/models_py/melite_models; see
-    docs/plans/python-action-cards.md). A model.yaml ALONGSIDE is a LOUD
-    refusal (two SSOTs is zero SSOTs). Un-flipped units keep the yaml
-    path until their rung."""
+    (2026-09-02) The flip is TOTAL: every unit is a model.py class
+    (plugins/web/models_py/melite_models; docs/plans/
+    python-action-cards.md); model.yaml is extinct tree-wide. A yaml
+    reappearing next to a model.py is a LOUD refusal (two SSOTs is
+    zero SSOTs)."""
     mpy = os.path.join(model_dir, "model.py")
-    if os.path.isfile(mpy):
-        if os.path.isfile(os.path.join(model_dir, "model.yaml")):
-            raise ValidationError(
-                "%s carries BOTH model.py and model.yaml — one source of "
-                "truth per unit; delete the yaml (the flip) or the .py"
-                % mpy)
-        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(
-            os.path.dirname(os.path.dirname(os.path.dirname(model_dir))))))
-        models_py = os.path.join(repo_root, "plugins", "web", "models_py")
-        if models_py not in sys.path:
-            sys.path.insert(0, models_py)
-        from melite_models import load_model_py, model_row
-        engine = os.path.basename(os.path.dirname(os.path.dirname(
-            os.path.dirname(model_dir))))
-        cls = load_model_py(mpy, engine)
-        meta = {"studio_tenant": None, "studio_owns_params": False}
-        return [(model_row(cls, model_dir), meta)]
-    path = os.path.join(model_dir, "model.yaml")
-    text = _read_file(path)
-    if text is None:
+    if not os.path.isfile(mpy):
         return []
-    m = _parse_model_yaml(text)
-    if not m["id"]:
-        return []
-    m["agent_md_path"] = _probe(os.path.join(model_dir, "agents", "AGENT.md"))
-    m["inference_path"] = _probe(os.path.join(model_dir, "inference.yaml"))
-    m["rubric_path"] = _probe(os.path.join(model_dir, "grading_rubric.yaml"))
-    meta = {
-        "studio_tenant": m["studio_tenant"],
-        "studio_owns_params": m["studio_owns_params"],
-    }
-    return [(_model_row(m), meta)]
+    if os.path.isfile(os.path.join(model_dir, "model.yaml")):
+        raise ValidationError(
+            "%s carries BOTH model.py and model.yaml — one source of "
+            "truth per unit; delete the yaml (the flip) or the .py"
+            % mpy)
+    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(model_dir))))))
+    models_py = os.path.join(repo_root, "plugins", "web", "models_py")
+    if models_py not in sys.path:
+        sys.path.insert(0, models_py)
+    from melite_models import load_model_py, model_row
+    engine = os.path.basename(os.path.dirname(os.path.dirname(
+        os.path.dirname(model_dir))))
+    cls = load_model_py(mpy, engine)
+    meta = {"studio_tenant": None, "studio_owns_params": False}
+    if isinstance(cls.studio, dict) and cls.studio.get("tenant"):
+        meta = {"studio_tenant": cls.studio["tenant"],
+                "studio_owns_params": bool(cls.studio.get("owns_params"))}
+    return [(model_row(cls, model_dir), meta)]
 
 
 def _scan_cards(plugins_dir):

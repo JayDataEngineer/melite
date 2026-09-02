@@ -1439,17 +1439,20 @@ def family_param_schema(family_ids, family_id: str):
 
 
 def catalog_family_ids(plugins_root):
-    """Data-driven family list: walk <plugins_root>/<owner>/models/<genre>/
-    <model-id>/model.yaml and read the declared id (catalog_scan,
-    src/catalog.c ~532). No engine or lane name is known here — the tree
-    is the vocabulary."""
+    """Data-driven family list: the model CLASS ids under
+    plugins/engines/<engine>/models/<genre>/<id>/model.py (the flip —
+    model.yaml is extinct). No engine or lane name is known here — the
+    tree is the vocabulary. (2026-09-02: healed the stale pre-engine
+    plugins/<owner>/models depth that found NOTHING since the engine
+    move.)"""
     ids = []
+    eng_root = os.path.join(plugins_root, "engines")
     try:
-        owners = sorted(os.listdir(plugins_root))
+        engines = sorted(os.listdir(eng_root))
     except OSError:
         return ids
-    for owner in owners:
-        models_dir = os.path.join(plugins_root, owner, "models")
+    for engine in engines:
+        models_dir = os.path.join(eng_root, engine, "models")
         if not os.path.isdir(models_dir):
             continue
         for genre in sorted(os.listdir(models_dir)):
@@ -1457,19 +1460,9 @@ def catalog_family_ids(plugins_root):
             if not os.path.isdir(genre_dir):
                 continue
             for unit in sorted(os.listdir(genre_dir)):
-                my = os.path.join(genre_dir, unit, "model.yaml")
-                if not os.path.isfile(my):
-                    continue
-                try:
-                    with open(my, "r", encoding="utf-8",
-                              errors="surrogateescape") as f:
-                        for line in f:
-                            m = re.match(r"\s*-?\s*id:\s*(\S+)", line)
-                            if m:
-                                ids.append(m.group(1))
-                                break
-                except OSError:
-                    continue
+                if os.path.isfile(os.path.join(genre_dir, unit,
+                                               "model.py")):
+                    ids.append(unit)
     return ids
 
 
@@ -1504,10 +1497,6 @@ def provision(body_json, plugins_root):
     plugins/models/ depth and 404'd EVERY model since the engine move.)
     """
     import os, subprocess
-    try:
-        import yaml as _yaml
-    except ImportError:
-        _yaml = None
 
     mid = (body_json.get("model") or "").strip()
     if not mid:
@@ -1535,9 +1524,12 @@ def provision(body_json, plugins_root):
         return 404, {"error": "model %r not found in catalog" % mid,
                       "queued": False, "model": mid}
 
-    # ── python flip: the class tree is the artifact source ──────────
+    # ── the class tree is the artifact source (flip is total) ────────
     mpy = os.path.join(found_dir, "model.py")
-    if os.path.isfile(mpy):
+    if not os.path.isfile(mpy):
+        return 404, {"error": "model %r not found in catalog" % mid,
+                      "queued": False, "model": mid}
+    if True:
         import sys
         repo_root = os.path.dirname(plugins_root)   # plugins/ → repo
         models_py = os.path.join(repo_root, "plugins", "web", "models_py")
@@ -1550,33 +1542,44 @@ def provision(body_json, plugins_root):
                                   % models_py, "queued": False, "model": mid}
         engine_dir = os.path.dirname(os.path.dirname(found_dir))
         cls = load_model_py(mpy, os.path.basename(engine_dir))
-        variant = (body_json.get("variant") or "").strip() or None
-        quant = (body_json.get("quant") or "").strip() or None
-        _route, _eng, cell = cls.resolve(variant, quant)
-        if cell is None or not getattr(cell, "source_url", ""):
-            return 422, {
-                "error": "model %r has no artifact at (%s, %s)"
-                         % (mid, variant, quant),
-                "queued": False, "model": mid}
-        art = cell().artifact()
-        url = str(art.source_url)
-        name = url.rsplit("/", 1)[-1]
-        dest = "models"
-        if art.dest_sub:
-            dest = "models/%s" % art.dest_sub.strip("/")
+        # explicit provisions blocks beat the derived cell artifact
+        prov = [dict(p) for p in (getattr(cls, "provisions", None) or ())]
+        if not prov:
+            variant = (body_json.get("variant") or "").strip() or None
+            quant = (body_json.get("quant") or "").strip() or None
+            _route, _eng, cell = cls.resolve(variant, quant)
+            if cell is None or not getattr(cell, "source_url", ""):
+                return 422, {
+                    "error": "model %r has no artifact at (%s, %s)"
+                             % (mid, variant, quant),
+                    "queued": False, "model": mid}
+            art = cell().artifact()
+            dest = "models"
+            if art.dest_sub:
+                dest = "models/%s" % art.dest_sub.strip("/")
+            prov = [dict(name=art.source_url.rsplit("/", 1)[-1],
+                         url=str(art.source_url), folder=dest)]
         queued, errors = [], []
-        try:
-            r = subprocess.run(
-                ["comfy", "model", "download", "--url", url,
-                 "--relative-path", dest, "--filename", name],
-                capture_output=True, text=True, timeout=7200)
-            if r.returncode == 0:
-                queued.append(name)
-            else:
-                errors.append({"file": name,
-                               "error": (r.stderr or r.stdout)[:200]})
-        except Exception as e:
-            errors.append({"file": name, "error": str(e)[:200]})
+        for p in prov:
+            name = (p.get("name") or "").strip()
+            url = (p.get("url") or "").strip()
+            folder = (p.get("folder") or "").strip("/")
+            if not name or not url:
+                continue
+            dest = folder if folder.startswith("models") else (
+                "models/%s" % folder if folder else "models")
+            try:
+                r = subprocess.run(
+                    ["comfy", "model", "download", "--url", url,
+                     "--relative-path", dest, "--filename", name],
+                    capture_output=True, text=True, timeout=7200)
+                if r.returncode == 0:
+                    queued.append(name)
+                else:
+                    errors.append({"file": name,
+                                   "error": (r.stderr or r.stdout)[:200]})
+            except Exception as e:
+                errors.append({"file": name, "error": str(e)[:200]})
         detail = []
         if queued:
             detail.append("downloaded: %s" % ", ".join(queued))
@@ -1584,57 +1587,11 @@ def provision(body_json, plugins_root):
             detail.append("errors: %d" % len(errors))
         return (200 if queued else 500), {
             "queued": bool(queued), "model": mid,
-            "detail": "; ".join(detail) or "no artifact matched",
+            "detail": "; ".join(detail) or "no provisions matched",
             "errors": errors or None,
         }
 
-    # ── yaml units: the provisions block (pre-flip shape) ───────────
-    found_yaml = os.path.join(found_dir, "model.yaml")
 
-    cfg = _yaml.safe_load(open(found_yaml).read()) if _yaml else {}
-    fam = cfg.get("family") if isinstance(cfg.get("family"), dict) else {}
-    provisions = fam.get("provisions") or cfg.get("provisions") or []
-    if not provisions:
-        return 422, {"error": "model %r has no provisions block" % mid,
-                      "queued": False, "model": mid}
-
-    queued, errors = [], []
-    for p in provisions:
-        name = (p.get("name") or "").strip()
-        url = (p.get("url") or "").strip()
-        folder = (p.get("folder") or "").strip("/")
-        if not name or not url:
-            continue
-        dest = "models/%s" % folder if folder else "models"
-        try:
-            r = subprocess.run(
-                ["comfy", "model", "download", "--url", url,
-                 "--relative-path", dest, "--filename", name],
-                capture_output=True, text=True, timeout=7200)
-            if r.returncode == 0:
-                queued.append(name)
-            else:
-                errors.append({"file": name,
-                               "error": (r.stderr or r.stdout)[:200]})
-        except Exception as e:
-            errors.append({"file": name, "error": str(e)[:200]})
-
-    detail_parts = []
-    if queued:
-        detail_parts.append("downloaded: %s" % ", ".join(queued))
-    if errors:
-        detail_parts.append("errors: %d" % len(errors))
-    return (200 if queued else 500), {
-        "queued": bool(queued),
-        "model": mid,
-        "detail": "; ".join(detail_parts) or "no provisions matched",
-        "errors": errors or None,
-    }
-
-
-
-# handle_lane_registry stubs: empty arrays are VALID registries (the
-# editor treats them as "nothing registered", never as an error).
 CHROME_STUBS = {
     "/v1/shell": {"entries": []},
     "/v1/right-panes": {"panes": []},

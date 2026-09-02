@@ -193,35 +193,45 @@ def _model_engine_type(model_yaml_path):
 
 
 def resolve_model(mid):
-    """Deterministic model → (engine_type, model_yaml_path) or LOUD refusal."""
+    """Deterministic model → (engine_type, model_path) or LOUD refusal.
+
+    (2026-09-02) The python flip: model.py units resolve through the
+    melite_models class (engine declared on the class; id == dirname by
+    law). yaml stragglers (the never-served id-less units) keep the
+    text scan. No declarer = LOUD refusal, unchanged.
+    """
     if not IDENT_RE.match(mid or ""):
         raise ValidationError("model id %r is not a legal identifier" % mid)
-    copies = []
     for plugin_dir in _iter_plugin_dirs():
         models_root = plugin_dir / "models"
         if not models_root.is_dir():
             continue
-        for my in models_root.glob("*/%s/model.yaml" % mid):
-            copies.append((plugin_dir.name, my))
-    if not copies:
-        raise ValidationError("no model.yaml for model: %s" % mid)
-    declarers = []
-    for plugin_id, my in copies:
-        t = _model_engine_type(my)
-        if t:
-            declarers.append((plugin_id, my, t))
-    if not declarers:
-        raise ValidationError(
-            "model %s resolves no engine type (no copy declares one under "
-            "plugins/*/models/*/ — refusing to guess)" % mid)
-    plugin_id, my, etype = declarers[0]
-    engines = scan_engines()
-    if etype not in engines:
-        raise ValidationError(
-            "model %s declares engine %r but no plugin owns that engine "
-            "(expected plugins/*/engines/*/engine.yaml type: %s)" % (
-                mid, etype, etype))
-    return etype, my
+        for mpy in sorted(models_root.glob("*/%s/model.py" % mid)):
+            import sys as _sys
+            models_py = plugin_dir.parents[1] / "web" / "models_py"
+            if str(models_py) not in _sys.path:
+                _sys.path.insert(0, str(models_py))
+            try:
+                from melite_models import load_model_py
+            except ImportError:
+                raise ValidationError(
+                    "model %s flipped to model.py but melite_models is "
+                    "missing at %s" % (mid, models_py))
+            engine = mpy.parent.parent.parent.name
+            try:
+                cls = load_model_py(str(mpy), engine)
+            except Exception as e:
+                raise ValidationError(
+                    "model %s refused at load: %s" % (mid, e))
+            if cls.engine:
+                engines = scan_engines()
+                if cls.engine not in engines:
+                    raise ValidationError(
+                        "model %s declares engine %r but no plugin owns "
+                        "that engine (engines/*/engine.yaml type: %s)"
+                        % (mid, cls.engine, cls.engine))
+                return cls.engine, str(mpy)
+    raise ValidationError("no model unit for model: %s" % mid)
 
 
 # ---------------------------------------------------------------------------

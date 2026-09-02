@@ -337,28 +337,22 @@ def _scan_catalog(repo_root):
                 model_dir = os.path.join(genre_dir, mid)
                 if not os.path.isdir(model_dir):
                     continue
-                # (2026-09-02) model.py WINS — the python flip. The row
-                # shape is the same dict the yaml parser emits (the class
-                # re-derives it); declarer data comes from class attrs.
+                # (2026-09-02) The flip is TOTAL: every unit is a
+                # model.py class; model.yaml is extinct tree-wide.
                 mpy = os.path.join(model_dir, "model.py")
-                if os.path.isfile(mpy):
-                    row = _model_row_from_py(repo_root, mpy, mid)
-                    if row is None:
-                        continue
-                    row["family_id"] = row["id"]
-                    row["id"] = mid
-                    ipath = os.path.join(model_dir, "inference.yaml")
-                    row["inference_path"] = (ipath
-                                             if os.path.isfile(ipath)
-                                             else None)
-                    models.append(row)
+                if not os.path.isfile(mpy):
                     continue
-                yaml = _read_file(os.path.join(model_dir, "model.yaml"))
-                if yaml is None:
-                    continue
-                row = _parse_model_yaml(yaml)
+                row = _model_row_from_py(repo_root, mpy, mid)
                 if row is None:
                     continue
+                row["family_id"] = row["id"]
+                row["id"] = mid
+                ipath = os.path.join(model_dir, "inference.yaml")
+                row["inference_path"] = (ipath
+                                         if os.path.isfile(ipath)
+                                         else None)
+                models.append(row)
+                continue
                 # The wire model id is the DIRECTORY name (canonical
                 # everywhere: py/plugins.py resolve_model globs
                 # models/<genre>/<mid>/model.yaml by mid; pipelines
@@ -440,26 +434,29 @@ def _variants_from_class(row):
     rows = []
     seen_quant = set()
     for _k, v in cls._variants_:
-        r = {"id": v.id, "label": v.label or v.id,
+        vlab = v.label or v.id
+        if 'a' <= vlab[0] <= 'z':           # the C's capitalize quirk
+            vlab = chr(ord(vlab[0]) - 32) + vlab[1:]
+        r = {"id": v.id, "label": vlab,
              # variant defaults are RESOLVER data (merged_defaults); the
              # wire row stayed {} in the C — expose deliberately later,
              # not silently (parity law).
              "defaults": {},
-             "group": v.group or "Variant", "route": v.route or cls.id}
-        if v.hint:
-            r["hint"] = v.hint
-        if v.engine or cls.engine:
-            r["engine"] = v.engine or cls.engine
+             "group": v.group or "Variant", "route": v.route or cls.id,
+             "hint": v.hint or None, "engine": v.engine or cls.engine or ""}
         rows.append(r)
         for _ck, c in v._cells_:
             if c.quant in seen_quant:
                 continue
             seen_quant.add(c.quant)
+            wire_vram = c.wire_vram if c.wire_vram is not None \
+                else (getattr(c, "vram_peak_gb", 0) or 0)
             rows.append({"id": c.quant,
-                         "label": getattr(c, "label", "") or c.quant.upper(),
+                         "label": getattr(c, "label", "") or c.quant,
                          "defaults": {}, "group": "Quant", "quant": c.quant,
-                         "route": c.route or v.route or cls.id,
-                         "vram_peak_gb": getattr(c, "vram_peak_gb", 0) or 0})
+                         "route": c.wire_route or c.route or v.route
+                         or cls.id,
+                         "vram_peak_gb": wire_vram})
     return rows
 
 
