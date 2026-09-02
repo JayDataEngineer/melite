@@ -176,10 +176,10 @@ for name, body, model, et in (
 # C18: card kinds compose real graphs (image/music through the plugin bus)
 yml, extra = plugins.compose({"model": "krea-2", "params": {"prompt": "fox"}},
                               "krea-2", "run-W1", "x", ["comfyui"])
-check("krea-2 composes generate node", "- id: generate" in yml and "SaveImage" in yml)
+check("krea-2 composes generate node", '"id": "generate"' in yml and "SaveImage" in yml and '"workflow"' in yml)
 yml, extra = plugins.compose({"model": "music3", "params": {"prompt": "Genre: x"}},
                               "music3", "run-W2", "x", ["comfyui"])
-check("music3 composes music node", "- id: music" in yml and "SaveAudio" in yml)
+check("music3 composes music node", '"id": "music"' in yml and "SaveAudio" in yml and '"workflow"' in yml)
 
 # C19: no engine names in the core (banned shape — the SO_ENGINE_OWNERS
 # hardcode class): py/gateway.py must not name any engine type literal)

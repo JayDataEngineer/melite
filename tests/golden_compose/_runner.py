@@ -9,6 +9,15 @@ Paths normalize (<repo>/build/../ vs <repo>/), minted seeds assert
 
 DOCUMENTED DEVIATIONS (fixes, not drift — each justified by a C bug the
 capture itself recorded):
+  co_script flip (card arms): generate/edit/music phase2 now emit a
+    BAKED workflow (JSON, params.workflow) instead of the C text emission
+    with workflow_file+inject. The bar for those cases is STRUCTURAL:
+    the new graph must be ISOMORPHIC to the C-channel reconstruction
+    (golden inject + phase-1 inputs over the model template). Two
+    documented corrections ride the branch: golden input strings keep
+    the C backslash-n artifact (normalized, same as extra), and an
+    unresolved $ref the C channel left as a LITERAL (instrumental
+    lyrics="$lyrics") bakes as the empty string.
   tts_seed_temp: the C's ac_jq_s scalar scan read numeric seed/temperature
     as garbage (seed 99 -> 0; temperature silently dropped). The port
     reads real JSON values. Everything else must match byte-for-byte.
@@ -63,6 +72,48 @@ def _norm_str(v):
     return v
 
 
+FLIP_TPL = {
+    "krea-2": "models/image/krea-2/generate_t2i.json",
+    "music3": "models/audio/music3/music_t1.json",
+    "img-edit": "models/image/img-edit/edit_i2i.json",
+}
+
+
+def _oldpath_graph(model, golden_yaml, inputs):
+    """Reconstruct the C channel delivered graph: template + inject
+    with $refs resolved from the phase-1 run inputs (string forms)."""
+    import copy, json as _j
+    import re as _re
+    m = _re.search(r'\"inject\":(\{.*\})\}', golden_yaml)
+    if not m:
+        return None
+    inject = _j.loads(m.group(1))
+    tpl_rel = FLIP_TPL.get(model)
+    if tpl_rel is None:
+        return None
+    tpl = _j.loads((REPO / "plugins" / "engines" / "comfyui" / tpl_rel).read_text())
+    wf = copy.deepcopy(tpl)
+    resolved = {}
+    for slot, v in inject.items():
+        if isinstance(v, str) and v.startswith("$"):
+            # DOCUMENTED DEVIATION (co_script flip): the C channel left
+            # an unresolved $ref as a LITERAL in the graph (observed:
+            # instrumental music carried lyrics="$lyrics"). The flip
+            # bakes the empty string - MiniMax instrumental convention.
+            v = inputs.get(v[1:], "")
+        resolved[slot] = v
+        parts = slot.split(".")
+        nid = None
+        for i in range(1, len(parts)):
+            cand = ".".join(parts[:i])
+            if cand in wf:
+                nid = cand
+                field = ".".join(parts[i:])
+        if nid is None:
+            return None
+        wf[nid].setdefault("inputs", {})[field] = v
+    return wf
+
 def run_case(rec):
     name, model, etypes, body = rec["case"], rec["model"], rec["engine_types"], rec["body"]
     skeleton = "name: %s\ntype: %s\ndescription: card-composed\n\nnodes:\n" % (model, etypes[0])
@@ -88,6 +139,33 @@ def run_case(rec):
             continue
         if not want_rc0:
             PASS.append("%s/%s refusal parity" % (name, phase))
+            continue
+        py_raw = got.get("yaml", "")
+        if py_raw.lstrip().startswith(chr(123)):
+            # CO_SCRIPT FLIP (documented deviation): the card arms now
+            # emit a baked workflow (JSON). Bar: ISOMORPHIC to the
+            # golden C-channel reconstruction (template + inject
+            # resolved from the phase-1 inputs the golden captured).
+            import json as _j2
+            PLUGIN = REPO / "plugins" / "engines" / "comfyui"
+            import sys as _s2
+            if str(PLUGIN) not in _s2.path:
+                _s2.path.insert(0, str(PLUGIN))
+            from constructors.co_script.parity import diff, reachable
+            OI = _j2.loads((PLUGIN / "data" / "object_info.json").read_text())
+            g_inputs = (rec.get("phase1", {}).get("extra") or {}).get("inputs", {})
+            g_inputs = {k: _norm_str(v) for k, v in g_inputs.items()}
+            g_inputs = {k: _norm_str(v) for k, v in g_inputs.items()}
+            old = _oldpath_graph(model, golden.get("yaml", ""), g_inputs)
+            new = _j2.loads(py_raw)["nodes"][0]["params"]["workflow"]
+            if old is None:
+                FAIL.append("%s/phase2 flip: un-reconstructable golden" % name)
+                continue
+            d = diff(reachable(old, OI), reachable(new, OI))
+            if not d["isomorphic"]:
+                FAIL.append("%s/phase2 flip drift: a_only=%s b_only=%s" % (name, d["a_only"][:4], d["b_only"][:4]))
+                continue
+            PASS.append("%s/phase2 (co_script flip isomorphic)" % name)
             continue
         gy, py_ = norm_yaml(golden.get("yaml", "")), norm_yaml(got.get("yaml", ""))
         if name == "tts_seed_temp" and phase == "phase2":
