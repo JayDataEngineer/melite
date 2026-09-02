@@ -38,8 +38,8 @@ import json, os, sys, glob
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
-TL = os.path.join(REPO, "plugins", "comfyui", "models", "video",
-                  "h3-timeline")
+TL = os.path.join(REPO, "plugins", "engines", "comfyui", "models",
+                  "video", "h3-timeline")
 
 fails = []
 def check(name, cond, detail=""):
@@ -70,13 +70,10 @@ for name, d in sorted(templates.items()):
     check(f"{name}: no exterminated classes", not (classes & DEAD_CLASSES),
           classes & DEAD_CLASSES)
 
-    itv = next((v for v in d.values()
-                if v["class_type"] == "MiniMaxH3ImageToVideo"), None)
-    if itv:
-        check(f"{name}: ItV has no dead context inputs",
-              "context_steps" not in itv["inputs"] and
-              "audio_context_steps" not in itv["inputs"],
-              [k for k in itv["inputs"] if "context" in k])
+    # ItV context inputs (context_steps/audio_context_steps) are LIVE
+    # wiring in the current lineage (fed from the FPS/math chain) — the
+    # old "dead context inputs" extermination check retired with the
+    # ComfyMathExpression rework; DEAD_CLASSES still guards classes.
 
     # 3: chain wiring — his spine, the ORIGINAL nodeset
     is_w1 = name.startswith("window1")
@@ -123,9 +120,12 @@ for name, d in sorted(templates.items()):
         check(f"{name}: R2V ref_image_0 reads BundleOut slot 1",
               r2v.get("ref_images.ref_image_0") == ["PlagueKindBundleOut.0", 0])
         if not is_w1:
-            check(f"{name}: master audio rides bundle slot 19",
+            # master audio moved off the bundle (slot 19) onto a direct
+            # LoadAudio.0 wire in the current lineage
+            check(f"{name}: master audio reads LoadAudio.0",
                   d["SongContext.0"]["inputs"].get("master_audio") ==
-                  ["PlagueKindBundleOut.0", 18])
+                  ["LoadAudio.0", 0],
+                  d["SongContext.0"]["inputs"].get("master_audio"))
         li = sorted(int(k.split(".")[1]) for k in d if k.startswith("LoadImage."))
         check(f"{name}: LoadImage slots exactly 0..8 (R2V max)",
               li == list(range(9)), li)
@@ -133,39 +133,40 @@ for name, d in sorted(templates.items()):
         la_exp = [0, 1, 2, 3] if not is_w1 else [1, 2, 3]
         check(f"{name}: LoadAudio slots {la_exp} (0=master chain, 1-3=refs)",
               la == la_exp, la)
-        vhs = sorted(int(k.split(".")[1]) for k in d if k.startswith("VHS_LoadVideoPath."))
-        check(f"{name}: VHS_LoadVideoPath slots exactly 0..2 (ref-video gap fix)",
-              vhs == [0, 1, 2], vhs)
-        check(f"{name}: VHS loaders dangle on placeholder (24fps/15s cap)",
-              all(d[f"VHS_LoadVideoPath.{i}"]["inputs"]["video"] == "REPLACED_BY_INJECT"
-                  and d[f"VHS_LoadVideoPath.{i}"]["inputs"]["force_rate"] == 24
-                  and d[f"VHS_LoadVideoPath.{i}"]["inputs"]["frame_load_cap"] == 360
-                  for i in range(3)))
-    else:
+    # VHS_LoadVideoPath retired from BOTH families (guide/ref videos
+    # ride LoadImage.0..8 + UnifiedResizeImageMask R/G into the bundle).
+    check(f"{name}: no VHS loaders anywhere",
+          not [k for k in d if k.startswith("VHS_LoadVideoPath.")])
+    if not name.endswith("_t4r.json"):
         check(f"{name}: plain family carries no bundle",
               "PlagueKindBundleIn.0" not in d and
               "PlagueKindBundleOut.0" not in d)
-        check(f"{name}: plain family carries no VHS loaders",
-              not [k for k in d if k.startswith("VHS_LoadVideoPath.")])
 
-    # 5b: LIVE post chain (dead-wire regression 2026-09-02: the mux used
-    # to read raw VAEDecode, making sharpen/interpolate inject no-ops).
-    # Now: mux <- SRSwitch <- (upscaler | InterpSwitch <- sharpen chain).
-    mux = d.get("VHSVideoCombine.0")
-    if check(f"{name}: VHSVideoCombine present", mux):
-        check(f"{name}: mux consumes SRSwitch (post chain LIVE)",
-              mux["inputs"].get("images") == ["SRSwitch.0", 0],
-              mux["inputs"].get("images"))
-    sr_sw = d.get("SRSwitch.0")
-    if check(f"{name}: SRSwitch present (SeedVR2 gap fix)", sr_sw):
-        check(f"{name}: SRSwitch off by default, chain passthrough",
-              sr_sw["inputs"].get("switch") is False and
-              sr_sw["inputs"].get("on_false") == ["InterpSwitch.0", 0])
-        up = d.get("SeedVR2VideoUpscaler.0")
-        check(f"{name}: upscaler <- InterpSwitch + local loaders",
-              up and up["inputs"].get("image") == ["InterpSwitch.0", 0] and
-              up["inputs"].get("dit") == ["SeedVR2LoadDiTModel.0", 0] and
-              up["inputs"].get("vae") == ["SeedVR2LoadVAEModel.0", 0])
+    # 5b: LIVE post chain — t4 family only (dead-wire regression
+    # 2026-09-02: the mux used to read raw VAEDecode, making sharpen/
+    # interpolate inject no-ops). t4: mux <- SRSwitch <- (upscaler |
+    # InterpSwitch <- sharpen). t4r: no post chain — mux <- VAEDecode.
+    mux = d.get("CreateVideo.0")
+    if name.endswith("_t4.json"):
+        if check(f"{name}: CreateVideo mux present", mux):
+            check(f"{name}: mux consumes SRSwitch (post chain LIVE)",
+                  mux["inputs"].get("images") == ["SRSwitch.0", 0],
+                  mux["inputs"].get("images"))
+        sr_sw = d.get("SRSwitch.0")
+        if check(f"{name}: SRSwitch present (SeedVR2 gap fix)", sr_sw):
+            check(f"{name}: SRSwitch off by default, chain passthrough",
+                  sr_sw["inputs"].get("switch") is False and
+                  sr_sw["inputs"].get("on_false") == ["InterpSwitch.0", 0])
+            up = d.get("SeedVR2VideoUpscaler.0")
+            check(f"{name}: upscaler <- InterpSwitch + local loaders",
+                  up and up["inputs"].get("image") == ["InterpSwitch.0", 0] and
+                  up["inputs"].get("dit") == ["SeedVR2LoadDiTModel.0", 0] and
+                  up["inputs"].get("vae") == ["SeedVR2LoadVAEModel.0", 0])
+    else:
+        if check(f"{name}: CreateVideo mux present (t4r)", mux):
+            check(f"{name}: t4r mux consumes VAEDecode (no post chain)",
+                  mux["inputs"].get("images") == ["VAEDecode.0", 0],
+                  mux["inputs"].get("images"))
 
 # ── 6: joint-AV grid law (pure-python pin of the C++ snap) ─────────────────
 def on_grid(v):
