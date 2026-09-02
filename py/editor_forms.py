@@ -597,13 +597,18 @@ def _has_parameters_block(yp):
 
 
 def _find_card_yaml(repo_root, model):
-    """cs_find_card_yaml (src/server.cpp:7533-7611): the sole-owner card.
-    Skip cards without a field surface (yaml parameters: block OR card.py
-    — the python flip); gate on the /v1/forms card ids (the C's
-    ALLOWED_CARDS); families must match, first-family match wins
+    """cs_find_card_yaml (src/server.cpp:7533-7611), class-driven since
+    the identity rung (2026-09-02): the sole-owner card.py. Gate on the
+    /v1/forms card ids (the C's ALLOWED_CARDS — read from the CLASS id);
+    families must match (any row normalized), first-family match wins
     outright, first any-family match is the fallback candidate.
-    (2026-09-02) Scan depth is the engine layout: plugins/engines/<engine>/cards/."""
+
+    Candidacy needs a FIELD SURFACE (declared fields on the class) —
+    identity-only cards (sfx) stay non-candidates exactly as the yaml
+    era served them (no parameters block → skip). Scan depth is the
+    engine layout: plugins/engines/<engine>/cards/."""
     candidate = None
+    nmodel = _norm(model)
     for _engine, edir in _iter_plugin_engines(repo_root):
         cdir = os.path.join(edir, "cards")
         if not os.path.isdir(cdir):
@@ -611,20 +616,21 @@ def _find_card_yaml(repo_root, model):
         for card in _scandir(cdir):
             if card.startswith('.'):
                 continue
-            yp = os.path.join(cdir, card, "card.yaml")
-            if not os.path.isfile(yp):
+            mpy = os.path.join(cdir, card, "card.py")
+            if not os.path.isfile(mpy):
                 continue
-            if not _card_has_surface(yp):
+            cls = _load_card_class(mpy)
+            if cls is None or not cls._fields_:
                 continue
-            cid = _card_identity_path(yp)["id"]
-            if cid not in _ALLOWED_CARDS:
+            if cls.id not in _ALLOWED_CARDS:
                 continue
-            if not _families_match(yp, model):
+            fams = [_norm(f) for f in cls.families_of()]
+            if nmodel not in fams:
                 continue
-            if _first_family_is(yp, model):
-                return yp
+            if fams and fams[0] == nmodel:
+                return mpy
             if candidate is None:
-                candidate = yp
+                candidate = mpy
     return candidate
 
 
@@ -839,17 +845,21 @@ def _card_spec(repo_root, model):
 
     (2026-09-02) card.py WINS when present — and a card.yaml
     `parameters:` block alongside it is a LOUD refusal (two SSOTs is
-    zero SSOTs; QUEUE LANE LAW: no silent preference)."""
+    zero SSOTs; QUEUE LANE LAW: no silent preference).
+
+    (2026-09-02, the identity rung) card.yaml is EXTINCT — the card.py
+    class carries identity too. A card.yaml alongside card.py refuses
+    LOUD regardless of content."""
     yp = _find_card_yaml(repo_root, model)
     if yp is None:
         return None
     cls = _load_card_class(yp)
     if cls is not None:
-        if _has_parameters_block(yp):
+        if os.path.isfile(os.path.join(os.path.dirname(yp), "card.yaml")):
             raise ValidationError(
-                "%s carries BOTH card.py and a card.yaml parameters: block "
-                "— the field surface lives in ONE place; delete the yaml "
-                "block (the flip) or the card.py" % yp)
+                "%s carries BOTH card.py and card.yaml — the identity "
+                "rung moved card.yaml onto the class; delete the yaml"
+                % yp)
         engine_dir = _engine_dir_of_card(yp)
         options_vocab = {
             "samplers": _option_list(repo_root, "samplers", engine_dir),
@@ -871,7 +881,7 @@ def _card_spec(repo_root, model):
     }
 
     out = {}
-    cid = _card_identity_path(yp)["id"]
+    cid = cls.id if cls is not None else _card_identity_path(yp)["id"]
     if cid:
         out["form"] = cid
     out["service"] = model
@@ -1287,7 +1297,8 @@ def form_spec(repo_root, model_id):
     # the spec is branded by the CARD's ability label; the model stays an
     # internal route (src/server.cpp:8108-8116)
     card_yp = _find_card_yaml(repo_root, row["id"])
-    card_label = _card_identity_path(card_yp)["label"] if card_yp else ""
+    _card_cls = _load_card_class(card_yp) if card_yp else None
+    card_label = _card_cls.label if _card_cls else ""
     label = card_label or row["label"] or row["id"]
 
     # (2026-09-02 tts 400 fix) advertise the prompt recipe ONLY when the

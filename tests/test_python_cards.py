@@ -192,6 +192,7 @@ def main():
         open(os.path.join(cdir, "card.py"), "w").write(
             "from melite_cards import ActionCard, Text\n\n\n"
             "class DuoCard(ActionCard):\n    id = 'image-gen'\n"
+            "    families = ('krea-2',)\n"
             "    t = Text(label='t')\n")
         yml = os.path.join(cdir, "card.yaml")
         open(yml, "w").write(

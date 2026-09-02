@@ -218,24 +218,24 @@ def resolve_request(body):
 
 
 def _find_card_requires(mid, plugins_dir=None):
-    """Resolve model id -> card.yaml requires list (or [] if none).
+    """Resolve model id -> the owning CARD's requires list (or []).
 
-    Walks plugins/*/cards/*/card.yaml, matches via ability.default_family
-    or families list against the model's family id.
+    (2026-09-02, the identity rung) Fully class-driven: the model class
+    names the card (`card` attr), the CARD class carries `requires`
+    (tuple of engine extension ids, declared on the ActionCard).
+    card.yaml is extinct; requires rides the class.
     """
-    # (2026-09-02) The flip: model classes carry the owning CARD id
-    # directly — no yaml family-id hop. Card identity still lives in
-    # card.yaml (the identity rung is pending), so the requires lookup
-    # walks the ENGINE layout (healed: the pre-engine depth found
-    # nothing since the move, silently skipping every requires check).
     if plugins_dir is None:
         plugins_dir = REPO / "plugins"
     import sys as _sys
-    models_py = plugins_dir.parent / "web" / "models_py"
-    if str(models_py) not in _sys.path:
-        _sys.path.insert(0, str(models_py))
+    models_py = plugins_dir / "web" / "models_py"
+    cards_py = plugins_dir / "web" / "cards_py"
+    for pth in (str(models_py), str(cards_py)):
+        if pth not in _sys.path:
+            _sys.path.insert(0, pth)
     try:
         from melite_models import load_model_py
+        from melite_cards import load_card_py
     except ImportError:
         return []
     card_id = None
@@ -252,21 +252,25 @@ def _find_card_requires(mid, plugins_dir=None):
                 break
         if card_id:
             break
-    if not card_id:
-        return []
-    for cy in sorted(plugins_dir.glob("engines/*/cards/*/card.yaml")):
+    # family fallback: models without a `card` attr resolve through the
+    # card whose families include them (h3-timeline: the model declares
+    # no card, the card declares the family)
+    nmid = mid.replace("_", "-")
+    for cpy in sorted(plugins_dir.glob("engines/*/cards/*/card.py")):
         try:
-            ccfg = _yaml.safe_load(cy.read_text()) or {}
+            engine = cpy.parent.parent.parent.name
+            cls = load_card_py(str(cpy), engine)
         except Exception:
             continue
-        card_sec = ccfg.get("card", ccfg)
-        cid = card_sec.get("id") or cy.parent.name
-        if cid != card_id:
-            continue
-        af = card_sec.get("ability", {})
-        if isinstance(af, dict) and af.get("default_family"):
-            return ccfg.get("requires", [])
-        return ccfg.get("requires", [])
+        if card_id:
+            if cls.id != card_id:
+                continue
+        else:
+            fams = [str(f).replace("_", "-")
+                    for f in cls.families_of()]
+            if nmid not in fams:
+                continue
+        return list(getattr(cls, "requires", ()) or [])
     return []
 
 

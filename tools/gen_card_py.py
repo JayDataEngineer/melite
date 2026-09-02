@@ -145,6 +145,65 @@ def _card_header(cy):
     return cid, label, fams
 
 
+def _identity_attrs(cy):
+    """The identity block attrs (id/label/description/genre/icon/api/
+    ability/requires/principles/skills) — catalog._parse_card_yaml is
+    the wire parser for every one of these (cards[] row + capabilities
+    splice). → list of source lines."""
+    import catalog
+    ct = catalog._parse_card_yaml(open(cy, "r", encoding="utf-8",
+                                       errors="surrogateescape").read())
+    L = []
+    L.append("    id = %s" % _pystr(ct["id"]))
+    if ct["label"]:
+        L.append("    label = %s" % _pystr(ct["label"]))
+    if ct["description"]:
+        L.append("    description = %s" % _pystr(ct["description"]))
+    if ct["genre"]:
+        L.append("    genre = %s" % _pystr(ct["genre"]))
+    if ct["icon"]:
+        L.append("    icon = %s" % _pystr(ct["icon"]))
+    if ct["api"]:
+        L.append("    api = True")
+    if ct["ability_route"]:
+        L.append('    ability = {"default_family": %s}'
+                 % _pystr(ct["ability_route"]))
+    # requires: the WIRE reader is the gateway's PyYAML path
+    # (_find_card_requires) — not the catalog text parser (which has no
+    # requires section). Source it the same way.
+    import yaml as _yaml
+    reqs = []
+    try:
+        ccfg = _yaml.safe_load(open(cy, "r", encoding="utf-8",
+                                    errors="surrogateescape").read()) or {}
+        raw_req = ccfg.get("requires") or []
+        reqs = [str(r) for r in raw_req if r]
+    except Exception:
+        reqs = []
+    if reqs:
+        L.append("    requires = (%s)" % (
+            ", ".join(_pystr(r) for r in reqs) + ("," if len(reqs) == 1
+                                                  else "")))
+    prins = [x for x in (ct.get("principles") or ()) if x]
+    if prins:
+        L.append("    principles = (")
+        for pr in prins:
+            L.append("        %s," % _pystr(pr))
+        L.append("    )")
+    skills = [(sid, slab) for sid, slab in (ct.get("skills") or ())
+              if sid]
+    if skills:
+        L.append("    skills = (")
+        for sid, slab in skills:
+            if slab:
+                L.append("        (%s, %s)," % (_pystr(sid),
+                                               _pystr(slab)))
+            else:
+                L.append("        (%s, "")," % _pystr(sid))
+        L.append("    )")
+    return L
+
+
 def gen_card_py(cy):
     """→ (source_text, cid, field_count)."""
     fields = ef._parse_card_parameters(cy)
@@ -179,9 +238,7 @@ def gen_card_py(cy):
     L.append("")
     L.append("")
     L.append("class %s(ActionCard):" % cname)
-    L.append('    id = %s' % _pystr(cid))
-    if label:
-        L.append('    label = %s' % _pystr(label))
+    L.extend(_identity_attrs(cy))
     if fams:
         L.append("    families = (%s%s)" % (
             ", ".join(_pystr(f) for f in fams),
@@ -293,9 +350,14 @@ def main():
             print("SKIP  %s (already flipped)" % cid)
             continue
         fields = ef._parse_card_parameters(cy)
-        if not fields:
-            print("SKIP  %s (no parameters block)" % cid)
+        import catalog as _cat
+        ct = _cat._parse_card_yaml(open(cy, "r", encoding="utf-8",
+                                        errors="surrogateescape").read())
+        if not ct["api"]:
+            print("PARK  %s (api gate — never served)" % cid)
             continue
+        if not fields:
+            fields = []      # identity-only card (sfx) — still flips
 
         # staging parity: class fragment == yaml-era fragment, per family
         fams = served_families(cy)

@@ -702,24 +702,69 @@ def _scan_cards(plugins_dir):
 
 
 def _scan_card_dir(card_dir, card_name):
-    """scan_card_dir (catalog.c:506): card.yaml -> row; only api: true
-    cards are served; the ability marker (plugin data) promotes the card
-    to a capabilities tile — the catalog_abilities_splice port."""
-    path = os.path.join(card_dir, "card.yaml")
-    text = _read_file(path)
-    if text is None:
+    """scan_card_dir (catalog.c:506, superseded): card.py class → row;
+    only api=True classes serve. The ability marker (plugin data)
+    promotes the card to a capabilities tile.
+
+    (2026-09-02, the identity rung) card.yaml is EXTINCT — id/label/
+    description/genre/icon/api/ability/requires/principles/skills live
+    on the ActionCard class (plugins/web/cards_py). A card.yaml next to
+    a card.py is a LOUD refusal (two SSOTs is zero SSOTs)."""
+    mpy = os.path.join(card_dir, "card.py")
+    if not os.path.isfile(mpy):
         return None, None, None
-    c = _parse_card_yaml(text)
-    if not c["id"]:
+    if os.path.isfile(os.path.join(card_dir, "card.yaml")):
+        raise ValidationError(
+            "%s carries BOTH card.py and card.yaml — the identity rung "
+            "moved card.yaml onto the class; delete the yaml" % mpy)
+    engine_dir = os.path.dirname(os.path.dirname(os.path.dirname(mpy)))
+    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(
+        engine_dir)))
+    cards_root = os.path.join(repo_root, "plugins", "web", "cards_py")
+    if cards_root not in sys.path:
+        sys.path.insert(0, cards_root)
+    from melite_cards import load_card_py
+    engine = os.path.basename(engine_dir)
+    cls = load_card_py(mpy, engine)
+    if not cls.id:
         return None, None, None
-    if not c["api"]:  # API gate (catalog.c:517-518)
+    if not cls.api:  # API gate (catalog.c:517-518)
         return None, None, None
-    c["inference_path"] = _probe(os.path.join(card_dir, "inference.yaml"))
-    c["rubric_path"] = _probe(os.path.join(card_dir, "grading_rubric.yaml"))
+    c = {
+        "id": cls.id, "label": cls.label, "description": cls.description,
+        "genre": cls.genre, "icon": cls.icon,
+        "families": list(cls.families_of()),
+        "principles": list(cls.principles),
+        "skills": [(sid, slab) for sid, slab in cls.skills],
+        "ability_route": (cls.ability or {}).get("default_family")
+        if isinstance(cls.ability, dict) else None,
+        "inference_path": _probe(os.path.join(card_dir, "inference.yaml")),
+        "rubric_path": _probe(os.path.join(card_dir,
+                                           "grading_rubric.yaml")),
+    }
     cap_key = cap_entry = None
     if c["ability_route"]:
-        cap_key, cap_entry = _capability_entry(card_name, text, c["ability_route"])
+        cap_key, cap_entry = _capability_entry_from_class(
+            card_name, cls, c["ability_route"])
     return _card_row(c), cap_key, cap_entry
+
+
+def _capability_entry_from_class(card_dir_name, cls, route):
+    """The class-driven _capability_entry — same emit order (label,
+    description, default_family, families, kind, [icon], resolved)."""
+    cid = cls.id or card_dir_name
+    clabel = cls.label or card_dir_name
+    entry = {
+        "label": clabel,
+        "description": cls.description,
+        "default_family": route,
+        "families": list(cls.families_of()),
+        "kind": "generation",
+    }
+    if cls.icon:
+        entry["icon"] = cls.icon
+    entry["resolved"] = {"family": route, "model": route, "params": {}}
+    return cid, entry
 
 
 # ---------------------------------------------------------------------------
