@@ -115,7 +115,7 @@ owners = {k: e.plugin_id for k, e in engines.items()}
 check("engine scan one-owner", owners.get("comfyui") == "comfyui"
       and owners.get("audio_cpp") == "audio-cpp"
       and owners.get("ffmpeg_concat") == "ffmpeg"
-      and owners.get("echo") == "core", repr(owners))
+      and "echo" not in owners, repr(owners))
 
 # C14: DETERMINISTIC model resolution — declarer wins over silent copies
 # (the C glob-order bug: music3 could resolve to a stanza-less copy)
