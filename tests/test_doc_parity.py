@@ -35,7 +35,14 @@ def check(name, cond, detail=""):
     (PASS if cond else FAIL).append(name if cond else "%s: %s" % (name, detail))
 
 
-# ── load the four model-level renderer modules (self-registering) ──────
+# ── load the four CARD renderer modules (self-registering; models
+#    don't render — cards do) ────────────────────────────────────────────
+_CARD_DIRS = [
+    PLUGIN / "action_cards" / "image" / "image-gen",
+    PLUGIN / "action_cards" / "image" / "image-edit",
+    PLUGIN / "action_cards" / "audio" / "music",
+    PLUGIN / "action_cards" / "video" / "h3-timeline",
+]
 _MODEL_DIRS = [
     PLUGIN / "models" / "image" / "krea-2",
     PLUGIN / "models" / "image" / "img-edit",
@@ -43,8 +50,8 @@ _MODEL_DIRS = [
     PLUGIN / "models" / "video" / "h3-timeline",
 ]
 _DOCS = {}
-for d in _MODEL_DIRS:
-    mod = _coscript.load_model_renderer(d)
+for d in _CARD_DIRS:
+    mod = _coscript.load_card_renderer(d)
     assert mod is not None, "renderer module missing: %s" % d
 
 # 1. every family carries a doc class ───────────────────────────────────
@@ -103,7 +110,13 @@ def _node(graph, cls):
     raise AssertionError("no %s node in graph" % cls)
 
 
-g = render("image_t2i", {"prompt": "a red fox"})
+from _coscript import load_model_cls  # noqa: E402
+_KREA2 = load_model_cls("krea-2")
+_IMGEDIT = load_model_cls("img-edit")
+_MUSIC3 = load_model_cls("music3")
+
+
+g = render("image_t2i", {"prompt": "a red fox"}, model=_KREA2)
 check("image_t2i wire: seed '%d'", _node(g, "KSampler")["seed"] == "42",
       repr(_node(g, "KSampler")["seed"]))
 check("image_t2i wire: steps '%.0f'", _node(g, "KSampler")["steps"] == "8",
@@ -114,7 +127,7 @@ check("image_t2i wire: width '%.0f'",
       _node(g, "EmptySD3LatentImage")["width"] == "1024",
       repr(_node(g, "EmptySD3LatentImage")["width"]))
 
-g = render("image_edit", {"prompt": "a red fox", "input_image": "a.png"})
+g = render("image_edit", {"prompt": "a red fox", "input_image": "a.png"}, model=_IMGEDIT)
 check("image_edit wire: shift '%g'",
       _node(g, "ModelSamplingAuraFlow")["shift"] == "1",
       repr(_node(g, "ModelSamplingAuraFlow")["shift"]))
@@ -122,7 +135,7 @@ check("image_edit wire: steps '%.0f'",
       _node(g, "KSampler")["steps"] == "4",
       repr(_node(g, "KSampler")["steps"]))
 
-g = render("music_t1", {"caption": "a song"})
+g = render("music_t1", {"caption": "a song"}, model=_MUSIC3)
 check("music_t1 wire: seconds '%.0f'",
       _node(g, "EmptyMiniMaxMusic3LatentAudio")["seconds"] == "30",
       repr(_node(g, "EmptyMiniMaxMusic3LatentAudio")["seconds"]))

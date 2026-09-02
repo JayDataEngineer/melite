@@ -1,8 +1,8 @@
 """test_co_script_parity_cards.py — card arms vs the old splice path.
 
 The generate/edit/music card arms render through the GENERIC co_script
-constructor + each model's co_script_renderer.py (params.workflow,
-values baked). Acceptance: the rendered graph is ISOMORPHIC to the OLD
+constructor + each CARD's renderer.py (params.workflow, values baked;
+the model rides along as DATA — models don't render, cards do). Acceptance: the rendered graph is ISOMORPHIC to the OLD
 workflow_file+inject channel's delivered graph — template + splice with
 the same string-form values the composers bake (the run-inputs SSOT
 forms the old $-resolution produced).
@@ -167,21 +167,22 @@ parity("music3 t1 instrumental", "models/audio/music3/music_t1.json",
 from co_script.errors import CoScriptError  # noqa: E402
 import importlib as _imp
 _cs = _imp.import_module("plugin_engines.comfyui.compose._coscript")
-render_model = _cs.render_model  # noqa: E402
+render_card = _cs.render_card  # noqa: E402
 try:
-    render_model(PLUGIN / "models" / "image" / "krea-2", "image_t2i",
-                 {"inject": {"SongContext.0.clip_start_seconds": 0.0}})
+    render_card(PLUGIN / "action_cards" / "image" / "image-gen",
+                "krea-2", "image_t2i",
+                {"inject": {"SongContext.0.clip_start_seconds": 0.0}})
     check("unsanctioned inject LOUD", False, "accepted")
 except CoScriptError as e:
     check("unsanctioned inject LOUD", "SongContext.0" in str(e), str(e))
 
-# 7. LOUD gate: model without a renderer refuses (no silent fallback)
+# 7. LOUD gate: card without a renderer refuses (no silent fallback)
 try:
-    render_model(PLUGIN / "models" / "image" / "ideogram", "image_t2i",
-                 {"inject": {}})
+    render_card(PLUGIN / "action_cards" / "mask" / "mask_studio",
+                "ideogram", "image_t2i", {"inject": {}})
     check("renderer-missing LOUD", False, "accepted")
 except RuntimeError as e:
-    check("renderer-missing LOUD", "co_script_renderer.py" in str(e), str(e))
+    check("renderer-missing LOUD", "renderer.py" in str(e), str(e))
 
 print("\n%d passed, %d failed" % (len(PASS), len(FAIL)))
 for f in FAIL:

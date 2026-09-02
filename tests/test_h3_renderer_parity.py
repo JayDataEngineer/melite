@@ -16,13 +16,16 @@ sys.path.insert(0, str(REPO / "plugins" / "engines" / "comfyui" / "compose"))
 
 from co_script import render, reachable, diff, CoScriptError
 
+# MODELS DON'T RENDER — the renderer is CARD-owned
+CARD_DIR = (REPO / "plugins" / "engines" / "comfyui" / "action_cards"
+            / "video" / "h3-timeline")
 MODEL_DIR = REPO / "plugins" / "engines" / "comfyui" / "models" / "video" / "h3-timeline"
 
-# MODEL-LEVEL RENDERER (lane law): the core ships no renderers — load the
-# h3 module so it registers "h3_window" before any render() call below.
+# CARD-OWNED RENDERER (models-don't-render law): load the card
+# module so it registers "h3_window" before any render() call below.
 import importlib.util as _ilu
 _RSPEC = _ilu.spec_from_file_location(
-    "h3_co_script_renderer", str(MODEL_DIR / "co_script_renderer.py"))
+    "h3_card_renderer", str(CARD_DIR / "renderer.py"))
 _RMOD = _ilu.module_from_spec(_RSPEC)
 sys.modules[_RSPEC.name] = _RMOD  # canonical: visible to sys.modules
 _RSPEC.loader.exec_module(_RMOD)

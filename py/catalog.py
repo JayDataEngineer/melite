@@ -653,11 +653,11 @@ def _scan_model_dir(model_dir):
     cls = load_model_py(mpy, engine)
     meta = {"studio_tenant": None, "studio_owns_params": False,
             "studio_writes": []}
-    if isinstance(cls.studio, dict) and cls.studio.get("tenant"):
-        meta = {"studio_tenant": cls.studio["tenant"],
-                "studio_owns_params": bool(cls.studio.get("owns_params")),
+    if cls.studio is not None:
+        meta = {"studio_tenant": cls.studio.tenant,
+                "studio_owns_params": bool(cls.studio.owns_params),
                 "studio_writes": [str(w) for w in
-                                  (cls.studio.get("writes") or ())]}
+                                  (cls.studio.writes or ())]}
     return [(model_row(cls, model_dir), meta)]
 
 

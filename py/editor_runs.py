@@ -1543,7 +1543,8 @@ def provision(body_json, plugins_root):
         engine_dir = os.path.dirname(os.path.dirname(found_dir))
         cls = load_model_py(mpy, os.path.basename(engine_dir))
         # explicit provisions blocks beat the derived cell artifact
-        prov = [dict(p) for p in (getattr(cls, "provisions", None) or ())]
+        # (rows now: Provision instances — attr access, rung 1)
+        prov = list(getattr(cls, "provisions", None) or ())
         if not prov:
             variant = (body_json.get("variant") or "").strip() or None
             quant = (body_json.get("quant") or "").strip() or None
@@ -1561,9 +1562,9 @@ def provision(body_json, plugins_root):
                          url=str(art.source_url), folder=dest)]
         queued, errors = [], []
         for p in prov:
-            name = (p.get("name") or "").strip()
-            url = (p.get("url") or "").strip()
-            folder = (p.get("folder") or "").strip("/")
+            name = (getattr(p, "name", "") or "").strip()
+            url = str(getattr(p, "url", "") or "").strip()
+            folder = (getattr(p, "folder", "") or "").strip("/")
             if not name or not url:
                 continue
             dest = folder if folder.startswith("models") else (

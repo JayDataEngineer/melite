@@ -102,6 +102,14 @@ class EngineRef:
             spec.loader.exec_module(mod)
             return mod
         if pkg_init.is_file():
+            # Shape law rung 5 (loader owns import mechanics): a compose
+            # PACKAGE resolves its importables through top-level names
+            # (the module-identity contract each compose/ documents) —
+            # so the PACKAGE dir joins sys.path here, in the loader,
+            # never via a sys.path.insert ritual inside the package.
+            pkg_dir = str(pkg_init.parent)
+            if pkg_dir not in sys.path:
+                sys.path.insert(0, pkg_dir)
             spec = importlib.util.spec_from_file_location(
                 modname, pkg_init,
                 submodule_search_locations=[str(pkg_init.parent)])

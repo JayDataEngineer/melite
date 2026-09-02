@@ -332,20 +332,41 @@ EDITOR_FALLBACK_SLOTS = [
     "reference_audio",
     "voice_file",
 ]
+declared = [r.slot for r in slot_kinds.VOCAB.slots]
 check("slots mirror editor fallback EXACTLY",
-      sorted(slot_kinds.SLOTS) == sorted(EDITOR_FALLBACK_SLOTS),
-      str(set(slot_kinds.SLOTS) ^ set(EDITOR_FALLBACK_SLOTS)))
+      sorted(declared) == sorted(EDITOR_FALLBACK_SLOTS),
+      str(set(declared) ^ set(EDITOR_FALLBACK_SLOTS)))
 check("undeclared mirrors editor fallback",
-      list(slot_kinds.UNDECLARED_WIRE_SLOTS) == ["lanpaint_mask"])
-check("every slot kinded", all(s in slot_kinds.SLOT_KINDS
-                               for s in slot_kinds.SLOTS))
-kinds = set(slot_kinds.SLOT_KINDS.values())
-closed = {"image", "mask", "glb", "audio", "video", "motion", "voice",
-          "text", "any"}
-check("kinds within closed FileKind vocabulary", kinds <= closed, str(kinds))
+      list(slot_kinds.VOCAB.undeclared_slots) == ["lanpaint_mask"])
+check("every slot kinded (enum rows — unkinded is unbuildable)",
+      all(r.kind in slot_kinds.FileKind for r in slot_kinds.VOCAB.slots))
+# the cross-row invariants are CONSTRUCTION-enforced (shape law): the
+# refused shapes prove the validator fires, not just a green path.
+def _refused(build):
+    try:
+        build()
+        return False
+    except Exception:
+        return True
+check("duplicate slot refused at construction", _refused(lambda:
+    slot_kinds.SlotVocabulary(slots=(
+        slot_kinds.SlotDecl(slot="input_image",
+                            kind=slot_kinds.FileKind.IMAGE),
+        slot_kinds.SlotDecl(slot="input_image",
+                            kind=slot_kinds.FileKind.IMAGE)))))
+check("stray undeclared slot refused at construction", _refused(lambda:
+    slot_kinds.SlotVocabulary(
+        slots=(slot_kinds.SlotDecl(slot="input_image",
+                                   kind=slot_kinds.FileKind.IMAGE),),
+        undeclared_slots=("no_such_slot",))))
+check("unknown FileKind refused at construction", _refused(lambda:
+    slot_kinds.SlotDecl(slot="x_slot", kind="not-a-kind")))
 vocab = slot_kinds.input_vocabulary()
 check("wire shape", set(vocab) == {"slots", "slot_kinds",
                                    "undeclared_slots"})
+check("wire kinds are enum values",
+      set(vocab["slot_kinds"].values())
+      <= {k.value for k in slot_kinds.FileKind})
 
 # ══════════════════════════════════════════════════════════════════════
 print("PASS %d  FAIL %d" % (len(PASS), len(FAIL)))

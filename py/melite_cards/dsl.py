@@ -23,6 +23,8 @@ zone defaults to "params".
 """
 
 import re
+from dataclasses import dataclass, replace
+from typing import ClassVar
 
 IDENT_RE = re.compile(r"^[a-z_][a-z0-9_-]*$")
 _FIELD_NAME_RE = re.compile(r"^[a-z_][a-z0-9_]*$")
@@ -44,17 +46,18 @@ class ValidationError(Exception):
     """Loud refusal before the wire — a broken card never serves."""
 
 
+@dataclass(frozen=True)
 class VocabRef:
     """$samplers / $schedulers — resolves against the OWNING engine's
-    field_options.yaml at serialize time (never a hand-copied list)."""
+    field_options.yaml at serialize time (never a hand-copied list).
+    Frozen row (shape law rung 2): invalid names refuse at construction."""
 
-    __slots__ = ("name",)
+    name: str
 
-    def __init__(self, name):
-        if not (isinstance(name, str) and name.startswith("$")):
+    def __post_init__(self):
+        if not (isinstance(self.name, str) and self.name.startswith("$")):
             raise ValidationError(
-                "VocabRef name must start with '$' (got %r)" % (name,))
-        self.name = name
+                "VocabRef name must start with '$' (got %r)" % (self.name,))
 
     def resolve(self, options_vocab):
         key = self.name[1:]
@@ -64,42 +67,44 @@ class VocabRef:
                 "field_options.yaml has no '%s:' list" % (self.name, key))
         return options_vocab[key]
 
-    def __repr__(self):
-        return "VocabRef(%r)" % (self.name,)
 
-
+@dataclass(frozen=True, kw_only=True)
 class Field:
-    """One wire field. Direct use carries a free-form `type`; prefer the
-    typed subclasses below (they pin the type string)."""
+    """One wire field — a frozen row (shape law rungs 1-2). Direct use
+    carries a free-form `type`; prefer the typed subclasses below (they
+    pin the type string). `name` is derived ONCE by _CardMeta from the
+    declaring attribute (never restated in the declaration)."""
 
-    TYPE = None  # subclasses pin
+    TYPE: ClassVar[str] = None       # subclasses pin
 
-    def __init__(self, *, label="", group="", zone="", order=None,
-                 width=None, columns=None, min=None, max=None, step=None,
-                 default=None, required=False, placeholder="", tooltip="",
-                 visible_when="", options=None, families=(), type=None):
-        self.name = None          # set by the metaclass
-        self.type = TYPE_NAMES.get(type or self.TYPE, type or self.TYPE)
+    label: str = ""
+    group: str = ""
+    zone: str = ""
+    order: int | None = None
+    width: int | None = None
+    columns: int | None = None
+    min: float | int | None = None
+    max: float | int | None = None
+    step: float | None = None
+    default: object = None
+    required: bool = False
+    placeholder: str = ""
+    tooltip: str = ""
+    visible_when: str = ""
+    options: object = None
+    families: tuple = ()
+    type: str = None
+    name: str = None                 # set once by _CardMeta
+
+    def __post_init__(self):
+        if isinstance(self.families, str):
+            object.__setattr__(self, "families", (self.families,))
+        object.__setattr__(self, "type",
+                           TYPE_NAMES.get(self.type or self.TYPE,
+                                          self.type or self.TYPE))
         if not self.type:
             raise ValidationError(
                 "Field needs a type — use a typed subclass or type=...")
-        self.label = label
-        self.group = group
-        self.zone = zone
-        self.order = order
-        self.width = width
-        self.columns = columns
-        self.min = min
-        self.max = max
-        self.step = step
-        self.default = default
-        self.required = required
-        self.placeholder = placeholder
-        self.tooltip = tooltip
-        self.visible_when = visible_when
-        self.options = options
-        self.families = tuple(families) if isinstance(families, str) \
-            else tuple(families or ())
         self._validate()
 
     def _validate(self):
@@ -267,7 +272,6 @@ def _absorb_models(name, cid, models, fields, seen):
     exactly the families that declared them. Loud refusals: a boarded
     model not claiming this card back, a non-pack mod, a field name
     two mods fight over."""
-    import copy
     from melite_models import Model
     if not models:
         raise ValidationError(
@@ -299,8 +303,7 @@ def _absorb_models(name, cid, models, fields, seen):
                     "%s: mod %s re-declares field %r — one declaration "
                     "per name across card and mods"
                     % (name, mod.__name__, f.name))
-            fc = copy.copy(f)
-            fc.families = tuple(fams)
+            fc = replace(f, families=tuple(fams))
             seen.add(f.name)
             out.append(fc)
     return out, seen
@@ -335,7 +338,7 @@ class _CardMeta(type):
                 raise ValidationError(
                     "%s: field name %r must be a lowercase identifier"
                     % (name, key))
-            val.name = key
+            object.__setattr__(val, "name", key)
             val._validate()  # re-run with the name bound
             seen.add(key)
             fields.append(val)

@@ -41,6 +41,86 @@ class ModelError(Exception):
     """Loud refusal before the wire (the QUEUE LANE LAW shape)."""
 
 
+_GENRE_VALUES = frozenset(("image", "video", "audio", "3d", ""))
+
+class LaneInputs(BaseModel, frozen=True):
+    '''Weight facts a card renderer reads (MODELS DON'T RENDER — cards
+    do; the model supplies data). `unet` states the checkpoint basename
+    when no cell artifact owns it; when the artifact DOES (krea-2),
+    `unet_variant`/`unet_quant` name the cell and the basename is
+    DERIVED — never restated beside the artifact (rung 6).'''
+    model_config = {"extra": "forbid"}
+    unet: str = ""
+    unet_variant: str = ""
+    unet_quant: str = ""
+    text_encoder: str = ""
+    clip_type: str = ""
+    vae: str = ""
+
+    @model_validator(mode="after")
+    def _one_unet_source(self):
+        if bool(self.unet) == bool(self.unet_variant):
+            raise ValueError(
+                "lane_inputs: set exactly one of unet= (the basename) "
+                "or unet_variant=/unet_quant= (derive from the cell)")
+        if self.unet_quant and self.unet_quant not in _QUANT_VALUES:
+            raise ValueError("lane_inputs: unknown quant %r"
+                             % self.unet_quant)
+        return self
+
+
+
+
+
+# ── head-setting rows — typed declarations, not honor-system dicts ──
+
+
+class VariantGroup(BaseModel, frozen=True):
+    """A UI selector group (Variant/Quant/…) — rung 1: this is a row."""
+    model_config = {"extra": "forbid"}
+    id: str
+    label: str = ""
+    tooltip: str = ""
+
+
+class GuideSection(BaseModel, frozen=True):
+    model_config = {"extra": "forbid"}
+    label: str = ""
+    body: str = ""
+    list: tuple[str, ...] = ()
+
+
+class PromptGuide(BaseModel, frozen=True):
+    model_config = {"extra": "forbid"}
+    title: str = ""
+    sections: tuple[GuideSection, ...] = ()
+
+
+class Provision(BaseModel, frozen=True):
+    """A pre-artifact download block (the audio lane's weight packs)."""
+    model_config = {"extra": "forbid"}
+    name: str
+    url: HttpUrl
+    folder: str = ""
+    sha256: str | None = None
+    size_bytes: int | None = Field(default=None, gt=0)
+
+    @field_validator("sha256")
+    @classmethod
+    def _hex(cls, v):
+        if v is not None and not _SHA256_RE.match(v):
+            raise ValueError("provision sha256 must be 64 lowercase hex")
+        return v
+
+
+class Studio(BaseModel, frozen=True):
+    """The families-section claim (catalog meta)."""
+    model_config = {"extra": "forbid"}
+    tenant: str
+    owns_params: bool = False
+    writes: tuple[str, ...] = ()
+
+
 # ── closed vocabularies (PYTHON SHAPE LAW rung 3) ────────────────────
 # Quants/dest-roots are closed sets: a typo is a construction refusal,
 # not a runtime route mismatch. Extend ONLY when a real tier lands.
@@ -51,6 +131,9 @@ class Quant(str, Enum):
     FP8 = "fp8"
     BF16 = "bf16"
     LIGHTNING4 = "lightning4"
+
+
+_QUANT_VALUES = frozenset(q.value for q in Quant)
 
 
 class DestRoot(str, Enum):
@@ -252,16 +335,18 @@ class Model(metaclass=_ModelMeta):
     defaults = None           # dict — the family-level defaults
     timeout_floor = None
     loras = ()                # tuple[LoraRow]
-    prompt_guide = None       # dict — content, free shape
-    variant_groups = ()       # tuple of dicts — UI selector groups
+    prompt_guide = None       # PromptGuide row — content, free shape
+    variant_groups = ()       # tuple[VariantGroup] — UI selector groups
     provisioning = None
     source = None             # {"type", "repo_id", "filename"} — the
                               # catalog row source (url never emitted,
                               # catalog.c:738-752)
-    studio = None             # {"tenant": str, "owns_params": bool} — the
-                              # families-section claim (catalog meta)
-    provisions = ()           # tuple of dicts — pre-artifact download
+    studio = None             # Studio row — the families-section claim
+    provisions = ()           # tuple[Provision] — pre-artifact download
                               # blocks (name/url/folder[/sha256/size_bytes])
+    lane_inputs = None        # LaneInputs row — weight facts the CARD
+                              # renderer reads (models are data; cards
+                              # render)
     # Enhance recipes (inference.yaml → python, 2026-09-02).
     # Semicolon-joined rule text; same wire shape the yaml reader produces.
     prompt_upscale = ()
@@ -312,11 +397,38 @@ class Model(metaclass=_ModelMeta):
                     "%s.defaults must be a dict (got %s)"
                     % (cls.__name__, type(d).__name__))
         st = cls.studio
-        if st is not None and not (isinstance(st, dict)
-                                   and "tenant" in st):
+        if st is not None and not isinstance(st, Studio):
             raise ModelError(
-                "%s.studio must be {'tenant': str, 'owns_params': bool}"
+                "%s.studio must be a Studio row (tenant/owns_params/"
+                "writes) — typed declarations, not honor-system dicts"
                 % cls.__name__)
+        for g in (cls.variant_groups or ()):
+            if not isinstance(g, VariantGroup):
+                raise ModelError(
+                    "%s.variant_groups entries must be VariantGroup rows"
+                    % cls.__name__)
+        pg = cls.prompt_guide
+        if pg is not None and not isinstance(pg, PromptGuide):
+            raise ModelError(
+                "%s.prompt_guide must be a PromptGuide row" % cls.__name__)
+        for pr in (cls.provisions or ()):
+            if not isinstance(pr, Provision):
+                raise ModelError(
+                    "%s.provisions entries must be Provision rows"
+                    % cls.__name__)
+        if cls.source is not None and not isinstance(cls.source, SourceRow):
+            raise ModelError(
+                "%s.source must be a SourceRow" % cls.__name__)
+        li = cls.lane_inputs
+        if li is not None and not isinstance(li, LaneInputs):
+            raise ModelError(
+                "%s.lane_inputs must be a LaneInputs row (weight facts "
+                "for the card renderer — models are data, cards render)"
+                % cls.__name__)
+        if cls.genre and cls.genre not in _GENRE_VALUES:
+            raise ModelError(
+                "%s.genre %r is not in the closed vocabulary %s"
+                % (cls.__name__, cls.genre, sorted(_GENRE_VALUES)))
         # variant/cell rows validate AT CONSTRUCTION (pydantic frozen)
         # — the opt-in `if source_url:` artifact walk is dead with the
         # classes (shape law rungs 2/4: no guard remembers to check)
@@ -378,6 +490,25 @@ class Model(metaclass=_ModelMeta):
         return None
 
     @classmethod
+    def lane_unet_basename(cls):
+        """The unet checkpoint basename for card renderers: derived
+        from the named cell's artifact, or the stated lane_inputs.unet.
+        LOUD when the row points at a cell with no artifact."""
+        li = cls.lane_inputs
+        if li is None:
+            return ""
+        if li.unet:
+            return li.unet
+        _v, _e, cell = cls.resolve(li.unet_variant,
+                                   li.unet_quant or None)
+        if cell is None or cell.artifact is None:
+            raise ModelError(
+                "%s.lane_inputs points at cell (%s, %s) which carries "
+                "no artifact — the unet cannot be derived"
+                % (cls.__name__, li.unet_variant, li.unet_quant))
+        return str(cell.artifact.source_url).rsplit("/", 1)[-1]
+
+    @classmethod
     def resolve(cls, variant=None, quant=None):
         """(route, engine, cell) for matrix coordinates — the resolver
         the yaml cascade buried in text scans. Unspecified coordinates
@@ -411,12 +542,12 @@ def model_row(cls, model_dir):
     row["genre"] = cls.genre or ""
     row["label"] = cls.label or ""
     row["description"] = cls.description or ""
-    src = dict(cls.source or {}) if isinstance(cls.source, dict) else {}
-    row["source"] = {"type": src.get("type") or ""}
-    if src.get("repo_id") is not None:
-        row["source"]["repo_id"] = src["repo_id"]
-    if src.get("filename") is not None:
-        row["source"]["filename"] = src["filename"]
+    src = cls.source            # SourceRow | None (typed at boot)
+    row["source"] = {"type": (src.type if src else "") or ""}
+    if src is not None and src.repo_id is not None:
+        row["source"]["repo_id"] = src.repo_id
+    if src is not None and src.filename is not None:
+        row["source"]["filename"] = src.filename
     row["loras"] = []          # the C never parsed lora_catalog (catalog.c:177)
     row["defaults"] = dict(cls.defaults or {})
     row["engine"] = cls.engine or ""

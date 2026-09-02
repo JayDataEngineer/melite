@@ -163,8 +163,8 @@ def main():
     studio_models = {}
     for mid, cls in models.items():
         st = getattr(cls, "studio", None)
-        if isinstance(st, dict) and st.get("tenant"):
-            studio_models[mid] = st["tenant"]
+        if st is not None:            # Studio row (typed at boot)
+            studio_models[mid] = st.tenant
     for cid, card in cards.items():
         for fam in card.families_of():
             n = _norm(fam)

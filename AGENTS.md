@@ -142,6 +142,17 @@ cascade and now THE law for how this repo writes python declarations:
    full day because class ceremony buries values. Rows make diffs
    legible; construction validation makes wrong shapes unbuildable.
 
+8. **Models don't render; action cards render.** The graph-composition
+   modules (co_script renderers) are CARD behavior —
+   `action_cards/<genre>/<card>/renderer.py` — never model payload.
+   A model ships DATA: typed rows (`lane_inputs` weight facts, cell
+   artifacts, variants). The unet basename is DERIVED from the named
+   cell's artifact (`lane_unet_basename`), never retyped beside it;
+   facts with no artifact row (img-edit, music3) state their basename
+   once in `lane_inputs`. The renderer receives the Model class as
+   data and reads its rows. (Operator order, 2026-09-03: "I don't
+   want the 'models' to render, I just want action cards to render.")
+
 Where classes remain right: `Model` subclass per family; mods
 (`Loras(LorasMod)` — genuine schema flavors under the single `Mod`
 parent); anything with behavior or per-family taxonomy.

@@ -31,6 +31,12 @@ def load_card_py(path, engine="engine"):
       * multiple ActionCard subclasses    — one card per directory
     """
     card_dir = os.path.dirname(path)
+    # the loader owns import mechanics (shape law rung 5): repo py root
+    # injected once — no per-card sys.path rituals
+    from melite_models import _repo_py_root
+    pyroot = _repo_py_root(path)
+    if pyroot and pyroot not in sys.path:
+        sys.path.insert(0, pyroot)
     modname = _module_name(engine, card_dir)
     if modname in sys.modules:
         return _card_class_of(sys.modules[modname], path)
