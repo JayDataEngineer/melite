@@ -1507,21 +1507,6 @@
   }
  },
  "capabilities": {
-  "h3-timeline": {
-   "label": "H3 Timeline",
-   "description": "THE video interface \u2014 multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
-   "default_family": "h3-timeline",
-   "families": [
-    "h3-timeline"
-   ],
-   "kind": "generation",
-   "icon": "video",
-   "resolved": {
-    "family": "h3-timeline",
-    "model": "h3-timeline",
-    "params": {}
-   }
-  },
   "image-gen": {
    "label": "Image",
    "description": "Text-to-image generation \u2014 the generate_image family card (build_txt2img); img2img + LanPaint inpaint ride the same card via input_image / lanpaint_mask",
@@ -1534,6 +1519,21 @@
    "resolved": {
     "family": "krea-2",
     "model": "krea-2",
+    "params": {}
+   }
+  },
+  "h3-timeline": {
+   "label": "H3 Timeline",
+   "description": "THE video interface \u2014 multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
+   "default_family": "h3-timeline",
+   "families": [
+    "h3-timeline"
+   ],
+   "kind": "generation",
+   "icon": "video",
+   "resolved": {
+    "family": "h3-timeline",
+    "model": "h3-timeline",
     "params": {}
    }
   },
@@ -1600,26 +1600,6 @@
  },
  "cards": [
   {
-   "id": "h3-timeline",
-   "label": "H3 Timeline",
-   "description": "THE video interface \u2014 multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
-   "genre": "video",
-   "families": [
-    "h3-timeline"
-   ],
-   "principles": [
-    "Describe MOTION and SOUND together \u2014 H3 generates both in one pass",
-    "Draft at 768x448x56f (~2.3s); produce at 1344x768x124f (~5.2s)",
-    "Length snaps to the 17k+5 frame grid at 24fps",
-    "For timelines: repeat the ambient soundscape verbatim in every window; add one new layer where the story needs it",
-    "Same seed across a shot's re-rolls keeps the world texture",
-    "SLA at sparsity 0.90 gives ~1.75x speedup with no quality loss \u2014 use it by default"
-   ],
-   "skills": [],
-   "has_inference": false,
-   "has_rubric": false
-  },
-  {
    "id": "image-gen",
    "label": "Image",
    "description": "Text-to-image generation \u2014 the generate_image family card (build_txt2img); img2img + LanPaint inpaint ride the same card via input_image / lanpaint_mask",
@@ -1637,6 +1617,26 @@
    ],
    "skills": [],
    "has_inference": true,
+   "has_rubric": false
+  },
+  {
+   "id": "h3-timeline",
+   "label": "H3 Timeline",
+   "description": "THE video interface \u2014 multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
+   "genre": "video",
+   "families": [
+    "h3-timeline"
+   ],
+   "principles": [
+    "Describe MOTION and SOUND together \u2014 H3 generates both in one pass",
+    "Draft at 768x448x56f (~2.3s); produce at 1344x768x124f (~5.2s)",
+    "Length snaps to the 17k+5 frame grid at 24fps",
+    "For timelines: repeat the ambient soundscape verbatim in every window; add one new layer where the story needs it",
+    "Same seed across a shot's re-rolls keeps the world texture",
+    "SLA at sparsity 0.90 gives ~1.75x speedup with no quality loss \u2014 use it by default"
+   ],
+   "skills": [],
+   "has_inference": false,
    "has_rubric": false
   },
   {
