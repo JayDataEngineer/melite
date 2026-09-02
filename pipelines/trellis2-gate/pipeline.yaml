@@ -8,4 +8,4 @@ nodes:
     type: comfyui
     input_from:
       - __initial__.prompt
-    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"/home/user/Documents/programs/active/inference.cpp/plugins/comfyui/models/3d/trellis2_gate/img2mesh.json","inject":{"CLIPTextEncode.0.text":"$prompt","KSampler.0.seed":42,"TrellisCppNative.0.seed":42},"out_dir":"./output","timeout_s":2400}
+    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"/home/user/Documents/programs/active/inference.cpp/plugins/engines/comfyui/models/3d/trellis2_gate/img2mesh.json","inject":{"CLIPTextEncode.0.text":"$prompt","KSampler.0.seed":42,"TrellisCppNative.0.seed":42},"out_dir":"./output","timeout_s":2400}

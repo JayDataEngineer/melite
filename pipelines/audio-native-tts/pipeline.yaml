@@ -10,4 +10,4 @@ nodes:
     description: Qwen3-TTS text to speech via live ComfyUI nodes
     input_from:
       - __initial__.prompt
-    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"/home/user/Documents/programs/active/inference.cpp/plugins/comfyui/models/audio/qwen3_tts_gate/tts.json","inject":{"2.prompt":"$prompt","2.seed":42},"out_dir":"./output","timeout_s":1200}
+    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"/home/user/Documents/programs/active/inference.cpp/plugins/engines/comfyui/models/audio/qwen3_tts_gate/tts.json","inject":{"2.prompt":"$prompt","2.seed":42},"out_dir":"./output","timeout_s":1200}
