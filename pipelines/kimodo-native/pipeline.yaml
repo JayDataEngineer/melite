@@ -1,0 +1,14 @@
+name: kimodo-native
+api: true
+description: >-
+  Text-to-motion gate — ComfyUI Kimodo lane (island nodes, raw PyTorch
+  kimodo package, local SOMA-RP-v1.1 weights + local LLM2Vec encoder).
+  Dag format: nodes: + explicit __initial__ wiring (dag.c / runner.c).
+
+nodes:
+  - id: t2m
+    type: comfyui
+    description: Kimodo text-to-pose via live ComfyUI nodes
+    input_from:
+      - __initial__.prompt
+    params: {"server_url":"http://127.0.0.1:18465","workflow_file":"/home/user/Documents/programs/active/inference.cpp/plugins/comfyui/models/motion/kimodo_native/generate_t2m.json","inject":{"2.prompt":"$prompt","2.seed":42,"2.duration_sec":3,"2.diffusion_steps":25},"out_dir":"./output","timeout_s":1800}
