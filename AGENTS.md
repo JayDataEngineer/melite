@@ -27,8 +27,9 @@
   {model} that resolves to pipelines/<model>/pipeline.yaml on disk.
 - Plugins (e.g. comfyui server_url) must not carry a hardcoded default
   endpoint. Missing required params fail the node LOUDLY at load.
-- Enforced by the chaos test suite (tests/test_queue_chaos.py, C5
-  banned-shape checks) and ctest test_queue_chaos (52 checks, green).
+- Enforced by the py gateway's route-layer validation (4xx BEFORE
+  registration) and the parity test suites (tests/test_py_gateway.py,
+  tests/test_http_parity.py).
 
 ## RESILIENCE LAW (operator order, 2026-08-29, verbatim)
 
@@ -62,10 +63,10 @@ unchanged: cards in, stop door out, operator-only gateway restarts.
 Perfection pass (same day, QUEUE_AUDIT.md round 2): every JSON accumulator
 is a grow-and-retry jappend (no truncation/underflow class left anywhere),
 GPU tickets are assigned at registration (strict submission-order FIFO,
-abandoned tickets drain in order), stop flags are C11 atomics, and all 24
-regression checks in tests/test_queue.py are green — the stop door lands
-in 0.3s with a witnessed /interrupt, SIGTERM manufactures zero zombies,
-and boot sweeps are idempotent.
+abandoned tickets drain in order), stop flags are C11 atomics, and the
+py gateway's golden parity suite confirms the stop door lands in <6s with
+a witnessed /interrupt, SIGTERM manufactures zero zombies, and boot sweeps
+are idempotent.
 
 ## PLUGIN ARCHITECTURE LAW (operator order, 2026-08-31, verbatim intent)
 
@@ -73,19 +74,21 @@ and boot sweeps are idempotent.
 
 - Lane/card-specific knowledge — calls→windows compile, grid math,
   template expansion, inject splices, knob maps, template families —
-  lives in the PLUGIN that owns the lane (code + data), NEVER in
-  src/server.cpp. The core stays generic.
-- Enforcement shape: the optional `card_compose` C-ABI hook
-  (include/inference/plugin.h). Phase 1 (run_id="") compiles/validates
-  and returns extra run inputs; phase 2 rewrites the run graph in
-  place. The server reads the engine type FROM THE GRAPH — it names no
-  lane and no engine.
+  lives in the PLUGIN that owns the lane (code + data), NEVER in the
+  gateway core (`py/gateway.py`). The core stays generic.
+- Enforcement shape: each plugin exposes `engines/<dir>/engine.py`
+  (execute) and `engines/<dir>/compose/` (card compose). Phase 1
+  (run_id="") validates and returns extra run inputs; phase 2 emits the
+  run graph YAML. The gateway resolves engine type FROM THE GRAPH — it
+  names no lane and no engine.
 - The card's knob map is DATA the plugin owns, next to its model:
-  plugins/<plugin>/models/video/<model>/card_knobs.yaml. A knob the
+  `plugins/<plugin>/models/video/<model>/card_knobs.yaml`. A knob the
   card offers must be in the map AND real in the lane's templates
-  (LAYER AUDIT enforces both directions; card_knobs.yaml is the SSOT
+  (LAYER AUDIT enforces both directions; `card_knobs.yaml` is the SSOT
   for what compose actually splices).
 - History note: the h3 timeline feature shipped 2026-08-30/31 with its
   compile/grid/splice logic embedded in server.cpp — a regression this
-  law repaid. If a lane "needs" core changes to express its card, the
-  ABI is extended generically instead.
+  law repaid. Post-flip, compose logic lives in
+  `plugins/comfyui/engines/comfyui/compose/` (per-card modules). If a
+  lane "needs" core changes to express its card, the plugin contract is
+  extended generically instead.
