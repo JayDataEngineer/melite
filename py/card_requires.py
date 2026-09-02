@@ -124,12 +124,24 @@ def check_card_requires(
         if custom_nodes_dir and _extension_on_disk(ext_lower, custom_nodes_dir):
             continue
 
-        # Strategy 3: if we have object_info but no mapping, assume present
-        # (we only refuse when we're SURE it's missing)
+        # Strategy 3: for unknown extensions (no node mapping), check
+        # if the name matches any loaded node type (heuristic).
         if object_info_set and not expected_nodes:
-            continue  # no way to verify — don't block
+            lower_name = ext_lower.lower().replace("-", "").replace("_", "")
+            matched = False
+            for node_name in object_info_set:
+                if lower_name in node_name.lower().replace("-", "").replace("_", ""):
+                    matched = True
+                    break
+            if not matched:
+                missing.append(ext_lower)
+            continue
 
-        missing.append(ext_lower)
+        # If we got here: no object_info match, no disk match, no heuristic.
+        # Cannot confirm the extension is present — refuse.
+        if expected_nodes and not object_info_set:
+            # We have a mapping but couldn't check object_info (server down)
+            missing.append(ext_lower)
 
     if missing:
         return False, (

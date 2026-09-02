@@ -217,6 +217,48 @@ def resolve_request(body):
 # sorted, LOUD refusals. The C glob-order bug dies here.)
 
 
+def _find_card_requires(mid, plugins_dir=None):
+    """Resolve model id -> card.yaml requires list (or [] if none).
+
+    Walks plugins/*/cards/*/card.yaml, matches via ability.default_family
+    or families list against the model's family id.
+    """
+    import yaml as _yaml
+    if plugins_dir is None:
+        plugins_dir = REPO / "plugins"
+    for plugin_dir in sorted(plugins_dir.iterdir()):
+        models_root = plugin_dir / "models"
+        if not models_root.is_dir():
+            continue
+        for my in models_root.glob("*/%s/model.yaml" % mid):
+            try:
+                cfg = _yaml.safe_load(my.read_text()) or {}
+                fam = cfg.get("family", {})
+                if isinstance(fam, dict) and fam.get("id"):
+                    family_id = fam["id"]
+                    for pdir in sorted(plugins_dir.iterdir()):
+                        cards_root = pdir / "cards"
+                        if not cards_root.is_dir():
+                            continue
+                        for cy in cards_root.glob("*/card.yaml"):
+                            try:
+                                ccfg = _yaml.safe_load(cy.read_text()) or {}
+                                card_sec = ccfg.get("card", ccfg)
+                                af = card_sec.get("ability", {})
+                                if isinstance(af, dict) and af.get("default_family") == family_id:
+                                    return ccfg.get("requires", [])
+                                fams = ccfg.get("families", [])
+                                for f in fams:
+                                    fid = f.get("id") if isinstance(f, dict) else f
+                                    if fid == family_id:
+                                        return ccfg.get("requires", [])
+                            except Exception:
+                                continue
+            except Exception:
+                continue
+    return []
+
+
 def resolve_card_model(body, mid):
     """{model} arm for card-only models (no pipeline.yaml on disk).
 
@@ -228,6 +270,17 @@ def resolve_card_model(body, mid):
     plugin order owns it; no declarer = LOUD refusal.
     Returns (skeleton_text, etype, extra) or raises loudly.
     """
+    # CARD REQUIRES LAW: check declared extensions before compose.
+    requires = _find_card_requires(mid)
+    if requires:
+        try:
+            from py.card_requires import check_card_requires
+            custom_nodes_dir = str(plugins_dir.parent / "custom_nodes")
+            ok, msg = check_card_requires(requires, custom_nodes_dir=custom_nodes_dir)
+            if not ok:
+                raise ValidationError("card requires: %s" % msg)
+        except ImportError:
+            pass  # card_requires module not available — skip check
     etype, _my = _plugin_loud(_plugin_bus.resolve_model, mid)
     skeleton = "name: %s\ntype: %s\ndescription: card-composed\n\nnodes:\n" % (mid, etype)
     try:
