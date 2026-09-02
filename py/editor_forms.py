@@ -72,6 +72,15 @@ from __future__ import annotations
 
 import json
 import os
+import sys
+
+try:
+    # the same class as the gateway's (plugins.py defines the standalone
+    # twin when the gateway import cycle blocks — same trick as plugins.py)
+    from gateway import ValidationError  # noqa: F401
+except Exception:
+    class ValidationError(Exception):
+        """Loud 4xx before any run is registered (QUEUE LANE LAW)."""
 
 __all__ = ["forms", "form_spec", "kinds"]
 
@@ -486,10 +495,36 @@ def _first_family_is(yp, model):
     return hit
 
 
+def _card_has_surface(yp):
+    """A card dir declares a FIELD SURFACE via a card.yaml `parameters:`
+    block OR a sibling card.py (the python flip, 2026-09-02). The
+    discovery gate; _load_card_surface enforces ONE of the two."""
+    if _has_parameters_block(yp):
+        return True
+    return os.path.isfile(os.path.join(os.path.dirname(yp), "card.py"))
+
+
+def _has_parameters_block(yp):
+    try:
+        with open(yp, 'r', encoding='utf-8', errors='surrogateescape',
+                  newline='') as f:
+            for pl in f:
+                if pl.startswith('parameters:'):
+                    return True
+                if pl[0] not in ' \t#\n':
+                    # top-level sections after card:/families: without a
+                    # parameters: header — the file has no block
+                    pass
+    except OSError:
+        return False
+    return False
+
+
 def _find_card_yaml(repo_root, model):
     """cs_find_card_yaml (src/server.cpp:7533-7611): the sole-owner card.
-    Skip cards without a parameters: block; gate on the /v1/forms card ids
-    (the C's ALLOWED_CARDS); families must match, first-family match wins
+    Skip cards without a field surface (yaml parameters: block OR card.py
+    — the python flip); gate on the /v1/forms card ids (the C's
+    ALLOWED_CARDS); families must match, first-family match wins
     outright, first any-family match is the fallback candidate.
     (2026-09-02) Scan depth is the engine layout: plugins/engines/<engine>/cards/."""
     candidate = None
@@ -503,12 +538,7 @@ def _find_card_yaml(repo_root, model):
             yp = os.path.join(cdir, card, "card.yaml")
             if not os.path.isfile(yp):
                 continue
-            has_params = False
-            for pl in _fgets(yp):
-                if pl.startswith('parameters:'):  # strncmp(pl, "parameters:", 11)
-                    has_params = True
-                    break
-            if not has_params:
+            if not _card_has_surface(yp):
                 continue
             cid = _card_identity_path(yp)["id"]
             if cid not in _ALLOWED_CARDS:
@@ -706,12 +736,51 @@ def _engine_dir_of_card(card_yaml_path):
     return os.path.dirname(os.path.dirname(os.path.dirname(card_yaml_path)))
 
 
+_MELITE_CARDS_PATH = os.path.join("plugins", "web", "cards_py")
+
+
+def _load_card_class(yp):
+    """The card.py ActionCard subclass for a card.yaml's dir, or None.
+    The gateway imports the generic DSL from plugins/web/cards_py (the
+    py twin of ui_components — PLUGIN ARCHITECTURE LAW: grammar is
+    generic, the class is engine-owned)."""
+    cppath = os.path.join(os.path.dirname(yp), "card.py")
+    if not os.path.isfile(cppath):
+        return None
+    engine_dir = _engine_dir_of_card(yp)
+    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(engine_dir)))
+    cards_root = os.path.join(repo_root, "plugins", "web", "cards_py")
+    if cards_root not in sys.path:
+        sys.path.insert(0, cards_root)
+    from melite_cards import load_card_py as _load
+    engine = os.path.basename(engine_dir)
+    return _load(cppath, engine)
+
+
 def _card_spec(repo_root, model):
     """card_spec_json: the "form"/"service"/"fields"/"schema_groups" tail,
-    or None when no card.yaml covers the model (legacy shape kept)."""
+    or None when no card.yaml covers the model (legacy shape kept).
+
+    (2026-09-02) card.py WINS when present — and a card.yaml
+    `parameters:` block alongside it is a LOUD refusal (two SSOTs is
+    zero SSOTs; QUEUE LANE LAW: no silent preference)."""
     yp = _find_card_yaml(repo_root, model)
     if yp is None:
         return None
+    cls = _load_card_class(yp)
+    if cls is not None:
+        if _has_parameters_block(yp):
+            raise ValidationError(
+                "%s carries BOTH card.py and a card.yaml parameters: block "
+                "— the field surface lives in ONE place; delete the yaml "
+                "block (the flip) or the card.py" % yp)
+        engine_dir = _engine_dir_of_card(yp)
+        options_vocab = {
+            "samplers": _option_list(repo_root, "samplers", engine_dir),
+            "schedulers": _option_list(repo_root, "schedulers", engine_dir),
+        }
+        from melite_cards import field_spec as _fs
+        return _fs(cls, model, options_vocab, service=model)
     fields = _parse_card_parameters(yp)
     if not fields:
         return None
@@ -829,11 +898,20 @@ def _parse_mod_entries(yp):
 def _modifiers(repo_root, model):
     """ModifierKind objects: bag-typed mods fields become kinds; scalar
     knobs that FOLLOW a kind ride it as ModifierFields (src/server.cpp:
-    8341-8391). Scalars before any kind are dropped."""
+    8341-8391). Scalars before any kind are dropped.
+    card.py cards walk the class fields (same attrs, same order)."""
     yp = _find_card_yaml(repo_root, model)
     if yp is None:
         return []
-    mes = _parse_mod_entries(yp)
+    cls = _load_card_class(yp)
+    if cls is not None:
+        mes = [{"name": f.name, "type": f.type, "label": f.label or "",
+                "min": f.min, "max": f.max, "step": f.step,
+                "has_min": f.min is not None, "has_max": f.max is not None,
+                "has_step": f.step is not None}
+               for f in cls._fields_]
+    else:
+        mes = _parse_mod_entries(yp)
     out = []
     for e, me in enumerate(mes):
         t = me["type"]
@@ -939,11 +1017,12 @@ def _recipes_fallback(repo_root, model_id):
 
 
 def _card_declares_prompt(yp):
-    """The has_prompt probe (src/server.cpp:8406-8430) — FAITHFUL BUG PORT:
-    unlike card_spec_json this scan does NOT skip blank lines; any blank or
-    top-level line between `parameters:` and the `prompt:` field resets the
-    section flag, so the card then 'declares no prompt' and the route
-    nullifies the prompt enhance recipe."""
+    """The has_prompt probe. card.py cards consult the class (an honest
+    declaration list — the FAITHFUL BUG PORT below only applies to the
+    yaml surface it was ported from)."""
+    cls = _load_card_class(yp)
+    if cls is not None:
+        return cls.declares_prompt()
     in_p = False
     for raw in _fgets(yp):
         pl = _cut_comment(raw)
