@@ -210,6 +210,12 @@ class Model(metaclass=_ModelMeta):
     engine = ""               # engine_plugin
     form = None
     card = ""
+    # MODS ARE DECLARED HERE — the family's own mod set (ActionCardPack
+    # classes from melite_cards): `mods = (LorasMod,)`. The card that
+    # boards this model absorbs exactly these mod blocks, scoped to
+    # this family. Different families declare different sets (z-image's
+    # mods are not krea-2's); the card surface derives, never hand-lists.
+    mods = ()
     canvas_default = False
     defaults = None           # dict — the family-level defaults
     timeout_floor = None
@@ -237,6 +243,18 @@ class Model(metaclass=_ModelMeta):
                 raise ModelError(
                     "%s: loras must be LoraRow instances (got %s)"
                     % (cls.__name__, type(lora).__name__))
+        mods = cls.mods or ()
+        if not isinstance(mods, tuple):
+            raise ModelError("%s.mods must be a tuple (got %s)"
+                             % (cls.__name__, type(mods).__name__))
+        if mods:
+            from melite_cards import ActionCardPack   # the interlock
+            for mod in mods:
+                if not (isinstance(mod, type)
+                        and issubclass(mod, ActionCardPack)):
+                    raise ModelError(
+                        "%s.mods entries must be ActionCardPack classes "
+                        "(got %r)" % (cls.__name__, mod))
         for attr in ("defaults", "provisions"):
             d = getattr(cls, attr, None)
             if attr == "provisions":

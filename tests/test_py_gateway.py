@@ -145,8 +145,10 @@ etype, _my = plugins.resolve_model("qwen3-tts")
 check("qwen3-tts resolves audio_cpp", etype == "audio_cpp", etype)
 
 # C15: no engine stanza = LOUD refusal (QUEUE LANE LAW — refuse to guess)
+# (z-image/anima declare engine now — they board the image-gen card and
+# must resolve; the utility lanes stay stanza-less and serve as the probe)
 try:
-    plugins.resolve_model("z-image")
+    plugins.resolve_model("input")
     check("stanza-less model refused", False, "no refusal")
 except plugins.ValidationError:
     check("stanza-less model refused", True)

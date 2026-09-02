@@ -259,37 +259,111 @@ def _parse_options_str(field_name, raw):
         % (field_name, raw))
 
 
+def _absorb_models(name, cid, models, fields, seen):
+    """The interlock's engine: board Model classes → derive the mods
+    surface. MODS ARE MODEL-LEVEL DECLARATIONS (Model.mods tuples of
+    ActionCardPack classes); the card never hand-lists mod fields —
+    it boards models and their mods ride through, each scoped to
+    exactly the families that declared them. Loud refusals: a boarded
+    model not claiming this card back, a non-pack mod, a field name
+    two mods fight over."""
+    import copy
+    from melite_models import Model
+    if not models:
+        raise ValidationError(
+            "%s: models= must board at least one Model class" % name)
+    for m in models:
+        if not (isinstance(m, type) and issubclass(m, Model)):
+            raise ValidationError(
+                "%s: models= entries must be Model classes (got %r)"
+                % (name, m))
+        if m.card != cid:
+            raise ValidationError(
+                "%s boards model %r whose card=%r does not claim this "
+                "card back (%r) — the cross-validation hook is the "
+                "model's to declare" % (name, m.id, m.card, cid))
+    mod_scope = {}       # mod class -> [family ids declaring it]
+    for m in models:
+        for mod in getattr(m, "mods", ()) or ():
+            if not (isinstance(mod, type)
+                    and issubclass(mod, ActionCardPack)):
+                raise ValidationError(
+                    "model %r declares mod %r — mods must be "
+                    "ActionCardPack classes" % (m.id, mod))
+            mod_scope.setdefault(mod, []).append(m.id)
+    out = list(fields)
+    for mod, fams in mod_scope.items():
+        for f in mod._fields_:
+            if f.name in seen:
+                raise ValidationError(
+                    "%s: mod %s re-declares field %r — one declaration "
+                    "per name across card and mods"
+                    % (name, mod.__name__, f.name))
+            fc = copy.copy(f)
+            fc.families = tuple(fams)
+            seen.add(f.name)
+            out.append(fc)
+    return out, seen
+
+
 class _CardMeta(type):
     """Collects Field attributes in DECLARATION order (the wire's field
     order law) and runs card-level validation at class creation — a
-    broken card fails at import, before the gateway ever serves it."""
+    broken card fails at import, before the gateway ever serves it.
+
+    Field order: OWN declarations first, then inherited bases left to
+    right — mod fields tail the card's core surface, matching the
+    served order law. Absorption: a card declaring
+    `models = (ModelClass, ...)` boards those model classes. MODS ARE
+    DECLARED AT THE MODEL LEVEL — each Model carries
+    `mods = (SomeMod, ...)` (a mod = an ActionCardPack field block),
+    and the metaclass UNIONS the boarded models' mods into the card
+    surface, each mod's fields scoped to exactly the families whose
+    Model declared them (z-image boards different mods than krea-2 —
+    that is the point). Card classes absorb model classes; model
+    classes are designed to be absorbed — the interlock."""
 
     def __new__(mcls, name, bases, ns):
         cls = super().__new__(mcls, name, bases, ns)
+        cid = ns.get("id", "")
         fields = []
         seen = set()
+        own = {key: val for key, val in ns.items()
+               if isinstance(val, Field)}
+        for key, val in own.items():
+            if not _FIELD_NAME_RE.match(key):
+                raise ValidationError(
+                    "%s: field name %r must be a lowercase identifier"
+                    % (name, key))
+            val.name = key
+            val._validate()  # re-run with the name bound
+            seen.add(key)
+            fields.append(val)
         for base in bases:
             for f in getattr(base, "_fields_", ()):
                 if f.name not in seen:
                     seen.add(f.name)
                     fields.append(f)
-        for key, val in ns.items():
-            if isinstance(val, Field):
-                if not _FIELD_NAME_RE.match(key):
-                    raise ValidationError(
-                        "%s: field name %r must be a lowercase identifier"
-                        % (name, key))
-                if key in seen:
-                    raise ValidationError(
-                        "%s: duplicate field %r — one declaration per name"
-                        % (name, key))
-                val.name = key
-                val._validate()  # re-run with the name bound
-                seen.add(key)
-                fields.append(val)
+        # -- absorption: the mods arrive THROUGH the boarded models ------
+        models = ns.get("models", None)
+        if models is not None:
+            fields, seen = _absorb_models(name, cid, models, fields, seen)
+            if "families" in ns:
+                raise ValidationError(
+                    "%s declares BOTH models= and families= — models is "
+                    "the truth; families derive from them" % name)
+            cls.families = tuple(m.id for m in models)
         cls._fields_ = tuple(fields)
-        cid = ns.get("id", "")
-        if fields and not cid:
+        pack = ns.get("pack", "")
+        if pack and cid:
+            raise ValidationError(
+                "%s: a pack (%r) never carries a card id — packs are "
+                "mod blocks a MODEL declares in its mods" % (name, pack))
+        if pack and not fields:
+            raise ValidationError(
+                "%s: pack %r declares no fields — a pack is a field "
+                "block, an empty one is dead machinery" % (name, pack))
+        if fields and not cid and not pack:
             raise ValidationError(
                 "%s declares fields but no card id" % name)
         if cid and not IDENT_RE.match(cid):
@@ -386,3 +460,108 @@ class ActionCard(metaclass=_CardMeta):
         """The mods-zone tail (loras/controlnet kinds + their trailing
         scalar knobs), in declaration order — the _modifiers port."""
         return list(cls._fields_)
+
+
+# ── MOD BLOCKS — the menu a MODEL declares in its `mods` tuple ─────────
+#
+# MODS ARE DECLARED AT THE MODEL LEVEL: a family's Model class carries
+# `mods = (LanPaintMod,)` — its OWN set, different families different
+# sets (z-image ≠ krea-2). A card boarding that model absorbs the
+# declared mods, each scoped to exactly the declaring families. A
+# block here that no model declares simply never surfaces — the menu
+# is capability grammar, not served surface.
+
+
+class ActionCardPack(metaclass=_CardMeta):
+    """Base mod block. Never a card: no id, never served alone; the
+    fields ride a card THROUGH its boarded models. `pack` names the
+    capability (the Model-side mods declaration matches on class
+    identity — subclass to shape a family's flavor of a mod)."""
+    pack = ""
+
+
+class LorasMod(ActionCardPack):
+    """The LoRA stack mod — boarded by families whose model provisions
+    loras (krea-2: the Raw-variant training loras, applied on Turbo)."""
+    pack = "loras"
+    loras = Loras(label='LoRAs', group='loras_controlnet', zone='mods',
+                  order=0)
+
+
+class ControlNetMod(ActionCardPack):
+    """The ControlNet stack mod — boarded by families provisioning
+    controlnet models. No model declares it yet; the entry waits in
+    the menu until one truthfully does."""
+    pack = "controlnet"
+    controlnet = ControlNet(label='ControlNet', group='loras_controlnet',
+                            zone='mods', order=1)
+    controlnet_strength_floor = Slider(
+        label='ControlNet Strength Floor',
+        group='loras_controlnet', zone='mods', order=2, width=1,
+        min=0, max=1, step=0.05,
+        tooltip='Minimum strength any ControlNet in the stack may apply '
+                'at. Entries below this are clamped UP (with a log '
+                'line). 0.0 = no floor. Raise this when stacking many '
+                'weak ControlNets that cost VRAM without visual '
+                'benefit.')
+
+
+class LanPaintMod(ActionCardPack):
+    """The LanPaint inpaint mod — input_image + lanpaint_mask switch
+    the builder to LanPaintKSampler; mask prep (grow/feather/
+    threshold/invert) and outpaint pads apply host-side pre-run."""
+    pack = "lanpaint"
+    input_image = Image(label='Image', group='lanpaint', order=-1)
+    lanpaint_mask = Image(label='Inpaint Mask', group='lanpaint', order=0,
+        tooltip='RGBA PNG whose alpha channel marks the region to '
+                'regenerate. When present alongside input_image, '
+                'build_txt2img switches to LanPaintKSampler.',
+        visible_when='input_image != null')
+    lanpaint_enabled = Boolean(label='Force LanPaint', group='lanpaint',
+                               order=1,
+                               visible_when='input_image != null')
+    lanpaint_num_steps = Number(label='Num Steps', group='lanpaint',
+                                order=2, width=1, min=1, max=100, step=1,
+                                visible_when='lanpaint_enabled == true')
+    lanpaint_step_size = Slider(label='Step Size', group='lanpaint',
+                                order=3, width=1, min=0.1, max=2, step=0.1,
+                                visible_when='lanpaint_enabled == true')
+    lanpaint_lambda = Slider(label='Lambda', group='lanpaint', order=4,
+                             width=1, min=0, max=2, step=0.05,
+                             visible_when='lanpaint_enabled == true')
+    lanpaint_beta = Slider(label='Beta', group='lanpaint', order=5,
+                           width=1, min=0, max=2, step=0.05,
+                           visible_when='lanpaint_enabled == true')
+    lanpaint_friction = Slider(label='Friction', group='lanpaint', order=6,
+                               width=1, min=0, max=2, step=0.05,
+                               visible_when='lanpaint_enabled == true')
+    lanpaint_prompt_mode = Select(label='Prompt Mode', group='lanpaint',
+                                  order=7, width=1,
+                                  visible_when='lanpaint_enabled == true',
+                                  options=["negative", "positive"])
+    mask_grow = Slider(label='Grow / Shrink', group='lanpaint', order=8,
+                       width=1, min=-32, max=32, step=1,
+                       visible_when='input_image != null')
+    mask_feather = Slider(label='Feather', group='lanpaint', order=9,
+                          width=1, min=0, max=32, step=1,
+                          visible_when='input_image != null')
+    mask_threshold = Slider(label='Re-threshold', group='lanpaint',
+                            order=10, width=1, min=0, max=1, step=0.05,
+                            visible_when='input_image != null')
+    mask_invert = Boolean(label='Invert', group='lanpaint', order=11,
+                          visible_when='input_image != null')
+    outpaint_top = Slider(label='Expand Top', group='lanpaint', order=12,
+                          width=1, min=0, max=512, step=8,
+                          visible_when='input_image != null')
+    outpaint_right = Slider(label='Expand Right', group='lanpaint',
+                            order=13, width=1, min=0, max=512, step=8,
+                            visible_when='input_image != null')
+    outpaint_bottom = Slider(label='Expand Bottom', group='lanpaint',
+                             order=14, width=1, min=0, max=512, step=8,
+                             visible_when='input_image != null')
+    outpaint_left = Slider(label='Expand Left', group='lanpaint', order=15,
+                           width=1, min=0, max=512, step=8,
+                           visible_when='input_image != null')
+    outpaint_overlap = Slider(label='Overlap', group='lanpaint', order=16,
+                              width=1, min=0, max=64, step=1,
+                              visible_when='input_image != null')

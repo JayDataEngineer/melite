@@ -1,1 +1,950 @@
-{"tools":[]}
+{
+  "tools": [
+    {
+      "name": "h3_timeline_card__h3_timeline",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "h3-timeline",
+      "model": "h3-timeline",
+      "stage_title": "H3 Timeline",
+      "description": "THE video interface \u2014 multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Verb-first motion + the sounds. For keyframes the image already sets the scene \u2014 prompt what CHANGES."
+          },
+          "image": {
+            "type": "string",
+            "description": "Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline."
+          },
+          "ref_image": {
+            "type": "string",
+            "description": "Absolute path to a reference image for identity-locked generation. The hybrid model auto-routes to Ref2VA mode when connected. Optional \u2014 leave empty for standard FL2VA text-to-video."
+          },
+          "seed": {
+            "type": "string",
+            "default": 42,
+            "description": "Same seed across re-rolls = same world texture"
+          },
+          "width": {
+            "type": "string",
+            "minimum": 448,
+            "maximum": 1344,
+            "default": 768,
+            "description": "Width"
+          },
+          "height": {
+            "type": "string",
+            "minimum": 448,
+            "maximum": 768,
+            "default": 448,
+            "description": "Height"
+          },
+          "length": {
+            "type": "string",
+            "minimum": 21,
+            "maximum": 362,
+            "default": 56,
+            "description": "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s"
+          },
+          "steps": {
+            "type": "string",
+            "minimum": 4,
+            "maximum": 30,
+            "default": 12,
+            "description": "12 for draft; 30 standard; 10 with the turbo LoRA"
+          },
+          "sharpen_enabled": {
+            "type": "string",
+            "default": "true",
+            "description": "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural."
+          },
+          "sharpen_strength": {
+            "type": "string",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 0.3,
+            "description": "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off."
+          },
+          "interpolate_enabled": {
+            "type": "string",
+            "default": "false",
+            "description": "Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time."
+          },
+          "shift_video": {
+            "type": "string",
+            "minimum": 1,
+            "maximum": 20,
+            "default": 12.0,
+            "description": "Timestep shift for video attention. Higher = more coherent motion."
+          },
+          "shift_audio": {
+            "type": "string",
+            "minimum": 1,
+            "maximum": 10,
+            "default": 3.0,
+            "description": "Timestep shift for audio attention. Lower = more detailed sound."
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      }
+    },
+    {
+      "name": "image_edit_card__img_edit",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "image-edit",
+      "model": "img-edit",
+      "stage_title": "Image Edit",
+      "description": "Instruction-driven image editing \u2014 the edit_image family card (build_img2img_edit); up to three input images + reference list, mask-aware region editing, LanPaint tuning",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "input_image": {
+            "type": "string",
+            "format": "path",
+            "description": "Image"
+          },
+          "mask": {
+            "type": "string",
+            "format": "path",
+            "description": "Optional region mask \u2014 omit to edit the whole image."
+          },
+          "image2": {
+            "type": "string",
+            "format": "path",
+            "description": "Image 2"
+          },
+          "image3": {
+            "type": "string",
+            "format": "path",
+            "description": "Image 3"
+          },
+          "reference_images": {
+            "type": "string",
+            "description": "Multi-image picker (up to 3). Used by workflows that pass resolved image lists; complements the individual Image 2 / Image 3 slots above."
+          },
+          "prompt": {
+            "type": "string",
+            "description": "Prompt"
+          },
+          "negative_prompt": {
+            "type": "string",
+            "x-visible-when": "negative_prompt != null",
+            "description": "Negative Prompt"
+          },
+          "width": {
+            "type": "number",
+            "minimum": 256,
+            "maximum": 2048,
+            "description": "Width"
+          },
+          "height": {
+            "type": "number",
+            "minimum": 256,
+            "maximum": 2048,
+            "description": "Height"
+          },
+          "seed": {
+            "type": "integer",
+            "default": -1,
+            "description": "Seed"
+          },
+          "steps": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Steps"
+          },
+          "cfg": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 10,
+            "description": "Qwen-Image-Edit uses low CFG (flow-matching)."
+          },
+          "sampler": {
+            "type": "string",
+            "description": "Sampler \u2014 options resolve from the $samplers vocabulary at serve time"
+          },
+          "scheduler": {
+            "type": "string",
+            "description": "Scheduler \u2014 options resolve from the $schedulers vocabulary at serve time"
+          },
+          "loras": {
+            "type": "array",
+            "description": "LoRAs"
+          },
+          "controlnet_strength_floor": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Minimum strength any ControlNet in the stack may apply at. Entries below are clamped UP. 0.0 = no floor. Raise when stacking weak CNs that cost VRAM without visual benefit."
+          },
+          "lanpaint_mask": {
+            "type": "string",
+            "format": "path",
+            "x-visible-when": "input_image != null",
+            "description": "RGBA PNG whose alpha channel marks the region to edit. When present alongside input_image, build_img2img_edit patches the model with the DiffSynth inpaint ControlNet."
+          },
+          "lanpaint_enabled": {
+            "type": "boolean",
+            "x-visible-when": "input_image != null",
+            "description": "Force LanPaint"
+          },
+          "lanpaint_num_steps": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100,
+            "x-visible-when": "lanpaint_enabled == true",
+            "description": "Num Steps"
+          },
+          "lanpaint_step_size": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 2,
+            "x-visible-when": "lanpaint_enabled == true",
+            "description": "Step Size"
+          },
+          "lanpaint_lambda": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2,
+            "x-visible-when": "lanpaint_enabled == true",
+            "description": "Lambda"
+          },
+          "lanpaint_beta": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2,
+            "x-visible-when": "lanpaint_enabled == true",
+            "description": "Beta"
+          },
+          "lanpaint_friction": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2,
+            "x-visible-when": "lanpaint_enabled == true",
+            "description": "Friction"
+          },
+          "lanpaint_prompt_mode": {
+            "type": "string",
+            "enum": [
+              "negative",
+              "positive"
+            ],
+            "x-visible-when": "lanpaint_enabled == true",
+            "description": "Prompt Mode"
+          },
+          "edit_mask_mode": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "crop_stitch",
+              "full_frame"
+            ],
+            "x-visible-when": "input_image != null",
+            "description": "How the region mask is honored: auto (DiffSynth ControlNet if its weights are present, else crop+stitch), crop_stitch (crop to the mask + context, edit the crop, composite back \u2014 pixels outside the mask never change), full_frame (legacy whole-image edit; unmasked regions may drift)."
+          },
+          "edit_context_pad": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 256,
+            "x-visible-when": "input_image != null",
+            "description": "Pixels of surrounding context kept in the crop (crop_stitch mode). More context = more coherent edit; 64 is the sweet spot."
+          },
+          "mask_grow": {
+            "type": "number",
+            "minimum": -32,
+            "maximum": 32,
+            "x-visible-when": "input_image != null",
+            "description": "Expand (+) or shrink (\u2212) the edit region by an exact pixel disk before the edit. Applied host-side \u2014 the same mask-prep chain the Inpaint card uses."
+          },
+          "mask_feather": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 32,
+            "x-visible-when": "input_image != null",
+            "description": "Gaussian falloff the composite blends through \u2014 kills the pasted-on rectangle edge."
+          },
+          "mask_threshold": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "x-visible-when": "input_image != null",
+            "description": "Re-binarize the feathered mask at this level. 0 = keep the soft falloff."
+          },
+          "mask_invert": {
+            "type": "boolean",
+            "x-visible-when": "input_image != null",
+            "description": "Edit OUTSIDE the painted region instead."
+          }
+        },
+        "required": [
+          "input_image",
+          "prompt"
+        ]
+      }
+    },
+    {
+      "name": "image_gen_card__anima",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "image-gen",
+      "model": "anima",
+      "stage_title": "Image",
+      "description": "Text-to-image generation \u2014 the generate_image interface card boarding krea-2, anima and z-image; each family declares its own mods (loras on krea-2, lanpaint on anima/z-image) and the surface scopes itself",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Prompt"
+          },
+          "negative_prompt": {
+            "type": "string",
+            "x-visible-when": "negative_prompt != null",
+            "description": "Negative Prompt"
+          },
+          "width": {
+            "type": "number",
+            "minimum": 256,
+            "maximum": 2048,
+            "description": "Width"
+          },
+          "height": {
+            "type": "number",
+            "minimum": 256,
+            "maximum": 2048,
+            "description": "Height"
+          },
+          "seed": {
+            "type": "integer",
+            "default": -1,
+            "description": "Seed"
+          },
+          "steps": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Steps"
+          },
+          "cfg": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 20,
+            "description": "How closely the diffusion follows the prompt. Higher = stricter."
+          },
+          "sampler": {
+            "type": "string",
+            "description": "Sampler \u2014 options resolve from the $samplers vocabulary at serve time"
+          },
+          "scheduler": {
+            "type": "string",
+            "description": "Scheduler \u2014 options resolve from the $schedulers vocabulary at serve time"
+          },
+          "input_image": {
+            "type": "string",
+            "format": "path",
+            "description": "Image"
+          },
+          "lanpaint_mask": {
+            "type": "string",
+            "format": "path",
+            "x-visible-when": "input_image != null",
+            "description": "RGBA PNG whose alpha channel marks the region to regenerate. When present alongside input_image, build_txt2img switches to LanPaintKSampler."
+          },
+          "lanpaint_enabled": {
+            "type": "boolean",
+            "x-visible-when": "input_image != null",
+            "description": "Force LanPaint"
+          },
+          "lanpaint_num_steps": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100,
+            "x-visible-when": "lanpaint_enabled == true",
+            "description": "Num Steps"
+          },
+          "lanpaint_step_size": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 2,
+            "x-visible-when": "lanpaint_enabled == true",
+            "description": "Step Size"
+          },
+          "lanpaint_lambda": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2,
+            "x-visible-when": "lanpaint_enabled == true",
+            "description": "Lambda"
+          },
+          "lanpaint_beta": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2,
+            "x-visible-when": "lanpaint_enabled == true",
+            "description": "Beta"
+          },
+          "lanpaint_friction": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2,
+            "x-visible-when": "lanpaint_enabled == true",
+            "description": "Friction"
+          },
+          "lanpaint_prompt_mode": {
+            "type": "string",
+            "enum": [
+              "negative",
+              "positive"
+            ],
+            "x-visible-when": "lanpaint_enabled == true",
+            "description": "Prompt Mode"
+          },
+          "mask_grow": {
+            "type": "number",
+            "minimum": -32,
+            "maximum": 32,
+            "x-visible-when": "input_image != null",
+            "description": "Grow / Shrink"
+          },
+          "mask_feather": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 32,
+            "x-visible-when": "input_image != null",
+            "description": "Feather"
+          },
+          "mask_threshold": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "x-visible-when": "input_image != null",
+            "description": "Re-threshold"
+          },
+          "mask_invert": {
+            "type": "boolean",
+            "x-visible-when": "input_image != null",
+            "description": "Invert"
+          },
+          "outpaint_top": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 512,
+            "x-visible-when": "input_image != null",
+            "description": "Expand Top"
+          },
+          "outpaint_right": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 512,
+            "x-visible-when": "input_image != null",
+            "description": "Expand Right"
+          },
+          "outpaint_bottom": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 512,
+            "x-visible-when": "input_image != null",
+            "description": "Expand Bottom"
+          },
+          "outpaint_left": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 512,
+            "x-visible-when": "input_image != null",
+            "description": "Expand Left"
+          },
+          "outpaint_overlap": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 64,
+            "x-visible-when": "input_image != null",
+            "description": "Overlap"
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      }
+    },
+    {
+      "name": "image_gen_card__krea_2",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "image-gen",
+      "model": "krea-2",
+      "stage_title": "Image",
+      "description": "Text-to-image generation \u2014 the generate_image interface card boarding krea-2, anima and z-image; each family declares its own mods (loras on krea-2, lanpaint on anima/z-image) and the surface scopes itself",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Prompt"
+          },
+          "negative_prompt": {
+            "type": "string",
+            "x-visible-when": "negative_prompt != null",
+            "description": "Negative Prompt"
+          },
+          "width": {
+            "type": "number",
+            "minimum": 256,
+            "maximum": 2048,
+            "description": "Width"
+          },
+          "height": {
+            "type": "number",
+            "minimum": 256,
+            "maximum": 2048,
+            "description": "Height"
+          },
+          "seed": {
+            "type": "integer",
+            "default": -1,
+            "description": "Seed"
+          },
+          "steps": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Steps"
+          },
+          "cfg": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 20,
+            "description": "How closely the diffusion follows the prompt. Higher = stricter."
+          },
+          "sampler": {
+            "type": "string",
+            "description": "Sampler \u2014 options resolve from the $samplers vocabulary at serve time"
+          },
+          "scheduler": {
+            "type": "string",
+            "description": "Scheduler \u2014 options resolve from the $schedulers vocabulary at serve time"
+          },
+          "loras": {
+            "type": "array",
+            "description": "LoRAs"
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      }
+    },
+    {
+      "name": "image_gen_card__z_image",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "image-gen",
+      "model": "z-image",
+      "stage_title": "Image",
+      "description": "Text-to-image generation \u2014 the generate_image interface card boarding krea-2, anima and z-image; each family declares its own mods (loras on krea-2, lanpaint on anima/z-image) and the surface scopes itself",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "preset": {
+            "type": "string",
+            "enum": [],
+            "description": "Recipe shortcut \u2014 the LanPaint quick reference (tuning defaults). Fills untouched fields; values you've set win."
+          },
+          "prompt": {
+            "type": "string",
+            "description": "Prompt"
+          },
+          "negative_prompt": {
+            "type": "string",
+            "x-visible-when": "negative_prompt != null",
+            "description": "Negative Prompt"
+          },
+          "width": {
+            "type": "number",
+            "minimum": 256,
+            "maximum": 2048,
+            "description": "Width"
+          },
+          "height": {
+            "type": "number",
+            "minimum": 256,
+            "maximum": 2048,
+            "description": "Height"
+          },
+          "seed": {
+            "type": "integer",
+            "default": -1,
+            "description": "Seed"
+          },
+          "steps": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Steps"
+          },
+          "cfg": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 20,
+            "description": "How closely the diffusion follows the prompt. Higher = stricter."
+          },
+          "sampler": {
+            "type": "string",
+            "description": "Sampler \u2014 options resolve from the $samplers vocabulary at serve time"
+          },
+          "scheduler": {
+            "type": "string",
+            "description": "Scheduler \u2014 options resolve from the $schedulers vocabulary at serve time"
+          },
+          "input_image": {
+            "type": "string",
+            "format": "path",
+            "description": "Image"
+          },
+          "lanpaint_mask": {
+            "type": "string",
+            "format": "path",
+            "x-visible-when": "input_image != null",
+            "description": "RGBA PNG whose alpha channel marks the region to regenerate. When present alongside input_image, build_txt2img switches to LanPaintKSampler."
+          },
+          "lanpaint_enabled": {
+            "type": "boolean",
+            "x-visible-when": "input_image != null",
+            "description": "Force LanPaint"
+          },
+          "lanpaint_num_steps": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100,
+            "x-visible-when": "lanpaint_enabled == true",
+            "description": "Num Steps"
+          },
+          "lanpaint_step_size": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 2,
+            "x-visible-when": "lanpaint_enabled == true",
+            "description": "Step Size"
+          },
+          "lanpaint_lambda": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2,
+            "x-visible-when": "lanpaint_enabled == true",
+            "description": "Lambda"
+          },
+          "lanpaint_beta": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2,
+            "x-visible-when": "lanpaint_enabled == true",
+            "description": "Beta"
+          },
+          "lanpaint_friction": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2,
+            "x-visible-when": "lanpaint_enabled == true",
+            "description": "Friction"
+          },
+          "lanpaint_prompt_mode": {
+            "type": "string",
+            "enum": [
+              "negative",
+              "positive"
+            ],
+            "x-visible-when": "lanpaint_enabled == true",
+            "description": "Prompt Mode"
+          },
+          "mask_grow": {
+            "type": "number",
+            "minimum": -32,
+            "maximum": 32,
+            "x-visible-when": "input_image != null",
+            "description": "Grow / Shrink"
+          },
+          "mask_feather": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 32,
+            "x-visible-when": "input_image != null",
+            "description": "Feather"
+          },
+          "mask_threshold": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "x-visible-when": "input_image != null",
+            "description": "Re-threshold"
+          },
+          "mask_invert": {
+            "type": "boolean",
+            "x-visible-when": "input_image != null",
+            "description": "Invert"
+          },
+          "outpaint_top": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 512,
+            "x-visible-when": "input_image != null",
+            "description": "Expand Top"
+          },
+          "outpaint_right": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 512,
+            "x-visible-when": "input_image != null",
+            "description": "Expand Right"
+          },
+          "outpaint_bottom": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 512,
+            "x-visible-when": "input_image != null",
+            "description": "Expand Bottom"
+          },
+          "outpaint_left": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 512,
+            "x-visible-when": "input_image != null",
+            "description": "Expand Left"
+          },
+          "outpaint_overlap": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 64,
+            "x-visible-when": "input_image != null",
+            "description": "Overlap"
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      }
+    },
+    {
+      "name": "music_card__music3",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "music",
+      "model": "music3",
+      "stage_title": "Music",
+      "description": "Generate music \u2014 MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, pop, soul, guitar, 105 BPM'."
+          },
+          "lyrics": {
+            "type": "string",
+            "description": "Lyrics with structure tags: [verse], [chorus], [bridge]. Empty = instrumental."
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 5,
+            "maximum": 360,
+            "description": "Target audio length in seconds (5-360)."
+          },
+          "guidance_scale": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 10,
+            "description": "Classifier-free guidance. IGNORED on Turbo (distilled weights \u2014 engine applies none); Base/SFT: 3.0-10.0, 7.0 recommended."
+          },
+          "n_diffusion_steps": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 200,
+            "description": "Flow-matching denoising steps. 8 = Turbo default (engine clamps Turbo to 8); Base recommended 32-50. Never 0."
+          },
+          "lm_cfg_scale": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10,
+            "description": "LM CFG"
+          },
+          "negative_prompt": {
+            "type": "string",
+            "description": "Excludes unwanted musical traits (e.g. 'muddy bass, clipping, harsh vocals')."
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "en",
+              "zh",
+              "ja",
+              "ko",
+              "es",
+              "fr",
+              "de",
+              "it",
+              "ru",
+              "pt"
+            ],
+            "description": "Vocal language for lyric/phoneme alignment. Default 'en' = English."
+          },
+          "temperature": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2,
+            "description": "LM planner temperature (song structure/lyrics). 0.7 default; 0.3-0.5 = predictable structures."
+          },
+          "top_p": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "LM planner nucleus sampling."
+          },
+          "seed": {
+            "type": "integer",
+            "default": -1,
+            "description": "Seed"
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      }
+    },
+    {
+      "name": "sfx_card__moss_sfx_v2",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "sfx",
+      "model": "moss_sfx_v2",
+      "stage_title": "Sound Effects",
+      "description": "Generate sound effects \u2014 MOSS-SFX v2, describe the SOUND not the scene",
+      "params_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    {
+      "name": "tts_card__qwen3_tts",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "tts",
+      "model": "qwen3_tts",
+      "stage_title": "TTS",
+      "description": "Text-to-speech \u2014 Qwen3-TTS with CustomVoice personas and instruct-text emotion control",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "The text to synthesize"
+          },
+          "voice": {
+            "type": "string",
+            "enum": [
+              "ryan",
+              "serena",
+              "vivian",
+              "aiden",
+              "eric",
+              "dylan",
+              "sohee",
+              "ono_anna",
+              "uncle_fu"
+            ],
+            "default": "ryan",
+            "description": "Preset speaker persona (CustomVoice) or .qvoice embedding path"
+          },
+          "style_instruction": {
+            "type": "string",
+            "description": "Emotion and delivery control (e.g. 'speak with warm confidence')"
+          },
+          "temperature": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2,
+            "default": 0.7,
+            "description": "Temperature"
+          },
+          "seed": {
+            "type": "integer",
+            "default": -1,
+            "description": "Seed"
+          }
+        },
+        "required": [
+          "text"
+        ]
+      }
+    },
+    {
+      "name": "voice_lock_card__qwen3_tts_voicedesign",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "voice-lock",
+      "model": "qwen3_tts_voicedesign",
+      "stage_title": "Voice Lock",
+      "description": "Lock a voice persona \u2014 design, export, and reuse .qvoice embeddings for consistent character voices",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "voice_name": {
+            "type": "string",
+            "description": "Name for the locked persona \u2014 becomes the .qvoice filename stem. Reused across every future TTS render."
+          },
+          "style_instruction": {
+            "type": "string",
+            "description": "The voice description \u2014 becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent')."
+          },
+          "reference_audio": {
+            "type": "string",
+            "format": "path",
+            "description": "Optional reference clip to anchor the design."
+          },
+          "temperature": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2,
+            "default": 0.7,
+            "description": "Temperature"
+          },
+          "top_p": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 0.9,
+            "description": "Top-P"
+          },
+          "speed": {
+            "type": "number",
+            "minimum": 0.5,
+            "maximum": 2,
+            "default": 1.0,
+            "description": "Speed"
+          },
+          "repetition_penalty": {
+            "type": "number",
+            "minimum": 0.8,
+            "maximum": 2,
+            "default": 1.05,
+            "description": "Repetition Penalty"
+          },
+          "seed": {
+            "type": "integer",
+            "default": -1,
+            "description": "Seed"
+          }
+        },
+        "required": [
+          "voice_name",
+          "style_instruction"
+        ]
+      }
+    }
+  ]
+}

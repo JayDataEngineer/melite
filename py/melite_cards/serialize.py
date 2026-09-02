@@ -64,9 +64,10 @@ def _card_class_of(mod, path):
 
 
 def scan_engine_cards(repo_root):
-    """Every card.py under plugins/engines/<engine>/cards/**/ (depth 2:
-    cards/<card>/ and the cards/<group>/<card>/ tenant layer), in scan
-    order: {card_id: (path, class)}. Duplicate ids LOUD."""
+    """Every card.py under plugins/engines/<engine>/cards/** AND
+    <engine>/action_cards/** (both depths: <card>/ and <group>/<card>/ —
+    the genre layer), in scan order: {card_id: (path, class)}.
+    Duplicate ids LOUD."""
     out = {}
     eng_root = os.path.join(repo_root, "plugins", "engines")
     if not os.path.isdir(eng_root):
@@ -74,26 +75,105 @@ def scan_engine_cards(repo_root):
     for engine in _scandir(eng_root):
         if engine.startswith("."):
             continue
-        cards_dir = os.path.join(eng_root, engine, "cards")
-        if not os.path.isdir(cards_dir):
-            continue
-        for cid in _scandir(cards_dir):
-            if cid.startswith("."):
+        for cards_dir_name in ("cards", "action_cards"):
+            cards_dir = os.path.join(eng_root, engine, cards_dir_name)
+            if not os.path.isdir(cards_dir):
                 continue
-            cdir = os.path.join(cards_dir, cid)
-            for sub in ("", ) + tuple(_scandir(cdir)):
-                if sub.startswith("."):
+            for cid in _scandir(cards_dir):
+                if cid.startswith("."):
                     continue
-                d = os.path.join(cdir, sub) if sub else cdir
-                p = os.path.join(d, "card.py")
-                if not os.path.isfile(p):
-                    continue
-                cls = load_card_py(p, engine)
-                if cls.id in out:
-                    raise ValidationError(
-                        "card id %r declared by BOTH %s and %s — one owner "
-                        "per card id" % (cls.id, out[cls.id][0], p))
-                out[cls.id] = (p, cls)
+                cdir = os.path.join(cards_dir, cid)
+                for sub in ("", ) + tuple(_scandir(cdir)):
+                    if sub.startswith("."):
+                        continue
+                    d = os.path.join(cdir, sub) if sub else cdir
+                    p = os.path.join(d, "card.py")
+                    if not os.path.isfile(p):
+                        continue
+                    cls = load_card_py(p, engine)
+                    if cls.id in out:
+                        raise ValidationError(
+                            "card id %r declared by BOTH %s and %s — one "
+                            "owner per card id" % (cls.id, out[cls.id][0], p))
+                    out[cls.id] = (p, cls)
+    return out
+
+
+# ── tool manifests — the SSOT promise, finally true ────────────────────
+#
+# tool.json rides the class (the melite_cards docstring's day-one plan):
+# one manifest per card PER SERVED FAMILY, params_schema scoped exactly
+# like the served form (family filter + required + enums + ranges).
+# Hand-written tool.json beside a card.py is drift; tools/gen_tool_json.py
+# regenerates the on-disk snapshots and the parity wall pins them.
+
+_JSON_TYPES = {
+    "text": "string", "textarea": "string", "select": "string",
+    "number": "number", "slider": "number", "seed": "integer",
+    "boolean": "boolean", "image": "string", "audio": "string",
+    "video": "string", "file": "string",
+    "loras": "array", "controlnet": "array",
+}
+
+
+def _param_of(f):
+    from .dsl import VocabRef
+    p = {"type": _JSON_TYPES.get(f.type, "string")}
+    desc = f.tooltip or f.label
+    if f.type == "select":
+        if isinstance(f.options, (list, tuple)):
+            p["enum"] = list(f.options)
+        elif isinstance(f.options, VocabRef):
+            desc = "%s — options resolve from the %s vocabulary at serve " \
+                   "time" % (desc, f.options.name)
+    if f.min is not None:
+        p["minimum"] = f.min
+    if f.max is not None:
+        p["maximum"] = f.max
+    if f.default is not None and f.default != "":
+        p["default"] = f.default
+    if f.type in ("image", "audio", "video", "file"):
+        p["format"] = "path"
+    if f.visible_when:
+        p["x-visible-when"] = f.visible_when
+    p["description"] = desc
+    return p
+
+
+def tool_manifests(cls):
+    """Derive the agent tool manifests from the card class: one per
+    served family, the params surface EXACTLY the family-scoped form.
+    Absorbed cards emit one manifest per boarded model — the mods the
+    family declares are the params it gets, nothing else."""
+    from .dsl import _norm
+    out = []
+    for fam in (cls.families_of() or ("",)):
+        nfam = _norm(fam)
+        keep = [f for f in cls._fields_ if f.families_keep(nfam)]
+        props = {}
+        required = []
+        for f in keep:
+            props[f.name] = _param_of(f)
+            if f.required:
+                required.append(f.name)
+        name = cls.id.replace("-", "_") + "_card"
+        if fam:
+            name += "__" + fam.replace("-", "_").replace(".", "_")
+        m = {
+            "name": name,
+            "version": 1,
+            "kind": "card-compose",
+            "card": cls.id,
+            "model": fam or None,
+            "stage_title": cls.label,
+            "description": cls.description,
+            "params_schema": {
+                "type": "object",
+                "properties": props,
+                "required": required,
+            },
+        }
+        out.append(m)
     return out
 
 

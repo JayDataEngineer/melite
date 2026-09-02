@@ -92,9 +92,13 @@ def main():
     d2 = deep_diff(served, py_frag)
     check("served fragment is class-driven", d2 is None, d2 or "")
 
+    # z-image/anima boarded the card with the model-level mods flip
+    # (2026-09-02): the interface card serves all three families, each
+    # scoped to its own declared mods — z-image/anima carry lanpaint,
+    # krea-2 carries loras. Serving all three IS the point.
     check("z-image gate parity",
-          ef._card_spec(REPO, "z-image") is None
-          and "z-image" not in tuple(cls.families_of()))
+          ef._card_spec(REPO, "z-image") is not None
+          and "z-image" in tuple(cls.families_of()))
 
     # ── the 2026-09-02 full card flip: every flipped card pinned the
     # same way — class fragment == golden form-spec (captured from the
@@ -194,10 +198,29 @@ def main():
     _spec.loader.exec_module(_ac)
     pairs = validate_against_cards(models, cards,
                                    engine_truth=_ac.ENGINE_TRUTH_KEYS)
-    check("cross-validation pairs (krea-2, img-edit, music3)",
-          pairs == [("img-edit", "image-edit"),
+    check("cross-validation pairs (all boarded families)",
+          pairs == [("anima", "image-gen"),
+                    ("img-edit", "image-edit"),
                     ("krea-2", "image-gen"),
-                    ("music3", "music")], repr(pairs))
+                    ("music3", "music"),
+                    ("z-image", "image-gen")], repr(pairs))
+
+    # tool.json snapshots are DERIVED artifacts — the card class is the
+    # SSOT (mods declared at the model level, absorbed through models=);
+    # a snapshot drifting from tool_manifests() is a parity failure.
+    # Regen: python3 tools/gen_tool_json.py --write
+    from melite_cards import tool_manifests
+    from melite_cards.serialize import scan_engine_cards
+    snap_fail = []
+    for pcid, (cpath, ccls) in sorted(scan_engine_cards(REPO).items()):
+        snap = os.path.join(os.path.dirname(cpath), "tool.json")
+        if not os.path.isfile(snap):
+            continue
+        want = json.loads(open(snap, encoding="utf-8").read())
+        if want != tool_manifests(ccls):
+            snap_fail.append(pcid)
+    check("tool.json snapshots derive from card classes", not snap_fail,
+          "drifted: %s — run tools/gen_tool_json.py --write" % snap_fail)
 
     # boot-loud validation contracts
     from melite_cards import ActionCard, ValidationError, Number, Select, VocabRef

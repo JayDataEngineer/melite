@@ -1599,7 +1599,7 @@ CHROME_STUBS = {
     "/v1/themes": {"themes": []},
     "/v1/tags": {"tags": []},
     "/v1/services": {"services": []},
-    "/v1/tools": {"tools": []},
+    # ("/v1/tools" serves DERIVED from the card classes — see tools())
     "/v1/plugins": {"plugins": []},
 }
 
@@ -1637,7 +1637,21 @@ def ui_slots():
 
 
 def tools():
-    return CHROME_STUBS["/v1/tools"]
+    """The agent tool surface — DERIVED from the card classes (the
+    melite_cards SSOT promise, finally true): one manifest per card per
+    served family, params_schema scoped exactly like the served form.
+    The hand-written tool.json era is over; tools/gen_tool_json.py
+    regenerates the on-disk snapshots and the parity wall pins them."""
+    repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    from melite_cards import scan_engine_cards, tool_manifests
+    cards = scan_engine_cards(repo)
+    out = []
+    for _cid, (_path, cls) in sorted(cards.items()):
+        if not cls.api:
+            continue
+        out.extend(tool_manifests(cls))
+    out.sort(key=lambda m: m["name"])
+    return {"tools": out}
 
 
 def shell():
