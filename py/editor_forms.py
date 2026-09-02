@@ -347,10 +347,7 @@ def _scan_catalog(repo_root):
                     continue
                 row["family_id"] = row["id"]
                 row["id"] = mid
-                ipath = os.path.join(model_dir, "inference.yaml")
-                row["inference_path"] = (ipath
-                                         if os.path.isfile(ipath)
-                                         else None)
+                row["inference_path"] = None  # inference.yaml extinct (class-driven)
                 models.append(row)
                 continue
                 # The wire model id is the DIRECTORY name (canonical
@@ -361,8 +358,7 @@ def _scan_catalog(repo_root):
                 # row["family_id"], never the lookup key.
                 row["family_id"] = row["id"]
                 row["id"] = mid
-                ipath = os.path.join(model_dir, "inference.yaml")
-                row["inference_path"] = ipath if os.path.isfile(ipath) else None
+                row["inference_path"] = None  # extinct
                 # NO declarer skip: every copy enters the catalog (the
                 # C scanned every owner too). Duplicate ids resolve
                 # declarer-wins in _find_model — the resolve_model law
@@ -373,24 +369,34 @@ def _scan_catalog(repo_root):
 
 
 def _plugin_engine_types(edir):
-    """The engine types a plugin dir DECLARES: engines/<dir>/engine.yaml
-    `type:` lines (same law as py/plugins.py scan_engines — the dir name
-    is not the type; audio-cpp declares audio_cpp)."""
+    """The engine types a plugin dir DECLARES: engine.py ENGINE_TYPE
+    (2026-09-02 flip), with engine.yaml fallback."""
     out = set()
     eng_root = os.path.join(edir, "engines")
     if os.path.isdir(eng_root):
         for sub in _scandir(eng_root):
-            ey = os.path.join(eng_root, sub, "engine.yaml")
-            if not os.path.isfile(ey):
-                continue
-            for line in open(ey, 'r', encoding='utf-8',
-                             errors='surrogateescape').read().splitlines():
-                s = line.strip()
-                if s.startswith("type:"):
-                    t = s.partition(":")[2].strip()
-                    if t:
-                        out.add(t)
-                    break
+            edir_sub = os.path.join(eng_root, sub)
+            epy = os.path.join(edir_sub, "engine.py")
+            if os.path.isfile(epy):
+                try:
+                    ns = {}
+                    exec(open(epy, 'r', encoding='utf-8',
+                              errors='surrogateescape').read(), ns)
+                    if ns.get("ENGINE_TYPE"):
+                        out.add(ns["ENGINE_TYPE"])
+                        continue
+                except Exception:
+                    pass
+            ey = os.path.join(edir_sub, "engine.yaml")
+            if os.path.isfile(ey):
+                for line in open(ey, 'r', encoding='utf-8',
+                                 errors='surrogateescape').read().splitlines():
+                    s = line.strip()
+                    if s.startswith("type:"):
+                        t = s.partition(":")[2].strip()
+                        if t:
+                            out.add(t)
+                        break
     return out
 
 
@@ -637,11 +643,23 @@ def _find_card_yaml(repo_root, model):
 
 
 def _option_list(repo_root, list_name, engine_dir):
-    """cs_option_list: samplers/schedulers from the ONE vocabulary file,
-    ENGINE-owned at plugins/engines/<engine>/models/field_options.yaml
-    (2026-09-02: the vocabulary is engine data — PLUGIN ARCHITECTURE
-    LAW; the old shared path plugins/agent/dsh/melite-core/ died with the
-    reorg, and $samplers resolved empty)."""
+    """cs_option_list: samplers/schedulers from the ONE vocabulary —
+    engine.py Plugin class attrs (2026-09-02 flip), yaml fallback."""
+    # plugin.py Plugin class — primary source (2026-09-02 field_options flip)
+    # engine_dir is the plugin root (e.g. plugins/engines/comfyui)
+    for name in ("plugin.py", "engine.py"):
+        pyp = os.path.join(engine_dir, name)
+        if os.path.isfile(pyp):
+            try:
+                ns = {}
+                exec(open(pyp, 'r', encoding='utf-8',
+                           errors='surrogateescape').read(), ns)
+                pcls = ns.get("Plugin")
+                if pcls is not None and hasattr(pcls, list_name):
+                    return list(getattr(pcls, list_name))
+            except Exception:
+                pass
+    # yaml fallback
     yp = os.path.join(engine_dir, "models", "field_options.yaml")
     head = list_name + ":"
     out = []
@@ -1290,11 +1308,14 @@ def form_spec(repo_root, model_id):
             return 200, dict(_MINIMAL_LANE_SPEC)
         return 404, {"error": "model not found"}
 
-    # enhance recipes: the model unit's inference.yaml blocks, verbatim;
-    # id-named-dir fallback probe when both came up empty
-    recipe, lrecipe = _recipes(row["inference_path"])
-    if not recipe and not lrecipe:
-        recipe, lrecipe = _recipes_fallback(repo_root, row["id"])
+    # enhance recipes: (2026-09-02) class-driven — the model class carries
+    # prompt_upscale / lyrics_upscale as tuples of rules (inference.yaml
+    # extinct). Join to the wire's semicolon-separated string.
+    _mcls = row.get("_model_class")
+    _praw = getattr(_mcls, "prompt_upscale", ()) if _mcls else ()
+    _lraw = getattr(_mcls, "lyrics_upscale", ()) if _mcls else ()
+    recipe = "; ".join(_praw) if isinstance(_praw, tuple) else (_praw or "")
+    lrecipe = "; ".join(_lraw) if isinstance(_lraw, tuple) else (_lraw or "")
 
     # the spec is branded by the CARD's ability label; the model stays an
     # internal route (src/server.cpp:8108-8116)

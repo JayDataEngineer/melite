@@ -525,7 +525,11 @@ def _model_row(m):
         row["form"] = m["form"]
     if m["agent_md_path"] is not None:
         row["has_agent"] = True
-    row["has_inference"] = m["inference_path"] is not None
+    # (2026-09-02) inference.yaml extinct — class carries recipes
+    _mcls = m.get("_model_class")
+    row["has_inference"] = bool(
+        getattr(_mcls, "prompt_upscale", None) or
+        getattr(_mcls, "lyrics_upscale", None)) if _mcls else False
     row["has_rubric"] = m["rubric_path"] is not None
     return row
 
@@ -741,7 +745,7 @@ def _scan_card_dir(card_dir, card_name):
         "skills": [(sid, slab) for sid, slab in cls.skills],
         "ability_route": (cls.ability or {}).get("default_family")
         if isinstance(cls.ability, dict) else None,
-        "inference_path": _probe(os.path.join(card_dir, "inference.yaml")),
+        "inference_path": None,  # inference.yaml extinct (class-driven)
         "rubric_path": _probe(os.path.join(card_dir,
                                            "grading_rubric.yaml")),
     }

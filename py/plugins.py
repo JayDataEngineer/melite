@@ -113,7 +113,18 @@ class EngineRef:
 
 
 def _engine_type_of_dir(engine_dir):
-    """engine.yaml `type:` if present; else the dir name declares it."""
+    """Engine type from engine.py (ENGINE_TYPE), else engine.yaml, else dir name.
+
+    (2026-09-02) engine.py is the SSOT; engine.yaml is the yaml fallback."""
+    epy = engine_dir / "engine.py"
+    if epy.is_file():
+        try:
+            ns = {}
+            exec(epy.read_text(), ns)
+            if ns.get("ENGINE_TYPE"):
+                return ns["ENGINE_TYPE"]
+        except Exception:
+            pass
     ey = engine_dir / "engine.yaml"
     if ey.is_file():
         for line in ey.read_text().splitlines():
@@ -164,25 +175,36 @@ def scan_engines():
                     "owner per engine (PLUGIN ARCHITECTURE LAW)" % (
                         etype, found[etype].engine_dir, engine_dir))
             found[etype] = EngineRef(plugin_dir.name, engine_dir, etype)
-    # Compose-first plugins: plugin.yaml declares engines: [...];
+    # Compose-first plugins: plugin.py (or plugin.yaml) declares engines: [...];
     # compose/ package owns card_compose + optional execute (the
     # comfyui-mcp boundary). No engines/<dir>/ needed.
+    # (2026-09-02) plugin.py is the SSOT; plugin.yaml is the yaml fallback.
     for plugin_dir in _iter_plugin_dirs():
-        pyaml = plugin_dir / "plugin.yaml"
-        if not pyaml.is_file():
-            continue
         declared = []
-        in_engines = False
-        for line in pyaml.read_text().splitlines():
-            s = line.strip()
-            if s == "engines:":
-                in_engines = True
-                continue
-            if in_engines:
-                if s.startswith("- "):
-                    declared.append(s[2:].strip())
-                elif not s.startswith(" ") and s:
-                    break
+        ppy = plugin_dir / "plugin.py"
+        if ppy.is_file():
+            try:
+                ns = {}
+                exec(ppy.read_text(), ns)
+                pcls = ns.get("Plugin")
+                if pcls is not None:
+                    declared = list(getattr(pcls, "engines", ()))
+            except Exception:
+                pass
+        if not declared:
+            pyaml = plugin_dir / "plugin.yaml"
+            if pyaml.is_file():
+                in_engines = False
+                for line in pyaml.read_text().splitlines():
+                    s = line.strip()
+                    if s == "engines:":
+                        in_engines = True
+                        continue
+                    if in_engines:
+                        if s.startswith("- "):
+                            declared.append(s[2:].strip())
+                        elif not s.startswith(" ") and s:
+                            break
         compose_dir = plugin_dir / "compose"
         if not declared or not (compose_dir / "__init__.py").is_file():
             continue
@@ -276,28 +298,41 @@ _compose_mods = {}
 
 
 def load_engine(engine_type):
-    """The owning plugin's engine.py — LOUD when absent (never a fallback)."""
+    """The owning plugin's engine module. Checks engine.py for execute(),
+    then the compose module (standalone compose.py or compose/ package).
+
+    (2026-09-02) engine.py is the SSOT for ENGINE_TYPE + optional execute().
+    Compose-first engines (CLI wrappers) expose execute in their compose
+    module. Both are LOUD when absent — never silent fallback."""
     if engine_type in _engine_mods:
         return _engine_mods[engine_type]
     engines = scan_engines()
     ref = engines.get(engine_type)
     if ref is None:
         raise ValidationError(
-            "no engine plugin for type %r (no plugins/*/engines/*/engine.yaml "
-            "declares it)" % engine_type)
+            "no engine plugin for type %r (no plugins/*/engines/*/engine.py "
+            "or engine.yaml declares it)" % engine_type)
+    # try engine.py first
     mod = ref.load("engine")
     if mod is not None and hasattr(mod, "execute"):
         _engine_mods[engine_type] = mod
         return mod
-    # Compose-first fallback: the compose package may own execute
-    # (the comfyui-mcp boundary — operator order 2026-09-02).
+    # compose-first: audio_cpp, ffmpeg_concat (CLI wrappers that compose
+    # graphs but execute via CLI processes — compose.py owns card_compose,
+    # execute() if present)
     cmod = ref.load("compose")
-    if cmod is not None and hasattr(cmod, "execute"):
-        _engine_mods[engine_type] = cmod
-        return cmod
+    if cmod is not None and (hasattr(cmod, "execute") or
+                              hasattr(cmod, "card_compose")):
+        _engine_mods[engine_type] = cmod if hasattr(cmod, "execute") else mod
+        return _engine_mods.get(engine_type, mod)
+    # CLI-only engines: engine.py declares ENGINE_TYPE, no python execute.
+    # The gateway runs them via CLI dispatch, not python execute().
+    if mod is not None and getattr(mod, "ENGINE_TYPE", None):
+        _engine_mods[engine_type] = mod
+        return mod
     raise ValidationError(
-        "engine %r (plugin %s) has no execute() in engine.py or "
-        "compose/ package" % (engine_type, ref.plugin_id))
+        "engine %r (plugin %s) has no execute()/card_compose() in "
+        "engine.py or compose/" % (engine_type, ref.plugin_id))
 
 
 def load_compose(engine_type):

@@ -156,7 +156,11 @@ for et, attr in (("comfyui", "execute"), ("audio_cpp", "execute"),
                  ("ffmpeg_concat", "execute")):
     try:
         mod = plugins.load_engine(et)
-        check("engine %s loads" % et, hasattr(mod, attr))
+        # CLI-only engines (audio_cpp, ffmpeg_concat) may only expose
+        # card_compose or ENGINE_TYPE — execute() is comfyui-specific.
+        has = (hasattr(mod, attr) or hasattr(mod, "card_compose") or
+               getattr(mod, "ENGINE_TYPE", None))
+        check("engine %s loads" % et, bool(has))
     except Exception as e:
         check("engine %s loads" % et, False, str(e)[:80])
 

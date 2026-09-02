@@ -222,6 +222,20 @@ def gen_model_py(mdir, engine, genre):
     desc = row.get("description") or ""
     if desc:
         L.append("    description = %r" % desc)
+    # enhance recipes (inference.yaml → python)
+    ipath = os.path.join(mdir, "inference.yaml")
+    if os.path.isfile(ipath):
+        import sys as _sys
+        _ef_dir = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))), "py")
+        if _ef_dir not in _sys.path:
+            _sys.path.insert(0, _ef_dir)
+        import editor_forms as _ef
+        prompt, lyrics = _ef._recipes(ipath)
+        if prompt:
+            L.append("    prompt_upscale = %r" % prompt)
+        if lyrics:
+            L.append("    lyrics_upscale = %r" % lyrics)
     if row.get("engine_plugin"):
         L.append("    engine = %r" % row["engine_plugin"])
     kind_marker = None

@@ -1,6 +1,8 @@
 # === Build artifacts ===
 build/
+build-dbg/
 build-asan/
+asan-build/
 cmake-build-*/
 compile_commands.json
 .cache/
@@ -75,8 +77,10 @@ references/autoremesher/
 
 # === session scratch (kept on disk, out of git) ===
 agent-sessions/
-asan-build/
 drafts/
+
+# === Dead C++ era (post python-orchestrator migration) ===
+third_party/
 
 # Datafolder — organized generated state (never commit)
 datafolder/outputs/
