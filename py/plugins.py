@@ -74,6 +74,16 @@ class EngineRef:
                 m = types.ModuleType(parent)
                 m.__path__ = []
                 sys.modules[parent] = m
+        # Constructor packages (plugin-root libraries, e.g.
+        # constructors/co_script) import as
+        # plugin_engines.<plugin_id>.constructors.<kind> — the parent
+        # package carries the plugin root on its path. Generic for every
+        # plugin (PLUGIN ARCHITECTURE LAW extension rule): no constructor
+        # is ever named in the core.
+        parent_mod = sys.modules["plugin_engines." + self.plugin_id]
+        plugin_root = str(self.engine_dir.parents[1])
+        if plugin_root not in parent_mod.__path__:
+            parent_mod.__path__.append(plugin_root)
         mod_dir = str(self.engine_dir)
         if mod_dir not in sys.path:
             sys.path.insert(0, mod_dir)
