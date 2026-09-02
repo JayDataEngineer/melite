@@ -657,7 +657,9 @@ def _scan_model_dir(model_dir):
 def _scan_cards(plugins_dir):
     rows = []
     capabilities = {}
-    # (2026-09-02) Engine layout: plugins/engines/<engine>/cards/<card>/.
+    # (2026-09-02) Engine layout: plugins/engines/<engine>/cards/<card>/
+    # AND plugins/engines/<engine>/action_cards/<card>/ (comfyui migrated
+    # 2026-09-02).  Both subtrees are scanned.
     eng_root = os.path.join(plugins_dir, "engines")
     try:
         owners = os.scandir(eng_root)
@@ -667,37 +669,38 @@ def _scan_cards(plugins_dir):
         for owner in owners:
             if owner.name.startswith("."):
                 continue
-            cards_dir = os.path.join(eng_root, owner.name, "cards")
-            if not os.path.isdir(cards_dir):
-                continue
-            with os.scandir(cards_dir) as cids:
-                for cid in cids:
-                    if cid.name.startswith("."):
-                        continue
-                    card_dir = os.path.join(cards_dir, cid.name)
-                    if not os.path.isdir(card_dir):
-                        continue
-                    row, cap_key, cap_entry = _scan_card_dir(card_dir, cid.name)
-                    if row is not None:
-                        rows.append(row)
-                    if cap_key is not None:
-                        capabilities[cap_key] = cap_entry
-                    # group layer (melite-* tenants): cards/<group>/<card>/
-                    # — the plugin-subtree shape the editor's cardStudios
-                    # glob also walks (cards/melite-*/*/component.tsx).
-                    with os.scandir(card_dir) as subs:
-                        for sub in subs:
-                            if sub.name.startswith("."):
-                                continue
-                            sub_dir = os.path.join(card_dir, sub.name)
-                            if not os.path.isdir(sub_dir):
-                                continue
-                            row, cap_key, cap_entry = _scan_card_dir(
-                                sub_dir, sub.name)
-                            if row is not None:
-                                rows.append(row)
-                            if cap_key is not None:
-                                capabilities[cap_key] = cap_entry
+            for subdir in ("cards", "action_cards"):
+                cards_dir = os.path.join(eng_root, owner.name, subdir)
+                if not os.path.isdir(cards_dir):
+                    continue
+                with os.scandir(cards_dir) as cids:
+                    for cid in cids:
+                        if cid.name.startswith("."):
+                            continue
+                        card_dir = os.path.join(cards_dir, cid.name)
+                        if not os.path.isdir(card_dir):
+                            continue
+                        row, cap_key, cap_entry = _scan_card_dir(
+                            card_dir, cid.name)
+                        if row is not None:
+                            rows.append(row)
+                        if cap_key is not None:
+                            capabilities[cap_key] = cap_entry
+                        # group layer (melite-* tenants): nested dirs
+                        # the editor's cardStudios glob also walks.
+                        with os.scandir(card_dir) as subs:
+                            for sub in subs:
+                                if sub.name.startswith("."):
+                                    continue
+                                sub_dir = os.path.join(card_dir, sub.name)
+                                if not os.path.isdir(sub_dir):
+                                    continue
+                                row, cap_key, cap_entry = _scan_card_dir(
+                                    sub_dir, sub.name)
+                                if row is not None:
+                                    rows.append(row)
+                                if cap_key is not None:
+                                    capabilities[cap_key] = cap_entry
     return rows, capabilities
 
 

@@ -256,7 +256,9 @@ def _find_card_requires(mid, plugins_dir=None):
     # card whose families include them (h3-timeline: the model declares
     # no card, the card declares the family)
     nmid = mid.replace("_", "-")
-    for cpy in sorted(plugins_dir.glob("engines/*/cards/*/card.py")):
+    for cpy in sorted(
+        list(plugins_dir.glob("engines/*/cards/*/card.py"))
+        + list(plugins_dir.glob("engines/*/action_cards/*/card.py"))):
         try:
             engine = cpy.parent.parent.parent.name
             cls = load_card_py(str(cpy), engine)

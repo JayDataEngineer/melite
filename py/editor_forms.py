@@ -606,31 +606,33 @@ def _find_card_yaml(repo_root, model):
     Candidacy needs a FIELD SURFACE (declared fields on the class) —
     identity-only cards (sfx) stay non-candidates exactly as the yaml
     era served them (no parameters block → skip). Scan depth is the
-    engine layout: plugins/engines/<engine>/cards/."""
+    engine layout: plugins/engines/<engine>/cards/ AND
+    plugins/engines/<engine>/action_cards/ (comfyui migrated 2026-09-02)."""
     candidate = None
     nmodel = _norm(model)
     for _engine, edir in _iter_plugin_engines(repo_root):
-        cdir = os.path.join(edir, "cards")
-        if not os.path.isdir(cdir):
-            continue
-        for card in _scandir(cdir):
-            if card.startswith('.'):
+        for subdir in ("cards", "action_cards"):
+            cdir = os.path.join(edir, subdir)
+            if not os.path.isdir(cdir):
                 continue
-            mpy = os.path.join(cdir, card, "card.py")
-            if not os.path.isfile(mpy):
-                continue
-            cls = _load_card_class(mpy)
-            if cls is None or not cls._fields_:
-                continue
-            if cls.id not in _ALLOWED_CARDS:
-                continue
-            fams = [_norm(f) for f in cls.families_of()]
-            if nmodel not in fams:
-                continue
-            if fams and fams[0] == nmodel:
-                return mpy
-            if candidate is None:
-                candidate = mpy
+            for card in _scandir(cdir):
+                if card.startswith('.'):
+                    continue
+                mpy = os.path.join(cdir, card, "card.py")
+                if not os.path.isfile(mpy):
+                    continue
+                cls = _load_card_class(mpy)
+                if cls is None or not cls._fields_:
+                    continue
+                if cls.id not in _ALLOWED_CARDS:
+                    continue
+                fams = [_norm(f) for f in cls.families_of()]
+                if nmodel not in fams:
+                    continue
+                if fams and fams[0] == nmodel:
+                    return mpy
+                if candidate is None:
+                    candidate = mpy
     return candidate
 
 

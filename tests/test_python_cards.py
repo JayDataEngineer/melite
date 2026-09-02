@@ -57,8 +57,8 @@ def deep_diff(a, b, path="$"):
 
 
 def main():
-    card_py = os.path.join(REPO, "plugins", "engines", "comfyui", "cards",
-                           "image-gen", "card.py")
+    card_py = os.path.join(REPO, "plugins", "engines", "comfyui",
+                           "action_cards", "image-gen", "card.py")
     check("image-gen card.py loads", os.path.isfile(card_py))
     cls = load_card_py(card_py, "comfyui")
     check("card id", cls.id == "image-gen", cls.id)
