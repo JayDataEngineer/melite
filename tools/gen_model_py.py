@@ -335,8 +335,8 @@ def _lora_catalog(raw):
         if not isinstance(l, dict) or not l.get("id"):
             continue
         out.append({k: l.get(k) for k in
-                    ("id", "filename", "label", "category",
-                     "default_strength", "user_provided")
+                    ("id", "filename", "source_url", "label", "category",
+                     "default_strength")
                     if l.get(k) is not None})
     return out
 

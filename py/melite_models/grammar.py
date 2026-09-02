@@ -47,12 +47,17 @@ class SourceRow(BaseModel):
 
 
 class LoraRow(BaseModel):
+    """A lora catalog row. `source_url` is REQUIRED — the upstream
+    download (resolve/ form, HEAD-verifiable), same honesty as a
+    CellArtifact. The `user_provided=True` era (rows with no link,
+    "the operator just has the files") was a dirty hack and is dead:
+    no link, no row."""
     id: str
     filename: str
+    source_url: HttpUrl
     label: str = ""
     category: str = ""
     default_strength: float = Field(default=1.0, ge=0.0, le=2.0)
-    user_provided: bool = False
 
 
 class CellArtifact(BaseModel):
