@@ -337,6 +337,22 @@ def _scan_catalog(repo_root):
                 model_dir = os.path.join(genre_dir, mid)
                 if not os.path.isdir(model_dir):
                     continue
+                # (2026-09-02) model.py WINS — the python flip. The row
+                # shape is the same dict the yaml parser emits (the class
+                # re-derives it); declarer data comes from class attrs.
+                mpy = os.path.join(model_dir, "model.py")
+                if os.path.isfile(mpy):
+                    row = _model_row_from_py(repo_root, mpy, mid)
+                    if row is None:
+                        continue
+                    row["family_id"] = row["id"]
+                    row["id"] = mid
+                    ipath = os.path.join(model_dir, "inference.yaml")
+                    row["inference_path"] = (ipath
+                                             if os.path.isfile(ipath)
+                                             else None)
+                    models.append(row)
+                    continue
                 yaml = _read_file(os.path.join(model_dir, "model.yaml"))
                 if yaml is None:
                     continue
@@ -382,6 +398,69 @@ def _plugin_engine_types(edir):
                         out.add(t)
                     break
     return out
+
+
+def _model_row_from_py(repo_root, mpy, mid):
+    """The python flip's adapter: a Model class → the parser-row shape
+    _scan_catalog/_find_model/form_spec consume (id/genre/label/
+    engine_plugin/defaults pairs/form). Defaults values keep the wire's
+    raw-STRING form (the C's text heritage) — the typed-defaults wire
+    cleanup is its own later rung, not a silent change."""
+    models_py = os.path.join(repo_root, "plugins", "web", "models_py")
+    if models_py not in sys.path:
+        sys.path.insert(0, models_py)
+    from melite_models import load_model_py
+    engine = os.path.basename(os.path.dirname(os.path.dirname(
+        os.path.dirname(mpy))))
+    cls = load_model_py(mpy, engine)
+    m = {"id": cls.id, "genre": cls.genre or None,
+         "label": cls.label or None,
+         "engine_plugin": cls.engine or None,
+         "defaults": [(k, _wire_str(v)) for k, v in (cls.defaults or {}).items()],
+         "form": cls.form}
+    m["_model_class"] = cls          # the class rides for _variants
+    return m
+
+
+def _wire_str(v):
+    """Native default → the C wire's raw string form."""
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    return str(v)
+
+
+def _variants_from_class(row):
+    """Variant rows + Quant cells from the CLASS tree — the collapse of
+    the yaml's triplicated variants/ data (row + nested rows + quants)
+    into one walk. Same wire shape as _variants, including the quant-id
+    DEDUP (a quant id serves once across variants)."""
+    cls = row.get("_model_class")
+    if cls is None:
+        return None
+    rows = []
+    seen_quant = set()
+    for _k, v in cls._variants_:
+        r = {"id": v.id, "label": v.label or v.id,
+             # variant defaults are RESOLVER data (merged_defaults); the
+             # wire row stayed {} in the C — expose deliberately later,
+             # not silently (parity law).
+             "defaults": {},
+             "group": v.group or "Variant", "route": v.route or cls.id}
+        if v.hint:
+            r["hint"] = v.hint
+        if v.engine or cls.engine:
+            r["engine"] = v.engine or cls.engine
+        rows.append(r)
+        for _ck, c in v._cells_:
+            if c.quant in seen_quant:
+                continue
+            seen_quant.add(c.quant)
+            rows.append({"id": c.quant,
+                         "label": getattr(c, "label", "") or c.quant.upper(),
+                         "defaults": {}, "group": "Quant", "quant": c.quant,
+                         "route": c.route or v.route or cls.id,
+                         "vram_peak_gb": getattr(c, "vram_peak_gb", 0) or 0})
+    return rows
 
 
 def _find_model(models, family_id):
@@ -1104,9 +1183,13 @@ def _parse_variant(path):
 
 
 def _variants(repo_root, model):
-    """Variant rows + deduped Quant cells from <model-dir>/variants/, in
-    readdir order; the model dir is dirname(inference_path) — no
+    """Variant rows + deduped Quant cells — the CLASS tree when the model
+    is flipped (the cascade is structural), else <model-dir>/variants/
+    yaml in readdir order; the model dir is dirname(inference_path) — no
     inference.yaml means no variants (src/server.cpp:8145-8159)."""
+    from_class = _variants_from_class(model)
+    if from_class is not None:
+        return from_class
     if not model["inference_path"]:
         return []
     mdir = os.path.dirname(model["inference_path"])

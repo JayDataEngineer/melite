@@ -61,6 +61,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 
 # ---------------------------------------------------------------------------
 # Minimal YAML helpers — ports of catalog.c ystrdup/ystrip/ykv/yindent
@@ -611,9 +612,42 @@ def _scan_models(plugins_dir):
     return pairs
 
 
+try:
+    # the same class as the gateway's (plugins.py defines the standalone
+    # twin when the gateway import cycle blocks — same trick as editor_forms)
+    from gateway import ValidationError  # noqa: F401
+except Exception:
+    class ValidationError(Exception):
+        """Loud 4xx before any run is registered (QUEUE LANE LAW)."""
+
+
 def _scan_model_dir(model_dir):
     """scan_model_dir (catalog.c:467): model.yaml -> row; no family id ->
-    skipped (catalog.c:479); unit assets probed next to the yaml."""
+    skipped (catalog.c:479); unit assets probed next to the yaml.
+
+    (2026-09-02) The PYTHON FLIP: model.py WINS when present — the
+    cascade is a class tree (plugins/web/models_py/melite_models; see
+    docs/plans/python-action-cards.md). A model.yaml ALONGSIDE is a LOUD
+    refusal (two SSOTs is zero SSOTs). Un-flipped units keep the yaml
+    path until their rung."""
+    mpy = os.path.join(model_dir, "model.py")
+    if os.path.isfile(mpy):
+        if os.path.isfile(os.path.join(model_dir, "model.yaml")):
+            raise ValidationError(
+                "%s carries BOTH model.py and model.yaml — one source of "
+                "truth per unit; delete the yaml (the flip) or the .py"
+                % mpy)
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(model_dir))))))
+        models_py = os.path.join(repo_root, "plugins", "web", "models_py")
+        if models_py not in sys.path:
+            sys.path.insert(0, models_py)
+        from melite_models import load_model_py, model_row
+        engine = os.path.basename(os.path.dirname(os.path.dirname(
+            os.path.dirname(model_dir))))
+        cls = load_model_py(mpy, engine)
+        meta = {"studio_tenant": None, "studio_owns_params": False}
+        return [(model_row(cls, model_dir), meta)]
     path = os.path.join(model_dir, "model.yaml")
     text = _read_file(path)
     if text is None:

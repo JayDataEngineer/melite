@@ -1488,13 +1488,20 @@ def models() -> dict:
 
 
 def provision(body_json, plugins_root):
-    """POST /v1/models/provision -- queue a model download via comfy-cli.
+    """POST /v1/models/provision -- queue a model download.
 
-    Accepts {"model": "<id>"} where id matches a model.yaml directory
-    stem under plugins/*/models/<genre>/<id>/. Reads the provisions
-    block and shells out to comfy model download (PIN LAW: the
-    comfy binary routes through the deployment wrapper into the
-    instance). Returns {"queued": true, "model": id, "detail": str}.
+    Accepts {"model": "<id>", "variant"?: str, "quant"?: str} where id
+    matches a model dir stem under plugins/engines/<engine>/models/
+    <genre>/<id>/. Python-flipped units (model.py) resolve their
+    artifacts from the CLASS tree — the Cell at (variant, quant) carries
+    url/dest/sha/size as validated data, no yaml text scan. Un-flipped
+    units keep the yaml provisions block. Transfer goes through the
+    comfy binary (PIN LAW: the deployment wrapper door into the serving
+    container — the CLI lives there, not in gateway python; portability
+    law). Returns {"queued": true, "model": id, "detail": str}.
+
+    (2026-09-02 reorg debt healed: this scanned the pre-engine
+    plugins/models/ depth and 404'd EVERY model since the engine move.)
     """
     import os, subprocess
     try:
@@ -1506,26 +1513,83 @@ def provision(body_json, plugins_root):
     if not mid:
         return 400, {"error": "model is required", "queued": False, "model": ""}
 
-    # scan plugins/*/models/<genre>/<id>/model.yaml
-    models_root = os.path.join(plugins_root, "models")
-    found_yaml = None
-    if os.path.isdir(models_root):
-        for genre in os.listdir(models_root):
-            candidate = os.path.join(models_root, genre, mid, "model.yaml")
-            if os.path.isfile(candidate):
-                found_yaml = candidate
+    # scan plugins/engines/<engine>/models/<genre>/<id>/ — the engine
+    # layout (the old plugins/models depth found nothing since the move)
+    eng_root = os.path.join(plugins_root, "engines")
+    found_dir = None
+    if os.path.isdir(eng_root):
+        for engine in sorted(os.listdir(eng_root)):
+            models_root = os.path.join(eng_root, engine, "models")
+            if not os.path.isdir(models_root):
+                continue
+            for genre in sorted(os.listdir(models_root)):
+                mdir = os.path.join(models_root, genre, mid)
+                if os.path.isfile(os.path.join(mdir, "model.py")) or \
+                        os.path.isfile(os.path.join(mdir, "model.yaml")):
+                    found_dir = mdir
+                    break
+            if found_dir:
                 break
-            genre_dir = os.path.join(models_root, genre)
-            if os.path.isdir(genre_dir):
-                for entry in os.listdir(genre_dir):
-                    if entry == mid and os.path.isfile(
-                            os.path.join(genre_dir, entry, "model.yaml")):
-                        found_yaml = os.path.join(genre_dir, entry, "model.yaml")
-                        break
 
-    if not found_yaml:
+    if not found_dir:
         return 404, {"error": "model %r not found in catalog" % mid,
                       "queued": False, "model": mid}
+
+    # ── python flip: the class tree is the artifact source ──────────
+    mpy = os.path.join(found_dir, "model.py")
+    if os.path.isfile(mpy):
+        import sys
+        repo_root = os.path.dirname(plugins_root)   # plugins/ → repo
+        models_py = os.path.join(repo_root, "plugins", "web", "models_py")
+        if models_py not in sys.path:
+            sys.path.insert(0, models_py)
+        try:
+            from melite_models import load_model_py
+        except ImportError:
+            return 500, {"error": "melite_models package missing at %s"
+                                  % models_py, "queued": False, "model": mid}
+        engine_dir = os.path.dirname(os.path.dirname(found_dir))
+        cls = load_model_py(mpy, os.path.basename(engine_dir))
+        variant = (body_json.get("variant") or "").strip() or None
+        quant = (body_json.get("quant") or "").strip() or None
+        _route, _eng, cell = cls.resolve(variant, quant)
+        if cell is None or not getattr(cell, "source_url", ""):
+            return 422, {
+                "error": "model %r has no artifact at (%s, %s)"
+                         % (mid, variant, quant),
+                "queued": False, "model": mid}
+        art = cell().artifact()
+        url = str(art.source_url)
+        name = url.rsplit("/", 1)[-1]
+        dest = "models"
+        if art.dest_sub:
+            dest = "models/%s" % art.dest_sub.strip("/")
+        queued, errors = [], []
+        try:
+            r = subprocess.run(
+                ["comfy", "model", "download", "--url", url,
+                 "--relative-path", dest, "--filename", name],
+                capture_output=True, text=True, timeout=7200)
+            if r.returncode == 0:
+                queued.append(name)
+            else:
+                errors.append({"file": name,
+                               "error": (r.stderr or r.stdout)[:200]})
+        except Exception as e:
+            errors.append({"file": name, "error": str(e)[:200]})
+        detail = []
+        if queued:
+            detail.append("downloaded: %s" % ", ".join(queued))
+        if errors:
+            detail.append("errors: %d" % len(errors))
+        return (200 if queued else 500), {
+            "queued": bool(queued), "model": mid,
+            "detail": "; ".join(detail) or "no artifact matched",
+            "errors": errors or None,
+        }
+
+    # ── yaml units: the provisions block (pre-flip shape) ───────────
+    found_yaml = os.path.join(found_dir, "model.yaml")
 
     cfg = _yaml.safe_load(open(found_yaml).read()) if _yaml else {}
     fam = cfg.get("family") if isinstance(cfg.get("family"), dict) else {}
