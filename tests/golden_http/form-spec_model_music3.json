@@ -1,1 +1,306 @@
-{"model":"music3","label":"Music","genre":"audio","engine":"","defaults":{"mp3_quality":"V0","output_format":"flac","preset":"song","seed":"-1","max_duration":"60.0","cfg_scale":"1.7","top_k":"50","steps":"30","tiled_decode":"false"},"variants":[],"features":{"modifiers":[],"variant_groups":{"Variant":{"label":"Variant"},"Quant":{"label":"Quant"}}},"enhance_prompts":{"prompt":"structure: [Genre, Vocal Details, Arrangement]; rules:; - Genre block first: era + region + 2-3 style anchors + tempo in BPM + key if known; - Vocal Details block: gender, register, delivery manner, one signature texture; - Arrangement block: the instrument story front to back — intro, build, drop, outro; - name production adjectives the ear can verify (dusty, wide, brickwalled); - never write lyric content in the caption — that lives in the lyrics field","lyrics":"structure: [section tags, rhyme, hook law]; rules:; - every section wrapped in [tag]: [verse] [pre-chorus] [chorus] [bridge] [outro]; - keep verses concrete and grounded; the chorus earns the abstraction; - the hook repeats at least once, word-for-word; - short lines sing: 6-9 syllables default, break longer thoughts; - match the section energy to the arrangement block it sits over"},"form":"music","service":"music3","fields":[{"name":"prompt","type":"textarea","label":"Tags / Description","group":"prompt","order":0,"columns":1,"required":true,"tooltip":"Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, pop, soul, guitar, 105 BPM'."},{"name":"lyrics","type":"textarea","label":"Lyrics","group":"prompt","order":1,"tooltip":"Lyrics with structure tags: [verse], [chorus], [bridge]. Empty = instrumental."},{"name":"duration","type":"slider","label":"Duration (s)","group":"generation","order":0,"width":1,"min":5,"max":360,"step":1,"tooltip":"Target audio length in seconds (5-360)."},{"name":"guidance_scale","type":"slider","label":"CFG","group":"generation","order":1,"width":1,"min":0.1,"max":10,"step":0.1,"tooltip":"Classifier-free guidance. IGNORED on Turbo (distilled weights — engine applies none); Base/SFT: 3.0-10.0, 7.0 recommended."},{"name":"n_diffusion_steps","type":"number","label":"Diffusion Steps","group":"generation","order":2,"width":1,"min":1,"max":200,"step":1,"tooltip":"Flow-matching denoising steps. 8 = Turbo default (engine clamps Turbo to 8); Base recommended 32-50. Never 0."},{"name":"lm_cfg_scale","type":"slider","label":"LM CFG","group":"generation","order":3,"width":1,"min":0,"max":10,"step":0.1},{"name":"negative_prompt","type":"textarea","label":"Negative Prompt","group":"generation","order":4,"tooltip":"Excludes unwanted musical traits (e.g. 'muddy bass, clipping, harsh vocals')."},{"name":"language","type":"select","label":"Vocal Language","group":"generation","order":5,"width":1,"tooltip":"Vocal language for lyric/phoneme alignment. Default 'en' = English.","options":["en", "zh", "ja", "ko", "es", "fr", "de", "it", "ru", "pt"]},{"name":"temperature","type":"slider","label":"Temperature","group":"sampling","order":0,"width":1,"min":0,"max":2,"step":0.05,"tooltip":"LM planner temperature (song structure/lyrics). 0.7 default; 0.3-0.5 = predictable structures."},{"name":"top_p","type":"slider","label":"Top-P","group":"sampling","order":1,"width":1,"min":0,"max":1,"step":0.01,"tooltip":"LM planner nucleus sampling."},{"name":"seed","type":"seed","label":"Seed","group":"seed","order":0,"width":1,"default":-1}],"schema_groups":[{"id":"prompt","label":"Prompt","order":0,"zone":"params","fields":[{"name":"prompt","type":"textarea","label":"Tags / Description","order":0,"columns":1,"required":true,"tooltip":"Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, pop, soul, guitar, 105 BPM'."},{"name":"lyrics","type":"textarea","label":"Lyrics","order":1,"tooltip":"Lyrics with structure tags: [verse], [chorus], [bridge]. Empty = instrumental."}]},{"id":"generation","label":"Generation","order":1,"zone":"params","fields":[{"name":"duration","type":"slider","label":"Duration (s)","order":0,"width":1,"min":5,"max":360,"step":1,"tooltip":"Target audio length in seconds (5-360)."},{"name":"guidance_scale","type":"slider","label":"CFG","order":1,"width":1,"min":0.1,"max":10,"step":0.1,"tooltip":"Classifier-free guidance. IGNORED on Turbo (distilled weights — engine applies none); Base/SFT: 3.0-10.0, 7.0 recommended."},{"name":"n_diffusion_steps","type":"number","label":"Diffusion Steps","order":2,"width":1,"min":1,"max":200,"step":1,"tooltip":"Flow-matching denoising steps. 8 = Turbo default (engine clamps Turbo to 8); Base recommended 32-50. Never 0."},{"name":"lm_cfg_scale","type":"slider","label":"LM CFG","order":3,"width":1,"min":0,"max":10,"step":0.1},{"name":"negative_prompt","type":"textarea","label":"Negative Prompt","order":4,"tooltip":"Excludes unwanted musical traits (e.g. 'muddy bass, clipping, harsh vocals')."},{"name":"language","type":"select","label":"Vocal Language","order":5,"width":1,"tooltip":"Vocal language for lyric/phoneme alignment. Default 'en' = English.","options":["en", "zh", "ja", "ko", "es", "fr", "de", "it", "ru", "pt"]}]},{"id":"sampling","label":"Sampling","order":2,"zone":"params","fields":[{"name":"temperature","type":"slider","label":"Temperature","order":0,"width":1,"min":0,"max":2,"step":0.05,"tooltip":"LM planner temperature (song structure/lyrics). 0.7 default; 0.3-0.5 = predictable structures."},{"name":"top_p","type":"slider","label":"Top-P","order":1,"width":1,"min":0,"max":1,"step":0.01,"tooltip":"LM planner nucleus sampling."}]},{"id":"seed","label":"Seed","order":3,"zone":"params","fields":[{"name":"seed","type":"seed","label":"Seed","order":0,"width":1,"default":-1}]}]}
+{
+ "model": "music3",
+ "label": "Music",
+ "genre": "audio",
+ "engine": "comfyui",
+ "defaults": {
+  "backend": "cuda"
+ },
+ "variants": [],
+ "features": {
+  "modifiers": [],
+  "variant_groups": {
+   "Variant": {
+    "label": "Variant"
+   },
+   "Quant": {
+    "label": "Quant"
+   }
+  }
+ },
+ "enhance_prompts": {
+  "prompt": "structure: [Genre, Vocal Details, Arrangement]; rules:; - Genre block first: era + region + 2-3 style anchors + tempo in BPM + key if known; - Vocal Details block: gender, register, delivery manner, one signature texture; - Arrangement block: the instrument story front to back \u2014 intro, build, drop, outro; - name production adjectives the ear can verify (dusty, wide, brickwalled); - never write lyric content in the caption \u2014 that lives in the lyrics field",
+  "lyrics": "structure: [section tags, rhyme, hook law]; rules:; - every section wrapped in [tag]: [verse] [pre-chorus] [chorus] [bridge] [outro]; - keep verses concrete and grounded; the chorus earns the abstraction; - the hook repeats at least once, word-for-word; - short lines sing: 6-9 syllables default, break longer thoughts; - match the section energy to the arrangement block it sits over"
+ },
+ "form": "music",
+ "service": "music3",
+ "fields": [
+  {
+   "name": "prompt",
+   "type": "textarea",
+   "label": "Tags / Description",
+   "group": "prompt",
+   "order": 0,
+   "columns": 1,
+   "required": true,
+   "tooltip": "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, pop, soul, guitar, 105 BPM'."
+  },
+  {
+   "name": "lyrics",
+   "type": "textarea",
+   "label": "Lyrics",
+   "group": "prompt",
+   "order": 1,
+   "tooltip": "Lyrics with structure tags: [verse], [chorus], [bridge]. Empty = instrumental."
+  },
+  {
+   "name": "duration",
+   "type": "slider",
+   "label": "Duration (s)",
+   "group": "generation",
+   "order": 0,
+   "width": 1,
+   "min": 5,
+   "max": 360,
+   "step": 1,
+   "tooltip": "Target audio length in seconds (5-360)."
+  },
+  {
+   "name": "guidance_scale",
+   "type": "slider",
+   "label": "CFG",
+   "group": "generation",
+   "order": 1,
+   "width": 1,
+   "min": 0.1,
+   "max": 10,
+   "step": 0.1,
+   "tooltip": "Classifier-free guidance. IGNORED on Turbo (distilled weights \u2014 engine applies none); Base/SFT: 3.0-10.0, 7.0 recommended."
+  },
+  {
+   "name": "n_diffusion_steps",
+   "type": "number",
+   "label": "Diffusion Steps",
+   "group": "generation",
+   "order": 2,
+   "width": 1,
+   "min": 1,
+   "max": 200,
+   "step": 1,
+   "tooltip": "Flow-matching denoising steps. 8 = Turbo default (engine clamps Turbo to 8); Base recommended 32-50. Never 0."
+  },
+  {
+   "name": "lm_cfg_scale",
+   "type": "slider",
+   "label": "LM CFG",
+   "group": "generation",
+   "order": 3,
+   "width": 1,
+   "min": 0,
+   "max": 10,
+   "step": 0.1
+  },
+  {
+   "name": "negative_prompt",
+   "type": "textarea",
+   "label": "Negative Prompt",
+   "group": "generation",
+   "order": 4,
+   "tooltip": "Excludes unwanted musical traits (e.g. 'muddy bass, clipping, harsh vocals')."
+  },
+  {
+   "name": "language",
+   "type": "select",
+   "label": "Vocal Language",
+   "group": "generation",
+   "order": 5,
+   "width": 1,
+   "tooltip": "Vocal language for lyric/phoneme alignment. Default 'en' = English.",
+   "options": [
+    "en",
+    "zh",
+    "ja",
+    "ko",
+    "es",
+    "fr",
+    "de",
+    "it",
+    "ru",
+    "pt"
+   ]
+  },
+  {
+   "name": "temperature",
+   "type": "slider",
+   "label": "Temperature",
+   "group": "sampling",
+   "order": 0,
+   "width": 1,
+   "min": 0,
+   "max": 2,
+   "step": 0.05,
+   "tooltip": "LM planner temperature (song structure/lyrics). 0.7 default; 0.3-0.5 = predictable structures."
+  },
+  {
+   "name": "top_p",
+   "type": "slider",
+   "label": "Top-P",
+   "group": "sampling",
+   "order": 1,
+   "width": 1,
+   "min": 0,
+   "max": 1,
+   "step": 0.01,
+   "tooltip": "LM planner nucleus sampling."
+  },
+  {
+   "name": "seed",
+   "type": "seed",
+   "label": "Seed",
+   "group": "seed",
+   "order": 0,
+   "width": 1,
+   "default": -1
+  }
+ ],
+ "schema_groups": [
+  {
+   "id": "prompt",
+   "label": "Prompt",
+   "order": 0,
+   "zone": "params",
+   "fields": [
+    {
+     "name": "prompt",
+     "type": "textarea",
+     "label": "Tags / Description",
+     "order": 0,
+     "columns": 1,
+     "required": true,
+     "tooltip": "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, pop, soul, guitar, 105 BPM'."
+    },
+    {
+     "name": "lyrics",
+     "type": "textarea",
+     "label": "Lyrics",
+     "order": 1,
+     "tooltip": "Lyrics with structure tags: [verse], [chorus], [bridge]. Empty = instrumental."
+    }
+   ]
+  },
+  {
+   "id": "generation",
+   "label": "Generation",
+   "order": 1,
+   "zone": "params",
+   "fields": [
+    {
+     "name": "duration",
+     "type": "slider",
+     "label": "Duration (s)",
+     "order": 0,
+     "width": 1,
+     "min": 5,
+     "max": 360,
+     "step": 1,
+     "tooltip": "Target audio length in seconds (5-360)."
+    },
+    {
+     "name": "guidance_scale",
+     "type": "slider",
+     "label": "CFG",
+     "order": 1,
+     "width": 1,
+     "min": 0.1,
+     "max": 10,
+     "step": 0.1,
+     "tooltip": "Classifier-free guidance. IGNORED on Turbo (distilled weights \u2014 engine applies none); Base/SFT: 3.0-10.0, 7.0 recommended."
+    },
+    {
+     "name": "n_diffusion_steps",
+     "type": "number",
+     "label": "Diffusion Steps",
+     "order": 2,
+     "width": 1,
+     "min": 1,
+     "max": 200,
+     "step": 1,
+     "tooltip": "Flow-matching denoising steps. 8 = Turbo default (engine clamps Turbo to 8); Base recommended 32-50. Never 0."
+    },
+    {
+     "name": "lm_cfg_scale",
+     "type": "slider",
+     "label": "LM CFG",
+     "order": 3,
+     "width": 1,
+     "min": 0,
+     "max": 10,
+     "step": 0.1
+    },
+    {
+     "name": "negative_prompt",
+     "type": "textarea",
+     "label": "Negative Prompt",
+     "order": 4,
+     "tooltip": "Excludes unwanted musical traits (e.g. 'muddy bass, clipping, harsh vocals')."
+    },
+    {
+     "name": "language",
+     "type": "select",
+     "label": "Vocal Language",
+     "order": 5,
+     "width": 1,
+     "tooltip": "Vocal language for lyric/phoneme alignment. Default 'en' = English.",
+     "options": [
+      "en",
+      "zh",
+      "ja",
+      "ko",
+      "es",
+      "fr",
+      "de",
+      "it",
+      "ru",
+      "pt"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sampling",
+   "label": "Sampling",
+   "order": 2,
+   "zone": "params",
+   "fields": [
+    {
+     "name": "temperature",
+     "type": "slider",
+     "label": "Temperature",
+     "order": 0,
+     "width": 1,
+     "min": 0,
+     "max": 2,
+     "step": 0.05,
+     "tooltip": "LM planner temperature (song structure/lyrics). 0.7 default; 0.3-0.5 = predictable structures."
+    },
+    {
+     "name": "top_p",
+     "type": "slider",
+     "label": "Top-P",
+     "order": 1,
+     "width": 1,
+     "min": 0,
+     "max": 1,
+     "step": 0.01,
+     "tooltip": "LM planner nucleus sampling."
+    }
+   ]
+  },
+  {
+   "id": "seed",
+   "label": "Seed",
+   "order": 3,
+   "zone": "params",
+   "fields": [
+    {
+     "name": "seed",
+     "type": "seed",
+     "label": "Seed",
+     "order": 0,
+     "width": 1,
+     "default": -1
+    }
+   ]
+  }
+ ]
+}

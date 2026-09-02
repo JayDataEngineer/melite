@@ -579,15 +579,18 @@ def _scan_models(plugins_dir):
     id — the C's flat n_models array. meta carries the studio claim for
     the families section (catalog.c:908-919)."""
     pairs = []
+    # (2026-09-02) Engine layout: plugins/engines/<engine>/models/<genre>/.
+    # The depth-1 owner scan found nothing since the engine formalization.
+    eng_root = os.path.join(plugins_dir, "engines")
     try:
-        owners = os.scandir(plugins_dir)
+        engines = os.scandir(eng_root)
     except OSError:
         return pairs
-    with owners:
-        for owner in owners:
+    with engines:
+        for owner in engines:
             if owner.name.startswith("."):
                 continue
-            models_dir = os.path.join(plugins_dir, owner.name, "models")
+            models_dir = os.path.join(eng_root, owner.name, "models")
             if not os.path.isdir(models_dir):
                 continue
             with os.scandir(models_dir) as genres:
@@ -631,15 +634,17 @@ def _scan_model_dir(model_dir):
 def _scan_cards(plugins_dir):
     rows = []
     capabilities = {}
+    # (2026-09-02) Engine layout: plugins/engines/<engine>/cards/<card>/.
+    eng_root = os.path.join(plugins_dir, "engines")
     try:
-        owners = os.scandir(plugins_dir)
+        owners = os.scandir(eng_root)
     except OSError:
         return rows, capabilities
     with owners:
         for owner in owners:
             if owner.name.startswith("."):
                 continue
-            cards_dir = os.path.join(plugins_dir, owner.name, "cards")
+            cards_dir = os.path.join(eng_root, owner.name, "cards")
             if not os.path.isdir(cards_dir):
                 continue
             with os.scandir(cards_dir) as cids:
@@ -654,6 +659,22 @@ def _scan_cards(plugins_dir):
                         rows.append(row)
                     if cap_key is not None:
                         capabilities[cap_key] = cap_entry
+                    # group layer (melite-* tenants): cards/<group>/<card>/
+                    # — the plugin-subtree shape the editor's cardStudios
+                    # glob also walks (cards/melite-*/*/component.tsx).
+                    with os.scandir(card_dir) as subs:
+                        for sub in subs:
+                            if sub.name.startswith("."):
+                                continue
+                            sub_dir = os.path.join(card_dir, sub.name)
+                            if not os.path.isdir(sub_dir):
+                                continue
+                            row, cap_key, cap_entry = _scan_card_dir(
+                                sub_dir, sub.name)
+                            if row is not None:
+                                rows.append(row)
+                            if cap_key is not None:
+                                capabilities[cap_key] = cap_entry
     return rows, capabilities
 
 

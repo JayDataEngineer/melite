@@ -1,1 +1,1720 @@
-{"models":{"input":{"id":"input","family":"input","genre":"image","family":"input","label":"Input Prep","description":">-","source":{"type":""},"loras":[],"defaults":{"media_type":null,"filename_prefix":"input_prep","output_artifact":"media"},"engine":"","form":"form_input","has_inference":false,"has_rubric":false},"media_merge":{"id":"media_merge","family":"media_merge","genre":"video","family":"media_merge","label":"Media Merge","description":">-","source":{"type":""},"loras":[],"defaults":{"operation":"concat","output_artifact":"video"},"engine":"","form":"form_media_merge","has_inference":false,"has_rubric":false},"mask_studio":{"id":"mask_studio","family":"mask_studio","genre":"image","family":"mask_studio","label":"Mask","description":"Selection-only mask card: YOLO+SAM segmentation → named class masks.","source":{"type":"","repo_id":"facebook/sam-vit-base"},"loras":[],"defaults":{"output_mode":"segm","detect_mode":"body","detection_threshold":0.35,"sam_threshold":0.93,"sam_dilation":0,"export_face":false,"export_hands":false,"export_body":false,"export_paint":false,"sam3_prompt":null,"export_boxes":true,"instance_filter":"all","max_instances":0,"outputs":"[]"},"engine":"","form":"form_mask_studio","has_inference":false,"has_rubric":false},"detect":{"id":"detect","family":"detect","genre":"image","family":"detect","label":"Auto Detect","description":"Auto Detect — automatically selects the best model and conditioning for a given input.","source":{"type":""},"loras":[],"defaults":{"output_mode":"segm","detect_mode":"face","detection_threshold":0.35,"sam_dilation":0,"sam_threshold":0.93},"engine":"","form":"form_detect","has_inference":false,"has_rubric":false},"neon_samurai":{"id":"neon_samurai","family":"neon_samurai","genre":"plugin","family":"neon_samurai","label":"neon-samurai","description":"","source":{"type":""},"loras":[],"defaults":{"prompt":"a neon samurai","negative_prompt":"blurry, low quality","seed":42,"steps":20,"cfg":4,"width":1024,"height":1024},"engine":"","form":"neon_samurai","has_inference":false,"has_rubric":false},"wan-vace":{"id":"wan-vace","family":"wan-vace","genre":"video","family":"wan-vace","label":"Wan2.2 VACE","description":"Wan2.2 VACE video generation with reference-frame and mask control.","source":{"type":""},"loras":[],"defaults":{"blocks_to_swap":38,"easycache_enabled":false,"easycache_thresh":0.015,"guide_strength":3.0,"magcache_K":4,"magcache_enabled":false,"magcache_thresh":0.02,"output_format":"mp4","relay_epsilon":0.001,"retake_enabled":false,"retake_start_frame":0,"retake_strength":1.0,"teacache_enabled":false,"teacache_threshold":0.15,"torch_compile":false,"upscale_cfg":1.0,"upscale_denoise":0.3,"upscale_enabled":false,"upscale_steps":10,"vace_blocks_to_swap":5,"vfi_model":"rife47.pth","vfi_multiplier":1,"wan_context_enabled":false,"wan_context_frames":81,"wan_context_freenoise":true,"wan_context_fuse_method":"linear","wan_context_overlap":16,"wan_context_schedule":"uniform_standard","wan_context_stride":4,"width":832,"height":480,"sampling_steps":25,"wan_scheduler":"unipc","guide_scale":6.0,"frames":81,"fps":16,"negative_prompt":null,"model_name":"Wan2_2-T2V-A14B_HIGH_fp8_e4m3fn_scaled_KJ.safetensors","t5_name":"umt5-xxl-enc-fp8_e4m3fn.safetensors","vae_name":"Wan2_1_VAE_bf16.safetensors","vace_name":"Wan2_2_Fun_VACE_module_A14B_HIGH_fp8_e4m3fn_scaled_KJ.safetensors"},"engine":"","form":"form_video_director","has_inference":false,"has_rubric":false},"ltx":{"id":"ltx","family":"ltx","genre":"video","family":"ltx","label":"LTX 2.3","description":"LTX 2.3 text- and image-to-video generation via the Director workflow.","source":{"type":""},"loras":[],"defaults":{"anchor_strength":0.7,"audio_mode":"none","auto_snap_ic_grid":true,"base_denoise":1.0,"crop":"center","director_guide_enabled":false,"divisible_by":32,"force_retake_mode":false,"guide_strength":3.0,"ic_lora_name":"None","ic_lora_strength":1.0,"image_attention_strength":1.0,"img_compression":18,"inpaint_audio":false,"lipsync_strength":3.0,"ltx_chunk_feedforward":false,"ltx_context_length":145,"ltx_context_overlap":40,"ltx_context_windows":false,"ltx_ff_chunks":2,"ltx_sage_attention":false,"ltx_sage_triton":true,"output_format":"mp4","override_audio":false,"relay_epsilon":0.001,"resize_method":"maintain aspect ratio","retake_apply_global":false,"retake_enabled":false,"retake_start_frame":0,"retake_strength":1.0,"scale_by":1.0,"start_frame":0,"tile_overlap":64,"tile_size":256,"torch_compile":false,"upscale_cfg":1.0,"upscale_denoise":0.3,"upscale_enabled":false,"upscale_method":"bicubic","upscale_steps":10,"use_custom_motion":true,"use_tiled_encode":false,"width":1280,"height":720,"sampling_steps":8,"sampler":"euler","guide_scale":3.0,"frames":97,"fps":24,"scheduler":"beta","negative_prompt":null},"engine":"","form":"form_video_director","has_inference":false,"has_rubric":false},"scail2":{"id":"scail2","family":"scail2","genre":"video","family":"scail2","label":"SCAIL-2","description":"SCAIL-2 character animation — drives a reference character from a video and colored mask.","source":{"type":""},"loras":[],"defaults":{"guide_strength":3.0,"output_format":"mp4","relay_epsilon":0.001,"retake_enabled":false,"retake_start_frame":0,"retake_strength":1.0,"upscale_cfg":1.0,"upscale_denoise":0.3,"upscale_enabled":false,"upscale_steps":10,"width":832,"height":480,"sampling_steps":40,"guide_scale":5.0,"frames":81,"fps":16,"mode":"animate","seed":42,"model_name":"scail2_14B_fp8_scaled.safetensors"},"engine":"","form":"form_video_director","has_inference":false,"has_rubric":false},"h3":{"id":"h3","family":"h3","genre":"video","family":"h3","label":"MiniMax H3","description":"MiniMax H3 joint video + audio generation. Native AV output — describe both motion and","source":{"type":""},"loras":[],"defaults":{"guide_strength":3.0,"h3_attention":"kitchen","h3_fp16_accumulation":false,"h3_ref_image_size":"match","h3_torch_compile":false,"output_format":"mp4","preset":"draft_02mp","relay_epsilon":0.001,"retake_enabled":false,"retake_start_frame":0,"retake_strength":1.0,"upscale_cfg":1.0,"upscale_denoise":0.3,"upscale_enabled":false,"upscale_steps":10,"width":1344,"height":768,"frames":124,"fps":24,"sampling_steps":30,"guide_scale":4.0,"sampler":"euler","scheduler":"simple","shift_video":12.0,"shift_audio":3.0,"seed":42},"engine":"","form":"form_video_director","has_agent":true,"has_inference":false,"has_rubric":false},"h3-timeline":{"id":"h3-timeline","family":"h3-timeline","genre":"video","family":"h3-timeline","label":"H3 Timeline (multi-window)","description":">-","source":{"type":""},"loras":[],"defaults":{"seed":42,"fps":24},"engine":"comfyui","form":"form_video_director","has_agent":true,"has_inference":true,"has_rubric":false},"ltx-2-3":{"id":"ltx-2-3","family":"ltx-2-3","genre":"video","family":"ltx-2-3","label":"LTX 2.3","description":">-","source":{"type":""},"loras":[],"defaults":{"width":1280,"height":720,"frames":97,"fps":24,"steps":30,"sampler":"euler","scheduler":"simple","cfg":3.0,"seed":42},"engine":"","form":"form_generate","has_inference":false,"has_rubric":false},"h3-keyframe":{"id":"h3-keyframe","family":"h3-keyframe","genre":"video","family":"h3-keyframe","label":"MiniMax H3 keyframe-to-video","description":"","source":{"type":""},"loras":[],"defaults":{"width":768,"height":448,"length":56,"steps":12,"fps":24},"engine":"","form":"form_video_director","has_agent":true,"has_inference":false,"has_rubric":false},"h3":{"id":"h3","family":"h3","genre":"video","family":"h3","label":"MiniMax H3","description":"MiniMax H3 joint video + audio generation. Native AV output — describe both motion and","source":{"type":""},"loras":[],"defaults":{"guide_strength":3.0,"h3_attention":"kitchen","h3_fp16_accumulation":false,"h3_ref_image_size":"match","h3_torch_compile":false,"output_format":"mp4","preset":"draft_02mp","relay_epsilon":0.001,"retake_enabled":false,"retake_start_frame":0,"retake_strength":1.0,"upscale_cfg":1.0,"upscale_denoise":0.3,"upscale_enabled":false,"upscale_steps":10,"width":1344,"height":768,"frames":124,"fps":24,"sampling_steps":30,"guide_scale":4.0,"sampler":"euler","scheduler":"simple","shift_video":12.0,"shift_audio":3.0,"seed":42},"engine":"","form":"form_video_director","has_agent":true,"has_inference":false,"has_rubric":false},"trellis2-native":{"id":"trellis2-native","family":"trellis2-native","genre":"3d","family":"trellis2-native","label":"TRELLIS.2 Native","description":">-","source":{"type":""},"loras":[],"defaults":{"resolution":1024,"texture_size":2048,"bg_removal":"auto","steps":12,"cfg":3.0,"seed":42,"filename_prefix":"trellis2_native"},"engine":"","form":"form_3d_trellis2_native","has_inference":false,"has_rubric":false},"pixal3d":{"id":"pixal3d","family":"pixal3d","genre":"3d","family":"pixal3d","label":"Pixal3D","description":">-","source":{"type":""},"loras":[],"defaults":{"resolution":1024,"texture_size":2048,"bg_removal":"auto","steps":12,"cfg":3.0,"seed":42,"filename_prefix":"pixal3d"},"engine":"","form":"form_3d_pixal3d","has_inference":false,"has_rubric":false},"step1x_texture":{"id":"step1x_texture","family":"step1x_texture","genre":"3d","family":"step1x_texture","label":"Step1X-3D Texture","description":"Diffusion-based 3D texture synthesis — 1 reference image → 6 multi-view images via SDXL ig2mv pipeline → baked onto UV atlas. Fills ALL surfaces (no coverage gaps unlike camera projection). 3.5B model, ~15s on 4090.","source":{"type":""},"loras":[],"defaults":{"preset":"standard","texture_size":2048,"render_size":2048,"remove_bg":false,"seed":2025,"filename_prefix":"step1x_texture"},"engine":"","form":"form_3d_step1x_texture","has_inference":false,"has_rubric":false},"mesh_refine":{"id":"mesh_refine","family":"mesh_refine","genre":"3d","family":"mesh_refine","label":"UltraShape Mesh Refine","description":"Image-guided coarse-mesh refinement (UltraShape 1.0 DiT) — carves sharp limb separation + hard-surface edges into blobby TRELLIS output using the SAME guide image the mesh was generated from. The pre-rig cleanup step: run BEFORE SOMAX so proximity-based weight transfer can't glue arm vertices to torso bones.","source":{"type":""},"loras":[],"defaults":{"box_v":1.0,"mc_level":0.0,"normalize_scale":0.99,"num_latents":32768,"num_sharp_points":204800,"num_uniform_points":204800,"preset":"standard","dtype":"bfloat16","low_vram":false,"steps":50,"guidance_scale":5.0,"octree_resolution":384,"num_chunks":8000,"remove_bg":false,"seed":42,"file_format":"glb","filename_prefix":"ultrashape_refined"},"engine":"","form":"form_3d_mesh_refine","has_inference":false,"has_rubric":false},"somax":{"id":"somax","family":"somax","genre":"3d","family":"somax","label":"SOMAX","description":"TRELLIS → SOMA weight transfer — image to SOMAX rigged GLB with anatomically correct SOMA-77 skeleton weights.","source":{"type":"","repo_id":"nvidia/soma-x"},"loras":[],"defaults":{"filename_prefix":"KimodoAnimated","file_format":"glb","decimate_ratio":0.2,"preserve_texture":true,"in_place":true},"engine":"","form":"form_3d_somax","has_inference":false,"has_rubric":false},"transfer_rig":{"id":"transfer_rig","family":"transfer_rig","genre":"3d","family":"transfer_rig","label":"Transfer Rig","description":"Copy rig from source GLB onto target GLB via GPU KNN.","source":{"type":""},"loras":[],"defaults":{},"engine":"","form":"form_3d_transfer_rig","has_inference":false,"has_rubric":false},"krea-2":{"id":"krea-2","family":"krea-2","genre":"image","family":"krea-2","label":"Krea 2","description":"High-quality general text-to-image generation.","source":{"type":""},"loras":[],"defaults":{"controlnet_strength_floor":0.0,"mask_feather":8,"mask_grow":8,"mask_invert":false,"mask_threshold":0,"outpaint_bottom":0,"outpaint_left":0,"outpaint_overlap":16,"outpaint_right":0,"outpaint_top":0,"scheduler":"normal","width":1024,"height":1024,"steps":8,"sampler":"euler","cfg":1.0},"engine":"comfyui","form":"form_generate","has_agent":true,"has_inference":true,"has_rubric":false},"img-edit":{"id":"img-edit","family":"img-edit","genre":"image","family":"img-edit","label":"Qwen Image Edit 2511","description":"","source":{"type":""},"loras":[],"defaults":{"width":1024,"height":1024,"steps":4,"cfg":1.0},"engine":"comfyui","form":"form_edit","has_agent":true,"has_inference":true,"has_rubric":false},"ace-step":{"id":"ace-step","family":"ace-step","genre":"audio","family":"ace-step","label":"ACE-Step v1.5","description":"ACE-Step v1.5 — text-to-music generation.","source":{"type":""},"loras":[],"defaults":{"language":"en","lm_cfg_scale":2.0,"top_p":0.9,"seed":-1,"duration":30.0,"n_diffusion_steps":8,"guidance_scale":1.0,"temperature":0.7},"engine":"","form":"form_music","has_inference":false,"has_rubric":false},"moss-sfx":{"id":"moss-sfx","family":"moss-sfx","genre":"audio","family":"moss-sfx","label":"MOSS Sound Effects v2","description":"MOSS Sound Effects v2 — text-to-SFX audio generation (OpenMOSS-Team MOSS-SoundEffect-v2.0).","source":{"type":"","repo_id":"OpenMOSS-Team/MOSS-SoundEffect-v2.0"},"loras":[],"defaults":{"num_inference_steps":50,"repetition_penalty":1.0,"speed":1.0,"temperature":1.0,"top_k":0,"top_p":0.9,"seed":-1},"engine":"","form":"form_sound","has_inference":false,"has_rubric":false},"music3":{"id":"music3","family":"music3","genre":"audio","family":"music3","label":"MiniMax Music 3","description":"MiniMax Music 3 — structured caption + lyrics → complete songs up to 5 minutes (native","source":{"type":""},"loras":[],"defaults":{"mp3_quality":"V0","output_format":"flac","preset":"song","seed":-1,"max_duration":60.0,"cfg_scale":1.7,"top_k":50,"steps":30,"tiled_decode":false},"engine":"","form":"form_music","has_agent":true,"has_inference":false,"has_rubric":false},"moss-tts":{"id":"moss-tts","family":"moss-tts","genre":"audio","family":"moss-tts","label":"MOSS-TTS","description":"MOSS-TTS — text-to-speech with zero-shot voice cloning and emotion/style direction via instruct.","source":{"type":""},"loras":[],"defaults":{"repetition_penalty":1.05,"speed":1.0,"temperature":0.8,"top_p":0.9,"seed":-1},"engine":"","form":"form_tts","has_inference":false,"has_rubric":false},"qwen3-tts":{"id":"qwen3-tts","family":"qwen3-tts","genre":"audio","family":"qwen3-tts","label":"Qwen3-TTS","description":"Qwen3-TTS — zero-shot multilingual text-to-speech with named speakers. The Variant axis picks the size (0.6B / 1.7B); Quant is Q8.","source":{"type":"","repo_id":"Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice"},"loras":[],"defaults":{"repetition_penalty":1.05,"speed":1.0,"temperature":0.8,"top_p":0.9,"seed":-1,"voice":"serena","qwen3_variant":"CustomVoice"},"engine":"","form":"form_tts","has_inference":false,"has_rubric":false},"llm_text":{"id":"llm_text","family":"llm_text","genre":"text","family":"llm_text","label":"LLM Text","description":"LLM Text — OpenAI-compat chat (cloud or local). Pick an endpoint in Settings → LLM, then prompt.","source":{"type":""},"loras":[],"defaults":{"system_prompt":null,"temperature":0.7,"max_length":1920,"json_output":false},"engine":"","form":"form_llm_text","has_inference":false,"has_rubric":false},"vibevoice_asr":{"id":"vibevoice_asr","family":"vibevoice_asr","genre":"","family":"vibevoice_asr","label":"VibeVoice ASR","description":"Provisioning-only infra family (no editor card) \\u2014 VibeVoice ASR.","source":{"type":""},"loras":[],"defaults":{},"engine":"","form":"form_admin","has_inference":false,"has_rubric":false},"pixal3d":{"id":"pixal3d","family":"pixal3d","genre":"","family":"pixal3d","label":"Pixal3D (3D generation)","description":"Provisioning-only infra family (no editor card) \\u2014 Pixal3D (3D generation).","source":{"type":""},"loras":[],"defaults":{},"engine":"","form":"form_admin","has_inference":false,"has_rubric":false},"faster_whisper":{"id":"faster_whisper","family":"faster_whisper","genre":"","family":"faster_whisper","label":"Faster-Whisper (ASR)","description":"Provisioning-only infra family (no editor card) \\u2014 Faster-Whisper (ASR).","source":{"type":""},"loras":[],"defaults":{},"engine":"","form":"form_admin","has_inference":false,"has_rubric":false},"qwen3_embeddings":{"id":"qwen3_embeddings","family":"qwen3_embeddings","genre":"","family":"qwen3_embeddings","label":"Jina v5-nano Embeddings (clustering + retrieval)","description":"\"Provisioning-only infra family (no editor card) \\u2014 Jina v5-nano Embeddings (clustering\\","source":{"type":""},"loras":[],"defaults":{},"engine":"","form":"form_admin","has_inference":false,"has_rubric":false},"ideogram":{"id":"ideogram","family":"ideogram","genre":"image","family":"ideogram","label":"Ideogram","description":"Typography-aware text-to-image with clean, legible text rendering.","source":{"type":""},"loras":[],"defaults":{"controlnet_strength_floor":0.0,"mu":0.0,"std":1.75,"width":1024,"height":1024,"steps":25,"sampler":"euler","cfg":5.0,"negative_prompt":"blurry, low quality, distorted text, watermark"},"engine":"","form":"form_ideogram","has_inference":false,"has_rubric":false},"echo":{"id":"echo","family":"echo","genre":"utility","family":"echo","label":"Echo","description":"Passthrough plugin — copies input tensors to outputs. Used for testing and pipeline prototyping.","source":{"type":"builtin"},"loras":[],"defaults":{"passthrough":true},"engine":"","form":"form_generate","has_agent":true,"has_inference":false,"has_rubric":false},"trellis_native":{"id":"trellis_native","family":"trellis_native","genre":"3d","family":"trellis_native","label":"TRELLIS 3D","description":"Image-to-3D mesh (GLB, textured) via NATIVE trellis.cpp engine — full pipeline dinov3/ss/shape/remesh/decimate/xatlas/texture, CUDA ggml in-process. 3D never touches ComfyUI.","source":{"type":"local"},"loras":[],"defaults":{"res":512,"seed":42,"gpu":0,"timeout_s":900},"engine":"","form":"form_generate","has_agent":true,"has_inference":false,"has_rubric":false},"anima":{"id":"anima","family":"anima","genre":"image","family":"anima","label":"Anima","description":"Anime/illustration text-to-image. Cosmos-Predict2 base with Danbooru-style prompting.","source":{"type":""},"loras":[],"defaults":{"controlnet_strength_floor":0.0,"lanpaint_beta":0.5,"lanpaint_enabled":false,"lanpaint_friction":0.5,"lanpaint_lambda":0.5,"lanpaint_num_steps":20,"lanpaint_prompt_mode":"negative","lanpaint_step_size":1.0,"mask_feather":8,"mask_grow":8,"mask_invert":false,"mask_threshold":0,"outpaint_bottom":0,"outpaint_left":0,"outpaint_overlap":16,"outpaint_right":0,"outpaint_top":0,"width":1024,"height":1024,"steps":30,"sampler":"er_sde","scheduler":"simple","cfg":4.0},"engine":"","form":"form_generate","has_inference":false,"has_rubric":false},"z-image":{"id":"z-image","family":"z-image","genre":"image","family":"z-image","label":"Z-Image","description":"Fast Z-Image / Z-Image Turbo text-to-image generation.","source":{"type":""},"loras":[],"defaults":{"controlnet_strength_floor":0.0,"lanpaint_beta":0.5,"lanpaint_enabled":false,"lanpaint_friction":0.5,"lanpaint_lambda":0.5,"lanpaint_num_steps":20,"lanpaint_prompt_mode":"negative","lanpaint_step_size":1.0,"mask_feather":8,"mask_grow":8,"mask_invert":false,"mask_threshold":0,"outpaint_bottom":0,"outpaint_left":0,"outpaint_overlap":16,"outpaint_right":0,"outpaint_top":0,"scheduler":"normal","width":1024,"height":1024,"steps":8,"sampler":"er_sde","cfg":1.0,"negative_prompt":null},"engine":"","form":"form_generate","has_inference":false,"has_rubric":false},"krea-2":{"id":"krea-2","family":"krea-2","genre":"image","family":"krea-2","label":"Krea 2","description":"High-quality general text-to-image generation.","source":{"type":""},"loras":[],"defaults":{"controlnet_strength_floor":0.0,"lanpaint_beta":0.5,"lanpaint_enabled":false,"lanpaint_friction":0.5,"lanpaint_lambda":0.5,"lanpaint_num_steps":20,"lanpaint_prompt_mode":"negative","lanpaint_step_size":1.0,"mask_feather":8,"mask_grow":8,"mask_invert":false,"mask_threshold":0,"outpaint_bottom":0,"outpaint_left":0,"outpaint_overlap":16,"outpaint_right":0,"outpaint_top":0,"scheduler":"normal","width":1024,"height":1024,"steps":8,"sampler":"euler","cfg":1.0},"engine":"","form":"form_generate","has_inference":false,"has_rubric":false},"tavern_scene":{"id":"tavern_scene","family":"tavern_scene","genre":"roleplay","family":"tavern_scene","label":"Tavern Scene","description":"","source":{"type":""},"loras":[],"defaults":{"active_chat_id":null},"engine":"","form":"form_tavern","has_inference":false,"has_rubric":false},"autoremesher":{"id":"autoremesher","family":"autoremesher","genre":"3d","family":"autoremesher","label":"AutoRemesher","description":"Field-aligned quad remeshing (upstream huxingyi/autoremesher): rebuilds clean quad topology over AI triangle soup. The edge flow survives triangulation — what downstream rigging and LODs consume. CPU-only.","source":{"type":""},"loras":[],"defaults":{"preset":"prop","output_artifact":"remeshed_glb","timeout_ms":120000},"engine":"","form":"form_3d_autoremesher","has_inference":false,"has_rubric":false},"texture_project":{"id":"texture_project","family":"texture_project","genre":"3d","family":"texture_project","label":"Texture Project","description":"Multi-view texture projection onto a GLB mesh.","source":{"type":""},"loras":[],"defaults":{"texture_size":2048,"orbit_radius":1.14,"fovy":47.5,"projection_weights":"1.0, 0.2, 2.0, 0.2","confidence_threshold":0.05,"complete_unseen_rgb":true,"filename_prefix":"texture_project"},"engine":"","form":"form_3d_texture_project","has_inference":false,"has_rubric":false},"trellis_native":{"id":"trellis_native","family":"trellis_native","genre":"3d","family":"trellis_native","label":"Trellis (Native)","description":"Native trellis.cpp GGML engine — image to UV-textured GLB with the reference-parity C++ postprocess (weld, fill, DC remesh, CuMesh QEM, xatlas, trilinear PBR bake). 50s per asset on the 4090; no confetti.","source":{"type":"","repo_id":"ilintar/trellis2-gguf"},"loras":[],"defaults":{"resolution":1024,"quant":"q8","bg_removal":"auto","band":0,"texture_size":2048,"webp_quality":90,"filename_prefix":"trelliscpp","seed":42},"engine":"","form":"form_3d_trellis_native","has_inference":false,"has_rubric":false},"composite_character":{"id":"composite_character","family":"composite_character","genre":"3d","family":"composite_character","label":"Composite Character","description":"Assemble body + outfit + hair GLBs into one merged rigged GLB.","source":{"type":""},"loras":[],"defaults":{},"engine":"","form":"form_3d_composite_character","has_agent":true,"has_inference":false,"has_rubric":false},"step1x_texture":{"id":"step1x_texture","family":"step1x_texture","genre":"3d","family":"step1x_texture","label":"Step1X-3D Texture","description":"Diffusion-based 3D texture synthesis — 1 reference image → 6 multi-view images via SDXL ig2mv pipeline → baked onto UV atlas. Fills ALL surfaces (no coverage gaps unlike camera projection). 3.5B model, ~15s on 4090.","source":{"type":""},"loras":[],"defaults":{"preset":"standard","texture_size":2048,"render_size":2048,"remove_bg":false,"seed":2025,"filename_prefix":"step1x_texture"},"engine":"","form":"form_3d_step1x_texture","has_inference":false,"has_rubric":false},"mesh_refine":{"id":"mesh_refine","family":"mesh_refine","genre":"3d","family":"mesh_refine","label":"UltraShape Mesh Refine","description":"Image-guided coarse-mesh refinement (UltraShape 1.0 DiT) — carves sharp limb separation + hard-surface edges into blobby TRELLIS output using the SAME guide image the mesh was generated from. The pre-rig cleanup step: run BEFORE SOMAX so proximity-based weight transfer can't glue arm vertices to torso bones.","source":{"type":""},"loras":[],"defaults":{"box_v":1.0,"mc_level":0.0,"normalize_scale":0.99,"num_latents":32768,"num_sharp_points":204800,"num_uniform_points":204800,"preset":"standard","dtype":"bfloat16","low_vram":false,"steps":50,"guidance_scale":5.0,"octree_resolution":384,"num_chunks":8000,"remove_bg":false,"seed":42,"file_format":"glb","filename_prefix":"ultrashape_refined"},"engine":"","form":"form_3d_mesh_refine","has_inference":false,"has_rubric":false},"bake_motion":{"id":"bake_motion","family":"bake_motion","genre":"3d","family":"bake_motion","label":"Bake Motion","description":"Bake a SOMA-77 motion NPZ onto a SOMAX-rigged GLB → animated GLB.","source":{"type":""},"loras":[],"defaults":{"anim_name":"Walk","fps":30.0},"engine":"","form":"form_3d_bake_motion","has_inference":false,"has_rubric":false},"kimodo_export":{"id":"kimodo_export","family":"kimodo_export","genre":"3d","family":"kimodo_export","label":"Kimodo FBX","description":"Rig + convert TRELLIS GLB → Kimodo-ready rigged GLB/FBX. One step: auto-rigs with Mixamo skeleton + skin weights, then retargets motion if provided.","source":{"type":""},"loras":[],"defaults":{"file_format":"glb"},"engine":"","form":"form_3d_kimodo_export","has_inference":false,"has_rubric":false},"somax":{"id":"somax","family":"somax","genre":"3d","family":"somax","label":"SOMAX","description":"TRELLIS → SOMA weight transfer — image to SOMAX rigged GLB with anatomically correct SOMA-77 skeleton weights.","source":{"type":"","repo_id":"nvidia/soma-x"},"loras":[],"defaults":{"filename_prefix":"KimodoAnimated","file_format":"glb","decimate_ratio":0.2,"preserve_texture":true,"in_place":true},"engine":"","form":"form_3d_somax","has_inference":false,"has_rubric":false},"anycreature":{"id":"anycreature","family":"anycreature","genre":"3d","family":"anycreature","label":"AnyCreature","description":"Procedural non-humanoid creature builder (upstream anyCreature engine): one JSON spec compiles to a skinned, vertex-colored, keyframe-animated GLB. CPU-only — runs while the GPU is busy.","source":{"type":""},"loras":[],"defaults":{"spec_path":"references/anycreature/example/wolf.json","output_artifact":"creature_glb","timeout_ms":120000},"engine":"","form":"form_3d_anycreature","has_inference":false,"has_rubric":false},"anigen":{"id":"anigen","family":"anigen","genre":"3d","family":"anigen","label":"AniGen","description":"AniGen image-to-rigged-3D mesh with skeleton and skinning.","source":{"type":""},"loras":[],"defaults":{"steps_ss":25,"cfg_scale_ss":7.5,"steps_slat":25,"cfg_scale_slat":3.0,"joints_density":1,"simplify_ratio":0.95,"texture_size":1024,"seed":42},"engine":"","form":"form_3d_anigen","has_inference":false,"has_rubric":false},"transfer_rig":{"id":"transfer_rig","family":"transfer_rig","genre":"3d","family":"transfer_rig","label":"Transfer Rig","description":"Copy rig from source GLB onto target GLB via GPU KNN.","source":{"type":""},"loras":[],"defaults":{},"engine":"","form":"form_3d_transfer_rig","has_inference":false,"has_rubric":false},"eval_night":{"id":"eval_night","family":"eval_night","genre":"plugin","family":"eval_night","label":"eval_night","description":"","source":{"type":""},"loras":[],"defaults":{"prompt":"INPUT"},"engine":"","form":"eval_night","has_inference":false,"has_rubric":false},"kimodo":{"id":"kimodo","family":"kimodo","genre":"motion","family":"kimodo","label":"Kimodo","description":"kimodo generation lane (kimodo.cpp native engine)","source":{"type":"url","filename":"kimodo-soma-rp-v1.1-f32.gguf"},"loras":[],"defaults":{"server_url":"http://127.0.0.1:8094","model":"soma-rp-v1.1","model_dir":"/mnt/data/models/motion/kimodo","text_bundle":"/mnt/data/models/motion/kimodo/llm2vec-text-bundle","poll_ms":500,"timeout_s":300},"engine":"","form":"form_motion_kimodo","has_agent":true,"has_inference":false,"has_rubric":false},"kimodo":{"id":"kimodo","family":"kimodo","genre":"motion","family":"kimodo","label":"Kimodo","description":"NVIDIA Kimodo — text-to-3D human motion diffusion (SOMA-77 skeleton).","source":{"type":"","repo_id":"nvidia/Kimodo-SOMA-RP-v1.1"},"loras":[],"defaults":{"cfg_type":"separated","cfg_weight_a":2.5,"cfg_weight_b":5.0,"duration_sec":5.0,"export_openpose":false,"num_transition_frames":10,"openpose_frame_index":0,"openpose_img_size":768,"render_background":"black","render_elevation":5.0,"render_fov":30.0,"render_framing":1.05,"render_height":1024,"render_target_y":0.0,"render_width":768,"model_name":"Kimodo-SOMA-RP-v1.1","diffusion_steps":25,"num_samples":1,"seed":42},"engine":"","form":"form_motion_kimodo","has_inference":false,"has_rubric":false},"hy-motion":{"id":"hy-motion","family":"hy-motion","genre":"motion","family":"hy-motion","label":"Hunyuan Motion","description":"Hunyuan Motion — text-to-3D human motion generation.","source":{"type":""},"loras":[],"defaults":{"format":"glb","duration":5.0,"seed":-1},"engine":"","form":"form_motion_hy","has_inference":false,"has_rubric":false},"hello_painter":{"id":"hello_painter","family":"hello_painter","genre":"plugin","family":"hello_painter","label":"Hello Painter","description":"","source":{"type":""},"loras":[],"defaults":{"paint_mask":null},"engine":"","form":"form_hello_painter","has_inference":false,"has_rubric":false},"hello_mount_probe":{"id":"hello_mount_probe","family":"hello_mount_probe","genre":"plugin","family":"hello_mount_probe","label":"Hello Mount Probe","description":"Reference plugin mount — proves the plugins/*/models merge root.","source":{"type":""},"loras":[],"defaults":{"prompt":"hello from a plugin"},"engine":"","form":"form_generate","has_inference":false,"has_rubric":false},"sam":{"id":"sam","family":"sam","genre":"segmentation","family":"sam","label":"SAM — Segment Anything","description":"Meta's Segment Anything Model for image/video segmentation. Supports point, box, and text prompts.","source":{"type":"huggingface","repo_id":"segmind/sam-2.1-hiera-tiny","filename":"sam2.1_hiera_tiny_f16.ggml"},"loras":[],"defaults":{"use_gpu":true,"n_threads":4,"score_threshold":0.5},"engine":"sam3_cpp","form":"form_mask_studio","has_inference":false,"has_rubric":false},"sam3":{"id":"sam3","family":"sam3","genre":"segmentation","family":"sam3","label":"SAM 3 Text-Prompted Segmentation","description":"SAM 3 with native text prompts - type yellow-jacket to segment without bounding boxes or point clicks.","source":{"type":"huggingface","repo_id":"PABannier/sam3-vit_b","filename":"sam3_vit_b_f16.ggml"},"loras":[],"defaults":{"use_gpu":true,"n_threads":4,"score_threshold":0.5,"nms_threshold":0.1},"engine":"sam3_cpp","form":"form_mask_studio","has_agent":true,"has_inference":false,"has_rubric":false},"video_upscale":{"id":"video_upscale","family":"video_upscale","genre":"video","family":"video_upscale","label":"Video Upscale","description":">-","source":{"type":""},"loras":[],"defaults":{"batch_size":5,"cfg":4.0,"color_match_enabled":true,"denoise":0.3,"dit_model":"seedvr2_ema_3b_fp16.safetensors","filename_prefix":"upscaled_video","fps":24,"seed":0,"steps":20,"upscaler_model":"4xNomos2_hq_dat2.pth","vae_model":"ema_vae_fp16.safetensors","mode":"rtx_vsr","rtx_two_pass":true,"rtx_mode":"vsr","target_resolution":1080,"rtx_strength":0.6},"engine":"","form":"form_video_upscale","has_inference":false,"has_rubric":false},"seedvr2_upscale":{"id":"seedvr2_upscale","family":"seedvr2_upscale","genre":"image","family":"seedvr2_upscale","label":"SeedVR2 Upscaler","description":"SeedVR2 diffusion-based super-resolution (3B EMA FP16 default, 7B EMA FP8","source":{"type":""},"loras":[],"defaults":{"cfg":7.5,"denoise":0.4,"detection_threshold":0.35,"downscale_first":1.0,"filename_prefix":"upscaled","guide_size":512,"inpaint_region":"free","max_size":1024,"seed":0,"steps":50,"target_scale":2.0,"resolution":2048,"batch_size":5,"mode":"upscale"},"engine":"","form":"form_upscale","has_inference":false,"has_rubric":false},"basic_scale":{"id":"basic_scale","family":"basic_scale","genre":"image","family":"basic_scale","label":"Basic Resize","description":">-","source":{"type":""},"loras":[],"defaults":{"resize_method":"lanczos","resize_scale":0.5,"filename_prefix":"scaled"},"engine":"","form":"form_upscale","has_inference":false,"has_rubric":false},"pixel_upscale":{"id":"pixel_upscale","family":"pixel_upscale","genre":"image","family":"pixel_upscale","label":"Pixel Upscaler","description":">-","source":{"type":""},"loras":[],"defaults":{"batch_size":5,"cfg":7.5,"denoise":0.4,"detection_threshold":0.35,"downscale_first":1.0,"filename_prefix":"upscaled","guide_size":512,"inpaint_region":"free","max_size":1024,"resolution":2048,"seed":0,"steps":50,"target_scale":4.0,"mode":"upscale"},"engine":"","form":"form_upscale","has_inference":false,"has_rubric":false},"llama":{"id":"llama","family":"llama","genre":"text","family":"llama","label":"LLaMA","description":"GGUF text generation via llama.cpp. Supports any GGUF-compatible LLM (LLaMA, Mistral, Qwen, Phi, Gemma, etc.).","source":{"type":"huggingface","repo_id":"ggml-org/llama.cpp","filename":"llama-{variant}.gguf"},"loras":[],"defaults":{"n_gpu_layers":32,"n_ctx":4096,"n_batch":512,"temperature":0.7,"top_p":0.9,"max_tokens":2048,"seed":-1},"engine":"llama_cpp","form":"form_generate","has_agent":true,"has_inference":false,"has_rubric":false},"see-through":{"id":"see-through","family":"see-through","genre":"","family":"see-through","label":"See-Through","description":"See-Through anime layer decomposition — splits an image into character, clothing, and background layers.","source":{"type":"","repo_id":"layerdifforg/seethroughv0.0.2_layerdiff3d"},"loras":[],"defaults":{"controlnet_strength_floor":0.0,"resolution":1280,"resolution_depth":768,"inference_steps":30,"tblr_split":false,"seed":42},"engine":"","form":"form_image_seethrough","has_inference":false,"has_rubric":false},"stretchy-rig":{"id":"stretchy-rig","family":"stretchy-rig","genre":"","family":"stretchy-rig","label":"Stretchy Rig","description":"Stretchy Studio auto-rig — DWPose TensorRT whole-body keypoints for 2D character animation.","source":{"type":""},"loras":[],"defaults":{"yolox_precision":"fp16","dwpose_precision":"fp32"},"engine":"","form":"form_image_stretchy_rig","has_inference":false,"has_rubric":false},"latentsync":{"id":"latentsync","family":"latentsync","genre":"","family":"latentsync","label":"LatentSync","description":"LatentSync — local-only lip-sync that aligns mouth shapes to audio in a video.","source":{"type":""},"loras":[],"defaults":{"controlnet_strength_floor":0.0,"edit_context_pad":64,"edit_mask_mode":"auto","lanpaint_beta":0.5,"lanpaint_enabled":false,"lanpaint_friction":0.5,"lanpaint_lambda":0.5,"lanpaint_num_steps":20,"lanpaint_prompt_mode":"negative","lanpaint_step_size":1.0,"mask_feather":8,"mask_grow":8,"mask_invert":false,"mask_threshold":0,"scheduler":"simple","width":1024,"height":1024,"steps":25,"sampler":"euler","cfg":1.0},"engine":"","form":"form_edit","has_inference":false,"has_rubric":false},"gem-soma":{"id":"gem-soma","family":"gem-soma","genre":"","family":"gem-soma","label":"SOMA","description":"GEM-X SOMA pose estimation and retargeting.","source":{"type":"","repo_id":"nvidia/soma-x"},"loras":[],"defaults":{"controlnet_strength_floor":0.0,"edit_context_pad":64,"edit_mask_mode":"auto","lanpaint_beta":0.5,"lanpaint_enabled":false,"lanpaint_friction":0.5,"lanpaint_lambda":0.5,"lanpaint_num_steps":20,"lanpaint_prompt_mode":"negative","lanpaint_step_size":1.0,"mask_feather":8,"mask_grow":8,"mask_invert":false,"mask_threshold":0,"scheduler":"simple","width":1024,"height":1024,"steps":25,"sampler":"euler","cfg":7.0},"engine":"","form":"form_edit","has_inference":false,"has_rubric":false},"dwpose":{"id":"dwpose","family":"dwpose","genre":"","family":"dwpose","label":"DWPose","description":"DWPose whole-body pose detection (preprocessor for pose-guided generation).","source":{"type":""},"loras":[],"defaults":{"cfg":1.0,"controlnet_strength_floor":0.0,"edit_context_pad":64,"edit_mask_mode":"auto","lanpaint_beta":0.5,"lanpaint_enabled":false,"lanpaint_friction":0.5,"lanpaint_lambda":0.5,"lanpaint_num_steps":20,"lanpaint_prompt_mode":"negative","lanpaint_step_size":1.0,"mask_feather":8,"mask_grow":8,"mask_invert":false,"mask_threshold":0,"scheduler":"simple","width":1024,"height":1024,"steps":1,"sampler":"euler"},"engine":"","form":"form_edit","has_inference":false,"has_rubric":false},"sd":{"id":"sd","family":"sd","genre":"image","family":"sd","label":"Stable Diffusion","description":"Text-to-image and image-to-image via stable-diffusion.cpp. Supports SD 1.x, SDXL, SD3, FLUX, and more.","source":{"type":"huggingface","repo_id":"leejet/stable-diffusion.cpp","filename":"sd-{variant}.gguf"},"loras":[],"defaults":{"width":1024,"height":1024,"steps":20,"cfg_scale":7.0,"sampler":"euler_a","seed":-1,"n_threads":4},"engine":"sd_cpp","form":"form_generate","has_agent":true,"has_inference":true,"has_rubric":true},"inpaint":{"id":"inpaint","family":"inpaint","genre":"image","family":"inpaint","label":"Inpaint","description":"Dual-engine masked region inpainting — FLUX.1-Fill (dedicated fill arch) or LanPaint on any base model.","source":{"type":""},"loras":[],"defaults":{"inpaint_context_pad":64,"inpaint_detail":"crop+stitch","inpaint_edge_extend":0,"inpaint_target_size":1024,"outpaint_bottom":0,"outpaint_left":0,"outpaint_overlap":16,"outpaint_right":0,"outpaint_top":0,"refine_denoise":0.4,"mode":"replace","steps":20,"cfg":1.0,"guidance":30.0,"sampler":"euler","scheduler":"normal","seed":42,"mask_grow":8,"mask_feather":8,"mask_threshold":0.0,"mask_invert":false},"engine":"","form":"form_inpaint","has_inference":false,"has_rubric":false},"qwen-img-edit-2511":{"id":"qwen-img-edit-2511","family":"qwen-img-edit-2511","genre":"image","family":"qwen-img-edit-2511","label":"Image Edit","description":"Image Edit — instruction-driven image editing and manipulation (Qwen-Image-Edit 2511 is","source":{"type":""},"loras":[],"defaults":{"controlnet_strength_floor":0.0,"edit_context_pad":64,"edit_mask_mode":"auto","lanpaint_beta":0.5,"lanpaint_enabled":false,"lanpaint_friction":0.5,"lanpaint_lambda":0.5,"lanpaint_num_steps":20,"lanpaint_prompt_mode":"negative","lanpaint_step_size":1.0,"mask_feather":8,"mask_grow":8,"mask_invert":false,"mask_threshold":0,"use_stock_nodes":false,"width":1024,"height":1024,"steps":8,"sampler":"euler","scheduler":"simple","cfg":1.0,"target_size":1024,"vl_encoder_size":392,"resample_method":"lanczos","crop_method":"center","double_reference":false},"engine":"","form":"form_edit","has_inference":false,"has_rubric":false},"composite_character":{"id":"composite_character","family":"composite_character","genre":"3d","family":"composite_character","label":"Composite Character","description":"Assemble body + outfit + hair GLBs into one merged rigged GLB.","source":{"type":""},"loras":[],"defaults":{},"engine":"","form":"form_3d_composite_character","has_agent":true,"has_inference":false,"has_rubric":false},"moss_tts_local":{"id":"moss_tts_local","family":"moss_tts_local","genre":"audio","family":"moss_tts_local","label":"MOSS-TTS Local v1.5","description":"MOSS-TTS Local Transformer v1.5","source":{"type":"huggingface","repo_id":"audio-cpp/audio.cpp-gguf","filename":"MOSS-TTS-Local-v1.5-GGUF"},"loras":[],"defaults":{"backend":"cuda"},"engine":"audio_cpp","form":"form_tts","has_inference":false,"has_rubric":false},"ace_step":{"id":"ace_step","family":"ace_step","genre":"audio","family":"ace_step","label":"ACE-Step 1.5 Turbo Q8","description":"ACE-Step 1.5 turbo q8 music generation","source":{"type":"huggingface","repo_id":"audio-cpp/audio.cpp-gguf","filename":"ACE-Step1.5-GGUF"},"loras":[],"defaults":{"backend":"cuda"},"engine":"audio_cpp","form":"form_music","has_agent":true,"has_inference":false,"has_rubric":false},"ace_step":{"id":"ace_step","family":"ace_step","genre":"audio","family":"ace_step","label":"ACE-Step 1.5 Base Q8","description":"ACE-Step 1.5 base q8 music generation","source":{"type":"huggingface","repo_id":"audio-cpp/audio.cpp-gguf","filename":"ACE-Step1.5-GGUF"},"loras":[],"defaults":{"backend":"cuda"},"engine":"audio_cpp","form":"form_music","has_inference":false,"has_rubric":false},"minimax_music3":{"id":"minimax_music3","family":"minimax_music3","genre":"audio","family":"minimax_music3","label":"MiniMax Music 3","description":"MiniMax Music 3 text-to-music with lyrics","source":{"type":"huggingface","repo_id":"audio-cpp/MiniMax-Music3-GGUF","filename":"MiniMax-Music3-GGUF"},"loras":[],"defaults":{"backend":"cuda"},"engine":"audio_cpp","form":"form_music","has_inference":false,"has_rubric":false},"ace_step":{"id":"ace_step","family":"ace_step","genre":"audio","family":"ace_step","label":"ACE-Step 1.5 Base BF16","description":"ACE-Step 1.5 base bf16 music generation","source":{"type":"huggingface","repo_id":"audio-cpp/audio.cpp-gguf","filename":"ACE-Step1.5-GGUF"},"loras":[],"defaults":{"backend":"cuda"},"engine":"audio_cpp","form":"form_music","has_inference":false,"has_rubric":false},"qwen3_tts":{"id":"qwen3_tts","family":"qwen3_tts","genre":"audio","family":"qwen3_tts","label":"Qwen3-TTS Base 1.7B","description":"Qwen3-TTS 12Hz base 1.7B","source":{"type":"huggingface","repo_id":"audio-cpp/audio.cpp-gguf","filename":"Qwen3-TTS-12Hz-1.7B-Base-GGUF"},"loras":[],"defaults":{"backend":"cuda"},"engine":"audio_cpp","form":"form_tts","has_inference":false,"has_rubric":false},"qwen3_tts":{"id":"qwen3_tts","family":"qwen3_tts","genre":"audio","family":"qwen3_tts","label":"Qwen3-TTS CustomVoice 1.7B","description":"Qwen3-TTS 12Hz CustomVoice 1.7B","source":{"type":"huggingface","repo_id":"audio-cpp/audio.cpp-gguf","filename":"Qwen3-TTS-12Hz-1.7B-CustomVoice-GGUF"},"loras":[],"defaults":{"backend":"cuda"},"engine":"audio_cpp","form":"form_tts","has_inference":false,"has_rubric":false},"moss_sfx_v2":{"id":"moss_sfx_v2","family":"moss_sfx_v2","genre":"audio","family":"moss_sfx_v2","label":"MOSS-SFX v2","description":"MOSS-SFX v2 sound effects generation","source":{"type":"huggingface","repo_id":"anomalyco/mse2-gguf","filename":"MOSS-SFX-v2-GGUF"},"loras":[],"defaults":{"backend":"cuda"},"engine":"audio_cpp","form":"form_sound","has_agent":true,"has_inference":false,"has_rubric":false},"ace_step":{"id":"ace_step","family":"ace_step","genre":"audio","family":"ace_step","label":"ACE-Step 1.5 Turbo BF16","description":"ACE-Step 1.5 turbo bf16 music generation","source":{"type":"huggingface","repo_id":"audio-cpp/audio.cpp-gguf","filename":"ACE-Step1.5-GGUF"},"loras":[],"defaults":{"backend":"cuda"},"engine":"audio_cpp","form":"form_music","has_inference":false,"has_rubric":false},"minimax_music3":{"id":"minimax_music3","family":"minimax_music3","genre":"audio","family":"minimax_music3","label":"MiniMax Music 3","description":"MiniMax Music 3 text-to-music with lyrics","source":{"type":"huggingface","repo_id":"audio-cpp/MiniMax-Music3-GGUF","filename":"MiniMax-Music3-GGUF"},"loras":[],"defaults":{"backend":"cuda"},"engine":"comfyui","form":"form_music","has_inference":true,"has_rubric":false},"moss_tts_nano":{"id":"moss_tts_nano","family":"moss_tts_nano","genre":"audio","family":"moss_tts_nano","label":"MOSS-TTS Nano 100M","description":"MOSS-TTS Nano 100M text-to-speech","source":{"type":"huggingface","repo_id":"audio-cpp/audio.cpp-gguf","filename":"MOSS-TTS-Nano-100M-GGUF"},"loras":[],"defaults":{"backend":"cuda"},"engine":"audio_cpp","form":"form_tts","has_inference":false,"has_rubric":false},"qwen3_tts":{"id":"qwen3_tts","family":"qwen3_tts","genre":"audio","family":"qwen3_tts","label":"Qwen3-TTS CustomVoice 1.7B","description":"Qwen3-TTS 12Hz CustomVoice 1.7B","source":{"type":"huggingface","repo_id":"audio-cpp/audio.cpp-gguf","filename":"Qwen3-TTS-12Hz-1.7B-CustomVoice-GGUF"},"loras":[],"defaults":{"backend":"cuda","task":"tts","family":"qwen3_tts","cli":"/home/user/Documents/programs/vendor/my-stuff/audiocpp-fork/build/bin/audiocpp_cli","model_path":"/mnt/data/models/audio/Qwen3-TTS-12Hz-0.6B-CustomVoice-merged"},"engine":"audio_cpp","form":"form_tts","has_agent":true,"has_inference":true,"has_rubric":false},"ace_step":{"id":"ace_step","family":"ace_step","genre":"audio","family":"ace_step","label":"ACE-Step 1.5 XL Turbo","description":"ACE-Step 1.5 XL turbo bf16 music generation","source":{"type":"huggingface","repo_id":"audio-cpp/audio.cpp-gguf","filename":"ACE-Step1.5-GGUF"},"loras":[],"defaults":{"backend":"cuda"},"engine":"audio_cpp","form":"form_music","has_inference":false,"has_rubric":false},"moss_voicegen":{"id":"moss_voicegen","family":"moss_voicegen","genre":"audio","family":"moss_voicegen","label":"MOSS VoiceGenerator","description":"MOSS VoiceGenerator voice design","source":{"type":"huggingface","repo_id":"audio-cpp/audio.cpp-gguf","filename":"MOSS-VoiceGenerator-GGUF"},"loras":[],"defaults":{"backend":"cuda"},"engine":"audio_cpp","form":"form_tts","has_inference":false,"has_rubric":false},"qwen3_tts_voicedesign":{"id":"qwen3_tts_voicedesign","family":"qwen3_tts_voicedesign","genre":"audio","family":"qwen3_tts_voicedesign","label":"Qwen3-TTS VoiceDesign 1.7B","description":"Qwen3-TTS 12Hz VoiceDesign 1.7B","source":{"type":"huggingface","repo_id":"audio-cpp/audio.cpp-gguf","filename":"Qwen3-TTS-12Hz-1.7B-VoiceDesign-GGUF"},"loras":[],"defaults":{"backend":"cuda","task":"vdes","family":"qwen3_tts","cli":"/home/user/Documents/programs/vendor/my-stuff/audiocpp-fork/build/bin/audiocpp_cli","model_path":"/mnt/data/models/image-gen/comfyui/audio/qwen3-tts/hf/Qwen3-TTS-12Hz-1.7B-VoiceDesign"},"engine":"audio_cpp","form":"form_tts","has_inference":true,"has_rubric":false},"ace_step":{"id":"ace_step","family":"ace_step","genre":"audio","family":"ace_step","label":"ACE-Step 1.5 SFT Q8","description":"ACE-Step 1.5 sft q8 music generation","source":{"type":"huggingface","repo_id":"audio-cpp/audio.cpp-gguf","filename":"ACE-Step1.5-GGUF"},"loras":[],"defaults":{"backend":"cuda"},"engine":"audio_cpp","form":"form_music","has_inference":false,"has_rubric":false},"qwen3_tts":{"id":"qwen3_tts","family":"qwen3_tts","genre":"audio","family":"qwen3_tts","label":"Qwen3-TTS CustomVoice 1.7B","description":"Qwen3-TTS 12Hz CustomVoice 1.7B","source":{"type":"huggingface","repo_id":"audio-cpp/audio.cpp-gguf","filename":"Qwen3-TTS-12Hz-1.7B-CustomVoice-GGUF"},"loras":[],"defaults":{"backend":"cuda"},"engine":"audio_cpp","form":"form_tts","has_inference":false,"has_rubric":false},"qwen3_tts":{"id":"qwen3_tts","family":"qwen3_tts","genre":"audio","family":"qwen3_tts","label":"Qwen3-TTS CustomVoice 1.7B","description":"Qwen3-TTS 12Hz CustomVoice 1.7B","source":{"type":"huggingface","repo_id":"audio-cpp/audio.cpp-gguf","filename":"Qwen3-TTS-12Hz-1.7B-CustomVoice-GGUF"},"loras":[],"defaults":{"backend":"cuda"},"engine":"audio_cpp","form":"form_tts","has_inference":false,"has_rubric":false},"qwen3_tts":{"id":"qwen3_tts","family":"qwen3_tts","genre":"audio","family":"qwen3_tts","label":"Qwen3-TTS CustomVoice 1.7B","description":"Qwen3-TTS 12Hz CustomVoice 1.7B","source":{"type":"huggingface","repo_id":"audio-cpp/audio.cpp-gguf","filename":"Qwen3-TTS-12Hz-1.7B-CustomVoice-GGUF"},"loras":[],"defaults":{"backend":"cuda"},"engine":"audio_cpp","form":"form_tts","has_inference":false,"has_rubric":false}},"families":{"input":{"label":"Input Prep","genre":"image"},"media_merge":{"label":"Media Merge","genre":"video"},"mask_studio":{"label":"Mask","genre":"image"},"detect":{"label":"Auto Detect","genre":"image"},"neon_samurai":{"label":"neon-samurai","genre":"plugin"},"wan-vace":{"label":"Wan2.2 VACE","genre":"video"},"ltx":{"label":"LTX 2.3","genre":"video"},"scail2":{"label":"SCAIL-2","genre":"video"},"h3":{"label":"MiniMax H3","genre":"video"},"h3-timeline":{"label":"H3 Timeline (multi-window)","genre":"video","studio":{"tenant":"melite-video/video_timeline","owns_params":true,"writes":[]}},"ltx-2-3":{"label":"LTX 2.3","genre":"video"},"h3-keyframe":{"label":"MiniMax H3 keyframe-to-video","genre":"video"},"h3":{"label":"MiniMax H3","genre":"video"},"trellis2-native":{"label":"TRELLIS.2 Native","genre":"3d"},"pixal3d":{"label":"Pixal3D","genre":"3d"},"step1x_texture":{"label":"Step1X-3D Texture","genre":"3d"},"mesh_refine":{"label":"UltraShape Mesh Refine","genre":"3d"},"somax":{"label":"SOMAX","genre":"3d"},"transfer_rig":{"label":"Transfer Rig","genre":"3d"},"krea-2":{"label":"Krea 2","genre":"image"},"img-edit":{"label":"Qwen Image Edit 2511","genre":"image"},"ace-step":{"label":"ACE-Step v1.5","genre":"audio"},"moss-sfx":{"label":"MOSS Sound Effects v2","genre":"audio"},"music3":{"label":"MiniMax Music 3","genre":"audio"},"moss-tts":{"label":"MOSS-TTS","genre":"audio"},"qwen3-tts":{"label":"Qwen3-TTS","genre":"audio"},"llm_text":{"label":"LLM Text","genre":"text"},"vibevoice_asr":{"label":"VibeVoice ASR","genre":""},"pixal3d":{"label":"Pixal3D (3D generation)","genre":""},"faster_whisper":{"label":"Faster-Whisper (ASR)","genre":""},"qwen3_embeddings":{"label":"Jina v5-nano Embeddings (clustering + retrieval)","genre":""},"ideogram":{"label":"Ideogram","genre":"image"},"echo":{"label":"Echo","genre":"utility"},"trellis_native":{"label":"TRELLIS 3D","genre":"3d"},"anima":{"label":"Anima","genre":"image"},"z-image":{"label":"Z-Image","genre":"image"},"krea-2":{"label":"Krea 2","genre":"image"},"tavern_scene":{"label":"Tavern Scene","genre":"roleplay"},"autoremesher":{"label":"AutoRemesher","genre":"3d"},"texture_project":{"label":"Texture Project","genre":"3d"},"trellis_native":{"label":"Trellis (Native)","genre":"3d"},"composite_character":{"label":"Composite Character","genre":"3d"},"step1x_texture":{"label":"Step1X-3D Texture","genre":"3d"},"mesh_refine":{"label":"UltraShape Mesh Refine","genre":"3d"},"bake_motion":{"label":"Bake Motion","genre":"3d"},"kimodo_export":{"label":"Kimodo FBX","genre":"3d"},"somax":{"label":"SOMAX","genre":"3d"},"anycreature":{"label":"AnyCreature","genre":"3d"},"anigen":{"label":"AniGen","genre":"3d"},"transfer_rig":{"label":"Transfer Rig","genre":"3d"},"eval_night":{"label":"eval_night","genre":"plugin"},"kimodo":{"label":"Kimodo","genre":"motion"},"kimodo":{"label":"Kimodo","genre":"motion"},"hy-motion":{"label":"Hunyuan Motion","genre":"motion"},"hello_painter":{"label":"Hello Painter","genre":"plugin"},"hello_mount_probe":{"label":"Hello Mount Probe","genre":"plugin"},"sam":{"label":"SAM — Segment Anything","genre":"segmentation"},"sam3":{"label":"SAM 3 Text-Prompted Segmentation","genre":"segmentation"},"video_upscale":{"label":"Video Upscale","genre":"video"},"seedvr2_upscale":{"label":"SeedVR2 Upscaler","genre":"image"},"basic_scale":{"label":"Basic Resize","genre":"image"},"pixel_upscale":{"label":"Pixel Upscaler","genre":"image"},"llama":{"label":"LLaMA","genre":"text"},"see-through":{"label":"See-Through","genre":""},"stretchy-rig":{"label":"Stretchy Rig","genre":""},"latentsync":{"label":"LatentSync","genre":""},"gem-soma":{"label":"SOMA","genre":""},"dwpose":{"label":"DWPose","genre":""},"sd":{"label":"Stable Diffusion","genre":"image"},"inpaint":{"label":"Inpaint","genre":"image"},"qwen-img-edit-2511":{"label":"Image Edit","genre":"image"},"composite_character":{"label":"Composite Character","genre":"3d"},"moss_tts_local":{"label":"MOSS-TTS Local v1.5","genre":"audio"},"ace_step":{"label":"ACE-Step 1.5 Turbo Q8","genre":"audio"},"ace_step":{"label":"ACE-Step 1.5 Base Q8","genre":"audio"},"minimax_music3":{"label":"MiniMax Music 3","genre":"audio"},"ace_step":{"label":"ACE-Step 1.5 Base BF16","genre":"audio"},"qwen3_tts":{"label":"Qwen3-TTS Base 1.7B","genre":"audio"},"qwen3_tts":{"label":"Qwen3-TTS CustomVoice 1.7B","genre":"audio"},"moss_sfx_v2":{"label":"MOSS-SFX v2","genre":"audio"},"ace_step":{"label":"ACE-Step 1.5 Turbo BF16","genre":"audio"},"minimax_music3":{"label":"MiniMax Music 3","genre":"audio"},"moss_tts_nano":{"label":"MOSS-TTS Nano 100M","genre":"audio"},"qwen3_tts":{"label":"Qwen3-TTS CustomVoice 1.7B","genre":"audio"},"ace_step":{"label":"ACE-Step 1.5 XL Turbo","genre":"audio"},"moss_voicegen":{"label":"MOSS VoiceGenerator","genre":"audio"},"qwen3_tts_voicedesign":{"label":"Qwen3-TTS VoiceDesign 1.7B","genre":"audio"},"ace_step":{"label":"ACE-Step 1.5 SFT Q8","genre":"audio"},"qwen3_tts":{"label":"Qwen3-TTS CustomVoice 1.7B","genre":"audio"},"qwen3_tts":{"label":"Qwen3-TTS CustomVoice 1.7B","genre":"audio"},"qwen3_tts":{"label":"Qwen3-TTS CustomVoice 1.7B","genre":"audio"}},"capabilities":{"image-gen":{"label":"Image","description":"Text-to-image generation — the generate_image family card (build_txt2img); img2img + LanPaint inpaint ride the same card via input_image / lanpaint_mask","default_family":"krea-2","families":["krea-2"],"kind":"generation","icon":"image","resolved":{"family":"krea-2","model":"krea-2","params":{}}},"image-edit":{"label":"Image Edit","description":"Instruction-driven image editing — the edit_image family card (build_img2img_edit); up to three input images + reference list, mask-aware region editing, LanPaint tuning","default_family":"img-edit","families":["img-edit"],"kind":"generation","icon":"edit","resolved":{"family":"img-edit","model":"img-edit","params":{}}},"tts":{"label":"TTS","description":"Text-to-speech — Qwen3-TTS with CustomVoice personas and instruct-text emotion control","default_family":"qwen3-tts","families":["qwen3_tts"],"kind":"generation","icon":"microphone","resolved":{"family":"qwen3-tts","model":"qwen3-tts","params":{}}},"voice-lock":{"label":"Voice Lock","description":"Lock a voice persona — design, export, and reuse .qvoice embeddings for consistent character voices","default_family":"qwen3_tts_voicedesign","families":["qwen3_tts_voicedesign"],"kind":"generation","icon":"fingerprint","resolved":{"family":"qwen3_tts_voicedesign","model":"qwen3_tts_voicedesign","params":{}}},"music":{"label":"Music","description":"Generate music — MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics","default_family":"music3","families":["music3"],"kind":"generation","icon":"music","resolved":{"family":"music3","model":"music3","params":{}}},"h3-timeline":{"label":"H3 Timeline","description":"THE video interface — multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.","default_family":"h3-timeline","families":["h3-timeline"],"kind":"generation","icon":"video","resolved":{"family":"h3-timeline","model":"h3-timeline","params":{}}}},"cards":[{"id":"h3-timeline","label":"H3 Timeline","description":"THE video interface — multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.","genre":"video","families":["h3-timeline"],"principles":["Describe MOTION and SOUND together — H3 generates both in one pass","Draft at 768x448x56f (~2.3s); produce at 1344x768x124f (~5.2s)","Length snaps to the 17k+5 frame grid at 24fps","For timelines: repeat the ambient soundscape verbatim in every window; add one new layer where the story needs it","Same seed across a shot's re-rolls keeps the world texture","SLA at sparsity 0.90 gives ~1.75x speedup with no quality loss — use it by default"],"skills":[],"has_inference":false,"has_rubric":false},{"id":"image-gen","label":"Image","description":"Text-to-image generation — the generate_image family card (build_txt2img); img2img + LanPaint inpaint ride the same card via input_image / lanpaint_mask","genre":"image","families":["krea-2"],"principles":["prompt is required — an empty/whitespace prompt is rejected loud, never sampled with empty conditioning","Defaults are shape, not value: resolution/steps/cfg come from the model folder (defaults:/presets), merged at serve time","Sampler and scheduler option lists resolve from the ONE vocabulary (media.comfyui.sampler_vocab) — never hand-copied","A preset fills untouched fields; values you have set win","input_image + lanpaint_mask switches the builder to LanPaintKSampler","Mask prep (grow/feather/threshold/invert) and outpaint pads are applied host-side before the run — no silent param drops"],"skills":[],"has_inference":true,"has_rubric":false},{"id":"image-edit","label":"Image Edit","description":"Instruction-driven image editing — the edit_image family card (build_img2img_edit); up to three input images + reference list, mask-aware region editing, LanPaint tuning","genre":"image","families":["img-edit"],"principles":["input_image is required — the edit is anchored on it (input_param: input_artifact, slots image1..image3)","Qwen-Image-Edit uses low CFG (flow-matching) — the Guidance Scale slider tops out at 10.0","A lanpaint_mask alongside input_image patches the model with the DiffSynth inpaint ControlNet","Region Mode controls how the mask is honored: auto / crop_stitch / full_frame","Mask prep (grow/feather/threshold/invert) uses the same host-side chain the Inpaint card uses","Iterate HERE, not in video — an edit costs seconds, a render minutes; name what changes, state the rest as unchanged"],"skills":[],"has_inference":false,"has_rubric":false},{"id":"3d-gen","label":"3D Generation","description":"Generate 3D meshes from images or text","genre":"3d","families":["trellis_native","sam3"],"principles":["TRELLIS 2 input must be a square image (512x512 or 1024x1024)","Default quality to 'fine' for TRELLIS","Output is GLB format — compatible with Blender, Unity, web viewers"],"skills":[],"has_inference":false,"has_rubric":false},{"id":"motion-gen","label":"Motion Generation","description":"Generate body motion from text prompts using Kimodo","genre":"motion","families":["kimodo"],"principles":["Kimodo generates skeletal animation from text descriptions","Output is GLB format with node-only hierarchy (no mesh)","Supports multiple skeleton types: SMPL-X 22, SOMA 30, G1 34","Default model is SOMA RP v1.1 (commercial use allowed)","Transition frames control blending between motion segments"],"skills":[],"has_inference":false,"has_rubric":false},{"id":"body","label":"Body Studio","description":"Sculpt a character body shape using ANNY phenotype sliders — 11 identity dims + body/face detail morphs + community .target blendshapes","genre":"3d","families":[],"principles":["ANNY is the only identity model exposed here (SOMA/MHR are in Pose Studio)","Default coeffs = neutral (all 0.5) — always pick a gender/age preset first","The mesh preview calls /poser/skin/mesh — debounced at 60ms during drag","Coeffs are order-sensitive: [gender, age, muscle, weight, height, proportions, cupsize, firmness, african, asian, caucasian]","local_changes are body-part morphs (e.g. upperarm-fat-incr) — set per slider","custom_targets are community MakeHuman .target blendshapes — Anny only","Saved characters persist to localStorage (v2 schema with customTargets)"],"skills":[],"has_inference":false,"has_rubric":false},{"id":"voice-lock","label":"Voice Lock","description":"Lock a voice persona — design, export, and reuse .qvoice embeddings for consistent character voices","genre":"audio","families":["qwen3_tts_voicedesign"],"principles":[],"skills":[],"has_inference":false,"has_rubric":false},{"id":"tts","label":"TTS","description":"Text-to-speech — Qwen3-TTS with CustomVoice personas and instruct-text emotion control","genre":"audio","families":["qwen3_tts"],"principles":["text is required — empty text fails","Use Voice Embedding (.qvoice) for consistent character voices","Style Instruction controls emotion and delivery","One line per call — serial execution for multi-line sequences"],"skills":[],"has_inference":false,"has_rubric":false},{"id":"music","label":"Music","description":"Generate music — MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics","genre":"audio","families":["music3"],"principles":[],"skills":[],"has_inference":false,"has_rubric":false},{"id":"sfx","label":"Sound Effects","description":"Generate sound effects — MOSS-SFX v2, describe the SOUND not the scene","genre":"audio","families":["moss_sfx_v2"],"principles":[],"skills":[],"has_inference":false,"has_rubric":false}]}
+{
+ "models": {
+  "input": {
+   "id": "input",
+   "family": "input",
+   "genre": "image",
+   "label": "Input Prep",
+   "description": ">-",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "media_type": null,
+    "filename_prefix": "input_prep",
+    "output_artifact": "media"
+   },
+   "engine": "",
+   "form": "form_input",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "media_merge": {
+   "id": "media_merge",
+   "family": "media_merge",
+   "genre": "video",
+   "label": "Media Merge",
+   "description": ">-",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "operation": "concat",
+    "output_artifact": "video"
+   },
+   "engine": "",
+   "form": "form_media_merge",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "video_upscale": {
+   "id": "video_upscale",
+   "family": "video_upscale",
+   "genre": "video",
+   "label": "Video Upscale",
+   "description": ">-",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "batch_size": 5,
+    "cfg": 4.0,
+    "color_match_enabled": true,
+    "denoise": 0.3,
+    "dit_model": "seedvr2_ema_3b_fp16.safetensors",
+    "filename_prefix": "upscaled_video",
+    "fps": 24,
+    "seed": 0,
+    "steps": 20,
+    "upscaler_model": "4xNomos2_hq_dat2.pth",
+    "vae_model": "ema_vae_fp16.safetensors",
+    "mode": "rtx_vsr",
+    "rtx_two_pass": true,
+    "rtx_mode": "vsr",
+    "target_resolution": 1080,
+    "rtx_strength": 0.6
+   },
+   "engine": "",
+   "form": "form_video_upscale",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "seedvr2_upscale": {
+   "id": "seedvr2_upscale",
+   "family": "seedvr2_upscale",
+   "genre": "image",
+   "label": "SeedVR2 Upscaler",
+   "description": "SeedVR2 diffusion-based super-resolution (3B EMA FP16 default, 7B EMA FP8",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "cfg": 7.5,
+    "denoise": 0.4,
+    "detection_threshold": 0.35,
+    "downscale_first": 1.0,
+    "filename_prefix": "upscaled",
+    "guide_size": 512,
+    "inpaint_region": "free",
+    "max_size": 1024,
+    "seed": 0,
+    "steps": 50,
+    "target_scale": 2.0,
+    "resolution": 2048,
+    "batch_size": 5,
+    "mode": "upscale"
+   },
+   "engine": "",
+   "form": "form_upscale",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "basic_scale": {
+   "id": "basic_scale",
+   "family": "basic_scale",
+   "genre": "image",
+   "label": "Basic Resize",
+   "description": ">-",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "resize_method": "lanczos",
+    "resize_scale": 0.5,
+    "filename_prefix": "scaled"
+   },
+   "engine": "",
+   "form": "form_upscale",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "pixel_upscale": {
+   "id": "pixel_upscale",
+   "family": "pixel_upscale",
+   "genre": "image",
+   "label": "Pixel Upscaler",
+   "description": ">-",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "batch_size": 5,
+    "cfg": 7.5,
+    "denoise": 0.4,
+    "detection_threshold": 0.35,
+    "downscale_first": 1.0,
+    "filename_prefix": "upscaled",
+    "guide_size": 512,
+    "inpaint_region": "free",
+    "max_size": 1024,
+    "resolution": 2048,
+    "seed": 0,
+    "steps": 50,
+    "target_scale": 4.0,
+    "mode": "upscale"
+   },
+   "engine": "",
+   "form": "form_upscale",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "ace-step": {
+   "id": "ace-step",
+   "family": "ace-step",
+   "genre": "audio",
+   "label": "ACE-Step v1.5",
+   "description": "ACE-Step v1.5 \u2014 text-to-music generation.",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "language": "en",
+    "lm_cfg_scale": 2.0,
+    "top_p": 0.9,
+    "seed": -1,
+    "duration": 30.0,
+    "n_diffusion_steps": 8,
+    "guidance_scale": 1.0,
+    "temperature": 0.7
+   },
+   "engine": "",
+   "form": "form_music",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "moss-sfx": {
+   "id": "moss-sfx",
+   "family": "moss-sfx",
+   "genre": "audio",
+   "label": "MOSS Sound Effects v2",
+   "description": "MOSS Sound Effects v2 \u2014 text-to-SFX audio generation (OpenMOSS-Team MOSS-SoundEffect-v2.0).",
+   "source": {
+    "type": "",
+    "repo_id": "OpenMOSS-Team/MOSS-SoundEffect-v2.0"
+   },
+   "loras": [],
+   "defaults": {
+    "num_inference_steps": 50,
+    "repetition_penalty": 1.0,
+    "speed": 1.0,
+    "temperature": 1.0,
+    "top_k": 0,
+    "top_p": 0.9,
+    "seed": -1
+   },
+   "engine": "",
+   "form": "form_sound",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "moss-tts": {
+   "id": "moss-tts",
+   "family": "moss-tts",
+   "genre": "audio",
+   "label": "MOSS-TTS",
+   "description": "MOSS-TTS \u2014 text-to-speech with zero-shot voice cloning and emotion/style direction via instruct.",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "repetition_penalty": 1.05,
+    "speed": 1.0,
+    "temperature": 0.8,
+    "top_p": 0.9,
+    "seed": -1
+   },
+   "engine": "",
+   "form": "form_tts",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "qwen3-tts": {
+   "id": "qwen3-tts",
+   "family": "qwen3-tts",
+   "genre": "audio",
+   "label": "Qwen3-TTS",
+   "description": "Qwen3-TTS \u2014 zero-shot multilingual text-to-speech with named speakers. The Variant axis picks the size (0.6B / 1.7B); Quant is Q8.",
+   "source": {
+    "type": "",
+    "repo_id": "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice"
+   },
+   "loras": [],
+   "defaults": {
+    "repetition_penalty": 1.05,
+    "speed": 1.0,
+    "temperature": 0.8,
+    "top_p": 0.9,
+    "seed": -1,
+    "voice": "serena",
+    "qwen3_variant": "CustomVoice"
+   },
+   "engine": "",
+   "form": "form_tts",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "mask_studio": {
+   "id": "mask_studio",
+   "family": "mask_studio",
+   "genre": "image",
+   "label": "Mask",
+   "description": "Selection-only mask card: YOLO+SAM segmentation \u2192 named class masks.",
+   "source": {
+    "type": "",
+    "repo_id": "facebook/sam-vit-base"
+   },
+   "loras": [],
+   "defaults": {
+    "output_mode": "segm",
+    "detect_mode": "body",
+    "detection_threshold": 0.35,
+    "sam_threshold": 0.93,
+    "sam_dilation": 0,
+    "export_face": false,
+    "export_hands": false,
+    "export_body": false,
+    "export_paint": false,
+    "sam3_prompt": null,
+    "export_boxes": true,
+    "instance_filter": "all",
+    "max_instances": 0,
+    "outputs": "[]"
+   },
+   "engine": "",
+   "form": "form_mask_studio",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "detect": {
+   "id": "detect",
+   "family": "detect",
+   "genre": "image",
+   "label": "Auto Detect",
+   "description": "Auto Detect \u2014 automatically selects the best model and conditioning for a given input.",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "output_mode": "segm",
+    "detect_mode": "face",
+    "detection_threshold": 0.35,
+    "sam_dilation": 0,
+    "sam_threshold": 0.93
+   },
+   "engine": "",
+   "form": "form_detect",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "inpaint": {
+   "id": "inpaint",
+   "family": "inpaint",
+   "genre": "image",
+   "label": "Inpaint",
+   "description": "Dual-engine masked region inpainting \u2014 FLUX.1-Fill (dedicated fill arch) or LanPaint on any base model.",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "inpaint_context_pad": 64,
+    "inpaint_detail": "crop+stitch",
+    "inpaint_edge_extend": 0,
+    "inpaint_target_size": 1024,
+    "outpaint_bottom": 0,
+    "outpaint_left": 0,
+    "outpaint_overlap": 16,
+    "outpaint_right": 0,
+    "outpaint_top": 0,
+    "refine_denoise": 0.4,
+    "mode": "replace",
+    "steps": 20,
+    "cfg": 1.0,
+    "guidance": 30.0,
+    "sampler": "euler",
+    "scheduler": "normal",
+    "seed": 42,
+    "mask_grow": 8,
+    "mask_feather": 8,
+    "mask_threshold": 0.0,
+    "mask_invert": false
+   },
+   "engine": "",
+   "form": "form_inpaint",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "wan-vace": {
+   "id": "wan-vace",
+   "family": "wan-vace",
+   "genre": "video",
+   "label": "Wan2.2 VACE",
+   "description": "Wan2.2 VACE video generation with reference-frame and mask control.",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "blocks_to_swap": 38,
+    "easycache_enabled": false,
+    "easycache_thresh": 0.015,
+    "guide_strength": 3.0,
+    "magcache_K": 4,
+    "magcache_enabled": false,
+    "magcache_thresh": 0.02,
+    "output_format": "mp4",
+    "relay_epsilon": 0.001,
+    "retake_enabled": false,
+    "retake_start_frame": 0,
+    "retake_strength": 1.0,
+    "teacache_enabled": false,
+    "teacache_threshold": 0.15,
+    "torch_compile": false,
+    "upscale_cfg": 1.0,
+    "upscale_denoise": 0.3,
+    "upscale_enabled": false,
+    "upscale_steps": 10,
+    "vace_blocks_to_swap": 5,
+    "vfi_model": "rife47.pth",
+    "vfi_multiplier": 1,
+    "wan_context_enabled": false,
+    "wan_context_frames": 81,
+    "wan_context_freenoise": true,
+    "wan_context_fuse_method": "linear",
+    "wan_context_overlap": 16,
+    "wan_context_schedule": "uniform_standard",
+    "wan_context_stride": 4,
+    "width": 832,
+    "height": 480,
+    "sampling_steps": 25,
+    "wan_scheduler": "unipc",
+    "guide_scale": 6.0,
+    "frames": 81,
+    "fps": 16,
+    "negative_prompt": null,
+    "model_name": "Wan2_2-T2V-A14B_HIGH_fp8_e4m3fn_scaled_KJ.safetensors",
+    "t5_name": "umt5-xxl-enc-fp8_e4m3fn.safetensors",
+    "vae_name": "Wan2_1_VAE_bf16.safetensors",
+    "vace_name": "Wan2_2_Fun_VACE_module_A14B_HIGH_fp8_e4m3fn_scaled_KJ.safetensors"
+   },
+   "engine": "",
+   "form": "form_video_director",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "h3-timeline": {
+   "id": "h3-timeline",
+   "family": "h3-timeline",
+   "genre": "video",
+   "label": "H3 Timeline (multi-window)",
+   "description": ">-",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "seed": 42,
+    "fps": 24
+   },
+   "engine": "comfyui",
+   "form": "form_video_director",
+   "has_agent": true,
+   "has_inference": true,
+   "has_rubric": false
+  },
+  "ltx-2-3": {
+   "id": "ltx-2-3",
+   "family": "ltx-2-3",
+   "genre": "video",
+   "label": "LTX 2.3",
+   "description": ">-",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "width": 1280,
+    "height": 720,
+    "frames": 97,
+    "fps": 24,
+    "steps": 30,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "cfg": 3.0,
+    "seed": 42
+   },
+   "engine": "",
+   "form": "form_generate",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "ltx": {
+   "id": "ltx",
+   "family": "ltx",
+   "genre": "video",
+   "label": "LTX 2.3",
+   "description": "LTX 2.3 text- and image-to-video generation via the Director workflow.",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "anchor_strength": 0.7,
+    "audio_mode": "none",
+    "auto_snap_ic_grid": true,
+    "base_denoise": 1.0,
+    "crop": "center",
+    "director_guide_enabled": false,
+    "divisible_by": 32,
+    "force_retake_mode": false,
+    "guide_strength": 3.0,
+    "ic_lora_name": "None",
+    "ic_lora_strength": 1.0,
+    "image_attention_strength": 1.0,
+    "img_compression": 18,
+    "inpaint_audio": false,
+    "lipsync_strength": 3.0,
+    "ltx_chunk_feedforward": false,
+    "ltx_context_length": 145,
+    "ltx_context_overlap": 40,
+    "ltx_context_windows": false,
+    "ltx_ff_chunks": 2,
+    "ltx_sage_attention": false,
+    "ltx_sage_triton": true,
+    "output_format": "mp4",
+    "override_audio": false,
+    "relay_epsilon": 0.001,
+    "resize_method": "maintain aspect ratio",
+    "retake_apply_global": false,
+    "retake_enabled": false,
+    "retake_start_frame": 0,
+    "retake_strength": 1.0,
+    "scale_by": 1.0,
+    "start_frame": 0,
+    "tile_overlap": 64,
+    "tile_size": 256,
+    "torch_compile": false,
+    "upscale_cfg": 1.0,
+    "upscale_denoise": 0.3,
+    "upscale_enabled": false,
+    "upscale_method": "bicubic",
+    "upscale_steps": 10,
+    "use_custom_motion": true,
+    "use_tiled_encode": false,
+    "width": 1280,
+    "height": 720,
+    "sampling_steps": 8,
+    "sampler": "euler",
+    "guide_scale": 3.0,
+    "frames": 97,
+    "fps": 24,
+    "scheduler": "beta",
+    "negative_prompt": null
+   },
+   "engine": "",
+   "form": "form_video_director",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "h3-keyframe": {
+   "id": "h3-keyframe",
+   "family": "h3-keyframe",
+   "genre": "video",
+   "label": "MiniMax H3 keyframe-to-video",
+   "description": "",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "width": 768,
+    "height": 448,
+    "length": 56,
+    "steps": 12,
+    "fps": 24
+   },
+   "engine": "",
+   "form": "form_video_director",
+   "has_agent": true,
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "scail2": {
+   "id": "scail2",
+   "family": "scail2",
+   "genre": "video",
+   "label": "SCAIL-2",
+   "description": "SCAIL-2 character animation \u2014 drives a reference character from a video and colored mask.",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "guide_strength": 3.0,
+    "output_format": "mp4",
+    "relay_epsilon": 0.001,
+    "retake_enabled": false,
+    "retake_start_frame": 0,
+    "retake_strength": 1.0,
+    "upscale_cfg": 1.0,
+    "upscale_denoise": 0.3,
+    "upscale_enabled": false,
+    "upscale_steps": 10,
+    "width": 832,
+    "height": 480,
+    "sampling_steps": 40,
+    "guide_scale": 5.0,
+    "frames": 81,
+    "fps": 16,
+    "mode": "animate",
+    "seed": 42,
+    "model_name": "scail2_14B_fp8_scaled.safetensors"
+   },
+   "engine": "",
+   "form": "form_video_director",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "h3": {
+   "id": "h3",
+   "family": "h3",
+   "genre": "video",
+   "label": "MiniMax H3",
+   "description": "MiniMax H3 joint video + audio generation. Native AV output \u2014 describe both motion and",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "guide_strength": 3.0,
+    "h3_attention": "kitchen",
+    "h3_fp16_accumulation": false,
+    "h3_ref_image_size": "match",
+    "h3_torch_compile": false,
+    "output_format": "mp4",
+    "preset": "draft_02mp",
+    "relay_epsilon": 0.001,
+    "retake_enabled": false,
+    "retake_start_frame": 0,
+    "retake_strength": 1.0,
+    "upscale_cfg": 1.0,
+    "upscale_denoise": 0.3,
+    "upscale_enabled": false,
+    "upscale_steps": 10,
+    "width": 1344,
+    "height": 768,
+    "frames": 124,
+    "fps": 24,
+    "sampling_steps": 30,
+    "guide_scale": 4.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift_video": 12.0,
+    "shift_audio": 3.0,
+    "seed": 42
+   },
+   "engine": "",
+   "form": "form_video_director",
+   "has_agent": true,
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "trellis_native": {
+   "id": "trellis_native",
+   "family": "trellis_native",
+   "genre": "3d",
+   "label": "Trellis (Native)",
+   "description": "Native trellis.cpp GGML engine \u2014 image to UV-textured GLB with the reference-parity C++ postprocess (weld, fill, DC remesh, CuMesh QEM, xatlas, trilinear PBR bake). 50s per asset on the 4090; no confetti.",
+   "source": {
+    "type": "",
+    "repo_id": "ilintar/trellis2-gguf"
+   },
+   "loras": [],
+   "defaults": {
+    "resolution": 1024,
+    "quant": "q8",
+    "bg_removal": "auto",
+    "band": 0,
+    "texture_size": 2048,
+    "webp_quality": 90,
+    "filename_prefix": "trelliscpp",
+    "seed": 42
+   },
+   "engine": "",
+   "form": "form_3d_trellis_native",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "trellis2-native": {
+   "id": "trellis2-native",
+   "family": "trellis2-native",
+   "genre": "3d",
+   "label": "TRELLIS.2 Native",
+   "description": ">-",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "resolution": 1024,
+    "texture_size": 2048,
+    "bg_removal": "auto",
+    "steps": 12,
+    "cfg": 3.0,
+    "seed": 42,
+    "filename_prefix": "trellis2_native"
+   },
+   "engine": "",
+   "form": "form_3d_trellis2_native",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "pixal3d": {
+   "id": "pixal3d",
+   "family": "pixal3d",
+   "genre": "3d",
+   "label": "Pixal3D",
+   "description": ">-",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "resolution": 1024,
+    "texture_size": 2048,
+    "bg_removal": "auto",
+    "steps": 12,
+    "cfg": 3.0,
+    "seed": 42,
+    "filename_prefix": "pixal3d"
+   },
+   "engine": "",
+   "form": "form_3d_pixal3d",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "step1x_texture": {
+   "id": "step1x_texture",
+   "family": "step1x_texture",
+   "genre": "3d",
+   "label": "Step1X-3D Texture",
+   "description": "Diffusion-based 3D texture synthesis \u2014 1 reference image \u2192 6 multi-view images via SDXL ig2mv pipeline \u2192 baked onto UV atlas. Fills ALL surfaces (no coverage gaps unlike camera projection). 3.5B model, ~15s on 4090.",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "preset": "standard",
+    "texture_size": 2048,
+    "render_size": 2048,
+    "remove_bg": false,
+    "seed": 2025,
+    "filename_prefix": "step1x_texture"
+   },
+   "engine": "",
+   "form": "form_3d_step1x_texture",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "mesh_refine": {
+   "id": "mesh_refine",
+   "family": "mesh_refine",
+   "genre": "3d",
+   "label": "UltraShape Mesh Refine",
+   "description": "Image-guided coarse-mesh refinement (UltraShape 1.0 DiT) \u2014 carves sharp limb separation + hard-surface edges into blobby TRELLIS output using the SAME guide image the mesh was generated from. The pre-rig cleanup step: run BEFORE SOMAX so proximity-based weight transfer can't glue arm vertices to torso bones.",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "box_v": 1.0,
+    "mc_level": 0.0,
+    "normalize_scale": 0.99,
+    "num_latents": 32768,
+    "num_sharp_points": 204800,
+    "num_uniform_points": 204800,
+    "preset": "standard",
+    "dtype": "bfloat16",
+    "low_vram": false,
+    "steps": 50,
+    "guidance_scale": 5.0,
+    "octree_resolution": 384,
+    "num_chunks": 8000,
+    "remove_bg": false,
+    "seed": 42,
+    "file_format": "glb",
+    "filename_prefix": "ultrashape_refined"
+   },
+   "engine": "",
+   "form": "form_3d_mesh_refine",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "somax": {
+   "id": "somax",
+   "family": "somax",
+   "genre": "3d",
+   "label": "SOMAX",
+   "description": "TRELLIS \u2192 SOMA weight transfer \u2014 image to SOMAX rigged GLB with anatomically correct SOMA-77 skeleton weights.",
+   "source": {
+    "type": "",
+    "repo_id": "nvidia/soma-x"
+   },
+   "loras": [],
+   "defaults": {
+    "filename_prefix": "KimodoAnimated",
+    "file_format": "glb",
+    "decimate_ratio": 0.2,
+    "preserve_texture": true,
+    "in_place": true
+   },
+   "engine": "",
+   "form": "form_3d_somax",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "transfer_rig": {
+   "id": "transfer_rig",
+   "family": "transfer_rig",
+   "genre": "3d",
+   "label": "Transfer Rig",
+   "description": "Copy rig from source GLB onto target GLB via GPU KNN.",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {},
+   "engine": "",
+   "form": "form_3d_transfer_rig",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "qwen-img-edit-2511": {
+   "id": "qwen-img-edit-2511",
+   "family": "qwen-img-edit-2511",
+   "genre": "image",
+   "label": "Image Edit",
+   "description": "Image Edit \u2014 instruction-driven image editing and manipulation (Qwen-Image-Edit 2511 is",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "controlnet_strength_floor": 0.0,
+    "edit_context_pad": 64,
+    "edit_mask_mode": "auto",
+    "lanpaint_beta": 0.5,
+    "lanpaint_enabled": false,
+    "lanpaint_friction": 0.5,
+    "lanpaint_lambda": 0.5,
+    "lanpaint_num_steps": 20,
+    "lanpaint_prompt_mode": "negative",
+    "lanpaint_step_size": 1.0,
+    "mask_feather": 8,
+    "mask_grow": 8,
+    "mask_invert": false,
+    "mask_threshold": 0,
+    "use_stock_nodes": false,
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "cfg": 1.0,
+    "target_size": 1024,
+    "vl_encoder_size": 392,
+    "resample_method": "lanczos",
+    "crop_method": "center",
+    "double_reference": false
+   },
+   "engine": "",
+   "form": "form_edit",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "see-through": {
+   "id": "see-through",
+   "family": "see-through",
+   "genre": "",
+   "label": "See-Through",
+   "description": "See-Through anime layer decomposition \u2014 splits an image into character, clothing, and background layers.",
+   "source": {
+    "type": "",
+    "repo_id": "layerdifforg/seethroughv0.0.2_layerdiff3d"
+   },
+   "loras": [],
+   "defaults": {
+    "controlnet_strength_floor": 0.0,
+    "resolution": 1280,
+    "resolution_depth": 768,
+    "inference_steps": 30,
+    "tblr_split": false,
+    "seed": 42
+   },
+   "engine": "",
+   "form": "form_image_seethrough",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "stretchy-rig": {
+   "id": "stretchy-rig",
+   "family": "stretchy-rig",
+   "genre": "",
+   "label": "Stretchy Rig",
+   "description": "Stretchy Studio auto-rig \u2014 DWPose TensorRT whole-body keypoints for 2D character animation.",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "yolox_precision": "fp16",
+    "dwpose_precision": "fp32"
+   },
+   "engine": "",
+   "form": "form_image_stretchy_rig",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "latentsync": {
+   "id": "latentsync",
+   "family": "latentsync",
+   "genre": "",
+   "label": "LatentSync",
+   "description": "LatentSync \u2014 local-only lip-sync that aligns mouth shapes to audio in a video.",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "controlnet_strength_floor": 0.0,
+    "edit_context_pad": 64,
+    "edit_mask_mode": "auto",
+    "lanpaint_beta": 0.5,
+    "lanpaint_enabled": false,
+    "lanpaint_friction": 0.5,
+    "lanpaint_lambda": 0.5,
+    "lanpaint_num_steps": 20,
+    "lanpaint_prompt_mode": "negative",
+    "lanpaint_step_size": 1.0,
+    "mask_feather": 8,
+    "mask_grow": 8,
+    "mask_invert": false,
+    "mask_threshold": 0,
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "steps": 25,
+    "sampler": "euler",
+    "cfg": 1.0
+   },
+   "engine": "",
+   "form": "form_edit",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "gem-soma": {
+   "id": "gem-soma",
+   "family": "gem-soma",
+   "genre": "",
+   "label": "SOMA",
+   "description": "GEM-X SOMA pose estimation and retargeting.",
+   "source": {
+    "type": "",
+    "repo_id": "nvidia/soma-x"
+   },
+   "loras": [],
+   "defaults": {
+    "controlnet_strength_floor": 0.0,
+    "edit_context_pad": 64,
+    "edit_mask_mode": "auto",
+    "lanpaint_beta": 0.5,
+    "lanpaint_enabled": false,
+    "lanpaint_friction": 0.5,
+    "lanpaint_lambda": 0.5,
+    "lanpaint_num_steps": 20,
+    "lanpaint_prompt_mode": "negative",
+    "lanpaint_step_size": 1.0,
+    "mask_feather": 8,
+    "mask_grow": 8,
+    "mask_invert": false,
+    "mask_threshold": 0,
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "steps": 25,
+    "sampler": "euler",
+    "cfg": 7.0
+   },
+   "engine": "",
+   "form": "form_edit",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "dwpose": {
+   "id": "dwpose",
+   "family": "dwpose",
+   "genre": "",
+   "label": "DWPose",
+   "description": "DWPose whole-body pose detection (preprocessor for pose-guided generation).",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "cfg": 1.0,
+    "controlnet_strength_floor": 0.0,
+    "edit_context_pad": 64,
+    "edit_mask_mode": "auto",
+    "lanpaint_beta": 0.5,
+    "lanpaint_enabled": false,
+    "lanpaint_friction": 0.5,
+    "lanpaint_lambda": 0.5,
+    "lanpaint_num_steps": 20,
+    "lanpaint_prompt_mode": "negative",
+    "lanpaint_step_size": 1.0,
+    "mask_feather": 8,
+    "mask_grow": 8,
+    "mask_invert": false,
+    "mask_threshold": 0,
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "steps": 1,
+    "sampler": "euler"
+   },
+   "engine": "",
+   "form": "form_edit",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "anima": {
+   "id": "anima",
+   "family": "anima",
+   "genre": "image",
+   "label": "Anima",
+   "description": "Anime/illustration text-to-image. Cosmos-Predict2 base with Danbooru-style prompting.",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "controlnet_strength_floor": 0.0,
+    "lanpaint_beta": 0.5,
+    "lanpaint_enabled": false,
+    "lanpaint_friction": 0.5,
+    "lanpaint_lambda": 0.5,
+    "lanpaint_num_steps": 20,
+    "lanpaint_prompt_mode": "negative",
+    "lanpaint_step_size": 1.0,
+    "mask_feather": 8,
+    "mask_grow": 8,
+    "mask_invert": false,
+    "mask_threshold": 0,
+    "outpaint_bottom": 0,
+    "outpaint_left": 0,
+    "outpaint_overlap": 16,
+    "outpaint_right": 0,
+    "outpaint_top": 0,
+    "width": 1024,
+    "height": 1024,
+    "steps": 30,
+    "sampler": "er_sde",
+    "scheduler": "simple",
+    "cfg": 4.0
+   },
+   "engine": "",
+   "form": "form_generate",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "ideogram": {
+   "id": "ideogram",
+   "family": "ideogram",
+   "genre": "image",
+   "label": "Ideogram",
+   "description": "Typography-aware text-to-image with clean, legible text rendering.",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "controlnet_strength_floor": 0.0,
+    "mu": 0.0,
+    "std": 1.75,
+    "width": 1024,
+    "height": 1024,
+    "steps": 25,
+    "sampler": "euler",
+    "cfg": 5.0,
+    "negative_prompt": "blurry, low quality, distorted text, watermark"
+   },
+   "engine": "",
+   "form": "form_ideogram",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "z-image": {
+   "id": "z-image",
+   "family": "z-image",
+   "genre": "image",
+   "label": "Z-Image",
+   "description": "Fast Z-Image / Z-Image Turbo text-to-image generation.",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "controlnet_strength_floor": 0.0,
+    "lanpaint_beta": 0.5,
+    "lanpaint_enabled": false,
+    "lanpaint_friction": 0.5,
+    "lanpaint_lambda": 0.5,
+    "lanpaint_num_steps": 20,
+    "lanpaint_prompt_mode": "negative",
+    "lanpaint_step_size": 1.0,
+    "mask_feather": 8,
+    "mask_grow": 8,
+    "mask_invert": false,
+    "mask_threshold": 0,
+    "outpaint_bottom": 0,
+    "outpaint_left": 0,
+    "outpaint_overlap": 16,
+    "outpaint_right": 0,
+    "outpaint_top": 0,
+    "scheduler": "normal",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "sampler": "er_sde",
+    "cfg": 1.0,
+    "negative_prompt": null
+   },
+   "engine": "",
+   "form": "form_generate",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "krea-2": {
+   "id": "krea-2",
+   "family": "krea-2",
+   "genre": "image",
+   "label": "Krea 2",
+   "description": "High-quality general text-to-image generation.",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "controlnet_strength_floor": 0.0,
+    "mask_feather": 8,
+    "mask_grow": 8,
+    "mask_invert": false,
+    "mask_threshold": 0,
+    "outpaint_bottom": 0,
+    "outpaint_left": 0,
+    "outpaint_overlap": 16,
+    "outpaint_right": 0,
+    "outpaint_top": 0,
+    "scheduler": "normal",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "sampler": "euler",
+    "cfg": 1.0
+   },
+   "engine": "comfyui",
+   "form": "form_generate",
+   "has_agent": true,
+   "has_inference": true,
+   "has_rubric": false
+  },
+  "img-edit": {
+   "id": "img-edit",
+   "family": "img-edit",
+   "genre": "image",
+   "label": "Qwen Image Edit 2511",
+   "description": "",
+   "source": {
+    "type": ""
+   },
+   "loras": [],
+   "defaults": {
+    "width": 1024,
+    "height": 1024,
+    "steps": 4,
+    "cfg": 1.0
+   },
+   "engine": "comfyui",
+   "form": "form_edit",
+   "has_agent": true,
+   "has_inference": true,
+   "has_rubric": false
+  },
+  "moss_tts_local": {
+   "id": "moss_tts_local",
+   "family": "moss_tts_local",
+   "genre": "audio",
+   "label": "MOSS-TTS Local v1.5",
+   "description": "MOSS-TTS Local Transformer v1.5",
+   "source": {
+    "type": "huggingface",
+    "repo_id": "audio-cpp/audio.cpp-gguf",
+    "filename": "MOSS-TTS-Local-v1.5-GGUF"
+   },
+   "loras": [],
+   "defaults": {
+    "backend": "cuda"
+   },
+   "engine": "audio_cpp",
+   "form": "form_tts",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "ace_step": {
+   "id": "ace_step",
+   "family": "ace_step",
+   "genre": "audio",
+   "label": "ACE-Step 1.5 SFT Q8",
+   "description": "ACE-Step 1.5 sft q8 music generation",
+   "source": {
+    "type": "huggingface",
+    "repo_id": "audio-cpp/audio.cpp-gguf",
+    "filename": "ACE-Step1.5-GGUF"
+   },
+   "loras": [],
+   "defaults": {
+    "backend": "cuda"
+   },
+   "engine": "audio_cpp",
+   "form": "form_music",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "minimax_music3": {
+   "id": "minimax_music3",
+   "family": "minimax_music3",
+   "genre": "audio",
+   "label": "MiniMax Music 3",
+   "description": "MiniMax Music 3 text-to-music with lyrics",
+   "source": {
+    "type": "huggingface",
+    "repo_id": "audio-cpp/MiniMax-Music3-GGUF",
+    "filename": "MiniMax-Music3-GGUF"
+   },
+   "loras": [],
+   "defaults": {
+    "backend": "cuda"
+   },
+   "engine": "comfyui",
+   "form": "form_music",
+   "has_inference": true,
+   "has_rubric": false
+  },
+  "qwen3_tts": {
+   "id": "qwen3_tts",
+   "family": "qwen3_tts",
+   "genre": "audio",
+   "label": "Qwen3-TTS CustomVoice 1.7B",
+   "description": "Qwen3-TTS 12Hz CustomVoice 1.7B",
+   "source": {
+    "type": "huggingface",
+    "repo_id": "audio-cpp/audio.cpp-gguf",
+    "filename": "Qwen3-TTS-12Hz-1.7B-CustomVoice-GGUF"
+   },
+   "loras": [],
+   "defaults": {
+    "backend": "cuda"
+   },
+   "engine": "audio_cpp",
+   "form": "form_tts",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "moss_sfx_v2": {
+   "id": "moss_sfx_v2",
+   "family": "moss_sfx_v2",
+   "genre": "audio",
+   "label": "MOSS-SFX v2",
+   "description": "MOSS-SFX v2 sound effects generation",
+   "source": {
+    "type": "huggingface",
+    "repo_id": "anomalyco/mse2-gguf",
+    "filename": "MOSS-SFX-v2-GGUF"
+   },
+   "loras": [],
+   "defaults": {
+    "backend": "cuda"
+   },
+   "engine": "audio_cpp",
+   "form": "form_sound",
+   "has_agent": true,
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "moss_tts_nano": {
+   "id": "moss_tts_nano",
+   "family": "moss_tts_nano",
+   "genre": "audio",
+   "label": "MOSS-TTS Nano 100M",
+   "description": "MOSS-TTS Nano 100M text-to-speech",
+   "source": {
+    "type": "huggingface",
+    "repo_id": "audio-cpp/audio.cpp-gguf",
+    "filename": "MOSS-TTS-Nano-100M-GGUF"
+   },
+   "loras": [],
+   "defaults": {
+    "backend": "cuda"
+   },
+   "engine": "audio_cpp",
+   "form": "form_tts",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "moss_voicegen": {
+   "id": "moss_voicegen",
+   "family": "moss_voicegen",
+   "genre": "audio",
+   "label": "MOSS VoiceGenerator",
+   "description": "MOSS VoiceGenerator voice design",
+   "source": {
+    "type": "huggingface",
+    "repo_id": "audio-cpp/audio.cpp-gguf",
+    "filename": "MOSS-VoiceGenerator-GGUF"
+   },
+   "loras": [],
+   "defaults": {
+    "backend": "cuda"
+   },
+   "engine": "audio_cpp",
+   "form": "form_tts",
+   "has_inference": false,
+   "has_rubric": false
+  },
+  "qwen3_tts_voicedesign": {
+   "id": "qwen3_tts_voicedesign",
+   "family": "qwen3_tts_voicedesign",
+   "genre": "audio",
+   "label": "Qwen3-TTS VoiceDesign 1.7B",
+   "description": "Qwen3-TTS 12Hz VoiceDesign 1.7B",
+   "source": {
+    "type": "huggingface",
+    "repo_id": "audio-cpp/audio.cpp-gguf",
+    "filename": "Qwen3-TTS-12Hz-1.7B-VoiceDesign-GGUF"
+   },
+   "loras": [],
+   "defaults": {
+    "backend": "cuda",
+    "task": "vdes",
+    "family": "qwen3_tts",
+    "cli": "/home/user/Documents/programs/vendor/my-stuff/audiocpp-fork/build/bin/audiocpp_cli",
+    "model_path": "/mnt/data/models/image-gen/comfyui/audio/qwen3-tts/hf/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
+   },
+   "engine": "audio_cpp",
+   "form": "form_tts",
+   "has_inference": true,
+   "has_rubric": false
+  }
+ },
+ "families": {
+  "input": {
+   "label": "Input Prep",
+   "genre": "image"
+  },
+  "media_merge": {
+   "label": "Media Merge",
+   "genre": "video"
+  },
+  "video_upscale": {
+   "label": "Video Upscale",
+   "genre": "video"
+  },
+  "seedvr2_upscale": {
+   "label": "SeedVR2 Upscaler",
+   "genre": "image"
+  },
+  "basic_scale": {
+   "label": "Basic Resize",
+   "genre": "image"
+  },
+  "pixel_upscale": {
+   "label": "Pixel Upscaler",
+   "genre": "image"
+  },
+  "ace-step": {
+   "label": "ACE-Step v1.5",
+   "genre": "audio"
+  },
+  "moss-sfx": {
+   "label": "MOSS Sound Effects v2",
+   "genre": "audio"
+  },
+  "moss-tts": {
+   "label": "MOSS-TTS",
+   "genre": "audio"
+  },
+  "qwen3-tts": {
+   "label": "Qwen3-TTS",
+   "genre": "audio"
+  },
+  "mask_studio": {
+   "label": "Mask",
+   "genre": "image"
+  },
+  "detect": {
+   "label": "Auto Detect",
+   "genre": "image"
+  },
+  "inpaint": {
+   "label": "Inpaint",
+   "genre": "image"
+  },
+  "wan-vace": {
+   "label": "Wan2.2 VACE",
+   "genre": "video"
+  },
+  "h3-timeline": {
+   "label": "H3 Timeline (multi-window)",
+   "genre": "video",
+   "studio": {
+    "tenant": "melite-video/video_timeline",
+    "owns_params": true,
+    "writes": []
+   }
+  },
+  "ltx-2-3": {
+   "label": "LTX 2.3",
+   "genre": "video"
+  },
+  "ltx": {
+   "label": "LTX 2.3",
+   "genre": "video"
+  },
+  "h3-keyframe": {
+   "label": "MiniMax H3 keyframe-to-video",
+   "genre": "video"
+  },
+  "scail2": {
+   "label": "SCAIL-2",
+   "genre": "video"
+  },
+  "h3": {
+   "label": "MiniMax H3",
+   "genre": "video"
+  },
+  "trellis_native": {
+   "label": "Trellis (Native)",
+   "genre": "3d"
+  },
+  "trellis2-native": {
+   "label": "TRELLIS.2 Native",
+   "genre": "3d"
+  },
+  "pixal3d": {
+   "label": "Pixal3D",
+   "genre": "3d"
+  },
+  "step1x_texture": {
+   "label": "Step1X-3D Texture",
+   "genre": "3d"
+  },
+  "mesh_refine": {
+   "label": "UltraShape Mesh Refine",
+   "genre": "3d"
+  },
+  "somax": {
+   "label": "SOMAX",
+   "genre": "3d"
+  },
+  "transfer_rig": {
+   "label": "Transfer Rig",
+   "genre": "3d"
+  },
+  "qwen-img-edit-2511": {
+   "label": "Image Edit",
+   "genre": "image"
+  },
+  "see-through": {
+   "label": "See-Through",
+   "genre": ""
+  },
+  "stretchy-rig": {
+   "label": "Stretchy Rig",
+   "genre": ""
+  },
+  "latentsync": {
+   "label": "LatentSync",
+   "genre": ""
+  },
+  "gem-soma": {
+   "label": "SOMA",
+   "genre": ""
+  },
+  "dwpose": {
+   "label": "DWPose",
+   "genre": ""
+  },
+  "anima": {
+   "label": "Anima",
+   "genre": "image"
+  },
+  "ideogram": {
+   "label": "Ideogram",
+   "genre": "image"
+  },
+  "z-image": {
+   "label": "Z-Image",
+   "genre": "image"
+  },
+  "krea-2": {
+   "label": "Krea 2",
+   "genre": "image"
+  },
+  "img-edit": {
+   "label": "Qwen Image Edit 2511",
+   "genre": "image"
+  },
+  "moss_tts_local": {
+   "label": "MOSS-TTS Local v1.5",
+   "genre": "audio"
+  },
+  "ace_step": {
+   "label": "ACE-Step 1.5 SFT Q8",
+   "genre": "audio"
+  },
+  "minimax_music3": {
+   "label": "MiniMax Music 3",
+   "genre": "audio"
+  },
+  "qwen3_tts": {
+   "label": "Qwen3-TTS CustomVoice 1.7B",
+   "genre": "audio"
+  },
+  "moss_sfx_v2": {
+   "label": "MOSS-SFX v2",
+   "genre": "audio"
+  },
+  "moss_tts_nano": {
+   "label": "MOSS-TTS Nano 100M",
+   "genre": "audio"
+  },
+  "moss_voicegen": {
+   "label": "MOSS VoiceGenerator",
+   "genre": "audio"
+  },
+  "qwen3_tts_voicedesign": {
+   "label": "Qwen3-TTS VoiceDesign 1.7B",
+   "genre": "audio"
+  }
+ },
+ "capabilities": {
+  "h3-timeline": {
+   "label": "H3 Timeline",
+   "description": "THE video interface \u2014 multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
+   "default_family": "h3-timeline",
+   "families": [
+    "h3-timeline"
+   ],
+   "kind": "generation",
+   "icon": "video",
+   "resolved": {
+    "family": "h3-timeline",
+    "model": "h3-timeline",
+    "params": {}
+   }
+  },
+  "image-gen": {
+   "label": "Image",
+   "description": "Text-to-image generation \u2014 the generate_image family card (build_txt2img); img2img + LanPaint inpaint ride the same card via input_image / lanpaint_mask",
+   "default_family": "krea-2",
+   "families": [
+    "krea-2"
+   ],
+   "kind": "generation",
+   "icon": "image",
+   "resolved": {
+    "family": "krea-2",
+    "model": "krea-2",
+    "params": {}
+   }
+  },
+  "image-edit": {
+   "label": "Image Edit",
+   "description": "Instruction-driven image editing \u2014 the edit_image family card (build_img2img_edit); up to three input images + reference list, mask-aware region editing, LanPaint tuning",
+   "default_family": "img-edit",
+   "families": [
+    "img-edit"
+   ],
+   "kind": "generation",
+   "icon": "edit",
+   "resolved": {
+    "family": "img-edit",
+    "model": "img-edit",
+    "params": {}
+   }
+  },
+  "voice-lock": {
+   "label": "Voice Lock",
+   "description": "Lock a voice persona \u2014 design, export, and reuse .qvoice embeddings for consistent character voices",
+   "default_family": "qwen3_tts_voicedesign",
+   "families": [
+    "qwen3_tts_voicedesign"
+   ],
+   "kind": "generation",
+   "icon": "fingerprint",
+   "resolved": {
+    "family": "qwen3_tts_voicedesign",
+    "model": "qwen3_tts_voicedesign",
+    "params": {}
+   }
+  },
+  "tts": {
+   "label": "TTS",
+   "description": "Text-to-speech \u2014 Qwen3-TTS with CustomVoice personas and instruct-text emotion control",
+   "default_family": "qwen3-tts",
+   "families": [
+    "qwen3_tts"
+   ],
+   "kind": "generation",
+   "icon": "microphone",
+   "resolved": {
+    "family": "qwen3-tts",
+    "model": "qwen3-tts",
+    "params": {}
+   }
+  },
+  "music": {
+   "label": "Music",
+   "description": "Generate music \u2014 MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
+   "default_family": "music3",
+   "families": [
+    "music3"
+   ],
+   "kind": "generation",
+   "icon": "music",
+   "resolved": {
+    "family": "music3",
+    "model": "music3",
+    "params": {}
+   }
+  }
+ },
+ "cards": [
+  {
+   "id": "h3-timeline",
+   "label": "H3 Timeline",
+   "description": "THE video interface \u2014 multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
+   "genre": "video",
+   "families": [
+    "h3-timeline"
+   ],
+   "principles": [
+    "Describe MOTION and SOUND together \u2014 H3 generates both in one pass",
+    "Draft at 768x448x56f (~2.3s); produce at 1344x768x124f (~5.2s)",
+    "Length snaps to the 17k+5 frame grid at 24fps",
+    "For timelines: repeat the ambient soundscape verbatim in every window; add one new layer where the story needs it",
+    "Same seed across a shot's re-rolls keeps the world texture",
+    "SLA at sparsity 0.90 gives ~1.75x speedup with no quality loss \u2014 use it by default"
+   ],
+   "skills": [],
+   "has_inference": false,
+   "has_rubric": false
+  },
+  {
+   "id": "image-gen",
+   "label": "Image",
+   "description": "Text-to-image generation \u2014 the generate_image family card (build_txt2img); img2img + LanPaint inpaint ride the same card via input_image / lanpaint_mask",
+   "genre": "image",
+   "families": [
+    "krea-2"
+   ],
+   "principles": [
+    "prompt is required \u2014 an empty/whitespace prompt is rejected loud, never sampled with empty conditioning",
+    "Defaults are shape, not value: resolution/steps/cfg come from the model folder (defaults:/presets), merged at serve time",
+    "Sampler and scheduler option lists resolve from the ONE vocabulary (media.comfyui.sampler_vocab) \u2014 never hand-copied",
+    "A preset fills untouched fields; values you have set win",
+    "input_image + lanpaint_mask switches the builder to LanPaintKSampler",
+    "Mask prep (grow/feather/threshold/invert) and outpaint pads are applied host-side before the run \u2014 no silent param drops"
+   ],
+   "skills": [],
+   "has_inference": true,
+   "has_rubric": false
+  },
+  {
+   "id": "image-edit",
+   "label": "Image Edit",
+   "description": "Instruction-driven image editing \u2014 the edit_image family card (build_img2img_edit); up to three input images + reference list, mask-aware region editing, LanPaint tuning",
+   "genre": "image",
+   "families": [
+    "img-edit"
+   ],
+   "principles": [
+    "input_image is required \u2014 the edit is anchored on it (input_param: input_artifact, slots image1..image3)",
+    "Qwen-Image-Edit uses low CFG (flow-matching) \u2014 the Guidance Scale slider tops out at 10.0",
+    "A lanpaint_mask alongside input_image patches the model with the DiffSynth inpaint ControlNet",
+    "Region Mode controls how the mask is honored: auto / crop_stitch / full_frame",
+    "Mask prep (grow/feather/threshold/invert) uses the same host-side chain the Inpaint card uses",
+    "Iterate HERE, not in video \u2014 an edit costs seconds, a render minutes; name what changes, state the rest as unchanged"
+   ],
+   "skills": [],
+   "has_inference": false,
+   "has_rubric": false
+  },
+  {
+   "id": "voice-lock",
+   "label": "Voice Lock",
+   "description": "Lock a voice persona \u2014 design, export, and reuse .qvoice embeddings for consistent character voices",
+   "genre": "audio",
+   "families": [
+    "qwen3_tts_voicedesign"
+   ],
+   "principles": [],
+   "skills": [],
+   "has_inference": false,
+   "has_rubric": false
+  },
+  {
+   "id": "tts",
+   "label": "TTS",
+   "description": "Text-to-speech \u2014 Qwen3-TTS with CustomVoice personas and instruct-text emotion control",
+   "genre": "audio",
+   "families": [
+    "qwen3_tts"
+   ],
+   "principles": [
+    "text is required \u2014 empty text fails",
+    "Use Voice Embedding (.qvoice) for consistent character voices",
+    "Style Instruction controls emotion and delivery",
+    "One line per call \u2014 serial execution for multi-line sequences"
+   ],
+   "skills": [],
+   "has_inference": false,
+   "has_rubric": false
+  },
+  {
+   "id": "music",
+   "label": "Music",
+   "description": "Generate music \u2014 MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
+   "genre": "audio",
+   "families": [
+    "music3"
+   ],
+   "principles": [],
+   "skills": [],
+   "has_inference": false,
+   "has_rubric": false
+  },
+  {
+   "id": "sfx",
+   "label": "Sound Effects",
+   "description": "Generate sound effects \u2014 MOSS-SFX v2, describe the SOUND not the scene",
+   "genre": "audio",
+   "families": [
+    "moss_sfx_v2"
+   ],
+   "principles": [],
+   "skills": [],
+   "has_inference": false,
+   "has_rubric": false
+  }
+ ]
+}

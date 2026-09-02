@@ -289,15 +289,31 @@ def _parse_model_yaml(text):
     return m if m["id"] else None
 
 
-def _scan_catalog(repo_root):
-    """scan_models (src/catalog.c:533-579): owner -> genre -> model dir,
-    raw readdir order; catalog_find_model is first-match on family id."""
-    plugins = os.path.join(repo_root, "plugins")
-    models = []
-    for owner in _scandir(plugins):
-        if owner.startswith('.'):
+def _iter_plugin_engines(repo_root):
+    """The 2026-09 engine formalization layout (supersedes the C's
+    plugins/<owner>/ depth-1 scan): cards and models are ENGINE-owned at
+    plugins/engines/<engine>/. No legacy-depth fallback — the old scan
+    found nothing here and every model 404'd (reorg debt, healed
+    2026-09-02). Bridge copies (a model dir under an engine whose
+    model.yaml declares a DIFFERENT engine — e.g. comfyui's audio bridge
+    packs) stay owned by their DECLARING engine, mirroring resolve_model's
+    declarer rule in py/plugins.py."""
+    eng_root = os.path.join(repo_root, "plugins", "engines")
+    for engine in _scandir(eng_root):
+        if engine.startswith('.'):
             continue
-        models_dir = os.path.join(plugins, owner, "models")
+        edir = os.path.join(eng_root, engine)
+        if os.path.isdir(edir):
+            yield engine, edir
+
+
+def _scan_catalog(repo_root):
+    """scan_models (catalog.c port, engine layout): engine -> genre ->
+    model dir, raw readdir order per engine; catalog_find_model is
+    first-match on family id among DECLARING rows."""
+    models = []
+    for _engine, edir in _iter_plugin_engines(repo_root):
+        models_dir = os.path.join(edir, "models")
         if not os.path.isdir(models_dir):
             continue
         for genre in _scandir(models_dir):
@@ -318,17 +334,59 @@ def _scan_catalog(repo_root):
                 row = _parse_model_yaml(yaml)
                 if row is None:
                     continue
+                # The wire model id is the DIRECTORY name (canonical
+                # everywhere: py/plugins.py resolve_model globs
+                # models/<genre>/<mid>/model.yaml by mid; pipelines
+                # reference dir ids). The yaml family.id is a display
+                # alias (music3's yaml says minimax_music3) — kept in
+                # row["family_id"], never the lookup key.
+                row["family_id"] = row["id"]
+                row["id"] = mid
                 ipath = os.path.join(model_dir, "inference.yaml")
                 row["inference_path"] = ipath if os.path.isfile(ipath) else None
+                # NO declarer skip: every copy enters the catalog (the
+                # C scanned every owner too). Duplicate ids resolve
+                # declarer-wins in _find_model — the resolve_model law
+                # (music3 sits in audio-cpp's tree but DECLARES comfyui:
+                # the music node is a ComfyUI bridge).
                 models.append(row)
     return models
 
 
+def _plugin_engine_types(edir):
+    """The engine types a plugin dir DECLARES: engines/<dir>/engine.yaml
+    `type:` lines (same law as py/plugins.py scan_engines — the dir name
+    is not the type; audio-cpp declares audio_cpp)."""
+    out = set()
+    eng_root = os.path.join(edir, "engines")
+    if os.path.isdir(eng_root):
+        for sub in _scandir(eng_root):
+            ey = os.path.join(eng_root, sub, "engine.yaml")
+            if not os.path.isfile(ey):
+                continue
+            for line in open(ey, 'r', encoding='utf-8',
+                             errors='surrogateescape').read().splitlines():
+                s = line.strip()
+                if s.startswith("type:"):
+                    t = s.partition(":")[2].strip()
+                    if t:
+                        out.add(t)
+                    break
+    return out
+
+
 def _find_model(models, family_id):
+    """catalog_find_model, declarer-wins: among rows with this id, a row
+    that DECLARES an engine beats a stanza-less bridge copy (resolve_model
+    law — py/plugins.py). First declaring row in scan order wins."""
+    fallback = None
     for row in models:
         if row["id"] == family_id:
-            return row
-    return None
+            if row["engine_plugin"]:
+                return row
+            if fallback is None:
+                fallback = row
+    return fallback
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -432,13 +490,11 @@ def _find_card_yaml(repo_root, model):
     """cs_find_card_yaml (src/server.cpp:7533-7611): the sole-owner card.
     Skip cards without a parameters: block; gate on the /v1/forms card ids
     (the C's ALLOWED_CARDS); families must match, first-family match wins
-    outright, first any-family match is the fallback candidate."""
-    plugins = os.path.join(repo_root, "plugins")
+    outright, first any-family match is the fallback candidate.
+    (2026-09-02) Scan depth is the engine layout: plugins/engines/<engine>/cards/."""
     candidate = None
-    for owner in _scandir(plugins):
-        if owner.startswith('.'):
-            continue
-        cdir = os.path.join(plugins, owner, "cards")
+    for _engine, edir in _iter_plugin_engines(repo_root):
+        cdir = os.path.join(edir, "cards")
         if not os.path.isdir(cdir):
             continue
         for card in _scandir(cdir):
@@ -466,11 +522,13 @@ def _find_card_yaml(repo_root, model):
     return candidate
 
 
-def _option_list(repo_root, list_name):
-    """cs_option_list: samplers/schedulers from the ONE vocabulary file
-    plugins/melite-core/models/field_options.yaml (path is the C's own)."""
-    yp = os.path.join(repo_root, "plugins", "agent", "dsh", "melite-core", "models",
-                      "field_options.yaml")
+def _option_list(repo_root, list_name, engine_dir):
+    """cs_option_list: samplers/schedulers from the ONE vocabulary file,
+    ENGINE-owned at plugins/engines/<engine>/models/field_options.yaml
+    (2026-09-02: the vocabulary is engine data — PLUGIN ARCHITECTURE
+    LAW; the old shared path plugins/agent/dsh/melite-core/ died with the
+    reorg, and $samplers resolved empty)."""
+    yp = os.path.join(engine_dir, "models", "field_options.yaml")
     head = list_name + ":"
     out = []
     in_list = False
@@ -642,6 +700,12 @@ def _families_keep(field, nmodel):
     return any(_norm(t) == nmodel for t in toks)
 
 
+def _engine_dir_of_card(card_yaml_path):
+    """.../<engine>/cards/<card>/card.yaml -> .../<engine> (the engine that
+    owns the card — vocabulary and lanes resolve relative to it)."""
+    return os.path.dirname(os.path.dirname(os.path.dirname(card_yaml_path)))
+
+
 def _card_spec(repo_root, model):
     """card_spec_json: the "form"/"service"/"fields"/"schema_groups" tail,
     or None when no card.yaml covers the model (legacy shape kept)."""
@@ -655,8 +719,10 @@ def _card_spec(repo_root, model):
     keep = [f for f in fields if _families_keep(f, nmodel)]
 
     options_vocab = {
-        "samplers": _option_list(repo_root, "samplers"),
-        "schedulers": _option_list(repo_root, "schedulers"),
+        "samplers": _option_list(repo_root, "samplers",
+                                 _engine_dir_of_card(yp)),
+        "schedulers": _option_list(repo_root, "schedulers",
+                                   _engine_dir_of_card(yp)),
     }
 
     out = {}
@@ -851,14 +917,12 @@ def _recipes_fallback(repo_root, model_id):
     with content), and the genre loop stops once a prompt recipe lands.
     This is how a row whose unit lacks inference.yaml (music3) borrows
     recipes from another owner's id-named unit."""
-    plugins = os.path.join(repo_root, "plugins")
+    plugins = os.path.join(repo_root, "plugins", "engines")
     recipe, lrecipe = "", ""
     for genre in ("image", "video", "audio", "text"):
         found = None
-        for owner in _scandir(plugins):
-            if owner.startswith('.'):
-                continue
-            cand = os.path.join(plugins, owner, "models", genre, model_id,
+        for _engine, edir in _iter_plugin_engines(repo_root):
+            cand = os.path.join(edir, "models", genre, model_id,
                                 "inference.yaml")
             if os.path.isfile(cand):
                 found = cand
