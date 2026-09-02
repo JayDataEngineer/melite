@@ -171,7 +171,8 @@ check("catalog serves one row", len(pairs) == 1)
 srow, smeta = pairs[0]
 check("catalog row == golden", srow == golden)
 check("catalog meta shape",
-      set(smeta) == {"studio_tenant", "studio_owns_params"})
+      set(smeta) == {"studio_tenant", "studio_owns_params",
+                     "studio_writes"})  # writes = E4 allowlist (h3 model)
 
 print()
 if _failures:
