@@ -289,19 +289,28 @@ def step_extensions(comfy_dir: Path, comfy: Path) -> bool:
     env = dict(os.environ, **env_cuda) if env_cuda else None
 
     for e in exts:
-        name, url, ref = e.get("name", ""), e.get("url", ""), e.get("ref", "")
+        name = e.get("name", "")
+        url, ref = e.get("url", ""), e.get("ref", "")
+        # RULING (operator 2026-09-21): "We never git clone. If more
+        # features are to be added it is the comfyui-mcp extension install
+        # tool." Preferred declaration form is a Comfy Registry id
+        # (registry: <slug>) installed via the same comfy node install
+        # verb comfy-mcp's install_node wraps. url+ref is the legacy
+        # transitional form (third-party packs not yet on the registry).
+        reg = (e.get("registry") or "").strip()
         if not name:
             continue
-        if not url:  # in-tree pack
+        if not url and not reg:  # in-tree pack
             counts[link_in_tree(name, comfy_dir)] += 1
             continue
 
-        installed = ext_installed_dir(comfy_dir, name, url)
+        install_arg = reg or url
+        installed = ext_installed_dir(comfy_dir, name, url or reg)
         if installed:
             counts["skipped"] += 1
             continue
 
-        r = sh([comfy, "node", "install", url], cwd=comfy_dir, env=env)
+        r = sh([comfy, "node", "install", install_arg], cwd=comfy_dir, env=env)
         if r.returncode != 0:
             counts["failed"] += 1
             continue
@@ -309,8 +318,10 @@ def step_extensions(comfy_dir: Path, comfy: Path) -> bool:
         target = ext_installed_dir(comfy_dir, name, url) \
             or comfy_dir / "custom_nodes" / name
 
-        # comfy-cli has no --ref: pin the declared commit ourselves
-        if ref:
+        # comfy-cli has no --ref: pin the declared commit ourselves.
+        # Registry installs pin by published version instead (record the
+        # expected version in the declaration; never git-pin a registry pack).
+        if ref and url and not reg:
             sh(["git", "-C", str(target), "fetch", "--depth", "1",
                 "origin", ref], timeout=300)
             rp = sh(["git", "-C", str(target), "checkout", ref], timeout=120)
@@ -377,7 +388,15 @@ def step_models(comfy_dir: Path, comfy: Path) -> bool:
             name, url = p.get("name", ""), p.get("url", "")
             if not name or not url:
                 continue
-            sub = ((p.get("dest") or {}).get("sub") or "").strip("/")
+            # RULING (operator 2026-09-21): model provisioning goes through
+            # comfy-mcp/comfy-cli; the RESOLUTION of the model location is
+            # handled by ComfyUI, not us. The folder: field names the models
+            # folder CATEGORY (e.g. diffusion_models); comfy-cli places under
+            # models/<folder> and ComfyUI's folder_paths/extra_model_paths
+            # decide where that category really lives. dest{root,sub} is the
+            # legacy spelling, still honored during migration.
+            folder = (p.get("folder") or "").strip("/")
+            sub = folder or ((p.get("dest") or {}).get("sub") or "").strip("/")
             dest = comfy_dir / "models" / sub / name if sub \
                 else comfy_dir / "models" / name
             if dest.exists():

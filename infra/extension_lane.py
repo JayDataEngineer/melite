@@ -108,7 +108,8 @@ def _merge_from(files: list[tuple[str, str]]) -> list[dict]:
 
 
 def main() -> None:
-    repo = os.path.join(os.path.dirname(__file__), "..", "..")
+    # default repo root = parent of infra/ (this file lives at <repo>/infra/)
+    repo = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     fmt = "yaml"
     args = sys.argv[1:]
     i = 0
