@@ -1,19 +1,13 @@
 # inference-gateway.service — reference copy of the CANONICAL gateway unit
 #
-# STATUS 2026-09-02: this unit is INSTALLED and ACTIVE in the operator's
-# home (~/.config/systemd/user/inference-gateway.service), supervising
-# :33081 with Restart=always. This repo copy is the reference — the
-# home copy is authoritative.
+# STATUS 2026-09-02 (python flip): the C server (build/inference_cli) is
+# RETIRED — the gateway is the python orchestrator (py/gateway.py,
+# stdlib-only asyncio; engines + card compose live in the OWNING
+# plugins, py/plugins.py mounts them). This unit supervises :33081 with
+# Restart=always.
 #
-# INCIDENT RECAP (why this matters): the unit originally targeted the
-# RETIRED :18090 while every skill and the dsh melite-card-deck proxy
-# point at http://localhost:33081 (the port inherited from the retired
-# ray melite-gw control plane). Result: a supervised, up-to-date
-# gateway that nothing talked to, plus recurring "stale 18090 process"
-# confusion — killing it just triggered Restart=always. The deck's
-# catalog 502 (gateway_unreachable) was the visible symptom. Fix:
-# re-point the unit to :33081 (ExecStart below), daemon-reload,
-# restart. mystery closed.
+# PORT LAW: every skill and the dsh melite-card-deck proxy point at
+# http://localhost:33081 — do not move the port.
 #
 # If re-installing from this copy:
 #   cp scripts/inference-gateway.service ~/.config/systemd/user/
@@ -22,14 +16,13 @@
 # logs: journalctl --user -u inference-gateway -f
 
 [Unit]
-Description=inference.cpp gateway (canonical :33081 — queue + catalog)
+Description=inference.cpp gateway (canonical :33081 — python orchestrator)
 After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=%h/Documents/programs/active/inference.cpp/build
-Environment=LD_LIBRARY_PATH=%h/Documents/programs/active/inference.cpp/build
-ExecStart=%h/Documents/programs/active/inference.cpp/build/inference_cli serve --port 33081 --plugin-dir . --catalog-dir ..
+WorkingDirectory=%h/Documents/programs/active/inference.cpp
+ExecStart=/usr/bin/python3 %h/Documents/programs/active/inference.cpp/py/gateway.py 33081
 Restart=always
 RestartSec=3
 

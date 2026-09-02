@@ -2,13 +2,15 @@
 """bootstrap.py — one path, one truth, every platform.
 
 Cross-platform (Linux / macOS / Windows) bootstrap for inference.cpp.
-Replaces the bash-only setup.sh body:
 
-  server      cmake build of the C++ gateway (CUDA autodetected)
   extensions  comfy-cli `node install` from the plugin declarations,
               ref-pinned via git, patches + pip deps applied after
   models      comfy-cli `model download` from model.yaml provisions,
               sha256-verified after download
+
+(2026-09-02 python flip) the C++ server build step is RETIRED — the
+gateway is py/gateway.py, stdlib-only, no build step. Provisioning of
+the ComfyUI workspace (extensions + models) is unchanged.
 
 Provisioning engine: comfy-cli — the same engine comfy-mcp wraps. The
 bootstrap calls the engine directly because it must run headless from a
@@ -19,14 +21,13 @@ Loud-fail law: no silent defaults. A missing ComfyUI workspace aborts with
 instructions; a sha256 mismatch deletes the file and counts as failure.
 
 Usage:
-  python3 bootstrap.py                      # everything
-  python3 bootstrap.py --server             # C++ server only
+  python3 bootstrap.py                      # extensions + models
   python3 bootstrap.py --extensions         # ComfyUI extensions only
   python3 bootstrap.py --models             # model downloads only
   python3 bootstrap.py --dry-run            # print the plan, change nothing
   python3 bootstrap.py --comfyui-dir /opt/ComfyUI
 
-Windows:  py bootstrap.py <flags>   (python 3.10+; cmake + git on PATH)
+Windows:  py bootstrap.py <flags>   (python 3.10+; git on PATH)
 """
 
 from __future__ import annotations
@@ -171,27 +172,8 @@ def cuda_env() -> dict | None:
     return None
 
 
-# ── step 1: C++ server ──────────────────────────────────────────────
-
-
-def step_server() -> bool:
-    info("building inference.cpp server (cmake)")
-    cmake = shutil.which("cmake")
-    if not cmake and not DRY:
-        fail("cmake not found on PATH — install cmake first")
-    cuda = shutil.which("nvcc") if not DRY else None
-    flags = ["-DCMAKE_BUILD_TYPE=Release", "-DINFERENCE_BUILD_TESTS=ON"]
-    if cuda or (not DRY and os.environ.get("INFERENCE_CUDA", "ON") != "OFF"
-                and cuda_env()):
-        flags.append("-DINFERENCE_CUDA=ON")
-        info("  CUDA detected — GPU build")
-    else:
-        info("  CPU-only (set INFERENCE_CUDA=ON / put nvcc on PATH for GPU)")
-    j = os.cpu_count() or 4
-    r1 = sh([cmake or "cmake", "-B", "build", *flags], cwd=REPO)
-    r2 = sh([cmake or "cmake", "--build", "build", "-j", str(j)], cwd=REPO,
-            timeout=7200)
-    return r1.returncode == 0 and r2.returncode == 0
+# ── step 1 (RETIRED 2026-09-02): C++ server ─────────────────────────
+# The gateway is py/gateway.py — stdlib-only, no cmake, no build step.
 
 
 # ── step 2: extensions via comfy-cli ────────────────────────────────
