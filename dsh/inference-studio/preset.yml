@@ -1,3 +1,0 @@
-name: Inference Studio
-description: The inference.cpp agent — discovers lanes (lane_bundle), reads the craft skills (skill_read), composes ONE action card (build_pipeline) that renders in chat; only you press Run. All inference rides the serial GPU queue.
-order: 6

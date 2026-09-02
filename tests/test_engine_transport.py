@@ -12,7 +12,7 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-ENGINE_DIR = REPO / "plugins/comfyui/engines/comfyui"
+ENGINE_DIR = REPO / "plugins/engines/comfyui/engines/comfyui"
 
 os.environ["INFERENCE_TEST_SANDBOX"] = "1"
 sys.path.insert(0, str(ENGINE_DIR))

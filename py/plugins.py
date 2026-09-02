@@ -35,6 +35,10 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 PLUGINS_DIR = REPO / "plugins"
+# Scan roots: engine plugins under plugins/engine/*, agent plugins under
+# plugins/agent/*, web plugins under plugins/web/*.  Each plugin dir
+# (depth-2 under a category) may own engines/ and/or models/.
+_PLUGIN_SCAN_ROOTS = [REPO / "plugins" / cat for cat in ("engines", "agents", "web")]
 IDENT_RE = re.compile(r"^[a-z_][a-z0-9_-]*$")
 
 try:
@@ -109,27 +113,42 @@ def _engine_type_of_dir(engine_dir):
 _engines = None      # engine_type -> EngineRef
 
 
+def _iter_plugin_dirs():
+    """Yield every plugin directory under the scan roots (depth-2)."""
+    for root in _PLUGIN_SCAN_ROOTS:
+        if not root.is_dir():
+            continue
+        for cat_dir in sorted(root.iterdir()):
+            if not cat_dir.is_dir():
+                continue
+            yield cat_dir
+
+
 def scan_engines():
     """Mount every plugin engine dir. Duplicate types fail LOUD."""
     global _engines
     if _engines is not None:
         return _engines
     found = {}
-    if PLUGINS_DIR.is_dir():
-        for plugin_dir in sorted(PLUGINS_DIR.iterdir()):
-            engines_root = plugin_dir / "engines"
-            if not engines_root.is_dir():
+    for plugin_dir in _iter_plugin_dirs():
+        engines_root = plugin_dir / "engines"
+        if not engines_root.is_dir():
+            continue
+        for engine_dir in sorted(engines_root.iterdir()):
+            if not engine_dir.is_dir():
                 continue
-            for engine_dir in sorted(engines_root.iterdir()):
-                if not engine_dir.is_dir():
-                    continue
-                etype = _engine_type_of_dir(engine_dir)
-                if etype in found:
-                    raise ValidationError(
-                        "engine type %r declared by BOTH %s and %s — one "
-                        "owner per engine (PLUGIN ARCHITECTURE LAW)" % (
-                            etype, found[etype].engine_dir, engine_dir))
-                found[etype] = EngineRef(plugin_dir.name, engine_dir, etype)
+            # Only scan dirs that contain engine.yaml or engine.py —
+            # skip compose/, tools/, __pycache__/ subdirs.
+            if not ((engine_dir / "engine.yaml").is_file() or
+                    (engine_dir / "engine.py").is_file()):
+                continue
+            etype = _engine_type_of_dir(engine_dir)
+            if etype in found:
+                raise ValidationError(
+                    "engine type %r declared by BOTH %s and %s — one "
+                    "owner per engine (PLUGIN ARCHITECTURE LAW)" % (
+                        etype, found[etype].engine_dir, engine_dir))
+            found[etype] = EngineRef(plugin_dir.name, engine_dir, etype)
     _engines = found
     return _engines
 
@@ -168,13 +187,12 @@ def resolve_model(mid):
     if not IDENT_RE.match(mid or ""):
         raise ValidationError("model id %r is not a legal identifier" % mid)
     copies = []
-    if PLUGINS_DIR.is_dir():
-        for plugin_dir in sorted(PLUGINS_DIR.iterdir()):
-            models_root = plugin_dir / "models"
-            if not models_root.is_dir():
-                continue
-            for my in models_root.glob("*/%s/model.yaml" % mid):
-                copies.append((plugin_dir.name, my))
+    for plugin_dir in _iter_plugin_dirs():
+        models_root = plugin_dir / "models"
+        if not models_root.is_dir():
+            continue
+        for my in models_root.glob("*/%s/model.yaml" % mid):
+            copies.append((plugin_dir.name, my))
     if not copies:
         raise ValidationError("no model.yaml for model: %s" % mid)
     declarers = []

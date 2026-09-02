@@ -469,7 +469,7 @@ def _find_card_yaml(repo_root, model):
 def _option_list(repo_root, list_name):
     """cs_option_list: samplers/schedulers from the ONE vocabulary file
     plugins/melite-core/models/field_options.yaml (path is the C's own)."""
-    yp = os.path.join(repo_root, "plugins", "melite-core", "models",
+    yp = os.path.join(repo_root, "plugins", "agent", "dsh", "melite-core", "models",
                       "field_options.yaml")
     head = list_name + ":"
     out = []

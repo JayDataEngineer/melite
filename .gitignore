@@ -77,3 +77,24 @@ references/autoremesher/
 agent-sessions/
 asan-build/
 drafts/
+
+# Datafolder — organized generated state (never commit)
+datafolder/outputs/
+datafolder/agent-sessions/
+datafolder/comfyui/
+datafolder/downloads/
+datafolder/staging/
+datafolder/inputs/
+datafolder/delivery/
+datafolder/sessions/
+datafolder/input/
+datafolder/artifacts/
+# Keep structure and docs
+!datafolder/**/
+!datafolder/**/.gitkeep
+!datafolder/README.md
+# Remove old data/ ignores (replaced by datafolder)
+-data/delivery/
+-data/input/
+-data/llm_keystore.json
+-data/llm_keystore.key

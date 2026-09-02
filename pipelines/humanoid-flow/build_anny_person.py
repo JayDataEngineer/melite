@@ -35,7 +35,7 @@ REPO = Path(__file__).resolve().parent.parent.parent
 NPZ = REPO / "vendor/kimodo/kimodo/assets/skeletons/somaskel77/skin_standard.npz"
 AUTORIG = REPO / "custom_nodes/melite-autorig-nodes"
 COMFY = "http://127.0.0.1:18465"
-RUNS = REPO / "data/runs"
+RUNS = REPO / "datafolder/outputs/runs"
 
 
 def _post(path: str, body: dict) -> dict:
