@@ -148,7 +148,19 @@ async def execute(node, run_dir, inputs, stop_event):
             artifacts.append({"path": str(dest), "bytes": len(data)})
         except Exception:
             continue
-    return {"outputs": {}, "artifacts": artifacts}
+    outputs = {}
+    for a in artifacts:
+        base = a["path"].rsplit("/", 1)[-1].lower()
+        fam = ""
+        if base.endswith((".mp4", ".webm", ".mkv")):
+            fam = "video"
+        elif base.endswith((".png", ".jpg", ".jpeg", ".webp")):
+            fam = "image"
+        elif base.endswith((".flac", ".wav", ".mp3", ".ogg")):
+            fam = "audio"
+        if fam:
+            outputs.setdefault("%s_0" % fam, a["path"])
+    return {"outputs": outputs, "artifacts": artifacts}
 
 
 async def stop(node, run_dir):

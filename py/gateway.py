@@ -114,6 +114,10 @@ def parse_pipeline_text(text):
             continue
         key, _, rest = stripped.partition(":")
         key = key.strip()
+        # a recognized key line ENDS any pending bullet list (else the
+        # next node's "- id:" gets swallowed as a list item)
+        if key in ("id", "type", "model", "description", "input_from", "params", "plugin", "optional"):
+            pending_list = None
         if key == "params":
             inline = rest.strip()
             if inline:
@@ -175,14 +179,74 @@ def resolve_request(body):
         path = PIPELINES / name / "pipeline.yaml"
         if not path.is_file():
             raise ValidationError("no pipeline yaml at pipelines/%s/pipeline.yaml" % name)
-        return parse_pipeline_text(path.read_text())
+        text = path.read_text()
+        graph0 = parse_pipeline_text(text)
+        types0 = [n["type"] for n in graph0["nodes"]]
+        if card_hooks is not None:
+            # PLUGIN ARCHITECTURE LAW: card semantics live in the plugin
+            # hooks, not here. Phase 1 (dry run) validates + extra inputs;
+            # dispatch by engine type, exactly like the C server.
+            try:
+                text, extra = card_hooks.compose(body, name, "", text, types0)
+            except Exception as e:
+                raise ValidationError("card_compose phase 1: %s" % e)
+            body = dict(body, **extra)
+            if extra:
+                text = text  # extra inputs merge into the request, not the graph
+            if text != path.read_text():
+                return parse_pipeline_text(text)
+        return graph0
     if "model" in body:
         mid = str(body["model"])
         path = PIPELINES / mid / "pipeline.yaml"
-        if not path.is_file():
-            raise ValidationError("no pipeline at pipelines/%s/pipeline.yaml for model %r" % (mid, mid))
-        return parse_pipeline_text(path.read_text())
+        if path.is_file():
+            return parse_pipeline_text(path.read_text())
+        # card-only model: the plugin hook composes the graph (phase 2)
+        skeleton, etype, extra = resolve_card_model(body, mid)
+        return {"__card__": True, "skeleton": skeleton,
+                "etype": etype, "extra": extra, "name": mid}
     raise ValidationError("no pipeline selected: provide yaml or model")
+
+
+def _find_model_yaml(mid):
+    for f in (REPO / "plugins").glob("*/models/*/%s/model.yaml" % mid):
+        return f
+    return None
+
+
+def _engine_type_of(model_yaml_path):
+    etype = ""
+    for line in model_yaml_path.read_text().splitlines():
+        s = line.strip()
+        if s.startswith("engine:") and not s.endswith(":"):
+            return s.partition(":")[2].strip()
+        if s.startswith("plugin:") and not etype:
+            etype = s.partition(":")[2].strip()
+    return etype
+
+
+def resolve_card_model(body, mid):
+    """{model} arm for card-only models (no pipeline.yaml on disk).
+
+    Mirrors the C card path: seed a minimal skeleton carrying the engine
+    type, let the OWNING plugin's hook generate the real graph (phase 2
+    at run registration; phase 1 here for validation + extra inputs).
+    Returns (skeleton_text, etype, extra) or raises loudly.
+    """
+    my = _find_model_yaml(mid)
+    if my is None:
+        raise ValidationError("no pipeline for model: %s" % mid)
+    etype = _engine_type_of(my)
+    if not etype:
+        raise ValidationError("model %s resolves no engine type (model.yaml engine.plugin) — refusing to guess" % mid)
+    skeleton = "name: %s\ntype: %s\ndescription: card-composed\n\nnodes:\n" % (mid, etype)
+    extra = {}
+    if card_hooks is not None:
+        try:
+            _, extra = card_hooks.compose(body, mid, "", skeleton, [etype])
+        except Exception as e:
+            raise ValidationError("card_compose phase 1: %s" % e)
+    return skeleton, etype, extra
 
 
 def resolve_inputs(node, initial):
@@ -190,12 +254,23 @@ def resolve_inputs(node, initial):
     out = {}
     for ref in node.get("input_from", []):
         if not ref.startswith("__initial__."):
+            if ref in initial:
+                out[ref] = initial[ref]
+                continue
             raise ValidationError(
-                "node %r: input_from ref %r unsupported (only __initial__ wiring; no name-match fallback)"
+                "node %r: input_from ref %r unresolved (neither __initial__ nor a prior node output)"
                 % (node["id"], ref),
             )
         tensor = ref.split(".", 1)[1]
         if tensor not in initial:
+            alt = tensor.lstrip("$")
+            params = initial.get("params") or {}
+            if isinstance(params, dict) and alt in params:
+                out[tensor] = params[alt]
+                continue
+            if alt in initial:
+                out[tensor] = initial[alt]
+                continue
             raise ValidationError("node %r: __initial__.%s not provided in request" % (node["id"], tensor))
         out[tensor] = initial[tensor]
     return out
@@ -210,15 +285,23 @@ def expand_inject(params, inputs):
     for slot, value in inject.items():
         if isinstance(value, str) and value.startswith("$"):
             name = value[1:]
-            if name not in inputs:
+            if name in inputs:
+                expanded[slot] = inputs[name]
+            elif ("$" + name) in inputs:
+                expanded[slot] = inputs["$" + name]
+            else:
                 raise ValidationError("inject %s: tensor %r unresolved" % (slot, name))
-            expanded[slot] = inputs[name]
         else:
             expanded[slot] = value
     out = dict(params)
     out["inject"] = expanded
     return out
 
+
+try:
+    import hooks as card_hooks
+except Exception:
+    card_hooks = None
 
 _engine_cache = {}
 
@@ -260,9 +343,31 @@ class Gateway:
         self.active = None
 
     async def submit(self, body):
-        graph = resolve_request(body)
+        resolved = resolve_request(body)
         run_id = "run-%s-%08x" % (uuid.uuid4().hex[:12], int(time.time() * 1000) & 0xFFFFFFFF)
+        if isinstance(resolved, dict) and resolved.get("__card__"):
+            # card-only model: phase 2 composes the REAL graph now that
+            # the run exists (the hook rewrites the skeleton in place).
+            text, etype = resolved["skeleton"], resolved["etype"]
+            # phase-1 extra are RUN INPUTS (tensor pool), never body
+            # keys — strict card validation rejects a polluted surface.
+            card_extra_inputs = dict(resolved.get("extra", {}))
+            if card_hooks is not None:
+                try:
+                    text, extra2 = card_hooks.compose(
+                        body, resolved["name"], run_id, text, [etype])
+                    for k, v in (extra2 or {}).items():
+                        card_extra_inputs.setdefault(k, v)
+                except Exception as e:
+                    raise ValidationError("card_compose phase 2: %s" % e)
+            graph = parse_pipeline_text(text)
+            if not graph["nodes"]:
+                raise ValidationError(
+                    "card_compose produced an empty graph for %s" % resolved["name"])
+        else:
+            graph = resolved
         run = Run(run_id=run_id, graph=graph, request=body)
+        run.card_extra_inputs = card_extra_inputs if resolved.get("__card__") else {}
         run.dir.mkdir(parents=True, exist_ok=True)
         atomic_write(run.dir / "_request.json", body)
         run.stages = [
@@ -296,6 +401,11 @@ class Gateway:
 
     async def execute(self, run):
         initial = {k: v for k, v in run.request.items() if k not in ("yaml", "pipeline", "model")}
+        # phase-1 card inputs ("inputs": {...}) land in the tensor pool
+        ci = getattr(run, "card_extra_inputs", {}) or {}
+        nested = ci.get("inputs") if isinstance(ci.get("inputs"), dict) else ci
+        for k, v in (nested or {}).items():
+            initial.setdefault(k, v)
         initial.setdefault("prompt", "")
         carry = {}
         for stage in run.stages:
@@ -315,7 +425,9 @@ class Gateway:
                     str(run.dir), inputs, run.stop_event,
                 )
                 if result:
-                    carry.update(result.get("outputs", {}))
+                    for k, v in result.get("outputs", {}).items():
+                        carry[k] = v
+                        carry["%s.%s" % (node["id"], k)] = v
                     run.artifacts.extend(result.get("artifacts", []))
                 stage["status"] = "completed"
             except Exception as e:
