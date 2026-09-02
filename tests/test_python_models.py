@@ -22,8 +22,7 @@ import tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(REPO, "py"))
-sys.path.insert(0, os.path.join(REPO, "plugins", "web", "models_py"))
-sys.path.insert(0, os.path.join(REPO, "plugins", "web", "cards_py"))
+sys.path.insert(0, os.path.join(REPO, "py"))
 
 sys.path.insert(0, REPO)
 

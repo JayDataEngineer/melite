@@ -406,9 +406,9 @@ def _model_row_from_py(repo_root, mpy, mid):
     engine_plugin/defaults pairs/form). Defaults values keep the wire's
     raw-STRING form (the C's text heritage) — the typed-defaults wire
     cleanup is its own later rung, not a silent change."""
-    models_py = os.path.join(repo_root, "plugins", "web", "models_py")
-    if models_py not in sys.path:
-        sys.path.insert(0, models_py)
+    _py = os.path.join(repo_root, "py")
+    if _py not in sys.path:
+        sys.path.insert(0, _py)
     from melite_models import load_model_py
     engine = os.path.basename(os.path.dirname(os.path.dirname(
         os.path.dirname(mpy))))
@@ -838,12 +838,12 @@ def _engine_dir_of_card(card_yaml_path):
     return os.path.dirname(os.path.dirname(os.path.dirname(card_yaml_path)))
 
 
-_MELITE_CARDS_PATH = os.path.join("plugins", "web", "cards_py")
+_MELITE_CARDS_PATH = os.path.join("py")
 
 
 def _load_card_class(yp):
     """The card.py ActionCard subclass for a card.yaml's dir, or None.
-    The gateway imports the generic DSL from plugins/web/cards_py (the
+    The gateway imports the generic DSL from py/melite_cards (the
     py twin of ui_components — PLUGIN ARCHITECTURE LAW: grammar is
     generic, the class is engine-owned)."""
     cppath = os.path.join(os.path.dirname(yp), "card.py")
@@ -851,9 +851,9 @@ def _load_card_class(yp):
         return None
     engine_dir = _engine_dir_of_card(yp)
     repo_root = os.path.dirname(os.path.dirname(os.path.dirname(engine_dir)))
-    cards_root = os.path.join(repo_root, "plugins", "web", "cards_py")
-    if cards_root not in sys.path:
-        sys.path.insert(0, cards_root)
+    _py = os.path.join(repo_root, "py")
+    if _py not in sys.path:
+        sys.path.insert(0, _py)
     from melite_cards import load_card_py as _load
     engine = os.path.basename(engine_dir)
     return _load(cppath, engine)

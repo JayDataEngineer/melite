@@ -13,8 +13,7 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, "py"))
-sys.path.insert(0, os.path.join(REPO, "plugins", "web", "cards_py"))
-sys.path.insert(0, os.path.join(REPO, "plugins", "web", "models_py"))
+sys.path.insert(0, os.path.join(REPO, "py"))
 
 import editor_forms as ef                    # noqa: E402
 from melite_cards import load_card_py, field_spec  # noqa: E402

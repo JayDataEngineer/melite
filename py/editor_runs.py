@@ -1532,9 +1532,9 @@ def provision(body_json, plugins_root):
     if True:
         import sys
         repo_root = os.path.dirname(plugins_root)   # plugins/ → repo
-        models_py = os.path.join(repo_root, "plugins", "web", "models_py")
-        if models_py not in sys.path:
-            sys.path.insert(0, models_py)
+        _py = os.path.join(repo_root, "py")
+        if _py not in sys.path:
+            sys.path.insert(0, _py)
         try:
             from melite_models import load_model_py
         except ImportError:

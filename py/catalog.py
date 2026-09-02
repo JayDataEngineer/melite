@@ -630,7 +630,7 @@ def _scan_model_dir(model_dir):
     unit assets (agents/inference/rubric) probed next to the class.
 
     (2026-09-02) The flip is TOTAL: every unit is a model.py class
-    (plugins/web/models_py/melite_models; docs/plans/
+    (py/melite_models; docs/plans/
     python-action-cards.md); model.yaml is extinct tree-wide. A yaml
     reappearing next to a model.py is a LOUD refusal (two SSOTs is
     zero SSOTs)."""
@@ -644,9 +644,9 @@ def _scan_model_dir(model_dir):
             % mpy)
     repo_root = os.path.dirname(os.path.dirname(os.path.dirname(
         os.path.dirname(os.path.dirname(os.path.dirname(model_dir))))))
-    models_py = os.path.join(repo_root, "plugins", "web", "models_py")
-    if models_py not in sys.path:
-        sys.path.insert(0, models_py)
+    _py = os.path.join(repo_root, "py")
+    if _py not in sys.path:
+        sys.path.insert(0, _py)
     from melite_models import load_model_py, model_row
     engine = os.path.basename(os.path.dirname(os.path.dirname(
         os.path.dirname(model_dir))))
@@ -715,7 +715,7 @@ def _scan_card_dir(card_dir, card_name):
 
     (2026-09-02, the identity rung) card.yaml is EXTINCT — id/label/
     description/genre/icon/api/ability/requires/principles/skills live
-    on the ActionCard class (plugins/web/cards_py). A card.yaml next to
+    on the ActionCard class (py/melite_cards). A card.yaml next to
     a card.py is a LOUD refusal (two SSOTs is zero SSOTs)."""
     mpy = os.path.join(card_dir, "card.py")
     if not os.path.isfile(mpy):
@@ -727,9 +727,9 @@ def _scan_card_dir(card_dir, card_name):
     engine_dir = os.path.dirname(os.path.dirname(os.path.dirname(mpy)))
     repo_root = os.path.dirname(os.path.dirname(os.path.dirname(
         engine_dir)))
-    cards_root = os.path.join(repo_root, "plugins", "web", "cards_py")
-    if cards_root not in sys.path:
-        sys.path.insert(0, cards_root)
+    _py = os.path.join(repo_root, "py")
+    if _py not in sys.path:
+        sys.path.insert(0, _py)
     from melite_cards import load_card_py
     engine = os.path.basename(engine_dir)
     cls = load_card_py(mpy, engine)

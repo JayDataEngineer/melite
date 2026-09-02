@@ -228,11 +228,10 @@ def _find_card_requires(mid, plugins_dir=None):
     if plugins_dir is None:
         plugins_dir = REPO / "plugins"
     import sys as _sys
-    models_py = plugins_dir / "web" / "models_py"
-    cards_py = plugins_dir / "web" / "cards_py"
-    for pth in (str(models_py), str(cards_py)):
-        if pth not in _sys.path:
-            _sys.path.insert(0, pth)
+    # Cards + models DSL now live in py/ (gateway infra, not plugins/).
+    py_dir = str(REPO / "py")
+    if py_dir not in _sys.path:
+        _sys.path.insert(0, py_dir)
     try:
         from melite_models import load_model_py
         from melite_cards import load_card_py

@@ -263,15 +263,15 @@ def resolve_model(mid):
             continue
         for mpy in sorted(models_root.glob("*/%s/model.py" % mid)):
             import sys as _sys
-            models_py = plugin_dir.parents[1] / "web" / "models_py"
-            if str(models_py) not in _sys.path:
-                _sys.path.insert(0, str(models_py))
+            _py = str(REPO / "py")
+            if _py not in _sys.path:
+                _sys.path.insert(0, _py)
             try:
                 from melite_models import load_model_py
             except ImportError:
                 raise ValidationError(
                     "model %s flipped to model.py but melite_models is "
-                    "missing at %s" % (mid, models_py))
+                    "missing at %s" % (mid, _py))
             engine = mpy.parent.parent.parent.name
             try:
                 cls = load_model_py(str(mpy), engine)
