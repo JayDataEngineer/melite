@@ -431,7 +431,6 @@ def step_models(comfy_dir: Path, comfy: Path) -> bool:
 def main() -> int:
     global DRY, REPO
     ap = argparse.ArgumentParser(description="inference.cpp cross-platform bootstrap")
-    ap.add_argument("--server", action="store_true", help="build the C++ server")
     ap.add_argument("--extensions", action="store_true", help="install ComfyUI extensions")
     ap.add_argument("--models", action="store_true", help="download declared models")
     ap.add_argument("--dry-run", action="store_true", help="print the plan, change nothing")
@@ -445,14 +444,11 @@ def main() -> int:
     if args.repo:
         REPO = Path(args.repo).resolve()
 
-    do_all = not (args.server or args.extensions or args.models)
-    do_server = args.server or do_all
+    do_all = not (args.extensions or args.models)
     do_ext = args.extensions or do_all
     do_models = args.models or do_all
 
     rc = 0
-    if do_server:
-        rc |= 0 if step_server() else 1
     comfy_dir = comfy = None
     if do_ext or do_models:
         comfy_dir = resolve_comfy_dir(args.comfyui_dir)
