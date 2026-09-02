@@ -147,40 +147,84 @@ def _param_of(f):
 
 
 def tool_manifests(cls):
-    """Derive the agent tool manifests from the card class: one per
-    served family, the params surface EXACTLY the family-scoped form.
-    Absorbed cards emit one manifest per boarded model — the mods the
-    family declares are the params it gets, nothing else."""
+    """Derive the agent tool manifests from the card class: ONE TOOL
+    PER ACTION CARD (operator order 2026-09-03: "I don't want the
+    'models' to render, I just want action cards to render" — shape
+    law rung 8). The card is the interface; the families are DATA
+    inside it.
+
+    Multi-family cards expose `model` as the FIRST param (enum of the
+    boarded families, defaulting to the card's DECLARED
+    ability.default_family — a declared route like the capability
+    tile's, never a guessed fallback; no declared default → required).
+    params carry the UNION of the families' surfaces; each family-
+    scoped field states its families in `x-families` so agents see the
+    scoping, and required lists only what EVERY family requires — a
+    family-specific violation is the server's LOUD refusal, never a
+    silent drop.
+
+    The card-compose request contract: POST /v1/pipelines/start
+    {model: <chosen family>, params: {...}} — the manifest's top-level
+    `model` names the declared default route (single-family cards: the
+    only family, no param)."""
     from .dsl import _norm
-    out = []
-    for fam in (cls.families_of() or ("",)):
-        nfam = _norm(fam)
-        keep = [f for f in cls._fields_ if f.families_keep(nfam)]
-        props = {}
-        required = []
-        for f in keep:
-            props[f.name] = _param_of(f)
-            if f.required:
-                required.append(f.name)
-        name = cls.id.replace("-", "_") + "_card"
-        if fam:
-            name += "__" + fam.replace("-", "_").replace(".", "_")
-        m = {
-            "name": name,
-            "version": 1,
-            "kind": "card-compose",
-            "card": cls.id,
-            "model": fam or None,
-            "stage_title": cls.label,
-            "description": cls.description,
-            "params_schema": {
-                "type": "object",
-                "properties": props,
-                "required": required,
-            },
+    fams = tuple(cls.families_of() or ())
+    nfams = [_norm(f) for f in fams]
+    multi = len(fams) > 1
+    default_fam = None
+    if isinstance(cls.ability, dict):
+        default_fam = cls.ability.get("default_family")
+    if default_fam is not None and default_fam not in fams:
+        raise ValueError(
+            "%s.ability.default_family %r is not a boarded family"
+            % (cls.id, default_fam))
+
+    def keeps_all(f):
+        return all(f.families_keep(nf) for nf in nfams)
+
+    def keeps_some(f):
+        return any(f.families_keep(nf) for nf in nfams)
+
+    props = {}
+    required = []
+    if multi:
+        mp = {
+            "type": "string",
+            "enum": list(fams),
+            "description":
+                "The boarded family to run — the request's top-level "
+                "`model`. Options: %s." % ", ".join(fams),
         }
-        out.append(m)
-    return out
+        if default_fam:
+            mp["default"] = default_fam
+        else:
+            required.append("model")   # no fallback — the caller picks
+        props["model"] = mp
+    for f in cls._fields_:
+        if not keeps_some(f):
+            continue
+        p = _param_of(f)
+        if not keeps_all(f):
+            p["x-families"] = [fam for fam, nf in zip(fams, nfams)
+                               if f.families_keep(nf)]
+        props[f.name] = p
+        if f.required and keeps_all(f):
+            required.append(f.name)
+    m = {
+        "name": cls.id.replace("-", "_") + "_card",
+        "version": 1,
+        "kind": "card-compose",
+        "card": cls.id,
+        "model": default_fam if multi else (fams[0] if fams else None),
+        "stage_title": cls.label,
+        "description": cls.description,
+        "params_schema": {
+            "type": "object",
+            "properties": props,
+            "required": required,
+        },
+    }
+    return [m]
 
 
 def field_spec(cls, model, options_vocab, service=None):
