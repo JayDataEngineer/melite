@@ -383,7 +383,9 @@ def step_models(comfy_dir: Path, comfy: Path) -> bool:
     for mf in files:
         import yaml
         cfg = yaml.safe_load(Path(mf).read_text()) or {}
-        fam = cfg.get("family") or {}
+        # family: may be a string alias (several lanes) — provisions only
+        # ride a dict form; tolerate both, never crash the sweep.
+        fam = cfg.get("family") if isinstance(cfg.get("family"), dict) else {}
         for p in (fam.get("provisions") or cfg.get("provisions") or []):
             name, url = p.get("name", ""), p.get("url", "")
             if not name or not url:
