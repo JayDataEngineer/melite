@@ -2955,10 +2955,19 @@ static void handle_pipelines_start(const httplib::Request &req,
                               && did_check[0]);
             int have_calls = (strstr(body, "\"calls\"") != NULL);
             int card_model = model_has_card_knobs(model);
-            if (have_draft || have_calls || card_model) {
+            /* (operator order 2026-09-02) THE CARD CALLS A MODEL, NOT A
+             * PIPELINE. Any catalog model with an engine.plugin is a
+             * RESOLVED request — the plugin that owns the lane composes
+             * the graph (card_compose). pipeline.yaml on disk is one
+             * compose source, never the only door; demanding it 404'd
+             * every card model (krea-2 et al). The draft/calls/knobs
+             * arms stay as explicit card-body markers. */
+            char etype[64] = "";
+            int engine_ok = (model_engine_plugin(model, etype,
+                                                 sizeof(etype)) == 0);
+            if (have_draft || have_calls || card_model || engine_ok) {
                 /* Read engine type from model.yaml instead of guessing */
-                char etype[64] = "";
-                if (model_engine_plugin(model, etype, sizeof(etype)) != 0) {
+                if (!engine_ok) {
                     res.status = 404;
                     char err[400];
                     snprintf(err, sizeof(err),
@@ -3048,7 +3057,7 @@ static void handle_pipelines_start(const httplib::Request &req,
              * old string-extract here silently dropped it (C23 law:
              * rejections NAME the path). */
             if (card_extra[0] == '{') {
-                res.status = (ph1 <= -2 && ph1 >= -19) ? 400 : 500;
+                res.status = (ph1 <= -2 && ph1 >= -30) ? 400 : 500;
                 res.set_content(card_extra, "application/json");
                 return;
             }
@@ -3062,7 +3071,7 @@ static void handle_pipelines_start(const httplib::Request &req,
                 if (ml) {
                     char out[600];
                     snprintf(out, sizeof out, "{\"error\":\"%s\"}", m);
-                    res.status = (ph1 <= -2 && ph1 >= -19)
+                    res.status = (ph1 <= -2 && ph1 >= -30)
                                      ? 400 : 500;
                     res.set_content(out, "application/json");
                     return;
@@ -3105,7 +3114,12 @@ static void handle_pipelines_start(const httplib::Request &req,
         }
         }
     }
-    if (!prompt[0]) {
+    /* (2026-09-02 tts 400 fix) a bare top-level prompt is required only
+     * for legacy prompt-driven runs. A {model:...} card run carries its
+     * own primary field (tts: text, voice-lock: style_instruction) —
+     * phase-1 card compose validates the card's own required knobs, so
+     * do not 400 here; fall through and let the card gate speak. */
+    if (!prompt[0] && !model[0]) {
         res.status = 400;
         res.set_content("{\"error\":\"missing prompt\"}", "application/json");
         return;
@@ -3239,7 +3253,17 @@ static void handle_pipelines_start(const httplib::Request &req,
     char ctx_prev_run[128] = "";
     {
         char cfr[128] = "";
-        if (inf_json_string(body, "continue_from", cfr, sizeof(cfr)) == 0 && cfr[0]) {
+        /* (plugin-architecture law 2026-09-02) this LEGACY tail-staging
+         * (RayH3ChainLatentAV / window1_load.json / windowN_tail.pt)
+         * belongs to the old lane. A card_compose lane that owns its
+         * own continuation announces it in PHASE 1's extra JSON via
+         * the generic "continue_from_card" key (phase 2 — which emits
+         * the CtxLoadLatent continuation — runs after this block, so
+         * a yaml marker is not visible yet). Card-owned: the card's
+         * phase 1 already validated the prior run pre-registration;
+         * the core must not re-stage or rewrite the graph. */
+        if (inf_json_string(body, "continue_from", cfr, sizeof(cfr)) == 0 && cfr[0]
+            && !strstr(card_extra, "\"continue_from_card\"")) {
             for (const char *p2 = cfr; *p2; p2++)
                 if (!((*p2 >= 'a' && *p2 <= 'z') || (*p2 >= '0' && *p2 <= '9') || *p2 == '-')) {
                     res.status = 400;
@@ -4103,7 +4127,7 @@ static void handle_pipelines_start(const httplib::Request &req,
                         run_set_state(idx, "error", m);
                         char out[640];
                         snprintf(out, sizeof out, "{\"error\":\"%s\"}", m);
-                        res.status = (crc <= -2 && crc >= -15)
+                        res.status = (crc <= -2 && crc >= -30)
                                          ? 400 : 500;
                         res.set_content(out, "application/json");
                         return;
@@ -5873,6 +5897,10 @@ static void handle_family_param_schema(const httplib::Request &req,
     res.set_content(out, "application/json");
 }
 
+/* (2026-09-02 the operator card law, surface 3 — fwd decl; defined after
+ * the cs_ helpers) capabilities = the 6 ABILITY cards ONLY. */
+static char *catalog_abilities_splice(char *json);
+
 static void handle_catalog(const httplib::Request &req,
                            httplib::Response &res) {
     (void)req;
@@ -5881,6 +5909,7 @@ static void handle_catalog(const httplib::Request &req,
         return;
     }
     char *json = catalog_to_json(g_catalog);
+    json = catalog_abilities_splice(json);
     res.set_content(json, "application/json");
     free(json);
 }
@@ -6186,14 +6215,48 @@ static void ensure_run_previews(const char *dir) {
     if (system(ff) != 0) unlink(poster);                /* failed: no poster */
 }
 
-typedef struct { char dir[64]; long created; } run_dir_ent;
+typedef struct { char dir[64]; long created; int media; } run_dir_ent;
 
+/* (user-surface law, 2026-09-01) MEDIA-FIRST ORDERING: a terminal-junk
+ * flood (chaos runs, error bursts — sidecar-only dirs with real model
+ * names) filled the newest-200 gallery window and pushed every
+ * artifact-bearing run OUT: the sidebar went "116 runs · 0 artifacts"
+ * while the artifacts sat on disk. Ordering now guarantees media runs
+ * are listed FIRST, newest-first, then everything else newest-first —
+ * junk can shuffle junk, but can never displace real work. */
 static int rundir_cmp(const void *a, const void *b) {
     const run_dir_ent *x = (const run_dir_ent *)a;
     const run_dir_ent *y = (const run_dir_ent *)b;
+    if (y->media != x->media) return y->media - x->media;
     if (y->created > x->created) return 1;
     if (y->created < x->created) return -1;
     return 0;
+}
+
+/* does this run dir contain at least one media file the gallery lists?
+ * (mirror of artifact_type's media set — image/video/audio extensions) */
+static int run_dir_has_media(const char *dir) {
+    DIR *d = opendir(dir);
+    if (!d) return 0;
+    struct dirent *e;
+    int found = 0;
+    while ((e = readdir(d)) != NULL) {
+        const char *dot = strrchr(e->d_name, '.');
+        if (!dot) continue;
+        const char *ext = dot + 1;
+        if (!strcasecmp(ext, "png") || !strcasecmp(ext, "jpg") ||
+            !strcasecmp(ext, "jpeg") || !strcasecmp(ext, "webp") ||
+            !strcasecmp(ext, "gif") ||
+            !strcasecmp(ext, "mp4") || !strcasecmp(ext, "webm") ||
+            !strcasecmp(ext, "mov") ||
+            !strcasecmp(ext, "wav") || !strcasecmp(ext, "flac") ||
+            !strcasecmp(ext, "ogg") || !strcasecmp(ext, "mp3")) {
+            found = 1;
+            break;
+        }
+    }
+    closedir(d);
+    return found;
 }
 
 /* GET /v1/pipelines/yaml/list - the editor Pipelines library section.
@@ -6389,6 +6452,157 @@ static void handle_yaml_detail(const httplib::Request &req,
     res.set_content(out, "application/json");
 }
 
+/* ── YAML pipeline CRUD (save / delete / rename) ──────────────────────────
+ * Completes the pipeline template catalog started with list + detail.
+ * Save produces the - id: / type: / params: {json} shape that detail
+ * parses. Delete removes the pipeline directory. Rename moves it.
+ * All three guard against path traversal (no '/' or '..' in names). */
+
+static bool yaml_safe_stem(const char *s, char *out, size_t outsz) {
+    /* bare basename, alnum + dash + underscore, no dots except trailing .yaml */
+    if (!s || !*s) return false;
+    size_t n = 0;
+    while (s[n] && n < outsz - 1) {
+        char c = s[n];
+        if (c == '/' || c == '.' || c == '\\') break;
+        if (!(c >= 'a' && c <= 'z') && !(c >= 'A' && c <= 'Z') &&
+            !(c >= '0' && c <= '9') && c != '-' && c != '_') return false;
+        out[n] = c; n++;
+    }
+    out[n] = 0;
+    return n > 0;
+}
+
+static void handle_yaml_save(const httplib::Request &req,
+                             httplib::Response &res) {
+    cJSON *root = cJSON_Parse(req.body.c_str());
+    if (!root) { res.status = 400;
+        res.set_content("{\"error\":\"invalid JSON\"}", "application/json"); return; }
+    const cJSON *jname = cJSON_GetObjectItem(root, "filename");
+    const cJSON *jsteps = cJSON_GetObjectItem(root, "steps");
+    const cJSON *joverwrite = cJSON_GetObjectItem(root, "overwrite");
+    const cJSON *jdisplay = cJSON_GetObjectItem(root, "name");
+    if (!jname || !jname->valuestring || !jsteps || !cJSON_IsArray(jsteps)
+        || cJSON_GetArraySize(jsteps) == 0) {
+        cJSON_Delete(root); res.status = 400;
+        res.set_content("{\"error\":\"filename (string) and steps (non-empty array) required\"}",
+                        "application/json"); return; }
+    char stem[128];
+    if (!yaml_safe_stem(jname->valuestring, stem, sizeof(stem))) {
+        cJSON_Delete(root); res.status = 400;
+        res.set_content("{\"error\":\"invalid filename — alphanumeric, dash, underscore only\"}",
+                        "application/json"); return; }
+    /* build pipeline YAML in the - id:/type:/params:{json} shape */
+    std::string yaml = "api: true\n";
+    const char *disp = (jdisplay && jdisplay->valuestring && jdisplay->valuestring[0])
+                       ? jdisplay->valuestring : stem;
+    yaml += std::string("name: ") + disp + "\nsteps:\n";
+    int n = cJSON_GetArraySize(jsteps);
+    for (int i = 0; i < n; i++) {
+        const cJSON *s = cJSON_GetArrayItem(jsteps, i);
+        const cJSON *sid = cJSON_GetObjectItem(s, "id");
+        const cJSON *stype = cJSON_GetObjectItem(s, "type");
+        const cJSON *fam = cJSON_GetObjectItem(s, "family");
+        const cJSON *sp = cJSON_GetObjectItem(s, "params");
+        const char *id = (sid && sid->valuestring) ? sid->valuestring : stem;
+        const char *tp = (stype && stype->valuestring) ? stype->valuestring
+                        : ((fam && fam->valuestring) ? fam->valuestring : "unknown");
+        yaml += "  - id: " + std::string(id) + "\n";
+        yaml += "    type: " + std::string(tp) + "\n";
+        if (sp && cJSON_IsObject(sp)) {
+            char *ps = cJSON_PrintUnformatted(sp);
+            if (ps) { yaml += "    params: " + std::string(ps) + "\n"; free(ps); }
+        }
+    }
+    /* write to ../pipelines/<stem>/pipeline.yaml */
+    char dirpath[512], fpath[512];
+    snprintf(dirpath, sizeof(dirpath), "../pipelines/%s", stem);
+    snprintf(fpath, sizeof(fpath), "%s/pipeline.yaml", dirpath);
+    bool existed = (access(fpath, R_OK) == 0);
+    if (existed && !(joverwrite && cJSON_IsTrue(joverwrite))) {
+        cJSON_Delete(root); res.status = 409;
+        res.set_content("{\"error\":\"pipeline exists — set overwrite:true to replace\"}",
+                        "application/json"); return; }
+    /* mkdir -p one level */
+    mkdir(dirpath, 0755);
+    FILE *f = fopen(fpath, "w");
+    if (!f) { cJSON_Delete(root); res.status = 500;
+        res.set_content("{\"error\":\"cannot write pipeline file\"}", "application/json"); return; }
+    fputs(yaml.c_str(), f); fclose(f);
+    /* copy disp BEFORE the tree free — disp points into the cJSON tree
+     * (use-after-free class: the 2026-09-01 save response mojibake). */
+    char dispbuf[256];
+    snprintf(dispbuf, sizeof(dispbuf), "%s", disp);
+    cJSON_Delete(root);
+    char resp[512];
+    snprintf(resp, sizeof(resp),
+             "{\"filename\":\"%s.yaml\",\"name\":\"%s\",\"path\":\"../pipelines/%s/pipeline.yaml\"}",
+             stem, dispbuf, stem);
+    res.set_content(resp, "application/json");
+    res.status = existed ? 200 : 201;
+}
+
+static void handle_yaml_delete(const httplib::Request &req,
+                               httplib::Response &res) {
+    if (!req.has_param("filename")) { res.status = 400;
+        res.set_content("{\"error\":\"missing filename param\"}", "application/json"); return; }
+    std::string fname = req.get_param_value("filename");
+    /* strip .yaml suffix */
+    size_t dot = fname.rfind(".yaml");
+    if (dot != std::string::npos) fname = fname.substr(0, dot);
+    char stem[128];
+    if (!yaml_safe_stem(fname.c_str(), stem, sizeof(stem))) { res.status = 400;
+        res.set_content("{\"error\":\"invalid filename\"}", "application/json"); return; }
+    char fpath[512];
+    snprintf(fpath, sizeof(fpath), "../pipelines/%s/pipeline.yaml", stem);
+    if (access(fpath, R_OK) != 0) { res.status = 404;
+        res.set_content("{\"error\":\"no such pipeline\"}", "application/json"); return; }
+    unlink(fpath);
+    /* try rmdir (will only succeed if empty) */
+    char dirpath[512];
+    snprintf(dirpath, sizeof(dirpath), "../pipelines/%s", stem);
+    rmdir(dirpath);
+    char resp[256];
+    snprintf(resp, sizeof(resp), "{\"deleted\":\"%s.yaml\"}", stem);
+    res.set_content(resp, "application/json");
+}
+
+static void handle_yaml_rename(const httplib::Request &req,
+                               httplib::Response &res) {
+    cJSON *root = cJSON_Parse(req.body.c_str());
+    if (!root) { res.status = 400;
+        res.set_content("{\"error\":\"invalid JSON\"}", "application/json"); return; }
+    const cJSON *jold = cJSON_GetObjectItem(root, "filename");
+    const cJSON *jnew = cJSON_GetObjectItem(root, "newName");
+    if (!jold || !jold->valuestring || !jnew || !jnew->valuestring) {
+        cJSON_Delete(root); res.status = 400;
+        res.set_content("{\"error\":\"filename and newName required\"}", "application/json"); return; }
+    char oldstem[128], newstem[128];
+    std::string oldstr = jold->valuestring;
+    size_t dot = oldstr.rfind(".yaml");
+    if (dot != std::string::npos) oldstr = oldstr.substr(0, dot);
+    if (!yaml_safe_stem(oldstr.c_str(), oldstem, sizeof(oldstem)) ||
+        !yaml_safe_stem(jnew->valuestring, newstem, sizeof(newstem))) {
+        cJSON_Delete(root); res.status = 400;
+        res.set_content("{\"error\":\"invalid stem\"}", "application/json"); return; }
+    char oldpath[512], newpath[512], newdir[512];
+    snprintf(oldpath, sizeof(oldpath), "../pipelines/%s/pipeline.yaml", oldstem);
+    snprintf(newdir, sizeof(newdir), "../pipelines/%s", newstem);
+    snprintf(newpath, sizeof(newpath), "%s/pipeline.yaml", newdir);
+    if (access(oldpath, R_OK) != 0) { cJSON_Delete(root); res.status = 404;
+        res.set_content("{\"error\":\"no such pipeline\"}", "application/json"); return; }
+    if (access(newpath, R_OK) == 0) { cJSON_Delete(root); res.status = 409;
+        res.set_content("{\"error\":\"target name already exists\"}", "application/json"); return; }
+    mkdir(newdir, 0755);
+    if (rename(oldpath, newpath) != 0) { cJSON_Delete(root); res.status = 500;
+        res.set_content("{\"error\":\"rename failed\"}", "application/json"); return; }
+    rmdir(oldpath); /* best-effort remove old dir if empty */
+    cJSON_Delete(root);
+    char resp[256];
+    snprintf(resp, sizeof(resp), "{\"renamed\":\"%s.yaml\"}", newstem);
+    res.set_content(resp, "application/json");
+}
+
 /* GET /v1/pipelines/runs - gallery list, disk-scanned from ./output/run-*
  * sidecars: survives restarts; live status is mirrored into the sidecars
  * by run_set_state, so the disk is always current. */
@@ -6420,6 +6634,13 @@ static void handle_pipelines_runs(const httplib::Request &req,
             }
             snprintf(ents[n].dir, sizeof(ents[n].dir), "%s", e->d_name);
             ents[n].created = created;
+            /* media-first ordering (2026-09-01): one cheap readdir per
+             * run dir decides gallery priority — see rundir_cmp. */
+            {
+                char rdir[640];
+                snprintf(rdir, sizeof(rdir), "./output/%s", e->d_name);
+                ents[n].media = run_dir_has_media(rdir);
+            }
             n++;
         }
         closedir(d);
@@ -6589,6 +6810,17 @@ static void handle_asset(const httplib::Request &req, httplib::Response &res) {
  * lane's tool exist. */
 static void lane_tools_append(std::string &out, const char *lane_want) {
     int count = 0;
+    /* (2026-09-01 operator card law) the action-card surface is CLOSED:
+     * ONLY the operator's six custom action cards serve manifests —
+     * image_card, image_edit_card, tts_card, voice_lock_card,
+     * music_card, video_card. Every other card or curated-pipeline
+     * manifest in the tree is INVISIBLE to both the DSH tool registry
+     * and the editor's add-card picker. Impossibility by construction —
+     * same law as the melite-tools ALLOWED_CARDS gate. */
+    static const char *ALLOWED_TOOLS[] = {
+        "image_card", "image_edit_card", "tts_card",
+        "voice_lock_card", "music_card", "video_card", NULL
+    };
     const char *plugins[] = { "../plugins", "./plugins", NULL };
     /* (lane SSOT, 2026-08-30) same arbitration as lane_resolve: when a
      * lane matches several card dirs by model, the lane's OWN tool
@@ -6628,6 +6860,31 @@ static void lane_tools_append(std::string &out, const char *lane_want) {
                     fprintf(stderr, "[card-tools] skipping malformed %s\n", tj);
                     free(buf);
                     continue;
+                }
+                /* operator allowlist — the manifest's declared tool name
+                 * must be one of the six. Parsed before anything else so
+                 * no other path can serve a non-operator card. */
+                {
+                    char anorm[64];
+                    anorm[0] = 0;
+                    const char *an = strstr(buf, "\"name\"");
+                    if (an) {
+                        const char *a1 = strchr(an + 6, '"');
+                        const char *a2 = a1 ? strchr(a1 + 1, '"') : NULL;
+                        if (a1 && a2 && (size_t)(a2 - a1 - 1) < sizeof(anorm)) {
+                            snprintf(anorm, sizeof(anorm), "%.*s",
+                                     (int)(a2 - a1 - 1), a1 + 1);
+                            for (char *c2 = anorm; *c2; c2++)
+                                if (*c2 == '-') *c2 = '_';
+                        }
+                    }
+                    int allowed = 0;
+                    for (int ai = 0; ALLOWED_TOOLS[ai]; ai++)
+                        if (strcmp(anorm, ALLOWED_TOOLS[ai]) == 0) {
+                            allowed = 1;
+                            break;
+                        }
+                    if (!allowed) { free(buf); continue; }
                 }
                 if (lane_want[0]) {
                     char dn[64], mdl[64], tnorm[64];
@@ -6704,6 +6961,31 @@ static void lane_tools_append(std::string &out, const char *lane_want) {
                 free(buf);
                 continue;
             }
+            /* operator allowlist — curated pipeline manifests are subject
+             * to the SAME closed surface (none of the six live here, so
+             * this drops them all until an operator name is added). */
+            {
+                char anorm[64];
+                anorm[0] = 0;
+                const char *an = strstr(buf, "\"name\"");
+                if (an) {
+                    const char *a1 = strchr(an + 6, '"');
+                    const char *a2 = a1 ? strchr(a1 + 1, '"') : NULL;
+                    if (a1 && a2 && (size_t)(a2 - a1 - 1) < sizeof(anorm)) {
+                        snprintf(anorm, sizeof(anorm), "%.*s",
+                                 (int)(a2 - a1 - 1), a1 + 1);
+                        for (char *c2 = anorm; *c2; c2++)
+                            if (*c2 == '-') *c2 = '_';
+                    }
+                }
+                int allowed = 0;
+                for (int ai = 0; ALLOWED_TOOLS[ai]; ai++)
+                    if (strcmp(anorm, ALLOWED_TOOLS[ai]) == 0) {
+                        allowed = 1;
+                        break;
+                    }
+                if (!allowed) { free(buf); continue; }
+            }
             if (lane_want[0]) {
                 char dn[64], mdl[64];
                 lane_norm(ent->d_name, dn, sizeof(dn));
@@ -6743,6 +7025,45 @@ static void handle_card_tools(const httplib::Request &req,
     res.set_content(out, "application/json");
 }
 
+/* GET /v1/card-tools/validate?model=<id> — pre-flight: can this model
+ * resolve to a runnable pipeline? Returns 200 {runnable:true,reason} or
+ * 404. Read-only — no run registered, no GPU claimed. The build_pipeline
+ * tool calls this BEFORE composing a draft to refuse broken cards. */
+static void handle_card_validate(const httplib::Request &req,
+                                 httplib::Response &res) {
+    std::string model_q = req.get_param_value("model");
+    if (model_q.empty()) {
+        res.status = 400;
+        res.set_content("{\"error\":\"model param required\"}", "application/json");
+        return;
+    }
+    const char *model = model_q.c_str();
+    /* 1. explicit pipeline.yaml on disk */
+    char probe[131072];
+    if (pipeline_yaml_for_model_ex(model, NULL, probe, sizeof(probe))) {
+        res.set_content("{\"runnable\":true,\"reason\":\"pipeline\"}", "application/json");
+        return;
+    }
+    /* 2. card path: engine.plugin in model.yaml (draft_id or card_knobs
+     *    fires the card-compose hook which generates the real graph) */
+    char etype[64] = "";
+    if (model_engine_plugin(model, etype, sizeof(etype)) == 0) {
+        char ok[128];
+        snprintf(ok, sizeof(ok),
+                 "{\"runnable\":true,\"reason\":\"engine\",\"engine\":\"%s\"}", etype);
+        res.set_content(ok, "application/json");
+        return;
+    }
+    /* not runnable */
+    res.status = 404;
+    char err[256];
+    snprintf(err, sizeof(err),
+             "{\"error\":\"model '%s' has no pipeline.yaml or engine.plugin "
+             "— cannot run. Use the lane's dedicated card tool.\","
+             "\"runnable\":false}", model);
+    res.set_content(err, "application/json");
+}
+
 /* (editor lane law, 2026-08-31) The Tech Noir editor (served by the card
  * deck at /editor) syncs its registries through a fixed set of /v1 lanes.
  * The deck proxies the WHOLE /v1 prefix here, so every lane the editor
@@ -6757,34 +7078,39 @@ static void handle_lane_registry(const httplib::Request &req,
     std::string path = req.path;
     std::string body;
     if (path == "/v1/forms") {
-        /* the compose-form list: one entry per lane pipeline, same names
-         * the card tools door already publishes */
-        body = "{\"forms\":[";
-        DIR *[REDACTED 2026-11-05] = opendir("../pipelines");
-        int n = 0;
-        if ([REDACTED 2026-11-05]) {
-            struct dirent *e;
-            while ((e = readdir([REDACTED 2026-11-05])) != NULL) {
-                char p[600];
-                snprintf(p, sizeof(p), "../pipelines/%s/pipeline.yaml",
-                         e->d_name);
-                struct stat st;
-                if (e->d_name[0] == '_' || e->d_name[0] == '.'
-                        || stat(p, &st) != 0)
-                    continue;
-                char safe[256];
-                snprintf(safe, sizeof(safe), "%s", e->d_name);
-                for (char *c = safe; *c; c++)
-                    if ((unsigned char)*c < 0x20 || *c == '"' || *c == '\\')
-                        *c = '_';
-                body += (n ? "," : "");
-                body += "{\"id\":\"" + std::string(safe)
-                      + "\",\"name\":\"" + std::string(safe) + "\"}";
-                n++;
-            }
-            closedir([REDACTED 2026-11-05]);
-        }
-        body += "]}";
+        /* (2026-09-01 operator card law) /v1/forms serves EXACTLY the six
+         * operator action cards in the Ray wire shape the golden editor's
+         * Cards sidebar consumes — an OBJECT map; the membership test is
+         * "declares a sidebar_key". The pipeline-dir walk this replaces
+         * served the curated flow pipelines as pseudo-forms (trash in the
+         * add-card view). Same closed surface as the card-tools gate. */
+        body =
+          "{\"forms\":{"
+          "\"image-gen\":{\"label\":\"Image\",\"genre\":\"image\","
+            "\"order\":1,\"plugin\":\"comfyui\","
+            "\"sidebar_key\":\"image\","
+            "\"default_service\":\"krea-2\",\"hidden\":false},"
+          "\"image-edit\":{\"label\":\"Image Edit\",\"genre\":\"image\","
+            "\"order\":2,\"plugin\":\"comfyui\","
+            "\"sidebar_key\":\"image-edit\","
+            "\"default_service\":\"img-edit\",\"hidden\":false},"
+          "\"tts\":{\"label\":\"Speech\",\"genre\":\"audio\","
+            "\"order\":3,\"plugin\":\"audio-cpp\","
+            "\"sidebar_key\":\"audio\","
+            "\"default_service\":\"qwen3-tts\",\"hidden\":false},"
+          "\"voice-lock\":{\"label\":\"Voice Lock\",\"genre\":\"audio\","
+            "\"order\":4,\"plugin\":\"audio-cpp\","
+            "\"sidebar_key\":\"audio\","
+            "\"default_service\":\"qwen3_tts_voicedesign\",\"hidden\":false},"
+          "\"music\":{\"label\":\"Music\",\"genre\":\"audio\","
+            "\"order\":5,\"plugin\":\"audio-cpp\","
+            "\"sidebar_key\":\"audio\","
+            "\"default_service\":\"music3\",\"hidden\":false},"
+          "\"h3-timeline\":{\"label\":\"H3 Timeline\",\"genre\":\"video\","
+            "\"order\":6,\"plugin\":\"comfyui\","
+            "\"sidebar_key\":\"video\","
+            "\"default_service\":\"h3-timeline\",\"hidden\":false}"
+          "}}";
     } else if (path == "/v1/shell") {
         body = "{\"entries\":[]}";
     } else if (path == "/v1/right-panes") {
@@ -6815,6 +7141,783 @@ static void handle_lane_registry(const httplib::Request &req,
     }
     res.set_header("Cache-Control", "no-store");
     res.set_content(body, "application/json");
+}
+
+/* ── (2026-09-01 THE EMPTY-CARD FIX) card.yaml parameter surface ────────
+ *
+ * The editor renders ONLY spec-declared fields ("ONLY spec-declared
+ * fields render" — web/editor/src/surfaces/pipeline/pipelineParamFields).
+ * handle_form_spec served defaults with ZERO field declarations, so every
+ * agent-composed card rendered an empty shell (model selector, no
+ * prompt/seed/width/height). The resolved per-parameter declaration
+ * already lives in the PLUGIN that owns the lane:
+ *     plugins/<owner>/cards/<card>/card.yaml → `parameters:`
+ * (the 1:1 port of the ray project's form_generate spec — same names,
+ * types, ranges, defaults, tooltips, visibility conditions).
+ *
+ * card_spec_json() reads that file GENERICALLY — no lane name, no model
+ * id, no field name is known here (Plugin Architecture Law) — and emits
+ * the `"fields":[…],"schema_groups":[…]` JSON tail that handle_form_spec
+ * appends to its response. `families:` in the card matches the model
+ * (underscore/hyphen-insensitive, family-id prefix of model id counts:
+ * qwen3_tts covers qwen3_tts_voicedesign). `$samplers` / `$schedulers`
+ * option refs resolve from plugins/melite-core/models/field_options.yaml
+ * (the ONE vocabulary — never hand-copied). Binary types (image/audio/
+ * video/file) are excluded from the flat `fields` list (the editor has
+ * no form-input path for them) but stay in `schema_groups` so SlotGrid
+ * null-seeds attach squares.
+ */
+#define CS_MAX_FIELDS 96
+
+struct cs_field {
+    char name[64];
+    char type[24];
+    char label[128];
+    char group[48];
+    char tooltip[640];
+    char placeholder[256];
+    char visible_when[256];
+    char defval[160];      /* raw default: number or string */
+    char options[512];     /* raw: "", "$samplers", "[a,b]", or block items */
+    char families[256];    /* raw families list or "" */
+    char zone[24];         /* (2026-09-01 slots+mods) inputs|mods|params… */
+    double order, width, columns, minv, maxv, stepv;
+    int has_order, has_width, has_columns, has_min, has_max, has_step;
+    int required;
+};
+
+/* cut a trailing "  # comment" that is not inside quotes */
+static void cs_cut_comment(char *s) {
+    int inq = 0;
+    for (char *p = s; *p; p++) {
+        if (*p == '"') inq = !inq;
+        else if (*p == '#' && !inq && p > s &&
+                 (p[-1] == ' ' || p[-1] == '\t')) { *p = 0; return; }
+    }
+}
+
+/* trim spaces both ends; strip ONE quote pair */
+static void cs_clean(char *s) {
+    size_t l = strlen(s);
+    while (l && (s[l-1] == ' ' || s[l-1] == '\t' || s[l-1] == '\r' ||
+                 s[l-1] == '\n')) s[--l] = 0;
+    char *p = s;
+    while (*p == ' ' || *p == '\t') p++;
+    if (p != s) memmove(s, p, strlen(p) + 1);
+    l = strlen(s);
+    if (l >= 2 && ((s[0] == '"' && s[l-1] == '"') ||
+                   (s[0] == '\'' && s[l-1] == '\''))) {
+        memmove(s, s + 1, l - 2);
+        s[l-2] = 0;
+    }
+}
+
+static int cs_is_number(const char *s) {
+    if (!*s) return 0;
+    const char *p = s;
+    if (*p == '-' || *p == '+') p++;
+    int digits = 0, dots = 0;
+    for (; *p; p++) {
+        if (*p >= '0' && *p <= '9') digits++;
+        else if (*p == '.') { if (++dots > 1) return 0; }
+        else return 0;
+    }
+    return digits > 0;
+}
+
+/* normalize an id for matching: '_' → '-' */
+static void cs_norm(const char *in, char *out, size_t cap) {
+    size_t i = 0;
+    for (; in[i] && i < cap - 1; i++)
+        out[i] = in[i] == '_' ? '-' : in[i];
+    out[i] = 0;
+}
+
+/* does this card.yaml's families: cover `model`? 0 = yes */
+static int cs_families_match(const char *path, const char *model) {
+    char nmodel[96];
+    cs_norm(model, nmodel, sizeof(nmodel));
+    FILE *f = fopen(path, "r");
+    if (!f) return 0;
+    char line[512];
+    int in_fam = 0, match = 0;
+    while (fgets(line, sizeof(line), f)) {
+        cs_cut_comment(line);
+        if (line[0] == 0 || line[0] == '\n' || line[0] == '\r') continue;
+        if (strncmp(line, "families:", 9) == 0) { in_fam = 1; continue; }
+        if (in_fam) {
+            if (line[0] != ' ') break;             /* next section */
+            char *p = line;
+            while (*p == ' ') p++;
+            if (strncmp(p, "- id:", 5) == 0) {
+                char fam[96];
+                snprintf(fam, sizeof(fam), "%s", p + 5);
+                cs_clean(fam);
+                char nfam[96];
+                cs_norm(fam, nfam, sizeof(nfam));
+                /* EXACT normalized match only. The earlier prefix rule
+                 * (family id as prefix of model id) let the voice-lock
+                 * STUB (family qwen3_tts, no parameters:) shadow tts/
+                 * card.yaml for model qwen3-tts — a parameterless match
+                 * starves the card of every field. Families that must
+                 * cover several models list each id explicitly. */
+                if (strcmp(nfam, nmodel) == 0) {
+                    match = 1;
+                    break;
+                }
+                continue;
+            }
+            /* any non "- id:" line at indent while in families = list done */
+            if (*p != '-') break;
+        }
+    }
+    fclose(f);
+    return match;
+}
+
+/* find plugins/<owner>/cards/<card>/card.yaml covering the model */
+static int cs_find_card_yaml(const char *model, char *out, size_t cap);
+static void cs_card_identity(const char *model,
+                             char *id_out, size_t id_cap,
+                             char *label_out, size_t label_cap,
+                             char *icon_out, size_t icon_cap,
+                             char *desc_out, size_t desc_cap);
+static void cs_card_identity_path(const char *yp,
+                             char *id_out, size_t id_cap,
+                             char *label_out, size_t label_cap,
+                             char *icon_out, size_t icon_cap,
+                             char *desc_out, size_t desc_cap);
+
+/* (2026-09-02 the operator card law, surface 3) capabilities = the 6
+ * ABILITY cards ONLY — never one-per-model. catalog_to_json's
+ * per-model emission made the add-card picker dump every family in the
+ * tree ("Image ·14, Video ·9, 3D ·13…"). Each capability is the CARD:
+ * label/icon from its card.yaml, families = the card's declared model
+ * pool (the universal interface — the image card fronts
+ * krea-2/z-image/anima/sd), resolved = the backend-precomputed default
+ * route. The tile is the ability; the model is an internal detail. */
+static char *catalog_abilities_splice(char *json) {
+    static const struct { const char *card, *route; } ABIL[] = {
+        {"image-gen",   "krea-2"},
+        {"image-edit",  "img-edit"},
+        {"tts",         "qwen3-tts"},
+        {"voice-lock",  "qwen3_tts_voicedesign"},
+        {"music",       "music3"},
+        /* THE TIMELINE IS THE VIDEO — the card file itself now carries
+         * the h3-timeline identity (card: id h3-timeline, families
+         * [h3-timeline] only). No overrides needed. */
+        {"video-gen",   "h3-timeline"},
+    };
+    size_t bcap = 8192, blen = 0;
+    char *block = (char *)malloc(bcap);
+    blen = jappend(&block, &bcap, blen, "{");
+    int cfirst = 1;
+    for (size_t i = 0; i < sizeof(ABIL) / sizeof(ABIL[0]); i++) {
+        char yp[1200], cid[80], clabel[160], cicon[64], cdesc[512];
+        if (cs_find_card_yaml(ABIL[i].route, yp, sizeof(yp)) != 0) {
+            /* (2026-09-02 no-time fix) the video-gen card declares its
+             * surface as a calls document, not parameters: — the
+             * parameters-filtered finder skips it. Locate by card id. */
+            const char *bases[] = { "plugins", "../plugins", NULL };
+            yp[0] = 0;
+            for (int bi = 0; bases[bi] && !yp[0]; bi++) {
+                char tpath[1200];
+                (void)tpath;
+                /* glob-lite: one readdir level */
+                DIR *[REDACTED 2026-11-05] = opendir(bases[bi]);
+                if (![REDACTED 2026-11-05]) continue;
+                struct dirent *pe;
+                while ((pe = readdir([REDACTED 2026-11-05])) != NULL) {
+                    if (pe->d_name[0] == '.') continue;
+                    snprintf(tpath, sizeof(tpath), "%s/%s/cards/%s/card.yaml",
+                             bases[bi], pe->d_name, ABIL[i].card);
+                    FILE *tf = fopen(tpath, "r");
+                    if (tf) { fclose(tf); snprintf(yp, sizeof(yp), "%s", tpath); break; }
+                }
+                closedir([REDACTED 2026-11-05]);
+            }
+            if (!yp[0]) continue;
+        }
+        cs_card_identity_path(yp, cid, sizeof(cid),
+                              clabel, sizeof(clabel),
+                              cicon, sizeof(cicon),
+                              cdesc, sizeof(cdesc));
+        if (!cid[0]) snprintf(cid, sizeof(cid), "%s", ABIL[i].card);
+        if (!clabel[0]) snprintf(clabel, sizeof(clabel), "%s", ABIL[i].card);
+        /* families: list from the card.yaml */
+        char fams[512];
+        {
+            size_t o = 0;
+            fams[0] = 0;
+            FILE *f = fopen(yp, "r");
+            if (!f) snprintf(fams, sizeof(fams), "[]");
+            else {
+                char line[512];
+                int in_fam = 0;
+                o += (size_t)snprintf(fams + o, sizeof(fams) - o, "[");
+                while (fgets(line, sizeof(line), f)) {
+                    cs_cut_comment(line);
+                    if (line[0]=='\n' || line[0]=='\r' || line[0]==0) continue;
+                    if (line[0] != ' ' && line[0] != '\t') {
+                        in_fam = (strncmp(line, "families:", 9) == 0);
+                        continue;
+                    }
+                    if (!in_fam) continue;
+                    int ind = 0;
+                    while (line[ind] == ' ') ind++;
+                    const char *p = line + ind;
+                    if (ind >= 4 || *p != '-') continue;
+                    p++;
+                    while (*p == ' ') p++;
+                    if (strncmp(p, "id:", 3) != 0) continue;
+                    char val[96];
+                    snprintf(val, sizeof(val), "%s", p + 3);
+                    cs_clean(val);
+                    if (!val[0]) continue;
+                    char *q = json_quote(val);
+                    int rn = snprintf(fams + o, sizeof(fams) - o,
+                                      "%s%s", o > 1 ? "," : "", q);
+                    if (rn > 0 && (size_t)rn < sizeof(fams) - o) o += (size_t)rn;
+                    else { free(q); break; }
+                    free(q);
+                }
+                fclose(f);
+                snprintf(fams + o, sizeof(fams) - o, "]");
+            }
+        }
+        char *lq = json_quote(clabel);
+        char *dq = json_quote(cdesc);
+        char *iq = json_quote(cicon);
+        char iconfrag[96];
+        iconfrag[0] = 0;
+        if (iq[2])                              /* non-empty quoted string */
+            snprintf(iconfrag, sizeof(iconfrag), ",\"icon\":%s", iq);
+        if (!cfirst) blen = jappend(&block, &bcap, blen, ",");
+        cfirst = 0;
+        blen = jappend(&block, &bcap, blen,
+            "\"%s\":{\"label\":%s,\"description\":%s,"
+            "\"default_family\":\"%s\",\"families\":%s,"
+            "\"kind\":\"generation\"%s,"
+            "\"resolved\":{\"family\":\"%s\",\"model\":\"%s\",\"params\":{}}}",
+            cid, lq, (dq[0] ? dq : (char*)"\"\""),
+            ABIL[i].route, fams,
+            iconfrag,
+            ABIL[i].route, ABIL[i].route);
+        free(lq);
+        free(dq);
+        free(iq);
+    }
+    blen = jappend(&block, &bcap, blen, "}");
+    /* splice over the per-model block: from `"capabilities":{` up to
+     * (exclusive) `,"cards":[` */
+    char *cs = strstr(json, "\"capabilities\":{");
+    char *ce = cs ? strstr(cs, "},\"cards\":[") : NULL;
+    if (cs && ce) {
+        size_t keep = (size_t)(cs - json) + strlen("\"capabilities\":");
+        std::string stitched(json, keep);
+        stitched += block;                  /* {entries…} — braces intact */
+        stitched += ce + 1;                 /* from ,"cards":[ … */
+        free(json);
+        json = strdup(stitched.c_str());
+    }
+    free(block);
+    return json;
+}
+
+/* (2026-09-01 the abstraction law) the ABILITY identity of the card that
+ * owns this model: the `card:` block's id + label ("Image", "Music",
+ * "Speech", …). A card is an ABILITY front — the model is an internal
+ * route. The form-spec envelope brands itself with the CARD's label,
+ * never the model's; the model stays in "model"/"service". */
+static void cs_card_identity_path(const char *yp,
+                              char *id_out, size_t id_cap,
+                              char *label_out, size_t label_cap,
+                              char *icon_out, size_t icon_cap,
+                              char *desc_out, size_t desc_cap) {
+    id_out[0] = 0;
+    label_out[0] = 0;
+    if (icon_cap) icon_out[0] = 0;
+    if (desc_cap) desc_out[0] = 0;
+    FILE *f = fopen(yp, "r");
+    if (!f) return;
+    char line[512];
+    int in_card = 0;
+    while (fgets(line, sizeof(line), f)) {
+        cs_cut_comment(line);
+        if (line[0] == '\n' || line[0] == '\r' || line[0] == 0) continue;
+        if (line[0] != ' ' && line[0] != '\t') {
+            in_card = (strncmp(line, "card:", 5) == 0);
+            continue;
+        }
+        if (!in_card) continue;
+        int ind = 0;
+        while (line[ind] == ' ' || line[ind] == '\t') ind++;
+        if (ind >= 4) continue;               /* nested deeper than card: */
+        const char *p = line + ind;
+        char val[200];
+        if (strncmp(p, "label:", 6) == 0) {
+            snprintf(val, sizeof(val), "%s", p + 6);
+            cs_clean(val);
+            if (val[0]) snprintf(label_out, label_cap, "%s", val);
+        } else if (strncmp(p, "icon:", 5) == 0 && icon_cap) {
+            snprintf(val, sizeof(val), "%s", p + 5);
+            cs_clean(val);
+            if (val[0]) snprintf(icon_out, icon_cap, "%s", val);
+        } else if (strncmp(p, "description:", 12) == 0 && desc_cap) {
+            snprintf(val, sizeof(val), "%s", p + 12);
+            cs_clean(val);
+            if (val[0]) snprintf(desc_out, desc_cap, "%s", val);
+        } else if (strncmp(p, "id:", 3) == 0 && !id_out[0]) {
+            snprintf(val, sizeof(val), "%s", p + 3);
+            cs_clean(val);
+            if (val[0]) snprintf(id_out, id_cap, "%s", val);
+        }
+    }
+    fclose(f);
+}
+
+static void cs_card_identity(const char *model,
+                             char *id_out, size_t id_cap,
+                             char *label_out, size_t label_cap,
+                             char *icon_out, size_t icon_cap,
+                             char *desc_out, size_t desc_cap) {
+    char yp[1200];
+    if (cs_find_card_yaml(model, yp, sizeof(yp)) != 0) {
+        id_out[0] = label_out[0] = 0;
+        if (icon_cap) icon_out[0] = 0;
+        if (desc_cap) desc_out[0] = 0;
+        return;
+    }
+    cs_card_identity_path(yp, id_out, id_cap, label_out, label_cap,
+                          icon_out, icon_cap, desc_out, desc_cap);
+}
+
+/* find plugins/<owner>/cards/<card>/card.yaml covering the model */
+static int cs_first_family_is(const char *path, const char *model) {
+    FILE *f = fopen(path, "r");
+    if (!f) return 0;
+    char line[512];
+    int in_fam = 0, first = 1, hit = 0;
+    char norm_model[96];
+    cs_norm((char *)model, norm_model, sizeof(norm_model));
+    while (fgets(line, sizeof(line), f)) {
+        cs_cut_comment(line);
+        if (line[0] == '\n' || line[0] == '\r' || line[0] == 0) continue;
+        if (line[0] != ' ' && line[0] != '\t') {
+            if (hit) break;                    /* first entry decided it */
+            in_fam = (strncmp(line, "families:", 9) == 0);
+            continue;
+        }
+        if (!in_fam) continue;
+        int ind = 0;
+        while (line[ind] == ' ' || line[ind] == '\t') ind++;
+        const char *p = line + ind;
+        if (ind >= 4 || *p != '-') continue;   /* only direct "- id:" rows */
+        p++;
+        while (*p == ' ') p++;
+        if (strncmp(p, "id:", 3) != 0) continue;
+        char val[96];
+        snprintf(val, sizeof(val), "%s", p + 3);
+        cs_clean(val);
+        char norm_val[96];
+        cs_norm(val, norm_val, sizeof(norm_val));
+        if (first) {
+            hit = (strcmp(norm_val, norm_model) == 0);
+            first = 0;
+        }
+    }
+    fclose(f);
+    return hit;
+}
+
+static int cs_find_card_yaml(const char *model, char *out, size_t cap) {
+    const char *bases[] = { "plugins", "../plugins", NULL };
+    /* (2026-09-01 the sole-owner tiebreak) several cards may list a model
+     * among their families — inpaint lists [z-image, img-edit] while
+     * image-edit lists ONLY img-edit. First-match-wins mis-branded the
+     * Image Edit card as "Inpaint". The card whose FIRST family id IS
+     * the model owns it outright; any-family matches are fallbacks. */
+    char cand[1200];
+    cand[0] = 0;
+    for (int bi = 0; bases[bi]; bi++) {
+        DIR *[REDACTED 2026-11-05] = opendir(bases[bi]);
+        if (![REDACTED 2026-11-05]) continue;
+        struct dirent *pe;
+        while ((pe = readdir([REDACTED 2026-11-05])) != NULL) {
+            if (pe->d_name[0] == '.') continue;
+            char cdir[900];
+            snprintf(cdir, sizeof(cdir), "%s/%s/cards", bases[bi], pe->d_name);
+            DIR *cd = opendir(cdir);
+            if (!cd) continue;
+            struct dirent *ce;
+            while ((ce = readdir(cd)) != NULL) {
+                if (ce->d_name[0] == '.') continue;
+                char yp[1200];
+                snprintf(yp, sizeof(yp), "%s/%s/card.yaml", cdir, ce->d_name);
+                FILE *tf = fopen(yp, "r");
+                if (!tf) continue;
+                /* a card without a parameters: block can never yield
+                 * fields — skip it instead of shadowing a real card
+                 * (the voice-lock/music stub bug). */
+                int has_params = 0;
+                char pl[512];
+                while (fgets(pl, sizeof(pl), tf)) {
+                    if (strncmp(pl, "parameters:", 11) == 0) {
+                        has_params = 1;
+                        break;
+                    }
+                }
+                fclose(tf);
+                if (!has_params) continue;
+                /* (operator order 2026-09-02) the form-spec card owner is
+                 * one of THE SIX abilities — image-gen, image-edit, tts,
+                 * voice-lock, music, video-gen. Inpaint/mask-studio/… are
+                 * MODS (they ride the image card via input_image/mask
+                 * slots); they must NEVER brand a model's card surface.
+                 * Without this gate, z-image (inpaint's first listed
+                 * family) rendered the whole inpaint workflow as its
+                 * parameter face. */
+                {
+                    char ccid[80], cclab[160];
+                    cs_card_identity_path(yp, ccid, sizeof(ccid),
+                                          cclab, sizeof(cclab),
+                                          NULL, 0, NULL, 0);
+                    static const char *ALLOWED_CARDS[] = {
+                        "image-gen", "image-edit", "tts", "voice-lock",
+                        "music", "h3-timeline", NULL
+                    };
+                    int ok = 0;
+                    for (int ai = 0; ALLOWED_CARDS[ai]; ai++)
+                        if (strcmp(ccid, ALLOWED_CARDS[ai]) == 0) { ok = 1; break; }
+                    if (!ok) continue;
+                }
+                if (!cs_families_match(yp, model)) continue;
+                if (cs_first_family_is(yp, model)) {
+                    snprintf(out, cap, "%s", yp);
+                    closedir(cd); closedir([REDACTED 2026-11-05]);
+                    return 0;
+                }
+                if (!cand[0]) snprintf(cand, sizeof(cand), "%s", yp);
+            }
+            closedir(cd);
+        }
+        closedir([REDACTED 2026-11-05]);
+    }
+    if (cand[0]) {
+        snprintf(out, cap, "%s", cand);
+        return 0;
+    }
+    return -1;
+}
+
+/* build ["a","b",…] for `list_name` ("samplers"/"schedulers") from
+ * plugins/melite-core/models/field_options.yaml — the ONE vocab */
+static void cs_option_list(const char *list_name, char *out, size_t cap) {
+    size_t o = 0;
+    out[o] = 0;
+    const char *bases[] = { "plugins", "../plugins", NULL };
+    char head[80];
+    snprintf(head, sizeof(head), "%s:", list_name);
+    for (int bi = 0; bases[bi] && o == 0; bi++) {
+        char yp[900];
+        snprintf(yp, sizeof(yp),
+                 "%s/melite-core/models/field_options.yaml", bases[bi]);
+        FILE *f = fopen(yp, "r");
+        if (!f) continue;
+        char line[512];
+        int in_list = 0;
+        while (fgets(line, sizeof(line), f)) {
+            cs_cut_comment(line);
+            if (line[0] == 0 || line[0] == '\n' || line[0] == '\r') continue;
+            if (!in_list) {
+                if (strcmp(line, head) == 0 ||
+                    strncmp(line, head, strlen(head)) == 0 &&
+                    (line[strlen(head)] == '\n' ||
+                     line[strlen(head)] == ' ')) in_list = 1;
+                continue;
+            }
+            if (line[0] != ' ') break;             /* next top-level key */
+            char *p = line;
+            while (*p == ' ') p++;
+            if (*p != '-') break;
+            p++;
+            while (*p == ' ') p++;
+            char item[96];
+            snprintf(item, sizeof(item), "%s", p);
+            cs_clean(item);
+            char *iq = json_quote(item);
+            int rn = snprintf(out + o, cap - o, "%s%s", o ? "," : "[", iq);
+            if (rn > 0 && (size_t)rn < cap - o) o += (size_t)rn;
+            else { free(iq); o = 0; out[0] = 0; break; }
+            free(iq);
+        }
+        fclose(f);
+    }
+    if (o) { snprintf(out + o, cap - o, "]"); }
+    else snprintf(out, cap, "[]");
+}
+
+/* emit one field object into the growable buffer */
+static size_t cs_emit_field(char **buf, size_t *cap, size_t len,
+                            const cs_field *f, int with_group) {
+    len = jappend(buf, cap, len, "{\"name\":\"%s\"", f->name);
+    if (f->type[0])
+        len = jappend(buf, cap, len, ",\"type\":\"%s\"", f->type);
+    if (f->label[0]) {
+        char *q = json_quote(f->label);
+        len = jappend(buf, cap, len, ",\"label\":%s", q);
+        free(q);
+    }
+    if (with_group && f->group[0])
+        len = jappend(buf, cap, len, ",\"group\":\"%s\"", f->group);
+    if (f->has_order)
+        len = jappend(buf, cap, len, ",\"order\":%g", f->order);
+    if (f->has_width)
+        len = jappend(buf, cap, len, ",\"width\":%g", f->width);
+    if (f->has_columns)
+        len = jappend(buf, cap, len, ",\"columns\":%g", f->columns);
+    if (f->has_min)
+        len = jappend(buf, cap, len, ",\"min\":%g", f->minv);
+    if (f->has_max)
+        len = jappend(buf, cap, len, ",\"max\":%g", f->maxv);
+    if (f->has_step)
+        len = jappend(buf, cap, len, ",\"step\":%g", f->stepv);
+    if (f->required)
+        len = jappend(buf, cap, len, ",\"required\":true");
+    if (f->defval[0]) {
+        if (cs_is_number(f->defval))
+            len = jappend(buf, cap, len, ",\"default\":%s", f->defval);
+        else {
+            char *q = json_quote(f->defval);
+            len = jappend(buf, cap, len, ",\"default\":%s", q);
+            free(q);
+        }
+    }
+    if (f->placeholder[0]) {
+        char *q = json_quote(f->placeholder);
+        len = jappend(buf, cap, len, ",\"placeholder\":%s", q);
+        free(q);
+    }
+    if (f->tooltip[0]) {
+        char *q = json_quote(f->tooltip);
+        len = jappend(buf, cap, len, ",\"tooltip\":%s", q);
+        free(q);
+    }
+    if (f->visible_when[0]) {
+        char *q = json_quote(f->visible_when);
+        len = jappend(buf, cap, len, ",\"visible_when\":%s", q);
+        free(q);
+    }
+    if (f->options[0]) {
+        char opts[1024];
+        if (strcmp(f->options, "$samplers") == 0)
+            cs_option_list("samplers", opts, sizeof(opts));
+        else if (strcmp(f->options, "$schedulers") == 0)
+            cs_option_list("schedulers", opts, sizeof(opts));
+        else if (f->options[0] == '[')
+            snprintf(opts, sizeof(opts), "%s", f->options);
+        else
+            /* block-style list accumulated as "a","b" — bracket it */
+            snprintf(opts, sizeof(opts), "[%s]", f->options);
+        len = jappend(buf, cap, len, ",\"options\":%s", opts);
+    }
+    len = jappend(buf, cap, len, "}");
+    return len;
+}
+
+/* Parse card.yaml `parameters:` → "fields":[…],"schema_groups":[…] */
+static char *card_spec_json(const char *model) {
+    char yp[1200];
+    if (cs_find_card_yaml(model, yp, sizeof(yp)) != 0) return NULL;
+    FILE *f = fopen(yp, "r");
+    if (!f) return NULL;
+
+    cs_field fields[CS_MAX_FIELDS];
+    int nf = 0;
+    cs_field *cur = NULL;
+    char pending_key[64] = "";   /* attr awaiting block-style "- item" list */
+    char line[768];
+    int in_params = 0;
+    while (fgets(line, sizeof(line), f)) {
+        cs_cut_comment(line);
+        if (line[0] == '\n' || line[0] == '\r' || line[0] == 0) continue;
+        if (!in_params) {
+            if (strcmp(line, "parameters:\n") == 0 ||
+                strcmp(line, "parameters:") == 0) in_params = 1;
+            continue;
+        }
+        if (line[0] != ' ' && line[0] != '\t') break;   /* next section */
+        /* indent */
+        int ind = 0;
+        while (line[ind] == ' ') ind++;
+        char *p = line + ind;
+        if (*p == '-') {
+            char item[256];
+            snprintf(item, sizeof(item), "%s", p + 1);
+            cs_clean(item);
+            if (cur && pending_key[0] &&
+                strcmp(pending_key, "options") == 0) {
+                if (cur->options[0])
+                    snprintf(cur->options + strlen(cur->options),
+                             sizeof(cur->options) - strlen(cur->options),
+                             ",\"%s\"", item);
+                else
+                    snprintf(cur->options, sizeof(cur->options),
+                             "\"%s\"", item);
+            }
+            continue;
+        }
+        char *colon = strchr(p, ':');
+        if (!colon) continue;
+        *colon = 0;
+        char key[64];
+        snprintf(key, sizeof(key), "%s", p);
+        cs_clean(key);
+        char val[640];
+        snprintf(val, sizeof(val), "%s", colon + 1);
+        cs_clean(val);
+        pending_key[0] = 0;
+        if (ind <= 2) {                    /* field name line */
+            if (nf >= CS_MAX_FIELDS) break;
+            cur = &fields[nf++];
+            memset(cur, 0, sizeof(*cur));
+            snprintf(cur->name, sizeof(cur->name), "%s", key);
+            if (val[0]) {                  /* inline default `name: val` */
+                snprintf(cur->defval, sizeof(cur->defval), "%s", val);
+            }
+            continue;
+        }
+        if (!cur) continue;
+        if      (strcmp(key, "type") == 0) snprintf(cur->type, sizeof(cur->type), "%s", val);
+        else if (strcmp(key, "label") == 0) snprintf(cur->label, sizeof(cur->label), "%s", val);
+        else if (strcmp(key, "group") == 0) snprintf(cur->group, sizeof(cur->group), "%s", val);
+        else if (strcmp(key, "zone") == 0) snprintf(cur->zone, sizeof(cur->zone), "%s", val);
+        else if (strcmp(key, "tooltip") == 0) snprintf(cur->tooltip, sizeof(cur->tooltip), "%s", val);
+        else if (strcmp(key, "placeholder") == 0) snprintf(cur->placeholder, sizeof(cur->placeholder), "%s", val);
+        else if (strcmp(key, "visible_when") == 0) snprintf(cur->visible_when, sizeof(cur->visible_when), "%s", val);
+        else if (strcmp(key, "default") == 0) snprintf(cur->defval, sizeof(cur->defval), "%s", val);
+        else if (strcmp(key, "options") == 0) {
+            if (!val[0]) snprintf(pending_key, sizeof(pending_key), "options");
+            else snprintf(cur->options, sizeof(cur->options), "%s", val);
+        }
+        else if (strcmp(key, "families") == 0) snprintf(cur->families, sizeof(cur->families), "%s", val);
+        else if (strcmp(key, "required") == 0) cur->required = (strcmp(val, "true") == 0);
+        else if (strcmp(key, "order") == 0)  { cur->order = atof(val); cur->has_order = 1; }
+        else if (strcmp(key, "width") == 0)  { cur->width = atof(val); cur->has_width = 1; }
+        else if (strcmp(key, "columns") == 0){ cur->columns = atof(val); cur->has_columns = 1; }
+        else if (strcmp(key, "min") == 0)    { cur->minv = atof(val); cur->has_min = 1; }
+        else if (strcmp(key, "max") == 0)    { cur->maxv = atof(val); cur->has_max = 1; }
+        else if (strcmp(key, "step") == 0)   { cur->stepv = atof(val); cur->has_step = 1; }
+    }
+    fclose(f);
+    if (nf == 0) return NULL;
+
+    /* families filter: a field naming families this model is not in drops */
+    char nmodel[96];
+    cs_norm(model, nmodel, sizeof(nmodel));
+    int keep[CS_MAX_FIELDS];
+    for (int i = 0; i < nf; i++) {
+        keep[i] = 1;
+        if (!fields[i].families[0]) continue;
+        /* parse "[a, b]" style list */
+        char fl[256];
+        snprintf(fl, sizeof(fl), "%s", fields[i].families);
+        for (char *c = fl; *c; c++)
+            if (*c == '[' || *c == ']' || *c == ',') *c = ' ';
+        keep[i] = 0;
+        char *tok = strtok(fl, " ");
+        char ftok[96];
+        while (tok) {
+            cs_norm(tok, ftok, sizeof(ftok));
+            if (strcmp(ftok, nmodel) == 0) keep[i] = 1;
+            tok = strtok(NULL, " ");
+        }
+    }
+
+    size_t cap = 4096;
+    char *out = (char *)malloc(cap);
+    size_t len = 0;
+    /* (2026-09-01 the abstraction law) the card's ABILITY identity leads
+     * the fragment: "form" = the card id, "service" = the resolved model
+     * route. The editor brands the card "Image"/"Music"/… from these. */
+    {
+        char cid[80], clabel[160];
+        cs_card_identity(model, cid, sizeof(cid), clabel, sizeof(clabel),
+                         NULL, 0, NULL, 0);
+        if (cid[0])
+            len = jappend(&out, &cap, len, "\"form\":\"%s\",", cid);
+        len = jappend(&out, &cap, len, "\"service\":\"%s\",", model);
+    }
+    /* flat fields — binary types excluded (no form-input path; the
+     * schema_groups pass below still exposes them for slot seeding) */
+    len = jappend(&out, &cap, len, "\"fields\":[");
+    int first = 1;
+    for (int i = 0; i < nf; i++) {
+        if (!keep[i]) continue;
+        const char *t = fields[i].type;
+        if (strcmp(t, "image") == 0 || strcmp(t, "audio") == 0 ||
+            strcmp(t, "video") == 0 || strcmp(t, "file") == 0) continue;
+        if (!first) len = jappend(&out, &cap, len, ",");
+        first = 0;
+        len = cs_emit_field(&out, &cap, len, &fields[i], 1);
+    }
+    len = jappend(&out, &cap, len, "],\"schema_groups\":[");
+    /* group by `group` attr, first-seen order */
+    char gseen[CS_MAX_FIELDS][48];
+    int ng = 0;
+    first = 1;
+    for (int i = 0; i < nf; i++) {
+        if (!keep[i]) continue;
+        const char *g = fields[i].group[0] ? fields[i].group : "";
+        int gi = -1;
+        for (int k = 0; k < ng; k++)
+            if (strcmp(gseen[k], g) == 0) { gi = k; break; }
+        if (gi < 0) { snprintf(gseen[ng], sizeof(gseen[ng]), "%s", g); gi = ng++; }
+        (void)gi;
+    }
+    for (int k = 0; k < ng; k++) {
+        if (!first) len = jappend(&out, &cap, len, ",");
+        first = 0;
+        /* (2026-09-01 slots+mods) the group's zone = the first zone its
+         * fields declare ("mods" for loras_controlnet, "inputs" for slot
+         * groups). Untagged → params — the wire default formZones.zoneOf
+         * expects; the editor renders Inputs via SlotGrid + Mods via
+         * SubcardGrid off this tag. */
+        const char *gz = "";
+        for (int i = 0; i < nf && !gz[0]; i++) {
+            if (!keep[i]) continue;
+            const char *g = fields[i].group[0] ? fields[i].group : "";
+            if (strcmp(g, gseen[k]) == 0 && fields[i].zone[0])
+                gz = fields[i].zone;
+        }
+        if (!gz[0]) gz = "params";
+        if (gseen[k][0]) {
+            char gl[64];
+            snprintf(gl, sizeof(gl), "%s", gseen[k]);
+            gl[0] = gl[0] >= 'a' && gl[0] <= 'z' ? gl[0] - 32 : gl[0];
+            char *gq = json_quote(gl);
+            len = jappend(&out, &cap, len,
+                          "{\"id\":\"%s\",\"label\":%s,\"order\":%d,\"zone\":\"%s\",\"fields\":[",
+                          gseen[k], gq, k, gz);
+            free(gq);
+        } else {
+            len = jappend(&out, &cap, len,
+                          "{\"id\":\"\",\"label\":\"Parameters\",\"order\":%d,\"zone\":\"%s\",\"fields\":[",
+                          k, gz);
+        }
+        int ffirst = 1;
+        for (int i = 0; i < nf; i++) {
+            if (!keep[i]) continue;
+            const char *g = fields[i].group[0] ? fields[i].group : "";
+            if (strcmp(g, gseen[k]) != 0) continue;
+            if (!ffirst) len = jappend(&out, &cap, len, ",");
+            ffirst = 0;
+            len = cs_emit_field(&out, &cap, len, &fields[i], 0);
+        }
+        len = jappend(&out, &cap, len, "]}");
+    }
+    len = jappend(&out, &cap, len, "]");
+    return out;
 }
 
 static void handle_form_spec(const httplib::Request &req,
@@ -6879,17 +7982,26 @@ static void handle_form_spec(const httplib::Request &req,
         return;
     }
 
-    /* enhance recipe: the prompt_upscale block of inference.yaml, verbatim */
+    /* enhance recipes: the model unit's inference.yaml blocks, verbatim.
+     * prompt_upscale → the prompt Enhance recipe; lyrics_upscale → the
+     * lyrics Enhance recipe (music cards). Both blocks are PLUGIN-OWNED
+     * data — the server only reads them (Plugin Architecture Law). */
     char recipe[4096] = "";
+    char lrecipe[4096] = "";
+    static const char *kPrompt = "prompt_upscale:";
+    static const char *kLyrics = "lyrics_upscale:";
+    char *blocks[2] = { recipe, lrecipe };
+    const char *keys[2] = { kPrompt, kLyrics };
     if (m->inference_path) {
-        FILE *f = fopen(m->inference_path, "rb");
-        if (f) {
+        for (int bi = 0; bi < 2; bi++) {
+            FILE *f = fopen(m->inference_path, "rb");
+            if (!f) continue;
             char line[512];
             int in_block = 0;
             size_t o = 0;
             while (fgets(line, sizeof(line), f) != NULL &&
                    o + 600 < sizeof(recipe)) {
-                if (strncmp(line, "prompt_upscale:", 15) == 0) {
+                if (strncmp(line, keys[bi], strlen(keys[bi])) == 0) {
                     in_block = 1;
                     continue;
                 }
@@ -6907,7 +8019,7 @@ static void handle_form_spec(const httplib::Request &req,
                          * pushed o past the 4096 array and the next
                          * append underflowed sizeof-o into an
                          * unbounded stack write. */
-                        int rn = snprintf(recipe + o, sizeof(recipe) - o,
+                        int rn = snprintf(blocks[bi] + o, sizeof(recipe) - o,
                                           "%s%.*s", o ? "; " : "",
                                           (int)ll, p);
                         if (rn > 0)
@@ -6920,8 +8032,88 @@ static void handle_form_spec(const httplib::Request &req,
             fclose(f);
         }
     }
+    /* (2026-09-01 the golden-cards revival) family dedupe: when several
+     * model dirs share a family id, the catalog row may carry the FIRST
+     * dir's inference_path (qwen3-tts-1-7b, ace-step-*) while the model's
+     * OWN id-named dir holds the recipe. If the primary read came up
+     * empty, probe the id-named dir before giving up — still pure data
+     * lookup, no lane knowledge (Plugin Architecture Law). */
+    if (!recipe[0] && !lrecipe[0]) {
+        char ipath[1200];
+        const char *roots[] = { "../plugins", "./plugins", NULL };
+        const char *genres[] = { "image", "video", "audio", "text", NULL };
+        for (int ri = 0; roots[ri] && !recipe[0]; ri++)
+            for (int gi = 0; genres[gi]; gi++) {
+                snprintf(ipath, sizeof(ipath), "%s/*/models/%s/%s/inference.yaml",
+                         roots[ri], genres[gi], m->id);
+                /* glob-free single wildcard walk on the owner segment */
+                DIR *od = opendir(roots[ri]);
+                if (!od) continue;
+                struct dirent *own;
+                while ((own = readdir(od)) != NULL) {
+                    if (own->d_name[0] == '.') continue;
+                    char cand[1200];
+                    snprintf(cand, sizeof(cand), "%s/%s/models/%s/%s/inference.yaml",
+                             roots[ri], own->d_name, genres[gi], m->id);
+                    FILE *tf = fopen(cand, "rb");
+                    if (!tf) continue;
+                    fclose(tf);
+                    /* found: re-run both block scans against this file */
+                    for (int bi = 0; bi < 2; bi++) {
+                        FILE *f = fopen(cand, "rb");
+                        if (!f) continue;
+                        char line[512];
+                        int in_block = 0;
+                        size_t o = 0;
+                        while (fgets(line, sizeof(line), f) != NULL &&
+                               o + 600 < sizeof(recipe)) {
+                            if (strncmp(line, keys[bi], strlen(keys[bi])) == 0) {
+                                in_block = 1;
+                                continue;
+                            }
+                            if (in_block) {
+                                if (line[0] != ' ' && line[0] != '#'
+                                        && line[0] != '\t' && line[0] != '\n'
+                                        && line[0] != 0)
+                                    break;
+                                const char *p = line;
+                                while (*p == ' ' || *p == '\t') p++;
+                                size_t ll = strlen(p);
+                                while (ll && (p[ll-1] == '\n' || p[ll-1] == '\r')) ll--;
+                                if (ll) {
+                                    int rn = snprintf(blocks[bi] + o,
+                                                      sizeof(recipe) - o,
+                                                      "%s%.*s", o ? "; " : "",
+                                                      (int)ll, p);
+                                    if (rn > 0)
+                                        o += (size_t)rn < sizeof(recipe) - 1 - o
+                                                 ? (size_t)rn
+                                                 : sizeof(recipe) - 1 - o;
+                                }
+                            }
+                        }
+                        fclose(f);
+                    }
+                    break;              /* first owner with the file wins */
+                }
+                closedir(od);
+                if (recipe[0]) break;
+            }
+    }
     char *recipeq = json_quote(recipe);
-    char *labelq = json_quote(m->label ? m->label : m->id);
+    char *lrecipeq = json_quote(lrecipe);
+    /* (2026-09-01 the abstraction law) the spec is branded by the CARD's
+     * ability label ("Image", "Music", "Speech", "Video", "Image Edit",
+     * "Voice Lock") — the model is an internal route, never the face. */
+    char cardlabel[160] = "";
+    {
+        char cid[80];
+        cs_card_identity(m->id, cid, sizeof(cid),
+                         cardlabel, sizeof(cardlabel),
+                         NULL, 0, NULL, 0);
+    }
+    char *labelq = json_quote(cardlabel[0] ? cardlabel
+                               : (m->label ? m->label : m->id));
 
     size_t cap = 8192 + strlen(recipeq) + strlen(labelq);
     char *out = (char *)malloc(cap);
@@ -6936,21 +8128,327 @@ static void handle_form_spec(const httplib::Request &req,
                                 i ? "," : "", m->default_keys[i],
                                 m->default_vals[i]);
     len = jappend(&out, &cap, len, "},\"variants\":[");
-    for (size_t g = 0; g < m->n_variant_groups; g++) {
-        const catalog_variant_group *vg = &m->variant_groups[g];
-        len = jappend(&out, &cap, len,
-                                "%s{\"name\":\"%s\",\"options\":[",
-                                g ? "," : "", vg->name ? vg->name : "");
-        for (size_t o = 0; o < vg->n_options; o++)
-            len = jappend(&out, &cap, len, "%s\"%s\"",
-                                    o ? "," : "",
-                                    vg->options[o].id ? vg->options[o].id : "");
-        len = jappend(&out, &cap, len, "]}");
+    /* (2026-09-02 variant/quant restore) the Model zone renders variant
+     * toggle rows + quant cells from VariantDef[] — {id, label,
+     * defaults (REQUIRED), group, quant?, route?}. The matrix IS the
+     * filesystem: <model>/variants/<name>/variant.yaml (label, hint,
+     * route, quants:{tier:{label,route,quant,vram_peak_gb}}). The old
+     * {name, options[]} shape starved the Model zone — the card showed
+     * a raw model list instead of Turbo/Raw + INT8 pickers. */
+    char vdefs[4096], vgrps[512];
+    {
+        size_t vo = 0, go = 0;
+        vdefs[0] = 0;
+        vgrps[0] = 0;
+        vo += (size_t)snprintf(vdefs + vo, sizeof(vdefs) - vo, "[");
+        int vfirst = 1;
+        char mdir[1100];
+        mdir[0] = 0;
+        if (m->inference_path && m->inference_path[0]) {
+            snprintf(mdir, sizeof(mdir), "%s", m->inference_path);
+            char *slash = strrchr(mdir, '/');
+            if (slash) *slash = 0;
+        }
+        if (mdir[0]) {
+            char vdir[1200];
+            snprintf(vdir, sizeof(vdir), "%s/variants", mdir);
+            DIR *vd = opendir(vdir);
+            if (vd) {
+                struct dirent *ve;
+                while ((ve = readdir(vd)) != NULL) {
+                    if (ve->d_name[0] == '.') continue;
+                    char vyp[1400];
+                    snprintf(vyp, sizeof(vyp), "%s/%s/variant.yaml",
+                             vdir, ve->d_name);
+                    FILE *vf = fopen(vyp, "r");
+                    if (!vf) continue;
+                    char vline[512];
+                    char vlab[128] = "", vhint[256] = "", vroute[128] = "";
+                    char qlab[128] = "", qroute[128] = "", qid[64] = "";
+                    double vram = 0.0;
+                    int in_quants = 0, got_quant = 0;
+                    while (fgets(vline, sizeof(vline), vf)) {
+                        cs_cut_comment(vline);
+                        if (vline[0]=='\n'||vline[0]=='\r'||vline[0]==0) continue;
+                        if (vline[0] != ' ' && vline[0] != '\t') {
+                            in_quants = (strncmp(vline, "quants:", 7) == 0);
+                            if (in_quants) continue;
+                            char *c = strchr(vline, ':');
+                            if (!c) continue;
+                            *c = 0;
+                            char vk[64], vv[300];
+                            snprintf(vk, sizeof(vk), "%s", vline);
+                            cs_clean(vk);
+                            snprintf(vv, sizeof(vv), "%s", c + 1);
+                            cs_clean(vv);
+                            if      (!strcmp(vk,"label")) snprintf(vlab,sizeof(vlab),"%s",vv);
+                            else if (!strcmp(vk,"hint"))  snprintf(vhint,sizeof(vhint),"%s",vv);
+                            else if (!strcmp(vk,"route")) snprintf(vroute,sizeof(vroute),"%s",vv);
+                        } else if (in_quants && !got_quant) {
+                            /* first quant tier block: "  int8:" */
+                            int qi = 0;
+                            while (vline[qi]==' ') qi++;
+                            if (qi != 2) continue;
+                            char *c = strchr(vline, ':');
+                            if (!c || vline[qi]=='-') continue;
+                            *c = 0;
+                            snprintf(qid, sizeof(qid), "%s", vline + qi);
+                            cs_clean(qid);
+                            if (!qid[0]) continue;
+                            got_quant = 1;   /* attrs follow in-block */
+                        } else if (in_quants && got_quant && !qlab[0]) {
+                            char *c = strchr(vline, ':');
+                            if (!c) continue;
+                            *c = 0;
+                            char qk[64], qv[300];
+                            snprintf(qk, sizeof(qk), "%s", vline);
+                            cs_clean(qk);
+                            while (qk[0] && (qk[0]==' '||qk[0]=='\t'))
+                                memmove(qk, qk+1, strlen(qk));
+                            snprintf(qv, sizeof(qv), "%s", c + 1);
+                            cs_clean(qv);
+                            if      (!strcmp(qk,"label")) snprintf(qlab,sizeof(qlab),"%s",qv);
+                            else if (!strcmp(qk,"route")) snprintf(qroute,sizeof(qroute),"%s",qv);
+                            else if (!strcmp(qk,"vram_peak_gb")) vram = atof(qv);
+                        }
+                    }
+                    fclose(vf);
+                    if (!vlab[0]) snprintf(vlab, sizeof(vlab), "%s", ve->d_name);
+                    if (vlab[0] >= 'a' && vlab[0] <= 'z') vlab[0] -= 32;
+                    char *lq = json_quote(vlab);
+                    char *hq = json_quote(vhint);
+                    char *rq = json_quote(vroute[0] ? vroute : m->id);
+                    vo += (size_t)snprintf(vdefs + vo, sizeof(vdefs) - vo,
+                        "%s{\"id\":\"%s\",\"label\":%s,\"defaults\":{},"
+                        "\"group\":\"Variant\",\"route\":%s,"
+                        "\"hint\":%s,\"engine\":\"%s\"}",
+                        vfirst ? "" : ",", ve->d_name, lq, rq,
+                        hq[2] ? hq : (char*)"null",
+                        m->engine_plugin ? m->engine_plugin : "");
+                    vfirst = 0;
+                    free(lq); free(hq); free(rq);
+                    if (got_quant && qid[0]) {
+                        /* dedupe (group,id): one INT8 cell in the Quant
+                         * row regardless of how many variants list it */
+                        int dup = 0;
+                        for (char *sp = vdefs; (sp = strstr(sp, "\"group\":\"Quant\"")); ) {
+                            char *cell = sp;
+                            while (cell > vdefs && *cell != '{') cell--;
+                            if (cell < vdefs) cell = vdefs;
+                            if (strstr(cell, "\"id\":\"\"") != NULL) break;
+                            char probe[96];
+                            snprintf(probe, sizeof(probe), "\"id\":\"%s\"", qid);
+                            char *close = strchr(sp, '}');
+                            if (close && strstr(cell, probe) < close) { dup = 1; break; }
+                            sp += 14;
+                        }
+                        if (dup) continue;
+                        if (!qlab[0]) snprintf(qlab, sizeof(qlab), "%s", qid);
+                        char *qlq = json_quote(qlab);
+                        char *qrq = json_quote(qroute[0] ? qroute : m->id);
+                        vo += (size_t)snprintf(vdefs + vo, sizeof(vdefs) - vo,
+                            ",{\"id\":\"%s\",\"label\":%s,\"defaults\":{},"
+                            "\"group\":\"Quant\",\"quant\":\"%s\",\"route\":%s,"
+                            "\"vram_peak_gb\":%g}",
+                            qid, qlq, qid, qrq, vram);
+                        free(qlq); free(qrq);
+                    }
+                }
+                closedir(vd);
+            }
+        }
+        vo += (size_t)snprintf(vdefs + vo, sizeof(vdefs) - vo, "]");
+        if (vo) vdefs[vo - 1] = 0;      /* strip outer ] — envelope has [ */
+        go += (size_t)snprintf(vgrps + go, sizeof(vgrps) - go,
+            "\"Variant\":{\"label\":\"Variant\"},\"Quant\":{\"label\":\"Quant\"}");
+    }
+    len = jappend(&out, &cap, len, "%s", vdefs + 1);
+    /* (2026-09-01 slots+mods; fixed 2026-09-02 contract) features.modifiers
+     * = ModifierKind objects on the wire (schema.d.ts ModifierKind: kind,
+     * label, cardinality, param_key, fields[]). Bag-typed mod fields
+     * (loras, controlnet) become KINDS; scalar knobs in the zone
+     * (controlnet_strength_floor) become ModifierFields of the last
+     * kind. The editor renders kinds as subcards (SubcardGrid) and the
+     * contract validator REJECTS anything not a kind object. */
+    char modbuf[1024];
+    {
+        struct modent { char name[64]; char type[24]; char label[128];
+                        char zone[24];
+                        double mn, mx, st, dv; int has_mn, has_mx, has_st, has_dv; };
+        modent me[32];
+        int nme = 0;
+        char myp[1200];
+        modbuf[0] = 0;
+        if (cs_find_card_yaml(m->id, myp, sizeof(myp)) == 0) {
+            FILE *mf = fopen(myp, "r");
+            if (mf) {
+                char ml[512];
+                modent P;
+                memset(&P, 0, sizeof(P));
+                int have_p = 0;
+                int in_params = 0;
+                while (fgets(ml, sizeof(ml), mf)) {
+                    cs_cut_comment(ml);
+                    if (ml[0]=='\n' || ml[0]=='\r' || ml[0]==0) continue;
+                    if (!in_params) {
+                        if (strcmp(ml, "parameters:\n")==0 ||
+                            strcmp(ml, "parameters:")==0) in_params = 1;
+                        continue;
+                    }
+                    if (ml[0] != ' ' && ml[0] != '\t') break;
+                    int mind2 = 0;
+                    while (ml[mind2] == ' ') mind2++;
+                    char *mp = ml + mind2;
+                    if (mind2 <= 2) {           /* field boundary: commit */
+                        if (have_p && strcmp(P.zone, "mods") == 0 &&
+                            nme < 32) me[nme++] = P;
+                        memset(&P, 0, sizeof(P));
+                        have_p = 0;
+                        char *c2 = strchr(mp, ':');
+                        if (c2) {
+                            *c2 = 0;
+                            snprintf(P.name, sizeof(P.name), "%s", mp);
+                            cs_clean(P.name);
+                            have_p = 1;
+                        }
+                        continue;
+                    }
+                    char *c3 = strchr(mp, ':');
+                    if (!c3 || !have_p) continue;
+                    *c3 = 0;
+                    char mk[32], mv[128];
+                    snprintf(mk, sizeof(mk), "%s", mp);
+                    cs_clean(mk);
+                    snprintf(mv, sizeof(mv), "%s", c3 + 1);
+                    cs_clean(mv);
+                    if      (!strcmp(mk,"type"))  snprintf(P.type, sizeof(P.type), "%s", mv);
+                    else if (!strcmp(mk,"label")) snprintf(P.label, sizeof(P.label), "%s", mv);
+                    else if (!strcmp(mk,"zone"))  snprintf(P.zone, sizeof(P.zone), "%s", mv);
+                    else if (!strcmp(mk,"min"))   { P.mn = atof(mv); P.has_mn = 1; }
+                    else if (!strcmp(mk,"max"))   { P.mx = atof(mv); P.has_mx = 1; }
+                    else if (!strcmp(mk,"step"))  { P.st = atof(mv); P.has_st = 1; }
+                    else if (!strcmp(mk,"default")){ P.dv = atof(mv); P.has_dv = 1; }
+                }
+                if (have_p && strcmp(P.zone, "mods") == 0 && nme < 32)
+                    me[nme++] = P;
+                fclose(mf);
+            }
+        }
+        size_t mo = 0;
+        mo += (size_t)snprintf(modbuf + mo, sizeof(modbuf) - mo, "[");
+        int mfirst = 1;
+        int last_kind = -1;            /* me[] index of last bag-typed kind */
+        for (int e = 0; e < nme; e++) {
+            const char *t = me[e].type;
+            int is_kind = (strcmp(t, "loras") == 0 || strcmp(t, "controlnet") == 0);
+            if (is_kind) {
+                if (!mfirst)
+                    mo += (size_t)snprintf(modbuf + mo, sizeof(modbuf) - mo, ",");
+                mfirst = 0;
+                const char *kind = (strcmp(t, "loras") == 0) ? "lora" : "controlnet";
+                /* ModifierFields: the scalar knobs that FOLLOW this kind
+                 * in the mods zone (controlnet_strength_floor rides the
+                 * controlnet kind, not a subcard of its own). */
+                char flds[384];
+                size_t fo = 0;
+                fo += (size_t)snprintf(flds + fo, sizeof(flds) - fo, "[");
+                int ffirst = 1;
+                for (int s = e + 1; s < nme; s++) {
+                    const char *st2 = me[s].type;
+                    if (!strcmp(st2, "loras") || !strcmp(st2, "controlnet")) break;
+                    char mins[32], maxs[32], steps[32];
+                    mins[0] = maxs[0] = steps[0] = 0;
+                    if (me[s].has_mn) snprintf(mins, sizeof(mins), ",\"min\":%g", me[s].mn);
+                    if (me[s].has_mx) snprintf(maxs, sizeof(maxs), ",\"max\":%g", me[s].mx);
+                    if (me[s].has_st) snprintf(steps, sizeof(steps), ",\"step\":%g", me[s].st);
+                    if (!ffirst)
+                        fo += (size_t)snprintf(flds + fo, sizeof(flds) - fo, ",");
+                    ffirst = 0;
+                    fo += (size_t)snprintf(flds + fo, sizeof(flds) - fo,
+                        "{\"name\":\"%s\",\"type\":\"float\",\"label\":\"%s\"%s%s%s}",
+                        me[s].name,
+                        me[s].label[0] ? me[s].label : me[s].name,
+                        mins, maxs, steps);
+                }
+                fo += (size_t)snprintf(flds + fo, sizeof(flds) - fo, "]");
+                (void)last_kind;
+                /* (validator contract) a kind with ZERO options must carry
+                 * scan proof (options_scanned=true) AND an upload_dir —
+                 * else the contract gate rejects the whole spec ("the
+                 * dropdown would render empty — silent drop"). The dirs
+                 * are the plugin's real model roots; the scan honestly
+                 * found none installed on this gateway. */
+                const char *updir = (strcmp(kind, "lora") == 0)
+                    ? "models/loras" : "models/controlnet";
+                mo += (size_t)snprintf(modbuf + mo, sizeof(modbuf) - mo,
+                    "{\"kind\":\"%s\",\"label\":\"%s\",\"cardinality\":\"list\","
+                    "\"param_key\":\"%s\",\"fields\":%s,"
+                    "\"options\":[],\"options_scanned\":true,"
+                    "\"upload_dir\":\"%s\",\"declaration_only\":true}",
+                    kind,
+                    me[e].label[0] ? me[e].label : me[e].name,
+                    me[e].name, flds, updir);
+            }
+            /* scalar mod knobs that precede any kind are dropped from
+             * modifiers — they render as ordinary params. */
+        }
+        mo += (size_t)snprintf(modbuf + mo, sizeof(modbuf) - mo, "]");
+        if (!modbuf[0]) snprintf(modbuf, sizeof(modbuf), "[]");
+    }
+    /* (2026-09-02 tts 400 fix, retake after crash postmortem) the editor
+     * attaches a 'prompt' param to the RUN whenever enhance_prompts.prompt
+     * is truthy — on cards whose surface has NO prompt field (qwen3-tts:
+     * text/voice/style) that param dies at the lane's strict card gate
+     * ("unknown param 'prompt'"). Advertise the recipe ONLY when the card
+     * declares a prompt parameter. Emission-only view pointer — recipeq
+     * itself stays the malloc'd json_quote result (freeing a literal here
+     * was the "free(): invalid pointer" form-spec crash). */
+    const char *recipe_emit = recipeq;
+    {
+        char pyp[1200];
+        if (cs_find_card_yaml(model.c_str(), pyp, sizeof(pyp)) == 0) {
+            FILE *pf = fopen(pyp, "r");
+            int in_p = 0, has_prompt = 0;
+            char pl[768];
+            while (pf && fgets(pl, sizeof(pl), pf)) {
+                cs_cut_comment(pl);
+                if (pl[0] != ' ' && pl[0] != '\t') {
+                    in_p = (strncmp(pl, "parameters:", 11) == 0);
+                    continue;
+                }
+                if (!in_p) continue;
+                int pi = 0;
+                while (pl[pi] == ' ') pi++;
+                if (pi == 2 && strncmp(pl + 2, "prompt:", 7) == 0) {
+                    has_prompt = 1;
+                    break;
+                }
+            }
+            if (pf) fclose(pf);
+            if (!has_prompt) recipe_emit = "null";
+        }
     }
     len = jappend(&out, &cap, len,
-        "],\"features\":{},\"enhance_prompts\":{\"prompt\":%s}}", recipeq);
+        "],\"features\":{\"modifiers\":%s,\"variant_groups\":{%s}},"
+        "\"enhance_prompts\":{\"prompt\":%s,\"lyrics\":%s}",
+        modbuf, vgrps, recipe_emit, lrecipeq);
+
+    /* (2026-09-01 the empty-card fix) the card.yaml parameter surface —
+     * "fields" + "schema_groups". Without these the editor renders ONLY
+     * the model selector (no prompt/seed/width/height): its law is
+     * spec-declared-fields-or-nothing. card_spec_json reads the PLUGIN's
+     * resolved declaration; NULL (no card.yaml for this model) keeps the
+     * legacy shape untouched. */
+    {
+        char *cardspec = card_spec_json(m->id);
+        if (cardspec) {
+            len = jappend(&out, &cap, len, ",%s", cardspec);
+            free(cardspec);
+        }
+    }
+    len = jappend(&out, &cap, len, "}");
     res.set_content(out, "application/json");
-    free(out); free(recipeq); free(labelq);
+    free(out); free(recipeq); free(lrecipeq); free(labelq);
 }
 
 
@@ -9819,10 +11317,14 @@ inference_server *server_create(int port, const char *bind_addr) {
     s->srv.Get("/v1/pipelines/drafts",     handle_draft_list);
     s->srv.Get("/v1/pipelines/yaml/list",  handle_yaml_list);
     s->srv.Get("/v1/pipelines/yaml/detail", handle_yaml_detail);
+    s->srv.Post("/v1/pipelines/yaml/save",  handle_yaml_save);
+    s->srv.Delete("/v1/pipelines/yaml/delete", handle_yaml_delete);
+    s->srv.Post("/v1/pipelines/yaml/rename", handle_yaml_rename);
     s->srv.Get("/v1/pipelines/runs",     handle_pipelines_runs);
     s->srv.Get(R"(/editor/assets/runs/(.+))", handle_asset);
     s->srv.Get("/v1/form-spec",          handle_form_spec);
     s->srv.Get("/v1/card-tools",          handle_card_tools);
+    s->srv.Get("/v1/card-tools/validate", handle_card_validate);
     s->srv.Post(R"(/v1/cards/([^/]+)/agent)", handle_card_agent);
     s->srv.Get(R"(/v1/cards/([^/]+)/bundle)", handle_lane_bundle);
     s->srv.Get(R"(/v1/cards/([^/]+)/schema)",  handle_card_schema);
