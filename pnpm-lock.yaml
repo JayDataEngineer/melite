@@ -15,6 +15,9 @@ importers:
       '@melite-plugin/3d':
         specifier: workspace:*
         version: link:3d/ui
+      '@melite-plugin/motion':
+        specifier: workspace:*
+        version: link:motion/ui
       '@melite-plugin/timeline':
         specifier: workspace:*
         version: link:video/h3-timeline/ui
