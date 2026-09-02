@@ -14,6 +14,7 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, "py"))
 sys.path.insert(0, os.path.join(REPO, "plugins", "web", "cards_py"))
+sys.path.insert(0, os.path.join(REPO, "plugins", "web", "models_py"))
 
 import editor_forms as ef                    # noqa: E402
 from melite_cards import load_card_py, field_spec  # noqa: E402
@@ -94,6 +95,68 @@ def main():
     check("z-image gate parity",
           ef._card_spec(REPO, "z-image") is None
           and "z-image" not in tuple(cls.families_of()))
+
+    # ── the 2026-09-02 full card flip: every flipped card pinned the
+    # same way — class fragment == golden form-spec (captured from the
+    # yaml-era serving BEFORE the parameters blocks died), and the
+    # served route must be class-driven for each family model.
+    FLIPPED = [
+        ("image-edit", "comfyui", "img-edit"),
+        ("h3-timeline", "comfyui", "h3-timeline"),
+        ("tts", "audio-cpp", "qwen3-tts"),
+        ("voice-lock", "audio-cpp", "qwen3-tts-voicedesign"),
+        ("music", "audio-cpp", "music3"),
+    ]
+    for cid, engine, model in FLIPPED:
+        cpath = os.path.join(REPO, "plugins", "engines", engine, "cards",
+                             cid, "card.py")
+        fcls = load_card_py(cpath, engine)
+        check("%s id" % cid, fcls.id == cid, fcls.id)
+        gpath = os.path.join(REPO, "tests", "golden_http",
+                             "form-spec_model_%s.json" % model)
+        gold = json.load(open(gpath))
+        edir = os.path.join(REPO, "plugins", "engines", engine)
+        fvocab = {
+            "samplers": ef._option_list(REPO, "samplers", edir),
+            "schedulers": ef._option_list(REPO, "schedulers", edir),
+        }
+        frag = field_spec(fcls, model, fvocab, service=gold["service"])
+        want = {k: gold[k] for k in ("form", "service", "fields",
+                                     "schema_groups") if k in gold}
+        dd = deep_diff(frag, want)
+        check("%s fragment parity vs golden (%s)" % (cid, model),
+              dd is None, dd or "")
+        served = ef._card_spec(REPO, model)
+        dd2 = deep_diff(served, frag)
+        check("%s served fragment is class-driven" % cid,
+              dd2 is None, dd2 or "")
+
+    # cross-validation: models declaring a card attr must keep defaults
+    # inside the owning card's field domains (the killer feature, live
+    # across engines now that both sides are python)
+    import catalog as _cat
+    from melite_models import (scan_engine_models,
+                               validate_against_cards)
+    models = {mid: cls for mid, (_p, cls)
+              in scan_engine_models(REPO).items()}
+    cards = {}
+    for cid, engine, model in [("image-gen", "comfyui", "krea-2")] + FLIPPED:
+        cards[cid] = load_card_py(os.path.join(
+            REPO, "plugins", "engines", engine, "cards", cid, "card.py"),
+            engine)
+    import importlib.util as _ilu
+    _spec = _ilu.spec_from_file_location(
+        "audio_compose", os.path.join(
+            REPO, "plugins", "engines", "audio-cpp", "engines", "audio",
+            "compose.py"))
+    _ac = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(_ac)
+    pairs = validate_against_cards(models, cards,
+                                   engine_truth=_ac.ENGINE_TRUTH_KEYS)
+    check("cross-validation pairs (krea-2, img-edit, music3)",
+          pairs == [("img-edit", "image-edit"),
+                    ("krea-2", "image-gen"),
+                    ("music3", "music")], repr(pairs))
 
     # boot-loud validation contracts
     from melite_cards import ActionCard, ValidationError, Number, Select, VocabRef
