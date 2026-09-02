@@ -38,7 +38,7 @@ PLUGINS_DIR = REPO / "plugins"
 # Scan roots: engine plugins under plugins/engine/*, agent plugins under
 # plugins/agent/*, web plugins under plugins/web/*.  Each plugin dir
 # (depth-2 under a category) may own engines/ and/or models/.
-_PLUGIN_SCAN_ROOTS = [REPO / "plugins" / cat for cat in ("engines", "agents", "web")]
+_PLUGIN_SCAN_ROOTS = [REPO / "plugins" / cat for cat in ("engines", "web")]
 IDENT_RE = re.compile(r"^[a-z_][a-z0-9_-]*$")
 
 try:
