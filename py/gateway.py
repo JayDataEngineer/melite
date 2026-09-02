@@ -317,8 +317,40 @@ def resolve_inputs(node, initial):
     return out
 
 
+def _deep_expand(value, inputs):
+    """Recursive $name substitution for inline workflows.
+
+    Unlike the inject channel (pure ref channel, unresolved = LOUD),
+    a workflow carries CONTENT: only names that RESOLVE against the
+    node inputs are substituted — an unknown $-string is prompt text
+    (e.g. "$100 bill"), passed through untouched. Link tuples like
+    ["NodeId", 0] never start with $ and ride unchanged.
+    """
+    if isinstance(value, str) and value.startswith("$"):
+        name = value[1:]
+        if name in inputs:
+            return inputs[name]
+        if ("$" + name) in inputs:
+            return inputs["$" + name]
+        return value
+    if isinstance(value, list):
+        return [_deep_expand(v, inputs) for v in value]
+    if isinstance(value, dict):
+        return {k: _deep_expand(v, inputs) for k, v in value.items()}
+    return value
+
+
 def expand_inject(params, inputs):
-    """Expand $name refs in inject from node inputs; unresolved = LOUD."""
+    """Expand $name refs in inject from node inputs; unresolved = LOUD.
+
+    Inline workflows (params.workflow, the co_script-flipped lane) get
+    the same tensor substitution via a deep walk. workflow + inject
+    together is a compose bug — refuse BEFORE registration.
+    """
+    if params.get("workflow") is not None and params.get("inject"):
+        raise ValidationError(
+            "workflow and inject are mutually exclusive — inline workflow "
+            "arrives pre-rendered, inject is the legacy channel")
     inject = params.get("inject", {})
     if not isinstance(inject, dict):
         raise ValidationError("inject must be an object")
@@ -336,6 +368,10 @@ def expand_inject(params, inputs):
             expanded[slot] = value
     out = dict(params)
     out["inject"] = expanded
+    if params.get("workflow") is not None:
+        if not isinstance(params["workflow"], dict):
+            raise ValidationError("workflow must be an object")
+        out["workflow"] = _deep_expand(params["workflow"], inputs)
     return out
 
 

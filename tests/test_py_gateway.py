@@ -60,6 +60,26 @@ try:
 except ValidationError:
     check("inject unresolved loud", True)
 
+# C5b: inline workflow + inject = compose bug, refused BEFORE registration
+try:
+    expand_inject({"workflow": {"N.0": {"class_type": "X", "inputs": {}}},
+                   "inject": {"N.0.x": 1}}, {})
+    check("workflow+inject exclusive", False, "no refusal")
+except ValidationError:
+    check("workflow+inject exclusive", True)
+
+# C5c: workflow deep-walk substitutes RESOLVING tensors, passes
+# content through, and never touches link tuples
+_wf = {"A.0": {"class_type": "X", "inputs": {
+    "prompt": "$prompt", "seed": "$seed",
+    "note": "$100 bill stays", "img": ["LoadImage.0", 0]}}}
+_out = expand_inject({"workflow": _wf}, {"$prompt": "hi", "seed": 7})
+_i = _out["workflow"]["A.0"]["inputs"]
+check("workflow deep-walk resolves",
+      _i["prompt"] == "hi" and _i["seed"] == 7)
+check("workflow content passthrough", _i["note"] == "$100 bill stays")
+check("workflow links untouched", _i["img"] == ["LoadImage.0", 0])
+
 # C6: params must be one-line JSON or map — garbage refused
 try:
     parse_pipeline_text("nodes:\n  - id: a\n    type: t\n    params: {bad}\n")
