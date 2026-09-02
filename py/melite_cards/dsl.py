@@ -472,23 +472,36 @@ class ActionCard(metaclass=_CardMeta):
 # is capability grammar, not served surface.
 
 
-class ActionCardPack(metaclass=_CardMeta):
-    """Base mod block. Never a card: no id, never served alone; the
-    fields ride a card THROUGH its boarded models. `pack` names the
-    capability (the Model-side mods declaration matches on class
-    identity — subclass to shape a family's flavor of a mod)."""
+class Mod(metaclass=_CardMeta):
+    """THE single parent of every mod — LorasMod, LanPaintMod,
+    ControlNetMod and every per-family flavor (models/<family>/mods/)
+    subclass THIS one class: one system for mods. Never a card: no
+    id, never served alone; the fields ride a card THROUGH its
+    boarded models. `pack` names the capability; field `default`s
+    are the mod's baseline tuning (merged_defaults absorbs them as
+    the cascade's base layer — no model hand-copies mod knobs);
+    `rows` carries the mod's catalog data (LoraRow for loras).
+    Subclass to shape a family's flavor of a mod."""
     pack = ""
+    rows = ()
 
 
-class LorasMod(ActionCardPack):
-    """The LoRA stack mod — boarded by families whose model provisions
-    loras (krea-2: the Raw-variant training loras, applied on Turbo)."""
+# backcompat alias — the pre-Mod name
+ActionCardPack = Mod
+
+
+class LorasMod(Mod):
+    """The LoRA stack mod. `rows` (LoraRow tuple, from melite_models)
+    is the mod's catalog data — a family with loras subclasses this in
+    its own models/<family>/mods/ and declares the subclass (krea-2:
+    the Raw-variant training loras, applied on Turbo)."""
     pack = "loras"
+    rows = ()
     loras = Loras(label='LoRAs', group='loras_controlnet', zone='mods',
                   order=0)
 
 
-class ControlNetMod(ActionCardPack):
+class ControlNetMod(Mod):
     """The ControlNet stack mod — boarded by families provisioning
     controlnet models. No model declares it yet; the entry waits in
     the menu until one truthfully does."""
@@ -496,7 +509,7 @@ class ControlNetMod(ActionCardPack):
     controlnet = ControlNet(label='ControlNet', group='loras_controlnet',
                             zone='mods', order=1)
     controlnet_strength_floor = Slider(
-        label='ControlNet Strength Floor',
+        label='ControlNet Strength Floor', default=0.0,
         group='loras_controlnet', zone='mods', order=2, width=1,
         min=0, max=1, step=0.05,
         tooltip='Minimum strength any ControlNet in the stack may apply '
@@ -506,7 +519,7 @@ class ControlNetMod(ActionCardPack):
                 'benefit.')
 
 
-class LanPaintMod(ActionCardPack):
+class LanPaintMod(Mod):
     """The LanPaint inpaint mod — input_image + lanpaint_mask switch
     the builder to LanPaintKSampler; mask prep (grow/feather/
     threshold/invert) and outpaint pads apply host-side pre-run."""
@@ -518,50 +531,51 @@ class LanPaintMod(ActionCardPack):
                 'build_txt2img switches to LanPaintKSampler.',
         visible_when='input_image != null')
     lanpaint_enabled = Boolean(label='Force LanPaint', group='lanpaint',
-                               order=1,
+                               order=1, default=False,
                                visible_when='input_image != null')
     lanpaint_num_steps = Number(label='Num Steps', group='lanpaint',
-                                order=2, width=1, min=1, max=100, step=1,
+                                order=2, width=1, min=1, max=100, step=1, default=20,
                                 visible_when='lanpaint_enabled == true')
     lanpaint_step_size = Slider(label='Step Size', group='lanpaint',
-                                order=3, width=1, min=0.1, max=2, step=0.1,
+                                order=3, width=1, min=0.1, max=2, step=0.1, default=1.0,
                                 visible_when='lanpaint_enabled == true')
     lanpaint_lambda = Slider(label='Lambda', group='lanpaint', order=4,
-                             width=1, min=0, max=2, step=0.05,
+                             width=1, min=0, max=2, step=0.05, default=0.5,
                              visible_when='lanpaint_enabled == true')
     lanpaint_beta = Slider(label='Beta', group='lanpaint', order=5,
-                           width=1, min=0, max=2, step=0.05,
+                           width=1, min=0, max=2, step=0.05, default=0.5,
                            visible_when='lanpaint_enabled == true')
     lanpaint_friction = Slider(label='Friction', group='lanpaint', order=6,
                                width=1, min=0, max=2, step=0.05,
+                               default=0.5,
                                visible_when='lanpaint_enabled == true')
     lanpaint_prompt_mode = Select(label='Prompt Mode', group='lanpaint',
-                                  order=7, width=1,
+                                  order=7, width=1, default='negative',
                                   visible_when='lanpaint_enabled == true',
                                   options=["negative", "positive"])
     mask_grow = Slider(label='Grow / Shrink', group='lanpaint', order=8,
-                       width=1, min=-32, max=32, step=1,
+                       width=1, min=-32, max=32, step=1, default=8,
                        visible_when='input_image != null')
     mask_feather = Slider(label='Feather', group='lanpaint', order=9,
-                          width=1, min=0, max=32, step=1,
+                          width=1, min=0, max=32, step=1, default=8,
                           visible_when='input_image != null')
     mask_threshold = Slider(label='Re-threshold', group='lanpaint',
-                            order=10, width=1, min=0, max=1, step=0.05,
+                            order=10, width=1, min=0, max=1, step=0.05, default=0,
                             visible_when='input_image != null')
     mask_invert = Boolean(label='Invert', group='lanpaint', order=11,
-                          visible_when='input_image != null')
+                          default=False, visible_when='input_image != null')
     outpaint_top = Slider(label='Expand Top', group='lanpaint', order=12,
-                          width=1, min=0, max=512, step=8,
+                          width=1, min=0, max=512, step=8, default=0,
                           visible_when='input_image != null')
     outpaint_right = Slider(label='Expand Right', group='lanpaint',
-                            order=13, width=1, min=0, max=512, step=8,
+                            order=13, width=1, min=0, max=512, step=8, default=0,
                             visible_when='input_image != null')
     outpaint_bottom = Slider(label='Expand Bottom', group='lanpaint',
-                             order=14, width=1, min=0, max=512, step=8,
+                             order=14, width=1, min=0, max=512, step=8, default=0,
                              visible_when='input_image != null')
     outpaint_left = Slider(label='Expand Left', group='lanpaint', order=15,
-                           width=1, min=0, max=512, step=8,
+                           width=1, min=0, max=512, step=8, default=0,
                            visible_when='input_image != null')
     outpaint_overlap = Slider(label='Overlap', group='lanpaint', order=16,
-                              width=1, min=0, max=64, step=1,
+                              width=1, min=0, max=64, step=1, default=16,
                               visible_when='input_image != null')

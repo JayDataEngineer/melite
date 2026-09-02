@@ -36,7 +36,7 @@
       "defaults": {},
       "group": "Variant",
       "route": "krea-2-raw",
-      "hint": "52-step base checkpoint \u2014 the variant LoRAs train on (DEFAULT here)",
+      "hint": "52-step base checkpoint \u2014 the variant the loras train on (DEFAULT here)",
       "engine": "comfyui"
     }
   ],

@@ -248,13 +248,26 @@ class Model(metaclass=_ModelMeta):
             raise ModelError("%s.mods must be a tuple (got %s)"
                              % (cls.__name__, type(mods).__name__))
         if mods:
-            from melite_cards import ActionCardPack   # the interlock
+            from melite_cards import Mod, LorasMod   # the interlock
             for mod in mods:
-                if not (isinstance(mod, type)
-                        and issubclass(mod, ActionCardPack)):
+                if not (isinstance(mod, type) and issubclass(mod, Mod)):
                     raise ModelError(
-                        "%s.mods entries must be ActionCardPack classes "
+                        "%s.mods entries must be Mod subclasses "
                         "(got %r)" % (cls.__name__, mod))
+                for row in (getattr(mod, "rows", None) or ()):
+                    if not isinstance(row, LoraRow):
+                        raise ModelError(
+                            "%s.mods %s: rows must be LoraRow instances "
+                            "(got %s)" % (cls.__name__, mod.__name__,
+                                          type(row).__name__))
+                for f in getattr(mod, "_fields_", ()):
+                    if f.name in (cls.defaults or {}):
+                        raise ModelError(
+                            "%s.defaults re-declares %r — a mod knob "
+                            "(%s) is absorbed from the mod's field "
+                            "default, never hand-copied into the model "
+                            "dict (one system for mods)"
+                            % (cls.__name__, f.name, mod.__name__))
         for attr in ("defaults", "provisions"):
             d = getattr(cls, attr, None)
             if attr == "provisions":
@@ -286,8 +299,17 @@ class Model(metaclass=_ModelMeta):
 
     @classmethod
     def merged_defaults(cls, variant=None, quant=None):
-        """Family → variant → cell, later layers win (the MRO walk)."""
-        out = dict(cls.defaults or {})
+        """Mods → family → variant → cell, later layers win (the MRO
+        walk). The mods layer is ABSORBED, never hand-copied: each
+        declared mod's field defaults form the cascade's base — the
+        one system for mods (a model dict re-declaring a mod knob is
+        the drift the flip killed)."""
+        out = {}
+        for mod in (cls.mods or ()):
+            for f in getattr(mod, "_fields_", ()):
+                if f.default is not None and f.default != "":
+                    out[f.name] = f.default
+        out.update(cls.defaults or {})
         if variant:
             vcls = cls._variant_(variant)
             if vcls is None:
@@ -300,6 +322,19 @@ class Model(metaclass=_ModelMeta):
                                                 None):
                     out.update(ccls.resolver_defaults or {})
         return out
+
+    @classmethod
+    def loras_of(cls):
+        """The lora catalog through the ONE mod system: union of rows
+        across every declared LorasMod-flavored mod. (The wire row
+        stays [] — catalog.c:177 never parsed lora_catalog — but the
+        data now lives governed under mods, boot-validated.)"""
+        from melite_cards import LorasMod
+        rows = []
+        for mod in (cls.mods or ()):
+            if issubclass(mod, LorasMod):
+                rows.extend(mod.rows or ())
+        return tuple(rows)
 
     @classmethod
     def _variant_(cls, vid):
@@ -419,6 +454,44 @@ def load_model_py(path, engine="engine"):
 
 def has_model_yaml(model_dir):
     return _os.path.isfile(_os.path.join(model_dir, "model.yaml"))
+
+
+def load_mod(model_py_path, stem, class_name):
+    """Load a per-family mod subclass from models/<family>/mods/<stem>.py
+    under a unique canonical name, returning its <class_name>. Called
+    from model.py:
+
+        from melite_models import load_mod
+        Loras = load_mod(__file__, "loras", "Loras")
+        ...
+        mods = (Loras,)
+
+    (load_model_py execs model.py under a file-based spec — plain
+    relative imports do not resolve there; this helper is the lane's
+    canonical loader, mirroring load_model_py's naming.)"""
+    import importlib.util
+    model_dir = _os.path.dirname(_os.path.abspath(model_py_path))
+    mod_dir = _os.path.join(model_dir, "mods")
+    path = _os.path.join(mod_dir, stem + ".py")
+    if not _os.path.isfile(path):
+        raise ModelError("no mod file %s (expected beside %s)"
+                         % (path, model_py_path))
+    family = _os.path.basename(model_dir)
+    modname = "plugin_model_mods.%s.%s" % (family, stem)
+    if modname not in _sys.modules:
+        spec = importlib.util.spec_from_file_location(modname, path)
+        mod = importlib.util.module_from_spec(spec)
+        _sys.modules[modname] = mod
+        try:
+            spec.loader.exec_module(mod)
+        except Exception:
+            del _sys.modules[modname]
+            raise
+    mod = _sys.modules[modname]
+    cls = getattr(mod, class_name, None)
+    if cls is None:
+        raise ModelError("%s declares no class %r" % (path, class_name))
+    return cls
 
 
 def scan_engine_models(repo_root):
