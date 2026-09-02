@@ -39,6 +39,7 @@ import importlib.util
 import json
 import os
 import re
+import signal
 import sys
 import time
 import uuid
@@ -456,7 +457,7 @@ class Gateway:
         run.stop_event.set()
         for stage in run.stages:
             if stage["status"] == "running":
-                n = run.graph["nodes"][stage["index"]]
+                n = self.graph_nodes(run)[stage["index"]]
                 engine = load_engine(n["type"])
                 if hasattr(engine, "stop"):
                     try:
@@ -464,6 +465,38 @@ class Gateway:
                     except Exception:
                         pass
         return {"run_id": run_id, "status": "stopping"}
+
+    def graph_nodes(self, run):
+        return run.graph["nodes"]
+
+    async def shutdown(self):
+        """SIGTERM/SIGINT path: mark the active run stopped (engine stop
+        hooks land), flush sidecars, exit cleanly. A deliberate shutdown
+        manufactures ZERO zombies — RESILIENCE LAW."""
+        run = self.active
+        if run is not None:
+            run.stop_event.set()
+            for stage in run.stages:
+                if stage["status"] == "running":
+                    n = self.graph_nodes(run)[stage["index"]]
+                    engine = load_engine(n["type"])
+                    if hasattr(engine, "stop"):
+                        try:
+                            await engine.stop({"params": n.get("params", {})}, str(run.dir))
+                        except Exception:
+                            pass
+            # give the worker one loop turn to observe the stop event and
+            # write the terminal sidecar (run.status -> stopped)
+            for _ in range(200):
+                if self.active is None:
+                    break
+                await asyncio.sleep(0.05)
+            if self.active is not None:   # engine ignored the stop event
+                run.status = "stopped"
+                sidecar(run)
+                self.active = None
+        ledger("server.stop", {"reason": "signal"})
+        os._exit(0)
 
 
 def sidecar(run):
@@ -475,6 +508,110 @@ def sidecar(run):
         "artifacts": run.artifacts,
         "created_at": run.created_at,
     })
+
+
+# ---------------------------------------------------------------------------
+# RESILIENCE LAW (operator order 2026-08-29) — ported from the C server's
+# post-audit hardening: a deliberate shutdown manufactures ZERO zombies,
+# kill -9 leftovers are swept to failed at boot AND at first read, and the
+# ledger journal records every sweep (parity with boot_sweep_stale_sidecars
+# / read-time sweep / ledger_log in src/server.cpp, retired 2026-09-02).
+# ---------------------------------------------------------------------------
+
+LEDGER_PATH = OUT_ROOT / "_ledger.jsonl"
+
+
+def ledger(event, data=None):
+    """Append-only activity journal at output/_ledger.jsonl — one JSON
+    object per line (close-per-line keeps every event durable)."""
+    try:
+        OUT_ROOT.mkdir(parents=True, exist_ok=True)
+        with open(LEDGER_PATH, "a") as f:
+            f.write('{"ts":%d,"event":"%s","data":%s}\n' % (
+                int(time.time()), event, json.dumps(data or {}, default=str)))
+    except OSError:
+        pass   # the journal must never take the gateway down
+
+
+def sweep_sidecar(path, why):
+    """Patch a stale sidecar: every running/queued status (top-level AND
+    per-stage) becomes failed, with the reason recorded in a "sweep" key.
+    Idempotent — an already-swept file has no active statuses left."""
+    try:
+        obj = json.loads(Path(path).read_text())
+    except (OSError, ValueError):
+        return False
+    touched = False
+
+    def _patch(o):
+        nonlocal touched
+        if isinstance(o, dict):
+            if o.get("status") in ("running", "queued"):
+                o["status"] = "failed"
+                touched = True
+            for v in o.values():
+                _patch(v)
+        elif isinstance(o, list):
+            for v in o:
+                _patch(v)
+
+    _patch(obj)
+    if not touched:
+        return False
+    obj["sweep"] = why
+    atomic_write(Path(path), obj)
+    return True
+
+
+def boot_sweep():
+    """Boot-time zombie sweep: every sidecar still claiming running/queued
+    belongs to a DEAD process (we just started — nothing is live yet).
+    Sweep BEFORE the gateway accepts traffic, so the ledger never shows
+    phantom active runs after a crash/restart."""
+    swept = 0
+    if not OUT_ROOT.is_dir():
+        return 0
+    for d in sorted(OUT_ROOT.iterdir()):
+        if not d.is_dir() or not d.name.startswith("run-"):
+            continue
+        if sweep_sidecar(
+                d / "_pipeline.json",
+                "gateway restarted (boot sweep): stale active sidecar "
+                "from a dead process"):
+            ledger("run.swept", {"run_id": d.name, "state": "failed",
+                                 "error": "boot sweep"})
+            swept += 1
+    return swept
+
+
+def sidecar_status(run_id):
+    """Status for a run this process never owned: read the sidecar.
+    A running/queued sidecar with no live registry entry is a stale
+    leftover from a prior crash — self-heal at read time so zombies
+    never accumulate, then report the failure."""
+    path = OUT_ROOT / run_id / "_pipeline.json"
+    if not path.is_file():
+        return None
+    try:
+        obj = json.loads(path.read_text())
+    except ValueError:
+        return {"run_id": run_id, "status": "failed",
+                "error": "unparseable sidecar", "stages": [],
+                "artifacts": [], "queue_position": 0}
+    if obj.get("status") in ("running", "queued"):
+        sweep_sidecar(
+            path, "read-time sweep: stale running sidecar, "
+            "no live registry entry")
+        ledger("run.swept", {"run_id": run_id, "state": "failed",
+                             "error": "zombie swept at read time"})
+        obj["status"] = "failed"
+        obj["error"] = "zombie swept at read time"
+    obj.setdefault("run_id", run_id)
+    obj.setdefault("stages", [])
+    obj.setdefault("artifacts", [])
+    obj.setdefault("error", "")
+    obj["queue_position"] = 0
+    return obj
 
 
 def atomic_write(path, obj):
@@ -509,10 +646,26 @@ async def handle(gw, reader, writer):
     except Exception as e:
         status, payload = 500, {"error": "%s: %s" % (type(e).__name__, e)}
     try:
-        blob = json.dumps(payload, indent=2, default=str).encode()
-        reason = {200: "OK", 202: "Accepted", 400: "Bad Request", 404: "Not Found"}.get(status, "Error")
-        head = ("HTTP/1.1 %d %s\r\ncontent-type: application/json\r\ncontent-length: %d\r\nconnection: close\r\n\r\n" % (status, reason, len(blob))).encode()
-        writer.write(head + blob)
+        # payload may be a 3-tuple (payload, headers_dict, raw_bytes)
+        # for binary routes (asset serving)
+        resp_headers = {}
+        raw = None
+        if isinstance(payload, tuple) and len(payload) == 3:
+            payload, resp_headers, raw = payload
+        if raw is not None:
+            blob = raw
+        else:
+            blob = json.dumps(payload, indent=2, default=str).encode()
+        ct = resp_headers.pop("content-type",
+                              "application/json" if raw is None else "application/octet-stream")
+        reason = {200: "OK", 202: "Accepted", 400: "Bad Request",
+                  404: "Not Found", 409: "Conflict"}.get(status, "Error")
+        hdrs = ("HTTP/1.1 %d %s\r\ncontent-type: %s\r\n"
+                "content-length: %d\r\nconnection: close\r\n"
+                % (status, reason, ct, len(blob)))
+        for k, v in resp_headers.items():
+            hdrs += "%s: %s\r\n" % (k, v)
+        writer.write((hdrs + "\r\n").encode() + blob)
         await writer.drain()
     finally:
         writer.close()
@@ -520,13 +673,17 @@ async def handle(gw, reader, writer):
 
 async def route(gw, method, target, body):
     path = target.split("?")[0].rstrip("/") or "/"
+    from urllib.parse import urlparse, parse_qs
+    qs = parse_qs(urlparse(target).query)
+
+    # ── QUEUE LANE LAW: start/status/stop (py gateway core) ──────────
     if method == "POST" and path == "/v1/pipelines/start":
         try:
             req = json.loads(body.decode() or "{}")
         except json.JSONDecodeError as e:
             return 400, {"error": "bad JSON: %s" % e}
         try:
-            run = await gw.submit(req)   # 4xx-loud BEFORE registration
+            run = await gw.submit(req)
         except ValidationError as e:
             return 400, {"error": str(e)}
         return 202, {"run_id": run.run_id, "status": run.status}
@@ -541,7 +698,10 @@ async def route(gw, method, target, body):
     if method == "GET" and m:
         run = gw.runs.get(m.group(1))
         if run is None:
-            return 404, {"error": "unknown run_id"}
+            stored = sidecar_status(m.group(1))
+            if stored is None:
+                return 404, {"error": "unknown run_id"}
+            return 200, stored
         return 200, {
             "run_id": run.run_id,
             "status": run.status,
@@ -556,14 +716,206 @@ async def route(gw, method, target, body):
             return 200, await gw.stop(m.group(1))
         except ValidationError as e:
             return 400, {"error": str(e)}
+
+    # ── CATALOG (editor surface — py/catalog.py) ─────────────────────
+    if method == "GET" and path == "/v1/model-catalog":
+        import catalog as _cat
+        return 200, json.loads(_cat.to_json(_cat.scan_catalog(str(REPO))))
+    m = re.match(r"^/v1/model/(.+)$", path)
+    if method == "GET" and m:
+        import catalog as _cat
+        row = _cat.find_model(_cat.scan_catalog(str(REPO)), m.group(1))
+        if row is None:
+            return 404, {"error": "model not found"}
+        return 200, row
+
+    # ── FORMS / KINDS / FORM-SPEC (py/editor_forms.py) ──────────────
+    if method == "GET" and path == "/v1/forms":
+        import editor_forms as _ef
+        return 200, _ef.forms(str(REPO))
+    if method == "GET" and path == "/v1/kinds":
+        import editor_forms as _ef
+        return 200, _ef.kinds(str(REPO))
+    if method == "GET" and path == "/v1/form-spec":
+        import editor_forms as _ef
+        model = qs.get("model", [""])[0]
+        code, spec = _ef.form_spec(str(REPO), model)
+        return code, spec
+
+    # ── EDITOR DATA SURFACE (py/editor_runs.py) ──────────────────────
+    if method == "GET" and path == "/v1/pipelines/runs":
+        import editor_runs as _er
+        return 200, _er.runs(str(REPO / "build"))
+    m = re.match(r"^/v1/pipelines/runs/(.+)$", path)
+    if method == "GET" and m:
+        import editor_runs as _er
+        return _er.run_detail(str(REPO / "build"), m.group(1))
+    if method == "GET" and path == "/v1/pipelines/yaml/list":
+        import editor_runs as _er
+        return 200, _er.yaml_list(str(REPO / "pipelines"))
+    if method == "GET" and path == "/v1/pipelines/yaml/detail":
+        import editor_runs as _er
+        yaml_name = qs.get("yaml", [""])[0]
+        return _er.yaml_detail(str(REPO / "pipelines"), yaml_name or None)
+    if method == "POST" and path == "/v1/pipelines/yaml/save":
+        import editor_runs as _er
+        try:
+            body_json = json.loads(body.decode() or "{}")
+        except json.JSONDecodeError as e:
+            return 400, {"error": "bad JSON: %s" % e}
+        return _er.yaml_save(str(REPO / "pipelines"), body_json)
+    if method in ("DELETE", "POST") and path == "/v1/pipelines/yaml/delete":
+        import editor_runs as _er
+        fname = qs.get("filename", [None])[0]
+        if fname is None and method == "POST":
+            try:
+                body_json = json.loads(body.decode() or "{}")
+                fname = body_json.get("filename")
+            except json.JSONDecodeError:
+                pass
+        return _er.yaml_delete(str(REPO / "pipelines"), fname)
+    if method == "POST" and path == "/v1/pipelines/yaml/rename":
+        import editor_runs as _er
+        try:
+            body_json = json.loads(body.decode() or "{}")
+        except json.JSONDecodeError as e:
+            return 400, {"error": "bad JSON: %s" % e}
+        return _er.yaml_rename(str(REPO / "pipelines"), body_json)
+    if method == "POST" and path == "/v1/pipelines/yaml/validate":
+        import editor_runs as _er
+        try:
+            body_json = json.loads(body.decode() or "{}")
+        except json.JSONDecodeError:
+            body_json = {}
+        return _er.yaml_validate(str(REPO / "pipelines"), body_json)
+    if method == "POST" and path == "/v1/pipelines/yaml/validate-simple":
+        import editor_runs as _er
+        try:
+            body_json = json.loads(body.decode() or "{}")
+        except json.JSONDecodeError:
+            body_json = {}
+        return _er.yaml_validate_simple(str(REPO / "pipelines"), body_json)
+    if method == "POST" and path.startswith("/v1/pipelines/resume/"):
+        import editor_runs as _er
+        rid = path.split("/")[-1]
+        try:
+            body_json = json.loads(body.decode() or "{}")
+        except json.JSONDecodeError:
+            body_json = {}
+        return _er.resume(str(REPO / "build"), rid, body_json,
+                          pipelines_root=str(REPO / "pipelines"))
+    if path == "/v1/pipelines/families/param-schemas":
+        import editor_runs as _er
+        return 200, _er.family_param_schemas(
+            _er.catalog_family_ids(str(REPO / "plugins")))
+    m = re.match(r"^/v1/pipelines/families/(.+)/param-schema$", path)
+    if method == "GET" and m:
+        import editor_runs as _er
+        return _er.family_param_schema(
+            _er.catalog_family_ids(str(REPO / "plugins")), m.group(1))
+    if method == "GET" and path == "/v1/pipelines/drafts":
+        import editor_runs as _er
+        return 200, _er.drafts_list(str(REPO / "build" / "drafts"))
+    if method == "POST" and path == "/v1/pipelines/drafts":
+        import editor_runs as _er
+        try:
+            body_json = json.loads(body.decode() or "{}")
+        except json.JSONDecodeError as e:
+            return 400, {"error": "bad JSON: %s" % e}
+        return _er.drafts_save(str(REPO / "build" / "drafts"), body_json)
+    m = re.match(r"^/v1/pipelines/drafts/(.+)$", path)
+    if method == "GET" and m:
+        import editor_runs as _er
+        return _er.drafts_get(str(REPO / "build" / "drafts"), m.group(1))
+
+    # ── BINARY ASSET SERVING (/editor/assets/runs/) ──────────────────
+    if path.startswith("/editor/assets/runs/"):
+        import editor_runs as _er
+        rel = path[len("/editor/assets/runs/"):]
+        code, data, ctype = _er.serve_asset(str(REPO / "build"), rel)
+        if code == 200:
+            return code, ({}, {"content-type": ctype}, data)
+        return code, {"error": "not found"} if code == 404 else data
+
+    # ── LEDGER ───────────────────────────────────────────────────────
+    if method == "GET" and path == "/v1/ledger":
+        return 200, ledger_tail(target)
+
+    # ── MODEL PROVISION ────────────────────────────────────────────
+    if method == "POST" and path == "/v1/models/provision":
+        import editor_runs as _er
+        try:
+            body_json = json.loads(body.decode() or "{}")
+        except json.JSONDecodeError as e:
+            return 400, {"error": "bad JSON: %s" % e}
+        code, data = _er.provision(body_json, str(REPO / "plugins"))
+        return code, data
+
+    # ── HEALTH + CHROME STUBS ────────────────────────────────────────
+    if method == "GET" and path == "/v1/health":
+        import editor_runs as _er
+        return 200, _er.health()
+    if method == "GET":
+        _chrome = {
+            "/v1/themes": "themes", "/v1/tags": "tags",
+            "/v1/services": "services", "/v1/right-panes": "right_panes",
+            "/v1/ui-slots": "ui_slots", "/v1/tools": "tools",
+            "/v1/shell": "shell", "/v1/plugins": "plugins_registry",
+            "/v1/models": "models",
+        }
+        if path in _chrome:
+            import editor_runs as _er
+            return 200, getattr(_er, _chrome[path])()
+
     return 404, {"error": "no such route %s %s" % (method, path)}
+
+
+def ledger_tail(target):
+    """GET /v1/ledger?limit=N&event=prefix — tail of the append-only
+    journal, oldest -> newest within the tail (C parity)."""
+    from urllib.parse import urlparse, parse_qs
+    q = parse_qs(urlparse(target).query)
+    try:
+        limit = max(1, min(500, int(q.get("limit", ["50"])[0])))
+    except ValueError:
+        limit = 50
+    ev = (q.get("event", [""])[0] or "")[:64]
+    entries, matched = [], 0
+    try:
+        with open(LEDGER_PATH) as f:
+            for line in f:
+                if ev and ('"event":"%s' % ev) not in line:
+                    continue
+                matched += 1
+                entries.append(line.rstrip("\n"))
+                if len(entries) > limit:
+                    entries.pop(0)
+    except OSError:
+        pass
+    out = []
+    for e in entries:
+        try:
+            out.append(json.loads(e))
+        except ValueError:
+            continue
+    return {"entries": out, "shown": len(out), "matched": matched}
 
 
 async def main(port):
     gw = Gateway()
-    asyncio.get_event_loop().create_task(gw.worker())
+    swept = boot_sweep()
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        try:
+            loop.add_signal_handler(
+                sig, lambda s=sig: asyncio.ensure_future(gw.shutdown()))
+        except NotImplementedError:
+            pass
+    loop.create_task(gw.worker())
+    ledger("server.boot", {"port": port, "swept": swept,
+                           "engine": "python-orchestrator"})
     server = await asyncio.start_server(lambda r, w: handle(gw, r, w), "127.0.0.1", port)
-    print("python gateway on 127.0.0.1:%d (queue: serial FIFO, laws intact)" % port, flush=True)
+    print("python gateway on 127.0.0.1:%d (queue: serial FIFO, laws intact; boot sweep: %d)" % (port, swept), flush=True)
     async with server:
         await server.serve_forever()
 
