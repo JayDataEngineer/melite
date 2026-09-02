@@ -204,6 +204,116 @@ try:
 except Exception as e:
     check("T12 cloud interrupt no-crash", False, str(e)[:120])
 
+# T12b: cloud interrupt BARE (engine's stop backstop calls it no-arg)
+# — must use the last submitted pid, not TypeError.
+cloud_bare = engine.CloudTransport({"comfy_bin": stub_bin3})
+cloud_bare._pid = "last-pid"
+try:
+    cloud_bare.interrupt()
+    check("T12b cloud interrupt bare", True)
+except Exception as e:
+    check("T12b cloud interrupt bare", False, repr(e)[:120])
+
+# ── comfy-cli transport (P3: engine → comfy-mcp boundary) ──────────
+
+# T13: comfy-cli transport resolves from node params.
+ct = engine._resolve_transport({"transport": "comfy-cli",
+                                "server_url": "http://127.0.0.1:19999"})
+check("T13 cli resolves", getattr(ct, "kind", "") == "comfy-cli", repr(ct))
+check("T13 cli host/port split",
+      ct.host == "127.0.0.1" and ct.port == 19999,
+      "%s:%s" % (ct.host, ct.port))
+
+# T14: comfy-cli without server_url — LOUD (no ambient default).
+ok, detail = loud(lambda: engine._resolve_transport({"transport": "comfy-cli"}),
+                  "server_url is required")
+check("T14 cli-no-url loud", ok, detail)
+
+# T15: submit through a stub comfy binary — envelope prompt_id, argv
+# carries run --workflow and explicit --host/--port (no ambient env
+# targeting; QUEUE LANE LAW: the endpoint is a registration).
+cli_stub_dir = tempfile.mkdtemp()
+cli_argv_log = os.path.join(cli_stub_dir, "argv.json")
+cli_stub = os.path.join(cli_stub_dir, "comfy")
+_write_stub(cli_stub, """import sys, json, os
+args = sys.argv[1:]
+open(os.environ["CLI_STUB_ARGV"], "w").write(json.dumps(args))
+if args[0] == "run":
+    # NDJSON event + final envelope (the run --json dialect)
+    print(json.dumps({"schema": "event/1", "type": "progress"}))
+    print(json.dumps({"schema": "envelope/1", "ok": True,
+                      "data": {"prompt_id": "cli-prompt-42"}}))
+elif args[0] == "jobs" and "status" in args:
+    print(json.dumps({"schema": "envelope/1", "ok": True, "data":
+        {"prompt_id": "cli-prompt-42", "status": "completed",
+         "outputs": [os.environ["CLI_STUB_URL"]]}}))
+elif args[0] == "jobs" and "cancel" in args:
+    print(json.dumps({"schema": "envelope/1", "ok": True, "data": {}}))
+else:
+    print(json.dumps({"schema": "envelope/1", "ok": True, "data": {}}))
+""")
+os.environ["CLI_STUB_ARGV"] = cli_argv_log
+os.environ["CLI_STUB_URL"] = "http://127.0.0.1:1/nothing.png"
+ct2 = engine.ComfyCliTransport("http://127.0.0.1:19999",
+                               {"comfy_bin": cli_stub})
+pid = ct2.submit({"N1": {"inputs": {}, "class_type": "T"}})
+argv = json.loads(open(cli_argv_log).read())
+check("T15 submit pid from envelope", pid == "cli-prompt-42", repr(pid))
+check("T15 argv run+workflow",
+      argv[0] == "run" and "--workflow" in argv, repr(argv)[:120])
+check("T15 argv explicit host/port",
+      "--host" in argv and argv[argv.index("--host") + 1] == "127.0.0.1"
+      and argv[argv.index("--port") + 1] == "19999", repr(argv)[:160])
+
+# T16: poll mapping — completed -> success entry (urls carried);
+# running -> None; envelope error -> LOUD EngineError.
+entry = ct2.poll("cli-prompt-42")
+check("T16 poll completed entry",
+      entry and entry["status"]["status_str"] == "success"
+      and entry["prompt_id"] == "cli-prompt-42", repr(entry)[:140])
+_write_stub(cli_stub, """import sys, json, os
+args = sys.argv[1:]
+if args[0] == "jobs" and "status" in args and "RUNNING" in os.environ:
+    print(json.dumps({"schema": "envelope/1", "ok": True, "data":
+        {"prompt_id": "x", "status": "running"}}))
+elif args[0] == "jobs" and "status" in args and "REFUSE" in os.environ:
+    print(json.dumps({"schema": "envelope/1", "ok": False, "error":
+        {"code": "prompt_not_found", "message": "gone"}}))
+else:
+    print(json.dumps({"schema": "envelope/1", "ok": True, "data": {}}))
+""")
+os.environ["RUNNING"] = "1"
+check("T16 poll running -> None", ct2.poll("x") is None, "not None")
+del os.environ["RUNNING"]
+os.environ["REFUSE"] = "1"
+ok, detail = loud(lambda: ct2.poll("x"), "prompt_not_found")
+check("T16 poll error loud", ok, detail)
+del os.environ["REFUSE"]
+
+# T17: artifacts — bytes fetched over the URL the control plane
+# reported (plain GET against a local one-shot http server).
+import http.server, threading
+
+class _Serve(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("content-type", "application/octet-stream")
+        self.end_headers()
+        self.wfile.write(b"CLIPYTES")
+    def log_message(self, *a):
+        pass
+srv2 = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _Serve)
+port17 = srv2.server_address[1]
+th = threading.Thread(target=srv2.serve_forever, daemon=True)
+th.start()
+try:
+    ents = {"prompt_id": "cli-prompt-42",
+            "_cli_data": {"outputs": ["http://127.0.0.1:%d/clip.mp4" % port17]}}
+    arts = ct2.artifacts(ents)
+    check("T17 artifacts bytes", arts == [("clip.mp4", b"CLIPYTES")], repr(arts)[:140])
+finally:
+    srv2.shutdown()
+
 print("PASS %d / FAIL %d" % (len(PASS), len(FAIL)))
 for f in FAIL:
     print("  FAIL:", f)
