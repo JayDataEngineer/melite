@@ -4,9 +4,9 @@
 // data attribute on <html>, no React involvement, so the conversation
 // subtree underneath stays mounted and stateful.
 //
-//   html[data-melite-deck-active] column > :has(deck canvas)  -> absolute,
+//   html[data-ray-deck-active] column > :has(deck canvas)  -> absolute,
 //     inset 0, z-index 60 (the family's overlay tier)
-//   html[data-melite-deck-active] column > :not(:has(...))    -> display:none
+//   html[data-ray-deck-active] column > :not(:has(...))    -> display:none
 //     (the chat pane — composer AND top region — plus every other
 //     column view hides while the deck owns the column)
 //
@@ -24,15 +24,15 @@
 // the canvas never reloads.
 
 /** The deck's activation attribute on <html> (our namespace). */
-const ACTIVE_ATTR = 'data-melite-deck-active'
+const ACTIVE_ATTR = 'data-ray-deck-active'
 /** Family activation attributes — cleared when the deck opens. */
 const FAMILY_ACTIVE_ATTRS = ['data-dsh-taskboard-active', 'data-dsh-ssh-active']
 /** The family's cross-panel coordination event (verbatim protocol). */
 const PANEL_ACTIVATE_EVENT = 'dsh-panel-activate'
 /** Our panel name on that event bus. */
-const PANEL_NAME = 'melite-deck'
+const PANEL_NAME = 'ray-deck'
 /** The deck plugin node marker (host row of the canvas iframe). */
-const DECK_NODE_SEL = '[data-plugin="melite-card-deck-canvas"]'
+const DECK_NODE_SEL = '[data-plugin="ray-card-deck-canvas"]'
 /** The center column (both shell generations, same selector pair as the family). */
 const COLUMN_SEL = '[data-pane="conversation"], [class*="centerCol"]'
 
@@ -108,7 +108,7 @@ function setActive(on: boolean): void {
 export function mountDeckFullbleed(): () => void {
   if (typeof document === 'undefined') return () => {}
 
-  const styleId = 'melite-card-deck-fullbleed'
+  const styleId = 'ray-card-deck-fullbleed'
   if (!document.querySelector('style#' + styleId)) {
     const tag = document.createElement('style')
     tag.id = styleId

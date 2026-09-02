@@ -345,6 +345,7 @@ window.__ModuleLoader__.load({
 			const [search, setSearch] = (0, react.useState)("");
 			const [preview, setPreview] = (0, react.useState)(null);
 			const [drafts, setDrafts] = (0, react.useState)([]);
+			const [templates, setTemplates] = (0, react.useState)([]);
 			const [tab, setTab] = (0, react.useState)("artifacts");
 			const load = (0, react.useCallback)(() => {
 				setLoading(true);
@@ -375,6 +376,48 @@ window.__ModuleLoader__.load({
 			(0, react.useEffect)(() => {
 				loadDrafts();
 			}, [loadDrafts]);
+			const loadTemplates = (0, react.useCallback)(() => {
+				fetch("/infer-media/pipeline-templates").then(async (r) => {
+					const data = await r.json();
+					if (!r.ok) throw new Error(String(data.error ?? r.status));
+					setTemplates(Array.isArray(data.pipelines) ? data.pipelines : []);
+				}).catch(() => {
+					setTemplates([]);
+				});
+			}, []);
+			(0, react.useEffect)(() => {
+				loadTemplates();
+			}, [loadTemplates]);
+			const saveTemplate = (0, react.useCallback)(async (name, steps) => {
+				try {
+					const r = await fetch("/infer-media/pipeline-template-save", {
+						method: "POST",
+						headers: { "content-type": "application/json" },
+						body: JSON.stringify({
+							filename: name,
+							name,
+							steps,
+							overwrite: true
+						})
+					});
+					if (!r.ok) {
+						const data = await r.json();
+						throw new Error(data.error ?? "HTTP " + String(r.status));
+					}
+					loadTemplates();
+				} catch (e) {
+					setError("save failed: " + (e instanceof Error ? e.message : String(e)));
+				}
+			}, [loadTemplates]);
+			(0, react.useEffect)(() => {
+				const win = window;
+				win.__inferMediaSaveTemplate = saveTemplate;
+				win.__inferMediaLoadTemplates = loadTemplates;
+				return () => {
+					delete win.__inferMediaSaveTemplate;
+					delete win.__inferMediaLoadTemplates;
+				};
+			}, [saveTemplate, loadTemplates]);
 			(0, react.useEffect)(() => {
 				let last = Date.now();
 				const refresh = () => {
@@ -425,6 +468,59 @@ window.__ModuleLoader__.load({
 					return;
 				}
 				if (!open(draftId)) setError("Cards studio refused to open");
+			};
+			/** TEMPLATE OPERATIONS: load a pipeline template's steps into the card
+			*  deck as action cards (the editor's loadPipelineSpec path), or
+			*  save/rename/delete through the gateway's YAML CRUD. */
+			const openTemplate = async (filename) => {
+				try {
+					const r = await fetch("/infer-media/pipeline-template-detail?yaml=" + encodeURIComponent(filename));
+					if (!r.ok) throw new Error("HTTP " + String(r.status));
+					const data = await r.json();
+					if (!Array.isArray(data.steps) || data.steps.length === 0) {
+						setError("template has no steps");
+						return;
+					}
+					const open = window.__meliteDeckOpenWithDraft;
+					if (typeof open === "function") open("__pipeline__" + filename);
+					document.dispatchEvent(new CustomEvent("melite-load-pipeline", { detail: {
+						name: data.name ?? filename,
+						steps: data.steps
+					} }));
+				} catch (e) {
+					setError("template load failed: " + (e instanceof Error ? e.message : String(e)));
+				}
+			};
+			const renameTemplate = async (oldName, newName) => {
+				try {
+					const r = await fetch("/infer-media/pipeline-template-rename", {
+						method: "POST",
+						headers: { "content-type": "application/json" },
+						body: JSON.stringify({
+							filename: oldName,
+							newName
+						})
+					});
+					if (!r.ok) {
+						const data = await r.json();
+						throw new Error(data.error ?? "HTTP " + String(r.status));
+					}
+					loadTemplates();
+				} catch (e) {
+					setError("rename failed: " + (e instanceof Error ? e.message : String(e)));
+				}
+			};
+			const deleteTemplate = async (filename) => {
+				try {
+					const r = await fetch("/infer-media/pipeline-template-delete?filename=" + encodeURIComponent(filename));
+					if (!r.ok) {
+						const data = await r.json();
+						throw new Error(data.error ?? "HTTP " + String(r.status));
+					}
+					loadTemplates();
+				} catch (e) {
+					setError("delete failed: " + (e instanceof Error ? e.message : String(e)));
+				}
 			};
 			const items = (0, react.useMemo)(() => flatten(runs), [runs]);
 			const counts = (0, react.useMemo)(() => {
@@ -522,7 +618,11 @@ window.__ModuleLoader__.load({
 									border: "1px solid rgba(148,163,184,0.25)",
 									borderRadius: 999
 								},
-								children: ["pipelines", "artifacts"].map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+								children: [
+									"pipelines",
+									"templates",
+									"artifacts"
+								].map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 									onClick: () => {
 										setTab(t);
 									},
@@ -536,7 +636,7 @@ window.__ModuleLoader__.load({
 										background: tab === t ? "rgba(59,130,246,0.18)" : "transparent",
 										color: tab === t ? "rgb(147,197,253)" : "rgb(203,213,225)"
 									},
-									children: t === "pipelines" ? "Pipelines " + String(drafts.length) : "Artifacts " + String(items.length)
+									children: t === "pipelines" ? "Pipelines " + String(drafts.length) : t === "templates" ? "Templates " + String(templates.length) : "Artifacts " + String(items.length)
 								}, t))
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
@@ -675,6 +775,120 @@ window.__ModuleLoader__.load({
 								}) : null
 							]
 						}, d.draft_id ?? Math.random()))
+					}) : tab === "templates" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						"data-infer-media-templates": "1",
+						style: {
+							display: "flex",
+							flexDirection: "column",
+							gap: 6
+						},
+						children: templates.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							style: {
+								color: "rgba(148,163,184,0.9)",
+								fontSize: 13,
+								padding: 20
+							},
+							children: "no pipeline templates — save one from the Cards editor."
+						}) : templates.map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							style: {
+								display: "flex",
+								alignItems: "center",
+								gap: 8,
+								textAlign: "left",
+								border: "1px solid rgba(148,163,184,0.18)",
+								borderRadius: 10,
+								padding: "8px 12px",
+								background: "linear-gradient(160deg, #1e293b 0%, #0f172a 100%)",
+								color: "rgb(226,232,240)",
+								fontFamily: "inherit"
+							},
+							children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+									onClick: () => {
+										openTemplate(t.filename).catch(() => {});
+									},
+									style: {
+										flex: 1,
+										border: 0,
+										background: "transparent",
+										color: "inherit",
+										cursor: "pointer",
+										textAlign: "left",
+										padding: 0,
+										fontFamily: "inherit",
+										display: "flex",
+										flexDirection: "column",
+										gap: 2
+									},
+									children: [
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: {
+												fontSize: 15,
+												lineHeight: 0,
+												color: "rgba(250,204,21,0.9)",
+												display: "inline"
+											},
+											children: "⚙ "
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: {
+												fontSize: 13,
+												fontWeight: 600,
+												overflow: "hidden",
+												textOverflow: "ellipsis",
+												whiteSpace: "nowrap",
+												display: "inline"
+											},
+											children: t.name || t.filename
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: {
+												fontSize: 10,
+												fontFamily: "ui-monospace, monospace",
+												color: "rgba(148,163,184,0.9)",
+												overflow: "hidden",
+												textOverflow: "ellipsis",
+												whiteSpace: "nowrap"
+											},
+											children: t.filename
+										})
+									]
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+									onClick: () => {
+										const nn = window.prompt("New name for " + t.name, t.name);
+										if (nn && nn !== t.name) renameTemplate(t.name, nn).catch(() => {});
+									},
+									style: {
+										border: "1px solid rgba(148,163,184,0.25)",
+										background: "transparent",
+										color: "rgb(148,163,184,0.9)",
+										borderRadius: 6,
+										padding: "3px 8px",
+										fontSize: 10,
+										cursor: "pointer",
+										fontFamily: "inherit"
+									},
+									children: "rename"
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+									onClick: () => {
+										if (window.confirm("Delete template \"" + t.name + "\"?")) deleteTemplate(t.filename).catch(() => {});
+									},
+									style: {
+										border: "1px solid rgba(248,113,113,0.4)",
+										background: "transparent",
+										color: "rgba(248,113,113,0.9)",
+										borderRadius: 6,
+										padding: "3px 8px",
+										fontSize: 10,
+										cursor: "pointer",
+										fontFamily: "inherit"
+									},
+									children: "delete"
+								})
+							]
+						}, t.filename))
 					}) : gatewayErrors.length > 0 ? gatewayErrors.map((e) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						style: {
 							fontSize: 11,
@@ -835,6 +1049,302 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
+		//#region src/client/PipelinesPanel.tsx
+		/**
+		* PipelinesPanel — the RIGHT-SIDEBAR Pipelines tab.
+		*
+		* Lists the composed action cards (drafts) from the host half's merged
+		* /infer-media/drafts door — every gateway's queue-native pipeline
+		* instances, newest first. Click a row: the Cards studio opens with THAT
+		* card hydrated (the deck's own __meliteDeckOpenWithDraft seam — the same
+		* door the media panel's run wand uses), ready to refine and Run.
+		*
+		* Deliberately sibling to MediaPanel's styling family (plain inline
+		* styles, no css-modules) — the two tabs read as one system.
+		*/
+		/** Sidebar tab glyph — a flow arrow, exported for the client entry. */
+		function PipelinesTabIcon({ size }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
+				width: size,
+				height: size,
+				viewBox: "0 0 16 16",
+				fill: "none",
+				"aria-hidden": "true",
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", {
+						d: "M2 4h5a3 3 0 0 1 3 3v2a3 3 0 0 0 3 3h1",
+						stroke: "currentColor",
+						strokeWidth: "1.6",
+						strokeLinecap: "round"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "2.8",
+						cy: "4",
+						r: "1.4",
+						fill: "currentColor"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "13.2",
+						cy: "12",
+						r: "1.4",
+						fill: "currentColor"
+					})
+				]
+			});
+		}
+		function PipelinesPanel() {
+			const [feed, setFeed] = (0, react.useState)({
+				drafts: [],
+				errors: []
+			});
+			const [loading, setLoading] = (0, react.useState)(true);
+			const [error, setError] = (0, react.useState)("");
+			const [search, setSearch] = (0, react.useState)("");
+			const load = (0, react.useCallback)(() => {
+				setLoading(true);
+				setError("");
+				fetch("/infer-media/drafts").then(async (r) => {
+					const data = await r.json();
+					if (!r.ok) throw new Error(String(data.error ?? r.status));
+					setFeed({
+						drafts: Array.isArray(data.drafts) ? data.drafts : [],
+						errors: Array.isArray(data.errors) ? data.errors : []
+					});
+				}).catch((e) => {
+					setError(e instanceof Error ? e.message : String(e));
+				}).finally(() => {
+					setLoading(false);
+				});
+			}, []);
+			(0, react.useEffect)(() => {
+				load();
+			}, [load]);
+			(0, react.useEffect)(() => {
+				let last = Date.now();
+				const refresh = () => {
+					if (Date.now() - last < 15e3) return;
+					last = Date.now();
+					load();
+				};
+				const onVis = () => {
+					if (document.visibilityState === "visible") refresh();
+				};
+				document.addEventListener("visibilitychange", onVis);
+				window.addEventListener("focus", refresh);
+				return () => {
+					document.removeEventListener("visibilitychange", onVis);
+					window.removeEventListener("focus", refresh);
+				};
+			}, [load]);
+			const openDraft = (draftId) => {
+				if (draftId === "") return;
+				const open = window.__meliteDeckOpenWithDraft;
+				if (typeof open !== "function") {
+					setError("Cards studio unavailable (deck plugin not loaded)");
+					return;
+				}
+				if (!open(draftId)) setError("Cards studio refused to open");
+			};
+			const q = search.trim().toLowerCase();
+			const shown = q === "" ? feed.drafts : feed.drafts.filter((d) => [
+				d.name ?? "",
+				d.model ?? "",
+				d.draft_id ?? ""
+			].join(" ").toLowerCase().includes(q));
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				"data-infer-pipelines-panel": "1",
+				style: {
+					padding: 14,
+					fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
+					color: "rgb(226,232,240)",
+					height: "100%",
+					overflowY: "auto",
+					boxSizing: "border-box"
+				},
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						style: {
+							display: "flex",
+							alignItems: "center",
+							gap: 10,
+							flexWrap: "wrap",
+							marginBottom: 10
+						},
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								style: {
+									fontWeight: 700,
+									fontSize: 14
+								},
+								children: "Pipelines"
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+								style: {
+									fontSize: 11,
+									color: "rgba(148,163,184,0.9)"
+								},
+								children: [
+									feed.drafts.length,
+									" cards",
+									feed.errors.length > 0 ? " · " + feed.errors.length + " gateway down" : ""
+								]
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { style: { flex: 1 } }),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+								value: search,
+								onChange: (e) => {
+									setSearch(e.target.value);
+								},
+								placeholder: "search name, model…",
+								style: {
+									background: "rgba(15,23,42,0.9)",
+									border: "1px solid rgba(148,163,184,0.25)",
+									color: "rgb(226,232,240)",
+									borderRadius: 8,
+									padding: "5px 10px",
+									fontSize: 12,
+									width: 170,
+									fontFamily: "inherit"
+								}
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+								onClick: () => {
+									load();
+								},
+								disabled: loading,
+								style: {
+									border: "1px solid rgba(148,163,184,0.25)",
+									background: "transparent",
+									color: "rgb(203,213,225)",
+									borderRadius: 8,
+									padding: "5px 10px",
+									fontSize: 12,
+									cursor: loading ? "default" : "pointer",
+									fontFamily: "inherit"
+								},
+								children: loading ? "loading…" : "refresh"
+							})
+						]
+					}),
+					feed.errors.map((e) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						style: {
+							fontSize: 11,
+							color: "rgba(251,191,36,0.9)",
+							marginBottom: 4
+						},
+						children: [
+							"gateway ",
+							e.gateway,
+							" unreachable — ",
+							e.message
+						]
+					}, e.gateway)),
+					error !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						style: {
+							padding: 14,
+							borderRadius: 8,
+							background: "rgba(127,29,29,0.35)",
+							border: "1px solid rgba(248,113,113,0.4)",
+							fontSize: 13
+						},
+						children: error
+					}) : loading && feed.drafts.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						style: {
+							color: "rgba(148,163,184,0.9)",
+							fontSize: 13,
+							padding: 20
+						},
+						children: "loading cards…"
+					}) : shown.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						style: {
+							color: "rgba(148,163,184,0.9)",
+							fontSize: 13,
+							padding: 20
+						},
+						children: "no composed cards yet — build one in a chat."
+					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						style: {
+							display: "flex",
+							flexDirection: "column",
+							gap: 6
+						},
+						children: shown.map((d) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+							onClick: () => {
+								openDraft(d.draft_id ?? "");
+							},
+							"data-draft": d.draft_id,
+							style: {
+								display: "flex",
+								alignItems: "center",
+								gap: 10,
+								textAlign: "left",
+								border: "1px solid rgba(148,163,184,0.18)",
+								borderRadius: 10,
+								padding: "8px 12px",
+								background: "linear-gradient(160deg, #1e293b 0%, #0f172a 100%)",
+								cursor: "pointer",
+								color: "rgb(226,232,240)",
+								fontFamily: "inherit"
+							},
+							children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									style: {
+										fontSize: 15,
+										lineHeight: 0,
+										color: "rgba(250,204,21,0.9)"
+									},
+									children: "▸"
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									style: {
+										flex: 1,
+										minWidth: 0,
+										display: "flex",
+										flexDirection: "column",
+										gap: 2
+									},
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										style: {
+											fontSize: 13,
+											fontWeight: 600,
+											overflow: "hidden",
+											textOverflow: "ellipsis",
+											whiteSpace: "nowrap"
+										},
+										children: d.name || d.draft_id
+									}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+										style: {
+											fontSize: 10,
+											fontFamily: "ui-monospace, monospace",
+											color: "rgba(148,163,184,0.9)",
+											overflow: "hidden",
+											textOverflow: "ellipsis",
+											whiteSpace: "nowrap"
+										},
+										children: [
+											d.model || "card",
+											" · ",
+											d.draft_id
+										]
+									})]
+								}),
+								typeof d.source === "string" && d.source !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									style: {
+										fontSize: 9,
+										color: "rgba(148,163,184,0.75)",
+										border: "1px solid rgba(148,163,184,0.25)",
+										borderRadius: 6,
+										padding: "2px 6px"
+									},
+									children: d.source.replace(/^https?:\/\//, "")
+								}) : null
+							]
+						}, d.draft_id ?? Math.random()))
+					})
+				]
+			});
+		}
+		//#endregion
 		//#region src/client/index.ts
 		/**
 		* `@infer-media/dsh-media` — client half.
@@ -885,6 +1395,19 @@ window.__ModuleLoader__.load({
 					if (typeof dispose === "function") dispose();
 				};
 			}, "infer-media: media tab");
+			ctx.effect(() => {
+				const dispose = bs.registerTab({
+					id: "infer-media:pipelines",
+					title: () => "Pipelines",
+					icon: (size) => react.createElement(PipelinesTabIcon, { size }),
+					order: 56,
+					single: true,
+					component: PipelinesPanel
+				});
+				return () => {
+					if (typeof dispose === "function") dispose();
+				};
+			}, "infer-media: pipelines tab");
 		}
 		//#endregion
 		exports.apply = apply;

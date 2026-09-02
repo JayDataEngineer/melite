@@ -4,19 +4,19 @@ import path from "node:path";
 /**
 * `@melite-plugin/dsh-card-deck` — host half.
 *
-* Same-origin proxy routes on the webServer service (melite-gallery pattern):
+* Same-origin proxy routes on the webServer service (ray-gallery pattern):
 *
-* - GET  /melite-deck/forms            → /v1/forms (card declarations)
-* - GET  /melite-deck/models           → /v1/model-catalog (model rows)
-* - GET  /melite-deck/form-spec?model= → /v1/form-spec?model= (validated id)
-* - POST /melite-deck/start            → /v1/pipelines/start (THE run door)
-* - GET  /melite-deck/status?run=      → /v1/pipelines/status/{run} (validated id)
-* - GET  /melite-deck/artifact?path=   → one asset, /editor/assets/runs/ only
+* - GET  /ray-deck/forms            → /v1/forms (card declarations)
+* - GET  /ray-deck/models           → /v1/model-catalog (model rows)
+* - GET  /ray-deck/form-spec?model= → /v1/form-spec?model= (validated id)
+* - POST /ray-deck/start            → /v1/pipelines/start (THE run door)
+* - GET  /ray-deck/status?run=      → /v1/pipelines/status/{run} (validated id)
+* - GET  /ray-deck/artifact?path=   → one asset, /editor/assets/runs/ only
 *
 * Failure policy: reachable webServer + unreachable gateway = 502 JSON with
 * the verbatim upstream body; handlers never throw.
 */
-const name = "melite-card-deck";
+const name = "ray-card-deck";
 const inject = ["webServer"];
 const DEFAULT_GATEWAY_URL = "http://localhost:33081";
 const DEFAULT_TIMEOUT_MS = 2e4;
@@ -57,8 +57,8 @@ function apply(ctx, config) {
 				}));
 			}
 		}
-	}), `melite-card-deck: ${route} route`);
-	ctx.logger.info("melite-card-deck proxying gateway %s", gatewayUrl);
+	}), `ray-card-deck: ${route} route`);
+	ctx.logger.info("ray-card-deck proxying gateway %s", gatewayUrl);
 	const LLM_STUBS = {
 		"/v1/llm/keys": [200, { keys: [] }],
 		"/v1/llm/keys/active": [404, {
@@ -85,9 +85,9 @@ function apply(ctx, config) {
 			res.writeHead(status, JSON_HEADERS);
 			res.end(JSON.stringify(body));
 		}
-	}), "melite-card-deck: /v1/llm stub (DSH owns the LLM)");
+	}), "ray-card-deck: /v1/llm stub (DSH owns the LLM)");
 	const here = path.dirname(fileURLToPath(import.meta.url));
-	const EDITOR_DIST = process.env.MELITE_EDITOR_DIST ?? path.resolve(here, "..", "..", "..", "web", "editor", "dist");
+	const EDITOR_DIST = process.env.RAY_EDITOR_DIST ?? path.resolve(here, "..", "..", "..", "web", "editor", "dist");
 	const MIME = {
 		".html": "text/html; charset=utf-8",
 		".js": "text/javascript; charset=utf-8",
@@ -125,9 +125,13 @@ function apply(ctx, config) {
 				const buf = Buffer.from(await response.arrayBuffer());
 				const h = {};
 				for (const [k, v] of response.headers) if (typeof v === "string") h[k] = v;
+				// (2026-09-01 the truncated-JSON fix) fetch() decompresses the
+				// gzipped body; the upstream content-length describes the
+				// COMPRESSED size — keeping it made Node truncate every response
+				// to the gzip size ("unterminated string at column 157").
 				delete h["content-encoding"];
 				delete h["transfer-encoding"];
-				h["content-length"] = String(buf.byteLength);
+				h["content-length"] = String(buf.length);
 				res.writeHead(response.status, h);
 				res.end(buf);
 			} catch (e) {
@@ -138,7 +142,7 @@ function apply(ctx, config) {
 				}));
 			}
 		}
-	}), `melite-card-deck: ${prefix} gateway proxy`);
+	}), `ray-card-deck: ${prefix} gateway proxy`);
 	const serveStatic = async (rel, res) => {
 		const fs = await import("node:fs/promises");
 		const path = await import("node:path");
@@ -178,12 +182,12 @@ function apply(ctx, config) {
 		handler: async (req, res) => {
 			await serveStatic(new URL(req.url ?? "/editor/", "http://local").pathname, res);
 		}
-	}), "melite-card-deck: /editor static");
-	proxyJson("/v1/forms", "/melite-deck/forms");
-	proxyJson("/v1/model-catalog", "/melite-deck/models");
+	}), "ray-card-deck: /editor static");
+	proxyJson("/v1/forms", "/ray-deck/forms");
+	proxyJson("/v1/model-catalog", "/ray-deck/models");
 	ctx.effect(() => ctx.webServer.register({
 		kind: "exact",
-		path: "/melite-deck/form-spec",
+		path: "/ray-deck/form-spec",
 		handler: async (req, res) => {
 			const model = safeId(new URL(req.url ?? "/", "http://local").searchParams.get("model"));
 			if (model === null) {
@@ -207,10 +211,10 @@ function apply(ctx, config) {
 				}));
 			}
 		}
-	}), "melite-card-deck: /melite-deck/form-spec route");
+	}), "ray-card-deck: /ray-deck/form-spec route");
 	ctx.effect(() => ctx.webServer.register({
 		kind: "exact",
-		path: "/melite-deck/status",
+		path: "/ray-deck/status",
 		handler: async (req, res) => {
 			const run = safeId(new URL(req.url ?? "/", "http://local").searchParams.get("run"));
 			if (run === null) {
@@ -230,12 +234,12 @@ function apply(ctx, config) {
 					for (const a of parsed.artifacts ?? []) {
 						const p = a.url ?? a.path;
 						if (typeof p === "string" && p.startsWith(ASSET_PREFIX)) {
-							const proxied = "/melite-deck/artifact?path=" + encodeURIComponent(p);
+							const proxied = "/ray-deck/artifact?path=" + encodeURIComponent(p);
 							if (a.url !== void 0) a.url = proxied;
 							else a.path = proxied;
 						}
 					}
-					for (const s of parsed.stages ?? []) if (typeof s.url === "string" && s.url.startsWith(ASSET_PREFIX)) s.url = "/melite-deck/artifact?path=" + encodeURIComponent(s.url);
+					for (const s of parsed.stages ?? []) if (typeof s.url === "string" && s.url.startsWith(ASSET_PREFIX)) s.url = "/ray-deck/artifact?path=" + encodeURIComponent(s.url);
 					out = JSON.stringify(parsed);
 				} catch {}
 				res.writeHead(response.status, JSON_HEADERS);
@@ -248,10 +252,10 @@ function apply(ctx, config) {
 				}));
 			}
 		}
-	}), "melite-card-deck: /melite-deck/status route");
+	}), "ray-card-deck: /ray-deck/status route");
 	ctx.effect(() => ctx.webServer.register({
 		kind: "exact",
-		path: "/melite-deck/start",
+		path: "/ray-deck/start",
 		handler: async (req, res) => {
 			if (req.method !== "POST") {
 				res.writeHead(405, JSON_HEADERS);
@@ -278,10 +282,10 @@ function apply(ctx, config) {
 				}));
 			}
 		}
-	}), "melite-card-deck: /melite-deck/start route");
+	}), "ray-card-deck: /ray-deck/start route");
 	ctx.effect(() => ctx.webServer.register({
 		kind: "exact",
-		path: "/melite-deck/artifact",
+		path: "/ray-deck/artifact",
 		handler: async (req, res) => {
 			const path = new URL(req.url ?? "/", "http://local").searchParams.get("path") ?? "";
 			if (!path.startsWith(ASSET_PREFIX)) {
@@ -308,7 +312,7 @@ function apply(ctx, config) {
 				}));
 			}
 		}
-	}), "melite-card-deck: /melite-deck/artifact route");
+	}), "ray-card-deck: /ray-deck/artifact route");
 }
 //#endregion
 export { apply, inject, name };

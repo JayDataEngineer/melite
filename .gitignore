@@ -72,3 +72,8 @@ Thumbs.db
 *.zip
 *.7z
 references/autoremesher/
+
+# === session scratch (kept on disk, out of git) ===
+agent-sessions/
+asan-build/
+drafts/

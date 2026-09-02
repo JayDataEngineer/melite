@@ -123,7 +123,7 @@ const DRAFT_TIMEOUT_MS$1 = 15e3;
 function buildPipeline(gatewayUrl) {
 	return {
 		name: "build_pipeline",
-		description: "Compose the action cards for ONE Melite generation (image/video/audio/3D): creates a pipeline draft and the conversation renders the REAL editable card tiles (prompt, model params — refined in the card, run by the user pressing Run). Pick sound defaults and hand it back — do not ask for details first. Args: model (a catalog id from model_catalog) + prompt (+ optional params bag). For options or variations, call it once per variation — the cards stack in the conversation. This tool never executes anything — there is no run tool; ONLY the user starts runs, from the cards.",
+		description: "GENERIC FALLBACK — prefer the lane's DEDICATED CARD TOOL (image_card, tts_card, video_card, music_card, sfx_card, three_d_card, motion_card, body_card, image_edit_card, h3_timeline_card, the *_flow tools) when one fits; reach for this only when no card tool covers the model. Compose the action cards for ONE Melite generation (image/video/audio/3D): creates a pipeline draft and the conversation renders the REAL editable card tiles (prompt, model params — refined in the card, run by the user pressing Run). Pick sound defaults and hand it back — do not ask for details first. Args: model (a catalog id from model_catalog) + prompt (+ optional params bag). For options or variations, call it once per variation — the cards stack in the conversation. This tool never executes anything — there is no run tool; ONLY the user starts runs, from the cards.",
 		parameters: {
 			type: "object",
 			properties: {
@@ -176,7 +176,7 @@ function buildPipeline(gatewayUrl) {
 				const n = Array.isArray(v.stages) ? v.stages.length : 0;
 				return [{
 					type: "text",
-					text: "cards draft " + String(v.draftId ?? "?") + " — " + n + " card" + (n === 1 ? "" : "s") + " (" + String(v.model ?? "?") + ") · the user presses Run on the card"
+					text: "card " + String(v.draftId ?? "?") + " (" + String(v.model ?? "?") + ") — " + n + " stage" + (n === 1 ? "" : "s") + " · the user presses Run on the card"
 				}];
 			}
 		},
@@ -191,18 +191,36 @@ function buildPipeline(gatewayUrl) {
 				const near = Object.keys(models).slice(0, 12).join(", ");
 				throw new Error("build_pipeline: unknown model \"" + a.model + "\" — catalog has: " + near);
 			}
+			try {
+				const v = await gatewayRequest(gatewayUrl, "GET", "/v1/card-tools/validate?model=" + encodeURIComponent(a.model), void 0, exec.signal, 1e4);
+				if (v.runnable !== true) throw new Error("build_pipeline: " + (v.error || "model \"" + a.model + "\" cannot run"));
+			} catch (e) {
+				if (e instanceof Error && /cannot run/.test(e.message)) throw e;
+			}
 			const familyId = typeof entry.family === "string" ? entry.family : a.model;
 			const famLabel = cat.families?.[familyId]?.label;
-			const title = typeof famLabel === "string" && famLabel.length > 0 ? famLabel : familyId;
+			let title = typeof famLabel === "string" && famLabel.length > 0 ? famLabel : familyId;
+			let cardDefaults = {};
+			try {
+				const tools = await gatewayRequest(gatewayUrl, "GET", "/v1/card-tools", void 0, exec.signal, CATALOG_TIMEOUT_MS$1);
+				const manifest = Array.isArray(tools) ? tools.find((t) => t.model === a.model) : void 0;
+				if (manifest !== void 0) {
+					const st = manifest.stage_title;
+					if (typeof st === "string" && st.length > 0) title = st;
+					const props = (manifest.params_schema !== null && typeof manifest.params_schema === "object" && manifest.params_schema.properties) ?? {};
+					for (const [k, spec] of Object.entries(props)) if (spec.default !== void 0) cardDefaults[k] = spec.default;
+				}
+			} catch {}
 			const defaults = entry.defaults !== null && typeof entry.defaults === "object" && !Array.isArray(entry.defaults) ? entry.defaults : {};
 			const bag = a.params !== null && typeof a.params === "object" && !Array.isArray(a.params) ? a.params : {};
 			const params = {
+				...cardDefaults,
 				...defaults,
 				...bag,
 				prompt: a.prompt
 			};
 			const draft = await gatewayRequest(gatewayUrl, "POST", "/v1/pipelines/drafts", {
-				intent: a.prompt,
+				intent: a.prompt.length > 80 ? a.prompt.slice(0, 77) + "…" : a.prompt,
 				stages: [{
 					title,
 					kind: "generation",
@@ -373,15 +391,23 @@ function enhanceOneField(llm, recipe, prompt, temperature, signal) {
 	});
 }
 /**
+* GENERIC FALLBACK RECIPE — the shared core (2026-09-01): most models
+* declare no per-model enhance recipe; throwing made enhance_prompt AND
+* the sweep door both useless for them. One recipe, used by every door.
+*/
+const GENERIC_ENHANCE_RECIPE = "You rewrite rough generation prompts into model-optimal ones. Expand terse descriptions into concrete visual/audio language: subject, action, setting, lighting, composition, style, medium, detail level. Reply with ONLY a JSON object {\"positive\": \"<the rewritten prompt>\", \"negative\": \"<what to avoid, or empty string>\"} — no prose outside the JSON.";
+/**
 * THE SWEEP — every declared field, one press. The route's model-form uses
 * this: the CALLER orchestrates (a button, not a conversational agent), so
 * unlike the chat tool there is no listing round-trip — all declared fields
-* are enhanced sequentially and returned together.
+* are enhanced sequentially and returned together. A model with NO declared
+* fields sweeps ONE generic 'prompt' field (the shared fallback recipe).
 */
 async function agenticSweep(gatewayUrl, llm, opts) {
 	const { fields } = await fetchDeclaredFields(gatewayUrl, opts.model, opts.signal);
-	const names = Object.keys(fields);
-	if (names.length === 0) throw new Error("agentic enhance: model \"" + opts.model + "\" declares no enhance recipe");
+	let names = Object.keys(fields);
+	if (names.length === 0) names = ["prompt"];
+	if (names.length === 1 && fields[names[0]] === void 0) fields[names[0]] = GENERIC_ENHANCE_RECIPE;
 	const results = {};
 	for (const name of names) results[name] = await enhanceOneField(llm, fields[name], opts.prompt, opts.temperature, opts.signal);
 	return {
@@ -469,11 +495,13 @@ function enhancePrompt(gatewayUrl, llm) {
 				fields: names
 			});
 			const fieldName = wantsField ?? names[0] ?? "";
-			if (fieldName === "" || fields[fieldName] === void 0) throw new Error("enhance_prompt: model \"" + a.model + "\" declares no recipe" + (wantsField ? " for field \"" + wantsField + "\"" : "") + (names.length > 0 ? " — declared fields: " + names.join(", ") : " — no enhance recipe at all"));
-			const result = await enhanceOneField(llm, fields[fieldName], a.prompt, typeof a.temperature === "number" ? a.temperature : void 0, exec.signal);
+			const recipe = fieldName !== "" && fields[fieldName] !== void 0 ? fields[fieldName] : { system: GENERIC_ENHANCE_RECIPE };
+			const usedFallback = fieldName === "" || fields[fieldName] === void 0;
+			const result = await enhanceOneField(llm, recipe, a.prompt, typeof a.temperature === "number" ? a.temperature : void 0, exec.signal);
 			return jsonClean({
 				model: a.model,
-				field: fieldName,
+				field: fieldName === "" ? "prompt" : fieldName,
+				recipe: usedFallback ? "generic" : "model-declared",
 				positive: result.positive,
 				negative: result.negative
 			});
@@ -490,7 +518,7 @@ function paramKeys(t) {
 function laneBundle(gatewayUrl) {
 	return {
 		name: "lane_bundle",
-		description: "Load one inference lane's full bundle (tool manifest + skills), or LIST all lanes when called with no arguments. With {lane}: GET /v1/cards/<lane>/bundle → the lane's params_schema (the card's input contract) and its skill documents (rules, seam/grid laws, recipes) — read these BEFORE build_pipeline. Without arguments: one compact row per lane from the gateway's card catalog — lane key, card tool name, title, param keys. Lane keys resolve by card dir name (\"video-gen\", \"image-gen\", \"tts\", \"sfx\", \"music\", \"3d-gen\", \"motion-gen\", \"body\", \"humanoid-flow\") or by model id (\"krea-2\", \"qwen3-tts\", \"h3-timeline\").",
+		description: "Load one inference lane's full bundle (card-tool manifest + skills), or LIST all lanes when called with no arguments. With {lane}: GET /v1/cards/<lane>/bundle → the lane's card tool(s) with params_schema (the card's input contract) and its skill documents (rules, seam/grid laws, recipes). THE COMPOSE FLOW: lane_bundle(lane) → read the manifest (tools[0].name is the lane's DEDICATED CARD TOOL — image_card, tts_card, video_card, three_d_card…) → call THAT tool with params from its params_schema. build_pipeline(model, prompt) is the generic fallback ONLY when the lane has no card tool. Without arguments: one compact row per lane — lane key, card tool name, title, param keys. Lane keys resolve by card dir name (\"video-gen\", \"image-gen\", \"tts\", \"sfx\", \"music\", \"3d-gen\", \"motion-gen\", \"body\", \"humanoid-flow\") or by model id (\"krea-2\", \"qwen3-tts\", \"h3-timeline\").",
 		parameters: {
 			type: "object",
 			properties: { lane: {
@@ -860,7 +888,9 @@ function refineDraft(gatewayUrl) {
 				const first = stages[0];
 				sid = typeof first.id === "string" && first.id.length > 0 ? first.id : "s_0";
 			}
-			const updated = await gatewayRequest(gatewayUrl, "PATCH", "/v1/pipelines/drafts/" + encodeURIComponent(a.draftId) + "/stages/" + encodeURIComponent(sid), { params: a.params }, exec.signal, TIMEOUT_MS);
+			const mergeParams = {};
+			for (const [k, v] of Object.entries(a.params)) mergeParams[k] = k === "calls" && Array.isArray(v) ? JSON.stringify(v) : v;
+			const updated = await gatewayRequest(gatewayUrl, "PATCH", "/v1/pipelines/drafts/" + encodeURIComponent(a.draftId) + "/stages/" + encodeURIComponent(sid), { params: mergeParams }, exec.signal, TIMEOUT_MS);
 			const stages = Array.isArray(updated.stages) ? updated.stages : [];
 			const patched = stages.find((s) => s.id === sid) ?? stages[0] ?? {};
 			const params = patched.params !== null && typeof patched.params === "object" ? patched.params : {};
@@ -1113,6 +1143,11 @@ function validateCardArgs(m, args) {
 	}
 	const cons = m.constraints ?? {};
 	const callsProp = props.calls;
+	if (callsProp === void 0) return {
+		params: out,
+		calls: null,
+		fps: 0
+	};
 	const calls = Array.isArray(args.calls) ? args.calls : fail(name, "calls[] is required");
 	if (callsProp?.min_items !== void 0 && calls.length < callsProp.min_items) fail(name, "calls needs at least " + String(callsProp.min_items) + " entry");
 	if (callsProp?.max_items !== void 0 && calls.length > callsProp.max_items) fail(name, "calls exceeds " + String(callsProp.max_items) + " entries");
@@ -1195,19 +1230,25 @@ async function cardTools(gatewayUrl, signal, lane) {
 				},
 				render: (_a, v) => [{
 					type: "text",
-					text: "card " + String(v?.draftId ?? "?") + " (" + model + ") — " + String(v?.shots ?? "?") + " shots, 1 run"
+					text: "card " + String(v?.draftId ?? "?") + " (" + model + ") — " + (Array.isArray(v?.stages) && v.stages.length > 0 ? String(v.stages.length) + " stage" : String(v?.shots ?? 1) + " shot") + ", 1 run"
 				}]
 			},
 			async execute(args, exec) {
 				const a = args ?? {};
 				const { params, calls, fps } = validateCardArgs(m, a);
 				const intent = typeof a.intent === "string" && a.intent ? a.intent : fail(toolName, "intent is required");
-				const doc = {
-					calls: JSON.stringify(calls),
-					fps,
-					intent
-				};
-				for (const [k, v] of Object.entries(params)) if (k !== "calls" && k !== "intent") doc[k] = v;
+				let doc;
+				if (calls === null) {
+					doc = {};
+					for (const [k, v] of Object.entries(params)) if (k !== "intent") doc[k] = v;
+				} else {
+					doc = {
+						calls: JSON.stringify(calls),
+						fps,
+						intent
+					};
+					for (const [k, v] of Object.entries(params)) if (k !== "calls" && k !== "intent") doc[k] = v;
+				}
 				const draft = await gwJson(gatewayUrl, "POST", "/v1/pipelines/drafts", {
 					intent,
 					stages: [{
@@ -1218,8 +1259,6 @@ async function cardTools(gatewayUrl, signal, lane) {
 					}]
 				}, exec?.signal, DRAFT_TIMEOUT_MS);
 				if (typeof draft.draftId !== "string" || draft.draftId === "") fail(toolName, "gateway draft POST returned no draftId");
-				const totalFrames = calls[calls.length - 1].end_frame;
-				const seams = calls.filter((c3) => c3.first_frame_prev_sec !== void 0).length;
 				const clean = (x) => {
 					if (Array.isArray(x)) return x.map(clean);
 					if (x && typeof x === "object") {
@@ -1233,6 +1272,16 @@ async function cardTools(gatewayUrl, signal, lane) {
 					if (typeof x === "function" || x === void 0) return void 0;
 					return x;
 				};
+				if (calls === null) return clean({
+					card: "draft",
+					draftId: draft.draftId,
+					model,
+					title: stageTitle,
+					runs: 1,
+					stages: Array.isArray(draft.stages) ? draft.stages : []
+				});
+				const totalFrames = calls[calls.length - 1].end_frame;
+				const seams = calls.filter((c3) => c3.first_frame_prev_sec !== void 0).length;
 				return clean({
 					card: "draft",
 					draftId: draft.draftId,
@@ -1363,4 +1412,4 @@ async function apply(ctx, config = {}) {
 	}), "melite-tools: enhance route");
 }
 //#endregion
-export { DEFAULT_GATEWAY_URL, MELITE_TOOL_NAMES, RayGatewayError, apply, inject, name, normalizeGatewayUrl };
+export { DEFAULT_GATEWAY_URL, MELITE_TOOL_NAMES, RayGatewayError, apply, buildPipeline, cardTools, enhancePrompt, inject, laneBundle, ledgerTail, modelCatalog, name, normalizeGatewayUrl, provisionModel, refineDraft, skillIndex, skillRead };

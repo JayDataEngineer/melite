@@ -15,11 +15,11 @@
  */
 import { createRoot } from 'react-dom/client'
 import css from './deck.module.css'
-import { DeckCanvas, setPendingDraft, OPEN_DRAFT_EVENT } from './DeckCanvas.tsx'
+import { DeckCanvas } from './DeckCanvas.tsx'
 import { mountSidebarEntry } from './sidebar-entry-core.ts'
 
 /** The mounted deck container (taskboard-style overlay child of the column). */
-const CONTAINER_SEL = '[data-melite-cards-deck-view]'
+const CONTAINER_SEL = '[data-ray-cards-deck-view]'
 
 /** The center column the container overlays (same selector as deck-fullbleed). */
 const COLUMN_SEL = '[data-pane="conversation"], [class*="centerCol"]'
@@ -28,7 +28,7 @@ const COLUMN_SEL = '[data-pane="conversation"], [class*="centerCol"]'
 const FAMILY_SELECTORS = [
   '[data-dsh-taskboard-entry]',
   '[data-dsh-ssh-entry]',
-  '[data-melite-cards-entry]',
+  '[data-ray-cards-entry]',
 ] as const
 
 /** Cards icon — two stacked cards, the shell's 16px nav-icon look. */
@@ -38,7 +38,7 @@ const ICON = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-h
   + ' fill="var(--dsw-alias-bg-base, #17171c)"/></svg>'
 
 /** Deck open-state events (the active-bridge the entry core subscribes to). */
-const OPEN_EVENT = 'melite-cards-deck-open-changed'
+const OPEN_EVENT = 'ray-cards-deck-open-changed'
 
 function isOpen(): boolean {
   return document.querySelector(CONTAINER_SEL) !== null
@@ -48,10 +48,7 @@ function isOpen(): boolean {
 function openDeck(): void {
   if (isOpen()) return
   const column = document.querySelector<HTMLElement>(COLUMN_SEL)
-  if (column === null) {
-    console.warn('[melite-cards] deck cannot mount: center column not found (' + COLUMN_SEL + ') - shell DOM changed or still loading')
-    return
-  }
+  if (column === null) return
   const container = document.createElement('div')
   container.setAttribute(CONTAINER_SEL.slice(1, -1), '')
   // Task-board overlay geometry: the column is position:relative while any
@@ -83,9 +80,9 @@ function closeDeck(): void {
  * @returns disposer removing the row.
  */
 export function mountCardsSidebarEntry(): () => void {
-  const dispose = mountSidebarEntry({
-    rowAttribute: 'data-melite-cards-entry',
-    rowSelector: '[data-melite-cards-entry]',
+  return mountSidebarEntry({
+    rowAttribute: 'data-ray-cards-entry',
+    rowSelector: '[data-ray-cards-entry]',
     icon: ICON,
     css: {
       entry: css['entry'] ?? '',
@@ -93,7 +90,7 @@ export function mountCardsSidebarEntry(): () => void {
       entryLabel: css['entryLabel'] ?? '',
     },
     label: () => 'Cards',
-    tooltip: () => 'Melite card deck',
+    tooltip: () => 'Ray card deck',
     onToggle: () => { isOpen() ? closeDeck() : openDeck() },
     position: 'before',
     familySelectors: FAMILY_SELECTORS,
@@ -105,25 +102,4 @@ export function mountCardsSidebarEntry(): () => void {
       isOpen,
     },
   })
-
-  /* CARD REPLAY DOOR (2026-08-30, additive): other bundles (the media
-   * panel's wand) open THE STUDIO with one draft loaded — the editor's
-   * ?meliteCards=<id> hydration. Closed deck: park the draft, open (the
-   * canvas consumes it at mount). Open deck: hand it to the live canvas. */
-  ;(window as unknown as Record<string, unknown>).__meliteDeckOpenWithDraft =
-    (draftId: string): boolean => {
-      if (typeof draftId !== 'string' || draftId === '') return false
-      if (isOpen()) {
-        document.dispatchEvent(new CustomEvent(OPEN_DRAFT_EVENT, { detail: { draftId } }))
-      } else {
-        setPendingDraft(draftId)
-        openDeck()
-      }
-      return true
-    }
-
-  return () => {
-    delete (window as unknown as Record<string, unknown>).__meliteDeckOpenWithDraft
-    dispose()
-  }
 }

@@ -70,10 +70,23 @@ export function enhanceOneField(
 export type LlmSeam = import('./llm-complete.ts').LlmStreamSeam
 
 /**
+ * GENERIC FALLBACK RECIPE — the shared core (2026-09-01): most models
+ * declare no per-model enhance recipe; throwing made enhance_prompt AND
+ * the sweep door both useless for them. One recipe, used by every door.
+ */
+export const GENERIC_ENHANCE_RECIPE: string =
+  'You rewrite rough generation prompts into model-optimal ones. '
+  + 'Expand terse descriptions into concrete visual/audio language: subject, '
+  + 'action, setting, lighting, composition, style, medium, detail level. '
+  + 'Reply with ONLY a JSON object {"positive": "<the rewritten prompt>", '
+  + '"negative": "<what to avoid, or empty string>"} — no prose outside the JSON.'
+
+/**
  * THE SWEEP — every declared field, one press. The route's model-form uses
  * this: the CALLER orchestrates (a button, not a conversational agent), so
  * unlike the chat tool there is no listing round-trip — all declared fields
- * are enhanced sequentially and returned together.
+ * are enhanced sequentially and returned together. A model with NO declared
+ * fields sweeps ONE generic 'prompt' field (the shared fallback recipe).
  */
 export async function agenticSweep(
   gatewayUrl: string,
@@ -81,9 +94,10 @@ export async function agenticSweep(
   opts: { model: string; prompt: string; temperature?: number; signal: AbortSignal },
 ): Promise<{ model: string; results: Record<string, FieldResult> }> {
   const { fields } = await fetchDeclaredFields(gatewayUrl, opts.model, opts.signal)
-  const names = Object.keys(fields)
-  if (names.length === 0) {
-    throw new Error('agentic enhance: model "' + opts.model + '" declares no enhance recipe')
+  let names = Object.keys(fields)
+  if (names.length === 0) names = ['prompt']
+  if (names.length === 1 && fields[names[0]] === undefined) {
+    fields[names[0]] = GENERIC_ENHANCE_RECIPE
   }
   const results: Record<string, FieldResult> = {}
   for (const name of names) {

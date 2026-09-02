@@ -3,7 +3,7 @@ const name = "infer-media";
 const inject = ["webServer"];
 const DEFAULT_GATEWAYS = ["http://localhost:33081"];
 const DEFAULT_TIMEOUT_MS = 15e3;
-const DEFAULT_LIMIT = 200;
+const DEFAULT_LIMIT = 500;
 const JSON_HEADERS = {
 	"content-type": "application/json; charset=utf-8",
 	"cache-control": "no-store"
@@ -195,6 +195,158 @@ function apply(ctx, config) {
 			}
 		}
 	}), "infer-media: /infer-media/artifact route");
+	const pipelineGw = gateways[0] ?? "";
+	ctx.effect(() => ctx.webServer.register({
+		kind: "exact",
+		path: "/infer-media/pipeline-templates",
+		handler: async (_req, res) => {
+			if (!pipelineGw) {
+				res.writeHead(502, JSON_HEADERS);
+				res.end("{\"error\":\"no gateway\"}");
+				return;
+			}
+			try {
+				const r = await fetch(pipelineGw + "/v1/pipelines/yaml/list", { signal: AbortSignal.timeout(timeoutMs) });
+				const body = await r.text();
+				res.writeHead(r.status, {
+					...JSON_HEADERS,
+					"cache-control": "no-store"
+				});
+				res.end(body);
+			} catch (e) {
+				res.writeHead(502, JSON_HEADERS);
+				res.end(JSON.stringify({
+					error: "gateway_unreachable",
+					message: String(e)
+				}));
+			}
+		}
+	}), "infer-media: /infer-media/pipeline-templates route");
+	ctx.effect(() => ctx.webServer.register({
+		kind: "exact",
+		path: "/infer-media/pipeline-template-detail",
+		handler: async (req, res) => {
+			if (!pipelineGw) {
+				res.writeHead(502, JSON_HEADERS);
+				res.end("{\"error\":\"no gateway\"}");
+				return;
+			}
+			try {
+				const yaml = new URL(req.url, "http://localhost").searchParams.get("yaml") ?? "";
+				const r = await fetch(pipelineGw + "/v1/pipelines/yaml/detail?yaml=" + encodeURIComponent(yaml), { signal: AbortSignal.timeout(timeoutMs) });
+				const body = await r.text();
+				res.writeHead(r.status, {
+					...JSON_HEADERS,
+					"cache-control": "no-store"
+				});
+				res.end(body);
+			} catch (e) {
+				res.writeHead(502, JSON_HEADERS);
+				res.end(JSON.stringify({
+					error: "gateway_unreachable",
+					message: String(e)
+				}));
+			}
+		}
+	}), "infer-media: /infer-media/pipeline-template-detail route");
+	ctx.effect(() => ctx.webServer.register({
+		kind: "exact",
+		path: "/infer-media/pipeline-template-save",
+		handler: async (req, res) => {
+			if (!pipelineGw) {
+				res.writeHead(502, JSON_HEADERS);
+				res.end("{\"error\":\"no gateway\"}");
+				return;
+			}
+			try {
+				const chunks = [];
+				for await (const c of req) chunks.push(c);
+				const body = chunks.length ? Buffer.concat(chunks) : void 0;
+				const r = await fetch(pipelineGw + "/v1/pipelines/yaml/save", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: body && body.length > 0 ? body : void 0,
+					signal: AbortSignal.timeout(timeoutMs)
+				});
+				const respBody = await r.text();
+				res.writeHead(r.status, {
+					...JSON_HEADERS,
+					"cache-control": "no-store"
+				});
+				res.end(respBody);
+			} catch (e) {
+				res.writeHead(502, JSON_HEADERS);
+				res.end(JSON.stringify({
+					error: "gateway_unreachable",
+					message: String(e)
+				}));
+			}
+		}
+	}), "infer-media: /infer-media/pipeline-template-save route");
+	ctx.effect(() => ctx.webServer.register({
+		kind: "exact",
+		path: "/infer-media/pipeline-template-rename",
+		handler: async (req, res) => {
+			if (!pipelineGw) {
+				res.writeHead(502, JSON_HEADERS);
+				res.end("{\"error\":\"no gateway\"}");
+				return;
+			}
+			try {
+				const chunks = [];
+				for await (const c of req) chunks.push(c);
+				const body = chunks.length ? Buffer.concat(chunks) : void 0;
+				const r = await fetch(pipelineGw + "/v1/pipelines/yaml/rename", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: body && body.length > 0 ? body : void 0,
+					signal: AbortSignal.timeout(timeoutMs)
+				});
+				const respBody = await r.text();
+				res.writeHead(r.status, {
+					...JSON_HEADERS,
+					"cache-control": "no-store"
+				});
+				res.end(respBody);
+			} catch (e) {
+				res.writeHead(502, JSON_HEADERS);
+				res.end(JSON.stringify({
+					error: "gateway_unreachable",
+					message: String(e)
+				}));
+			}
+		}
+	}), "infer-media: /infer-media/pipeline-template-rename route");
+	ctx.effect(() => ctx.webServer.register({
+		kind: "exact",
+		path: "/infer-media/pipeline-template-delete",
+		handler: async (req, res) => {
+			if (!pipelineGw) {
+				res.writeHead(502, JSON_HEADERS);
+				res.end("{\"error\":\"no gateway\"}");
+				return;
+			}
+			try {
+				const filename = new URL(req.url, "http://localhost").searchParams.get("filename") ?? "";
+				const r = await fetch(pipelineGw + "/v1/pipelines/yaml/delete?filename=" + encodeURIComponent(filename), {
+					method: "DELETE",
+					signal: AbortSignal.timeout(timeoutMs)
+				});
+				const body = await r.text();
+				res.writeHead(r.status, {
+					...JSON_HEADERS,
+					"cache-control": "no-store"
+				});
+				res.end(body);
+			} catch (e) {
+				res.writeHead(502, JSON_HEADERS);
+				res.end(JSON.stringify({
+					error: "gateway_unreachable",
+					message: String(e)
+				}));
+			}
+		}
+	}), "infer-media: /infer-media/pipeline-template-delete route");
 }
 //#endregion
 export { apply, inject, name };

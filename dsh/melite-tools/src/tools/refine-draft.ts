@@ -105,11 +105,21 @@ export function refineDraft(gatewayUrl: string): ToolDefinition {
         sid = typeof first.id === 'string' && first.id.length > 0 ? first.id : 's_0'
       }
 
+      // CALLS-CARD COERCION (2026-09-01): timeline cards store `calls` as
+      // a JSON STRING (compose-time shape from card-tools). An agent
+      // refining a calls document passes an ARRAY — coerce it here so the
+      // stored param keeps the shape the composer/consumer expects. Same
+      // for any other array-valued calls key.
+      const mergeParams: Record<string, unknown> = {}
+      for (const [k, v] of Object.entries(a.params as Record<string, unknown>)) {
+        mergeParams[k] = k === 'calls' && Array.isArray(v) ? JSON.stringify(v) : v
+      }
+
       // Key-wise MERGE via the editor's own persistence door.
       const updated = await gatewayRequest(
         gatewayUrl, 'PATCH',
         '/v1/pipelines/drafts/' + encodeURIComponent(a.draftId) + '/stages/' + encodeURIComponent(sid),
-        { params: a.params },
+        { params: mergeParams },
         exec.signal, TIMEOUT_MS,
       ) as DraftDoc
 

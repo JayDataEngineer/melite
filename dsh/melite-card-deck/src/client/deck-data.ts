@@ -1,7 +1,7 @@
 /**
  * deck-data — typed fetchers over this package's host-half proxy.
  *
- * All fetches are same-origin (/melite-deck/*); the host half owns the gateway
+ * All fetches are same-origin (/ray-deck/*); the host half owns the gateway
  * hop. Errors surface as typed DeckError with the verbatim upstream body —
  * the UI renders them honestly instead of swallowing.
  */
@@ -89,7 +89,7 @@ async function getJson<T>(url: string): Promise<T> {
 }
 
 export function fetchForms(): Promise<FormEntry[]> {
-  return getJson<{ forms: Record<string, FormEntry & { sidebar_key: string; default_service: string }> }>('/melite-deck/forms')
+  return getJson<{ forms: Record<string, FormEntry & { sidebar_key: string; default_service: string }> }>('/ray-deck/forms')
     .then(d => {
       const out: FormEntry[] = []
       for (const [id, f] of Object.entries(d.forms ?? {})) {
@@ -106,7 +106,7 @@ export function fetchForms(): Promise<FormEntry[]> {
 }
 
 export function fetchCatalog(): Promise<CatalogModel[]> {
-  return getJson<Record<string, unknown> | Array<Record<string, unknown>>>('/melite-deck/models')
+  return getJson<Record<string, unknown> | Array<Record<string, unknown>>>('/ray-deck/models')
     .then(d => {
       // The gateway returns { families, models: {<id>: row}, engine_order, … }
       // — models is a KEYED OBJECT. Normalize every plausible shape to rows.
@@ -128,11 +128,11 @@ export function fetchCatalog(): Promise<CatalogModel[]> {
 }
 
 export function fetchFormSpec(model: string): Promise<FormSpec> {
-  return getJson<FormSpec>(`/melite-deck/form-spec?model=${encodeURIComponent(model)}`)
+  return getJson<FormSpec>(`/ray-deck/form-spec?model=${encodeURIComponent(model)}`)
 }
 
 export async function startRun(model: string, params: Record<string, unknown>): Promise<{ run_id: string }> {
-  const resp = await fetch('/melite-deck/start', {
+  const resp = await fetch('/ray-deck/start', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ model, params }),
@@ -152,7 +152,7 @@ export async function startRun(model: string, params: Record<string, unknown>): 
 }
 
 export function fetchRunStatus(runId: string): Promise<RunStatus> {
-  return getJson<RunStatus>(`/melite-deck/status?run=${encodeURIComponent(runId)}`)
+  return getJson<RunStatus>(`/ray-deck/status?run=${encodeURIComponent(runId)}`)
 }
 
 /** Terminal statuses (server-js runner.ts TERMINAL_RUN_STATUSES). */
@@ -167,5 +167,5 @@ export function isTerminal(status: string): boolean {
 export function artifactUrl(a: RunArtifact): string {
   const p = typeof a.url === 'string' ? a.url : (typeof a.path === 'string' ? a.path : '')
   if (p === '') return ''
-  return `/melite-deck/artifact?path=${encodeURIComponent(p)}`
+  return `/ray-deck/artifact?path=${encodeURIComponent(p)}`
 }

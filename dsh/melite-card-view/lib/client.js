@@ -470,27 +470,49 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/client/index.ts
-		/** The wire tool name this package owns the rendering of. */
-		const PIPELINE_START_TOOL = "build_pipeline";
+		/** Every card tool that produces a draft — the card tile renders for ALL of them. */
+		const CARD_TOOLS = [
+			"build_pipeline",
+			"image_card",
+			"tts_card",
+			"video_card",
+			"music_card",
+			"sfx_card",
+			"three_d_card",
+			"motion_card",
+			"body_card",
+			"image_edit_card",
+			"h3_timeline_card",
+			"refine_draft",
+			"creature_flow",
+			"humanoid_flow",
+			"non_humanoid_flow",
+			"prop_flow",
+			"sprite_sheet"
+		];
+		/** @deprecated use CARD_TOOLS — kept for back-compat imports */
+		const PIPELINE_START_TOOL = CARD_TOOLS[0];
 		/** Required services (fiber inject waiting — the slot registry must be up first). */
 		const inject = ["slots"];
 		/**
-		* Register the pipeline_start card.
+		* Register the pipeline card for EVERY card tool so drafts always render
+		* as interactive pipelines in the chat — regardless of which tool made them.
 		* @param ctx - client root context.
 		*/
 		function apply(ctx) {
 			if (!claimCardViewApply()) return;
 			ctx.effect(() => releaseCardViewApply, "melite-card-view: apply claim");
-			try {
+			for (const tool of CARD_TOOLS) try {
 				ctx.slots.inject("tool.call.toolview", () => ctx.slots.register({
 					name: "tool.call.toolview",
-					key: PIPELINE_START_TOOL
+					key: tool
 				}, PipelineCards));
 			} catch (error) {
-				console.error("[melite-card-view] toolview registration failed:", error);
+				console.error(`[melite-card-view] toolview registration failed for ${tool}:`, error);
 			}
 		}
 		//#endregion
+		exports.CARD_TOOLS = CARD_TOOLS;
 		exports.PIPELINE_START_TOOL = PIPELINE_START_TOOL;
 		exports.PipelineCards = PipelineCards;
 		exports.apply = apply;

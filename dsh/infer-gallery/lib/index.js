@@ -24,6 +24,63 @@ function apply(ctx, config) {
 	const pipelineDir = config.pipelineDir ?? DEFAULT_PIPELINE_DIR;
 	const upstream = (path) => fetch(`${gatewayUrl}${path}`, { signal: AbortSignal.timeout(timeoutMs) });
 	ctx.logger.info("infer-gallery proxying %s (gateway %s)", RUNS_UPSTREAM, gatewayUrl);
+	const DRAFTS_UPSTREAM = "/v1/pipelines/drafts";
+	const DRAFTS_LIMIT = 200;
+	ctx.effect(() => ctx.webServer.register({
+		kind: "exact",
+		path: "/infer-gallery/drafts",
+		handler: async (_req, res) => {
+			try {
+				const response = await upstream(DRAFTS_UPSTREAM);
+				const body = await response.text();
+				if (!response.ok) {
+					res.writeHead(response.status, JSON_HEADERS);
+					res.end(JSON.stringify({
+						error: "gateway_error",
+						status: response.status,
+						upstream: `${gatewayUrl}${DRAFTS_UPSTREAM}`,
+						body: body.slice(0, 2e3)
+					}));
+					return;
+				}
+				let payload;
+				try {
+					payload = JSON.parse(body);
+				} catch {
+					res.writeHead(502, JSON_HEADERS);
+					res.end(JSON.stringify({
+						error: "gateway_bad_payload",
+						message: "upstream /v1/pipelines/drafts returned non-JSON body",
+						body: body.slice(0, 2e3)
+					}));
+					return;
+				}
+				const all = Array.isArray(payload?.drafts) ? payload.drafts : [];
+				const drafts = all.slice(0, DRAFTS_LIMIT);
+				const draftsBody = JSON.stringify({
+					gateway: gatewayUrl,
+					total: all.length,
+					truncated: all.length > drafts.length,
+					drafts
+				});
+				res.writeHead(200, {
+					...JSON_HEADERS,
+					"content-length": String(Buffer.byteLength(draftsBody))
+				});
+				res.end(Buffer.from(draftsBody));
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				ctx.logger.warn("infer-gallery: gateway unreachable: %s", message);
+				res.writeHead(502, JSON_HEADERS);
+				res.end(JSON.stringify({
+					error: "gateway_unreachable",
+					message,
+					gatewayUrl,
+					upstream: `${gatewayUrl}${DRAFTS_UPSTREAM}`
+				}));
+			}
+		}
+	}), "infer-gallery: /infer-gallery/drafts route");
 	ctx.effect(() => ctx.webServer.register({
 		kind: "exact",
 		path: "/infer-gallery/pipeline",

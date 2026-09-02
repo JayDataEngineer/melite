@@ -40,6 +40,13 @@ import shutil
 import signal as _sig
 import socket
 import subprocess
+import tempfile
+import shutil
+import atexit
+
+# (disk-isolation law, 2026-09-01) ALL run-dir reads/writes resolve here.
+# Set to the sandbox in main(); tests never touch the production root.
+RUNS_ROOT = None
 import sys
 import threading
 import time
@@ -411,7 +418,7 @@ def parse_all_sidecars(build, since=None):
     wrote — the shared build/output tree carries hundreds of older
     runs (prod history lives there); re-parsing all of them per kill
     cycle added minutes of pure waste with zero extra guarantee."""
-    out = os.path.join(build, "output")
+    out = os.path.join(RUNS_ROOT, "output")
     bad = []
     n = 0
     if not os.path.isdir(out):
@@ -436,7 +443,7 @@ def parse_all_sidecars(build, since=None):
 
 def swept_count(build, rid):
     try:
-        with open(os.path.join(build, "output", "_ledger.jsonl")) as f:
+        with open(os.path.join(RUNS_ROOT, "output", "_ledger.jsonl")) as f:
             return sum(1 for line in f
                        if '"run.swept"' in line and rid in line)
     except FileNotFoundError:
@@ -456,6 +463,22 @@ def main():
     if not os.path.exists(binpath):
         print("SKIP: inference_cli not built")
         return 0
+    # (disk-isolation law, 2026-09-01) the suite used to spawn gateways
+    # with cwd=build — the SAME cwd as the production gateway — so every
+    # chaos run wrote ./output/run-* into the real gallery root with
+    # forever-retention (263 media-less junk dirs buried 58 real
+    # artifacts past the newest-200 window). Gateways now run in a
+    # sandbox that mirrors build's ../ layout: ./output dies with the
+    # suite in /tmp, ../pipelines resolves through a symlink, and the
+    # production root is NEVER written by tests.
+    sandbox_parent = tempfile.mkdtemp(prefix="chaos_gw_root_")
+    sandbox = os.path.join(sandbox_parent, "gw")
+    os.makedirs(sandbox)
+    os.symlink(os.path.join(repo, "pipelines"),
+               os.path.join(sandbox_parent, "pipelines"))
+    atexit.register(shutil.rmtree, sandbox_parent, True)
+    global RUNS_ROOT
+    RUNS_ROOT = sandbox
     build_object_info(repo)
 
     global ERR2_BODY
@@ -563,7 +586,7 @@ def main():
     srv_env["INFERENCE_TEST_SANDBOX"] = "1"   # (leak gate) no fallback
     srv = subprocess.Popen(
         [binpath, "serve", "--port", str(port), "--plugin-dir", build],
-        cwd=build, stdout=subprocess.DEVNULL,
+        cwd=sandbox, stdout=subprocess.DEVNULL,
         stderr=open(srv_log, "ab"), env=srv_env)
     api = Api("http://127.0.0.1:%d" % port)
     run_ids = []
@@ -588,7 +611,7 @@ def main():
         # may NEVER touch the live server (AGENTS.md INFERENCE LAW).
         return subprocess.Popen(
             [binpath, "serve", "--port", str(port), "--plugin-dir", build],
-            cwd=build, stdout=subprocess.DEVNULL,
+            cwd=sandbox, stdout=subprocess.DEVNULL,
             stderr=open(srv_log, "ab"), env=srv_env)
 
     def kill_hard(p):
@@ -929,7 +952,7 @@ def main():
         err = st.get("error") or ""
         check("boom" in err and "quoted" in err,
               "C6: exact hostile error preserved (%r)" % err[:60])
-        sc_path = os.path.join(build, "output", rid, "_pipeline.json")
+        sc_path = os.path.join(RUNS_ROOT, "output", rid, "_pipeline.json")
         try:
             with open(sc_path) as f:
                 sc = json.load(f)
@@ -1036,7 +1059,7 @@ def main():
             clean = False
             kill_hard(srv)
         check(clean, "C8: SIGINT exits cleanly")
-        sc_path = os.path.join(build, "output", g, "_pipeline.json")
+        sc_path = os.path.join(RUNS_ROOT, "output", g, "_pipeline.json")
         try:
             with open(sc_path) as f:
                 sc = json.load(f)
@@ -1067,7 +1090,7 @@ def main():
             st_bad: '{"run_id":"%s","status":"running", NOT JSON' % st_bad,
         }
         for rid, doc in cases.items():
-            d = os.path.join(build, "output", rid)
+            d = os.path.join(RUNS_ROOT, "output", rid)
             os.makedirs(d, exist_ok=True)
             with open(os.path.join(d, "_pipeline.json"), "w") as f:
                 f.write(doc)
@@ -1078,7 +1101,7 @@ def main():
         wait_for(lambda: _healthy(api), 15, "reboot for sweep")
         check(_healthy(api), "C10: boot survives a malformed sidecar")
         for rid in (st_top, st_both):
-            with open(os.path.join(build, "output", rid,
+            with open(os.path.join(RUNS_ROOT, "output", rid,
                                    "_pipeline.json")) as f:
                 sc = json.load(f)
             ok = (sc.get("status") == "failed" and
@@ -1087,13 +1110,13 @@ def main():
                   "sweep" in sc)
             check(ok, "C10: %s swept at both levels (%s)" %
                   (rid, sc.get("status")))
-        with open(os.path.join(build, "output", st_stage,
+        with open(os.path.join(RUNS_ROOT, "output", st_stage,
                                "_pipeline.json")) as f:
             sc = json.load(f)
         check(sc.get("stages", [{}])[0].get("status") == "failed" and
               "sweep" in sc,
               "C10: stage-only stale swept too")
-        with open(os.path.join(build, "output", st_failed,
+        with open(os.path.join(RUNS_ROOT, "output", st_failed,
                                "_pipeline.json")) as f:
             sc = json.load(f)
         check(sc.get("status") == "failed" and "sweep" not in sc,
@@ -1120,7 +1143,7 @@ def main():
         print("\n-- C11 concurrent sidecar-restore race (8 threads)")
         disk_ids = []
         for rid in list(run_ids)[-6:]:
-            if os.path.isfile(os.path.join(build, "output", rid,
+            if os.path.isfile(os.path.join(RUNS_ROOT, "output", rid,
                                            "_pipeline.json")):
                 disk_ids.append(rid)
         if len(disk_ids) < 2:
@@ -1390,7 +1413,7 @@ def main():
             # registration evidence: the run's yaml carries resolved
             # ABSOLUTE tail paths (no $tailpath vars left behind)
             if registered:
-                sc_path = os.path.join(build, "output", registered,
+                sc_path = os.path.join(RUNS_ROOT, "output", registered,
                                        "_pipeline.json")
                 try:
                     y = json.load(open(sc_path)).get("yaml", "")
@@ -1431,7 +1454,7 @@ def main():
             srv2 = subprocess.Popen(
                 [binpath, "serve", "--port", str(port2),
                  "--plugin-dir", build],
-                cwd=build, stdout=subprocess.DEVNULL,
+                cwd=sandbox, stdout=subprocess.DEVNULL,
                 stderr=open(srv2_log, "ab"),
                 env={**os.environ,
                      "COMFYUI_ENDPOINT_CONFIG": tl_cfg,
@@ -1492,7 +1515,7 @@ def main():
                              240, "tl2 run terminal")
                 except AssertionError:
                     api2.stop(tl_rid)
-                out2 = os.path.join(build, "output", tl_rid)
+                out2 = os.path.join(RUNS_ROOT, "output", tl_rid)
                 # 1) tails fetched from the OUTPUT door under canonical
                 #    names (window1..4 tails; w5's is fetched too but the
                 #    stitch failure may cut the run before w5's stage —
@@ -1806,7 +1829,7 @@ def main():
                 # sidecar must PARSE and carry ALL 60 stages — the old
                 # fixed 8192 builder smashed the stack here
                 sc = json.load(open(os.path.join(
-                    build, "output", rm2, "_pipeline.json")))
+                    RUNS_ROOT, "output", rm2, "_pipeline.json")))
                 check(len(sc.get("stages", [])) == 60,
                       "C20c: sidecar lists all 60 stages (got %d)"
                       % len(sc.get("stages", [])))
@@ -2050,7 +2073,7 @@ def main():
             pass
         comfy.shutdown()
         for rid in run_ids:
-            shutil.rmtree(os.path.join(build, "output", rid),
+            shutil.rmtree(os.path.join(RUNS_ROOT, "output", rid),
                           ignore_errors=True)
         for nm in made_fixtures:
             shutil.rmtree(os.path.join(repo, "pipelines", nm),
@@ -2058,7 +2081,7 @@ def main():
         for rid in ("run-sweep-top-only", "run-sweep-stage-only",
                     "run-sweep-both", "run-sweep-already-failed",
                     "run-sweep-malformed"):
-            shutil.rmtree(os.path.join(build, "output", rid),
+            shutil.rmtree(os.path.join(RUNS_ROOT, "output", rid),
                           ignore_errors=True)
 
     # ====== LEAK-GATE SELF-PROOF (operator order 2026-09-01): ======

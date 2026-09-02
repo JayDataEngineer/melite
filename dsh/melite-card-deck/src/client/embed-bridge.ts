@@ -189,7 +189,7 @@ export function startEmbedBridge(frame: HTMLIFrameElement): EmbedHandle {
  *  title; hidden buttons still click; the pane opens in the canvas. */
 export function driveCanvasLane(label: string): boolean {
   const frame = document.querySelector<HTMLIFrameElement>(
-    '[data-plugin="melite-card-deck-canvas"] iframe',
+    '[data-plugin="ray-card-deck-canvas"] iframe',
   )
   const doc = frame?.contentDocument
   if (!doc) return false

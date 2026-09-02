@@ -2,17 +2,13 @@
  * FormCard — the action-card form renderer.
  *
  * Renders one FormSpec (from /v1/form-spec) as the card body: sections,
- * the six simple field types (select | text | textarea | number | seed |
- * boolean), tooltips, required marks — plus the ideogram_canvas FIELD SLOT,
- * which mounts IdeoCanvasField: the advanced Ideogram spatial-layout editor
- * imported from git history (see ideoField.ts / IdeoCanvasField.tsx headers).
- * Owns NO network — the deck passes the spec in and reads values out via ref
- * for the Run button.
+ * the six field types (select | text | textarea | number | seed | boolean),
+ * tooltips, required marks. Owns NO network — the deck passes the spec in
+ * and reads values out via ref for the Run button.
  */
 import { useImperativeHandle, useRef, type RefObject } from 'react'
 import css from './deck.module.css'
 import type { FormField, FormSpec } from './deck-data.ts'
-import { IdeoCanvasField } from './IdeoCanvasField.tsx'
 
 export interface FormCardHandle {
   /** Current values, coerced per declared type; empty strings dropped. */
@@ -227,28 +223,12 @@ export function FormCard({ spec, handle }: { spec: FormSpec; handle?: RefObject<
         <section key={name} className={css.formSection} data-section={name}>
           <h4 className={css.sectionTitle}>{name}</h4>
           {fields.map(f => (
-            f.type === 'ideogram_canvas' ? (
-              <div key={f.name} className={css.fieldRow} data-field={f.name}>
-                <span className={css.fieldLabel}>
-                  {f.label || f.name}
-                  {f.required ? <span className={css.req}>*</span> : null}
-                  {f.tooltip ? <FieldTooltip text={f.tooltip} /> : null}
-                </span>
-                <IdeoCanvasField
-                  value={values.current[f.name]}
-                  onChange={v => { values.current[f.name] = v }}
-                  getValues={() => ({ ...values.current })}
-                  setSibling={(name, v) => { values.current[name] = v }}
-                />
-              </div>
-            ) : (
-              <FieldRow
-                key={f.name}
-                field={f}
-                value={values.current[f.name]}
-                onChange={v => { values.current[f.name] = v }}
-              />
-            )
+            <FieldRow
+              key={f.name}
+              field={f}
+              value={values.current[f.name]}
+              onChange={v => { values.current[f.name] = v }}
+            />
           ))}
         </section>
       ))}

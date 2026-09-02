@@ -14,6 +14,7 @@
 import * as React from 'react'
 import { claimMediaApply, releaseMediaApply } from './apply-guard.ts'
 import { MediaPanel, MediaTabIcon } from './MediaPanel.tsx'
+import { PipelinesPanel, PipelinesTabIcon } from './PipelinesPanel.tsx'
 
 interface TabCtx {
   effect(fn: () => void, name?: string): unknown
@@ -79,4 +80,22 @@ export function apply(ctx: TabCtx): void {
       if (typeof dispose === 'function') dispose()
     }
   }, 'infer-media: media tab')
+
+  // THE PIPELINES TAB — the composed action cards (drafts), the queue-native
+  // pipeline instances, listed in the RIGHT SIDEBAR one slot under Media.
+  // Click a row: the Cards studio opens with that card hydrated. The drafts
+  // feed is the host half's merged /infer-media/drafts door (all gateways).
+  ctx.effect(() => {
+    const dispose = bs.registerTab({
+      id: 'infer-media:pipelines',
+      title: () => 'Pipelines',
+      icon: (size: number) => React.createElement(PipelinesTabIcon, { size }),
+      order: 56,
+      single: true,
+      component: PipelinesPanel as unknown as React.ComponentType<Record<string, unknown>>,
+    })
+    return () => {
+      if (typeof dispose === 'function') dispose()
+    }
+  }, 'infer-media: pipelines tab')
 }

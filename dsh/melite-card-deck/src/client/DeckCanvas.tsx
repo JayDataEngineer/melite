@@ -5,53 +5,13 @@
  * tokens and strips its own chrome -- the canvas rides DSH's sidebar and
  * details column, it does not bring its own frame.
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import css from './deck.module.css'
 import { startEmbedBridge, type EmbedHandle } from './embed-bridge.ts'
 import { createZoomPromotion, PREVIEW_DIALOG_SELECTOR, ZOOM_OVERLAY_SELECTOR } from '../../../melite-card-view/src/client/zoomPromotion.ts'
 
-/** CARD REPLAY (2026-08-30, additive): a surface may ask the studio to
- * open with ONE draft loaded — the editor's own /editor/?meliteCards=<id>
- * mode (it fetches the draft and hydrateDraft()s the card with every
- * parameter filled). Parked here BEFORE mount by deck-sidebar-entry's
- * openDeckWithDraft(); consumed once by the canvas below. */
-let pendingDraftId = ''
-
-export function setPendingDraft(draftId: string): void {
-  pendingDraftId = draftId
-}
-
-/** Live-open event while the canvas is already mounted. */
-export const OPEN_DRAFT_EVENT = 'melite-cards-deck-open-draft'
-
 export function DeckCanvas() {
   const frameRef = useRef<HTMLIFrameElement>(null)
-  // RELOAD NONCE (cache fix, 2026-09-01): re-opening the SAME draft while
-  // the deck is mounted must REPLACE the card on screen — the user's local
-  // edits are discarded and the saved draft re-hydrates. A bare
-  // setDraftId(sameString) is a React no-op (identical state → identical
-  // iframe src → no navigation → the wand looks dead). The nonce bumps the
-  // iframe URL on EVERY open event, forcing a fresh editor boot and a
-  // re-fetch of the draft from the gateway.
-  const nonce = useRef(0)
-  const [open, setOpen] = useState<{ id: string; n: number }>(() => {
-    const d = pendingDraftId
-    pendingDraftId = ''
-    nonce.current += 1
-    return { id: d, n: nonce.current }
-  })
-
-  useEffect(() => {
-    const onOpenDraft = (e: Event): void => {
-      const d = (e as CustomEvent<{ draftId?: unknown }>).detail?.draftId
-      if (typeof d === 'string' && d !== '') {
-        nonce.current += 1
-        setOpen({ id: d, n: nonce.current })
-      }
-    }
-    document.addEventListener(OPEN_DRAFT_EVENT, onOpenDraft)
-    return () => { document.removeEventListener(OPEN_DRAFT_EVENT, onOpenDraft) }
-  }, [])
 
   useEffect(() => {
     const frame = frameRef.current
@@ -96,12 +56,12 @@ export function DeckCanvas() {
   }, [])
 
   return (
-    <div className={css.canvasFrame} data-plugin="melite-card-deck-canvas">
+    <div className={css.canvasFrame} data-plugin="ray-card-deck-canvas">
       <iframe
         ref={frameRef}
         className={css.canvasIframe}
-        src={open.id === '' ? '/editor/' : '/editor/?meliteCards=' + encodeURIComponent(open.id) + '&_r=' + String(open.n)}
-        title="Melite card canvas"
+        src="/editor/"
+        title="Ray card canvas"
         allow="clipboard-read; clipboard-write"
       />
     </div>

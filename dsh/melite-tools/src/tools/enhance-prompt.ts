@@ -20,7 +20,7 @@
  */
 import type { ToolDefinition } from '../types.ts'
 import { jsonClean } from '../json-clean.ts'
-import { fetchDeclaredFields, enhanceOneField, type LlmSeam } from '../enhance-agent.ts'
+import { fetchDeclaredFields, enhanceOneField, GENERIC_ENHANCE_RECIPE, type LlmSeam } from '../enhance-agent.ts'
 
 export function enhancePrompt(gatewayUrl: string, llm: LlmSeam): ToolDefinition {
   return {
@@ -111,21 +111,26 @@ export function enhancePrompt(gatewayUrl: string, llm: LlmSeam): ToolDefinition 
       }
 
       const fieldName = wantsField ?? (names[0] ?? '')
-      if (fieldName === '' || fields[fieldName] === undefined) {
-        throw new Error('enhance_prompt: model "' + a.model + '" declares no recipe'
-          + (wantsField ? ' for field "' + wantsField + '"' : '')
-          + (names.length > 0 ? ' — declared fields: ' + names.join(', ') : ' — no enhance recipe at all'))
-      }
+      // GENERIC FALLBACK RECIPE (2026-09-01): most models declare no
+      // per-model recipe. Enhancing ONLY recipe-bearing models made the
+      // tool throw for krea-2 and friends — useless. A model with no
+      // declared recipe gets the generic diffusion-prompt rewrite; the
+      // result is still a strict improvement over the user's rough words.
+      const recipe = fieldName !== '' && fields[fieldName] !== undefined
+        ? fields[fieldName]!
+: { system: GENERIC_ENHANCE_RECIPE }
+      const usedFallback = fieldName === '' || fields[fieldName] === undefined
 
       // THE completion: the harness's own model via ctx.llm. No keystore.
       const result = await enhanceOneField(
-        llm, fields[fieldName]!, a.prompt,
+        llm, recipe, a.prompt,
         typeof a.temperature === 'number' ? a.temperature : undefined,
         exec.signal,
       )
       return jsonClean({
         model: a.model,
-        field: fieldName,
+        field: fieldName === '' ? 'prompt' : fieldName,
+        recipe: usedFallback ? 'generic' : 'model-declared',
         positive: result.positive,
         negative: result.negative,
       })

@@ -33,7 +33,13 @@ export interface Config {
 
 const DEFAULT_GATEWAYS = ['http://localhost:33081']
 const DEFAULT_TIMEOUT_MS = 15_000
-const DEFAULT_LIMIT = 200
+/* 2026-09-01 ARTIFACT-BLINDNESS FIX: the gateway door returns only the
+ * NEWEST N runs. Chaos-test floods + error bursts fill the window with
+ * sidecar-only rows and push every artifact-bearing run OUT of the
+ * listing (sidebar showed "116 runs · 0 artifacts" while 58 real
+ * artifacts sat past the window at limit=500). 500 is the door's hard
+ * max — always pull it. Regression-tested by test/runs-window.mjs. */
+const DEFAULT_LIMIT = 500
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }
 
 interface WireArtifact { url?: unknown; type?: unknown; name?: unknown; size?: unknown }
@@ -238,4 +244,120 @@ export function apply(ctx: Context, config: Config): void {
       }
     },
   }), 'infer-media: /infer-media/artifact route')
+
+  /* ── PIPELINE TEMPLATE CATALOG (2026-09-01) ────────────────────────────
+   * The gateway serves YAML pipeline CRUD at /v1/pipelines/yaml/*.
+   * These routes proxy them through DSH so the browser stays same-origin.
+   * The first gateway in the list is the authoritative pipeline host
+   * (the inference.cpp C++ gateway owns the pipelines/ directory). */
+  const pipelineGw = gateways[0] ?? ''
+
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: '/infer-media/pipeline-templates',
+    handler: async (_req, res) => {
+      if (!pipelineGw) { res.writeHead(502, JSON_HEADERS); res.end('{"error":"no gateway"}'); return }
+      try {
+        const r = await fetch(pipelineGw + '/v1/pipelines/yaml/list', { signal: AbortSignal.timeout(timeoutMs) })
+        const body = await r.text()
+        res.writeHead(r.status, { ...JSON_HEADERS, 'cache-control': 'no-store' })
+        res.end(body)
+      } catch (e) {
+        res.writeHead(502, JSON_HEADERS)
+        res.end(JSON.stringify({ error: 'gateway_unreachable', message: String(e) }))
+      }
+    },
+  }), 'infer-media: /infer-media/pipeline-templates route')
+
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: '/infer-media/pipeline-template-detail',
+    handler: async (req, res) => {
+      if (!pipelineGw) { res.writeHead(502, JSON_HEADERS); res.end('{"error":"no gateway"}'); return }
+      try {
+        const url = new URL(req.url, 'http://localhost')
+        const yaml = url.searchParams.get('yaml') ?? ''
+        const r = await fetch(pipelineGw + '/v1/pipelines/yaml/detail?yaml=' + encodeURIComponent(yaml),
+          { signal: AbortSignal.timeout(timeoutMs) })
+        const body = await r.text()
+        res.writeHead(r.status, { ...JSON_HEADERS, 'cache-control': 'no-store' })
+        res.end(body)
+      } catch (e) {
+        res.writeHead(502, JSON_HEADERS)
+        res.end(JSON.stringify({ error: 'gateway_unreachable', message: String(e) }))
+      }
+    },
+  }), 'infer-media: /infer-media/pipeline-template-detail route')
+
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: '/infer-media/pipeline-template-save',
+    handler: async (req, res) => {
+      if (!pipelineGw) { res.writeHead(502, JSON_HEADERS); res.end('{"error":"no gateway"}'); return }
+      try {
+        const chunks: Buffer[] = []
+        for await (const c of req) chunks.push(c as Buffer)
+        const body = chunks.length ? Buffer.concat(chunks) : undefined
+        const r = await fetch(pipelineGw + '/v1/pipelines/yaml/save', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: body && body.length > 0 ? body : undefined,
+          signal: AbortSignal.timeout(timeoutMs),
+        })
+        const respBody = await r.text()
+        res.writeHead(r.status, { ...JSON_HEADERS, 'cache-control': 'no-store' })
+        res.end(respBody)
+      } catch (e) {
+        res.writeHead(502, JSON_HEADERS)
+        res.end(JSON.stringify({ error: 'gateway_unreachable', message: String(e) }))
+      }
+    },
+  }), 'infer-media: /infer-media/pipeline-template-save route')
+
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: '/infer-media/pipeline-template-rename',
+    handler: async (req, res) => {
+      if (!pipelineGw) { res.writeHead(502, JSON_HEADERS); res.end('{"error":"no gateway"}'); return }
+      try {
+        const chunks: Buffer[] = []
+        for await (const c of req) chunks.push(c as Buffer)
+        const body = chunks.length ? Buffer.concat(chunks) : undefined
+        const r = await fetch(pipelineGw + '/v1/pipelines/yaml/rename', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: body && body.length > 0 ? body : undefined,
+          signal: AbortSignal.timeout(timeoutMs),
+        })
+        const respBody = await r.text()
+        res.writeHead(r.status, { ...JSON_HEADERS, 'cache-control': 'no-store' })
+        res.end(respBody)
+      } catch (e) {
+        res.writeHead(502, JSON_HEADERS)
+        res.end(JSON.stringify({ error: 'gateway_unreachable', message: String(e) }))
+      }
+    },
+  }), 'infer-media: /infer-media/pipeline-template-rename route')
+
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: '/infer-media/pipeline-template-delete',
+    handler: async (req, res) => {
+      if (!pipelineGw) { res.writeHead(502, JSON_HEADERS); res.end('{"error":"no gateway"}'); return }
+      try {
+        const url = new URL(req.url, 'http://localhost')
+        const filename = url.searchParams.get('filename') ?? ''
+        const r = await fetch(pipelineGw + '/v1/pipelines/yaml/delete?filename=' + encodeURIComponent(filename), {
+          method: 'DELETE',
+          signal: AbortSignal.timeout(timeoutMs),
+        })
+        const body = await r.text()
+        res.writeHead(r.status, { ...JSON_HEADERS, 'cache-control': 'no-store' })
+        res.end(body)
+      } catch (e) {
+        res.writeHead(502, JSON_HEADERS)
+        res.end(JSON.stringify({ error: 'gateway_unreachable', message: String(e) }))
+      }
+    },
+  }), 'infer-media: /infer-media/pipeline-template-delete route')
 }

@@ -33,14 +33,24 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
   }
 }
 
-/** The wire tool name this package owns the rendering of. */
-export const PIPELINE_START_TOOL = 'build_pipeline'
+/** Every card tool that produces a draft — the card tile renders for ALL of them. */
+export const CARD_TOOLS = [
+  'build_pipeline',
+  'image_card', 'tts_card', 'video_card', 'music_card', 'sfx_card',
+  'three_d_card', 'motion_card', 'body_card', 'image_edit_card',
+  'h3_timeline_card', 'refine_draft',
+  'creature_flow', 'humanoid_flow', 'non_humanoid_flow', 'prop_flow',
+  'sprite_sheet',
+]
+/** @deprecated use CARD_TOOLS — kept for back-compat imports */
+export const PIPELINE_START_TOOL = CARD_TOOLS[0]
 
 /** Required services (fiber inject waiting — the slot registry must be up first). */
 export const inject = ['slots']
 
 /**
- * Register the pipeline_start card.
+ * Register the pipeline card for EVERY card tool so drafts always render
+ * as interactive pipelines in the chat — regardless of which tool made them.
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
@@ -49,13 +59,15 @@ export function apply(ctx: ClientContext): void {
   if (!claimCardViewApply()) return
   ctx.effect(() => releaseCardViewApply, 'melite-card-view: apply claim')
 
-  try {
-    ctx.slots.inject('tool.call.toolview', () => ctx.slots.register(
-      { name: 'tool.call.toolview', key: PIPELINE_START_TOOL },
-      PipelineCards,
-    ))
-  } catch (error) {
-    console.error('[melite-card-view] toolview registration failed:', error)
+  for (const tool of CARD_TOOLS) {
+    try {
+      ctx.slots.inject('tool.call.toolview', () => ctx.slots.register(
+        { name: 'tool.call.toolview', key: tool },
+        PipelineCards,
+      ))
+    } catch (error) {
+      console.error(`[melite-card-view] toolview registration failed for ${tool}:`, error)
+    }
   }
 }
 

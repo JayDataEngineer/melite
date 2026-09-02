@@ -1,7 +1,7 @@
 /**
- * Standalone build config for the melite-card-deck client plugin.
+ * Standalone build config for the ray-card-deck client plugin.
  *
- * Same shared client-bundle preset as melite-gallery: node-half lib/ plus the
+ * Same shared client-bundle preset as ray-gallery: node-half lib/ plus the
  * browser bundle lib/client.js for the GUI module loader.
  */
 import { clientBundle } from '../shared/tsdown.client.ts'

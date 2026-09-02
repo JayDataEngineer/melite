@@ -26,6 +26,7 @@ cannot pass.
 """
 import os
 import sys
+import subprocess
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, ".."))
@@ -109,15 +110,52 @@ def main():
               f"src {fmt(newest_src_t)} ({newest_src_f}) NEWER than dist "
               f"{fmt(dist_t)} ({os.path.basename(dist_f)}) — run vite build")
 
-    # ── F3: wand reload nonce present in the deck bundle ──────────────
-    deck_bundle = os.path.join(REPO, "dsh", "melite-card-deck", "lib", "client.js")
-    if os.path.isfile(deck_bundle):
-        body = open(deck_bundle, encoding="utf-8", errors="replace").read()
-        check("F3 deck bundle carries wand reload nonce (_r=)",
-              "_r=" in body,
-              "recreate-caching fix reverted — DeckCanvas nonce missing")
+    # ── F3: wand reload nonce — BEHAVIORAL + content pin ──────────────
+    # The behavioral test drives the real DeckCanvas component in
+    # happy-dom: renders, fires OPEN_DRAFT_EVENT with the same id, and
+    # asserts the iframe URL nonce bumps (_r=1 → _r=2). This catches
+    # both the React no-op regression AND silent source reverts. When
+    # vitest infra is unavailable, fall back to a content grep.
+    deck_test = os.path.join(REPO, "dsh", "melite-card-deck",
+                             "test", "deck-canvas-open.test.tsx")
+    vitest_bin = os.path.join(REPO, "dsh", "node_modules", ".bin", "vitest")
+    if os.path.isfile(deck_test) and (os.path.isfile(vitest_bin)
+                                      or os.path.isfile(vitest_bin + ".cmd")):
+        try:
+            r = subprocess.run(
+                [vitest_bin, "run", "melite-card-deck/test/"
+                 "deck-canvas-open.test.tsx"],
+                cwd=os.path.join(REPO, "dsh"),
+                capture_output=True, text=True, timeout=30,
+            )
+            ok = r.returncode == 0 and "6 passed" in r.stdout
+            detail = "" if ok else (
+                f"vitest exit {r.returncode}\n{r.stdout[-500:] if r.stdout else ''}"
+                f"\n{r.stderr[-500:] if r.stderr else ''}")
+            check("F3 deck nonce behavioral test (vitest 6/6)", ok, detail)
+        except (subprocess.TimeoutExpired, OSError) as exc:
+            check("F3 deck nonce behavioral test (vitest 6/6)",
+                  False, f"run failed: {exc}")
+            # content pin as fallback
+            deck_bundle = os.path.join(REPO, "dsh", "melite-card-deck",
+                                       "lib", "client.js")
+            if os.path.isfile(deck_bundle):
+                body = open(deck_bundle, encoding="utf-8",
+                            errors="replace").read()
+                check("F3 fallback: deck bundle contains _r= (content pin)",
+                      "_r=" in body)
+    elif os.path.isfile(deck_test):
+        skips.append("F3 behavioral (vitest not installed)")
+        # content pin fallback
+        deck_bundle = os.path.join(REPO, "dsh", "melite-card-deck",
+                                   "lib", "client.js")
+        if os.path.isfile(deck_bundle):
+            body = open(deck_bundle, encoding="utf-8",
+                        errors="replace").read()
+            check("F3 fallback: deck bundle contains _r= (content pin)",
+                  "_r=" in body)
     else:
-        skips.append("F3 deck bundle (not built)")
+        skips.append("F3 (test file missing)")
 
     # ── F4: no shadowing `const at ` in the card-view bundle ──────────
     view_bundle = os.path.join(REPO, "dsh", "melite-card-view", "lib", "client.js")

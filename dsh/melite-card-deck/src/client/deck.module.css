@@ -1,4 +1,4 @@
-/* melite-card-deck — styled 1:1 by the DSH theme system. Every color is a
+/* ray-card-deck — styled 1:1 by the DSH theme system. Every color is a
  * live --dsw-* token read off the shell (Skin Center flips this chrome
  * wholesale). NO color literals anywhere: scrims/tints derive from tokens
  * via color-mix. */
@@ -106,7 +106,7 @@
 [data-dsh-frame][data-sidebar-collapsed] .entry { justify-content: center; padding: 0; }
 [data-dsh-frame][data-sidebar-collapsed] .entryLabel { display: none; }
 
-/* ── Melite Assets tab (better-sidebar): the REAL sidebar via iframe ────── */
+/* ── Ray Assets tab (better-sidebar): the REAL sidebar via iframe ────── */
 .assetsFrame {
   width: 100%;
   height: 100%;

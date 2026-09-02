@@ -170,8 +170,10 @@ def template_values(path):
         "steps":   get("Scheduler.0", "steps"),
         "ref_image_size":
             get("MiniMaxH3ReferenceToVideo.0", "ref_image_size"),
-        "film_ckpt":  get("FILMVFI.0", "ckpt_name"),
-        "film_mult":  get("FILMVFI.0", "multiplier"),
+        "film_ckpt":  get("FrameInterpolationModelLoader.0", "model_name",
+                       get("FILMVFI.0", "ckpt_name")),
+        "film_mult":  get("FrameInterpolate.0", "multiplier",
+                      get("FILMVFI.0", "multiplier")),
         "unet":    get("UNETLoader.0", "unet_name"),
         "vae_video": get("VAELoader.0", "vae_name"),
         "vae_audio": get("VAELoader.1", "vae_name"),

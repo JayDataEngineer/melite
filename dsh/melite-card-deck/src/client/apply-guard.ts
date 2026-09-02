@@ -7,7 +7,7 @@ let claimed = false
 
 export function claimDeckApply(): boolean {
   if (claimed) {
-    console.warn('[melite-card-deck] apply called twice — second mount skipped')
+    console.warn('[ray-card-deck] apply called twice — second mount skipped')
     return false
   }
   claimed = true

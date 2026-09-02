@@ -18,7 +18,9 @@
   },
   "scripts": {
     "build": "pnpm exec tsdown -c tsdown.config.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:runs": "node test/runs-window.mjs",
+    "test": "node test/runs-window.mjs"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",

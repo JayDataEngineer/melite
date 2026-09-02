@@ -170,6 +170,7 @@ def main():
         env=venv)
     api = Api("http://127.0.0.1:%d" % port)
     rid = rid2 = rid3 = rid4 = rid5 = rid6 = rid7 = None
+    rid8 = rid9 = rid10 = rid11 = None
     fails = []
     n = [0]
 
@@ -269,8 +270,16 @@ def main():
         check(y3 is not None and "window1_t4r.json" in y3,
               "V6a1: guide flips window1 to _t4r")
         if y3:
-            check('"PlagueKindBundleIn.0.input_1":["LoadImage.0",0]' in y3,
-                  "V6a2: guide rides bundle slot 1")
+            # (2026-09-01 resize-chain parity) the guide rides HIS ref
+            # path: LoadImage -> UnifiedResizeImageMask.R (his 5613,
+            # Shorter-Side scalars) -> BundleIn.input_1 — not the old
+            # bare LoadImage link.
+            check('"PlagueKindBundleIn.0.input_1":'
+                  '["UnifiedResizeImageMask.R",0]' in y3,
+                  "V6a2: guide rides his resize chain (bundle slot 1)")
+            check('"UnifiedResizeImageMask.R.image":'
+                  '["LoadImage.0",0]' in y3,
+                  "V6a2b: resize R fed by the staged LoadImage")
             check('"LoadImage.0.image":"ref1_' in y3,
                   "V6a3: staged guide filename injected")
 
@@ -460,6 +469,193 @@ def main():
               "V10d: per-call refs.videos refused as dead key (%d %s)"
               % (code, body[:90]))
 
+        # V11 (dry-fire regression, 2026-09-01): per-call Layer B knobs
+        # must land on EVERY window that carries them. Two GPU runs
+        # burned because the knob walker counted a call's nested
+        # "knobs":{...} object as the NEXT call — every window >= 3
+        # then extracted the wrong span and its Layer B silently
+        # vanished (window3 kept the 1344x768 template default while
+        # the card said 832x1120 -> PlagueKind geometry refusal AFTER
+        # windows 1-2 had already rendered). The old suite only ever
+        # put knobs on the LAST call — the one shape where the buggy
+        # walk accidentally worked. This block IS the dry fire: 4
+        # calls, knobs on calls 2-4, a literal '{' inside prompt text
+        # (the walker must be string-aware), and per-window landing
+        # asserted from the compose sidecar BEFORE any GPU exists.
+        kb_body = {"model": "h3-timeline",
+                   "prompt": "per-call knob landing dry-fire",
+                   "params": {"calls": [
+                       {"text": "w1 plain text", "start_frame": 0,
+                        "end_frame": 90},
+                       {"text": "w2 text { brace inside", "start_frame": 90,
+                        "end_frame": 179,
+                        "knobs": {"width": 832, "height": 1120}},
+                       {"text": "w3 text", "start_frame": 179,
+                        "end_frame": 268,
+                        "knobs": {"width": 832, "height": 1120}},
+                       {"text": "w4 text", "start_frame": 268,
+                        "end_frame": 357,
+                        "knobs": {"width": 832, "height": 1120}}],
+                       "fps": 24, "seed": 20}}
+        code, body = api.post("/v1/pipelines/start", kb_body)
+        rid8 = None
+        try:
+            rid8 = json.loads(body).get("run_id")
+        except ValueError:
+            pass
+        check(bool(rid8), "V11a: 4-call knob card accepted (%d %s)"
+              % (code, body[:90]))
+        y8 = sidecar_yaml(rid8) if rid8 else None
+        if y8:
+            def wsec(wid, nxt):
+                a = "- id: " + wid
+                if a not in y8:
+                    return ""
+                s = y8.split(a)[1]
+                return s.split("- id: " + nxt)[0] if nxt else s
+            w1s = wsec("window1", "window2")
+            w2s = wsec("window2", "window3")
+            w3s = wsec("window3", "window4")
+            w4s = wsec("window4", "stitch")
+            for wid, sec in (("window2", w2s), ("window3", w3s),
+                             ("window4", w4s)):
+                check('"MiniMaxH3ReferenceToVideo.0.width":832' in sec
+                      and '"MiniMaxH3ReferenceToVideo.0.height":1120'
+                      in sec,
+                      "V11b: %s Layer B width/height 832x1120 lands "
+                      "(%s)" % (wid, "yes" if (
+                          '"MiniMaxH3ReferenceToVideo.0.width":832'
+                          in sec) else "MISSING"))
+            check('"MiniMaxH3ReferenceToVideo.0.width":832' in w1s
+                  and '"MiniMaxH3ReferenceToVideo.0.height":1120' in w1s,
+                  "V11c: imageless window1 inherits the film geometry "
+                  "832x1120 (broadcast law)")
+
+        # V12 (film-geometry law, 2026-09-01 — "how is it going to work
+        # when we start to have 15+ clips?"): geometry stated ONCE at
+        # the ROOT propagates to EVERY chained window (his chain node
+        # refuses per-window divergence at render time, after earlier
+        # windows burned). Divergent declarations are a named 4xx at
+        # compose. Window 1 opened from a guide IMAGE keeps his
+        # UnifiedResizeImageMask chain as the geometry SSOT — the root
+        # width inject is suppressed there, never overwriting his LINK.
+        g2 = os.path.join(BUILD, "geom_probe.png")
+        with open(g2, "wb") as f:
+            f.write(b"\x89PNG\r\n\x1a\n" + b"\x00" * 64)
+        calls15 = []
+        cur = 0
+        for i in range(15):
+            calls15.append({"text": "clip %d of the film" % i,
+                            "start_frame": cur,
+                            "end_frame": cur + 89})
+            cur += 89
+        calls15[0]["image"] = g2
+        g15_body = {"model": "h3-timeline", "prompt": "15-clip geometry",
+                    "params": {"calls": calls15, "fps": 24, "seed": 21,
+                               "width": 832, "height": 1120}}
+        code, body = api.post("/v1/pipelines/start", g15_body)
+        rid9 = None
+        try:
+            rid9 = json.loads(body).get("run_id")
+        except ValueError:
+            pass
+        check(bool(rid9), "V12a: 15-call root-geometry card accepted "
+              "(%d %s)" % (code, body[:90]))
+        y9 = sidecar_yaml(rid9) if rid9 else None
+        if y9:
+            miss = []
+            for i in range(2, 16):   # window1 rides HIS resize chain
+                                      # when a guide image opens the
+                                      # film (asserted by V12c)
+                a = "- id: window%d" % i
+                if a not in y9:
+                    miss.append("window%d(section)" % i)
+                    continue
+                tail = y9.split(a)[1]
+                nxt = "- id: window%d" % (i + 1)
+                sec = (tail.split(nxt)[0] if nxt in tail
+                       else tail.split("- id: stitch")[0])
+                if ('"MiniMaxH3ReferenceToVideo.0.width":832' not in sec
+                        or '"MiniMaxH3ReferenceToVideo.0.height":1120'
+                        not in sec):
+                    miss.append("window%d" % i)
+            check(not miss,
+                  "V12b: root 832x1120 lands on ALL 15 windows (%s)"
+                  % (",".join(miss) if miss else "all present"))
+            w1s9 = y9.split("- id: window1")[1].split("- id: window2")[0]
+            check('"MiniMaxH3ReferenceToVideo.0.width":' not in w1s9,
+                  "V12c: window1 with guide image keeps HIS resize "
+                  "chain (no width inject over the link)")
+        # V12d: divergence is a named 4xx BEFORE registration
+        div_calls = [dict(c) for c in calls15]
+        div_calls[7] = dict(div_calls[7],
+                            knobs={"width": 999, "height": 1120})
+        div_body = {"model": "h3-timeline", "prompt": "divergent geom",
+                    "params": {"calls": div_calls, "fps": 24, "seed": 22,
+                               "width": 832, "height": 1120}}
+        code, body = api.post("/v1/pipelines/start", div_body)
+        check(400 <= code < 500 and "film-geometry" in body,
+              "V12d: divergent width refused 4xx by name (%d %s)"
+              % (code, body[:90]))
+        # V12e: CONSISTENT repetition is legal (not falsely refused)
+        rep_calls = [dict(c) for c in calls15[:4]]
+        for c in rep_calls[1:]:
+            c["knobs"] = {"width": 832, "height": 1120}
+        rep_body = {"model": "h3-timeline", "prompt": "repeat geom",
+                    "params": {"calls": rep_calls, "fps": 24, "seed": 23,
+                               "width": 832, "height": 1120}}
+        code, body = api.post("/v1/pipelines/start", rep_body)
+        rid10 = None
+        try:
+            rid10 = json.loads(body).get("run_id")
+        except ValueError:
+            pass
+        check(bool(rid10), "V12e: consistent repetition accepted (%d %s)"
+              % (code, body[:90]))
+
+        # V13 (tile-cover law, 2026-09-01 — run-6a976515): a 96f
+        # authored span rounded DOWN to 90 (nearest), window 1
+        # under-rendered 6f and the film's video shipped 0.25s short
+        # while apad held audio at span. The snap is a CEIL: render
+        # length must COVER the span; the stitch span-cut trims
+        # overshoot. 3x4s chained card, song bed, his defaults.
+        calls3 = [{"text": "sprint bursts from the line",
+                   "start_frame": 0, "end_frame": 96},
+                  {"text": "runner banks hard around the corner",
+                   "start_frame": 96, "end_frame": 192},
+                  {"text": "final stretch opens wide",
+                   "start_frame": 192, "end_frame": 288}]
+        body3 = {"model": "h3-timeline",
+                 "prompt": "3x4s tile-cover regression",
+                 "params": {"calls": calls3, "fps": 24, "seed": 24,
+                            "audio_stem": "RANDOM-SONG.mp3"}}
+        code, body = api.post("/v1/pipelines/start", body3)
+        rid11 = None
+        try:
+            rid11 = json.loads(body).get("run_id")
+        except ValueError:
+            pass
+        check(bool(rid11), "V13a: 3x4s card accepted (%d %s)"
+              % (code, body[:90]))
+        y11 = sidecar_yaml(rid11) if rid11 else None
+        if y11:
+            import re
+            w1 = y11.split("- id: window1")[1].split("- id: window2")[0]
+            m = re.search(r'"MiniMaxH3ReferenceToVideo.0.length":(\d+)', w1)
+            lens1 = int(m.group(1)) if m else 0
+            check(lens1 == 107,
+                  "V13b: 96f span renders 107 (ceil snap covers; got %d)"
+                  % lens1)
+            st = y11.split("- id: stitch")[1]
+            flat = st.replace(" ", "")
+            check('"spans":[4.000000,4.000000,4.000000]' in flat,
+                  "V13c: stitch spans exact 4.0x3")
+            sc2 = re.search(r'clip_start_seconds\\?":([\d.]+)',
+                            y11.split("- id: window2")[1]
+                              .split("- id: window3")[0])
+            check(sc2 and abs(float(sc2.group(1)) - 4.0) < 1e-6,
+                  "V13d: w2 song in-point 4.0s (96f film position)")
+
     finally:
         srv.terminate()
         try:
@@ -469,11 +665,13 @@ def main():
         cf.shutdown()
         outd = os.path.join(BUILD, "output")
         if os.path.isdir(outd):
-            for r in (rid, rid2, rid3, rid4, rid5, rid6, rid7):
+            for r in (rid, rid2, rid3, rid4, rid5, rid6, rid7, rid8,
+                      rid9, rid10, rid11):
                 if r:
                     shutil.rmtree(os.path.join(outd, r),
                                   ignore_errors=True)
         for p in (os.path.join(BUILD, "guide_probe.png"),
+                  os.path.join(BUILD, "geom_probe.png"),
                   os.path.join(BUILD, "vid_probe.mp4")):
             try:
                 os.remove(p)

@@ -34,12 +34,10 @@ export function buildPipeline(gatewayUrl: string): ToolDefinition {
   return {
     name: 'build_pipeline',
     description:
-      'Compose the action cards for ONE Melite generation (image/video/audio/3D): creates a pipeline draft and the '
-      + 'conversation renders the REAL editable card tiles (prompt, model params — refined in the card, run by the '
-      + 'user pressing Run). Pick sound defaults and hand it back — do not ask for details first. Args: model (a '
-      + 'catalog id from model_catalog) + prompt (+ optional params bag). For options or variations, call it once '
-      + 'per variation — the cards stack in the conversation. This tool never executes anything — there is no run '
-      + 'tool; ONLY the user starts runs, from the cards.',
+      'Compose a pipeline from the allowed card tools ONLY. Allowed models: h3-timeline, qwen3_tts_voicedesign, qwen3-tts, music3, krea-2, img-edit. '
+      + 'Creates a pipeline draft; the conversation renders editable card tiles (prompt, model params — refined in the card, run by the '
+      + 'user pressing Run). Args: model (one of the allowed models) + prompt (+ optional params bag). '
+      + 'This tool never executes anything — there is no run tool; ONLY the user starts runs, from the cards.',
     parameters: {
       type: 'object',
       properties: {
@@ -81,9 +79,13 @@ export function buildPipeline(gatewayUrl: string): ToolDefinition {
         return [{
           type: 'text',
           // The toolview parses the draft id out of this line (content is
-          // the render text, not the raw value).
-          text: 'cards draft ' + String(v.draftId ?? '?') + ' — ' + n + ' card' + (n === 1 ? '' : 's')
-            + ' (' + String(v.model ?? '?') + ') · the user presses Run on the card',
+          // the render text, not the raw value): it takes the token right
+          // after the FIRST 'card ' — so the draft id must come IMMEDIATELY
+          // after 'card ' (the gateway card-tools contract), with no other
+          // 'card ' occurrence earlier in the line.
+          text: 'card ' + String(v.draftId ?? '?')
+            + ' (' + String(v.model ?? '?') + ') — ' + n + ' stage' + (n === 1 ? '' : 's')
+            + ' · the user presses Run on the card',
         }]
       },
     },
@@ -95,6 +97,18 @@ export function buildPipeline(gatewayUrl: string): ToolDefinition {
       if (typeof a.prompt !== 'string' || a.prompt.length === 0) {
         throw new Error('build_pipeline: "prompt" is required (what to put on the card)')
       }
+      // MODEL ALLOWLIST — only models with dedicated card tools may be used.
+      const ALLOWED_MODELS = new Set([
+        'h3-timeline',
+        'qwen3_tts_voicedesign',
+        'qwen3-tts',
+        'music3',
+        'krea-2',
+        'img-edit',
+      ])
+      if (!ALLOWED_MODELS.has(a.model)) {
+        throw new Error('build_pipeline: model "' + a.model + '" is not allowed. Use one of: ' + [...ALLOWED_MODELS].join(', '))
+      }
       // Catalog read: the model's default params + its family label (the
       // card title — the same derivation familyEntryToCard makes).
       const cat = await gatewayRequest(gatewayUrl, 'GET', '/v1/model-catalog', undefined, exec.signal, CATALOG_TIMEOUT_MS) as CatalogShape
@@ -104,18 +118,62 @@ export function buildPipeline(gatewayUrl: string): ToolDefinition {
         const near = Object.keys(models).slice(0, 12).join(', ')
         throw new Error('build_pipeline: unknown model "' + a.model + '" — catalog has: ' + near)
       }
+      // RUNNABILITY GATE — ask the server's own resolver if this model
+      // can actually produce a pipeline at Run time. If not, refuse.
+      // This is a read-only check — no run registered, no GPU claimed.
+      try {
+        const v = await gatewayRequest(gatewayUrl, 'GET',
+          '/v1/card-tools/validate?model=' + encodeURIComponent(a.model),
+          undefined, exec.signal, 10_000) as { runnable?: boolean; error?: string }
+        if (v.runnable !== true) {
+          throw new Error('build_pipeline: ' + (v.error || 'model "' + a.model + '" cannot run'))
+        }
+      } catch (e: unknown) {
+        // If the endpoint doesn't exist (old gateway), allow through —
+        // the old gateway doesn't have the validate gate.
+        if (e instanceof Error && /cannot run/.test(e.message)) throw e
+      }
       const familyId = typeof entry.family === 'string' ? entry.family : a.model
       const famLabel = cat.families?.[familyId]?.label
-      const title = typeof famLabel === 'string' && famLabel.length > 0 ? famLabel : familyId
+      // CARD MANIFEST RESOLUTION — the action card's own declaration wins:
+      // /v1/card-tools carries this model's card (image_card, tts_card, …)
+      // with its stage_title ("Image", "Speech"…) and its params_schema
+      // defaults. Without this the card renders as a generic model tile
+      // titled by the family label ("Krea 2") — the exact regression the
+      // operator reported. Manifest > catalog, always.
+      let title = typeof famLabel === 'string' && famLabel.length > 0 ? famLabel : familyId
+      let cardDefaults: Record<string, unknown> = {}
+      try {
+        const tools = await gatewayRequest(gatewayUrl, 'GET', '/v1/card-tools', undefined, exec.signal, CATALOG_TIMEOUT_MS) as Array<Record<string, unknown>>
+        const manifest = Array.isArray(tools)
+          ? tools.find((t) => t.model === a.model)
+          : undefined
+        if (manifest !== undefined) {
+          const st = manifest.stage_title
+          if (typeof st === 'string' && st.length > 0) title = st
+          const props = (manifest.params_schema !== null && typeof manifest.params_schema === 'object'
+            && (manifest.params_schema as { properties?: Record<string, { default?: unknown }> }).properties) ?? {}
+          for (const [k, spec] of Object.entries(props)) {
+            if (spec.default !== undefined) cardDefaults[k] = spec.default
+          }
+        }
+      } catch {
+        // Card-tools door unreachable: fall through with the family label —
+        // the draft still composes; loud failure would lose the card.
+      }
       const defaults = (entry.defaults !== null && typeof entry.defaults === 'object' && !Array.isArray(entry.defaults))
         ? entry.defaults as Record<string, unknown>
         : {}
       const bag = (a.params !== null && typeof a.params === 'object' && !Array.isArray(a.params)) ? a.params : {}
-      // Card params: model defaults < explicit params < the prompt arg.
-      const params: Record<string, unknown> = { ...defaults, ...bag, prompt: a.prompt }
+      // Card params: card manifest defaults < model defaults < explicit
+      // params < the prompt arg (most specific wins).
+      const params: Record<string, unknown> = { ...cardDefaults, ...defaults, ...bag, prompt: a.prompt }
+      // Intent: the SHORT headline (the embed's card name) — the full prompt
+      // lives in params.prompt; a novel-length prompt as intent is noise.
+      const intent = a.prompt.length > 80 ? a.prompt.slice(0, 77) + '…' : a.prompt
       // THE DRAFT — the old wire: POST /v1/pipelines/drafts. Cards, not runs.
       const draft = await gatewayRequest(gatewayUrl, 'POST', '/v1/pipelines/drafts', {
-        intent: a.prompt,
+        intent,
         stages: [{
           title,
           kind: 'generation',

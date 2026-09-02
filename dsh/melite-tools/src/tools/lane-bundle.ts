@@ -51,12 +51,14 @@ export function laneBundle(gatewayUrl: string): ToolDefinition {
   return {
     name: 'lane_bundle',
     description:
-      'Load one inference lane\'s full bundle (tool manifest + skills), or LIST all lanes when called with no arguments. '
-      + 'With {lane}: GET /v1/cards/<lane>/bundle → the lane\'s params_schema (the card\'s input contract) and its skill '
-      + 'documents (rules, seam/grid laws, recipes) — read these BEFORE build_pipeline. Without arguments: one compact row '
-      + 'per lane from the gateway\'s card catalog — lane key, card tool name, title, param keys. Lane keys resolve by card '
-      + 'dir name ("video-gen", "image-gen", "tts", "sfx", "music", "3d-gen", "motion-gen", "body", "humanoid-flow") or by '
-      + 'model id ("krea-2", "qwen3-tts", "h3-timeline").',
+      'Load one inference lane\'s full bundle (card-tool manifest + skills), or LIST all lanes when called with no arguments. '
+      + 'With {lane}: GET /v1/cards/<lane>/bundle → the lane\'s card tool(s) with params_schema (the card\'s input contract) '
+      + 'and its skill documents (rules, seam/grid laws, recipes). THE COMPOSE FLOW: lane_bundle(lane) → read the manifest '
+      + '(tools[0].name is the lane\'s DEDICATED CARD TOOL — image_card, tts_card, video_card, three_d_card…) → call THAT '
+      + 'tool with params from its params_schema. build_pipeline(model, prompt) is the generic fallback ONLY when the lane '
+      + 'has no card tool. Without arguments: one compact row per lane — lane key, card tool name, title, param keys. Lane '
+      + 'keys resolve by card dir name ("video-gen", "image-gen", "tts", "sfx", "music", "3d-gen", "motion-gen", "body", '
+      + '"humanoid-flow") or by model id ("krea-2", "qwen3-tts", "h3-timeline").',
     parameters: {
       type: 'object',
       properties: {

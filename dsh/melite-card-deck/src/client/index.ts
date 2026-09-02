@@ -13,31 +13,25 @@ import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import { claimDeckApply, releaseDeckApply } from './apply-guard.ts'
 import { mountCardsSidebarEntry } from './deck-sidebar-entry.tsx'
 import { mountDeckFullbleed } from './deck-fullbleed.ts'
-// The native form-card renderer + its ideogram_canvas slot (the advanced
-// Ideogram mode import). Exported so the bundle CARRIES them for any DSH
-// surface that mounts action-form cards; FormCard dispatches IdeoCanvasField
-// by declared field type.
-export { FormCard } from './FormCard.tsx'
-export type { FormCardHandle } from './FormCard.tsx'
-export { IdeoCanvasField } from './IdeoCanvasField.tsx'
+import { registerRayAssetsTab } from './assets-tab.tsx'
 
 /** 'betterSidebar': the public right-sidebar registry (dsh-better-sidebar,
- * mounted by the web profile's web-ui-all aggregate) — hosts the Melite
+ * mounted by the web profile's web-ui-all aggregate) — hosts the Ray
  * Assets tab. */
 export const inject = ['slots', 'betterSidebar']
 
 export function apply(ctx: ClientContext): void {
   if (!claimDeckApply()) return
-  ctx.effect(() => releaseDeckApply, 'melite-card-deck: apply claim')
+  ctx.effect(() => releaseDeckApply, 'ray-card-deck: apply claim')
 
   // The Cards sidebar entry (family row, self-healing DOM via the vendored
   // entry core; dsh's sidebar shell exposes no registrable nav slot).
   // Toggle mounts the deck container in the center column; deck-fullbleed
   // applies the takeover. Logged, never thrown (shell law).
   try {
-    ctx.effect(() => mountCardsSidebarEntry(), 'melite-card-deck: sidebar entry')
+    ctx.effect(() => mountCardsSidebarEntry(), 'ray-card-deck: sidebar entry')
   } catch (error) {
-    console.error('[melite-card-deck] sidebar entry mount failed:', error)
+    console.error('[ray-card-deck] sidebar entry mount failed:', error)
   }
 
   // Full-bleed takeover of the center column while the deck container is
@@ -45,14 +39,17 @@ export function apply(ctx: ClientContext): void {
   // overlay + <html> attribute + their dsh-panel-activate bus), our
   // namespace. Logged, never thrown (shell law).
   try {
-    ctx.effect(() => mountDeckFullbleed(), 'melite-card-deck: full-bleed')
+    ctx.effect(() => mountDeckFullbleed(), 'ray-card-deck: full-bleed')
   } catch (error) {
-    console.error('[melite-card-deck] full-bleed mount failed:', error)
+    console.error('[ray-card-deck] full-bleed mount failed:', error)
   }
 
-  // ONE SIDEBAR (operator order 2026-08-30: "stop with the three — make ONE
-  // sidebar with all the features"): the ray-era Melite Assets right-sidebar
-  // tabs are REMOVED. The ONE media sidebar is @infer-media/dsh-media's
-  // "Media" tab (runs grid + playback + recreate); the deck keeps only its
-  // left-sidebar canvas row. assets-tab.tsx was deleted — single pattern.
+  // Ray Assets — the old asset sidebar reborn in the better-sidebar (the
+  // public registry; a first-class + menu tab). Draggable model tiles that
+  // land as action cards on any card view. Logged, never thrown.
+  try {
+    registerRayAssetsTab(ctx as unknown as Parameters<typeof registerRayAssetsTab>[0])
+  } catch (error) {
+    console.error('[ray-card-deck] assets tab registration failed:', error)
+  }
 }

@@ -60,6 +60,19 @@ import { agenticSweep } from './enhance-agent.ts'
 
 export { DEFAULT_GATEWAY_URL, RayGatewayError, normalizeGatewayUrl } from './gateway.ts'
 
+// Tool factories — re-exported for the smoke harness (test/smoke.mjs)
+// and any embedder that mounts tools without the full plugin apply().
+export { modelCatalog } from './tools/model-catalog.ts'
+export { buildPipeline } from './tools/build-pipeline.ts'
+export { refineDraft } from './tools/refine-draft.ts'
+export { laneBundle } from './tools/lane-bundle.ts'
+export { provisionModel } from './tools/provision-model.ts'
+export { enhancePrompt } from './tools/enhance-prompt.ts'
+export { skillIndex } from './tools/skill-index.ts'
+export { skillRead } from './tools/skill-read.ts'
+export { ledgerTail } from './tools/ledger-tail.ts'
+export { cardTools } from './tools/card-tools.ts'
+
 /** Cordis plugin name used by loader diagnostics. */
 export const name = 'melite-tools'
 

@@ -262,7 +262,8 @@ export function MediaPanel(): JSX.Element {
   const [search, setSearch] = useState('')
   const [preview, setPreview] = useState<MediaItem | null>(null)
   const [drafts, setDrafts] = useState<DraftRow[]>([])
-  const [tab, setTab] = useState<'artifacts' | 'pipelines'>('artifacts')
+  const [templates, setTemplates] = useState<Array<{ filename: string; name: string; path: string }>>([])
+  const [tab, setTab] = useState<'artifacts' | 'pipelines' | 'templates'>('artifacts')
 
   const load = useCallback(() => {
     setLoading(true)
@@ -293,6 +294,55 @@ export function MediaPanel(): JSX.Element {
       .catch(() => { setDrafts([]) })  // runs view stays fully usable
   }, [])
   useEffect(() => { loadDrafts() }, [loadDrafts])
+
+  /* TEMPLATES: the pipeline template catalog from the gateway's YAML CRUD.
+   * Loads independently — failure never blanks drafts or runs. */
+  const loadTemplates = useCallback(() => {
+    fetch('/infer-media/pipeline-templates')
+      .then(async (r) => {
+        const data = await r.json() as { pipelines?: Array<{ filename: string; name: string; path: string }> }
+        if (!r.ok) throw new Error(String((data as { error?: string }).error ?? r.status))
+        setTemplates(Array.isArray(data.pipelines) ? data.pipelines : [])
+      })
+      .catch(() => { setTemplates([]) })
+  }, [])
+  useEffect(() => { loadTemplates() }, [loadTemplates])
+
+  // TDZ LAW (the 2026-09-01 Media crash): this const MUST stay declared
+  // ABOVE the useEffect that names it in its dependency array — React
+  // evaluates deps eagerly at the call site, so a declaration below the
+  // effect is a temporal-dead-zone ReferenceError on EVERY render
+  // ("Cannot access 'saveTemplate' before initialization"), which killed
+  // the whole Media tab. useCallback keeps the identity stable so the
+  // window-exposure effect below does not re-run each render.
+  const saveTemplate = useCallback(async (name: string, steps: Array<Record<string, unknown>>): Promise<void> => {
+    try {
+      const r = await fetch('/infer-media/pipeline-template-save', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ filename: name, name, steps, overwrite: true }),
+      })
+      if (!r.ok) {
+        const data = await r.json() as { error?: string }
+        throw new Error(data.error ?? 'HTTP ' + String(r.status))
+      }
+      loadTemplates()
+    } catch (e) {
+      setError('save failed: ' + (e instanceof Error ? e.message : String(e)))
+    }
+  }, [loadTemplates])
+
+  // Expose saveTemplate on window so the editor iframe can save pipelines
+  // through the media plugin proxy (same-origin, no CORS).
+  useEffect(() => {
+    const win = window as unknown as Record<string, unknown>
+    win.__inferMediaSaveTemplate = saveTemplate
+    win.__inferMediaLoadTemplates = loadTemplates
+    return () => {
+      delete win.__inferMediaSaveTemplate
+      delete win.__inferMediaLoadTemplates
+    }
+  }, [saveTemplate, loadTemplates])
 
   // NEVER STALE: a new chat session does NOT reload the SPA — the panel would
   // sit on hour-old data while fresh runs exist. Refetch whenever the page
@@ -353,6 +403,64 @@ export function MediaPanel(): JSX.Element {
     }
   }
 
+  /** TEMPLATE OPERATIONS: load a pipeline template's steps into the card
+   *  deck as action cards (the editor's loadPipelineSpec path), or
+   *  save/rename/delete through the gateway's YAML CRUD. */
+  const openTemplate = async (filename: string): Promise<void> => {
+    try {
+      const r = await fetch('/infer-media/pipeline-template-detail?yaml=' + encodeURIComponent(filename))
+      if (!r.ok) throw new Error('HTTP ' + String(r.status))
+      const data = await r.json() as { steps?: Array<Record<string, unknown>>; name?: string }
+      if (!Array.isArray(data.steps) || data.steps.length === 0) {
+        setError('template has no steps')
+        return
+      }
+      // The editor's loadPipelineSpec expects a drop event with PIPELINE_DRAG_MIME
+      // carrying {name, steps}. We dispatch it on the deck canvas.
+      const open = (window as unknown as Record<string, unknown>).__meliteDeckOpenWithDraft
+      if (typeof open === 'function') {
+        // Open the deck first, then dispatch a custom pipeline-load event
+        ;(open as (id: string) => boolean)('__pipeline__' + filename)
+      }
+      // As a fallback: dispatch a DOM event the editor can listen for
+      document.dispatchEvent(new CustomEvent('melite-load-pipeline', {
+        detail: { name: data.name ?? filename, steps: data.steps },
+      }))
+    } catch (e) {
+      setError('template load failed: ' + (e instanceof Error ? e.message : String(e)))
+    }
+  }
+
+  const renameTemplate = async (oldName: string, newName: string): Promise<void> => {
+    try {
+      const r = await fetch('/infer-media/pipeline-template-rename', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ filename: oldName, newName }),
+      })
+      if (!r.ok) {
+        const data = await r.json() as { error?: string }
+        throw new Error(data.error ?? 'HTTP ' + String(r.status))
+      }
+      loadTemplates()
+    } catch (e) {
+      setError('rename failed: ' + (e instanceof Error ? e.message : String(e)))
+    }
+  }
+
+  const deleteTemplate = async (filename: string): Promise<void> => {
+    try {
+      const r = await fetch('/infer-media/pipeline-template-delete?filename=' + encodeURIComponent(filename))
+      if (!r.ok) {
+        const data = await r.json() as { error?: string }
+        throw new Error(data.error ?? 'HTTP ' + String(r.status))
+      }
+      loadTemplates()
+    } catch (e) {
+      setError('delete failed: ' + (e instanceof Error ? e.message : String(e)))
+    }
+  }
+
   const items = useMemo(() => flatten(runs), [runs])
   const counts = useMemo(() => {
     const c: Record<Cat, number> = { all: items.length, video: 0, image: 0, audio: 0 }
@@ -400,7 +508,7 @@ export function MediaPanel(): JSX.Element {
         {/* PIPELINES ↔ ARTIFACTS: the two faces of the archive — composed
             cards (drafts) vs rendered runs. Segmented like the cat chips. */}
         <span style={{ display: 'flex', gap: 4, padding: 2, border: '1px solid rgba(148,163,184,0.25)', borderRadius: 999 }}>
-          {(['pipelines', 'artifacts'] as const).map((t) => (
+          {(['pipelines', 'templates', 'artifacts'] as const).map((t) => (
             <button
               key={t}
               onClick={() => { setTab(t) }}
@@ -410,7 +518,7 @@ export function MediaPanel(): JSX.Element {
                 background: tab === t ? 'rgba(59,130,246,0.18)' : 'transparent',
                 color: tab === t ? 'rgb(147,197,253)' : 'rgb(203,213,225)',
               }}
-            >{t === 'pipelines' ? 'Pipelines ' + String(drafts.length) : 'Artifacts ' + String(items.length)}</button>
+            >{t === 'pipelines' ? 'Pipelines ' + String(drafts.length) : t === 'templates' ? 'Templates ' + String(templates.length) : 'Artifacts ' + String(items.length)}</button>
           ))}
         </span>
         <input
@@ -467,6 +575,46 @@ export function MediaPanel(): JSX.Element {
                   </button>
                 ))}
               </div>)
+        : tab === 'templates'
+        ? <div data-infer-media-templates="1" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {templates.length === 0
+              ? <div style={{ color: 'rgba(148,163,184,0.9)', fontSize: 13, padding: 20 }}>no pipeline templates — save one from the Cards editor.</div>
+              : templates.map((t) => (
+                  <div key={t.filename} style={{
+                    display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left',
+                    border: '1px solid rgba(148,163,184,0.18)', borderRadius: 10, padding: '8px 12px',
+                    background: 'linear-gradient(160deg, #1e293b 0%, #0f172a 100%)',
+                    color: 'rgb(226,232,240)', fontFamily: 'inherit',
+                  }}>
+                    <button
+                      onClick={() => { openTemplate(t.filename).catch(() => {}) }}
+                      style={{ flex: 1, border: 0, background: 'transparent', color: 'inherit', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'inherit', display: 'flex', flexDirection: 'column', gap: 2 }}
+                    >
+                      <span style={{ fontSize: 15, lineHeight: 0, color: 'rgba(250,204,21,0.9)', display: 'inline' }}>⚙ </span>
+                      <span style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline' }}>
+                        {t.name || t.filename}
+                      </span>
+                      <span style={{ fontSize: 10, fontFamily: 'ui-monospace, monospace', color: 'rgba(148,163,184,0.9)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {t.filename}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        const nn = window.prompt('New name for ' + t.name, t.name)
+                        if (nn && nn !== t.name) renameTemplate(t.name, nn).catch(() => {})
+                      }}
+                      style={{ border: '1px solid rgba(148,163,184,0.25)', background: 'transparent', color: 'rgb(148,163,184,0.9)', borderRadius: 6, padding: '3px 8px', fontSize: 10, cursor: 'pointer', fontFamily: 'inherit' }}
+                    >rename</button>
+                    <button
+                      onClick={() => {
+                        if (window.confirm('Delete template "' + t.name + '"?')) deleteTemplate(t.filename).catch(() => {})
+                      }}
+                      style={{ border: '1px solid rgba(248,113,113,0.4)', background: 'transparent', color: 'rgba(248,113,113,0.9)', borderRadius: 6, padding: '3px 8px', fontSize: 10, cursor: 'pointer', fontFamily: 'inherit' }}
+                    >delete</button>
+                  </div>
+                ))
+            }
+          </div>
         : gatewayErrors.length > 0
         ? gatewayErrors.map((e) => (
             <div key={e.gateway} style={{ fontSize: 11, color: 'rgba(251,191,36,0.9)', marginBottom: 4 }}>

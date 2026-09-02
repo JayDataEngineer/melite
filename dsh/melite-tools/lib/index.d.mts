@@ -657,7 +657,7 @@ declare class Fiber {
 /** Extract the parameter tuple from a function type. */
 type Parameters<F> = F extends ((...args: infer P) => any) ? P : never;
 /** Extract the return type from a function type. */
-type ReturnType<F> = F extends ((...args: any) => infer R) ? R : never;
+type ReturnType$1<F> = F extends ((...args: any) => infer R) ? R : never;
 /** Extract the explicit `this` type from a function type. */
 type ThisType<F> = F extends ((this: infer T, ...args: any) => any) ? T : never;
 /**
@@ -697,9 +697,9 @@ declare module './context.ts' {
      * @param args — arguments passed to each listener.
      * @returns the first bail value (non-null, non-false, non-undefined), if any.
      */
-    serial<K extends keyof Events>(name: K, ...args: Parameters<Events[K]>): Promisify<ReturnType<Events[K]>>;
+    serial<K extends keyof Events>(name: K, ...args: Parameters<Events[K]>): Promisify<ReturnType$1<Events[K]>>;
     /** Same as above, with an explicit `this` for listeners (also used for filtering). */
-    serial<K extends keyof Events>(thisArg: NoInfer<ThisType<Events[K]>>, name: K, ...args: Parameters<Events[K]>): Promisify<ReturnType<Events[K]>>;
+    serial<K extends keyof Events>(thisArg: NoInfer<ThisType<Events[K]>>, name: K, ...args: Parameters<Events[K]>): Promisify<ReturnType$1<Events[K]>>;
     /**
      * Dispatch an event, calling listeners in order until one bails.
      *
@@ -707,9 +707,9 @@ declare module './context.ts' {
      * @param args — arguments passed to each listener.
      * @returns the first bail value (non-null, non-false, non-undefined), if any.
      */
-    bail<K extends keyof Events>(name: K, ...args: Parameters<Events[K]>): ReturnType<Events[K]>;
+    bail<K extends keyof Events>(name: K, ...args: Parameters<Events[K]>): ReturnType$1<Events[K]>;
     /** Same as above, with an explicit `this` for listeners (also used for filtering). */
-    bail<K extends keyof Events>(thisArg: NoInfer<ThisType<Events[K]>>, name: K, ...args: Parameters<Events[K]>): ReturnType<Events[K]>;
+    bail<K extends keyof Events>(thisArg: NoInfer<ThisType<Events[K]>>, name: K, ...args: Parameters<Events[K]>): ReturnType$1<Events[K]>;
     /**
      * Dispatch an event whose last argument is a `next` continuation.
      *
@@ -720,9 +720,9 @@ declare module './context.ts' {
      * @param args — listener arguments; the final one is the innermost `next`.
      * @returns the outermost listener's return value.
      */
-    waterfall<K extends keyof Events>(name: K, ...args: Parameters<Events[K]>): ReturnType<Events[K]>;
+    waterfall<K extends keyof Events>(name: K, ...args: Parameters<Events[K]>): ReturnType$1<Events[K]>;
     /** Same as above, with an explicit `this` for listeners (also used for filtering). */
-    waterfall<K extends keyof Events>(thisArg: NoInfer<ThisType<Events[K]>>, name: K, ...args: Parameters<Events[K]>): ReturnType<Events[K]>;
+    waterfall<K extends keyof Events>(thisArg: NoInfer<ThisType<Events[K]>>, name: K, ...args: Parameters<Events[K]>): ReturnType$1<Events[K]>;
     /**
      * Register an event listener owned by the current fiber.
      *
@@ -1144,6 +1144,156 @@ declare const DEFAULT_GATEWAY_URL = "http://localhost:33081";
 /** Strip one trailing slash so path joins stay single-slash. */
 declare function normalizeGatewayUrl(gatewayUrl: string): string;
 //#endregion
+//#region src/types.d.ts
+/**
+ * Local structural types for the DSH tool registry seam.
+ *
+ * `@deepseek-ai/dsh-tools` is not a resolvable dependency of this workspace
+ * (the melite/dsh workspace installs only cordis + tsdown + typescript), so the
+ * plugin hands the registry plain `ToolDefinition` object literals instead of
+ * calling `defineTool()`. The runtime contract these types mirror (verified
+ * against @deepseek-ai/dsh-tools 0.1.0-rc.7 lib/index.js):
+ *
+ * - `ToolRuntime.register(definition)` requires `output { schema, render }`,
+ *   asserts `output.schema` against its supported JSON-Schema subset, and
+ *   rejects the reserved name `run_code`.
+ * - `parameters` is projected verbatim as the model-facing JSON Schema —
+ *   an object root with `properties` / `required`.
+ * - A thrown `execute` is materialized by the registry as an error result
+ *   whose content is the error message — that is how gateway 4xx bodies
+ *   reach the model verbatim.
+ *
+ * Supported schema keywords (dsh-tools json-schema subset): type, oneOf,
+ * properties, required, additionalProperties, items, enum, const plus the
+ * annotations description/title/default/examples. Type arrays are NOT
+ * supported; nullable fields stay undeclared and ride
+ * `additionalProperties: true`.
+ */
+/** One model-facing content block (the only kind this plugin renders). */
+interface TextBlock {
+  type: 'text';
+  text: string;
+}
+/** Execution identity handed to a tool body (subset the tools use). */
+interface ToolExec {
+  readonly signal: AbortSignal;
+}
+/** Registry-ready tool definition — the structural subset we register. */
+interface ToolDefinition {
+  name: string;
+  description: string;
+  /** Raw JSON Schema object root (implicit open object of parameters). */
+  parameters: Record<string, unknown>;
+  output: {
+    /** Raw JSON Schema enforced against every successful canonical value. */
+    schema: Record<string, unknown>;
+    render(args: unknown, value: unknown): TextBlock[];
+  };
+  execute(args: unknown, exec: ToolExec): Promise<unknown>;
+}
+//#endregion
+//#region src/tools/model-catalog.d.ts
+declare function modelCatalog(gatewayUrl: string): ToolDefinition;
+//#endregion
+//#region src/tools/build-pipeline.d.ts
+declare function buildPipeline(gatewayUrl: string): ToolDefinition;
+//#endregion
+//#region src/tools/refine-draft.d.ts
+declare function refineDraft(gatewayUrl: string): ToolDefinition;
+//#endregion
+//#region src/tools/lane-bundle.d.ts
+declare function laneBundle(gatewayUrl: string): ToolDefinition;
+//#endregion
+//#region src/tools/provision-model.d.ts
+declare function provisionModel(gatewayUrl: string): ToolDefinition;
+//#endregion
+//#region src/llm-complete.d.ts
+/**
+ * One harness-model completion core — the ONLY execution path for prompt
+ * enhancement. Both consumers share it:
+ *
+ *   - the enhance_prompt TOOL (model-facing, multi-field orchestration)
+ *   - the POST /melite-tools/enhance HOST ROUTE (the editor's ✦ button inside
+ *     the DSH GUI — same origin, no keystore, no key setup)
+ *
+ * The LLM is the DeepSeek harness's own model via ctx.llm (LlmRuntime):
+ * the adapter the host itself chats through. There is no keystore lookup
+ * anywhere on this path, so "no model configured" cannot happen in a host
+ * that is conversing at all.
+ *
+ * Structural seam only: @deepseek-ai/dsh-llm is not a resolvable dependency
+ * of this workspace (mirrors types.ts), so the runtime contract is captured
+ * as the minimal shape we exercise — verified against the harness README:
+ * stream() emits raw chunks (text-delta, finish{kind,failure}) and
+ * listProviders/listModels expose registered routes.
+ */
+/** Minimal structural view of the LlmRuntime seam we exercise. */
+interface LlmStreamSeam {
+  listProviders(): Array<{
+    id: string;
+    name?: string;
+  }>;
+  listModels(provider: string): Promise<Array<{
+    id: string;
+  }>>;
+  stream(options: {
+    provider: string;
+    model: string;
+    messages: Array<unknown>;
+    system?: string;
+    temperature?: number;
+    maxTokens?: number;
+    signal?: AbortSignal;
+  }): AsyncIterable<{
+    type: 'text-delta';
+    text: string;
+  } | {
+    type: 'finish';
+    kind: string;
+    failure?: {
+      message: string;
+      code?: string;
+    };
+  } | {
+    type: string;
+    [k: string]: unknown;
+  }>;
+}
+//#endregion
+//#region src/enhance-agent.d.ts
+/** Structural re-export so callers do not import llm-complete for the type. */
+type LlmSeam = LlmStreamSeam;
+//#endregion
+//#region src/tools/enhance-prompt.d.ts
+declare function enhancePrompt(gatewayUrl: string, llm: LlmSeam): ToolDefinition;
+//#endregion
+//#region src/tools/skill-index.d.ts
+declare function skillIndex(gatewayUrl: string): ToolDefinition;
+//#endregion
+//#region src/tools/skill-read.d.ts
+declare function skillRead(gatewayUrl: string): ToolDefinition;
+//#endregion
+//#region src/tools/ledger-tail.d.ts
+declare function ledgerTail(gatewayUrl: string): ToolDefinition;
+//#endregion
+//#region src/tools/card-tools.d.ts
+/**
+ * card-tools.ts — the PLUGIN SYSTEM registrar (2026-08-30).
+ *
+ * Complex cards OWN their tools: plugins/<owner>/cards/<card>/tool.json
+ * (beside the card's form) declares name/description/model + the params
+ * schema + a small constraint vocabulary. This module fetches
+ * GET /v1/card-tools and registers ONE DSH tool per manifest — the
+ * executor validates against the DECLARED schema/constraints and lands
+ * a draft via the drafts door. Adding a complex card = adding its dir
+ * + tool.json; the model receives the tool with ZERO DSH-side code.
+ * No godfile: the timeline tool lives where the timeline is defined.
+ */
+type Tool = ReturnType<typeof buildPipelineLike>;
+declare function buildPipelineLike(): any;
+/** Fetch manifests + build one DSH tool per card. */
+declare function cardTools(gatewayUrl: string, signal?: AbortSignal, lane?: string): Promise<Tool[]>;
+//#endregion
 //#region src/index.d.ts
 /** Cordis plugin name used by loader diagnostics. */
 declare const name = "melite-tools";
@@ -1159,4 +1309,4 @@ declare const MELITE_TOOL_NAMES: readonly ["model_catalog", "build_pipeline", "r
 /** Register the Melite tools (+ the /melite-tools/catalog diagnostic route). */
 declare function apply(ctx: Context, config?: Config): Promise<void>;
 //#endregion
-export { Config, DEFAULT_GATEWAY_URL, MELITE_TOOL_NAMES, RayGatewayError, apply, inject, name, normalizeGatewayUrl };
+export { Config, DEFAULT_GATEWAY_URL, MELITE_TOOL_NAMES, RayGatewayError, apply, buildPipeline, cardTools, enhancePrompt, inject, laneBundle, ledgerTail, modelCatalog, name, normalizeGatewayUrl, provisionModel, refineDraft, skillIndex, skillRead };

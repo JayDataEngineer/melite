@@ -90,6 +90,13 @@ function validateCardArgs(m: CardManifest, args: Record<string, any>): { params:
 	}
 	const cons: any = m.constraints ?? {}
 	const callsProp: any = props.calls
+	// FLAT vs CALLS cards (the 2026-09-01 image_card regression): a card
+	// whose manifest declares NO `calls` property is FLAT — its declared
+	// params (prompt, width, seed…) ride the stage doc directly. Only
+	// timeline-style cards (h3_timeline_card, video_card) declare calls.
+	// Demanding calls[] from a flat card made every dedicated card tool
+	// throw "calls[] is required" — unusable.
+	if (callsProp === undefined) return { params: out, calls: null, fps: 0 }
 	const calls: any[] = Array.isArray(args.calls) ? args.calls : fail(name, 'calls[] is required')
 	if (callsProp?.min_items !== undefined && calls.length < callsProp.min_items) fail(name, 'calls needs at least ' + String(callsProp.min_items) + ' entry')
 	if (callsProp?.max_items !== undefined && calls.length > callsProp.max_items) fail(name, 'calls exceeds ' + String(callsProp.max_items) + ' entries')
@@ -157,9 +164,21 @@ export async function cardTools(gatewayUrl: string, signal?: AbortSignal, lane?:
 		return []
 	}
 	if (lane && manifests.length !== 1) throw new Error('card-tools: lane "' + lane + '" resolved ' + String(manifests.length) + ' manifests (must be exactly 1)')
+
+	// ALLOWLIST: only these card tools are exposed to the agent.
+	const ALLOWED_CARDS = new Set([
+		'h3_timeline_card',
+		'voice_lock_card',
+		'tts_card',
+		'music_card',
+		'image_card',
+		'image_edit_card',
+	])
+
 	const tools: Tool[] = []
 	for (const m of manifests) {
 		if (typeof m?.name !== 'string' || !m.name || typeof m.model !== 'string' || !m.model) continue
+		if (!ALLOWED_CARDS.has(m.name)) continue
 		const toolName = m.name
 		const model = m.model
 		const stageTitle = typeof m.stage_title === 'string' && m.stage_title ? m.stage_title : model
@@ -169,23 +188,39 @@ export async function cardTools(gatewayUrl: string, signal?: AbortSignal, lane?:
 			parameters: m.params_schema,
 			output: {
 				schema: { type: 'object', additionalProperties: true, properties: { card: { type: 'string' }, draftId: { type: 'string' } }, required: ['card', 'draftId'] },
-				render: (_a: any, v: any) => [{ type: 'text', text: 'card ' + String(v?.draftId ?? '?') + ' (' + model + ') — ' + String(v?.shots ?? '?') + ' shots, 1 run' }],
+				render: (_a: any, v: any) => [{ type: 'text', text: 'card ' + String(v?.draftId ?? '?') + ' (' + model + ') — '
+				+ (Array.isArray(v?.stages) && v.stages.length > 0 ? String(v.stages.length) + ' stage' : String(v?.shots ?? 1) + ' shot') + ', 1 run' }],
 			},
 			async execute(args: any, exec: any) {
 				const a = args ?? {}
 				const { params, calls, fps } = validateCardArgs(m, a)
 				const intent = typeof a.intent === 'string' && a.intent ? a.intent : fail(toolName, 'intent is required')
-				const doc: Record<string, any> = { calls: JSON.stringify(calls), fps, intent }
-				for (const [k, v] of Object.entries(params)) if (k !== 'calls' && k !== 'intent') doc[k] = v
+				let doc: Record<string, any>
+				if (calls === null) {
+					// FLAT card: every declared param rides the stage doc as-is.
+					doc = {}
+					for (const [k, v] of Object.entries(params)) if (k !== 'intent') doc[k] = v
+				} else {
+					doc = { calls: JSON.stringify(calls), fps, intent }
+					for (const [k, v] of Object.entries(params)) if (k !== 'calls' && k !== 'intent') doc[k] = v
+				}
 				const draft = await gwJson(gatewayUrl, 'POST', '/v1/pipelines/drafts', {
 					intent,
 					stages: [{ title: stageTitle, kind: 'generation', service: model, params: doc }],
 				}, exec?.signal, DRAFT_TIMEOUT_MS)
 				if (typeof draft.draftId !== 'string' || draft.draftId === '') fail(toolName, 'gateway draft POST returned no draftId')
+			const clean = (x: any): any => { if (Array.isArray(x)) return x.map(clean); if (x && typeof x === 'object') { const o: any = {}; for (const [k, v] of Object.entries(x)) { const c4 = clean(v); if (c4 !== undefined) o[k] = c4 } return o } if (typeof x === 'function' || x === undefined) return undefined; return x }
+				if (calls === null) {
+					return clean({
+						card: 'draft', draftId: draft.draftId, model, title: stageTitle,
+						// ONE card = ONE run. The gateway expands to N windows.
+						runs: 1,
+						stages: Array.isArray(draft.stages) ? draft.stages : [],
+					})
+				}
 				const totalFrames = calls[calls.length - 1].end_frame
 				const seams = calls.filter((c3: any) => c3.first_frame_prev_sec !== undefined).length
-				const clean = (x: any): any => { if (Array.isArray(x)) return x.map(clean); if (x && typeof x === 'object') { const o: any = {}; for (const [k, v] of Object.entries(x)) { const c4 = clean(v); if (c4 !== undefined) o[k] = c4 } return o } if (typeof x === 'function' || x === undefined) return undefined; return x }
-				return clean({
+					return clean({
 					card: 'draft', draftId: draft.draftId, model,
 					shots: calls.length, totalFrames,
 					durationSec: Math.round((totalFrames / fps) * 100) / 100,
