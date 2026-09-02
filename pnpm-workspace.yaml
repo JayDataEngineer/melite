@@ -1,0 +1,31 @@
+## pnpm 11 supply-chain policy overrides for the dev container.
+## Without these, pnpm install exits 1 and the Vite startup chain dies.
+onlyBuiltDependencies:
+  - msw
+## @tanstack/react-virtual + virtual-core ship lockfile entries published
+## the same day; pnpm 11's default minimumReleaseAge rejects them.
+minimumReleaseAge: 0
+allowBuilds:
+  '@scarf/scarf': set this to true or false
+  msw: set this to true or false
+
+## THE PLUGIN WORKSPACE (2026-08-21 law: plugins are REAL packages; the
+## package manager materializes every cross-package link per-OS. No
+## hand-rolled node_modules links are ever committed; a fresh clone +
+## `pnpm install` works on every platform).
+##
+## ROOT SINCE 2026-09-02: the editor moved OUT of core (web/editor →
+## plugins/web/editor). It is a CONSUMER — an alternative pathway to the
+## dsh plugins, not infrastructure — so it joins as a workspace MEMBER
+## like every other plugin (core ships py/ + the contract; nothing else).
+## The generic UI kit stays at plugins/web/ui_components — engine-agnostic
+## packages any engine consumes and any pathway renders.
+packages:
+  - 'packages/*'                          # root stragglers: dsl, map-client, melite-model-base
+  - 'plugins/*'                           # single-package plugins
+  - 'plugins/harness/dsh/*'               # the DSH harness family (agent tools, presets, provisioner)
+  - 'plugins/web/dsh/*'                   # the DSH web family (chat/sidebar panels — embeds the editor)
+  - 'plugins/web/editor'                  # the editor pathway (the card surface DSH embeds)
+  - 'plugins/web/ui_components/*'         # @melite/{ui,slots,contracts,formats,catalog} — the generic kit
+  - 'plugins/engines/*/action_cards/*/ui' # engine UI tenants (@melite-plugin/{timeline,3d,video,audio,motion})
+  - 'plugins/engines/*/action_cards'      # card tenants (resolution scope; @comfyui/cards)
