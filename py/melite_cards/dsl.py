@@ -300,6 +300,19 @@ class _CardMeta(type):
             if f.group and f.group not in groups:
                 groups.append(f.group)
         cls._groups_ = tuple(groups)
+        # PRESENTATION NOTCH vocabulary — loud at import, not a mystery
+        # at render. A typo'd notch is a card that silently renders the
+        # default chrome while its author believes they declared huge.
+        size = ns.get("size", getattr(cls, "size", "default"))
+        if size not in ("default", "huge"):
+            raise ValidationError(
+                "%s.size must be 'default' | 'huge' (got %r)"
+                % (name, size))
+        layout = ns.get("layout", getattr(cls, "layout", "form"))
+        if layout not in ("form", "studio"):
+            raise ValidationError(
+                "%s.layout must be 'form' | 'studio' (got %r)"
+                % (name, layout))
         return cls
 
 
@@ -332,6 +345,13 @@ class ActionCard(metaclass=_CardMeta):
       requires     tuple of engine extension ids (compose-time gate)
       principles   tuple of served principle strings
       skills       tuple of (id, label) pairs — card-local skills
+      size         PRESENTATION NOTCH — "default" | "huge". huge = the
+                   fullscreen card (the h3 timeline). The BASE owns the
+                   default; a card declares ONLY the deviation.
+      layout       PRESENTATION NOTCH — "form" | "studio". form = the
+                   standard fill-in, image preview on top; studio = an
+                   interactive body tenant (mask, timeline). The BASE
+                   owns the default; declare only the deviation.
     """
 
     id = ""
@@ -344,6 +364,9 @@ class ActionCard(metaclass=_CardMeta):
     requires = ()
     principles = ()
     skills = ()
+    # Notch defaults — the system provides; cards state exceptions only.
+    size = "default"
+    layout = "form"
 
     @classmethod
     def families_of(cls):

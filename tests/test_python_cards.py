@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.join(REPO, "py"))
 sys.path.insert(0, os.path.join(REPO, "py"))
 
 import editor_forms as ef                    # noqa: E402
+from melite_cards.serialize import _norm       # noqa: E402
 from melite_cards import load_card_py, field_spec  # noqa: E402
 
 PASS = FAIL = 0
@@ -125,8 +126,11 @@ def main():
             "schedulers": ef._option_list(REPO, "schedulers", edir),
         }
         frag = field_spec(fcls, model, fvocab, service=gold["service"])
-        want = {k: gold[k] for k in ("form", "service", "fields",
-                                     "schema_groups") if k in gold}
+        # size/layout are the presentation notches — non-defaults only,
+        # so both sides may lack them (a "form"/"default" card emits
+        # nothing; the h3-timeline golden carries both).
+        want = {k: gold[k] for k in ("form", "service", "size", "layout",
+                                     "fields", "schema_groups") if k in gold}
         dd = deep_diff(frag, want)
         check("%s fragment parity vs golden (%s)" % (cid, model),
               dd is None, dd or "")
@@ -135,12 +139,14 @@ def main():
         check("%s served fragment is class-driven" % cid,
               dd2 is None, dd2 or "")
 
-    # cross-validation: models declaring a card attr must keep defaults
-    # inside the owning card's field domains (the killer feature, live
-    # across engines now that both sides are python)
-    import catalog as _cat
-    from melite_models import (scan_engine_models,
-                               validate_against_cards)
+    # ── PRESENTATION NOTCHES (2026-09-02) ─────────────────────────────
+    # The declaration law: the base owns the defaults ("default"/"form");
+    # a card states ONLY deviations, the wire carries ONLY deviations.
+    # Both-directions audit (the LAYER AUDIT pattern): a model declaring
+    # a studio tenant ROUTES to an interactive body — the card of its
+    # family MUST declare layout="studio", and a card declaring
+    # layout="studio" without a tenant binding is an orphan notch.
+    from melite_models import scan_engine_models
     models = {mid: cls for mid, (_p, cls)
               in scan_engine_models(REPO).items()}
     cards = {}
@@ -150,6 +156,35 @@ def main():
         cards[cid] = load_card_py(os.path.join(
             REPO, "plugins", "engines", engine, *home, "card.py"),
             engine)
+    studio_models = {}
+    for mid, cls in models.items():
+        st = getattr(cls, "studio", None)
+        if isinstance(st, dict) and st.get("tenant"):
+            studio_models[mid] = st["tenant"]
+    for cid, card in cards.items():
+        for fam in card.families_of():
+            n = _norm(fam)
+            has_tenant = any(_norm(m) == n for m in studio_models)
+            if has_tenant:
+                check("notch: %s (family %s has a studio tenant) "
+                      "declares layout=studio" % (cid, fam),
+                      card.layout == "studio", card.layout)
+                check("notch: %s layout=studio + size is explicit"
+                      % cid,
+                      card.size in ("default", "huge"), card.size)
+    # a studio-layout card whose NO family carries a tenant = orphan
+    for cid, card in cards.items():
+        if card.layout == "studio":
+            fams = {_norm(f) for f in card.families_of()}
+            if not fams & {_norm(m) for m in studio_models}:
+                check("notch: %s declares studio but no family "
+                      "binds a tenant" % cid, False, "orphan notch")
+
+    # cross-validation: models declaring a card attr must keep defaults
+    # inside the owning card's field domains (the killer feature, live
+    # across engines now that both sides are python)
+    import catalog as _cat
+    from melite_models import validate_against_cards
     import importlib.util as _ilu
     _spec = _ilu.spec_from_file_location(
         "audio_compose", os.path.join(

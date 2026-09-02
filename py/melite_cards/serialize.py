@@ -108,6 +108,14 @@ def field_spec(cls, model, options_vocab, service=None):
         out["form"] = cls.id
     out["service"] = service if service is not None else model
 
+    # PRESENTATION NOTCHES — non-defaults only (the declaration law:
+    # the base owns the defaults; a card that deviates says so, a card
+    # that doesn't says NOTHING). Absent key = default chrome.
+    if cls.size != "default":
+        out["size"] = cls.size
+    if cls.layout != "form":
+        out["layout"] = cls.layout
+
     out["fields"] = [
         f.emit(True, options_vocab)
         for f in keep if f.type not in BINARY_FIELD_TYPES
