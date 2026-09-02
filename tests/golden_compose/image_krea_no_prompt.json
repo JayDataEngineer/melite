@@ -1,0 +1,22 @@
+{
+  "case": "image_krea_no_prompt",
+  "model": "krea-2",
+  "engine_types": [
+    "comfyui"
+  ],
+  "body": {
+    "model": "krea-2",
+    "params": {
+      "width": 512,
+      "height": 512
+    }
+  },
+  "phase1": {
+    "rc": -1,
+    "refusal": "card_compose rc=-3 (comfyui_plugin.so): {\"error\":\"required param 'prompt' missing or empty on the krea-2 image card (what the picture IS)\"}"
+  },
+  "phase2": {
+    "rc": -1,
+    "refusal": "card_compose rc=-3 (comfyui_plugin.so): {\"error\":\"required param 'prompt' missing or empty on the krea-2 image card (what the picture IS)\"}"
+  }
+}

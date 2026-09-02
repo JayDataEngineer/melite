@@ -22,10 +22,14 @@ Laws carried over verbatim from AGENTS.md:
 Run dirs are drop-in compatible: output/RUN_ID/_request.json,
 _pipeline.json (atomic tmp+rename), engine artifacts beside them.
 
-Engines live in py/engines/ENGINE_TYPE.py, each exporting:
+Engines + card composition live in the OWNING PLUGIN (PLUGIN
+ARCHITECTURE LAW): plugins/<id>/engines/<dir>/engine.yaml declares the
+type; engine.py exports
     async def execute(node, run_dir, inputs, stop_event) -> dict
     async def stop(node, run_dir) -> None   (optional)
-The server names no lane and no engine — it reads the type from the graph.
+and compose.py (or a compose/ package) exports card_compose. py/plugins.py
+mounts them; the server names no lane and no engine — it reads the type
+from the graph.
 """
 
 from __future__ import annotations
@@ -45,7 +49,6 @@ from typing import Any
 REPO = Path(__file__).resolve().parent.parent
 OUT_ROOT = REPO / "output"
 PIPELINES = REPO / "pipelines"
-ENGINES_DIR = Path(__file__).resolve().parent / "engines"
 
 IDENT_RE = re.compile(r"^[a-z_][a-z0-9_-]*$")
 
@@ -208,21 +211,9 @@ def resolve_request(body):
     raise ValidationError("no pipeline selected: provide yaml or model")
 
 
-def _find_model_yaml(mid):
-    for f in (REPO / "plugins").glob("*/models/*/%s/model.yaml" % mid):
-        return f
-    return None
-
-
-def _engine_type_of(model_yaml_path):
-    etype = ""
-    for line in model_yaml_path.read_text().splitlines():
-        s = line.strip()
-        if s.startswith("engine:") and not s.endswith(":"):
-            return s.partition(":")[2].strip()
-        if s.startswith("plugin:") and not etype:
-            etype = s.partition(":")[2].strip()
-    return etype
+# (_find_model_yaml/_engine_type_of retired 2026-09-02: the nondeterministic
+# first-glob-hit model resolution moved to py/plugins.py — declarer-wins,
+# sorted, LOUD refusals. The C glob-order bug dies here.)
 
 
 def resolve_card_model(body, mid):
@@ -231,21 +222,17 @@ def resolve_card_model(body, mid):
     Mirrors the C card path: seed a minimal skeleton carrying the engine
     type, let the OWNING plugin's hook generate the real graph (phase 2
     at run registration; phase 1 here for validation + extra inputs).
+    Model resolution is DETERMINISTIC (py/plugins.py): all copies of the
+    model's model.yaml, engine-stanza declarers win, first in sorted
+    plugin order owns it; no declarer = LOUD refusal.
     Returns (skeleton_text, etype, extra) or raises loudly.
     """
-    my = _find_model_yaml(mid)
-    if my is None:
-        raise ValidationError("no pipeline for model: %s" % mid)
-    etype = _engine_type_of(my)
-    if not etype:
-        raise ValidationError("model %s resolves no engine type (model.yaml engine.plugin) — refusing to guess" % mid)
+    etype, _my = _plugin_loud(_plugin_bus.resolve_model, mid)
     skeleton = "name: %s\ntype: %s\ndescription: card-composed\n\nnodes:\n" % (mid, etype)
-    extra = {}
-    if card_hooks is not None:
-        try:
-            _, extra = card_hooks.compose(body, mid, "", skeleton, [etype])
-        except Exception as e:
-            raise ValidationError("card_compose phase 1: %s" % e)
+    try:
+        _, extra = card_hooks.compose(body, mid, "", skeleton, [etype])
+    except Exception as e:
+        raise ValidationError("card_compose phase 1: %s" % e)
     return skeleton, etype, extra
 
 
@@ -299,24 +286,48 @@ def expand_inject(params, inputs):
 
 
 try:
-    import hooks as card_hooks
+    import plugins as _plugin_bus
 except Exception:
-    card_hooks = None
+    _plugin_bus = None
+
+
+class _ComposeBridge:
+    """PLUGIN ARCHITECTURE LAW: compose dispatch lives in py/plugins.py —
+    the core names no lane and no engine; it routes by the graph's
+    engine type to the OWNING plugin (code + data in the plugin dir).
+    No ctypes, no .so map, no engine names here."""
+
+    @staticmethod
+    def compose(body, name, run_id, text, types0):
+        if _plugin_bus is None:
+            return text, {}
+        return _plugin_bus.compose(body, name, run_id, text, types0)
+
+
+card_hooks = _ComposeBridge()
 
 _engine_cache = {}
 
 
+def _plugin_loud(fn, *a, **kw):
+    """Normalize a plugin-bus refusal into THIS module's ValidationError
+    (when gateway.py runs as __main__, plugins.py's `from gateway import
+    ValidationError` binds a second module copy's class — normalize at
+    the boundary so the HTTP layer always sees one class → 4xx)."""
+    try:
+        return fn(*a, **kw)
+    except ValidationError:
+        raise
+    except Exception as e:
+        raise ValidationError(str(e))
+
+
 def load_engine(engine_type):
-    if engine_type in _engine_cache:
-        return _engine_cache[engine_type]
-    path = ENGINES_DIR / ("%s.py" % engine_type)
-    if not path.is_file():
-        raise ValidationError("no engine plugin for type %r (expected %s)" % (engine_type, path))
-    spec = importlib.util.spec_from_file_location("engines.%s" % engine_type, path)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    _engine_cache[engine_type] = mod
-    return mod
+    """The owning plugin's engine module (plugins.py resolves the
+    plugin dir from engine.yaml declarations) — LOUD when absent."""
+    if _plugin_bus is None:
+        raise ValidationError("plugin bus unavailable (py/plugins.py)")
+    return _plugin_loud(_plugin_bus.load_engine, engine_type)
 
 
 @dataclass

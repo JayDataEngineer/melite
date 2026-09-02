@@ -298,13 +298,28 @@ def step_extensions(comfy_dir: Path, comfy: Path) -> bool:
         # verb comfy-mcp's install_node wraps. url+ref is the legacy
         # transitional form (third-party packs not yet on the registry).
         reg = (e.get("registry") or "").strip()
+        pver = str(e.get("version") or "").strip().strip('"')
         if not name:
             continue
         if not url and not reg:  # in-tree pack
             counts[link_in_tree(name, comfy_dir)] += 1
             continue
 
-        install_arg = reg or url
+        if reg:
+            # MANAGER LAW (probed in-instance 2026-09-21): a BARE registry id
+            # resolves to version 'unknown' = Manager's GIT pseudo-version —
+            # comfy node install <id> silently git-clones. The registry ZIP
+            # rail (ruling 4: never git clone) is only taken with an explicit
+            # pin: install <id>@<version>. Versionless registry entries are
+            # rejected loudly here.
+            if not pver:
+                warn(f"  [{name}] registry entry without version: refuses "
+                     f"(bare id installs git flavor) — add version: or use url+ref")
+                counts["failed"] += 1
+                continue
+            install_arg = f"{reg}@{pver}"
+        else:
+            install_arg = url
         installed = ext_installed_dir(comfy_dir, name, url or reg)
         if installed:
             counts["skipped"] += 1
