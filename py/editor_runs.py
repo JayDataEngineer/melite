@@ -1548,12 +1548,12 @@ def provision(body_json, plugins_root):
             variant = (body_json.get("variant") or "").strip() or None
             quant = (body_json.get("quant") or "").strip() or None
             _route, _eng, cell = cls.resolve(variant, quant)
-            if cell is None or not getattr(cell, "source_url", ""):
+            if cell is None or cell.artifact is None:
                 return 422, {
                     "error": "model %r has no artifact at (%s, %s)"
                              % (mid, variant, quant),
                     "queued": False, "model": mid}
-            art = cell().artifact()
+            art = cell.artifact
             dest = "models"
             if art.dest_sub:
                 dest = "models/%s" % art.dest_sub.strip("/")

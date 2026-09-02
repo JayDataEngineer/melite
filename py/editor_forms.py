@@ -439,7 +439,7 @@ def _variants_from_class(row):
         return None
     rows = []
     seen_quant = set()
-    for _k, v in cls._variants_:
+    for v in cls.variants:                 # frozen rows, not classes
         vlab = v.label or v.id
         if 'a' <= vlab[0] <= 'z':           # the C's capitalize quirk
             vlab = chr(ord(vlab[0]) - 32) + vlab[1:]
@@ -451,15 +451,16 @@ def _variants_from_class(row):
              "group": v.group or "Variant", "route": v.route or cls.id,
              "hint": v.hint or None, "engine": v.engine or cls.engine or ""}
         rows.append(r)
-        for _ck, c in v._cells_:
+        for c in v.cells:
             if c.quant in seen_quant:
                 continue
             seen_quant.add(c.quant)
             wire_vram = c.wire_vram if c.wire_vram is not None \
-                else (getattr(c, "vram_peak_gb", 0) or 0)
-            rows.append({"id": c.quant,
-                         "label": getattr(c, "label", "") or c.quant,
-                         "defaults": {}, "group": "Quant", "quant": c.quant,
+                else (c.vram_peak_gb or 0)
+            rows.append({"id": c.quant.value,
+                         "label": c.label or c.quant.value,
+                         "defaults": {}, "group": "Quant",
+                         "quant": c.quant.value,
                          "route": c.wire_route or c.route or v.route
                          or cls.id,
                          "vram_peak_gb": wire_vram})

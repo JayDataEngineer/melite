@@ -29,7 +29,7 @@
       "group": "Quant",
       "quant": "int8",
       "route": "z-image",
-      "vram_peak_gb": 0
+      "vram_peak_gb": 0.0
     },
     {
       "id": "turbo",

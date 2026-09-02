@@ -71,7 +71,7 @@ check("family default cell is turbo",
 route, engine, cell = cls.resolve("raw", "int8")
 check("raw route", route == "krea-2-raw", route)
 check("engine comfyui", engine == "comfyui", engine)
-check("cell artifact validates", cell().artifact().size_bytes > 0)
+check("cell artifact validates", cell.artifact.size_bytes > 0)
 
 # ── 3. cross-validation: model defaults ⊆ card field domains ────────
 card = load_card_py(os.path.join(REPO, "plugins", "engines", "comfyui",
@@ -144,23 +144,24 @@ with tempfile.TemporaryDirectory() as td:
     bad = os.path.join(td, "bad-sha")
     os.makedirs(bad)
     with open(os.path.join(bad, "model.py"), "w") as f:
-        f.write("from melite_models import Model, Variant, Cell\n"
-                "class C(Cell):\n"
-                "    quant = 'int8'\n"
-                "    source_url = 'https://x/y.safetensors'\n"
-                "    size_bytes = 10\n"
-                "    sha256 = 'nothex'\n"
-                "class V(Variant):\n"
-                "    Int8 = C\n"
+        # shape law: cells are rows; a bad sha refuses AT CONSTRUCTION
+        # (pydantic), the loader wraps it into the ModelError channel
+        f.write("from melite_models import Model, Variant, Cell, CellArtifact\n"
                 "class X(Model):\n"
                 "    id = 'bad-sha'\n"
-                "    V = V\n")
+                "    variants = (\n"
+                "        Variant(id='v', route='bad-sha', cells=(\n"
+                "            Cell(quant='int8', artifact=CellArtifact(\n"
+                "                source_url='https://x/y.safetensors',\n"
+                "                size_bytes=10, sha256='nothex')),\n"
+                "        )),\n"
+                "    )\n")
     refused = False
     try:
         load_model_py(os.path.join(bad, "model.py"), "comfyui")
     except ModelError as e:
-        refused = "invalid artifact" in str(e)
-    check("bad sha256 boot refusal", refused)
+        refused = "sha256" in str(e)
+    check("bad sha256 construction refusal", refused)
 
     # duplicate model ids across trees refuse
     check("scan dedups", "krea-2" in scan_engine_models(REPO))

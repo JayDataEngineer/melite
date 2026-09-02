@@ -28,13 +28,35 @@ the owning card's field domains — names, enums ($samplers), min/max.
 
 import re
 
-from pydantic import BaseModel, Field, HttpUrl, ValidationError, field_validator
+from enum import Enum
+
+from pydantic import (BaseModel, Field, HttpUrl, ValidationError,
+                      field_validator, model_validator)
 
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_SAFE_ID_RE = re.compile(r"[a-z0-9_-]+")
 
 
 class ModelError(Exception):
     """Loud refusal before the wire (the QUEUE LANE LAW shape)."""
+
+
+# ── closed vocabularies (PYTHON SHAPE LAW rung 3) ────────────────────
+# Quants/dest-roots are closed sets: a typo is a construction refusal,
+# not a runtime route mismatch. Extend ONLY when a real tier lands.
+
+
+class Quant(str, Enum):
+    INT8 = "int8"
+    FP8 = "fp8"
+    BF16 = "bf16"
+    LIGHTNING4 = "lightning4"
+
+
+class DestRoot(str, Enum):
+    """Where provisioning roots an artifact (env-resolved by the
+    engine; COMFYUI_ROOT today — widened only by real engines)."""
+    COMFYUI = "COMFYUI_ROOT"
 
 
 # ── pydantic row schemas — the SERVED/emitted shapes ─────────────────
@@ -65,7 +87,7 @@ class CellArtifact(BaseModel):
     source_url: HttpUrl
     size_bytes: int = Field(gt=0)
     sha256: str
-    dest_root: str = "COMFYUI_ROOT"          # enum widened by engines
+    dest_root: DestRoot = DestRoot.COMFYUI
     dest_sub: str = ""
     size_hint_gb: float | None = None
     vram_peak_gb: float | None = None
@@ -97,106 +119,108 @@ class ModelRow(BaseModel):
     has_rubric: bool | None = None
 
 
-# ── authoring bases — nested classes ARE the cascade ────────────────
+# ── the cascade rows — frozen instances, not subclasses ──────────────
+# (PYTHON SHAPE LAW rung 1: a quant cell is a record, not a type.
+# Validation is construction; invalid rows cannot be built.)
 
 
-class Cell:
-    """One (variant × quant) matrix place. Declared as a nested class
-    inside a Variant; carries the artifact body this place downloads."""
-    quant = ""
-    label = ""
-    route = ""                    # pipeline route this cell resolves to
-    engine = ""                   # engine override (declarer-wins shape)
-    source_url = ""
-    size_bytes = 0
-    sha256 = ""
-    dest_root = "COMFYUI_ROOT"
-    dest_sub = ""
-    size_hint_gb = None
-    vram_peak_gb = None
-    hide_from_dropdown = False
-    resolver_defaults = None  # dict — cascade merge data (deepest layer)
+class Cell(BaseModel, frozen=True):
+    """One (variant × quant) matrix place. A row in the variant's
+    `cells` tuple. Either IS a download place (`artifact` present,
+    fully validated) or is NOT (None) — all-or-nothing, rung 4."""
+    model_config = {"extra": "forbid"}
+
+    quant: Quant
+    label: str = ""
+    route: str = ""                    # pipeline route (falls back up)
+    engine: str = ""                   # engine override (declarer-wins)
+    vram_peak_gb: float | None = Field(default=None, ge=0)
+    resolver_defaults: dict = {}       # cascade merge (deepest layer)
+    hide_from_dropdown: bool = False
     # WIRE overrides — the faithful-bug port: the C's variant parser
     # stops reading quant attrs once `label` is seen, so some served
     # quant rows carry the MODEL route and vram 0 even when the file
-    # declares richer data. The class keeps the truth; the wire keeps
+    # declares richer data. The row keeps the truth; the wire keeps
     # the bug. Unset → falls back to the true attrs.
-    wire_route = ""
-    wire_vram = None
-
-    def artifact(self):
-        """Validated CellArtifact — refuses at class-creation time via
-        the variant's boot check when a source_url is declared."""
-        return CellArtifact(
-            source_url=self.source_url, size_bytes=self.size_bytes,
-            sha256=self.sha256, dest_root=self.dest_root,
-            dest_sub=self.dest_sub, size_hint_gb=self.size_hint_gb,
-            vram_peak_gb=self.vram_peak_gb)
+    wire_route: str = ""
+    wire_vram: float | None = Field(default=None, ge=0)
+    artifact: CellArtifact | None = None
 
 
-class _VariantMeta(type):
-    def __new__(mcls, name, bases, ns):
-        cls = super().__new__(mcls, name, bases, ns)
-        cells = []
-        seen = set()
-        for base in bases:
-            for c in getattr(base, "_cells_", ()):
-                if c[0] not in seen:
-                    seen.add(c[0])
-                    cells.append(c)
-        for key, val in ns.items():
-            if isinstance(val, type) and issubclass(val, Cell) and val is not Cell:
-                if key in seen:
-                    raise ModelError(
-                        "%s: duplicate cell %r — one declaration per quant"
-                        % (name, key))
-                val.quant = val.quant or key.lower()
-                cells.append((key, val))
-                seen.add(key)
-        cls._cells_ = tuple(cells)
-        return cls
+class Variant(BaseModel, frozen=True):
+    """A variant row (turbo/raw/…). `cells` are its quant places in
+    declaration order; the wire's quant dedup rides the consumer."""
+    model_config = {"extra": "forbid"}
 
+    id: str
+    label: str = ""
+    hint: str = ""
+    group: str = "Variant"
+    route: str = ""
+    engine: str = ""
+    order: int | None = None
+    resolver_defaults: dict = {}       # cascade merge data (family ∪ this)
+    defaults: dict | None = None       # WIRE variant-row defaults (stayed {})
+    cells: tuple[Cell, ...] = ()
 
-class Variant(metaclass=_VariantMeta):
-    """A variant row (turbo/raw/…). Nested Cell classes are its quant
-    places, in declaration order."""
-    id = ""
-    group = "Variant"
-    label = ""
-    hint = ""
-    route = ""
-    engine = ""
-    order = None
-    defaults = None          # dict — the WIRE variant row defaults
-                             # (form-spec; stayed {} in the C for every
-                             # unit — kept separate so the wire never
-                             # leaks resolver data silently)
-    resolver_defaults = None # dict — cascade merge data (family ∪ this)
+    @field_validator("id")
+    @classmethod
+    def _id_shape(cls, v):
+        if not _SAFE_ID_RE.fullmatch(v):
+            raise ValueError("variant id must be [a-z0-9_-]+ (got %r)" % v)
+        return v
 
-    def merged_defaults(self):
-        return dict(self.resolver_defaults or {})
+    @model_validator(mode="after")
+    def _one_cell_per_quant(self):
+        quants = [c.quant for c in self.cells]
+        dupes = {q for q in quants if quants.count(q) > 1}
+        if dupes:
+            raise ValueError(
+                "variant %r: duplicate quant %s — one cell per tier"
+                % (self.id, ", ".join(sorted(str(q) for q in dupes))))
+        return self
 
 
 class _ModelMeta(type):
+    """Collects `variants` (a tuple of Variant INSTANCES — rung 1) and
+    enforces the family laws at class-creation time. No namespace
+    scanning, no key-derivation: the class states its rows once."""
+
     def __new__(mcls, name, bases, ns):
         cls = super().__new__(mcls, name, bases, ns)
         variants = []
-        seen = set()
+        seen = {}
         for base in bases:
-            for v in getattr(base, "_variants_", ()):
-                if v[0] not in seen:
-                    seen.add(v[0])
+            for v in getattr(base, "variants", ()):
+                if v.id not in seen:
+                    seen[v.id] = v
                     variants.append(v)
-        for key, val in ns.items():
-            if isinstance(val, type) and issubclass(val, Variant) \
-                    and val is not Variant:
-                if key in seen:
-                    raise ModelError(
-                        "%s: duplicate variant %r" % (name, key))
-                val.id = val.id or key.lower()
-                variants.append((key, val))
-                seen.add(key)
-        cls._variants_ = tuple(variants)
+        own = ns.get("variants", ())
+        if not isinstance(own, tuple):
+            raise ModelError(
+                "%s.variants must be a tuple of Variant instances" % name)
+        for v in own:
+            if not isinstance(v, Variant):
+                raise ModelError(
+                    "%s.variants entries must be Variant instances "
+                    "(got %s — cells are rows now, not subclasses)"
+                    % (name, type(v).__name__))
+            if v.id in seen:
+                raise ModelError(
+                    "%s: duplicate variant %r" % (name, v.id))
+            seen[v.id] = v
+            variants.append(v)
+        cls.variants = tuple(variants)
+        # route → (variant, cell): every matrix address, one map (the
+        # C served ?model=<route>; the class flip lost it — structural
+        # again)
+        routes = {}
+        for v in cls.variants:
+            for c in v.cells:
+                for r in (c.route, v.route, cls.id):
+                    if r and r != cls.id:
+                        routes.setdefault(r, (v, c))
+        cls._routes = routes
         cid = ns.get("id", "")
         if variants and not cid:
             raise ModelError("%s declares variants but no id" % name)
@@ -206,8 +230,11 @@ class _ModelMeta(type):
 
 
 class Model(metaclass=_ModelMeta):
-    """The family head. Dir name must equal `id` (naming law 1)."""
+    """The family head — the one subclass per unit (taxonomy lives
+    here; variant/cell DATA lives in `variants` as frozen rows). Dir
+    name must equal `id` (naming law 1)."""
     id = ""
+    variants = ()             # tuple[Variant] — frozen instance rows
     tile = ""
     genre = ""
     label = ""
@@ -290,15 +317,9 @@ class Model(metaclass=_ModelMeta):
             raise ModelError(
                 "%s.studio must be {'tenant': str, 'owns_params': bool}"
                 % cls.__name__)
-        for _key, vcls in getattr(cls, "_variants_", ()):
-            for _ckey, ccls in getattr(vcls, "_cells_", ()):
-                if getattr(ccls, "source_url", ""):
-                    try:
-                        ccls().artifact()      # validates url/sha/size
-                    except Exception as e:
-                        raise ModelError(
-                            "%s.%s.%s: invalid artifact: %s"
-                            % (cls.__name__, _key, _ckey, e))
+        # variant/cell rows validate AT CONSTRUCTION (pydantic frozen)
+        # — the opt-in `if source_url:` artifact walk is dead with the
+        # classes (shape law rungs 2/4: no guard remembers to check)
 
     # ── cascade reads ─────────────────────────────────────────────
 
@@ -343,15 +364,16 @@ class Model(metaclass=_ModelMeta):
 
     @classmethod
     def _variant_(cls, vid):
-        for _k, v in cls._variants_:
+        for v in cls.variants:
             if v.id == vid:
                 return v
         return None
 
     @staticmethod
-    def _cell_(vcls, quant):
-        for _k, c in vcls._cells_:
-            if c.quant == quant:
+    def _cell_(variant, quant):
+        q = Quant(quant)
+        for c in variant.cells:
+            if c.quant == q:
                 return c
         return None
 
@@ -362,13 +384,13 @@ class Model(metaclass=_ModelMeta):
         fall to the FIRST declared variant / cell (the family default —
         krea-2's head body IS turbo/int8)."""
         vcls = cls._variant_(variant) if variant else (
-            cls._variants_[0][1] if cls._variants_ else None)
+            cls.variants[0] if cls.variants else None)
         ccls = None
         if vcls is not None:
             if quant:
                 ccls = cls._cell_(vcls, quant)
-            elif vcls._cells_:
-                ccls = vcls._cells_[0][1]
+            elif vcls.cells:
+                ccls = vcls.cells[0]
         route = getattr(ccls, "route", "") or getattr(vcls, "route", "") \
             or getattr(cls, "route", "")
         engine = getattr(ccls, "engine", "") or getattr(vcls, "engine", "") \
@@ -422,10 +444,32 @@ import os as _os       # noqa: E402
 import sys as _sys     # noqa: E402
 
 
+def _repo_py_root(path):
+    """The repo's py/ package root for a file under it (walks up until
+    a parent has py/melite_models). The LOADER owns import mechanics —
+    model.py files declare, they never sys.path-insert (shape law
+    rung 5; the 53 six-ups rituals are deleted)."""
+    d = _os.path.dirname(_os.path.abspath(path))
+    for _ in range(12):
+        cand = _os.path.join(d, "py", "melite_models")
+        if _os.path.isdir(cand):
+            return _os.path.join(d, "py")
+        nxt = _os.path.dirname(d)
+        if nxt == d:
+            break
+        d = nxt
+    return None
+
+
 def load_model_py(path, engine="engine"):
     """Import one model.py → its Model subclass (exactly one per file,
-    loud otherwise). Asserts dirname == model id (naming law 1)."""
+    loud otherwise). Asserts dirname == model id (naming law 1).
+    Injects the repo py/ root (loader-owned) and converts pydantic
+    construction refusals into the ModelError channel."""
     model_dir = _os.path.dirname(path)
+    pyroot = _repo_py_root(path)
+    if pyroot and pyroot not in _sys.path:
+        _sys.path.insert(0, pyroot)
     modname = "plugin_models.%s.%s" % (engine, _os.path.basename(model_dir))
     if modname in _sys.modules:
         mod = _sys.modules[modname]
@@ -435,6 +479,9 @@ def load_model_py(path, engine="engine"):
         _sys.modules[modname] = mod
         try:
             spec.loader.exec_module(mod)
+        except ValidationError as e:
+            del _sys.modules[modname]
+            raise ModelError("%s: invalid declaration: %s" % (path, e))
         except Exception:
             del _sys.modules[modname]
             raise

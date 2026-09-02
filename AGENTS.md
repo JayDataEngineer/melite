@@ -92,3 +92,56 @@ are idempotent.
   `plugins/comfyui/engines/comfyui/compose/` (per-card modules). If a
   lane "needs" core changes to express its card, the plugin contract is
   extended generically instead.
+
+## PYTHON SHAPE LAW (operator order, 2026-09-03, verbatim intent)
+
+> "I had to drill in the very, very basics of clean python. Over and over."
+> "Are you saying this is the pythonic way to handle this?"
+> "You recommend this pattern? Of not using Python Data Classes, but to
+>  type raw strings?"
+
+The ladder, every rung load-bearing — audited on the model/variant/cell
+cascade and now THE law for how this repo writes python declarations:
+
+1. **Classes are for taxonomy and behavior; data is instances.**
+   Two classes that differ only in field values are not two types —
+   they are two rows. A quant cell is a record, not a subclass. One
+   class per family (Model subclasses carry real taxonomy), `variants`
+   and `cells` are TUPLES OF INSTANCES of frozen schema models. The
+   class-per-cell era exploded 4 variants × 3 quants into 12 classes +
+   12 wiring attributes + a namespace-scanning metaclass that existed
+   only to paper over classes-as-records.
+2. **Schemas are pydantic models (the dataclass discipline), frozen.**
+   Validation happens AT CONSTRUCTION — an invalid row cannot be built.
+   Not `__post_init__` hand-rolling, not boot-time scans that remember
+   to check, not opt-in guards (the `if source_url:` guard let linkless
+   cells through — the `user_provided` hack's cousin). Mutability dies
+   with `frozen=True`: no runtime `Krea2.defaults["steps"] = 99`.
+3. **Closed vocabularies are enums; open ones are plain str.**
+   `quant`/`dest_root` are closed sets → `Quant`/`DestRoot(str, Enum)`:
+   a typo is a construction refusal, not a runtime route mismatch.
+   Formats get constrained types (`HttpUrl`, `Sha256` pattern). Only
+   genuinely open vocab (route, id, hint) stays `str` — typing theater
+   there buys nothing.
+4. **Artifacts are all-or-nothing.** A cell either IS a download place
+   (a nested `CellArtifact`: url + sha256 + size, all validated) or is
+   NOT (None). A url without a sha refuses. A linkless row claiming
+   "user provided" is a dirty hack and is banned — the LoraRow flip
+   (`source_url` required, `user_provided` deleted) is the precedent.
+5. **No stringly handshakes.** Declarations are structural — class
+   references and typed rows. `load_mod(__file__, "loras", "Loras")`
+   magic-word pairs are tolerated ONLY where file-based loading forces
+   them, and the loader owns import mechanics: no per-file
+   `sys.path.insert` six-ups rituals (53 copies deleted — the loader
+   injects the repo `py/` root once).
+6. **No restated coordinates.** If a name is derived, never restate it
+   beside the derivation (`Turbo = Turbo` + `id = "turbo"` was a drift
+   surface). Instances state their id once, validated.
+7. **Copy-paste fossils are a shape problem.** The krea-2 turbo/raw
+   cells shared one sha256 across two different checkpoint files for a
+   full day because class ceremony buries values. Rows make diffs
+   legible; construction validation makes wrong shapes unbuildable.
+
+Where classes remain right: `Model` subclass per family; mods
+(`Loras(LorasMod)` — genuine schema flavors under the single `Mod`
+parent); anything with behavior or per-family taxonomy.

@@ -8,12 +8,22 @@ suite guards was a REAL shipped bug:
   - duplicate history rows      -> both history lookups hit metadata copy
   - metadata.history drift      -> render copy diverged from root history
 Exit 0 = all pass; any assert failure prints FAIL and exits 1.
+
+The draft is a RUNTIME artifact: the gateway's draft_writeback creates it
+on the first h3-timeline card edit (the GPU e2e arm produces a fully
+populated one). The fast arm never assumes a GPU, so an absent draft is a
+loud SKIP (exit 0), not a failure.
 """
 import json, hashlib, sys, os
 
 DRAFT = os.environ.get(
     "TL_DRAFT",
     os.path.join(os.path.dirname(__file__), "../../build/drafts/draft-timeline-h3.json"))
+
+if not os.path.exists(DRAFT):
+    print("SKIP draft_invariants (no draft at %s — produced by an h3-timeline "
+          "run; TL_DRAFT=... or RUN_GPU=1)" % DRAFT)
+    sys.exit(0)
 
 fails = []
 def check(name, cond, detail=""):
