@@ -120,8 +120,14 @@ def scan_engine_cards(repo_root):
 _JSON_TYPES = {
     "text": "string", "textarea": "string", "select": "string",
     "number": "number", "slider": "number", "seed": "integer",
-    "boolean": "boolean", "image": "string", "audio": "string",
-    "video": "string", "file": "string",
+    # the card-declaration shorthand (type='int'/'float'/'bool'/
+    # 'image_list' — what cards actually write) maps to the wire
+    # vocabulary; unmapped falls to "string", which once typed numeric
+    # fields as strings WITH minimum/maximum (drift fixed 2026-09-03)
+    "int": "integer", "integer": "integer", "float": "number",
+    "bool": "boolean", "boolean": "boolean",
+    "image": "string", "audio": "string", "video": "string",
+    "file": "string", "image_list": "array",
     "loras": "array", "controlnet": "array",
 }
 

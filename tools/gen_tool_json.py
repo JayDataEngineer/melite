@@ -31,7 +31,13 @@ def main():
     drifted, written = [], []
     for cid in sorted(cards):
         path, cls = cards[cid]
-        snap = os.path.join(os.path.dirname(path), "tool.json")
+        # THE CARD PATTERN (2026-09-03): card.py lives in the card's
+        # py/ subfolder; the tool.json SNAPSHOT is derived data and
+        # sits at the CARD ROOT (beside tool.json's serving-era home)
+        snap_dir = os.path.dirname(path)
+        if os.path.basename(snap_dir) == "py":
+            snap_dir = os.path.dirname(snap_dir)
+        snap = os.path.join(snap_dir, "tool.json")
         manifests = tool_manifests(cls)
         text = json.dumps(manifests, indent=2, ensure_ascii=False) + "\n"
         old = open(snap, encoding="utf-8").read() if os.path.exists(snap) \
