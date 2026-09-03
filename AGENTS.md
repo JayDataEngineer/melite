@@ -218,13 +218,18 @@ a deployment choice, never an assumption):
   install_node drives its cm_cli machinery (the legacy
   custom_nodes clone does not count, live-probed 2026-09-03);
   it is the rail, never a second interactive plane.
-- **Bloodstreams stay separate by default** (resilience law: the
-  gateway must survive comfy torch chaos). The gateway env is
-  root `pyproject.toml` — pydantic-only, a WALL keeps it that way.
-  Power users may fold it into a comfy env; the surface is thin
-  enough that folding is safe. Remote/cloud deployments make
-  sharing impossible anyway — sharing is a local luxury, never a
-  load-bearing assumption.
+- **ONE base env IS the management plane** (operator order,
+  2026-09-03, verbatim: "ALL THIS NEEDS TO GO INTO THE BASE. THERE IS
+  ONE [REDACTED 2026-11-05] FLOW HERE. THE OPTION IS A FULL COMFYUI INSTALL
+  THROUGH PYTHON. COMFY-MCP NEEDS TO BE IN THE [REDACTED 2026-11-05] BASE. OUR
+  SYSTEM DOES NOT RUN WITHOUT THAT"). Root `pyproject.toml` carries
+  pydantic, comfy-script (composition), comfy-mcp (the engine
+  boundary), comfyui-manager (cm_cli install rail), comfy-cli,
+  fastmcp + starlette (MCP serving), pyyaml — no opt-in group, no
+  second env. The resilience law's torch wall survives because the
+  SERVING runtime (data/runtime/comfyui/.venv) stays its own
+  bloodstream: the base env never imports torch; the manager rides
+  the runtime env (COMFYUI_PATH) where it needs comfy core.
 
 - **Management is python packages, not shell scripts** (operator
   order, 2026-09-03: "models, extensions, and comfyui management is
@@ -232,16 +237,17 @@ a deployment choice, never an assumption):
   `tools/provision.py` imports comfy-mcp and calls its tools
   IN-PROCESS (`install_node`, `download_model`); comfy-cli's binary
   routing is comfy-mcp's concern (COMFY_BIN/PATH — deployment
-  config). The management env is the opt-in `management` dependency
-  group (comfy-mcp + pyyaml); the default env stays pydantic-only.
-  `bootstrap.py` is deleted — its shell-wrapping era is over. url+ref
-  declarations BLOCK loudly (never-git-clone ruling); vendor symlinks
-  and sha-verified downloads require a workspace WRITABLE from the
-  orchestrator's world (containers provision via entrypoint/binds).
+  config). `bootstrap.py` is deleted — its shell-wrapping era is
+  over. The management group is RETIRED: `uv run python
+  tools/provision.py` is the whole invocation (url+ref declarations
+  install through cm_cli, the Manager's own acquisition rail —
+  never a repo-side git clone); vendor symlinks and sha-verified
+  downloads require a workspace WRITABLE from the orchestrator's
+  world (containers provision via entrypoint/binds).
 
-Enforced by tests/test_provision.py (config shape, pydantic-only
-surface, git-pinned core, manager-v4 rail, BYO never-installs
-refusal, dead-instance refusal, management group present, no
+Enforced by tests/test_provision.py (config shape, full-plane base
+env, no dependency-groups split, git-pinned core, manager-v4 rail,
+BYO never-installs refusal, dead-instance refusal, no
 comfy-shell-wrapping, manifest non-empty).
 
 ## C RETIREMENT (operator order, 2026-09-03, verbatim)

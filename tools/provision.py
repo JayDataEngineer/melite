@@ -29,10 +29,12 @@ Declaration provisioning — through the python packages:
                  polled to completion, sha256-verified after (ours).
   all            extensions + models.
 
-Management environment (deps: comfy-mcp only — the comfy binary is
-deployment-provided):
+ONE base environment (operator order 2026-09-03: the base env IS the
+comfyui management plane — pydantic, comfy-script, comfy-mcp,
+comfyui-manager, comfy-cli, fastmcp, starlette, pyyaml; no opt-in
+group, one flow):
 
-  uv run --group management python tools/provision.py <command>
+  uv run python tools/provision.py <command>
 
 setup.sh wraps exactly that. Agent-driven interactive provisioning
 stays with the comfy-mcp MCP server itself (docs/comfyui/comfy-mcp.md).
@@ -96,9 +98,9 @@ def need_comfy_mcp():
         import comfy_mcp.server as sms  # noqa: F401
         return sms
     except ImportError:
-        fail("comfy-mcp is not importable — run the provisioning "
-             "commands through the management env:\n"
-             "  uv run --group management python tools/provision.py <command>"
+        fail("comfy-mcp is not importable — the base env carries it "
+             "(uv sync); run:\n"
+             "  uv run python tools/provision.py <command>"
              "\n(or: pip install comfy-mcp)")
 
 
@@ -113,6 +115,54 @@ def call(fn, *a, **kw):
     r = fn(*a, **kw)
     import inspect
     return asyncio.run(r) if inspect.iscoroutine(r) else r
+
+
+def _url_installed(url: str, workspace: Path) -> bool:
+    """True if some custom_nodes clone's git remote IS this declaration's
+    url. The Manager renames install dirs from its registry metadata
+    (e.g. ComfyUI-SeedVR2_VideoUpscaler -> seedvr2_videoupscaler), so
+    matching by name is hopeless; matching the remote is exact."""
+    import configparser
+    want = url.rstrip("/").lower().removesuffix(".git")
+    for child in sorted((workspace / "custom_nodes").glob("*")):
+        if not child.is_dir():
+            continue
+        cfg = child / ".git" / "config"
+        if not cfg.is_file():
+            continue
+        try:
+            cp = configparser.ConfigParser()
+            cp.read(cfg)
+            for sect in cp.sections():
+                origin = cp.get(sect, "url", fallback="")
+                if origin and origin.rstrip("/").lower().removesuffix(".git") == want:
+                    return True
+        except Exception:
+            continue
+    return False
+
+
+def _cm_cli_install(url: str, workspace: Path) -> dict:
+    """Call cm_cli install directly (accepts git URLs; install_node wraps it but
+    refuses them).  Uses the workspace .venv python for dependencies."""
+    import subprocess
+    # Use the VIRTUAL_ENV set by managed provisioning (line 649 in this file)
+    venv = os.environ.get("VIRTUAL_ENV", "")
+    if venv:
+        py = Path(venv) / "bin" / "python"
+    else:
+        py = sys.executable
+    env = {**os.environ, "COMFYUI_PATH": str(workspace)}
+    result = subprocess.run(
+        [str(py), "-m", "cm_cli", "install", url],
+        capture_output=True, text=True, cwd=str(workspace), env=env, timeout=300,
+    )
+    # cm_cli exits 0 on success, non-zero on failure
+    if result.returncode == 0:
+        return {"installed": True, "restart_required": True, "result": result.stdout}
+    # parse failure from stderr/stdout
+    err = result.stderr or result.stdout
+    return {"installed": False, "failed": True, "error": err[:500]}
 
 
 # ── instance provisioning (byo verify / managed materialize) ────────
@@ -298,8 +348,8 @@ def cmd_verify(cfg):
         except Exception as e:
             check("comfy-cli routing answers (server_info)", False, str(e)[:100])
     except SystemExit:
-        check("comfy-mcp importable (management env)", False,
-              "run via: uv run --group management")
+        check("comfy-mcp importable (base env)", False,
+              "run via: uv sync (the base env carries comfy-mcp)")
     print()
     if FAILS:
         print("VERIFY REFUSED: %d failure(s): %s" % (len(FAILS), ", ".join(FAILS)))
@@ -405,15 +455,50 @@ def step_extensions() -> bool:
             counts[link_in_tree(name, workspace)] += 1
             continue
         if url and not reg:
-            # install_node REFUSES git URLs by design — and the estate
-            # ruled (2026-09-21) "we never git clone". This declaration
-            # form is stranded until the pack publishes to the registry
-            # or we vendor it: say so, loudly, and count it.
-            warn("  [%s] url-form declaration BLOCKED — install_node "
-                 "refuses git URLs (never-git-clone ruling); convert the "
-                 "declaration to registry: <slug> (version recorded in "
-                 "nodes.yaml) or vendor the pack in-tree" % name)
-            counts["blocked"] += 1
+            # URL-form (GitHub): cm_cli install handles GitHub extensions
+            # directly (install_node's registry-only guard is bypassed by
+            # driving the same engine comfy-cli uses). The URL is the
+            # declaration; ComfyUI Manager owns acquisition.
+            # cm_cli clones to a dir the Manager's registry metadata picks,
+            # not `name`; the git remote is the authoritative match.
+            if _url_installed(url, workspace):
+                counts["skipped"] += 1
+                info("  [%s] already in custom_nodes — skipping" % name)
+                continue
+            if DRY:
+                print("[dry-run] install_node [%s] from url %r"
+                      % (name, url))
+                counts["installed"] += 1
+                continue
+            try:
+                # cm-cli (underlying comfy-cli) handles GitHub URLs directly.
+                # The comfy-mcp `install_node` wrapper refuses URLs; we call
+                # the engine directly so the declaration (url in nodes.yaml)
+                # actually reaches the install.
+                rep = _cm_cli_install(url, workspace)
+            except Exception as exc:
+                warn("  [%s] cm_cli install raised: %s"
+                     % (name, str(exc)[:160]))
+                counts["failed"] += 1
+                continue
+            if rep.get("unsupported"):
+                warn("  [%s] install_node unsupported: %s"
+                     % (name, str(rep.get("error"))[:160]))
+                counts["failed"] += 1
+                continue
+            if rep.get("failed"):
+                warn("  [%s] failed packs: %s"
+                     % (name, rep["failed"]))
+                counts["failed"] += 1
+                continue
+            counts["installed"] += 1
+            if rep.get("restart_required"):
+                restart = True
+            ref = (e.get("ref") or "").strip()
+            if ref:
+                info("  [%s] installed from url (declared ref %s — "
+                     "install_node may pull a different ref; audit the "
+                     "drift deliberately)" % (name, ref))
             continue
 
         # registry form: bare id (install_node refuses @pins too; the
@@ -626,7 +711,7 @@ def main():
     ap = argparse.ArgumentParser(
         description="inference.cpp provisioning — the ONE orchestrator "
                     "(management plane in-process; run via: uv run "
-                    "--group management python tools/provision.py …)")
+                    "python tools/provision.py …)")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     for name, help_ in (("paths", "runtime layout + extra_model_paths.yaml"),

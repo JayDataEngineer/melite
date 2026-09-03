@@ -1,22 +1,37 @@
 # The estate python — the gateway's entire third-party surface.
 #
-# PROVISIONING LAW: this env is the estate's OWN (resilience law —
-# the gateway must survive comfy torch chaos, so it never shares a
-# bloodstream with the renderer by default). Power users MAY fold
-# these deps into a comfy env; the surface is pydantic-only, so
-# folding is safe. uv lock pins; uv sync materializes.
+# ONE FLOW (operator order, 2026-09-03): the BASE env IS the comfyui
+# management plane. There is no opt-in group, no second env — the
+# system does not run without comfy-mcp, so comfy-mcp is base. This
+# env installs ComfyUI (comfy-cli), manages it (comfyui-manager's
+# cm_cli), drives it (comfy-mcp), composes for it (comfy-script) and
+# serves MCP (fastmcp + starlette). uv lock pins; uv sync materializes.
 [project]
 name = "melite-gateway"
 version = "0.1.0"
 description = "inference.cpp estate gateway (py/ + plugin compose)"
 requires-python = ">=3.12"
-dependencies = ["pydantic>=2.13"]
-
-# The MANAGEMENT environment (opt-in group; the default env stays
-# pydantic-only). comfy-mcp is the management plane's python package —
-# its tools are called IN-PROCESS by tools/provision.py. The comfy
-# BINARY is NOT a pip dep: it is deployment-provided and routed by
-# comfy-mcp via COMFY_BIN/PATH (portability law — this machine's PATH
-# `comfy` is deployment glue into the serving container).
-[dependency-groups]
-management = ["comfy-mcp>=0.10.0", "pyyaml>=6"]
+dependencies = [
+    "pydantic>=2.13",
+    # composition engine: upstream comfy-script builds node classes
+    # from the pinned object_info; co_script is our DRY-primitives
+    # layer over it (pin discipline, require_nodes gate, blocks,
+    # renderer registry). (comfy-script under-declares its runtime
+    # imports; nest_asyncio2 / aiohttp / networkx are its real
+    # transitive surface.)
+    "comfy-script>=0.6",
+    "nest_asyncio2>=1.0",
+    "aiohttp>=3.9",
+    "networkx>=3",
+    "pillow>=10",
+    # management plane: comfy-mcp (THE engine boundary — the system
+    # does not run without it), comfyui-manager (v4 package form:
+    # cm_cli, the install rail), comfy-cli (install/routing python),
+    # fastmcp + starlette (MCP serving), pyyaml (manifests).
+    "comfy-mcp>=0.10.0",
+    "comfyui-manager",
+    "comfy-cli",
+    "fastmcp",
+    "starlette",
+    "pyyaml>=6",
+]

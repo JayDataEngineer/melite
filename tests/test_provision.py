@@ -8,8 +8,10 @@ The provisioning shape is a contract, not a convenience:
   - BYO never installs (sync REFUSES);
   - managed is lockfile-pinned (comfyui @ exact git ref; version
     hops are deliberate lock bumps);
-  - the gateway's third-party surface stays pydantic-only (resilience
-    law: it must survive comfy torch chaos — dep creep here is drift).
+  - ONE base env (operator order 2026-09-03): the base env IS the
+    comfyui management plane — pydantic + comfy-script + comfy-mcp +
+    comfyui-manager + comfy-cli + fastmcp + starlette + pyyaml.
+    No opt-in group; the system does not run without comfy-mcp.
 """
 
 import json
@@ -42,12 +44,18 @@ check("model_base_path declared (weights are deployment config)",
       bool(cfg.get("model_base_path", "").strip()))
 check("url declared", bool(cfg.get("url", "").strip()))
 
-# ── 2. the estate env: surface stays pydantic-only ────────────────────
+# ── 2. the estate env: ONE base env, the full management plane ────────
 gw = tomllib.loads((REPO / "pyproject.toml").read_text())
 deps = gw["project"]["dependencies"]
+_plane = ("pydantic", "comfy-script", "comfy-mcp", "comfyui-manager",
+          "comfy-cli", "fastmcp", "starlette", "pyyaml")
 check("gateway env exists (root pyproject)", bool(deps))
-check("gateway third-party surface is pydantic-only",
-      deps == ["pydantic>=2.13"], repr(deps))
+check("base env carries the FULL comfyui management plane",
+      all(any(d.startswith(p) for d in deps) for p in _plane),
+      "missing: %s" % [p for p in _plane
+                       if not any(d.startswith(p) for d in deps)])
+check("no dependency-groups split (ONE flow, no opt-in group)",
+      not gw.get("dependency-groups"), repr(gw.get("dependency-groups")))
 check("gateway lock tracked", (REPO / "uv.lock").is_file())
 
 # ── 3. the managed runtime: pinned, locked, manager-free ──────────────
@@ -69,13 +77,6 @@ check("managed python pin is a range (not the gateway's)",
       "<" in cj["project"]["requires-python"])
 
 # ── 4. management plane: packages in-process, never shell scripts ────
-groups = gw.get("dependency-groups", {})
-mgmt = groups.get("management", [])
-check("management group exists (comfy-mcp + pyyaml)",
-      "comfy-mcp" in " ".join(mgmt) and "pyyaml" in " ".join(mgmt), repr(mgmt))
-check("default env untouched by the management group",
-      gw["project"]["dependencies"] == ["pydantic>=2.13"])
-
 prov_src = PROVISION.read_text()
 check("no comfy-shell-wrapping in provision.py",
       '"node", "install"' not in prov_src
@@ -87,8 +88,8 @@ check("provision.py calls comfy-mcp in-process",
 check("bootstrap.py is deleted (one orchestrator)",
       not (REPO / "bootstrap.py").exists())
 setup = (REPO / "setup.sh").read_text()
-check("setup.sh routes through the management env",
-      "--group management" in setup and "provision.py" in setup)
+check("setup.sh routes through the ONE base env",
+      "--group management" not in setup and "provision.py" in setup)
 
 # the manifest merger sees the REAL plugin layouts (fossil-glob wall)
 r = subprocess.run([sys.executable, str(REPO / "infra" / "extension_lane.py"),
