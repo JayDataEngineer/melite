@@ -69,6 +69,7 @@ Thumbs.db
 *.zip
 *.7z
 references/autoremesher/
+references/comfy-mcp/
 
 # === session scratch (kept on disk, out of git) ===
 agent-sessions/
