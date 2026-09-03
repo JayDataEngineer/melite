@@ -129,15 +129,20 @@ def expand_subgraphs(wf: Dict[str, Any]
                 cp = dict(inode)
                 cp["id"] = fid
                 nodes[fid] = cp
-            # exposed widget overrides: instance wv in def.inputs order
+            # exposed widget overrides: instance wv in def.inputs
+            # order. The boundary links fanning a widget value IN are
+            # NOT graph edges — the consumers' socket refs to them
+            # are cleared below and the value rides `overrides`.
             wq: WidgetValues = list(inst.get("widgets_values") or [])
+            widget_lids: Set[int] = set()
             for sgin in sg["inputs"]:
                 if sgin.get("type") not in WIDGETISH:
                     continue
                 val = wq.pop(0) if wq else None
-                if val is None:
-                    continue
                 for lid in sgin.get("linkIds", []):
+                    widget_lids.add(lid)
+                    if val is None:
+                        continue
                     il = _ilink(sg, lid)
                     tgt = remap.get(il["target_id"])
                     if tgt is None:
@@ -145,7 +150,10 @@ def expand_subgraphs(wf: Dict[str, Any]
                     name = _slot_name(nodes[tgt], il["target_slot"])
                     if name is not None:
                         overrides[(tgt, name)] = val
-            # internal links (both endpoints real) import to parent
+            # internal links (both endpoints real) import to parent;
+            # lid_remap carries internal lid -> parent lid so the
+            # imported nodes' socket refs stay resolvable
+            lid_remap: Dict[int, int] = {}
             for il in sg["links"]:
                 o, t = il["origin_id"], il["target_id"]
                 if o == -10 or t == -20:
@@ -155,27 +163,55 @@ def expand_subgraphs(wf: Dict[str, Any]
                         "sever dangling internal link %s (%s->%s) in %s\n"
                         % (il["id"], o, t, sg.get("name")))
                     continue
-                links[fresh()] = [il["id"], remap[o], il["origin_slot"],
-                                  remap[t], il["target_slot"], il["type"]]
-            # re-wire parent links that touched the instance
+                plid = fresh()
+                links[plid] = [il["id"], remap[o], il["origin_slot"],
+                               remap[t], il["target_slot"], il["type"]]
+                lid_remap[il["id"]] = plid
+            # re-wire parent links that touched the instance. The
+            # boundary sockets map by NAME, not position: sg.inputs
+            # lists WIDGET entries too, while the instance's socket
+            # array carries only the link-typed inputs — positions
+            # diverge the moment a widget input precedes a linked one
+            sg_in_by_name = {g["name"]: g for g in sg["inputs"]}
+            sg_out_by_name = {g["name"]: g for g in sg["outputs"]}
+            inst_in = {i["name"]: n for n, i in
+                       enumerate(inst.get("inputs") or [])}
+            inst_out = {o["name"]: n for n, o in
+                        enumerate(inst.get("outputs") or [])}
             for lid in list(links):
                 l = links[lid]
                 if l[1] == iid:                    # instance was SOURCE
-                    outs = sg["outputs"][l[2]].get("linkIds", [])
+                    oname = (inst.get("outputs") or [])[l[2]]["name"]
+                    outs = sg_out_by_name.get(oname, {}).get("linkIds", [])
                     if not outs:
                         del links[lid]
                         continue
                     il = _ilink(sg, outs[0])
                     l[1], l[2] = remap[il["origin_id"]], il["origin_slot"]
                 if l[3] == iid:                    # instance was TARGET
+                    iname = (inst.get("inputs") or [])[l[4]]["name"]
                     for il in [_ilink(sg, i) for i in
-                               sg["inputs"][l[4]].get("linkIds", [])]:
+                               sg_in_by_name.get(iname, {})
+                               .get("linkIds", [])]:
                         nl = list(l)
                         nl[0] = fresh()
                         nl[3] = remap[il["target_id"]]
                         nl[4] = il["target_slot"]
                         links[nl[0]] = nl
+                        lid_remap[il["id"]] = nl[0]
                     del links[lid]
+            # socket refs on the imported nodes: internal lids ->
+            # parent lids; widget-boundary refs clear to None (the
+            # override channel owns the value)
+            for fid in remap.values():
+                for inp in nodes[fid].get("inputs") or []:
+                    ol = inp.get("link")
+                    if ol is None:
+                        continue
+                    if ol in widget_lids:
+                        inp["link"] = None
+                    elif ol in lid_remap:
+                        inp["link"] = lid_remap[ol]
     return nodes, links, overrides
 
 
@@ -315,10 +351,16 @@ def main(argv: Optional[List[str]] = None) -> int:
     wf = json.loads(Path(args.workflow).read_text())
     if "nodes" in wf and "links" in wf:            # web-UI format
         nodes, links, overrides = expand_subgraphs(wf)
-        oi: Dict[str, Any] = ({} if args.no_transpile or not
-                              (args.api or args.object_info)
-                              else load_object_info(args.api,
-                                                    args.object_info))
+        # the vocabulary is needed for CONVERSION (widget placement),
+        # not just transpiling — an empty spec set would drop every
+        # node silently, which is the failure this tool exists to
+        # prevent. --no-transpile only skips the python emission.
+        if not (args.api or args.object_info):
+            sys.stderr.write("web-UI format needs a vocabulary: "
+                             "pass --api/--object-info\n")
+            return 2
+        oi: Dict[str, Any] = load_object_info(args.api,
+                                              args.object_info)
         api_wf = to_api(nodes, links, overrides, oi)
     else:
         api_wf = wf                                # already API format
