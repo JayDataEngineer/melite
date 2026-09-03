@@ -94,19 +94,6 @@
  },
  "cards": [
   {
-   "description": "Generate music \u2014 MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
-   "families": [
-    "music3"
-   ],
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "music",
-   "label": "Music",
-   "principles": [],
-   "skills": []
-  },
-  {
    "description": "Generate sound effects \u2014 MOSS-SFX v2, describe the SOUND not the scene",
    "families": [
     "moss-sfx"
@@ -147,6 +134,19 @@
    "has_rubric": false,
    "id": "voice-lock",
    "label": "Voice Lock",
+   "principles": [],
+   "skills": []
+  },
+  {
+   "description": "Generate music \u2014 MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
+   "families": [
+    "music3"
+   ],
+   "genre": "audio",
+   "has_inference": false,
+   "has_rubric": false,
+   "id": "music",
+   "label": "Music",
    "principles": [],
    "skills": []
   },

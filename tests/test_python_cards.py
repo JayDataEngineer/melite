@@ -126,7 +126,11 @@ def main():
         ("tts", "audio-cpp", "qwen3-tts", ("cards", "tts")),
         ("voice-lock", "audio-cpp", "qwen3-tts-voicedesign",
          ("cards", "voice-lock")),
-        ("music", "audio-cpp", "music3", ("cards", "music")),
+        # music rehomed 2026-09-04: the FIRST audio card on native
+        # ComfyUI core (MiniMax Music 3 rides upstream core nodes —
+        # no extension pack; the A-cluster lead)
+        ("music", "comfyui", "music3",
+         ("action_cards", "audio", "music")),
     ]
     for cid, engine, model, home in FLIPPED:
         cpath = _card_py(engine, *home)
