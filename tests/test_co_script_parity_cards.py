@@ -53,12 +53,15 @@ def apply_inject(template, inject):
 
 
 def composed_workflow(body, model, run_id):
-    """The REAL composer output: phase-2 through the plugin bus."""
+    """The REAL composer output: phase-2 through the plugin bus. The
+    arms emit the gateway mini-YAML skeleton (workflow JSON embedded);
+    parse_pipeline_text owns the format — never a bespoke parse."""
     import plugins  # noqa: F401  (bus loads the owning plugin)
+    from gateway import parse_pipeline_text
     mod = plugins.load_compose("comfyui")
     rc, yml, extra, err = mod.card_compose(body, model, run_id, "x")
     assert rc == 0, "compose refused: %s" % err
-    node = json.loads(yml)["nodes"][0]
+    node = parse_pipeline_text(yml)["nodes"][0]
     assert "workflow" in node["params"], "no baked workflow in params"
     assert "workflow_file" not in node["params"], "legacy channel leaked"
     return node["params"]["workflow"]
