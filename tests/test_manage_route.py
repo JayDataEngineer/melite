@@ -16,10 +16,11 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.dirname(__file__))
+import _live
 import _http as hh  # noqa: E402
 
 
-class ManageEnvelopeTests(unittest.TestCase):
+class ManageEnvelopeTests(_live.LiveRequired, unittest.TestCase):
     # the action dispatch + the envelope contract. status is a
     # non-mutating probe — the dispatch + response shape is the wall;
     # the action's downstream liveness (ComfyUI :18466 reachable) is
@@ -50,7 +51,7 @@ class ManageEnvelopeTests(unittest.TestCase):
         self.assertIn("detail", body)
 
 
-class ManageDoorSingularityTests(unittest.TestCase):
+class ManageDoorSingularityTests(_live.LiveRequired, unittest.TestCase):
     # provisioning law: /v1/manage is the ONE management door. C-era
     # siblings (download, provision, install) are cut. This is the live
     # regression guard — if any shadow door reappears, the law breaks.

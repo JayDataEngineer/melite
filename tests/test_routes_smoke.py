@@ -11,10 +11,11 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.dirname(__file__))
+import _live
 import _http as hh  # noqa: E402
 
 
-class LanesSmokeTests(unittest.TestCase):
+class LanesSmokeTests(_live.LiveRequired, unittest.TestCase):
     # lane disclosure: every plugin can advertise its lanes; the list
     # route is the deck's only stable view of what the estate supports.
 
@@ -41,7 +42,7 @@ class LanesSmokeTests(unittest.TestCase):
             )
 
 
-class CardToolsSmokeTests(unittest.TestCase):
+class CardToolsSmokeTests(_live.LiveRequired, unittest.TestCase):
     # card-tools: the registry the action-card editor consumes. Returns
     # a bare list (not an envelope); each tool declares its model +
     # card + params schema.
@@ -63,7 +64,7 @@ class CardToolsSmokeTests(unittest.TestCase):
             )
 
 
-class SkillsSmokeTests(unittest.TestCase):
+class SkillsSmokeTests(_live.LiveRequired, unittest.TestCase):
     # /v1/skills: the DSH skill catalog the harness exposes. Envelope
     # mirrors the assets route's {count, items[...]} shape; items here
     # are skills, each carrying scope + model metadata.

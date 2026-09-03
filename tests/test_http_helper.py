@@ -9,6 +9,7 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.dirname(__file__))
+import _live
 import _http as hh  # noqa: E402
 
 
@@ -26,7 +27,7 @@ class BaseConfigTests(unittest.TestCase):
         self.assertGreater(hh.TIMEOUT, 0)
 
 
-class LiveHelperSmokeTests(unittest.TestCase):
+class LiveHelperSmokeTests(_live.LiveRequired, unittest.TestCase):
     # the helper against the real gateway: get returns (status, body)
     # with JSON, post returns (status, body) for 2xx or (code, text)
     # for 4xx/5xx (the truncated body is the diagnostic).

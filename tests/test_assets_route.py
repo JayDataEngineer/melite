@@ -20,13 +20,14 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.dirname(__file__))
+import _live
 import _http as hh  # noqa: E402
 
 REQUIRED_RUN_KEYS = {"run_id", "name", "status", "created_at", "artifacts"}
 REQUIRED_ROW_KEYS = {"name", "run_id", "kind", "bytes", "sha256", "url"}
 
 
-class AssetsRouteShapeTests(unittest.TestCase):
+class AssetsRouteShapeTests(_live.LiveRequired, unittest.TestCase):
     def test_envelope(self):
         st, body = hh.get("/v1/assets?limit=200")
         self.assertEqual(st, 200)
@@ -62,7 +63,7 @@ class AssetsRouteShapeTests(unittest.TestCase):
                 self.assertGreater(row["bytes"], 0)
 
 
-class AssetsRouteFilterTests(unittest.TestCase):
+class AssetsRouteFilterTests(_live.LiveRequired, unittest.TestCase):
     def test_kind_filter(self):
         st, body = hh.get("/v1/assets?kind=image&limit=200")
         self.assertEqual(st, 200)
@@ -89,7 +90,7 @@ class AssetsRouteFilterTests(unittest.TestCase):
         self.assertIsInstance(body["artifacts"], int)
 
 
-class AssetsRouteIntegrityTests(unittest.TestCase):
+class AssetsRouteIntegrityTests(_live.LiveRequired, unittest.TestCase):
     def test_index_sha_matches_streamed_bytes(self):
         # the index's sha256 must be the sha256 of the bytes served at
         # the row's url. The state-is-not-contract law only holds if the
@@ -106,9 +107,14 @@ class AssetsRouteIntegrityTests(unittest.TestCase):
                 )
 
 
-class RunCompletedLedgerTests(unittest.TestCase):
+class RunCompletedLedgerTests(_live.LiveRequired, unittest.TestCase):
     def test_run_completed_event_present(self):
-        st, body = hh.get("/v1/ledger?limit=200")
+        # the ledger is newest-first and the gateway writes a server.boot
+        # on every restart; with limit=200 those boots can drown out
+        # the run.completed entries. 2000 is enough headroom to find
+        # real completions on a quiet estate. (Boot-spam filtering is
+        # a separate, known pending item.)
+        st, body = hh.get("/v1/ledger?limit=2000")
         self.assertEqual(st, 200)
         events = [e["event"] for e in body["entries"]]
         self.assertIn(
@@ -118,7 +124,7 @@ class RunCompletedLedgerTests(unittest.TestCase):
         )
 
     def test_run_completed_payload_has_sha16(self):
-        st, body = hh.get("/v1/ledger?limit=500")
+        st, body = hh.get("/v1/ledger?limit=2000")
         self.assertEqual(st, 200)
         seen = False
         for e in body["entries"]:
@@ -141,7 +147,7 @@ class RunCompletedLedgerTests(unittest.TestCase):
         # so we pin the universal four and report the created_at
         # presence as a forward-compat signal — the real created_at law
         # is the unit test in test_asset_ledger (the code under test).
-        st, body = hh.get("/v1/ledger?limit=500")
+        st, body = hh.get("/v1/ledger?limit=2000")
         self.assertEqual(st, 200)
         seen = False
         new_shape_seen = False
@@ -167,7 +173,7 @@ class RunCompletedLedgerTests(unittest.TestCase):
         # after the fix, this stays False — the unit test is the law.
 
 
-class CCruftAbsenceTests(unittest.TestCase):
+class CCruftAbsenceTests(_live.LiveRequired, unittest.TestCase):
     # the C-era POST /v1/models/provision was cut in the same commit as
     # this rung; the 404 stays here as the regression guard.
 

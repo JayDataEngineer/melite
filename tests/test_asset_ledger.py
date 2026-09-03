@@ -138,12 +138,17 @@ class ResilienceTests(unittest.TestCase):
             self.assertEqual(one["count"], 1)
             self.assertEqual(one["artifacts"], 1)
 
-    def test_completed_payload_none_when_empty(self):
+class CompletedPayloadTests(unittest.TestCase):
+    # completed_payload() — the run.completed ledger event payload.
+    # Returned as None when a run delivered nothing; otherwise the
+    # fields the worker journals into the ledger.
+
+    def test_none_when_empty(self):
         with tempfile.TemporaryDirectory() as root:
             rd = _write_run(root, "run-c", {})
             self.assertIsNone(al.completed_payload(rd))
 
-    def test_completed_payload_carries_sha16(self):
+    def test_carries_sha16(self):
         import hashlib
         blob = b"artifact-bytes"
         with tempfile.TemporaryDirectory() as root:
@@ -153,7 +158,7 @@ class ResilienceTests(unittest.TestCase):
             row = ev["artifacts"][0]
             self.assertEqual(row["sha16"], hashlib.sha256(blob).hexdigest()[:16])
 
-    def test_completed_payload_has_created_at(self):
+    def test_has_created_at(self):
         # the worker journals run.completed with the same fields the
         # run row carries. created_at must ride along (consumers like
         # the LEDGER wall sort by it).
