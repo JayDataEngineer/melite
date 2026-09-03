@@ -1,5 +1,13 @@
 # model-catalog golden — regeneration causes
 
+## 2026-09-05 — h3-timeline writes contract: lora surface admitted
+
+The studio.writes allowlist (E4 contract: observed ⊆ declared) gains
+`lora_name` + `lora_strength` — the wire surface the LoraStack
+pattern primitive reads (chain.LoraStack.from_wire; lane data in
+models/video/h3-timeline/lora_stack.yaml). DELIBERATE contract
+extension, not drift: the keys were previously unadmitted dead wire.
+
 ## 2026-09-02 — models-as-python full flip (naming law normalization)
 
 All 53 units serve from model.py classes; model.yaml + variant.yaml are

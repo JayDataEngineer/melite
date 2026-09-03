@@ -233,7 +233,11 @@ srow, smeta = pairs[0]
 check("catalog row == golden", srow == golden)
 check("catalog meta shape",
       set(smeta) == {"studio_tenant", "studio_owns_params",
-                     "studio_writes"})  # writes = E4 allowlist (h3 model)
+                     "studio_writes",
+                     # presentation notches (web-registry §7), served
+                     # since the Studio size/layout fields landed —
+                     # pinned byte-level by the model-catalog golden
+                     "studio_size", "studio_layout"})
 
 print()
 if _failures:

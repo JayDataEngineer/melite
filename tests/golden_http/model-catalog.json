@@ -1478,6 +1478,8 @@
           "interpolate_enabled",
           "interpolate_multiplier",
           "audio_stem",
+          "lora_name",
+          "lora_strength",
           "document"
         ],
         "size": "huge",

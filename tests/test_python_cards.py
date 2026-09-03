@@ -537,22 +537,15 @@ def main():
               for r in (_default + _always))).value == _core.LORA_STACK_GOLD,
           "yaml rows / provisions / GOLD drifted apart")
 
-    # card derivation: user lora replaces default, always rides; the
-    # no-model-dir + user-lora combo refuses LOUD (turbo never
-    # silently drops)
-    import importlib.util as _ilu
-    _spec = _ilu.spec_from_file_location(
-        "h3tl_knobs", os.path.join(
-            REPO, "plugins", "engines", "comfyui", "action_cards",
-            "video", "h3-timeline", "py", "timeline", "knobs.py"))
-    _kn = _ilu.module_from_spec(_spec)
-    _spec.loader.exec_module(_kn)
-    _stk = _kn.lora_stack({"lora_name": "h3/user.safetensors",
-                           "lora_strength": 0.8}, _MODEL_DIR)
-    _base = _kn.lora_stack({}, _MODEL_DIR)
+    # the pattern primitive: user lora replaces default, always
+    # rides; the no-model-dir + user-lora combo refuses LOUD (turbo
+    # never silently drops)
+    _stk = LoraStack.from_wire({"lora_name": "h3/user.safetensors",
+                                "lora_strength": 0.8}, _MODEL_DIR)
+    _base = LoraStack.from_wire({}, _MODEL_DIR)
     _refused = False
     try:
-        _kn.lora_stack({"lora_name": "h3/user.safetensors"}, "")
+        LoraStack.from_wire({"lora_name": "h3/user.safetensors"}, "")
     except RuntimeError:
         _refused = True
     check("lora stack derivation: user replaces default, always rides",
@@ -563,7 +556,7 @@ def main():
           and _base is not None
           and [e.lora for e in _base.entries] == [
               _default[0]["lora"], _always[0]["lora"]]
-          and _kn.lora_stack({}, "") is None and _refused,
+          and LoraStack.from_wire({}, "") is None and _refused,
           "stack derivation drifted")
 
     # live e2e: the mod rides the graph (window1 carries the stack)
