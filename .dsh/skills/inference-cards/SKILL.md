@@ -8,57 +8,55 @@ description: Drive the local inference gateway (inference.cpp) REST API from any
 This skill ships IN THIS REPO, under ".dsh/skills/". Any DSH session
 started inside the repo sees it automatically — clone = installed.
 
-The gateway is a local REST server (inference.cpp). You call it with
+The gateway is a local REST server (inference.cpp, py/gateway.py). You call it with
 bash + curl. No MCP — plain HTTP. ALL inference goes through its QUEUE
 (serial GPU). Never bypass it.
 
 ## 0. Find the gateway
 
-Canonical port is 18090 (what the repo dsh overlay targets):
+Canonical port is 33081 (systemd unit scripts/inference-gateway.service):
 
-    curl -s http://127.0.0.1:18090/v1/health
+    curl -s http://127.0.0.1:33081/v1/health
 
-If that fails, find the live port:
-
-    ss -ltnp 2>/dev/null | grep inference_cli
-
-If the gateway is NOT running: STOP — gateway restarts are operator-only.
-Ask the operator to start it. Do not boot it yourself.
+Manual runs may use 18201. If the gateway is NOT running: STOP — gateway
+restarts are operator-only. Ask the operator to start it. Do not boot
+it yourself.
 
 ## 1. Pick the lane (what did the user ask for?)
 
-    video-gen   video clips (H3 joint video+audio)
-    image-gen   images/sprites/concepts
+    video-gen   video clips (H3 joint video+audio) - h3-timeline card
+    image-gen   images/sprites/concepts (krea-2, anima, ideogram, z-image)
     image-edit  1:1 ray-guided image edits
     tts         spoken VO lines
     sfx         sound effects
     voice-lock  design/lock a custom voice
     music       structured music
-    3d-gen      TRELLIS meshes from concepts
+    3d-gen      TRELLIS meshes from concepts (somax, mask-studio)
     motion-gen  body motion from text
     body        full character body assets
     humanoid-flow / non-humanoid-flow   curated multi-step pipelines
 
-## 2. Fetch the lane bundle (the lane ENTIRE surface)
+## 2. Fetch the lane manifest (the lane ENTIRE surface)
 
-    curl -s "http://127.0.0.1:18090/v1/cards/<lane>/bundle" | jq .
+    curl -s "http://127.0.0.1:33081/v1/lane-bundle?lane=video-gen" | jq .
 
-Returns lane, tools, skills: the ONE tool manifest (params_schema =
-your input contract) and the lane skills. Read the lane AGENT.md at
-plugins/<owner>/cards/<lane>/AGENT.md for param laws (sizes, seeds,
-frame grids).
+Returns lane, params_schema (your input contract), and the lane skills.
+Read the lane AGENT.md at plugins/<owner>/action_cards/<genre>/<card>/AGENT.md
+for param laws (sizes, seeds, frame grids). The old /v1/cards/<lane>/bundle
+route is RETIRED (interlock: the bundle is now served by the gateway's
+lane resolver, not by a card-specific endpoint).
 
 ## 3. Compose a card, then start it through the queue
 
 Compose (draft door — returns draftId, does NOT execute):
 
-    curl -s -X POST http://127.0.0.1:18090/v1/pipelines/drafts \
+    curl -s -X POST http://127.0.0.1:33081/v1/pipelines/drafts \
       -H 'content-type: application/json' \
-      -d '{"intent":"...","stages":[{"card":"tts","params":{...}}]}'
+      -d '{"intent":"...","stages":[{"card":"h3-timeline","params":{...}}]}'
 
 Start (queue door — the run registers; the draft carries the params):
 
-    curl -s -X POST http://127.0.0.1:18090/v1/pipelines/start \
+    curl -s -X POST http://127.0.0.1:33081/v1/pipelines/start \
       -H 'content-type: application/json' \
       -d '{"yaml":"h3-timeline","draft_id":"<draftId>","prompt":"<tag>"}'
 
