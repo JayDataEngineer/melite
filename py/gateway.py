@@ -58,6 +58,13 @@ REPO = Path(__file__).resolve().parent.parent
 # "output"; flattening it waits for that file to leave flight.)
 STATE_ROOT = REPO / "data" / "runs"
 OUT_ROOT = STATE_ROOT / "output"
+# L3 of the test/prod barrier: test runs are routed to a sibling
+# root so the production output dir cannot contain them. /v1/assets
+# reads ONLY OUT_ROOT; the test view reads TEST_OUT_ROOT via
+# ?include_test=true. (L1+L2 are defense-in-depth: a test run that
+# somehow lands in OUT_ROOT stays hidden because its sidecar test
+# flag still excludes it.)
+TEST_OUT_ROOT = STATE_ROOT / "test-output"
 PIPELINES = REPO / "pipelines"
 
 IDENT_RE = re.compile(r"^[a-z_][a-z0-9_-]*$")
@@ -483,10 +490,15 @@ class Run:
     artifacts: list = field(default_factory=list)
     stop_event: asyncio.Event = field(default_factory=asyncio.Event)
     created_at: float = field(default_factory=time.time)
+    # L3: where the run dir actually lives. Set in submit() based on
+    # the request's test flag; defaults to OUT_ROOT for runs created
+    # before this field existed (and for any code path that builds a
+    # Run without going through submit()).
+    out_root: "Path" = field(default=None)  # type: ignore
 
     @property
     def dir(self):
-        return OUT_ROOT / self.run_id
+        return (self.out_root or OUT_ROOT) / self.run_id
 
 
 class Gateway:
@@ -550,6 +562,10 @@ class Gateway:
             graph = resolved
         run = Run(run_id=run_id, graph=graph, request=body)
         run.card_extra_inputs = card_extra_inputs if resolved.get("__card__") else {}
+        # L3: route the run dir to the test root when the caller
+        # declared test:true. The sidecar test flag is the SAME data
+        # (L1) -- this is the directory-level enforcement.
+        run.out_root = TEST_OUT_ROOT if body.get("test") else OUT_ROOT
         run.dir.mkdir(parents=True, exist_ok=True)
         atomic_write(run.dir / "_request.json", body)
         run.stages = [
@@ -1221,9 +1237,12 @@ async def route(gw, method, target, body):
     if method == "GET" and path == "/v1/assets":
         # the cross-run asset index (asset_ledger rung, 2026-09-03):
         # derived from disk truth at read time — state is not contract.
-        # L2 of the test/prod barrier: include_test defaults to False
-        # so a test run is invisible here unless the caller opts in
-        # explicitly. An opt-in is journaled.
+        # L3 of the test/prod barrier: the default view reads ONLY
+        # the production OUT_ROOT -- a test run is in a different
+        # dir entirely and cannot appear here. include_test=true
+        # switches the read to TEST_OUT_ROOT (the test view). L2
+        # stays in place as defense-in-depth: a test-tagged run
+        # that somehow lands in OUT_ROOT stays hidden.
         import asset_ledger as _al
         try:
             _lim = int(qs.get("limit", ["200"])[0] or 200)
@@ -1231,12 +1250,18 @@ async def route(gw, method, target, body):
             _lim = 200
         _include_test = qs.get("include_test", ["false"])[0].lower() \
             in ("1", "true", "yes")
+        _root = TEST_OUT_ROOT if _include_test else OUT_ROOT
+        # When reading TEST_OUT_ROOT, the directory IS the test
+        # filter; bypass L2's sidecar filter (which would hide every
+        # run, since everything in TEST_OUT_ROOT is test-tagged). For
+        # OUT_ROOT, keep L2 as defense-in-depth.
+        _idx_include_test = True if _include_test else False
         if _include_test:
             ledger("assets.include_test", {"limit": _lim})
         return 200, _al.assets_index(
-            str(OUT_ROOT), run=qs.get("run", [None])[0],
+            str(_root), run=qs.get("run", [None])[0],
             kind=qs.get("kind", [None])[0], limit=_lim,
-            include_test=_include_test)
+            include_test=_idx_include_test)
 
     # ── LANE DISCLOSURE (py/lane_disclosure.py — progressive surface) ──
     # GET /v1/card-tools        every card manifest (lane list source)

@@ -260,3 +260,48 @@ class TestRunTestFlag:
             ev = al.completed_payload(rd)
             assert ev is not None
             assert ev["test"] is True
+
+
+class TestL3DirectoryRouting:
+    # L3 unit: assets_index on a given root reads only that root.
+    # The directory-level enforcement is independent of the sidecar
+    # filter; a test run written to a test root is invisible from a
+    # production-root scan, and vice versa.
+
+    def test_test_root_only_sees_test_runs(self):
+        with tempfile.TemporaryDirectory() as root:
+            test_root = os.path.join(root, "test-output")
+            os.makedirs(test_root)
+            _write_run(test_root, "run-test-1", {"a.png": b"a"},
+                        status="completed")
+            import json
+            sc = os.path.join(test_root, "run-test-1",
+                                "_pipeline.json")
+            data = json.loads(open(sc).read())
+            data["test"] = True
+            open(sc, "w").write(json.dumps(data))
+            body = al.assets_index(test_root, include_test=True)
+            assert body["count"] == 1
+            assert body["runs"][0]["run_id"] == "run-test-1"
+            assert body["runs"][0]["test"] is True
+
+    def test_prod_root_does_not_see_test_root_runs(self):
+        with tempfile.TemporaryDirectory() as root:
+            test_root = os.path.join(root, "test-output")
+            prod_root = os.path.join(root, "output")
+            os.makedirs(test_root)
+            os.makedirs(prod_root)
+            _write_run(test_root, "run-test-1", {"a.png": b"a"},
+                        status="completed")
+            import json
+            sc = os.path.join(test_root, "run-test-1",
+                                "_pipeline.json")
+            data = json.loads(open(sc).read())
+            data["test"] = True
+            open(sc, "w").write(json.dumps(data))
+            # a production-root scan: should not see the test run
+            body = al.assets_index(prod_root)
+            assert body["count"] == 0
+            # the test root sees it
+            body2 = al.assets_index(test_root, include_test=True)
+            assert body2["count"] == 1

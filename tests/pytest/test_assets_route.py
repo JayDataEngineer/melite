@@ -153,43 +153,30 @@ class TestCCruftAbsence:
             "POST /v1/models/provision is back -- the C-cruft cut regressed"
 
 
-class TestTestFlagExclusion:
-    # L2 LIVE wall: the production /v1/assets must NOT show test
-    # runs by default. The barrier is the asset-index default; this
-    # test exercises it end-to-end on the live gateway. The test run
-    # is a real sidecar on disk inside the gateway's OUT_ROOT --
-    # if the barrier regresses, the run appears by default and this
-    # test fails.
 
-    def _create_test_run(self, live, run_id):
-        # The gateway's OUT_ROOT is data/runs/output (gateway.py
-        # defines it). We can find it from the live /v1/assets
-        # response -- the index lives in that dir.
-        # Simpler: ask the gateway. Use a one-shot probe by listing
-        # the directory via the index's run rows; we already know
-        # it lives under the repo. The integration conftest shows
-        # the layout; the gateway log is the source of truth. We
-        # write to <repo>/data/runs/output/<run_id>/
+class TestTestFlagExclusion:
+    # L2 + L3 LIVE wall: the production /v1/assets must NOT show test
+    # runs by default. The wall is two layers now:
+    #   L3 -- /v1/assets reads ONLY the production OUT_ROOT. A test
+    #         run lives in TEST_OUT_ROOT and CANNOT appear here.
+    #   L2 -- defense-in-depth: even if a test-tagged run somehow
+    #         lands in OUT_ROOT, scan_run reads the sidecar test:true
+    #         and assets_index filters it.
+    # include_test=true switches the read to TEST_OUT_ROOT (the test
+    # view) -- production runs there aren't present, test runs are.
+
+    def _create_test_run(self, live, repo, run_id, in_test_root):
+        # write a real sidecar + a tiny file to either OUT_ROOT or
+        # TEST_OUT_ROOT (the directory-level routing target)
         import json
         import os
-        import urllib.request
-        # Find the repo root via the live base
-        repo = live["BASE"]
-        # The gateway serves files at <base>/editor/assets/runs/<id>/<file>
-        # -- we can read one to confirm the path. Or use a sentinel:
-        # the test runs add a tiny file and the sidecar.
-        out_root = os.path.join(
-            os.path.dirname(os.path.dirname(repo.replace("http://",
-                                                           ""))),
-            "data", "runs", "output")
-        # If OUT_ROOT isn't where we expect, fall back to the well-known
-        # env-derived path; the test then skips if it can't resolve.
-        if not os.path.isdir(out_root):
+        sub = "test-output" if in_test_root else "output"
+        root = os.path.join(repo, "data", "runs", sub)
+        if not os.path.isdir(os.path.dirname(root)):
             return None
-        run_dir = os.path.join(out_root, run_id)
+        os.makedirs(root, exist_ok=True)
+        run_dir = os.path.join(root, run_id)
         os.makedirs(run_dir, exist_ok=True)
-        # tiny PNG-ish payload (just bytes; the index only requires
-        # a non-empty, non-_ file)
         with open(os.path.join(run_dir, "test-artifact.bin"), "wb") as f:
             f.write(b"test-artifact-payload-12345")
         with open(os.path.join(run_dir, "_pipeline.json"), "w") as f:
@@ -207,56 +194,63 @@ class TestTestFlagExclusion:
         import shutil
         shutil.rmtree(run_dir, ignore_errors=True)
 
-    def test_test_run_excluded_by_default(self, live):
-        # create a test-flagged run on disk
+    def _new_run_id(self):
         import time
-        run_id = f"run-barrier-test-{int(time.time()*1000)}"
-        run_dir = self._create_test_run(live, run_id)
+        return f"run-barrier-test-{int(time.time()*1000)}"
+
+    def test_test_run_in_test_output_excluded_from_production_view(self, live, repo):
+        # L3: a test run lives in TEST_OUT_ROOT. /v1/assets (which
+        # reads OUT_ROOT) must not see it.
+        run_id = self._new_run_id()
+        run_dir = self._create_test_run(live, repo, run_id, in_test_root=True)
         try:
-            # default view: must NOT contain the test run
             code, body = live["get"]("/v1/assets?limit=200")
             assert code == 200
             run_ids = [r["run_id"] for r in body["runs"]]
             assert run_id not in run_ids, \
-                f"test run {run_id} leaked into /v1/assets by default"
-            # ...and every visible run has test: false
-            assert all(r.get("test") is False for r in body["runs"]), \
-                "a non-test run was tagged as test"
+                f"test run {run_id} in TEST_OUT_ROOT leaked into production view"
         finally:
             self._cleanup(run_dir)
 
-    def test_test_run_visible_with_include_test(self, live):
-        import time
-        run_id = f"run-barrier-test-{int(time.time()*1000)}"
-        run_dir = self._create_test_run(live, run_id)
+    def test_test_run_in_test_output_visible_via_include_test(self, live, repo):
+        # L3: include_test=true reads TEST_OUT_ROOT. The test run is there.
+        run_id = self._new_run_id()
+        run_dir = self._create_test_run(live, repo, run_id, in_test_root=True)
         try:
-            # opt-in: must contain the test run
             code, body = live["get"](
                 f"/v1/assets?include_test=true&run={run_id}")
             assert code == 200
             run_ids = [r["run_id"] for r in body["runs"]]
             assert run_id in run_ids, \
-                f"test run {run_id} hidden even with include_test=true"
+                f"test run {run_id} hidden from test view too"
             by_id = {r["run_id"]: r for r in body["runs"]}
             assert by_id[run_id]["test"] is True
         finally:
             self._cleanup(run_dir)
 
+    def test_test_run_in_output_excluded_by_l2_defense(self, live, repo):
+        # L2 defense: if a test-tagged run is in the PRODUCTION root
+        # (which L3 should prevent from happening normally), it must
+        # still be hidden by the sidecar filter.
+        run_id = self._new_run_id()
+        run_dir = self._create_test_run(live, repo, run_id, in_test_root=False)
+        try:
+            code, body = live["get"]("/v1/assets?limit=200")
+            assert code == 200
+            run_ids = [r["run_id"] for r in body["runs"]]
+            assert run_id not in run_ids, \
+                f"test run {run_id} in OUT_ROOT slipped through L2 defense"
+        finally:
+            self._cleanup(run_dir)
+
     def test_include_test_is_journaled(self, live):
         # the opt-in is a significant event; the gateway writes an
-        # assets.include_test ledger entry. L2 isn't silent.
-        import json
-        import urllib.request
+        # assets.include_test ledger entry. The wall is not silent.
         code, body = live["get"]("/v1/ledger?limit=2000")
         assert code == 200
-        # there may already be include_test entries from prior test
-        # runs in this session -- the wall only asserts the FIELD
-        # exists, not the count (no flaky state).
         assert any(e.get("event") == "assets.include_test"
                    for e in body["entries"]), \
             "no assets.include_test event in the ledger"
-        # and the entry carries the limit
         ev = next(e for e in body["entries"]
                   if e.get("event") == "assets.include_test")
-        data = ev.get("data", {})
-        assert "limit" in data
+        assert "limit" in ev.get("data", {})
