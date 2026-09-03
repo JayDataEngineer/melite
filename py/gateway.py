@@ -302,11 +302,13 @@ def resolve_card_model(body, mid):
     Returns (skeleton_text, etype, extra) or raises loudly.
     """
     # CARD REQUIRES LAW: check declared extensions before compose.
+    # EXTENSION LAW: our authored packs live as submodules under
+    # vendor/comfyui_extensions — the on-disk fallback resolves there.
     requires = _find_card_requires(mid)
     if requires:
         try:
             from py.card_requires import check_card_requires
-            custom_nodes_dir = str(plugins_dir.parent / "custom_nodes")
+            custom_nodes_dir = str(REPO / "vendor" / "comfyui_extensions")
             ok, msg = check_card_requires(requires, custom_nodes_dir=custom_nodes_dir)
             if not ok:
                 raise ValidationError("card requires: %s" % msg)

@@ -14,8 +14,9 @@ Extension name resolution:
   1. The name is looked up in extensions.yaml files (our registry).
   2. If found there, the check maps the extension name to its expected
      node class types and verifies they appear in object_info.
-  3. If NOT found in extensions.yaml, the name is treated as a
-     custom_nodes directory name and checked for presence on disk.
+  3. If NOT found in extensions.yaml, the name is treated as an
+     in-tree pack dir under vendor/comfyui_extensions (EXTENSION LAW:
+     our authored packs are submodules there) and checked on disk.
 """
 
 from __future__ import annotations

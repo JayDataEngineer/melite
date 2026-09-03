@@ -193,8 +193,10 @@ def load_extensions() -> list[dict]:
 
 
 def link_in_tree(name: str, comfy_dir: Path) -> str:
-    """In-tree pack: plugins/*/custom_nodes/<name> -> custom_nodes link.
+    """In-tree pack: vendor/comfyui_extensions/<name> -> custom_nodes link.
 
+    Our authored packs are submodules under vendor/comfyui_extensions
+    (EXTENSION LAW — declared, never vendored into plugin trees).
     Symlink preferred (dev iterates on the checkout); copytree fallback for
     Windows without Developer Mode. Returns installed|skipped|failed.
     """
@@ -202,17 +204,13 @@ def link_in_tree(name: str, comfy_dir: Path) -> str:
     if (target / "__init__.py").exists():
         return "skipped"
     src = None
-    # repo-root custom_nodes/<name> (ray layout) then plugins/*/custom_nodes
-    for pattern in (str(REPO / "custom_nodes" / name),
-                    str(REPO / "plugins" / "*" / "custom_nodes" / name)):
-        for cand in glob.glob(pattern):
-            if Path(cand, "__init__.py").is_file():
-                src = Path(cand)
-                break
-        if src:
+    # the ONE true in-tree home (submodule checkout)
+    for cand in (REPO / "vendor" / "comfyui_extensions" / name,):
+        if Path(cand, "__init__.py").is_file():
+            src = Path(cand)
             break
     if not src:
-        warn(f"  [{name}] in-tree pack not found under plugins/*/custom_nodes")
+        warn(f"  [{name}] in-tree pack not found under vendor/comfyui_extensions")
         return "failed"
     if DRY:
         print(f"[dry-run] link {target} <- {src}")

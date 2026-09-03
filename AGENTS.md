@@ -157,6 +157,31 @@ Where classes remain right: `Model` subclass per family; mods
 (`Loras(LorasMod)` — genuine schema flavors under the single `Mod`
 parent); anything with behavior or per-family taxonomy.
 
+## EXTENSION LAW (operator order, 2026-09-03, verbatim intent)
+
+> "The python package comfyui-mcp is supposed to manage our
+>  extensions, yet we manage them on disk."
+> "In the action card folders, we declare what extensions we need,
+>  instead of keeping them on disk in our git repository."
+
+- ComfyUI extensions are DECLARED, never vendored. A card that needs
+  an extension says so (card `requires` + per-lane `nodes.yaml`,
+  url+ref pinned); the MANAGEMENT PLANE installs them
+  (comfy-mcp / comfy-cli `install_node`, registry-pinned — PIN LAW:
+  bare ids silently git-clone; only <id>@<version> takes the
+  registry rail). docs/comfyui/comfy-mcp.md §8 is the design record.
+- Our AUTHORED packs live as submodules in ONE place:
+  `vendor/comfyui_extensions/<pack>` (each its own repo). Nothing
+  under any plugin's tree carries a pack copy — the fossil
+  `plugins/engines/comfyui/custom_nodes/` (17 dirs, ~235 MB,
+  drifting from the live ray binds) was deleted 2026-09-03.
+- Foreign extensions we want to READ go in `references/` as study
+  copies — nothing there executes or installs.
+- The compose-time gate stays: `check_card_requires` resolves
+  declarations against the LIVE object_info (and the vendor
+  submodule dir for in-tree names) and REFUSES loudly before any
+  graph is emitted.
+
 ## C RETIREMENT (operator order, 2026-09-03, verbatim)
 
 > "Okay, let's fully retire C then"
