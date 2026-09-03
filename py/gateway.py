@@ -84,9 +84,13 @@ def parse_params_scalar(line_value):
 def parse_pipeline_text(text):
     """Parse the pipeline mini-YAML the estate uses (nodes/input_from/params).
 
-    A constrained YAML subset — the dialect the estate's pipeline files
-    speak (inherited from the C dag parser at C retirement, 2026-09-03;
-    the parity goldens pin it). There is no other gateway.
+    A constrained YAML subset — the dialect the estate's AUTHORED
+    pipeline files speak (inherited from the C dag parser at C
+    retirement, 2026-09-03; the parity goldens pin it). This is the
+    DISK rim's parser: it reads pipeline.yaml files callers author —
+    composed output NEVER passes through text (compose arms hand the
+    gateway graph DICTs; python hands python structures, PYTHON SHAPE
+    rung 5). There is no other gateway.
     """
     nodes = []
     meta = {}
@@ -178,7 +182,17 @@ def parse_pipeline_text(text):
         if n["id"] in seen:
             raise ValidationError("duplicate node id %r" % n["id"])
         seen.add(n["id"])
-    return {"meta": meta, "nodes": nodes}
+    if not nodes:
+        raise ValidationError(
+            "authored pipeline has no nodes (steps:-shaped flow docs "
+            "are editor documents, not queue pipelines)")
+    import pipeline_graph
+    return pipeline_graph.PipelineGraph.model_validate({
+        "name": meta.get("name") or "",
+        "type": meta.get("type") or "",
+        "description": meta.get("description") or "",
+        "nodes": nodes,
+    })
 
 
 def resolve_request(body):
@@ -194,20 +208,22 @@ def resolve_request(body):
             raise ValidationError("no pipeline yaml at pipelines/%s/pipeline.yaml" % name)
         text = path.read_text()
         graph0 = parse_pipeline_text(text)
-        types0 = [n["type"] for n in graph0["nodes"]]
+        types0 = [n.node_type for n in graph0.nodes]
         if card_hooks is not None:
             # PLUGIN ARCHITECTURE LAW: card semantics live in the plugin
             # hooks, not here. Phase 1 (dry run) validates + extra inputs;
-            # dispatch by engine type, exactly like the C server.
+            # dispatch by engine type, exactly like the C server. The
+            # hook hands back a graph DICT (or the caller's own object
+            # when it emits none) — never text.
             try:
-                text, extra = card_hooks.compose(body, name, "", text, types0)
+                graph1, extra = card_hooks.compose(
+                    body, name, "", graph0, types0)
             except Exception as e:
                 raise ValidationError("card_compose phase 1: %s" % e)
             body = dict(body, **extra)
-            if extra:
-                text = text  # extra inputs merge into the request, not the graph
-            if text != path.read_text():
-                return parse_pipeline_text(text)
+            # extra inputs merge into the request, not the graph
+            if graph1 is not None and graph1 is not graph0:
+                return graph1
         return graph0
     if "model" in body:
         mid = str(body["model"])
@@ -315,7 +331,10 @@ def resolve_card_model(body, mid):
         except ImportError:
             pass  # card_requires module not available — skip check
     etype, _my = _plugin_loud(_plugin_bus.resolve_model, mid)
-    skeleton = "name: %s\ntype: %s\ndescription: card-composed\n\nnodes:\n" % (mid, etype)
+    import pipeline_graph
+    skeleton = pipeline_graph.PipelineGraph(
+        name=mid, engine_type=etype, description="card-composed",
+        nodes=())
     try:
         _, extra = card_hooks.compose(body, mid, "", skeleton, [etype])
     except Exception as e:
@@ -326,14 +345,14 @@ def resolve_card_model(body, mid):
 def resolve_inputs(node, initial):
     """Explicit wiring only: input_from entries like __initial__.PROMPT."""
     out = {}
-    for ref in node.get("input_from", []):
+    for ref in node.input_from:
         if not ref.startswith("__initial__."):
             if ref in initial:
                 out[ref] = initial[ref]
                 continue
             raise ValidationError(
                 "node %r: input_from ref %r unresolved (neither __initial__ nor a prior node output)"
-                % (node["id"], ref),
+                % (node.node_id, ref),
             )
         tensor = ref.split(".", 1)[1]
         if tensor not in initial:
@@ -345,7 +364,7 @@ def resolve_inputs(node, initial):
             if alt in initial:
                 out[tensor] = initial[alt]
                 continue
-            raise ValidationError("node %r: __initial__.%s not provided in request" % (node["id"], tensor))
+            raise ValidationError("node %r: __initial__.%s not provided in request" % (node.node_id, tensor))
         out[tensor] = initial[tensor]
     return out
 
@@ -508,20 +527,23 @@ class Gateway:
         if isinstance(resolved, dict) and resolved.get("__card__"):
             # card-only model: phase 2 composes the REAL graph now that
             # the run exists (the hook rewrites the skeleton in place).
-            text, etype = resolved["skeleton"], resolved["etype"]
+            graph, etype = resolved["skeleton"], resolved["etype"]
             # phase-1 extra are RUN INPUTS (tensor pool), never body
             # keys — strict card validation rejects a polluted surface.
             card_extra_inputs = dict(resolved.get("extra", {}))
             if card_hooks is not None:
                 try:
-                    text, extra2 = card_hooks.compose(
-                        body, resolved["name"], run_id, text, [etype])
+                    # phase 2 hands back the composed graph as a DICT —
+                    # python hands python structures; nothing here
+                    # serializes for an in-process hop
+                    graph, extra2 = card_hooks.compose(
+                        body, resolved["name"], run_id, graph, [etype])
                     for k, v in (extra2 or {}).items():
                         card_extra_inputs.setdefault(k, v)
                 except Exception as e:
                     raise ValidationError("card_compose phase 2: %s" % e)
-            graph = parse_pipeline_text(text)
-            if not graph["nodes"]:
+            import pipeline_graph as _pg
+            if not (isinstance(graph, _pg.PipelineGraph) and graph.nodes):
                 raise ValidationError(
                     "card_compose produced an empty graph for %s" % resolved["name"])
         else:
@@ -531,8 +553,9 @@ class Gateway:
         run.dir.mkdir(parents=True, exist_ok=True)
         atomic_write(run.dir / "_request.json", body)
         run.stages = [
-            {"id": n["id"], "name": n["id"], "index": i, "status": "pending"}
-            for i, n in enumerate(graph["nodes"])
+            {"id": n.node_id, "name": n.node_id, "index": i,
+             "status": "pending"}
+            for i, n in enumerate(graph.nodes)
         ]
         self.runs[run_id] = run
         self.order.append(run_id)
@@ -592,7 +615,7 @@ class Gateway:
                 stage["status"] = "stopped"
                 sidecar(run)
                 return
-            node = run.graph["nodes"][stage["index"]]
+            node = run.graph.nodes[stage["index"]]
             stage["status"] = "running"
             sidecar(run)
             self.publish(run.run_id, {"type": "stage",
@@ -613,16 +636,20 @@ class Gateway:
                                            **updates})
             try:
                 inputs = resolve_inputs(node, dict(initial, **carry))
-                params = expand_inject(node.get("params", {}), inputs)
-                engine = load_engine(node["type"])
+                params = expand_inject(node.params, inputs)
+                engine = load_engine(node.node_type)
+                # the engine ABI row: a VALIDATED NodeRow carrying the
+                # inject-expanded params (construction refuses a bad row)
+                import pipeline_graph as _pg
                 result = await engine.execute(
-                    {"id": node["id"], "type": node["type"], "params": params},
+                    _pg.NodeRow(node_id=node.node_id,
+                                node_type=node.node_type, params=params),
                     str(run.dir), inputs, run.stop_event, report=_report,
                 )
                 if result:
                     for k, v in result.get("outputs", {}).items():
                         carry[k] = v
-                        carry["%s.%s" % (node["id"], k)] = v
+                        carry["%s.%s" % (node.node_id, k)] = v
                     run.artifacts.extend(result.get("artifacts", []))
                 stage["status"] = "completed"
                 stage.pop("progress", None)
@@ -648,16 +675,16 @@ class Gateway:
         for stage in run.stages:
             if stage["status"] == "running":
                 n = self.graph_nodes(run)[stage["index"]]
-                engine = load_engine(n["type"])
+                engine = load_engine(n.node_type)
                 if hasattr(engine, "stop"):
                     try:
-                        await engine.stop({"params": n.get("params", {})}, str(run.dir))
+                        await engine.stop(n.params, str(run.dir))
                     except Exception:
                         pass
         return {"run_id": run_id, "status": "stopping"}
 
     def graph_nodes(self, run):
-        return run.graph["nodes"]
+        return run.graph.nodes
 
     async def shutdown(self):
         """SIGTERM/SIGINT path: mark the active run stopped (engine stop

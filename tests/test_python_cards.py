@@ -348,7 +348,7 @@ def main():
                                    "start_frame": 0, "end_frame": 56},
                                   {"text": "the storm swallows the alley",
                                    "start_frame": 56, "end_frame": 112}]}}
-    _skel = "name: h3-timeline\ntype: comfyui\n\nnodes:\n"
+    _skel = {"name": "h3-timeline", "type": "comfyui", "nodes": []}
 
     # phase 1: THE VALIDATION DOOR — construction is the gate; the
     # door carries NO render payload (prompts/seeds/trims are the
@@ -415,7 +415,8 @@ def main():
     _ok0, _e0 = plugins.compose(_cut0, "h3-timeline", "run-WALL-CUT0",
                                 _skel, ("comfyui",))
     check("seam_carry 0 is a legal hard cut",
-          "- id: h3-film" in (_ok0 or ""),
+          _ok0 is not None and _ok0.nodes
+          and _ok0.nodes[0].node_id == "h3-film",
           "body-level 0 refused or re-defaulted")
 
     # the seed road owns the clamp EVERYWHERE: a garbage wire seed
@@ -425,7 +426,7 @@ def main():
     _g["params"] = dict(_g["params"], seed=-5)
     _gyml, _gextra = plugins.compose(_g, "h3-timeline", "run-WALL-SEED",
                                      _skel, ("comfyui",))
-    _gwf = json.loads(_re_road.search(r"workflow: (.*)", _gyml).group(1))
+    _gwf = _gyml.nodes[0].params["workflow"]
     _gseeds = sorted({v for n in _gwf.values() if isinstance(n, dict)
                       for k, v in n.get("inputs", {}).items()
                       if "seed" in k.lower() and isinstance(v, int)})
@@ -441,16 +442,16 @@ def main():
     # THE ACTION CARD LAW: one skeleton node = one workflow = one queue submission.
     # The skeleton has exactly one node: h3-film (not per-window nodes).
     check("run_id set: the render door emits the run graph",
-          "- id: h3-film" in (yml2 or "")
-          and "workflow: {" in (yml2 or "")
+          yml2 is not None and yml2.nodes
+          and yml2.nodes[0].node_id == "h3-film"
+          and isinstance(yml2.nodes[0].params["workflow"], dict)
           and "$prompt" in ((extra2 or {}).get("inputs", {})),
-          "yaml %d bytes" % len(yml2 or ""))
+          "graph %r" % (yml2,))
 
     # THE CARD ROAD WALL: input_from is the scaffold's positional pool
     # contract — $prompt, $prompt2..N ascending, then $seed. The refs
     # must mirror the pool exactly, nothing missing, nothing extra.
-    import re as _re_road  # noqa: E402
-    _refs = _re_road.findall(r"__initial__\.\$[a-z0-9]+", yml2 or "")
+    _refs = list(yml2.nodes[0].input_from)
     _pool2 = sorted((extra2 or {}).get("inputs", {}))
 
     def _rank(k):
@@ -475,8 +476,7 @@ def main():
         REPO, "plugins", "engines", "comfyui", "compose"))
     from co_script.merge import dangling_links  # noqa: E402
     import re as _re  # noqa: E402
-    _wf = json.loads(
-        _re.search(r"workflow: (.*)", yml2 or "{}").group(1))
+    _wf = yml2.nodes[0].params["workflow"]
     _bad = dangling_links(_wf)
     check("merged workflow link integrity",
           not _bad, "%d dangling (first: %s)" % (
@@ -624,14 +624,17 @@ def main():
                         "calls": [{"text": "runs the alley",
                                    "start_frame": 0, "end_frame": 56}]}},
             "h3-timeline", "run-WALL-LORA",
-            "name: h3-timeline\ntype: comfyui\n\nnodes:\n", ("comfyui",))
+            {"name": "h3-timeline", "type": "comfyui", "nodes": []},
+            ("comfyui",))
     except Exception:
-        _lyml = ""
+        _lyml = None
     finally:
         os.environ.pop("H3_MODEL_DIR", None)
+    _lw = json.dumps(
+        (_lyml.nodes[0].params.get("workflow", {})
+         if _lyml is not None and _lyml.nodes else {}))
     check("lora stack rides the composed graph",
-          "h3/user.safetensors" in (_lyml or "")
-          and _always[0]["lora"] in (_lyml or ""),
+          "h3/user.safetensors" in _lw and _always[0]["lora"] in _lw,
           "stack absent from composed workflow")
 
     # refusal: unknown key refuses LOUDLY through the same door
@@ -717,18 +720,19 @@ def main():
     try:
         _cyml, _cextra = plugins.compose(
             dict(_cbody), "h3-timeline", "run-WALL-CONT",
-            "name: h3-timeline\ntype: comfyui\n\nnodes:\n", ("comfyui",))
+            None, ("comfyui",))
     except Exception:
-        _cyml, _cextra = "", {}
+        _cyml, _cextra = None, {}
     finally:
         os.environ.pop("G_DEFAULT_OUTPUT_DIR", None)
     import re as _re_cont
-    _cwf = json.loads(_re_cont.search(r"workflow: (.*)", _cyml or "{}").group(1)) \
-        if "workflow: " in (_cyml or "") else {}
+    _cwf = (_cyml.nodes[0].params["workflow"]
+            if _cyml is not None and _cyml.nodes else {})
     _w1 = [n for n in _cwf if n.startswith("window1_")]
     _ctx_load = [n for n in _w1 if "CtxLoad" in n or "MotionContext" in n]
     check("continuation via latent artifact ref",
-          bool(_cwf) and "- id: h3-film" in (_cyml or "")
+          bool(_cwf) and _cyml is not None
+          and _cyml.nodes[0].node_id == "h3-film"
           and isinstance(_cextra.get("inputs"), dict)
           and any("runs/PRIOR/h3_context" == v
                   for n in _ctx_load
@@ -751,9 +755,9 @@ def main():
                                   {"text": "b", "start_frame": 64,
                                    "end_frame": 128}]}},
             "h3-timeline", "run-WALL-LINK",
-            "name: h3-timeline\ntype: comfyui\n\nnodes:\n", ("comfyui",))
-        _lwf = json.loads(
-            _re_cont.search(r"workflow: (.*)", _lyml).group(1))
+            {"name": "h3-timeline", "type": "comfyui", "nodes": []},
+            ("comfyui",))
+        _lwf = _lyml.nodes[0].params["workflow"]
     except Exception:
         _lwf = {}
     _ld = _lwf.get("window2_MiniMaxH3MotionContextLoadLatent.0",

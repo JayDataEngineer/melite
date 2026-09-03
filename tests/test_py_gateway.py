@@ -13,6 +13,7 @@ sys.path.insert(0, str(REPO / "py"))
 from gateway import (  # noqa: E402
     ValidationError, expand_inject, parse_pipeline_text, resolve_request,
 )
+from pipeline_graph import NodeRow  # noqa: E402
 
 PASS = []
 FAIL = []
@@ -104,13 +105,15 @@ except ValidationError:
 # C9: __initial__ missing tensor refused (no fallback)
 from gateway import resolve_inputs
 try:
-    resolve_inputs({"id": "n", "input_from": ["__initial__.prompt"]}, {})
+    resolve_inputs(NodeRow(node_id="n", node_type="t",
+                            input_from=("__initial__.prompt",)), {})
     check("missing initial refused", False, "no refusal")
 except ValidationError:
     check("missing initial refused", True)
 
 # C10: dollar-tensor resolution top-level then params
-out = resolve_inputs({"id": "n", "input_from": ["__initial__.$seed"]},
+out = resolve_inputs(NodeRow(node_id="n", node_type="t",
+                              input_from=("__initial__.$seed",)),
                      {"params": {"seed": 7}, "prompt": "x"})
 check("dollar tensor from params", out.get("$seed") == 7, repr(out))
 
@@ -180,18 +183,25 @@ for name, body, model, et in (
     ("required missing refusal", {"model": "qwen3-tts", "params": {"seed": 5}}, "qwen3-tts", ["audio_cpp"]),
 ):
     try:
-        plugins.compose(body, model, "", "x", et)
+        plugins.compose(body, model, "", None, et)
         check(name, False, "no refusal")
     except plugins.ValidationError:
         check(name, True)
 
 # C18: card kinds compose real graphs (image/music through the plugin bus)
+import json as _json
 yml, extra = plugins.compose({"model": "krea-2", "params": {"prompt": "fox"}},
-                              "krea-2", "run-W1", "x", ["comfyui"])
-check("krea-2 composes generate node", "- id: generate" in yml and "SaveImage" in yml and "workflow: {" in yml)
+                              "krea-2", "run-W1", None, ["comfyui"])
+_wf = _json.dumps(yml.nodes[0].params["workflow"])
+check("krea-2 composes generate node",
+      yml.nodes[0].node_id == "generate" and "SaveImage" in _wf
+      and isinstance(yml.nodes[0].params["workflow"], dict))
 yml, extra = plugins.compose({"model": "music3", "params": {"prompt": "Genre: x"}},
-                              "music3", "run-W2", "x", ["comfyui"])
-check("music3 composes music node", "- id: music" in yml and "SaveAudio" in yml and "workflow: {" in yml)
+                              "music3", "run-W2", None, ["comfyui"])
+_wf = _json.dumps(yml.nodes[0].params["workflow"])
+check("music3 composes music node",
+      yml.nodes[0].node_id == "music" and "SaveAudio" in _wf
+      and isinstance(yml.nodes[0].params["workflow"], dict))
 
 # C19: no engine names in the core (banned shape — the SO_ENGINE_OWNERS
 # hardcode class): py/gateway.py must not name any engine type literal)

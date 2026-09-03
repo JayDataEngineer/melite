@@ -35,6 +35,7 @@ REPO = HERE.parent.parent
 sys.path.insert(0, str(REPO / "py"))
 sys.path.insert(0, str(REPO / "plugins" / "engines" / "comfyui" / "compose"))
 
+import json as _j2  # noqa: E402
 import plugins  # noqa: E402
 
 PASS, FAIL = [], []
@@ -117,12 +118,11 @@ def _oldpath_graph(model, golden_yaml, inputs):
 
 def run_case(rec):
     name, model, etypes, body = rec["case"], rec["model"], rec["engine_types"], rec["body"]
-    skeleton = "name: %s\ntype: %s\ndescription: card-composed\n\nnodes:\n" % (model, etypes[0])
     for phase, rid, gkey in (("phase1", "", "phase1"), ("phase2", "run-GOLDEN-0001", "phase2")):
         golden = rec[gkey]
         try:
-            yml, extra = plugins.compose(dict(body), model, rid, skeleton, etypes)
-            got = {"rc": 0, "yaml": yml, "extra": extra}
+            graph, extra = plugins.compose(dict(body), model, rid, None, etypes)
+            got = {"rc": 0, "graph": graph, "extra": extra}
         except plugins.ValidationError as e:
             got = {"rc": -1, "refusal": str(e)}
         want_rc0 = golden["rc"] == 0
@@ -141,21 +141,15 @@ def run_case(rec):
         if not want_rc0:
             PASS.append("%s/%s refusal parity" % (name, phase))
             continue
-        py_raw = got.get("yaml", "")
-        if py_raw.lstrip().startswith("name:") and "workflow: " in py_raw:
-            # CARD-ANCHORED RENDERERS + mini-YAML skeleton (the py
-            # gateway's parse_pipeline_text owns the format): extract
-            # the inline workflow JSON and take the isomorphic path
-            import re as _re3
-            m3 = _re3.search(r"workflow: (\{.*\})\n", py_raw, _re3.S)
-            if m3:
-                py_raw = m3.group(1)
-        if py_raw.lstrip().startswith(chr(123)):
-            # CO_SCRIPT FLIP (documented deviation): the card arms now
-            # emit a baked workflow (JSON). Bar: ISOMORPHIC to the
-            # golden C-channel reconstruction (template + inject
-            # resolved from the phase-1 inputs the golden captured).
-            import json as _j2
+        graph = got.get("graph")
+        wf = None
+        if graph is not None and graph.nodes:
+            wf = graph.nodes[0].params.get("workflow")
+        if isinstance(wf, dict):
+            # CO_SCRIPT FLIP (documented deviation): the card arms emit
+            # a BAKED workflow. Bar: ISOMORPHIC to the golden C-channel
+            # reconstruction (template + inject resolved from the
+            # phase-1 inputs the golden captured).
             PLUGIN = REPO / "plugins" / "engines" / "comfyui"
             import sys as _s2
             if str(PLUGIN) not in _s2.path:
@@ -164,38 +158,52 @@ def run_case(rec):
             OI = _j2.loads((PLUGIN / "data" / "object_info.json").read_text())
             g_inputs = (rec.get("phase1", {}).get("extra") or {}).get("inputs", {})
             g_inputs = {k: _norm_str(v) for k, v in g_inputs.items()}
-            g_inputs = {k: _norm_str(v) for k, v in g_inputs.items()}
             old = _oldpath_graph(model, golden.get("yaml", ""), g_inputs)
-            try:
-                new = _j2.loads(py_raw)["nodes"][0]["params"]["workflow"]
-            except (KeyError, TypeError):
-                # mini-YAML form: the workflow JSON was already lifted
-                # out above — it IS the graph
-                new = _j2.loads(py_raw)
             if old is None:
                 FAIL.append("%s/phase2 flip: un-reconstructable golden" % name)
                 continue
-            d = diff(reachable(old, OI), reachable(new, OI))
+            d = diff(reachable(old, OI), reachable(wf, OI))
             if not d["isomorphic"]:
                 FAIL.append("%s/phase2 flip drift: a_only=%s b_only=%s" % (name, d["a_only"][:4], d["b_only"][:4]))
                 continue
             PASS.append("%s/phase2 (co_script flip isomorphic)" % name)
-            continue
-        gy, py_ = norm_yaml(golden.get("yaml", "")), norm_yaml(got.get("yaml", ""))
-        if name == "tts_seed_temp" and phase == "phase2":
-            # DOCUMENTED DEVIATION: C dropped numeric seed/temperature
-            # (recorded in the golden itself: seed 99 -> 0). Assert the
-            # deviation is EXACTLY this fix and nothing else.
-            stripped_py = py_.replace('"temperature":0.40, ', "")
-            if stripped_py != gy:
-                FAIL.append("%s/%s: deviation beyond the seed/temperature fix\n    C: %s\n    py: %s"
-                            % (name, phase, gy[:300], py_[:300]))
+        elif phase == "phase2" and graph is not None and graph.nodes:
+            # AUDIO ARM: the graph is a typed PipelineGraph — compare
+            # STRUCTURALLY against the golden's own graph (parsed at
+            # the disk rim from the recorded text)
+            from gateway import parse_pipeline_text
+            try:
+                old = parse_pipeline_text(golden.get("yaml", ""))
+            except Exception as e:
+                FAIL.append("%s/phase2: golden yaml unparseable (%s)" % (name, e))
                 continue
-            PASS.append("%s/%s (documented seed/temp fix)" % (name, phase))
-            continue
-        if gy != py_:
-            FAIL.append("%s/%s yaml drift\n    C: %s\n    py: %s" % (name, phase, gy[:300], py_[:300]))
-            continue
+            new_dump = _norm_graph(graph.model_dump(by_alias=True))
+            old_dump = _norm_graph(old.model_dump(by_alias=True))
+            if name == "tts_seed_temp":
+                # DOCUMENTED DEVIATION: C's scalar scan mangled numeric
+                # seed (99 -> 0) and silently dropped temperature. The
+                # port reads real JSON values — assert the fix is EXACT
+                # (raw value, BEFORE seed normalization).
+                _py_seed = graph.nodes[0].params.get("seed")
+                if _py_seed != 99:
+                    FAIL.append("%s/phase2: seed fix absent (py %r)" % (name, _py_seed))
+                    continue
+                _c_seed = old_dump["nodes"][0]["params"].get("seed")
+                if _c_seed == 0:
+                    new_dump["nodes"][0]["params"]["seed"] = "<int>"
+                    old_dump["nodes"][0]["params"]["seed"] = "<int>"
+                if "temperature" not in old_dump["nodes"][0]["params"]:
+                    new_dump["nodes"][0]["params"].pop("temperature", None)
+            if new_dump != old_dump:
+                FAIL.append("%s/phase2 graph drift\n    C: %s\n    py: %s"
+                            % (name, old_dump, new_dump))
+                continue
+            PASS.append("%s/phase2 (graph structural)" % name)
+        else:
+            # PHASE 1: the flip's documented deviation — validation is
+            # the DOOR, not a graph; the C echoed its input text, the
+            # py arms emit no graph (None). Extras still compare.
+            PASS.append("%s/phase1 (no graph — validation door)" % name)
         ge, pe = norm_extra(golden.get("extra")), norm_extra(got.get("extra"))
         if name == "tts_seed_temp":
             # DOCUMENTED DEVIATION: C's scalar scan mangled numeric
@@ -206,7 +214,32 @@ def run_case(rec):
         if ge != pe:
             FAIL.append("%s/%s extra drift\n    C: %s\n    py: %s" % (name, phase, ge, pe))
             continue
-        PASS.append("%s/%s" % (name, phase))
+        PASS.append("%s/%s extras" % (name, phase))
+
+
+def _norm_graph(g):
+    """Structural normalizer: repo paths, minted seeds, the C's
+    literal backslash-n artifact. Dict-keyed ints named seed pin to
+    <int> (minted); strings normalize like extras."""
+    import re as _re
+    if isinstance(g, dict):
+        out = {}
+        for k, v in g.items():
+            if k == "seed" and isinstance(v, int) and not isinstance(v, bool):
+                out[k] = "<int>"
+            else:
+                out[k] = _norm_graph(v)
+        return out
+    if isinstance(g, (list, tuple)):
+        return [_norm_graph(v) for v in g]
+    if isinstance(g, str):
+        t = g.replace(str(REPO / "build" / ".."), str(REPO))
+        t = t.replace(str(REPO), "<REPO>")
+        t = _re.sub(r"edit_[0-9a-f]+_", "edit_<time>_", t)
+        return _norm_str(t)
+    if isinstance(g, float):
+        return round(g, 2)
+    return g
 
 
 def _same_refusal_class(c_msg, py_msg):

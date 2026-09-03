@@ -363,12 +363,15 @@ def load_compose(engine_type):
     return mod
 
 
-def compose(body, model, run_id, yaml_text, engine_types):
+def compose(body, model, run_id, graph, engine_types):
     """Run the OWNING plugin's card_compose over the graph.
 
     Dispatch mirrors the C server: the hook is selected by the graph's
     engine type, never broadcast. A non-zero rc is a LOUD refusal
-    (ValidationError) — never a silent drop. Returns (yaml_text, extra).
+    (ValidationError) — never a silent drop. Returns (graph, extra) —
+    python hands python STRUCTURES (PYTHON SHAPE rung 5); an arm that
+    emits no graph (validation door, passthrough) returns None/the
+    caller's own object and the caller's graph stands.
     """
     engines = scan_engines()
     extra = {}
@@ -379,14 +382,17 @@ def compose(body, model, run_id, yaml_text, engine_types):
         mod = load_compose(etype)
         if mod is None:
             continue
-        rc, new_text, mod_extra, err = mod.card_compose(
-            body, model, run_id, yaml_text)
+        rc, new_graph, mod_extra, err = mod.card_compose(
+            body, model, run_id, graph)
         if rc != 0:
             raise ValidationError(
                 "card_compose rc=%d (%s.%s): %s" % (
                     rc, ref.plugin_id, etype, err or "no detail"))
-        if new_text and new_text != yaml_text:
-            yaml_text = new_text
+        if new_graph is not None and new_graph is not graph:
+            # the rim: arm output is a typed PipelineGraph or refuses
+            # LOUDLY by field name — a malformed graph can never ride
+            import pipeline_graph
+            graph = pipeline_graph.PipelineGraph.model_validate(new_graph)
         if isinstance(mod_extra, dict):
             extra.update(mod_extra)
-    return yaml_text, extra
+    return graph, extra

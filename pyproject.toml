@@ -34,4 +34,35 @@ dependencies = [
     "fastmcp",
     "starlette",
     "pyyaml>=6",
+    # agent harness: the python SDK + bundled dsh runtime (the SERVER
+    # mount). Recipe: plugins/harness/dsh/provisioner, materialized
+    # data/runtime/dsh-harness-home. Exact pin — pre-release line;
+    # bumps are deliberate orders (bundled runtime ships in the wheel:
+    # no Node.js, no pnpm needed to serve).
+    "deepseek-harness-sdk==0.1.2a3",
+    "mypy>=1.14",
 ]
+
+# ── TYPING WALL (operator order 2026-09-04: "you cannot silently skip
+# out on strongly typed code") ──────────────────────────────────────
+# strict mypy over the typed-contract surface; the target list lives
+# in tests/test_typing.py and only GROWS (a module joins when it is
+# fully annotated; nothing ever leaves). follow_imports=silent keeps
+# not-yet-migrated dependencies from blocking the wall while their
+# imports still resolve.
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+follow_imports = "silent"
+# the compose primitives ride sys.path at runtime (the pattern's lazy
+# loader); mypy resolves the same roots
+mypy_path = "py:plugins/engines/comfyui/compose"
+
+# pydantic plugin discipline (PYTHON SHAPE rung 2): construction is
+# the validation door — no runtime mutation of frozen models
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+warn_untyped_fields = true
