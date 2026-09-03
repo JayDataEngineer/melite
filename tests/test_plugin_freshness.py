@@ -85,7 +85,6 @@ def main():
         (WEB_DSH, "melite-card-deck"),
         (WEB_DSH, "melite-card-view"),
         (WEB_DSH, "infer-gallery"),
-        (WEB_DSH, "melite-hello"),
         (HARNESS_DSH, "melite-tools"),
     ]
     for base, plug in members:

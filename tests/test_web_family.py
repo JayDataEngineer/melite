@@ -31,10 +31,8 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WEB_DSH_MEMBERS = {
     "melite-card-view": "@melite-plugin/dsh-card-view",   # chat toolview (embedder, CLIENT)
     "melite-card-deck": "@melite-plugin/dsh-card-deck",   # sidebar deck + /editor host (embedder, HOST)
-    "melite-gallery":   "@melite-plugin/dsh-gallery",
     "media-plugin":     "@infer-media/dsh-media",
     "infer-gallery":    "@infer-media/dsh-gallery",
-    "melite-hello":     "@melite-plugin/dsh-hello",
     "shared":           None,   # build helpers (tsdown.client.ts) — no package
     "skins":            None,   # UI assets — no package
 }
@@ -43,7 +41,6 @@ HARNESS_DSH_MEMBERS = {
     "melite-tools":       "@melite-plugin/dsh-tools",     # the tool registry
     "melite-preset":      "@melite-plugin/dsh-preset",
     "inference-studio":   None,   # preset + SKILL.md, no package
-    "profile":            None,   # rendered templates, no package
     "provisioner":        "@infer/dsh-provisioner",       # the integrator
     "testkit":            "@melite-plugin/dsh-testkit",   # the family test runner (ex-infer-dsh)
 }
@@ -63,7 +60,7 @@ REQUIRED_WORKSPACE_GLOBS = (
     "plugins/harness/dsh/*",
     "plugins/web/dsh/*",
     "plugins/web/editor",
-    "plugins/web/ui_components/*",
+    "web/*",
 )
 
 # provisioner links: name → path from plugins/harness/dsh/provisioner
@@ -194,9 +191,8 @@ def main():
     # 6. the kit stays engine-agnostic, sibling to the pathways
     print("[6] the kit")
     for k in ("ui", "slots", "contracts", "formats", "catalog"):
-        check("ui_components/%s is @melite/%s" % (k, k),
-              pkg_name(os.path.join(REPO, "plugins", "web", "ui_components", k))
-              == "@melite/%s" % k)
+        check("web/%s is @melite/%s" % (k, k),
+              pkg_name(os.path.join(REPO, "web", k)) == "@melite/%s" % k)
 
     total = _checks["pass"] + _checks["fail"]
     print("PASS %d / FAIL %d" % (_checks["pass"], _checks["fail"]))
