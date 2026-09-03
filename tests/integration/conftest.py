@@ -68,7 +68,12 @@ class QueueDoor:
         self.port = port
 
     def submit(self, body):
-        code, resp = _req(self.port, "POST", "/v1/pipelines/start", body)
+        # L4 of the test/prod barrier: every integration submission is
+        # tagged test:true. Even if a scratch run ever landed in the
+        # real output root, the tag keeps it out of /v1/assets.
+        tagged = dict(body)
+        tagged.setdefault("test", True)
+        code, resp = _req(self.port, "POST", "/v1/pipelines/start", tagged)
         assert code == 202, "submit refused (%d): %s" % (code, resp)
         return resp["run_id"]
 

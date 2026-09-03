@@ -87,6 +87,11 @@ class RunIndex(BaseModel):
     name: str = ""
     status: str = "unknown"
     created_at: int = 0
+    # L1 of the test/prod barrier (L2 is the assets_index default
+    # exclusion). A run is "test" when the caller (or the harness
+    # routing it) declared test:true in the start body. The sidecar
+    # is the source; missing or false is production.
+    test: bool = False
     artifacts: Tuple[AssetRow, ...] = ()
 
 
@@ -148,6 +153,7 @@ def scan_run(run_dir: str, sidecar: Optional[dict] = None) -> RunIndex:
         name=str(sc.get("model") or ""),
         status=str(sc.get("status") or "unknown"),
         created_at=int(sc.get("created_at") or 0),
+        test=bool(sc.get("test", False)),
         artifacts=tuple(rows))
 
 
@@ -159,9 +165,13 @@ def _read_sidecar(run_dir: str) -> dict:
 
 
 def assets_index(output_root: str, run: Optional[str] = None,
-                 kind: Optional[str] = None, limit: int = 200) -> dict:
+                 kind: Optional[str] = None, limit: int = 200,
+                 include_test: bool = False) -> dict:
     """GET /v1/assets — the cross-run delivery view. Derived at read
-    time; ?run= and ?kind= filter; limit caps run rows."""
+    time; ?run= and ?kind= filter; limit caps run rows. Test runs
+    (sidecar test:true) are EXCLUDED from the production view by
+    default — opt in with include_test=True (logged at the route
+    layer). L2 of the test/prod barrier."""
     try:
         want = AssetKind(kind) if kind else None
     except ValueError:
@@ -178,12 +188,14 @@ def assets_index(output_root: str, run: Optional[str] = None,
             continue
         rd = os.path.join(output_root, ent)
         idx = scan_run(rd, _read_sidecar(rd))
+        if idx.test and not include_test:
+            continue                       # L2: the test/prod wall
         arts = idx.artifacts if want is None else tuple(
             a for a in idx.artifacts if a.kind is want)
         total += len(arts)
         runs.append({
             "run_id": idx.run_id, "name": idx.name, "status": idx.status,
-            "created_at": idx.created_at,
+            "created_at": idx.created_at, "test": idx.test,
             "artifacts": [a.model_dump() for a in arts],
         })
         if len(runs) >= limit:
@@ -199,7 +211,7 @@ def completed_payload(run_dir: str, sidecar: Optional[dict] = None) -> Optional[
         return None
     return {
         "run_id": idx.run_id, "name": idx.name, "status": idx.status,
-        "created_at": idx.created_at,
+        "created_at": idx.created_at, "test": idx.test,
         "artifacts": [
             {**a.model_dump(), "sha16": a.sha256[:16]}
             for a in idx.artifacts

@@ -177,3 +177,86 @@ class TestIndexFrozen:
                 idx.run_id = "other"
             with pytest.raises(Exception):
                 idx.status = "spoofed"
+
+
+class TestRunTestFlag:
+    # L1+L2 unit: the sidecar's test flag rides into RunIndex; the
+    # asset index excludes test runs from the production view by
+    # default, includes them when asked.
+
+    def test_sidecar_test_flag_default_false(self):
+        # a sidecar WITHOUT a test key is treated as production
+        with tempfile.TemporaryDirectory() as root:
+            rd = _write_run(root, "run-prod", {"x.png": b"abc"})
+            idx = al.scan_run(rd)
+            assert idx.test is False
+
+    def test_sidecar_test_flag_true(self):
+        with tempfile.TemporaryDirectory() as root:
+            rd = os.path.join(root, "run-test")
+            os.makedirs(rd)
+            with open(os.path.join(rd, "x.png"), "wb") as fp:
+                fp.write(b"abc")
+            import json
+            with open(os.path.join(rd, "_pipeline.json"), "w") as fp:
+                fp.write(json.dumps({
+                    "run_id": "run-test", "status": "completed",
+                    "model": "x", "created_at": 1700000000,
+                    "test": True,
+                }))
+            idx = al.scan_run(rd)
+            assert idx.test is True
+
+    def test_index_excludes_test_by_default(self):
+        with tempfile.TemporaryDirectory() as root:
+            _write_run(root, "run-prod", {"a.png": b"a"})
+            _write_run(root, "run-test", {"b.png": b"b"},
+                        status="completed")
+            # rewrite the test sidecar to carry test:true
+            import json
+            sc_path = os.path.join(root, "run-test", "_pipeline.json")
+            data = json.loads(open(sc_path).read())
+            data["test"] = True
+            open(sc_path, "w").write(json.dumps(data))
+            body = al.assets_index(root)
+            run_ids = [r["run_id"] for r in body["runs"]]
+            assert "run-prod" in run_ids
+            assert "run-test" not in run_ids
+            assert all(r["test"] is False for r in body["runs"])
+
+    def test_index_includes_test_when_asked(self):
+        with tempfile.TemporaryDirectory() as root:
+            _write_run(root, "run-prod", {"a.png": b"a"})
+            _write_run(root, "run-test", {"b.png": b"b"},
+                        status="completed")
+            import json
+            sc_path = os.path.join(root, "run-test", "_pipeline.json")
+            data = json.loads(open(sc_path).read())
+            data["test"] = True
+            open(sc_path, "w").write(json.dumps(data))
+            body = al.assets_index(root, include_test=True)
+            run_ids = [r["run_id"] for r in body["runs"]]
+            assert "run-prod" in run_ids
+            assert "run-test" in run_ids
+            # and the test field is exposed in the envelope
+            by_id = {r["run_id"]: r for r in body["runs"]}
+            assert by_id["run-test"]["test"] is True
+            assert by_id["run-prod"]["test"] is False
+
+    def test_completed_payload_carries_test_flag(self):
+        # the ledger event payload also carries the flag (so
+        # consumers reading /v1/ledger can filter)
+        with tempfile.TemporaryDirectory() as root:
+            rd = os.path.join(root, "run-t")
+            os.makedirs(rd)
+            with open(os.path.join(rd, "a.png"), "wb") as fp:
+                fp.write(b"abc")
+            import json
+            with open(os.path.join(rd, "_pipeline.json"), "w") as fp:
+                fp.write(json.dumps({
+                    "run_id": "run-t", "status": "completed",
+                    "created_at": 0, "test": True,
+                }))
+            ev = al.completed_payload(rd)
+            assert ev is not None
+            assert ev["test"] is True

@@ -717,6 +717,10 @@ class Gateway:
 
 
 def sidecar(run):
+    # L1 of the test/prod barrier: the test flag rides from the start
+    # body into the run's request dict and onto the sidecar. scan_run
+    # reads it from here; assets_index (L2) uses it to keep test runs
+    # out of the production view.
     atomic_write(run.dir / "_pipeline.json", {
         "run_id": run.run_id,
         "status": run.status,
@@ -724,6 +728,7 @@ def sidecar(run):
         "stages": run.stages,
         "artifacts": run.artifacts,
         "created_at": run.created_at,
+        "test": bool(run.request.get("test", False)),
     })
 
 
@@ -1216,14 +1221,22 @@ async def route(gw, method, target, body):
     if method == "GET" and path == "/v1/assets":
         # the cross-run asset index (asset_ledger rung, 2026-09-03):
         # derived from disk truth at read time — state is not contract.
+        # L2 of the test/prod barrier: include_test defaults to False
+        # so a test run is invisible here unless the caller opts in
+        # explicitly. An opt-in is journaled.
         import asset_ledger as _al
         try:
             _lim = int(qs.get("limit", ["200"])[0] or 200)
         except ValueError:
             _lim = 200
+        _include_test = qs.get("include_test", ["false"])[0].lower() \
+            in ("1", "true", "yes")
+        if _include_test:
+            ledger("assets.include_test", {"limit": _lim})
         return 200, _al.assets_index(
             str(OUT_ROOT), run=qs.get("run", [None])[0],
-            kind=qs.get("kind", [None])[0], limit=_lim)
+            kind=qs.get("kind", [None])[0], limit=_lim,
+            include_test=_include_test)
 
     # ── LANE DISCLOSURE (py/lane_disclosure.py — progressive surface) ──
     # GET /v1/card-tools        every card manifest (lane list source)
