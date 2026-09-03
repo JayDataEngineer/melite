@@ -76,6 +76,53 @@ class ScanTests(unittest.TestCase):
             self.assertEqual(row.bytes, 12)
             self.assertEqual(len(row.sha256), 64)
 
+
+class ResilienceTests(unittest.TestCase):
+    """RESILIENCE LAW: indexing never raises — a broken run is a broken
+    run, never a gateway crash. scan_run over hostile input returns a
+    well-formed (possibly empty) index."""
+
+    def test_garbled_sidecar(self):
+        # a corrupt _pipeline.json must not raise
+        with tempfile.TemporaryDirectory() as root:
+            rd = os.path.join(root, "run-x")
+            os.makedirs(rd)
+            with open(os.path.join(rd, "a.png"), "wb") as f:
+                f.write(b"x" * 5)
+            with open(os.path.join(rd, "_pipeline.json"), "w") as f:
+                f.write("{not json at all")
+            idx = al.scan_run(rd)
+            self.assertEqual(idx.run_id, "run-x")
+            self.assertEqual(idx.status, "unknown")
+            # the file still indexes — disk truth survives sidecar rot
+            self.assertEqual(len(idx.artifacts), 1)
+
+    def test_empty_dir(self):
+        with tempfile.TemporaryDirectory() as root:
+            rd = os.path.join(root, "run-empty")
+            os.makedirs(rd)
+            idx = al.scan_run(rd)
+            self.assertEqual(idx.artifacts, tuple())
+            self.assertEqual(idx.status, "unknown")
+
+    def test_missing_dir(self):
+        # a vanished run dir (operator cleanup race) returns empty
+        with tempfile.TemporaryDirectory() as root:
+            idx = al.scan_run(os.path.join(root, "run-gone"))
+            self.assertEqual(idx.artifacts, tuple())
+
+    def test_assets_index_never_raises_on_rot(self):
+        # the ROUTE wrapper: garbage inside output_root still yields a
+        # well-formed envelope, never a 500
+        with tempfile.TemporaryDirectory() as root:
+            os.makedirs(os.path.join(root, "run-a"))
+            with open(os.path.join(root, "run-a", "_pipeline.json"), "w") as f:
+                f.write("]]]")
+            os.makedirs(os.path.join(root, "not-a-run"))
+            body = al.assets_index(root)
+            self.assertEqual(set(body.keys()), {"count", "artifacts", "runs"})
+            self.assertEqual(body["count"], 1)
+
     def test_index_filters_and_counts(self):
         with tempfile.TemporaryDirectory() as root:
             _write_run(root, "run-a", {"x.png": b"img"})
