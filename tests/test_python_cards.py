@@ -509,9 +509,9 @@ def main():
         _cs.render_card = lambda root, model, fam, doc: {
             fam: {"class_type": fam, "inputs": dict(doc["inject"])}}
         from chain import Chain, Group, Inject
-        g1 = Group(family="w", tpl="a.json",
+        g1 = Group(family="w", variant="t4r",
                    inject={"N.0.seed": 1}, prompt="p1")
-        g2 = Group(family="w", tpl="b.json",
+        g2 = Group(family="w", variant="t4_chain",
                    inject={"N.0.seed": 2},
                    mods=(Inject(key="N.0.x", value="per-call"),),
                    prompt="p2")
