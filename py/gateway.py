@@ -557,6 +557,21 @@ class Gateway:
                 run.error = "%s: %s" % (type(e).__name__, e)
             finally:
                 sidecar(run)
+                if run.status == "completed":
+                    # the asset-ledger rung (2026-09-03): the delivery
+                    # lands in the journal as typed rows — indexing
+                    # failure must never take the queue loop down.
+                    try:
+                        import asset_ledger as _al
+                        ev = _al.completed_payload(str(run.dir), {
+                            "model": run.request.get("yaml")
+                                     or run.request.get("model") or "",
+                            "status": run.status,
+                            "created_at": int(run.created_at)})
+                        if ev:
+                            ledger("run.completed", ev)
+                    except Exception:
+                        pass
                 # terminal broadcast: every subscriber gets the final
                 # status exactly once, then the door closes the socket.
                 self.publish(run.run_id, {"type": "run",
@@ -1171,16 +1186,97 @@ async def route(gw, method, target, body):
     # ── LEDGER ───────────────────────────────────────────────────────
     if method == "GET" and path == "/v1/ledger":
         return 200, ledger_tail(target)
+    if method == "GET" and path == "/v1/assets":
+        # the cross-run asset index (asset_ledger rung, 2026-09-03):
+        # derived from disk truth at read time — state is not contract.
+        import asset_ledger as _al
+        try:
+            _lim = int(qs.get("limit", ["200"])[0] or 200)
+        except ValueError:
+            _lim = 200
+        return 200, _al.assets_index(
+            str(OUT_ROOT), run=qs.get("run", [None])[0],
+            kind=qs.get("kind", [None])[0], limit=_lim)
 
-    # ── MODEL PROVISION ────────────────────────────────────────────
-    if method == "POST" and path == "/v1/models/provision":
-        import editor_runs as _er
+    # ── LANE DISCLOSURE (py/lane_disclosure.py — progressive surface) ──
+    # GET /v1/card-tools        every card manifest (lane list source)
+    # GET /v1/cards/<lane>/bundle  one lane: tools + skills (all levels)
+    # GET /v1/skills            the cheap index across card+model+guide
+    # GET /v1/skills/<id>       one body (ledgered skill.read)
+    if method == "GET" and path == "/v1/card-tools":
+        import lane_disclosure as _ld
+        return 200, _ld.card_tools()
+    if method == "GET" and path == "/v1/skills":
+        import lane_disclosure as _ld
+        return 200, _ld.skill_index()
+    # PEEK tier: the lane table (kind/genre filters via query — the
+    # handler strips the query from path but parses it into qs)
+    if method == "GET" and path == "/v1/lanes":
+        import lane_disclosure as _ld
+        return 200, _ld.peek(qs.get("kind", [None])[0],
+                             qs.get("genre", [None])[0])
+    m = re.match(r"^/v1/skills/([^/]+)$", path)
+    if method == "GET" and m:
+        import lane_disclosure as _ld
+        from urllib.parse import unquote as _uq
+        return _ld.skill_read(_uq(m.group(1)), ledger)
+    m = re.match(r"^/v1/cards/([^/]+)/bundle$", path)
+    if method == "GET" and m:
+        import lane_disclosure as _ld
+        from urllib.parse import unquote as _uq
+        return _ld.lane_bundle(_uq(m.group(1)), qs.get("kind", [None])[0])
+
+    # ── COMFYUI MANAGER (the ONE management SSOT — py/manage.py) ────
+    # AI door for the comfy_manage DSH tool: wraps comfy-mcp +
+    # comfyui-manager (security=medium) + comfy-cli. The manual door is
+    # tools/provision.py manage <action>. The gateway's own interpreter
+    # may not carry the management plane (portability law — same reason
+    # /v1/models/provision shells to the comfy binary): dispatch
+    # in-process when importable, else spawn the BASE-ENV python
+    # (repo .venv) running the SAME SSOT module.
+    if method == "POST" and path == "/v1/manage":
         try:
             body_json = json.loads(body.decode() or "{}")
         except json.JSONDecodeError as e:
             return 400, {"error": "bad JSON: %s" % e}
-        code, data = _er.provision(body_json, str(REPO / "plugins"))
-        return code, data
+        import sys as _sys
+        if str(REPO / "py") not in _sys.path:
+            _sys.path.insert(0, str(REPO / "py"))
+        try:
+            import comfy_mcp                           # noqa: F401 — the plane
+            import manage as _mg                       # in-process (fast)
+            return _mg.dispatch(body_json)
+        except ImportError:
+            pass                                       # base env below
+        import subprocess as _sp
+        _runner = (
+            "import sys, json;"
+            "sys.path.insert(0, %r);"
+            "import manage;"
+            "c, r = manage.dispatch(json.loads(sys.stdin.read()));"
+            "print(json.dumps([c, r]))"
+        ) % str(REPO / "py")
+        _py = REPO / ".venv" / "bin" / "python"
+        if not _py.is_file():
+            return 503, {"action": body_json.get("action", "?"),
+                         "ok": False,
+                         "detail": "management plane unavailable: no "
+                                   "base-env python at %s (uv sync)" % _py}
+        try:
+            r = _sp.run([str(_py), "-c", _runner],
+                        input=json.dumps(body_json), capture_output=True,
+                        text=True, timeout=900)
+            if r.returncode == 0 and r.stdout.strip():
+                code, rep = json.loads(r.stdout.strip().splitlines()[-1])
+                return int(code), rep
+            return 502, {"action": body_json.get("action", "?"),
+                         "ok": False,
+                         "detail": "manage runner failed",
+                         "data": {"stderr": r.stderr[-500:]}}
+        except _sp.TimeoutExpired:
+            return 504, {"action": body_json.get("action", "?"),
+                         "ok": False,
+                         "detail": "manage action timed out (900s)"}
 
     # ── HEALTH + CHROME STUBS ────────────────────────────────────────
     if method == "GET" and path == "/v1/health":

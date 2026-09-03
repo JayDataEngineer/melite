@@ -1,0 +1,110 @@
+"""Asset-ledger tests — typed rows, derivation, index shape (2026-09-03).
+
+PYTHON SHAPE LAW: invalid rows are construction refusals; the index is
+derived from disk truth, never stored beside it.
+"""
+import json
+import os
+import sys
+import tempfile
+import unittest
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "py"))
+
+import asset_ledger as al  # noqa: E402
+
+
+def _write_run(root, run_id, files, status="completed", model="x"):
+    rd = os.path.join(root, run_id)
+    os.makedirs(rd, exist_ok=True)
+    for name, blob in files.items():
+        with open(os.path.join(rd, name), "wb") as f:
+            f.write(blob)
+    with open(os.path.join(rd, "_pipeline.json"), "w") as f:
+        json.dump({"run_id": run_id, "status": status, "model": model,
+                   "created_at": 1700000000}, f)
+    return rd
+
+
+class RowShapeTests(unittest.TestCase):
+    def test_bad_sha_refused(self):
+        with self.assertRaises(Exception):
+            al.AssetRow(name="a.png", run_id="run-x", kind=al.AssetKind.image,
+                        bytes=10, sha256="not-a-sha", url="/u")
+
+    def test_zero_bytes_refused(self):
+        with self.assertRaises(Exception):
+            al.AssetRow(name="a.png", run_id="run-x", kind=al.AssetKind.image,
+                        bytes=0, sha256="a" * 64, url="/u")
+
+    def test_frozen(self):
+        r = al.AssetRow(name="a.png", run_id="run-x", kind=al.AssetKind.image,
+                        bytes=10, sha256="b" * 64, url="/u")
+        with self.assertRaises(Exception):
+            r.name = "other"
+
+    def test_kind_vocab_closed(self):
+        with self.assertRaises(Exception):
+            al.AssetRow(name="a", run_id="run-x", kind="weird",
+                        bytes=10, sha256="c" * 64, url="/u")
+
+
+class KindTests(unittest.TestCase):
+    def test_media_mesh_doc(self):
+        self.assertEqual(al.kind_for("a.png"), al.AssetKind.image)
+        self.assertEqual(al.kind_for("a.mp4"), al.AssetKind.video)
+        self.assertEqual(al.kind_for("a.wav"), al.AssetKind.audio)
+        self.assertEqual(al.kind_for("a.glb"), al.AssetKind.model)
+        self.assertEqual(al.kind_for("a.json"), al.AssetKind.document)
+        self.assertEqual(al.kind_for("a.zzz"), al.AssetKind.other)
+
+
+class ScanTests(unittest.TestCase):
+    def test_scan_skips_bookkeeping_and_empty(self):
+        with tempfile.TemporaryDirectory() as root:
+            rd = _write_run(root, "run-1", {
+                "out.png": bytes.fromhex("89504e470d0a1a0a64617461"),
+                "_poster.jpg": b"poster",
+                "empty.bin": b"",
+            })
+            idx = al.scan_run(rd)
+            self.assertEqual(idx.status, "completed")
+            self.assertEqual(len(idx.artifacts), 1)
+            row = idx.artifacts[0]
+            self.assertEqual(row.name, "out.png")
+            self.assertEqual(row.kind, al.AssetKind.image)
+            self.assertEqual(row.bytes, 12)
+            self.assertEqual(len(row.sha256), 64)
+
+    def test_index_filters_and_counts(self):
+        with tempfile.TemporaryDirectory() as root:
+            _write_run(root, "run-a", {"x.png": b"img"})
+            _write_run(root, "run-b", {"y.glb": b"mesh"})
+            allv = al.assets_index(root)
+            self.assertEqual(allv["count"], 2)
+            self.assertEqual(allv["artifacts"], 2)
+            only_mesh = al.assets_index(root, kind="model")
+            self.assertEqual(only_mesh["artifacts"], 1)
+            self.assertEqual(only_mesh["runs"][0]["run_id"], "run-b")
+            one = al.assets_index(root, run="run-a")
+            self.assertEqual(one["count"], 1)
+            self.assertEqual(one["artifacts"], 1)
+
+    def test_completed_payload_none_when_empty(self):
+        with tempfile.TemporaryDirectory() as root:
+            rd = _write_run(root, "run-c", {})
+            self.assertIsNone(al.completed_payload(rd))
+
+    def test_completed_payload_carries_sha16(self):
+        import hashlib
+        blob = b"artifact-bytes"
+        with tempfile.TemporaryDirectory() as root:
+            rd = _write_run(root, "run-d", {"z.png": blob})
+            ev = al.completed_payload(rd)
+            self.assertEqual(ev["run_id"], "run-d")
+            row = ev["artifacts"][0]
+            self.assertEqual(row["sha16"], hashlib.sha256(blob).hexdigest()[:16])
+
+
+if __name__ == "__main__":
+    unittest.main()
