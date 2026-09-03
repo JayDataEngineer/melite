@@ -1,8 +1,7 @@
 {
  "defaults": {
-  "family": "qwen3_tts",
   "mode": "tts",
-  "model_path": "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged"
+  "variant": "customvoice"
  },
  "engine": "comfyui",
  "enhance_prompts": {

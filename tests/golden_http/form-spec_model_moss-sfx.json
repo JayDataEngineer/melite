@@ -1,8 +1,5 @@
 {
- "defaults": {
-  "family": "moss_sfx_v2",
-  "model_path": "MOSS-SFX-v2-GGUF"
- },
+ "defaults": {},
  "engine": "comfyui",
  "enhance_prompts": {
   "lyrics": "",

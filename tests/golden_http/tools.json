@@ -635,11 +635,6 @@
       "format": "path",
       "type": "string"
      },
-     "reference_audio": {
-      "description": "Optional reference clip to anchor the design.",
-      "format": "path",
-      "type": "string"
-     },
      "repetition_penalty": {
       "default": 1.05,
       "description": "Repetition Penalty",

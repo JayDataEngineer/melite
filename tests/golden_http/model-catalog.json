@@ -1374,7 +1374,8 @@
   },
   "qwen3-tts-base": {
    "defaults": {
-    "mode": "tts"
+    "mode": "tts",
+    "variant": "base"
    },
    "description": "Qwen3-TTS 12Hz Base 0.6B \u2014 plain text-to-speech, no persona",
    "engine": "comfyui",
@@ -1392,7 +1393,8 @@
   },
   "qwen3-tts-voicedesign": {
    "defaults": {
-    "mode": "design"
+    "mode": "design",
+    "variant": "voicedesign"
    },
    "description": "Qwen3-TTS 12Hz VoiceDesign 1.7B \u2014 instruction-following voice design; the voice-lock lane",
    "engine": "comfyui",

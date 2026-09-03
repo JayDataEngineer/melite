@@ -1,8 +1,7 @@
 {
  "defaults": {
-  "family": "qwen3_tts",
   "mode": "design",
-  "model_path": "/mnt/data/models/image-gen/comfyui/audio/qwen3-tts/hf/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
+  "variant": "voicedesign"
  },
  "engine": "comfyui",
  "enhance_prompts": {
@@ -131,14 +130,6 @@
      "required": true,
      "tooltip": "The voice description \u2014 becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent').",
      "type": "textarea"
-    },
-    {
-     "label": "Reference Audio",
-     "name": "reference_audio",
-     "order": 2,
-     "tooltip": "Optional reference clip to anchor the design.",
-     "type": "audio",
-     "width": 1
     }
    ],
    "id": "voice",
