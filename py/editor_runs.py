@@ -1596,7 +1596,8 @@ def provision(body_json, plugins_root):
 CHROME_STUBS = {
     "/v1/shell": {"entries": []},
     "/v1/right-panes": {"panes": []},
-    "/v1/ui-slots": {"uiSlots": []},
+    # ("/v1/ui-slots" serves DERIVED from the plugin ui.yaml claims —
+    #  see ui_slots())
     "/v1/themes": {"themes": []},
     "/v1/tags": {"tags": []},
     "/v1/services": {"services": []},
@@ -1633,8 +1634,72 @@ def right_panes():
     return CHROME_STUBS["/v1/right-panes"]
 
 
+def _ui_claims_from(owner, ui_dir):
+    """Claims under one ui/ root: <id>/ui.yaml → wire rows. The
+    component.tsx beside each yaml is the implementation (the editor's
+    import.meta.glob keys match these same paths — plugin field = the
+    OWNING dir, exactly what the glob derives). A malformed claim fails
+    LOUD (missing slot / precedence): a half-declared claim never rides
+    the wire to die client-side."""
+    import yaml
+
+    out = []
+    for uid in sorted(os.listdir(ui_dir)):
+        if uid.startswith("."):
+            continue
+        ypath = os.path.join(ui_dir, uid, "ui.yaml")
+        if not os.path.isfile(ypath):
+            continue
+        with open(ypath, encoding="utf-8") as fh:
+            data = yaml.safe_load(fh) or {}
+        slot = data.get("slot")
+        prec = data.get("precedence")
+        if not isinstance(slot, str) or not slot:
+            raise ValueError(f"ui claim {ypath}: 'slot' missing/empty")
+        if not isinstance(prec, int):
+            raise ValueError(f"ui claim {ypath}: 'precedence' missing/not int")
+        row = {"plugin": owner, "id": uid, "slot": slot, "precedence": prec}
+        if isinstance(data.get("title"), str):
+            row["title"] = data["title"]
+        out.append(row)
+    return out
+
+
 def ui_slots():
-    return CHROME_STUBS["/v1/ui-slots"]
+    """The ui-claim lane (GET /v1/ui-slots) — DERIVED from the plugin
+    ui.yaml declarations, not stubbed: the first-party chrome claims
+    under plugins/melite-core/ui/<id>/ (the zeroth plugin — the asset
+    preview cell, the media sidebar, the tile run affordance), plugin
+    claims under plugins/engines/<engine>/ui/<id>/, and card claims
+    under plugins/engines/<engine>/action_cards/<card>/ui/<id>/. The
+    wire's plugin field names the OWNING dir (what the editor's
+    component glob derives); a dropped-in claim directory lights its
+    lane on the next GET — the same contract door tools() opens for
+    cards."""
+    repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    claims: list = []
+    # FIRST-PARTY CHROME is STATIC in the shell (web-registry ruling
+    # 2026-09-03): plugins/melite-core is deleted; this wire serves
+    # PLUGIN claims only.
+    eng_root = os.path.join(repo, "plugins", "engines")
+    if os.path.isdir(eng_root):
+        for engine in sorted(os.listdir(eng_root)):
+            e_dir = os.path.join(eng_root, engine)
+            if engine.startswith(".") or not os.path.isdir(e_dir):
+                continue
+            ui_dir = os.path.join(e_dir, "ui")
+            if os.path.isdir(ui_dir):
+                claims.extend(_ui_claims_from(engine, ui_dir))
+            ac_dir = os.path.join(e_dir, "action_cards")
+            if os.path.isdir(ac_dir):
+                for card in sorted(os.listdir(ac_dir)):
+                    if card.startswith("."):
+                        continue
+                    cui = os.path.join(ac_dir, card, "ui")
+                    if os.path.isdir(cui):
+                        claims.extend(_ui_claims_from(card, cui))
+    claims.sort(key=lambda c: (c["plugin"], c["id"]))
+    return {"uiSlots": claims}
 
 
 def tools():
