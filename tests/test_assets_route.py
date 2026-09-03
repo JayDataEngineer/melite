@@ -133,6 +133,39 @@ class RunCompletedLedgerTests(unittest.TestCase):
                 )
         self.assertTrue(seen, "no run.completed event carried any artifacts in the live ledger")
 
+    def test_run_completed_payload_shape(self):
+        # the worker finally-block writes a payload from completed_payload.
+        # The four IDENTITY keys (run_id, name, status, artifacts) have
+        # always been there; created_at was added later. The live ledger
+        # is mixed-age (events from before the code change still lack it)
+        # so we pin the universal four and report the created_at
+        # presence as a forward-compat signal — the real created_at law
+        # is the unit test in test_asset_ledger (the code under test).
+        st, body = hh.get("/v1/ledger?limit=500")
+        self.assertEqual(st, 200)
+        seen = False
+        new_shape_seen = False
+        for e in body["entries"]:
+            if e["event"] != "run.completed":
+                continue
+            data = e.get("data", {})
+            self.assertTrue(
+                {"run_id", "name", "status", "artifacts"}.issubset(data.keys()),
+                f"run.completed payload dropped an identity key: {sorted(data.keys())}"
+            )
+            self.assertIsInstance(data["run_id"], str)
+            self.assertIsInstance(data["name"], str)
+            self.assertEqual(data["status"], "completed")
+            self.assertIsInstance(data["artifacts"], list)
+            if "created_at" in data:
+                self.assertIsInstance(data["created_at"], int)
+                new_shape_seen = True
+            seen = True
+        self.assertTrue(seen, "no run.completed event found in the live ledger")
+        # forward-compat signal: at least one event was written by the
+        # updated worker. If the live estate never completed a run
+        # after the fix, this stays False — the unit test is the law.
+
 
 class CCruftAbsenceTests(unittest.TestCase):
     # the C-era POST /v1/models/provision was cut in the same commit as

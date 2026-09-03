@@ -14,7 +14,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "py"))
 import asset_ledger as al  # noqa: E402
 
 
-def _write_run(root, run_id, files, status="completed", model="x"):
+def _write_run(root, run_id, files, status="completed", model="x",
+                created_at=1700000000):
     rd = os.path.join(root, run_id)
     os.makedirs(rd, exist_ok=True)
     for name, blob in files.items():
@@ -22,7 +23,7 @@ def _write_run(root, run_id, files, status="completed", model="x"):
             f.write(blob)
     with open(os.path.join(rd, "_pipeline.json"), "w") as f:
         json.dump({"run_id": run_id, "status": status, "model": model,
-                   "created_at": 1700000000}, f)
+                   "created_at": created_at}, f)
     return rd
 
 
@@ -151,6 +152,32 @@ class ResilienceTests(unittest.TestCase):
             self.assertEqual(ev["run_id"], "run-d")
             row = ev["artifacts"][0]
             self.assertEqual(row["sha16"], hashlib.sha256(blob).hexdigest()[:16])
+
+    def test_completed_payload_has_created_at(self):
+        # the worker journals run.completed with the same fields the
+        # run row carries. created_at must ride along (consumers like
+        # the LEDGER wall sort by it).
+        with tempfile.TemporaryDirectory() as root:
+            rd = _write_run(root, "run-e", {"x.png": b"abc"}, created_at=1700001234)
+            ev = al.completed_payload(rd)
+            self.assertIn("created_at", ev)
+            self.assertEqual(ev["created_at"], 1700001234)
+
+
+class IndexFrozenTests(unittest.TestCase):
+    # PYTHON SHAPE LAW: a row cannot mutate after construction. AssetRow
+    # was tested; RunIndex is the run-level view and must obey the same
+    # law (a consumer that mutates a returned index breaks the "index is
+    # a derived artifact" contract).
+
+    def test_run_index_frozen(self):
+        with tempfile.TemporaryDirectory() as root:
+            rd = _write_run(root, "run-f", {"a.png": b"abc"})
+            idx = al.scan_run(rd)
+            with self.assertRaises(Exception):
+                idx.run_id = "other"
+            with self.assertRaises(Exception):
+                idx.status = "spoofed"
 
 
 if __name__ == "__main__":

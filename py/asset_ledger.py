@@ -199,6 +199,7 @@ def completed_payload(run_dir: str, sidecar: Optional[dict] = None) -> Optional[
         return None
     return {
         "run_id": idx.run_id, "name": idx.name, "status": idx.status,
+        "created_at": idx.created_at,
         "artifacts": [
             {**a.model_dump(), "sha16": a.sha256[:16]}
             for a in idx.artifacts
