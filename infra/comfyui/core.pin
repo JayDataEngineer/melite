@@ -1,0 +1,3 @@
+# ComfyUI core source pin — version hops are deliberate pin bumps
+# (audited ref: docs/comfyui/comfy-mcp.md §1, 2026-08-31 estate audit)
+d3eaf6adb388c27245374ac26e585fef4936c485

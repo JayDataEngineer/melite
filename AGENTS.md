@@ -167,9 +167,12 @@ parent); anything with behavior or per-family taxonomy.
 - ComfyUI extensions are DECLARED, never vendored. A card that needs
   an extension says so (card `requires` + per-lane `nodes.yaml`,
   url+ref pinned); the MANAGEMENT PLANE installs them
-  (comfy-mcp / comfy-cli `install_node`, registry-pinned — PIN LAW:
-  bare ids silently git-clone; only <id>@<version> takes the
-  registry rail). docs/comfyui/comfy-mcp.md §8 is the design record.
+  (comfy-mcp / comfy-cli `install_node` — PIN LAW, live-probed flip
+  day: bare registry ids take the rail; `install_node` REFUSES both
+  git URLs AND `<id>@<version>` pins, so the declared version in
+  nodes.yaml stays the RECORDED expectation and drift is reported
+  for deliberate audit). docs/comfyui/comfy-mcp.md §8 is the design
+  record.
 - Our AUTHORED packs live as submodules in ONE place:
   `vendor/comfyui_extensions/<pack>` (each its own repo). Nothing
   under any plugin's tree carries a pack copy — the fossil
@@ -200,16 +203,21 @@ a deployment choice, never an assumption):
   and NEVER installs one.
 - **managed (opt-in via `provision: "managed"` in the endpoint
   config):** the estate is its own most convenient customer.
-  `infra/comfyui/` is the recipe — uv-locked, ComfyUI core pinned
-  at an exact git ref (the 2026-08-31 audit commit); version hops
-  are deliberate, reviewable lock bumps. `tools/provision.py sync`
-  materializes `data/runtime/comfyui/.venv` — weights NEVER move
+  `infra/comfyui/` is the recipe — uv-locked deps (core's own
+  requirements, verbatim ranges) plus ComfyUI core as a PINNED git
+  checkout (`infra/comfyui/core.pin` — core at the audited ref is
+  not a pip package: no build system upstream, and Comfy-Org ships
+  core as a checkout); version hops are deliberate, reviewable pin
+  bumps. `tools/provision.py sync` materializes
+  `data/runtime/comfyui` (checkout + `.venv`) — weights NEVER move
   (extra_model_paths.yaml, generated from `model_base_path`, points
   at the deployment's persistent storage); estate streams serve
   input/output (`data/input`, `data/temp`).
 - **Management plane is ONE: comfy-mcp** (EXTENSION LAW). The
-  managed env deliberately ships NO comfyui-manager — two managers
-  is one too many.
+  managed env ships comfyui-manager ONLY as the v4 PACKAGE form —
+  install_node drives its cm_cli machinery (the legacy
+  custom_nodes clone does not count, live-probed 2026-09-03);
+  it is the rail, never a second interactive plane.
 - **Bloodstreams stay separate by default** (resilience law: the
   gateway must survive comfy torch chaos). The gateway env is
   root `pyproject.toml` — pydantic-only, a WALL keeps it that way.
@@ -232,7 +240,7 @@ a deployment choice, never an assumption):
   orchestrator's world (containers provision via entrypoint/binds).
 
 Enforced by tests/test_provision.py (config shape, pydantic-only
-surface, git-pinned core, manager-free env, BYO never-installs
+surface, git-pinned core, manager-v4 rail, BYO never-installs
 refusal, dead-instance refusal, management group present, no
 comfy-shell-wrapping, manifest non-empty).
 

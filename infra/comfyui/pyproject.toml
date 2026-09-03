@@ -1,20 +1,27 @@
-# MANAGED ComfyUI runtime — uv-locked, git-pinned.
+# MANAGED ComfyUI runtime — uv-locked deps + pinned core checkout.
 #
 # PROVISIONING LAW: the estate VERIFIES a user's ComfyUI (BYO,
 # default) and never installs one — EXCEPT in "managed" deployments,
-# where the estate is its own most convenient customer. This project
-# is that mode's recipe: ComfyUI core pinned to an exact git ref
-# (version hops = a deliberate, reviewable lock bump — no git-pull
-# roulette), torch from the CUDA index, everything frozen in uv.lock.
+# where the estate is its own most convenient customer.
 #
-#   sync:      tools/provision.py sync   (materializes data/runtime/comfyui/.venv)
-#   boot:      tools/provision.py boot-cmd (prints the exact launch)
-#   verify:    tools/provision.py verify
+# CORE SHAPE (learned live, flip day 2026-09-03): ComfyUI core at the
+# audited ref is NOT a pip package — its pyproject has no build
+# system and no packaging config (setuptools auto-discovery refuses
+# the six top-level packages). Comfy-Org ships core as a git
+# checkout (comfy-cli does exactly that). So managed core = a PINNED
+# git checkout (infra/comfyui/core.pin — version hops are deliberate
+# pin bumps), and THIS project locks every real runtime dep (core's
+# own requirements.txt, verbatim ranges) as wheels. Determinism:
+# uv.lock pins the deps; core.pin pins the source. Never clone
+# "latest" — the pin is the truth.
+#
+# Manager note (flip order): install_node drives ComfyUI-Manager's
+# cm_cli IN the target instance — the v4 PACKAGE form is the rail,
+# the legacy custom_nodes clone does not count (live-probed against
+# the ray-era image). The management PLANE is still ONE (comfy-mcp);
+# Manager ships here only as its machinery.
 #
 # NOT included, deliberately:
-#   - comfyui-manager — the management plane is comfy-mcp (EXTENSION
-#     LAW: extensions are DECLARED by cards, installed by comfy-mcp;
-#     two managers is one too many).
 #   - weights — never in the env; extra_model_paths.yaml (generated
 #     from the endpoint config's model_base_path) points at the
 #     deployment's persistent storage. Switching comfyui versions
@@ -25,13 +32,46 @@ version = "0.1.0"
 description = "managed ComfyUI runtime for the inference.cpp estate (BYO deployments need none of this)"
 requires-python = ">=3.11,<3.13"
 dependencies = [
-    # audit ref: v0.34.0 @ d3eaf6a — the commit the 2026-08-31 estate
-    # audit verified (docs/comfyui/comfy-mcp.md §1)
-    "comfyui @ git+https://github.com/comfyanonymous/ComfyUI.git@d3eaf6a",
-    "comfyui-frontend-package",
+    # core runtime deps (requirements.txt @ core.pin, verbatim ranges)
+    "comfyui-frontend-package>=1.51.9",
+    "comfyui-workflow-templates>=0.11.50",
+    "comfyui-embedded-docs>=0.5.10",
     "torch",
+    "torchsde",
     "torchvision",
     "torchaudio",
+    "numpy>=1.25.0",
+    "einops",
+    "transformers>=4.50.3",
+    "tokenizers>=0.13.3",
+    "sentencepiece",
+    "safetensors>=0.4.2",
+    "aiohttp>=3.11.8",
+    "yarl>=1.18.0",
+    "pyyaml",
+    "Pillow",
+    "scipy",
+    "tqdm",
+    "psutil",
+    "alembic",
+    "SQLAlchemy>=2.0.0",
+    "filelock",
+    "av>=17.0.0",
+    "comfy-kitchen>=0.2.31",
+    "comfy-aimdo>=0.4.15",
+    "requests",
+    "simpleeval>=1.0.0",
+    "blake3",
+    # non-essential but declared by core
+    "kornia>=0.7.1",
+    "spandrel",
+    "pydantic~=2.0",
+    "pydantic-settings~=2.0",
+    "PyOpenGL>=3.1.8",
+    "comfy-angle",
+    # management rails
+    "comfy-cli>=1.14",
+    "comfyui-manager>=4.0",
 ]
 
 [tool.uv.sources]

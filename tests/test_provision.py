@@ -53,12 +53,18 @@ check("gateway lock tracked", (REPO / "uv.lock").is_file())
 # ── 3. the managed runtime: pinned, locked, manager-free ──────────────
 cj = tomllib.loads((COMFY_PROJECT / "pyproject.toml").read_text())
 mdeps = cj["project"]["dependencies"]
-pinned = [d for d in mdeps if d.startswith("comfyui @ git+")]
-check("managed project pins comfyui at an exact git ref",
-      len(pinned) == 1 and "@" in pinned[0].split("git+")[-1], repr(mdeps))
+_pin = next(ln.strip() for ln in
+             (COMFY_PROJECT / "core.pin").read_text().splitlines()
+             if ln.strip() and not ln.strip().startswith("#"))
+check("managed core pin tracked (core.pin — source checkout, not pip)",
+      (COMFY_PROJECT / "core.pin").is_file() and len(_pin) >= 40)
+check("core requirements locked as wheels (frontend/comfy-kitchen present)",
+      any("comfy-kitchen" in d for d in mdeps)
+      and any("comfyui-workflow-templates" in d for d in mdeps))
 check("managed lock tracked", (COMFY_PROJECT / "uv.lock").is_file())
-check("no comfyui-manager (comfy-mcp is the ONE management plane)",
-      not any("manager" in d.lower() for d in mdeps))
+check("comfyui-manager >=4 ships as the install rail (install_node "
+      "drives its cm_cli; the plane stays comfy-mcp)",
+      any(d.startswith("comfyui-manager>=4") for d in mdeps))
 check("managed python pin is a range (not the gateway's)",
       "<" in cj["project"]["requires-python"])
 
@@ -96,7 +102,12 @@ check("declaration manifest non-empty (merger sees plugin layouts)",
       r.returncode == 0 and len(exts) > 0, "%d entries" % len(exts))
 
 # ── 5. behavior: BYO never installs; dead instances refuse ────────────
-r = subprocess.run([sys.executable, str(PROVISION), "sync"],
+byo = Path("/tmp/_provision_byo.json")
+byo.write_text(json.dumps(
+    {"provision": "byo", "url": "http://127.0.0.1:8188",
+     "model_base_path": "/x",
+     "boot_cmd": "systemctl --user start comfyui"}))
+r = subprocess.run([sys.executable, str(PROVISION), "sync", str(byo)],
                    capture_output=True, text=True, cwd=str(REPO))
 check("sync REFUSES in byo mode",
       r.returncode == 2 and "never install" in r.stdout,
@@ -110,10 +121,10 @@ r = subprocess.run([sys.executable, str(PROVISION), "verify", str(dead)],
 check("verify REFUSES on a dead instance",
       r.returncode == 1 and "instance live" in r.stdout,
       "rc=%d" % r.returncode)
-r = subprocess.run([sys.executable, str(PROVISION), "boot-cmd"],
+r = subprocess.run([sys.executable, str(PROVISION), "boot-cmd", str(byo)],
                    capture_output=True, text=True, cwd=str(REPO))
 check("byo boot-cmd prints the config's boot_cmd",
-      r.returncode == 0 and cfg["boot_cmd"] in r.stdout)
+      r.returncode == 0 and "systemctl --user start comfyui" in r.stdout)
 
 print()
 print("PASS %d / FAIL %d" % (PASS, FAIL))
