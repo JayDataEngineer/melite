@@ -62,7 +62,40 @@ check("no comfyui-manager (comfy-mcp is the ONE management plane)",
 check("managed python pin is a range (not the gateway's)",
       "<" in cj["project"]["requires-python"])
 
-# ── 4. behavior: BYO never installs; dead instances refuse ────────────
+# ── 4. management plane: packages in-process, never shell scripts ────
+groups = gw.get("dependency-groups", {})
+mgmt = groups.get("management", [])
+check("management group exists (comfy-mcp + pyyaml)",
+      "comfy-mcp" in " ".join(mgmt) and "pyyaml" in " ".join(mgmt), repr(mgmt))
+check("default env untouched by the management group",
+      gw["project"]["dependencies"] == ["pydantic>=2.13"])
+
+prov_src = PROVISION.read_text()
+check("no comfy-shell-wrapping in provision.py",
+      '"node", "install"' not in prov_src
+      and '"model", "download"' not in prov_src
+      and '"comfy-cli"' not in prov_src)
+check("provision.py calls comfy-mcp in-process",
+      "comfy_mcp" in prov_src and "install_node" in prov_src
+      and "download_model" in prov_src)
+check("bootstrap.py is deleted (one orchestrator)",
+      not (REPO / "bootstrap.py").exists())
+setup = (REPO / "setup.sh").read_text()
+check("setup.sh routes through the management env",
+      "--group management" in setup and "provision.py" in setup)
+
+# the manifest merger sees the REAL plugin layouts (fossil-glob wall)
+r = subprocess.run([sys.executable, str(REPO / "infra" / "extension_lane.py"),
+                    "--repo", str(REPO), "--format", "json"],
+                   capture_output=True, text=True, cwd=str(REPO))
+try:
+    exts = json.loads(r.stdout)
+except Exception:
+    exts = []
+check("declaration manifest non-empty (merger sees plugin layouts)",
+      r.returncode == 0 and len(exts) > 0, "%d entries" % len(exts))
+
+# ── 5. behavior: BYO never installs; dead instances refuse ────────────
 r = subprocess.run([sys.executable, str(PROVISION), "sync"],
                    capture_output=True, text=True, cwd=str(REPO))
 check("sync REFUSES in byo mode",

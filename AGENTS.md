@@ -218,9 +218,23 @@ a deployment choice, never an assumption):
   sharing impossible anyway — sharing is a local luxury, never a
   load-bearing assumption.
 
-Enforced by tests/test_provision.py (13 checks: config shape,
-pydantic-only surface, git-pinned core, manager-free env, BYO
-never-installs refusal, dead-instance refusal).
+- **Management is python packages, not shell scripts** (operator
+  order, 2026-09-03: "models, extensions, and comfyui management is
+  done through those python packages, not shell scripts").
+  `tools/provision.py` imports comfy-mcp and calls its tools
+  IN-PROCESS (`install_node`, `download_model`); comfy-cli's binary
+  routing is comfy-mcp's concern (COMFY_BIN/PATH — deployment
+  config). The management env is the opt-in `management` dependency
+  group (comfy-mcp + pyyaml); the default env stays pydantic-only.
+  `bootstrap.py` is deleted — its shell-wrapping era is over. url+ref
+  declarations BLOCK loudly (never-git-clone ruling); vendor symlinks
+  and sha-verified downloads require a workspace WRITABLE from the
+  orchestrator's world (containers provision via entrypoint/binds).
+
+Enforced by tests/test_provision.py (config shape, pydantic-only
+surface, git-pinned core, manager-free env, BYO never-installs
+refusal, dead-instance refusal, management group present, no
+comfy-shell-wrapping, manifest non-empty).
 
 ## C RETIREMENT (operator order, 2026-09-03, verbatim)
 

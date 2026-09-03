@@ -6,7 +6,7 @@
 # infra/patches) is bind-mounted from the repo at /opt/inference-src, and the
 # entrypoint runs the EXACT commands bare metal runs:
 #
-#     python3 bootstrap.py --extensions --models --comfyui-dir /root/ComfyUI
+#     python3 tools/provision.py all   (comfy-mcp in-process)
 #     exec .venv/bin/python main.py --listen 0.0.0.0 --port 18465
 #
 # Extensions land pinned, models land sha256-verified into the models volume.
@@ -28,7 +28,7 @@ RUN pip install --no-cache-dir comfy-cli
 # machine (the H3 lane ships its nodes as custom-node packs).
 RUN comfy install --version 0.34.0 /root/ComfyUI
 
-# The bootstrap + declarations + patches arrive via the bind mount
+# The orchestrator + declarations + patches arrive via the bind mount
 # (compose: . -> /opt/inference-src:ro); nothing is baked into the image.
 EXPOSE 18465
 

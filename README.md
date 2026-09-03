@@ -8,20 +8,30 @@ and the run ledger.
 
 ## QUICK START
 
-### 1. Self-bootstrap
+### 1. Provision (BYO ComfyUI + declarations)
+
+Bring your own ComfyUI — anywhere (local, container, remote, cloud);
+this estate sits on top and never installs one. The orchestrator is
+`tools/provision.py`, driven through the MANAGEMENT environment
+(comfy-mcp — the packages, in-process; `setup.sh` wraps the uv group):
 
 ```bash
-# build the gateway
-cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j
+./setup.sh verify        # config shape, live instance, comfy-cli routing
+./setup.sh extensions    # declared packs: registry via comfy-mcp install_node,
+                         # vendor packs symlinked from vendor/comfyui_extensions
+./setup.sh models        # declared weights via comfy-mcp download_model,
+                         # sha256-verified after
+```
 
-# point it at your ComfyUI (url, boot cmd, input dir)
-#   plugins/comfyui/data/comfyui_endpoint.json
-#   { "url": "http://127.0.0.1:18465",
-#     "boot_cmd": "...", "input_dir": "/abs/path/to/comfyui-input" }
+Endpoint + weights location are deployment config:
+`plugins/engines/comfyui/data/comfyui_endpoint.json`
+(`provision: byo|managed`, `url`, `boot_cmd`, `model_base_path`).
 
-# serve (plugins + catalog live beside the binary's build dir)
-cd build && setsid nohup ./inference_cli serve --port 18090 \
-  --plugin-dir . --catalog-dir .. >> /tmp/gw.log 2>&1 < /dev/null &
+### 2. Serve the gateway
+
+```bash
+# python gateway, no build step (setsid law: children must outlive the shell)
+setsid nohup python3 py/gateway.py 18090 >> /tmp/gw.log 2>&1 < /dev/null &
 
 # smoke: the queue answers, the card tools list
 curl -s localhost:18090/v1/queue
@@ -30,9 +40,9 @@ curl -s localhost:18090/v1/card-tools
 
 Every lane (model + card + templates + knobs) is a PLUGIN under
 `plugins/` — the core names no lane. Adding a lane = adding a plugin
-directory, never touching `src/`.
+directory, never touching the gateway core.
 
-### 2. DSH profile setup (the interactive studio)
+### 3. DSH profile setup (the interactive studio)
 
 ```bash
 # install the inference profile (tools + card view + gallery) into ~/.dsh

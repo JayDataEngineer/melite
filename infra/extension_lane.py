@@ -29,22 +29,31 @@ def warn(msg: str) -> None:
 
 
 def find_nodes_yaml(repo: str) -> list[tuple[str, str]]:
-    """Find all nodes.yaml files, return (path, owner_id) pairs sorted by owner."""
+    """Find all nodes.yaml files, return (path, owner_id) pairs sorted by owner.
+
+    Plugin layouts (root reorganization, 2026-09-03): flat
+    plugins/<id>/… and engine-scoped plugins/engines/<engine>/… —
+    owner id is the plugin path between plugins/ and the first
+    models|nodes segment (e.g. "engines/comfyui").
+    """
     patterns = [
-        # Plugin-level: plugins/<id>/nodes/extensions.yaml
         os.path.join(repo, "plugins", "*", "nodes", "extensions.yaml"),
-        # Family-level: plugins/<id>/models/**/nodes.yaml
         os.path.join(repo, "plugins", "*", "models", "**", "nodes.yaml"),
+        os.path.join(repo, "plugins", "*", "*", "nodes", "extensions.yaml"),
+        os.path.join(repo, "plugins", "*", "*", "models", "**", "nodes.yaml"),
     ]
     results: list[tuple[str, str]] = []
     for pattern in patterns:
         for path in sorted(glob.glob(pattern, recursive=True)):
-            parts = Path(path).parts
-            # Extract plugin id from path
+            rel = Path(path).relative_to(repo)
+            parts = list(rel.parts)
             try:
                 idx = parts.index("plugins")
-                plugin_id = parts[idx + 1]
-            except (ValueError, IndexError):
+                tail = parts[idx + 1:]
+                cut = next(i for i, p in enumerate(tail)
+                           if p in ("models", "nodes"))
+                plugin_id = "/".join(tail[:cut]) or tail[0]
+            except (ValueError, IndexError, StopIteration):
                 warn(f"Cannot determine plugin id from {path}, skipping")
                 continue
             results.append((path, plugin_id))

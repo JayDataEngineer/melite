@@ -1,40 +1,63 @@
 #!/usr/bin/env python3
-"""provision.py — the PROVISIONING orchestrator (operator order, 2026-09-03).
+"""provision.py — the ONE provisioning orchestrator.
 
-> "the user comes before hand with their own comfyui, then this sits
->  on top of it"
-> "let's build it out now, clean as possible"
+Operator orders: PROVISIONING LAW (2026-09-03) + bootstrap retirement
+(same day): "models, extensions, and comfyui management is done through
+those python packages, not shell scripts" — this tool imports comfy-mcp
+and calls its tools IN-PROCESS. There is no shelling out to a comfy CLI
+here; comfy-mcp owns the binary routing (COMFY_BIN / PATH — deployment
+config, portability law).
 
-TWO modes, ONE interface — the code never knows the difference:
+Instance provisioning — one interface, two modes, the estate code
+never knows the difference:
 
-  byo (default)  The user's own ComfyUI, anywhere (local box, remote,
-                 cloud). The estate VERIFIES and never installs.
-  managed        The estate is its own most convenient customer:
-                 uv materializes a lockfile-pinned ComfyUI from
-                 infra/comfyui/ into data/runtime/comfyui/. Version
-                 hops are deliberate lock bumps — no git-pull roulette.
+  byo (default)  the user's own ComfyUI, anywhere. The estate
+                 VERIFIES and never installs one.
+  managed        uv materializes a lockfile-pinned ComfyUI from
+                 infra/comfyui/ into data/runtime/comfyui/.
 
-The two never share a bloodstream by default (resilience law: the
-gateway must survive comfy torch chaos). Power users may fold the
-gateway's pydantic-only deps into a comfy env — their informed call.
+Declaration provisioning — through the python packages:
+
+  extensions     comfy-mcp install_node for registry declarations
+                 (bare ids — the tool REFUSES git URLs and @pins by
+                 design, which is the estate's own never-git-clone
+                 ruling made mechanical); vendor packs symlinked from
+                 vendor/comfyui_extensions (ours, EXTENSION LAW);
+                 url+ref declarations BLOCK loudly — convert them to
+                 registry: or vendor them in-tree.
+  models         comfy-mcp download_model per model.yaml provision,
+                 polled to completion, sha256-verified after (ours).
+  all            extensions + models.
+
+Management environment (deps: comfy-mcp only — the comfy binary is
+deployment-provided):
+
+  uv run --group management python tools/provision.py <command>
+
+setup.sh wraps exactly that. Agent-driven interactive provisioning
+stays with the comfy-mcp MCP server itself (docs/comfyui/comfy-mcp.md).
 
 Commands:
-  paths       write data/runtime/comfyui layout + extra_model_paths.yaml
-  sync        managed only: uv sync --frozen (refuses in byo mode)
+  verify      health probe: config shape, live instance, routing
+  paths       runtime layout + extra_model_paths.yaml (managed)
+  sync        managed only: uv sync --frozen
   boot-cmd    print the exact launch for the configured mode
-  verify      health probe: config shape, live instance, lock state
-
-The compose-time requires gate (card `requires` vs the live
-instance) stays where the EXTENSION LAW put it — this tool PROBES
-health; it does not re-implement the gate (one system).
+  extensions | models | all [--dry-run]
 """
 
 from __future__ import annotations
 
+import argparse
+import asyncio
+import glob
+import hashlib
+import importlib.util
 import json
 import os
+import shutil
 import subprocess
 import sys
+import time
 import urllib.request
 from pathlib import Path
 
@@ -42,9 +65,57 @@ REPO = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = REPO / "plugins" / "engines" / "comfyui" / "data" / "comfyui_endpoint.json"
 RUNTIME = REPO / "data" / "runtime" / "comfyui"
 COMFY_PROJECT = REPO / "infra" / "comfyui"
-
+LANE = REPO / "infra" / "extension_lane.py"
+DRY = False
 FAILS = []
 
+
+# ── output helpers ──────────────────────────────────────────────────
+
+def info(msg: str) -> None:
+    print("[provision] %s" % msg, flush=True)
+
+
+def warn(msg: str) -> None:
+    print("[provision] WARN: %s" % msg, flush=True)
+
+
+def fail(msg: str) -> None:
+    print("[provision] FATAL: %s" % msg, file=sys.stderr, flush=True)
+    sys.exit(1)
+
+
+def die(msg: str) -> None:
+    print("REFUSED: %s" % msg)
+    sys.exit(2)
+
+
+def need_comfy_mcp():
+    """Import the management plane — loudly, with the fix printed."""
+    try:
+        import comfy_mcp.server as sms  # noqa: F401
+        return sms
+    except ImportError:
+        fail("comfy-mcp is not importable — run the provisioning "
+             "commands through the management env:\n"
+             "  uv run --group management python tools/provision.py <command>"
+             "\n(or: pip install comfy-mcp)")
+
+
+def tool(sms, name):
+    """The @mcp.tool function, callable as a plain python function."""
+    fn = getattr(sms, name)
+    return getattr(fn, "fn", fn)
+
+
+def call(fn, *a, **kw):
+    """Invoke an @mcp.tool function — some are async, some sync."""
+    r = fn(*a, **kw)
+    import inspect
+    return asyncio.run(r) if inspect.iscoroutine(r) else r
+
+
+# ── instance provisioning (byo verify / managed materialize) ────────
 
 def check(name, ok, note=""):
     print("  %-4s %s%s" % ("ok" if ok else "FAIL", name,
@@ -56,8 +127,7 @@ def check(name, ok, note=""):
 
 def load_config(path):
     cfg = json.loads(Path(path).read_text())
-    # defaults: absent provision = byo (the agnostic default)
-    cfg.setdefault("provision", "byo")
+    cfg.setdefault("provision", "byo")   # absent = byo (the agnostic default)
     return cfg
 
 
@@ -150,9 +220,9 @@ def cmd_verify(cfg):
     url = cfg.get("url", "").strip()
     if url:
         try:
-            st, info = _probe(url, "/system_stats")
-            ver = (info.get("system") or {}).get("comfyui_version", "?")
-            check("instance live (/system_stats)", st == 200, str(info)[:80])
+            st, stats = _probe(url, "/system_stats")
+            ver = (stats.get("system") or {}).get("comfyui_version", "?")
+            check("instance live (/system_stats)", st == 200, str(stats)[:80])
             print("       comfyui_version:", ver)
         except Exception as e:
             check("instance live (/system_stats)", False, str(e)[:120])
@@ -162,6 +232,22 @@ def cmd_verify(cfg):
                   "status %s" % st)
         except Exception as e:
             check("object_info served", False, str(e)[:120])
+    # management plane (the packages, in-process)
+    try:
+        import comfy_mcp  # noqa: F401
+        check("comfy-mcp importable (management env)", True)
+        sms = need_comfy_mcp()
+        try:
+            rep = call(tool(sms, "server_info"))
+            ws = rep.get("workspace")
+            wpath = ws.get("path") if isinstance(ws, dict) else ws
+            check("comfy-cli routing answers (server_info)", True)
+            print("       workspace:", wpath, "| running:", rep.get("running"))
+        except Exception as e:
+            check("comfy-cli routing answers (server_info)", False, str(e)[:100])
+    except SystemExit:
+        check("comfy-mcp importable (management env)", False,
+              "run via: uv run --group management")
     print()
     if FAILS:
         print("VERIFY REFUSED: %d failure(s): %s" % (len(FAILS), ", ".join(FAILS)))
@@ -170,22 +256,293 @@ def cmd_verify(cfg):
           "per the EXTENSION LAW — this probe does not duplicate it)")
 
 
-def die(msg):
-    print("REFUSED: %s" % msg)
-    sys.exit(2)
+# ── extensions via comfy-mcp (in-process) + our vendor symlinks ─────
+
+def load_manifest():
+    """infra/extension_lane.py merges all plugin declarations — the SSOT,
+    imported, not shelled."""
+    spec = importlib.util.spec_from_file_location("extension_lane", LANE)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.merge_all(str(REPO))
+
+
+def link_in_tree(name: str, workspace: Path) -> str:
+    """Vendor pack: vendor/comfyui_extensions/<name> -> custom_nodes link.
+
+    Our authored packs are submodules under vendor/comfyui_extensions
+    (EXTENSION LAW). Symlink preferred; copytree fallback for Windows
+    without Developer Mode. Returns installed|skipped|failed.
+    """
+    target = workspace / "custom_nodes" / name
+    if (target / "__init__.py").exists():
+        return "skipped"
+    src = REPO / "vendor" / "comfyui_extensions" / name
+    if not (src / "__init__.py").is_file():
+        warn("  [%s] vendor pack not checked out under vendor/comfyui_extensions "
+             "(git submodule update --init)" % name)
+        return "failed"
+    if DRY:
+        print("[dry-run] link %s <- %s" % (target, src))
+        return "installed"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        os.symlink(src, target, target_is_directory=True)
+        info("  [%s] symlinked -> %s" % (name, src))
+        return "installed"
+    except OSError:
+        shutil.copytree(src, target)
+        warn("  [%s] symlink unavailable (Windows?) — COPIED" % name)
+        return "installed"
+
+
+def workspace_from_server_info(sms):
+    """The workspace comfy-cli reports it is driving (informational —
+    it may live in ANOTHER world: a container path, a remote host)."""
+    rep = call(tool(sms, "server_info"))
+    ws = rep.get("workspace")
+    path = ws.get("path") if isinstance(ws, dict) else ws
+    if not path:
+        fail("comfy-cli reports no workspace — management routing is "
+             "deployment config (COMFY_BIN / comfy set-default); "
+             "provision cannot guess one")
+    return Path(path)
+
+
+def _same_world(workspace: Path, duty: str) -> bool:
+    """Duties that touch the workspace FILESYSTEM (vendor symlinks,
+    sha-verified model files) require the workspace to be WRITABLE from
+    HERE — a same-named read-only path is another world's shadow, not
+    ours. A container/remote workspace is provisioned from INSIDE its
+    world (infra/comfyui/entrypoint.sh) or by deployment binds — never
+    by guessing."""
+    cn = workspace / "custom_nodes"
+    try:
+        cn.mkdir(parents=True, exist_ok=True)
+        if os.access(cn, os.W_OK):
+            return True
+    except OSError:
+        pass
+    warn("  workspace %s is not writable from here (another world: "
+         "container/remote) — %s is done from inside that world "
+         "(entrypoint) or by deployment binds; refusing to guess"
+         % (workspace, duty))
+    return False
+
+
+def step_extensions() -> bool:
+    sms = need_comfy_mcp()
+    exts = load_manifest()
+    info("%d extensions declared" % len(exts))
+    workspace = workspace_from_server_info(sms)
+    vendor_world = _same_world(workspace, "vendor symlinking")
+    install_node = tool(sms, "install_node")
+    counts = {"installed": 0, "skipped": 0, "failed": 0, "blocked": 0}
+    restart = False
+
+    for e in exts:
+        name = (e.get("name") or "").strip()
+        reg = (e.get("registry") or "").strip()
+        url = (e.get("url") or "").strip()
+        if not name:
+            continue
+        if not reg and not url:                       # vendor pack (ours)
+            if not vendor_world:
+                counts["failed"] += 1
+                continue
+            counts[link_in_tree(name, workspace)] += 1
+            continue
+        if url and not reg:
+            # install_node REFUSES git URLs by design — and the estate
+            # ruled (2026-09-21) "we never git clone". This declaration
+            # form is stranded until the pack publishes to the registry
+            # or we vendor it: say so, loudly, and count it.
+            warn("  [%s] url-form declaration BLOCKED — install_node "
+                 "refuses git URLs (never-git-clone ruling); convert the "
+                 "declaration to registry: <slug> (version recorded in "
+                 "nodes.yaml) or vendor the pack in-tree" % name)
+            counts["blocked"] += 1
+            continue
+
+        # registry form: bare id (install_node refuses @pins too; the
+        # declared version stays the RECORDED expectation, audited below)
+        if DRY:
+            print("[dry-run] install_node [%s] registry id %r" % (name, reg))
+            counts["installed"] += 1
+            continue
+        try:
+            rep = call(install_node, [reg], confirm_install=True)
+        except Exception as exc:
+            warn("  [%s] install_node raised: %s" % (name, str(exc)[:160]))
+            counts["failed"] += 1
+            continue
+        if rep.get("unsupported"):
+            warn("  [%s] install_node unsupported: %s"
+                 % (name, str(rep.get("error"))[:160]))
+            counts["failed"] += 1
+            continue
+        if rep.get("failed"):
+            warn("  [%s] failed packs: %s" % (name, rep["failed"]))
+            counts["failed"] += 1
+            continue
+        counts["installed"] += 1
+        if rep.get("restart_required"):
+            restart = True
+        ver = str(e.get("version") or "").strip().strip('"')
+        if ver:
+            info("  [%s] installed (declaration records version %s — "
+                 "install_node installs latest; audit the drift "
+                 "deliberately)" % (name, ver))
+
+    info("extensions: %d installed, %d skipped, %d failed, %d blocked"
+         % (counts["installed"], counts["skipped"],
+            counts["failed"], counts["blocked"]))
+    if restart:
+        info("restart required for new nodes (restart_comfyui is "
+             "operator-invoked: comfy restart, or the stop/boot doors)")
+    return counts["failed"] == 0 and counts["blocked"] == 0
+
+
+# ── models via comfy-mcp (in-process) + our sha256 gate ─────────────
+
+def sha256_of(path: Path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _provisions():
+    files = sorted(glob.glob(str(REPO / "plugins" / "*" / "models" / "**"
+                                    / "model.yaml"), recursive=True))
+    files += sorted(glob.glob(str(REPO / "plugins" / "*" / "*" / "models"
+                                     / "**" / "model.yaml"), recursive=True))
+    for mf in files:
+        try:
+            import yaml
+            cfg = yaml.safe_load(Path(mf).read_text()) or {}
+        except ImportError:
+            fail("PyYAML required for models: pip install pyyaml")
+        except Exception as exc:
+            warn("skipping unreadable %s: %s" % (mf, exc))
+            continue
+        fam = cfg.get("family") if isinstance(cfg.get("family"), dict) else {}
+        for p in (fam.get("provisions") or cfg.get("provisions") or []):
+            yield p
+
+
+def step_models() -> bool:
+    sms = need_comfy_mcp()
+    workspace = workspace_from_server_info(sms)
+    if not _same_world(workspace, "sha-verified model downloads"):
+        return False
+    download_model = tool(sms, "download_model")
+    download = tool(sms, "download")
+
+    rows = [p for p in _provisions() if p.get("name") and p.get("url")]
+    if not rows:
+        info("no model.yaml provisions found")
+        return True
+    ok, bad, skipped = 0, 0, 0
+    for p in rows:
+        name, url = p["name"], p["url"]
+        # RULING (operator 2026-09-21): provisioning goes through
+        # comfy-mcp/comfy-cli; the folder: field names the models folder
+        # CATEGORY — comfy-cli places under models/<folder>, the
+        # instance's folder_paths/extra_model_paths decide where that
+        # category really lives.
+        folder = (p.get("folder") or "").strip("/")
+        sub = folder or ((p.get("dest") or {}).get("sub") or "").strip("/")
+        rel = "models/%s" % sub if sub else "models"
+        dest = workspace / rel / name
+        if dest.exists():
+            skipped += 1
+            continue
+        info("  [model] %s -> %s/" % (name, rel))
+        if DRY:
+            print("[dry-run] download_model %s -> %s/%s" % (url, rel, name))
+            continue
+        try:
+            rep = call(download_model, url, relative_path=rel,
+                       filename=name, wait=True, timeout_seconds=100.0)
+            # big transfers outlive one waited call: poll the handle
+            deadline = time.time() + 7200
+            while isinstance(rep, dict) and rep.get("timed_out") \
+                    and rep.get("download_id") and time.time() < deadline:
+                rep = call(download, action="wait",
+                           download_id=rep["download_id"],
+                           timeout_seconds=3600.0)
+            if not (isinstance(rep, dict) and rep.get("status") == "completed"):
+                warn("  [model] %s: download did not complete: %s"
+                     % (name, str(rep)[:160]))
+                bad += 1
+                continue
+        except Exception as exc:
+            warn("  [model] %s: download_model raised: %s" % (name, str(exc)[:160]))
+            bad += 1
+            continue
+        want = (p.get("sha256") or "").strip().lower()
+        if want:
+            got = sha256_of(dest).lower()
+            if got != want:
+                dest.unlink(missing_ok=True)
+                warn("  [model] %s: sha256 mismatch — deleted" % name)
+                bad += 1
+                continue
+        info("  [model] %s: verified" % name)
+        ok += 1
+
+    info("models: %d downloaded+verified, %d present, %d failed"
+         % (ok, skipped, bad))
+    return bad == 0
+
+
+# ── main ────────────────────────────────────────────────────────────
+
+def run_declarations(args) -> int:
+    rc = 0
+    if args.cmd in ("all", "extensions"):
+        rc |= 0 if step_extensions() else 1
+    if args.cmd in ("all", "models"):
+        rc |= 0 if step_models() else 1
+    info("=" * 42)
+    info("provision complete" if rc == 0 else "provision FINISHED WITH FAILURES")
+    return rc
 
 
 def main():
-    cmds = {"paths": cmd_paths, "sync": cmd_sync,
-            "boot-cmd": cmd_boot_cmd, "verify": cmd_verify}
-    args = sys.argv[1:]
-    if not args or args[0] in ("-h", "--help") or args[0] not in cmds:
-        print(__doc__)
-        sys.exit(0 if args and args[0] in ("-h", "--help") else 2)
-    cfg_path = args[1] if len(args) > 1 and not args[1].startswith("-") \
-        else str(DEFAULT_CONFIG)
-    cfg = load_config(cfg_path)
-    cmds[args[0]](cfg)
+    global DRY
+    ap = argparse.ArgumentParser(
+        description="inference.cpp provisioning — the ONE orchestrator "
+                    "(management plane in-process; run via: uv run "
+                    "--group management python tools/provision.py …)")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    for name, help_ in (("paths", "runtime layout + extra_model_paths.yaml"),
+                        ("sync", "managed only: uv sync --frozen"),
+                        ("boot-cmd", "print the exact launch for this mode"),
+                        ("verify", "health probe: config, instance, routing")):
+        s = sub.add_parser(name, help=help_)
+        s.add_argument("config", nargs="?", default=str(DEFAULT_CONFIG),
+                       help="endpoint config (default: the engine plugin's)")
+
+    for name, help_ in (
+            ("extensions", "install declared extensions (comfy-mcp in-process)"),
+            ("models", "download declared models (comfy-mcp, sha-verified)"),
+            ("all", "extensions + models")):
+        s = sub.add_parser(name, help=help_)
+        s.add_argument("--dry-run", action="store_true",
+                       help="print the plan, change nothing")
+    args = ap.parse_args()
+
+    if args.cmd in ("paths", "sync", "boot-cmd", "verify"):
+        cfg = load_config(args.config)
+        {"paths": cmd_paths, "sync": cmd_sync,
+         "boot-cmd": cmd_boot_cmd, "verify": cmd_verify}[args.cmd](cfg)
+    else:
+        DRY = args.dry_run
+        sys.exit(run_declarations(args))
 
 
 if __name__ == "__main__":
