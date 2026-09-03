@@ -493,6 +493,94 @@ def main():
         check("live compose identity-law refusal",
               "image-anchored film without params.identity" in str(e))
 
+    # ── THE ARTIFACT-REF PRIMITIVE WALL ─────────────────────────────
+    # One law, five kinds: image/video/audio/latent/qvoice. The walk,
+    # the kind contract (wrong kind refuses LOUD), dir-shaped latent
+    # strips, and the transport policy SSOT (latent never uploads).
+    import tempfile as _tf
+    import artifact as _artifact_mod
+    from artifact import Kind as _AK
+    _ad = _tf.mkdtemp(prefix="artifact-wall-")
+    _png = os.path.join(_ad, "guide.png"); open(_png, "wb").write(b"png")
+    _wav = os.path.join(_ad, "clip.wav"); open(_wav, "wb").write(b"wav")
+    _strip = os.path.join(_ad, "runs", "PRIOR", "h3_context")
+    os.makedirs(_strip)
+    open(os.path.join(_strip, "clip_1.safetensors"), "wb").write(b"s")
+    open(os.path.join(_strip, "clip_2.safetensors"), "wb").write(b"s")
+
+    _ok_img = _artifact_mod.resolve(_png, _AK.IMAGE)
+    _ok_strip = _artifact_mod.resolve("runs/PRIOR/h3_context", _AK.LATENT,
+                                      output_dir=_ad)
+    _wrong = _missing = _dir_img = False
+    try:
+        _artifact_mod.resolve(_wav, _AK.IMAGE)
+    except ValueError:
+        _wrong = True
+    try:
+        _artifact_mod.resolve("nope.png", _AK.IMAGE, output_dir=_ad)
+    except ValueError:
+        _missing = True
+    try:
+        _artifact_mod.resolve(_strip, _AK.IMAGE)
+    except ValueError:
+        _dir_img = True
+    check("artifact ref primitive: five kinds, one law",
+          _ok_img is not None and _ok_img.path == _png
+          and _ok_strip is not None
+          and _ok_strip.path == _strip and _ok_strip.ref == "runs/PRIOR/h3_context"
+          and _artifact_mod.resolve(None, _AK.IMAGE) is None
+          and _wrong and _missing and _dir_img
+          and not _artifact_mod.uploads(_AK.LATENT)
+          and all(_artifact_mod.uploads(k) for k in
+                  (_AK.IMAGE, _AK.VIDEO, _AK.AUDIO, _AK.QVOICE))
+          and ".safetensors" not in _artifact_mod.upload_extensions()
+          and ".png" in _artifact_mod.upload_extensions(),
+          "kind walk/refusal/policy drifted")
+
+    # ── CONTINUATION e2e: a latent ref flips window 1 to the chain
+    # family; the ref bakes VERBATIM; the old run-id magic is gone. ──
+    _cbody = {"model": "h3-timeline",
+              "params": {"seed": 7, "fps": 24, "identity": "courier",
+                         "context": "runs/PRIOR/h3_context",
+                         "calls": [{"text": "more running",
+                                    "start_frame": 0, "end_frame": 56}]}}
+    os.environ["G_DEFAULT_OUTPUT_DIR"] = _ad
+    try:
+        _cyml, _cextra = plugins.compose(
+            dict(_cbody), "h3-timeline", "run-WALL-CONT",
+            "name: h3-timeline\ntype: comfyui\n\nnodes:\n", ("comfyui",))
+    except Exception:
+        _cyml, _cextra = "", {}
+    finally:
+        os.environ.pop("G_DEFAULT_OUTPUT_DIR", None)
+    import re as _re_cont
+    _cwf = json.loads(_re_cont.search(r"workflow: (.*)", _cyml or "{}").group(1)) \
+        if "workflow: " in (_cyml or "") else {}
+    _w1 = [n for n in _cwf if n.startswith("window1_")]
+    _ctx_load = [n for n in _w1 if "CtxLoad" in n or "MotionContext" in n]
+    check("continuation via latent artifact ref",
+          bool(_cwf) and "- id: h3-film" in (_cyml or "")
+          and isinstance(_cextra.get("inputs"), dict)
+          and any("runs/PRIOR/h3_context" == v
+                  for n in _ctx_load
+                  for v in _cwf[n].get("inputs", {}).values()),
+          "context flip failed: %s" % (
+              "no verbatim ref" if _cwf else "compose refused"))
+
+    # the old run-id surface must refuse at the VALIDATION door
+    # (run_id="" — the registration gate; phase2 assumes it ran)
+    _old = dict(_cbody)
+    _old["params"] = dict(_old["params"], continue_from="run-PRIOR-1")
+    _old_refused = False
+    try:
+        plugins.compose(_old, "h3-timeline", "",
+                        "name: h3-timeline\ntype: comfyui\n\nnodes:\n",
+                        ("comfyui",))
+    except PluginsValidationError:
+        _old_refused = True
+    check("continue_from run-id magic is extinct",
+          _old_refused, "legacy surface accepted")
+
     print("PASS %d / FAIL %d" % (PASS, FAIL))
     return 1 if FAIL else 0
 
