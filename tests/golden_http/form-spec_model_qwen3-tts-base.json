@@ -1,0 +1,165 @@
+{
+ "defaults": {
+  "family": "qwen3_tts",
+  "mode": "tts",
+  "model_path": "Qwen3-TTS-12Hz-0.6B-Base"
+ },
+ "engine": "comfyui",
+ "enhance_prompts": {
+  "lyrics": "",
+  "prompt": null
+ },
+ "features": {
+  "modifiers": [],
+  "variant_groups": {
+   "Quant": {
+    "label": "Quant"
+   },
+   "Variant": {
+    "label": "Variant"
+   }
+  }
+ },
+ "fields": [
+  {
+   "label": "Text",
+   "name": "text",
+   "placeholder": "The words to speak",
+   "required": true,
+   "tooltip": "The text to synthesize",
+   "type": "textarea"
+  },
+  {
+   "default": "ryan",
+   "label": "Voice",
+   "name": "voice",
+   "options": [
+    "ryan",
+    "serena",
+    "vivian",
+    "aiden",
+    "eric",
+    "dylan",
+    "sohee",
+    "ono_anna",
+    "uncle_fu"
+   ],
+   "tooltip": "Preset speaker persona (CustomVoice) or .qvoice embedding path",
+   "type": "select"
+  },
+  {
+   "label": "Style Instruction",
+   "name": "style_instruction",
+   "tooltip": "Emotion and delivery control (e.g. 'speak with warm confidence')",
+   "type": "textarea"
+  },
+  {
+   "default": 0.7,
+   "label": "Temperature",
+   "max": 2,
+   "min": 0,
+   "name": "temperature",
+   "step": 0.05,
+   "type": "slider"
+  },
+  {
+   "default": -1,
+   "label": "Seed",
+   "name": "seed",
+   "type": "seed"
+  },
+  {
+   "group": "qvoice",
+   "label": "PCA Steering",
+   "name": "voice_pca_strengths",
+   "order": 1,
+   "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} \u2014 subtle voice direction without re-designing the persona.",
+   "type": "textarea"
+  }
+ ],
+ "form": "tts",
+ "genre": "audio",
+ "label": "TTS",
+ "model": "qwen3-tts-base",
+ "schema_groups": [
+  {
+   "fields": [
+    {
+     "label": "Text",
+     "name": "text",
+     "placeholder": "The words to speak",
+     "required": true,
+     "tooltip": "The text to synthesize",
+     "type": "textarea"
+    },
+    {
+     "default": "ryan",
+     "label": "Voice",
+     "name": "voice",
+     "options": [
+      "ryan",
+      "serena",
+      "vivian",
+      "aiden",
+      "eric",
+      "dylan",
+      "sohee",
+      "ono_anna",
+      "uncle_fu"
+     ],
+     "tooltip": "Preset speaker persona (CustomVoice) or .qvoice embedding path",
+     "type": "select"
+    },
+    {
+     "label": "Style Instruction",
+     "name": "style_instruction",
+     "tooltip": "Emotion and delivery control (e.g. 'speak with warm confidence')",
+     "type": "textarea"
+    },
+    {
+     "default": 0.7,
+     "label": "Temperature",
+     "max": 2,
+     "min": 0,
+     "name": "temperature",
+     "step": 0.05,
+     "type": "slider"
+    },
+    {
+     "default": -1,
+     "label": "Seed",
+     "name": "seed",
+     "type": "seed"
+    }
+   ],
+   "id": "",
+   "label": "Parameters",
+   "order": 0,
+   "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "label": "Voice (.qvoice)",
+     "name": "qvoice",
+     "order": 0,
+     "tooltip": "Pre-computed speaker embedding (.qvoice/.voice \u2014 the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one.",
+     "type": "file"
+    },
+    {
+     "label": "PCA Steering",
+     "name": "voice_pca_strengths",
+     "order": 1,
+     "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} \u2014 subtle voice direction without re-designing the persona.",
+     "type": "textarea"
+    }
+   ],
+   "id": "qvoice",
+   "label": "Qvoice",
+   "order": 1,
+   "zone": "mods"
+  }
+ ],
+ "service": "qwen3-tts-base",
+ "variants": []
+}

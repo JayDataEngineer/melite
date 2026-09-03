@@ -48,7 +48,12 @@ class LaneInputs(BaseModel, frozen=True):
     do; the model supplies data). `unet` states the checkpoint basename
     when no cell artifact owns it; when the artifact DOES (krea-2),
     `unet_variant`/`unet_quant` name the cell and the basename is
-    DERIVED — never restated beside the artifact (rung 6).'''
+    DERIVED — never restated beside the artifact (rung 6).
+
+The AUDIO lanes (A-cluster, 2026-09-04) load through the audiocore
+node pack instead of ComfyUI loaders: `family` + `model_path` are
+THEIR weight facts (LoadAudiocoreModel's two required rows) — a
+third source shape, mutually exclusive with the loader facts.'''
     model_config = {"extra": "forbid"}
     unet: str = ""
     unet_variant: str = ""
@@ -56,13 +61,27 @@ class LaneInputs(BaseModel, frozen=True):
     text_encoder: str = ""
     clip_type: str = ""
     vae: str = ""
+    family: str = ""        # audiocore load family (qwen3_tts, ...)
+    model_path: str = ""    # audiocore weights (basename or abs)
 
     @model_validator(mode="after")
     def _one_unet_source(self):
+        if self.family:
+            if self.unet or self.unet_variant or self.text_encoder \
+                    or self.vae:
+                raise ValueError(
+                    "lane_inputs: family= is the audiocore source — "
+                    "loader facts do not ride beside it")
+            if not self.model_path:
+                raise ValueError(
+                    "lane_inputs: family= needs model_path= (the "
+                    "LoadAudiocoreModel rows)")
+            return self
         if bool(self.unet) == bool(self.unet_variant):
             raise ValueError(
-                "lane_inputs: set exactly one of unet= (the basename) "
-                "or unet_variant=/unet_quant= (derive from the cell)")
+                "lane_inputs: set exactly one of unet= (the basename), "
+                "unet_variant=/unet_quant= (derive from the cell), or "
+                "family=/model_path= (the audiocore load)")
         if self.unet_quant and self.unet_quant not in _QUANT_VALUES:
             raise ValueError("lane_inputs: unknown quant %r"
                              % self.unet_quant)

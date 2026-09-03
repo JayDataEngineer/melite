@@ -151,7 +151,8 @@ check("engine scan one-owner", owners.get("comfyui") == "comfyui"
 etype, _my = plugins.resolve_model("music3")
 check("music3 resolves comfyui (declarer-wins)", etype == "comfyui", etype)
 etype, _my = plugins.resolve_model("qwen3-tts")
-check("qwen3-tts resolves audio_cpp", etype == "audio_cpp", etype)
+check("qwen3-tts resolves comfyui (A-cluster rehome)",
+      etype == "comfyui", etype)
 
 # C15: no engine stanza = LOUD refusal (QUEUE LANE LAW — refuse to guess)
 # (z-image/anima declare engine now — they board the image-gen card and

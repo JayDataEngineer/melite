@@ -1,4 +1,25 @@
 {
+ "defaults": {
+  "family": "qwen3_tts",
+  "mode": "design",
+  "model_path": "/mnt/data/models/image-gen/comfyui/audio/qwen3-tts/hf/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
+ },
+ "engine": "comfyui",
+ "enhance_prompts": {
+  "lyrics": "",
+  "prompt": null
+ },
+ "features": {
+  "modifiers": [],
+  "variant_groups": {
+   "Quant": {
+    "label": "Quant"
+   },
+   "Variant": {
+    "label": "Variant"
+   }
+  }
+ },
  "fields": [
   {
    "group": "voice",
@@ -6,7 +27,7 @@
    "name": "voice_name",
    "order": 0,
    "required": true,
-   "tooltip": "Name for the locked persona — becomes the .qvoice filename stem. Reused across every future TTS render.",
+   "tooltip": "Name for the locked persona \u2014 becomes the .qvoice filename stem. Reused across every future TTS render.",
    "type": "text",
    "width": 1
   },
@@ -17,7 +38,7 @@
    "name": "style_instruction",
    "order": 1,
    "required": true,
-   "tooltip": "The voice description — becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent').",
+   "tooltip": "The voice description \u2014 becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent').",
    "type": "textarea"
   },
   {
@@ -76,9 +97,20 @@
    "order": 0,
    "type": "seed",
    "width": 1
+  },
+  {
+   "group": "qvoice",
+   "label": "PCA Steering",
+   "name": "voice_pca_strengths",
+   "order": 1,
+   "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} \u2014 subtle voice direction without re-designing the persona.",
+   "type": "textarea"
   }
  ],
  "form": "voice-lock",
+ "genre": "audio",
+ "label": "Voice Lock",
+ "model": "qwen3-tts-voicedesign",
  "schema_groups": [
   {
    "fields": [
@@ -87,7 +119,7 @@
      "name": "voice_name",
      "order": 0,
      "required": true,
-     "tooltip": "Name for the locked persona — becomes the .qvoice filename stem. Reused across every future TTS render.",
+     "tooltip": "Name for the locked persona \u2014 becomes the .qvoice filename stem. Reused across every future TTS render.",
      "type": "text",
      "width": 1
     },
@@ -97,7 +129,7 @@
      "name": "style_instruction",
      "order": 1,
      "required": true,
-     "tooltip": "The voice description — becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent').",
+     "tooltip": "The voice description \u2014 becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent').",
      "type": "textarea"
     },
     {
@@ -181,7 +213,30 @@
    "label": "Seed",
    "order": 2,
    "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "label": "Voice (.qvoice)",
+     "name": "qvoice",
+     "order": 0,
+     "tooltip": "Pre-computed speaker embedding (.qvoice/.voice \u2014 the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one.",
+     "type": "file"
+    },
+    {
+     "label": "PCA Steering",
+     "name": "voice_pca_strengths",
+     "order": 1,
+     "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} \u2014 subtle voice direction without re-designing the persona.",
+     "type": "textarea"
+    }
+   ],
+   "id": "qvoice",
+   "label": "Qvoice",
+   "order": 3,
+   "zone": "mods"
   }
  ],
- "service": "qwen3-tts-voicedesign"
+ "service": "qwen3-tts-voicedesign",
+ "variants": []
 }

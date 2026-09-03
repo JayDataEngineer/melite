@@ -61,11 +61,27 @@
     "params": {}
    }
   },
+  "sfx": {
+   "default_family": "moss-sfx",
+   "description": "Generate sound effects \u2014 MOSS-SFX v2, describe the SOUND not the scene",
+   "families": [
+    "moss-sfx"
+   ],
+   "icon": "bolt",
+   "kind": "generation",
+   "label": "Sound Effects",
+   "resolved": {
+    "family": "moss-sfx",
+    "model": "moss-sfx",
+    "params": {}
+   }
+  },
   "tts": {
    "default_family": "qwen3-tts",
    "description": "Text-to-speech \u2014 Qwen3-TTS with CustomVoice personas and instruct-text emotion control",
    "families": [
-    "qwen3-tts"
+    "qwen3-tts",
+    "qwen3-tts-base"
    ],
    "icon": "microphone",
    "kind": "generation",
@@ -77,22 +93,35 @@
    }
   },
   "voice-lock": {
-   "default_family": "qwen3_tts_voicedesign",
+   "default_family": "qwen3-tts-voicedesign",
    "description": "Lock a voice persona \u2014 design, export, and reuse .qvoice embeddings for consistent character voices",
    "families": [
-    "qwen3_tts_voicedesign"
+    "qwen3-tts-voicedesign"
    ],
    "icon": "fingerprint",
    "kind": "generation",
    "label": "Voice Lock",
    "resolved": {
-    "family": "qwen3_tts_voicedesign",
-    "model": "qwen3_tts_voicedesign",
+    "family": "qwen3-tts-voicedesign",
+    "model": "qwen3-tts-voicedesign",
     "params": {}
    }
   }
  },
  "cards": [
+  {
+   "description": "Generate music \u2014 MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
+   "families": [
+    "music3"
+   ],
+   "genre": "audio",
+   "has_inference": false,
+   "has_rubric": false,
+   "id": "music",
+   "label": "Music",
+   "principles": [],
+   "skills": []
+  },
   {
    "description": "Generate sound effects \u2014 MOSS-SFX v2, describe the SOUND not the scene",
    "families": [
@@ -109,7 +138,8 @@
   {
    "description": "Text-to-speech \u2014 Qwen3-TTS with CustomVoice personas and instruct-text emotion control",
    "families": [
-    "qwen3-tts"
+    "qwen3-tts",
+    "qwen3-tts-base"
    ],
    "genre": "audio",
    "has_inference": false,
@@ -127,26 +157,13 @@
   {
    "description": "Lock a voice persona \u2014 design, export, and reuse .qvoice embeddings for consistent character voices",
    "families": [
-    "qwen3_tts_voicedesign"
+    "qwen3-tts-voicedesign"
    ],
    "genre": "audio",
    "has_inference": false,
    "has_rubric": false,
    "id": "voice-lock",
    "label": "Voice Lock",
-   "principles": [],
-   "skills": []
-  },
-  {
-   "description": "Generate music \u2014 MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
-   "families": [
-    "music3"
-   ],
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "music",
-   "label": "Music",
    "principles": [],
    "skills": []
   },
@@ -396,29 +413,13 @@
   },
   "qwen3-tts": {
    "genre": "audio",
-   "label": "Qwen3-TTS CustomVoice 1.7B"
-  },
-  "qwen3-tts-1-7b": {
-   "genre": "audio",
-   "label": "Qwen3-TTS CustomVoice 1.7B"
+   "label": "Qwen3-TTS CustomVoice 0.6B"
   },
   "qwen3-tts-base": {
    "genre": "audio",
-   "label": "Qwen3-TTS Base 1.7B"
+   "label": "Qwen3-TTS Base 0.6B"
   },
-  "qwen3-tts-voice-studio": {
-   "genre": "audio",
-   "label": "Qwen3-TTS CustomVoice 1.7B"
-  },
-  "qwen3-tts-voice-studio-1-7b": {
-   "genre": "audio",
-   "label": "Qwen3-TTS CustomVoice 1.7B"
-  },
-  "qwen3_tts_customvoice": {
-   "genre": "audio",
-   "label": "Qwen3-TTS CustomVoice 1.7B"
-  },
-  "qwen3_tts_voicedesign": {
+  "qwen3-tts-voicedesign": {
    "genre": "audio",
    "label": "Qwen3-TTS VoiceDesign 1.7B"
   },
@@ -1178,24 +1179,19 @@
    }
   },
   "moss-sfx": {
-   "defaults": {
-    "backend": "cuda"
-   },
-   "description": "MOSS-SFX v2 sound effects generation",
-   "engine": "audio_cpp",
+   "defaults": {},
+   "description": "MOSS-SFX v2 sound-effect generation \u2014 describe the SOUND not the scene",
+   "engine": "comfyui",
    "family": "moss-sfx",
    "form": "form_sound",
    "genre": "audio",
-   "has_agent": true,
    "has_inference": false,
    "has_rubric": false,
    "id": "moss-sfx",
    "label": "MOSS-SFX v2",
    "loras": [],
    "source": {
-    "filename": "MOSS-SFX-v2-GGUF",
-    "repo_id": "anomalyco/mse2-gguf",
-    "type": "huggingface"
+    "type": ""
    }
   },
   "moss-tts": {
@@ -1360,151 +1356,56 @@
   },
   "qwen3-tts": {
    "defaults": {
-    "backend": "cuda",
-    "cli": "/home/user/Documents/programs/vendor/my-stuff/audiocpp-fork/build/bin/audiocpp_cli",
-    "family": "qwen3_tts",
-    "model_path": "/mnt/data/models/audio/Qwen3-TTS-12Hz-0.6B-CustomVoice-merged",
-    "task": "tts"
+    "mode": "tts"
    },
-   "description": "Qwen3-TTS 12Hz CustomVoice 1.7B",
-   "engine": "audio_cpp",
+   "description": "Qwen3-TTS 12Hz CustomVoice 0.6B \u2014 preset personas and instruct-text emotion control",
+   "engine": "comfyui",
    "family": "qwen3-tts",
    "form": "form_tts",
    "genre": "audio",
-   "has_agent": true,
    "has_inference": true,
    "has_rubric": false,
    "id": "qwen3-tts",
-   "label": "Qwen3-TTS CustomVoice 1.7B",
+   "label": "Qwen3-TTS CustomVoice 0.6B",
    "loras": [],
    "source": {
-    "filename": "Qwen3-TTS-12Hz-1.7B-CustomVoice-GGUF",
-    "repo_id": "audio-cpp/audio.cpp-gguf",
-    "type": "huggingface"
-   }
-  },
-  "qwen3-tts-1-7b": {
-   "defaults": {
-    "backend": "cuda"
-   },
-   "description": "Qwen3-TTS 12Hz CustomVoice 1.7B",
-   "engine": "audio_cpp",
-   "family": "qwen3-tts-1-7b",
-   "form": "form_tts",
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "qwen3-tts-1-7b",
-   "label": "Qwen3-TTS CustomVoice 1.7B",
-   "loras": [],
-   "source": {
-    "filename": "Qwen3-TTS-12Hz-1.7B-CustomVoice-GGUF",
-    "repo_id": "audio-cpp/audio.cpp-gguf",
-    "type": "huggingface"
+    "type": ""
    }
   },
   "qwen3-tts-base": {
    "defaults": {
-    "backend": "cuda"
+    "mode": "tts"
    },
-   "description": "Qwen3-TTS 12Hz base 1.7B",
-   "engine": "audio_cpp",
+   "description": "Qwen3-TTS 12Hz Base 0.6B \u2014 plain text-to-speech, no persona",
+   "engine": "comfyui",
    "family": "qwen3-tts-base",
-   "form": "form_tts",
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "qwen3-tts-base",
-   "label": "Qwen3-TTS Base 1.7B",
-   "loras": [],
-   "source": {
-    "filename": "Qwen3-TTS-12Hz-1.7B-Base-GGUF",
-    "repo_id": "audio-cpp/audio.cpp-gguf",
-    "type": "huggingface"
-   }
-  },
-  "qwen3-tts-voice-studio": {
-   "defaults": {
-    "backend": "cuda"
-   },
-   "description": "Qwen3-TTS 12Hz CustomVoice 1.7B",
-   "engine": "audio_cpp",
-   "family": "qwen3-tts-voice-studio",
-   "form": "form_tts",
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "qwen3-tts-voice-studio",
-   "label": "Qwen3-TTS CustomVoice 1.7B",
-   "loras": [],
-   "source": {
-    "filename": "Qwen3-TTS-12Hz-1.7B-CustomVoice-GGUF",
-    "repo_id": "audio-cpp/audio.cpp-gguf",
-    "type": "huggingface"
-   }
-  },
-  "qwen3-tts-voice-studio-1-7b": {
-   "defaults": {
-    "backend": "cuda"
-   },
-   "description": "Qwen3-TTS 12Hz CustomVoice 1.7B",
-   "engine": "audio_cpp",
-   "family": "qwen3-tts-voice-studio-1-7b",
-   "form": "form_tts",
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "qwen3-tts-voice-studio-1-7b",
-   "label": "Qwen3-TTS CustomVoice 1.7B",
-   "loras": [],
-   "source": {
-    "filename": "Qwen3-TTS-12Hz-1.7B-CustomVoice-GGUF",
-    "repo_id": "audio-cpp/audio.cpp-gguf",
-    "type": "huggingface"
-   }
-  },
-  "qwen3_tts_customvoice": {
-   "defaults": {
-    "backend": "cuda"
-   },
-   "description": "Qwen3-TTS 12Hz CustomVoice 1.7B",
-   "engine": "audio_cpp",
-   "family": "qwen3_tts_customvoice",
-   "form": "form_tts",
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "qwen3_tts_customvoice",
-   "label": "Qwen3-TTS CustomVoice 1.7B",
-   "loras": [],
-   "source": {
-    "filename": "Qwen3-TTS-12Hz-1.7B-CustomVoice-GGUF",
-    "repo_id": "audio-cpp/audio.cpp-gguf",
-    "type": "huggingface"
-   }
-  },
-  "qwen3_tts_voicedesign": {
-   "defaults": {
-    "backend": "cuda",
-    "cli": "/home/user/Documents/programs/vendor/my-stuff/audiocpp-fork/build/bin/audiocpp_cli",
-    "family": "qwen3_tts",
-    "model_path": "/mnt/data/models/image-gen/comfyui/audio/qwen3-tts/hf/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
-    "task": "vdes"
-   },
-   "description": "Qwen3-TTS 12Hz VoiceDesign 1.7B",
-   "engine": "audio_cpp",
-   "family": "qwen3_tts_voicedesign",
    "form": "form_tts",
    "genre": "audio",
    "has_inference": true,
    "has_rubric": false,
-   "id": "qwen3_tts_voicedesign",
+   "id": "qwen3-tts-base",
+   "label": "Qwen3-TTS Base 0.6B",
+   "loras": [],
+   "source": {
+    "type": ""
+   }
+  },
+  "qwen3-tts-voicedesign": {
+   "defaults": {
+    "mode": "design"
+   },
+   "description": "Qwen3-TTS 12Hz VoiceDesign 1.7B \u2014 instruction-following voice design; the voice-lock lane",
+   "engine": "comfyui",
+   "family": "qwen3-tts-voicedesign",
+   "form": "form_tts",
+   "genre": "audio",
+   "has_inference": false,
+   "has_rubric": false,
+   "id": "qwen3-tts-voicedesign",
    "label": "Qwen3-TTS VoiceDesign 1.7B",
    "loras": [],
    "source": {
-    "filename": "Qwen3-TTS-12Hz-1.7B-VoiceDesign-GGUF",
-    "repo_id": "audio-cpp/audio.cpp-gguf",
-    "type": "huggingface"
+    "type": ""
    }
   },
   "rtx-vsr": {

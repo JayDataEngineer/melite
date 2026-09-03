@@ -1,0 +1,126 @@
+{
+ "defaults": {
+  "family": "moss_sfx_v2",
+  "model_path": "MOSS-SFX-v2-GGUF"
+ },
+ "engine": "comfyui",
+ "enhance_prompts": {
+  "lyrics": "",
+  "prompt": ""
+ },
+ "features": {
+  "modifiers": [],
+  "variant_groups": {
+   "Quant": {
+    "label": "Quant"
+   },
+   "Variant": {
+    "label": "Variant"
+   }
+  }
+ },
+ "fields": [
+  {
+   "label": "Sound Description",
+   "name": "prompt",
+   "required": true,
+   "tooltip": "Describe the SOUND itself, not the scene (e.g. 'sharp metallic clang with long decay')",
+   "type": "textarea"
+  },
+  {
+   "default": 5.0,
+   "label": "CFG",
+   "max": 20,
+   "min": 0,
+   "name": "guidance_scale",
+   "step": 0.1,
+   "tooltip": "Diffusion classifier-free guidance",
+   "type": "slider"
+  },
+  {
+   "default": 50,
+   "label": "Diffusion Steps",
+   "max": 500,
+   "min": 1,
+   "name": "n_diffusion_steps",
+   "step": 1,
+   "tooltip": "More = higher quality, slower",
+   "type": "slider"
+  },
+  {
+   "default": 10.0,
+   "label": "Duration (s)",
+   "max": 300,
+   "min": 0.5,
+   "name": "duration",
+   "step": 0.5,
+   "tooltip": "Output length in seconds",
+   "type": "slider"
+  },
+  {
+   "default": -1,
+   "label": "Seed",
+   "name": "seed",
+   "type": "seed"
+  }
+ ],
+ "form": "sfx",
+ "genre": "audio",
+ "label": "Sound Effects",
+ "model": "moss-sfx",
+ "schema_groups": [
+  {
+   "fields": [
+    {
+     "label": "Sound Description",
+     "name": "prompt",
+     "required": true,
+     "tooltip": "Describe the SOUND itself, not the scene (e.g. 'sharp metallic clang with long decay')",
+     "type": "textarea"
+    },
+    {
+     "default": 5.0,
+     "label": "CFG",
+     "max": 20,
+     "min": 0,
+     "name": "guidance_scale",
+     "step": 0.1,
+     "tooltip": "Diffusion classifier-free guidance",
+     "type": "slider"
+    },
+    {
+     "default": 50,
+     "label": "Diffusion Steps",
+     "max": 500,
+     "min": 1,
+     "name": "n_diffusion_steps",
+     "step": 1,
+     "tooltip": "More = higher quality, slower",
+     "type": "slider"
+    },
+    {
+     "default": 10.0,
+     "label": "Duration (s)",
+     "max": 300,
+     "min": 0.5,
+     "name": "duration",
+     "step": 0.5,
+     "tooltip": "Output length in seconds",
+     "type": "slider"
+    },
+    {
+     "default": -1,
+     "label": "Seed",
+     "name": "seed",
+     "type": "seed"
+    }
+   ],
+   "id": "",
+   "label": "Parameters",
+   "order": 0,
+   "zone": "params"
+  }
+ ],
+ "service": "moss-sfx",
+ "variants": []
+}

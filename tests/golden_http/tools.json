@@ -511,8 +511,41 @@
    "model": "moss-sfx",
    "name": "sfx_card",
    "params_schema": {
-    "properties": {},
-    "required": [],
+    "properties": {
+     "duration": {
+      "default": 10.0,
+      "description": "Output length in seconds",
+      "maximum": 300,
+      "minimum": 0.5,
+      "type": "number"
+     },
+     "guidance_scale": {
+      "default": 5.0,
+      "description": "Diffusion classifier-free guidance",
+      "maximum": 20,
+      "minimum": 0,
+      "type": "number"
+     },
+     "n_diffusion_steps": {
+      "default": 50,
+      "description": "More = higher quality, slower",
+      "maximum": 500,
+      "minimum": 1,
+      "type": "number"
+     },
+     "prompt": {
+      "description": "Describe the SOUND itself, not the scene (e.g. 'sharp metallic clang with long decay')",
+      "type": "string"
+     },
+     "seed": {
+      "default": -1,
+      "description": "Seed",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "prompt"
+    ],
     "type": "object"
    },
    "stage_title": "Sound Effects",
@@ -526,6 +559,20 @@
    "name": "tts_card",
    "params_schema": {
     "properties": {
+     "model": {
+      "default": "qwen3-tts",
+      "description": "The boarded family to run \u2014 the request's top-level `model`. Options: qwen3-tts, qwen3-tts-base.",
+      "enum": [
+       "qwen3-tts",
+       "qwen3-tts-base"
+      ],
+      "type": "string"
+     },
+     "qvoice": {
+      "description": "Pre-computed speaker embedding (.qvoice/.voice \u2014 the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one.",
+      "format": "path",
+      "type": "string"
+     },
      "seed": {
       "default": -1,
       "description": "Seed",
@@ -561,6 +608,10 @@
        "uncle_fu"
       ],
       "type": "string"
+     },
+     "voice_pca_strengths": {
+      "description": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} \u2014 subtle voice direction without re-designing the persona.",
+      "type": "string"
      }
     },
     "required": [
@@ -575,10 +626,15 @@
    "card": "voice-lock",
    "description": "Lock a voice persona \u2014 design, export, and reuse .qvoice embeddings for consistent character voices",
    "kind": "card-compose",
-   "model": "qwen3_tts_voicedesign",
+   "model": "qwen3-tts-voicedesign",
    "name": "voice_lock_card",
    "params_schema": {
     "properties": {
+     "qvoice": {
+      "description": "Pre-computed speaker embedding (.qvoice/.voice \u2014 the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one.",
+      "format": "path",
+      "type": "string"
+     },
      "reference_audio": {
       "description": "Optional reference clip to anchor the design.",
       "format": "path",
@@ -623,6 +679,10 @@
      },
      "voice_name": {
       "description": "Name for the locked persona \u2014 becomes the .qvoice filename stem. Reused across every future TTS render.",
+      "type": "string"
+     },
+     "voice_pca_strengths": {
+      "description": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} \u2014 subtle voice direction without re-designing the persona.",
       "type": "string"
      }
     },

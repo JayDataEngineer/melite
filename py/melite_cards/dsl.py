@@ -609,6 +609,28 @@ class MaskMod(Mod):
         tooltip='Work OUTSIDE the painted region instead.')
 
 
+
+class QvoiceMod(Mod):
+    """The qvoice input mod — surfaces exactly when a QwenTTS family
+    is selected (operator order, 2026-09-04: 'a mod for qvoice
+    input, that triggers in qwenTTS model showing up'). A .qvoice /
+    .voice file is a pre-computed speaker embedding — the
+    voice-lock card exports them; the TTS card consumes them for
+    consistent character voices. Fields default off: most runs use
+    the stock preset voice."""
+    pack = "qvoice"
+    qvoice = File(label='Voice (.qvoice)', group='qvoice', zone='mods',
+        order=0,
+        tooltip='Pre-computed speaker embedding (.qvoice/.voice — the '
+        'voice-lock card exports these). Present = synthesize with '
+        'THIS voice instead of the preset one.')
+    voice_pca_strengths = Textarea(label='PCA Steering', group='qvoice',
+        zone='mods', order=1,
+        tooltip='JSON knobs over the embedding\'s principal components, '
+        'e.g. {"pca_pc1.dir": 0.5} — subtle voice direction without '
+        're-designing the persona.')
+
+
 class LanPaintMod(Mod):
     """The LanPaint inpaint mod — input_image + a mask (the generic
     MaskMod, boarded beside this one) switch the builder to the

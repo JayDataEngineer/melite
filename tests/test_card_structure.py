@@ -172,6 +172,9 @@ def main():
     _TEMPLATE_BY_CARD = {
         "image-gen": "generate_t2i.json",
         "image-edit": "edit_i2i.json",
+        "tts": "tts_t1.json",
+        "voice-lock": "voicelock_t1.json",
+        "sfx": "sfx_t1.json",
     }
     for mid, mcls in sorted(_mcards.items()):
         card_id = getattr(mcls, "card", "") or ""

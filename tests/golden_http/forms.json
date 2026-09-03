@@ -1,1 +1,67 @@
-{"forms":{"image-gen":{"label":"Image","genre":"image","order":1,"plugin":"comfyui","sidebar_key":"image","default_service":"krea-2","hidden":false},"image-edit":{"label":"Image Edit","genre":"image","order":2,"plugin":"comfyui","sidebar_key":"image-edit","default_service":"img-edit","hidden":false},"tts":{"label":"Speech","genre":"audio","order":3,"plugin":"audio-cpp","sidebar_key":"audio","default_service":"qwen3-tts","hidden":false},"voice-lock":{"label":"Voice Lock","genre":"audio","order":4,"plugin":"audio-cpp","sidebar_key":"audio","default_service":"qwen3_tts_voicedesign","hidden":false},"music":{"label":"Music","genre":"audio","order":5,"plugin":"audio-cpp","sidebar_key":"audio","default_service":"music3","hidden":false},"h3-timeline":{"label":"H3 Timeline","genre":"video","order":6,"plugin":"comfyui","sidebar_key":"video","default_service":"h3-timeline","hidden":false}}}
+{
+ "forms": {
+  "h3-timeline": {
+   "default_service": "h3-timeline",
+   "genre": "video",
+   "hidden": false,
+   "label": "H3 Timeline",
+   "order": 6,
+   "plugin": "comfyui",
+   "sidebar_key": "video"
+  },
+  "image-edit": {
+   "default_service": "img-edit",
+   "genre": "image",
+   "hidden": false,
+   "label": "Image Edit",
+   "order": 2,
+   "plugin": "comfyui",
+   "sidebar_key": "image-edit"
+  },
+  "image-gen": {
+   "default_service": "krea-2",
+   "genre": "image",
+   "hidden": false,
+   "label": "Image",
+   "order": 1,
+   "plugin": "comfyui",
+   "sidebar_key": "image"
+  },
+  "music": {
+   "default_service": "music3",
+   "genre": "audio",
+   "hidden": false,
+   "label": "Music",
+   "order": 5,
+   "plugin": "comfyui",
+   "sidebar_key": "audio"
+  },
+  "sfx": {
+   "default_service": "moss-sfx",
+   "genre": "audio",
+   "hidden": false,
+   "label": "Sound Effects",
+   "order": 7,
+   "plugin": "comfyui",
+   "sidebar_key": "audio"
+  },
+  "tts": {
+   "default_service": "qwen3-tts",
+   "genre": "audio",
+   "hidden": false,
+   "label": "Speech",
+   "order": 3,
+   "plugin": "comfyui",
+   "sidebar_key": "audio"
+  },
+  "voice-lock": {
+   "default_service": "qwen3-tts-voicedesign",
+   "genre": "audio",
+   "hidden": false,
+   "label": "Voice Lock",
+   "order": 4,
+   "plugin": "comfyui",
+   "sidebar_key": "audio"
+  }
+ }
+}

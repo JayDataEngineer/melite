@@ -123,14 +123,16 @@ def main():
          ("action_cards", "image", "image-edit")),
         ("h3-timeline", "comfyui", "h3-timeline",
          ("action_cards", "video", "h3-timeline")),
-        ("tts", "audio-cpp", "qwen3-tts", ("cards", "tts")),
-        ("voice-lock", "audio-cpp", "qwen3-tts-voicedesign",
-         ("cards", "voice-lock")),
-        # music rehomed 2026-09-04: the FIRST audio card on native
-        # ComfyUI core (MiniMax Music 3 rides upstream core nodes —
-        # no extension pack; the A-cluster lead)
+        # the audio A-cluster rehomed 2026-09-04 (music rides native
+        # core; tts/voice-lock/sfx ride the split packs' classes)
+        ("tts", "comfyui", "qwen3-tts",
+         ("action_cards", "audio", "tts")),
+        ("voice-lock", "comfyui", "qwen3-tts-voicedesign",
+         ("action_cards", "audio", "voice-lock")),
         ("music", "comfyui", "music3",
          ("action_cards", "audio", "music")),
+        ("sfx", "comfyui", "moss-sfx",
+         ("action_cards", "audio", "sfx")),
     ]
     for cid, engine, model, home in FLIPPED:
         cpath = _card_py(engine, *home)
@@ -209,13 +211,19 @@ def main():
             "compose.py"))
     _ac = _ilu.module_from_spec(_spec)
     _spec.loader.exec_module(_ac)
-    pairs = validate_against_cards(models, cards,
-                                   engine_truth=_ac.ENGINE_TRUTH_KEYS)
+    import plugins as _pl
+    _cc = _pl.load_compose("comfyui")
+    _truth = _ac.ENGINE_TRUTH_KEYS + tuple(_cc.ENGINE_TRUTH_KEYS)
+    pairs = validate_against_cards(models, cards, engine_truth=_truth)
     check("cross-validation pairs (all boarded families)",
           pairs == [("img-edit", "image-edit"),
                     ("krea-2", "image-gen"),
+                    ("moss-sfx", "sfx"),
                     ("music3", "music"),
-                    ("qwen-img-edit-2511", "image-edit")], repr(pairs))
+                    ("qwen-img-edit-2511", "image-edit"),
+                    ("qwen3-tts", "tts"),
+                    ("qwen3-tts-base", "tts"),
+                    ("qwen3-tts-voicedesign", "voice-lock")], repr(pairs))
 
     # tool.json snapshots are DERIVED artifacts — the card class is the
     # SSOT (mods declared at the model level, absorbed through models=);

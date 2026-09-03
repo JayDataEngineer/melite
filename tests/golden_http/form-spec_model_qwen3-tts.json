@@ -1,4 +1,25 @@
 {
+ "defaults": {
+  "family": "qwen3_tts",
+  "mode": "tts",
+  "model_path": "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged"
+ },
+ "engine": "comfyui",
+ "enhance_prompts": {
+  "lyrics": "",
+  "prompt": null
+ },
+ "features": {
+  "modifiers": [],
+  "variant_groups": {
+   "Quant": {
+    "label": "Quant"
+   },
+   "Variant": {
+    "label": "Variant"
+   }
+  }
+ },
  "fields": [
   {
    "label": "Text",
@@ -46,9 +67,20 @@
    "label": "Seed",
    "name": "seed",
    "type": "seed"
+  },
+  {
+   "group": "qvoice",
+   "label": "PCA Steering",
+   "name": "voice_pca_strengths",
+   "order": 1,
+   "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} \u2014 subtle voice direction without re-designing the persona.",
+   "type": "textarea"
   }
  ],
  "form": "tts",
+ "genre": "audio",
+ "label": "TTS",
+ "model": "qwen3-tts",
  "schema_groups": [
   {
    "fields": [
@@ -104,7 +136,30 @@
    "label": "Parameters",
    "order": 0,
    "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "label": "Voice (.qvoice)",
+     "name": "qvoice",
+     "order": 0,
+     "tooltip": "Pre-computed speaker embedding (.qvoice/.voice \u2014 the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one.",
+     "type": "file"
+    },
+    {
+     "label": "PCA Steering",
+     "name": "voice_pca_strengths",
+     "order": 1,
+     "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} \u2014 subtle voice direction without re-designing the persona.",
+     "type": "textarea"
+    }
+   ],
+   "id": "qvoice",
+   "label": "Qvoice",
+   "order": 1,
+   "zone": "mods"
   }
  ],
- "service": "qwen3-tts"
+ "service": "qwen3-tts",
+ "variants": []
 }
