@@ -68,7 +68,8 @@ def main():
         return os.path.join(root, "card.py")
 
     card_py = os.path.join(REPO, "plugins", "engines", "comfyui",
-                           "action_cards", "image", "image-gen", "card.py")
+                           "action_cards", "image", "image-gen", "py",
+                           "card.py")
     check("image-gen card.py loads", os.path.isfile(card_py))
     cls = load_card_py(card_py, "comfyui")
     check("card id", cls.id == "image-gen", cls.id)
@@ -974,9 +975,9 @@ def main():
     # chains generic LoraLoaderModelOnly nodes; bare posts are
     # byte-stable; closed channels and unknown ids refuse LOUD).
     _gen = os.path.join(REPO, "plugins/engines/comfyui/action_cards",
-                        "image", "image-gen")
+                        "image", "image-gen", "py")
     sys.path.insert(0, _gen)
-    import generate as _gen_mod
+    import compose as _gen_mod
 
     _bare = {"model": "krea-2", "params": {"prompt": "x", "seed": 7}}
     _rc, _y, _ex, _e = _gen_mod.compose(_bare, "krea-2", "")

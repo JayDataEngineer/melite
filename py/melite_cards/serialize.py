@@ -20,7 +20,15 @@ from .dsl import ActionCard, BINARY_FIELD_TYPES, ValidationError, _norm
 
 
 def _module_name(engine, card_dir):
-    return "plugin_cards.%s.%s" % (engine, os.path.basename(card_dir))
+    """Module identity from the CARD dir (genre + card), never the
+    shared py/ leaf — the day three cards moved onto THE CARD
+    PATTERN they all keyed as plugin_cards.<engine>.py and the
+    second load silently returned the first card's class."""
+    parts = os.path.normpath(card_dir).split(os.sep)
+    while parts and parts[-1] == "py":
+        parts.pop()
+    tail = ".".join(parts[-2:]) if len(parts) >= 2 else parts[-1]
+    return "plugin_cards.%s.%s" % (engine, tail)
 
 
 def load_card_py(path, engine="engine"):

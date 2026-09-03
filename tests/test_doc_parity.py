@@ -81,12 +81,12 @@ for row in getattr(h3_cls, "card_knobs", ()):
 from melite_cards import load_card_py  # noqa: E402
 
 _CARD_DOCS = [
-    (PLUGIN / "action_cards" / "image" / "image-gen" / "card.py", "image_t2i", ()),
+    (PLUGIN / "action_cards" / "image" / "image-gen" / "py" / "card.py", "image_t2i", ()),
     # 'shift' is a renderer-internal knob (ModelSamplingAuraFlow template
     # value the C port read from params but the card surface never
     # offered — it rides the 1.0 default). Review round: surface it on
     # the card or retire it from the doc.
-    (PLUGIN / "action_cards" / "image" / "image-edit" / "card.py", "image_edit",
+    (PLUGIN / "action_cards" / "image" / "image-edit" / "py" / "card.py", "image_edit",
      ("shift",)),
 ]
 for card_path, family, internal in _CARD_DOCS:

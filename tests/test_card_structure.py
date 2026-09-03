@@ -1,0 +1,173 @@
+#!/usr/bin/env python3
+"""THE STRUCTURE WALL (operator order, 2026-09-04: "clearly we need
+some sort of validation on file and folder structure... the timeline
+action card, the golden base, is different than the img-gen action
+card").
+
+Every action card dir under this engine's action_cards/ must match
+ONE skeleton — the golden base (h3-timeline):
+
+    action_cards/<genre>/<card>/
+      agents/            # AGENT.md (+ prompts.yaml, skills/) — never
+                         # an AGENT.md at the card root
+      py/                # ALL python: __init__.py, card.py, compose.py
+                         # (the arm — one stem, every card), renderer.py
+                         # when the card renders, subpackages at will
+      ui/                # optional (studio surfaces)
+      tool.json          # derived snapshot (cards that serve python)
+
+Root-level *.py, root AGENT.md, and surprise root entries are drift.
+Pure-UI cards (ui/ only, no python) pass untouched. A py/ with no
+py/card.py is legal ONLY as a cross-engine arm satellite (music: the
+card surface lives in audio-cpp/cards/music/ — the wall asserts the
+owner exists and declares the same card id).
+
+Run: python3 tests/test_card_structure.py
+"""
+
+import json
+import os
+import subprocess
+import sys
+
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ACTION_CARDS = os.path.join(REPO, "plugins", "engines", "comfyui",
+                            "action_cards")
+GOLDEN = os.path.join(ACTION_CARDS, "video", "h3-timeline")
+
+ALLOWED_ROOT = {"agents", "py", "ui", "tool.json", "README.md"}
+PY_REQUIRED = {"__init__.py", "compose.py"}
+
+PASS = FAIL = 0
+
+
+def check(name, ok, detail=""):
+    global PASS, FAIL
+    print("  %s  %s%s" % ("ok" if ok else "FAIL", name,
+                          (" — %s" % detail) if detail and not ok else ""))
+    PASS, FAIL = PASS + ok, FAIL + (not ok)
+
+
+def card_dirs():
+    """(genre, card_dir) for every card dir — skips non-genre roots
+    (node_modules shared by the ui surfaces, dotdirs)."""
+    out = []
+    for genre in sorted(os.listdir(ACTION_CARDS)):
+        if genre.startswith(".") or genre == "node_modules":
+            continue
+        gdir = os.path.join(ACTION_CARDS, genre)
+        if not os.path.isdir(gdir):
+            continue
+        for card in sorted(os.listdir(gdir)):
+            cdir = os.path.join(gdir, card)
+            if not os.path.isdir(cdir) or card.startswith("."):
+                continue
+            if card == "ui":
+                # the genre's shared VIEWER package (viewers/,
+                # node_modules, package.json) — not an action card
+                continue
+            out.append((genre, cdir))
+    return out
+
+
+def cross_engine_owner(genre, cdir):
+    """The card id another engine's cards/ tree owns, or None — a py/
+    dir with no card.py must be an arm satellite for one of them."""
+    card = os.path.basename(cdir)
+    eng_root = os.path.join(REPO, "plugins", "engines")
+    for engine in sorted(os.listdir(eng_root)):
+        if engine.startswith(".") or engine == "comfyui":
+            continue
+        owner = os.path.join(eng_root, engine, "cards", card, "card.py")
+        if os.path.isfile(owner):
+            return owner
+    return None
+
+
+def validate_card(genre, cdir):
+    label = "%s/%s" % (genre, os.path.basename(cdir))
+    entries = sorted(e for e in os.listdir(cdir)
+                     if not e.startswith("."))
+
+    # 1. no python at the card root — THE CARD PATTERN (py/ only)
+    root_py = [e for e in entries if e.endswith(".py")]
+    check("%s: no root python" % label, not root_py,
+          "root %s — python lives in py/" % root_py)
+
+    # 2. only the skeleton's entries at the root
+    strays = [e for e in entries if e not in ALLOWED_ROOT]
+    check("%s: root skeleton only" % label, not strays,
+          "unexpected %s (allowed: %s)" % (strays, sorted(ALLOWED_ROOT)))
+
+    # 3. AGENT.md lives under agents/, never at the root
+    check("%s: AGENT.md under agents/" % label,
+          "AGENT.md" not in entries,
+          "root AGENT.md — the golden base keeps it in agents/")
+
+    has_py = "py" in entries
+    py_dir = os.path.join(cdir, "py")
+    if has_py:
+        # 4. the package is real and the arm is py/compose.py
+        py_entries = set(os.listdir(py_dir))
+        missing = sorted(PY_REQUIRED - py_entries)
+        check("%s: py package complete" % label, not missing,
+              "py/ missing %s" % missing)
+
+        # 5. identity: py/card.py, or a cross-engine arm satellite
+        if "card.py" not in py_entries:
+            owner = cross_engine_owner(genre, cdir)
+            check("%s: arm satellite has a cross-engine owner" % label,
+                  owner is not None,
+                  "py/ has no card.py and no other engine claims "
+                  "cards/%s/" % os.path.basename(cdir))
+
+        # 6. a python card serves its derived tool snapshot — here,
+        #    or at its cross-engine card-surface owner
+        owner = (cross_engine_owner(genre, cdir)
+                 if "card.py" not in py_entries else None)
+        owner_tool = (os.path.join(os.path.dirname(owner), "tool.json")
+                      if owner else None)
+        check("%s: tool.json present" % label,
+              "tool.json" in entries
+              or bool(owner_tool and os.path.isfile(owner_tool)),
+              "python card without tool.json (here or at the owner)")
+
+
+def main():
+    print("THE STRUCTURE WALL — action cards vs the golden base")
+    dirs = card_dirs()
+    check("action cards discovered", len(dirs) >= 6,
+          "only %d card dirs" % len(dirs))
+
+    # the golden base proves the wall against itself first
+    check("golden base present", os.path.isdir(GOLDEN), GOLDEN)
+    for genre, cdir in dirs:
+        validate_card(genre, cdir)
+
+    # the dispatch table names real dirs with real arms (one stem:
+    # py/compose.py — the per-card generate/edit/music stems are over)
+    sys.path.insert(0, os.path.join(REPO, "py"))
+    comfyui_root = os.path.join(REPO, "plugins", "engines", "comfyui")
+    sys.path.insert(0, comfyui_root)
+    sys.path.insert(0, os.path.join(comfyui_root, "compose"))
+    import compose as _compose_pkg  # noqa: E402
+    for card_id, rel in sorted(_compose_pkg._CARD_DIR_BY_CARD.items()):
+        arm = os.path.join(ACTION_CARDS, rel, "py", "compose.py")
+        check("dispatch: %s -> py/compose.py" % card_id,
+              os.path.isfile(arm), "missing %s" % arm)
+
+    # bytecode never tracked under action_cards
+    tracked = subprocess.run(
+        ["git", "-C", REPO, "ls-files", "--",
+         "plugins/engines/comfyui/action_cards"],
+        capture_output=True, text=True).stdout.splitlines()
+    dirty = [t for t in tracked
+             if "__pycache__" in t or t.endswith(".pyc")]
+    check("no bytecode tracked under action_cards", not dirty, dirty[:3])
+
+    print("PASS %d / FAIL %d" % (PASS, FAIL))
+    return 1 if FAIL else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
