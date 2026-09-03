@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Editor form/card-data readers — stdlib-only Python port of the C gateway.
+"""Editor form/card-data readers — THE form surface (stdlib-only.
+Born as a port of the C gateway; C retired 2026-09-02. Since C
+retirement (2026-09-03) the golden_http pins are the estate's own
+wire contract — this module IS the implementation, not a twin.
 
 Routes ported (C sources in this repo):
   GET /v1/forms                 -> handle_lane_registry "/v1/forms" branch

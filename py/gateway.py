@@ -77,9 +77,9 @@ def parse_params_scalar(line_value):
 def parse_pipeline_text(text):
     """Parse the pipeline mini-YAML the estate uses (nodes/input_from/params).
 
-    The C dag parser reads a constrained YAML subset; this does the same so
-    pipelines/NAME/pipeline.yaml stays byte-identical for both gateways
-    during the transition.
+    A constrained YAML subset — the dialect the estate's pipeline files
+    speak (inherited from the C dag parser at C retirement, 2026-09-03;
+    the parity goldens pin it). There is no other gateway.
     """
     nodes = []
     meta = {}

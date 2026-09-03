@@ -156,3 +156,39 @@ cascade and now THE law for how this repo writes python declarations:
 Where classes remain right: `Model` subclass per family; mods
 (`Loras(LorasMod)` — genuine schema flavors under the single `Mod`
 parent); anything with behavior or per-family taxonomy.
+
+## C RETIREMENT (operator order, 2026-09-03, verbatim)
+
+> "Okay, let's fully retire C then"
+
+The python gateway is THE gateway. There is no twin, no transition,
+and no live C obligation anywhere in the estate (src/server.cpp was
+deleted 2026-09-02; the compose-parity runner compares against
+RECORDED outputs, never a live binary).
+
+What retired with this order:
+
+- **The goldens changed owner, not bytes.** `tests/golden_http/` was
+  "what C served"; it is now the ESTATE'S OWN regression pin — the
+  wire contract, full stop. The C-era wire quirks (the capitalize
+  quirk, variant `defaults: {}`, the caps and precedence rules
+  documented in the route modules) are no longer "C behavior we
+  reproduce" — they are OUR wire format, and the goldens are its
+  authority. Changing one means changing the contract deliberately,
+  never by drift.
+- **State is not contract.** The C-era `pipelines/runs` and
+  `pipelines/drafts` snapshots (one dead server's 174 runs / 546
+  drafts) are deleted; those routes are CONTRACT-pinned in the
+  harness (envelope + count invariant + row shape). The skip entries
+  and their "C-parity holdover" mode are gone.
+- **Transition language is resolved.** "both gateways during the
+  transition" and module-header "port of the C gateway" framings are
+  retired where they framed the py side as a twin; historical
+  references inside route modules (quirk provenance: "the C's
+  off-by-one", line-number citations) are PROVENANCE and stay — they
+  explain why the wire format is what it is.
+
+Naming consequence (deferred, deliberate): the `py/` directory name
+earned its keep by contrasting with the C side. That contrast is now
+historical; a role-rename, if ever wanted, is its own coordinated
+order — nothing here requires it.

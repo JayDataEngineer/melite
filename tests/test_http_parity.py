@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """test_http_parity.py — HTTP-layer golden wall for the editor data surface.
 
-The C gateway (src/server.cpp, retired 2026-09-02) served the deck/editor
-consumers on :33081. tests/golden_http/ holds its captured responses; this
-wall boots the PYTHON gateway on a scratch port (scratch OUT_ROOT via
-env override) and asserts route-level parity for the deck-critical GET
-surface. The verified behavior is the CONTRACT — deviations must be
-documented in the route module, never here.
+The goldens in tests/golden_http/ were captured from the C gateway
+(src/server.cpp, retired 2026-09-02) and, since C RETIREMENT (operator
+order, 2026-09-03), they are the ESTATE'S OWN regression pin — the wire
+contract, full stop. This wall boots the gateway on a scratch port
+(scratch OUT_ROOT via env override) and asserts route-level parity for
+the deck-critical GET surface. State-bearing routes (runs/drafts) are
+CONTRACT-pinned in-harness, not golden-pinned — server state is not a
+contract. Deviations must be documented in the route module, never here.
 
 Run: python3 tests/test_http_parity.py
 """
@@ -135,9 +137,6 @@ def main():
             ("plugins", "deep"),
             ("health", "deep"),
             ("pipelines/yaml/list", "deep"),
-            # runs/drafts goldens are C-era snapshots — skip post-flip
-            ("pipelines/runs", "skip"),
-            ("pipelines/drafts", "skip"),
             ("themes", "deep"),
             ("tags", "deep"),
             ("services", "deep"),
@@ -148,9 +147,6 @@ def main():
             ("models", "deep"),
         ]
         for r, mode in routes:
-            if mode == "skip":
-                check("GET /v1/%s" % r, True, "(skipped: C-parity holdover post-flip)")
-                continue
             fn = r.translate(str.maketrans("/?=&", "____"))
             gpath = GOLDEN / ("%s.json" % fn)
             if not gpath.exists():
@@ -165,10 +161,29 @@ def main():
             div = cmp_fn(golden, body)
             check("GET /v1/%s" % r, div is None, div or "")
 
-        # queue door parity (C returned these exact shapes)
+        # queue door wire contract
         code, body = get(port, "/v1/queue")
         check("GET /v1/queue shape", code == 200 and set(body) >= {
             "queued", "running", "active", "queued_ids"}, str(body)[:80])
+
+        # C RETIREMENT: state-bearing routes are CONTRACT-pinned, not
+        # golden-pinned — the deleted C-era snapshots (174 runs / 546
+        # drafts) captured one dead server's state: history, not
+        # contract. The pin: envelope + count invariant + row shape.
+        code, body = get(port, "/v1/pipelines/runs")
+        rows = body.get("runs", []) if isinstance(body, dict) else []
+        check("GET /v1/pipelines/runs contract",
+              code == 200 and set(body) >= {"count", "runs"}
+              and body["count"] == len(rows)
+              and all(set(r) >= {"run_id", "status"} for r in rows),
+              str(body)[:80])
+        code, body = get(port, "/v1/pipelines/drafts")
+        rows = body.get("drafts", []) if isinstance(body, dict) else []
+        check("GET /v1/pipelines/drafts contract",
+              code == 200 and set(body) >= {"count", "drafts"}
+              and body["count"] == len(rows)
+              and all(set(d) >= {"draft_id", "model"} for d in rows),
+              str(body)[:80])
 
         # unknown run: sidecar-aware 404 stays loud
         code, body = get(port, "/v1/pipelines/status/run-does-not-exist-000")
