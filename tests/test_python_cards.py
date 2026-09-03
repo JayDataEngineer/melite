@@ -274,6 +274,55 @@ def main():
         finally:
             _ef._iter_plugin_engines = orig_iter
 
+    # ── drift walls: the cards tree cannot rot ────────────────────────
+    # rung 8 (inverse): renderer payload lives ONLY in card packages.
+    # Any renderer.py under an engine tree must sit inside an
+    # action_cards/ dir — a renderer next to a model is the regression
+    # rung 8 exists to prevent.
+    from pathlib import Path as _P
+    _repo = _P(REPO)
+    _misplaced = sorted(
+        str(r.relative_to(_repo)) for r in
+        _repo.glob("plugins/engines/*/models/**/renderer.py")) + sorted(
+        str(r.relative_to(_repo)) for r in
+        _repo.glob("plugins/engines/*/models/**/co_script_renderer.py"))
+    check("no renderer payload under models/ (rung 8)",
+          not _misplaced, "; ".join(_misplaced[:3]))
+    _card_renderers = sorted(
+        str(r.relative_to(_repo)) for r in
+        _repo.glob("plugins/engines/*/action_cards/**/renderer.py"))
+    check("card renderers exist (rung 8 has surface)",
+          len(_card_renderers) >= 4, repr(_card_renderers[:6]))
+
+    # rung 5: the compose bus owns import mechanics — zero sys.path
+    # rituals anywhere under action_cards/. Pattern matches the CALL
+    # (path.insert/append), not one spelling.
+    def _ritual(txt):
+        return "path.insert(" in txt or "path.append(" in txt
+    _rituals = sorted(
+        str(f.relative_to(_repo)) for f in
+        _repo.glob("plugins/engines/*/action_cards/**/*.py")
+        if _ritual(f.read_text(errors="replace")))
+    check("zero sys.path rituals under action_cards/ (rung 5)",
+          not _rituals, "; ".join(_rituals[:3]))
+
+    # dead card refs refuse (the migration amnesty is over): a model
+    # declaring card= for a card that does not exist is drift.
+    from melite_models import ModelError
+    _dead_probe = dict(models)
+    class _Ghost:  # minimal shape validate_against_cards reads
+        id = "zombie"
+        card = "no-such-card"
+    _dead_probe["zombie"] = _Ghost
+    try:
+        from melite_models import validate_against_cards
+        # ghost ALONE (real models need their engine_truth keys; the
+        # ghost has no defaults — the refusal path is isolated)
+        validate_against_cards({"zombie": _Ghost}, cards)
+        check("dead card= ref refuses", False, "no refusal")
+    except ModelError as e:
+        check("dead card= ref refuses", "no known card" in str(e))
+
     print("PASS %d / FAIL %d" % (PASS, FAIL))
     return 1 if FAIL else 0
 

@@ -166,7 +166,67 @@ with tempfile.TemporaryDirectory() as td:
     # duplicate model ids across trees refuse
     check("scan dedups", "krea-2" in scan_engine_models(REPO))
 
-# ── 5. end-to-end: catalog serves the class row ─────────────────────
+# ── 5. drift walls: the models tree cannot rot ────────────────────────
+# These are the structural enforcements that make models/ drift-proof:
+# rung 8 (no render payload), rung 5 (loader owns import mechanics),
+# and the route law (one owner per route; no shadowing another family).
+
+# rung 8: NO renderer payload under models/ — cards render, models are
+# data. A stray co_script_renderer.py is dead code at best, drift at
+# worst; the wall refuses it the moment it appears.
+from pathlib import Path as _P
+_REPO_P = _P(REPO)
+_renderer_like = sorted(
+    str(p.relative_to(_REPO_P)) for p in
+    _REPO_P.glob("plugins/engines/*/models/**/co_script_renderer.py")) + \
+    sorted(str(p.relative_to(_REPO_P)) for p in
+           _REPO_P.glob("plugins/engines/*/models/**/renderer.py"))
+check("no renderer payload under models/ (rung 8)",
+      not _renderer_like, "; ".join(_renderer_like[:3]))
+
+# rung 5: the loader owns import mechanics — zero sys.path rituals in
+# any model.py or mods/*.py under every engine's models tree. The
+# pattern matches the CALL (path.insert/append), not one spelling —
+# `import sys as _s; _s.path.insert(...)` is the same disease.
+def _rituals_in(text):
+    return "path.insert(" in text or "path.append(" in text
+_ritual_files = []
+for _mp in _REPO_P.glob("plugins/engines/*/models/**/model.py"):
+    if _rituals_in(_mp.read_text(errors="replace")):
+        _ritual_files.append(str(_mp.relative_to(REPO)))
+for _mp in _REPO_P.glob("plugins/engines/*/models/**/mods/*.py"):
+    if _rituals_in(_mp.read_text(errors="replace")):
+        _ritual_files.append(str(_mp.relative_to(REPO)))
+check("zero sys.path rituals in the models tree (rung 5)",
+      not _ritual_files, "; ".join(_ritual_files[:3]))
+
+# route law: every NON-MODEL route is owned by exactly ONE model (the
+# route lens would be ambiguous otherwise). A route that names another
+# model's id is a LEGAL BRIDGE (h3's timeline variants submit as
+# model=h3-timeline — the C pattern), not a shadow: the family lookup
+# serves it, by design.
+_all_models = scan_engine_models(REPO)
+_route_owner = {}
+for _mid, (_path, _cls) in _all_models.items():
+    for _v in _cls.variants:
+        _rs = {_v.route or _mid}
+        for _c in _v.cells:
+            _rs.add(_c.route or _v.route or _mid)
+        for _r in _rs:
+            _route_owner.setdefault(_r, set()).add(_mid)
+_multi = {r: sorted(ms) for r, ms in _route_owner.items() if len(ms) > 1}
+check("every route owned by exactly one model",
+      not _multi, repr(_multi))
+_non_model_routes = {r: ms for r, ms in _route_owner.items()
+                     if r not in _all_models}
+_collide = {r: sorted(ms) for r, ms in _non_model_routes.items()
+            if len(ms) > 1}
+check("non-model routes: one owner each (route lens unambiguous)",
+      not _collide, repr(_collide))
+check("route map is non-empty (the lens has surface)",
+      len(_non_model_routes) >= 2, repr(sorted(_non_model_routes)))
+
+# ── 6. end-to-end: catalog serves the class row ─────────────────────
 pairs = catalog._scan_model_dir(KREA_DIR)
 check("catalog serves one row", len(pairs) == 1)
 srow, smeta = pairs[0]

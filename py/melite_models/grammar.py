@@ -425,6 +425,26 @@ class Model(metaclass=_ModelMeta):
                 "%s.lane_inputs must be a LaneInputs row (weight facts "
                 "for the card renderer — models are data, cards render)"
                 % cls.__name__)
+        if isinstance(li, LaneInputs) and li.unet_variant:
+            v = cls._variant_(li.unet_variant)
+            if v is None:
+                raise ModelError(
+                    "%s.lane_inputs names variant %r which it does not "
+                    "declare — the row is dead weight (drift wall)"
+                    % (cls.__name__, li.unet_variant))
+            cell = cls._cell_(v, li.unet_quant or None)
+            if cell is None:
+                raise ModelError(
+                    "%s.lane_inputs names cell (%s, %s) which variant "
+                    "%r does not declare" % (cls.__name__,
+                                             li.unet_variant,
+                                             li.unet_quant,
+                                             li.unet_variant))
+            if cell.artifact is None:
+                raise ModelError(
+                    "%s.lane_inputs derives its unet from cell (%s, %s) "
+                    "which carries no artifact — state unet= instead"
+                    % (cls.__name__, li.unet_variant, li.unet_quant))
         if cls.genre and cls.genre not in _GENRE_VALUES:
             raise ModelError(
                 "%s.genre %r is not in the closed vocabulary %s"
@@ -727,6 +747,11 @@ def validate_against_cards(models, cards, engine_truth=()):
     for mid, cls in sorted(models.items()):
         card_id = getattr(cls, "card", "")
         card = cards.get(card_id)
+        if card is None and card_id:
+            raise ModelError(
+                "model %s: card=%r names no known card — the "
+                "migration amnesty is over; a dead card ref is drift, "
+                "not a skip" % (cls.id, card_id))
         if card is None:
             continue
         domains = {f.name: f for f in card._fields_}
