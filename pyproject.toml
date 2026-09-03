@@ -1,0 +1,13 @@
+# The estate python — the gateway's entire third-party surface.
+#
+# PROVISIONING LAW: this env is the estate's OWN (resilience law —
+# the gateway must survive comfy torch chaos, so it never shares a
+# bloodstream with the renderer by default). Power users MAY fold
+# these deps into a comfy env; the surface is pydantic-only, so
+# folding is safe. uv lock pins; uv sync materializes.
+[project]
+name = "melite-gateway"
+version = "0.1.0"
+description = "inference.cpp estate gateway (py/ + plugin compose)"
+requires-python = ">=3.12"
+dependencies = ["pydantic>=2.13"]

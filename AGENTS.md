@@ -182,6 +182,46 @@ parent); anything with behavior or per-family taxonomy.
   submodule dir for in-tree names) and REFUSES loudly before any
   graph is emitted.
 
+## PROVISIONING LAW (operator order, 2026-09-03, verbatim)
+
+> "the user comes before hand with their own comfyui, then this sits
+>  on top of it"
+> "It would impose less of a burden on power users, if the python
+>  that runs this system, and comfyui, shared a single python venv"
+> "But yes, let's build it out now, clean as possible"
+
+ONE interface, TWO modes — the estate code NEVER knows the
+difference (both modes speak HTTP + declared extensions; managed is
+a deployment choice, never an assumption):
+
+- **byo (default):** the user's own ComfyUI, anywhere — local,
+  remote, cloud, updated. The estate VERIFIES (tools/provision.py
+  verify: config shape, live /system_stats + /object_info probe)
+  and NEVER installs one.
+- **managed (opt-in via `provision: "managed"` in the endpoint
+  config):** the estate is its own most convenient customer.
+  `infra/comfyui/` is the recipe — uv-locked, ComfyUI core pinned
+  at an exact git ref (the 2026-08-31 audit commit); version hops
+  are deliberate, reviewable lock bumps. `tools/provision.py sync`
+  materializes `data/runtime/comfyui/.venv` — weights NEVER move
+  (extra_model_paths.yaml, generated from `model_base_path`, points
+  at the deployment's persistent storage); estate streams serve
+  input/output (`data/input`, `data/temp`).
+- **Management plane is ONE: comfy-mcp** (EXTENSION LAW). The
+  managed env deliberately ships NO comfyui-manager — two managers
+  is one too many.
+- **Bloodstreams stay separate by default** (resilience law: the
+  gateway must survive comfy torch chaos). The gateway env is
+  root `pyproject.toml` — pydantic-only, a WALL keeps it that way.
+  Power users may fold it into a comfy env; the surface is thin
+  enough that folding is safe. Remote/cloud deployments make
+  sharing impossible anyway — sharing is a local luxury, never a
+  load-bearing assumption.
+
+Enforced by tests/test_provision.py (13 checks: config shape,
+pydantic-only surface, git-pinned core, manager-free env, BYO
+never-installs refusal, dead-instance refusal).
+
 ## C RETIREMENT (operator order, 2026-09-03, verbatim)
 
 > "Okay, let's fully retire C then"

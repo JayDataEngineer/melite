@@ -1,0 +1,45 @@
+# MANAGED ComfyUI runtime — uv-locked, git-pinned.
+#
+# PROVISIONING LAW: the estate VERIFIES a user's ComfyUI (BYO,
+# default) and never installs one — EXCEPT in "managed" deployments,
+# where the estate is its own most convenient customer. This project
+# is that mode's recipe: ComfyUI core pinned to an exact git ref
+# (version hops = a deliberate, reviewable lock bump — no git-pull
+# roulette), torch from the CUDA index, everything frozen in uv.lock.
+#
+#   sync:      tools/provision.py sync   (materializes data/runtime/comfyui/.venv)
+#   boot:      tools/provision.py boot-cmd (prints the exact launch)
+#   verify:    tools/provision.py verify
+#
+# NOT included, deliberately:
+#   - comfyui-manager — the management plane is comfy-mcp (EXTENSION
+#     LAW: extensions are DECLARED by cards, installed by comfy-mcp;
+#     two managers is one too many).
+#   - weights — never in the env; extra_model_paths.yaml (generated
+#     from the endpoint config's model_base_path) points at the
+#     deployment's persistent storage. Switching comfyui versions
+#     never moves a gigabyte.
+[project]
+name = "melite-comfyui-runtime"
+version = "0.1.0"
+description = "managed ComfyUI runtime for the inference.cpp estate (BYO deployments need none of this)"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    # audit ref: v0.34.0 @ d3eaf6a — the commit the 2026-08-31 estate
+    # audit verified (docs/comfyui/comfy-mcp.md §1)
+    "comfyui @ git+https://github.com/comfyanonymous/ComfyUI.git@d3eaf6a",
+    "comfyui-frontend-package",
+    "torch",
+    "torchvision",
+    "torchaudio",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
+torchvision = { index = "pytorch-cu128" }
+torchaudio = { index = "pytorch-cu128" }
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true

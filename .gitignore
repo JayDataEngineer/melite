@@ -88,6 +88,7 @@ data/staging/
 data/delivery/
 data/sessions/
 data/artifacts/
+data/runtime/
 # Keep structure and docs
 !data/**/
 !data/**/.gitkeep
