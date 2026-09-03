@@ -387,6 +387,23 @@ def main():
           not _bad, "%d dangling (first: %s)" % (
               len(_bad), _bad[0] if _bad else "-"))
 
+    # THE PATTERN PRIMITIVE WALL: the wire seed clamp is pattern policy
+    # (compose/params.seed) — deterministic default, LOUD on garbage.
+    sys.path.insert(0, os.path.join(
+        REPO, "plugins", "engines", "comfyui", "compose"))
+    from params import seed as _seed_fn  # noqa: E402
+    try:
+        _seed_fn("not-a-number")
+        _loud = False
+    except ValueError:
+        _loud = True
+    check("wire seed pattern primitive",
+          _seed_fn(None) == 42 and _seed_fn(-3) == 42
+          and _seed_fn(7) == 7 and _seed_fn("9") == 9
+          and _seed_fn(7.0) == 7 and _seed_fn(-1, default=5) == 5
+          and _loud,
+          "clamp/refusal policy drifted")
+
     # refusal: unknown key refuses LOUDLY through the same door
     try:
         plugins.compose({"model": "h3-timeline",
