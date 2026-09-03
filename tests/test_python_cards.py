@@ -137,6 +137,10 @@ def main():
         # refines — native core, no extension pack)
         ("mask-studio", "comfyui", "mask-studio",
          ("action_cards", "mask", "mask_studio")),
+        # cluster C stopgap (2026-09-04): kimodo text→motion on our
+        # own packs (ray-era hand-rolls, operator's stopgap order)
+        ("motion", "comfyui", "kimodo",
+         ("action_cards", "motion", "motion")),
     ]
     for cid, engine, model, home in FLIPPED:
         cpath = _card_py(engine, *home)
@@ -221,6 +225,7 @@ def main():
     pairs = validate_against_cards(models, cards, engine_truth=_truth)
     check("cross-validation pairs (all boarded families)",
           pairs == [("img-edit", "image-edit"),
+                    ("kimodo", "motion"),
                     ("krea-2", "image-gen"),
                     ("mask-studio", "mask-studio"),
                     ("moss-sfx", "sfx"),

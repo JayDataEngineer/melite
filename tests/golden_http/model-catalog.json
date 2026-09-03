@@ -61,6 +61,21 @@
     "params": {}
    }
   },
+  "motion": {
+   "default_family": "kimodo",
+   "description": "Text \u2192 3D human motion (SOMA-77 pose NPZ). Chain segments, constrain joints, skin onto a rigged character GLB.",
+   "families": [
+    "kimodo"
+   ],
+   "icon": "motion",
+   "kind": "generation",
+   "label": "Motion",
+   "resolved": {
+    "family": "kimodo",
+    "model": "kimodo",
+    "params": {}
+   }
+  },
   "music": {
    "default_family": "music3",
    "description": "Generate music \u2014 MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
@@ -237,6 +252,19 @@
    "skills": []
   },
   {
+   "description": "Text \u2192 3D human motion (SOMA-77 pose NPZ). Chain segments, constrain joints, skin onto a rigged character GLB.",
+   "families": [
+    "kimodo"
+   ],
+   "genre": "motion",
+   "has_inference": false,
+   "has_rubric": false,
+   "id": "motion",
+   "label": "Motion",
+   "principles": [],
+   "skills": []
+  },
+  {
    "description": "THE video interface \u2014 multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
    "families": [
     "h3-timeline"
@@ -375,6 +403,10 @@
   "input": {
    "genre": "image",
    "label": "Input Prep"
+  },
+  "kimodo": {
+   "genre": "motion",
+   "label": "Kimodo (text \u2192 motion)"
   },
   "krea-2": {
    "genre": "image",
@@ -1014,6 +1046,32 @@
    "label": "Input Prep",
    "loras": [],
    "source": {
+    "type": ""
+   }
+  },
+  "kimodo": {
+   "defaults": {
+    "cfg_type": "separated",
+    "cfg_weight_a": 2.5,
+    "cfg_weight_b": 5.0,
+    "diffusion_steps": 25,
+    "duration_sec": 5.0,
+    "num_samples": 1,
+    "num_transition_frames": 10,
+    "seed": 42
+   },
+   "description": "Kinematic motion diffusion (NVIDIA Kimodo-SOMA): text \u2192 SOMA-77 pose NPZ, chainable, skinnable onto rigged GLBs.",
+   "engine": "comfyui",
+   "family": "kimodo",
+   "form": "form_motion_kimodo",
+   "genre": "motion",
+   "has_inference": false,
+   "has_rubric": false,
+   "id": "kimodo",
+   "label": "Kimodo (text \u2192 motion)",
+   "loras": [],
+   "source": {
+    "repo_id": "nvidia/Kimodo-SOMA-RP-v1.1",
     "type": ""
    }
   },

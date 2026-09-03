@@ -125,6 +125,11 @@ _FORMS_TABLE = {
     "mask-studio": {"label": "Mask", "genre": "image", "order": 8,
                     "plugin": "comfyui", "sidebar_key": "image",
                     "default_service": "mask-studio", "hidden": False},
+    # cluster C stopgap (2026-09-04): kimodo text→motion on our own
+    # packs; the motion genre already rides the sidebar taxonomy
+    "motion": {"label": "Motion", "genre": "motion", "order": 9,
+               "plugin": "comfyui", "sidebar_key": "motion",
+               "default_service": "kimodo", "hidden": False},
 }
 
 # The C's ALLOWED_CARDS gate (src/server.cpp:7585-7588) is exactly the keys

@@ -36,6 +36,15 @@
    "plugin": "comfyui",
    "sidebar_key": "image"
   },
+  "motion": {
+   "default_service": "kimodo",
+   "genre": "motion",
+   "hidden": false,
+   "label": "Motion",
+   "order": 9,
+   "plugin": "comfyui",
+   "sidebar_key": "motion"
+  },
   "music": {
    "default_service": "music3",
    "genre": "audio",

@@ -1,0 +1,347 @@
+{
+ "defaults": {
+  "cfg_type": "separated",
+  "cfg_weight_a": "2.5",
+  "cfg_weight_b": "5.0",
+  "diffusion_steps": "25",
+  "duration_sec": "5.0",
+  "num_samples": "1",
+  "num_transition_frames": "10",
+  "seed": "42"
+ },
+ "engine": "comfyui",
+ "enhance_prompts": {
+  "lyrics": "",
+  "prompt": ""
+ },
+ "features": {
+  "modifiers": [],
+  "variant_groups": {
+   "Quant": {
+    "label": "Quant"
+   },
+   "Variant": {
+    "label": "Variant"
+   }
+  }
+ },
+ "fields": [
+  {
+   "columns": 1,
+   "group": "prompt",
+   "label": "Prompt",
+   "name": "prompt",
+   "order": 0,
+   "required": true,
+   "tooltip": "What the body DOES \u2014 verb-first, one continuous action per segment. Multi-segment: separate with | and pair with motion_prompts.",
+   "type": "textarea"
+  },
+  {
+   "default": 42,
+   "group": "prompt",
+   "label": "Seed",
+   "name": "seed",
+   "order": 1,
+   "tooltip": "Same seed + prompt = same motion take.",
+   "type": "seed",
+   "width": 1
+  },
+  {
+   "default": 5,
+   "group": "generation",
+   "label": "Duration (s)",
+   "max": 30,
+   "min": 1,
+   "name": "duration_sec",
+   "order": 0,
+   "step": 0.5,
+   "tooltip": "Length of the generated motion segment.",
+   "type": "slider",
+   "width": 1
+  },
+  {
+   "default": 25,
+   "group": "generation",
+   "label": "Diffusion steps",
+   "max": 200,
+   "min": 10,
+   "name": "diffusion_steps",
+   "order": 1,
+   "step": 1,
+   "tooltip": "More steps = smoother arcs; 25 is the calibrated default.",
+   "type": "number",
+   "width": 1
+  },
+  {
+   "default": 1,
+   "group": "generation",
+   "label": "Samples",
+   "max": 4,
+   "min": 1,
+   "name": "num_samples",
+   "order": 2,
+   "step": 1,
+   "tooltip": "Takes per prompt (each becomes its own NPZ).",
+   "type": "number",
+   "width": 1
+  },
+  {
+   "default": 10,
+   "group": "generation",
+   "label": "Transition frames",
+   "max": 60,
+   "min": 0,
+   "name": "num_transition_frames",
+   "order": 3,
+   "step": 1,
+   "tooltip": "Blend frames when chaining onto a previous motion (motion_npz).",
+   "type": "number",
+   "width": 1
+  },
+  {
+   "default": "separated",
+   "group": "guidance",
+   "label": "CFG mode",
+   "name": "cfg_type",
+   "options": [
+    "separated",
+    "regular",
+    "nocfg"
+   ],
+   "order": 0,
+   "tooltip": "separated = independent text/action guidance (calibrated); nocfg = fastest.",
+   "type": "select",
+   "width": 1
+  },
+  {
+   "default": 2.5,
+   "group": "guidance",
+   "label": "CFG weight A",
+   "max": 15,
+   "min": 0,
+   "name": "cfg_weight_a",
+   "order": 1,
+   "step": 0.5,
+   "tooltip": "Text guidance weight (separated mode).",
+   "type": "slider",
+   "width": 1
+  },
+  {
+   "default": 5,
+   "group": "guidance",
+   "label": "CFG weight B",
+   "max": 15,
+   "min": 0,
+   "name": "cfg_weight_b",
+   "order": 2,
+   "step": 0.5,
+   "tooltip": "Action guidance weight (separated mode).",
+   "type": "slider",
+   "width": 1
+  },
+  {
+   "group": "chain",
+   "label": "Chain from NPZ",
+   "name": "motion_npz",
+   "order": 0,
+   "tooltip": "Previous motion NPZ to continue \u2014 the new prompt takes over after num_transition_frames of blend.",
+   "type": "text"
+  },
+  {
+   "group": "chain",
+   "label": "Multi-segment prompts",
+   "name": "motion_prompts",
+   "order": 1,
+   "tooltip": "Segment prompts joined with | \u2014 one motion per segment, auto-chained in order.",
+   "type": "textarea"
+  },
+  {
+   "group": "chain",
+   "label": "Joint constraints",
+   "name": "motion_constraints",
+   "order": 2,
+   "tooltip": "Pin joints (e.g. left_foot:ground) \u2014 JSON or key:value lines, applied per segment.",
+   "type": "textarea"
+  }
+ ],
+ "form": "motion",
+ "genre": "motion",
+ "label": "Motion",
+ "model": "kimodo",
+ "schema_groups": [
+  {
+   "fields": [
+    {
+     "columns": 1,
+     "label": "Prompt",
+     "name": "prompt",
+     "order": 0,
+     "required": true,
+     "tooltip": "What the body DOES \u2014 verb-first, one continuous action per segment. Multi-segment: separate with | and pair with motion_prompts.",
+     "type": "textarea"
+    },
+    {
+     "default": 42,
+     "label": "Seed",
+     "name": "seed",
+     "order": 1,
+     "tooltip": "Same seed + prompt = same motion take.",
+     "type": "seed",
+     "width": 1
+    }
+   ],
+   "id": "prompt",
+   "label": "Prompt",
+   "order": 0,
+   "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "default": 5,
+     "label": "Duration (s)",
+     "max": 30,
+     "min": 1,
+     "name": "duration_sec",
+     "order": 0,
+     "step": 0.5,
+     "tooltip": "Length of the generated motion segment.",
+     "type": "slider",
+     "width": 1
+    },
+    {
+     "default": 25,
+     "label": "Diffusion steps",
+     "max": 200,
+     "min": 10,
+     "name": "diffusion_steps",
+     "order": 1,
+     "step": 1,
+     "tooltip": "More steps = smoother arcs; 25 is the calibrated default.",
+     "type": "number",
+     "width": 1
+    },
+    {
+     "default": 1,
+     "label": "Samples",
+     "max": 4,
+     "min": 1,
+     "name": "num_samples",
+     "order": 2,
+     "step": 1,
+     "tooltip": "Takes per prompt (each becomes its own NPZ).",
+     "type": "number",
+     "width": 1
+    },
+    {
+     "default": 10,
+     "label": "Transition frames",
+     "max": 60,
+     "min": 0,
+     "name": "num_transition_frames",
+     "order": 3,
+     "step": 1,
+     "tooltip": "Blend frames when chaining onto a previous motion (motion_npz).",
+     "type": "number",
+     "width": 1
+    }
+   ],
+   "id": "generation",
+   "label": "Generation",
+   "order": 1,
+   "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "default": "separated",
+     "label": "CFG mode",
+     "name": "cfg_type",
+     "options": [
+      "separated",
+      "regular",
+      "nocfg"
+     ],
+     "order": 0,
+     "tooltip": "separated = independent text/action guidance (calibrated); nocfg = fastest.",
+     "type": "select",
+     "width": 1
+    },
+    {
+     "default": 2.5,
+     "label": "CFG weight A",
+     "max": 15,
+     "min": 0,
+     "name": "cfg_weight_a",
+     "order": 1,
+     "step": 0.5,
+     "tooltip": "Text guidance weight (separated mode).",
+     "type": "slider",
+     "width": 1
+    },
+    {
+     "default": 5,
+     "label": "CFG weight B",
+     "max": 15,
+     "min": 0,
+     "name": "cfg_weight_b",
+     "order": 2,
+     "step": 0.5,
+     "tooltip": "Action guidance weight (separated mode).",
+     "type": "slider",
+     "width": 1
+    }
+   ],
+   "id": "guidance",
+   "label": "Guidance",
+   "order": 2,
+   "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "label": "Chain from NPZ",
+     "name": "motion_npz",
+     "order": 0,
+     "tooltip": "Previous motion NPZ to continue \u2014 the new prompt takes over after num_transition_frames of blend.",
+     "type": "text"
+    },
+    {
+     "label": "Multi-segment prompts",
+     "name": "motion_prompts",
+     "order": 1,
+     "tooltip": "Segment prompts joined with | \u2014 one motion per segment, auto-chained in order.",
+     "type": "textarea"
+    },
+    {
+     "label": "Joint constraints",
+     "name": "motion_constraints",
+     "order": 2,
+     "tooltip": "Pin joints (e.g. left_foot:ground) \u2014 JSON or key:value lines, applied per segment.",
+     "type": "textarea"
+    }
+   ],
+   "id": "chain",
+   "label": "Chain",
+   "order": 3,
+   "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "label": "Preview character GLB",
+     "name": "preview_glb",
+     "order": 0,
+     "tooltip": "SOMAX-rigged character GLB \u2014 the motion is skinned onto it (somax bake) as an animated GLB artifact.",
+     "type": "file"
+    }
+   ],
+   "id": "output",
+   "label": "Output",
+   "order": 4,
+   "zone": "params"
+  }
+ ],
+ "service": "kimodo",
+ "variants": []
+}

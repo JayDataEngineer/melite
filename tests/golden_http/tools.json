@@ -536,6 +536,101 @@
    "version": 1
   },
   {
+   "card": "motion",
+   "description": "Text \u2192 3D human motion (SOMA-77 pose NPZ). Chain segments, constrain joints, skin onto a rigged character GLB.",
+   "kind": "card-compose",
+   "model": "kimodo",
+   "name": "motion_card",
+   "params_schema": {
+    "properties": {
+     "cfg_type": {
+      "default": "separated",
+      "description": "separated = independent text/action guidance (calibrated); nocfg = fastest.",
+      "enum": [
+       "separated",
+       "regular",
+       "nocfg"
+      ],
+      "type": "string"
+     },
+     "cfg_weight_a": {
+      "default": 2.5,
+      "description": "Text guidance weight (separated mode).",
+      "maximum": 15,
+      "minimum": 0,
+      "type": "number"
+     },
+     "cfg_weight_b": {
+      "default": 5,
+      "description": "Action guidance weight (separated mode).",
+      "maximum": 15,
+      "minimum": 0,
+      "type": "number"
+     },
+     "diffusion_steps": {
+      "default": 25,
+      "description": "More steps = smoother arcs; 25 is the calibrated default.",
+      "maximum": 200,
+      "minimum": 10,
+      "type": "number"
+     },
+     "duration_sec": {
+      "default": 5,
+      "description": "Length of the generated motion segment.",
+      "maximum": 30,
+      "minimum": 1,
+      "type": "number"
+     },
+     "motion_constraints": {
+      "description": "Pin joints (e.g. left_foot:ground) \u2014 JSON or key:value lines, applied per segment.",
+      "type": "string"
+     },
+     "motion_npz": {
+      "description": "Previous motion NPZ to continue \u2014 the new prompt takes over after num_transition_frames of blend.",
+      "type": "string"
+     },
+     "motion_prompts": {
+      "description": "Segment prompts joined with | \u2014 one motion per segment, auto-chained in order.",
+      "type": "string"
+     },
+     "num_samples": {
+      "default": 1,
+      "description": "Takes per prompt (each becomes its own NPZ).",
+      "maximum": 4,
+      "minimum": 1,
+      "type": "number"
+     },
+     "num_transition_frames": {
+      "default": 10,
+      "description": "Blend frames when chaining onto a previous motion (motion_npz).",
+      "maximum": 60,
+      "minimum": 0,
+      "type": "number"
+     },
+     "preview_glb": {
+      "description": "SOMAX-rigged character GLB \u2014 the motion is skinned onto it (somax bake) as an animated GLB artifact.",
+      "format": "path",
+      "type": "string"
+     },
+     "prompt": {
+      "description": "What the body DOES \u2014 verb-first, one continuous action per segment. Multi-segment: separate with | and pair with motion_prompts.",
+      "type": "string"
+     },
+     "seed": {
+      "default": 42,
+      "description": "Same seed + prompt = same motion take.",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "prompt"
+    ],
+    "type": "object"
+   },
+   "stage_title": "Motion",
+   "version": 1
+  },
+  {
    "card": "music",
    "description": "Generate music \u2014 MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
    "kind": "card-compose",

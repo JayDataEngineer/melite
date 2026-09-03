@@ -176,6 +176,7 @@ def main():
         "voice-lock": "voicelock_t1.json",
         "sfx": "sfx_t1.json",
         "mask-studio": "mask_t1.json",
+        "motion": "motion_t1.json",
     }
     for mid, mcls in sorted(_mcards.items()):
         card_id = getattr(mcls, "card", "") or ""

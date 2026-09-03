@@ -41,7 +41,12 @@ class ModelError(Exception):
     """Loud refusal before the wire (the QUEUE LANE LAW shape)."""
 
 
-_GENRE_VALUES = frozenset(("image", "video", "audio", "3d", ""))
+# The closed genre vocabulary. 'motion' joined 2026-09-04 (cluster C
+# stopgap): the estate already speaks it everywhere else — the action
+# cards tree (action_cards/motion/), the models tree (models/motion/),
+# the sidebar taxonomy (web/formats sidebarGenres) — this enum was the
+# stale edge. Closed vocabularies extend when a real tier lands.
+_GENRE_VALUES = frozenset(("image", "video", "audio", "3d", "motion", ""))
 
 class LaneInputs(BaseModel, frozen=True):
     '''Weight facts a card renderer reads (MODELS DON'T RENDER — cards

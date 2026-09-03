@@ -142,4 +142,10 @@ def assets():
     d = Path(__file__).parent / "assets"
     src = d / "source.png"
     assert src.is_file(), "missing feed asset: %s" % src
-    return {"source": str(src)}
+    # the motion canary's character body: a SOMAX-77 rig (skin
+    # SOMA-Mixamo, 77 joints — the somax bake's hard contract).
+    # Sourced from the estate's soma output (bary_little_girl);
+    # smallest verified rig on the volumes.
+    rig = d / "rigged_char.glb"
+    return {"source": str(src),
+            "rigged_glb": str(rig) if rig.is_file() else ""}
