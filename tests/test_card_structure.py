@@ -156,6 +156,52 @@ def main():
         check("dispatch: %s -> py/compose.py" % card_id,
               os.path.isfile(arm), "missing %s" % arm)
 
+    # ── MODEL DIR COMPLETENESS (the qwen bug class, walled) ─────
+    # A model class that boards a renderer-serving card must be
+    # RENDERABLE at boot: engine declared, lane_inputs row, the
+    # arm's graph template + nodes.yaml in the model dir. Each of
+    # those was a real integration failure (engine -> "no model
+    # unit"; template -> "template missing"; lane_inputs ->
+    # None.unet) — the wall refuses the phantom at load.
+    sys.path.insert(0, os.path.join(REPO, "py"))
+    from melite_models import scan_engine_models
+    _mcards = {mid: cls for mid, (_p, cls)
+               in scan_engine_models(REPO).items()}
+    # the find_template arms' template names (arm knowledge, kept
+    # as a table — a new arm adopting find_template joins it)
+    _TEMPLATE_BY_CARD = {
+        "image-gen": "generate_t2i.json",
+        "image-edit": "edit_i2i.json",
+    }
+    for mid, mcls in sorted(_mcards.items()):
+        card_id = getattr(mcls, "card", "") or ""
+        if not card_id:
+            continue          # tool/utility lanes: not card families
+        check("model %s declares engine" % mid,
+              bool(getattr(mcls, "engine", "")),
+              "boarding %s with no engine" % card_id)
+        check("model %s carries lane facts" % mid,
+              getattr(mcls, "lane_inputs", None) is not None,
+              "boarding %s with no lane_inputs row" % card_id)
+        tmpl = _TEMPLATE_BY_CARD.get(card_id)
+        if tmpl:
+            mdir = None
+            for genre in os.listdir(os.path.join(
+                    REPO, "plugins", "engines", "comfyui", "models")):
+                d = os.path.join(REPO, "plugins", "engines", "comfyui",
+                                 "models", genre, mid)
+                if os.path.isdir(d):
+                    mdir = d
+                    break
+            if mdir:
+                check("model %s carries its %s" % (mid, tmpl),
+                      os.path.isfile(os.path.join(mdir, tmpl)),
+                      "missing in %s" % mdir)
+                # nodes.yaml is deliberately NOT demanded: absence
+                # is the honest "no extensions for this lane"
+                # (krea-2 uses core nodes only; EXTENSION LAW —
+                # declarations are per-lane, optional)
+
     # bytecode never tracked under action_cards
     tracked = subprocess.run(
         ["git", "-C", REPO, "ls-files", "--",
