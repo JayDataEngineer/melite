@@ -50,7 +50,10 @@ from pathlib import Path
 from typing import Any
 
 REPO = Path(__file__).resolve().parent.parent
-OUT_ROOT = REPO / "output"
+# SERVER-STATE ROOT LAW: build/ is the server cwd — ONE root for
+# run output, drafts, ledgers. The editor routes read it; runs
+# write it. (Root output/ + drafts/ were the C-era split-brain.)
+OUT_ROOT = REPO / "build" / "output"
 PIPELINES = REPO / "pipelines"
 
 IDENT_RE = re.compile(r"^[a-z_][a-z0-9_-]*$")

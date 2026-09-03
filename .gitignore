@@ -43,6 +43,9 @@ downloaded_files/
 
 # === Runtime / scratch ===
 .dsh_work/
+.scratch/
+.pytest_cache/
+data/  # test harness droppings (playwright etc.)
 Testing/Temporary/
 
 # === Node.js ===
@@ -53,8 +56,6 @@ __pycache__/
 *.pyc
 
 # === Secrets / credentials ===
-data/llm_keystore.json
-data/llm_keystore.key
 .env
 .env.*
 
