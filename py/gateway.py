@@ -50,10 +50,14 @@ from pathlib import Path
 from typing import Any
 
 REPO = Path(__file__).resolve().parent.parent
-# SERVER-STATE ROOT LAW: build/ is the server cwd — ONE root for
-# run output, drafts, ledgers. The editor routes read it; runs
-# write it. (Root output/ + drafts/ were the C-era split-brain.)
-OUT_ROOT = REPO / "build" / "output"
+# SERVER-STATE ROOT LAW (operator order, 2026-09-03: "build was
+# c++ and c era"): ALL runtime state lives under the declared data
+# root's runs/ stream — run dirs, drafts, ledgers. build/ was the
+# C++ CMake dir the C server happened to cwd into; it is GONE.
+# (One hop runs/output: editor_runs' server_root contract appends
+# "output"; flattening it waits for that file to leave flight.)
+STATE_ROOT = REPO / "datafolder" / "runs"
+OUT_ROOT = STATE_ROOT / "output"
 PIPELINES = REPO / "pipelines"
 
 IDENT_RE = re.compile(r"^[a-z_][a-z0-9_-]*$")
@@ -1070,11 +1074,11 @@ async def route(gw, method, target, body):
     # ── EDITOR DATA SURFACE (py/editor_runs.py) ──────────────────────
     if method == "GET" and path == "/v1/pipelines/runs":
         import editor_runs as _er
-        return 200, _er.runs(str(REPO / "build"))
+        return 200, _er.runs(str(STATE_ROOT))
     m = re.match(r"^/v1/pipelines/runs/(.+)$", path)
     if method == "GET" and m:
         import editor_runs as _er
-        return _er.run_detail(str(REPO / "build"), m.group(1))
+        return _er.run_detail(str(STATE_ROOT), m.group(1))
     if method == "GET" and path == "/v1/pipelines/yaml/list":
         import editor_runs as _er
         return 200, _er.yaml_list(str(REPO / "pipelines"))
@@ -1127,7 +1131,7 @@ async def route(gw, method, target, body):
             body_json = json.loads(body.decode() or "{}")
         except json.JSONDecodeError:
             body_json = {}
-        return _er.resume(str(REPO / "build"), rid, body_json,
+        return _er.resume(str(STATE_ROOT), rid, body_json,
                           pipelines_root=str(REPO / "pipelines"))
     if path == "/v1/pipelines/families/param-schemas":
         import editor_runs as _er
@@ -1140,24 +1144,24 @@ async def route(gw, method, target, body):
             _er.catalog_family_ids(str(REPO / "plugins")), m.group(1))
     if method == "GET" and path == "/v1/pipelines/drafts":
         import editor_runs as _er
-        return 200, _er.drafts_list(str(REPO / "build" / "drafts"))
+        return 200, _er.drafts_list(str(STATE_ROOT / "drafts"))
     if method == "POST" and path == "/v1/pipelines/drafts":
         import editor_runs as _er
         try:
             body_json = json.loads(body.decode() or "{}")
         except json.JSONDecodeError as e:
             return 400, {"error": "bad JSON: %s" % e}
-        return _er.drafts_save(str(REPO / "build" / "drafts"), body_json)
+        return _er.drafts_save(str(STATE_ROOT / "drafts"), body_json)
     m = re.match(r"^/v1/pipelines/drafts/(.+)$", path)
     if method == "GET" and m:
         import editor_runs as _er
-        return _er.drafts_get(str(REPO / "build" / "drafts"), m.group(1))
+        return _er.drafts_get(str(STATE_ROOT / "drafts"), m.group(1))
 
     # ── BINARY ASSET SERVING (/editor/assets/runs/) ──────────────────
     if path.startswith("/editor/assets/runs/"):
         import editor_runs as _er
         rel = path[len("/editor/assets/runs/"):]
-        code, data, ctype = _er.serve_asset(str(REPO / "build"), rel)
+        code, data, ctype = _er.serve_asset(str(STATE_ROOT), rel)
         if code == 200:
             return code, ({}, {"content-type": ctype}, data)
         return code, {"error": "not found"} if code == 404 else data

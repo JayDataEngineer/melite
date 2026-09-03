@@ -1,9 +1,4 @@
-# === Build artifacts ===
-build/
-build-dbg/
-build-asan/
-asan-build/
-cmake-build-*/
+# === Editor tooling ===
 compile_commands.json
 .cache/
 
@@ -84,15 +79,15 @@ drafts/
 third_party/
 
 # Datafolder — organized generated state (never commit)
-datafolder/outputs/
+datafolder/output/
+datafolder/temp/
+datafolder/input/
+datafolder/runs/
 datafolder/agent-sessions/
-datafolder/comfyui/
 datafolder/downloads/
 datafolder/staging/
-datafolder/inputs/
 datafolder/delivery/
 datafolder/sessions/
-datafolder/input/
 datafolder/artifacts/
 # Keep structure and docs
 !datafolder/**/
