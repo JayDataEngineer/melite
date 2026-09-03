@@ -40,7 +40,6 @@ downloaded_files/
 .dsh_work/
 .scratch/
 .pytest_cache/
-data/  # test harness droppings (playwright etc.)
 Testing/Temporary/
 
 # === Node.js ===
@@ -78,21 +77,21 @@ drafts/
 # === Dead C++ era (post python-orchestrator migration) ===
 third_party/
 
-# Datafolder — organized generated state (never commit)
-datafolder/output/
-datafolder/temp/
-datafolder/input/
-datafolder/runs/
-datafolder/agent-sessions/
-datafolder/downloads/
-datafolder/staging/
-datafolder/delivery/
-datafolder/sessions/
-datafolder/artifacts/
+# data/ — the data root (never commit; README is the law doc)
+data/output/
+data/temp/
+data/input/
+data/runs/
+data/agent-sessions/
+data/downloads/
+data/staging/
+data/delivery/
+data/sessions/
+data/artifacts/
 # Keep structure and docs
-!datafolder/**/
-!datafolder/**/.gitkeep
-!datafolder/README.md
+!data/**/
+!data/**/.gitkeep
+!data/README.md
 # Remove old data/ ignores (replaced by datafolder)
 -data/delivery/
 -data/input/

@@ -51,12 +51,12 @@ from typing import Any
 
 REPO = Path(__file__).resolve().parent.parent
 # SERVER-STATE ROOT LAW (operator order, 2026-09-03: "build was
-# c++ and c era"): ALL runtime state lives under the declared data
-# root's runs/ stream — run dirs, drafts, ledgers. build/ was the
+# c++ and c era"): ALL runtime state lives under the data root's
+# runs/ stream — run dirs, drafts, ledgers. build/ was the
 # C++ CMake dir the C server happened to cwd into; it is GONE.
 # (One hop runs/output: editor_runs' server_root contract appends
 # "output"; flattening it waits for that file to leave flight.)
-STATE_ROOT = REPO / "datafolder" / "runs"
+STATE_ROOT = REPO / "data" / "runs"
 OUT_ROOT = STATE_ROOT / "output"
 PIPELINES = REPO / "pipelines"
 
