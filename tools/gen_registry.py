@@ -149,20 +149,20 @@ def main():
         "items": _kit_items() + _fragment_items(),
     }
     text = json.dumps(registry, indent=2, ensure_ascii=False) + "\n"
-    snap = os.path.join(REPO, "web", "registry.json")
+    snap = os.path.join(REPO, "web", "generated", "registry.json")
     old = open(snap, encoding="utf-8").read() if os.path.exists(snap) else None
     if old == text:
-        print("web/registry.json matches the packages (%d items)"
+        print("web/generated/registry.json matches the packages (%d items)"
               % len(registry["items"]))
         return 0
     if write:
         with open(snap, "w", encoding="utf-8") as f:
             f.write(text)
-        print("wrote web/registry.json (%d items: %d core + %d plugin)"
+        print("wrote web/generated/registry.json (%d items: %d core + %d plugin)"
               % (len(registry["items"]), len(_kit_items()),
                  len(_fragment_items())))
         return 0
-    print("DRIFT web/registry.json — run with --write")
+    print("DRIFT web/generated/registry.json — run with --write")
     return 1
 
 
