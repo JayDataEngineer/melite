@@ -1,896 +1,817 @@
 {
-  "model": "z-image-base",
-  "label": "Image",
-  "genre": "image",
-  "engine": "comfyui",
-  "defaults": {
-    "scheduler": "normal",
-    "width": "1024",
-    "height": "1024",
-    "steps": "8",
-    "sampler": "er_sde",
-    "cfg": "1.0",
-    "negative_prompt": "None"
+ "defaults": {
+  "cfg": "1.0",
+  "height": "1024",
+  "negative_prompt": "None",
+  "sampler": "er_sde",
+  "scheduler": "normal",
+  "steps": "8",
+  "width": "1024"
+ },
+ "engine": "comfyui",
+ "enhance_prompts": {
+  "lyrics": "",
+  "prompt": ""
+ },
+ "features": {
+  "modifiers": [],
+  "variant_groups": {
+   "Quant": {
+    "label": "Quant"
+   },
+   "Variant": {
+    "label": "Variant"
+   }
+  }
+ },
+ "fields": [
+  {
+   "columns": 1,
+   "group": "preset",
+   "label": "Workflow Preset",
+   "name": "preset",
+   "options": [],
+   "order": 0,
+   "tooltip": "Recipe shortcut \u2014 the LanPaint quick reference (tuning defaults). Fills untouched fields; values you've set win.",
+   "type": "select",
+   "width": 1
   },
-  "variants": [
-    {
-      "id": "base",
-      "label": "Base",
-      "defaults": {},
-      "group": "Variant",
-      "route": "z-image-base",
-      "hint": "50-step base checkpoint — higher quality, LoRA training",
-      "engine": "comfyui"
-    },
-    {
-      "id": "int8",
-      "label": "INT8 ConvRot",
-      "defaults": {},
-      "group": "Quant",
-      "quant": "int8",
-      "route": "z-image",
-      "vram_peak_gb": 0.0
-    },
-    {
-      "id": "turbo",
-      "label": "Turbo",
-      "defaults": {},
-      "group": "Variant",
-      "route": "z-image",
-      "hint": "8-step distilled — fast (DEFAULT)",
-      "engine": "comfyui"
-    }
-  ],
-  "features": {
-    "modifiers": [
-      {
-        "kind": "lora",
-        "label": "LoRAs",
-        "cardinality": "list",
-        "param_key": "loras",
-        "fields": [
-          {
-            "name": "input_image",
-            "type": "float",
-            "label": "Image"
-          },
-          {
-            "name": "lanpaint_mask",
-            "type": "float",
-            "label": "Inpaint Mask"
-          },
-          {
-            "name": "lanpaint_enabled",
-            "type": "float",
-            "label": "Force LanPaint"
-          },
-          {
-            "name": "lanpaint_num_steps",
-            "type": "float",
-            "label": "Num Steps",
-            "min": 1,
-            "max": 100,
-            "step": 1
-          },
-          {
-            "name": "lanpaint_step_size",
-            "type": "float",
-            "label": "Step Size",
-            "min": 0.1,
-            "max": 2,
-            "step": 0.1
-          },
-          {
-            "name": "lanpaint_lambda",
-            "type": "float",
-            "label": "Lambda",
-            "min": 0,
-            "max": 2,
-            "step": 0.05
-          },
-          {
-            "name": "lanpaint_beta",
-            "type": "float",
-            "label": "Beta",
-            "min": 0,
-            "max": 2,
-            "step": 0.05
-          },
-          {
-            "name": "lanpaint_friction",
-            "type": "float",
-            "label": "Friction",
-            "min": 0,
-            "max": 2,
-            "step": 0.05
-          },
-          {
-            "name": "lanpaint_prompt_mode",
-            "type": "float",
-            "label": "Prompt Mode"
-          },
-          {
-            "name": "mask_grow",
-            "type": "float",
-            "label": "Grow / Shrink",
-            "min": -32,
-            "max": 32,
-            "step": 1
-          },
-          {
-            "name": "mask_feather",
-            "type": "float",
-            "label": "Feather",
-            "min": 0,
-            "max": 32,
-            "step": 1
-          },
-          {
-            "name": "mask_threshold",
-            "type": "float",
-            "label": "Re-threshold",
-            "min": 0,
-            "max": 1,
-            "step": 0.05
-          },
-          {
-            "name": "mask_invert",
-            "type": "float",
-            "label": "Invert"
-          },
-          {
-            "name": "outpaint_top",
-            "type": "float",
-            "label": "Expand Top",
-            "min": 0,
-            "max": 512,
-            "step": 8
-          },
-          {
-            "name": "outpaint_right",
-            "type": "float",
-            "label": "Expand Right",
-            "min": 0,
-            "max": 512,
-            "step": 8
-          },
-          {
-            "name": "outpaint_bottom",
-            "type": "float",
-            "label": "Expand Bottom",
-            "min": 0,
-            "max": 512,
-            "step": 8
-          },
-          {
-            "name": "outpaint_left",
-            "type": "float",
-            "label": "Expand Left",
-            "min": 0,
-            "max": 512,
-            "step": 8
-          },
-          {
-            "name": "outpaint_overlap",
-            "type": "float",
-            "label": "Overlap",
-            "min": 0,
-            "max": 64,
-            "step": 1
-          }
-        ],
-        "options": [],
-        "options_scanned": true,
-        "upload_dir": "models/loras",
-        "declaration_only": true
-      }
-    ],
-    "variant_groups": {
-      "Variant": {
-        "label": "Variant"
-      },
-      "Quant": {
-        "label": "Quant"
-      }
-    }
+  {
+   "columns": 2,
+   "group": "prompt",
+   "label": "Prompt",
+   "name": "prompt",
+   "order": 0,
+   "required": true,
+   "type": "textarea",
+   "width": 1
   },
-  "enhance_prompts": {
-    "prompt": "",
-    "lyrics": ""
+  {
+   "default": "None",
+   "group": "prompt",
+   "label": "Negative Prompt",
+   "name": "negative_prompt",
+   "order": 1,
+   "type": "textarea",
+   "visible_when": "negative_prompt != null",
+   "width": 1
   },
-  "form": "image-gen",
-  "service": "z-image",
-  "fields": [
+  {
+   "columns": 3,
+   "default": "1024",
+   "group": "resolution",
+   "label": "Width",
+   "max": 2048,
+   "min": 256,
+   "name": "width",
+   "order": 0,
+   "step": 16,
+   "type": "number",
+   "width": 1
+  },
+  {
+   "default": "1024",
+   "group": "resolution",
+   "label": "Height",
+   "max": 2048,
+   "min": 256,
+   "name": "height",
+   "order": 1,
+   "step": 16,
+   "type": "number",
+   "width": 1
+  },
+  {
+   "default": -1,
+   "group": "resolution",
+   "label": "Seed",
+   "name": "seed",
+   "order": 4,
+   "type": "seed",
+   "width": 1
+  },
+  {
+   "default": "8",
+   "group": "sampling",
+   "label": "Steps",
+   "max": 100,
+   "min": 1,
+   "name": "steps",
+   "order": 0,
+   "step": 1,
+   "type": "number",
+   "width": 1
+  },
+  {
+   "default": "1.0",
+   "group": "sampling",
+   "label": "Guidance Scale",
+   "max": 20,
+   "min": 1,
+   "name": "cfg",
+   "order": 1,
+   "step": 0.1,
+   "tooltip": "How closely the diffusion follows the prompt. Higher = stricter.",
+   "type": "slider",
+   "width": 1
+  },
+  {
+   "default": "er_sde",
+   "group": "sampling",
+   "label": "Sampler",
+   "name": "sampler",
+   "options": [
+    "er_sde",
+    "euler",
+    "euler_ancestral",
+    "euler_cfg_pp",
+    "dpmpp_2m",
+    "dpmpp_2m_sde",
+    "dpmpp_2m_sde_gpu",
+    "dpmpp_3m_sde",
+    "dpm_fast",
+    "lcm",
+    "lms",
+    "heun"
+   ],
+   "order": 2,
+   "type": "select",
+   "width": 1
+  },
+  {
+   "default": "normal",
+   "group": "sampling",
+   "label": "Scheduler",
+   "name": "scheduler",
+   "options": [
+    "normal",
+    "karras",
+    "exponential",
+    "sgm_uniform",
+    "simple",
+    "ddim_uniform",
+    "beta",
+    "linear_quadratic",
+    "kl_optimal"
+   ],
+   "order": 3,
+   "type": "select",
+   "width": 1
+  },
+  {
+   "default": false,
+   "group": "lanpaint",
+   "label": "Force LanPaint",
+   "name": "lanpaint_enabled",
+   "order": 1,
+   "type": "boolean",
+   "visible_when": "input_image != null"
+  },
+  {
+   "default": 20,
+   "group": "lanpaint",
+   "label": "Num Steps",
+   "max": 100,
+   "min": 1,
+   "name": "lanpaint_num_steps",
+   "order": 2,
+   "step": 1,
+   "type": "number",
+   "visible_when": "lanpaint_enabled == true",
+   "width": 1
+  },
+  {
+   "default": 1.0,
+   "group": "lanpaint",
+   "label": "Step Size",
+   "max": 2,
+   "min": 0.1,
+   "name": "lanpaint_step_size",
+   "order": 3,
+   "step": 0.1,
+   "type": "slider",
+   "visible_when": "lanpaint_enabled == true",
+   "width": 1
+  },
+  {
+   "default": 0.5,
+   "group": "lanpaint",
+   "label": "Lambda",
+   "max": 2,
+   "min": 0,
+   "name": "lanpaint_lambda",
+   "order": 4,
+   "step": 0.05,
+   "type": "slider",
+   "visible_when": "lanpaint_enabled == true",
+   "width": 1
+  },
+  {
+   "default": 0.5,
+   "group": "lanpaint",
+   "label": "Beta",
+   "max": 2,
+   "min": 0,
+   "name": "lanpaint_beta",
+   "order": 5,
+   "step": 0.05,
+   "type": "slider",
+   "visible_when": "lanpaint_enabled == true",
+   "width": 1
+  },
+  {
+   "default": 0.5,
+   "group": "lanpaint",
+   "label": "Friction",
+   "max": 2,
+   "min": 0,
+   "name": "lanpaint_friction",
+   "order": 6,
+   "step": 0.05,
+   "type": "slider",
+   "visible_when": "lanpaint_enabled == true",
+   "width": 1
+  },
+  {
+   "default": "negative",
+   "group": "lanpaint",
+   "label": "Prompt Mode",
+   "name": "lanpaint_prompt_mode",
+   "options": [
+    "negative",
+    "positive"
+   ],
+   "order": 7,
+   "type": "select",
+   "visible_when": "lanpaint_enabled == true",
+   "width": 1
+  },
+  {
+   "default": 0,
+   "group": "lanpaint",
+   "label": "Expand Top",
+   "max": 512,
+   "min": 0,
+   "name": "outpaint_top",
+   "order": 8,
+   "step": 8,
+   "type": "slider",
+   "visible_when": "input_image != null",
+   "width": 1
+  },
+  {
+   "default": 0,
+   "group": "lanpaint",
+   "label": "Expand Right",
+   "max": 512,
+   "min": 0,
+   "name": "outpaint_right",
+   "order": 9,
+   "step": 8,
+   "type": "slider",
+   "visible_when": "input_image != null",
+   "width": 1
+  },
+  {
+   "default": 0,
+   "group": "lanpaint",
+   "label": "Expand Bottom",
+   "max": 512,
+   "min": 0,
+   "name": "outpaint_bottom",
+   "order": 10,
+   "step": 8,
+   "type": "slider",
+   "visible_when": "input_image != null",
+   "width": 1
+  },
+  {
+   "default": 0,
+   "group": "lanpaint",
+   "label": "Expand Left",
+   "max": 512,
+   "min": 0,
+   "name": "outpaint_left",
+   "order": 11,
+   "step": 8,
+   "type": "slider",
+   "visible_when": "input_image != null",
+   "width": 1
+  },
+  {
+   "default": 16,
+   "group": "lanpaint",
+   "label": "Overlap",
+   "max": 64,
+   "min": 0,
+   "name": "outpaint_overlap",
+   "order": 8,
+   "step": 1,
+   "type": "slider",
+   "visible_when": "input_image != null",
+   "width": 1
+  },
+  {
+   "default": "auto",
+   "group": "mask",
+   "label": "Region Mode",
+   "name": "mask_mode",
+   "options": [
+    "auto",
+    "crop_stitch",
+    "full_frame"
+   ],
+   "order": 1,
+   "tooltip": "How the mask is honored: auto (the lane's own region ControlNet if its weights are present, else crop+stitch), crop_stitch (crop to the mask + context, work the crop, composite back \u2014 pixels outside the mask never change), full_frame (legacy whole-image pass; unmasked regions may drift).",
+   "type": "select",
+   "width": 1
+  },
+  {
+   "default": 64,
+   "group": "mask",
+   "label": "Context Padding",
+   "max": 256,
+   "min": 0,
+   "name": "mask_context_pad",
+   "order": 2,
+   "step": 8,
+   "tooltip": "Pixels of surrounding context kept in the crop (crop_stitch mode). More context = more coherence; 64 is the sweet spot.",
+   "type": "slider",
+   "width": 1
+  },
+  {
+   "default": 8,
+   "group": "mask",
+   "label": "Grow / Shrink",
+   "max": 32,
+   "min": -32,
+   "name": "mask_grow",
+   "order": 3,
+   "step": 1,
+   "tooltip": "Expand (+) or shrink (\u2212) the region by an exact pixel disk before the run. Applied host-side.",
+   "type": "slider",
+   "width": 1
+  },
+  {
+   "default": 8,
+   "group": "mask",
+   "label": "Feather",
+   "max": 32,
+   "min": 0,
+   "name": "mask_feather",
+   "order": 4,
+   "step": 1,
+   "tooltip": "Gaussian falloff the composite blends through \u2014 kills the pasted-on rectangle edge.",
+   "type": "slider",
+   "width": 1
+  },
+  {
+   "default": 0,
+   "group": "mask",
+   "label": "Re-threshold",
+   "max": 1,
+   "min": 0,
+   "name": "mask_threshold",
+   "order": 5,
+   "step": 0.05,
+   "tooltip": "Re-binarize the feathered mask at this level. 0 = keep the soft falloff.",
+   "type": "slider",
+   "width": 1
+  },
+  {
+   "default": false,
+   "group": "mask",
+   "label": "Invert",
+   "name": "mask_invert",
+   "order": 6,
+   "tooltip": "Work OUTSIDE the painted region instead.",
+   "type": "boolean",
+   "width": 1
+  }
+ ],
+ "form": "image-gen",
+ "genre": "image",
+ "label": "Image",
+ "model": "z-image-base",
+ "schema_groups": [
+  {
+   "fields": [
     {
-      "name": "preset",
-      "type": "select",
-      "label": "Workflow Preset",
-      "group": "preset",
-      "order": 0,
-      "width": 1,
-      "columns": 1,
-      "tooltip": "Recipe shortcut — the LanPaint quick reference (tuning defaults). Fills untouched fields; values you've set win.",
-      "options": []
-    },
-    {
-      "name": "prompt",
-      "type": "textarea",
-      "label": "Prompt",
-      "group": "prompt",
-      "order": 0,
-      "width": 1,
-      "columns": 2,
-      "required": true
-    },
-    {
-      "name": "negative_prompt",
-      "type": "textarea",
-      "label": "Negative Prompt",
-      "group": "prompt",
-      "order": 1,
-      "width": 1,
-      "visible_when": "negative_prompt != null",
-      "default": "None"
-    },
-    {
-      "name": "width",
-      "type": "number",
-      "label": "Width",
-      "group": "resolution",
-      "order": 0,
-      "width": 1,
-      "columns": 3,
-      "min": 256,
-      "max": 2048,
-      "step": 16,
-      "default": "1024"
-    },
-    {
-      "name": "height",
-      "type": "number",
-      "label": "Height",
-      "group": "resolution",
-      "order": 1,
-      "width": 1,
-      "min": 256,
-      "max": 2048,
-      "step": 16,
-      "default": "1024"
-    },
-    {
-      "name": "seed",
-      "type": "seed",
-      "label": "Seed",
-      "group": "resolution",
-      "order": 4,
-      "width": 1,
-      "default": -1
-    },
-    {
-      "name": "steps",
-      "type": "number",
-      "label": "Steps",
-      "group": "sampling",
-      "order": 0,
-      "width": 1,
-      "min": 1,
-      "max": 100,
-      "step": 1,
-      "default": "8"
-    },
-    {
-      "name": "cfg",
-      "type": "slider",
-      "label": "Guidance Scale",
-      "group": "sampling",
-      "order": 1,
-      "width": 1,
-      "min": 1,
-      "max": 20,
-      "step": 0.1,
-      "tooltip": "How closely the diffusion follows the prompt. Higher = stricter.",
-      "default": "1.0"
-    },
-    {
-      "name": "sampler",
-      "type": "select",
-      "label": "Sampler",
-      "group": "sampling",
-      "order": 2,
-      "width": 1,
-      "options": [
-        "er_sde",
-        "euler",
-        "euler_ancestral",
-        "euler_cfg_pp",
-        "dpmpp_2m",
-        "dpmpp_2m_sde",
-        "dpmpp_2m_sde_gpu",
-        "dpmpp_3m_sde",
-        "dpm_fast",
-        "lcm",
-        "lms",
-        "heun"
-      ],
-      "default": "er_sde"
-    },
-    {
-      "name": "scheduler",
-      "type": "select",
-      "label": "Scheduler",
-      "group": "sampling",
-      "order": 3,
-      "width": 1,
-      "options": [
-        "normal",
-        "karras",
-        "exponential",
-        "sgm_uniform",
-        "simple",
-        "ddim_uniform",
-        "beta",
-        "linear_quadratic",
-        "kl_optimal"
-      ],
-      "default": "normal"
-    },
-    {
-      "name": "lanpaint_enabled",
-      "type": "boolean",
-      "label": "Force LanPaint",
-      "group": "lanpaint",
-      "order": 1,
-      "default": false,
-      "visible_when": "input_image != null"
-    },
-    {
-      "name": "lanpaint_num_steps",
-      "type": "number",
-      "label": "Num Steps",
-      "group": "lanpaint",
-      "order": 2,
-      "width": 1,
-      "min": 1,
-      "max": 100,
-      "step": 1,
-      "default": 20,
-      "visible_when": "lanpaint_enabled == true"
-    },
-    {
-      "name": "lanpaint_step_size",
-      "type": "slider",
-      "label": "Step Size",
-      "group": "lanpaint",
-      "order": 3,
-      "width": 1,
-      "min": 0.1,
-      "max": 2,
-      "step": 0.1,
-      "default": 1.0,
-      "visible_when": "lanpaint_enabled == true"
-    },
-    {
-      "name": "lanpaint_lambda",
-      "type": "slider",
-      "label": "Lambda",
-      "group": "lanpaint",
-      "order": 4,
-      "width": 1,
-      "min": 0,
-      "max": 2,
-      "step": 0.05,
-      "default": 0.5,
-      "visible_when": "lanpaint_enabled == true"
-    },
-    {
-      "name": "lanpaint_beta",
-      "type": "slider",
-      "label": "Beta",
-      "group": "lanpaint",
-      "order": 5,
-      "width": 1,
-      "min": 0,
-      "max": 2,
-      "step": 0.05,
-      "default": 0.5,
-      "visible_when": "lanpaint_enabled == true"
-    },
-    {
-      "name": "lanpaint_friction",
-      "type": "slider",
-      "label": "Friction",
-      "group": "lanpaint",
-      "order": 6,
-      "width": 1,
-      "min": 0,
-      "max": 2,
-      "step": 0.05,
-      "default": 0.5,
-      "visible_when": "lanpaint_enabled == true"
-    },
-    {
-      "name": "lanpaint_prompt_mode",
-      "type": "select",
-      "label": "Prompt Mode",
-      "group": "lanpaint",
-      "order": 7,
-      "width": 1,
-      "default": "negative",
-      "visible_when": "lanpaint_enabled == true",
-      "options": [
-        "negative",
-        "positive"
-      ]
-    },
-    {
-      "name": "mask_grow",
-      "type": "slider",
-      "label": "Grow / Shrink",
-      "group": "lanpaint",
-      "order": 8,
-      "width": 1,
-      "min": -32,
-      "max": 32,
-      "step": 1,
-      "default": 8,
-      "visible_when": "input_image != null"
-    },
-    {
-      "name": "mask_feather",
-      "type": "slider",
-      "label": "Feather",
-      "group": "lanpaint",
-      "order": 9,
-      "width": 1,
-      "min": 0,
-      "max": 32,
-      "step": 1,
-      "default": 8,
-      "visible_when": "input_image != null"
-    },
-    {
-      "name": "mask_threshold",
-      "type": "slider",
-      "label": "Re-threshold",
-      "group": "lanpaint",
-      "order": 10,
-      "width": 1,
-      "min": 0,
-      "max": 1,
-      "step": 0.05,
-      "default": 0,
-      "visible_when": "input_image != null"
-    },
-    {
-      "name": "mask_invert",
-      "type": "boolean",
-      "label": "Invert",
-      "group": "lanpaint",
-      "order": 11,
-      "default": false,
-      "visible_when": "input_image != null"
-    },
-    {
-      "name": "outpaint_top",
-      "type": "slider",
-      "label": "Expand Top",
-      "group": "lanpaint",
-      "order": 12,
-      "width": 1,
-      "min": 0,
-      "max": 512,
-      "step": 8,
-      "default": 0,
-      "visible_when": "input_image != null"
-    },
-    {
-      "name": "outpaint_right",
-      "type": "slider",
-      "label": "Expand Right",
-      "group": "lanpaint",
-      "order": 13,
-      "width": 1,
-      "min": 0,
-      "max": 512,
-      "step": 8,
-      "default": 0,
-      "visible_when": "input_image != null"
-    },
-    {
-      "name": "outpaint_bottom",
-      "type": "slider",
-      "label": "Expand Bottom",
-      "group": "lanpaint",
-      "order": 14,
-      "width": 1,
-      "min": 0,
-      "max": 512,
-      "step": 8,
-      "default": 0,
-      "visible_when": "input_image != null"
-    },
-    {
-      "name": "outpaint_left",
-      "type": "slider",
-      "label": "Expand Left",
-      "group": "lanpaint",
-      "order": 15,
-      "width": 1,
-      "min": 0,
-      "max": 512,
-      "step": 8,
-      "default": 0,
-      "visible_when": "input_image != null"
-    },
-    {
-      "name": "outpaint_overlap",
-      "type": "slider",
-      "label": "Overlap",
-      "group": "lanpaint",
-      "order": 16,
-      "width": 1,
-      "min": 0,
-      "max": 64,
-      "step": 1,
-      "default": 16,
-      "visible_when": "input_image != null"
+     "columns": 1,
+     "label": "Workflow Preset",
+     "name": "preset",
+     "options": [],
+     "order": 0,
+     "tooltip": "Recipe shortcut \u2014 the LanPaint quick reference (tuning defaults). Fills untouched fields; values you've set win.",
+     "type": "select",
+     "width": 1
     }
-  ],
-  "schema_groups": [
+   ],
+   "id": "preset",
+   "label": "Preset",
+   "order": 0,
+   "zone": "params"
+  },
+  {
+   "fields": [
     {
-      "id": "preset",
-      "label": "Preset",
-      "order": 0,
-      "zone": "params",
-      "fields": [
-        {
-          "name": "preset",
-          "type": "select",
-          "label": "Workflow Preset",
-          "order": 0,
-          "width": 1,
-          "columns": 1,
-          "tooltip": "Recipe shortcut — the LanPaint quick reference (tuning defaults). Fills untouched fields; values you've set win.",
-          "options": []
-        }
-      ]
+     "columns": 2,
+     "label": "Prompt",
+     "name": "prompt",
+     "order": 0,
+     "required": true,
+     "type": "textarea",
+     "width": 1
     },
     {
-      "id": "prompt",
-      "label": "Prompt",
-      "order": 1,
-      "zone": "params",
-      "fields": [
-        {
-          "name": "prompt",
-          "type": "textarea",
-          "label": "Prompt",
-          "order": 0,
-          "width": 1,
-          "columns": 2,
-          "required": true
-        },
-        {
-          "name": "negative_prompt",
-          "type": "textarea",
-          "label": "Negative Prompt",
-          "order": 1,
-          "width": 1,
-          "visible_when": "negative_prompt != null"
-        }
-      ]
-    },
-    {
-      "id": "resolution",
-      "label": "Resolution",
-      "order": 2,
-      "zone": "params",
-      "fields": [
-        {
-          "name": "width",
-          "type": "number",
-          "label": "Width",
-          "order": 0,
-          "width": 1,
-          "columns": 3,
-          "min": 256,
-          "max": 2048,
-          "step": 16
-        },
-        {
-          "name": "height",
-          "type": "number",
-          "label": "Height",
-          "order": 1,
-          "width": 1,
-          "min": 256,
-          "max": 2048,
-          "step": 16
-        },
-        {
-          "name": "seed",
-          "type": "seed",
-          "label": "Seed",
-          "order": 4,
-          "width": 1,
-          "default": -1
-        }
-      ]
-    },
-    {
-      "id": "sampling",
-      "label": "Sampling",
-      "order": 3,
-      "zone": "params",
-      "fields": [
-        {
-          "name": "steps",
-          "type": "number",
-          "label": "Steps",
-          "order": 0,
-          "width": 1,
-          "min": 1,
-          "max": 100,
-          "step": 1
-        },
-        {
-          "name": "cfg",
-          "type": "slider",
-          "label": "Guidance Scale",
-          "order": 1,
-          "width": 1,
-          "min": 1,
-          "max": 20,
-          "step": 0.1,
-          "tooltip": "How closely the diffusion follows the prompt. Higher = stricter."
-        },
-        {
-          "name": "sampler",
-          "type": "select",
-          "label": "Sampler",
-          "order": 2,
-          "width": 1,
-          "options": [
-            "er_sde",
-            "euler",
-            "euler_ancestral",
-            "euler_cfg_pp",
-            "dpmpp_2m",
-            "dpmpp_2m_sde",
-            "dpmpp_2m_sde_gpu",
-            "dpmpp_3m_sde",
-            "dpm_fast",
-            "lcm",
-            "lms",
-            "heun"
-          ]
-        },
-        {
-          "name": "scheduler",
-          "type": "select",
-          "label": "Scheduler",
-          "order": 3,
-          "width": 1,
-          "options": [
-            "normal",
-            "karras",
-            "exponential",
-            "sgm_uniform",
-            "simple",
-            "ddim_uniform",
-            "beta",
-            "linear_quadratic",
-            "kl_optimal"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "lanpaint",
-      "label": "Lanpaint",
-      "order": 4,
-      "zone": "params",
-      "fields": [
-        {
-          "name": "input_image",
-          "type": "image",
-          "label": "Image",
-          "order": -1
-        },
-        {
-          "name": "lanpaint_mask",
-          "type": "image",
-          "label": "Inpaint Mask",
-          "order": 0,
-          "tooltip": "RGBA PNG whose alpha channel marks the region to regenerate. When present alongside input_image, build_txt2img switches to LanPaintKSampler.",
-          "visible_when": "input_image != null"
-        },
-        {
-          "name": "lanpaint_enabled",
-          "type": "boolean",
-          "label": "Force LanPaint",
-          "order": 1,
-          "default": false,
-          "visible_when": "input_image != null"
-        },
-        {
-          "name": "lanpaint_num_steps",
-          "type": "number",
-          "label": "Num Steps",
-          "order": 2,
-          "width": 1,
-          "min": 1,
-          "max": 100,
-          "step": 1,
-          "default": 20,
-          "visible_when": "lanpaint_enabled == true"
-        },
-        {
-          "name": "lanpaint_step_size",
-          "type": "slider",
-          "label": "Step Size",
-          "order": 3,
-          "width": 1,
-          "min": 0.1,
-          "max": 2,
-          "step": 0.1,
-          "default": 1.0,
-          "visible_when": "lanpaint_enabled == true"
-        },
-        {
-          "name": "lanpaint_lambda",
-          "type": "slider",
-          "label": "Lambda",
-          "order": 4,
-          "width": 1,
-          "min": 0,
-          "max": 2,
-          "step": 0.05,
-          "default": 0.5,
-          "visible_when": "lanpaint_enabled == true"
-        },
-        {
-          "name": "lanpaint_beta",
-          "type": "slider",
-          "label": "Beta",
-          "order": 5,
-          "width": 1,
-          "min": 0,
-          "max": 2,
-          "step": 0.05,
-          "default": 0.5,
-          "visible_when": "lanpaint_enabled == true"
-        },
-        {
-          "name": "lanpaint_friction",
-          "type": "slider",
-          "label": "Friction",
-          "order": 6,
-          "width": 1,
-          "min": 0,
-          "max": 2,
-          "step": 0.05,
-          "default": 0.5,
-          "visible_when": "lanpaint_enabled == true"
-        },
-        {
-          "name": "lanpaint_prompt_mode",
-          "type": "select",
-          "label": "Prompt Mode",
-          "order": 7,
-          "width": 1,
-          "default": "negative",
-          "visible_when": "lanpaint_enabled == true",
-          "options": [
-            "negative",
-            "positive"
-          ]
-        },
-        {
-          "name": "mask_grow",
-          "type": "slider",
-          "label": "Grow / Shrink",
-          "order": 8,
-          "width": 1,
-          "min": -32,
-          "max": 32,
-          "step": 1,
-          "default": 8,
-          "visible_when": "input_image != null"
-        },
-        {
-          "name": "mask_feather",
-          "type": "slider",
-          "label": "Feather",
-          "order": 9,
-          "width": 1,
-          "min": 0,
-          "max": 32,
-          "step": 1,
-          "default": 8,
-          "visible_when": "input_image != null"
-        },
-        {
-          "name": "mask_threshold",
-          "type": "slider",
-          "label": "Re-threshold",
-          "order": 10,
-          "width": 1,
-          "min": 0,
-          "max": 1,
-          "step": 0.05,
-          "default": 0,
-          "visible_when": "input_image != null"
-        },
-        {
-          "name": "mask_invert",
-          "type": "boolean",
-          "label": "Invert",
-          "order": 11,
-          "default": false,
-          "visible_when": "input_image != null"
-        },
-        {
-          "name": "outpaint_top",
-          "type": "slider",
-          "label": "Expand Top",
-          "order": 12,
-          "width": 1,
-          "min": 0,
-          "max": 512,
-          "step": 8,
-          "default": 0,
-          "visible_when": "input_image != null"
-        },
-        {
-          "name": "outpaint_right",
-          "type": "slider",
-          "label": "Expand Right",
-          "order": 13,
-          "width": 1,
-          "min": 0,
-          "max": 512,
-          "step": 8,
-          "default": 0,
-          "visible_when": "input_image != null"
-        },
-        {
-          "name": "outpaint_bottom",
-          "type": "slider",
-          "label": "Expand Bottom",
-          "order": 14,
-          "width": 1,
-          "min": 0,
-          "max": 512,
-          "step": 8,
-          "default": 0,
-          "visible_when": "input_image != null"
-        },
-        {
-          "name": "outpaint_left",
-          "type": "slider",
-          "label": "Expand Left",
-          "order": 15,
-          "width": 1,
-          "min": 0,
-          "max": 512,
-          "step": 8,
-          "default": 0,
-          "visible_when": "input_image != null"
-        },
-        {
-          "name": "outpaint_overlap",
-          "type": "slider",
-          "label": "Overlap",
-          "order": 16,
-          "width": 1,
-          "min": 0,
-          "max": 64,
-          "step": 1,
-          "default": 16,
-          "visible_when": "input_image != null"
-        }
-      ]
+     "label": "Negative Prompt",
+     "name": "negative_prompt",
+     "order": 1,
+     "type": "textarea",
+     "visible_when": "negative_prompt != null",
+     "width": 1
     }
-  ]
+   ],
+   "id": "prompt",
+   "label": "Prompt",
+   "order": 1,
+   "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "columns": 3,
+     "label": "Width",
+     "max": 2048,
+     "min": 256,
+     "name": "width",
+     "order": 0,
+     "step": 16,
+     "type": "number",
+     "width": 1
+    },
+    {
+     "label": "Height",
+     "max": 2048,
+     "min": 256,
+     "name": "height",
+     "order": 1,
+     "step": 16,
+     "type": "number",
+     "width": 1
+    },
+    {
+     "default": -1,
+     "label": "Seed",
+     "name": "seed",
+     "order": 4,
+     "type": "seed",
+     "width": 1
+    }
+   ],
+   "id": "resolution",
+   "label": "Resolution",
+   "order": 2,
+   "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "label": "Steps",
+     "max": 100,
+     "min": 1,
+     "name": "steps",
+     "order": 0,
+     "step": 1,
+     "type": "number",
+     "width": 1
+    },
+    {
+     "label": "Guidance Scale",
+     "max": 20,
+     "min": 1,
+     "name": "cfg",
+     "order": 1,
+     "step": 0.1,
+     "tooltip": "How closely the diffusion follows the prompt. Higher = stricter.",
+     "type": "slider",
+     "width": 1
+    },
+    {
+     "label": "Sampler",
+     "name": "sampler",
+     "options": [
+      "er_sde",
+      "euler",
+      "euler_ancestral",
+      "euler_cfg_pp",
+      "dpmpp_2m",
+      "dpmpp_2m_sde",
+      "dpmpp_2m_sde_gpu",
+      "dpmpp_3m_sde",
+      "dpm_fast",
+      "lcm",
+      "lms",
+      "heun"
+     ],
+     "order": 2,
+     "type": "select",
+     "width": 1
+    },
+    {
+     "label": "Scheduler",
+     "name": "scheduler",
+     "options": [
+      "normal",
+      "karras",
+      "exponential",
+      "sgm_uniform",
+      "simple",
+      "ddim_uniform",
+      "beta",
+      "linear_quadratic",
+      "kl_optimal"
+     ],
+     "order": 3,
+     "type": "select",
+     "width": 1
+    }
+   ],
+   "id": "sampling",
+   "label": "Sampling",
+   "order": 3,
+   "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "label": "Image",
+     "name": "input_image",
+     "order": -1,
+     "type": "image"
+    },
+    {
+     "default": false,
+     "label": "Force LanPaint",
+     "name": "lanpaint_enabled",
+     "order": 1,
+     "type": "boolean",
+     "visible_when": "input_image != null"
+    },
+    {
+     "default": 20,
+     "label": "Num Steps",
+     "max": 100,
+     "min": 1,
+     "name": "lanpaint_num_steps",
+     "order": 2,
+     "step": 1,
+     "type": "number",
+     "visible_when": "lanpaint_enabled == true",
+     "width": 1
+    },
+    {
+     "default": 1.0,
+     "label": "Step Size",
+     "max": 2,
+     "min": 0.1,
+     "name": "lanpaint_step_size",
+     "order": 3,
+     "step": 0.1,
+     "type": "slider",
+     "visible_when": "lanpaint_enabled == true",
+     "width": 1
+    },
+    {
+     "default": 0.5,
+     "label": "Lambda",
+     "max": 2,
+     "min": 0,
+     "name": "lanpaint_lambda",
+     "order": 4,
+     "step": 0.05,
+     "type": "slider",
+     "visible_when": "lanpaint_enabled == true",
+     "width": 1
+    },
+    {
+     "default": 0.5,
+     "label": "Beta",
+     "max": 2,
+     "min": 0,
+     "name": "lanpaint_beta",
+     "order": 5,
+     "step": 0.05,
+     "type": "slider",
+     "visible_when": "lanpaint_enabled == true",
+     "width": 1
+    },
+    {
+     "default": 0.5,
+     "label": "Friction",
+     "max": 2,
+     "min": 0,
+     "name": "lanpaint_friction",
+     "order": 6,
+     "step": 0.05,
+     "type": "slider",
+     "visible_when": "lanpaint_enabled == true",
+     "width": 1
+    },
+    {
+     "default": "negative",
+     "label": "Prompt Mode",
+     "name": "lanpaint_prompt_mode",
+     "options": [
+      "negative",
+      "positive"
+     ],
+     "order": 7,
+     "type": "select",
+     "visible_when": "lanpaint_enabled == true",
+     "width": 1
+    },
+    {
+     "default": 0,
+     "label": "Expand Top",
+     "max": 512,
+     "min": 0,
+     "name": "outpaint_top",
+     "order": 8,
+     "step": 8,
+     "type": "slider",
+     "visible_when": "input_image != null",
+     "width": 1
+    },
+    {
+     "default": 0,
+     "label": "Expand Right",
+     "max": 512,
+     "min": 0,
+     "name": "outpaint_right",
+     "order": 9,
+     "step": 8,
+     "type": "slider",
+     "visible_when": "input_image != null",
+     "width": 1
+    },
+    {
+     "default": 0,
+     "label": "Expand Bottom",
+     "max": 512,
+     "min": 0,
+     "name": "outpaint_bottom",
+     "order": 10,
+     "step": 8,
+     "type": "slider",
+     "visible_when": "input_image != null",
+     "width": 1
+    },
+    {
+     "default": 0,
+     "label": "Expand Left",
+     "max": 512,
+     "min": 0,
+     "name": "outpaint_left",
+     "order": 11,
+     "step": 8,
+     "type": "slider",
+     "visible_when": "input_image != null",
+     "width": 1
+    },
+    {
+     "default": 16,
+     "label": "Overlap",
+     "max": 64,
+     "min": 0,
+     "name": "outpaint_overlap",
+     "order": 8,
+     "step": 1,
+     "type": "slider",
+     "visible_when": "input_image != null",
+     "width": 1
+    }
+   ],
+   "id": "lanpaint",
+   "label": "Lanpaint",
+   "order": 4,
+   "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "label": "Region Mask",
+     "name": "input_mask",
+     "order": 0,
+     "tooltip": "RGBA PNG whose alpha channel marks the region. Standalone: region semantics for this lane. Alongside lanpaint: the inpaint region \u2014 present with input_image, the builder switches to the lanpaint sampler.",
+     "type": "image"
+    },
+    {
+     "default": "auto",
+     "label": "Region Mode",
+     "name": "mask_mode",
+     "options": [
+      "auto",
+      "crop_stitch",
+      "full_frame"
+     ],
+     "order": 1,
+     "tooltip": "How the mask is honored: auto (the lane's own region ControlNet if its weights are present, else crop+stitch), crop_stitch (crop to the mask + context, work the crop, composite back \u2014 pixels outside the mask never change), full_frame (legacy whole-image pass; unmasked regions may drift).",
+     "type": "select",
+     "width": 1
+    },
+    {
+     "default": 64,
+     "label": "Context Padding",
+     "max": 256,
+     "min": 0,
+     "name": "mask_context_pad",
+     "order": 2,
+     "step": 8,
+     "tooltip": "Pixels of surrounding context kept in the crop (crop_stitch mode). More context = more coherence; 64 is the sweet spot.",
+     "type": "slider",
+     "width": 1
+    },
+    {
+     "default": 8,
+     "label": "Grow / Shrink",
+     "max": 32,
+     "min": -32,
+     "name": "mask_grow",
+     "order": 3,
+     "step": 1,
+     "tooltip": "Expand (+) or shrink (\u2212) the region by an exact pixel disk before the run. Applied host-side.",
+     "type": "slider",
+     "width": 1
+    },
+    {
+     "default": 8,
+     "label": "Feather",
+     "max": 32,
+     "min": 0,
+     "name": "mask_feather",
+     "order": 4,
+     "step": 1,
+     "tooltip": "Gaussian falloff the composite blends through \u2014 kills the pasted-on rectangle edge.",
+     "type": "slider",
+     "width": 1
+    },
+    {
+     "default": 0,
+     "label": "Re-threshold",
+     "max": 1,
+     "min": 0,
+     "name": "mask_threshold",
+     "order": 5,
+     "step": 0.05,
+     "tooltip": "Re-binarize the feathered mask at this level. 0 = keep the soft falloff.",
+     "type": "slider",
+     "width": 1
+    },
+    {
+     "default": false,
+     "label": "Invert",
+     "name": "mask_invert",
+     "order": 6,
+     "tooltip": "Work OUTSIDE the painted region instead.",
+     "type": "boolean",
+     "width": 1
+    }
+   ],
+   "id": "mask",
+   "label": "Mask",
+   "order": 5,
+   "zone": "mods"
+  }
+ ],
+ "service": "z-image",
+ "variants": [
+  {
+   "defaults": {},
+   "engine": "comfyui",
+   "group": "Variant",
+   "hint": "50-step base checkpoint \u2014 higher quality, LoRA training",
+   "id": "base",
+   "label": "Base",
+   "route": "z-image-base"
+  },
+  {
+   "defaults": {},
+   "group": "Quant",
+   "id": "int8",
+   "label": "INT8 ConvRot",
+   "quant": "int8",
+   "route": "z-image",
+   "vram_peak_gb": 0.0
+  },
+  {
+   "defaults": {},
+   "engine": "comfyui",
+   "group": "Variant",
+   "hint": "8-step distilled \u2014 fast (DEFAULT)",
+   "id": "turbo",
+   "label": "Turbo",
+   "route": "z-image"
+  }
+ ]
 }

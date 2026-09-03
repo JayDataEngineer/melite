@@ -117,7 +117,7 @@ def main():
     # (reorg 2026-09-02b: comfyui cards live under genre groups in
     # action_cards/<genre>/<card>/; audio-cpp still rides cards/<cid>/)
     FLIPPED = [
-        ("image-edit", "comfyui", "img-edit",
+        ("image-edit", "comfyui", "qwen-img-edit-2511",
          ("action_cards", "image", "image-edit")),
         ("h3-timeline", "comfyui", "h3-timeline",
          ("action_cards", "video", "h3-timeline")),
@@ -207,9 +207,13 @@ def main():
                                    engine_truth=_ac.ENGINE_TRUTH_KEYS)
     check("cross-validation pairs (all boarded families)",
           pairs == [("anima", "image-gen"),
+                    ("dwpose", "image-edit"),
+                    ("gem_soma", "image-edit"),
                     ("img-edit", "image-edit"),
                     ("krea-2", "image-gen"),
+                    ("latentsync", "image-edit"),
                     ("music3", "music"),
+                    ("qwen-img-edit-2511", "image-edit"),
                     ("z-image", "image-gen")], repr(pairs))
 
     # tool.json snapshots are DERIVED artifacts — the card class is the
@@ -875,6 +879,141 @@ def main():
               "preset lora outside provision: %s" % _pl)
     finally:
         os.environ.pop("H3_MODEL_DIR", None)
+
+    # ── THE MOD SYSTEM AUDIT (operator order, 2026-09-04: "is
+    # LanPaint, ControlNet, LORA all tucked purely away under mods,
+    # or did code leak out to the action card or model level?") ────
+    from melite_cards import (MaskMod, LanPaintMod, LorasMod,
+                              ControlNetMod, Boolean as _Bool)
+    from melite_cards.serialize import scan_engine_cards
+    from melite_models import scan_engine_models, load_model_py
+
+    # WALL 1 — FIELDS: no card hand-lists a mod's fields (the
+    # image-edit leak: 12 LanPaintMod fields copy-pasted onto the
+    # card). A card class declaring a field a library mod owns is
+    # drift — absorption is the only road onto a card surface.
+    _MOD_FIELDS = {}
+    for _mod in (MaskMod, LanPaintMod, LorasMod, ControlNetMod):
+        for _f in _mod._fields_:
+            _MOD_FIELDS.setdefault(_f.name, _mod.__name__)
+    from melite_cards import Field as _FieldCls
+    for pcid, (cpath, ccls) in sorted(scan_engine_cards(REPO).items()):
+        _hand = {k for k, v in vars(ccls).items()
+                 if isinstance(v, _FieldCls)}
+        _leaks = sorted(_hand & set(_MOD_FIELDS))
+        check("card %s hand-lists no mod field" % pcid, not _leaks,
+              "leaked: %s" % _leaks)
+
+    # WALL 2 — DEFAULTS: no model restates a mod knob in defaults=
+    # (merged_defaults absorbs the mod's field defaults as the base
+    # layer; a dict restatement is a silent override — the pose/edit
+    # hand-copies this audit deleted).
+    _models = scan_engine_models(
+        os.path.join(REPO, "plugins", "engines", "comfyui"))
+    for mid, mcls in sorted(_models.items()):
+        _absorbed = set()
+        for _mod in getattr(mcls, "mods", ()) or ():
+            _absorbed |= {f.name for f in _mod._fields_}
+        _restated = sorted(set(mcls.defaults or {}) & _absorbed)
+        check("model %s restates no mod knob" % mid, not _restated,
+              "restated: %s" % _restated)
+
+    # WALL 3 — COMPOSITION: the mask component is standalone AND
+    # attached (operator order: "it can be standalone AND also
+    # attached to the lanpaint section"). Standalone = no lanpaint
+    # coupling inside the mod; attached = lanpaint families board
+    # both; truthful = a family with no mask consumer boards none.
+    check("MaskMod standalone (no lanpaint coupling)",
+          all(not (f.visible_when or "") for f in MaskMod._fields_),
+          "coupled: %s" % [f.name for f in MaskMod._fields_
+                           if f.visible_when])
+    _anima = load_model_py(os.path.join(REPO, "plugins/engines/comfyui/models/image/anima/model.py"), "comfyui")
+    _anima_packs = {getattr(m, "pack", "") for m in _anima.mods}
+    check("anima attaches mask to lanpaint",
+          _anima_packs == {"lanpaint", "mask"}, _anima_packs)
+    _krea = load_model_py(os.path.join(REPO, "plugins/engines/comfyui/models/image/krea-2/model.py"), "comfyui")
+    _krea_packs = {getattr(m, "pack", "") for m in _krea.mods}
+    check("krea-2 boards no unconsumed mod (truthful surface)",
+          _krea_packs == {"loras"}, _krea_packs)
+
+    # WALL 4 — THE INTERLOCK: same-pack flavors MERGE across families
+    # (one lanpaint surface across the five edit-lane families — the
+    # loaded card above is the proof); DIVERGENT flavors refuse LOUD
+    # (one shape per name).
+    _editfams = [load_model_py(
+        os.path.join(REPO, "plugins/engines/comfyui/models",
+                     p, "model.py"), "comfyui")
+        for p in ("image/img-edit", "edit/qwen-img-edit-2511",
+                  "pose/dwpose", "pose/gem_soma", "pose/latentsync")]
+    _lan_fams = sorted(
+        m.id for m in _editfams
+        for mod in m.mods if getattr(mod, "pack", "") == "lanpaint")
+    check("edit lane: one lanpaint flavor shape, five families",
+          _lan_fams == ["dwpose", "gem_soma", "img-edit",
+                        "latentsync", "qwen-img-edit-2511"], _lan_fams)
+    from melite_cards.dsl import (_assert_flavors_agree,
+                                  ValidationError as _VE)
+
+    class _FlavorA(LanPaintMod):
+        pack = "lanpaint"
+
+    class _FlavorB(LanPaintMod):
+        pack = "lanpaint"
+        lanpaint_enabled = _Bool(label='Diverged', default=False)
+    try:
+        _assert_flavors_agree("probe", _FlavorA, _FlavorB)
+        check("divergent same-pack flavors refuse", False,
+              "divergence accepted silently")
+    except _VE:
+        check("divergent same-pack flavors refuse", True)
+    _assert_flavors_agree("probe", _FlavorA, LanPaintMod)
+    check("identical same-pack flavors merge", True)
+
+    # WALL 5 — CONSUMPTION: the loras mod rides low-code (the door
+    # resolves entries against the model's own rows; the renderer
+    # chains generic LoraLoaderModelOnly nodes; bare posts are
+    # byte-stable; closed channels and unknown ids refuse LOUD).
+    _gen = os.path.join(REPO, "plugins/engines/comfyui/action_cards",
+                        "image", "image-gen")
+    sys.path.insert(0, _gen)
+    import generate as _gen_mod
+
+    _bare = {"model": "krea-2", "params": {"prompt": "x", "seed": 7}}
+    _rc, _y, _ex, _e = _gen_mod.compose(_bare, "krea-2", "")
+    check("loras: bare post carries no channel",
+          _rc == 0 and "loras" not in (_ex or {}).get("inputs", {}),
+          _e or "")
+
+    _rc, _y, _ex, _e = _gen_mod.compose(
+        {"model": "krea-2", "params": {"prompt": "x",
+         "loras": [{"id": "nope"}]}}, "krea-2", "")
+    check("loras: unknown id refuses LOUD (catalog is the SSOT)",
+          _rc == -3 and "nope" in (_e or ""), _e or "")
+
+    _rc, _y, _ex, _e = _gen_mod.compose(
+        {"model": "anima", "params": {"prompt": "x",
+         "loras": [{"id": "any"}]}}, "anima", "")
+    check("loras: closed channel refuses (no loras mod declared)",
+          _rc == -3 and "no loras mod" in (_e or ""), _e or "")
+
+    _rc, _sk, _ex, _e = _gen_mod.compose(
+        {"model": "krea-2", "params": {
+            "prompt": "x", "seed": 7,
+            "loras": [{"id": "krea2_turbo_lora_rank_64_bf16"},
+                      {"id": "krea2_realism_lora", "strength": 0.4}]}},
+        "krea-2", "run-wall-loras")
+    _wf = _sk.nodes[0].params["workflow"] if _rc == 0 else {}
+    _chain = [v for v in _wf.values()
+              if v["class_type"] == "LoraLoaderModelOnly"]
+    _sampler = [v for v in _wf.values()
+                if v["class_type"] == "KSampler"]
+    check("loras: chain wires unet -> loaders -> sampler",
+          _rc == 0 and len(_chain) == 2 and _sampler
+          and _sampler[0]["inputs"]["model"][1] == 0
+          and _chain[1]["inputs"]["model"][0].startswith(
+              "LoraLoaderModelOnly")
+          and _chain[0]["inputs"]["model"][0].startswith("UNETLoader"),
+          "chain: %s" % [v["inputs"] for v in _chain])
 
     print("PASS %d / FAIL %d" % (PASS, FAIL))
     return 1 if FAIL else 0

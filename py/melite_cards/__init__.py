@@ -30,6 +30,7 @@ from .dsl import (          # noqa: F401
     LorasMod,
     ControlNetMod,
     LanPaintMod,
+    MaskMod,
     Field,
     Select,
     Textarea,
@@ -51,7 +52,7 @@ from .serialize import (  # noqa: F401
     field_spec, load_card_py, scan_engine_cards, tool_manifests)
 
 __all__ = [
-    "ActionCard", "Mod", "ActionCardPack", "LorasMod", "ControlNetMod",
+    "ActionCard", "Mod", "ActionCardPack", "LorasMod", "ControlNetMod", "MaskMod",
     "LanPaintMod", "Field", "Select", "Textarea", "Text", "Number",
     "Slider", "Seed", "Boolean", "Image", "Audio", "Video", "File",
     "Loras", "ControlNet", "VocabRef", "ValidationError",

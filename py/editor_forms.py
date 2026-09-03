@@ -1045,11 +1045,21 @@ def _modifiers(repo_root, model):
         return []
     cls = _load_card_class(yp)
     if cls is not None:
+        # FAMILY-SCOPED walk: absorbed mod fields ride only the
+        # families that declared them (the fields array always was;
+        # the modifier walk leaking other families' knobs was the
+        # unscoped hand-list era's camouflage)
+        nmodel = _norm(model)
+
+        def _in_family(fld):
+            fams = getattr(fld, "families", ()) or ()
+            return not fams or any(_norm(t) == nmodel for t in fams)
+
         mes = [{"name": f.name, "type": f.type, "label": f.label or "",
                 "min": f.min, "max": f.max, "step": f.step,
                 "has_min": f.min is not None, "has_max": f.max is not None,
                 "has_step": f.step is not None}
-               for f in cls._fields_]
+               for f in cls._fields_ if _in_family(f)]
     else:
         mes = _parse_mod_entries(yp)
     out = []

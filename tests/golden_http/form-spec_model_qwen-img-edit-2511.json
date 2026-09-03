@@ -124,25 +124,35 @@
    "width": 1
   },
   {
-   "group": "loras",
-   "label": "LoRAs",
-   "name": "loras",
+   "group": "edit_tuning",
+   "label": "Workflow Preset",
+   "name": "preset",
+   "options": [],
    "order": 0,
-   "type": "loras"
-  },
-  {
-   "group": "loras",
-   "label": "ControlNet Strength Floor",
-   "max": 1,
-   "min": 0,
-   "name": "controlnet_strength_floor",
-   "order": 2,
-   "step": 0.05,
-   "tooltip": "Minimum strength any ControlNet in the stack may apply at. Entries below are clamped UP. 0.0 = no floor. Raise when stacking weak CNs that cost VRAM without visual benefit.",
-   "type": "slider",
+   "tooltip": "Optional recipe preset \u2014 empty (default) = plain edit, the route's own catalog recipe (steps/cfg/loras from its defaults). vnccs_repose: the VNCCS re-pose recipe (external Lightning 4-step LoRA + VNCCS PoseStudio LoRA) for mesh-based re-pose pipelines \u2014 explicit only, never the default: its Lightning LoRA stacked on a Lightning-baked route (Apex int8, the fused lightning4) is double distillation (GPU-verified 2026-08-15). blue_mesh: blue-mesh overpaint mode \u2014 the builder loads the blue_mesh ControlNet stack.",
+   "type": "select",
    "width": 1
   },
   {
+   "group": "edit_tuning",
+   "label": "Use Stock Nodes",
+   "name": "use_stock_nodes",
+   "order": 1,
+   "tooltip": "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.",
+   "type": "boolean",
+   "width": 1
+  },
+  {
+   "group": "edit_tuning",
+   "label": "Double Reference",
+   "name": "double_reference",
+   "order": 2,
+   "tooltip": "Encode the input image twice (VAE + vision encoder) for stronger identity preservation. Disable for faster runs where identity drift is acceptable.",
+   "type": "boolean",
+   "width": 1
+  },
+  {
+   "default": false,
    "group": "lanpaint",
    "label": "Force LanPaint",
    "name": "lanpaint_enabled",
@@ -151,6 +161,7 @@
    "visible_when": "input_image != null"
   },
   {
+   "default": 20,
    "group": "lanpaint",
    "label": "Num Steps",
    "max": 100,
@@ -163,6 +174,7 @@
    "width": 1
   },
   {
+   "default": 1.0,
    "group": "lanpaint",
    "label": "Step Size",
    "max": 2,
@@ -175,6 +187,7 @@
    "width": 1
   },
   {
+   "default": 0.5,
    "group": "lanpaint",
    "label": "Lambda",
    "max": 2,
@@ -187,6 +200,7 @@
    "width": 1
   },
   {
+   "default": 0.5,
    "group": "lanpaint",
    "label": "Beta",
    "max": 2,
@@ -199,6 +213,7 @@
    "width": 1
   },
   {
+   "default": 0.5,
    "group": "lanpaint",
    "label": "Friction",
    "max": 2,
@@ -211,6 +226,7 @@
    "width": 1
   },
   {
+   "default": "negative",
    "group": "lanpaint",
    "label": "Prompt Mode",
    "name": "lanpaint_prompt_mode",
@@ -224,80 +240,145 @@
    "width": 1
   },
   {
+   "default": 0,
    "group": "lanpaint",
+   "label": "Expand Top",
+   "max": 512,
+   "min": 0,
+   "name": "outpaint_top",
+   "order": 8,
+   "step": 8,
+   "type": "slider",
+   "visible_when": "input_image != null",
+   "width": 1
+  },
+  {
+   "default": 0,
+   "group": "lanpaint",
+   "label": "Expand Right",
+   "max": 512,
+   "min": 0,
+   "name": "outpaint_right",
+   "order": 9,
+   "step": 8,
+   "type": "slider",
+   "visible_when": "input_image != null",
+   "width": 1
+  },
+  {
+   "default": 0,
+   "group": "lanpaint",
+   "label": "Expand Bottom",
+   "max": 512,
+   "min": 0,
+   "name": "outpaint_bottom",
+   "order": 10,
+   "step": 8,
+   "type": "slider",
+   "visible_when": "input_image != null",
+   "width": 1
+  },
+  {
+   "default": 0,
+   "group": "lanpaint",
+   "label": "Expand Left",
+   "max": 512,
+   "min": 0,
+   "name": "outpaint_left",
+   "order": 11,
+   "step": 8,
+   "type": "slider",
+   "visible_when": "input_image != null",
+   "width": 1
+  },
+  {
+   "default": 16,
+   "group": "lanpaint",
+   "label": "Overlap",
+   "max": 64,
+   "min": 0,
+   "name": "outpaint_overlap",
+   "order": 8,
+   "step": 1,
+   "type": "slider",
+   "visible_when": "input_image != null",
+   "width": 1
+  },
+  {
+   "default": "auto",
+   "group": "mask",
    "label": "Region Mode",
-   "name": "edit_mask_mode",
+   "name": "mask_mode",
    "options": [
     "auto",
     "crop_stitch",
     "full_frame"
    ],
-   "order": 8,
-   "tooltip": "How the region mask is honored: auto (DiffSynth ControlNet if its weights are present, else crop+stitch), crop_stitch (crop to the mask + context, edit the crop, composite back — pixels outside the mask never change), full_frame (legacy whole-image edit; unmasked regions may drift).",
+   "order": 1,
+   "tooltip": "How the mask is honored: auto (the lane's own region ControlNet if its weights are present, else crop+stitch), crop_stitch (crop to the mask + context, work the crop, composite back \u2014 pixels outside the mask never change), full_frame (legacy whole-image pass; unmasked regions may drift).",
    "type": "select",
-   "visible_when": "input_image != null",
    "width": 1
   },
   {
-   "group": "lanpaint",
+   "default": 64,
+   "group": "mask",
    "label": "Context Padding",
    "max": 256,
    "min": 0,
-   "name": "edit_context_pad",
-   "order": 9,
+   "name": "mask_context_pad",
+   "order": 2,
    "step": 8,
-   "tooltip": "Pixels of surrounding context kept in the crop (crop_stitch mode). More context = more coherent edit; 64 is the sweet spot.",
+   "tooltip": "Pixels of surrounding context kept in the crop (crop_stitch mode). More context = more coherence; 64 is the sweet spot.",
    "type": "slider",
-   "visible_when": "input_image != null",
    "width": 1
   },
   {
-   "group": "lanpaint",
+   "default": 8,
+   "group": "mask",
    "label": "Grow / Shrink",
    "max": 32,
    "min": -32,
    "name": "mask_grow",
-   "order": 10,
+   "order": 3,
    "step": 1,
-   "tooltip": "Expand (+) or shrink (−) the edit region by an exact pixel disk before the edit. Applied host-side — the same mask-prep chain the Inpaint card uses.",
+   "tooltip": "Expand (+) or shrink (\u2212) the region by an exact pixel disk before the run. Applied host-side.",
    "type": "slider",
-   "visible_when": "input_image != null",
    "width": 1
   },
   {
-   "group": "lanpaint",
+   "default": 8,
+   "group": "mask",
    "label": "Feather",
    "max": 32,
    "min": 0,
    "name": "mask_feather",
-   "order": 11,
+   "order": 4,
    "step": 1,
-   "tooltip": "Gaussian falloff the composite blends through — kills the pasted-on rectangle edge.",
+   "tooltip": "Gaussian falloff the composite blends through \u2014 kills the pasted-on rectangle edge.",
    "type": "slider",
-   "visible_when": "input_image != null",
    "width": 1
   },
   {
-   "group": "lanpaint",
+   "default": 0,
+   "group": "mask",
    "label": "Re-threshold",
    "max": 1,
    "min": 0,
    "name": "mask_threshold",
-   "order": 12,
+   "order": 5,
    "step": 0.05,
    "tooltip": "Re-binarize the feathered mask at this level. 0 = keep the soft falloff.",
    "type": "slider",
-   "visible_when": "input_image != null",
    "width": 1
   },
   {
-   "group": "lanpaint",
+   "default": false,
+   "group": "mask",
    "label": "Invert",
    "name": "mask_invert",
-   "order": 13,
-   "tooltip": "Edit OUTSIDE the painted region instead.",
+   "order": 6,
+   "tooltip": "Work OUTSIDE the painted region instead.",
    "type": "boolean",
-   "visible_when": "input_image != null",
    "width": 1
   }
  ],
@@ -305,24 +386,6 @@
  "schema_groups": [
   {
    "fields": [
-    {
-     "columns": 3,
-     "label": "Image",
-     "name": "input_image",
-     "order": -1,
-     "required": true,
-     "type": "image",
-     "width": 1
-    },
-    {
-     "columns": 3,
-     "label": "Region Mask",
-     "name": "mask",
-     "order": 0,
-     "tooltip": "Optional region mask — omit to edit the whole image.",
-     "type": "image",
-     "width": 1
-    },
     {
      "label": "Image 2",
      "name": "image2",
@@ -343,6 +406,15 @@
      "order": 2,
      "tooltip": "Multi-image picker (up to 3). Used by workflows that pass resolved image lists; complements the individual Image 2 / Image 3 slots above.",
      "type": "image_list"
+    },
+    {
+     "columns": 3,
+     "label": "Image",
+     "name": "input_image",
+     "order": -1,
+     "required": true,
+     "type": "image",
+     "width": 1
     }
    ],
    "id": "input",
@@ -483,39 +555,40 @@
   {
    "fields": [
     {
-     "label": "LoRAs",
-     "name": "loras",
+     "label": "Workflow Preset",
+     "name": "preset",
+     "options": [],
      "order": 0,
-     "type": "loras"
+     "tooltip": "Optional recipe preset \u2014 empty (default) = plain edit, the route's own catalog recipe (steps/cfg/loras from its defaults). vnccs_repose: the VNCCS re-pose recipe (external Lightning 4-step LoRA + VNCCS PoseStudio LoRA) for mesh-based re-pose pipelines \u2014 explicit only, never the default: its Lightning LoRA stacked on a Lightning-baked route (Apex int8, the fused lightning4) is double distillation (GPU-verified 2026-08-15). blue_mesh: blue-mesh overpaint mode \u2014 the builder loads the blue_mesh ControlNet stack.",
+     "type": "select",
+     "width": 1
     },
     {
-     "label": "ControlNet Strength Floor",
-     "max": 1,
-     "min": 0,
-     "name": "controlnet_strength_floor",
+     "label": "Use Stock Nodes",
+     "name": "use_stock_nodes",
+     "order": 1,
+     "tooltip": "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.",
+     "type": "boolean",
+     "width": 1
+    },
+    {
+     "label": "Double Reference",
+     "name": "double_reference",
      "order": 2,
-     "step": 0.05,
-     "tooltip": "Minimum strength any ControlNet in the stack may apply at. Entries below are clamped UP. 0.0 = no floor. Raise when stacking weak CNs that cost VRAM without visual benefit.",
-     "type": "slider",
+     "tooltip": "Encode the input image twice (VAE + vision encoder) for stronger identity preservation. Disable for faster runs where identity drift is acceptable.",
+     "type": "boolean",
      "width": 1
     }
    ],
-   "id": "loras",
-   "label": "Loras",
+   "id": "edit_tuning",
+   "label": "Edit_tuning",
    "order": 4,
-   "zone": "mods"
+   "zone": "params"
   },
   {
    "fields": [
     {
-     "label": "Inpaint Mask",
-     "name": "lanpaint_mask",
-     "order": 0,
-     "tooltip": "RGBA PNG whose alpha channel marks the region to edit. When present alongside input_image, build_img2img_edit patches the model with the DiffSynth inpaint ControlNet.",
-     "type": "image",
-     "visible_when": "input_image != null"
-    },
-    {
+     "default": false,
      "label": "Force LanPaint",
      "name": "lanpaint_enabled",
      "order": 1,
@@ -523,6 +596,7 @@
      "visible_when": "input_image != null"
     },
     {
+     "default": 20,
      "label": "Num Steps",
      "max": 100,
      "min": 1,
@@ -534,6 +608,7 @@
      "width": 1
     },
     {
+     "default": 1.0,
      "label": "Step Size",
      "max": 2,
      "min": 0.1,
@@ -545,6 +620,7 @@
      "width": 1
     },
     {
+     "default": 0.5,
      "label": "Lambda",
      "max": 2,
      "min": 0,
@@ -556,6 +632,7 @@
      "width": 1
     },
     {
+     "default": 0.5,
      "label": "Beta",
      "max": 2,
      "min": 0,
@@ -567,6 +644,7 @@
      "width": 1
     },
     {
+     "default": 0.5,
      "label": "Friction",
      "max": 2,
      "min": 0,
@@ -578,6 +656,7 @@
      "width": 1
     },
     {
+     "default": "negative",
      "label": "Prompt Mode",
      "name": "lanpaint_prompt_mode",
      "options": [
@@ -590,73 +669,62 @@
      "width": 1
     },
     {
-     "label": "Region Mode",
-     "name": "edit_mask_mode",
-     "options": [
-      "auto",
-      "crop_stitch",
-      "full_frame"
-     ],
+     "default": 0,
+     "label": "Expand Top",
+     "max": 512,
+     "min": 0,
+     "name": "outpaint_top",
      "order": 8,
-     "tooltip": "How the region mask is honored: auto (DiffSynth ControlNet if its weights are present, else crop+stitch), crop_stitch (crop to the mask + context, edit the crop, composite back — pixels outside the mask never change), full_frame (legacy whole-image edit; unmasked regions may drift).",
-     "type": "select",
+     "step": 8,
+     "type": "slider",
      "visible_when": "input_image != null",
      "width": 1
     },
     {
-     "label": "Context Padding",
-     "max": 256,
+     "default": 0,
+     "label": "Expand Right",
+     "max": 512,
      "min": 0,
-     "name": "edit_context_pad",
+     "name": "outpaint_right",
      "order": 9,
      "step": 8,
-     "tooltip": "Pixels of surrounding context kept in the crop (crop_stitch mode). More context = more coherent edit; 64 is the sweet spot.",
      "type": "slider",
      "visible_when": "input_image != null",
      "width": 1
     },
     {
-     "label": "Grow / Shrink",
-     "max": 32,
-     "min": -32,
-     "name": "mask_grow",
+     "default": 0,
+     "label": "Expand Bottom",
+     "max": 512,
+     "min": 0,
+     "name": "outpaint_bottom",
      "order": 10,
-     "step": 1,
-     "tooltip": "Expand (+) or shrink (−) the edit region by an exact pixel disk before the edit. Applied host-side — the same mask-prep chain the Inpaint card uses.",
+     "step": 8,
      "type": "slider",
      "visible_when": "input_image != null",
      "width": 1
     },
     {
-     "label": "Feather",
-     "max": 32,
+     "default": 0,
+     "label": "Expand Left",
+     "max": 512,
      "min": 0,
-     "name": "mask_feather",
+     "name": "outpaint_left",
      "order": 11,
-     "step": 1,
-     "tooltip": "Gaussian falloff the composite blends through — kills the pasted-on rectangle edge.",
+     "step": 8,
      "type": "slider",
      "visible_when": "input_image != null",
      "width": 1
     },
     {
-     "label": "Re-threshold",
-     "max": 1,
+     "default": 16,
+     "label": "Overlap",
+     "max": 64,
      "min": 0,
-     "name": "mask_threshold",
-     "order": 12,
-     "step": 0.05,
-     "tooltip": "Re-binarize the feathered mask at this level. 0 = keep the soft falloff.",
+     "name": "outpaint_overlap",
+     "order": 8,
+     "step": 1,
      "type": "slider",
-     "visible_when": "input_image != null",
-     "width": 1
-    },
-    {
-     "label": "Invert",
-     "name": "mask_invert",
-     "order": 13,
-     "tooltip": "Edit OUTSIDE the painted region instead.",
-     "type": "boolean",
      "visible_when": "input_image != null",
      "width": 1
     }
@@ -665,7 +733,93 @@
    "label": "Lanpaint",
    "order": 5,
    "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "label": "Region Mask",
+     "name": "input_mask",
+     "order": 0,
+     "tooltip": "RGBA PNG whose alpha channel marks the region. Standalone: region semantics for this lane. Alongside lanpaint: the inpaint region \u2014 present with input_image, the builder switches to the lanpaint sampler.",
+     "type": "image"
+    },
+    {
+     "default": "auto",
+     "label": "Region Mode",
+     "name": "mask_mode",
+     "options": [
+      "auto",
+      "crop_stitch",
+      "full_frame"
+     ],
+     "order": 1,
+     "tooltip": "How the mask is honored: auto (the lane's own region ControlNet if its weights are present, else crop+stitch), crop_stitch (crop to the mask + context, work the crop, composite back \u2014 pixels outside the mask never change), full_frame (legacy whole-image pass; unmasked regions may drift).",
+     "type": "select",
+     "width": 1
+    },
+    {
+     "default": 64,
+     "label": "Context Padding",
+     "max": 256,
+     "min": 0,
+     "name": "mask_context_pad",
+     "order": 2,
+     "step": 8,
+     "tooltip": "Pixels of surrounding context kept in the crop (crop_stitch mode). More context = more coherence; 64 is the sweet spot.",
+     "type": "slider",
+     "width": 1
+    },
+    {
+     "default": 8,
+     "label": "Grow / Shrink",
+     "max": 32,
+     "min": -32,
+     "name": "mask_grow",
+     "order": 3,
+     "step": 1,
+     "tooltip": "Expand (+) or shrink (\u2212) the region by an exact pixel disk before the run. Applied host-side.",
+     "type": "slider",
+     "width": 1
+    },
+    {
+     "default": 8,
+     "label": "Feather",
+     "max": 32,
+     "min": 0,
+     "name": "mask_feather",
+     "order": 4,
+     "step": 1,
+     "tooltip": "Gaussian falloff the composite blends through \u2014 kills the pasted-on rectangle edge.",
+     "type": "slider",
+     "width": 1
+    },
+    {
+     "default": 0,
+     "label": "Re-threshold",
+     "max": 1,
+     "min": 0,
+     "name": "mask_threshold",
+     "order": 5,
+     "step": 0.05,
+     "tooltip": "Re-binarize the feathered mask at this level. 0 = keep the soft falloff.",
+     "type": "slider",
+     "width": 1
+    },
+    {
+     "default": false,
+     "label": "Invert",
+     "name": "mask_invert",
+     "order": 6,
+     "tooltip": "Work OUTSIDE the painted region instead.",
+     "type": "boolean",
+     "width": 1
+    }
+   ],
+   "id": "mask",
+   "label": "Mask",
+   "order": 6,
+   "zone": "mods"
   }
  ],
- "service": "img-edit"
+ "service": "qwen-img-edit-2511"
 }

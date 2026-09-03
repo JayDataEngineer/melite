@@ -286,7 +286,14 @@ def _absorb_models(name, cid, models, fields, seen):
                 "%s boards model %r whose card=%r does not claim this "
                 "card back (%r) — the cross-validation hook is the "
                 "model's to declare" % (name, m.id, m.card, cid))
-    mod_scope = {}       # mod class -> [family ids declaring it]
+    # Mods key by CAPABILITY (pack), not by exact class: several
+    # families may board their own flavor of the same mod (img-edit's
+    # four families each declare a mods/lanpaint.py flavor — the
+    # krea-2 loras pattern). Same-pack flavors MERGE: one surface,
+    # scoped to every family that declared it. Flavors that diverge
+    # on a field's shape are a LOUD refusal — one declaration per
+    # name means one SHAPE per name too (pick a shape, share it).
+    mod_scope = {}       # pack -> (mod class, [family ids declaring it])
     for m in models:
         for mod in getattr(m, "mods", ()) or ():
             if not (isinstance(mod, type)
@@ -294,9 +301,15 @@ def _absorb_models(name, cid, models, fields, seen):
                 raise ValidationError(
                     "model %r declares mod %r — mods must be "
                     "ActionCardPack classes" % (m.id, mod))
-            mod_scope.setdefault(mod, []).append(m.id)
+            pack = getattr(mod, "pack", "") or mod.__name__
+            if pack in mod_scope:
+                first, fams = mod_scope[pack]
+                _assert_flavors_agree(name, first, mod)
+                fams.append(m.id)
+            else:
+                mod_scope[pack] = (mod, [m.id])
     out = list(fields)
-    for mod, fams in mod_scope.items():
+    for _pack, (mod, fams) in mod_scope.items():
         for f in mod._fields_:
             if f.name in seen:
                 raise ValidationError(
@@ -307,6 +320,30 @@ def _absorb_models(name, cid, models, fields, seen):
             seen.add(f.name)
             out.append(fc)
     return out, seen
+
+
+def _field_sig(f):
+    """A field's declaration shape, name/families aside (the merge
+    key for same-pack flavors)."""
+    return tuple(sorted((k, repr(v)) for k, v in vars(f).items()
+                        if k not in ("name", "families")))
+
+
+def _assert_flavors_agree(name, first, other):
+    fi = {f.name: _field_sig(f) for f in first._fields_}
+    oi = {f.name: _field_sig(f) for f in other._fields_}
+    for nm in sorted(set(fi) & set(oi)):
+        if fi[nm] != oi[nm]:
+            raise ValidationError(
+                "%s: mod flavors %s and %s diverge on field %r — "
+                "same-pack flavors must share one field shape"
+                % (name, first.__name__, other.__name__, nm))
+    if set(fi) != set(oi):
+        raise ValidationError(
+            "%s: mod flavors %s and %s declare different fields "
+            "(%s vs %s) — same-pack flavors must share one surface"
+            % (name, first.__name__, other.__name__,
+               sorted(fi), sorted(oi)))
 
 
 class _CardMeta(type):
@@ -522,17 +559,65 @@ class ControlNetMod(Mod):
                 'benefit.')
 
 
+class MaskMod(Mod):
+    """The generic masking component — standalone AND attached
+    (operator order, 2026-09-04). Owns the mask slot, how a region
+    mask is honored, and the host-side prep chain (grow/feather/
+    threshold/invert — one mask system; the knobs used to live
+    inside LanPaintMod). STANDALONE: a family boards it alone for
+    its own region semantics. ATTACHED: lanpaint families board it
+    beside LanPaintMod — the mask feeds the inpaint flow (the old
+    lanpaint_mask slot WAS this mask). Mods bring up their own form
+    section, so the UI composes the same way the backend does — no
+    special casing on either side. Most runs never mask: every
+    field defaults to off/absent."""
+    pack = "mask"
+    input_mask = Image(label='Region Mask', group='mask', zone='mods',
+        order=0,
+        tooltip='RGBA PNG whose alpha channel marks the region. Standalone: '
+                'region semantics for this lane. Alongside lanpaint: the '
+                'inpaint region — present with input_image, the builder '
+                'switches to the lanpaint sampler.')
+    mask_mode = Select(label='Region Mode', group='mask', zone='mods',
+        order=1, width=1, default='auto',
+        options=['auto', 'crop_stitch', 'full_frame'],
+        tooltip='How the mask is honored: auto (the lane\'s own region '
+                'ControlNet if its weights are present, else crop+stitch), '
+                'crop_stitch (crop to the mask + context, work the crop, '
+                'composite back — pixels outside the mask never change), '
+                'full_frame (legacy whole-image pass; unmasked regions '
+                'may drift).')
+    mask_context_pad = Slider(label='Context Padding', group='mask',
+        zone='mods', order=2, width=1, min=0, max=256, step=8, default=64,
+        tooltip='Pixels of surrounding context kept in the crop '
+                '(crop_stitch mode). More context = more coherence; '
+                '64 is the sweet spot.')
+    mask_grow = Slider(label='Grow / Shrink', group='mask', zone='mods',
+        order=3, width=1, min=-32, max=32, step=1, default=8,
+        tooltip='Expand (+) or shrink (−) the region by an exact pixel '
+                'disk before the run. Applied host-side.')
+    mask_feather = Slider(label='Feather', group='mask', zone='mods',
+        order=4, width=1, min=0, max=32, step=1, default=8,
+        tooltip='Gaussian falloff the composite blends through — kills '
+                'the pasted-on rectangle edge.')
+    mask_threshold = Slider(label='Re-threshold', group='mask',
+        zone='mods', order=5, width=1, min=0, max=1, step=0.05, default=0,
+        tooltip='Re-binarize the feathered mask at this level. '
+                '0 = keep the soft falloff.')
+    mask_invert = Boolean(label='Invert', group='mask', zone='mods',
+        order=6, width=1, default=False,
+        tooltip='Work OUTSIDE the painted region instead.')
+
+
 class LanPaintMod(Mod):
-    """The LanPaint inpaint mod — input_image + lanpaint_mask switch
-    the builder to LanPaintKSampler; mask prep (grow/feather/
-    threshold/invert) and outpaint pads apply host-side pre-run."""
+    """The LanPaint inpaint mod — input_image + a mask (the generic
+    MaskMod, boarded beside this one) switch the builder to the
+    lanpaint sampler. The mask slot and its host-side prep chain
+    live in MaskMod now: attached composition, not lanpaint
+    internals. Outpaint pads ride here (canvas expansion is part of
+    the inpaint flow)."""
     pack = "lanpaint"
     input_image = Image(label='Image', group='lanpaint', order=-1)
-    lanpaint_mask = Image(label='Inpaint Mask', group='lanpaint', order=0,
-        tooltip='RGBA PNG whose alpha channel marks the region to '
-                'regenerate. When present alongside input_image, '
-                'build_txt2img switches to LanPaintKSampler.',
-        visible_when='input_image != null')
     lanpaint_enabled = Boolean(label='Force LanPaint', group='lanpaint',
                                order=1, default=False,
                                visible_when='input_image != null')
@@ -556,29 +641,18 @@ class LanPaintMod(Mod):
                                   order=7, width=1, default='negative',
                                   visible_when='lanpaint_enabled == true',
                                   options=["negative", "positive"])
-    mask_grow = Slider(label='Grow / Shrink', group='lanpaint', order=8,
-                       width=1, min=-32, max=32, step=1, default=8,
-                       visible_when='input_image != null')
-    mask_feather = Slider(label='Feather', group='lanpaint', order=9,
-                          width=1, min=0, max=32, step=1, default=8,
-                          visible_when='input_image != null')
-    mask_threshold = Slider(label='Re-threshold', group='lanpaint',
-                            order=10, width=1, min=0, max=1, step=0.05, default=0,
-                            visible_when='input_image != null')
-    mask_invert = Boolean(label='Invert', group='lanpaint', order=11,
-                          default=False, visible_when='input_image != null')
-    outpaint_top = Slider(label='Expand Top', group='lanpaint', order=12,
+    outpaint_top = Slider(label='Expand Top', group='lanpaint', order=8,
                           width=1, min=0, max=512, step=8, default=0,
                           visible_when='input_image != null')
     outpaint_right = Slider(label='Expand Right', group='lanpaint',
-                            order=13, width=1, min=0, max=512, step=8, default=0,
+                            order=9, width=1, min=0, max=512, step=8, default=0,
                             visible_when='input_image != null')
     outpaint_bottom = Slider(label='Expand Bottom', group='lanpaint',
-                             order=14, width=1, min=0, max=512, step=8, default=0,
+                             order=10, width=1, min=0, max=512, step=8, default=0,
                              visible_when='input_image != null')
-    outpaint_left = Slider(label='Expand Left', group='lanpaint', order=15,
+    outpaint_left = Slider(label='Expand Left', group='lanpaint', order=11,
                            width=1, min=0, max=512, step=8, default=0,
                            visible_when='input_image != null')
-    outpaint_overlap = Slider(label='Overlap', group='lanpaint', order=16,
+    outpaint_overlap = Slider(label='Overlap', group='lanpaint', order=8,
                               width=1, min=0, max=64, step=1, default=16,
                               visible_when='input_image != null')
