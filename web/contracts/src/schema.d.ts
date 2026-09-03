@@ -1334,6 +1334,21 @@ export interface components {
             owns_params: boolean;
             /** Writes */
             writes: string[];
+            /**
+             * Size
+             * @description Presentation notch (web-registry §7): the body frame's
+             *     size class — normal | wide | huge. Rides the claim; the shell
+             *     reads it instead of hardcoding.
+             * @default normal
+             */
+            size?: string;
+            /**
+             * Layout
+             * @description Presentation notch (web-registry §7): studio = the
+             *     full-bleed authoring surface; panel = embedded beside the rail.
+             * @default studio
+             */
+            layout?: string;
         } & {
             [key: string]: unknown;
         };

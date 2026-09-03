@@ -652,12 +652,17 @@ def _scan_model_dir(model_dir):
         os.path.dirname(model_dir))))
     cls = load_model_py(mpy, engine)
     meta = {"studio_tenant": None, "studio_owns_params": False,
-            "studio_writes": []}
+            "studio_writes": [], "studio_size": "normal",
+            "studio_layout": "studio"}
     if cls.studio is not None:
         meta = {"studio_tenant": cls.studio.tenant,
                 "studio_owns_params": bool(cls.studio.owns_params),
                 "studio_writes": [str(w) for w in
-                                  (cls.studio.writes or ())]}
+                                  (cls.studio.writes or ())],
+                # Presentation notches ride the claim (web-registry §7):
+                # the enum VALUES serve verbatim on the wire.
+                "studio_size": cls.studio.size.value,
+                "studio_layout": cls.studio.layout.value}
     return [(model_row(cls, model_dir), meta)]
 
 
@@ -829,6 +834,8 @@ def scan_catalog(repo_root):
                 "tenant": meta["studio_tenant"],
                 "owns_params": bool(meta["studio_owns_params"]),
                 "writes": list(meta["studio_writes"]),
+                "size": meta["studio_size"],
+                "layout": meta["studio_layout"],
             }
         families[row["id"]] = fam
 

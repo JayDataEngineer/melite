@@ -113,12 +113,30 @@ class Provision(BaseModel, frozen=True):
         return v
 
 
+class StudioSize(str, Enum):
+    """The body frame's size notch (presentation, web-registry §7)."""
+    normal = "normal"
+    wide = "wide"
+    huge = "huge"
+
+
+class StudioLayout(str, Enum):
+    """How the body mounts: studio = full-bleed authoring surface;
+    panel = embedded beside the rail."""
+    studio = "studio"
+    panel = "panel"
+
+
 class Studio(BaseModel, frozen=True):
     """The families-section claim (catalog meta)."""
     model_config = {"extra": "forbid"}
     tenant: str
     owns_params: bool = False
     writes: tuple[str, ...] = ()
+    # Presentation notches (web-registry §7 — they ride the data): the
+    # shell reads them off the claim instead of hardcoding the frame.
+    size: StudioSize = StudioSize.normal
+    layout: StudioLayout = StudioLayout.studio
 
 
 # ── closed vocabularies (PYTHON SHAPE LAW rung 3) ────────────────────

@@ -1,0 +1,766 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "items": [
+    {
+      "name": "FilmPlayer",
+      "type": "registry:block",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/FilmPlayer.tsx"
+        }
+      ],
+      "exports": [
+        "FilmPlayer",
+        "FilmPlayerHandle",
+        "FilmPlayerProps"
+      ],
+      "component": true
+    },
+    {
+      "name": "NumberField",
+      "type": "registry:block",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/NumberField.tsx"
+        }
+      ],
+      "exports": [
+        "NumberField",
+        "NumberFieldProps"
+      ],
+      "component": true
+    },
+    {
+      "name": "ProvenanceBadge",
+      "type": "registry:block",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/ProvenanceBadge.tsx"
+        }
+      ],
+      "exports": [
+        "PROVENANCE_META",
+        "ProvenanceBadge",
+        "ProvenanceMeta"
+      ],
+      "component": true
+    },
+    {
+      "name": "SlotSquare",
+      "type": "registry:block",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/SlotSquare.tsx"
+        }
+      ],
+      "exports": [
+        "ASSET_DRAG_MIME",
+        "SlotSquare",
+        "SlotSquareProps",
+        "isImageUrl",
+        "readAsDataURL"
+      ],
+      "component": true
+    },
+    {
+      "name": "WirePickerModal",
+      "type": "registry:block",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/WirePickerModal.tsx"
+        }
+      ],
+      "exports": [
+        "WirePickerModal",
+        "WirePickerModalProps"
+      ],
+      "component": true
+    },
+    {
+      "name": "accordion",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/accordion.tsx"
+        }
+      ],
+      "exports": [
+        "Accordion",
+        "AccordionContent",
+        "AccordionItem",
+        "AccordionTrigger"
+      ],
+      "component": true
+    },
+    {
+      "name": "avatar",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/avatar.tsx"
+        }
+      ],
+      "exports": [
+        "Avatar",
+        "AvatarBadge",
+        "AvatarFallback",
+        "AvatarGroup",
+        "AvatarGroupCount",
+        "AvatarImage"
+      ],
+      "component": true
+    },
+    {
+      "name": "badge",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/badge.tsx"
+        }
+      ],
+      "exports": [
+        "Badge",
+        "badgeVariants"
+      ],
+      "component": true
+    },
+    {
+      "name": "button",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/button.tsx"
+        }
+      ],
+      "exports": [
+        "Button",
+        "buttonVariants"
+      ],
+      "component": true
+    },
+    {
+      "name": "card",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/card.tsx"
+        }
+      ],
+      "exports": [
+        "Card",
+        "CardAction",
+        "CardContent",
+        "CardDescription",
+        "CardFooter",
+        "CardHeader",
+        "CardTitle"
+      ],
+      "component": true
+    },
+    {
+      "name": "cardControls",
+      "type": "registry:block",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/cardControls.tsx"
+        }
+      ],
+      "exports": [
+        "CheckControl",
+        "CheckControlProps",
+        "ControlDensity",
+        "ControlRow",
+        "ControlRowProps",
+        "ControlSelectOption",
+        "NumberControl",
+        "NumberControlProps",
+        "SectionLabel",
+        "SectionLabelProps",
+        "SelectControl",
+        "SelectControlProps",
+        "SliderControl",
+        "SliderControlProps",
+        "TextControl",
+        "TextControlProps",
+        "TriControl",
+        "TriControlProps"
+      ],
+      "component": true
+    },
+    {
+      "name": "checkbox",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/checkbox.tsx"
+        }
+      ],
+      "exports": [
+        "Checkbox"
+      ],
+      "component": true
+    },
+    {
+      "name": "clipboard",
+      "type": "registry:lib",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/clipboard.ts"
+        }
+      ],
+      "exports": [
+        "copyText"
+      ],
+      "component": false
+    },
+    {
+      "name": "collapsible",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/collapsible.tsx"
+        }
+      ],
+      "exports": [
+        "Collapsible",
+        "CollapsibleContent",
+        "CollapsibleTrigger"
+      ],
+      "component": true
+    },
+    {
+      "name": "command",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/command.tsx"
+        }
+      ],
+      "exports": [
+        "Command",
+        "CommandEmpty",
+        "CommandGroup",
+        "CommandInput",
+        "CommandItem",
+        "CommandList"
+      ],
+      "component": true
+    },
+    {
+      "name": "dialog",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/dialog.tsx"
+        }
+      ],
+      "exports": [
+        "Dialog",
+        "DialogClose",
+        "DialogContent",
+        "DialogDescription",
+        "DialogFooter",
+        "DialogHeader",
+        "DialogOverlay",
+        "DialogPortal",
+        "DialogTitle",
+        "DialogTrigger"
+      ],
+      "component": true
+    },
+    {
+      "name": "input",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/input.tsx"
+        }
+      ],
+      "exports": [
+        "Input"
+      ],
+      "component": true
+    },
+    {
+      "name": "label",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/label.tsx"
+        }
+      ],
+      "exports": [
+        "Label"
+      ],
+      "component": true
+    },
+    {
+      "name": "listFilter",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/listFilter.ts"
+        }
+      ],
+      "exports": [
+        "ListFilterState",
+        "ListItemAccessor",
+        "SORT_OPTIONS",
+        "SortOption",
+        "useListFilter"
+      ],
+      "component": true
+    },
+    {
+      "name": "motionThumbStore",
+      "type": "registry:block",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/motionThumbStore.ts"
+        }
+      ],
+      "exports": [
+        "useMotionThumbStore"
+      ],
+      "component": true
+    },
+    {
+      "name": "navigation-menu",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/navigation-menu.tsx"
+        }
+      ],
+      "exports": [
+        "NavigationMenu",
+        "NavigationMenuContent",
+        "NavigationMenuIndicator",
+        "NavigationMenuItem",
+        "NavigationMenuLink",
+        "NavigationMenuList",
+        "NavigationMenuPositioner",
+        "NavigationMenuTrigger",
+        "navigationMenuTriggerStyle"
+      ],
+      "component": true
+    },
+    {
+      "name": "popover",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/popover.tsx"
+        }
+      ],
+      "exports": [
+        "Popover",
+        "PopoverAnchor",
+        "PopoverContent",
+        "PopoverTrigger"
+      ],
+      "component": true
+    },
+    {
+      "name": "scroll-area",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/scroll-area.tsx"
+        }
+      ],
+      "exports": [
+        "ScrollArea",
+        "ScrollBar"
+      ],
+      "component": true
+    },
+    {
+      "name": "scrub-input",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/scrub-input.tsx"
+        }
+      ],
+      "exports": [
+        "ScrubInput"
+      ],
+      "component": true
+    },
+    {
+      "name": "select-menu",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/select-menu.tsx"
+        }
+      ],
+      "exports": [
+        "SelectMenu",
+        "SelectOption"
+      ],
+      "component": true
+    },
+    {
+      "name": "select",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/select.tsx"
+        }
+      ],
+      "exports": [
+        "Select",
+        "SelectContent",
+        "SelectGroup",
+        "SelectItem",
+        "SelectLabel",
+        "SelectScrollDownButton",
+        "SelectScrollUpButton",
+        "SelectSeparator",
+        "SelectTrigger",
+        "SelectValue"
+      ],
+      "component": true
+    },
+    {
+      "name": "separator",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/separator.tsx"
+        }
+      ],
+      "exports": [
+        "Separator"
+      ],
+      "component": true
+    },
+    {
+      "name": "sheet",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/sheet.tsx"
+        }
+      ],
+      "exports": [
+        "Sheet",
+        "SheetClose",
+        "SheetContent",
+        "SheetDescription",
+        "SheetFooter",
+        "SheetHeader",
+        "SheetTitle",
+        "SheetTrigger"
+      ],
+      "component": true
+    },
+    {
+      "name": "shortcuts",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/shortcuts.ts"
+        }
+      ],
+      "exports": [
+        "SHORTCUTS",
+        "SHORTCUT_CATEGORY_ORDER",
+        "ShortcutCategory",
+        "ShortcutDef",
+        "findShortcutById",
+        "groupShortcutsByCategory"
+      ],
+      "component": true
+    },
+    {
+      "name": "sidebar",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/sidebar.tsx"
+        }
+      ],
+      "exports": [
+        "Sidebar",
+        "SidebarContent",
+        "SidebarFooter",
+        "SidebarGroup",
+        "SidebarGroupAction",
+        "SidebarGroupContent",
+        "SidebarGroupLabel",
+        "SidebarHeader",
+        "SidebarInput",
+        "SidebarInset",
+        "SidebarMenu",
+        "SidebarMenuAction",
+        "SidebarMenuBadge",
+        "SidebarMenuButton",
+        "SidebarMenuItem",
+        "SidebarMenuSkeleton",
+        "SidebarMenuSub",
+        "SidebarMenuSubButton",
+        "SidebarMenuSubItem",
+        "SidebarProvider",
+        "SidebarRail",
+        "SidebarSeparator",
+        "SidebarTrigger",
+        "useSidebar"
+      ],
+      "component": true
+    },
+    {
+      "name": "skeleton",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/skeleton.tsx"
+        }
+      ],
+      "exports": [
+        "Skeleton"
+      ],
+      "component": true
+    },
+    {
+      "name": "slider",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/slider.tsx"
+        }
+      ],
+      "exports": [
+        "Slider"
+      ],
+      "component": true
+    },
+    {
+      "name": "snapping",
+      "type": "registry:lib",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/snapping.ts"
+        }
+      ],
+      "exports": [
+        "SnapResult",
+        "SnapTarget",
+        "findSnap",
+        "gridTargets",
+        "segmentEdgeTargets",
+        "snapTime"
+      ],
+      "component": false
+    },
+    {
+      "name": "speechLength",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/speechLength.ts"
+        }
+      ],
+      "exports": [
+        "SPEECH_LENGTH_ZERO",
+        "SpeechLengthResult",
+        "useSpeechLength"
+      ],
+      "component": true
+    },
+    {
+      "name": "status",
+      "type": "registry:lib",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/status.ts"
+        }
+      ],
+      "exports": [
+        "StatusKey",
+        "statusBadge",
+        "statusDot",
+        "statusLabel",
+        "statusStyle"
+      ],
+      "component": false
+    },
+    {
+      "name": "switch",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/switch.tsx"
+        }
+      ],
+      "exports": [
+        "Switch"
+      ],
+      "component": true
+    },
+    {
+      "name": "tabs",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/tabs.tsx"
+        }
+      ],
+      "exports": [
+        "Tabs",
+        "TabsContent",
+        "TabsList",
+        "TabsTrigger",
+        "tabsListVariants"
+      ],
+      "component": true
+    },
+    {
+      "name": "textarea",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/textarea.tsx"
+        }
+      ],
+      "exports": [
+        "Textarea"
+      ],
+      "component": true
+    },
+    {
+      "name": "tip",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/tip.tsx"
+        }
+      ],
+      "exports": [
+        "Tip"
+      ],
+      "component": true
+    },
+    {
+      "name": "toast",
+      "type": "registry:hook",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/toast.ts"
+        }
+      ],
+      "exports": [
+        "Toast",
+        "ToastAction",
+        "ToastType",
+        "useToastStore"
+      ],
+      "component": false
+    },
+    {
+      "name": "tooltip",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/tooltip.tsx"
+        }
+      ],
+      "exports": [
+        "Tooltip",
+        "TooltipContent",
+        "TooltipProvider",
+        "TooltipTrigger"
+      ],
+      "component": true
+    },
+    {
+      "name": "use-hover-scrub",
+      "type": "registry:hook",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/use-hover-scrub.ts"
+        }
+      ],
+      "exports": [
+        "UseHoverScrubResult",
+        "formatScrubTime",
+        "useHoverScrub"
+      ],
+      "component": false
+    },
+    {
+      "name": "use-mobile",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/use-mobile.ts"
+        }
+      ],
+      "exports": [
+        "useIsMobile"
+      ],
+      "component": true
+    },
+    {
+      "name": "utils",
+      "type": "registry:lib",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/utils.ts"
+        }
+      ],
+      "exports": [
+        "clampNumber",
+        "cn",
+        "parseNumber"
+      ],
+      "component": false
+    }
+  ]
+}
