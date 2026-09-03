@@ -1,6 +1,6 @@
 # melite_cards — the python action-card DSL (2026-09-02)
 """Engine-agnostic card form grammar: py/melite_cards is the py twin
-of plugins/web/ui_components — generic infrastructure, no lane knowledge
+of web/ (the web registry root) — generic infrastructure, no lane knowledge
 (PLUGIN ARCHITECTURE LAW). The CLASSES live engine-owned at
 plugins/engines/<engine>/cards/<card>/card.py and carry the surface.
 

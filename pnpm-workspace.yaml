@@ -18,15 +18,27 @@ allowBuilds:
 ## plugins/web/editor). It is a CONSUMER — an alternative pathway to the
 ## dsh plugins, not infrastructure — so it joins as a workspace MEMBER
 ## like every other plugin (core ships py/ + the contract; nothing else).
-## The generic UI kit stays at plugins/web/ui_components — engine-agnostic
-## packages any engine consumes and any pathway renders.
+## The generic UI kit lives at web/ (THE WEB REGISTRY ruling, 2026-09-03,
+## docs/design/web-registry.md §3): first-party design system ABOVE
+## pathways — the editor and every engine plugin consume it; no consumer
+## hosts shared infrastructure in its subtree.
 packages:
   - 'packages/*'                          # root stragglers: dsl, map-client, melite-model-base
   - 'plugins/*'                           # single-package plugins
   - 'plugins/harness/dsh/*'               # the DSH harness family (agent tools, presets, provisioner)
   - 'plugins/web/dsh/*'                   # the DSH web family (chat/sidebar panels — embeds the editor)
   - 'plugins/web/editor'                  # the editor pathway (the card surface DSH embeds)
-  - 'plugins/web/ui_components/*'         # @melite/{ui,slots,contracts,formats,catalog} — the generic kit
+  - 'web/*'                               # @melite/{ui,slots,contracts,formats,catalog} — the generic kit (web/ at root)
   - 'plugins/engines/*/action_cards/*/ui' # engine UI tenants (@melite-plugin/{video,3d,audio,motion})
   - 'plugins/engines/*/action_cards/*/*/ui' # genre-grouped card lanes (video/h3-timeline/ui — @melite-plugin/timeline)
   - 'plugins/engines/*/action_cards'      # card tenants (resolution scope; @comfyui/cards)
+
+## ONE REACT for the whole workspace (web-registry move, 2026-09-03):
+## the @melite kit packages declare react:"*" (they render wherever a
+## consumer mounts them) — without a pin, pnpm re-resolved the wildcard
+## to a SECOND react (18.3.1 beside the editor's 19.2.8) and every
+## radix-hook test died on dual-React useRef. The override makes the
+## single-instance law explicit.
+overrides:
+  react: ^19.2.6
+  react-dom: ^19.2.6

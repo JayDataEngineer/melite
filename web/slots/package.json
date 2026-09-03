@@ -1,0 +1,28 @@
+{
+  "name": "@melite/slots",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "dependencies": {
+    "@melite/contracts": "workspace:*",
+    "react": "*",
+    "react-dom": "*"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./cardBodySeam": "./src/cardBodySeam.ts",
+    "./cardElementSeams": "./src/cardElementSeams.ts",
+    "./cardSeam": "./src/cardSeam.ts",
+    "./clientTools": "./src/clientTools.ts",
+    "./package.json": "./package.json",
+    "./regionSeams": "./src/regionSeams.ts",
+    "./studioCapabilities": "./src/studioCapabilities.ts",
+    "./studioContextSeam": "./src/studioContextSeam.ts",
+    "./studioRail": "./src/studioRail.tsx",
+    "./uiSlotSeam": "./src/uiSlotSeam.ts",
+    "./vendored/core": "./src/vendored/core.ts",
+    "./vendored/react": "./src/vendored/react.tsx"
+  },
+  "version": "0.1.0",
+  "types": "./src/index.ts"
+}
