@@ -736,6 +736,32 @@ def main():
           "context flip failed: %s" % (
               "no verbatim ref" if _cwf else "compose refused"))
 
+    # ── SAME-PROMPT CHAIN SEAM: window2's context load is a LINK to
+    # window1's save output (the extension's designed seam), never a
+    # restated literal path — a literal is invisible to the scheduler
+    # (window2 raced window1's save: FileNotFoundError on the strip)
+    # and a restated coordinate (rung 6). ──
+    _lwf = {}
+    try:
+        _lyml, _ = plugins.compose(
+            {"model": "h3-timeline",
+             "params": {"seed": 7, "fps": 24, "identity": "courier",
+                        "calls": [{"text": "a", "start_frame": 0,
+                                   "end_frame": 64},
+                                  {"text": "b", "start_frame": 64,
+                                   "end_frame": 128}]}},
+            "h3-timeline", "run-WALL-LINK",
+            "name: h3-timeline\ntype: comfyui\n\nnodes:\n", ("comfyui",))
+        _lwf = json.loads(
+            _re_cont.search(r"workflow: (.*)", _lyml).group(1))
+    except Exception:
+        _lwf = {}
+    _ld = _lwf.get("window2_MiniMaxH3MotionContextLoadLatent.0",
+                   {}).get("inputs", {}).get("latent_path")
+    check("same-prompt chain links to the prior save",
+          _ld == ["window1_MiniMaxH3MotionContextSaveLatent.0", 0],
+          "window2 context load is not linked: %r" % (_ld,))
+
     # the old run-id surface must refuse at the VALIDATION door
     # (run_id="" — the registration gate; the render door assumes it ran)
     _old = dict(_cbody)
