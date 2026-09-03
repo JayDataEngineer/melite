@@ -88,6 +88,7 @@ data/staging/
 data/delivery/
 data/sessions/
 data/artifacts/
+data/test-output/	# e2e/playwright generated state (configs resolve here from repo root)
 data/runtime/
 # Keep structure and docs
 !data/**/
