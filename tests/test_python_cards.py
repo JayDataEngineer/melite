@@ -493,6 +493,100 @@ def main():
     finally:
         _cs.render_card = _orig_render
 
+    # ── THE LORA STACK WALL: typed rows, one serializer, SSOT bound ──
+    # The stack is a chain.LoraStack mod (typed entries; the JSON is
+    # the flavor's — no hand-built stack strings anywhere). The rows
+    # live in lane data next to the model, bound to the payload's
+    # Provision rows AND to the renderer template's LORA_STACK_GOLD:
+    # three surfaces, one truth, drift is a test failure.
+    from chain import LoraEntry, LoraStack
+    _MODEL_DIR = os.path.join(
+        REPO, "plugins", "engines", "comfyui", "models", "video",
+        "h3-timeline")
+
+    _ser = LoraStack(entries=(LoraEntry(lora="h3/a.safetensors", str=0.4),
+                              LoraEntry(lora="h3/b.safetensors",
+                                        str=0.6))).value
+    check("lora stack mod: serializer owns the JSON",
+          _ser == ('[{"on":true,"lora":"h3/a.safetensors","str":0.4,'
+                   '"v":1,"a":1,"t":1},{"on":true,'
+                   '"lora":"h3/b.safetensors","str":0.6,"v":1,"a":1,'
+                   '"t":1}]')
+          and LoraStack(entries=(LoraEntry(lora="x", str=0.5),)).key
+          == "LTX_lora_loader.0.stack_data",
+          "stack bytes drifted: %r" % _ser)
+
+    import yaml as _yaml
+    _rows = (_yaml.safe_load(open(os.path.join(_MODEL_DIR,
+                                               "lora_stack.yaml")))
+             or {}).get("rows", [])
+    _default = [r for r in _rows if r.get("role") == "default"]
+    _always = [r for r in _rows if r.get("role") == "always"]
+    _prov_names = set(_re_road.findall(
+        r"Provision\(folder='loras/h3', name='([^']+)'",
+        open(os.path.join(_MODEL_DIR, "model.py")).read()))
+    from co_script.blocks import core as _core
+    check("lora stack rows bind payload provisions + template gold",
+          bool(_default) and bool(_always)
+          and all(r["lora"] == "h3/" + n
+                  for r in _rows for n in [r["lora"][3:]]
+                  if r["lora"].startswith("h3/"))
+          and {r["lora"][3:] for r in _rows} <= _prov_names
+          and LoraStack(entries=tuple(
+              LoraEntry(lora=str(r["lora"]), str=float(r["str"]))
+              for r in (_default + _always))).value == _core.LORA_STACK_GOLD,
+          "yaml rows / provisions / GOLD drifted apart")
+
+    # card derivation: user lora replaces default, always rides; the
+    # no-model-dir + user-lora combo refuses LOUD (turbo never
+    # silently drops)
+    import importlib.util as _ilu
+    _spec = _ilu.spec_from_file_location(
+        "h3tl_knobs", os.path.join(
+            REPO, "plugins", "engines", "comfyui", "action_cards",
+            "video", "h3-timeline", "py", "timeline", "knobs.py"))
+    _kn = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(_kn)
+    _stk = _kn.lora_stack({"lora_name": "h3/user.safetensors",
+                           "lora_strength": 0.8}, _MODEL_DIR)
+    _base = _kn.lora_stack({}, _MODEL_DIR)
+    _refused = False
+    try:
+        _kn.lora_stack({"lora_name": "h3/user.safetensors"}, "")
+    except RuntimeError:
+        _refused = True
+    check("lora stack derivation: user replaces default, always rides",
+          _stk is not None and len(_stk.entries) == 2
+          and _stk.entries[0].lora == "h3/user.safetensors"
+          and _stk.entries[0].str == 0.8
+          and _stk.entries[1].lora == _always[0]["lora"]
+          and _base is not None
+          and [e.lora for e in _base.entries] == [
+              _default[0]["lora"], _always[0]["lora"]]
+          and _kn.lora_stack({}, "") is None and _refused,
+          "stack derivation drifted")
+
+    # live e2e: the mod rides the graph (window1 carries the stack)
+    os.environ["H3_MODEL_DIR"] = _MODEL_DIR
+    try:
+        _lyml, _lextra = plugins.compose(
+            {"model": "h3-timeline",
+             "params": {"seed": 3, "fps": 24,
+                        "lora_name": "h3/user.safetensors",
+                        "lora_strength": 0.8,
+                        "calls": [{"text": "runs the alley",
+                                   "start_frame": 0, "end_frame": 56}]}},
+            "h3-timeline", "run-WALL-LORA",
+            "name: h3-timeline\ntype: comfyui\n\nnodes:\n", ("comfyui",))
+    except Exception:
+        _lyml = ""
+    finally:
+        os.environ.pop("H3_MODEL_DIR", None)
+    check("lora stack rides the composed graph",
+          "h3/user.safetensors" in (_lyml or "")
+          and _always[0]["lora"] in (_lyml or ""),
+          "stack absent from composed workflow")
+
     # refusal: unknown key refuses LOUDLY through the same door
     try:
         plugins.compose({"model": "h3-timeline",
