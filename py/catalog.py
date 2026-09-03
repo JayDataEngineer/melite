@@ -725,9 +725,15 @@ def _scan_card_dir(card_dir, card_name):
     (2026-09-02, the identity rung) card.yaml is EXTINCT — id/label/
     description/genre/icon/api/ability/requires/principles/skills live
     on the ActionCard class (py/melite_cards). A card.yaml next to
-    a card.py is a LOUD refusal (two SSOTs is zero SSOTs)."""
-    mpy = os.path.join(card_dir, "card.py")
-    if not os.path.isfile(mpy):
+    a card.py is a LOUD refusal (two SSOTs is zero SSOTs).
+
+    THE CARD PATTERN (2026-09-03): python code lives in the card's
+    py/ subfolder — <card>/py/card.py; a root card.py is the compat
+    fallback (pre-pattern cards)."""
+    mpy = next((p for p in (os.path.join(card_dir, "py", "card.py"),
+                            os.path.join(card_dir, "card.py"))
+                if os.path.isfile(p)), None)
+    if mpy is None:
         return None, None, None
     if os.path.isfile(os.path.join(card_dir, "card.yaml")):
         raise ValidationError(
@@ -735,8 +741,11 @@ def _scan_card_dir(card_dir, card_name):
             "moved card.yaml onto the class; delete the yaml" % mpy)
     # engine dir: one hop above the cards/action_cards segment for
     # depth-1 card dirs, two for genre-grouped
-    # (action_cards/<genre>/<card>/, 2026-09-02 reorg)
+    # (action_cards/<genre>/<card>/, 2026-09-02 reorg); THE CARD
+    # PATTERN (2026-09-03) adds a py/ hop — stripped first
     _d = os.path.dirname(card_dir)
+    if os.path.basename(_d) == "py":
+        _d = os.path.dirname(_d)
     engine_dir = (os.path.dirname(_d)
                   if os.path.basename(_d) in ("cards", "action_cards")
                   else os.path.dirname(os.path.dirname(_d)))

@@ -57,6 +57,16 @@ def deep_diff(a, b, path="$"):
 
 
 def main():
+    def _card_py(*parts):
+        """THE CARD PATTERN (2026-09-03): python lives in the card's py/
+        subfolder; a root card.py is the compat fallback."""
+        root = os.path.join(REPO, "plugins", "engines", *parts)
+        for c in (os.path.join(root, "py", "card.py"),
+                  os.path.join(root, "card.py")):
+            if os.path.isfile(c):
+                return c
+        return os.path.join(root, "card.py")
+
     card_py = os.path.join(REPO, "plugins", "engines", "comfyui",
                            "action_cards", "image", "image-gen", "card.py")
     check("image-gen card.py loads", os.path.isfile(card_py))
@@ -117,8 +127,7 @@ def main():
         ("music", "audio-cpp", "music3", ("cards", "music")),
     ]
     for cid, engine, model, home in FLIPPED:
-        cpath = os.path.join(REPO, "plugins", "engines", engine, *home,
-                             "card.py")
+        cpath = _card_py(engine, *home)
         fcls = load_card_py(cpath, engine)
         check("%s id" % cid, fcls.id == cid, fcls.id)
         gpath = os.path.join(REPO, "tests", "golden_http",
@@ -157,9 +166,7 @@ def main():
     for cid, engine, model, home in [("image-gen", "comfyui", "krea-2",
                                       ("action_cards", "image",
                                        "image-gen"))] + FLIPPED:
-        cards[cid] = load_card_py(os.path.join(
-            REPO, "plugins", "engines", engine, *home, "card.py"),
-            engine)
+        cards[cid] = load_card_py(_card_py(engine, *home), engine)
     studio_models = {}
     for mid, cls in models.items():
         st = getattr(cls, "studio", None)

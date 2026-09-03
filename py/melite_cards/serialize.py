@@ -93,8 +93,12 @@ def scan_engine_cards(repo_root):
                     if sub.startswith("."):
                         continue
                     d = os.path.join(cdir, sub) if sub else cdir
-                    p = os.path.join(d, "card.py")
-                    if not os.path.isfile(p):
+                    # THE CARD PATTERN (2026-09-03): python code lives
+                    # in the card's py/ subfolder; root is compat.
+                    p = next((c for c in (os.path.join(d, "py", "card.py"),
+                                          os.path.join(d, "card.py"))
+                              if os.path.isfile(c)), None)
+                    if p is None:
                         continue
                     cls = load_card_py(p, engine)
                     if cls.id in out:

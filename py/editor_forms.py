@@ -637,11 +637,16 @@ def _find_card_yaml(repo_root, model):
             for card in _scandir(cdir):
                 if card.startswith('.'):
                     continue
+                # THE CARD PATTERN (2026-09-03): python code lives in
+                # the card's py/ subfolder; root card.py is compat.
+                paths.append(os.path.join(cdir, card, "py", "card.py"))
                 paths.append(os.path.join(cdir, card, "card.py"))
                 card_path = os.path.join(cdir, card)
                 if os.path.isdir(card_path):
                     for sub in _scandir(card_path):
                         if not sub.startswith('.'):
+                            paths.append(os.path.join(card_path, sub,
+                                                      "py", "card.py"))
                             paths.append(os.path.join(card_path, sub,
                                                       "card.py"))
             for mpy in paths:
@@ -852,15 +857,18 @@ def _families_keep(field, nmodel):
     return any(_norm(t) == nmodel for t in toks)
 
 
-def _engine_dir_of_card(card_yaml_path):
-    """.../<engine>/{cards,action_cards}/<card>/card.py -> .../<engine>
-    (the engine that owns the card — vocabulary and lanes resolve
-    relative to it). Genre-grouped cards (action_cards/<genre>/<card>/,
-    2026-09-02 reorg) sit one deeper: hop above the cards/action_cards
-    segment either way."""
-    d2 = os.path.dirname(os.path.dirname(card_yaml_path))
+def _engine_dir_of_card(card_path):
+    """.../<engine>/{cards,action_cards}/<card>/[py/]card.py ->
+    .../<engine> (the engine that owns the card — vocabulary and lanes
+    resolve relative to it). Genre-grouped cards (action_cards/<genre>/
+    <card>/, 2026-09-02 reorg) sit one deeper; THE CARD PATTERN
+    (2026-09-03) adds a py/ hop — stripped first."""
+    d = os.path.dirname(os.path.abspath(card_path))
+    if os.path.basename(d) == "py":
+        d = os.path.dirname(d)
+    d2 = os.path.dirname(d)
     if os.path.basename(d2) in ("cards", "action_cards"):
-        return os.path.dirname(d2)              # flat: d2 IS the cards root
+        return os.path.dirname(d2)               # flat: d2 IS the cards root
     return os.path.dirname(os.path.dirname(d2))  # genre: d2 is the group
 
 

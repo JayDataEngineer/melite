@@ -30,7 +30,13 @@ from pathlib import Path
 # When a card declares requires: ["ComfyUI-KJNodes"], we verify that
 # at least some of these nodes appear in object_info.
 EXTENSION_NODE_TYPES: dict[str, set[str]] = {
-    "ComfyUI-PlagueKind-Nodes": {"PlagueKindBundleIn", "PlagueKindBundleOut"},
+    # the chaining rail (NikoDemon80/ComfyUI-H3-Motion-Context)
+    "comfyui-h3-motion-context": {
+        "MiniMaxH3MotionContext", "MiniMaxH3MotionContextTrim",
+        "MiniMaxH3MotionContextSaveLatent", "MiniMaxH3MotionContextLoadLatent",
+    },
+    "ComfyUI-PlagueKind-Nodes": {"PlagueKindBundleIn", "PlagueKindBundleOut",
+                                 "H3SLAAttention", "H3AdaLNLoRAFix"},
     "ComfyUI-Frame-Interpolation": {"FrameInterpolate", "FrameInterpolationModelLoader"},
     "ComfyUI-KJNodes": {
         "ImageSharpenKJ", "ModelAttentionBackend", "ModelPreviewOverrideKJ",
@@ -39,7 +45,6 @@ EXTENSION_NODE_TYPES: dict[str, set[str]] = {
         "SeedVR2LoadDiTModel", "SeedVR2LoadVAEModel", "SeedVR2VideoUpscaler",
     },
     "ComfyUI-LTXVideo": {"LTX_lora_loader", "CreateVideo"},
-    "melite-video": {"ComfyMathExpression", "ComfySwitchNode"},
     "melite-audio-nodes": {
         "MiniMaxMusic3TextEncode", "EmptyMiniMaxMusic3LatentAudio",
         "SaveAudioAdvanced", "AudiocoreTTS", "LoadAudiocoreModel",

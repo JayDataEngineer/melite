@@ -142,6 +142,39 @@ def _url_installed(url: str, workspace: Path) -> bool:
     return False
 
 
+def _runtime_python(workspace: Path) -> str:
+    """The SERVING runtime's interpreter (where ComfyUI imports nodes).
+    VIRTUAL_ENV is set by managed routing; COMFY_BIN's sibling python
+    is the same env; the workspace .venv is the last resort."""
+    venv = os.environ.get("VIRTUAL_ENV", "")
+    if venv:
+        py = Path(venv) / "bin" / "python"
+        if py.is_file():
+            return str(py)
+    cb = os.environ.get("COMFY_BIN", "")
+    if cb:
+        py = Path(cb).with_name("python")
+        if py.is_file():
+            return str(py)
+    return str(workspace / ".venv" / "bin" / "python")
+
+
+def _pip_install(pkgs, workspace: Path) -> bool:
+    """Install declared python deps into the SERVING runtime venv (where
+    ComfyUI imports nodes). uv is the rail (the runtime venv ships no
+    pip); satisfied pins are no-ops. Declared pins (pkg==x.y.z) are
+    exact — the declaration is the contract."""
+    import subprocess
+    py = _runtime_python(workspace)
+    cmd = ["uv", "pip", "install", "--python", py, *pkgs]
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    if r.returncode == 0:
+        return True
+    warn("  pip install failed (%s): %s" % (
+        " ".join(pkgs), (r.stderr or r.stdout).strip()[:200]))
+    return False
+
+
 def _cm_cli_install(url: str, workspace: Path) -> dict:
     """Call cm_cli install directly (accepts git URLs; install_node wraps it but
     refuses them).  Uses the workspace .venv python for dependencies."""
@@ -448,6 +481,17 @@ def step_extensions() -> bool:
         url = (e.get("url") or "").strip()
         if not name:
             continue
+        # python deps the card declares for this extension — they ride
+        # the SERVING runtime venv (nodes import them at load). Runs
+        # FIRST: an already-cloned pack with unsatisfied deps is a
+        # half-install; satisfied pins are no-ops.
+        pipdeps = [str(p).strip() for p in (e.get("pip") or []) if str(p).strip()]
+        if pipdeps:
+            if DRY:
+                print("[dry-run] pip install [%s]: %s" % (name, pipdeps))
+            elif not _pip_install(pipdeps, workspace):
+                counts["failed"] += 1
+                continue
         if not reg and not url:                       # vendor pack (ours)
             if not vendor_world:
                 counts["failed"] += 1
