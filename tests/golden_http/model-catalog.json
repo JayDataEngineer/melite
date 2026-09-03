@@ -1480,6 +1480,7 @@
           "audio_stem",
           "lora_name",
           "lora_strength",
+          "seam_carry",
           "document"
         ],
         "size": "huge",

@@ -8,6 +8,12 @@ pattern primitive reads (chain.LoraStack.from_wire; lane data in
 models/video/h3-timeline/lora_stack.yaml). DELIBERATE contract
 extension, not drift: the keys were previously unadmitted dead wire.
 
+## 2026-09-05 (b) — writes gains `seam_carry`
+
+Body-level seam_carry is a wire surface the window compiler reads
+(resolve_carry; 0 = hard cut, otherwise int in [1, 64] — a door law
+now). Same E4 justification as the lora keys.
+
 ## 2026-09-02 — models-as-python full flip (naming law normalization)
 
 All 53 units serve from model.py classes; model.yaml + variant.yaml are

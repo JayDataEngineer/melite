@@ -384,6 +384,57 @@ def main():
     check("no-calls refuses at the door",
           _refused_nc, "no-calls admitted at registration")
 
+    # door range laws: garbage wire values refuse LOUD at
+    # construction — never a silent re-default at compile time
+    import re as _re_road  # noqa: E402
+
+    def _door_refusal(body, needle):
+        try:
+            plugins.compose(body, "h3-timeline", "", _skel, ("comfyui",))
+            return False
+        except PluginsValidationError as e:
+            return needle in str(e)
+
+    _c = dict(_body)
+    _c["params"] = dict(_c["params"], seam_carry=999)
+    check("out-of-range seam_carry refuses at the door",
+          _door_refusal(_c, "outside [1, 64]"),
+          "carry 999 silently re-defaulted")
+    _c["params"] = dict(_c["params"], seam_carry="abc")
+    check("non-integer seam_carry refuses at the door",
+          _door_refusal(_c, "not an integer"),
+          "carry 'abc' accepted")
+    _c["params"] = dict(_c["params"], seam_carry=None,
+                        calls=[{"text": "a", "start_frame": 90,
+                                "end_frame": 0}])
+    check("reversed frame span refuses at the door",
+          _door_refusal(_c, "not a shot"),
+          "reversed span silently rendered 56 frames")
+    _cut0 = dict(_body)
+    _cut0["params"] = dict(_body["params"], seam_carry=0)
+    _ok0, _e0 = plugins.compose(_cut0, "h3-timeline", "run-WALL-CUT0",
+                                _skel, ("comfyui",))
+    check("seam_carry 0 is a legal hard cut",
+          "- id: h3-film" in (_ok0 or ""),
+          "body-level 0 refused or re-defaulted")
+
+    # the seed road owns the clamp EVERYWHERE: a garbage wire seed
+    # feeds pool AND window seeds from the same clamped base (the
+    # old compile re-read raw params — pool 42, windows -5)
+    _g = dict(_body)
+    _g["params"] = dict(_g["params"], seed=-5)
+    _gyml, _gextra = plugins.compose(_g, "h3-timeline", "run-WALL-SEED",
+                                     _skel, ("comfyui",))
+    _gwf = json.loads(_re_road.search(r"workflow: (.*)", _gyml).group(1))
+    _gseeds = sorted({v for n in _gwf.values() if isinstance(n, dict)
+                      for k, v in n.get("inputs", {}).items()
+                      if "seed" in k.lower() and isinstance(v, int)})
+    check("garbage seed clamps everywhere (pool AND windows)",
+          (_gextra or {}).get("inputs", {}).get("$seed") == 42
+          and _gseeds == [42, 2000048],
+          "seed divergence: pool %r vs windows %r"
+          % ((_gextra or {}).get("inputs", {}).get("$seed"), _gseeds))
+
     # phase 2: the run graph (renderer seam included)
     yml2, extra2 = plugins.compose(dict(_body), "h3-timeline",
                                    "run-WALL-0001", _skel, ("comfyui",))
