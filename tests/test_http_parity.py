@@ -125,6 +125,8 @@ def main():
             ("model-catalog", "deep"),
             ("forms", "deep"),
             ("form-spec?model=krea-2", "deep"),
+            ("form-spec?model=krea-2-raw", "deep"),
+            ("form-spec?model=z-image-base", "deep"),
             ("form-spec?model=anima", "deep"),
             ("form-spec?model=z-image", "deep"),
             ("form-spec?model=h3-timeline", "deep"),

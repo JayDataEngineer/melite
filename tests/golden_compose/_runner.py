@@ -142,6 +142,14 @@ def run_case(rec):
             PASS.append("%s/%s refusal parity" % (name, phase))
             continue
         py_raw = got.get("yaml", "")
+        if py_raw.lstrip().startswith("name:") and "workflow: " in py_raw:
+            # CARD-ANCHORED RENDERERS + mini-YAML skeleton (the py
+            # gateway's parse_pipeline_text owns the format): extract
+            # the inline workflow JSON and take the isomorphic path
+            import re as _re3
+            m3 = _re3.search(r"workflow: (\{.*\})\n", py_raw, _re3.S)
+            if m3:
+                py_raw = m3.group(1)
         if py_raw.lstrip().startswith(chr(123)):
             # CO_SCRIPT FLIP (documented deviation): the card arms now
             # emit a baked workflow (JSON). Bar: ISOMORPHIC to the
@@ -158,7 +166,12 @@ def run_case(rec):
             g_inputs = {k: _norm_str(v) for k, v in g_inputs.items()}
             g_inputs = {k: _norm_str(v) for k, v in g_inputs.items()}
             old = _oldpath_graph(model, golden.get("yaml", ""), g_inputs)
-            new = _j2.loads(py_raw)["nodes"][0]["params"]["workflow"]
+            try:
+                new = _j2.loads(py_raw)["nodes"][0]["params"]["workflow"]
+            except (KeyError, TypeError):
+                # mini-YAML form: the workflow JSON was already lifted
+                # out above — it IS the graph
+                new = _j2.loads(py_raw)
             if old is None:
                 FAIL.append("%s/phase2 flip: un-reconstructable golden" % name)
                 continue

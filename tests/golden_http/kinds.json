@@ -1,3 +1,68 @@
 {
- "kinds": []
+ "kinds": [
+  {
+   "kind": "generation",
+   "runnable": true,
+   "executable": true,
+   "formSpec": true,
+   "compound": false,
+   "opensStudio": false,
+   "badgeTone": "default"
+  },
+  {
+   "kind": "chain",
+   "runnable": true,
+   "executable": true,
+   "formSpec": true,
+   "compound": false,
+   "opensStudio": false,
+   "badgeTone": "default"
+  },
+  {
+   "kind": "studio-link",
+   "runnable": true,
+   "executable": false,
+   "formSpec": false,
+   "compound": false,
+   "opensStudio": true,
+   "badgeTone": "brand"
+  },
+  {
+   "kind": "preview",
+   "runnable": true,
+   "executable": true,
+   "formSpec": false,
+   "compound": false,
+   "opensStudio": false,
+   "badgeTone": "default"
+  },
+  {
+   "kind": "input",
+   "runnable": true,
+   "executable": true,
+   "formSpec": false,
+   "compound": false,
+   "opensStudio": false,
+   "badgeTone": "default"
+  },
+  {
+   "kind": "body",
+   "runnable": false,
+   "executable": false,
+   "formSpec": false,
+   "compound": false,
+   "opensStudio": false,
+   "badgeTone": "default",
+   "icon": "Box"
+  },
+  {
+   "kind": "compound",
+   "runnable": true,
+   "executable": true,
+   "formSpec": false,
+   "compound": true,
+   "opensStudio": false,
+   "badgeTone": "default"
+  }
+ ]
 }

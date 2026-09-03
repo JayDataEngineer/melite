@@ -9,8 +9,9 @@ Routes ported (C sources in this repo):
                                    + card_spec_json (src/server.cpp:7729-7921)
                                    + cs_find_card_yaml (src/server.cpp:7533-7611)
                                    + catalog scan/parse (src/catalog.c)
-  GET /v1/kinds                 -> handle_kinds (src/server.cpp:4934-4992)
-                                   + kinds_parse_file (src/server.cpp:4846-4930)
+  GET /v1/kinds                 -> the first-party kind table declared in
+                                   py/card_kinds.py (the yaml scan is
+                                   extinct — see kinds() below)
 
 Where each route's data lives (everything is read from plugins/ at call time;
 no model or engine name is hardcoded as logic — see the one documented
@@ -38,8 +39,9 @@ exception for /v1/forms below):
                    probe across owners/genres); lane fallback:
                    pipelines/<name>/pipeline.yaml or any
                    pipelines/*/pipeline.yaml containing "type: <name>".
-  /v1/kinds        plugins/<plugin>/kinds/<stem>.yaml behavior-flag files
-                   (file stem IS the kind string).
+  /v1/kinds        py/card_kinds.py TABLE (the first-party card-kind
+                   behavior flags; gateway infra, not plugin data — the
+                   C-era plugins/*/kinds/*.yaml scan is extinct)
 
 Faithful-bug ports (behavior the goldens captured; do NOT "fix"):
   * enhance-prompts prompt-nullification probe (server.cpp:8406-8430) does
@@ -429,7 +431,7 @@ def _wire_str(v):
     return str(v)
 
 
-def _variants_from_class(row):
+def _variants_from_class(row, prefer_variant=None):
     """Variant rows + Quant cells from the CLASS tree — the collapse of
     the yaml's triplicated variants/ data (row + nested rows + quants)
     into one walk. Same wire shape as _variants, including the quant-id
@@ -452,6 +454,10 @@ def _variants_from_class(row):
              "hint": v.hint or None, "engine": v.engine or cls.engine or ""}
         rows.append(r)
         for c in v.cells:
+            # route lens: only the SELECTED variant's cells wire (the
+            # fixture's int8 row is RAW's — its hint, its route)
+            if prefer_variant and v.id != prefer_variant:
+                continue
             if c.quant in seen_quant:
                 continue
             seen_quant.add(c.quant)
@@ -1226,12 +1232,12 @@ def _parse_variant(path):
             "qid": qid, "qlab": qlab, "qroute": qroute, "vram": vram}
 
 
-def _variants(repo_root, model):
+def _variants(repo_root, model, prefer_variant=None):
     """Variant rows + deduped Quant cells — the CLASS tree when the model
     is flipped (the cascade is structural), else <model-dir>/variants/
     yaml in readdir order; the model dir is dirname(inference_path) — no
     inference.yaml means no variants (src/server.cpp:8145-8159)."""
-    from_class = _variants_from_class(model)
+    from_class = _variants_from_class(model, prefer_variant)
     if from_class is not None:
         return from_class
     if not model["inference_path"]:
@@ -1307,6 +1313,43 @@ def _lane_probe(repo_root, model):
     return False
 
 
+def _route_owner(repo_root, route_id):
+    """(row, cls, variant, cell) for a variant route, or None — the
+    model class whose _routes carries the route owns the spec."""
+    from melite_models import scan_engine_models
+    for _path, cls in scan_engine_models(repo_root).values():
+        hit = cls._routes.get(route_id)
+        if hit is not None:
+            row = _find_model(_scan_catalog(repo_root), cls.id)
+            if row is not None:
+                variant, cell = hit
+                return row, cls, variant, cell
+    return None
+
+
+def _form_spec_routed(repo_root, owner, route_id):
+    """The route lens: the OWNING family's spec, stamped by the routed
+    variant — model id, defaults, field defaults, and the quant rows
+    anchored on the selected variant. The stamp is the variant's
+    resolver_defaults (family defaults + the variant layer — the same
+    merge merged_defaults performs, minus the mods base the plain spec
+    does not carry either)."""
+    row, cls, variant, _cell = owner
+    status, spec = form_spec(repo_root, cls.id)
+    if status != 200:
+        return status, spec
+    spec["model"] = route_id
+    stamped = dict(row["defaults"])
+    stamped.update(variant.resolver_defaults or {})
+    spec["defaults"] = stamped
+    for f in spec.get("fields", []):
+        if f.get("name") in stamped:
+            f["default"] = stamped[f["name"]]
+    spec["variants"] = _variants(repo_root, row,
+                                 prefer_variant=variant.id)
+    return 200, spec
+
+
 def form_spec(repo_root, model_id):
     """GET /v1/form-spec?model=<id> -> (status_code, body_dict).
 
@@ -1320,6 +1363,15 @@ def form_spec(repo_root, model_id):
 
     row = _find_model(_scan_catalog(repo_root), model)
     if row is None:
+        # route lens: model=<variant route> (krea-2-raw, z-image-base)
+        # serves the OWNING family's spec through the variant — the
+        # C-era editor fixtures (spec_krea-2-raw / spec_z-image-base)
+        # are the proof this surface served. _routes (route ->
+        # (variant, cell)) is structural on the class since the
+        # frozen-rows rework.
+        owner = _route_owner(repo_root, model)
+        if owner is not None:
+            return _form_spec_routed(repo_root, owner, model)
         safe = len(model) < 64 and all(c in _SAFE_ID for c in model)
         if safe and _lane_probe(repo_root, model):
             return 200, dict(_MINIMAL_LANE_SPEC)
@@ -1371,77 +1423,21 @@ def form_spec(repo_root, model_id):
 
 
 # ─────────────────────────────────────────────────────────────────────────
-# GET /v1/kinds — port of handle_kinds (src/server.cpp:4934-4992)
+# GET /v1/kinds — the first-party kind table (py/card_kinds.py).
 # ─────────────────────────────────────────────────────────────────────────
-
-def _parse_kind_file(path, plugin):
-    """kinds_parse_file: line-prefixed behavior flags; 'true' anywhere in
-    the value counts (C strstr). File stem IS the kind string."""
-    runnable = executable = form_spec_ = compound = opens = False
-    tone = "default"
-    icon = ""
-    try:
-        with open(path, 'r', encoding='utf-8', errors='surrogateescape',
-                  newline='') as f:
-            lines = f.readlines()
-    except OSError:
-        return None
-    for raw in lines:
-        line = raw.split('\n', 1)[0]  # C: cut at first \n
-        if line.startswith("runnable:"):
-            runnable = "true" in line
-        elif line.startswith("executable:"):
-            executable = "true" in line
-        elif line.startswith("formSpec:"):
-            form_spec_ = "true" in line
-        elif line.startswith("compound:"):
-            compound = "true" in line
-        elif line.startswith("opensStudio:"):
-            opens = "true" in line
-        elif line.startswith("badgeTone:"):
-            toks = line[len("badgeTone:"):].split()
-            if toks:
-                tone = toks[0][:31]
-        elif line.startswith("icon:"):
-            toks = line[len("icon:"):].split()
-            if toks:
-                icon = toks[0][:63]
-    stem = os.path.basename(path)
-    kind = stem[:95].rsplit('.', 1)[0] if '.' in stem else stem[:95]
-    entry = {
-        "kind": kind,
-        "runnable": runnable,
-        "executable": executable,
-        "formSpec": form_spec_,
-        "compound": compound,
-        "opensStudio": opens,
-        "badgeTone": tone,
-    }
-    if icon:
-        entry["icon"] = icon
-    entry["plugin"] = plugin
-    return entry
-
+# The C-era file scan (plugins/*/kinds/*.yaml, kinds_parse_file) is
+# EXTINCT: the files rode out with the dead plugins/core plugin (6a86082)
+# and the lane went dark — the editor's fail-safe kindDef gated every
+# form-spec fetch OFF and cards rendered without form fields. The table
+# is gateway infra now, declared as frozen pydantic rows (the
+# slot_kinds.py precedent); this projection is the only route body.
 
 def kinds(repo_root):
-    """GET /v1/kinds -> {"kinds": [...]}. Sources: the kinds dirs under the
-    plugins tree and the repo root's own <entry>/kinds (C roots
-    {"../plugins", "."}), raw readdir order throughout."""
-    out = []
-    for root in (os.path.join(repo_root, "plugins"), repo_root):
-        for entry in _scandir(root):
-            if entry.startswith('.'):
-                continue
-            kd = os.path.join(root, entry, "kinds")
-            if not os.path.isdir(kd):
-                continue
-            for name in _scandir(kd):
-                if len(name) < 6 or not name.endswith(".yaml"):
-                    continue
-                parsed = _parse_kind_file(os.path.join(kd, name), entry)
-                if parsed is not None:
-                    out.append(parsed)
-    return {"kinds": out}
+    """GET /v1/kinds -> {"kinds": [...]}. The first-party card-kind
+    behavior flags, projected from py/card_kinds.py's TABLE (the SSOT —
+    one declaration, validated at construction; no file scans)."""
+    import card_kinds as _ck
+    return _ck.kinds_wire()
 
 
 # ─────────────────────────────────────────────────────────────────────────
