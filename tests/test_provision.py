@@ -15,6 +15,7 @@ The provisioning shape is a contract, not a convenience:
 """
 
 import json
+import os
 import subprocess
 import sys
 import tomllib
@@ -126,6 +127,126 @@ r = subprocess.run([sys.executable, str(PROVISION), "boot-cmd", str(byo)],
                    capture_output=True, text=True, cwd=str(REPO))
 check("byo boot-cmd prints the config's boot_cmd",
       r.returncode == 0 and "systemctl --user start comfyui" in r.stdout)
+
+# ── 6. agent harness mount: recipe → materialized home ──────────────
+PROV = REPO / "plugins" / "harness" / "dsh" / "provisioner"
+ppkg = json.loads((PROV / "package.json").read_text())
+check("provisioner bundle tracked (dsh.bundle.patch declared)",
+      (PROV / "cordis.patch.yml").is_file()
+      and ppkg.get("dsh", {}).get("bundle", {}).get("patch") == "./cordis.patch.yml")
+check("provisioner deps are relative link: rows (machine-neutral)",
+      all(str(v).startswith("link:../") for v in ppkg["dependencies"].values()))
+sculpt = (PROV / "cordis.patch.yml").read_text()
+check("bundle patch machine-neutral (no absolute paths, no secrets)",
+      "/home/" not in sculpt and "sk-" not in sculpt)
+check("base env carries the agent SDK pin (server mount)",
+      any(d.startswith("deepseek-harness-sdk==") for d in deps))
+check("profile recipe composes base + sdk-app + provisioner",
+      '"@deepseek-ai/dsh-base"' in prov_src
+      and '"@deepseek-ai/dsh-sdk-app"' in prov_src
+      and '"@infer/dsh-provisioner"' in prov_src)
+check("GUI-home isolation guard present",
+      "must differ from the GUI home" in prov_src)
+tmp_home = Path("/tmp/_provision_dsh_home")
+subprocess.run(["rm", "-rf", str(tmp_home)], check=True)
+r = subprocess.run([sys.executable, str(PROVISION), "dsh"],
+                   capture_output=True, text=True, cwd=str(REPO),
+                   env={**os.environ, "MELITE_DSH_HOME": str(tmp_home)})
+ok_dsh = r.returncode == 0
+check("provision dsh materializes + verifies the harness home", ok_dsh,
+      ((r.stdout or "") + (r.stderr or ""))[-200:] if not ok_dsh else "")
+if ok_dsh:
+    prof = tmp_home / "profiles" / "estate"
+    pk = json.loads((prof / "package.json").read_text())
+    check("estate profile bundles = base + sdk-app + provisioner",
+          pk["dsh"]["profile"]["bundles"] ==
+          ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-sdk-app",
+           "@infer/dsh-provisioner"])
+    check("provisioner installed via the pnpm rail (link:)",
+          (prof / "node_modules" / "@infer" / "dsh-provisioner"
+           / "cordis.patch.yml").is_file())
+    check("per-machine skill root rendered into the profile patch",
+          str(REPO / ".dsh" / "skills")
+          in (prof / "cordis.patch.yml").read_text())
+    check("harness-home local layer written once (edit-owned)",
+          (tmp_home / "cordis.patch.yml").is_file())
+    check("generated home self-ignores (secrets can never be committed)",
+          (tmp_home / ".gitignore").is_file()
+          and (tmp_home / ".gitignore").read_text().strip() == "*")
+
+# ── DECLARED AUTODOWNLOAD: the lane's full weight set + idempotent
+# provisioning (operator order: "we manage the models through pip
+# comfy-cli / comfy-mcp. We should autodownloads") ──────────────────
+sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "tools"))
+import manage as _mg                                     # noqa: E402
+import provision as _pv                                  # noqa: E402
+
+_cfg = json.loads((REPO / "plugins" / "engines" / "comfyui" /
+                   "data" / "comfyui_endpoint.json").read_text())
+_bound = _pv.bound_model_folders(_cfg)
+
+check("bound_model_folders: the ONE derivation (fixed + extras)",
+      _bound["folders"].get("vae") == "vae"
+      and _bound["folders"].get("text_encoders") == "text_encoders"
+      and _bound["folders"].get("frame_interpolation") == "frame_interpolation"
+      and _bound["base_path"] == _cfg["model_base_path"],
+      "folder derivation drifted from the endpoint config")
+
+check("cmd_paths renders FROM the one derivation (no restated list)",
+      "bound_model_folders(cfg)" in
+      __import__("inspect").getsource(_pv.cmd_paths),
+      "cmd_paths stopped consuming bound_model_folders")
+
+check("manage consumes the derivation, never a yaml re-parse",
+      "bound_model_folders" in
+      __import__("inspect").getsource(_mg._model_present)
+      and "safe_load" not in
+      __import__("inspect").getsource(_mg._model_present),
+      "presence check regressed to yaml parsing")
+
+_have = _mg._model_present(
+    "models/text_encoders", "qwen3vl_32b_minimax_h3_int8_convrot.safetensors")
+check("_model_present resolves the mount binding",
+      _have is not None and str(_have).endswith(
+          "text_encoders/qwen3vl_32b_minimax_h3_int8_convrot.safetensors"),
+      "presence check cannot see the bound mount: %r" % (_have,))
+check("_model_present: missing stays missing",
+      _mg._model_present("models/vae", "nope.safetensors") is None,
+      "missing file reported present")
+
+# the h3 lane declares its FULL weight set (clip + VAEs included —
+# the render graph names them; an undeclared weight is a dead lane
+# on a fresh mount)
+sys.path.insert(0, str(REPO))
+from melite_models import load_model_py                   # noqa: E402
+_h3 = load_model_py(
+    str(REPO / "plugins/engines/comfyui/models/video/h3-timeline/model.py"),
+    "comfyui")
+_declared = {p.name for p in _h3.provisions}
+for _need_w in ("qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+                "minimax_h3_video_vae_int8_convrot.safetensors",
+                "minimax_h3_audio_vae_fp32.safetensors",
+                "film_net_fp16.safetensors"):
+    check("h3 declares %s" % _need_w, _need_w in _declared,
+          "lane weight missing from provisions")
+
+# idempotence: every PRESENT row must never reach the download tool —
+# a booby-trapped sms proves the short-circuit
+def _boom(*a, **k):
+    raise AssertionError("download executed for a present row")
+
+class _Boom:
+    def __getattr__(self, name):
+        return _boom
+
+_req = _mg.ManageRequest(action=_mg.Action.PROVISION_MODEL,
+                         model="h3-timeline")
+_code, _rep = _mg._h_provision_model(_req, _Boom())
+check("provision-model is idempotent (present rows never download)",
+      _rep.get("ok") and _rep["data"]["present"]
+      and not _rep["data"]["files"],
+      "idempotence broken: %s" % _rep.get("detail"))
 
 print()
 print("PASS %d / FAIL %d" % (PASS, FAIL))

@@ -384,14 +384,53 @@ def _h_download_model(req: ManageRequest, sms) -> tuple[int, dict]:
                + (req.filename or req.url.rsplit("/", 1)[-1]), rep)
 
 
+def _model_present(relative_path: str, name: str) -> Optional[Path]:
+    """A declared weight is PRESENT when the instance can see it: the
+    runtime's own models tree (where download_model lands) OR any
+    mount dir the generated extra_model_paths.yaml binds (the machine
+    statement of every folder ComfyUI scans — never a restated list).
+    Idempotent provisioning: a present weight is never re-downloaded."""
+    folder = relative_path[len("models/"):] \
+        if relative_path.startswith("models/") else relative_path
+    cand = RUNTIME / "models" / folder / name
+    if cand.is_file():
+        return cand
+    # the mount bindings: THE ONE derivation (provision.bound_model_
+    # folders — same source the generated yaml renders from), never
+    # a yaml re-parse and never a restated folder list
+    tools_dir = str(REPO / "tools")
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    import provision as _prov                    # lazy, no import cycle
+    try:
+        cfg = json.loads(DEFAULT_CONFIG.read_text()) \
+            if DEFAULT_CONFIG.is_file() else {}
+        bound = _prov.bound_model_folders(cfg)
+    except (OSError, json.JSONDecodeError, SystemExit):
+        return None
+    head, _, rest = folder.partition("/")
+    sub = bound["folders"].get(head)
+    if not sub:
+        return None
+    cand = Path(bound["base_path"]) / sub
+    if rest:
+        cand = cand / rest
+    cand = cand / name
+    return cand if cand.is_file() else None
+
+
 def _h_provision_model(req: ManageRequest, sms) -> tuple[int, dict]:
     _need(req, "model")
     rows = _resolve_catalog_artifact(req.model, req.variant, req.quant)
     _ensure_routing()
     wait = req.wait if req.wait is not None else False
     download = _tool(sms, "download_model")
-    done, errs = [], []
+    done, present, errs = [], [], []
     for row in rows:
+        have = _model_present(row["relative_path"], row["name"])
+        if have is not None:
+            present.append(row["name"])
+            continue
         try:
             rep = _call(download, row["url"],
                         relative_path=row["relative_path"],
@@ -400,13 +439,19 @@ def _h_provision_model(req: ManageRequest, sms) -> tuple[int, dict]:
             done.append(row["name"])
         except Exception as e:                        # noqa: BLE001
             errs.append({"file": row["name"], "error": str(e)[:200]})
-    detail = ("downloaded: %s" % ", ".join(done)) if done else "no files landed"
+    parts = []
+    if present:
+        parts.append("present: %d" % len(present))
+    if done:
+        parts.append("downloaded: %s" % ", ".join(done))
+    detail = "; ".join(parts) if parts else "no files landed"
     if errs:
         detail += "; errors: %d" % len(errs)
-    code = 200 if done else 500
-    return code, {"action": req.action.value, "ok": bool(done),
+    code = 200 if (done or present) else 500
+    return code, {"action": req.action.value, "ok": bool(done or present),
                   "detail": detail,
                   "data": {"model": req.model, "files": done,
+                           "present": present,
                            "errors": errs or None}}
 
 
