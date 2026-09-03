@@ -70,12 +70,23 @@ third source shape, mutually exclusive with the loader facts.'''
     model_path: str = ""    # audiocore weights (basename or abs)
     checkpoint: str = ""    # a CheckpointLoader row (mask lanes: SAM3
                             # rides a checkpoint beside the RT-DETR unet)
+    # the TRELLIS.2 lane (cluster C, 2026-09-04): five loaders, one
+    # lane — UNETLoader + TWO VAELoader rows (shape decodes the
+    # voxel structure, texture decodes the atlas) + CLIPVisionLoader
+    # (dino_v3 conditions) + LoadBackgroundRemovalModel (birefnet).
+    # `vae` is the STRUCTURE vae (the stage that owns the mesh);
+    # texture_vae the atlas decoder. The mask precedent: new loader
+    # shapes get typed rows, never stringly side-channels.
+    texture_vae: str = ""
+    clip_vision: str = ""
+    background_removal: str = ""
 
     @model_validator(mode="after")
     def _one_unet_source(self):
         if self.family:
             if self.unet or self.unet_variant or self.text_encoder \
-                    or self.vae or self.checkpoint:
+                    or self.vae or self.checkpoint or self.texture_vae \
+                    or self.clip_vision or self.background_removal:
                 raise ValueError(
                     "lane_inputs: family= is the audiocore source — "
                     "loader facts do not ride beside it")

@@ -130,6 +130,11 @@ _FORMS_TABLE = {
     "motion": {"label": "Motion", "genre": "motion", "order": 9,
                "plugin": "comfyui", "sidebar_key": "motion",
                "default_service": "kimodo", "hidden": False},
+    # cluster C (2026-09-04): TRELLIS.2 native — image → textured
+    # .glb on ComfyUI core (no extension packs)
+    "img-to-mesh": {"label": "Image → 3D", "genre": "3d", "order": 10,
+                    "plugin": "comfyui", "sidebar_key": "3d",
+                    "default_service": "trellis2-native", "hidden": False},
 }
 
 # The C's ALLOWED_CARDS gate (src/server.cpp:7585-7588) is exactly the keys

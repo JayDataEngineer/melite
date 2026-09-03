@@ -419,6 +419,71 @@
    "version": 1
   },
   {
+   "card": "img-to-mesh",
+   "description": "Lift one image into a textured 3D mesh (.glb) \u2014 native ComfyUI TRELLIS.2: birefnet background removal, dino_v3 conditioning, voxel structure, shape + texture stages.",
+   "kind": "card-compose",
+   "model": "trellis2-native",
+   "name": "img_to_mesh_card",
+   "params_schema": {
+    "properties": {
+     "bg_removal": {
+      "default": "auto",
+      "description": "auto/on: birefnet cuts the background (recommended). off: feed a pre-cleaned or alpha-cut image straight to conditioning.",
+      "enum": [
+       "auto",
+       "on",
+       "off"
+      ],
+      "type": "string"
+     },
+     "cfg": {
+      "default": 3.0,
+      "description": "Structure-stage guidance. Upstream template calibrates 7.5 for max fidelity; 3.0 runs looser/faster.",
+      "maximum": 15,
+      "minimum": 1,
+      "type": "number"
+     },
+     "filename_prefix": {
+      "description": "Output .glb name prefix (the run stamps resolution + seed).",
+      "type": "string"
+     },
+     "input_image": {
+      "description": "One clear object, tight framing. Background is removed automatically (birefnet) unless bg_removal=off.",
+      "format": "path",
+      "type": "string"
+     },
+     "resolution": {
+      "default": "1024",
+      "description": "512 fast (props/thumbnails), 1024 standard, 1536 hero (rides the upsample stage).",
+      "enum": [
+       "512",
+       "1024",
+       "1536"
+      ],
+      "type": "string"
+     },
+     "seed": {
+      "default": 42,
+      "description": "Same seed + image = same mesh take.",
+      "type": "integer"
+     },
+     "steps": {
+      "default": 12,
+      "description": "STRUCTURE stage steps (the lift). Shape runs 20, texture 12 \u2014 calibrated upstream.",
+      "maximum": 60,
+      "minimum": 4,
+      "type": "number"
+     }
+    },
+    "required": [
+     "input_image"
+    ],
+    "type": "object"
+   },
+   "stage_title": "Image \u2192 3D",
+   "version": 1
+  },
+  {
    "card": "mask-studio",
    "description": "Selection-only mask card: detect people/subjects, refine with SAM3, paint corrections \u2192 mask artifacts for inpaint pipelines.",
    "kind": "card-compose",

@@ -141,6 +141,10 @@ def main():
         # own packs (ray-era hand-rolls, operator's stopgap order)
         ("motion", "comfyui", "kimodo",
          ("action_cards", "motion", "motion")),
+        # cluster C (2026-09-04): TRELLIS.2 native — 8 core classes,
+        # five loaders, no extension packs
+        ("img-to-mesh", "comfyui", "trellis2-native",
+         ("action_cards", "3d", "img_to_mesh")),
     ]
     for cid, engine, model, home in FLIPPED:
         cpath = _card_py(engine, *home)
@@ -233,7 +237,8 @@ def main():
                     ("qwen-img-edit-2511", "image-edit"),
                     ("qwen3-tts", "tts"),
                     ("qwen3-tts-base", "tts"),
-                    ("qwen3-tts-voicedesign", "voice-lock")], repr(pairs))
+                    ("qwen3-tts-voicedesign", "voice-lock"),
+                    ("trellis2-native", "img-to-mesh")], repr(pairs))
 
     # tool.json snapshots are DERIVED artifacts — the card class is the
     # SSOT (mods declared at the model level, absorbed through models=);

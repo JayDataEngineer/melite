@@ -1,0 +1,257 @@
+{
+ "defaults": {
+  "bg_removal": "auto",
+  "cfg": "3.0",
+  "filename_prefix": "trellis2_native",
+  "resolution": "1024",
+  "seed": "42",
+  "steps": "12"
+ },
+ "engine": "comfyui",
+ "enhance_prompts": {
+  "lyrics": "",
+  "prompt": null
+ },
+ "features": {
+  "modifiers": [],
+  "variant_groups": {
+   "Quant": {
+    "label": "Quant"
+   },
+   "Variant": {
+    "label": "Variant"
+   }
+  }
+ },
+ "fields": [
+  {
+   "default": 42,
+   "group": "input",
+   "label": "Seed",
+   "name": "seed",
+   "order": 1,
+   "tooltip": "Same seed + image = same mesh take.",
+   "type": "seed",
+   "width": 1
+  },
+  {
+   "default": 1024,
+   "group": "generation",
+   "label": "Resolution",
+   "name": "resolution",
+   "options": [
+    "512",
+    "1024",
+    "1536"
+   ],
+   "order": 0,
+   "tooltip": "512 fast (props/thumbnails), 1024 standard, 1536 hero (rides the upsample stage).",
+   "type": "select",
+   "width": 1
+  },
+  {
+   "default": 12,
+   "group": "generation",
+   "label": "Steps",
+   "max": 60,
+   "min": 4,
+   "name": "steps",
+   "order": 1,
+   "step": 1,
+   "tooltip": "STRUCTURE stage steps (the lift). Shape runs 20, texture 12 \u2014 calibrated upstream.",
+   "type": "number",
+   "width": 1
+  },
+  {
+   "default": 3.0,
+   "group": "generation",
+   "label": "CFG",
+   "max": 15,
+   "min": 1,
+   "name": "cfg",
+   "order": 2,
+   "step": 0.5,
+   "tooltip": "Structure-stage guidance. Upstream template calibrates 7.5 for max fidelity; 3.0 runs looser/faster.",
+   "type": "slider",
+   "width": 1
+  },
+  {
+   "default": "auto",
+   "group": "generation",
+   "label": "Background removal",
+   "name": "bg_removal",
+   "options": [
+    "auto",
+    "on",
+    "off"
+   ],
+   "order": 3,
+   "tooltip": "auto/on: birefnet cuts the background (recommended). off: feed a pre-cleaned or alpha-cut image straight to conditioning.",
+   "type": "select",
+   "width": 1
+  },
+  {
+   "group": "output",
+   "label": "Filename prefix",
+   "name": "filename_prefix",
+   "order": 0,
+   "tooltip": "Output .glb name prefix (the run stamps resolution + seed).",
+   "type": "text"
+  }
+ ],
+ "form": "img-to-mesh",
+ "genre": "3d",
+ "label": "Image \u2192 3D",
+ "model": "trellis2-native",
+ "schema_groups": [
+  {
+   "fields": [
+    {
+     "columns": 1,
+     "label": "Source image",
+     "name": "input_image",
+     "order": 0,
+     "required": true,
+     "tooltip": "One clear object, tight framing. Background is removed automatically (birefnet) unless bg_removal=off.",
+     "type": "file"
+    },
+    {
+     "default": 42,
+     "label": "Seed",
+     "name": "seed",
+     "order": 1,
+     "tooltip": "Same seed + image = same mesh take.",
+     "type": "seed",
+     "width": 1
+    }
+   ],
+   "id": "input",
+   "label": "Input",
+   "order": 0,
+   "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "default": 1024,
+     "label": "Resolution",
+     "name": "resolution",
+     "options": [
+      "512",
+      "1024",
+      "1536"
+     ],
+     "order": 0,
+     "tooltip": "512 fast (props/thumbnails), 1024 standard, 1536 hero (rides the upsample stage).",
+     "type": "select",
+     "width": 1
+    },
+    {
+     "default": 12,
+     "label": "Steps",
+     "max": 60,
+     "min": 4,
+     "name": "steps",
+     "order": 1,
+     "step": 1,
+     "tooltip": "STRUCTURE stage steps (the lift). Shape runs 20, texture 12 \u2014 calibrated upstream.",
+     "type": "number",
+     "width": 1
+    },
+    {
+     "default": 3.0,
+     "label": "CFG",
+     "max": 15,
+     "min": 1,
+     "name": "cfg",
+     "order": 2,
+     "step": 0.5,
+     "tooltip": "Structure-stage guidance. Upstream template calibrates 7.5 for max fidelity; 3.0 runs looser/faster.",
+     "type": "slider",
+     "width": 1
+    },
+    {
+     "default": "auto",
+     "label": "Background removal",
+     "name": "bg_removal",
+     "options": [
+      "auto",
+      "on",
+      "off"
+     ],
+     "order": 3,
+     "tooltip": "auto/on: birefnet cuts the background (recommended). off: feed a pre-cleaned or alpha-cut image straight to conditioning.",
+     "type": "select",
+     "width": 1
+    }
+   ],
+   "id": "generation",
+   "label": "Generation",
+   "order": 1,
+   "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "label": "Filename prefix",
+     "name": "filename_prefix",
+     "order": 0,
+     "tooltip": "Output .glb name prefix (the run stamps resolution + seed).",
+     "type": "text"
+    }
+   ],
+   "id": "output",
+   "label": "Output",
+   "order": 2,
+   "zone": "params"
+  }
+ ],
+ "service": "trellis2-native",
+ "variants": [
+  {
+   "defaults": {},
+   "engine": "comfyui",
+   "group": "Variant",
+   "hint": "Standard resolution \u2014 DEFAULT",
+   "id": "1024",
+   "label": "1024",
+   "route": "trellis2-native"
+  },
+  {
+   "defaults": {},
+   "group": "Quant",
+   "id": "bf16",
+   "label": "BF16",
+   "quant": "bf16",
+   "route": "trellis2-native",
+   "vram_peak_gb": 0.0
+  },
+  {
+   "defaults": {},
+   "group": "Quant",
+   "id": "int8",
+   "label": "INT8 ConvRot",
+   "quant": "int8",
+   "route": "trellis2-native",
+   "vram_peak_gb": 0.0
+  },
+  {
+   "defaults": {},
+   "engine": "comfyui",
+   "group": "Variant",
+   "hint": "Quality resolution \u2014 hero assets, final production",
+   "id": "1536",
+   "label": "1536",
+   "route": "trellis2-native-1536"
+  },
+  {
+   "defaults": {},
+   "engine": "comfyui",
+   "group": "Variant",
+   "hint": "Fast resolution \u2014 props, thumbnails, iteration",
+   "id": "512",
+   "label": "512",
+   "route": "trellis2-native-512"
+  }
+ ]
+}

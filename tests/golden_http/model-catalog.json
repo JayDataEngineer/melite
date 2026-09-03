@@ -46,6 +46,21 @@
     "params": {}
    }
   },
+  "img-to-mesh": {
+   "default_family": "trellis2-native",
+   "description": "Lift one image into a textured 3D mesh (.glb) \u2014 native ComfyUI TRELLIS.2: birefnet background removal, dino_v3 conditioning, voxel structure, shape + texture stages.",
+   "families": [
+    "trellis2-native"
+   ],
+   "icon": "box",
+   "kind": "generation",
+   "label": "Image \u2192 3D",
+   "resolved": {
+    "family": "trellis2-native",
+    "model": "trellis2-native",
+    "params": {}
+   }
+  },
   "mask-studio": {
    "default_family": "mask-studio",
    "description": "Selection-only mask card: detect people/subjects, refine with SAM3, paint corrections \u2192 mask artifacts for inpaint pipelines.",
@@ -139,6 +154,19 @@
   }
  },
  "cards": [
+  {
+   "description": "Lift one image into a textured 3D mesh (.glb) \u2014 native ComfyUI TRELLIS.2: birefnet background removal, dino_v3 conditioning, voxel structure, shape + texture stages.",
+   "families": [
+    "trellis2-native"
+   ],
+   "genre": "3d",
+   "has_inference": false,
+   "has_rubric": false,
+   "id": "img-to-mesh",
+   "label": "Image \u2192 3D",
+   "principles": [],
+   "skills": []
+  },
   {
    "description": "Generate music \u2014 MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
    "families": [
@@ -1725,11 +1753,10 @@
     "filename_prefix": "trellis2_native",
     "resolution": 1024,
     "seed": 42,
-    "steps": 12,
-    "texture_size": 2048
+    "steps": 12
    },
-   "description": ">-",
-   "engine": "",
+   "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning \u2192 voxel structure \u2192 shape latent \u2192 texture atlas, saved as a .glb.",
+   "engine": "comfyui",
    "family": "trellis2-native",
    "form": "form_3d_trellis2_native",
    "genre": "3d",

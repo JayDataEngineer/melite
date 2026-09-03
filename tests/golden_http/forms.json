@@ -27,6 +27,15 @@
    "plugin": "comfyui",
    "sidebar_key": "image"
   },
+  "img-to-mesh": {
+   "default_service": "trellis2-native",
+   "genre": "3d",
+   "hidden": false,
+   "label": "Image \u2192 3D",
+   "order": 10,
+   "plugin": "comfyui",
+   "sidebar_key": "3d"
+  },
   "mask-studio": {
    "default_service": "mask-studio",
    "genre": "image",
