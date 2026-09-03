@@ -78,8 +78,12 @@ are idempotent.
   gateway core (`py/gateway.py`). The core stays generic.
 - Enforcement shape: each plugin exposes `engines/<dir>/engine.py`
   (execute) and `engines/<dir>/compose/` (card compose). Phase 1
-  (run_id="") validates and returns extra run inputs; phase 2 emits the
-  run graph YAML. The gateway resolves engine type FROM THE GRAPH — it
+  (run_id="") is the VALIDATION DOOR: document construction IS the
+  gate — key admission, artifact-ref existence on the mounts, and
+  semantic laws are pydantic validators (PYTHON SHAPE LAW: no
+  post-hoc walks); everything that can 4xx does so BEFORE any run
+  registers. Phase 2 emits the run graph YAML and the run-input
+  pool. The gateway resolves engine type FROM THE GRAPH — it
   names no lane and no engine.
 - The card's knob map is DATA the plugin owns, next to its model:
   `plugins/<plugin>/models/video/<model>/card_knobs.yaml`. A knob the

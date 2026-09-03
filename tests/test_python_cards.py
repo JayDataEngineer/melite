@@ -350,15 +350,39 @@ def main():
                                    "start_frame": 56, "end_frame": 112}]}}
     _skel = "name: h3-timeline\ntype: comfyui\n\nnodes:\n"
 
-    # phase 1: persisted extras
+    # phase 1: THE VALIDATION DOOR — construction is the gate; the
+    # door carries NO render payload (prompts/seeds/trims are the
+    # materialization pool's, via phase2's setdefault merge)
     yml1, extra1 = plugins.compose(dict(_body), "h3-timeline", "", _skel,
                                    ("comfyui",))
-    _in = (extra1 or {}).get("inputs", {})
-    check("live compose phase1 extras",
-          set((extra1 or {})) == {"inputs", "trims", "spans"}
-          and "prompt" in _in and str(_in.get("seed")) == "7"
-          and "prompt2" in _in,
+    check("live compose phase1 is the bare validation door",
+          (extra1 or {}) == {},
           "extra keys %s" % sorted((extra1 or {}).keys()))
+
+    # door refusals: dead guide image + no calls 4xx BEFORE any run
+    # registers (QUEUE LANE LAW — no zombie slots)
+    _dead = dict(_body)
+    _dead["params"] = dict(_dead["params"])
+    _dead["params"]["calls"] = [
+        {"image": "/nonexistent/wall-guide.png", "text": "x",
+         "start_frame": 0, "end_frame": 56}]
+    _refused_dead = False
+    try:
+        plugins.compose(_dead, "h3-timeline", "", _skel, ("comfyui",))
+    except PluginsValidationError as e:
+        _refused_dead = "guide image ref" in str(e)
+    check("dead guide image refuses at the door",
+          _refused_dead, "dead ref admitted at registration")
+
+    _nocalls = dict(_body)
+    _nocalls["params"] = {"seed": 7, "fps": 24, "calls": []}
+    _refused_nc = False
+    try:
+        plugins.compose(_nocalls, "h3-timeline", "", _skel, ("comfyui",))
+    except PluginsValidationError as e:
+        _refused_nc = "no calls" in str(e)
+    check("no-calls refuses at the door",
+          _refused_nc, "no-calls admitted at registration")
 
     # phase 2: the run graph (renderer seam included)
     yml2, extra2 = plugins.compose(dict(_body), "h3-timeline",
@@ -480,6 +504,10 @@ def main():
               "strict card validation failed" in str(e))
 
     # refusal: the identity law (image-anchored, multi-window, no identity)
+    # — the image must be REAL: the existence law (mode="before")
+    # resolves guide refs before the semantic laws, so a dead image
+    # would refuse as "guide image ref", not isolate the identity law
+    open("/tmp/a.png", "wb").write(b"png")
     try:
         plugins.compose({"model": "h3-timeline",
                          "params": {"calls": [

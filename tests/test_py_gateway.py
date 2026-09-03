@@ -114,8 +114,14 @@ out = resolve_inputs({"id": "n", "input_from": ["__initial__.$seed"]},
                      {"params": {"seed": 7}, "prompt": "x"})
 check("dollar tensor from params", out.get("$seed") == 7, repr(out))
 
-# C11: card model arm resolves (h3-timeline) — needs plugins dir
-resolved = resolve_request({"model": "h3-timeline", "prompt": "x"})
+# C11: card model arm resolves (h3-timeline) — needs plugins dir.
+# The door requires calls: construction is the gate (a calls-less
+# film is a guaranteed render refusal — refusing at registration
+# kills the zombie slot).
+resolved = resolve_request({"model": "h3-timeline",
+                            "params": {"calls": [
+                                {"text": "x", "start_frame": 0,
+                                 "end_frame": 56}]}})
 check("card model arm", isinstance(resolved, dict) and resolved.get("__card__"), repr(type(resolved)))
 
 # C12: unknown model refused loudly
