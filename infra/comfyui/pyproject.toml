@@ -72,12 +72,16 @@ dependencies = [
     # management rails
     "comfy-cli>=1.14",
     "comfyui-manager>=4.0",
+    # authored runtime lib: PipelinePatcher — the packs' custom nodes
+    # import it (installed-first, _vendor fallback for BYO envs)
+    "melite-model-base",
 ]
 
 [tool.uv.sources]
 torch = { index = "pytorch-cu128" }
 torchvision = { index = "pytorch-cu128" }
 torchaudio = { index = "pytorch-cu128" }
+melite-model-base = { path = "../../vendor/comfyui_extensions/melite-model-base" }
 
 [[tool.uv.index]]
 name = "pytorch-cu128"

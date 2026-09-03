@@ -1030,6 +1030,7 @@ dependencies = [
     { name = "einops" },
     { name = "filelock" },
     { name = "kornia" },
+    { name = "melite-model-base" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "numpy", version = "2.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "pillow" },
@@ -1073,6 +1074,7 @@ requires-dist = [
     { name = "einops" },
     { name = "filelock" },
     { name = "kornia", specifier = ">=0.7.1" },
+    { name = "melite-model-base", directory = "../../vendor/comfyui_extensions/melite-model-base" },
     { name = "numpy", specifier = ">=1.25.0" },
     { name = "pillow" },
     { name = "psutil" },
@@ -1096,6 +1098,11 @@ requires-dist = [
     { name = "transformers", specifier = ">=4.50.3" },
     { name = "yarl", specifier = ">=1.18.0" },
 ]
+
+[[package]]
+name = "melite-model-base"
+version = "1.0.0"
+source = { directory = "../../vendor/comfyui_extensions/melite-model-base" }
 
 [[package]]
 name = "mixpanel"

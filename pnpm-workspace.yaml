@@ -20,7 +20,6 @@ minimumReleaseAge: 0
 ## pathways — the editor and every engine plugin consume it; no consumer
 ## hosts shared infrastructure in its subtree.
 packages:
-  - 'packages/*'                          # root stragglers: melite-model-base (dsl, map-client cut 2026-09-03)
   - 'plugins/*'                           # single-package plugins
   - 'plugins/harness/dsh/*'               # the DSH harness family (agent tools, presets, provisioner)
   - 'plugins/web/dsh/*'                   # the DSH web family (chat/sidebar panels — embeds the editor)
