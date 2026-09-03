@@ -352,10 +352,10 @@ def main():
 
     # phase 1: THE VALIDATION DOOR — construction is the gate; the
     # door carries NO render payload (prompts/seeds/trims are the
-    # materialization pool's, via phase2's setdefault merge)
+    # materialization pool's, via the render door's setdefault merge)
     yml1, extra1 = plugins.compose(dict(_body), "h3-timeline", "", _skel,
                                    ("comfyui",))
-    check("live compose phase1 is the bare validation door",
+    check("run_id='' is the bare validation door (no payload)",
           (extra1 or {}) == {},
           "extra keys %s" % sorted((extra1 or {}).keys()))
 
@@ -440,7 +440,7 @@ def main():
                                    "run-WALL-0001", _skel, ("comfyui",))
     # THE ACTION CARD LAW: one skeleton node = one workflow = one queue submission.
     # The skeleton has exactly one node: h3-film (not per-window nodes).
-    check("live compose phase2 run graph",
+    check("run_id set: the render door emits the run graph",
           "- id: h3-film" in (yml2 or "")
           and "workflow: {" in (yml2 or "")
           and "$prompt" in ((extra2 or {}).get("inputs", {})),
@@ -734,7 +734,7 @@ def main():
               "no verbatim ref" if _cwf else "compose refused"))
 
     # the old run-id surface must refuse at the VALIDATION door
-    # (run_id="" — the registration gate; phase2 assumes it ran)
+    # (run_id="" — the registration gate; the render door assumes it ran)
     _old = dict(_cbody)
     _old["params"] = dict(_old["params"], continue_from="run-PRIOR-1")
     _old_refused = False
