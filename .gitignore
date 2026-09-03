@@ -77,25 +77,15 @@ drafts/
 # === Dead C++ era (post python-orchestrator migration) ===
 third_party/
 
-# data/ — the data root (never commit; README is the law doc)
-data/output/
-data/temp/
-data/input/
-data/runs/
-data/agent-sessions/
-data/downloads/
-data/staging/
-data/delivery/
-data/sessions/
-data/artifacts/
-data/test-output/	# e2e/playwright generated state (configs resolve here from repo root)
-data/runtime/
-# Keep structure and docs
+# data/ — the data root (never commit state; README is the law doc)
+# ONE rule: ignore everything under data/, then re-include directory
+# traversal (so .gitkeep discovery works) and the law doc. The old
+# per-subdir list + a trailing !data/**/ negation broke itself —
+# dir-only ignores lose to the later dir negation, git descended, and
+# NO pattern matched any file: everything under data/ was committable,
+# llm_keystore.json/.key included. (-pattern lines were not gitignore
+# syntax at all — dead text.)
+data/**
 !data/**/
-!data/**/.gitkeep
 !data/README.md
-# Remove old data/ ignores (replaced by datafolder)
--data/delivery/
--data/input/
--data/llm_keystore.json
--data/llm_keystore.key
+!data/**/.gitkeep
