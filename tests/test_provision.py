@@ -55,8 +55,24 @@ check("base env carries the FULL comfyui management plane",
       all(any(d.startswith(p) for d in deps) for p in _plane),
       "missing: %s" % [p for p in _plane
                        if not any(d.startswith(p) for d in deps)])
-check("no dependency-groups split (ONE flow, no opt-in group)",
-      not gw.get("dependency-groups"), repr(gw.get("dependency-groups")))
+# ONE FLOW, refined 2026-09-04 (operator order: "to pyproject, we
+# need to add the pytest dev dependency"): the MANAGEMENT plane can
+# never be an opt-in group — but dev/test tooling may group. The
+# invariant: only a "dev" group exists, and it carries NO management
+# packages (comfy-mcp / comfyui-manager / comfy-cli stay base or the
+# system does not run).
+_mgmt = ("comfy-mcp", "comfyui-manager", "comfy-cli")
+_groups = gw.get("dependency-groups") or {}
+_bad_groups = sorted(set(_groups) - {"dev"})
+_dev_rows = [str(x) for x in _groups.get("dev", [])]
+_mgmt_leak = [d for d in _dev_rows
+              if any(m in d for m in _mgmt)]
+check("dependency groups: dev-only, never management",
+      not _bad_groups and not _mgmt_leak,
+      "groups %s / mgmt leak %s" % (_bad_groups, _mgmt_leak))
+base_deps = "\n".join(gw["project"]["dependencies"])
+check("management plane stays base (never a group)",
+      all(m in base_deps for m in _mgmt), _mgmt)
 check("gateway lock tracked", (REPO / "uv.lock").is_file())
 
 # ── 3. the managed runtime: pinned, locked, manager-free ──────────────

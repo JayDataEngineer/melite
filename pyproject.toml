@@ -69,3 +69,26 @@ init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = true
 warn_untyped_fields = true
+
+# ── TEST PLANE (operator order 2026-09-04: "we should probably add
+# pytest") ──────────────────────────────────────────────────────────
+# pytest is the RUNNER; the script-style wall suites stay script-style
+# (their check() discipline and exit codes ARE the contract — pytest
+# wraps them as subprocess walls, never rewrites them). The dev group
+# is the only dependency group (the management plane stays base —
+# PROVISIONING LAW).
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+# tests/pytest = native pytest home; tests/integration = REAL
+# INFERENCE (the special folder: cards through the queue, GPU money
+# on the line — deselected by default, opted in with `-m gpu`).
+# The script suites (tests/test_*.py) are deliberately OUTSIDE
+# testpaths: several execute walls at import; they run as subprocess
+# walls via tests/pytest/test_walls.py.
+testpaths = ["tests/pytest", "tests/integration"]
+markers = [
+    "gpu: real inference through the queue (opt in: pytest -m gpu)",
+]
+addopts = "-m 'not gpu' -q"

@@ -35,6 +35,10 @@ productions/
 *.png
 *.gif
 downloaded_files/
+# feed-in assets are INPUTS, not artifacts (the integration suite's
+# deterministic inputs ride the repo — GPU output may vary, feeds
+# may not)
+!tests/integration/assets/*.png
 
 # === Runtime / scratch ===
 .dsh_work/
