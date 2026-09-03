@@ -1,3 +1,11 @@
+[submodule "melite-tts-nodes"]
+	path = vendor/comfyui_extensions/melite-tts-nodes
+	url = https://github.com/JayDataEngineer/melite-tts-nodes.git
+	branch = main
+[submodule "melite-sfx-nodes"]
+	path = vendor/comfyui_extensions/melite-sfx-nodes
+	url = https://github.com/JayDataEngineer/melite-sfx-nodes.git
+	branch = main
 [submodule "melite-audio-nodes"]
 	path = vendor/comfyui_extensions/melite-audio-nodes
 	url = https://github.com/JayDataEngineer/melite-audio-nodes.git
