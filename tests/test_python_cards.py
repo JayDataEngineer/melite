@@ -363,8 +363,10 @@ def main():
     # phase 2: the run graph (renderer seam included)
     yml2, extra2 = plugins.compose(dict(_body), "h3-timeline",
                                    "run-WALL-0001", _skel, ("comfyui",))
+    # THE ACTION CARD LAW: one skeleton node = one workflow = one queue submission.
+    # The skeleton has exactly one node: h3-film (not per-window nodes).
     check("live compose phase2 run graph",
-          "- id: window1" in (yml2 or "") and "- id: window2" in (yml2 or "")
+          "- id: h3-film" in (yml2 or "")
           and "workflow: {" in (yml2 or "")
           and "$prompt" in ((extra2 or {}).get("inputs", {})),
           "yaml %d bytes" % len(yml2 or ""))
