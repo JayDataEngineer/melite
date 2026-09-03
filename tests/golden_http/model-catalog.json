@@ -751,7 +751,7 @@
     "width": 1024
    },
    "description": "DWPose whole-body pose detection (preprocessor for pose-guided generation).",
-   "engine": "",
+   "engine": "comfyui",
    "family": "dwpose",
    "form": "form_edit",
    "genre": "",
@@ -812,7 +812,7 @@
     "width": 1024
    },
    "description": "GEM-X SOMA pose estimation and retargeting.",
-   "engine": "",
+   "engine": "comfyui",
    "family": "gem_soma",
    "form": "form_edit",
    "genre": "",
@@ -1014,7 +1014,7 @@
     "width": 1024
    },
    "description": "LatentSync \u2014 local-only lip-sync that aligns mouth shapes to audio in a video.",
-   "engine": "",
+   "engine": "comfyui",
    "family": "latentsync",
    "form": "form_edit",
    "genre": "",
@@ -1355,7 +1355,7 @@
     "width": 1024
    },
    "description": "Image Edit \u2014 instruction-driven image editing and manipulation (Qwen-Image-Edit 2511 is",
-   "engine": "",
+   "engine": "comfyui",
    "family": "qwen-img-edit-2511",
    "form": "form_edit",
    "genre": "image",

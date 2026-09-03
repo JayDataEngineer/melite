@@ -93,8 +93,14 @@ def merge_plugins_dir(plugins_root: str) -> list[dict]:
 
 
 def _merge_from(files: list[tuple[str, str]]) -> list[dict]:
+    """One extension per name; an IDENTICAL restatement (same url AND
+    ref — two family heads of one physical lane pinning the same
+    extension) merges silently, a DIVERGENT pin refuses loud. (The
+    2026-09-04 integration sweep: qwen-img-edit-2511 and img-edit
+    both carry Comfyui-QwenEditUtils — one lane, two family heads,
+    same pin: truth, not drift.)"""
     merged: list[dict] = []
-    seen_names: dict[str, str] = {}  # name -> owning file
+    seen: dict[str, dict] = {}   # name -> owning row
 
     for path, plugin_id in files:
         exts = load_extensions(path)
@@ -102,13 +108,17 @@ def _merge_from(files: list[tuple[str, str]]) -> list[dict]:
             name = ext.get("name")
             if not name:
                 fail(f"{path}: extension with no name")
-            if name in seen_names:
-                fail(
-                    f"Duplicate extension '{name}':\n"
-                    f"  first:  {seen_names[name]}\n"
-                    f"  second: {path}"
-                )
-            seen_names[name] = path
+            if name in seen:
+                prior = seen[name]
+                if (prior.get("url"), prior.get("ref")) !=                         (ext.get("url"), ext.get("ref")):
+                    fail(
+                        f"Divergent pins for extension '{name}':\n"
+                        f"  {prior['_source']}: {prior.get('url')} @ "
+                        f"{prior.get('ref')}\n"
+                        f"  {path}: {ext.get('url')} @ {ext.get('ref')}"
+                    )
+                continue          # identical restatement — one truth
+            seen[name] = ext
             # Tag with source for traceability
             ext["_source"] = f"{plugin_id}:{path}"
             merged.append(ext)
