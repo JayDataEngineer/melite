@@ -330,6 +330,69 @@ def main():
     except ModelError as e:
         check("dead card= ref refuses", "no known card" in str(e))
 
+    # ── THE LIVE COMPOSE WALL (2026-09-04) ─────────────────────────────
+    # Coverage gap this closes: every other section loads card.py ALONE;
+    # the golden rows are audio refusals. Nothing imported the full
+    # timeline package end-to-end — which is how a broken intra-package
+    # import (the deleted .fp16) shipped green through every wall. This
+    # section drives the REAL dispatch (plugins.compose, engine-typed)
+    # through the whole pipeline: schema -> timeline -> emission ->
+    # renderer.
+    import plugins
+    from plugins import ValidationError as PluginsValidationError
+
+    _body = {"model": "h3-timeline",
+             "params": {"seed": 7, "fps": 24,
+                        "identity": "a courier in lantern-lit rain",
+                        "calls": [{"text": "pushes off through the glow",
+                                   "start_frame": 0, "end_frame": 56},
+                                  {"text": "the storm swallows the alley",
+                                   "start_frame": 56, "end_frame": 112}]}}
+    _skel = "name: h3-timeline\ntype: comfyui\n\nnodes:\n"
+
+    # phase 1: persisted extras
+    yml1, extra1 = plugins.compose(dict(_body), "h3-timeline", "", _skel,
+                                   ("comfyui",))
+    _in = (extra1 or {}).get("inputs", {})
+    check("live compose phase1 extras",
+          set((extra1 or {})) == {"inputs", "trims", "spans"}
+          and "prompt" in _in and str(_in.get("seed")) == "7"
+          and "prompt2" in _in,
+          "extra keys %s" % sorted((extra1 or {}).keys()))
+
+    # phase 2: the run graph (renderer seam included)
+    yml2, extra2 = plugins.compose(dict(_body), "h3-timeline",
+                                   "run-WALL-0001", _skel, ("comfyui",))
+    check("live compose phase2 run graph",
+          "- id: window1" in (yml2 or "") and "- id: window2" in (yml2 or "")
+          and "workflow: {" in (yml2 or "")
+          and "$prompt" in ((extra2 or {}).get("inputs", {})),
+          "yaml %d bytes" % len(yml2 or ""))
+
+    # refusal: unknown key refuses LOUDLY through the same door
+    try:
+        plugins.compose({"model": "h3-timeline",
+                         "params": {"calls": [{"bogus": 1}]}},
+                        "h3-timeline", "", _skel, ("comfyui",))
+        check("live compose unknown-key refusal", False, "no refusal")
+    except PluginsValidationError as e:
+        check("live compose unknown-key refusal",
+              "strict card validation failed" in str(e))
+
+    # refusal: the identity law (image-anchored, multi-window, no identity)
+    try:
+        plugins.compose({"model": "h3-timeline",
+                         "params": {"calls": [
+                             {"image": "/tmp/a.png", "text": "a",
+                              "start_frame": 0, "end_frame": 56},
+                             {"text": "b", "start_frame": 56,
+                              "end_frame": 112}]}},
+                        "h3-timeline", "", _skel, ("comfyui",))
+        check("live compose identity-law refusal", False, "no refusal")
+    except PluginsValidationError as e:
+        check("live compose identity-law refusal",
+              "image-anchored film without params.identity" in str(e))
+
     print("PASS %d / FAIL %d" % (PASS, FAIL))
     return 1 if FAIL else 0
 
