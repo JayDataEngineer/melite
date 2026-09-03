@@ -128,9 +128,10 @@ def main():
             ("forms", "deep"),
             ("form-spec?model=krea-2", "deep"),
             ("form-spec?model=krea-2-raw", "deep"),
-            ("form-spec?model=z-image-base", "deep"),
-            ("form-spec?model=anima", "deep"),
-            ("form-spec?model=z-image", "deep"),
+            # FEEDING LAW: z-image/anima/z-image-base are DATA
+            # families (unboarded) — no form-spec contract; their
+            # goldens were deleted with the unboarding 2026-09-04.
+            # They return when the families truthfully feed a card.
             ("form-spec?model=h3-timeline", "deep"),
             ("form-spec?model=music3", "deep"),
             ("kinds", "deep"),

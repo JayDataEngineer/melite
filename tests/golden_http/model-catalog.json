@@ -17,13 +17,10 @@
   },
   "image-edit": {
    "default_family": "img-edit",
-   "description": "Instruction-driven image editing \u2014 the edit_image interface card boarding qwen-img-edit-2511 and the pose preprocessors; each family declares its own lanpaint flavor (required anchor image) and the surface scopes itself",
+   "description": "Instruction-driven image editing \u2014 the edit_image interface card boarding the Qwen-Image-Edit 2511 lane (img-edit + qwen-img-edit-2511); each family declares its own lanpaint flavor (required anchor image) and the surface scopes itself",
    "families": [
     "img-edit",
-    "qwen-img-edit-2511",
-    "dwpose",
-    "gem_soma",
-    "latentsync"
+    "qwen-img-edit-2511"
    ],
    "icon": "edit",
    "kind": "generation",
@@ -36,11 +33,9 @@
   },
   "image-gen": {
    "default_family": "krea-2",
-   "description": "Text-to-image generation \u2014 the generate_image interface card boarding krea-2, anima and z-image; each family declares its own mods (loras on krea-2, lanpaint on anima/z-image) and the surface scopes itself",
+   "description": "Text-to-image generation \u2014 the generate_image interface card boarding krea-2; the family declares its mods (loras) and the surface scopes itself",
    "families": [
-    "krea-2",
-    "anima",
-    "z-image"
+    "krea-2"
    ],
    "icon": "image",
    "kind": "generation",
@@ -156,13 +151,10 @@
    "skills": []
   },
   {
-   "description": "Instruction-driven image editing \u2014 the edit_image interface card boarding qwen-img-edit-2511 and the pose preprocessors; each family declares its own lanpaint flavor (required anchor image) and the surface scopes itself",
+   "description": "Instruction-driven image editing \u2014 the edit_image interface card boarding the Qwen-Image-Edit 2511 lane (img-edit + qwen-img-edit-2511); each family declares its own lanpaint flavor (required anchor image) and the surface scopes itself",
    "families": [
     "img-edit",
-    "qwen-img-edit-2511",
-    "dwpose",
-    "gem_soma",
-    "latentsync"
+    "qwen-img-edit-2511"
    ],
    "genre": "image",
    "has_inference": false,
@@ -180,11 +172,9 @@
    "skills": []
   },
   {
-   "description": "Text-to-image generation \u2014 the generate_image interface card boarding krea-2, anima and z-image; each family declares its own mods (loras on krea-2, lanpaint on anima/z-image) and the surface scopes itself",
+   "description": "Text-to-image generation \u2014 the generate_image interface card boarding krea-2; the family declares its mods (loras) and the surface scopes itself",
    "families": [
-    "krea-2",
-    "anima",
-    "z-image"
+    "krea-2"
    ],
    "genre": "image",
    "has_inference": false,

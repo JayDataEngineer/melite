@@ -103,13 +103,14 @@ def main():
     d2 = deep_diff(served, py_frag)
     check("served fragment is class-driven", d2 is None, d2 or "")
 
-    # z-image/anima boarded the card with the model-level mods flip
-    # (2026-09-02): the interface card serves all three families, each
-    # scoped to its own declared mods — z-image/anima carry lanpaint,
-    # krea-2 carries loras. Serving all three IS the point.
-    check("z-image gate parity",
-          ef._card_spec(REPO, "z-image") is not None
-          and "z-image" in tuple(cls.families_of()))
+    # FEEDING LAW (2026-09-04): unboarded data families carry no
+    # card surface — z-image/anima no longer serve on image-gen
+    # (they fed nothing: no lane facts, no template). krea-2 is
+    # the single truthful feeder.
+    check("unboarded families serve no gate",
+          "z-image" not in tuple(cls.families_of())
+          and "anima" not in tuple(cls.families_of())
+          and "krea-2" in tuple(cls.families_of()))
 
     # ── the 2026-09-02 full card flip: every flipped card pinned the
     # same way — class fragment == golden form-spec (captured from the
@@ -207,15 +208,10 @@ def main():
     pairs = validate_against_cards(models, cards,
                                    engine_truth=_ac.ENGINE_TRUTH_KEYS)
     check("cross-validation pairs (all boarded families)",
-          pairs == [("anima", "image-gen"),
-                    ("dwpose", "image-edit"),
-                    ("gem_soma", "image-edit"),
-                    ("img-edit", "image-edit"),
+          pairs == [("img-edit", "image-edit"),
                     ("krea-2", "image-gen"),
-                    ("latentsync", "image-edit"),
                     ("music3", "music"),
-                    ("qwen-img-edit-2511", "image-edit"),
-                    ("z-image", "image-gen")], repr(pairs))
+                    ("qwen-img-edit-2511", "image-edit")], repr(pairs))
 
     # tool.json snapshots are DERIVED artifacts — the card class is the
     # SSOT (mods declared at the model level, absorbed through models=);
@@ -928,10 +924,17 @@ def main():
           all(not (f.visible_when or "") for f in MaskMod._fields_),
           "coupled: %s" % [f.name for f in MaskMod._fields_
                            if f.visible_when])
+    # FEEDING LAW: the attach exemplar is a BOARDED family — the
+    # edit lane (qwen-img-edit-2511) carries both packs; unboarded
+    # data families (anima, z-image) carry none (no card feeds).
+    _qwen_edit = load_model_py(os.path.join(REPO, "plugins/engines/comfyui/models/edit/qwen-img-edit-2511/model.py"), "comfyui")
+    _qe_packs = {getattr(m, "pack", "") for m in _qwen_edit.mods}
+    check("edit family attaches mask to lanpaint",
+          _qe_packs == {"lanpaint", "mask"}, _qe_packs)
     _anima = load_model_py(os.path.join(REPO, "plugins/engines/comfyui/models/image/anima/model.py"), "comfyui")
     _anima_packs = {getattr(m, "pack", "") for m in _anima.mods}
-    check("anima attaches mask to lanpaint",
-          _anima_packs == {"lanpaint", "mask"}, _anima_packs)
+    check("unboarded data family carries no mods",
+          _anima_packs == set(), _anima_packs)
     _krea = load_model_py(os.path.join(REPO, "plugins/engines/comfyui/models/image/krea-2/model.py"), "comfyui")
     _krea_packs = {getattr(m, "pack", "") for m in _krea.mods}
     check("krea-2 boards no unconsumed mod (truthful surface)",
@@ -944,14 +947,12 @@ def main():
     _editfams = [load_model_py(
         os.path.join(REPO, "plugins/engines/comfyui/models",
                      p, "model.py"), "comfyui")
-        for p in ("image/img-edit", "edit/qwen-img-edit-2511",
-                  "pose/dwpose", "pose/gem_soma", "pose/latentsync")]
+        for p in ("image/img-edit", "edit/qwen-img-edit-2511")]
     _lan_fams = sorted(
         m.id for m in _editfams
         for mod in m.mods if getattr(mod, "pack", "") == "lanpaint")
-    check("edit lane: one lanpaint flavor shape, five families",
-          _lan_fams == ["dwpose", "gem_soma", "img-edit",
-                        "latentsync", "qwen-img-edit-2511"], _lan_fams)
+    check("edit lane: one lanpaint flavor shape, two boarded families",
+          _lan_fams == ["img-edit", "qwen-img-edit-2511"], _lan_fams)
     from melite_cards.dsl import (_assert_flavors_agree,
                                   ValidationError as _VE)
 

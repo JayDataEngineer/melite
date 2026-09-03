@@ -95,7 +95,7 @@
   },
   {
    "card": "image-edit",
-   "description": "Instruction-driven image editing \u2014 the edit_image interface card boarding qwen-img-edit-2511 and the pose preprocessors; each family declares its own lanpaint flavor (required anchor image) and the surface scopes itself",
+   "description": "Instruction-driven image editing \u2014 the edit_image interface card boarding the Qwen-Image-Edit 2511 lane (img-edit + qwen-img-edit-2511); each family declares its own lanpaint flavor (required anchor image) and the surface scopes itself",
    "kind": "card-compose",
    "model": "img-edit",
    "name": "image_edit_card",
@@ -241,13 +241,10 @@
      },
      "model": {
       "default": "img-edit",
-      "description": "The boarded family to run \u2014 the request's top-level `model`. Options: img-edit, qwen-img-edit-2511, dwpose, gem_soma, latentsync.",
+      "description": "The boarded family to run \u2014 the request's top-level `model`. Options: img-edit, qwen-img-edit-2511.",
       "enum": [
        "img-edit",
-       "qwen-img-edit-2511",
-       "dwpose",
-       "gem_soma",
-       "latentsync"
+       "qwen-img-edit-2511"
       ],
       "type": "string"
      },
@@ -356,7 +353,7 @@
   },
   {
    "card": "image-gen",
-   "description": "Text-to-image generation \u2014 the generate_image interface card boarding krea-2, anima and z-image; each family declares its own mods (loras on krea-2, lanpaint on anima/z-image) and the surface scopes itself",
+   "description": "Text-to-image generation \u2014 the generate_image interface card boarding krea-2; the family declares its mods (loras) and the surface scopes itself",
    "kind": "card-compose",
    "model": "krea-2",
    "name": "image_gen_card",
@@ -374,264 +371,14 @@
       "minimum": 256,
       "type": "number"
      },
-     "input_image": {
-      "description": "Image",
-      "format": "path",
-      "type": "string",
-      "x-families": [
-       "anima",
-       "z-image"
-      ]
-     },
-     "input_mask": {
-      "description": "RGBA PNG whose alpha channel marks the region. Standalone: region semantics for this lane. Alongside lanpaint: the inpaint region \u2014 present with input_image, the builder switches to the lanpaint sampler.",
-      "format": "path",
-      "type": "string",
-      "x-families": [
-       "anima",
-       "z-image"
-      ]
-     },
-     "lanpaint_beta": {
-      "default": 0.5,
-      "description": "Beta",
-      "maximum": 2,
-      "minimum": 0,
-      "type": "number",
-      "x-families": [
-       "anima",
-       "z-image"
-      ],
-      "x-visible-when": "lanpaint_enabled == true"
-     },
-     "lanpaint_enabled": {
-      "default": false,
-      "description": "Force LanPaint",
-      "type": "boolean",
-      "x-families": [
-       "anima",
-       "z-image"
-      ],
-      "x-visible-when": "input_image != null"
-     },
-     "lanpaint_friction": {
-      "default": 0.5,
-      "description": "Friction",
-      "maximum": 2,
-      "minimum": 0,
-      "type": "number",
-      "x-families": [
-       "anima",
-       "z-image"
-      ],
-      "x-visible-when": "lanpaint_enabled == true"
-     },
-     "lanpaint_lambda": {
-      "default": 0.5,
-      "description": "Lambda",
-      "maximum": 2,
-      "minimum": 0,
-      "type": "number",
-      "x-families": [
-       "anima",
-       "z-image"
-      ],
-      "x-visible-when": "lanpaint_enabled == true"
-     },
-     "lanpaint_num_steps": {
-      "default": 20,
-      "description": "Num Steps",
-      "maximum": 100,
-      "minimum": 1,
-      "type": "number",
-      "x-families": [
-       "anima",
-       "z-image"
-      ],
-      "x-visible-when": "lanpaint_enabled == true"
-     },
-     "lanpaint_prompt_mode": {
-      "default": "negative",
-      "description": "Prompt Mode",
-      "enum": [
-       "negative",
-       "positive"
-      ],
-      "type": "string",
-      "x-families": [
-       "anima",
-       "z-image"
-      ],
-      "x-visible-when": "lanpaint_enabled == true"
-     },
-     "lanpaint_step_size": {
-      "default": 1.0,
-      "description": "Step Size",
-      "maximum": 2,
-      "minimum": 0.1,
-      "type": "number",
-      "x-families": [
-       "anima",
-       "z-image"
-      ],
-      "x-visible-when": "lanpaint_enabled == true"
-     },
      "loras": {
       "description": "LoRAs",
-      "type": "array",
-      "x-families": [
-       "krea-2"
-      ]
-     },
-     "mask_context_pad": {
-      "default": 64,
-      "description": "Pixels of surrounding context kept in the crop (crop_stitch mode). More context = more coherence; 64 is the sweet spot.",
-      "maximum": 256,
-      "minimum": 0,
-      "type": "number",
-      "x-families": [
-       "anima",
-       "z-image"
-      ]
-     },
-     "mask_feather": {
-      "default": 8,
-      "description": "Gaussian falloff the composite blends through \u2014 kills the pasted-on rectangle edge.",
-      "maximum": 32,
-      "minimum": 0,
-      "type": "number",
-      "x-families": [
-       "anima",
-       "z-image"
-      ]
-     },
-     "mask_grow": {
-      "default": 8,
-      "description": "Expand (+) or shrink (\u2212) the region by an exact pixel disk before the run. Applied host-side.",
-      "maximum": 32,
-      "minimum": -32,
-      "type": "number",
-      "x-families": [
-       "anima",
-       "z-image"
-      ]
-     },
-     "mask_invert": {
-      "default": false,
-      "description": "Work OUTSIDE the painted region instead.",
-      "type": "boolean",
-      "x-families": [
-       "anima",
-       "z-image"
-      ]
-     },
-     "mask_mode": {
-      "default": "auto",
-      "description": "How the mask is honored: auto (the lane's own region ControlNet if its weights are present, else crop+stitch), crop_stitch (crop to the mask + context, work the crop, composite back \u2014 pixels outside the mask never change), full_frame (legacy whole-image pass; unmasked regions may drift).",
-      "enum": [
-       "auto",
-       "crop_stitch",
-       "full_frame"
-      ],
-      "type": "string",
-      "x-families": [
-       "anima",
-       "z-image"
-      ]
-     },
-     "mask_threshold": {
-      "default": 0,
-      "description": "Re-binarize the feathered mask at this level. 0 = keep the soft falloff.",
-      "maximum": 1,
-      "minimum": 0,
-      "type": "number",
-      "x-families": [
-       "anima",
-       "z-image"
-      ]
-     },
-     "model": {
-      "default": "krea-2",
-      "description": "The boarded family to run \u2014 the request's top-level `model`. Options: krea-2, anima, z-image.",
-      "enum": [
-       "krea-2",
-       "anima",
-       "z-image"
-      ],
-      "type": "string"
+      "type": "array"
      },
      "negative_prompt": {
       "description": "Negative Prompt",
       "type": "string",
       "x-visible-when": "negative_prompt != null"
-     },
-     "outpaint_bottom": {
-      "default": 0,
-      "description": "Expand Bottom",
-      "maximum": 512,
-      "minimum": 0,
-      "type": "number",
-      "x-families": [
-       "anima",
-       "z-image"
-      ],
-      "x-visible-when": "input_image != null"
-     },
-     "outpaint_left": {
-      "default": 0,
-      "description": "Expand Left",
-      "maximum": 512,
-      "minimum": 0,
-      "type": "number",
-      "x-families": [
-       "anima",
-       "z-image"
-      ],
-      "x-visible-when": "input_image != null"
-     },
-     "outpaint_overlap": {
-      "default": 16,
-      "description": "Overlap",
-      "maximum": 64,
-      "minimum": 0,
-      "type": "number",
-      "x-families": [
-       "anima",
-       "z-image"
-      ],
-      "x-visible-when": "input_image != null"
-     },
-     "outpaint_right": {
-      "default": 0,
-      "description": "Expand Right",
-      "maximum": 512,
-      "minimum": 0,
-      "type": "number",
-      "x-families": [
-       "anima",
-       "z-image"
-      ],
-      "x-visible-when": "input_image != null"
-     },
-     "outpaint_top": {
-      "default": 0,
-      "description": "Expand Top",
-      "maximum": 512,
-      "minimum": 0,
-      "type": "number",
-      "x-families": [
-       "anima",
-       "z-image"
-      ],
-      "x-visible-when": "input_image != null"
-     },
-     "preset": {
-      "description": "Recipe shortcut \u2014 the LanPaint quick reference (tuning defaults). Fills untouched fields; values you've set win.",
-      "enum": [],
-      "type": "string",
-      "x-families": [
-       "z-image"
-      ]
      },
      "prompt": {
       "description": "Prompt",
