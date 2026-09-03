@@ -555,15 +555,17 @@ def main():
         REPO, "plugins", "engines", "comfyui", "models", "video",
         "h3-timeline")
 
-    _ser = LoraStack(entries=(LoraEntry(lora="h3/a.safetensors", str=0.4),
+    _ser = LoraStack(entries=(LoraEntry(lora="h3/a.safetensors",
+                                  strength=0.4),
                               LoraEntry(lora="h3/b.safetensors",
-                                        str=0.6))).value
+                                        strength=0.6))).value
     check("lora stack mod: serializer owns the JSON",
           _ser == ('[{"on":true,"lora":"h3/a.safetensors","str":0.4,'
                    '"v":1,"a":1,"t":1},{"on":true,'
                    '"lora":"h3/b.safetensors","str":0.6,"v":1,"a":1,'
                    '"t":1}]')
-          and LoraStack(entries=(LoraEntry(lora="x", str=0.5),)).key
+          and LoraStack(entries=(LoraEntry(lora="x",
+                                 strength=0.5),)).key
           == "LTX_lora_loader.0.stack_data",
           "stack bytes drifted: %r" % _ser)
 
@@ -584,7 +586,8 @@ def main():
                   if r["lora"].startswith("h3/"))
           and {r["lora"][3:] for r in _rows} <= _prov_names
           and LoraStack(entries=tuple(
-              LoraEntry(lora=str(r["lora"]), str=float(r["str"]))
+              LoraEntry(lora=str(r["lora"]),
+                        strength=float(r["str"]))
               for r in (_default + _always))).value == _core.LORA_STACK_GOLD,
           "yaml rows / provisions / GOLD drifted apart")
 
@@ -602,7 +605,7 @@ def main():
     check("lora stack derivation: user replaces default, always rides",
           _stk is not None and len(_stk.entries) == 2
           and _stk.entries[0].lora == "h3/user.safetensors"
-          and _stk.entries[0].str == 0.8
+          and _stk.entries[0].strength == 0.8
           and _stk.entries[1].lora == _always[0]["lora"]
           and _base is not None
           and [e.lora for e in _base.entries] == [
