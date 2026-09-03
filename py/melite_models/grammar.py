@@ -63,12 +63,14 @@ third source shape, mutually exclusive with the loader facts.'''
     vae: str = ""
     family: str = ""        # audiocore load family (qwen3_tts, ...)
     model_path: str = ""    # audiocore weights (basename or abs)
+    checkpoint: str = ""    # a CheckpointLoader row (mask lanes: SAM3
+                            # rides a checkpoint beside the RT-DETR unet)
 
     @model_validator(mode="after")
     def _one_unet_source(self):
         if self.family:
             if self.unet or self.unet_variant or self.text_encoder \
-                    or self.vae:
+                    or self.vae or self.checkpoint:
                 raise ValueError(
                     "lane_inputs: family= is the audiocore source — "
                     "loader facts do not ride beside it")

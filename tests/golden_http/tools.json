@@ -419,6 +419,123 @@
    "version": 1
   },
   {
+   "card": "mask-studio",
+   "description": "Selection-only mask card: detect people/subjects, refine with SAM3, paint corrections \u2192 mask artifacts for inpaint pipelines.",
+   "kind": "card-compose",
+   "model": "mask-studio",
+   "name": "mask_studio_card",
+   "params_schema": {
+    "properties": {
+     "detect_mode": {
+      "default": "body",
+      "description": "What the primary selection targets. body \u2192 RT-DETR person boxes refined by SAM3; face/hands \u2192 SAM3 open-vocabulary text selection.",
+      "enum": [
+       "body",
+       "face",
+       "hands"
+      ],
+      "type": "string"
+     },
+     "detection_threshold": {
+      "default": 0.35,
+      "description": "RT-DETR box confidence. Lower catches more instances, noisier boxes.",
+      "maximum": 0.95,
+      "minimum": 0.05,
+      "type": "number"
+     },
+     "export_body": {
+      "default": "false",
+      "description": "Export body mask",
+      "type": "boolean"
+     },
+     "export_boxes": {
+      "default": "true",
+      "description": "Draw RT-DETR boxes on the image \u2014 the instance manifest (read it, then set instance_filter).",
+      "type": "boolean"
+     },
+     "export_face": {
+      "default": "false",
+      "description": "Export face mask",
+      "type": "boolean"
+     },
+     "export_hands": {
+      "default": "false",
+      "description": "Export hands mask",
+      "type": "boolean"
+     },
+     "export_paint": {
+      "default": "false",
+      "description": "ON when a brush stroke exists \u2014 the painted payload becomes its own mask export.",
+      "type": "boolean"
+     },
+     "input_image": {
+      "description": "The photo to select from \u2014 absolute path or an artifact ref from a prior run.",
+      "format": "path",
+      "type": "string"
+     },
+     "instance_filter": {
+      "default": "all",
+      "description": "'all' | 'largest' | comma indices '0,2' \u2014 which detected instances the primary keeps.",
+      "type": "string"
+     },
+     "max_instances": {
+      "default": 0,
+      "description": "Cap detected instances (0 = no cap). Read the manifest first, then filter.",
+      "maximum": 100,
+      "minimum": 0,
+      "type": "number"
+     },
+     "output_mode": {
+      "default": "segm",
+      "description": "segm saves masks; bbox saves the drawn-box manifest preview.",
+      "enum": [
+       "segm",
+       "bbox"
+      ],
+      "type": "string"
+     },
+     "outputs": {
+      "default": "[]",
+      "description": "THE recipe form: one entry per mask, filter (where) over selection (how). Non-empty \u21d2 overrides the flat params. See AGENT.md.",
+      "type": "string"
+     },
+     "paint_mask": {
+      "description": "The painted PNG (alpha channel = strokes). Required when export_paint is true.",
+      "format": "path",
+      "type": "string"
+     },
+     "roi": {
+      "description": "[x, y, w, h] fractions \u2014 run-global crop of every selection. Recipe filters may carry their own; identical scopes only.",
+      "type": "string"
+     },
+     "sam3_prompt": {
+      "description": "Open-vocabulary text selection \u2014 e.g. 'the red hat', 'left shoe'. Rides INSTEAD of detect_mode when set.",
+      "type": "string"
+     },
+     "sam_dilation": {
+      "default": 0,
+      "description": "Grow the final mask N pixels \u2014 the inpaint bleed margin.",
+      "maximum": 64,
+      "minimum": 0,
+      "type": "number"
+     },
+     "sam_threshold": {
+      "default": 0.93,
+      "description": "SAM3 mask confidence.",
+      "maximum": 1.0,
+      "minimum": 0.5,
+      "type": "number"
+     }
+    },
+    "required": [
+     "input_image"
+    ],
+    "type": "object"
+   },
+   "stage_title": "Mask Studio",
+   "version": 1
+  },
+  {
    "card": "music",
    "description": "Generate music \u2014 MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
    "kind": "card-compose",

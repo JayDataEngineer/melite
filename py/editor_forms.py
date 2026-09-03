@@ -119,6 +119,12 @@ _FORMS_TABLE = {
     "h3-timeline": {"label": "H3 Timeline", "genre": "video", "order": 6,
                     "plugin": "comfyui", "sidebar_key": "video",
                     "default_service": "h3-timeline", "hidden": False},
+    # mask B-cluster: the selection layer rides the image sidebar (the
+    # studio body's tenant is mask/mask_studio — the card is the authoring
+    # fallback surface)
+    "mask-studio": {"label": "Mask", "genre": "image", "order": 8,
+                    "plugin": "comfyui", "sidebar_key": "image",
+                    "default_service": "mask-studio", "hidden": False},
 }
 
 # The C's ALLOWED_CARDS gate (src/server.cpp:7585-7588) is exactly the keys

@@ -1,0 +1,396 @@
+{
+ "defaults": {
+  "detect_mode": "body",
+  "detection_threshold": "0.35",
+  "export_body": "false",
+  "export_boxes": "true",
+  "export_face": "false",
+  "export_hands": "false",
+  "export_paint": "false",
+  "instance_filter": "all",
+  "max_instances": "0",
+  "output_mode": "segm",
+  "outputs": "[]",
+  "sam3_prompt": "None",
+  "sam_dilation": "0",
+  "sam_threshold": "0.93"
+ },
+ "engine": "comfyui",
+ "enhance_prompts": {
+  "lyrics": "",
+  "prompt": null
+ },
+ "features": {
+  "modifiers": [],
+  "variant_groups": {
+   "Quant": {
+    "label": "Quant"
+   },
+   "Variant": {
+    "label": "Variant"
+   }
+  }
+ },
+ "fields": [
+  {
+   "default": "body",
+   "group": "detect",
+   "label": "Detect",
+   "name": "detect_mode",
+   "options": [
+    "body",
+    "face",
+    "hands"
+   ],
+   "order": 0,
+   "tooltip": "What the primary selection targets. body \u2192 RT-DETR person boxes refined by SAM3; face/hands \u2192 SAM3 open-vocabulary text selection.",
+   "type": "select",
+   "width": 1
+  },
+  {
+   "default": 0.35,
+   "group": "detect",
+   "label": "Detection threshold",
+   "max": 0.95,
+   "min": 0.05,
+   "name": "detection_threshold",
+   "order": 1,
+   "step": 0.05,
+   "tooltip": "RT-DETR box confidence. Lower catches more instances, noisier boxes.",
+   "type": "slider",
+   "width": 1
+  },
+  {
+   "default": 0.93,
+   "group": "detect",
+   "label": "SAM3 threshold",
+   "max": 1,
+   "min": 0.5,
+   "name": "sam_threshold",
+   "order": 2,
+   "step": 0.01,
+   "tooltip": "SAM3 mask confidence.",
+   "type": "slider",
+   "width": 1
+  },
+  {
+   "default": 0,
+   "group": "detect",
+   "label": "Dilation (px)",
+   "max": 64,
+   "min": 0,
+   "name": "sam_dilation",
+   "order": 3,
+   "step": 1,
+   "tooltip": "Grow the final mask N pixels \u2014 the inpaint bleed margin.",
+   "type": "slider",
+   "width": 1
+  },
+  {
+   "default": "segm",
+   "group": "detect",
+   "label": "Output",
+   "name": "output_mode",
+   "options": [
+    "segm",
+    "bbox"
+   ],
+   "order": 4,
+   "tooltip": "segm saves masks; bbox saves the drawn-box manifest preview.",
+   "type": "select",
+   "width": 1
+  },
+  {
+   "default": "all",
+   "group": "detect",
+   "label": "Instance filter",
+   "name": "instance_filter",
+   "order": 5,
+   "tooltip": "'all' | 'largest' | comma indices '0,2' \u2014 which detected instances the primary keeps.",
+   "type": "text"
+  },
+  {
+   "default": 0,
+   "group": "detect",
+   "label": "Max instances",
+   "max": 100,
+   "min": 0,
+   "name": "max_instances",
+   "order": 6,
+   "step": 1,
+   "tooltip": "Cap detected instances (0 = no cap). Read the manifest first, then filter.",
+   "type": "number"
+  },
+  {
+   "group": "refine",
+   "label": "SAM3 prompt",
+   "name": "sam3_prompt",
+   "order": 0,
+   "tooltip": "Open-vocabulary text selection \u2014 e.g. 'the red hat', 'left shoe'. Rides INSTEAD of detect_mode when set.",
+   "type": "textarea"
+  },
+  {
+   "default": "true",
+   "group": "exports",
+   "label": "Export box manifest",
+   "name": "export_boxes",
+   "order": 0,
+   "tooltip": "Draw RT-DETR boxes on the image \u2014 the instance manifest (read it, then set instance_filter).",
+   "type": "boolean"
+  },
+  {
+   "default": "false",
+   "group": "exports",
+   "label": "Export face mask",
+   "name": "export_face",
+   "order": 1,
+   "type": "boolean"
+  },
+  {
+   "default": "false",
+   "group": "exports",
+   "label": "Export hands mask",
+   "name": "export_hands",
+   "order": 2,
+   "type": "boolean"
+  },
+  {
+   "default": "false",
+   "group": "exports",
+   "label": "Export body mask",
+   "name": "export_body",
+   "order": 3,
+   "type": "boolean"
+  },
+  {
+   "default": "false",
+   "group": "exports",
+   "label": "Export paint mask",
+   "name": "export_paint",
+   "order": 4,
+   "tooltip": "ON when a brush stroke exists \u2014 the painted payload becomes its own mask export.",
+   "type": "boolean"
+  },
+  {
+   "group": "advanced",
+   "label": "Scope ROI",
+   "name": "roi",
+   "order": 0,
+   "tooltip": "[x, y, w, h] fractions \u2014 run-global crop of every selection. Recipe filters may carry their own; identical scopes only.",
+   "type": "text"
+  },
+  {
+   "default": "[]",
+   "group": "advanced",
+   "label": "Recipe (outputs)",
+   "name": "outputs",
+   "order": 1,
+   "tooltip": "THE recipe form: one entry per mask, filter (where) over selection (how). Non-empty \u21d2 overrides the flat params. See AGENT.md.",
+   "type": "textarea"
+  }
+ ],
+ "form": "mask-studio",
+ "genre": "image",
+ "label": "Mask Studio",
+ "layout": "studio",
+ "model": "mask-studio",
+ "schema_groups": [
+  {
+   "fields": [
+    {
+     "label": "Input image",
+     "name": "input_image",
+     "required": true,
+     "tooltip": "The photo to select from \u2014 absolute path or an artifact ref from a prior run.",
+     "type": "image"
+    }
+   ],
+   "id": "",
+   "label": "Parameters",
+   "order": 0,
+   "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "default": "body",
+     "label": "Detect",
+     "name": "detect_mode",
+     "options": [
+      "body",
+      "face",
+      "hands"
+     ],
+     "order": 0,
+     "tooltip": "What the primary selection targets. body \u2192 RT-DETR person boxes refined by SAM3; face/hands \u2192 SAM3 open-vocabulary text selection.",
+     "type": "select",
+     "width": 1
+    },
+    {
+     "default": 0.35,
+     "label": "Detection threshold",
+     "max": 0.95,
+     "min": 0.05,
+     "name": "detection_threshold",
+     "order": 1,
+     "step": 0.05,
+     "tooltip": "RT-DETR box confidence. Lower catches more instances, noisier boxes.",
+     "type": "slider",
+     "width": 1
+    },
+    {
+     "default": 0.93,
+     "label": "SAM3 threshold",
+     "max": 1,
+     "min": 0.5,
+     "name": "sam_threshold",
+     "order": 2,
+     "step": 0.01,
+     "tooltip": "SAM3 mask confidence.",
+     "type": "slider",
+     "width": 1
+    },
+    {
+     "default": 0,
+     "label": "Dilation (px)",
+     "max": 64,
+     "min": 0,
+     "name": "sam_dilation",
+     "order": 3,
+     "step": 1,
+     "tooltip": "Grow the final mask N pixels \u2014 the inpaint bleed margin.",
+     "type": "slider",
+     "width": 1
+    },
+    {
+     "default": "segm",
+     "label": "Output",
+     "name": "output_mode",
+     "options": [
+      "segm",
+      "bbox"
+     ],
+     "order": 4,
+     "tooltip": "segm saves masks; bbox saves the drawn-box manifest preview.",
+     "type": "select",
+     "width": 1
+    },
+    {
+     "default": "all",
+     "label": "Instance filter",
+     "name": "instance_filter",
+     "order": 5,
+     "tooltip": "'all' | 'largest' | comma indices '0,2' \u2014 which detected instances the primary keeps.",
+     "type": "text"
+    },
+    {
+     "default": 0,
+     "label": "Max instances",
+     "max": 100,
+     "min": 0,
+     "name": "max_instances",
+     "order": 6,
+     "step": 1,
+     "tooltip": "Cap detected instances (0 = no cap). Read the manifest first, then filter.",
+     "type": "number"
+    }
+   ],
+   "id": "detect",
+   "label": "Detect",
+   "order": 1,
+   "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "label": "SAM3 prompt",
+     "name": "sam3_prompt",
+     "order": 0,
+     "tooltip": "Open-vocabulary text selection \u2014 e.g. 'the red hat', 'left shoe'. Rides INSTEAD of detect_mode when set.",
+     "type": "textarea"
+    }
+   ],
+   "id": "refine",
+   "label": "Refine",
+   "order": 2,
+   "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "default": "true",
+     "label": "Export box manifest",
+     "name": "export_boxes",
+     "order": 0,
+     "tooltip": "Draw RT-DETR boxes on the image \u2014 the instance manifest (read it, then set instance_filter).",
+     "type": "boolean"
+    },
+    {
+     "default": "false",
+     "label": "Export face mask",
+     "name": "export_face",
+     "order": 1,
+     "type": "boolean"
+    },
+    {
+     "default": "false",
+     "label": "Export hands mask",
+     "name": "export_hands",
+     "order": 2,
+     "type": "boolean"
+    },
+    {
+     "default": "false",
+     "label": "Export body mask",
+     "name": "export_body",
+     "order": 3,
+     "type": "boolean"
+    },
+    {
+     "default": "false",
+     "label": "Export paint mask",
+     "name": "export_paint",
+     "order": 4,
+     "tooltip": "ON when a brush stroke exists \u2014 the painted payload becomes its own mask export.",
+     "type": "boolean"
+    },
+    {
+     "label": "Paint payload",
+     "name": "paint_mask",
+     "order": 5,
+     "tooltip": "The painted PNG (alpha channel = strokes). Required when export_paint is true.",
+     "type": "image"
+    }
+   ],
+   "id": "exports",
+   "label": "Exports",
+   "order": 3,
+   "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "label": "Scope ROI",
+     "name": "roi",
+     "order": 0,
+     "tooltip": "[x, y, w, h] fractions \u2014 run-global crop of every selection. Recipe filters may carry their own; identical scopes only.",
+     "type": "text"
+    },
+    {
+     "default": "[]",
+     "label": "Recipe (outputs)",
+     "name": "outputs",
+     "order": 1,
+     "tooltip": "THE recipe form: one entry per mask, filter (where) over selection (how). Non-empty \u21d2 overrides the flat params. See AGENT.md.",
+     "type": "textarea"
+    }
+   ],
+   "id": "advanced",
+   "label": "Advanced",
+   "order": 4,
+   "zone": "params"
+  }
+ ],
+ "service": "mask-studio",
+ "variants": []
+}

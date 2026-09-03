@@ -133,6 +133,10 @@ def main():
          ("action_cards", "audio", "music")),
         ("sfx", "comfyui", "moss-sfx",
          ("action_cards", "audio", "sfx")),
+        # the mask B-cluster lands 2026-09-04 (RT-DETR proposes, SAM3
+        # refines — native core, no extension pack)
+        ("mask-studio", "comfyui", "mask-studio",
+         ("action_cards", "mask", "mask_studio")),
     ]
     for cid, engine, model, home in FLIPPED:
         cpath = _card_py(engine, *home)
@@ -218,6 +222,7 @@ def main():
     check("cross-validation pairs (all boarded families)",
           pairs == [("img-edit", "image-edit"),
                     ("krea-2", "image-gen"),
+                    ("mask-studio", "mask-studio"),
                     ("moss-sfx", "sfx"),
                     ("music3", "music"),
                     ("qwen-img-edit-2511", "image-edit"),
@@ -899,18 +904,29 @@ def main():
 
     # WALL 1 — FIELDS: no card hand-lists a mod's fields (the
     # image-edit leak: 12 LanPaintMod fields copy-pasted onto the
-    # card). A card class declaring a field a library mod owns is
-    # drift — absorption is the only road onto a card surface.
-    _MOD_FIELDS = {}
-    for _mod in (MaskMod, LanPaintMod, LorasMod, ControlNetMod):
-        for _f in _mod._fields_:
-            _MOD_FIELDS.setdefault(_f.name, _mod.__name__)
+    # card). The leak is SHADOWING: a card declaring a field the mods
+    # ITS FAMILIES BOARD also bring via absorption — two SSOTs for one
+    # knob. Scope: the boarded mods' field names. (Name-collision
+    # alone over-fires on shared vocabulary: mask-studio owns
+    # input_image — the agents' MCP schema + the studio body write it
+    # — while LanPaintMod owns the same NAME for the inpaint lanes;
+    # mask-studio boards no lanpaint family, so absorption brings
+    # nothing to shadow.)
+    _MODS_BY_NAME = {m.__name__: m for m in
+                     (MaskMod, LanPaintMod, LorasMod, ControlNetMod)}
     from melite_cards import Field as _FieldCls
     for pcid, (cpath, ccls) in sorted(scan_engine_cards(REPO).items()):
         _hand = {k for k, v in vars(ccls).items()
                  if isinstance(v, _FieldCls)}
-        _leaks = sorted(_hand & set(_MOD_FIELDS))
-        check("card %s hand-lists no mod field" % pcid, not _leaks,
+        _boarded = set()
+        for _m in getattr(ccls, "models", ()) or ():
+            for _mod in getattr(_m, "mods", ()) or ():
+                _modcls = _mod if isinstance(_mod, type) else type(_mod)
+                if _modcls.__name__ in _MODS_BY_NAME:
+                    _boarded.update(
+                        f.name for f in _MODS_BY_NAME[_modcls.__name__]._fields_)
+        _leaks = sorted(_hand & _boarded)
+        check("card %s hand-lists no boarded-mod field" % pcid, not _leaks,
               "leaked: %s" % _leaks)
 
     # WALL 2 — DEFAULTS: no model restates a mod knob in defaults=

@@ -46,6 +46,21 @@
     "params": {}
    }
   },
+  "mask-studio": {
+   "default_family": "mask-studio",
+   "description": "Selection-only mask card: detect people/subjects, refine with SAM3, paint corrections \u2192 mask artifacts for inpaint pipelines.",
+   "families": [
+    "mask-studio"
+   ],
+   "icon": "mask",
+   "kind": "generation",
+   "label": "Mask Studio",
+   "resolved": {
+    "family": "mask-studio",
+    "model": "mask-studio",
+    "params": {}
+   }
+  },
   "music": {
    "default_family": "music3",
    "description": "Generate music \u2014 MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
@@ -209,6 +224,19 @@
    "skills": []
   },
   {
+   "description": "Selection-only mask card: detect people/subjects, refine with SAM3, paint corrections \u2192 mask artifacts for inpaint pipelines.",
+   "families": [
+    "mask-studio"
+   ],
+   "genre": "image",
+   "has_inference": false,
+   "has_rubric": false,
+   "id": "mask-studio",
+   "label": "Mask Studio",
+   "principles": [],
+   "skills": []
+  },
+  {
    "description": "THE video interface \u2014 multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
    "families": [
     "h3-timeline"
@@ -369,10 +397,28 @@
    "label": "Mask",
    "studio": {
     "layout": "studio",
-    "owns_params": false,
+    "owns_params": true,
     "size": "normal",
     "tenant": "mask/mask_studio",
-    "writes": []
+    "writes": [
+     "input_image",
+     "detect_mode",
+     "detection_threshold",
+     "sam_threshold",
+     "sam_dilation",
+     "output_mode",
+     "sam3_prompt",
+     "export_boxes",
+     "export_face",
+     "export_hands",
+     "export_body",
+     "export_paint",
+     "paint_mask",
+     "instance_filter",
+     "max_instances",
+     "outputs",
+     "roi"
+    ]
    }
   },
   "mesh_refine": {
@@ -1129,8 +1175,8 @@
     "sam_dilation": 0,
     "sam_threshold": 0.93
    },
-   "description": "Selection-only mask card: YOLO+SAM segmentation \u2192 named class masks.",
-   "engine": "",
+   "description": "Selection-only mask card: RT-DETR proposes, SAM3 refines \u2192 named class masks for inpaint pipelines.",
+   "engine": "comfyui",
    "family": "mask-studio",
    "form": "form_mask_studio",
    "genre": "image",

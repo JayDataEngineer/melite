@@ -27,6 +27,15 @@
    "plugin": "comfyui",
    "sidebar_key": "image"
   },
+  "mask-studio": {
+   "default_service": "mask-studio",
+   "genre": "image",
+   "hidden": false,
+   "label": "Mask",
+   "order": 8,
+   "plugin": "comfyui",
+   "sidebar_key": "image"
+  },
   "music": {
    "default_service": "music3",
    "genre": "audio",
