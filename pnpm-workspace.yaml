@@ -1,13 +1,10 @@
-## pnpm 11 supply-chain policy overrides for the dev container.
+## Supply-chain policy for the installed pnpm (10.x).
 ## Without these, pnpm install exits 1 and the Vite startup chain dies.
 onlyBuiltDependencies:
   - msw
 ## @tanstack/react-virtual + virtual-core ship lockfile entries published
-## the same day; pnpm 11's default minimumReleaseAge rejects them.
+## the same day; pnpm's default minimumReleaseAge rejects them.
 minimumReleaseAge: 0
-allowBuilds:
-  '@scarf/scarf': set this to true or false
-  msw: set this to true or false
 
 ## THE PLUGIN WORKSPACE (2026-08-21 law: plugins are REAL packages; the
 ## package manager materializes every cross-package link per-OS. No
@@ -23,7 +20,7 @@ allowBuilds:
 ## pathways — the editor and every engine plugin consume it; no consumer
 ## hosts shared infrastructure in its subtree.
 packages:
-  - 'packages/*'                          # root stragglers: dsl, map-client, melite-model-base
+  - 'packages/*'                          # root stragglers: melite-model-base (dsl, map-client cut 2026-09-03)
   - 'plugins/*'                           # single-package plugins
   - 'plugins/harness/dsh/*'               # the DSH harness family (agent tools, presets, provisioner)
   - 'plugins/web/dsh/*'                   # the DSH web family (chat/sidebar panels — embeds the editor)
