@@ -371,6 +371,26 @@ def main():
           and "$prompt" in ((extra2 or {}).get("inputs", {})),
           "yaml %d bytes" % len(yml2 or ""))
 
+    # THE CARD ROAD WALL: input_from is the scaffold's positional pool
+    # contract — $prompt, $prompt2..N ascending, then $seed. The refs
+    # must mirror the pool exactly, nothing missing, nothing extra.
+    import re as _re_road  # noqa: E402
+    _refs = _re_road.findall(r"__initial__\.\$[a-z0-9]+", yml2 or "")
+    _pool2 = sorted((extra2 or {}).get("inputs", {}))
+
+    def _rank(k):
+        if k == "$prompt":
+            return (0, 0, k)
+        if k.startswith("$prompt") and k[7:].isdigit():
+            return (0, int(k[7:]), k)
+        return (1, 0, k)
+
+    _expected = ["__initial__." + k for k in sorted(_pool2, key=_rank)]
+    check("card road: input_from positional contract",
+          _refs == _expected and "$seed" in _pool2
+          and len(_refs) >= 3 and _refs[-1] == "__initial__.$seed",
+          "refs %s vs pool %s" % (_refs, _pool2))
+
     # THE MERGE WALL: every link tuple in the merged multi-window
     # workflow must resolve to a node in the SAME workflow. Namespacing
     # that renames IDs but not links passes shape checks and severs the
