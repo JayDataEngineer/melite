@@ -404,6 +404,51 @@ def main():
           and _loud,
           "clamp/refusal policy drifted")
 
+    # THE CHAINING PRIMITIVE WALL: base + seams + mods -> ONE workflow.
+    # Card params propagate via declared mods; group mods win; bad mod
+    # targets refuse at construction; dangling links refuse LOUD.
+    import _coscript as _cs
+    import chain as _chain_mod
+    _orig_render = _cs.render_card
+    try:
+        _cs.render_card = lambda root, model, fam, doc: {
+            fam: {"class_type": fam, "inputs": dict(doc["inject"])}}
+        from chain import Chain, Group, Inject
+        g1 = Group(family="w", tpl="a.json",
+                   inject={"N.0.seed": 1}, prompt="p1")
+        g2 = Group(family="w", tpl="b.json",
+                   inject={"N.0.seed": 2},
+                   mods=(Inject(key="N.0.x", value="per-call"),),
+                   prompt="p2")
+        wf = _chain_mod.compose(
+            Chain(base=g1, seams=(g2,),
+                  mods=(Inject(key="N.0.x", value="card"),
+                        Inject(key="N.0.knob", value=7))),
+            "/tmp", "m")
+        _ok = (set(wf) == {"window1_w", "window2_w"}
+               and wf["window1_w"]["inputs"]["N.0.x"] == "card"      # chain mod reached base
+               and wf["window1_w"]["inputs"]["N.0.knob"] == 7        # chain mod reached seam too
+               and wf["window2_w"]["inputs"]["N.0.x"] == "per-call"  # group mod WINS
+               and wf["window1_w"]["inputs"]["N.0.seed"] == 1)       # injects untouched
+        _pool = Chain(base=g1, seams=(g2,)).pool()
+        _pool_ok = (_pool == {"$prompt": "p1", "$prompt2": "p2"})
+        _bad_target = _bad_links = False
+        try:
+            Inject(key="no-dots", value=1)
+        except Exception:
+            _bad_target = True
+        _cs.render_card = lambda root, model, fam, doc: {
+            fam: {"class_type": fam, "inputs": {"x": ["missing", 0]}}}
+        try:
+            _chain_mod.compose(Chain(base=g1, seams=(g2,)), "/tmp", "m")
+        except RuntimeError:
+            _bad_links = True
+        check("chain primitive: mods propagate, group wins, LOUD gates",
+              _ok and _pool_ok and _bad_target and _bad_links,
+              "compose/precedence/refusal drifted")
+    finally:
+        _cs.render_card = _orig_render
+
     # refusal: unknown key refuses LOUDLY through the same door
     try:
         plugins.compose({"model": "h3-timeline",
