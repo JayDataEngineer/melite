@@ -371,6 +371,22 @@ def main():
           and "$prompt" in ((extra2 or {}).get("inputs", {})),
           "yaml %d bytes" % len(yml2 or ""))
 
+    # THE MERGE WALL: every link tuple in the merged multi-window
+    # workflow must resolve to a node in the SAME workflow. Namespacing
+    # that renames IDs but not links passes shape checks and severs the
+    # graph — ComfyUI refuses it at /prompt. This wall catches it at
+    # compose time (witness: 46 dangling links through naive prefixing).
+    sys.path.insert(0, os.path.join(
+        REPO, "plugins", "engines", "comfyui", "compose"))
+    from co_script.merge import dangling_links  # noqa: E402
+    import re as _re  # noqa: E402
+    _wf = json.loads(
+        _re.search(r"workflow: (.*)", yml2 or "{}").group(1))
+    _bad = dangling_links(_wf)
+    check("merged workflow link integrity",
+          not _bad, "%d dangling (first: %s)" % (
+              len(_bad), _bad[0] if _bad else "-"))
+
     # refusal: unknown key refuses LOUDLY through the same door
     try:
         plugins.compose({"model": "h3-timeline",
