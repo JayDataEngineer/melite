@@ -780,6 +780,102 @@ def main():
     check("continue_from run-id magic is extinct",
           _old_refused, "legacy surface accepted")
 
+    # ── THE PRESET PATTERN (lane recipes as data) ─────────────────
+    # presets.yaml rides beside lora_stack.yaml; the validation door
+    # refuses unknown names; projection lays preset knobs as the
+    # FLOOR under explicit values; preset lora rows replace the
+    # 'default' stack role (always rows ride regardless).
+    os.environ["H3_MODEL_DIR"] = _MODEL_DIR
+    try:
+        _pb = {"model": "h3-timeline",
+               "params": {"seed": 3, "fps": 24,
+                          "identity": "a courier",
+                          "calls": [{"text": "walks",
+                                     "start_frame": 0,
+                                     "end_frame": 56}]}}
+        def _wf(res):
+            y = res[0]
+            return {n["class_type"]: n for n in
+                    (y.nodes[0].params.get("workflow", {}) if y.nodes
+                     else {}).values()}
+
+        _y = plugins.compose(dict(_pb), "h3-timeline", "run-WALL-PRESET",
+                             {"name": "h3-timeline", "type": "comfyui",
+                              "nodes": []}, ("comfyui",))
+        _plain = _wf(_y).get("H3SLAAttention", {}).get("inputs", {})
+        _y2 = plugins.compose(
+            dict(_pb, params=dict(_pb["params"], preset="anime-boost")),
+            "h3-timeline", "run-WALL-PRESET",
+            {"name": "h3-timeline", "type": "comfyui", "nodes": []},
+            ("comfyui",))
+        _boost = _wf(_y2).get("H3SLAAttention", {}).get("inputs", {})
+        check("preset knobs ride as the floor",
+              _plain.get("sparsity_ratio") != _boost.get("sparsity_ratio")
+              and _boost.get("sparsity_ratio") == 0.95,
+              "anime-boost did not ride: %s -> %s"
+              % (_plain.get("sparsity_ratio"),
+                 _boost.get("sparsity_ratio")))
+
+        _y3 = plugins.compose(
+            dict(_pb, params=dict(_pb["params"], preset="anime-boost",
+                                  knobs={"h3_sla_sparsity": 0.82})),
+            "h3-timeline", "run-WALL-PRESET",
+            {"name": "h3-timeline", "type": "comfyui", "nodes": []},
+            ("comfyui",))
+        _over = _wf(_y3).get("H3SLAAttention", {}).get("inputs", {})
+        check("explicit knobs override the preset",
+              _over.get("sparsity_ratio") == 0.82,
+              "override lost: %s" % _over.get("sparsity_ratio"))
+
+        _y4 = plugins.compose(
+            dict(_pb, params=dict(_pb["params"], preset="turbo-768")),
+            "h3-timeline", "run-WALL-PRESET",
+            {"name": "h3-timeline", "type": "comfyui", "nodes": []},
+            ("comfyui",))
+        _stack = json.loads(
+            _wf(_y4)["LTX_lora_loader"]["inputs"]["stack_data"])
+        check("preset loras replace the default role",
+              [r["lora"] for r in _stack] == [
+                  _always[0]["lora"], _always[0]["lora"]],
+              "turbo-768 stack wrong: %s"
+              % [r["lora"] for r in _stack])
+
+        _bad_preset = False
+        try:
+            plugins.compose(
+                dict(_pb, params=dict(_pb["params"], preset="nope")),
+                "h3-timeline", "run-WALL-PRESET",
+                {"name": "h3-timeline", "type": "comfyui",
+                 "nodes": []}, ("comfyui",))
+        except PluginsValidationError:
+            _bad_preset = True
+        check("unknown preset refuses at the door",
+              _bad_preset, "unknown preset accepted")
+
+        _bad_knob = False
+        try:
+            plugins.compose(
+                dict(_pb, params=dict(_pb["params"],
+                                      knobs={"bogus_knob": 1})),
+                "h3-timeline", "run-WALL-PRESET",
+                {"name": "h3-timeline", "type": "comfyui",
+                 "nodes": []}, ("comfyui",))
+        except PluginsValidationError:
+            _bad_knob = True
+        check("unknown knob key refuses LOUD (never silent drop)",
+              _bad_knob, "bogus knob accepted")
+
+        # preset data integrity: every preset lora is a Provision row
+        import presets as _pp
+        _pl = [r.lora for p in _pp.load(_MODEL_DIR)
+               for r in p.loras]
+        _known = {_default[0]["lora"], _always[0]["lora"]}
+        check("preset lora rows match the lane's proven weights",
+              all(l in _known for l in _pl),
+              "preset lora outside provision: %s" % _pl)
+    finally:
+        os.environ.pop("H3_MODEL_DIR", None)
+
     print("PASS %d / FAIL %d" % (PASS, FAIL))
     return 1 if FAIL else 0
 

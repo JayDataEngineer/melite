@@ -56,8 +56,11 @@ strict = true
 plugins = ["pydantic.mypy"]
 follow_imports = "silent"
 # the compose primitives ride sys.path at runtime (the pattern's lazy
-# loader); mypy resolves the same roots
+# loader); mypy resolves the same roots. explicit_package_bases keeps
+# module names anchored to those roots — compose/presets.py is
+# "presets" whether targeted by path or imported by sibling cards
 mypy_path = "py:plugins/engines/comfyui/compose"
+explicit_package_bases = true
 
 # pydantic plugin discipline (PYTHON SHAPE rung 2): construction is
 # the validation door — no runtime mutation of frozen models

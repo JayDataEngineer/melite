@@ -39,6 +39,10 @@ TARGETS = [
     "plugins/engines/comfyui/action_cards/video/h3-timeline/py/schema.py",
     "plugins/engines/comfyui/action_cards/video/h3-timeline/py/compose.py",
     "plugins/engines/comfyui/action_cards/video/h3-timeline/py/emission/graph.py",
+    # the workflow->python extraction tool (subgraph inlining trick)
+    "tools/workflow_transpile.py",
+    # the PRESET pattern: named recipes as validated lane data
+    "plugins/engines/comfyui/compose/presets.py",
 ]
 
 # ── config cannot be quietly loosened ───────────────────────────────
