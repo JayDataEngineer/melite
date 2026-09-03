@@ -30,13 +30,6 @@ from pathlib import Path
 # When a card declares requires: ["ComfyUI-KJNodes"], we verify that
 # at least some of these nodes appear in object_info.
 EXTENSION_NODE_TYPES: dict[str, set[str]] = {
-    "ComfyUI-H3-Motion-Context-MultiRef": {
-        "MiniMaxH3ImageToVideo", "MiniMaxH3GeneratedAVMaskedContext",
-        "MiniMaxH3MotionContextLoadLatent", "MiniMaxH3MotionContextSaveLatent",
-        "MiniMaxH3ReferenceToVideo", "MiniMaxH3SigmaShift",
-        "MiniMaxH3SongMaskedAVContext", "MiniMaxChunkFeedForward",
-        "MiniMaxLowVRAMAttention",
-    },
     "ComfyUI-PlagueKind-Nodes": {"PlagueKindBundleIn", "PlagueKindBundleOut"},
     "ComfyUI-Frame-Interpolation": {"FrameInterpolate", "FrameInterpolationModelLoader"},
     "ComfyUI-KJNodes": {
@@ -51,7 +44,6 @@ EXTENSION_NODE_TYPES: dict[str, set[str]] = {
         "MiniMaxMusic3TextEncode", "EmptyMiniMaxMusic3LatentAudio",
         "SaveAudioAdvanced", "AudiocoreTTS", "LoadAudiocoreModel",
     },
-    "ComfyUI-TRELLIS2": {"TrellisCppNative"},
     "melite-kimodo-nodes": {"KimodoLoader", "KimodoTextToPose"},
     "qweneditutils": {"TextEncodeQwenImageEditPlus"},
     "vnccs_utils": {"ModelSamplingAuraFlow", "UniCanvasNode"},

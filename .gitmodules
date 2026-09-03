@@ -6,10 +6,6 @@
 	path = vendor/comfyui_extensions/melite-kimodo-nodes
 	url = https://github.com/JayDataEngineer/melite-kimodo-nodes.git
 	branch = main
-[submodule "melite-anny-nodes"]
-	path = vendor/comfyui_extensions/melite-anny-nodes
-	url = https://github.com/JayDataEngineer/melite-anny-nodes.git
-	branch = main
 [submodule "melite-autoremesher-nodes"]
 	path = vendor/comfyui_extensions/melite-autoremesher-nodes
 	url = https://github.com/JayDataEngineer/melite-autoremesher-nodes.git
@@ -30,10 +26,6 @@
 	path = vendor/comfyui_extensions/melite-autorig-nodes
 	url = https://github.com/JayDataEngineer/melite-autorig-nodes.git
 	branch = main
-[submodule "melite-h3-motion-nodes"]
-	path = vendor/comfyui_extensions/melite-h3-motion-nodes
-	url = https://github.com/JayDataEngineer/melite-h3-motion-nodes.git
-	branch = main
 [submodule "melite-hymotion-nodes"]
 	path = vendor/comfyui_extensions/melite-hymotion-nodes
 	url = https://github.com/JayDataEngineer/melite-hymotion-nodes.git
@@ -50,9 +42,6 @@
 	path = vendor/comfyui_extensions/melite-stretchy-nodes
 	url = https://github.com/JayDataEngineer/melite-stretchy-nodes.git
 	branch = main
-[submodule "melite-trelliscpp-nodes"]
-	path = vendor/comfyui_extensions/melite-trelliscpp-nodes
-	url = https://github.com/JayDataEngineer/melite-trelliscpp-nodes.git
 	branch = main
 [submodule "melite-video-nodes"]
 	path = vendor/comfyui_extensions/melite-video-nodes
