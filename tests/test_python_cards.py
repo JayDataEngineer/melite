@@ -145,10 +145,21 @@ def main():
         # five loaders, no extension packs
         ("img-to-mesh", "comfyui", "trellis2-native",
          ("action_cards", "3d", "img_to_mesh")),
+        # cluster H (2026-09-04): transfer_rig boards the grouped 3d
+        # card (KimodoTransferWeights lane on OUR autorig pack)
+        ("img-to-mesh", "comfyui", "transfer_rig",
+         ("action_cards", "3d", "img_to_mesh")),
         # cluster C2 (2026-09-04): anny — character assembly on the
         # poser pack (composite + turnaround + SAM sprites)
         ("anny", "comfyui", "anny",
          ("action_cards", "3d", "anny")),
+        # cluster E (2026-09-04): the generic video card — ONE
+        # interface, every non-h3 family (img-gen pattern); h3 stays
+        # on h3-timeline
+        ("video-gen", "comfyui", "wan-vace",
+         ("action_cards", "video", "video-gen")),
+        ("video-gen", "comfyui", "scail2-animate",
+         ("action_cards", "video", "video-gen")),
     ]
     for cid, engine, model, home in FLIPPED:
         cpath = _card_py(engine, *home)
@@ -223,8 +234,8 @@ def main():
     import importlib.util as _ilu
     _spec = _ilu.spec_from_file_location(
         "audio_compose", os.path.join(
-            REPO, "plugins", "engines", "audio-cpp", "engines", "audio",
-            "compose.py"))
+            REPO, "plugins", "engines", "cpp", "audio-cpp",
+            "engines", "audio", "compose.py"))
     _ac = _ilu.module_from_spec(_spec)
     _spec.loader.exec_module(_ac)
     import plugins as _pl
@@ -243,7 +254,10 @@ def main():
                     ("qwen3-tts", "tts"),
                     ("qwen3-tts-base", "tts"),
                     ("qwen3-tts-voicedesign", "voice-lock"),
-                    ("trellis2-native", "img-to-mesh")], repr(pairs))
+                    ("scail2-animate", "video-gen"),
+                    ("transfer_rig", "img-to-mesh"),
+                    ("trellis2-native", "img-to-mesh"),
+                    ("wan-vace", "video-gen")], repr(pairs))
 
     # tool.json snapshots are DERIVED artifacts — the card class is the
     # SSOT (mods declared at the model level, absorbed through models=);

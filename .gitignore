@@ -39,6 +39,9 @@ downloaded_files/
 # deterministic inputs ride the repo — GPU output may vary, feeds
 # may not)
 !tests/integration/assets/*.png
+# the scail2 driving video (cluster E): 143 KB, 512x320x25f —
+# deterministic POSE input, committed like the png feeds
+!tests/integration/assets/drive_pose.mp4
 
 # === Runtime / scratch ===
 .dsh_work/

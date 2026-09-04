@@ -167,17 +167,22 @@ def main():
     from melite_models import scan_engine_models
     _mcards = {mid: cls for mid, (_p, cls)
                in scan_engine_models(REPO).items()}
-    # the find_template arms' template names (arm knowledge, kept
-    # as a table — a new arm adopting find_template joins it)
-    _TEMPLATE_BY_CARD = {
-        "image-gen": "generate_t2i.json",
-        "image-edit": "edit_i2i.json",
-        "tts": "tts_t1.json",
+    # the arms' template names, keyed by FAMILY (the grouped-card
+    # truth: ONE card, one arm per family — video-gen boards
+    # wan-vace + scail2-animate, img-to-mesh boards trellis2-native +
+    # transfer_rig; a family's dir carries ITS arm's template)
+    _TEMPLATE_BY_FAMILY = {
+        "krea-2": "generate_t2i.json",
+        "img-edit": "edit_i2i.json",
+        "qwen3-tts-voicedesign": "tts_t1.json",
         "voice-lock": "voicelock_t1.json",
         "sfx": "sfx_t1.json",
         "mask-studio": "mask_t1.json",
         "motion": "motion_t1.json",
-        "img-to-mesh": "trellis_t1.json",
+        "trellis2-native": "trellis_t1.json",
+        "transfer_rig": "transfer_rig_t1.json",
+        "wan-vace": "wan_vace_t1.json",
+        "scail2-animate": "scail2_t1.json",
     }
     for mid, mcls in sorted(_mcards.items()):
         card_id = getattr(mcls, "card", "") or ""
@@ -189,7 +194,7 @@ def main():
         check("model %s carries lane facts" % mid,
               getattr(mcls, "lane_inputs", None) is not None,
               "boarding %s with no lane_inputs row" % card_id)
-        tmpl = _TEMPLATE_BY_CARD.get(card_id)
+        tmpl = _TEMPLATE_BY_FAMILY.get(mid)
         if tmpl:
             mdir = None
             for genre in os.listdir(os.path.join(

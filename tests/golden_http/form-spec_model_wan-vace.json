@@ -1,0 +1,415 @@
+{
+ "defaults": {
+  "blocks_to_swap": "38",
+  "easycache_enabled": "false",
+  "easycache_thresh": "0.015",
+  "fps": "16",
+  "frames": "81",
+  "guide_scale": "6.0",
+  "guide_strength": "3.0",
+  "height": "480",
+  "magcache_K": "4",
+  "magcache_enabled": "false",
+  "magcache_thresh": "0.02",
+  "model_name": "Wan2_2-T2V-A14B_HIGH_fp8_e4m3fn_scaled_KJ.safetensors",
+  "negative_prompt": "None",
+  "output_format": "mp4",
+  "relay_epsilon": "0.001",
+  "retake_enabled": "false",
+  "retake_start_frame": "0",
+  "retake_strength": "1.0",
+  "sampling_steps": "25",
+  "t5_name": "umt5-xxl-enc-fp8_e4m3fn.safetensors",
+  "teacache_enabled": "false",
+  "teacache_threshold": "0.15",
+  "torch_compile": "false",
+  "upscale_cfg": "1.0",
+  "upscale_denoise": "0.3",
+  "upscale_enabled": "false",
+  "upscale_steps": "10",
+  "vace_blocks_to_swap": "5",
+  "vace_name": "Wan2_2_Fun_VACE_module_A14B_HIGH_fp8_e4m3fn_scaled_KJ.safetensors",
+  "vae_name": "Wan2_1_VAE_bf16.safetensors",
+  "vfi_model": "rife47.pth",
+  "vfi_multiplier": "1",
+  "wan_context_enabled": "false",
+  "wan_context_frames": "81",
+  "wan_context_freenoise": "true",
+  "wan_context_fuse_method": "linear",
+  "wan_context_overlap": "16",
+  "wan_context_schedule": "uniform_standard",
+  "wan_context_stride": "4",
+  "wan_scheduler": "unipc",
+  "width": "832"
+ },
+ "engine": "comfyui",
+ "enhance_prompts": {
+  "lyrics": "",
+  "prompt": ""
+ },
+ "features": {
+  "modifiers": [],
+  "variant_groups": {
+   "Quant": {
+    "label": "Quant"
+   },
+   "Variant": {
+    "label": "Variant"
+   }
+  }
+ },
+ "fields": [
+  {
+   "columns": 2,
+   "group": "prompt",
+   "label": "Prompt",
+   "name": "prompt",
+   "order": 0,
+   "required": true,
+   "type": "textarea",
+   "width": 1
+  },
+  {
+   "group": "prompt",
+   "label": "Negative Prompt",
+   "name": "negative_prompt",
+   "order": 1,
+   "type": "textarea",
+   "visible_when": "negative_prompt != null",
+   "width": 1
+  },
+  {
+   "columns": 3,
+   "group": "resolution",
+   "label": "Width",
+   "max": 1280,
+   "min": 320,
+   "name": "width",
+   "order": 0,
+   "step": 16,
+   "type": "number",
+   "width": 1
+  },
+  {
+   "group": "resolution",
+   "label": "Height",
+   "max": 720,
+   "min": 320,
+   "name": "height",
+   "order": 1,
+   "step": 16,
+   "type": "number",
+   "width": 1
+  },
+  {
+   "columns": 3,
+   "group": "resolution",
+   "label": "Frames",
+   "max": 121,
+   "min": 9,
+   "name": "length",
+   "order": 2,
+   "step": 4,
+   "tooltip": "4n+1 (Wan latent grid). 49 \u2248 2s, 81 \u2248 3.4s at 24fps.",
+   "type": "number",
+   "width": 1
+  },
+  {
+   "group": "resolution",
+   "label": "FPS",
+   "max": 30,
+   "min": 8,
+   "name": "fps",
+   "order": 3,
+   "step": 1,
+   "type": "number",
+   "width": 1
+  },
+  {
+   "default": -1,
+   "group": "resolution",
+   "label": "Seed",
+   "name": "seed",
+   "order": 4,
+   "type": "seed",
+   "width": 1
+  },
+  {
+   "group": "sampling",
+   "label": "Steps",
+   "max": 50,
+   "min": 1,
+   "name": "steps",
+   "order": 0,
+   "step": 1,
+   "type": "number",
+   "width": 1
+  },
+  {
+   "group": "sampling",
+   "label": "Guidance Scale",
+   "max": 12,
+   "min": 1,
+   "name": "cfg",
+   "order": 1,
+   "step": 0.1,
+   "tooltip": "Lightning-distilled lanes run CFG 1 (guidance baked in).",
+   "type": "slider",
+   "width": 1
+  },
+  {
+   "group": "sampling",
+   "label": "Sampler",
+   "name": "sampler",
+   "options": [
+    "er_sde",
+    "euler",
+    "euler_ancestral",
+    "euler_cfg_pp",
+    "dpmpp_2m",
+    "dpmpp_2m_sde",
+    "dpmpp_2m_sde_gpu",
+    "dpmpp_3m_sde",
+    "dpm_fast",
+    "lcm",
+    "lms",
+    "heun"
+   ],
+   "order": 2,
+   "type": "select",
+   "width": 1
+  },
+  {
+   "group": "sampling",
+   "label": "Scheduler",
+   "name": "scheduler",
+   "options": [
+    "normal",
+    "karras",
+    "exponential",
+    "sgm_uniform",
+    "simple",
+    "ddim_uniform",
+    "beta",
+    "linear_quadratic",
+    "kl_optimal"
+   ],
+   "order": 3,
+   "type": "select",
+   "width": 1
+  }
+ ],
+ "form": "video-gen",
+ "genre": "video",
+ "label": "Video",
+ "model": "wan-vace",
+ "schema_groups": [
+  {
+   "fields": [
+    {
+     "columns": 2,
+     "label": "Prompt",
+     "name": "prompt",
+     "order": 0,
+     "required": true,
+     "type": "textarea",
+     "width": 1
+    },
+    {
+     "label": "Negative Prompt",
+     "name": "negative_prompt",
+     "order": 1,
+     "type": "textarea",
+     "visible_when": "negative_prompt != null",
+     "width": 1
+    }
+   ],
+   "id": "prompt",
+   "label": "Prompt",
+   "order": 0,
+   "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "columns": 3,
+     "label": "Width",
+     "max": 1280,
+     "min": 320,
+     "name": "width",
+     "order": 0,
+     "step": 16,
+     "type": "number",
+     "width": 1
+    },
+    {
+     "label": "Height",
+     "max": 720,
+     "min": 320,
+     "name": "height",
+     "order": 1,
+     "step": 16,
+     "type": "number",
+     "width": 1
+    },
+    {
+     "columns": 3,
+     "label": "Frames",
+     "max": 121,
+     "min": 9,
+     "name": "length",
+     "order": 2,
+     "step": 4,
+     "tooltip": "4n+1 (Wan latent grid). 49 \u2248 2s, 81 \u2248 3.4s at 24fps.",
+     "type": "number",
+     "width": 1
+    },
+    {
+     "label": "FPS",
+     "max": 30,
+     "min": 8,
+     "name": "fps",
+     "order": 3,
+     "step": 1,
+     "type": "number",
+     "width": 1
+    },
+    {
+     "default": -1,
+     "label": "Seed",
+     "name": "seed",
+     "order": 4,
+     "type": "seed",
+     "width": 1
+    }
+   ],
+   "id": "resolution",
+   "label": "Resolution",
+   "order": 1,
+   "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "label": "Steps",
+     "max": 50,
+     "min": 1,
+     "name": "steps",
+     "order": 0,
+     "step": 1,
+     "type": "number",
+     "width": 1
+    },
+    {
+     "label": "Guidance Scale",
+     "max": 12,
+     "min": 1,
+     "name": "cfg",
+     "order": 1,
+     "step": 0.1,
+     "tooltip": "Lightning-distilled lanes run CFG 1 (guidance baked in).",
+     "type": "slider",
+     "width": 1
+    },
+    {
+     "label": "Sampler",
+     "name": "sampler",
+     "options": [
+      "er_sde",
+      "euler",
+      "euler_ancestral",
+      "euler_cfg_pp",
+      "dpmpp_2m",
+      "dpmpp_2m_sde",
+      "dpmpp_2m_sde_gpu",
+      "dpmpp_3m_sde",
+      "dpm_fast",
+      "lcm",
+      "lms",
+      "heun"
+     ],
+     "order": 2,
+     "type": "select",
+     "width": 1
+    },
+    {
+     "label": "Scheduler",
+     "name": "scheduler",
+     "options": [
+      "normal",
+      "karras",
+      "exponential",
+      "sgm_uniform",
+      "simple",
+      "ddim_uniform",
+      "beta",
+      "linear_quadratic",
+      "kl_optimal"
+     ],
+     "order": 3,
+     "type": "select",
+     "width": 1
+    }
+   ],
+   "id": "sampling",
+   "label": "Sampling",
+   "order": 2,
+   "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "label": "Reference image",
+     "name": "reference_image",
+     "order": 0,
+     "tooltip": "The anchor frame \u2014 identity, subject, scene (wan-vace); the character to animate (scail2-animate).",
+     "type": "image",
+     "width": 1
+    }
+   ],
+   "id": "input",
+   "label": "Input",
+   "order": 3,
+   "zone": "params"
+  }
+ ],
+ "service": "wan-vace",
+ "variants": [
+  {
+   "defaults": {},
+   "engine": "comfyui",
+   "group": "Variant",
+   "hint": "DEFAULT \u2014 25-step HIGH fp8 checkpoint, director-quality",
+   "id": "base",
+   "label": "Base",
+   "route": "wan-vace"
+  },
+  {
+   "defaults": {},
+   "engine": "comfyui",
+   "group": "Variant",
+   "hint": "6-step + lightx2v distill LoRA on the base HIGH model",
+   "id": "custom_fast",
+   "label": "Custom Fast",
+   "route": "wan-vace"
+  },
+  {
+   "defaults": {},
+   "engine": "comfyui",
+   "group": "Variant",
+   "hint": "30-step HIGH expert \u2014 maximum detail",
+   "id": "custom_quality",
+   "label": "Custom Quality",
+   "route": "wan-vace"
+  },
+  {
+   "defaults": {},
+   "engine": "comfyui",
+   "group": "Variant",
+   "hint": "4-step + Wan Lightning LoRA on the base HIGH model (~6\u00d7 faster)",
+   "id": "lightning",
+   "label": "Lightning",
+   "route": "wan-vace"
+  }
+ ]
+}

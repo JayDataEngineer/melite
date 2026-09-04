@@ -153,6 +153,11 @@ _FORMS_TABLE = {
     "anny": {"label": "Anny", "genre": "3d", "order": 14,
              "plugin": "comfyui", "sidebar_key": "3d",
              "default_service": "anny", "hidden": False},
+    # cluster E (2026-09-04): the generic video card — ONE interface,
+    # every non-h3 family (img-gen pattern; h3 stays on h3-timeline)
+    "video-gen": {"label": "Video", "genre": "video", "order": 15,
+                  "plugin": "comfyui", "sidebar_key": "video",
+                  "default_service": "wan-vace", "hidden": False},
 }
 
 # The C's ALLOWED_CARDS gate (src/server.cpp:7585-7588) is exactly the keys
