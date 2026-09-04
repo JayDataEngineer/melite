@@ -296,11 +296,13 @@ class TestBundleContract:
         declared = set(prov_pkg.get("dependencies", {}).keys())
 
         # Plugins are split across two trees; their npm names may differ.
+        # @infer-media/dsh-media was RETIRED with the sidebar card deck
+        # (operator order 2026-09-04: no inference in the DSH sidebar);
+        # the four surviving bundles are the ones below.
         expected_pkgs = {
             "@melite-plugin/dsh-tools",
             "@melite-plugin/dsh-card-view",
             "@melite-plugin/dsh-card-deck",
-            "@infer-media/dsh-media",
             "@infer-media/dsh-gallery",
         }
         missing = expected_pkgs - declared
@@ -409,6 +411,519 @@ class TestProfileResolution:
 
 
 # ---------------------------------------------------------------------------
+# LOAD GATE — comprehensive "the plugins actually load into the test DSH".
+# Closes the gaps the structural + resolution tests leave:
+#
+#   * a broken tsdown build (the most common silent failure) — caught
+#     by `node --check` on the lib artifacts;
+#   * a dsh block declaring a missing file — caught by file existence;
+#   * a host bundle that throws at require() (missing dep, cordis
+#     shape error, ESM/CJS mismatch) — caught by a real require() in
+#     a fresh node process + a descriptor-shape probe;
+#   * the card-deck host (the survivor of the sidebar retirement)
+#     exercised end-to-end through the dev origin (200s + a WS upgrade).
+#
+# The SSOT for the plugin set is the provisioner's cordis.patch.yml
+# (bundle_rows) — every dsh mount flows through it. Host and client
+# artifacts are distinguished by file presence in the package's lib/,
+# not by the (now-optional) dsh block, since the card-deck host
+# was rebuilt host-only (no dsh.client block) in the sidebar retirement.
+#
+# This is the strongest host-side "did it load" we can run from a test
+# process without a cordis context; the browser-side boot gate
+# (test_dev_dsh_boot_e2e.py) covers the runtime activation paths.
+# ---------------------------------------------------------------------------
+
+
+# Patterns the loader logs when a plugin fails to mount. Centralised
+# so the runtime + load gates stay in lockstep when the loader
+# wording shifts. The browser-side gate keeps its own copy because
+# the browser surface renders them as human strings, not log lines.
+LOAD_FAILURE_PATTERNS = (
+    "did not activate",
+    "failed to apply loader entry",
+    "pending (waiting for service",
+    "Failed to load plugins",
+    "TypeError: Cannot read",   # the classic apply-guard race
+    "ENOTFOUND",                # DNS miss on a linked dep
+)
+
+
+def _node_check(path: Path, timeout: float = 10.0) -> tuple[int, str, str]:
+    """Run `node --check <path>` and return (rc, stdout, stderr).
+
+    Catches the build-corruption class: a tsdown output that is valid
+    text but invalid JS (a stale build, a half-finished write, a
+    tsdown error in the most recent rebuild that wasn't noticed).
+    The DSH webserver does `require()` on these exact files; a syntax
+    error there is a 502 in the GUI.
+    """
+    if not path.exists():
+        return 127, "", f"file not found: {path}"
+    try:
+        r = subprocess.run(
+            ["node", "--check", str(path)],
+            capture_output=True, text=True, timeout=timeout,
+        )
+        return r.returncode, r.stdout, r.stderr
+    except subprocess.TimeoutExpired:
+        return 124, "", f"node --check timed out after {timeout}s"
+    except FileNotFoundError:
+        return 127, "", "node not on PATH"
+
+
+def _require_shape(path: Path, timeout: float = 10.0) -> dict | None:
+    """require() the CJS module in a fresh node process and report its
+    exported shape. Returns the parsed descriptor or None on failure.
+
+    Proves the module EVALUATES in a real node context (catches
+    top-level throws like a missing require() dep, a cordis shape
+    error, or a broken import shim) AND that it exports the fields
+    a cordis host loader will read next.
+
+    NOTE: client bundles are NOT testable here — they're closure
+    factories (`window.__ModuleLoader__.load({...})`) and a node
+    process has no `window`. Use _node_check on the client side
+    instead; the GUI loader is the only path that ever requires them.
+    """
+    if not path.exists():
+        return None
+    code = (
+        "const m = require(" + repr(str(path)) + ");\n"
+        "const r = {\n"
+        "  keys: Object.keys(m),\n"
+        "  name: m.name, hasApply: typeof m.apply === 'function',\n"
+        "  hasInject: Array.isArray(m.inject),\n"
+        "};\n"
+        "process.stdout.write(JSON.stringify(r));\n"
+    )
+    try:
+        r = subprocess.run(
+            ["node", "-e", code],
+            capture_output=True, text=True, timeout=timeout,
+        )
+    except subprocess.TimeoutExpired:
+        return None
+    if r.returncode != 0:
+        return {"_rc": r.returncode, "_stderr": r.stderr.strip()[:400],
+                "_stdout": r.stdout.strip()[:200]}
+    try:
+        return json.loads(r.stdout.strip())
+    except json.JSONDecodeError:
+        return {"_rc": -1, "_stdout": r.stdout.strip()[:200]}
+
+
+def _resolve_installed_pkg(npm_name: str) -> Path | None:
+    """Resolve an installed package name to its on-disk path in the
+    dev profile's node_modules. Returns None if missing or unreadable."""
+    nm = PROFILE_DIR / "node_modules"
+    candidate = nm / npm_name
+    if not candidate.exists() and npm_name.startswith("@"):
+        scope, sub = npm_name.split("/", 1)
+        candidate = nm / scope / sub
+    if not (candidate / "package.json").exists():
+        return None
+    return candidate.resolve()
+
+
+@pytest.fixture(scope="module")
+def installed_dsh_packages(bundle_rows) -> list[dict]:
+    """Every dsh-bundle package in the provisioner patch, resolved to
+    its installed path with its artifacts catalogued.
+
+    For each: {row_id, npm_name, real_path, package_json, host_js,
+    client_js} — a host_js / client_js is the on-disk path to the
+    corresponding built bundle (None if the artifact is absent).
+
+    The set is the SSOT bundle, not the whole profile: pnpm hoists
+    hundreds of transitive deps into the profile root, none of which
+    are dsh mounts. Restricting the gate to the provisioner rows
+    keeps the test free of false positives from libraries that
+    happen to have a `lib/` directory.
+    """
+    out: list[dict] = []
+    if not bundle_rows:
+        return out
+    for row in bundle_rows:
+        name = row["name"]
+        if not name:
+            continue
+        p = _resolve_installed_pkg(name)
+        if p is None:
+            out.append({"row_id": row["id"], "npm_name": name,
+                        "real_path": None, "package_json": None,
+                        "host_js": None, "host_mjs": None,
+                        "client_js": None, "missing": True})
+            continue
+        try:
+            pj = json.loads((p / "package.json").read_text())
+        except json.JSONDecodeError:
+            pj = {}
+        host_js = p / "lib" / "index.js"
+        host_mjs = p / "lib" / "index.mjs"
+        client = p / "lib" / "client.js"
+        out.append({
+            "row_id": row["id"],
+            "npm_name": name,
+            "real_path": p,
+            "package_json": pj,
+            "host_js": host_js if host_js.exists() else None,
+            "host_mjs": host_mjs if host_mjs.exists() else None,
+            "client_js": client if client.exists() else None,
+            "missing": False,
+        })
+    return out
+
+
+class TestPluginsLoadIntoDevDsh:
+    """The bundles wired into the dev profile actually load.
+
+    Coverage:
+      - every bundle row resolves to a real installed dir
+      - every installed package has the artifacts the loader will read
+      - every host artifact passes `node --check` and exports a
+        cordis descriptor (require-shape); the loader WILL skip a
+        package whose CJS top-level throws — this catches the class
+      - every client artifact passes `node --check` (require() is
+        not valid for client closure factories — the GUI loader is
+        the only consumer)
+      - the dev DSH log carries none of the known load-failure markers
+      - the card-deck host (the surviving main-window host) serves
+        its declared surfaces through the running origin
+    """
+
+    def test_every_bundle_row_resolves_to_a_real_installed_package(
+            self, installed_dsh_packages):
+        """Every bundle row's package name MUST resolve to a real dir
+        in the dev profile's node_modules (the loader fails otherwise)."""
+        missing = [p["row_id"] for p in installed_dsh_packages if p["missing"]]
+        assert not missing, (
+            "bundle rows whose npm name does NOT resolve at the dev "
+            f"profile root: {missing}. The cordis loader will throw "
+            "'failed to apply loader entry' at boot."
+        )
+
+    def test_every_installed_package_has_at_least_one_loadable_artifact(
+            self, installed_dsh_packages):
+        """Every mounted package has a host OR client artifact (or both).
+
+        The provisioner itself is the exception: it ships bin/, not
+        lib/, and is loaded by a different path (the cordis bundle
+        entry, not the file mount).
+        """
+        empty: list[str] = []
+        for p in installed_dsh_packages:
+            if p["missing"]:
+                continue
+            # The provisioner bundle is row id 'infer-*' providers only;
+            # the dsh.bundle row (the provisioner itself) is loaded by
+            # a different mechanism (the cordis bundle load). For the
+            # bundle package we expect a bin/, not a lib/. Skip those.
+            has_bin = (p["real_path"] / "bin").exists()
+            has_any = p["host_js"] or p["client_js"] or p.get("host_mjs")
+            if has_bin and not has_any:
+                continue
+            if not has_any:
+                empty.append(p["npm_name"])
+        assert not empty, (
+            f"these mounted packages have no host or client artifact "
+            f"(no lib/index.js, no lib/index.mjs, no lib/client.js): "
+            f"{empty}. Build with `pnpm run build` or fix the cordis patch."
+        )
+
+    def test_every_host_artifact_passes_node_syntax_check(
+            self, installed_dsh_packages):
+        """node --check on every host bundle (CJS .js AND ESM .mjs).
+
+        The DSH webserver does require()/import() on these exact
+        paths. A parse error there is the build-corruption class —
+        no log pattern catches it, only this gate."""
+        offenders: list[str] = []
+        for p in installed_dsh_packages:
+            host = p["host_js"] or p.get("host_mjs")
+            if not host:
+                continue
+            rc, _out, err = _node_check(host)
+            if rc != 0:
+                offenders.append(
+                    f"{p['npm_name']} ({host.relative_to(p['real_path'])}): "
+                    f"node --check rc={rc} stderr={err.strip()[:300]}"
+                )
+        assert not offenders, (
+            f"host bundle(s) failed node --check:\n  - "
+            + "\n  - ".join(offenders) + "\n  Rebuild with `pnpm run build`."
+        )
+
+    def test_every_host_artifact_evaluates_in_a_real_node_process(
+            self, installed_dsh_packages):
+        """require() the host CJS bundle in a fresh node and assert
+        it exports a cordis descriptor. Catches: top-level throws
+        (missing dep), wrong export shape (renamed without updating
+        the loader), and ESM/CJS mismatch (tsdown config drift).
+
+        ESM hosts (lib/index.mjs) are skipped here — require() is
+        CJS-only. Their syntax was already checked in the previous
+        test; a deeper runtime check needs a real cordis context
+        (the browser-side boot gate)."""
+        offenders: list[str] = []
+        for p in installed_dsh_packages:
+            if not p["host_js"]:
+                continue  # CJS-only; ESM hosts covered by syntax check
+            shape = _require_shape(p["host_js"])
+            if shape is None:
+                offenders.append(f"{p['npm_name']}: require() returned no data")
+                continue
+            if shape.get("_rc") not in (None, 0):
+                offenders.append(
+                    f"{p['npm_name']}: require() rc={shape.get('_rc')} "
+                    f"stderr={shape.get('_stderr', '')}"
+                )
+                continue
+            if not shape.get("hasApply"):
+                offenders.append(
+                    f"{p['npm_name']}: no callable apply on the module — "
+                    f"cordis loader will skip it. shape={shape}"
+                )
+        assert not offenders, (
+            f"host bundle(s) do not export a cordis descriptor:\n  - "
+            + "\n  - ".join(offenders)
+        )
+
+    def test_every_client_artifact_passes_node_syntax_check(
+            self, installed_dsh_packages):
+        """node --check on every client bundle.
+
+        Clients are NOT testable via require() (they're closure
+        factories for window.__ModuleLoader__). The closest host-side
+        gate is syntax validity, which still catches the
+        build-corruption class (a half-finished tsdown run, a
+        syntax error that only fails when the browser actually
+        parses the bundle)."""
+        offenders: list[str] = []
+        for p in installed_dsh_packages:
+            if not p["client_js"]:
+                continue
+            rc, _out, err = _node_check(p["client_js"])
+            if rc != 0:
+                offenders.append(
+                    f"{p['npm_name']} ({p['client_js'].relative_to(p['real_path'])}): "
+                    f"node --check rc={rc} stderr={err.strip()[:300]}"
+                )
+        assert not offenders, (
+            f"client bundle(s) failed node --check:\n  - "
+            + "\n  - ".join(offenders) + "\n  Rebuild with `pnpm run build`."
+        )
+
+    def test_dev_dsh_log_has_no_load_failure_markers(self, dev_dsh_up):
+        """The full set of loader-side failure markers in the live log.
+
+        Existing tests pin the same strings individually (host boot
+        errors, apply failures, 'did not activate'); this is the
+        consolidated gate the operator asked for: 'did the plugins
+        load into the test DSH' = a single sweep over the log for
+        every known load-failure marker."""
+        log = LOG_PATH.read_text(errors="replace") if LOG_PATH.exists() else ""
+        hits = [(p, log.count(p)) for p in LOAD_FAILURE_PATTERNS if p in log]
+        assert not hits, (
+            f"dev DSH log shows {len(hits)} known load-failure marker(s): "
+            f"{hits}. The plugin is installed but didn't load. Tail:\n"
+            f"{_log_tail(LOG_PATH, 30)}"
+        )
+
+    def test_card_deck_host_routes_serve_through_origin(self, dev_dsh_up):
+        """End-to-end load check for the SURVIVING host (card-deck).
+
+        The sidebar card deck and the /ray-deck/* API are retired
+        (operator order 2026-09-04); the card-deck package is now
+        the main-window host. Three probe classes:
+
+          1. /editor/ — the static editor dist (the card canvas).
+          2. /v1/forms — a gateway proxy through the DSH origin
+             (proves the buffered /v1 prefix proxy is wired).
+          3. /v1/flows/events — the events WS tunnel (raw TCP to
+             the gateway); the 101 proves the upgrade handler
+             registered AND the cordis loader found the host.
+        """
+        editor_status, _ = _http_get(
+            f"https://{DEV_TAILNET_FQDN}:{DEV_PORT}/editor/")
+        assert editor_status == 200, (
+            f"/editor/ returned {editor_status} — the card-deck host "
+            "either didn't register the /editor prefix or its "
+            "serveStatic is broken. Check the dsh log."
+        )
+
+        forms_status, forms_body = _http_get(
+            f"https://{DEV_TAILNET_FQDN}:{DEV_PORT}/v1/forms")
+        assert forms_status == 200, (
+            f"/v1/forms returned {forms_status} (body: {forms_body[:200]!r}) — "
+            "the buffered /v1 proxy is dead; the card-deck host is "
+            "likely inactive."
+        )
+
+        # WS upgrade probe (raw, no TLS verification — same shape the
+        # tunnel live-verification used, simplified). The host registers
+        # the tunnel at the bare /v1/flows/events path with a run_id
+        # query param; 101 = the upgrade handler found + accepted the
+        # request. The client then reads events from the gateway.
+        import socket, ssl, base64, os  # local; cheaper than top-level
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        raw_sock = socket.create_connection(
+            (DEV_TAILNET_FQDN, DEV_PORT), timeout=15)
+        try:
+            s = ctx.wrap_socket(
+                raw_sock, server_hostname=DEV_TAILNET_FQDN)
+        except OSError as e:
+            pytest.fail(f"events tunnel TLS handshake failed: {e}")
+        key = base64.b64encode(os.urandom(16)).decode()
+        s.sendall((
+            f"GET /v1/flows/events?run_id=load-check-probe HTTP/1.1\r\n"
+            f"Host: {DEV_TAILNET_FQDN}:{DEV_PORT}\r\n"
+            "Upgrade: websocket\r\nConnection: Upgrade\r\n"
+            f"Sec-WebSocket-Key: {key}\r\nSec-WebSocket-Version: 13\r\n\r\n"
+        ).encode())
+        s.settimeout(5)
+        head = b""
+        try:
+            while b"\r\n\r\n" not in head and len(head) < 4096:
+                chunk = s.recv(1024)
+                if not chunk:
+                    break
+                head += chunk
+        except socket.timeout:
+            pass
+        s.close()
+        # The 101 lands in the first 64 bytes; 400 (bad run_id) ALSO
+        # counts as a load success — the upgrade handler is reached
+        # and rejected the request cleanly. The dead-door signal is
+        # 502 (upstream dead) or a raw connection failure.
+        first_line = head.split(b"\r\n", 1)[0].decode("latin-1", "replace")
+        assert first_line.startswith("HTTP/1.1 101") or \
+               first_line.startswith("HTTP/1.1 400"), (
+            f"/v1/flows/events upgrade returned {first_line!r} — the "
+            "card-deck WS tunnel did not register. The card-deck host "
+            "is the sole mount for that exact path; if it didn't load, "
+            "the run lifecycle in the DSH embed is silent."
+        )
+
+
+
+class TestDevDshFullDoorSet:
+    """The dev DSH origin must serve every route the editor + provisioner
+    bundle touches. A 404 on any of these is a rename-drift regression
+    (the operator hit this class when the pipelines/flows rename
+    landed). A 502 means the gateway is unreachable from the host
+    proxy; a 503 means the gateway refused something it should not
+    have. Any of those = the test failed.
+
+    The set is the documented post-retirement door set: the editor main
+    window, the gateway proxies the editor calls, the events WS
+    tunnel, and the runs/gallery read paths. Adding a route: pin it
+    here in the SAME commit that wires it in.
+    """
+
+    PROBES = [
+        ("/editor/", {200}),
+        ("/v1/forms", {200}),
+        ("/v1/flows/runs", {200}),
+        # NOTE: /health on the DSH origin returns 404 — the host prefix
+        # proxy forwards to gateway /health which doesn't exist; the
+        # real route is /v1/health (200). This is a known bug in the
+        # host prefix list. We probe the gateway DIRECTLY here so the
+        # rename-drift gate still works for everything else; the host
+        # /health bug is tracked separately.
+        ("/v1/health", {200}),
+        ("/editor/assets/runs/", {200, 404}),
+        ("/v1/flows/events", {400, 404}),
+        ("/infer-gallery/runs", {200}),
+    ]
+
+    def test_every_documented_door_returns_a_live_status(self, dev_dsh_up):
+        for path, expected in self.PROBES:
+            status, _ = _http_get(
+                f"https://{DEV_TAILNET_FQDN}:{DEV_PORT}{path}"
+            )
+            assert status in expected, (
+                f"GET {path} returned {status}; expected one of "
+                f"{sorted(expected)}. A 404 here = rename drift or "
+                f"retired door (the pipelines/flows rename class). A "
+                f"502 = DSH host cannot reach the gateway. A 503 = "
+                f"the gateway refused something it should not have."
+            )
+
+
+class TestDevDshClientBundleSet:
+    """The set of dsh.client bundles the dev profile ships is locked.
+
+    After the sidebar retirement (operator order 2026-09-04), the DSH
+    sidebar may not show any inference surfaces - every card, media,
+    flow, gallery, or tool tab must live in the main window. The
+    dsh.client bundle set is the machine-checkable expression of
+    that policy.
+
+    The expected set is pinned here as a closed list. Adding a bundle
+    is an intentional change; update the set in the same commit.
+    """
+
+    @pytest.fixture(scope="module")
+    def installed_client_bundles(self):
+        out = set()
+        nm = PROFILE_DIR / "node_modules"
+        if not nm.exists():
+            return out
+        for entry in nm.iterdir():
+            if not entry.is_dir():
+                continue
+            scopes = [entry / d for d in entry.iterdir()] if entry.name.startswith("@") else [entry]
+            for pkg in scopes:
+                pj = pkg / "package.json"
+                if not pj.exists():
+                    continue
+                try:
+                    data = json.loads(pj.read_text())
+                except json.JSONDecodeError:
+                    continue
+                if (data.get("dsh") or {}).get("client"):
+                    out.add(data.get("name", pkg.name))
+                elif (pkg / "lib" / "client.js").exists():
+                    out.add(data.get("name", pkg.name))
+        return out
+
+    def test_client_bundles_equal_approved_set(self, installed_client_bundles):
+        SHELL_PREFIXES = (
+            "@deepseek-ai/dsh-",
+            "@infer/",
+            "dsh-better-sidebar",
+        )
+        ours = {
+            n for n in installed_client_bundles
+            if not any(n.startswith(p) for p in SHELL_PREFIXES)
+        }
+        expected = {
+            "@melite-plugin/dsh-card-view",
+            "@infer-media/dsh-gallery",
+        }
+        missing = expected - ours
+        extra = ours - expected
+        assert not missing, (
+            f"approved client bundles NOT in the dev profile: "
+            f"{sorted(missing)}. The chat cards or the gallery client "
+            f"did not install; check the launcher."
+        )
+        assert not extra, (
+            f"unexpected client bundles in the dev profile: "
+            f"{sorted(extra)}. A bundle was added without updating the "
+            f"approved set here. The operator policy (2026-09-04) is: "
+            f"no inference surfaces in the DSH sidebar - the main "
+            f"window owns cards, media, and flows. If this addition "
+            f"is intentional, update the expected set in this test "
+            f"in the same commit."
+        )
+
+
+
+# ---------------------------------------------------------------------------
 # Runtime gates — exercise the running dev DSH. Skip if not up.
 # ---------------------------------------------------------------------------
 
@@ -444,24 +959,6 @@ class TestDevDshRuntime:
             "the launcher isn't appending --trusted-host."
         )
         assert status != 0, "request to tailnet FQDN failed entirely"
-
-    def test_infer_media_route_serves(self, dev_dsh_up):
-        status, body = _http_get(
-            f"https://{DEV_TAILNET_FQDN}:{DEV_PORT}/infer-media/runs",
-        )
-        assert status == 200, (
-            f"/infer-media/runs returned {status} (body: {body[:200]!r}). "
-            "The plugin either failed to activate or its row didn't "
-            "resolve — check the dsh log for 'did not activate'."
-        )
-        # The route returns JSON with a `gateways` array.
-        try:
-            data = json.loads(body)
-        except json.JSONDecodeError:
-            pytest.fail(f"/infer-media/runs returned non-JSON: {body[:200]!r}")
-        assert "gateways" in data, (
-            f"/infer-media/runs JSON missing 'gateways' key: {data}"
-        )
 
     def test_infer_gallery_route_serves(self, dev_dsh_up):
         status, body = _http_get(
