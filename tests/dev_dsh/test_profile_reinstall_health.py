@@ -222,3 +222,23 @@ class TestProfileReinstallHealth:
                 f"provisioner dep {name!r} link target {target} has no "
                 f"package.json"
             )
+
+    def test_inference_studio_preset_is_installed(self):
+        """The Inference Studio agent preset must be present in DSH_HOME.
+
+        The launcher runs infer-provision preset after pnpm install to
+        copy the persona + cordis config into the profile. Without it,
+        the preset dropdown shows only Into the Unknown / Standard
+        mode instead of Inference Studio.
+        """
+        preset_dir = Path.home() / ".dsh-test" / ".agent-presets" / "inference-studio"
+        assert preset_dir.is_dir(), (
+            f"{preset_dir} does not exist. The launcher must run "
+            f"infer-provision preset after pnpm install."
+        )
+        assert (preset_dir / "preset.yml").exists(), (
+            f"{preset_dir}/preset.yml missing"
+        )
+        assert (preset_dir / "agent.cordis.yml").exists(), (
+            f"{preset_dir}/agent.cordis.yml missing"
+        )
