@@ -89,8 +89,15 @@ export function streamPipelineEvents(
     if (typeof WebSocket === "undefined") return // no ws runtime → poll only
     const proto = typeof location !== "undefined" && location.protocol === "https:" ? "wss" : "ws"
     const host = typeof location !== "undefined" ? location.host : ""
+    // QUERY FORM (run_id as a query param at the BARE events path):
+    // the DSH web-ui proxy (which serves /editor inside the DSH origin)
+    // registers upgrade tunnels at EXACT paths only — a per-run path
+    // segment can never match one. The gateway accepts BOTH forms; the
+    // query form is the one that survives every proxy (live bug
+    // 2026-09-04: the embed's per-run WS 502'd on every connect and the
+    // card showed no live comfyui feedback).
     try {
-      ws = new WebSocket(`${proto}://${host}/v1/pipelines/events/${encodeURIComponent(runId)}`)
+      ws = new WebSocket(`${proto}://${host}/v1/pipelines/events?run_id=${encodeURIComponent(runId)}`)
     } catch {
       return // constructor refused → poll only
     }
