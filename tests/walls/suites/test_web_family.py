@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """test_web_family.py — the web-family alignment gate.
 
 The contract under test (plugins/web/README.md):
@@ -13,15 +12,14 @@ This gate encodes that alignment as DATA (a pydantic-style table of
 expectations): a member in the wrong family, a stale link:, a wrong
 EDITOR_DIST depth, or a missing workspace glob fails HERE, at test time —
 never as a mystery 404 inside a DSH chat iframe at boot.
-
-Run: python3 tests/walls/suites/test_web_family.py   (part of the python gate ladder)
 """
 import json
 import os
 import re
-import sys
 
-REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
+import pytest
+
+from _anchor import REPO
 
 # ─────────────────────────────────────────────────────────────────────────
 # THE FAMILY MAP — the SSOT this gate enforces. Edit HERE when the family
@@ -72,16 +70,8 @@ PROVISIONER_LINKS = {
     "@infer-media/dsh-gallery":     "../../../web/dsh/infer-gallery",
 }
 
-_checks = {"pass": 0, "fail": 0}
 
-
-def check(name, ok, detail=""):
-    _checks["pass" if ok else "fail"] += 1
-    tag = "ok  " if ok else "FAIL"
-    print("  %s  %s%s" % (tag, name, (" — " + str(detail)) if detail and not ok else ""))
-
-
-def pkg_name(member_dir):
+def _pkg_name(member_dir):
     pj = os.path.join(member_dir, "package.json")
     if not os.path.isfile(pj):
         return None
@@ -92,115 +82,116 @@ def pkg_name(member_dir):
         return "UNPARSEABLE: %s" % e
 
 
-def main():
-    print("web family alignment (plugins/web/README.md is the contract)")
+# ── 1. members exist, in the right family, with the right package names ──
 
-    # 1. members exist, in the right family, with the right package names
-    print("[1] family members")
-    for d, name in sorted(WEB_DSH_MEMBERS.items()):
-        path = os.path.join(REPO, "plugins", "web", "dsh", d)
-        check("web/dsh/%s exists" % d, os.path.isdir(path))
-        if name is not None:
-            check("web/dsh/%s is %s" % (d, name), pkg_name(path) == name,
-                  pkg_name(path))
-    for d, name in sorted(HARNESS_DSH_MEMBERS.items()):
-        path = os.path.join(REPO, "plugins", "harness", "dsh", d)
-        check("harness/dsh/%s exists" % d, os.path.isdir(path))
-        if name is not None:
-            check("harness/dsh/%s is %s" % (d, name), pkg_name(path) == name,
-                  pkg_name(path))
+@pytest.mark.parametrize("d,name", sorted(WEB_DSH_MEMBERS.items()))
+def test_web_dsh_member_exists(d, name):
+    path = os.path.join(REPO, "plugins", "web", "dsh", d)
+    assert os.path.isdir(path), f"web/dsh/{d} missing"
 
-    # the editor is a web sibling
+
+@pytest.mark.parametrize("d,name", sorted(WEB_DSH_MEMBERS.items()))
+def test_web_dsh_member_package_name(d, name):
+    if name is None:
+        pytest.skip(f"{d} has no package")
+    path = os.path.join(REPO, "plugins", "web", "dsh", d)
+    assert _pkg_name(path) == name, _pkg_name(path)
+
+
+@pytest.mark.parametrize("d,name", sorted(HARNESS_DSH_MEMBERS.items()))
+def test_harness_dsh_member_exists(d, name):
+    path = os.path.join(REPO, "plugins", "harness", "dsh", d)
+    assert os.path.isdir(path), f"harness/dsh/{d} missing"
+
+
+@pytest.mark.parametrize("d,name", sorted(HARNESS_DSH_MEMBERS.items()))
+def test_harness_dsh_member_package_name(d, name):
+    if name is None:
+        pytest.skip(f"{d} has no package")
+    path = os.path.join(REPO, "plugins", "harness", "dsh", d)
+    assert _pkg_name(path) == name, _pkg_name(path)
+
+
+def test_editor_exists():
     ed = os.path.join(REPO, "plugins", "web", "editor")
-    check("web/editor exists", os.path.isdir(ed))
-    check("web/editor pkg is 'editor'", pkg_name(ed) == EDITOR_PKG_NAME,
-          pkg_name(ed))
+    assert os.path.isdir(ed)
 
-    # the old grab-bag is GONE (two concerns cannot share one directory)
-    check("plugins/dsh retired", not os.path.exists(
-        os.path.join(REPO, "plugins", "dsh")))
 
-    # 2. the embedding: EDITOR_DIST traversal lands on the real dist dir
-    print("[2] the embedding (deck HOST → editor dist)")
+def test_editor_package_name():
+    ed = os.path.join(REPO, "plugins", "web", "editor")
+    assert _pkg_name(ed) == EDITOR_PKG_NAME, _pkg_name(ed)
+
+
+def test_plugins_dsh_retired():
+    assert not os.path.exists(os.path.join(REPO, "plugins", "dsh"))
+
+
+# ── 2. the embedding: EDITOR_DIST traversal ─────────────────────────────
+
+def test_deck_editor_dist_traversal():
     deck_src = os.path.join(REPO, "plugins", "web", "dsh",
                             "melite-card-deck", "src", "index.ts")
-    ok = os.path.isfile(deck_src)
-    check("deck src present", ok)
-    if ok:
-        src = open(deck_src, encoding="utf-8").read()
-        m = re.search(
-            r"EDITOR_DIST\s*=\s*process\.env\.RAY_EDITOR_DIST\s*\?\?\s*"
-            r"path\.resolve\(here((?:,\s*'[^']+')+)\)", src)
-        check("EDITOR_DIST declares the family-relative traversal", bool(m))
-        if m:
-            parts = [p.strip().strip("'\"") for p in m.group(1).split(",")[1:]]
-            check("traversal is ×3 up + editor/dist",
-                  parts == ["..", "..", "..", "editor", "dist"], parts)
-            # simulate: resolve from <pkg>/lib the way the built file does
-            lib = os.path.join(REPO, "plugins", "web", "dsh",
-                               "melite-card-deck", "lib")
-            resolved = os.path.normpath(os.path.join(lib, *parts))
-            expected = os.path.join(REPO, "plugins", "web", "editor", "dist")
-            check("traversal lands on plugins/web/editor/dist",
-                  resolved == expected, "%s != %s" % (resolved, expected))
+    assert os.path.isfile(deck_src), "deck src missing"
+    src = open(deck_src, encoding="utf-8").read()
+    m = re.search(
+        r"EDITOR_DIST\s*=\s*process\.env\.RAY_EDITOR_DIST\s*\?\?\s*"
+        r"path\.resolve\(here((?:,\s*'[^']+')+)\)", src)
+    assert m, "EDITOR_DIST declares the family-relative traversal"
+    parts = [p.strip().strip("'\"") for p in m.group(1).split(",")[1:]]
+    assert parts == ["..", "..", "..", "editor", "dist"], parts
+    lib = os.path.join(REPO, "plugins", "web", "dsh",
+                       "melite-card-deck", "lib")
+    resolved = os.path.normpath(os.path.join(lib, *parts))
+    expected = os.path.join(REPO, "plugins", "web", "editor", "dist")
+    assert resolved == expected, f"{resolved} != {expected}"
 
-    # 3. the bridge: card-view bundles the deck's embed-bridge
-    print("[3] the embed bridge (ONE bridge, ONE theme map)")
+
+# ── 3. the bridge ───────────────────────────────────────────────────────
+
+def test_card_view_embeds_deck_bridge():
     cv = os.path.join(REPO, "plugins", "web", "dsh", "melite-card-view",
                       "src", "client", "PipelineCards.tsx")
-    ok = os.path.isfile(cv)
-    check("card-view PipelineCards.tsx present", ok)
-    if ok:
-        src = open(cv, encoding="utf-8").read()
-        check("card-view imports the deck's embed-bridge",
-              EMBED_BRIDGE_IMPORT in src)
-        bridge = os.path.join(REPO, "plugins", "web", "dsh",
-                              "melite-card-deck", EMBED_BRIDGE_FILE)
-        check("embed-bridge.ts exists in the deck",
-              os.path.isfile(bridge), bridge)
+    assert os.path.isfile(cv), "card-view PipelineCards.tsx missing"
+    src = open(cv, encoding="utf-8").read()
+    assert EMBED_BRIDGE_IMPORT in src
 
-    # 4. workspace globs resolve the members
-    print("[4] root workspace alignment")
+
+def test_embed_bridge_file_exists():
+    bridge = os.path.join(REPO, "plugins", "web", "dsh",
+                          "melite-card-deck", EMBED_BRIDGE_FILE)
+    assert os.path.isfile(bridge), bridge
+
+
+# ── 4. workspace globs ─────────────────────────────────────────────────
+
+def test_root_workspace_globs():
     ws = os.path.join(REPO, "pnpm-workspace.yaml")
-    ok = os.path.isfile(ws)
-    check("root pnpm-workspace.yaml present", ok)
-    if ok:
-        text = open(ws, encoding="utf-8").read()
-        for g in REQUIRED_WORKSPACE_GLOBS:
-            check("workspace globs %s" % g, ("'%s'" % g) in text or
-                  ('"%s"' % g) in text)
+    assert os.path.isfile(ws), "root pnpm-workspace.yaml missing"
+    text = open(ws, encoding="utf-8").read()
+    for g in REQUIRED_WORKSPACE_GLOBS:
+        assert ("'%s'" % g) in text or ('"%s"' % g) in text, (
+            f"workspace glob {g} missing")
 
-    # 5. provisioner links both families, targets exist
-    print("[5] provisioner spans the family line")
+
+# ── 5. provisioner links both families ──────────────────────────────────
+
+def test_provisioner_links():
     pj = os.path.join(REPO, "plugins", "harness", "dsh", "provisioner",
                       "package.json")
-    ok = os.path.isfile(pj)
-    check("provisioner package.json present", ok)
-    if ok:
-        with open(pj, encoding="utf-8") as f:
-            deps = json.load(f).get("dependencies", {})
-        for pkg, rel in PROVISIONER_LINKS.items():
-            got = deps.get(pkg)
-            check("links %s → %s" % (pkg, rel), got == "link:%s" % rel, got)
-            target = os.path.normpath(os.path.join(
-                os.path.dirname(pj), rel.lstrip("./") if not rel.startswith("..")
-                else rel))
-            check("link target exists (%s)" % rel, os.path.isdir(target),
-                  target)
-
-    # 6. the kit stays engine-agnostic, sibling to the pathways
-    print("[6] the kit")
-    for k in ("ui", "slots", "contracts", "formats", "catalog"):
-        check("web/%s is @melite/%s" % (k, k),
-              pkg_name(os.path.join(REPO, "web", k)) == "@melite/%s" % k)
-
-    total = _checks["pass"] + _checks["fail"]
-    print("PASS %d / FAIL %d" % (_checks["pass"], _checks["fail"]))
-    if _checks["fail"]:
-        print("WEB FAMILY MISALIGNED — the contract is plugins/web/README.md")
-        sys.exit(1)
-    print("web family aligned: one card surface, two windows")
+    assert os.path.isfile(pj), "provisioner package.json missing"
+    with open(pj, encoding="utf-8") as f:
+        deps = json.load(f).get("dependencies", {})
+    for pkg, rel in PROVISIONER_LINKS.items():
+        got = deps.get(pkg)
+        assert got == "link:%s" % rel, got
+        target = os.path.normpath(os.path.join(
+            os.path.dirname(pj), rel.lstrip("./") if not rel.startswith("..")
+            else rel))
+        assert os.path.isdir(target), target
 
 
-if __name__ == "__main__":
-    main()
+# ── 6. the kit stays engine-agnostic ────────────────────────────────────
+
+@pytest.mark.parametrize("k", ["ui", "slots", "contracts", "formats", "catalog"])
+def test_kit_package_name(k):
+    assert _pkg_name(os.path.join(REPO, "web", k)) == "@melite/%s" % k

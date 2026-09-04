@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """E2E ROUTING WALL — the viewer slot classification.
 
 The viewer seam (AssetMedia.tsx) routes harvested artifacts to one
@@ -9,8 +8,7 @@ harvest's classification) makes the wrong viewer claim the artifact
 
 This wall mirrors the editor's regexes in Python and walks every
 KNOWN emitter across the estate, asserting the route matches what
-the lane actually writes. SCRIPT FORM (the estate wall law for
-non-inference checks): `python3 tests/walls/suites/test_artifact_routing.py`.
+the lane actually writes.
 
 THE LAW: this module's regex tables MUST match the source-side
 verbatim. When the editor updates the routes, update this wall in
@@ -19,17 +17,17 @@ the same commit (or the E2E suite will lie about coverage).
 
 import os
 import re
-import sys
 
-REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
+import pytest
 
+from _anchor import REPO
 
 # ── the editor's regex tables (MIRROR of AssetMedia.tsx) ──────────────
 # From plugins/web/editor/src/surfaces/assets/AssetMedia.tsx:26-36.
 # KEEP IN LOCKSTEP — see module docstring.
 
 _MESH_RE = re.compile(r"\.(glb|gltf|fbx)(\?|#|$)", re.IGNORECASE)
-_MOTION_RE = re.compile(r"\.npz(\?|#|$)", re.IGNORECASE)
+MOTION_RE = re.compile(r"\.npz(\?|#|$)", re.IGNORECASE)
 
 
 def _route(name):
@@ -42,7 +40,7 @@ def _route(name):
     lower = name.lower()
     if _MESH_RE.search(lower):
         return "mesh-viewer"
-    if _MOTION_RE.search(lower):
+    if MOTION_RE.search(lower):
         return "motion-viewer"
     if (lower.endswith(".mp4") or lower.endswith(".webm")
             or lower.endswith(".gif")):
@@ -83,79 +81,58 @@ def _emits(renderer_path, node):
     return node in src
 
 
-def main():
-    fails = 0
-
-    def check(ok, label, detail=""):
-        nonlocal fails
-        print("  %s  %s%s" % ("ok " if ok else "FAIL", label,
-                              (" — " + detail) if detail else ""))
-        if not ok:
-            fails += 1
-
-    # ── every known renderer — the route per emitted extension ──────
-    print("artifact routing — viewer slot per Save* kind:")
+def test_renderer_emits_expected_nodes():
+    """Every known renderer emits the Save* nodes the wall expects."""
     for path, nodes in _EMITTERS:
         rp = os.path.join(REPO, path)
-        if not os.path.isfile(rp):
-            check(False, "%s present" % path, "renderer file missing")
-            continue
+        assert os.path.isfile(rp), f"{path} renderer file missing"
         for node, ext in nodes:
-            present = _emits(rp, node)
-            check(present,
-                  "%s emits %s" % (path, node),
-                  "" if present else "%s not in this renderer" % node)
-            got = _route("artifact" + ext)
-            # the expected slot — derive it from the extension; the
-            # SSOT is the extension, not the node name
-            expected = _route("ref" + ext)
-            check(got == expected,
-                  "%s .%s -> %s" % (path, ext.lstrip("."), expected),
-                  "got %s" % got if got != expected else "")
+            assert _emits(rp, node), (
+                f"{node} not in {path}")
 
-    # ── the harvest kind table — AssetMedia's source-of-truth ───────
-    # plugins/engines/comfyui/compose/native.py:352-371 lists the
-    # kinds the harvest walks. Each must have a route. Missing route
-    # = silent orphan.
+
+def test_viewer_slot_routes_match_extension():
+    """Every emitted extension routes to the correct viewer slot."""
+    for path, nodes in _EMITTERS:
+        for node, ext in nodes:
+            got = _route("artifact" + ext)
+            expected = _route("ref" + ext)
+            assert got == expected, (
+                f"{path} .{ext.lstrip('.')} -> expected {expected}, got {got}")
+
+
+def test_harvest_kinds_are_enumerated():
+    """Every harvest kind has a route (None = extension decides)."""
     harvest_kinds = [
         ("images", "image-tile"),
         ("gifs", "video-viewer"),
         ("audio", "audio-viewer"),
         ("video", "video-viewer"),
         ("3d", "mesh-viewer"),
-        ("three_model", None),       # extension decides
-        ("result", None),            # extension decides
+        ("three_model", None),
+        ("result", None),
     ]
-    print("harvest kinds — every kind has a route (None = extension):")
     for kind, _ in harvest_kinds:
         # the harvest kind ITSELF doesn't dictate the slot — the
         # extension of the actual file does. The kind is the SOURCE
         # bucket; the slot is downstream. The wall asserts only
         # that no kind is silently dropped.
-        check(True, "harvest kind %r is enumerated" % kind)
-
-    # ── kimodo's NPZ is the one case that lands in motion-viewer ──
-    # kimodo's pack surfaces output as ui.three_model with a
-    # .npz file extension; the harvest reads the .npz and the
-    # editor's isMotionAsset regex catches it.
-    check(_route("pose.npz") == "motion-viewer",
-          "kimodo's .npz -> motion-viewer",
-          "got %s" % _route("pose.npz"))
-
-    # ── the user-facing names that are commonly used ──────────────
-    print("common artifact names — route per name:")
-    for n in ("scene.glb", "rigged.glb", "pose.npz",
-              "film.mp4", "film.webm", "film.gif",
-              "frame.png", "out.jpg", "wave.wav"):
-        check(_route(n) in {
-            "mesh-viewer", "motion-viewer", "video-viewer",
-            "image-tile", "audio-viewer",
-        }, "%s -> %s" % (n, _route(n)),
-            "fell through to a slot that doesn't exist")
-
-    print("PASS" if fails == 0 else "FAIL %d" % fails)
-    return 1 if fails else 0
+        assert kind is not None
 
 
-if __name__ == "__main__":
-    sys.exit(main())
+def test_kimodo_npz_routes_to_motion_viewer():
+    """kimodo's NPZ is the one case that lands in motion-viewer."""
+    assert _route("pose.npz") == "motion-viewer"
+
+
+@pytest.mark.parametrize("name", [
+    "scene.glb", "rigged.glb", "pose.npz",
+    "film.mp4", "film.webm", "film.gif",
+    "frame.png", "out.jpg", "wave.wav",
+])
+def test_common_artifact_name_has_valid_slot(name):
+    """Common artifact names route to a valid viewer slot."""
+    assert _route(name) in {
+        "mesh-viewer", "motion-viewer", "video-viewer",
+        "image-tile", "audio-viewer",
+    }, f"{name} -> {_route(name)} fell through to a non-existent slot"

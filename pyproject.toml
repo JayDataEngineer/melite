@@ -83,12 +83,18 @@ dev = ["pytest>=8"]
 [tool.pytest.ini_options]
 # tests/ layout: unit/ = no server, routes/ = live gateway (skips when
 # down), integration/ = real inference (-m gpu, deselected by default),
-# walls/ = the pytest-side orchestrator (test_walls.py) + suites/ (the
-# script-style wall suites — exit codes are the contract; conftest.py
-# there keeps suites/ OUT of collection), dev_dsh/ = the DSH harness
-# gate ladder (own runner), timeline/ = the h3 timeline suite (own
-# runner). The goldens live in golden_http/ + golden_compose/.
+# walls/ = the pytest-side orchestrator (test_walls.py) + suites/ (a
+# mix of native pytest tests and script-style wall suites; conftest.py
+# keeps the unconverted script-style suites OUT of collection),
+# dev_dsh/ = the DSH harness gate ladder (own runner), timeline/ = the
+# h3 timeline suite (own runner). The goldens live in golden_http/ +
+# golden_compose/.
 testpaths = ["tests/unit", "tests/routes", "tests/integration", "tests/walls"]
+# repo root on sys.path: unit suites import shared factories across
+# test files (tests.unit.runtime.conftest) — namespace packages
+# resolve only with the root importable (the README runner
+# `uv run pytest` does not prepend CWD the way `python -m pytest` does)
+pythonpath = ["."]
 markers = [
     "gpu: real inference through the queue (opt in: pytest -m gpu)",
 ]

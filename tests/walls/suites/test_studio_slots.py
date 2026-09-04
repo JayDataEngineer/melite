@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """G-cluster wall: the STUDIO SLOT CONTRACT, both directions.
 
 The tenant seam (operator order 2026-09-03, formalized in
@@ -6,7 +5,7 @@ cardStudios.ts): a family claims a studio with Studio(tenant=
 '<genre>/<dir>'); the shell globs action_cards/<genre>/<dir>/ui/
 studio/component.tsx and registers the tenant id '<genre>/<dir>'.
 
-TWO failure classes this wall refuses:
+Two failure classes this wall refuses:
   1. PHANTOM TENANT — a family declares Studio(tenant=X) but no
      component.tsx lives at X's ui/studio (the studio tab renders
      an empty panel — a broken authoring surface).
@@ -14,15 +13,14 @@ TWO failure classes this wall refuses:
      ui/studio but NO family claims that tenant (dead UI drift:
      a body the loader can never mount; it also silently shadows
      the default schema form for that card id if one ever lands).
-
-Script-form wall (the estate's law): python3 tests/walls/suites/test_studio_slots.py
 """
 
 import os
 import re
-import sys
 
-REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
+import pytest
+
+from _anchor import REPO
 MODELS_ROOT = os.path.join(REPO, "plugins", "engines", "comfyui", "models")
 CARDS_ROOT = os.path.join(REPO, "plugins", "engines")
 
@@ -67,36 +65,27 @@ def _bodies():
     return out
 
 
-def main():
-    fails = 0
-
-    def check(ok, label, detail=""):
-        nonlocal fails
-        print("  %s  %s%s" % ("ok " if ok else "FAIL", label,
-                              (" — " + detail) if detail else ""))
-        if not ok:
-            fails += 1
-
-    claims = _claims()
-    bodies = _bodies()
-    print("studio slot contract: %d tenant claims, %d bodies on disk"
-          % (sum(len(v) for v in claims.values()), len(bodies)))
-
-    print("direction 1 — every claimed tenant has a body:")
-    for tenant in sorted(claims):
-        check(tenant in bodies, "tenant %r has component.tsx" % tenant,
-              "claimed by %s; no action_cards/%s/ui/studio/component.tsx"
-              % (", ".join(claims[tenant]), tenant))
-
-    print("direction 2 — every body is claimed by a family:")
-    for tenant in sorted(bodies):
-        check(tenant in claims, "body %r has a claiming family" % tenant,
-              "%s exists but no model.py declares Studio(tenant=%r)"
-              % (bodies[tenant], tenant))
-
-    print("PASS" if fails == 0 else "FAIL %d" % fails)
-    return 1 if fails else 0
+@pytest.fixture(scope="module")
+def tenant_claims():
+    return _claims()
 
 
-if __name__ == "__main__":
-    sys.exit(main())
+@pytest.fixture(scope="module")
+def tenant_bodies():
+    return _bodies()
+
+
+def test_every_claimed_tenant_has_body(tenant_claims, tenant_bodies):
+    """Every claimed tenant has a component.tsx on disk."""
+    for tenant in sorted(tenant_claims):
+        assert tenant in tenant_bodies, (
+            "claimed by %s; no action_cards/%s/ui/studio/component.tsx"
+            % (", ".join(tenant_claims[tenant]), tenant))
+
+
+def test_every_body_is_claimed(tenant_claims, tenant_bodies):
+    """Every ui/studio/component.tsx is claimed by a family."""
+    for tenant in sorted(tenant_bodies):
+        assert tenant in tenant_claims, (
+            "%s exists but no model.py declares Studio(tenant=%r)"
+            % (tenant_bodies[tenant], tenant))
