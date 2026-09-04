@@ -5,7 +5,8 @@
   },
   "engines": {
     "comfyui": {
-      "base": "image-gen/comfyui"
+      "base": "image-gen/comfyui",
+      "url": "http://127.0.0.1:18466"
     },
     "kimodo": {
       "base": "motion/kimodo"

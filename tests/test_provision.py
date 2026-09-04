@@ -225,6 +225,12 @@ check("root config: the project-root derivation (operator 2026-09-04)",
       "read=%s download=%s" % (_ec_paths["read_root"],
                                _ec_paths["download_root"]))
 
+# the URL is also root-configurable (operator 2026-09-04: "is the
+# comfyui url there too" — yes, engines.comfyui.url in the root)
+check("root config: engines.comfyui.url resolves",
+      _ec.engine_url("comfyui", endpoint_override=_cfg.get("url")).startswith("http"),
+      repr(_ec.engine_url("comfyui", endpoint_override=_cfg.get("url"))))
+
 check("bound_model_folders: the ONE derivation (fixed + extras)",
       _bound["folders"].get("vae") == "vae"
       and _bound["folders"].get("text_encoders") == "text_encoders"

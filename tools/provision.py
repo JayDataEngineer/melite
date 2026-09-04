@@ -327,6 +327,7 @@ def cmd_paths(cfg):
         "\n".join(lines) + "\n")
     print("runtime layout + extra_model_paths.yaml → %s" % RUNTIME)
     _lay_download_pointers(bound["download_path"], folders)
+    _sync_endpoint_from_root(cfg)
 
 
 def _lay_download_pointers(download_base, folders):
@@ -370,6 +371,51 @@ def _lay_download_pointers(download_base, folders):
         local.symlink_to(target)
     print("download pointers: %d categories → %s (configured "
           "model_download_path)" % (len(folders), download_base))
+
+
+# endpoint fields derived from the ROOT config (operator order
+# 2026-09-04: configure the whole estate from the project root;
+# the root is the SSOT, the endpoint file is a generated surface
+# for these fields — the same shape extra_model_paths.yaml plays).
+_ENDPOINT_DERIVED = ("url", "model_base_path", "model_download_path")
+
+
+def _sync_endpoint_from_root(cfg):
+    """The comfyui endpoint's url + model_* keys are derived from
+    the root config. The endpoint may still override url when set
+    (back-compat for deployments that pass one in); for the model
+    keys, the endpoint inherits — writes the root's value to the
+    endpoint file so the gateway and the wall see the same root."""
+    import collections
+    try:
+        path_urls = estate_config.model_paths("comfyui")
+    except estate_config.RootConfigError:
+        return
+    derived = {
+        "model_base_path": path_urls["read_root"],
+        "model_download_path": path_urls["download_root"],
+    }
+    # url: root is the default; an explicit endpoint value wins
+    derived["url"] = estate_config.engine_url("comfyui",
+                                             endpoint_override=cfg.get("url"))
+    changed = []
+    for k, v in derived.items():
+        cur = str(cfg.get(k) or "").strip()
+        want = str(v or "").strip()
+        if cur == want:
+            continue
+        changed.append(k)
+        cfg[k] = want
+    if not changed:
+        return
+    cfg_path = DEFAULT_CONFIG
+    # write back preserving the file's order + comments where we can
+    on_disk = json.loads(cfg_path.read_text())
+    for k in _ENDPOINT_DERIVED:
+        if k in derived:
+            on_disk[k] = derived[k]
+    cfg_path.write_text(json.dumps(on_disk, indent=2) + "\n")
+    print("endpoint derived from root: %s" % ", ".join(changed))
 
 
 def cmd_sync(cfg):
@@ -472,7 +518,13 @@ def cmd_verify(cfg):
     except estate_config.RootConfigError as exc:
         check("model roots resolve (root config + overrides)",
               False, str(exc))
-    check("url present", bool(cfg.get("url", "").strip()))
+    try:
+        url = estate_config.engine_url("comfyui", endpoint_override=cfg.get("url"))
+        check("url resolves (endpoint → root engines.comfyui.url)",
+              bool(url), repr(url))
+    except estate_config.RootConfigError as exc:
+        check("url resolves (endpoint → root engines.comfyui.url)",
+              False, str(exc))
     if cfg.get("provision") == "managed":
         check("managed lock present", (COMFY_PROJECT / "uv.lock").is_file())
         r = subprocess.run(["uv", "lock", "--check", "--project",

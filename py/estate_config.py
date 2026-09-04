@@ -2,8 +2,8 @@
 people configure from the root of the overall project").
 
 `inference.config.json` at the repo root is THE user-facing place
-where model storage is configured for the WHOLE estate — every
-engine, not just one. Shape:
+where the WHOLE estate is configured — model storage AND each
+engine's connection — every engine, not just one. Shape:
 
     {
       "models": {
@@ -11,8 +11,14 @@ engine, not just one. Shape:
         "download_root": "/mnt/data/models"    # where downloads land
       },
       "engines": {
-        "comfyui": { "base": "image-gen/comfyui" },
-        "kimodo":  { "base": "motion/kimodo" }
+        "comfyui": {
+          "base": "image-gen/comfyui",         # subdir under the roots
+          "url":  "http://127.0.0.1:18466"     # engine endpoint (when
+                                               # the engine has one)
+        },
+        "kimodo": {
+          "base": "motion/kimodo"
+        }
       }
     }
 
@@ -26,18 +32,25 @@ file's semantics):
       Per-engine home UNDER the global roots (a relative subdir) or
       an ABSOLUTE override. Unset → the engine lives directly under
       the global roots.
+  engines.<name>.url
+      The engine's connection (the comfyui HTTP endpoint today;
+      engine-specific — set only for engines that have one). Optional.
 
-Engine-level configs (e.g. the comfyui endpoint's
+Engine-level configs (e.g. the comfyui endpoint's url /
 model_base_path / model_download_path) still WIN when set — the
 root config is the base layer, engine configs are explicit
-overrides for deployments that want them. ComfortUI's endpoint
+overrides for deployments that want them. comfyui's endpoint
 unset keys inherit from here; kimodo falls back here before its
 runtime default.
 
 Downloads land where download_root says — enforced at the rails by
 tools/provision.py's download pointers and walled by
 tests/test_models_on_second_drive.py (which reads THIS file, never
-a hardcoded spot).
+a hardcoded spot). The engine URL is synced from the root into
+the comfyui endpoint by `provision paths` so the gateway and the
+config never drift (extra_model_paths.yaml's generation is the
+precedent — the endpoint's url becomes a derived surface, the
+root remains the SSOT).
 """
 
 from __future__ import annotations
@@ -140,3 +153,22 @@ def model_paths(engine: str = "", endpoint_overrides: dict | None = None):
                     % (src, raw))
             paths[dst] = os.path.abspath(raw)
     return paths
+
+
+def engine_url(engine: str, endpoint_override: str | None = None) -> str:
+    """The engine's connection string (comfyui's HTTP URL today).
+
+    Priority: explicit endpoint value → root config
+    engines.<engine>.url. Empty/unset for engines that have no
+    connection (kimodo is local subprocess; the URL key is then
+    simply not set — a missing key is fine, an empty string dies
+    loud).
+    """
+    raw = str(endpoint_override or "").strip()
+    if raw:
+        return raw
+    cfg = load()
+    row = (cfg.get("engines") or {}).get(engine) or {}
+    if not isinstance(row, dict):
+        return ""
+    return str(row.get("url") or "").strip()
