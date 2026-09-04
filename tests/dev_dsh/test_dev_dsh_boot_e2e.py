@@ -168,9 +168,10 @@ def main() -> int:
         fetched = {u.split("/plugins/")[-1].split("/client.js")[0]
                    for u in request_urls if "/plugins/" in u and "/client.js" in u}
         must_load = {"@melite-plugin/dsh-card-view",
+                    "@melite-plugin/dsh-card-deck",
                     "@infer-media/dsh-media",
                     "@infer-media/dsh-gallery"}
-        must_not_load = {"@melite-plugin/dsh-card-deck"}
+        must_not_load = set()
         missing_load = must_load - fetched
         illegal_load = must_not_load & fetched
         if missing_load or illegal_load:
