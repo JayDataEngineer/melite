@@ -13,7 +13,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** The ONE run door — four folded shapes (route / yaml / flow / generation) */
+        /** The ONE run door — two doors: {flow: name} | {model: id} (the yaml/route shapes retired 2026-09-04, docs/queue/flows.md) */
         post: operations["flows_start"];
         delete?: never;
         options?: never;
