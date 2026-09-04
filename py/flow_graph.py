@@ -34,6 +34,13 @@ class NodeRow(BaseModel):
     # the engine-owned surface (comfyui: workflow/out_dir/timeout_s;
     # audio_cpp: task/family/model/...) — content is the engine's
     params: dict[str, Any] = Field(default_factory=dict)
+    # the flow-typed-edges contract (docs/queue/flow-typed-edges.md):
+    # what THIS node produces, named per output channel, as Kind.value
+    # strings. Empty for card-only NodeRows (the action-card ABI) and
+    # for engine rows that didn't declare `outputs` on the Stage.
+    # Carried into the run sidecar so MCP introspection and editor
+    # graph views see the typed chain past construction.
+    outputs: dict[str, str] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def _refs_nonempty(self) -> "NodeRow":

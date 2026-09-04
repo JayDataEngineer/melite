@@ -261,8 +261,39 @@ class Flow(BaseModel):
 
     def to_graph(self):
         """The FlowGraph the executor consumes — the SAME typed
-        contract compose arms hand the core (py/flow_graph.py)."""
+        contract compose arms hand the core (py/flow_graph.py).
+
+        The flow-typed-edges contract (docs/queue/flow-typed-edges.md):
+        resolve each stage's effective outputs (its `outputs` or its
+        engine's DEFAULT_OUTPUT, whichever applies) and stamp the
+        per-output Kind.values into the NodeRow. The runtime sidecar
+        (MCP introspection, editor graph view) sees the typed chain
+        past construction — the operator's lever doesn't just refuse
+        wrong wires, it annotates the right ones.
+
+        Engine modules are loaded via the same bus validate_engines
+        uses (py/plugins.py caches the import after the first call,
+        so repeated to_graph() is cheap)."""
         import flow_graph
+        if str(REPO / "py") not in sys.path:
+            sys.path.insert(0, str(REPO / "py"))
+        import plugins
+        # resolve per-stage outputs: explicit row wins; engine
+        # DEFAULT_OUTPUT fills the unnamed "default" channel.
+        resolved: dict[str, dict[str, Kind]] = {}
+        for st in self.stages:
+            if st.outputs:
+                resolved[st.id] = dict(st.outputs)
+                continue
+            try:
+                mod = plugins.load_engine(st.engine)
+                default = getattr(mod, "DEFAULT_OUTPUT", None)
+            except Exception:
+                default = None
+            if isinstance(default, Kind):
+                resolved[st.id] = {"default": default}
+            # else: leave unresolved — NodeRow.outputs stays empty,
+            # the sidecar will show '' for that stage's output kind
         return flow_graph.FlowGraph(
             name=self.id,
             description=self.description,
@@ -273,6 +304,10 @@ class Flow(BaseModel):
                     description=st.description,
                     params=dict(st.params),
                     input_from=tuple(e.ref() for e in st.inputs.values()),
+                    outputs={
+                        k: v.value
+                        for k, v in resolved.get(st.id, {}).items()
+                    },
                 )
                 for st in self.stages),
         )

@@ -472,7 +472,13 @@ class Gateway:
         atomic_write(run.dir / "_request.json", body)
         run.stages = [
             {"id": n.node_id, "name": n.node_id, "index": i,
-             "status": "pending"}
+             "status": "pending",
+             # the flow-typed-edges contract (docs/queue/flow-typed-edges.md):
+             # stamp the typed outputs into the sidecar so MCP
+             # introspection and editor graph views see the chain past
+             # construction. Empty when the stage omitted outputs and
+             # its engine's DEFAULT_OUTPUT was unknown at load.
+             "outputs": dict(n.outputs or {})}
             for i, n in enumerate(graph.nodes)
         ]
         self.runs[run_id] = run

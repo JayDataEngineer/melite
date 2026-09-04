@@ -4,6 +4,8 @@ loading, and the {flow} door's refusal contract (QUEUE LANE LAW).
 No GPU, no network — the schema is the wall. Design record:
 docs/queue/flows.md."""
 
+import json
+
 import pytest
 from pydantic import ValidationError
 
@@ -299,3 +301,204 @@ def test_engine_default_output_attribute_is_present():
         assert isinstance(mod.DEFAULT_OUTPUT, flow_mod.Kind), \
             "engine %r DEFAULT_OUTPUT is %r, expected Kind member" % (
                 etype, mod.DEFAULT_OUTPUT)
+
+
+def test_to_graph_stamps_typed_outputs_into_noderow():
+    """Gap #2: the flow-typed-edges contract is visible PAST
+    construction — the NodeRow carries the resolved outputs so
+    the sidecar / MCP introspection / editor graph view see the
+    typed chain. Explicit outputs win; engine DEFAULT_OUTPUT fills
+    the unnamed 'default' channel when the stage omits outputs."""
+    fl = Flow(
+        id="kind-stamp-probe",
+        stages=(
+            # explicit outputs
+            Stage(id="img2mesh", engine="comfyui",
+                  inputs={"prompt": FromInitial(key="prompt")},
+                  expected={"prompt": flow_mod.Kind.text},
+                  outputs={"glb": flow_mod.Kind.mesh}),
+            # omitted outputs — engine DEFAULT_OUTPUT (comfyui → image)
+            # fills the unnamed "default" channel
+            Stage(id="upscale", engine="comfyui",
+                  inputs={"frame": FromStage(stage="img2mesh", output="glb")},
+                  expected={"frame": flow_mod.Kind.mesh}),
+        ))
+    g = fl.to_graph()
+    img2mesh, upscale = g.nodes
+    assert img2mesh.outputs == {"glb": "mesh"}, \
+        "explicit outputs must stamp: %r" % img2mesh.outputs
+    # comfyui engine default = Kind.image → "default": "image"
+    assert upscale.outputs == {"default": "image"}, \
+        "engine DEFAULT_OUTPUT must fill 'default': %r" % upscale.outputs
+
+
+def test_to_graph_stamps_default_output_for_audio_engine():
+    """Same lever for audio_cpp — Stage omits outputs, engine default
+    fills the 'default' channel with Kind.audio."""
+    fl = Flow(
+        id="audio-default-probe",
+        stages=(
+            Stage(id="tts", engine="audio_cpp",
+                  inputs={"text": FromInitial(key="text")},
+                  expected={"text": flow_mod.Kind.text}),
+        ))
+    g = fl.to_graph()
+    (tts,) = g.nodes
+    assert tts.outputs == {"default": "audio"}, \
+        "audio_cpp default must be audio: %r" % tts.outputs
+
+
+# ── live door: the operator's "iterates without GPU" promise, pinned ──
+
+@pytest.fixture
+def live_gateway_url():
+    """Skip if the operator gateway is not up — the live door
+    test is for environments where the live restart dance has run.
+    CI runs this wall only when the operator gateway is up."""
+    import os
+    url = os.environ.get("GATEWAY_URL", "http://127.0.0.1:33081")
+    import urllib.request, urllib.error
+    try:
+        with urllib.request.urlopen(url + "/v1/queue", timeout=2) as r:
+            assert r.status == 200
+    except (urllib.error.URLError, OSError, AssertionError):
+        pytest.skip("operator gateway not up at %s" % url)
+    return url
+
+
+def test_live_door_refuses_wrong_kind_with_4xx(live_gateway_url, tmp_path):
+    """Gap #1 (the operator's lever, pinned end-to-end):
+    POST a flow that wires an image stage into a text stage. The
+    live {flow} door must return 4xx, name BOTH kinds, and
+    register NO run (no sidecar, no GPU claim)."""
+    import urllib.request, urllib.error
+    import shutil
+    probe_dir = flow_mod.FLOWS_ROOT / "_gap1_probe"
+    try:
+        probe_dir.mkdir(parents=True, exist_ok=True)
+        (probe_dir / "flow.py").write_text(
+            "from flow import Flow, Stage, FromStage, Kind\n"
+            "FLOW = Flow(id='_gap1_probe', stages=(\n"
+            "    Stage(id='gen', engine='comfyui',\n"
+            "          outputs={'png': Kind.image}),\n"
+            "    Stage(id='tts', engine='comfyui',\n"
+            "          inputs={'prompt': FromStage(stage='gen', output='png')},\n"
+            "          expected={'prompt': Kind.text}),\n"
+            "))\n",
+            encoding="utf-8")
+        # probe: assert no run is in the queue BEFORE our POST
+        with urllib.request.urlopen(live_gateway_url + "/v1/queue",
+                                    timeout=3) as r:
+            before = json.loads(r.read().decode())
+        before_ids = set(before.get("queued_ids", []) or [])
+        with urllib.request.urlopen(live_gateway_url + "/v1/queue",
+                                    timeout=3) as r:
+            before_running = json.loads(r.read().decode())["running"]
+        # POST the broken flow
+        body = json.dumps({"flow": "_gap1_probe"}).encode()
+        req = urllib.request.Request(
+            live_gateway_url + "/v1/flows/start",
+            data=body, headers={"Content-Type": "application/json"})
+        try:
+            urllib.request.urlopen(req, timeout=5)
+            raised = None
+        except urllib.error.HTTPError as e:
+            raised = e
+        # must be 4xx (not 5xx, not 200)
+        assert raised is not None, "broken flow must 4xx; it accepted"
+        assert 400 <= raised.code < 500, \
+            "expected 4xx, got %d" % raised.code
+        err = json.loads(raised.read().decode())["error"]
+        assert "expected text" in err, "must name the expected kind: %r" % err
+        assert "got image" in err, "must name the got kind: %r" % err
+        assert "_gap1_probe" in err, "must name the flow id: %r" % err
+        # NO run was registered — the queue is unchanged
+        with urllib.request.urlopen(live_gateway_url + "/v1/queue",
+                                    timeout=3) as r:
+            after = json.loads(r.read().decode())
+        assert after.get("running") == before_running, \
+            "broken flow must not claim a run: %r" % after
+        after_ids = set(after.get("queued_ids", []) or [])
+        assert after_ids == before_ids, \
+            "broken flow must not enqueue: before=%r after=%r" % (
+                before_ids, after_ids)
+    finally:
+        shutil.rmtree(probe_dir, ignore_errors=True)
+
+
+# ── unused Kinds earn their place in the closed vocabulary ──────────
+# Gap #3: num, lora, seg were declared but no real flow used them.
+# These pins exercise each in a real flow shape so the AI can copy.
+
+def test_kind_num_for_seed_or_cfg_between_stages():
+    """`num` is the inter-stage scalar channel: a stage produces a
+    number (e.g. an image-to-prompt embedding stage that returns a
+    seed), the next stage consumes it. The kind system refuses
+    the wrong scalar the same way it refuses wrong media types."""
+    Flow(id="num-probe", stages=(
+        Stage(id="seedgen", engine="comfyui",
+              outputs={"seed": flow_mod.Kind.num}),
+        Stage(id="sample", engine="comfyui",
+              inputs={"seed_in": FromStage(stage="seedgen", output="seed")},
+              expected={"seed_in": flow_mod.Kind.num}),
+    ))  # no exception
+    # and a wrong-num refusal (num into text) refuses loud
+    with pytest.raises((flow_mod.FlowError, ValidationError)) as exc:
+        Flow(id="num-probe", stages=(
+            Stage(id="seedgen", engine="comfyui",
+                  outputs={"seed": flow_mod.Kind.num}),
+            Stage(id="tts", engine="comfyui",
+                  inputs={"prompt": FromStage(stage="seedgen", output="seed")},
+                  expected={"prompt": flow_mod.Kind.text}),
+        ))
+    assert "expected text" in str(exc.value)
+    assert "got num" in str(exc.value)
+
+
+def test_kind_lora_for_lora_conditioned_image_stages():
+    """`lora` is the LoRA-set channel: a stage produces a lora
+    selection (the comfyui LoRA loader's output), the next stage
+    consumes it as a weight conditioner. The shape is symmetric
+    with media kinds — same construction-time refusal."""
+    Flow(id="lora-probe", stages=(
+        Stage(id="lorapick", engine="comfyui",
+              outputs={"lora_set": flow_mod.Kind.lora}),
+        Stage(id="img", engine="comfyui",
+              inputs={"lora_in": FromStage(stage="lorapick", output="lora_set")},
+              expected={"lora_in": flow_mod.Kind.lora}),
+    ))  # no exception
+    # image output cannot masquerade as a lora set
+    with pytest.raises((flow_mod.FlowError, ValidationError)) as exc:
+        Flow(id="lora-probe", stages=(
+            Stage(id="img", engine="comfyui",
+                  outputs={"png": flow_mod.Kind.image}),
+            Stage(id="with_lora", engine="comfyui",
+                  inputs={"lora_in": FromStage(stage="img", output="png")},
+                  expected={"lora_in": flow_mod.Kind.lora}),
+        ))
+    assert "expected lora" in str(exc.value)
+    assert "got image" in str(exc.value)
+
+
+def test_kind_seg_for_mask_driven_inpaint_stages():
+    """`seg` is the segmentation/mask channel: a detect stage
+    produces a mask, an inpaint stage consumes it (the comfyui
+    image-edit card's SAM3-driven flow is the live target)."""
+    Flow(id="seg-probe", stages=(
+        Stage(id="detect", engine="comfyui",
+              outputs={"mask": flow_mod.Kind.seg}),
+        Stage(id="inpaint", engine="comfyui",
+              inputs={"mask_in": FromStage(stage="detect", output="mask")},
+              expected={"mask_in": flow_mod.Kind.seg}),
+    ))  # no exception
+    # image output cannot masquerade as a seg
+    with pytest.raises((flow_mod.FlowError, ValidationError)) as exc:
+        Flow(id="seg-probe", stages=(
+            Stage(id="img", engine="comfyui",
+                  outputs={"png": flow_mod.Kind.image}),
+            Stage(id="inpaint", engine="comfyui",
+                  inputs={"mask_in": FromStage(stage="img", output="png")},
+                  expected={"mask_in": flow_mod.Kind.seg}),
+        ))
+    assert "expected seg" in str(exc.value)
+    assert "got image" in str(exc.value)
