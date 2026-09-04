@@ -46,6 +46,94 @@ def test_no_selection_refused():
         resolve_request({"prompt": "x"})
 
 
+# ── the multi-step compose surface (flow_inline + validate door) ────
+#
+# The AI feedback loop (typed-edges design record): an agent
+# constructs flows as JSON, compiles them against the SAME
+# validators a flows/<id>/flow.py module meets, and iterates on
+# verbatim refusals — no queue slot, no GPU, no sidecar.
+
+_INLINE_TWO_STEP = {
+    "id": "wall-two-step",
+    "description": "still then motion",
+    "stages": [
+        {"id": "still", "engine": "comfyui", "params": {},
+         "outputs": {"default": "image"}},
+        {"id": "move", "engine": "comfyui",
+         "inputs": {"img": {"stage": "still", "output": "default"}},
+         "expected": {"img": "image"},
+         "outputs": {"default": "video"}},
+    ],
+}
+
+
+def test_flow_inline_resolves_to_graph():
+    graph = resolve_request({"flow_inline": _INLINE_TWO_STEP})
+    assert [n.node_id for n in graph.nodes] == ["still", "move"]
+    assert graph.nodes[1].input_from == ("still.default",)
+
+
+def test_flow_inline_kind_mismatch_verbatim():
+    import copy
+    body = copy.deepcopy(_INLINE_TWO_STEP)
+    body["stages"][1]["expected"]["img"] = "text"
+    with pytest.raises(ValidationError) as ei:
+        resolve_request({"flow_inline": body})
+    assert ("stage 'move' input 'img': expected text, got image from "
+            "stage 'still' output 'default' — must be text") in str(ei.value)
+
+
+def test_flow_inline_dead_rider_refused():
+    import copy
+    body = copy.deepcopy(_INLINE_TWO_STEP)
+    body["yaml"] = "retired key"
+    with pytest.raises(ValidationError) as ei:
+        resolve_request({"flow_inline": body})
+    assert "unknown keys ['yaml']" in str(ei.value)
+
+
+def test_flow_inline_kind_typo_names_vocabulary():
+    import copy
+    body = copy.deepcopy(_INLINE_TWO_STEP)
+    body["stages"][0]["outputs"]["default"] = "vidio"
+    with pytest.raises(ValidationError) as ei:
+        resolve_request({"flow_inline": body})
+    assert "not a Kind" in str(ei.value)
+    assert "video" in str(ei.value)  # the vocabulary is in the message
+
+
+def test_ambiguous_doors_refused():
+    with pytest.raises(ValidationError) as ei:
+        resolve_request({"flow": "kimodo-native", "model": "krea-2"})
+    assert "ambiguous" in str(ei.value)
+    with pytest.raises(ValidationError):
+        resolve_request({"flow_inline": _INLINE_TWO_STEP, "model": "krea-2"})
+
+
+def test_validate_door_compiles_without_registering():
+    """The HTTP door: 200 with the typed stage view, 400 with the
+    verbatim compile refusal — no queue, no sidecar, no run dir."""
+    import asyncio
+    import gateway as gw_mod
+    import copy
+
+    class _Ctx:
+        def __init__(self, j):
+            self.json = j
+
+    code, body = asyncio.run(
+        gw_mod._h_flows_validate(_Ctx(copy.deepcopy(_INLINE_TWO_STEP))))
+    assert code == 200 and body["ok"] is True
+    assert body["stages"][1]["outputs"] == {"default": "video"}
+    assert body["stages"][1]["inputs"] == ["still.default"]
+
+    bad = copy.deepcopy(_INLINE_TWO_STEP)
+    bad["stages"][1]["expected"]["img"] = "mesh"
+    code, body = asyncio.run(gw_mod._h_flows_validate(_Ctx(bad)))
+    assert code == 400
+    assert "must be mesh" in body["error"]
+
+
 # C4: illegal identifier refused (traversal dies at the door)
 def test_illegal_ident_refused():
     with pytest.raises(ValidationError):

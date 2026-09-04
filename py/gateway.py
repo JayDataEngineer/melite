@@ -88,14 +88,19 @@ class ValidationError(Exception):
 def resolve_request(body):
     """Resolve the start request to a flow graph — loudly.
 
-    TWO doors (QUEUE LANE LAW, 2026-09-04 flows rework — the yaml
-    text door + its parser are retired; design record docs/queue/
-    flows.md):
+    THREE doors (QUEUE LANE LAW, 2026-09-04 flows rework + the
+    multi-step compose phase; design record docs/queue/flows.md,
+    typed edges docs/queue/flow-typed-edges.md):
       {flow: name}  -> flows/<name>/flow.py declares FLOW = Flow(...)
                       (py/flow.py: frozen rows, validation AT
                       construction, edges structural; loaded on
                       demand, engines validated through the plugin
                       bus — a bad flow refuses HERE, never on the GPU)
+      {flow_inline: {...}} -> the SAME rows as JSON (flow_from_body):
+                      an agent-constructed multi-step flow, compiled
+                      by the identical validators — iterate at
+                      POST /v1/flows/validate, then start when it
+                      compiles
       {model: mid}  -> card-only models: the OWNING plugin's compose
                       hook builds the graph (phase 1 here, phase 2 at
                       registration). Cards are the queue-native
@@ -103,10 +108,21 @@ def resolve_request(body):
     """
     if not isinstance(body, dict):
         raise ValidationError("request body must be a JSON object")
+    doors = [k for k in ("flow", "flow_inline", "model") if k in body]
+    if len(doors) > 1:
+        raise ValidationError(
+            "ambiguous request: names %s — provide exactly one of "
+            "flow, flow_inline, model" % doors)
     if "flow" in body:
         import flow as flow_mod
         try:
             return flow_mod.load_flow(str(body["flow"])).to_graph()
+        except flow_mod.FlowError as e:
+            raise ValidationError(str(e))
+    if "flow_inline" in body:
+        import flow as flow_mod
+        try:
+            return flow_mod.flow_from_body(body["flow_inline"]).to_graph()
         except flow_mod.FlowError as e:
             raise ValidationError(str(e))
     if "model" in body:
@@ -115,7 +131,8 @@ def resolve_request(body):
         skeleton, etype, extra = resolve_card_model(body, mid)
         return {"__card__": True, "skeleton": skeleton,
                 "etype": etype, "extra": extra, "name": mid}
-    raise ValidationError("no flow selected: provide flow or model")
+    raise ValidationError("no flow selected: provide flow, flow_inline "
+                          "or model")
 
 
 # (_find_model_yaml/_engine_type_of retired 2026-09-02: the nondeterministic
@@ -1026,6 +1043,31 @@ async def _h_flows_start(ctx):
     return 202, {"run_id": run.run_id, "status": run.status}
 
 
+async def _h_flows_validate(ctx):
+    """The AI feedback loop (typed-edges design record): compile an
+    inline flow body — every refusal is verbatim compile-time error
+    text naming flow/stage/input and both Kinds. No queue slot, no
+    GPU claim, no sidecar, no registration. 200 carries the typed
+    stage view (resolved output kinds included) so the agent sees
+    the graph it just built."""
+    import flow as flow_mod
+    try:
+        fl = flow_mod.flow_from_body(ctx.json)
+    except flow_mod.FlowError as e:
+        return 400, {"error": str(e)}
+    graph = fl.to_graph()
+    return 200, {
+        "ok": True,
+        "flow": fl.id,
+        "stages": [
+            {"id": n.node_id, "engine": n.node_type,
+             "description": n.description,
+             "inputs": list(n.input_from),
+             "outputs": dict(n.outputs)}
+            for n in graph.nodes],
+    }
+
+
 async def _h_queue(ctx):
     gw = ctx.gw
     return 200, {
@@ -1300,6 +1342,11 @@ ROUTES: tuple = (
           summary="Submit: {flow:name} or {model:id,...} — explicit, "
                   "4xx BEFORE registration (QUEUE LANE LAW)",
           body="strict", handler=_h_flows_start),
+    Route(method="POST", path="/v1/flows/validate", group="Queue & runs",
+          summary="Compile an inline flow body ({flow_inline shape}) — "
+                  "verbatim refusals, no queue slot, no GPU, no "
+                  "sidecar (the AI feedback loop)",
+          body="strict", handler=_h_flows_validate),
     Route(method="GET", path="/v1/queue", group="Queue & runs",
           summary="Queue snapshot (queued/running/active)", handler=_h_queue),
     Route(method="GET", path=r"^/v1/flows/status/(.+)$", regex=True,

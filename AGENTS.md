@@ -39,8 +39,15 @@
   refuses an image→text wire AT CONSTRUCTION, no GPU cycle
   needed, design record docs/queue/flow-typed-edges.md; the yaml text door +
   its parser retired 2026-09-04, design record docs/queue/flows.md) —
+  or `{flow_inline:{...}}`, the SAME rows as JSON
+  (py/flow.py `flow_from_body`; agent-constructed multi-step flows
+  compiled by the identical validators — `POST /v1/flows/validate`
+  returns verbatim compile refusals so the AI iterates without a
+  queue slot, a GPU claim, or a sidecar) —
   or `{model}` for card-only models (the plugin compose hook builds
-  the graph). The `{pipeline:{steps}}` door named here earlier never
+  the graph). Naming more than one door is an ambiguous request and
+  refuses BEFORE registration. The `{pipeline:{steps}}` door named
+  here earlier never
   existed in code; the law text now matches the resolver.
 - Plugins (e.g. comfyui server_url) must not carry a hardcoded default
   endpoint. Missing required params fail the node LOUDLY at load.

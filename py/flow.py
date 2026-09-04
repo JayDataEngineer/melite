@@ -32,7 +32,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import (BaseModel, ConfigDict, Field, ValidationError,
+                      model_validator)
 
 REPO = Path(__file__).resolve().parents[1]
 FLOWS_ROOT = REPO / "flows"
@@ -392,3 +393,128 @@ def scan_flow_ids() -> list[str]:
     return sorted(
         d.name for d in FLOWS_ROOT.iterdir()
         if d.is_dir() and (d / "flow.py").is_file())
+
+
+# ── the AI compose surface (typed-edges design record) ──────────────
+#
+# The same rows a flows/<id>/flow.py module declares, expressed as
+# JSON, so an agent can CONSTRUCT and COMPILE multi-step flows at a
+# validate door — iterating on refusals "without burning a single
+# queue slot, without claiming the GPU, without producing a sidecar."
+# Zero-tolerance (2026-09-04): unknown keys refuse, kind typos
+# refuse, ambiguous edges refuse — nothing drops silently.
+
+_INLINE_TOP_KEYS = {"id", "description", "stages"}
+
+
+def _inline_kind(where: str, value: object) -> Kind:
+    if not isinstance(value, str):
+        raise FlowError("%s: kind %r is not a string" % (where, value))
+    try:
+        return Kind(value)
+    except ValueError:
+        raise FlowError(
+            "%s: %r is not a Kind — the closed vocabulary is %s"
+            % (where, value, [k.value for k in Kind])) from None
+
+
+def _inline_edge(where: str, value: object) -> Edge:
+    if not isinstance(value, dict):
+        raise FlowError(
+            "%s: edge %r is not an object — use {\"initial\": key} "
+            "or {\"stage\": id, \"output\": name}" % (where, value))
+    if set(value) == {"initial"}:
+        return FromInitial(key=str(value["initial"]))
+    if set(value) == {"stage", "output"}:
+        return FromStage(
+            stage=str(value["stage"]), output=str(value["output"]))
+    raise FlowError(
+        "%s: edge keys %s are not an edge shape — exactly "
+        "{\"initial\": key} or {\"stage\": id, \"output\": name}"
+        % (where, sorted(value)))
+
+
+def flow_from_body(body: object) -> Flow:
+    """A JSON body -> a fully validated Flow (the AI compose surface).
+
+    Shape:
+        {"id": "...", "description": "...", "stages": [{
+            "id": "...", "engine": "...", "description": "...",
+            "params": {...},
+            "inputs":  {"name": {"initial": "key"}
+                                 | {"stage": "id", "output": "name"}},
+            "outputs": {"name": "<Kind>"},   # omit for engine default
+            "expected": {"name": "<Kind>"}   # what each input expects
+        }]}
+
+    Every refusal is a FlowError naming flow/stage/input and both
+    Kinds — the compile-time feedback the AI iterates on. Engines are
+    validated through the plugin bus HERE (validate_engines runs
+    inside), so the caller gets a loadable flow or a loud refusal.
+    """
+    if not isinstance(body, dict):
+        raise FlowError("flow body must be a JSON object")
+    dead = sorted(set(body) - _INLINE_TOP_KEYS)
+    if dead:
+        raise FlowError(
+            "flow body carries unknown keys %s — allowed: %s"
+            % (dead, sorted(_INLINE_TOP_KEYS)))
+    if "id" not in body or "stages" not in body:
+        raise FlowError(
+            "flow body needs at least id and stages — got keys %s"
+            % sorted(body))
+    stages_in = body["stages"]
+    if not isinstance(stages_in, list) or not stages_in:
+        raise FlowError("flow stages must be a non-empty list")
+    rows = []
+    for i, st in enumerate(stages_in):
+        where = "stage[%d]" % i
+        if not isinstance(st, dict):
+            raise FlowError("%s: %r is not an object" % (where, st))
+        try:
+            inputs = {
+                name: _inline_edge(
+                    "%s input %r" % (where, name), edge)
+                for name, edge in (st.get("inputs") or {}).items()}
+            outputs = {
+                name: _inline_kind(
+                    "%s output %r" % (where, name), kind)
+                for name, kind in (st.get("outputs") or {}).items()}
+            expected = {
+                name: _inline_kind(
+                    "%s expected %r" % (where, name), kind)
+                for name, kind in (st.get("expected") or {}).items()}
+            rows.append(Stage(
+                id=str(st.get("id", "")),
+                engine=str(st.get("engine", "")),
+                description=str(st.get("description", "")),
+                params=dict(st.get("params") or {}),
+                inputs=inputs, outputs=outputs, expected=expected))
+        except FlowError as e:
+            raise e
+        except Exception as e:
+            # pydantic field refusals (extra keys, empty ids) arrive
+            # here — surfaced as FlowError so the door speaks one
+            # error language
+            raise FlowError("%s refuses: %s" % (where, e)) from e
+    try:
+        fl = Flow(id=str(body["id"]),
+                  description=str(body.get("description", "")),
+                  stages=tuple(rows))
+    except FlowError as e:
+        raise FlowError(str(e)) from e
+    except ValidationError as e:
+        # pydantic wraps the row validators' FlowErrors — dig the
+        # compile message out so the AI loop reads the REAL refusal
+        # (flow/stage/input + both kinds), not the wrapper envelope
+        inner = None
+        for err in e.errors():
+            cand = err.get("ctx", {}).get("error")
+            if isinstance(cand, (FlowError, ValueError)):
+                inner = str(cand)
+                break
+        raise FlowError(inner or str(e)) from e
+    except Exception as e:
+        raise FlowError("flow %r refuses at construction: %s"
+                        % (body.get("id"), e)) from e
+    return validate_engines(fl)
