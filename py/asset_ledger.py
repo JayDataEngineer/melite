@@ -69,7 +69,7 @@ _SHA256 = "^[0-9a-f]{64}$"
 
 class AssetRow(BaseModel):
     """One delivered file — all-or-nothing facts, frozen at construction."""
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     name: str = Field(min_length=1)
     run_id: str = Field(min_length=1)
@@ -81,7 +81,7 @@ class AssetRow(BaseModel):
 
 class RunIndex(BaseModel):
     """One run's delivery snapshot (frozen tuple of rows)."""
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     run_id: str = Field(min_length=1)
     name: str = ""

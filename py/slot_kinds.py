@@ -55,6 +55,8 @@ class FileKind(str, Enum):
 
 
 class SlotDecl(BaseModel, frozen=True):
+    model_config = {"extra": "forbid"}
+
     """One wire slot row: a canonical slot key and its file kind."""
 
     slot: str
@@ -70,6 +72,8 @@ class SlotDecl(BaseModel, frozen=True):
 
 
 class SlotVocabulary(BaseModel, frozen=True):
+    model_config = {"extra": "forbid"}
+
     """The declared vocabulary. Cross-row invariants are enforced AT
     CONSTRUCTION of the instance — an invalid vocabulary cannot be
     built, loud here, not at the first 4am render."""

@@ -41,12 +41,14 @@ class ModelError(Exception):
     """Loud refusal before the wire (the QUEUE LANE LAW shape)."""
 
 
-# The closed genre vocabulary. 'motion' joined 2026-09-04 (cluster C
-# stopgap): the estate already speaks it everywhere else — the action
-# cards tree (action_cards/motion/), the models tree (models/motion/),
-# the sidebar taxonomy (web/formats sidebarGenres) — this enum was the
-# stale edge. Closed vocabularies extend when a real tier lands.
-_GENRE_VALUES = frozenset(("image", "video", "audio", "3d", "motion", "creature", ""))
+# THE ONE genre vocabulary — one set of values, everywhere:
+#   model.py genre=, plugin.py genres=, card.ts CardGenre,
+#   sidebarGenres.ts, CARD_GENRES, models/<genre>/ + action_cards/<genre>/
+#   directory names. No aliases, no fallbacks.
+#   'text' is the returning LLM lane (sidebar renders it today).
+#   'creature' was folded into '3d' (2026-09-04) — anycreature boards the
+#   3d lane. 'ai_generated' is a TAG, not a genre.
+_GENRE_VALUES = frozenset(("image", "video", "audio", "3d", "motion", "other", "text", ""))
 
 class LaneInputs(BaseModel, frozen=True):
     '''Weight facts a card renderer reads (MODELS DON'T RENDER — cards
@@ -202,13 +204,21 @@ class DestRoot(str, Enum):
 # ── pydantic row schemas — the SERVED/emitted shapes ─────────────────
 
 
-class SourceRow(BaseModel):
+class SourceRow(BaseModel, frozen=True):
+    model_config = {"extra": "forbid"}
+
     type: str = ""
     repo_id: str | None = None
     filename: str | None = None
+    # provenance note (e.g. "our own pack (vendor/…)"): declared
+    # 2026-09-04 when the dead-rider wall caught anny/model.py passing
+    # it into the silent drop — the data was wanted, the row was short
+    note: str = ""
 
 
-class LoraRow(BaseModel):
+class LoraRow(BaseModel, frozen=True):
+    model_config = {"extra": "forbid"}
+
     """A lora catalog row. `source_url` is REQUIRED — the upstream
     download (resolve/ form, HEAD-verifiable), same honesty as a
     CellArtifact. The `user_provided=True` era (rows with no link,
@@ -222,7 +232,9 @@ class LoraRow(BaseModel):
     default_strength: float = Field(default=1.0, ge=0.0, le=2.0)
 
 
-class CellArtifact(BaseModel):
+class CellArtifact(BaseModel, frozen=True):
+    model_config = {"extra": "forbid"}
+
     """A matrix cell's downloadable body."""
     source_url: HttpUrl
     size_bytes: int = Field(gt=0)
@@ -240,7 +252,7 @@ class CellArtifact(BaseModel):
         return v
 
 
-class ModelRow(BaseModel):
+class ModelRow(BaseModel, frozen=True):
     """The catalog's served model row (catalog._model_row shape)."""
     model_config = {"extra": "forbid"}
 
@@ -681,6 +693,19 @@ def load_model_py(path, engine="engine"):
     modname = "plugin_models.%s.%s" % (engine, _os.path.basename(model_dir))
     if modname in _sys.modules:
         mod = _sys.modules[modname]
+        # The cache key is engine+id (genre-blind) — a cache hit from a
+        # DIFFERENT path means two declarations claim one modname. That
+        # is a lie, not a reuse: refuse loudly (the music-card path bug
+        # rode this silence for days — the cache answered for a path the
+        # caller never loaded).
+        cached_file = _os.path.normpath(
+            getattr(mod, "__file__", "") or "")
+        if cached_file != _os.path.normpath(path):
+            raise ModelError(
+                "plugin_models modname %r is cached from %r — refusing "
+                "to alias it to %r (two paths, one cache key: the genre "
+                "segment belongs in one of them)" % (
+                    modname, cached_file, path))
     else:
         spec = importlib.util.spec_from_file_location(modname, path)
         mod = importlib.util.module_from_spec(spec)

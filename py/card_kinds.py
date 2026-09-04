@@ -36,6 +36,8 @@ class BadgeTone(str, Enum):
 
 
 class CardKindRow(BaseModel, frozen=True):
+    model_config = {"extra": "forbid"}
+
     """One card-kind behavior flag row. Every flag explicit — no implicit
     truths (the original kinds-lane law); the flags are the editor's
     render/run contract for the kind string:
@@ -58,6 +60,8 @@ class CardKindRow(BaseModel, frozen=True):
 
 
 class CardKindTable(BaseModel, frozen=True):
+    model_config = {"extra": "forbid"}
+
     """The declared vocabulary. Cross-row invariants are enforced AT
     CONSTRUCTION — a duplicate kind string (the wire's within-wire
     duplicate guard) cannot be built, loud here, not on the editor's

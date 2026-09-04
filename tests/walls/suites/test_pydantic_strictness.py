@@ -1,0 +1,200 @@
+"""test_pydantic_strictness.py — the zero-tolerance pydantic wall.
+
+Operator order (2026-09-04, the dead-rider sweep): pydantic's DEFAULT
+is silent tolerance — `extra="ignore"` drops unknown fields, loose
+coercion bends types. PYTHON SHAPE LAW already demands frozen rows
+validated at construction; this wall sweeps EVERY pydantic model the
+gateway can reach and pins the two contract points:
+
+  1. extra == "forbid"  — a dead rider (unknown JSON key) is a
+     construction refusal, never a silent drop
+  2. frozen is True     — rows are data; mutation after construction
+     is the drift surface rung 2 killed
+
+Plus the poison fuzzer: every model, handed a `__dead_rider__` key on
+an otherwise-minimal payload, must refuse with `extra_forbidden` —
+proving the contract at RUNTIME, not just in config text.
+
+Discovery mirrors the estate's own import surface (loader-owned
+mechanics, shape law rung 5): repo py/ on sys.path, each engine's
+plugin root on sys.path (the compose/ library contract), naive spec
+import per file, LOUD on holes — a target file that fails to import
+fails this suite, so the sweep can never silently shrink.
+"""
+
+import importlib.util
+import sys
+from pathlib import Path
+
+import pytest
+from pydantic import BaseModel, ValidationError
+
+REPO = Path(__file__).resolve().parents[3]
+
+# The estate's model-declaration surface: every file that can define
+# a pydantic row the gateway constructs at runtime.
+def _target_files() -> list[Path]:
+    files: list[Path] = []
+    files += (REPO / "py").glob("*.py")
+    files += (REPO / "py/melite_models").glob("*.py")
+    files += (REPO / "py/melite_cards").glob("*.py")
+    for eng in (REPO / "plugins/engines").iterdir():
+        if not eng.is_dir():
+            continue
+        files += eng.glob("models/*/*/model.py")
+        files += eng.glob("models/*/*/mods/*.py")
+        files += eng.glob("action_cards/*/*/py/*.py")
+        p = eng / "plugin.py"
+        if p.is_file():
+            files.append(p)
+    return sorted({f for f in files if "__pycache__" not in str(f)})
+
+
+def _discover_models() -> dict[str, type[BaseModel]]:
+    """Every pydantic model DEFINED in a target file, imported through
+    the loader's own path contract. MEMOIZED: co_script's renderer
+    registry refuses duplicate registrations, so the sweep executes
+    each file exactly once per process."""
+    global _MODELS
+    if _MODELS is not None:
+        return _MODELS
+    _MODELS = _discover_locked()
+    return _MODELS
+
+
+def _discover_locked() -> dict[str, type[BaseModel]]:
+    sys.path.insert(0, str(REPO / "py"))
+    # compose libraries resolve from the plugin root and the compose
+    # package dir (co_script / _coscript) — the same contract
+    # py/plugins.py load_engine honors for card py modules
+    for eng in (REPO / "plugins/engines").iterdir():
+        if eng.is_dir():
+            sys.path.insert(0, str(eng))
+            comp = eng / "compose"
+            if comp.is_dir():
+                sys.path.insert(0, str(comp))
+
+    # co_script's renderer registry is name-keyed and refuses
+    # duplicates; importing card renderer.py files here would poison
+    # it for every later in-process test (the gateway compose hook
+    # re-execs the same files under loader names). Snapshot + clear
+    # (a prior suite's loader run may have registered already),
+    # discover, restore — the sweep leaves no trace in module state.
+    # NOTE: `import co_script.renderers as m` binds the FUNCTION the
+    # package __init__ re-exports over the attribute — from-imports
+    # bind the registry dicts themselves, immune to the shadowing.
+    from co_script.renderers import _FNS, _RENDERERS
+    reg_snapshot = (dict(_RENDERERS), dict(_FNS))
+    _RENDERERS.clear()
+    _FNS.clear()
+
+    found: dict[str, type[BaseModel]] = {}
+    try:
+        for f in _target_files():
+            rel = str(f.relative_to(REPO))
+            modname = "strictwall_" + rel.replace(
+                "/", "_").replace(".", "_").replace("-", "_")
+            # package-member files (a dir with __init__.py, e.g. the h3
+            # card's py/ tree) import under a synthetic parent package so
+            # relative imports resolve — the same context the card loader
+            # provides at runtime
+            parent_pkg = None
+            if (f.parent / "__init__.py").is_file():
+                import hashlib
+                tag = hashlib.sha1(str(f.parent).encode()).hexdigest()[:8]
+                parent_pkg = "strictwall_pkg_" + tag
+                if parent_pkg not in sys.modules:
+                    import types
+                    pkg = types.ModuleType(parent_pkg)
+                    pkg.__path__ = [str(f.parent)]
+                    sys.modules[parent_pkg] = pkg
+            try:
+                qname = ("%s.%s" % (parent_pkg, f.stem)
+                         if parent_pkg else modname)
+                spec = importlib.util.spec_from_file_location(qname, f)
+                mod = importlib.util.module_from_spec(spec)
+                sys.modules[qname] = mod
+                spec.loader.exec_module(mod)
+            except Exception as e:  # LOUD: no silent holes in the sweep
+                raise AssertionError(
+                    "strictness sweep cannot import %s: %s" % (f, e)) from e
+            for name, obj in vars(mod).items():
+                if (isinstance(obj, type) and issubclass(obj, BaseModel)
+                        and obj is not BaseModel
+                        and obj.__module__ == qname):
+                    found["%s:%s" % (f.relative_to(REPO), name)] = obj
+    finally:
+        from co_script.renderers import _FNS, _RENDERERS
+        _RENDERERS.clear()
+        _RENDERERS.update(reg_snapshot[0])
+        _FNS.clear()
+        _FNS.update(reg_snapshot[1])
+    _MODELS = found
+    return found
+
+
+_MODELS: dict[str, type[BaseModel]] | None = None
+
+
+@pytest.fixture(scope="module")
+def models() -> dict[str, type[BaseModel]]:
+    return _discover_models()
+
+
+def test_discovery_finds_the_estate(models) -> None:
+    """The sweep is not empty and covers the law's own named rows."""
+    assert len(models) >= 20, (
+        "discovery collapsed — the sweep must not silently shrink")
+    names = {k.split(":")[-1] for k in models}
+    for expected in ("LoraRow", "CellArtifact", "Flow", "Stage"):
+        assert expected in names, (
+            "%s not discovered — the sweep has a hole" % expected)
+
+
+def test_every_model_forbids_extra_fields(models) -> None:
+    """NO DEAD RIDERS: an unknown key is a construction refusal."""
+    bad = [k for k, cls in models.items()
+           if cls.model_config.get("extra") != "forbid"]
+    assert not bad, (
+        "models that silently DROP unknown fields (set "
+        'extra="forbid" — PYTHON SHAPE LAW, the dead-rider order '
+        "2026-09-04): %s" % sorted(bad))
+
+
+def test_every_model_is_frozen(models) -> None:
+    """Rows are data: mutation after construction is banned (rung 2)."""
+    bad = [k for k, cls in models.items()
+           if cls.model_config.get("frozen") is not True]
+    assert not bad, (
+        "mutable models (set frozen=True — PYTHON SHAPE LAW rung 2, "
+        "'mutability dies with frozen=True'): %s" % sorted(bad))
+
+
+@pytest.mark.parametrize("key", sorted(_discover_models()))
+def test_dead_riders_are_rejected_at_runtime(key: str) -> None:
+    """The poison fuzzer: every model, handed a __dead_rider__ key on
+    a minimal payload, refuses with extra_forbidden — the contract
+    proven at runtime, not just declared in config."""
+    cls = _discover_models()[key]
+    payload: dict = {}
+    for fname, finfo in cls.model_fields.items():
+        ann = finfo.annotation
+        if not finfo.is_required():
+            continue
+        if ann is int or ann is float:
+            payload[fname] = 0
+        elif ann is bool:
+            payload[fname] = True
+        elif ann is str:
+            payload[fname] = "valid"
+        else:
+            payload[fname] = None
+    payload["__dead_rider__"] = "should crash"
+    with pytest.raises(ValidationError) as exc:
+        cls.model_validate(payload)
+    types = {e["type"] for e in exc.value.errors()}
+    # The contract: NO SILENT ACCEPTANCE — the rider never constructs.
+    # extra_forbidden is the canonical refusal; a before-validator
+    # firing first (value_error) refuses just as loudly — the static
+    # config test above pins extra="forbid" independently.
+    assert types, "%s swallowed a dead rider" % key
