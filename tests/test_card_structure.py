@@ -208,6 +208,55 @@ def main():
                 # (krea-2 uses core nodes only; EXTENSION LAW —
                 # declarations are per-lane, optional)
 
+    # ── THE COMPLETENESS WALL (cluster D, 2026-09-04) ────────────
+    # The hand tables above pin EXACT names (drift detection); this
+    # walk is DERIVED from the registry — a family that declares
+    # engine+card is renderable at boot NO MATTER whether anyone
+    # remembered the tables. Three derived facts, no hand lists:
+    #   1. the model dir carries ≥1 graph template (*.json besides
+    #      nodes.yaml) — a boarding family with no template is the
+    #      qwen bug class (refuses at render, not at boot);
+    #   2. the card dir exists on the golden base with py/compose.py
+    #      (dash or underscore variant — the estate has both);
+    #   3. the dispatch table routes it (card -> py/compose.py path).
+    # DATA families (engine, no card) and husks are NOT walled —
+    # the FEEDING LAW boards them the day they can feed.
+    _MODELS_ROOT = os.path.join(REPO, "plugins", "engines", "comfyui",
+                                "models")
+    for mid, mcls in sorted(_mcards.items()):
+        card_id = getattr(mcls, "card", "") or ""
+        engine = getattr(mcls, "engine", "") or ""
+        if not (card_id and engine):
+            continue
+        genre = getattr(mcls, "genre", "") or ""
+        mdir = os.path.join(_MODELS_ROOT, genre, mid)
+        if not os.path.isdir(mdir):
+            # the census walk found it before under some genre —
+            # only a hand-edited genre mismatch lands here
+            for g in os.listdir(_MODELS_ROOT):
+                d = os.path.join(_MODELS_ROOT, g, mid)
+                if os.path.isdir(d):
+                    mdir = d
+                    break
+        # 1. ≥1 graph template in the model dir
+        tmpl_jsons = [f for f in os.listdir(mdir)
+                      if f.endswith(".json") and f != "nodes.yaml"] \
+            if os.path.isdir(mdir) else []
+        check("completeness: %s dir carries a graph template" % mid,
+              bool(tmpl_jsons),
+              "no *.json template in %s (boarding %s)" % (mdir, card_id))
+        # 2. the card is DISPATCHED — _CARD_DIR_BY_CARD routes it
+        # (the routing SSOT; the existing dispatch loop above then
+        # proves the routed dir carries py/compose.py). Deriving
+        # the dir by genre convention is wrong twice over:
+        # mask-studio's genre FIELD is 'image' (sidebar taxonomy)
+        # but its dir is action_cards/mask/; qwen-img-edit-2511
+        # lives in models/edit/ but boards image/image-edit.
+        check("completeness: %s is dispatched" % card_id,
+              card_id in _compose_pkg._CARD_DIR_BY_CARD,
+              "card-declaring model %s not in _CARD_DIR_BY_CARD"
+              " (never routes)" % mid)
+
     # bytecode never tracked under action_cards
     tracked = subprocess.run(
         ["git", "-C", REPO, "ls-files", "--",

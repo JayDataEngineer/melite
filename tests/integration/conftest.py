@@ -142,10 +142,13 @@ def assets():
     d = Path(__file__).parent / "assets"
     src = d / "source.png"
     assert src.is_file(), "missing feed asset: %s" % src
-    # the motion canary's character body: a SOMAX-77 rig (skin
-    # SOMA-Mixamo, 77 joints — the somax bake's hard contract).
-    # Sourced from the estate's soma output (bary_little_girl);
-    # smallest verified rig on the volumes.
-    rig = d / "rigged_char.glb"
+    # the motion canary's character body: the CANONICAL SOMAX-77 rig
+    # (skin SOMA-Mixamo, 77 joints, translation-only node chain at
+    # SOMA's own offsets, template mesh + LBS weights from kimodo's
+    # somaskel77/skin_standard.npz). The somax bake's FK gate holds
+    # ONLY on canonical offsets — a rig with its own bind pose
+    # (e.g. the barycentric bary_little_girl) deviates ~43cm and
+    # the gate refuses (caught live 2026-09-04: the gate is honest).
+    rig = d / "rigged_char_canonical.glb"
     return {"source": str(src),
             "rigged_glb": str(rig) if rig.is_file() else ""}
