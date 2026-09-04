@@ -37,6 +37,12 @@ What each probe proves:
 """
 
 import json
+
+import pytest
+# GPU-money gate (2026-09-04): pytest collects this suite now that
+# the walls suites are native; the marker keeps it OUT of the fast
+# runner (addopts "-m not gpu") — opt in with: pytest -m gpu
+pytestmark = pytest.mark.gpu
 import os
 import sys
 import time
@@ -282,40 +288,38 @@ class TestGpuCppCards(unittest.TestCase):
                             "unexpected refusal: %r" % err[:200])
 
     def test_05_engine_transition_forge_to_remesh(self):
-        """A 2-stage yaml: the creature GLB wires node-to-node
-        ($forge.glb) across the anycreature→autoremesher boundary,
-        converts at the card's door, and BOTH stages produce REAL
-        artifacts (GLB + remeshed OBJ). The full unloads story:
-        subprocess engines exit between stages; the boundary never
-        crashes the run."""
-        lane = os.path.join(REPO, "pipelines",
+        """A 2-stage FLOW (2026-09-04 flows rework: the lane is now a
+        Python declaration, not a runtime yaml): the creature GLB
+        wires node-to-node ($forge.glb) across the anycreature->
+        autoremesher boundary via a STRUCTURAL edge (FromStage), and
+        BOTH stages produce REAL artifacts (GLB + remeshed OBJ). The
+        full unloads story: subprocess engines exit between stages;
+        the boundary never crashes the run."""
+        lane = os.path.join(REPO, "flows",
                             "gpu-test-cpp-transition")
         os.makedirs(lane, exist_ok=True)
+        flow_py = os.path.join(lane, "flow.py")
+        with open(flow_py, "w", encoding="utf-8") as f:
+            f.write(
+                "from flow import Flow, Stage, FromStage\n\n"
+                "FLOW = Flow(\n"
+                "    id='gpu-test-cpp-transition',\n"
+                "    description='Live GPU-suite lane: forge a creature, "
+                "hand the GLB to quad-remesh across the engine boundary.',\n"
+                "    stages=(\n"
+                "        Stage(id='forge', engine='anycreature',\n"
+                "              description='compile the minimal creature',\n"
+                "              params=" + repr({"workflow": MINI_SPEC}) + "),\n"
+                "        Stage(id='remesh', engine='autoremesher',\n"
+                "              description='quad-remesh the creature GLB',\n"
+                "              inputs={'glb': FromStage(stage='forge', output='glb')},\n"
+                "              params=" + repr({"workflow": {"input": "$forge.glb"},
+                                   "target_quads": 2000}) + "),\n"
+                "    ),\n"
+                ")\n")
         try:
-            with open(os.path.join(lane, "pipeline.yaml"), "w",
-                      encoding="utf-8") as f:
-                f.write(
-                    "name: gpu-test-cpp-transition\n"
-                    "api: true\n"
-                    "description: >-\n"
-                    "  Live GPU-suite lane: forge a creature, hand the "
-                    "GLB to quad-remesh across the engine boundary.\n"
-                    "nodes:\n")
-                f.write(
-                    "  - id: forge\n"
-                    "    type: anycreature\n"
-                    "    description: compile the minimal creature\n"
-                    "    params: " + json.dumps(
-                        {"workflow": MINI_SPEC}) + "\n"
-                    "  - id: remesh\n"
-                    "    type: autoremesher\n"
-                    "    description: quad-remesh the creature GLB\n"
-                    "    input_from: [forge.glb]\n"
-                    "    params: " + json.dumps(
-                        {"workflow": {"input": "$forge.glb"},
-                         "target_quads": 2000}) + "\n")
             d = _req("POST", "/v1/pipelines/start",
-                     {"yaml": "gpu-test-cpp-transition"})
+                     {"flow": "gpu-test-cpp-transition"})
             run_id = d["run_id"]
             final = _wait(run_id, deadline_s=600)
             sc = _sidecar(run_id)

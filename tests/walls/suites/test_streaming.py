@@ -151,7 +151,7 @@ async def fake_engine_execute(node, run_dir, inputs, stop_event,
         # in the stage dict the 700ms poll would serve — captured here,
         # because the terminal flip (correctly) clears it.
         MIDFLIGHT.update(_the_run.stages[0])
-    REPORTS.append(node["id"])
+    REPORTS.append(node.node_id)
     return {"outputs": {}, "artifacts": []}
 
 
@@ -168,8 +168,14 @@ class FakeRun:
         self.stop_event = asyncio.Event()
         self.stages = [{"id": "s0", "name": "gen", "index": 0,
                         "status": "running"}]
-        self.graph = {"nodes": [{"id": "n0", "type": "fake",
-                                 "params": {}}]}
+        # the typed graph contract (py/pipeline_graph.py): execute()
+        # reads run.graph.nodes — a raw dict stopped working the day
+        # PipelineGraph landed (2026-09-04 repair, flows rework round)
+        import pipeline_graph
+        self.graph = pipeline_graph.PipelineGraph(
+            name="fake",
+            nodes=(pipeline_graph.NodeRow(
+                node_id="n0", node_type="fake", params={}),))
         self.artifacts = []
         self.error = None
         self.dir = Path(tempfile.mkdtemp())

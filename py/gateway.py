@@ -65,7 +65,6 @@ OUT_ROOT = STATE_ROOT / "output"
 # somehow lands in OUT_ROOT stays hidden because its sidecar test
 # flag still excludes it.)
 TEST_OUT_ROOT = STATE_ROOT / "test-output"
-PIPELINES = REPO / "pipelines"
 
 IDENT_RE = re.compile(r"^[a-z_][a-z0-9_-]*$")
 
@@ -74,174 +73,37 @@ class ValidationError(Exception):
     """Loud 4xx before any run is registered (QUEUE LANE LAW)."""
 
 
-def parse_params_scalar(line_value):
-    """params is a ONE-LINE JSON scalar (mirrors parse_kv: remainder of line)."""
-    line_value = line_value.strip()
-    if not line_value:
-        return {}
-    try:
-        val = json.loads(line_value)
-    except json.JSONDecodeError as e:
-        raise ValidationError("node params is not valid JSON: %s" % e)
-    if not isinstance(val, dict):
-        raise ValidationError("node params must be a JSON object")
-    return val
-
-
-def parse_pipeline_text(text):
-    """Parse the pipeline mini-YAML the estate uses (nodes/input_from/params).
-
-    A constrained YAML subset — the dialect the estate's AUTHORED
-    pipeline files speak (inherited from the C dag parser at C
-    retirement, 2026-09-03; the parity goldens pin it). This is the
-    DISK rim's parser: it reads pipeline.yaml files callers author —
-    composed output NEVER passes through text (compose arms hand the
-    gateway graph DICTs; python hands python structures, PYTHON SHAPE
-    rung 5). There is no other gateway.
-    """
-    nodes = []
-    meta = {}
-    current = None
-    in_params = False
-    pending_list = None
-    pending_map = None
-    for lineno, raw in enumerate(text.splitlines(), 1):
-        line = raw.rstrip()
-        if not line.strip() or line.strip().startswith("#"):
-            continue
-        if not line.startswith((" ", "\t")):
-            current = None
-            in_params = False
-            top = line.rstrip(":").strip()
-            if top == "nodes":
-                continue
-            if ":" in line:
-                k, _, v = line.partition(":")
-                meta[k.strip()] = v.strip()
-            continue
-        stripped = line.strip()
-        if current is not None and stripped.startswith("- ") and pending_list:
-            item = stripped[2:].strip()
-            current[pending_list].append(item)
-            continue
-        if stripped.startswith("- id:") or stripped.startswith("-id:"):
-            pending_list = None
-            pending_map = None
-            current = {"id": stripped.split(":", 1)[1].strip(), "type": "", "input_from": [], "params": {}}
-            nodes.append(current)
-            in_params = False
-            continue
-        if current is None:
-            if ":" in stripped:
-                k, _, v = stripped.partition(":")
-                meta[k.strip()] = v.strip().strip('"').strip("'")
-            continue
-        key, _, rest = stripped.partition(":")
-        key = key.strip()
-        # a recognized key line ENDS any pending bullet list (else the
-        # next node's "- id:" gets swallowed as a list item)
-        if key in ("id", "type", "model", "description", "input_from", "params", "plugin", "optional"):
-            pending_list = None
-        if key == "params":
-            inline = rest.strip()
-            if inline:
-                current["params"] = parse_params_scalar(inline)
-            else:
-                current["params"] = {}
-                pending_map = "params"
-            in_params = True
-            continue
-        NODE_KEYS = ("id", "type", "model", "description", "input_from", "params", "plugin", "optional")
-        if pending_map == "params" and current is not None and not stripped.startswith("- ") and key not in NODE_KEYS and ":" in stripped:
-            pk, _, pv = stripped.partition(":")
-            if pk and pv.strip() and ":" in stripped:
-                try:
-                    current["params"][pk.strip()] = json.loads(pv.strip())
-                except json.JSONDecodeError:
-                    current["params"][pk.strip()] = pv.strip().strip('"').strip("'")
-                continue
-        if key in ("id", "type", "model", "description"):
-            current[key] = rest.strip()
-            in_params = False
-            continue
-        if key == "input_from":
-            inline = rest.strip()
-            if inline:
-                refs = [r.strip() for r in inline.strip("[]").split(",") if r.strip()]
-                current["input_from"] = refs
-                pending_list = None
-            else:
-                pending_list = "input_from"
-            in_params = False
-            continue
-        if pending_list and key not in ("",):
-            pending_list = None
-        if in_params:
-            raise ValidationError(
-                "line %d: params must be a one-line JSON value (got continuation %r)" % (lineno, stripped)
-            )
-    seen = set()
-    for n in nodes:
-        if not IDENT_RE.match(n["id"]):
-            raise ValidationError("node id %r is not a legal identifier" % n["id"])
-        if not n.get("type"):
-            raise ValidationError("node %r has no type" % n["id"])
-        if n["id"] in seen:
-            raise ValidationError("duplicate node id %r" % n["id"])
-        seen.add(n["id"])
-    if not nodes:
-        raise ValidationError(
-            "authored pipeline has no nodes (steps:-shaped flow docs "
-            "are editor documents, not queue pipelines)")
-    import pipeline_graph
-    return pipeline_graph.PipelineGraph.model_validate({
-        "name": meta.get("name") or "",
-        "type": meta.get("type") or "",
-        "description": meta.get("description") or "",
-        "nodes": nodes,
-    })
-
-
 def resolve_request(body):
-    """Resolve the start request to a pipeline graph — loudly."""
+    """Resolve the start request to a pipeline graph — loudly.
+
+    TWO doors (QUEUE LANE LAW, 2026-09-04 flows rework — the yaml
+    text door + its parser are retired; design record docs/queue/
+    flows.md):
+      {flow: name}  -> flows/<name>/flow.py declares FLOW = Flow(...)
+                      (py/flow.py: frozen rows, validation AT
+                      construction, edges structural; loaded on
+                      demand, engines validated through the plugin
+                      bus — a bad flow refuses HERE, never on the GPU)
+      {model: mid}  -> card-only models: the OWNING plugin's compose
+                      hook builds the graph (phase 1 here, phase 2 at
+                      registration). Cards are the queue-native
+                       interface (INFERENCE LAW).
+    """
     if not isinstance(body, dict):
         raise ValidationError("request body must be a JSON object")
-    if "yaml" in body:
-        name = str(body["yaml"])
-        if not IDENT_RE.match(name):
-            raise ValidationError("yaml pipeline name %r is not a legal identifier" % name)
-        path = PIPELINES / name / "pipeline.yaml"
-        if not path.is_file():
-            raise ValidationError("no pipeline yaml at pipelines/%s/pipeline.yaml" % name)
-        text = path.read_text()
-        graph0 = parse_pipeline_text(text)
-        types0 = [n.node_type for n in graph0.nodes]
-        if card_hooks is not None:
-            # PLUGIN ARCHITECTURE LAW: card semantics live in the plugin
-            # hooks, not here. Phase 1 (dry run) validates + extra inputs;
-            # dispatch by engine type, exactly like the C server. The
-            # hook hands back a graph DICT (or the caller's own object
-            # when it emits none) — never text.
-            try:
-                graph1, extra = card_hooks.compose(
-                    body, name, "", graph0, types0)
-            except Exception as e:
-                raise ValidationError("card_compose phase 1: %s" % e)
-            body = dict(body, **extra)
-            # extra inputs merge into the request, not the graph
-            if graph1 is not None and graph1 is not graph0:
-                return graph1
-        return graph0
+    if "flow" in body:
+        import flow as flow_mod
+        try:
+            return flow_mod.load_flow(str(body["flow"])).to_graph()
+        except flow_mod.FlowError as e:
+            raise ValidationError(str(e))
     if "model" in body:
         mid = str(body["model"])
-        path = PIPELINES / mid / "pipeline.yaml"
-        if path.is_file():
-            return parse_pipeline_text(path.read_text())
         # card-only model: the plugin hook composes the graph (phase 2)
         skeleton, etype, extra = resolve_card_model(body, mid)
         return {"__card__": True, "skeleton": skeleton,
                 "etype": etype, "extra": extra, "name": mid}
-    raise ValidationError("no pipeline selected: provide yaml or model")
+    raise ValidationError("no pipeline selected: provide flow or model")
 
 
 # (_find_model_yaml/_engine_type_of retired 2026-09-02: the nondeterministic
@@ -750,6 +612,23 @@ class Gateway:
                         carry[k] = v
                         carry["%s.%s" % (node.node_id, k)] = v
                     run.artifacts.extend(result.get("artifacts", []))
+                    # WIRE EXTRAS (RunStageWire's open keys — live bug
+                    # 2026-09-04: the py gateway served only the strict
+                    # core {id,name,index,status}, so the editor's
+                    # collectStageUrls(status.stages) got [] and the
+                    # finished card rendered NO artifact. Stamp this
+                    # stage's own engine artifacts as url (primary) +
+                    # gallery (every) in the SAME /editor/assets/runs/
+                    # form the runs list serves. Generic: basename only,
+                    # no lane knowledge; per-stage attribution is exact
+                    # because it happens HERE, inside this stage's turn.
+                    stage_arts = [os.path.basename(str(a))
+                                  for a in result.get("artifacts", []) if a]
+                    if stage_arts:
+                        base = "/editor/assets/runs/%s/" % run.run_id
+                        stage["url"] = base + stage_arts[0]
+                        stage["gallery"] = [
+                            {"url": base + n, "name": n} for n in stage_arts]
                 stage["status"] = "completed"
                 stage.pop("progress", None)
                 stage.pop("activity", None)
@@ -1115,6 +994,19 @@ async def handle(gw, reader, writer):
         if headers.get("upgrade", "").lower() == "websocket":
             wsm = re.match(r"^/v1/pipelines/events/(.+)$",
                            target.split("?")[0].rstrip("/"))
+            # Query form (?run_id=<id> at the BARE /v1/pipelines/events):
+            # the DSH web-ui proxy registers upgrade tunnels at EXACT
+            # paths only, so the embed connects with the run id in the
+            # query (2026-09-04 live bug: no comfyui feedback in the
+            # DSH embed — the buffered /v1 proxy 502'd every WS
+            # upgrade). Path form stays authoritative (direct editor).
+            if not wsm and method == "GET":
+                from urllib.parse import urlparse as _up, parse_qs as _pq
+                q = _pq(_up(target).query)
+                rid = (q.get("run_id") or q.get("id") or [""])[0]
+                if rid and _up(target).path.rstrip("/") == \
+                        "/v1/pipelines/events":
+                    wsm = re.match(r"^(.+)$", rid)
             if wsm and method == "GET":
                 await ws_events_door(gw, reader, writer, headers,
                                      wsm.group(1))
@@ -1229,18 +1121,18 @@ async def route(gw, method, target, body):
         return _er.run_detail(str(STATE_ROOT), m.group(1))
     if method == "GET" and path == "/v1/pipelines/yaml/list":
         import editor_runs as _er
-        return 200, _er.yaml_list(str(REPO / "pipelines"))
+        return 200, _er.yaml_list(str(REPO / "flows"))
     if method == "GET" and path == "/v1/pipelines/yaml/detail":
         import editor_runs as _er
         yaml_name = qs.get("yaml", [""])[0]
-        return _er.yaml_detail(str(REPO / "pipelines"), yaml_name or None)
+        return _er.yaml_detail(str(REPO / "flows"), yaml_name or None)
     if method == "POST" and path == "/v1/pipelines/yaml/save":
         import editor_runs as _er
         try:
             body_json = json.loads(body.decode() or "{}")
         except json.JSONDecodeError as e:
             return 400, {"error": "bad JSON: %s" % e}
-        return _er.yaml_save(str(REPO / "pipelines"), body_json)
+        return _er.yaml_save(str(REPO / "flows"), body_json)
     if method in ("DELETE", "POST") and path == "/v1/pipelines/yaml/delete":
         import editor_runs as _er
         fname = qs.get("filename", [None])[0]
@@ -1250,28 +1142,28 @@ async def route(gw, method, target, body):
                 fname = body_json.get("filename")
             except json.JSONDecodeError:
                 pass
-        return _er.yaml_delete(str(REPO / "pipelines"), fname)
+        return _er.yaml_delete(str(REPO / "flows"), fname)
     if method == "POST" and path == "/v1/pipelines/yaml/rename":
         import editor_runs as _er
         try:
             body_json = json.loads(body.decode() or "{}")
         except json.JSONDecodeError as e:
             return 400, {"error": "bad JSON: %s" % e}
-        return _er.yaml_rename(str(REPO / "pipelines"), body_json)
+        return _er.yaml_rename(str(REPO / "flows"), body_json)
     if method == "POST" and path == "/v1/pipelines/yaml/validate":
         import editor_runs as _er
         try:
             body_json = json.loads(body.decode() or "{}")
         except json.JSONDecodeError:
             body_json = {}
-        return _er.yaml_validate(str(REPO / "pipelines"), body_json)
+        return _er.yaml_validate(str(REPO / "flows"), body_json)
     if method == "POST" and path == "/v1/pipelines/yaml/validate-simple":
         import editor_runs as _er
         try:
             body_json = json.loads(body.decode() or "{}")
         except json.JSONDecodeError:
             body_json = {}
-        return _er.yaml_validate_simple(str(REPO / "pipelines"), body_json)
+        return _er.yaml_validate_simple(str(REPO / "flows"), body_json)
     if method == "POST" and path.startswith("/v1/pipelines/resume/"):
         import editor_runs as _er
         rid = path.split("/")[-1]
@@ -1280,7 +1172,7 @@ async def route(gw, method, target, body):
         except json.JSONDecodeError:
             body_json = {}
         return _er.resume(str(STATE_ROOT), rid, body_json,
-                          pipelines_root=str(REPO / "pipelines"))
+                          pipelines_root=str(REPO / "flows"))
     if path == "/v1/pipelines/families/param-schemas":
         import editor_runs as _er
         return 200, _er.family_param_schemas(

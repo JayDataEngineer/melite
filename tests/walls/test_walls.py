@@ -39,24 +39,37 @@ SUBPROCESS_WALLS = [
     "tests/walls/suites/test_typing.py",
     "tests/walls/suites/test_workflow_transpile.py",
     "tests/walls/suites/test_doc_parity.py",
-    "tests/walls/suites/test_h3_renderer_parity.py",
     "tests/walls/suites/test_streaming.py",
     "tests/walls/suites/test_models_on_second_drive.py",
     "tests/golden_compose/_runner.py",
     # unittest-style suites — pytest collects them but they also work
     # as subprocess walls; listed here for the subprocess harness
     "tests/walls/suites/test_cpp_engines.py",
-    "tests/walls/suites/test_browser_lanes.py",
     "tests/walls/suites/test_card_pattern_wall.py",
-    "tests/walls/suites/test_gpu_cpp_cards.py",
     "tests/walls/suites/test_web_harness_pages.py",
     "tests/walls/suites/test_wire_surface.py",
+    # NOT here (2026-09-04 flows-rework validation):
+    # - test_browser_lanes.py — boots a throwaway vite + chromium (its
+    #   own live-browser infra; hangs the subprocess wall). Run it via
+    #   its script form; see suites/conftest.py.
+    # - test_gpu_cpp_cards.py — LIVE operator-gateway runs (GPU money).
+    #   pytest-marked `gpu` (deselected in fast collection); the
+    #   subprocess path would bypass the marker and burn GPU in CI.
 ]
 
 # broken at HEAD by the object_info pin / h3-motion consolidation
 # drift (reproduces with the tree stashed — NOT this lane's files).
 # Cited here so the debt stays visible; remove when the pin lands.
 KNOWN_DRIFT = {
+    # 2026-09-04 flows-rework validation: the renderer moved to
+    # action_cards/video/h3-timeline/py/renderer.py (suite path fixed)
+    # but its model fixtures (window1_t4r.json & kin) no longer exist
+    # anywhere under plugins/ — broken at HEAD by the reorg lane,
+    # reproduced with the tree stashed. The h3 lane's owner rehomes
+    # the fixtures or the suite gets rewritten against the new paths.
+    "tests/walls/suites/test_h3_renderer_parity.py":
+        "h3 model fixtures (window1_t4r.json etc.) missing after the "
+        "action_cards/models reorg — owning lane rehomes them",
     "tests/walls/suites/test_co_script.py":
         "pin lost 'easy saveText'/'LTX_lora_loader' (object_info "
         "refresh vs declarations) — concurrent committer lane",

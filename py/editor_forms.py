@@ -40,8 +40,8 @@ exception for /v1/forms below):
                    recipes: <model-dir>/inference.yaml prompt_upscale:/
                    lyrics_upscale: blocks (with the C's id-named-dir fallback
                    probe across owners/genres); lane fallback:
-                   pipelines/<name>/pipeline.yaml or any
-                   pipelines/*/pipeline.yaml containing "type: <name>".
+                   flows/<name>/pipeline.yaml (agent
+                   lane docs) or any flows/*/pipeline.yaml containing "type: <name>".
   /v1/kinds        py/card_kinds.py TABLE (the first-party card-kind
                    behavior flags; gateway infra, not plugin data — the
                    C-era plugins/*/kinds/*.yaml scan is extinct)
@@ -1370,12 +1370,12 @@ _SAFE_ID = frozenset(
 
 def _lane_probe(repo_root, model):
     """Unknown-catalog-name fallback (src/server.cpp:7946-7977): a
-    pipelines/<name>/pipeline.yaml on disk, or any pipelines/*/pipeline.yaml
+    flows/<name>/pipeline.yaml on disk, or any flows/*/pipeline.yaml
     containing 'type: <name>', gets the minimal spec."""
-    if os.path.exists(os.path.join(repo_root, "pipelines", model,
+    if os.path.exists(os.path.join(repo_root, "flows", model,
                                    "pipeline.yaml")):
         return True
-    pdir = os.path.join(repo_root, "pipelines")
+    pdir = os.path.join(repo_root, "flows")
     needle = "type: " + model
     for name in _scandir(pdir):
         pyp = os.path.join(pdir, name, "pipeline.yaml")
@@ -1613,7 +1613,7 @@ def _main():
     # lane fallback: a pipelines/<name>/pipeline.yaml lane gets the minimal
     # display spec (shape check against live disk, C src/server.cpp:7958-7967)
     lane = None
-    pdir = os.path.join(repo_root, "pipelines")
+    pdir = os.path.join(repo_root, "flows")
     for name in sorted(_scandir(pdir)):
         if os.path.isfile(os.path.join(pdir, name, "pipeline.yaml")):
             lane = name

@@ -33,8 +33,13 @@
   request fails to resolve. Unresolved requests are rejected with 4xx
   BEFORE any run is registered (no zombie slots, no sidecars).
 - No default model names (e.g. the old "krea-2" fallback). A run must
-  name its pipeline EXPLICITLY: {yaml:name}, {pipeline:{steps}}, or
-  {model} that resolves to pipelines/<model>/pipeline.yaml on disk.
+  name its pipeline EXPLICITLY: `{flow:name}` resolving
+  `flows/<name>/flow.py` — a PYTHON declaration (frozen pydantic rows,
+  structural edges, validation AT CONSTRUCTION; the yaml text door +
+  its parser retired 2026-09-04, design record docs/queue/flows.md) —
+  or `{model}` for card-only models (the plugin compose hook builds
+  the graph). The `{pipeline:{steps}}` door named here earlier never
+  existed in code; the law text now matches the resolver.
 - Plugins (e.g. comfyui server_url) must not carry a hardcoded default
   endpoint. Missing required params fail the node LOUDLY at load.
 - Enforced by the py gateway's route-layer validation (4xx BEFORE

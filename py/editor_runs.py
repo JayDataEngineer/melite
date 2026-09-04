@@ -417,7 +417,13 @@ def runs(server_root, drafts_root=None, aux_root=None, limit=200,
             with open(os.path.join(run_dir, "_pipeline.json"), "r",
                       encoding="utf-8", errors="surrogateescape") as f:
                 buf = f.read(8191)                   # C reads 8192-1 bytes
-            created = sidecar_num(buf, "created", 0)
+            # created_at is the py sidecar's key (gateway.sidecar writes
+            # "created_at"); "created" is the C-era fossil. Live bug
+            # (2026-09-04): every py-era run read epoch 0 here, the
+            # newest-first sort collapsed, and fresh generations were
+            # buried among hundreds of runs in the media sidebar.
+            created = sidecar_num(buf, "created_at",
+                                  sidecar_num(buf, "created", 0))
         except OSError:
             pass
         ents.append({"dir": name, "created": created,
@@ -451,7 +457,7 @@ def runs(server_root, drafts_root=None, aux_root=None, limit=200,
             status = raw_status if found else "unknown"
             draft = sidecar_str(buf, "draft_id", 96)
             seed = sidecar_num(buf, "seed", -1)
-            created = sidecar_num(buf, "created", created)
+            created = sidecar_num(buf, "created_at", created)
             # ZOMBIE SWEEP (~6688): "running" with no live registry entry.
             if status == "running" and ent["dir"] not in live_run_ids:
                 status = "failed"
@@ -556,11 +562,14 @@ def run_detail(server_root, run_id: str):
             ev = sb[c:e]
 
     created = 0
-    qq = sb.find('"created"')
-    if qq >= 0:
-        c = sb.find(":", qq)
-        if c >= 0:
-            created = _strtol(sb[c + 1:])
+    # created_at (py sidecar) first, "created" (C-era fossil) fallback.
+    for ckey in ("created_at", "created"):
+        qq = sb.find('"' + ckey + '"')
+        if qq >= 0:
+            c = sb.find(":", qq)
+            if c >= 0:
+                created = _strtol(sb[c + 1:])
+            break
     dur = 0
     qq = sb.find('"durationSec"')
     if qq >= 0:
@@ -1338,7 +1347,7 @@ def resume(server_root, run_id, body=None, pipelines_root=None,
     if not model:
         return 400, _err_body("cannot resume: no model in sidecar")
     if pipelines_root is None:
-        pipelines_root = os.path.join(server_root, "..", "pipelines")
+        pipelines_root = os.path.join(server_root, "..", "flows")
     if not yaml_buf:
         # resolve the model's harvested pipeline, mirroring the C's
         # pipeline_yaml_for_model probes (<root>/<model>/pipeline.yaml)
@@ -1761,7 +1770,7 @@ def _selftest():
     server_root = os.path.join(repo, "build")
     if not os.path.isdir(os.path.join(server_root, "output")):
         server_root = repo  # py gateway's OUT_ROOT = <repo>/output/
-    pipelines_root = os.path.join(repo, "pipelines")
+    pipelines_root = os.path.join(repo, "flows")
     drafts_root = os.path.join(server_root, "drafts")
 
     failures = []
@@ -1825,7 +1834,7 @@ def _selftest():
     # ---- write doors against throwaway fixtures --------------------------
     tmp = tempfile.mkdtemp(prefix="editor_runs_selftest_")
     try:
-        proot = os.path.join(tmp, "pipelines")
+        proot = os.path.join(tmp, "flows")
         # -- yaml_save
         st, resp = yaml_save(proot, {"filename": "demo-flow",
                                      "steps": [

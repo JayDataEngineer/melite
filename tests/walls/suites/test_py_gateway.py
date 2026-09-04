@@ -1,6 +1,8 @@
 """Queue-law regression for the python gateway (mirrors the C chaos suite
 essentials) + the plugin-bus wall (PLUGIN ARCHITECTURE LAW).
-No GPU, no network: parser + resolution + compose laws + golden parity."""
+No GPU, no network: flow declarations + resolution + compose laws +
+golden parity. (2026-09-04 flows rework: the yaml parser era tests were
+reborn as Flow-construction refusals — docs/queue/flows.md.)"""
 
 import json
 import subprocess
@@ -12,27 +14,30 @@ import pytest
 from _anchor import REPO
 
 from gateway import (  # noqa: E402
-    ValidationError, expand_inject, parse_pipeline_text, resolve_request,
+    ValidationError, expand_inject, resolve_request,
 )
 from pipeline_graph import NodeRow  # noqa: E402
+import flow as flow_mod  # noqa: E402
+from flow import Flow, Stage, FromInitial, FromStage  # noqa: E402
 
 
-# C1: every estate yaml parses
-@pytest.mark.parametrize("yard", sorted((REPO / "pipelines").glob("*/pipeline.yaml")),
-                         ids=lambda y: y.parent.name)
-def test_parse_estate_yaml(yard):
-    parse_pipeline_text(yard.read_text())
+# C1: every estate flow loads (validation AT construction + engines
+# through the plugin bus — the module IS the name)
+@pytest.mark.parametrize("name", flow_mod.scan_flow_ids())
+def test_load_estate_flow(name):
+    fl = flow_mod.load_flow(name)
+    assert fl.id == name
+    assert len(fl.stages) >= 1
 
 
-def test_estate_yamls_found():
-    yards = sorted((REPO / "pipelines").glob("*/pipeline.yaml"))
-    assert len(yards) >= 8, str(len(yards))
+def test_estate_flows_found():
+    assert len(flow_mod.scan_flow_ids()) >= 3  # converted lanes, not doc yamls
 
 
-# C2: unknown yaml refused
-def test_unknown_yaml_refused():
+# C2: unknown flow refused
+def test_unknown_flow_refused():
     with pytest.raises(ValidationError):
-        resolve_request({"yaml": "no-such-lane"})
+        resolve_request({"flow": "no-such-lane"})
 
 
 # C3: no selection refused
@@ -41,10 +46,10 @@ def test_no_selection_refused():
         resolve_request({"prompt": "x"})
 
 
-# C4: illegal identifier refused
+# C4: illegal identifier refused (traversal dies at the door)
 def test_illegal_ident_refused():
     with pytest.raises(ValidationError):
-        resolve_request({"yaml": "../etc"})
+        resolve_request({"flow": "../etc"})
 
 
 # C5: inject unresolved tensor = LOUD
@@ -72,22 +77,31 @@ def test_workflow_deep_walk_resolves():
     assert _i["img"] == ["LoadImage.0", 0]
 
 
-# C6: bad params refused
-def test_bad_params_refused():
-    with pytest.raises(ValidationError):
-        parse_pipeline_text("nodes:\n  - id: a\n    type: t\n    params: {bad}\n")
+# C6: unknown stage field refused (extra=forbid — the parser-era
+# "bad params" reborn: a wrong shape cannot even be DECLARED).
+# ValueError covers FlowError AND pydantic's ValidationError (both
+# subclass it — construction refusals, never silent)
+def test_bad_stage_shape_refused():
+    with pytest.raises(ValueError):
+        Stage(id="a", engine="comfyui", no_such_field=1)
 
 
-# C7: duplicate node ids refused
-def test_dup_ids_refused():
-    with pytest.raises(ValidationError):
-        parse_pipeline_text("nodes:\n  - id: a\n    type: t\n  - id: a\n    type: t\n")
+# C7: duplicate stage ids refused at construction
+def test_dup_stage_ids_refused():
+    with pytest.raises(ValueError, match="duplicate stage id"):
+        Flow(id="x", stages=(
+            Stage(id="a", engine="comfyui"),
+            Stage(id="a", engine="comfyui")))
 
 
-# C8: typeless node refused
-def test_typeless_node_refused():
-    with pytest.raises(ValidationError):
-        parse_pipeline_text("nodes:\n  - id: a\n")
+# C8: a wire to a LATER/missing stage refused at construction (the
+# graph is a chain, not a soup — forward refs die here, not on GPU)
+def test_forward_wire_refused():
+    with pytest.raises(ValueError, match="EARLIER"):
+        Flow(id="x", stages=(
+            Stage(id="a", engine="comfyui",
+                  inputs={"mesh": FromStage(stage="b", output="glb")}),
+            Stage(id="b", engine="comfyui")))
 
 
 # C9: missing initial refused

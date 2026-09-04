@@ -25,7 +25,7 @@ MODEL_DIR = REPO / "plugins" / "engines" / "comfyui" / "models" / "video" / "h3-
 # module so it registers "h3_window" before any render() call below.
 import importlib.util as _ilu
 _RSPEC = _ilu.spec_from_file_location(
-    "h3_card_renderer", str(CARD_DIR / "renderer.py"))
+    "h3_card_renderer", str(CARD_DIR / "py" / "renderer.py"))
 _RMOD = _ilu.module_from_spec(_RSPEC)
 sys.modules[_RSPEC.name] = _RMOD  # canonical: visible to sys.modules
 _RSPEC.loader.exec_module(_RMOD)

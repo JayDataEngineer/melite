@@ -1,0 +1,35 @@
+"""audio-native-tts — Qwen3-TTS 12Hz CustomVoice via the live
+melite-audio-nodes island pack in the serving ComfyUI container.
+
+(2026-09-04 flows rework) Converted from pipeline.yaml — the
+declaration is now typed rows; the hardcoded server_url fossil
+DROPPED (the engine's _server_url() config/env seam owns the
+endpoint, QUEUE LANE LAW). params are the comfyui engine's surface,
+verbatim."""
+
+from flow import Flow, Stage, FromInitial
+
+FLOW = Flow(
+    id="audio-native-tts",
+    description=(
+        "Phase 1b gate: Qwen3-TTS 12Hz CustomVoice via the live "
+        "melite-audio-nodes island pack in the serving ComfyUI "
+        "container (pure-ComfyUI audio lane; retires the C audio "
+        "engine for TTS)."),
+    stages=(
+        Stage(
+            id="tts",
+            engine="comfyui",
+            description="Qwen3-TTS text to speech via live ComfyUI nodes",
+            inputs={"prompt": FromInitial(key="prompt")},
+            params={
+                "workflow_file": "/home/user/Documents/programs/active/"
+                                 "inference.cpp/plugins/engines/comfyui/"
+                                 "models/audio/qwen3_tts_gate/tts.json",
+                "inject": {"2.prompt": "$prompt", "2.seed": 42},
+                "out_dir": "./output",
+                "timeout_s": 1200,
+            },
+        ),
+    ),
+)

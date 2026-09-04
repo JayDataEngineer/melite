@@ -4,7 +4,7 @@
   "kind": "pipeline",
   "model": "humanoid-flow",
   "stage_title": "Humanoid Flow",
-  "description": "The humanoid pipeline: ANNY body sculpt -> SOMAX rig -> texture -> 8 review views. Composes the character, 3d, and image cards internally. Start with {yaml: humanoid-flow} through the queue door.",
+  "description": "The humanoid pipeline: ANNY body sculpt -> SOMAX rig -> texture -> 8 review views. Composes the character, 3d, and image cards internally. These lanes are AGENT-DRIVEN card chains (2026-09-04 flows rework): drive each stage card through the queue door ({model: ...}); there is no single-shot yaml door anymore (docs/queue/flows.md).",
   "params_schema": {
     "type": "object",
     "properties": {

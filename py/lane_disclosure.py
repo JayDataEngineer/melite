@@ -34,6 +34,14 @@ card composes ONE run; a flow chains STEPS across plugins. Served as
 yaml itself (rename to "templates" pending; the wire key changes
 with the rename order).
 
+THE CALLABLE TABLE IS CARDS (+ FLOWS), NEVER MODELS (operator order,
+2026-09-04: "the only way to actually do inference is through action
+cards, yet I see the model level as available for inference"). A
+model is a card PARAMETER plus craft docs: peek() lists no model
+rows, kind="model" is refused by _norm_kind, and the MODEL level
+above rides the bundles of the cards that board it (family + base
+chain) and the skills surface (model:<id> / guide:<id> rows).
+
 Every row carries a one-line description (frontmatter) so the index
 stays cheap; bodies load only via skill_read (ledgered skill.read).
 """
@@ -216,20 +224,28 @@ def _base_chain(family: str, all_ids: set) -> list[str]:
 
 
 _KINDS = {"action_card": "card", "card": "card",
-          "template": "flow", "pipeline": "flow", "flow": "flow",
-          "model": "model"}
+          "template": "flow", "pipeline": "flow", "flow": "flow"}
 
 
 def _norm_kind(kind) -> str | None:
     """Peek/load speak the agent's vocabulary: action_card / template
-    (or pipeline) / model — normalized to the internal lane classes.
-    Empty → None (unfiltered). Unknown → ValueError (named refusal)."""
+    (or pipeline) — normalized to the internal lane classes. Empty →
+    None (unfiltered). Unknown → ValueError (named refusal).
+
+    'model' is REFUSED here on purpose (operator order, 2026-09-04:
+    "the only way to actually do inference is through action cards,
+    yet I see the model level as available for inference"). Models
+    are not callable lanes — a model is a card PARAMETER plus craft
+    docs: parameter detail via model_catalog, craft via skill_read,
+    and a model's docs ride the bundle of the card that boards it."""
     if kind is None or str(kind).strip() == "":
         return None
     k = _KINDS.get(str(kind).strip().lower())
     if k is None:
         raise ValueError(
-            "unknown kind %r — use action_card | template | model" % kind)
+            "unknown kind %r — the lane table is the CALLABLE surface "
+            "(action_card | template); models are not lanes: parameter "
+            "detail via model_catalog, craft docs via skill_read" % kind)
     return k
 
 
@@ -237,12 +253,12 @@ def _norm_kind(kind) -> str | None:
 
 
 def _flow_rows() -> list[dict]:
-    """LEVEL 4: pipelines/<name>/pipeline.yaml with the api:true gate —
+    """LEVEL 4: flows/<name>/pipeline.yaml with the api:true gate —
     one row per flow template (the yaml_list reader's scan, plus the
     step summary so the index row says what the flow DOES)."""
     import yaml
     rows: list[dict] = []
-    root = REPO / "pipelines"
+    root = REPO / "flows"
     if not root.is_dir():
         return rows
     for pdir in sorted(root.iterdir()):
@@ -289,10 +305,17 @@ def flow_lanes() -> list[dict]:
 
 
 def peek(kind=None, genre=None) -> dict:
-    """GET /v1/lanes — the PEEK table: one preview row per callable
-    lane across all classes. The agent peeks a class (and optionally a
-    genre), reads titles/descriptions/shape counts, THEN loads the one
-    lane it wants. Rows are cheap by design — no bodies, no schemas."""
+    """GET /v1/lanes — the PEEK table: one preview row per CALLABLE
+    lane. The callable surface is action cards (the ONLY inference
+    interface — queue law) plus flow templates (multi-step lanes that
+    run through the queue's template door). MODELS ARE NOT LANES
+    (operator order, 2026-09-04): a model is a card parameter +
+    craft docs, never an inference entry of its own — parameter
+    detail lives in model_catalog, craft docs in the skills this
+    module serves, and they ride the bundle of the card that boards
+    the model. The agent peeks a class (and optionally a genre),
+    reads titles/descriptions/shape counts, THEN loads the one lane
+    it wants. Rows are cheap by design — no bodies, no schemas."""
     try:
         k = _norm_kind(kind)
     except ValueError as e:
@@ -322,20 +345,6 @@ def peek(kind=None, genre=None) -> dict:
                                               for m in entry["rows"]
                                               if m.get("description")), ""),
                          "params": params, "skills": skills})
-        for r in _model_rows(engine):
-            mid = r.get("model")
-            if mid is None:
-                continue
-            g = str(r.get("genre") or "").lower() or None
-            if genre and g != genre:
-                continue
-            if not any(x["lane"] == mid and x["kind"] == "model"
-                       for x in rows):
-                n = sum(1 for x in _model_rows(engine)
-                        if x.get("model") == mid)
-                rows.append({"kind": "model", "lane": mid, "genre": g,
-                             "title": r["name"], "description": "",
-                             "skills": n})
     for r in _flow_rows():
         rows.append({"kind": "template", "lane": r["name"], "genre": None,
                      "title": r["name"],
@@ -343,8 +352,6 @@ def peek(kind=None, genre=None) -> dict:
                      "steps": r["step_count"]})
     if k == "card":
         rows = [r for r in rows if r["kind"] == "action_card"]
-    elif k == "model":
-        rows = [r for r in rows if r["kind"] == "model"]
     elif k == "flow":
         rows = [r for r in rows if r["kind"] == "template"]
     return {"count": len(rows), "lanes": rows}
@@ -384,8 +391,10 @@ def lane_bundle(lane: str, kind=None) -> tuple[int, dict]:
 
     kind gates the resolution class (peek/load vocabulary):
       action_card → card dirs only; template|pipeline → flow templates
-      only; model → model lanes only; absent → any class. 404 names
-    what was searched."""
+      only; absent → any class. 'model' is not a lane class (operator
+      order, 2026-09-04 — models are card parameters + craft docs, see
+      _norm_kind): a bare model id still resolves to the CARD that
+      boards it. 404 names what was searched."""
     try:
         k = _norm_kind(kind)
     except ValueError as e:
@@ -398,7 +407,9 @@ def lane_bundle(lane: str, kind=None) -> tuple[int, dict]:
         model_rows = _model_rows(engine)
         ids = _model_ids(engine)
 
-        # resolve: card dir name, or a card boarding this model
+        # resolve: card dir name, or a card boarding this model (a
+        # model id is NOT a lane of its own — it lands on the card,
+        # the only run surface)
         card_dir = lane if lane in manifests else None
         if card_dir is None:
             for cid, entry in manifests.items():
@@ -408,33 +419,18 @@ def lane_bundle(lane: str, kind=None) -> tuple[int, dict]:
                     break
         if k == "flow":
             continue                       # templates resolve below
-        if card_dir is not None and k == "model":
-            continue                       # kind says model, not card
-        if card_dir is None and lane not in ids:
-            continue
-        if card_dir is None and k == "card":
-            continue                       # kind says card, not model
-        agent_row = None
         if card_dir is None:
-            # model-only lane: no card manifests, skills still resolve
-            tools: list = []
-            families = [lane]
-            card_bucket_rows: list[dict] = []
-            agent_row = by_id = None
-            for r in model_rows:
-                if r["id"] == "model:%s" % lane:
-                    agent_row = r
-                    break
-        else:
-            tools = manifests[card_dir]["rows"]
-            families = [str(m.get("model", "")) for m in tools
-                        if m.get("model")] or [card_dir]
-            _, by_card = _card_rows(engine)
-            card_bucket_rows = list(by_card.get(card_dir, {}).get("rows", []))
-            for r in card_bucket_rows:
-                if r["id"] == "card:%s" % card_dir:
-                    agent_row = r
-                    break
+            continue                       # cards are the only lane class
+        tools = manifests[card_dir]["rows"]
+        families = [str(m.get("model", "")) for m in tools
+                    if m.get("model")] or [card_dir]
+        _, by_card = _card_rows(engine)
+        card_bucket_rows = list(by_card.get(card_dir, {}).get("rows", []))
+        agent_row = None
+        for r in card_bucket_rows:
+            if r["id"] == "card:%s" % card_dir:
+                agent_row = r
+                break
 
         skills: list[dict] = list(card_bucket_rows)
         for fam in families:
@@ -465,15 +461,15 @@ def lane_bundle(lane: str, kind=None) -> tuple[int, dict]:
         clean = [{kk: v for kk, v in r.items() if kk != "_path"}
                  for r in uniq]
         agent = _agent_block(agent_row)
-        return 200, {"lane": lane, "card": card_dir, "kind":
-                     ("action_card" if card_dir else "model"),
+        return 200, {"lane": lane, "card": card_dir,
+                     "kind": "action_card",
                      "agent": agent, "tools": tools,
                      "pipelines": [], "skills": clean,
                      "read_first": read_first[:6]}
     # LEVEL 4 — a flow lane (pipelines/<lane>/pipeline.yaml, api:true).
     # Distinct lane class: no card manifests; the template IS the
     # contract, carried under "pipelines" + a flow:<name> skill row.
-    if k != "card" and k != "model":
+    if k != "card":
         for r in _flow_rows():
             if r["name"] == lane or r["id"] == "flow:%s" % lane:
                 row = {kk: v for kk, v in r.items() if kk != "_path"}
