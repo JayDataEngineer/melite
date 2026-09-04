@@ -23,16 +23,20 @@ ID scheme (skill_index/skill_read speak it):
   model:<id>                 model AGENT.md
   model:<id>:<stem>          model-level SKILL.md
   guide:<id>                 model GUIDE.md
-  flow:<name>                flows/<name>/flow.yaml (the multi-
-                             step flow template body — concept → mesh →
-                             remesh → … — a LANE class of its own)
+  flow:<name>                flows/<name>/flow.py — the PYTHON
+                             declaration (concept → mesh → remesh →
+                             … — a LANE class of its own); the skill
+                             body is the module source itself
 
-LEVEL 4 — FLOW TEMPLATES (flows/<name>/flow.yaml, api:true):
-multi-step orchestrated lanes. Distinct artifact class from cards: a
-card composes ONE run; a flow chains STEPS across plugins. Served as
-"flows" in the bundle + a flow:<name> skill row whose body is the
-yaml itself (rename to "templates" pending; the wire key changes
-with the rename order).
+LEVEL 4 — FLOW TEMPLATES (flows/<name>/flow.py): multi-step
+orchestrated lanes. Distinct artifact class from cards: a card
+composes ONE run; a flow chains STAGES across engines, edges typed
+at construction (docs/queue/flow-typed-edges.md). Served as "flows"
+in the bundle + a flow:<name> skill row. The registry lists ONLY
+declarations the run door can load — every row comes from
+load_flow() itself, the same construction {flow:name} submit runs,
+so peek and run cannot drift apart (the yaml door + its parser
+retired 2026-09-04 — design record docs/queue/flows.md).
 
 THE CALLABLE TABLE IS CARDS (+ FLOWS), NEVER MODELS (operator order,
 2026-09-04: "the only way to actually do inference is through action
@@ -253,44 +257,36 @@ def _norm_kind(kind) -> str | None:
 
 
 def _flow_rows() -> list[dict]:
-    """LEVEL 4: flows/<name>/flow.yaml with the api:true gate —
-    one row per flow template (the yaml_list reader's scan, plus the
-    step summary so the index row says what the flow DOES)."""
-    import yaml
+    """LEVEL 4: flows/<name>/flow.py — the live PYTHON declarations.
+
+    The registry lists ONLY lanes the run door can load: each row
+    comes from load_flow() itself — the same construction the
+    {flow:name} submit door runs — so peek and run cannot drift
+    apart. A declaration that refuses construction is NOT a registry
+    row (walls sweep flows/ loadable-clean; a broken declaration is
+    a build failure, not a hidden lane). The skill body (_path) is
+    the module source: reading a flow template IS reading its
+    contract — id, stages, typed inputs/outputs, params — verbatim."""
+    import flow as flow_mod
     rows: list[dict] = []
     root = REPO / "flows"
     if not root.is_dir():
         return rows
-    for pdir in sorted(root.iterdir()):
-        py = pdir / "flow.yaml"
-        if not py.is_file():
-            continue
+    for name in flow_mod.scan_flow_ids():
         try:
-            text = py.read_text(encoding="utf-8", errors="surrogateescape")
-        except OSError:
+            fl = flow_mod.load_flow(name)
+        except flow_mod.FlowError:
             continue
-        head = text[:4095]
-        if "api: true" not in head:
-            continue
-        try:
-            doc = yaml.safe_load(text)
-        except yaml.YAMLError:
-            doc = {}
-        doc = doc if isinstance(doc, dict) else {}
-        # yaml_detail's shape law: flows carry steps: (multi-stage) or
-        # nodes: (single-lane node list) — summarize either honestly.
-        steps = doc.get("steps") or doc.get("nodes") or []
-        step_rows = [{"id": s.get("id", ""), "type": s.get("type", ""),
-                      "plugin": s.get("plugin", "")}
-                     for s in steps if isinstance(s, dict)]
+        step_rows = [{"id": st.id, "type": st.engine,
+                      "plugin": st.engine} for st in fl.stages]
         rows.append({
-            "id": "flow:%s" % pdir.name,
-            "name": str(doc.get("name") or pdir.name),
-            "description": str(doc.get("description") or "")[:200],
+            "id": "flow:%s" % fl.id,
+            "name": fl.id,
+            "description": str(fl.description or "")[:200],
             "scope": "flow",
             "steps": step_rows,
             "step_count": len(step_rows),
-            "_path": str(py),
+            "_path": str(root / name / "flow.py"),
         })
     return rows
 
