@@ -79,6 +79,17 @@ py gateway's golden parity suite confirms the stop door lands in <6s with
 a witnessed /interrupt, SIGTERM manufactures zero zombies, and boot sweeps
 are idempotent.
 
+Engine-transition pass (2026-09-04, docs/audits/queue-audit.md round 3):
+the ENGINE TRANSITION boundary is GATEWAY-LEVEL — a switch between two
+queued RUNS fires the outgoing engine's unload() exactly like a switch
+between two stages of one run (comfyui POSTs /free; VRAM verified live
+5.11→22.1 GB free across a comfyui→anycreature boundary). Every attempted
+transition is sidecar-recorded (`stages[].boundary_unload`: fired/absent/
+error:<msg>). Tested at three layers (tests/unit/runtime/test_engine_boundary.py:
+rule + real Gateway.execute loop + the real /free payload against a mock
+server), pinned live by the GPU cpp suite (test_11), and run in CI
+(.github/workflows/tests.yml — the fast no-GPU runner only).
+
 ## PLUGIN ARCHITECTURE LAW (operator order, 2026-08-31, verbatim intent)
 
 > "ARE YOU WRITING THE H3 TIMELINE SPECIFIC THINGS IN SERVER.CPP?"

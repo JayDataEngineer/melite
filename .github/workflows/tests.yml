@@ -1,0 +1,32 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  fast-suite:
+    # The README's documented runner — the fast, no-GPU set:
+    # unit (pytest-collected) + routes (skip when no gateway) +
+    # walls (test_walls.py subprocess-pins every script suite).
+    # Live GPU inference stays opt-in locally (pytest -m gpu) — it
+    # needs the standing gateway + ComfyUI and is never CI's to spend.
+    name: unit + routes + walls (no GPU)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - name: Sync the base env (uv.lock)
+        run: uv sync --frozen
+      - name: Run the fast suite
+        run: uv run pytest tests/unit tests/routes tests/walls -q

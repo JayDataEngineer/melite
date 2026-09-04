@@ -44,7 +44,7 @@ import unittest
 import urllib.request
 
 BASE = "http://127.0.0.1:33081"
-REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
+from _anchor import REPO
 
 # the TRUE minimal green creature (live-probed against the engine's
 # mechanical checks: graded body rhythm + two support legs + palette)
@@ -462,6 +462,45 @@ class TestGpuCppCards(unittest.TestCase):
         self.assertLess(elapsed, 15,
                         "stop door took %.1fs (>15s) — the cpp "
                         "stop path is slow" % elapsed)
+
+    def test_11_cross_run_engine_transition_unloads(self):
+        """VRAM-release audit fix (2026-09-04): the engine boundary
+        is GATEWAY-level. A comfyui card run followed by an
+        anycreature card run — two SEPARATE runs — must fire the
+        comfyui unload (POST /free) at the second run's first stage;
+        the cached models would otherwise stay resident while the
+        subprocess engine runs alongside them. Pinned via the
+        sidecar's boundary_unload row ('fired' can only mean
+        ComfyUI answered /free 2xx — a failed unload records
+        error:<msg> instead)."""
+        url = ""
+        try:
+            with open(os.path.join(REPO, "inference.config.json"),
+                      encoding="utf-8") as f:
+                url = json.load(f)["engines"]["comfyui"]["url"]
+        except Exception:
+            pass
+        try:
+            urllib.request.urlopen(url + "/system_stats", timeout=5)
+        except Exception as e:
+            self.skipTest("ComfyUI not reachable at %s (%s) — the "
+                          "cross-run comfyui boundary needs it" % (url, e))
+        d1 = _submit("krea-2", {"prompt": "a small red cube on white",
+                                "width": 512, "height": 512,
+                                "steps": 4, "seed": 7})
+        f1 = _wait(d1["run_id"], deadline_s=600)
+        self.assertEqual(f1["status"], "completed",
+                         "comfyui stage failed: %s" % json.dumps(f1)[:300])
+        d2 = _submit("anycreature", {"spec": MINI_SPEC})
+        f2 = _wait(d2["run_id"])
+        self.assertEqual(f2["status"], "completed",
+                         json.dumps(f2)[:300])
+        sc = _sidecar(d2["run_id"])
+        self.assertEqual(
+            sc["stages"][0].get("boundary_unload"), "fired",
+            "the engine switch between RUNS must unload the outgoing "
+            "engine (comfyui /free) — sidecar stages: %s"
+            % json.dumps(sc.get("stages"))[:300])
 
     def test_06_queue_serializes_concurrent_submissions(self):
         """THE SERIAL AUDIT: two forge runs submitted back-to-back —

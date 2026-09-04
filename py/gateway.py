@@ -479,6 +479,38 @@ def load_engine(engine_type):
     return _plugin_loud(_plugin_bus.load_engine, engine_type)
 
 
+async def _engine_boundary_unload(prev_type, node_type):
+    """ENGINE TRANSITION (operator order, 2026-10-02: pipelines may
+    switch engines — 'comfyui calls unload all models to be safe';
+    2026-09-04 VRAM-release audit: the boundary is GATEWAY-level, so
+    a switch between two queued RUNS fires exactly like a switch
+    between two stages — comfyui's cached models must not stay
+    resident while another engine's subprocess runs).
+
+    When the resident engine differs from the incoming one, the
+    outgoing engine unloads (if it exports the optional unload()
+    ABI) — awaited, before the next engine's stage starts.
+    Same-engine stages keep their cache (why trellis-after-image is
+    fast); subprocess engines (anycreature, autoremesher, kimodo)
+    unload by process exit and simply do not export unload().
+
+    Returns the outcome for the sidecar — fired / absent /
+    no-transition / error:<msg>. An unload failure NEVER kills the
+    run (RESILIENCE LAW: document the exact message, then continue).
+    The core names no engine: it calls the ABI if present."""
+    if prev_type is None or prev_type == node_type:
+        return "no-transition"
+    eng = load_engine(prev_type)
+    u = getattr(eng, "unload", None)
+    if u is None:
+        return "absent"
+    try:
+        await u()
+        return "fired"
+    except Exception as e:
+        return "error:%s" % e
+
+
 @dataclass
 class Run:
     run_id: str
@@ -506,6 +538,13 @@ class Gateway:
         self.runs = {}
         self.order = []
         self.active = None
+        # ENGINE TRANSITION state (gateway-level, 2026-09-04 audit):
+        # the engine of the last STARTED stage, across runs — the
+        # boundary unload fires when the next stage (this run or the
+        # NEXT queued run) lives on a different engine. None after
+        # boot: the first run never unloads (nothing resident that we
+        # know of). Single-writer under the serial worker loop.
+        self.last_engine_type = None
         # ── the events bus (2026-09-02, the streaming restoration) ──
         # run_id -> set of subscriber queues; the WS door
         # (/v1/pipelines/events/<run_id>) feeds here and the engine
@@ -536,7 +575,8 @@ class Gateway:
     async def submit(self, body):
         resolved = resolve_request(body)
         run_id = "run-%s-%08x" % (uuid.uuid4().hex[:12], int(time.time() * 1000) & 0xFFFFFFFF)
-        if isinstance(resolved, dict) and resolved.get("__card__"):
+        is_card = isinstance(resolved, dict) and resolved.get("__card__")
+        if is_card:
             # card-only model: phase 2 composes the REAL graph now that
             # the run exists (the hook rewrites the skeleton in place).
             graph, etype = resolved["skeleton"], resolved["etype"]
@@ -561,7 +601,7 @@ class Gateway:
         else:
             graph = resolved
         run = Run(run_id=run_id, graph=graph, request=body)
-        run.card_extra_inputs = card_extra_inputs if resolved.get("__card__") else {}
+        run.card_extra_inputs = card_extra_inputs if is_card else {}
         # L3: route the run dir to the test root when the caller
         # declared test:true. The sidecar test flag is the SAME data
         # (L1) -- this is the directory-level enforcement.
@@ -632,6 +672,22 @@ class Gateway:
                 sidecar(run)
                 return
             node = run.graph.nodes[stage["index"]]
+            # ENGINE TRANSITION: the outgoing engine unloads before the
+            # next engine's stage starts. The boundary state is
+            # GATEWAY-level (self.last_engine_type) — a switch between
+            # two queued RUNS fires exactly like a switch between two
+            # stages of one run (2026-09-04 VRAM-release audit).
+            # Every attempted transition is documented in the sidecar:
+            # fired / absent / error:<msg> ("absent" = subprocess
+            # engines that release VRAM by process exit).
+            prev_type = self.last_engine_type
+            if prev_type is not None and prev_type != node.node_type:
+                outcome = await _engine_boundary_unload(
+                    prev_type, node.node_type)
+                if outcome != "no-transition":
+                    stage["boundary_unload"] = outcome
+                    sidecar(run)
+            self.last_engine_type = node.node_type
             stage["status"] = "running"
             sidecar(run)
             self.publish(run.run_id, {"type": "stage",
@@ -662,6 +718,33 @@ class Gateway:
                                 node_type=node.node_type, params=params),
                     str(run.dir), inputs, run.stop_event, report=_report,
                 )
+                if result and result.get("error"):
+                    # ENGINE ABI: compose-first engines return their
+                    # refusal as an error DICT (never raise). The rim
+                    # honors it — a documented failure, never a silent
+                    # empty completion (RESILIENCE LAW).
+                    err_text = str(result["error"])
+                    # a deliberate STOP is its own class: the engine
+                    # answers {"error": "stopped"} when the stop door
+                    # fired, never a failure (RESILIENCE LAW: a stop
+                    # lands in <6s and reports 'stopped' — never
+                    # 'error'). Gate on the stop_event being set so a
+                    # spurious "stopped" in a normal failure still
+                    # raises.
+                    if run.stop_event.is_set() and "stop" in \
+                            err_text.lower():
+                        stage["status"] = "stopped"
+                        stage["error"] = err_text
+                        self.publish(run.run_id, {
+                            "type": "stage",
+                            "stage": stage["id"],
+                            "index": stage["index"],
+                            "status": "stopped",
+                            "error": err_text})
+                        break
+                    raise ValidationError(
+                        "engine %s: %s" % (
+                            node.node_type, err_text))
                 if result:
                     for k, v in result.get("outputs", {}).items():
                         carry[k] = v
