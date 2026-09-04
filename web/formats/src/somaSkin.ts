@@ -11,7 +11,7 @@
  * client-side so the asset preview shows a Kimodo motion on the same neutral
  * mesh the demo uses, with no parametric body shape imposed.
  *
- * Pipeline per frame:
+ * Flow per frame:
  *   fk[j]      = [[global_rot[j], global_pos[j]], [0,0,0,1]]   (4×4, per joint)
  *   affine[j]  = (fk[j] · inv(bind_rig[j]))[:3, :]             (3×4, per joint)
  *   v'         = Σ_w lbs_weights[v,w] · (affine[lbs_indices[v,w]] · [bind_v, 1])

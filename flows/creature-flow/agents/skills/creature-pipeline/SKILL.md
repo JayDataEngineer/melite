@@ -1,10 +1,10 @@
 ---
-name: creature-pipeline
+name: creature-flow
 description: The non-humanoid creature chain — concept discipline, 50K quad budget, refine-then-rig order, and the turntable gate
 genre: 3d
 ---
 
-# Creature Pipeline
+# Creature Flow
 
 The creature lane: concept image -> Pixal3D mesh -> 50K quad remesh ->
 UltraShape refine -> optional rig -> 8 turntable views.

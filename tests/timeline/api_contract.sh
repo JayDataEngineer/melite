@@ -4,9 +4,9 @@
 # not assume a live server. Every assertion here guards a SHIPPED
 # regression:
 #   - empty 404 bodies broke the editor's JSON parser (banner bug)
-#   - yaml/list+detail 404s made the Pipelines library dead
+#   - yaml/list+detail 404s made the Flows library dead
 #   - control chars in yaml descriptions broke strict JSON parsing
-# Post-reorg shape: pipelines/ is the lane yaml set; h3-timeline is a
+# Post-reorg shape: flows/ is the lane yaml set; h3-timeline is a
 # MODEL (served from the model catalog + form-spec), not a yaml.
 set -u
 GW="${GW:-http://127.0.0.1:18090}"
@@ -27,13 +27,13 @@ fi
 curl -s -m 5 "$GW/v1/queue" | J >/dev/null; ck "queue.strict_json" $?
 curl -s -m 5 "$GW/v1/queue" | grep -q '"queued_ids"'; ck "queue.queued_ids_key" $?
 
-# --- pipelines yaml list (the editor library endpoint) ---
-L=$(curl -s -m 8 "$GW/v1/pipelines/yaml/list")
+# --- flows yaml list (the editor library endpoint) ---
+L=$(curl -s -m 8 "$GW/v1/flows/yaml/list")
 echo "$L" | J >/dev/null; ck "yaml_list.strict_json" $?
 echo "$L" | python3 -c '
 import json,sys
-d=json.load(sys.stdin); ps=d.get("pipelines",[])
-assert len(ps)>=6, f"too few pipelines: {len(ps)}"
+d=json.load(sys.stdin); ps=d.get("flows",[])
+assert len(ps)>=6, f"too few flows: {len(ps)}"
 names=[p.get("name") or p.get("filename","").removesuffix(".yaml") for p in ps]
 assert "audio-native-tts" in names, "audio-native-tts missing"
 assert names==sorted(names), "list not sorted"
@@ -58,7 +58,7 @@ assert "h3-timeline" in models, f"h3-timeline missing from model catalog: {list(
 ' ; ck "catalog.has_h3_timeline" $?
 
 # --- yaml detail (nodes surface the editor imports) ---
-D=$(curl -s -m 8 "$GW/v1/pipelines/yaml/detail?yaml=trellis2-gate")
+D=$(curl -s -m 8 "$GW/v1/flows/yaml/detail?yaml=trellis2-gate")
 echo "$D" | J >/dev/null; ck "yaml_detail.strict_json" $?
 echo "$D" | python3 -c '
 import json,sys
@@ -75,14 +75,14 @@ CODE=${B##*|}; BODY=${B%|*}
 echo "$BODY" | J >/dev/null; ck "notfound.body_is_json" $?
 echo "$BODY" | grep -q '"error"'; ck "notfound.body_has_error_key" $?
 
-curl -s -m 5 -o /dev/null -w '%{http_code}' "$GW/v1/pipelines/yaml/detail" | grep -q 400
+curl -s -m 5 -o /dev/null -w '%{http_code}' "$GW/v1/flows/yaml/detail" | grep -q 400
 ck "yaml_detail.missing_param_400" $?
-E=$(curl -s -m 5 "$GW/v1/pipelines/yaml/detail?yaml=zz-no-such")
+E=$(curl -s -m 5 "$GW/v1/flows/yaml/detail?yaml=zz-no-such")
 echo "$E" | J >/dev/null; ck "yaml_detail.unknown_strict_json" $?
 echo "$E" | grep -q '"error"'; ck "yaml_detail.unknown_error_body" $?
 
 # --- runs ledger shape (state-agnostic) ---
-R=$(curl -s -m 5 "$GW/v1/pipelines/runs")
+R=$(curl -s -m 5 "$GW/v1/flows/runs")
 echo "$R" | J >/dev/null; ck "runs.strict_json" $?
 echo "$R" | python3 -c '
 import json,sys

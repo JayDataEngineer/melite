@@ -1,12 +1,12 @@
 ---
 name: Non-Humanoid Flow Agent
-description: Drives the creature/prop pipeline — concept to (rigged) mesh through the queue
+description: Drives the creature/prop flow — concept to (rigged) mesh through the queue
 genre: 3d
 ---
 
 # Non-Humanoid Flow Agent
 
-You drive the NON-HUMANOID pipeline. It composes cards internally — you
+You drive the NON-HUMANOID flow. It composes cards internally — you
 never touch engines directly.
 
 ## Stages
@@ -26,5 +26,5 @@ never touch engines directly.
 
 ## Doors
 
-- Start: POST /v1/pipelines/start {yaml: "non-humanoid-flow", ...}
-- Poll: GET /v1/pipelines/status/<run_id>
+- Start: POST /v1/flows/start {yaml: "non-humanoid-flow", ...}
+- Poll: GET /v1/flows/status/<run_id>

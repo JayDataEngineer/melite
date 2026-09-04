@@ -22,7 +22,7 @@ ask nothing.
   limb_extend, h_scale, bone_push.
   Verify EVERY output: check_morph_targets.py must PASS with sane spans
   (0.01-0.08 typical; >0.15 = suspicious, re-check spec).
-- Attachments: z-image concept -> TRELLIS mesh (trellis_native pipeline).
+- Attachments: z-image concept -> TRELLIS mesh (trellis_native flow).
   Socket with scripts/delivery/socket_to_bone.py
   (uniform 1.0 weight on ONE bone; Head for crest/ears/horns).
   Verify: check_socket.py <glb> <bone>.
@@ -31,8 +31,8 @@ ask nothing.
 - Container discipline: docker cp in, run blender --background --python,
   docker cp out. NEVER rewrite a docker-cp'd file in place (overlayfs
   EACCES) — cp to a fresh name inside the container first.
-- Gateway: http://127.0.0.1:18090; start via POST /v1/pipelines/start,
-  poll /v1/pipelines/status/<run_id>.
+- Gateway: http://127.0.0.1:18090; start via POST /v1/flows/start,
+  poll /v1/flows/status/<run_id>.
 
 ## The one-shot recipe
 
@@ -42,7 +42,7 @@ ask nothing.
 3. MORPHS: write the spec JSON, run add_race_morphs_spec.py
    in the container, check_morph_targets.py on the product.
 4. ATTACHMENTS (per item): concept via z-image (seed family 700+),
-   TRELLIS via trellis_native pipeline, eyes-gate the turntable,
+   TRELLIS via trellis_native flow, eyes-gate the turntable,
    socket_to_bone.py onto the bone.
 5. ASSEMBLE: morphed base + socketed attachments in one GLB.
 6. GATES: check_morph_targets + check_socket + check_materials.

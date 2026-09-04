@@ -2,7 +2,7 @@
 
 > Operator law 2026-08-25: characters have TWO PATHS. (a) HUMANOID = the
 > mesh lanes (frozen body prefix + attachment lanes). (b) NON-humanoid =
-> THIS skill — the upstream anyCreature engine as a pipeline-native
+> THIS skill — the upstream anyCreature engine as a flow-native
 > family. Never hand-roll creatures through somax (W12: the SOMA-77
 > template destroys quadrupeds); never treat the monolith as a creature
 > maker.
@@ -30,13 +30,13 @@ MIT). Spec authoring doctrine: the clone's `cards/SYNTAX.md` + the
 ## Run loop
 
 1. Author or pick the spec. Default lane uses the upstream wolf anchor;
-   for a new creature write `data/pipelines/<creature>.yaml` with either
+   for a new creature write `data/flows/<creature>.yaml` with either
    `spec_path:` (repo-relative file) or inline `spec:` (OBJECT — never a
    string; the family BLOCKS strings).
-2. `POST /v1/pipelines/yaml/validate {"yaml":"<creature>.yaml"}` must be
+2. `POST /v1/flows/yaml/validate {"yaml":"<creature>.yaml"}` must be
    ok before starting.
-3. `POST /v1/pipelines/start {"yaml":"<creature>.yaml"}` -> poll
-   `GET /v1/pipelines/status/{run_id}`.
+3. `POST /v1/flows/start {"yaml":"<creature>.yaml"}` -> poll
+   `GET /v1/flows/status/{run_id}`.
 4. Steps: anycreature (build) -> verify_glb (ADVISORY: fail_on never,
    stages structural/weights/deformation/visual — no arm_hand on beasts;
    tighten only after calibrating floors on a known-good anyCreature GLB)

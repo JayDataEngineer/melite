@@ -1,10 +1,10 @@
 ---
-name: prop-pipeline
+name: prop-flow
 description: The concept-to-game-asset chain — mode choice, budgets, and the delivery gate
 genre: 3d
 ---
 
-# Prop Pipeline
+# Prop Flow
 
 ## Mode law
 

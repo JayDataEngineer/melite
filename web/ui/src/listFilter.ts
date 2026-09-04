@@ -73,7 +73,7 @@ export interface ListItemAccessor<T> {
 
 // ── Declarative Fuse.js weights ──────────────────────────────────────────
 // SSOT for field→weight. Higher = ranks first in fuzzy results. Adding a new
-// weighted field is a row here, not a code change in the filter pipeline.
+// weighted field is a row here, not a code change in the filter flow.
 // ST uses { name: 10, tags: 10 } — we give name the edge since filenames are
 // the user's primary mental model for finding media.
 const FIELD_WEIGHTS: Record<string, number> = {

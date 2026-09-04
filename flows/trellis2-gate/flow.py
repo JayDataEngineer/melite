@@ -1,6 +1,6 @@
 """trellis2-gate — krea concept image in, TRELLIS textured mesh out.
 
-(2026-09-04 flows rework) Converted from pipeline.yaml; the hardcoded
+(2026-09-04 flows rework) Converted from flow.yaml; the hardcoded
 server_url fossil DROPPED (the engine's _server_url() config/env
 seam owns the endpoint)."""
 

@@ -61,7 +61,7 @@ export type Genre =
 /** A resolved sidebar row — form entries, MCP tools, /v1/services entries,
  *  studio links, and the external AI-Chat link all reduce to this shape
  *  before grouping by genre. One input shape for the SectionHeader+ListRow
- *  pipeline; ServicesSidebar is the canonical consumer. */
+ *  flow; ServicesSidebar is the canonical consumer. */
 export interface SidebarItem {
   /** The onSelect payload — MCP tool name, service name, sidebar_key, or a
    *  `_studio` / `_llm_chat` sentinel. */

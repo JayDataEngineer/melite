@@ -19,7 +19,7 @@
     "./modifierSubcards": "./src/modifierSubcards.ts",
     "./objectUrlCache": "./src/objectUrlCache.ts",
     "./package.json": "./package.json",
-    "./pipelineTypes": "./src/pipelineTypes.ts",
+    "./FlowTypes": "./src/FlowTypes.ts",
     "./preflightStore": "./src/preflightStore.ts",
     "./preflightTypes": "./src/preflightTypes.ts",
     "./regions": "./src/regions.ts",

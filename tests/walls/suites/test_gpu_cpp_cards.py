@@ -19,7 +19,7 @@ engine directly). Requirements:
 What each probe proves:
 - forge green: the card → bus → renderer argv → engine → GLB
   artifact chain END TO END, inputs and outputs exactly as the
-  pipeline layer needs them (the artifact path lands in the run's
+  flow layer needs them (the artifact path lands in the run's
   artifacts, carryable to the next node)
 - forge BLOCK refusal: the engine's mechanical checks (balance,
   proportion) ride back as the run's EXACT error — a documented
@@ -125,7 +125,7 @@ def _req(method, path, body=None, timeout=30):
 
 
 def _submit(model, params):
-    return _req("POST", "/v1/pipelines/start",
+    return _req("POST", "/v1/flows/start",
                 {"model": model, "params": params})
 
 
@@ -134,7 +134,7 @@ def _wait(run_id, deadline_s=180, want=("completed", "failed", "error",
     """Poll until terminal; returns the final status dict."""
     end = time.time() + deadline_s
     while time.time() < end:
-        d = _req("GET", "/v1/pipelines/status/" + run_id)
+        d = _req("GET", "/v1/flows/status/" + run_id)
         if d.get("status") in want:
             return d
         time.sleep(0.4)
@@ -144,7 +144,7 @@ def _wait(run_id, deadline_s=180, want=("completed", "failed", "error",
 
 def _sidecar(run_id):
     with open(os.path.join(REPO, "data/runs/output", run_id,
-                           "_pipeline.json"), encoding="utf-8") as f:
+                           "_flow.json"), encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -161,7 +161,7 @@ class TestGpuCppCards(unittest.TestCase):
         # the gateway must be UP — a dead gateway is a FAILURE, never
         # a skip (the suite's whole point is the live queue)
         try:
-            _req("GET", "/v1/pipelines/yaml/list", timeout=5)
+            _req("GET", "/v1/flows/yaml/list", timeout=5)
         except Exception as e:
             raise AssertionError(
                 "gateway not reachable on %s — restart it first: "
@@ -171,7 +171,7 @@ class TestGpuCppCards(unittest.TestCase):
 
     def test_01_forge_green_through_the_queue(self):
         """The full chain: card → bus → renderer argv → node engine
-        → GLB artifact recorded — the inputs/outputs the pipeline
+        → GLB artifact recorded — the inputs/outputs the flow
         layer needs."""
         d = _submit("anycreature", {"spec": MINI_SPEC, "ao": True})
         run_id = d["run_id"]
@@ -318,7 +318,7 @@ class TestGpuCppCards(unittest.TestCase):
                 "    ),\n"
                 ")\n")
         try:
-            d = _req("POST", "/v1/pipelines/start",
+            d = _req("POST", "/v1/flows/start",
                      {"flow": "gpu-test-cpp-transition"})
             run_id = d["run_id"]
             final = _wait(run_id, deadline_s=600)
@@ -446,7 +446,7 @@ class TestGpuCppCards(unittest.TestCase):
         # loads); we want stop to interrupt an IN-FLIGHT generation
         end_claim = time.time() + 60
         while time.time() < end_claim:
-            s = _req("GET", "/v1/pipelines/status/" + run_id,
+            s = _req("GET", "/v1/flows/status/" + run_id,
                      timeout=5)
             if s.get("status") not in ("queued", "running", "starting"):
                 self.fail("run %s settled before stop could fire: %s"
@@ -455,7 +455,7 @@ class TestGpuCppCards(unittest.TestCase):
                 break
             time.sleep(0.3)
         t0 = time.time()
-        _req("POST", "/v1/pipelines/stop/" + run_id, timeout=5)
+        _req("POST", "/v1/flows/stop/" + run_id, timeout=5)
         # generous deadline — the run may take seconds to notice the
         # flag through the asyncio.wait_for path
         final = _wait(run_id, deadline_s=30)
@@ -515,8 +515,8 @@ class TestGpuCppCards(unittest.TestCase):
         active_samples = []
         while True:
             try:
-                ra = _req("GET", "/v1/pipelines/status/" + a["run_id"])
-                rb = _req("GET", "/v1/pipelines/status/" + b["run_id"])
+                ra = _req("GET", "/v1/flows/status/" + a["run_id"])
+                rb = _req("GET", "/v1/flows/status/" + b["run_id"])
             except Exception:
                 break
             def _active(d):
@@ -543,8 +543,8 @@ class TestGpuCppCards(unittest.TestCase):
                            "sampling window too small — runs finished "
                            "before the audit could observe")
         # both served — the queue continued after the first
-        fa = _req("GET", "/v1/pipelines/status/" + a["run_id"])
-        fb = _req("GET", "/v1/pipelines/status/" + b["run_id"])
+        fa = _req("GET", "/v1/flows/status/" + a["run_id"])
+        fb = _req("GET", "/v1/flows/status/" + b["run_id"])
         self.assertEqual(fa.get("status"), "completed",
                          json.dumps(fa)[:200])
         self.assertEqual(fb.get("status"), "completed",
@@ -553,10 +553,10 @@ class TestGpuCppCards(unittest.TestCase):
         # ≤ B's (the sidecar write is the completion time)
         ma = os.path.getmtime(
             os.path.join(REPO, "data/runs/output", a["run_id"],
-                         "_pipeline.json"))
+                         "_flow.json"))
         mb = os.path.getmtime(
             os.path.join(REPO, "data/runs/output", b["run_id"],
-                         "_pipeline.json"))
+                         "_flow.json"))
         self.assertLessEqual(ma, mb,
                              "FIFO broken: A's completion (%f) is "
                              "after B's (%f)" % (ma, mb))

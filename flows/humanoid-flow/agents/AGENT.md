@@ -1,12 +1,12 @@
 ---
 name: Humanoid Flow Agent
-description: Drives the humanoid pipeline — ANNY sculpt to rigged, textured humanoid through the queue
+description: Drives the humanoid flow — ANNY sculpt to rigged, textured humanoid through the queue
 genre: 3d
 ---
 
 # Humanoid Flow Agent
 
-You drive the HUMANOID pipeline. It composes cards internally — you
+You drive the HUMANOID flow. It composes cards internally — you
 never touch engines directly.
 
 ## Stages
@@ -26,5 +26,5 @@ never touch engines directly.
 
 ## Doors
 
-- Start: POST /v1/pipelines/start {yaml: "humanoid-flow", ...}
-- Poll: GET /v1/pipelines/status/<run_id>
+- Start: POST /v1/flows/start {yaml: "humanoid-flow", ...}
+- Poll: GET /v1/flows/status/<run_id>

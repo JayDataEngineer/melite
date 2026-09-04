@@ -1,6 +1,6 @@
 """test_engine_boundary.py — the ENGINE TRANSITION rule's gates.
 
-Operator order, 2026-10-02: pipelines may switch engines —
+Operator order, 2026-10-02: flows may switch engines —
 "comfyui calls unload all models to be safe" at the handoff.
 Operator order, 2026-09-04 (the VRAM-release audit): the boundary
 is GATEWAY-LEVEL — a switch between two queued RUNS fires exactly
@@ -142,11 +142,11 @@ class TestRealLoop(unittest.TestCase):
     def _run(self, *node_types):
         """A real Run over a graph of the given node types, with the
         stage rows shaped exactly like submit() shapes them."""
-        import pipeline_graph
+        import flow_graph
         self._seq += 1
-        g = pipeline_graph.PipelineGraph(
+        g = flow_graph.FlowGraph(
             name="t%d" % self._seq,
-            nodes=[pipeline_graph.NodeRow(node_id="n%d" % i,
+            nodes=[flow_graph.NodeRow(node_id="n%d" % i,
                                           node_type=t)
                    for i, t in enumerate(node_types)])
         run = gateway.Run(run_id="run-bnd-%d" % self._seq,
@@ -184,7 +184,7 @@ class TestRealLoop(unittest.TestCase):
         self.assertEqual(run.stages[2].get("boundary_unload"), "fired")
         self.assertNotIn("boundary_unload", run.stages[1])
         # the sidecar on disk carries the outcome (survives restarts)
-        sc = json.loads((run.dir / "_pipeline.json").read_text())
+        sc = json.loads((run.dir / "_flow.json").read_text())
         self.assertEqual(sc["stages"][2].get("boundary_unload"),
                          "fired")
 

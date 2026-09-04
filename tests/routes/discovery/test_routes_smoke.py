@@ -28,6 +28,30 @@ class TestLanesSmoke:
             assert required.issubset(set(lane.keys())), \
                 f"lane {lane.get('lane', '?')!r} dropped a key: {sorted(lane.keys())}"
 
+    def test_no_model_rows(self, live):
+        # Operator order, 2026-09-04: "The only way to actually do
+        # inference is through action cards, yet I see the model level
+        # as available for inference." The lane table is the CALLABLE
+        # surface — models are NOT lanes (a model is a card parameter
+        # + craft docs; model_catalog and the skills surface serve
+        # them). This wall keeps the model level out of the callable
+        # table forever.
+        code, body = live.get("/v1/lanes")
+        kinds = {lane["kind"] for lane in body["lanes"]}
+        assert kinds <= {"action_card", "template"}, \
+            f"non-callable lane classes leaked into /v1/lanes: {sorted(kinds)}"
+
+    def test_model_kind_is_a_named_refusal(self, live):
+        # kind="model" must refuse LOUDLY (never an empty table that
+        # looks like "no models", never a 500) and teach where models
+        # DO live — the peek error envelope carries the pointer.
+        code, body = live.get("/v1/lanes?kind=model")
+        assert code == 200
+        assert body["count"] == 0
+        assert body["lanes"] == []
+        assert "not lanes" in body.get("error", ""), \
+            f"kind=model refusal must name the law, got: {body.get('error')!r}"
+
 
 class TestCardToolsSmoke:
     # card-tools: the registry the action-card editor consumes.

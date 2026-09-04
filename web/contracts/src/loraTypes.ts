@@ -8,11 +8,11 @@
  *      media/image/comfyui.py and parse_loras_selected in
  *      media/inference/loras.py).
  *
- *  History: the video pipeline previously used a comma-separated string
- *  ("name:0.7, name2") while the image pipeline used
+ *  History: the video flow previously used a comma-separated string
+ *  ("name:0.7, name2") while the image flow used
  *  {name, strength_model, strength_clip} dicts. With the video backend
  *  migrated to ComfyUI, both surfaces share one backend — and now share
- *  one frontend primitive. The image pipeline's strength_model/strength_clip
+ *  one frontend primitive. The image flow's strength_model/strength_clip
  *  split is a ComfyUI-internal concern; the frontend exposes a single
  *  `strength` and the dispatch layer duplicates it at the boundary.
  *

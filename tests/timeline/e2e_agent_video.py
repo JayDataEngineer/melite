@@ -107,7 +107,7 @@ def main():
     # fresh draft, auto-arm starts it, and the runs listing carries
     # draft_id + created_at.)
     drafts_before = set()
-    code, dl = req("GET", "/v1/pipelines/drafts")
+    code, dl = req("GET", "/v1/flows/drafts")
     for x in dl.get("drafts", dl if isinstance(dl, list) else []):
         if x.get("draft_id"):
             drafts_before.add(x["draft_id"])
@@ -115,7 +115,7 @@ def main():
     run_id, draft_id = None, None
     deadline = time.time() + 420
     while time.time() < deadline:
-        code, st = req("GET", "/v1/pipelines/runs")
+        code, st = req("GET", "/v1/flows/runs")
         runs = st.get("runs", st if isinstance(st, list) else [])
         for rr in runs:
             did = rr.get("draft_id") or ""
@@ -128,7 +128,7 @@ def main():
             # expectations (14 bogus failures, real run ignored).
             if (did and did not in drafts_before
                     and (rr.get("created_at") or 0) > spawn_ts - 60
-                    and rr.get("pipeline") == "h3-timeline"
+                    and rr.get("flow") == "h3-timeline"
                     and rr.get("status") in ("queued", "running",
                                              "success", "completed",
                                              "error", "failed")):
@@ -152,7 +152,7 @@ def main():
     state, err = "", ""
     deadline = time.time() + 2400
     while time.time() < deadline:
-        code, st = req("GET", f"/v1/pipelines/status/{run_id}")
+        code, st = req("GET", f"/v1/flows/status/{run_id}")
         state = st.get("state", st.get("status", ""))
         err = st.get("error", "")
         if state in ("success", "completed", "error", "failed", "stopped"):

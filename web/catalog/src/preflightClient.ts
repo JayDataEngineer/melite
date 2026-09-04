@@ -10,7 +10,7 @@
 // The contract mirrors /v1/download-model/stream (same SSE shape: a JSON
 // payload per `data:` frame, terminated by `data: [DONE]`). See
 // backend/server/app.py::install_extensions_stream for the producer.
-import { describeErrorBody } from "./pipelineProtocol"
+import { describeErrorBody } from "./FlowProtocol"
 
 export type InstallEvent =
   | { event: "install_start"; index: number; total: number; name: string; url: string; pip: string[] }

@@ -9,7 +9,7 @@
  *   • vertsToB64 / cm helpers — the PoseViewer3D boundary (cm + base64)
  *   • AZIMUTH_PRESETS      — the 8 export angles (Blender convention,
  *                            0 = front / 90 = right, matching the vnccs
- *                            pipeline's front_mesh…front_left_mesh names)
+ *                            flow's front_mesh…front_left_mesh names)
  *   • soma77ToCoco18       — TS port of the poser nodes' SOMA→COCO-18
  *                            mapping + ear extrapolation (library/
  *                            soma_to_coco.py — the DWPose / vnccs contract)

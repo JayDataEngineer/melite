@@ -9,7 +9,7 @@ THE FAIL THIS CATCHES (2026-08-30 incident):
   holds the SAME line in the suite so a template edit cannot regress
   the door contract even with the gateway down.
 
-Checks EVERY workflow file referenced by ANY pipelines/*/pipeline*.yaml:
+Checks EVERY workflow file referenced by ANY flows/*/flow*.yaml:
   - the file exists on disk
   - every class_type inside exists in the live /object_info
     (or in the committed snapshot when the backend is unreachable —
@@ -31,7 +31,7 @@ def check(name, cond, detail=""):
 
 # ── collect workflow files + class_types from every lane yaml ──────────────
 refs = set()
-for yf in glob.glob(os.path.join(REPO, "pipelines", "*", "pipeline*.yaml")):
+for yf in glob.glob(os.path.join(REPO, "flows", "*", "flow*.yaml")):
     y = open(yf).read()
     for m in re.finditer(r'workflow_file"?\s*:\s*"([^"]+)"', y):
         refs.add((os.path.basename(yf), m.group(1)))
@@ -40,7 +40,7 @@ check("lanes reference at least one workflow", len(refs) > 0, sorted(refs)[:3])
 classes = {}   # class -> first (yaml, file) that references it
 missing_files = []
 for yname, rel in sorted(refs):
-    # gateway CWD is build/: "../pipelines/x" resolves there. Also try
+    # gateway CWD is build/: "../flows/x" resolves there. Also try
     # repo-root forms so the test runs from any CWD.
     cands = [os.path.normpath(os.path.join(REPO, "build", rel)),
              os.path.normpath(os.path.join(REPO, rel)),

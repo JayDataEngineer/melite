@@ -7,7 +7,7 @@
 // it here on load. A param key is a slot iff it appears in the current
 // vocabulary — the frontend never hand-maintains the list.
 //
-// The three frontend consumers — PipelineCard's ParamEditor skip list,
+// The three frontend consumers — FlowCard's ParamEditor skip list,
 // CardDetailModal's Input slots section, + CardTile's drop resolver —
 // all read through inputSlots() / the helpers here. Rule 4: one shape,
 // everywhere, in one edit.
@@ -258,7 +258,7 @@ export function padInputs(
  * backend resolves ONLY the slot keys (compile._resolve_input_value), so
  * an unnormalized card would render no square AND silently lose its input
  * on re-run. Every card materializer (addStage, the hydrates, and the
- * BACKEND build_pipeline — drafts.py folds before persisting, 2026-08-13)
+ * BACKEND build_flow — drafts.py folds before persisting, 2026-08-13)
  * runs this so the card speaks one vocabulary.
  *
  * Precedence: an explicit slot-key value wins over an alias; a real alias
@@ -324,7 +324,7 @@ export function normalizeSlotParams(
 
 // ── FileKind vocabulary + slot-type guard (2026-08-12) ───────────────────
 //
-// Mirrors backend/core/pipelines/slot_kinds.py — the SAME vocabulary on
+// Mirrors backend/core/flows/slot_kinds.py — the SAME vocabulary on
 // both sides of the wire. The catalog delivers slot_kinds via
 // input_vocabulary; familyGenres arrive as the family's ``genre`` field.
 // Together they drive canWireSlot() — the guard setSlotInput calls before

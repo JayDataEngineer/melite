@@ -50,7 +50,6 @@
 	path = vendor/comfyui_extensions/melite-stretchy-nodes
 	url = https://github.com/JayDataEngineer/melite-stretchy-nodes.git
 	branch = main
-	branch = main
 [submodule "melite-video-nodes"]
 	path = vendor/comfyui_extensions/melite-video-nodes
 	url = https://github.com/JayDataEngineer/melite-video-nodes.git

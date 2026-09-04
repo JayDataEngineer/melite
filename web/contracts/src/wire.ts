@@ -6,7 +6,7 @@ export interface PluginRow {
  version: string
  name: string
  enabled: boolean
- /** Lane names the plugin carries (cards/models/pipelines/graph). */
+ /** Lane names the plugin carries (cards/models/flows/graph). */
  lanes: string[]
  /** Repo-relative root, or the out-of-tree dir it mounts from. */
  root: string

@@ -14,22 +14,22 @@ hero lane's composite.
 
 ## The lane
 
-`data/pipelines/garment_asset.yaml` (served spec space — run by filename).
+`data/flows/garment_asset.yaml` (served spec space — run by filename).
 
 ## The run loop (headless, exact calls)
 
 ```bash
 # 1. copy per piece (NEVER edit the frozen original in place)
-cp data/pipelines/garment_asset.yaml data/pipelines/<piece-name>.yaml
+cp data/flows/garment_asset.yaml data/flows/<piece-name>.yaml
 # 2. edit ONLY the attachment bricks (see customization)
 # 3. validate (GPU-free)
-curl -X POST localhost:33081/v1/pipelines/yaml/validate \
+curl -X POST localhost:33081/v1/flows/yaml/validate \
   -H 'content-type: application/json' -d '{"yaml":"<piece-name>.yaml"}'
 # 4. run
-curl -X POST localhost:33081/v1/pipelines/start \
+curl -X POST localhost:33081/v1/flows/start \
   -H 'content-type: application/json' -d '{"yaml":"<piece-name>.yaml"}'
 # 5. poll until completed/failed
-curl -s localhost:33081/v1/pipelines/status/<run_id> | jq '.status, .stages[] | {family_id, status}'
+curl -s localhost:33081/v1/flows/status/<run_id> | jq '.status, .stages[] | {family_id, status}'
 ```
 
 ## THE FROZEN BODY PREFIX LAW (memorize)
@@ -58,7 +58,7 @@ with its own frozen prefix, never an edit.
 
 ## Gate loop (AGENT EYES — blind_read retired 2026-08-25 by operator)
 
-The pipeline gate brick is GONE from the lane. YOU are the gate now: when
+The flow gate brick is GONE from the lane. YOU are the gate now: when
 `render_glb_views` completes, call the `describe_image` tool on each
 view artifact (OpenRouter `xiaomi/mimo-v2.5`, wired in
 `~/.dsh/settings.yaml`). Ask for a factual description of subject +

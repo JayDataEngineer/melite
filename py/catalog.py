@@ -4,7 +4,7 @@
 1:1 transcription of src/catalog.c (scan + parse + serialize) and the
 catalog_abilities_splice() post-pass from src/server.cpp:7299 that
 handle_catalog() (src/server.cpp:5904) applies to every response.
-The verified behavior is the CONTRACT (ORCHESTRATOR_MIGRATION.md): the
+The verified behavior is the CONTRACT (docs/plans/orchestrator-migration.md): the
 Python scan's output is structurally equal to the C server's captured
 response (tests/golden_http/model-catalog.json).
 
@@ -579,6 +579,17 @@ def _capability_entry(card_dir, card_text, route):
 # ---------------------------------------------------------------------------
 
 
+def _engine_owner_dirs(eng_root):
+    """Owner dirs under plugins/engines/: depth-2 plugins AND depth-3
+    category subdirs (plugins/engines/<cat>/<plugin>/ — the cpp
+    native-engine category, 2026-10-02). THE WALK LIVES IN plugins.py
+    (iter_plugin_dirs_under — one law, every consumer: scan_engines,
+    this scan, editor_forms). Yields Path objects."""
+    from pathlib import Path
+    import plugins as _plugins
+    yield from _plugins.iter_plugin_dirs_under(Path(eng_root))
+
+
 def _scan_models(plugins_dir):
     """Returns ordered (row, meta) pairs, one per model.yaml WITH a family
     id — the C's flat n_models array. meta carries the studio claim for
@@ -586,16 +597,14 @@ def _scan_models(plugins_dir):
     pairs = []
     # (2026-09-02) Engine layout: plugins/engines/<engine>/models/<genre>/.
     # The depth-1 owner scan found nothing since the engine formalization.
+    # (2026-10-02) Category subdirs (cpp/) walk via _engine_owner_dirs.
     eng_root = os.path.join(plugins_dir, "engines")
     try:
-        engines = os.scandir(eng_root)
+        owner_dirs = list(_engine_owner_dirs(eng_root))
     except OSError:
         return pairs
-    with engines:
-        for owner in engines:
-            if owner.name.startswith("."):
-                continue
-            models_dir = os.path.join(eng_root, owner.name, "models")
+    for owner in owner_dirs:
+            models_dir = os.path.join(owner, "models")
             if not os.path.isdir(models_dir):
                 continue
             with os.scandir(models_dir) as genres:
@@ -674,15 +683,12 @@ def _scan_cards(plugins_dir):
     # 2026-09-02).  Both subtrees are scanned.
     eng_root = os.path.join(plugins_dir, "engines")
     try:
-        with os.scandir(eng_root) as it:
-            owners = sorted(it, key=lambda e: e.name)
+        owners = list(_engine_owner_dirs(eng_root))
     except OSError:
         return rows, capabilities
     for owner in owners:
-            if owner.name.startswith("."):
-                continue
             for subdir in ("cards", "action_cards"):
-                cards_dir = os.path.join(eng_root, owner.name, subdir)
+                cards_dir = os.path.join(owner, subdir)
                 if not os.path.isdir(cards_dir):
                     continue
                 with os.scandir(cards_dir) as cids:
@@ -747,15 +753,25 @@ def _scan_card_dir(card_dir, card_name):
     # engine dir: one hop above the cards/action_cards segment for
     # depth-1 card dirs, two for genre-grouped
     # (action_cards/<genre>/<card>/, 2026-09-02 reorg); THE CARD
-    # PATTERN (2026-09-03) adds a py/ hop — stripped first
+    # PATTERN (2026-09-03) adds a py/ hop — stripped first.
+    # (2026-10-02) depth-3 category plugins (cpp/): climb to the dir
+    # whose PARENT is plugins/ — the repo root — instead of a fixed
+    # three-hop dirname (which lands on plugins/ for cpp plugins).
     _d = os.path.dirname(card_dir)
     if os.path.basename(_d) == "py":
         _d = os.path.dirname(_d)
     engine_dir = (os.path.dirname(_d)
                   if os.path.basename(_d) in ("cards", "action_cards")
                   else os.path.dirname(os.path.dirname(_d)))
-    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(
-        engine_dir)))
+    _root = engine_dir
+    while _root and os.path.basename(os.path.dirname(_root)) != "plugins" \
+            and os.path.basename(_root) != "plugins":
+        _root = os.path.dirname(_root)
+        if _root == os.sep or not _root:
+            _root = engine_dir
+            break
+    repo_root = os.path.dirname(_root) if os.path.basename(
+        os.path.dirname(_root)) == "plugins" else _root
     _py = os.path.join(repo_root, "py")
     if _py not in sys.path:
         sys.path.insert(0, _py)

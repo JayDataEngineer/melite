@@ -4,8 +4,8 @@
 //
 // THE PROBLEM THIS KILLS: kind behavior used to live as a closed union
 // (CardKind / StageKind) plus scattered `kind === "x"` literals across the
-// kit — runnability in pipelineCardTypes, execution skips in the execute
-// slice (×3), form-spec membership + compound in pipelineTypes, the body
+// kit — runnability in flowCardTypes, execution skips in the execute
+// slice (×3), form-spec membership + compound in FlowTypes, the body
 // tile icon, the studio-link badge tone, and the revive allowlist. Two
 // half-seams (kindHasFormSpec / getCardStudio) with no spine, and a third
 // party could not add a card kind without editing five files.
@@ -22,7 +22,7 @@
 // graph composition).
 //
 // PURE MODULE: imports nothing at runtime (types only) — the dependency
-// root, like pipelineCardTypes. Kinds arrive via the kinds lane (the
+// root, like flowCardTypes. Kinds arrive via the kinds lane (the
 // fourth lane): plugins/*/kinds/*.yaml → GET /v1/kinds → pluginKinds'
 // ONE sync (melite-core is the zeroth provider — no code registrations
 // anywhere; the vitest suite seeds the same wire via the meliteCoreKinds
@@ -35,7 +35,7 @@ import type { ComponentType } from "react"
  * scattered `kind ===` literals. Every flag defaults explicitly; there are
  * no implicit truths. */
 export interface CardKindDef {
-  /** The kind string — the WIRE vocabulary (persisted in pipeline docs,
+  /** The kind string — the WIRE vocabulary (persisted in flow docs,
    * revived verbatim). One registration per kind; duplicate = loud. */
   kind: string
   /** The card carries a Run affordance and compiles (body cards are

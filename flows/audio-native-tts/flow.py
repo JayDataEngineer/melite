@@ -1,7 +1,7 @@
 """audio-native-tts — Qwen3-TTS 12Hz CustomVoice via the live
 melite-audio-nodes island pack in the serving ComfyUI container.
 
-(2026-09-04 flows rework) Converted from pipeline.yaml — the
+(2026-09-04 flows rework) Converted from flow.yaml — the
 declaration is now typed rows; the hardcoded server_url fossil
 DROPPED (the engine's _server_url() config/env seam owns the
 endpoint, QUEUE LANE LAW). params are the comfyui engine's surface,

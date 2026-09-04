@@ -4,9 +4,9 @@
 One file, stdlib only. Replaces the C/C++ server (src/server.cpp and kin)
 with the same queue contract the estate already speaks:
 
-  POST /v1/pipelines/start
-  GET  /v1/pipelines/status/RUN_ID
-  POST /v1/pipelines/stop/RUN_ID
+  POST /v1/flows/start
+  GET  /v1/flows/status/RUN_ID
+  POST /v1/flows/stop/RUN_ID
   GET  /v1/queue
 
 Laws carried over verbatim from AGENTS.md:
@@ -20,7 +20,7 @@ Laws carried over verbatim from AGENTS.md:
                     run failure.
 
 Run dirs are drop-in compatible: output/RUN_ID/_request.json,
-_pipeline.json (atomic tmp+rename), engine artifacts beside them.
+_flow.json (atomic tmp+rename), engine artifacts beside them.
 
 Engines + card composition live in the OWNING PLUGIN (PLUGIN
 ARCHITECTURE LAW): plugins/<id>/engines/<dir>/engine.yaml declares the
@@ -74,7 +74,7 @@ class ValidationError(Exception):
 
 
 def resolve_request(body):
-    """Resolve the start request to a pipeline graph — loudly.
+    """Resolve the start request to a flow graph — loudly.
 
     TWO doors (QUEUE LANE LAW, 2026-09-04 flows rework — the yaml
     text door + its parser are retired; design record docs/queue/
@@ -103,7 +103,7 @@ def resolve_request(body):
         skeleton, etype, extra = resolve_card_model(body, mid)
         return {"__card__": True, "skeleton": skeleton,
                 "etype": etype, "extra": extra, "name": mid}
-    raise ValidationError("no pipeline selected: provide flow or model")
+    raise ValidationError("no flow selected: provide flow or model")
 
 
 # (_find_model_yaml/_engine_type_of retired 2026-09-02: the nondeterministic
@@ -176,7 +176,7 @@ def _find_card_requires(mid, plugins_dir=None):
 
 
 def resolve_card_model(body, mid):
-    """{model} arm for card-only models (no pipeline.yaml on disk).
+    """{model} arm for card-only models (no flow.yaml on disk).
 
     Mirrors the C card path: seed a minimal skeleton carrying the engine
     type, let the OWNING plugin's hook generate the real graph (phase 2
@@ -200,8 +200,8 @@ def resolve_card_model(body, mid):
         except ImportError:
             pass  # card_requires module not available — skip check
     etype, _my = _plugin_loud(_plugin_bus.resolve_model, mid)
-    import pipeline_graph
-    skeleton = pipeline_graph.PipelineGraph(
+    import flow_graph
+    skeleton = flow_graph.FlowGraph(
         name=mid, engine_type=etype, description="card-composed",
         nodes=())
     try:
@@ -342,7 +342,7 @@ def load_engine(engine_type):
 
 
 async def _engine_boundary_unload(prev_type, node_type):
-    """ENGINE TRANSITION (operator order, 2026-10-02: pipelines may
+    """ENGINE TRANSITION (operator order, 2026-10-02: flows may
     switch engines — 'comfyui calls unload all models to be safe';
     2026-09-04 VRAM-release audit: the boundary is GATEWAY-level, so
     a switch between two queued RUNS fires exactly like a switch
@@ -409,7 +409,7 @@ class Gateway:
         self.last_engine_type = None
         # ── the events bus (2026-09-02, the streaming restoration) ──
         # run_id -> set of subscriber queues; the WS door
-        # (/v1/pipelines/events/<run_id>) feeds here and the engine
+        # (/v1/flows/events/<run_id>) feeds here and the engine
         # report contract publishes here. The 700ms status poll stays
         # the terminal authority; the bus carries the intra-tick frames
         # (per-step progress, activity flips) the poll cannot.
@@ -456,8 +456,8 @@ class Gateway:
                         card_extra_inputs.setdefault(k, v)
                 except Exception as e:
                     raise ValidationError("card_compose phase 2: %s" % e)
-            import pipeline_graph as _pg
-            if not (isinstance(graph, _pg.PipelineGraph) and graph.nodes):
+            import flow_graph as _pg
+            if not (isinstance(graph, _pg.FlowGraph) and graph.nodes):
                 raise ValidationError(
                     "card_compose produced an empty graph for %s" % resolved["name"])
         else:
@@ -520,7 +520,7 @@ class Gateway:
                 self.active = None
 
     async def execute(self, run):
-        initial = {k: v for k, v in run.request.items() if k not in ("yaml", "pipeline", "model")}
+        initial = {k: v for k, v in run.request.items() if k not in ("yaml", "flow", "model")}
         # phase-1 card inputs ("inputs": {...}) land in the tensor pool
         ci = getattr(run, "card_extra_inputs", {}) or {}
         nested = ci.get("inputs") if isinstance(ci.get("inputs"), dict) else ci
@@ -574,7 +574,7 @@ class Gateway:
                 engine = load_engine(node.node_type)
                 # the engine ABI row: a VALIDATED NodeRow carrying the
                 # inject-expanded params (construction refuses a bad row)
-                import pipeline_graph as _pg
+                import flow_graph as _pg
                 result = await engine.execute(
                     _pg.NodeRow(node_id=node.node_id,
                                 node_type=node.node_type, params=params),
@@ -699,7 +699,7 @@ def sidecar(run):
     # body into the run's request dict and onto the sidecar. scan_run
     # reads it from here; assets_index (L2) uses it to keep test runs
     # out of the production view.
-    atomic_write(run.dir / "_pipeline.json", {
+    atomic_write(run.dir / "_flow.json", {
         "run_id": run.run_id,
         "status": run.status,
         "error": json.dumps(run.error)[:20000] if run.error else "",
@@ -775,7 +775,7 @@ def boot_sweep():
         if not d.is_dir() or not d.name.startswith("run-"):
             continue
         if sweep_sidecar(
-                d / "_pipeline.json",
+                d / "_flow.json",
                 "gateway restarted (boot sweep): stale active sidecar "
                 "from a dead process"):
             ledger("run.swept", {"run_id": d.name, "state": "failed",
@@ -789,7 +789,7 @@ def sidecar_status(run_id):
     A running/queued sidecar with no live registry entry is a stale
     leftover from a prior crash — self-heal at read time so zombies
     never accumulate, then report the failure."""
-    path = OUT_ROOT / run_id / "_pipeline.json"
+    path = OUT_ROOT / run_id / "_flow.json"
     if not path.is_file():
         return None
     try:
@@ -845,7 +845,7 @@ def _ws_frame(payload: bytes) -> bytes:
 
 
 async def ws_events_door(gw, reader, writer, headers, run_id):
-    """GET /v1/pipelines/events/<run_id> with Upgrade: websocket.
+    """GET /v1/flows/events/<run_id> with Upgrade: websocket.
 
     The streaming door (2026-09-02): subscribes to the run's event bus
     and pushes every frame live — stage flips, per-step progress,
@@ -992,9 +992,9 @@ async def handle(gw, reader, writer):
         # the WS door hijacks the connection BEFORE routing (an Upgrade
         # request must never fall through to a JSON response).
         if headers.get("upgrade", "").lower() == "websocket":
-            wsm = re.match(r"^/v1/pipelines/events/(.+)$",
+            wsm = re.match(r"^/v1/flows/events/(.+)$",
                            target.split("?")[0].rstrip("/"))
-            # Query form (?run_id=<id> at the BARE /v1/pipelines/events):
+            # Query form (?run_id=<id> at the BARE /v1/flows/events):
             # the DSH web-ui proxy registers upgrade tunnels at EXACT
             # paths only, so the embed connects with the run id in the
             # query (2026-09-04 live bug: no comfyui feedback in the
@@ -1005,7 +1005,7 @@ async def handle(gw, reader, writer):
                 q = _pq(_up(target).query)
                 rid = (q.get("run_id") or q.get("id") or [""])[0]
                 if rid and _up(target).path.rstrip("/") == \
-                        "/v1/pipelines/events":
+                        "/v1/flows/events":
                     wsm = re.match(r"^(.+)$", rid)
             if wsm and method == "GET":
                 await ws_events_door(gw, reader, writer, headers,
@@ -1046,7 +1046,7 @@ async def route(gw, method, target, body):
     qs = parse_qs(urlparse(target).query)
 
     # ── QUEUE LANE LAW: start/status/stop (py gateway core) ──────────
-    if method == "POST" and path == "/v1/pipelines/start":
+    if method == "POST" and path == "/v1/flows/start":
         try:
             req = json.loads(body.decode() or "{}")
         except json.JSONDecodeError as e:
@@ -1063,7 +1063,7 @@ async def route(gw, method, target, body):
             "active": gw.active.run_id if gw.active else "",
             "queued_ids": list(gw.order),
         }
-    m = re.match(r"^/v1/pipelines/status/(.+)$", path)
+    m = re.match(r"^/v1/flows/status/(.+)$", path)
     if method == "GET" and m:
         run = gw.runs.get(m.group(1))
         if run is None:
@@ -1079,7 +1079,7 @@ async def route(gw, method, target, body):
             "error": run.error,
             "queue_position": gw.order.index(run.run_id) if run.run_id in gw.order else 0,
         }
-    m = re.match(r"^/v1/pipelines/stop/(.+)$", path)
+    m = re.match(r"^/v1/flows/stop/(.+)$", path)
     if method == "POST" and m:
         try:
             return 200, await gw.stop(m.group(1))
@@ -1112,28 +1112,28 @@ async def route(gw, method, target, body):
         return code, spec
 
     # ── EDITOR DATA SURFACE (py/editor_runs.py) ──────────────────────
-    if method == "GET" and path == "/v1/pipelines/runs":
+    if method == "GET" and path == "/v1/flows/runs":
         import editor_runs as _er
         return 200, _er.runs(str(STATE_ROOT))
-    m = re.match(r"^/v1/pipelines/runs/(.+)$", path)
+    m = re.match(r"^/v1/flows/runs/(.+)$", path)
     if method == "GET" and m:
         import editor_runs as _er
         return _er.run_detail(str(STATE_ROOT), m.group(1))
-    if method == "GET" and path == "/v1/pipelines/yaml/list":
+    if method == "GET" and path == "/v1/flows/yaml/list":
         import editor_runs as _er
         return 200, _er.yaml_list(str(REPO / "flows"))
-    if method == "GET" and path == "/v1/pipelines/yaml/detail":
+    if method == "GET" and path == "/v1/flows/yaml/detail":
         import editor_runs as _er
         yaml_name = qs.get("yaml", [""])[0]
         return _er.yaml_detail(str(REPO / "flows"), yaml_name or None)
-    if method == "POST" and path == "/v1/pipelines/yaml/save":
+    if method == "POST" and path == "/v1/flows/yaml/save":
         import editor_runs as _er
         try:
             body_json = json.loads(body.decode() or "{}")
         except json.JSONDecodeError as e:
             return 400, {"error": "bad JSON: %s" % e}
         return _er.yaml_save(str(REPO / "flows"), body_json)
-    if method in ("DELETE", "POST") and path == "/v1/pipelines/yaml/delete":
+    if method in ("DELETE", "POST") and path == "/v1/flows/yaml/delete":
         import editor_runs as _er
         fname = qs.get("filename", [None])[0]
         if fname is None and method == "POST":
@@ -1143,28 +1143,28 @@ async def route(gw, method, target, body):
             except json.JSONDecodeError:
                 pass
         return _er.yaml_delete(str(REPO / "flows"), fname)
-    if method == "POST" and path == "/v1/pipelines/yaml/rename":
+    if method == "POST" and path == "/v1/flows/yaml/rename":
         import editor_runs as _er
         try:
             body_json = json.loads(body.decode() or "{}")
         except json.JSONDecodeError as e:
             return 400, {"error": "bad JSON: %s" % e}
         return _er.yaml_rename(str(REPO / "flows"), body_json)
-    if method == "POST" and path == "/v1/pipelines/yaml/validate":
+    if method == "POST" and path == "/v1/flows/yaml/validate":
         import editor_runs as _er
         try:
             body_json = json.loads(body.decode() or "{}")
         except json.JSONDecodeError:
             body_json = {}
         return _er.yaml_validate(str(REPO / "flows"), body_json)
-    if method == "POST" and path == "/v1/pipelines/yaml/validate-simple":
+    if method == "POST" and path == "/v1/flows/yaml/validate-simple":
         import editor_runs as _er
         try:
             body_json = json.loads(body.decode() or "{}")
         except json.JSONDecodeError:
             body_json = {}
         return _er.yaml_validate_simple(str(REPO / "flows"), body_json)
-    if method == "POST" and path.startswith("/v1/pipelines/resume/"):
+    if method == "POST" and path.startswith("/v1/flows/resume/"):
         import editor_runs as _er
         rid = path.split("/")[-1]
         try:
@@ -1172,27 +1172,27 @@ async def route(gw, method, target, body):
         except json.JSONDecodeError:
             body_json = {}
         return _er.resume(str(STATE_ROOT), rid, body_json,
-                          pipelines_root=str(REPO / "flows"))
-    if path == "/v1/pipelines/families/param-schemas":
+                          flows_root=str(REPO / "flows"))
+    if path == "/v1/flows/families/param-schemas":
         import editor_runs as _er
         return 200, _er.family_param_schemas(
             _er.catalog_family_ids(str(REPO / "plugins")))
-    m = re.match(r"^/v1/pipelines/families/(.+)/param-schema$", path)
+    m = re.match(r"^/v1/flows/families/(.+)/param-schema$", path)
     if method == "GET" and m:
         import editor_runs as _er
         return _er.family_param_schema(
             _er.catalog_family_ids(str(REPO / "plugins")), m.group(1))
-    if method == "GET" and path == "/v1/pipelines/drafts":
+    if method == "GET" and path == "/v1/flows/drafts":
         import editor_runs as _er
         return 200, _er.drafts_list(str(STATE_ROOT / "drafts"))
-    if method == "POST" and path == "/v1/pipelines/drafts":
+    if method == "POST" and path == "/v1/flows/drafts":
         import editor_runs as _er
         try:
             body_json = json.loads(body.decode() or "{}")
         except json.JSONDecodeError as e:
             return 400, {"error": "bad JSON: %s" % e}
         return _er.drafts_save(str(STATE_ROOT / "drafts"), body_json)
-    m = re.match(r"^/v1/pipelines/drafts/(.+)$", path)
+    m = re.match(r"^/v1/flows/drafts/(.+)$", path)
     if method == "GET" and m:
         import editor_runs as _er
         return _er.drafts_get(str(STATE_ROOT / "drafts"), m.group(1))

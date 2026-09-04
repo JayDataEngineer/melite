@@ -7,11 +7,11 @@
 - ALL inference — video windows, images, TTS, motion, every GPU workload — goes
   through the QUEUE SYSTEM (asset requests / action cards). One active request
   at a time (serial GPU law).
-- NEVER POST directly to /v1/pipelines/start, /generate, or any inference door
+- NEVER POST directly to /v1/flows/start, /generate, or any inference door
   as a "straight demand". The GPU fails when the queue is bypassed.
 - Action cards are the queue-native interface: compose the card, the run goes
   through the queue, claims enforce serialization.
-- If a run must stop: use the stop door (/v1/pipelines/stop/<id>) — never kill
+- If a run must stop: use the stop door (/v1/flows/stop/<id>) — never kill
   processes.
 - Gateway restarts: OPERATOR ONLY on production deployments. THE DEV DSH
   LOOP IS THE SANCTIONED EXCEPTION (operator order, 2026-09-04: "Change
@@ -29,7 +29,7 @@
 
 > "No legacy. No fallbacks. No hardcodes. These are banned."
 
-- The pipeline START handler must never silently compose a graph when a
+- The flow START handler must never silently compose a graph when a
   request fails to resolve. Unresolved requests are rejected with 4xx
   BEFORE any run is registered (no zombie slots, no sidecars).
 - No default model names (e.g. the old "krea-2" fallback). A run must
@@ -53,7 +53,7 @@
 > IT SHOULD DOCUMENT THE FAILURE, THEN CONTINUE"
 
 - A failing run marks itself `error` with the EXACT failure message (from the
-  plugin's stderr capture) in the sidecar ledger `_pipeline.json` — top-level
+  plugin's stderr capture) in the sidecar ledger `_flow.json` — top-level
   `error` field AND per-stage `stages[].error`. Never a bare "failed".
 - The gateway process outlives every run failure. No code path in a run thread
   may abort the server; early returns must release the GPU FIFO ticket exactly

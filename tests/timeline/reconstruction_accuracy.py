@@ -10,7 +10,7 @@ THE FAIL THIS CATCHES (2026-08-30):
 
   Root cause: compile_calls_windows() in server.cpp compiles card-level
   calls into window prompts via local variables (tl_wins/tl_spans) that
-  go out of scope. The sidecar (_pipeline.json) does not store the
+  go out of scope. The sidecar (_flow.json) does not store the
   compiled windows. The write-back has no data to reconstruct params.calls.
 
 INVARIANT: for every completed h3-timeline run, the draft's params.calls

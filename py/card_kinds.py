@@ -41,7 +41,7 @@ class CardKindRow(BaseModel, frozen=True):
     render/run contract for the kind string:
 
       runnable     — the card may join a run (Run affordance renders)
-      executable   — the card executes as its own pipeline step
+      executable   — the card executes as its own flow step
       formSpec     — the card fetches a form-spec (ParamGrid renders)
       compound     — the card is a container (holds other cards)
       opensStudio  — the card authors params in a studio body, not a grid

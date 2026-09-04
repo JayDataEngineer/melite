@@ -1,10 +1,10 @@
 ---
-name: prop-flow-pipeline
+name: prop-flow-flow
 description: The static prop chain — concept discipline, the 10K ultra-low budget, and the turntable gate
 genre: 3d
 ---
 
-# Prop Flow Pipeline
+# Prop Flow Flow
 
 The prop lane: concept image -> Pixal3D mesh -> 10K quad remesh ->
 8 turntable views. No rig stage, ever.

@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/v1/pipelines/start": {
+    "/v1/flows/start": {
         parameters: {
             query?: never;
             header?: never;
@@ -13,15 +13,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** The ONE run door — four folded shapes (route / yaml / pipeline / generation) */
-        post: operations["pipelines_start"];
+        /** The ONE run door — four folded shapes (route / yaml / flow / generation) */
+        post: operations["flows_start"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/pipelines/status/{run_id}": {
+    "/v1/flows/status/{run_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -29,7 +29,7 @@ export interface paths {
             cookie?: never;
         };
         /** The ONE status channel */
-        get: operations["pipelines_status"];
+        get: operations["flows_status"];
         put?: never;
         post?: never;
         delete?: never;
@@ -701,7 +701,7 @@ export interface components {
         };
         /**
          * RunStartRequest
-         * @description The declared vocabulary of POST /v1/pipelines/start.
+         * @description The declared vocabulary of POST /v1/flows/start.
          *
          *     Union of every folded shape's declared keys. `extra="allow"`: keys
          *     not declared here are legal generation params (model_extra), scanned
@@ -715,8 +715,8 @@ export interface components {
         RunStartRequest: {
             /** Route */
             route?: boolean | null;
-            /** Pipeline */
-            pipeline?: {
+            /** Flow */
+            flow?: {
                 [key: string]: unknown;
             } | null;
             /** Yaml */
@@ -835,7 +835,7 @@ export interface components {
         };
         /**
          * RunStartResult
-         * @description 200 success — a run is running; poll GET /v1/pipelines/status.
+         * @description 200 success — a run is running; poll GET /v1/flows/status.
          *
          *     ``status``/``queue_position`` appear ONLY for a queued start (the
          *     ONE-GPU run queue, 2026-08-14): while another run is active the door
@@ -983,7 +983,7 @@ export interface components {
         /**
          * RunStatusWire
          * @description The wire status — the contract core + every runner extra (log_tail,
-         *     params, pipeline_doc, ...). The emission serializes through THIS (the
+         *     params, flow_doc, ...). The emission serializes through THIS (the
          *     doc derives from it); contracts.RunStatus stays the strict core.
          */
         RunStatusWire: {
@@ -1175,7 +1175,7 @@ export interface components {
          *     Declaration lives on the family's catalog block (``primary_output`` +
          *     ``optional_outputs:``); ``emit_when`` is the param key whose truthy
          *     presence in a step's params ACTIVATES the output for that step. The
-         *     resolver (core.pipelines.outputs.resolve_step_outputs) derives the
+         *     resolver (core.flows.outputs.resolve_step_outputs) derives the
          *     per-step ``outputs`` list from this declaration + the step's params —
          *     one generic code path for every family. Adding an optional output to a
          *     family is a YAML line here, ZERO schema/compile/frontend edits.
@@ -2099,7 +2099,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    pipelines_start: {
+    flows_start: {
         parameters: {
             query?: never;
             header?: never;
@@ -2112,7 +2112,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Success (run started — poll /v1/pipelines/status/{run_id}), or a discriminating preflight/download-required dict (200) that must be resolved before retrying the same body, or a blocked-run error (the model can't be provisioned — the error field carries the guidance), or a dry-run plan (dry_run: true — gates run, NOTHING minted). */
+            /** @description Success (run started — poll /v1/flows/status/{run_id}), or a discriminating preflight/download-required dict (200) that must be resolved before retrying the same body, or a blocked-run error (the model can't be provisioned — the error field carries the guidance), or a dry-run plan (dry_run: true — gates run, NOTHING minted). */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2141,7 +2141,7 @@ export interface operations {
             };
         };
     };
-    pipelines_status: {
+    flows_status: {
         parameters: {
             query?: never;
             header?: never;

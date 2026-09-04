@@ -7,7 +7,7 @@ import pytest
 
 def write_run(root, run_id, files, status="completed", model="x",
               created_at=1700000000, test=False):
-    """Write a run dir (artifact files + _pipeline.json sidecar).
+    """Write a run dir (artifact files + _flow.json sidecar).
 
     Shared by every unit suite that needs a run on disk. Tests that
     need custom sidecar shapes (garbled, hand-built dicts) write the
@@ -22,7 +22,7 @@ def write_run(root, run_id, files, status="completed", model="x",
                "model": model, "created_at": created_at}
     if test:
         sidecar["test"] = True
-    with open(os.path.join(rd, "_pipeline.json"), "w") as fp:
+    with open(os.path.join(rd, "_flow.json"), "w") as fp:
         fp.write(json.dumps(sidecar))
     return rd
 

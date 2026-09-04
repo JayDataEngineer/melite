@@ -23,14 +23,14 @@ ID scheme (skill_index/skill_read speak it):
   model:<id>                 model AGENT.md
   model:<id>:<stem>          model-level SKILL.md
   guide:<id>                 model GUIDE.md
-  flow:<name>                pipelines/<name>/pipeline.yaml (the multi-
+  flow:<name>                flows/<name>/flow.yaml (the multi-
                              step flow template body — concept → mesh →
                              remesh → … — a LANE class of its own)
 
-LEVEL 4 — FLOW TEMPLATES (pipelines/<name>/pipeline.yaml, api:true):
+LEVEL 4 — FLOW TEMPLATES (flows/<name>/flow.yaml, api:true):
 multi-step orchestrated lanes. Distinct artifact class from cards: a
 card composes ONE run; a flow chains STEPS across plugins. Served as
-"pipelines" in the bundle + a flow:<name> skill row whose body is the
+"flows" in the bundle + a flow:<name> skill row whose body is the
 yaml itself (rename to "templates" pending; the wire key changes
 with the rename order).
 
@@ -224,12 +224,12 @@ def _base_chain(family: str, all_ids: set) -> list[str]:
 
 
 _KINDS = {"action_card": "card", "card": "card",
-          "template": "flow", "pipeline": "flow", "flow": "flow"}
+          "template": "flow", "flow": "flow", "flow": "flow"}
 
 
 def _norm_kind(kind) -> str | None:
     """Peek/load speak the agent's vocabulary: action_card / template
-    (or pipeline) — normalized to the internal lane classes. Empty →
+    (or flow) — normalized to the internal lane classes. Empty →
     None (unfiltered). Unknown → ValueError (named refusal).
 
     'model' is REFUSED here on purpose (operator order, 2026-09-04:
@@ -253,7 +253,7 @@ def _norm_kind(kind) -> str | None:
 
 
 def _flow_rows() -> list[dict]:
-    """LEVEL 4: flows/<name>/pipeline.yaml with the api:true gate —
+    """LEVEL 4: flows/<name>/flow.yaml with the api:true gate —
     one row per flow template (the yaml_list reader's scan, plus the
     step summary so the index row says what the flow DOES)."""
     import yaml
@@ -262,7 +262,7 @@ def _flow_rows() -> list[dict]:
     if not root.is_dir():
         return rows
     for pdir in sorted(root.iterdir()):
-        py = pdir / "pipeline.yaml"
+        py = pdir / "flow.yaml"
         if not py.is_file():
             continue
         try:
@@ -297,7 +297,7 @@ def _flow_rows() -> list[dict]:
 
 def flow_lanes() -> list[dict]:
     """The flow template index (bundle list surface): one compact row
-    per api:true pipeline template."""
+    per api:true flow template."""
     return [{"lane": r["name"], "flow": r["id"],
              "description": r["description"],
              "steps": r["step_count"]}
@@ -390,7 +390,7 @@ def lane_bundle(lane: str, kind=None) -> tuple[int, dict]:
     reads orientation with zero extra round-trips.
 
     kind gates the resolution class (peek/load vocabulary):
-      action_card → card dirs only; template|pipeline → flow templates
+      action_card → card dirs only; template|flow → flow templates
       only; absent → any class. 'model' is not a lane class (operator
       order, 2026-09-04 — models are card parameters + craft docs, see
       _norm_kind): a bare model id still resolves to the CARD that
@@ -464,11 +464,11 @@ def lane_bundle(lane: str, kind=None) -> tuple[int, dict]:
         return 200, {"lane": lane, "card": card_dir,
                      "kind": "action_card",
                      "agent": agent, "tools": tools,
-                     "pipelines": [], "skills": clean,
+                     "flows": [], "skills": clean,
                      "read_first": read_first[:6]}
-    # LEVEL 4 — a flow lane (pipelines/<lane>/pipeline.yaml, api:true).
+    # LEVEL 4 — a flow lane (flows/<lane>/flow.yaml, api:true).
     # Distinct lane class: no card manifests; the template IS the
-    # contract, carried under "pipelines" + a flow:<name> skill row.
+    # contract, carried under "flows" + a flow:<name> skill row.
     if k != "card":
         for r in _flow_rows():
             if r["name"] == lane or r["id"] == "flow:%s" % lane:
@@ -477,7 +477,7 @@ def lane_bundle(lane: str, kind=None) -> tuple[int, dict]:
                          "content": _flow_orientation(r)}
                 return 200, {"lane": lane, "card": None,
                              "kind": "template", "agent": agent,
-                             "tools": [], "pipelines": [row],
+                             "tools": [], "flows": [row],
                              "skills": [row], "read_first": [r["id"]]}
     return 404, {"error": "no such lane: %r (kind=%s)"
                  % (lane, k or "any")}

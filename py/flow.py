@@ -1,6 +1,6 @@
 """flow.py — THE flow declaration layer (PYTHON SHAPE LAW, 2026-09-04).
 
-Flows are what pipelines/ was: authored multi-stage graphs for the
+Flows are what flows/ was: authored multi-stage graphs for the
 queue (design record: docs/queue/flows.md). Declarations are PYTHON
 MODULES — one flow per module, the module IS the name
 (flows/<id>/flow.py exposing FLOW = Flow(...)). Validation happens
@@ -8,9 +8,9 @@ AT CONSTRUCTION: an unbuildable flow (dup ids, a wire to a later or
 missing stage, an engine no plugin declares) cannot be declared —
 the refusal is the import.
 
-Layers (pipeline_graph.py stays THE graph contract, unchanged):
+Layers (flow_graph.py stays THE graph contract, unchanged):
     flows/<id>/flow.py   authored declaration (this schema)
-    Flow.to_graph()      -> PipelineGraph / NodeRow (the executor's food)
+    Flow.to_graph()      -> FlowGraph / NodeRow (the executor's food)
     resolve_inputs()     runtime __initial__/<node>.<out> wiring (gateway)
 
 Edges are structural (rung 5: no stringly handshakes):
@@ -129,14 +129,14 @@ class Flow(BaseModel):
         return tuple(st.engine for st in self.stages)
 
     def to_graph(self):
-        """The PipelineGraph the executor consumes — the SAME typed
-        contract compose arms hand the core (py/pipeline_graph.py)."""
-        import pipeline_graph
-        return pipeline_graph.PipelineGraph(
+        """The FlowGraph the executor consumes — the SAME typed
+        contract compose arms hand the core (py/flow_graph.py)."""
+        import flow_graph
+        return flow_graph.FlowGraph(
             name=self.id,
             description=self.description,
             nodes=tuple(
-                pipeline_graph.NodeRow(
+                flow_graph.NodeRow(
                     node_id=st.id,
                     node_type=st.engine,
                     description=st.description,

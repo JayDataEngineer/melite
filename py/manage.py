@@ -170,7 +170,7 @@ def _ensure_routing() -> dict:
 _STATUS_RE = re.compile(r'\"status\"\s*:\s*\"([a-z]+)\"')
 
 def _active_runs() -> list[str]:
-    """Sidecar scan: run dirs whose _pipeline.json reads running|queued.
+    """Sidecar scan: run dirs whose _flow.json reads running|queued.
     Conservative by design — a stale \"running\" sidecar refuses the
     restart (safe); the sweep that marks them failed is the runs
     reader's job, not the manager's."""
@@ -183,7 +183,7 @@ def _active_runs() -> list[str]:
         if not name.startswith("run-"):
             continue
         try:
-            buf = (STATE_RUNS / name / "_pipeline.json").read_text(
+            buf = (STATE_RUNS / name / "_flow.json").read_text(
                 encoding="utf-8", errors="surrogateescape")[:8191]
         except OSError:
             continue

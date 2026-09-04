@@ -168,12 +168,12 @@ def run_case(rec):
                 continue
             PASS.append("%s/phase2 (co_script flip isomorphic)" % name)
         elif phase == "phase2" and graph is not None and graph.nodes:
-            # AUDIO ARM: the graph is a typed PipelineGraph — compare
+            # AUDIO ARM: the graph is a typed FlowGraph — compare
             # STRUCTURALLY against the golden's own graph (parsed at
             # the disk rim from the recorded text)
-            from gateway import parse_pipeline_text
+            from gateway import parse_flow_text
             try:
-                old = parse_pipeline_text(golden.get("yaml", ""))
+                old = parse_flow_text(golden.get("yaml", ""))
             except Exception as e:
                 FAIL.append("%s/phase2: golden yaml unparseable (%s)" % (name, e))
                 continue

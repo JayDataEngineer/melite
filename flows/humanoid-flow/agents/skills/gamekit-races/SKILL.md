@@ -15,7 +15,7 @@ description: race assembly lane — base humanoid + blendshape morphs + TRELLIS 
    Rig-quality warning: SOMAX weights currently FAIL the verify harness
    floors (ADR W23) — the rig drives fine for tween/preview use; do not
    ship hero close-ups without re-gating.
-   TEXTURED base (2026-08-25, GREEN): `data/pipelines/base_human_texture.yaml` —
+   TEXTURED base (2026-08-25, GREEN): `data/flows/base_human_texture.yaml` —
    step1x_texture identity-locked bake onto the keeper mesh
    (mesh_artifact + reference_artifact = the SAME concept front crop,
    texture_size 2048). Delivered: base_human_textured/ (GLB+FBX) +
@@ -33,7 +33,7 @@ description: race assembly lane — base humanoid + blendshape morphs + TRELLIS 
      delta dV; w is the 0-1 weight you tween.
    - Verify any GLB: `.venv/bin/python scripts/delivery/check_morph_targets.py <file.glb>`
 3. **Attachments** — TRELLIS static props (cat ears, horns, crests) bound to
-   ONE bone. Lane: the trellis_native pipeline. Gate with agent eyes (all turntable views
+   ONE bone. Lane: the trellis_native flow. Gate with agent eyes (all turntable views
    must agree on one subject noun).
 
 ## The socket law (non-negotiable)
@@ -63,9 +63,9 @@ plain bone transforms the same zero-clip way).
 Gateway: `http://127.0.0.1:18090` (discover live: `ss -ltnp | grep inference_cli`).
 
 Start:
-`curl -s -X POST http://127.0.0.1:18090/v1/pipelines/start -d '{"yaml":"trellis_native","prompt":"<attachment>"}'`
+`curl -s -X POST http://127.0.0.1:18090/v1/flows/start -d '{"yaml":"trellis_native","prompt":"<attachment>"}'`
 
-Poll: `curl -s http://127.0.0.1:18090/v1/pipelines/status/<run_id>`
+Poll: `curl -s http://127.0.0.1:18090/v1/flows/status/<run_id>`
 
 ## Assembly (container blender)
 

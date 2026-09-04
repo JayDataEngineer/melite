@@ -168,13 +168,13 @@ class FakeRun:
         self.stop_event = asyncio.Event()
         self.stages = [{"id": "s0", "name": "gen", "index": 0,
                         "status": "running"}]
-        # the typed graph contract (py/pipeline_graph.py): execute()
+        # the typed graph contract (py/flow_graph.py): execute()
         # reads run.graph.nodes — a raw dict stopped working the day
-        # PipelineGraph landed (2026-09-04 repair, flows rework round)
-        import pipeline_graph
-        self.graph = pipeline_graph.PipelineGraph(
+        # FlowGraph landed (2026-09-04 repair, flows rework round)
+        import flow_graph
+        self.graph = flow_graph.FlowGraph(
             name="fake",
-            nodes=(pipeline_graph.NodeRow(
+            nodes=(flow_graph.NodeRow(
                 node_id="n0", node_type="fake", params={}),))
         self.artifacts = []
         self.error = None
@@ -252,7 +252,7 @@ async def ws_door_battery():
         reader, writer = await asyncio.open_connection("127.0.0.1", port)
         key = base64.b64encode(os.urandom(16)).decode()
         writer.write((
-            "GET /v1/pipelines/events/%s HTTP/1.1\r\n"
+            "GET /v1/flows/events/%s HTTP/1.1\r\n"
             "Host: 127.0.0.1:%d\r\n"
             "Upgrade: websocket\r\n"
             "Connection: Upgrade\r\n"

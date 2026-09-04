@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # GPU e2e regression suite - RUN ONLY WITH RUN_GPU=1 (real ComfyUI runs).
 # Two runs, ~4 min total:
-#   1. no-audio regression: stock pipeline must stay byte-identical in
+#   1. no-audio regression: stock flow must stay byte-identical in
 #      GRAPH terms - workflow files untouched, run completes, seams persist,
 #      history grows by exactly 1 row, no dupes.
-#   2. audio-guide lane: pipeline_audio.yaml variant + staged guide track.
+#   2. audio-guide lane: flow_audio.yaml variant + staged guide track.
 # Law: queue must be empty before the gateway restart (FIFO ticket).
 set -u
 GW="${GW:-http://127.0.0.1:18090}"
@@ -26,10 +26,10 @@ EOF
 
 run_and_wait() { # echoes run_id; $1 = audio json suffix
   local RID S
-  RID=$(curl -s -m 8 -X POST "$GW/v1/pipelines/start" -H 'content-type: application/json' \
+  RID=$(curl -s -m 8 -X POST "$GW/v1/flows/start" -H 'content-type: application/json' \
         -d "$(body "$1")" | python3 -c 'import json,sys; print(json.load(sys.stdin)["run_id"])')
   for i in $(seq 1 150); do
-    S=$(curl -s -m 5 "$GW/v1/pipelines/status/$RID" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("status","?"))' 2>/dev/null)
+    S=$(curl -s -m 5 "$GW/v1/flows/status/$RID" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("status","?"))' 2>/dev/null)
     [ "$S" = "completed" ] || [ "$S" = "failed" ] && break
     sleep 6
   done

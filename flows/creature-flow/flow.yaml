@@ -1,15 +1,15 @@
 name: creature-flow
 api: true
 description: >-
-  Non-humanoid creature pipeline — concept image → Pixal3D mesh via
+  Non-humanoid creature flow — concept image → Pixal3D mesh via
   ComfyUI native nodes → AutoRemesher quad budget (20K) → UltraShape
   refinement → optional anyCreature skeleton bridge → turntable review.
-  NOTE: humanoid creatures use humanoid-flow, NOT this pipeline.
+  NOTE: humanoid creatures use humanoid-flow, NOT this flow.
 
 # Plugin-field law: the plugin names the UPSTREAM SOURCE that owns
 # the compute — comfyui for every GPU node run (Pixal3D, UltraShape,
 # the /poser/bridge_creature rig endpoint in melite-poser-nodes),
-# melite-3d for its own pipeline-native CPU engines (autoremesher).
+# melite-3d for its own flow-native CPU engines (autoremesher).
 
 steps:
   - id: concept

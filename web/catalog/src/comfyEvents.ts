@@ -12,7 +12,7 @@
  * 2026-09-02 status: the ENGINE side of that law landed — the comfyui
  * plugin owns a native ws tap (compose/native.py) that shares the
  * submitting client_id, and the gateway re-publishes through its own
- * events door (consumed via pipelineEvents.ts). This client remains
+ * events door (consumed via FlowEvents.ts). This client remains
  * for DIRECT ComfyUI attachments (engine-local UI, no gateway hop).
  */
 

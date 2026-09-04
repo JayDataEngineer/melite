@@ -1,12 +1,12 @@
-// preflightStore — the imperative bridge between the (UI-less) pipeline
+// preflightStore — the imperative bridge between the (UI-less) flow
 // store and the (rendered-once) <PreflightDialog/>.
 //
 // WHY A SEPARATE STORE: executeGeneration is a free function that returns a
-// StageResult; it has no React context. When /v1/pipelines/start returns
+// StageResult; it has no React context. When /v1/flows/start returns
 // status: "preflight_required", the run must PAUSE — open the popup, await
 // the user's decision (download+restart / skip / cancel), then either retry
 // or abort. A tiny zustand store is the cleanest imperative gate: the dialog
-// mounts once (PipelineCanvas) and watches `request`; the runner calls
+// mounts once (FlowCanvas) and watches `request`; the runner calls
 // runPreflight() which sets `request` and returns a promise the dialog
 // resolves via _resolve().
 //

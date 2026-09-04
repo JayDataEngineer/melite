@@ -52,7 +52,7 @@ function DialogOverlay({ className, ...props }: React.ComponentProps<typeof Dial
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        // z-[100] — above the card zoom overlay's z-[80] (PipelineCard's
+        // z-[100] — above the card zoom overlay's z-[80] (FlowCard's
         // createPortal layer). The Dialog portals to document.body but the
         // zoom overlay ALSO portals (to [data-workspace-content] ?? body),
         // so at body level z-80 beat the old z-50 and hid the Dialog behind

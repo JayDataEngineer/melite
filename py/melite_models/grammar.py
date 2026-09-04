@@ -46,7 +46,7 @@ class ModelError(Exception):
 # cards tree (action_cards/motion/), the models tree (models/motion/),
 # the sidebar taxonomy (web/formats sidebarGenres) — this enum was the
 # stale edge. Closed vocabularies extend when a real tier lands.
-_GENRE_VALUES = frozenset(("image", "video", "audio", "3d", "motion", ""))
+_GENRE_VALUES = frozenset(("image", "video", "audio", "3d", "motion", "creature", ""))
 
 class LaneInputs(BaseModel, frozen=True):
     '''Weight facts a card renderer reads (MODELS DON'T RENDER — cards
@@ -185,6 +185,7 @@ class Quant(str, Enum):
     INT8 = "int8"
     FP8 = "fp8"
     BF16 = "bf16"
+    F32 = "f32"
     LIGHTNING4 = "lightning4"
 
 
@@ -195,6 +196,7 @@ class DestRoot(str, Enum):
     """Where provisioning roots an artifact (env-resolved by the
     engine; COMFYUI_ROOT today — widened only by real engines)."""
     COMFYUI = "COMFYUI_ROOT"
+    KIMODO = "KIMODO_ROOT"
 
 
 # ── pydantic row schemas — the SERVED/emitted shapes ─────────────────
@@ -270,7 +272,7 @@ class Cell(BaseModel, frozen=True):
 
     quant: Quant
     label: str = ""
-    route: str = ""                    # pipeline route (falls back up)
+    route: str = ""                    # flow route (falls back up)
     engine: str = ""                   # engine override (declarer-wins)
     vram_peak_gb: float | None = Field(default=None, ge=0)
     resolver_defaults: dict = {}       # cascade merge (deepest layer)

@@ -3,31 +3,31 @@
 
 Scope of this module (branch python-orchestrator): the READERS and
 persistence doors the Tech Noir editor + media deck speak — run history,
-drafts, pipeline-yaml CRUD, artifact serving, family param schemas, and
+drafts, flow-yaml CRUD, artifact serving, family param schemas, and
 the tiny chrome registries. Pure functions over explicit roots; stdlib
 only; no globals carrying configuration (the C server's cwd-relative
-"./output", "./drafts", "../pipelines" become explicit arguments).
+"./output", "./drafts", "../flows" become explicit arguments).
 
 C sources mirrored (line numbers from src/server.cpp at port time):
 
-  handle_pipelines_runs      ~6606   GET  /v1/pipelines/runs
-  handle_pipelines_status    ~4356   GET  /v1/pipelines/status/:run_id
+  handle_flows_runs      ~6606   GET  /v1/flows/runs
+  handle_flows_status    ~4356   GET  /v1/flows/status/:run_id
                                      (run_detail implements the
                                      restored-from-sidecar path; the live
                                      in-memory-registry path needs g_runs[]
                                      and is documented, not ported)
-  handle_yaml_list           ~6270   GET  /v1/pipelines/yaml/list
-  handle_yaml_detail         ~6326   GET  /v1/pipelines/yaml/detail
-  handle_yaml_save           ~6476   POST /v1/pipelines/yaml/save
-  handle_yaml_delete         ~6545   DELETE /v1/pipelines/yaml/delete
-  handle_yaml_rename         ~6570   POST /v1/pipelines/yaml/rename
-  handle_pipelines_workflow  ~4262   GET  /v1/pipelines/workflow/:run_id
+  handle_yaml_list           ~6270   GET  /v1/flows/yaml/list
+  handle_yaml_detail         ~6326   GET  /v1/flows/yaml/detail
+  handle_yaml_save           ~6476   POST /v1/flows/yaml/save
+  handle_yaml_delete         ~6545   DELETE /v1/flows/yaml/delete
+  handle_yaml_rename         ~6570   POST /v1/flows/yaml/rename
+  handle_flows_workflow  ~4262   GET  /v1/flows/workflow/:run_id
                                      (the only ComfyUI-export door in C;
                                      served here as export_comfyui)
-  handle_pipelines_drafts    ~4637   POST /v1/pipelines/drafts
-  handle_draft_get           ~5445   GET  /v1/pipelines/drafts/:id
-  handle_draft_list          ~5729   GET  /v1/pipelines/drafts
-  handle_pipelines_resume    ~10300  POST /v1/pipelines/resume/:run_id
+  handle_flows_drafts    ~4637   POST /v1/flows/drafts
+  handle_draft_get           ~5445   GET  /v1/flows/drafts/:id
+  handle_draft_list          ~5729   GET  /v1/flows/drafts
+  handle_flows_resume    ~10300  POST /v1/flows/resume/:run_id
   handle_asset               ~6763   GET  /editor/assets/runs/<run>/<file>
   handle_family_param_schema[s] ~5853
   handle_health / handle_models / handle_lane_registry (chrome stubs)
@@ -35,11 +35,11 @@ C sources mirrored (line numbers from src/server.cpp at port time):
 On-disk stores (the C server runs with cwd = build/, so its "./output" is
 build/output — pass that root for golden parity):
 
-  runs     <server_root>/output/run-*/_pipeline.json   (+ media files)
+  runs     <server_root>/output/run-*/_flow.json   (+ media files)
   drafts   <server_root>/drafts/<id>.json              flat JSON docs;
            an optional read-only aux tree comes from the DRAFTS_AUX_DIR
            env in C (drafts_aux_dir(), ~4822) — pass aux_root explicitly
-  yaml     <pipelines_root>/<name>/pipeline.yaml       (C: ../pipelines)
+  yaml     <flows_root>/<name>/flow.yaml          (C: ../flows)
 
 Divergences from the C, all deliberate and load-bearing for parity or
 safety (see also the module self-test):
@@ -348,7 +348,7 @@ def _run_thumbnail(run_dir: str, run_id: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# GET /v1/pipelines/runs — handle_pipelines_runs (~6609)
+# GET /v1/flows/runs — handle_flows_runs (~6609)
 # ---------------------------------------------------------------------------
 
 def _patch_sidecar_sweep(path: str, why: str) -> bool:
@@ -385,7 +385,7 @@ def _patch_sidecar_sweep(path: str, why: str) -> bool:
 
 def runs(server_root, drafts_root=None, aux_root=None, limit=200,
          live_run_ids=(), sweep=False) -> dict:
-    """GET /v1/pipelines/runs. server_root is the C process cwd (the parent
+    """GET /v1/flows/runs. server_root is the C process cwd (the parent
     of its output/ tree). Rows: media-first, then newest-first; test-fixture
     models with a leading underscore never surface (user-surface law); a
     draft_id whose doc is gone degrades to a draftless row (click-contract
@@ -414,7 +414,7 @@ def runs(server_root, drafts_root=None, aux_root=None, limit=200,
         run_dir = os.path.join(output_root, name)
         created = 0
         try:
-            with open(os.path.join(run_dir, "_pipeline.json"), "r",
+            with open(os.path.join(run_dir, "_flow.json"), "r",
                       encoding="utf-8", errors="surrogateescape") as f:
                 buf = f.read(8191)                   # C reads 8192-1 bytes
             # created_at is the py sidecar's key (gateway.sidecar writes
@@ -443,7 +443,7 @@ def runs(server_root, drafts_root=None, aux_root=None, limit=200,
         created = ent["created"]
         buf = None
         try:
-            with open(os.path.join(run_dir, "_pipeline.json"), "r",
+            with open(os.path.join(run_dir, "_flow.json"), "r",
                       encoding="utf-8", errors="surrogateescape") as f:
                 buf = f.read(8191)
         except OSError:
@@ -463,7 +463,7 @@ def runs(server_root, drafts_root=None, aux_root=None, limit=200,
                 status = "failed"
                 if sweep:
                     _patch_sidecar_sweep(
-                        os.path.join(run_dir, "_pipeline.json"),
+                        os.path.join(run_dir, "_flow.json"),
                         "read-time sweep: stale running sidecar, "
                         "no live registry entry")
         else:
@@ -481,7 +481,7 @@ def runs(server_root, drafts_root=None, aux_root=None, limit=200,
         rows.append({
             "run_id": ent["dir"],
             "name": model,
-            "pipeline": model,
+            "flow": model,
             "status": status,
             "created_at": created,
             "prompt": prompt,
@@ -495,7 +495,7 @@ def runs(server_root, drafts_root=None, aux_root=None, limit=200,
 
 
 # ---------------------------------------------------------------------------
-# GET /v1/pipelines/status/:run_id — handle_pipelines_status restore path
+# GET /v1/flows/status/:run_id — handle_flows_status restore path
 # ---------------------------------------------------------------------------
 
 def _stages_span(text: str, cap: int = 24576) -> str:
@@ -523,13 +523,13 @@ def _stages_span(text: str, cap: int = 24576) -> str:
 
 
 def run_detail(server_root, run_id: str):
-    """GET /v1/pipelines/status/:run_id, restore-from-sidecar path
+    """GET /v1/flows/status/:run_id, restore-from-sidecar path
     (~4365-4556). Returns (status, dict). The C consults its live
     g_runs[] registry first; a pure reader has no registry, so every id
     answers from disk exactly as a restarted C gateway would."""
     output_root = os.path.join(server_root, "output")
     run_dir = os.path.join(output_root, run_id)
-    sc_path = os.path.join(run_dir, "_pipeline.json")
+    sc_path = os.path.join(run_dir, "_flow.json")
     try:
         with open(sc_path, "r", encoding="utf-8", errors="surrogateescape") as f:
             sb = f.read(65535)                       # C reads 65536-1
@@ -679,21 +679,21 @@ def run_detail(server_root, run_id: str):
 
 
 # ---------------------------------------------------------------------------
-# pipeline-yaml CRUD — ../pipelines/<stem>/pipeline.yaml
+# flow-doc CRUD — ../flows/<stem>/flow.yaml
 # ---------------------------------------------------------------------------
 
-def yaml_list(pipelines_root) -> dict:
-    """GET /v1/pipelines/yaml/list (~6270): every <dir>/pipeline.yaml that
+def yaml_list(flows_root) -> dict:
+    """GET /v1/flows/yaml/list (~6270): every <dir>/flow.yaml that
     is readable AND carries the literal "api: true" gate, sorted by name."""
     names = []
     try:
-        entries = sorted(os.listdir(pipelines_root))
+        entries = sorted(os.listdir(flows_root))
     except OSError:
         entries = []
     for name in entries[:256]:                       # C table caps at 256
         if name.startswith("."):
             continue
-        py = os.path.join(pipelines_root, name, "pipeline.yaml")
+        py = os.path.join(flows_root, name, "flow.yaml")
         if not os.access(py, os.R_OK):
             continue
         try:
@@ -705,9 +705,9 @@ def yaml_list(pipelines_root) -> dict:
             continue
         names.append(name[:79])
     names.sort(key=lambda s: s.encode("utf-8", "surrogateescape"))
-    return {"pipelines": [
+    return {"flows": [
         {"filename": n + ".yaml", "name": n,
-         "path": "../pipelines/%s/pipeline.yaml" % n}
+         "path": "../flows/%s/flow.yaml" % n}
         for n in names
     ]}
 
@@ -836,19 +836,19 @@ def _yaml_step_spans(buf: str):
     return nodes, steps
 
 
-def yaml_detail(pipelines_root, name):
-    """GET /v1/pipelines/yaml/detail?yaml=<name>[.yaml] (~6326)."""
+def yaml_detail(flows_root, name):
+    """GET /v1/flows/yaml/detail?yaml=<name>[.yaml] (~6326)."""
     if name is None:
         return 400, _err_body("missing yaml param")
     dot = name.rfind(".yaml")
     if dot >= 0:
         name = name[:dot]
-    path = os.path.join(pipelines_root, name, "pipeline.yaml")
+    path = os.path.join(flows_root, name, "flow.yaml")
     try:
         with open(path, "r", encoding="utf-8", errors="surrogateescape") as f:
             buf = f.read(65535)
     except OSError:
-        return 404, _err_body("no such pipeline")
+        return 404, _err_body("no such flow")
     desc = ""
     dp = buf.find("description:")
     if dp >= 0:
@@ -885,8 +885,8 @@ def _yaml_safe_stem(s: str):
     return stem if stem else None
 
 
-def yaml_save(pipelines_root, body):
-    """POST /v1/pipelines/yaml/save (~6476). body: {filename, steps,
+def yaml_save(flows_root, body):
+    """POST /v1/flows/yaml/save (~6476). body: {filename, steps,
     overwrite?, name?} — steps entries use id/type/family/params exactly
     as the C reads them. Returns (status, dict); 201 on create, 200 on
     overwrite."""
@@ -927,25 +927,25 @@ def yaml_save(pipelines_root, body):
             lines.append("    params: %s" % _cjson_compact(sp))
     yaml = "\n".join(lines) + "\n"
 
-    fpath = os.path.join(pipelines_root, stem, "pipeline.yaml")
+    fpath = os.path.join(flows_root, stem, "flow.yaml")
     existed = os.access(fpath, os.R_OK)
     if existed and joverwrite is not True:
-        return 409, _err_body("pipeline exists — set overwrite:true to replace")
+        return 409, _err_body("flow exists — set overwrite:true to replace")
     os.makedirs(os.path.dirname(fpath), exist_ok=True)  # mkdir one level
     try:
         with open(fpath, "w", encoding="utf-8") as f:
             f.write(yaml)
     except OSError:
-        return 500, _err_body("cannot write pipeline file")
+        return 500, _err_body("cannot write flow file")
     return (200 if existed else 201), {
         "filename": stem + ".yaml",
         "name": disp,
-        "path": "../pipelines/%s/pipeline.yaml" % stem,
+        "path": "../flows/%s/flow.yaml" % stem,
     }
 
 
-def yaml_delete(pipelines_root, filename):
-    """DELETE /v1/pipelines/yaml/delete?filename=<name> (~6545)."""
+def yaml_delete(flows_root, filename):
+    """DELETE /v1/flows/yaml/delete?filename=<name> (~6545)."""
     if filename is None:
         return 400, _err_body("missing filename param")
     dot = filename.rfind(".yaml")
@@ -954,22 +954,22 @@ def yaml_delete(pipelines_root, filename):
     stem = _yaml_safe_stem(filename)
     if not stem:
         return 400, _err_body("invalid filename")
-    fpath = os.path.join(pipelines_root, stem, "pipeline.yaml")
+    fpath = os.path.join(flows_root, stem, "flow.yaml")
     if not os.access(fpath, os.R_OK):
-        return 404, _err_body("no such pipeline")
+        return 404, _err_body("no such flow")
     try:
         os.unlink(fpath)
     except OSError:
         pass
     try:
-        os.rmdir(os.path.join(pipelines_root, stem))   # succeeds if empty
+        os.rmdir(os.path.join(flows_root, stem))   # succeeds if empty
     except OSError:
         pass
     return 200, {"deleted": stem + ".yaml"}
 
 
-def yaml_rename(pipelines_root, body):
-    """POST /v1/pipelines/yaml/rename {filename, newName} (~6570)."""
+def yaml_rename(flows_root, body):
+    """POST /v1/flows/yaml/rename {filename, newName} (~6570)."""
     if isinstance(body, (str, bytes)):
         try:
             body = json.loads(body)
@@ -989,11 +989,11 @@ def yaml_rename(pipelines_root, body):
     newstem = _yaml_safe_stem(jnew)
     if not oldstem or not newstem:
         return 400, _err_body("invalid stem")
-    oldpath = os.path.join(pipelines_root, oldstem, "pipeline.yaml")
-    newdir = os.path.join(pipelines_root, newstem)
-    newpath = os.path.join(newdir, "pipeline.yaml")
+    oldpath = os.path.join(flows_root, oldstem, "flow.yaml")
+    newdir = os.path.join(flows_root, newstem)
+    newpath = os.path.join(newdir, "flow.yaml")
     if not os.access(oldpath, os.R_OK):
-        return 404, _err_body("no such pipeline")
+        return 404, _err_body("no such flow")
     if os.access(newpath, os.R_OK):
         return 409, _err_body("target name already exists")
     os.makedirs(newdir, exist_ok=True)
@@ -1006,24 +1006,24 @@ def yaml_rename(pipelines_root, body):
     return 200, {"renamed": newstem + ".yaml"}
 
 
-def yaml_validate(pipelines_root, body=None):
-    """POST /v1/pipelines/yaml/validate — NO SUCH ROUTE in src/server.cpp
+def yaml_validate(flows_root, body=None):
+    """POST /v1/flows/yaml/validate — NO SUCH ROUTE in src/server.cpp
     (route table ~11294-11348). Answers with the C's unmatched-route
     error-handler shape (~11355)."""
     return 404, {"error": "not found",
-                 "path": "/v1/pipelines/yaml/validate"}
+                 "path": "/v1/flows/yaml/validate"}
 
 
-def yaml_validate_simple(pipelines_root, body=None):
-    """POST /v1/pipelines/yaml/validate-simple — NO SUCH ROUTE in C."""
+def yaml_validate_simple(flows_root, body=None):
+    """POST /v1/flows/yaml/validate-simple — NO SUCH ROUTE in C."""
     return 404, {"error": "not found",
-                 "path": "/v1/pipelines/yaml/validate-simple"}
+                 "path": "/v1/flows/yaml/validate-simple"}
 
 
 def export_comfyui(server_root, run_id, window=None, workflow_prefix="_comfyui_"):
-    """GET /v1/pipelines/yaml/export-comfyui does not exist in C; this is
-    the C's ComfyUI workflow export door, handle_pipelines_workflow
-    (~4262): GET /v1/pipelines/workflow/:run_id[?window=<name>]. Index
+    """GET /v1/flows/yaml/export-comfyui does not exist in C; this is
+    the C's ComfyUI workflow export door, handle_flows_workflow
+    (~4262): GET /v1/flows/workflow/:run_id[?window=<name>]. Index
     mode lists the run dir's exported workflow graphs; fetch mode returns
     one graph's bytes. workflow_prefix is the on-disk filename convention
     (<prefix><name>.json) — data, not an engine name."""
@@ -1076,7 +1076,7 @@ def draft_id_ok(draft_id: str) -> bool:
 
 
 def drafts_list(drafts_root, aux_root=None) -> dict:
-    """GET /v1/pipelines/drafts (~5729): merged index over ./drafts and the
+    """GET /v1/flows/drafts (~5729): merged index over ./drafts and the
     optional aux tree, newest-first by mtime, model/name (with the
     intent/title/service fallbacks) from the first 8KB of each doc."""
     ents = []
@@ -1196,7 +1196,7 @@ def _ray_compose_draft_doc(body: dict, draft_id: str) -> dict:
 
 
 def drafts_save(drafts_root, body, draft_id=None):
-    """POST /v1/pipelines/drafts (~4637): compose the ray birth contract
+    """POST /v1/flows/drafts (~4637): compose the ray birth contract
     and persist <drafts_root>/<id>.json. Returns (status, dict) with the
     {draftId, stages} response shape. The C's x-agent-session one-card
     lane law (409) is an HTTP-header concern and is not modeled here."""
@@ -1260,7 +1260,7 @@ def _heal_duration_sec(text: str):
 
 
 def drafts_get(drafts_root, draft_id, aux_root=None, heal=False):
-    """GET /v1/pipelines/drafts/:id (~5445). Returns (status, text) with
+    """GET /v1/flows/drafts/:id (~5445). Returns (status, text) with
     the doc's VERBATIM bytes. The C click door heals corrupt docs
     (quarantine + stub) and stale durationSec values IN PLACE; a pure
     reader serves bytes as-is unless heal=True (durationSec patch only —
@@ -1293,20 +1293,20 @@ def drafts_get(drafts_root, draft_id, aux_root=None, heal=False):
 
 
 def drafts_delete(drafts_root, draft_id):
-    """DELETE /v1/pipelines/drafts/:id — NO SUCH ROUTE in src/server.cpp
+    """DELETE /v1/flows/drafts/:id — NO SUCH ROUTE in src/server.cpp
     (the C table registers Get/Post/Patch only, ~11311-11317). Answers
     with the unmatched-route error-handler shape (~11355) instead of
     inventing persistence the gateway does not have."""
     return 404, {"error": "not found",
-                 "path": "/v1/pipelines/drafts/%s" % draft_id}
+                 "path": "/v1/flows/drafts/%s" % draft_id}
 
 
 # ---------------------------------------------------------------------------
-# POST /v1/pipelines/resume/:run_id — handle_pipelines_resume (~10300)
+# POST /v1/flows/resume/:run_id — handle_flows_resume (~10300)
 # ---------------------------------------------------------------------------
 
 def _parse_yaml_stage_ids(yaml_text: str):
-    """run_parse_stages (~434): the "- id: <x>" lines of a pipeline yaml."""
+    """run_parse_stages (~434): the "- id: <x>" lines of a flow yaml."""
     ids = []
     for line in yaml_text.split("\n"):
         stripped = line.lstrip(" ")
@@ -1320,9 +1320,9 @@ def _parse_yaml_stage_ids(yaml_text: str):
     return ids
 
 
-def resume(server_root, run_id, body=None, pipelines_root=None,
+def resume(server_root, run_id, body=None, flows_root=None,
            register=True):
-    """POST /v1/pipelines/resume/:run_id. SEMANTICS (from C ~10300-10542):
+    """POST /v1/flows/resume/:run_id. SEMANTICS (from C ~10300-10542):
     a resume does NOT restart the old run — it REQUEUES a brand-new run:
     read the stopped run's sidecar, copy model/prompt/seed/yaml, honor the
     optional body fields (lyrics, negative_prompt become run inputs;
@@ -1334,7 +1334,7 @@ def resume(server_root, run_id, body=None, pipelines_root=None,
     LAW: no run is started here). Returns (202, {"run_id","status":"queued"})
     on success, else the C's error shapes."""
     output_root = os.path.join(server_root, "output")
-    sc_path = os.path.join(output_root, run_id, "_pipeline.json")
+    sc_path = os.path.join(output_root, run_id, "_flow.json")
     try:
         with open(sc_path, "r", encoding="utf-8", errors="surrogateescape") as f:
             spec = f.read()
@@ -1346,18 +1346,18 @@ def resume(server_root, run_id, body=None, pipelines_root=None,
     yaml_buf = inf_json_string(spec, "yaml", 4096)
     if not model:
         return 400, _err_body("cannot resume: no model in sidecar")
-    if pipelines_root is None:
-        pipelines_root = os.path.join(server_root, "..", "flows")
+    if flows_root is None:
+        flows_root = os.path.join(server_root, "..", "flows")
     if not yaml_buf:
-        # resolve the model's harvested pipeline, mirroring the C's
-        # pipeline_yaml_for_model probes (<root>/<model>/pipeline.yaml)
-        cand = os.path.join(pipelines_root, model, "pipeline.yaml")
+        # resolve the model's harvested flow, mirroring the C's
+        # flow_yaml_for_model probes (<root>/<model>/flow.yaml)
+        cand = os.path.join(flows_root, model, "flow.yaml")
         try:
             with open(cand, "r", encoding="utf-8",
                       errors="surrogateescape") as f:
                 yaml_buf = f.read(65535)
         except OSError:
-            return 400, _err_body("cannot resume: no pipeline for model")
+            return 400, _err_body("cannot resume: no flow for model")
     new_id = "run-%x-%x-%x" % (int(time.time()), threading.get_ident(),
                                next(_RUN_SEQ))
     if register:
@@ -1381,10 +1381,10 @@ def resume(server_root, run_id, body=None, pipelines_root=None,
             "yaml": yaml_buf,
             "draft_id": "",
         }
-        tmp = os.path.join(new_dir, "_pipeline.json.tmp")
+        tmp = os.path.join(new_dir, "_flow.json.tmp")
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(sidecar, f, separators=(",", ":"), ensure_ascii=False)
-        os.replace(tmp, os.path.join(new_dir, "_pipeline.json"))
+        os.replace(tmp, os.path.join(new_dir, "_flow.json"))
     return 202, {"run_id": new_id, "status": "queued"}
 
 
@@ -1417,7 +1417,7 @@ def serve_asset(server_root, rel_path: str):
 # ---------------------------------------------------------------------------
 
 def family_param_schemas(family_ids) -> dict:
-    """GET /v1/pipelines/families/param-schemas: the pydantic-style derived
+    """GET /v1/flows/families/param-schemas: the pydantic-style derived
     envelope (empty properties — ray parity) for every catalog family."""
     out = {}
     for fid in family_ids:
@@ -1434,7 +1434,7 @@ def family_param_schemas(family_ids) -> dict:
 
 
 def family_param_schema(family_ids, family_id: str):
-    """GET /v1/pipelines/families/:family_id/param-schema."""
+    """GET /v1/flows/families/:family_id/param-schema."""
     if family_id in family_ids:
         return 200, {
             "title": "%s_Params" % family_id,
@@ -1630,7 +1630,7 @@ def plugins_registry():
 #     (structural JSON equality; the C's unstable-sort tie groups are
 #     compared as order-insensitive multisets, with a printed note);
 #   * exercises the write doors against throwaway fixture trees (nothing
-#     under the repo's output/ or pipelines/ is touched);
+#     under the repo's output/ or flows/ is touched);
 #   * optionally live-diffs yaml_detail / run_detail against the C server
 #     at 127.0.0.1:33081 (GET probes only) when it is up.
 #   Prints the FIRST divergence per mismatch; exits nonzero on drift.
@@ -1698,7 +1698,7 @@ def _cmp_runs_golden(server_root, drafts_root, gold, mine):
             continue
         buf = ""
         try:
-            with open(os.path.join(output_root, name, "_pipeline.json"),
+            with open(os.path.join(output_root, name, "_flow.json"),
                       "r", encoding="utf-8", errors="surrogateescape") as f:
                 buf = f.read(8191)
         except OSError:
@@ -1763,14 +1763,14 @@ def _selftest():
     repo = os.path.dirname(here)
     golden = os.path.join(repo, "tests", "golden_http")
     # the C gateway runs with cwd = build/: its ./output is build/output,
-    # ./drafts is build/drafts, ../pipelines is the repo pipelines tree.
+    # ./drafts is build/drafts, ../flows is the repo flows tree.
     # POST-FLIP: build/ is gone; the py gateway reads from <repo>/output/.
     # The runs/drafts golden comparisons are C-parity holdovers — skip when
     # the data dir is absent or the goldens are stale (data is volatile).
     server_root = os.path.join(repo, "build")
     if not os.path.isdir(os.path.join(server_root, "output")):
         server_root = repo  # py gateway's OUT_ROOT = <repo>/output/
-    pipelines_root = os.path.join(repo, "flows")
+    flows_root = os.path.join(repo, "flows")
     drafts_root = os.path.join(server_root, "drafts")
 
     failures = []
@@ -1792,14 +1792,14 @@ def _selftest():
     # server data.  Post-flip, the py gateway owns output/ and draft IDs
     # differ.  These checks are skipped — the functional tests below
     # (save/get/delete/rename/resume) verify module correctness.
-    check("GET /v1/pipelines/runs", True,
+    check("GET /v1/flows/runs", True,
           "(skipped: C-parity holdover post-flip)")
-    check("GET /v1/pipelines/drafts", True,
+    check("GET /v1/flows/drafts", True,
           "(skipped: C-parity holdover post-flip)")
 
-    got = yaml_list(pipelines_root)
-    check("GET /v1/pipelines/yaml/list", got == load_golden("pipelines_yaml_list.json"),
-          _first_divergence(got, load_golden("pipelines_yaml_list.json")))
+    got = yaml_list(flows_root)
+    check("GET /v1/flows/yaml/list", got == load_golden("flows_yaml_list.json"),
+          _first_divergence(got, load_golden("flows_yaml_list.json")))
 
     check("GET /v1/health", health() == load_golden("health.json"))
     for lane, fn in (("/v1/themes", themes), ("/v1/tags", tags),
@@ -1814,7 +1814,7 @@ def _selftest():
               _first_divergence(got, want))
 
     # ---- yaml_detail: shape self-checks ----------------------------------
-    st, det = yaml_detail(pipelines_root, "prop-flow.yaml")
+    st, det = yaml_detail(flows_root, "prop-flow.yaml")
     want_keys = ["name", "description", "nodes", "steps", "yaml"]
     ok = (st == 200 and list(det.keys()) == want_keys
           and det["name"] == "prop-flow"
@@ -1823,10 +1823,10 @@ def _selftest():
           and all(s["family"] == s["service"] for s in det["steps"]))
     check("yaml_detail shape (prop-flow)", ok,
           "status=%r keys=%r" % (st, list(det.keys()) if isinstance(det, dict) else det))
-    st, det = yaml_detail(pipelines_root, None)
+    st, det = yaml_detail(flows_root, None)
     check("yaml_detail missing param -> 400", st == 400 and det == {"error": "missing yaml param"})
-    st, det = yaml_detail(pipelines_root, "no-such-pipeline")
-    check("yaml_detail unknown -> 404", st == 404 and det == {"error": "no such pipeline"})
+    st, det = yaml_detail(flows_root, "no-such-flow")
+    check("yaml_detail unknown -> 404", st == 404 and det == {"error": "no such flow"})
 
     # params parsing: the calls-doc style params line parses to name/value
     # pairs (checked against a fixture below, where we control the yaml).
@@ -1843,9 +1843,9 @@ def _selftest():
                                          {"type": "t2"}]})
         ok = (st == 201 and resp == {
             "filename": "demo-flow.yaml", "name": "demo-flow",
-            "path": "../pipelines/demo-flow/pipeline.yaml"})
+            "path": "../flows/demo-flow/flow.yaml"})
         check("POST yaml/save (create) -> 201", ok, "status=%r resp=%r" % (st, resp))
-        text = open(os.path.join(proot, "demo-flow", "pipeline.yaml")).read()
+        text = open(os.path.join(proot, "demo-flow", "flow.yaml")).read()
         want = ("api: true\nname: demo-flow\nsteps:\n"
                 "  - id: a\n    type: t1\n    params: {\"seed\":42,\"ratio\":1}\n"
                 "  - id: demo-flow\n    type: t2\n")
@@ -1853,7 +1853,7 @@ def _selftest():
               text == want, repr(text))
         st, resp = yaml_save(proot, {"filename": "demo-flow", "steps": [{"id": "a"}]})
         check("yaml/save exists w/o overwrite -> 409",
-              st == 409 and resp == {"error": "pipeline exists — set overwrite:true to replace"},
+              st == 409 and resp == {"error": "flow exists — set overwrite:true to replace"},
               "status=%r resp=%r" % (st, resp))
         st, resp = yaml_save(proot, {"filename": "demo-flow", "overwrite": True,
                                      "name": "Demo!",
@@ -1883,7 +1883,7 @@ def _selftest():
               "status=%r resp=%r" % (st, resp))
         st, resp = yaml_rename(proot, {"filename": "missing-flow", "newName": "x-flow"})
         check("yaml/rename missing -> 404",
-              st == 404 and resp == {"error": "no such pipeline"})
+              st == 404 and resp == {"error": "no such flow"})
         yaml_save(proot, {"filename": "other-flow", "steps": [{"id": "b"}]})
         st, resp = yaml_rename(proot, {"filename": "renamed-flow", "newName": "other-flow"})
         check("yaml/rename target exists -> 409",
@@ -1894,7 +1894,7 @@ def _selftest():
               st == 200 and resp == {"deleted": "other-flow.yaml"})
         st, resp = yaml_delete(proot, "other-flow")
         check("yaml/delete missing -> 404",
-              st == 404 and resp == {"error": "no such pipeline"})
+              st == 404 and resp == {"error": "no such flow"})
         st, resp = yaml_delete(proot, "../etc/passwd")
         check("yaml/delete traversal stem -> 400",
               st == 400 and resp == {"error": "invalid filename"})
@@ -1902,10 +1902,10 @@ def _selftest():
         st, resp = yaml_validate(proot, {})
         check("POST yaml/validate (no C route) -> 404 error-handler shape",
               st == 404 and resp == {"error": "not found",
-                                     "path": "/v1/pipelines/yaml/validate"})
+                                     "path": "/v1/flows/yaml/validate"})
         st, resp = yaml_validate_simple(proot, {})
         check("POST yaml/validate-simple (no C route) -> 404",
-              st == 404 and resp["path"] == "/v1/pipelines/yaml/validate-simple")
+              st == 404 and resp["path"] == "/v1/flows/yaml/validate-simple")
 
         # -- drafts fixtures
         droot = os.path.join(tmp, "drafts")
@@ -1918,7 +1918,7 @@ def _selftest():
               and resp["stages"][0]["inputs"] == [""]
               and resp["stages"][0]["provenance"] == "agent"
               and resp["stages"][1]["calls"] == [{"text": "b"}])
-        check("POST /v1/pipelines/drafts -> {draftId, stages} + birth contract",
+        check("POST /v1/flows/drafts -> {draftId, stages} + birth contract",
               ok, "status=%r resp=%r" % (st, resp))
         doc = json.loads(open(os.path.join(droot, did + ".json")).read())
         ok = (list(doc.keys())[:6] == ["draft_id", "intent", "stages",
@@ -1928,7 +1928,7 @@ def _selftest():
               "keys=%r" % list(doc.keys()))
         st, body = drafts_get(droot, did)
         ok = st == 200 and json.loads(body)["draft_id"] == did
-        check("GET /v1/pipelines/drafts/:id -> verbatim doc", ok,
+        check("GET /v1/flows/drafts/:id -> verbatim doc", ok,
               "status=%r" % st)
         st, body = drafts_get(droot, "bad/id!!")
         check("drafts/:id bad id -> 400",
@@ -1941,7 +1941,7 @@ def _selftest():
         ok = (lst["count"] == 1
               and lst["drafts"][0] == {"draft_id": did, "model": "svc",
                                        "name": "a test card"})
-        check("GET /v1/pipelines/drafts (list fallbacks: intent, service)",
+        check("GET /v1/flows/drafts (list fallbacks: intent, service)",
               ok, "list=%r" % lst)
         # name falls back through intent when absent
         drafts_save(droot, {"title": "by title", "stages": []}, draft_id="draft-t1")
@@ -1952,7 +1952,7 @@ def _selftest():
         st, resp = drafts_delete(droot, did)
         check("DELETE drafts/:id (no C route) -> 404 error-handler shape",
               st == 404 and resp == {"error": "not found",
-                                     "path": "/v1/pipelines/drafts/%s" % did})
+                                     "path": "/v1/flows/drafts/%s" % did})
 
         # -- run fixture: status restore + resume + assets + workflow export
         oroot = os.path.join(tmp, "server")
@@ -1969,7 +1969,7 @@ def _selftest():
             "yaml": "steps:\n  - id: gen\n    type: demo\n",
             "draft_id": "draft-t1",
         }
-        with open(os.path.join(oroot, "output", "run-fixture-1", "_pipeline.json"), "w") as f:
+        with open(os.path.join(oroot, "output", "run-fixture-1", "_flow.json"), "w") as f:
             json.dump(sidecar, f)
         with open(os.path.join(oroot, "output", "run-fixture-1", "_request.json"), "w") as f:
             json.dump({"prompt": "per-run prompt"}, f)
@@ -2039,10 +2039,10 @@ def _selftest():
 
         # resume: requeue semantics — new run id, new dir, queued sidecar
         os.makedirs(os.path.join(proot, "demo-model"), exist_ok=True)
-        with open(os.path.join(proot, "demo-model", "pipeline.yaml"), "w") as f:
+        with open(os.path.join(proot, "demo-model", "flow.yaml"), "w") as f:
             f.write("steps:\n  - id: gen\n    type: demo\n")
         st, resp = resume(oroot, "run-fixture-1", {},
-                          pipelines_root=proot)
+                          flows_root=proot)
         new_id = resp.get("run_id") if isinstance(resp, dict) else None
         ok = (st == 202 and resp == {"run_id": new_id, "status": "queued"}
               and new_id != "run-fixture-1"
@@ -2050,27 +2050,27 @@ def _selftest():
         check("POST resume/:id -> 202 requeue (NEW run id, queued sidecar)",
               ok, "status=%r resp=%r" % (st, resp))
         sc = json.loads(open(os.path.join(oroot, "output", new_id,
-                                          "_pipeline.json")).read())
+                                          "_flow.json")).read())
         ok = (sc["model"] == "demo-model" and sc["prompt"] == "a prompt \"with quotes\""
               and sc["seed"] == 7 and sc["status"] == "queued"
               and sc["stages"][0]["id"] == "gen" and sc["error"] is None)
         check("resume sidecar copies spec (model/prompt/seed/yaml stages)",
               ok, "sidecar=%r" % sc)
-        st, resp = resume(oroot, "run-nosuch", {}, pipelines_root=proot)
+        st, resp = resume(oroot, "run-nosuch", {}, flows_root=proot)
         check("resume missing sidecar -> 404",
               st == 404 and resp == {"error": "run sidecar not found"})
-        # model with no pipeline on disk -> the C's loud 400
+        # model with no flow on disk -> the C's loud 400
         os.makedirs(os.path.join(oroot, "output", "run-fixture-2"), exist_ok=True)
-        with open(os.path.join(oroot, "output", "run-fixture-2", "_pipeline.json"), "w") as f:
+        with open(os.path.join(oroot, "output", "run-fixture-2", "_flow.json"), "w") as f:
             json.dump({"run_id": "run-fixture-2", "model": "ghost-model"}, f)
-        st, resp = resume(oroot, "run-fixture-2", {}, pipelines_root=proot)
-        check("resume no pipeline -> 400",
-              st == 400 and resp == {"error": "cannot resume: no pipeline for model"})
+        st, resp = resume(oroot, "run-fixture-2", {}, flows_root=proot)
+        check("resume no flow -> 400",
+              st == 400 and resp == {"error": "cannot resume: no flow for model"})
         # no model in sidecar -> 400
         os.makedirs(os.path.join(oroot, "output", "run-fixture-3"), exist_ok=True)
-        with open(os.path.join(oroot, "output", "run-fixture-3", "_pipeline.json"), "w") as f:
+        with open(os.path.join(oroot, "output", "run-fixture-3", "_flow.json"), "w") as f:
             json.dump({"run_id": "run-fixture-3", "prompt": "p"}, f)
-        st, resp = resume(oroot, "run-fixture-3", {}, pipelines_root=proot)
+        st, resp = resume(oroot, "run-fixture-3", {}, flows_root=proot)
         check("resume no model -> 400",
               st == 400 and resp == {"error": "cannot resume: no model in sidecar"})
 
@@ -2105,10 +2105,10 @@ def _selftest():
                 live += 1
         for name in ("prop-flow", "humanoid-flow", "audio-native-tts"):
             with urllib.request.urlopen(
-                    base + "/v1/pipelines/yaml/detail?yaml=" + name,
+                    base + "/v1/flows/yaml/detail?yaml=" + name,
                     timeout=5) as r:
                 want = json.loads(r.read())
-            st, got = yaml_detail(pipelines_root, name)
+            st, got = yaml_detail(flows_root, name)
             if got != want:
                 check("live yaml_detail %s" % name, False,
                       _first_divergence(got, want, "$"))
@@ -2120,7 +2120,7 @@ def _selftest():
                     "run-6a976e6a-76ef17fff6c0-0",
                     "run-6a97c34a-7fa67b7fe6c0-24"):
             with urllib.request.urlopen(
-                    base + "/v1/pipelines/status/" + rid, timeout=5) as r:
+                    base + "/v1/flows/status/" + rid, timeout=5) as r:
                 want = json.loads(r.read())
             if not want.get("restored_from_sidecar"):
                 continue                     # live-registry shape: out of scope

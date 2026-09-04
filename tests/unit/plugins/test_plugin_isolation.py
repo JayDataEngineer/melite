@@ -42,7 +42,7 @@ IMPORT_SURFACES = [
     "editor_runs",             # py/editor_runs.py: editor run routing
     "flow",                    # py/flow.py: flows/<name>/flow.py resolver
     "manage",                  # py/manage.py: management-plane door
-    "pipeline_graph",          # py/pipeline_graph.py: run graph emitter
+    "flow_graph",          # py/flow_graph.py: run graph emitter
 ]
 
 

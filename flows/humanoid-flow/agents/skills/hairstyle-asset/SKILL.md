@@ -13,7 +13,7 @@ generation. Swap = compose with a different library GLB.
 
 ## The lane
 
-`data/pipelines/hairstyle_asset.yaml`. Same run loop as garment-asset
+`data/flows/hairstyle_asset.yaml`. Same run loop as garment-asset
 (copy -> edit attachment bricks -> validate -> start -> poll); see that
 skill for the exact curl sequence.
 

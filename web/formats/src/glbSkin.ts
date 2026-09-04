@@ -4,7 +4,7 @@
  * The motion card's preview was born on the NEUTRAL mannequin (the
  * skin_standard.npz template — somaSkin.ts). This adapter imports a REAL
  * character (a Trellis / composite_character / transfer_rig output, or a
- * user upload) so the SAME preview pipeline — deformFrame, the scrubber,
+ * user upload) so the SAME preview flow — deformFrame, the scrubber,
  * refine, repose, export — skins the user's body instead.
  *
  * WHY THIS IS A PURE ADAPTER: glTF skinning IS the same LBS the demo's

@@ -8,9 +8,9 @@
       "supports": ["search", "kind", "tag", "fav"],
       "default_sort": "newest"
     },
-    "pipeline": {
-      "kind": "pipeline",
-      "label": "Pipelines",
+    "flow": {
+      "kind": "flow",
+      "label": "Flows",
       "icon": "Workflow",
       "supports": ["search", "provenance", "tag", "fav"],
       "default_sort": "recent"

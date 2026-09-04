@@ -116,7 +116,7 @@ def main():
             ("kinds", "deep"),
             ("plugins", "deep"),
             ("health", "deep"),
-            ("pipelines/yaml/list", "deep"),
+            ("flows/yaml/list", "deep"),
             ("themes", "deep"),
             ("tags", "deep"),
             ("services", "deep"),
@@ -150,29 +150,29 @@ def main():
         # golden-pinned — the deleted C-era snapshots (174 runs / 546
         # drafts) captured one dead server's state: history, not
         # contract. The pin: envelope + count invariant + row shape.
-        code, body = get(port, "/v1/pipelines/runs")
+        code, body = get(port, "/v1/flows/runs")
         rows = body.get("runs", []) if isinstance(body, dict) else []
-        check("GET /v1/pipelines/runs contract",
+        check("GET /v1/flows/runs contract",
               code == 200 and set(body) >= {"count", "runs"}
               and body["count"] == len(rows)
               and all(set(r) >= {"run_id", "status"} for r in rows),
               str(body)[:80])
-        code, body = get(port, "/v1/pipelines/drafts")
+        code, body = get(port, "/v1/flows/drafts")
         rows = body.get("drafts", []) if isinstance(body, dict) else []
-        check("GET /v1/pipelines/drafts contract",
+        check("GET /v1/flows/drafts contract",
               code == 200 and set(body) >= {"count", "drafts"}
               and body["count"] == len(rows)
               and all(set(d) >= {"draft_id", "model"} for d in rows),
               str(body)[:80])
 
         # unknown run: sidecar-aware 404 stays loud
-        code, body = get(port, "/v1/pipelines/status/run-does-not-exist-000")
+        code, body = get(port, "/v1/flows/status/run-does-not-exist-000")
         check("status unknown run -> 404", code == 404, str(code))
 
-        # loud refusal band: start without a named pipeline is 400 BEFORE
+        # loud refusal band: start without a named flow is 400 BEFORE
         # any run registration (QUEUE LANE LAW)
         req = urllib.request.Request(
-            "http://127.0.0.1:%d/v1/pipelines/start" % port,
+            "http://127.0.0.1:%d/v1/flows/start" % port,
             data=b"{}", headers={"content-type": "application/json"})
         try:
             urllib.request.urlopen(req, timeout=10)

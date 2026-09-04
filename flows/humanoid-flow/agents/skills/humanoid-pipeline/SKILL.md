@@ -1,10 +1,10 @@
 ---
-name: humanoid-pipeline
+name: humanoid-flow
 description: The ANNY-to-rigged-humanoid chain — stage order, finalize gates, and the 8-view delivery check
 genre: 3d
 ---
 
-# Humanoid Pipeline
+# Humanoid Flow
 
 ## Stage order is law
 

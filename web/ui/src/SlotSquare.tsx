@@ -2,8 +2,8 @@
 //
 // be reusable. Because when we design the look for it, the look for it
 // will be reused for the sub-card system (i.e. loras and such)". This
-// component is the pipeline-agnostic shell: a square thumbnail with a
-// label + status line, file/asset drops, and an actions slot. The pipeline
+// component is the flow-agnostic shell: a square thumbnail with a
+// label + status line, file/asset drops, and an actions slot. The flow
 // wiring layer (SlotGrid) and the future modifier sub-cards both render
 // this shell — they add their own actions (wire button, drag handle) via
 // `actions`.

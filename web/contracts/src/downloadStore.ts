@@ -2,7 +2,7 @@
 // and the (rendered-once) <ModelDownloadDialog/>.
 //
 // WHY A SEPARATE STORE: runCompiledGeneration is a free function with no
-// React context. When /v1/pipelines/start returns status:
+// React context. When /v1/flows/start returns status:
 // "download_required", the run must PAUSE — open the popup, stream the
 // model download, await the user, then either retry or abort. A tiny
 // zustand store is the cleanest imperative gate: the dialog mounts once

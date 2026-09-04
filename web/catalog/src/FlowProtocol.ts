@@ -1,13 +1,13 @@
-// pipelineProtocol — the ONE generation protocol (Phase C + ONE surface).
+// flowProtocol — the ONE generation protocol (Phase C + ONE surface).
 //
-// POST /v1/pipelines/start compiles {model, params} → a 1-step pipeline
-// document (catalog form → family mapping, core/pipelines/compile.py) and
+// POST /v1/flows/start compiles {model, params} → a 1-step flow
+// document (catalog form → family mapping, core/flows/compile.py) and
 // returns {run_id}. The run executes on the server; we poll
-// GET /v1/pipelines/status/{run_id} until terminal, then collect artifact
+// GET /v1/flows/status/{run_id} until terminal, then collect artifact
 // URLs from stage.url + stage.gallery[].url.
 //
 // The flat shape is ONE of four shapes the canonical route dispatches on
-// (doc / flat / YAML-spec / auto-routed). /v1/pipelines/generate and
+// (doc / flat / YAML-spec / auto-routed). /v1/flows/generate and
 // /v1/run live on for one release as aliases of the same handler; this
 // module posts to the canonical door. Unprovisioned models short-circuit
 // with the standard download_required dict (the server pre-checks weights
@@ -32,7 +32,7 @@ import type { PreflightPayload, PreflightNeededEntry } from "@melite/contracts"
  *
  * Our backend always answers errors as `{"error": "..."}` — the string
  * carries REAL newlines once parsed (the wire JSON escapes them), which is
- * exactly what a multi-line pipeline doc parse error / validation report
+ * exactly what a multi-line flow doc parse error / validation report
  * looks like in the drilldown modal. When the body isn't JSON, or has no
  * string `error` field (proxy error page, unexpected shape), the raw text
  * is returned unchanged.
@@ -63,7 +63,7 @@ const NON_JSON_BODY_CAP = 2000
  *  fields — a stage from the wire always carries the core, by contract.
  *  A type-alias intersection (NOT an interface): the generated components
  *  are intersection aliases, which interfaces cannot extend (TS2499). */
-export type PipelineRunStage = components["schemas"]["RunStageWire"] & {
+export type FlowRunStage = components["schemas"]["RunStageWire"] & {
   url?: string
   gallery?: Array<{ url: string; name?: string }>
   /** name → wireable URL for EVERY artifact the brick produced (Phase 5,
@@ -101,11 +101,11 @@ export type PipelineRunStage = components["schemas"]["RunStageWire"] & {
  *  unknown), so Omit's mapped type degenerates every property to unknown
  *  (keyof includes `string`). Pick with literal keys avoids the poison —
  *  indexed access on the intersection still resolves status to the 7-union. */
-export type PipelineRunStatus = Pick<
+export type FlowRunStatus = Pick<
   components["schemas"]["RunStatusWire"],
   "run_id" | "status"
 > & {
-  stages?: Array<PipelineRunStage>
+  stages?: Array<FlowRunStage>
   /** Run-level failure detail — emitted by the runner on failed runs;
    *  not part of the contract core (declared here as a view extra). */
   error?: string
@@ -113,7 +113,7 @@ export type PipelineRunStatus = Pick<
 }
 
 /** The minimal artifact-carrying shape the collectors read. Satisfied by
- *  PipelineRunStage AND by the editor's loose run-protocol rows (whose
+ *  FlowRunStage AND by the editor's loose run-protocol rows (whose
  *  url/gallery/named_urls are `unknown`) once narrowed through
  *  asArtifactSource — the collectors take the SOURCE, callers stop
  *  double-casting their rows into the strict wire type. */
@@ -193,7 +193,7 @@ export function collectNamedArtifacts(stages?: Array<ArtifactSource>): Record<st
 }
 
 /**
- * Poll a pipeline run until terminal. Throws on error/timeout/abort.
+ * Poll a flow run until terminal. Throws on error/timeout/abort.
  *
  * Terminal statuses: "completed"/"done" → success; "error"/"failed" →
  * throws with the run-level error message.
@@ -204,11 +204,11 @@ export function collectNamedArtifacts(stages?: Array<ArtifactSource>): Record<st
  * run, 2026-08-08). Not fired on the terminal tick (the final status is
  * the return value).
  */
-export async function pollPipelineRun(
+export async function pollFlowRun(
   runId: string,
   signal?: AbortSignal,
-  opts?: { maxWaitMs?: number; intervalMs?: number; onTick?: (status: PipelineRunStatus) => void },
-): Promise<PipelineRunStatus> {
+  opts?: { maxWaitMs?: number; intervalMs?: number; onTick?: (status: FlowRunStatus) => void },
+): Promise<FlowRunStatus> {
   // 60 min ceiling. The backend ALWAYS returns a terminal run-level status
   // ("completed" or "failed") when the brick finishes, so this is purely a
   // safety net for a wedged run — it must NOT race the backend's own brick
@@ -220,7 +220,7 @@ export async function pollPipelineRun(
   const started = performance.now()
   while (performance.now() - started < maxWaitMs) {
     if (signal?.aborted) throw new DOMException("Aborted", "AbortError")
-    const resp = await apiFetch(`/v1/pipelines/status/${runId}`, { signal })
+    const resp = await apiFetch(`/v1/flows/status/${runId}`, { signal })
     if (!resp.ok) {
       // 404 = the run vanished server-side (server restart / crash /
       // DEV_MODE reload killed it mid-flight). Polling on for the rest of
@@ -229,11 +229,11 @@ export async function pollPipelineRun(
       // Surface the truth; runStage's catch flips the card to error.
       if (resp.status === 404) {
         throw new Error(
-          `Pipeline run ${runId} is gone — the server restarted mid-run. Re-run this card.`,
+          `Flow run ${runId} is gone — the server restarted mid-run. Re-run this card.`,
         )
       }
       // A non-ok body carrying a `violations` array is the status-channel
-      // CONTRACT 500 (backend/core/pipelines/contracts.py run_status_500):
+      // CONTRACT 500 (backend/core/flows/contracts.py run_status_500):
       // the backend is lying to the poll. Fail VISIBLY — polling on would
       // be a silent fake "running" for the rest of the ceiling.
       let errorBody: unknown = null
@@ -248,7 +248,7 @@ export async function pollPipelineRun(
       await new Promise((r) => setTimeout(r, intervalMs))
       continue
     }
-    const data = (await resp.json()) as PipelineRunStatus
+    const data = (await resp.json()) as FlowRunStatus
     // ── THE CONTRACT (2026-08-11) ── the status core is checked BEFORE it
     // drives any UI: run_id + the run-level status vocabulary + stages with
     // id/name/index/status. A 200 body failing the core is a backend bug —
@@ -266,7 +266,7 @@ export async function pollPipelineRun(
     if (data.status === "completed") return data
     if (data.status === "failed") {
       const detail = data.error
-      throw new Error(`Pipeline run ${runId} failed${detail ? `: ${detail}` : ""}`)
+      throw new Error(`Flow run ${runId} failed${detail ? `: ${detail}` : ""}`)
     }
     // Non-terminal tick — surface live progress (KSampler steps) to the
     // store before sleeping for the next poll.
@@ -274,19 +274,19 @@ export async function pollPipelineRun(
     await new Promise((r) => setTimeout(r, intervalMs))
   }
   throw new Error(
-    `Pipeline run ${runId} timed out after ${Math.round(maxWaitMs / 60_000)} min`,
+    `Flow run ${runId} timed out after ${Math.round(maxWaitMs / 60_000)} min`,
   )
 }
 
 export type CompiledGenerationResult =
-  | { kind: "started"; runId: string; status: PipelineRunStatus; urls: string[] }
+  | { kind: "started"; runId: string; status: FlowRunStatus; urls: string[] }
   | { kind: "download_required"; payload: Record<string, unknown> }
   | { kind: "preflight_required"; payload: PreflightPayload }
 
 
 /**
  * The run-time extension preflight payload — what
- * POST /v1/pipelines/start returns (HTTP 200, status: "preflight_required")
+ * POST /v1/flows/start returns (HTTP 200, status: "preflight_required")
  * when the family declares REQUIRED_EXTENSIONS and at least one is not
  * loaded in ComfyUI right now (verified via /object_info, see
  * backend/media/comfyui/runtime_preflight.py). The PreflightDialog renders
@@ -298,7 +298,7 @@ export type CompiledGenerationResult =
 /**
  * Start a compiled generation and poll it to completion.
  *
- * POSTs {model, ...params} to /v1/pipelines/start — the canonical run-start
+ * POSTs {model, ...params} to /v1/flows/start — the canonical run-start
  * door, flat shape (raw fetch — no retry, a retry would duplicate GPU
  * work), then polls /status. Returns:
  *   - started: run completed — urls are the artifact URLs
@@ -339,7 +339,7 @@ export function setRequiredEmptyResolver(
  * degraded output they can't diagnose.
  *
  * This function is called before EVERY GPU-starting fetch (generate,
- * startChain, startInlineDoc — all now the one /v1/pipelines/start door) —
+ * startChain, startInlineDoc — all now the one /v1/flows/start door) —
  * it is the universal gate. It catches:
  *   - `undefined` values (silently dropped by JSON.stringify)
  *   - `NaN` / `Infinity` (serialized as `null` — a value mutation)
@@ -410,7 +410,7 @@ export async function runCompiledGeneration(
     /** Fires with the run_id immediately after the start response (before the
      * first status poll) — lets callers correlate the run (e.g. cancel). */
     onStart?: (runId: string) => void
-    onTick?: (status: PipelineRunStatus) => void
+    onTick?: (status: FlowRunStatus) => void
   },
 ): Promise<CompiledGenerationResult> {
   assertNoParamDrops(body)
@@ -434,7 +434,7 @@ export async function runCompiledGeneration(
     }
     await assertParamsMatchFamilySchema(body.model, paramOnly)
   }
-  const res = await fetch("/v1/pipelines/start", {
+  const res = await fetch("/v1/flows/start", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -447,7 +447,7 @@ export async function runCompiledGeneration(
       data = JSON.parse(text) as Record<string, unknown>
     } catch {
       throw new Error(
-        `generate failed: /v1/pipelines/start returned non-JSON body: ${text.slice(0, NON_JSON_BODY_CAP)}`,
+        `generate failed: /v1/flows/start returned non-JSON body: ${text.slice(0, NON_JSON_BODY_CAP)}`,
       )
     }
     if (data.status === "download_required") {
@@ -459,11 +459,11 @@ export async function runCompiledGeneration(
     const runId = data.run_id
     if (typeof runId !== "string") {
       throw new Error(
-        `generate failed: /v1/pipelines/start returned no run_id: ${describeErrorBody(text)}`,
+        `generate failed: /v1/flows/start returned no run_id: ${describeErrorBody(text)}`,
       )
     }
     opts?.onStart?.(runId)
-    const status = await pollPipelineRun(runId, signal, {
+    const status = await pollFlowRun(runId, signal, {
       intervalMs: opts?.intervalMs,
       onTick: opts?.onTick,
     })

@@ -15,9 +15,9 @@ What this test enforces (every plugin, every time):
     (the plugin doesnt claim a genre it cant deliver)
   * every model has a nodes.yaml (the manifest the engine loads)
 
-The engine.yaml concept lives in pipelines/<name>/pipeline.yaml
+The engine.yaml concept lives in flows/<name>/flow.yaml
 (named flows), not per-plugin -- that is a separate drift surface
-(pipelines have their own golden parity wall already).
+(flows have their own golden parity wall already).
 """
 import ast
 import os

@@ -59,7 +59,7 @@ import unittest
 from _anchor import REPO
 
 import plugins
-import pipeline_graph
+import flow_graph
 
 _ENG_ROOT = os.path.join(REPO, "plugins", "engines")
 
@@ -130,10 +130,10 @@ def _iter_all_compose_files():
 
 
 def _seed_graph(engine):
-    row = pipeline_graph.NodeRow(
+    row = flow_graph.NodeRow(
         node_id="seed", node_type=engine, input_from=(),
         params={"workflow": {"seed": True}})
-    return pipeline_graph.Skeleton(name="seed", engine_type=engine,
+    return flow_graph.Skeleton(name="seed", engine_type=engine,
                                    nodes=(row,))
 
 
@@ -217,9 +217,9 @@ class TestLaw3BusDrive(unittest.TestCase):
                     {"params": {}}, _default_model(etype), "",
                     _seed_graph(etype), [etype])
                 # a clean return is a pass (a card with no required
-                # fields) — the graph must stand as a PipelineGraph
+                # fields) — the graph must stand as a FlowGraph
                 self.assertIsInstance(
-                    g, pipeline_graph.PipelineGraph,
+                    g, flow_graph.FlowGraph,
                     "%s: bus returned a broken graph" % etype)
             except plugins.ValidationError:
                 pass   # the clean refusal — naming the missing param

@@ -1,4 +1,4 @@
-/** Wire shape of a run summary from GET /v1/pipelines/runs (list_runs).
+/** Wire shape of a run summary from GET /v1/flows/runs (list_runs).
  *  The contract returns loose Records; the derived module casts. */
 export interface MediaRun {
   run_id: string;
@@ -26,7 +26,7 @@ export type MediaCategory =
   | "other";
 
 /** One artifact card in the Library's derived media archive — flattened
- *  from the run protocol (GET /v1/pipelines/runs → artifacts). */
+ *  from the run protocol (GET /v1/flows/runs → artifacts). */
 export interface MediaAsset {
   /** Unique key — the artifact url (dedupe happens here). */
   id: string;

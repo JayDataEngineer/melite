@@ -150,8 +150,8 @@ def test_deck_editor_dist_traversal():
 
 def test_card_view_embeds_deck_bridge():
     cv = os.path.join(REPO, "plugins", "web", "dsh", "melite-card-view",
-                      "src", "client", "PipelineCards.tsx")
-    assert os.path.isfile(cv), "card-view PipelineCards.tsx missing"
+                      "src", "client", "FlowCards.tsx")
+    assert os.path.isfile(cv), "card-view FlowCards.tsx missing"
     src = open(cv, encoding="utf-8").read()
     assert EMBED_BRIDGE_IMPORT in src
 

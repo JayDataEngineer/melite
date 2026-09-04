@@ -181,7 +181,7 @@ def tool_manifests(cls):
     family-specific violation is the server's LOUD refusal, never a
     silent drop.
 
-    The card-compose request contract: POST /v1/pipelines/start
+    The card-compose request contract: POST /v1/flows/start
     {model: <chosen family>, params: {...}} — the manifest's top-level
     `model` names the declared default route (single-family cards: the
     only family, no param)."""

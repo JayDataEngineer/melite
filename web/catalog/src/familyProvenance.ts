@@ -2,7 +2,7 @@
 //
 // A capability tile (Library) declares ONE default family. A run records
 // which families actually executed: list_runs projects a `families` array
-// from brick-level family keys (backend/core/pipelines/runner.py
+// from brick-level family keys (backend/core/flows/runner.py
 // _run_families — YAML + inline runs both carry it). Provenance is the
 // join: "this capability has produced N completed runs, most recently at
 // T". The Library badges tiles that have run before — the archive is a

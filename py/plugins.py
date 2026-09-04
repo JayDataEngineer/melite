@@ -147,15 +147,37 @@ def _engine_type_of_dir(engine_dir):
 _engines = None      # engine_type -> EngineRef
 
 
-def _iter_plugin_dirs():
-    """Yield every plugin directory under the scan roots (depth-2)."""
-    for root in _PLUGIN_SCAN_ROOTS:
-        if not root.is_dir():
+def _has_plugin_marker(d):
+    """True if d looks like a plugin dir (has plugin.py, plugin.yaml,
+    or an engines/ subdir)."""
+    return (d / "plugin.py").is_file() or (d / "plugin.yaml").is_file() or (d / "engines").is_dir()
+
+
+def iter_plugin_dirs_under(root):
+    """The ONE plugin-dir walk (public: scan_engines here, catalog.py,
+    and editor_forms.py all consume it — one law, no per-consumer
+    copies). Depth-2 (the original contract): plugins/<cat>/<plugin>.
+    Depth-3 (category subdirs, 2026-10-02): a dir with no plugin
+    markers of its own is a CATEGORY CONTAINER (cpp/), not a plugin —
+    recurse one level into its marker-carrying children."""
+    if not root.is_dir():
+        return
+    for cat_dir in sorted(root.iterdir()):
+        if not cat_dir.is_dir():
             continue
-        for cat_dir in sorted(root.iterdir()):
-            if not cat_dir.is_dir():
-                continue
+        if _has_plugin_marker(cat_dir):
             yield cat_dir
+        else:
+            for sub in sorted(cat_dir.iterdir()):
+                if sub.is_dir() and _has_plugin_marker(sub):
+                    yield sub
+
+
+def _iter_plugin_dirs():
+    """Yield every plugin directory under the scan roots
+    (iter_plugin_dirs_under over each root)."""
+    for root in _PLUGIN_SCAN_ROOTS:
+        yield from iter_plugin_dirs_under(root)
 
 
 def scan_engines():
@@ -389,10 +411,10 @@ def compose(body, model, run_id, graph, engine_types):
                 "card_compose rc=%d (%s.%s): %s" % (
                     rc, ref.plugin_id, etype, err or "no detail"))
         if new_graph is not None and new_graph is not graph:
-            # the rim: arm output is a typed PipelineGraph or refuses
+            # the rim: arm output is a typed FlowGraph or refuses
             # LOUDLY by field name — a malformed graph can never ride
-            import pipeline_graph
-            graph = pipeline_graph.PipelineGraph.model_validate(new_graph)
+            import flow_graph
+            graph = flow_graph.FlowGraph.model_validate(new_graph)
         if isinstance(mod_extra, dict):
             extra.update(mod_extra)
     return graph, extra

@@ -40,8 +40,8 @@ exception for /v1/forms below):
                    recipes: <model-dir>/inference.yaml prompt_upscale:/
                    lyrics_upscale: blocks (with the C's id-named-dir fallback
                    probe across owners/genres); lane fallback:
-                   flows/<name>/pipeline.yaml (agent
-                   lane docs) or any flows/*/pipeline.yaml containing "type: <name>".
+                   flows/<name>/flow.yaml (agent
+                   lane docs) or any flows/*/flow.yaml containing "type: <name>".
   /v1/kinds        py/card_kinds.py TABLE (the first-party card-kind
                    behavior flags; gateway infra, not plugin data — the
                    C-era plugins/*/kinds/*.yaml scan is extinct)
@@ -407,7 +407,7 @@ def _scan_catalog(repo_root):
                 continue
                 # The wire model id is the DIRECTORY name (canonical
                 # everywhere: py/plugins.py resolve_model globs
-                # models/<genre>/<mid>/model.yaml by mid; pipelines
+                # models/<genre>/<mid>/model.yaml by mid; flows
                 # reference dir ids). The yaml family.id is a display
                 # alias (music3's yaml says minimax_music3) — kept in
                 # row["family_id"], never the lookup key.
@@ -1370,15 +1370,15 @@ _SAFE_ID = frozenset(
 
 def _lane_probe(repo_root, model):
     """Unknown-catalog-name fallback (src/server.cpp:7946-7977): a
-    flows/<name>/pipeline.yaml on disk, or any flows/*/pipeline.yaml
+    flows/<name>/flow.yaml on disk, or any flows/*/flow.yaml
     containing 'type: <name>', gets the minimal spec."""
     if os.path.exists(os.path.join(repo_root, "flows", model,
-                                   "pipeline.yaml")):
+                                   "flow.yaml")):
         return True
     pdir = os.path.join(repo_root, "flows")
     needle = "type: " + model
     for name in _scandir(pdir):
-        pyp = os.path.join(pdir, name, "pipeline.yaml")
+        pyp = os.path.join(pdir, name, "flow.yaml")
         if os.path.isfile(pyp) and needle in (_read_file(pyp) or ""):
             return True
     return False
@@ -1610,12 +1610,12 @@ def _main():
         print("form-spec unknown model        : DRIFT —", status, body)
         failures.append(("form-spec:404", "%s %s" % (status, body)))
 
-    # lane fallback: a pipelines/<name>/pipeline.yaml lane gets the minimal
+    # lane fallback: a flows/<name>/flow.yaml lane gets the minimal
     # display spec (shape check against live disk, C src/server.cpp:7958-7967)
     lane = None
     pdir = os.path.join(repo_root, "flows")
     for name in sorted(_scandir(pdir)):
-        if os.path.isfile(os.path.join(pdir, name, "pipeline.yaml")):
+        if os.path.isfile(os.path.join(pdir, name, "flow.yaml")):
             lane = name
             break
     if lane is not None and _find_model(_scan_catalog(repo_root),

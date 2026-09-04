@@ -1,6 +1,6 @@
 """kimodo-native — text-to-motion gate (ComfyUI Kimodo lane).
 
-(2026-09-04 flows rework) Converted from pipeline.yaml. Inline
+(2026-09-04 flows rework) Converted from flow.yaml. Inline
 params.workflow (typed-step-docs rung 3, 2026-09-02): the
 workflow_file+inject legacy channel was already retired for this
 lane. $prompt resolves through the gateway's inline deep-walk;

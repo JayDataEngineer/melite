@@ -144,7 +144,7 @@ const NO_VIEWS: readonly SlotEntryView[] = Object.freeze([])
  * per mutation (registry state is consistent when they bump); subscribe()
  * notifications batch per microtask, so N same-tick mutations produce one
  * notification per touched key. Declaration and entry mutations ride the
- * same pipeline in this cut — one listener set per seat.
+ * same flow in this cut — one listener set per seat.
  */
 export class SlotCore {
   private records = new Map<string, SlotRecord>()

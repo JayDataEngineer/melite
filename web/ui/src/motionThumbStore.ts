@@ -6,7 +6,7 @@
  * it captures a canvas screenshot and stores it here so the collapsed tile
  * can show a visual preview instead of a broken-image icon.
  *
- * This is a UI-only cache — it has ZERO impact on the pipeline's cacheKey,
+ * This is a UI-only cache — it has ZERO impact on the flow's cacheKey,
  * run params, or backend submission. It persists to localStorage so thumbnails
  * survive page reloads. If a thumbnail is missing (run completed but the
  * drilldown was never opened), the tile shows a motion-genre placeholder.

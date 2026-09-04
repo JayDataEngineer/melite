@@ -12,18 +12,18 @@ recognition-gated. Delivery converts black to alpha.
 
 ## The lane
 
-`data/pipelines/vfx_sprite.yaml` (2 bricks — cheap; batch freely).
+`data/flows/vfx_sprite.yaml` (2 bricks — cheap; batch freely).
 
 ## Run loop
 
 ```bash
-cp data/pipelines/vfx_sprite.yaml data/pipelines/vfx_<effect>.yaml
+cp data/flows/vfx_sprite.yaml data/flows/vfx_<effect>.yaml
 # edit prompt + expect + seed
-curl -X POST localhost:33081/v1/pipelines/yaml/validate \
+curl -X POST localhost:33081/v1/flows/yaml/validate \
   -H 'content-type: application/json' -d '{"yaml":"vfx_<effect>.yaml"}'
-curl -X POST localhost:33081/v1/pipelines/start \
+curl -X POST localhost:33081/v1/flows/start \
   -H 'content-type: application/json' -d '{"yaml":"vfx_<effect>.yaml"}'
-curl -s localhost:33081/v1/pipelines/status/<run_id>
+curl -s localhost:33081/v1/flows/status/<run_id>
 ```
 
 ## Customization points

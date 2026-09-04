@@ -10,6 +10,12 @@ overrides:
 
 importers:
 
+  .:
+    dependencies:
+      lightningcss:
+        specifier: ^1.33.0
+        version: 1.33.0
+
   plugins/engines/comfyui/action_cards:
     dependencies:
       '@melite-plugin/3d':

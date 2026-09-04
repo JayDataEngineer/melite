@@ -24,7 +24,7 @@
     "./llmProviders": "./src/llmProviders.ts",
     "./modelCatalog": "./src/modelCatalog.ts",
     "./package.json": "./package.json",
-    "./pipelineProtocol": "./src/pipelineProtocol.ts",
+    "./FlowProtocol": "./src/FlowProtocol.ts",
     "./preflightClient": "./src/preflightClient.ts",
     "./runStatusContract": "./src/runStatusContract.ts",
     "./runStatusContractStore": "./src/runStatusContractStore.ts",

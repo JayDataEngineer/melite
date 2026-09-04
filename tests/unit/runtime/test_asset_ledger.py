@@ -25,7 +25,7 @@ import os
 import pytest
 
 import asset_ledger as al  # noqa: E402
-from tests.unit.conftest import write_run  # noqa: E402
+from tests.unit.runtime.conftest import write_run  # noqa: E402
 
 
 class TestRowShape:
@@ -103,7 +103,7 @@ class TestResilience:
         rd = tmp_path / "run-x"
         rd.mkdir()
         (rd / "a.png").write_bytes(b"x" * 5)
-        (rd / "_pipeline.json").write_text("{not json at all")
+        (rd / "_flow.json").write_text("{not json at all")
         idx = al.scan_run(str(rd))
         assert idx.run_id == "run-x"
         assert idx.status == "unknown"
@@ -124,7 +124,7 @@ class TestResilience:
         # garbage inside output_root must still yield a well-formed
         # envelope, never a 500
         (tmp_path / "run-a").mkdir()
-        (tmp_path / "run-a" / "_pipeline.json").write_text("]]]")
+        (tmp_path / "run-a" / "_flow.json").write_text("]]]")
         (tmp_path / "not-a-run").mkdir()
         body = al.assets_index(str(tmp_path))
         assert set(body.keys()) == {"count", "artifacts", "runs"}
@@ -177,7 +177,7 @@ class TestRunTestFlag:
         rd = tmp_path / "run-test"
         rd.mkdir()
         (rd / "x.png").write_bytes(b"abc")
-        (rd / "_pipeline.json").write_text(json.dumps({
+        (rd / "_flow.json").write_text(json.dumps({
             "run_id": "run-test", "status": "completed",
             "model": "x", "created_at": 1700000000,
             "test": True,
@@ -210,7 +210,7 @@ class TestRunTestFlag:
         rd = tmp_path / "run-t"
         rd.mkdir()
         (rd / "a.png").write_bytes(b"abc")
-        (rd / "_pipeline.json").write_text(json.dumps({
+        (rd / "_flow.json").write_text(json.dumps({
             "run_id": "run-t", "status": "completed",
             "created_at": 0, "test": True,
         }))

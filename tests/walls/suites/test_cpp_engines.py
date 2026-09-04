@@ -31,17 +31,17 @@ import unittest
 
 from _anchor import REPO
 
-import pipeline_graph
+import flow_graph
 import plugins
 
 
 def _seed_graph(engine):
     """A legal one-node skeleton seed for the bus call (the caller's
     own graph object — the bus replaces it in phase 2)."""
-    row = pipeline_graph.NodeRow(
+    row = flow_graph.NodeRow(
         node_id="seed", node_type=engine, input_from=(),
         params={"workflow": {"seed": True}})
-    return pipeline_graph.Skeleton(name="seed", engine_type=engine,
+    return flow_graph.Skeleton(name="seed", engine_type=engine,
                                    nodes=(row,))
 
 
@@ -115,11 +115,11 @@ class TestForgeBusContract(unittest.TestCase):
     def test_phase1_ok_returns_extra_no_graph(self):
         g, extra = _bus(self.OK, "anycreature", "", "anycreature")
         self.assertEqual(sorted(extra.keys()), ["spec"])
-        self.assertIsInstance(g, pipeline_graph.PipelineGraph)
+        self.assertIsInstance(g, flow_graph.FlowGraph)
 
     def test_phase2_emits_skeleton_with_workflow_spec(self):
         g, _extra = _bus(self.OK, "anycreature", "run-1", "anycreature")
-        self.assertIsInstance(g, pipeline_graph.PipelineGraph)
+        self.assertIsInstance(g, flow_graph.FlowGraph)
         self.assertEqual(len(g.nodes), 1)
         node = g.nodes[0]
         self.assertEqual(node.node_type, "anycreature")
@@ -156,7 +156,7 @@ class TestTextToMotionBusContract(unittest.TestCase):
         gated = {"params": {"prompt": "wave", "skeleton": "smplx",
                             "smplx_checkpoint": "/data/smplx.gguf"}}
         g, _extra = _bus(gated, "smplx", "", "kimodo")
-        self.assertIsInstance(g, pipeline_graph.PipelineGraph)
+        self.assertIsInstance(g, flow_graph.FlowGraph)
 
     def test_phase2_emits_skeleton_with_prompt_workflow(self):
         g, _extra = _bus(self.OK, "soma", "run-2", "kimodo")

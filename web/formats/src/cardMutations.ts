@@ -1,17 +1,17 @@
-// cardMutations — the declarative card + pipeline mutation gate (2026-08-09).
+// cardMutations — the declarative card + flow mutation gate (2026-08-09).
 //
 // DECLARATIVE way. One table, one gate — no per-kind imperative store code.
 // Each row declares the field a mutation kind writes + its validation
 // + coercion; extending the gate = adding a union member + a table row (same
-// discipline as _FORM_CONFIGS in backend/core/pipelines/compile.py, and the
+// discipline as _FORM_CONFIGS in backend/core/flows/compile.py, and the
 // backend's pydantic models this table mirrors).
 //
 // The enforcement is two-layer, mirroring the catalog schema's pattern:
 // • HERE (frontend, edit time): the typed unions (tsc) + this runtime gate —
 // every card/doc mutation passes through applyStageMutation /
 // applyDocMutation (the shared runMutation core).
-// • BACKEND (wire, run start): PipelineStep.title AND PipelineDoc.name
-// carry Field(max_length=TITLE_MAX_LEN) in backend/media/comfyui/pipeline.py
+// • BACKEND (wire, run start): FlowStep.title AND FlowDoc.name
+// carry Field(max_length=TITLE_MAX_LEN) in backend/media/comfyui/flow.py
 // — the pydantic bounds. Bump all together.
 //
 // THE NAMING RULE (2026-08-09, the "meta-asset" pattern): every user-visible
@@ -19,9 +19,9 @@
 // (pydantic where Python owns the model, zod where Node does). No ad-hoc
 // name writes — that's how drift and breakage creep in.
 
-/** Max length of a card title / pipeline name. MIRRORED on the backend:
- * PipelineStep.title AND PipelineDoc.name carry Field(max_length=120) in
- * backend/media/comfyui/pipeline.py. */
+/** Max length of a card title / flow name. MIRRORED on the backend:
+ * FlowStep.title AND FlowDoc.name carry Field(max_length=120) in
+ * backend/media/comfyui/flow.py. */
 export const TITLE_MAX_LEN = 120
 
 // ─── Shared gate core ──────────────────────────────────────────────────────
@@ -83,9 +83,9 @@ export function applyStageMutation(mutation: StageMutation): StageMutationResult
  return runMutation(spec, mutation.value) as StageMutationResult
 }
 
-// ─── Doc (pipeline-level) mutations ────────────────────────────────────────
+// ─── Doc (flow-level) mutations ────────────────────────────────────────
 
-/** The closed set of pipeline-doc mutations (the pipeline rename,
+/** The closed set of flow-doc mutations (the flow rename,
  * 2026-08-09). Same extension discipline as the stage table. */
 export type DocMutationKind = "rename"
 
@@ -104,7 +104,7 @@ export type DocMutationResult =
  | { ok: true; patch: { name: string } }
  | { ok: false; error: string }
 
-/** Pure gate for pipeline-doc mutations — the pipeline-level sibling of
+/** Pure gate for flow-doc mutations — the flow-level sibling of
  * applyStageMutation. Cosmetic: the store action must NOT mark stale or
  * recompute keys (a rename is not a semantic change). */
 export function applyDocMutation(mutation: DocMutation): DocMutationResult {

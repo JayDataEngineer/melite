@@ -71,7 +71,7 @@ def generate_frame(character, action, seed, output_dir):
     }).encode()
 
     req = urllib.request.Request(
-        f"{SERVER}/v1/pipelines/start",
+        f"{SERVER}/v1/flows/start",
         data=body,
         headers={"Content-Type": "application/json"},
         method="POST"
@@ -93,7 +93,7 @@ def wait_for_run(run_id, timeout=120):
     start = time.time()
     while time.time() - start < timeout:
         try:
-            req = urllib.request.urlopen(f"{SERVER}/v1/pipelines/status/{run_id}", timeout=10)
+            req = urllib.request.urlopen(f"{SERVER}/v1/flows/status/{run_id}", timeout=10)
             data = json.loads(req.read())
             status = data.get("status", "unknown")
             if status in ("success", "error"):
@@ -205,7 +205,7 @@ def generate_sprite_sheet(character, actions, output_path, cols=None,
                 artifacts = result.get("artifacts", [])
                 if not artifacts:
                     # Try sidecar
-                    sidecar_path = f"./output/{run_id}/_pipeline.json"
+                    sidecar_path = f"./output/{run_id}/_flow.json"
                     if os.path.exists(sidecar_path):
                         sidecar = json.load(open(sidecar_path))
                         artifacts = sidecar.get("artifacts", [])

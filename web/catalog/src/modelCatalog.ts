@@ -28,7 +28,7 @@ import { useCatalogContractStore } from "./catalogContractStore"
 //
 // Every wire shape below is a re-export of components["schemas"] — the
 // backend pydantic models are the single source of truth, /openapi.json is
-// BUILT from them (core/pipelines/openapi.py), and `api:sync` regenerates
+// BUILT from them (core/flows/openapi.py), and `api:sync` regenerates
 // src/api/schema.d.ts from the live gateway. NO hand-written wire mirrors:
 // a backend drift lands here on the next api:sync and fails tsc. The two
 // LOCAL types at the bottom (CardGenre, ModelDefaults) are VIEW
@@ -305,7 +305,7 @@ export function primeCatalog(data: Catalog): void {
 // failure schedule a 3s retry + push the "Catalog unavailable" toast — with
 // real timers and real network. Under full-suite worker contention a file's
 // lifetime straddles that 3s retry, so the toast landed mid-test and broke
-// unrelated toast-absence assertions (pipelineStore.saveChain 409, three
+// unrelated toast-absence assertions (flowStore.saveChain 409, three
 // deterministic full-suite reproductions). Tests that want the loader call
 // ensureCatalog()/loadCatalog() explicitly against their own api mocks
 // (model-catalog.test.ts pins the retry + dedup behavior that way). The gate

@@ -2,7 +2,7 @@
 //
 // THE STORAGE IS THE WIRE (2026-08-07, recon revision): params.loras[] /
 // params.controlnets[] are already the wire shape (executeGeneration spreads
-// stage.params into POST /v1/pipelines/start), already round-trip through
+// stage.params into POST /v1/flows/start), already round-trip through
 // run hydration, already agent-writable. A parallel stage.modifiers field
 // would be a second source of truth (rule 4). So this module is a VIEW +
 // interaction layer over the param-bag entries: types (migrated from the

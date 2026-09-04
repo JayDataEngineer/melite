@@ -96,7 +96,7 @@ class RunIndex(BaseModel):
 
 
 _CHUNK = 1 << 16
-SIDECAR = "_pipeline.json"
+SIDECAR = "_flow.json"
 
 
 def _sha256_file(path: str) -> Optional[str]:
@@ -116,7 +116,7 @@ def _sha256_file(path: str) -> Optional[str]:
 def scan_run(run_dir: str, sidecar: Optional[dict] = None) -> RunIndex:
     """Disk truth → typed rows. Files starting with `_` are estate
     bookkeeping (sidecars, generated posters), never deliverables.
-    sidecar=None reads <run_dir>/_pipeline.json when present."""
+    sidecar=None reads <run_dir>/_flow.json when present."""
     run_id = os.path.basename(run_dir.rstrip("/"))
     if sidecar is None:
         sidecar = _read_sidecar(run_dir)

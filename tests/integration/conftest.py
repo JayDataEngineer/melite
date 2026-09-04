@@ -6,7 +6,7 @@ works").
 THE LAWS THIS FOLDER OBEYS:
 
 * INFERENCE LAW — every run goes through the queue door (POST
-  /v1/pipelines/start on a real gateway process; never a direct
+  /v1/flows/start on a real gateway process; never a direct
   engine post). The gateway serializes (serial GPU law) and pytest
   runs these sequentially — one active request at a time.
 * RESILIENCE LAW — a failing run surfaces as status failed/completed
@@ -64,7 +64,7 @@ class QueueDoor:
         # real output root, the tag keeps it out of /v1/assets.
         tagged = dict(body)
         tagged.setdefault("test", True)
-        code, resp = _req(self.port, "POST", "/v1/pipelines/start", tagged)
+        code, resp = _req(self.port, "POST", "/v1/flows/start", tagged)
         assert code == 202, "submit refused (%d): %s" % (code, resp)
         return resp["run_id"]
 
@@ -74,7 +74,7 @@ class QueueDoor:
         last = {}
         while time.monotonic() < deadline:
             code, last = _req(self.port, "GET",
-                              "/v1/pipelines/status/%s" % run_id)
+                              "/v1/flows/status/%s" % run_id)
             assert code == 200, "status door %d: %s" % (code, last)
             if last.get("status") in TERMINAL:
                 return last
@@ -94,7 +94,7 @@ class QueueDoor:
         return out
 
     def stop(self, run_id):
-        _req(self.port, "POST", "/v1/pipelines/stop/%s" % run_id)
+        _req(self.port, "POST", "/v1/flows/stop/%s" % run_id)
 
 
 @pytest.fixture(scope="session")

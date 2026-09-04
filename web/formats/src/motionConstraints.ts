@@ -8,8 +8,8 @@
 // consume (SOMA-77 order, meters). serializeConstraints() produces the
 // JSON payload that:
 //   1. PERSISTS in stage.params.motion_constraints (survives reloads — the
-//      pipeline UX "persist always" hard rule), AND
-//   2. TRANSPORTS to melite-kimodo-nodes via the motion_constraints pipeline
+//      flow UX "persist always" hard rule), AND
+//   2. TRANSPORTS to melite-kimodo-nodes via the motion_constraints flow
 //      param, where the node deserializes it into FullBodyConstraintSet /
 //      EndEffectorConstraintSet / Root2DConstraintSet and feeds raw()'s
 //      constraint_lst.

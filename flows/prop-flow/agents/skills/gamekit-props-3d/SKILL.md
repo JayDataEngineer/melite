@@ -32,4 +32,4 @@ per vision-gate/SKILL.md.
 
 ## Deliver
 GLB + FBX into data/delivery/unity/<category>/<name>/ (FBX via the container
-blender pattern in docs/asset-pipelines/delivery-unity.md), manifest rows.
+blender pattern in docs/asset-flows/delivery-unity.md), manifest rows.

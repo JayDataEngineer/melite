@@ -16,7 +16,7 @@ from _anchor import REPO
 from gateway import (  # noqa: E402
     ValidationError, expand_inject, resolve_request,
 )
-from pipeline_graph import NodeRow  # noqa: E402
+from flow_graph import NodeRow  # noqa: E402
 import flow as flow_mod  # noqa: E402
 from flow import Flow, Stage, FromInitial, FromStage  # noqa: E402
 

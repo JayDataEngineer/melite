@@ -3,7 +3,7 @@
  * Types only — runtime helpers stay app-side. */
 export type CardGenre = "image" | "video" | "audio" | "3d" | "motion" | "ai_generated" | "text"
 
-export type CompoundMode = "fanout" | "pipeline" | "modifiers"
+export type CompoundMode = "fanout" | "flow" | "modifiers"
 
 export interface CompoundBlock {
   mode: CompoundMode
@@ -11,17 +11,17 @@ export interface CompoundBlock {
    * of the parent moves the whole block; the children's relative order is
    * preserved. */
   childIds: string[]
-  /** ``mode === "pipeline"`` — the YAML pipeline filename (the atomic run).
-   * Mirrors the legacy top-level ``stage.yamlPipeline`` for back-compat. */
-  yamlPipeline?: string
+  /** ``mode === "flow"`` — the YAML flow filename (the atomic run).
+   * Mirrors the legacy top-level ``stage.yamlFlow`` for back-compat. */
+  yamlFlow?: string
   /** ``mode === "modifiers"`` — which ``params[paramKey]`` array holds the
    * modifier entries (loras / controlnets / kind.param_key). The host
    * stage's params are the storage; the compound block只是 names the slot. */
   paramKey?: string
 }
 
-// pipelineCardTypes — the CardStage unified view-model, shared by every
-// card-surface module. Moved VERBATIM from PipelineCard.tsx (Cut 2, C2):
+// flowCardTypes — the CardStage unified view-model, shared by every
+// card-surface module. Moved VERBATIM from FlowCard.tsx (Cut 2, C2):
 // one status vocabulary, one card-shape vocabulary, the runnability rule,
 // and the tile play-affordance decision live here as the dependency root —
 // everything else in the kit imports from this module, never from the
@@ -70,7 +70,7 @@ export interface CardResult {
 }
 
 /**
- * A pipeline stage as the card renders it — the superset of the agent
+ * A flow stage as the card renders it — the superset of the agent
  * stage, the YAML brick stage, and a plain asset entry. Surfaces map their
  * own model into this; the card never reads a surface store.
  */
@@ -90,7 +90,7 @@ export interface CardStage {
   inputs: string[]
   /** Per-slot NAMED output selection (input_prep → mask): inputOutputs[i]
   * names which output to consume from inputs[i]. null/absent = primary
-  * (assetUrls[0]). Mirrors PipelineStage.inputOutputs by index. */
+  * (assetUrls[0]). Mirrors FlowStage.inputOutputs by index. */
   inputOutputs?: (string | null)[]
   /** Resolved 0-based indices of upstream stages in the surface's own
   * stage list — what the "← from 01" badge renders. Precomputed by the
@@ -125,9 +125,9 @@ export interface CardStage {
   * derivation that left Stop unrenderable mid-run. */
   runId?: string | null
   /** WHO authored the card — the agent-generated marker (2026-08-09).
-  * ``agent`` — the agent built this stage (build_pipeline tool).
+  * ``agent`` — the agent built this stage (build_flow tool).
   * ``user`` — the user hand-authored it (ServicePicker + addStage).
-  * ``imported`` — hydrated from a past run (pipelineStore.loadRun).
+  * ``imported`` — hydrated from a past run (flowStore.loadRun).
  *
  * Optional for graceful rollout — existing call sites that don't set it
  * render unchanged (no badge). The closed vocabulary mirrors the
@@ -146,7 +146,7 @@ export interface CardStage {
   * card is a container that holds other cards. The projection
   * (subgraph.projectSubgraphs) collapses the children into this card's
   * segment; the renderer shows a ChainCardTile face + a ChainZoomOverlay
-  * drill-down. See pipelineTypes.ts CompoundBlock for the full rationale. */
+  * drill-down. See FlowTypes.ts CompoundBlock for the full rationale. */
   compound?: CompoundBlock
 }
 
@@ -190,12 +190,12 @@ export interface CardActions {
  * * nothing. RESOLVES with the plan; REJECTS with the exact error a real
  * * Run would surface — including the familyParamContract copy ("unknown
  * * parameter 'x' — not in the family signature"). Presence-gated: the
- * * adapter omits it for chain-backed pipelines (their Run is a
+ * * adapter omits it for chain-backed flows (their Run is a
  * * whole-spec start). */
 }
 
-/** Anything with a status + stages — PipelineDoc and RunStatus both fit. */
-export interface CardPipelineLike {
+/** Anything with a status + stages — FlowDoc and RunStatus both fit. */
+export interface CardFlowLike {
   status: string
   stages: { kind?: string; status: string }[]
 }

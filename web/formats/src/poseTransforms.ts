@@ -90,7 +90,7 @@ function translate(kp: Keypoints, idx: number, dx: number, dy: number): void {
   kp[idx * 3 + 1] += dy
 }
 
-// ── Transform pipeline ───────────────────────────────────────────────────
+// ── Transform flow ───────────────────────────────────────────────────
 // Each transform mutates the (already-cloned) keypoint array.
 // Order matters: crouch and weight shift move everything; arm/elbow transforms
 // then operate on the post-shifted shoulder positions; head tilt and spine

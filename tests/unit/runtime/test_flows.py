@@ -115,8 +115,8 @@ def test_to_graph_emits_the_executor_contract():
                   inputs={"mesh": FromStage(stage="a", output="glb")}),
         ))
     g = fl.to_graph()
-    import pipeline_graph
-    assert isinstance(g, pipeline_graph.PipelineGraph)
+    import flow_graph
+    assert isinstance(g, flow_graph.FlowGraph)
     a, b = g.nodes
     assert a.input_from == ("__initial__.prompt",)
     assert b.input_from == ("a.glb",)

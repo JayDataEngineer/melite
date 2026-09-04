@@ -1,13 +1,13 @@
 /**
- * pipelineEvents.ts — the gateway events door client (2026-09-02, the
+ * FlowEvents.ts — the gateway events door client (2026-09-02, the
  * streaming restoration).
  *
- * GET ws(s)://<gateway>/v1/pipelines/events/<run_id> streams the run's
+ * GET ws(s)://<gateway>/v1/flows/events/<run_id> streams the run's
  * event bus live: stage flips, per-KSampler-step progress, activity
  * strings, the terminal run status. Frames are one-line JSON text
  * frames (the gateway speaks RFC 6455, stdlib asyncio — no framework).
  *
- * CONTRACT vs the 700ms poll (`pollPipelineRun`, pipelineProtocol.ts):
+ * CONTRACT vs the 700ms poll (`pollFlowRun`, FlowProtocol.ts):
  * the poll stays the TERMINAL AUTHORITY — a dropped socket must never
  * lose a run. The stream only carries intra-tick frames; every frame
  * is an idempotent patch onto the same store the poll writes. Silent
@@ -22,23 +22,23 @@
  */
 
 /** A per-step progress frame (ComfyUI progress, KSampler steps). */
-export type PipelineProgress = { value: number; max: number; node?: string }
+export type FlowProgress = { value: number; max: number; node?: string }
 
 /** One frame off the events bus. `stage` frames are idempotent patches;
  * `run` frames with a terminal status end the stream. */
-export type PipelineEventFrame =
+export type FlowEventFrame =
   | { type: "run"; status: string }
   | {
       type: "stage"
       stage: string
       index?: number
       status?: string
-      progress?: PipelineProgress
+      progress?: FlowProgress
       activity?: string
       error?: string
     }
 
-export type PipelineEventsHandle = {
+export type FlowEventsHandle = {
   /** Idempotent; safe to call twice or after the terminal frame. */
   close: () => void
   /** True once a terminal `run` frame arrived (stream is over). */
@@ -54,11 +54,11 @@ const BACKOFF_CAP_MS = 5_000
  * in `onEvent`. Auto-reconnects with capped backoff until a terminal
  * `run` frame, an explicit close, or `signal` aborts.
  */
-export function streamPipelineEvents(
+export function streamFlowEvents(
   runId: string,
-  onEvent: (frame: PipelineEventFrame) => void,
+  onEvent: (frame: FlowEventFrame) => void,
   opts: { signal?: AbortSignal } = {},
-): PipelineEventsHandle {
+): FlowEventsHandle {
   let ws: WebSocket | null = null
   let terminal = false
   let closed = false
@@ -97,15 +97,15 @@ export function streamPipelineEvents(
     // 2026-09-04: the embed's per-run WS 502'd on every connect and the
     // card showed no live comfyui feedback).
     try {
-      ws = new WebSocket(`${proto}://${host}/v1/pipelines/events?run_id=${encodeURIComponent(runId)}`)
+      ws = new WebSocket(`${proto}://${host}/v1/flows/events?run_id=${encodeURIComponent(runId)}`)
     } catch {
       return // constructor refused → poll only
     }
     ws.onmessage = (ev) => {
       if (closed || terminal) return
       attempt = 0 // live frames reset the backoff
-      let frame: PipelineEventFrame | null = null
-      try { frame = JSON.parse(String(ev.data)) as PipelineEventFrame } catch { return }
+      let frame: FlowEventFrame | null = null
+      try { frame = JSON.parse(String(ev.data)) as FlowEventFrame } catch { return }
       if (!frame || typeof frame !== "object" || typeof (frame as { type?: unknown }).type !== "string") return
       onEvent(frame)
       if (frame.type === "run" && TERMINAL.has(String(frame.status))) finish()

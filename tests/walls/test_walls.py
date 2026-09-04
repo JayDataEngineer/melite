@@ -34,12 +34,12 @@ VENV_PY = REPO / ".venv" / "bin" / "python"
 # test_provision, test_form_defaults, test_web_family) are collected
 # by pytest directly from suites/ and are NOT listed here.
 SUBPROCESS_WALLS = [
-    "tests/walls/suites/test_python_cards.py",
     "tests/walls/suites/test_python_models.py",
     "tests/walls/suites/test_typing.py",
     "tests/walls/suites/test_workflow_transpile.py",
-    "tests/walls/suites/test_doc_parity.py",
     "tests/walls/suites/test_streaming.py",
+    "tests/walls/suites/test_doc_parity.py",
+    "tests/walls/suites/test_wire_surface.py",
     "tests/walls/suites/test_models_on_second_drive.py",
     "tests/golden_compose/_runner.py",
     # unittest-style suites — pytest collects them but they also work
@@ -47,7 +47,6 @@ SUBPROCESS_WALLS = [
     "tests/walls/suites/test_cpp_engines.py",
     "tests/walls/suites/test_card_pattern_wall.py",
     "tests/walls/suites/test_web_harness_pages.py",
-    "tests/walls/suites/test_wire_surface.py",
     # NOT here (2026-09-04 flows-rework validation):
     # - test_browser_lanes.py — boots a throwaway vite + chromium (its
     #   own live-browser infra; hangs the subprocess wall). Run it via
@@ -61,6 +60,15 @@ SUBPROCESS_WALLS = [
 # drift (reproduces with the tree stashed — NOT this lane's files).
 # Cited here so the debt stays visible; remove when the pin lands.
 KNOWN_DRIFT = {
+    # 2026-09-04 rename validation: object_info.json was refreshed in
+    # the working tree (14:04Z) without re-stamping object_info.meta
+    # (pin integrity: sha 76f00a4b != stamped a396d14e) — the compose
+    # pin is the owning lane's explicit door (refresh_snapshot);
+    # python_cards still cascades from it (doc_parity/wire_surface
+    # recovered after the re-stamp).
+    "tests/walls/suites/test_python_cards.py":
+        "object_info.json refreshed unstamped (concurrent lane) — "
+        "pin integrity refusal; owner re-stamps via refresh_snapshot",
     # 2026-09-04 flows-rework validation: the renderer moved to
     # action_cards/video/h3-timeline/py/renderer.py (suite path fixed)
     # but its model fixtures (window1_t4r.json & kin) no longer exist

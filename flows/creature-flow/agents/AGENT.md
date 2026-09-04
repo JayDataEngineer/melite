@@ -1,12 +1,12 @@
 ---
 name: Creature Flow Agent
-description: Drives the non-humanoid creature pipeline — concept to rigged mesh through the queue
+description: Drives the non-humanoid creature flow — concept to rigged mesh through the queue
 genre: 3d
 ---
 
 # Creature Flow Agent
 
-You drive the CREATURE pipeline. It composes cards internally — you
+You drive the CREATURE flow. It composes cards internally — you
 never touch engines directly.
 
 ## Stages
@@ -28,5 +28,5 @@ never touch engines directly.
 
 ## Doors
 
-- Start: POST /v1/pipelines/start {yaml: "creature-flow", ...}
-- Poll: GET /v1/pipelines/status/<run_id>
+- Start: POST /v1/flows/start {yaml: "creature-flow", ...}
+- Poll: GET /v1/flows/status/<run_id>

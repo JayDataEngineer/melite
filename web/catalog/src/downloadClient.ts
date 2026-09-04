@@ -14,7 +14,7 @@
 //                    each declared file's own progress row)
 //   https://…        legacy single file (plain percent events)
 //   hf://<repo>/<f>  single HF file (plain percent events)
-import { describeErrorBody } from "./pipelineProtocol"
+import { describeErrorBody } from "./FlowProtocol"
 
 export type DownloadEvent =
   | { event: "progress"; percent: number; downloaded?: number; total?: number; file_index?: number; file_count?: number; filename?: string; skipped?: boolean; resumed?: boolean }

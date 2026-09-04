@@ -1,14 +1,14 @@
 /**
  * STATUS_STYLES — the single source of truth for status → visual mapping.
  *
- * Used by every workspace tab (Pipeline, Video/Director, Motion) so the
+ * Used by every workspace tab (Flow, Video/Director, Motion) so the
  * status language is identical everywhere: same colors, same dots, same
  * badges, same labels. Change a color here, it changes everywhere.
  *
  * Status keys are the superset of all three tabs' statuses:
- *   pipeline: pending | running | done | error | skipped | stopped
+ *   flow: pending | running | done | error | skipped | stopped
  *   video:    empty | pending | generating | ready | failed
- *   motion:   (same as pipeline — it IS a pipeline stage type)
+ *   motion:   (same as flow — it IS a flow stage type)
  *
  * Aliases (completed→done, failed→error, generating→running) normalize
  * the legacy keys so each tab can use its own vocabulary without

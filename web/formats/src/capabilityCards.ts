@@ -21,7 +21,7 @@ import type { CardGenre } from "@melite/contracts"
  *  ``"generation"`` (the default), so the existing helpers don't set it
  *  and the canvas defaults to "generation". The Input / Media Prep tile
  *  sets ``kind: "input"`` so the canvas routes the stage through the
- *  doc-driven input family (POST /v1/pipelines/start, 1-step inline
+ *  doc-driven input family (POST /v1/flows/start, 1-step inline
  *  doc) — NOT the generation wire. This is rule 4: the shape carries
  *  the kind, so pick → addStage never silently misroutes. */
 export interface PickedCard {

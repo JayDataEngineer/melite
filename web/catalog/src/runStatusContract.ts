@@ -2,8 +2,8 @@
 //
 // 2026-08-11 directive: "make declarative contracts in the Zustand and
 // pydantic so it's impossible to fail this". The backend half is
-// backend/core/pipelines/contracts.py RunStatus/RunStage, validated AT THE
-// WIRE (GET /v1/pipelines/status/{run_id} 500s with a `violations` array on
+// backend/core/flows/contracts.py RunStatus/RunStage, validated AT THE
+// WIRE (GET /v1/flows/status/{run_id} 500s with a `violations` array on
 // a contract violation). This validator mirrors it at the poll:
 //
 //   * the contract CORE (run_id, run-level status from the backend's 7
@@ -12,7 +12,7 @@
 //     running run,
 //   * stage statuses are NOT enum-constrained (volatile; serverStatusToCard
 //     maps unknowns → pending by design),
-//   * every auxiliary wire field (log_tail, params, pipeline_doc, ...)
+//   * every auxiliary wire field (log_tail, params, flow_doc, ...)
 //     passes through UNVALIDATED — the runner can evolve without breaking
 //     the poll.
 //
@@ -58,7 +58,7 @@ const _RUN_STATUS_VALUES = [
 ] as const satisfies readonly _RunStatusUnion[]
 export const RUN_STATUSES: ReadonlySet<string> = new Set(_RUN_STATUS_VALUES)
 
-/** Thrown by pollPipelineRun when the status channel lied — either a 500
+/** Thrown by pollFlowRun when the status channel lied — either a 500
  * body carrying the backend's `violations` signature, or a 200 body that
  * fails the contract core. The caller's catch flips the card to error
  * VISIBLY — never a silent fake "running" for the rest of the ceiling. */
@@ -151,7 +151,7 @@ export function validateRunStatusContract(payload: unknown): RunStatusContractRe
 }
 
 /** True when a non-ok body carries the backend's contract-violation
- * signature (pipeline_status 500s: {error, run_id, violations: [...]}). */
+ * signature (flow_status 500s: {error, run_id, violations: [...]}). */
 export function hasViolationsSignature(body: unknown): boolean {
  return isObj(body) && Array.isArray(body.violations)
 }

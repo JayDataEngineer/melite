@@ -1,16 +1,16 @@
-// Pipeline types — the ONE pipeline document data model (built from stage
+// Flow types — the ONE flow document data model (built from stage
 // descriptors or hydrated from a run/spec).
 import type { CompoundMode, CompoundBlock } from "./card"
 import type { Provenance } from "./vocab"
 //
 // ARCHITECTURE:
 // User intent ("make a waifu") or capability tile
-// → build_pipeline tool / addStage
-// → pipelineStore materializes a PipelineDoc with stages
+// → build_flow tool / addStage
+// → flowStore materializes a FlowDoc with stages
 // → Stages execute via EXISTING backends (generate_media, yaml/start —
-// both now the ONE /v1/pipelines/start door, flat vs YAML-spec shapes)
+// both now the ONE /v1/flows/start door, flat vs YAML-spec shapes)
 // → Results land in the existing asset store
-// → Cards render from the pipeline store state
+// → Cards render from the flow store state
 //
 // This is NOT a new compute engine. It's an orchestration + presentation
 // layer that sits on top of the existing media. Each stage knows which
@@ -19,7 +19,7 @@ import type { Provenance } from "./vocab"
 // STAGE KINDS:
 // "generation" — calls generate_media (single ComfyUI run). Simple tasks:
 // image gen, edit, upscale, detail. One card.
-// "chain" — calls /v1/pipelines/start YAML-spec shape (multi-step YAML run).
+// "chain" — calls /v1/flows/start YAML-spec shape (multi-step YAML run).
 // Complex tasks: 3D character creator. Renders as sequential
 // sub-cards (one per YAML step).
 // "studio-link" — doesn't execute immediately. Double-click opens a studio
@@ -35,13 +35,13 @@ import type { Provenance } from "./vocab"
 // Each stage computes a cacheKey = hash(service + params + upstream cacheKeys).
 // On re-run, if cacheKey matches → return cached result instantly (no server
 // call). If params change → only that stage + downstream re-execute. This
-// mirrors ComfyUI's server-side prompt-hash caching, but at the pipeline
+// mirrors ComfyUI's server-side prompt-hash caching, but at the flow
 // level, client-side.
 
 /** How a stage executes + what card it renders as.
  *
  * ``input`` — the doc-driven media-import family (media/comfyui/families/
- * input_prep.py). Runs via POST /v1/pipelines/start with a 1-step inline
+ * input_prep.py). Runs via POST /v1/flows/start with a 1-step inline
  * doc (no catalog entry, no form spec) — the card editor renders a FIXED
  * field set (source / crop / scale / trim / volume). The output artifact
  * feeds downstream generation bricks via the normal consumes topology.
@@ -55,12 +55,12 @@ import type { Provenance } from "./vocab"
  *     N consecutive same-family edits rendered as one block). Identity is
  *     FIRST-CLASS now — the group survives reorder (the old pure-view
  *     projection dissolved the moment a member moved).
- *   • ``pipeline`` — a YAML-backed atomic run (replaces ``kind: "chain"`` +
- *     ``yamlPipeline``: one /v1/pipelines/start yaml call for the whole
+ *   • ``flow`` — a YAML-backed atomic run (replaces ``kind: "chain"`` +
+ *     ``yamlFlow``: one /v1/flows/start yaml call for the whole
  *     group; children are the spec's steps).
  *   • ``modifiers`` — param-bag deps (replaces the subcard grid container:
  *     LoRA/CN/generic modifier entries folded into the host's params).
- * ``kind: "chain"`` remains as a legacy alias for ``compound.mode="pipeline"``
+ * ``kind: "chain"`` remains as a legacy alias for ``compound.mode="flow"``
  * during the migration; new code emits ``compound``.
  *
  * OPEN VOCABULARY (2026-08-19, the cardSeam cut): the closed StageKind
@@ -74,23 +74,23 @@ import type { Provenance } from "./vocab"
 /** The first-class subgraph block — present on a stage iff ``kind ===
  * "compound"``. ``childIds`` is the ONE source of truth for "what does this
  * card hold"; children live in the same flat ``stages[]`` (wiring/cache-key/
- * runner untouched). Mode-specific extras ride along (``yamlPipeline`` for
- * pipeline mode, ``paramKey`` for modifiers mode). */
+ * runner untouched). Mode-specific extras ride along (``yamlFlow`` for
+ * flow mode, ``paramKey`` for modifiers mode). */
 
 /** The compound block AS THE BACKEND WROTE IT — mirror of CompoundBlock
  * with the wire's snake-free field set (drafts.py). ``childIds`` already
  * resolved. The store adopts this as-is on hydration; no client-side
- * resolution exists anymore (2026-08-13: build_pipeline moved to the
+ * resolution exists anymore (2026-08-13: build_flow moved to the
  * backend — the browser is a dumb renderer). */
 export interface BackendCompoundBlock {
   mode: CompoundMode
   childIds: string[]
-  yamlPipeline?: string
+  yamlFlow?: string
   paramKey?: string
 }
 
-/** One draft stage as POST /v1/pipelines/drafts returns it in the full
- * draft (GET /v1/pipelines/drafts/{draftId}). The backend already did
+/** One draft stage as POST /v1/flows/drafts returns it in the full
+ * draft (GET /v1/flows/drafts/{draftId}). The backend already did
  * capability resolution, slot-vocabulary fold, null-seeding, and
  * inputIndices→inputs resolution — the store fills ONLY render state
  * (result/status/error/cacheKey) on hydration. */
@@ -106,7 +106,7 @@ export interface BackendStage {
    * (null = primary). Persisted by the 2026-08-22 wire PATCH so named
    * output wires survive rehydrate. */
   inputOutputs?: (string | null)[]
-  yamlPipeline?: string
+  yamlFlow?: string
   studio?: "body"
   studioContext?: Record<string, unknown>
   compound?: BackendCompoundBlock
@@ -119,7 +119,7 @@ export interface BackendStage {
 }
 
 /** The full draft document — the hydration source for hydrateDraft.
- * ``draft_id`` becomes the pipeline's id (one draft = one pipeline). */
+ * ``draft_id`` becomes the flow's id (one draft = one flow). */
 export interface BackendDraft {
   draft_id: string
   intent: string
@@ -139,8 +139,8 @@ export interface BackendDraft {
 /** Which studio a studio-link card opens. */
 export type StudioTarget = "pose" | "director" | "body"
 
-/** Pipeline-wide status. */
-export type PipelineStatus =
+/** Flow-wide status. */
+export type FlowStatus =
  | "draft" // stages being composed by the agent
  | "ready" // all stages have params, awaiting run
  | "running" // one or more stages executing
@@ -150,7 +150,7 @@ export type PipelineStatus =
  | "stale" // params changed since last run, needs re-run
 
 /** Per-stage status. "cached" = result available from cache (no re-run needed). */
-export type PipelineStageStatus =
+export type FlowStageStatus =
  | "pending"
  | "running"
  | "queued" // backend run door enqueued this run (ONE-GPU queue)
@@ -179,8 +179,8 @@ export interface StageResult {
  durationSec: number
 }
 
-/** A single stage in a pipeline document. */
-export interface PipelineStage {
+/** A single stage in a flow document. */
+export interface FlowStage {
  id: string
  /** Display title — what the user sees on the card. */
  title: string
@@ -206,7 +206,7 @@ export interface PipelineStage {
  /** Result after execution. null = not yet run. */
  result: StageResult | null
  /** Current status. */
- status: PipelineStageStatus
+ status: FlowStageStatus
  /** Error message if status === "error". */
  error: string | null
  /** Content hash of (service + params + upstream results). For caching. */
@@ -228,7 +228,7 @@ export interface PipelineStage {
  [k: string]: unknown
  } | null
  /** WHO created the stage — the agent-generated marker (2026-08-09).
- * Set at the creation site: ``agent`` (backend build_pipeline / drafts.py,
+ * Set at the creation site: ``agent`` (backend build_flow / drafts.py,
  * 2026-08-13), ``user`` (addStage), ``imported`` (hydrateRunStages /
  * hydrateSpecSteps). Optional so legacy code paths keep working during
  * rollout; the card badge renders only when set. Mirrors the pydantic enum
@@ -243,13 +243,13 @@ export interface PipelineStage {
  saveToAssets?: boolean
 
  // ── For "generation" stages ──
- /** The run ID (from /v1/pipelines/start), for status polling. */
+ /** The run ID (from /v1/flows/start), for status polling. */
  runId?: string
 
  // ── For "chain" stages ──
- /** YAML pipeline filename (for pipelines stages). */
- yamlPipeline?: string
- /** The YAML run ID (from /v1/pipelines/start, YAML-spec shape). */
+ /** YAML flow filename (for flows stages). */
+ yamlFlow?: string
+ /** The YAML run ID (from /v1/flows/start, YAML-spec shape). */
  yamlRunId?: string
 
  // ── For "studio-link" stages ──
@@ -265,33 +265,33 @@ export interface PipelineStage {
  compound?: CompoundBlock
 }
 
-/** A pipeline instance — built from descriptors or hydrated from a run/spec. */
-export interface PipelineDoc {
+/** A flow instance — built from descriptors or hydrated from a run/spec. */
+export interface FlowDoc {
  id: string
  /** The user's original intent ("make a waifu"). */
  intent: string
  /**
- * Authored display name (the pipeline rename, 2026-08-09). Optional —
+ * Authored display name (the flow rename, 2026-08-09). Optional —
  * undefined means "not authored" (falls back to intent everywhere).
  * In-memory + wire: runs keep it via the sidecar; a reload reverts.
  * Enforced through the DOC_MUTATIONS gate (lib/cardMutations).
  */
  name?: string
  /** Ordered list of stages. */
- stages: PipelineStage[]
- /** Pipeline-wide status. */
- status: PipelineStatus
- /** When the pipeline was created (epoch ms). */
+ stages: FlowStage[]
+ /** Flow-wide status. */
+ status: FlowStatus
+ /** When the flow was created (epoch ms). */
  createdAt: number
- /** When the pipeline last completed (epoch ms). */
+ /** When the flow last completed (epoch ms). */
  completedAt: number | null
  /**
- * Chain-backed pipeline (loaded from a YAML spec, 2026-08-07): the spec
- * filename. When set, the pipeline's stages are the SPEC's steps — a
+ * Chain-backed flow (loaded from a YAML spec, 2026-08-07): the spec
+ * filename. When set, the flow's stages are the SPEC's steps — a
  * collection of actions — and execution goes through the YAML runner
  * (startChain with start_from/reuse_run_id), NOT the compile path.
  */
- yamlPipeline?: string
+ yamlFlow?: string
  /** Last YAML run id — lets a card re-run reuse its upstream bricks. */
  yamlRunId?: string | null
  /**
@@ -305,19 +305,19 @@ export interface PipelineDoc {
 /** The authoring-time compound block — what the agent / UI declares. Uses
  * ``childIndices`` (0-based, into the descriptor array) because the author
  * doesn't know stage ids until materialization. The store resolves these
- * to ``childIds`` on ``PipelineStage.compound`` (the runtime shape). */
+ * to ``childIds`` on ``FlowStage.compound`` (the runtime shape). */
 export interface CompoundDescriptor {
   mode: CompoundMode
   /** 0-based indices into the descriptor array — the member stages. The
    * store resolves them to childIds at materialization time. */
   childIndices: number[]
-  /** ``mode === "pipeline"`` — the YAML pipeline filename. */
-  yamlPipeline?: string
+  /** ``mode === "flow"`` — the YAML flow filename. */
+  yamlFlow?: string
   /** ``mode === "modifiers"`` — the params[paramKey] holding the entries. */
   paramKey?: string
 }
 
-/** A stage descriptor — what build_pipeline materializes. */
+/** A stage descriptor — what build_flow materializes. */
 export interface StageDescriptor {
  title: string
  subtitle?: string
@@ -326,8 +326,8 @@ export interface StageDescriptor {
  params: Record<string, unknown>
  /** Indices of upstream stages (0-based, into the descriptor array). */
  inputIndices?: number[]
- /** For "chain" stages: the YAML pipeline filename. */
- yamlPipeline?: string
+ /** For "chain" stages: the YAML flow filename. */
+ yamlFlow?: string
  /** For "studio-link" stages: which studio to open. */
  studio?: StudioTarget
  /** For "studio-link" stages: context payload for the studio. */

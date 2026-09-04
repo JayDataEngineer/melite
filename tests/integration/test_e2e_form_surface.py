@@ -24,7 +24,7 @@ This suite takes the EDITOR's exact path:
                                             hasn't typed anything)
   3. fill the required path param(s)        (the editor's "user picks
                                             a file" gesture)
-  4. POST /v1/pipelines/start                (the editor's submit)
+  4. POST /v1/flows/start                (the editor's submit)
   5. poll + assert artifacts + routes to    (the editor's "your
      the right viewer slot                   asset is ready" panel)
 
@@ -195,9 +195,9 @@ def test_form_surface_seedvr2_ema(gateway, assets, gateway_port):
             "restored png too small: %d" % a.stat().st_size
 
 
-# ── the cross-card pipeline e2e (the grouped-card doctrine) ─────────
+# ── the cross-card flow e2e (the grouped-card doctrine) ─────────
 
-def test_pipeline_image_then_upscale(gateway, assets, gateway_port):
+def test_flow_image_then_upscale(gateway, assets, gateway_port):
     """The grouped-card flow: an image-gen family submits first → its
     .png becomes the upscale-tools' input_image → a second submit
     restores it → BOTH artifacts on disk. Proves cross-card input

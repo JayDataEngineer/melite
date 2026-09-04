@@ -1,9 +1,9 @@
 ---
-name: sprite-sheet-pipeline
+name: sprite-sheet-flow
 description: Author a sprite-sheet card — one prompt, one generate stage, queue-native
 ---
 
-# Sprite-Sheet Pipeline Skill
+# Sprite-Sheet Flow Skill
 
 ## Card shape
 

@@ -42,7 +42,7 @@ export interface NumberFieldProps {
  * the final value — the persistence hook. Use this for store writes so
  * a drag doesn't fire onChange (and any expensive recompute it triggers)
  * on every pointer step. When omitted, the field is onChange-only (the
- * draft pattern PipelineCard's ParamGrid uses). */
+ * draft pattern FlowCard's ParamGrid uses). */
  onCommit?: (v: number) => void
 }
 

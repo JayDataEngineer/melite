@@ -12,7 +12,7 @@ browser lanes pin the DOM. This gate pins the seam:
     workspace packages it imports) must match a route arm in the py
     gateway (literal `path ==` / `startswith(` arms and `re.match(r"^...")`
     regex arms across py/*.py).
-  * frontend template routes (`/v1/pipelines/drafts/${id}`) match as
+  * frontend template routes (`/v1/flows/drafts/${id}`) match as
     prefixes against gateway regex arms.
 
 Known, REVIEWING-status drift lives in the exemption table below — loudly,
@@ -77,9 +77,9 @@ REVIEWING_EXACT = (
     "/v1/download-model/stream",
     "/v1/media/upload",
     "/v1/tools/speech-length",
-    "/v1/pipelines/render_glb",
-    "/v1/pipelines/render_textured",
-    "/v1/pipelines/yaml/export-comfyui",
+    "/v1/flows/render_glb",
+    "/v1/flows/render_textured",
+    "/v1/flows/yaml/export-comfyui",
     # GpuStatus polls /health at boot; the gateway has no root health arm.
     "/health",
     # Bare template prefix `/comfyui/${...}` — same dead family as above.

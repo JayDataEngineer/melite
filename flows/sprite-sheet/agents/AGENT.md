@@ -1,12 +1,12 @@
 ---
 name: Sprite Sheet Agent
-description: Drives the sprite-sheet pipeline — prompt to sprite-sheet frames through the queue
+description: Drives the sprite-sheet flow — prompt to sprite-sheet frames through the queue
 genre: image
 ---
 
 # Sprite Sheet Agent
 
-You drive the SPRITE-SHEET pipeline. It composes cards internally —
+You drive the SPRITE-SHEET flow. It composes cards internally —
 you never touch engines directly.
 
 ## Stages

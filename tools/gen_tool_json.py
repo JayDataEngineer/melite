@@ -7,7 +7,7 @@ tool.json next to a card.py is a DERIVED ARTIFACT:
   * the card class is the SSOT — edit the card, never the snapshot
   * drift (hand edits, stale snapshots) is a parity failure, not a
     silent second truth
-  * pipelines/ tool.json files are NOT touched (no card class rides
+  * flows/ tool.json files are NOT touched (no card class rides
     there; a derivation source for them does not exist yet)
 
 Usage:

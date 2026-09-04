@@ -31,7 +31,7 @@ def check(name, ok, detail=""):
 # ── the ratchet: only grows ─────────────────────────────────────────
 TARGETS = [
     # THE graph contract (compose arms ↔ gateway core)
-    "py/pipeline_graph.py",
+    "py/flow_graph.py",
     # the single-node skeleton emission (THE ACTION CARD LAW at
     # construction)
     "plugins/engines/comfyui/compose/co_script/skeleton.py",

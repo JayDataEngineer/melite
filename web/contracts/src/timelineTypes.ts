@@ -1,5 +1,5 @@
-/** The pipeline status of a segment — drives the E3.11 status ribbon
- * + filter. The order here is the canonical pipeline order. */
+/** The flow status of a segment — drives the E3.11 status ribbon
+ * + filter. The order here is the canonical flow order. */
 export const SEGMENT_STATUSES = ['empty', 'pending', 'generating', 'ready', 'failed'] as const
 export type SegmentStatus = (typeof SEGMENT_STATUSES)[number]
 

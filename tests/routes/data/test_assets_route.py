@@ -179,7 +179,7 @@ class TestTestFlagExclusion:
         os.makedirs(run_dir, exist_ok=True)
         with open(os.path.join(run_dir, "test-artifact.bin"), "wb") as f:
             f.write(b"test-artifact-payload-12345")
-        with open(os.path.join(run_dir, "_pipeline.json"), "w") as f:
+        with open(os.path.join(run_dir, "_flow.json"), "w") as f:
             json.dump({
                 "run_id": run_id, "status": "completed",
                 "model": "test-model", "created_at": 1700000000,

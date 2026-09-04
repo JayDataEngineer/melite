@@ -387,7 +387,7 @@ def main():
     # timeline package end-to-end — which is how a broken intra-package
     # import (the deleted .fp16) shipped green through every wall. This
     # section drives the REAL dispatch (plugins.compose, engine-typed)
-    # through the whole pipeline: schema -> timeline -> emission ->
+    # through the whole flow: schema -> timeline -> emission ->
     # renderer.
     import plugins
     from plugins import ValidationError as PluginsValidationError

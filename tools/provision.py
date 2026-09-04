@@ -980,7 +980,7 @@ def _dsh_materialize_profile(home: Path) -> Path:
         "    customSkillDirs:\n"
         "      - '%s'\n"
         # INTERFACE LAW: the server mount is the HEADLESS agent —
-        # config-pinned run doors (card_run / pipeline_run / run_status),
+        # config-pinned run doors (card_run / flow_run / run_status),
         # the delegated operator riding the same queue doors as the
         # editor's Run button. The GUI mount keeps browser mode (no row).
         "- id: infer-tools\n"

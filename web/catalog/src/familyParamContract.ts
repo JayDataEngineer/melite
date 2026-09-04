@@ -3,7 +3,7 @@
 // ONE system, ONE endpoint, ONE pattern. The gateway serves every
 // family's param JSON Schema in ONE fetch:
 //
-//   GET /v1/pipelines/families/param-schemas → { family_id: jsonSchema, ... }
+//   GET /v1/flows/families/param-schemas → { family_id: jsonSchema, ... }
 //
 // The frontend loads this at boot (loadFamilySchemas, mirroring loadCatalog),
 // caches it, and every run request validates against the family's schema
@@ -78,7 +78,7 @@ export async function loadFamilySchemas(
   _inflight = (async () => {
     try {
       const data = await apiJson<FamilyParamSchemaIndex>(
-        "/v1/pipelines/families/param-schemas",
+        "/v1/flows/families/param-schemas",
       )
       _cache = data
       return data
@@ -166,8 +166,8 @@ function jsonTypeOf(val: unknown): JsonSchemaType | null {
  *
  * WHAT IT LEAVES TO THE BACKEND (no false positives):
  *   - REQUIRED-field presence — the frontend doesn't know which keys are
- *     injected from pipeline.shared via the consumes axis (comfy_url, model).
- *     The backend's validate_pipeline_doc_params passes consumes=tuple(
+ *     injected from flow.shared via the consumes axis (comfy_url, model).
+ *     The backend's validate_flow_doc_params passes consumes=tuple(
  *     shared.keys()), so it knows. The frontend defers required-checking to
  *     the hard wire gate.
  */

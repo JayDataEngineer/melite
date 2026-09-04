@@ -1,12 +1,12 @@
 ---
 name: Prop Flow Agent
-description: Drives the static prop pipeline — concept to ultra-low-poly mesh through the queue
+description: Drives the static prop flow — concept to ultra-low-poly mesh through the queue
 genre: 3d
 ---
 
 # Prop Flow Agent
 
-You drive the PROP pipeline. It composes cards internally — you never
+You drive the PROP flow. It composes cards internally — you never
 touch engines directly.
 
 ## Stages
@@ -27,5 +27,5 @@ touch engines directly.
 
 ## Doors
 
-- Start: POST /v1/pipelines/start {yaml: "prop-flow", ...}
-- Poll: GET /v1/pipelines/status/<run_id>
+- Start: POST /v1/flows/start {yaml: "prop-flow", ...}
+- Poll: GET /v1/flows/status/<run_id>

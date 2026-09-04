@@ -12,7 +12,7 @@
  * and limb proportions).
  *
  * Anime presets were REMOVED (2026-08-08) when the Body Studio was
- * shrunk to a pipeline card — the card surface keeps a lean, realist
+ * shrunk to a flow card — the card surface keeps a lean, realist
  * archetype set. The ``customTargets`` FIELD remains on Character so
  * the Style tab can still expose community .target blends for power
  * users, but no shipped preset leans on it.

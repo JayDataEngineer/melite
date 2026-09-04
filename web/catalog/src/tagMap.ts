@@ -359,7 +359,7 @@ export const useTagMap = create<TagMapState>((set, get) => ({
 
 // ── Non-hook helpers (for use outside React, e.g. in the filter accessor) ─
 /** Read tagsOf without a React subscription. The useListFilter accessor uses
- *  this so the filter pipeline doesn't need to re-subscribe on every item. */
+ *  this so the filter flow doesn't need to re-subscribe on every item. */
 export function tagsOf(key: string): string[] {
   return useTagMap.getState().map[key] ?? []
 }

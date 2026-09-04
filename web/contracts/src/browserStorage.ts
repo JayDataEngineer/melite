@@ -3,7 +3,7 @@
  *
  * localStorage's ~5MB quota HARD-fails the whole origin once full
  * (QuotaExceededError on setItem), which has repeatedly crashed persistence
- * (pipeline mirror, LLM key store, CopilotThreadResume). IndexedDB has a
+ * (flow mirror, LLM key store, CopilotThreadResume). IndexedDB has a
  * ~hundreds-of-MB quota and never fails the app on write.
  *
  * How this works:
