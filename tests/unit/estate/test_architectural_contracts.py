@@ -15,7 +15,7 @@ import subprocess
 import sys
 
 
-REPO = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", ".."))
+REPO = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
 
 def test_architectural_contracts_clean():

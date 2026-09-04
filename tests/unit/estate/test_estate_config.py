@@ -3,8 +3,8 @@ Tests the ONE parser (py/estate_config.py) and the endpoint sync
 (provision paths) — the two layers that make inference.config.json
 the SSOT for the whole estate.
 
-pytest-native; lives in tests/unit/ alongside the other unit tests.
-Run: pytest tests/unit/test_estate_config.py -v
+pytest-native; lives in tests/unit/estate/ alongside the other unit tests.
+Run: pytest tests/unit/estate/test_estate_config.py -v
 """
 
 import json
@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 CONFIG = REPO / "inference.config.json"
 ENDPOINT = REPO / "plugins" / "engines" / "comfyui" / "data" / "comfyui_endpoint.json"
 sys.path.insert(0, str(REPO / "py"))
