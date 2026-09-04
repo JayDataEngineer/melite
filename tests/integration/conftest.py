@@ -27,9 +27,6 @@ from __future__ import annotations
 
 import json
 import os
-import socket
-import subprocess
-import sys
 import time
 import urllib.error
 import urllib.request
@@ -37,17 +34,11 @@ from pathlib import Path
 
 import pytest
 
+import _bootstrap  # tests/_bootstrap.py — path owned by the root conftest
+
 REPO = Path(__file__).resolve().parents[2]
 PY = REPO / ".venv" / "bin" / "python"
 TERMINAL = {"completed", "failed", "stopped"}
-
-
-def _free_port():
-    s = socket.socket()
-    s.bind(("127.0.0.1", 0))
-    p = s.getsockname()[1]
-    s.close()
-    return p
 
 
 def _req(port, method, path, body=None, timeout=15):
@@ -110,29 +101,18 @@ class QueueDoor:
 def gateway():
     """A scratch gateway process: boots on a free port, serves the
     whole sweep, terminates CLEANLY (SIGTERM — the shutdown law
-    manufactures zero zombies)."""
-    port = _free_port()
-    proc = subprocess.Popen(
-        [str(PY), str(REPO / "py" / "gateway.py"), str(port)],
-        cwd=str(REPO), stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL, start_new_session=True)
+    manufactures zero zombies). Boot/reap mechanics live in
+    tests/_bootstrap.py — the ONE implementation, shared with the
+    walls parity suite (fixture audit 2026-09-04, F7)."""
     try:
-        for _ in range(120):
-            try:
-                code, _ = _req(port, "GET", "/v1/forms", timeout=2)
-                if code == 200:
-                    break
-            except Exception:
-                time.sleep(0.4)
-        else:
-            pytest.fail("scratch gateway did not boot (port %d)" % port)
+        port, proc = _bootstrap.boot_scratch_gateway(
+            wait_path="/v1/forms", python=str(PY), env=dict(os.environ))
+    except RuntimeError as e:
+        pytest.fail(str(e))
+    try:
         yield QueueDoor(port)
     finally:
-        proc.terminate()
-        try:
-            proc.wait(timeout=15)
-        except subprocess.TimeoutExpired:
-            proc.kill()
+        _bootstrap.reap_gateway(proc)
 
 
 @pytest.fixture(scope="session")
@@ -158,6 +138,8 @@ def assets():
     # the gate refuses (caught live 2026-09-04: the gate is honest).
     rig = d / "rigged_char_canonical.glb"
     outfit = d / "outfit_cap.glb"
+    # Missing optionals are None + an explicit skip at the consuming
+    # test — never "" sentinels (fixture audit 2026-09-04, F3).
     return {"source": str(src),
-            "rigged_glb": str(rig) if rig.is_file() else "",
-            "outfit_glb": str(outfit) if outfit.is_file() else ""}
+            "rigged_glb": str(rig) if rig.is_file() else None,
+            "outfit_glb": str(outfit) if outfit.is_file() else None}

@@ -14,9 +14,12 @@ REPO = Path(__file__).resolve().parent.parent
 
 # the estate's py/ scripts are importable as TOP-LEVEL modules when
 # py/ itself is on sys.path (py/ has no __init__.py; the gateway
-# does the same insert on boot). ONE insert, owned here.
-if str(REPO / "py") not in sys.path:
-    sys.path.insert(0, str(REPO / "py"))
+# does the same insert on boot). ONE insert, owned here. The tests/
+# dir rides along for the shared bootstrap (tests/_bootstrap.py —
+# fixture audit 2026-09-04).
+for _p in (str(REPO / "py"), str(REPO / "tests")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 
 @pytest.fixture(scope="session")

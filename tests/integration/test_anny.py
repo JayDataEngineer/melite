@@ -15,6 +15,9 @@ pytestmark = pytest.mark.gpu
 def test_anny_assemble_turnaround(gateway, assets):
     """Parts in, character out: the composite renders 8 views and
     the SAM ingest produces part sprites from the source photo."""
+    if not assets["rigged_glb"]:
+        pytest.skip("canonical rig GLBs missing — add rigged_char_canonical.glb"
+                    " + outfit_cap.glb to tests/integration/assets/")
     door = gateway
     run_id = door.submit({
         "model": "anny",

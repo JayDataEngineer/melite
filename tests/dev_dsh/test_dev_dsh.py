@@ -53,9 +53,8 @@ PROD_PORT = 3080
 DEV_TAILNET_FQDN = "cloud.tailb1e597.ts.net"
 DSH_HOME_DEV = Path.home() / ".dsh-test"
 PROFILE_DIR = DSH_HOME_DEV / "profiles" / "web"
-PROVISIONER = Path(
-    "/home/user/Documents/programs/active/inference.cpp/plugins/harness/dsh/provisioner"
-)
+PROVISIONER = Path(__file__).resolve().parents[2] / \
+    "plugins" / "harness" / "dsh" / "provisioner"
 LOG_PATH = DSH_HOME_DEV / f"test-web.{DEV_PORT}.log"
 LAUNCHER = Path.home() / "bin" / "inference-dev-dsh.sh"
 

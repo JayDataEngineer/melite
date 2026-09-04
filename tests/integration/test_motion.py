@@ -40,6 +40,10 @@ def test_motion_text_to_pose(gateway):
 def test_motion_somax_bake(gateway, assets):
     """The character arc: NPZ skinned onto a SOMAX-rigged GLB — the
     animated GLB artifact (the anny stopgap consumption)."""
+    if not assets["rigged_glb"]:
+        pytest.skip("canonical rig GLB missing — add rigged_char_canonical.glb"
+                    " to tests/integration/assets/ (the bake gate holds ONLY"
+                    " on canonical SOMAX-77 offsets)")
     door = gateway
     run_id = door.submit({
         "model": "kimodo",

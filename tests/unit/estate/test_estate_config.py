@@ -18,7 +18,8 @@ import pytest
 REPO = Path(__file__).resolve().parents[3]
 CONFIG = REPO / "inference.config.json"
 ENDPOINT = REPO / "plugins" / "engines" / "comfyui" / "data" / "comfyui_endpoint.json"
-sys.path.insert(0, str(REPO / "py"))
+# py/ is on sys.path via the root conftest (tests/conftest.py) — no
+# per-file insert (fixture audit 2026-09-04, F4).
 import estate_config  # noqa: E402
 
 
@@ -204,41 +205,50 @@ class TestErrorPaths:
 
 # ── endpoint sync (provision paths) ────────────────────────────────────
 
+@pytest.fixture(scope="class")
+def ep():
+    """provision paths syncs 7 derived fields from the root config into
+    the comfyui endpoint file — and WRITES the repo-tree endpoint while
+    doing so. Snapshot/restore keeps the working tree byte-identical
+    after the class (fixture audit 2026-09-04, F2); the sync itself
+    runs exactly once per class."""
+    backup = ENDPOINT.read_bytes() if ENDPOINT.is_file() else None
+    r = subprocess.run(
+        [sys.executable, str(REPO / "tools" / "provision.py"), "paths"],
+        capture_output=True, text=True, cwd=str(REPO))
+    assert r.returncode == 0, "provision paths failed: %s" % r.stderr[:200]
+    try:
+        yield json.loads(ENDPOINT.read_text())
+    finally:
+        if backup is not None:
+            ENDPOINT.write_bytes(backup)
+
+
 class TestEndpointSync:
     """provision paths syncs 7 derived fields from the root config
     into the comfyui endpoint file."""
 
-    ep = {}
+    def test_url_set(self, ep):
+        assert ep.get("url", "").startswith("http")
 
-    @pytest.fixture(scope="class", autouse=True)
-    def _run_paths(self, request):
-        r = subprocess.run(
-            [sys.executable, str(REPO / "tools" / "provision.py"), "paths"],
-            capture_output=True, text=True, cwd=str(REPO))
-        assert r.returncode == 0, "provision paths failed: %s" % r.stderr[:200]
-        request.cls.ep = json.loads(ENDPOINT.read_text())
-
-    def test_url_set(self):
-        assert self.ep.get("url", "").startswith("http")
-
-    def test_url_matches_root(self):
+    def test_url_matches_root(self, ep):
         root = estate_config.engine_url("comfyui")
-        assert self.ep["url"] == root
+        assert ep["url"] == root
 
-    def test_model_base_path_set(self):
-        assert self.ep.get("model_base_path", "").startswith("/")
+    def test_model_base_path_set(self, ep):
+        assert ep.get("model_base_path", "").startswith("/")
 
-    def test_model_download_path_set(self):
-        assert self.ep.get("model_download_path", "").startswith("/")
+    def test_model_download_path_set(self, ep):
+        assert ep.get("model_download_path", "").startswith("/")
 
-    def test_input_dir_set(self):
-        assert self.ep.get("input_dir", "")
+    def test_input_dir_set(self, ep):
+        assert ep.get("input_dir", "")
 
-    def test_output_dir_set(self):
-        assert self.ep.get("output_dir", "")
+    def test_output_dir_set(self, ep):
+        assert ep.get("output_dir", "")
 
-    def test_boot_cmd_set(self):
-        assert self.ep.get("boot_cmd", "")
+    def test_boot_cmd_set(self, ep):
+        assert ep.get("boot_cmd", "")
 
-    def test_boot_cmd_port_matches_url(self):
-        assert "--port 18466" in self.ep.get("boot_cmd", "")
+    def test_boot_cmd_port_matches_url(self, ep):
+        assert "--port 18466" in ep.get("boot_cmd", "")
