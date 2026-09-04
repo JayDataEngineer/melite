@@ -80,8 +80,11 @@ import itertools
 import json
 import os
 import re
+import sys
 import threading
 import time
+
+import run_wire
 
 # The artifact-serving URL prefix — the ONE door clients fetch run media
 # from. Owns the stamping here (runs list rows, poster) and is imported
@@ -487,20 +490,35 @@ def runs(server_root, drafts_root=None, aux_root=None, limit=200,
                     draft = ""
         thumb = _run_thumbnail(run_dir, ent["dir"])
         arts = run_artifacts(run_dir, "./output/%s" % ent["dir"])
-        rows.append({
-            "run_id": ent["dir"],
-            "name": model,
-            "flow": model,
-            "status": status,
-            "created_at": created,
-            "prompt": prompt,
-            "seed": seed,
-            "thumbnail": thumb,
-            "artifacts": arts,
-            "params": {"seed": seed},
-            "draft_id": draft,
-        })
-    return {"count": len(ents), "runs": rows}
+        # RUN WIRE GATE (2026-09-05, operator order: "there is no
+        # validation on workflow outputs or reconstructions"): the row
+        # is CONSTRUCTED as a frozen pydantic RunRow — a reconstruction
+        # that cannot be built cannot be served. A drifted sidecar
+        # skips its row LOUDLY (logged reason, listing continues —
+        # RESILIENCE LAW), never ships garbage to the studio.
+        try:
+            row = run_wire.RunRow(
+                run_id=ent["dir"],
+                name=model,
+                flow=model,
+                status=status,
+                created_at=created,
+                prompt=prompt,
+                seed=seed,
+                thumbnail=thumb,
+                artifacts=arts,
+                params={"seed": seed},
+                draft_id=draft,
+            )
+        except run_wire.ValidationError as e:
+            print("[editor_runs] run row refused (%s): %s"
+                  % (ent["dir"], run_wire.refusal_reason(e)),
+                  file=sys.stderr)
+            continue
+        rows.append(row.model_dump())
+    return run_wire.RunsEnvelope(
+        count=len(ents),
+        runs=[run_wire.RunRow.model_validate(r) for r in rows]).model_dump()
 
 
 # ---------------------------------------------------------------------------
@@ -714,139 +732,33 @@ def yaml_list(flows_root) -> dict:
             continue
         names.append(name[:79])
     names.sort(key=lambda s: s.encode("utf-8", "surrogateescape"))
-    return {"flows": [
-        {"filename": n + ".yaml", "name": n,
-         "path": "../flows/%s/flow.yaml" % n}
-        for n in names
-    ]}
-
-
-def _yaml_step_spans(buf: str):
-    """The - id:/type:/params: line parser from handle_yaml_detail
-    (~6365-6446), returned as (nodes, steps) list-pairs of raw strings."""
-    nodes = []
-    steps = []
-    cur_id = ""
-    cur_type = ""
-    cur_params = "[]"
-
-    def flush():
-        nonlocal cur_id, cur_type, cur_params
-        if not cur_id:
-            return
-        nodes.append({"id": cur_id})
-        fam = cur_type if cur_type else "node"
-        steps.append({"family": fam, "service": fam, "title": cur_id,
-                      "params": json.loads(cur_params)})
-        cur_id, cur_type, cur_params = "", "", "[]"
-
-    p = 0
-    n = len(buf)
-    while p < n:
-        eol = buf.find("\n", p)
-        if eol < 0:
-            eol = n
-        indent = 0
-        while p + indent < eol and buf[p + indent] == " ":
-            indent += 1
-        ll = eol - p
-        if ll > indent + 6 and buf.startswith("- id: ", p + indent):
-            flush()
-            v = p + indent + 6
-            L = 0
-            while v + L < eol and buf[v + L] not in (" ", "\r"):
-                L += 1
-            cur_id = buf[v:v + L]
-        elif cur_id and ll > indent + 6 and buf.startswith("type: ", p + indent):
-            v = p + indent + 6
-            L = 0
-            while v + L < eol and buf[v + L] not in (" ", "\r"):
-                L += 1
-            cur_type = buf[v:v + L]
-        elif cur_id and ll > indent + 8 and buf.startswith("params: ", p + indent):
-            v = p + indent + 8
-            if v < n and buf[v] == "{":
-                # string-aware balanced-brace walk to the closing '}'
-                depth = 0
-                e = v
-                instr = False
-                while e < n:
-                    ch = buf[e]
-                    if instr:
-                        if ch == "\\" and e + 1 < n:
-                            e += 2
-                            continue
-                        if ch == '"':
-                            instr = False
-                    else:
-                        if ch == '"':
-                            instr = True
-                        elif ch == "{":
-                            depth += 1
-                        elif ch == "}":
-                            depth -= 1
-                            if depth == 0:
-                                e += 1
-                                break
-                    e += 1
-                # shallow-walk top-level "key":value pairs (raw value span)
-                ps = []
-                c = v + 1
-                first = True
-                while c < e - 1:
-                    if buf[c] != '"':
-                        c += 1
-                        continue
-                    k = c + 1
-                    ke = k
-                    while ke < n and buf[ke] != '"':
-                        if buf[ke] == "\\" and ke + 1 < n:
-                            ke += 1
-                        ke += 1
-                    key = buf[k:ke]
-                    c = ke + 1
-                    while c < e and buf[c] in (" ", ":"):
-                        c += 1
-                    vs = c
-                    d2 = 0
-                    in2 = False
-                    while c < e:
-                        ch = buf[c]
-                        if in2:
-                            if ch == "\\" and c + 1 < n:
-                                c += 2
-                                continue
-                            if ch == '"':
-                                in2 = False
-                            c += 1
-                            continue
-                        if ch == '"':
-                            in2 = True
-                            c += 1
-                            continue
-                        if ch in "{[":
-                            d2 += 1
-                        elif ch in "}]":
-                            if d2 == 0:
-                                break
-                            d2 -= 1
-                        elif ch == "," and d2 == 0:
-                            break
-                        c += 1
-                    val = buf[vs:c]
-                    if first:
-                        first = False
-                    ps.append({"name": key, "value": val})
-                cur_params = ("[" + ",".join(
-                    '{"name":%s,"value":%s}' % (json_quote(x["name"]), x["value"])
-                    for x in ps) + "]") if ps else "[]"
-        p = eol + 1
-    flush()
-    return nodes, steps
+    # RUN WIRE GATE: entries constructed as frozen FlowListEntry rows.
+    flows = []
+    for n in names:
+        try:
+            flows.append(run_wire.FlowListEntry(
+                filename=n + ".yaml", name=n,
+                path="../flows/%s/flow.yaml" % n).model_dump())
+        except run_wire.ValidationError as e:
+            print("[editor_runs] flow list entry refused (%s): %s"
+                  % (n, run_wire.refusal_reason(e)), file=sys.stderr)
+    return run_wire.FlowListEnvelope(
+        flows=[run_wire.FlowListEntry.model_validate(f) for f in flows]).model_dump()
 
 
 def yaml_detail(flows_root, name):
-    """GET /v1/flows/yaml/detail?yaml=<name>[.yaml] (~6326)."""
+    """GET /v1/flows/yaml/detail?yaml=<name>[.yaml].
+
+    RUN WIRE GATE (2026-09-05): the flow document is reconstructed by a
+    REAL YAML parse and constructed as a frozen FlowDetailEnvelope — the
+    C-parity find-and-slice description scan (which shipped the
+    block-scalar indicator `>-` as creature-flow's and prop-flow's
+    description, live) is deleted. A document that does not
+    parse refuses LOUDLY with 400; a parsed document that cannot build
+    the envelope refuses with its field-named reason. The wire shape the
+    studio consumes is unchanged: nodes=[{id}], steps=[{family, service,
+    title, params}] with family/service from the step's type, title from
+    its id."""
     if name is None:
         return 400, _err_body("missing yaml param")
     dot = name.rfind(".yaml")
@@ -858,20 +770,42 @@ def yaml_detail(flows_root, name):
             buf = f.read(65535)
     except OSError:
         return 404, _err_body("no such flow")
-    desc = ""
-    dp = buf.find("description:")
-    if dp >= 0:
-        v = dp + 12
-        while v < len(buf) and buf[v] in (' ', '"'):
-            v += 1
-        L = 0
-        while (v + L < len(buf) and buf[v + L] not in ("\n", '"')
-               and L < 255):
-            L += 1
-        desc = buf[v:v + L]
-    nodes, steps = _yaml_step_spans(buf)
-    return 200, {"name": name, "description": desc,
-                 "nodes": nodes, "steps": steps, "yaml": buf}
+    import yaml as _yaml
+    try:
+        doc = _yaml.safe_load(buf)
+    except _yaml.YAMLError as e:
+        return 400, _err_body("flow yaml does not parse: %s" % str(e)[:200])
+    if not isinstance(doc, dict):
+        return 400, _err_body("flow yaml is not a mapping")
+    raw_steps = doc.get("steps") or []
+    if not isinstance(raw_steps, list):
+        return 400, _err_body("flow yaml steps is not a list")
+    desc = doc.get("description", "")
+    if not isinstance(desc, str):
+        desc = str(desc)
+    nodes = []
+    steps = []
+    for s in raw_steps:
+        if not isinstance(s, dict) or not isinstance(s.get("id"), str):
+            return 400, _err_body(
+                "flow yaml step without a string id: %r" % (s,))
+        fam = s.get("type") if isinstance(s.get("type"), str) else ""
+        fam = fam or "node"
+        params = s.get("params", [])
+        if not isinstance(params, list):
+            params = [params]
+        nodes.append(run_wire.FlowNodeRow(id=s["id"]).model_dump())
+        steps.append(run_wire.FlowStepRow(
+            family=fam, service=fam, title=s["id"], params=params).model_dump())
+    try:
+        env = run_wire.FlowDetailEnvelope(
+            name=doc.get("name") if isinstance(doc.get("name"), str)
+            and doc["name"] else name,
+            description=desc, nodes=nodes, steps=steps, yaml=buf)
+    except run_wire.ValidationError as e:
+        return 400, _err_body("flow reconstruction refused: %s"
+                              % run_wire.refusal_reason(e))
+    return 200, env.model_dump()
 
 
 def _yaml_safe_stem(s: str):
@@ -1127,8 +1061,20 @@ def drafts_list(drafts_root, aux_root=None) -> dict:
             ents.append((mt, {"draft_id": did, "model": model, "name": disp}))
     # C: std::sort by mtime DESC (unstable across exact-second ties).
     ents.sort(key=lambda e: -e[0])
-    return {"count": len(ents),
-            "drafts": [row for _, row in ents[:600]]}
+    # RUN WIRE GATE: index rows constructed as frozen DraftRow — a doc
+    # whose index fields cannot build a row is skipped LOUDLY (logged
+    # reason), never served as garbage.
+    rows = []
+    for _, raw in ents[:600]:
+        try:
+            rows.append(run_wire.DraftRow.model_validate(raw).model_dump())
+        except run_wire.ValidationError as e:
+            print("[editor_runs] draft row refused (%s): %s"
+                  % (raw.get("draft_id", "?"), run_wire.refusal_reason(e)),
+                  file=sys.stderr)
+    return run_wire.DraftsEnvelope(
+        count=len(ents),
+        drafts=[run_wire.DraftRow.model_validate(r) for r in rows]).model_dump()
 
 
 def _unwrap_calls(obj, done=False):
