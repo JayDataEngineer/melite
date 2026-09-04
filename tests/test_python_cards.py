@@ -160,6 +160,11 @@ def main():
          ("action_cards", "video", "video-gen")),
         ("video-gen", "comfyui", "scail2-animate",
          ("action_cards", "video", "video-gen")),
+        # cluster F (2026-09-04): the hidden tool card — one
+        # submittable family (seedvr2_ema); the weightless fragments
+        # are consumed-only arms, not card families
+        ("upscale-tools", "comfyui", "seedvr2_ema",
+         ("action_cards", "image", "upscale-tools")),
     ]
     for cid, engine, model, home in FLIPPED:
         cpath = _card_py(engine, *home)
@@ -255,6 +260,7 @@ def main():
                     ("qwen3-tts-base", "tts"),
                     ("qwen3-tts-voicedesign", "voice-lock"),
                     ("scail2-animate", "video-gen"),
+                    ("seedvr2_ema", "upscale-tools"),
                     ("transfer_rig", "img-to-mesh"),
                     ("trellis2-native", "img-to-mesh"),
                     ("wan-vace", "video-gen")], repr(pairs))

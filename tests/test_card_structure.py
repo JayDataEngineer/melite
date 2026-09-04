@@ -183,6 +183,7 @@ def main():
         "transfer_rig": "transfer_rig_t1.json",
         "wan-vace": "wan_vace_t1.json",
         "scail2-animate": "scail2_t1.json",
+        "seedvr2_ema": "seedvr2_t1.json",
     }
     for mid, mcls in sorted(_mcards.items()):
         card_id = getattr(mcls, "card", "") or ""

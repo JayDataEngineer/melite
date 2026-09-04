@@ -158,6 +158,13 @@ _FORMS_TABLE = {
     "video-gen": {"label": "Video", "genre": "video", "order": 15,
                   "plugin": "comfyui", "sidebar_key": "video",
                   "default_service": "wan-vace", "hidden": False},
+    # F-cluster (2026-09-04): the hidden tool card — tool lanes are
+    # consumed BY other cards, never user surfaces
+    "upscale-tools": {"label": "Upscale Tools", "genre": "image",
+                      "order": 16, "plugin": "comfyui",
+                      "sidebar_key": "image",
+                      "default_service": "seedvr2_ema",
+                      "hidden": True},
 }
 
 # The C's ALLOWED_CARDS gate (src/server.cpp:7585-7588) is exactly the keys

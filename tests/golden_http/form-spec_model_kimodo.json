@@ -167,6 +167,7 @@
  "form": "motion",
  "genre": "motion",
  "label": "Motion",
+ "layout": "studio",
  "model": "kimodo",
  "schema_groups": [
   {
@@ -343,5 +344,6 @@
   }
  ],
  "service": "kimodo",
+ "size": "huge",
  "variants": []
 }

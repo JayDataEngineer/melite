@@ -24,3 +24,24 @@ def test_minimal_timeline(gateway):
     assert status["status"] == "completed", status.get("error")
     arts = gateway.artifacts_on_disk(status)
     assert any(a.suffix in (".mp4", ".webm", ".gif") for a in arts), arts
+
+
+def test_keyframe_film(gateway, assets):
+    """h3-KEYFRAME through the same lane (the empty-card route: the
+    family rides h3-timeline's card — image sets the first frame,
+    prompt what CHANGES). Proves the keyframe leg of the golden base."""
+    run_id = gateway.submit({
+        "model": "h3-keyframe",
+        "params": {
+            "image": assets["source"],
+            "calls": [
+                {"text": "the figure turns slowly and raises one hand, "
+                         "cloth moving softly",
+                 "start_frame": 0, "end_frame": 56},
+            ],
+        },
+    })
+    status = gateway.wait(run_id, timeout_s=1800, poll_s=5.0)
+    assert status["status"] == "completed", status.get("error")
+    arts = gateway.artifacts_on_disk(status)
+    assert any(a.suffix in (".mp4", ".webm", ".gif") for a in arts), arts
