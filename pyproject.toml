@@ -87,7 +87,11 @@ dev = ["pytest>=8"]
 # The script suites (tests/test_*.py) are deliberately OUTSIDE
 # testpaths: several execute walls at import; they run as subprocess
 # walls via tests/pytest/test_walls.py.
-testpaths = ["tests/pytest", "tests/integration"]
+# tests/ layout (2026-09-03 rework): unit/ = no server, routes/ =
+# live gateway (skips when down), integration/ = real inference
+# (-m gpu, deselected by default), walls/ = the subprocess
+# orchestrator for the script-style walls at tests/test_*.py.
+testpaths = ["tests/unit", "tests/routes", "tests/integration", "tests/walls"]
 markers = [
     "gpu: real inference through the queue (opt in: pytest -m gpu)",
 ]

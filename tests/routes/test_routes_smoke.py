@@ -13,7 +13,7 @@ class TestLanesSmoke:
     # list route is the deck stable view.
 
     def test_envelope(self, live):
-        code, body = live["get"]("/v1/lanes")
+        code, body = live.get("/v1/lanes")
         assert code == 200
         assert set(body.keys()) == {"count", "lanes"}
         assert body["count"] == len(body["lanes"])
@@ -23,7 +23,7 @@ class TestLanesSmoke:
         # params / skills / steps are engine-specific; only identity
         # keys are pinned.
         required = {"kind", "lane", "genre", "title", "description"}
-        code, body = live["get"]("/v1/lanes")
+        code, body = live.get("/v1/lanes")
         for lane in body["lanes"]:
             assert required.issubset(set(lane.keys())), \
                 f"lane {lane.get('lane', '?')!r} dropped a key: {sorted(lane.keys())}"
@@ -34,25 +34,29 @@ class TestCardToolsSmoke:
     # Returns a bare list (not an envelope).
 
     def test_envelope(self, live):
-        code, body = live["get"]("/v1/card-tools")
+        code, body = live.get("/v1/card-tools")
         assert code == 200
         assert isinstance(body, list)
         assert len(body) > 0
 
     def test_tool_row_keys(self, live):
-        expected = {"name", "version", "kind", "card", "model",
+        # universal keys are pinned; tools may carry EXTRA fields
+        # (e.g. hidden) -- the row may be richer than the minimum,
+        # never poorer.
+        required = {"name", "version", "kind", "card", "model",
                     "stage_title", "description", "params_schema"}
-        code, body = live["get"]("/v1/card-tools")
+        code, body = live.get("/v1/card-tools")
         for tool in body:
-            assert set(tool.keys()) == expected, \
-                f"tool {tool.get('name', '?')!r} dropped a key: {sorted(tool.keys())}"
+            assert required.issubset(set(tool.keys())), \
+                f"tool {tool.get('name', '?')!r} dropped a key: " \
+                f"have {sorted(tool.keys())}, required {sorted(required)}"
 
 
 class TestSkillsSmoke:
     # /v1/skills: the DSH skill catalog. Envelope mirrors /v1/assets.
 
     def test_envelope(self, live):
-        code, body = live["get"]("/v1/skills")
+        code, body = live.get("/v1/skills")
         assert code == 200
         assert set(body.keys()) == {"count", "skills"}
         assert body["count"] == len(body["skills"])
@@ -62,7 +66,7 @@ class TestSkillsSmoke:
         # the (card, model) union is scope-dependent (card:/model:/flow:)
         # -- the wall pins the universal identity keys only.
         required = {"id", "name", "description", "scope"}
-        code, body = live["get"]("/v1/skills")
+        code, body = live.get("/v1/skills")
         for skill in body["skills"]:
             assert required.issubset(set(skill.keys())), \
                 f"skill {skill.get('id', '?')!r} dropped a key: {sorted(skill.keys())}"

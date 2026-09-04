@@ -1,7 +1,7 @@
 """/v1/assets + run.completed hook -- the asset-ledger rung wall.
 
 Envelope, filter, integrity, the worker completion event, the
-C-cruft tripwire. Live-gateway; uses the live fixture.
+C-cruft tripwire. Live-gateway; uses the live client.
 """
 import hashlib
 import re
@@ -16,14 +16,14 @@ REQUIRED_ROW_KEYS = {"name", "run_id", "kind", "bytes", "sha256", "url"}
 
 class TestAssetsRouteShape:
     def test_envelope(self, live):
-        code, body = live["get"]("/v1/assets?limit=200")
+        code, body = live.get("/v1/assets?limit=200")
         assert code == 200
         assert set(body.keys()) == {"count", "artifacts", "runs"}
         assert isinstance(body["count"], int)
         assert isinstance(body["runs"], list)
 
     def test_run_envelope_keys(self, live):
-        code, body = live["get"]("/v1/assets?limit=200")
+        code, body = live.get("/v1/assets?limit=200")
         runs = [r for r in body["runs"] if r["artifacts"]]
         assert runs, "live estate should have at least one run with artifacts"
         assert set(runs[0].keys()) == REQUIRED_RUN_KEYS
@@ -31,7 +31,7 @@ class TestAssetsRouteShape:
         assert set(row.keys()) == REQUIRED_ROW_KEYS
 
     def test_row_kinds_are_closed(self, live):
-        code, body = live["get"]("/v1/assets?limit=200")
+        code, body = live.get("/v1/assets?limit=200")
         allowed = {"image", "video", "audio", "model", "document", "other"}
         for run in body["runs"]:
             for row in run["artifacts"]:
@@ -39,7 +39,7 @@ class TestAssetsRouteShape:
                     f"row {row['name']} has unvouched kind {row['kind']!r}"
 
     def test_sha256_is_64_hex(self, live):
-        code, body = live["get"]("/v1/assets?limit=200")
+        code, body = live.get("/v1/assets?limit=200")
         for run in body["runs"]:
             for row in run["artifacts"]:
                 assert re.match(r"^[0-9a-f]{64}$", row["sha256"]), \
@@ -49,17 +49,17 @@ class TestAssetsRouteShape:
 
 class TestAssetsRouteFilter:
     def test_kind_filter(self, live):
-        code, body = live["get"]("/v1/assets?kind=image&limit=200")
+        code, body = live.get("/v1/assets?kind=image&limit=200")
         assert code == 200
         for run in body["runs"]:
             for row in run["artifacts"]:
                 assert row["kind"] == "image"
 
     def test_run_filter(self, live):
-        code, body = live["get"]("/v1/assets?limit=200")
+        code, body = live.get("/v1/assets?limit=200")
         target = next((r for r in body["runs"] if r["artifacts"]), None)
         assert target is not None
-        code2, body2 = live["get"](f"/v1/assets?run={target['run_id']}")
+        code2, body2 = live.get(f"/v1/assets?run={target['run_id']}")
         assert code2 == 200
         assert body2["runs"]
         assert body2["runs"][0]["run_id"] == target["run_id"]
@@ -67,7 +67,7 @@ class TestAssetsRouteFilter:
     def test_limit_honored(self, live):
         # limit caps RUN ROWS; the envelope artifacts field is the
         # TOTAL int across returned runs, not a slice.
-        code, body = live["get"]("/v1/assets?limit=1")
+        code, body = live.get("/v1/assets?limit=1")
         assert code == 200
         assert body["count"] <= 1
         assert len(body["runs"]) <= 1
@@ -79,12 +79,12 @@ class TestAssetsRouteIntegrity:
         # the index sha256 must equal the sha256 of the bytes served
         # at the row url. state-is-not-contract law only holds if the
         # index agrees with the bytes.
-        code, body = live["get"]("/v1/assets?kind=image&limit=200")
+        code, body = live.get("/v1/assets?kind=image&limit=200")
         for run in body["runs"]:
             for row in run["artifacts"]:
                 with urllib.request.urlopen(
-                        live["BASE"] + row["url"],
-                        timeout=live["TIMEOUT"]) as r:
+                        live.base + row["url"],
+                        timeout=live.timeout) as r:
                     blob = r.read()
                 assert hashlib.sha256(blob).hexdigest() == row["sha256"], \
                     f"sha mismatch for {row['name']}"
@@ -95,7 +95,7 @@ class TestRunCompletedLedger:
         # 2000 is enough headroom: the gateway writes server.boot on
         # every restart and that can drown the run.completed entries
         # in a 200-entry newest-first window.
-        code, body = live["get"]("/v1/ledger?limit=2000")
+        code, body = live.get("/v1/ledger?limit=2000")
         assert code == 200
         events = [e["event"] for e in body["entries"]]
         assert "run.completed" in events, \
@@ -104,7 +104,7 @@ class TestRunCompletedLedger:
     def test_run_completed_payload_has_sha16(self, live):
         # the meld-assets contract: every run.completed row carries
         # sha16 = sha256[:16]. Pin it.
-        code, body = live["get"]("/v1/ledger?limit=2000")
+        code, body = live.get("/v1/ledger?limit=2000")
         assert code == 200
         seen = False
         for e in body["entries"]:
@@ -123,7 +123,7 @@ class TestRunCompletedLedger:
         # 4; report created_at presence as a forward-compat signal.
         # The real created_at law is the unit test in
         # test_asset_ledger (the code under test).
-        code, body = live["get"]("/v1/ledger?limit=2000")
+        code, body = live.get("/v1/ledger?limit=2000")
         assert code == 200
         seen = False
         for e in body["entries"]:
@@ -148,7 +148,7 @@ class TestCCruftAbsence:
     # as this rung; the 404 stays here as the regression guard.
 
     def test_provision_door_stays_404(self, live):
-        code, _ = live["post"]("/v1/models/provision", {})
+        code, _ = live.post("/v1/models/provision", {})
         assert code == 404, \
             "POST /v1/models/provision is back -- the C-cruft cut regressed"
 
@@ -204,7 +204,7 @@ class TestTestFlagExclusion:
         run_id = self._new_run_id()
         run_dir = self._create_test_run(live, repo, run_id, in_test_root=True)
         try:
-            code, body = live["get"]("/v1/assets?limit=200")
+            code, body = live.get("/v1/assets?limit=200")
             assert code == 200
             run_ids = [r["run_id"] for r in body["runs"]]
             assert run_id not in run_ids, \
@@ -217,7 +217,7 @@ class TestTestFlagExclusion:
         run_id = self._new_run_id()
         run_dir = self._create_test_run(live, repo, run_id, in_test_root=True)
         try:
-            code, body = live["get"](
+            code, body = live.get(
                 f"/v1/assets?include_test=true&run={run_id}")
             assert code == 200
             run_ids = [r["run_id"] for r in body["runs"]]
@@ -235,7 +235,7 @@ class TestTestFlagExclusion:
         run_id = self._new_run_id()
         run_dir = self._create_test_run(live, repo, run_id, in_test_root=False)
         try:
-            code, body = live["get"]("/v1/assets?limit=200")
+            code, body = live.get("/v1/assets?limit=200")
             assert code == 200
             run_ids = [r["run_id"] for r in body["runs"]]
             assert run_id not in run_ids, \
@@ -246,7 +246,7 @@ class TestTestFlagExclusion:
     def test_include_test_is_journaled(self, live):
         # the opt-in is a significant event; the gateway writes an
         # assets.include_test ledger entry. The wall is not silent.
-        code, body = live["get"]("/v1/ledger?limit=2000")
+        code, body = live.get("/v1/ledger?limit=2000")
         assert code == 200
         assert any(e.get("event") == "assets.include_test"
                    for e in body["entries"]), \
