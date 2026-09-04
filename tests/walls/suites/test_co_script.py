@@ -1,11 +1,11 @@
-"""co_script constructor core tests (script style — python3 tests/test_co_script.py).
+"""co_script constructor core tests (script style — python3 tests/walls/suites/test_co_script.py).
 No GPU, no network: the pin is the schema SSOT."""
 
 import json
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "plugins" / "engines" / "comfyui" / "compose"))
 
 from co_script import (  # noqa: E402

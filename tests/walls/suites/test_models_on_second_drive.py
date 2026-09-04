@@ -32,14 +32,14 @@ Two violation classes this wall refuses:
      is a misconfiguration and fails here too.
 
 Script-form wall (the estate's law): python3
-tests/test_models_on_second_drive.py
+tests/walls/suites/test_models_on_second_drive.py
 """
 
 import json
 import os
 import sys
 
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
 sys.path.insert(0, os.path.join(REPO, "py"))
 import estate_config  # noqa: E402  (the ONE parser)
 

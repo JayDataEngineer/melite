@@ -10,7 +10,7 @@ harvest's classification) makes the wrong viewer claim the artifact
 This wall mirrors the editor's regexes in Python and walks every
 KNOWN emitter across the estate, asserting the route matches what
 the lane actually writes. SCRIPT FORM (the estate wall law for
-non-inference checks): `python3 tests/test_artifact_routing.py`.
+non-inference checks): `python3 tests/walls/suites/test_artifact_routing.py`.
 
 THE LAW: this module's regex tables MUST match the source-side
 verbatim. When the editor updates the routes, update this wall in
@@ -21,7 +21,7 @@ import os
 import re
 import sys
 
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
 
 
 # ── the editor's regex tables (MIRROR of AssetMedia.tsx) ──────────────

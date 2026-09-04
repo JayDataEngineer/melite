@@ -22,7 +22,7 @@ py/card.py is legal ONLY as a cross-engine arm satellite (music: the
 card surface lives in audio-cpp/cards/music/ — the wall asserts the
 owner exists and declares the same card id).
 
-Run: python3 tests/test_card_structure.py
+Run: python3 tests/walls/suites/test_card_structure.py
 """
 
 import json
@@ -30,7 +30,7 @@ import os
 import subprocess
 import sys
 
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
 ACTION_CARDS = os.path.join(REPO, "plugins", "engines", "comfyui",
                             "action_cards")
 GOLDEN = os.path.join(ACTION_CARDS, "video", "h3-timeline")

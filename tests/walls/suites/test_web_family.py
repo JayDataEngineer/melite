@@ -14,14 +14,14 @@ expectations): a member in the wrong family, a stale link:, a wrong
 EDITOR_DIST depth, or a missing workspace glob fails HERE, at test time —
 never as a mystery 404 inside a DSH chat iframe at boot.
 
-Run: python3 tests/test_web_family.py   (part of the python gate ladder)
+Run: python3 tests/walls/suites/test_web_family.py   (part of the python gate ladder)
 """
 import json
 import os
 import re
 import sys
 
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
 
 # ─────────────────────────────────────────────────────────────────────────
 # THE FAMILY MAP — the SSOT this gate enforces. Edit HERE when the family

@@ -10,7 +10,7 @@ the deck-critical GET surface. State-bearing routes (runs/drafts) are
 CONTRACT-pinned in-harness, not golden-pinned — server state is not a
 contract. Deviations must be documented in the route module, never here.
 
-Run: python3 tests/test_http_parity.py
+Run: python3 tests/walls/suites/test_http_parity.py
 """
 
 import json
@@ -23,7 +23,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[3]
 GOLDEN = REPO / "tests" / "golden_http"
 PASS = FAIL = 0
 

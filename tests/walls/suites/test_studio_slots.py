@@ -15,14 +15,14 @@ TWO failure classes this wall refuses:
      a body the loader can never mount; it also silently shadows
      the default schema form for that card id if one ever lands).
 
-Script-form wall (the estate's law): python3 tests/test_studio_slots.py
+Script-form wall (the estate's law): python3 tests/walls/suites/test_studio_slots.py
 """
 
 import os
 import re
 import sys
 
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
 MODELS_ROOT = os.path.join(REPO, "plugins", "engines", "comfyui", "models")
 CARDS_ROOT = os.path.join(REPO, "plugins", "engines")
 

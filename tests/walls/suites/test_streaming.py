@@ -1,6 +1,6 @@
 """test_streaming.py — the streaming restoration gates (2026-09-02).
 
-Three gaps, three batteries (python3 tests/test_streaming.py):
+Three gaps, three batteries (python3 tests/walls/suites/test_streaming.py):
   A. native.py — the comfyui engine's own transport: workflow splice,
      upload-walk rewrite, ws frame codec, event fold -> report().
   B. the gateway report contract — engine report() frames land in the
@@ -28,7 +28,7 @@ import time
 import uuid
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "py"))
 sys.path.insert(0, str(REPO / "plugins" / "engines" / "comfyui" / "compose"))
 

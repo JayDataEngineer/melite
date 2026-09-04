@@ -14,13 +14,13 @@ Pins, all offline (pinned object_info, no GPU, no network):
   4. WIRE FORMS: the renderers bake the run-inputs SSOT string forms
      ("%d" / "%.0f" / "%g") — the parity the flip acceptance recorded.
 
-Run: python3 tests/test_doc_parity.py   (exit 0 = pass)
+Run: python3 tests/walls/suites/test_doc_parity.py   (exit 0 = pass)
 """
 
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[3]
 PLUGIN = REPO / "plugins" / "engines" / "comfyui"
 sys.path.insert(0, str(PLUGIN / "compose"))
 sys.path.insert(0, str(REPO / "py"))

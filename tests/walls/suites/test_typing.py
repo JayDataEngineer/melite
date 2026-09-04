@@ -18,7 +18,7 @@ import sys
 import tomllib
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[3]
 PASS, FAIL = [], []
 
 

@@ -46,7 +46,7 @@ dependencies = [
 # ── TYPING WALL (operator order 2026-09-04: "you cannot silently skip
 # out on strongly typed code") ──────────────────────────────────────
 # strict mypy over the typed-contract surface; the target list lives
-# in tests/test_typing.py and only GROWS (a module joins when it is
+# in tests/walls/suites/test_typing.py and only GROWS (a module joins when it is
 # fully annotated; nothing ever leaves). follow_imports=silent keeps
 # not-yet-migrated dependencies from blocking the wall while their
 # imports still resolve.
@@ -81,16 +81,13 @@ warn_untyped_fields = true
 dev = ["pytest>=8"]
 
 [tool.pytest.ini_options]
-# tests/pytest = native pytest home; tests/integration = REAL
-# INFERENCE (the special folder: cards through the queue, GPU money
-# on the line — deselected by default, opted in with `-m gpu`).
-# The script suites (tests/test_*.py) are deliberately OUTSIDE
-# testpaths: several execute walls at import; they run as subprocess
-# walls via tests/pytest/test_walls.py.
-# tests/ layout (2026-09-03 rework): unit/ = no server, routes/ =
-# live gateway (skips when down), integration/ = real inference
-# (-m gpu, deselected by default), walls/ = the subprocess
-# orchestrator for the script-style walls at tests/test_*.py.
+# tests/ layout: unit/ = no server, routes/ = live gateway (skips when
+# down), integration/ = real inference (-m gpu, deselected by default),
+# walls/ = the pytest-side orchestrator (test_walls.py) + suites/ (the
+# script-style wall suites — exit codes are the contract; conftest.py
+# there keeps suites/ OUT of collection), dev_dsh/ = the DSH harness
+# gate ladder (own runner), timeline/ = the h3 timeline suite (own
+# runner). The goldens live in golden_http/ + golden_compose/.
 testpaths = ["tests/unit", "tests/routes", "tests/integration", "tests/walls"]
 markers = [
     "gpu: real inference through the queue (opt in: pytest -m gpu)",

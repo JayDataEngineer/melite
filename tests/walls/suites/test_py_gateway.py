@@ -1,13 +1,13 @@
 """Queue-law regression for the python gateway (mirrors the C chaos suite
 essentials) + the plugin-bus wall (PLUGIN ARCHITECTURE LAW). Run:
-python3 tests/test_py_gateway.py  — exits non-zero on any violation.
+python3 tests/walls/suites/test_py_gateway.py  — exits non-zero on any violation.
 No GPU, no network: parser + resolution + compose laws + golden parity."""
 
 import json
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "py"))
 
 from gateway import (  # noqa: E402

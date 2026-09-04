@@ -21,7 +21,7 @@ import sys
 import tomllib
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[3]
 CONFIG = REPO / "plugins" / "engines" / "comfyui" / "data" / "comfyui_endpoint.json"
 PROVISION = REPO / "tools" / "provision.py"
 COMFY_PROJECT = REPO / "infra" / "comfyui"

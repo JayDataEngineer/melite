@@ -4,7 +4,7 @@
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "py"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "py"))
 from card_requires import check_card_requires, EXTENSION_NODE_TYPES
 
 

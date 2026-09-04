@@ -20,7 +20,7 @@ import sys
 import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.dirname(HERE)
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(REPO, "py"))
 sys.path.insert(0, os.path.join(REPO, "py"))
 
@@ -48,7 +48,7 @@ def check(name, cond, detail=""):
 
 # ── 1. row parity vs the yaml-era golden ────────────────────────────
 golden = json.load(open(os.path.join(
-    HERE, "golden_http", "model-catalog.json")))["models"]["krea-2"]
+    REPO, "tests", "golden_http", "model-catalog.json")))["models"]["krea-2"]
 cls = load_model_py(os.path.join(KREA_DIR, "model.py"), "comfyui")
 row = model_row(cls, KREA_DIR)
 check("golden row parity", row == golden,

@@ -7,26 +7,36 @@ A pytest project. The runner:
 
 ## Layout
 
+Every suite lives in a folder for its plane — nothing piles up at
+the root:
+
     tests/
       conftest.py                root: repo fixture + the ONE py/ sys.path insert
       unit/                      no server, milliseconds
         conftest.py              make_run factory (tmp_path-based)
-        test_asset_ledger.py     PYTHON SHAPE + RESILIENCE + L3 (unit)
-        test_plugin_drift.py     plugin contract sweep (parametrized)
-        test_plugin_isolation.py subprocess clean-import walls
-        test_workspace_laws.py   fs / git / pnpm tripwires
-        test_architectural_contracts.py  boundary-drift linter wall
+        estate/                  config, workspace laws, boundary-drift linter
+        plugins/                 plugin contract sweep, subprocess isolation
+        runtime/                 asset ledger (PYTHON SHAPE + RESILIENCE, unit)
       routes/                    live gateway; SKIPS when down
         conftest.py              GatewayClient + live fixture
-        test_gateway_client.py   client smoke
-        test_assets_route.py     /v1/assets + run.completed + L3 (live)
-        test_manage_route.py     /v1/manage + ONE-DOOR singularity
-        test_routes_smoke.py     lanes / card-tools / skills smokes
+        control/                 /v1/manage + ONE-DOOR singularity
+        data/                    /v1/assets + run.completed + L3 (live)
+        discovery/               client smoke, lanes / card-tools / skills
       integration/               REAL inference, -m gpu (scratch gateway)
-      walls/                     test_walls.py: subprocess orchestrator
-      test_*.py                  the script-style walls (NOT pytest-
-                                 collected; the orchestrator runs them
-                                 and pins exit codes)
+      walls/                     THE WALL PLANE
+        conftest.py              collect_ignore — suites/ is never collected
+        test_walls.py            the subprocess orchestrator (exit codes)
+        suites/                  the script-style wall suites (check()
+                                  discipline + exit code IS the contract;
+                                  run directly: python3 tests/walls/suites/
+                                  test_<name>.py — never imported by pytest)
+      dev_dsh/                   the DSH harness gate ladder
+        test_dev_dsh.py          structural + host-side boot gates (pytest)
+        test_dev_dsh_boot_e2e.py browser-side boot gate (python3.14 + playwright)
+        run_dev_dsh_tests.sh     single entrypoint for the ladder
+      timeline/                  h3 timeline suite (own runner: run_tests.sh)
+      golden_compose/            compose goldens + their _runner.py wall
+      golden_http/               the wire-contract goldens (C RETIREMENT)
 
 ## Conventions
 
@@ -36,8 +46,12 @@ A pytest project. The runner:
   body), live.fetch_bytes(path). A down gateway skips the suite.
 * assertions are plain assert; parametrize whenever cases differ by
   data only.
-* new walls go in tests/unit or tests/routes; new script walls stay
-  at tests/ root and get added to tests/walls/test_walls.py WALLS.
+* script-style wall suites live in walls/suites/, keep their
+  check()/exit-code shape, and get pinned by walls/test_walls.py
+  (WALLS when green; KNOWN_DRIFT when red at HEAD for another lane's
+  reasons). New pytest-native walls go in unit/ or routes/.
+* dev_dsh and timeline keep their own runners (two interpreters /
+  ComfyUI-side probes); they are not in testpaths.
 
 ## The live-gateway contract
 
@@ -50,14 +64,18 @@ Boot:
 
 ## The laws the tests pin
 
-* PYTHON SHAPE LAW -- frozen rows, closed enums (unit/test_asset_ledger)
-* RESILIENCE LAW -- indexing never raises (unit/test_asset_ledger)
-* PLUGIN ARCHITECTURE -- py/ is generic; plugins independent (tools/
-  arch_lint.py via unit/test_architectural_contracts)
+* PYTHON SHAPE LAW -- frozen rows, closed enums (unit/runtime/test_asset_ledger)
+* RESILIENCE LAW -- indexing never raises (unit/runtime/test_asset_ledger)
+* PLUGIN ARCHITECTURE -- py/ is generic; plugins independent (unit/
+  estate/test_architectural_contracts)
 * EXTENSION LAW -- vendor packs isolated, references study-only (same)
-* PROVISIONING LAW -- /v1/manage is the ONE door (routes/test_manage_route)
-* C RETIREMENT -- provision door stays 404 (routes/test_assets_route)
+* PROVISIONING LAW -- /v1/manage is the ONE door (routes/control/
+  test_manage_route; walls/suites/test_provision)
+* C RETIREMENT -- the http goldens are OUR wire contract (walls/
+  suites/test_http_parity); provision door stays 404 (routes/data/
+  test_assets_route)
 * TEST/PROD BARRIER (L1-L4) -- test runs tagged, segregated, routed to
-  test-output, harness-tagged (routes/test_assets_route + the
+  test-output, harness-tagged (routes/data/test_assets_route + the
   melite-tools bun suite)
-* Secrets safety -- llm_keystore cannot be committed (unit/test_workspace_laws)
+* Secrets safety -- llm_keystore cannot be committed (unit/estate/
+  test_workspace_laws)

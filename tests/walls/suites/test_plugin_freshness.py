@@ -38,7 +38,7 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.abspath(os.path.join(HERE, ".."))
+REPO = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 
 WEB_DSH = os.path.join(REPO, "plugins", "web", "dsh")
 HARNESS_DSH = os.path.join(REPO, "plugins", "harness", "dsh")

@@ -24,17 +24,17 @@ import pytest
 REPO = Path(__file__).resolve().parents[2]
 VENV_PY = REPO / ".venv" / "bin" / "python"
 
-# every wall suite, in estate order
+# every wall suite, in estate order — the script suites live in
+# tests/walls/suites/ (their own folder; uncollected, see conftest.py)
 WALLS = [
-    "tests/test_python_cards.py",
-    "tests/test_card_structure.py",
-    "tests/test_http_parity.py",
-    "tests/test_py_gateway.py",
-    "tests/test_python_models.py",
-    "tests/test_provision.py",
-    "tests/test_typing.py",
-    "tests/test_workflow_transpile.py",
-    "tests/test_doc_parity.py",
+    "tests/walls/suites/test_python_cards.py",
+    "tests/walls/suites/test_card_structure.py",
+    "tests/walls/suites/test_py_gateway.py",
+    "tests/walls/suites/test_python_models.py",
+    "tests/walls/suites/test_provision.py",
+    "tests/walls/suites/test_typing.py",
+    "tests/walls/suites/test_workflow_transpile.py",
+    "tests/walls/suites/test_doc_parity.py",
     "tests/golden_compose/_runner.py",
 ]
 
@@ -42,12 +42,21 @@ WALLS = [
 # drift (reproduces with the tree stashed — NOT this lane's files).
 # Cited here so the debt stays visible; remove when the pin lands.
 KNOWN_DRIFT = {
-    "tests/test_co_script.py":
+    "tests/walls/suites/test_co_script.py":
         "pin lost 'easy saveText'/'LTX_lora_loader' (object_info "
         "refresh vs declarations) — concurrent committer lane",
-    "tests/test_card_requires.py":
+    "tests/walls/suites/test_card_requires.py":
         "video-gen declares ComfyUI-H3-Motion-Context-MultiRef / "
         "melite-video, not installed live — consolidation lane",
+    # 2026-09-04: verified pre-existing — a byte-identical copy at the
+    # pre-migration path with the pre-migration anchor fails with the
+    # same five drifts. The migration changed nothing here.
+    "tests/walls/suites/test_http_parity.py":
+        "wire drift vs the goldens from the concurrent audio-cpp "
+        "consolidation + anny lanes (/v1/tools 13->10, music3 "
+        "defaults.backend, anny capabilities/forms, runs contract) — "
+        "the owning lane bumps the goldens deliberately (C "
+        "RETIREMENT: the goldens ARE the contract)",
 }
 
 

@@ -16,7 +16,7 @@ The canary tests catch the LAST mile (queue submission), but the
 DEFAULTS shape never reaches the canary when it's missing a key —
 it fails elsewhere. This wall catches the form <-> card drift at
 serve time. SCRIPT FORM (the estate wall law for non-inference
-checks): `python3 tests/test_form_defaults.py`.
+checks): `python3 tests/walls/suites/test_form_defaults.py`.
 
 The wall walks the card.py tree (one per action card), parses the
 declared id and the field widgets, and asserts every form-spec
@@ -32,7 +32,7 @@ import os
 import re
 import sys
 
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
 
 
 def _find_card_classes():
