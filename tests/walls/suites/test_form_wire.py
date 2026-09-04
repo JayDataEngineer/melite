@@ -177,3 +177,55 @@ def test_no_bare_minimal_literal_on_the_serving_path():
     i_reg = src.index('_FORMS_TABLE.get(model)')
     i_probe = src.index('if safe and _lane_probe(repo_root, model):')
     assert i_reg < i_probe
+
+
+# ── F. HTTP end-to-end — the route, not just the function ──────────
+#
+# The 2026-09-05 lesson (operator: "your testing [REDACTED 2026-11-05]"): the first
+# version of this wall validated editor_forms.form_spec in-process and
+# the fix still didn't reach the user — the serving path (uvicorn
+# route, query parsing, JSON serialization) is what the studio speaks.
+# These pins boot a REAL scratch gateway and hold the WIRE body to the
+# same contract.
+
+def _http_get(port, path):
+    import urllib.request
+    import json as _json
+    r = urllib.request.urlopen(
+        "http://127.0.0.1:%d/%s" % (port, path), timeout=10)
+    return r.status, _json.loads(r.read().decode("utf-8"))
+
+
+@pytest.fixture(scope="module")
+def scratch_gateway():
+    from _anchor import boot_scratch_gateway, reap_gateway
+    import sys as _sys
+    port, proc = boot_scratch_gateway(
+        wait_path="/v1/queue", python=_sys.executable,
+        tries=150, sleep=0.2, env=None)
+    yield port
+    reap_gateway(proc)
+
+
+@pytest.mark.parametrize("svc", sorted(editor_forms._FORMS_TABLE))
+def test_http_every_form_serves_the_full_contract(scratch_gateway, svc):
+    status, body = _http_get(scratch_gateway, "v1/form-spec?model=%s" % svc)
+    assert status == 200, (svc, status)
+    env = form_wire.FormSpecRow.model_validate(body)
+    assert len(env.fields) >= 1, (svc, "no form rows on the wire")
+    assert env.label
+
+
+def test_http_image_gen_is_the_universal_form(scratch_gateway):
+    status, body = _http_get(scratch_gateway, "v1/form-spec?model=image-gen")
+    assert status == 200
+    env = form_wire.FormSpecRow.model_validate(body)
+    assert env.model == "krea-2" and env.form == "image-gen"
+    assert {"prompt", "width", "height", "steps"} <= {f.name for f in env.fields}
+
+
+def test_http_unknown_refuses_404(scratch_gateway):
+    import urllib.error
+    with pytest.raises(urllib.error.HTTPError) as ei:
+        _http_get(scratch_gateway, "v1/form-spec?model=no-such-thing")
+    assert ei.value.code == 404
