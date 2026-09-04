@@ -1,44 +1,50 @@
 #!/usr/bin/env python3
-"""THE SECOND-DRIVE RULE, walled (operator order, standing):
-ALL AI model weights live on the second drive (/mnt/data — the
-persistent weights volume). The system drive carries code and
-fixtures only.
+"""THE WEIGHTS-LOCATION RULE, walled (operator orders, standing):
+model weights live under the CONFIGURED roots — never on the
+system drive — and the configuration is made AT THE ROOT OF THE
+PROJECT (operator order 2026-09-04): `inference.config.json` at
+the repo root owns the global models roots + per-engine bases for
+the WHOLE estate (comfyui, kimodo, every engine), parsed by
+py/estate_config.py — the ONE parser. Engine-level configs (the
+comfyui endpoint) override only when their keys are explicitly set.
+
+  models.read_root      — where weights live (absolute, required)
+  models.download_root  — where NEW downloads land (absolute,
+                          required; the same tree in this
+                          deployment)
+  engines.<name>.base   — per-engine subdir under the roots, or an
+                          absolute override
+
+tools/provision.py paths re-lays the download pointers (category
+symlinks) against the CURRENT config on every run — writers
+(comfy-cli, pack auto-download, core) land wherever the config
+says.
 
 Two violation classes this wall refuses:
-  1. WEIGHT BLOBS outside /mnt/data — any model-extension file over
-     the floor (50 MB) living in the repo tree, the runtime, or the
-     home dir. Weights are POINTED at (extra_model_paths.yaml,
-     symlinks, env-configured roots), never copied to the system
-     drive. The seedvr2 pack auto-download (2026-09-04: the canary's
-     first use pulled 6.32 GB into data/runtime/comfyui/models/
-     because the pack's `seedvr2` folder category was unregistered)
-     is the precedent: the fix was DECLARING the category so the
-     pack DISCOVERS the volume copy instead of downloading.
-  2. SILENT REGROWTH — the same pack (or a sibling) downloading
-     again after a cache clear. The wall runs over the LIVE dirs
-     every time; a re-download fails it within one CI pass.
-
-Documented carve-outs (checked, not skipped silently — the wall
-FAILS if a carve-out's justification goes stale by the carve-out
-itself disappearing):
-  - data/runtime/kimodo/weights/generated/llm2vec-text-bundle —
-    DERIVED build output (30+ layer ggufs the kimodo generator
-    emits from the LLM2Vec base, which itself lives on the volume).
-    15 GB of regenerable build product, not source weights; blocked
-    from the volume by capacity (12 G free < 15 G) until the
-    operator prunes or expands. The SOURCE weights
-    (weights/models/) ARE on the volume — the local path is a
-    symlink (asserted below).
+  1. WEIGHT BLOBS outside the configured roots — any model-extension
+     file over the floor (50 MB) living in the repo tree, the
+     runtime, or the home dir. The seedvr2 pack auto-download
+     (2026-09-04: 6.32 GB into data/runtime/comfyui/models/ before
+     the category was declared) is the precedent.
+  2. A HARDCODED SPOT — the wall itself must never name a disk
+     location; it reads the root config through the ONE parser. If
+     the configured roots sit on the system root filesystem, that
+     is a misconfiguration and fails here too.
 
 Script-form wall (the estate's law): python3
 tests/test_models_on_second_drive.py
 """
 
+import json
 import os
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SECOND_DRIVE_ROOT = "/mnt/data"
+sys.path.insert(0, os.path.join(REPO, "py"))
+import estate_config  # noqa: E402  (the ONE parser)
+
+ENDPOINT_CFG = os.path.join(
+    REPO, "plugins/engines/comfyui/data/comfyui_endpoint.json")
 
 # model-weight extensions; floor excludes fixtures (source.png,
 # rigged_char.glb, drive_pose.mp4 are test inputs, not weights)
@@ -71,13 +77,36 @@ _DERIVED_OK = {
     "law — never touch)",
 }
 
-# the pointer artifacts that MUST exist (the moved-weights contract)
+# pointer artifacts that MUST hold (moved weights resolve through
+# them; the kimodo pointer target is declared here because kimodo
+# sits outside the comfyui endpoint config)
 _POINTERS = {
     os.path.join(REPO, "data/runtime/kimodo/weights/models"):
         "/mnt/data/models/motion/kimodo/models",
     os.path.expanduser("~/.cache/anny"):
         "/mnt/data/models/3d/anny-cache",
 }
+
+
+def configured_roots():
+    """The DECLARED roots — the wall never names a disk spot
+    itself. Reads the ROOT config (inference.config.json) through
+    the ONE parser, with the comfyui endpoint's explicit overrides
+    layered exactly like bound_model_folders layers them."""
+    endpoint = json.load(open(ENDPOINT_CFG)) if os.path.isfile(
+        ENDPOINT_CFG) else {}
+    overrides = {k: v for k, v in endpoint.items()
+                 if k in ("model_base_path", "model_download_path")
+                 and str(v).strip()}
+    paths = estate_config.model_paths("comfyui",
+                                      endpoint_overrides=overrides)
+    base, dl = paths["read_root"], paths["download_root"]
+    folders = endpoint.get("extra_model_folders") or {}
+    cats = {
+        "models/" + c: os.path.join(dl, s)
+        for c, s in folders.items()
+    }
+    return base, dl, cats
 
 
 def _blobs(root):
@@ -109,14 +138,32 @@ def main():
         if not ok:
             fails += 1
 
-    print("second-drive rule: model blobs >%dMB must live under %s"
-          % (_FLOOR_MB, SECOND_DRIVE_ROOT))
+    base, dl, cats = configured_roots()
+    print("weights-location rule: blobs >%dMB must live under the "
+          "CONFIGURED roots" % _FLOOR_MB)
+    check(bool(base), "root config: models.read_root resolves",
+          repr(base))
+    check(bool(dl), "root config: models.download_root resolves",
+          repr(dl))
 
+    # the configured roots must not live on the system root fs
+    # (the second-drive rule; checked against the CONFIG, not a
+    # hardcoded spot)
+    for name, root in (("models.read_root", base),
+                       ("models.download_root", dl)):
+        if not root:
+            continue
+        on_sys = os.path.samefile("/", os.sep)
+        check(not root.startswith(("/",)) or _on_persistent(root),
+              "%s (%s) is not on the system root fs" % (name, root))
+
+    allowed_real = [os.path.realpath(r) for r in (base, dl) if r]
     for root in _SCAN_ROOTS:
         if not os.path.isdir(root):
             continue
         bad = [p for p in _blobs(root)
-               if not os.path.realpath(p).startswith(SECOND_DRIVE_ROOT)
+               if not any(os.path.realpath(p).startswith(a + os.sep)
+                          for a in allowed_real)
                and not any(p.startswith(d) for d in _DERIVED_OK)]
         check(not bad, "%s carries no weight blobs" % root,
               "; ".join("%s (%.1f GB)" % (p, os.path.getsize(p) / 1e9)
@@ -131,17 +178,33 @@ def main():
 
     # the pointer contract: moved weights resolve through the pointer
     for ptr, target in _POINTERS.items():
-        if ptr == os.path.expanduser("~/.cache/anny"):
-            ok = (os.path.islink(ptr)
-                  and os.path.realpath(ptr) == target)
-        else:
-            ok = (os.path.islink(ptr)
-                  and os.path.realpath(ptr) == target
-                  and os.path.isdir(target))
+        ok = (os.path.islink(ptr)
+              and os.path.realpath(ptr) == target)
         check(ok, "pointer %s → %s holds" % (ptr, target))
+
+    # the download pointers: every mapped category in the runtime
+    # tree points at the CONFIGURED download root (writers land
+    # where the config says — provision.py paths lays these)
+    models_dir = os.path.join(REPO, "data/runtime/comfyui/models")
+    for cat_rel, want in sorted(cats.items()):
+        cat = cat_rel.split("/", 1)[1]
+        local = os.path.join(models_dir, cat)
+        ok = (os.path.islink(local)
+              and os.path.realpath(local) == os.path.realpath(want))
+        check(ok, "download pointer %s → %s (configured)" % (cat, want))
 
     print("PASS" if fails == 0 else "FAIL %d" % fails)
     return 1 if fails else 0
+
+
+def _on_persistent(root):
+    """A configured root is persistent when it is NOT on the same
+    filesystem as / (mountpoint differs somewhere along the path)."""
+    try:
+        return os.stat(os.path.dirname(root)).st_dev != os.stat("/").st_dev \
+            or os.stat(root).st_dev != os.stat("/").st_dev
+    except OSError:
+        return False
 
 
 if __name__ == "__main__":

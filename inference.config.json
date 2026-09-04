@@ -1,0 +1,14 @@
+{
+  "models": {
+    "read_root": "/mnt/data/models",
+    "download_root": "/mnt/data/models"
+  },
+  "engines": {
+    "comfyui": {
+      "base": "image-gen/comfyui"
+    },
+    "kimodo": {
+      "base": "motion/kimodo"
+    }
+  }
+}

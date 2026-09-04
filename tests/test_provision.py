@@ -41,8 +41,13 @@ cfg = json.loads(CONFIG.read_text())
 # ── 1. the endpoint config: deployment truth, explicit ────────────────
 check("provision mode declared and valid",
       cfg.get("provision") in ("byo", "managed"), repr(cfg.get("provision")))
-check("model_base_path declared (weights are deployment config)",
-      bool(cfg.get("model_base_path", "").strip()))
+# model storage is configured AT THE PROJECT ROOT (operator order
+# 2026-09-04): inference.config.json owns the roots; the endpoint
+# may override, and if it does the keys are never empty
+check("model storage keys valid (unset → root config; set → absolute, non-empty)",
+      all(str(cfg.get(k, "")).strip()
+          for k in ("model_base_path", "model_download_path")
+          if cfg.get(k) is not None))
 check("url declared", bool(cfg.get("url", "").strip()))
 
 # ── 2. the estate env: ONE base env, the full management plane ────────
@@ -202,12 +207,30 @@ _cfg = json.loads((REPO / "plugins" / "engines" / "comfyui" /
                    "data" / "comfyui_endpoint.json").read_text())
 _bound = _pv.bound_model_folders(_cfg)
 
+# model storage resolves FROM THE ROOT OF THE PROJECT
+# (inference.config.json — py/estate_config.py is the ONE parser);
+# the endpoint's storage keys, when SET, override per-engine
+sys.path.insert(0, str(REPO / "py"))
+import estate_config as _ec                             # noqa: E402
+_ec_paths = _ec.model_paths(
+    "comfyui", endpoint_overrides={
+        k: v for k, v in _cfg.items()
+        if k in ("model_base_path", "model_download_path")
+        and str(v).strip()})
+
+check("root config: the project-root derivation (operator 2026-09-04)",
+      _ec.ROOT_CONFIG.is_file()
+      and _ec_paths["read_root"].startswith("/mnt/")
+      and _ec_paths["download_root"].startswith("/mnt/"),
+      "read=%s download=%s" % (_ec_paths["read_root"],
+                               _ec_paths["download_root"]))
+
 check("bound_model_folders: the ONE derivation (fixed + extras)",
       _bound["folders"].get("vae") == "vae"
       and _bound["folders"].get("text_encoders") == "text_encoders"
       and _bound["folders"].get("frame_interpolation") == "frame_interpolation"
-      and _bound["base_path"] == _cfg["model_base_path"],
-      "folder derivation drifted from the endpoint config")
+      and _bound["base_path"] == _ec_paths["read_root"],
+      "folder derivation drifted from the root config")
 
 check("cmd_paths renders FROM the one derivation (no restated list)",
       "bound_model_folders(cfg)" in
