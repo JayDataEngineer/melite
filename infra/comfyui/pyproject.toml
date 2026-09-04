@@ -75,6 +75,18 @@ dependencies = [
     # authored runtime lib: PipelinePatcher — the packs' custom nodes
     # import it (installed-first, _vendor fallback for BYO envs)
     "melite-model-base",
+    # pack-lane runtime deps (canary-proven 2026-09-04, GPU sweep):
+    # kimodo's 8-bit text-encoder path + its motion lib; tts/voice-
+    # lock's qwen engine (HARD-PINS transformers 4.57.3 — kimodo runs
+    # live-proven on it; the /opt/kimodo pyproject's 5.1.0 pin is
+    # conservative); the poser chain's mesh work. The audio lane also
+    # runs its DiT EAGER on this stack (AUDIOCORE_SFX_EAGER=1 — the
+    # torch 2.11 inductor segfault, see melite-audio-nodes eb18e35).
+    "bitsandbytes==0.50.2",
+    "motion-correction",
+    "qwen-tts==0.1.1",
+    "transformers==4.57.3",
+    "trimesh>=5.0",
 ]
 
 [tool.uv.sources]
