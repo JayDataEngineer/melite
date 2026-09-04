@@ -127,6 +127,42 @@ export interface BackendDraft {
   status: string
   createdAt: number
   completedAt: number | null
+  /**
+   * The COMPILED FLOW BODY (multi-step compose, 2026-09-05): present
+   * iff the draft was composed by build_flow's multi mode. This is the
+   * exact JSON that validated at POST /v1/flows/validate — the draft
+   * doc is its ONE carrier (the tool result carries only the slim
+   * projection). The card surface's Run posts it to /v1/flows/start as
+   * ``{flow_inline}`` — ONE typed run; ``FlowDoc.inlineFlow`` adopts
+   * it on hydration and per-stage params overlay onto it at start.
+   */
+  flow?: InlineFlowBody
+}
+
+/** One typed edge row of an inline flow (py/flow.py flow_from_body
+ * contract): an initial-pool key, or an upstream stage output. */
+export type InlineFlowEdge = { initial: string } | { stage: string; output: string }
+
+/** One stage row of an inline flow body. ``inputs``/``expected`` carry
+ * the folded typed edges; ``outputs`` declares what the stage
+ * produces (kind per name). */
+export interface InlineFlowStage {
+  id: string
+  engine: string
+  description?: string
+  params?: Record<string, unknown>
+  inputs?: Record<string, InlineFlowEdge>
+  expected?: Record<string, string>
+  outputs?: Record<string, string>
+}
+
+/** The agent-compiled multi-step pipeline as the gateway accepts it
+ * (``{flow_inline: ...}`` at /v1/flows/start and /v1/flows/validate —
+ * py/flow.py ``flow_from_body``). */
+export interface InlineFlowBody {
+  id: string
+  description?: string
+  stages: InlineFlowStage[]
 }
 
 /** Stage kinds that own a catalog model route and therefore have a
@@ -295,7 +331,18 @@ export interface FlowDoc {
  /** Last YAML run id — lets a card re-run reuse its upstream bricks. */
  yamlRunId?: string | null
  /**
- * Per-stage-index params snapshot taken when the spec was loaded. The
+  * Graph-backed flow (agent-composed, 2026-09-05): the COMPILED typed
+  * body the draft carried (``BackendDraft.flow``). When set, the
+  * doc's stages are the flow's stages (one card per stage, ids
+  * SHARED) and Run means ONE ``{flow_inline}`` POST — the whole graph
+  * as one run, server-side wiring, never per-stage card runs. User
+  * edits to a card's params overlay onto the matching body stage at
+  * start time (``syncInlineFlow``) so the typed run never silently
+  * drops an edit.
+  */
+ inlineFlow?: InlineFlowBody
+ /**
+  * Per-stage-index params snapshot taken when the spec was loaded. The
  * diff between a card's params and this baseline becomes the startChain
  * overrides — the YAML stays the SSOT, edits ride along as overrides.
  */
