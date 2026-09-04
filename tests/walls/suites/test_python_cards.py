@@ -11,9 +11,7 @@ import json
 import os
 import sys
 
-REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
-sys.path.insert(0, os.path.join(REPO, "py"))
-sys.path.insert(0, os.path.join(REPO, "py"))
+from _anchor import REPO
 
 import editor_forms as ef                    # noqa: E402
 from melite_cards.serialize import _norm       # noqa: E402

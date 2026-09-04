@@ -28,8 +28,7 @@ import time
 import uuid
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "py"))
+from _anchor import REPO
 sys.path.insert(0, str(REPO / "plugins" / "engines" / "comfyui" / "compose"))
 
 PASS, FAIL = [], []

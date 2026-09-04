@@ -56,13 +56,12 @@ import os
 import sys
 import unittest
 
-_REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
-sys.path.insert(0, os.path.join(_REPO, "py"))
+from _anchor import REPO
 
 import plugins
 import pipeline_graph
 
-_ENG_ROOT = os.path.join(_REPO, "plugins", "engines")
+_ENG_ROOT = os.path.join(REPO, "plugins", "engines")
 
 
 def _iter_card_dirs():
@@ -260,7 +259,7 @@ class TestLaw4IdentityGates(unittest.TestCase):
 
     def test_serving_cards_declare_ability(self):
         import catalog
-        d = catalog.scan_catalog(_REPO)
+        d = catalog.scan_catalog(REPO)
         cards = d.get("cards", [])
         self.assertGreater(len(cards), 8)
         for row in cards:
@@ -279,7 +278,7 @@ class TestLaw5NoFossils(unittest.TestCase):
 
     def test_no_card_yaml(self):
         hits = []
-        for root, _dirs, files in os.walk(os.path.join(_REPO, "plugins")):
+        for root, _dirs, files in os.walk(os.path.join(REPO, "plugins")):
             if "__pycache__" in root or "vendor" in root \
                     or "node_modules" in root:
                 continue
@@ -292,7 +291,7 @@ class TestLaw5NoFossils(unittest.TestCase):
 
     def test_no_card_knobs_yaml(self):
         hits = []
-        for root, _dirs, files in os.walk(os.path.join(_REPO, "plugins")):
+        for root, _dirs, files in os.walk(os.path.join(REPO, "plugins")):
             if "__pycache__" in root or "vendor" in root \
                     or "node_modules" in root:
                 continue
@@ -460,11 +459,11 @@ class TestLaw8CleanImport(unittest.TestCase):
             "sys.modules['wall_probe'] = mod\n"
             "spec.loader.exec_module(mod)\n")
         env = dict(os.environ)
-        env["PYTHONPATH"] = os.path.join(_REPO, "py")
+        env["PYTHONPATH"] = os.path.join(REPO, "py")
         failures = []
         res = subprocess.run(
             [sys.executable, "-c", loader_snippet],
-            capture_output=True, text=True, cwd=_REPO, env=env,
+            capture_output=True, text=True, cwd=REPO, env=env,
             timeout=self.TIMEOUT)
         if res.returncode != 0 or res.stderr.strip():
             failures.append(
@@ -477,7 +476,7 @@ class TestLaw8CleanImport(unittest.TestCase):
                 continue   # covered by the loader probe above
             res = subprocess.run(
                 [sys.executable, "-c", card_snippet, path],
-                capture_output=True, text=True, cwd=_REPO, env=env,
+                capture_output=True, text=True, cwd=REPO, env=env,
                 timeout=self.TIMEOUT)
             if res.returncode != 0 or res.stderr.strip():
                 failures.append(
@@ -563,7 +562,7 @@ class TestLaw10VendorRegistration(unittest.TestCase):
         import subprocess
         res = subprocess.run(
             ["git", "ls-files", "-s", "plugins/"],
-            capture_output=True, text=True, cwd=_REPO)
+            capture_output=True, text=True, cwd=REPO)
         self.assertEqual(res.returncode, 0, "git ls-files failed")
         return {parts[3] for parts in
                 (line.split() for line in res.stdout.splitlines())
@@ -574,7 +573,7 @@ class TestLaw10VendorRegistration(unittest.TestCase):
         # strict=False: git itself tolerates duplicate keys in
         # .gitmodules (last wins) — the wall parses like git parses
         cp = configparser.ConfigParser(strict=False)
-        cp.read(os.path.join(_REPO, ".gitmodules"))
+        cp.read(os.path.join(REPO, ".gitmodules"))
         return {cp.get(s, "path") for s in cp.sections()
                 if cp.has_option(s, "path")}
 

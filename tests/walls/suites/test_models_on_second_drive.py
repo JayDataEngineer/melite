@@ -39,8 +39,7 @@ import json
 import os
 import sys
 
-REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
-sys.path.insert(0, os.path.join(REPO, "py"))
+from _anchor import REPO
 import estate_config  # noqa: E402  (the ONE parser)
 
 ENDPOINT_CFG = os.path.join(

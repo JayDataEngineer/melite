@@ -15,25 +15,14 @@ Run: python3 tests/walls/suites/test_http_parity.py
 
 import json
 import os
-import signal
-import socket
-import subprocess
 import sys
-import time
+import urllib.error
 import urllib.request
-from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[3]
+from _anchor import REPO, boot_scratch_gateway, reap_gateway
+
 GOLDEN = REPO / "tests" / "golden_http"
 PASS = FAIL = 0
-
-
-def free_port():
-    s = socket.socket()
-    s.bind(("127.0.0.1", 0))
-    p = s.getsockname()[1]
-    s.close()
-    return p
 
 
 def get(port, path):
@@ -105,24 +94,14 @@ def check(name, ok, note=""):
 
 
 def main():
-    port = free_port()
-    env = dict(os.environ)
-    proc = subprocess.Popen(
-        [sys.executable, str(REPO / "py" / "gateway.py"), str(port)],
-        cwd=str(REPO), env=env,
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        start_new_session=True)
     try:
-        for _ in range(50):
-            try:
-                get(port, "/v1/queue")
-                break
-            except Exception:
-                time.sleep(0.1)
-        else:
-            print("FATAL: gateway did not boot")
-            return 1
-
+        port, proc = boot_scratch_gateway(
+            wait_path="/v1/queue", python=sys.executable,
+            tries=150, sleep=0.2, env=dict(os.environ))
+    except RuntimeError as e:
+        print("FATAL: %s" % e)
+        return 1
+    try:
         routes = [
             ("model-catalog", "deep"),
             ("forms", "deep"),
@@ -201,8 +180,7 @@ def main():
         except urllib.error.HTTPError as e:
             check("start {} -> 400", e.code == 400, str(e.code))
     finally:
-        os.killpg(proc.pid, signal.SIGTERM)
-        proc.wait(timeout=10)
+        reap_gateway(proc)
 
     print("PASS %d / FAIL %d" % (PASS, FAIL))
     return 1 if FAIL else 0

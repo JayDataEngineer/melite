@@ -4,7 +4,7 @@
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "py"))
+from _anchor import REPO  # noqa: F401 — owns the py/ path insert
 from card_requires import check_card_requires, EXTENSION_NODE_TYPES
 
 

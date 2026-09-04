@@ -25,7 +25,7 @@ import os
 import re
 import unittest
 
-REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
+from _anchor import REPO
 EDITOR = os.path.join(REPO, "plugins", "web", "editor")
 
 MODULE_SRC_RE = re.compile(r'<script[^>]+type="module"[^>]+src="([^"]+)"')

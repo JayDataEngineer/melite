@@ -29,7 +29,7 @@ import time
 import unittest
 import urllib.request
 
-REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
+from _anchor import REPO
 EDITOR = os.path.join(REPO, "plugins", "web", "editor")
 LANES = (
     "e2e/card-harness.spec.ts",

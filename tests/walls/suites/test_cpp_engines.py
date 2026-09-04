@@ -29,8 +29,7 @@ import os
 import sys
 import unittest
 
-_REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
-sys.path.insert(0, os.path.join(_REPO, "py"))
+from _anchor import REPO
 
 import pipeline_graph
 import plugins
@@ -62,7 +61,7 @@ class TestDiscovery(unittest.TestCase):
     def test_cpp_category_dir_is_not_a_plugin(self):
         """plugins/engines/cpp/ has no plugin markers — a category
         container, never discovered as an engine owner itself."""
-        cpp = os.path.join(_REPO, "plugins", "engines", "cpp")
+        cpp = os.path.join(REPO, "plugins", "engines", "cpp")
         self.assertFalse(os.path.isfile(os.path.join(cpp, "plugin.py")))
         self.assertFalse(os.path.isfile(os.path.join(cpp, "plugin.yaml")))
         self.assertFalse(os.path.isdir(os.path.join(cpp, "engines")))
@@ -221,7 +220,7 @@ class TestCardPattern(unittest.TestCase):
 
     def test_every_card_owns_the_pattern_files(self):
         for plugin, card in self.CARDS:
-            root = os.path.join(_REPO, "plugins", "engines", "cpp",
+            root = os.path.join(REPO, "plugins", "engines", "cpp",
                                 plugin, card, "py")
             for fname in ("__init__.py", "card.py", "compose.py",
                           "schema.py", "renderer.py"):
@@ -234,7 +233,7 @@ class TestCardPattern(unittest.TestCase):
         """The plugin compose/__init__ carries the bus-arity door and
         NO inline arm logic: the arm files live in the card trees."""
         for plugin, _card in self.CARDS:
-            init = os.path.join(_REPO, "plugins", "engines", "cpp",
+            init = os.path.join(REPO, "plugins", "engines", "cpp",
                                 plugin, "compose", "__init__.py")
             with open(init, encoding="utf-8") as f:
                 text = f.read()
@@ -251,7 +250,7 @@ class TestRendererArgv(unittest.TestCase):
 
     def _renderer(self, plugin, card_dir, alias):
         import importlib.util
-        pkg = os.path.join(_REPO, "plugins", "engines", "cpp", plugin,
+        pkg = os.path.join(REPO, "plugins", "engines", "cpp", plugin,
                            "action_cards", card_dir, "py")
         spec = importlib.util.spec_from_file_location(
             alias, os.path.join(pkg, "renderer.py"),
@@ -292,7 +291,7 @@ class TestRendererArgv(unittest.TestCase):
 class TestKimodoModelRows(unittest.TestCase):
     def _load(self, family):
         import importlib.util
-        path = os.path.join(_REPO, "plugins/engines/cpp/kimodo/models",
+        path = os.path.join(REPO, "plugins/engines/cpp/kimodo/models",
                             "motion", family, "model.py")
         spec = importlib.util.spec_from_file_location(
             "kimodo_%s_check" % family, path)
@@ -326,7 +325,7 @@ class TestKnobSSOT(unittest.TestCase):
 
     def _fields(self, plugin, card_dir, alias):
         import importlib.util
-        pkg = os.path.join(_REPO, "plugins", "engines", "cpp", plugin,
+        pkg = os.path.join(REPO, "plugins", "engines", "cpp", plugin,
                            "action_cards", card_dir, "py")
         spec = importlib.util.spec_from_file_location(
             alias, os.path.join(pkg, "card.py"),
@@ -340,7 +339,7 @@ class TestKnobSSOT(unittest.TestCase):
         mod = self._fields("anycreature", "creature/forge",
                            "forge_card_check")
         card_fields = {f.name for f in mod.ForgeCard._fields_}
-        mpath = os.path.join(_REPO, "plugins/engines/cpp/anycreature",
+        mpath = os.path.join(REPO, "plugins/engines/cpp/anycreature",
                              "models/creature/anycreature/model.py")
         cls = load_model_py(mpath, "anycreature")
         knob_fields = {row["card"] for row in cls.card_knobs}
@@ -353,7 +352,7 @@ class TestKnobSSOT(unittest.TestCase):
         mod = self._fields("autoremesher", "mesh/quad-remesh",
                            "qr_card_check")
         card_fields = {f.name for f in mod.QuadRemeshCard._fields_}
-        mpath = os.path.join(_REPO, "plugins/engines/cpp/autoremesher",
+        mpath = os.path.join(REPO, "plugins/engines/cpp/autoremesher",
                              "models/3d/autoremesher/model.py")
         cls = load_model_py(mpath, "autoremesher")
         knob_fields = {row["card"] for row in cls.card_knobs}
@@ -363,7 +362,7 @@ class TestKnobSSOT(unittest.TestCase):
         """The yaml knob era is extinct tree-wide — rows live on the
         model class (the music3 pattern)."""
         import glob
-        hits = glob.glob(os.path.join(_REPO, "plugins/engines/cpp",
+        hits = glob.glob(os.path.join(REPO, "plugins/engines/cpp",
                                       "**/card_knobs.yaml"),
                          recursive=True)
         self.assertEqual(hits, [])
@@ -374,7 +373,7 @@ class TestVendorLaw(unittest.TestCase):
         import configparser
         # strict=False: git tolerates duplicate keys (last wins)
         cp = configparser.ConfigParser(strict=False)
-        cp.read(os.path.join(_REPO, ".gitmodules"))
+        cp.read(os.path.join(REPO, ".gitmodules"))
         return {cp.get(s, "path"): cp.get(s, "url") for s in
                 cp.sections() if cp.has_option(s, "path")}
 
@@ -393,19 +392,19 @@ class TestVendorLaw(unittest.TestCase):
             self.assertIn(repo, paths[pin])
 
     def test_vendored_engines_present(self):
-        cli = os.path.join(_REPO, "plugins/engines/cpp/anycreature",
+        cli = os.path.join(REPO, "plugins/engines/cpp/anycreature",
                            "vendor/anyCreature/engine/cli.js")
         self.assertTrue(os.path.isfile(cli), "vendored cli.js missing")
-        capi = os.path.join(_REPO, "plugins/engines/cpp/kimodo",
+        capi = os.path.join(REPO, "plugins/engines/cpp/kimodo",
                             "vendor/kimodo/include/kimodo/kimodo_capi.h")
         self.assertTrue(os.path.isfile(capi),
                         "vendored kimodo C API header missing")
 
     def test_vendored_engines_present(self):
-        cli = os.path.join(_REPO, "plugins/engines/cpp/anycreature",
+        cli = os.path.join(REPO, "plugins/engines/cpp/anycreature",
                            "vendor/anyCreature/engine/cli.js")
         self.assertTrue(os.path.isfile(cli), "vendored cli.js missing")
-        capi = os.path.join(_REPO, "plugins/engines/cpp/kimodo",
+        capi = os.path.join(REPO, "plugins/engines/cpp/kimodo",
                             "vendor/kimodo/include/kimodo/kimodo_capi.h")
         self.assertTrue(os.path.isfile(capi),
                         "vendored kimodo C API header missing")

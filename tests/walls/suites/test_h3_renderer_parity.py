@@ -11,7 +11,7 @@ import json
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[3]
+from _anchor import REPO
 sys.path.insert(0, str(REPO / "plugins" / "engines" / "comfyui" / "compose"))
 
 from co_script import render, reachable, diff, CoScriptError

@@ -25,7 +25,7 @@ import os
 import re
 import unittest
 
-REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
+from _anchor import REPO
 
 # Frontend roots whose wire surface we pin. __tests__/__e2e__ fixtures and
 # spec files are excluded — mock-server tests deliberately cite dead doors.

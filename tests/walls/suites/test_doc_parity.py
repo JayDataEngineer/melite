@@ -20,10 +20,9 @@ Run: python3 tests/walls/suites/test_doc_parity.py   (exit 0 = pass)
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[3]
+from _anchor import REPO
 PLUGIN = REPO / "plugins" / "engines" / "comfyui"
 sys.path.insert(0, str(PLUGIN / "compose"))
-sys.path.insert(0, str(REPO / "py"))
 
 import _coscript  # noqa: E402
 from co_script import registry, render  # noqa: E402
