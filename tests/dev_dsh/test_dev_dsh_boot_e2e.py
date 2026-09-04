@@ -96,15 +96,19 @@ def page_is_healthy(page) -> tuple[bool, str]:
     matched = [p for p in BOOT_FAILURE_PATTERNS if p in body]
     if matched:
         return False, f"boot failure pattern(s) in page body: {matched}"
-    # Positive signal: the DSH shell renders Cards + Files panels.
-    # If we're on a blank page (TLS error, server down), we get neither
-    # the failure patterns NOR the positive signal — flag that.
-    has_shell = ("Cards" in body and "Files" in body) or "Media" in body
+    # Positive signal: the DSH shell renders the New Session screen
+    # (the post-sidebar-retirement baseline: no Cards/Files/Media
+    # sidebar entries — those surfaces were retired on operator order
+    # 2026-09-04). A page where we got neither the failure patterns
+    # NOR the shell is a transport error (TLS, server down, blank).
+    has_shell = ("New Session" in body
+                 and ("Settings" in body or "Workspaces" in body))
     if not has_shell:
         return False, (
             "page rendered without failure patterns but ALSO without "
-            "the DSH shell (Cards/Files/Media) — likely a transport "
-            f"error. Body: {body[:200]!r}"
+            "the DSH shell (New Session / Workspaces / Settings) — "
+            "likely a transport error. "
+            f"Body: {body[:200]!r}"
         )
     return True, body[:200]
 
@@ -128,9 +132,11 @@ def main() -> int:
 
         page_errors: list[str] = []
         console_errors: list[str] = []
+        request_urls: list[str] = []
         page.on("pageerror", lambda e: page_errors.append(str(e)))
         page.on("console", lambda m: console_errors.append(m.text)
                 if m.type == "error" else None)
+        page.on("request", lambda r: request_urls.append(r.url))
 
         # Try the tailnet FQDN first (the canonical dev URL); fall back
         # to local direct if it fails.
@@ -150,9 +156,43 @@ def main() -> int:
         ok, detail = page_is_healthy(page)
         browser.close()
 
+        # ── CLIENT-BUNDLE LOADER SET (2026-09-04 sidebar retirement) ─────
+        # The module loader fetches each dsh.client bundle at
+        # /plugins/<npm-name>/client.js?rev=<hash>. The set of OUR
+        # packages in that list is the browser-side expression of the
+        # no-inference-in-the-sidebar policy:
+        #   - @melite-plugin/dsh-card-view MUST load (the chat cards —
+        #     the main window conversation surface);
+        #   - @melite-plugin/dsh-card-deck MUST NOT (its client half was
+        #     retired; the package is host-only now);
+        #   - @infer-media/dsh-media MUST NOT (the package is deleted);
+        #   - @infer-media/dsh-gallery MAY load (its apply is a no-op
+        #     claim — mounts nothing).
+        fetched = {u.split("/plugins/")[-1].split("/client.js")[0]
+                   for u in request_urls if "/plugins/" in u and "/client.js" in u}
+        must_load = {"@melite-plugin/dsh-card-view"}
+        must_not_load = {"@melite-plugin/dsh-card-deck", "@infer-media/dsh-media"}
+        missing_load = must_load - fetched
+        illegal_load = must_not_load & fetched
+        if missing_load or illegal_load:
+            print(f"[boot-e2e] FAIL — client-bundle loader set drifted at {url}",
+                  file=sys.stderr)
+            if missing_load:
+                print(f"[boot-e2e] approved bundles the loader did NOT fetch: "
+                      f"{sorted(missing_load)} (the chat cards will not render)",
+                      file=sys.stderr)
+            if illegal_load:
+                print(f"[boot-e2e] retired/deleted bundles the loader DID fetch: "
+                      f"{sorted(illegal_load)} — the sidebar retirement regressed",
+                      file=sys.stderr)
+            print(f"[boot-e2e] full fetched set: {sorted(fetched)}", file=sys.stderr)
+            return 1
+
         if ok:
             print(f"[boot-e2e] OK — dev DSH booted cleanly at {url}")
             print(f"[boot-e2e] body preview: {detail}")
+            print(f"[boot-e2e] client bundles loaded: {len(fetched)} "
+                  f"(incl. card-view; deck/media correctly absent)")
             return 0
 
         print(f"[boot-e2e] FAIL — dev DSH boot is broken at {url}", file=sys.stderr)
