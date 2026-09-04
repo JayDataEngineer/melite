@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """The Python gateway — Phase 3 of the everything-is-ComfyUI consolidation.
 
-One file, stdlib only. Replaces the C/C++ server (src/server.cpp and kin)
+One file. Starlette ASGI + uvicorn (no heavyweight deps; the base env
+already carries both). Replaces the C/C++ server (src/server.cpp and kin)
 with the same queue contract the estate already speaks:
 
   POST /v1/flows/start
@@ -48,6 +49,10 @@ import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+from starlette.applications import Starlette
+from starlette.responses import Response
+from starlette.routing import Route as StarRoute, WebSocketRoute as WSRoute
 
 REPO = Path(__file__).resolve().parent.parent
 # SERVER-STATE ROOT LAW (operator order, 2026-09-03: "build was
@@ -834,130 +839,13 @@ def atomic_write(path, obj):
 
 
 # ---------------------------------------------------------------------------
-# http — stdlib asyncio, no framework
+# ASGI transport — starlette + uvicorn
+#
+# The ROUTES table (below) remains the wire SSOT: the catch-all HTTP
+# adapter calls route() to match + dispatch, then converts the
+# (status, payload) tuple into a starlette Response.  WebSocket doors
+# are native starlette WebSocketRoutes — no more hand-rolled RFC 6455.
 # ---------------------------------------------------------------------------
-
-_WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-
-
-def _ws_accept(key: str) -> str:
-    import hashlib
-    return base64.b64encode(
-        hashlib.sha1((key + _WS_GUID).encode()).digest()).decode()
-
-
-def _ws_frame(payload: bytes) -> bytes:
-    """One server->client TEXT frame (server frames are unmasked)."""
-    b1 = 0x81
-    n = len(payload)
-    if n < 126:
-        return bytes([b1, n]) + payload
-    if n < 65536:
-        return bytes([b1, 126]) + struct.pack(">H", n) + payload
-    return bytes([b1, 127]) + struct.pack(">Q", n) + payload
-
-
-async def ws_events_door(gw, reader, writer, headers, run_id):
-    """GET /v1/flows/events/<run_id> with Upgrade: websocket.
-
-    The streaming door (2026-09-02): subscribes to the run's event bus
-    and pushes every frame live — stage flips, per-step progress,
-    activity, the terminal run status. Late joiners hydrate from the
-    current run/stage snapshot first. The 700ms status poll remains the
-    recovery channel (a dropped socket must never lose a run).
-    """
-    import hashlib
-    key = headers.get("sec-websocket-key", "")
-    if not key:
-        writer.close()
-        return
-    accept = base64.b64encode(
-        hashlib.sha1((key + _WS_GUID).encode()).digest()).decode()
-    writer.write((
-        "HTTP/1.1 101 Switching Protocols\r\n"
-        "Upgrade: websocket\r\n"
-        "Connection: Upgrade\r\n"
-        "Sec-WebSocket-Accept: %s\r\n\r\n" % accept).encode())
-    await writer.drain()
-
-    q = gw.subscribe(run_id)
-
-    def send(obj):
-        writer.write(_ws_frame(json.dumps(obj, default=str).encode()))
-        return writer.drain()
-
-    try:
-        # hydrate: the snapshot BEFORE the subscription would race;
-        # subscribe() happened first, so anything between snapshot and
-        # now also arrives on the queue (worst case: one dup frame,
-        # which consumers treat as an idempotent patch).
-        run = gw.runs.get(run_id)
-        if run is None:
-            await send({"type": "run", "status": "unknown"})
-        else:
-            await send({"type": "run", "status": run.status})
-            for st in run.stages:
-                patch = {"type": "stage", "stage": st["id"],
-                         "status": st["status"]}
-                if st.get("progress"):
-                    patch["progress"] = st["progress"]
-                if st.get("activity"):
-                    patch["activity"] = st["activity"]
-                if run.status in ("completed", "failed", "stopped"):
-                    await send(patch)
-        # the read side is ONE persistent task, re-armed only when the
-        # client actually speaks (close/ping). Cancelling a readexactly
-        # mid-frame and re-creating it each loop iteration proved
-        # fragile on 3.14 — a cancelled StreamReader read can surface as
-        # a spurious connection teardown. The q.get() waiter is the only
-        # thing cancelled per round, and every cancellation is AWAITED
-        # (a fire-and-forget cancel can smuggle the CancelledError into
-        # the next await point of THIS coroutine).
-        read_fr = asyncio.ensure_future(_ws_read_client(reader))
-        try:
-            while True:
-                get_ev = asyncio.ensure_future(q.get())
-                done, pending = await asyncio.wait(
-                    {get_ev, read_fr},
-                    return_when=asyncio.FIRST_COMPLETED)
-                if read_fr in done:
-                    opcode = read_fr.result()
-                    if opcode == 0x8:      # client close
-                        get_ev.cancel()
-                        await _swallow(get_ev)
-                        return
-                    if opcode == 0x9:      # ping -> pong (server unmasked)
-                        writer.write(bytes([0x8A, 0x00]))
-                        await writer.drain()
-                    read_fr = asyncio.ensure_future(_ws_read_client(reader))
-                    if get_ev not in done:
-                        get_ev.cancel()
-                        await _swallow(get_ev)
-                        continue
-                elif get_ev in done:
-                    pass                    # fall through to the event send
-                else:                       # unreachable, kept honest
-                    get_ev.cancel()
-                    await _swallow(get_ev)
-                    continue
-                ev = get_ev.result()
-                await send(ev)
-                if ev.get("type") == "run" and ev.get("status") in (
-                        "completed", "failed", "stopped", "unknown"):
-                    read_fr.cancel()
-                    await _swallow(read_fr)
-                    return
-        finally:
-            read_fr.cancel()
-    except (ConnectionError, OSError, asyncio.IncompleteReadError):
-        pass  # client went away
-    finally:
-        gw.unsubscribe(run_id, q)
-        try:
-            writer.close()
-        except Exception:
-            pass
-
 
 async def _swallow(task):
     """Await a cancelled/failed child cleanly so its exception can never
@@ -968,89 +856,117 @@ async def _swallow(task):
         pass
 
 
-async def _ws_read_client(reader):
-    """Read ONE client frame -> opcode (0x8 close, 0x9 ping, ...).
-    Client frames are masked; payload is discarded (we never need it)."""
-    b1 = (await reader.readexactly(1))[0]
-    b2 = (await reader.readexactly(1))[0]
-    length = b2 & 0x7F
-    if length == 126:
-        length = struct.unpack(">H", await reader.readexactly(2))[0]
-    elif length == 127:
-        length = struct.unpack(">Q", await reader.readexactly(8))[0]
-    if b2 & 0x80:
-        await reader.readexactly(4)   # mask key
-    if length:
-        await reader.readexactly(length)
-    return b1 & 0x0F
+async def _ws_starlette(websocket):
+    """Native starlette WebSocket for /v1/flows/events/<run_id>.
 
+    The streaming door (2026-09-02, now transport-agnostic):
+    subscribes to the run's event bus and pushes every frame live —
+    stage flips, per-step progress, activity, the terminal run status.
+    Late joiners hydrate from the current run/stage snapshot first.
+    The 700ms status poll remains the recovery channel.
 
-async def handle(gw, reader, writer):
-    try:
-        line = await asyncio.wait_for(reader.readline(), timeout=30)
-        parts = line.decode().split()
-        if len(parts) < 2:
-            writer.close()
+    Starlette/uvicorn handles RFC 6455 framing, ping/pong, and close
+    handshakes — the ~150 lines of hand-rolled WS helpers are gone.
+    """
+    await websocket.accept()
+    gw = websocket.app.state.gw
+
+    # Parse run_id: path form (/events/<id>) or query form (?run_id=<id>)
+    run_id = websocket.path_params.get("run_id", "")
+    if not run_id:
+        from urllib.parse import parse_qs as _pq, urlparse as _up
+        qs = _pq(_up(str(websocket.url)).query)
+        run_id = (qs.get("run_id") or qs.get("id") or [""])[0]
+        path = websocket.url.path.rstrip("/")
+        if not run_id or path != "/v1/flows/events":
+            await websocket.close()
             return
-        method, target = parts[0], parts[1]
-        headers = {}
-        while True:
-            h = await reader.readline()
-            if h in (b"\r\n", b"\n", b""):
-                break
-            hk, _, hv = h.decode().partition(":")
-            headers[hk.strip().lower()] = hv.strip()
-        length = int(headers.get("content-length", 0) or 0)
-        body = await reader.readexactly(length) if length else b""
-        # the WS door hijacks the connection BEFORE routing (an Upgrade
-        # request must never fall through to a JSON response).
-        if headers.get("upgrade", "").lower() == "websocket":
-            wsm = re.match(r"^/v1/flows/events/(.+)$",
-                           target.split("?")[0].rstrip("/"))
-            # Query form (?run_id=<id> at the BARE /v1/flows/events):
-            # the DSH web-ui proxy registers upgrade tunnels at EXACT
-            # paths only, so the embed connects with the run id in the
-            # query (2026-09-04 live bug: no comfyui feedback in the
-            # DSH embed — the buffered /v1 proxy 502'd every WS
-            # upgrade). Path form stays authoritative (direct editor).
-            if not wsm and method == "GET":
-                from urllib.parse import urlparse as _up, parse_qs as _pq
-                q = _pq(_up(target).query)
-                rid = (q.get("run_id") or q.get("id") or [""])[0]
-                if rid and _up(target).path.rstrip("/") == \
-                        "/v1/flows/events":
-                    wsm = re.match(r"^(.+)$", rid)
-            if wsm and method == "GET":
-                await ws_events_door(gw, reader, writer, headers,
-                                     wsm.group(1))
-                return
-        status, payload = await route(gw, method, target, body)
-    except Exception as e:
-        status, payload = 500, {"error": "%s: %s" % (type(e).__name__, e)}
+
+    q = gw.subscribe(run_id)
+
+    async def _send(obj):
+        await websocket.send_json(obj)
+
+    async def _monitor_client():
+        """Block on client reads; returns (raises) on disconnect."""
+        try:
+            while True:
+                msg = await websocket.receive()
+                if msg.get("type") == "websocket.disconnect":
+                    return
+        except Exception:
+            return
+
     try:
-        # payload may be a 3-tuple (payload, headers_dict, raw_bytes)
-        # for binary routes (asset serving)
-        resp_headers = {}
-        raw = None
-        if isinstance(payload, tuple) and len(payload) == 3:
-            payload, resp_headers, raw = payload
-        if raw is not None:
-            blob = raw
+        # hydrate: the snapshot BEFORE the subscription would race
+        run = gw.runs.get(run_id)
+        if run is None:
+            await _send({"type": "run", "status": "unknown"})
         else:
-            blob = json.dumps(payload, indent=2, default=str).encode()
-        ct = resp_headers.pop("content-type",
-                              "application/json" if raw is None else "application/octet-stream")
-        reason = {200: "OK", 202: "Accepted", 400: "Bad Request",
-                  404: "Not Found", 409: "Conflict"}.get(status, "Error")
-        hdrs = ("HTTP/1.1 %d %s\r\ncontent-type: %s\r\n"
-                "content-length: %d\r\nconnection: close\r\n"
-                % (status, reason, ct, len(blob)))
-        for k, v in resp_headers.items():
-            hdrs += "%s: %s\r\n" % (k, v)
-        writer.write((hdrs + "\r\n").encode() + blob)
-        await writer.drain()
+            await _send({"type": "run", "status": run.status})
+            for st in run.stages:
+                patch = {"type": "stage", "stage": st["id"],
+                         "status": st["status"]}
+                if st.get("progress"):
+                    patch["progress"] = st["progress"]
+                if st.get("activity"):
+                    patch["activity"] = st["activity"]
+                if run.status in ("completed", "failed", "stopped"):
+                    await _send(patch)
+
+        # event loop: multiplex queue events and client reads
+        read_mon = asyncio.ensure_future(_monitor_client())
+        try:
+            while True:
+                get_ev = asyncio.ensure_future(q.get())
+                done, pending = await asyncio.wait(
+                    {get_ev, read_mon},
+                    return_when=asyncio.FIRST_COMPLETED)
+                if read_mon in done:
+                    get_ev.cancel()
+                    await _swallow(get_ev)
+                    return
+                if get_ev not in done:
+                    get_ev.cancel()
+                    await _swallow(get_ev)
+                    continue
+                ev = get_ev.result()
+                await _send(ev)
+                if ev.get("type") == "run" and ev.get("status") in (
+                        "completed", "failed", "stopped", "unknown"):
+                    read_mon.cancel()
+                    await _swallow(read_mon)
+                    return
+        finally:
+            read_mon.cancel()
+            await _swallow(read_mon)
+    except Exception:
+        pass  # client went away
     finally:
-        writer.close()
+        gw.unsubscribe(run_id, q)
+
+
+async def _adapt(request):
+    """Starlette→legacy bridge: match the request against the ROUTES
+    table, call the handler, convert (status, payload) → Response.
+
+    This is the ONLY new dispatch code; the ROUTES table, _Ctx, and
+    every _h_* handler are unchanged.  The goldens own response bodies;
+    this adapter serializes them identically (indent=2, default=str)."""
+    gw = request.app.state.gw
+    body = await request.body()
+    target = request.url.path + ("?" + request.url.query
+                                 if request.url.query else "")
+    status, payload = await route(gw, request.method, target, body)
+    if isinstance(payload, tuple) and len(payload) == 3:
+        _, resp_headers, raw = payload
+        ct = resp_headers.pop("content-type",
+                              "application/octet-stream")
+        return Response(content=raw, status_code=status,
+                        headers=resp_headers, media_type=ct)
+    return Response(
+        content=json.dumps(payload, indent=2, default=str).encode(),
+        status_code=status, media_type="application/json")
 
 
 # ---------------------------------------------------------------------------
@@ -1617,20 +1533,45 @@ def ledger_tail(target):
 async def main(port):
     gw = Gateway()
     swept = boot_sweep()
-    loop = asyncio.get_running_loop()
-    for sig in (signal.SIGTERM, signal.SIGINT):
-        try:
-            loop.add_signal_handler(
-                sig, lambda s=sig: asyncio.ensure_future(gw.shutdown()))
-        except NotImplementedError:
-            pass
-    loop.create_task(gw.worker())
     ledger("server.boot", {"port": port, "swept": swept,
                            "engine": "python-orchestrator"})
-    server = await asyncio.start_server(lambda r, w: handle(gw, r, w), "127.0.0.1", port)
-    print("python gateway on 127.0.0.1:%d (queue: serial FIFO, laws intact; boot sweep: %d)" % (port, swept), flush=True)
-    async with server:
-        await server.serve_forever()
+
+    # Starlette lifespan: startup boots the worker, shutdown marks
+    # active runs stopped and exits (RESILIENCE LAW).
+    from contextlib import asynccontextmanager
+
+    @asynccontextmanager
+    async def _lifespan(application):
+        loop = asyncio.get_running_loop()
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            try:
+                loop.add_signal_handler(
+                    sig, lambda s=sig: asyncio.ensure_future(gw.shutdown()))
+            except NotImplementedError:
+                pass
+        asyncio.create_task(gw.worker())
+        yield
+
+    # Build starlette routes:
+    # - one catch-all HTTP route → _adapt (matches against ROUTES table)
+    # - two WebSocketRoutes for the events door (path + query forms)
+    app = Starlette(
+        lifespan=_lifespan,
+        routes=[
+            WSRoute("/v1/flows/events/{run_id:path}", _ws_starlette),
+            WSRoute("/v1/flows/events", _ws_starlette),
+            StarRoute("/{path:path}", _adapt,
+                      methods=["GET", "POST", "DELETE", "PUT",
+                               "PATCH", "OPTIONS", "HEAD"]),
+        ],
+    )
+    app.state.gw = gw
+
+    import uvicorn
+    config = uvicorn.Config(app, host="127.0.0.1", port=port,
+                            log_level="info")
+    server = uvicorn.Server(config)
+    await server.serve()
 
 
 if __name__ == "__main__":
