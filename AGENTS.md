@@ -43,7 +43,12 @@
   (py/flow.py `flow_from_body`; agent-constructed multi-step flows
   compiled by the identical validators — `POST /v1/flows/validate`
   returns verbatim compile refusals so the AI iterates without a
-  queue slot, a GPU claim, or a sidecar) —
+  queue slot, a GPU claim, or a sidecar; the compiled body rides the
+  DRAFT doc (`flow` member, stage ids shared with the card rows) and
+  the card surface's Run posts it as ONE `{flow_inline}` run —
+  current card params overlay per stage id at start, drift refuses
+  loudly, only gateway-honored body keys are sent — run wiring
+  design record docs/queue/flows.md) —
   or `{model}` for card-only models (the plugin compose hook builds
   the graph). Naming more than one door is an ambiguous request and
   refuses BEFORE registration. The `{pipeline:{steps}}` door named
