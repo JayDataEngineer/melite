@@ -1490,6 +1490,18 @@ def form_spec(repo_root, model_id):
     frag = _card_spec(repo_root, row["id"])
     if frag:
         spec.update(frag)
+    # INTERSECT defaults with the card's declared fields (the
+    # form-surface shouldn't advertise a model default the card has
+    # no input for — a phantom slot the editor would render as a
+    # value with no backing control). The card stays the source of
+    # truth for what the form surface ships. Caught by the
+    # test_form_defaults wall (h3-timeline's fps=24 model default
+    # was leaking through; fps is a fixed grid constant the h3 card
+    # deliberately does not expose).
+    if frag and (frag.get("fields") or []):
+        declared = {f.get("name") for f in frag["fields"] if f.get("name")}
+        spec["defaults"] = {k: v for k, v in spec["defaults"].items()
+                            if k in declared}
     return 200, spec
 
 

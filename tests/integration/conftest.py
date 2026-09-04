@@ -136,6 +136,13 @@ def gateway():
 
 
 @pytest.fixture(scope="session")
+def gateway_port(gateway):
+    """The scratch gateway's port (the form-spec door lives on the
+    same gateway the queue door uses — same process, different routes)."""
+    return gateway.port
+
+
+@pytest.fixture(scope="session")
 def assets():
     """Feed-in assets (committed, deterministic — GPU output varies,
     input must not). tests/integration/assets/."""
@@ -150,5 +157,7 @@ def assets():
     # (e.g. the barycentric bary_little_girl) deviates ~43cm and
     # the gate refuses (caught live 2026-09-04: the gate is honest).
     rig = d / "rigged_char_canonical.glb"
+    outfit = d / "outfit_cap.glb"
     return {"source": str(src),
-            "rigged_glb": str(rig) if rig.is_file() else ""}
+            "rigged_glb": str(rig) if rig.is_file() else "",
+            "outfit_glb": str(outfit) if outfit.is_file() else ""}
