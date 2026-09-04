@@ -78,8 +78,10 @@ rig, not a borderline silhouette.
 
 - `step1x_texture` OSError `stable-diffusion-xl-base-1.0 not cached`:
   SDXL base missing + Hub unreachable (seen live 2026-08-25, run
-  pmt7yay1iqhklf6). Provision the model (`POST /v1/models/provision`)
-  or restore network, then re-run — earlier bricks reuse from cache.
+  pmt7yay1iqhklf6). Provision the model through the ONE management
+  door (`POST /v1/manage` with `{"action": "provision_model", ...}` —
+  the C-era `/v1/models/provision` door was cut 2026-09-03) or restore
+  network, then re-run — earlier bricks reuse from cache.
 - TRELLIS garment comes out blobby: concept image too flat/dark —
   re-shoot the prompt with stronger three-quarter form lighting.
 

@@ -68,6 +68,13 @@ TEST_OUT_ROOT = STATE_ROOT / "test-output"
 
 IDENT_RE = re.compile(r"^[a-z_][a-z0-9_-]*$")
 
+# The artifact-serving URL prefix — owned by editor_runs (the asset
+# door implementation); stamped here for stage url/gallery and the
+# route row. One constant, no restated coordinates. (Phase 2
+# consolidation, 2026-09-04: moved from /editor/assets/runs — outside
+# /v1 — to the assets family.)
+from editor_runs import ASSET_URL_PREFIX  # noqa: E402
+
 
 class ValidationError(Exception):
     """Loud 4xx before any run is registered (QUEUE LANE LAW)."""
@@ -624,14 +631,14 @@ class Gateway:
                     # collectStageUrls(status.stages) got [] and the
                     # finished card rendered NO artifact. Stamp this
                     # stage's own engine artifacts as url (primary) +
-                    # gallery (every) in the SAME /editor/assets/runs/
+                    # gallery (every) in the SAME /v1/assets/runs/
                     # form the runs list serves. Generic: basename only,
                     # no lane knowledge; per-stage attribution is exact
                     # because it happens HERE, inside this stage's turn.
                     stage_arts = [os.path.basename(str(a))
                                   for a in result.get("artifacts", []) if a]
                     if stage_arts:
-                        base = "/editor/assets/runs/%s/" % run.run_id
+                        base = ASSET_URL_PREFIX + "/%s/" % run.run_id
                         stage["url"] = base + stage_arts[0]
                         stage["gallery"] = [
                             {"url": base + n, "name": n} for n in stage_arts]
@@ -1046,300 +1053,533 @@ async def handle(gw, reader, writer):
         writer.close()
 
 
+# ---------------------------------------------------------------------------
+# the route table — the wire SSOT (dispatch as DATA)
+#
+# Every HTTP door is a row. tools/gen_api_docs.py generates
+# docs/gateway/endpoints.md + docs/gateway/openapi.yaml FROM these rows,
+# and tests/walls/suites/test_api_doc_parity.py refuses drift between
+# table, doc, and spec. The goldens (tests/golden_http/) stay the byte
+# authority for response BODIES; this table is the authority for the
+# PATH LIST. WS rows are marked ws=True — handle() hijacks the
+# connection before dispatch, so their handler is the non-upgrade
+# fallback (the historical unmatched-route 404, byte-identical).
+# ---------------------------------------------------------------------------
+
+
+class _Ctx:
+    """One matched request: everything a handler may read."""
+    __slots__ = ("gw", "method", "path", "target", "qs", "body", "json",
+                 "m", "row")
+
+    def __init__(self, gw, method, path, target, qs, body):
+        self.gw = gw
+        self.method = method
+        self.path = path
+        self.target = target
+        self.qs = qs
+        self.body = body
+        self.json = None
+        self.m = None
+        self.row = None
+
+    def q(self, name, default=None):
+        return self.qs.get(name, [default])[0]
+
+
+@dataclass(frozen=True)
+class Route:
+    method: str = "*"          # "GET" | "POST" | "DELETE" | "A|B" | "*"
+    path: str = ""             # literal path; regex when regex=True
+    template: str = ""         # doc/openapi form ("/v1/flows/status/{run_id}")
+    group: str = ""            # doc group heading
+    summary: str = ""          # one line for generated docs
+    query: tuple = ()          # documented query parameter names
+    body: str = "none"         # none | strict | lenient | raw
+    regex: bool = False
+    ws: bool = False           # websocket door (hijacked in handle())
+    attr: str = ""             # chrome stubs: editor_runs attribute
+    handler: object = None
+
+
+async def _h_flows_start(ctx):
+    try:
+        run = await ctx.gw.submit(ctx.json)
+    except ValidationError as e:
+        return 400, {"error": str(e)}
+    return 202, {"run_id": run.run_id, "status": run.status}
+
+
+async def _h_queue(ctx):
+    gw = ctx.gw
+    return 200, {
+        "queued": len(gw.order),
+        "running": 1 if gw.active else 0,
+        "active": gw.active.run_id if gw.active else "",
+        "queued_ids": list(gw.order),
+    }
+
+
+async def _h_flows_status(ctx):
+    rid = ctx.m.group(1)
+    run = ctx.gw.runs.get(rid)
+    if run is None:
+        stored = sidecar_status(rid)
+        if stored is None:
+            return 404, {"error": "unknown run_id"}
+        return 200, stored
+    return 200, {
+        "run_id": run.run_id,
+        "status": run.status,
+        "stages": run.stages,
+        "artifacts": run.artifacts,
+        "error": run.error,
+        "queue_position": (ctx.gw.order.index(run.run_id)
+                           if run.run_id in ctx.gw.order else 0),
+    }
+
+
+async def _h_flows_stop(ctx):
+    try:
+        return 200, await ctx.gw.stop(ctx.m.group(1))
+    except ValidationError as e:
+        return 400, {"error": str(e)}
+
+
+async def _h_ws_fallback(ctx):
+    """Non-upgrade reach of a WS door: the unmatched-route 404 the
+    if-chain era served (wire parity)."""
+    return 404, {"error": "no such route %s %s" % (ctx.method, ctx.path)}
+
+
+async def _h_runs_list(ctx):
+    import editor_runs as _er
+    return 200, _er.runs(str(STATE_ROOT))
+
+
+async def _h_run_detail(ctx):
+    import editor_runs as _er
+    return _er.run_detail(str(STATE_ROOT), ctx.m.group(1))
+
+
+async def _h_resume(ctx):
+    import editor_runs as _er
+    rid = ctx.path.split("/")[-1]
+    return _er.resume(str(STATE_ROOT), rid, ctx.json,
+                      flows_root=str(REPO / "flows"))
+
+
+async def _h_model_catalog(ctx):
+    import catalog as _cat
+    return 200, json.loads(_cat.to_json(_cat.scan_catalog(str(REPO))))
+
+
+async def _h_model_one(ctx):
+    import catalog as _cat
+    row = _cat.find_model(_cat.scan_catalog(str(REPO)), ctx.m.group(1))
+    if row is None:
+        return 404, {"error": "model not found"}
+    return 200, row
+
+
+async def _h_forms(ctx):
+    import editor_forms as _ef
+    return 200, _ef.forms(str(REPO))
+
+
+async def _h_kinds(ctx):
+    import editor_forms as _ef
+    return 200, _ef.kinds(str(REPO))
+
+
+async def _h_form_spec(ctx):
+    import editor_forms as _ef
+    code, spec = _ef.form_spec(str(REPO), ctx.q("model", ""))
+    return code, spec
+
+
+async def _h_family_schemas(ctx):
+    import editor_runs as _er
+    return 200, _er.family_param_schemas(
+        _er.catalog_family_ids(str(REPO / "plugins")))
+
+
+async def _h_family_schema_one(ctx):
+    import editor_runs as _er
+    return _er.family_param_schema(
+        _er.catalog_family_ids(str(REPO / "plugins")), ctx.m.group(1))
+
+
+async def _h_yaml_list(ctx):
+    import editor_runs as _er
+    return 200, _er.yaml_list(str(REPO / "flows"))
+
+
+async def _h_yaml_detail(ctx):
+    import editor_runs as _er
+    return _er.yaml_detail(str(REPO / "flows"), ctx.q("yaml", "") or None)
+
+
+async def _h_yaml_save(ctx):
+    import editor_runs as _er
+    return _er.yaml_save(str(REPO / "flows"), ctx.json)
+
+
+async def _h_yaml_delete(ctx):
+    import editor_runs as _er
+    fname = ctx.q("filename")
+    if fname is None and ctx.method == "POST":
+        try:
+            fname = json.loads(ctx.body.decode() or "{}").get("filename")
+        except json.JSONDecodeError:
+            pass
+    return _er.yaml_delete(str(REPO / "flows"), fname)
+
+
+async def _h_yaml_rename(ctx):
+    import editor_runs as _er
+    return _er.yaml_rename(str(REPO / "flows"), ctx.json)
+
+
+async def _h_yaml_validate(ctx):
+    import editor_runs as _er
+    return _er.yaml_validate(str(REPO / "flows"), ctx.json)
+
+
+async def _h_yaml_validate_simple(ctx):
+    import editor_runs as _er
+    return _er.yaml_validate_simple(str(REPO / "flows"), ctx.json)
+
+
+async def _h_drafts_list(ctx):
+    import editor_runs as _er
+    return 200, _er.drafts_list(str(STATE_ROOT / "drafts"))
+
+
+async def _h_drafts_save(ctx):
+    import editor_runs as _er
+    return _er.drafts_save(str(STATE_ROOT / "drafts"), ctx.json)
+
+
+async def _h_drafts_get(ctx):
+    import editor_runs as _er
+    return _er.drafts_get(str(STATE_ROOT / "drafts"), ctx.m.group(1))
+
+
+async def _h_asset(ctx):
+    import editor_runs as _er
+    rel = ctx.path[len(ASSET_URL_PREFIX + "/"):]
+    code, data, ctype = _er.serve_asset(str(STATE_ROOT), rel)
+    if code == 200:
+        return code, ({}, {"content-type": ctype}, data)
+    return code, {"error": "not found"} if code == 404 else data
+
+
+async def _h_ledger(ctx):
+    return 200, ledger_tail(ctx.target)
+
+
+async def _h_assets_index(ctx):
+    import asset_ledger as _al
+    try:
+        _lim = int(ctx.q("limit", "200") or 200)
+    except ValueError:
+        _lim = 200
+    _include_test = (ctx.q("include_test", "false") or "").lower() \
+        in ("1", "true", "yes")
+    _root = TEST_OUT_ROOT if _include_test else OUT_ROOT
+    # reading TEST_OUT_ROOT, the directory IS the test filter; bypass
+    # L2's sidecar filter (everything there is test-tagged). For
+    # OUT_ROOT, keep L2 as defense-in-depth (test/prod barrier).
+    _idx_include_test = True if _include_test else False
+    if _include_test:
+        ledger("assets.include_test", {"limit": _lim})
+    return 200, _al.assets_index(
+        str(_root), run=ctx.q("run"), kind=ctx.q("kind"), limit=_lim,
+        include_test=_idx_include_test)
+
+
+async def _h_card_tools(ctx):
+    import lane_disclosure as _ld
+    return 200, _ld.card_tools()
+
+
+async def _h_skills(ctx):
+    import lane_disclosure as _ld
+    return 200, _ld.skill_index()
+
+
+async def _h_lanes(ctx):
+    import lane_disclosure as _ld
+    return 200, _ld.peek(ctx.q("kind"), ctx.q("genre"))
+
+
+async def _h_skill_read(ctx):
+    import lane_disclosure as _ld
+    from urllib.parse import unquote as _uq
+    return _ld.skill_read(_uq(ctx.m.group(1)), ledger)
+
+
+async def _h_lane_bundle(ctx):
+    import lane_disclosure as _ld
+    from urllib.parse import unquote as _uq
+    return _ld.lane_bundle(_uq(ctx.m.group(1)), ctx.q("kind"))
+
+
+async def _h_manage(ctx):
+    body_json = ctx.json
+    import sys as _sys
+    if str(REPO / "py") not in _sys.path:
+        _sys.path.insert(0, str(REPO / "py"))
+    try:
+        import comfy_mcp                           # noqa: F401 — the plane
+        import manage as _mg                       # in-process (fast)
+        return _mg.dispatch(body_json)
+    except ImportError:
+        pass                                       # base env below
+    import subprocess as _sp
+    _runner = (
+        "import sys, json;"
+        "sys.path.insert(0, %r);"
+        "import manage;"
+        "c, r = manage.dispatch(json.loads(sys.stdin.read()));"
+        "print(json.dumps([c, r]))"
+    ) % str(REPO / "py")
+    _py = REPO / ".venv" / "bin" / "python"
+    if not _py.is_file():
+        return 503, {"action": body_json.get("action", "?"),
+                     "ok": False,
+                     "detail": "management plane unavailable: no "
+                               "base-env python at %s (uv sync)" % _py}
+    try:
+        r = _sp.run([str(_py), "-c", _runner],
+                    input=json.dumps(body_json), capture_output=True,
+                    text=True, timeout=900)
+        if r.returncode == 0 and r.stdout.strip():
+            code, rep = json.loads(r.stdout.strip().splitlines()[-1])
+            return int(code), rep
+        return 502, {"action": body_json.get("action", "?"),
+                     "ok": False,
+                     "detail": "manage runner failed",
+                     "data": {"stderr": r.stderr[-500:]}}
+    except _sp.TimeoutExpired:
+        return 504, {"action": body_json.get("action", "?"),
+                     "ok": False,
+                     "detail": "manage action timed out (900s)"}
+
+
+async def _h_health(ctx):
+    import editor_runs as _er
+    return 200, _er.health()
+
+
+async def _h_chrome(ctx):
+    import editor_runs as _er
+    return 200, getattr(_er, ctx.row.attr)()
+
+
+ROUTES: tuple = (
+    # ── Queue & runs (INFERENCE LAW: everything through the queue) ──
+    Route(method="POST", path="/v1/flows/start", group="Queue & runs",
+          summary="Submit: {flow:name} or {model:id,...} — explicit, "
+                  "4xx BEFORE registration (QUEUE LANE LAW)",
+          body="strict", handler=_h_flows_start),
+    Route(method="GET", path="/v1/queue", group="Queue & runs",
+          summary="Queue snapshot (queued/running/active)", handler=_h_queue),
+    Route(method="GET", path=r"^/v1/flows/status/(.+)$", regex=True,
+          template="/v1/flows/status/{run_id}", group="Queue & runs",
+          summary="Status + stages + artifacts + queue position",
+          handler=_h_flows_status),
+    Route(method="POST", path=r"^/v1/flows/stop/(.+)$", regex=True,
+          template="/v1/flows/stop/{run_id}", group="Queue & runs",
+          summary="The stop door (<6s, /interrupt, reports stopped)",
+          handler=_h_flows_stop),
+    Route(method="GET", path=r"^/v1/flows/events/(.+)$", regex=True, ws=True,
+          template="/v1/flows/events/{run_id}", group="Queue & runs",
+          summary="WS streaming door (path form; hijacked on Upgrade)",
+          handler=_h_ws_fallback),
+    Route(method="GET", path="/v1/flows/events", ws=True,
+          template="/v1/flows/events?run_id={run_id}", group="Queue & runs",
+          summary="WS streaming door (query form for exact-path proxies)",
+          handler=_h_ws_fallback),
+    Route(method="GET", path="/v1/flows/runs", group="Queue & runs",
+          summary="Run history (sidecar-derived rows, click-contract)",
+          handler=_h_runs_list),
+    Route(method="GET", path=r"^/v1/flows/runs/(.+)$", regex=True,
+          template="/v1/flows/runs/{run_id}", group="Queue & runs",
+          summary="One run", handler=_h_run_detail),
+    Route(method="POST", path=r"^/v1/flows/resume/", regex=True,
+          template="/v1/flows/resume/{run_id}", group="Queue & runs",
+          summary="Resume a stopped run", body="lenient", handler=_h_resume),
+
+    # ── Assets & ledger ──────────────────────────────────────────────
+    Route(method="GET", path="/v1/assets", group="Assets & ledger",
+          summary="Cross-run asset index (typed rows from disk at read "
+                  "time; ?run= ?kind= ?limit= ?include_test=)",
+          query=("run", "kind", "limit", "include_test"),
+          handler=_h_assets_index),
+    Route(method="GET", path="/v1/ledger", group="Assets & ledger",
+          summary="Tail the append-only journal (?limit= ?event= prefix)",
+          query=("limit", "event"), handler=_h_ledger),
+    Route(method="GET", path=r"^/v1/assets/runs/", regex=True,
+          template="/v1/assets/runs/{run_id}/{file}",
+          group="Assets & ledger",
+          summary="Stream one artifact (the only tree the gallery "
+                  "proxy may touch)", handler=_h_asset),
+
+    # ── Lane discovery (progressive disclosure) ──────────────────────
+    Route(method="GET", path="/v1/lanes", group="Lane discovery",
+          summary="The lane table (peek tier; ?kind= ?genre=)",
+          query=("kind", "genre"), handler=_h_lanes),
+    Route(method="GET", path="/v1/kinds", group="Lane discovery",
+          summary="The kind vocabulary", handler=_h_kinds),
+    Route(method="GET", path="/v1/card-tools", group="Lane discovery",
+          summary="Every card manifest (the lane list source)",
+          handler=_h_card_tools),
+    Route(method="GET", path=r"^/v1/cards/([^/]+)/bundle$", regex=True,
+          template="/v1/cards/{lane}/bundle", group="Lane discovery",
+          summary="One lane bundle: tools + skills + agent doc (?kind=)",
+          query=("kind",), handler=_h_lane_bundle),
+    Route(method="GET", path="/v1/skills", group="Lane discovery",
+          summary="The cheap skill index", handler=_h_skills),
+    Route(method="GET", path=r"^/v1/skills/([^/]+)$", regex=True,
+          template="/v1/skills/{id}", group="Lane discovery",
+          summary="One skill body (ledgered skill.read)",
+          handler=_h_skill_read),
+
+    # ── Models & forms ───────────────────────────────────────────────
+    Route(method="GET", path="/v1/model-catalog", group="Models & forms",
+          summary="The catalog (families, variants, cells)",
+          handler=_h_model_catalog),
+    Route(method="GET", path=r"^/v1/model-catalog/(.+)$", regex=True,
+          template="/v1/model-catalog/{id}", group="Models & forms",
+          summary="One model's card row", handler=_h_model_one),
+    Route(method="GET", path="/v1/forms", group="Models & forms",
+          summary="Editor forms", handler=_h_forms),
+    Route(method="GET", path="/v1/form-spec", group="Models & forms",
+          summary="Form spec (?model=)", query=("model",),
+          handler=_h_form_spec),
+    Route(method="*", path="/v1/flows/families/param-schemas",
+          template="/v1/flows/families/param-schemas",
+          group="Models & forms",
+          summary="Family param schemas (all families)",
+          handler=_h_family_schemas),
+    Route(method="GET", path=r"^/v1/flows/families/(.+)/param-schema$",
+          regex=True, template="/v1/flows/families/{family}/param-schema",
+          group="Models & forms", summary="One family's param schema",
+          handler=_h_family_schema_one),
+
+    # ── Templates & drafts (the flow.yaml library the editor edits) ──
+    Route(method="GET", path="/v1/flows/yaml/list",
+          group="Templates & drafts",
+          summary="Served templates (literal api: true gate)",
+          handler=_h_yaml_list),
+    Route(method="GET", path="/v1/flows/yaml/detail",
+          group="Templates & drafts", summary="One template (?yaml=)",
+          query=("yaml",), handler=_h_yaml_detail),
+    Route(method="POST", path="/v1/flows/yaml/save",
+          group="Templates & drafts", summary="Save", body="strict",
+          handler=_h_yaml_save),
+    Route(method="POST", path="/v1/flows/yaml/rename",
+          group="Templates & drafts", summary="Rename", body="strict",
+          handler=_h_yaml_rename),
+    Route(method="DELETE|POST", path="/v1/flows/yaml/delete",
+          group="Templates & drafts",
+          summary="Delete (?filename= or {filename})", body="raw",
+          handler=_h_yaml_delete),
+    Route(method="POST", path="/v1/flows/yaml/validate",
+          group="Templates & drafts",
+          summary="Contract-pinned 404 (no such C route; shape kept)",
+          body="lenient", handler=_h_yaml_validate),
+    Route(method="POST", path="/v1/flows/yaml/validate-simple",
+          group="Templates & drafts",
+          summary="Contract-pinned 404 (no such C route; shape kept)",
+          body="lenient", handler=_h_yaml_validate_simple),
+    Route(method="GET", path="/v1/flows/drafts", group="Templates & drafts",
+          summary="Draft rows (params docs; click-contract)",
+          handler=_h_drafts_list),
+    Route(method="POST", path="/v1/flows/drafts", group="Templates & drafts",
+          summary="Save a draft", body="strict", handler=_h_drafts_save),
+    Route(method="GET", path=r"^/v1/flows/drafts/(.+)$", regex=True,
+          template="/v1/flows/drafts/{draft_id}",
+          group="Templates & drafts", summary="One draft",
+          handler=_h_drafts_get),
+
+    # ── Management (ONE door) ────────────────────────────────────────
+    Route(method="POST", path="/v1/manage", group="Management",
+          summary="comfy_manage actions: provision_model, install_node, "
+                  "download_model, ... (comfy-mcp in-process; falls back "
+                  "to base-env runner)",
+          body="strict", handler=_h_manage),
+
+    # ── Health & chrome ──────────────────────────────────────────────
+    Route(method="GET", path="/v1/health", group="Health & chrome",
+          summary="Liveness", handler=_h_health),
+    Route(method="GET", path="/v1/themes", group="Health & chrome",
+          attr="themes",
+          summary="Chrome stub (the deck expects the shape)",
+          handler=_h_chrome),
+    Route(method="GET", path="/v1/tags", group="Health & chrome",
+          attr="tags", summary="Chrome stub (the deck expects the shape)",
+          handler=_h_chrome),
+    Route(method="GET", path="/v1/services", group="Health & chrome",
+          attr="services",
+          summary="Chrome stub (the deck expects the shape)",
+          handler=_h_chrome),
+    Route(method="GET", path="/v1/right-panes", group="Health & chrome",
+          attr="right_panes",
+          summary="Chrome stub (the deck expects the shape)",
+          handler=_h_chrome),
+    Route(method="GET", path="/v1/ui-slots", group="Health & chrome",
+          attr="ui_slots",
+          summary="DERIVED from plugin ui.yaml claims",
+          handler=_h_chrome),
+    Route(method="GET", path="/v1/tools", group="Health & chrome",
+          attr="tools", summary="DERIVED from card classes",
+          handler=_h_chrome),
+    Route(method="GET", path="/v1/shell", group="Health & chrome",
+          attr="shell",
+          summary="Chrome stub (the deck expects the shape)",
+          handler=_h_chrome),
+    Route(method="GET", path="/v1/plugins", group="Health & chrome",
+          attr="plugins_registry",
+          summary="Chrome stub (the deck expects the shape)",
+          handler=_h_chrome),
+    Route(method="GET", path="/v1/models", group="Health & chrome",
+          attr="models",
+          summary="OpenAI-compat model list (custom format + empty "
+                  "list — docs/gateway/openai-compat.md)",
+          handler=_h_chrome),
+)
+
+
 async def route(gw, method, target, body):
-    path = target.split("?")[0].rstrip("/") or "/"
     from urllib.parse import urlparse, parse_qs
+    path = target.split("?")[0].rstrip("/") or "/"
     qs = parse_qs(urlparse(target).query)
-
-    # ── QUEUE LANE LAW: start/status/stop (py gateway core) ──────────
-    if method == "POST" and path == "/v1/flows/start":
-        try:
-            req = json.loads(body.decode() or "{}")
-        except json.JSONDecodeError as e:
-            return 400, {"error": "bad JSON: %s" % e}
-        try:
-            run = await gw.submit(req)
-        except ValidationError as e:
-            return 400, {"error": str(e)}
-        return 202, {"run_id": run.run_id, "status": run.status}
-    if method == "GET" and path == "/v1/queue":
-        return 200, {
-            "queued": len(gw.order),
-            "running": 1 if gw.active else 0,
-            "active": gw.active.run_id if gw.active else "",
-            "queued_ids": list(gw.order),
-        }
-    m = re.match(r"^/v1/flows/status/(.+)$", path)
-    if method == "GET" and m:
-        run = gw.runs.get(m.group(1))
-        if run is None:
-            stored = sidecar_status(m.group(1))
-            if stored is None:
-                return 404, {"error": "unknown run_id"}
-            return 200, stored
-        return 200, {
-            "run_id": run.run_id,
-            "status": run.status,
-            "stages": run.stages,
-            "artifacts": run.artifacts,
-            "error": run.error,
-            "queue_position": gw.order.index(run.run_id) if run.run_id in gw.order else 0,
-        }
-    m = re.match(r"^/v1/flows/stop/(.+)$", path)
-    if method == "POST" and m:
-        try:
-            return 200, await gw.stop(m.group(1))
-        except ValidationError as e:
-            return 400, {"error": str(e)}
-
-    # ── CATALOG (editor surface — py/catalog.py) ─────────────────────
-    if method == "GET" and path == "/v1/model-catalog":
-        import catalog as _cat
-        return 200, json.loads(_cat.to_json(_cat.scan_catalog(str(REPO))))
-    m = re.match(r"^/v1/model/(.+)$", path)
-    if method == "GET" and m:
-        import catalog as _cat
-        row = _cat.find_model(_cat.scan_catalog(str(REPO)), m.group(1))
-        if row is None:
-            return 404, {"error": "model not found"}
-        return 200, row
-
-    # ── FORMS / KINDS / FORM-SPEC (py/editor_forms.py) ──────────────
-    if method == "GET" and path == "/v1/forms":
-        import editor_forms as _ef
-        return 200, _ef.forms(str(REPO))
-    if method == "GET" and path == "/v1/kinds":
-        import editor_forms as _ef
-        return 200, _ef.kinds(str(REPO))
-    if method == "GET" and path == "/v1/form-spec":
-        import editor_forms as _ef
-        model = qs.get("model", [""])[0]
-        code, spec = _ef.form_spec(str(REPO), model)
-        return code, spec
-
-    # ── EDITOR DATA SURFACE (py/editor_runs.py) ──────────────────────
-    if method == "GET" and path == "/v1/flows/runs":
-        import editor_runs as _er
-        return 200, _er.runs(str(STATE_ROOT))
-    m = re.match(r"^/v1/flows/runs/(.+)$", path)
-    if method == "GET" and m:
-        import editor_runs as _er
-        return _er.run_detail(str(STATE_ROOT), m.group(1))
-    if method == "GET" and path == "/v1/flows/yaml/list":
-        import editor_runs as _er
-        return 200, _er.yaml_list(str(REPO / "flows"))
-    if method == "GET" and path == "/v1/flows/yaml/detail":
-        import editor_runs as _er
-        yaml_name = qs.get("yaml", [""])[0]
-        return _er.yaml_detail(str(REPO / "flows"), yaml_name or None)
-    if method == "POST" and path == "/v1/flows/yaml/save":
-        import editor_runs as _er
-        try:
-            body_json = json.loads(body.decode() or "{}")
-        except json.JSONDecodeError as e:
-            return 400, {"error": "bad JSON: %s" % e}
-        return _er.yaml_save(str(REPO / "flows"), body_json)
-    if method in ("DELETE", "POST") and path == "/v1/flows/yaml/delete":
-        import editor_runs as _er
-        fname = qs.get("filename", [None])[0]
-        if fname is None and method == "POST":
+    ctx = _Ctx(gw, method, path, target, qs, body)
+    for row in ROUTES:
+        if row.method != "*" and method not in row.method.split("|"):
+            continue
+        if row.regex:
+            m = re.match(row.path, path)
+            if not m:
+                continue
+            ctx.m = m
+        elif path != row.path:
+            continue
+        ctx.row = row
+        if row.body == "strict":
             try:
-                body_json = json.loads(body.decode() or "{}")
-                fname = body_json.get("filename")
+                ctx.json = json.loads(body.decode() or "{}")
+            except json.JSONDecodeError as e:
+                return 400, {"error": "bad JSON: %s" % e}
+        elif row.body == "lenient":
+            try:
+                ctx.json = json.loads(body.decode() or "{}")
             except json.JSONDecodeError:
-                pass
-        return _er.yaml_delete(str(REPO / "flows"), fname)
-    if method == "POST" and path == "/v1/flows/yaml/rename":
-        import editor_runs as _er
-        try:
-            body_json = json.loads(body.decode() or "{}")
-        except json.JSONDecodeError as e:
-            return 400, {"error": "bad JSON: %s" % e}
-        return _er.yaml_rename(str(REPO / "flows"), body_json)
-    if method == "POST" and path == "/v1/flows/yaml/validate":
-        import editor_runs as _er
-        try:
-            body_json = json.loads(body.decode() or "{}")
-        except json.JSONDecodeError:
-            body_json = {}
-        return _er.yaml_validate(str(REPO / "flows"), body_json)
-    if method == "POST" and path == "/v1/flows/yaml/validate-simple":
-        import editor_runs as _er
-        try:
-            body_json = json.loads(body.decode() or "{}")
-        except json.JSONDecodeError:
-            body_json = {}
-        return _er.yaml_validate_simple(str(REPO / "flows"), body_json)
-    if method == "POST" and path.startswith("/v1/flows/resume/"):
-        import editor_runs as _er
-        rid = path.split("/")[-1]
-        try:
-            body_json = json.loads(body.decode() or "{}")
-        except json.JSONDecodeError:
-            body_json = {}
-        return _er.resume(str(STATE_ROOT), rid, body_json,
-                          flows_root=str(REPO / "flows"))
-    if path == "/v1/flows/families/param-schemas":
-        import editor_runs as _er
-        return 200, _er.family_param_schemas(
-            _er.catalog_family_ids(str(REPO / "plugins")))
-    m = re.match(r"^/v1/flows/families/(.+)/param-schema$", path)
-    if method == "GET" and m:
-        import editor_runs as _er
-        return _er.family_param_schema(
-            _er.catalog_family_ids(str(REPO / "plugins")), m.group(1))
-    if method == "GET" and path == "/v1/flows/drafts":
-        import editor_runs as _er
-        return 200, _er.drafts_list(str(STATE_ROOT / "drafts"))
-    if method == "POST" and path == "/v1/flows/drafts":
-        import editor_runs as _er
-        try:
-            body_json = json.loads(body.decode() or "{}")
-        except json.JSONDecodeError as e:
-            return 400, {"error": "bad JSON: %s" % e}
-        return _er.drafts_save(str(STATE_ROOT / "drafts"), body_json)
-    m = re.match(r"^/v1/flows/drafts/(.+)$", path)
-    if method == "GET" and m:
-        import editor_runs as _er
-        return _er.drafts_get(str(STATE_ROOT / "drafts"), m.group(1))
-
-    # ── BINARY ASSET SERVING (/editor/assets/runs/) ──────────────────
-    if path.startswith("/editor/assets/runs/"):
-        import editor_runs as _er
-        rel = path[len("/editor/assets/runs/"):]
-        code, data, ctype = _er.serve_asset(str(STATE_ROOT), rel)
-        if code == 200:
-            return code, ({}, {"content-type": ctype}, data)
-        return code, {"error": "not found"} if code == 404 else data
-
-    # ── LEDGER ───────────────────────────────────────────────────────
-    if method == "GET" and path == "/v1/ledger":
-        return 200, ledger_tail(target)
-    if method == "GET" and path == "/v1/assets":
-        # the cross-run asset index (asset_ledger rung, 2026-09-03):
-        # derived from disk truth at read time — state is not contract.
-        # L3 of the test/prod barrier: the default view reads ONLY
-        # the production OUT_ROOT -- a test run is in a different
-        # dir entirely and cannot appear here. include_test=true
-        # switches the read to TEST_OUT_ROOT (the test view). L2
-        # stays in place as defense-in-depth: a test-tagged run
-        # that somehow lands in OUT_ROOT stays hidden.
-        import asset_ledger as _al
-        try:
-            _lim = int(qs.get("limit", ["200"])[0] or 200)
-        except ValueError:
-            _lim = 200
-        _include_test = qs.get("include_test", ["false"])[0].lower() \
-            in ("1", "true", "yes")
-        _root = TEST_OUT_ROOT if _include_test else OUT_ROOT
-        # When reading TEST_OUT_ROOT, the directory IS the test
-        # filter; bypass L2's sidecar filter (which would hide every
-        # run, since everything in TEST_OUT_ROOT is test-tagged). For
-        # OUT_ROOT, keep L2 as defense-in-depth.
-        _idx_include_test = True if _include_test else False
-        if _include_test:
-            ledger("assets.include_test", {"limit": _lim})
-        return 200, _al.assets_index(
-            str(_root), run=qs.get("run", [None])[0],
-            kind=qs.get("kind", [None])[0], limit=_lim,
-            include_test=_idx_include_test)
-
-    # ── LANE DISCLOSURE (py/lane_disclosure.py — progressive surface) ──
-    # GET /v1/card-tools        every card manifest (lane list source)
-    # GET /v1/cards/<lane>/bundle  one lane: tools + skills (all levels)
-    # GET /v1/skills            the cheap index across card+model+guide
-    # GET /v1/skills/<id>       one body (ledgered skill.read)
-    if method == "GET" and path == "/v1/card-tools":
-        import lane_disclosure as _ld
-        return 200, _ld.card_tools()
-    if method == "GET" and path == "/v1/skills":
-        import lane_disclosure as _ld
-        return 200, _ld.skill_index()
-    # PEEK tier: the lane table (kind/genre filters via query — the
-    # handler strips the query from path but parses it into qs)
-    if method == "GET" and path == "/v1/lanes":
-        import lane_disclosure as _ld
-        return 200, _ld.peek(qs.get("kind", [None])[0],
-                             qs.get("genre", [None])[0])
-    m = re.match(r"^/v1/skills/([^/]+)$", path)
-    if method == "GET" and m:
-        import lane_disclosure as _ld
-        from urllib.parse import unquote as _uq
-        return _ld.skill_read(_uq(m.group(1)), ledger)
-    m = re.match(r"^/v1/cards/([^/]+)/bundle$", path)
-    if method == "GET" and m:
-        import lane_disclosure as _ld
-        from urllib.parse import unquote as _uq
-        return _ld.lane_bundle(_uq(m.group(1)), qs.get("kind", [None])[0])
-
-    # ── COMFYUI MANAGER (the ONE management SSOT — py/manage.py) ────
-    # AI door for the comfy_manage DSH tool: wraps comfy-mcp +
-    # comfyui-manager (security=medium) + comfy-cli. The manual door is
-    # tools/provision.py manage <action>. The gateway's own interpreter
-    # may not carry the management plane (portability law — same reason
-    # /v1/models/provision shells to the comfy binary): dispatch
-    # in-process when importable, else spawn the BASE-ENV python
-    # (repo .venv) running the SAME SSOT module.
-    if method == "POST" and path == "/v1/manage":
-        try:
-            body_json = json.loads(body.decode() or "{}")
-        except json.JSONDecodeError as e:
-            return 400, {"error": "bad JSON: %s" % e}
-        import sys as _sys
-        if str(REPO / "py") not in _sys.path:
-            _sys.path.insert(0, str(REPO / "py"))
-        try:
-            import comfy_mcp                           # noqa: F401 — the plane
-            import manage as _mg                       # in-process (fast)
-            return _mg.dispatch(body_json)
-        except ImportError:
-            pass                                       # base env below
-        import subprocess as _sp
-        _runner = (
-            "import sys, json;"
-            "sys.path.insert(0, %r);"
-            "import manage;"
-            "c, r = manage.dispatch(json.loads(sys.stdin.read()));"
-            "print(json.dumps([c, r]))"
-        ) % str(REPO / "py")
-        _py = REPO / ".venv" / "bin" / "python"
-        if not _py.is_file():
-            return 503, {"action": body_json.get("action", "?"),
-                         "ok": False,
-                         "detail": "management plane unavailable: no "
-                                   "base-env python at %s (uv sync)" % _py}
-        try:
-            r = _sp.run([str(_py), "-c", _runner],
-                        input=json.dumps(body_json), capture_output=True,
-                        text=True, timeout=900)
-            if r.returncode == 0 and r.stdout.strip():
-                code, rep = json.loads(r.stdout.strip().splitlines()[-1])
-                return int(code), rep
-            return 502, {"action": body_json.get("action", "?"),
-                         "ok": False,
-                         "detail": "manage runner failed",
-                         "data": {"stderr": r.stderr[-500:]}}
-        except _sp.TimeoutExpired:
-            return 504, {"action": body_json.get("action", "?"),
-                         "ok": False,
-                         "detail": "manage action timed out (900s)"}
-
-    # ── HEALTH + CHROME STUBS ────────────────────────────────────────
-    if method == "GET" and path == "/v1/health":
-        import editor_runs as _er
-        return 200, _er.health()
-    if method == "GET":
-        _chrome = {
-            "/v1/themes": "themes", "/v1/tags": "tags",
-            "/v1/services": "services", "/v1/right-panes": "right_panes",
-            "/v1/ui-slots": "ui_slots", "/v1/tools": "tools",
-            "/v1/shell": "shell", "/v1/plugins": "plugins_registry",
-            "/v1/models": "models",
-        }
-        if path in _chrome:
-            import editor_runs as _er
-            return 200, getattr(_er, _chrome[path])()
-
+                ctx.json = {}
+        return await row.handler(ctx)
     return 404, {"error": "no such route %s %s" % (method, path)}
 
 

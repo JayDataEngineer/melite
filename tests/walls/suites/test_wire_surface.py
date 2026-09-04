@@ -129,21 +129,23 @@ def frontend_routes():
 
 
 def gateway_arms():
-    """(exact_literals, prefix_arms, regex_patterns) the gateway can answer."""
+    """(exact_literals, prefix_arms, regex_patterns) the gateway can answer.
+
+    The route table IS the wire SSOT (2026-09-04 Phase 1 refactor: the
+    if-chain became ROUTES rows in py/gateway.py) — read it directly.
+    Literal rows are exact arms; regex rows anchored both ends are
+    fullmatch patterns; open-ended regex rows (^prefix with no $) are
+    prefix arms (the old path.startswith(...) semantics).
+    """
+    import gateway as _gw
     literals, prefixes, patterns = set(), set(), set()
-    for path in _walk(GATEWAY_ROOT):
-        with open(path, encoding="utf-8", errors="replace") as fh:
-            text = fh.read()
-        for m in PATH_EQ_RE.finditer(text):
-            literals.add(m.group(1))
-        for m in PATH_TARGET_EQ_RE.finditer(text):
-            literals.add(m.group(1))
-        for m in PATH_STARTSWITH_RE.finditer(text):
-            prefixes.add(m.group(1))  # genuine prefix arm
-        for m in ROUTE_REGEX_RE.finditer(text):
-            patterns.add(m.group(1))
-        for m in DICT_KEY_RE.finditer(text):
-            literals.add(m.group(1))
+    for row in _gw.ROUTES:
+        if not row.regex:
+            literals.add(row.path)
+        elif row.path.endswith("$"):
+            patterns.add(row.path)
+        else:
+            prefixes.add(row.path.lstrip("^"))
     return literals, prefixes, patterns
 
 

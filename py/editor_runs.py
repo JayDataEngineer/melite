@@ -83,6 +83,14 @@ import re
 import threading
 import time
 
+# The artifact-serving URL prefix — the ONE door clients fetch run media
+# from. Owns the stamping here (runs list rows, poster) and is imported
+# by the gateway (stage url/gallery stamping, route row) and
+# asset_ledger (index rows). No restated coordinates.
+# (Phase 2 consolidation, 2026-09-04: moved from /editor/assets/runs —
+# outside /v1 — into the assets family.)
+ASSET_URL_PREFIX = "/v1/assets/runs"
+
 # ---------------------------------------------------------------------------
 # C-string parity helpers
 # ---------------------------------------------------------------------------
@@ -321,7 +329,8 @@ def run_artifacts(out_dir: str, out_dir_literal: str) -> list:
             "name": name,
             "path": "%s/%s" % (out_dir_literal, name),
             "bytes": size,
-            "url": "/editor/assets/runs/%s/%s" % (os.path.basename(out_dir_literal.rstrip("/")), name),
+            "url": "%s/%s/%s" % (ASSET_URL_PREFIX,
+                                 os.path.basename(out_dir_literal.rstrip("/")), name),
             "type": t,
             "size": size,
         })
@@ -335,7 +344,7 @@ def _run_thumbnail(run_dir: str, run_id: str) -> str:
     sorted name. (Poster GENERATION — ensure_run_previews — is not ported:
     it forks ffmpeg and writes into the run dir.)"""
     if os.path.exists(os.path.join(run_dir, "_poster.jpg")):
-        return "/editor/assets/runs/%s/_poster.jpg" % run_id
+        return "%s/%s/_poster.jpg" % (ASSET_URL_PREFIX, run_id)
     try:
         names = sorted(os.listdir(run_dir),
                        key=lambda s: s.encode("utf-8", "surrogateescape"))
@@ -343,7 +352,7 @@ def _run_thumbnail(run_dir: str, run_id: str) -> str:
         return ""
     for name in names:
         if artifact_type(name) == "image":
-            return "/editor/assets/runs/%s/%s" % (run_id, name)
+            return "%s/%s/%s" % (ASSET_URL_PREFIX, run_id, name)
     return ""
 
 

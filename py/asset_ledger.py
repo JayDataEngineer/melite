@@ -32,7 +32,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 _PY = str(Path(__file__).resolve().parent)
 if _PY not in sys.path:
     sys.path.insert(0, _PY)
-from editor_runs import artifact_type  # noqa: E402
+from editor_runs import ASSET_URL_PREFIX, artifact_type  # noqa: E402
 
 
 class AssetKind(str, Enum):
@@ -145,7 +145,7 @@ def scan_run(run_dir: str, sidecar: Optional[dict] = None) -> RunIndex:
             rows.append(AssetRow(
                 name=name, run_id=run_id, kind=kind_for(name),
                 bytes=size, sha256=sha,
-                url="/editor/assets/runs/%s/%s" % (run_id, name)))
+                url="%s/%s/%s" % (ASSET_URL_PREFIX, run_id, name)))
         except ValidationError:
             continue                       # malformed truth: not indexed
     return RunIndex(

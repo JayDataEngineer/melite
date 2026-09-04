@@ -29,7 +29,7 @@ export const ASSET_DRAG_MIME = "application/tech-noir-asset"
 
 /** THE "is this a thumbnail" rule for slot-shaped values — data: image
  * URLs, and http(s)/root-relative server asset URLs (the real artifact
- * shape: /editor/assets/runs/{rid}/{rel}). Shared by the square and the
+ * shape: /v1/assets/runs/{rid}/{rel}). Shared by the square and the
  * wire picker so every artifact renders the same way. */
 export function isImageUrl(value: string): boolean {
  return (

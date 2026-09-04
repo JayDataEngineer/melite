@@ -834,7 +834,7 @@ class TestDevDshFullDoorSet:
         # rename-drift gate still works for everything else; the host
         # /health bug is tracked separately.
         ("/v1/health", {200}),
-        ("/editor/assets/runs/", {200, 404}),
+        ("/v1/assets/runs/", {200, 404}),
         ("/v1/flows/events", {400, 404}),
         ("/infer-gallery/runs", {200}),
     ]
