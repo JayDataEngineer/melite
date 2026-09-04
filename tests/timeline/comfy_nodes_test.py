@@ -37,6 +37,23 @@ REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 PACK = os.path.join(REPO, "plugins", "engines", "comfyui",
                     "custom_nodes", "melite-h3-motion-nodes", "h3_seam_nodes.py")
 
+# The h3 seam pack was deleted with the custom_nodes fossil (EXTENSION
+# LAW, 2026-09-03) and has not been re-vendored under
+# vendor/comfyui_extensions/ — this suite's SSOT is gone. Skip LOUDLY
+# instead of erroring at collection; if the pack returns (vendored),
+# update PACK above and this guard revives the suite automatically.
+if not os.path.isfile(PACK):
+    try:
+        import pytest
+        pytest.skip(
+            "h3 seam pack deleted (custom_nodes fossil removal, not "
+            "re-vendored) — awaiting the h3 lane's disposition",
+            allow_module_level=True)
+    except ImportError:                      # standalone run, no pytest
+        raise SystemExit(
+            "SKIP: h3 seam pack deleted (custom_nodes fossil removal, "
+            "not re-vendored) — awaiting the h3 lane's disposition")
+
 fails = []
 def check(name, cond, detail=""):
     print(("PASS " if cond else "FAIL ") + name + ((" | " + str(detail)) if detail and not cond else ""))

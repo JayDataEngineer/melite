@@ -27,3 +27,15 @@ def repo():
     """The repo root as a Path. Cheaper than git rev-parse and always
     correct (conftest location is fixed relative to the repo)."""
     return REPO
+
+
+# Script-style suites that call sys.exit() at import time.
+# pytest collects them before running — and crashes the whole run.
+# timeline/*: h3-era scripts whose SSOT files are deleted (EXTENSION
+# LAW, 2026-09-03). dev_dsh_boot_e2e.py gates on an env that may
+# not be present. Neither dir is covered by the walls conftest
+# (tests/walls/) which governs only suites/ subdirectory collection.
+collect_ignore_glob = [
+    "timeline/*",
+    "dev_dsh/test_dev_dsh_boot_e2e.py",
+]

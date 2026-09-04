@@ -7,7 +7,7 @@
 - ALL inference — video windows, images, TTS, motion, every GPU workload — goes
   through the QUEUE SYSTEM (asset requests / action cards). One active request
   at a time (serial GPU law).
-- NEVER POST directly to /v1/flows/start, /generate, or any inference door
+- NEVER POST directly to /v1/flows/start or any inference door
   as a "straight demand". The GPU fails when the queue is bypassed.
 - Action cards are the queue-native interface: compose the card, the run goes
   through the queue, claims enforce serialization.
@@ -65,37 +65,20 @@
 - Gateway restarts use `setsid` — plain `nohup` children die with the
   spawning shell and leave "running" sidecars (zombies) behind.
 
-### AUDITED HARDENING (total extreme audit, 2026-08-29 — docs/audits/queue-audit.md)
+### AUDITED HARDENING — three rounds, the numbers live in the audit doc
 
-The stop door now reaches INTO a running render (node_stop ABI): a stop
-lands in <6s, POSTs /interrupt to ComfyUI, and reports `stopped` — never
-`error`, never a 300s wait. Timeouts also /interrupt (no zombie GPU jobs).
-SIGTERM/SIGINT mark every active run `stopped` and exit cleanly — a
-deliberate shutdown manufactures zero zombies; kill -9 leftovers are swept
-to `failed` at boot AND at first read (idempotent, ledgered as `run.swept`).
-Sidecar writes are atomic (tmp+rename) and error strings are JSON-quoted —
-a status response can never become unparseable. Window prompts are
-per-request locals — concurrent submissions cannot cross-wire. Invoke law
-unchanged: cards in, stop door out, operator-only gateway restarts.
+- Round 1 (2026-08-29): the stop door reaches INTO renders (<6s, POSTs
+  /interrupt, reports `stopped`); timeouts /interrupt; SIGTERM
+  manufactures zero zombies; kill -9 swept idempotently; sidecar writes
+  atomic.
+- Round 2 (same day): jappend accumulators, FIFO tickets assigned at
+  registration, atomic stop flags — no truncation/ordering class left.
+- Round 3 (2026-09-04): engine-transition boundary is gateway-level
+  (outgoing engine unload() across runs AND stages, sidecar-recorded) —
+  tested at three layers (tests/unit/runtime/test_engine_boundary.py),
+  pinned live by the GPU cpp suite, run in CI.
 
-Perfection pass (same day, docs/audits/queue-audit.md round 2): every JSON accumulator
-is a grow-and-retry jappend (no truncation/underflow class left anywhere),
-GPU tickets are assigned at registration (strict submission-order FIFO,
-abandoned tickets drain in order), stop flags are C11 atomics, and the
-py gateway's golden parity suite confirms the stop door lands in <6s with
-a witnessed /interrupt, SIGTERM manufactures zero zombies, and boot sweeps
-are idempotent.
-
-Engine-transition pass (2026-09-04, docs/audits/queue-audit.md round 3):
-the ENGINE TRANSITION boundary is GATEWAY-LEVEL — a switch between two
-queued RUNS fires the outgoing engine's unload() exactly like a switch
-between two stages of one run (comfyui POSTs /free; VRAM verified live
-5.11→22.1 GB free across a comfyui→anycreature boundary). Every attempted
-transition is sidecar-recorded (`stages[].boundary_unload`: fired/absent/
-error:<msg>). Tested at three layers (tests/unit/runtime/test_engine_boundary.py:
-rule + real Gateway.execute loop + the real /free payload against a mock
-server), pinned live by the GPU cpp suite (test_11), and run in CI
-(.github/workflows/tests.yml — the fast no-GPU runner only).
+Full detail, timings, and VRAM evidence: docs/audits/queue-audit.md.
 
 ## PLUGIN ARCHITECTURE LAW (operator order, 2026-08-31, verbatim intent)
 
@@ -105,24 +88,34 @@ server), pinned live by the GPU cpp suite (test_11), and run in CI
   template expansion, inject splices, knob maps, template families —
   lives in the PLUGIN that owns the lane (code + data), NEVER in the
   gateway core (`py/gateway.py`). The core stays generic.
-- Enforcement shape: each plugin exposes `engines/<dir>/engine.py`
-  (execute) and `engines/<dir>/compose/` (card compose). Phase 1
-  (run_id="") is the VALIDATION DOOR: document construction IS the
-  gate — key admission, artifact-ref existence on the mounts, and
-  semantic laws are pydantic validators (PYTHON SHAPE LAW: no
-  post-hoc walks); everything that can 4xx does so BEFORE any run
-  registers. Phase 2 emits the run graph YAML and the run-input
-  pool. The gateway resolves engine type FROM THE GRAPH — it
-  names no lane and no engine.
-- The card's knob map is DATA the plugin owns, next to its model:
-  `plugins/<plugin>/models/video/<model>/card_knobs.yaml`. A knob the
-  card offers must be in the map AND real in the lane's templates
-  (LAYER AUDIT enforces both directions; `card_knobs.yaml` is the SSOT
-  for what compose actually splices).
+- Enforcement shape (compose-first, operator order 2026-09-02; the
+  declarer `py/plugins.py` is the discovery SSOT): a plugin lives at
+  `plugins/engines/<id>/` and declares itself — `plugin.py` (a Plugin
+  class: id, engines tuple, genres) — carrying `compose/` (card
+  compose + execute), `models/<genre>/<model>/model.py`
+  (self-contained families), and `action_cards/<genre>/<card>/py/`
+  (card defs + lane code). A compose-first plugin has NO engine.py:
+  execution rides comfyui-mcp. The legacy
+  `engines/<dir>/engine.yaml` + `engine.py` shape survives only in
+  audio-cpp (ffmpeg retired 2026-09-04). Phase 1 (run_id="") is the
+  VALIDATION DOOR: document construction IS the gate — key admission,
+  artifact-ref existence on the mounts, and semantic laws are
+  pydantic validators (PYTHON SHAPE LAW: no post-hoc walks);
+  everything that can 4xx does so BEFORE any run registers. Phase 2
+  emits the run graph YAML and the run-input pool. The gateway
+  resolves engine type FROM THE GRAPH — it names no lane and no
+  engine.
+- The card's knob vocabulary is card_knobs ROWS on the model class —
+  frozen pydantic rows, not a yaml sidecar (`card_knobs.yaml` is
+  extinct since the 2026-09-02 class flip). A knob a card offers
+  must have a row on every model it boards AND be real in the lane's
+  templates (LAYER AUDIT enforces both directions; the rows are the
+  SSOT for what compose splices —
+  tests/walls/suites/test_cpp_engines.py `TestKnobSSOT`).
 - History note: the h3 timeline feature shipped 2026-08-30/31 with its
   compile/grid/splice logic embedded in server.cpp — a regression this
   law repaid. Post-flip, compose logic lives in
-  `plugins/comfyui/engines/comfyui/compose/` (per-card modules). If a
+  `plugins/engines/comfyui/compose/` (per-card modules). If a
   lane "needs" core changes to express its card, the plugin contract is
   extended generically instead.
 
@@ -165,8 +158,11 @@ cascade and now THE law for how this repo writes python declarations:
    references and typed rows. `load_mod(__file__, "loras", "Loras")`
    magic-word pairs are tolerated ONLY where file-based loading forces
    them, and the loader owns import mechanics: no per-file
-   `sys.path.insert` six-ups rituals (53 copies deleted — the loader
-   injects the repo `py/` root once).
+   `sys.path.insert` six-ups rituals (the six-ups are gone; the repo
+   `py/`-root injection survives as a guarded two-liner at the module
+   entry points that must stand alone when tools/tests import them,
+   and plugin path setup lives in the loader, never inside the
+   packages).
 6. **No restated coordinates.** If a name is derived, never restate it
    beside the derivation (`Turbo = Turbo` + `id = "turbo"` was a drift
    surface). Instances state their id once, validated.
@@ -318,3 +314,19 @@ Naming consequence (deferred, deliberate): the `py/` directory name
 earned its keep by contrasting with the C side. That contrast is now
 historical; a role-rename, if ever wanted, is its own coordinated
 order — nothing here requires it.
+
+## LAW TEXT HYGIENE (2026-09-04, born from the first law audit)
+
+- A law names a file or format only while a wall pins the claim. Dead
+  paths in law text teach dead shapes with extra authority — the same
+  drift class as the `{yaml:}` teachings, inside the law file itself.
+- Dated audit narratives (timings, VRAM numbers, round detail) live in
+  docs/audits/; a law carries a one-line pointer, not the journal.
+- When code deletes a thing a law names, the law text dies in the SAME
+  stroke. (Amended this stroke: the dead /generate door, the extinct
+  `card_knobs.yaml` SSOT, pre-reorg plugin paths, three audit rounds
+  compressed to pointers, rung-5's import-mechanics reality.)
+- Enforced by tests/walls/suites/test_law_hygiene.py: every backticked
+  file path in AGENTS.md must exist in the tree unless allowlisted as
+  deliberate dead provenance (`src/server.cpp`, `card_knobs.yaml`,
+  `bootstrap.py` — things the laws cite AS deleted).
