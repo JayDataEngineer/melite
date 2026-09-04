@@ -6,7 +6,7 @@ workflow_file+inject legacy channel was already retired for this
 lane. $prompt resolves through the gateway's inline deep-walk;
 seed/duration/steps bake as literals."""
 
-from flow import Flow, Stage, FromInitial
+from flow import Flow, Stage, FromInitial, Kind
 
 FLOW = Flow(
     id="kimodo-native",
@@ -20,6 +20,10 @@ FLOW = Flow(
             engine="comfyui",
             description="Kimodo text-to-pose via live ComfyUI nodes",
             inputs={"prompt": FromInitial(key="prompt")},
+            # the flow-typed-edges contract: t2m wants text,
+            # produces video (the rendered motion frame sequence)
+            expected={"prompt": Kind.text},
+            outputs={"mp4": Kind.video},
             params={
                 "out_dir": "./output",
                 "timeout_s": 1800,

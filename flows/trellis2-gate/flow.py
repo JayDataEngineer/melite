@@ -4,7 +4,7 @@
 server_url fossil DROPPED (the engine's _server_url() config/env
 seam owns the endpoint)."""
 
-from flow import Flow, Stage, FromInitial
+from flow import Flow, Stage, FromInitial, Kind
 
 FLOW = Flow(
     id="trellis2-gate",
@@ -18,6 +18,10 @@ FLOW = Flow(
             engine="comfyui",
             description="krea concept -> TRELLIS mesh via live nodes",
             inputs={"prompt": FromInitial(key="prompt")},
+            # the flow-typed-edges contract: img2mesh wants text
+            # (the krea prompt), produces mesh (the TRELLIS GLB)
+            expected={"prompt": Kind.text},
+            outputs={"glb": Kind.mesh},
             params={
                 "workflow_file": "/home/user/Documents/programs/active/"
                                  "inference.cpp/plugins/engines/comfyui/"

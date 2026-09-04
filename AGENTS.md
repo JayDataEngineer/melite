@@ -35,7 +35,9 @@
 - No default model names (e.g. the old "krea-2" fallback). A run must
   name its pipeline EXPLICITLY: `{flow:name}` resolving
   `flows/<name>/flow.py` — a PYTHON declaration (frozen pydantic rows,
-  structural edges, validation AT CONSTRUCTION; the yaml text door +
+  structural edges, TYPED edges — the closed `Kind` vocabulary
+  refuses an image→text wire AT CONSTRUCTION, no GPU cycle
+  needed, design record docs/queue/flow-typed-edges.md; the yaml text door +
   its parser retired 2026-09-04, design record docs/queue/flows.md) —
   or `{model}` for card-only models (the plugin compose hook builds
   the graph). The `{pipeline:{steps}}` door named here earlier never

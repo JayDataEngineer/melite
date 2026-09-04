@@ -301,7 +301,7 @@ class TestGpuCppCards(unittest.TestCase):
         flow_py = os.path.join(lane, "flow.py")
         with open(flow_py, "w", encoding="utf-8") as f:
             f.write(
-                "from flow import Flow, Stage, FromStage\n\n"
+                "from flow import Flow, Stage, FromStage, Kind\n\n"
                 "FLOW = Flow(\n"
                 "    id='gpu-test-cpp-transition',\n"
                 "    description='Live GPU-suite lane: forge a creature, "
@@ -309,10 +309,12 @@ class TestGpuCppCards(unittest.TestCase):
                 "    stages=(\n"
                 "        Stage(id='forge', engine='anycreature',\n"
                 "              description='compile the minimal creature',\n"
+                "              outputs={'glb': Kind.mesh},\n"
                 "              params=" + repr({"workflow": MINI_SPEC}) + "),\n"
                 "        Stage(id='remesh', engine='autoremesher',\n"
                 "              description='quad-remesh the creature GLB',\n"
                 "              inputs={'glb': FromStage(stage='forge', output='glb')},\n"
+                "              expected={'glb': Kind.mesh},\n"
                 "              params=" + repr({"workflow": {"input": "$forge.glb"},
                                    "target_quads": 2000}) + "),\n"
                 "    ),\n"

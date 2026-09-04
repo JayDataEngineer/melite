@@ -56,13 +56,21 @@ ISOLATION_FILE = REPO / "tests/unit/plugins/test_plugin_isolation.py"
 # document each exemption with its reason or do not add it.
 GATEWAY_IMPORT_EXEMPT: set[str] = set()
 
-ENGINE_ABI = {"ENGINE_TYPE", "execute", "stop", "unload"}
+ENGINE_ABI = {"ENGINE_TYPE", "execute", "stop", "unload",
+               # DEFAULT_OUTPUT: the flow-typed-edges contract
+               # (docs/queue/flow-typed-edges.md) — the Kind this
+               # engine produces when a stage omits `outputs`. Read
+               # by py/flow.py:validate_engines().
+               "DEFAULT_OUTPUT"}
 # ENGINE_TRUTH_KEYS: each engine's run-truth keys, declared in its
 # compose and consumed by the walls (test_python_cards.py reads the
 # module attribute) — documented contract in py/melite_models/grammar.py.
 # ValidationError: re-export the core's 4xx plumbing consumes.
+# DEFAULT_OUTPUT: see ENGINE_ABI above; compose-first engines set it
+# on their __init__ instead of engine.py.
 COMPOSE_ABI = {"card_compose", "execute", "stop", "unload",
-               "ValidationError", "ENGINE_TRUTH_KEYS"}
+               "ValidationError", "ENGINE_TRUTH_KEYS",
+               "DEFAULT_OUTPUT"}
 PLUGIN_ABI = {"Plugin"}
 
 

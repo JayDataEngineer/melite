@@ -7,7 +7,7 @@ DROPPED (the engine's _server_url() config/env seam owns the
 endpoint, QUEUE LANE LAW). params are the comfyui engine's surface,
 verbatim."""
 
-from flow import Flow, Stage, FromInitial
+from flow import Flow, Stage, FromInitial, Kind
 
 FLOW = Flow(
     id="audio-native-tts",
@@ -22,6 +22,11 @@ FLOW = Flow(
             engine="comfyui",
             description="Qwen3-TTS text to speech via live ComfyUI nodes",
             inputs={"prompt": FromInitial(key="prompt")},
+            # the flow-typed-edges contract: tts wants text
+            # (and overrides the comfyui engine default Kind.image
+            # with Kind.audio on the named "wav" output)
+            expected={"prompt": Kind.text},
+            outputs={"wav": Kind.audio},
             params={
                 "workflow_file": "/home/user/Documents/programs/active/"
                                  "inference.cpp/plugins/engines/comfyui/"
