@@ -45,6 +45,10 @@ def _parse_patch_ids_and_names():
         if s.startswith("- insert:"):
             in_insert = True
             continue
+        if line.startswith("- id:"):  # column-0: top-level override row, not an insert
+            in_insert = False
+            cur = None
+            continue
         if not in_insert:
             continue
         if s.startswith("- id:"):
@@ -95,6 +99,19 @@ class TestCordisPatchGolden:
         deps = set(prov.get("dependencies", {}).keys())
         missing = [r["name"] for r in patch_rows if r["name"] not in deps]
         assert not missing, f"patch names not declared in provisioner deps: {missing}"
+
+    def test_host_skill_filesystem_row_is_pinned_off(self):
+        """The bundle pins the HOST `skill-filesystem` row OFF for every
+        profile it mounts (progressive disclosure: no pre-loaded skill
+        catalog — discovery is the gateway's lane/skill ladder; design
+        record docs/deployment/dsh-profiles.md). The pin is an OVERRIDE
+        row (column-0 `- id:` + `disabled: true`): it patches the
+        dsh-base row and mounts nothing, which is why the insert-row
+        contract tests above must not see it."""
+        text = PATCH.read_text()
+        assert re.search(r"^- id: skill-filesystem\s*\n\s+disabled: true", text, re.MULTILINE), (
+            "the skill-filesystem host-row pin is missing from the provisioner patch"
+        )
 
     def test_bin_web_rows_is_a_subset_of_patch_ids(self):
         web = set(_parse_bin_web_rows())
