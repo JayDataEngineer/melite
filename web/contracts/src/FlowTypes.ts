@@ -342,10 +342,12 @@ export interface FlowDoc {
   */
  inlineFlow?: InlineFlowBody
  /**
-  * Per-stage-index params snapshot taken when the spec was loaded. The
- * diff between a card's params and this baseline becomes the startChain
- * overrides — the YAML stays the SSOT, edits ride along as overrides.
- */
+  * Per-stage-index params snapshot taken when the spec was loaded —
+  * the authored baseline, a hydration record of loadFlowSpec. It no
+  * longer feeds start overrides (the C-era overrides sends were
+  * silent drops, retired 2026-09-05); it dies with the spec-library
+  * retirement stroke.
+  */
  specBaseline?: Record<number, Record<string, unknown>>
 }
 
