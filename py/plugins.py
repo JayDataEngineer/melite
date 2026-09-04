@@ -5,10 +5,13 @@ execution, card composition — ships INSIDE the plugin that owns the
 engine, next to its models/knob data, and is discovered from
 plugin-owned declarations:
 
-    Legacy shape (audio-cpp, ffmpeg):
+    Legacy shape (audio-cpp):
         plugins/<id>/engines/<dir>/engine.yaml    type: <engine type>
         plugins/<id>/engines/<dir>/engine.py      async execute(...)
         plugins/<id>/engines/<dir>/compose.py     card_compose(...)
+    ffmpeg retired 2026-09-04 — concat rides comfyui's VHS /
+    melite-audio-nodes; the CLI-wrapper engine plugin and its
+    type are gone.
 
     Compose-first shape (comfyui — operator order 2026-09-02):
         plugins/<id>/plugin.yaml                  engines: [type]
@@ -347,9 +350,10 @@ def load_engine(engine_type):
     if mod is not None and hasattr(mod, "execute"):
         _engine_mods[engine_type] = mod
         return mod
-    # compose-first: audio_cpp, ffmpeg_concat (CLI wrappers that compose
-    # graphs but execute via CLI processes — compose.py owns card_compose,
-    # execute() if present)
+    # compose-first: audio_cpp (CLI wrappers that compose graphs but
+    # execute via CLI processes — compose.py owns card_compose,
+    # execute() if present). ffmpeg_concat retired 2026-09-04; see
+    # docs/audits/queue-audit.md round 8.
     cmod = ref.load("compose")
     if cmod is not None and (hasattr(cmod, "execute") or
                               hasattr(cmod, "card_compose")):

@@ -52,11 +52,15 @@ def _bus(body, model, run_id, engine):
 
 
 class TestDiscovery(unittest.TestCase):
-    def test_all_six_engine_types_discover(self):
+    def test_five_engine_types_discover(self):
+        """Five live engine types. ffmpeg_concat retired 2026-09-04:
+        concat rides comfyui's VHS / melite-audio-nodes; the
+        CLI-wrapper engine plugin and its dedicated type are gone."""
         engines = plugins.scan_engines()
         for etype in ("anycreature", "audio_cpp", "autoremesher",
-                      "comfyui", "ffmpeg_concat", "kimodo"):
+                      "comfyui", "kimodo"):
             self.assertIn(etype, engines, "engine %r missing" % etype)
+        self.assertNotIn("ffmpeg_concat", engines)
 
     def test_cpp_category_dir_is_not_a_plugin(self):
         """plugins/engines/cpp/ has no plugin markers — a category

@@ -120,29 +120,11 @@ def test_plugin_has_plugin_class(plugin_id):
     assert spec.id == plugin_id, f"{plugin_id}: spec id mismatch"
     assert spec.label, f"{plugin_id}: empty label"
     assert spec.engines, f"{plugin_id}: no engines declared"
-    # genres is optional (ffmpeg is a stitcher, not a generative
-    # engine -- empty genres is a legitimate PluginSpec value)
+    # genres is optional (a stitcher / non-generative engine is a
+    # legitimate PluginSpec value — empty genres is fine)
 
 
-# KNOWN DRIFT (2026-09-04, audio consolidation lane): the comfyui
-# plugin declares genres music/sfx/tts while those models live under
-# models/audio/ (moss-sfx, music3, qwen3-tts). The lane that owns the
-# audio re-shelve settles one side or the other; strict=True makes the
-# day it settles a loud stale-xfail — this debt cannot rot silently.
-_MODELS_FOR_EVERY_GENRE = [
-    pytest.param(
-        pid,
-        marks=pytest.mark.xfail(
-            strict=True,
-            reason="comfyui declares genres music/sfx/tts; those models "
-                   "live under models/audio/ — audio consolidation lane",
-        ),
-    ) if pid == "comfyui" else pid
-    for pid in PLUGIN_IDS
-]
-
-
-@pytest.mark.parametrize("plugin_id", _MODELS_FOR_EVERY_GENRE,
+@pytest.mark.parametrize("plugin_id", PLUGIN_IDS,
                          ids=PLUGIN_IDS)
 def test_plugin_has_models_for_every_genre(plugin_id):
     """If the plugin promises a genre, it MUST ship at least one

@@ -293,7 +293,9 @@ def test_engine_default_output_attribute_is_present():
     module exposes DEFAULT_OUTPUT as a Kind member. Refuses at
     validate_engines if it's missing or non-Kind."""
     for etype in ("comfyui", "anycreature", "autoremesher", "kimodo",
-                  "audio_cpp", "ffmpeg_concat"):
+                  "audio_cpp"):
+        # ffmpeg_concat retired 2026-09-04 (concat rides comfyui's
+        # VHS / melite-audio-nodes); see audit round 8.
         import plugins
         mod = plugins.load_engine(etype)
         assert hasattr(mod, "DEFAULT_OUTPUT"), \

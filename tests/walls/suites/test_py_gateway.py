@@ -146,7 +146,10 @@ def test_engine_scan_one_owner():
     owners = {k: e.plugin_id for k, e in engines.items()}
     assert owners.get("comfyui") == "comfyui"
     assert owners.get("audio_cpp") == "audio-cpp"
-    assert owners.get("ffmpeg_concat") == "ffmpeg"
+    # ffmpeg_concat retired 2026-09-04: concat goes through comfyui's
+    # VHS / melite-audio-nodes (the live ffmpeg-backed nodes); the
+    # CLI-wrapper engine plugin and its dedicated type are gone.
+    assert "ffmpeg_concat" not in owners
     assert "echo" not in owners
 
 
@@ -171,7 +174,7 @@ def test_stanza_less_model_refused():
 @pytest.mark.parametrize("engine_type,attr", [
     ("comfyui", "execute"),
     ("audio_cpp", "execute"),
-    ("ffmpeg_concat", "execute"),
+    # ffmpeg_concat retired (VHS / melite-audio-nodes handle concat)
 ])
 def test_engine_loads(engine_type, attr):
     mod = plugins.load_engine(engine_type)
@@ -208,10 +211,11 @@ def test_music3_composes_music_node():
     assert isinstance(yml.nodes[0].params["workflow"], dict)
 
 
-# C19: no engine names in the core
+# C19: no engine names in the core (ffmpeg_concat retired 2026-09-04
+# — the core never named it and never should; the check is gone too)
 def test_core_names_no_engine():
     gw_src = (REPO / "py" / "gateway.py").read_text()
-    core_ok = not any(t in gw_src for t in ('"comfyui"', '"audio_cpp"', '"ffmpeg_concat"'))
+    core_ok = not any(t in gw_src for t in ('"comfyui"', '"audio_cpp"'))
     assert core_ok, "engine literal in gateway.py"
 
 

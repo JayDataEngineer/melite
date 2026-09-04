@@ -580,6 +580,16 @@ def cmd_verify(cfg):
                   "status %s" % st)
         except Exception as e:
             check("object_info served", False, str(e)[:120])
+    # project requirement: the ffmpeg binary on PATH. The comfyui
+    # concat nodes (VHS_VideoCombine, AudioConcat) shell out to it;
+    # the in-estate ffmpeg_concat engine plugin retired 2026-09-04 —
+    # concat is now extension-mediated. Missing ffmpeg is a 4xx
+    # install hint, not an estate-installed dep.
+    import shutil
+    ffmpeg = shutil.which("ffmpeg")
+    check("ffmpeg on PATH (project requirement for VHS / AudioConcat)",
+          bool(ffmpeg),
+          ffmpeg or "install: apt install ffmpeg / brew install ffmpeg")
     # management plane (the packages, in-process) — routing first:
     # managed mode points the spawns at THIS runtime's comfy-cli
     try:
