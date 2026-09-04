@@ -12,7 +12,17 @@
 - Action cards are the queue-native interface: compose the card, the run goes
   through the queue, claims enforce serialization.
 - If a run must stop: use the stop door (/v1/pipelines/stop/<id>) — never kill
-  processes. If the gateway needs a restart: operator only.
+  processes.
+- Gateway restarts: OPERATOR ONLY on production deployments. THE DEV DSH
+  LOOP IS THE SANCTIONED EXCEPTION (operator order, 2026-09-04: "Change
+  the [REDACTED 2026-11-05] operator law. I made a dev dsh just for testing this
+  [REDACTED 2026-11-05], in this very project"): the dev DSH at
+  https://cloud.tailb1e597.ts.net:3909/ (tests/dev_dsh/, launched by
+  ~/bin/inference-dev-dsh.sh, isolated ~/.dsh-test home) exists precisely
+  to test estate changes — so verifying a change MAY rebuild the web
+  artifacts, restart the estate gateway, and probe the dev DSH. The
+  restart preconditions still apply in full: confirm ZERO active runs
+  first, use setsid, and never touch the prod DSH home (~/.dsh).
 
 
 ## QUEUE LANE LAW (operator order, 2026-08-30, verbatim)
@@ -28,8 +38,9 @@
 - Plugins (e.g. comfyui server_url) must not carry a hardcoded default
   endpoint. Missing required params fail the node LOUDLY at load.
 - Enforced by the py gateway's route-layer validation (4xx BEFORE
-  registration) and the parity test suites (tests/test_py_gateway.py,
-  tests/test_http_parity.py).
+  registration) and the parity test suites
+  (tests/walls/suites/test_py_gateway.py,
+  tests/walls/suites/test_http_parity.py).
 
 ## RESILIENCE LAW (operator order, 2026-08-29, verbatim)
 
@@ -47,7 +58,7 @@
 - Gateway restarts use `setsid` — plain `nohup` children die with the
   spawning shell and leave "running" sidecars (zombies) behind.
 
-### AUDITED HARDENING (total extreme audit, 2026-08-29 — QUEUE_AUDIT.md)
+### AUDITED HARDENING (total extreme audit, 2026-08-29 — docs/audits/queue-audit.md)
 
 The stop door now reaches INTO a running render (node_stop ABI): a stop
 lands in <6s, POSTs /interrupt to ComfyUI, and reports `stopped` — never
@@ -60,7 +71,7 @@ a status response can never become unparseable. Window prompts are
 per-request locals — concurrent submissions cannot cross-wire. Invoke law
 unchanged: cards in, stop door out, operator-only gateway restarts.
 
-Perfection pass (same day, QUEUE_AUDIT.md round 2): every JSON accumulator
+Perfection pass (same day, docs/audits/queue-audit.md round 2): every JSON accumulator
 is a grow-and-retry jappend (no truncation/underflow class left anywhere),
 GPU tickets are assigned at registration (strict submission-order FIFO,
 abandoned tickets drain in order), stop flags are C11 atomics, and the
@@ -249,7 +260,7 @@ a deployment choice, never an assumption):
   downloads require a workspace WRITABLE from the orchestrator's
   world (containers provision via entrypoint/binds).
 
-Enforced by tests/test_provision.py (config shape, full-plane base
+Enforced by tests/walls/suites/test_provision.py (config shape, full-plane base
 env, no dependency-groups split, git-pinned core, manager-v4 rail,
 BYO never-installs refusal, dead-instance refusal, no
 comfy-shell-wrapping, manifest non-empty).

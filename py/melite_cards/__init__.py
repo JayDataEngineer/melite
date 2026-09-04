@@ -15,7 +15,7 @@ Why python beats the yaml it replaces (docs/plans/python-action-cards.md):
 
 The serializer emits the wire fragment (form/fields/schema_groups) in
 the editor's exact key order — parity with the yaml parser is pinned by
-tests/test_python_cards.py per served card.
+tests/walls/suites/test_python_cards.py per served card.
 
 NO SILENT COEXISTENCE: a card dir with BOTH card.py and a card.yaml
 `parameters:` block is a loud refusal (two SSOTs is zero SSOTs).

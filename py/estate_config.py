@@ -45,7 +45,7 @@ runtime default.
 
 Downloads land where download_root says — enforced at the rails by
 tools/provision.py's download pointers and walled by
-tests/test_models_on_second_drive.py (which reads THIS file, never
+tests/walls/suites/test_models_on_second_drive.py (which reads THIS file, never
 a hardcoded spot). The engine URL is synced from the root into
 the comfyui endpoint by `provision paths` so the gateway and the
 config never drift (extra_model_paths.yaml's generation is the

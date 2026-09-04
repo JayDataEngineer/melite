@@ -44,7 +44,7 @@ assert "h3-timeline" not in names, "h3-timeline is a MODEL now (interlock), not 
 # State-aware: the model registry is built at gateway startup from the tree
 # on disk. A gateway that started before the model migration serves an
 # EMPTY catalog — a process-state artifact, not a code defect. The golden
-# wall (tests/test_http_parity.py, fresh gateway) pins the full contract.
+# wall (tests/walls/suites/test_http_parity.py, fresh gateway) pins the full contract.
 C=$(curl -s -m 8 "$GW/v1/model-catalog")
 echo "$C" | J >/dev/null; ck "catalog.strict_json" $?
 echo "$C" | python3 -c '
