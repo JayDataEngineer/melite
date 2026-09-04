@@ -217,9 +217,10 @@ class TestCardPattern(unittest.TestCase):
     compose/ package dispatches — never owns the arm."""
 
     CARDS = [
-        ("anycreature", "action_cards/creature/forge"),
+        ("anycreature", "action_cards/3d/forge"),
         ("kimodo", "action_cards/motion/text-to-motion"),
-        ("autoremesher", "action_cards/mesh/quad-remesh"),
+        ("autoremesher", "action_cards/3d/quad-remesh"),
+        ("audio-cpp", "action_cards/audio/music"),
     ]
 
     def test_every_card_owns_the_pattern_files(self):
@@ -264,7 +265,7 @@ class TestRendererArgv(unittest.TestCase):
         return mod
 
     def test_quad_remesh_argv_is_the_eight_knob_cli(self):
-        r = self._renderer("autoremesher", "mesh/quad-remesh",
+        r = self._renderer("autoremesher", "3d/quad-remesh",
                            "qr_renderer_check")
         cmd, out, report = r.build_argv(
             __import__("pathlib").Path("/bin/autoremesher"), "/tmp/run",
@@ -340,11 +341,11 @@ class TestKnobSSOT(unittest.TestCase):
 
     def test_forge_fields_all_in_knob_rows(self):
         from melite_models import load_model_py
-        mod = self._fields("anycreature", "creature/forge",
+        mod = self._fields("anycreature", "3d/forge",
                            "forge_card_check")
         card_fields = {f.name for f in mod.ForgeCard._fields_}
         mpath = os.path.join(REPO, "plugins/engines/cpp/anycreature",
-                             "models/creature/anycreature/model.py")
+                             "models/3d/anycreature/model.py")
         cls = load_model_py(mpath, "anycreature")
         knob_fields = {row["card"] for row in cls.card_knobs}
         self.assertTrue(card_fields <= knob_fields,
@@ -353,7 +354,7 @@ class TestKnobSSOT(unittest.TestCase):
 
     def test_quad_remesh_fields_all_in_knob_rows(self):
         from melite_models import load_model_py
-        mod = self._fields("autoremesher", "mesh/quad-remesh",
+        mod = self._fields("autoremesher", "3d/quad-remesh",
                            "qr_card_check")
         card_fields = {f.name for f in mod.QuadRemeshCard._fields_}
         mpath = os.path.join(REPO, "plugins/engines/cpp/autoremesher",
