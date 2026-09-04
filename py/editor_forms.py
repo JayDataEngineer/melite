@@ -79,6 +79,8 @@ import json
 import os
 import sys
 
+import form_wire
+
 try:
     # the same class as the gateway's (plugins.py defines the standalone
     # twin when the gateway import cycle blocks — same trick as plugins.py)
@@ -1360,9 +1362,26 @@ def _variants(repo_root, model, prefer_variant=None):
 # ─────────────────────────────────────────────────────────────────────────
 
 # Minimal lane/family display spec (src/server.cpp:7963-7966): display wire
-# only — the run door's no-fallback law is untouched.
+# only — the run door's no-fallback law is untouched. FORM WIRE GATE
+# (2026-09-05): served through the SAME frozen FormSpecRow with honest
+# empties — the old bare {defaults,variants,features,enhance_prompts}
+# 200 was the hollow-spec bug (a form the client contract cannot hold);
+# a lane spec now carries the full required core like every other 200.
 _MINIMAL_LANE_SPEC = {"defaults": {}, "variants": [], "features": {},
                       "enhance_prompts": ""}
+
+
+def _minimal_lane_spec(model):
+    """The lane display spec, CONSTRUCTED through form_wire.FormSpecRow
+    — required keys present, empties honest."""
+    return form_wire.FormSpecRow(
+        model=model, form=model, service=model, label=model,
+        genre="", fields=[], schema_groups=[],
+        features=_MINIMAL_LANE_SPEC["features"],
+        defaults=_MINIMAL_LANE_SPEC["defaults"],
+        variants=_MINIMAL_LANE_SPEC["variants"],
+        enhance_prompts=_MINIMAL_LANE_SPEC["enhance_prompts"],
+    ).model_dump()
 
 _SAFE_ID = frozenset(
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
@@ -1443,9 +1462,25 @@ def form_spec(repo_root, model_id):
         owner = _route_owner(repo_root, model)
         if owner is not None:
             return _form_spec_routed(repo_root, owner, model)
+        # FORM-NAME RESOLUTION (2026-09-05, form_wire gate): a fresh
+        # baseline card carries its FORM name as the service
+        # (stage.service = "image-gen"); the spec door resolves it
+        # through the /v1/forms registry to its default_service model.
+        # Before this, "image-gen" fell to the lane probe below (ANY
+        # flow.yaml carrying "type: image-gen" — every estate flow
+        # doc's image step matches) and served the hollow
+        # _MINIMAL_LANE_SPEC: a 200 with no fields — the card modal
+        # rendered the Model zone and nothing else ("it just allows me
+        # to pick model"). The registry wins BEFORE the probe; a form
+        # name can never read as a lane.
+        fdef = _FORMS_TABLE.get(model)
+        if (fdef is not None and fdef["default_service"] != model
+                and _find_model(_scan_catalog(repo_root),
+                                fdef["default_service"]) is not None):
+            return form_spec(repo_root, fdef["default_service"])
         safe = len(model) < 64 and all(c in _SAFE_ID for c in model)
         if safe and _lane_probe(repo_root, model):
-            return 200, dict(_MINIMAL_LANE_SPEC)
+            return 200, _minimal_lane_spec(model)
         return 404, {"error": "model not found"}
 
     # enhance recipes: (2026-09-02) class-driven — the model class carries
@@ -1490,6 +1525,18 @@ def form_spec(repo_root, model_id):
     frag = _card_spec(repo_root, row["id"])
     if frag:
         spec.update(frag)
+    # CARDLESS MODELS (2026-09-05, form_wire gate): a catalog row with
+    # no card fragment (tool lanes, family engines, undeployed
+    # families) serves the SAME required core with honest empties —
+    # form/service default to the model id, fields/schema_groups to
+    # []. The pre-gate shape (no form/service/fields keys at all) was
+    # the hollow-spec class; the C served it field-less and the editor
+    # rendered "No parameters" — that tolerance is the contract, the
+    # missing keys are not.
+    spec.setdefault("form", row["id"])
+    spec.setdefault("service", row["id"])
+    spec.setdefault("fields", [])
+    spec.setdefault("schema_groups", [])
     # INTERSECT defaults with the card's declared fields (the
     # form-surface shouldn't advertise a model default the card has
     # no input for — a phantom slot the editor would render as a
@@ -1502,7 +1549,19 @@ def form_spec(repo_root, model_id):
         declared = {f.get("name") for f in frag["fields"] if f.get("name")}
         spec["defaults"] = {k: v for k, v in spec["defaults"].items()
                             if k in declared}
-    return 200, spec
+    # FORM WIRE GATE (2026-09-05): the 200 body is CONSTRUCTED as a
+    # frozen FormSpecRow — model/form/service/label/genre/fields/
+    # schema_groups/features/defaults/variants are REQUIRED. A spec
+    # that cannot carry the universal action form cannot be built and
+    # cannot be served. A refusal is a LOUD 500 with the field-named
+    # reason (our own card data is malformed — document, then continue:
+    # RESILIENCE LAW), never a hollow 200 and never a crashed gateway.
+    try:
+        gated = form_wire.FormSpecRow.model_validate(spec).model_dump()
+    except form_wire.ValidationError as e:
+        return 500, {"error": "form spec contract refusal (%s): %s"
+                     % (row["id"], form_wire.refusal_reason(e))}
+    return 200, gated
 
 
 # ─────────────────────────────────────────────────────────────────────────
