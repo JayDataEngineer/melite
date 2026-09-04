@@ -229,3 +229,55 @@ def test_http_unknown_refuses_404(scratch_gateway):
     with pytest.raises(urllib.error.HTTPError) as ei:
         _http_get(scratch_gateway, "v1/form-spec?model=no-such-thing")
     assert ei.value.code == 404
+
+
+# ── G. cross-door invariant: manifest kinds ⊆ kinds registry ───────
+#
+# The 2026-09-05 root cause (operator: "nothing has changed" — the
+# second round of the same symptom): every action_cards/*/*/tool.json
+# declares kind "card-compose"; the kinds table (rebuilt from the
+# seven first-party yaml files) never had that row; the editor's
+# kindDef() fail-safed to UNKNOWN (formSpec: false) and the modal's
+# spec load NEVER FIRED — the server served a perfect form-spec and
+# the client never asked for it. Two server tables, zero contract
+# between them. This section is that contract.
+
+def test_card_tools_kinds_exist_in_registry_with_formspec():
+    import lane_disclosure
+    manifests = lane_disclosure.card_tools()
+    assert len(manifests) >= 10
+    import card_kinds
+    rows = {r.kind: r for r in card_kinds.TABLE.kinds}
+    for m in manifests:
+        kind = m.get("kind")
+        assert kind, ("manifest without a kind", m.get("name"))
+        assert kind in rows, (
+            "manifest kind missing from the kinds registry — the "
+            "editor fail-safes this card to NO form-spec (the "
+            "model-picker-only bug class): %s (card %s)"
+            % (kind, m.get("name")))
+        assert rows[kind].formSpec, (
+            "a picker-seeded action card must render the universal "
+            "form (formSpec=True): %s (card %s)" % (kind, m.get("name")))
+
+
+def test_registry_declares_card_compose():
+    import card_kinds
+    rows = {r.kind: r for r in card_kinds.TABLE.kinds}
+    assert "card-compose" in rows and rows["card-compose"].formSpec
+
+
+def test_http_kinds_lane_serves_card_compose(scratch_gateway):
+    status, body = _http_get(scratch_gateway, "v1/kinds")
+    assert status == 200
+    kinds = {k["kind"]: k for k in body["kinds"]}
+    assert kinds.get("card-compose", {}).get("formSpec") is True
+
+
+def test_http_card_tools_manifest_kinds_covered(scratch_gateway):
+    status, body = _http_get(scratch_gateway, "v1/kinds")
+    reg = {k["kind"] for k in body["kinds"] if k.get("formSpec")}
+    status2, manifests = _http_get(scratch_gateway, "v1/card-tools")
+    assert status2 == 200
+    for m in manifests:
+        assert m.get("kind") in reg, (m.get("name"), m.get("kind"))

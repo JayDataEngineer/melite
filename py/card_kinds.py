@@ -80,12 +80,23 @@ class CardKindTable(BaseModel, frozen=True):
 
 # THE declaration — the single instance everything else derives from.
 # Rows mirror the original plugins/core/kinds/*.yaml table 1:1 (recovered
-# from 8adcb19; the jsdom fixture meliteCoreKinds.ts pins the same seven).
+# from 8adcb19; the jsdom fixture meliteCoreKinds.ts pins the same set).
 TABLE = CardKindTable(
     kinds=(
         CardKindRow(kind="generation", runnable=True, executable=True,
                     formSpec=True, compound=False, opensStudio=False),
         CardKindRow(kind="chain", runnable=True, executable=True,
+                    formSpec=True, compound=False, opensStudio=False),
+        # card-compose: the compose-first action cards (every
+        # action_cards/*/*/tool.json declares kind "card-compose").
+        # Missing from this table 2026-09-04..05 — the manifests stamped
+        # a kind the registry never had, the editor's kindDef() fail-
+        # safed to UNKNOWN (formSpec: false), and the modal's spec load
+        # never fired: every baseline card rendered the Model zone and
+        # nothing else ("it just allows me to pick model"). The
+        # cross-door wall (test_form_wire.py section G) now refuses a
+        # manifest kind the registry lacks.
+        CardKindRow(kind="card-compose", runnable=True, executable=True,
                     formSpec=True, compound=False, opensStudio=False),
         CardKindRow(kind="studio-link", runnable=True, executable=False,
                     formSpec=False, compound=False, opensStudio=True,
