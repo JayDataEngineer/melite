@@ -34,6 +34,15 @@ IMPORT_SURFACES = [
     "catalog",                 # py/catalog.py: model catalog scanner
     "lane_disclosure",          # py/lane_disclosure.py: lane listing
     "asset_ledger",            # py/asset_ledger.py: the asset-ledger rung
+    # 2026-09-04: the surface-registry meta-test (test_surface_registry.py)
+    # caught these five gateway-imported modules running unpinned —
+    # every py/ sibling py/gateway.py imports must have a clean-import
+    # pin here or a documented exemption there.
+    "editor_forms",            # py/editor_forms.py: editor form discovery
+    "editor_runs",             # py/editor_runs.py: editor run routing
+    "flow",                    # py/flow.py: flows/<name>/flow.py resolver
+    "manage",                  # py/manage.py: management-plane door
+    "pipeline_graph",          # py/pipeline_graph.py: run graph emitter
 ]
 
 
