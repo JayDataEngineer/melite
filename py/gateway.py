@@ -135,6 +135,24 @@ def resolve_request(body):
                           "or model")
 
 
+# The start-body keys that SELECT a graph, never ride it: the initial
+# tensor pool (execute) is built from everything else — prompt and
+# friends are run INPUTS, but a door key's payload is the graph
+# declaration itself. flow_inline joined the exclusion 2026-09-05:
+# without it the whole typed body leaked into the pool as a passenger
+# dict (inert for resolve_inputs, pollution in every _request.json
+# downstream read). ONE list, no restated copies.
+DOOR_KEYS = ("yaml", "flow", "flow_inline", "model")
+
+
+def initial_pool(request):
+    """The run's initial input pool: request body minus the door keys.
+
+    Pure seam (wall-tested): the pool is scalar/stringly run inputs —
+    prompt, seed, wired artifact URLs — never a graph declaration."""
+    return {k: v for k, v in request.items() if k not in DOOR_KEYS}
+
+
 # (_find_model_yaml/_engine_type_of retired 2026-09-02: the nondeterministic
 # first-glob-hit model resolution moved to py/plugins.py — declarer-wins,
 # sorted, LOUD refusals. The C glob-order bug dies here.)
@@ -555,7 +573,7 @@ class Gateway:
                 self.active = None
 
     async def execute(self, run):
-        initial = {k: v for k, v in run.request.items() if k not in ("yaml", "flow", "model")}
+        initial = initial_pool(run.request)
         # phase-1 card inputs ("inputs": {...}) land in the tensor pool
         ci = getattr(run, "card_extra_inputs", {}) or {}
         nested = ci.get("inputs") if isinstance(ci.get("inputs"), dict) else ci

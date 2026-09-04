@@ -134,6 +134,24 @@ def test_validate_door_compiles_without_registering():
     assert "must be mesh" in body["error"]
 
 
+def test_initial_pool_excludes_every_door_key():
+    """The run's tensor pool carries INPUTS, never a graph declaration.
+    The flow_inline body is the loudest case: without the exclusion the
+    whole typed flow rides the pool as an inert passenger dict (silent
+    pollution — every downstream _request.json read sees it)."""
+    import gateway as gw_mod
+    pool = gw_mod.initial_pool({
+        "flow_inline": _INLINE_TWO_STEP,
+        "prompt": "a still, then motion",
+        "seed": 7,
+    })
+    assert pool == {"prompt": "a still, then motion", "seed": 7}
+    # every door key excluded — including the retired yaml spelling
+    for door in gw_mod.DOOR_KEYS:
+        pool = gw_mod.initial_pool({door: object(), "prompt": "x"})
+        assert door not in pool
+
+
 # C4: illegal identifier refused (traversal dies at the door)
 def test_illegal_ident_refused():
     with pytest.raises(ValidationError):
