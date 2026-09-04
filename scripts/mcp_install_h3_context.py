@@ -14,6 +14,7 @@ import asyncio
 import json
 import os
 import sys
+from pathlib import Path
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
@@ -23,9 +24,27 @@ TARGET_URL = "https://github.com/NikoDemon80/ComfyUI-H3-Motion-Context.git"
 # pack ids only). The registry slug for this pack, if it exists:
 TARGET_REGISTRY_ID = "comfyui-h3-motion-context"
 
+# the comfyui binary path: env override → estate_config root → old hardcoded
+# fallback (this script is a one-off bootstrap demo, never a production rail;
+# the root config owns the path for everything else)
+_REPO = Path(__file__).resolve().parents[1]
+if str(_REPO / "py") not in sys.path:
+    sys.path.insert(0, str(_REPO / "py"))
+try:
+    import estate_config
+    _EP = estate_config.engine_url("comfyui") or ""
+    _COMFY_PATH = Path(os.environ.get(
+        "COMFYUI_PATH",
+        str(_REPO / "data/runtime/comfyui")))
+except Exception:
+    _EP = ""
+    _COMFY_PATH = Path(os.environ.get(
+        "COMFYUI_PATH", "/opt/ComfyUI"))
+_url = _EP.rstrip("/") or "http://127.0.0.1:18466"
+
 ENV = dict(os.environ,
-           COMFY_BIN="/opt/ComfyUI/.venv/bin/comfy",
-           COMFY_LOCAL_URL="http://127.0.0.1:18465")
+           COMFY_BIN=str(_COMFY_PATH / ".venv" / "bin" / "comfy"),
+           COMFY_LOCAL_URL=_url)
 
 
 async def main() -> int:
@@ -33,7 +52,8 @@ async def main() -> int:
         print(f"[server] {line.rstrip()}", flush=True)
 
     params = StdioServerParameters(
-        command="/opt/ComfyUI/.venv/bin/comfy-mcp", env=ENV, errlog=errlog)
+        command=str(_COMFY_PATH / ".venv" / "bin" / "comfy-mcp"),
+        env=ENV, errlog=errlog)
     async with stdio_client(params) as (read, write):
         async with ClientSession(read, write) as s:
             await s.initialize()

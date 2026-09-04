@@ -172,3 +172,56 @@ def engine_url(engine: str, endpoint_override: str | None = None) -> str:
     if not isinstance(row, dict):
         return ""
     return str(row.get("url") or "").strip()
+
+
+def engine_field(engine: str, field: str,
+                 endpoint_override: str | None = None) -> str:
+    """Any engine field: endpoint override wins when SET and non-empty;
+    otherwise the root config's engines.<engine>.<field>. Returns ''
+    when absent (callers decide whether '' is valid).
+
+    Used for stream paths (input_dir, output_dir), the boot_cmd,
+    kimodo's generator/exporter paths, and any future fields that
+    follow the same override-then-root pattern.
+    """
+    raw = str(endpoint_override or "").strip()
+    if raw:
+        return raw
+    cfg = load()
+    row = (cfg.get("engines") or {}).get(engine) or {}
+    if not isinstance(row, dict):
+        return ""
+    return str(row.get(field) or "").strip()
+
+
+def engine_port(engine: str, endpoint_override=None) -> int:
+    """The port (int) — derived from the URL when not set explicitly
+    in the root config. This lets boot_cmd drift be caught: if the
+    root config's URL says 18466, the port is 18466 regardless of
+    what the endpoint's boot_cmd string says.
+    """
+    val = endpoint_override
+    if val is not None:
+        val = str(val).strip()
+    if val:
+        try:
+            return int(val)
+        except ValueError:
+            pass
+    cfg = load()
+    row = (cfg.get("engines") or {}).get(engine) or {}
+    if isinstance(row, dict):
+        p = row.get("port")
+        if p is not None:
+            try:
+                return int(p)
+            except (ValueError, TypeError):
+                pass
+        url = str(row.get("url") or "").strip()
+        if url:
+            from urllib.parse import urlparse
+            try:
+                return int(urlparse(url).port)
+            except (ValueError, TypeError):
+                pass
+    return 0

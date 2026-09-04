@@ -377,39 +377,73 @@ def _lay_download_pointers(download_base, folders):
 # 2026-09-04: configure the whole estate from the project root;
 # the root is the SSOT, the endpoint file is a generated surface
 # for these fields — the same shape extra_model_paths.yaml plays).
-_ENDPOINT_DERIVED = ("url", "model_base_path", "model_download_path")
+# Values here are synced to the endpoint on every provision paths
+# run; hand-edits to these keys in the endpoint are overwritten.
+_ENDPOINT_DERIVED = ("url", "model_base_path", "model_download_path",
+                     "input_dir", "input_dir_container", "output_dir",
+                     "boot_cmd")
 
 
 def _sync_endpoint_from_root(cfg):
-    """The comfyui endpoint's url + model_* keys are derived from
-    the root config. The endpoint may still override url when set
-    (back-compat for deployments that pass one in); for the model
-    keys, the endpoint inherits — writes the root's value to the
-    endpoint file so the gateway and the wall see the same root."""
-    import collections
+    """The comfyui endpoint's url, model_*, stream and boot_cmd keys
+    are derived from the root config. The root is the SSOT; the
+    endpoint file is the surface the gateway reads (same shape
+    extra_model_paths.yaml plays). An explicit endpoint value still
+    wins when SET (back-compat); unset inherits the root.
+
+    The boot_cmd is built from the root's url/port + input/output
+    dirs (the <repo> placeholder is preserved; only the drift-prone
+    values are injected) — this catches the port-drift gap where
+    changing the URL left boot_cmd pointing at the old port."""
     try:
         path_urls = estate_config.model_paths("comfyui")
     except estate_config.RootConfigError:
         return
+    ep = cfg  # the endpoint dict we're syncing
+    url = estate_config.engine_url("comfyui",
+                                   endpoint_override=ep.get("url"))
+    port = estate_config.engine_port("comfyui",
+                                     endpoint_override=ep.get("port"))
+    input_dir = estate_config.engine_field(
+        "comfyui", "input_dir",
+        endpoint_override=ep.get("input_dir"))
+    input_dir_container = estate_config.engine_field(
+        "comfyui", "input_dir_container",
+        endpoint_override=ep.get("input_dir_container"))
+    output_dir = estate_config.engine_field(
+        "comfyui", "output_dir",
+        endpoint_override=ep.get("output_dir"))
+    # boot_cmd: root config wins when present; derive port from root
+    # if needed (catches the drift gap where URL and boot_cmd port
+    # disagree).
+    boot_cmd = estate_config.engine_field(
+        "comfyui", "boot_cmd",
+        endpoint_override=ep.get("boot_cmd"))
+    if boot_cmd and port:
+        import re as _re
+        boot_cmd = _re.sub(r"--port \d+", "--port %d" % port, boot_cmd)
+        boot_cmd = _re.sub(r"--listen 127\.0\.0\.1 --port",
+                           "--listen 127.0.0.1 --port", boot_cmd)
     derived = {
         "model_base_path": path_urls["read_root"],
         "model_download_path": path_urls["download_root"],
+        "url": url,
+        "input_dir": input_dir,
+        "input_dir_container": input_dir_container,
+        "output_dir": output_dir,
+        "boot_cmd": boot_cmd,
     }
-    # url: root is the default; an explicit endpoint value wins
-    derived["url"] = estate_config.engine_url("comfyui",
-                                             endpoint_override=cfg.get("url"))
     changed = []
     for k, v in derived.items():
-        cur = str(cfg.get(k) or "").strip()
+        cur = str(ep.get(k) or "").strip()
         want = str(v or "").strip()
         if cur == want:
             continue
         changed.append(k)
-        cfg[k] = want
+        ep[k] = want
     if not changed:
         return
     cfg_path = DEFAULT_CONFIG
-    # write back preserving the file's order + comments where we can
     on_disk = json.loads(cfg_path.read_text())
     for k in _ENDPOINT_DERIVED:
         if k in derived:
