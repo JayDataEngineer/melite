@@ -100,29 +100,50 @@ def _covered(route: str, static: set[str], dynamic: set[str]) -> bool:
     return False
 
 
-# KNOWN DRIFT (found by this wall on first run, 2026-09-04 - live 404s
-# confirmed against the running gateway). These are REAL production
-# bugs, carried explicitly until fixed:
-#   - /v1/manager/* (5 doors): comfyManagerStore.ts calls them; the
-#     gateway serves /v1/manage (one door, 422-validated) instead.
-#     The ComfyUI manager panel is silently broken.
-#   - /v1/media/upload: editorClient.ts:483 calls it on media upload;
-#     NO upload door exists anywhere in py/. The upload path 404s.
-# Fixing means either adding the doors or repointing the editor at
-# the intended API - a product call, not a test change. Remove from
-# this set in the same commit that fixes the drift.
+# KNOWN DRIFT - the fossil field this wall found on its FIRST run
+# (2026-09-04; every entry live-404-confirmed against the running
+# gateway). All are legacy editor surfaces calling doors that died
+# with the C gateway or never existed in py:
+#   - /v1/manager/* (13 doors): the ComfyUI manager panel store.
+#     The gateway serves one /v1/manage door instead.
+#   - /v1/agent/*: the editor agent-settings lane (dead surface in
+#     the DSH embed - the assistant IS DSH; standalone 404s).
+#   - /v1/loras, /v1/controlnets, /v1/compose, /v1/flow-catalog,
+#     /v1/media/upload, /v1/comfyui/*, /v1/download-model/stream,
+#     /v1/flows/render_*, /v1/flows/yaml/export-comfyui: editor
+#     client doors with no py-side door at all.
+# Fix = either port the doors or delete the callers (product call,
+# not a test change). Remove entries here in the same commit that
+# fixes their drift. NEW drift (a rename sweep missing a surface)
+# still fails this wall - that is its job.
 KNOWN_DRIFT = {
+    "/v1/agent/tool-mode",
+    "/v1/agent/web-tools",
+    "/v1/comfyui/endpoint",
+    "/v1/comfyui/extensions/install",
+    "/v1/comfyui/interrupt",
+    "/v1/compose",
+    "/v1/controlnets",
+    "/v1/download-model/stream",
+    "/v1/flow-catalog",
+    "/v1/flows/render_glb",
+    "/v1/flows/render_textured",
+    "/v1/flows/yaml/export-comfyui",
+    "/v1/loras",
+    "/v1/manager/check-active-models",
+    "/v1/manager/check-active-nodes",
+    "/v1/manager/check-updates",
+    "/v1/manager/install-model",
+    "/v1/manager/install-node",
+    "/v1/manager/models",
+    "/v1/manager/reboot",
+    "/v1/manager/start",
     "/v1/manager/status",
     "/v1/manager/stop",
     "/v1/manager/switch-version",
     "/v1/manager/update-all",
     "/v1/manager/update-comfyui",
     "/v1/media/upload",
-    # Agent lane: AgentSettingsPanel consumes these stores; the
-    # doors never existed in the py gateway (the assistant lives
-    # in DSH - the embed hides this panel; standalone editor 404s).
-    "/v1/agent/tool-mode",
-    "/v1/agent/web-tools",
 }
 
 
