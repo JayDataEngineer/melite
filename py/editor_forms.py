@@ -135,6 +135,24 @@ _FORMS_TABLE = {
     "img-to-mesh": {"label": "Image → 3D", "genre": "3d", "order": 10,
                     "plugin": "comfyui", "sidebar_key": "3d",
                     "default_service": "trellis2-native", "hidden": False},
+    # cpp native-engine category (2026-10-02): the vendored-subprocess
+    # engines join the SAME picker — generic form-specs (the card class
+    # Field rows), queue lane, no bespoke editor chrome yet.
+    "forge": {"label": "Creature Forge", "genre": "creature", "order": 11,
+              "plugin": "anycreature", "sidebar_key": "3d",
+              "default_service": "anycreature", "hidden": False},
+    "text-to-motion": {"label": "Text → Motion", "genre": "motion",
+                       "order": 12, "plugin": "kimodo",
+                       "sidebar_key": "motion",
+                       "default_service": "soma", "hidden": False},
+    "quad-remesh": {"label": "Quad Remesh", "genre": "3d", "order": 13,
+                    "plugin": "autoremesher", "sidebar_key": "3d",
+                    "default_service": "autoremesher", "hidden": False},
+    # cluster C2 (2026-09-04): anny — character assembly (composite
+    # body/hair/outfit + 8-view turnaround + SAM part sprites)
+    "anny": {"label": "Anny", "genre": "3d", "order": 14,
+             "plugin": "comfyui", "sidebar_key": "3d",
+             "default_service": "anny", "hidden": False},
 }
 
 # The C's ALLOWED_CARDS gate (src/server.cpp:7585-7588) is exactly the keys
@@ -327,19 +345,18 @@ def _parse_model_yaml(text):
 def _iter_plugin_engines(repo_root):
     """The 2026-09 engine formalization layout (supersedes the C's
     plugins/<owner>/ depth-1 scan): cards and models are ENGINE-owned at
-    plugins/engines/<engine>/. No legacy-depth fallback — the old scan
-    found nothing here and every model 404'd (reorg debt, healed
-    2026-09-02). Bridge copies (a model dir under an engine whose
+    plugins/engines/<engine>/ — AND (2026-10-02) under category subdirs
+    (plugins/engines/<cat>/<plugin>/ — the cpp native-engine category).
+    THE WALK LIVES IN plugins.py (iter_plugin_dirs_under — one law,
+    every consumer). Bridge copies (a model dir under an engine whose
     model.yaml declares a DIFFERENT engine — e.g. comfyui's audio bridge
     packs) stay owned by their DECLARING engine, mirroring resolve_model's
     declarer rule in py/plugins.py."""
+    from pathlib import Path
+    import plugins as _plugins
     eng_root = os.path.join(repo_root, "plugins", "engines")
-    for engine in _scandir(eng_root):
-        if engine.startswith('.'):
-            continue
-        edir = os.path.join(eng_root, engine)
-        if os.path.isdir(edir):
-            yield engine, edir
+    for pdir in _plugins.iter_plugin_dirs_under(Path(eng_root)):
+        yield pdir.name, str(pdir)
 
 
 def _scan_catalog(repo_root):

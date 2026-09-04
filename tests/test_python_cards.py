@@ -145,6 +145,10 @@ def main():
         # five loaders, no extension packs
         ("img-to-mesh", "comfyui", "trellis2-native",
          ("action_cards", "3d", "img_to_mesh")),
+        # cluster C2 (2026-09-04): anny — character assembly on the
+        # poser pack (composite + turnaround + SAM sprites)
+        ("anny", "comfyui", "anny",
+         ("action_cards", "3d", "anny")),
     ]
     for cid, engine, model, home in FLIPPED:
         cpath = _card_py(engine, *home)
@@ -228,7 +232,8 @@ def main():
     _truth = _ac.ENGINE_TRUTH_KEYS + tuple(_cc.ENGINE_TRUTH_KEYS)
     pairs = validate_against_cards(models, cards, engine_truth=_truth)
     check("cross-validation pairs (all boarded families)",
-          pairs == [("img-edit", "image-edit"),
+          pairs == [("anny", "anny"),
+                    ("img-edit", "image-edit"),
                     ("kimodo", "motion"),
                     ("krea-2", "image-gen"),
                     ("mask-studio", "mask-studio"),

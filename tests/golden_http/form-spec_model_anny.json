@@ -1,0 +1,216 @@
+{
+ "defaults": {
+  "focal_length": "50",
+  "framing": "1.2",
+  "resolution": "768",
+  "samples": "64",
+  "transparent": "true"
+ },
+ "engine": "comfyui",
+ "enhance_prompts": {
+  "lyrics": "",
+  "prompt": null
+ },
+ "features": {
+  "modifiers": [],
+  "variant_groups": {
+   "Quant": {
+    "label": "Quant"
+   },
+   "Variant": {
+    "label": "Variant"
+   }
+  }
+ },
+ "fields": [
+  {
+   "default": 768,
+   "group": "turnaround",
+   "label": "View resolution",
+   "max": 2048,
+   "min": 256,
+   "name": "resolution",
+   "order": 0,
+   "step": 64,
+   "tooltip": "Pixel size of each turnaround view.",
+   "type": "slider",
+   "width": 1
+  },
+  {
+   "default": 1.2,
+   "group": "turnaround",
+   "label": "Framing",
+   "max": 3,
+   "min": 1,
+   "name": "framing",
+   "order": 1,
+   "step": 0.05,
+   "tooltip": "Camera distance factor \u2014 larger frames the whole body looser.",
+   "type": "slider",
+   "width": 1
+  },
+  {
+   "default": 50,
+   "group": "turnaround",
+   "label": "Focal length (mm)",
+   "max": 400,
+   "min": 10,
+   "name": "focal_length",
+   "order": 2,
+   "step": 1,
+   "tooltip": "Lens focal length \u2014 lower = wider perspective.",
+   "type": "slider",
+   "width": 1
+  },
+  {
+   "default": 64,
+   "group": "turnaround",
+   "label": "Samples",
+   "max": 4096,
+   "min": 1,
+   "name": "samples",
+   "order": 3,
+   "step": 1,
+   "tooltip": "Render samples per view \u2014 more = cleaner but slower.",
+   "type": "number",
+   "width": 1
+  },
+  {
+   "default": "true",
+   "group": "turnaround",
+   "label": "Background",
+   "name": "transparent",
+   "options": [
+    "true",
+    "false"
+   ],
+   "order": 4,
+   "tooltip": "Transparent turnaround background (for compositing into sheets).",
+   "type": "select",
+   "width": 1
+  }
+ ],
+ "form": "anny",
+ "genre": "3d",
+ "label": "Anny",
+ "model": "anny",
+ "schema_groups": [
+  {
+   "fields": [
+    {
+     "columns": 1,
+     "label": "Body GLB",
+     "name": "body_glb",
+     "order": 0,
+     "required": true,
+     "tooltip": "The base body \u2014 a rigged or static character GLB the parts composite onto.",
+     "type": "file"
+    },
+    {
+     "label": "Hair GLB",
+     "name": "hair_glb",
+     "order": 1,
+     "tooltip": "Optional hair part GLB \u2014 merged into the composite.",
+     "type": "file"
+    },
+    {
+     "label": "Outfit GLB",
+     "name": "outfit_glb",
+     "order": 2,
+     "tooltip": "Optional outfit part GLB \u2014 merged into the composite.",
+     "type": "file"
+    }
+   ],
+   "id": "parts",
+   "label": "Parts",
+   "order": 0,
+   "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "label": "Source photo",
+     "name": "source_image",
+     "order": 0,
+     "tooltip": "Character photo \u2014 SAM segments hair/outfit sprites (feeds the estimator arc).",
+     "type": "file"
+    }
+   ],
+   "id": "ingest",
+   "label": "Ingest",
+   "order": 1,
+   "zone": "params"
+  },
+  {
+   "fields": [
+    {
+     "default": 768,
+     "label": "View resolution",
+     "max": 2048,
+     "min": 256,
+     "name": "resolution",
+     "order": 0,
+     "step": 64,
+     "tooltip": "Pixel size of each turnaround view.",
+     "type": "slider",
+     "width": 1
+    },
+    {
+     "default": 1.2,
+     "label": "Framing",
+     "max": 3,
+     "min": 1,
+     "name": "framing",
+     "order": 1,
+     "step": 0.05,
+     "tooltip": "Camera distance factor \u2014 larger frames the whole body looser.",
+     "type": "slider",
+     "width": 1
+    },
+    {
+     "default": 50,
+     "label": "Focal length (mm)",
+     "max": 400,
+     "min": 10,
+     "name": "focal_length",
+     "order": 2,
+     "step": 1,
+     "tooltip": "Lens focal length \u2014 lower = wider perspective.",
+     "type": "slider",
+     "width": 1
+    },
+    {
+     "default": 64,
+     "label": "Samples",
+     "max": 4096,
+     "min": 1,
+     "name": "samples",
+     "order": 3,
+     "step": 1,
+     "tooltip": "Render samples per view \u2014 more = cleaner but slower.",
+     "type": "number",
+     "width": 1
+    },
+    {
+     "default": "true",
+     "label": "Background",
+     "name": "transparent",
+     "options": [
+      "true",
+      "false"
+     ],
+     "order": 4,
+     "tooltip": "Transparent turnaround background (for compositing into sheets).",
+     "type": "select",
+     "width": 1
+    }
+   ],
+   "id": "turnaround",
+   "label": "Turnaround",
+   "order": 2,
+   "zone": "params"
+  }
+ ],
+ "service": "anny",
+ "variants": []
+}
