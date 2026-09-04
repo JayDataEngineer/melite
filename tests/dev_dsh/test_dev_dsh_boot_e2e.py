@@ -156,22 +156,21 @@ def main() -> int:
         ok, detail = page_is_healthy(page)
         browser.close()
 
-        # ── CLIENT-BUNDLE LOADER SET (2026-09-04 sidebar retirement) ─────
+        # ── CLIENT-BUNDLE LOADER SET ─────────────────────────────────
         # The module loader fetches each dsh.client bundle at
         # /plugins/<npm-name>/client.js?rev=<hash>. The set of OUR
-        # packages in that list is the browser-side expression of the
-        # no-inference-in-the-sidebar policy:
-        #   - @melite-plugin/dsh-card-view MUST load (the chat cards —
-        #     the main window conversation surface);
-        #   - @melite-plugin/dsh-card-deck MUST NOT (its client half was
-        #     retired; the package is host-only now);
-        #   - @infer-media/dsh-media MUST NOT (the package is deleted);
-        #   - @infer-media/dsh-gallery MAY load (its apply is a no-op
-        #     claim — mounts nothing).
+        # packages in that list proves the inference extensions load.
+        #   - @melite-plugin/dsh-card-view MUST load (chat cards);
+        #   - @infer-media/dsh-media MUST load (media integration);
+        #   - @infer-media/dsh-gallery MUST load (runs gallery);
+        #   - @melite-plugin/dsh-card-deck MUST NOT load (client half
+        #     removed; host-only package).
         fetched = {u.split("/plugins/")[-1].split("/client.js")[0]
                    for u in request_urls if "/plugins/" in u and "/client.js" in u}
-        must_load = {"@melite-plugin/dsh-card-view"}
-        must_not_load = {"@melite-plugin/dsh-card-deck", "@infer-media/dsh-media"}
+        must_load = {"@melite-plugin/dsh-card-view",
+                    "@infer-media/dsh-media",
+                    "@infer-media/dsh-gallery"}
+        must_not_load = {"@melite-plugin/dsh-card-deck"}
         missing_load = must_load - fetched
         illegal_load = must_not_load & fetched
         if missing_load or illegal_load:

@@ -28,7 +28,7 @@ from _anchor import REPO
 
 WEB_DSH_MEMBERS = {
     "melite-card-view": "@melite-plugin/dsh-card-view",   # chat toolview (embedder, CLIENT)
-    "melite-card-deck": "@melite-plugin/dsh-card-deck",   # sidebar deck + /editor host (embedder, HOST)
+    "melite-card-deck": "@melite-plugin/dsh-card-deck",   # /editor main-window host (embedder, HOST)
     "media-plugin":     "@infer-media/dsh-media",
     "infer-gallery":    "@infer-media/dsh-gallery",
     "shared":           None,   # build helpers (tsdown.client.ts) — no package

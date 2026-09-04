@@ -296,13 +296,11 @@ class TestBundleContract:
         declared = set(prov_pkg.get("dependencies", {}).keys())
 
         # Plugins are split across two trees; their npm names may differ.
-        # @infer-media/dsh-media was RETIRED with the sidebar card deck
-        # (operator order 2026-09-04: no inference in the DSH sidebar);
-        # the four surviving bundles are the ones below.
         expected_pkgs = {
             "@melite-plugin/dsh-tools",
             "@melite-plugin/dsh-card-view",
             "@melite-plugin/dsh-card-deck",
+            "@infer-media/dsh-media",
             "@infer-media/dsh-gallery",
         }
         missing = expected_pkgs - declared
@@ -902,6 +900,7 @@ class TestDevDshClientBundleSet:
         }
         expected = {
             "@melite-plugin/dsh-card-view",
+            "@infer-media/dsh-media",
             "@infer-media/dsh-gallery",
         }
         missing = expected - ours
