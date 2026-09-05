@@ -130,7 +130,8 @@ class Field:
             raise ValidationError(
                 "field %r: step %s must be > 0" % (self.name, self.step))
         if self.default is not None and self.default != "" \
-                and self.min is not None and isinstance(self.default, (int, float)) \
+                and self.min is not None and self.max is not None \
+                and isinstance(self.default, (int, float)) \
                 and not (self.min <= self.default <= self.max):
             raise ValidationError(
                 "field %r: default %s outside [%s, %s]"
@@ -279,8 +280,64 @@ def _parse_options_str(field_name: str, raw: str) -> list[str]:
         % (field_name, raw))
 
 
+def _validate_verb(name: str, ns: _CardNamespace) -> None:
+    """The SubAction contract, refused at import (a broken verb never
+    serves): id + label name it; engines carry ≥1 runnable flow;
+    writes names the card fields a run may hydrate (non-empty — the
+    wall pins ⊆ card fields); requires is extension ids. A verb is
+    never a card (no id=cid) and never a pack."""
+    vid = ns.get("id", "")
+    if not (isinstance(vid, str) and vid and IDENT_RE.match(vid)):
+        raise ValidationError(
+            "%s: a verb needs a legal id (got %r)" % (name, vid))
+    if not ns.get("label", ""):
+        raise ValidationError(
+            "%s: a verb needs a label (the chip text)" % name)
+    engines = ns.get("engines", ())
+    if not isinstance(engines, tuple) or not engines:
+        raise ValidationError(
+            "%s: a verb needs engines=(VerbEngine, ...) — at least one "
+            "engine choice" % name)
+    seen_e = set()
+    runnable = False
+    for e in engines:
+        if not isinstance(e, VerbEngine):
+            raise ValidationError(
+                "%s: engines entries must be VerbEngine rows (got %r)"
+                % (name, e))
+        if e.id in seen_e:
+            raise ValidationError(
+                "%s: duplicate engine id %r" % (name, e.id))
+        seen_e.add(e.id)
+        runnable = runnable or e.flow is not None
+    if not runnable:
+        raise ValidationError(
+            "%s: a verb needs ≥1 runnable engine (a flow template) — "
+            "all-refusal verbs advertise a dead button" % name)
+    writes = ns.get("writes", ())
+    if not isinstance(writes, tuple) or not writes or not all(
+            isinstance(w, str) and w and IDENT_RE.match(w)
+            for w in writes):
+        raise ValidationError(
+            "%s: writes must be a non-empty tuple of card field names "
+            "(got %r)" % (name, writes))
+    requires = ns.get("requires", ())
+    if not isinstance(requires, tuple) or not all(
+            isinstance(r, str) and r for r in requires):
+        raise ValidationError(
+            "%s: requires must be a tuple of extension ids (got %r)"
+            % (name, requires))
+    if ns.get("pack", ""):
+        raise ValidationError(
+            "%s: a verb never carries a pack (verbs mount by id, packs "
+            "merge field flavors)" % name)
+
+
 def _absorb_models(name: str, cid: str, models: tuple[type[Model], ...],
-                   fields: list[Field], seen: set[str]) -> tuple[list[Field], set[str]]:
+                   fields: list[Field], seen: set[str]
+                   ) -> tuple[list[Field], set[str],
+                              tuple[tuple[type[SubActionMod],
+                                          tuple[str, ...]], ...]]:
     """The interlock's engine: board Model classes → derive the mods
     surface. MODS ARE MODEL-LEVEL DECLARATIONS (Model.mods tuples of
     ActionCardPack classes); the card never hand-lists mod fields —
@@ -310,6 +367,7 @@ def _absorb_models(name: str, cid: str, models: tuple[type[Model], ...],
     # on a field's shape are a LOUD refusal — one declaration per
     # name means one SHAPE per name too (pick a shape, share it).
     mod_scope = {}       # pack -> (mod class, [family ids declaring it])
+    verb_scope = {}      # verb id -> (verb class, [family ids])
     for m in models:
         for mod in getattr(m, "mods", ()) or ():
             if not (isinstance(mod, type)
@@ -317,6 +375,21 @@ def _absorb_models(name: str, cid: str, models: tuple[type[Model], ...],
                 raise ValidationError(
                     "model %r declares mod %r — mods must be "
                     "ActionCardPack classes" % (m.id, mod))
+            if getattr(mod, "_is_verb_", False):
+                # SUB-ACTION: mounts by verb id, fields NEVER union
+                # (zone-law rule 2 — verbs own their knobs).
+                if mod.id in verb_scope:
+                    first, fams = verb_scope[mod.id]
+                    if first is not mod:
+                        raise ValidationError(
+                            "%s: two verbs claim id %r (%s vs %s) — "
+                            "one verb id means one verb class"
+                            % (name, mod.id, first.__name__,
+                               mod.__name__))
+                    fams.append(m.id)
+                else:
+                    verb_scope[mod.id] = (mod, [m.id])
+                continue
             pack = getattr(mod, "pack", "") or mod.__name__
             if pack in mod_scope:
                 first, fams = mod_scope[pack]
@@ -335,7 +408,9 @@ def _absorb_models(name: str, cid: str, models: tuple[type[Model], ...],
             fc = replace(f, families=tuple(fams))
             seen.add(f.name)
             out.append(fc)
-    return out, seen
+    verbs = tuple((mod, tuple(fams))
+                  for _vid, (mod, fams) in verb_scope.items())
+    return out, seen, verbs
 
 
 def _field_sig(f: Field) -> tuple[tuple[str, str], ...]:
@@ -385,6 +460,7 @@ class _CardMeta(type):
                 ns: _CardNamespace) -> type[ActionCard] | type[Mod]:
         cls = super().__new__(mcls, name, bases, ns)
         cid = ns.get("id", "")
+        is_verb = any(getattr(b, "_is_verb_", False) for b in bases)
         fields = []
         seen = set()
         own = {key: val for key, val in ns.items()
@@ -405,14 +481,33 @@ class _CardMeta(type):
                     fields.append(f)
         # -- absorption: the mods arrive THROUGH the boarded models ------
         models = ns.get("models", None)
+        own_verbs: tuple[tuple[type[SubActionMod], tuple[str, ...]], ...] = ()
         if models is not None:
-            fields, seen = _absorb_models(name, cid, models, fields, seen)
+            fields, seen, own_verbs = _absorb_models(name, cid, models,
+                                                     fields, seen)
             if "families" in ns:
                 raise ValidationError(
                     "%s declares BOTH models= and families= — models is "
                     "the truth; families derive from them" % name)
             cls.families = tuple(m.id for m in models)
         cls._fields_ = tuple(fields)
+        # mounted verbs: own mounts win; inherited mounts ride along
+        # (a layout subclass keeps its parent's verbs); two different
+        # classes claiming one verb id is a refusal, not a shadow.
+        verbs: dict[str, tuple[type[SubActionMod], tuple[str, ...]]] = {
+            vcls.id: (vcls, vfams) for vcls, vfams in own_verbs}
+        for base in bases:
+            for vcls, vfams in getattr(base, "_verbs_", ()):
+                if vcls.id in verbs:
+                    if verbs[vcls.id][0] is not vcls:
+                        raise ValidationError(
+                            "%s: two verbs claim id %r (%s vs %s) — "
+                            "one verb id means one verb class"
+                            % (name, vcls.id,
+                               verbs[vcls.id][0].__name__, vcls.__name__))
+                else:
+                    verbs[vcls.id] = (vcls, vfams)
+        cls._verbs_ = tuple(verbs.values())
         pack = ns.get("pack", "")
         if pack and cid:
             raise ValidationError(
@@ -437,9 +532,11 @@ class _CardMeta(type):
                 "capability — the LoRA control would render over an "
                 "empty /v1/loras pack; declare LoraRow rows or drop "
                 "the mod" % name)
-        if fields and not cid and not pack:
+        if fields and not cid and not pack and not is_verb:
             raise ValidationError(
                 "%s declares fields but no card id" % name)
+        if is_verb:
+            _validate_verb(name, ns)
         if cid and not IDENT_RE.match(cid):
             raise ValidationError(
                 "%s: card id %r is not a legal identifier" % (name, cid))
@@ -543,7 +640,9 @@ class ActionCard(metaclass=_CardMeta):
 # sets (z-image ≠ krea-2). A card boarding that model absorbs the
 # declared mods, each scoped to exactly the declaring families. A
 # block here that no model declares simply never surfaces — the menu
-# is capability grammar, not served surface.
+# is capability grammar, not served surface. BEHAVIOR rides
+# SubActionMod: same mounting, but its fields never join the card
+# surface — the verb mounts, its knobs stay its own.
 
 
 class Mod(metaclass=_CardMeta):
@@ -562,6 +661,64 @@ class Mod(metaclass=_CardMeta):
 
 # backcompat alias — the pre-Mod name
 ActionCardPack = Mod
+
+
+# ── SUB-ACTION VERBS — family-scoped BEHAVIOR (design
+# docs/design/anny-evolution.md §3: "family-scoped, mountable,
+# behavior-carrying card units" — the headline pattern of the anny
+# evolution; anny is consumer #1, never the specification).
+#
+# A SubActionMod is a behavior-bearing Mod: field block + verb + lane
+# fragment + result writes. It mounts EXACTLY like any mod (a family
+# declares it in Model.mods; per-family visibility rides the same
+# machinery) with ONE carve-out: its FIELDS NEVER JOIN the card
+# surface (zone-law rule 2 — verbs own their knobs; they ride the
+# verb's own invocation doc, the card's schema gate stays closed).
+# Absorption records the verb in cls._verbs_ instead of unioning its
+# fields; a verb id claimed by two different classes on one card is
+# a loud refusal.
+#
+# The engine vocabulary is ROWS, not strings (shape law rung 3): each
+# VerbEngine names an engine choice with EITHER a flow template
+# (runnable today) OR a refusal (unavailable — the remediation the UI
+# speaks INSTEAD of the button, never a silent downgrade). Exactly
+# one of the two (rung 4); ≥1 runnable engine per verb.
+
+@dataclass(frozen=True, kw_only=True)
+class VerbEngine:
+    """One engine choice of a verb (e.g. regress | commercial | refine)."""
+    id: str
+    flow: str | None = None
+    refusal: str = ""
+
+    def __post_init__(self) -> None:
+        if not (isinstance(self.id, str) and IDENT_RE.match(self.id)):
+            raise ValidationError(
+                "VerbEngine id %r is not a legal identifier" % (self.id,))
+        if (self.flow is None) == (not self.refusal):
+            raise ValidationError(
+                "VerbEngine %r: exactly one of flow | refusal — a "
+                "runnable engine names its flow template, an unavailable "
+                "one carries the remediation" % (self.id,))
+        if self.flow is not None and not IDENT_RE.match(self.flow):
+            raise ValidationError(
+                "VerbEngine %r: flow %r is not a legal flow id"
+                % (self.id, self.flow))
+
+
+class SubActionMod(Mod):
+    """THE SubAction contract. Declare per family in models/<family>/
+    mods/; the family boards it in Model.mods. `id` is the verb id
+    (the renderer keys on it); `label` the chip text; `writes` the
+    card fields a run may hydrate; `requires` the extension ids (the
+    SAME gate as card requires). Field attributes are the verb's OWN
+    knob block — never card fields, never emitted on the card form."""
+    _is_verb_ = True
+    id = ""
+    label = ""
+    engines: tuple[VerbEngine, ...] = ()
+    writes: tuple[str, ...] = ()
+    requires: tuple[str, ...] = ()
 
 
 class LorasMod(Mod):
