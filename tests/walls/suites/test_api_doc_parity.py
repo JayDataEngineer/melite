@@ -79,7 +79,10 @@ def test_route_table_nonempty_and_grouped() -> None:
     # the mods flip never built — declared LoraRow pack, class-sourced
     # +3 Studios doors (stroke 3, 2026-09-06): the tenant preset
     # ledger (GET/POST/DELETE /v1/studios/{tenant}/presets)
-    assert len(gateway.ROUTES) == 43
+    # +1 Studios door (2026-09-06): the open-card mannequin
+    # (GET /v1/studios/{tenant}/base-body streams the declared
+    # neutral body while the Body slot is empty)
+    assert len(gateway.ROUTES) == 44
     groups = {r.group for r in gateway.ROUTES}
     assert len(groups) >= 6
     for g in groups:

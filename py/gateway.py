@@ -86,7 +86,7 @@ from editor_runs import ASSET_URL_PREFIX, draft_id_ok  # noqa: E402
 
 if TYPE_CHECKING:
     from flow_graph import FlowGraph, FlowNode
-    from melite_models import CharacterPreset
+    from melite_models import CharacterPreset, Model
 
 # The request-body shape: decoded JSON (objects, arrays, scalars).
 type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
@@ -239,7 +239,12 @@ DOOR_KEYS = ("yaml", "flow", "flow_inline", "model")
 # through into the frozen rows). The GATEWAY owns the envelope: door
 # keys + the run-door flags. The lifted body is what card_compose
 # sees, BOTH phases; the arms read body["params"] and nothing else.
-CARD_ENVELOPE_KEYS = DOOR_KEYS + ("draft_id", "test")
+# service rides here too (2026-09-05 mod-audit follow-up): the
+# editor's form controller bakes `{ service }` into generate payloads
+# and NO backend reader consumes it — before this it fell through
+# into params and every forbid row 400'd naming 'service' (proved on
+# the image-edit door). Routing chrome is envelope, never params.
+CARD_ENVELOPE_KEYS = DOOR_KEYS + ("draft_id", "test", "service")
 
 
 def card_compose_body(body: dict[str, JsonValue]
@@ -1490,15 +1495,85 @@ async def _h_ledger(ctx: _Ctx) -> HandlerResult:
 # artifact door (resolve_artifact_file — a save naming a pruned run
 # refuses BEFORE the row appends, never a dangling preset).
 
-def _preset_estate_rows(tenant: str) -> tuple[CharacterPreset, ...] | None:
-    """Estate CharacterPreset rows for a tenant, or None (unknown)."""
+def _studio_family(tenant: str) -> type[Model] | None:
+    """The Model class claiming a studio tenant, or None (unknown).
+    THE tenant lookup (PLUGIN ARCHITECTURE LAW — the core names no
+    tenant): the studio.tenant some family declares."""
     from melite_models import scan_engine_models
     for _path, cls in scan_engine_models(str(REPO)).values():
         studio = getattr(cls, "studio", None)
         if studio is not None \
                 and getattr(studio, "tenant", "") == tenant:
-            return tuple(getattr(cls, "character_presets", ()))
+            return cls
     return None
+
+
+def _preset_estate_rows(tenant: str) -> tuple[CharacterPreset, ...] | None:
+    """Estate CharacterPreset rows for a tenant, or None (unknown)."""
+    cls = _studio_family(tenant)
+    if cls is None:
+        return None
+    return tuple(getattr(cls, "character_presets", ()))
+
+
+async def _h_base_body(ctx: _Ctx) -> HandlerResult:
+    """Stream the family's declared neutral mannequin (2026-09-06):
+    the studio viewport shows it while the body slot is empty
+    (display-only — it never writes params). GENERIC: the Model's
+    base_body names the provision; the mount path derives the same
+    way compose resolves it (endpoint file + model_paths read_root
+    + the provision's folder). Loud 404s: unknown tenant, no
+    declared base body, or not provisioned on disk (the phase-1
+    door refuses the same way at run time — card-open stays
+    honest)."""
+    import editor_runs as _er
+    tenant = ctx.m.group(1)
+    cls = _studio_family(tenant)
+    if cls is None:
+        return 404, {"error": "unknown studio tenant %r" % (tenant,)}
+    base_name = getattr(cls, "base_body", "") or ""
+    if not base_name:
+        return 404, {"error": "family %r declares no base body"
+                     % (getattr(cls, "id", tenant),)}
+    prov = None
+    for p in (getattr(cls, "provisions", None) or ()):
+        if p.name == base_name:
+            prov = p
+            break
+    if prov is None:  # the metaclass refuses this at import; double-guard
+        return 500, {"error": "base body %r is not a declared "
+                     "provision" % (base_name,)}
+    engine = getattr(cls, "engine", "") or ""
+    ep_path = REPO / "plugins" / "engines" / engine / "data" / (
+        engine + "_endpoint.json") if engine else None
+    try:
+        ep = json.loads(ep_path.read_text(encoding="utf-8")) \
+            if ep_path is not None else {}
+    except (OSError, ValueError):
+        ep = {}
+    folders = ep.get("extra_model_folders") or {}
+    sub = str(folders.get(prov.folder, prov.folder)
+              or prov.folder).strip().strip("/")
+    if isinstance(ep.get("model_base_path"), str) \
+            and ep["model_base_path"].strip():
+        overrides = {"model_base_path": ep["model_base_path"].strip()}
+    else:
+        overrides = {}
+    from estate_config import model_paths as _model_paths
+    roots = _model_paths(engine or "comfyui",
+                         endpoint_overrides=overrides)
+    disk = os.path.join(roots["read_root"], sub, prov.name)
+    if not os.path.isfile(disk):
+        return 404, {"error": "base body %r is not provisioned "
+                     "(missing %s — provision it: models lane)"
+                     % (prov.name, disk)}
+    try:
+        with open(disk, "rb") as f:
+            data = f.read()
+    except OSError as e:
+        return 500, {"error": "base body unreadable: %s" % e}
+    return 200, ({}, {"content-type": _er.content_type_of(disk)},
+                 data)
 
 
 def _preset_check_refs(row: CharacterPreset) -> str | None:
@@ -1909,6 +1984,12 @@ ROUTES: tuple = (
           group="Studios",
           summary="Delete a USER preset (estate rows refuse — "
                   "they are code)", handler=_h_presets_delete),
+    Route(method="GET",
+          path=r"^/v1/studios/([^/]+/[^/]+)/base-body$", regex=True,
+          template="/v1/studios/{tenant}/base-body", group="Studios",
+          summary="Stream the family's declared neutral mannequin "
+                  "(the studio viewport shows it while the body "
+                  "slot is empty)", handler=_h_base_body),
 
     # ── Lane discovery (progressive disclosure) ──────────────────────
     Route(method="GET", path="/v1/lanes", group="Lane discovery",

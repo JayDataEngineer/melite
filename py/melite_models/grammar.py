@@ -473,6 +473,11 @@ _MODEL_ATTRS = frozenset({
     # CharacterPreset rows (the ray archetypes live on the anny
     # family; user rows live in the tenant ledger, never here).
     "character_presets",
+    # base-body display (2026-09-06): the provision NAME that is the
+    # family's neutral mannequin (the studio shows it when the body
+    # slot is empty; the base-body door streams it). Empty = the
+    # family declares none.
+    "base_body",
 })
 
 
@@ -481,6 +486,7 @@ class _ModelNamespace(TypedDict, total=False):
     docstrings and the rest ride through to type.__new__ opaquely."""
     variants: tuple[Variant, ...]
     character_presets: tuple[CharacterPreset, ...]
+    base_body: str
     id: str
 
 
@@ -543,6 +549,29 @@ class _ModelMeta(type):
             seen_presets[p.id] = p
             presets.append(p)
         cls.character_presets = tuple(presets)
+        # base-body display: a provision NAME (or "" for none),
+        # inherited like other scalars. A non-empty name MUST match
+        # a declared provision — a studio pointing at an
+        # undeclared download place is a construction refusal, not
+        # a 404 at card-open.
+        base_body = ns.get("base_body", "")
+        if not base_body:
+            for b in bases:
+                base_body = getattr(b, "base_body", "") or ""
+                if base_body:
+                    break
+        if not isinstance(base_body, str):
+            raise ModelError(
+                "%s.base_body must be a provision name str (got %s)"
+                % (name, type(base_body).__name__))
+        if base_body and base_body not in {
+                p.name for p in
+                (getattr(cls, "provisions", None) or ())}:
+            raise ModelError(
+                "%s.base_body %r names no declared provision — the "
+                "neutral mannequin needs a download place "
+                "(provisions)" % (name, base_body))
+        cls.base_body = base_body
         # route → (variant, cell): every matrix address, one map (the
         # C served ?model=<route>; the class flip lost it — structural
         # again)
@@ -587,6 +616,7 @@ class Model(metaclass=_ModelMeta):
     id = ""
     variants = ()             # tuple[Variant] — frozen instance rows
     character_presets = ()    # tuple[CharacterPreset] — estate rows
+    base_body = ""            # provision NAME — the neutral mannequin
     tile = ""
     # the genre's TYPE is the validation (rung 3: a typo refuses
     # construction). The metaclass coerces legacy str assignments so
