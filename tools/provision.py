@@ -1245,6 +1245,193 @@ def cmd_manage(argv: list[str]) -> int:
     return 0 if rep.get("ok") else 1
 
 
+# ── anny-commercial runtime (the commercial estimator chain) ──────────────
+# docs/design/commercial-estimator-chain.md — SAM 3D Body → MHR → SOMA →
+# anny. Rides its OWN venv: torch cu130 (the system nvcc 13.x cannot build
+# detectron2 against the serving venv's cu128 stack — MAJOR mismatch is a
+# hard build error, minor (13.1 vs 13.0) is warning-only).
+_SOMAX_REF = "d29dbe5a3f5a"     # NVlabs/SOMA-X, probed 2026-09-05
+_S3DB_REF = "b5c765a0d89d"      # facebookresearch/sam-3d-body
+_COM_DEPS = [
+    "pytorch-lightning", "pyrender", "opencv-python-headless", "yacs",
+    "scikit-image", "einops", "timm", "dill", "pandas", "pyarrow", "rich",
+    "hydra-core", "hydra-colorlog", "pyrootutils", "chump",
+    "networkx==3.2.1", "roma", "joblib", "appdirs", "cython", "jsonlines",
+    "loguru", "optree", "fvcore", "pycocotools", "xtcocotools",
+    "tensorboard", "huggingface_hub", "braceexpand", "mhr", "warp-lang",
+    "usd-core", "rtree", "anny==0.6.0", "setuptools==78.1.0",
+]
+_COM_NVIDIA_LIB = "lib/python3.11/site-packages/nvidia/cu13/lib"
+
+
+def _sha256_file(p: Path) -> str:
+    return hashlib.sha256(p.read_bytes()).hexdigest()[:16]
+
+
+_SOMAX_PATCHES = (
+    # 1. pose_inversion.py:1053 lazy `from .body import SOMALayer`
+    #    (→ soma.fitting.body, does not exist); line 27's absolute form
+    #    is correct. Upstream typo kills mhr2soma at runtime.
+    ("soma/fitting/pose_inversion.py",
+     "            from .body import SOMALayer",
+     "            from ..body import SOMALayer"),
+    # 2. conversion_utils.export_soma_npz: PoseInversion returns rotations
+    #    in the PUBLIC rig space (78 joints incl. Root) but the export
+    #    removes orients from the full internal rig (110) — hard crash.
+    #    Poses are NOT consumed downstream (convert_identity_backend
+    #    rebuilds the bind pose from the layer), so consistent public-
+    #    space shapes are sufficient.
+    ("tools/conversion_utils.py",
+     "    orient = soma._t_pose_orient.to(device=rotations.device, dtype=rotations.dtype)\n"
+     "    orient_parent_T = soma._t_pose_orient_parent_T.to(\n"
+     "        device=rotations.device, dtype=rotations.dtype\n"
+     "    )\n"
+     "    rel_rotations = remove_joint_orient_local(rotations, orient, orient_parent_T)",
+     "    orient = soma._t_pose_orient.to(device=rotations.device, dtype=rotations.dtype)\n"
+     "    orient_parent_T = soma._t_pose_orient_parent_T.to(\n"
+     "        device=rotations.device, dtype=rotations.dtype\n"
+     "    )\n"
+     "    joint_names = list(soma.rig_data[\"joint_names\"])\n"
+     "    if (\n"
+     "        orient.shape[0] != rotations.shape[1]\n"
+     "        and hasattr(soma, \"public_joint_names\")\n"
+     "        and len(soma.public_joint_names) == rotations.shape[1]\n"
+     "    ):\n"
+     "        from soma.geometry.rig_utils import precompute_joint_orient\n"
+     "\n"
+     "        bind_pub = soma.public_bind_transforms_world().to(\n"
+     "            device=rotations.device, dtype=rotations.dtype)\n"
+     "        if bind_pub.dim() == 4:  # cached binds are batched (B,J,4,4)\n"
+     "            bind_pub = bind_pub[0]\n"
+     "        parents = soma.public_joint_parent_ids\n"
+     "        if torch.is_tensor(parents):\n"
+     "            parents = parents.to(device=rotations.device)\n"
+     "        orient, orient_parent_T = precompute_joint_orient(\n"
+     "            bind_pub, parents)\n"
+     "        joint_names = list(soma.public_joint_names)\n"
+     "    rel_rotations = remove_joint_orient_local(rotations, orient, orient_parent_T)"),
+    ("tools/conversion_utils.py",
+     "        poses_rotvec,\n"
+     "        save_transl,\n"
+     "        joint_names=list(soma.rig_data[\"joint_names\"]),",
+     "        poses_rotvec,\n"
+     "        save_transl,\n"
+     "        joint_names=joint_names,"),
+    ("tools/conversion_utils.py",
+     "from soma.geometry.rig_utils import remove_joint_orient_local",
+     "import torch\n\n"
+     "from soma.geometry.rig_utils import remove_joint_orient_local"),
+    # 3. mhr2soma main: warm the identity cache before the npz export
+    #    (the render loop's own pattern) — the export's public-bind read
+    #    needs it and the inversion leaves it cold.
+    ("tools/mhr2soma.py",
+     "    # --- Save output ---\n"
+     "    if args.output_npz:\n"
+     "        extra_arrays = {\"bone_length_flexibles\": bone_length_flexibles}",
+     "    # --- Save output ---\n"
+     "    if args.output_npz:\n"
+     "        soma.prepare_identity(\n"
+     "            all_ic, all_sp,\n"
+     "            kwargs={\"bone_length_flexibles\": all_bl})\n"
+     "        extra_arrays = {\"bone_length_flexibles\": bone_length_flexibles}"),
+)
+
+
+def _patch_somax(checkout: Path) -> None:
+    """Apply the pinned SOMA-X friction patches (live-probed 2026-09-05).
+
+    Each entry refuses on drift (expected text gone = upstream may have
+    fixed it; re-pin _SOMAX_REF and drop the entry) — never silently.
+    """
+    for rel, bad, good in _SOMAX_PATCHES:
+        p = checkout / rel
+        text = p.read_text()
+        if bad not in text:
+            if good in text:
+                info(f"[commercial] patch already present in {rel} — "
+                     "upstream fixed it; drop the entry + re-pin")
+                continue
+            die(f"SOMA-X patch drift: expected text not found in {rel} — "
+                "upstream moved; re-pin _SOMAX_REF and rewrite _patch_somax")
+        p.write_text(text.replace(bad, good, 1))
+        info(f"[commercial] patched SOMA-X {rel}")
+
+
+def cmd_commercial() -> None:
+    """Materialize data/runtime/anny-commercial (venv + checkouts + worker).
+
+    Idempotent: an existing healthy runtime is left alone. The ComfyUI
+    node Sam3dBodyImageToAnny resolves this root (env
+    ANNY_COMMERCIAL_ROOT overrides) and refuses loudly without it.
+    """
+    root = REPO / "data" / "runtime" / "anny-commercial"
+    venv_py = root / ".venv" / "bin" / "python"
+    marker = root / ".provisioned"
+    expected = [venv_py, root / "commercial_chain.py",
+                root / "SOMA-X" / "tools" / "mhr2soma.py",
+                root / "sam-3d-body" / "notebook" / "utils.py"]
+    if marker.is_file() and all(p.exists() for p in expected):
+        info(f"[commercial] runtime healthy at {root} — nothing to do")
+        return
+    if any(root.glob("*")) and not marker.is_file():
+        die(f"{root} exists but is not provisioned — remove it first "
+            "(a half-built runtime is never patched in place)")
+
+    def _run(cmd: list[str], cwd: Path | None = None) -> None:
+        info("[commercial] " + " ".join(cmd[:6]))
+        r = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+        if r.returncode != 0:
+            die(f"provision step failed ({cmd[0]} …):\n"
+                f"{r.stdout[-800:]}\n{r.stderr[-1500:]}")
+
+    root.mkdir(parents=True)
+    for url, ref, name in (
+        ("https://github.com/NVlabs/SOMA-X.git", _SOMAX_REF, "SOMA-X"),
+        ("https://github.com/facebookresearch/sam-3d-body.git",
+         _S3DB_REF, "sam-3d-body"),
+    ):
+        _run(["git", "clone", "-q", url, str(root / name)])
+        _run(["git", "-C", str(root / name), "checkout", "-q", ref])
+    _patch_somax(root / "SOMA-X")
+
+    _run(["uv", "venv", "-q", "--python", "3.11", str(root / ".venv")])
+    uv = ["uv", "pip", "install", "--python", str(venv_py)]
+    _run(uv + ["-q", "torch==2.10.0", "torchvision",
+               "--index-url", "https://download.pytorch.org/whl/cu130"])
+    _run(uv + ["-q"] + _COM_DEPS)
+    # detectron2 builds against the venv's torch; CUDA_HOME must NOT be
+    # forced — torch resolves /usr/local/cuda (13.x, major-match cu130).
+    # uv-driven (uv venv ships no pip — `python -m pip` refuses).
+    _run(uv + ["-q",
+               "git+https://github.com/facebookresearch/detectron2.git@a1ce2f9",
+               "--no-build-isolation", "--no-deps"])
+    # sam-3d-body is NOT pip-installed (no pyproject — upstream ships
+    # it as a checkout): the worker self-paths root/sam-3d-body, the
+    # same way the probe ran from the checkout dir.
+    _run(uv + ["-q", "-e", str(root / "SOMA-X"),
+               "git+https://github.com/microsoft/MoGe.git"])
+    shutil.copy2(
+        REPO / "flows" / "anny-hmr-commercial" / "worker.py",
+        root / "commercial_chain.py")
+
+    # warm the weights (S3DB + torchvision detector → HF/torch hub cache)
+    nvidia_lib = root / ".venv" / _COM_NVIDIA_LIB
+    env = {**os.environ, "LD_LIBRARY_PATH": str(nvidia_lib)}
+    info("[commercial] warmup (downloads S3DB + detector weights)")
+    r = subprocess.run(
+        [str(venv_py), str(root / "commercial_chain.py"), "--warmup"],
+        cwd=str(root), env=env, capture_output=True, text=True)
+    if r.returncode != 0:
+        die(f"warmup failed (weights unreachable or model drift):\n"
+            f"{r.stdout[-600:]}\n{r.stderr[-1200:]}")
+    marker.write_text(
+        f"SOMA-X@{_SOMAX_REF} sam-3d-body@{_S3DB_REF} torch=2.10.0+cu130\n"
+        f"worker sha: {_sha256_file(root / 'commercial_chain.py')}\n")
+    info(f"[commercial] runtime provisioned at {root}")
+    info("[commercial] node spawn env: LD_LIBRARY_PATH="
+         f"{nvidia_lib}")
+
+
 def main() -> None:
     global DRY
     ap = argparse.ArgumentParser(
@@ -1276,10 +1463,16 @@ def main() -> None:
                        "in-process; see: provision.py manage --help)")
     mg.add_argument("rest", nargs=argparse.REMAINDER,
                     help="<action> [key=value ...]")
+    sub.add_parser("commercial", help="materialize data/runtime/"
+                                      "anny-commercial (the commercial "
+                                      "estimator chain: SAM 3D Body → "
+                                      "MHR → SOMA → anny; its own venv)")
     args = ap.parse_args()
 
     if args.cmd == "dsh":
         cmd_dsh()
+    elif args.cmd == "commercial":
+        cmd_commercial()
     elif args.cmd == "manage":
         sys.exit(cmd_manage(args.rest))
     elif args.cmd in ("paths", "sync", "boot-cmd", "verify"):
