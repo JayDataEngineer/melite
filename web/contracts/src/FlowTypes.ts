@@ -55,9 +55,9 @@ import type { Provenance } from "./vocab"
  *     N consecutive same-family edits rendered as one block). Identity is
  *     FIRST-CLASS now — the group survives reorder (the old pure-view
  *     projection dissolved the moment a member moved).
- *   • ``flow`` — a YAML-backed atomic run (replaces ``kind: "chain"`` +
- *     ``yamlFlow``: one /v1/flows/start yaml call for the whole
- *     group; children are the spec's steps).
+ *   • ``flow`` — a named-flow atomic run (replaces ``kind: "chain"`` +
+ *     ``flowName``: one /v1/flows/start {flow:name} call for the whole
+ *     group; children are the flow's stages).
  *   • ``modifiers`` — param-bag deps (replaces the subcard grid container:
  *     LoRA/CN/generic modifier entries folded into the host's params).
  * ``kind: "chain"`` remains as a legacy alias for ``compound.mode="flow"``
@@ -74,7 +74,7 @@ import type { Provenance } from "./vocab"
 /** The first-class subgraph block — present on a stage iff ``kind ===
  * "compound"``. ``childIds`` is the ONE source of truth for "what does this
  * card hold"; children live in the same flat ``stages[]`` (wiring/cache-key/
- * runner untouched). Mode-specific extras ride along (``yamlFlow`` for
+ * runner untouched). Mode-specific extras ride along (``flowName`` for
  * flow mode, ``paramKey`` for modifiers mode). */
 
 /** The compound block AS THE BACKEND WROTE IT — mirror of CompoundBlock
@@ -85,7 +85,7 @@ import type { Provenance } from "./vocab"
 export interface BackendCompoundBlock {
   mode: CompoundMode
   childIds: string[]
-  yamlFlow?: string
+  flowName?: string
   paramKey?: string
 }
 
@@ -106,7 +106,7 @@ export interface BackendStage {
    * (null = primary). Persisted by the 2026-08-22 wire PATCH so named
    * output wires survive rehydrate. */
   inputOutputs?: (string | null)[]
-  yamlFlow?: string
+  flowName?: string
   studio?: "body"
   studioContext?: Record<string, unknown>
   compound?: BackendCompoundBlock
@@ -284,9 +284,9 @@ export interface FlowStage {
 
  // ── For "chain" stages ──
  /** YAML flow filename (for flows stages). */
- yamlFlow?: string
+ flowName?: string
  /** The YAML run ID (from /v1/flows/start, YAML-spec shape). */
- yamlRunId?: string
+ flowRunId?: string
 
  // ── For "studio-link" stages ──
  /** Which studio to open when double-clicked. */
@@ -327,9 +327,9 @@ export interface FlowDoc {
  * collection of actions — and execution goes through the YAML runner
  * (startChain with start_from/reuse_run_id), NOT the compile path.
  */
- yamlFlow?: string
+ flowName?: string
  /** Last YAML run id — lets a card re-run reuse its upstream bricks. */
- yamlRunId?: string | null
+ flowRunId?: string | null
  /**
   * Graph-backed flow (agent-composed, 2026-09-05): the COMPILED typed
   * body the draft carried (``BackendDraft.flow``). When set, the
@@ -361,7 +361,7 @@ export interface CompoundDescriptor {
    * store resolves them to childIds at materialization time. */
   childIndices: number[]
   /** ``mode === "flow"`` — the YAML flow filename. */
-  yamlFlow?: string
+  flowName?: string
   /** ``mode === "modifiers"`` — the params[paramKey] holding the entries. */
   paramKey?: string
 }
@@ -376,7 +376,7 @@ export interface StageDescriptor {
  /** Indices of upstream stages (0-based, into the descriptor array). */
  inputIndices?: number[]
  /** For "chain" stages: the YAML flow filename. */
- yamlFlow?: string
+ flowName?: string
  /** For "studio-link" stages: which studio to open. */
  studio?: StudioTarget
  /** For "studio-link" stages: context payload for the studio. */

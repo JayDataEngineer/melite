@@ -1,7 +1,13 @@
 /** card.ts — the CardStage unified view-model + its vocabulary.
  * The CONTRACT every card surface (app + plugin studios) shares.
  * Types only — runtime helpers stay app-side. */
-export type CardGenre = "image" | "video" | "audio" | "3d" | "motion" | "ai_generated" | "text"
+export type CardGenre = "image" | "video" | "audio" | "3d" | "motion" | "other" | "text"
+
+/** Card TAGS — orthogonal to genre. A tag describes HOW a thing was made
+ * or what it carries, never WHAT KIND of media it is. 'ai_generated' is
+ * the badge former-genre that was demoted (2026-09-04): provenance is a
+ * tag, not a media category. */
+export type CardTag = "ai_generated"
 
 export type CompoundMode = "fanout" | "flow" | "modifiers"
 
@@ -12,8 +18,9 @@ export interface CompoundBlock {
    * preserved. */
   childIds: string[]
   /** ``mode === "flow"`` — the YAML flow filename (the atomic run).
-   * Mirrors the legacy top-level ``stage.yamlFlow`` for back-compat. */
-  yamlFlow?: string
+   * Mirrors the top-level ``stage.flowName`` (the named flow this
+   * compound runs through the {flow:name} door). */
+  flowName?: string
   /** ``mode === "modifiers"`` — which ``params[paramKey]`` array holds the
    * modifier entries (loras / controlnets / kind.param_key). The host
    * stage's params are the storage; the compound block只是 names the slot. */
@@ -81,10 +88,14 @@ export interface CardStage {
   kind: string
   /** Model key / brick family / asset name — shown on the service badge. */
   service: string
-  /** Catalog-declared media genre (image|video|audio|3d|motion), resolved
+  /** Catalog-declared media genre — ONE vocabulary
+  * (image|video|audio|3d|motion|other|text), resolved
   * by the surface adapter from the model route. Drives the badge icon +
   * video gating. undefined = non-catalog service (generic badge). */
   genre?: CardGenre
+  /** Provenance/descriptor tags — orthogonal to genre. 'ai_generated'
+  * lives here, never in genre. */
+  tags?: CardTag[]
   params: Record<string, unknown>
   /** Upstream stage ids (dependency wiring). */
   inputs: string[]
