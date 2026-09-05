@@ -87,6 +87,12 @@ dependencies = [
     "qwen-tts==0.1.1",
     "transformers==4.57.3",
     "trimesh>=5.0",
+    # the poser chain's NATIVE anny engine (operator order, 2026-09-06:
+    # "you are rendering GLB and not native ANNY... that is why it is
+    # low quality") — /poser/skin/mesh?identity_model=anny builds
+    # SOMALayer(identity_model_type="anny") and refuses without this;
+    # the Shape band's live preview is the native anny figure.
+    "py-soma-x[anny]",
 ]
 
 [tool.uv.sources]
