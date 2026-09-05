@@ -433,7 +433,14 @@ def runs(server_root, drafts_root=None, aux_root=None, limit=200,
     rows = []
     for ent in ents[:limit]:
         run_dir = os.path.join(output_root, ent["dir"])
-        model = ""
+        # pipeline init is LOAD-BEARING for the legacy path: a dir with
+        # no sidecar never enters the buf block below, and the RUN WIRE
+        # GATE reads pipeline for name/flow — the in-flight 2026-09-05
+        # "pipeline" rename left the init as the dead `model = ""` and
+        # every legacy dir crashed the whole listing with
+        # UnboundLocalError (a NameError class the skip-gate cannot
+        # catch). One init, both paths.
+        pipeline = ""
         prompt = ""
         status = "unknown"
         draft = ""
@@ -446,12 +453,23 @@ def runs(server_root, drafts_root=None, aux_root=None, limit=200,
         except OSError:
             status = "success"                       # legacy dir, no sidecar
         if buf is not None:
-            model = sidecar_str(buf, "model", 64)
-            if model.startswith("_"):
+            # pipeline = the door name the run was started with (flow id
+            # | model id | inline flow id). The C-era key was "model" —
+            # a key no py sidecar ever carried, so name/flow were blank
+            # for every py run until 2026-09-05 (sidecar.md: the
+            # "pipeline" row is the honest shape).
+            pipeline = sidecar_str(buf, "pipeline", 64)
+            if pipeline.startswith("_"):
                 continue                             # user-surface law (~6678)
             prompt = sidecar_str(buf, "prompt", 2048)
             found, raw_status = _sidecar_str_impl(buf, "status", 16)
             status = raw_status if found else "unknown"
+            # C-era sidecars write "error" for a dead run — the list
+            # must serve the SAME mapping the detail path serves
+            # (error->failed, the C restore law) or the RUN WIRE GATE
+            # refuses the whole row (RunRow's enum has no "error").
+            if status == "error":
+                status = "failed"
             draft = sidecar_str(buf, "draft_id", 96)
             seed = sidecar_num(buf, "seed", -1)
             created = sidecar_num(buf, "created_at", created)
@@ -484,8 +502,8 @@ def runs(server_root, drafts_root=None, aux_root=None, limit=200,
         try:
             row = run_wire.RunRow(
                 run_id=ent["dir"],
-                name=model,
-                flow=model,
+                name=pipeline,
+                flow=pipeline,
                 status=status,
                 created_at=created,
                 prompt=prompt,
@@ -603,8 +621,6 @@ def run_detail(server_root, run_id: str):
         src = sb
     if src is not None:
         stages2 = _stages_span(src)
-
-    yaml_filename = sidecar_str(sb, "model", 80)
     draft_id = sidecar_str(sb, "draft_id", 96)
 
     # placeholder-prompt fix (~4458-4541): inject the run's real prompt +
@@ -685,7 +701,6 @@ def run_detail(server_root, run_id: str):
         "restored_from_sidecar": True,
         "artifacts": arts,
         "stages": stages,
-        "yaml_filename": yaml_filename,
         "draft_id": draft_id,
     }
 
@@ -1423,7 +1438,7 @@ def _selftest():
         oroot = os.path.join(tmp, "server")
         os.makedirs(os.path.join(oroot, "output", "run-fixture-1"), exist_ok=True)
         sidecar = {
-            "run_id": "run-fixture-1", "model": "demo-model",
+            "run_id": "run-fixture-1", "pipeline": "demo-model",
             "prompt": "a prompt \"with quotes\"", "seed": 7,
             "created": 1700000000, "ended": 1700000009, "durationSec": 9,
             "status": "error",
@@ -1449,7 +1464,10 @@ def _selftest():
               and det["state"] == "failed" and det["error"] == ""
               and det["restored_from_sidecar"] is True
               and det["created"] == 1700000000 and det["durationSec"] == 9
-              and det["yaml_filename"] == "demo-model"
+              # the fossil wire field retired 2026-09-05: it carried the
+              # C-era sidecar "model" read under a yaml-era name and
+              # gated nothing (the editor's own comment said so)
+              and "yaml_filename" not in det
               and det["draft_id"] == "draft-t1"
               and det["artifacts"][0]["name"] == "out.png")
         check("GET status/:id restore shape (error->failed, error:'' parity)",
@@ -1467,7 +1485,7 @@ def _selftest():
         # runs() over the fixture (no sidecar-less dirs, no underscore)
         listing = runs(oroot, drafts_root=droot)
         row = listing["runs"][0]
-        ok = (listing["count"] == 1 and row["status"] == "error"
+        ok = (listing["count"] == 1 and row["status"] == "failed"
               and row["name"] == "demo-model" and row["seed"] == 7
               and row["draft_id"] == "draft-t1"
               and row["thumbnail"].endswith("/out.png")
@@ -1475,6 +1493,9 @@ def _selftest():
         check("runs() reads the fixture row", ok, "row=%r" % row)
 
         # serve_asset: root is <server_root>/output only, ".." anywhere -> 400
+        # (the listing row check above now expects status "failed" —
+        # the C-era "error" spelling maps error->failed at the scan,
+        # mirroring the detail path, or the RUN WIRE GATE refuses it)
         st, data, ctype = serve_asset(oroot, "run-fixture-1/out.png")
         ok = st == 200 and data == b"\x89PNG-fixture" and ctype == "image/png"
         check("GET /editor/assets/runs/<run>/<file>", ok,

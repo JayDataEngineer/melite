@@ -631,8 +631,7 @@ class Gateway:
                     try:
                         import asset_ledger as _al
                         ev = _al.completed_payload(str(run.dir), {
-                            "model": run.request.get("yaml")
-                                     or run.request.get("model") or "",
+                            "model": run.request.get("model") or "",
                             "status": run.status,
                             "created_at": int(run.created_at)})
                         if ev:
@@ -831,6 +830,18 @@ def sidecar(run):
     # drafts door. None for cardless test runs and bare API hits —
     # py/editor_runs.py:480 strips empty/missing anyway (click-
     # contract law, 2026-09-02). docs/queue/sidecar.md:36.
+    # the door name (QUEUE LANE LAW: exactly one of flow | flow_inline |
+    # model — resolved BEFORE registration, so exactly one of these is
+    # ever truthy). The runs-list scan (py/editor_runs.py) lifts it
+    # into the row's name/flow; the editor's run-title fallback reads
+    # r.name. The C-era sidecar carried "model" — a key the py writer
+    # NEVER wrote, so every py run served blank names until 2026-09-05
+    # (0 of 550 on-disk sidecars carry "model"; nothing reads it).
+    inline = run.request.get("flow_inline")
+    pipeline = (run.request.get("flow")
+                or run.request.get("model")
+                or (inline.get("id", "")
+                    if isinstance(inline, dict) else ""))
     atomic_write(run.dir / "_flow.json", {
         "run_id": run.run_id,
         "status": run.status,
@@ -840,6 +851,7 @@ def sidecar(run):
         "created_at": run.created_at,
         "test": bool(run.request.get("test", False)),
         "draft_id": run.draft_id,
+        "pipeline": pipeline,
     })
 
 
@@ -1318,29 +1330,44 @@ async def _h_assets_index(ctx):
 
 async def _h_card_tools(ctx):
     import lane_disclosure as _ld
-    return 200, _ld.card_tools()
+    try:
+        return 200, _ld.card_tools()
+    except _ld.LaneWireError as e:
+        return 500, {"error": "lane wire refusal (card-tools): %s" % e}
 
 
 async def _h_skills(ctx):
     import lane_disclosure as _ld
-    return 200, _ld.skill_index()
+    try:
+        return 200, _ld.skill_index()
+    except _ld.LaneWireError as e:
+        return 500, {"error": "lane wire refusal (skills): %s" % e}
 
 
 async def _h_lanes(ctx):
     import lane_disclosure as _ld
-    return 200, _ld.peek(ctx.q("kind"), ctx.q("genre"))
+    try:
+        return 200, _ld.peek(ctx.q("kind"), ctx.q("genre"))
+    except _ld.LaneWireError as e:
+        return 500, {"error": "lane wire refusal (lanes): %s" % e}
 
 
 async def _h_skill_read(ctx):
     import lane_disclosure as _ld
     from urllib.parse import unquote as _uq
-    return _ld.skill_read(_uq(ctx.m.group(1)), ledger)
+    try:
+        return _ld.skill_read(_uq(ctx.m.group(1)), ledger)
+    except _ld.LaneWireError as e:
+        return 500, {"error": "lane wire refusal (skill): %s" % e}
 
 
 async def _h_lane_bundle(ctx):
     import lane_disclosure as _ld
     from urllib.parse import unquote as _uq
-    return _ld.lane_bundle(_uq(ctx.m.group(1)), ctx.q("kind"))
+    try:
+        return _ld.lane_bundle(_uq(ctx.m.group(1)), ctx.q("kind"))
+    except _ld.LaneWireError as e:
+        return 500, {"error": "lane wire refusal (bundle): %s" % e}
 
 
 async def _h_manage(ctx):
