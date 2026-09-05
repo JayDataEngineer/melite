@@ -26,7 +26,9 @@ Z-up), so no AnnyGroundBody stage: nothing in this lane is ever
 camera-space. Artifacts: commercial_body.glb + anny_params.npz
 (phenotype + local-change rows — the card/slider vocabulary; the
 research lane's .pkl is NOT interchangeable: different
-parameterization, world vs bind pose).
+parameterization, world vs bind pose) + anny_preset.json (the
+estimated-dialect recipe the studio seeds its levers from —
+surfaced on the node's ui beside the GLB, harvested the same way).
 """
 
 from flow import Flow, Stage, FromInitial, Kind
