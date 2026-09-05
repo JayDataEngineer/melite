@@ -32,6 +32,11 @@ def check(name, ok, detail=""):
 TARGETS = [
     # THE graph contract (compose arms ↔ gateway core)
     "py/flow_graph.py",
+    # the lane-disclosure wire contract (frozen rows, fully annotated
+    # at birth, 2026-09-05)
+    "py/lane_wire.py",
+    # THE root config schema (pydantic flip 2026-09-05)
+    "py/estate_config.py",
     # the single-node skeleton emission (THE ACTION CARD LAW at
     # construction)
     "plugins/engines/comfyui/compose/co_script/skeleton.py",

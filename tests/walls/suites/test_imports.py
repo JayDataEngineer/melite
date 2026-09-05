@@ -29,6 +29,7 @@ GATEWAY_MODULES = (
     "form_wire",
     "flow",
     "run_wire",
+    "lane_wire",
     "editor_forms",
     "editor_runs",
     "lane_disclosure",

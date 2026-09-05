@@ -189,3 +189,106 @@ class TestRunLifecycle:
                 f"GET {first_url} on the gateway returned {gw_art_status} -- "
                 f"the stage artifact URL the gateway stamps does not serve."
             )
+
+    def test_run_card_link_round_trips(self, gateway_up):
+        """THE CARD-LINK WIRE (2026-09-04 audit, run→card reproducibility).
+
+        The py gateway's submit() MUST capture draft_id from the start
+        body and emit it into _flow.json. The reader (editor_runs.py
+        runs()) reads draft_id from _flow.json; the media sidebar's
+        Cards wand uses it to open the originating card in the deck
+        studio. A run started with draft_id MUST appear with the same
+        draft_id in /v1/flows/runs — the operator's "all flows
+        recoverable by design" promise lives or dies here.
+        """
+        # Save the draft FIRST so the click-contract gate (editor_runs.py
+        # 480, 2026-09-02 law) doesn't strip our draft_id from the row.
+        # A real user presses Run from the deck studio, where the draft
+        # doc was saved by POST /v1/flows/drafts — exactly this shape.
+        DRAFT_ID = "draft-lifecycle-test-card-link-0"
+        draft_body = {
+            "intent": "lifecycle test card-link",
+            "stages": [{"id": "s0", "card": "image-gen",
+                        "params": {"prompt": "lifecycle card-link: a tiny red dot",
+                                   "width": 256, "height": 256,
+                                   "steps": 2, "seed": 99}}],
+            "model": "krea-2",
+        }
+        draft_status, draft_resp = _post(
+            f"{GATEWAY_URL}/v1/flows/drafts", draft_body)
+        if draft_status != 200:
+            pytest.skip(
+                f"could not save draft doc (status={draft_status}): "
+                f"{draft_resp.get('error', '')}")
+        # POST /v1/flows/drafts may rewrite the id (draft_id_ok validator);
+        # use what the gateway returned, not our local DRAFT_ID.
+        DRAFT_ID = draft_resp.get("draftId", DRAFT_ID)
+
+        body = {
+            "model": "krea-2",
+            "draft_id": DRAFT_ID,
+            "params": {
+                "prompt": "lifecycle card-link: a tiny red dot",
+                "width": 256, "height": 256, "steps": 2, "seed": 99,
+            },
+        }
+        status, resp = _post(f"{GATEWAY_URL}/v1/flows/start", body)
+        if status == 400:
+            pytest.skip(
+                f"gateway rejected start at 400 (infra issue): "
+                f"{resp.get('error', '')}")
+        assert status == 202, f"POST /v1/flows/start returned {status}: {resp}"
+        run_id = resp["run_id"]
+
+        terminal = _poll_status(run_id)
+        assert terminal, "run never became terminal within 120s"
+        assert terminal["status"] in ("completed", "error", "stopped"), (
+            f"terminal status is {terminal['status']!r}")
+
+        # --- sidecar MUST carry draft_id (docs/queue/sidecar.md:36) ---
+        sidecar_path = OUT_ROOT / run_id / "_flow.json"
+        assert sidecar_path.exists(), (
+            f"no _flow.json for run {run_id} — terminal write never "
+            f"fired (zombie). The resilience law requires a sidecar.")
+        sc = json.loads(sidecar_path.read_text())
+        assert sc.get("draft_id") == DRAFT_ID, (
+            f"sidecar draft_id is {sc.get('draft_id')!r}, "
+            f"expected {DRAFT_ID!r}. The py gateway dropped the "
+            f"run→card wire (2026-09-04 audit, broken since the C "
+            f"retirement 2026-09-03). All flows are recoverable by "
+            f"design: a card-driven run must surface its card."
+        )
+
+        # --- /v1/flows/runs MUST surface the same draft_id ---
+        runs_status, runs_body = _get(f"{GATEWAY_URL}/v1/flows/runs?limit=500")
+        assert runs_status == 200, f"/v1/flows/runs HTTP {runs_status}"
+        runs = runs_body.get("runs", [])
+        row = next((r for r in runs if r.get("run_id") == run_id), None)
+        assert row is not None, f"run_id {run_id} missing from /v1/flows/runs"
+        assert row.get("draft_id") == DRAFT_ID, (
+            f"/v1/flows/runs row draft_id is {row.get('draft_id')!r}, "
+            f"expected {DRAFT_ID!r}. If this is empty, the click-contract "
+            f"gate (editor_runs.py:480) stripped it because the draft doc "
+            f"is gone — but we just saved it above, so it MUST exist."
+        )
+
+    def test_run_card_link_malformed_refused(self, gateway_up):
+        """A malformed draft_id MUST 4xx before any run registers.
+
+        QUEUE LANE LAW: validation at construction. py/editor_runs
+        .py:1080 draft_id_ok() is the SSOT — 96 char cap, [A-Za-z0-9_-].
+        A bad wire must NEVER register, never write a sidecar.
+        """
+        body = {
+            "model": "krea-2",
+            "draft_id": "has spaces and !bad! chars",
+            "params": {"prompt": "should never run", "width": 64,
+                       "height": 64, "steps": 1, "seed": 0},
+        }
+        status, resp = _post(f"{GATEWAY_URL}/v1/flows/start", body)
+        assert 400 <= status < 500, (
+            f"malformed draft_id must 4xx, got HTTP {status}: {resp}")
+        # The error message names the field, so callers can correct.
+        err = str(resp.get("error", "")).lower()
+        assert "draft_id" in err, (
+            f"400 error must name the rejected field, got {resp}")

@@ -161,7 +161,7 @@ class TestGpuCppCards(unittest.TestCase):
         # the gateway must be UP — a dead gateway is a FAILURE, never
         # a skip (the suite's whole point is the live queue)
         try:
-            _req("GET", "/v1/flows/yaml/list", timeout=5)
+            _req("GET", "/v1/health", timeout=5)
         except Exception as e:
             raise AssertionError(
                 "gateway not reachable on %s — restart it first: "

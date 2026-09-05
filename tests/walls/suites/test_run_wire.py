@@ -6,71 +6,39 @@ reconstructions" / "Everything is extensively tested in our
 repository, that is the goal. This whole flow is a complete and total
 blindspot").
 
-Scope: every reconstruction the runs / flows / drafts doors serve —
-GET /v1/flows/runs rows, the flow-doc detail, the flow list, the
-drafts index — is CONSTRUCTED as a frozen pydantic row (py/
-run_wire.py) and every served payload round-trips through the same
-models. The wall pins:
+Scope: every reconstruction the runs / drafts doors serve — GET
+/v1/flows/runs rows and the drafts index — is CONSTRUCTED as a frozen
+pydantic row (py/run_wire.py) and every served payload round-trips
+through the same models. The wall pins:
 
-  * every LIVE estate flow doc parses and builds FlowDetailEnvelope
-    (the `>-` block-scalar indicator leak on creature-flow/prop-flow,
-    shipped for weeks by the C-parity string surgery, cannot return);
   * shape refusals happen AT CONSTRUCTION (PYTHON SHAPE LAW: a bad
     status, a negative epoch, an unlisted artifact type, an extra key
     — all unbuildable);
   * drifted sources degrade LOUDLY: a bad run sidecar or draft doc
     skips its row with a logged reason and the listing continues
     (RESILIENCE LAW), never ships garbage;
-  * the studio's consumption contract survives: steps carry
-    family/service/title/params, artifacts carry url under the
-    /v1/assets/runs prefix (Phase 2 consolidation).
+  * the studio's consumption contract survives: artifacts carry url
+    under the /v1/assets/runs prefix (Phase 2 consolidation).
 
-No GPU, no network. Fixture trees under tmp_path; live estate flow
-docs read from flows/."""
+The flow-doc family (GET /v1/flows/yaml/*) that shared this wall
+retired 2026-09-05 with the yaml format itself — NO LEGACY; the
+agent-lane docs under flows/ are markdown now, not served payloads.
+
+No GPU, no network. Fixture trees under tmp_path."""
 
 import json
-import sys
+import tempfile
 from pathlib import Path
 
 import pytest
-import yaml as pyyaml
 
 from _anchor import REPO  # noqa: E402
-
-sys.path.insert(0, str(REPO / "py"))
 
 import editor_runs  # noqa: E402
 import run_wire  # noqa: E402
 
 
 # ── fixtures ───────────────────────────────────────────────────────
-
-FLOW_DOC = """\
-name: fixture-flow
-api: true
-description: >-
-  A folded block-scalar description spanning
-  multiple lines — the string-surgery era shipped the block
-  indicator here instead of this text.
-steps:
-  - id: concept
-    type: image-gen
-    description: Generate a concept
-  - id: mesh
-    type: pixal3d_native
-    params:
-      - {name: preset, value: creature}
-  - id: views
-"""
-
-
-@pytest.fixture()
-def flow_tree(tmp_path):
-    root = tmp_path / "flows"
-    (root / "fixture-flow").mkdir(parents=True)
-    (root / "fixture-flow" / "flow.yaml").write_text(FLOW_DOC, encoding="utf-8")
-    return root
-
 
 def _run_dir(state, run_id, sidecar, media=None):
     d = state / "output" / run_id
@@ -96,62 +64,7 @@ def state_tree(tmp_path):
     return root
 
 
-# ── A. every live estate flow doc reconstructs ─────────────────────
-
-def test_every_estate_flow_doc_builds():
-    flows_root = REPO / "flows"
-    names = [p.parent.name for p in sorted(flows_root.glob("*/flow.yaml"))]
-    assert len(names) >= 3
-    for name in names:
-        code, body = editor_runs.yaml_detail(str(flows_root), name)
-        assert code == 200, (name, body)
-        env = run_wire.FlowDetailEnvelope.model_validate(body)
-        assert env.name == name
-        assert len(env.nodes) >= 1 and len(env.steps) == len(env.nodes)
-
-
-def test_block_scalar_indicator_leak_is_dead(flow_tree):
-    """The regression that opened this wall: creature-flow and
-    prop-flow served description: ">-" because the reconstruction was
-    read-to-newline string surgery over the yaml TEXT."""
-    code, body = editor_runs.yaml_detail(str(flow_tree), "fixture-flow")
-    assert code == 200
-    env = run_wire.FlowDetailEnvelope.model_validate(body)
-    assert env.description.startswith("A folded block-scalar")
-    assert ">-" not in env.description
-
-
-def test_step_wire_shape_is_the_studio_contract(flow_tree):
-    code, body = editor_runs.yaml_detail(str(flow_tree), "fixture-flow")
-    env = run_wire.FlowDetailEnvelope.model_validate(body)
-    fams = [(s.family, s.service, s.title) for s in env.steps]
-    assert fams == [("image-gen", "image-gen", "concept"),
-                    ("pixal3d_native", "pixal3d_native", "mesh"),
-                    ("node", "node", "views")]
-    assert env.steps[1].params == [{"name": "preset", "value": "creature"}]
-
-
-def test_unparseable_flow_refuses_loudly(flow_tree):
-    bad = flow_tree / "fixture-flow" / "flow.yaml"
-    bad.write_text("description: [unclosed\n  bad: {", encoding="utf-8")
-    code, body = editor_runs.yaml_detail(str(flow_tree), "fixture-flow")
-    assert code == 400 and "does not parse" in body["error"]
-
-
-def test_non_mapping_flow_refuses(flow_tree):
-    (flow_tree / "fixture-flow" / "flow.yaml").write_text("- a\n- b\n")
-    code, body = editor_runs.yaml_detail(str(flow_tree), "fixture-flow")
-    assert code == 400 and "not a mapping" in body["error"]
-
-
-def test_step_without_string_id_refuses(flow_tree):
-    (flow_tree / "fixture-flow" / "flow.yaml").write_text(
-        "steps:\n  - type: image-gen\n")
-    code, body = editor_runs.yaml_detail(str(flow_tree), "fixture-flow")
-    assert code == 400 and "string id" in body["error"]
-
-
-# ── B. shape refusals happen AT CONSTRUCTION ───────────────────────
+# ── A. shape refusals happen AT CONSTRUCTION ───────────────────────
 
 def _row(**over):
     base = dict(
@@ -195,7 +108,7 @@ def test_run_row_closed_status_vocab_is_complete():
     assert served == {s.value for s in run_wire.RunStatus}
 
 
-# ── C. drifted sources degrade LOUDLY, listing continues ───────────
+# ── B. drifted sources degrade LOUDLY, listing continues ───────────
 
 def test_runs_listing_round_trips_and_serves_artifact_rows(state_tree):
     _run_dir(state_tree, "run-good0001-cafe", GOOD_SIDECAR,
@@ -245,16 +158,7 @@ def test_zombie_running_sidecar_reads_failed(state_tree):
     assert env.runs[0].status is run_wire.RunStatus.FAILED
 
 
-# ── D. flow list + drafts index ────────────────────────────────────
-
-def test_flow_list_serves_gated_docs_only(flow_tree):
-    (flow_tree / "not-api").mkdir()
-    (flow_tree / "not-api" / "flow.yaml").write_text("name: not-api\n")
-    out = editor_runs.yaml_list(str(flow_tree))
-    env = run_wire.FlowListEnvelope.model_validate(out)
-    assert [f.name for f in env.flows] == ["fixture-flow"]
-    assert env.flows[0].filename == "fixture-flow.yaml"
-
+# ── C. drafts index ────────────────────────────────────────────────
 
 def test_drafts_index_round_trips_with_fallback_fields(state_tree):
     dr = state_tree / "drafts"
@@ -280,7 +184,7 @@ def test_drafts_index_skips_non_json_and_short_names(state_tree):
     assert env.count == 0
 
 
-# ── E. live estate state (present) round-trips ─────────────────────
+# ── D. live estate state (present) round-trips ─────────────────────
 
 def test_live_runs_state_round_trips():
     state = REPO / "data" / "runs"
@@ -293,21 +197,71 @@ def test_live_runs_state_round_trips():
         assert isinstance(row.status, run_wire.RunStatus)
 
 
-# ── F. no string surgery on flow docs (structure pin) ──────────────
+# ── E. the birth-doc gate (2026-09-05) ─────────────────────────────
 
-def test_no_yaml_text_surgery_survives():
-    """The reconstruction parses flow docs with a real YAML load; the
-    find()-and-slice era must stay dead. `description:` must never be
-    located by text scan in this module."""
-    src = (REPO / "py" / "editor_runs.py").read_text(encoding="utf-8")
-    assert "find(\"description:\")" not in src
-    assert "_yaml_step_spans" not in src
+def test_birth_gate_accepts_every_composed_doc_shape():
+    """drafts_save's composed doc validates at the door: normal saves,
+    and the open-extras preservation (caller members ride untouched —
+    the gate never reads them)."""
+    with tempfile.TemporaryDirectory() as td:
+        # a caller body carrying contractual open extras
+        code, resp = editor_runs.drafts_save(
+            td, {"intent": "make a clip",
+                 "stages": [{"card": "video-gen", "params": {"fps": 24}}],
+                 "model": "krea-2", "history": ["x"]})
+        assert code == 200, resp
+        doc = json.loads((Path(td) / (resp["draftId"] + ".json"))
+                         .read_text())
+        # extras preserved verbatim, birth fields gated
+        assert doc["model"] == "krea-2"
+        assert doc["history"] == ["x"]
+        run_wire.validate_draft_birth(doc)
 
 
-def test_flow_docs_are_pure_yaml_documents():
-    """Estate flow.yaml files parse as mappings under a REAL yaml load —
-    the run_wire gate's input contract."""
-    for p in sorted((REPO / "flows").glob("*/flow.yaml")):
-        doc = pyyaml.safe_load(p.read_text(encoding="utf-8"))
-        assert isinstance(doc, dict), p
-        assert isinstance(doc.get("steps"), list), p
+def test_birth_gate_catches_composer_drift():
+    """The subset gate refuses every drifted birth shape loudly —
+    the corruption class that would otherwise persist silently."""
+    from pydantic import ValidationError
+    good = {"draftId": None}  # placeholder, real docs built below
+    base = {"draft_id": "draft-11111111-a", "intent": "x",
+            "stages": [{"id": "s_0", "inputs": [""],
+                        "provenance": "agent"}],
+            "status": "ready", "createdAt": 1700000000000,
+            "completedAt": None}
+    run_wire.validate_draft_birth(base)          # the good shape passes
+    for bad in (
+        {**base, "draft_id": ""},                 # empty id
+        {**base, "status": None},                 # missing status
+        {**base, "createdAt": "soon"},            # non-int stamp
+        {**base, "stages": "nope"},               # stages not a list
+        {**base, "stages": [{"id": "s", "inputs": "",
+                             "provenance": "agent"}]},   # inputs not list
+        {**base, "stages": [{"id": "", "inputs": [],
+                             "provenance": "agent"}]},   # empty stage id
+        {**base, "stages": [{"id": "s", "inputs": [],
+                             "provenance": ""}]},  # empty provenance
+        {k: v for k, v in base.items() if k != "createdAt"},  # key lost
+    ):
+        with pytest.raises(ValidationError):
+            run_wire.validate_draft_birth(bad)
+    assert good == {"draftId": None}             # no accidental mutation
+
+
+def test_birth_gate_serves_500_on_drift_never_persists(monkeypatch,
+                                                       tmp_path):
+    """If the composer ever emits drift, drafts_save refuses to
+    PERSIST it — a structured 500, never a corrupted doc on disk."""
+    import editor_runs as er
+
+    original = er._ray_compose_draft_doc
+
+    def drifted(body, draft_id):
+        doc = original(body, draft_id)
+        doc["status"] = None                     # composer bug
+        return doc
+
+    monkeypatch.setattr(er, "_ray_compose_draft_doc", drifted)
+    code, resp = er.drafts_save(str(tmp_path), {"intent": "x"})
+    assert code == 500
+    assert "draft composer drift" in resp["error"]
+    assert list(tmp_path.glob("*.json")) == []   # nothing persisted

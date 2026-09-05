@@ -38,13 +38,25 @@ def _target_files() -> list[Path]:
     files += (REPO / "py").glob("*.py")
     files += (REPO / "py/melite_models").glob("*.py")
     files += (REPO / "py/melite_cards").glob("*.py")
-    for eng in (REPO / "plugins/engines").iterdir():
-        if not eng.is_dir():
-            continue
-        files += eng.glob("models/*/*/model.py")
-        files += eng.glob("models/*/*/mods/*.py")
-        files += eng.glob("action_cards/*/*/py/*.py")
-        p = eng / "plugin.py"
+    # THE ONE plugin-dir walk (py/plugins.py:iter_plugin_dirs_under —
+    # no per-consumer copies): depth-2 plugins AND depth-3 category
+    # containers (cpp/<plugin>). The 2026-09-05 audit found the old
+    # per-engine globs silently missed ALL 40 files under cpp/ —
+    # every cpp plugin's rows were unswept.
+    sys.path.insert(0, str(REPO / "py"))
+    import plugins as _plugins
+    for pdir in _plugins.iter_plugin_dirs_under(
+            REPO / "plugins" / "engines"):
+        files += pdir.glob("models/*/*/model.py")
+        files += pdir.glob("models/*/*/mods/*.py")
+        files += pdir.glob("action_cards/*/*/py/*.py")
+        # the compose packages (card/chain/artifact/preset rows — the
+        # 2026-09-05 sweep found these extra=ignore, silently dropping
+        # dead riders; the glob hole is why it survived)
+        files += pdir.glob("compose/*.py")
+        files += pdir.glob("compose/co_script/*.py")
+        files += pdir.glob("compose/ui/*.py")
+        p = pdir / "plugin.py"
         if p.is_file():
             files.append(p)
     return sorted({f for f in files if "__pycache__" not in str(f)})
