@@ -84,7 +84,12 @@ class AnnyBakeParams(BaseModel):
 
       authored  -> phenotype exactly 11 floats in 0..1 +
                    local_changes an OBJECT of morph-name -> -1..2
-      estimated -> phenotype + scale (both float arrays)
+                   (scale refused — that is the other dialect)
+      estimated -> phenotype exactly 6 floats (the estimator's
+                   identity coefficients, raw — no 0..1 check) +
+                   scale exactly 139 floats (non-empty
+                   local_changes refused — the node would ignore
+                   them)
 
     The local_changes OBJECT (not the AuthoredParams row tuple) is
     the node's wire shape — the door serves canonical_json, the
@@ -117,31 +122,57 @@ class AnnyBakeParams(BaseModel):
 
     @model_validator(mode="after")
     def _dialect_shape(self) -> "AnnyBakeParams":
-        if len(self.phenotype) != AUTHORED_DIM_COUNT:
-            raise ValueError(
-                "%s phenotype wants %d dims, got %d — the dims are "
-                "gender/age/muscle/weight/height/proportions/cupsize/"
-                "firmness/african/asian/caucasian"
-                % (self.dialect, AUTHORED_DIM_COUNT, len(self.phenotype)))
-        for i, v in enumerate(self.phenotype):
-            if not 0.0 <= v <= 1.0:
+        # The door MIRRORS the node (flows/anny-params/bake_params.py)
+        # per dialect — a doc the door accepts but the node refuses
+        # burns a GPU claim (2026-09-06: the door demanded phenotype
+        # 11 for BOTH dialects while the node wants 6 for estimated,
+        # so a verbatim estimator preset 4xxed; and the door never
+        # counted scale, so a short vector died post-claim).
+        if self.dialect == "authored":
+            if len(self.phenotype) != AUTHORED_DIM_COUNT:
                 raise ValueError(
-                    "%s phenotype[%d] = %r outside 0.0..1.0"
-                    % (self.dialect, i, v))
+                    "authored phenotype wants %d dims, got %d — the "
+                    "dims are gender/age/muscle/weight/height/"
+                    "proportions/cupsize/firmness/african/asian/"
+                    "caucasian"
+                    % (AUTHORED_DIM_COUNT, len(self.phenotype)))
+            for i, v in enumerate(self.phenotype):
+                if not 0.0 <= v <= 1.0:
+                    raise ValueError(
+                        "authored phenotype[%d] = %r outside 0.0..1.0"
+                        % (i, v))
+            if self.scale is not None:
+                raise ValueError(
+                    "authored takes local_changes, not scale "
+                    "(that is the estimated dialect)")
+        else:  # estimated — the verbatim estimator preset
+            if len(self.phenotype) != ESTIMATED_PHENOTYPE_COUNT:
+                raise ValueError(
+                    "estimated phenotype wants %d dims, got %d "
+                    "(the estimator's identity coefficients, not "
+                    "the 11 authoring dims)"
+                    % (ESTIMATED_PHENOTYPE_COUNT, len(self.phenotype)))
+            # No 0..1 range check here (deliberate): the identity
+            # coefficients are MHR measurements, not slider positions
+            # — EstimatedParams and the node take them raw.
+            if self.scale is None:
+                raise ValueError(
+                    "estimated wants scale (the estimator run's "
+                    "measurement vector)")
+            if len(self.scale) != ESTIMATED_SCALE_COUNT:
+                raise ValueError(
+                    "estimated scale wants %d entries, got %d"
+                    % (ESTIMATED_SCALE_COUNT, len(self.scale)))
+            if self.local_changes:
+                raise ValueError(
+                    "estimated bakes phenotype+scale only — "
+                    "local_changes would be silently ignored "
+                    "(that is the authored dialect)")
         for name, value in self.local_changes.items():
             if not -1.0 <= value <= 2.0:
                 raise ValueError(
                     "local_changes[%r] = %r outside -1.0..2.0"
                     % (name, value))
-        if self.dialect == "authored":
-            if self.scale is not None:
-                raise ValueError(
-                    "authored takes local_changes, not scale "
-                    "(that is the estimated dialect)")
-        elif self.scale is None:
-            raise ValueError(
-                "estimated wants scale (the estimator run's "
-                "measurement vector)")
         return self
 
 

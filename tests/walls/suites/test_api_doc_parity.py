@@ -82,7 +82,10 @@ def test_route_table_nonempty_and_grouped() -> None:
     # +1 Studios door (2026-09-06): the open-card mannequin
     # (GET /v1/studios/{tenant}/base-body streams the declared
     # neutral body while the Body slot is empty)
-    assert len(gateway.ROUTES) == 44
+    # +1 Uploads door (2026-09-06): POST /v1/uploads (browser file
+    # → data/input — the photo flows' composable intake; the route
+    # landed with the door, the pin + generated docs caught up here)
+    assert len(gateway.ROUTES) == 45
     groups = {r.group for r in gateway.ROUTES}
     assert len(groups) >= 6
     for g in groups:

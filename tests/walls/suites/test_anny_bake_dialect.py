@@ -39,8 +39,8 @@ GOOD_AUTHORED = json.dumps({
 })
 GOOD_ESTIMATED = json.dumps({
     "dialect": "estimated",
-    "phenotype": [0.5] * 11,
-    "scale": [1.0, 1.0, 1.0],
+    "phenotype": [0.5] * 6,
+    "scale": [0.0] * 139,
 })
 # THE KILLER (the exact request that burned a GPU slot, verbatim from
 # data/runs/output/run-53a2b0e10813-73640e13/_request.json).
@@ -62,6 +62,19 @@ class TestTheModel:
         with pytest.raises(ValidationError):
             AnnyBakeParams.model_validate(KILLER)
 
+    def test_estimated_takes_raw_identity_coefficients(self):
+        """No 0..1 check on the estimated phenotype (deliberate):
+        the identity coefficients are MHR measurements, not slider
+        positions — EstimatedParams and the node take them raw, so
+        the door must too (a range refusal here would 4xx every
+        real estimator preset)."""
+        m = AnnyBakeParams.model_validate(json.dumps({
+            "dialect": "estimated",
+            "phenotype": [2.5, -1.2, 0.3, 0.9, 1.7, 0.1],
+            "scale": [0.0] * 139,
+        }))
+        assert m.dialect == "estimated"
+
     @pytest.mark.parametrize("bad,needle", [
         ("not json", "not JSON"),
         ('[1,2,3]', "JSON object"),
@@ -72,8 +85,18 @@ class TestTheModel:
                      "local_changes": {}}), "outside 0.0..1.0"),
         (json.dumps({"dialect": "authored", "phenotype": [0.5] * 11,
                      "local_changes": {"x": 9.0}}), "outside -1.0..2.0"),
-        (json.dumps({"dialect": "estimated", "phenotype": [0.5] * 11}),
+        (json.dumps({"dialect": "estimated", "phenotype": [0.5] * 6}),
          "wants scale"),
+        (json.dumps({"dialect": "estimated", "phenotype": [0.5] * 6,
+                     "scale": [0.0] * 100}),
+         "wants 139 entries"),
+        (json.dumps({"dialect": "estimated", "phenotype": [0.5] * 11,
+                     "scale": [0.0] * 139}),
+         "wants 6 dims"),
+        (json.dumps({"dialect": "estimated", "phenotype": [0.5] * 6,
+                     "scale": [0.0] * 139,
+                     "local_changes": {"upperarm-fat-incr": 0.2}}),
+         "silently ignored"),
         (json.dumps({"dialect": "authored", "phenotype": [0.5] * 11,
                      "local_changes": {}, "scale": [1.0]}),
          "not scale"),
