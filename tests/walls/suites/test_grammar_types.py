@@ -24,7 +24,14 @@ import pytest
 
 REPO = os.path.normpath(os.path.join(os.path.dirname(
     os.path.abspath(__file__)), "..", "..", ".."))
-sys.path.insert(0, os.path.join(REPO, "py"))
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _estate_path():
+    p = os.path.join(REPO, "py")
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
 
 from melite_models import (  # noqa: E402
     Model, LaneInputs, Genre, ClipType, LatentNode,
