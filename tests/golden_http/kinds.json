@@ -1,68 +1,78 @@
 {
- "kinds": [
-  {
-   "kind": "generation",
-   "runnable": true,
-   "executable": true,
-   "formSpec": true,
-   "compound": false,
-   "opensStudio": false,
-   "badgeTone": "default"
-  },
-  {
-   "kind": "chain",
-   "runnable": true,
-   "executable": true,
-   "formSpec": true,
-   "compound": false,
-   "opensStudio": false,
-   "badgeTone": "default"
-  },
-  {
-   "kind": "studio-link",
-   "runnable": true,
-   "executable": false,
-   "formSpec": false,
-   "compound": false,
-   "opensStudio": true,
-   "badgeTone": "brand"
-  },
-  {
-   "kind": "preview",
-   "runnable": true,
-   "executable": true,
-   "formSpec": false,
-   "compound": false,
-   "opensStudio": false,
-   "badgeTone": "default"
-  },
-  {
-   "kind": "input",
-   "runnable": true,
-   "executable": true,
-   "formSpec": false,
-   "compound": false,
-   "opensStudio": false,
-   "badgeTone": "default"
-  },
-  {
-   "kind": "body",
-   "runnable": false,
-   "executable": false,
-   "formSpec": false,
-   "compound": false,
-   "opensStudio": false,
-   "badgeTone": "default",
-   "icon": "Box"
-  },
-  {
-   "kind": "compound",
-   "runnable": true,
-   "executable": true,
-   "formSpec": false,
-   "compound": true,
-   "opensStudio": false,
-   "badgeTone": "default"
-  }
- ]
+  "kinds": [
+    {
+      "badgeTone": "default",
+      "compound": false,
+      "executable": true,
+      "formSpec": true,
+      "kind": "generation",
+      "opensStudio": false,
+      "runnable": true
+    },
+    {
+      "badgeTone": "default",
+      "compound": false,
+      "executable": true,
+      "formSpec": true,
+      "kind": "chain",
+      "opensStudio": false,
+      "runnable": true
+    },
+    {
+      "badgeTone": "default",
+      "compound": false,
+      "executable": true,
+      "formSpec": true,
+      "kind": "card-compose",
+      "opensStudio": false,
+      "runnable": true
+    },
+    {
+      "badgeTone": "brand",
+      "compound": false,
+      "executable": false,
+      "formSpec": false,
+      "kind": "studio-link",
+      "opensStudio": true,
+      "runnable": true
+    },
+    {
+      "badgeTone": "default",
+      "compound": false,
+      "executable": true,
+      "formSpec": false,
+      "kind": "preview",
+      "opensStudio": false,
+      "runnable": true
+    },
+    {
+      "badgeTone": "default",
+      "compound": false,
+      "executable": true,
+      "formSpec": false,
+      "kind": "input",
+      "opensStudio": false,
+      "runnable": true,
+      "runner": "input"
+    },
+    {
+      "badgeTone": "default",
+      "compound": false,
+      "executable": false,
+      "formSpec": false,
+      "icon": "Box",
+      "kind": "body",
+      "opensStudio": false,
+      "runnable": false
+    },
+    {
+      "badgeTone": "default",
+      "compound": true,
+      "executable": true,
+      "formSpec": false,
+      "kind": "compound",
+      "opensStudio": false,
+      "runnable": true
+    }
+  ]
 }

@@ -24,11 +24,15 @@ def check(name, cond, detail=""):
 # 1. pin present + integrity
 meta = pin_meta()
 check("pin meta schema", meta["schema"] == "object_info_pin/1")
-check("pin node count > 3000", meta["node_count"] > 3000, str(meta["node_count"]))
+# Floor is the LIVE estate post-consolidation (2026-09-05: the managed
+# ComfyUI at :18466 serves 1310 nodes — the >3000 era died with the
+# fossil custom_nodes deletion, 2026-09-03). >1200 keeps the check's
+# intent (a real full-estate snapshot, not a stub) at today's truth.
+check("pin node count > 1200", meta["node_count"] > 1200, str(meta["node_count"]))
 
 # 2. offline ensure_nodes
 N = ensure_nodes()
-check("offline load > 3000", len(N) > 3000, str(len(N)))
+check("offline load > 1200", len(N) > 1200, str(len(N)))
 check("second call cached", ensure_nodes() is N)
 
 # 3. names gate
@@ -76,8 +80,11 @@ d = diff(ga, gb)
 check("perturbed differs", not d["isomorphic"])
 check("diff names class", any("MiniMaxH3SigmaShift" in s for s in d["a_only"] + d["b_only"]), str(d))
 oi = json.loads((REPO / "plugins" / "engines" / "comfyui" / "data" / "object_info.json").read_text())
-seed = N["easy saveText"](text="x", output_file_path="", file_name="x",
-                          file_extension="txt", overwrite=True)[0].api_format()
+# The orphan probe rides a PIN-PRESENT OUTPUT node ('easy saveText'
+# died with the easy-use pack in the 2026-09-05 refresh — 1310 nodes,
+# no easy surface; the pin is live truth). SaveImage is an output node
+# with a defaulted input set, exactly what reachable() walks back from.
+seed = N["SaveImage"]().api_format()
 g_orphan = dict(seed)
 g_orphan["LoadImage.99"] = {"class_type": "LoadImage", "inputs": {"image": "x.png"}}
 r = reachable(g_orphan, oi)

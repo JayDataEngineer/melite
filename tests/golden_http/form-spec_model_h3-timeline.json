@@ -1,257 +1,400 @@
 {
- "defaults": {
-  "seed": "42"
- },
- "engine": "comfyui",
- "enhance_prompts": {
-  "lyrics": "",
-  "prompt": "structure: [subject, motion, camera, environment, sound]; rules:; - motion is the verb chain, not a pose: name what CHANGES across the window; - one camera move per shot (push in, truck left, locked off) \u2014 never two; - carry the subject's identity words into every shot that shows them; - end each shot prompt with its soundscape in one clause (room tone, foley, music); - a shot that cannot say its motion in one sentence is two shots"
- },
- "features": {
-  "modifiers": [],
-  "variant_groups": {
-   "Quant": {
-    "label": "Quant"
-   },
-   "Variant": {
-    "label": "Variant"
-   }
-  }
- },
- "fields": [
-  {
-   "label": "Prompt",
-   "name": "prompt",
-   "placeholder": "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out",
-   "required": true,
-   "tooltip": "Verb-first motion + the sounds. For keyframes the image already sets the scene \u2014 prompt what CHANGES.",
-   "type": "text"
+  "contract": null,
+  "defaults": {
+    "seed": "42"
   },
-  {
-   "label": "First frame (keyframe lanes)",
-   "name": "image",
-   "tooltip": "Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline.",
-   "type": "text"
+  "engine": "comfyui",
+  "enhance_prompt": null,
+  "enhance_prompts": {
+    "lyrics": "",
+    "prompt": "structure: [subject, motion, camera, environment, sound]; rules:; - motion is the verb chain, not a pose: name what CHANGES across the window; - one camera move per shot (push in, truck left, locked off) \u2014 never two; - carry the subject's identity words into every shot that shows them; - end each shot prompt with its soundscape in one clause (room tone, foley, music); - a shot that cannot say its motion in one sentence is two shots"
   },
-  {
-   "label": "Reference image (Ref2VA identity lock)",
-   "name": "ref_image",
-   "tooltip": "Absolute path to a reference image for identity-locked generation. The hybrid model auto-routes to Ref2VA mode when connected. Optional \u2014 leave empty for standard FL2VA text-to-video.",
-   "type": "text"
-  },
-  {
-   "default": 42,
-   "label": "Seed",
-   "name": "seed",
-   "tooltip": "Same seed across re-rolls = same world texture",
-   "type": "int"
-  },
-  {
-   "default": 768,
-   "label": "Width",
-   "max": 1344,
-   "min": 448,
-   "name": "width",
-   "step": 64,
-   "type": "int"
-  },
-  {
-   "default": 448,
-   "label": "Height",
-   "max": 768,
-   "min": 448,
-   "name": "height",
-   "step": 64,
-   "type": "int"
-  },
-  {
-   "default": 56,
-   "label": "Frames",
-   "max": 362,
-   "min": 21,
-   "name": "length",
-   "step": 5,
-   "tooltip": "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s",
-   "type": "int"
-  },
-  {
-   "default": 12,
-   "label": "Steps",
-   "max": 30,
-   "min": 4,
-   "name": "steps",
-   "tooltip": "12 for draft; 30 standard; 10 with the turbo LoRA",
-   "type": "int"
-  },
-  {
-   "default": "true",
-   "label": "FSR Sharpening",
-   "name": "sharpen_enabled",
-   "tooltip": "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural.",
-   "type": "bool"
-  },
-  {
-   "default": 0.3,
-   "label": "Sharpen Strength",
-   "max": 1,
-   "min": 0,
-   "name": "sharpen_strength",
-   "step": 0.05,
-   "tooltip": "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.",
-   "type": "float"
-  },
-  {
-   "default": "false",
-   "label": "FILM Interpolation",
-   "name": "interpolate_enabled",
-   "tooltip": "Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time.",
-   "type": "bool"
-  },
-  {
-   "default": 12.0,
-   "label": "Video Shift",
-   "max": 20,
-   "min": 1,
-   "name": "shift_video",
-   "step": 0.5,
-   "tooltip": "Timestep shift for video attention. Higher = more coherent motion.",
-   "type": "float"
-  },
-  {
-   "default": 3.0,
-   "label": "Audio Shift",
-   "max": 10,
-   "min": 1,
-   "name": "shift_audio",
-   "step": 0.5,
-   "tooltip": "Timestep shift for audio attention. Lower = more detailed sound.",
-   "type": "float"
-  }
- ],
- "form": "h3-timeline",
- "genre": "video",
- "label": "H3 Timeline",
- "layout": "studio",
- "model": "h3-timeline",
- "schema_groups": [
-  {
-   "fields": [
-    {
-     "label": "Prompt",
-     "name": "prompt",
-     "placeholder": "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out",
-     "required": true,
-     "tooltip": "Verb-first motion + the sounds. For keyframes the image already sets the scene \u2014 prompt what CHANGES.",
-     "type": "text"
-    },
-    {
-     "label": "First frame (keyframe lanes)",
-     "name": "image",
-     "tooltip": "Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline.",
-     "type": "text"
-    },
-    {
-     "label": "Reference image (Ref2VA identity lock)",
-     "name": "ref_image",
-     "tooltip": "Absolute path to a reference image for identity-locked generation. The hybrid model auto-routes to Ref2VA mode when connected. Optional \u2014 leave empty for standard FL2VA text-to-video.",
-     "type": "text"
-    },
-    {
-     "default": 42,
-     "label": "Seed",
-     "name": "seed",
-     "tooltip": "Same seed across re-rolls = same world texture",
-     "type": "int"
-    },
-    {
-     "default": 768,
-     "label": "Width",
-     "max": 1344,
-     "min": 448,
-     "name": "width",
-     "step": 64,
-     "type": "int"
-    },
-    {
-     "default": 448,
-     "label": "Height",
-     "max": 768,
-     "min": 448,
-     "name": "height",
-     "step": 64,
-     "type": "int"
-    },
-    {
-     "default": 56,
-     "label": "Frames",
-     "max": 362,
-     "min": 21,
-     "name": "length",
-     "step": 5,
-     "tooltip": "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s",
-     "type": "int"
-    },
-    {
-     "default": 12,
-     "label": "Steps",
-     "max": 30,
-     "min": 4,
-     "name": "steps",
-     "tooltip": "12 for draft; 30 standard; 10 with the turbo LoRA",
-     "type": "int"
-    },
-    {
-     "default": "true",
-     "label": "FSR Sharpening",
-     "name": "sharpen_enabled",
-     "tooltip": "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural.",
-     "type": "bool"
-    },
-    {
-     "default": 0.3,
-     "label": "Sharpen Strength",
-     "max": 1,
-     "min": 0,
-     "name": "sharpen_strength",
-     "step": 0.05,
-     "tooltip": "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.",
-     "type": "float"
-    },
-    {
-     "default": "false",
-     "label": "FILM Interpolation",
-     "name": "interpolate_enabled",
-     "tooltip": "Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time.",
-     "type": "bool"
-    },
-    {
-     "default": 12.0,
-     "label": "Video Shift",
-     "max": 20,
-     "min": 1,
-     "name": "shift_video",
-     "step": 0.5,
-     "tooltip": "Timestep shift for video attention. Higher = more coherent motion.",
-     "type": "float"
-    },
-    {
-     "default": 3.0,
-     "label": "Audio Shift",
-     "max": 10,
-     "min": 1,
-     "name": "shift_audio",
-     "step": 0.5,
-     "tooltip": "Timestep shift for audio attention. Lower = more detailed sound.",
-     "type": "float"
+  "features": {
+    "modifiers": [],
+    "variant_groups": {
+      "Quant": {
+        "label": "Quant"
+      },
+      "Variant": {
+        "label": "Variant"
+      }
     }
-   ],
-   "id": "",
-   "label": "Parameters",
-   "order": 0,
-   "zone": "params"
-  }
- ],
- "service": "h3-timeline",
- "size": "huge",
- "variants": []
+  },
+  "fields": [
+    {
+      "columns": null,
+      "default": null,
+      "group": "",
+      "label": "Prompt",
+      "max": null,
+      "min": null,
+      "name": "prompt",
+      "options": [],
+      "order": null,
+      "placeholder": "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out",
+      "required": true,
+      "step": null,
+      "tooltip": "Verb-first motion + the sounds. For keyframes the image already sets the scene \u2014 prompt what CHANGES.",
+      "type": "text",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": null,
+      "group": "",
+      "label": "First frame (keyframe lanes)",
+      "max": null,
+      "min": null,
+      "name": "image",
+      "options": [],
+      "order": null,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline.",
+      "type": "text",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": null,
+      "group": "",
+      "label": "Reference image (Ref2VA identity lock)",
+      "max": null,
+      "min": null,
+      "name": "ref_image",
+      "options": [],
+      "order": null,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "Absolute path to a reference image for identity-locked generation. The hybrid model auto-routes to Ref2VA mode when connected. Optional \u2014 leave empty for standard FL2VA text-to-video.",
+      "type": "text",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": 42,
+      "group": "",
+      "label": "Seed",
+      "max": null,
+      "min": null,
+      "name": "seed",
+      "options": [],
+      "order": null,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "Same seed across re-rolls = same world texture",
+      "type": "int",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": 768,
+      "group": "",
+      "label": "Width",
+      "max": 1344,
+      "min": 448,
+      "name": "width",
+      "options": [],
+      "order": null,
+      "placeholder": "",
+      "required": null,
+      "step": 64,
+      "tooltip": "",
+      "type": "int",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": 448,
+      "group": "",
+      "label": "Height",
+      "max": 768,
+      "min": 448,
+      "name": "height",
+      "options": [],
+      "order": null,
+      "placeholder": "",
+      "required": null,
+      "step": 64,
+      "tooltip": "",
+      "type": "int",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": 56,
+      "group": "",
+      "label": "Frames",
+      "max": 362,
+      "min": 21,
+      "name": "length",
+      "options": [],
+      "order": null,
+      "placeholder": "",
+      "required": null,
+      "step": 5,
+      "tooltip": "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s",
+      "type": "int",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": 12,
+      "group": "",
+      "label": "Steps",
+      "max": 30,
+      "min": 4,
+      "name": "steps",
+      "options": [],
+      "order": null,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "12 for draft; 30 standard; 10 with the turbo LoRA",
+      "type": "int",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": "true",
+      "group": "",
+      "label": "FSR Sharpening",
+      "max": null,
+      "min": null,
+      "name": "sharpen_enabled",
+      "options": [],
+      "order": null,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural.",
+      "type": "bool",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": 0.3,
+      "group": "",
+      "label": "Sharpen Strength",
+      "max": 1,
+      "min": 0,
+      "name": "sharpen_strength",
+      "options": [],
+      "order": null,
+      "placeholder": "",
+      "required": null,
+      "step": 0.05,
+      "tooltip": "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.",
+      "type": "float",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": "false",
+      "group": "",
+      "label": "FILM Interpolation",
+      "max": null,
+      "min": null,
+      "name": "interpolate_enabled",
+      "options": [],
+      "order": null,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time.",
+      "type": "bool",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": 12.0,
+      "group": "",
+      "label": "Video Shift",
+      "max": 20,
+      "min": 1,
+      "name": "shift_video",
+      "options": [],
+      "order": null,
+      "placeholder": "",
+      "required": null,
+      "step": 0.5,
+      "tooltip": "Timestep shift for video attention. Higher = more coherent motion.",
+      "type": "float",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": 3.0,
+      "group": "",
+      "label": "Audio Shift",
+      "max": 10,
+      "min": 1,
+      "name": "shift_audio",
+      "options": [],
+      "order": null,
+      "placeholder": "",
+      "required": null,
+      "step": 0.5,
+      "tooltip": "Timestep shift for audio attention. Lower = more detailed sound.",
+      "type": "float",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    }
+  ],
+  "form": "h3-timeline",
+  "genre": "video",
+  "guide": null,
+  "label": "H3 Timeline",
+  "layout": "studio",
+  "loader_info": null,
+  "model": "h3-timeline",
+  "schema_groups": [
+    {
+      "fields": [
+        {
+          "label": "Prompt",
+          "name": "prompt",
+          "placeholder": "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out",
+          "required": true,
+          "tooltip": "Verb-first motion + the sounds. For keyframes the image already sets the scene \u2014 prompt what CHANGES.",
+          "type": "text"
+        },
+        {
+          "label": "First frame (keyframe lanes)",
+          "name": "image",
+          "tooltip": "Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline.",
+          "type": "text"
+        },
+        {
+          "label": "Reference image (Ref2VA identity lock)",
+          "name": "ref_image",
+          "tooltip": "Absolute path to a reference image for identity-locked generation. The hybrid model auto-routes to Ref2VA mode when connected. Optional \u2014 leave empty for standard FL2VA text-to-video.",
+          "type": "text"
+        },
+        {
+          "default": 42,
+          "label": "Seed",
+          "name": "seed",
+          "tooltip": "Same seed across re-rolls = same world texture",
+          "type": "int"
+        },
+        {
+          "default": 768,
+          "label": "Width",
+          "max": 1344,
+          "min": 448,
+          "name": "width",
+          "step": 64,
+          "type": "int"
+        },
+        {
+          "default": 448,
+          "label": "Height",
+          "max": 768,
+          "min": 448,
+          "name": "height",
+          "step": 64,
+          "type": "int"
+        },
+        {
+          "default": 56,
+          "label": "Frames",
+          "max": 362,
+          "min": 21,
+          "name": "length",
+          "step": 5,
+          "tooltip": "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s",
+          "type": "int"
+        },
+        {
+          "default": 12,
+          "label": "Steps",
+          "max": 30,
+          "min": 4,
+          "name": "steps",
+          "tooltip": "12 for draft; 30 standard; 10 with the turbo LoRA",
+          "type": "int"
+        },
+        {
+          "default": "true",
+          "label": "FSR Sharpening",
+          "name": "sharpen_enabled",
+          "tooltip": "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural.",
+          "type": "bool"
+        },
+        {
+          "default": 0.3,
+          "label": "Sharpen Strength",
+          "max": 1,
+          "min": 0,
+          "name": "sharpen_strength",
+          "step": 0.05,
+          "tooltip": "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.",
+          "type": "float"
+        },
+        {
+          "default": "false",
+          "label": "FILM Interpolation",
+          "name": "interpolate_enabled",
+          "tooltip": "Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time.",
+          "type": "bool"
+        },
+        {
+          "default": 12.0,
+          "label": "Video Shift",
+          "max": 20,
+          "min": 1,
+          "name": "shift_video",
+          "step": 0.5,
+          "tooltip": "Timestep shift for video attention. Higher = more coherent motion.",
+          "type": "float"
+        },
+        {
+          "default": 3.0,
+          "label": "Audio Shift",
+          "max": 10,
+          "min": 1,
+          "name": "shift_audio",
+          "step": 0.5,
+          "tooltip": "Timestep shift for audio attention. Lower = more detailed sound.",
+          "type": "float"
+        }
+      ],
+      "id": "",
+      "label": "Parameters",
+      "order": 0,
+      "zone": "params"
+    }
+  ],
+  "service": "h3-timeline",
+  "size": "huge",
+  "variants": []
 }

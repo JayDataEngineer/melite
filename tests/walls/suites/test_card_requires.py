@@ -31,8 +31,12 @@ r = _ok("T2 None requires", ok and msg == "")
 passed += r; failed += (not r)
 
 # ── T3: known extension with nodes in object_info ──
+# 2026-09-05 drift fix: the declaration vocabulary is the BASE pack
+# (h3-timeline/nodes.yaml: comfyui-h3-motion-context v0.5.1 — it owns
+# the four MiniMaxH3MotionContext class names "under coexistence with
+# the MultiRef fork"; the fork name was never a card declaration).
 ok, msg = check_card_requires(
-    ["ComfyUI-H3-Motion-Context-MultiRef"],
+    ["comfyui-h3-motion-context"],
     server_url="http://127.0.0.1:18465",
 )
 r = _ok("T3 installed extension via object_info", ok, msg)
@@ -56,20 +60,23 @@ ok, msg = check_card_requires(
 r = _ok("T5 mixed real+fake refuses", not ok)
 passed += r; failed += (not r)
 
-# ── T6: video-gen full requires (all installed on this server) ──
+# ── T6: h3-timeline card's REAL requires (all installed on this
+# server) — 2026-09-05 drift fix: the list mirrors the card class
+# requires (the video-gen card declares NONE — its families ride core
+# + VHS; 'melite-video' is declared once in plugins/melite-video/
+# nodes/extensions.yaml, never a card require).
 ok, msg = check_card_requires(
     [
-        "ComfyUI-H3-Motion-Context-MultiRef",
+        "comfyui-h3-motion-context",
         "ComfyUI-PlagueKind-Nodes",
         "ComfyUI-Frame-Interpolation",
         "ComfyUI-KJNodes",
         "ComfyUI-SeedVR2_VideoUpscaler",
         "ComfyUI-LTXVideo",
-        "melite-video",
     ],
     server_url="http://127.0.0.1:18465",
 )
-r = _ok("T6 video-gen all installed", ok, msg)
+r = _ok("T6 h3-timeline requires all installed", ok, msg)
 passed += r; failed += (not r)
 
 # ── T7: unreachable server — graceful fallback ──

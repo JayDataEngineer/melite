@@ -48,6 +48,20 @@ SUBPROCESS_WALLS = [
     "tests/walls/suites/test_cpp_engines.py",
     "tests/walls/suites/test_card_pattern_wall.py",
     "tests/walls/suites/test_web_harness_pages.py",
+    # recovered 2026-09-05 from KNOWN_DRIFT — recorded-renderer-output
+    # parity (the hand-written window templates retired with dcfa4c7;
+    # goldens in suites/golden_h3/, regen via H3_PARITY_REGEN=1)
+    "tests/walls/suites/test_h3_renderer_parity.py",
+    # recovered 2026-09-05 from KNOWN_DRIFT — the pin is live truth
+    # (1310 nodes post-consolidation); probe rides SaveImage, floor
+    # >1200
+    "tests/walls/suites/test_co_script.py",
+    # recovered 2026-09-05 from KNOWN_DRIFT — T3/T6 spoke stale names;
+    # the checks mirror the h3-timeline card's real requires now
+    "tests/walls/suites/test_card_requires.py",
+    # recovered 2026-09-05 from KNOWN_DRIFT — deliberate golden bumps
+    # from the scratch gateway + runs-count invariant corrected to >=
+    "tests/walls/suites/test_http_parity.py",
     # NOT here (2026-09-04 flows-rework validation):
     # - test_browser_lanes.py — boots a throwaway vite + chromium (its
     #   own live-browser infra; hangs the subprocess wall). Run it via
@@ -75,27 +89,29 @@ KNOWN_DRIFT = {
     # 2026-09-04 flows-rework validation: the renderer moved to
     # action_cards/video/h3-timeline/py/renderer.py (suite path fixed)
     # but its model fixtures (window1_t4r.json & kin) no longer exist
-    # anywhere under plugins/ — broken at HEAD by the reorg lane,
-    # reproduced with the tree stashed. The h3 lane's owner rehomes
-    # the fixtures or the suite gets rewritten against the new paths.
-    "tests/walls/suites/test_h3_renderer_parity.py":
-        "h3 model fixtures (window1_t4r.json etc.) missing after the "
-        "action_cards/models reorg — owning lane rehomes them",
-    "tests/walls/suites/test_co_script.py":
-        "pin lost 'easy saveText'/'LTX_lora_loader' (object_info "
-        "refresh vs declarations) — concurrent committer lane",
-    "tests/walls/suites/test_card_requires.py":
-        "video-gen declares ComfyUI-H3-Motion-Context-MultiRef / "
-        "melite-video, not installed live — consolidation lane",
-    # 2026-09-04: verified pre-existing — a byte-identical copy at the
-    # pre-migration path with the pre-migration anchor fails with the
-    # same five drifts. The migration changed nothing here.
-    "tests/walls/suites/test_http_parity.py":
-        "wire drift vs the goldens from the concurrent audio-cpp "
-        "consolidation + anny lanes (/v1/tools 13->10, music3 "
-        "defaults.backend, anny capabilities/forms, runs contract) — "
-        "the owning lane bumps the goldens deliberately (C "
-        "RETIREMENT: the goldens ARE the contract)",
+    # anywhere under plugins/ — broken at HEAD by the reorg lane.
+    # RESOLVED 2026-09-05: the templates retired FOR GOOD (dcfa4c7 —
+    # the comfy-script authoring path supersedes them per operator),
+    # so the suite was REHOMED onto recorded-renderer-output parity
+    # (suites/golden_h3/ recordings, H3_PARITY_REGEN regen door) and
+    # moved into SUBPROCESS_WALLS. 9/9 checks green at HEAD.
+    # RESOLVED 2026-09-05 (co_script): the pin IS live truth — the
+    # managed :18466 serves exactly 1310 nodes (easy-use pack gone,
+    # post-consolidation estate); the suite's orphan probe moved to
+    # the pin-present SaveImage node and the >3000 floor became >1200.
+    # 16/16 checks green; moved into SUBPROCESS_WALLS.
+    # RESOLVED 2026-09-05 (card_requires): the T3/T6 names were stale
+    # test vocabulary — the declaration set is the h3-timeline card's
+    # requires (base pack comfyui-h3-motion-context, no 'melite-video'
+    # card require; the video-gen card declares none). 9/9 checks
+    # green; moved into SUBPROCESS_WALLS.
+    # RESOLVED 2026-09-05 (http_parity): deliberate golden bumps from
+    # the scratch gateway (C RETIREMENT: the goldens ARE the contract)
+    # — anny capabilities/forms, form-spec contract keys, kinds 7->8
+    # (card-compose), tools 10->14 — plus the runs-count invariant
+    # corrected to >= per run_wire.RunsEnvelope's declared C contract
+    # (count = total pre-limit). 24/24 checks green; moved into
+    # SUBPROCESS_WALLS.
 }
 
 
