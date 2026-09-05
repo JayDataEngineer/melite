@@ -203,6 +203,184 @@ class TestErrorPaths:
             estate_config._abs_root("", "test_key")
 
 
+# ── parse refusals (the pydantic flip, 2026-09-05) ─────────────────────
+#
+# The config IS a schema: every misconfiguration refuses AT PARSE with
+# one field-named RootConfigError — never at some later door, never
+# guessed around. These tests write candidate configs to a tmp file and
+# point the parser at it (the real inference.config.json stays clean).
+
+GOOD_CFG = {
+    "models": {"read_root": "/mnt/models", "download_root": "/mnt/models"},
+    "engines": {
+        "comfyui": {"base": "image-gen/comfyui",
+                    "url": "http://127.0.0.1:18466", "port": 18466},
+        "kimodo": {"base": "motion/kimodo",
+                   "generator": "/opt/kimodo/bin/kmd-generate"},
+    },
+}
+
+
+@pytest.fixture()
+def cfg_file(tmp_path, monkeypatch):
+    """Point estate_config at a scratch config file; write_config()
+    returns a helper the test drives."""
+    f = tmp_path / "inference.config.json"
+    monkeypatch.setattr(estate_config, "ROOT_CONFIG", f)
+    def write(cfg):
+        f.write_text(json.dumps(cfg), encoding="utf-8")
+        return f
+    return write
+
+
+class TestParseRefusals:
+    """load() refuses malformed configs AT PARSE (PYTHON SHAPE LAW:
+    an invalid config cannot be CONSTRUCTED)."""
+
+    def test_missing_file_refuses(self, cfg_file, tmp_path):
+        # nothing written — the file does not exist
+        with pytest.raises(estate_config.RootConfigError, match="missing"):
+            estate_config.load()
+
+    def test_bad_json_refuses(self, cfg_file):
+        cfg_file(GOOD_CFG)
+        p = estate_config.ROOT_CONFIG
+        p.write_text("{not json", encoding="utf-8")
+        with pytest.raises(estate_config.RootConfigError, match="not valid JSON"):
+            estate_config.load()
+
+    def test_non_object_refuses(self, cfg_file):
+        cfg_file(["a", "list"])
+        with pytest.raises(estate_config.RootConfigError, match="refuses at parse"):
+            estate_config.load()
+
+    def test_missing_models_stanza_refuses(self, cfg_file):
+        cfg_file({"engines": {}})
+        with pytest.raises(estate_config.RootConfigError, match="models"):
+            estate_config.load()
+
+    def test_missing_roots_refuse(self, cfg_file):
+        cfg_file({"models": {}})
+        with pytest.raises(estate_config.RootConfigError, match="read_root"):
+            estate_config.load()
+
+    def test_relative_root_refuses_at_parse(self, cfg_file):
+        cfg = {"models": {"read_root": "relative/path",
+                          "download_root": "/mnt/models"}}
+        cfg_file(cfg)
+        with pytest.raises(estate_config.RootConfigError,
+                           match="must be ABSOLUTE"):
+            estate_config.load()
+
+    def test_typo_top_level_key_refuses(self, cfg_file):
+        # the duck-typed era let "model:" ride silently — the closed
+        # top level kills the typo class
+        cfg = dict(GOOD_CFG, model={"read_root": "/x"})
+        cfg_file(cfg)
+        with pytest.raises(estate_config.RootConfigError, match="model"):
+            estate_config.load()
+
+    def test_engines_not_a_map_refuses(self, cfg_file):
+        cfg = dict(GOOD_CFG, engines=["comfyui"])
+        cfg_file(cfg)
+        with pytest.raises(estate_config.RootConfigError, match="engines"):
+            estate_config.load()
+
+    def test_engine_entry_not_an_object_refuses(self, cfg_file):
+        # the duck-typed era silently treated this as "no entry"
+        cfg = dict(GOOD_CFG, engines={"comfyui": "http://x:1"})
+        cfg_file(cfg)
+        with pytest.raises(estate_config.RootConfigError, match="comfyui"):
+            estate_config.load()
+
+    def test_garbage_port_refuses_at_parse(self, cfg_file):
+        # the duck-typed era let port:"abc" silently fall through to
+        # the URL parse — now it dies loud at the parse
+        cfg = {"models": GOOD_CFG["models"],
+               "engines": {"comfyui": {"port": "not-a-port"}}}
+        cfg_file(cfg)
+        with pytest.raises(estate_config.RootConfigError, match="port"):
+            estate_config.load()
+
+    def test_error_names_the_field(self, cfg_file):
+        cfg_file({"models": {"read_root": "rel", "download_root": "/m"}})
+        with pytest.raises(estate_config.RootConfigError,
+                           match="read_root"):
+            estate_config.load()
+
+
+class TestParseAccepts:
+    """The schema accepts the honest shapes (frozen, typed rows)."""
+
+    def test_good_config_loads_typed(self, cfg_file):
+        cfg_file(GOOD_CFG)
+        cfg = estate_config.load()
+        assert isinstance(cfg, estate_config.RootConfig)
+        assert cfg.models.read_root == "/mnt/models"
+        assert cfg.engine("comfyui").url == "http://127.0.0.1:18466"
+
+    def test_config_without_engines_loads(self, cfg_file):
+        cfg_file({"models": GOOD_CFG["models"]})
+        assert estate_config.load().engines == {}
+
+    def test_rows_are_frozen(self, cfg_file):
+        cfg_file(GOOD_CFG)
+        cfg = estate_config.load()
+        with pytest.raises(Exception):
+            cfg.models.read_root = "/other"
+
+    def test_engine_vocabulary_is_typed(self, cfg_file):
+        cfg_file(GOOD_CFG)
+        cfg = estate_config.load()
+        # kimodo's generator is a DECLARED field (closed key set —
+        # a typo'd engine key refuses at parse, never a silent "")
+        assert cfg.engine("kimodo").field("generator") == \
+            "/opt/kimodo/bin/kmd-generate"
+        assert cfg.engine("kimodo").field("nope") == ""
+
+    def test_typo_engine_key_refuses(self, cfg_file):
+        # the duck-typed era returned "" for a typo'd key — the closed
+        # engine vocabulary kills the typo class at parse
+        cfg = {"models": GOOD_CFG["models"],
+               "engines": {"comfyui": {"input_dirs": "/x"}}}
+        cfg_file(cfg)
+        with pytest.raises(estate_config.RootConfigError,
+                           match="input_dirs"):
+            estate_config.load()
+
+    def test_unknown_engine_is_the_empty_row(self, cfg_file):
+        cfg_file(GOOD_CFG)
+        e = estate_config.load().engine("never-configured")
+        assert e.base == "" and e.url == "" and e.port is None
+
+    def test_string_port_coerces_like_the_int_it_wrote(self, cfg_file):
+        # pydantic lax coercion == the old int(p) attempt: "18466" is
+        # the port 18466, not a refusal
+        cfg = {"models": GOOD_CFG["models"],
+               "engines": {"comfyui": {"port": "18466"}}}
+        cfg_file(cfg)
+        assert estate_config.load().engine("comfyui").port == 18466
+
+    def test_port_derives_from_url_when_unset(self, cfg_file):
+        cfg = {"models": GOOD_CFG["models"],
+               "engines": {"comfyui": {"url": "http://127.0.0.1:18466"}}}
+        cfg_file(cfg)
+        assert estate_config.engine_port("comfyui") == 18466
+
+    def test_engine_field_reads_declared_fields_too(self, cfg_file):
+        cfg_file(GOOD_CFG)
+        assert estate_config.engine_field("comfyui", "base") == \
+            "image-gen/comfyui"
+        assert estate_config.engine_field("comfyui", "port") == "18466"
+
+    def test_model_paths_from_scratch_config(self, cfg_file):
+        cfg_file(GOOD_CFG)
+        p = estate_config.model_paths("comfyui")
+        assert p["read_root"] == "/mnt/models/image-gen/comfyui"
+        assert estate_config.model_paths("kimodo")["read_root"] == \
+            "/mnt/models/motion/kimodo"
+
+
 # ── endpoint sync (provision paths) ────────────────────────────────────
 
 @pytest.fixture(scope="class")

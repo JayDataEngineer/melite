@@ -36,6 +36,18 @@ file's semantics):
       The engine's connection (the comfyui HTTP endpoint today;
       engine-specific — set only for engines that have one). Optional.
 
+PYTHON SHAPE LAW (2026-09-05 flip): the config IS a schema — frozen
+pydantic rows validated AT PARSE. The duck-typed era (hand-rolled
+isinstance walks, `(cfg.get("engines") or {}).get(engine) or {}`,
+a garbage `port` silently falling through to the URL, a typo'd
+engine key reading as a silently-missing field) is over: an invalid
+config cannot be LOADED, so every door that reads it refuses with
+the same field-named reason. Key discipline mirrors the wire modules
+(run_wire/form_wire): the top level, the models stanza, AND each
+engine entry are CLOSED (extra="forbid") with the engine key set
+enumerated empirically — a new engine field is a deliberate schema
+extension in this file, never drift.
+
 Engine-level configs (e.g. the comfyui endpoint's url /
 model_base_path / model_download_path) still WIN when set — the
 root config is the base layer, engine configs are explicit
@@ -58,6 +70,10 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+from typing import Optional
+
+from pydantic import (BaseModel, ConfigDict, Field, ValidationError,
+                      ValidationInfo, field_validator)
 
 _REPO = Path(__file__).resolve().parents[1]
 ROOT_CONFIG = _REPO / "inference.config.json"
@@ -67,45 +83,136 @@ class RootConfigError(Exception):
     """Misconfiguration — dies LOUD, never guessed around."""
 
 
-def load() -> dict:
+def _reason(error: ValidationError) -> str:
+    """One-line, field-named parse refusal (the wire-module shape)."""
+    parts = []
+    for e in error.errors():
+        loc = ".".join(str(x) for x in e["loc"]) or "<root>"
+        parts.append(f"{loc}: {e['msg']}")
+    return "; ".join(parts)
+
+
+# ── the schema ─────────────────────────────────────────────────────
+
+def _check_abs_root(value: object, key: str) -> str:
+    """A global root: required, absolute, non-empty (ValueError core
+    the pydantic validator and the RootConfigError wrapper share)."""
+    raw = (str(value).strip() if value is not None else "")
+    if not raw:
+        raise ValueError(
+            "models.%s missing/empty in %s — where models %s is "
+            "deployment config, never guessed (QUEUE LANE LAW)"
+            % (key, ROOT_CONFIG.name,
+               "live" if key == "read_root" else "download to"))
+    if not os.path.isabs(raw):
+        raise ValueError(
+            "models.%s must be ABSOLUTE (got %r) — a relative model "
+            "root would move with the working directory"
+            % (key, raw))
+    return os.path.abspath(raw)
+
+
+def _abs_root(value: object, key: str) -> str:
+    """The RootConfigError surface over the shared check (kept as the
+    module's own loud helper — wall-tested directly)."""
+    try:
+        return _check_abs_root(value, key)
+    except ValueError as e:
+        raise RootConfigError(str(e)) from e
+
+
+class ModelsRoots(BaseModel):
+    """The global model roots — closed keys, validated AT PARSE."""
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    read_root: str
+    download_root: str
+
+    @field_validator("read_root", "download_root")
+    @classmethod
+    def _root_is_absolute(cls, v: str, info: ValidationInfo) -> str:
+        return _check_abs_root(v, str(info.field_name))
+
+
+class EngineEntry(BaseModel):
+    """One engine's root-config row. Keys are the CLOSED empirical
+    engine vocabulary (the form_wire discipline: key sets enumerated
+    from the live estate sweep, VALUES typed) — a typo'd engine key
+    ("input_dirs") is a parse refusal, never a silently-missing field.
+    Adding a field is a deliberate schema extension, never drift."""
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    base: str = ""
+    url: str = ""
+    # declared so a garbage port dies AT PARSE (the duck-typed era
+    # let it silently fall through to the URL)
+    port: Optional[int] = None
+    # stream paths + the boot command (comfyui's endpoint sync)
+    input_dir: str = ""
+    input_dir_container: str = ""
+    output_dir: str = ""
+    boot_cmd: str = ""
+    # kimodo's local tools (engine-specific but declared — the
+    # schema names what engine_field reads)
+    generator: str = ""
+    exporter: str = ""
+    # free-form operator prose (audio-cpp's rationale row)
+    comment: str = ""
+
+    @field_validator("base", "url", "input_dir", "input_dir_container",
+                     "output_dir", "boot_cmd", "generator", "exporter",
+                     "comment")
+    @classmethod
+    def _stripped(cls, v: str) -> str:
+        return str(v).strip()
+
+    def field(self, name: str) -> str:
+        """Any declared field as a stripped string ('' when absent) —
+        the engine_field() read rail."""
+        v = getattr(self, name, None)
+        return str(v).strip() if v is not None else ""
+
+
+class RootConfig(BaseModel):
+    """The whole inference.config.json — closed at the top level
+    (models + engines; a typo'd key dies loud), engines open per
+    entry. An invalid config cannot be CONSTRUCTED, so it cannot be
+    served, provisioned, or booted against."""
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    models: ModelsRoots
+    engines: dict[str, EngineEntry] = Field(default_factory=dict)
+
+    def engine(self, name: str) -> EngineEntry:
+        """The entry, or an empty row (an unconfigured engine sits
+        directly under the global roots with no connection)."""
+        return self.engines.get(name) or EngineEntry()
+
+
+# ── the ONE parser ─────────────────────────────────────────────────
+
+def load() -> RootConfig:
+    """Parse + validate the root config. Every misconfiguration —
+    missing file, bad JSON, non-object, missing/relative roots,
+    engines that is not a map, an engine entry that is not an
+    object, a garbage port — refuses HERE with one field-named
+    RootConfigError (never at some later door, never guessed)."""
     if not ROOT_CONFIG.is_file():
         raise RootConfigError(
             "%s missing — model storage is configured at the ROOT "
             "of the project (see docs/comfyui/setup.md §Configuration)"
             % ROOT_CONFIG.name)
     try:
-        cfg = json.loads(ROOT_CONFIG.read_text())
+        raw = json.loads(ROOT_CONFIG.read_text())
     except json.JSONDecodeError as exc:
         raise RootConfigError(
             "%s is not valid JSON: %s" % (ROOT_CONFIG.name, exc))
-    if not isinstance(cfg, dict):
-        raise RootConfigError("%s must be a JSON object" % ROOT_CONFIG.name)
-    return cfg
-
-
-def _abs_root(value: object, key: str) -> str:
-    """A global root: required, absolute, non-empty."""
-    raw = (str(value).strip() if value is not None else "")
-    if not raw:
+    try:
+        return RootConfig.model_validate(raw)
+    except ValidationError as exc:
         raise RootConfigError(
-            "models.%s missing/empty in %s — where models %s is "
-            "deployment config, never guessed (QUEUE LANE LAW)"
-            % (key, ROOT_CONFIG.name,
-               "live" if key == "read_root" else "download to"))
-    root = os.path.abspath(raw)
-    if not os.path.isabs(raw):
-        raise RootConfigError(
-            "models.%s must be ABSOLUTE (got %r) — a relative model "
-            "root would move with the working directory"
-            % (key, raw))
-    return root
-
-
-def _engine_base(cfg: dict, engine: str) -> str:
-    """engines.<name>.base — subdir under the roots, or absolute."""
-    row = (cfg.get("engines") or {}).get(engine) or {}
-    raw = str(row.get("base") or "").strip() if isinstance(row, dict) else ""
-    return raw  # "" → the engine sits directly under the global roots
+            "%s refuses at parse: %s"
+            % (ROOT_CONFIG.name, _reason(exc))) from exc
 
 
 def join(root: str, sub: str) -> str:
@@ -118,7 +225,9 @@ def join(root: str, sub: str) -> str:
     return os.path.join(root, sub)
 
 
-def model_paths(engine: str = "", endpoint_overrides: dict | None = None):
+def model_paths(engine: str = "",
+                endpoint_overrides: dict[str, str] | None = None
+                ) -> dict[str, str]:
     """THE derivation every engine consumes:
 
         model_paths("comfyui") → {
@@ -133,11 +242,9 @@ def model_paths(engine: str = "", endpoint_overrides: dict | None = None):
       3. (no third layer — missing roots raise, never default)
     """
     cfg = load()
-    read = _abs_root((cfg.get("models") or {}).get("read_root"),
-                     "read_root")
-    dl = _abs_root((cfg.get("models") or {}).get("download_root"),
-                   "download_root")
-    base = _engine_base(cfg, engine)
+    read = cfg.models.read_root            # absolute, parse-validated
+    dl = cfg.models.download_root
+    base = cfg.engine(engine).base
     paths = {
         "read_root": join(read, base),
         "download_root": join(dl, base),
@@ -161,17 +268,12 @@ def engine_url(engine: str, endpoint_override: str | None = None) -> str:
     Priority: explicit endpoint value → root config
     engines.<engine>.url. Empty/unset for engines that have no
     connection (kimodo is local subprocess; the URL key is then
-    simply not set — a missing key is fine, an empty string dies
-    loud).
+    simply not set — a missing key is fine).
     """
     raw = str(endpoint_override or "").strip()
     if raw:
         return raw
-    cfg = load()
-    row = (cfg.get("engines") or {}).get(engine) or {}
-    if not isinstance(row, dict):
-        return ""
-    return str(row.get("url") or "").strip()
+    return load().engine(engine).url
 
 
 def engine_field(engine: str, field: str,
@@ -187,14 +289,11 @@ def engine_field(engine: str, field: str,
     raw = str(endpoint_override or "").strip()
     if raw:
         return raw
-    cfg = load()
-    row = (cfg.get("engines") or {}).get(engine) or {}
-    if not isinstance(row, dict):
-        return ""
-    return str(row.get(field) or "").strip()
+    return load().engine(engine).field(field)
 
 
-def engine_port(engine: str, endpoint_override=None) -> int:
+def engine_port(engine: str,
+                endpoint_override: object | None = None) -> int:
     """The port (int) — derived from the URL when not set explicitly
     in the root config. This lets boot_cmd drift be caught: if the
     root config's URL says 18466, the port is 18466 regardless of
@@ -208,20 +307,15 @@ def engine_port(engine: str, endpoint_override=None) -> int:
             return int(val)
         except ValueError:
             pass
-    cfg = load()
-    row = (cfg.get("engines") or {}).get(engine) or {}
-    if isinstance(row, dict):
-        p = row.get("port")
-        if p is not None:
-            try:
-                return int(p)
-            except (ValueError, TypeError):
-                pass
-        url = str(row.get("url") or "").strip()
-        if url:
-            from urllib.parse import urlparse
-            try:
-                return int(urlparse(url).port)
-            except (ValueError, TypeError):
-                pass
+    entry = load().engine(engine)
+    if entry.port is not None:
+        return entry.port
+    if entry.url:
+        from urllib.parse import urlparse
+        try:
+            port = urlparse(entry.url).port
+        except (ValueError, TypeError):
+            port = None
+        if port is not None:
+            return port
     return 0
