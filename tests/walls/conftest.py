@@ -31,4 +31,7 @@ collect_ignore_glob = [
     "suites/test_h3_renderer_parity.py",
     "suites/test_streaming.py",
     "suites/test_models_on_second_drive.py",
+    # wired 2026-09-05 with its SUBPROCESS_WALLS entry: the cpp
+    # lane's new script-style suite (sys.exit at import — uncollectable).
+    "suites/test_cpp_native_cards.py",
 ]

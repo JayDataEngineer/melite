@@ -69,6 +69,12 @@ SUBPROCESS_WALLS = [
     # - test_gpu_cpp_cards.py — LIVE operator-gateway runs (GPU money).
     #   pytest-marked `gpu` (deselected in fast collection); the
     #   subprocess path would bypass the marker and burn GPU in CI.
+    # wired 2026-09-05 (extraction stroke): the cpp lane's new
+    # script-style suite landed WITHOUT its collect-ignore entry and
+    # broke full-run collection (sys.exit at import). Green
+    # standalone (20/20) so it rides the subprocess wall, not the
+    # ignore void — owner converts or owns it from here.
+    "tests/walls/suites/test_cpp_native_cards.py",
 ]
 
 # Suites that are broken at HEAD by drift OUTSIDE this lane. Each

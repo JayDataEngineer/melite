@@ -93,7 +93,13 @@ def main() -> int:
         "samplers": ef._option_list(REPO, "samplers", engine_dir),
         "schedulers": ef._option_list(REPO, "schedulers", engine_dir),
     }
-    check("vocab resolves", len(vocab["samplers"]) == 12
+    # the options vocab loads from the engine Plugin class (derived
+    # from the object_info pin at class-definition time) — 45 pin
+    # samplers / 9 schedulers. (2026-09-05: _option_list exec'd
+    # plugin.py with no __file__, so the pin derivation always raised
+    # NameError and the wire served []; the 12-count this check used
+    # to pin was the stale C-era hand list.)
+    check("vocab resolves", len(vocab["samplers"]) == 45
           and len(vocab["schedulers"]) == 9,
           "%d samplers / %d schedulers" % (len(vocab["samplers"]),
                                            len(vocab["schedulers"])))
@@ -157,6 +163,12 @@ def main() -> int:
         # five loaders, no extension packs
         ("img-to-mesh", "comfyui", "trellis2-native",
          ("action_cards", "3d", "img_to_mesh")),
+        # cluster P (2026-09-05): pixal3d boards the grouped 3d card
+        # as the pixel-aligned hero tier — same sampler chain, alt
+        # conditioning (Pixal3DConditioning + MoGe FoV), 6 loaders,
+        # ComfyUI-MoGe extension declared required
+        ("img-to-mesh", "comfyui", "pixal3d",
+         ("action_cards", "3d", "img_to_mesh")),
         # cluster H (2026-09-04): transfer_rig boards the grouped 3d
         # card (KimodoTransferWeights lane on OUR autorig pack)
         ("img-to-mesh", "comfyui", "transfer_rig",
@@ -182,6 +194,12 @@ def main() -> int:
         # image-gen picker), full form-spec golden recorded.
         ("ideogram4", "comfyui", "ideogram",
          ("action_cards", "image", "ideogram4")),
+        # (2026-09-05 boarding): input-prep — the input lane is a real
+        # {model} card (weightless NATIVE cascade, requires=()); a
+        # HIDDEN forms row (the editor's fixed InputCardEditor owns
+        # the surface), full form-spec golden recorded.
+        ("input-prep", "comfyui", "input",
+         ("action_cards", "image", "input_prep")),
     ]
     for cid, engine, model, home in FLIPPED:
         cpath = _card_py(engine, *home)
@@ -279,11 +297,16 @@ def main() -> int:
                     # 2026-09-05 img-edit → qwen-img-edit-2511 family
                     # rename (the old family dir is gone; the pin
                     # follows the tree, never the reverse).
+                    # ("input", "input-prep") boards 2026-09-05 — the
+                    # input lane is a real {model} card (weightless
+                    # NATIVE cascade, requires=()).
+                    ("input", "input-prep"),
                     ("kimodo", "motion"),
                     ("krea-2", "image-gen"),
                     ("mask-studio", "mask-studio"),
                     ("moss-sfx", "sfx"),
                     ("music3", "music"),
+                    ("pixal3d", "img-to-mesh"),
                     ("qwen-img-edit-2511", "image-edit"),
                     ("qwen3-tts", "tts"),
                     ("qwen3-tts-base", "tts"),
@@ -502,22 +525,37 @@ def main() -> int:
           and _ok0.nodes[0].node_id == "h3-film",
           "body-level 0 refused or re-defaulted")
 
-    # the seed road owns the clamp EVERYWHERE: a garbage wire seed
-    # feeds pool AND window seeds from the same clamped base (the
-    # old compile re-read raw params — pool 42, windows -5)
+    # the seed road is NO-FALLBACK (QUEUE LANE LAW; negative-seed
+    # refusal landed 2026-09-05 with the schema door): a negative
+    # seed rides raw into RandomNoise (min 0) and dies at execution
+    # — past the queue claim. That is an INFERENCE-time error class;
+    # the door refuses it at CONSTRUCTION (the operator's standing
+    # order: caught compile time, never inference time). The old
+    # silent clamp-to-42 was a fallback and is banned.
+    _neg = dict(_body)
+    _neg["params"] = dict(_neg["params"], seed=-5)
+    check("negative seed refuses at the door (no silent clamp)",
+          _door_refusal(_neg, "negative"),
+          "seed -5 silently clamped — a fallback the queue law bans")
+
+    # the seed road owns COHERENCE everywhere: pool AND window seeds
+    # feed from the same base (the old compile re-read raw params —
+    # pool clamped, windows raw). Window n derives base + 2000006*(n-1).
     _g = dict(_body)
-    _g["params"] = dict(_g["params"], seed=-5)
+    _g["params"] = dict(_g["params"], seed=77)
     _gyml, _gextra = plugins.compose(_g, "h3-timeline", "run-WALL-SEED",
                                      _skel, ("comfyui",))
     _gwf = _gyml.nodes[0].params["workflow"]
-    _gseeds = sorted({v for n in _gwf.values() if isinstance(n, dict)
-                      for k, v in n.get("inputs", {}).items()
-                      if "seed" in k.lower() and isinstance(v, int)})
-    check("garbage seed clamps everywhere (pool AND windows)",
-          (_gextra or {}).get("inputs", {}).get("$seed") == 42
-          and _gseeds == [42, 2000048],
+    _gnoise = sorted(v for nid, n in _gwf.items()
+                     if isinstance(n, dict)
+                     and n.get("class_type") == "RandomNoise"
+                     for k, v in n.get("inputs", {}).items()
+                     if "seed" in k.lower())
+    check("wire seed feeds pool AND windows from one base",
+          (_gextra or {}).get("inputs", {}).get("$seed") == 77
+          and _gnoise == [77, 2000083],
           "seed divergence: pool %r vs windows %r"
-          % ((_gextra or {}).get("inputs", {}).get("$seed"), _gseeds))
+          % ((_gextra or {}).get("inputs", {}).get("$seed"), _gnoise))
 
     # phase 2: the run graph (renderer seam included)
     yml2, extra2 = plugins.compose(dict(_body), "h3-timeline",
@@ -1018,12 +1056,15 @@ def main() -> int:
           "coupled: %s" % [f.name for f in MaskMod._fields_
                            if f.visible_when])
     # The attach exemplar: the edit lane (qwen-img-edit-2511)
-    # carries both packs; anima boards image-gen (2026-09-05) but
-    # attaches no mods — nothing to attach on its lane yet.
+    # carries lanpaint + mask AND the boarded loras door (2026-09-05
+    # button order: the runtime-catalog Loras flavor with zero own
+    # rows — the operator's krea2 loras validate on the edit lane);
+    # anima boards image-gen (2026-09-05) but attaches no mods —
+    # nothing to attach on its lane yet.
     _qwen_edit = load_model_py(os.path.join(REPO, "plugins/engines/comfyui/models/image/qwen-img-edit-2511/model.py"), "comfyui")
     _qe_packs = {getattr(m, "pack", "") for m in _qwen_edit.mods}
-    check("edit family attaches mask to lanpaint",
-          _qe_packs == {"lanpaint", "mask"}, _qe_packs)
+    check("edit family attaches mask + loras door to lanpaint",
+          _qe_packs == {"lanpaint", "loras", "mask"}, _qe_packs)
     _anima = load_model_py(os.path.join(REPO, "plugins/engines/comfyui/models/image/anima/model.py"), "comfyui")
     _anima_packs = {getattr(m, "pack", "") for m in _anima.mods}
     check("anima carries no mods (nothing to attach on its lane)",
@@ -1206,6 +1247,39 @@ def main() -> int:
     check("anny: body_glb kind is any (no global vocab entry, honest)",
           _kind.get("body_glb") == _sk3.FileKind.ANY,
           "got %s" % _kind.get("body_glb"))
+    # MODS-ZONE SLOT SKIP (operator order, 2026-09-05: "INPUT MASK...
+    # is A MOD it's not cluttering the main inputs"): a mod-owned
+    # binary field (MaskMod's input_mask, zone='mods') NEVER becomes a
+    # main SlotGrid binding — it renders in the Mods zone's own
+    # section. The image-edit family pins it: main slots are exactly
+    # the input-zoned ones.
+    _ie_card_py = os.path.join(REPO,
+        "plugins/engines/comfyui/action_cards/image/image-edit/py/card.py")
+    _iec = _mc3.load_card_py(_ie_card_py, "comfyui")
+    _ie_bindings = []
+    for _m in (_iec.models or ()):
+        for _f in getattr(_iec, "_fields_", ()):
+            _ft = getattr(_f, "type", "")
+            if _ft not in _DSL:
+                continue
+            # mirror production: mods-zone binaries never bind (the
+            # catalog _emit skip this wall pins)
+            if getattr(_f, "zone", None) == "mods":
+                continue
+            _ie_bindings.append(_f.name)
+    check("image-edit: input_mask is NOT a main slot (mods zone)",
+          "input_mask" not in _ie_bindings,
+          "main slots: %s" % _ie_bindings)
+    check("image-edit: image2/image3/input_image ARE main slots",
+          sorted(_ie_bindings) == ["image2", "image3", "input_image"],
+          "got %s" % _ie_bindings)
+    check("image-edit: optional slots carry declared defaults "
+          "(a null square is legal on the family contract)",
+          all(getattr(_f, "default", None) is not None
+              for _f in getattr(_iec, "_fields_", ())
+              if _f.name in ("image2", "image3", "reference_images")),
+          "an optional slot without a declared default")
+
     # Duplicate detection: a model that declares the same field twice
     # refuses at construction (the cross-row invariant,
     # FormSlotVocabulary model_validator — per-MODEL uniqueness;

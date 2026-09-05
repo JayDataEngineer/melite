@@ -11,8 +11,8 @@ Pins, all offline (pinned object_info, no GPU, no network):
   3. CARD ↔ DOC (image-gen / image-edit): every doc knob is speakable
      on the card surface (doc fields ⊆ card fields, run-scoped
      filename_prefix excepted).
-  4. WIRE FORMS: the renderers bake the run-inputs SSOT string forms
-     ("%d" / "%.0f" / "%g") — the parity the flip acceptance recorded.
+  4. NATIVE WIRE FORMS (render-kit stroke): the renderers bake the
+     doc's TYPED values, never format strings.
 
 Run: python3 tests/walls/suites/test_doc_parity.py   (exit 0 = pass)
 """
@@ -34,13 +34,24 @@ def check(name: str, cond: bool, detail: str = "") -> None:
     (PASS if cond else FAIL).append(name if cond else "%s: %s" % (name, detail))
 
 
-# ── load the four CARD renderer modules (self-registering; models
+# ── load the CARD renderer modules (self-registering; models
 #    don't render — cards do) ────────────────────────────────────────────
 _CARD_DIRS = [
-    PLUGIN / "action_cards" / "image" / "image-gen",
-    PLUGIN / "action_cards" / "image" / "image-edit",
+    PLUGIN / "action_cards" / "3d" / "anny",
+    PLUGIN / "action_cards" / "3d" / "img_to_mesh",
     PLUGIN / "action_cards" / "audio" / "music",
+    PLUGIN / "action_cards" / "audio" / "sfx",
+    PLUGIN / "action_cards" / "audio" / "tts",
+    PLUGIN / "action_cards" / "audio" / "voice-lock",
+    PLUGIN / "action_cards" / "image" / "ideogram4",
+    PLUGIN / "action_cards" / "image" / "image-edit",
+    PLUGIN / "action_cards" / "image" / "image-gen",
+    PLUGIN / "action_cards" / "image" / "input_prep",
+    PLUGIN / "action_cards" / "image" / "mask_studio",
+    PLUGIN / "action_cards" / "image" / "upscale-tools",
+    PLUGIN / "action_cards" / "motion" / "motion",
     PLUGIN / "action_cards" / "video" / "h3-timeline",
+    PLUGIN / "action_cards" / "video" / "video-gen",
 ]
 _MODEL_DIRS = [
     PLUGIN / "models" / "image" / "krea-2",
@@ -117,32 +128,180 @@ _IMGEDIT = load_model_cls("qwen-img-edit-2511")
 _MUSIC3 = load_model_cls("music3")
 
 
+# ── THE NODE INTERFACE WALL (2026-09-05 compile-time incident) ──
+# Operator order, verbatim: "WE HAVE COMFYUI-SCRIPT THAT CAN
+# LITERALLY GIVE YOU THE PARAMETER INTERFACE". It can: co_script
+# loads the PINNED object_info (every node's INPUT_TYPES — INT,
+# FLOAT, STRING, BOOLEAN, combos, model wires) into comfy-script's
+# registry at render time. comfy-script does NOT enforce input types
+# at construction (verbatim passthrough) and ComfyUI's execution is
+# lax (numeric strings parse) — so a mistyped graph RUNS and the lie
+# survives until a strict consumer. This wall enforces the interface
+# directly: every scalar a renderer emits must match the
+# pin's declared input type for that node+key (links and model-wire
+# outputs skip — they are references, not scalars). Estate-wide:
+# every rendered graph below is measured, not just the edit lane
+# where the incident bit.
+def _pin_inputs():
+    from co_script import nodes as _n
+    oi, _sha = _n._load_pin_dict()
+    return oi
+
+
+_PIN = _pin_inputs()
+_IFACE_ATOM = {"INT": "int", "FLOAT": "float", "STRING": "str",
+               "BOOLEAN": "bool"}
+
+
+def _iface_mismatches(graph):
+    bad = []
+    for nid, node in graph.items():
+        cls = node.get("class_type")
+        spec = ((_PIN.get(cls) or {}).get("input") or {}).get(
+            "required") or {}
+        for k, v in (node.get("inputs") or {}).items():
+            decl = spec.get(k)
+            if not decl or not isinstance(decl, list):
+                continue
+            if not isinstance(decl[0], str):
+                continue  # combo options list — not an atom
+            want = _IFACE_ATOM.get(decl[0])
+            if want is None:
+                continue  # combos / model wires / links — not scalars
+            if isinstance(v, (dict, list)):
+                continue  # link refs / vectors — not scalars
+            got = ("bool" if isinstance(v, bool)
+                   else "int" if isinstance(v, int)
+                   else "float" if isinstance(v, float)
+                   else "str" if isinstance(v, str)
+                   else type(v).__name__)
+            ok = (got == want) or (want == "float" and got == "int")
+            if not ok:
+                bad.append("%s[%s].%s: interface %s, emitted %s %r"
+                           % (cls, nid, k, decl[0], got, v))
+    return bad
+
+
 g = render("image_t2i", {"prompt": "a red fox"}, model=_KREA2)
-check("image_t2i wire: seed '%d'", _node(g, "KSampler")["seed"] == "42",
+# NATIVE NODE TYPES (2026-09-05 render-kit stroke): the doc's typed
+# values ride unchanged — the string-format era ("%d"/"%.0f"/"%g")
+# is dead on every lane, pinned here per knob (the interface wall
+# below owns the general law; these pins name the incident's knots).
+check("image_t2i wire: seed native int",
+      _node(g, "KSampler")["seed"] == 42
+      and type(_node(g, "KSampler")["seed"]) is int,
       repr(_node(g, "KSampler")["seed"]))
-check("image_t2i wire: steps '%.0f'", _node(g, "KSampler")["steps"] == "8",
+check("image_t2i wire: steps native int",
+      _node(g, "KSampler")["steps"] == 8
+      and type(_node(g, "KSampler")["steps"]) is int,
       repr(_node(g, "KSampler")["steps"]))
-check("image_t2i wire: cfg '%g'", _node(g, "KSampler")["cfg"] == "4.5",
+check("image_t2i wire: cfg native float",
+      _node(g, "KSampler")["cfg"] == 4.5
+      and isinstance(_node(g, "KSampler")["cfg"], float),
       repr(_node(g, "KSampler")["cfg"]))
-check("image_t2i wire: width '%.0f'",
-      _node(g, "EmptySD3LatentImage")["width"] == "1024",
+check("image_t2i wire: width native int",
+      _node(g, "EmptySD3LatentImage")["width"] == 1024
+      and type(_node(g, "EmptySD3LatentImage")["width"]) is int,
       repr(_node(g, "EmptySD3LatentImage")["width"]))
+check("image_t2i graph matches the pinned node interface",
+      _iface_mismatches(g) == [], _iface_mismatches(g))
 
 g = render("image_edit", {"prompt": "a red fox", "input_image": "a.png"}, model=_IMGEDIT)
-check("image_edit wire: shift '%g'",
-      _node(g, "ModelSamplingAuraFlow")["shift"] == "1",
+# NATIVE NODE TYPES (2026-09-05 compile-time incident): the doc's
+# ints/floats ride unchanged — the pinned object_info declares
+# shift FLOAT, seed/steps INT, cfg FLOAT (the "%g"/"%d" wire-string
+# era died on this lane; t2i/music keep theirs — other strokes).
+check("image_edit wire: shift native float",
+      _node(g, "ModelSamplingAuraFlow")["shift"] == 1.0
+      and isinstance(_node(g, "ModelSamplingAuraFlow")["shift"], float),
       repr(_node(g, "ModelSamplingAuraFlow")["shift"]))
-check("image_edit wire: steps '%.0f'",
-      _node(g, "KSampler")["steps"] == "4",
-      repr(_node(g, "KSampler")["steps"]))
+check("image_edit wire: seed/steps native int, cfg native float",
+      _node(g, "KSampler")["seed"] == 42
+      and type(_node(g, "KSampler")["seed"]) is int
+      and _node(g, "KSampler")["steps"] == 4
+      and type(_node(g, "KSampler")["steps"]) is int
+      and _node(g, "KSampler")["cfg"] == 1.0
+      and isinstance(_node(g, "KSampler")["cfg"], float),
+      repr(_node(g, "KSampler")))
+
+# (interface wall moved above the t2i block — estate-wide measure)
+
+g = render("image_edit", {"prompt": "a red fox", "input_image": "a.png"}, model=_IMGEDIT)
+check("image_edit graph matches the pinned node interface",
+      _iface_mismatches(g) == [], _iface_mismatches(g))
+# the loras stack rides the same law (filenames are STRINGS for the
+# loader's STRING input, strengths are FLOATS):
+g = render("image_edit", {"prompt": "a red fox", "input_image": "a.png",
+                          "loras": [{"filename": "krea-2/krea2_realism_lora.safetensors",
+                                     "strength": 0.7}]}, model=_IMGEDIT)
+check("image_edit lora stack matches the pinned node interface",
+      _iface_mismatches(g) == [], _iface_mismatches(g))
 
 g = render("music_t1", {"caption": "a song"}, model=_MUSIC3)
-check("music_t1 wire: seconds '%.0f'",
-      _node(g, "EmptyMiniMaxMusic3LatentAudio")["seconds"] == "30",
+# NATIVE NODE TYPES (render-kit stroke — same law as t2i above).
+check("music_t1 wire: seconds native float",
+      _node(g, "EmptyMiniMaxMusic3LatentAudio")["seconds"] == 30.0
+      and isinstance(
+          _node(g, "EmptyMiniMaxMusic3LatentAudio")["seconds"], float),
       repr(_node(g, "EmptyMiniMaxMusic3LatentAudio")["seconds"]))
-check("music_t1 wire: seed '%d'",
-      _node(g, "KSampler")["seed"] == "42",
+check("music_t1 wire: seed native int",
+      _node(g, "KSampler")["seed"] == 42
+      and type(_node(g, "KSampler")["seed"]) is int,
       repr(_node(g, "KSampler")["seed"]))
+check("music_t1 graph matches the pinned node interface",
+      _iface_mismatches(g) == [], _iface_mismatches(g))
+
+# ── ESTATE-WIDE INTERFACE MEASURE (render-kit stroke) ──
+# Every registered family renders from a minimal doc (required Doc
+# fields only — dummies by shape, never disk: renders are pure graph
+# builds) and the SAME interface wall measures the graph. A lane that
+# can't render minimal, or emits a mistyped scalar, fails HERE —
+# not at 2am on the queue. Model-free lanes pass model=None; lanes
+# reading model rows get their card's first boarded model.
+_ESTATE_MODELS = {m: load_model_cls(m) for m in (
+    "anny", "ideogram", "mask-studio", "kimodo", "moss-sfx",
+    "pixal3d", "trellis2-native", "transfer_rig", "qwen3-tts",
+    "qwen3-tts-voicedesign", "qwen-img-edit-2511", "krea-2",
+    "music3")}
+_ESTATE_FAMILIES = [
+    # (family, model-id-or-None, minimal doc)
+    ("anny_t1", None, {"body_glb": "x"}),
+    ("basic_resize_t1", None, {}),
+    ("concat_t1", "mask-studio", {}),
+    ("h3_window", None, {"variant": "t4_open"}),
+    ("ideogram_t2i", "ideogram", {"prompt": "a red fox"}),
+    ("image_edit", "qwen-img-edit-2511", {"prompt": "a red fox",
+                                          "input_image": "a.png"}),
+    ("image_t2i", "krea-2", {"prompt": "a red fox"}),
+    ("input_prep", None, {}),
+    ("input_t1", None, {}),
+    ("mask_t1", "mask-studio", {"input_image": "a.png"}),
+    ("motion_t1", "kimodo", {"prompt": "a punch"}),
+    ("music_t1", "music3", {"caption": "a song"}),
+    ("pixal_t1", "pixal3d", {"input_image": "a.png"}),
+    ("pixel_upscale_t1", None, {}),
+    ("rtx_vsr_t1", None, {}),
+    ("scail2_t1", None, {}),
+    ("seedvr2_t1", None, {}),
+    ("sfx_t1", "moss-sfx", {"prompt": "boom"}),
+    ("transfer_rig_t1", "transfer_rig",
+     {"rigged_glb": "r.glb", "target_glb": "t.glb"}),
+    ("trellis_t1", "trellis2-native", {"input_image": "a.png"}),
+    ("tts_t1", "qwen3-tts", {"text": "hi"}),
+    ("voicelock_t1", "qwen3-tts-voicedesign", {}),
+    ("wan_vace_t1", None, {}),
+]
+for _fam, _mid, _doc in _ESTATE_FAMILIES:
+    try:
+        _g = render(_fam, dict(_doc),
+                    model=_ESTATE_MODELS.get(_mid) if _mid else None)
+    except Exception as e:
+        check("estate %s renders minimal" % _fam, False,
+              "%s: %s" % (type(e).__name__, e))
+        continue
+    check("estate %s renders minimal" % _fam, True, "")
+    check("estate %s matches the pinned node interface" % _fam,
+          _iface_mismatches(_g) == [], _iface_mismatches(_g))
 
 # ── report ──────────────────────────────────────────────────────────────
 print()

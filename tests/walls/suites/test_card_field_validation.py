@@ -95,14 +95,15 @@ def test_untyped_field_refuses() -> None:
 
 
 _TYPE_RE = re.compile(r"Field\(\s*type\s*=\s*['\"]([^'\"]+)['\"]")
-# The live dispensations: h3-timeline's int/bool/float wire dialect and
-# image-edit's image_list multi-picker (parallel's in-flight rename
-# work — not this stroke's to rewrite). Grandfathered (their editors
-# render them), NOT a pattern — EQUALITY pinned below, so a third
-# dialect fails and either card's flip to subclasses deletes its entry.
-_TYPE_DISPENSATION = {"int", "bool", "float", "image_list"}
+# The live dispensation: image-edit's image_list multi-picker
+# (parallel's in-flight rename work — not this stroke's to rewrite).
+# h3-timeline's int/bool/float dialect flipped to subclasses
+# 2026-09-05 (card-primitive sweep) and its entry left with it.
+# Grandfathered (their editors render them), NOT a pattern — EQUALITY
+# pinned below, so a second dialect fails and image-edit's flip to a
+# subclass deletes the last entry.
+_TYPE_DISPENSATION = {"image_list"}
 _DISPENSATED_CARDS = {
-    os.path.join("video", "h3-timeline", "py", "card.py"),
     os.path.join("image", "image-edit", "py", "card.py"),
 }
 

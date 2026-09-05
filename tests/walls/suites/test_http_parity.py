@@ -115,6 +115,15 @@ def main() -> int:
             ("form-spec?model=anima", "deep"),
             ("form-spec?model=h3-timeline", "deep"),
             ("form-spec?model=music3", "deep"),
+            # NATIVE 3D/AUDIO BOARDING (2026-09-06): the cpp engines'
+            # cards serve via the shared card walk — quad-remesh
+            # (autoremesher) + forge (anycreature) + the renamed
+            # music-native (ace-step-xl) + kimodo's text-to-motion
+            # (soma, side-boarding, goldened stable-tree).
+            ("form-spec?model=autoremesher", "deep"),
+            ("form-spec?model=anycreature", "deep"),
+            ("form-spec?model=ace-step-xl", "deep"),
+            ("form-spec?model=soma", "deep"),
             ("kinds", "deep"),
             ("plugins", "deep"),
             ("health", "deep"),

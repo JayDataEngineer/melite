@@ -116,5 +116,48 @@ r = _ok("T9 card.yaml parse with requires", True,
         f"{req_count}/{card_count} cards have requires")
 passed += r; failed += (not r)
 
+# ── T10: every class-declared require resolves (2026-09-06) ──
+# card.yaml is extinct; requires rides the card class (requires +
+# requires_by_family). Every named id must hit the node-type map or
+# the vendor disk — the two strategies that can satisfy the gate.
+# (Strategy-3 heuristic names are best-effort by design and stay out.)
+from melite_cards import load_card_py  # noqa: E402
+_mapped = set(EXTENSION_NODE_TYPES.keys())
+_vendor = set()
+_vdir = REPO / "vendor" / "comfyui_extensions"
+if _vdir.is_dir():
+    _vendor = {e.name.lower() for e in _vdir.iterdir()}
+_unresolved = set()
+
+discover = set()
+for _pat in ("engines/*/cards/*/card.py",
+               "engines/*/action_cards/*/card.py",
+               "engines/*/action_cards/*/*/card.py",
+               "engines/*/action_cards/*/*/py/card.py"):
+    discover |= set((REPO / "plugins").glob(_pat))
+for _cpy in sorted(discover):
+    try:
+        _pdir = _cpy.parent
+        if _pdir.name == "py":
+            _eng = _pdir.parent.parent.parent.parent.name
+        elif _pdir.parent.name in ("cards", "action_cards"):
+            _eng = _pdir.parent.parent.name
+        else:
+            _eng = _pdir.parent.parent.parent.name
+        _cls = load_card_py(str(_cpy), _eng)
+    except Exception:
+        continue
+    _named = list(getattr(_cls, "requires", ()) or [])
+    _fam = getattr(_cls, "requires_by_family", {}) or {}
+    if isinstance(_fam, dict):
+        for _v in _fam.values():
+            _named.extend(list(_v) if isinstance(_v, (tuple, list)) else [_v])
+    for _ext in _named:
+        if _ext not in _mapped and _ext.lower() not in _vendor:
+            _unresolved.add("%s (%s)" % (_ext, _cls.id))
+r = _ok("T10 class-declared requires resolve", not _unresolved,
+        f"unresolved: {sorted(_unresolved)}" if _unresolved else "all resolve")
+passed += r; failed += (not r)
+
 print(f"\n{'PASS' if not failed else 'FAIL'} {passed} / FAIL {failed}")
 sys.exit(1 if failed else 0)
