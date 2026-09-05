@@ -228,3 +228,31 @@ trellis2-native; `layout='studio'` on img-to-mesh; two thin tenants;
 `trellis-studio.test.tsx` (the second adopter pin).
 Surgical regolds: ONLY `families.trellis2-native.studio` here and
 `"layout": "studio"` in `form-spec_model_trellis2-native.json`.
+
+## 2026-09-05 (i) — DRY follow-up: one import edge, one test harness, one kind spelling
+The operator's cruft sense was right — the abstraction stroke left
+three second ways, all removed here, no new behavior:
+1. Tenants imported the generic through the package edge
+   (@melite-plugin/3d/ui/studios/assembly + a new exports-map line)
+   while EVERY sibling tenant (audio/motion/video/mesh) imports
+   relatively — and the edge had zero other consumers. Both tenants
+   now import ../../../ui/studios/assembly like Anny originally did;
+   the exports-map line is reverted (the file nets to its pre-stroke
+   bytes). One surface: the file on disk.
+2. anny-studio + trellis-studio tests were 140-line mirrors. Now
+   assembly-tenant-shared.tsx owns the mock rig, the glob pin, the
+   empty state and the FAIL alert; tenant files are descriptors +
+   their own extras (servable-part/mount-note for Anny, run-mesh
+   for Trellis). Third adopter adds ~15 lines.
+3. The kind wall accepted kind='assembly' alongside
+   StudioKind.ASSEMBLY (pydantic coerces either — two spellings, one
+   claim). The wall now recognizes the enum form ONLY; the shared
+   tenant loop is factored into _claimed_tenants.
+Left as-is, deliberately: card layout='studio' stays stringly (the
+dsl.py notch predates this work, h3 sets the precedent, and the
+third adopter file is under parallel churn — unifying the notch
+vocabulary is a coordinated order, not a drive-by); ray-card-deck
+vs @melite-plugin/dsh-card-deck is the ssh package/id pattern, and
+ray- is the live product name, not C ancestry; bespoke bodies stay
+bespoke (StudioKind.custom is taxonomy — a video timeline can never
+be a part-slot assembly).

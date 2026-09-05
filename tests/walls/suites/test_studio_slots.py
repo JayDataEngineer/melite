@@ -30,6 +30,7 @@ AssemblyStudio, Kimodo CAN adopt it) adds two declaration parities:
 
 import os
 import re
+from collections.abc import Iterator
 
 import pytest
 
@@ -50,7 +51,7 @@ _BODY_RE = re.compile(
     r"\.ui\.studio$")
 
 
-def _claims():
+def _claims() -> dict[str, list[str]]:
     """{tenant_id: [family ids]} — every Studio(tenant=) declaration."""
     out = {}
     for dirpath, _dirs, files in os.walk(MODELS_ROOT):
@@ -64,7 +65,7 @@ def _claims():
     return out
 
 
-def _bodies():
+def _bodies() -> dict[str, str]:
     """{tenant_id: relpath} — every ui/studio/component.tsx on disk."""
     out = {}
     for dirpath, _dirs, files in os.walk(CARDS_ROOT):
@@ -79,16 +80,16 @@ def _bodies():
 
 
 @pytest.fixture(scope="module")
-def tenant_claims():
+def tenant_claims() -> dict[str, list[str]]:
     return _claims()
 
 
 @pytest.fixture(scope="module")
-def tenant_bodies():
+def tenant_bodies() -> dict[str, str]:
     return _bodies()
 
 
-def test_every_claimed_tenant_has_body(tenant_claims, tenant_bodies):
+def test_every_claimed_tenant_has_body(tenant_claims: dict[str, list[str]], tenant_bodies: dict[str, str]) -> None:
     """Every claimed tenant has a component.tsx on disk."""
     for tenant in sorted(tenant_claims):
         assert tenant in tenant_bodies, (
@@ -96,7 +97,7 @@ def test_every_claimed_tenant_has_body(tenant_claims, tenant_bodies):
             % (", ".join(tenant_claims[tenant]), tenant))
 
 
-def test_every_body_is_claimed(tenant_claims, tenant_bodies):
+def test_every_body_is_claimed(tenant_claims: dict[str, list[str]], tenant_bodies: dict[str, str]) -> None:
     """Every ui/studio/component.tsx is claimed by a family."""
     for tenant in sorted(tenant_bodies):
         assert tenant in tenant_claims, (
@@ -114,13 +115,15 @@ _SLOTS_RE = re.compile(
     r"[A-Z][A-Z0-9_]*_SLOTS\s*:\s*AssemblySlot\[\]\s*=\s*\[(.*?)\]\s*;?",
     re.DOTALL)
 _SLOT_KEY_RE = re.compile(r"""key\s*:\s*['"]([^'"]+)['"]""")
-_KIND_ASSEMBLY_RE = re.compile(
-    r"kind\s*=\s*(?:StudioKind\.ASSEMBLY|['\"]assembly['\"])")
+# ONE declaration way: the enum form. A raw kind='assembly' string
+# constructs (pydantic coerces str enums) but is refused HERE — the
+# wall reads source, and two spellings for one claim is drift.
+_KIND_ASSEMBLY_RE = re.compile(r"kind\s*=\s*StudioKind\.ASSEMBLY")
 _FIELD_RE = re.compile(r"^\s*(\w+)\s*=\s*(?:File|Image)\s*\(")
 _WRITES_RE = re.compile(r"writes\s*=\s*\(([^)]*)\)")
 
 
-def _body_src(tenant, tenant_bodies):
+def _body_src(tenant: str, tenant_bodies: dict[str, str]) -> str:
     rel = tenant_bodies[tenant]
     for eng in os.listdir(CARDS_ROOT):
         cand = os.path.join(CARDS_ROOT, eng, "action_cards",
@@ -131,7 +134,7 @@ def _body_src(tenant, tenant_bodies):
     raise AssertionError("body vanished mid-wall: %s (%s)" % (tenant, rel))
 
 
-def _family_model_src(family):
+def _family_model_src(family: str) -> str:
     for dirpath, _dirs, files in os.walk(MODELS_ROOT):
         if os.path.basename(dirpath) == family and "model.py" in files:
             return open(os.path.join(dirpath, "model.py"),
@@ -139,7 +142,7 @@ def _family_model_src(family):
     raise AssertionError("claiming family has no model.py: %s" % family)
 
 
-def _card_field_names(tenant):
+def _card_field_names(tenant: str) -> set[str]:
     genre, card = tenant.split("/")
     names = set()
     for eng in os.listdir(CARDS_ROOT):
@@ -154,13 +157,23 @@ def _card_field_names(tenant):
     return names
 
 
-def test_kind_matches_body(tenant_claims, tenant_bodies):
-    """Studio(kind=assembly) ⟺ the tenant body imports the generic."""
+def _claimed_tenants(tenant_claims: dict[str, list[str]],
+                       tenant_bodies: dict[str, str]) -> Iterator[tuple[str, str, list[str]]]:
+    """Yield (tenant, body-src, claiming families) — the ONE loop shape
+    every parity below walks (body presence is pinned above; fail there
+    first). Bespoke bodies come through too; callers filter on the
+    generic frag."""
     for tenant in sorted(tenant_claims):
-        assert tenant in tenant_bodies  # pinned above; fail there first
-        src = _body_src(tenant, tenant_bodies)
+        assert tenant in tenant_bodies
+        yield tenant, _body_src(tenant, tenant_bodies), tenant_claims[tenant]
+
+
+def test_kind_matches_body(tenant_claims: dict[str, list[str]], tenant_bodies: dict[str, str]) -> None:
+    """Studio(kind=assembly) ⟺ the tenant body imports the generic."""
+    for tenant, src, families in _claimed_tenants(tenant_claims,
+                                                  tenant_bodies):
         body_is_generic = _GENERIC_IMPORT_FRAG in src
-        for family in tenant_claims[tenant]:
+        for family in families:
             model_src = _family_model_src(family)
             kind_is_assembly = bool(_KIND_ASSEMBLY_RE.search(model_src))
             assert kind_is_assembly == body_is_generic, (
@@ -172,12 +185,11 @@ def test_kind_matches_body(tenant_claims, tenant_bodies):
                    "imports" if body_is_generic else "does NOT import"))
 
 
-def test_generic_slot_tables(tenant_claims, tenant_bodies):
+def test_generic_slot_tables(tenant_claims: dict[str, list[str]], tenant_bodies: dict[str, str]) -> None:
     """Every generic tenant's slot key is a real card File/Image field
     AND a declared studio.write of the claiming family."""
-    for tenant in sorted(tenant_claims):
-        assert tenant in tenant_bodies  # pinned above; fail there first
-        src = _body_src(tenant, tenant_bodies)
+    for tenant, src, families in _claimed_tenants(tenant_claims,
+                                                  tenant_bodies):
         if _GENERIC_IMPORT_FRAG not in src:
             continue  # bespoke bodies declare no slot table
         m = _SLOTS_RE.search(src)
@@ -188,7 +200,7 @@ def test_generic_slot_tables(tenant_claims, tenant_bodies):
         assert keys, "generic tenant %s has an empty slot table" % tenant
         fields = _card_field_names(tenant)
         assert fields, "no card.py found for tenant %s" % tenant
-        for family in tenant_claims[tenant]:
+        for family in families:
             model_src = _family_model_src(family)
             wm = _WRITES_RE.search(model_src)
             writes = set(re.findall(r"""['"]([^'"]+)['"]""",
