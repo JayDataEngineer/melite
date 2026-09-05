@@ -179,8 +179,8 @@ cascade and now THE law for how this repo writes python declarations:
    A model ships DATA: typed rows (`lane_inputs` weight facts, cell
    artifacts, variants). The unet basename is DERIVED from the named
    cell's artifact (`lane_unet_basename`), never retyped beside it;
-   facts with no artifact row (img-edit, music3) state their basename
-   once in `lane_inputs`. The renderer receives the Model class as
+   facts with no artifact row (qwen-img-edit-2511, music3) state
+   their basename once in `lane_inputs`. The renderer receives the Model class as
    data and reads its rows. (Operator order, 2026-09-03: "I don't
    want the 'models' to render, I just want action cards to render.")
 
@@ -292,25 +292,29 @@ RECORDED outputs, never a live binary).
 
 What retired with this order:
 
-- **The goldens changed owner, not bytes.** `tests/golden_http/` was
-  "what C served"; it is now the ESTATE'S OWN regression pin — the
-  wire contract, full stop. The C-era wire quirks (the capitalize
-  quirk, variant `defaults: {}`, the caps and precedence rules
-  documented in the route modules) are no longer "C behavior we
-  reproduce" — they are OUR wire format, and the goldens are its
-  authority. Changing one means changing the contract deliberately,
-  never by drift.
+- **The goldens changed owner.** `tests/golden_http/` was "what C
+  served"; it is now the ESTATE'S OWN regression pin — the wire
+  contract, full stop. The wire format the goldens pin (the capitalize
+  quirk, variant `defaults: {}`, the caps and precedence rules) is OUR
+  format. Changing it means changing the contract deliberately, never
+  by drift.
 - **State is not contract.** The C-era `pipelines/runs` and
   `pipelines/drafts` snapshots (one dead server's 174 runs / 546
   drafts) are deleted; those routes are CONTRACT-pinned in the
   harness (envelope + count invariant + row shape). The skip entries
   and their "C-parity holdover" mode are gone.
-- **Transition language is resolved.** "both gateways during the
-  transition" and module-header "port of the C gateway" framings are
-  retired where they framed the py side as a twin; historical
-  references inside route modules (quirk provenance: "the C's
-  off-by-one", line-number citations) are PROVENANCE and stay — they
-  explain why the wire format is what it is.
+- **Transition language is resolved — and the C residue is purged**
+  (operator order, 2026-09-05, verbatim: "I can't be dealing with any
+  C cruft in the future"). The py estate carries NO C ancestry in
+  code or comment: the dead C-port machinery (py/catalog.py's yaml
+  parsers, the server.cpp splice twins, the parity `_model_row`) is
+  deleted; every `catalog.c`/`server.cpp` citation is stripped from
+  the py route modules — a wire quirk is documented as OUR behavior,
+  full stop, never as a faithful reproduction. The C-shaped wire
+  FOSSILS died the same day (models[].loras frozen `[]`,
+  `wire_route`/`wire_vram` quant-row lies, the never-emitted source
+  url) — purged with regold causes recorded. A new fossil found in
+  the wire is a bug, not heritage.
 
 Naming consequence (deferred, deliberate): the `py/` directory name
 earned its keep by contrasting with the C side. That contrast is now
@@ -332,3 +336,27 @@ order — nothing here requires it.
   file path in AGENTS.md must exist in the tree unless allowlisted as
   deliberate dead provenance (`src/server.cpp`, `card_knobs.yaml`,
   `bootstrap.py` — things the laws cite AS deleted).
+
+## DOCUMENTATION LAW (operator order, 2026-09-05, verbatim)
+
+> "We must be EXPERT DOCUMENTORS... EXPERTS... otherwise COMPACTION will
+> cause us to lose our precious progress."
+
+- Session context is EPHEMERAL — compaction WILL discard it. The TREE is
+  the only memory. Every insight, decision, verbatim operator order, and
+  design fork lands in the tree IN THE SAME STROKE it occurs, never in
+  chat alone.
+- The record map (who holds what):
+  - `AGENTS.md` — laws (verbatim orders + enforcement shape).
+  - `docs/design/*.md` — thinking: patterns, contracts, stroke plans;
+    every record carries a Date and a Status (THINKING | landed | law).
+  - `docs/audits/*.md` — evidence: probes, timings, numbers.
+  - `*.d/causes.md` beside goldens — every regold's reason.
+  - `tests/walls/suites/` — enforcement: a pattern without a wall is a
+    suggestion.
+- A record a future session (post-compaction, or a fresh agent) can act
+  on ALONE: date + verbatim order + status + the decision + its wall.
+  A decision that lives only in chat history is LOST.
+- Enforced by `tests/walls/suites/test_record_shape.py`: every design
+  record and audit carries Date + Status; laws that name a wall are
+  named BY it (LAW TEXT HYGIENE's mirror).
