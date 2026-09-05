@@ -61,6 +61,19 @@ EXTENSION_NODE_TYPES: dict[str, set[str]] = {
     "comfyui-impact-pack": {"FaceDetailer", "SAMLoader", "UltralyticsDetectorProvider"},
     "comfyui-lanpaint": {"LanPaintSampler", "LanPaintInpaint"},
     "ComfyUI-GGUF": {"GGUFUnetLoader", "GGUFCLIPLoader"},
+    # Native-core capability gates (2026-09-06 img-to-mesh live-fire).
+    # TRELLIS.2/Pixal3D/MoGe-FOV ship in comfy_extras on ComfyUI 0.34+
+    # and are absent before it: capability, never a version string.
+    # MoGe is FOV-only on purpose (0.33 already carries LoadMoGeModel
+    # + MoGeInference, but pixal-auto dies without the FOV node).
+    "comfyui-core-trellis2": {
+        "Trellis2Conditioning", "EmptyTrellis2LatentStructure",
+        "Trellis2ShapeStage", "Trellis2TextureStage",
+        "VaeDecodeStructureTrellis2", "VaeDecodeShapeTrellis",
+        "VaeDecodeTextureTrellis", "Pixal3DConditioning",
+    },
+    "ComfyUI-MoGe": {"MoGeGeometryToFOV"},
+    "melite-autorig-nodes": {"KimodoTransferWeights", "SaveRiggedModel"},
 }
 
 

@@ -51,6 +51,7 @@ from .dsl import (          # noqa: F401
     VocabRef,
     ValidationError,
 )
+from . import validators  # noqa: F401
 from .serialize import (  # noqa: F401
     field_spec, load_card_py, scan_engine_cards, tool_manifests)
 
@@ -60,4 +61,5 @@ __all__ = [
     "Slider", "Seed", "Boolean", "Image", "Audio", "Video", "File",
     "Loras", "ControlNet", "VocabRef", "ValidationError",
     "field_spec", "load_card_py", "scan_engine_cards", "tool_manifests",
+    "validators",
 ]

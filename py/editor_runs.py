@@ -63,6 +63,7 @@ from __future__ import annotations
 
 import itertools
 import json
+import glob
 import os
 import re
 import sys
@@ -1002,33 +1003,291 @@ def serve_asset(server_root: str, rel_path: str) -> tuple[int, bytes, str]:
 # family param schemas — handle_family_param_schema[s] (~5853)
 # ---------------------------------------------------------------------------
 
+_MODEL_BY_ID_MISS: object = object()
+_MODEL_BY_ID_CACHE: dict[str, object] | None | object = _MODEL_BY_ID_MISS
+
+
+def _model_by_id(repo_root: str) -> dict[str, object] | None:
+    """family id → Model class over the real plugins tree (one scan,
+    cached per process; None when the tree won't resolve)."""
+    global _MODEL_BY_ID_CACHE
+    if _MODEL_BY_ID_CACHE is _MODEL_BY_ID_MISS:
+        _MODEL_BY_ID_CACHE = None
+        try:
+            from melite_models import scan_engine_models
+            by_id: dict[str, object] = {}
+            for _path, cls in scan_engine_models(repo_root).values():
+                by_id.setdefault(getattr(cls, "id", ""), cls)
+            _MODEL_BY_ID_CACHE = by_id
+        except Exception:
+            _MODEL_BY_ID_CACHE = None
+    return _MODEL_BY_ID_CACHE
+
+
+# card Field kind → frontend JSON type (the click-time gate's
+# vocabulary). Kinds absent here (bespoke Field flavors such as
+# image_list) are served WITHOUT a type: presence admitted, type
+# unchecked, the backend wire gate decides — never a false positive.
+_FIELD_JSON_TYPES = {
+    "Text": "string", "Textarea": "string", "Select": "string",
+    "Image": "string", "Audio": "string", "Video": "string",
+    "File": "string",
+    "Number": "number", "Slider": "number", "Seed": "number",
+    "Boolean": "boolean",
+}
+
+_FAMILY_PROPS_CACHE: dict[str, dict[str, dict[str, JsonValue]] | None] = {}
+
+_SCHEMA_MOD_CACHE: dict[str, object | None] = {}
+
+
+def _schema_row_for_card(card_py_path: str) -> object | None:
+    """The card's enforcement row (sibling schema.py's Params class) —
+    the SAME row the backend wire gate (parse_card) constructs, loaded
+    standalone by path (never through the engine bus). Resolution:
+    parse_card's return annotation when it names a pydantic model,
+    else the module's single model. None when the card ships no
+    schema.py or the row won't resolve (the caller falls back to the
+    card.py UI fields — never a crash: an unresolvable row defers,
+    it never refuses)."""
+    import importlib.util as _ilu
+    import sys as _sys
+    import typing as _typing
+    schema_py = os.path.join(os.path.dirname(card_py_path), "schema.py")
+    if schema_py in _SCHEMA_MOD_CACHE:
+        cached_mod = _SCHEMA_MOD_CACHE[schema_py]
+    else:
+        cached_mod = None
+        if os.path.isfile(schema_py):
+            mod_name = "family_schema_" + re.sub(
+                r"[^0-9A-Za-z_]", "_", schema_py)
+            try:
+                if mod_name in _sys.modules:
+                    cached_mod = _sys.modules[mod_name]
+                else:
+                    _spec = _ilu.spec_from_file_location(
+                        mod_name, schema_py)
+                    if _spec is not None and _spec.loader is not None:
+                        _mod = _ilu.module_from_spec(_spec)
+                        _sys.modules[mod_name] = _mod
+                        _spec.loader.exec_module(_mod)
+                        cached_mod = _mod
+            except Exception:
+                cached_mod = None
+        _SCHEMA_MOD_CACHE[schema_py] = cached_mod
+    if cached_mod is None:
+        return None
+    try:
+        from pydantic import BaseModel as _BaseModel
+    except Exception:
+        return None
+    parse_card = getattr(cached_mod, "parse_card", None)
+    if callable(parse_card):
+        # The UNEVALUATED return annotation first (2026-09-06): the
+        # object is already there at def time — no get_type_hints
+        # evaluation, so an unresolvable PARAM annotation (a sibling
+        # stroke's JsonDict alias naming a missing JsonValue) cannot
+        # sink the return pick. Multi-model modules (a card row plus
+        # a nested draft row) resolve exactly; the single-model scan
+        # below stays the fallback.
+        try:
+            ret = getattr(parse_card, "__annotations__", {}).get("return")
+            if isinstance(ret, str):
+                ret = getattr(cached_mod, ret, None)
+            if isinstance(ret, type) and issubclass(ret, _BaseModel):
+                return ret
+        except Exception:
+            pass
+        try:
+            hints = _typing.get_type_hints(parse_card)
+            ret = hints.get("return")
+            if isinstance(ret, type) and issubclass(ret, _BaseModel):
+                return ret
+        except Exception:
+            pass
+    try:
+        cands = [v for v in vars(cached_mod).values()
+                 if isinstance(v, type) and issubclass(v, _BaseModel)
+                 and getattr(v, "__module__", "") == getattr(
+                     cached_mod, "__name__", "")]
+        if len(cands) == 1:
+            return cands[0]
+    except Exception:
+        pass
+    return None
+
+
+def _props_from_schema_row(row_cls: object) -> dict[str, dict[str, JsonValue]] | None:
+    """Project a frozen schema.py row (pydantic model) to the envelope
+    props: field name → JSON type + declared default (None defaults
+    INCLUDED — an Optional-bag/slot None default is the class's own
+    null-admission, and the click gate must admit what the class
+    admits). Untyped annotations (object/Any/dict/mixed unions) serve
+    WITHOUT a type: presence admitted, type unchecked, the backend
+    wire gate decides — never a false positive. None when the row
+    carries no readable fields."""
+    import typing as _typing
+    try:
+        fields = getattr(row_cls, "model_fields")
+        if not fields:
+            return None
+    except Exception:
+        return None
+    props: dict[str, dict[str, JsonValue]] = {}
+    for name, fld in fields.items():
+        entry: dict[str, JsonValue] = {}
+        jtype = _schema_annotation_json_type(
+            getattr(fld, "annotation", None), _typing)
+        if jtype is not None:
+            entry["type"] = jtype
+        try:
+            default = fld.get_default(call_default_factory=True)
+        except Exception:
+            default = None
+            has_default = False
+        else:
+            try:
+                from pydantic_core import PydanticUndefined as _Undef
+                has_default = default is not _Undef
+            except Exception:
+                has_default = default is not None or (
+                    getattr(fld, "is_required", None) is False)
+        if has_default and isinstance(
+                default, (str, int, float, bool, list, dict)) \
+                or (has_default and default is None):
+            entry["default"] = default  # type: ignore[assignment]
+        props[str(name)] = entry
+    return props or None
+
+
+def _schema_annotation_json_type(ann: object, _typing: object) -> str | None:
+    """Pydantic annotation → envelope JSON type. Optional/nullable
+    unwraps to the carried type; a pure-numeric union (int/float) is
+    "number" (the click gate treats integer as valid for number, and
+    every card Seed/Slider/Number serves "number" today — zero type
+    vocabulary change). Anything without a scalar/array shape
+    (object/Any/dict/mixed unions) is untyped: admitted, unchecked."""
+    import typing as _t
+    if ann is None:
+        return None
+    origin = _t.get_origin(ann)
+    args = _t.get_args(ann)
+    if origin is not None and str(origin) == "typing.Annotated":
+        return _schema_annotation_json_type(
+            args[0] if args else None, _t) if args else None
+    if origin is _t.Union or str(origin).endswith("|"):
+        non_null = [a for a in args
+                    if a is not type(None) and a is not _t.Any]
+        if len(non_null) == 1:
+            return _schema_annotation_json_type(non_null[0], _t)
+        if non_null and all(a in (int, float) for a in non_null):
+            return "number"
+        strs = [_schema_annotation_json_type(a, _t) for a in non_null]
+        flat = [s for s in strs if s is not None]
+        if len(flat) == 1 and len(set(flat)) == 1:
+            return flat[0]
+        return None
+    if ann is str:
+        return "string"
+    if ann is bool:
+        return "boolean"
+    if ann in (int, float):
+        return "number"
+    if origin in (list, tuple, set, frozenset):
+        return "array"
+    return None
+
+
+def _family_surface_props(family_id: str
+                          ) -> dict[str, dict[str, JsonValue]] | None:
+    """The click-time vocabulary for a family: the owning card's SCHEMA
+    ROW keys (schema.py — the SAME row the backend wire gate enforces,
+    so the two gates cannot drift) → JSON types + declared defaults.
+    None when the tree won't resolve (the frontend defers to the
+    backend gate — never a false-positive refusal).
+
+    (2026-09-05 image-edit incident: this served faithful-but-EMPTY
+    envelopes for every family, so the click-time validator deferred
+    ALWAYS and 27 extra_forbidden errors fired at run time instead of
+    at the click. Deriving from the enforcement row makes an empty
+    envelope mean "unknown family" — the only honest deferral.)
+
+    (2026-09-06 frontend-impossible incident: the derivation above
+    read the card.py UI fields, whose numeric/boolean defaults are
+    almost always None — the envelope carried no default for
+    duration/width/steps/..., so every untouched knob failed the
+    click gate as "null but has no default" while the backend row
+    defaults it. The envelope now projects the schema.py row
+    (defaults included); the card.py read survives ONLY as the
+    fallback for cards with no schema.py (ideogram4) — a fallback,
+    never a second SSOT."""
+    if family_id in _FAMILY_PROPS_CACHE:
+        return _FAMILY_PROPS_CACHE[family_id]
+    props: dict[str, dict[str, JsonValue]] | None = None
+    try:
+        repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        by_id = _model_by_id(repo)
+        cls = by_id.get(family_id) if by_id else None
+        card_id = getattr(cls, "card", None) if cls is not None else None
+        if card_id:
+            from melite_cards import load_card_py
+            cands = sorted(set([str(card_id),
+                                str(card_id).replace("-", "_")]))
+            hits = []
+            for cand in cands:
+                hits = sorted(glob.glob(os.path.join(
+                    repo, "plugins", "engines", "*", "action_cards",
+                    "*", cand, "py", "card.py")))
+                if hits:
+                    break
+            if hits:
+                row_cls = _schema_row_for_card(hits[0])
+                if row_cls is not None:
+                    props = _props_from_schema_row(row_cls)
+                if props is None:
+                    eng = hits[0].split(
+                        os.sep + "engines" + os.sep)[1].split(os.sep)[0]
+                    card_cls = load_card_py(hits[0], eng)
+                    props = {}
+                    for f in getattr(card_cls, "_fields_", ()):
+                        entry: dict[str, JsonValue] = {}
+                        if getattr(f, "type", None) == "image_list":
+                            entry["type"] = "array"
+                        else:
+                            t = _FIELD_JSON_TYPES.get(type(f).__name__)
+                            if t is not None:
+                                entry["type"] = t
+                        if getattr(f, "default", None) is not None:
+                            entry["default"] = f.default
+                        props[f.name] = entry
+    except Exception:
+        props = None
+    _FAMILY_PROPS_CACHE[family_id] = props
+    return props
+
+
+def _family_envelope(family_id: str) -> dict[str, JsonValue]:
+    props = _family_surface_props(family_id)
+    return {
+        "title": "%s_Params" % family_id,
+        "type": "object",
+        "additionalProperties": False,
+        "properties": props if props is not None else {},
+        "required": [],
+    }
+
+
 def family_param_schemas(family_ids: list[str]) -> dict[str, dict[str, JsonValue]]:
-    """GET /v1/flows/families/param-schemas: the pydantic-style derived
-    envelope (empty properties — ray parity) for every catalog family."""
-    out = {}
-    for fid in family_ids:
-        if not fid:
-            continue
-        out[fid] = {
-            "title": "%s_Params" % fid,
-            "type": "object",
-            "additionalProperties": False,
-            "properties": {},
-            "required": [],
-        }
-    return out
+    """GET /v1/flows/families/param-schemas: the per-family param
+    envelope for the frontend click-time gate — derived from each
+    owning card's schema row (same source the backend enforces)."""
+    return {fid: _family_envelope(fid) for fid in family_ids if fid}
 
 
 def family_param_schema(family_ids: list[str], family_id: str) -> tuple[int, dict[str, JsonValue]]:
     """GET /v1/flows/families/:family_id/param-schema."""
     if family_id in family_ids:
-        return 200, {
-            "title": "%s_Params" % family_id,
-            "type": "object",
-            "additionalProperties": False,
-            "properties": {},
-            "required": [],
-        }
+        return 200, _family_envelope(family_id)
     return 404, {"error": "Unknown family_id '%s'" % family_id,
                  "family_id": family_id}
 

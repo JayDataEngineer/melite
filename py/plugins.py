@@ -359,6 +359,38 @@ def _model_engine_type(model_yaml_path: Path) -> str:
     return etype
 
 
+def _family_of_route(mid: str) -> tuple[str, Path] | None:
+    """(engine, family model.py) for a VARIANT ROUTE id — the class
+    tree's _routes map (route -> (variant, cell)), the same lookup
+    editor_forms._route_owner performs for the spec lens. None when no
+    family declares the route (the caller refuses loudly, naming the
+    route AND the lookup so the miss is diagnosable)."""
+    import sys as _sys
+    _py = str(REPO / "py")
+    if _py not in _sys.path:
+        _sys.path.insert(0, _py)
+    try:
+        from melite_models import scan_engine_models
+    except ImportError:
+        return None
+    for path, cls in scan_engine_models(str(REPO)).values():
+        routes = getattr(cls, "_routes", None) or {}
+        if mid in routes:
+            engine = mpy_parent_engine(Path(path))
+            return getattr(cls, "engine", "") or engine, Path(path)
+    return None
+
+
+def mpy_parent_engine(mpy: Path) -> str:
+    """.../engines/<engine>/models[/genre]/<id>/model.py → the owning
+    engine dir name: the directory ABOVE the 'models' component
+    (genre nesting varies — the walk, not a fixed hop count)."""
+    for parent in mpy.parents:
+        if parent.name == "models":
+            return parent.parent.name
+    return ""
+
+
 def resolve_model(mid: str) -> tuple[str, str]:
     """Deterministic model → (engine_type, model_path) or LOUD refusal.
 
@@ -366,6 +398,16 @@ def resolve_model(mid: str) -> tuple[str, str]:
     melite_models class (engine declared on the class; id == dirname by
     law). yaml stragglers (the never-served id-less units) keep the
     text scan. No declarer = LOUD refusal, unchanged.
+
+    (2026-09-05) VARIANT ROUTES resolve at THIS door, once: a route id
+    (qwen-img-edit-2511-lightning4) names a variant CELL, not a
+    directory — the dirname glob misses and the old refusal ("no model
+    unit") fired one click from a live picker. The _routes lookup maps
+    the route to its OWNING family's model.py; every downstream
+    dirname-glob site (compose dispatch, model_pys, find_template,
+    render_card) then works unmodified because they receive the
+    family. The picked variant/cell rides the run's resolver stamps
+    (form-spec route lens); the arm never needs the route string.
     """
     if not IDENT_RE.match(mid or ""):
         raise ValidationError("model id %r is not a legal identifier" % mid)
@@ -398,7 +440,19 @@ def resolve_model(mid: str) -> tuple[str, str]:
                         "that engine (engines/*/engine.yaml type: %s)"
                         % (mid, cls.engine, cls.engine))
                 return cls.engine, str(mpy)
-    raise ValidationError("no model unit for model: %s" % mid)
+    hit = _family_of_route(mid)
+    if hit is not None:
+        engine, fam_mpy = hit
+        engines = scan_engines()
+        if engine not in engines:
+            raise ValidationError(
+                "route %s resolves to family %r whose engine %r has no "
+                "owning plugin" % (mid, fam_mpy.parent.name, engine))
+        return engine, str(fam_mpy)
+    raise ValidationError(
+        "no model unit for model: %s (no models/<genre>/%s dir and no "
+        "family declares route %s in its variants' cells — checked the "
+        "class tree's _routes map)" % (mid, mid, mid))
 
 
 # ---------------------------------------------------------------------------

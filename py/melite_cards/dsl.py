@@ -100,7 +100,10 @@ class Field:
     min: float | int | None = None
     max: float | int | None = None
     step: float | None = None
-    default: str | int | float | bool | None = None
+    # list[str] rides for image_list fields' empty default (2026-09-05,
+    # the optional-slots fix: default=[] serves on the family contract
+    # so a null (the editor's empty picker) is legal on the wire).
+    default: str | int | float | bool | list[str] | None = None
     required: bool = False
     placeholder: str = ""
     tooltip: str = ""
@@ -236,6 +239,15 @@ class ControlNet(Field):
     TYPE = "controlnet"
 
 
+class Mask(Field):
+    """The mask bag — THE ADD-MOD TILE entry (operator order,
+    2026-09-05: "THERE WAS A BUTTON WE HAD TO ADD [REDACTED 2026-11-05] MODS" —
+    the mask is added through the Mods button like every other mod,
+    never a pre-rendered menu). The bag holds the picker's tile list;
+    the mod's own flat fields ride the kind as its fields."""
+    TYPE = "mask"
+
+
 def _norm(s: str | None) -> str:
     """The C's normalization: non-alnum → '-', lowercase."""
     return re.sub(r"[^a-z0-9]+", "-", (s or "").lower()).strip("-")
@@ -246,11 +258,14 @@ def _g(v: int | float) -> int | float:
     return int(v) if float(v).is_integer() else float(v)
 
 
-def _num_or_str(v: str | int | float | bool) -> str | int | float | bool:
+def _num_or_str(v: str | int | float | bool | list[str]
+                ) -> str | int | float | bool | list[str]:
     """Inline defaults — the yaml defval path verbatim (editor_forms
     _num): '42' → 42, '1.0' → 1.0. NO %g collapse on defaults (a
-    declared 1.0 serves 1.0, like the yaml wire; min/max/step DO %g)."""
-    if isinstance(v, bool):
+    declared 1.0 serves 1.0, like the yaml wire; min/max/step DO %g).
+    A sequence (image_list's default=[]) passes verbatim — never
+    str()-collapsed."""
+    if isinstance(v, (bool, float, int, list)):
         return v
     if isinstance(v, float):
         return v
@@ -543,12 +558,16 @@ class _CardMeta(type):
         # only DECLARING flavors (direct subclasses) must carry rows.
         if pack and not cid and bases and \
                 getattr(bases[0], "__name__", "") == "LorasMod" and \
-                not ns.get("rows", ()):
+                not ns.get("rows", ()) and \
+                not ns.get("runtime_catalog", False):
             raise ValidationError(
                 "%s: a LorasMod flavor with zero rows is a phantom "
                 "capability — the LoRA control would render over an "
                 "empty /v1/loras pack; declare LoraRow rows or drop "
-                "the mod" % name)
+                "the mod — unless the flavor is the RUNTIME CATALOG "
+                "door (runtime_catalog = True: the picker serves the "
+                "estate union, picks validate at the compose door; "
+                "operator order 2026-09-05 'RUNTIME VALIDATION')" % name)
         if fields and not cid and not pack and not is_verb:
             raise ValidationError(
                 "%s declares fields but no card id" % name)
@@ -758,6 +777,13 @@ class LorasMod(Mod):
     the Raw-variant training loras, applied on Turbo)."""
     pack = "loras"
     rows = ()
+    # The RUNTIME CATALOG door (2026-09-05): a flavor may declare
+    # runtime_catalog = True to board the loras channel with NO rows
+    # of its own — its picker options resolve from the estate union
+    # (every family's rows) at serve, and the compose door validates
+    # picks against the same union. False (the default) keeps the
+    # phantom-capability gate: advertised surface must be servable.
+    runtime_catalog = False
     loras = Loras(label='LoRAs', group='loras_controlnet', zone='mods',
                   order=0)
 
@@ -793,8 +819,22 @@ class MaskMod(Mod):
     special casing on either side. Most runs never mask: every
     field defaults to off/absent."""
     pack = "mask"
+    # THE BAG FIRST (2026-09-05 button order): the trailing-scalar
+    # walk in editor_forms._modifiers reads every field AFTER the bag
+    # as the kind's fields — the SAME Field objects serve both faces
+    # (the flat lane wire in fields[], the drawer UI in kind.fields).
+    # params.mask = [{input_mask: ..., mask_grow: ...}] — added via
+    # the Mods button, one tile; compose flattens bag -> flat.
+    mask = Mask(label='Region Mask', group='mask', zone='mods',
+        order=-1,
+        tooltip='Add the mask mod, then drop an RGBA PNG whose alpha '
+                'channel marks the region.')
+    # default "" = the schema row's absent sentinel (input_mask:
+    # str = "") — the envelope derives it, the class coerces null ->
+    # "" (2026-09-05 compile-time incident: the seeded null died at
+    # both gates). Same law as image2/image3's default=''.
     input_mask = Image(label='Region Mask', group='mask', zone='mods',
-        order=0,
+        order=0, default='',
         tooltip='RGBA PNG whose alpha channel marks the region. Standalone: '
                 'region semantics for this lane. Alongside lanpaint: the '
                 'inpaint region — present with input_image, the builder '

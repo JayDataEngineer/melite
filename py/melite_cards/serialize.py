@@ -84,19 +84,22 @@ def _card_class_of(mod: ModuleType, path: str) -> type[ActionCard]:
 
 
 def scan_engine_cards(repo_root: str) -> dict[str, tuple[str, type[ActionCard]]]:
-    """Every card.py under plugins/engines/<engine>/cards/** AND
-    <engine>/action_cards/** (both depths: <card>/ and <group>/<card>/ —
+    """Every card.py under <plugin>/cards/** AND
+    <plugin>/action_cards/** (both depths: <card>/ and <group>/<card>/ —
     the genre layer), in scan order: {card_id: (path, class)}.
-    Duplicate ids LOUD."""
+    Duplicate ids LOUD. The plugin walk lives in plugins.py
+    (iter_plugin_dirs_under — one law, every consumer: depth-2
+    engines AND depth-3 category children like the cpp natives)."""
+    from pathlib import Path
+    import plugins as _plugins
     out = {}
     eng_root = os.path.join(repo_root, "plugins", "engines")
     if not os.path.isdir(eng_root):
         return out
-    for engine in _scandir(eng_root):
-        if engine.startswith("."):
-            continue
+    for pdir in _plugins.iter_plugin_dirs_under(Path(eng_root)):
+        engine = pdir.name
         for cards_dir_name in ("cards", "action_cards"):
-            cards_dir = os.path.join(eng_root, engine, cards_dir_name)
+            cards_dir = os.path.join(str(pdir), cards_dir_name)
             if not os.path.isdir(cards_dir):
                 continue
             for cid in _scandir(cards_dir):

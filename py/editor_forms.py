@@ -30,7 +30,9 @@ exception for /v1/forms below):
                     card surface (form/service/fields/schema_groups/
                     features.modifiers): the card's declared surface;
                     option vocabularies $samplers/$schedulers:
-                    plugins/melite-core/models/field_options.yaml;
+                    the OWNING engine's Plugin class attrs (derived from
+                    its object_info pin), engine field_options.yaml
+                    fallback;
                     enhance recipes: the class's prompt_upscale:/
                     lyrics_upscale: rows (with the id-named-dir fallback
                     probe across owners/genres); lane fallback:
@@ -169,10 +171,15 @@ _FORMS_TABLE = {
                "covers": ("kimodo",)},
     # cluster C (2026-09-04): TRELLIS.2 native — image → textured
     # .glb on ComfyUI core (no extension packs)
+    # cluster P (2026-09-05): pixal3d boards the same card as the
+    # pixel-aligned hero tier (same input shape + camera_fov) —
+    # covered so the editor offers the model switch. transfer_rig
+    # stays uncovered: different inputs (GLB pair, no image), it
+    # does not ride the image form.
     "img-to-mesh": {"label": "Image → 3D", "genre": "3d", "order": 10,
                     "plugin": "comfyui", "sidebar_key": "3d",
                     "default_service": "trellis2-native", "hidden": False,
-                    "covers": ("trellis2-native",)},
+                    "covers": ("trellis2-native", "pixal3d")},
     # cpp native-engine category (2026-10-02): the vendored-subprocess
     # engines join the SAME picker — generic form-specs (the card class
     # Field rows), queue lane, no bespoke editor chrome yet.
@@ -226,6 +233,18 @@ _FORMS_TABLE = {
                   "default_service": "ideogram",
                   "hidden": True,
                   "covers": ("ideogram",)},
+    # input-prep (2026-09-05): the weightless source lane boards.
+    # HIDDEN row — the input card is not a picker surface (the
+    # editor's InputCardEditor is its fixed-field surface); this row
+    # exists so the card id clears the _ALLOWED_CARDS gate and the
+    # boarding wall's offered-means-runnable holds (the same shape
+    # as upscale-tools/ideogram4: registered, not a user surface).
+    "input-prep": {"label": "Input Prep", "genre": "image",
+                   "order": 18, "plugin": "comfyui",
+                   "sidebar_key": "image",
+                   "default_service": "input",
+                   "hidden": True,
+                   "covers": ("input",)},
 }
 
 # The C's ALLOWED_CARDS gate is exactly the keys
@@ -233,7 +252,7 @@ _FORMS_TABLE = {
 _ALLOWED_CARDS = frozenset(_FORMS_TABLE)
 
 # Mod bag types that become modifier KINDS.
-_MOD_KIND_TYPES = frozenset(("loras", "controlnet"))
+_MOD_KIND_TYPES = frozenset(("loras", "controlnet", "mask"))
 
 # Enhance-recipe blocks read from a model unit's inference.yaml
 #.
@@ -559,12 +578,21 @@ def _variants_from_class(row: CatalogRow,
         vlab = v.label or v.id
         if 'a' <= vlab[0] <= 'z':           # display rule: labels render Capitalized
             vlab = chr(ord(vlab[0]) - 32) + vlab[1:]
+        # PATCH-ONLY ROWS (Recipe group, 2026-09-05): a routeless
+        # variant is a stamp applier — its declared defaults SERVE (the
+        # editor writes them onto the draft on click; applyVariantOverrides
+        # sets list values absolutely) and its route serves None (a
+        # falsy route keeps handleVariantPick on the patch path — the
+        # old `or cls.id` fallback would misread a recipe as a route
+        # switch to the family head). Routed rows keep {} by contract:
+        # their defaults are RESOLVER data (merged_defaults / the
+        # gateway stamp overlay), never wire-stamped.
         r = {"id": v.id, "label": vlab,
-             # variant defaults are RESOLVER data (merged_defaults);
-             # the wire row is {} by contract — expose deliberately,
-             # never silently.
-             "defaults": {},
-             "group": v.group or "Variant", "route": v.route or cls.id,
+             "defaults": dict(v.defaults) if (v.defaults and not v.route) else {},
+             "group": v.group or "Variant",
+             # "" (the wire row's declared default) = patch-only; a
+             # falsy route keeps the frontend on the patch path.
+             "route": v.route or "",
              "hint": v.hint or None, "engine": v.engine or cls.engine or ""}
         rows.append(r)
         for c in v.cells:
@@ -790,12 +818,15 @@ def _option_list(repo_root: str, list_name: str, engine_dir: str) -> list[str]:
     """option_list: samplers/schedulers from the ONE vocabulary —
     engine.py Plugin class attrs (2026-09-02 flip), yaml fallback."""
     # plugin.py Plugin class — primary source (2026-09-02 field_options flip)
-    # engine_dir is the plugin root (e.g. plugins/engines/comfyui)
+    # engine_dir is the plugin root (e.g. plugins/engines/comfyui).
+    # The file location rides the exec namespace: Plugin class bodies
+    # may derive their vocab from files beside the plugin (the comfyui
+    # object_info pin), and a bare exec has no __file__.
     for name in ("plugin.py", "engine.py"):
         pyp = os.path.join(engine_dir, name)
         if os.path.isfile(pyp):
             try:
-                ns = {}
+                ns = {"__file__": os.path.abspath(pyp)}
                 exec(open(pyp, 'r', encoding='utf-8',
                            errors='surrogateescape').read(), ns)
                 pcls = ns.get("Plugin")
@@ -1184,7 +1215,47 @@ def _parse_mod_entries(yp: str) -> list[FieldRow]:
     return entries[:32]  # C me[32] cap
 
 
-def _modifiers(repo_root: str, model: str) -> list[dict[str, str | bool | list[dict[str, str | float]] | list[str]]]:
+def _variant_groups(mcls: object | None) -> dict[str, dict[str, str | None]]:
+    """The family's declared VariantGroup rows as the wire's group map
+    (label + tooltip per id); the standard Variant/Quant pair when the
+    family declares none."""
+    declared = getattr(mcls, "variant_groups", ()) if mcls is not None else ()
+    if not declared:
+        return {"Variant": {"label": "Variant"},
+                "Quant": {"label": "Quant"}}
+    return {g.id: {"label": g.label or g.id} | ({"tooltip": g.tooltip}
+                                                 if g.tooltip else {})
+            for g in declared}
+
+
+def _runtime_lora_rows(repo_root: str) -> list:
+    """The RUNTIME LORA CATALOG: every LoraRow every family declares,
+    scanned live at serve time (operator order, 2026-09-05, verbatim:
+    "I DON'T SEE MY KREA2 LORAS... RUNTIME VALIDATION" — a family that
+    boards the loras channel without rows of its own offers the whole
+    estate catalog; picks validate at the compose door against the
+    SAME union, refusing unknown ids LOUD). Frozen order: scan order,
+    family rows stable within a model."""
+    rows: list = []
+    seen: set[str] = set()
+    import glob as _glob
+    from melite_models import load_model_py
+    pat = os.path.join(repo_root, "plugins", "engines", "*",
+                       "models", "*", "*", "model.py")
+    for mp in sorted(_glob.glob(pat)):
+        try:
+            mcls = load_model_py(mp, "comfyui")
+        except Exception:
+            continue          # a foreign/broken model dir is not ours
+        for r in getattr(mcls, "loras_of", lambda: ())() or ():
+            if r.id in seen:
+                continue
+            seen.add(r.id)
+            rows.append(r)
+    return rows
+
+
+def _modifiers(repo_root: str, model: str, mcls: object | None = None) -> list[dict[str, str | bool | list[dict[str, str | float]] | list[str]]]:
     """ModifierKind objects: bag-typed mods fields become kinds; scalar
     knobs that FOLLOW a kind ride it as ModifierFields. Scalars before any kind are dropped.
     card.py cards walk the class fields (same attrs, same order)."""
@@ -1205,7 +1276,16 @@ def _modifiers(repo_root: str, model: str) -> list[dict[str, str | bool | list[d
 
         mes = [{"name": f.name, "type": f.type, "label": f.label or "",
                 "min": f.min, "max": f.max, "step": f.step,
-                "has_min": f.min is not None, "has_max": f.max is not None,
+                # the field's declared default rides the kind (2026-09-05
+                # button order: the drawer's bare-field create + the
+                # GenericFieldControl fallback seed from field.default —
+                # a kind without defaults authors empty dicts).
+                "default": f.default,
+                "options": (list(f.options)
+                            if isinstance(getattr(f, "options", None),
+                                          (list, tuple)) else []),
+                "has_min": f.min is not None,
+                "has_max": f.max is not None,
                 "has_step": f.step is not None}
                for f in cls._fields_ if _in_family(f)]
     else:
@@ -1215,33 +1295,87 @@ def _modifiers(repo_root: str, model: str) -> list[dict[str, str | bool | list[d
         t = me["type"]
         if t not in _MOD_KIND_TYPES:
             continue
-        kind = "lora" if t == "loras" else "controlnet"
+        kind = {"loras": "lora", "controlnet": "controlnet",
+                "mask": "mask"}[t]
         fields = []
         for s in range(e + 1, len(mes)):
             st = mes[s]["type"]
             if st in _MOD_KIND_TYPES:
                 break
-            f = {"name": mes[s]["name"], "type": "float",
-                 "label": mes[s]["label"] or mes[s]["name"]}
+            # THE FIELD'S REAL TYPE rides the kind (2026-09-05 button
+            # order: the mask mod's select/boolean/image fields render
+            # in the add-mod drawer — the old float-forcing walk drew
+            # number boxes for a file slot). Options ride selects.
+            # file folds to image (the drawer well picks any file;
+            # the contract's ModifierFieldSpec has no "file" member —
+            # ModifierFieldSpec.type ∈ integer|float|string|select|
+            # image|boolean, web/contracts/src/schema.d.ts).
+            f: dict[str, JsonValue] = {
+                "name": mes[s]["name"],
+                "type": "image" if st in ("image", "file")
+                else st if st in ("select", "boolean", "string")
+                else "float",
+                "label": mes[s]["label"] or mes[s]["name"]}
+            if mes[s].get("options"):
+                f["options"] = list(mes[s]["options"])
             if mes[s]["has_min"]:
                 f["min"] = _g(mes[s]["min"])
             if mes[s]["has_max"]:
                 f["max"] = _g(mes[s]["max"])
             if mes[s]["has_step"]:
                 f["step"] = _g(mes[s]["step"])
+            if mes[s].get("default") is not None:
+                f["default"] = mes[s]["default"]
             fields.append(f)
-        out.append({
+        # LORA CATALOG OPTIONS (2026-09-05, "write it up cleanly"):
+        # the family's LoraRow rows ARE the picker's options — value=id,
+        # label, tooltip (category + provenance filename), and
+        # defaults.strength seeded from the row's default_strength (the
+        # ONE strength source — the recipe rows and the compose door
+        # read the same row, rung 6). A family whose loras flavor
+        # declares NO rows of its own (the edit lane's door) serves the
+        # RUNTIME CATALOG — the union of every family's declared rows
+        # (operator order, verbatim: "THE LORAS DON'T MAP, I DON'T SEE
+        # MY KREA2 LORAS... RUNTIME VALIDATION" — picks validate at the
+        # compose door, the same union, refusing unknown ids LOUD).
+        # ControlNet keeps the declared-only shape (no catalog rows
+        # exist for it yet).
+        options: list[dict[str, str | float | dict[str, float]]] = []
+        if kind == "lora":
+            rows = list(getattr(mcls, "loras_of", lambda: ())()) \
+                if mcls is not None else []
+            union = False
+            if not rows:
+                rows = _runtime_lora_rows(repo_root)
+                union = True
+            for r in rows:
+                tip = " — ".join(x for x in (r.category, r.filename) if x)
+                if union:
+                    tip = ((tip + " — ") if tip else "") + \
+                        "runtime catalog"
+                options.append({
+                    "value": r.id, "label": r.label or r.id,
+                    "tooltip": tip or None,
+                    "defaults": {"strength": r.default_strength},
+                })
+        entry: dict[str, JsonValue] = {
             "kind": kind,
             "label": me["label"] or me["name"],
             "cardinality": "list",
             "param_key": me["name"],
             "fields": fields,
-            "options": [],
+            "options": options,
             "options_scanned": True,
-            "upload_dir": "models/loras" if kind == "lora"
-            else "models/controlnet",
-            "declaration_only": True,
-        })
+            "declaration_only": not options,
+        }
+        if kind == "mask":
+            # ONE mask tile — the second add is refused in the drawer
+            entry["max_stack"] = 1
+        if kind == "lora":
+            entry["upload_dir"] = "models/loras"
+        elif kind == "controlnet":
+            entry["upload_dir"] = "models/controlnet"
+        out.append(entry)
     return out
 
 
@@ -1531,13 +1665,31 @@ def _form_spec_routed(repo_root: str, owner: RouteOwner,
     status, spec = form_spec(repo_root, cls.id)
     if status != 200:
         return status, spec
-    spec["model"] = route_id
+    # COPY-BASED STAMP (mod-audit follow-up, 2026-09-05): every row
+    # the lens touches is REPLACED with a fresh dict — the route
+    # stamp never writes into a served structure in place. Today
+    # form_spec rebuilds everything per call so in-place was
+    # harmless; the copy makes that freshness a non-requirement (a
+    # future cache layer cannot leak the route's stamps into the
+    # family spec). Anti-leak wall: test_compose_gates.py
+    # test_route_lens_never_stamps_the_family_spec.
     stamped = dict(row["defaults"])
     stamped.update(variant.resolver_defaults or {})
+    spec["model"] = route_id
     spec["defaults"] = stamped
-    for f in spec.get("fields", []):
-        if f.get("name") in stamped:
-            f["default"] = stamped[f["name"]]
+    # NATIVE field stamps (2026-09-06 C-retirement fossil kill): the
+    # top-level `defaults` above stay the pinned stringified wire
+    # contract, but FIELDS ride native — the old code stamped the
+    # stringified base under native resolver values, serving one form
+    # in two types for one kind ('1024' next to 52). A new fossil in
+    # the wire is a bug, not heritage.
+    native = dict(getattr(cls, "defaults", None) or {})
+    native.update(variant.resolver_defaults or {})
+    spec["fields"] = [
+        dict(f, default=native[f["name"]])
+        if f.get("name") in native else f
+        for f in spec.get("fields", [])
+    ]
     spec["variants"] = _variants(repo_root, row,
                                  prefer_variant=variant.id)
     return 200, spec
@@ -1621,9 +1773,13 @@ def form_spec(repo_root: str, model_id: str | None) -> tuple[int, dict[str, Json
         "defaults": {k: v for k, v in row["defaults"]},
         "variants": _variants(repo_root, row),
         "features": {
-            "modifiers": _modifiers(repo_root, row["id"]),
-            "variant_groups": {"Variant": {"label": "Variant"},
-                               "Quant": {"label": "Quant"}},
+            "modifiers": _modifiers(repo_root, row["id"],
+                                    row.get("_model_class")),
+            # DECLARED groups (2026-09-05): the family's VariantGroup
+            # rows serve — label + tooltip (the hardcoded pair starved
+            # the wire of every declared tooltip and made a new group
+            # like Recipe unservable). Standard pair = the fallback.
+            "variant_groups": _variant_groups(row.get("_model_class")),
         },
         "enhance_prompts": {"prompt": prompt_emit, "lyrics": lrecipe},
     }
@@ -1690,6 +1846,14 @@ def form_spec(repo_root: str, model_id: str | None) -> tuple[int, dict[str, Json
     except form_wire.ValidationError as e:
         return 500, {"error": "form spec contract refusal (%s): %s"
                      % (row["id"], form_wire.refusal_reason(e))}
+    # max_stack rides ONLY when a family declares a cap (2026-09-05
+    # button order: the mask kind's one-tile cap). model_dump emits
+    # the row's None default on every cap-less kind — a null the wire
+    # contract never carried (goldens pin ABSENT; the drawer falls
+    # back per kind: lora 5, controlnet 3). Strip the Nones.
+    for _m in (gated.get("features") or {}).get("modifiers") or []:
+        if isinstance(_m, dict) and _m.get("max_stack") is None:
+            _m.pop("max_stack", None)
     return 200, gated
 
 

@@ -318,14 +318,23 @@ def _find_card_requires(mid: str, plugins_dir: str | None = None) -> list[str]:
     for cpy in sorted(
         list(plugins_dir.glob("engines/*/cards/*/card.py"))
         + list(plugins_dir.glob("engines/*/action_cards/*/card.py"))
-        + list(plugins_dir.glob("engines/*/action_cards/*/*/card.py"))):
+        + list(plugins_dir.glob("engines/*/action_cards/*/*/card.py"))
+        + list(plugins_dir.glob("engines/*/action_cards/*/*/py/card.py"))):
         try:
             # depth-1 card dir → engine 3 hops up; genre-grouped
-            # (action_cards/<genre>/<card>/) → 4 (2026-09-02 reorg)
+            # (action_cards/<genre>/<card>/) → 4 (2026-09-02 reorg);
+            # THE CARD PATTERN (2026-09-03): python lives in py/ → 5.
+            # Without the py/ arm this loop finds NO modern card and
+            # every requires resolves [] (gate silently dead — found
+            # live 2026-09-06 when the img-to-mesh family gate proved
+            # unwired end to end).
             pdir = cpy.parent
-            engine = (pdir.parent.parent.name
-                      if pdir.parent.name in ("cards", "action_cards")
-                      else pdir.parent.parent.parent.name)
+            if pdir.name == "py":
+                engine = pdir.parent.parent.parent.parent.name
+            else:
+                engine = (pdir.parent.parent.name
+                          if pdir.parent.name in ("cards", "action_cards")
+                          else pdir.parent.parent.parent.name)
             cls = load_card_py(str(cpy), engine)
         except Exception:
             continue

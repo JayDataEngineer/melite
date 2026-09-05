@@ -138,6 +138,10 @@ class ModifierFeatureRow(_Frozen):
     label: str = ""
     param_key: str = Field(min_length=1)
     cardinality: str = ""
+    # max_stack rides the wire (2026-09-05 button order: the mask
+    # kind's one-tile cap — the drawer refuses the second add LOUD;
+    # the TS contract ModifierKindSpec already carries it).
+    max_stack: int | None = None
     fields: list[Any] = []
     options: list[Any] = []
     options_scanned: bool | None = None
