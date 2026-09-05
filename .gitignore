@@ -109,6 +109,23 @@ third_party/
 data/runtime/*/build/
 data/runtime/*/build-*/
 
+# === Python plugin venvs (per-plugin uv envs, the management plane
+# stays base) ===
+# The root .venv is the gateway base env (estate). Plugin-local
+# .venv dirs (e.g. plugins/harness/dsh/infer-flow-tavern/.venv) are
+# material on `uv sync` from the plugin dir; the install surface is
+# `uv tool install` or `uvx`, not git. Both patterns are matched
+# by a single **/.venv entry — every level, every plugin.
+/.venv
+plugins/**/.venv
+**/.venv
+# === Python plugin session scratch (uvicorn + starlette) ===
+# uvicorn + starlette dump a `.sesskey` on boot when the TestClient
+# spins up; it's a per-run session id, never source.
+/.sesskey
+plugins/**/.sesskey
+**/.sesskey
+
 # data/ — the data root (never commit state; README is the law doc)
 # ONE rule: ignore everything under data/, then re-include directory
 # traversal (so .gitkeep discovery works) and the law doc. The old

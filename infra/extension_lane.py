@@ -91,7 +91,7 @@ class ExtensionRow(BaseModel):
     desc: str = ""
     pip: tuple[str, ...] = ()
 
-    def pin(self) -> tuple:
+    def pin(self) -> tuple[str, str, str, str, tuple[str, ...]]:
         """The comparable pin identity — EVERY rail, so divergence in
         any one of them refuses (the url/ref-only era let registry
         pins diverge silently)."""
@@ -116,7 +116,7 @@ class NodesDoc(BaseModel):
 
     @field_validator("extensions", mode="before")
     @classmethod
-    def _null_is_empty(cls, v):
+    def _null_is_empty(cls, v: list[dict[str, str | bool | list[str]]] | None) -> list[dict[str, str | bool | list[str]]] | tuple[()]:
         return () if v is None else v
 
 
@@ -125,7 +125,12 @@ ExtensionRow.model_rebuild()
 NodesDoc.model_rebuild()
 
 
-def load_extensions(path: str) -> list[dict]:
+# model_dump rows (+ the merged `_source` tag): every value is a
+# manifest scalar — str fields, the required bool, the pip tuple.
+ManifestRow = dict[str, str | bool | tuple[str, ...]]
+
+
+def load_extensions(path: str) -> list[ManifestRow]:
     """Load + VALIDATE the extensions list from a nodes.yaml file.
     An invalid document fails LOUD (a manifest that cannot be parsed
     honestly must not half-install)."""
@@ -143,7 +148,7 @@ def load_extensions(path: str) -> list[dict]:
     return [row.model_dump() for row in doc.extensions]
 
 
-def merge_all(repo: str) -> list[dict]:
+def merge_all(repo: str) -> list[ManifestRow]:
     """Merge all nodes.yaml files. Returns deduplicated extension list."""
     files = find_nodes_yaml(repo)
     if not files:
@@ -151,7 +156,7 @@ def merge_all(repo: str) -> list[dict]:
     return _merge_from(files)
 
 
-def merge_plugins_dir(plugins_root: str) -> list[dict]:
+def merge_plugins_dir(plugins_root: str) -> list[ManifestRow]:
     """Merge a bare plugins/ subtree (e.g. a docker bind mount like
     /tmp/melite-plugins) — same law, plugin-id order, dup guard."""
     pattern = os.path.join(plugins_root, "*", "nodes", "extensions.yaml")
@@ -163,7 +168,7 @@ def merge_plugins_dir(plugins_root: str) -> list[dict]:
     return _merge_from(files)
 
 
-def _merge_from(files: list[tuple[str, str]]) -> list[dict]:
+def _merge_from(files: list[tuple[str, str]]) -> list[ManifestRow]:
     """One extension per name; an IDENTICAL restatement (same url AND
     ref — two family heads of one physical lane pinning the same
     extension) merges silently, a DIVERGENT pin refuses loud. (The
