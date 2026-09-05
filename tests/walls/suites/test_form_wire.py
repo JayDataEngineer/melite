@@ -365,3 +365,47 @@ def test_card_kinds_table_input_runner_is_set():
         assert r.runner == "", (
             "%s runner=%r — only the input kind overrides the default" %
             (k, r.runner))
+
+
+def test_http_cardless_models_in_a_form_serve_the_form_card():
+    """The cardless-model → form-card fallback (2026-09-05). Every model
+    in _FORMS_TABLE[*].covers must serve the form's anchor card's
+    fields on /v1/form-spec — a cardless "data" model (z-image, anima,
+    ideogram in the image form) would otherwise serve 0 fields and the
+    Parameters zone vanishes on model swap. The membership is the
+    SSOT (the table's `covers`); this pin refuses an empty fallback."""
+    import editor_forms
+    import urllib.request
+    import json as _json
+    for fid, fdef in editor_forms._FORMS_TABLE.items():
+        covers = fdef.get("covers") or ()
+        if not covers: continue
+        anchor = fdef["default_service"]
+        # Anchor must serve itself (sanity).
+        for mid in covers:
+            try:
+                req = urllib.request.urlopen(
+                    "http://127.0.0.1:%d/v1/form-spec?model=%s" %
+                    (scratch_gateway, mid), timeout=10)
+                spec = _json.loads(req.read().decode("utf-8"))
+            except Exception:
+                continue
+            fields = spec.get("fields") or []
+            assert len(fields) >= 1, (
+                "form %s model %s serves 0 fields — the cardless-model "
+                "fallback did not engage (covers declares it; the "
+                "anchor %s has the fields)." % (fid, mid, anchor))
+
+
+def test_http_cardless_model_spec_keeps_its_own_identity(scratch_gateway):
+    """The fallback inherits the ANCHOR's fields but brands the spec
+    with the REQUESTED model (form/service = model.id) — the editor
+    binds to the right model, not the anchor. Via HTTP so the wall
+    path mirrors the browser's (and avoids the grammar model-cache
+    path-collision that a direct in-process call would hit)."""
+    for mid in ("z-image", "anima", "ideogram"):
+        status, body = _http_get(scratch_gateway, "v1/form-spec?model=%s" % mid)
+        assert status == 200
+        assert body["model"] == mid
+        assert body["form"] == mid and body["service"] == mid
+        assert len(body.get("fields", [])) >= 1

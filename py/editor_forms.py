@@ -100,73 +100,98 @@ __all__ = ["forms", "form_spec", "kinds"]
 _FORMS_TABLE = {
     "image-gen": {"label": "Image", "genre": "image", "order": 1,
                   "plugin": "comfyui", "sidebar_key": "image",
-                  "default_service": "krea-2", "hidden": False},
+                  "default_service": "krea-2", "hidden": False,
+                  # The image-generation form's model membership (the
+                  # SSOT for the cardless-model → form-card fallback,
+                  # 2026-09-05). krea-2 is the carded anchor (its own
+                  # card.py); z-image/anima/ideogram are "data" models
+                  # in the same form — without this declaration, their
+                  # form-spec served 0 fields and the Parameters zone
+                  # vanished on model swap.
+                  "covers": ("krea-2", "z-image", "anima", "ideogram")},
     "image-edit": {"label": "Image Edit", "genre": "image", "order": 2,
                    "plugin": "comfyui", "sidebar_key": "image-edit",
-                   "default_service": "img-edit", "hidden": False},
+                   "default_service": "img-edit", "hidden": False,
+                   "covers": ("img-edit", "qwen-img-edit-2511")},
     # audio A-cluster rehomed 2026-09-04 (music on native core;
     # tts/voice-lock/sfx on the split packs' classes)
     "tts": {"label": "Speech", "genre": "audio", "order": 3,
             "plugin": "comfyui", "sidebar_key": "audio",
-            "default_service": "qwen3-tts", "hidden": False},
+            "default_service": "qwen3-tts", "hidden": False,
+            "covers": ("qwen3-tts", "qwen3-tts-base")},
     "voice-lock": {"label": "Voice Lock", "genre": "audio", "order": 4,
                    "plugin": "comfyui", "sidebar_key": "audio",
-                   "default_service": "qwen3-tts-voicedesign", "hidden": False},
+                   "default_service": "qwen3-tts-voicedesign", "hidden": False,
+                   "covers": ("qwen3-tts-voicedesign",)},
     "music": {"label": "Music", "genre": "audio", "order": 5,
               "plugin": "comfyui", "sidebar_key": "audio",
-              "default_service": "music3", "hidden": False},
+              "default_service": "music3", "hidden": False,
+              "covers": ("music3",)},
     "sfx": {"label": "Sound Effects", "genre": "audio", "order": 7,
             "plugin": "comfyui", "sidebar_key": "audio",
-            "default_service": "moss-sfx", "hidden": False},
+            "default_service": "moss-sfx", "hidden": False,
+            "covers": ("moss-sfx",)},
     "h3-timeline": {"label": "H3 Timeline", "genre": "video", "order": 6,
                     "plugin": "comfyui", "sidebar_key": "video",
-                    "default_service": "h3-timeline", "hidden": False},
+                    "default_service": "h3-timeline", "hidden": False,
+                    "covers": ("h3-timeline", "h3", "h3-keyframe")},
     # mask B-cluster: the selection layer rides the image sidebar (the
     # studio body's tenant is mask/mask_studio — the card is the authoring
     # fallback surface)
     "mask-studio": {"label": "Mask", "genre": "image", "order": 8,
                     "plugin": "comfyui", "sidebar_key": "image",
-                    "default_service": "mask-studio", "hidden": False},
+                    "default_service": "mask-studio", "hidden": False,
+                    "covers": ("mask-studio",)},
     # cluster C stopgap (2026-09-04): kimodo text→motion on our own
     # packs; the motion genre already rides the sidebar taxonomy
     "motion": {"label": "Motion", "genre": "motion", "order": 9,
                "plugin": "comfyui", "sidebar_key": "motion",
-               "default_service": "kimodo", "hidden": False},
+               "default_service": "kimodo", "hidden": False,
+               "covers": ("kimodo", "hy_motion")},
     # cluster C (2026-09-04): TRELLIS.2 native — image → textured
     # .glb on ComfyUI core (no extension packs)
     "img-to-mesh": {"label": "Image → 3D", "genre": "3d", "order": 10,
                     "plugin": "comfyui", "sidebar_key": "3d",
-                    "default_service": "trellis2-native", "hidden": False},
+                    "default_service": "trellis2-native", "hidden": False,
+                    "covers": ("trellis2-native",)},
     # cpp native-engine category (2026-10-02): the vendored-subprocess
     # engines join the SAME picker — generic form-specs (the card class
     # Field rows), queue lane, no bespoke editor chrome yet.
     "forge": {"label": "Creature Forge", "genre": "creature", "order": 11,
               "plugin": "anycreature", "sidebar_key": "3d",
-              "default_service": "anycreature", "hidden": False},
+              "default_service": "anycreature", "hidden": False,
+              "covers": ("anycreature",)},
     "text-to-motion": {"label": "Text → Motion", "genre": "motion",
                        "order": 12, "plugin": "kimodo",
                        "sidebar_key": "motion",
-                       "default_service": "soma", "hidden": False},
+                       "default_service": "soma", "hidden": False,
+                       "covers": ("soma",)},
     "quad-remesh": {"label": "Quad Remesh", "genre": "3d", "order": 13,
                     "plugin": "autoremesher", "sidebar_key": "3d",
-                    "default_service": "autoremesher", "hidden": False},
+                    "default_service": "autoremesher", "hidden": False,
+                    "covers": ("autoremesher",)},
     # cluster C2 (2026-09-04): anny — character assembly (composite
     # body/hair/outfit + 8-view turnaround + SAM part sprites)
     "anny": {"label": "Anny", "genre": "3d", "order": 14,
              "plugin": "comfyui", "sidebar_key": "3d",
-             "default_service": "anny", "hidden": False},
+             "default_service": "anny", "hidden": False,
+             "covers": ("anny",)},
     # cluster E (2026-09-04): the generic video card — ONE interface,
     # every non-h3 family (img-gen pattern; h3 stays on h3-timeline)
     "video-gen": {"label": "Video", "genre": "video", "order": 15,
                   "plugin": "comfyui", "sidebar_key": "video",
-                  "default_service": "wan-vace", "hidden": False},
+                  "default_service": "wan-vace", "hidden": False,
+                  "covers": ("wan-vace", "ltx-director-distilled",
+                             "scail2-animate", "ltx-2-3")},
     # F-cluster (2026-09-04): the hidden tool card — tool lanes are
     # consumed BY other cards, never user surfaces
     "upscale-tools": {"label": "Upscale Tools", "genre": "image",
                       "order": 16, "plugin": "comfyui",
                       "sidebar_key": "image",
                       "default_service": "seedvr2_ema",
-                      "hidden": True},
+                      "hidden": True,
+                      "covers": ("seedvr2_ema", "pixel_upscale",
+                                 "basic_resize")},
 }
 
 # The C's ALLOWED_CARDS gate (src/server.cpp:7585-7588) is exactly the keys
@@ -1032,7 +1057,30 @@ def _card_spec(repo_root, model):
     return out
 
 
-# ─────────────────────────────────────────────────────────────────────────
+def _form_card_frag_for_model(repo_root, row):
+    """The cardless-model → form-card fallback (2026-09-05).
+
+    A model with no card.py of its own still belongs to a form
+    (_FORMS_TABLE's `covers` membership is the SSOT). Its form-spec
+    inherits the form's ANCHOR card's fields/schema_groups so the
+    Parameters zone renders the universal surface — without this,
+    cardless "data" models (z-image, anima, ideogram in the image
+    form) served 0 fields and the Parameters zone vanished on
+    model swap. Declarative: the model→form membership lives in
+    _FORMS_TABLE, the anchor card is the form's `default_service`.
+    No model name is hardcoded in the body of this helper."""
+    model_id = row.get("id", "")
+    for fid, fdef in _FORMS_TABLE.items():
+        covers = fdef.get("covers") or ()
+        if model_id not in covers:
+            continue
+        anchor = fdef.get("default_service")
+        if not anchor or anchor == model_id:
+            continue
+        return _card_spec(repo_root, anchor)
+    return None
+
+
 # features.modifiers — port of the mods-zone scan (src/server.cpp:8273-8397)
 # ─────────────────────────────────────────────────────────────────────────
 
@@ -1534,8 +1582,24 @@ def form_spec(repo_root, model_id):
     }
 
     frag = _card_spec(repo_root, row["id"])
+    frag_from_fallback = False
+    if frag is None:
+        # Form-card fallback for cardless "data" models in a form
+        # (2026-09-05): the model is listed in a form's `covers` and
+        # inherits that form's anchor card's fields. Declarative — the
+        # membership is _FORMS_TABLE's `covers`, no model name here.
+        frag = _form_card_frag_for_model(repo_root, row)
+        frag_from_fallback = frag is not None
     if frag:
         spec.update(frag)
+    if frag_from_fallback:
+        # The card carries the ANCHOR's identity (form/service) but
+        # this spec is for the REQUESTED model — brand the spec with
+        # the model's own id so the editor and the form_wire gate
+        # see the right model, not the anchor. Fields stay (the
+        # universal form).
+        spec["form"] = row["id"]
+        spec["service"] = row["id"]
     # CARDLESS MODELS (2026-09-05, form_wire gate): a catalog row with
     # no card fragment (tool lanes, family engines, undeployed
     # families) serves the SAME required core with honest empties —
