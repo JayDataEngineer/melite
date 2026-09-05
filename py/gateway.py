@@ -337,7 +337,20 @@ def _find_card_requires(mid: str, plugins_dir: str | None = None) -> list[str]:
                     for f in cls.families_of()]
             if nmid not in fams:
                 continue
-        return list(getattr(cls, "requires", ()) or [])
+        reqs = list(getattr(cls, "requires", ()) or [])
+        # Per-family capabilities (2026-09-06, img-to-mesh live-fire):
+        # requires_by_family maps family/model id to extra extension
+        # ids, merged here for the requesting model. Card-level
+        # requires still applies to every family.
+        fam_reqs = getattr(cls, "requires_by_family", {}) or {}
+        if isinstance(fam_reqs, dict):
+            for _key, _val in fam_reqs.items():
+                if _key in (mid, nmid):
+                    _more = (list(_val) if isinstance(_val, (tuple, list))
+                             else [_val])
+                    reqs.extend(_more)
+                    break
+        return reqs
     return []
 
 
@@ -1668,6 +1681,12 @@ async def _h_base_body(ctx: _Ctx) -> HandlerResult:
         return 500, {"error": "base body %r is not a declared "
                      "provision" % (base_name,)}
     engine = getattr(cls, "engine", "") or ""
+    if not engine:  # QUEUE LANE LAW: no default engine names — the
+        # family declares its engine (anny: engine = 'comfyui' in the
+        # plugin, where lane knowledge belongs); a family without one
+        # refuses here, never a hardcoded core fallback.
+        return 500, {"error": "family %r declares no engine"
+                     % (getattr(cls, "id", tenant),)}
     ep_path = REPO / "plugins" / "engines" / engine / "data" / (
         engine + "_endpoint.json") if engine else None
     try:
@@ -1684,7 +1703,7 @@ async def _h_base_body(ctx: _Ctx) -> HandlerResult:
     else:
         overrides = {}
     from estate_config import model_paths as _model_paths
-    roots = _model_paths(engine or "comfyui",
+    roots = _model_paths(engine,
                          endpoint_overrides=overrides)
     disk = os.path.join(roots["read_root"], sub, prov.name)
     if not os.path.isfile(disk):
@@ -1862,6 +1881,63 @@ async def _h_presets_delete(ctx: _Ctx) -> HandlerResult:
         return 404, {"error": "no user preset %r on tenant %r"
                      % (preset_id, tenant)}
     return 200, {"tenant": tenant, "deleted": preset_id}
+
+
+# ── Uploads (browser → estate input stream) ──────────────────────────
+#
+# Operator order, 2026-09-06 (verbatim): "AND THERE IS NO WAY FOR ME
+# TO PUT AN IMAGE IN, LET ALONE TEST IT". The estate had NO
+# server-side upload — images rode FileReader data: URLs (the
+# SubcardModal precedent), which the anny estimate verb must refuse
+# (the lane composes mount files; a data: URL stages nothing to the
+# engine). THIS door is how a browser photo becomes a composable
+# path: strict JSON {filename, data} (data = the FileReader data:
+# URL, passed through verbatim), validated and written to
+# data/input/ (the estate input stream). The returned repo-relative
+# path stages to the engine like any other file initial. Refusals
+# are 4xx with the reason — never a stored partial, never an
+# overwrite (unique suffix per upload).
+_UPLOAD_IMAGE_TYPES = {"image/png": ".png", "image/jpeg": ".jpg",
+                       "image/webp": ".webp"}
+# the estate's ControlNet precedent (SubcardModal upload well)
+_UPLOAD_MAX_BYTES = 20 * 1024 * 1024
+
+
+async def _h_uploads(ctx: _Ctx) -> HandlerResult:
+    doc = ctx.json if isinstance(ctx.json, dict) else None
+    if doc is None:
+        return 400, {"error": "uploads: body must be a JSON object "
+                              "{filename, data}"}
+    raw_name = doc.get("filename")
+    data_url = doc.get("data")
+    if not isinstance(raw_name, str) or not raw_name.strip():
+        return 400, {"error": "uploads: filename is required"}
+    if not isinstance(data_url, str) or not data_url.startswith("data:"):
+        return 400, {"error": "uploads: data must be a FileReader "
+                              "data: URL"}
+    try:
+        header, b64 = data_url.split(",", 1)
+    except ValueError:
+        return 400, {"error": "uploads: malformed data: URL (no comma)"}
+    mime = header.split(";", 1)[0][5:]
+    ext = _UPLOAD_IMAGE_TYPES.get(mime)
+    if ext is None:
+        return 400, {"error": "uploads: image type %r refused (want "
+                              "png/jpeg/webp)" % (mime,)}
+    try:
+        raw = base64.b64decode(b64, validate=True)
+    except (ValueError, base64.binascii.Error):
+        return 400, {"error": "uploads: base64 body does not decode"}
+    if len(raw) > _UPLOAD_MAX_BYTES:
+        return 400, {"error": "uploads: image too large (%d bytes, "
+                              "max %d)" % (len(raw), _UPLOAD_MAX_BYTES)}
+    stem = re.sub(r"[^A-Za-z0-9_-]+", "-",
+                  Path(raw_name).stem).strip("-")[:48] or "upload"
+    target = REPO / "data" / "input"
+    target.mkdir(parents=True, exist_ok=True)
+    name = "%s-%s%s" % (stem, uuid.uuid4().hex[:8], ext)
+    (target / name).write_bytes(raw)
+    return 200, {"path": "data/input/%s" % name, "bytes": len(raw)}
 
 
 # ── the studio bridge (rebuilt 2026-09-05) ───────────────────────────
@@ -2113,6 +2189,12 @@ ROUTES: tuple = (
           group="Assets & ledger",
           summary="Stream one artifact (the only tree the gallery "
                   "proxy may touch)", handler=_h_asset),
+    Route(method="POST", path="/v1/uploads", group="Assets & ledger",
+          summary="Browser file → data/input (strict JSON {filename, "
+                  "data:} — the data: URL a FileReader produces; "
+                  "png/jpeg/webp ≤ 20 MB; returns the composable "
+                  "repo-relative path)",
+          body="strict", handler=_h_uploads),
 
     # ── Studios (tenant preset ledgers — stroke 3) ─────────────────
     Route(method="GET",

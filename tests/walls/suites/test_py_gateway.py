@@ -247,6 +247,81 @@ def test_unknown_model_refused() -> None:
         resolve_request({"model": "no-such-model"})
 
 
+# ── PIPE-CARRY RETIREMENT (2026-09-05) ──
+# The card wire is params-only: no gateway ever read `pipe`/`stage_id`,
+# no status ever emitted `flow_doc` (the revive rail is the draft +
+# the run registry). The client stopped sending the stowaways and the
+# gateway refuses them BEFORE registration — a fossil card body is a
+# compile error, never a run. Operator order: "THESE ERRORS NEED BE
+# CAUGHT COMPILE TIME, NOT INFERENCE TIME".
+
+def test_retired_carry_keys_refused_before_registration() -> None:
+    import gateway as gw_mod
+    with pytest.raises(ValidationError) as ei:
+        gw_mod._strict_body({"model": "krea-2", "prompt": "x",
+                             "pipe": {"stages": []}, "stage_id": "s0"})
+    assert "retired pipe-carry key(s)" in str(ei.value)
+    assert "params only" in str(ei.value)
+
+
+def test_card_compose_body_lifts_envelope() -> None:
+    """The body a card arm receives: envelope keys (door + draft_id +
+    test) lifted, everything else restaged as the ONE params stanza.
+    Wall-pinned shape — the arms' flat-form branch retired with it.
+    Two payload shapes ride the stanza: flat cards post params at top
+    level ({model, prompt} -> {"params": {"prompt"}}); doc cards (h3)
+    post their doc under a literal `params` key, which the lift keeps
+    ({model, params: {calls}} -> {"params": {"params": {calls}}})."""
+    import gateway as gw_mod
+    assert gw_mod.card_compose_body(
+        {"model": "krea-2", "prompt": "x"}) == {"params": {"prompt": "x"}}
+    assert gw_mod.card_compose_body(
+        {"model": "h3-timeline", "params": {"calls": []},
+         "draft_id": "d", "test": True}) == {
+             "params": {"params": {"calls": []}}}
+
+
+def test_validate_model_arm_catches_card_errors_compile_time() -> None:
+    """The {model} arm of the validate door runs the EXACT phase-1 chain
+    a start would run — no queue slot, no GPU claim, no sidecar, no
+    registration. Four cases, verbatim refusals."""
+    import asyncio
+    import gateway as gw_mod
+
+    class _Ctx:
+        def __init__(self, j: dict[str, str | int | dict[str, list[str]]]) -> None:
+            self.json = j
+
+    # 1. a clean card compiles
+    code, out = asyncio.run(gw_mod._h_flows_validate(
+        _Ctx({"model": "krea-2", "prompt": "x"})))
+    assert code == 200
+    assert out == {"ok": True, "model": "krea-2", "card": True}
+
+    # 2. an unknown knob is the frozen-row refusal (the 2026-09-05 live
+    # failure: ImageGenParams stepz "Extra inputs are not permitted") —
+    # at COMPILE time, not inference time
+    code, out = asyncio.run(gw_mod._h_flows_validate(
+        _Ctx({"model": "krea-2", "prompt": "x", "stepz": 1})))
+    assert code == 400
+    assert "Extra inputs are not permitted" in out["error"]
+
+    # 3. a dangling artifact ref is the sweep refusal (the 2026-09-05
+    # live failure: SaveImage gallery url of a pruned run)
+    code, out = asyncio.run(gw_mod._h_flows_validate(
+        _Ctx({"model": "qwen-img-edit-2511", "prompt": "x",
+              "input_image": "/v1/assets/runs/no-such-run/x.png"})))
+    assert code == 400
+    assert "dangling artifact ref" in out["error"]
+
+    # 4. the retired stowaways refuse with the retirement reason
+    code, out = asyncio.run(gw_mod._h_flows_validate(
+        _Ctx({"model": "krea-2", "prompt": "x",
+              "pipe": {"stages": []}, "stage_id": "s0"})))
+    assert code == 400
+    assert "retired pipe-carry key(s)" in out["error"]
+
+
 # ── PLUGIN BUS WALL ──
 import plugins  # noqa: E402
 
@@ -275,10 +350,11 @@ def test_qwen3_tts_resolves_comfyui() -> None:
     assert etype == "comfyui", etype
 
 
-# C15: stanza-less model refused
+# C15: stanza-less model refused (input boarded 2026-09-05, so the
+# pin moves to auto-detect: offered form, no engine stanza)
 def test_stanza_less_model_refused() -> None:
     with pytest.raises(plugins.ValidationError):
-        plugins.resolve_model("input")
+        plugins.resolve_model("auto-detect")
 
 
 # C16: engines load from owning plugin dir
@@ -335,3 +411,68 @@ def test_golden_parity_wall() -> None:
     r = subprocess.run([sys.executable, str(REPO / "tests" / "golden_compose" / "_runner.py")],
                        capture_output=True, text=True)
     assert r.returncode == 0, r.stdout[-400:] if r.returncode else ""
+
+
+# C21: the uploads door (browser → estate input stream, 2026-09-06 —
+# operator order "THERE IS NO WAY FOR ME TO PUT AN IMAGE IN").
+# Strict JSON {filename, data:}; the handler writes
+# data/input/<stem>-<id>.<ext> and returns the composable
+# repo-relative path. Refusals are 4xx — never a stored partial.
+# REPO is monkeypatched so the wall never touches the real stream.
+def _upload_ctx(doc: object) -> object:
+    class _Ctx:
+        def __init__(self, j: object) -> None:
+            self.json = j
+    return _Ctx(doc)
+
+
+def _tiny_png_data_url() -> str:
+    import base64
+    raw = b"\x89PNG\r\n\x1a\n" + b"0" * 64
+    return "data:image/png;base64," + base64.b64encode(raw).decode()
+
+
+def test_uploads_door_happy_path(monkeypatch: pytest.MonkeyPatch,
+                                 tmp_path: Path) -> None:
+    import asyncio
+    import gateway as gw_mod
+    monkeypatch.setattr(gw_mod, "REPO", tmp_path)
+    code, out = asyncio.run(gw_mod._h_uploads(
+        _upload_ctx({"filename": "me.png", "data": _tiny_png_data_url()})))
+    assert code == 200
+    assert out["path"].startswith("data/input/me-")
+    assert out["path"].endswith(".png")
+    assert (tmp_path / out["path"]).is_file()
+
+
+def test_uploads_door_refusal_matrix() -> None:
+    import asyncio
+    import gateway as gw_mod
+    cases = [
+        ({}, "filename is required"),
+        ({"filename": "a.png", "data": "not-a-data-url"},
+         "must be a FileReader"),
+        ({"filename": "a.png", "data": "data:image/png;base64"},
+         "malformed"),
+        ({"filename": "a.gif", "data": "data:image/gif;base64,AAAA"},
+         "refused"),
+        ({"filename": "a.png", "data": "data:image/png;base64,!!!"},
+         "does not decode"),
+    ]
+    for doc, needle in cases:
+        code, out = asyncio.run(gw_mod._h_uploads(_upload_ctx(doc)))
+        assert code == 400, doc
+        assert needle in out["error"], (doc, out)
+
+
+def test_uploads_door_sanitizes_traversal(monkeypatch: pytest.MonkeyPatch,
+                                          tmp_path: Path) -> None:
+    import asyncio
+    import gateway as gw_mod
+    monkeypatch.setattr(gw_mod, "REPO", tmp_path)
+    code, out = asyncio.run(gw_mod._h_uploads(
+        _upload_ctx({"filename": "../../evil.png",
+                     "data": _tiny_png_data_url()})))
+    assert code == 200
+    assert ".." not in out["path"]
+    assert (tmp_path / out["path"]).is_file()

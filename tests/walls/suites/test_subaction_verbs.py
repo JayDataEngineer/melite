@@ -187,44 +187,44 @@ def test_tsx_names_the_declared_verbs_and_flows() -> None:
                 "declared %r engine" % (e.flow, e.id))
 
 
-def test_default_engine_is_the_sellable_lane() -> None:
-    """Declaration order IS preference order (operator order,
-    2026-09-06): the chip opens on engines[0], and engines[0] must be
-    the commercial SAM 3D Body chain — never the NAVER
-    non-commercial research lane. Both sides, same first id."""
+def test_estimate_verb_is_commercial_only() -> None:
+    """ONE verb, ONE engine (operator order, 2026-09-06, verbatim:
+    "I ONLY WANT HTE COMMERICAL FLOW. I DON't WANT A DROPDOWN
+    DUDE"): the estimate verb declares exactly the commercial
+    engine — no picker on the chip, no research lane, no dead
+    refine. Both sides, same single id."""
     from melite_cards import load_card_py
     cls = load_card_py(
         os.path.join(REPO, "plugins", "engines", "comfyui",
                      "action_cards", "3d", "anny", "py", "card.py"))
     verbs = {v.id: v for v, _ in cls._verbs_}
-    first = verbs["hmr-estimate"].engines[0]
-    assert first.id == "commercial", (
-        "the estimate verb must open on the sellable lane, not %r" % first.id)
-    assert first.flow == "anny-hmr-commercial"
+    (only,) = verbs["hmr-estimate"].engines
+    assert only.id == "commercial", (
+        "the estimate verb must be the sellable lane alone, not %r" % only.id)
+    assert only.flow == "anny-hmr-commercial"
     src = _tsx()
     i = src.find("export const ANNY_VERBS")
     assert i >= 0, "ANNY_VERBS vanished from the TSX chip"
     j = src.find("engines: [", i)
     assert j >= 0, "the estimate verb lost its engines array"
-    m = re.search(r"\{\s*id:\s*\"([^\"]+)\"", src[j:])
-    assert m and m.group(1) == "commercial", (
-        "the TSX chip must list commercial first (it opens on "
-        "engines[0])")
+    ids = re.findall(r"\{\s*id:\s*\"([^\"]+)\"", src[j:src.find("]", j) + 1])
+    assert ids == ["commercial"], (
+        "the TSX chip must declare commercial alone (no dropdown), "
+        "got %r" % (ids,))
 
 
-def test_no_silent_downgrade_on_both_sides() -> None:
-    """The shared phrase: PY refusal contract + TSX renderer copy."""
-    from melite_cards import load_card_py
-    cls = load_card_py(
-        os.path.join(REPO, "plugins", "engines", "comfyui",
-                     "action_cards", "3d", "anny", "py", "card.py"))
-    refusals = [e.refusal for v, _ in cls._verbs_
-                for e in v.engines
-                if e.flow is None and not e.local]
-    assert refusals, "no refusal engines declared"
-    for r in refusals:
-        assert "never a silent downgrade" in r
-    assert "never a silent downgrade" in _tsx()
+def test_no_dead_ends_no_silent_downgrade() -> None:
+    """Every declared engine is runnable (a flow or a tenant-local
+    verb); any refusal row still present carries the shared phrase.
+    The anny estimate verb keeps neither — no dead buttons."""
+    dead = []
+    for cid, _cls, verbs in _cards_with_verbs():
+        for vcls, _fams in verbs:
+            for e in vcls.engines:
+                if e.flow is None and not e.local:
+                    if "never a silent downgrade" not in (e.refusal or ""):
+                        dead.append("%s/%s/%s" % (cid, vcls.id, e.id))
+    assert not dead, "refusal engines without the phrase: %r" % (dead,)
 
 
 # ── contract shape: bad verbs refuse at import ──────────────────────

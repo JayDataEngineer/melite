@@ -28,12 +28,12 @@ resolve_inputs (runtime), not construction. The pack chain is designed
 in-graph (SelectPerson's tooltip: "wire
 MultiHMR2ImageToAnny.mesh_paths").
 
-REFINE DEFERRED (pilot record §4 + anny-evolution §3 honest edge):
-AnnyFitOptimize returns params.npz + renders, NO mesh — wiring it as
-a body origin needs a params→GLB export that does not exist. The verb
-offers regress only; refine refuses loudly at the verb layer, never a
-silent downgrade. No server_url fossil (QUEUE LANE LAW: the engine's
-config/env seam owns the endpoint).
+CARD STATUS 2026-09-06: the anny card offers the COMMERCIAL flow
+only (operator order "I ONLY WANT HTE COMMERICAL FLOW. I DON't WANT
+A DROPDOWN DUDE") — this research lane stays a runnable flow in the
+tree but the chip no longer posts it, and the refine refusal button
+is gone with it (no dead buttons). No server_url fossil (QUEUE LANE
+LAW: the engine's config/env seam owns the endpoint).
 """
 
 from flow import Flow, Stage, FromInitial, Kind

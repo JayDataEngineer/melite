@@ -206,7 +206,7 @@ class TestRailLayout(unittest.TestCase):
         # estimation" — presets + AnnyHmrVerb live in the import pane;
         # the character pane carries ONLY the shape band.
         self.assertIn('{railTab === "import" &&', self.component)
-        self.assertIn("Estimate from photo — MHR", self.component)
+        self.assertIn("Estimate from photo — SOMA-X commercial", self.component)
         self.assertRegex(
             self.component,
             r'\{railTab === "import" &&[\s\S]{0,600}<AnnyPresets',

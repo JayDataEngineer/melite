@@ -21,8 +21,6 @@ Pins what stroke 1 promises and nothing it defers:
 No GPU, no network — the schema is the wall (test_flows.py pattern).
 """
 
-import re
-
 import pytest
 from pydantic import ValidationError
 
@@ -131,7 +129,12 @@ _VERB_SRC = (REPO / "plugins/engines/comfyui/action_cards/3d/anny/ui"
 
 
 def test_verb_rows_name_this_flow_and_write_the_body_slot() -> None:
-    assert '"anny-hmr"' in _VERB_SRC
+    # 2026-09-06: the card offers the COMMERCIAL flow only (operator
+    # order "I ONLY WANT HTE COMMERICAL FLOW. I DON't WANT A
+    # DROPDOWN") — the research lane stays a runnable flow in the
+    # tree, but the chip no longer posts it.
+    assert '"anny-hmr"' not in _VERB_SRC
+    assert '"anny-hmr-commercial"' in _VERB_SRC
     assert "body_glb" in _VERB_SRC
 
 
@@ -143,7 +146,12 @@ def test_verb_posts_the_queue_door_never_comfyui() -> None:
     assert "18466" not in _VERB_SRC
 
 
-def test_verb_refuses_refine_loudly() -> None:
-    assert "ANNY_HMR_REFINE_REFUSAL" in _VERB_SRC
-    assert "params" in _VERB_SRC and "GLB" in _VERB_SRC
-    assert re.search(r"never a silent downgrade", _VERB_SRC)
+def test_verb_is_one_button_no_picker_no_dead_refine() -> None:
+    """The operator's no-dropdown order, pinned: no engine picker,
+    no dead refine button — and the way in (Upload source photo →
+    POST /v1/uploads) lives beside the button."""
+    assert "Estimator engine" not in _VERB_SRC
+    assert "ANNY_HMR_REFINE_REFUSAL" not in _VERB_SRC
+    assert "Refine body (soon)" not in _VERB_SRC
+    assert "Upload source photo" in _VERB_SRC
+    assert "/v1/uploads" in _VERB_SRC
