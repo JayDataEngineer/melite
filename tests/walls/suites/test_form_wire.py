@@ -332,3 +332,36 @@ def test_wire_every_quant_is_owner_linked_to_a_known_variant(scratch_gateway):
                 assert v.owner and v.owner in ids, (
                     "%s: quant %r owner=%r is empty or not a known "
                     "variant of this model" % (svc, v.id, v.owner))
+
+
+def test_http_kinds_lane_declares_input_runner(scratch_gateway):
+    """The dispatcher's SSOT (2026-09-05): the input kind declares its
+    runner family on the /v1/kinds wire; the editor's resolver reads
+    it instead of branching on the kind name. Pin the lockstep."""
+    status, body = _http_get(scratch_gateway, "v1/kinds")
+    assert status == 200
+    by_kind = {k["kind"]: k for k in body["kinds"]}
+    assert by_kind.get("input", {}).get("runner") == "input", (
+        "the input kind MUST declare runner='input' — the dispatcher's "
+        "data-driven resolver depends on it; a missing/typoed value "
+        "re-introduces the hardcoded kind-name branch")
+    # And the other kinds must NOT carry a runner (the default rule
+    # applies: flowName → chain, executable card → generation).
+    for kind, entry in by_kind.items():
+        if kind == "input": continue
+        assert not entry.get("runner"), (
+            "%s unexpectedly declares runner=%r — only the input kind "
+            "is allowed to override the default rule today" %
+            (kind, entry.get("runner")))
+
+
+def test_card_kinds_table_input_runner_is_set():
+    """Lockstep: the server SSOT row carries runner='input'."""
+    import card_kinds
+    rows = {r.kind: r for r in card_kinds.TABLE.kinds}
+    assert rows["input"].runner == "input"
+    for k, r in rows.items():
+        if k == "input": continue
+        assert r.runner == "", (
+            "%s runner=%r — only the input kind overrides the default" %
+            (k, r.runner))

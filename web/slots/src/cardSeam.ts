@@ -63,6 +63,13 @@ export interface CardKindDef {
   icon?: ComponentType
   /** Service-badge tone (studio-link → brand). */
   badgeTone: "brand" | "default"
+  /** The runner family this kind belongs to. The dispatcher
+   * (resolveStageRunner) reads this instead of branching on kind names
+   * — data-driven, never a hardcoded kind → runner map. Closed
+   * vocabulary ("" / "input"); see py/card_kinds.py for the server
+   * SSOT. (2026-09-05 "make sure we are declarative and not
+   * hardcoding here".) */
+  runner?: string
 }
 
 const _kinds = new Map<string, CardKindDef>()
@@ -123,6 +130,7 @@ const UNKNOWN_KIND_DEF: CardKindDef = {
   compound: false,
   opensStudio: false,
   badgeTone: "default",
+  runner: "",
 }
 
 const _warned = new Set<string>()

@@ -57,6 +57,17 @@ class CardKindRow(BaseModel, frozen=True):
     opensStudio: bool
     badgeTone: BadgeTone = BadgeTone.DEFAULT
     icon: str | None = None
+    # The runner family this kind belongs to — the DECLARATIVE answer
+    # to "which executor runs a stage of this kind". The dispatcher
+    # (flowExecuteSlice.ts resolveStageRunner) reads this instead of
+    # branching on kind names: "" (default) → the stage's own
+    # declarations decide (flowName → chain, executable card with a
+    # model → generation); "input" → the input family runner
+    # (media/preprocess, a 1-step inline doc). The closed vocabulary
+    # is the resolver's contract — a kind may only declare one of
+    # {"", "input"} here. (2026-09-05 "make sure we are declarative
+    # and not hardcoding here".)
+    runner: str = ""
 
 
 class CardKindTable(BaseModel, frozen=True):
@@ -104,7 +115,10 @@ TABLE = CardKindTable(
         CardKindRow(kind="preview", runnable=True, executable=True,
                     formSpec=False, compound=False, opensStudio=False),
         CardKindRow(kind="input", runnable=True, executable=True,
-                    formSpec=False, compound=False, opensStudio=False),
+                    formSpec=False, compound=False, opensStudio=False,
+                    # The input family runs through the input runner
+                    # (a 1-step inline doc, not the card model path).
+                    runner="input"),
         CardKindRow(kind="body", runnable=False, executable=False,
                     formSpec=False, compound=False, opensStudio=False,
                     icon="Box"),
@@ -128,7 +142,12 @@ def kinds_wire() -> dict:
             "compound": r.compound,
             "opensStudio": r.opensStudio,
             "badgeTone": r.badgeTone.value,
+            # The runner family declaration (the dispatcher's SSOT).
+            # Omit when "" (the default rule applies) to keep the wire
+            # minimal for kinds that don't override the default.
         }
+        if r.runner:
+            entry["runner"] = r.runner
         if r.icon is not None:
             entry["icon"] = r.icon
         out.append(entry)
