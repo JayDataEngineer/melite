@@ -1,251 +1,303 @@
 {
- "defaults": {
-  "focal_length": "50",
-  "framing": "1.2",
-  "resolution": "768",
-  "samples": "64",
-  "transparent": "true"
- },
- "engine": "comfyui",
- "enhance_prompts": {
-  "lyrics": "",
-  "prompt": null
- },
- "features": {
-  "modifiers": [],
-  "variant_groups": {
-   "Quant": {
-    "label": "Quant"
-   },
-   "Variant": {
-    "label": "Variant"
-   }
-  }
- },
- "fields": [
-  {
-   "name": "body_glb",
-   "type": "file",
-   "label": "Body GLB",
-   "group": "parts",
-   "order": 0,
-   "columns": 1,
-   "required": true,
-   "tooltip": "The base body — a rigged or static character GLB the parts composite onto."
-  },
-  {
-   "name": "hair_glb",
-   "type": "file",
-   "label": "Hair GLB",
-   "group": "parts",
-   "order": 1,
-   "tooltip": "Optional hair part GLB — merged into the composite."
-  },
-  {
-   "name": "outfit_glb",
-   "type": "file",
-   "label": "Outfit GLB",
-   "group": "parts",
-   "order": 2,
-   "tooltip": "Optional outfit part GLB — merged into the composite."
-  },
-  {
-   "name": "source_image",
-   "type": "file",
-   "label": "Source photo",
-   "group": "ingest",
-   "order": 0,
-   "tooltip": "Character photo — SAM segments hair/outfit sprites (feeds the estimator arc)."
-  },
-  {
-   "name": "resolution",
-   "type": "slider",
-   "label": "View resolution",
-   "group": "turnaround",
-   "order": 0,
-   "width": 1,
-   "min": 256,
-   "max": 2048,
-   "step": 64,
-   "default": 768,
-   "tooltip": "Pixel size of each turnaround view."
-  },
-  {
-   "name": "framing",
-   "type": "slider",
-   "label": "Framing",
-   "group": "turnaround",
-   "order": 1,
-   "width": 1,
-   "min": 1,
-   "max": 3,
-   "step": 0.05,
-   "default": 1.2,
-   "tooltip": "Camera distance factor — larger frames the whole body looser."
-  },
-  {
-   "name": "focal_length",
-   "type": "slider",
-   "label": "Focal length (mm)",
-   "group": "turnaround",
-   "order": 2,
-   "width": 1,
-   "min": 10,
-   "max": 400,
-   "step": 1,
-   "default": 50,
-   "tooltip": "Lens focal length — lower = wider perspective."
-  },
-  {
-   "name": "samples",
-   "type": "number",
-   "label": "Samples",
-   "group": "turnaround",
-   "order": 3,
-   "width": 1,
-   "min": 1,
-   "max": 4096,
-   "step": 1,
-   "default": 64,
-   "tooltip": "Render samples per view — more = cleaner but slower."
-  },
-  {
-   "name": "transparent",
-   "type": "select",
-   "label": "Background",
-   "group": "turnaround",
-   "order": 4,
-   "width": 1,
-   "default": "true",
-   "tooltip": "Transparent turnaround background (for compositing into sheets).",
-   "options": [
-    "true",
-    "false"
-   ]
-  }
- ],
- "form": "anny",
- "genre": "3d",
- "label": "Anny",
- "layout": "studio",
- "model": "anny",
- "schema_groups": [
-  {
-   "fields": [
+  "model": "anny",
+  "form": "anny",
+  "service": "anny",
+  "label": "Anny",
+  "genre": "3d",
+  "fields": [
     {
-     "columns": 1,
-     "label": "Body GLB",
-     "name": "body_glb",
-     "order": 0,
-     "required": true,
-     "tooltip": "The base body — a rigged or static character GLB the parts composite onto.",
-     "type": "file"
+      "name": "body_glb",
+      "type": "file",
+      "label": "Body GLB",
+      "default": null,
+      "options": [],
+      "group": "parts",
+      "zone": "",
+      "order": 0,
+      "required": true,
+      "columns": 1,
+      "width": null,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "The base body \u2014 a rigged or static character GLB the turnaround renders. (Photo\u2192body estimation is the pilot arc; clothing composite moves to its own card later.)",
+      "visible_when": null
     },
     {
-     "label": "Hair GLB",
-     "name": "hair_glb",
-     "order": 1,
-     "tooltip": "Optional hair part GLB — merged into the composite.",
-     "type": "file"
+      "name": "source_image",
+      "type": "file",
+      "label": "Source photo",
+      "default": null,
+      "options": [],
+      "group": "ingest",
+      "zone": "",
+      "order": 0,
+      "required": null,
+      "columns": null,
+      "width": null,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Character photo \u2014 SAM segments hair/outfit sprites (feeds the estimator arc).",
+      "visible_when": null
     },
     {
-     "label": "Outfit GLB",
-     "name": "outfit_glb",
-     "order": 2,
-     "tooltip": "Optional outfit part GLB — merged into the composite.",
-     "type": "file"
+      "name": "resolution",
+      "type": "slider",
+      "label": "View resolution",
+      "default": 768,
+      "options": [],
+      "group": "turnaround",
+      "zone": "",
+      "order": 0,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": 256,
+      "max": 2048,
+      "step": 64,
+      "placeholder": "",
+      "tooltip": "Pixel size of each turnaround view.",
+      "visible_when": null
+    },
+    {
+      "name": "framing",
+      "type": "slider",
+      "label": "Framing",
+      "default": 1.2,
+      "options": [],
+      "group": "turnaround",
+      "zone": "",
+      "order": 1,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": 1,
+      "max": 3,
+      "step": 0.05,
+      "placeholder": "",
+      "tooltip": "Camera distance factor \u2014 larger frames the whole body looser.",
+      "visible_when": null
+    },
+    {
+      "name": "focal_length",
+      "type": "slider",
+      "label": "Focal length (mm)",
+      "default": 50,
+      "options": [],
+      "group": "turnaround",
+      "zone": "",
+      "order": 2,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": 10,
+      "max": 400,
+      "step": 1,
+      "placeholder": "",
+      "tooltip": "Lens focal length \u2014 lower = wider perspective.",
+      "visible_when": null
+    },
+    {
+      "name": "samples",
+      "type": "number",
+      "label": "Samples",
+      "default": 64,
+      "options": [],
+      "group": "turnaround",
+      "zone": "",
+      "order": 3,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": 1,
+      "max": 4096,
+      "step": 1,
+      "placeholder": "",
+      "tooltip": "Render samples per view \u2014 more = cleaner but slower.",
+      "visible_when": null
+    },
+    {
+      "name": "transparent",
+      "type": "select",
+      "label": "Background",
+      "default": "true",
+      "options": [
+        "true",
+        "false"
+      ],
+      "group": "turnaround",
+      "zone": "",
+      "order": 4,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Transparent turnaround background (for compositing into sheets).",
+      "visible_when": null
     }
-   ],
-   "id": "parts",
-   "label": "Parts",
-   "order": 0,
-   "zone": "params"
-  },
-  {
-   "fields": [
+  ],
+  "schema_groups": [
     {
-     "label": "Source photo",
-     "name": "source_image",
-     "order": 0,
-     "tooltip": "Character photo — SAM segments hair/outfit sprites (feeds the estimator arc).",
-     "type": "file"
+      "id": "parts",
+      "label": "Parts",
+      "fields": [
+        {
+          "name": "body_glb",
+          "type": "file",
+          "label": "Body GLB",
+          "order": 0,
+          "columns": 1,
+          "required": true,
+          "tooltip": "The base body \u2014 a rigged or static character GLB the turnaround renders. (Photo\u2192body estimation is the pilot arc; clothing composite moves to its own card later.)"
+        }
+      ],
+      "order": 0,
+      "zone": "params"
+    },
+    {
+      "id": "ingest",
+      "label": "Ingest",
+      "fields": [
+        {
+          "name": "source_image",
+          "type": "file",
+          "label": "Source photo",
+          "order": 0,
+          "tooltip": "Character photo \u2014 SAM segments hair/outfit sprites (feeds the estimator arc)."
+        }
+      ],
+      "order": 1,
+      "zone": "params"
+    },
+    {
+      "id": "turnaround",
+      "label": "Turnaround",
+      "fields": [
+        {
+          "name": "resolution",
+          "type": "slider",
+          "label": "View resolution",
+          "order": 0,
+          "width": 1,
+          "min": 256,
+          "max": 2048,
+          "step": 64,
+          "default": 768,
+          "tooltip": "Pixel size of each turnaround view."
+        },
+        {
+          "name": "framing",
+          "type": "slider",
+          "label": "Framing",
+          "order": 1,
+          "width": 1,
+          "min": 1,
+          "max": 3,
+          "step": 0.05,
+          "default": 1.2,
+          "tooltip": "Camera distance factor \u2014 larger frames the whole body looser."
+        },
+        {
+          "name": "focal_length",
+          "type": "slider",
+          "label": "Focal length (mm)",
+          "order": 2,
+          "width": 1,
+          "min": 10,
+          "max": 400,
+          "step": 1,
+          "default": 50,
+          "tooltip": "Lens focal length \u2014 lower = wider perspective."
+        },
+        {
+          "name": "samples",
+          "type": "number",
+          "label": "Samples",
+          "order": 3,
+          "width": 1,
+          "min": 1,
+          "max": 4096,
+          "step": 1,
+          "default": 64,
+          "tooltip": "Render samples per view \u2014 more = cleaner but slower."
+        },
+        {
+          "name": "transparent",
+          "type": "select",
+          "label": "Background",
+          "order": 4,
+          "width": 1,
+          "default": "true",
+          "tooltip": "Transparent turnaround background (for compositing into sheets).",
+          "options": [
+            "true",
+            "false"
+          ]
+        }
+      ],
+      "order": 2,
+      "zone": "params"
     }
-   ],
-   "id": "ingest",
-   "label": "Ingest",
-   "order": 1,
-   "zone": "params"
-  },
-  {
-   "fields": [
-    {
-     "default": 768,
-     "label": "View resolution",
-     "max": 2048,
-     "min": 256,
-     "name": "resolution",
-     "order": 0,
-     "step": 64,
-     "tooltip": "Pixel size of each turnaround view.",
-     "type": "slider",
-     "width": 1
-    },
-    {
-     "default": 1.2,
-     "label": "Framing",
-     "max": 3,
-     "min": 1,
-     "name": "framing",
-     "order": 1,
-     "step": 0.05,
-     "tooltip": "Camera distance factor — larger frames the whole body looser.",
-     "type": "slider",
-     "width": 1
-    },
-    {
-     "default": 50,
-     "label": "Focal length (mm)",
-     "max": 400,
-     "min": 10,
-     "name": "focal_length",
-     "order": 2,
-     "step": 1,
-     "tooltip": "Lens focal length — lower = wider perspective.",
-     "type": "slider",
-     "width": 1
-    },
-    {
-     "default": 64,
-     "label": "Samples",
-     "max": 4096,
-     "min": 1,
-     "name": "samples",
-     "order": 3,
-     "step": 1,
-     "tooltip": "Render samples per view — more = cleaner but slower.",
-     "type": "number",
-     "width": 1
-    },
-    {
-     "default": "true",
-     "label": "Background",
-     "name": "transparent",
-     "options": [
-      "true",
-      "false"
-     ],
-     "order": 4,
-     "tooltip": "Transparent turnaround background (for compositing into sheets).",
-     "type": "select",
-     "width": 1
+  ],
+  "features": {
+    "modifiers": [],
+    "variant_groups": {
+      "Variant": {
+        "label": "Variant"
+      },
+      "Quant": {
+        "label": "Quant"
+      }
     }
-   ],
-   "id": "turnaround",
-   "label": "Turnaround",
-   "order": 2,
-   "zone": "params"
-  }
- ],
- "service": "anny",
- "variants": []
+  },
+  "defaults": {
+    "resolution": "768",
+    "framing": "1.2",
+    "focal_length": "50",
+    "samples": "64",
+    "transparent": "true"
+  },
+  "variants": [
+    {
+      "id": "standard",
+      "label": "Standard",
+      "group": "Variant",
+      "defaults": {},
+      "route": "anny",
+      "hint": null,
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    },
+    {
+      "id": "native",
+      "label": "Native",
+      "group": "Quant",
+      "defaults": {},
+      "route": "anny",
+      "hint": null,
+      "engine": "",
+      "quant": "native",
+      "vram_peak_gb": 0,
+      "owner": "standard"
+    }
+  ],
+  "guide": null,
+  "engine": "comfyui",
+  "enhance_prompt": null,
+  "enhance_prompts": {
+    "prompt": null,
+    "lyrics": ""
+  },
+  "size": null,
+  "layout": "studio",
+  "loader_info": null,
+  "contract": null
 }

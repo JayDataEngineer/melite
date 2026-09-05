@@ -1,19 +1,26 @@
-"""GPU canary — the anny card (C2 stopgap): character assembly.
+"""GPU canary — the anny card: character body turnaround.
 
 body GLB → CompositeCharacter → 8-view turnaround; source photo →
-SAM part sprites. The queue door is the ONLY inference path
-(INFERENCE LAW); this canary rides it end to end on the managed
+SAM part sprites. (DESCOPE 2026-09-05: hair/outfit inputs left the
+card — clothing composite returns as its own trellis-clothing card;
+the canary rides body-only.) The queue door is the ONLY inference
+path (INFERENCE LAW); this canary rides it end to end on the managed
 ComfyUI.
 """
 
 import pytest
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from conftest import QueueDoor
 
 pytestmark = pytest.mark.gpu
 
 
-def test_anny_assemble_turnaround(gateway, assets):
-    """Parts in, character out: the composite renders 8 views and
+def test_anny_assemble_turnaround(gateway: "QueueDoor",
+                                  assets: dict[str, str | None]) -> None:
+    """Body in, character out: the turnaround renders 8 views and
     the SAM ingest produces part sprites from the source photo."""
     if not assets["rigged_glb"]:
         pytest.skip("canonical rig GLBs missing — add rigged_char_canonical.glb"
@@ -26,8 +33,6 @@ def test_anny_assemble_turnaround(gateway, assets):
             "body_glb": str(Path(assets["rigged_glb"]).parent
                               / "rigged_char.glb"),   # bary body: blender-strict importable (the canonical
             # rig fails Blender 4.2 gltf decode — noted defect)
-            "hair_glb": str(Path(assets["rigged_glb"]).parent
-                              / "outfit_cap.glb"),
             "source_image": assets["source"],
             "resolution": 512,
         },

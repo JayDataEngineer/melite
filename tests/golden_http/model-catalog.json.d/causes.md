@@ -256,3 +256,11 @@ vs @melite-plugin/dsh-card-deck is the ssh package/id pattern, and
 ray- is the live product name, not C ancestry; bespoke bodies stay
 bespoke (StudioKind.custom is taxonomy — a video timeline can never
 be a part-slot assembly).
+- 2026-09-05 (anny DESCOPE, operator order verbatim: "on ANNY we don't
+  need the hair or outfit right now... later we will make a NEW action
+  card where we can put trellis clothing on"): hair_glb/outfit_glb left
+  the anny card — families.anny.studio.writes is now
+  [body_glb, source_image]. Same regold sweeps the input_vocabulary
+  catch-up to the committed slot_kinds evolution (slots + slot_kinds
+  rows replacing the form_slots/model_maps shape) the stale golden had
+  missed — tree truth at regold time.
