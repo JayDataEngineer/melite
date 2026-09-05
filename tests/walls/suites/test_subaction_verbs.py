@@ -194,7 +194,8 @@ def test_no_silent_downgrade_on_both_sides() -> None:
         os.path.join(REPO, "plugins", "engines", "comfyui",
                      "action_cards", "3d", "anny", "py", "card.py"))
     refusals = [e.refusal for v, _ in cls._verbs_
-                for e in v.engines if e.flow is None]
+                for e in v.engines
+                if e.flow is None and not e.local]
     assert refusals, "no refusal engines declared"
     for r in refusals:
         assert "never a silent downgrade" in r

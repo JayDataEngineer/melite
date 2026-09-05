@@ -86,6 +86,7 @@ from editor_runs import ASSET_URL_PREFIX, draft_id_ok  # noqa: E402
 
 if TYPE_CHECKING:
     from flow_graph import FlowGraph, FlowNode
+    from melite_models import CharacterPreset
 
 # The request-body shape: decoded JSON (objects, arrays, scalars).
 type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
@@ -126,6 +127,17 @@ RETIRED_RUNNER_KNOBS = frozenset({
     "start_from", "stop_after", "reuse_run_id", "partial_run",
     "overrides", "since", "from_index",
 })
+# RETIRED CARRY KEYS (2026-09-05, the pipe-carry retirement): the
+# 2026-08-10 wire stowed `pipe` + `stage_id` on every card run body on
+# the claim "the server stashes both and get_run_status surfaces them
+# as flow_doc + stage_id" — a contract NO gateway ever implemented
+# (nothing in py/ reads pipe or emits flow_doc). The stowaways rode
+# _request.json as inert passengers until the frozen card rows landed
+# (validated-row sweep, 2026-09-05) and began refusing them at RUN
+# time as extra_forbidden — the incident class this retirement closes.
+# The revive rail is REAL state: the draft door (draft_id) + the run
+# registry. Refused here, BEFORE the doors resolve, with the reason.
+RETIRED_CARRY_KEYS = frozenset({"pipe", "stage_id"})
 _INTERNAL_KEY_PREFIX = "_"  # C-era runner internal naming — refused
 
 
@@ -135,8 +147,8 @@ def _strict_body(body: JsonValue) -> None:
     Door keys are allowed (the door itself is one of them); model
     params ride through initial_pool as scalar inputs (params have
     open vocabulary — the model class declares them). The strict
-    class is exactly the retired runner knob names and C-era
-    internal naming."""
+    class is the retired runner knob names, the retired pipe-carry
+    keys, and C-era internal naming."""
     if not isinstance(body, dict):
         return
     bad = [k for k in body
@@ -149,6 +161,15 @@ def _strict_body(body: JsonValue) -> None:
             + repr(sorted(bad))
             + " — the runner never reads these (silent-drop class); "
             "remove them")
+    carry = [k for k in body if k in RETIRED_CARRY_KEYS]
+    if carry:
+        raise ValidationError(
+            "request body carries retired pipe-carry key(s) "
+            + repr(sorted(carry))
+            + " — the 2026-08-10 stowaway wire: no gateway ever "
+            "stashed it (flow_doc was never emitted). The revive "
+            "rail is the draft (draft_id) + the run registry; card "
+            "bodies carry params only")
 
 
 def resolve_request(body: JsonValue) -> FlowGraph | dict[str, JsonValue]:
@@ -210,6 +231,24 @@ def resolve_request(body: JsonValue) -> FlowGraph | dict[str, JsonValue]:
 # dict (inert for resolve_inputs, pollution in every _request.json
 # downstream read). ONE list, no restated copies.
 DOOR_KEYS = ("yaml", "flow", "flow_inline", "model")
+
+# The card-envelope lift (2026-09-05, pipe-carry retirement): the arms'
+# contract is `body == {"params": {...}}` — ONE shape, no per-arm
+# envelope stripping (the "flat form: the body IS the params, minus
+# model" fossil in 14 arms was the hole the pipe-carry stowaways fell
+# through into the frozen rows). The GATEWAY owns the envelope: door
+# keys + the run-door flags. The lifted body is what card_compose
+# sees, BOTH phases; the arms read body["params"] and nothing else.
+CARD_ENVELOPE_KEYS = DOOR_KEYS + ("draft_id", "test")
+
+
+def card_compose_body(body: dict[str, JsonValue]
+                      ) -> dict[str, JsonValue]:
+    """The body a card arm receives: the run body minus the gateway
+    envelope, restaged as the ONE params stanza. Wall-pinned shape —
+    the arms' flat-form branch is retired with it."""
+    return {"params": {k: v for k, v in body.items()
+                       if k not in CARD_ENVELOPE_KEYS}}
 
 
 def initial_pool(request: dict[str, JsonValue]) -> dict[str, JsonValue]:
@@ -341,7 +380,8 @@ def resolve_card_model(body: dict[str, JsonValue], mid: str
         name=mid, engine_type=etype, description="card-composed",
         nodes=())
     try:
-        _, extra = card_hooks.compose(body, mid, "", skeleton, [etype])
+        _, extra = card_hooks.compose(
+            card_compose_body(body), mid, "", skeleton, [etype])
     except Exception as e:
         raise ValidationError("card_compose phase 1: %s" % e)
     return skeleton, etype, extra
@@ -626,9 +666,12 @@ class Gateway:
                 try:
                     # phase 2 hands back the composed graph as a DICT —
                     # python hands python structures; nothing here
-                    # serializes for an in-process hop
+                    # serializes for an in-process hop. The body the arm
+                    # receives is the LIFTED one (params stanza only —
+                    # the envelope never reaches a card arm).
                     graph, extra2 = card_hooks.compose(
-                        body, resolved["name"], run_id, graph, [etype])
+                        card_compose_body(body), resolved["name"],
+                        run_id, graph, [etype])
                     for k, v in (extra2 or {}).items():
                         card_extra_inputs.setdefault(k, v)
                 except Exception as e:
@@ -1247,12 +1290,30 @@ async def _h_flows_start(ctx: _Ctx) -> HandlerResult:
 
 
 async def _h_flows_validate(ctx: _Ctx) -> HandlerResult:
-    """The AI feedback loop (typed-edges design record): compile an
-    inline flow body — every refusal is verbatim compile-time error
-    text naming flow/stage/input and both Kinds. No queue slot, no
-    GPU claim, no sidecar, no registration. 200 carries the typed
-    stage view (resolved output kinds included) so the agent sees
-    the graph it just built."""
+    """The COMPILE door (operator order 2026-09-05: "THESE ERRORS
+    NEED BE CAUGHT COMPILE TIME, NOT INFERENCE TIME"). Two arms,
+    both the EXACT phase-1 chain a start would run — every refusal
+    is verbatim compile-time error text. No queue slot, no GPU
+    claim, no sidecar, no registration. Callers: the AI compose
+    loop AND the editor's pre-Run check (a refusal paints the card
+    before any run is attempted).
+
+      {flow_inline: {...}} -> typed flow compile (stage/edge/Kinds);
+        200 carries the typed stage view (resolved output kinds
+        included) so the agent sees the graph it just built.
+      {model: mid, ...params} -> card phase 1: strict body, artifact
+        sweep, card requires, the frozen card row — the same
+        refusals a start hits, returned HERE for iteration.
+    """
+    body = ctx.json
+    if isinstance(body, dict) and "model" in body:
+        try:
+            _strict_body(body)
+            resolve_request(body)   # {model} arm: phase 1 inside
+        except ValidationError as e:
+            return 400, {"error": str(e)}
+        return 200, {"ok": True, "model": str(body["model"]),
+                     "card": True}
     import flow as flow_mod
     try:
         fl = flow_mod.flow_from_body(ctx.json)
@@ -1416,6 +1477,167 @@ async def _h_asset(ctx: _Ctx) -> HandlerResult:
 
 async def _h_ledger(ctx: _Ctx) -> HandlerResult:
     return 200, ledger_tail(ctx.target)
+
+
+# ── studio presets (stroke 3, 2026-09-06) ───────────────────────────
+#
+# The tenant preset ledger: estate CharacterPreset rows (the Model
+# classes' character_presets) + user rows (data/tenants/<tenant>/
+# presets.json — machine state, never committed). GENERIC machinery
+# (PLUGIN ARCHITECTURE LAW — the core names no tenant): the tenant
+# resolves through the model scan (the studio.tenant some family
+# claims); unknown tenants 404. Saved refs resolve through the
+# artifact door (resolve_artifact_file — a save naming a pruned run
+# refuses BEFORE the row appends, never a dangling preset).
+
+def _preset_estate_rows(tenant: str) -> tuple[CharacterPreset, ...] | None:
+    """Estate CharacterPreset rows for a tenant, or None (unknown)."""
+    from melite_models import scan_engine_models
+    for _path, cls in scan_engine_models(str(REPO)).values():
+        studio = getattr(cls, "studio", None)
+        if studio is not None \
+                and getattr(studio, "tenant", "") == tenant:
+            return tuple(getattr(cls, "character_presets", ()))
+    return None
+
+
+def _preset_check_refs(row: CharacterPreset) -> str | None:
+    """Every URL the row names must resolve on disk (existence-verified).
+    Returns the refusal text, or None when clean."""
+    from artifact_refs import (resolve_artifact_file, ArtifactRefError)
+    refs = []
+    if row.params_ref:
+        refs.append(("params_ref", row.params_ref))
+    if row.body_ref:
+        refs.append(("body_ref", row.body_ref))
+    if row.parts.hair:
+        refs.append(("parts.hair", row.parts.hair))
+    if row.parts.outfit:
+        refs.append(("parts.outfit", row.parts.outfit))
+    for where, ref in refs:
+        try:
+            resolve_artifact_file(ref)
+        except ArtifactRefError as e:
+            return "%s: %s" % (where, e)
+    return None
+
+
+def _preset_try_promote(row: CharacterPreset) -> CharacterPreset | None:
+    """File→estimated promotion (None = stays file). Reads NOTHING
+    the studio sent: the params artifact must sit beside the
+    body_ref's run artifact on disk, parse as JSON, and validate as
+    EstimatedParams. A corrupt/foreign anny_preset.json refuses the
+    WHOLE save (a half-promoted row is worse than a file row)."""
+    from artifact_refs import resolve_artifact_file, ArtifactRefError
+    from melite_models import (EstimatedParams, PresetOrigin,
+                               PRESET_PARAMS_FILENAME)
+    from pathlib import Path as _Path
+    from pydantic import ValidationError as _PydanticRefusal
+    prefix, sep, _tail = row.body_ref.partition("/runs/")
+    if not sep or "/" not in _tail:
+        return None  # a mounts file, not a run artifact — no run dir
+    run_dir = prefix + "/runs/" + _tail.rsplit("/", 1)[0]
+    params_ref = run_dir + "/" + PRESET_PARAMS_FILENAME
+    try:
+        params_path = _Path(resolve_artifact_file(params_ref))
+    except ArtifactRefError:
+        return None  # the run delivered no params (regress) — file
+    try:
+        doc = json.loads(params_path.read_text(encoding="utf-8"))
+        params = EstimatedParams(
+            phenotype=tuple(doc["phenotype"]),
+            scale=tuple(doc["scale"]))
+    except (OSError, ValueError, KeyError, TypeError,
+            _PydanticRefusal) as e:
+        raise _PresetPromoteRefusal(
+            "run delivered %s but it does not parse as estimated "
+            "params (%s) — fix the run or save mesh-only" % (
+                PRESET_PARAMS_FILENAME, e))
+    if doc.get("dialect") != "estimated":
+        raise _PresetPromoteRefusal(
+            "run delivered %s with dialect %r (want estimated)" % (
+                PRESET_PARAMS_FILENAME, doc.get("dialect")))
+    return row.model_copy(update={
+        "origin": PresetOrigin.estimated,
+        "params": params, "params_ref": params_ref})
+
+
+class _PresetPromoteRefusal(Exception):
+    """A corrupt params artifact refuses the save (never half-saved)."""
+
+
+async def _h_presets_list(ctx: _Ctx) -> HandlerResult:
+    from melite_models import (all_presets, read_user_presets,
+                               PresetLedgerError)
+    tenant = ctx.m.group(1)
+    estate = _preset_estate_rows(tenant)
+    if estate is None:
+        return 404, {"error": "unknown studio tenant %r" % (tenant,)}
+    try:
+        user = read_user_presets(str(REPO / "data"), tenant)
+        rows = all_presets(estate, user)
+    except PresetLedgerError as e:
+        return 500, {"error": "preset ledger: %s" % e}
+    return 200, {"tenant": tenant,
+                 "presets": [p.model_dump(mode="json") for p in rows]}
+
+
+async def _h_presets_save(ctx: _Ctx) -> HandlerResult:
+    from melite_models import (CharacterPreset, append_user_preset,
+                               PresetLedgerError)
+    from pydantic import ValidationError as _PydanticRefusal
+    tenant = ctx.m.group(1)
+    estate = _preset_estate_rows(tenant)
+    if estate is None:
+        return 404, {"error": "unknown studio tenant %r" % (tenant,)}
+    body = ctx.json if isinstance(ctx.json, dict) else {}
+    try:
+        row = CharacterPreset(id="user-pending", **{
+            k: v for k, v in body.items() if k != "id"})
+    except _PydanticRefusal as e:
+        return 400, {"error": "bad preset row: %s" % e}
+    problem = _preset_check_refs(row)
+    if problem is not None:
+        return 400, {"error": "dangling preset ref — %s" % problem}
+    # save promotion (stroke 3, 2026-09-06): the studio always posts
+    # FILE intent (it knows the mesh, never the params). When the
+    # body_ref is a run artifact and that run's dir ALSO delivered
+    # the preset params artifact (the commercial worker writes
+    # PRESET_PARAMS_FILENAME beside its npz), the row promotes to
+    # estimated — params parsed + validated server-side, never
+    # studio-guessed. Regress runs (no params artifact) stay file.
+    if row.origin.value == "file" and row.body_ref:
+        try:
+            promoted = _preset_try_promote(row)
+        except _PresetPromoteRefusal as e:
+            return 400, {"error": "preset ledger: %s" % e}
+        if promoted is not None:
+            row = promoted
+    try:
+        saved = append_user_preset(str(REPO / "data"), tenant, row,
+                                   estate)
+    except PresetLedgerError as e:
+        return 400, {"error": "preset ledger: %s" % e}
+    return 201, {"tenant": tenant,
+                 "preset": saved.model_dump(mode="json")}
+
+
+async def _h_presets_delete(ctx: _Ctx) -> HandlerResult:
+    from melite_models import delete_user_preset, PresetLedgerError
+    tenant = ctx.m.group(1)
+    preset_id = ctx.m.group(2)
+    estate = _preset_estate_rows(tenant)
+    if estate is None:
+        return 404, {"error": "unknown studio tenant %r" % (tenant,)}
+    try:
+        removed = delete_user_preset(str(REPO / "data"), tenant,
+                                     preset_id, estate)
+    except PresetLedgerError as e:
+        return 400, {"error": "preset ledger: %s" % e}
+    if not removed:
+        return 404, {"error": "no user preset %r on tenant %r"
+                     % (preset_id, tenant)}
+    return 200, {"tenant": tenant, "deleted": preset_id}
 
 
 # ── the studio bridge (rebuilt 2026-09-05) ───────────────────────────
@@ -1667,6 +1889,26 @@ ROUTES: tuple = (
           group="Assets & ledger",
           summary="Stream one artifact (the only tree the gallery "
                   "proxy may touch)", handler=_h_asset),
+
+    # ── Studios (tenant preset ledgers — stroke 3) ─────────────────
+    Route(method="GET",
+          path=r"^/v1/studios/([^/]+/[^/]+)/presets$", regex=True,
+          template="/v1/studios/{tenant}/presets", group="Studios",
+          summary="Estate + user character presets for a studio "
+                  "tenant", handler=_h_presets_list),
+    Route(method="POST",
+          path=r"^/v1/studios/([^/]+/[^/]+)/presets$", regex=True,
+          template="/v1/studios/{tenant}/presets", group="Studios",
+          summary="Save a user character preset (refs verified on "
+                  "disk BEFORE the row appends)",
+          body="strict", handler=_h_presets_save),
+    Route(method="DELETE",
+          path=r"^/v1/studios/([^/]+/[^/]+)/presets/([^/]+)$",
+          regex=True,
+          template="/v1/studios/{tenant}/presets/{preset_id}",
+          group="Studios",
+          summary="Delete a USER preset (estate rows refuse — "
+                  "they are code)", handler=_h_presets_delete),
 
     # ── Lane discovery (progressive disclosure) ──────────────────────
     Route(method="GET", path="/v1/lanes", group="Lane discovery",

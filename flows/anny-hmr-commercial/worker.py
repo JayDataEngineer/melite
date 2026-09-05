@@ -25,6 +25,7 @@ Prints PROGRESS lines (the node streams them to the ComfyUI log);
 exits non-zero with the failing stage's stderr surfaced by the node.
 """
 
+import json
 import subprocess
 import sys
 import time
@@ -154,6 +155,20 @@ def main(photo: str, out_dir: Path, person_index: int = 0) -> int:
     err = float(np.load(anny_npz)["conversion_vertex_error"][0])
     print(f"PROGRESS anny_bind_pose_vertex_error {err:.5f}", flush=True)
 
+    # ── 4b. preset params artifact (stroke 3, 2026-09-06) ──────────────
+    # The canonical estimated dialect (CharacterPreset.canonical_json
+    # shape): verbatim estimator output as JSON — the save-preset
+    # verb's params_ref target. Written from the SAME npz the bake
+    # reads (no second source, no drift).
+    preset_json = out_dir / "anny_preset.json"
+    _d = np.load(anny_npz)
+    preset_json.write_text(json.dumps({
+        "dialect": "estimated",
+        "phenotype": np.asarray(
+            _d["identity_coeffs"]).flatten().tolist(),
+        "scale": np.asarray(_d["scale_params"]).flatten().tolist(),
+    }, sort_keys=True), encoding="utf-8")
+
     # ── 5. fitted GLB (grounded Y-up) ──────────────────────────────────────
     def _bake():
         import torch
@@ -192,10 +207,10 @@ def main(photo: str, out_dir: Path, person_index: int = 0) -> int:
         return out
 
     glb = _stage("bake_glb", _bake)
-    import json
     print(json.dumps({
         "glb": str(glb),
         "anny_params": str(anny_npz),
+        "preset_params": str(preset_json),
         "vertex_error": err,
     }), flush=True)
     return 0

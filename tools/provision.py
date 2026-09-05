@@ -1413,6 +1413,11 @@ def cmd_commercial() -> None:
     shutil.copy2(
         REPO / "flows" / "anny-hmr-commercial" / "worker.py",
         root / "commercial_chain.py")
+    # stroke 3 (2026-09-06): the preset bake script rides the same
+    # runtime (AnnyParamsToGlb shells it; same venv, same SOMAX).
+    shutil.copy2(
+        REPO / "flows" / "anny-params" / "bake_params.py",
+        root / "bake_params.py")
 
     # warm the weights (S3DB + torchvision detector → HF/torch hub cache)
     nvidia_lib = root / ".venv" / _COM_NVIDIA_LIB
@@ -1426,7 +1431,8 @@ def cmd_commercial() -> None:
             f"{r.stdout[-600:]}\n{r.stderr[-1200:]}")
     marker.write_text(
         f"SOMA-X@{_SOMAX_REF} sam-3d-body@{_S3DB_REF} torch=2.10.0+cu130\n"
-        f"worker sha: {_sha256_file(root / 'commercial_chain.py')}\n")
+        f"worker sha: {_sha256_file(root / 'commercial_chain.py')}\n"
+        f"bake sha: {_sha256_file(root / 'bake_params.py')}\n")
     info(f"[commercial] runtime provisioned at {root}")
     info("[commercial] node spawn env: LD_LIBRARY_PATH="
          f"{nvidia_lib}")

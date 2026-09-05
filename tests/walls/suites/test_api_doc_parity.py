@@ -77,7 +77,9 @@ def test_route_table_nonempty_and_grouped() -> None:
     # the Bun-era server died): +1 studio-bridge door = 39
     # +1 /v1/loras (2026-09-05): the door LoraPicker always fetched and
     # the mods flip never built — declared LoraRow pack, class-sourced
-    assert len(gateway.ROUTES) == 40
+    # +3 Studios doors (stroke 3, 2026-09-06): the tenant preset
+    # ledger (GET/POST/DELETE /v1/studios/{tenant}/presets)
+    assert len(gateway.ROUTES) == 43
     groups = {r.group for r in gateway.ROUTES}
     assert len(groups) >= 6
     for g in groups:

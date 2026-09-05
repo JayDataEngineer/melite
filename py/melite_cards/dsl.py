@@ -282,10 +282,14 @@ def _parse_options_str(field_name: str, raw: str) -> list[str]:
 
 def _validate_verb(name: str, ns: _CardNamespace) -> None:
     """The SubAction contract, refused at import (a broken verb never
-    serves): id + label name it; engines carry ≥1 runnable flow;
-    writes names the card fields a run may hydrate (non-empty — the
-    wall pins ⊆ card fields); requires is extension ids. A verb is
-    never a card (no id=cid) and never a pack."""
+    serves): id + label name it; engines carry ≥1 runnable arm (flow
+    or local — all-refusal verbs advertise a dead button); a verb
+    runs on ONE plane (queue flows XOR tenant-local — never mixed,
+    never half-hydrated); writes names the card fields a run may
+    hydrate (non-empty for queue verbs — the wall pins ⊆ card
+    fields; EMPTY for local-only verbs — a ledger write hydrates no
+    card field); requires is extension ids. A verb is never a card
+    (no id=cid) and never a pack."""
     vid = ns.get("id", "")
     if not (isinstance(vid, str) and vid and IDENT_RE.match(vid)):
         raise ValidationError(
@@ -300,6 +304,8 @@ def _validate_verb(name: str, ns: _CardNamespace) -> None:
             "engine choice" % name)
     seen_e = set()
     runnable = False
+    has_flow = False
+    has_local = False
     for e in engines:
         if not isinstance(e, VerbEngine):
             raise ValidationError(
@@ -309,13 +315,24 @@ def _validate_verb(name: str, ns: _CardNamespace) -> None:
             raise ValidationError(
                 "%s: duplicate engine id %r" % (name, e.id))
         seen_e.add(e.id)
-        runnable = runnable or e.flow is not None
+        runnable = runnable or e.flow is not None or bool(e.local)
+        has_flow = has_flow or e.flow is not None
+        has_local = has_local or bool(e.local)
     if not runnable:
         raise ValidationError(
-            "%s: a verb needs ≥1 runnable engine (a flow template) — "
+            "%s: a verb needs ≥1 runnable engine (flow or local) — "
             "all-refusal verbs advertise a dead button" % name)
+    if has_flow and has_local:
+        raise ValidationError(
+            "%s: queue + local engines in one verb — one verb, one "
+            "execution plane (split it into two verbs)" % name)
     writes = ns.get("writes", ())
-    if not isinstance(writes, tuple) or not writes or not all(
+    if has_local:
+        if writes != ():
+            raise ValidationError(
+                "%s: a local-only verb hydrates no card field — "
+                "writes must be () (got %r)" % (name, writes))
+    elif not isinstance(writes, tuple) or not writes or not all(
             isinstance(w, str) and w and IDENT_RE.match(w)
             for w in writes):
         raise ValidationError(
@@ -686,24 +703,37 @@ ActionCardPack = Mod
 
 @dataclass(frozen=True, kw_only=True)
 class VerbEngine:
-    """One engine choice of a verb (e.g. regress | commercial | refine)."""
+    """One engine choice of a verb (e.g. regress | commercial | refine).
+
+    Exactly ONE arm: flow (a queue flow template — GPU work through
+    the queue door), local (a tenant-local action id — synchronous
+    gateway work that must NEVER burn a serial-GPU slot, e.g. saving
+    a preset row to the tenant ledger), or refusal (the remediation
+    text for an unavailable engine)."""
     id: str
     flow: str | None = None
+    local: str = ""
     refusal: str = ""
 
     def __post_init__(self) -> None:
         if not (isinstance(self.id, str) and IDENT_RE.match(self.id)):
             raise ValidationError(
                 "VerbEngine id %r is not a legal identifier" % (self.id,))
-        if (self.flow is None) == (not self.refusal):
+        arms = (self.flow is not None, bool(self.local), bool(self.refusal))
+        if sum(arms) != 1:
             raise ValidationError(
-                "VerbEngine %r: exactly one of flow | refusal — a "
-                "runnable engine names its flow template, an unavailable "
-                "one carries the remediation" % (self.id,))
+                "VerbEngine %r: exactly one of flow | local | refusal — "
+                "a queue engine names its flow template, a tenant-local "
+                "engine names its action, an unavailable one carries "
+                "the remediation" % (self.id,))
         if self.flow is not None and not IDENT_RE.match(self.flow):
             raise ValidationError(
                 "VerbEngine %r: flow %r is not a legal flow id"
                 % (self.id, self.flow))
+        if self.local and not IDENT_RE.match(self.local):
+            raise ValidationError(
+                "VerbEngine %r: local action %r is not a legal id"
+                % (self.id, self.local))
 
 
 class SubActionMod(Mod):

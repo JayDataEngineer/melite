@@ -44,6 +44,8 @@ from typing import TYPE_CHECKING, TypedDict
 from pydantic import (BaseModel, Field, HttpUrl, ValidationError,
                       field_validator, model_validator)
 
+from .presets import CharacterPreset
+
 if TYPE_CHECKING:
     from melite_cards import ActionCard, Mod
 
@@ -467,6 +469,10 @@ _MODEL_ATTRS = frozenset({
     "loras",
     "architecture", "canvas_default", "loader", "tile",
     "timeout_floor",
+    # stroke 3 (2026-09-06): estate character presets — frozen
+    # CharacterPreset rows (the ray archetypes live on the anny
+    # family; user rows live in the tenant ledger, never here).
+    "character_presets",
 })
 
 
@@ -474,6 +480,7 @@ class _ModelNamespace(TypedDict, total=False):
     """The class-body keys _ModelMeta consumes (variants/id) — methods,
     docstrings and the rest ride through to type.__new__ opaquely."""
     variants: tuple[Variant, ...]
+    character_presets: tuple[CharacterPreset, ...]
     id: str
 
 
@@ -509,6 +516,33 @@ class _ModelMeta(type):
             seen[v.id] = v
             variants.append(v)
         cls.variants = tuple(variants)
+        # estate character presets (stroke 3): frozen CharacterPreset
+        # rows, inherited like variants (a sub-family re-states the
+        # rows it keeps — same merge, same duplicate refusal).
+        presets: list[CharacterPreset] = []
+        seen_presets = {}
+        for base in bases:
+            for p in getattr(base, "character_presets", ()):
+                if p.id not in seen_presets:
+                    seen_presets[p.id] = p
+                    presets.append(p)
+        own_presets = ns.get("character_presets", ())
+        if not isinstance(own_presets, tuple):
+            raise ModelError(
+                "%s.character_presets must be a tuple of "
+                "CharacterPreset instances" % name)
+        for p in own_presets:
+            if not isinstance(p, CharacterPreset):
+                raise ModelError(
+                    "%s.character_presets entries must be "
+                    "CharacterPreset instances (got %s)"
+                    % (name, type(p).__name__))
+            if p.id in seen_presets:
+                raise ModelError(
+                    "%s: duplicate character preset %r" % (name, p.id))
+            seen_presets[p.id] = p
+            presets.append(p)
+        cls.character_presets = tuple(presets)
         # route → (variant, cell): every matrix address, one map (the
         # C served ?model=<route>; the class flip lost it — structural
         # again)
@@ -552,6 +586,7 @@ class Model(metaclass=_ModelMeta):
     name must equal `id` (naming law 1)."""
     id = ""
     variants = ()             # tuple[Variant] — frozen instance rows
+    character_presets = ()    # tuple[CharacterPreset] — estate rows
     tile = ""
     # the genre's TYPE is the validation (rung 3: a typo refuses
     # construction). The metaclass coerces legacy str assignments so
