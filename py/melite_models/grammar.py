@@ -48,7 +48,40 @@ class ModelError(Exception):
 #   'text' is the returning LLM lane (sidebar renders it today).
 #   'creature' was folded into '3d' (2026-09-04) — anycreature boards the
 #   3d lane. 'ai_generated' is a TAG, not a genre.
-_GENRE_VALUES = frozenset(("image", "video", "audio", "3d", "motion", "other", "text", ""))
+# The closed set IS the Genre enum (above) — rung 6: no restated
+# coordinates.
+
+# ── closed-vocabulary enums (PYTHON SHAPE LAW rung 3: a closed set
+#    is a TYPE, not a str a wall validates) ─────────────────────────
+
+class Genre(str, Enum):
+    """The model's family genre — closed (the 7 lanes the estate
+    supports). A typo refuses construction; a string assignment on a
+    Model subclass is coerced to the enum in the metaclass so model.py
+    files that still state `genre = "image"` keep working, but a wall
+    pins the type"""
+    IMAGE = "image"
+    VIDEO = "video"
+    AUDIO = "audio"
+    MOTION = "motion"
+    THREED = "3d"
+    OTHER = "other"
+    TEXT = "text"
+    NONE = ""                    # no genre (utilities, future lanes)
+
+
+class ClipType(str, Enum):
+    """The CLIPLoader `type` arg — closed across the comfyui lanes
+    (the supported clip-loader families). None for audiocore lanes
+    that don't use CLIPLoader. A typo refuses construction."""
+    KREA2 = "krea2"
+    LUMINA2 = "lumina2"
+    QWEN_IMAGE = "qwen_image"
+    IDEOGRAM4 = "ideogram4"
+    STABLE_DIFFUSION = "stable_diffusion"
+    WAN = "wan"
+    MINIMAX = "minimax"
+
 
 class LatentNode(str, Enum):
     """The t2i lane's empty-latent constructors — one per family
@@ -82,7 +115,9 @@ a stated-once basename like `unet`, no artifact row beside it.'''
     unet_variant: str = ""
     unet_quant: str = ""
     text_encoder: str = ""
-    clip_type: str = ""
+    # closed vocabulary (rung 3): a typo refuses construction. None
+    # for audiocore lanes that don't load through CLIPLoader
+    clip_type: ClipType | None = None
     vae: str = ""
     family: str = ""        # audiocore load family (qwen3_tts, ...)
     model_path: str = ""    # audiocore weights (basename or abs)
@@ -413,7 +448,11 @@ class Model(metaclass=_ModelMeta):
     id = ""
     variants = ()             # tuple[Variant] — frozen instance rows
     tile = ""
-    genre = ""
+    # the genre's TYPE is the validation (rung 3: a typo refuses
+    # construction). The metaclass coerces legacy str assignments so
+    # model.py files that still state `genre = "image"` keep working
+    # until the sweep lands — the type is the gate, the wall pins it.
+    genre: Genre = Genre.NONE
     label = ""
     description = ""
     engine = ""               # engine_plugin
@@ -539,10 +578,15 @@ class Model(metaclass=_ModelMeta):
                     "%s.lane_inputs derives its unet from cell (%s, %s) "
                     "which carries no artifact — state unet= instead"
                     % (cls.__name__, li.unet_variant, li.unet_quant))
-        if cls.genre and cls.genre not in _GENRE_VALUES:
-            raise ModelError(
-                "%s.genre %r is not in the closed vocabulary %s"
-                % (cls.__name__, cls.genre, sorted(_GENRE_VALUES)))
+        # GENRE: type IS the gate (rung 3: a `genre = "typo"` line in
+        # a model.py would be coerced here; a real `Genre.typo` fails
+        # at class-body evaluation). The legacy _GENRE_VALUES wall
+        # check is dead with the enum — rung 6, no restated
+        # coordinates.
+        if isinstance(cls.genre, str) and not isinstance(cls.genre, Genre):
+            cls.genre = Genre(cls.genre)
+        elif cls.genre is None:
+            cls.genre = Genre.NONE
         # variant/cell rows validate AT CONSTRUCTION (pydantic frozen)
         # — the opt-in `if source_url:` artifact walk is dead with the
         # classes (shape law rungs 2/4: no guard remembers to check)
