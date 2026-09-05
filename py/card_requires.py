@@ -49,6 +49,9 @@ EXTENSION_NODE_TYPES: dict[str, set[str]] = {
         "MiniMaxMusic3TextEncode", "EmptyMiniMaxMusic3LatentAudio",
         "SaveAudioAdvanced", "AudiocoreTTS", "LoadAudiocoreModel",
     },
+    "melite-anny-estimator-nodes": {
+        "MultiHMR2ImageToAnny", "AnnyFitOptimize",
+    },
     "melite-kimodo-nodes": {"KimodoLoader", "KimodoTextToPose"},
     "qweneditutils": {"TextEncodeQwenImageEditPlus"},
     "vnccs_utils": {"ModelSamplingAuraFlow", "UniCanvasNode"},
@@ -135,10 +138,14 @@ def check_card_requires(
                 missing.append(ext_lower)
             continue
 
-        # If we got here: no object_info match, no disk match, no heuristic.
-        # Cannot confirm the extension is present — refuse.
-        if expected_nodes and not object_info_set:
-            # We have a mapping but couldn't check object_info (server down)
+        # If we got here with a KNOWN mapping, the extension could not
+        # be confirmed: either the server is unreachable (cannot
+        # verify) or it is LIVE and verifiably lacks the expected
+        # nodes with no disk fallback. Both are MISSING — never an
+        # assumed install (the T7 no-false-positive law; the
+        # silent-pass era let a known-but-not-installed extension
+        # through whenever the server answered at all).
+        if expected_nodes:
             missing.append(ext_lower)
 
     if missing:
