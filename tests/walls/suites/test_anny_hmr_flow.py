@@ -81,6 +81,12 @@ def test_anny_hmr_in_graph_pack_chain() -> None:
         "class_type": "AnnySelectPerson",
         "inputs": {"mesh_paths": ["hmr", 2], "index": 0},
     }
+    # the estimator→card bridge: camera-space mesh grounded to a
+    # world body (Y-up, feet down, origin-centered) before hydration
+    assert wf["ground"] == {
+        "class_type": "AnnyGroundBody",
+        "inputs": {"glb_path": ["select", 0]},
+    }
 
 
 def test_anny_hmr_carries_no_hardcoded_endpoint() -> None:

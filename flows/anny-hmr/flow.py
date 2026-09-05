@@ -86,6 +86,16 @@ FLOW = Flow(
                             "index": 0,
                         },
                     },
+                    # camera-space mesh -> WORLD body (Y-up, feet
+                    # grounded, origin-centered) — the estimator's
+                    # GLBs float at camera distance (live-probed:
+                    # centered z≈1.85); hydrating them raw into the
+                    # card's body_glb would misplace the turnaround.
+                    # AnnyGroundBody is the estimator→card bridge.
+                    "ground": {
+                        "class_type": "AnnyGroundBody",
+                        "inputs": {"glb_path": ["select", 0]},
+                    },
                 },
             },
         ),
