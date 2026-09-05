@@ -55,7 +55,7 @@ if not os.path.isfile(PACK):
             "not re-vendored) — awaiting the h3 lane's disposition")
 
 fails = []
-def check(name, cond, detail=""):
+def check(name: str, cond: bool, detail: str = "") -> None:
     print(("PASS " if cond else "FAIL ") + name + ((" | " + str(detail)) if detail and not cond else ""))
     if not cond: fails.append(name)
 

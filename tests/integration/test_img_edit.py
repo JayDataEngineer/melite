@@ -8,11 +8,16 @@ vary; the feed may not).
 """
 
 import pytest
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from conftest import QueueDoor
 
 pytestmark = pytest.mark.gpu
 
 
-def test_edit_with_feed_image(gateway, assets):
+def test_edit_with_feed_image(gateway: "QueueDoor",
+                              assets: dict[str, str | None]) -> None:
     run_id = gateway.submit({
         "model": "qwen-img-edit-2511",
         "params": {

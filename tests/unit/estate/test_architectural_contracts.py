@@ -18,7 +18,7 @@ import sys
 REPO = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
 
-def test_architectural_contracts_clean():
+def test_architectural_contracts_clean() -> None:
     # the linter is a stand-alone python script; run it from the repo
     # root so the relative path in its output is meaningful.
     proc = subprocess.run(

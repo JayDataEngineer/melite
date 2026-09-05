@@ -99,16 +99,16 @@ class TestProfileReinstallHealth:
     orphans (declared but not installed) are both bugs."""
 
     @pytest.fixture(scope="module")
-    def provisioner_deps(self):
+    def provisioner_deps(self) -> dict[str, str]:
         return _provisioner_link_deps()
 
     @pytest.fixture(scope="module")
-    def live_links(self):
+    def live_links(self) -> dict[str, Path | None]:
         return _live_profile_link_symlinks()
 
 
     @pytest.fixture(scope="module")
-    def all_profile_symlinks(self):
+    def all_profile_symlinks(self) -> dict[str, str]:
         """Every symlink in the dev profile's node_modules at any
         scope, regardless of target. Used to detect dangling symlinks
         before the target filtering strips them."""
@@ -130,7 +130,7 @@ class TestProfileReinstallHealth:
                     out[pkg.name] = "dangling"
         return out
 
-    def test_no_dangling_symlinks_in_profile(self, all_profile_symlinks):
+    def test_no_dangling_symlinks_in_profile(self, all_profile_symlinks: dict[str, str]) -> None:
         """No dangling symlinks exist anywhere in node_modules.
 
         This is the broader version of test_no_dangling_repo_link_symlinks:
@@ -147,7 +147,7 @@ class TestProfileReinstallHealth:
             f"--reinstall to wipe node_modules + lockfile and re-link."
         )
 
-    def test_no_dangling_repo_link_symlinks(self, live_links):
+    def test_no_dangling_repo_link_symlinks(self, live_links: dict[str, Path | None]) -> None:
         """Every repo-link symlink in node_modules resolves to a real
         directory under REPO/plugins/. A dangling symlink is the
         class of bug the operator hit on the 2026-09-04 sidebar
@@ -169,7 +169,7 @@ class TestProfileReinstallHealth:
             f"lockfile and re-link the current provisioner deps."
         )
 
-    def test_every_provisioner_link_dep_is_installed(self, provisioner_deps, live_links):
+    def test_every_provisioner_link_dep_is_installed(self, provisioner_deps: dict[str, str], live_links: dict[str, Path | None]) -> None:
         """Every link: dep in the provisioner package.json is in the
         dev profile's node_modules. The launcher lifts these as
         direct deps; if a row is missing, the cordis loader fails
@@ -183,7 +183,7 @@ class TestProfileReinstallHealth:
             f"to link the current provisioner deps."
         )
 
-    def test_no_undeclared_repo_link_symlinks(self, live_links, provisioner_deps):
+    def test_no_undeclared_repo_link_symlinks(self, live_links: dict[str, Path | None], provisioner_deps: dict[str, str]) -> None:
         """No repo-link symlink exists in the dev profile's node_modules
         that is NOT a declared provisioner dep. The provisioner is
         the SSOT; a profile-side symlink that escaped pnpm (manual
@@ -202,7 +202,7 @@ class TestProfileReinstallHealth:
             f"(intentional) or remove them with --reinstall."
         )
 
-    def test_every_link_dep_target_is_a_real_plugin(self, provisioner_deps):
+    def test_every_link_dep_target_is_a_real_plugin(self, provisioner_deps: dict[str, str]) -> None:
         """The link: target paths in the provisioner package.json
         resolve to a real directory under REPO/plugins/. A typo in
         the link path would break the launcher (pnpm refuses an
@@ -223,7 +223,7 @@ class TestProfileReinstallHealth:
                 f"package.json"
             )
 
-    def test_inference_studio_preset_is_installed(self):
+    def test_inference_studio_preset_is_installed(self) -> None:
         """The Inference Studio agent preset must be present in DSH_HOME.
 
         The launcher runs infer-provision preset after pnpm install to

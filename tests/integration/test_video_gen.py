@@ -7,13 +7,18 @@ inference path (INFERENCE LAW).
 """
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
+
+if TYPE_CHECKING:
+    from conftest import QueueDoor
 
 pytestmark = pytest.mark.gpu
 
 
-def test_wan_vace_reference_film(gateway, assets):
+def test_wan_vace_reference_film(gateway: "QueueDoor",
+                                 assets: dict[str, str | None]) -> None:
     """wan-vace: reference image + prompt → one h264 film."""
     run_id = gateway.submit({
         "model": "wan-vace",
@@ -36,7 +41,8 @@ def test_wan_vace_reference_film(gateway, assets):
     assert max(sizes) > 20_000, "film too small: %s" % names
 
 
-def test_scail2_character_animation(gateway, assets):
+def test_scail2_character_animation(gateway: "QueueDoor",
+                                      assets: dict[str, str | None]) -> None:
     """scail2-animate: reference character + driving video → film."""
     drive = str(Path(assets["source"]).parent / "drive_pose.mp4")
     run_id = gateway.submit({

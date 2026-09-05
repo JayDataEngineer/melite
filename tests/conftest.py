@@ -23,7 +23,7 @@ for _p in (str(REPO / "py"), str(REPO / "tests")):
 
 
 @pytest.fixture(scope="session")
-def repo():
+def repo() -> Path:
     """The repo root as a Path. Cheaper than git rev-parse and always
     correct (conftest location is fixed relative to the repo)."""
     return REPO

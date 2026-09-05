@@ -11,21 +11,22 @@ audit 2026-09-04, F1).
 import json
 import os
 import subprocess
+from pathlib import Path
 
 import pytest
 
 
-def _read(rel, repo):
+def _read(rel: str, repo: Path) -> str:
     with open(os.path.join(repo, rel), encoding="utf-8") as f:
         return f.read()
 
 
-def _exists(rel, repo):
+def _exists(rel: str, repo: Path) -> bool:
     return os.path.exists(os.path.join(repo, rel))
 
 
 class TestSecretSafety:
-    def test_keystore_ignored(self, repo):
+    def test_keystore_ignored(self, repo: Path) -> None:
         for rel in ("data/llm_keystore.json", "data/llm_keystore.key"):
             r = subprocess.run(
                 ["git", "check-ignore", "-v", rel],
@@ -35,7 +36,7 @@ class TestSecretSafety:
             assert "data/**" in r.stdout, \
                 f"unexpected rule for {rel}: {r.stdout}"
 
-    def test_study_clone_ignored(self, repo):
+    def test_study_clone_ignored(self, repo: Path) -> None:
         r = subprocess.run(
             ["git", "check-ignore", "-v", "references/comfy-mcp/README.md"],
             cwd=repo, capture_output=True, text=True)
@@ -43,12 +44,12 @@ class TestSecretSafety:
 
 
 class TestPnpmWorkspace:
-    def test_no_packages_glob(self, repo):
+    def test_no_packages_glob(self, repo: Path) -> None:
         body = _read("pnpm-workspace.yaml", repo)
         assert "'packages/*'" not in body, \
             "pnpm-workspace.yaml still globs packages/*"
 
-    def test_workspace_parses(self, repo):
+    def test_workspace_parses(self, repo: Path) -> None:
         r = subprocess.run(
             ["pnpm", "ls", "-r", "--depth", "-1"],
             cwd=repo, capture_output=True, text=True, timeout=60)
@@ -57,7 +58,7 @@ class TestPnpmWorkspace:
                 if ln.lstrip().startswith(("@", "|")) or "PRIVATE" in ln)
         assert n > 18, f"only {n} members -- workspace regressed?"
 
-    def test_gen_registry_dry_run(self, repo):
+    def test_gen_registry_dry_run(self, repo: Path) -> None:
         r = subprocess.run(
             ["python3", "tools/gen_registry.py"],
             cwd=repo, capture_output=True, text=True, timeout=60)
@@ -67,11 +68,11 @@ class TestPnpmWorkspace:
 
 
 class TestDerivedArtifactHome:
-    def test_no_registry_at_web_root(self, repo):
+    def test_no_registry_at_web_root(self, repo: Path) -> None:
         assert not _exists("web/registry.json", repo), \
             "web/registry.json exists at the web root"
 
-    def test_generated_registry_present(self, repo):
+    def test_generated_registry_present(self, repo: Path) -> None:
         assert _exists("web/generated/registry.json", repo)
         data = json.loads(_read("web/generated/registry.json", repo))
         assert "items" in data
@@ -80,6 +81,6 @@ class TestDerivedArtifactHome:
             assert "name" in it
             assert "package" in it
 
-    def test_no_packages_dir(self, repo):
+    def test_no_packages_dir(self, repo: Path) -> None:
         assert not _exists("packages", repo), \
             "packages/ directory exists -- the straggler dir is back"

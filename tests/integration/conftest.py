@@ -30,18 +30,23 @@ import os
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 
 import _bootstrap  # tests/_bootstrap.py — path owned by the root conftest
 
+# JSON wire values (queue doors speak parsed JSON only — fully narrowed).
+JsonValue = str | int | float | bool | None | list["JsonValue"] | dict[str, "JsonValue"]
+
 REPO = Path(__file__).resolve().parents[2]
 PY = REPO / ".venv" / "bin" / "python"
 TERMINAL = {"completed", "failed", "stopped"}
 
 
-def _req(port, method, path, body=None, timeout=15):
+def _req(port: int, method: str, path: str, body: dict[str, JsonValue] | None = None,
+         timeout: int = 15) -> tuple[int, JsonValue]:
     url = "http://127.0.0.1:%d%s" % (port, path)
     data = json.dumps(body).encode() if body is not None else None
     r = urllib.request.Request(url, data=data, method=method)
@@ -55,10 +60,10 @@ def _req(port, method, path, body=None, timeout=15):
 class QueueDoor:
     """The queue door, lawfully: submit -> poll -> artifact."""
 
-    def __init__(self, port):
+    def __init__(self, port: int) -> None:
         self.port = port
 
-    def submit(self, body):
+    def submit(self, body: dict[str, JsonValue]) -> str:
         # L4 of the test/prod barrier: every integration submission is
         # tagged test:true. Even if a scratch run ever landed in the
         # real output root, the tag keeps it out of /v1/assets.
@@ -68,7 +73,8 @@ class QueueDoor:
         assert code == 202, "submit refused (%d): %s" % (code, resp)
         return resp["run_id"]
 
-    def wait(self, run_id, timeout_s=900.0, poll_s=2.0):
+    def wait(self, run_id: str, timeout_s: float = 900.0,
+             poll_s: float = 2.0) -> dict[str, JsonValue]:
         """Poll to a terminal state; returns the final status dict."""
         deadline = time.monotonic() + timeout_s
         last = {}
@@ -82,7 +88,7 @@ class QueueDoor:
         pytest.fail("run %s did not settle in %ss (last: %s)"
                     % (run_id, timeout_s, last.get("status")))
 
-    def artifacts_on_disk(self, status):
+    def artifacts_on_disk(self, status: dict[str, JsonValue]) -> list[Path]:
         """The run's artifact paths, verified to EXIST with bytes."""
         out = []
         for a in status.get("artifacts") or []:
@@ -93,12 +99,12 @@ class QueueDoor:
         assert out, "run completed with zero artifacts: %s" % status
         return out
 
-    def stop(self, run_id):
+    def stop(self, run_id: str) -> None:
         _req(self.port, "POST", "/v1/flows/stop/%s" % run_id)
 
 
 @pytest.fixture(scope="session")
-def gateway():
+def gateway() -> Iterator[QueueDoor]:
     """A scratch gateway process: boots on a free port, serves the
     whole sweep, terminates CLEANLY (SIGTERM — the shutdown law
     manufactures zero zombies). Boot/reap mechanics live in
@@ -116,14 +122,14 @@ def gateway():
 
 
 @pytest.fixture(scope="session")
-def gateway_port(gateway):
+def gateway_port(gateway: QueueDoor) -> int:
     """The scratch gateway's port (the form-spec door lives on the
     same gateway the queue door uses — same process, different routes)."""
     return gateway.port
 
 
 @pytest.fixture(scope="session")
-def assets():
+def assets() -> dict[str, str | None]:
     """Feed-in assets (committed, deterministic — GPU output varies,
     input must not). tests/integration/assets/."""
     d = Path(__file__).parent / "assets"

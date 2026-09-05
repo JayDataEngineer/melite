@@ -10,11 +10,16 @@ inference path (INFERENCE LAW).
 """
 
 import pytest
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from conftest import QueueDoor
 
 pytestmark = pytest.mark.gpu
 
 
-def test_seedvr2_restore(gateway, assets):
+def test_seedvr2_restore(gateway: "QueueDoor",
+                         assets: dict[str, str | None]) -> None:
     """seedvr2_ema: input frame → diffusion-restored png."""
     run_id = gateway.submit({
         "model": "seedvr2_ema",

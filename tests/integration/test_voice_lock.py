@@ -7,11 +7,16 @@ GPU-marked: real inference, serial law, artifacts asserted on disk.
 """
 
 import pytest
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from conftest import QueueDoor
 
 pytestmark = pytest.mark.gpu
 
 
-def test_voice_lock_export(gateway, assets):
+def test_voice_lock_export(gateway: "QueueDoor",
+                           assets: dict[str, str | None]) -> None:
     """Design + export: a described persona becomes a reusable
     embedding file beside its preview audio."""
     door = gateway          # the fixture IS the QueueDoor

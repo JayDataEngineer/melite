@@ -9,26 +9,30 @@ import json
 import os
 import urllib.error
 import urllib.request
+from collections.abc import Iterator
 
 import pytest
 
 BASE = os.environ.get("TEST_GATEWAY_BASE", "http://127.0.0.1:33081")
 TIMEOUT = 10
 
+# JSON wire values (the gateway speaks parsed JSON only — fully narrowed).
+JsonValue = str | int | float | bool | None | list["JsonValue"] | dict[str, "JsonValue"]
+
 
 class GatewayClient:
     """Minimal typed client for the estate gateway."""
 
-    def __init__(self, base, timeout):
+    def __init__(self, base: str, timeout: int) -> None:
         self.base = base
         self.timeout = timeout
 
-    def get(self, path):
+    def get(self, path: str) -> tuple[int, JsonValue]:
         with urllib.request.urlopen(
                 self.base + path, timeout=self.timeout) as r:
             return r.status, json.loads(r.read())
 
-    def post(self, path, body):
+    def post(self, path: str, body: dict[str, str]) -> tuple[int, dict[str, JsonValue] | str]:
         req = urllib.request.Request(
             self.base + path, method="POST",
             data=json.dumps(body).encode(),
@@ -40,14 +44,14 @@ class GatewayClient:
         except urllib.error.HTTPError as e:
             return e.code, e.read().decode()[:300]
 
-    def fetch_bytes(self, path):
+    def fetch_bytes(self, path: str) -> bytes:
         with urllib.request.urlopen(
                 self.base + path, timeout=self.timeout) as r:
             return r.read()
 
 
 @pytest.fixture(scope="session")
-def live():
+def live() -> Iterator[GatewayClient]:
     """The live gateway client, or a SKIP with the operator hint."""
     client = GatewayClient(BASE, TIMEOUT)
     try:

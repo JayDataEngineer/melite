@@ -53,7 +53,7 @@ COMFYUI = REPO / "plugins" / "engines" / "comfyui"
 _CARDS_MOUNTED = False
 
 
-def _mount_cards():
+def _mount_cards() -> None:
     global _CARDS_MOUNTED
     if _CARDS_MOUNTED:
         return
@@ -76,14 +76,14 @@ def _mount_cards():
 
 
 @pytest.fixture(scope="module", autouse=True)
-def _mount():
+def _mount() -> None:
     _mount_cards()
 
 
 # ── 1. registry: hand-pinned, wall-verified ─────────────────────────
 
 
-def test_registry_declares_every_action_card_schema():
+def test_registry_declares_every_action_card_schema() -> None:
     """The card class table (the SSOT — melite_cards.scan_engine_cards)
     matches the registry's card_ids.
 
@@ -106,7 +106,7 @@ def test_registry_declares_every_action_card_schema():
         % sorted(missing))
 
 
-def test_registry_does_not_claim_phantom_cards():
+def test_registry_does_not_claim_phantom_cards() -> None:
     """A row in the registry whose card id is NOT served by any
     ActionCard class is a phantom — the gate would activate for
     a card nobody can compose against. Refused loud."""
@@ -120,7 +120,7 @@ def test_registry_does_not_claim_phantom_cards():
         % sorted(phantom))
 
 
-def test_registry_unique_card_ids():
+def test_registry_unique_card_ids() -> None:
     """The cross-row invariant is enforced AT CONSTRUCTION (the
     model_validator in ParamSchemaRegistry). Constructing a
     duplicate-id table is the loud refusal."""
@@ -132,7 +132,7 @@ def test_registry_unique_card_ids():
         ))
 
 
-def test_registry_kind_must_be_closed_vocabulary():
+def test_registry_kind_must_be_closed_vocabulary() -> None:
     """A typo'd kind value (e.g. "imag" instead of "image")
     refuses AT CONSTRUCTION of the row — PYTHON SHAPE LAW rung 3
     (closed vocabularies as enums, no stringly handshakes)."""
@@ -143,7 +143,7 @@ def test_registry_kind_must_be_closed_vocabulary():
             kind_outputs={"default": "imag"})
 
 
-def test_registry_schema_must_be_frozen_pydantic_model():
+def test_registry_schema_must_be_frozen_pydantic_model() -> None:
     """A non-frozen (or non-BaseModel) schema_class refuses
     AT CONSTRUCTION — PYTHON SHAPE LAW rung 2 (frozen, validated
     at construction, no post-hoc walks)."""
@@ -161,7 +161,7 @@ def test_registry_schema_must_be_frozen_pydantic_model():
 # ── 2. body gate: Stage(card=...) validates params ─────────────────
 
 
-def test_card_stage_unknown_knob_refused_at_construction():
+def test_card_stage_unknown_knob_refused_at_construction() -> None:
     """The lever the lattice closes: a typo'd knob name refuses
     the Flow(...) line, named after the field. The duck-typed
     era let `durations` render at default duration — silent
@@ -178,7 +178,7 @@ def test_card_stage_unknown_knob_refused_at_construction():
     assert "Extra inputs" in msg, "must name the failure: %r" % msg
 
 
-def test_card_stage_clean_body_constructs():
+def test_card_stage_clean_body_constructs() -> None:
     """The gate does not over-refuse: a clean body that matches
     the schema row constructs, the kind check uses the registry's
     kind_inputs to fill effective_expected, and to_graph() stamps
@@ -198,7 +198,7 @@ def test_card_stage_clean_body_constructs():
     assert g.nodes[0].outputs == {"default": "audio"}
 
 
-def test_card_stage_schema_refused_for_unknown_card():
+def test_card_stage_schema_refused_for_unknown_card() -> None:
     """A card id that is not in the registry is a LOUD refusal
     at construction. The card may exist in a future estate —
     but until it joins the registry (and the schema.py on disk
@@ -214,7 +214,7 @@ def test_card_stage_schema_refused_for_unknown_card():
     assert "ParamSchemaRegistry" in msg, "must point to the registry: %r" % msg
 
 
-def test_engine_only_stage_skips_body_gate():
+def test_engine_only_stage_skips_body_gate() -> None:
     """The lattice is ADDITIVE: a stage without `card=` does not
     gate its params (the engine's own Phase-1 validation owns
     the body shape). Regression: existing flows keep working
@@ -234,7 +234,7 @@ def test_engine_only_stage_skips_body_gate():
 # ── 3. kind contract: registry fills outputs/expected ──────────────
 
 
-def test_card_stage_outputs_filled_from_registry():
+def test_card_stage_outputs_filled_from_registry() -> None:
     """The kind contract: a card stage that omits `outputs` has
     its effective outputs filled from the registry's
     `kind_outputs`. The flow-typed-edges check then has a
@@ -250,7 +250,7 @@ def test_card_stage_outputs_filled_from_registry():
     assert g.nodes[0].outputs == {"default": "audio"}
 
 
-def test_card_stage_expected_filled_from_registry():
+def test_card_stage_expected_filled_from_registry() -> None:
     """Symmetric fill: a card stage that omits `expected` has
     its effective expected kinds filled from the registry's
     `kind_inputs`. The AI's first typo class — forgetting
@@ -286,7 +286,7 @@ def test_card_stage_expected_filled_from_registry():
     assert g.nodes[1].outputs == {"default": "audio"}
 
 
-def test_kind_mismatch_against_card_outputs_refused():
+def test_kind_mismatch_against_card_outputs_refused() -> None:
     """The lattice's main lever: an image-gen output (Kind.image)
     wired into a video-gen input that expects Kind.text
     refuses the Flow(...) line. The error names both kinds and
@@ -310,7 +310,7 @@ def test_kind_mismatch_against_card_outputs_refused():
     assert "'gen' output 'default'" in msg
 
 
-def test_kind_mismatch_image_to_text_input_refused():
+def test_kind_mismatch_image_to_text_input_refused() -> None:
     """Another kind: image-gen (image) wired into motion's
     prompt input (text). The image cannot masquerade as a
     text prompt."""
@@ -328,7 +328,7 @@ def test_kind_mismatch_image_to_text_input_refused():
     assert "got image" in str(exc.value)
 
 
-def test_valid_kind_chain_image_to_mesh_passes():
+def test_valid_kind_chain_image_to_mesh_passes() -> None:
     """The lattice does not over-refuse: a chain whose kinds
     line up constructs and to_graph() stamps the typed outputs
     into the sidecar."""
@@ -347,7 +347,7 @@ def test_valid_kind_chain_image_to_mesh_passes():
                    "im":  {"default": "mesh"}}
 
 
-def test_explicit_outputs_override_registry():
+def test_explicit_outputs_override_registry() -> None:
     """Stage.outputs is the author-explicit override; the
     registry's kind_outputs is the fallback. The author wins."""
     fl = Flow(id="override", stages=(
@@ -361,7 +361,7 @@ def test_explicit_outputs_override_registry():
     assert g.nodes[0].outputs == {"mp3": "audio"}
 
 
-def test_card_io_explicit_override():
+def test_card_io_explicit_override() -> None:
     """Stage.card_io is the rare explicit-override channel
     (a flow author who needs the card to declare a different
     output channel than the registry's default). Sits between
@@ -379,7 +379,7 @@ def test_card_io_explicit_override():
 # ── 4. inline path: flow_from_body has the same gates ─────────────
 
 
-def test_inline_flow_validates_schema():
+def test_inline_flow_validates_schema() -> None:
     """The {flow_inline} JSON path gains the same body gate as
     the on-disk Flow() literal. An AI constructing a flow with
     a typo'd knob refuses the compile door (4xx, no GPU)."""
@@ -398,7 +398,7 @@ def test_inline_flow_validates_schema():
     assert "music" in msg
 
 
-def test_inline_flow_kind_mismatch_refused():
+def test_inline_flow_kind_mismatch_refused() -> None:
     """The {flow_inline} kind check is the same as the on-disk
     check. Image-gen -> video-gen (image into text) refuses."""
     body = {
@@ -419,7 +419,7 @@ def test_inline_flow_kind_mismatch_refused():
     assert "got image" in str(exc.value)
 
 
-def test_inline_flow_clean_card_constructs():
+def test_inline_flow_clean_card_constructs() -> None:
     """The {flow_inline} path accepts a clean card flow the
     same way the on-disk literal does."""
     body = {
@@ -441,7 +441,7 @@ def test_inline_flow_clean_card_constructs():
                    "anny": {"default": "mesh"}}
 
 
-def test_inline_flow_unknown_card_refused():
+def test_inline_flow_unknown_card_refused() -> None:
     """An inline body naming a card that is not in the registry
     refuses — same lever as the on-disk path."""
     body = {
@@ -459,7 +459,7 @@ def test_inline_flow_unknown_card_refused():
 # ── 5. precedence ladder: outputs > card_io > registry > engine ───
 
 
-def test_precedence_explicit_outputs_win_over_card_io():
+def test_precedence_explicit_outputs_win_over_card_io() -> None:
     """Stage.outputs (most explicit) wins over Stage.card_io."""
     fl = Flow(id="prec1", stages=(
         Stage(id="m", engine="comfyui", card="music",
@@ -473,7 +473,7 @@ def test_precedence_explicit_outputs_win_over_card_io():
     assert g.nodes[0].outputs == {"wav": "audio"}
 
 
-def test_precedence_card_io_wins_over_registry():
+def test_precedence_card_io_wins_over_registry() -> None:
     """Stage.card_io wins over the registry's kind_outputs."""
     fl = Flow(id="prec2", stages=(
         Stage(id="m", engine="comfyui", card="music",
@@ -488,7 +488,7 @@ def test_precedence_card_io_wins_over_registry():
 # ── 6. existing flows (regression) ────────────────────────────────
 
 
-def test_existing_flows_still_load():
+def test_existing_flows_still_load() -> None:
     """The two on-disk flows (audio-native-tts, kimodo-native) are
     engine-only and must still load without touching them. The
     lattice is additive — no behavior change for card="".

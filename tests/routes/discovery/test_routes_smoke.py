@@ -6,20 +6,24 @@ walls /v1/manage. This file is the smoke wall for the remaining
 list endpoints so a route that silently 404s (or drifts its
 envelope) is caught.
 """
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from conftest import GatewayClient
 
 
 class TestLanesSmoke:
     # lane disclosure: every plugin can advertise its lanes; the
     # list route is the deck stable view.
 
-    def test_envelope(self, live):
+    def test_envelope(self, live: "GatewayClient") -> None:
         code, body = live.get("/v1/lanes")
         assert code == 200
         assert set(body.keys()) == {"count", "lanes"}
         assert body["count"] == len(body["lanes"])
         assert body["count"] > 0
 
-    def test_lane_row_keys(self, live):
+    def test_lane_row_keys(self, live: "GatewayClient") -> None:
         # params / skills / steps are engine-specific; only identity
         # keys are pinned.
         required = {"kind", "lane", "genre", "title", "description"}
@@ -28,7 +32,7 @@ class TestLanesSmoke:
             assert required.issubset(set(lane.keys())), \
                 f"lane {lane.get('lane', '?')!r} dropped a key: {sorted(lane.keys())}"
 
-    def test_no_model_rows(self, live):
+    def test_no_model_rows(self, live: "GatewayClient") -> None:
         # Operator order, 2026-09-04: "The only way to actually do
         # inference is through action cards, yet I see the model level
         # as available for inference." The lane table is the CALLABLE
@@ -41,7 +45,7 @@ class TestLanesSmoke:
         assert kinds <= {"action_card", "template"}, \
             f"non-callable lane classes leaked into /v1/lanes: {sorted(kinds)}"
 
-    def test_model_kind_is_a_named_refusal(self, live):
+    def test_model_kind_is_a_named_refusal(self, live: "GatewayClient") -> None:
         # kind="model" must refuse LOUDLY (never an empty table that
         # looks like "no models", never a 500) and teach where models
         # DO live — the peek error envelope carries the pointer.
@@ -57,13 +61,13 @@ class TestCardToolsSmoke:
     # card-tools: the registry the action-card editor consumes.
     # Returns a bare list (not an envelope).
 
-    def test_envelope(self, live):
+    def test_envelope(self, live: "GatewayClient") -> None:
         code, body = live.get("/v1/card-tools")
         assert code == 200
         assert isinstance(body, list)
         assert len(body) > 0
 
-    def test_tool_row_keys(self, live):
+    def test_tool_row_keys(self, live: "GatewayClient") -> None:
         # universal keys are pinned; tools may carry EXTRA fields
         # (e.g. hidden) -- the row may be richer than the minimum,
         # never poorer.
@@ -79,14 +83,14 @@ class TestCardToolsSmoke:
 class TestSkillsSmoke:
     # /v1/skills: the DSH skill catalog. Envelope mirrors /v1/assets.
 
-    def test_envelope(self, live):
+    def test_envelope(self, live: "GatewayClient") -> None:
         code, body = live.get("/v1/skills")
         assert code == 200
         assert set(body.keys()) == {"count", "skills"}
         assert body["count"] == len(body["skills"])
         assert body["count"] > 0
 
-    def test_skill_row_keys(self, live):
+    def test_skill_row_keys(self, live: "GatewayClient") -> None:
         # the (card, model) union is scope-dependent (card:/model:/flow:)
         # -- the wall pins the universal identity keys only.
         required = {"id", "name", "description", "scope"}

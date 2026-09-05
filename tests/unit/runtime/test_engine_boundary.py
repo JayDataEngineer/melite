@@ -36,8 +36,10 @@ import sys
 import tempfile
 import threading
 import unittest
+from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import NoReturn, Protocol
 
 _REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(_REPO / "py"))
@@ -45,44 +47,57 @@ sys.path.insert(0, str(_REPO / "py"))
 import gateway  # noqa: E402
 
 
+class _NodeLike(Protocol):
+    """The engine-execute contract's node: what the gateway actually
+    reads (node_id for errors, node_type for dispatch)."""
+    node_id: str
+    node_type: str
+
+
+# The stub-execute contract, mirroring the gateway's call: inputs is
+# the resolved tensor pool, report folds progress into the stage.
+_StageInputs = dict[str, str | dict[str, str] | list[str]]
+_ReportFn = Callable[[dict[str, str]], None]
+
+
 class _StubEngine:
     """A stub engine; exports unload() only when asked to."""
-    def __init__(self, with_unload=True, fails=False):
+    def __init__(self, with_unload: bool=True, fails: bool=False) -> None:
         self.calls = 0
         self.execs = 0
         self._with_unload = with_unload
         self._fails = fails
         if with_unload:
-            async def _unload():
+            async def _unload() -> None:
                 self.calls += 1
                 if self._fails:
                     raise RuntimeError("ComfyUI /free status 500")
             self.unload = _unload
 
-    async def execute(self, node, run_dir, inputs, stop_event,
-                      report=None):
+    async def execute(self, node: _NodeLike, run_dir: str, inputs: _StageInputs, stop_event: asyncio.Event,
+                      report: _ReportFn | None=None) -> dict[str, dict[str, int] | list[dict[str, str]]]:
         self.execs += 1
         return {"outputs": {"ok": 1}, "artifacts": []}
 
 
 class _Registry(dict):
     """load_engine stand-in keyed by engine type."""
-    def __call__(self, engine_type):
+    def __call__(self, engine_type: str) -> _StubEngine:
         return self[engine_type]
 
 
 class TestBoundaryRule(unittest.TestCase):
     """_engine_boundary_unload's own outcome vocabulary."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self._orig = gateway.load_engine
         self.reg = _Registry()
         gateway.load_engine = self.reg
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         gateway.load_engine = self._orig
 
-    def test_engine_without_unload_transitions_cleanly(self):
+    def test_engine_without_unload_transitions_cleanly(self) -> None:
         """Subprocess engines (no unload ABI) — absent, never an error."""
         subprocess_engine = _StubEngine(with_unload=False)
         comfy = _StubEngine()
@@ -92,7 +107,7 @@ class TestBoundaryRule(unittest.TestCase):
             gateway._engine_boundary_unload("anycreature", "comfyui"))
         self.assertEqual(outcome, "absent")
 
-    def test_first_stage_never_unloads(self):
+    def test_first_stage_never_unloads(self) -> None:
         """No previous engine → no-transition."""
         comfy = _StubEngine()
         self.reg["comfyui"] = comfy
@@ -100,7 +115,7 @@ class TestBoundaryRule(unittest.TestCase):
             gateway._engine_boundary_unload(None, "comfyui"))
         self.assertEqual(outcome, "no-transition")
 
-    def test_same_engine_is_no_transition(self):
+    def test_same_engine_is_no_transition(self) -> None:
         comfy = _StubEngine()
         self.reg["comfyui"] = comfy
         outcome = asyncio.run(
@@ -108,7 +123,7 @@ class TestBoundaryRule(unittest.TestCase):
         self.assertEqual(outcome, "no-transition")
         self.assertEqual(comfy.calls, 0)
 
-    def test_failing_unload_documented_not_raised(self):
+    def test_failing_unload_documented_not_raised(self) -> None:
         """RESILIENCE LAW: the exact message returns, nothing raises."""
         failing = _StubEngine(fails=True)
         auto = _StubEngine()
@@ -127,7 +142,7 @@ class TestRealLoop(unittest.TestCase):
     boundary call from execute() FAILS here (the audit found the old
     suite re-simulating the walk — this is the fix)."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self._orig = gateway.load_engine
         self.reg = _Registry()
         gateway.load_engine = self.reg
@@ -135,11 +150,11 @@ class TestRealLoop(unittest.TestCase):
         self.gw = gateway.Gateway()
         self._seq = 0
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         gateway.load_engine = self._orig
         self.tmp.cleanup()
 
-    def _run(self, *node_types):
+    def _run(self, *node_types: str) -> gateway.Run:
         """A real Run over a graph of the given node types, with the
         stage rows shaped exactly like submit() shapes them."""
         import flow_graph
@@ -158,10 +173,10 @@ class TestRealLoop(unittest.TestCase):
         run.dir.mkdir(parents=True, exist_ok=True)
         return run
 
-    def _execute(self, run):
+    def _execute(self, run: gateway.Run) -> None:
         asyncio.run(self.gw.execute(run))
 
-    def test_same_engine_stages_never_unload(self):
+    def test_same_engine_stages_never_unload(self) -> None:
         comfy = _StubEngine()
         self.reg["comfyui"] = comfy
         run = self._run("comfyui", "comfyui", "comfyui")
@@ -172,7 +187,7 @@ class TestRealLoop(unittest.TestCase):
                          ["completed"] * 3)
         self.assertNotIn("boundary_unload", run.stages[1])
 
-    def test_transition_fires_once_and_documents_sidecar(self):
+    def test_transition_fires_once_and_documents_sidecar(self) -> None:
         comfy = _StubEngine()
         auto = _StubEngine()
         self.reg["comfyui"] = comfy
@@ -188,7 +203,7 @@ class TestRealLoop(unittest.TestCase):
         self.assertEqual(sc["stages"][2].get("boundary_unload"),
                          "fired")
 
-    def test_back_and_forward_fires_each_boundary(self):
+    def test_back_and_forward_fires_each_boundary(self) -> None:
         a = _StubEngine()
         b = _StubEngine()
         self.reg["a"] = a
@@ -201,7 +216,7 @@ class TestRealLoop(unittest.TestCase):
         self.assertEqual(run.stages[2].get("boundary_unload"), "fired")
         self.assertEqual(run.stages[3].get("boundary_unload"), "fired")
 
-    def test_subprocess_boundary_recorded_as_absent(self):
+    def test_subprocess_boundary_recorded_as_absent(self) -> None:
         """Subprocess engines release VRAM by process exit — the
         boundary still leaves its trace in the sidecar (the audit's
         observability gap: 'absent' used to be indistinguishable
@@ -214,7 +229,7 @@ class TestRealLoop(unittest.TestCase):
         self._execute(run)
         self.assertEqual(run.stages[1].get("boundary_unload"), "absent")
 
-    def test_failing_unload_documented_run_continues(self):
+    def test_failing_unload_documented_run_continues(self) -> None:
         failing = _StubEngine(fails=True)
         auto = _StubEngine()
         self.reg["comfyui"] = failing
@@ -226,7 +241,7 @@ class TestRealLoop(unittest.TestCase):
         self.assertEqual(run.stages[1]["status"], "completed",
                          "an unload failure never kills the run")
 
-    def test_cross_run_boundary_fires(self):
+    def test_cross_run_boundary_fires(self) -> None:
         """THE 2026-09-04 FIX: two SEPARATE runs, different engines —
         the second run's first stage fires the unload of the first
         run's engine (gateway-level engine tracking). Before the fix
@@ -246,7 +261,7 @@ class TestRealLoop(unittest.TestCase):
                          "the engine switch between RUNS must unload")
         self.assertEqual(run2.stages[0].get("boundary_unload"), "fired")
 
-    def test_cross_run_same_engine_keeps_cache(self):
+    def test_cross_run_same_engine_keeps_cache(self) -> None:
         comfy = _StubEngine()
         self.reg["comfyui"] = comfy
         self._execute(self._run("comfyui"))
@@ -254,11 +269,11 @@ class TestRealLoop(unittest.TestCase):
         self.assertEqual(comfy.calls, 0,
                          "consecutive same-engine runs keep the cache")
 
-    def test_failed_stage_still_transitions_the_next_run(self):
+    def test_failed_stage_still_transitions_the_next_run(self) -> None:
         """A failing comfyui stage leaves the engine resident — the
         next different-engine run still fires the unload."""
         class _Boom(_StubEngine):
-            async def execute(self, *a, **kw):
+            async def execute(self, *a: _NodeLike | str | _StageInputs | asyncio.Event, **kw: _ReportFn) -> NoReturn:
                 raise RuntimeError("engine exploded")
         comfy = _Boom()
         auto = _StubEngine()
@@ -276,7 +291,7 @@ class TestRealLoop(unittest.TestCase):
 class TestComfyuiUnloadExported(unittest.TestCase):
     """The comfyui engine owns the real unload(): POST /free."""
 
-    def test_comfyui_compose_exports_unload(self):
+    def test_comfyui_compose_exports_unload(self) -> None:
         compose_dir = _REPO / "plugins" / "engines" / "comfyui" / "compose"
         sys.path.insert(0, str(compose_dir))
         try:
@@ -298,7 +313,7 @@ class _FreeRecorder(BaseHTTPRequestHandler):
     records = []
     status = 200
 
-    def do_POST(self):
+    def do_POST(self) -> None:
         n = int(self.headers.get("content-length", 0))
         body = self.rfile.read(n)
         type(self).records.append((self.path, body))
@@ -307,7 +322,7 @@ class _FreeRecorder(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"{}")
 
-    def log_message(self, *a):
+    def log_message(self, *a: str | int) -> None:
         pass
 
 
@@ -317,7 +332,7 @@ class TestComfyuiUnloadHTTP(unittest.TestCase):
     is LOUD — the gateway documents it, never trusts it)."""
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         cls.srv = ThreadingHTTPServer(("127.0.0.1", 0), _FreeRecorder)
         cls.port = cls.srv.server_address[1]
         threading.Thread(target=cls.srv.serve_forever,
@@ -327,20 +342,20 @@ class TestComfyuiUnloadHTTP(unittest.TestCase):
         cls.native = importlib.import_module("native")
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         cls.srv.shutdown()
         sys.path.remove(str(_REPO / "plugins" / "engines" /
                             "comfyui" / "compose"))
 
-    def setUp(self):
+    def setUp(self) -> None:
         _FreeRecorder.records = []
         _FreeRecorder.status = 200
         os.environ["COMFYUI_URL"] = "http://127.0.0.1:%d" % self.port
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         os.environ.pop("COMFYUI_URL", None)
 
-    def test_free_payload_is_unload_all(self):
+    def test_free_payload_is_unload_all(self) -> None:
         asyncio.run(self.native.unload())
         self.assertEqual(
             [(p, json.loads(b)) for p, b in _FreeRecorder.records],
@@ -348,7 +363,7 @@ class TestComfyuiUnloadHTTP(unittest.TestCase):
             "the boundary unload must drop every cached model AND the "
             "execution cache — anything less leaves VRAM resident")
 
-    def test_non_2xx_raises_loud(self):
+    def test_non_2xx_raises_loud(self) -> None:
         _FreeRecorder.status = 500
         with self.assertRaises(self.native.ComfyError) as ctx:
             asyncio.run(self.native.unload())

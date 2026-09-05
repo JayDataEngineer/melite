@@ -39,6 +39,9 @@ import socket
 import urllib.error
 import urllib.request
 
+from collections.abc import Iterator
+from typing import NoReturn
+
 import pytest
 
 # The dev DSH public origin (matches the constants in test_dev_dsh.py —
@@ -48,7 +51,7 @@ DEV_TAILNET_FQDN = "cloud.tailb1e597.ts.net"
 
 
 @pytest.fixture(scope="module")
-def dev_dsh_up():
+def dev_dsh_up() -> Iterator[bool]:
     """Ensure the dev DSH is running before this module's tests run.
 
     Mirrors the fixture in test_dev_dsh.py (no __init__ in the dir,
@@ -87,7 +90,7 @@ EDITOR_ROUTES = [
 ]
 
 
-def _http(url, timeout=15):
+def _http(url: str, timeout: int = 15) -> tuple[int, bytes]:
     try:
         r = urllib.request.urlopen(url, timeout=timeout)
         return r.status, r.read()
@@ -97,7 +100,7 @@ def _http(url, timeout=15):
         return 0, f"(connect failed: {e})".encode()
 
 
-def _find_estate_port():
+def _find_estate_port() -> int | None:
     """The dev DSH proxies /v1/* to an estate gateway. The wall
     needs to probe that gateway DIRECTLY too (catches "dev DSH
     green, upstream stale" — the exact failure the user hit). The
@@ -115,7 +118,7 @@ def _find_estate_port():
     return None
 
 
-def _assert_json_envelope(label, status, body, route):
+def _assert_json_envelope(label: str, status: int, body: bytes, route: str) -> None:
     """A 200 OR a 4xx/5xx with a JSON body carrying a real error
     message. Bare text = the old swallowed-exception leak (the
     "Internal Server Error" the user saw on form-spec?model=anny).
@@ -152,7 +155,7 @@ def _assert_json_envelope(label, status, body, route):
                 % (label, route, status, body[:200]))
 
 
-def test_dev_dsh_origin_serves_every_editor_route(dev_dsh_up):
+def test_dev_dsh_origin_serves_every_editor_route(dev_dsh_up: bool) -> None:
     """The dev DSH public origin (HTTPS :3909) MUST serve 200 with
     a JSON envelope for every route the editor fetches. The user
     hit the exact gap this test closes: form-spec?model=anny served
@@ -170,7 +173,7 @@ def test_dev_dsh_origin_serves_every_editor_route(dev_dsh_up):
     assert not failures, "\n  ".join(failures)
 
 
-def test_upstream_estate_matches_dev_dsh_for_every_editor_route(dev_dsh_up):
+def test_upstream_estate_matches_dev_dsh_for_every_editor_route(dev_dsh_up: bool) -> None:
     """The dev DSH is a proxy; the SOURCE of truth is the estate
     gateway it proxies to. When the dev DSH green-proxies a stale
     upstream, the user sees 200 (the dev DSH's buffered cache)
@@ -210,7 +213,7 @@ def test_upstream_estate_matches_dev_dsh_for_every_editor_route(dev_dsh_up):
 # test pins the surfacing so a regression to bare text is a red.
 # ---------------------------------------------------------------------------
 
-def test_gateway_surfaces_uncaught_exceptions_as_json():
+def test_gateway_surfaces_uncaught_exceptions_as_json() -> None:
     """RESILIENCE LAW: a failure documents the exact failure message —
     the HTTP layer too. A bare "Internal Server Error" 500 is a
     regression; the wall catches it."""
@@ -221,10 +224,10 @@ def test_gateway_surfaces_uncaught_exceptions_as_json():
     import gateway
     from starlette.requests import Request
 
-    async def _raise(*a, **k):
+    async def _raise(*a: str | bytes | None, **k: str | bytes | None) -> NoReturn:
         raise ValueError("wall surfacing probe — the message must be visible")
 
-    async def receive():
+    async def receive() -> dict[str, str | bytes | bool]:
         return {"type": "http.request", "body": b"", "more_body": False}
 
     scope = {

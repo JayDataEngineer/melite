@@ -71,47 +71,41 @@ SUBPROCESS_WALLS = [
     #   subprocess path would bypass the marker and burn GPU in CI.
 ]
 
-# broken at HEAD by the object_info pin / h3-motion consolidation
-# drift (reproduces with the tree stashed — NOT this lane's files).
-# Cited here so the debt stays visible; remove when the pin lands.
-KNOWN_DRIFT = {
+# Suites that are broken at HEAD by drift OUTSIDE this lane. Each
+# entry maps suite → reason (the live cause, not a fossil one).
+KNOWN_DRIFT: dict[str, str] = {
     # (2026-09-05) test_python_cards.py RECOVERED and moved into
     # SUBPROCESS_WALLS: its real break was a fossil spec-load of
     # engines/audio/compose.py (dead since the compose reorg) — now
     # reached through the plugins loader. 117/117 checks green at
-    # HEAD. The object_info pin concern below resolved with the
-    # owning lane's re-stamp.
+    # HEAD.
     #
-    # 2026-09-04 rename validation: object_info.json was refreshed in
-    # the working tree (14:04Z) without re-stamping object_info.meta
-    # (pin integrity: sha 76f00a4b != stamped a396d14e) — the compose
-    # pin is the owning lane's explicit door (refresh_snapshot).
-    # 2026-09-04 flows-rework validation: the renderer moved to
-    # action_cards/video/h3-timeline/py/renderer.py (suite path fixed)
-    # but its model fixtures (window1_t4r.json & kin) no longer exist
-    # anywhere under plugins/ — broken at HEAD by the reorg lane.
-    # RESOLVED 2026-09-05: the templates retired FOR GOOD (dcfa4c7 —
-    # the comfy-script authoring path supersedes them per operator),
-    # so the suite was REHOMED onto recorded-renderer-output parity
-    # (suites/golden_h3/ recordings, H3_PARITY_REGEN regen door) and
-    # moved into SUBPROCESS_WALLS. 9/9 checks green at HEAD.
-    # RESOLVED 2026-09-05 (co_script): the pin IS live truth — the
-    # managed :18466 serves exactly 1310 nodes (easy-use pack gone,
-    # post-consolidation estate); the suite's orphan probe moved to
-    # the pin-present SaveImage node and the >3000 floor became >1200.
-    # 16/16 checks green; moved into SUBPROCESS_WALLS.
-    # RESOLVED 2026-09-05 (card_requires): the T3/T6 names were stale
-    # test vocabulary — the declaration set is the h3-timeline card's
-    # requires (base pack comfyui-h3-motion-context, no 'melite-video'
-    # card require; the video-gen card declares none). 9/9 checks
-    # green; moved into SUBPROCESS_WALLS.
-    # RESOLVED 2026-09-05 (http_parity): deliberate golden bumps from
-    # the scratch gateway (C RETIREMENT: the goldens ARE the contract)
-    # — anny capabilities/forms, form-spec contract keys, kinds 7->8
-    # (card-compose), tools 10->14 — plus the runs-count invariant
-    # corrected to >= per run_wire.RunsEnvelope's declared C contract
-    # (count = total pre-limit). 24/24 checks green; moved into
-    # SUBPROCESS_WALLS.
+    # (2026-09-05) test_h3_renderer_parity.py RECOVERED: the hand-
+    # written window templates retired FOR GOOD (dcfa4c7 — comfy-
+    # script authoring supersedes them per operator); the suite was
+    # REHOMED onto recorded-renderer-output parity (suites/golden_h3/
+    # recordings, H3_PARITY_REGEN regen door) and moved into
+    # SUBPROCESS_WALLS. 9/9 checks green at HEAD.
+    #
+    # (2026-09-05) test_co_script.py RECOVERED: the pin IS live truth
+    # — the managed :18466 serves exactly 1310 nodes (easy-use pack
+    # gone, post-consolidation estate); the suite's orphan probe
+    # moved to the pin-present SaveImage node and the >3000 floor
+    # became >1200. 16/16 checks green; moved into SUBPROCESS_WALLS.
+    #
+    # (2026-09-05) test_card_requires.py RECOVERED: T3/T6 names were
+    # stale test vocabulary — the declaration set is the h3-timeline
+    # card's requires (base pack comfyui-h3-motion-context, no
+    # 'melite-video' card require; the video-gen card declares none).
+    # 9/9 checks green; moved into SUBPROCESS_WALLS.
+    #
+    # (2026-09-05) test_http_parity.py RECOVERED: deliberate golden
+    # bumps from the scratch gateway (C RETIREMENT: the goldens ARE
+    # the contract) — anny capabilities/forms, form-spec contract
+    # keys, kinds 7->8 (card-compose), tools 10->14 — plus the
+    # runs-count invariant corrected to >= per
+    # run_wire.RunsEnvelope's declared C contract (count = total
+    # pre-limit). 24/24 checks green; moved into SUBPROCESS_WALLS.
 }
 
 
@@ -129,7 +123,7 @@ def _suite_id(suite: str) -> str:
 
 
 @pytest.mark.parametrize("suite", SUBPROCESS_WALLS, ids=_suite_id)
-def test_wall_suite(suite):
+def test_wall_suite(suite: str) -> None:
     proc = _run_suite(suite)
     assert proc.returncode == 0, (
         "%s FAILED\n%s\n%s" % (suite, proc.stdout[-2000:],
@@ -137,7 +131,7 @@ def test_wall_suite(suite):
 
 
 @pytest.mark.parametrize("suite", sorted(KNOWN_DRIFT), ids=_suite_id)
-def test_wall_suite_known_drift(suite):
+def test_wall_suite_known_drift(suite: str) -> None:
     """Documented debt: the suite is expected red at HEAD for reasons
     OUTSIDE this lane. The test asserts the drift reason is still the
     live one (the suite still fails) — the day it passes, the entry

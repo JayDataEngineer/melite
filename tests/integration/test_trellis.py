@@ -14,11 +14,16 @@ filename_prefix.
 """
 
 import pytest
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from conftest import QueueDoor
 
 pytestmark = pytest.mark.gpu
 
 
-def test_trellis_img_to_mesh(gateway, assets):
+def test_trellis_img_to_mesh(gateway: "QueueDoor",
+                             assets: dict[str, str | None]) -> None:
     """The standard lift: one image → one textured .glb."""
     door = gateway
     run_id = door.submit({
@@ -39,7 +44,8 @@ def test_trellis_img_to_mesh(gateway, assets):
                for n in names), names
 
 
-def test_trellis_hero_upsample(gateway, assets):
+def test_trellis_hero_upsample(gateway: "QueueDoor",
+                               assets: dict[str, str | None]) -> None:
     """The 1536 branch: the upsample stage inserts — same .glb
     contract, heavier walk."""
     door = gateway

@@ -100,7 +100,7 @@ else:
 # ── THE CHECK ────────────────────────────────────────────────────────────────
 fails = []
 
-def check(name, cond, detail=""):
+def check(name: str, cond: bool, detail: str = "") -> None:
     status = "PASS" if cond else "FAIL"
     msg = f"{status} {name}"
     if detail and not cond:

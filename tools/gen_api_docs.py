@@ -67,7 +67,7 @@ docs/gateway/openai-compat.md) — a different vocabulary from
 """
 
 
-def _methods(row):
+def _methods(row: gateway.Route) -> str:
     if row.ws:
         return "WS"
     if row.method == "*":
@@ -75,11 +75,11 @@ def _methods(row):
     return row.method.replace("|", "/")
 
 
-def _doc_path(row):
+def _doc_path(row: gateway.Route) -> str:
     return row.template or row.path
 
 
-def gen_doc():
+def gen_doc() -> str:
     groups = {}
     for row in gateway.ROUTES:
         groups.setdefault(row.group, []).append(row)
@@ -94,7 +94,7 @@ def gen_doc():
     return "\n".join(out) + "\n"
 
 
-def _spec_methods(row):
+def _spec_methods(row: gateway.Route) -> list[str]:
     if row.ws:
         return ["get"]
     if row.method == "*":
@@ -102,7 +102,7 @@ def _spec_methods(row):
     return [m.strip().lower() for m in row.method.split("|")]
 
 
-def _spec_path(row):
+def _spec_path(row: gateway.Route) -> tuple[str, list[dict[str, str | bool | dict[str, str]]]]:
     """OpenAPI path: template minus query string; params from braces."""
     tmpl = _doc_path(row)
     path, _, query = tmpl.partition("?")
@@ -121,7 +121,7 @@ def _spec_path(row):
     return path, params
 
 
-def gen_spec():
+def gen_spec() -> str:
     lines = [
         "# GENERATED from py/gateway.py ROUTES by tools/gen_api_docs.py —",
         "# edit the table, not this file. Paths + parameters only:",
@@ -170,7 +170,7 @@ def gen_spec():
     return "\n".join(lines) + "\n"
 
 
-def main():
+def main() -> int:
     if "--check" in sys.argv:
         ok = True
         for path, text in ((DOC_PATH, gen_doc()), (SPEC_PATH, gen_spec())):

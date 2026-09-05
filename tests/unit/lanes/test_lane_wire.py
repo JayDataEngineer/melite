@@ -39,7 +39,7 @@ REPO = Path(__file__).resolve().parents[3]
 
 # ── A. shape refusals happen AT CONSTRUCTION ───────────────────────
 
-def _manifest_row(**over):
+def _manifest_row(**over: str | int | bool | dict[str, str | list[str] | dict[str, dict[str, str]]]) -> dict[str, str | int | bool | dict[str, str | list[str] | dict[str, dict[str, str]]]]:
     base = dict(
         name="image_gen_card", version=1, kind="card-compose",
         card="image-gen", model="krea-2", stage_title="Image",
@@ -52,44 +52,44 @@ def _manifest_row(**over):
 
 
 class TestManifestConstruction:
-    def test_minimal_manifest_builds(self):
+    def test_minimal_manifest_builds(self) -> None:
         row = lane_wire.ToolManifestRow.model_validate(_manifest_row())
         assert row.name == "image_gen_card"
         assert row.params_schema.type == "object"
 
-    def test_empty_name_refuses(self):
+    def test_empty_name_refuses(self) -> None:
         with pytest.raises(ValidationError):
             lane_wire.ToolManifestRow.model_validate(
                 _manifest_row(name=""))
 
-    def test_zero_version_refuses(self):
+    def test_zero_version_refuses(self) -> None:
         with pytest.raises(ValidationError):
             lane_wire.ToolManifestRow.model_validate(
                 _manifest_row(version=0))
 
-    def test_garbage_version_refuses(self):
+    def test_garbage_version_refuses(self) -> None:
         with pytest.raises(ValidationError):
             lane_wire.ToolManifestRow.model_validate(
                 _manifest_row(version="next"))
 
-    def test_missing_params_schema_refuses(self):
+    def test_missing_params_schema_refuses(self) -> None:
         raw = _manifest_row()
         del raw["params_schema"]
         with pytest.raises(ValidationError):
             lane_wire.ToolManifestRow.model_validate(raw)
 
-    def test_params_schema_without_type_refuses(self):
+    def test_params_schema_without_type_refuses(self) -> None:
         raw = _manifest_row(params_schema={"properties": {},
                                            "required": []})
         with pytest.raises(ValidationError):
             lane_wire.ToolManifestRow.model_validate(raw)
 
-    def test_dead_rider_refuses(self):
+    def test_dead_rider_refuses(self) -> None:
         with pytest.raises(ValidationError):
             lane_wire.ToolManifestRow.model_validate(
                 _manifest_row(__dead_rider__="x"))
 
-    def test_hidden_is_optional_bool(self):
+    def test_hidden_is_optional_bool(self) -> None:
         row = lane_wire.ToolManifestRow.model_validate(
             _manifest_row(hidden=True))
         assert row.hidden is True
@@ -98,33 +98,33 @@ class TestManifestConstruction:
 
 
 class TestSkillRowConstruction:
-    def _row(self, **over):
+    def _row(self, **over: str | int | list[dict[str, str]]) -> dict[str, str | int | list[dict[str, str]]]:
         base = dict(id="card:image-gen", name="Image", scope="card",
                     genre="image", card="image-gen")
         base.update(over)
         return base
 
-    def test_card_scoped_builds(self):
+    def test_card_scoped_builds(self) -> None:
         assert lane_wire.SkillRow.model_validate(self._row()).card == \
             "image-gen"
 
-    def test_card_and_model_scoping_refuses(self):
+    def test_card_and_model_scoping_refuses(self) -> None:
         with pytest.raises(ValidationError, match="never both"):
             lane_wire.SkillRow.model_validate(
                 self._row(model="krea-2"))
 
-    def test_steps_without_step_count_refuses(self):
+    def test_steps_without_step_count_refuses(self) -> None:
         with pytest.raises(ValidationError, match="travel together"):
             lane_wire.SkillRow.model_validate(self._row(
                 steps=[{"id": "s", "type": "comfyui", "plugin": "comfyui"}]))
 
-    def test_step_count_mismatch_refuses(self):
+    def test_step_count_mismatch_refuses(self) -> None:
         with pytest.raises(ValidationError, match="step_count"):
             lane_wire.SkillRow.model_validate(self._row(
                 steps=[{"id": "s", "type": "comfyui", "plugin": "comfyui"}],
                 step_count=3))
 
-    def test_flow_row_steps_are_typed(self):
+    def test_flow_row_steps_are_typed(self) -> None:
         row = lane_wire.SkillRow.model_validate(dict(
             id="flow:demo", name="demo", scope="flow",
             steps=[{"id": "s1", "type": "comfyui", "plugin": "comfyui"}],
@@ -133,35 +133,35 @@ class TestSkillRowConstruction:
 
 
 class TestBundleConstruction:
-    def _agent(self):
+    def _agent(self) -> dict[str, str]:
         return {"source": "card:x", "name": "X", "content": "body"}
 
-    def test_card_bundle_builds(self):
+    def test_card_bundle_builds(self) -> None:
         row = lane_wire.BundleRow.model_validate(dict(
             lane="x", card="x", kind="action_card", agent=self._agent(),
             tools=[_manifest_row()], flows=[], skills=[], read_first=[]))
         assert row.kind is lane_wire.PeekKind.ACTION_CARD
 
-    def test_card_bundle_without_card_refuses(self):
+    def test_card_bundle_without_card_refuses(self) -> None:
         with pytest.raises(ValidationError, match="card"):
             lane_wire.BundleRow.model_validate(dict(
                 lane="x", card=None, kind="action_card",
                 tools=[], skills=[], read_first=[]))
 
-    def test_card_bundle_with_flow_rows_refuses(self):
+    def test_card_bundle_with_flow_rows_refuses(self) -> None:
         with pytest.raises(ValidationError, match="flow rows"):
             lane_wire.BundleRow.model_validate(dict(
                 lane="x", card="x", kind="action_card",
                 flows=[dict(id="flow:d", name="d", scope="flow")],
                 tools=[], skills=[], read_first=[]))
 
-    def test_template_bundle_with_tools_refuses(self):
+    def test_template_bundle_with_tools_refuses(self) -> None:
         with pytest.raises(ValidationError, match="tool manifests"):
             lane_wire.BundleRow.model_validate(dict(
                 lane="x", card=None, kind="template",
                 tools=[_manifest_row()], skills=[], read_first=[]))
 
-    def test_template_bundle_with_card_refuses(self):
+    def test_template_bundle_with_card_refuses(self) -> None:
         with pytest.raises(ValidationError, match="no card"):
             lane_wire.BundleRow.model_validate(dict(
                 lane="x", card="x", kind="template",
@@ -171,7 +171,7 @@ class TestBundleConstruction:
 # ── B. wire() keeps the served key discipline ──────────────────────
 
 class TestWireProjections:
-    def test_manifest_hidden_rides_only_when_declared(self):
+    def test_manifest_hidden_rides_only_when_declared(self) -> None:
         plain = lane_wire.ToolManifestRow.model_validate(
             _manifest_row()).wire()
         assert "hidden" not in plain
@@ -179,7 +179,7 @@ class TestWireProjections:
             _manifest_row(hidden=True)).wire()
         assert hid["hidden"] is True
 
-    def test_skill_row_carries_only_its_sources_keys(self):
+    def test_skill_row_carries_only_its_sources_keys(self) -> None:
         card_row = lane_wire.SkillRow.model_validate(dict(
             id="card:x", name="X", scope="card", genre="image",
             card="x")).wire()
@@ -191,26 +191,26 @@ class TestWireProjections:
         assert set(flow_row) == {"id", "name", "description", "scope",
                                  "steps", "step_count"}
 
-    def test_card_lane_row_serves_null_genre(self):
+    def test_card_lane_row_serves_null_genre(self) -> None:
         row = lane_wire.CardLaneRow(
             lane="x", genre=None, title="X").model_dump()
         assert row["kind"] == "action_card"
         assert row["genre"] is None
 
-    def test_flow_lane_row_shape(self):
+    def test_flow_lane_row_shape(self) -> None:
         row = lane_wire.FlowLaneRow(
             lane="d", title="d", steps=3).model_dump()
         assert row == {"kind": "template", "lane": "d", "genre": None,
                        "title": "d", "description": "", "steps": 3}
 
-    def test_lanes_envelope_error_only_on_refusal(self):
+    def test_lanes_envelope_error_only_on_refusal(self) -> None:
         ok = lane_wire.LanesEnvelope(count=0, lanes=[]).wire()
         assert "error" not in ok
         refuse = lane_wire.LanesEnvelope(
             count=0, lanes=[], error="unknown kind").wire()
         assert refuse["error"] == "unknown kind"
 
-    def test_bundle_wire_keeps_nested_key_discipline(self):
+    def test_bundle_wire_keeps_nested_key_discipline(self) -> None:
         bundle = lane_wire.BundleRow(
             lane="x", card="x", kind=lane_wire.PeekKind.ACTION_CARD,
             agent=None, tools=[lane_wire.ToolManifestRow.model_validate(
@@ -236,7 +236,7 @@ GOOD_MANIFEST = {
 
 
 @pytest.fixture()
-def fixture_tree(tmp_path, monkeypatch):
+def fixture_tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """A scratch plugins/engines tree: one good card, one card whose
     manifest is malformed, one card whose docs carry an empty-scope
     row the gate must refuse."""
@@ -263,25 +263,25 @@ def fixture_tree(tmp_path, monkeypatch):
 
 
 class TestLoudSkip:
-    def test_malformed_manifest_skips_loudly(self, fixture_tree,
-                                             capsys):
+    def test_malformed_manifest_skips_loudly(self, fixture_tree: Path,
+                                             capsys: pytest.CaptureFixture[str]) -> None:
         tools = ld.card_tools()
         assert [t["name"] for t in tools] == ["good_card"]
         err = capsys.readouterr().err
         assert "manifest refused" in err
         assert "name" in err            # field-named reason
 
-    def test_dead_card_leaves_the_surface(self, fixture_tree):
+    def test_dead_card_leaves_the_surface(self, fixture_tree: Path) -> None:
         peek = ld.peek()
         lanes = [r["lane"] for r in peek["lanes"]]
         assert "good-card" in lanes
         assert "bad-manifest" not in lanes   # never advertised
 
-    def test_dead_card_bundle_404s(self, fixture_tree):
+    def test_dead_card_bundle_404s(self, fixture_tree: Path) -> None:
         assert ld.lane_bundle("bad-manifest")[0] == 404
 
     def test_good_card_bundle_serves_validated_tools(self,
-                                                     fixture_tree):
+                                                     fixture_tree: Path) -> None:
         code, bundle = ld.lane_bundle("good-card")
         assert code == 200
         # the served bundle re-validates through the wire model
@@ -290,8 +290,8 @@ class TestLoudSkip:
         assert row.agent is not None and row.agent.source == \
             "card:good-card"
 
-    def test_unreadable_manifest_json_skips_loudly(self, tmp_path,
-                                                   monkeypatch, capsys):
+    def test_unreadable_manifest_json_skips_loudly(self, tmp_path: Path,
+                                                   monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
         root = tmp_path
         cards = root / "plugins" / "engines" / "e" / "action_cards" \
             / "image"
@@ -311,7 +311,7 @@ class TestEstateSweep:
     """Producer and consumer share one contract: what the disclosure
     engine serves re-validates through the same frozen rows."""
 
-    def test_every_disk_manifest_validates(self):
+    def test_every_disk_manifest_validates(self) -> None:
         count = 0
         for tj in REPO.rglob("plugins/engines/*/action_cards/*/*/tool.json"):
             data = json.loads(tj.read_text(encoding="utf-8"))
@@ -320,40 +320,40 @@ class TestEstateSweep:
                 count += 1
         assert count >= 10, "the manifest sweep collapsed"
 
-    def test_peek_round_trips(self):
+    def test_peek_round_trips(self) -> None:
         for kwargs in ({}, {"kind": "action_card"},
                        {"kind": "template"}):
             served = ld.peek(**kwargs)
             lane_wire.LanesEnvelope.model_validate(
                 {**served, "lanes": served["lanes"]})
 
-    def test_peek_unknown_kind_serves_named_refusal(self):
+    def test_peek_unknown_kind_serves_named_refusal(self) -> None:
         served = ld.peek(kind="model")
         assert served["count"] == 0
         assert "unknown kind" in served["error"]
 
-    def test_card_tools_round_trip(self):
+    def test_card_tools_round_trip(self) -> None:
         for m in ld.card_tools():
             lane_wire.ToolManifestRow.model_validate(m)
 
-    def test_skills_round_trip(self):
+    def test_skills_round_trip(self) -> None:
         served = ld.skill_index()
         for s in served["skills"]:
             lane_wire.SkillRow.model_validate(s)
 
-    def test_skill_read_round_trip(self):
+    def test_skill_read_round_trip(self) -> None:
         # one flow skill + one card doc, both re-validate
         code, doc = ld.skill_read("flow:audio-native-tts")
         assert code == 200
         lane_wire.SkillDocRow.model_validate(doc)
 
-    def test_flow_bundle_round_trip(self):
+    def test_flow_bundle_round_trip(self) -> None:
         for r in ld.flow_lanes():
             code, bundle = ld.lane_bundle(r["lane"], kind="template")
             assert code == 200
             lane_wire.BundleRow.model_validate(bundle)
 
-    def test_card_bundles_round_trip(self):
+    def test_card_bundles_round_trip(self) -> None:
         served = ld.peek(kind="action_card")
         assert served["count"] >= 5
         for row in served["lanes"][:5]:

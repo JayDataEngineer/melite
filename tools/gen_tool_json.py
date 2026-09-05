@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.join(REPO, "py"))
 from melite_cards import scan_engine_cards, tool_manifests  # noqa: E402
 
 
-def main():
+def main() -> int:
     write = "--write" in sys.argv
     cards = scan_engine_cards(REPO)
     drifted, written = [], []

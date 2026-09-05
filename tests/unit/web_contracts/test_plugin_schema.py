@@ -26,11 +26,19 @@ from typing import Any, Optional
 
 import pytest
 import yaml
+from _pytest.mark import ParameterSet
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 REPO = Path(__file__).resolve().parents[3]
 PLUGINS_ROOT = REPO / "plugins"
+
+# A plugin.py Plugin class as AST-read: class-level literals (slugs,
+# tuples/lists of slugs, webui/dependency maps) or None when the file
+# declares nothing readable.
+PluginAttrs = dict[str, str | bool | tuple[str, ...] | list[str] | dict[str, str | tuple[str, ...]] | list[dict[str, str | tuple[str, ...]]] | tuple[dict[str, str | tuple[str, ...]], ...] | None]
+# An action_cards card class as AST-read: scalar/genre literals only.
+CardAttrs = dict[str, str | bool | list[str] | None]
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -84,14 +92,14 @@ class PluginClassDecl(BaseModel, frozen=True):
 
     @field_validator("engines", mode="before")
     @classmethod
-    def _engines_to_tuple(cls, v: Any) -> tuple[str, ...]:
+    def _engines_to_tuple(cls, v: str | list[str] | tuple[str, ...] | None) -> tuple[str, ...]:
         if isinstance(v, (list, tuple)):
             return tuple(v)
         return (v,) if v else ()
 
     @field_validator("genres", mode="before")
     @classmethod
-    def _genres_to_tuple(cls, v: Any) -> tuple[str, ...]:
+    def _genres_to_tuple(cls, v: str | list[str] | tuple[str, ...] | None) -> tuple[str, ...]:
         if isinstance(v, (list, tuple)):
             return tuple(v)
         return (v,) if v else ()
@@ -193,14 +201,14 @@ CROSS_FILE_RULES: dict[PluginType, list[str]] = {
 # §6  AST-based plugin.py reader (side-effect free)
 # ═══════════════════════════════════════════════════════════════════════
 
-def _ast_read_plugin_class(plugin_py: Path) -> dict[str, Any] | None:
+def _ast_read_plugin_class(plugin_py: Path) -> PluginAttrs | None:
     """Parse plugin.py via AST and return the Plugin class attributes.
     No exec, no import — pure static analysis."""
     src = plugin_py.read_text(encoding="utf-8")
     tree = ast.parse(src, filename=str(plugin_py))
     for node in ast.walk(tree):
         if isinstance(node, ast.ClassDef) and node.name == "Plugin":
-            attrs: dict[str, Any] = {}
+            attrs: PluginAttrs = {}
             for stmt in node.body:
                 if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1:
                     tgt = stmt.targets[0]
@@ -297,7 +305,7 @@ ALL_PLUGINS = _discover_all_plugins()
 PLUGIN_IDS = [pid for pid, _, _ in ALL_PLUGINS]
 
 
-def _ast_read_card_class(card_py: Path) -> dict[str, Any] | None:
+def _ast_read_card_class(card_py: Path) -> CardAttrs | None:
     """Parse card.py via AST and return the first ActionCard subclass's
     class attributes. No exec, no import — pure static analysis."""
     src = card_py.read_text(encoding="utf-8")
@@ -309,7 +317,7 @@ def _ast_read_card_class(card_py: Path) -> dict[str, Any] | None:
                  for b in node.bases}
         if not bases & {"ActionCard"}:
             continue
-        attrs: dict[str, Any] = {}
+        attrs: CardAttrs = {}
         for stmt in node.body:
             if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1:
                 tgt = stmt.targets[0]
@@ -322,10 +330,10 @@ def _ast_read_card_class(card_py: Path) -> dict[str, Any] | None:
     return None
 
 
-def _discover_all_cards() -> list[tuple[str, Path, dict[str, Any]]]:
+def _discover_all_cards() -> list[tuple[str, Path, CardAttrs]]:
     """Every action_cards/<genre>/<card>/py/card.py across all engine
     plugins (depth-2 and depth-3 containers alike)."""
-    out: list[tuple[str, Path, dict[str, Any]]] = []
+    out: list[tuple[str, Path, CardAttrs]] = []
     eng_root = REPO / "plugins" / "engines"
     for plugin_dir in sorted(eng_root.iterdir()):
         if not plugin_dir.is_dir():
@@ -360,11 +368,11 @@ def _plugin_type(plugin_id: str) -> PluginType:
 class TestPluginTypeTaxonomy:
     """PluginType is a closed vocabulary — only known types allowed."""
 
-    def test_all_types_known(self):
+    def test_all_types_known(self) -> None:
         expected = {"engine", "web", "harness"}
         assert {t.value for t in PluginType} == expected
 
-    def test_invalid_type_refused(self):
+    def test_invalid_type_refused(self) -> None:
         with pytest.raises(ValueError):
             PluginType("agent")
 
@@ -377,7 +385,7 @@ class TestPluginTypeTaxonomy:
 class TestPluginDeclaration:
     """Every plugin.py declares a Plugin class that validates."""
 
-    def test_has_plugin_class(self, plugin_id):
+    def test_has_plugin_class(self, plugin_id: str) -> None:
         plugin_dir = _plugin_dir(plugin_id)
         plugin_py = plugin_dir / "plugin.py"
         assert plugin_py.is_file(), (
@@ -388,7 +396,7 @@ class TestPluginDeclaration:
             f"{plugin_id}: no Plugin class in plugin.py"
         )
 
-    def test_plugin_spec_validates(self, plugin_id):
+    def test_plugin_spec_validates(self, plugin_id: str) -> None:
         plugin_dir = _plugin_dir(plugin_id)
         attrs = _ast_read_plugin_class(plugin_dir / "plugin.py")
         if attrs is None:
@@ -399,7 +407,7 @@ class TestPluginDeclaration:
             if k in PluginClassDecl.model_fields
         })
 
-    def test_id_matches_directory(self, plugin_id):
+    def test_id_matches_directory(self, plugin_id: str) -> None:
         plugin_dir = _plugin_dir(plugin_id)
         attrs = _ast_read_plugin_class(plugin_dir / "plugin.py")
         if attrs is None:
@@ -408,7 +416,7 @@ class TestPluginDeclaration:
             f"{plugin_id}: Plugin.id={attrs.get('id')!r} ≠ dir name"
         )
 
-    def test_required_files_present(self, plugin_id):
+    def test_required_files_present(self, plugin_id: str) -> None:
         ptype = _plugin_type(plugin_id)
         plugin_dir = _plugin_dir(plugin_id)
         required = REQUIRED_FILES.get(ptype, {})
@@ -438,7 +446,7 @@ ENGINE_PLUGIN_IDS = [
 class TestEngineDirectories:
     """Engine plugins must have engine.py or engine.yaml per subdir."""
 
-    def test_engine_dirs_have_declaration(self, plugin_id):
+    def test_engine_dirs_have_declaration(self, plugin_id: str) -> None:
         for edir in _engine_dirs_for(plugin_id):
             has_py = (edir / "engine.py").is_file()
             has_yaml = (edir / "engine.yaml").is_file()
@@ -447,7 +455,7 @@ class TestEngineDirectories:
                 f"no engine.py or engine.yaml"
             )
 
-    def test_engine_types_unique(self, plugin_id):
+    def test_engine_types_unique(self, plugin_id: str) -> None:
         """Engine types declared by this plugin must not clash with
         another plugin's types (PLUGIN ARCHITECTURE LAW)."""
         seen_types: dict[str, str] = {}
@@ -498,7 +506,7 @@ def _model_dirs_for(plugin_id: str) -> list[tuple[str, str, Path]]:
     return results
 
 
-def _all_model_params():
+def _all_model_params() -> list[ParameterSet]:
     """Generate (plugin_id, genre, model_id) for parametrize."""
     params = []
     for pid, _, _ in ALL_PLUGINS:
@@ -516,7 +524,7 @@ ALL_MODEL_PARAMS = _all_model_params()
 class TestModelDirectories:
     """Every model directory validates against the schema."""
 
-    def test_has_model_py_or_nodes_yaml(self, plugin_id, genre, model_id):
+    def test_has_model_py_or_nodes_yaml(self, plugin_id: str, genre: str, model_id: str) -> None:
         """A model must have at least model.py (the declaration) or
         nodes.yaml (the manifest). Neither = dead model dir."""
         model_dir = _plugin_dir(plugin_id) / "models" / genre / model_id
@@ -527,7 +535,7 @@ class TestModelDirectories:
             f"no model.py or nodes.yaml"
         )
 
-    def test_nodes_yaml_validates(self, plugin_id, genre, model_id):
+    def test_nodes_yaml_validates(self, plugin_id: str, genre: str, model_id: str) -> None:
         """If nodes.yaml exists, it must parse as valid YAML with
         the expected shape (nodes: dict at minimum)."""
         model_dir = _plugin_dir(plugin_id) / "models" / genre / model_id
@@ -543,7 +551,7 @@ class TestModelDirectories:
             )
         NodesYamlSpec(**data)
 
-    def test_model_dir_shape(self, plugin_id, genre, model_id):
+    def test_model_dir_shape(self, plugin_id: str, genre: str, model_id: str) -> None:
         """The ModelDirDecl shape validates from filesystem facts."""
         model_dir = _plugin_dir(plugin_id) / "models" / genre / model_id
         decl = ModelDirDecl(
@@ -561,7 +569,7 @@ class TestModelDirectories:
             f"{plugin_id}/{genre}/{model_id}: empty model dir"
         )
 
-    def test_no_stale_model_yaml(self, plugin_id, genre, model_id):
+    def test_no_stale_model_yaml(self, plugin_id: str, genre: str, model_id: str) -> None:
         """model.yaml is DELETED — the flip to model.py is done.
         A model.yaml appearing next to model.py is a LOUD refusal
         (two SSOTs = zero SSOTs)."""
@@ -586,7 +594,7 @@ class TestGenreCoverage:
     for each. No aliases, no fallbacks — the directory name IS the
     genre vocabulary."""
 
-    def test_declared_genres_have_models(self, plugin_id):
+    def test_declared_genres_have_models(self, plugin_id: str) -> None:
         plugin_dir = _plugin_dir(plugin_id)
         attrs = _ast_read_plugin_class(plugin_dir / "plugin.py")
         if attrs is None or not attrs.get("genres"):
@@ -635,7 +643,7 @@ class TestComposeFirstPlugins:
     the compose-first constraint applies only when the plugin uses the
     plugin.py engines: declaration WITHOUT a legacy engines/ dir."""
 
-    def test_compose_package_exists(self, plugin_id):
+    def test_compose_package_exists(self, plugin_id: str) -> None:
         plugin_dir = _plugin_dir(plugin_id)
         # If the plugin has a legacy engines/ dir with engine.py/yaml,
         # it uses the old shape — compose/ is not required.
@@ -679,7 +687,7 @@ class TestPluginYaml:
     """plugin.yaml must parse as valid YAML with at minimum
     an 'engines:' key or basic metadata."""
 
-    def test_yaml_parses(self, plugin_id):
+    def test_yaml_parses(self, plugin_id: str) -> None:
         plugin_dir = _plugin_dir(plugin_id)
         yaml_path = plugin_dir / "plugin.yaml"
         try:
@@ -698,32 +706,32 @@ class TestPluginYaml:
 class TestSchemaConstructionRefusals:
     """The schemas themselves reject invalid inputs at construction time."""
 
-    def test_plugin_class_decl_id_shape(self):
+    def test_plugin_class_decl_id_shape(self) -> None:
         with pytest.raises(Exception):
             PluginClassDecl(
                 id="BadID!", label="X", description="D",
                 engines=("comfyui",), genres=("image",),
             )
 
-    def test_plugin_class_decl_empty_id(self):
+    def test_plugin_class_decl_empty_id(self) -> None:
         with pytest.raises(Exception):
             PluginClassDecl(
                 id="", label="X", description="D",
             )
 
-    def test_plugin_class_decl_empty_label(self):
+    def test_plugin_class_decl_empty_label(self) -> None:
         with pytest.raises(Exception):
             PluginClassDecl(
                 id="ok", label="", description="D",
             )
 
-    def test_plugin_class_decl_empty_description(self):
+    def test_plugin_class_decl_empty_description(self) -> None:
         with pytest.raises(Exception):
             PluginClassDecl(
                 id="ok", label="X", description="",
             )
 
-    def test_plugin_class_decl_frozen(self):
+    def test_plugin_class_decl_frozen(self) -> None:
         p = PluginClassDecl(
             id="test", label="T", description="D",
             engines=("e",), genres=("image",),
@@ -731,11 +739,11 @@ class TestSchemaConstructionRefusals:
         with pytest.raises(Exception):
             p.id = "changed"
 
-    def test_nodes_yaml_spec_validates(self):
+    def test_nodes_yaml_spec_validates(self) -> None:
         n = NodesYamlSpec(nodes={"KSampler": {"type": " sampler"}})
         assert "KSampler" in n.nodes
 
-    def test_model_dir_decl_frozen(self):
+    def test_model_dir_decl_frozen(self) -> None:
         m = ModelDirDecl(
             plugin_id="comfyui", genre="image",
             model_id="krea-2", has_model_py=True,
@@ -743,7 +751,7 @@ class TestSchemaConstructionRefusals:
         with pytest.raises(Exception):
             m.model_id = "changed"
 
-    def test_genre_closed_vocab(self):
+    def test_genre_closed_vocab(self) -> None:
         for g in ("image", "video", "audio", "3d", "motion", "other",
                   "text"):
             assert Genre(g).value == g
@@ -754,7 +762,7 @@ class TestSchemaConstructionRefusals:
         with pytest.raises(ValueError):
             Genre("ai_generated")  # a TAG, not a genre
 
-    def test_live_plugin_genres_in_vocab(self):
+    def test_live_plugin_genres_in_vocab(self) -> None:
         """Every plugin.py genres value on disk speaks the ONE vocabulary."""
         for plugin_id in PLUGIN_IDS:
             plugin_dir = _plugin_dir(plugin_id)
@@ -767,7 +775,7 @@ class TestSchemaConstructionRefusals:
                     f"vocabulary {[g.value for g in Genre]}"
                 )
 
-    def test_live_card_genres_in_vocab(self):
+    def test_live_card_genres_in_vocab(self) -> None:
         """Every card.py genre on disk speaks the ONE vocabulary."""
         for plugin_id, card_path, attrs in _discover_all_cards():
             genre = attrs.get("genre")
@@ -778,7 +786,7 @@ class TestSchemaConstructionRefusals:
                 f"is not in the ONE vocabulary"
             )
 
-    def test_live_card_dir_matches_genre(self):
+    def test_live_card_dir_matches_genre(self) -> None:
         """action_cards/<genre>/<card> — the directory IS the genre."""
         for plugin_id, card_path, attrs in _discover_all_cards():
             genre = attrs.get("genre")
@@ -790,7 +798,7 @@ class TestSchemaConstructionRefusals:
                 f"genre={genre!r} but lives under action_cards/{dir_genre}/"
             )
 
-    def test_plugin_type_closed_vocab(self):
+    def test_plugin_type_closed_vocab(self) -> None:
         for t in ("engine", "web", "harness"):
             assert PluginType(t).value == t
         with pytest.raises(ValueError):

@@ -88,7 +88,23 @@ T4R_LINK_INJECTS = {
 }
 
 
-def load_knob_map(yaml_path):
+# Template JSON shapes: a template maps node ids to node objects; a
+# node carries its class inputs (possibly nested one level for
+# group.field paths) plus scalar metadata.
+_FieldValue = (
+    str
+    | int
+    | float
+    | bool
+    | list[str]
+    | dict[str, str | int | float | bool | list[str] | None]
+    | None
+)
+_TemplateNode = dict[str, str | dict[str, _FieldValue] | list[str] | int | float | bool | None]
+_Template = dict[str, _TemplateNode]
+
+
+def load_knob_map(yaml_path: str) -> list[tuple[str, str, str]]:
     """Return list of (card_name, inject_target, kind) tuples."""
     with open(yaml_path) as f:
         data = yaml.safe_load(f)
@@ -101,7 +117,7 @@ def load_knob_map(yaml_path):
     return knobs
 
 
-def load_templates(tpl_dir):
+def load_templates(tpl_dir: str) -> dict[str, _Template]:
     """Load window*_t4.json + window*_t4r.json. Return {filename: json}."""
     templates = {}
     pattern = re.compile(r"^window\d+_t4r?\.json$")
@@ -112,7 +128,7 @@ def load_templates(tpl_dir):
     return templates
 
 
-def resolve_node_field(inject_target, template):
+def resolve_node_field(inject_target: str, template: _Template) -> tuple[str, str] | None:
     """Resolve an inject target like "RandomNoise.0.noise_seed" or
     "ImageSharpenKJ.0.method.strength" against a template.
 
@@ -142,7 +158,7 @@ def resolve_node_field(inject_target, template):
     return None
 
 
-def resolve_field_in_node(node_obj, field_path):
+def resolve_field_in_node(node_obj: _TemplateNode, field_path: str) -> bool:
     """Check that field_path exists (possibly nested) in the node's inputs."""
     if "inputs" not in node_obj:
         return False
@@ -155,7 +171,7 @@ def resolve_field_in_node(node_obj, field_path):
     return True
 
 
-def check_inject_resolves(inject_target, template):
+def check_inject_resolves(inject_target: str, template: _Template) -> bool:
     """Target resolves AND the field exists in the node's inputs."""
     result = resolve_node_field(inject_target, template)
     if result is None:
@@ -164,7 +180,7 @@ def check_inject_resolves(inject_target, template):
     return resolve_field_in_node(template[node_id], field_path)
 
 
-def audit_direction_a(knob_map, templates):
+def audit_direction_a(knob_map: list[tuple[str, str, str]], templates: dict[str, _Template]) -> list[tuple[str, str, list[str]]]:
     """Every knob-map inject target must resolve in EVERY template."""
     violations = []
     for card, inject, kind in knob_map:
@@ -177,7 +193,7 @@ def audit_direction_a(knob_map, templates):
     return violations
 
 
-def audit_direction_b(templates):
+def audit_direction_b(templates: dict[str, _Template]) -> list[tuple[str, list[str]]]:
     """Structural injects resolve in the family where they're written."""
     violations = []
 
@@ -214,7 +230,7 @@ def audit_direction_b(templates):
     return violations
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(
         description="Bidirectional layer audit: card_knobs.yaml <-> templates 1:1"
     )

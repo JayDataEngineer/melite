@@ -63,7 +63,10 @@ import subprocess
 import sys
 import time
 import urllib.request
+from collections.abc import Callable, Iterator
 from pathlib import Path
+from types import ModuleType
+from typing import Protocol
 
 REPO = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = REPO / "plugins" / "engines" / "comfyui" / "data" / "comfyui_endpoint.json"
@@ -78,6 +81,19 @@ FAILS = []
 if str(REPO / "py") not in sys.path:
     sys.path.insert(0, str(REPO / "py"))
 import estate_config  # noqa: E402
+
+# Honest typing shapes (annotation-only; no runtime behavior).
+_EndpointConfig = dict[str, str | bool | int | float | list[str] | dict[str, str] | None]
+_BoundLayout = dict[str, str | dict[str, str]]
+_ToolResult = dict[str, str | int | float | bool | list[str] | dict[str, str] | None]
+
+
+class _CellArtifact(Protocol):
+    """Structural shape of a model.py cell artifact row as consumed
+    by step_models (download url + sha + destination subdir)."""
+    source_url: str
+    sha256: str
+    dest_sub: str
 
 # ── agent harness mount (dsh) — recipe → materialized home ─────────
 # The estate sculpt is @infer/dsh-provisioner (plugins/harness/dsh):
@@ -116,7 +132,7 @@ def die(msg: str) -> None:
     sys.exit(2)
 
 
-def need_comfy_mcp():
+def need_comfy_mcp() -> ModuleType:
     """Import the management plane — loudly, with the fix printed."""
     try:
         import comfy_mcp.server as sms  # noqa: F401
@@ -128,13 +144,13 @@ def need_comfy_mcp():
              "\n(or: pip install comfy-mcp)")
 
 
-def tool(sms, name):
+def tool(sms: ModuleType, name: str) -> Callable[..., _ToolResult]:
     """The @mcp.tool function, callable as a plain python function."""
     fn = getattr(sms, name)
     return getattr(fn, "fn", fn)
 
 
-def call(fn, *a, **kw):
+def call(fn: Callable[..., _ToolResult], *a: str | list[str], **kw: str | bool | int | float | None) -> _ToolResult:
     """Invoke an @mcp.tool function — some are async, some sync."""
     r = fn(*a, **kw)
     import inspect
@@ -183,7 +199,7 @@ def _runtime_python(workspace: Path) -> str:
     return str(workspace / ".venv" / "bin" / "python")
 
 
-def _pip_install(pkgs, workspace: Path) -> bool:
+def _pip_install(pkgs: list[str], workspace: Path) -> bool:
     """Install declared python deps into the SERVING runtime venv (where
     ComfyUI imports nodes). uv is the rail (the runtime venv ships no
     pip); satisfied pins are no-ops. Declared pins (pkg==x.y.z) are
@@ -199,7 +215,7 @@ def _pip_install(pkgs, workspace: Path) -> bool:
     return False
 
 
-def _cm_cli_install(url: str, workspace: Path) -> dict:
+def _cm_cli_install(url: str, workspace: Path) -> dict[str, str | bool]:
     """Call cm_cli install directly (accepts git URLs; install_node wraps it but
     refuses them).  Uses the workspace .venv python for dependencies."""
     import subprocess
@@ -224,7 +240,7 @@ def _cm_cli_install(url: str, workspace: Path) -> dict:
 
 # ── instance provisioning (byo verify / managed materialize) ────────
 
-def check(name, ok, note=""):
+def check(name: str, ok: bool, note: str = "") -> bool:
     print("  %-4s %s%s" % ("ok" if ok else "FAIL", name,
                            (" — " + note) if note and not ok else ""))
     if not ok:
@@ -232,13 +248,13 @@ def check(name, ok, note=""):
     return ok
 
 
-def load_config(path):
+def load_config(path: str | Path) -> _EndpointConfig:
     cfg = json.loads(Path(path).read_text())
     cfg.setdefault("provision", "byo")   # absent = byo (the agnostic default)
     return cfg
 
 
-def _probe(url, path, timeout=5):
+def _probe(url: str, path: str, timeout: int = 5) -> tuple[int, dict[str, str | int | float | bool | list[str] | dict[str, str | int | float | bool | None] | None]]:
     with urllib.request.urlopen(url.rstrip("/") + path, timeout=timeout) as r:
         return r.status, json.loads(r.read())
 
@@ -252,7 +268,7 @@ _FIXED_FOLDERS = (
 )
 
 
-def bound_model_folders(cfg: dict) -> dict:
+def bound_model_folders(cfg: _EndpointConfig) -> _BoundLayout:
     """THE ONE derivation: ROOT config + endpoint overrides
     -> {folder: mount subdir}.
 
@@ -304,7 +320,7 @@ def bound_model_folders(cfg: dict) -> dict:
             "folders": folders}
 
 
-def cmd_paths(cfg):
+def cmd_paths(cfg: _EndpointConfig) -> None:
     """Runtime layout + extra_model_paths.yaml (weights NEVER move:
     the yaml points at the deployment's persistent storage)."""
     bound = bound_model_folders(cfg)
@@ -330,7 +346,7 @@ def cmd_paths(cfg):
     _sync_endpoint_from_root(cfg)
 
 
-def _lay_download_pointers(download_base, folders):
+def _lay_download_pointers(download_base: str, folders: dict[str, str]) -> None:
     """THE DOWNLOAD DESTINATION IS CONFIG (operator order 2026-09-04:
     "configure where models download to — not an automatic spot").
 
@@ -384,7 +400,7 @@ _ENDPOINT_DERIVED = ("url", "model_base_path", "model_download_path",
                      "boot_cmd")
 
 
-def _sync_endpoint_from_root(cfg):
+def _sync_endpoint_from_root(cfg: _EndpointConfig) -> None:
     """The comfyui endpoint's url, model_*, stream and boot_cmd keys
     are derived from the root config. The root is the SSOT; the
     endpoint file is the surface the gateway reads (same shape
@@ -452,7 +468,7 @@ def _sync_endpoint_from_root(cfg):
     print("endpoint derived from root: %s" % ", ".join(changed))
 
 
-def cmd_sync(cfg):
+def cmd_sync(cfg: _EndpointConfig) -> None:
     if cfg.get("provision") != "managed":
         die("provision=%r — BYO deployments never install a ComfyUI "
             "(the estate sits on top; verify instead)" % cfg.get("provision"))
@@ -504,7 +520,7 @@ def cmd_sync(cfg):
     info("core checked out at %s (workspace root: %s)" % (pin[:12], RUNTIME))
 
 
-def cmd_boot_cmd(cfg):
+def cmd_boot_cmd(cfg: _EndpointConfig) -> None:
     if cfg.get("provision") == "managed":
         port = cfg.get("url", "http://127.0.0.1:18465").rsplit(":", 1)[-1]
         print("# managed launch (cwd resolves custom_nodes; weights via "
@@ -526,7 +542,7 @@ def cmd_boot_cmd(cfg):
         print(boot)
 
 
-def cmd_verify(cfg):
+def cmd_verify(cfg: _EndpointConfig) -> None:
     print("config:", DEFAULT_CONFIG.name)
     check("provision mode declared", cfg.get("provision") in ("byo", "managed"),
           repr(cfg.get("provision")))
@@ -621,7 +637,7 @@ def cmd_verify(cfg):
 
 # ── extensions via comfy-mcp (in-process) + our vendor symlinks ─────
 
-def load_manifest():
+def load_manifest() -> list[dict[str, str | list[str] | None]]:
     """infra/extension_lane.py merges all plugin declarations — the SSOT,
     imported, not shelled."""
     spec = importlib.util.spec_from_file_location("extension_lane", LANE)
@@ -659,7 +675,7 @@ def link_in_tree(name: str, workspace: Path) -> str:
         return "installed"
 
 
-def workspace_from_server_info(sms):
+def workspace_from_server_info(sms: ModuleType) -> Path:
     """The workspace comfy-cli reports it is driving (informational —
     it may live in ANOTHER world: a container path, a remote host)."""
     rep = call(tool(sms, "server_info"))
@@ -828,7 +844,7 @@ def sha256_of(path: Path) -> str:
     return h.hexdigest()
 
 
-def _cell_rows():
+def _cell_rows() -> Iterator[tuple[str, str, str, _CellArtifact]]:
     """Every downloadable cell artifact the estate declares — the REAL
     declarations (pydantic rows in model.py, PYTHON SHAPE LAW), via the
     catalog's own scanner. The model.yaml-glob era was a fossil that
@@ -939,7 +955,7 @@ def step_models() -> bool:
 
 # ── agent harness home (server mount) ──────────────────────────────
 
-def need_dsh_sdk():
+def need_dsh_sdk() -> Callable[[], list[str]]:
     """The python client + bundled dsh runtime — loudly, with the fix."""
     try:
         import deepseek_harness  # noqa: F401
@@ -1016,7 +1032,7 @@ def _dsh_materialize_profile(home: Path) -> Path:
     return prof
 
 
-def cmd_dsh():
+def cmd_dsh() -> None:
     """Materialize the harness home + estate profile, then PROVE the
     composition resolves through the bundled runtime (--dump-config:
     the full tree, no app boot, no model key needed)."""
@@ -1063,7 +1079,7 @@ def cmd_dsh():
 
 # ── main ────────────────────────────────────────────────────────────
 
-def _managed_routing():
+def _managed_routing() -> None:
     """managed mode: comfy-mcp spawns must hit THIS runtime's comfy-cli
     and workspace (COMFY_BIN + COMFYUI_PATH env routing — the same
     deployment-glue mechanism, owned by config instead of a wrapper)."""
@@ -1096,7 +1112,7 @@ def _managed_routing():
          % (comfy_bin, RUNTIME))
 
 
-def run_declarations(args) -> int:
+def run_declarations(args: argparse.Namespace) -> int:
     _managed_routing()
     rc = 0
     if args.cmd in ("all", "extensions"):
@@ -1108,7 +1124,7 @@ def run_declarations(args) -> int:
     return rc
 
 
-def cmd_manage(argv):
+def cmd_manage(argv: list[str]) -> int:
     """manual door of the ONE ComfyUI manager (py/manage.py — the SSOT;
     the AI door is POST /v1/manage → the comfy_manage DSH tool).
 
@@ -1170,7 +1186,7 @@ def cmd_manage(argv):
     return 0 if rep.get("ok") else 1
 
 
-def main():
+def main() -> None:
     global DRY
     ap = argparse.ArgumentParser(
         description="inference.cpp provisioning — the ONE orchestrator "

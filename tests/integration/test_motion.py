@@ -15,11 +15,15 @@ skinned onto the SOMAX-rigged character).
 """
 
 import pytest
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from conftest import QueueDoor
 
 pytestmark = pytest.mark.gpu
 
 
-def test_motion_text_to_pose(gateway):
+def test_motion_text_to_pose(gateway: "QueueDoor") -> None:
     """Bare generation: one prompt → one SOMA-77 NPZ on disk."""
     door = gateway
     run_id = door.submit({
@@ -37,7 +41,8 @@ def test_motion_text_to_pose(gateway):
     assert any("kimodo_pose" in n and n.endswith(".npz") for n in names), names
 
 
-def test_motion_somax_bake(gateway, assets):
+def test_motion_somax_bake(gateway: "QueueDoor",
+                           assets: dict[str, str | None]) -> None:
     """The character arc: NPZ skinned onto a SOMAX-rigged GLB — the
     animated GLB artifact (the anny stopgap consumption)."""
     if not assets["rigged_glb"]:

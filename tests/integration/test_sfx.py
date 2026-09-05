@@ -6,11 +6,16 @@ GPU-marked: real inference, serial law, artifacts asserted on disk.
 """
 
 import pytest
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from conftest import QueueDoor
 
 pytestmark = pytest.mark.gpu
 
 
-def test_sfx_basic(gateway, assets):
+def test_sfx_basic(gateway: "QueueDoor",
+                   assets: dict[str, str | None]) -> None:
     """Bare sfx submit: describe the SOUND not the scene; short
     clip, few steps — a canary, not a showcase."""
     door = gateway          # the fixture IS the QueueDoor

@@ -77,8 +77,27 @@ warn_untyped_fields = true
 # wraps them as subprocess walls, never rewrites them). The dev group
 # is the only dependency group (the management plane stays base —
 # PROVISIONING LAW).
+#
+# Parallel runner: pytest-xdist lives in the dev group. The walls'
+# subprocess wall list (test_walls.py SUBPROCESS_WALLS) is already
+# one-suite-one-subprocess, so -n auto fans the parametrize across
+# workers for free. Unit / routes / walls tests get xdist_group
+# markers stamped by their directory conftest so `--dist=loadgroup`
+# keeps a directory's session-scoped fixtures on one worker (the
+# integration suite's scratch gateway, the routes suite's live
+# gateway client).
+#
+# Runner shapes:
+#   uv run pytest                  # sequential (the safe default)
+#   uv run pytest -n auto          # parallel across cores
+#   uv run pytest -n 4             # bounded parallelism
+#   uv run pytest -m gpu           # integration (GPU money, opt-in)
+#   uv run pytest -m gpu -n 1      # integration forced serial
 [dependency-groups]
-dev = ["pytest>=8"]
+dev = [
+    "pytest>=8",
+    "pytest-xdist>=3",
+]
 
 [tool.pytest.ini_options]
 # tests/ layout: unit/ = no server, routes/ = live gateway (skips when
@@ -97,5 +116,18 @@ testpaths = ["tests/unit", "tests/routes", "tests/integration", "tests/walls"]
 pythonpath = ["."]
 markers = [
     "gpu: real inference through the queue (opt in: pytest -m gpu)",
+    # xdist_group stamps (set by directory conftests via
+    # pytest_collection_modifyitems; listed here so `--strict-markers`
+    # would be silent and so `pytest --markers` documents the shape).
+    # The names match the testpaths dirs: unit / routes / walls /
+    # integration. Under `--dist=loadgroup`, a group's session-scoped
+    # fixtures (integration's scratch gateway, routes' live client)
+    # live on a single worker — no cross-worker fixture sharing.
+    "xdist_group(name): group tests so they run on the same xdist worker (pytest-xdist --dist=loadgroup)",
 ]
+# -m 'not gpu' deselects the GPU suite by default (GPU money; opt in
+# explicitly). `-q` keeps the fast-runner output terse. Parallelism
+# is OPT-IN: `uv run pytest -n auto` — the safe default stays
+# sequential because the walls' subprocess walls ALREADY fork their
+# own processes and the integration suite is serial by the GPU law.
 addopts = "-m 'not gpu' -q"

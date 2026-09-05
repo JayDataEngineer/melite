@@ -48,7 +48,7 @@ def _get(url: str, timeout: float = 20.0) -> tuple[int, str]:
 
 
 @pytest.fixture(scope="module")
-def dev_dsh_up():
+def dev_dsh_up() -> bool:
     import socket
     try:
         s = socket.create_connection((DEV_TAILNET_FQDN, DEV_PORT), timeout=3)
@@ -59,14 +59,14 @@ def dev_dsh_up():
 
 
 @pytest.fixture(scope="module")
-def editor_html(dev_dsh_up) -> str:
+def editor_html(dev_dsh_up: bool) -> str:
     status, html = _get(f"{ORIGIN}/editor/")
     assert status == 200, f"GET /editor/ returned {status}: {html[:200]!r}"
     return html
 
 
 @pytest.fixture(scope="module")
-def asset_paths(editor_html) -> list[str]:
+def asset_paths(editor_html: str) -> list[str]:
     """Every JS chunk URL referenced by the served HTML."""
     paths = sorted(set(re.findall(r'assets/[A-Za-z0-9_.-]+\.js', editor_html)))
     assert paths, (
@@ -77,7 +77,7 @@ def asset_paths(editor_html) -> list[str]:
 
 
 @pytest.fixture(scope="module")
-def all_js(asset_paths) -> str:
+def all_js(asset_paths: list[str]) -> str:
     """The concatenation of every served JS chunk (the bytes a browser
     downloads on first paint)."""
     chunks: list[str] = []
@@ -94,7 +94,7 @@ class TestEditorServedBundle:
     a stale dist or a half-finished rebuild fails here, not in a
     browser session."""
 
-    def test_query_form_events_url_is_deployed(self, all_js):
+    def test_query_form_events_url_is_deployed(self, all_js: str) -> None:
         """The events WS client must use the query form
         (?run_id=...) — the form the DSH exact-path tunnel law
         requires. The path form died with the 2026-09-04 live bug
@@ -106,7 +106,7 @@ class TestEditorServedBundle:
             "feedback inside the DSH embed will be silent."
         )
 
-    def test_retired_capability_grid_copy_is_gone(self, all_js):
+    def test_retired_capability_grid_copy_is_gone(self, all_js: str) -> None:
         """The capability-grid question was deleted with the
         one-surface picker order (2026-09-04: the action cards are
         the ONE surface). A served copy means the dist is stale."""
@@ -116,7 +116,7 @@ class TestEditorServedBundle:
             "src — rebuild plugins/web/editor."
         )
 
-    def test_action_card_picker_copy_is_deployed(self, all_js):
+    def test_action_card_picker_copy_is_deployed(self, all_js: str) -> None:
         """The one-surface picker headline must be IN the served
         bytes — proves the dist is NEWER than the picker rewrite."""
         assert "Your action cards" in all_js, (
@@ -125,7 +125,7 @@ class TestEditorServedBundle:
             "rebuild plugins/web/editor."
         )
 
-    def test_no_retired_ray_deck_routes_in_served_js(self, all_js):
+    def test_no_retired_ray_deck_routes_in_served_js(self, all_js: str) -> None:
         """No served chunk may reference the retired /ray-deck/ API.
         A reference means either a stale chunk or a src file that
         still imports the dead door."""
@@ -135,7 +135,7 @@ class TestEditorServedBundle:
             "calls the dead door (it would 404 at runtime)."
         )
 
-    def test_no_retired_infer_media_routes_in_served_js(self, all_js):
+    def test_no_retired_infer_media_routes_in_served_js(self, all_js: str) -> None:
         """No served chunk may reference the retired infer-media
         routes (the package was deleted with the sidebar
         retirement)."""
@@ -145,7 +145,7 @@ class TestEditorServedBundle:
             "the deleted media-plugin package."
         )
 
-    def test_every_asset_chunk_is_fresh_over_http(self, asset_paths):
+    def test_every_asset_chunk_is_fresh_over_http(self, asset_paths: list[str]) -> None:
         """Every chunk referenced by the HTML is actually served
         (a 404 on a hashed chunk name = the dist was rebuilt AFTER
         the HTML was cached, or a file was deleted mid-deploy)."""

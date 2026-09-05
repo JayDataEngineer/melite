@@ -1,12 +1,21 @@
 """tests/unit conftest — factories for the no-server suites."""
 import json
 import os
+from pathlib import Path
+from typing import Protocol
 
 import pytest
 
 
-def write_run(root, run_id, files, status="completed", model="x",
-              created_at=1700000000, test=False):
+class _MakeRun(Protocol):
+    """The make_run factory: call it to write a run dir, read .root
+    for the default tree it writes under."""
+    root: str
+    def __call__(self, run_id: str, files: dict[str, bytes], root: Path | str | None = None, **kwargs: str | int | bool) -> str: ...
+
+
+def write_run(root: Path | str, run_id: str, files: dict[str, bytes], status: str="completed", model: str="x",
+              created_at: int=1700000000, test: bool=False) -> str:
     """Write a run dir (artifact files + _flow.json sidecar).
 
     Shared by every unit suite that needs a run on disk. Tests that
@@ -28,13 +37,13 @@ def write_run(root, run_id, files, status="completed", model="x",
 
 
 @pytest.fixture
-def make_run(tmp_path):
+def make_run(tmp_path: Path) -> _MakeRun:
     """Factory fixture: make_run(run_id, files, root=None, **kwargs).
 
     Writes under tmp_path by default (auto-cleaned per test); pass
     root=<Path> to target a custom tree (the L3 tests use
     tmp_path/test-output as their own root)."""
-    def _make(run_id, files, root=None, **kwargs):
+    def _make(run_id: str, files: dict[str, bytes], root: Path | str | None=None, **kwargs: str | int | bool) -> str:
         return write_run(root if root is not None else tmp_path,
                          run_id, files, **kwargs)
     _make.root = str(tmp_path)

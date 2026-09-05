@@ -40,7 +40,7 @@ SUITES = WALLS / "suites"
 REPO = WALLS.parent.parent
 
 
-def _assign(tree, name):
+def _assign(tree: ast.Module, name: str) -> list[str] | set[str] | dict[str, str] | None:
     """Literal value of a top-level `name = ...` assignment, else None."""
     for node in tree.body:
         if isinstance(node, ast.Assign) and any(
@@ -50,7 +50,7 @@ def _assign(tree, name):
     return None
 
 
-def _registries():
+def _registries() -> tuple[set[str], set[str], set[str]]:
     walls_tree = ast.parse((WALLS / "test_walls.py").read_text())
     conftest_tree = ast.parse((WALLS / "conftest.py").read_text())
     subprocess_walls = _assign(walls_tree, "SUBPROCESS_WALLS") or []
@@ -63,16 +63,16 @@ def _registries():
     )
 
 
-def _suite_files():
+def _suite_files() -> set[str]:
     """Every suite on disk, as suites-relative basenames."""
     return {p.name for p in SUITES.glob("test_*.py")}
 
 
-def _ignored(name, ignore_globs):
+def _ignored(name: str, ignore_globs: set[str]) -> bool:
     return any(fnmatch(name, pat.split("/")[-1]) for pat in ignore_globs)
 
 
-def test_r1_every_ignored_suite_is_run_by_something():
+def test_r1_every_ignored_suite_is_run_by_something() -> None:
     """R1: a suite pytest refuses to collect must have a runner."""
     subprocess_walls, known_drift, ignore_globs = _registries()
     run = subprocess_walls | known_drift
@@ -88,7 +88,7 @@ def test_r1_every_ignored_suite_is_run_by_something():
     )
 
 
-def test_r2_registry_entries_exist_on_disk():
+def test_r2_registry_entries_exist_on_disk() -> None:
     """R2: ghost entries — deleted suites still booked in a registry."""
     subprocess_walls, known_drift, _ = _registries()
     ghosts = sorted(
@@ -101,7 +101,7 @@ def test_r2_registry_entries_exist_on_disk():
     )
 
 
-def test_r3_no_suite_is_both_green_and_drift():
+def test_r3_no_suite_is_both_green_and_drift() -> None:
     """R3: SUBPROCESS_WALLS expects exit 0, KNOWN_DRIFT expects red —
     a suite in both is a contradiction the orchestrator resolves
     arbitrarily."""
@@ -112,7 +112,7 @@ def test_r3_no_suite_is_both_green_and_drift():
     )
 
 
-def test_r4_every_ignore_glob_matches_a_suite():
+def test_r4_every_ignore_glob_matches_a_suite() -> None:
     """R4: dead globs — bookkeeping for a file that no longer exists."""
     _, _, ignore_globs = _registries()
     dead = sorted(
@@ -123,7 +123,7 @@ def test_r4_every_ignore_glob_matches_a_suite():
     assert not dead, "collect_ignore_glob patterns matching nothing: %s" % dead
 
 
-def test_r5_collectible_suites_do_not_execute_at_import():
+def test_r5_collectible_suites_do_not_execute_at_import() -> None:
     """R5: a suite NOT ignore-globbed will be imported by pytest at
     collection. Top-level executable calls (module-level check()/run()
     invocations outside any def or __main__ guard) mean a script-style

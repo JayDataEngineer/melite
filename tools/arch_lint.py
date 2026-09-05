@@ -13,6 +13,7 @@ import ast
 import os
 import re
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -32,7 +33,7 @@ TS_RE = re.compile(
 )
 
 
-def iter_source_files(root):
+def iter_source_files(root: Path) -> Iterator[tuple[Path, str]]:
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
         for fn in filenames:
@@ -43,7 +44,7 @@ def iter_source_files(root):
                 yield p, "ts"
 
 
-def collect_imports(path, language):
+def collect_imports(path: Path, language: str) -> Iterator[tuple[Path, int, str]]:
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
@@ -78,7 +79,7 @@ def collect_imports(path, language):
                 yield path, line_no, spec
 
 
-def _top_group(path):
+def _top_group(path: Path) -> str | None:
     try:
         rel = path.resolve().relative_to(REPO)
     except ValueError:
@@ -92,7 +93,7 @@ def _top_group(path):
     return None
 
 
-def _plugins_subgroup(path):
+def _plugins_subgroup(path: Path) -> str | None:
     try:
         rel = path.resolve().relative_to(REPO / "plugins")
     except ValueError:
@@ -103,7 +104,7 @@ def _plugins_subgroup(path):
     return parts[1]
 
 
-def _vendor_pack(path):
+def _vendor_pack(path: Path) -> str | None:
     try:
         rel = path.resolve().relative_to(REPO / "vendor" / "comfyui_extensions")
     except ValueError:
@@ -114,7 +115,7 @@ def _vendor_pack(path):
     return parts[0]
 
 
-def contract_core_is_generic(all_imports):
+def contract_core_is_generic(all_imports: list[tuple[Path, int, str]]) -> list[tuple[Path, int, str]]:
     """PLUGIN ARCHITECTURE LAW: py/ is generic. No py/ file may
     import from plugins/, vendor/, or references/.
 
@@ -147,7 +148,7 @@ def contract_core_is_generic(all_imports):
     return violations
 
 
-def contract_plugins_are_independent(all_imports):
+def contract_plugins_are_independent(all_imports: list[tuple[Path, int, str]]) -> list[tuple[Path, int, str]]:
     """EXTENSION LAW + plugin architecture: the three plugin groups
     (engines, harness, web) are independent DOMAIN trees.
 
@@ -188,7 +189,7 @@ def contract_plugins_are_independent(all_imports):
     return violations
 
 
-def contract_vendor_packs_isolated(all_imports):
+def contract_vendor_packs_isolated(all_imports: list[tuple[Path, int, str]]) -> list[tuple[Path, int, str]]:
     """EXTENSION LAW: each vendor/comfyui_extensions/<pack> is its own
     repo. Cross-pack imports are a wall break."""
     violations = []
@@ -208,7 +209,7 @@ def contract_vendor_packs_isolated(all_imports):
     return violations
 
 
-def contract_references_is_study_only(all_imports):
+def contract_references_is_study_only(all_imports: list[tuple[Path, int, str]]) -> list[tuple[Path, int, str]]:
     """EXTENSION LAW: references/ is read-only study. No one
     OUTSIDE references/ may import from it.
 
@@ -236,7 +237,7 @@ CONTRACTS = [
 ]
 
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> int:
     import argparse
     parser = argparse.ArgumentParser(
         description="Estate boundary-drift linter (4 contracts)")

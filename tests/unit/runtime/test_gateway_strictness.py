@@ -17,6 +17,7 @@ No GPU, no server: direct handler/submit calls."""
 
 import asyncio
 import sys
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 
 import pytest
@@ -27,36 +28,41 @@ sys.path.insert(0, str(REPO / "py"))
 import gateway  # noqa: E402
 import lane_disclosure as ld  # noqa: E402
 
+# Awaited handler answers: (status code, JSON-ish envelope the tests
+# read error/count keys off).
+HandlerResult = tuple[int, dict[str, str | int | list[dict[str, str | int | bool]]]]
+HandlerFn = Callable[[gateway._Ctx], Awaitable[HandlerResult]]
+
 
 # ── the test flag is a BOOLEAN ─────────────────────────────────────
 
-def _submit(body):
+def _submit(body: dict[str, str | bool | int | list[bool]]) -> gateway.Run:
     gw = gateway.Gateway()
     return asyncio.run(gw.submit(body))
 
 
 @pytest.mark.parametrize("bad", ["false", "yes", 1, 0, "true", [True]])
-def test_non_bool_test_flag_refused_before_registration(bad):
+def test_non_bool_test_flag_refused_before_registration(bad: str | int | list[bool]) -> None:
     """4xx BEFORE any run registers — no run dir, no sidecar lie."""
     with pytest.raises(gateway.ValidationError, match="test flag"):
         _submit({"prompt": "x", "test": bad})
 
 
-def test_bool_false_flag_passes_the_flag_gate():
+def test_bool_false_flag_passes_the_flag_gate() -> None:
     # the flag check passed when the refusal comes from the NEXT gate
     # (resolve_request: no flow selected) — a different, named error
     with pytest.raises(gateway.ValidationError, match="no flow selected"):
         _submit({"prompt": "x", "test": False})
 
 
-def test_bool_true_flag_passes_the_flag_gate():
+def test_bool_true_flag_passes_the_flag_gate() -> None:
     with pytest.raises(gateway.ValidationError, match="no flow selected"):
         _submit({"prompt": "x", "test": True})
 
 
 # ── limit params refuse garbage loudly ─────────────────────────────
 
-def _ctx(path, qs):
+def _ctx(path: str, qs: dict[str, str]) -> gateway._Ctx:
     return gateway._Ctx(None, "GET", path, path + "?" + "&".join(
         "%s=%s" % kv for kv in qs.items()), qs, b"")
 
@@ -65,27 +71,27 @@ def _ctx(path, qs):
     (gateway._h_runs_list, "/v1/flows/runs"),
     (gateway._h_assets_index, "/v1/assets"),
 ])
-def test_garbage_limit_refuses_4xx(handler, good_path):
+def test_garbage_limit_refuses_4xx(handler: HandlerFn, good_path: str) -> None:
     code, body = asyncio.run(
         handler(_ctx(good_path, {"limit": "abc"})))
     assert code == 400
     assert "limit" in body["error"]
 
 
-def test_runs_list_integer_limit_serves(handler=None):
+def test_runs_list_integer_limit_serves(handler: HandlerFn | None=None) -> None:
     code, body = asyncio.run(
         gateway._h_runs_list(_ctx("/v1/flows/runs", {"limit": "5"})))
     assert code == 200
     assert body["count"] >= 0
 
 
-def test_runs_list_default_limit_serves():
+def test_runs_list_default_limit_serves() -> None:
     code, body = asyncio.run(
         gateway._h_runs_list(_ctx("/v1/flows/runs", {})))
     assert code == 200
 
 
-def test_assets_index_integer_limit_serves():
+def test_assets_index_integer_limit_serves() -> None:
     code, body = asyncio.run(
         gateway._h_assets_index(_ctx("/v1/assets", {"limit": "5"})))
     assert code == 200
@@ -101,7 +107,7 @@ def test_assets_index_integer_limit_serves():
      lambda: setattr(ld, "card_tools", lambda: (_ for _ in ()).throw(
          ld.LaneWireError("boom: field reason")))),
 ])
-def test_lane_wire_refusal_serves_structured_500(handler, path, setup):
+def test_lane_wire_refusal_serves_structured_500(handler: HandlerFn, path: str, setup: Callable[[], None]) -> None:
     setup()
     code, body = asyncio.run(handler(_ctx(path, {})))
     assert code == 500
@@ -109,7 +115,7 @@ def test_lane_wire_refusal_serves_structured_500(handler, path, setup):
     assert "boom" in body["error"]
 
 
-def test_skill_read_door_still_404s_unknown():
+def test_skill_read_door_still_404s_unknown() -> None:
     # the 404 path is the disclosure function's own contract
     code, body = ld.skill_read("no-such-skill")
     assert code == 404

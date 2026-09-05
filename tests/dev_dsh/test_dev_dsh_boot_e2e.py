@@ -34,6 +34,10 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from playwright.sync_api import Page
 
 # Playwright is python3.14-only on this host (not in the project venv).
 # Importing happens at module top; if it fails the user gets a clear
@@ -85,7 +89,7 @@ BOOT_FAILURE_PATTERNS = (
 )
 
 
-def page_is_healthy(page) -> tuple[bool, str]:
+def page_is_healthy(page: Page) -> tuple[bool, str]:
     """Return (ok, detail). ok=False if any boot failure pattern shows.
 
     We also confirm a positive signal (the page actually rendered the

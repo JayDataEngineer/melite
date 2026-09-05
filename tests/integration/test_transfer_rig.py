@@ -7,11 +7,16 @@ produces it). Serial GPU discipline; queue door only (INFERENCE LAW).
 """
 
 import pytest
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from conftest import QueueDoor
 
 pytestmark = pytest.mark.gpu
 
 
-def test_transfer_rig_copies_the_rig(gateway, assets):
+def test_transfer_rig_copies_the_rig(gateway: "QueueDoor",
+                                     assets: dict[str, str | None]) -> None:
     """rigged_char.glb (bary body, SOMA-rigged) + outfit_cap.glb
     (static clothed cap) → one rigged .glb out."""
     run_id = gateway.submit({

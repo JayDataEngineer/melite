@@ -41,7 +41,7 @@ import plugins  # noqa: E402
 PASS, FAIL = [], []
 
 
-def norm_yaml(text):
+def norm_yaml(text: str) -> str:
     """Normalize the known nondeterminisms: repo path prefix, minted
     seeds, staged edit filenames. Keep inject ORDER (it is data)."""
     t = text.replace(str(REPO / "build" / ".."), str(REPO))
@@ -51,7 +51,7 @@ def norm_yaml(text):
     return t
 
 
-def norm_extra(extra):
+def norm_extra(extra: dict[str, str | int | dict[str, str | int]] | None) -> dict[str, str | int | dict[str, str | int]] | None:
     if not isinstance(extra, dict):
         return extra
     out = {}
@@ -63,7 +63,7 @@ def norm_extra(extra):
     return out
 
 
-def _norm_str(v):
+def _norm_str(v: str | int | float | bool | None) -> str | int | float | bool | None:
     """DOCUMENTED DEVIATION normalizer: the C's raw substring extraction
     (CC_GRAB_STR/ac_jq_s) never unescaped JSON wire escapes, so a body
     lyric '[verse]\\nhello' reached run inputs as a LITERAL backslash-n.
@@ -77,11 +77,13 @@ def _norm_str(v):
 FLIP_TPL = {
     "krea-2": "models/image/krea-2/generate_t2i.json",
     "music3": "models/audio/music3/music_t1.json",
-    "img-edit": "models/image/img-edit/edit_i2i.json",
+    # (2026-09-05 image-edit rework) the `img-edit` family head is
+    # retired — same lane, its template now lives on the survivor.
+    "qwen-img-edit-2511": "models/image/qwen-img-edit-2511/edit_i2i.json",
 }
 
 
-def _oldpath_graph(model, golden_yaml, inputs):
+def _oldpath_graph(model: str, golden_yaml: str, inputs: dict[str, str]) -> dict[str, dict[str, str | int | float | bool | list[str] | dict[str, str | int]]] | None:
     """Reconstruct the C channel delivered graph: template + inject
     with $refs resolved from the phase-1 run inputs (string forms)."""
     import copy, json as _j
@@ -116,7 +118,7 @@ def _oldpath_graph(model, golden_yaml, inputs):
         wf[nid].setdefault("inputs", {})[field] = v
     return wf
 
-def run_case(rec):
+def run_case(rec: dict[str, str | int | list[str] | dict[str, str | int | dict[str, str | int | None]]]) -> None:
     name, model, etypes, body = rec["case"], rec["model"], rec["engine_types"], rec["body"]
     for phase, rid, gkey in (("phase1", "", "phase1"), ("phase2", "run-GOLDEN-0001", "phase2")):
         golden = rec[gkey]
@@ -217,7 +219,7 @@ def run_case(rec):
         PASS.append("%s/%s extras" % (name, phase))
 
 
-def _norm_graph(g):
+def _norm_graph(g: dict[str, str | int | float | bool | list[str | int] | dict[str, str | int | float | bool]] | list[str | int | dict[str, str | int]] | str | int | float | bool | None) -> dict[str, str | int | float | bool | list[str | int] | dict[str, str | int]] | list[str | int | dict[str, str | int]] | str | int | float | bool | None:
     """Structural normalizer: repo paths, minted seeds, the C's
     literal backslash-n artifact. Dict-keyed ints named seed pin to
     <int> (minted); strings normalize like extras."""
@@ -242,7 +244,7 @@ def _norm_graph(g):
     return g
 
 
-def _same_refusal_class(c_msg, py_msg):
+def _same_refusal_class(c_msg: str, py_msg: str) -> bool:
     """The refusal CAUSE must match (by-name params, required-missing,
     knob-map-missing) — exact wording may differ in the rc=-1 wrap."""
     for marker in ("required param", "unknown param", "knob map", "no knob entries",
@@ -252,7 +254,7 @@ def _same_refusal_class(c_msg, py_msg):
     return True
 
 
-def main():
+def main() -> int:
     cases = sorted(HERE.glob("*.json"))
     cases = [c for c in cases if not c.name.startswith("_")]
     for c in cases:

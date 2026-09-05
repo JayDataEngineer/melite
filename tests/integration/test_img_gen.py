@@ -7,11 +7,15 @@ LoraLoaderModelOnly nodes — the artifacts prove the chain executes.
 """
 
 import pytest
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from conftest import QueueDoor
 
 pytestmark = pytest.mark.gpu
 
 
-def test_bare_post(gateway):
+def test_bare_post(gateway: "QueueDoor") -> None:
     run_id = gateway.submit({
         "model": "krea-2",
         "params": {"prompt": "a red fox in snow, studio light",
@@ -23,7 +27,7 @@ def test_bare_post(gateway):
     assert all(a.suffix == ".png" for a in arts), arts
 
 
-def test_loras_mod_consumption(gateway):
+def test_loras_mod_consumption(gateway: "QueueDoor") -> None:
     """The loras channel end-to-end on real GPU: the model's own
     catalog row (turbo), default strength from the row."""
     run_id = gateway.submit({

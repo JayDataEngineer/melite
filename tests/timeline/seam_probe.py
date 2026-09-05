@@ -27,20 +27,20 @@ wins = sorted(
      if re.fullmatch(r"window\d+_video_0\.mp4", f)),
     key=lambda f: int(re.search(r"\d+", f).group()))
 
-def ff(*a):
+def ff(*a: str) -> bytes:
     return subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", *a],
                           capture_output=True).stdout
 
-def pcm(path, ss, t):
+def pcm(path: str, ss: float, t: float) -> array.array[int]:
     b = ff("-ss", f"{ss}", "-t", f"{t}", "-i", path,
            "-ac", "1", "-ar", "16000", "-f", "s16le", "-")
     a = array.array("h"); a.frombytes(b[:len(b)//2*2])
     return a
 
-def rms(xs):
+def rms(xs: array.array[int]) -> float:
     return math.sqrt(sum(x*x for x in xs) / max(1, len(xs))) / 32768.0
 
-def spectrum(xs, sr=16000, nband=24):
+def spectrum(xs: list[int], sr: int = 16000, nband: int = 24) -> list[float] | None:
     """coarse log-magnitude spectrum via Goertzel bands — no numpy needed"""
     n = len(xs)
     if n < 512: return None
@@ -56,18 +56,18 @@ def spectrum(xs, sr=16000, nband=24):
         out.append(math.log10((ci*ci + cq*cq) / (n//step) + 1e-12))
     return out
 
-def dist(a, b):
+def dist(a: list[float] | None, b: list[float] | None) -> float | None:
     if a is None or b is None: return None
     return math.sqrt(sum((x-y)**2 for x, y in zip(a, b))) / math.sqrt(len(a))
 
-def dur(path):
+def dur(path: str) -> float | None:
     r = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
                         "format=duration", "-of", "csv=p=0", path],
                        capture_output=True, text=True)
     try: return float(r.stdout.strip())
     except ValueError: return None
 
-def xcorr(a, b):
+def xcorr(a: array.array[int], b: array.array[int]) -> float | None:
     n = min(len(a), len(b))
     if n < 2000: return None
     a, b = a[:n], b[:n]
@@ -110,7 +110,7 @@ while t + 0.25 < d1 - 0.1:
     prev, prev_s = cur, cur_s
     t += 0.25
 lvl_steps.sort(); spec_ds.sort()
-def pct(xs, p):
+def pct(xs: list[float], p: float) -> float | None:
     return xs[min(len(xs)-1, int(p*len(xs)))] if xs else None
 ctrl = {"internal_p95_level_db": round(pct(lvl_steps, .95), 2) if lvl_steps else None,
         "internal_p95_spec": round(pct(spec_ds, .95), 3) if spec_ds else None,

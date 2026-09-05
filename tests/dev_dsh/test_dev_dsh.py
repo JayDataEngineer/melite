@@ -38,6 +38,7 @@ import subprocess
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Iterable
 
@@ -108,7 +109,7 @@ def _log_tail(path: Path, lines: int = 80) -> str:
 # ---------------------------------------------------------------------------
 
 @pytest.fixture(scope="module")
-def dev_dsh_up():
+def dev_dsh_up() -> Iterator[bool]:
     """Ensure the dev DSH is running before this module's tests run.
 
     If the port isn't listening, attempt a single launcher invocation.
@@ -135,8 +136,16 @@ def dev_dsh_up():
     yield True
 
 
+# Honest row shapes for the bundle/provisioner gates (annotation-only
+# aliases — the wall refuses bare dicts, and Any is never the answer).
+_BundleRow = dict[str, str]
+_PluginInject = dict[str, str | list[str]]
+_PackageJson = dict[str, str | list[str] | dict[str, str]]
+_InstalledPkg = dict[str, str | Path | bool | _PackageJson | None]
+
+
 @pytest.fixture(scope="module")
-def bundle_rows() -> list[dict]:
+def bundle_rows() -> list[_BundleRow]:
     """Parse the @infer/dsh-provisioner cordis.patch.yml into a list of insert rows.
 
     Each row is a dict {id, name} (other config keys are dropped — they aren't
@@ -145,7 +154,7 @@ def bundle_rows() -> list[dict]:
     patch = PROVISIONER / "cordis.patch.yml"
     if not patch.exists():
         return []
-    rows: list[dict] = []
+    rows: list[_BundleRow] = []
     in_insert = False
     for line in patch.read_text().splitlines():
         s = line.strip()
@@ -161,13 +170,13 @@ def bundle_rows() -> list[dict]:
 
 
 @pytest.fixture(scope="module")
-def plugin_injects(repo) -> list[dict]:
+def plugin_injects(repo: Path) -> list[_PluginInject]:
     """For every plugin in plugins/{harness,web}/dsh/, return its
     client-half `inject` array (the services it depends on at boot).
 
     Each entry: {pkg, source, inject:[...]}.
     """
-    out: list[dict] = []
+    out: list[_PluginInject] = []
     for sub in ("harness", "web"):
         base = repo / "plugins" / sub / "dsh"
         if not base.exists():
@@ -224,20 +233,20 @@ def profile_node_modules() -> dict[str, str]:
 class TestLauncherContract:
     """The dev launcher script must exist + have the right shape."""
 
-    def test_launcher_exists(self):
+    def test_launcher_exists(self) -> None:
         assert LAUNCHER.exists(), (
             f"dev DSH launcher missing at {LAUNCHER}; this test gate has "
             "no infra to start the dev DSH"
         )
 
-    def test_launcher_is_executable(self):
+    def test_launcher_is_executable(self) -> None:
         if not LAUNCHER.exists():
             pytest.skip("launcher missing")
         import stat
         mode = LAUNCHER.stat().st_mode
         assert mode & stat.S_IXUSR, f"{LAUNCHER} is not user-executable"
 
-    def test_launcher_pins_dsh_home(self, repo):
+    def test_launcher_pins_dsh_home(self, repo: Path) -> None:
         """DSH_HOME must be exported to the isolated dev home.
 
         Without this, the launcher falls back to ~/.dsh (PROD) and
@@ -253,7 +262,7 @@ class TestLauncherContract:
             "the launcher will silently use the prod ~/.dsh home."
         )
 
-    def test_launcher_resolves_link_deps_as_direct(self, repo):
+    def test_launcher_resolves_link_deps_as_direct(self, repo: Path) -> None:
         """pnpm does not materialize link: deps transitively.
 
         The launcher must read the provisioner's package.json and add
@@ -273,21 +282,21 @@ class TestLauncherContract:
 class TestBundleContract:
     """The provisioner bundle must declare its plugin rows + have build artifacts."""
 
-    def test_provisioner_exists(self):
+    def test_provisioner_exists(self) -> None:
         assert PROVISIONER.exists(), f"provisioner missing at {PROVISIONER}"
 
-    def test_provisioner_has_patch(self):
+    def test_provisioner_has_patch(self) -> None:
         patch = PROVISIONER / "cordis.patch.yml"
         assert patch.exists(), f"{patch} missing — no rows to load"
 
-    def test_provisioner_has_lib(self):
+    def test_provisioner_has_lib(self) -> None:
         # The bin is required for the launcher + the loader needs
         # node-resolvable exports. Provisioner ships bin/, no lib/.
         assert (PROVISIONER / "bin" / "infer-provision.mjs").exists(), (
             f"{(PROVISIONER / 'bin' / 'infer-provision.mjs')} missing"
         )
 
-    def test_provisioner_declares_every_built_plugin_as_link_dep(self, repo):
+    def test_provisioner_declares_every_built_plugin_as_link_dep(self, repo: Path) -> None:
         """Every plugin directory under plugins/{harness,web}/dsh/ with a
         real `lib/` build must appear as a link: dep in the
         provisioner's package.json. Otherwise the loader can't find it.
@@ -319,7 +328,7 @@ class TestPluginStructure:
     """
 
     @pytest.mark.parametrize("sub", ["harness", "web"])
-    def test_every_plugin_has_lib_artifacts(self, repo, sub):
+    def test_every_plugin_has_lib_artifacts(self, repo: Path, sub: str) -> None:
         base = repo / "plugins" / sub / "dsh"
         if not base.exists():
             pytest.skip(f"{base} not present")
@@ -335,7 +344,7 @@ class TestPluginStructure:
             f"these plugins have a lib/ dir but no built entry: {missing}"
         )
 
-    def test_every_client_half_declares_inject(self, plugin_injects):
+    def test_every_client_half_declares_inject(self, plugin_injects: list[dict[str, str | list[str]]]) -> None:
         for entry in plugin_injects:
             assert entry["inject"], (
                 f"{entry['source']} declares no inject array; the loader "
@@ -354,7 +363,7 @@ class TestProfileResolution:
     registered by SOME installed package.
     """
 
-    def test_all_bundle_rows_resolve(self, bundle_rows, profile_node_modules):
+    def test_all_bundle_rows_resolve(self, bundle_rows: list[dict[str, str]], profile_node_modules: dict[str, str]) -> None:
         if not bundle_rows:
             pytest.skip("provisioner patch not parseable")
         installed = set(profile_node_modules.values()) | set(profile_node_modules.keys())
@@ -375,8 +384,8 @@ class TestProfileResolution:
             "with 'failed to apply loader entry' on boot."
         )
 
-    def test_all_plugin_injects_have_a_provider(self, plugin_injects,
-                                                profile_node_modules):
+    def test_all_plugin_injects_have_a_provider(self, plugin_injects: list[dict[str, str | list[str]]],
+                                                profile_node_modules: dict[str, str]) -> None:
         """For every service a plugin declares in inject, at least one
         installed package should plausibly provide it (heuristic: the
         service name appears as a substring of an installed package's
@@ -470,7 +479,7 @@ def _node_check(path: Path, timeout: float = 10.0) -> tuple[int, str, str]:
         return 127, "", "node not on PATH"
 
 
-def _require_shape(path: Path, timeout: float = 10.0) -> dict | None:
+def _require_shape(path: Path, timeout: float = 10.0) -> dict[str, list[str] | str | bool | int | None] | None:
     """require() the CJS module in a fresh node process and report its
     exported shape. Returns the parsed descriptor or None on failure.
 
@@ -525,7 +534,7 @@ def _resolve_installed_pkg(npm_name: str) -> Path | None:
 
 
 @pytest.fixture(scope="module")
-def installed_dsh_packages(bundle_rows) -> list[dict]:
+def installed_dsh_packages(bundle_rows: list[dict[str, str]]) -> list[_InstalledPkg]:
     """Every dsh-bundle package in the provisioner patch, resolved to
     its installed path with its artifacts catalogued.
 
@@ -539,7 +548,7 @@ def installed_dsh_packages(bundle_rows) -> list[dict]:
     keeps the test free of false positives from libraries that
     happen to have a `lib/` directory.
     """
-    out: list[dict] = []
+    out: list[_InstalledPkg] = []
     if not bundle_rows:
         return out
     for row in bundle_rows:
@@ -591,7 +600,7 @@ class TestPluginsLoadIntoDevDsh:
     """
 
     def test_every_bundle_row_resolves_to_a_real_installed_package(
-            self, installed_dsh_packages):
+            self, installed_dsh_packages: list[_InstalledPkg]) -> None:
         """Every bundle row's package name MUST resolve to a real dir
         in the dev profile's node_modules (the loader fails otherwise)."""
         missing = [p["row_id"] for p in installed_dsh_packages if p["missing"]]
@@ -602,7 +611,7 @@ class TestPluginsLoadIntoDevDsh:
         )
 
     def test_every_installed_package_has_at_least_one_loadable_artifact(
-            self, installed_dsh_packages):
+            self, installed_dsh_packages: list[_InstalledPkg]) -> None:
         """Every mounted package has a host OR client artifact (or both).
 
         The provisioner itself is the exception: it ships bin/, not
@@ -630,7 +639,7 @@ class TestPluginsLoadIntoDevDsh:
         )
 
     def test_every_host_artifact_passes_node_syntax_check(
-            self, installed_dsh_packages):
+            self, installed_dsh_packages: list[_InstalledPkg]) -> None:
         """node --check on every host bundle (CJS .js AND ESM .mjs).
 
         The DSH webserver does require()/import() on these exact
@@ -653,7 +662,7 @@ class TestPluginsLoadIntoDevDsh:
         )
 
     def test_every_host_artifact_evaluates_in_a_real_node_process(
-            self, installed_dsh_packages):
+            self, installed_dsh_packages: list[_InstalledPkg]) -> None:
         """require() the host CJS bundle in a fresh node and assert
         it exports a cordis descriptor. Catches: top-level throws
         (missing dep), wrong export shape (renamed without updating
@@ -688,7 +697,7 @@ class TestPluginsLoadIntoDevDsh:
         )
 
     def test_every_client_artifact_passes_node_syntax_check(
-            self, installed_dsh_packages):
+            self, installed_dsh_packages: list[_InstalledPkg]) -> None:
         """node --check on every client bundle.
 
         Clients are NOT testable via require() (they're closure
@@ -712,7 +721,7 @@ class TestPluginsLoadIntoDevDsh:
             + "\n  - ".join(offenders) + "\n  Rebuild with `pnpm run build`."
         )
 
-    def test_dev_dsh_log_has_no_load_failure_markers(self, dev_dsh_up):
+    def test_dev_dsh_log_has_no_load_failure_markers(self, dev_dsh_up: bool) -> None:
         """The full set of loader-side failure markers in the live log.
 
         Existing tests pin the same strings individually (host boot
@@ -728,7 +737,7 @@ class TestPluginsLoadIntoDevDsh:
             f"{_log_tail(LOG_PATH, 30)}"
         )
 
-    def test_card_deck_host_routes_serve_through_origin(self, dev_dsh_up):
+    def test_card_deck_host_routes_serve_through_origin(self, dev_dsh_up: bool) -> None:
         """End-to-end load check for the SURVIVING host (card-deck).
 
         The sidebar card deck and the /ray-deck/* API are retired
@@ -837,7 +846,7 @@ class TestDevDshFullDoorSet:
         ("/infer-gallery/runs", {200}),
     ]
 
-    def test_every_documented_door_returns_a_live_status(self, dev_dsh_up):
+    def test_every_documented_door_returns_a_live_status(self, dev_dsh_up: bool) -> None:
         for path, expected in self.PROBES:
             status, _ = _http_get(
                 f"https://{DEV_TAILNET_FQDN}:{DEV_PORT}{path}"
@@ -865,7 +874,7 @@ class TestDevDshClientBundleSet:
     """
 
     @pytest.fixture(scope="module")
-    def installed_client_bundles(self):
+    def installed_client_bundles(self) -> set[str]:
         out = set()
         nm = PROFILE_DIR / "node_modules"
         if not nm.exists():
@@ -888,7 +897,7 @@ class TestDevDshClientBundleSet:
                     out.add(data.get("name", pkg.name))
         return out
 
-    def test_client_bundles_equal_approved_set(self, installed_client_bundles):
+    def test_client_bundles_equal_approved_set(self, installed_client_bundles: set[str]) -> None:
         SHELL_PREFIXES = (
             "@deepseek-ai/dsh-",
             "@infer/",
@@ -931,19 +940,19 @@ class TestDevDshClientBundleSet:
 class TestDevDshRuntime:
     """Boot + HTTP probes against the running dev DSH."""
 
-    def test_local_port_open(self, dev_dsh_up):
+    def test_local_port_open(self, dev_dsh_up: bool) -> None:
         assert _port_open(DEV_PORT), (
             f"dev DSH not listening on 127.0.0.1:{DEV_PORT}"
         )
 
-    def test_local_root_responds_200(self, dev_dsh_up):
+    def test_local_root_responds_200(self, dev_dsh_up: bool) -> None:
         status, body = _http_get(f"http://127.0.0.1:{DEV_PORT}/")
         assert status == 200, (
             f"GET http://127.0.0.1:{DEV_PORT}/ returned {status}; "
             f"body (1kB): {body[:200]!r}"
         )
 
-    def test_tailnet_fqdn_trusted(self, dev_dsh_up):
+    def test_tailnet_fqdn_trusted(self, dev_dsh_up: bool) -> None:
         """The /api/host.listDirectory 403 was the original symptom.
 
         Without --trusted-host, the fence rejects requests whose Host
@@ -961,7 +970,7 @@ class TestDevDshRuntime:
         )
         assert status != 0, "request to tailnet FQDN failed entirely"
 
-    def test_infer_gallery_route_serves(self, dev_dsh_up):
+    def test_infer_gallery_route_serves(self, dev_dsh_up: bool) -> None:
         status, body = _http_get(
             f"https://{DEV_TAILNET_FQDN}:{DEV_PORT}/infer-gallery/runs",
         )
@@ -970,7 +979,7 @@ class TestDevDshRuntime:
             "Check the dsh log for plugin activation failures."
         )
 
-    def test_no_boot_pending_services(self, dev_dsh_up):
+    def test_no_boot_pending_services(self, dev_dsh_up: bool) -> None:
         """The host-side boot asserts every entry is active too.
 
         If a plugin's bundle fails to resolve (missing package at the
@@ -998,7 +1007,7 @@ class TestDevDshRuntime:
             "package, broken link: dep, or malformed cordis.patch.yml)."
         )
 
-    def test_no_loader_apply_failures(self, dev_dsh_up):
+    def test_no_loader_apply_failures(self, dev_dsh_up: bool) -> None:
         """Boot-time loader errors like 'failed to apply loader entry X'.
 
         These are the hardest to debug — usually a missing package at
@@ -1015,7 +1024,7 @@ class TestDevDshRuntime:
             "See log tail for the cause."
         )
 
-    def test_no_entries_did_not_activate(self, dev_dsh_up):
+    def test_no_entries_did_not_activate(self, dev_dsh_up: bool) -> None:
         log = LOG_PATH.read_text(errors="replace") if LOG_PATH.exists() else ""
         m = re.search(r"(\d+)\s+entries\s+did\s+not\s+activate", log)
         assert not m, (
@@ -1023,7 +1032,7 @@ class TestDevDshRuntime:
             "did not activate. See log tail."
         )
 
-    def test_dev_home_did_not_pollute_prod_home(self, dev_dsh_up):
+    def test_dev_home_did_not_pollute_prod_home(self, dev_dsh_up: bool) -> None:
         """Sanity: the dev launcher's DSH_HOME pin kept ~/.dsh cold.
 
         If ~/.dsh/ shows a recently-touched profile dir that wasn't
@@ -1053,19 +1062,19 @@ class TestProdUnaffected:
 
     PROD_PID = 131065  # known from the session; if you change prod, update here
 
-    def test_prod_port_still_open(self):
+    def test_prod_port_still_open(self) -> None:
         assert _port_open(PROD_PORT), (
             f"prod DSH not listening on 127.0.0.1:{PROD_PORT}; the dev "
             "launcher (or a test) appears to have killed it"
         )
 
-    def test_prod_responds(self):
+    def test_prod_responds(self) -> None:
         status, _ = _http_get(f"http://127.0.0.1:{PROD_PORT}/")
         assert status == 200, (
             f"prod DSH returned {status} — it may have been disturbed"
         )
 
-    def test_prod_process_alive(self):
+    def test_prod_process_alive(self) -> None:
         try:
             os.kill(self.PROD_PID, 0)
         except ProcessLookupError:

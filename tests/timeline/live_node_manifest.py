@@ -25,7 +25,8 @@ SNAP = os.path.join(HERE, "live_nodes.snapshot.json")
 COMFY = os.environ.get("COMFY_URL", "http://127.0.0.1:18465")
 
 fails = []
-def check(name, cond, detail=""):
+def check(name: str, cond: bool,
+          detail: str | list[str] | list[tuple[str, str]] | dict[str, tuple[str, str]] = "") -> None:
     print(("PASS " if cond else "FAIL ") + name + ((" | " + str(detail)) if detail and not cond else ""))
     if not cond: fails.append(name)
 
@@ -83,7 +84,7 @@ if "--snapshot" in sys.argv and live:
 # required:true). Other lanes may simply not be deployed in this
 # ComfyUI — the gateway pre-validates them per-run at the start door;
 # here they are reported, not failed.
-def is_prod(yname, rel):
+def is_prod(yname: str, rel: str) -> bool:
     return "h3-timeline" in rel or "h3-timeline" in yname
 
 dead = sorted(c for c in classes if c not in live and is_prod(*classes[c]))

@@ -21,11 +21,20 @@ STRUCTURE
 import hashlib
 import json
 import os
+from pathlib import Path
+from typing import Protocol
 
 import pytest
 
 import asset_ledger as al  # noqa: E402
 from tests.unit.runtime.conftest import write_run  # noqa: E402
+
+
+class _MakeRun(Protocol):
+    """The make_run factory: call it to write a run dir, read .root
+    for the default tree it writes under."""
+    root: str
+    def __call__(self, run_id: str, files: dict[str, bytes], root: Path | str | None = None, **kwargs: str | int | bool) -> str: ...
 
 
 class TestRowShape:
@@ -38,14 +47,14 @@ class TestRowShape:
         {"name": "a", "kind": "weird",
          "sha256": "c" * 64},                   # closed vocab
     ], ids=["bad_sha", "zero_bytes", "closed_vocab"])
-    def test_row_construction_refused(self, override):
+    def test_row_construction_refused(self, override: dict[str, str | int]) -> None:
         base = {"name": "a.png", "run_id": "run-x",
                 "kind": al.AssetKind.image, "bytes": 10,
                 "sha256": "b" * 64, "url": "/u"}
         with pytest.raises(Exception):
             al.AssetRow(**{**base, **override})
 
-    def test_frozen(self):
+    def test_frozen(self) -> None:
         r = al.AssetRow(name="a.png", run_id="run-x",
                         kind=al.AssetKind.image, bytes=10,
                         sha256="b" * 64, url="/u")
@@ -54,7 +63,7 @@ class TestRowShape:
 
 
 class TestKindFor:
-    def test_media_mesh_doc(self):
+    def test_media_mesh_doc(self) -> None:
         assert al.kind_for("a.png") == al.AssetKind.image
         assert al.kind_for("a.mp4") == al.AssetKind.video
         assert al.kind_for("a.wav") == al.AssetKind.audio
@@ -64,7 +73,7 @@ class TestKindFor:
 
 
 class TestScan:
-    def test_skips_bookkeeping_and_empty(self, make_run):
+    def test_skips_bookkeeping_and_empty(self, make_run: _MakeRun) -> None:
         rd = make_run("run-1", {
             "out.png": bytes.fromhex("89504e470d0a1a0a64617461"),
             "_poster.jpg": b"poster",
@@ -79,7 +88,7 @@ class TestScan:
         assert row.bytes == 12
         assert len(row.sha256) == 64
 
-    def test_index_filters_and_counts(self, make_run):
+    def test_index_filters_and_counts(self, make_run: _MakeRun) -> None:
         make_run("run-a", {"x.png": b"img"})
         make_run("run-b", {"y.glb": b"mesh"})
         root = make_run.root
@@ -98,7 +107,7 @@ class TestResilience:
     # RESILIENCE LAW: indexing never raises. A broken run is a
     # broken run, never a gateway crash.
 
-    def test_garbled_sidecar(self, tmp_path):
+    def test_garbled_sidecar(self, tmp_path: Path) -> None:
         # tests that need a custom sidecar shape use tmp_path directly
         rd = tmp_path / "run-x"
         rd.mkdir()
@@ -109,18 +118,18 @@ class TestResilience:
         assert idx.status == "unknown"
         assert len(idx.artifacts) == 1
 
-    def test_empty_dir(self, tmp_path):
+    def test_empty_dir(self, tmp_path: Path) -> None:
         rd = tmp_path / "run-empty"
         rd.mkdir()
         idx = al.scan_run(str(rd))
         assert idx.artifacts == tuple()
         assert idx.status == "unknown"
 
-    def test_missing_dir(self, tmp_path):
+    def test_missing_dir(self, tmp_path: Path) -> None:
         idx = al.scan_run(str(tmp_path / "run-gone"))
         assert idx.artifacts == tuple()
 
-    def test_assets_index_never_raises_on_rot(self, tmp_path):
+    def test_assets_index_never_raises_on_rot(self, tmp_path: Path) -> None:
         # garbage inside output_root must still yield a well-formed
         # envelope, never a 500
         (tmp_path / "run-a").mkdir()
@@ -132,11 +141,11 @@ class TestResilience:
 
 
 class TestCompletedPayload:
-    def test_none_when_empty(self, make_run):
+    def test_none_when_empty(self, make_run: _MakeRun) -> None:
         rd = make_run("run-c", {})
         assert al.completed_payload(rd) is None
 
-    def test_carries_sha16(self, make_run):
+    def test_carries_sha16(self, make_run: _MakeRun) -> None:
         blob = b"artifact-bytes"
         rd = make_run("run-d", {"z.png": blob})
         ev = al.completed_payload(rd)
@@ -144,7 +153,7 @@ class TestCompletedPayload:
         row = ev["artifacts"][0]
         assert row["sha16"] == hashlib.sha256(blob).hexdigest()[:16]
 
-    def test_has_created_at(self, make_run):
+    def test_has_created_at(self, make_run: _MakeRun) -> None:
         rd = make_run("run-e", {"x.png": b"abc"}, created_at=1700001234)
         ev = al.completed_payload(rd)
         assert "created_at" in ev
@@ -152,7 +161,7 @@ class TestCompletedPayload:
 
 
 class TestIndexFrozen:
-    def test_run_index_frozen(self, make_run):
+    def test_run_index_frozen(self, make_run: _MakeRun) -> None:
         rd = make_run("run-f", {"a.png": b"abc"})
         idx = al.scan_run(rd)
         with pytest.raises(Exception):
@@ -166,13 +175,13 @@ class TestRunTestFlag:
     # asset index excludes test runs from the production view by
     # default, includes them when asked.
 
-    def test_sidecar_test_flag_default_false(self, make_run):
+    def test_sidecar_test_flag_default_false(self, make_run: _MakeRun) -> None:
         # a sidecar WITHOUT a test key is treated as production
         rd = make_run("run-prod", {"x.png": b"abc"})
         idx = al.scan_run(rd)
         assert idx.test is False
 
-    def test_sidecar_test_flag_true(self, tmp_path):
+    def test_sidecar_test_flag_true(self, tmp_path: Path) -> None:
         # a custom-shape sidecar; write it by hand under tmp_path
         rd = tmp_path / "run-test"
         rd.mkdir()
@@ -185,7 +194,7 @@ class TestRunTestFlag:
         idx = al.scan_run(str(rd))
         assert idx.test is True
 
-    def test_index_excludes_test_by_default(self, make_run):
+    def test_index_excludes_test_by_default(self, make_run: _MakeRun) -> None:
         make_run("run-prod", {"a.png": b"a"})
         make_run("run-test", {"b.png": b"b"}, test=True)
         body = al.assets_index(make_run.root)
@@ -194,7 +203,7 @@ class TestRunTestFlag:
         assert "run-test" not in run_ids
         assert all(r["test"] is False for r in body["runs"])
 
-    def test_index_includes_test_when_asked(self, make_run):
+    def test_index_includes_test_when_asked(self, make_run: _MakeRun) -> None:
         make_run("run-prod", {"a.png": b"a"})
         make_run("run-test", {"b.png": b"b"}, test=True)
         body = al.assets_index(make_run.root, include_test=True)
@@ -205,7 +214,7 @@ class TestRunTestFlag:
         assert by_id["run-test"]["test"] is True
         assert by_id["run-prod"]["test"] is False
 
-    def test_completed_payload_carries_test_flag(self, tmp_path):
+    def test_completed_payload_carries_test_flag(self, tmp_path: Path) -> None:
         # custom-shape sidecar (test:true, no model field)
         rd = tmp_path / "run-t"
         rd.mkdir()
@@ -225,7 +234,7 @@ class TestL3DirectoryRouting:
     # filter; a test run written to a test root is invisible from a
     # production-root scan, and vice versa.
 
-    def test_test_root_only_sees_test_runs(self, tmp_path):
+    def test_test_root_only_sees_test_runs(self, tmp_path: Path) -> None:
         # the test root is an arbitrary sibling -- the factory fixture
         # would write to tmp_path itself, so we use the module helper
         # for a custom location
@@ -238,7 +247,7 @@ class TestL3DirectoryRouting:
         assert body["runs"][0]["run_id"] == "run-test-1"
         assert body["runs"][0]["test"] is True
 
-    def test_prod_root_does_not_see_test_root_runs(self, tmp_path):
+    def test_prod_root_does_not_see_test_root_runs(self, tmp_path: Path) -> None:
         test_root = tmp_path / "test-output"
         prod_root = tmp_path / "output"
         test_root.mkdir()

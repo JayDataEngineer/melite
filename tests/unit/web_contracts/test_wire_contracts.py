@@ -145,15 +145,15 @@ from tests.unit.web_contracts.models import (
 class TestProvenance:
     """Provenance is a closed 3-value vocabulary."""
 
-    def test_valid_values(self):
+    def test_valid_values(self) -> None:
         for v in ("agent", "user", "imported"):
             assert Provenance(v).value == v
 
-    def test_invalid_refused(self):
+    def test_invalid_refused(self) -> None:
         with pytest.raises(ValueError):
             Provenance("admin")
 
-    def test_case_sensitive(self):
+    def test_case_sensitive(self) -> None:
         with pytest.raises(ValueError):
             Provenance("Agent")
 
@@ -163,17 +163,17 @@ class TestProvenance:
 # ═══════════════════════════════════════════════════════════════════════
 
 class TestCardGenre:
-    def test_all_seven_values(self):
+    def test_all_seven_values(self) -> None:
         expected = {"image", "video", "audio", "3d", "motion", "other", "text"}
         assert {g.value for g in CardGenre} == expected
 
-    def test_invalid_refused(self):
+    def test_invalid_refused(self) -> None:
         with pytest.raises(ValueError):
             CardGenre("mesh")
 
 
 class TestCardStatus:
-    def test_all_nine_values(self):
+    def test_all_nine_values(self) -> None:
         expected = {
             "pending", "running", "queued", "done", "error",
             "stale", "cached", "skipped", "reused",
@@ -182,33 +182,33 @@ class TestCardStatus:
 
 
 class TestCompoundMode:
-    def test_three_values(self):
+    def test_three_values(self) -> None:
         expected = {"fanout", "flow", "modifiers"}
         assert {m.value for m in CompoundMode} == expected
 
 
 class TestCardProgress:
-    def test_minimal(self):
+    def test_minimal(self) -> None:
         p = CardProgress(value=5, max=20)
         assert p.value == 5
         assert p.node is None
 
-    def test_with_node(self):
+    def test_with_node(self) -> None:
         p = CardProgress(value=10, max=20, node="KSampler")
         assert p.node == "KSampler"
 
-    def test_frozen(self):
+    def test_frozen(self) -> None:
         p = CardProgress(value=1, max=1)
         with pytest.raises(Exception):
             p.value = 2
 
 
 class TestCardResult:
-    def test_minimal(self):
+    def test_minimal(self) -> None:
         r = CardResult(assetUrls=[], artifacts={}, metadata={})
         assert r.durationSec is None
 
-    def test_with_gallery(self):
+    def test_with_gallery(self) -> None:
         r = CardResult(
             assetUrls=["a.png"],
             artifacts={"mask": "mask.png"},
@@ -217,7 +217,7 @@ class TestCardResult:
         )
         assert len(r.gallery) == 1
 
-    def test_frozen(self):
+    def test_frozen(self) -> None:
         r = CardResult(assetUrls=[], artifacts={}, metadata={})
         with pytest.raises(Exception):
             r.assetUrls = ["x"]
@@ -226,7 +226,7 @@ class TestCardResult:
 class TestCardStage:
     """CardStage is the core card view-model — test its construction rules."""
 
-    def _make(self, **overrides):
+    def _make(self, **overrides: str | CardResult | CompoundBlock | dict[str, str] | None) -> CardStage:
         base = {
             "id": "stage-1",
             "title": "Generate Image",
@@ -241,63 +241,63 @@ class TestCardStage:
         base.update(overrides)
         return CardStage(**base)
 
-    def test_minimal_construction(self):
+    def test_minimal_construction(self) -> None:
         s = self._make()
         assert s.id == "stage-1"
         assert s.status == CardStatus.PENDING
 
-    def test_with_result(self):
+    def test_with_result(self) -> None:
         result = CardResult(assetUrls=["out.png"], artifacts={}, metadata={})
         s = self._make(result=result, status="done")
         assert s.result.assetUrls == ["out.png"]
 
-    def test_with_compound(self):
+    def test_with_compound(self) -> None:
         compound = CompoundBlock(mode="flow", childIds=["s1", "s2"])
         s = self._make(kind="compound", compound=compound)
         assert s.compound.mode == CompoundMode.FLOW
 
-    def test_genre_optional(self):
+    def test_genre_optional(self) -> None:
         s = self._make()
         assert s.genre is None
 
-    def test_with_genre(self):
+    def test_with_genre(self) -> None:
         s = self._make(genre="image")
         assert s.genre == CardGenre.IMAGE
 
-    def test_open_vocabulary_kind(self):
+    def test_open_vocabulary_kind(self) -> None:
         """kind is open seam vocabulary — any string accepted."""
         s = self._make(kind="my_custom_kind_xyz")
         assert s.kind == "my_custom_kind_xyz"
 
-    def test_frozen(self):
+    def test_frozen(self) -> None:
         s = self._make()
         with pytest.raises(Exception):
             s.id = "changed"
 
-    def test_with_activity(self):
+    def test_with_activity(self) -> None:
         activity = {"phase": "sampling", "node": "42", "message": "step 5/20"}
         s = self._make(activity=activity)
         assert s.activity.phase == "sampling"
 
-    def test_with_provenance(self):
+    def test_with_provenance(self) -> None:
         s = self._make(provenance="agent")
         assert s.provenance == Provenance.AGENT
 
-    def test_save_to_assets_default(self):
+    def test_save_to_assets_default(self) -> None:
         s = self._make()
         assert s.saveToAssets is None
 
 
 class TestTilePlayAffordance:
-    def test_play(self):
+    def test_play(self) -> None:
         a = TilePlayAffordance(verb="start", icon="play")
         assert a.icon == "play"
 
-    def test_reroll(self):
+    def test_reroll(self) -> None:
         a = TilePlayAffordance(verb="reroll", icon="reroll")
         assert a.verb == "reroll"
 
-    def test_invalid_icon_refused(self):
+    def test_invalid_icon_refused(self) -> None:
         with pytest.raises(ValidationError):
             TilePlayAffordance(verb="go", icon="stop")
 
@@ -307,21 +307,21 @@ class TestTilePlayAffordance:
 # ═══════════════════════════════════════════════════════════════════════
 
 class TestLoRAEntry:
-    def test_construction(self):
+    def test_construction(self) -> None:
         l = LoRAEntry(name="style_v2", strength=0.7)
         assert l.name == "style_v2"
         assert l.strength == 0.7
 
-    def test_zero_strength(self):
+    def test_zero_strength(self) -> None:
         l = LoRAEntry(name="x", strength=0.0)
         assert l.strength == 0.0
 
-    def test_negative_strength_allowed(self):
+    def test_negative_strength_allowed(self) -> None:
         """Negative strength is valid in ComfyUI."""
         l = LoRAEntry(name="x", strength=-0.5)
         assert l.strength == -0.5
 
-    def test_frozen(self):
+    def test_frozen(self) -> None:
         l = LoRAEntry(name="x", strength=0.5)
         with pytest.raises(Exception):
             l.strength = 1.0
@@ -332,15 +332,15 @@ class TestLoRAEntry:
 # ═══════════════════════════════════════════════════════════════════════
 
 class TestCharacter:
-    def test_soma(self):
+    def test_soma(self) -> None:
         c = Character(identityModel="soma", coeffs=[0.1, 0.2])
         assert c.identityModel == IdentityModel.SOMA
 
-    def test_mhr(self):
+    def test_mhr(self) -> None:
         c = Character(identityModel="mhr", coeffs=None)
         assert c.identityModel == IdentityModel.MHR
 
-    def test_anny(self):
+    def test_anny(self) -> None:
         c = Character(
             identityModel="anny",
             coeffs=[1.0],
@@ -350,11 +350,11 @@ class TestCharacter:
         assert c.localChanges["nose"] == 0.5
         assert c.customTargets["anime"] == 0.3
 
-    def test_invalid_model_refused(self):
+    def test_invalid_model_refused(self) -> None:
         with pytest.raises(ValidationError):
             Character(identityModel="invalid_model")
 
-    def test_frozen(self):
+    def test_frozen(self) -> None:
         c = Character(identityModel="soma")
         with pytest.raises(Exception):
             c.identityModel = "mhr"
@@ -365,14 +365,14 @@ class TestCharacter:
 # ═══════════════════════════════════════════════════════════════════════
 
 class TestPluginRow:
-    def test_construction(self):
+    def test_construction(self) -> None:
         p = PluginRow(
             id="comfyui", version="0.1.0", name="ComfyUI",
             enabled=True, lanes=["image", "video"], root="plugins/engines/comfyui",
         )
         assert p.hooks is None
 
-    def test_with_hooks(self):
+    def test_with_hooks(self) -> None:
         p = PluginRow(
             id="x", version="1", name="X",
             enabled=False, lanes=[], root="/",
@@ -380,7 +380,7 @@ class TestPluginRow:
         )
         assert p.hooks == 3
 
-    def test_frozen(self):
+    def test_frozen(self) -> None:
         p = PluginRow(id="x", version="1", name="X",
                        enabled=True, lanes=[], root="/")
         with pytest.raises(Exception):
@@ -388,25 +388,25 @@ class TestPluginRow:
 
 
 class TestUiSlotEntry:
-    def test_minimal(self):
+    def test_minimal(self) -> None:
         e = UiSlotEntry(plugin="core", id="sidebar", slot="left", precedence=0)
         assert e.title is None
 
-    def test_with_title(self):
+    def test_with_title(self) -> None:
         e = UiSlotEntry(plugin="core", id="sb", slot="left",
                          precedence=1, title="Sidebar")
         assert e.title == "Sidebar"
 
 
 class TestThemeEntry:
-    def test_construction(self):
+    def test_construction(self) -> None:
         t = ThemeEntry(
             plugin="themes", id="dark", label="Dark",
             dark=True, vars={"bg": "#000"},
         )
         assert t.description is None
 
-    def test_with_description(self):
+    def test_with_description(self) -> None:
         t = ThemeEntry(
             plugin="t", id="d", label="D",
             dark=False, vars={}, description="A theme",
@@ -419,12 +419,12 @@ class TestThemeEntry:
 # ═══════════════════════════════════════════════════════════════════════
 
 class TestPreflightNeededEntry:
-    def test_minimal(self):
+    def test_minimal(self) -> None:
         e = PreflightNeededEntry(name="comfyui-h3-motion-context")
         assert e.installed is None
         assert e.applies is None
 
-    def test_full(self):
+    def test_full(self) -> None:
         e = PreflightNeededEntry(
             name="ext", applies=True, reason="needed",
             url="https://github.com/x", pip=["pkg1"],
@@ -434,20 +434,20 @@ class TestPreflightNeededEntry:
         )
         assert e.action == "clone"
 
-    def test_invalid_action_refused(self):
+    def test_invalid_action_refused(self) -> None:
         with pytest.raises(ValidationError):
             PreflightNeededEntry(name="x", action="install")
 
 
 class TestPreflightPayload:
-    def test_construction(self):
+    def test_construction(self) -> None:
         p = PreflightPayload(
             family="krea2", reachable=True,
             restart_required=False, needed=[],
         )
         assert p.status == "preflight_required"
 
-    def test_with_needed(self):
+    def test_with_needed(self) -> None:
         entry = PreflightNeededEntry(name="ext1")
         p = PreflightPayload(
             family="krea2", reachable=True,
@@ -461,22 +461,22 @@ class TestPreflightPayload:
 # ═══════════════════════════════════════════════════════════════════════
 
 class TestMediaCategory:
-    def test_six_values(self):
+    def test_six_values(self) -> None:
         expected = {"image", "video", "mesh", "motion", "audio", "other"}
         assert {c.value for c in MediaCategory} == expected
 
-    def test_invalid_refused(self):
+    def test_invalid_refused(self) -> None:
         with pytest.raises(ValueError):
             MediaCategory("3d")
 
 
 class TestMediaRun:
-    def test_minimal(self):
+    def test_minimal(self) -> None:
         m = MediaRun(run_id="run-1")
         assert m.status is None
         assert m.artifacts is None
 
-    def test_full(self):
+    def test_full(self) -> None:
         m = MediaRun(
             run_id="r1", status="completed", prompt="a cat",
             thumbnail="thumb.png", created_at=1700000000,
@@ -488,7 +488,7 @@ class TestMediaRun:
 
 
 class TestMediaAsset:
-    def test_construction(self):
+    def test_construction(self) -> None:
         a = MediaAsset(
             id="url1", runId="r1", name="output.png",
             category="image", url="/out.png", type="image",
@@ -498,7 +498,7 @@ class TestMediaAsset:
         )
         assert a.category == MediaCategory.IMAGE
 
-    def test_frozen(self):
+    def test_frozen(self) -> None:
         a = MediaAsset(
             id="u", runId="r", name="n", category="image",
             url="/u", type="image", size=1, prompt="p",
@@ -513,7 +513,7 @@ class TestMediaAsset:
 # ═══════════════════════════════════════════════════════════════════════
 
 class TestEnhanceModel:
-    def test_construction(self):
+    def test_construction(self) -> None:
         m = EnhanceModel(
             id="openai", name="OpenAI",
             baseUrl="https://api.openai.com/v1",
@@ -521,7 +521,7 @@ class TestEnhanceModel:
         )
         assert m.keyId is None
 
-    def test_with_key_id(self):
+    def test_with_key_id(self) -> None:
         m = EnhanceModel(
             id="x", name="X", baseUrl="http://x",
             apiKey="k", model="m", keyId="backend-1",
@@ -534,11 +534,11 @@ class TestEnhanceModel:
 # ═══════════════════════════════════════════════════════════════════════
 
 class TestAssetViewerMode:
-    def test_tile_and_full(self):
+    def test_tile_and_full(self) -> None:
         assert AssetViewerMode("tile") == AssetViewerMode.TILE
         assert AssetViewerMode("full") == AssetViewerMode.FULL
 
-    def test_invalid(self):
+    def test_invalid(self) -> None:
         with pytest.raises(ValueError):
             AssetViewerMode("dialog")
 
@@ -548,25 +548,25 @@ class TestAssetViewerMode:
 # ═══════════════════════════════════════════════════════════════════════
 
 class TestFlowStatus:
-    def test_seven_values(self):
+    def test_seven_values(self) -> None:
         expected = {"draft", "ready", "running", "queued", "done", "failed", "stale"}
         assert {s.value for s in FlowStatus} == expected
 
 
 class TestFlowStageStatus:
-    def test_seven_values(self):
+    def test_seven_values(self) -> None:
         expected = {"pending", "running", "queued", "done", "error", "stale", "cached"}
         assert {s.value for s in FlowStageStatus} == expected
 
 
 class TestStudioTarget:
-    def test_three_values(self):
+    def test_three_values(self) -> None:
         expected = {"pose", "director", "body"}
         assert {s.value for s in StudioTarget} == expected
 
 
 class TestStageResult:
-    def test_construction(self):
+    def test_construction(self) -> None:
         r = StageResult(
             assetUrls=["out.png"],
             artifacts={"mask": "mask.png"},
@@ -576,7 +576,7 @@ class TestStageResult:
         )
         assert r.durationSec == 3.5
 
-    def test_frozen(self):
+    def test_frozen(self) -> None:
         r = StageResult(
             assetUrls=[], artifacts={}, metadata={},
             completedAt=0, durationSec=0,
@@ -586,7 +586,7 @@ class TestStageResult:
 
 
 class TestFlowStage:
-    def _make(self, **overrides):
+    def _make(self, **overrides: str | StageResult | CompoundBlock | None) -> FlowStage:
         base = {
             "id": "s1",
             "title": "Gen",
@@ -602,11 +602,11 @@ class TestFlowStage:
         base.update(overrides)
         return FlowStage(**base)
 
-    def test_minimal(self):
+    def test_minimal(self) -> None:
         s = self._make()
         assert s.status == FlowStageStatus.PENDING
 
-    def test_with_result(self):
+    def test_with_result(self) -> None:
         r = StageResult(
             assetUrls=[], artifacts={}, metadata={},
             completedAt=0, durationSec=0,
@@ -614,22 +614,22 @@ class TestFlowStage:
         s = self._make(result=r, status="done")
         assert s.result is not None
 
-    def test_with_compound(self):
+    def test_with_compound(self) -> None:
         c = CompoundBlock(mode="fanout", childIds=["a", "b"])
         s = self._make(kind="compound", compound=c)
         assert s.compound.mode == CompoundMode.FANOUT
 
-    def test_open_kind(self):
+    def test_open_kind(self) -> None:
         s = self._make(kind="body")
         assert s.kind == "body"
 
-    def test_with_studio(self):
+    def test_with_studio(self) -> None:
         s = self._make(studio="pose")
         assert s.studio == StudioTarget.POSE
 
 
 class TestFlowDoc:
-    def _make(self, **overrides):
+    def _make(self, **overrides: str | None) -> FlowDoc:
         base = {
             "id": "flow-1",
             "intent": "make a cat",
@@ -641,15 +641,15 @@ class TestFlowDoc:
         base.update(overrides)
         return FlowDoc(**base)
 
-    def test_minimal(self):
+    def test_minimal(self) -> None:
         d = self._make()
         assert d.status == FlowStatus.DRAFT
 
-    def test_with_name(self):
+    def test_with_name(self) -> None:
         d = self._make(name="Cat Generator")
         assert d.name == "Cat Generator"
 
-    def test_with_yaml_flow(self):
+    def test_with_yaml_flow(self) -> None:
         d = self._make(yamlFlow="3d-character.yaml")
         assert d.yamlFlow == "3d-character.yaml"
 
@@ -661,7 +661,7 @@ class TestFlowDoc:
 # ── FormField ─────────────────────────────────────────────────────────
 
 class TestFormFieldType:
-    def test_thirteen_values(self):
+    def test_thirteen_values(self) -> None:
         expected = {
             "textarea", "text", "number", "seed", "select", "file",
             "boolean", "stringlist", "image", "image_list", "video",
@@ -671,12 +671,12 @@ class TestFormFieldType:
 
 
 class TestFormField:
-    def test_minimal(self):
+    def test_minimal(self) -> None:
         f = FormField(name="prompt", type="textarea")
         assert f.label is None
         assert f.default is None
 
-    def test_full(self):
+    def test_full(self) -> None:
         f = FormField(
             name="seed", type="seed", label="Seed",
             default=42, options=["-1"],
@@ -685,14 +685,14 @@ class TestFormField:
         )
         assert f.section == FormFieldSection.CORE
 
-    def test_options_string_list(self):
+    def test_options_string_list(self) -> None:
         f = FormField(
             name="model", type="select",
             options=["option_a", "option_b"],
         )
         assert f.options == ["option_a", "option_b"]
 
-    def test_options_mixed(self):
+    def test_options_mixed(self) -> None:
         f = FormField(
             name="preset", type="select",
             options=[
@@ -704,11 +704,11 @@ class TestFormField:
 
 
 class TestFormGuideSection:
-    def test_construction(self):
+    def test_construction(self) -> None:
         s = PromptGuideSection(label="Tips", body="Be specific")
         assert s.code is None
 
-    def test_with_code(self):
+    def test_with_code(self) -> None:
         s = PromptGuideSection(
             label="Example", code="a photo of a cat",
         )
@@ -716,12 +716,12 @@ class TestFormGuideSection:
 
 
 class TestPromptGuide:
-    def test_empty(self):
+    def test_empty(self) -> None:
         g = PromptGuide()
         assert g.title is None
         assert g.sections is None
 
-    def test_with_sections(self):
+    def test_with_sections(self) -> None:
         g = PromptGuide(
             title="Guide",
             sections=[PromptGuideSection(label="Tip 1", body="Use seeds")],
@@ -732,22 +732,22 @@ class TestPromptGuide:
 # ── ModifierKind ──────────────────────────────────────────────────────
 
 class TestModifierField:
-    def test_construction(self):
+    def test_construction(self) -> None:
         f = ModifierField(name="weight", type="float", min=0.0, max=1.0, step=0.1)
         assert f.label is None
 
-    def test_invalid_type_refused(self):
+    def test_invalid_type_refused(self) -> None:
         with pytest.raises(ValueError):
             ModifierField(name="x", type="invalid_type")
 
 
 class TestModifierOption:
-    def test_construction(self):
+    def test_construction(self) -> None:
         o = ModifierOption(value="depth", label="Depth CN")
         assert o.tooltip is None
         assert o.installed is None
 
-    def test_with_metadata(self):
+    def test_with_metadata(self) -> None:
         o = ModifierOption(
             value="x", label="X",
             metadata={"model_path": "/m/model.safetensors"},
@@ -756,7 +756,7 @@ class TestModifierOption:
 
 
 class TestModifierKind:
-    def test_construction(self):
+    def test_construction(self) -> None:
         mk = ModifierKind(
             kind="lora", label="LoRA",
             param_key="loras",
@@ -764,7 +764,7 @@ class TestModifierKind:
         )
         assert mk.cardinality == ModifierCardinality.LIST
 
-    def test_scalar(self):
+    def test_scalar(self) -> None:
         mk = ModifierKind(
             kind="clip_skip", label="Clip Skip",
             cardinality="scalar",
@@ -773,7 +773,7 @@ class TestModifierKind:
         )
         assert mk.cardinality == ModifierCardinality.SCALAR
 
-    def test_with_options(self):
+    def test_with_options(self) -> None:
         mk = ModifierKind(
             kind="controlnet", label="ControlNet",
             param_key="controlnet",
@@ -786,11 +786,11 @@ class TestModifierKind:
 # ── VariantDef ────────────────────────────────────────────────────────
 
 class TestVariantDef:
-    def test_minimal(self):
+    def test_minimal(self) -> None:
         v = VariantDef(id="base", label="Base", defaults={})
         assert v.group is None
 
-    def test_full(self):
+    def test_full(self) -> None:
         v = VariantDef(
             id="turbo", label="Turbo",
             defaults={"steps": 4, "cfg": 1.0},
@@ -808,11 +808,11 @@ class TestVariantDef:
 
 
 class TestVariantGroup:
-    def test_construction(self):
+    def test_construction(self) -> None:
         vg = VariantGroup(label="Quality", tooltip="Select quality tier")
         assert vg.filters_on is None
 
-    def test_with_filters(self):
+    def test_with_filters(self) -> None:
         vg = VariantGroup(label="Speed", filters_on="Speed tier")
         assert vg.filters_on == "Speed tier"
 
@@ -820,11 +820,11 @@ class TestVariantGroup:
 # ── RetakeDef ─────────────────────────────────────────────────────────
 
 class TestRetakeDef:
-    def test_construction(self):
+    def test_construction(self) -> None:
         r = RetakeDef(pathway="inpaint")
         assert r.supports_global_apply is None
 
-    def test_with_flag(self):
+    def test_with_flag(self) -> None:
         r = RetakeDef(pathway="regen", supports_global_apply=True)
         assert r.supports_global_apply is True
 
@@ -832,11 +832,11 @@ class TestRetakeDef:
 # ── OutputEntry ───────────────────────────────────────────────────────
 
 class TestOutputEntry:
-    def test_construction(self):
+    def test_construction(self) -> None:
         o = OutputEntry(id="mp4", label="MP4 Video", default=True)
         assert o.params is None
 
-    def test_with_params(self):
+    def test_with_params(self) -> None:
         o = OutputEntry(
             id="mp3", label="MP3 Audio",
             default=False, params={"bitrate": 192},
@@ -847,13 +847,13 @@ class TestOutputEntry:
 # ── FormFeatures ──────────────────────────────────────────────────────
 
 class TestFormFeatures:
-    def test_empty(self):
+    def test_empty(self) -> None:
         f = FormFeatures()
         assert f.modifiers is None
         assert f.variants is None
         assert f.outputs is None
 
-    def test_with_modifiers(self):
+    def test_with_modifiers(self) -> None:
         mk = ModifierKind(
             kind="lora", label="LoRA",
             param_key="loras",
@@ -866,7 +866,7 @@ class TestFormFeatures:
 # ── SchemaGroupDef ────────────────────────────────────────────────────
 
 class TestSchemaGroupDef:
-    def test_construction(self):
+    def test_construction(self) -> None:
         g = SchemaGroupDef(
             id="core", label="Core", order=0,
             collapsed=False,
@@ -877,7 +877,7 @@ class TestSchemaGroupDef:
         )
         assert g.zone == GroupZone.PARAMS
 
-    def test_hidden_group(self):
+    def test_hidden_group(self) -> None:
         g = SchemaGroupDef(
             id="x", label="X", order=0,
             collapsed=True, fields=[], hidden=True,
@@ -888,7 +888,7 @@ class TestSchemaGroupDef:
 # ── ConditionalContract ───────────────────────────────────────────────
 
 class TestConditionalContract:
-    def test_minimal(self):
+    def test_minimal(self) -> None:
         c = ConditionalContract(
             discriminator="mode",
             modes=["upscale", "inpaint"],
@@ -899,7 +899,7 @@ class TestConditionalContract:
         assert c.default_clause is None
         assert c.children is None
 
-    def test_with_default_clause(self):
+    def test_with_default_clause(self) -> None:
         c = ConditionalContract(
             discriminator="mode",
             modes=["a", "b"],
@@ -908,7 +908,7 @@ class TestConditionalContract:
         )
         assert c.default_clause.forbids == ["y"]
 
-    def test_nested_children(self):
+    def test_nested_children(self) -> None:
         child = ConditionalContract(
             discriminator="region",
             modes=["face", "free"],
@@ -924,7 +924,7 @@ class TestConditionalContract:
 
 
 class TestContractClause:
-    def test_construction(self):
+    def test_construction(self) -> None:
         cc = ContractClause(
             requires=["prompt"],
             forbids=["negative_prompt"],
@@ -933,7 +933,7 @@ class TestContractClause:
         )
         assert len(cc.requires) == 1
 
-    def test_all_none(self):
+    def test_all_none(self) -> None:
         cc = ContractClause()
         assert cc.requires is None
         assert cc.forbids is None
@@ -942,7 +942,7 @@ class TestContractClause:
 # ── FormSpec ──────────────────────────────────────────────────────────
 
 class TestFormSpec:
-    def _make(self, **overrides):
+    def _make(self, **overrides: str | ConditionalContract) -> FormSpec:
         base = {
             "model": "krea2",
             "form": "krea2-form",
@@ -958,24 +958,24 @@ class TestFormSpec:
         base.update(overrides)
         return FormSpec(**base)
 
-    def test_construction(self):
+    def test_construction(self) -> None:
         s = self._make()
         assert s.model == "krea2"
         assert s.genre == FormGenre.IMAGE
 
-    def test_invalid_genre_refused(self):
+    def test_invalid_genre_refused(self) -> None:
         with pytest.raises(ValidationError):
             self._make(genre="mesh")
 
-    def test_with_size(self):
+    def test_with_size(self) -> None:
         s = self._make(size="huge")
         assert s.size == FormSize.HUGE
 
-    def test_with_layout(self):
+    def test_with_layout(self) -> None:
         s = self._make(layout="studio")
         assert s.layout == FormLayout.STUDIO
 
-    def test_with_contract(self):
+    def test_with_contract(self) -> None:
         contract = ConditionalContract(
             discriminator="mode",
             modes=["a"],
@@ -984,7 +984,7 @@ class TestFormSpec:
         s = self._make(contract=contract)
         assert s.contract.discriminator == "mode"
 
-    def test_size_default_absent(self):
+    def test_size_default_absent(self) -> None:
         s = self._make()
         assert s.size is None  # absent = default
 
@@ -992,7 +992,7 @@ class TestFormSpec:
 # ── RunStartResult ────────────────────────────────────────────────────
 
 class TestRunStartResult:
-    def test_construction(self):
+    def test_construction(self) -> None:
         r = RunStartResult(
             run_id="run-abc",
             bricks=[RunBrickMeta(index=0, family_id="krea2")],
@@ -1001,7 +1001,7 @@ class TestRunStartResult:
         assert r.status is None
         assert r.queue_position is None
 
-    def test_queued(self):
+    def test_queued(self) -> None:
         r = RunStartResult(
             run_id="run-xyz",
             bricks=[],
@@ -1012,7 +1012,7 @@ class TestRunStartResult:
         assert r.status == "queued"
         assert r.queue_position == 2
 
-    def test_invalid_status_refused(self):
+    def test_invalid_status_refused(self) -> None:
         with pytest.raises(ValidationError):
             RunStartResult(
                 run_id="x", bricks=[], total=0,
@@ -1021,12 +1021,12 @@ class TestRunStartResult:
 
 
 class TestRunBrickMeta:
-    def test_minimal(self):
+    def test_minimal(self) -> None:
         b = RunBrickMeta(index=0, family_id="krea2")
         assert b.name is None
         assert b.status is None
 
-    def test_full(self):
+    def test_full(self) -> None:
         b = RunBrickMeta(
             index=0, family_id="krea2", name="img_gen",
             title="Image Gen", phase="execute",
@@ -1040,13 +1040,13 @@ class TestRunBrickMeta:
 # ── DryRunPlan ────────────────────────────────────────────────────────
 
 class TestDryRunPlan:
-    def test_default(self):
+    def test_default(self) -> None:
         d = DryRunPlan()
         assert d.status == "dry_run"
         assert d.stages == []
         assert d.gates == {}
 
-    def test_with_stages(self):
+    def test_with_stages(self) -> None:
         d = DryRunPlan(
             stages=[{"family": "krea2", "params": {"steps": 20}}],
             gates={"model_gate": None},
@@ -1057,14 +1057,14 @@ class TestDryRunPlan:
 # ── DownloadRequired ──────────────────────────────────────────────────
 
 class TestDownloadRequired:
-    def test_construction(self):
+    def test_construction(self) -> None:
         d = DownloadRequired(
             download_url="https://example.com/model.safetensors",
         )
         assert d.status == "download_required"
         assert d.model_filename is None
 
-    def test_full(self):
+    def test_full(self) -> None:
         d = DownloadRequired(
             download_url="https://example.com/m.safetensors",
             model_filename="model.safetensors",
@@ -1079,12 +1079,12 @@ class TestDownloadRequired:
 # ── RunStartBlocked ───────────────────────────────────────────────────
 
 class TestRunStartBlocked:
-    def test_construction(self):
+    def test_construction(self) -> None:
         b = RunStartBlocked()
         assert b.status == "error"
         assert b.error is None
 
-    def test_with_error(self):
+    def test_with_error(self) -> None:
         b = RunStartBlocked(
             code="model_not_in_remote_registry",
             error="Model not found on executor",
@@ -1095,7 +1095,7 @@ class TestRunStartBlocked:
 # ── RunStatusWire ─────────────────────────────────────────────────────
 
 class TestRunStatusEnum:
-    def test_eight_values(self):
+    def test_eight_values(self) -> None:
         expected = {
             "pending", "running", "completed", "failed",
             "stopped", "interrupted", "unknown", "queued",
@@ -1104,13 +1104,13 @@ class TestRunStatusEnum:
 
 
 class TestRunStageWire:
-    def test_construction(self):
+    def test_construction(self) -> None:
         s = RunStageWire(id="s1", name="Gen", index=0, status="running")
         assert s.index == 0
 
 
 class TestRunStatusWire:
-    def test_construction(self):
+    def test_construction(self) -> None:
         r = RunStatusWire(
             run_id="r1",
             status="running",
@@ -1118,7 +1118,7 @@ class TestRunStatusWire:
         )
         assert r.status == RunStatusEnum.RUNNING
 
-    def test_invalid_status_refused(self):
+    def test_invalid_status_refused(self) -> None:
         with pytest.raises(ValidationError):
             RunStatusWire(run_id="x", status="invalid", stages=[])
 
@@ -1126,11 +1126,11 @@ class TestRunStatusWire:
 # ── ErrorEnvelope ─────────────────────────────────────────────────────
 
 class TestErrorEnvelope:
-    def test_minimal(self):
+    def test_minimal(self) -> None:
         e = ErrorEnvelope(error="not found")
         assert e.violations is None
 
-    def test_with_violations(self):
+    def test_with_violations(self) -> None:
         e = ErrorEnvelope(
             error="validation failed",
             violations=[
@@ -1141,7 +1141,7 @@ class TestErrorEnvelope:
 
 
 class TestViolation:
-    def test_construction(self):
+    def test_construction(self) -> None:
         v = Violation(field="seed", kind="type", message="must be integer")
         assert v.field == "seed"
 
@@ -1149,11 +1149,11 @@ class TestViolation:
 # ── CardSummary ───────────────────────────────────────────────────────
 
 class TestCardSummary:
-    def test_width_height(self):
+    def test_width_height(self) -> None:
         cs = CardSummary(width_param="width", height_param="height")
         assert cs.size_param is None
 
-    def test_size_param(self):
+    def test_size_param(self) -> None:
         cs = CardSummary(size_param="resolution", size_suffix="px")
         assert cs.size_suffix == "px"
 
@@ -1161,7 +1161,7 @@ class TestCardSummary:
 # ── DetectorEntry ─────────────────────────────────────────────────────
 
 class TestDetectorEntry:
-    def test_construction(self):
+    def test_construction(self) -> None:
         d = DetectorEntry(label="Face", model="bbox/face_yolov8m.pt")
         assert d.model == "bbox/face_yolov8m.pt"
 
@@ -1169,17 +1169,17 @@ class TestDetectorEntry:
 # ── Provision types ───────────────────────────────────────────────────
 
 class TestProvisionDest:
-    def test_construction(self):
+    def test_construction(self) -> None:
         d = ProvisionDest(root="COMFYUI_ROOT", sub="checkpoints")
         assert d.root == "COMFYUI_ROOT"
 
 
 class TestProvisionArtifact:
-    def test_minimal(self):
+    def test_minimal(self) -> None:
         a = ProvisionArtifact(dest=ProvisionDest(root="COMFYUI_ROOT"))
         assert a.url is None
 
-    def test_full(self):
+    def test_full(self) -> None:
         a = ProvisionArtifact(
             url="https://example.com/m.safetensors",
             dest=ProvisionDest(root="COMFYUI_ROOT", sub="checkpoints"),
@@ -1198,7 +1198,7 @@ class TestProvisionArtifact:
 # ── LanpaintModelEntry ────────────────────────────────────────────────
 
 class TestLanpaintModelEntry:
-    def test_construction(self):
+    def test_construction(self) -> None:
         l = LanpaintModelEntry(carrier="krea2", route="lanpaint-krea2")
         assert l.label is None
         assert l.provision is None
@@ -1207,19 +1207,19 @@ class TestLanpaintModelEntry:
 # ── MaskLayerKind ─────────────────────────────────────────────────────
 
 class TestMaskLayerKind:
-    def test_detector(self):
+    def test_detector(self) -> None:
         m = MaskLayerKind(kind="detector", source="face")
         assert m.kind == MaskLayerKindType.DETECTOR
 
-    def test_derived(self):
+    def test_derived(self) -> None:
         m = MaskLayerKind(kind="derived", source="subject")
         assert m.kind == MaskLayerKindType.DERIVED
 
-    def test_paint(self):
+    def test_paint(self) -> None:
         m = MaskLayerKind(kind="paint", source="photoshop")
         assert m.kind == MaskLayerKindType.PAINT
 
-    def test_invalid_refused(self):
+    def test_invalid_refused(self) -> None:
         with pytest.raises(ValueError):
             MaskLayerKind(kind="auto", source="x")
 
@@ -1227,12 +1227,12 @@ class TestMaskLayerKind:
 # ── ModelFileParam ────────────────────────────────────────────────────
 
 class TestModelFileParam:
-    def test_construction(self):
+    def test_construction(self) -> None:
         m = ModelFileParam(folder="frame_interpolation")
         assert m.default is None
         assert m.sha256 is None
 
-    def test_with_source(self):
+    def test_with_source(self) -> None:
         m = ModelFileParam(
             folder="upscale_models",
             default="4x-UltraSharp.pth",
@@ -1246,12 +1246,12 @@ class TestModelFileParam:
 # ── OptionalOutput ────────────────────────────────────────────────────
 
 class TestOptionalOutput:
-    def test_construction(self):
+    def test_construction(self) -> None:
         o = OptionalOutput(name="mask", label="Mask", emit_when="enable_mask")
         assert o.genre is None
         assert o.mask_layer is None
 
-    def test_with_mask_layer(self):
+    def test_with_mask_layer(self) -> None:
         ml = MaskLayerKind(kind="detector", source="face")
         o = OptionalOutput(
             name="mask", label="Mask",
@@ -1264,12 +1264,12 @@ class TestOptionalOutput:
 # ── PresetEntry ───────────────────────────────────────────────────────
 
 class TestPresetEntry:
-    def test_construction(self):
+    def test_construction(self) -> None:
         p = PresetEntry(label="Lightning", params={"steps": 4, "cfg": 1.0})
         assert p.description is None
         assert p.mods is None
 
-    def test_with_mods(self):
+    def test_with_mods(self) -> None:
         p = PresetEntry(
             label="Enhanced",
             params={"steps": 20},
@@ -1281,17 +1281,17 @@ class TestPresetEntry:
 # ── TransformApplicability ────────────────────────────────────────────
 
 class TestTransformApplicability:
-    def test_construction(self):
+    def test_construction(self) -> None:
         t = TransformApplicability(
             name="crop", applies_to=["image", "video"],
         )
         assert len(t.applies_to) == 2
 
-    def test_invalid_name(self):
+    def test_invalid_name(self) -> None:
         with pytest.raises(ValueError):
             TransformApplicability(name="rotate", applies_to=["image"])
 
-    def test_invalid_media_type(self):
+    def test_invalid_media_type(self) -> None:
         with pytest.raises(ValueError):
             TransformApplicability(name="crop", applies_to=["mesh"])
 
@@ -1299,18 +1299,18 @@ class TestTransformApplicability:
 # ── VideoManifest ─────────────────────────────────────────────────────
 
 class TestVideoManifest:
-    def test_empty(self):
+    def test_empty(self) -> None:
         v = VideoManifest()
         assert v.conditioning is None
         assert v.modifiers is None
 
-    def test_with_audio(self):
+    def test_with_audio(self) -> None:
         v = VideoManifest(audio=VideoAudio(native_audio=True, lipsync=True))
         assert v.audio.native_audio is True
 
 
 class TestVideoAudio:
-    def test_construction(self):
+    def test_construction(self) -> None:
         a = VideoAudio(native_audio=True, lipsync=False, narrator=True)
         assert a.narrator is True
 
@@ -1318,12 +1318,12 @@ class TestVideoAudio:
 # ── VariantEntryWire ──────────────────────────────────────────────────
 
 class TestVariantEntryWire:
-    def test_minimal(self):
+    def test_minimal(self) -> None:
         v = VariantEntryWire(id="base", label="Base", defaults={})
         assert v.owner is None
         assert v.live is None
 
-    def test_full(self):
+    def test_full(self) -> None:
         v = VariantEntryWire(
             id="turbo", label="Turbo",
             defaults={"steps": 4},
@@ -1338,12 +1338,12 @@ class TestVariantEntryWire:
 # ── ModelEntryWire ────────────────────────────────────────────────────
 
 class TestModelEntryWire:
-    def test_minimal(self):
+    def test_minimal(self) -> None:
         m = ModelEntryWire(family="krea2", form="krea2-form", label="Krea2")
         assert m.variant is None
         assert m.engine is None
 
-    def test_with_validation(self):
+    def test_with_validation(self) -> None:
         mv = ModelValidation(
             talker_modes=["standard"],
             modes={"standard": ModeClause(require=["prompt"])},
@@ -1358,11 +1358,11 @@ class TestModelEntryWire:
 # ── CapabilityEntryWire ───────────────────────────────────────────────
 
 class TestCapabilityEntryWire:
-    def test_minimal(self):
+    def test_minimal(self) -> None:
         c = CapabilityEntryWire(label="Generate", families=["krea2"])
         assert c.kind == CapabilityKind.GENERATION
 
-    def test_with_subcategories(self):
+    def test_with_subcategories(self) -> None:
         c = CapabilityEntryWire(
             label="Enhance",
             families=["upscale", "detail"],
@@ -1374,7 +1374,7 @@ class TestCapabilityEntryWire:
         )
         assert "Upscaling" in c.subcategories
 
-    def test_input_kind(self):
+    def test_input_kind(self) -> None:
         c = CapabilityEntryWire(
             label="Input", families=["input_prep"],
             kind="input",
@@ -1385,7 +1385,7 @@ class TestCapabilityEntryWire:
 # ── CapabilityRoute ───────────────────────────────────────────────────
 
 class TestCapabilityRoute:
-    def test_construction(self):
+    def test_construction(self) -> None:
         r = CapabilityRoute(
             family="krea2", model="krea2-base",
             params={"steps": 20},
@@ -1396,7 +1396,7 @@ class TestCapabilityRoute:
 # ── InputVocabulary ───────────────────────────────────────────────────
 
 class TestInputVocabulary:
-    def test_construction(self):
+    def test_construction(self) -> None:
         iv = InputVocabulary(
             slots=["image", "mask"],
             aliases={"img": "image"},
@@ -1405,7 +1405,7 @@ class TestInputVocabulary:
         )
         assert iv.slot_kinds is None
 
-    def test_with_slot_kinds(self):
+    def test_with_slot_kinds(self) -> None:
         iv = InputVocabulary(
             slots=["image"], aliases={}, form_aliases={},
             form_slots={}, slot_kinds={"image": "image"},
@@ -1416,12 +1416,12 @@ class TestInputVocabulary:
 # ── LoraListOut ───────────────────────────────────────────────────────
 
 class TestLoraListOut:
-    def test_empty(self):
+    def test_empty(self) -> None:
         l = LoraListOut()
         assert l.model is None
         assert l.loras is None
 
-    def test_with_loras(self):
+    def test_with_loras(self) -> None:
         l = LoraListOut(
             model="krea2",
             loras=["style_v2.safetensors", "detail.safetensors"],
@@ -1433,12 +1433,12 @@ class TestLoraListOut:
 # ── CatalogResponse ───────────────────────────────────────────────────
 
 class TestCatalogResponse:
-    def test_minimal(self):
+    def test_minimal(self) -> None:
         c = CatalogResponse(families={}, models={})
         assert c.capabilities is None
         assert c.input_vocabulary is None
 
-    def test_full(self):
+    def test_full(self) -> None:
         c = CatalogResponse(
             families={"krea2": FamilyEntryWire(label="Krea2")},
             models={"krea2-base": ModelEntryWire(
@@ -1461,7 +1461,7 @@ class TestCatalogResponse:
 class TestCrossModelConstraints:
     """Validate constraints that span multiple models."""
 
-    def test_card_stage_with_flow_stage_result(self):
+    def test_card_stage_with_flow_stage_result(self) -> None:
         """A CardStage can hold a FlowTypes.StageResult as its result."""
         sr = StageResult(
             assetUrls=["out.png"], artifacts={}, metadata={},
@@ -1471,7 +1471,7 @@ class TestCrossModelConstraints:
         # to confuse the two. Verify they are distinct models.
         assert StageResult is not CardResult
 
-    def test_provenance_used_in_both_card_and_flow(self):
+    def test_provenance_used_in_both_card_and_flow(self) -> None:
         """Provenance enum is shared between CardStage and FlowStage."""
         cs = CardStage(
             id="x", title="X", kind="gen", service="s",
@@ -1485,17 +1485,17 @@ class TestCrossModelConstraints:
         )
         assert cs.provenance == fs.provenance == Provenance.AGENT
 
-    def test_modifier_kind_field_type_alignment(self):
+    def test_modifier_kind_field_type_alignment(self) -> None:
         """ModifierField.type uses its own closed vocabulary."""
         for t in ("integer", "float", "string", "select", "image", "boolean"):
             f = ModifierField(name="x", type=t)
             assert f.type.value == t
 
-    def test_form_field_type_alignment(self):
+    def test_form_field_type_alignment(self) -> None:
         """FormFieldType has exactly 13 values (the CANONICAL_WIRE_TYPES)."""
         assert len(FormFieldType) == 13
 
-    def test_schema_field_type_alignment(self):
+    def test_schema_field_type_alignment(self) -> None:
         """SchemaFieldType has more values than FormFieldType
         (builder-specific types like keyframes, loras, etc.)."""
         assert len(SchemaFieldType) > len(FormFieldType)
@@ -1510,7 +1510,7 @@ class TestGatewayResponseShapes:
     These are construction tests — they verify the Python models accept
     the same payloads the gateway would emit."""
 
-    def test_run_start_success_shape(self):
+    def test_run_start_success_shape(self) -> None:
         """POST /v1/flows/start 200: RunStartResult."""
         body = {
             "run_id": "abc-123",
@@ -1529,7 +1529,7 @@ class TestGatewayResponseShapes:
         assert r.run_id == "abc-123"
         assert r.bricks[0].family_id == "krea2"
 
-    def test_run_start_queued_shape(self):
+    def test_run_start_queued_shape(self) -> None:
         """POST /v1/flows/start 200: queued run."""
         body = {
             "run_id": "def-456",
@@ -1542,7 +1542,7 @@ class TestGatewayResponseShapes:
         assert r.status == "queued"
         assert r.queue_position == 1
 
-    def test_run_status_running_shape(self):
+    def test_run_status_running_shape(self) -> None:
         """GET /v1/flows/status/{id} 200: running."""
         body = {
             "run_id": "abc-123",
@@ -1554,7 +1554,7 @@ class TestGatewayResponseShapes:
         r = RunStatusWire(**body)
         assert r.status == RunStatusEnum.RUNNING
 
-    def test_run_status_completed_shape(self):
+    def test_run_status_completed_shape(self) -> None:
         """GET /v1/flows/status/{id} 200: completed."""
         body = {
             "run_id": "abc-123",
@@ -1566,7 +1566,7 @@ class TestGatewayResponseShapes:
         r = RunStatusWire(**body)
         assert r.status == RunStatusEnum.COMPLETED
 
-    def test_download_required_shape(self):
+    def test_download_required_shape(self) -> None:
         """POST /v1/flows/start 200: download_required."""
         body = {
             "status": "download_required",
@@ -1577,7 +1577,7 @@ class TestGatewayResponseShapes:
         r = DownloadRequired(**body)
         assert r.status == "download_required"
 
-    def test_preflight_required_shape(self):
+    def test_preflight_required_shape(self) -> None:
         """POST /v1/flows/start 200: preflight_required."""
         body = {
             "status": "preflight_required",
@@ -1592,7 +1592,7 @@ class TestGatewayResponseShapes:
         assert r.status == "preflight_required"
         assert r.needed[0].installed is False
 
-    def test_error_envelope_400_shape(self):
+    def test_error_envelope_400_shape(self) -> None:
         """POST /v1/flows/start 400: ErrorEnvelope."""
         body = {
             "error": "validation failed",
@@ -1603,13 +1603,13 @@ class TestGatewayResponseShapes:
         e = ErrorEnvelope(**body)
         assert len(e.violations) == 1
 
-    def test_error_envelope_minimal_shape(self):
+    def test_error_envelope_minimal_shape(self) -> None:
         """GET /v1/flows/status/{id} 404: ErrorEnvelope without violations."""
         body = {"error": "run not found"}
         e = ErrorEnvelope(**body)
         assert e.violations is None
 
-    def test_dry_run_shape(self):
+    def test_dry_run_shape(self) -> None:
         """POST /v1/flows/start 200: dry_run plan."""
         body = {
             "status": "dry_run",
@@ -1620,7 +1620,7 @@ class TestGatewayResponseShapes:
         assert d.status == "dry_run"
         assert len(d.stages) == 1
 
-    def test_blocked_run_shape(self):
+    def test_blocked_run_shape(self) -> None:
         """POST /v1/flows/start 200: blocked run."""
         body = {
             "status": "error",
@@ -1630,7 +1630,7 @@ class TestGatewayResponseShapes:
         b = RunStartBlocked(**body)
         assert b.status == "error"
 
-    def test_catalog_response_shape(self):
+    def test_catalog_response_shape(self) -> None:
         """GET /v1/model-catalog 200: CatalogResponse."""
         body = {
             "families": {
@@ -1652,7 +1652,7 @@ class TestGatewayResponseShapes:
         assert "krea2" in c.families
         assert c.families["krea2"].label == "Krea2 Image"
 
-    def test_form_spec_shape(self):
+    def test_form_spec_shape(self) -> None:
         """GET /v1/form-spec 200: FormSpec."""
         body = {
             "model": "krea2",

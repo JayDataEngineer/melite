@@ -11,6 +11,7 @@ Usage: freeze_detect.py <run_dir>  → JSON verdict, exit 0 PASS / 1 FAIL.
 """
 import json, math, os, subprocess, sys
 import numpy as np
+import numpy.typing as npt
 
 run_dir = sys.argv[1] if len(sys.argv) > 1 else "."
 TRIM = 0.91667
@@ -22,7 +23,8 @@ if not os.path.exists(stitch):
 dur = lambda p: float(subprocess.run(["ffprobe", "-v", "error", "-show_entries",
     "format=duration", "-of", "csv=p=0", p], capture_output=True, text=True).stdout.strip() or 0)
 
-def frames_gray(path, ss, t, w=192, h=112, fps=12):
+def frames_gray(path: str, ss: float, t: float, w: int = 192, h: int = 112,
+                fps: int = 12) -> npt.NDArray[np.uint8] | None:
     """downscaled grayscale frames as an [N, h, w] uint8 array"""
     r = subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error",
                         "-ss", f"{ss:.4f}", "-t", f"{t:.4f}", "-i", path,
@@ -32,7 +34,7 @@ def frames_gray(path, ss, t, w=192, h=112, fps=12):
     if a.size == 0: return None
     return a[: (a.size // (w * h)) * w * h].reshape(-1, h, w)
 
-def motion(fr):
+def motion(fr: npt.NDArray[np.uint8] | None) -> float | None:
     """mean abs consecutive-frame diff, normalized to 0..1"""
     if fr is None or fr.shape[0] < 3: return None
     d = np.abs(fr[1:].astype(np.int16) - fr[:-1].astype(np.int16))

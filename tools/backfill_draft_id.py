@@ -48,8 +48,19 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 OUT_ROOT = REPO / "data" / "runs" / "output"
 
+# JSON value shapes for run sidecars (_flow.json / _request.json):
+# scalar leaves, short string lists, one-level string-keyed objects.
+_JsonScalar = str | int | float | bool | None
+_JsonValue = (
+    _JsonScalar
+    | list[str]
+    | list[dict[str, _JsonScalar]]
+    | dict[str, _JsonScalar]
+)
+_JsonObject = dict[str, _JsonValue]
 
-def _atomic_write(path: Path, payload: dict) -> None:
+
+def _atomic_write(path: Path, payload: _JsonObject) -> None:
     """tmp+rename atomic, matching gateway.atomic_write() (same shape:
     a `.tmp` suffix that os.replace() atomically promotes)."""
     tmp = path.with_suffix(path.suffix + ".tmp")
@@ -57,13 +68,13 @@ def _atomic_write(path: Path, payload: dict) -> None:
     os.replace(tmp, path)
 
 
-def _draft_id_ok(draft_id: object) -> bool:
+def _draft_id_ok(draft_id: _JsonValue) -> bool:
     if not isinstance(draft_id, str) or not draft_id or len(draft_id) > 96:
         return False
     return all(c.isascii() and (c.isalnum() or c in "-_") for c in draft_id)
 
 
-def _read_json(path: Path) -> dict | None:
+def _read_json(path: Path) -> _JsonObject | None:
     try:
         return json.loads(path.read_text())
     except (OSError, ValueError):
@@ -148,7 +159,7 @@ def backfill(root: Path, dry_run: bool) -> tuple[int, int, int]:
     return backfilled, swept, skipped
 
 
-def main():
+def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dry-run", action="store_true",
                     help="show what would be done without writing")

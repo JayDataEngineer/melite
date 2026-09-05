@@ -11,11 +11,16 @@ mask_combined + detect_boxes manifest).
 """
 
 import pytest
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from conftest import QueueDoor
 
 pytestmark = pytest.mark.gpu
 
 
-def test_mask_body_primary(gateway, assets):
+def test_mask_body_primary(gateway: "QueueDoor",
+                           assets: dict[str, str | None]) -> None:
     """Bare flat run: body primary → mask_combined + the drawn box
     manifest (the instance readback)."""
     door = gateway
@@ -37,7 +42,8 @@ def test_mask_body_primary(gateway, assets):
     assert any("detect_boxes" in n for n in names), names
 
 
-def test_mask_recipe_multi(gateway, assets):
+def test_mask_recipe_multi(gateway: "QueueDoor",
+                           assets: dict[str, str | None]) -> None:
     """The recipe form: primary body + an open-vocabulary sam3
     selection (the text lane) — two masks from one run."""
     door = gateway

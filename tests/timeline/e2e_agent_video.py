@@ -50,6 +50,9 @@ CALLS = [
 ]
 SEED = 20260830
 
+# Agent-door wire values (parsed JSON bodies and status docs).
+JsonValue = str | int | float | bool | None | list["JsonValue"] | dict[str, "JsonValue"]
+
 REQUEST = f"""Compose one h3-timeline card and run it. Use the
 h3_timeline_card tool with EXACTLY these parameters — do not paraphrase,
 do not change any number:
@@ -60,7 +63,8 @@ do not change any number:
 No image, no audio_stem, no other fields beyond defaults."""
 
 
-def req(method, path, body=None, timeout=30):
+def req(method: str, path: str, body: dict[str, str] | None = None,
+        timeout: int = 30) -> tuple[int, dict[str, JsonValue]]:
     data = json.dumps(body).encode() if body is not None else None
     r = urllib.request.Request(GW + path, data=data, method=method)
     if data:
@@ -78,13 +82,13 @@ def req(method, path, body=None, timeout=30):
 
 
 fails = []
-def check(name, cond, detail=""):
+def check(name: str, cond: bool, detail: str = "") -> None:
     print(("PASS " if cond else "FAIL ") + name + ((" | " + str(detail)) if detail and not cond else ""), flush=True)
     if not cond:
         fails.append(name)
 
 
-def main():
+def main() -> int:
     # serial GPU law: never barge onto an active run
     code, q = req("GET", "/v1/queue")
     active = [r for r in q.get("runs", []) if r.get("state") in ("queued", "running")]

@@ -26,7 +26,11 @@ if not os.path.exists(DRAFT):
     sys.exit(0)
 
 fails = []
-def check(name, cond, detail=""):
+# The detail payload is whatever the failing invariant wants to show
+# (an exception, the offending rows, or a rendered diff) — narrowed to
+# the shapes this suite actually passes, never the anything-type.
+Detail = str | BaseException | type[list[str]] | list[str] | list[int] | dict[str, str] | None
+def check(name: str, cond: bool, detail: Detail = "") -> None:
     print(("PASS " if cond else "FAIL ") + name + ((" | " + str(detail)) if detail and not cond else ""))
     if not cond:
         fails.append(name)

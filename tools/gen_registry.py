@@ -70,7 +70,7 @@ _EXPORT_LIST_RE = re.compile(
 )
 
 
-def _exports_of(body: str) -> list:
+def _exports_of(body: str) -> list[str]:
     names = set(_EXPORT_RE.findall(body))
     for group in _EXPORT_LIST_RE.findall(body):
         for part in group.split(","):
@@ -82,7 +82,7 @@ def _exports_of(body: str) -> list:
     return sorted(names)
 
 
-def _kit_items():
+def _kit_items() -> list[dict[str, str | list[dict[str, str]] | list[str] | bool]]:
     """Core items: one per exported component of the kit packages."""
     items = []
     for pkg_dir, pkg_name in sorted(_KIT_PACKAGES.items()):
@@ -114,7 +114,7 @@ def _kit_items():
     return items
 
 
-def _fragment_items():
+def _fragment_items() -> list[dict[str, str | int | float | bool | list[str] | list[dict[str, str]] | dict[str, str | int | float | bool | None] | None]]:
     """Plugin fragments: every engines ui package that carries its own
     registry.json (the fork mechanic — a plugin publishing components
     into the pool)."""
@@ -142,7 +142,7 @@ def _fragment_items():
     return items
 
 
-def main():
+def main() -> int:
     write = "--write" in sys.argv
     registry = {
         "$schema": "https://ui.shadcn.com/schema/registry.json",

@@ -24,9 +24,14 @@ import os
 import subprocess
 import sys
 import time
+from collections.abc import Iterator
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
+
+if TYPE_CHECKING:
+    from playwright.sync_api import Browser, Page, Playwright
 
 # ── config ───────────────────────────────────────────────────────────
 
@@ -42,7 +47,7 @@ CHROMIUM_PATHS = [
 ]
 
 
-def _find_chromium():
+def _find_chromium() -> str | None:
     for p in CHROMIUM_PATHS:
         if os.path.exists(p):
             return p
@@ -69,7 +74,7 @@ def _port_open(port: int, host: str = "127.0.0.1") -> bool:
         return False
 
 
-def _dismiss_dialogs(page):
+def _dismiss_dialogs(page: Page) -> None:
     """Dismiss every modal dialog the DSH shows on first load."""
     for _ in range(5):
         for btn in page.locator("button:visible").all():
@@ -82,7 +87,7 @@ def _dismiss_dialogs(page):
                 pass
 
 
-def _open_right_sidebar(page):
+def _open_right_sidebar(page: Page) -> bool:
     """Toggle the right sidebar open. Returns True if the sidebar appeared."""
     # Try the explicit aria-label toggle first
     for label in ["Expand sidebar", "Toggle sidebar"]:
@@ -108,7 +113,7 @@ def _open_right_sidebar(page):
     return False
 
 
-def _get_skin_state(page) -> dict:
+def _get_skin_state(page: Page) -> dict[str, str | None]:
     """Return the DSH skin state: skin name, resolved tokens, body bg."""
     return page.evaluate("""() => {
         const html = document.documentElement;
@@ -130,7 +135,7 @@ def _get_skin_state(page) -> dict:
     }""")
 
 
-def _get_panel_styles(page, selector: str) -> dict:
+def _get_panel_styles(page: Page, selector: str) -> dict[str, str] | None:
     """Get computed styles of a panel element."""
     return page.evaluate(f"""() => {{
         const el = document.querySelector("{selector}");
@@ -148,14 +153,14 @@ def _get_panel_styles(page, selector: str) -> dict:
 
 
 @pytest.fixture(scope="module")
-def dev_dsh_up():
+def dev_dsh_up() -> bool:
     if _port_open(DEV_PORT):
         return True
     pytest.skip("dev DSH not listening on 127.0.0.1:{DEV_PORT}")
 
 
 @pytest.fixture(scope="module")
-def playwright_browser():
+def playwright_browser() -> Iterator[tuple[Browser, Playwright]]:
     if not HAS_PLAYWRIGHT:
         pytest.skip("playwright not installed")
     chromium = _find_chromium()
@@ -175,7 +180,7 @@ def playwright_browser():
 class TestDshSkinActive:
     """The DSH skin is loaded and provides the --dsw-alias-* tokens."""
 
-    def test_skin_attribute_set(self, dev_dsh_up, playwright_browser):
+    def test_skin_attribute_set(self, dev_dsh_up: bool, playwright_browser: tuple[Browser, Playwright]) -> None:
         browser, pw = playwright_browser
         ctx = browser.new_context(ignore_https_errors=True, viewport={"width": 1600, "height": 900})
         page = ctx.new_page()
@@ -192,7 +197,7 @@ class TestDshSkinActive:
             f"active. Copy ~/.dsh/skins/ and skin-center-active.json to DSH_HOME."
         )
 
-    def test_theme_tokens_resolve(self, dev_dsh_up, playwright_browser):
+    def test_theme_tokens_resolve(self, dev_dsh_up: bool, playwright_browser: tuple[Browser, Playwright]) -> None:
         browser, pw = playwright_browser
         ctx = browser.new_context(ignore_https_errors=True, viewport={"width": 1600, "height": 900})
         page = ctx.new_page()
@@ -212,7 +217,7 @@ class TestDshSkinActive:
                 f"The skin CSS is not loaded. state={state}"
             )
 
-    def test_body_is_not_unstyled_white(self, dev_dsh_up, playwright_browser):
+    def test_body_is_not_unstyled_white(self, dev_dsh_up: bool, playwright_browser: tuple[Browser, Playwright]) -> None:
         """If the skin is active, the body background must NOT be pure white."""
         browser, pw = playwright_browser
         ctx = browser.new_context(ignore_https_errors=True, viewport={"width": 1600, "height": 900})
@@ -236,7 +241,7 @@ class TestRightSidebarTabs:
     """The right sidebar shows NO inference tabs."""
 
     @pytest.fixture(scope="class")
-    def sidebar_state(self, playwright_browser):
+    def sidebar_state(self, playwright_browser: tuple[Browser, Playwright]) -> dict[str, bool]:
         browser, pw = playwright_browser
         ctx = browser.new_context(ignore_https_errors=True, viewport={"width": 1600, "height": 900})
         page = ctx.new_page()
@@ -259,16 +264,16 @@ class TestRightSidebarTabs:
             "cards_visible": cards_visible,
         }
 
-    def test_no_ray_media_tab(self, sidebar_state):
+    def test_no_ray_media_tab(self, sidebar_state: dict[str, bool]) -> None:
         assert not sidebar_state["media"], "Ray Media tab should NOT be in the right sidebar"
 
-    def test_no_ray_comfy_tab(self, sidebar_state):
+    def test_no_ray_comfy_tab(self, sidebar_state: dict[str, bool]) -> None:
         assert not sidebar_state["comfy"], "Ray ComfyUI tab should NOT be in the right sidebar"
 
-    def test_no_ray_flows_tab(self, sidebar_state):
+    def test_no_ray_flows_tab(self, sidebar_state: dict[str, bool]) -> None:
         assert not sidebar_state["flows"], "Ray Flows tab should NOT be in the right sidebar"
 
-    def test_no_ray_cards_tab(self, sidebar_state):
+    def test_no_ray_cards_tab(self, sidebar_state: dict[str, bool]) -> None:
         assert not sidebar_state["cards_visible"], (
             "Ray Cards tab should NOT be in the right sidebar "
             "(operator order: no flow builder in sidebar)"
@@ -278,7 +283,7 @@ class TestRightSidebarTabs:
 class TestMediaPanelTheme:
     """The media panel renders with DSH theme-compliant colors."""
 
-    def test_media_panel_uses_theme_colors(self, dev_dsh_up, playwright_browser):
+    def test_media_panel_uses_theme_colors(self, dev_dsh_up: bool, playwright_browser: tuple[Browser, Playwright]) -> None:
         browser, pw = playwright_browser
         ctx = browser.new_context(ignore_https_errors=True, viewport={"width": 1600, "height": 900})
         page = ctx.new_page()
@@ -333,7 +338,7 @@ class TestMediaPanelTheme:
 class TestVideoPreview:
     """Videos in the media tab show a poster frame, not just a glyph."""
 
-    def test_video_has_poster(self, dev_dsh_up, playwright_browser):
+    def test_video_has_poster(self, dev_dsh_up: bool, playwright_browser: tuple[Browser, Playwright]) -> None:
         browser, pw = playwright_browser
         ctx = browser.new_context(ignore_https_errors=True, viewport={"width": 1600, "height": 900})
         page = ctx.new_page()

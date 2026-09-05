@@ -7,11 +7,15 @@ card's chain regresses, this is where it surfaces first.
 """
 
 import pytest
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from conftest import QueueDoor
 
 pytestmark = pytest.mark.gpu
 
 
-def test_minimal_timeline(gateway):
+def test_minimal_timeline(gateway: "QueueDoor") -> None:
     run_id = gateway.submit({
         "model": "h3-timeline",
         "params": {"calls": [
@@ -26,7 +30,8 @@ def test_minimal_timeline(gateway):
     assert any(a.suffix in (".mp4", ".webm", ".gif") for a in arts), arts
 
 
-def test_keyframe_film(gateway, assets):
+def test_keyframe_film(gateway: "QueueDoor",
+                       assets: dict[str, str | None]) -> None:
     """h3-KEYFRAME through the same lane (the empty-card route: the
     family rides h3-timeline's card — image sets the first frame,
     prompt what CHANGES). Proves the keyframe leg of the golden base."""

@@ -46,20 +46,27 @@ import urllib.request
 from pathlib import Path
 
 import pytest
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from conftest import QueueDoor
 
 pytestmark = pytest.mark.gpu
+
+# JSON wire values (form-spec defaults round-trip as parsed JSON).
+JsonValue = str | int | float | bool | None | list["JsonValue"] | dict[str, "JsonValue"]
 
 
 # ── the form-spec door (the editor's fetch) ──────────────────────────
 
-def _form_spec(port, model):
+def _form_spec(port: int, model: str) -> dict[str, JsonValue]:
     code, spec = _http("GET", port, "/v1/form-spec?model=%s" % model)
     assert code == 200, "form-spec refused for %s: %d %s" % (
         model, code, spec)
     return spec
 
 
-def _http(method, port, path):
+def _http(method: str, port: int, path: str) -> tuple[int, JsonValue]:
     url = "http://127.0.0.1:%d%s" % (port, path)
     r = urllib.request.Request(url, method=method)
     try:
@@ -80,7 +87,7 @@ _MOTION_EXTS = (".npz",)
 _VIDEO_EXTS = (".mp4", ".webm")
 
 
-def _route(name):
+def _route(name: str) -> str:
     """The slot a harvested artifact lands in, by extension. Mirrors
     AssetMedia.tsx; if the editor changes its regex, this stays in
     lockstep or the E2E fails loud."""
@@ -96,7 +103,8 @@ def _route(name):
 
 # ── THE EDITOR'S PATH (per family) ───────────────────────────────────
 
-def test_form_surface_transfer_rig(gateway, assets, gateway_port):
+def test_form_surface_transfer_rig(gateway: QueueDoor, assets: dict[str, str | None],
+                                     gateway_port: int) -> None:
     """transfer_rig's form defaults (rigged_glb = SOMAX canonical) →
     submit → rigged .glb artifact lands in mesh-viewer.
 
@@ -132,7 +140,8 @@ _FORM_PROMPT = (
     "verb-first motion across the frame, one continuous take")
 
 
-def test_form_surface_wan_vace(gateway, assets, gateway_port):
+def test_form_surface_wan_vace(gateway: QueueDoor, assets: dict[str, str | None],
+                                 gateway_port: int) -> None:
     """wan-vace's form defaults (the Lightning 4-step shape) +
     reference_image + prompt → submit → film artifact in video-viewer.
 
@@ -156,7 +165,8 @@ def test_form_surface_wan_vace(gateway, assets, gateway_port):
                 a.name, _route(a.name))
 
 
-def test_form_surface_scail2_animate(gateway, assets, gateway_port):
+def test_form_surface_scail2_animate(gateway: QueueDoor, assets: dict[str, str | None],
+                                       gateway_port: int) -> None:
     """scail2-animate's form defaults + reference_image + pose_video +
     prompt → submit → film artifact lands in video-viewer."""
     spec = _form_spec(gateway_port, "scail2-animate")
@@ -174,7 +184,8 @@ def test_form_surface_scail2_animate(gateway, assets, gateway_port):
     assert films, "no film: %s" % [a.name for a in arts]
 
 
-def test_form_surface_seedvr2_ema(gateway, assets, gateway_port):
+def test_form_surface_seedvr2_ema(gateway: QueueDoor, assets: dict[str, str | None],
+                                    gateway_port: int) -> None:
     """seedvr2_ema's form defaults (1080 / 4096 / batch 1) + input
     image → submit → restored .png artifact lands in image-tile (the
     diffusion upscale restores to a still, not a glb). No prompt
@@ -197,7 +208,8 @@ def test_form_surface_seedvr2_ema(gateway, assets, gateway_port):
 
 # ── the cross-card flow e2e (the grouped-card doctrine) ─────────
 
-def test_flow_image_then_upscale(gateway, assets, gateway_port):
+def test_flow_image_then_upscale(gateway: QueueDoor, assets: dict[str, str | None],
+                                   gateway_port: int) -> None:
     """The grouped-card flow: an image-gen family submits first → its
     .png becomes the upscale-tools' input_image → a second submit
     restores it → BOTH artifacts on disk. Proves cross-card input

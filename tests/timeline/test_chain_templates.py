@@ -42,7 +42,11 @@ TL = os.path.join(REPO, "plugins", "engines", "comfyui", "models",
                   "video", "h3-timeline")
 
 fails = []
-def check(name, cond, detail=""):
+# JSON template values plus the rendered diffs this suite shows on failure.
+JsonValue = str | int | float | bool | None | list["JsonValue"] | dict[str, "JsonValue"]
+CheckDetail = (str | list[str] | set[str] | list[int] | tuple[int, int, int]
+               | dict[str, tuple[JsonValue, JsonValue]] | list[JsonValue] | None)
+def check(name: str, cond: bool, detail: CheckDetail = "") -> None:
     print(("PASS " if cond else "FAIL ") + name + ((" | " + str(detail)) if detail and not cond else ""))
     if not cond: fails.append(name)
 
@@ -169,14 +173,14 @@ for name, d in sorted(templates.items()):
                   mux["inputs"].get("images"))
 
 # ── 6: joint-AV grid law (pure-python pin of the C++ snap) ─────────────────
-def on_grid(v):
+def on_grid(v: int) -> bool:
     return ((v - 5) % 17 == 0) and (v % 3 == 0)
 
 check("grid: 39/90/141/192 are boundaries",
       all(on_grid(v) for v in (39, 90, 141, 192)))
 check("grid: 40 and 56 are NOT boundaries",
       not on_grid(40) and not on_grid(56))
-def snap(v):
+def snap(v: int) -> int:
     b = v
     while b > 39 and not on_grid(b):
         b -= 1
