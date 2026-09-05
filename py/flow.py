@@ -469,6 +469,24 @@ def flow_from_body(body: object) -> Flow:
     rows = []
     for i, st in enumerate(stages_in):
         where = "stage[%d]" % i
+        # STAGE-EXTRAS (QUEUE LANE LAW, 2026-09-05): the body's
+        # stage row MUST name only the schema's known fields.
+        # extra=forbid on Stage pydantic is bypassed here because
+        # we pull fields by name; without this check a fossil
+        # field (yamlFlow, yamlRunId, etc.) silently drops. Strict
+        # makes it loud.
+        _STAGE_KEYS = frozenset({
+            "id", "engine", "description", "params",
+            "inputs", "outputs", "expected",
+        })
+        st_extras = sorted(set(st) - _STAGE_KEYS)
+        if st_extras:
+            raise FlowError(
+                "stage[%d] %r: body carries unknown field(s) %s — "
+                "the schema declares %s (extra=forbid at the door)"
+                % (i, st.get("id", "<no id>"), st_extras,
+                   sorted(_STAGE_KEYS)))
+
         if not isinstance(st, dict):
             raise FlowError("%s: %r is not an object" % (where, st))
         try:

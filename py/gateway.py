@@ -85,6 +85,47 @@ class ValidationError(Exception):
     """Loud 4xx before any run is registered (QUEUE LANE LAW)."""
 
 
+
+
+
+# STRICT_BODY — the silent-drop class dies here.
+# (QUEUE LANE LAW, 2026-09-05) A start body MUST be {door: ...} plus
+# scalar run inputs. Body keys that the runner never reads are
+# pollution (they ride _request.json, lie in the tensor pool as
+# inert passengers, and teach callers the wrong shape). The C-era
+# runner knob names are explicitly refused — they survived a
+# deprecation cycle as silent drops; strict=True kills them at the
+# door. The DOOR_KEYS set is the door vocab; everything else
+# entering the run is a scalar input (the model's params).
+_RETIRED_RUNNER_KNOBS = frozenset({
+    "start_from", "stop_after", "reuse_run_id", "partial_run",
+    "overrides", "since", "from_index",
+})
+_INTERNAL_KEY_PREFIX = "_"  # C-era runner internal naming — refused
+
+
+def _strict_body(body):
+    """Loud 400 on any body key the runner never reads.
+
+    Door keys are allowed (the door itself is one of them); model
+    params ride through initial_pool as scalar inputs (params have
+    open vocabulary — the model class declares them). The strict
+    class is exactly the retired runner knob names and C-era
+    internal naming."""
+    if not isinstance(body, dict):
+        return
+    bad = [k for k in body
+           if k in _RETIRED_RUNNER_KNOBS
+           or (k.startswith(_INTERNAL_KEY_PREFIX)
+               and k not in DOOR_KEYS)]
+    if bad:
+        raise ValidationError(
+            "request body carries retired runner knob(s) "
+            + repr(sorted(bad))
+            + " — the runner never reads these (silent-drop class); "
+            "remove them")
+
+
 def resolve_request(body):
     """Resolve the start request to a flow graph — loudly.
 
@@ -108,6 +149,7 @@ def resolve_request(body):
     """
     if not isinstance(body, dict):
         raise ValidationError("request body must be a JSON object")
+    _strict_body(body)
     doors = [k for k in ("flow", "flow_inline", "model") if k in body]
     if len(doors) > 1:
         raise ValidationError(
