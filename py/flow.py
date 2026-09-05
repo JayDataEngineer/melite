@@ -102,7 +102,21 @@ class Stage(BaseModel):
     """One flow stage — the authored row. `engine` must be a type the
     plugin registry declares (validated on the Flow, where the whole
     graph is known); `params` is the engine-owned surface, verbatim;
-    `expected`/`outputs` carry the edge-Kind contract."""
+    `expected`/`outputs` carry the edge-Kind contract.
+
+    The CARD-STAGE LATTICE (2026-09-05, design record
+    docs/queue/card-stage-typing.md): when `card=` is set, the stage
+    opts in to a typed body gate (`py/stage_params.py` validates
+    `params` against the card's schema at construction) AND a typed
+    I/O contract (the card's `kind_outputs` fills `outputs` when
+    the stage omits them; the card's `kind_inputs` is consulted
+    when the stage omits `expected`).
+
+    Engine-only stages (card="") are unchanged: `params` is the
+    engine's verbatim surface, `outputs` defaults to the engine's
+    DEFAULT_OUTPUT, and the engine's own Phase-1 validation owns
+    the body shape.
+    """
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     id: str = Field(min_length=1)
@@ -113,10 +127,25 @@ class Stage(BaseModel):
     # what the stage PRODUCES, named per output channel. Defaults to
     # {"default": <engine.default_output>}; if the engine declares no
     # default_output the Flow validator refuses loudly (see _kinds_ok).
+    # When `card=` is set and the stage omits `outputs`, the registry's
+    # `kind_outputs` fills the channels (see _resolve_stage_outputs).
     outputs: dict[str, Kind] = Field(default_factory=dict)
     # what each named input EXPECTS. The Flow validator refuses any
-    # input that is wired but untyped, or typed but unwired.
+    # input that is wired but untyped, or typed but unwired. When
+    # `card=` is set and the stage omits `expected`, the registry's
+    # `kind_inputs` is consulted (the AI's first typo class
+    # — forgetting `expected=` — has a typed fallback).
     expected: dict[str, Kind] = Field(default_factory=dict)
+    # ── the lattice opt-in (Path C) ───────────────────────────────
+    # card="" is the engine-only default. Setting card="<id>" routes
+    # the stage through the ParamSchemaRegistry gate (py/stage_params.py):
+    # the body is validated against the card's schema_class, and the
+    # I/O contract is read from the same row. card_io is the EXPLICIT
+    # output override — a flow author who needs the card to declare
+    # a different output channel than the registry's default (rare;
+    # the same pattern as Stage.outputs) can stamp it here.
+    card: str = ""
+    card_io: dict[str, Kind] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def _id_legal(self) -> "Stage":
@@ -163,6 +192,38 @@ class Flow(BaseModel):
             done.add(st.id)
         return self
 
+    @model_validator(mode="after")
+    def _card_params_gate(self) -> "Flow":
+        """The CARD-STAGE LATTICE body gate (Path C,
+        docs/queue/card-stage-typing.md). Every stage that opts in
+        with `card=` has its `params` validated against the card's
+        schema class. Runs BEFORE _validate_kinds so a typo'd knob
+        refuses the `Flow(...)` line — same lever as the
+        flow-typed-edges kind check.
+
+        Engine-only stages (card="") skip the gate (the engine's
+        own Phase-1 validation owns the body). The validator is a
+        separate pass so the lattice has a distinct refusal channel
+        (the AI iterates on a body-shape refusal without confusing
+        it with a kind-mismatch refusal)."""
+        # Lazy import: py/stage_params imports py/flow's Kind lazily
+        # to avoid the cycle; this validator runs at construction
+        # time, after both modules are fully loaded.
+        import stage_params
+        for st in self.stages:
+            if not st.card:
+                continue
+            try:
+                stage_params.validate_stage_params(
+                    st.card, st.params,
+                    where="flow %r stage %r" % (self.id, st.id))
+            except stage_params.StageParamError as e:
+                # a pydantic-shaped refusal from a pydantic-shaped
+                # gate — translate the ValueError so the door
+                # speaks one error language
+                raise FlowError(str(e)) from e
+        return self
+
     def _kinds_ok(self, engine_defaults: dict[str, Optional[Kind]]) -> "Flow":
         """Type-check the graph (flow-typed-edges.md). Three refusal
         classes:
@@ -178,13 +239,36 @@ class Flow(BaseModel):
         Every refusal names flow + stage + input/output + the two
         Kinds (or the missing one), so the AI iterates without a
         single GPU cycle.
+
+        CARD-STAGE LATTICE: when a stage has `card=`, the registry's
+        `kind_outputs` is consulted (precedence: Stage.outputs >
+        Stage.card_io > registry.kind_outputs > engine DEFAULT_OUTPUT).
+        Same precedence as the existing engine-default resolution —
+        a stage that names its outputs explicitly wins.
         """
+        # Lazy import: cycle (py/stage_params imports py/flow's
+        # Kind via TYPE_CHECKING + lazy). At construction time both
+        # modules are loaded; the import is cheap.
+        import stage_params
         outputs_by_stage: dict[str, dict[str, Kind]] = {}
         for st in self.stages:
-            # 1) inputs/expected symmetry
-            if set(st.inputs.keys()) != set(st.expected.keys()):
-                only_input = set(st.inputs) - set(st.expected)
-                only_expected = set(st.expected) - set(st.inputs)
+            # 1) inputs/expected symmetry. CARD-STAGE LATTICE: when
+            # `card=` is set and the stage omits `expected`, fill the
+            # wired-but-untyped keys from the card's kind_inputs. The
+            # author can still override per-key explicitly — the
+            # lattice does not stamp over explicit rows (the same
+            # precedence ladder as outputs below).
+            effective_expected: dict[str, Kind] = dict(st.expected)
+            if st.card and st.inputs:
+                card_in = stage_params.card_inputs(st.card)
+                for name in st.inputs:
+                    if name in effective_expected:
+                        continue
+                    if name in card_in:
+                        effective_expected[name] = Kind(card_in[name])
+            if set(st.inputs.keys()) != set(effective_expected.keys()):
+                only_input = set(st.inputs) - set(effective_expected)
+                only_expected = set(effective_expected) - set(st.inputs)
                 bits = []
                 if only_input:
                     bits.append("wired but untyped: %s" % sorted(only_input))
@@ -195,9 +279,23 @@ class Flow(BaseModel):
                     "every input needs an expected Kind, every expected "
                     "Kind needs an input"
                     % (self.id, st.id, "; ".join(bits)))
-            # resolve this stage's effective outputs
+            # resolve this stage's effective outputs — precedence
+            # ladder (Path C, design record):
+            #   1. Stage.outputs    (author explicit)
+            #   2. Stage.card_io    (author explicit override)
+            #   3. registry.kind_outputs   (card contract)
+            #   4. engine DEFAULT_OUTPUT   (engine contract)
+            resolved: dict[str, Kind] = {}
             if st.outputs:
-                resolved = dict(st.outputs)
+                resolved.update(st.outputs)
+            if st.card_io:
+                resolved.update(st.card_io)
+            if not resolved and st.card:
+                card_outs = stage_params.card_outputs(st.card)
+                if card_outs:
+                    resolved.update(
+                        {k: Kind(v) for k, v in card_outs.items()})
+            if resolved:
                 outputs_by_stage[st.id] = resolved
             elif st.engine in engine_defaults:
                 # bus loaded the engine — its default is authoritative
@@ -233,7 +331,7 @@ class Flow(BaseModel):
                         % (self.id, st.id, name, edge.stage,
                            edge.output, sorted(upstream)))
                 upstream_kind = upstream[edge.output]
-                receiving_kind = st.expected[name]
+                receiving_kind = effective_expected[name]
                 if upstream_kind is not receiving_kind:
                     raise FlowError(
                         "flow %r stage %r input %r: expected %s, "
@@ -279,13 +377,27 @@ class Flow(BaseModel):
         if str(REPO / "py") not in sys.path:
             sys.path.insert(0, str(REPO / "py"))
         import plugins
-        # resolve per-stage outputs: explicit row wins; engine
-        # DEFAULT_OUTPUT fills the unnamed "default" channel.
+        import stage_params
+        # resolve per-stage outputs: explicit row wins; card_io (the
+        # stage's override) wins next; the card registry's
+        # kind_outputs fills when the stage has card= and no
+        # explicit row; engine DEFAULT_OUTPUT is the final fallback.
+        # Same precedence ladder as _kinds_ok — the sidecar sees
+        # the SAME typed chain the gate used.
         resolved: dict[str, dict[str, Kind]] = {}
         for st in self.stages:
             if st.outputs:
                 resolved[st.id] = dict(st.outputs)
                 continue
+            if st.card_io:
+                resolved[st.id] = dict(st.card_io)
+                continue
+            if st.card:
+                card_outs = stage_params.card_outputs(st.card)
+                if card_outs:
+                    resolved[st.id] = {k: Kind(v)
+                                        for k, v in card_outs.items()}
+                    continue
             try:
                 mod = plugins.load_engine(st.engine)
                 default = getattr(mod, "DEFAULT_OUTPUT", None)
@@ -444,7 +556,10 @@ def flow_from_body(body: object) -> Flow:
             "inputs":  {"name": {"initial": "key"}
                                  | {"stage": "id", "output": "name"}},
             "outputs": {"name": "<Kind>"},   # omit for engine default
-            "expected": {"name": "<Kind>"}   # what each input expects
+            "expected": {"name": "<Kind>"},  # what each input expects
+            # ── CARD-STAGE LATTICE (2026-09-05, Path C) ──
+            "card": "<id>",                   # opt in to the body gate
+            "card_io": {"name": "<Kind>"}     # output override (rare)
         }]}
 
     Every refusal is a FlowError naming flow/stage/input and both
@@ -478,6 +593,7 @@ def flow_from_body(body: object) -> Flow:
         _STAGE_KEYS = frozenset({
             "id", "engine", "description", "params",
             "inputs", "outputs", "expected",
+            "card", "card_io",     # CARD-STAGE LATTICE
         })
         st_extras = sorted(set(st) - _STAGE_KEYS)
         if st_extras:
@@ -502,12 +618,18 @@ def flow_from_body(body: object) -> Flow:
                 name: _inline_kind(
                     "%s expected %r" % (where, name), kind)
                 for name, kind in (st.get("expected") or {}).items()}
+            card_io = {
+                name: _inline_kind(
+                    "%s card_io %r" % (where, name), kind)
+                for name, kind in (st.get("card_io") or {}).items()}
             rows.append(Stage(
                 id=str(st.get("id", "")),
                 engine=str(st.get("engine", "")),
                 description=str(st.get("description", "")),
                 params=dict(st.get("params") or {}),
-                inputs=inputs, outputs=outputs, expected=expected))
+                inputs=inputs, outputs=outputs, expected=expected,
+                card=str(st.get("card", "") or ""),
+                card_io=card_io))
         except FlowError as e:
             raise e
         except Exception as e:
