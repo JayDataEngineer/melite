@@ -129,7 +129,7 @@
    "name": "preset",
    "options": [],
    "order": 0,
-   "tooltip": "Optional recipe preset \u2014 empty (default) = plain edit, the route's own catalog recipe (steps/cfg/loras from its defaults). vnccs_repose: the VNCCS re-pose recipe (external Lightning 4-step LoRA + VNCCS PoseStudio LoRA) for mesh-based re-pose pipelines \u2014 explicit only, never the default: its Lightning LoRA stacked on a Lightning-baked route (Apex int8, the fused lightning4) is double distillation (GPU-verified 2026-08-15). blue_mesh: blue-mesh overpaint mode \u2014 the builder loads the blue_mesh ControlNet stack.",
+   "tooltip": "Optional recipe preset \u2014 empty (default) = plain edit, the route's own catalog recipe (steps/cfg/loras from its defaults). vnccs_repose: the VNCCS re-pose recipe (external Lightning 4-step LoRA + VNCCS PoseStudio LoRA) for mesh-based re-pose flows \u2014 explicit only, never the default: its Lightning LoRA stacked on a Lightning-baked route (Apex int8, the fused lightning4) is double distillation (GPU-verified 2026-08-15). blue_mesh: blue-mesh overpaint mode \u2014 the builder loads the blue_mesh ControlNet stack.",
    "type": "select",
    "width": 1
   },
@@ -559,7 +559,7 @@
      "name": "preset",
      "options": [],
      "order": 0,
-     "tooltip": "Optional recipe preset \u2014 empty (default) = plain edit, the route's own catalog recipe (steps/cfg/loras from its defaults). vnccs_repose: the VNCCS re-pose recipe (external Lightning 4-step LoRA + VNCCS PoseStudio LoRA) for mesh-based re-pose pipelines \u2014 explicit only, never the default: its Lightning LoRA stacked on a Lightning-baked route (Apex int8, the fused lightning4) is double distillation (GPU-verified 2026-08-15). blue_mesh: blue-mesh overpaint mode \u2014 the builder loads the blue_mesh ControlNet stack.",
+     "tooltip": "Optional recipe preset \u2014 empty (default) = plain edit, the route's own catalog recipe (steps/cfg/loras from its defaults). vnccs_repose: the VNCCS re-pose recipe (external Lightning 4-step LoRA + VNCCS PoseStudio LoRA) for mesh-based re-pose flows \u2014 explicit only, never the default: its Lightning LoRA stacked on a Lightning-baked route (Apex int8, the fused lightning4) is double distillation (GPU-verified 2026-08-15). blue_mesh: blue-mesh overpaint mode \u2014 the builder loads the blue_mesh ControlNet stack.",
      "type": "select",
      "width": 1
     },

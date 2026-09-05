@@ -17,7 +17,7 @@ from flow import Flow, Stage, FromInitial, FromStage, validate_engines
 
 def test_registry_has_the_converted_lanes():
     ids = flow_mod.scan_flow_ids()
-    for must in ("audio-native-tts", "kimodo-native", "trellis2-gate"):
+    for must in ("audio-native-tts", "kimodo-native"):
         assert must in ids, "converted lane missing: %s" % must
 
 
@@ -31,20 +31,26 @@ def test_every_flow_loads_and_matches_its_dir():
 
 def test_converted_flows_keep_their_engine_params():
     """The conversion is FAITHFUL: the comfyui engine surface rides
-    verbatim (workflow_file+inject for tts/trellis, inline workflow
-    for kimodo) and NO server_url fossil survives (QUEUE LANE LAW:
-    the engine's config/env seam owns the endpoint)."""
+    verbatim (workflow_file+inject for tts, inline workflow for
+    kimodo) and NO server_url fossil survives (QUEUE LANE LAW:
+    the engine's config/env seam owns the endpoint).
+
+    Trellis retired 2026-09-05: the broken flow
+    flows/trellis2-gate/flow.py bypassed the img-to-mesh action
+    card with a raw engine call that injected into nodes the live
+    native ComfyUI template doesn't have (CLIPTextEncode, KSampler
+    — the native template is a pure mesh processor: UnwrapMesh →
+    BakeTextureFromVoxel → ApplyTextureToMesh). The card IS the
+    trellis lane — {model: "trellis2-native", input_image: ...} —
+    not a flow. Verified live: a single run produced
+    trellis2_native_00007.glb (24MB) via the model door. The
+    estate has 2 flows: audio-native-tts, kimodo-native."""
     tts = flow_mod.load_flow("audio-native-tts")
     (st,) = tts.stages
     assert st.engine == "comfyui"
     assert st.params["inject"] == {"2.prompt": "$prompt", "2.seed": 42}
     assert "server_url" not in st.params
     assert st.params["timeout_s"] == 1200
-
-    trellis = flow_mod.load_flow("trellis2-gate")
-    (st,) = trellis.stages
-    assert "server_url" not in st.params
-    assert st.params["inject"]["CLIPTextEncode.0.text"] == "$prompt"
 
     kimodo = flow_mod.load_flow("kimodo-native")
     (st,) = kimodo.stages
@@ -154,7 +160,7 @@ def test_yaml_door_is_dead():
     """The yaml text door retired with the parser (NO LEGACY: no
     fallbacks). A body carrying it is a NO-SELECTION refusal now."""
     from gateway import ValidationError, resolve_request
-    with pytest.raises(ValidationError, match="flow or model"):
+    with pytest.raises(ValidationError, match="no flow selected"):
         resolve_request({"yaml": "audio-native-tts"})
 
 

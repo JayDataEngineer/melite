@@ -31,7 +31,12 @@ def test_load_estate_flow(name):
 
 
 def test_estate_flows_found():
-    assert len(flow_mod.scan_flow_ids()) >= 3  # converted lanes, not doc yamls
+    # 2026-09-05: trellis2-gate retired (the broken flow bypassed the
+    # native comfyui action card; the card IS the trellis lane via
+    # {model: "trellis2-native", input_image: ...}). Estate flows are
+    # audio-native-tts + kimodo-native — the lanes that survive
+    # end-to-end via the {flow:name} door.
+    assert len(flow_mod.scan_flow_ids()) >= 2
 
 
 # C2: unknown flow refused

@@ -233,7 +233,7 @@ class TestDshSkinActive:
 
 
 class TestRightSidebarTabs:
-    """The right sidebar shows Ray Media, Ray ComfyUI, Ray Flows."""
+    """The right sidebar shows NO inference tabs."""
 
     @pytest.fixture(scope="class")
     def sidebar_state(self, playwright_browser):
@@ -259,14 +259,14 @@ class TestRightSidebarTabs:
             "cards_visible": cards_visible,
         }
 
-    def test_ray_media_tab_exists(self, sidebar_state):
-        assert sidebar_state["media"], "Ray Media tab not found in right sidebar"
+    def test_no_ray_media_tab(self, sidebar_state):
+        assert not sidebar_state["media"], "Ray Media tab should NOT be in the right sidebar"
 
-    def test_ray_comfy_tab_exists(self, sidebar_state):
-        assert sidebar_state["comfy"], "Ray ComfyUI tab not found in right sidebar"
+    def test_no_ray_comfy_tab(self, sidebar_state):
+        assert not sidebar_state["comfy"], "Ray ComfyUI tab should NOT be in the right sidebar"
 
-    def test_ray_flows_tab_exists(self, sidebar_state):
-        assert sidebar_state["flows"], "Ray Flows tab not found in right sidebar"
+    def test_no_ray_flows_tab(self, sidebar_state):
+        assert not sidebar_state["flows"], "Ray Flows tab should NOT be in the right sidebar"
 
     def test_no_ray_cards_tab(self, sidebar_state):
         assert not sidebar_state["cards_visible"], (

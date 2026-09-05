@@ -55,7 +55,6 @@ class Genre(str, Enum):
     THREE_D = "3d"
     MOTION = "motion"
     OTHER = "other"
-    CREATURE = "creature"
     TEXT = "text"
 
 
@@ -746,10 +745,12 @@ class TestSchemaConstructionRefusals:
 
     def test_genre_closed_vocab(self):
         for g in ("image", "video", "audio", "3d", "motion", "other",
-                  "creature", "text"):
+                  "text"):
             assert Genre(g).value == g
         with pytest.raises(ValueError):
             Genre("mesh")
+        with pytest.raises(ValueError):
+            Genre("creature")  # folded into 3d (2026-09-04)
         with pytest.raises(ValueError):
             Genre("ai_generated")  # a TAG, not a genre
 

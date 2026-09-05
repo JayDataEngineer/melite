@@ -54,8 +54,8 @@ export type PresetEntry = components["schemas"]["PresetEntry"]
 /** Source media type a family INGESTS — DERIVED from the backend's closed
  * Literal (schema.py FamilyEntry.accepts), never hand-written: a backend
  * vocabulary change re-types this on api:sync instead of silently
- * drifting. Deliberately a SUBSET of CardGenre (no 3d/motion/
- * ai_generated): those are output/badge genres, not ingest types. */
+ * drifting. Deliberately a SUBSET of CardGenre (no 3d/motion/other):
+ * those are output genres, not ingest types. */
 export type SourceMediaType = NonNullable<
  components["schemas"]["TransformApplicability"]["applies_to"]
 >[number]
@@ -66,7 +66,7 @@ export type SourceMediaType = NonNullable<
 
 /** The closed CardGenre vocabulary — the membership test for narrowGenre.
  * One source; the union and the list cannot drift apart. */
-const CARD_GENRES: readonly CardGenre[] = ["image", "video", "audio", "3d", "motion", "ai_generated", "text"]
+const CARD_GENRES: readonly CardGenre[] = ["image", "video", "audio", "3d", "motion", "other", "text"]
 
 /** Narrow the wire's plain string genre (string | null — the backend
  * Literal does not survive the wire as a type) onto the view union.

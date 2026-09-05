@@ -354,7 +354,7 @@ const GENRE_TO_KIND: Record<string, FileKind> = {
  audio: "audio",
  "3d": "glb",
  motion: "motion",
- ai_generated: "image",
+ other: "any",
  text: "text",
 }
 
