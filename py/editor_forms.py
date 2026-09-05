@@ -1569,7 +1569,10 @@ def form_spec(repo_root, model_id):
     spec = {
         "model": row["id"],
         "label": label,
-        "genre": row["genre"] or "",
+        # genre rides the KindGenre enum (form_wire); a model
+        # without a declared genre refuses the gate — a model MUST
+        # be classified to serve a form-spec (no untyped lane).
+        "genre": row["genre"],
         "engine": row["engine_plugin"] or "",
         "defaults": {k: v for k, v in row["defaults"]},
         "variants": _variants(repo_root, row),
@@ -1600,14 +1603,21 @@ def form_spec(repo_root, model_id):
         # universal form).
         spec["form"] = row["id"]
         spec["service"] = row["id"]
-    # CARDLESS MODELS (2026-09-05, form_wire gate): a catalog row with
-    # no card fragment (tool lanes, family engines, undeployed
-    # families) serves the SAME required core with honest empties —
-    # form/service default to the model id, fields/schema_groups to
-    # []. The pre-gate shape (no form/service/fields keys at all) was
-    # the hollow-spec class; the C served it field-less and the editor
-    # rendered "No parameters" — that tolerance is the contract, the
-    # missing keys are not.
+    # CARDLESS MODELS — the contract (revised 2026-09-05):
+    # A catalog row with NO card.py of its own still belongs to a
+    # form (the membership is _FORMS_TABLE's `covers`); its form-spec
+    # inherits the form's ANCHOR card's fields/schema_groups so the
+    # Parameters zone renders the universal form. form/service default
+    # to the model id (the spec is branded for THIS model), fields and
+    # schema_groups carry the anchor card's. The setdefault guards
+    # below remain the LAST-RESORT honest empties for models outside
+    # any form's covers (a true orphan: no card, no form membership —
+    # e.g. a half-deployed plugin lane). The earlier comment
+    # ("that tolerance is the contract") framed the empty shape as
+    # the desired behaviour; the cardless-model fix reversed that —
+    # the universal form is the contract now, honest empties are the
+    # orphan fallback. The hollow-spec class (missing required keys)
+    # is still refused by the form_wire gate above.
     spec.setdefault("form", row["id"])
     spec.setdefault("service", row["id"])
     spec.setdefault("fields", [])

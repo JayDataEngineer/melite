@@ -66,11 +66,18 @@ export interface CardKindDef {
   /** The runner family this kind belongs to. The dispatcher
    * (resolveStageRunner) reads this instead of branching on kind names
    * — data-driven, never a hardcoded kind → runner map. Closed
-   * vocabulary ("" / "input"); see py/card_kinds.py for the server
-   * SSOT. (2026-09-05 "make sure we are declarative and not
-   * hardcoding here".) */
-  runner?: string
+   * vocabulary mirroring py/card_kinds.KindRunner ("" / "input");
+   * a kind may only declare one of these (PYTHON SHAPE LAW rung 3
+   * — closed vocabularies are enums, lockstep client/server). The
+   * resolver defends against an unknown string (the wire may carry
+   * a runner the client enum hasn't learned yet — refuse loud,
+   * never a silent fallback). (2026-09-05.) */
+  runner?: KindRunner
 }
+
+/** The closed runner-family vocabulary (mirror of
+ * py/card_kinds.KindRunner). Update both sides in lockstep. */
+export type KindRunner = "" | "input"
 
 const _kinds = new Map<string, CardKindDef>()
 

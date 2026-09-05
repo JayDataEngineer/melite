@@ -43,9 +43,27 @@ server gate makes that class unreachable regardless.
 """
 from __future__ import annotations
 
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
+
+
+class KindGenre(str, Enum):
+    """The closed genre vocabulary (the wire's genre field, mirrored
+    on the client FormSpec.genre). A typo at construction refuses
+    (PYTHON SHAPE LAW rung 3 — closed vocabularies are enums). The
+    values match the /v1/forms registry's genre keys and the
+    client's generated OpenAPI enum."""
+
+    IMAGE = "image"
+    VIDEO = "video"
+    AUDIO = "audio"
+    MOTION = "motion"
+    TEXT = "text"
+    THREE_D = "3d"
+    CREATURE = "creature"
+    OTHER = "other"  # utility/misc models outside the lane taxonomy
 
 
 class _Frozen(BaseModel):
@@ -148,7 +166,7 @@ class FormSpecRow(_Frozen):
     form: str = Field(min_length=1)
     service: str = Field(min_length=1)
     label: str = Field(min_length=1)
-    genre: str
+    genre: KindGenre
     fields: list[FormFieldRow]
     schema_groups: list[SchemaGroupRow]
     features: FormFeaturesRow

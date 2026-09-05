@@ -658,7 +658,7 @@ export interface components {
              * Genre
              * @enum {string}
              */
-            genre: "image" | "video" | "audio" | "3d" | "motion" | "text";
+            genre: "image" | "video" | "audio" | "3d" | "motion" | "text" | "creature" | "other";
             /** Service */
             service: string;
             /** Label */

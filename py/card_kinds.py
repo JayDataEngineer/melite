@@ -25,7 +25,7 @@ from enum import Enum
 
 from pydantic import BaseModel, model_validator
 
-__all__ = ["BadgeTone", "CardKindRow", "CardKindTable", "TABLE", "kinds_wire"]
+__all__ = ["BadgeTone", "KindRunner", "CardKindRow", "CardKindTable", "TABLE", "kinds_wire"]
 
 
 class BadgeTone(str, Enum):
@@ -33,6 +33,19 @@ class BadgeTone(str, Enum):
 
     DEFAULT = "default"
     BRAND = "brand"
+
+
+class KindRunner(str, Enum):
+    """The closed runner-family vocabulary (the dispatcher's SSOT,
+    2026-09-05). Mirrors the client `CardKindDef.runner` union.
+    DEFAULT = the default rule (flowName → chain, executable card →
+    generation). INPUT = the input family runner (a 1-step inline doc).
+    A kind may only declare one of these; a typo at construction
+    refuses (PYTHON SHAPE LAW rung 3 — closed vocabularies are
+    enums)."""
+
+    DEFAULT = ""
+    INPUT = "input"
 
 
 class CardKindRow(BaseModel, frozen=True):
@@ -67,7 +80,7 @@ class CardKindRow(BaseModel, frozen=True):
     # is the resolver's contract — a kind may only declare one of
     # {"", "input"} here. (2026-09-05 "make sure we are declarative
     # and not hardcoding here".)
-    runner: str = ""
+    runner: KindRunner = KindRunner.DEFAULT
 
 
 class CardKindTable(BaseModel, frozen=True):
@@ -118,7 +131,7 @@ TABLE = CardKindTable(
                     formSpec=False, compound=False, opensStudio=False,
                     # The input family runs through the input runner
                     # (a 1-step inline doc, not the card model path).
-                    runner="input"),
+                    runner=KindRunner.INPUT),
         CardKindRow(kind="body", runnable=False, executable=False,
                     formSpec=False, compound=False, opensStudio=False,
                     icon="Box"),
