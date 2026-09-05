@@ -13,16 +13,6 @@
   through the queue, claims enforce serialization.
 - If a run must stop: use the stop door (/v1/flows/stop/<id>) — never kill
   processes.
-- Gateway restarts: OPERATOR ONLY on production deployments. THE DEV DSH
-  LOOP IS THE SANCTIONED EXCEPTION (operator order, 2026-09-04: "Change
-  the [REDACTED 2026-11-05] operator law. I made a dev dsh just for testing this
-  [REDACTED 2026-11-05], in this very project"): the dev DSH at
-  https://cloud.tailb1e597.ts.net:3909/ (tests/dev_dsh/, launched by
-  ~/bin/inference-dev-dsh.sh, isolated ~/.dsh-test home) exists precisely
-  to test estate changes — so verifying a change MAY rebuild the web
-  artifacts, restart the estate gateway, and probe the dev DSH. The
-  restart preconditions still apply in full: confirm ZERO active runs
-  first, use setsid, and never touch the prod DSH home (~/.dsh).
 
 
 ## QUEUE LANE LAW (operator order, 2026-08-30, verbatim)
