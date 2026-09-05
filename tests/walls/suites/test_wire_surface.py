@@ -79,7 +79,6 @@ REVIEWING_EXACT = (
     "/v1/tools/speech-length",
     "/v1/flows/render_glb",
     "/v1/flows/render_textured",
-    "/v1/flows/yaml/export-comfyui",
     # GpuStatus polls /health at boot; the gateway has no root health arm.
     "/health",
     # Bare template prefix `/comfyui/${...}` — same dead family as above.

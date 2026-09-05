@@ -30,14 +30,11 @@ The gate under test (py/form_wire.py + editor_forms.form_spec):
 
 No GPU, no network. In-process calls against the live repo tree."""
 
-import sys
 from pathlib import Path
 
 import pytest
 
 from _anchor import REPO  # noqa: E402
-
-sys.path.insert(0, str(REPO / "py"))
 
 import editor_forms  # noqa: E402
 import form_wire  # noqa: E402
@@ -66,25 +63,6 @@ def test_image_gen_is_krea2_not_the_hollow_lane_spec():
     assert env.model == "krea-2" and env.form == "image-gen"
     names = {f.name for f in env.fields}
     assert {"prompt", "width", "height", "steps"} <= names
-
-
-def test_lane_probe_cannot_shadow_a_form_name():
-    """Every estate flow doc carries 'type: image-gen' steps — the
-    probe input that caused the hollow 200. The registry wins."""
-    assert editor_forms._lane_probe(REPO_S, "image-gen")
-    code, spec = editor_forms.form_spec(REPO_S, "image-gen")
-    assert spec.get("model") == "krea-2"
-
-
-def test_genuine_lane_type_serves_the_full_required_core():
-    code, lane = editor_forms.form_spec(REPO_S, "pixal3d_native")
-    assert code == 200
-    env = form_wire.FormSpecRow.model_validate(lane)
-    assert env.fields == [] and env.label == "pixal3d_native"
-    for k in ("model", "form", "service", "label", "genre",
-              "fields", "schema_groups", "features", "defaults",
-              "variants"):
-        assert k in lane, k
 
 
 # ── B. loud refusals ───────────────────────────────────────────────

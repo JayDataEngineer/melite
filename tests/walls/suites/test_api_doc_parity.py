@@ -72,7 +72,8 @@ def _spec_surface():
 
 
 def test_route_table_nonempty_and_grouped():
-    assert len(gateway.ROUTES) >= 40
+    # yaml+resume retirement 2026-09-05: 7 yaml doors + 1 resume = 38
+    assert len(gateway.ROUTES) == 38
     groups = {r.group for r in gateway.ROUTES}
     assert len(groups) >= 6
     for g in groups:

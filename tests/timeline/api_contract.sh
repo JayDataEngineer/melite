@@ -27,19 +27,6 @@ fi
 curl -s -m 5 "$GW/v1/queue" | J >/dev/null; ck "queue.strict_json" $?
 curl -s -m 5 "$GW/v1/queue" | grep -q '"queued_ids"'; ck "queue.queued_ids_key" $?
 
-# --- flows yaml list (the editor library endpoint) ---
-L=$(curl -s -m 8 "$GW/v1/flows/yaml/list")
-echo "$L" | J >/dev/null; ck "yaml_list.strict_json" $?
-echo "$L" | python3 -c '
-import json,sys
-d=json.load(sys.stdin); ps=d.get("flows",[])
-assert len(ps)>=6, f"too few flows: {len(ps)}"
-names=[p.get("name") or p.get("filename","").removesuffix(".yaml") for p in ps]
-assert "audio-native-tts" in names, "audio-native-tts missing"
-assert names==sorted(names), "list not sorted"
-assert "h3-timeline" not in names, "h3-timeline is a MODEL now (interlock), not a yaml"
-' ; ck "yaml_list.content_sorted" $?
-
 # --- h3-timeline is a model now (the editor reads it from the catalog) ---
 # State-aware: the model registry is built at gateway startup from the tree
 # on disk. A gateway that started before the model migration serves an
@@ -57,29 +44,12 @@ if not models:
 assert "h3-timeline" in models, f"h3-timeline missing from model catalog: {list(models)[:12]}"
 ' ; ck "catalog.has_h3_timeline" $?
 
-# --- yaml detail (nodes surface the editor imports) ---
-D=$(curl -s -m 8 "$GW/v1/flows/yaml/detail?yaml=trellis2-gate")
-echo "$D" | J >/dev/null; ck "yaml_detail.strict_json" $?
-echo "$D" | python3 -c '
-import json,sys
-d=json.load(sys.stdin)
-assert d.get("name")=="trellis2-gate", d.get("name")
-ns=[n.get("id") for n in d.get("nodes",[])]
-assert "img2mesh" in ns, f"node img2mesh missing: {ns}"
-' ; ck "yaml_detail.nodes_img2mesh" $?
-
 # --- JSON 404 / 400 bodies (the banner-bug class) ---
 B=$(curl -s -m 5 -w '|%{http_code}' "$GW/v1/definitely-not-a-route")
 CODE=${B##*|}; BODY=${B%|*}
 [ "$CODE" = "404" ]; ck "notfound.status_404" $?
 echo "$BODY" | J >/dev/null; ck "notfound.body_is_json" $?
 echo "$BODY" | grep -q '"error"'; ck "notfound.body_has_error_key" $?
-
-curl -s -m 5 -o /dev/null -w '%{http_code}' "$GW/v1/flows/yaml/detail" | grep -q 400
-ck "yaml_detail.missing_param_400" $?
-E=$(curl -s -m 5 "$GW/v1/flows/yaml/detail?yaml=zz-no-such")
-echo "$E" | J >/dev/null; ck "yaml_detail.unknown_strict_json" $?
-echo "$E" | grep -q '"error"'; ck "yaml_detail.unknown_error_body" $?
 
 # --- runs ledger shape (state-agnostic) ---
 R=$(curl -s -m 5 "$GW/v1/flows/runs")
