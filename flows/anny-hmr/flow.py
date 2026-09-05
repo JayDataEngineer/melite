@@ -1,0 +1,93 @@
+"""anny-hmr — photo → Anny body GLB via the estimator pack (pilot stroke 1).
+
+Date: 2026-09-05 · Status: landed (pilot record docs/plans/anny-pilot.md
+§4 stroke 1 — HMR as the first SUB-ACTION verb; pattern doctrine
+docs/design/anny-evolution.md §3, verb UX docs/design/studio-shell.md §4).
+
+ONE comfyui stage, inline params.workflow (the kimodo-native shape):
+LoadImage($photo) → MultiHMR2ImageToAnny (regression) →
+AnnySelectPerson (loud single-person lock, index 0). The HMR node
+emits its meshes on the `three_model` ui surface (pack nodes.py
+estimate() returns {"ui": {"three_model": [...]}}), which the comfyui
+engine's harvest already downloads as run artifacts (compose/native.py
+_fetch_outputs "three_model" kind) — the verb hydrates body_glb from
+those artifacts via writes.
+
+Node signatures are verbatim from the LIVE pin
+(plugins/engines/comfyui/data/object_info.json — MultiHMR2ImageToAnny,
+AnnySelectPerson; NEVER retyped from memory): required knobs baked as
+literals (conf_thresh 0.4, dist_thresh_nms 0.25, save_anny_params /
+save_mesh true, render false, filename_prefix anny/multihmr2). The
+photo arrives on the $photo engine-ABI channel (gateway deep-walk),
+never retyped beside the edge.
+
+SINGLE STAGE ON PURPOSE: a multi-stage comfyui→comfyui file handoff
+does not resolve — the engine returns {prompt_id} into carry, never
+upstream file paths, so a FromStage mesh wire would refuse at
+resolve_inputs (runtime), not construction. The pack chain is designed
+in-graph (SelectPerson's tooltip: "wire
+MultiHMR2ImageToAnny.mesh_paths").
+
+REFINE DEFERRED (pilot record §4 + anny-evolution §3 honest edge):
+AnnyFitOptimize returns params.npz + renders, NO mesh — wiring it as
+a body origin needs a params→GLB export that does not exist. The verb
+offers regress only; refine refuses loudly at the verb layer, never a
+silent downgrade. No server_url fossil (QUEUE LANE LAW: the engine's
+config/env seam owns the endpoint).
+"""
+
+from flow import Flow, Stage, FromInitial, Kind
+
+FLOW = Flow(
+    id="anny-hmr",
+    description=(
+        "Pilot stroke 1 (docs/plans/anny-pilot.md §4): photo → Anny "
+        "body GLB via the estimator pack (MultiHMR2 regression + "
+        "loud single-person lock) — the first SUB-ACTION verb's flow "
+        "template; the anny card's HMR chip runs this through the "
+        "queue and hydrates body_glb from its artifacts."),
+    stages=(
+        Stage(
+            id="estimate",
+            engine="comfyui",
+            description="MultiHMR2 regression + loud single-person lock",
+            inputs={"photo": FromInitial(key="photo")},
+            # the flow-typed-edges contract: estimate wants an image,
+            # produces a mesh (the three_model harvest). A wire feeding
+            # image into a mesh input (or vice versa) refuses AT
+            # CONSTRUCTION — pinned by the anny-hmr wall.
+            expected={"photo": Kind.image},
+            outputs={"body": Kind.mesh},
+            params={
+                "out_dir": "./output",
+                "timeout_s": 1800,
+                "workflow": {
+                    "load": {
+                        "class_type": "LoadImage",
+                        "inputs": {"image": "$photo"},
+                    },
+                    "hmr": {
+                        "class_type": "MultiHMR2ImageToAnny",
+                        "inputs": {
+                            "image": ["load", 0],
+                            "conf_thresh": 0.4,
+                            "dist_thresh_nms": 0.25,
+                            "lowres": False,
+                            "save_anny_params": True,
+                            "save_mesh": True,
+                            "render": False,
+                            "filename_prefix": "anny/multihmr2",
+                        },
+                    },
+                    "select": {
+                        "class_type": "AnnySelectPerson",
+                        "inputs": {
+                            "mesh_paths": ["hmr", 2],
+                            "index": 0,
+                        },
+                    },
+                },
+            },
+        ),
+    ),
+)
