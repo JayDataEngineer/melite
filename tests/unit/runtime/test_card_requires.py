@@ -160,3 +160,62 @@ def test_node_type_table_values_are_str_sets() -> None:
         assert isinstance(ext, str) and ext
         assert isinstance(nodes, set) and nodes
         assert all(isinstance(n, str) and n for n in nodes)
+
+
+# ── native-core capability gates (2026-09-06 img-to-mesh live-fire) ──
+# ComfyUI 0.33: no trellis2 module, MoGe without the FOV node.
+# 0.34+: trellis2 + FOV native. The canned infos mirror the live
+# object_info probes (3286 vs 1314 classes).
+OLD_CORE_INFO = {
+    "LoadImage": {}, "KSampler": {}, "CLIPVisionLoader": {},
+    "LoadMoGeModel": {}, "MoGeInference": {},
+    "Save3DAdvanced": {}, "SomeOtherNode": {},
+}
+NEW_CORE_INFO = {
+    **OLD_CORE_INFO,
+    "Trellis2Conditioning": {}, "EmptyTrellis2LatentStructure": {},
+    "Trellis2ShapeStage": {}, "Trellis2TextureStage": {},
+    "VaeDecodeStructureTrellis2": {}, "VaeDecodeShapeTrellis": {},
+    "VaeDecodeTextureTrellis": {}, "Pixal3DConditioning": {},
+    "MoGeGeometryToFOV": {}, "ImageCropToMask": {},
+}
+TRELLIS_REQ = ["comfyui-core-trellis2"]
+PIXAL_REQ = ["comfyui-core-trellis2", "ComfyUI-MoGe"]
+
+
+def test_trellis_capability_old_core_refuses(object_info: SetObjectInfo) -> None:
+    object_info(dict(OLD_CORE_INFO))
+    ok, msg = card_requires.check_card_requires(TRELLIS_REQ)
+    assert not ok
+    assert "comfyui-core-trellis2" in msg
+
+
+def test_trellis_capability_new_core_ok(object_info: SetObjectInfo) -> None:
+    object_info(dict(NEW_CORE_INFO))
+    ok, msg = card_requires.check_card_requires(TRELLIS_REQ)
+    assert ok, msg
+
+
+def test_pixal_requires_old_core_names_both(object_info: SetObjectInfo) -> None:
+    object_info(dict(OLD_CORE_INFO))
+    ok, msg = card_requires.check_card_requires(PIXAL_REQ)
+    assert not ok
+    assert "comfyui-core-trellis2" in msg
+    assert "ComfyUI-MoGe" in msg
+
+
+def test_pixal_requires_new_core_ok(object_info: SetObjectInfo) -> None:
+    object_info(dict(NEW_CORE_INFO))
+    ok, msg = card_requires.check_card_requires(PIXAL_REQ)
+    assert ok, msg
+
+
+def test_moge_gate_not_fooled_by_partial_moge(object_info: SetObjectInfo) -> None:
+    # The old core HAS LoadMoGeModel + MoGeInference: the FOV-only set
+    # must still refuse (pixal-auto dies without the FOV node).
+    info = dict(NEW_CORE_INFO)
+    del info["MoGeGeometryToFOV"]
+    object_info(info)
+    ok, msg = card_requires.check_card_requires(["ComfyUI-MoGe"])
+    assert not ok
+    assert "ComfyUI-MoGe" in msg

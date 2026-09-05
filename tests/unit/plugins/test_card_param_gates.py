@@ -182,3 +182,32 @@ def test_compose_door_admits_clean_and_refuses_typos(card: str) -> None:
         {"params": dict(good, typo_knob_xyz=1)}, model, "")
     assert rc == -3
     assert "typo_knob_xyz" in (err or "")
+
+
+# ── the optional-slot null law (2026-09-05 image-edit incident) ─────
+# Operator order, verbatim: "image 2 and 3 are optional... user doesn't
+# have to put it in". The editor seeds every declared slot null (so the
+# grid draws the empty square) and the run body carries that null. A
+# SLOT's null is 'no image' — coerced to the empty sentinel the compose
+# already treats as absent. Numeric nulls keep refusing (there null IS
+# garbage). Pinned on the image-edit gate (the reported card); the law
+# is the row's, other cards adopt it as they grow optional slots.
+
+def test_optional_slot_null_is_the_empty_square(gate: GateRow) -> None:
+    card, cls, mod, _num = gate
+    if cls != "ImageEditParams":
+        pytest.skip("optional-slot law pinned on image-edit (the adopter)")
+    doc = mod.parse_card({"params": {
+        "prompt": "hat", "input_image": "x.png",
+        "image2": None, "image3": None, "reference_images": None}})
+    assert doc.image2 == "" and doc.image3 == ""
+    assert doc.reference_images == []
+
+
+def test_numeric_null_still_refuses(gate: GateRow) -> None:
+    card, cls, mod, num = gate
+    if cls != "ImageEditParams":
+        pytest.skip("numeric-null law pinned on image-edit (the adopter)")
+    with pytest.raises(ValidationError):
+        mod.parse_card({"params": {
+            "prompt": "hat", "input_image": "x.png", num: None}})

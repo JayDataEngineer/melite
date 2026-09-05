@@ -74,6 +74,32 @@ def _norm_str(v: str | int | float | bool | None) -> str | int | float | bool | 
     return v
 
 
+def _norm_num(g: object) -> object:
+    """Fold numeric-strings to numbers (native-type era companion to
+    _norm_str): "42" -> 42, "4.5" -> 4.5. Non-numeric strings
+    (prompts, filenames, sampler names) pass through untouched — only
+    a FULLY numeric string folds, never a substring guess. Whole-
+    valued floats canonicalize to int (30.0 -> 30: the C channel's
+    "30" and the doc's typed 30.0 execute identically on FLOAT pins;
+    value-FORM is owned by the doc_parity wall's per-lane pins)."""
+    if isinstance(g, dict):
+        return {k: _norm_num(v) for k, v in g.items()}
+    if isinstance(g, list):
+        return [_norm_num(v) for v in g]
+    if isinstance(g, str):
+        try:
+            return int(g)
+        except ValueError:
+            pass
+        try:
+            g = float(g)
+        except ValueError:
+            return g
+    if isinstance(g, float) and g.is_integer():
+        return int(g)
+    return g
+
+
 FLIP_TPL = {
     "krea-2": "models/image/krea-2/generate_t2i.json",
     "music3": "models/audio/music3/music_t1.json",
@@ -164,6 +190,15 @@ def run_case(rec: dict[str, str | int | list[str] | dict[str, str | int | dict[s
             if old is None:
                 FAIL.append("%s/phase2 flip: un-reconstructable golden" % name)
                 continue
+            # DOCUMENTED DEVIATION (native-type era, 2026-09-05): the
+            # C channel carried every run input as a STRING (its
+            # run-inputs SSOT); the card renderers now emit the doc's
+            # TYPED values (ints/floats — the pinned node interface).
+            # Value-FORM is owned by the doc_parity wall (per-lane
+            # native pins); this bar is STRUCTURAL isomorphism, so
+            # both sides fold numeric-strings to numbers first.
+            old = _norm_num(old)
+            wf = _norm_num(wf)
             d = diff(reachable(old, OI), reachable(wf, OI))
             if not d["isomorphic"]:
                 FAIL.append("%s/phase2 flip drift: a_only=%s b_only=%s" % (name, d["a_only"][:4], d["b_only"][:4]))

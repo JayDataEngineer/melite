@@ -108,8 +108,17 @@ def test_assets_index_integer_limit_serves() -> None:
          ld.LaneWireError("boom: field reason")))),
 ])
 def test_lane_wire_refusal_serves_structured_500(handler: HandlerFn, path: str, setup: Callable[[], None]) -> None:
+    # The setup lambdas setattr a RAISING double onto lane_disclosure —
+    # restore the original in a finally: a leaked double poisons every
+    # later test in the process that calls the real function
+    # (form_wire's card_tools pins caught the "boom" leak, 2026-09-05).
+    attr = "peek" if handler is gateway._h_lanes else "card_tools"
+    original = getattr(ld, attr)
     setup()
-    code, body = asyncio.run(handler(_ctx(path, {})))
+    try:
+        code, body = asyncio.run(handler(_ctx(path, {})))
+    finally:
+        setattr(ld, attr, original)
     assert code == 500
     assert "lane wire refusal" in body["error"]
     assert "boom" in body["error"]
