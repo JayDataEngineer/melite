@@ -92,7 +92,7 @@
       "required": null,
       "step": null,
       "tooltip": "Same seed across re-rolls = same world texture",
-      "type": "int",
+      "type": "seed",
       "visible_when": null,
       "width": null,
       "zone": ""
@@ -111,7 +111,7 @@
       "required": null,
       "step": 64,
       "tooltip": "",
-      "type": "int",
+      "type": "number",
       "visible_when": null,
       "width": null,
       "zone": ""
@@ -130,7 +130,7 @@
       "required": null,
       "step": 64,
       "tooltip": "",
-      "type": "int",
+      "type": "number",
       "visible_when": null,
       "width": null,
       "zone": ""
@@ -149,7 +149,7 @@
       "required": null,
       "step": 5,
       "tooltip": "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s",
-      "type": "int",
+      "type": "number",
       "visible_when": null,
       "width": null,
       "zone": ""
@@ -168,7 +168,7 @@
       "required": null,
       "step": null,
       "tooltip": "12 for draft; 30 standard; 10 with the turbo LoRA",
-      "type": "int",
+      "type": "number",
       "visible_when": null,
       "width": null,
       "zone": ""
@@ -187,7 +187,7 @@
       "required": null,
       "step": null,
       "tooltip": "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural.",
-      "type": "bool",
+      "type": "boolean",
       "visible_when": null,
       "width": null,
       "zone": ""
@@ -206,7 +206,7 @@
       "required": null,
       "step": 0.05,
       "tooltip": "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.",
-      "type": "float",
+      "type": "number",
       "visible_when": null,
       "width": null,
       "zone": ""
@@ -225,7 +225,7 @@
       "required": null,
       "step": null,
       "tooltip": "Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time.",
-      "type": "bool",
+      "type": "boolean",
       "visible_when": null,
       "width": null,
       "zone": ""
@@ -244,7 +244,7 @@
       "required": null,
       "step": 0.5,
       "tooltip": "Timestep shift for video attention. Higher = more coherent motion.",
-      "type": "float",
+      "type": "number",
       "visible_when": null,
       "width": null,
       "zone": ""
@@ -263,7 +263,7 @@
       "required": null,
       "step": 0.5,
       "tooltip": "Timestep shift for audio attention. Lower = more detailed sound.",
-      "type": "float",
+      "type": "number",
       "visible_when": null,
       "width": null,
       "zone": ""
@@ -304,7 +304,7 @@
           "label": "Seed",
           "name": "seed",
           "tooltip": "Same seed across re-rolls = same world texture",
-          "type": "int"
+          "type": "seed"
         },
         {
           "default": 768,
@@ -313,7 +313,7 @@
           "min": 448,
           "name": "width",
           "step": 64,
-          "type": "int"
+          "type": "number"
         },
         {
           "default": 448,
@@ -322,7 +322,7 @@
           "min": 448,
           "name": "height",
           "step": 64,
-          "type": "int"
+          "type": "number"
         },
         {
           "default": 56,
@@ -332,7 +332,7 @@
           "name": "length",
           "step": 5,
           "tooltip": "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s",
-          "type": "int"
+          "type": "number"
         },
         {
           "default": 12,
@@ -341,14 +341,14 @@
           "min": 4,
           "name": "steps",
           "tooltip": "12 for draft; 30 standard; 10 with the turbo LoRA",
-          "type": "int"
+          "type": "number"
         },
         {
           "default": "true",
           "label": "FSR Sharpening",
           "name": "sharpen_enabled",
           "tooltip": "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural.",
-          "type": "bool"
+          "type": "boolean"
         },
         {
           "default": 0.3,
@@ -358,14 +358,14 @@
           "name": "sharpen_strength",
           "step": 0.05,
           "tooltip": "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.",
-          "type": "float"
+          "type": "number"
         },
         {
           "default": "false",
           "label": "FILM Interpolation",
           "name": "interpolate_enabled",
           "tooltip": "Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time.",
-          "type": "bool"
+          "type": "boolean"
         },
         {
           "default": 12.0,
@@ -375,7 +375,7 @@
           "name": "shift_video",
           "step": 0.5,
           "tooltip": "Timestep shift for video attention. Higher = more coherent motion.",
-          "type": "float"
+          "type": "number"
         },
         {
           "default": 3.0,
@@ -385,7 +385,7 @@
           "name": "shift_audio",
           "step": 0.5,
           "tooltip": "Timestep shift for audio attention. Lower = more detailed sound.",
-          "type": "float"
+          "type": "number"
         }
       ],
       "id": "",

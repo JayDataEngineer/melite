@@ -1,0 +1,62 @@
+{
+  "model": "ace-step-xl",
+  "form": "ace-step-xl",
+  "service": "ace-step-xl",
+  "label": "ACE-Step 1.5 XL Turbo",
+  "genre": "audio",
+  "fields": [],
+  "schema_groups": [],
+  "features": {
+    "modifiers": [],
+    "variant_groups": {
+      "Variant": {
+        "label": "Variant"
+      },
+      "Quant": {
+        "label": "Quant"
+      }
+    }
+  },
+  "defaults": {
+    "backend": "cuda",
+    "duration": "120",
+    "sample_rate": "44100"
+  },
+  "variants": [
+    {
+      "id": "standard",
+      "label": "Standard",
+      "group": "Variant",
+      "defaults": {},
+      "route": "ace-step-xl",
+      "hint": null,
+      "engine": "audio_cpp",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    },
+    {
+      "id": "native",
+      "label": "Native",
+      "group": "Quant",
+      "defaults": {},
+      "route": "ace-step-xl",
+      "hint": null,
+      "engine": "",
+      "quant": "native",
+      "vram_peak_gb": 0,
+      "owner": "standard"
+    }
+  ],
+  "guide": null,
+  "engine": "audio_cpp",
+  "enhance_prompt": null,
+  "enhance_prompts": {
+    "prompt": "",
+    "lyrics": ""
+  },
+  "size": null,
+  "layout": null,
+  "loader_info": null,
+  "contract": null
+}

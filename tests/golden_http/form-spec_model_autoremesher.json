@@ -1,0 +1,264 @@
+{
+  "model": "autoremesher",
+  "form": "quad-remesh",
+  "service": "autoremesher",
+  "label": "Quad Remesh",
+  "genre": "3d",
+  "fields": [
+    {
+      "name": "input",
+      "type": "textarea",
+      "label": "Input mesh",
+      "default": null,
+      "options": [],
+      "group": "",
+      "zone": "",
+      "order": null,
+      "required": true,
+      "columns": null,
+      "width": null,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "OBJ/STL/PLY path or artifact-ref from a previous card",
+      "visible_when": null
+    },
+    {
+      "name": "target_quads",
+      "type": "slider",
+      "label": "Target quads",
+      "default": 50000,
+      "options": [],
+      "group": "",
+      "zone": "",
+      "order": null,
+      "required": null,
+      "columns": null,
+      "width": null,
+      "min": 100,
+      "max": 1000000,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Target quad count",
+      "visible_when": null
+    },
+    {
+      "name": "edge_scaling",
+      "type": "slider",
+      "label": "Edge scaling",
+      "default": 1.0,
+      "options": [],
+      "group": "",
+      "zone": "",
+      "order": null,
+      "required": null,
+      "columns": null,
+      "width": null,
+      "min": 0.1,
+      "max": 10,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "",
+      "visible_when": null
+    },
+    {
+      "name": "sharp_edge",
+      "type": "slider",
+      "label": "Sharp edge",
+      "default": 90.0,
+      "options": [],
+      "group": "",
+      "zone": "",
+      "order": null,
+      "required": null,
+      "columns": null,
+      "width": null,
+      "min": 0,
+      "max": 180,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "",
+      "visible_when": null
+    },
+    {
+      "name": "smooth_normal",
+      "type": "slider",
+      "label": "Smooth normal",
+      "default": 0.0,
+      "options": [],
+      "group": "",
+      "zone": "",
+      "order": null,
+      "required": null,
+      "columns": null,
+      "width": null,
+      "min": 0,
+      "max": 1,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "",
+      "visible_when": null
+    },
+    {
+      "name": "adaptivity",
+      "type": "slider",
+      "label": "Adaptivity",
+      "default": 1.0,
+      "options": [],
+      "group": "",
+      "zone": "",
+      "order": null,
+      "required": null,
+      "columns": null,
+      "width": null,
+      "min": 0.1,
+      "max": 2,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "",
+      "visible_when": null
+    },
+    {
+      "name": "anisotropy",
+      "type": "slider",
+      "label": "Anisotropy",
+      "default": 1.0,
+      "options": [],
+      "group": "",
+      "zone": "",
+      "order": null,
+      "required": null,
+      "columns": null,
+      "width": null,
+      "min": 0.1,
+      "max": 2,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "",
+      "visible_when": null
+    }
+  ],
+  "schema_groups": [
+    {
+      "id": "",
+      "label": "Parameters",
+      "fields": [
+        {
+          "name": "input",
+          "type": "textarea",
+          "label": "Input mesh",
+          "required": true,
+          "tooltip": "OBJ/STL/PLY path or artifact-ref from a previous card"
+        },
+        {
+          "name": "target_quads",
+          "type": "slider",
+          "label": "Target quads",
+          "min": 100,
+          "max": 1000000,
+          "default": 50000,
+          "tooltip": "Target quad count"
+        },
+        {
+          "name": "edge_scaling",
+          "type": "slider",
+          "label": "Edge scaling",
+          "min": 0.1,
+          "max": 10,
+          "default": 1.0
+        },
+        {
+          "name": "sharp_edge",
+          "type": "slider",
+          "label": "Sharp edge",
+          "min": 0,
+          "max": 180,
+          "default": 90.0
+        },
+        {
+          "name": "smooth_normal",
+          "type": "slider",
+          "label": "Smooth normal",
+          "min": 0,
+          "max": 1,
+          "default": 0.0
+        },
+        {
+          "name": "adaptivity",
+          "type": "slider",
+          "label": "Adaptivity",
+          "min": 0.1,
+          "max": 2,
+          "default": 1.0
+        },
+        {
+          "name": "anisotropy",
+          "type": "slider",
+          "label": "Anisotropy",
+          "min": 0.1,
+          "max": 2,
+          "default": 1.0
+        }
+      ],
+      "order": 0,
+      "zone": "params"
+    }
+  ],
+  "features": {
+    "modifiers": [],
+    "variant_groups": {
+      "Variant": {
+        "label": "Variant"
+      },
+      "Quant": {
+        "label": "Quant"
+      }
+    }
+  },
+  "defaults": {
+    "target_quads": "50000",
+    "edge_scaling": "1.0",
+    "sharp_edge": "90.0",
+    "smooth_normal": "0.0",
+    "adaptivity": "1.0",
+    "anisotropy": "1.0"
+  },
+  "variants": [
+    {
+      "id": "standard",
+      "label": "Standard",
+      "group": "Variant",
+      "defaults": {},
+      "route": "autoremesher",
+      "hint": null,
+      "engine": "autoremesher",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    },
+    {
+      "id": "native",
+      "label": "Native",
+      "group": "Quant",
+      "defaults": {},
+      "route": "autoremesher",
+      "hint": null,
+      "engine": "",
+      "quant": "native",
+      "vram_peak_gb": 0,
+      "owner": "standard"
+    }
+  ],
+  "guide": null,
+  "engine": "autoremesher",
+  "enhance_prompt": null,
+  "enhance_prompts": {
+    "prompt": null,
+    "lyrics": ""
+  },
+  "size": null,
+  "layout": null,
+  "loader_info": null,
+  "contract": null
+}

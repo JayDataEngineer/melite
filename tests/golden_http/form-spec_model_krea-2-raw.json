@@ -1,441 +1,629 @@
 {
-  "contract": null,
-  "defaults": {
-    "cfg": 3.5,
-    "height": "1024",
-    "model": "krea-2-raw",
-    "sampler": "euler",
-    "scheduler": "normal",
-    "steps": 52,
-    "width": "1024"
-  },
-  "engine": "comfyui",
-  "enhance_prompt": null,
-  "enhance_prompts": {
-    "lyrics": "",
-    "prompt": "structure: [subject, action, environment, lighting, style, quality]; rules:; - pair every bare noun with 1-2 visual adjectives; - name the camera or render view (e.g. \"3/4 view, 50mm, soft rim light\"); - end with the quality block, never open with it; - negations go to the negative prompt, never the positive; - one style axis per prompt; stacking contradictory styles muddies both"
-  },
-  "features": {
-    "modifiers": [
-      {
-        "cardinality": "list",
-        "declaration_only": true,
-        "fields": [],
-        "kind": "lora",
-        "label": "LoRAs",
-        "options": [],
-        "options_scanned": true,
-        "param_key": "loras",
-        "upload_dir": "models/loras"
-      }
-    ],
-    "variant_groups": {
-      "Quant": {
-        "label": "Quant"
-      },
-      "Variant": {
-        "label": "Variant"
-      }
-    }
-  },
+  "model": "krea-2-raw",
+  "form": "image-gen",
+  "service": "krea-2",
+  "label": "Image",
+  "genre": "image",
   "fields": [
     {
-      "columns": 2,
-      "default": null,
-      "group": "prompt",
-      "label": "Prompt",
-      "max": null,
-      "min": null,
       "name": "prompt",
-      "options": [],
-      "order": 0,
-      "placeholder": "",
-      "required": true,
-      "step": null,
-      "tooltip": "",
       "type": "textarea",
-      "visible_when": null,
-      "width": 1,
-      "zone": ""
-    },
-    {
-      "columns": null,
+      "label": "Prompt",
       "default": null,
+      "options": [],
       "group": "prompt",
-      "label": "Negative Prompt",
-      "max": null,
+      "zone": "",
+      "order": 0,
+      "required": true,
+      "columns": 2,
+      "width": 1,
       "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "",
+      "visible_when": null
+    },
+    {
       "name": "negative_prompt",
-      "options": [],
-      "order": 1,
-      "placeholder": "",
-      "required": null,
-      "step": null,
-      "tooltip": "",
       "type": "textarea",
-      "visible_when": "negative_prompt != null",
-      "width": 1,
-      "zone": ""
-    },
-    {
-      "columns": 3,
-      "default": "1024",
-      "group": "resolution",
-      "label": "Width",
-      "max": 2048,
-      "min": 256,
-      "name": "width",
+      "label": "Negative Prompt",
+      "default": null,
       "options": [],
-      "order": 0,
-      "placeholder": "",
-      "required": null,
-      "step": 16,
-      "tooltip": "",
-      "type": "number",
-      "visible_when": null,
-      "width": 1,
-      "zone": ""
-    },
-    {
-      "columns": null,
-      "default": "1024",
-      "group": "resolution",
-      "label": "Height",
-      "max": 2048,
-      "min": 256,
-      "name": "height",
-      "options": [],
+      "group": "prompt",
+      "zone": "",
       "order": 1,
-      "placeholder": "",
       "required": null,
-      "step": 16,
-      "tooltip": "",
-      "type": "number",
-      "visible_when": null,
-      "width": 1,
-      "zone": ""
-    },
-    {
       "columns": null,
-      "default": -1,
-      "group": "resolution",
-      "label": "Seed",
-      "max": null,
+      "width": 1,
       "min": null,
-      "name": "seed",
-      "options": [],
-      "order": 4,
-      "placeholder": "",
-      "required": null,
+      "max": null,
       "step": null,
+      "placeholder": "",
       "tooltip": "",
-      "type": "seed",
-      "visible_when": null,
-      "width": 1,
-      "zone": ""
+      "visible_when": "negative_prompt != null"
     },
     {
-      "columns": null,
-      "default": 52,
-      "group": "sampling",
-      "label": "Steps",
-      "max": 100,
-      "min": 1,
-      "name": "steps",
-      "options": [],
-      "order": 0,
-      "placeholder": "",
-      "required": null,
-      "step": 1,
-      "tooltip": "",
+      "name": "width",
       "type": "number",
-      "visible_when": null,
-      "width": 1,
-      "zone": ""
-    },
-    {
-      "columns": null,
-      "default": 3.5,
-      "group": "sampling",
-      "label": "Guidance Scale",
-      "max": 20,
-      "min": 1,
-      "name": "cfg",
+      "label": "Width",
+      "default": 1024,
       "options": [],
-      "order": 1,
-      "placeholder": "",
+      "group": "resolution",
+      "zone": "",
+      "order": 0,
       "required": null,
-      "step": 0.1,
-      "tooltip": "How closely the diffusion follows the prompt. Higher = stricter.",
-      "type": "slider",
-      "visible_when": null,
+      "columns": 3,
       "width": 1,
-      "zone": ""
+      "min": 256,
+      "max": 2048,
+      "step": 16,
+      "placeholder": "",
+      "tooltip": "",
+      "visible_when": null
     },
     {
+      "name": "height",
+      "type": "number",
+      "label": "Height",
+      "default": 1024,
+      "options": [],
+      "group": "resolution",
+      "zone": "",
+      "order": 1,
+      "required": null,
       "columns": null,
-      "default": "euler",
-      "group": "sampling",
-      "label": "Sampler",
-      "max": null,
+      "width": 1,
+      "min": 256,
+      "max": 2048,
+      "step": 16,
+      "placeholder": "",
+      "tooltip": "",
+      "visible_when": null
+    },
+    {
+      "name": "seed",
+      "type": "seed",
+      "label": "Seed",
+      "default": -1,
+      "options": [],
+      "group": "resolution",
+      "zone": "",
+      "order": 4,
+      "required": null,
+      "columns": null,
+      "width": 1,
       "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "",
+      "visible_when": null
+    },
+    {
+      "name": "steps",
+      "type": "number",
+      "label": "Steps",
+      "default": 52,
+      "options": [],
+      "group": "sampling",
+      "zone": "",
+      "order": 0,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": 1,
+      "max": 100,
+      "step": 1,
+      "placeholder": "",
+      "tooltip": "",
+      "visible_when": null
+    },
+    {
+      "name": "cfg",
+      "type": "slider",
+      "label": "Guidance Scale",
+      "default": 3.5,
+      "options": [],
+      "group": "sampling",
+      "zone": "",
+      "order": 1,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": 1,
+      "max": 20,
+      "step": 0.1,
+      "placeholder": "",
+      "tooltip": "How closely the diffusion follows the prompt. Higher = stricter.",
+      "visible_when": null
+    },
+    {
       "name": "sampler",
+      "type": "select",
+      "label": "Sampler",
+      "default": "euler",
       "options": [
+        "cfgpp_ud10_ab",
+        "ddim",
+        "ddpm",
+        "deis",
+        "dpm_2",
+        "dpm_2_ancestral",
+        "dpm_adaptive",
+        "dpm_fast",
+        "dpmpp_2m",
+        "dpmpp_2m_cfg_pp",
+        "dpmpp_2m_sde",
+        "dpmpp_2m_sde_gpu",
+        "dpmpp_2m_sde_heun",
+        "dpmpp_2m_sde_heun_gpu",
+        "dpmpp_2s_ancestral",
+        "dpmpp_2s_ancestral_cfg_pp",
+        "dpmpp_3m_sde",
+        "dpmpp_3m_sde_gpu",
+        "dpmpp_sde",
+        "dpmpp_sde_gpu",
         "er_sde",
         "euler",
         "euler_ancestral",
+        "euler_ancestral_cfg_pp",
         "euler_cfg_pp",
-        "dpmpp_2m",
-        "dpmpp_2m_sde",
-        "dpmpp_2m_sde_gpu",
-        "dpmpp_3m_sde",
-        "dpm_fast",
+        "exp_heun_2_x0",
+        "exp_heun_2_x0_sde",
+        "gradient_estimation",
+        "gradient_estimation_cfg_pp",
+        "heun",
+        "heunpp2",
+        "ipndm",
+        "ipndm_v",
         "lcm",
         "lms",
-        "heun"
+        "res_multistep",
+        "res_multistep_ancestral",
+        "res_multistep_ancestral_cfg_pp",
+        "res_multistep_cfg_pp",
+        "sa_solver",
+        "sa_solver_pece",
+        "seeds_2",
+        "seeds_3",
+        "uni_pc",
+        "uni_pc_bh2"
       ],
-      "order": 2,
-      "placeholder": "",
-      "required": null,
-      "step": null,
-      "tooltip": "",
-      "type": "select",
-      "visible_when": null,
-      "width": 1,
-      "zone": ""
-    },
-    {
-      "columns": null,
-      "default": "normal",
       "group": "sampling",
-      "label": "Scheduler",
-      "max": null,
-      "min": null,
-      "name": "scheduler",
-      "options": [
-        "normal",
-        "karras",
-        "exponential",
-        "sgm_uniform",
-        "simple",
-        "ddim_uniform",
-        "beta",
-        "linear_quadratic",
-        "kl_optimal"
-      ],
-      "order": 3,
-      "placeholder": "",
+      "zone": "",
+      "order": 2,
       "required": null,
-      "step": null,
-      "tooltip": "",
-      "type": "select",
-      "visible_when": null,
+      "columns": null,
       "width": 1,
-      "zone": ""
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "",
+      "visible_when": null
     },
     {
-      "columns": null,
-      "default": null,
-      "group": "loras_controlnet",
-      "label": "LoRAs",
-      "max": null,
-      "min": null,
-      "name": "loras",
-      "options": [],
-      "order": 0,
-      "placeholder": "",
+      "name": "scheduler",
+      "type": "select",
+      "label": "Scheduler",
+      "default": "normal",
+      "options": [
+        "beta",
+        "ddim_uniform",
+        "exponential",
+        "karras",
+        "kl_optimal",
+        "linear_quadratic",
+        "normal",
+        "sgm_uniform",
+        "simple"
+      ],
+      "group": "sampling",
+      "zone": "",
+      "order": 3,
       "required": null,
+      "columns": null,
+      "width": 1,
+      "min": null,
+      "max": null,
       "step": null,
+      "placeholder": "",
       "tooltip": "",
+      "visible_when": null
+    },
+    {
+      "name": "loras",
       "type": "loras",
-      "visible_when": null,
+      "label": "LoRAs",
+      "default": null,
+      "options": [],
+      "group": "loras_controlnet",
+      "zone": "",
+      "order": 0,
+      "required": null,
+      "columns": null,
       "width": null,
-      "zone": ""
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "",
+      "visible_when": null
     }
   ],
-  "form": "image-gen",
-  "genre": "image",
-  "guide": null,
-  "label": "Image",
-  "layout": null,
-  "loader_info": null,
-  "model": "krea-2-raw",
   "schema_groups": [
     {
-      "fields": [
-        {
-          "columns": 2,
-          "label": "Prompt",
-          "name": "prompt",
-          "order": 0,
-          "required": true,
-          "type": "textarea",
-          "width": 1
-        },
-        {
-          "label": "Negative Prompt",
-          "name": "negative_prompt",
-          "order": 1,
-          "type": "textarea",
-          "visible_when": "negative_prompt != null",
-          "width": 1
-        }
-      ],
       "id": "prompt",
       "label": "Prompt",
+      "fields": [
+        {
+          "name": "prompt",
+          "type": "textarea",
+          "label": "Prompt",
+          "order": 0,
+          "width": 1,
+          "columns": 2,
+          "required": true
+        },
+        {
+          "name": "negative_prompt",
+          "type": "textarea",
+          "label": "Negative Prompt",
+          "order": 1,
+          "width": 1,
+          "visible_when": "negative_prompt != null"
+        }
+      ],
       "order": 0,
       "zone": "params"
     },
     {
-      "fields": [
-        {
-          "columns": 3,
-          "label": "Width",
-          "max": 2048,
-          "min": 256,
-          "name": "width",
-          "order": 0,
-          "step": 16,
-          "type": "number",
-          "width": 1
-        },
-        {
-          "label": "Height",
-          "max": 2048,
-          "min": 256,
-          "name": "height",
-          "order": 1,
-          "step": 16,
-          "type": "number",
-          "width": 1
-        },
-        {
-          "default": -1,
-          "label": "Seed",
-          "name": "seed",
-          "order": 4,
-          "type": "seed",
-          "width": 1
-        }
-      ],
       "id": "resolution",
       "label": "Resolution",
+      "fields": [
+        {
+          "name": "width",
+          "type": "number",
+          "label": "Width",
+          "order": 0,
+          "width": 1,
+          "columns": 3,
+          "min": 256,
+          "max": 2048,
+          "step": 16,
+          "default": 1024
+        },
+        {
+          "name": "height",
+          "type": "number",
+          "label": "Height",
+          "order": 1,
+          "width": 1,
+          "min": 256,
+          "max": 2048,
+          "step": 16,
+          "default": 1024
+        },
+        {
+          "name": "seed",
+          "type": "seed",
+          "label": "Seed",
+          "order": 4,
+          "width": 1,
+          "default": -1
+        }
+      ],
       "order": 1,
       "zone": "params"
     },
     {
+      "id": "sampling",
+      "label": "Sampling",
       "fields": [
         {
-          "label": "Steps",
-          "max": 100,
-          "min": 1,
           "name": "steps",
-          "order": 0,
-          "step": 1,
           "type": "number",
-          "width": 1
+          "label": "Steps",
+          "order": 0,
+          "width": 1,
+          "min": 1,
+          "max": 100,
+          "step": 1,
+          "default": 8
         },
         {
-          "label": "Guidance Scale",
-          "max": 20,
-          "min": 1,
           "name": "cfg",
+          "type": "slider",
+          "label": "Guidance Scale",
           "order": 1,
+          "width": 1,
+          "min": 1,
+          "max": 20,
           "step": 0.1,
           "tooltip": "How closely the diffusion follows the prompt. Higher = stricter.",
-          "type": "slider",
-          "width": 1
+          "default": 4.5
         },
         {
-          "label": "Sampler",
           "name": "sampler",
+          "type": "select",
+          "label": "Sampler",
+          "order": 2,
+          "width": 1,
           "options": [
+            "cfgpp_ud10_ab",
+            "ddim",
+            "ddpm",
+            "deis",
+            "dpm_2",
+            "dpm_2_ancestral",
+            "dpm_adaptive",
+            "dpm_fast",
+            "dpmpp_2m",
+            "dpmpp_2m_cfg_pp",
+            "dpmpp_2m_sde",
+            "dpmpp_2m_sde_gpu",
+            "dpmpp_2m_sde_heun",
+            "dpmpp_2m_sde_heun_gpu",
+            "dpmpp_2s_ancestral",
+            "dpmpp_2s_ancestral_cfg_pp",
+            "dpmpp_3m_sde",
+            "dpmpp_3m_sde_gpu",
+            "dpmpp_sde",
+            "dpmpp_sde_gpu",
             "er_sde",
             "euler",
             "euler_ancestral",
+            "euler_ancestral_cfg_pp",
             "euler_cfg_pp",
-            "dpmpp_2m",
-            "dpmpp_2m_sde",
-            "dpmpp_2m_sde_gpu",
-            "dpmpp_3m_sde",
-            "dpm_fast",
+            "exp_heun_2_x0",
+            "exp_heun_2_x0_sde",
+            "gradient_estimation",
+            "gradient_estimation_cfg_pp",
+            "heun",
+            "heunpp2",
+            "ipndm",
+            "ipndm_v",
             "lcm",
             "lms",
-            "heun"
-          ],
-          "order": 2,
-          "type": "select",
-          "width": 1
+            "res_multistep",
+            "res_multistep_ancestral",
+            "res_multistep_ancestral_cfg_pp",
+            "res_multistep_cfg_pp",
+            "sa_solver",
+            "sa_solver_pece",
+            "seeds_2",
+            "seeds_3",
+            "uni_pc",
+            "uni_pc_bh2"
+          ]
         },
         {
-          "label": "Scheduler",
           "name": "scheduler",
-          "options": [
-            "normal",
-            "karras",
-            "exponential",
-            "sgm_uniform",
-            "simple",
-            "ddim_uniform",
-            "beta",
-            "linear_quadratic",
-            "kl_optimal"
-          ],
-          "order": 3,
           "type": "select",
-          "width": 1
+          "label": "Scheduler",
+          "order": 3,
+          "width": 1,
+          "options": [
+            "beta",
+            "ddim_uniform",
+            "exponential",
+            "karras",
+            "kl_optimal",
+            "linear_quadratic",
+            "normal",
+            "sgm_uniform",
+            "simple"
+          ]
         }
       ],
-      "id": "sampling",
-      "label": "Sampling",
       "order": 2,
       "zone": "params"
     },
     {
-      "fields": [
-        {
-          "label": "LoRAs",
-          "name": "loras",
-          "order": 0,
-          "type": "loras"
-        }
-      ],
       "id": "loras_controlnet",
       "label": "Loras_controlnet",
+      "fields": [
+        {
+          "name": "loras",
+          "type": "loras",
+          "label": "LoRAs",
+          "order": 0
+        }
+      ],
       "order": 3,
       "zone": "mods"
     }
   ],
-  "service": "krea-2",
-  "size": null,
+  "features": {
+    "modifiers": [
+      {
+        "kind": "lora",
+        "label": "LoRAs",
+        "param_key": "loras",
+        "cardinality": "list",
+        "fields": [],
+        "options": [
+          {
+            "value": "krea2_realism_lora",
+            "label": "Realism",
+            "tooltip": "photorealism — krea-2/krea2_realism_lora.safetensors",
+            "defaults": {
+              "strength": 0.7
+            }
+          },
+          {
+            "value": "krea2_turbo_lora_rank_64_bf16",
+            "label": "Turbo Rank-64 (BF16)",
+            "tooltip": "quality — krea-2/krea2_turbo_lora_rank_64_bf16.safetensors",
+            "defaults": {
+              "strength": 1.0
+            }
+          },
+          {
+            "value": "krea2_darkbrush",
+            "label": "Dark Brush",
+            "tooltip": "style — krea-2/krea2_darkbrush.safetensors",
+            "defaults": {
+              "strength": 0.8
+            }
+          },
+          {
+            "value": "krea2_dotmatrix",
+            "label": "Dot Matrix",
+            "tooltip": "style — krea-2/krea2_dotmatrix.safetensors",
+            "defaults": {
+              "strength": 0.8
+            }
+          },
+          {
+            "value": "krea2_kidsdrawing",
+            "label": "Kids Drawing",
+            "tooltip": "style — krea-2/krea2_kidsdrawing.safetensors",
+            "defaults": {
+              "strength": 0.8
+            }
+          },
+          {
+            "value": "krea2_neondrip",
+            "label": "Neon Drip",
+            "tooltip": "style — krea-2/krea2_neondrip.safetensors",
+            "defaults": {
+              "strength": 0.8
+            }
+          },
+          {
+            "value": "krea2_rainywindow",
+            "label": "Rainy Window",
+            "tooltip": "style — krea-2/krea2_rainywindow.safetensors",
+            "defaults": {
+              "strength": 0.8
+            }
+          },
+          {
+            "value": "krea2_retroanime",
+            "label": "Retro Anime",
+            "tooltip": "style — krea-2/krea2_retroanime.safetensors",
+            "defaults": {
+              "strength": 0.8
+            }
+          },
+          {
+            "value": "krea2_softwatercolor",
+            "label": "Soft Watercolor",
+            "tooltip": "style — krea-2/krea2_softwatercolor.safetensors",
+            "defaults": {
+              "strength": 0.8
+            }
+          },
+          {
+            "value": "krea2_sunsetblur",
+            "label": "Sunset Blur",
+            "tooltip": "style — krea-2/krea2_sunsetblur.safetensors",
+            "defaults": {
+              "strength": 0.8
+            }
+          },
+          {
+            "value": "krea2_vintagetarot",
+            "label": "Vintage Tarot",
+            "tooltip": "style — krea-2/krea2_vintagetarot.safetensors",
+            "defaults": {
+              "strength": 0.8
+            }
+          },
+          {
+            "value": "krea2filterbypass3",
+            "label": "Filter Bypass 3",
+            "tooltip": "style — krea-2/krea2filterbypass3.safetensors",
+            "defaults": {
+              "strength": 0.8
+            }
+          }
+        ],
+        "options_scanned": true,
+        "upload_dir": "models/loras",
+        "declaration_only": false
+      }
+    ],
+    "variant_groups": {
+      "Variant": {
+        "label": "Variant",
+        "tooltip": "Base checkpoint — Turbo (8-step distilled, fast/photorealistic) or Raw (52-step base, for LoRA training)."
+      },
+      "Quant": {
+        "label": "Quant",
+        "tooltip": "Quantization tier — INT8 ConvRot (the official Comfy-Org convrot artifact, DEFAULT)."
+      },
+      "Recipe": {
+        "label": "Recipe",
+        "tooltip": "One-click LoRA recipes — patch-only variant rows that stamp loras picks onto the draft; the picks fire through the loras door at compose (unknown ids refuse there, compile-time)."
+      }
+    }
+  },
+  "defaults": {
+    "scheduler": "normal",
+    "width": "1024",
+    "height": "1024",
+    "steps": 52,
+    "sampler": "euler",
+    "cfg": 3.5,
+    "model": "krea-2-raw"
+  },
   "variants": [
     {
-      "defaults": {},
-      "engine": "comfyui",
-      "group": "Variant",
-      "hint": "8-step distilled \u2014 fast, photorealistic (DEFAULT)",
       "id": "turbo",
       "label": "Turbo",
-      "route": "krea-2"
+      "defaults": {},
+      "group": "Variant",
+      "route": "krea-2",
+      "hint": "8-step distilled — fast, photorealistic (DEFAULT)",
+      "engine": "comfyui"
     },
     {
-      "defaults": {},
-      "engine": "comfyui",
-      "group": "Variant",
-      "hint": "52-step base checkpoint \u2014 the variant the loras train on (DEFAULT here)",
       "id": "raw",
       "label": "Raw",
-      "route": "krea-2-raw"
+      "defaults": {},
+      "group": "Variant",
+      "route": "krea-2-raw",
+      "hint": "52-step base checkpoint — the variant the loras train on (DEFAULT here)",
+      "engine": "comfyui"
     },
     {
-      "defaults": {},
-      "group": "Quant",
       "id": "int8",
       "label": "INT8 ConvRot",
-      "owner": "raw",
+      "defaults": {},
+      "group": "Quant",
       "quant": "int8",
       "route": "krea-2-raw",
-      "vram_peak_gb": 22.0
+      "vram_peak_gb": 22.0,
+      "owner": "raw"
+    },
+    {
+      "id": "realism",
+      "label": "Realism",
+      "defaults": {
+        "loras": [
+          {
+            "id": "krea2_realism_lora"
+          }
+        ]
+      },
+      "group": "Recipe",
+      "route": "",
+      "hint": "The realism recipe — krea2_realism_lora at the catalog row's default strength (0.7)",
+      "engine": "comfyui"
     }
-  ]
+  ],
+  "guide": null,
+  "engine": "comfyui",
+  "enhance_prompt": null,
+  "enhance_prompts": {
+    "prompt": "structure: [subject, action, environment, lighting, style, quality]; rules:; - pair every bare noun with 1-2 visual adjectives; - name the camera or render view (e.g. \"3/4 view, 50mm, soft rim light\"); - end with the quality block, never open with it; - negations go to the negative prompt, never the positive; - one style axis per prompt; stacking contradictory styles muddies both",
+    "lyrics": ""
+  },
+  "size": null,
+  "layout": null,
+  "loader_info": null,
+  "contract": null
 }

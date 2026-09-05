@@ -1,241 +1,287 @@
 {
- "defaults": {
-  "mode": "design",
-  "variant": "voicedesign"
- },
- "engine": "comfyui",
- "enhance_prompts": {
-  "lyrics": "",
-  "prompt": null
- },
- "features": {
-  "modifiers": [],
-  "variant_groups": {
-   "Quant": {
-    "label": "Quant"
-   },
-   "Variant": {
-    "label": "Variant"
-   }
-  }
- },
- "fields": [
-  {
-   "name": "voice_name",
-   "type": "text",
-   "label": "Voice Name",
-   "group": "voice",
-   "order": 0,
-   "width": 1,
-   "required": true,
-   "tooltip": "Name for the locked persona — becomes the .qvoice filename stem. Reused across every future TTS render."
-  },
-  {
-   "name": "style_instruction",
-   "type": "textarea",
-   "label": "Style Instruction",
-   "group": "voice",
-   "order": 1,
-   "columns": 1,
-   "required": true,
-   "tooltip": "The voice description — becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent')."
-  },
-  {
-   "name": "temperature",
-   "type": "slider",
-   "label": "Temperature",
-   "group": "sampling",
-   "order": 0,
-   "width": 1,
-   "min": 0,
-   "max": 2,
-   "step": 0.05,
-   "default": 0.7
-  },
-  {
-   "name": "top_p",
-   "type": "slider",
-   "label": "Top-P",
-   "group": "sampling",
-   "order": 1,
-   "width": 1,
-   "min": 0,
-   "max": 1,
-   "step": 0.01,
-   "default": 0.9
-  },
-  {
-   "name": "speed",
-   "type": "slider",
-   "label": "Speed",
-   "group": "sampling",
-   "order": 2,
-   "width": 1,
-   "min": 0.5,
-   "max": 2,
-   "step": 0.1,
-   "default": 1.0
-  },
-  {
-   "name": "repetition_penalty",
-   "type": "slider",
-   "label": "Repetition Penalty",
-   "group": "sampling",
-   "order": 3,
-   "width": 1,
-   "min": 0.8,
-   "max": 2,
-   "step": 0.01,
-   "default": 1.05
-  },
-  {
-   "name": "seed",
-   "type": "seed",
-   "label": "Seed",
-   "group": "seed",
-   "order": 0,
-   "width": 1,
-   "default": -1
-  },
-  {
-   "name": "qvoice",
-   "type": "file",
-   "label": "Voice (.qvoice)",
-   "group": "qvoice",
-   "order": 0,
-   "tooltip": "Pre-computed speaker embedding (.qvoice/.voice — the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one."
-  },
-  {
-   "name": "voice_pca_strengths",
-   "type": "textarea",
-   "label": "PCA Steering",
-   "group": "qvoice",
-   "order": 1,
-   "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} — subtle voice direction without re-designing the persona."
-  }
- ],
- "form": "voice-lock",
- "genre": "audio",
- "label": "Voice Lock",
- "model": "qwen3-tts-voicedesign",
- "schema_groups": [
-  {
-   "fields": [
+  "model": "qwen3-tts-voicedesign",
+  "form": "voice-lock",
+  "service": "qwen3-tts-voicedesign",
+  "label": "Voice Lock",
+  "genre": "audio",
+  "fields": [
     {
-     "label": "Voice Name",
-     "name": "voice_name",
-     "order": 0,
-     "required": true,
-     "tooltip": "Name for the locked persona — becomes the .qvoice filename stem. Reused across every future TTS render.",
-     "type": "text",
-     "width": 1
+      "name": "voice_name",
+      "type": "text",
+      "label": "Voice Name",
+      "default": null,
+      "options": [],
+      "group": "voice",
+      "zone": "",
+      "order": 0,
+      "required": true,
+      "columns": null,
+      "width": 1,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Name for the locked persona — becomes the .qvoice filename stem. Reused across every future TTS render.",
+      "visible_when": null
     },
     {
-     "columns": 1,
-     "label": "Style Instruction",
-     "name": "style_instruction",
-     "order": 1,
-     "required": true,
-     "tooltip": "The voice description — becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent').",
-     "type": "textarea"
+      "name": "style_instruction",
+      "type": "textarea",
+      "label": "Style Instruction",
+      "default": null,
+      "options": [],
+      "group": "voice",
+      "zone": "",
+      "order": 1,
+      "required": true,
+      "columns": 1,
+      "width": null,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "The voice description — becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent').",
+      "visible_when": null
+    },
+    {
+      "name": "temperature",
+      "type": "slider",
+      "label": "Temperature",
+      "default": 0.7,
+      "options": [],
+      "group": "sampling",
+      "zone": "",
+      "order": 0,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": 0,
+      "max": 2,
+      "step": 0.05,
+      "placeholder": "",
+      "tooltip": "",
+      "visible_when": null
+    },
+    {
+      "name": "top_p",
+      "type": "slider",
+      "label": "Top-P",
+      "default": 0.9,
+      "options": [],
+      "group": "sampling",
+      "zone": "",
+      "order": 1,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "placeholder": "",
+      "tooltip": "",
+      "visible_when": null
+    },
+    {
+      "name": "speed",
+      "type": "slider",
+      "label": "Speed",
+      "default": 1.0,
+      "options": [],
+      "group": "sampling",
+      "zone": "",
+      "order": 2,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": 0.5,
+      "max": 2,
+      "step": 0.1,
+      "placeholder": "",
+      "tooltip": "",
+      "visible_when": null
+    },
+    {
+      "name": "repetition_penalty",
+      "type": "slider",
+      "label": "Repetition Penalty",
+      "default": 1.05,
+      "options": [],
+      "group": "sampling",
+      "zone": "",
+      "order": 3,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": 0.8,
+      "max": 2,
+      "step": 0.01,
+      "placeholder": "",
+      "tooltip": "",
+      "visible_when": null
+    },
+    {
+      "name": "seed",
+      "type": "seed",
+      "label": "Seed",
+      "default": -1,
+      "options": [],
+      "group": "seed",
+      "zone": "",
+      "order": 0,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "",
+      "visible_when": null
     }
-   ],
-   "id": "voice",
-   "label": "Voice",
-   "order": 0,
-   "zone": "params"
-  },
-  {
-   "fields": [
+  ],
+  "schema_groups": [
     {
-     "default": 0.7,
-     "label": "Temperature",
-     "max": 2,
-     "min": 0,
-     "name": "temperature",
-     "order": 0,
-     "step": 0.05,
-     "type": "slider",
-     "width": 1
+      "id": "voice",
+      "label": "Voice",
+      "fields": [
+        {
+          "name": "voice_name",
+          "type": "text",
+          "label": "Voice Name",
+          "order": 0,
+          "width": 1,
+          "required": true,
+          "tooltip": "Name for the locked persona — becomes the .qvoice filename stem. Reused across every future TTS render."
+        },
+        {
+          "name": "style_instruction",
+          "type": "textarea",
+          "label": "Style Instruction",
+          "order": 1,
+          "columns": 1,
+          "required": true,
+          "tooltip": "The voice description — becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent')."
+        }
+      ],
+      "order": 0,
+      "zone": "params"
     },
     {
-     "default": 0.9,
-     "label": "Top-P",
-     "max": 1,
-     "min": 0,
-     "name": "top_p",
-     "order": 1,
-     "step": 0.01,
-     "type": "slider",
-     "width": 1
+      "id": "sampling",
+      "label": "Sampling",
+      "fields": [
+        {
+          "name": "temperature",
+          "type": "slider",
+          "label": "Temperature",
+          "order": 0,
+          "width": 1,
+          "min": 0,
+          "max": 2,
+          "step": 0.05,
+          "default": 0.7
+        },
+        {
+          "name": "top_p",
+          "type": "slider",
+          "label": "Top-P",
+          "order": 1,
+          "width": 1,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "default": 0.9
+        },
+        {
+          "name": "speed",
+          "type": "slider",
+          "label": "Speed",
+          "order": 2,
+          "width": 1,
+          "min": 0.5,
+          "max": 2,
+          "step": 0.1,
+          "default": 1.0
+        },
+        {
+          "name": "repetition_penalty",
+          "type": "slider",
+          "label": "Repetition Penalty",
+          "order": 3,
+          "width": 1,
+          "min": 0.8,
+          "max": 2,
+          "step": 0.01,
+          "default": 1.05
+        }
+      ],
+      "order": 1,
+      "zone": "params"
     },
     {
-     "default": 1.0,
-     "label": "Speed",
-     "max": 2,
-     "min": 0.5,
-     "name": "speed",
-     "order": 2,
-     "step": 0.1,
-     "type": "slider",
-     "width": 1
-    },
-    {
-     "default": 1.05,
-     "label": "Repetition Penalty",
-     "max": 2,
-     "min": 0.8,
-     "name": "repetition_penalty",
-     "order": 3,
-     "step": 0.01,
-     "type": "slider",
-     "width": 1
+      "id": "seed",
+      "label": "Seed",
+      "fields": [
+        {
+          "name": "seed",
+          "type": "seed",
+          "label": "Seed",
+          "order": 0,
+          "width": 1,
+          "default": -1
+        }
+      ],
+      "order": 2,
+      "zone": "params"
     }
-   ],
-   "id": "sampling",
-   "label": "Sampling",
-   "order": 1,
-   "zone": "params"
-  },
-  {
-   "fields": [
-    {
-     "default": -1,
-     "label": "Seed",
-     "name": "seed",
-     "order": 0,
-     "type": "seed",
-     "width": 1
+  ],
+  "features": {
+    "modifiers": [],
+    "variant_groups": {
+      "Variant": {
+        "label": "Variant"
+      },
+      "Quant": {
+        "label": "Quant"
+      }
     }
-   ],
-   "id": "seed",
-   "label": "Seed",
-   "order": 2,
-   "zone": "params"
   },
-  {
-   "fields": [
+  "defaults": {},
+  "variants": [
     {
-     "label": "Voice (.qvoice)",
-     "name": "qvoice",
-     "order": 0,
-     "tooltip": "Pre-computed speaker embedding (.qvoice/.voice — the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one.",
-     "type": "file"
+      "id": "standard",
+      "label": "Standard",
+      "group": "Variant",
+      "defaults": {},
+      "route": "qwen3-tts-voicedesign",
+      "hint": null,
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
     },
     {
-     "label": "PCA Steering",
-     "name": "voice_pca_strengths",
-     "order": 1,
-     "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} — subtle voice direction without re-designing the persona.",
-     "type": "textarea"
+      "id": "native",
+      "label": "Native",
+      "group": "Quant",
+      "defaults": {},
+      "route": "qwen3-tts-voicedesign",
+      "hint": null,
+      "engine": "",
+      "quant": "native",
+      "vram_peak_gb": 0,
+      "owner": "standard"
     }
-   ],
-   "id": "qvoice",
-   "label": "Qvoice",
-   "order": 3,
-   "zone": "mods"
-  }
- ],
- "service": "qwen3-tts-voicedesign",
- "variants": []
+  ],
+  "guide": null,
+  "engine": "comfyui",
+  "enhance_prompt": null,
+  "enhance_prompts": {
+    "prompt": null,
+    "lyrics": ""
+  },
+  "size": null,
+  "layout": null,
+  "loader_info": null,
+  "contract": null
 }

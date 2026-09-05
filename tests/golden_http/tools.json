@@ -63,6 +63,60 @@
       }
     },
     {
+      "name": "forge_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "forge",
+      "model": "anycreature",
+      "stage_title": "Creature Forge",
+      "description": "Breed a creature spec \u2192 validate \u2192 compile to GLB",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "smooth_angle": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 180,
+            "default": 50,
+            "description": "Crease threshold \u2014 higher = smoother"
+          },
+          "build": {
+            "type": "string",
+            "enum": [
+              "default",
+              "rigid"
+            ],
+            "default": "default",
+            "description": "'rigid' for robots/crystals"
+          },
+          "ao": {
+            "type": "string",
+            "enum": [
+              "true",
+              "false"
+            ],
+            "default": "true",
+            "description": "Per-vertex AO bake"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "minion",
+              "npc",
+              "boss"
+            ],
+            "default": "npc",
+            "description": "Budget and threshold presets"
+          },
+          "shading": {
+            "type": "string",
+            "description": "Colour ramp JSON \u2014 {gradient:{top,bottom}, noise:{size,amount}}"
+          }
+        },
+        "required": []
+      }
+    },
+    {
       "name": "h3_timeline_card",
       "version": 1,
       "kind": "card-compose",
@@ -91,28 +145,28 @@
             "description": "Same seed across re-rolls = same world texture"
           },
           "width": {
-            "type": "integer",
+            "type": "number",
             "minimum": 448,
             "maximum": 1344,
             "default": 768,
             "description": "Width"
           },
           "height": {
-            "type": "integer",
+            "type": "number",
             "minimum": 448,
             "maximum": 768,
             "default": 448,
             "description": "Height"
           },
           "length": {
-            "type": "integer",
+            "type": "number",
             "minimum": 21,
             "maximum": 362,
             "default": 56,
             "description": "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s"
           },
           "steps": {
-            "type": "integer",
+            "type": "number",
             "minimum": 4,
             "maximum": 30,
             "default": 12,
@@ -556,7 +610,7 @@
       "card": "img-to-mesh",
       "model": "trellis2-native",
       "stage_title": "Image \u2192 3D",
-      "description": "The 3D lane \u2014 lift one image into a textured mesh (.glb) on native TRELLIS.2, or copy a rig onto a target GLB (transfer_rig); one surface, one arm per family.",
+      "description": "The 3D lane \u2014 lift one image into a textured mesh (.glb) on native TRELLIS.2 (DINOv3 conditioning) or native Pixal3D (pixel-aligned + MoGe camera FOV, hero tier), or copy a rig onto a target GLB (transfer_rig); one surface, one arm per family.",
       "params_schema": {
         "type": "object",
         "properties": {
@@ -564,9 +618,10 @@
             "type": "string",
             "enum": [
               "trellis2-native",
+              "pixal3d",
               "transfer_rig"
             ],
-            "description": "The boarded family to run \u2014 the request's top-level `model`. Options: trellis2-native, transfer_rig.",
+            "description": "The boarded family to run \u2014 the request's top-level `model`. Options: trellis2-native, pixal3d, transfer_rig.",
             "default": "trellis2-native"
           },
           "input_image": {
@@ -574,7 +629,8 @@
             "format": "path",
             "description": "One clear object, tight framing. Background is removed automatically (birefnet) unless bg_removal=off.",
             "x-families": [
-              "trellis2-native"
+              "trellis2-native",
+              "pixal3d"
             ]
           },
           "rigged_glb": {
@@ -606,21 +662,21 @@
               "1536"
             ],
             "default": "1024",
-            "description": "512 fast (props/thumbnails), 1024 standard, 1536 hero (rides the upsample stage)."
+            "description": "Upsample target (official pins 1536). All tiers run the full official chain \u2014 upsample + both texture passes + remesh tail."
           },
           "steps": {
             "type": "number",
             "minimum": 4,
             "maximum": 60,
             "default": 12,
-            "description": "STRUCTURE stage steps (the lift). Shape runs 20, texture 12 \u2014 calibrated upstream."
+            "description": "STRUCTURE stage steps (the lift). Shape + texture stages ride their own knobs in the Stage section."
           },
           "cfg": {
             "type": "number",
             "minimum": 1,
             "maximum": 15,
-            "default": 3.0,
-            "description": "Structure-stage guidance. Upstream template calibrates 7.5 for max fidelity; 3.0 runs looser/faster."
+            "default": 7.5,
+            "description": "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance \u2014 blobby trash out of the box). Lower runs looser."
           },
           "bg_removal": {
             "type": "string",
@@ -631,6 +687,287 @@
             ],
             "default": "auto",
             "description": "auto/on: birefnet cuts the background (recommended). off: feed a pre-cleaned or alpha-cut image straight to conditioning."
+          },
+          "camera_fov": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "35",
+              "49.13",
+              "60",
+              "75",
+              "90"
+            ],
+            "default": "auto",
+            "description": "Pixal3D only \u2014 per-image horizontal FoV feeding the camera transform matrix. auto: MoGeInference estimates from the source image (recommended); a literal degree value skips MoGe (operator-vouched camera, e.g. calibrated).",
+            "x-families": [
+              "pixal3d"
+            ]
+          },
+          "shape_steps": {
+            "type": "number",
+            "minimum": 4,
+            "maximum": 60,
+            "default": 20,
+            "description": "Shape-stage steps. 20 is the official template calibration.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "shape_cfg": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 15,
+            "default": 7.5,
+            "description": "Shape-stage guidance. 7.5 is the official template calibration.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "tex1_steps": {
+            "type": "number",
+            "minimum": 4,
+            "maximum": 60,
+            "default": 12,
+            "description": "First texture pass steps (upsampled latent, simple scheduler). 12 is the official calibration.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "tex1_cfg": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 15,
+            "default": 7.5,
+            "description": "First texture pass guidance. 7.5 is the official calibration.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "tex2_steps": {
+            "type": "number",
+            "minimum": 4,
+            "maximum": 60,
+            "default": 12,
+            "description": "Second texture pass steps (raw unet \u2014 the detail pass). 12 is the official calibration.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "tex2_cfg": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 15,
+            "default": 1.0,
+            "description": "Second texture pass guidance. 1.0 is the official calibration (near-verbatim detail sampling).",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "remesh_resolution": {
+            "type": "number",
+            "minimum": 128,
+            "maximum": 2048,
+            "default": 768,
+            "description": "UDF remesh voxel resolution. 768 is the official calibration; lower = lighter mesh, coarser surface.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "decimate_faces": {
+            "type": "number",
+            "minimum": 10000,
+            "maximum": 2000000,
+            "default": 700000,
+            "description": "Exact face count after decimation (midpoint placement). 700000 is the official calibration.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "smooth_angle": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 180,
+            "default": 180,
+            "description": "Normal-smoothing crease angle, applied before unwrap and after texturing. 180 is the official calibration.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "atlas_size": {
+            "type": "string",
+            "enum": [
+              "2048",
+              "4096"
+            ],
+            "default": "4096",
+            "description": "Unwrap + baked color atlas resolution. 4096 is the official calibration (VRAM-heavy); 2048 is the lighter fallback.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "ao_size": {
+            "type": "string",
+            "enum": [
+              "512",
+              "1024"
+            ],
+            "default": "1024",
+            "description": "Ambient-occlusion bake resolution. 1024 is the official calibration.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "normal_size": {
+            "type": "string",
+            "enum": [
+              "1024",
+              "2048"
+            ],
+            "default": "2048",
+            "description": "Normal-map bake resolution. 2048 is the official calibration.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "struct_sampler": {
+            "type": "string",
+            "default": "euler",
+            "description": "Structure-stage sampler. euler is the official template pick. \u2014 options resolve from the $samplers vocabulary at serve time",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "struct_scheduler": {
+            "type": "string",
+            "default": "normal",
+            "description": "Structure-stage scheduler. normal is the official pick. \u2014 options resolve from the $schedulers vocabulary at serve time",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "shape_sampler": {
+            "type": "string",
+            "default": "euler",
+            "description": "Shape-stage sampler. euler is the official pick. \u2014 options resolve from the $samplers vocabulary at serve time",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "shape_scheduler": {
+            "type": "string",
+            "default": "normal",
+            "description": "Shape-stage scheduler. normal is the official pick. \u2014 options resolve from the $schedulers vocabulary at serve time",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "tex1_sampler": {
+            "type": "string",
+            "default": "euler",
+            "description": "First texture pass sampler. euler is the official pick. \u2014 options resolve from the $samplers vocabulary at serve time",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "tex1_scheduler": {
+            "type": "string",
+            "default": "simple",
+            "description": "First texture pass scheduler. simple is the official pick (the only non-normal scheduler in the template). \u2014 options resolve from the $schedulers vocabulary at serve time",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "tex2_sampler": {
+            "type": "string",
+            "default": "euler",
+            "description": "Second texture pass sampler. euler is the official pick. \u2014 options resolve from the $samplers vocabulary at serve time",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "tex2_scheduler": {
+            "type": "string",
+            "default": "normal",
+            "description": "Second texture pass scheduler. normal is the official pick. \u2014 options resolve from the $schedulers vocabulary at serve time",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "sd3_shift": {
+            "type": "number",
+            "minimum": 1.0,
+            "maximum": 10.0,
+            "default": 5.0,
+            "description": "ModelSamplingSD3 shift on the structure arm. 5.0 is the official template calibration.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "rescale_struct": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 1.0,
+            "default": 0.7,
+            "description": "Structure-arm RescaleCFG multiplier. 0.7 is the official calibration.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "rescale_shape": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 1.0,
+            "default": 0.5,
+            "description": "Shape-arm RescaleCFG multiplier (also feeds texture pass 1 \u2014 one node). 0.5 is the official calibration.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "override_struct": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "default": 0.667,
+            "description": "Structure-arm CFGOverride start percent. 0.667 is the official calibration.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "override_shape": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "default": 0.769,
+            "description": "Shape-arm CFGOverride start percent. 0.769 is the official calibration.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
           },
           "filename_prefix": {
             "type": "string",
@@ -714,27 +1051,27 @@
           },
           "export_boxes": {
             "type": "boolean",
-            "default": "true",
+            "default": true,
             "description": "Draw RT-DETR boxes on the image \u2014 the instance manifest (read it, then set instance_filter)."
           },
           "export_face": {
             "type": "boolean",
-            "default": "false",
+            "default": false,
             "description": "Export face mask"
           },
           "export_hands": {
             "type": "boolean",
-            "default": "false",
+            "default": false,
             "description": "Export hands mask"
           },
           "export_body": {
             "type": "boolean",
-            "default": "false",
+            "default": false,
             "description": "Export body mask"
           },
           "export_paint": {
             "type": "boolean",
-            "default": "false",
+            "default": false,
             "description": "ON when a brush stroke exists \u2014 the painted payload becomes its own mask export."
           },
           "paint_mask": {
@@ -939,6 +1276,135 @@
       }
     },
     {
+      "name": "music_native_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "music-native",
+      "model": "ace-step-xl",
+      "stage_title": "Music (audio_cpp)",
+      "description": "audio.cpp music lane \u2014 ACE-Step 1.5 XL / SFT or MiniMax Music 3 text-to-music (the audio_cpp binding layer calls audiocpp_cli with the family + model name from each model row)",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "ace-step-xl",
+              "ace-step-sft",
+              "txt2music"
+            ],
+            "description": "The boarded family to run \u2014 the request's top-level `model`. Options: ace-step-xl, ace-step-sft, txt2music.",
+            "default": "ace-step-xl"
+          },
+          "prompt": {
+            "type": "string",
+            "description": "Genre, era, region, 2-3 style anchors, tempo in BPM, key if known"
+          },
+          "lyrics": {
+            "type": "string",
+            "description": "Section tags [verse] [pre-chorus] [chorus] [bridge] [outro]; txt2music honours them, ACE-Step ignores"
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 10,
+            "maximum": 600,
+            "default": 120,
+            "description": "Target length in seconds (audio.cpp caps at 10 minutes)"
+          },
+          "seed": {
+            "type": "integer",
+            "default": -1,
+            "description": "Seed"
+          },
+          "backend": {
+            "type": "string",
+            "enum": [
+              "cuda",
+              "cpu"
+            ],
+            "default": "cuda",
+            "description": "cuda = GPU; cpu = GGUF CPU path (CUDA absent)"
+          },
+          "family": {
+            "type": "string",
+            "enum": [
+              "ace-step-xl",
+              "ace-step-sft",
+              "minimax"
+            ],
+            "default": "ace-step-xl",
+            "description": "audio_cpp family \u2014 the renderer reads lane_inputs.family from the picked model row"
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      }
+    },
+    {
+      "name": "quad_remesh_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "quad-remesh",
+      "model": "autoremesher",
+      "stage_title": "Quad Remesh",
+      "description": "High-poly mesh \u2192 clean quad topology",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": "string",
+            "description": "OBJ/STL/PLY path or artifact-ref from a previous card"
+          },
+          "target_quads": {
+            "type": "number",
+            "minimum": 100,
+            "maximum": 1000000,
+            "default": 50000,
+            "description": "Target quad count"
+          },
+          "edge_scaling": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 10.0,
+            "default": 1.0,
+            "description": "Edge scaling"
+          },
+          "sharp_edge": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 180.0,
+            "default": 90.0,
+            "description": "Sharp edge"
+          },
+          "smooth_normal": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "default": 0.0,
+            "description": "Smooth normal"
+          },
+          "adaptivity": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 2.0,
+            "default": 1.0,
+            "description": "Adaptivity"
+          },
+          "anisotropy": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 2.0,
+            "default": 1.0,
+            "description": "Anisotropy"
+          }
+        },
+        "required": [
+          "input"
+        ]
+      }
+    },
+    {
       "name": "sfx_card",
       "version": 1,
       "kind": "card-compose",
@@ -978,6 +1444,68 @@
             "type": "integer",
             "default": -1,
             "description": "Seed"
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      }
+    },
+    {
+      "name": "text_to_motion_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "text-to-motion",
+      "model": "soma",
+      "stage_title": "Text to Motion",
+      "description": "Text \u2192 skeleton animation (SMPL-X / SOMA / G1)",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "soma",
+              "g1",
+              "smplx"
+            ],
+            "description": "The boarded family to run \u2014 the request's top-level `model`. Options: soma, g1, smplx.",
+            "default": "soma"
+          },
+          "prompt": {
+            "type": "string",
+            "description": "Describe the motion to generate"
+          },
+          "skeleton": {
+            "type": "string",
+            "enum": [
+              "smplx",
+              "soma",
+              "g1"
+            ],
+            "default": "soma",
+            "description": "SMPL-X (22j), SOMA (30j), G1 (34j)"
+          },
+          "seed": {
+            "type": "integer",
+            "default": -1,
+            "description": "RNG seed (-1 = hash of prompt)"
+          },
+          "steps": {
+            "type": "number",
+            "minimum": 10,
+            "maximum": 200,
+            "default": 50,
+            "description": "DDIM sampling steps"
+          },
+          "backend": {
+            "type": "string",
+            "enum": [
+              "cpu",
+              "vulkan"
+            ],
+            "default": "cpu",
+            "description": "CPU or Vulkan (GPU)"
           }
         },
         "required": [

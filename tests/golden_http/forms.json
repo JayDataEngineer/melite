@@ -79,7 +79,8 @@
     },
     "img-to-mesh": {
       "covers": [
-        "trellis2-native"
+        "trellis2-native",
+        "pixal3d"
       ],
       "default_service": "trellis2-native",
       "genre": "3d",
@@ -210,6 +211,18 @@
       "order": 4,
       "plugin": "comfyui",
       "sidebar_key": "audio"
+    },
+    "input-prep": {
+      "label": "Input Prep",
+      "genre": "image",
+      "order": 18,
+      "plugin": "comfyui",
+      "sidebar_key": "image",
+      "default_service": "input",
+      "hidden": true,
+      "covers": [
+        "input"
+      ]
     }
   }
 }

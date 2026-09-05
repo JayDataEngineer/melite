@@ -1,404 +1,254 @@
 {
-  "contract": null,
-  "defaults": {},
-  "engine": "comfyui",
-  "enhance_prompt": null,
-  "enhance_prompts": {
-    "lyrics": "structure: [section tags, rhyme, hook law]; rules:; - every section wrapped in [tag]: [verse] [pre-chorus] [chorus] [bridge] [outro]; - keep verses concrete and grounded; the chorus earns the abstraction; - the hook repeats at least once, word-for-word; - short lines sing: 6-9 syllables default, break longer thoughts; - match the section energy to the arrangement block it sits over",
-    "prompt": "structure: [Genre, Vocal Details, Arrangement]; rules:; - Genre block first: era + region + 2-3 style anchors + tempo in BPM + key if known; - Vocal Details block: gender, register, delivery manner, one signature texture; - Arrangement block: the instrument story front to back — intro, build, drop, outro; - name production adjectives the ear can verify (dusty, wide, brickwalled); - never write lyric content in the caption — that lives in the lyrics field"
-  },
+  "model": "music3",
+  "form": "music",
+  "service": "music3",
+  "label": "Music",
+  "genre": "audio",
+  "fields": [
+    {
+      "name": "prompt",
+      "type": "textarea",
+      "label": "Tags / Description",
+      "default": null,
+      "options": [],
+      "group": "prompt",
+      "zone": "",
+      "order": 0,
+      "required": true,
+      "columns": 1,
+      "width": null,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, pop, soul, guitar, 105 BPM'.",
+      "visible_when": null
+    },
+    {
+      "name": "lyrics",
+      "type": "textarea",
+      "label": "Lyrics",
+      "default": null,
+      "options": [],
+      "group": "prompt",
+      "zone": "",
+      "order": 1,
+      "required": null,
+      "columns": null,
+      "width": null,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Lyrics with structure tags: [verse], [chorus], [bridge]. Empty = instrumental.",
+      "visible_when": null
+    },
+    {
+      "name": "duration",
+      "type": "slider",
+      "label": "Duration (s)",
+      "default": 30,
+      "options": [],
+      "group": "generation",
+      "zone": "",
+      "order": 0,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": 5,
+      "max": 360,
+      "step": 1,
+      "placeholder": "",
+      "tooltip": "Target audio length in seconds (5-360).",
+      "visible_when": null
+    },
+    {
+      "name": "guidance_scale",
+      "type": "slider",
+      "label": "CFG",
+      "default": 1.7,
+      "options": [],
+      "group": "generation",
+      "zone": "",
+      "order": 1,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": 0.1,
+      "max": 10,
+      "step": 0.1,
+      "placeholder": "",
+      "tooltip": "Classifier-free guidance (KSampler cfg). 1.7 = lane default.",
+      "visible_when": null
+    },
+    {
+      "name": "n_diffusion_steps",
+      "type": "number",
+      "label": "Diffusion Steps",
+      "default": 30,
+      "options": [],
+      "group": "generation",
+      "zone": "",
+      "order": 2,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": 1,
+      "max": 200,
+      "step": 1,
+      "placeholder": "",
+      "tooltip": "Flow-matching denoising steps. 30 = lane default. Never 0.",
+      "visible_when": null
+    },
+    {
+      "name": "lm_cfg_scale",
+      "type": "slider",
+      "label": "LM CFG",
+      "default": 1.7,
+      "options": [],
+      "group": "generation",
+      "zone": "",
+      "order": 3,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": 0,
+      "max": 10,
+      "step": 0.1,
+      "placeholder": "",
+      "tooltip": "Lyric-encoder guidance (MiniMaxMusic3TextEncode cfg_scale). 1.7 = lane default.",
+      "visible_when": null
+    },
+    {
+      "name": "seed",
+      "type": "seed",
+      "label": "Seed",
+      "default": -1,
+      "options": [],
+      "group": "seed",
+      "zone": "",
+      "order": 0,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "",
+      "visible_when": null
+    }
+  ],
+  "schema_groups": [
+    {
+      "id": "prompt",
+      "label": "Prompt",
+      "fields": [
+        {
+          "name": "prompt",
+          "type": "textarea",
+          "label": "Tags / Description",
+          "order": 0,
+          "columns": 1,
+          "required": true,
+          "tooltip": "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, pop, soul, guitar, 105 BPM'."
+        },
+        {
+          "name": "lyrics",
+          "type": "textarea",
+          "label": "Lyrics",
+          "order": 1,
+          "tooltip": "Lyrics with structure tags: [verse], [chorus], [bridge]. Empty = instrumental."
+        }
+      ],
+      "order": 0,
+      "zone": "params"
+    },
+    {
+      "id": "generation",
+      "label": "Generation",
+      "fields": [
+        {
+          "name": "duration",
+          "type": "slider",
+          "label": "Duration (s)",
+          "order": 0,
+          "width": 1,
+          "min": 5,
+          "max": 360,
+          "step": 1,
+          "tooltip": "Target audio length in seconds (5-360).",
+          "default": 30
+        },
+        {
+          "name": "guidance_scale",
+          "type": "slider",
+          "label": "CFG",
+          "order": 1,
+          "width": 1,
+          "min": 0.1,
+          "max": 10,
+          "step": 0.1,
+          "tooltip": "Classifier-free guidance (KSampler cfg). 1.7 = lane default.",
+          "default": 1.7
+        },
+        {
+          "name": "n_diffusion_steps",
+          "type": "number",
+          "label": "Diffusion Steps",
+          "order": 2,
+          "width": 1,
+          "min": 1,
+          "max": 200,
+          "step": 1,
+          "tooltip": "Flow-matching denoising steps. 30 = lane default. Never 0.",
+          "default": 30
+        },
+        {
+          "name": "lm_cfg_scale",
+          "type": "slider",
+          "label": "LM CFG",
+          "order": 3,
+          "width": 1,
+          "min": 0,
+          "max": 10,
+          "step": 0.1,
+          "tooltip": "Lyric-encoder guidance (MiniMaxMusic3TextEncode cfg_scale). 1.7 = lane default.",
+          "default": 1.7
+        }
+      ],
+      "order": 1,
+      "zone": "params"
+    },
+    {
+      "id": "seed",
+      "label": "Seed",
+      "fields": [
+        {
+          "name": "seed",
+          "type": "seed",
+          "label": "Seed",
+          "order": 0,
+          "width": 1,
+          "default": -1
+        }
+      ],
+      "order": 2,
+      "zone": "params"
+    }
+  ],
   "features": {
     "modifiers": [],
     "variant_groups": {
-      "Quant": {
-        "label": "Quant"
-      },
       "Variant": {
         "label": "Variant"
+      },
+      "Quant": {
+        "label": "Quant"
       }
     }
   },
-  "fields": [
-    {
-      "columns": 1,
-      "default": null,
-      "group": "prompt",
-      "label": "Tags / Description",
-      "max": null,
-      "min": null,
-      "name": "prompt",
-      "options": [],
-      "order": 0,
-      "placeholder": "",
-      "required": true,
-      "step": null,
-      "tooltip": "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, pop, soul, guitar, 105 BPM'.",
-      "type": "textarea",
-      "visible_when": null,
-      "width": null,
-      "zone": ""
-    },
-    {
-      "columns": null,
-      "default": null,
-      "group": "prompt",
-      "label": "Lyrics",
-      "max": null,
-      "min": null,
-      "name": "lyrics",
-      "options": [],
-      "order": 1,
-      "placeholder": "",
-      "required": null,
-      "step": null,
-      "tooltip": "Lyrics with structure tags: [verse], [chorus], [bridge]. Empty = instrumental.",
-      "type": "textarea",
-      "visible_when": null,
-      "width": null,
-      "zone": ""
-    },
-    {
-      "columns": null,
-      "default": null,
-      "group": "generation",
-      "label": "Duration (s)",
-      "max": 360,
-      "min": 5,
-      "name": "duration",
-      "options": [],
-      "order": 0,
-      "placeholder": "",
-      "required": null,
-      "step": 1,
-      "tooltip": "Target audio length in seconds (5-360).",
-      "type": "slider",
-      "visible_when": null,
-      "width": 1,
-      "zone": ""
-    },
-    {
-      "columns": null,
-      "default": null,
-      "group": "generation",
-      "label": "CFG",
-      "max": 10,
-      "min": 0.1,
-      "name": "guidance_scale",
-      "options": [],
-      "order": 1,
-      "placeholder": "",
-      "required": null,
-      "step": 0.1,
-      "tooltip": "Classifier-free guidance. IGNORED on Turbo (distilled weights — engine applies none); Base/SFT: 3.0-10.0, 7.0 recommended.",
-      "type": "slider",
-      "visible_when": null,
-      "width": 1,
-      "zone": ""
-    },
-    {
-      "columns": null,
-      "default": null,
-      "group": "generation",
-      "label": "Diffusion Steps",
-      "max": 200,
-      "min": 1,
-      "name": "n_diffusion_steps",
-      "options": [],
-      "order": 2,
-      "placeholder": "",
-      "required": null,
-      "step": 1,
-      "tooltip": "Flow-matching denoising steps. 8 = Turbo default (engine clamps Turbo to 8); Base recommended 32-50. Never 0.",
-      "type": "number",
-      "visible_when": null,
-      "width": 1,
-      "zone": ""
-    },
-    {
-      "columns": null,
-      "default": null,
-      "group": "generation",
-      "label": "LM CFG",
-      "max": 10,
-      "min": 0,
-      "name": "lm_cfg_scale",
-      "options": [],
-      "order": 3,
-      "placeholder": "",
-      "required": null,
-      "step": 0.1,
-      "tooltip": "",
-      "type": "slider",
-      "visible_when": null,
-      "width": 1,
-      "zone": ""
-    },
-    {
-      "columns": null,
-      "default": null,
-      "group": "generation",
-      "label": "Negative Prompt",
-      "max": null,
-      "min": null,
-      "name": "negative_prompt",
-      "options": [],
-      "order": 4,
-      "placeholder": "",
-      "required": null,
-      "step": null,
-      "tooltip": "Excludes unwanted musical traits (e.g. 'muddy bass, clipping, harsh vocals').",
-      "type": "textarea",
-      "visible_when": null,
-      "width": null,
-      "zone": ""
-    },
-    {
-      "columns": null,
-      "default": null,
-      "group": "generation",
-      "label": "Vocal Language",
-      "max": null,
-      "min": null,
-      "name": "language",
-      "options": [
-        "en",
-        "zh",
-        "ja",
-        "ko",
-        "es",
-        "fr",
-        "de",
-        "it",
-        "ru",
-        "pt"
-      ],
-      "order": 5,
-      "placeholder": "",
-      "required": null,
-      "step": null,
-      "tooltip": "Vocal language for lyric/phoneme alignment. Default 'en' = English.",
-      "type": "select",
-      "visible_when": null,
-      "width": 1,
-      "zone": ""
-    },
-    {
-      "columns": null,
-      "default": null,
-      "group": "sampling",
-      "label": "Temperature",
-      "max": 2,
-      "min": 0,
-      "name": "temperature",
-      "options": [],
-      "order": 0,
-      "placeholder": "",
-      "required": null,
-      "step": 0.05,
-      "tooltip": "LM planner temperature (song structure/lyrics). 0.7 default; 0.3-0.5 = predictable structures.",
-      "type": "slider",
-      "visible_when": null,
-      "width": 1,
-      "zone": ""
-    },
-    {
-      "columns": null,
-      "default": null,
-      "group": "sampling",
-      "label": "Top-P",
-      "max": 1,
-      "min": 0,
-      "name": "top_p",
-      "options": [],
-      "order": 1,
-      "placeholder": "",
-      "required": null,
-      "step": 0.01,
-      "tooltip": "LM planner nucleus sampling.",
-      "type": "slider",
-      "visible_when": null,
-      "width": 1,
-      "zone": ""
-    },
-    {
-      "columns": null,
-      "default": -1,
-      "group": "seed",
-      "label": "Seed",
-      "max": null,
-      "min": null,
-      "name": "seed",
-      "options": [],
-      "order": 0,
-      "placeholder": "",
-      "required": null,
-      "step": null,
-      "tooltip": "",
-      "type": "seed",
-      "visible_when": null,
-      "width": 1,
-      "zone": ""
-    }
-  ],
-  "form": "music",
-  "genre": "audio",
-  "guide": null,
-  "label": "Music",
-  "layout": null,
-  "loader_info": null,
-  "model": "music3",
-  "schema_groups": [
-    {
-      "fields": [
-        {
-          "columns": 1,
-          "label": "Tags / Description",
-          "name": "prompt",
-          "order": 0,
-          "required": true,
-          "tooltip": "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, pop, soul, guitar, 105 BPM'.",
-          "type": "textarea"
-        },
-        {
-          "label": "Lyrics",
-          "name": "lyrics",
-          "order": 1,
-          "tooltip": "Lyrics with structure tags: [verse], [chorus], [bridge]. Empty = instrumental.",
-          "type": "textarea"
-        }
-      ],
-      "id": "prompt",
-      "label": "Prompt",
-      "order": 0,
-      "zone": "params"
-    },
-    {
-      "fields": [
-        {
-          "label": "Duration (s)",
-          "max": 360,
-          "min": 5,
-          "name": "duration",
-          "order": 0,
-          "step": 1,
-          "tooltip": "Target audio length in seconds (5-360).",
-          "type": "slider",
-          "width": 1
-        },
-        {
-          "label": "CFG",
-          "max": 10,
-          "min": 0.1,
-          "name": "guidance_scale",
-          "order": 1,
-          "step": 0.1,
-          "tooltip": "Classifier-free guidance. IGNORED on Turbo (distilled weights — engine applies none); Base/SFT: 3.0-10.0, 7.0 recommended.",
-          "type": "slider",
-          "width": 1
-        },
-        {
-          "label": "Diffusion Steps",
-          "max": 200,
-          "min": 1,
-          "name": "n_diffusion_steps",
-          "order": 2,
-          "step": 1,
-          "tooltip": "Flow-matching denoising steps. 8 = Turbo default (engine clamps Turbo to 8); Base recommended 32-50. Never 0.",
-          "type": "number",
-          "width": 1
-        },
-        {
-          "label": "LM CFG",
-          "max": 10,
-          "min": 0,
-          "name": "lm_cfg_scale",
-          "order": 3,
-          "step": 0.1,
-          "type": "slider",
-          "width": 1
-        },
-        {
-          "label": "Negative Prompt",
-          "name": "negative_prompt",
-          "order": 4,
-          "tooltip": "Excludes unwanted musical traits (e.g. 'muddy bass, clipping, harsh vocals').",
-          "type": "textarea"
-        },
-        {
-          "label": "Vocal Language",
-          "name": "language",
-          "options": [
-            "en",
-            "zh",
-            "ja",
-            "ko",
-            "es",
-            "fr",
-            "de",
-            "it",
-            "ru",
-            "pt"
-          ],
-          "order": 5,
-          "tooltip": "Vocal language for lyric/phoneme alignment. Default 'en' = English.",
-          "type": "select",
-          "width": 1
-        }
-      ],
-      "id": "generation",
-      "label": "Generation",
-      "order": 1,
-      "zone": "params"
-    },
-    {
-      "fields": [
-        {
-          "label": "Temperature",
-          "max": 2,
-          "min": 0,
-          "name": "temperature",
-          "order": 0,
-          "step": 0.05,
-          "tooltip": "LM planner temperature (song structure/lyrics). 0.7 default; 0.3-0.5 = predictable structures.",
-          "type": "slider",
-          "width": 1
-        },
-        {
-          "label": "Top-P",
-          "max": 1,
-          "min": 0,
-          "name": "top_p",
-          "order": 1,
-          "step": 0.01,
-          "tooltip": "LM planner nucleus sampling.",
-          "type": "slider",
-          "width": 1
-        }
-      ],
-      "id": "sampling",
-      "label": "Sampling",
-      "order": 2,
-      "zone": "params"
-    },
-    {
-      "fields": [
-        {
-          "default": -1,
-          "label": "Seed",
-          "name": "seed",
-          "order": 0,
-          "type": "seed",
-          "width": 1
-        }
-      ],
-      "id": "seed",
-      "label": "Seed",
-      "order": 3,
-      "zone": "params"
-    }
-  ],
-  "service": "music3",
-  "size": null,
+  "defaults": {},
   "variants": [
     {
       "id": "standard",
@@ -424,5 +274,16 @@
       "vram_peak_gb": 20.0,
       "owner": "standard"
     }
-  ]
+  ],
+  "guide": null,
+  "engine": "comfyui",
+  "enhance_prompt": null,
+  "enhance_prompts": {
+    "prompt": "structure: [Genre, Vocal Details, Arrangement]; rules:; - Genre block first: era + region + 2-3 style anchors + tempo in BPM + key if known; - Vocal Details block: gender, register, delivery manner, one signature texture; - Arrangement block: the instrument story front to back — intro, build, drop, outro; - name production adjectives the ear can verify (dusty, wide, brickwalled); - never write lyric content in the caption — that lives in the lyrics field",
+    "lyrics": "structure: [section tags, rhyme, hook law]; rules:; - every section wrapped in [tag]: [verse] [pre-chorus] [chorus] [bridge] [outro]; - keep verses concrete and grounded; the chorus earns the abstraction; - the hook repeats at least once, word-for-word; - short lines sing: 6-9 syllables default, break longer thoughts; - match the section energy to the arrangement block it sits over"
+  },
+  "size": null,
+  "layout": null,
+  "loader_info": null,
+  "contract": null
 }

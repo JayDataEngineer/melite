@@ -199,6 +199,22 @@ reverted — it dragged parallel-session drift). The companion
 NOT bundled: the live `capabilities.image-edit` rename drift is a
 parallel session's in-flight work — left failing LOUD for its owner.
 
+## 2026-09-06 — img-to-mesh knob surfacing (12 new defaults per lift model)
+
+trellis2-native.defaults + pixal3d.defaults gain the 11 knob rows
+(shape/tex1/tex2 steps+cfg, remesh/decimate/smooth, atlas/ao/normal)
+slotted in model-dict order after cfg. One-line diff (compact
+golden); served-verified, no other model moves.
+
+
+## 2026-09-06 — img-to-mesh official-template alignment
+
+models.trellis2-native.defaults.cfg + models.pixal3d.defaults.cfg:
+3.0 -> 7.5 (the official template calibration — the card default
+out of the box; nothing else in the catalog moves). One-line diff
+(compact golden, round-trip-verified dump settings).
+
+
 ## 2026-09-05 (h) — the generic abstraction: trellis2-native claims its studio (Anny rebased onto the shared body)
 The user's order: shared components and layouts, not per-card
 hand-rolls — Trellis rode the default form, Anny carried a bespoke
@@ -264,3 +280,90 @@ be a part-slot assembly).
   catch-up to the committed slot_kinds evolution (slots + slot_kinds
   rows replacing the form_slots/model_maps shape) the stale golden had
   missed — tree truth at regold time.
+
+## 2026-09-05 (j) — the input lane boards (`input` → `input-prep`)
+
+The `input` model resolves (engine `comfyui`, card `input-prep`;
+design docs/design/input-prep-boarding.md): operator report verbatim
+"Input cards don't accept image files". DELIBERATE contract change,
+purely additive (keyed diff old→new: nothing removed, nothing altered
+except `models.input.engine` `""` → `"comfyui"`):
+
+- `capabilities` gains `input-prep` (families `["input"]`);
+- `cards` gains the `input-prep` row (18 → 19);
+- `input_vocabulary.form_slots` gains `form_input: ["source"]` and
+  `model_slots` gains `input: ["source"]` (the card's declared `source`
+  File — image OR audio, hence File, not Image).
+
+Re-asserted from served `/v1/model-catalog` on a scratch gateway (no
+live restart); verified additive-only against the previous golden.
+
+## 2026-09-06 — img-to-mesh sampler lab (13 new defaults per lift model)
+
+trellis2-native.defaults + pixal3d.defaults gain the lab rows
+(8 sampler/scheduler names + sd3_shift + 2 rescale multipliers +
+2 override percents), slotted in model-dict order. One-line diff
+(compact golden); served-verified, no other model moves.
+
+(j2, same day — fossil purge inside the new row): the boarded class
+first shipped with `description='>-'` (a yaml-folding fossil from
+the generator) and `defaults` naming no card field (`media_type`,
+`filename_prefix`, `output_artifact` — consumed by NOTHING; the arm
+derives everything off the validated doc). The cross-validation law
+(`validate_against_cards`: every default names a field on the owning
+card) refused the row LOUD — the operator's compile-time order
+working as designed. Class now carries a real description and
+`defaults = dict()` (the lane takes NO model-level knobs); the
+golden's `models.input` row patched surgically to match (verified:
+old→new diff on that row is exactly description + defaults).
+
+## 2026-09-05 (k) — pixal3d boards img-to-mesh (surgical leaves)
+
+Pixal3D joins the img-to-mesh card (design
+docs/design/img-to-mesh-pixal3d-boarding.md). Six leaves overlaid from
+the live scan — every other divergence left for its owner (anny
+writes, image-edit/tts vocab are other sessions in-flight work):
+
+- capabilities.img-to-mesh: description (new card text) + families
+  2 -> 3 (+pixal3d);
+- cards img-to-mesh row: same two leaves;
+- families.pixal3d: full row incl. the new studio tenant
+  (3d/img_to_mesh, owns_params false);
+- input_vocabulary: form_3d_pixal3d + model pixal3d slots;
+- models.pixal3d: engine "" -> "comfyui", real description (the >-
+  yaml-folding fossil is gone), defaults gains camera_fov=auto and
+  drops the consumed-by-nothing texture_size fossil (cross-validation
+  law: every default names a card field).
+
+Verified: post-patch live-vs-golden diff shows ONLY the seven foreign
+leaves (anny x1, image-edit x2, tts x4).
+
+## 2026-09-06 — the 3D card boards ONE form (Model dropdown fix)
+
+Operator order: the visual image-to-3D card showed no model picker.
+Root cause: the card Model dropdown groups by catalog form tag
+(flowParamEditor -> dropdownModels(form)), and trellis2-native /
+Pixal3D / transfer_rig each boarded their OWN tag — a one-head list
+renders NO Model zone (AxisRows skips empty: modelOpts.length > 1).
+All three models now board form_img_to_mesh (model.py form fields;
+comments mark the shared tag); the backend FormSlotVocabulary already
+blesses multi-model forms (qwen3-tts precedent) — the three identical
+form_slots rows merged into one, model_slots rows untouched (the
+model-level vocabulary wins per cardSlotsFor). Surgical leaves:
+models.{trellis2-native,Pixal3d,transfer_rig}.form + the form_slots
+merge. Behavioral pin: model-catalog.test.ts THREE_D_CARD
+(dropdownModels -> 3 heads, familiesForForm -> 3 families).
+
+## 2026-09-06 — cpp native boarding (music tile ownership)
+
+Operator order: ComfyUI keeps 'music'. The native audio-cpp card
+is renamed music -> music-native (card id + compose dispatch key +
+3 model rows; graph-internal node_id untouched), so served
+capabilities.music falls back to the ComfyUI tile (music3) and a
+new music-native tile (ace-step-xl) appears beside it. DELIBERATE
+contract change: HEAD pinned native-owns-music (the catalog scan
+saw cpp cards long before the tools walk did — last-wins). Pinned
+by tests/walls/suites/test_cpp_native_cards.py (fork checks).
+Follow-up: golden cards[16] was the stale audio-cpp row under the
+old 'music' id — replaced positionally with the served
+music-native row (id-only diff; neighbors' rows untouched).

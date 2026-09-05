@@ -142,7 +142,7 @@
    "label": "Export box manifest",
    "group": "exports",
    "order": 0,
-   "default": "true",
+   "default": true,
    "tooltip": "Draw RT-DETR boxes on the image — the instance manifest (read it, then set instance_filter)."
   },
   {
@@ -151,7 +151,7 @@
    "label": "Export face mask",
    "group": "exports",
    "order": 1,
-   "default": "false"
+   "default": false
   },
   {
    "name": "export_hands",
@@ -159,7 +159,7 @@
    "label": "Export hands mask",
    "group": "exports",
    "order": 2,
-   "default": "false"
+   "default": false
   },
   {
    "name": "export_body",
@@ -167,7 +167,7 @@
    "label": "Export body mask",
    "group": "exports",
    "order": 3,
-   "default": "false"
+   "default": false
   },
   {
    "name": "export_paint",
@@ -175,7 +175,7 @@
    "label": "Export paint mask",
    "group": "exports",
    "order": 4,
-   "default": "false",
+   "default": false,
    "tooltip": "ON when a brush stroke exists — the painted payload becomes its own mask export."
   },
   {
@@ -333,7 +333,7 @@
   {
    "fields": [
     {
-     "default": "true",
+     "default": true,
      "label": "Export box manifest",
      "name": "export_boxes",
      "order": 0,
@@ -341,28 +341,28 @@
      "type": "boolean"
     },
     {
-     "default": "false",
+     "default": false,
      "label": "Export face mask",
      "name": "export_face",
      "order": 1,
      "type": "boolean"
     },
     {
-     "default": "false",
+     "default": false,
      "label": "Export hands mask",
      "name": "export_hands",
      "order": 2,
      "type": "boolean"
     },
     {
-     "default": "false",
+     "default": false,
      "label": "Export body mask",
      "name": "export_body",
      "order": 3,
      "type": "boolean"
     },
     {
-     "default": "false",
+     "default": false,
      "label": "Export paint mask",
      "name": "export_paint",
      "order": 4,

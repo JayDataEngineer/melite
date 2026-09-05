@@ -53,7 +53,7 @@
    "order": 0,
    "width": 1,
    "default": 1024,
-   "tooltip": "512 fast (props/thumbnails), 1024 standard, 1536 hero (rides the upsample stage).",
+   "tooltip": "Upsample target (official pins 1536). All tiers run the full official chain — upsample + both texture passes + remesh tail.",
    "options": [
     "512",
     "1024",
@@ -71,7 +71,7 @@
    "max": 60,
    "step": 1,
    "default": 12,
-   "tooltip": "STRUCTURE stage steps (the lift). Shape runs 20, texture 12 — calibrated upstream."
+   "tooltip": "STRUCTURE stage steps (the lift). Shape + texture stages ride their own knobs in the Stage section."
   },
   {
    "name": "cfg",
@@ -83,8 +83,8 @@
    "min": 1,
    "max": 15,
    "step": 0.5,
-   "default": 3.0,
-   "tooltip": "Structure-stage guidance. Upstream template calibrates 7.5 for max fidelity; 3.0 runs looser/faster."
+   "default": 7.5,
+   "tooltip": "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance — blobby trash out of the box). Lower runs looser."
   },
   {
    "name": "bg_removal",
@@ -161,7 +161,7 @@
       "1536"
      ],
      "order": 0,
-     "tooltip": "512 fast (props/thumbnails), 1024 standard, 1536 hero (rides the upsample stage).",
+     "tooltip": "Upsample target (official pins 1536). All tiers run the full official chain — upsample + both texture passes + remesh tail.",
      "type": "select",
      "width": 1
     },
@@ -173,19 +173,19 @@
      "name": "steps",
      "order": 1,
      "step": 1,
-     "tooltip": "STRUCTURE stage steps (the lift). Shape runs 20, texture 12 — calibrated upstream.",
+     "tooltip": "STRUCTURE stage steps (the lift). Shape + texture stages ride their own knobs in the Stage section.",
      "type": "number",
      "width": 1
     },
     {
-     "default": 3.0,
+     "default": 7.5,
      "label": "CFG",
      "max": 15,
      "min": 1,
      "name": "cfg",
      "order": 2,
      "step": 0.5,
-     "tooltip": "Structure-stage guidance. Upstream template calibrates 7.5 for max fidelity; 3.0 runs looser/faster.",
+     "tooltip": "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance — blobby trash out of the box). Lower runs looser.",
      "type": "slider",
      "width": 1
     },
