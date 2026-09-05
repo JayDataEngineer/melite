@@ -151,6 +151,51 @@ class TestShapeBandSeam(unittest.TestCase):
         )
 
 
+class TestRailLayout(unittest.TestCase):
+    """The rail layout law (operator order, 2026-09-06, verbatim:
+    "you have SHAPE and Turnaround AT THE SAME TIME! That is too
+    many" + "NOT EVEN A SCROLL? ARE YOU CRAZT?" — typo preserved in
+    the design record, not here). ONE concern per tab; THE TAB PANE
+    owns the one scroll surface; the Shape panel may expand into a
+    viewport drawer but never co-renders two instances."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.component = ANNY_COMPONENT.read_text(encoding="utf-8")
+        cls.shape = ANNY_SHAPE.read_text(encoding="utf-8")
+
+    def test_the_rail_is_tabbed(self):
+        self.assertIn('role="tablist"', self.component)
+        self.assertIn('role="tabpanel"', self.component)
+
+    def test_the_pane_owns_the_scroll(self):
+        self.assertRegex(
+            self.component,
+            r'role="tabpanel"[\s\S]{0,200}overflow-y-auto',
+            "the tab pane must scroll — natural-height sections inside",
+        )
+        # the band itself is NATURAL height (no nested scroll box)
+        self.assertNotIn(
+            'flex min-h-0 flex-1 flex-col rounded-lg border border-sidebar-border/50 px-3 py-2',
+            self.shape,
+            "AnnyShapeBand must not carry its own flex-1 scroll — the "
+            "tab pane owns the one scroll surface",
+        )
+
+    def test_shape_expands_into_the_drawer_not_a_second_panel(self):
+        self.assertIn("{shapeExpanded && <AnnyShapeDrawer", self.component)
+        self.assertIn("{!shapeExpanded && <AnnyShapeBand", self.component,
+                      "ONE BodyShapePanel instance: the drawer replaces "
+                          "the rail band while expanded")
+        self.assertIn("w-80", self.shape, "the drawer is the wide surface")
+
+    def test_the_bridge_survives_layout_moves(self):
+        self.assertIn("useAnnyShapeBridge(props.stage, props.onSave)",
+                      self.component,
+                      "the bridge mounts ONCE at the studio level — it "
+                      "must not unmount when the panel moves rail↔drawer")
+
+
 class TestBodyCardRetirementPending(unittest.TestCase):
     """The body card still EXISTS this stroke (sequenced retirement —
     its dir + goldens collide with the in-flight pipe-carry stroke).
