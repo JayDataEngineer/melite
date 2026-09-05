@@ -35,6 +35,7 @@ VENV_PY = REPO / ".venv" / "bin" / "python"
 # by pytest directly from suites/ and are NOT listed here.
 SUBPROCESS_WALLS = [
     "tests/walls/suites/test_python_models.py",
+    "tests/walls/suites/test_python_cards.py",   # recovered 2026-09-05
     "tests/walls/suites/test_typing.py",
     "tests/walls/suites/test_workflow_transpile.py",
     "tests/walls/suites/test_streaming.py",
@@ -60,15 +61,17 @@ SUBPROCESS_WALLS = [
 # drift (reproduces with the tree stashed — NOT this lane's files).
 # Cited here so the debt stays visible; remove when the pin lands.
 KNOWN_DRIFT = {
+    # (2026-09-05) test_python_cards.py RECOVERED and moved into
+    # SUBPROCESS_WALLS: its real break was a fossil spec-load of
+    # engines/audio/compose.py (dead since the compose reorg) — now
+    # reached through the plugins loader. 117/117 checks green at
+    # HEAD. The object_info pin concern below resolved with the
+    # owning lane's re-stamp.
+    #
     # 2026-09-04 rename validation: object_info.json was refreshed in
     # the working tree (14:04Z) without re-stamping object_info.meta
     # (pin integrity: sha 76f00a4b != stamped a396d14e) — the compose
-    # pin is the owning lane's explicit door (refresh_snapshot);
-    # python_cards still cascades from it (doc_parity/wire_surface
-    # recovered after the re-stamp).
-    "tests/walls/suites/test_python_cards.py":
-        "object_info.json refreshed unstamped (concurrent lane) — "
-        "pin integrity refusal; owner re-stamps via refresh_snapshot",
+    # pin is the owning lane's explicit door (refresh_snapshot).
     # 2026-09-04 flows-rework validation: the renderer moved to
     # action_cards/video/h3-timeline/py/renderer.py (suite path fixed)
     # but its model fixtures (window1_t4r.json & kin) no longer exist

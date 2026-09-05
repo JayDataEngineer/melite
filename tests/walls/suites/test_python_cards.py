@@ -134,7 +134,7 @@ def main():
         # the mask B-cluster lands 2026-09-04 (RT-DETR proposes, SAM3
         # refines — native core, no extension pack)
         ("mask-studio", "comfyui", "mask-studio",
-         ("action_cards", "mask", "mask_studio")),
+         ("action_cards", "image", "mask_studio")),
         # cluster C stopgap (2026-09-04): kimodo text→motion on our
         # own packs (ray-era hand-rolls, operator's stopgap order)
         ("motion", "comfyui", "kimodo",
@@ -234,14 +234,13 @@ def main():
     # across engines now that both sides are python)
     import catalog as _cat
     from melite_models import validate_against_cards
-    import importlib.util as _ilu
-    _spec = _ilu.spec_from_file_location(
-        "audio_compose", os.path.join(
-            REPO, "plugins", "engines", "cpp", "audio-cpp",
-            "engines", "audio", "compose.py"))
-    _ac = _ilu.module_from_spec(_spec)
-    _spec.loader.exec_module(_ac)
+    # the audio truth keys ride the plugin's compose package — reached
+    # through the loader (the declaring SSOT), never a hand-built path.
+    # (2026-09-05: this walk previously spec-loaded the fossil
+    # engines/audio/compose.py — a path that died with the compose
+    # reorg; the loader is the one true way to a plugin's compose.)
     import plugins as _pl
+    _ac = _pl.load_compose("audio_cpp")
     _cc = _pl.load_compose("comfyui")
     _truth = _ac.ENGINE_TRUTH_KEYS + tuple(_cc.ENGINE_TRUTH_KEYS)
     pairs = validate_against_cards(models, cards, engine_truth=_truth)
@@ -988,7 +987,7 @@ def main():
     # FEEDING LAW: the attach exemplar is a BOARDED family — the
     # edit lane (qwen-img-edit-2511) carries both packs; unboarded
     # data families (anima, z-image) carry none (no card feeds).
-    _qwen_edit = load_model_py(os.path.join(REPO, "plugins/engines/comfyui/models/edit/qwen-img-edit-2511/model.py"), "comfyui")
+    _qwen_edit = load_model_py(os.path.join(REPO, "plugins/engines/comfyui/models/image/qwen-img-edit-2511/model.py"), "comfyui")
     _qe_packs = {getattr(m, "pack", "") for m in _qwen_edit.mods}
     check("edit family attaches mask to lanpaint",
           _qe_packs == {"lanpaint", "mask"}, _qe_packs)
@@ -1008,7 +1007,7 @@ def main():
     _editfams = [load_model_py(
         os.path.join(REPO, "plugins/engines/comfyui/models",
                      p, "model.py"), "comfyui")
-        for p in ("image/img-edit", "edit/qwen-img-edit-2511")]
+        for p in ("image/img-edit", "image/qwen-img-edit-2511")]
     _lan_fams = sorted(
         m.id for m in _editfams
         for mod in m.mods if getattr(mod, "pack", "") == "lanpaint")

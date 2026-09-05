@@ -179,6 +179,11 @@ class FakeRun:
         self.artifacts = []
         self.error = None
         self.dir = Path(tempfile.mkdtemp())
+        # sidecar() reads these (CARD LINKAGE, 2026-09-04; the
+        # card-extra pool, 2026-09-05) — absent attrs would kill the
+        # execute() finally-block before the report contract lands
+        self.draft_id = None
+        self.card_extra_inputs = {}
 
 
 async def run_report_battery():
@@ -205,7 +210,7 @@ async def run_report_battery():
     return run, got
 
 
-run, got = asyncio.run(run_report_battery())
+run, got = asyncio.run(asyncio.wait_for(run_report_battery(), 20))
 stage = run.stages[0]
 check("report lands in stage dict (poll path)",
       MIDFLIGHT.get("progress") == {"value": 4, "max": 10, "node": "2"},
@@ -226,14 +231,37 @@ check("terminal stage cleared progress",
 
 
 async def ws_door_battery():
+    """(2026-09-05) The door is the REAL one: gateway._ws_starlette on
+    a starlette WebSocketRoute, served by uvicorn — the raw
+    gateway.handle + hand-rolled RFC 6455 server codec retired with
+    the 2026-09-02 transport flip ("starlette/uvicorn handles framing,
+    ping/pong, and close handshakes"). The CLIENT below keeps its own
+    handshake + frame parser on purpose: the accept-key check pins the
+    live server's RFC 6455 conformance against OUR door, not against
+    a test double."""
+    import starlette.applications as _sa
+    from starlette.routing import WebSocketRoute as _WSR
+    import uvicorn
+
     gw3 = gateway.Gateway()
     run = FakeRun()
     run.status = "running"
     gw3.runs[run.run_id] = run
 
-    server = await asyncio.start_server(
-        lambda r, w: gateway.handle(gw3, r, w), "127.0.0.1", 0)
-    port = server.sockets[0].getsockname()[1]
+    app = _sa.Starlette(routes=[
+        _WSR("/v1/flows/events/{run_id:path}", gateway._ws_starlette),
+        _WSR("/v1/flows/events", gateway._ws_starlette),
+    ])
+    app.state.gw = gw3
+
+    server = uvicorn.Server(uvicorn.Config(
+        app, host="127.0.0.1", port=0, log_level="warning"))
+    srv_task = asyncio.ensure_future(server.serve())
+    for _ in range(500):                     # wait for bind (≤10s)
+        if server.started:
+            break
+        await asyncio.sleep(0.02)
+    port = server.servers[0].sockets[0].getsockname()[1]
 
     async def engine_side():
         # fixed-delay publish: waiting for the subscriber here RACES the
@@ -270,8 +298,11 @@ async def ws_door_battery():
             hk, _, hv = h.decode().partition(":")
             if hk.strip().lower() == "sec-websocket-accept":
                 accept = hv.strip()
+        # the RFC 6455 accept recipe (uvicorn owns it now; the constant
+        # is the spec's, asserted against the live server's answer)
         want = base64.b64encode(hashlib.sha1(
-            (key + gateway._WS_GUID).encode()).digest()).decode()
+            (key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode()
+        ).digest()).decode()
         frames = []
         try:
             while True:
@@ -300,14 +331,22 @@ async def ws_door_battery():
             writer.close()
         return status_line, accept, want, frames
 
-    eng = asyncio.ensure_future(engine_side())
-    status_line, accept, want, frames = await client_side()
-    await asyncio.wait_for(eng, 2)
-    server.close()
+    try:
+        eng = asyncio.ensure_future(engine_side())
+        status_line, accept, want, frames = await client_side()
+        await asyncio.wait_for(eng, 2)
+    finally:
+        server.should_exit = True
+        await asyncio.wait_for(srv_task, 5)
     return status_line, accept, want, frames
 
 
-status_line, accept, want, frames = asyncio.run(ws_door_battery())
+# 2026-09-05: the batteries ride wait_for(20s) — a missed terminal
+# frame used to block the read loop FOREVER (the historical
+# "test_streaming hangs" drift; the underlying race healed with the
+# flows rework, but a stall must die LOUD as a timeout, never hang).
+status_line, accept, want, frames = asyncio.run(
+    asyncio.wait_for(ws_door_battery(), 20))
 check("door upgrades 101", b"101" in status_line, status_line.decode())
 check("accept key correct", accept == want)
 check("hydrate snapshot present",
