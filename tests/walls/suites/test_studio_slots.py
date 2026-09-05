@@ -17,7 +17,8 @@ Two failure classes this wall refuses:
 The generic abstraction (2026-09-05: Trellis/Anny run the shared
 AssemblyStudio, Kimodo CAN adopt it) adds two declaration parities:
   3. KIND⟺BODY — Studio(kind=assembly) ⟺ the tenant's component.tsx
-     imports the generic (@melite-plugin/3d/ui/studios/assembly).
+     imports the generic (ui/studios/assembly — a relative import,
+     like every sibling tenant's ../viewers).
      A bespoke body claiming assembly (or vice versa) renders the
      wrong surface with zero errors — refused here.
   4. SLOT TABLE — a generic tenant declares its slots ONCE, as a
@@ -166,6 +167,23 @@ def _claimed_tenants(tenant_claims: dict[str, list[str]],
     for tenant in sorted(tenant_claims):
         assert tenant in tenant_bodies
         yield tenant, _body_src(tenant, tenant_bodies), tenant_claims[tenant]
+
+
+def test_bogus_notch_refuses() -> None:
+    """layout='asd' dies AT CLASS DEFINITION — a typo'd notch is a
+    card that silently renders the default chrome while its author
+    believes they declared studio. The _CardMeta gate refuses BEFORE
+    any card.py finishes importing (nothing serves, nothing drifts);
+    the sibling size notch shares the gate."""
+    from melite_cards import ActionCard, ValidationError
+    with pytest.raises(ValidationError):
+        class _BadLayout(ActionCard):  # noqa: F841
+            id = "bad"
+            layout = "asd"
+    with pytest.raises(ValidationError):
+        class _BadSize(ActionCard):  # noqa: F841
+            id = "bad2"
+            size = "asd"
 
 
 def test_kind_matches_body(tenant_claims: dict[str, list[str]], tenant_bodies: dict[str, str]) -> None:
