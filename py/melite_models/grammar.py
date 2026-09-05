@@ -478,6 +478,10 @@ _MODEL_ATTRS = frozenset({
     # slot is empty; the base-body door streams it). Empty = the
     # family declares none.
     "base_body",
+    # ingestion vocabulary (2026-09-06): the closed media types the
+    # family ingests (the canvas drop gate reads families.<id>.accepts
+    # off the served catalog). Empty = ingests nothing.
+    "accepts",
 })
 
 
@@ -648,6 +652,15 @@ class Model(metaclass=_ModelMeta):
     defaults = None           # dict — the family-level defaults
     timeout_floor = None
     loras = ()                # tuple[LoraRow]
+    # SOURCE INGESTION (2026-09-06 — the "Input cards don't accept
+    # image files" incident, second half): the closed media
+    # vocabulary this family ingests. The canvas drop gate reads it
+    # off the served catalog (families.<id>.accepts) — a family with
+    # no entry serves no key and the frontend treats [] as "not a
+    # drop target", so every drop hard-failed with that toast. Empty
+    # = ingests nothing. The construction gate below refuses unknown
+    # members — a typo can never serve.
+    accepts = ()              # tuple[str] ⊆ {"image", "video", "audio"}
     prompt_guide = None       # PromptGuide row — content, free shape
     variant_groups = ()       # tuple[VariantGroup] — UI selector groups
     provisioning = None
@@ -787,6 +800,20 @@ class Model(metaclass=_ModelMeta):
                 raise ModelError(
                     "%s.provisions entries must be Provision rows"
                     % cls.__name__)
+        acc = cls.accepts or ()
+        if not isinstance(acc, (tuple, list)) or any(
+                not isinstance(a, str) for a in acc):
+            raise ModelError(
+                "%s.accepts must be a tuple/list of str (got %r)"
+                % (cls.__name__, acc))
+        _unknown = [a for a in acc
+                    if a not in ("image", "video", "audio")]
+        if _unknown:
+            raise ModelError(
+                "%s.accepts names unknown media %r — the closed "
+                "ingestion vocabulary is image/video/audio (the "
+                "canvas drop gate compares verbatim)"
+                % (cls.__name__, _unknown))
         if cls.source is not None and not isinstance(cls.source, SourceRow):
             raise ModelError(
                 "%s.source must be a SourceRow" % cls.__name__)

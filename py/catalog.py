@@ -245,7 +245,9 @@ def _scan_model_dir(model_dir: str) -> list[tuple[dict[str, JsonValue], dict[str
         return []
     meta = {"studio_tenant": None, "studio_owns_params": False,
             "studio_writes": [], "studio_size": "normal",
-            "studio_layout": "studio"}
+            "studio_layout": "studio",
+            "accepts": [str(a) for a in
+                        (getattr(cls, "accepts", ()) or ())]}
     if cls.studio is not None:
         meta = {"studio_tenant": cls.studio.tenant,
                 "studio_owns_params": bool(cls.studio.owns_params),
@@ -254,7 +256,9 @@ def _scan_model_dir(model_dir: str) -> list[tuple[dict[str, JsonValue], dict[str
                 # Presentation notches ride the claim (web-registry §7):
                 # the enum VALUES serve verbatim on the wire.
                 "studio_size": cls.studio.size.value,
-                "studio_layout": cls.studio.layout.value}
+                "studio_layout": cls.studio.layout.value,
+                "accepts": [str(a) for a in
+                            (getattr(cls, "accepts", ()) or ())]}
     return [(model_row(cls, model_dir), meta)]
 
 
@@ -406,6 +410,13 @@ def _scan_card_dir(card_dir: str, card_name: str, models: dict[str, dict[str, Js
             _ft = getattr(_fld, "type", None)
             if _ft not in _DSL_TO_KIND:
                 continue
+            # MODS-ZONE BINARY FIELDS ARE NOT MAIN INPUTS (operator
+            # order, 2026-09-05: "INPUT MASK... is A MOD it's not
+            # cluttering the main inputs"). A mod-owned slot (MaskMod's
+            # input_mask, zone='mods') renders in the Mods zone's own
+            # section, never in the main SlotGrid vocabulary.
+            if getattr(_fld, "zone", None) == "mods":
+                continue
             _kind = _vocab_kinds.get(_fld.name) or _DSL_TO_KIND[_ft]
             slot_bindings.append(
                 _sk.FormSlotBinding(
@@ -473,6 +484,11 @@ def scan_catalog(repo_root: str) -> _Catalog:
     for row, meta in scan_pairs:
         models[row["id"]] = row
         fam = {"label": row["label"], "genre": row["genre"]}
+        if meta.get("accepts"):
+            # Ingestion vocabulary (2026-09-06): the canvas drop
+            # gate reads families.<id>.accepts — a family that
+            # declares none serves no key (not a drop target).
+            fam["accepts"] = list(meta["accepts"])
         if meta["studio_tenant"]:
             # Studio body claim: only models declaring studio: emit
             # it — the editor's studio-tenant resolver.
