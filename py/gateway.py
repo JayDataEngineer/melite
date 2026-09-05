@@ -1095,12 +1095,41 @@ async def _adapt(request):
 
     This is the ONLY new dispatch code; the ROUTES table, _Ctx, and
     every _h_* handler are unchanged.  The goldens own response bodies;
-    this adapter serializes them identically (indent=2, default=str)."""
+    this adapter serializes them identically (indent=2, default=str).
+
+    Uncaught exceptions in the handler (anything that escapes route()
+    as a raised exception rather than a (status, {"error": ...})
+    tuple) are surfaced as JSON 500s with the real exception text —
+    a bare "Internal Server Error" hides the cause from the wall
+    and the user (the dev DSH 500 on /v1/form-spec?model=anny hid
+    the anny-card loader error until the wall fetched the real
+    message). RESILIENCE LAW: the failure documents the exact
+    failure message — the HTTP layer must too."""
     gw = request.app.state.gw
     body = await request.body()
     target = request.url.path + ("?" + request.url.query
                                  if request.url.query else "")
-    status, payload = await route(gw, request.method, target, body)
+    try:
+        status, payload = await route(gw, request.method, target, body)
+    except Exception as exc:
+        try:
+            from traceback import format_exc
+            tb = format_exc()
+        except Exception:
+            tb = "(traceback unavailable)"
+        try:
+            sys.stderr.write(
+                "[gateway] uncaught in route(%s %s): %s\n%s\n"
+                % (request.method, target, exc, tb))
+        except Exception:
+            pass
+        return Response(
+            content=json.dumps(
+                {"error": str(exc), "type": type(exc).__name__,
+                 "traceback": tb,
+                 "route": "%s %s" % (request.method, target)},
+                indent=2, default=str).encode(),
+            status_code=500, media_type="application/json")
     if isinstance(payload, tuple) and len(payload) == 3:
         _, resp_headers, raw = payload
         ct = resp_headers.pop("content-type",
