@@ -62,14 +62,85 @@ def find_nodes_yaml(repo: str) -> list[tuple[str, str]]:
     return results
 
 
+# ── the manifest schema (PYTHON SHAPE LAW: construction IS the gate) ──
+#
+# The 2026-09-05 audit found this loader duck-typed end to end: a
+# typo'd top-level key (``extentions:``) silently merged NOTHING (the
+# extension never installs, invisibly), garbage rows rode into
+# provision's install step, and the divergent-pin guard compared
+# url/ref only — registry/version pins (the cm_cli rail) could
+# diverge silently and merge as "identical". Rows are frozen
+# pydantic now: an invalid manifest is a LOUD refusal naming the
+# file, never a partial install.
+from pydantic import (BaseModel, ConfigDict, Field,
+                      ValidationError, field_validator)
+
+
+class ExtensionRow(BaseModel):
+    """One declared extension. The pin pair is BOTH rails: registry+
+    version (the cm_cli install rail, PIN LAW) and url+ref (the
+    recorded git expectation). `pip` rides for python deps."""
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    name: str = Field(min_length=1)
+    registry: str = ""
+    version: str = ""
+    url: str = ""
+    ref: str = ""
+    required: bool = True
+    desc: str = ""
+    pip: tuple[str, ...] = ()
+
+    def pin(self) -> tuple:
+        """The comparable pin identity — EVERY rail, so divergence in
+        any one of them refuses (the url/ref-only era let registry
+        pins diverge silently)."""
+        return (self.registry, self.version, self.url, self.ref,
+                self.pip)
+
+
+class NodesDoc(BaseModel):
+    """A nodes.yaml document. Top level is CLOSED: a typo'd key is a
+    refusal, never a silently-empty manifest."""
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    # `extensions:` followed by only comments parses as explicit
+    # null — a legitimate "declared nothing here" document (the
+    # genre-level heads carry the declaration elsewhere).
+    # A PROVIDED null (`extensions:` followed only by comments)
+    # normalizes to () through the before-validator — a legitimate
+    # "declared nothing here" genre head. A MISSING key takes the ()
+    # default directly (pydantic skips validators for defaults, so
+    # the annotation stays non-optional).
+    extensions: tuple[ExtensionRow, ...] = ()
+
+    @field_validator("extensions", mode="before")
+    @classmethod
+    def _null_is_empty(cls, v):
+        return () if v is None else v
+
+
+# future-annotations module: resolve the forward refs now
+ExtensionRow.model_rebuild()
+NodesDoc.model_rebuild()
+
+
 def load_extensions(path: str) -> list[dict]:
-    """Load extensions list from a nodes.yaml file."""
+    """Load + VALIDATE the extensions list from a nodes.yaml file.
+    An invalid document fails LOUD (a manifest that cannot be parsed
+    honestly must not half-install)."""
     with open(path) as f:
         cfg = yaml.safe_load(f) or {}
-    exts = cfg.get("extensions")
-    if not isinstance(exts, list):
-        return []
-    return exts
+    try:
+        doc = NodesDoc.model_validate(cfg)
+    except ValidationError as e:
+        reasons = "; ".join(
+            "%s: %s" % (".".join(str(x) for x in err["loc"]) or "?",
+                        err["msg"])
+            for err in e.errors()[:5])
+        fail(f"{path}: refuses to parse as a nodes.yaml manifest "
+             f"({reasons})")
+    return [row.model_dump() for row in doc.extensions]
 
 
 def merge_all(repo: str) -> list[dict]:
@@ -108,17 +179,19 @@ def _merge_from(files: list[tuple[str, str]]) -> list[dict]:
             name = ext.get("name")
             if not name:
                 fail(f"{path}: extension with no name")
+            pin = (ext.get("registry", ""), ext.get("version", ""),
+                   ext.get("url", ""), ext.get("ref", ""),
+                   tuple(ext.get("pip") or ()))
             if name in seen:
                 prior = seen[name]
-                if (prior.get("url"), prior.get("ref")) !=                         (ext.get("url"), ext.get("ref")):
+                if prior[0] != pin:
                     fail(
                         f"Divergent pins for extension '{name}':\n"
-                        f"  {prior['_source']}: {prior.get('url')} @ "
-                        f"{prior.get('ref')}\n"
-                        f"  {path}: {ext.get('url')} @ {ext.get('ref')}"
+                        f"  {prior[1]}: {prior[0]}\n"
+                        f"  {path}: {pin}"
                     )
                 continue          # identical restatement — one truth
-            seen[name] = ext
+            seen[name] = (pin, f"{plugin_id}:{path}")
             # Tag with source for traceability
             ext["_source"] = f"{plugin_id}:{path}"
             merged.append(ext)
