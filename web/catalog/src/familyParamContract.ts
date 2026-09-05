@@ -103,42 +103,58 @@ export function isFamilySchemaCachePopulated(): boolean {
   return !!_cache && Object.keys(_cache).length > 0
 }
 
-// ── WIRE_RELAXED keys — pre-sweep saved cards + wire-level fields ────────
+// ── WIRE_RELAXED keys — transport the gate must not false-positive ──────
 /**
- * Params the backend ACCEPTS on the wire even though the family signature
- * doesn't declare them — the local gate must not false-positive them:
+ * Params the click-time gate admits WITHOUT a family-signature
+ * declaration. Every entry needs a LIVE consumer (mod-audit law,
+ * 2026-09-05 — an unread key here is a hole: the gate waves it
+ * through and the backend 400s it, the exact inversion of this
+ * gate's purpose):
  *
- *  • ALIAS KEYS (2026-08-14 param-vocabulary sweep): the compile path
- *    translates sampling_steps→steps, guide_scale→cfg, num_frames→frames
- *    (compile.py _PARAM_TRANSLATIONS) — a card SAVED before the sweep
- *    carries the old spellings and runs fine (the backend translates);
- *    rejecting it locally would block a card the wire accepts.
- *  • WIRE-LEVEL FIELDS (compile.py _KNOWN_NON_SIG_PARAMS — the Python
- *    mirror): input slots (image1/2/3, end_image…), modifier bags,
- *    builder weight filenames (model_name/t5_name/vae_name/vace_name),
- *    the loras_selected variant switch, export flags, envelope keys.
+ *  • CARD FIELDS ELSEWHERE (sampling_steps, guide_scale, num_frames,
+ *    image1/2/3, input_image, …): real params on the lanes that
+ *    declare them (their schemas admit them); waved here so the
+ *    click gate doesn't second-guess cross-lane bodies. On lanes
+ *    that DON'T declare them the backend forbid row voices LOUD —
+ *    admission ≠ permission, the hard gate decides.
+ *  • SLOT / TRANSPORT VOCABULARY (py/slot_kinds.py SlotDecl + the
+ *    flow upstream injector): input slots (first_frame, last_frame,
+ *    input_glb, source_glb, outfit_glb, hair_glb, motion_npz,
+ *    prev_motion_artifact, lanpaint_mask), modifier bags (loras,
+ *    controlnets, modifiers), renderer weight filenames
+ *    (model_name, t5_name, vae_name — read by the co_script
+ *    renderers), export flags, detect_mode (mask_studio field),
+ *    reference_audio / reference_text / rigged_path / npz_path
+ *    (slot + renderer reads), service (envelope chrome the gateway
+ *    lift strips — CARD_ENVELOPE_KEYS), source + preset (card
+ *    fields on their lanes; backend voices misuse field-named).
  *
- * Genuinely unknown keys still throw — this is a bounded, enumerated set
- * kept in lockstep with the backend (compile.py's two tables are the
- * source of truth; the catalog defaults gate
- * (backend catalog_defaults_violations) keeps NEW drift out at CI time).
+ * CUT 2026-09-05 (zero backend presence — no card field, no reader
+ * in py/ or the plugin tree, unwaved by any live sender):
+ * pose_image_b64, vace_name, motion_bg_image, loras_selected (the
+ * flow draft still carries loras_selected as transport, but NOTHING
+ * reads it — a silent-drop fossil; the flow lane owns that
+ * vocabulary, this generate-surface gate must not bless it).
+ * compile.py (_PARAM_TRANSLATIONS / _KNOWN_NON_SIG_PARAMS, the old
+ * provenance) is DEAD — no successor translates legacy spellings;
+ * the "catalog_defaults_violations keeps drift out" claim was
+ * fiction too (no such gate exists). This comment is the provenance
+ * now; a key without a consumer cited above is cut on sight.
  */
 const WIRE_RELAXED_KEYS: ReadonlySet<string> = new Set([
-  // _PARAM_TRANSLATIONS — legacy spellings the compile path translates
+  // Real params on their declaring lanes (schemas admit where valid)
   "sampling_steps", "guide_scale", "num_frames", "end_image",
   "image1", "image2", "image3",
-  // _KNOWN_NON_SIG_PARAMS mirror (input slots / wire fields)
+  // Slot / transport vocabulary (slot_kinds + flow injector + renderers)
   "input_image", "first_frame", "last_frame", "input_glb",
-  "prev_motion_artifact", "motion_bg_image", "lanpaint_mask",
+  "prev_motion_artifact", "lanpaint_mask",
   "source_glb", "outfit_glb", "hair_glb", "motion_npz",
   "loras", "controlnets", "modifiers",
   "service", "source", "preset",
   "reference_audio", "reference_text", "rigged_path", "npz_path",
-  "pose_image_b64",
   "export_glb", "export_fbx", "export_usd", "export_obj",
   "detect_mode",
-  "model_name", "t5_name", "vae_name", "vace_name",
-  "loras_selected",
+  "model_name", "t5_name", "vae_name",
 ])
 
 // ── The validator (pure, synchronous) ───────────────────────────────────
@@ -154,10 +170,133 @@ function jsonTypeOf(val: unknown): JsonSchemaType | null {
 }
 
 /**
+ * Coerce a params dict to a family's schema types — the TYPED RUN BODY.
+ * Canonical coercions ONLY (2026-09-05 compile-time incident: form state,
+ * stale drafts and legacy editors carry strings for numbers/booleans and
+ * "" for empty arrays — the class admits the canonical forms, so the
+ * boundary normalizes them instead of refusing what the backend takes):
+ *   - integer/number: numbers kept (integer rejects fractions); a trimmed
+ *     canonical numeric string becomes Number; "" means UNSET (falls into
+ *     the null path: default-or-omit — "" is NEVER 0); anything else is
+ *     a violation (never NaN into the wire).
+ *   - boolean: booleans kept; "true"/"false" become bool; else violation.
+ *   - array: arrays kept; "" becomes [] (the unowned picker's empty
+ *     serialization — the class coerces the same); a non-empty string is
+ *     a violation (ambiguous — never a split-guess).
+ *   - string/object: kept on exact type; anything else is a violation
+ *     (never String()-collapse, never JSON.parse-guess).
+ *   - null / UNSET-"": OMITTED when the field declares a default —
+ *     absent rides the backend default (the class's own semantics:
+ *     explicit null refuses on numerics, so the boundary must never
+ *     POST a null the click gate waved through — 2026-09-06
+ *     frontend-impossible incident). A null/UNSET with NO default is
+ *     kept so the validator refuses it loudly. Untyped fields (the
+ *     loras/mask tile bags) pass null through untouched — the class's
+ *     own None-coercion owns them, and it runs on explicit values.
+ *   - fields with NO declared type (the loras/mask tile bags {}): passed
+ *     through untouched — the compose door owns them.
+ * Returns the typed copy + violations against the TYPED values (empty =
+ * the body is exactly what the class admits — the POST must send THIS
+ * body, never the raw draft).
+ */
+export function coerceParamsToSchema(
+  schema: FamilyParamSchema,
+  params: Record<string, unknown>,
+  opts: { pathPrefix?: string } = {},
+): { params: Record<string, unknown>; violations: ParamContractViolation[] } {
+  const out: ParamContractViolation[] = []
+  const prefix = opts.pathPrefix ? `${opts.pathPrefix}.` : ""
+  const typed: Record<string, unknown> = {}
+  const props = schema.properties ?? {}
+  for (const [key, val] of Object.entries(params)) {
+    const field = props[key]
+    if (!field || !field.type) {
+      typed[key] = val
+      continue
+    }
+    const expected = field.type
+    if (val === null) {
+      // Null with a default = "use the default": OMIT so the POST
+      // carries absent (the class defaults it). POSTing the null
+      // would 400 on every numeric row (explicit null refuses).
+      if ("default" in field) continue
+      typed[key] = val
+      continue
+    }
+    const actual = jsonTypeOf(val)
+    if (actual === expected) {
+      typed[key] = val
+      continue
+    }
+    if (expected === "number" && actual === "integer") {
+      typed[key] = val
+      continue
+    }
+    const coerced = coerceScalar(key, expected, val)
+    if ("value" in coerced) {
+      typed[key] = coerced.value
+      continue
+    }
+    if (coerced.unset) {
+      // "" is UNSET: omit when defaulted (absent rides the default),
+      // keep-as-null when not (the validator refuses it loudly).
+      if (field && "default" in field) continue
+      typed[key] = null
+      continue
+    }
+    out.push({
+      path: `${prefix}${key}`,
+      message: `'${key}': expected ${expected}, got ${actual}`,
+    })
+    typed[key] = val
+  }
+  return { params: typed, violations: out }
+}
+
+/** Canonical scalar coercion. ok = coerced value; unset = "" for a
+ * non-string field (the value is UNSET — the caller routes it into the
+ * null path); neither = refuse loudly. */
+function coerceScalar(
+  _key: string,
+  expected: JsonSchemaType,
+  val: unknown,
+): { ok: true; value: unknown } | { ok: false; unset: boolean } {
+  if (typeof val === "string") {
+    const t = val.trim()
+    if (t === "") {
+      // "" is UNSET for every non-string field — never 0, never false.
+      // ("" for an array IS the picker's empty → [], handled above.)
+      if (expected === "array") return { ok: true, value: [] }
+      if (expected === "string") return { ok: true, value: val }
+      return { ok: false, unset: true }
+    }
+    if (expected === "integer" || expected === "number") {
+      const n = Number(t)
+      if (!Number.isFinite(n)) return { ok: false, unset: false }
+      if (expected === "integer" && !Number.isInteger(n)) {
+        return { ok: false, unset: false }
+      }
+      return { ok: true, value: n }
+    }
+    if (expected === "boolean") {
+      if (t === "true") return { ok: true, value: true }
+      if (t === "false") return { ok: true, value: false }
+      return { ok: false, unset: false }
+    }
+    return { ok: false, unset: false }
+  }
+  return { ok: false, unset: false }
+}
+
+/**
  * Validate a params dict against a family's param schema. Pure + synchronous.
  * Returns violations (empty = clean). A null for a field WITH a default is
- * treated as "use the default" (no violation) — mirrors the backend's
- * None→default coercion. A null for a field WITHOUT a default IS a violation.
+ * treated as "use the default" (no violation) — coerce strips such nulls
+ * to absent before this runs, and absent rides the backend default; the
+ * tolerance here is defense-in-depth for direct callers (the boundary
+ * must NEVER POST a null the class would refuse — explicit null 400s
+ * on every numeric row, so coerce omits, it never forwards). A null for
+ * a field WITHOUT a default IS a violation.
  *
  * WHAT IT CATCHES (the motion_constraints bug class):
  *   - TYPE mismatches: a str param sent an object/number/array.
@@ -167,9 +306,8 @@ function jsonTypeOf(val: unknown): JsonSchemaType | null {
  * WHAT IT LEAVES TO THE BACKEND (no false positives):
  *   - REQUIRED-field presence — the frontend doesn't know which keys are
  *     injected from flow.shared via the consumes axis (comfy_url, model).
- *     The backend's validate_flow_doc_params passes consumes=tuple(
- *     shared.keys()), so it knows. The frontend defers required-checking to
- *     the hard wire gate.
+ *     The backend's card phase-1 compose knows the consumes set, so it
+ *     knows. The frontend defers required-checking to the hard wire gate.
  */
 export function validateParamsAgainstSchema(
   schema: FamilyParamSchema,
@@ -180,15 +318,20 @@ export function validateParamsAgainstSchema(
   const prefix = opts.pathPrefix ? `${opts.pathPrefix}.` : ""
   const props = schema.properties ?? {}
 
-  // EMPTY-ENVELOPE DEFERRAL (F-DEBT 2026-08-21, a LIVE bug): the TS
-  // families take an untyped params dict, so the gateway's derivation
-  // (server-js family_schema.ts) serves faithful envelopes with EMPTY
-  // `properties` + additionalProperties:false. Against that envelope
-  // EVERY key — prompt, steps, cfg — flagged as "unknown parameter" and
-  // the gate THREW on every clean payload (proven: a canonical
-  // {prompt,steps,cfg,width,height,seed} z-image draw produced 6 phantom
-  // violations). A schema that declares NOTHING transmits no param
-  // knowledge; validating against it means validating against nothing.
+  // EMPTY-ENVELOPE DEFERRAL (unknown-family backstop): the backend
+  // derives each boarded family's properties from its card's schema
+  // row (2026-09-05 image-edit incident — the derivation that makes
+  // this gate real; before it EVERY envelope was empty and the gate
+  // deferred always). An envelope that STILL declares nothing means
+  // an unboarded family — no param knowledge to validate against, so
+  // the unknown-key/type checks defer to the backend HARD wire gate
+  // rather than false-positive every key. (History: the TS families'
+  // untyped params dict made server-js family_schema.ts serve EMPTY
+  // envelopes with additionalProperties:false, and the gate THREW on
+  // every clean payload — proven by a canonical z-image draw's 6
+  // phantom violations. A schema that declares NOTHING transmits no
+  // param knowledge; validating against it means validating against
+  // nothing.)
   // The unknown-key/type checks run only when the family actually
   // declared a properties map; the modifier-entry gate (real catalog
   // knowledge) and the backend wire gate still run either way.
@@ -478,7 +621,7 @@ function checkModEntry(
 export async function assertParamsMatchFamilySchema(
   model: string,
   params: Record<string, unknown>,
-): Promise<void> {
+): Promise<Record<string, unknown>> {
   // Resolve model → family via the cached catalog. The catalog loads at
   // boot (main.tsx, before the app renders) — if the cache is still cold
   // here, DEFER to the backend's HARD wire gate instead of fetching from
@@ -494,9 +637,9 @@ export async function assertParamsMatchFamilySchema(
     family = cat?.models?.[model]?.family
     modifiers = cat?.families?.[family ?? ""]?.modifiers
   } catch {
-    return // catalog cache cold at boot — nothing to resolve against yet
+    return params // catalog cache cold at boot — nothing to resolve against yet
   }
-  if (!cat) return // cache not populated — backend gate decides
+  if (!cat) return params // cache not populated — backend gate decides
   if (!family) {
     throw new Error(
       `Parameter validation failed — model '${model}' is not in the ` +
@@ -513,7 +656,7 @@ export async function assertParamsMatchFamilySchema(
   try {
     await loadFamilySchemas()
   } catch {
-    return
+    return params
   }
   const schema = getFamilySchema(family)
   if (!schema) {
@@ -527,13 +670,26 @@ export async function assertParamsMatchFamilySchema(
         `against nothing.`,
       )
     }
-    return // cache cold/failed — defer to the backend wire gate
+    return params // cache cold/failed — defer to the backend wire gate
   }
 
-  const violations = validateParamsAgainstSchema(schema, params)
+  // THE TYPED RUN BODY (2026-09-05 compile-time incident): coerce FIRST
+  // against the class-derived envelope (canonical forms only), then
+  // validate the TYPED values — the mirror must never refuse what the
+  // class admits. The caller POSTs the returned body, never the raw
+  // draft — a gate that passes but sends the untyped original is
+  // false confidence (the backend 400s what the click approved).
+  // (2026-09-06: coerce OMITS null/UNSET-"" for defaulted fields, so a
+  // body that passed the click can never carry a null the class's
+  // explicit-null refusal would 400 at compile.)
+  const coerced = coerceParamsToSchema(schema, params)
+  const violations = [...coerced.violations]
+  violations.push(...validateParamsAgainstSchema(schema, coerced.params))
   // Modifier entries are untyped in the family signature (``list[dict]``);
   // the catalog's declared ``modifiers:`` kinds are their contract — same
   // validator the backend's wire gate runs (validate_modifier_entries).
+  // Entries validate against the RAW draft bags (coercion passes untyped
+  // fields through untouched — same objects either way).
   violations.push(...validateModifierEntries(modifiers, params))
   if (violations.length > 0) {
     const lines = violations.map((v) => `  - ${v.path}: ${v.message}`).join("\n")
@@ -543,4 +699,5 @@ export async function assertParamsMatchFamilySchema(
         `(The backend's wire gate would reject this same request with 400.)`,
     )
   }
+  return coerced.params
 }

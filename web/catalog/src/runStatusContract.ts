@@ -12,9 +12,10 @@
 //     running run,
 //   * stage statuses are NOT enum-constrained (volatile; serverStatusToCard
 //     maps unknowns → pending by design),
-//   * every auxiliary wire field (log_tail, params, flow_doc, ...)
-//     passes through UNVALIDATED — the runner can evolve without breaking
-//     the poll.
+//   * every auxiliary wire field (log_tail, params, ...) passes
+//     through UNVALIDATED — the runner can evolve without breaking
+//     the poll. (flow_doc is NOT auxiliary: no gateway ever emitted
+//     it — the pipe-carry fiction, retired 2026-09-05.)
 //
 // The runner's run-level status vocabulary (runner.py): pending / running /
 // completed / failed / stopped / interrupted / unknown — exactly the

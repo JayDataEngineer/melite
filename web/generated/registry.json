@@ -384,6 +384,21 @@
       "component": true
     },
     {
+      "name": "posterShell",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/posterShell.tsx"
+        }
+      ],
+      "exports": [
+        "PosterShell",
+        "usePosterDataUrl"
+      ],
+      "component": true
+    },
+    {
       "name": "posterStore",
       "type": "registry:lib",
       "package": "@melite/ui",

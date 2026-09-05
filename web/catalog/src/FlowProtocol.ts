@@ -326,7 +326,7 @@ export function setRequiredEmptyResolver(
  * degraded output they can't diagnose.
  *
  * This function is called before EVERY GPU-starting fetch (generate,
- * startChain, startInlineDoc — all now the one /v1/flows/start door) —
+ * startChain — the run doors) —
  * it is the universal gate. It catches:
  *   - `undefined` values (silently dropped by JSON.stringify)
  *   - `NaN` / `Infinity` (serialized as `null` — a value mutation)
@@ -389,6 +389,25 @@ export function assertNoParamDrops(body: Record<string, unknown>): void {
   }
 }
 
+/** Append the door's 400 violation envelope ({violations: [{field,
+ * message}]}) as one line per violation — a bare headline would silently
+ * DROP the dotted paths (the whole point of a refusal is seeing WHICH
+ * param failed). ONE construction, both run doors (compile + start). */
+function violationLines(text: string): string {
+  try {
+    const parsed = JSON.parse(text) as Record<string, unknown>
+    if (Array.isArray(parsed.violations)) {
+      const lines = (parsed.violations as Array<Record<string, unknown>>)
+        .map((v) => `${String(v.field ?? "?")}: ${String(v.message ?? "")}`)
+        .filter((line) => !line.endsWith(": "))
+      if (lines.length > 0) return `\n${lines.join("\n")}`
+    }
+  } catch {
+    /* non-JSON body — describeErrorBody already carries it */
+  }
+  return ""
+}
+
 export async function runCompiledGeneration(
   body: Record<string, unknown>,
   signal?: AbortSignal,
@@ -408,23 +427,57 @@ export async function runCompiledGeneration(
   // the cached catalog, fetches+caches the per-family schema. No-ops when
   // the family/schema can't be resolved (the backend's HARD wire gate is
   // the backstop — a bad shape 400s at the POST regardless).
+  // The gate returns THE TYPED RUN BODY (2026-09-05 compile-time
+  // incident) — the POSTs below send it, never the raw draft. A gate
+  // that passes but ships the untyped original is false confidence.
+  let typedBody: Record<string, unknown> = body
   if (typeof body.model === "string") {
     const { assertParamsMatchFamilySchema } = await import("./familyParamContract")
-    // Strip the envelope fields the backend also strips (model, pipe,
-    // stage_id) — they are not family params and would false-positive as
-    // "unknown parameter" against additionalProperties: false. debug_id
-    // passes through (declared family vocabulary in some families).
+    // Strip the envelope field the backend also strips (model) — it is
+    // not a family param and would false-positive as "unknown
+    // parameter" against additionalProperties: false. debug_id passes
+    // through (declared family vocabulary in some families). (The
+    // 2026-08-10 pipe/stage_id stowaways died with the pipe-carry —
+    // the senders no longer emit them; the gateway refuses them.)
     const paramOnly: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(body)) {
-      if (k === "model" || k === "pipe" || k === "stage_id") continue
+      if (k === "model") continue
       paramOnly[k] = v
     }
-    await assertParamsMatchFamilySchema(body.model, paramOnly)
+    const typedParams = await assertParamsMatchFamilySchema(body.model, paramOnly)
+    // The typed body is EXACTLY {model} + the coerced params — never a
+    // spread-merge with the raw body (2026-09-06 frontend-impossible
+    // incident: coerce OMITS null/UNSET-"" for defaulted fields, and a
+    // {...body, ...typed} merge would resurrect the raw ""/null under
+    // the omitted keys — the click passes, the compile 400s).
+    // typedParams already carries every non-stripped key (unknown and
+    // transport keys pass through untouched), so nothing is lost. The
+    // route stays authoritative last (the route-authority rule: a stale
+    // params.model carrier never overrides the resolved route).
+    typedBody = { ...typedParams, model: body.model }
+    // COMPILE FIRST (pipe-carry retirement, 2026-09-05): the card body
+    // compiles at POST /v1/flows/validate BEFORE any run registers —
+    // the SAME phase-1 chain a start runs (strict body, artifact
+    // sweep, card requires, frozen card row), verbatim refusals, no
+    // queue slot, no GPU claim, no sidecar. A refusal throws HERE and
+    // no run is attempted ("caught compile time, not inference time").
+    const compileRes = await fetch("/v1/flows/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(typedBody),
+      signal,
+    })
+    if (!compileRes.ok) {
+      const text = await compileRes.text()
+      throw new Error(
+        `card failed to compile: HTTP ${compileRes.status}${text ? `: ${describeErrorBody(text)}` : ""}${violationLines(text)}`,
+      )
+    }
   }
   const res = await fetch("/v1/flows/start", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify(typedBody),
     signal,
   })
   const text = await res.text()
@@ -450,23 +503,11 @@ export async function runCompiledGeneration(
     })
     return { kind: "started", runId, status, urls: collectStageUrls(status.stages) }
   }
-  // Violation detail (Phase C, 2026-08-14): the door's 400 envelopes carry
-  // the exact dotted paths ({violations: [{field, message}]}) — a bare
-  // headline would silently DROP them (the whole point of a dry-run is
-  // seeing WHICH param failed). Append every violation as a line.
-  let violationLines = ""
-  try {
-    const parsed = JSON.parse(text) as Record<string, unknown>
-    if (Array.isArray(parsed.violations)) {
-      const lines = (parsed.violations as Array<Record<string, unknown>>)
-        .map((v) => `${String(v.field ?? "?")}: ${String(v.message ?? "")}`)
-        .filter((line) => !line.endsWith(": "))
-      if (lines.length > 0) violationLines = `\n${lines.join("\n")}`
-    }
-  } catch {
-    /* non-JSON body — describeErrorBody already carries it */
-  }
+  // Violation detail (Phase C, 2026-08-14 — one construction, both
+  // doors): the door's 400 envelopes carry the exact dotted paths
+  // ({violations: [{field, message}]}) — appended as lines by the
+  // violationLines helper above.
   throw new Error(
-    `generate failed: HTTP ${res.status}${text ? `: ${describeErrorBody(text)}` : ""}${violationLines}`,
+    `generate failed: HTTP ${res.status}${text ? `: ${describeErrorBody(text)}` : ""}${violationLines(text)}`,
   )
 }

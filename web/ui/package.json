@@ -50,6 +50,7 @@
     "./package.json": "./package.json",
     "./popover": "./src/popover.tsx",
     "./posterStore": "./src/posterStore.ts",
+    "./posterShell": "./src/posterShell.tsx",
     "./scroll-area": "./src/scroll-area.tsx",
     "./select": "./src/select.tsx",
     "./select-menu": "./src/select-menu.tsx",
