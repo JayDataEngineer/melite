@@ -8,6 +8,16 @@ one card, consuming (assembly + bake) on another. This stroke mounts the
 Character Maker INTO the anny studio; the body card's retirement is
 sequenced behind the in-flight pipe-carry stroke (its dir + goldens
 collide) — these walls pin the mount, the seam, and the pending state.
+
+NO LEGACY (operator order, 2026-09-06, verbatim: "NO LEGACY
+CODEBASE.... YOU SNEAK! YOU KEPT IT ALL IN!"): the ray-era Character
+bag (identityModel/coeffs/localChanges/customTargets) rode the merge
+from the body card's bridge — nothing downstream ever read it, the
+family signature never declared it, and every Shape-touched Run died
+at the gate naming all four. REMOVED from the card schema, the model
+writes, the studio caps defaults, and the bridge write-back (the
+bridge scrubs stragglers off existing stages once). The body card's
+own dir + tenant claim retire with the sequenced stroke, not here.
 """
 
 import os
@@ -29,8 +39,13 @@ ANNY_COMPONENT = (
     / "plugins/engines/comfyui/action_cards/3d/anny/ui/studio/component.tsx"
 )
 BODY_CARD = REPO / "plugins/engines/comfyui/action_cards/3d/body"
+STUDIO_CAPS = (
+    REPO / "web/slots/src/studioCapabilities.ts"
+)
 
-# The ray Character bag — the exact keys the body card's bridge wrote.
+# The REMOVED ray Character bag — the exact keys the body card's
+# bridge wrote. No wall may assert these exist anywhere on the anny
+# wire again; the pins below assert ABSENCE.
 CHARACTER_BAG = ("identityModel", "coeffs", "localChanges", "customTargets")
 
 
@@ -49,56 +64,87 @@ def _anny_params():
     return mod.AnnyParams
 
 
-class TestCharacterBagRidesTheCard(unittest.TestCase):
-    """The anny card SCHEMA carries the Character bag — the shape band
-    persists what it sculpts with the draft (retirement-ready seam)."""
+class TestCharacterBagRemoved(unittest.TestCase):
+    """NO LEGACY (2026-09-06): the ray Character bag is GONE from the
+    card schema — the Run gate's verbatim refusal named all four, so
+    absence here is the fix, pinned."""
 
-    def test_bag_fields_exist_with_null_defaults(self):
+    def test_bag_fields_absent(self):
         P = _anny_params()
-        row = P()
         for key in CHARACTER_BAG:
-            self.assertIn(key, P.model_fields, f"AnnyParams lost {key}")
-        self.assertEqual(row.identityModel, "anny")
-        self.assertIsNone(row.coeffs)
-        self.assertIsNone(row.localChanges)
-        self.assertIsNone(row.customTargets)
+            self.assertNotIn(key, P.model_fields,
+                             f"legacy {key} crept back onto AnnyParams")
 
-    def test_bag_values_accepted(self):
-        P = _anny_params()
-        row = P(
-            identityModel="anny",
-            coeffs=[0.5] * 11,
-            localChanges={"chest": 0.2},
-            customTargets={"a": 1.0},
-        )
-        self.assertEqual(len(row.coeffs), 11)
-        self.assertEqual(row.localChanges["chest"], 0.2)
+    def test_bag_values_refused_loud(self):
+        """extra="forbid": a straggler carrying the bag refuses at
+        parse — never silently tolerated."""
+        from pydantic import ValidationError
 
-    def test_turnaround_tolerates_the_bag(self):
-        """A card carrying the bag still parses — the turnaround lane
-        ignores the keys (body still comes from body_glb/base)."""
         P = _anny_params()
-        row = P(
-            body_glb="runs/x/out/body.glb",
-            coeffs=[0.1] * 11,
-            localChanges={"waist": -0.3},
-            customTargets=None,
-        )
+        with self.assertRaises(ValidationError):
+            P(coeffs=[0.5] * 11, localChanges={"chest": 0.2})
+
+    def test_turnaround_row_parses_clean(self):
+        P = _anny_params()
+        row = P(body_glb="runs/x/out/body.glb")
         self.assertEqual(row.body_glb, "runs/x/out/body.glb")
 
 
 class TestWritesDeclared(unittest.TestCase):
-    """E1: the shape band's write-back must be inside studio.writes —
-    onSave writes what the registry declares, nothing more."""
+    """E1: onSave writes what the registry declares, nothing more —
+    and the registry no longer declares the legacy bag."""
 
-    def test_writes_carry_the_bag(self):
+    def test_writes_refuse_the_bag(self):
         cls = load_model_py(ANNY_MODEL_PY, "comfyui")
         writes = cls.studio.writes
         for key in CHARACTER_BAG:
-            self.assertIn(key, writes, f"anny studio.writes lost {key}")
-        # the original seam members survive the merge
+            self.assertNotIn(key, writes,
+                             f"legacy {key} crept back into studio.writes")
+        # the seam members survive the removal
         for key in ("body_glb", "source_image"):
             self.assertIn(key, writes)
+
+
+class TestBridgeScrubsTheBag(unittest.TestCase):
+    """The bridge is hydrate-only: no write-back of the bag, and a
+    one-time scrub lifts stragglers off existing stages (their keys
+    are unwritable AND unclearable otherwise — the schema forbids
+    them, no control touches them). New stages seed no legacy."""
+
+    def setUp(self):
+        self.shape = ANNY_SHAPE.read_text(encoding="utf-8")
+
+    def test_no_write_back_of_the_bag(self):
+        self.assertNotIn(
+            "coeffs: editing.coeffs",
+            self.shape,
+            "the scratchpad→params write-back is back — the Run "
+            "gate refuses these keys",
+        )
+
+    def test_scrub_lifts_stragglers(self):
+        self.assertIn(
+            "scrubLegacyBag",
+            self.shape,
+            "the one-time legacy migration vanished — old stages "
+            "stay refused forever",
+        )
+        for key in CHARACTER_BAG:
+            self.assertIn(
+                f'"{key}"',
+                self.shape,
+                f"LEGACY_BAG_KEYS lost {key} — the scrub must name "
+                "the full removed bag",
+            )
+
+    def test_caps_defaults_seed_no_legacy(self):
+        caps = STUDIO_CAPS.read_text(encoding="utf-8")
+        for key in CHARACTER_BAG:
+            self.assertNotIn(
+                key,
+                caps,
+                f"new stages still seed legacy {key} via caps defaults",
+            )
 
 
 class TestShapeBandSeam(unittest.TestCase):

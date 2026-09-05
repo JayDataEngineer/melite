@@ -59,10 +59,10 @@ export interface StudioCapability {
  *
  *  Mesh is the first entry (the character / body studio — renamed from
  *  "Body" to "Mesh" 2026-08-10: the user thinks in terms of the output
- *  mesh, not the anatomical category). The defaults mirror backend/core/
- *  flows/character.py:140 (identity_model="anny" — the only model that
- *  supports deform). coeffs / localChanges / customTargets start null and
- *  are populated by the Body Studio's mesh + sliders on drill-down. */
+ *  mesh, not the anatomical category). NO legacy bag in the defaults
+ *  (removed 2026-09-06, operator order "NO LEGACY CODEBASE"): new
+ *  stages seed ONLY family-declared params — the ray-era keys used
+ *  to arrive here stillborn and die at the Run gate. */
 export const STUDIO_CAPABILITIES: readonly StudioCapability[] = [
   {
     kind: "studio",
@@ -71,11 +71,6 @@ export const STUDIO_CAPABILITIES: readonly StudioCapability[] = [
     description: "anny · phenotype + morphs",
     genre: "3d",
     studio: "body",
-    defaultParams: {
-      identityModel: "anny",
-      coeffs: null,
-      localChanges: null,
-      customTargets: null,
-    },
+    defaultParams: {},
   },
 ] as const
