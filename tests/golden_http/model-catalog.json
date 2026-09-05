@@ -1,1901 +1,2248 @@
 {
- "capabilities": {
-  "h3-timeline": {
-   "default_family": "h3-timeline",
-   "description": "THE video interface \u2014 multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
-   "families": [
-    "h3-timeline"
-   ],
-   "icon": "video",
-   "kind": "generation",
-   "label": "H3 Timeline",
-   "resolved": {
-    "family": "h3-timeline",
-    "model": "h3-timeline",
-    "params": {}
-   }
-  },
-  "image-edit": {
-   "default_family": "img-edit",
-   "description": "Instruction-driven image editing \u2014 the edit_image interface card boarding the Qwen-Image-Edit 2511 lane (img-edit + qwen-img-edit-2511); each family declares its own lanpaint flavor (required anchor image) and the surface scopes itself",
-   "families": [
-    "img-edit",
-    "qwen-img-edit-2511"
-   ],
-   "icon": "edit",
-   "kind": "generation",
-   "label": "Image Edit",
-   "resolved": {
-    "family": "img-edit",
-    "model": "img-edit",
-    "params": {}
-   }
-  },
-  "image-gen": {
-   "default_family": "krea-2",
-   "description": "Text-to-image generation \u2014 the generate_image interface card boarding krea-2; the family declares its mods (loras) and the surface scopes itself",
-   "families": [
-    "krea-2"
-   ],
-   "icon": "image",
-   "kind": "generation",
-   "label": "Image",
-   "resolved": {
-    "family": "krea-2",
-    "model": "krea-2",
-    "params": {}
-   }
-  },
-  "img-to-mesh": {
-   "default_family": "trellis2-native",
-   "description": "Lift one image into a textured 3D mesh (.glb) \u2014 native ComfyUI TRELLIS.2: birefnet background removal, dino_v3 conditioning, voxel structure, shape + texture stages.",
-   "families": [
-    "trellis2-native"
-   ],
-   "icon": "box",
-   "kind": "generation",
-   "label": "Image \u2192 3D",
-   "resolved": {
-    "family": "trellis2-native",
-    "model": "trellis2-native",
-    "params": {}
-   }
-  },
-  "mask-studio": {
-   "default_family": "mask-studio",
-   "description": "Selection-only mask card: detect people/subjects, refine with SAM3, paint corrections \u2192 mask artifacts for inpaint pipelines.",
-   "families": [
-    "mask-studio"
-   ],
-   "icon": "mask",
-   "kind": "generation",
-   "label": "Mask Studio",
-   "resolved": {
-    "family": "mask-studio",
-    "model": "mask-studio",
-    "params": {}
-   }
-  },
-  "motion": {
-   "default_family": "kimodo",
-   "description": "Text \u2192 3D human motion (SOMA-77 pose NPZ). Chain segments, constrain joints, skin onto a rigged character GLB.",
-   "families": [
-    "kimodo"
-   ],
-   "icon": "motion",
-   "kind": "generation",
-   "label": "Motion",
-   "resolved": {
-    "family": "kimodo",
-    "model": "kimodo",
-    "params": {}
-   }
-  },
-  "music": {
-   "default_family": "music3",
-   "description": "Generate music \u2014 MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
-   "families": [
-    "music3"
-   ],
-   "icon": "music",
-   "kind": "generation",
-   "label": "Music",
-   "resolved": {
-    "family": "music3",
-    "model": "music3",
-    "params": {}
-   }
-  },
-  "sfx": {
-   "default_family": "moss-sfx",
-   "description": "Generate sound effects \u2014 MOSS-SFX v2, describe the SOUND not the scene",
-   "families": [
-    "moss-sfx"
-   ],
-   "icon": "bolt",
-   "kind": "generation",
-   "label": "Sound Effects",
-   "resolved": {
-    "family": "moss-sfx",
-    "model": "moss-sfx",
-    "params": {}
-   }
-  },
-  "tts": {
-   "default_family": "qwen3-tts",
-   "description": "Text-to-speech \u2014 Qwen3-TTS with CustomVoice personas and instruct-text emotion control",
-   "families": [
-    "qwen3-tts",
-    "qwen3-tts-base"
-   ],
-   "icon": "microphone",
-   "kind": "generation",
-   "label": "TTS",
-   "resolved": {
-    "family": "qwen3-tts",
-    "model": "qwen3-tts",
-    "params": {}
-   }
-  },
-  "voice-lock": {
-   "default_family": "qwen3-tts-voicedesign",
-   "description": "Lock a voice persona \u2014 design, export, and reuse .qvoice embeddings for consistent character voices",
-   "families": [
-    "qwen3-tts-voicedesign"
-   ],
-   "icon": "fingerprint",
-   "kind": "generation",
-   "label": "Voice Lock",
-   "resolved": {
-    "family": "qwen3-tts-voicedesign",
-    "model": "qwen3-tts-voicedesign",
-    "params": {}
-   }
-  }
- },
- "cards": [
-  {
-   "description": "Lift one image into a textured 3D mesh (.glb) \u2014 native ComfyUI TRELLIS.2: birefnet background removal, dino_v3 conditioning, voxel structure, shape + texture stages.",
-   "families": [
-    "trellis2-native"
-   ],
-   "genre": "3d",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "img-to-mesh",
-   "label": "Image \u2192 3D",
-   "principles": [],
-   "skills": []
-  },
-  {
-   "description": "Generate music \u2014 MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
-   "families": [
-    "music3"
-   ],
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "music",
-   "label": "Music",
-   "principles": [],
-   "skills": []
-  },
-  {
-   "description": "Generate sound effects \u2014 MOSS-SFX v2, describe the SOUND not the scene",
-   "families": [
-    "moss-sfx"
-   ],
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "sfx",
-   "label": "Sound Effects",
-   "principles": [],
-   "skills": []
-  },
-  {
-   "description": "Text-to-speech \u2014 Qwen3-TTS with CustomVoice personas and instruct-text emotion control",
-   "families": [
-    "qwen3-tts",
-    "qwen3-tts-base"
-   ],
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "tts",
-   "label": "TTS",
-   "principles": [
-    "text is required \u2014 empty text fails",
-    "Use Voice Embedding (.qvoice) for consistent character voices",
-    "Style Instruction controls emotion and delivery",
-    "One line per call \u2014 serial execution for multi-line sequences"
-   ],
-   "skills": []
-  },
-  {
-   "description": "Lock a voice persona \u2014 design, export, and reuse .qvoice embeddings for consistent character voices",
-   "families": [
-    "qwen3-tts-voicedesign"
-   ],
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "voice-lock",
-   "label": "Voice Lock",
-   "principles": [],
-   "skills": []
-  },
-  {
-   "description": "Instruction-driven image editing \u2014 the edit_image interface card boarding the Qwen-Image-Edit 2511 lane (img-edit + qwen-img-edit-2511); each family declares its own lanpaint flavor (required anchor image) and the surface scopes itself",
-   "families": [
-    "img-edit",
-    "qwen-img-edit-2511"
-   ],
-   "genre": "image",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "image-edit",
-   "label": "Image Edit",
-   "principles": [
-    "input_image is required \u2014 the edit is anchored on it (the lanpaint flavor declares it; input_param: input_artifact, slots image1..image3)",
-    "Qwen-Image-Edit uses low CFG (flow-matching) \u2014 the Guidance Scale slider tops out at 10.0",
-    "A lanpaint_mask alongside input_image patches the model with the DiffSynth inpaint ControlNet",
-    "Region Mode controls how the mask is honored: auto / crop_stitch / full_frame",
-    "Mask prep (grow/feather/threshold/invert) uses the same host-side chain the Inpaint card uses",
-    "Iterate HERE, not in video \u2014 an edit costs seconds, a render minutes; name what changes, state the rest as unchanged"
-   ],
-   "skills": []
-  },
-  {
-   "description": "Text-to-image generation \u2014 the generate_image interface card boarding krea-2; the family declares its mods (loras) and the surface scopes itself",
-   "families": [
-    "krea-2"
-   ],
-   "genre": "image",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "image-gen",
-   "label": "Image",
-   "principles": [
-    "prompt is required \u2014 an empty/whitespace prompt is rejected loud, never sampled with empty conditioning",
-    "Defaults are shape, not value: resolution/steps/cfg come from the model folder (defaults:/presets), merged at serve time",
-    "Sampler and scheduler option lists resolve from the ONE vocabulary (media.comfyui.sampler_vocab) \u2014 never hand-copied",
-    "A preset fills untouched fields; values you have set win",
-    "Mods are model-level declarations: lanpaint rides the families that declare it (anima, z-image) \u2014 input_image + lanpaint_mask switch the builder to LanPaintKSampler; loras ride krea-2 (apply on Turbo, train on Raw)",
-    "Mask prep (grow/feather/threshold/invert) and outpaint pads are applied host-side before the run \u2014 no silent param drops"
-   ],
-   "skills": []
-  },
-  {
-   "description": "Selection-only mask card: detect people/subjects, refine with SAM3, paint corrections \u2192 mask artifacts for inpaint pipelines.",
-   "families": [
-    "mask-studio"
-   ],
-   "genre": "image",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "mask-studio",
-   "label": "Mask Studio",
-   "principles": [],
-   "skills": []
-  },
-  {
-   "description": "Text \u2192 3D human motion (SOMA-77 pose NPZ). Chain segments, constrain joints, skin onto a rigged character GLB.",
-   "families": [
-    "kimodo"
-   ],
-   "genre": "motion",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "motion",
-   "label": "Motion",
-   "principles": [],
-   "skills": []
-  },
-  {
-   "description": "THE video interface \u2014 multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
-   "families": [
-    "h3-timeline"
-   ],
-   "genre": "video",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "h3-timeline",
-   "label": "H3 Timeline",
-   "principles": [
-    "Describe MOTION and SOUND together \u2014 H3 generates both in one pass",
-    "Draft at 768x448x56f (~2.3s); produce at 1344x768x124f (~5.2s)",
-    "Length snaps to the 17k+5 frame grid at 24fps",
-    "For timelines: repeat the ambient soundscape verbatim in every window; add one new layer where the story needs it",
-    "Same seed across a shot's re-rolls keeps the world texture",
-    "SLA at sparsity 0.90 gives ~1.75x speedup with no quality loss \u2014 use it by default"
-   ],
-   "skills": []
-  }
- ],
- "families": {
-  "ace-step": {
-   "genre": "audio",
-   "label": "ACE-Step 1.5 Turbo Q8"
-  },
-  "ace-step-base": {
-   "genre": "audio",
-   "label": "ACE-Step 1.5 Base Q8"
-  },
-  "ace-step-base-bf16": {
-   "genre": "audio",
-   "label": "ACE-Step 1.5 Base BF16"
-  },
-  "ace-step-bf16": {
-   "genre": "audio",
-   "label": "ACE-Step 1.5 Turbo BF16"
-  },
-  "ace-step-sft": {
-   "genre": "audio",
-   "label": "ACE-Step 1.5 SFT Q8"
-  },
-  "ace-step-xl": {
-   "genre": "audio",
-   "label": "ACE-Step 1.5 XL Turbo"
-  },
-  "anima": {
-   "genre": "image",
-   "label": "Anima"
-  },
-  "auto-detect": {
-   "genre": "image",
-   "label": "Auto Detect"
-  },
-  "basic_resize": {
-   "genre": "image",
-   "label": "Basic Resize"
-  },
-  "concat": {
-   "genre": "video",
-   "label": "Media Merge"
-  },
-  "dwpose": {
-   "genre": "",
-   "label": "DWPose"
-  },
-  "flux-fill-dev": {
-   "genre": "image",
-   "label": "Inpaint"
-  },
-  "gem_soma": {
-   "genre": "",
-   "label": "SOMA"
-  },
-  "h3": {
-   "genre": "video",
-   "label": "MiniMax H3"
-  },
-  "h3-keyframe": {
-   "genre": "video",
-   "label": "MiniMax H3 keyframe-to-video"
-  },
-  "h3-timeline": {
-   "genre": "video",
-   "label": "H3 Timeline (multi-window)",
-   "studio": {
-    "layout": "studio",
-    "owns_params": true,
-    "size": "huge",
-    "tenant": "video/h3-timeline",
-    "writes": [
-     "calls",
-     "keyframes",
-     "preset",
-     "fps",
-     "seed",
-     "audio_mode",
-     "continuity",
-     "shift_video",
-     "shift_audio",
-     "sampler",
-     "scheduler",
-     "sampling_steps",
-     "width",
-     "height",
-     "h3_attention",
-     "h3_sage_attention",
-     "h3_fp16_accumulation",
-     "h3_torch_compile",
-     "sharpen_enabled",
-     "sharpen_strength",
-     "interpolate_enabled",
-     "interpolate_multiplier",
-     "audio_stem",
-     "lora_name",
-     "lora_strength",
-     "seam_carry",
-     "document"
-    ]
-   }
-  },
-  "ideogram": {
-   "genre": "image",
-   "label": "Ideogram",
-   "studio": {
-    "layout": "studio",
-    "owns_params": false,
-    "size": "normal",
-    "tenant": "image/canvas-ideogram",
-    "writes": []
-   }
-  },
-  "img-edit": {
-   "genre": "image",
-   "label": "Qwen Image Edit 2511"
-  },
-  "input": {
-   "genre": "image",
-   "label": "Input Prep"
-  },
-  "kimodo": {
-   "genre": "motion",
-   "label": "Kimodo (text \u2192 motion)"
-  },
-  "krea-2": {
-   "genre": "image",
-   "label": "Krea 2"
-  },
-  "latentsync": {
-   "genre": "",
-   "label": "LatentSync"
-  },
-  "ltx-2-3": {
-   "genre": "video",
-   "label": "LTX 2.3"
-  },
-  "ltx-director-distilled": {
-   "genre": "video",
-   "label": "LTX 2.3"
-  },
-  "mask-studio": {
-   "genre": "image",
-   "label": "Mask",
-   "studio": {
-    "layout": "studio",
-    "owns_params": true,
-    "size": "normal",
-    "tenant": "mask/mask_studio",
-    "writes": [
-     "input_image",
-     "detect_mode",
-     "detection_threshold",
-     "sam_threshold",
-     "sam_dilation",
-     "output_mode",
-     "sam3_prompt",
-     "export_boxes",
-     "export_face",
-     "export_hands",
-     "export_body",
-     "export_paint",
-     "paint_mask",
-     "instance_filter",
-     "max_instances",
-     "outputs",
-     "roi"
-    ]
-   }
-  },
-  "mesh_refine": {
-   "genre": "3d",
-   "label": "UltraShape Mesh Refine"
-  },
-  "moss-sfx": {
-   "genre": "audio",
-   "label": "MOSS-SFX v2"
-  },
-  "moss-tts": {
-   "genre": "audio",
-   "label": "MOSS-TTS Nano 100M"
-  },
-  "moss-tts-local": {
-   "genre": "audio",
-   "label": "MOSS-TTS Local v1.5"
-  },
-  "moss_voicegenerator": {
-   "genre": "audio",
-   "label": "MOSS VoiceGenerator"
-  },
-  "music3": {
-   "genre": "audio",
-   "label": "MiniMax Music 3"
-  },
-  "pixal3d": {
-   "genre": "3d",
-   "label": "Pixal3D"
-  },
-  "pixel_upscale": {
-   "genre": "image",
-   "label": "Pixel Upscaler"
-  },
-  "qwen-img-edit-2511": {
-   "genre": "image",
-   "label": "Image Edit"
-  },
-  "qwen3-tts": {
-   "genre": "audio",
-   "label": "Qwen3-TTS CustomVoice 0.6B"
-  },
-  "qwen3-tts-base": {
-   "genre": "audio",
-   "label": "Qwen3-TTS Base 0.6B"
-  },
-  "qwen3-tts-voicedesign": {
-   "genre": "audio",
-   "label": "Qwen3-TTS VoiceDesign 1.7B"
-  },
-  "rtx-vsr": {
-   "genre": "video",
-   "label": "Video Upscale"
-  },
-  "scail2-animate": {
-   "genre": "video",
-   "label": "SCAIL-2"
-  },
-  "see-through": {
-   "genre": "",
-   "label": "See-Through"
-  },
-  "seedvr2_ema": {
-   "genre": "image",
-   "label": "SeedVR2 Upscaler"
-  },
-  "somax": {
-   "genre": "3d",
-   "label": "SOMAX",
-   "studio": {
-    "layout": "studio",
-    "owns_params": false,
-    "size": "normal",
-    "tenant": "3d/body",
-    "writes": []
-   }
-  },
-  "step1x_texture": {
-   "genre": "3d",
-   "label": "Step1X-3D Texture"
-  },
-  "stretchy-rig": {
-   "genre": "",
-   "label": "Stretchy Rig"
-  },
-  "transfer_rig": {
-   "genre": "3d",
-   "label": "Transfer Rig"
-  },
-  "trellis2-native": {
-   "genre": "3d",
-   "label": "TRELLIS.2 Native"
-  },
-  "trellis_native": {
-   "genre": "3d",
-   "label": "Trellis (Native)"
-  },
-  "txt2music": {
-   "genre": "audio",
-   "label": "MiniMax Music 3"
-  },
-  "wan-vace": {
-   "genre": "video",
-   "label": "Wan2.2 VACE"
-  },
-  "z-image": {
-   "genre": "image",
-   "label": "Z-Image"
-  }
- },
- "input_vocabulary": {
-  "slot_kinds": {
-   "end_image": "image",
-   "first_frame": "image",
-   "image1": "image",
-   "image2": "image",
-   "image3": "image",
-   "input_glb": "glb",
-   "input_image": "image",
-   "input_mask": "mask",
-   "lanpaint_mask": "mask",
-   "last_frame": "image",
-   "prev_motion_artifact": "motion",
-   "preview_glb": "glb",
-   "reference_audio": "audio",
-   "reference_image": "image",
-   "source_glb": "glb",
-   "source_image": "image",
-   "voice_file": "voice"
-  },
-  "slots": [
-   "input_image",
-   "image1",
-   "image2",
-   "image3",
-   "reference_image",
-   "end_image",
-   "first_frame",
-   "last_frame",
-   "lanpaint_mask",
-   "input_mask",
-   "source_image",
-   "source_glb",
-   "input_glb",
-   "prev_motion_artifact",
-   "preview_glb",
-   "reference_audio",
-   "voice_file"
+  "capabilities": {
+    "anny": {
+      "default_family": "anny",
+      "description": "Assemble a character \u2014 composite body/hair/outfit GLBs, render the 8-view turnaround, segment a source photo into part sprites.",
+      "families": [
+        "anny"
+      ],
+      "icon": "person",
+      "kind": "generation",
+      "label": "Anny",
+      "resolved": {
+        "family": "anny",
+        "model": "anny",
+        "params": {}
+      }
+    },
+    "forge": {
+      "default_family": "anycreature",
+      "description": "Breed a creature spec \u2192 validate \u2192 compile to GLB",
+      "families": [
+        "anycreature"
+      ],
+      "icon": "creature",
+      "kind": "generation",
+      "label": "Creature Forge",
+      "resolved": {
+        "family": "anycreature",
+        "model": "anycreature",
+        "params": {}
+      }
+    },
+    "h3-timeline": {
+      "default_family": "h3-timeline",
+      "description": "THE video interface \u2014 multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
+      "families": [
+        "h3-timeline"
+      ],
+      "icon": "video",
+      "kind": "generation",
+      "label": "H3 Timeline",
+      "resolved": {
+        "family": "h3-timeline",
+        "model": "h3-timeline",
+        "params": {}
+      }
+    },
+    "ideogram4": {
+      "default_family": "ideogram",
+      "description": "Typography-aware text-to-image with clean, legible text rendering.",
+      "families": [
+        "ideogram"
+      ],
+      "icon": "image",
+      "kind": "generation",
+      "label": "Ideogram",
+      "resolved": {
+        "family": "ideogram",
+        "model": "ideogram",
+        "params": {}
+      }
+    },
+    "image-edit": {
+      "default_family": "img-edit",
+      "description": "Instruction-driven image editing \u2014 the edit_image interface card boarding the Qwen-Image-Edit 2511 lane (img-edit + qwen-img-edit-2511); each family declares its own lanpaint flavor (required anchor image) and the surface scopes itself",
+      "families": [
+        "img-edit",
+        "qwen-img-edit-2511"
+      ],
+      "icon": "edit",
+      "kind": "generation",
+      "label": "Image Edit",
+      "resolved": {
+        "family": "img-edit",
+        "model": "img-edit",
+        "params": {}
+      }
+    },
+    "image-gen": {
+      "default_family": "krea-2",
+      "description": "Text-to-image generation \u2014 the generate_image interface card boarding krea-2; the family declares its mods (loras) and the surface scopes itself",
+      "families": [
+        "krea-2",
+        "z-image",
+        "anima"
+      ],
+      "icon": "image",
+      "kind": "generation",
+      "label": "Image",
+      "resolved": {
+        "family": "krea-2",
+        "model": "krea-2",
+        "params": {}
+      }
+    },
+    "img-to-mesh": {
+      "default_family": "trellis2-native",
+      "description": "The 3D lane \u2014 lift one image into a textured mesh (.glb) on native TRELLIS.2, or copy a rig onto a target GLB (transfer_rig); one surface, one arm per family.",
+      "families": [
+        "trellis2-native",
+        "transfer_rig"
+      ],
+      "icon": "box",
+      "kind": "generation",
+      "label": "Image \u2192 3D",
+      "resolved": {
+        "family": "trellis2-native",
+        "model": "trellis2-native",
+        "params": {}
+      }
+    },
+    "mask-studio": {
+      "default_family": "mask-studio",
+      "description": "Selection-only mask card: detect people/subjects, refine with SAM3, paint corrections \u2192 mask artifacts for inpaint flows.",
+      "families": [
+        "mask-studio"
+      ],
+      "icon": "mask",
+      "kind": "generation",
+      "label": "Mask Studio",
+      "resolved": {
+        "family": "mask-studio",
+        "model": "mask-studio",
+        "params": {}
+      }
+    },
+    "motion": {
+      "default_family": "kimodo",
+      "description": "Text \u2192 3D human motion (SOMA-77 pose NPZ). Chain segments, constrain joints, skin onto a rigged character GLB.",
+      "families": [
+        "kimodo"
+      ],
+      "icon": "motion",
+      "kind": "generation",
+      "label": "Motion",
+      "resolved": {
+        "family": "kimodo",
+        "model": "kimodo",
+        "params": {}
+      }
+    },
+    "music": {
+      "default_family": "ace-step-xl",
+      "description": "audio.cpp music lane \u2014 ACE-Step 1.5 XL / SFT or MiniMax Music 3 text-to-music (the audio_cpp binding layer calls audiocpp_cli with the family + model name from each model row)",
+      "families": [
+        "ace-step-xl",
+        "ace-step-sft",
+        "txt2music"
+      ],
+      "icon": "music",
+      "kind": "generation",
+      "label": "Music (audio_cpp)",
+      "resolved": {
+        "family": "ace-step-xl",
+        "model": "ace-step-xl",
+        "params": {}
+      }
+    },
+    "quad-remesh": {
+      "default_family": "autoremesher",
+      "description": "High-poly mesh \u2192 clean quad topology",
+      "families": [
+        "autoremesher"
+      ],
+      "icon": "mesh",
+      "kind": "generation",
+      "label": "Quad Remesh",
+      "resolved": {
+        "family": "autoremesher",
+        "model": "autoremesher",
+        "params": {}
+      }
+    },
+    "sfx": {
+      "default_family": "moss-sfx",
+      "description": "Generate sound effects \u2014 MOSS-SFX v2, describe the SOUND not the scene",
+      "families": [
+        "moss-sfx"
+      ],
+      "icon": "bolt",
+      "kind": "generation",
+      "label": "Sound Effects",
+      "resolved": {
+        "family": "moss-sfx",
+        "model": "moss-sfx",
+        "params": {}
+      }
+    },
+    "text-to-motion": {
+      "default_family": "soma",
+      "description": "Text \u2192 skeleton animation (SMPL-X / SOMA / G1)",
+      "families": [
+        "soma",
+        "g1",
+        "smplx"
+      ],
+      "icon": "motion",
+      "kind": "generation",
+      "label": "Text to Motion",
+      "resolved": {
+        "family": "soma",
+        "model": "soma",
+        "params": {}
+      }
+    },
+    "tts": {
+      "default_family": "qwen3-tts",
+      "description": "Text-to-speech \u2014 Qwen3-TTS with CustomVoice personas and instruct-text emotion control",
+      "families": [
+        "qwen3-tts",
+        "qwen3-tts-base"
+      ],
+      "icon": "microphone",
+      "kind": "generation",
+      "label": "TTS",
+      "resolved": {
+        "family": "qwen3-tts",
+        "model": "qwen3-tts",
+        "params": {}
+      }
+    },
+    "upscale-tools": {
+      "default_family": "seedvr2_ema",
+      "description": "Diffusion upscale (SeedVR2-3B fp16) \u2014 the hidden tool card; also home of the consumed tool fragments (resize, pixel-upscale, rtx-vsr, concat, input)",
+      "families": [
+        "seedvr2_ema"
+      ],
+      "icon": "maximize",
+      "kind": "generation",
+      "label": "Upscale Tools",
+      "resolved": {
+        "family": "seedvr2_ema",
+        "model": "seedvr2_ema",
+        "params": {}
+      }
+    },
+    "video-gen": {
+      "default_family": "wan-vace",
+      "description": "Text/reference-to-video \u2014 the generate_video interface card boarding wan-vace and scail2-animate; one surface, one arm per family",
+      "families": [
+        "wan-vace",
+        "scail2-animate"
+      ],
+      "icon": "video",
+      "kind": "generation",
+      "label": "Video",
+      "resolved": {
+        "family": "wan-vace",
+        "model": "wan-vace",
+        "params": {}
+      }
+    },
+    "voice-lock": {
+      "default_family": "qwen3-tts-voicedesign",
+      "description": "Lock a voice persona \u2014 design, export, and reuse .qvoice embeddings for consistent character voices",
+      "families": [
+        "qwen3-tts-voicedesign"
+      ],
+      "icon": "fingerprint",
+      "kind": "generation",
+      "label": "Voice Lock",
+      "resolved": {
+        "family": "qwen3-tts-voicedesign",
+        "model": "qwen3-tts-voicedesign",
+        "params": {}
+      }
+    }
+  },
+  "cards": [
+    {
+      "description": "Assemble a character \u2014 composite body/hair/outfit GLBs, render the 8-view turnaround, segment a source photo into part sprites.",
+      "families": [
+        "anny"
+      ],
+      "genre": "3d",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "anny",
+      "label": "Anny",
+      "principles": [],
+      "skills": []
+    },
+    {
+      "description": "The 3D lane \u2014 lift one image into a textured mesh (.glb) on native TRELLIS.2, or copy a rig onto a target GLB (transfer_rig); one surface, one arm per family.",
+      "families": [
+        "trellis2-native",
+        "transfer_rig"
+      ],
+      "genre": "3d",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "img-to-mesh",
+      "label": "Image \u2192 3D",
+      "principles": [],
+      "skills": []
+    },
+    {
+      "description": "Generate music \u2014 MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
+      "families": [
+        "music3"
+      ],
+      "genre": "audio",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "music",
+      "label": "Music",
+      "principles": [],
+      "skills": []
+    },
+    {
+      "description": "Generate sound effects \u2014 MOSS-SFX v2, describe the SOUND not the scene",
+      "families": [
+        "moss-sfx"
+      ],
+      "genre": "audio",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "sfx",
+      "label": "Sound Effects",
+      "principles": [],
+      "skills": []
+    },
+    {
+      "description": "Text-to-speech \u2014 Qwen3-TTS with CustomVoice personas and instruct-text emotion control",
+      "families": [
+        "qwen3-tts",
+        "qwen3-tts-base"
+      ],
+      "genre": "audio",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "tts",
+      "label": "TTS",
+      "principles": [
+        "text is required \u2014 empty text fails",
+        "Use Voice Embedding (.qvoice) for consistent character voices",
+        "Style Instruction controls emotion and delivery",
+        "One line per call \u2014 serial execution for multi-line sequences"
+      ],
+      "skills": []
+    },
+    {
+      "description": "Lock a voice persona \u2014 design, export, and reuse .qvoice embeddings for consistent character voices",
+      "families": [
+        "qwen3-tts-voicedesign"
+      ],
+      "genre": "audio",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "voice-lock",
+      "label": "Voice Lock",
+      "principles": [],
+      "skills": []
+    },
+    {
+      "description": "Typography-aware text-to-image with clean, legible text rendering.",
+      "families": [
+        "ideogram"
+      ],
+      "genre": "image",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "ideogram4",
+      "label": "Ideogram",
+      "principles": [
+        "prompt is required \u2014 an empty/whitespace prompt is rejected loud, never sampled with empty conditioning",
+        "The negative channel is the zeroed conditioning (ConditioningZeroOut) \u2014 the official family graph has no negative text input",
+        "mu/std ride the model defaults (merged at serve time); the universal form does not carry them as fields",
+        "Sampler option lists resolve from the ONE vocabulary \u2014 never hand-copied"
+      ],
+      "skills": []
+    },
+    {
+      "description": "Instruction-driven image editing \u2014 the edit_image interface card boarding the Qwen-Image-Edit 2511 lane (img-edit + qwen-img-edit-2511); each family declares its own lanpaint flavor (required anchor image) and the surface scopes itself",
+      "families": [
+        "img-edit",
+        "qwen-img-edit-2511"
+      ],
+      "genre": "image",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "image-edit",
+      "label": "Image Edit",
+      "principles": [
+        "input_image is required \u2014 the edit is anchored on it (the lanpaint flavor declares it; input_param: input_artifact, slots image1..image3)",
+        "Qwen-Image-Edit uses low CFG (flow-matching) \u2014 the Guidance Scale slider tops out at 10.0",
+        "A lanpaint_mask alongside input_image patches the model with the DiffSynth inpaint ControlNet",
+        "Region Mode controls how the mask is honored: auto / crop_stitch / full_frame",
+        "Mask prep (grow/feather/threshold/invert) uses the same host-side chain the Inpaint card uses",
+        "Iterate HERE, not in video \u2014 an edit costs seconds, a render minutes; name what changes, state the rest as unchanged"
+      ],
+      "skills": []
+    },
+    {
+      "description": "Text-to-image generation \u2014 the generate_image interface card boarding krea-2; the family declares its mods (loras) and the surface scopes itself",
+      "families": [
+        "krea-2",
+        "z-image",
+        "anima"
+      ],
+      "genre": "image",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "image-gen",
+      "label": "Image",
+      "principles": [
+        "prompt is required \u2014 an empty/whitespace prompt is rejected loud, never sampled with empty conditioning",
+        "Defaults are shape, not value: resolution/steps/cfg come from the model folder (defaults:/presets), merged at serve time",
+        "Sampler and scheduler option lists resolve from the ONE vocabulary (media.comfyui.sampler_vocab) \u2014 never hand-copied",
+        "A preset fills untouched fields; values you have set win",
+        "Mods are model-level declarations: lanpaint rides the families that declare it (anima, z-image) \u2014 input_image + lanpaint_mask switch the builder to LanPaintKSampler; loras ride krea-2 (apply on Turbo, train on Raw)",
+        "Mask prep (grow/feather/threshold/invert) and outpaint pads are applied host-side before the run \u2014 no silent param drops"
+      ],
+      "skills": []
+    },
+    {
+      "description": "Selection-only mask card: detect people/subjects, refine with SAM3, paint corrections \u2192 mask artifacts for inpaint flows.",
+      "families": [
+        "mask-studio"
+      ],
+      "genre": "image",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "mask-studio",
+      "label": "Mask Studio",
+      "principles": [],
+      "skills": []
+    },
+    {
+      "description": "Diffusion upscale (SeedVR2-3B fp16) \u2014 the hidden tool card; also home of the consumed tool fragments (resize, pixel-upscale, rtx-vsr, concat, input)",
+      "families": [
+        "seedvr2_ema"
+      ],
+      "genre": "image",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "upscale-tools",
+      "label": "Upscale Tools",
+      "principles": [
+        "A tool lane boards only with real weight facts \u2014 the weightless fragments render as consumed arms, never as phantom submit options",
+        "SeedVR2 restores detail (diffusion); plain resize resamples pixels \u2014 pick by intent, not by size",
+        "resolution is the TARGET short side (1080 = FHD rail); max_resolution is the hard ceiling the lane refuses past",
+        "Defaults are shape, not value: filenames and knobs come from the model folder, merged at serve time",
+        "rtx-vsr is NVIDIA-SDK-only: the arm is compose-truth, execution needs the RTX stack"
+      ],
+      "skills": []
+    },
+    {
+      "description": "Text \u2192 3D human motion (SOMA-77 pose NPZ). Chain segments, constrain joints, skin onto a rigged character GLB.",
+      "families": [
+        "kimodo"
+      ],
+      "genre": "motion",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "motion",
+      "label": "Motion",
+      "principles": [],
+      "skills": []
+    },
+    {
+      "description": "THE video interface \u2014 multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
+      "families": [
+        "h3-timeline"
+      ],
+      "genre": "video",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "h3-timeline",
+      "label": "H3 Timeline",
+      "principles": [
+        "Describe MOTION and SOUND together \u2014 H3 generates both in one pass",
+        "Draft at 768x448x56f (~2.3s); produce at 1344x768x124f (~5.2s)",
+        "Length snaps to the 17k+5 frame grid at 24fps",
+        "For timelines: repeat the ambient soundscape verbatim in every window; add one new layer where the story needs it",
+        "Same seed across a shot's re-rolls keeps the world texture",
+        "SLA at sparsity 0.90 gives ~1.75x speedup with no quality loss \u2014 use it by default"
+      ],
+      "skills": []
+    },
+    {
+      "description": "Text/reference-to-video \u2014 the generate_video interface card boarding wan-vace and scail2-animate; one surface, one arm per family",
+      "families": [
+        "wan-vace",
+        "scail2-animate"
+      ],
+      "genre": "video",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "video-gen",
+      "label": "Video",
+      "principles": [
+        "prompt is required \u2014 an empty/whitespace prompt is rejected loud, never sampled with empty conditioning",
+        "The reference image anchors identity/scene \u2014 prompt the MOTION, not the subject",
+        "Wan frames are 4n+1 (49 \u2248 2s at 24fps); SCAIL-2 drives a character from a pose video",
+        "Defaults are shape, not value: resolution/steps/cfg come from the model folder, merged at serve time",
+        "A family boards only when it can feed truthfully \u2014 lane facts + the arm template, no phantom options"
+      ],
+      "skills": []
+    },
+    {
+      "description": "Breed a creature spec \u2192 validate \u2192 compile to GLB",
+      "families": [
+        "anycreature"
+      ],
+      "genre": "3d",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "forge",
+      "label": "Creature Forge",
+      "principles": [
+        "The spec is the creature \u2014 joints/chains/volumes/parts/anims as JSON",
+        "volumes + parts are the structural floor; everything else sharpens",
+        "build:rigid for robots and crystals, default for flesh",
+        "role presets set budget and thresholds \u2014 boss costs more"
+      ],
+      "skills": []
+    },
+    {
+      "description": "audio.cpp music lane \u2014 ACE-Step 1.5 XL / SFT or MiniMax Music 3 text-to-music (the audio_cpp binding layer calls audiocpp_cli with the family + model name from each model row)",
+      "families": [
+        "ace-step-xl",
+        "ace-step-sft",
+        "txt2music"
+      ],
+      "genre": "audio",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "music",
+      "label": "Music (audio_cpp)",
+      "principles": [
+        "family + model is the audiocpp_cli invocation pair \u2014 pick by intent, not by parameter",
+        "XL is the flagship (bf16, best quality); SFT is the finetune (q8, lighter VRAM); txt2music is lyrics-aware",
+        "duration is the target length in seconds (default 120); sample_rate defaults to 44.1kHz",
+        "prompt is the music caption (genre/era/tempos/instruments); lyrics is the lyric block (txt2music only)"
+      ],
+      "skills": []
+    },
+    {
+      "description": "High-poly mesh \u2192 clean quad topology",
+      "families": [
+        "autoremesher"
+      ],
+      "genre": "3d",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "quad-remesh",
+      "label": "Quad Remesh",
+      "principles": [
+        "target_quads is the budget \u2014 lower is cleaner, higher keeps detail",
+        "sharp_edge below 90 preserves creases; above smooths them",
+        "adaptivity above 1 concentrates quads at curvature",
+        "Feed it a dense scan or TRELLIS output; it returns clean quads"
+      ],
+      "skills": []
+    },
+    {
+      "description": "Text \u2192 skeleton animation (SMPL-X / SOMA / G1)",
+      "families": [
+        "soma",
+        "g1",
+        "smplx"
+      ],
+      "genre": "motion",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "text-to-motion",
+      "label": "Text to Motion",
+      "principles": [
+        "Describe MOTION, not pose \u2014 \"walks forward, then crouches\" beats \"a person standing\"",
+        "soma (30j) is the default; g1 (34j) for the Unitree rig; smplx (22j) is licence-gated",
+        "SMPL-X needs your own checkpoint (NVIDIA internal-R&D licence \u2014 no distribution)",
+        "Same seed + same prompt = same motion; seed -1 hashes the prompt"
+      ],
+      "skills": []
+    }
   ],
-  "undeclared_slots": [
-   "lanpaint_mask"
-  ]
- },
- "models": {
-  "ace-step": {
-   "defaults": {
-    "backend": "cuda"
-   },
-   "description": "ACE-Step 1.5 turbo q8 music generation",
-   "engine": "audio_cpp",
-   "family": "ace-step",
-   "form": "form_music",
-   "genre": "audio",
-   "has_agent": true,
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "ace-step",
-   "label": "ACE-Step 1.5 Turbo Q8",
-   "loras": [],
-   "source": {
-    "filename": "ACE-Step1.5-GGUF",
-    "repo_id": "audio-cpp/audio.cpp-gguf",
-    "type": "huggingface"
-   }
+  "families": {
+    "ace-step": {
+      "genre": "audio",
+      "label": "ACE-Step 1.5 Turbo Q8"
+    },
+    "ace-step-base": {
+      "genre": "audio",
+      "label": "ACE-Step 1.5 Base Q8"
+    },
+    "ace-step-base-bf16": {
+      "genre": "audio",
+      "label": "ACE-Step 1.5 Base BF16"
+    },
+    "ace-step-bf16": {
+      "genre": "audio",
+      "label": "ACE-Step 1.5 Turbo BF16"
+    },
+    "ace-step-sft": {
+      "genre": "audio",
+      "label": "ACE-Step 1.5 SFT (Q8)"
+    },
+    "ace-step-xl": {
+      "genre": "audio",
+      "label": "ACE-Step 1.5 XL Turbo"
+    },
+    "anima": {
+      "genre": "image",
+      "label": "Anima"
+    },
+    "anny": {
+      "genre": "3d",
+      "label": "Anny (character assembly)"
+    },
+    "anycreature": {
+      "genre": "3d",
+      "label": "anyCreature"
+    },
+    "auto-detect": {
+      "genre": "image",
+      "label": "Auto Detect"
+    },
+    "autoremesher": {
+      "genre": "3d",
+      "label": "AutoRemesher"
+    },
+    "basic_resize": {
+      "genre": "image",
+      "label": "Basic Resize"
+    },
+    "concat": {
+      "genre": "video",
+      "label": "Media Merge"
+    },
+    "dwpose": {
+      "genre": "other",
+      "label": "DWPose"
+    },
+    "flux-fill-dev": {
+      "genre": "image",
+      "label": "Inpaint"
+    },
+    "g1": {
+      "genre": "motion",
+      "label": "Kimodo G1 34-joint"
+    },
+    "gem_soma": {
+      "genre": "other",
+      "label": "SOMA"
+    },
+    "h3": {
+      "genre": "video",
+      "label": "MiniMax H3"
+    },
+    "h3-keyframe": {
+      "genre": "video",
+      "label": "MiniMax H3 keyframe-to-video"
+    },
+    "h3-timeline": {
+      "genre": "video",
+      "label": "H3 Timeline (multi-window)",
+      "studio": {
+        "layout": "studio",
+        "owns_params": true,
+        "size": "huge",
+        "tenant": "video/h3-timeline",
+        "writes": [
+          "calls",
+          "keyframes",
+          "preset",
+          "fps",
+          "seed",
+          "audio_mode",
+          "continuity",
+          "shift_video",
+          "shift_audio",
+          "sampler",
+          "scheduler",
+          "sampling_steps",
+          "width",
+          "height",
+          "h3_attention",
+          "h3_sage_attention",
+          "h3_fp16_accumulation",
+          "h3_torch_compile",
+          "sharpen_enabled",
+          "sharpen_strength",
+          "interpolate_enabled",
+          "interpolate_multiplier",
+          "audio_stem",
+          "lora_name",
+          "lora_strength",
+          "seam_carry",
+          "document"
+        ]
+      }
+    },
+    "ideogram": {
+      "genre": "image",
+      "label": "Ideogram",
+      "studio": {
+        "layout": "studio",
+        "owns_params": false,
+        "size": "normal",
+        "tenant": "image/canvas-ideogram",
+        "writes": []
+      }
+    },
+    "img-edit": {
+      "genre": "image",
+      "label": "Qwen Image Edit 2511"
+    },
+    "input": {
+      "genre": "image",
+      "label": "Input Prep"
+    },
+    "kimodo": {
+      "genre": "motion",
+      "label": "Kimodo (text \u2192 motion)",
+      "studio": {
+        "layout": "studio",
+        "owns_params": false,
+        "size": "normal",
+        "tenant": "motion/motion-studio",
+        "writes": []
+      }
+    },
+    "krea-2": {
+      "genre": "image",
+      "label": "Krea 2"
+    },
+    "latentsync": {
+      "genre": "other",
+      "label": "LatentSync"
+    },
+    "ltx-2-3": {
+      "genre": "video",
+      "label": "LTX 2.3"
+    },
+    "ltx-director-distilled": {
+      "genre": "video",
+      "label": "LTX 2.3"
+    },
+    "mask-studio": {
+      "genre": "image",
+      "label": "Mask",
+      "studio": {
+        "layout": "studio",
+        "owns_params": true,
+        "size": "normal",
+        "tenant": "image/mask_studio",
+        "writes": [
+          "input_image",
+          "detect_mode",
+          "detection_threshold",
+          "sam_threshold",
+          "sam_dilation",
+          "output_mode",
+          "sam3_prompt",
+          "export_boxes",
+          "export_face",
+          "export_hands",
+          "export_body",
+          "export_paint",
+          "paint_mask",
+          "instance_filter",
+          "max_instances",
+          "outputs",
+          "roi"
+        ]
+      }
+    },
+    "mesh_refine": {
+      "genre": "3d",
+      "label": "UltraShape Mesh Refine"
+    },
+    "moss-sfx": {
+      "genre": "audio",
+      "label": "MOSS-SFX v2"
+    },
+    "moss-tts": {
+      "genre": "audio",
+      "label": "MOSS-TTS Nano 100M"
+    },
+    "moss-tts-local": {
+      "genre": "audio",
+      "label": "MOSS-TTS Local v1.5"
+    },
+    "moss_voicegenerator": {
+      "genre": "audio",
+      "label": "MOSS VoiceGenerator"
+    },
+    "music3": {
+      "genre": "audio",
+      "label": "MiniMax Music 3"
+    },
+    "pixal3d": {
+      "genre": "3d",
+      "label": "Pixal3D"
+    },
+    "pixel_upscale": {
+      "genre": "image",
+      "label": "Pixel Upscaler"
+    },
+    "qwen-img-edit-2511": {
+      "genre": "image",
+      "label": "Image Edit"
+    },
+    "qwen3-tts": {
+      "genre": "audio",
+      "label": "Qwen3-TTS CustomVoice 0.6B"
+    },
+    "qwen3-tts-base": {
+      "genre": "audio",
+      "label": "Qwen3-TTS Base 0.6B"
+    },
+    "qwen3-tts-voicedesign": {
+      "genre": "audio",
+      "label": "Qwen3-TTS VoiceDesign 1.7B"
+    },
+    "rtx-vsr": {
+      "genre": "video",
+      "label": "Video Upscale"
+    },
+    "scail2-animate": {
+      "genre": "video",
+      "label": "SCAIL-2"
+    },
+    "see-through": {
+      "genre": "other",
+      "label": "See-Through"
+    },
+    "seedvr2_ema": {
+      "genre": "image",
+      "label": "SeedVR2 Upscaler"
+    },
+    "smplx": {
+      "genre": "motion",
+      "label": "Kimodo SMPL-X 22-joint"
+    },
+    "soma": {
+      "genre": "motion",
+      "label": "Kimodo SOMA 30-joint"
+    },
+    "somax": {
+      "genre": "3d",
+      "label": "SOMAX",
+      "studio": {
+        "layout": "studio",
+        "owns_params": false,
+        "size": "normal",
+        "tenant": "3d/body",
+        "writes": []
+      }
+    },
+    "step1x_texture": {
+      "genre": "3d",
+      "label": "Step1X-3D Texture"
+    },
+    "stretchy-rig": {
+      "genre": "other",
+      "label": "Stretchy Rig"
+    },
+    "transfer_rig": {
+      "genre": "3d",
+      "label": "Transfer Rig"
+    },
+    "trellis2-native": {
+      "genre": "3d",
+      "label": "TRELLIS.2 Native"
+    },
+    "trellis_native": {
+      "genre": "3d",
+      "label": "Trellis (Native)"
+    },
+    "txt2music": {
+      "genre": "audio",
+      "label": "MiniMax Music 3 (txt2music)"
+    },
+    "wan-vace": {
+      "genre": "video",
+      "label": "Wan2.2 VACE"
+    },
+    "z-image": {
+      "genre": "image",
+      "label": "Z-Image"
+    }
   },
-  "ace-step-base": {
-   "defaults": {
-    "backend": "cuda"
-   },
-   "description": "ACE-Step 1.5 base q8 music generation",
-   "engine": "audio_cpp",
-   "family": "ace-step-base",
-   "form": "form_music",
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "ace-step-base",
-   "label": "ACE-Step 1.5 Base Q8",
-   "loras": [],
-   "source": {
-    "filename": "ACE-Step1.5-GGUF",
-    "repo_id": "audio-cpp/audio.cpp-gguf",
-    "type": "huggingface"
-   }
+  "input_vocabulary": {
+    "slot_kinds": {
+      "end_image": "image",
+      "first_frame": "image",
+      "image1": "image",
+      "image2": "image",
+      "image3": "image",
+      "input_glb": "glb",
+      "input_image": "image",
+      "input_mask": "mask",
+      "lanpaint_mask": "mask",
+      "last_frame": "image",
+      "prev_motion_artifact": "motion",
+      "preview_glb": "glb",
+      "reference_audio": "audio",
+      "reference_image": "image",
+      "source_glb": "glb",
+      "source_image": "image",
+      "voice_file": "voice"
+    },
+    "slots": [
+      "input_image",
+      "image1",
+      "image2",
+      "image3",
+      "reference_image",
+      "end_image",
+      "first_frame",
+      "last_frame",
+      "lanpaint_mask",
+      "input_mask",
+      "source_image",
+      "source_glb",
+      "input_glb",
+      "prev_motion_artifact",
+      "preview_glb",
+      "reference_audio",
+      "voice_file"
+    ],
+    "undeclared_slots": [
+      "lanpaint_mask"
+    ]
   },
-  "ace-step-base-bf16": {
-   "defaults": {
-    "backend": "cuda"
-   },
-   "description": "ACE-Step 1.5 base bf16 music generation",
-   "engine": "audio_cpp",
-   "family": "ace-step-base-bf16",
-   "form": "form_music",
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "ace-step-base-bf16",
-   "label": "ACE-Step 1.5 Base BF16",
-   "loras": [],
-   "source": {
-    "filename": "ACE-Step1.5-GGUF",
-    "repo_id": "audio-cpp/audio.cpp-gguf",
-    "type": "huggingface"
-   }
-  },
-  "ace-step-bf16": {
-   "defaults": {
-    "backend": "cuda"
-   },
-   "description": "ACE-Step 1.5 turbo bf16 music generation",
-   "engine": "audio_cpp",
-   "family": "ace-step-bf16",
-   "form": "form_music",
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "ace-step-bf16",
-   "label": "ACE-Step 1.5 Turbo BF16",
-   "loras": [],
-   "source": {
-    "filename": "ACE-Step1.5-GGUF",
-    "repo_id": "audio-cpp/audio.cpp-gguf",
-    "type": "huggingface"
-   }
-  },
-  "ace-step-sft": {
-   "defaults": {
-    "backend": "cuda"
-   },
-   "description": "ACE-Step 1.5 sft q8 music generation",
-   "engine": "audio_cpp",
-   "family": "ace-step-sft",
-   "form": "form_music",
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "ace-step-sft",
-   "label": "ACE-Step 1.5 SFT Q8",
-   "loras": [],
-   "source": {
-    "filename": "ACE-Step1.5-GGUF",
-    "repo_id": "audio-cpp/audio.cpp-gguf",
-    "type": "huggingface"
-   }
-  },
-  "ace-step-xl": {
-   "defaults": {
-    "backend": "cuda"
-   },
-   "description": "ACE-Step 1.5 XL turbo bf16 music generation",
-   "engine": "audio_cpp",
-   "family": "ace-step-xl",
-   "form": "form_music",
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "ace-step-xl",
-   "label": "ACE-Step 1.5 XL Turbo",
-   "loras": [],
-   "source": {
-    "filename": "ACE-Step1.5-GGUF",
-    "repo_id": "audio-cpp/audio.cpp-gguf",
-    "type": "huggingface"
-   }
-  },
-  "anima": {
-   "defaults": {
-    "cfg": 4.0,
-    "height": 1024,
-    "sampler": "er_sde",
-    "scheduler": "simple",
-    "steps": 30,
-    "width": 1024
-   },
-   "description": "Anime/illustration text-to-image. Cosmos-Predict2 base with Danbooru-style prompting.",
-   "engine": "comfyui",
-   "family": "anima",
-   "form": "form_generate",
-   "genre": "image",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "anima",
-   "label": "Anima",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "auto-detect": {
-   "defaults": {
-    "detect_mode": "face",
-    "detection_threshold": 0.35,
-    "output_mode": "segm",
-    "sam_dilation": 0,
-    "sam_threshold": 0.93
-   },
-   "description": "Auto Detect \u2014 automatically selects the best model and conditioning for a given input.",
-   "engine": "",
-   "family": "auto-detect",
-   "form": "form_detect",
-   "genre": "image",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "auto-detect",
-   "label": "Auto Detect",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "basic_resize": {
-   "defaults": {
-    "filename_prefix": "scaled",
-    "resize_method": "lanczos",
-    "resize_scale": 0.5
-   },
-   "description": ">-",
-   "engine": "",
-   "family": "basic_resize",
-   "form": "form_upscale",
-   "genre": "image",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "basic_resize",
-   "label": "Basic Resize",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "concat": {
-   "defaults": {
-    "operation": "concat",
-    "output_artifact": "video"
-   },
-   "description": ">-",
-   "engine": "",
-   "family": "concat",
-   "form": "form_media_merge",
-   "genre": "video",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "concat",
-   "label": "Media Merge",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "dwpose": {
-   "defaults": {
-    "cfg": 1.0,
-    "height": 1024,
-    "sampler": "euler",
-    "scheduler": "simple",
-    "steps": 1,
-    "width": 1024
-   },
-   "description": "DWPose whole-body pose detection (preprocessor for pose-guided generation).",
-   "engine": "comfyui",
-   "family": "dwpose",
-   "form": "form_edit",
-   "genre": "",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "dwpose",
-   "label": "DWPose",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "flux-fill-dev": {
-   "defaults": {
-    "cfg": 1.0,
-    "guidance": 30.0,
-    "inpaint_context_pad": 64,
-    "inpaint_detail": "crop+stitch",
-    "inpaint_edge_extend": 0,
-    "inpaint_target_size": 1024,
-    "mask_feather": 8,
-    "mask_grow": 8,
-    "mask_invert": false,
-    "mask_threshold": 0.0,
-    "mode": "replace",
-    "outpaint_bottom": 0,
-    "outpaint_left": 0,
-    "outpaint_overlap": 16,
-    "outpaint_right": 0,
-    "outpaint_top": 0,
-    "refine_denoise": 0.4,
-    "sampler": "euler",
-    "scheduler": "normal",
-    "seed": 42,
-    "steps": 20
-   },
-   "description": "Dual-engine masked region inpainting \u2014 FLUX.1-Fill (dedicated fill arch) or LanPaint on any base model.",
-   "engine": "",
-   "family": "flux-fill-dev",
-   "form": "form_inpaint",
-   "genre": "image",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "flux-fill-dev",
-   "label": "Inpaint",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "gem_soma": {
-   "defaults": {
-    "cfg": 7.0,
-    "height": 1024,
-    "sampler": "euler",
-    "scheduler": "simple",
-    "steps": 25,
-    "width": 1024
-   },
-   "description": "GEM-X SOMA pose estimation and retargeting.",
-   "engine": "comfyui",
-   "family": "gem_soma",
-   "form": "form_edit",
-   "genre": "",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "gem_soma",
-   "label": "SOMA",
-   "loras": [],
-   "source": {
-    "repo_id": "nvidia/soma-x",
-    "type": ""
-   }
-  },
-  "h3": {
-   "defaults": {
-    "fps": 24,
-    "frames": 124,
-    "guide_scale": 4.0,
-    "guide_strength": 3.0,
-    "h3_attention": "kitchen",
-    "h3_fp16_accumulation": false,
-    "h3_ref_image_size": "match",
-    "h3_torch_compile": false,
-    "height": 768,
-    "output_format": "mp4",
-    "preset": "draft_02mp",
-    "relay_epsilon": 0.001,
-    "retake_enabled": false,
-    "retake_start_frame": 0,
-    "retake_strength": 1.0,
-    "sampler": "euler",
-    "sampling_steps": 30,
-    "scheduler": "simple",
-    "seed": 42,
-    "shift_audio": 3.0,
-    "shift_video": 12.0,
-    "upscale_cfg": 1.0,
-    "upscale_denoise": 0.3,
-    "upscale_enabled": false,
-    "upscale_steps": 10,
-    "width": 1344
-   },
-   "description": "MiniMax H3 joint video + audio generation. Native AV output \u2014 describe both motion and",
-   "engine": "",
-   "family": "h3",
-   "form": "form_video_director",
-   "genre": "video",
-   "has_agent": true,
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "h3",
-   "label": "MiniMax H3",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "h3-keyframe": {
-   "defaults": {
-    "fps": 24,
-    "height": 448,
-    "length": 56,
-    "steps": 12,
-    "width": 768
-   },
-   "description": "",
-   "engine": "",
-   "family": "h3-keyframe",
-   "form": "form_video_director",
-   "genre": "video",
-   "has_agent": true,
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "h3-keyframe",
-   "label": "MiniMax H3 keyframe-to-video",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "h3-timeline": {
-   "defaults": {
-    "fps": 24,
-    "seed": 42
-   },
-   "description": ">-",
-   "engine": "comfyui",
-   "family": "h3-timeline",
-   "form": "form_video_director",
-   "genre": "video",
-   "has_agent": true,
-   "has_inference": true,
-   "has_rubric": false,
-   "id": "h3-timeline",
-   "label": "H3 Timeline (multi-window)",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "ideogram": {
-   "defaults": {
-    "cfg": 5.0,
-    "height": 1024,
-    "mu": 0.0,
-    "negative_prompt": "blurry, low quality, distorted text, watermark",
-    "sampler": "euler",
-    "std": 1.75,
-    "steps": 25,
-    "width": 1024
-   },
-   "description": "Typography-aware text-to-image with clean, legible text rendering.",
-   "engine": "",
-   "family": "ideogram",
-   "form": "form_ideogram",
-   "genre": "image",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "ideogram",
-   "label": "Ideogram",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "img-edit": {
-   "defaults": {
-    "cfg": 1.0,
-    "height": 1024,
-    "steps": 4,
-    "width": 1024
-   },
-   "description": "",
-   "engine": "comfyui",
-   "family": "img-edit",
-   "form": "form_edit",
-   "genre": "image",
-   "has_agent": true,
-   "has_inference": true,
-   "has_rubric": false,
-   "id": "img-edit",
-   "label": "Qwen Image Edit 2511",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "input": {
-   "defaults": {
-    "filename_prefix": "input_prep",
-    "media_type": null,
-    "output_artifact": "media"
-   },
-   "description": ">-",
-   "engine": "",
-   "family": "input",
-   "form": "form_input",
-   "genre": "image",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "input",
-   "label": "Input Prep",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "kimodo": {
-   "defaults": {
-    "cfg_type": "separated",
-    "cfg_weight_a": 2.5,
-    "cfg_weight_b": 5.0,
-    "diffusion_steps": 25,
-    "duration_sec": 5.0,
-    "num_samples": 1,
-    "num_transition_frames": 10,
-    "seed": 42
-   },
-   "description": "Kinematic motion diffusion (NVIDIA Kimodo-SOMA): text \u2192 SOMA-77 pose NPZ, chainable, skinnable onto rigged GLBs.",
-   "engine": "comfyui",
-   "family": "kimodo",
-   "form": "form_motion_kimodo",
-   "genre": "motion",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "kimodo",
-   "label": "Kimodo (text \u2192 motion)",
-   "loras": [],
-   "source": {
-    "repo_id": "nvidia/Kimodo-SOMA-RP-v1.1",
-    "type": ""
-   }
-  },
-  "krea-2": {
-   "defaults": {
-    "cfg": 1.0,
-    "height": 1024,
-    "sampler": "euler",
-    "scheduler": "normal",
-    "steps": 8,
-    "width": 1024
-   },
-   "description": "High-quality general text-to-image generation.",
-   "engine": "comfyui",
-   "family": "krea-2",
-   "form": "form_generate",
-   "genre": "image",
-   "has_agent": true,
-   "has_inference": true,
-   "has_rubric": false,
-   "id": "krea-2",
-   "label": "Krea 2",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "latentsync": {
-   "defaults": {
-    "cfg": 1.0,
-    "height": 1024,
-    "sampler": "euler",
-    "scheduler": "simple",
-    "steps": 25,
-    "width": 1024
-   },
-   "description": "LatentSync \u2014 local-only lip-sync that aligns mouth shapes to audio in a video.",
-   "engine": "comfyui",
-   "family": "latentsync",
-   "form": "form_edit",
-   "genre": "",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "latentsync",
-   "label": "LatentSync",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "ltx-2-3": {
-   "defaults": {
-    "cfg": 3.0,
-    "fps": 24,
-    "frames": 97,
-    "height": 720,
-    "sampler": "euler",
-    "scheduler": "simple",
-    "seed": 42,
-    "steps": 30,
-    "width": 1280
-   },
-   "description": ">-",
-   "engine": "",
-   "family": "ltx-2-3",
-   "form": "form_generate",
-   "genre": "video",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "ltx-2-3",
-   "label": "LTX 2.3",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "ltx-director-distilled": {
-   "defaults": {
-    "anchor_strength": 0.7,
-    "audio_mode": "none",
-    "auto_snap_ic_grid": true,
-    "base_denoise": 1.0,
-    "crop": "center",
-    "director_guide_enabled": false,
-    "divisible_by": 32,
-    "force_retake_mode": false,
-    "fps": 24,
-    "frames": 97,
-    "guide_scale": 3.0,
-    "guide_strength": 3.0,
-    "height": 720,
-    "ic_lora_name": "None",
-    "ic_lora_strength": 1.0,
-    "image_attention_strength": 1.0,
-    "img_compression": 18,
-    "inpaint_audio": false,
-    "lipsync_strength": 3.0,
-    "ltx_chunk_feedforward": false,
-    "ltx_context_length": 145,
-    "ltx_context_overlap": 40,
-    "ltx_context_windows": false,
-    "ltx_ff_chunks": 2,
-    "ltx_sage_attention": false,
-    "ltx_sage_triton": true,
-    "negative_prompt": null,
-    "output_format": "mp4",
-    "override_audio": false,
-    "relay_epsilon": 0.001,
-    "resize_method": "maintain aspect ratio",
-    "retake_apply_global": false,
-    "retake_enabled": false,
-    "retake_start_frame": 0,
-    "retake_strength": 1.0,
-    "sampler": "euler",
-    "sampling_steps": 8,
-    "scale_by": 1.0,
-    "scheduler": "beta",
-    "start_frame": 0,
-    "tile_overlap": 64,
-    "tile_size": 256,
-    "torch_compile": false,
-    "upscale_cfg": 1.0,
-    "upscale_denoise": 0.3,
-    "upscale_enabled": false,
-    "upscale_method": "bicubic",
-    "upscale_steps": 10,
-    "use_custom_motion": true,
-    "use_tiled_encode": false,
-    "width": 1280
-   },
-   "description": "LTX 2.3 text- and image-to-video generation via the Director workflow.",
-   "engine": "",
-   "family": "ltx-director-distilled",
-   "form": "form_video_director",
-   "genre": "video",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "ltx-director-distilled",
-   "label": "LTX 2.3",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "mask-studio": {
-   "defaults": {
-    "detect_mode": "body",
-    "detection_threshold": 0.35,
-    "export_body": false,
-    "export_boxes": true,
-    "export_face": false,
-    "export_hands": false,
-    "export_paint": false,
-    "instance_filter": "all",
-    "max_instances": 0,
-    "output_mode": "segm",
-    "outputs": "[]",
-    "sam3_prompt": null,
-    "sam_dilation": 0,
-    "sam_threshold": 0.93
-   },
-   "description": "Selection-only mask card: RT-DETR proposes, SAM3 refines \u2192 named class masks for inpaint pipelines.",
-   "engine": "comfyui",
-   "family": "mask-studio",
-   "form": "form_mask_studio",
-   "genre": "image",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "mask-studio",
-   "label": "Mask",
-   "loras": [],
-   "source": {
-    "repo_id": "facebook/sam-vit-base",
-    "type": ""
-   }
-  },
-  "mesh_refine": {
-   "defaults": {
-    "box_v": 1.0,
-    "dtype": "bfloat16",
-    "file_format": "glb",
-    "filename_prefix": "ultrashape_refined",
-    "guidance_scale": 5.0,
-    "low_vram": false,
-    "mc_level": 0.0,
-    "normalize_scale": 0.99,
-    "num_chunks": 8000,
-    "num_latents": 32768,
-    "num_sharp_points": 204800,
-    "num_uniform_points": 204800,
-    "octree_resolution": 384,
-    "preset": "standard",
-    "remove_bg": false,
-    "seed": 42,
-    "steps": 50
-   },
-   "description": "Image-guided coarse-mesh refinement (UltraShape 1.0 DiT) \u2014 carves sharp limb separation + hard-surface edges into blobby TRELLIS output using the SAME guide image the mesh was generated from. The pre-rig cleanup step: run BEFORE SOMAX so proximity-based weight transfer can't glue arm vertices to torso bones.",
-   "engine": "",
-   "family": "mesh_refine",
-   "form": "form_3d_mesh_refine",
-   "genre": "3d",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "mesh_refine",
-   "label": "UltraShape Mesh Refine",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "moss-sfx": {
-   "defaults": {},
-   "description": "MOSS-SFX v2 sound-effect generation \u2014 describe the SOUND not the scene",
-   "engine": "comfyui",
-   "family": "moss-sfx",
-   "form": "form_sound",
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "moss-sfx",
-   "label": "MOSS-SFX v2",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "moss-tts": {
-   "defaults": {
-    "backend": "cuda"
-   },
-   "description": "MOSS-TTS Nano 100M text-to-speech",
-   "engine": "audio_cpp",
-   "family": "moss-tts",
-   "form": "form_tts",
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "moss-tts",
-   "label": "MOSS-TTS Nano 100M",
-   "loras": [],
-   "source": {
-    "filename": "MOSS-TTS-Nano-100M-GGUF",
-    "repo_id": "audio-cpp/audio.cpp-gguf",
-    "type": "huggingface"
-   }
-  },
-  "moss-tts-local": {
-   "defaults": {
-    "backend": "cuda"
-   },
-   "description": "MOSS-TTS Local Transformer v1.5",
-   "engine": "audio_cpp",
-   "family": "moss-tts-local",
-   "form": "form_tts",
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "moss-tts-local",
-   "label": "MOSS-TTS Local v1.5",
-   "loras": [],
-   "source": {
-    "filename": "MOSS-TTS-Local-v1.5-GGUF",
-    "repo_id": "audio-cpp/audio.cpp-gguf",
-    "type": "huggingface"
-   }
-  },
-  "moss_voicegenerator": {
-   "defaults": {
-    "backend": "cuda"
-   },
-   "description": "MOSS VoiceGenerator voice design",
-   "engine": "audio_cpp",
-   "family": "moss_voicegenerator",
-   "form": "form_tts",
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "moss_voicegenerator",
-   "label": "MOSS VoiceGenerator",
-   "loras": [],
-   "source": {
-    "filename": "MOSS-VoiceGenerator-GGUF",
-    "repo_id": "audio-cpp/audio.cpp-gguf",
-    "type": "huggingface"
-   }
-  },
-  "music3": {
-   "defaults": {
-    "backend": "cuda"
-   },
-   "description": "MiniMax Music 3 text-to-music with lyrics",
-   "engine": "comfyui",
-   "family": "music3",
-   "form": "form_music",
-   "genre": "audio",
-   "has_inference": true,
-   "has_rubric": false,
-   "id": "music3",
-   "label": "MiniMax Music 3",
-   "loras": [],
-   "source": {
-    "filename": "MiniMax-Music3-GGUF",
-    "repo_id": "audio-cpp/MiniMax-Music3-GGUF",
-    "type": "huggingface"
-   }
-  },
-  "pixal3d": {
-   "defaults": {
-    "bg_removal": "auto",
-    "cfg": 3.0,
-    "filename_prefix": "pixal3d",
-    "resolution": 1024,
-    "seed": 42,
-    "steps": 12,
-    "texture_size": 2048
-   },
-   "description": ">-",
-   "engine": "",
-   "family": "pixal3d",
-   "form": "form_3d_pixal3d",
-   "genre": "3d",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "pixal3d",
-   "label": "Pixal3D",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "pixel_upscale": {
-   "defaults": {
-    "batch_size": 5,
-    "cfg": 7.5,
-    "denoise": 0.4,
-    "detection_threshold": 0.35,
-    "downscale_first": 1.0,
-    "filename_prefix": "upscaled",
-    "guide_size": 512,
-    "inpaint_region": "free",
-    "max_size": 1024,
-    "mode": "upscale",
-    "resolution": 2048,
-    "seed": 0,
-    "steps": 50,
-    "target_scale": 4.0
-   },
-   "description": ">-",
-   "engine": "",
-   "family": "pixel_upscale",
-   "form": "form_upscale",
-   "genre": "image",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "pixel_upscale",
-   "label": "Pixel Upscaler",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "qwen-img-edit-2511": {
-   "defaults": {
-    "cfg": 1.0,
-    "double_reference": false,
-    "height": 1024,
-    "sampler": "euler",
-    "scheduler": "simple",
-    "steps": 8,
-    "use_stock_nodes": false,
-    "width": 1024
-   },
-   "description": "Image Edit \u2014 instruction-driven image editing and manipulation (Qwen-Image-Edit 2511 is",
-   "engine": "comfyui",
-   "family": "qwen-img-edit-2511",
-   "form": "form_edit",
-   "genre": "image",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "qwen-img-edit-2511",
-   "label": "Image Edit",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "qwen3-tts": {
-   "defaults": {
-    "mode": "tts"
-   },
-   "description": "Qwen3-TTS 12Hz CustomVoice 0.6B \u2014 preset personas and instruct-text emotion control",
-   "engine": "comfyui",
-   "family": "qwen3-tts",
-   "form": "form_tts",
-   "genre": "audio",
-   "has_inference": true,
-   "has_rubric": false,
-   "id": "qwen3-tts",
-   "label": "Qwen3-TTS CustomVoice 0.6B",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "qwen3-tts-base": {
-   "defaults": {
-    "mode": "tts",
-    "variant": "base"
-   },
-   "description": "Qwen3-TTS 12Hz Base 0.6B \u2014 plain text-to-speech, no persona",
-   "engine": "comfyui",
-   "family": "qwen3-tts-base",
-   "form": "form_tts",
-   "genre": "audio",
-   "has_inference": true,
-   "has_rubric": false,
-   "id": "qwen3-tts-base",
-   "label": "Qwen3-TTS Base 0.6B",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "qwen3-tts-voicedesign": {
-   "defaults": {
-    "mode": "design",
-    "variant": "voicedesign"
-   },
-   "description": "Qwen3-TTS 12Hz VoiceDesign 1.7B \u2014 instruction-following voice design; the voice-lock lane",
-   "engine": "comfyui",
-   "family": "qwen3-tts-voicedesign",
-   "form": "form_tts",
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "qwen3-tts-voicedesign",
-   "label": "Qwen3-TTS VoiceDesign 1.7B",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "rtx-vsr": {
-   "defaults": {
-    "batch_size": 5,
-    "cfg": 4.0,
-    "color_match_enabled": true,
-    "denoise": 0.3,
-    "dit_model": "seedvr2_ema_3b_fp16.safetensors",
-    "filename_prefix": "upscaled_video",
-    "fps": 24,
-    "mode": "rtx_vsr",
-    "rtx_mode": "vsr",
-    "rtx_strength": 0.6,
-    "rtx_two_pass": true,
-    "seed": 0,
-    "steps": 20,
-    "target_resolution": 1080,
-    "upscaler_model": "4xNomos2_hq_dat2.pth",
-    "vae_model": "ema_vae_fp16.safetensors"
-   },
-   "description": ">-",
-   "engine": "",
-   "family": "rtx-vsr",
-   "form": "form_video_upscale",
-   "genre": "video",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "rtx-vsr",
-   "label": "Video Upscale",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "scail2-animate": {
-   "defaults": {
-    "fps": 16,
-    "frames": 81,
-    "guide_scale": 5.0,
-    "guide_strength": 3.0,
-    "height": 480,
-    "mode": "animate",
-    "model_name": "scail2_14B_fp8_scaled.safetensors",
-    "output_format": "mp4",
-    "relay_epsilon": 0.001,
-    "retake_enabled": false,
-    "retake_start_frame": 0,
-    "retake_strength": 1.0,
-    "sampling_steps": 40,
-    "seed": 42,
-    "upscale_cfg": 1.0,
-    "upscale_denoise": 0.3,
-    "upscale_enabled": false,
-    "upscale_steps": 10,
-    "width": 832
-   },
-   "description": "SCAIL-2 character animation \u2014 drives a reference character from a video and colored mask.",
-   "engine": "",
-   "family": "scail2-animate",
-   "form": "form_video_director",
-   "genre": "video",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "scail2-animate",
-   "label": "SCAIL-2",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "see-through": {
-   "defaults": {
-    "inference_steps": 30,
-    "resolution": 1280,
-    "resolution_depth": 768,
-    "seed": 42,
-    "tblr_split": false
-   },
-   "description": "See-Through anime layer decomposition \u2014 splits an image into character, clothing, and background layers.",
-   "engine": "",
-   "family": "see-through",
-   "form": "form_image_seethrough",
-   "genre": "",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "see-through",
-   "label": "See-Through",
-   "loras": [],
-   "source": {
-    "repo_id": "layerdifforg/seethroughv0.0.2_layerdiff3d",
-    "type": ""
-   }
-  },
-  "seedvr2_ema": {
-   "defaults": {
-    "batch_size": 5,
-    "cfg": 7.5,
-    "denoise": 0.4,
-    "detection_threshold": 0.35,
-    "downscale_first": 1.0,
-    "filename_prefix": "upscaled",
-    "guide_size": 512,
-    "inpaint_region": "free",
-    "max_size": 1024,
-    "mode": "upscale",
-    "resolution": 2048,
-    "seed": 0,
-    "steps": 50,
-    "target_scale": 2.0
-   },
-   "description": "SeedVR2 diffusion-based super-resolution (3B EMA FP16 default, 7B EMA FP8",
-   "engine": "",
-   "family": "seedvr2_ema",
-   "form": "form_upscale",
-   "genre": "image",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "seedvr2_ema",
-   "label": "SeedVR2 Upscaler",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "somax": {
-   "defaults": {
-    "decimate_ratio": 0.2,
-    "file_format": "glb",
-    "filename_prefix": "KimodoAnimated",
-    "in_place": true,
-    "preserve_texture": true
-   },
-   "description": "TRELLIS \u2192 SOMA weight transfer \u2014 image to SOMAX rigged GLB with anatomically correct SOMA-77 skeleton weights.",
-   "engine": "",
-   "family": "somax",
-   "form": "form_3d_somax",
-   "genre": "3d",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "somax",
-   "label": "SOMAX",
-   "loras": [],
-   "source": {
-    "repo_id": "nvidia/soma-x",
-    "type": ""
-   }
-  },
-  "step1x_texture": {
-   "defaults": {
-    "filename_prefix": "step1x_texture",
-    "preset": "standard",
-    "remove_bg": false,
-    "render_size": 2048,
-    "seed": 2025,
-    "texture_size": 2048
-   },
-   "description": "Diffusion-based 3D texture synthesis \u2014 1 reference image \u2192 6 multi-view images via SDXL ig2mv pipeline \u2192 baked onto UV atlas. Fills ALL surfaces (no coverage gaps unlike camera projection). 3.5B model, ~15s on 4090.",
-   "engine": "",
-   "family": "step1x_texture",
-   "form": "form_3d_step1x_texture",
-   "genre": "3d",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "step1x_texture",
-   "label": "Step1X-3D Texture",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "stretchy-rig": {
-   "defaults": {
-    "dwpose_precision": "fp32",
-    "yolox_precision": "fp16"
-   },
-   "description": "Stretchy Studio auto-rig \u2014 DWPose TensorRT whole-body keypoints for 2D character animation.",
-   "engine": "",
-   "family": "stretchy-rig",
-   "form": "form_image_stretchy_rig",
-   "genre": "",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "stretchy-rig",
-   "label": "Stretchy Rig",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "transfer_rig": {
-   "defaults": {},
-   "description": "Copy rig from source GLB onto target GLB via GPU KNN.",
-   "engine": "",
-   "family": "transfer_rig",
-   "form": "form_3d_transfer_rig",
-   "genre": "3d",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "transfer_rig",
-   "label": "Transfer Rig",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "trellis2-native": {
-   "defaults": {
-    "bg_removal": "auto",
-    "cfg": 3.0,
-    "filename_prefix": "trellis2_native",
-    "resolution": 1024,
-    "seed": 42,
-    "steps": 12
-   },
-   "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning \u2192 voxel structure \u2192 shape latent \u2192 texture atlas, saved as a .glb.",
-   "engine": "comfyui",
-   "family": "trellis2-native",
-   "form": "form_3d_trellis2_native",
-   "genre": "3d",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "trellis2-native",
-   "label": "TRELLIS.2 Native",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "trellis_native": {
-   "defaults": {
-    "band": 0,
-    "bg_removal": "auto",
-    "filename_prefix": "trelliscpp",
-    "quant": "q8",
-    "resolution": 1024,
-    "seed": 42,
-    "texture_size": 2048,
-    "webp_quality": 90
-   },
-   "description": "Native trellis.cpp GGML engine \u2014 image to UV-textured GLB with the reference-parity C++ postprocess (weld, fill, DC remesh, CuMesh QEM, xatlas, trilinear PBR bake). 50s per asset on the 4090; no confetti.",
-   "engine": "",
-   "family": "trellis_native",
-   "form": "form_3d_trellis_native",
-   "genre": "3d",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "trellis_native",
-   "label": "Trellis (Native)",
-   "loras": [],
-   "source": {
-    "repo_id": "ilintar/trellis2-gguf",
-    "type": ""
-   }
-  },
-  "txt2music": {
-   "defaults": {
-    "backend": "cuda"
-   },
-   "description": "MiniMax Music 3 text-to-music with lyrics",
-   "engine": "audio_cpp",
-   "family": "txt2music",
-   "form": "form_music",
-   "genre": "audio",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "txt2music",
-   "label": "MiniMax Music 3",
-   "loras": [],
-   "source": {
-    "filename": "MiniMax-Music3-GGUF",
-    "repo_id": "audio-cpp/MiniMax-Music3-GGUF",
-    "type": "huggingface"
-   }
-  },
-  "wan-vace": {
-   "defaults": {
-    "blocks_to_swap": 38,
-    "easycache_enabled": false,
-    "easycache_thresh": 0.015,
-    "fps": 16,
-    "frames": 81,
-    "guide_scale": 6.0,
-    "guide_strength": 3.0,
-    "height": 480,
-    "magcache_K": 4,
-    "magcache_enabled": false,
-    "magcache_thresh": 0.02,
-    "model_name": "Wan2_2-T2V-A14B_HIGH_fp8_e4m3fn_scaled_KJ.safetensors",
-    "negative_prompt": null,
-    "output_format": "mp4",
-    "relay_epsilon": 0.001,
-    "retake_enabled": false,
-    "retake_start_frame": 0,
-    "retake_strength": 1.0,
-    "sampling_steps": 25,
-    "t5_name": "umt5-xxl-enc-fp8_e4m3fn.safetensors",
-    "teacache_enabled": false,
-    "teacache_threshold": 0.15,
-    "torch_compile": false,
-    "upscale_cfg": 1.0,
-    "upscale_denoise": 0.3,
-    "upscale_enabled": false,
-    "upscale_steps": 10,
-    "vace_blocks_to_swap": 5,
-    "vace_name": "Wan2_2_Fun_VACE_module_A14B_HIGH_fp8_e4m3fn_scaled_KJ.safetensors",
-    "vae_name": "Wan2_1_VAE_bf16.safetensors",
-    "vfi_model": "rife47.pth",
-    "vfi_multiplier": 1,
-    "wan_context_enabled": false,
-    "wan_context_frames": 81,
-    "wan_context_freenoise": true,
-    "wan_context_fuse_method": "linear",
-    "wan_context_overlap": 16,
-    "wan_context_schedule": "uniform_standard",
-    "wan_context_stride": 4,
-    "wan_scheduler": "unipc",
-    "width": 832
-   },
-   "description": "Wan2.2 VACE video generation with reference-frame and mask control.",
-   "engine": "",
-   "family": "wan-vace",
-   "form": "form_video_director",
-   "genre": "video",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "wan-vace",
-   "label": "Wan2.2 VACE",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
-  },
-  "z-image": {
-   "defaults": {
-    "cfg": 1.0,
-    "height": 1024,
-    "negative_prompt": null,
-    "sampler": "er_sde",
-    "scheduler": "normal",
-    "steps": 8,
-    "width": 1024
-   },
-   "description": "Fast Z-Image / Z-Image Turbo text-to-image generation.",
-   "engine": "comfyui",
-   "family": "z-image",
-   "form": "form_generate",
-   "genre": "image",
-   "has_inference": false,
-   "has_rubric": false,
-   "id": "z-image",
-   "label": "Z-Image",
-   "loras": [],
-   "source": {
-    "type": ""
-   }
+  "models": {
+    "ace-step": {
+      "defaults": {
+        "backend": "cuda"
+      },
+      "description": "ACE-Step 1.5 turbo q8 music generation",
+      "engine": "audio_cpp",
+      "family": "ace-step",
+      "form": "form_music",
+      "genre": "audio",
+      "has_agent": true,
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "ace-step",
+      "label": "ACE-Step 1.5 Turbo Q8",
+      "loras": [],
+      "source": {
+        "filename": "ACE-Step1.5-GGUF",
+        "repo_id": "audio-cpp/audio.cpp-gguf",
+        "type": "huggingface"
+      }
+    },
+    "ace-step-base": {
+      "defaults": {
+        "backend": "cuda"
+      },
+      "description": "ACE-Step 1.5 base q8 music generation",
+      "engine": "audio_cpp",
+      "family": "ace-step-base",
+      "form": "form_music",
+      "genre": "audio",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "ace-step-base",
+      "label": "ACE-Step 1.5 Base Q8",
+      "loras": [],
+      "source": {
+        "filename": "ACE-Step1.5-GGUF",
+        "repo_id": "audio-cpp/audio.cpp-gguf",
+        "type": "huggingface"
+      }
+    },
+    "ace-step-base-bf16": {
+      "defaults": {
+        "backend": "cuda"
+      },
+      "description": "ACE-Step 1.5 base bf16 music generation",
+      "engine": "audio_cpp",
+      "family": "ace-step-base-bf16",
+      "form": "form_music",
+      "genre": "audio",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "ace-step-base-bf16",
+      "label": "ACE-Step 1.5 Base BF16",
+      "loras": [],
+      "source": {
+        "filename": "ACE-Step1.5-GGUF",
+        "repo_id": "audio-cpp/audio.cpp-gguf",
+        "type": "huggingface"
+      }
+    },
+    "ace-step-bf16": {
+      "defaults": {
+        "backend": "cuda"
+      },
+      "description": "ACE-Step 1.5 turbo bf16 music generation",
+      "engine": "audio_cpp",
+      "family": "ace-step-bf16",
+      "form": "form_music",
+      "genre": "audio",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "ace-step-bf16",
+      "label": "ACE-Step 1.5 Turbo BF16",
+      "loras": [],
+      "source": {
+        "filename": "ACE-Step1.5-GGUF",
+        "repo_id": "audio-cpp/audio.cpp-gguf",
+        "type": "huggingface"
+      }
+    },
+    "ace-step-sft": {
+      "defaults": {
+        "backend": "cuda",
+        "duration": 120,
+        "sample_rate": 44100
+      },
+      "description": "ACE-Step 1.5 sft q8 music generation (the finetune)",
+      "engine": "audio_cpp",
+      "family": "ace-step-sft",
+      "form": "form_music",
+      "genre": "audio",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "ace-step-sft",
+      "label": "ACE-Step 1.5 SFT (Q8)",
+      "loras": [],
+      "source": {
+        "filename": "ACE-Step1.5-SFT-GGUF",
+        "repo_id": "audio-cpp/audio.cpp-gguf",
+        "type": "huggingface"
+      }
+    },
+    "ace-step-xl": {
+      "defaults": {
+        "backend": "cuda",
+        "duration": 120,
+        "sample_rate": 44100
+      },
+      "description": "ACE-Step 1.5 XL turbo bf16 music generation (the audio.cpp flagship)",
+      "engine": "audio_cpp",
+      "family": "ace-step-xl",
+      "form": "form_music",
+      "genre": "audio",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "ace-step-xl",
+      "label": "ACE-Step 1.5 XL Turbo",
+      "loras": [],
+      "source": {
+        "filename": "ACE-Step1.5-XL-GGUF",
+        "repo_id": "audio-cpp/audio.cpp-gguf",
+        "type": "huggingface"
+      }
+    },
+    "anima": {
+      "defaults": {
+        "cfg": 4.0,
+        "height": 1024,
+        "sampler": "er_sde",
+        "scheduler": "simple",
+        "steps": 30,
+        "width": 1024
+      },
+      "description": "Anime/illustration text-to-image. Cosmos-Predict2 base with Danbooru-style prompting.",
+      "engine": "comfyui",
+      "family": "anima",
+      "form": "form_generate",
+      "genre": "image",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "anima",
+      "label": "Anima",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "anny": {
+      "defaults": {
+        "focal_length": 50,
+        "framing": 1.2,
+        "resolution": 768,
+        "samples": 64,
+        "transparent": true
+      },
+      "description": "Assemble a character \u2014 composite body/hair/outfit GLBs, render the 8-view turnaround, segment a source photo into part sprites.",
+      "engine": "comfyui",
+      "family": "anny",
+      "form": "form_3d_anny",
+      "genre": "3d",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "anny",
+      "label": "Anny (character assembly)",
+      "loras": [],
+      "source": {
+        "repo_id": "melite-poser-nodes",
+        "type": ""
+      }
+    },
+    "anycreature": {
+      "defaults": {
+        "ao": true,
+        "build": "default",
+        "role": "npc",
+        "smooth_angle": 50
+      },
+      "description": "Text \u2192 game-ready 3D creature (JSON spec \u2192 skinned GLB)",
+      "engine": "anycreature",
+      "family": "anycreature",
+      "form": "form_forge",
+      "genre": "3d",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "anycreature",
+      "label": "anyCreature",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "auto-detect": {
+      "defaults": {
+        "detect_mode": "face",
+        "detection_threshold": 0.35,
+        "output_mode": "segm",
+        "sam_dilation": 0,
+        "sam_threshold": 0.93
+      },
+      "description": "Auto Detect \u2014 automatically selects the best model and conditioning for a given input.",
+      "engine": "",
+      "family": "auto-detect",
+      "form": "form_detect",
+      "genre": "image",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "auto-detect",
+      "label": "Auto Detect",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "autoremesher": {
+      "defaults": {
+        "adaptivity": 1.0,
+        "anisotropy": 1.0,
+        "edge_scaling": 1.0,
+        "sharp_edge": 90.0,
+        "smooth_normal": 0.0,
+        "target_quads": 50000
+      },
+      "description": "High-poly mesh \u2192 clean quad topology (eight control knobs)",
+      "engine": "autoremesher",
+      "family": "autoremesher",
+      "form": "form_quad_remesh",
+      "genre": "3d",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "autoremesher",
+      "label": "AutoRemesher",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "basic_resize": {
+      "defaults": {
+        "filename_prefix": "scaled",
+        "resize_method": "lanczos",
+        "resize_scale": 0.5
+      },
+      "description": ">-",
+      "engine": "",
+      "family": "basic_resize",
+      "genre": "image",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "basic_resize",
+      "label": "Basic Resize",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "concat": {
+      "defaults": {
+        "operation": "concat",
+        "output_artifact": "video"
+      },
+      "description": ">-",
+      "engine": "",
+      "family": "concat",
+      "form": "form_media_merge",
+      "genre": "video",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "concat",
+      "label": "Media Merge",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "dwpose": {
+      "defaults": {
+        "cfg": 1.0,
+        "height": 1024,
+        "sampler": "euler",
+        "scheduler": "simple",
+        "steps": 1,
+        "width": 1024
+      },
+      "description": "DWPose whole-body pose detection (preprocessor for pose-guided generation).",
+      "engine": "comfyui",
+      "family": "dwpose",
+      "form": "form_edit",
+      "genre": "other",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "dwpose",
+      "label": "DWPose",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "flux-fill-dev": {
+      "defaults": {
+        "cfg": 1.0,
+        "guidance": 30.0,
+        "inpaint_context_pad": 64,
+        "inpaint_detail": "crop+stitch",
+        "inpaint_edge_extend": 0,
+        "inpaint_target_size": 1024,
+        "mask_feather": 8,
+        "mask_grow": 8,
+        "mask_invert": false,
+        "mask_threshold": 0.0,
+        "mode": "replace",
+        "outpaint_bottom": 0,
+        "outpaint_left": 0,
+        "outpaint_overlap": 16,
+        "outpaint_right": 0,
+        "outpaint_top": 0,
+        "refine_denoise": 0.4,
+        "sampler": "euler",
+        "scheduler": "normal",
+        "seed": 42,
+        "steps": 20
+      },
+      "description": "Dual-engine masked region inpainting \u2014 FLUX.1-Fill (dedicated fill arch) or LanPaint on any base model.",
+      "engine": "",
+      "family": "flux-fill-dev",
+      "form": "form_inpaint",
+      "genre": "image",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "flux-fill-dev",
+      "label": "Inpaint",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "g1": {
+      "defaults": {
+        "backend": "cpu",
+        "skeleton": "g1"
+      },
+      "description": "Unitree G1 34-joint humanoid robot skeleton \u2014 RP and SEED variants",
+      "engine": "kimodo",
+      "family": "g1",
+      "form": "form_motion",
+      "genre": "motion",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "g1",
+      "label": "Kimodo G1 34-joint",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "gem_soma": {
+      "defaults": {
+        "cfg": 7.0,
+        "height": 1024,
+        "sampler": "euler",
+        "scheduler": "simple",
+        "steps": 25,
+        "width": 1024
+      },
+      "description": "GEM-X SOMA pose estimation and retargeting.",
+      "engine": "comfyui",
+      "family": "gem_soma",
+      "form": "form_edit",
+      "genre": "other",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "gem_soma",
+      "label": "SOMA",
+      "loras": [],
+      "source": {
+        "repo_id": "nvidia/soma-x",
+        "type": ""
+      }
+    },
+    "h3": {
+      "defaults": {
+        "height": 768,
+        "length": 124,
+        "seed": 42,
+        "shift_audio": 3.0,
+        "shift_video": 12.0,
+        "steps": 30,
+        "width": 1344
+      },
+      "description": "MiniMax H3 joint video + audio generation. Native AV output \u2014 describe both motion and",
+      "engine": "comfyui",
+      "family": "h3",
+      "form": "form_video_director",
+      "genre": "video",
+      "has_agent": true,
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "h3",
+      "label": "MiniMax H3",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "h3-keyframe": {
+      "defaults": {
+        "height": 448,
+        "length": 56,
+        "steps": 12,
+        "width": 768
+      },
+      "description": "",
+      "engine": "comfyui",
+      "family": "h3-keyframe",
+      "form": "form_video_director",
+      "genre": "video",
+      "has_agent": true,
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "h3-keyframe",
+      "label": "MiniMax H3 keyframe-to-video",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "h3-timeline": {
+      "defaults": {
+        "seed": 42
+      },
+      "description": ">-",
+      "engine": "comfyui",
+      "family": "h3-timeline",
+      "form": "form_video_director",
+      "genre": "video",
+      "has_agent": true,
+      "has_inference": true,
+      "has_rubric": false,
+      "id": "h3-timeline",
+      "label": "H3 Timeline (multi-window)",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "ideogram": {
+      "defaults": {
+        "cfg": 7.0,
+        "height": 1024,
+        "mu": 0.5,
+        "sampler": "euler",
+        "std": 1.75,
+        "steps": 20,
+        "width": 1024
+      },
+      "description": "Typography-aware text-to-image with clean, legible text rendering.",
+      "engine": "comfyui",
+      "family": "ideogram",
+      "form": "form_generate",
+      "genre": "image",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "ideogram",
+      "label": "Ideogram",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "img-edit": {
+      "defaults": {
+        "cfg": 1.0,
+        "height": 1024,
+        "steps": 4,
+        "width": 1024
+      },
+      "description": "",
+      "engine": "comfyui",
+      "family": "img-edit",
+      "form": "form_edit",
+      "genre": "image",
+      "has_agent": true,
+      "has_inference": true,
+      "has_rubric": false,
+      "id": "img-edit",
+      "label": "Qwen Image Edit 2511",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "input": {
+      "defaults": {
+        "filename_prefix": "input_prep",
+        "media_type": null,
+        "output_artifact": "media"
+      },
+      "description": ">-",
+      "engine": "",
+      "family": "input",
+      "form": "form_input",
+      "genre": "image",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "input",
+      "label": "Input Prep",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "kimodo": {
+      "defaults": {
+        "cfg_type": "separated",
+        "cfg_weight_a": 2.5,
+        "cfg_weight_b": 5.0,
+        "diffusion_steps": 25,
+        "duration_sec": 5.0,
+        "num_samples": 1,
+        "num_transition_frames": 10,
+        "seed": 42
+      },
+      "description": "Kinematic motion diffusion (NVIDIA Kimodo-SOMA): text \u2192 SOMA-77 pose NPZ, chainable, skinnable onto rigged GLBs.",
+      "engine": "comfyui",
+      "family": "kimodo",
+      "form": "form_motion_kimodo",
+      "genre": "motion",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "kimodo",
+      "label": "Kimodo (text \u2192 motion)",
+      "loras": [],
+      "source": {
+        "repo_id": "nvidia/Kimodo-SOMA-RP-v1.1",
+        "type": ""
+      }
+    },
+    "krea-2": {
+      "defaults": {
+        "cfg": 1.0,
+        "height": 1024,
+        "sampler": "euler",
+        "scheduler": "normal",
+        "steps": 8,
+        "width": 1024
+      },
+      "description": "High-quality general text-to-image generation.",
+      "engine": "comfyui",
+      "family": "krea-2",
+      "form": "form_generate",
+      "genre": "image",
+      "has_agent": true,
+      "has_inference": true,
+      "has_rubric": false,
+      "id": "krea-2",
+      "label": "Krea 2",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "latentsync": {
+      "defaults": {
+        "cfg": 1.0,
+        "height": 1024,
+        "sampler": "euler",
+        "scheduler": "simple",
+        "steps": 25,
+        "width": 1024
+      },
+      "description": "LatentSync \u2014 local-only lip-sync that aligns mouth shapes to audio in a video.",
+      "engine": "comfyui",
+      "family": "latentsync",
+      "form": "form_edit",
+      "genre": "other",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "latentsync",
+      "label": "LatentSync",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "ltx-2-3": {
+      "defaults": {
+        "cfg": 3.0,
+        "fps": 24,
+        "frames": 97,
+        "height": 720,
+        "sampler": "euler",
+        "scheduler": "simple",
+        "seed": 42,
+        "steps": 30,
+        "width": 1280
+      },
+      "description": ">-",
+      "engine": "",
+      "family": "ltx-2-3",
+      "genre": "video",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "ltx-2-3",
+      "label": "LTX 2.3",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "ltx-director-distilled": {
+      "defaults": {
+        "anchor_strength": 0.7,
+        "audio_mode": "none",
+        "auto_snap_ic_grid": true,
+        "base_denoise": 1.0,
+        "crop": "center",
+        "director_guide_enabled": false,
+        "divisible_by": 32,
+        "force_retake_mode": false,
+        "fps": 24,
+        "frames": 97,
+        "guide_scale": 3.0,
+        "guide_strength": 3.0,
+        "height": 720,
+        "ic_lora_name": "None",
+        "ic_lora_strength": 1.0,
+        "image_attention_strength": 1.0,
+        "img_compression": 18,
+        "inpaint_audio": false,
+        "lipsync_strength": 3.0,
+        "ltx_chunk_feedforward": false,
+        "ltx_context_length": 145,
+        "ltx_context_overlap": 40,
+        "ltx_context_windows": false,
+        "ltx_ff_chunks": 2,
+        "ltx_sage_attention": false,
+        "ltx_sage_triton": true,
+        "negative_prompt": null,
+        "output_format": "mp4",
+        "override_audio": false,
+        "relay_epsilon": 0.001,
+        "resize_method": "maintain aspect ratio",
+        "retake_apply_global": false,
+        "retake_enabled": false,
+        "retake_start_frame": 0,
+        "retake_strength": 1.0,
+        "sampler": "euler",
+        "sampling_steps": 8,
+        "scale_by": 1.0,
+        "scheduler": "beta",
+        "start_frame": 0,
+        "tile_overlap": 64,
+        "tile_size": 256,
+        "torch_compile": false,
+        "upscale_cfg": 1.0,
+        "upscale_denoise": 0.3,
+        "upscale_enabled": false,
+        "upscale_method": "bicubic",
+        "upscale_steps": 10,
+        "use_custom_motion": true,
+        "use_tiled_encode": false,
+        "width": 1280
+      },
+      "description": "LTX 2.3 text- and image-to-video generation via the Director workflow.",
+      "engine": "",
+      "family": "ltx-director-distilled",
+      "genre": "video",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "ltx-director-distilled",
+      "label": "LTX 2.3",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "mask-studio": {
+      "defaults": {
+        "detect_mode": "body",
+        "detection_threshold": 0.35,
+        "export_body": false,
+        "export_boxes": true,
+        "export_face": false,
+        "export_hands": false,
+        "export_paint": false,
+        "instance_filter": "all",
+        "max_instances": 0,
+        "output_mode": "segm",
+        "outputs": "[]",
+        "sam3_prompt": null,
+        "sam_dilation": 0,
+        "sam_threshold": 0.93
+      },
+      "description": "Selection-only mask card: RT-DETR proposes, SAM3 refines \u2192 named class masks for inpaint flows.",
+      "engine": "comfyui",
+      "family": "mask-studio",
+      "form": "form_mask_studio",
+      "genre": "image",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "mask-studio",
+      "label": "Mask",
+      "loras": [],
+      "source": {
+        "repo_id": "facebook/sam-vit-base",
+        "type": ""
+      }
+    },
+    "mesh_refine": {
+      "defaults": {
+        "box_v": 1.0,
+        "dtype": "bfloat16",
+        "file_format": "glb",
+        "filename_prefix": "ultrashape_refined",
+        "guidance_scale": 5.0,
+        "low_vram": false,
+        "mc_level": 0.0,
+        "normalize_scale": 0.99,
+        "num_chunks": 8000,
+        "num_latents": 32768,
+        "num_sharp_points": 204800,
+        "num_uniform_points": 204800,
+        "octree_resolution": 384,
+        "preset": "standard",
+        "remove_bg": false,
+        "seed": 42,
+        "steps": 50
+      },
+      "description": "Image-guided coarse-mesh refinement (UltraShape 1.0 DiT) \u2014 carves sharp limb separation + hard-surface edges into blobby TRELLIS output using the SAME guide image the mesh was generated from. The pre-rig cleanup step: run BEFORE SOMAX so proximity-based weight transfer can't glue arm vertices to torso bones.",
+      "engine": "",
+      "family": "mesh_refine",
+      "form": "form_3d_mesh_refine",
+      "genre": "3d",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "mesh_refine",
+      "label": "UltraShape Mesh Refine",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "moss-sfx": {
+      "defaults": {},
+      "description": "MOSS-SFX v2 sound-effect generation \u2014 describe the SOUND not the scene",
+      "engine": "comfyui",
+      "family": "moss-sfx",
+      "form": "form_sound",
+      "genre": "audio",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "moss-sfx",
+      "label": "MOSS-SFX v2",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "moss-tts": {
+      "defaults": {
+        "backend": "cuda"
+      },
+      "description": "MOSS-TTS Nano 100M text-to-speech",
+      "engine": "audio_cpp",
+      "family": "moss-tts",
+      "form": "form_tts",
+      "genre": "audio",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "moss-tts",
+      "label": "MOSS-TTS Nano 100M",
+      "loras": [],
+      "source": {
+        "filename": "MOSS-TTS-Nano-100M-GGUF",
+        "repo_id": "audio-cpp/audio.cpp-gguf",
+        "type": "huggingface"
+      }
+    },
+    "moss-tts-local": {
+      "defaults": {
+        "backend": "cuda"
+      },
+      "description": "MOSS-TTS Local Transformer v1.5",
+      "engine": "audio_cpp",
+      "family": "moss-tts-local",
+      "form": "form_tts",
+      "genre": "audio",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "moss-tts-local",
+      "label": "MOSS-TTS Local v1.5",
+      "loras": [],
+      "source": {
+        "filename": "MOSS-TTS-Local-v1.5-GGUF",
+        "repo_id": "audio-cpp/audio.cpp-gguf",
+        "type": "huggingface"
+      }
+    },
+    "moss_voicegenerator": {
+      "defaults": {
+        "backend": "cuda"
+      },
+      "description": "MOSS VoiceGenerator voice design",
+      "engine": "audio_cpp",
+      "family": "moss_voicegenerator",
+      "form": "form_tts",
+      "genre": "audio",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "moss_voicegenerator",
+      "label": "MOSS VoiceGenerator",
+      "loras": [],
+      "source": {
+        "filename": "MOSS-VoiceGenerator-GGUF",
+        "repo_id": "audio-cpp/audio.cpp-gguf",
+        "type": "huggingface"
+      }
+    },
+    "music3": {
+      "defaults": {
+        "backend": "cuda"
+      },
+      "description": "MiniMax Music 3 text-to-music with lyrics",
+      "engine": "comfyui",
+      "family": "music3",
+      "form": "form_music",
+      "genre": "audio",
+      "has_inference": true,
+      "has_rubric": false,
+      "id": "music3",
+      "label": "MiniMax Music 3",
+      "loras": [],
+      "source": {
+        "filename": "MiniMax-Music3-GGUF",
+        "repo_id": "audio-cpp/MiniMax-Music3-GGUF",
+        "type": "huggingface"
+      }
+    },
+    "pixal3d": {
+      "defaults": {
+        "bg_removal": "auto",
+        "cfg": 3.0,
+        "filename_prefix": "pixal3d",
+        "resolution": 1024,
+        "seed": 42,
+        "steps": 12,
+        "texture_size": 2048
+      },
+      "description": ">-",
+      "engine": "",
+      "family": "pixal3d",
+      "form": "form_3d_pixal3d",
+      "genre": "3d",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "pixal3d",
+      "label": "Pixal3D",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "pixel_upscale": {
+      "defaults": {
+        "batch_size": 5,
+        "cfg": 7.5,
+        "denoise": 0.4,
+        "detection_threshold": 0.35,
+        "downscale_first": 1.0,
+        "filename_prefix": "upscaled",
+        "guide_size": 512,
+        "inpaint_region": "free",
+        "max_size": 1024,
+        "mode": "upscale",
+        "resolution": 2048,
+        "seed": 0,
+        "steps": 50,
+        "target_scale": 4.0
+      },
+      "description": ">-",
+      "engine": "",
+      "family": "pixel_upscale",
+      "genre": "image",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "pixel_upscale",
+      "label": "Pixel Upscaler",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "qwen-img-edit-2511": {
+      "defaults": {
+        "cfg": 1.0,
+        "double_reference": false,
+        "height": 1024,
+        "sampler": "euler",
+        "scheduler": "simple",
+        "steps": 8,
+        "use_stock_nodes": false,
+        "width": 1024
+      },
+      "description": "Image Edit \u2014 instruction-driven image editing and manipulation (Qwen-Image-Edit 2511 is",
+      "engine": "comfyui",
+      "family": "qwen-img-edit-2511",
+      "form": "form_edit",
+      "genre": "image",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "qwen-img-edit-2511",
+      "label": "Image Edit",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "qwen3-tts": {
+      "defaults": {
+        "mode": "tts"
+      },
+      "description": "Qwen3-TTS 12Hz CustomVoice 0.6B \u2014 preset personas and instruct-text emotion control",
+      "engine": "comfyui",
+      "family": "qwen3-tts",
+      "form": "form_tts",
+      "genre": "audio",
+      "has_inference": true,
+      "has_rubric": false,
+      "id": "qwen3-tts",
+      "label": "Qwen3-TTS CustomVoice 0.6B",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "qwen3-tts-base": {
+      "defaults": {
+        "mode": "tts",
+        "variant": "base"
+      },
+      "description": "Qwen3-TTS 12Hz Base 0.6B \u2014 plain text-to-speech, no persona",
+      "engine": "comfyui",
+      "family": "qwen3-tts-base",
+      "form": "form_tts",
+      "genre": "audio",
+      "has_inference": true,
+      "has_rubric": false,
+      "id": "qwen3-tts-base",
+      "label": "Qwen3-TTS Base 0.6B",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "qwen3-tts-voicedesign": {
+      "defaults": {
+        "mode": "design",
+        "variant": "voicedesign"
+      },
+      "description": "Qwen3-TTS 12Hz VoiceDesign 1.7B \u2014 instruction-following voice design; the voice-lock lane",
+      "engine": "comfyui",
+      "family": "qwen3-tts-voicedesign",
+      "form": "form_tts",
+      "genre": "audio",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "qwen3-tts-voicedesign",
+      "label": "Qwen3-TTS VoiceDesign 1.7B",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "rtx-vsr": {
+      "defaults": {
+        "batch_size": 5,
+        "cfg": 4.0,
+        "color_match_enabled": true,
+        "denoise": 0.3,
+        "dit_model": "seedvr2_ema_3b_fp16.safetensors",
+        "filename_prefix": "upscaled_video",
+        "fps": 24,
+        "mode": "rtx_vsr",
+        "rtx_mode": "vsr",
+        "rtx_strength": 0.6,
+        "rtx_two_pass": true,
+        "seed": 0,
+        "steps": 20,
+        "target_resolution": 1080,
+        "upscaler_model": "4xNomos2_hq_dat2.pth",
+        "vae_model": "ema_vae_fp16.safetensors"
+      },
+      "description": ">-",
+      "engine": "",
+      "family": "rtx-vsr",
+      "form": "form_video_upscale",
+      "genre": "video",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "rtx-vsr",
+      "label": "Video Upscale",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "scail2-animate": {
+      "defaults": {
+        "cfg": 5.0,
+        "fps": 24,
+        "height": 480,
+        "length": 25,
+        "pose_strength": 1.0,
+        "sampler": "euler",
+        "scheduler": "simple",
+        "seed": 42,
+        "steps": 12,
+        "width": 480
+      },
+      "description": "SCAIL-2 character animation \u2014 drives a reference character from a video and colored mask.",
+      "engine": "comfyui",
+      "family": "scail2-animate",
+      "form": "form_video_director",
+      "genre": "video",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "scail2-animate",
+      "label": "SCAIL-2",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "see-through": {
+      "defaults": {
+        "inference_steps": 30,
+        "resolution": 1280,
+        "resolution_depth": 768,
+        "seed": 42,
+        "tblr_split": false
+      },
+      "description": "See-Through anime layer decomposition \u2014 splits an image into character, clothing, and background layers.",
+      "engine": "",
+      "family": "see-through",
+      "form": "form_image_seethrough",
+      "genre": "other",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "see-through",
+      "label": "See-Through",
+      "loras": [],
+      "source": {
+        "repo_id": "layerdifforg/seethroughv0.0.2_layerdiff3d",
+        "type": ""
+      }
+    },
+    "seedvr2_ema": {
+      "defaults": {
+        "batch_size": 1,
+        "filename_prefix": "seedvr2",
+        "max_resolution": 4096,
+        "resolution": 1080,
+        "seed": 0
+      },
+      "description": "SeedVR2 diffusion-based super-resolution (3B EMA FP16 default, 7B EMA FP8",
+      "engine": "comfyui",
+      "family": "seedvr2_ema",
+      "form": "form_upscale",
+      "genre": "image",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "seedvr2_ema",
+      "label": "SeedVR2 Upscaler",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "smplx": {
+      "defaults": {
+        "backend": "cpu",
+        "skeleton": "smplx"
+      },
+      "description": "SMPL-X 22-joint skeleton \u2014 gated licence, user must provide checkpoint",
+      "engine": "kimodo",
+      "family": "smplx",
+      "form": "form_motion",
+      "genre": "motion",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "smplx",
+      "label": "Kimodo SMPL-X 22-joint",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "soma": {
+      "defaults": {
+        "backend": "cpu",
+        "skeleton": "soma"
+      },
+      "description": "SOMA compact 30-joint control skeleton \u2014 RP and SEED variants",
+      "engine": "kimodo",
+      "family": "soma",
+      "form": "form_motion",
+      "genre": "motion",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "soma",
+      "label": "Kimodo SOMA 30-joint",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "somax": {
+      "defaults": {
+        "decimate_ratio": 0.2,
+        "file_format": "glb",
+        "filename_prefix": "KimodoAnimated",
+        "in_place": true,
+        "preserve_texture": true
+      },
+      "description": "TRELLIS \u2192 SOMA weight transfer \u2014 image to SOMAX rigged GLB with anatomically correct SOMA-77 skeleton weights.",
+      "engine": "",
+      "family": "somax",
+      "form": "form_3d_somax",
+      "genre": "3d",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "somax",
+      "label": "SOMAX",
+      "loras": [],
+      "source": {
+        "repo_id": "nvidia/soma-x",
+        "type": ""
+      }
+    },
+    "step1x_texture": {
+      "defaults": {
+        "filename_prefix": "step1x_texture",
+        "preset": "standard",
+        "remove_bg": false,
+        "render_size": 2048,
+        "seed": 2025,
+        "texture_size": 2048
+      },
+      "description": "Diffusion-based 3D texture synthesis \u2014 1 reference image \u2192 6 multi-view images via SDXL ig2mv flow \u2192 baked onto UV atlas. Fills ALL surfaces (no coverage gaps unlike camera projection). 3.5B model, ~15s on 4090.",
+      "engine": "",
+      "family": "step1x_texture",
+      "form": "form_3d_step1x_texture",
+      "genre": "3d",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "step1x_texture",
+      "label": "Step1X-3D Texture",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "stretchy-rig": {
+      "defaults": {
+        "dwpose_precision": "fp32",
+        "yolox_precision": "fp16"
+      },
+      "description": "Stretchy Studio auto-rig \u2014 DWPose TensorRT whole-body keypoints for 2D character animation.",
+      "engine": "",
+      "family": "stretchy-rig",
+      "form": "form_image_stretchy_rig",
+      "genre": "other",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "stretchy-rig",
+      "label": "Stretchy Rig",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "transfer_rig": {
+      "defaults": {},
+      "description": "Copy rig from source GLB onto target GLB via GPU KNN.",
+      "engine": "comfyui",
+      "family": "transfer_rig",
+      "form": "form_3d_transfer_rig",
+      "genre": "3d",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "transfer_rig",
+      "label": "Transfer Rig",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "trellis2-native": {
+      "defaults": {
+        "bg_removal": "auto",
+        "cfg": 3.0,
+        "filename_prefix": "trellis2_native",
+        "resolution": 1024,
+        "seed": 42,
+        "steps": 12
+      },
+      "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning \u2192 voxel structure \u2192 shape latent \u2192 texture atlas, saved as a .glb.",
+      "engine": "comfyui",
+      "family": "trellis2-native",
+      "form": "form_3d_trellis2_native",
+      "genre": "3d",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "trellis2-native",
+      "label": "TRELLIS.2 Native",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "trellis_native": {
+      "defaults": {
+        "band": 0,
+        "bg_removal": "auto",
+        "filename_prefix": "trelliscpp",
+        "quant": "q8",
+        "resolution": 1024,
+        "seed": 42,
+        "texture_size": 2048,
+        "webp_quality": 90
+      },
+      "description": "Native trellis.cpp GGML engine \u2014 image to UV-textured GLB with the reference-parity C++ postprocess (weld, fill, DC remesh, CuMesh QEM, xatlas, trilinear PBR bake). 50s per asset on the 4090; no confetti.",
+      "engine": "",
+      "family": "trellis_native",
+      "form": "form_3d_trellis_native",
+      "genre": "3d",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "trellis_native",
+      "label": "Trellis (Native)",
+      "loras": [],
+      "source": {
+        "repo_id": "ilintar/trellis2-gguf",
+        "type": ""
+      }
+    },
+    "txt2music": {
+      "defaults": {
+        "backend": "cuda",
+        "duration": 120,
+        "sample_rate": 44100
+      },
+      "description": "MiniMax Music 3 text-to-music with lyrics (audio.cpp t2m)",
+      "engine": "audio_cpp",
+      "family": "txt2music",
+      "form": "form_music",
+      "genre": "audio",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "txt2music",
+      "label": "MiniMax Music 3 (txt2music)",
+      "loras": [],
+      "source": {
+        "filename": "MiniMax-Music3-GGUF",
+        "repo_id": "audio-cpp/MiniMax-Music3-GGUF",
+        "type": "huggingface"
+      }
+    },
+    "wan-vace": {
+      "defaults": {
+        "cfg": 1.0,
+        "fps": 24,
+        "height": 480,
+        "length": 49,
+        "sampler": "euler",
+        "scheduler": "simple",
+        "seed": 42,
+        "steps": 4,
+        "width": 832
+      },
+      "description": "Wan2.2 VACE video generation with reference-frame and mask control.",
+      "engine": "comfyui",
+      "family": "wan-vace",
+      "form": "form_video_director",
+      "genre": "video",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "wan-vace",
+      "label": "Wan2.2 VACE",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    },
+    "z-image": {
+      "defaults": {
+        "cfg": 1.0,
+        "height": 1024,
+        "negative_prompt": null,
+        "sampler": "res_multistep",
+        "scheduler": "simple",
+        "steps": 8,
+        "width": 1024
+      },
+      "description": "Fast Z-Image / Z-Image Turbo text-to-image generation.",
+      "engine": "comfyui",
+      "family": "z-image",
+      "form": "form_generate",
+      "genre": "image",
+      "has_inference": false,
+      "has_rubric": false,
+      "id": "z-image",
+      "label": "Z-Image",
+      "loras": [],
+      "source": {
+        "type": ""
+      }
+    }
   }
- }
 }

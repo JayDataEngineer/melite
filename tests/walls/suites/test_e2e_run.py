@@ -110,19 +110,22 @@ def scratch_gateway():
     reap_gateway(proc)
 
 
-def test_e2e_krea_2_runs_to_a_real_png(scratch_gateway):
-    # start
-    code, body = _post(scratch_gateway, "v1/flows/start", E2E_BODY)
+def _run_to_real_png(port, body, label):
+    """The shared e2e spine: start → poll to terminal → asset bytes.
+    Every boarded image family rides it (offered means runnable —
+    operator order 2026-09-05)."""
+    code, rbody = _post(port, "v1/flows/start", body)
     if code not in (200, 202):
-        msg = str(body).lower()
+        msg = str(rbody).lower()
         unavailable = ("not available", "no engine", "no comfyui",
                        "plugin not found")
         if any(s in msg for s in unavailable) or code in (503, 502):
             pytest.skip("scratch gateway can't run inference: %s %s" %
-                        (code, body))
-        pytest.fail("start failed: %s %s" % (code, body))
-    run_id = body.get("run_id") or body.get("id")
-    assert run_id, "start returned %s but no run_id: %s" % (code, body)
+                        (code, rbody))
+        pytest.fail("%s start failed: %s %s" % (label, code, rbody))
+    run_id = rbody.get("run_id") or rbody.get("id")
+    assert run_id, "%s start returned %s but no run_id: %s" % (
+        label, code, rbody)
 
     # poll
     deadline = time.time() + 180
@@ -130,7 +133,7 @@ def test_e2e_krea_2_runs_to_a_real_png(scratch_gateway):
     final = None
     while time.time() < deadline:
         time.sleep(2)
-        c, b = _get_json(scratch_gateway, "v1/flows/status/%s" % run_id)
+        c, b = _get_json(port, "v1/flows/status/%s" % run_id)
         if c != 200 or not isinstance(b, dict):
             continue
         state = (b.get("status") or b.get("state") or "").lower()
@@ -149,10 +152,11 @@ def test_e2e_krea_2_runs_to_a_real_png(scratch_gateway):
                           for s in stages):
             terminal = "error"; final = b; break
     if terminal is None:
-        pytest.fail("run %s did not reach terminal in 180s" % run_id)
+        pytest.fail("%s run %s did not reach terminal in 180s" %
+                    (label, run_id))
     if terminal != "done":
-        pytest.fail("run %s reached terminal=%s: %s" %
-                    (run_id, terminal, final))
+        pytest.fail("%s run %s reached terminal=%s: %s" %
+                    (label, run_id, terminal, final))
 
     # asset
     assets = (final.get("assets") or final.get("artifacts") or [])
@@ -161,34 +165,26 @@ def test_e2e_krea_2_runs_to_a_real_png(scratch_gateway):
             assets.extend(st.get("assets") or st.get("artifacts") or [])
     if not assets:
         time.sleep(1)
-        c, b2 = _get_json(scratch_gateway, "v1/flows/status/%s" % run_id)
+        c, b2 = _get_json(port, "v1/flows/status/%s" % run_id)
         assets = (b2.get("assets") or b2.get("artifacts") or []) if isinstance(b2, dict) else []
-    assert assets, "run completed but no assets returned: %s" % final
+    assert assets, "%s run completed but no assets returned: %s" % (label, final)
     first = assets[0]
     url = (first.get("url") or first.get("path") or first.get("href")
            if isinstance(first, dict) else first)
-    assert url, "asset entry has no url: %s" % first
+    assert url, "%s asset entry has no url: %s" % (label, first)
     # The wire contract (terminal=completed + non-empty asset URL) is the
     # load-bearing pin. The bytes-fetch is opportunistic: a scratch
-    # gateway whose asset mount path differs (or whose STATE_ROOT
-    # doesn't persist) may 404 the asset path; the live probe
-    # (run-947ace9bc89a → 957,065 byte PNG) proved the bytes on the
-    # user's box. We attempt the fetch and WARN on miss rather
-    # than fail the wall, so this wall runs in any GPU env and
-    # the execution+wire pin holds everywhere.
+    # gateway whose asset mount path differs may 404 the asset path;
+    # the live probes (krea-2 run-947ace9bc89a → 957,065 byte PNG, and
+    # the 2026-09-05 boarding probes per family) proved the bytes on
+    # the user's box. We WARN on miss rather than fail the wall, so
+    # this wall runs in any GPU env.
     fetched = False
     buf = b""
     cr = 0
-    # the asset door's URL shape is /v1/assets/runs/<run_id>/<file> (the
-    # same door the production gateway serves — verified live on :33081).
-    # The status payload's artifacts are ABSOLUTE PATHS; deriving the
-    # basename + run_id (instead of the old lstrip("/") of the abs path,
-    # which produced a URL the door never served — the 404 the old
-    # warning complained about) makes the bytes-fetch REAL on any
-    # correctly-wired scratch gateway.
     fname = url.rstrip("/").rsplit("/", 1)[-1]
     asset_path = "v1/assets/runs/%s/%s" % (run_id, fname)
-    cr, buf = _get_bytes(scratch_gateway, asset_path, timeout=30)
+    cr, buf = _get_bytes(port, asset_path, timeout=30)
     fetched = (cr == 200 and len(buf) > 0)
     if not fetched and url.startswith("http"):
         try:
@@ -198,15 +194,57 @@ def test_e2e_krea_2_runs_to_a_real_png(scratch_gateway):
         except Exception:
             fetched = False
     if fetched and len(buf) > 1000 and _is_image(buf):
-        return  # the strongest pin: real image bytes off the wire
-    # Wire proof already asserted above (terminal done + non-empty
-    # assets). If the bytes didn't come back, record the URL so
-    # the operator can chase the asset mount; don't fail the wall
-    # (the live probe separately proved bytes on the production
-    # gateway — this wall's job is the execution+wire pin).
+        return buf  # the strongest pin: real image bytes off the wire
     import warnings
-    warnings.warn("e2e run completed but asset bytes not fetched "
+    warnings.warn("%s e2e run completed but asset bytes not fetched "
                   "from scratch gateway (path/url=%s, status=%s) — "
                   "the wire contract (terminal+asset URL) is the "
                   "pin; the live probe proved bytes on :33081." %
-                  (url, cr if url.startswith("/") else "n/a"))
+                  (label, url, cr if url.startswith("/") else "n/a"))
+    return b""
+
+
+def test_e2e_krea_2_runs_to_a_real_png(scratch_gateway):
+    _run_to_real_png(scratch_gateway, E2E_BODY, "krea-2")
+
+
+# the boarded image families (operator order 2026-09-05: offered
+# means runnable — the unboarded data-family era ended). Each body
+# rides the family's own lane shape (its defaults, its samplers).
+E2E_ZIMAGE_BODY = {
+    "model": "z-image",
+    "prompt": "wall e2e test: a solid blue square on a white background",
+    "width": 512, "height": 512,
+    "steps": 8, "cfg": 1.0,
+    "sampler": "res_multistep", "scheduler": "simple",
+    "seed": 1,
+}
+E2E_ANIMA_BODY = {
+    "model": "anima",
+    "prompt": "wall e2e test: a solid green triangle on a white background",
+    "width": 512, "height": 512,
+    "steps": 8, "cfg": 4.0,
+    "sampler": "er_sde", "scheduler": "simple",
+    "seed": 1,
+}
+E2E_IDEOGRAM_BODY = {
+    "model": "ideogram",
+    "prompt": "wall e2e test: the word WALL in bold black letters",
+    "width": 512, "height": 512,
+    "steps": 10, "cfg": 7.0,
+    "sampler": "euler",
+    "mu": 0.5, "std": 1.75,
+    "seed": 1,
+}
+
+
+def test_e2e_z_image_runs_to_a_real_png(scratch_gateway):
+    _run_to_real_png(scratch_gateway, E2E_ZIMAGE_BODY, "z-image")
+
+
+def test_e2e_anima_runs_to_a_real_png(scratch_gateway):
+    _run_to_real_png(scratch_gateway, E2E_ANIMA_BODY, "anima")
+
+
+def test_e2e_ideogram_runs_to_a_real_png(scratch_gateway):
+    _run_to_real_png(scratch_gateway, E2E_IDEOGRAM_BODY, "ideogram")

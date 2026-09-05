@@ -102,12 +102,11 @@ _FORMS_TABLE = {
                   "plugin": "comfyui", "sidebar_key": "image",
                   "default_service": "krea-2", "hidden": False,
                   # The image-generation form's model membership (the
-                  # SSOT for the cardless-model → form-card fallback,
-                  # 2026-09-05). krea-2 is the carded anchor (its own
-                  # card.py); z-image/anima/ideogram are "data" models
-                  # in the same form — without this declaration, their
-                  # form-spec served 0 fields and the Parameters zone
-                  # vanished on model swap.
+                  # SSOT for the form-card fallback, 2026-09-05).
+                  # EVERY member boards a card arm: krea-2/z-image/
+                  # anima → image-gen; ideogram → ideogram4 (the
+                  # dual-guided graph, same editor form). Offered
+                  # means runnable — pinned by test_card_boarding.
                   "covers": ("krea-2", "z-image", "anima", "ideogram")},
     "image-edit": {"label": "Image Edit", "genre": "image", "order": 2,
                    "plugin": "comfyui", "sidebar_key": "image-edit",
@@ -143,11 +142,13 @@ _FORMS_TABLE = {
                     "default_service": "mask-studio", "hidden": False,
                     "covers": ("mask-studio",)},
     # cluster C stopgap (2026-09-04): kimodo text→motion on our own
-    # packs; the motion genre already rides the sidebar taxonomy
+    # packs; the motion genre already rides the sidebar taxonomy.
+    # hy_motion dropped (2026-09-05): no model class exists — a
+    # ghost cover is an offer that cannot run
     "motion": {"label": "Motion", "genre": "motion", "order": 9,
                "plugin": "comfyui", "sidebar_key": "motion",
                "default_service": "kimodo", "hidden": False,
-               "covers": ("kimodo", "hy_motion")},
+               "covers": ("kimodo",)},
     # cluster C (2026-09-04): TRELLIS.2 native — image → textured
     # .glb on ComfyUI core (no extension packs)
     "img-to-mesh": {"label": "Image → 3D", "genre": "3d", "order": 10,
@@ -178,20 +179,35 @@ _FORMS_TABLE = {
              "covers": ("anny",)},
     # cluster E (2026-09-04): the generic video card — ONE interface,
     # every non-h3 family (img-gen pattern; h3 stays on h3-timeline)
+    # cluster E (2026-09-04): the generic video card — ONE interface,
+    # every non-h3 family (img-gen pattern; h3 stays on h3-timeline).
+    # Covers = the RUNNABLE members only (2026-09-05): the ltx pair
+    # is unboarded (no card arm — form='' on their classes until the
+    # LTX lane boards).
     "video-gen": {"label": "Video", "genre": "video", "order": 15,
                   "plugin": "comfyui", "sidebar_key": "video",
                   "default_service": "wan-vace", "hidden": False,
-                  "covers": ("wan-vace", "ltx-director-distilled",
-                             "scail2-animate", "ltx-2-3")},
+                  "covers": ("wan-vace", "scail2-animate")},
     # F-cluster (2026-09-04): the hidden tool card — tool lanes are
-    # consumed BY other cards, never user surfaces
+    # consumed BY other cards, never user surfaces. The pixel pair is
+    # unboarded (form='' until the upscale lane boards them).
     "upscale-tools": {"label": "Upscale Tools", "genre": "image",
                       "order": 16, "plugin": "comfyui",
                       "sidebar_key": "image",
                       "default_service": "seedvr2_ema",
                       "hidden": True,
-                      "covers": ("seedvr2_ema", "pixel_upscale",
-                                 "basic_resize")},
+                      "covers": ("seedvr2_ema",)},
+    # ideogram4 (2026-09-05): the dual-guided typography card. HIDDEN
+    # row — ideogram rides the IMAGE-GEN picker (image-gen covers it);
+    # this row exists so the card id clears the _ALLOWED_CARDS gate
+    # and /v1/form-spec?model=ideogram serves the card surface (the
+    # same shape as upscale-tools: registered, not a user surface).
+    "ideogram4": {"label": "Ideogram", "genre": "image",
+                  "order": 17, "plugin": "comfyui",
+                  "sidebar_key": "image",
+                  "default_service": "ideogram",
+                  "hidden": True,
+                  "covers": ("ideogram",)},
 }
 
 # The C's ALLOWED_CARDS gate (src/server.cpp:7585-7588) is exactly the keys
@@ -1058,14 +1074,15 @@ def _card_spec(repo_root, model):
 
 
 def _form_card_frag_for_model(repo_root, row):
-    """The cardless-model → form-card fallback (2026-09-05).
+    """The no-own-card.py model → form-anchor fallback (2026-09-05).
 
     A model with no card.py of its own still belongs to a form
-    (_FORMS_TABLE's `covers` membership is the SSOT). Its form-spec
-    inherits the form's ANCHOR card's fields/schema_groups so the
-    Parameters zone renders the universal surface — without this,
-    cardless "data" models (z-image, anima, ideogram in the image
-    form) served 0 fields and the Parameters zone vanished on
+    (_FORMS_TABLE's `covers` membership is the SSOT — every member
+    BOARDS a compose arm; owning a card.py is a different thing from
+    boarding). Its form-spec inherits the form's ANCHOR card's
+    fields/schema_groups so the Parameters zone renders the
+    universal surface — without this, models without their own
+    card.py served 0 fields and the Parameters zone vanished on
     model swap. Declarative: the model→form membership lives in
     _FORMS_TABLE, the anchor card is the form's `default_service`.
     No model name is hardcoded in the body of this helper."""

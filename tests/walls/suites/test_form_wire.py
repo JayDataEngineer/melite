@@ -398,14 +398,23 @@ def test_http_cardless_models_in_a_form_serve_the_form_card():
 
 
 def test_http_cardless_model_spec_keeps_its_own_identity(scratch_gateway):
-    """The fallback inherits the ANCHOR's fields but brands the spec
-    with the REQUESTED model (form/service = model.id) — the editor
-    binds to the right model, not the anchor. Via HTTP so the wall
-    path mirrors the browser's (and avoids the grammar model-cache
-    path-collision that a direct in-process call would hit)."""
-    for mid in ("z-image", "anima", "ideogram"):
+    """A covered model's spec brands the MODEL (model/service = its
+    id) while the field surface comes from the card it boards —
+    absorbed members (z-image/anima → image-gen) carry the card's
+    form identity; ideogram composes through its own arm and serves
+    it (the hidden ideogram4 forms row clears the ALLOWED_CARDS
+    gate — the same registered-but-not-a-surface shape as
+    upscale-tools). Via HTTP so the wall path mirrors the
+    browser's (and avoids the grammar model-cache path-collision
+    that a direct in-process call would hit)."""
+    _expected_form = {"z-image": "image-gen", "anima": "image-gen",
+                      "ideogram": "ideogram4"}
+    for mid, want_form in _expected_form.items():
         status, body = _http_get(scratch_gateway, "v1/form-spec?model=%s" % mid)
         assert status == 200
         assert body["model"] == mid
-        assert body["form"] == mid and body["service"] == mid
+        assert body["service"] == mid
+        assert body["form"] == want_form, (
+            "model %s serves form %r, expected %r"
+            % (mid, body["form"], want_form))
         assert len(body.get("fields", [])) >= 1

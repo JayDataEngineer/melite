@@ -150,8 +150,22 @@ def test_model_dir_completeness():
     _mcards = {mid: cls for mid, (_p, cls)
                in scan_engine_models(REPO).items()}
 
+    # the package-load arms (h3-timeline) read no lane_inputs — the
+    # lane package owns its own weight wiring; the row requirement
+    # below is the CARD-PATTERN arms' contract (SSOT: compose's
+    # _PACKAGE_CARDS)
+    sys.path.insert(0, os.path.join(
+        REPO, "plugins", "engines", "comfyui"))
+    sys.path.insert(0, os.path.join(
+        REPO, "plugins", "engines", "comfyui", "compose"))
+    import compose as _compose_pkg
+    _package_cards = _compose_pkg._PACKAGE_CARDS
+
     _TEMPLATE_BY_FAMILY = {
         "krea-2": "generate_t2i.json",
+        "z-image": "generate_t2i.json",
+        "anima": "generate_t2i.json",
+        "ideogram": "generate_t2i.json",
         "img-edit": "edit_i2i.json",
         "qwen3-tts-voicedesign": "tts_t1.json",
         "voice-lock": "voicelock_t1.json",
@@ -170,8 +184,10 @@ def test_model_dir_completeness():
             continue
         assert bool(getattr(mcls, "engine", "")), (
             "model %s boarding %s with no engine" % (mid, card_id))
-        assert getattr(mcls, "lane_inputs", None) is not None, (
-            "model %s boarding %s with no lane_inputs row" % (mid, card_id))
+        if card_id not in _package_cards:
+            assert getattr(mcls, "lane_inputs", None) is not None, (
+                "model %s boarding %s with no lane_inputs row"
+                % (mid, card_id))
         tmpl = _TEMPLATE_BY_FAMILY.get(mid)
         if tmpl:
             mdir = None

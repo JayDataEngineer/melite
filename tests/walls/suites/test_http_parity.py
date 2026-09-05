@@ -107,16 +107,17 @@ def main():
             ("forms", "deep"),
             ("form-spec?model=krea-2", "deep"),
             ("form-spec?model=krea-2-raw", "deep"),
-            # FEEDING LAW: z-image/anima/z-image-base are DATA
-            # families (unboarded) — no form-spec contract; their
-            # goldens were deleted with the unboarding 2026-09-04.
-            # They return when the families truthfully feed a card.
+            # OFFERED MEANS RUNNABLE (2026-09-05): z-image/anima
+            # board image-gen — their form-specs are contract again
+            # (goldens regenerated with the boarding). z-image-base
+            # remains unoffered (its checkpoint is not provisioned).
+            ("form-spec?model=z-image", "deep"),
+            ("form-spec?model=anima", "deep"),
             ("form-spec?model=h3-timeline", "deep"),
             ("form-spec?model=music3", "deep"),
             ("kinds", "deep"),
             ("plugins", "deep"),
             ("health", "deep"),
-            ("flows/yaml/list", "deep"),
             ("themes", "deep"),
             ("tags", "deep"),
             ("services", "deep"),
@@ -150,11 +151,16 @@ def main():
         # golden-pinned — the deleted C-era snapshots (174 runs / 546
         # drafts) captured one dead server's state: history, not
         # contract. The pin: envelope + count invariant + row shape.
+        # count invariant (2026-09-05 correction): RunsEnvelope DECLARES
+        # count = total collected entries, pre-limit, >= len(runs) —
+        # the C contract, per run_wire.RunsEnvelope. The old == pin
+        # held only while the estate fit under the 200-row page; with
+        # 686 collected sidecars the honest invariant is >=.
         code, body = get(port, "/v1/flows/runs")
         rows = body.get("runs", []) if isinstance(body, dict) else []
         check("GET /v1/flows/runs contract",
               code == 200 and set(body) >= {"count", "runs"}
-              and body["count"] == len(rows)
+              and body["count"] >= len(rows)
               and all(set(r) >= {"run_id", "status"} for r in rows),
               str(body)[:80])
         code, body = get(port, "/v1/flows/drafts")

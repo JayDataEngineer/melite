@@ -50,6 +50,15 @@ class ModelError(Exception):
 #   3d lane. 'ai_generated' is a TAG, not a genre.
 _GENRE_VALUES = frozenset(("image", "video", "audio", "3d", "motion", "other", "text", ""))
 
+class LatentNode(str, Enum):
+    """The t2i lane's empty-latent constructors — one per family
+    latent shape (closed vocabulary, rung 3: a typo refuses
+    construction, never a runtime node mismatch)."""
+    SD3 = "EmptySD3LatentImage"       # 16-channel (krea-2, z-image)
+    PLAIN = "EmptyLatentImage"        # SD latents (anima)
+    FLUX2 = "EmptyFlux2LatentImage"   # flux2 latent (ideogram4)
+
+
 class LaneInputs(BaseModel, frozen=True):
     '''Weight facts a card renderer reads (MODELS DON'T RENDER — cards
     do; the model supplies data). `unet` states the checkpoint basename
@@ -60,7 +69,14 @@ class LaneInputs(BaseModel, frozen=True):
 The AUDIO lanes (A-cluster, 2026-09-04) load through the audiocore
 node pack instead of ComfyUI loaders: `family` + `model_path` are
 THEIR weight facts (LoadAudiocoreModel's two required rows) — a
-third source shape, mutually exclusive with the loader facts.'''
+third source shape, mutually exclusive with the loader facts.
+
+The IMAGE family variance (2026-09-05 boarding): `sampling_shift`
+wraps the unet in ModelSamplingAuraFlow when nonzero (z-image's
+flow shift; 0 = no wrapper, krea-2 byte-stable), `latent_node`
+picks the empty-latent constructor, and `unet_unconditional`
+states the SECOND unet for dual-guided families (ideogram4) —
+a stated-once basename like `unet`, no artifact row beside it.'''
     model_config = {"extra": "forbid"}
     unet: str = ""
     unet_variant: str = ""
@@ -82,13 +98,17 @@ third source shape, mutually exclusive with the loader facts.'''
     texture_vae: str = ""
     clip_vision: str = ""
     background_removal: str = ""
+    sampling_shift: float = 0.0
+    latent_node: LatentNode = LatentNode.SD3
+    unet_unconditional: str = ""
 
     @model_validator(mode="after")
     def _one_unet_source(self):
         if self.family:
             if self.unet or self.unet_variant or self.text_encoder \
                     or self.vae or self.checkpoint or self.texture_vae \
-                    or self.clip_vision or self.background_removal:
+                    or self.clip_vision or self.background_removal \
+                    or self.unet_unconditional:
                 raise ValueError(
                     "lane_inputs: family= is the audiocore source — "
                     "loader facts do not ride beside it")
@@ -105,6 +125,11 @@ third source shape, mutually exclusive with the loader facts.'''
         if self.unet_quant and self.unet_quant not in _QUANT_VALUES:
             raise ValueError("lane_inputs: unknown quant %r"
                              % self.unet_quant)
+        if self.unet_unconditional and self.sampling_shift:
+            raise ValueError(
+                "lane_inputs: unet_unconditional= is the dual-guided "
+                "(ideogram4) shape — sampling_shift belongs to the "
+                "single-unet KSampler families")
         return self
 
 

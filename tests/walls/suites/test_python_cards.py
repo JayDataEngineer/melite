@@ -16,6 +16,7 @@ from _anchor import REPO
 import editor_forms as ef                    # noqa: E402
 from melite_cards.serialize import _norm       # noqa: E402
 from melite_cards import load_card_py, field_spec  # noqa: E402
+from form_wire import FormFieldRow             # noqa: E402
 
 PASS = FAIL = 0
 
@@ -25,6 +26,21 @@ def check(name, ok, note=""):
     print("  %-4s %s%s" % ("ok" if ok else "FAIL", name,
                            (" — " + note) if (note and not ok) else ""))
     PASS, FAIL = PASS + (1 if ok else 0), FAIL + (0 if ok else 1)
+
+
+def _dense(spec):
+    """Project a spec fragment's field rows through the wire atom
+    (FormFieldRow.model_dump) — the SERVED body is densified by the
+    FORM WIRE GATE (form_spec returns FormSpecRow.model_dump()), so
+    the golden_http files carry dense rows while field_spec emits
+    SPARSE ones. Comparing through the same atom makes the parity
+    assertion about CONTENT, not density (2026-09-05, post-golden-
+    regen: the served bodies became the goldens verbatim)."""
+    s = dict(spec)
+    if isinstance(s.get("fields"), list):
+        s["fields"] = [FormFieldRow.model_validate(f).model_dump()
+                       for f in s["fields"]]
+    return s
 
 
 def deep_diff(a, b, path="$"):
@@ -92,7 +108,7 @@ def main():
     py_frag = field_spec(cls, model, vocab, service=golden["service"])
     want = {k: golden[k] for k in ("form", "service", "fields",
                                    "schema_groups") if k in golden}
-    d = deep_diff(py_frag, want)
+    d = deep_diff(_dense(py_frag), _dense(want))
     check("fragment parity vs golden (%s)" % model, d is None, d or "")
 
     # the served route itself must serve the class fragment (round trip:
@@ -101,14 +117,12 @@ def main():
     d2 = deep_diff(served, py_frag)
     check("served fragment is class-driven", d2 is None, d2 or "")
 
-    # FEEDING LAW (2026-09-04): unboarded data families carry no
-    # card surface — z-image/anima no longer serve on image-gen
-    # (they fed nothing: no lane facts, no template). krea-2 is
-    # the single truthful feeder.
-    check("unboarded families serve no gate",
-          "z-image" not in tuple(cls.families_of())
-          and "anima" not in tuple(cls.families_of())
-          and "krea-2" in tuple(cls.families_of()))
+    # OFFERED MEANS RUNNABLE (operator order 2026-09-05 — the
+    # unboarded data-family era ended): z-image/anima board image-gen
+    # WITH lane facts + templates; krea-2 was never alone again.
+    check("boarded families all serve on the gate",
+          tuple(cls.families_of()) == ("krea-2", "z-image", "anima"),
+          tuple(cls.families_of()))
 
     # ── the 2026-09-02 full card flip: every flipped card pinned the
     # same way — class fragment == golden form-spec (captured from the
@@ -163,6 +177,11 @@ def main():
         # are consumed-only arms, not card families
         ("upscale-tools", "comfyui", "seedvr2_ema",
          ("action_cards", "image", "upscale-tools")),
+        # (2026-09-05 boarding): ideogram4 — the dual-guided
+        # typography card, a HIDDEN forms row (ideogram rides the
+        # image-gen picker), full form-spec golden recorded.
+        ("ideogram4", "comfyui", "ideogram",
+         ("action_cards", "image", "ideogram4")),
     ]
     for cid, engine, model, home in FLIPPED:
         cpath = _card_py(engine, *home)
@@ -179,10 +198,15 @@ def main():
         frag = field_spec(fcls, model, fvocab, service=gold["service"])
         # size/layout are the presentation notches — non-defaults only,
         # so both sides may lack them (a "form"/"default" card emits
-        # nothing; the h3-timeline golden carries both).
+        # nothing; the h3-timeline golden carries both). Post-regen
+        # the goldens are DENSE served bodies (FormSpecRow.model_dump
+        # writes explicit nulls) — a null notch IS the absence of a
+        # notch, so the want side drops None exactly as the fragment
+        # omits it.
         want = {k: gold[k] for k in ("form", "service", "size", "layout",
-                                     "fields", "schema_groups") if k in gold}
-        dd = deep_diff(frag, want)
+                                     "fields", "schema_groups")
+                if k in gold and gold[k] is not None}
+        dd = deep_diff(_dense(frag), _dense(want))
         check("%s fragment parity vs golden (%s)" % (cid, model),
               dd is None, dd or "")
         served = ef._card_spec(REPO, model)
@@ -245,7 +269,12 @@ def main():
     _truth = _ac.ENGINE_TRUTH_KEYS + tuple(_cc.ENGINE_TRUTH_KEYS)
     pairs = validate_against_cards(models, cards, engine_truth=_truth)
     check("cross-validation pairs (all boarded families)",
-          pairs == [("anny", "anny"),
+          pairs == [("anima", "image-gen"),
+                    ("anny", "anny"),
+                    ("h3", "h3-timeline"),
+                    ("h3-keyframe", "h3-timeline"),
+                    ("h3-timeline", "h3-timeline"),
+                    ("ideogram", "ideogram4"),
                     ("img-edit", "image-edit"),
                     ("kimodo", "motion"),
                     ("krea-2", "image-gen"),
@@ -260,7 +289,8 @@ def main():
                     ("seedvr2_ema", "upscale-tools"),
                     ("transfer_rig", "img-to-mesh"),
                     ("trellis2-native", "img-to-mesh"),
-                    ("wan-vace", "video-gen")], repr(pairs))
+                    ("wan-vace", "video-gen"),
+                    ("z-image", "image-gen")], repr(pairs))
 
     # tool.json snapshots are DERIVED artifacts — the card class is the
     # SSOT (mods declared at the model level, absorbed through models=);
@@ -984,16 +1014,16 @@ def main():
           all(not (f.visible_when or "") for f in MaskMod._fields_),
           "coupled: %s" % [f.name for f in MaskMod._fields_
                            if f.visible_when])
-    # FEEDING LAW: the attach exemplar is a BOARDED family — the
-    # edit lane (qwen-img-edit-2511) carries both packs; unboarded
-    # data families (anima, z-image) carry none (no card feeds).
+    # The attach exemplar: the edit lane (qwen-img-edit-2511)
+    # carries both packs; anima boards image-gen (2026-09-05) but
+    # attaches no mods — nothing to attach on its lane yet.
     _qwen_edit = load_model_py(os.path.join(REPO, "plugins/engines/comfyui/models/image/qwen-img-edit-2511/model.py"), "comfyui")
     _qe_packs = {getattr(m, "pack", "") for m in _qwen_edit.mods}
     check("edit family attaches mask to lanpaint",
           _qe_packs == {"lanpaint", "mask"}, _qe_packs)
     _anima = load_model_py(os.path.join(REPO, "plugins/engines/comfyui/models/image/anima/model.py"), "comfyui")
     _anima_packs = {getattr(m, "pack", "") for m in _anima.mods}
-    check("unboarded data family carries no mods",
+    check("anima carries no mods (nothing to attach on its lane)",
           _anima_packs == set(), _anima_packs)
     _krea = load_model_py(os.path.join(REPO, "plugins/engines/comfyui/models/image/krea-2/model.py"), "comfyui")
     _krea_packs = {getattr(m, "pack", "") for m in _krea.mods}

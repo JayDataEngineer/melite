@@ -537,6 +537,22 @@ class Gateway:
                 pass
 
     async def submit(self, body):
+        # body shape FIRST (RESILIENCE LAW + QUEUE LANE LAW): a
+        # non-object body 4xxes here — resolve_request owns the same
+        # guard for its own callers, but the test-flag read below
+        # touches body before it runs. 4xx BEFORE any run registers.
+        if not isinstance(body, dict):
+            raise ValidationError("request body must be a JSON object")
+        # the test flag routes the run dir (L3) and stamps the sidecar
+        # (L1) — duck-typed truthiness here would let "false" (a
+        # STRING) route a production run into the test root and lie
+        # in the ledger. A flag is a BOOLEAN, refused 4xx BEFORE any
+        # run registers (QUEUE LANE LAW).
+        test_flag = body.get("test", False)
+        if not isinstance(test_flag, bool):
+            raise ValidationError(
+                "test flag must be a boolean (got %s %r)"
+                % (type(test_flag).__name__, test_flag))
         resolved = resolve_request(body)
         run_id = "run-%s-%08x" % (uuid.uuid4().hex[:12], int(time.time() * 1000) & 0xFFFFFFFF)
         # CARD LINKAGE (the run→card wire, 2026-09-04 audit): validate
@@ -587,7 +603,7 @@ class Gateway:
         # L3: route the run dir to the test root when the caller
         # declared test:true. The sidecar test flag is the SAME data
         # (L1) -- this is the directory-level enforcement.
-        run.out_root = TEST_OUT_ROOT if body.get("test") else OUT_ROOT
+        run.out_root = TEST_OUT_ROOT if test_flag else OUT_ROOT
         run.dir.mkdir(parents=True, exist_ok=True)
         atomic_write(run.dir / "_request.json", body)
         run.stages = [
@@ -849,7 +865,7 @@ def sidecar(run):
         "stages": run.stages,
         "artifacts": run.artifacts,
         "created_at": run.created_at,
-        "test": bool(run.request.get("test", False)),
+        "test": run.request.get("test", False),
         "draft_id": run.draft_id,
         "pipeline": pipeline,
     })
@@ -1226,11 +1242,13 @@ async def _h_runs_list(ctx):
     # The default of 200 silently buries fresh generations under hundreds
     # of older rows; the operator hit this on 2026-09-04 and the wall
     # suite test_run_lifecycle calls ?limit=500 to surface its row
-    # regardless of archive size.
+    # regardless of archive size. Garbage refuses 4xx — a silent
+    # default here is the no-silent-drops sin in miniature.
+    _raw = ctx.q("limit", "") or "200"
     try:
-        limit = int(ctx.q("limit", "") or "200")
+        limit = int(_raw)
     except ValueError:
-        limit = 200
+        return 400, {"error": "limit must be an integer (got %r)" % _raw}
     return 200, _er.runs(str(STATE_ROOT), limit=limit)
 
 
@@ -1310,10 +1328,11 @@ async def _h_ledger(ctx):
 
 async def _h_assets_index(ctx):
     import asset_ledger as _al
+    _raw = ctx.q("limit", "200") or "200"
     try:
-        _lim = int(ctx.q("limit", "200") or 200)
+        _lim = int(_raw)
     except ValueError:
-        _lim = 200
+        return 400, {"error": "limit must be an integer (got %r)" % _raw}
     _include_test = (ctx.q("include_test", "false") or "").lower() \
         in ("1", "true", "yes")
     _root = TEST_OUT_ROOT if _include_test else OUT_ROOT
