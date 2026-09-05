@@ -14,8 +14,9 @@ from .grammar import (  # noqa: F401
     has_model_yaml, validate_against_cards,
 )
 from .presets import (  # noqa: F401
-    AuthoredParams, CharacterPreset, EstimatedParams, LocalChange,
-    PresetKnobs, PresetLedgerError, PresetOrigin, PresetParts,
+    AnnyBakeParams, AuthoredParams, CharacterPreset, EstimatedParams,
+    LocalChange, PresetKnobs, PresetLedgerError, PresetOrigin,
+    PresetParts,
     PRESET_PARAMS_FILENAME,
     all_presets, append_user_preset, delete_user_preset,
     read_user_presets, tenant_ledger_path,
@@ -29,7 +30,8 @@ __all__ = [
     "model_row", "load_model_py",
     "load_mod", "scan_engine_models", "has_model_yaml",
     "validate_against_cards",
-    "AuthoredParams", "CharacterPreset", "EstimatedParams",
+    "AuthoredParams", "AnnyBakeParams", "CharacterPreset",
+    "EstimatedParams",
     "LocalChange", "PresetKnobs", "PresetLedgerError", "PresetOrigin",
     "PresetParts", "PRESET_PARAMS_FILENAME", "all_presets", "append_user_preset",
     "delete_user_preset", "read_user_presets", "tenant_ledger_path",

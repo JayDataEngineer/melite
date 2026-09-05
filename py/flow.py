@@ -30,7 +30,7 @@ import re
 import sys
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     import flow_graph
@@ -186,6 +186,42 @@ class Flow(BaseModel):
     id: str = Field(min_length=1)
     description: str = ""
     stages: tuple[Stage, ...] = Field(min_length=1)
+    # INITIAL-INPUT VALIDATORS (operator order, 2026-09-06: "Where is
+    # MY GOD DAMNED COMPILE TIME VALIDATION!") — key → pydantic model.
+    # The gateway's start/validate doors model_validate every PRESENT
+    # body key against its model BEFORE any run registers: a bad
+    # dialect string 4xxes with a field-clean message at the door,
+    # never as a node traceback after a GPU claim. The flow DECLARES
+    # the models (the dialect belongs to its domain — PLUGIN
+    # ARCHITECTURE LAW); the core only invokes them.
+    initial_validators: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _validators_are_models(self) -> "Flow":
+        for key, model in self.initial_validators.items():
+            if not (isinstance(model, type) and issubclass(model, BaseModel)):
+                raise FlowError(
+                    "initial_validators[%r] must be a pydantic BaseModel "
+                    "subclass, got %r" % (key, model))
+        return self
+
+    def validate_initial(self, body: dict[str, Any]) -> None:
+        """The compile-time initial door — called by the gateway's
+        start/validate handlers with the REQUEST body. Every key that
+        has a declared validator and is PRESENT in the body validates
+        NOW; a refusal is a FlowError (clean text, 4xx upstream).
+        Absent keys are the stage-runtime's own concern (a flow may
+        default them); this door never invents values."""
+        from pydantic import ValidationError as _PydanticRefusal
+        for key, model in sorted(self.initial_validators.items()):
+            if key not in body or body[key] is None:
+                continue
+            try:
+                model.model_validate(body[key])
+            except _PydanticRefusal as e:
+                raise FlowError(
+                    "initial input %r: %s" % (key, e.errors()[0]["msg"]
+                                              if e.errors() else str(e)))
 
     @model_validator(mode="after")
     def _wires_resolve(self) -> "Flow":

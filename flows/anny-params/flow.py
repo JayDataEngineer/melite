@@ -21,6 +21,7 @@ AnnyGroundBody stage.
 """
 
 from flow import Flow, Stage, FromInitial, Kind
+from melite_models import AnnyBakeParams
 
 FLOW = Flow(
     id="anny-params",
@@ -51,4 +52,12 @@ FLOW = Flow(
             },
         ),
     ),
+    # THE COMPILE-TIME DIALECT DOOR (operator order, 2026-09-06:
+    # "Where is MY GOD DAMNED COMPILE TIME VALIDATION?" — the child
+    # preset's list-shaped local_changes reached the NODE and died on
+    # the GPU with a traceback). The gateway validates params_json
+    # against AnnyBakeParams at the start/validate doors — BEFORE any
+    # run registers — so a bad dialect 4xxes with a field-clean
+    # message. The node keeps its guard (belt).
+    initial_validators={"params_json": AnnyBakeParams},
 )

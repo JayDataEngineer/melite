@@ -204,13 +204,21 @@ def resolve_request(body: JsonValue) -> FlowGraph | dict[str, JsonValue]:
     if "flow" in body:
         import flow as flow_mod
         try:
-            return flow_mod.load_flow(str(body["flow"])).to_graph()
+            fl = flow_mod.load_flow(str(body["flow"]))
+            # THE COMPILE-TIME INITIAL DOOR (2026-09-06): flow-declared
+            # pydantic models validate present initial keys BEFORE any
+            # run registers — a bad dialect 4xxes field-clean here,
+            # never as a node traceback after a GPU claim.
+            fl.validate_initial(body)
+            return fl.to_graph()
         except flow_mod.FlowError as e:
             raise ValidationError(str(e))
     if "flow_inline" in body:
         import flow as flow_mod
         try:
-            return flow_mod.flow_from_body(body["flow_inline"]).to_graph()
+            fl = flow_mod.flow_from_body(body["flow_inline"])
+            fl.validate_initial(body)
+            return fl.to_graph()
         except flow_mod.FlowError as e:
             raise ValidationError(str(e))
     if "model" in body:
@@ -381,15 +389,131 @@ def resolve_card_model(body: dict[str, JsonValue], mid: str
             pass  # card_requires module not available — skip check
     etype, _my = _plugin_loud(_plugin_bus.resolve_model, mid)
     import flow_graph
+    # VARIANT ROUTE LENS (2026-09-05): a route id (variant cell, e.g.
+    # qwen-img-edit-2511-lightning4) resolves to its OWNING family —
+    # the graph/skeleton is addressed by the family; the ROUTE's
+    # variant stamps (resolver_defaults: lightning's steps=4) apply
+    # exactly as the form-spec route lens serves them. The editor
+    # posts the stamps it was seeded with; a BARE body gets the same
+    # stamps overlaid here (absent keys only) — the bare/API path
+    # compiles the SAME recipe the picker promised (before this, no
+    # arm applied the variant layer and krea-2-raw silently compiled
+    # the turbo recipe — the mod-audit route wall caught it).
+    fam = _route_family(mid, body)
+    body = _route_stamp_overlay(body, mid)
     skeleton = flow_graph.FlowGraph(
-        name=mid, engine_type=etype, description="card-composed",
+        name=fam, engine_type=etype, description="card-composed",
         nodes=())
     try:
         _, extra = card_hooks.compose(
-            card_compose_body(body), mid, "", skeleton, [etype])
+            card_compose_body(body), fam, "", skeleton, [etype])
     except Exception as e:
         raise ValidationError("card_compose phase 1: %s" % e)
     return skeleton, etype, extra
+
+
+def _route_family(mid: str, body: dict[str, JsonValue]) -> str:
+    """The model id the card arm addresses: mid itself, or mid's
+    owning family when mid names a variant route."""
+    cls = _route_owner(mid)
+    return cls.id if cls is not None else mid
+
+
+def _route_owner(mid: str):
+    """The Model class whose _routes owns mid, or None. Generic
+    plugin data (melite_models scan) — no lane knowledge here."""
+    from melite_models import scan_engine_models
+    try:
+        for _path, cls in scan_engine_models(str(REPO)).values():
+            if mid in (getattr(cls, "_routes", None) or {}):
+                return cls
+    except Exception:
+        pass
+    return None
+
+
+def _route_stamp_overlay(body: dict[str, JsonValue],
+                         mid: str) -> dict[str, JsonValue]:
+    """The served spec's defaults, overlaid onto a BARE body: the
+    family defaults (+ the variant's resolver_defaults when mid names
+    a route — the exact merge the served form-spec carries), filtered
+    to the owning CARD's field surface (route chrome like a restated
+    'model' key is not a card field and never rides), injected ONLY
+    for keys the caller did NOT state — the editor path (which posts
+    its seeded stamps) is byte-identical with or without this
+    overlay. The model row is the defaults SSOT ("merged at serve
+    time"); before this the bare/API path compiled schema-level
+    pydantic defaults (krea-2-raw silently built the turbo recipe
+    with cfg 4.5 — the mod-audit route wall caught the leak)."""
+    from melite_models import scan_engine_models
+    cls = None
+    variant = None
+    try:
+        for _path, c in scan_engine_models(str(REPO)).values():
+            routes = getattr(c, "_routes", None) or {}
+            if mid in routes:
+                cls, variant = c, routes[mid][0]
+                break
+            if c.id == mid:
+                cls = c
+                break
+    except Exception:
+        return body
+    if cls is None:
+        return body
+    stamps: dict[str, JsonValue] = dict(cls.defaults or {})
+    if variant is not None:
+        stamps.update(variant.resolver_defaults or {})
+    if not stamps:
+        return body
+    field_names = _card_field_names(cls)
+    if field_names is None:
+        return body
+    out = dict(body)
+    for k, v in stamps.items():
+        # None/"" mean UNSET in a defaults row (z-image declares
+        # negative_prompt=None) — never a stamp; riding them would
+        # refuse the very str fields the row leaves open.
+        if v is None or v == "":
+            continue
+        if k in field_names and k not in out and k not in CARD_ENVELOPE_KEYS:
+            out[k] = v
+    return out
+
+
+def _card_field_names(model_cls) -> set[str] | None:
+    """The owning card's field surface (generic plugin data: the
+    model names the card, the card declares the fields), or None
+    when resolution fails (the overlay then declines — LOUD beats
+    wrong, but a stamp-less compile is the pre-overlay behavior)."""
+    import sys as _sys
+    py_dir = str(REPO / "py")
+    if py_dir not in _sys.path:
+        _sys.path.insert(0, py_dir)
+    card_id = getattr(model_cls, "card", None)
+    if not card_id:
+        return None
+    try:
+        from melite_cards import load_card_py
+    except ImportError:
+        return None
+    plugins_dir = REPO / "plugins"
+    for cpy in sorted(
+        list(plugins_dir.glob("engines/*/action_cards/*/py/card.py"))
+            + list(plugins_dir.glob("engines/*/action_cards/*/*/py/card.py"))
+            + list(plugins_dir.glob("engines/*/action_cards/*/card.py"))
+            + list(plugins_dir.glob("engines/*/action_cards/*/*/card.py"))):
+        pdir = cpy.parent
+        engine = (pdir.parent.parent.name
+                  if pdir.parent.name in ("cards", "action_cards")
+                  else pdir.parent.parent.parent.name)
+        try:
+            ccls = load_card_py(str(cpy), engine)
+        except Exception:
+            continue
+        if ccls.id == card_id:
+            return {f.name for f in getattr(ccls, "_fields_", ())}
+    return None
 
 
 def resolve_inputs(node: FlowNode,
@@ -1653,8 +1777,33 @@ async def _h_presets_list(ctx: _Ctx) -> HandlerResult:
         rows = all_presets(estate, user)
     except PresetLedgerError as e:
         return 500, {"error": "preset ledger: %s" % e}
-    return 200, {"tenant": tenant,
-                 "presets": [p.model_dump(mode="json") for p in rows]}
+    # Each row rides its params_json — the CANONICAL bake dialect
+    # (canonical_json: local_changes as the node's OBJECT, not the
+    # row tuple; estimated rows carry scale). The studio posts this
+    # VERBATIM; client-side dialect translation is dead (the child
+    # preset's list-shaped local_changes sailed through JS
+    # `[] || {}` straight to a GPU traceback — 2026-09-06). File rows
+    # carry None (their mesh applies via the attach door, no bake).
+    # SERVE-SIDE BELT: every served string validates through
+    # AnnyBakeParams — a malformed declaration row refuses the DOOR,
+    # never the studio's run.
+    from melite_models import AnnyBakeParams
+    from pydantic import ValidationError as _RowRefusal
+    served = []
+    for p in rows:
+        d = p.model_dump(mode="json")
+        try:
+            d["params_json"] = p.canonical_json() if p.params else None
+        except ValueError:
+            d["params_json"] = None
+        if d["params_json"] is not None:
+            try:
+                AnnyBakeParams.model_validate(d["params_json"])
+            except _RowRefusal as e:
+                return 500, {"error": "preset %r serves an invalid bake "
+                                     "dialect: %s" % (p.id, e)}
+        served.append(d)
+    return 200, {"tenant": tenant, "presets": served}
 
 
 async def _h_presets_save(ctx: _Ctx) -> HandlerResult:

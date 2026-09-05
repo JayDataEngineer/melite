@@ -333,9 +333,13 @@ def test_tsx_parity_for_both_preset_verbs() -> None:
     src = open(ANNY_TSX, encoding="utf-8").read()
     assert '"preset-save"' in src and '"preset-load"' in src
     assert '"save-preset"' in src and '"anny-params"' in src
-    # params_json is rebuilt from the FETCHED row (verbatim, never a
-    # second source) + file rows apply via the attach door
-    assert "selected.params.phenotype" in src
+    # params_json is the DOOR-SERVED canonical string, posted
+    # VERBATIM (2026-09-06: the client-side rebuild turned the child
+    # row's list-shaped local_changes into a GPU traceback — the
+    # rebuild is dead, the door serves the dialect and the flow start
+    # validates it BEFORE registration) + file rows apply via the
+    # attach door
+    assert "selected.params_json" in src
     assert "selected.body_ref" in src
     assert "/v1/studios/3d/anny/presets" in src
 

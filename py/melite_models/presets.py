@@ -30,7 +30,7 @@ import os
 import re
 import tempfile
 from enum import Enum
-from typing import Optional, Union
+from typing import Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -69,6 +69,80 @@ class LocalChange(BaseModel):
 
     name: str = Field(min_length=1)
     value: float = Field(ge=-1.0, le=2.0)
+
+
+class AnnyBakeParams(BaseModel):
+    """The AnnyParamsToGlb node's JSON dialect — THE compile-time door
+    (operator order, 2026-09-06: "Where is MY GOD DAMNED COMPILE TIME
+    VALIDATION?"). ONE validation for three consumers: the presets
+    door (serve side), the flow-start door (initial_validators — a
+    bad string 4xxes BEFORE any run registers), and the node (belt;
+    it keeps its own guard). Accepts the wire STRING (json.loads in
+    the before-hook — the flow's initial input IS a string) or the
+    already-parsed doc. Refusals are field-clean, never a node
+    traceback after a GPU claim:
+
+      authored  -> phenotype exactly 11 floats in 0..1 +
+                   local_changes an OBJECT of morph-name -> -1..2
+      estimated -> phenotype + scale (both float arrays)
+
+    The local_changes OBJECT (not the AuthoredParams row tuple) is
+    the node's wire shape — the door serves canonical_json, the
+    studio posts it verbatim, and a LIST (the old silent killer:
+    JS `[] || {}` keeps the list) refuses HERE."""
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    dialect: Literal["authored", "estimated"]
+    phenotype: tuple[float, ...]
+    local_changes: dict[str, float] = Field(default_factory=dict)
+    scale: tuple[float, ...] | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _parse_wire(cls, v: object) -> object:
+        """The wire value IS a JSON string (the flow's initial input);
+        accept both it and an already-parsed doc, refuse everything
+        else — ONE hook (two hooks raced: the object check fired on
+        the unparsed string)."""
+        if isinstance(v, (str, bytes, bytearray)):
+            try:
+                v = json.loads(v)
+            except json.JSONDecodeError as e:
+                raise ValueError("params_json is not JSON: %s" % e)
+        if not isinstance(v, dict):
+            raise ValueError(
+                "params_json must be a JSON object, got %s"
+                % type(v).__name__)
+        return v
+
+    @model_validator(mode="after")
+    def _dialect_shape(self) -> "AnnyBakeParams":
+        if len(self.phenotype) != AUTHORED_DIM_COUNT:
+            raise ValueError(
+                "%s phenotype wants %d dims, got %d — the dims are "
+                "gender/age/muscle/weight/height/proportions/cupsize/"
+                "firmness/african/asian/caucasian"
+                % (self.dialect, AUTHORED_DIM_COUNT, len(self.phenotype)))
+        for i, v in enumerate(self.phenotype):
+            if not 0.0 <= v <= 1.0:
+                raise ValueError(
+                    "%s phenotype[%d] = %r outside 0.0..1.0"
+                    % (self.dialect, i, v))
+        for name, value in self.local_changes.items():
+            if not -1.0 <= value <= 2.0:
+                raise ValueError(
+                    "local_changes[%r] = %r outside -1.0..2.0"
+                    % (name, value))
+        if self.dialect == "authored":
+            if self.scale is not None:
+                raise ValueError(
+                    "authored takes local_changes, not scale "
+                    "(that is the estimated dialect)")
+        elif self.scale is None:
+            raise ValueError(
+                "estimated wants scale (the estimator run's "
+                "measurement vector)")
+        return self
 
 
 class AuthoredParams(BaseModel):
