@@ -97,7 +97,12 @@ class ValidationError(Exception):
 # deprecation cycle as silent drops; strict=True kills them at the
 # door. The DOOR_KEYS set is the door vocab; everything else
 # entering the run is a scalar input (the model's params).
-_RETIRED_RUNNER_KNOBS = frozenset({
+#
+# SSOT for the retired runner knob set. tests/walls/suites/
+# test_strict_body.py imports this directly (no second list — drift
+# would mean a knob name is allowed at one site and refused at the
+# other; the wall must always reflect the implementation).
+RETIRED_RUNNER_KNOBS = frozenset({
     "start_from", "stop_after", "reuse_run_id", "partial_run",
     "overrides", "since", "from_index",
 })
@@ -115,7 +120,7 @@ def _strict_body(body):
     if not isinstance(body, dict):
         return
     bad = [k for k in body
-           if k in _RETIRED_RUNNER_KNOBS
+           if k in RETIRED_RUNNER_KNOBS
            or (k.startswith(_INTERNAL_KEY_PREFIX)
                and k not in DOOR_KEYS)]
     if bad:

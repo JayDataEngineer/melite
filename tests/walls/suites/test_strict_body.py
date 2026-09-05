@@ -18,6 +18,12 @@ refusal. Anything else that the runner doesn't read stays the run's
 problem (not the gateway's); the model class is the door for
 knob-shape validation.
 
+The retired-knob list is the implementation's SSOT
+(py/gateway.py:RETIRED_RUNNER_KNOBS); the wall imports it directly
+so the test can't drift from the implementation. To ADD a knob to
+the refusal set, edit the constant — the wall's parametrize grows
+in lockstep.
+
 No GPU, no network."""
 
 from _anchor import REPO  # noqa: E402
@@ -25,18 +31,16 @@ from _anchor import REPO  # noqa: E402
 import pytest  # noqa: E402
 
 import gateway  # noqa: E402
+from gateway import RETIRED_RUNNER_KNOBS  # noqa: E402  (SSOT, no second list)
 
 
 # A. the retired runner knob set — every name the C runner read but
 # the py runner does NOT. A body carrying any of these is a silent-drop
 # attempt; the door must refuse loud (400, not 200 with a dropped key).
-RETIRED_KNOBS = (
-    "start_from", "stop_after", "reuse_run_id", "partial_run",
-    "overrides", "since", "from_index",
-)
+# The list is RETIRED_RUNNER_KNOBS (imported above from gateway, the SSOT).
 
 
-@pytest.mark.parametrize("knob", RETIRED_KNOBS)
+@pytest.mark.parametrize("knob", RETIRED_RUNNER_KNOBS)
 def test_retired_runner_knob_refused(knob):
     """The C-era runner knobs are silent-drop attempts. Loud 400."""
     body = {"flow": "audio-native-tts", knob: 2}
@@ -54,6 +58,17 @@ def test_multiple_retired_knobs_refused_at_once():
         gateway.resolve_request(body)
     msg = str(e.value)
     assert "start_from" in msg and "overrides" in msg, msg
+
+
+def test_retired_knobs_constant_is_nonempty_and_frozen():
+    """The retired-knob set must be non-empty (a silent-drop attempt
+    is the reason the wall exists) AND frozen (mutation at call time
+    is the same class of drift we're guarding against)."""
+    assert len(RETIRED_RUNNER_KNOBS) >= 1
+    # frozenset refuses mutation loud
+    with pytest.raises((AttributeError, TypeError)):
+        # type: ignore[attr-defined]
+        RETIRED_RUNNER_KNOBS.add("would-be-added")
 
 
 # B. C-era internal naming (the "_" prefix) — the runner never read
