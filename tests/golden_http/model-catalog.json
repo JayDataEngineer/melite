@@ -61,18 +61,17 @@
       }
     },
     "image-edit": {
-      "default_family": "img-edit",
-      "description": "Instruction-driven image editing \u2014 the edit_image interface card boarding the Qwen-Image-Edit 2511 lane (img-edit + qwen-img-edit-2511); each family declares its own lanpaint flavor (required anchor image) and the surface scopes itself",
+      "default_family": "qwen-img-edit-2511",
+      "description": "Instruction-driven image editing \u2014 the edit_image interface card boarding the Qwen-Image-Edit 2511 lane; the family carries the lightning / standard cascade (variant/quant always shown) plus the lanpaint flavor (required anchor image). The surface scopes itself.",
       "families": [
-        "img-edit",
         "qwen-img-edit-2511"
       ],
       "icon": "edit",
       "kind": "generation",
       "label": "Image Edit",
       "resolved": {
-        "family": "img-edit",
-        "model": "img-edit",
+        "family": "qwen-img-edit-2511",
+        "model": "qwen-img-edit-2511",
         "params": {}
       }
     },
@@ -371,9 +370,8 @@
       "skills": []
     },
     {
-      "description": "Instruction-driven image editing \u2014 the edit_image interface card boarding the Qwen-Image-Edit 2511 lane (img-edit + qwen-img-edit-2511); each family declares its own lanpaint flavor (required anchor image) and the surface scopes itself",
+      "description": "Instruction-driven image editing \u2014 the edit_image interface card boarding the Qwen-Image-Edit 2511 lane; the family carries the lightning / standard cascade (variant/quant always shown) plus the lanpaint flavor (required anchor image). The surface scopes itself.",
       "families": [
-        "img-edit",
         "qwen-img-edit-2511"
       ],
       "genre": "image",
@@ -387,7 +385,8 @@
         "A lanpaint_mask alongside input_image patches the model with the DiffSynth inpaint ControlNet",
         "Region Mode controls how the mask is honored: auto / crop_stitch / full_frame",
         "Mask prep (grow/feather/threshold/invert) uses the same host-side chain the Inpaint card uses",
-        "Iterate HERE, not in video \u2014 an edit costs seconds, a render minutes; name what changes, state the rest as unchanged"
+        "Iterate HERE, not in video \u2014 an edit costs seconds, a render minutes; name what changes, state the rest as unchanged",
+        "Previous card outputs ride as artifact URLs (/v1/assets/runs/<run>/<file>); the compose resolves them to data/runs/output/<run>/<file> and stages into the comfy input dir (phase 1 validates on the mounts BEFORE registration)"
       ],
       "skills": []
     },
@@ -606,7 +605,19 @@
     },
     "anny": {
       "genre": "3d",
-      "label": "Anny (character assembly)"
+      "label": "Anny (character assembly)",
+      "studio": {
+        "layout": "studio",
+        "owns_params": false,
+        "size": "normal",
+        "tenant": "3d/anny",
+        "writes": [
+          "body_glb",
+          "hair_glb",
+          "outfit_glb",
+          "source_image"
+        ]
+      }
     },
     "anycreature": {
       "genre": "3d",
@@ -619,10 +630,6 @@
     "autoremesher": {
       "genre": "3d",
       "label": "AutoRemesher"
-    },
-    "basic_resize": {
-      "genre": "image",
-      "label": "Basic Resize"
     },
     "concat": {
       "genre": "video",
@@ -702,10 +709,6 @@
         "writes": []
       }
     },
-    "img-edit": {
-      "genre": "image",
-      "label": "Qwen Image Edit 2511"
-    },
     "input": {
       "genre": "image",
       "label": "Input Prep"
@@ -728,14 +731,6 @@
     "latentsync": {
       "genre": "other",
       "label": "LatentSync"
-    },
-    "ltx-2-3": {
-      "genre": "video",
-      "label": "LTX 2.3"
-    },
-    "ltx-director-distilled": {
-      "genre": "video",
-      "label": "LTX 2.3"
     },
     "mask-studio": {
       "genre": "image",
@@ -793,10 +788,6 @@
     "pixal3d": {
       "genre": "3d",
       "label": "Pixal3D"
-    },
-    "pixel_upscale": {
-      "genre": "image",
-      "label": "Pixel Upscaler"
     },
     "qwen-img-edit-2511": {
       "genre": "image",
@@ -883,6 +874,98 @@
     }
   },
   "input_vocabulary": {
+    "form_slots": {
+      "form_3d_anny": [
+        "body_glb",
+        "hair_glb",
+        "outfit_glb",
+        "source_image"
+      ],
+      "form_3d_transfer_rig": [
+        "input_image",
+        "rigged_glb",
+        "target_glb"
+      ],
+      "form_3d_trellis2_native": [
+        "input_image",
+        "rigged_glb",
+        "target_glb"
+      ],
+      "form_edit": [
+        "image2",
+        "image3",
+        "input_image",
+        "input_mask"
+      ],
+      "form_mask_studio": [
+        "input_image",
+        "paint_mask"
+      ],
+      "form_motion_kimodo": [
+        "preview_glb"
+      ],
+      "form_tts": [
+        "qvoice"
+      ],
+      "form_upscale": [
+        "input_image"
+      ],
+      "form_video_director": [
+        "reference_image",
+        "pose_video"
+      ]
+    },
+    "model_slots": {
+      "anny": [
+        "body_glb",
+        "hair_glb",
+        "outfit_glb",
+        "source_image"
+      ],
+      "kimodo": [
+        "preview_glb"
+      ],
+      "mask-studio": [
+        "input_image",
+        "paint_mask"
+      ],
+      "qwen-img-edit-2511": [
+        "image2",
+        "image3",
+        "input_image",
+        "input_mask"
+      ],
+      "qwen3-tts": [
+        "qvoice"
+      ],
+      "qwen3-tts-base": [
+        "qvoice"
+      ],
+      "qwen3-tts-voicedesign": [
+        "qvoice"
+      ],
+      "scail2-animate": [
+        "reference_image",
+        "pose_video"
+      ],
+      "seedvr2_ema": [
+        "input_image"
+      ],
+      "transfer_rig": [
+        "input_image",
+        "rigged_glb",
+        "target_glb"
+      ],
+      "trellis2-native": [
+        "input_image",
+        "rigged_glb",
+        "target_glb"
+      ],
+      "wan-vace": [
+        "reference_image",
+        "pose_video"
+      ]
+    },
     "slot_kinds": {
       "end_image": "image",
       "first_frame": "image",
@@ -940,7 +1023,6 @@
       "has_rubric": false,
       "id": "ace-step",
       "label": "ACE-Step 1.5 Turbo Q8",
-      "loras": [],
       "source": {
         "filename": "ACE-Step1.5-GGUF",
         "repo_id": "audio-cpp/audio.cpp-gguf",
@@ -960,7 +1042,6 @@
       "has_rubric": false,
       "id": "ace-step-base",
       "label": "ACE-Step 1.5 Base Q8",
-      "loras": [],
       "source": {
         "filename": "ACE-Step1.5-GGUF",
         "repo_id": "audio-cpp/audio.cpp-gguf",
@@ -980,7 +1061,6 @@
       "has_rubric": false,
       "id": "ace-step-base-bf16",
       "label": "ACE-Step 1.5 Base BF16",
-      "loras": [],
       "source": {
         "filename": "ACE-Step1.5-GGUF",
         "repo_id": "audio-cpp/audio.cpp-gguf",
@@ -1000,7 +1080,6 @@
       "has_rubric": false,
       "id": "ace-step-bf16",
       "label": "ACE-Step 1.5 Turbo BF16",
-      "loras": [],
       "source": {
         "filename": "ACE-Step1.5-GGUF",
         "repo_id": "audio-cpp/audio.cpp-gguf",
@@ -1022,7 +1101,6 @@
       "has_rubric": false,
       "id": "ace-step-sft",
       "label": "ACE-Step 1.5 SFT (Q8)",
-      "loras": [],
       "source": {
         "filename": "ACE-Step1.5-SFT-GGUF",
         "repo_id": "audio-cpp/audio.cpp-gguf",
@@ -1044,7 +1122,6 @@
       "has_rubric": false,
       "id": "ace-step-xl",
       "label": "ACE-Step 1.5 XL Turbo",
-      "loras": [],
       "source": {
         "filename": "ACE-Step1.5-XL-GGUF",
         "repo_id": "audio-cpp/audio.cpp-gguf",
@@ -1069,7 +1146,6 @@
       "has_rubric": false,
       "id": "anima",
       "label": "Anima",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1091,7 +1167,6 @@
       "has_rubric": false,
       "id": "anny",
       "label": "Anny (character assembly)",
-      "loras": [],
       "source": {
         "repo_id": "melite-poser-nodes",
         "type": ""
@@ -1113,7 +1188,6 @@
       "has_rubric": false,
       "id": "anycreature",
       "label": "anyCreature",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1135,7 +1209,6 @@
       "has_rubric": false,
       "id": "auto-detect",
       "label": "Auto Detect",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1158,26 +1231,6 @@
       "has_rubric": false,
       "id": "autoremesher",
       "label": "AutoRemesher",
-      "loras": [],
-      "source": {
-        "type": ""
-      }
-    },
-    "basic_resize": {
-      "defaults": {
-        "filename_prefix": "scaled",
-        "resize_method": "lanczos",
-        "resize_scale": 0.5
-      },
-      "description": ">-",
-      "engine": "",
-      "family": "basic_resize",
-      "genre": "image",
-      "has_inference": false,
-      "has_rubric": false,
-      "id": "basic_resize",
-      "label": "Basic Resize",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1196,7 +1249,6 @@
       "has_rubric": false,
       "id": "concat",
       "label": "Media Merge",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1219,7 +1271,6 @@
       "has_rubric": false,
       "id": "dwpose",
       "label": "DWPose",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1257,7 +1308,6 @@
       "has_rubric": false,
       "id": "flux-fill-dev",
       "label": "Inpaint",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1276,7 +1326,6 @@
       "has_rubric": false,
       "id": "g1",
       "label": "Kimodo G1 34-joint",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1299,7 +1348,6 @@
       "has_rubric": false,
       "id": "gem_soma",
       "label": "SOMA",
-      "loras": [],
       "source": {
         "repo_id": "nvidia/soma-x",
         "type": ""
@@ -1325,7 +1373,6 @@
       "has_rubric": false,
       "id": "h3",
       "label": "MiniMax H3",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1347,7 +1394,6 @@
       "has_rubric": false,
       "id": "h3-keyframe",
       "label": "MiniMax H3 keyframe-to-video",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1366,7 +1412,6 @@
       "has_rubric": false,
       "id": "h3-timeline",
       "label": "H3 Timeline (multi-window)",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1390,29 +1435,6 @@
       "has_rubric": false,
       "id": "ideogram",
       "label": "Ideogram",
-      "loras": [],
-      "source": {
-        "type": ""
-      }
-    },
-    "img-edit": {
-      "defaults": {
-        "cfg": 1.0,
-        "height": 1024,
-        "steps": 4,
-        "width": 1024
-      },
-      "description": "",
-      "engine": "comfyui",
-      "family": "img-edit",
-      "form": "form_edit",
-      "genre": "image",
-      "has_agent": true,
-      "has_inference": true,
-      "has_rubric": false,
-      "id": "img-edit",
-      "label": "Qwen Image Edit 2511",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1432,7 +1454,6 @@
       "has_rubric": false,
       "id": "input",
       "label": "Input Prep",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1457,7 +1478,6 @@
       "has_rubric": false,
       "id": "kimodo",
       "label": "Kimodo (text \u2192 motion)",
-      "loras": [],
       "source": {
         "repo_id": "nvidia/Kimodo-SOMA-RP-v1.1",
         "type": ""
@@ -1482,7 +1502,6 @@
       "has_rubric": false,
       "id": "krea-2",
       "label": "Krea 2",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1505,99 +1524,6 @@
       "has_rubric": false,
       "id": "latentsync",
       "label": "LatentSync",
-      "loras": [],
-      "source": {
-        "type": ""
-      }
-    },
-    "ltx-2-3": {
-      "defaults": {
-        "cfg": 3.0,
-        "fps": 24,
-        "frames": 97,
-        "height": 720,
-        "sampler": "euler",
-        "scheduler": "simple",
-        "seed": 42,
-        "steps": 30,
-        "width": 1280
-      },
-      "description": ">-",
-      "engine": "",
-      "family": "ltx-2-3",
-      "genre": "video",
-      "has_inference": false,
-      "has_rubric": false,
-      "id": "ltx-2-3",
-      "label": "LTX 2.3",
-      "loras": [],
-      "source": {
-        "type": ""
-      }
-    },
-    "ltx-director-distilled": {
-      "defaults": {
-        "anchor_strength": 0.7,
-        "audio_mode": "none",
-        "auto_snap_ic_grid": true,
-        "base_denoise": 1.0,
-        "crop": "center",
-        "director_guide_enabled": false,
-        "divisible_by": 32,
-        "force_retake_mode": false,
-        "fps": 24,
-        "frames": 97,
-        "guide_scale": 3.0,
-        "guide_strength": 3.0,
-        "height": 720,
-        "ic_lora_name": "None",
-        "ic_lora_strength": 1.0,
-        "image_attention_strength": 1.0,
-        "img_compression": 18,
-        "inpaint_audio": false,
-        "lipsync_strength": 3.0,
-        "ltx_chunk_feedforward": false,
-        "ltx_context_length": 145,
-        "ltx_context_overlap": 40,
-        "ltx_context_windows": false,
-        "ltx_ff_chunks": 2,
-        "ltx_sage_attention": false,
-        "ltx_sage_triton": true,
-        "negative_prompt": null,
-        "output_format": "mp4",
-        "override_audio": false,
-        "relay_epsilon": 0.001,
-        "resize_method": "maintain aspect ratio",
-        "retake_apply_global": false,
-        "retake_enabled": false,
-        "retake_start_frame": 0,
-        "retake_strength": 1.0,
-        "sampler": "euler",
-        "sampling_steps": 8,
-        "scale_by": 1.0,
-        "scheduler": "beta",
-        "start_frame": 0,
-        "tile_overlap": 64,
-        "tile_size": 256,
-        "torch_compile": false,
-        "upscale_cfg": 1.0,
-        "upscale_denoise": 0.3,
-        "upscale_enabled": false,
-        "upscale_method": "bicubic",
-        "upscale_steps": 10,
-        "use_custom_motion": true,
-        "use_tiled_encode": false,
-        "width": 1280
-      },
-      "description": "LTX 2.3 text- and image-to-video generation via the Director workflow.",
-      "engine": "",
-      "family": "ltx-director-distilled",
-      "genre": "video",
-      "has_inference": false,
-      "has_rubric": false,
-      "id": "ltx-director-distilled",
-      "label": "LTX 2.3",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1628,7 +1554,6 @@
       "has_rubric": false,
       "id": "mask-studio",
       "label": "Mask",
-      "loras": [],
       "source": {
         "repo_id": "facebook/sam-vit-base",
         "type": ""
@@ -1663,7 +1588,6 @@
       "has_rubric": false,
       "id": "mesh_refine",
       "label": "UltraShape Mesh Refine",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1679,7 +1603,6 @@
       "has_rubric": false,
       "id": "moss-sfx",
       "label": "MOSS-SFX v2",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1697,7 +1620,6 @@
       "has_rubric": false,
       "id": "moss-tts",
       "label": "MOSS-TTS Nano 100M",
-      "loras": [],
       "source": {
         "filename": "MOSS-TTS-Nano-100M-GGUF",
         "repo_id": "audio-cpp/audio.cpp-gguf",
@@ -1717,7 +1639,6 @@
       "has_rubric": false,
       "id": "moss-tts-local",
       "label": "MOSS-TTS Local v1.5",
-      "loras": [],
       "source": {
         "filename": "MOSS-TTS-Local-v1.5-GGUF",
         "repo_id": "audio-cpp/audio.cpp-gguf",
@@ -1737,7 +1658,6 @@
       "has_rubric": false,
       "id": "moss_voicegenerator",
       "label": "MOSS VoiceGenerator",
-      "loras": [],
       "source": {
         "filename": "MOSS-VoiceGenerator-GGUF",
         "repo_id": "audio-cpp/audio.cpp-gguf",
@@ -1757,7 +1677,6 @@
       "has_rubric": false,
       "id": "music3",
       "label": "MiniMax Music 3",
-      "loras": [],
       "source": {
         "filename": "MiniMax-Music3-GGUF",
         "repo_id": "audio-cpp/MiniMax-Music3-GGUF",
@@ -1783,37 +1702,6 @@
       "has_rubric": false,
       "id": "pixal3d",
       "label": "Pixal3D",
-      "loras": [],
-      "source": {
-        "type": ""
-      }
-    },
-    "pixel_upscale": {
-      "defaults": {
-        "batch_size": 5,
-        "cfg": 7.5,
-        "denoise": 0.4,
-        "detection_threshold": 0.35,
-        "downscale_first": 1.0,
-        "filename_prefix": "upscaled",
-        "guide_size": 512,
-        "inpaint_region": "free",
-        "max_size": 1024,
-        "mode": "upscale",
-        "resolution": 2048,
-        "seed": 0,
-        "steps": 50,
-        "target_scale": 4.0
-      },
-      "description": ">-",
-      "engine": "",
-      "family": "pixel_upscale",
-      "genre": "image",
-      "has_inference": false,
-      "has_rubric": false,
-      "id": "pixel_upscale",
-      "label": "Pixel Upscaler",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1829,16 +1717,16 @@
         "use_stock_nodes": false,
         "width": 1024
       },
-      "description": "Image Edit \u2014 instruction-driven image editing and manipulation (Qwen-Image-Edit 2511 is",
+      "description": "Instruction-driven image editing and manipulation \u2014 the Qwen-Image-Edit 2511 lane (the image-edit card arms this family; the pre-flip img-edit head is retired, same physical lane, its assets merged here 2026-09-05).",
       "engine": "comfyui",
       "family": "qwen-img-edit-2511",
       "form": "form_edit",
       "genre": "image",
-      "has_inference": false,
+      "has_agent": true,
+      "has_inference": true,
       "has_rubric": false,
       "id": "qwen-img-edit-2511",
       "label": "Image Edit",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1856,7 +1744,6 @@
       "has_rubric": false,
       "id": "qwen3-tts",
       "label": "Qwen3-TTS CustomVoice 0.6B",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1875,7 +1762,6 @@
       "has_rubric": false,
       "id": "qwen3-tts-base",
       "label": "Qwen3-TTS Base 0.6B",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1894,7 +1780,6 @@
       "has_rubric": false,
       "id": "qwen3-tts-voicedesign",
       "label": "Qwen3-TTS VoiceDesign 1.7B",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1927,7 +1812,6 @@
       "has_rubric": false,
       "id": "rtx-vsr",
       "label": "Video Upscale",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1954,7 +1838,6 @@
       "has_rubric": false,
       "id": "scail2-animate",
       "label": "SCAIL-2",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -1976,7 +1859,6 @@
       "has_rubric": false,
       "id": "see-through",
       "label": "See-Through",
-      "loras": [],
       "source": {
         "repo_id": "layerdifforg/seethroughv0.0.2_layerdiff3d",
         "type": ""
@@ -1999,7 +1881,6 @@
       "has_rubric": false,
       "id": "seedvr2_ema",
       "label": "SeedVR2 Upscaler",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -2018,7 +1899,6 @@
       "has_rubric": false,
       "id": "smplx",
       "label": "Kimodo SMPL-X 22-joint",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -2037,7 +1917,6 @@
       "has_rubric": false,
       "id": "soma",
       "label": "Kimodo SOMA 30-joint",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -2059,7 +1938,6 @@
       "has_rubric": false,
       "id": "somax",
       "label": "SOMAX",
-      "loras": [],
       "source": {
         "repo_id": "nvidia/soma-x",
         "type": ""
@@ -2083,7 +1961,6 @@
       "has_rubric": false,
       "id": "step1x_texture",
       "label": "Step1X-3D Texture",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -2102,7 +1979,6 @@
       "has_rubric": false,
       "id": "stretchy-rig",
       "label": "Stretchy Rig",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -2118,7 +1994,6 @@
       "has_rubric": false,
       "id": "transfer_rig",
       "label": "Transfer Rig",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -2141,7 +2016,6 @@
       "has_rubric": false,
       "id": "trellis2-native",
       "label": "TRELLIS.2 Native",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -2166,7 +2040,6 @@
       "has_rubric": false,
       "id": "trellis_native",
       "label": "Trellis (Native)",
-      "loras": [],
       "source": {
         "repo_id": "ilintar/trellis2-gguf",
         "type": ""
@@ -2187,7 +2060,6 @@
       "has_rubric": false,
       "id": "txt2music",
       "label": "MiniMax Music 3 (txt2music)",
-      "loras": [],
       "source": {
         "filename": "MiniMax-Music3-GGUF",
         "repo_id": "audio-cpp/MiniMax-Music3-GGUF",
@@ -2215,7 +2087,6 @@
       "has_rubric": false,
       "id": "wan-vace",
       "label": "Wan2.2 VACE",
-      "loras": [],
       "source": {
         "type": ""
       }
@@ -2239,7 +2110,6 @@
       "has_rubric": false,
       "id": "z-image",
       "label": "Z-Image",
-      "loras": [],
       "source": {
         "type": ""
       }

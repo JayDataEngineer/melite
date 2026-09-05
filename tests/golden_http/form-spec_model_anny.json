@@ -24,75 +24,110 @@
  },
  "fields": [
   {
-   "default": 768,
-   "group": "turnaround",
-   "label": "View resolution",
-   "max": 2048,
-   "min": 256,
-   "name": "resolution",
+   "name": "body_glb",
+   "type": "file",
+   "label": "Body GLB",
+   "group": "parts",
    "order": 0,
-   "step": 64,
-   "tooltip": "Pixel size of each turnaround view.",
-   "type": "slider",
-   "width": 1
+   "columns": 1,
+   "required": true,
+   "tooltip": "The base body — a rigged or static character GLB the parts composite onto."
   },
   {
-   "default": 1.2,
-   "group": "turnaround",
-   "label": "Framing",
-   "max": 3,
-   "min": 1,
-   "name": "framing",
+   "name": "hair_glb",
+   "type": "file",
+   "label": "Hair GLB",
+   "group": "parts",
    "order": 1,
-   "step": 0.05,
-   "tooltip": "Camera distance factor \u2014 larger frames the whole body looser.",
-   "type": "slider",
-   "width": 1
+   "tooltip": "Optional hair part GLB — merged into the composite."
   },
   {
-   "default": 50,
-   "group": "turnaround",
-   "label": "Focal length (mm)",
-   "max": 400,
-   "min": 10,
-   "name": "focal_length",
+   "name": "outfit_glb",
+   "type": "file",
+   "label": "Outfit GLB",
+   "group": "parts",
    "order": 2,
-   "step": 1,
-   "tooltip": "Lens focal length \u2014 lower = wider perspective.",
+   "tooltip": "Optional outfit part GLB — merged into the composite."
+  },
+  {
+   "name": "source_image",
+   "type": "file",
+   "label": "Source photo",
+   "group": "ingest",
+   "order": 0,
+   "tooltip": "Character photo — SAM segments hair/outfit sprites (feeds the estimator arc)."
+  },
+  {
+   "name": "resolution",
    "type": "slider",
-   "width": 1
+   "label": "View resolution",
+   "group": "turnaround",
+   "order": 0,
+   "width": 1,
+   "min": 256,
+   "max": 2048,
+   "step": 64,
+   "default": 768,
+   "tooltip": "Pixel size of each turnaround view."
   },
   {
-   "default": 64,
+   "name": "framing",
+   "type": "slider",
+   "label": "Framing",
    "group": "turnaround",
-   "label": "Samples",
-   "max": 4096,
+   "order": 1,
+   "width": 1,
    "min": 1,
-   "name": "samples",
-   "order": 3,
-   "step": 1,
-   "tooltip": "Render samples per view \u2014 more = cleaner but slower.",
-   "type": "number",
-   "width": 1
+   "max": 3,
+   "step": 0.05,
+   "default": 1.2,
+   "tooltip": "Camera distance factor — larger frames the whole body looser."
   },
   {
-   "default": "true",
+   "name": "focal_length",
+   "type": "slider",
+   "label": "Focal length (mm)",
    "group": "turnaround",
-   "label": "Background",
+   "order": 2,
+   "width": 1,
+   "min": 10,
+   "max": 400,
+   "step": 1,
+   "default": 50,
+   "tooltip": "Lens focal length — lower = wider perspective."
+  },
+  {
+   "name": "samples",
+   "type": "number",
+   "label": "Samples",
+   "group": "turnaround",
+   "order": 3,
+   "width": 1,
+   "min": 1,
+   "max": 4096,
+   "step": 1,
+   "default": 64,
+   "tooltip": "Render samples per view — more = cleaner but slower."
+  },
+  {
    "name": "transparent",
+   "type": "select",
+   "label": "Background",
+   "group": "turnaround",
+   "order": 4,
+   "width": 1,
+   "default": "true",
+   "tooltip": "Transparent turnaround background (for compositing into sheets).",
    "options": [
     "true",
     "false"
-   ],
-   "order": 4,
-   "tooltip": "Transparent turnaround background (for compositing into sheets).",
-   "type": "select",
-   "width": 1
+   ]
   }
  ],
  "form": "anny",
  "genre": "3d",
  "label": "Anny",
+ "layout": "studio",
  "model": "anny",
  "schema_groups": [
   {
@@ -103,21 +138,21 @@
      "name": "body_glb",
      "order": 0,
      "required": true,
-     "tooltip": "The base body \u2014 a rigged or static character GLB the parts composite onto.",
+     "tooltip": "The base body — a rigged or static character GLB the parts composite onto.",
      "type": "file"
     },
     {
      "label": "Hair GLB",
      "name": "hair_glb",
      "order": 1,
-     "tooltip": "Optional hair part GLB \u2014 merged into the composite.",
+     "tooltip": "Optional hair part GLB — merged into the composite.",
      "type": "file"
     },
     {
      "label": "Outfit GLB",
      "name": "outfit_glb",
      "order": 2,
-     "tooltip": "Optional outfit part GLB \u2014 merged into the composite.",
+     "tooltip": "Optional outfit part GLB — merged into the composite.",
      "type": "file"
     }
    ],
@@ -132,7 +167,7 @@
      "label": "Source photo",
      "name": "source_image",
      "order": 0,
-     "tooltip": "Character photo \u2014 SAM segments hair/outfit sprites (feeds the estimator arc).",
+     "tooltip": "Character photo — SAM segments hair/outfit sprites (feeds the estimator arc).",
      "type": "file"
     }
    ],
@@ -163,7 +198,7 @@
      "name": "framing",
      "order": 1,
      "step": 0.05,
-     "tooltip": "Camera distance factor \u2014 larger frames the whole body looser.",
+     "tooltip": "Camera distance factor — larger frames the whole body looser.",
      "type": "slider",
      "width": 1
     },
@@ -175,7 +210,7 @@
      "name": "focal_length",
      "order": 2,
      "step": 1,
-     "tooltip": "Lens focal length \u2014 lower = wider perspective.",
+     "tooltip": "Lens focal length — lower = wider perspective.",
      "type": "slider",
      "width": 1
     },
@@ -187,7 +222,7 @@
      "name": "samples",
      "order": 3,
      "step": 1,
-     "tooltip": "Render samples per view \u2014 more = cleaner but slower.",
+     "tooltip": "Render samples per view — more = cleaner but slower.",
      "type": "number",
      "width": 1
     },

@@ -1,0 +1,80 @@
+{
+  "loras": [
+    "krea-2/krea2_realism_lora.safetensors",
+    "krea-2/krea2_turbo_lora_rank_64_bf16.safetensors",
+    "krea-2/krea2_darkbrush.safetensors",
+    "krea-2/krea2_dotmatrix.safetensors",
+    "krea-2/krea2_kidsdrawing.safetensors",
+    "krea-2/krea2_neondrip.safetensors",
+    "krea-2/krea2_rainywindow.safetensors",
+    "krea-2/krea2_retroanime.safetensors",
+    "krea-2/krea2_softwatercolor.safetensors",
+    "krea-2/krea2_sunsetblur.safetensors",
+    "krea-2/krea2_vintagetarot.safetensors",
+    "krea-2/krea2filterbypass3.safetensors"
+  ],
+  "meta": {
+    "krea2_darkbrush": {
+      "category": "style",
+      "default_strength": 0.8,
+      "label": "Dark Brush"
+    },
+    "krea2_dotmatrix": {
+      "category": "style",
+      "default_strength": 0.8,
+      "label": "Dot Matrix"
+    },
+    "krea2_kidsdrawing": {
+      "category": "style",
+      "default_strength": 0.8,
+      "label": "Kids Drawing"
+    },
+    "krea2_neondrip": {
+      "category": "style",
+      "default_strength": 0.8,
+      "label": "Neon Drip"
+    },
+    "krea2_rainywindow": {
+      "category": "style",
+      "default_strength": 0.8,
+      "label": "Rainy Window"
+    },
+    "krea2_realism_lora": {
+      "category": "photorealism",
+      "default_strength": 0.7,
+      "label": "Realism"
+    },
+    "krea2_retroanime": {
+      "category": "style",
+      "default_strength": 0.8,
+      "label": "Retro Anime"
+    },
+    "krea2_softwatercolor": {
+      "category": "style",
+      "default_strength": 0.8,
+      "label": "Soft Watercolor"
+    },
+    "krea2_sunsetblur": {
+      "category": "style",
+      "default_strength": 0.8,
+      "label": "Sunset Blur"
+    },
+    "krea2_turbo_lora_rank_64_bf16": {
+      "category": "quality",
+      "default_strength": 1.0,
+      "label": "Turbo Rank-64 (BF16)"
+    },
+    "krea2_vintagetarot": {
+      "category": "style",
+      "default_strength": 0.8,
+      "label": "Vintage Tarot"
+    },
+    "krea2filterbypass3": {
+      "category": "style",
+      "default_strength": 0.8,
+      "label": "Filter Bypass 3"
+    }
+  },
+  "model": "krea-2",
+  "note": "12 declared adapters — the family's LorasMod rows (mods/loras.py)"
+}
