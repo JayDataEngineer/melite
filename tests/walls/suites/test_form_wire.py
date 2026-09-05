@@ -31,6 +31,7 @@ The gate under test (py/form_wire.py + editor_forms.form_spec):
 No GPU, no network. In-process calls against the live repo tree."""
 
 from pathlib import Path
+from collections.abc import Iterator
 
 import pytest
 
@@ -45,7 +46,7 @@ REPO_S = str(REPO)
 # ── A. the regression: baseline card services resolve to full specs ─
 
 @pytest.mark.parametrize("svc", sorted(editor_forms._FORMS_TABLE))
-def test_every_form_name_resolves_to_a_full_spec(svc):
+def test_every_form_name_resolves_to_a_full_spec(svc: str) -> None:
     code, spec = editor_forms.form_spec(REPO_S, svc)
     assert code == 200, (svc, code, spec)
     env = form_wire.FormSpecRow.model_validate(spec)
@@ -54,7 +55,7 @@ def test_every_form_name_resolves_to_a_full_spec(svc):
     assert env.label  # branded label, not ""
 
 
-def test_image_gen_is_krea2_not_the_hollow_lane_spec():
+def test_image_gen_is_krea2_not_the_hollow_lane_spec() -> None:
     """THE bug: 'Image' showed only the model picker because
     image-gen hit the lane probe and served the hollow spec."""
     code, spec = editor_forms.form_spec(REPO_S, "image-gen")
@@ -67,19 +68,19 @@ def test_image_gen_is_krea2_not_the_hollow_lane_spec():
 
 # ── B. loud refusals ───────────────────────────────────────────────
 
-def test_unknown_model_refuses_404():
+def test_unknown_model_refuses_404() -> None:
     code, body = editor_forms.form_spec(REPO_S, "no-such-model-xyz")
     assert code == 404 and body["error"] == "model not found"
 
 
-def test_empty_model_param_refuses_400():
+def test_empty_model_param_refuses_400() -> None:
     code, body = editor_forms.form_spec(REPO_S, "")
     assert code == 400 and body["error"] == "missing model param"
 
 
 # ── C. the hollow spec is unbuildable ──────────────────────────────
 
-def _full(**over):
+def _full(**over: str | list[dict[str, str]] | list[dict[str, str | list[str]]] | dict[str, list[str] | dict[str, str]] | dict[str, int] | None) -> dict[str, str | list[dict[str, str]] | list[dict[str, str | list[str]]] | dict[str, list[str] | dict[str, str]] | dict[str, int] | None]:
     base = dict(
         model="m", form="f", service="s", label="L", genre="image",
         fields=[{"name": "prompt", "type": "textarea", "label": "P"}],
@@ -90,7 +91,7 @@ def _full(**over):
     return base
 
 
-def test_hollow_spec_cannot_be_built():
+def test_hollow_spec_cannot_be_built() -> None:
     """The old 200 body (defaults/variants/features only) is a
     construction refusal now — the class is dead by shape."""
     with pytest.raises(form_wire.ValidationError):
@@ -103,20 +104,20 @@ def test_hollow_spec_cannot_be_built():
     "model", "form", "service", "label", "fields", "schema_groups",
     "features", "defaults", "variants",
 ])
-def test_each_required_key_is_load_bearing(missing):
+def test_each_required_key_is_load_bearing(missing: str) -> None:
     with pytest.raises(form_wire.ValidationError):
         form_wire.FormSpecRow.model_validate(
             {k: v for k, v in _full().items() if k != missing})
 
 
-def test_field_row_requires_name_and_type():
+def test_field_row_requires_name_and_type() -> None:
     with pytest.raises(form_wire.ValidationError):
         form_wire.FormFieldRow.model_validate({"name": "", "type": "x"})
     with pytest.raises(form_wire.ValidationError):
         form_wire.FormFieldRow.model_validate({"name": "a"})
 
 
-def test_empty_group_id_is_the_legacy_bucket():
+def test_empty_group_id_is_the_legacy_bucket() -> None:
     """The ungrouped 'Parameters' bucket carries id='' by wire
     contract (C-era default bucket) — NOT a refusal."""
     row = form_wire.SchemaGroupRow.model_validate(
@@ -126,7 +127,7 @@ def test_empty_group_id_is_the_legacy_bucket():
 
 # ── D. the full catalog sweeps clean through the gate ──────────────
 
-def test_every_catalog_model_spec_validates():
+def test_every_catalog_model_spec_validates() -> None:
     rows = editor_forms._scan_catalog(REPO_S)
     assert len(rows) >= 10
     for row in rows:
@@ -138,7 +139,7 @@ def test_every_catalog_model_spec_validates():
         form_wire.FormSpecRow.model_validate(spec)
 
 
-def test_variant_routes_validate_too():
+def test_variant_routes_validate_too() -> None:
     for route in ("krea-2-raw",):
         code, spec = editor_forms.form_spec(REPO_S, route)
         assert code == 200, (route, code)
@@ -147,7 +148,7 @@ def test_variant_routes_validate_too():
 
 # ── E. structure pin: the hollow literal is gone from the route ────
 
-def test_no_bare_minimal_literal_on_the_serving_path():
+def test_no_bare_minimal_literal_on_the_serving_path() -> None:
     src = (REPO / "py" / "editor_forms.py").read_text(encoding="utf-8")
     assert "dict(_MINIMAL_LANE_SPEC)" not in src
     # the registry resolution precedes the probe CALL inside form_spec
@@ -166,7 +167,7 @@ def test_no_bare_minimal_literal_on_the_serving_path():
 # These pins boot a REAL scratch gateway and hold the WIRE body to the
 # same contract.
 
-def _http_get(port, path):
+def _http_get(port: int, path: str) -> tuple[int, dict[str, str | int | float | bool | list[dict[str, str | bool | int | list[str]]] | dict[str, str | dict[str, str]] | None] | list[dict[str, str | bool]]]:
     import urllib.request
     import json as _json
     r = urllib.request.urlopen(
@@ -175,7 +176,7 @@ def _http_get(port, path):
 
 
 @pytest.fixture(scope="module")
-def scratch_gateway():
+def scratch_gateway() -> Iterator[int]:
     from _anchor import boot_scratch_gateway, reap_gateway
     import sys as _sys
     port, proc = boot_scratch_gateway(
@@ -186,7 +187,7 @@ def scratch_gateway():
 
 
 @pytest.mark.parametrize("svc", sorted(editor_forms._FORMS_TABLE))
-def test_http_every_form_serves_the_full_contract(scratch_gateway, svc):
+def test_http_every_form_serves_the_full_contract(scratch_gateway: int, svc: str) -> None:
     status, body = _http_get(scratch_gateway, "v1/form-spec?model=%s" % svc)
     assert status == 200, (svc, status)
     env = form_wire.FormSpecRow.model_validate(body)
@@ -194,7 +195,7 @@ def test_http_every_form_serves_the_full_contract(scratch_gateway, svc):
     assert env.label
 
 
-def test_http_image_gen_is_the_universal_form(scratch_gateway):
+def test_http_image_gen_is_the_universal_form(scratch_gateway: int) -> None:
     status, body = _http_get(scratch_gateway, "v1/form-spec?model=image-gen")
     assert status == 200
     env = form_wire.FormSpecRow.model_validate(body)
@@ -202,7 +203,7 @@ def test_http_image_gen_is_the_universal_form(scratch_gateway):
     assert {"prompt", "width", "height", "steps"} <= {f.name for f in env.fields}
 
 
-def test_http_unknown_refuses_404(scratch_gateway):
+def test_http_unknown_refuses_404(scratch_gateway: int) -> None:
     import urllib.error
     with pytest.raises(urllib.error.HTTPError) as ei:
         _http_get(scratch_gateway, "v1/form-spec?model=no-such-thing")
@@ -220,7 +221,7 @@ def test_http_unknown_refuses_404(scratch_gateway):
 # the client never asked for it. Two server tables, zero contract
 # between them. This section is that contract.
 
-def test_card_tools_kinds_exist_in_registry_with_formspec():
+def test_card_tools_kinds_exist_in_registry_with_formspec() -> None:
     import lane_disclosure
     manifests = lane_disclosure.card_tools()
     assert len(manifests) >= 10
@@ -239,20 +240,20 @@ def test_card_tools_kinds_exist_in_registry_with_formspec():
             "form (formSpec=True): %s (card %s)" % (kind, m.get("name")))
 
 
-def test_registry_declares_card_compose():
+def test_registry_declares_card_compose() -> None:
     import card_kinds
     rows = {r.kind: r for r in card_kinds.TABLE.kinds}
     assert "card-compose" in rows and rows["card-compose"].formSpec
 
 
-def test_http_kinds_lane_serves_card_compose(scratch_gateway):
+def test_http_kinds_lane_serves_card_compose(scratch_gateway: int) -> None:
     status, body = _http_get(scratch_gateway, "v1/kinds")
     assert status == 200
     kinds = {k["kind"]: k for k in body["kinds"]}
     assert kinds.get("card-compose", {}).get("formSpec") is True
 
 
-def test_http_card_tools_manifest_kinds_covered(scratch_gateway):
+def test_http_card_tools_manifest_kinds_covered(scratch_gateway: int) -> None:
     status, body = _http_get(scratch_gateway, "v1/kinds")
     reg = {k["kind"] for k in body["kinds"] if k.get("formSpec")}
     status2, manifests = _http_get(scratch_gateway, "v1/card-tools")
@@ -261,7 +262,7 @@ def test_http_card_tools_manifest_kinds_covered(scratch_gateway):
         assert m.get("kind") in reg, (m.get("name"), m.get("kind"))
 
 
-def test_http_krea_2_carries_top_level_variants(scratch_gateway):
+def test_http_krea_2_carries_top_level_variants(scratch_gateway: int) -> None:
     """The Variant/Quant tabs are read from spec.variants (top-level) in
     flowAxisRows; the previous specFeatures?.variants read silently
     returned [] for every card because the wire never nests variants
@@ -278,7 +279,7 @@ def test_http_krea_2_carries_top_level_variants(scratch_gateway):
     assert "Variant" in (body.get("features") or {}).get("variant_groups", {})
 
 
-def test_wire_variants_are_top_level_not_under_features(scratch_gateway):
+def test_wire_variants_are_top_level_not_under_features(scratch_gateway: int) -> None:
     """Lockstep with flowAxisRows.tsx and form_wire.FormSpecRow."""
     status, body = _http_get(scratch_gateway, "v1/form-spec?model=krea-2")
     assert status == 200
@@ -295,7 +296,7 @@ def test_wire_variants_are_top_level_not_under_features(scratch_gateway):
         "the wrong read back")
 
 
-def test_http_krea_2_int8_quant_owns_under_turbo(scratch_gateway):
+def test_http_krea_2_int8_quant_owns_under_turbo(scratch_gateway: int) -> None:
     """The axis-hierarchy link. flowAxisRows scopes the Quant select to
     `quantRows.filter(e => e.owner === activeVariantRow)` — without
     `owner` on the quant row every quant is orphaned and the row
@@ -312,7 +313,7 @@ def test_http_krea_2_int8_quant_owns_under_turbo(scratch_gateway):
         "owner=%r — the editor's owner-scope hides an unlinked quant" % owner)
 
 
-def test_wire_every_quant_is_owner_linked_to_a_known_variant(scratch_gateway):
+def test_wire_every_quant_is_owner_linked_to_a_known_variant(scratch_gateway: int) -> None:
     """The cross-model invariant. Every Quant row on the wire must point
     at a Variant row of the same model — an orphan is a hidden quant."""
     import lane_disclosure
@@ -334,7 +335,7 @@ def test_wire_every_quant_is_owner_linked_to_a_known_variant(scratch_gateway):
                     "variant of this model" % (svc, v.id, v.owner))
 
 
-def test_http_kinds_lane_declares_input_runner(scratch_gateway):
+def test_http_kinds_lane_declares_input_runner(scratch_gateway: int) -> None:
     """The dispatcher's SSOT (2026-09-05): the input kind declares its
     runner family on the /v1/kinds wire; the editor's resolver reads
     it instead of branching on the kind name. Pin the lockstep."""
@@ -355,7 +356,7 @@ def test_http_kinds_lane_declares_input_runner(scratch_gateway):
             (kind, entry.get("runner")))
 
 
-def test_card_kinds_table_input_runner_is_set():
+def test_card_kinds_table_input_runner_is_set() -> None:
     """Lockstep: the server SSOT row carries runner='input'."""
     import card_kinds
     rows = {r.kind: r for r in card_kinds.TABLE.kinds}
@@ -367,7 +368,7 @@ def test_card_kinds_table_input_runner_is_set():
             (k, r.runner))
 
 
-def test_http_cardless_models_in_a_form_serve_the_form_card():
+def test_http_cardless_models_in_a_form_serve_the_form_card() -> None:
     """The cardless-model → form-card fallback (2026-09-05). Every model
     in _FORMS_TABLE[*].covers must serve the form's anchor card's
     fields on /v1/form-spec — a cardless "data" model (z-image, anima,
@@ -397,7 +398,7 @@ def test_http_cardless_models_in_a_form_serve_the_form_card():
                 "anchor %s has the fields)." % (fid, mid, anchor))
 
 
-def test_http_cardless_model_spec_keeps_its_own_identity(scratch_gateway):
+def test_http_cardless_model_spec_keeps_its_own_identity(scratch_gateway: int) -> None:
     """A covered model's spec brands the MODEL (model/service = its
     id) while the field surface comes from the card it boards —
     absorbed members (z-image/anima → image-gen) carry the card's

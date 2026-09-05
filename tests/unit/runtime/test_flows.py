@@ -5,6 +5,7 @@ No GPU, no network — the schema is the wall. Design record:
 docs/queue/flows.md."""
 
 import json
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -15,13 +16,13 @@ from flow import Flow, Stage, FromInitial, FromStage, validate_engines
 
 # ── registry sweep: every declared flow loads + is sound ──────────
 
-def test_registry_has_the_converted_lanes():
+def test_registry_has_the_converted_lanes() -> None:
     ids = flow_mod.scan_flow_ids()
     for must in ("audio-native-tts", "kimodo-native"):
         assert must in ids, "converted lane missing: %s" % must
 
 
-def test_every_flow_loads_and_matches_its_dir():
+def test_every_flow_loads_and_matches_its_dir() -> None:
     assert flow_mod.scan_flow_ids(), "no flows declared"
     for name in flow_mod.scan_flow_ids():
         fl = flow_mod.load_flow(name)
@@ -29,7 +30,7 @@ def test_every_flow_loads_and_matches_its_dir():
         assert len(fl.stages) >= 1
 
 
-def test_converted_flows_keep_their_engine_params():
+def test_converted_flows_keep_their_engine_params() -> None:
     """The conversion is FAITHFUL: the comfyui engine surface rides
     verbatim (workflow_file+inject for tts, inline workflow for
     kimodo) and NO server_url fossil survives (QUEUE LANE LAW:
@@ -59,14 +60,14 @@ def test_converted_flows_keep_their_engine_params():
 
 # ── construction refusals (an unbuildable flow cannot be declared) ─
 
-def test_duplicate_stage_ids_refused():
+def test_duplicate_stage_ids_refused() -> None:
     with pytest.raises(ValueError, match="duplicate stage id"):
         Flow(id="x", stages=(
             Stage(id="a", engine="comfyui"),
             Stage(id="a", engine="comfyui")))
 
 
-def test_forward_wire_refused():
+def test_forward_wire_refused() -> None:
     with pytest.raises(ValueError, match="EARLIER"):
         Flow(id="x", stages=(
             Stage(id="a", engine="comfyui",
@@ -74,34 +75,34 @@ def test_forward_wire_refused():
             Stage(id="b", engine="comfyui")))
 
 
-def test_wire_to_missing_stage_refused():
+def test_wire_to_missing_stage_refused() -> None:
     with pytest.raises(ValueError, match="EARLIER"):
         Flow(id="x", stages=(
             Stage(id="a", engine="comfyui",
                   inputs={"mesh": FromStage(stage="ghost", output="glb")}),))
 
 
-def test_illegal_stage_id_refused():
+def test_illegal_stage_id_refused() -> None:
     with pytest.raises(ValueError, match="identifier"):
         Stage(id="../etc", engine="comfyui")
 
 
-def test_unknown_stage_field_refused():
+def test_unknown_stage_field_refused() -> None:
     with pytest.raises(ValueError):
         Stage(id="a", engine="comfyui", no_such_field=1)
 
 
-def test_engineless_stage_refused():
+def test_engineless_stage_refused() -> None:
     with pytest.raises(ValueError):
         Stage(id="a", engine="")
 
 
-def test_empty_flow_refused():
+def test_empty_flow_refused() -> None:
     with pytest.raises(ValueError):
         Flow(id="x", stages=())
 
 
-def test_unknown_engine_refused_at_validation():
+def test_unknown_engine_refused_at_validation() -> None:
     fl = Flow(id="x", stages=(Stage(id="a", engine="no-such-engine"),))
     with pytest.raises(flow_mod.FlowError, match="no-such-engine"):
         validate_engines(fl)
@@ -109,12 +110,12 @@ def test_unknown_engine_refused_at_validation():
 
 # ── edges: structural rows, runtime refs exactly the graph's food ──
 
-def test_edge_refs():
+def test_edge_refs() -> None:
     assert FromInitial(key="prompt").ref() == "__initial__.prompt"
     assert FromStage(stage="forge", output="glb").ref() == "forge.glb"
 
 
-def test_to_graph_emits_the_executor_contract():
+def test_to_graph_emits_the_executor_contract() -> None:
     fl = Flow(
         id="probe", description="d",
         stages=(
@@ -137,26 +138,26 @@ def test_to_graph_emits_the_executor_contract():
 
 # ── the {flow} door (through the gateway's resolver) ───────────────
 
-def test_flow_door_resolves():
+def test_flow_door_resolves() -> None:
     from gateway import resolve_request
     g = resolve_request({"flow": "audio-native-tts"})
     assert g.name == "audio-native-tts"
     assert [n.node_type for n in g.nodes] == ["comfyui"]
 
 
-def test_flow_door_unknown_refused():
+def test_flow_door_unknown_refused() -> None:
     from gateway import ValidationError, resolve_request
     with pytest.raises(ValidationError, match="no flow at flows/"):
         resolve_request({"flow": "no-such-flow"})
 
 
-def test_flow_door_traversal_refused():
+def test_flow_door_traversal_refused() -> None:
     from gateway import ValidationError, resolve_request
     with pytest.raises(ValidationError, match="legal identifier"):
         resolve_request({"flow": "../etc"})
 
 
-def test_yaml_door_is_dead():
+def test_yaml_door_is_dead() -> None:
     """The yaml text door retired with the parser (NO LEGACY: no
     fallbacks). A body carrying it is a NO-SELECTION refusal now."""
     from gateway import ValidationError, resolve_request
@@ -164,7 +165,7 @@ def test_yaml_door_is_dead():
         resolve_request({"yaml": "audio-native-tts"})
 
 
-def test_runtime_flow_module_loads_and_cleans_up():
+def test_runtime_flow_module_loads_and_cleans_up() -> None:
     """test_05's pattern: a lane may WRITE a flow module at runtime,
     submit through the door, and remove it — the loader reads disk
     per request, no boot cache to fight."""
@@ -193,7 +194,7 @@ def test_runtime_flow_module_loads_and_cleans_up():
 # Flow(...) construction, not on the GPU. The AI iterates without
 # burning a single queue slot.
 
-def test_kind_refuses_image_into_text_at_construction():
+def test_kind_refuses_image_into_text_at_construction() -> None:
     """The main lever: image_gen -> tts refuses loud, the AI swaps
     the upstream stage, no GPU cycle."""
     with pytest.raises((flow_mod.FlowError, ValidationError)) as exc:
@@ -211,7 +212,7 @@ def test_kind_refuses_image_into_text_at_construction():
     assert "stage 'tts' input 'prompt'" in msg
 
 
-def test_kind_refuses_text_into_image_at_construction():
+def test_kind_refuses_text_into_image_at_construction() -> None:
     """Symmetric refusal: text into an image stage."""
     with pytest.raises((flow_mod.FlowError, ValidationError)) as exc:
         Flow(id="x", stages=(
@@ -227,7 +228,7 @@ def test_kind_refuses_text_into_image_at_construction():
     assert "must be image" in msg
 
 
-def test_inputs_expected_mismatch_wired_but_untyped_refused():
+def test_inputs_expected_mismatch_wired_but_untyped_refused() -> None:
     """Every input must have an expected Kind (the AI's first typo
     class: forgetting `expected=` on the receiving stage)."""
     with pytest.raises((flow_mod.FlowError, ValidationError)) as exc:
@@ -243,7 +244,7 @@ def test_inputs_expected_mismatch_wired_but_untyped_refused():
     assert "'frame'" in msg
 
 
-def test_inputs_expected_mismatch_typed_but_unwired_refused():
+def test_inputs_expected_mismatch_typed_but_unwired_refused() -> None:
     """Symmetric: expected without a wire."""
     with pytest.raises((flow_mod.FlowError, ValidationError)) as exc:
         Flow(id="x", stages=(
@@ -256,7 +257,7 @@ def test_inputs_expected_mismatch_typed_but_unwired_refused():
     assert "'frame'" in msg
 
 
-def test_engine_default_output_used_when_stage_omits_outputs():
+def test_engine_default_output_used_when_stage_omits_outputs() -> None:
     """A stage with no `outputs` falls back to the engine's
     DEFAULT_OUTPUT. The comfyui default is Kind.image; a stage
     taking that downstream with expected=Kind.image is fine."""
@@ -268,7 +269,7 @@ def test_engine_default_output_used_when_stage_omits_outputs():
     ))  # no exception — the construction succeeds
 
 
-def test_unknown_upstream_output_name_refused():
+def test_unknown_upstream_output_name_refused() -> None:
     """A FromStage(output='png') on a stage whose outputs are
     {'thumb': Kind.image} refuses loud (typo class)."""
     with pytest.raises((flow_mod.FlowError, ValidationError)) as exc:
@@ -284,7 +285,7 @@ def test_unknown_upstream_output_name_refused():
     assert "declared outputs: ['thumb']" in msg
 
 
-def test_kind_is_closed_enum():
+def test_kind_is_closed_enum() -> None:
     """The Kind vocabulary is closed — a typo at a flow site is a
     construction refusal (PYTHON SHAPE LAW rung 3)."""
     with pytest.raises((ValueError, TypeError)):
@@ -294,7 +295,7 @@ def test_kind_is_closed_enum():
         "text", "image", "video", "audio", "mesh", "num", "lora", "seg"}
 
 
-def test_engine_default_output_attribute_is_present():
+def test_engine_default_output_attribute_is_present() -> None:
     """The engine contract (flow-typed-edges.md): every engine
     module exposes DEFAULT_OUTPUT as a Kind member. Refuses at
     validate_engines if it's missing or non-Kind."""
@@ -311,7 +312,7 @@ def test_engine_default_output_attribute_is_present():
                 etype, mod.DEFAULT_OUTPUT)
 
 
-def test_to_graph_stamps_typed_outputs_into_noderow():
+def test_to_graph_stamps_typed_outputs_into_noderow() -> None:
     """Gap #2: the flow-typed-edges contract is visible PAST
     construction — the NodeRow carries the resolved outputs so
     the sidecar / MCP introspection / editor graph view see the
@@ -340,7 +341,7 @@ def test_to_graph_stamps_typed_outputs_into_noderow():
         "engine DEFAULT_OUTPUT must fill 'default': %r" % upscale.outputs
 
 
-def test_to_graph_stamps_default_output_for_audio_engine():
+def test_to_graph_stamps_default_output_for_audio_engine() -> None:
     """Same lever for audio_cpp — Stage omits outputs, engine default
     fills the 'default' channel with Kind.audio."""
     fl = Flow(
@@ -359,7 +360,7 @@ def test_to_graph_stamps_default_output_for_audio_engine():
 # ── live door: the operator's "iterates without GPU" promise, pinned ──
 
 @pytest.fixture
-def live_gateway_url():
+def live_gateway_url() -> str:
     """Skip if the operator gateway is not up — the live door
     test is for environments where the live restart dance has run.
     CI runs this wall only when the operator gateway is up."""
@@ -374,7 +375,7 @@ def live_gateway_url():
     return url
 
 
-def test_live_door_refuses_wrong_kind_with_4xx(live_gateway_url, tmp_path):
+def test_live_door_refuses_wrong_kind_with_4xx(live_gateway_url: str, tmp_path: Path) -> None:
     """Gap #1 (the operator's lever, pinned end-to-end):
     POST a flow that wires an image stage into a text stage. The
     live {flow} door must return 4xx, name BOTH kinds, and
@@ -438,7 +439,7 @@ def test_live_door_refuses_wrong_kind_with_4xx(live_gateway_url, tmp_path):
 # Gap #3: num, lora, seg were declared but no real flow used them.
 # These pins exercise each in a real flow shape so the AI can copy.
 
-def test_kind_num_for_seed_or_cfg_between_stages():
+def test_kind_num_for_seed_or_cfg_between_stages() -> None:
     """`num` is the inter-stage scalar channel: a stage produces a
     number (e.g. an image-to-prompt embedding stage that returns a
     seed), the next stage consumes it. The kind system refuses
@@ -463,7 +464,7 @@ def test_kind_num_for_seed_or_cfg_between_stages():
     assert "got num" in str(exc.value)
 
 
-def test_kind_lora_for_lora_conditioned_image_stages():
+def test_kind_lora_for_lora_conditioned_image_stages() -> None:
     """`lora` is the LoRA-set channel: a stage produces a lora
     selection (the comfyui LoRA loader's output), the next stage
     consumes it as a weight conditioner. The shape is symmetric
@@ -488,7 +489,7 @@ def test_kind_lora_for_lora_conditioned_image_stages():
     assert "got image" in str(exc.value)
 
 
-def test_kind_seg_for_mask_driven_inpaint_stages():
+def test_kind_seg_for_mask_driven_inpaint_stages() -> None:
     """`seg` is the segmentation/mask channel: a detect stage
     produces a mask, an inpaint stage consumes it (the comfyui
     image-edit card's SAM3-driven flow is the live target)."""

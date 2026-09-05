@@ -147,7 +147,7 @@ KNOWN_DRIFT = {
 }
 
 
-def test_every_referenced_v1_route_is_served():
+def test_every_referenced_v1_route_is_served() -> None:
     static, dynamic = _served()
     referenced = _referenced()
     assert referenced, "no /v1 references found in the web family - extraction broke"
@@ -167,7 +167,7 @@ def test_every_referenced_v1_route_is_served():
         raise AssertionError(chr(10).join(lines))
 
 
-def test_the_weave_sees_both_sides():
+def test_the_weave_sees_both_sides() -> None:
     """Sanity: extraction is alive on both ends.
 
     If the gateway route extraction or the web-source walk breaks

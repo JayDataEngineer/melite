@@ -26,6 +26,9 @@ import os
 import urllib.request
 from pathlib import Path
 
+# The object_info shape: decoded JSON (objects, arrays, scalars).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
+
 # Extension name → set of node class types it provides (curated).
 # When a card declares requires: ["ComfyUI-KJNodes"], we verify that
 # at least some of these nodes appear in object_info.
@@ -61,7 +64,7 @@ EXTENSION_NODE_TYPES: dict[str, set[str]] = {
 }
 
 
-def _fetch_object_info(server_url: str, timeout: float = 5.0) -> dict | None:
+def _fetch_object_info(server_url: str, timeout: float = 5.0) -> dict[str, JsonValue] | None:
     """Fetch object_info from a running ComfyUI instance. Returns None on failure."""
     try:
         req = urllib.request.Request(

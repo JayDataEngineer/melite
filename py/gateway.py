@@ -2,7 +2,7 @@
 """The Python gateway — Phase 3 of the everything-is-ComfyUI consolidation.
 
 One file. Starlette ASGI + uvicorn (no heavyweight deps; the base env
-already carries both). Replaces the C/C++ server (src/server.cpp and kin)
+already carries both). Replaces the C/C++ server
 with the same queue contract the estate already speaks:
 
   POST /v1/flows/start
@@ -46,12 +46,16 @@ import struct
 import sys
 import time
 import uuid
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from types import ModuleType
+from typing import TYPE_CHECKING, TypeVar
 
 from starlette.applications import Starlette
+from starlette.requests import Request
 from starlette.responses import Response
+from starlette.websockets import WebSocket
 from starlette.routing import Route as StarRoute, WebSocketRoute as WSRoute
 
 REPO = Path(__file__).resolve().parent.parent
@@ -79,6 +83,22 @@ IDENT_RE = re.compile(r"^[a-z_][a-z0-9_-]*$")
 # consolidation, 2026-09-04: moved from /editor/assets/runs — outside
 # /v1 — to the assets family.)
 from editor_runs import ASSET_URL_PREFIX, draft_id_ok  # noqa: E402
+
+if TYPE_CHECKING:
+    from flow_graph import FlowGraph, FlowNode
+
+# The request-body shape: decoded JSON (objects, arrays, scalars).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
+
+# A raw-bytes handler payload: (unused, headers, body) — the asset /
+# bridge doors bypass JSON serialization (see _adapt).
+type RawTriple = tuple[dict[str, str], dict[str, str], bytes]
+
+# Every _h_* handler answers (status, payload): a JSON body, or a raw
+# triple for the byte doors.
+type HandlerResult = tuple[int, dict[str, JsonValue] | RawTriple]
+
+_T = TypeVar("_T")
 
 
 class ValidationError(Exception):
@@ -109,7 +129,7 @@ RETIRED_RUNNER_KNOBS = frozenset({
 _INTERNAL_KEY_PREFIX = "_"  # C-era runner internal naming — refused
 
 
-def _strict_body(body):
+def _strict_body(body: JsonValue) -> None:
     """Loud 400 on any body key the runner never reads.
 
     Door keys are allowed (the door itself is one of them); model
@@ -131,7 +151,7 @@ def _strict_body(body):
             "remove them")
 
 
-def resolve_request(body):
+def resolve_request(body: JsonValue) -> FlowGraph | dict[str, JsonValue]:
     """Resolve the start request to a flow graph — loudly.
 
     THREE doors (QUEUE LANE LAW, 2026-09-04 flows rework + the
@@ -192,7 +212,7 @@ def resolve_request(body):
 DOOR_KEYS = ("yaml", "flow", "flow_inline", "model")
 
 
-def initial_pool(request):
+def initial_pool(request: dict[str, JsonValue]) -> dict[str, JsonValue]:
     """The run's initial input pool: request body minus the door keys.
 
     Pure seam (wall-tested): the pool is scalar/stringly run inputs —
@@ -205,7 +225,7 @@ def initial_pool(request):
 # sorted, LOUD refusals. The C glob-order bug dies here.)
 
 
-def _find_card_requires(mid, plugins_dir=None):
+def _find_card_requires(mid: str, plugins_dir: str | None = None) -> list[str]:
     """Resolve model id -> the owning CARD's requires list (or []).
 
     (2026-09-02, the identity rung) Fully class-driven: the model class
@@ -269,7 +289,8 @@ def _find_card_requires(mid, plugins_dir=None):
     return []
 
 
-def resolve_card_model(body, mid):
+def resolve_card_model(body: dict[str, JsonValue], mid: str
+                       ) -> tuple[FlowGraph, str, dict[str, JsonValue]]:
     """{model} arm for card-only models (no flow.yaml on disk).
 
     Mirrors the C card path: seed a minimal skeleton carrying the engine
@@ -280,6 +301,27 @@ def resolve_card_model(body, mid):
     plugin order owns it; no declarer = LOUD refusal.
     Returns (skeleton_text, etype, extra) or raises loudly.
     """
+    # ARTIFACT-REF GATE (2026-09-05 image-edit incident): every
+    # /v1/assets/... URL wired into the body must exist on the
+    # served mounts BEFORE the card composes — a dangling upstream
+    # output is a 4xx here, never a phase-2 compose failure, never
+    # a GPU-cycle burn, never a zombie slot. Card-agnostic: asset
+    # URLs are gateway vocabulary (this gateway serves them), not
+    # lane knowledge — so this runs for EVERY card, including
+    # future ones whose compose forgets its own existence check.
+    # Runs BEFORE phase 1 (fail fast; a sloppy compose can never
+    # admit a dangling ref into registration).
+    try:
+        from artifact_refs import find_dangling_refs
+    except ImportError:
+        find_dangling_refs = None
+    if find_dangling_refs is not None:
+        dangling = find_dangling_refs(body)
+        if dangling:
+            location, ref, why = dangling[0]
+            raise ValidationError(
+                "dangling artifact ref at %r: %s (%s)" %
+                (location, ref, why))
     # CARD REQUIRES LAW: check declared extensions before compose.
     # EXTENSION LAW: our authored packs live as submodules under
     # vendor/comfyui_extensions — the on-disk fallback resolves there.
@@ -305,7 +347,8 @@ def resolve_card_model(body, mid):
     return skeleton, etype, extra
 
 
-def resolve_inputs(node, initial):
+def resolve_inputs(node: FlowNode,
+                   initial: dict[str, JsonValue]) -> dict[str, JsonValue]:
     """Explicit wiring only: input_from entries like __initial__.PROMPT."""
     out = {}
     for ref in node.input_from:
@@ -332,7 +375,7 @@ def resolve_inputs(node, initial):
     return out
 
 
-def _deep_expand(value, inputs):
+def _deep_expand(value: JsonValue, inputs: dict[str, JsonValue]) -> JsonValue:
     """Recursive $name substitution for inline workflows.
 
     Unlike the inject channel (pure ref channel, unresolved = LOUD),
@@ -355,7 +398,8 @@ def _deep_expand(value, inputs):
     return value
 
 
-def expand_inject(params, inputs):
+def expand_inject(params: dict[str, JsonValue],
+                  inputs: dict[str, JsonValue]) -> dict[str, JsonValue]:
     """Expand $name refs in inject from node inputs; unresolved = LOUD.
 
     Inline workflows (params.workflow, the co_script-flipped lane) get
@@ -403,7 +447,9 @@ class _ComposeBridge:
     No ctypes, no .so map, no engine names here."""
 
     @staticmethod
-    def compose(body, name, run_id, text, types0):
+    def compose(body: dict[str, JsonValue], name: str, run_id: str,
+                text: FlowGraph, types0: Iterable[str]
+                ) -> tuple[FlowGraph, dict[str, JsonValue]]:
         if _plugin_bus is None:
             return text, {}
         return _plugin_bus.compose(body, name, run_id, text, types0)
@@ -414,7 +460,7 @@ card_hooks = _ComposeBridge()
 _engine_cache = {}
 
 
-def _plugin_loud(fn, *a, **kw):
+def _plugin_loud(fn: Callable[..., _T], *a: str, **kw: str) -> _T:
     """Normalize a plugin-bus refusal into THIS module's ValidationError
     (when gateway.py runs as __main__, plugins.py's `from gateway import
     ValidationError` binds a second module copy's class — normalize at
@@ -427,7 +473,7 @@ def _plugin_loud(fn, *a, **kw):
         raise ValidationError(str(e))
 
 
-def load_engine(engine_type):
+def load_engine(engine_type: str) -> ModuleType:
     """The owning plugin's engine module (plugins.py resolves the
     plugin dir from engine.yaml declarations) — LOUD when absent."""
     if _plugin_bus is None:
@@ -435,7 +481,7 @@ def load_engine(engine_type):
     return _plugin_loud(_plugin_bus.load_engine, engine_type)
 
 
-async def _engine_boundary_unload(prev_type, node_type):
+async def _engine_boundary_unload(prev_type: str, node_type: str) -> str:
     """ENGINE TRANSITION (operator order, 2026-10-02: flows may
     switch engines — 'comfyui calls unload all models to be safe';
     2026-09-04 VRAM-release audit: the boundary is GATEWAY-level, so
@@ -470,19 +516,19 @@ async def _engine_boundary_unload(prev_type, node_type):
 @dataclass
 class Run:
     run_id: str
-    graph: dict
-    request: dict
+    graph: FlowGraph
+    request: dict[str, JsonValue]
     status: str = "queued"
     error: str = ""
-    stages: list = field(default_factory=list)
-    artifacts: list = field(default_factory=list)
+    stages: list[dict[str, JsonValue]] = field(default_factory=list)
+    artifacts: list[str] = field(default_factory=list)
     stop_event: asyncio.Event = field(default_factory=asyncio.Event)
     created_at: float = field(default_factory=time.time)
     # L3: where the run dir actually lives. Set in submit() based on
     # the request's test flag; defaults to OUT_ROOT for runs created
     # before this field existed (and for any code path that builds a
     # Run without going through submit()).
-    out_root: "Path" = field(default=None)  # type: ignore
+    out_root: Path | None = field(default=None)
     # CARD LINKAGE (the run→card wire, 2026-09-04 audit): the sidecar
     # MUST carry the draft_id the start body declared so /v1/flows/runs
     # can answer "what card produced this" without round-tripping the
@@ -490,15 +536,15 @@ class Run:
     # direct API hits). Validated by draft_id_ok() at submit() — 96
     # char cap, [A-Za-z0-9_-] — the same SSOT the drafts door uses.
     # docs/queue/run-registry.md:41 / docs/queue/sidecar.md:36.
-    draft_id: str | None = None  # type: ignore
+    draft_id: str | None = None
 
     @property
-    def dir(self):
+    def dir(self) -> Path:
         return (self.out_root or OUT_ROOT) / self.run_id
 
 
 class Gateway:
-    def __init__(self):
+    def __init__(self) -> None:
         self.runs = {}
         self.order = []
         self.active = None
@@ -517,26 +563,26 @@ class Gateway:
         # (per-step progress, activity flips) the poll cannot.
         self.subscribers = {}
 
-    def subscribe(self, run_id):
+    def subscribe(self, run_id: str) -> asyncio.Queue[dict[str, JsonValue]]:
         q = asyncio.Queue()
         self.subscribers.setdefault(run_id, set()).add(q)
         return q
 
-    def unsubscribe(self, run_id, q):
+    def unsubscribe(self, run_id: str, q: asyncio.Queue[dict[str, JsonValue]]) -> None:
         subs = self.subscribers.get(run_id)
         if subs is not None:
             subs.discard(q)
             if not subs:
                 self.subscribers.pop(run_id, None)
 
-    def publish(self, run_id, event):
+    def publish(self, run_id: str, event: dict[str, JsonValue]) -> None:
         for q in list(self.subscribers.get(run_id, ())):
             try:
                 q.put_nowait(event)
             except Exception:
                 pass
 
-    async def submit(self, body):
+    async def submit(self, body: dict[str, JsonValue]) -> Run:
         # body shape FIRST (RESILIENCE LAW + QUEUE LANE LAW): a
         # non-object body 4xxes here — resolve_request owns the same
         # guard for its own callers, but the test-flag read below
@@ -622,7 +668,7 @@ class Gateway:
         sidecar(run)
         return run
 
-    async def worker(self):
+    async def worker(self) -> None:
         while True:
             await asyncio.sleep(0.05)
             if self.active is not None or not self.order:
@@ -660,7 +706,7 @@ class Gateway:
                                           "status": run.status})
                 self.active = None
 
-    async def execute(self, run):
+    async def execute(self, run: Run) -> None:
         initial = initial_pool(run.request)
         # phase-1 card inputs ("inputs": {...}) land in the tensor pool
         ci = getattr(run, "card_extra_inputs", {}) or {}
@@ -702,7 +748,8 @@ class Gateway:
             # execution; the gateway folds it into the stage dict (the
             # status poll serves it), the sidecar (survives restarts),
             # and the events bus (the WS door streams it live).
-            def _report(updates, _run=run, _stage=stage):
+            def _report(updates: dict[str, JsonValue], _run: Run = run,
+                        _stage: dict[str, JsonValue] = stage) -> None:
                 _stage.update(updates)
                 sidecar(_run)
                 self.publish(_run.run_id, {"type": "stage",
@@ -784,7 +831,7 @@ class Gateway:
                 raise
             sidecar(run)
 
-    async def stop(self, run_id):
+    async def stop(self, run_id: str) -> dict[str, str]:
         run = self.runs.get(run_id)
         if run is None:
             raise ValidationError("unknown run_id %r" % run_id)
@@ -802,10 +849,10 @@ class Gateway:
                         pass
         return {"run_id": run_id, "status": "stopping"}
 
-    def graph_nodes(self, run):
+    def graph_nodes(self, run: Run) -> tuple[FlowNode, ...]:
         return run.graph.nodes
 
-    async def shutdown(self):
+    async def shutdown(self) -> None:
         """SIGTERM/SIGINT path: mark the active run stopped (engine stop
         hooks land), flush sidecars, exit cleanly. A deliberate shutdown
         manufactures ZERO zombies — RESILIENCE LAW."""
@@ -835,7 +882,7 @@ class Gateway:
         os._exit(0)
 
 
-def sidecar(run):
+def sidecar(run: Run) -> None:
     # L1 of the test/prod barrier: the test flag rides from the start
     # body into the run's request dict and onto the sidecar. scan_run
     # reads it from here; assets_index (L2) uses it to keep test runs
@@ -882,7 +929,7 @@ def sidecar(run):
 LEDGER_PATH = OUT_ROOT / "_ledger.jsonl"
 
 
-def ledger(event, data=None):
+def ledger(event: str, data: dict[str, JsonValue] | None = None) -> None:
     """Append-only activity journal at output/_ledger.jsonl — one JSON
     object per line (close-per-line keeps every event durable)."""
     try:
@@ -894,7 +941,7 @@ def ledger(event, data=None):
         pass   # the journal must never take the gateway down
 
 
-def sweep_sidecar(path, why):
+def sweep_sidecar(path: Path, why: str) -> bool:
     """Patch a stale sidecar: every running/queued status (top-level AND
     per-stage) becomes failed, with the reason recorded in a "sweep" key.
     Idempotent — an already-swept file has no active statuses left."""
@@ -904,7 +951,7 @@ def sweep_sidecar(path, why):
         return False
     touched = False
 
-    def _patch(o):
+    def _patch(o: JsonValue) -> None:
         nonlocal touched
         if isinstance(o, dict):
             if o.get("status") in ("running", "queued"):
@@ -924,7 +971,7 @@ def sweep_sidecar(path, why):
     return True
 
 
-def boot_sweep():
+def boot_sweep() -> int:
     """Boot-time zombie sweep: every sidecar still claiming running/queued
     belongs to a DEAD process (we just started — nothing is live yet).
     Sweep BEFORE the gateway accepts traffic, so the ledger never shows
@@ -945,7 +992,7 @@ def boot_sweep():
     return swept
 
 
-def sidecar_status(run_id):
+def sidecar_status(run_id: str) -> dict[str, JsonValue] | None:
     """Status for a run this process never owned: read the sidecar.
     A running/queued sidecar with no live registry entry is a stale
     leftover from a prior crash — self-heal at read time so zombies
@@ -975,7 +1022,7 @@ def sidecar_status(run_id):
     return obj
 
 
-def atomic_write(path, obj):
+def atomic_write(path: Path, obj: JsonValue) -> None:
     tmp = Path(str(path) + ".tmp")
     tmp.write_text(json.dumps(obj, indent=2, default=str))
     os.replace(str(tmp), str(path))
@@ -990,7 +1037,7 @@ def atomic_write(path, obj):
 # are native starlette WebSocketRoutes — no more hand-rolled RFC 6455.
 # ---------------------------------------------------------------------------
 
-async def _swallow(task):
+async def _swallow(task: asyncio.Task[JsonValue | None]) -> None:
     """Await a cancelled/failed child cleanly so its exception can never
     leak into the next await of the caller (reaped, not propagated)."""
     try:
@@ -999,7 +1046,7 @@ async def _swallow(task):
         pass
 
 
-async def _ws_starlette(websocket):
+async def _ws_starlette(websocket: WebSocket) -> None:
     """Native starlette WebSocket for /v1/flows/events/<run_id>.
 
     The streaming door (2026-09-02, now transport-agnostic):
@@ -1027,10 +1074,10 @@ async def _ws_starlette(websocket):
 
     q = gw.subscribe(run_id)
 
-    async def _send(obj):
+    async def _send(obj: JsonValue) -> None:
         await websocket.send_json(obj)
 
-    async def _monitor_client():
+    async def _monitor_client() -> None:
         """Block on client reads; returns (raises) on disconnect."""
         try:
             while True:
@@ -1089,7 +1136,7 @@ async def _ws_starlette(websocket):
         gw.unsubscribe(run_id, q)
 
 
-async def _adapt(request):
+async def _adapt(request: Request) -> Response:
     """Starlette→legacy bridge: match the request against the ROUTES
     table, call the handler, convert (status, payload) → Response.
 
@@ -1160,7 +1207,8 @@ class _Ctx:
     __slots__ = ("gw", "method", "path", "target", "qs", "body", "json",
                  "m", "row")
 
-    def __init__(self, gw, method, path, target, qs, body):
+    def __init__(self, gw: Gateway, method: str, path: str, target: str,
+                 qs: dict[str, list[str]], body: bytes) -> None:
         self.gw = gw
         self.method = method
         self.path = path
@@ -1171,7 +1219,7 @@ class _Ctx:
         self.m = None
         self.row = None
 
-    def q(self, name, default=None):
+    def q(self, name: str, default: str | None = None) -> str | None:
         return self.qs.get(name, [default])[0]
 
 
@@ -1187,10 +1235,10 @@ class Route:
     regex: bool = False
     ws: bool = False           # websocket door (hijacked in handle())
     attr: str = ""             # chrome stubs: editor_runs attribute
-    handler: object = None
+    handler: Callable[[_Ctx], Awaitable[HandlerResult]] | None = None
 
 
-async def _h_flows_start(ctx):
+async def _h_flows_start(ctx: _Ctx) -> HandlerResult:
     try:
         run = await ctx.gw.submit(ctx.json)
     except ValidationError as e:
@@ -1198,7 +1246,7 @@ async def _h_flows_start(ctx):
     return 202, {"run_id": run.run_id, "status": run.status}
 
 
-async def _h_flows_validate(ctx):
+async def _h_flows_validate(ctx: _Ctx) -> HandlerResult:
     """The AI feedback loop (typed-edges design record): compile an
     inline flow body — every refusal is verbatim compile-time error
     text naming flow/stage/input and both Kinds. No queue slot, no
@@ -1223,7 +1271,7 @@ async def _h_flows_validate(ctx):
     }
 
 
-async def _h_queue(ctx):
+async def _h_queue(ctx: _Ctx) -> HandlerResult:
     gw = ctx.gw
     return 200, {
         "queued": len(gw.order),
@@ -1233,7 +1281,7 @@ async def _h_queue(ctx):
     }
 
 
-async def _h_flows_status(ctx):
+async def _h_flows_status(ctx: _Ctx) -> HandlerResult:
     rid = ctx.m.group(1)
     run = ctx.gw.runs.get(rid)
     if run is None:
@@ -1252,20 +1300,20 @@ async def _h_flows_status(ctx):
     }
 
 
-async def _h_flows_stop(ctx):
+async def _h_flows_stop(ctx: _Ctx) -> HandlerResult:
     try:
         return 200, await ctx.gw.stop(ctx.m.group(1))
     except ValidationError as e:
         return 400, {"error": str(e)}
 
 
-async def _h_ws_fallback(ctx):
+async def _h_ws_fallback(ctx: _Ctx) -> HandlerResult:
     """Non-upgrade reach of a WS door: the unmatched-route 404 the
     if-chain era served (wire parity)."""
     return 404, {"error": "no such route %s %s" % (ctx.method, ctx.path)}
 
 
-async def _h_runs_list(ctx):
+async def _h_runs_list(ctx: _Ctx) -> HandlerResult:
     import editor_runs as _er
     # limit is honored (1..500 per editor_runs.runs clamp, ~6612).
     # The default of 200 silently buries fresh generations under hundreds
@@ -1281,17 +1329,17 @@ async def _h_runs_list(ctx):
     return 200, _er.runs(str(STATE_ROOT), limit=limit)
 
 
-async def _h_run_detail(ctx):
+async def _h_run_detail(ctx: _Ctx) -> HandlerResult:
     import editor_runs as _er
     return _er.run_detail(str(STATE_ROOT), ctx.m.group(1))
 
 
-async def _h_model_catalog(ctx):
+async def _h_model_catalog(ctx: _Ctx) -> HandlerResult:
     import catalog as _cat
     return 200, json.loads(_cat.to_json(_cat.scan_catalog(str(REPO))))
 
 
-async def _h_model_one(ctx):
+async def _h_model_one(ctx: _Ctx) -> HandlerResult:
     import catalog as _cat
     row = _cat.find_model(_cat.scan_catalog(str(REPO)), ctx.m.group(1))
     if row is None:
@@ -1299,50 +1347,65 @@ async def _h_model_one(ctx):
     return 200, row
 
 
-async def _h_forms(ctx):
+async def _h_forms(ctx: _Ctx) -> HandlerResult:
     import editor_forms as _ef
     return 200, _ef.forms(str(REPO))
 
 
-async def _h_kinds(ctx):
+async def _h_kinds(ctx: _Ctx) -> HandlerResult:
     import editor_forms as _ef
     return 200, _ef.kinds(str(REPO))
 
 
-async def _h_form_spec(ctx):
+async def _h_form_spec(ctx: _Ctx) -> HandlerResult:
     import editor_forms as _ef
     code, spec = _ef.form_spec(str(REPO), ctx.q("model", ""))
     return code, spec
 
 
-async def _h_family_schemas(ctx):
+async def _h_loras(ctx: _Ctx) -> HandlerResult:
+    """GET /v1/loras?model=<id> — a model's DECLARED LoRA pack (the
+    LorasMod rows on the class; python rows, never a disk scrape).
+    The picker's options ARE the rows — 'lora detection' migrated to
+    the class system 2026-09-05 (the door the mods flip forgot)."""
+    import catalog as _cat
+    mid = ctx.q("model", "")
+    if not mid:
+        return 400, {"error": "missing model param"}
+    body = _cat.model_loras(str(REPO), mid)
+    if body is None:
+        return 404, {"error": "model not found"}
+    return 200, body
+
+
+async def _h_family_schemas(ctx: _Ctx) -> HandlerResult:
     import editor_runs as _er
     return 200, _er.family_param_schemas(
         _er.catalog_family_ids(str(REPO / "plugins")))
 
 
-async def _h_family_schema_one(ctx):
+async def _h_family_schema_one(ctx: _Ctx) -> HandlerResult:
     import editor_runs as _er
     return _er.family_param_schema(
         _er.catalog_family_ids(str(REPO / "plugins")), ctx.m.group(1))
 
 
-async def _h_drafts_list(ctx):
+async def _h_drafts_list(ctx: _Ctx) -> HandlerResult:
     import editor_runs as _er
     return 200, _er.drafts_list(str(STATE_ROOT / "drafts"))
 
 
-async def _h_drafts_save(ctx):
+async def _h_drafts_save(ctx: _Ctx) -> HandlerResult:
     import editor_runs as _er
     return _er.drafts_save(str(STATE_ROOT / "drafts"), ctx.json)
 
 
-async def _h_drafts_get(ctx):
+async def _h_drafts_get(ctx: _Ctx) -> HandlerResult:
     import editor_runs as _er
     return _er.drafts_get(str(STATE_ROOT / "drafts"), ctx.m.group(1))
 
 
-async def _h_asset(ctx):
+async def _h_asset(ctx: _Ctx) -> HandlerResult:
     import editor_runs as _er
     rel = ctx.path[len(ASSET_URL_PREFIX + "/"):]
     code, data, ctype = _er.serve_asset(str(STATE_ROOT), rel)
@@ -1351,11 +1414,95 @@ async def _h_asset(ctx):
     return code, {"error": "not found"} if code == 404 else data
 
 
-async def _h_ledger(ctx):
+async def _h_ledger(ctx: _Ctx) -> HandlerResult:
     return 200, ledger_tail(ctx.target)
 
 
-async def _h_assets_index(ctx):
+# ── the studio bridge (rebuilt 2026-09-05) ───────────────────────────
+#
+# The /poser surface (bind meshes, identity morphs, joint reads,
+# raster passes) lives INSIDE ComfyUI: the melite-poser-nodes pack
+# registers its aiohttp routes on PromptServer (EXTENSION LAW — the
+# pack owns its lane's routes). The editor's vite proxy sends the
+# /poser prefix here; the gateway is the bridge. The documented
+# architecture (vite.config.ts) always said so — the retired Bun-era
+# server carried the forward and the py rewrite never rebuilt it, so
+# every studio mesh read 404'd ("no such route GET /poser/skin/mesh"
+# — the 2026-09-05 viewer audit).
+#
+# Laws this shape keeps:
+#   • QUEUE LANE LAW — the target is an engines.<name>.url from
+#     inference.config.json, never a hardcoded endpoint. Zero or
+#     ambiguous targets refuse loudly (502) — no fallback, no default.
+#   • INFERENCE LAW — the poser pack is studio-plane skin math (its
+#     own header: bind meshes + identity metadata "WITHOUT a separate
+#     poser-skin container", CPU-side SkinEngine threads). Queued
+#     generation still rides /v1/flows/start with poser NODES inside
+#     prompts; this bridge never reaches a generation door.
+#   • PLUGIN ARCHITECTURE LAW — the mechanics are a GENERIC forward
+#     (method + path + query + body → engines.<name>.url); the core
+#     names no poser route. The pack stays the SSOT of its surface.
+#   • RESILIENCE LAW — upstream refusals pass through VERBATIM (the
+#     studio sees the pack's own 404/400, never a masked 500);
+#     connection failures return 502 with the exact reason; the
+#     asyncio loop never blocks (urllib in a thread — the stdlib-only
+#     law).
+
+async def _h_poser_bridge(ctx: _Ctx) -> HandlerResult:
+    import urllib.error
+    import urllib.request
+    from estate_config import load as _load_config
+
+    # Target resolution stays GENERIC (PLUGIN ARCHITECTURE LAW — the
+    # core names no engine): the poser packs ride the one configured
+    # engine endpoint. Zero or many url-bearing engines refuse LOUDLY
+    # (no-silent-drops); if a second endpoint ever exists, the right
+    # shape is pinning the target on the bridge row by deliberate
+    # order — never a hardcoded default.
+    entries = {n: e for n, e in _load_config().engines.items() if e.url}
+    if len(entries) != 1:
+        return 502, {
+            "error": "poser bridge: exactly one engine endpoint with a "
+                     "url must be configured to forward to (got %d: %s) "
+                     "— inference.config.json engines, no hardcoded "
+                     "fallback"
+                     % (len(entries), sorted(entries) or ["none"]),
+        }
+    base = next(iter(entries.values())).url
+    url = base.rstrip("/") + ctx.target
+
+    def _fwd() -> tuple[int, str, bytes]:
+        req = urllib.request.Request(
+            url, method=ctx.method,
+            data=ctx.body if ctx.body else None,
+            headers=({"content-type": "application/json"}
+                     if ctx.body else {}))
+        with urllib.request.urlopen(req, timeout=60) as r:
+            return (r.status,
+                    r.headers.get("content-type", "application/json"),
+                    r.read())
+
+    try:
+        status, ctype, raw = await asyncio.to_thread(_fwd)
+        return status, ({}, {"content-type": ctype}, raw)
+    except urllib.error.HTTPError as e:
+        # the pack's own refusals (unknown identity model, bad
+        # coeffs) pass through with THEIR status and body
+        try:
+            raw = e.read()
+        except Exception:
+            raw = b""
+        ctype = e.headers.get("content-type", "application/json")
+        return e.code, ({}, {"content-type": ctype}, raw)
+    except urllib.error.URLError as e:
+        return 502, {"error": "poser bridge: comfyui unreachable at %s "
+                              "(%s)" % (base, e.reason)}
+    except Exception as e:
+        return 502, {"error": "poser bridge: %s: %s"
+                             % (type(e).__name__, e)}
+
+
+async def _h_assets_index(ctx: _Ctx) -> HandlerResult:
     import asset_ledger as _al
     _raw = ctx.q("limit", "200") or "200"
     try:
@@ -1376,7 +1523,7 @@ async def _h_assets_index(ctx):
         include_test=_idx_include_test)
 
 
-async def _h_card_tools(ctx):
+async def _h_card_tools(ctx: _Ctx) -> HandlerResult:
     import lane_disclosure as _ld
     try:
         return 200, _ld.card_tools()
@@ -1384,7 +1531,7 @@ async def _h_card_tools(ctx):
         return 500, {"error": "lane wire refusal (card-tools): %s" % e}
 
 
-async def _h_skills(ctx):
+async def _h_skills(ctx: _Ctx) -> HandlerResult:
     import lane_disclosure as _ld
     try:
         return 200, _ld.skill_index()
@@ -1392,7 +1539,7 @@ async def _h_skills(ctx):
         return 500, {"error": "lane wire refusal (skills): %s" % e}
 
 
-async def _h_lanes(ctx):
+async def _h_lanes(ctx: _Ctx) -> HandlerResult:
     import lane_disclosure as _ld
     try:
         return 200, _ld.peek(ctx.q("kind"), ctx.q("genre"))
@@ -1400,7 +1547,7 @@ async def _h_lanes(ctx):
         return 500, {"error": "lane wire refusal (lanes): %s" % e}
 
 
-async def _h_skill_read(ctx):
+async def _h_skill_read(ctx: _Ctx) -> HandlerResult:
     import lane_disclosure as _ld
     from urllib.parse import unquote as _uq
     try:
@@ -1409,7 +1556,7 @@ async def _h_skill_read(ctx):
         return 500, {"error": "lane wire refusal (skill): %s" % e}
 
 
-async def _h_lane_bundle(ctx):
+async def _h_lane_bundle(ctx: _Ctx) -> HandlerResult:
     import lane_disclosure as _ld
     from urllib.parse import unquote as _uq
     try:
@@ -1418,7 +1565,7 @@ async def _h_lane_bundle(ctx):
         return 500, {"error": "lane wire refusal (bundle): %s" % e}
 
 
-async def _h_manage(ctx):
+async def _h_manage(ctx: _Ctx) -> HandlerResult:
     body_json = ctx.json
     import sys as _sys
     if str(REPO / "py") not in _sys.path:
@@ -1460,12 +1607,12 @@ async def _h_manage(ctx):
                      "detail": "manage action timed out (900s)"}
 
 
-async def _h_health(ctx):
+async def _h_health(ctx: _Ctx) -> HandlerResult:
     import editor_runs as _er
     return 200, _er.health()
 
 
-async def _h_chrome(ctx):
+async def _h_chrome(ctx: _Ctx) -> HandlerResult:
     import editor_runs as _er
     return 200, getattr(_er, ctx.row.attr)()
 
@@ -1553,6 +1700,10 @@ ROUTES: tuple = (
     Route(method="GET", path="/v1/form-spec", group="Models & forms",
           summary="Form spec (?model=)", query=("model",),
           handler=_h_form_spec),
+    Route(method="GET", path="/v1/loras", group="Models & forms",
+          summary="A model's declared LoRA pack (?model=) — the "
+                  "LorasMod rows on the class, in declaration order",
+          query=("model",), handler=_h_loras),
     Route(method="*", path="/v1/flows/families/param-schemas",
           template="/v1/flows/families/param-schemas",
           group="Models & forms",
@@ -1582,6 +1733,15 @@ ROUTES: tuple = (
                   "download_model, ... (comfy-mcp in-process; falls back "
                   "to base-env runner)",
           body="strict", handler=_h_manage),
+
+    # ── Studio bridge (the /poser forward) ───────────────────────────
+    Route(method="GET|POST", path=r"^/poser/", regex=True,
+          template="/poser/{route}", group="Studio bridge",
+          summary="Forward to the engine endpoint's poser pack (bind "
+                  "mesh, identity morphs, joint reads, raster passes — "
+                  "studio-plane skin math; target is the configured "
+                  "engine url, never hardcoded)",
+          handler=_h_poser_bridge),
 
     # ── Health & chrome ──────────────────────────────────────────────
     Route(method="GET", path="/v1/health", group="Health & chrome",
@@ -1624,7 +1784,8 @@ ROUTES: tuple = (
 )
 
 
-async def route(gw, method, target, body):
+async def route(gw: Gateway, method: str, target: str,
+                body: bytes) -> HandlerResult:
     from urllib.parse import urlparse, parse_qs
     path = target.split("?")[0].rstrip("/") or "/"
     qs = parse_qs(urlparse(target).query)
@@ -1654,7 +1815,7 @@ async def route(gw, method, target, body):
     return 404, {"error": "no such route %s %s" % (method, path)}
 
 
-def ledger_tail(target):
+def ledger_tail(target: str) -> dict[str, list[JsonValue] | int]:
     """GET /v1/ledger?limit=N&event=prefix — tail of the append-only
     journal, oldest -> newest within the tail (C parity)."""
     from urllib.parse import urlparse, parse_qs
@@ -1685,7 +1846,7 @@ def ledger_tail(target):
     return {"entries": out, "shown": len(out), "matched": matched}
 
 
-async def main(port):
+async def main(port: int) -> None:
     gw = Gateway()
     swept = boot_sweep()
     ledger("server.boot", {"port": port, "swept": swept,
@@ -1696,7 +1857,7 @@ async def main(port):
     from contextlib import asynccontextmanager
 
     @asynccontextmanager
-    async def _lifespan(application):
+    async def _lifespan(application: Starlette) -> AsyncIterator[None]:
         loop = asyncio.get_running_loop()
         for sig in (signal.SIGTERM, signal.SIGINT):
             try:

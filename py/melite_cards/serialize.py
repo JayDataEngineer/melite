@@ -12,14 +12,20 @@ ActionCard subclass per module (multiple subclasses is a LOUD refusal;
 one card per dir, the filesystem IS the card).
 """
 
+from __future__ import annotations
+
 import importlib.util
 import os
 import sys
+from types import ModuleType
 
-from .dsl import ActionCard, BINARY_FIELD_TYPES, ValidationError, _norm
+from .dsl import ActionCard, Field, ValidationError, _norm
+
+# The wire-fragment shape: decoded JSON (objects, arrays, scalars).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
 
 
-def _module_name(engine, card_dir):
+def _module_name(engine: str, card_dir: str) -> str:
     """Module identity from the CARD dir (genre + card), never the
     shared py/ leaf — the day three cards moved onto THE CARD
     PATTERN they all keyed as plugin_cards.<engine>.py and the
@@ -31,7 +37,7 @@ def _module_name(engine, card_dir):
     return "plugin_cards.%s.%s" % (engine, tail)
 
 
-def load_card_py(path, engine="engine"):
+def load_card_py(path: str, engine: str = "engine") -> type[ActionCard]:
     """Import one card.py and return its ActionCard subclass.
 
     LOUD refusals (no partial loads, ever):
@@ -61,7 +67,7 @@ def load_card_py(path, engine="engine"):
     return _card_class_of(mod, path)
 
 
-def _card_class_of(mod, path):
+def _card_class_of(mod: ModuleType, path: str) -> type[ActionCard]:
     classes = [v for v in vars(mod).values()
                if isinstance(v, type) and issubclass(v, ActionCard)
                and v is not ActionCard]
@@ -77,7 +83,7 @@ def _card_class_of(mod, path):
     return classes[0]
 
 
-def scan_engine_cards(repo_root):
+def scan_engine_cards(repo_root: str) -> dict[str, tuple[str, type[ActionCard]]]:
     """Every card.py under plugins/engines/<engine>/cards/** AND
     <engine>/action_cards/** (both depths: <card>/ and <group>/<card>/ —
     the genre layer), in scan order: {card_id: (path, class)}.
@@ -140,7 +146,7 @@ _JSON_TYPES = {
 }
 
 
-def _param_of(f):
+def _param_of(f: Field) -> dict[str, JsonValue]:
     from .dsl import VocabRef
     p = {"type": _JSON_TYPES.get(f.type, "string")}
     desc = f.tooltip or f.label
@@ -164,7 +170,7 @@ def _param_of(f):
     return p
 
 
-def tool_manifests(cls):
+def tool_manifests(cls: type[ActionCard]) -> list[dict[str, JsonValue]]:
     """Derive the agent tool manifests from the card class: ONE TOOL
     PER ACTION CARD (operator order 2026-09-03: "I don't want the
     'models' to render, I just want action cards to render" — shape
@@ -197,10 +203,10 @@ def tool_manifests(cls):
             "%s.ability.default_family %r is not a boarded family"
             % (cls.id, default_fam))
 
-    def keeps_all(f):
+    def keeps_all(f: Field) -> bool:
         return all(f.families_keep(nf) for nf in nfams)
 
-    def keeps_some(f):
+    def keeps_some(f: Field) -> bool:
         return any(f.families_keep(nf) for nf in nfams)
 
     props = {}
@@ -245,7 +251,9 @@ def tool_manifests(cls):
     return [m]
 
 
-def field_spec(cls, model, options_vocab, service=None):
+def field_spec(cls: type[ActionCard], model: str,
+               options_vocab: dict[str, list[str]],
+               service: str | None = None) -> dict[str, JsonValue]:
     """The wire fragment for one card class + model. Mirrors
     editor_forms._card_spec exactly (key order included)."""
     nmodel = _norm(model)
@@ -264,9 +272,15 @@ def field_spec(cls, model, options_vocab, service=None):
     if cls.layout != "form":
         out["layout"] = cls.layout
 
+    # Every declared field rides the wire — NO DROPS (2026-09-05). The
+    # old BINARY_FIELD_TYPES filter omitted File/Image/Audio/Video rows
+    # from this flat list (they "lived in schema_groups"), and any
+    # consumer reading only the flat list rendered a card with no inputs
+    # — the silent default-card class. Binary fields are first-class
+    # here too; schema_groups carries the grouping on top.
     out["fields"] = [
         f.emit(True, options_vocab)
-        for f in keep if f.type not in BINARY_FIELD_TYPES
+        for f in keep
     ]
 
     groups = []
@@ -295,7 +309,7 @@ def field_spec(cls, model, options_vocab, service=None):
     return out
 
 
-def _scandir(path):
+def _scandir(path: str) -> list[str]:
     try:
         with os.scandir(path) as it:
             return sorted(e.name for e in it)

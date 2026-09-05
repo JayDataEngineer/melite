@@ -30,7 +30,7 @@ _MESH_RE = re.compile(r"\.(glb|gltf|fbx)(\?|#|$)", re.IGNORECASE)
 MOTION_RE = re.compile(r"\.npz(\?|#|$)", re.IGNORECASE)
 
 
-def _route(name):
+def _route(name: str) -> str:
     """The slot a harvested artifact lands in, by name/type. Mirrors
     AssetMedia's isMeshAsset / isMotionAsset + the video/image fall-
     through. The video extensions come from the same intent (mp4 /
@@ -76,12 +76,12 @@ _EMITTERS = [
 ]
 
 
-def _emits(renderer_path, node):
+def _emits(renderer_path: str, node: str) -> bool:
     src = open(renderer_path).read()
     return node in src
 
 
-def test_renderer_emits_expected_nodes():
+def test_renderer_emits_expected_nodes() -> None:
     """Every known renderer emits the Save* nodes the wall expects."""
     for path, nodes in _EMITTERS:
         rp = os.path.join(REPO, path)
@@ -91,7 +91,7 @@ def test_renderer_emits_expected_nodes():
                 f"{node} not in {path}")
 
 
-def test_viewer_slot_routes_match_extension():
+def test_viewer_slot_routes_match_extension() -> None:
     """Every emitted extension routes to the correct viewer slot."""
     for path, nodes in _EMITTERS:
         for node, ext in nodes:
@@ -101,7 +101,7 @@ def test_viewer_slot_routes_match_extension():
                 f"{path} .{ext.lstrip('.')} -> expected {expected}, got {got}")
 
 
-def test_harvest_kinds_are_enumerated():
+def test_harvest_kinds_are_enumerated() -> None:
     """Every harvest kind has a route (None = extension decides)."""
     harvest_kinds = [
         ("images", "image-tile"),
@@ -120,7 +120,7 @@ def test_harvest_kinds_are_enumerated():
         assert kind is not None
 
 
-def test_kimodo_npz_routes_to_motion_viewer():
+def test_kimodo_npz_routes_to_motion_viewer() -> None:
     """kimodo's NPZ is the one case that lands in motion-viewer."""
     assert _route("pose.npz") == "motion-viewer"
 
@@ -130,7 +130,7 @@ def test_kimodo_npz_routes_to_motion_viewer():
     "film.mp4", "film.webm", "film.gif",
     "frame.png", "out.jpg", "wave.wav",
 ])
-def test_common_artifact_name_has_valid_slot(name):
+def test_common_artifact_name_has_valid_slot(name: str) -> None:
     """Common artifact names route to a valid viewer slot."""
     assert _route(name) in {
         "mesh-viewer", "motion-viewer", "video-viewer",

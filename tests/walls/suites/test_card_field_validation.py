@@ -26,6 +26,7 @@ day h3 flips to subclasses the entry must be deleted with it.
 
 import os
 import re
+from collections.abc import Callable
 
 import pytest
 
@@ -40,7 +41,7 @@ from melite_cards import (
 )
 
 
-def _probe(fn):
+def _probe(fn: Callable[[], Field | None]) -> ValidationError | TypeError:
     try:
         fn()
     except (ValidationError, TypeError) as e:
@@ -67,20 +68,20 @@ def test_unknown_kwarg_refuses() -> None:
 
 
 def test_field_name_and_card_shape_refuse() -> None:
-    def bad_name():
+    def bad_name() -> None:
         class _C(ActionCard):
             id = "ok"
             Body_Glb = Number(label="x")
     e = _probe(bad_name)
     assert "lowercase identifier" in str(e)
 
-    def no_id():
+    def no_id() -> None:
         class _C(ActionCard):
             x = Number(label="x")
     e = _probe(no_id)
     assert "no card id" in str(e)
 
-    def bad_id():
+    def bad_id() -> None:
         class _C(ActionCard):
             id = "Has Space"
             x = Number(label="x")

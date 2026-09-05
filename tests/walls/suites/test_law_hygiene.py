@@ -19,6 +19,7 @@ Scope rules (deliberate):
   operator-machine facts the repo cannot pin
 """
 import re
+from collections.abc import Iterator
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
@@ -35,7 +36,7 @@ FILEISH = re.compile(
     r"`([A-Za-z0-9_./$~<>-]+\.(?:py|yaml|yml|md|cpp|toml|json|ts|tsx|sh))`")
 
 
-def _law_path_claims():
+def _law_path_claims() -> Iterator[str]:
     for m in FILEISH.finditer(AGENTS.read_text()):
         tok = m.group(1)
         if "/" not in tok or "<" in tok or "$" in tok or tok.startswith("~"):
@@ -43,7 +44,7 @@ def _law_path_claims():
         yield tok
 
 
-def test_every_file_path_named_by_a_law_exists():
+def test_every_file_path_named_by_a_law_exists() -> None:
     missing = sorted({
         tok for tok in _law_path_claims()
         if tok not in DEAD_PROVENANCE and not (REPO / tok).exists()
@@ -56,7 +57,7 @@ def test_every_file_path_named_by_a_law_exists():
     )
 
 
-def test_the_law_hygiene_wall_is_real():
+def test_the_law_hygiene_wall_is_real() -> None:
     """The wall file the LAW TEXT HYGIENE section names must exist —
     a law may not cite a fictional enforcement."""
     assert Path(__file__).name == "test_law_hygiene.py"

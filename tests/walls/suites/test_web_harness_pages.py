@@ -34,14 +34,14 @@ MODULE_SRC_RE = re.compile(r'<script[^>]+type="module"[^>]+src="([^"]+)"')
 REMOTE_SRC = ("http://", "https://", "//")
 
 
-def _editor_root_htmls():
+def _editor_root_htmls() -> list[str]:
     return sorted(
         f for f in os.listdir(EDITOR)
         if f.endswith(".html") and os.path.isfile(os.path.join(EDITOR, f))
     )
 
 
-def _module_srcs(html_name):
+def _module_srcs(html_name: str) -> list[str]:
     with open(os.path.join(EDITOR, html_name), encoding="utf-8") as fh:
         html = fh.read()
     return MODULE_SRC_RE.findall(html)
@@ -50,7 +50,7 @@ def _module_srcs(html_name):
 class HarnessPageTests(unittest.TestCase):
     """Structural pins on every module-mounting html page in the editor root."""
 
-    def test_at_least_the_two_harness_pages_exist(self):
+    def test_at_least_the_two_harness_pages_exist(self) -> None:
         # The card harness + the loading-bar harness are the lane anchors.
         for name in ("card-harness.html", "loading-bar-harness.html"):
             self.assertTrue(
@@ -58,7 +58,7 @@ class HarnessPageTests(unittest.TestCase):
                 f"{name} missing — the browser lanes have no page to drive",
             )
 
-    def test_module_srcs_are_relative_and_resolve(self):
+    def test_module_srcs_are_relative_and_resolve(self) -> None:
         # The absolute "/src/..." form 404s under base '/editor/' in dev —
         # the module never loads and the page renders an empty root.
         for name in _editor_root_htmls():
@@ -77,7 +77,7 @@ class HarnessPageTests(unittest.TestCase):
                     "page rotted (entry deleted, page left behind)",
                 )
 
-    def test_every_module_page_is_a_vite_build_input(self):
+    def test_every_module_page_is_a_vite_build_input(self) -> None:
         # Without an explicit rollupOptions.input entry, only index.html
         # lands in dist — the DSH embed serves editor/dist and could never
         # reach the page.
@@ -93,7 +93,7 @@ class HarnessPageTests(unittest.TestCase):
                 "it will not land in editor/dist (the DSH embed window)",
             )
 
-    def test_every_harness_page_is_driven_by_a_spec(self):
+    def test_every_harness_page_is_driven_by_a_spec(self) -> None:
         # A page no spec drives is a page whose rot nobody would notice.
         e2e_dir = os.path.join(EDITOR, "e2e")
         specs = [

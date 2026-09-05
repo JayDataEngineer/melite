@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Editor data surfaces ported 1:1 from the C gateway (src/server.cpp).
+"""Editor data surfaces — the estate's own wire.
 
 Scope of this module (branch python-orchestrator): the READERS and
 persistence doors the Tech Noir editor + media deck speak — run history,
@@ -8,7 +8,7 @@ the tiny chrome registries. Pure functions over explicit roots; stdlib
 only; no globals carrying configuration (the C server's cwd-relative
 "./output", "./drafts", "../flows" become explicit arguments).
 
-C sources mirrored (line numbers from src/server.cpp at port time):
+Surfaces served:
 
   handle_flows_runs      ~6606   GET  /v1/flows/runs
   handle_flows_status    ~4356   GET  /v1/flows/status/:run_id
@@ -71,6 +71,9 @@ import time
 
 import run_wire
 
+# The served-envelope shape: decoded JSON (objects, arrays, scalars).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
+
 # The artifact-serving URL prefix — the ONE door clients fetch run media
 # from. Owns the stamping here (runs list rows, poster) and is imported
 # by the gateway (stage url/gallery stamping, route row) and
@@ -86,7 +89,7 @@ ASSET_URL_PREFIX = "/v1/assets/runs"
 _ERR_JSON = "application/json"
 
 
-def _err_body(msg: str) -> dict:
+def _err_body(msg: str) -> dict[str, str]:
     return {"error": msg}
 
 
@@ -108,7 +111,7 @@ def json_quote(s: str) -> str:
     return "".join(out) + '"'
 
 
-def _sidecar_str_impl(text: str, key: str, cap: int):
+def _sidecar_str_impl(text: str, key: str, cap: int) -> tuple[bool, str]:
     """Core of C sidecar_str() (~6119), BYTE-wise like the C: first
     '"key":', skip spaces/tabs, expect a quoted string, decode \\n \\r \\t
     \\" \\\\ escapes, stop at cap-1 BYTES written (multibyte UTF-8 counts
@@ -189,11 +192,11 @@ def inf_json_string(text: str, key: str, cap: int) -> str:
     return "".join(out)
 
 
-def _cjson_compact(value) -> str:
+def _cjson_compact(value: JsonValue) -> str:
     """cJSON_PrintUnformatted parity: compact separators, object key order
     preserved, integral floats printed as integers (cJSON prints d==int(d)
     with %d)."""
-    def norm(v):
+    def norm(v: JsonValue) -> JsonValue:
         if isinstance(v, float) and v.is_integer() and abs(v) < 1e15:
             return int(v)
         if isinstance(v, list):
@@ -286,7 +289,7 @@ def _file_size(path: str) -> int:
         return -1
 
 
-def run_artifacts(out_dir: str, out_dir_literal: str) -> list:
+def run_artifacts(out_dir: str, out_dir_literal: str) -> list[dict[str, str | int | bool]]:
     """C run_artifacts_json() (~587) as a list. out_dir_literal is the
     string the C embeds in "path" (it passes its "./output/<run>" string);
     rows: {name,path,bytes,url,type,size} + a trailing
@@ -380,8 +383,9 @@ def _patch_sidecar_sweep(path: str, why: str) -> bool:
         return False
 
 
-def runs(server_root, drafts_root=None, aux_root=None, limit=200,
-         live_run_ids=(), sweep=False) -> dict:
+def runs(server_root: str, drafts_root: str | None = None, aux_root: str | None = None,
+         limit: int = 200, live_run_ids: tuple[str, ...] = (),
+         sweep: bool = False) -> dict[str, JsonValue]:
     """GET /v1/flows/runs. server_root is the C process cwd (the parent
     of its output/ tree). Rows: media-first, then newest-first; test-fixture
     models with a leading underscore never surface (user-surface law); a
@@ -552,7 +556,7 @@ def _stages_span(text: str, cap: int = 24576) -> str:
     return text[c:e][:cap - 1]
 
 
-def run_detail(server_root, run_id: str):
+def run_detail(server_root: str, run_id: str) -> tuple[int, dict[str, JsonValue]]:
     """GET /v1/flows/status/:run_id, restore-from-sidecar path
     (~4365-4556). Returns (status, dict). The C consults its live
     g_runs[] registry first; a pure reader has no registry, so every id
@@ -721,7 +725,7 @@ def draft_id_ok(draft_id: str) -> bool:
     return all(c.isascii() and (c.isalnum() or c in "-_") for c in draft_id)
 
 
-def drafts_list(drafts_root, aux_root=None) -> dict:
+def drafts_list(drafts_root: str | None, aux_root: str | None = None) -> dict[str, JsonValue]:
     """GET /v1/flows/drafts (~5729): merged index over ./drafts and the
     optional aux tree, newest-first by mtime, model/name (with the
     intent/title/service fallbacks) from the first 8KB of each doc."""
@@ -780,7 +784,7 @@ def drafts_list(drafts_root, aux_root=None) -> dict:
         drafts=[run_wire.DraftRow.model_validate(r) for r in rows]).model_dump()
 
 
-def _unwrap_calls(obj, done=False):
+def _unwrap_calls(obj: JsonValue, done: bool = False) -> tuple[JsonValue, bool]:
     """ray_unwrap_calls (~5316): a JSON-encoded STRING under a "calls" key
     becomes the array it encodes (first occurrence only)."""
     if done or not isinstance(obj, dict):
@@ -810,7 +814,7 @@ def _mint_draft_id() -> str:
                                next(_DRAFT_SEQ))
 
 
-def _ray_compose_draft_doc(body: dict, draft_id: str) -> dict:
+def _ray_compose_draft_doc(body: dict[str, JsonValue], draft_id: str) -> dict[str, JsonValue]:
     """ray_compose_draft_doc (~5354) by JSON round-trip: root contract keys
     in ray's exact order, unknown members preserved AFTER them, per-stage
     birth fields (id "s_<i>", inputs [""], provenance "agent") injected
@@ -853,7 +857,8 @@ def _ray_compose_draft_doc(body: dict, draft_id: str) -> dict:
     return doc
 
 
-def drafts_save(drafts_root, body, draft_id=None):
+def drafts_save(drafts_root: str, body: dict[str, JsonValue],
+                draft_id: str | None = None) -> tuple[int, dict[str, JsonValue]]:
     """POST /v1/flows/drafts (~4637): compose the ray birth contract
     and persist <drafts_root>/<id>.json. Returns (status, dict) with the
     {draftId, stages} response shape. The C's x-agent-session one-card
@@ -889,7 +894,7 @@ def drafts_save(drafts_root, body, draft_id=None):
     return 200, {"draftId": draft_id, "stages": doc["stages"]}
 
 
-def _heal_duration_sec(text: str):
+def _heal_duration_sec(text: str) -> tuple[str, int]:
     """Serve-time timeline-sync heal (~5502-5559): recompute durationSec
     from the card's own frame plan (max end_frame / fps) and patch every
     disagreeing occurrence."""
@@ -918,7 +923,7 @@ def _heal_duration_sec(text: str):
             n_patch += 1
     if n_patch == 0:
         return text, 0
-    def repl(m):
+    def repl(m: re.Match[str]) -> str:
         c = text.find(":", m.end())
         stored = _strtol(text[c + 1:])
         return '"durationSec":%d' % (film if stored != film else stored)
@@ -926,7 +931,8 @@ def _heal_duration_sec(text: str):
     return fixed, n_patch
 
 
-def drafts_get(drafts_root, draft_id, aux_root=None, heal=False):
+def drafts_get(drafts_root: str, draft_id: str, aux_root: str | None = None,
+               heal: bool = False) -> tuple[int, dict[str, str] | str]:
     """GET /v1/flows/drafts/:id (~5445). Returns (status, text) with
     the doc's VERBATIM bytes. The C click door heals corrupt docs
     (quarantine + stub) and stale durationSec values IN PLACE; a pure
@@ -959,11 +965,11 @@ def drafts_get(drafts_root, draft_id, aux_root=None, heal=False):
     return 200, body
 
 
-def drafts_delete(drafts_root, draft_id):
-    """DELETE /v1/flows/drafts/:id — NO SUCH ROUTE in src/server.cpp
-    (the C table registers Get/Post/Patch only, ~11311-11317). Answers
-    with the unmatched-route error-handler shape (~11355) instead of
-    inventing persistence the gateway does not have."""
+def drafts_delete(drafts_root: str, draft_id: str) -> tuple[int, dict[str, str]]:
+    """DELETE /v1/flows/drafts/:id — NO SUCH ROUTE on the wire
+    contract (the drafts door registers Get/Post/Patch only). Answers
+    with the unmatched-route error shape instead of inventing
+    persistence the gateway does not have."""
     return 404, {"error": "not found",
                  "path": "/v1/flows/drafts/%s" % draft_id}
 
@@ -972,7 +978,7 @@ def drafts_delete(drafts_root, draft_id):
 # GET /editor/assets/runs/<run_id>/<file> — handle_asset (~6763)
 # ---------------------------------------------------------------------------
 
-def serve_asset(server_root, rel_path: str):
+def serve_asset(server_root: str, rel_path: str) -> tuple[int, bytes, str]:
     """The artifact media tree. Root: <server_root>/output ONLY. Traversal
     guard mirrors C exactly: an empty rel or ANY ".." substring (not just
     path components) -> 400 {"error":"bad path"}; missing -> 404. Returns
@@ -996,7 +1002,7 @@ def serve_asset(server_root, rel_path: str):
 # family param schemas — handle_family_param_schema[s] (~5853)
 # ---------------------------------------------------------------------------
 
-def family_param_schemas(family_ids) -> dict:
+def family_param_schemas(family_ids: list[str]) -> dict[str, dict[str, JsonValue]]:
     """GET /v1/flows/families/param-schemas: the pydantic-style derived
     envelope (empty properties — ray parity) for every catalog family."""
     out = {}
@@ -1013,7 +1019,7 @@ def family_param_schemas(family_ids) -> dict:
     return out
 
 
-def family_param_schema(family_ids, family_id: str):
+def family_param_schema(family_ids: list[str], family_id: str) -> tuple[int, dict[str, JsonValue]]:
     """GET /v1/flows/families/:family_id/param-schema."""
     if family_id in family_ids:
         return 200, {
@@ -1027,7 +1033,7 @@ def family_param_schema(family_ids, family_id: str):
                  "family_id": family_id}
 
 
-def catalog_family_ids(plugins_root):
+def catalog_family_ids(plugins_root: str) -> list[str]:
     """Data-driven family list: the model CLASS ids under
     plugins/engines/<engine>/models/<genre>/<id>/model.py (the flip —
     model.yaml is extinct). No engine or lane name is known here — the
@@ -1060,11 +1066,11 @@ def catalog_family_ids(plugins_root):
 # handle_lane_registry (~167, ~174, ~7076)
 # ---------------------------------------------------------------------------
 
-def health() -> dict:
+def health() -> dict[str, str]:
     return {"status": "ok", "version": "0.1.0"}
 
 
-def models() -> dict:
+def models() -> dict[str, str | list[JsonValue]]:
     """GET /v1/models (custom format + OpenAI-compatible empty list)."""
     return {"object": "list", "data": []}
 
@@ -1082,7 +1088,7 @@ CHROME_STUBS = {
 }
 
 
-def chrome(path: str):
+def chrome(path: str) -> tuple[int, dict[str, JsonValue]]:
     """Data-driven reader for the chrome lanes: (status, dict). Unknown
     lanes answer the C error-handler shape."""
     if path in CHROME_STUBS:
@@ -1094,23 +1100,23 @@ def chrome(path: str):
     return 404, {"error": "not found", "path": path}
 
 
-def themes():
+def themes() -> dict[str, list[JsonValue]]:
     return CHROME_STUBS["/v1/themes"]
 
 
-def tags():
+def tags() -> dict[str, list[JsonValue]]:
     return CHROME_STUBS["/v1/tags"]
 
 
-def services():
+def services() -> dict[str, list[JsonValue]]:
     return CHROME_STUBS["/v1/services"]
 
 
-def right_panes():
+def right_panes() -> dict[str, list[JsonValue]]:
     return CHROME_STUBS["/v1/right-panes"]
 
 
-def _ui_claims_from(owner, ui_dir):
+def _ui_claims_from(owner: str, ui_dir: str) -> list[dict[str, JsonValue]]:
     """Claims under one ui/ root: <id>/ui.yaml → wire rows. The
     component.tsx beside each yaml is the implementation (the editor's
     import.meta.glob keys match these same paths — plugin field = the
@@ -1141,7 +1147,7 @@ def _ui_claims_from(owner, ui_dir):
     return out
 
 
-def ui_slots():
+def ui_slots() -> dict[str, list[dict[str, JsonValue]]]:
     """The ui-claim lane (GET /v1/ui-slots) — DERIVED from the plugin
     ui.yaml declarations, not stubbed: the first-party chrome claims
     under plugins/melite-core/ui/<id>/ (the zeroth plugin — the asset
@@ -1178,7 +1184,7 @@ def ui_slots():
     return {"uiSlots": claims}
 
 
-def tools():
+def tools() -> dict[str, list[dict[str, JsonValue]]]:
     """The agent tool surface — DERIVED from the card classes (the
     melite_cards SSOT promise, finally true): one manifest per card per
     served family, params_schema scoped exactly like the served form.
@@ -1196,11 +1202,11 @@ def tools():
     return {"tools": out}
 
 
-def shell():
+def shell() -> dict[str, list[JsonValue]]:
     return CHROME_STUBS["/v1/shell"]
 
 
-def plugins_registry():
+def plugins_registry() -> dict[str, list[JsonValue]]:
     return CHROME_STUBS["/v1/plugins"]
 
 
@@ -1216,7 +1222,7 @@ def plugins_registry():
 #   Prints the FIRST divergence per mismatch; exits nonzero on drift.
 # ===========================================================================
 
-def _first_divergence(a, b, path="$"):
+def _first_divergence(a: JsonValue, b: JsonValue, path: str = "$") -> str | None:
     """Path of the first structural difference between two JSON values."""
     if type(a) is not type(b) and not (
             isinstance(a, (int, float)) and isinstance(b, (int, float))):
@@ -1250,7 +1256,8 @@ def _first_divergence(a, b, path="$"):
     return None
 
 
-def _cmp_runs_golden(server_root, drafts_root, gold, mine):
+def _cmp_runs_golden(server_root: str, drafts_root: str,
+                     gold: JsonValue, mine: JsonValue) -> tuple[bool, str | None]:
     """Ordered compare with the C's qsort-tie tolerance: rows may only
     shuffle inside exact (media, created) tie groups."""
     if mine == gold:
@@ -1298,7 +1305,8 @@ def _cmp_runs_golden(server_root, drafts_root, gold, mine):
             if rm != rows_g[idx_g[rm["run_id"]]])
 
 
-def _cmp_drafts_golden(drafts_root, gold, mine):
+def _cmp_drafts_golden(drafts_root: str, gold: JsonValue,
+                       mine: JsonValue) -> tuple[bool, str | None]:
     """Ordered compare with mtime-tie tolerance."""
     if mine == gold:
         return True, None
@@ -1334,7 +1342,7 @@ def _cmp_drafts_golden(drafts_root, gold, mine):
     return True, "order-only shuffle inside mtime tie second(s)"
 
 
-def _selftest():
+def _selftest() -> None:
     import shutil
     import tempfile
     import urllib.request
@@ -1356,14 +1364,14 @@ def _selftest():
     failures = []
     passes = []
 
-    def check(name, ok, detail=None):
+    def check(name: str, ok: bool, detail: str | None = None) -> None:
         (passes if ok else failures).append(name)
         tag = "ok  " if ok else "DRIFT"
         print("[%s] %s%s" % (tag, name, "" if ok else
                              (" — first divergence: %s" % detail if detail
                               else "")))
 
-    def load_golden(fname):
+    def load_golden(fname: str) -> JsonValue:
         with open(os.path.join(golden, fname), "r", encoding="utf-8") as f:
             return json.load(f)
 

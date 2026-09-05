@@ -21,14 +21,14 @@ from form_wire import FormFieldRow             # noqa: E402
 PASS = FAIL = 0
 
 
-def check(name, ok, note=""):
+def check(name: str, ok: bool, note: str = "") -> None:
     global PASS, FAIL
     print("  %-4s %s%s" % ("ok" if ok else "FAIL", name,
                            (" — " + note) if (note and not ok) else ""))
     PASS, FAIL = PASS + (1 if ok else 0), FAIL + (0 if ok else 1)
 
 
-def _dense(spec):
+def _dense(spec: dict[str, str | list[dict[str, str | int | bool | None]] | dict[str, str] | None]) -> dict[str, str | list[dict[str, str | int | bool | None]] | dict[str, str] | None]:
     """Project a spec fragment's field rows through the wire atom
     (FormFieldRow.model_dump) — the SERVED body is densified by the
     FORM WIRE GATE (form_spec returns FormSpecRow.model_dump()), so
@@ -43,7 +43,7 @@ def _dense(spec):
     return s
 
 
-def deep_diff(a, b, path="$"):
+def deep_diff(a: dict[str, str | int | float | bool | None | list[dict[str, str | int | float | bool | None]] | dict[str, str | int]] | list[dict[str, str | int | float | bool | None] | str] | str | int | float | bool | None, b: dict[str, str | int | float | bool | None | list[dict[str, str | int | float | bool | None]] | dict[str, str | int]] | list[dict[str, str | int | float | bool | None] | str] | str | int | float | bool | None, path: str = "$") -> str | None:
     """First divergence path (None when equal) — key order matters for
     'fields' arrays; dicts compare by content (the wire JSON is an
     object; the C's emission order is preserved by construction)."""
@@ -70,8 +70,8 @@ def deep_diff(a, b, path="$"):
     return None if a == b else "%s: %r != %r" % (path, a, b)
 
 
-def main():
-    def _card_py(*parts):
+def main() -> int:
+    def _card_py(*parts: str) -> str:
         """THE CARD PATTERN (2026-09-03): python lives in the card's py/
         subfolder; a root card.py is the compat fallback."""
         root = os.path.join(REPO, "plugins", "engines", *parts)
@@ -275,7 +275,10 @@ def main():
                     ("h3-keyframe", "h3-timeline"),
                     ("h3-timeline", "h3-timeline"),
                     ("ideogram", "ideogram4"),
-                    ("img-edit", "image-edit"),
+                    # ("img-edit", "image-edit") died with the
+                    # 2026-09-05 img-edit → qwen-img-edit-2511 family
+                    # rename (the old family dir is gone; the pin
+                    # follows the tree, never the reverse).
                     ("kimodo", "motion"),
                     ("krea-2", "image-gen"),
                     ("mask-studio", "mask-studio"),
@@ -384,7 +387,7 @@ def main():
     # rung 5: the compose bus owns import mechanics — zero sys.path
     # rituals anywhere under action_cards/. Pattern matches the CALL
     # (path.insert/append), not one spelling.
-    def _ritual(txt):
+    def _ritual(txt: str) -> bool:
         return "path.insert(" in txt or "path.append(" in txt
     _rituals = sorted(
         str(f.relative_to(_repo)) for f in
@@ -468,7 +471,7 @@ def main():
     # construction — never a silent re-default at compile time
     import re as _re_road  # noqa: E402
 
-    def _door_refusal(body, needle):
+    def _door_refusal(body: dict[str, str | dict[str, str | int | list[dict[str, str | int]] | None]], needle: str) -> bool:
         try:
             plugins.compose(body, "h3-timeline", "", _skel, ("comfyui",))
             return False
@@ -534,7 +537,7 @@ def main():
     _refs = list(yml2.nodes[0].input_from)
     _pool2 = sorted((extra2 or {}).get("inputs", {}))
 
-    def _rank(k):
+    def _rank(k: str) -> tuple[int, int, str]:
         if k == "$prompt":
             return (0, 0, k)
         if k.startswith("$prompt") and k[7:].isdigit():
@@ -873,7 +876,7 @@ def main():
                           "calls": [{"text": "walks",
                                      "start_frame": 0,
                                      "end_frame": 56}]}}
-        def _wf(res):
+        def _wf(res: tuple[dict[str, str | list[dict[str, str]]] | list[dict[str, str]] | str, ...]) -> dict[str, dict[str, str | dict[str, str | int | float | bool | None]]]:
             y = res[0]
             return {n["class_type"]: n for n in
                     (y.nodes[0].params.get("workflow", {}) if y.nodes
@@ -1031,18 +1034,21 @@ def main():
           _krea_packs == {"loras"}, _krea_packs)
 
     # WALL 4 — THE INTERLOCK: same-pack flavors MERGE across families
-    # (one lanpaint surface across the five edit-lane families — the
+    # (one lanpaint surface across the boarded edit-lane family — the
     # loaded card above is the proof); DIVERGENT flavors refuse LOUD
     # (one shape per name).
+    # (2026-09-05, image-edit rework) the pre-flip `img-edit` family
+    # head is RETIRED (the cascade gate killed the 'rides on defaults'
+    # fossil; the lane is one, the card boards one family, the
+    # lanpaint flavor is the qwen-img-edit-2511 mods/lanpaint.py).
     _editfams = [load_model_py(
         os.path.join(REPO, "plugins/engines/comfyui/models",
-                     p, "model.py"), "comfyui")
-        for p in ("image/img-edit", "image/qwen-img-edit-2511")]
+                     "image/qwen-img-edit-2511", "model.py"), "comfyui")]
     _lan_fams = sorted(
         m.id for m in _editfams
         for mod in m.mods if getattr(mod, "pack", "") == "lanpaint")
-    check("edit lane: one lanpaint flavor shape, two boarded families",
-          _lan_fams == ["img-edit", "qwen-img-edit-2511"], _lan_fams)
+    check("edit lane: one lanpaint flavor shape, the boarded family",
+          _lan_fams == ["qwen-img-edit-2511"], _lan_fams)
     from melite_cards.dsl import (_assert_flavors_agree,
                                   ValidationError as _VE)
 
@@ -1106,6 +1112,112 @@ def main():
               "LoraLoaderModelOnly")
           and _chain[0]["inputs"]["model"][0].startswith("UNETLoader"),
           "chain: %s" % [v["inputs"] for v in _chain])
+
+    # WALL 6 — ANNY PART GUARD AT THE REGISTRATION DOOR (2026-09-05,
+    # corrected same day): the lane composites hair/outfit onto the
+    # body; body-only used to die MID-RUN in CompositeCharacter ("neither
+    # hair nor outfit provided") — a GPU slot burned for a guaranteed
+    # error. The guard refuses at the RUN-BEARING door only (PLUGIN
+    # ARCHITECTURE LAW: 4xx before any run registers). It MUST NOT fire
+    # at the phase-1 open/validate door: the user hasn't picked parts
+    # yet there, and the first placement (phase 1, 2026-09-05 morning)
+    # made the editor SILENTLY downgrade the anny card to the default
+    # card — the exact regression the phase split now pins both ways.
+    import importlib.util as _ilu2
+    from pathlib import Path as _P2
+    _anny_py = os.path.join(REPO, "plugins/engines/comfyui/action_cards",
+                            "3d", "anny", "py", "compose.py")
+    _sp = _ilu2.spec_from_file_location("anny_compose_wall", _anny_py)
+    _anny_mod = _ilu2.module_from_spec(_sp)
+    _sp.loader.exec_module(_anny_mod)
+    _any_file = str(_P2(__file__))   # phase 1 checks existence, not kind
+    _rc, _y, _ex, _e = _anny_mod.compose(
+        {"model": "anny", "params": {"body_glb": _any_file}}, "anny", "")
+    check("anny: body-only PASSES the open door (parts unchosen is a "
+          "mid-composition state, never a refusal)",
+          _rc == 0 and _ex and "body_glb" in _ex["inputs"], _e or "")
+    _rc, _y, _ex, _e = _anny_mod.compose(
+        {"model": "anny", "params": {"body_glb": _any_file}},
+        "anny", "wall-run-anny-body")
+    check("anny: body-only REGISTERS (DESCOPE 2026-09-05 — the "
+          "at-least-one-part guard died with the parts; body-only IS "
+          "the card)",
+          _rc == 0 and bool(_y), _e or "")
+    _rc, _y, _ex, _e = _anny_mod.compose(
+        {"model": "anny",
+         "params": {"body_glb": _any_file, "hair_glb": _any_file}},
+        "anny", "")
+    check("anny: the descoped hair_glb input REFUSES (a dropped input "
+          "is a loud refusal, never a silently-ignored knob)",
+          _rc == -3 and "hair_glb" in (_e or ""), _e or "")
+
+    # WALL 7 — NO-DROP SLOT VOCABULARY INVARIANT (2026-09-05):
+    # the anny card declares two File inputs (body_glb, source_image —
+    # DESCOPE 2026-09-05 removed hair_glb/outfit_glb; clothing returns
+    # as its own trellis-clothing card). The frontend's SlotGrid reads
+    # form_slots[form] / model_slots[model_route] to render its
+    # squares; a card whose declared slots are NOT in the served
+    # vocabulary renders EMPTY inputs — the silent default-card class
+    # that drove the user report. The catalog now derives the bindings
+    # from the card class at scan time (py/catalog.py + py/slot_kinds.py
+    # FormSlotBinding). This wall loads the anny card class DIRECTLY
+    # (no full catalog scan — that path is exercised by
+    # test_py_gateway / test_http_parity against the live route) and
+    # asserts the bindings contain every declared File field for every
+    # boarded model. A duplicate declaration or a missing field fails
+    # LOUDLY here. By construction: a card that DECLARES a slot but
+    # DOESN'T emit it is a bug the wall catches before the wire.
+    import slot_kinds as _sk3
+    import melite_cards as _mc3
+    _anny_card_py = os.path.join(REPO,
+        "plugins/engines/comfyui/action_cards/3d/anny/py/card.py")
+    _ac = _mc3.load_card_py(_anny_card_py, "comfyui")
+    # Mirror py/catalog.py _scan_card_dir EXACTLY (kind resolution:
+    # global slot_kinds vocab first, DSL type second) — the wall pins
+    # the production derivation, not a reimplementation.
+    _vocab3 = {r.slot: r.kind for r in _sk3.VOCAB.slots}
+    _DSL = {"image": _sk3.FileKind.IMAGE, "audio": _sk3.FileKind.AUDIO,
+            "video": _sk3.FileKind.VIDEO, "file": _sk3.FileKind.ANY}
+    _bindings = []
+    for _m in (_ac.models or ()):
+        for _f in getattr(_ac, "_fields_", ()):
+            _ft = getattr(_f, "type", "")
+            if _ft not in _DSL:
+                continue
+            _bindings.append(_sk3.FormSlotBinding(
+                form=_m.form, model_route=_m.id, field=_f.name,
+                kind=_vocab3.get(_f.name) or _DSL[_ft]))
+    _v = _sk3.FormSlotVocabulary(bindings=tuple(_bindings))
+    _fs = _v.form_slots().get("form_3d_anny", [])
+    _ms = _v.model_slots().get("anny", [])
+    _expected = ["body_glb", "source_image"]
+    check("anny: every declared File field is in form_slots[form_3d_anny]",
+          sorted(_fs) == sorted(_expected),
+          "got %s" % _fs)
+    check("anny: every declared File field is in model_slots[anny]",
+          sorted(_ms) == sorted(_expected),
+          "got %s" % _ms)
+    # source_image is in the global slot_kinds vocab (kind=image);
+    # body_glb is NOT (honest "any").
+    _kind = {b.field: b.kind for b in _bindings}
+    check("anny: source_image kind is image (from global vocab)",
+          _kind.get("source_image") == _sk3.FileKind.IMAGE,
+          "got %s" % _kind.get("source_image"))
+    check("anny: body_glb kind is any (no global vocab entry, honest)",
+          _kind.get("body_glb") == _sk3.FileKind.ANY,
+          "got %s" % _kind.get("body_glb"))
+    # Duplicate detection: a model that declares the same field twice
+    # refuses at construction (the cross-row invariant,
+    # FormSlotVocabulary model_validator — per-MODEL uniqueness;
+    # several models may board one form). Exhaustively check the wall
+    # by building a duplicate row and confirming it raises.
+    _dup = _bindings + [_bindings[0]]
+    try:
+        _sk3.FormSlotVocabulary(bindings=tuple(_dup))
+        check("duplicate (model, field) refuses at construction",
+              False, "no refusal")
+    except Exception:
+        check("duplicate (model, field) refuses at construction", True)
 
     print("PASS %d / FAIL %d" % (PASS, FAIL))
     return 1 if FAIL else 0

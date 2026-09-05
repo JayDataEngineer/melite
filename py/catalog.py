@@ -1,59 +1,43 @@
 #!/usr/bin/env python3
-"""py/catalog.py — model catalog builder, C→Python port with output parity.
+"""py/catalog.py — the estate's model catalog builder.
 
-1:1 transcription of src/catalog.c (scan + parse + serialize) and the
-catalog_abilities_splice() post-pass from src/server.cpp:7299 that
-handle_catalog() (src/server.cpp:5904) applies to every response.
-The verified behavior is the CONTRACT (docs/plans/orchestrator-migration.md): the
-Python scan's output is structurally equal to the C server's captured
-response (tests/golden_http/model-catalog.json).
+THE catalog module (there is no other): scans plugins/engines/** for
+model.py classes and card.py classes, assembles the served catalog,
+and pins its own output against tests/golden_http/model-catalog.json
+— the estate's wire contract regression pin.
 
     scan_catalog(repo_root) -> dict   full catalog object
-                                       (models / families / capabilities / cards)
-    to_json(catalog) -> str           compact serialization, catalog.c emit order
-    find_model(catalog, model_id)     first scan-order match (catalog.c:629)
-                                       or None
+                                        (models / families / capabilities / cards)
+    to_json(catalog) -> str           compact serialization, emit order below
+    find_model(catalog, model_id)     first scan-order match or None
 
-SCAN ROOTS (how the C finds its data)
-    main.c:108-111 — plugins_path = "<catalog-dir or cwd>/plugins";
-    catalog.c:533 walks plugins/<owner>/models/<genre>/<model-id>/model.yaml
-    catalog.c:582 walks plugins/<owner>/cards/<card-id>/card.yaml
-    Traversal is RAW DIRECTORY ORDER (C readdir) — os.scandir yields the
-    same getdents(3) stream, which is what keeps the cards ARRAY order and
-    the duplicate-family-id collapse (91 scanned ids -> 70 distinct, last
-    scan row wins, exactly like a JSON parser reading the C's duplicate
-    map keys) faithful to the golden.
-
-PLUGIN ARCHITECTURE LAW: this module names NO model, engine, or lane. The
-one table the C hardcoded in src/server.cpp — the ability/route pairs of
-catalog_abilities_splice (server.cpp:7300 ABIL[] + server.cpp:7585
-ALLOWED_CARDS) — moved into the data that owns it, next to the cards:
-a card.yaml whose card: block carries
+PLUGIN ARCHITECTURE LAW: this module names NO model, engine, or lane.
+A card.py class whose card block carries
 
     ability:
       default_family: <model family id>
 
-is a capability tile (one per ABILITY card, never one per model — the
-operator card law, surface 3). The C parsers ignore the key (unknown keys
-in the card: section are skipped by parse_card_yaml catalog.c:383-389 and
-cs_card_identity_path server.cpp:7458-7474), so both servers read the
-same files.
+is a capability tile (one per ability card, never one per model — the
+operator card law, surface 3).
 
-Documented C-scan artifacts this port does NOT reproduce byte-for-byte
-(JSON semantics unaffected; the parity gate is structural equality):
-  * catalog.c:726-727 emits the "family" key TWICE per model row — a JSON
-    parser keeps one; the dict here carries it once.
-  * json_escape (catalog.c:667) escapes only quote, backslash and
-    newline; other control characters (tab, CR) ride through raw.
-    json.dumps escapes them; both spellings parse to identical strings.
-  * json_value (catalog.c:681) re-emits numeric defaults as their SOURCE
-    TEXT ("1e3" stays "1e3"); this port types them (1e3 -> 1000.0 ->
-    "1000.0"). Same parsed number, different spelling — the allowed
-    float-formatting deviation.
-  * catalog.c parses variant_groups: (section 5) but no catalog endpoint
-    ever emits them; this port parses them for row fidelity and likewise
-    never emits them. lora_catalog: (section 6) has NO parser body in C —
-    "loras" is always [].
+OFFERING LAW (2026-09-05, "offered means runnable" × the 2026-08-11
+catalog contract): the served catalog carries ONLY offered models.
+A Model class is offered (form = "<editor form>") or unoffered
+(unoffered = True — no card arm yet); the scan skips unoffered
+classes entirely, so every wire row routes and renders. The form=''
+era shipped keyless rows and let the frontend validator catch them
+at runtime — that channel is closed at class construction
+(melite_models grammar: the offering gate) and again here (the skip).
+
+Wire shape (OUR contract — the goldens pin it, and changing it is a
+deliberate regold with a causes.md entry, never drift):
+  * families/models/capabilities are RECORDS keyed by id — never
+    arrays. Duplicate family ids across plugin folders collapse
+    last-scan-row-wins (a JSON parser reading duplicate map keys
+    keeps the last).
+  * models walk is raw scandir order; the cards walk is SORTED
+    (deterministic across machines).
+  * model rows carry a REQUIRED non-empty form (ModelRow schema).
 """
 
 from __future__ import annotations
@@ -62,479 +46,58 @@ import json
 import os
 import re
 import sys
+from collections.abc import Iterator
+from pathlib import Path
+from typing import TYPE_CHECKING, TypedDict
+
+if TYPE_CHECKING:
+    import slot_kinds
+    from melite_cards import ActionCard
+    from melite_models import Model
+
+# The wire-row shape: decoded JSON (objects, arrays, scalars).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
+
+
+class _CardFacts(TypedDict):
+    id: str
+    label: str
+    description: str
+    genre: str
+    icon: str
+    families: list[str]
+    principles: list[str]
+    skills: list[tuple[str, str]]
+    ability_route: str | None
+    inference_path: str | None
+    rubric_path: str | None
+
+
+class _Catalog(TypedDict):
+    models: dict[str, dict[str, JsonValue]]
+    families: dict[str, dict[str, JsonValue]]
+    capabilities: dict[str, dict[str, JsonValue]]
+    cards: list[dict[str, JsonValue]]
+    _scan_models: list[dict[str, JsonValue]]
+    _plugins_dir: str
+    _form_slot_vocab: slot_kinds.FormSlotVocabulary
 
 # ---------------------------------------------------------------------------
-# Minimal YAML helpers — ports of catalog.c ystrdup/ystrip/ykv/yindent
-# ---------------------------------------------------------------------------
-
-
-def _unquote1(s):
-    """ystrdup (catalog.c:16): strip ONE layer of wrapping yaml quotes."""
-    if s is None:
-        return None
-    n = len(s)
-    if n >= 2 and ((s[0] == '"' and s[n - 1] == '"') or (s[0] == "'" and s[n - 1] == "'")):
-        return s[1:-1]
-    return s
-
-
-def _ystrip(s):
-    """ystrip (catalog.c:33): trim leading spaces/tabs + trailing blanks."""
-    return s.strip(" \t\n\r")
-
-
-def _ykv(s, key):
-    """ykv (catalog.c:44): value after "key:", leading spaces skipped."""
-    if not s.startswith(key):
-        return None
-    p = s[len(key):]
-    if not p.startswith(":"):
-        return None
-    p = p[1:]
-    while p.startswith(" "):
-        p = p[1:]
-    return p
-
-
-def _yindent(line):
-    """yindent (catalog.c:55): leading SPACES only (tabs do not indent)."""
-    return len(line) - len(line.lstrip(" "))
-
-
-# ---------------------------------------------------------------------------
-# File reading — read_file (catalog.c:63): missing or EMPTY file -> skip
+# File probes
 # ---------------------------------------------------------------------------
 
 
-def _read_file(path):
-    try:
-        if os.path.getsize(path) <= 0:
-            return None
-        with open(path, "rb") as f:
-            return f.read().decode("utf-8")
-    except (OSError, UnicodeDecodeError):
-        return None
-
-
-def _probe(path):
-    """probe_unit_file (catalog.c:457) / the AGENT.md probe (catalog.c:486)."""
+def _probe(path: str) -> str | None:
+    """Unit-asset existence probe (agents/AGENT.md etc.)."""
     return path if os.path.isfile(path) else None
 
 
 # ---------------------------------------------------------------------------
-# Model parser — parse_model_yaml (catalog.c:143)
-# ---------------------------------------------------------------------------
-
-_M_SECTIONS = {
-    "family:": 1,
-    "source:": 2,
-    "defaults:": 3,
-    "engine:": 4,
-}
-
-
-def _parse_model_yaml(text):
-    m = {
-        "id": None,
-        "genre": None,
-        "label": None,
-        "description": None,
-        "source": {"type": None, "repo_id": None, "url": None, "filename": None},
-        "variant_groups": [],
-        "defaults": [],  # ordered (key, raw_value) pairs
-        "engine_plugin": None,
-        "studio_tenant": None,
-        "studio_owns_params": False,
-        "form": None,
-    }
-
-    section = 0
-    cur_opt = None
-    cur_group = None
-
-    for line in text.split("\n"):
-        indent = _yindent(line)
-        s = _ystrip(line)
-        if not s or s.startswith("#"):  # whole-line comments only (catalog.c:165)
-            continue
-
-        if indent == 0:
-            # Top-level section dispatch (catalog.c:171-179)
-            if s in _M_SECTIONS:
-                section = _M_SECTIONS[s]
-            elif s.startswith("variant_groups:"):
-                section = 5
-            elif s.startswith("lora_catalog:"):
-                section = 6  # no parser body in C -> loras stay []
-            elif s.startswith("studio:"):
-                section = 7
-            else:
-                section = 0
-            # form: is a top-level scalar, not a section (catalog.c:181-185)
-            val0 = _ykv(s, "form")
-            if val0 is not None:
-                m["form"] = _unquote1(val0)
-
-        # Family section (catalog.c:191-196)
-        if section == 1 and indent == 2:
-            val = _ykv(s, "id")
-            if val is not None:
-                m["id"] = _unquote1(val)
-            val = _ykv(s, "genre")
-            if val is not None:
-                m["genre"] = _unquote1(val)
-            val = _ykv(s, "label")
-            if val is not None:
-                m["label"] = _unquote1(val)
-            val = _ykv(s, "description")
-            if val is not None:
-                m["description"] = _unquote1(val)
-
-        # Source section (catalog.c:199-204) — url parsed, never emitted
-        if section == 2 and indent == 2:
-            for key in ("type", "repo_id", "url", "filename"):
-                val = _ykv(s, key)
-                if val is not None:
-                    m["source"][key] = _unquote1(val)
-
-        # Defaults section (catalog.c:207-235): any "k: v" pair, in order,
-        # keys verbatim (no quote-strip on the key), ONE quote layer on the
-        # value, NO inline-comment cutting anywhere in this parser.
-        if section == 3 and indent == 2:
-            colon = s.find(":")
-            if colon != -1:
-                key = s[:colon]
-                v = s[colon + 1:]
-                while v.startswith(" "):
-                    v = v[1:]
-                m["defaults"].append((key, _unquote1(v)))
-
-        # Engine section (catalog.c:238-243)
-        if section == 4 and indent == 2:
-            val = _ykv(s, "plugin")
-            if val is not None:
-                m["engine_plugin"] = _unquote1(val)
-
-        # Studio body claim (catalog.c:246-254)
-        if section == 7 and indent == 2:
-            val = _ykv(s, "tenant")
-            if val is not None:
-                m["studio_tenant"] = _unquote1(val)
-            val = _ykv(s, "owns_params")
-            if val is not None:
-                m["studio_owns_params"] = val in ("true", "1")
-
-        # Variant groups (catalog.c:258-315) — parsed for fidelity; no
-        # catalog endpoint ever emits them (catalog_model_to_json has no
-        # variant block).
-        if section == 5:
-            if indent == 2 and s.startswith("-"):
-                gname = ""
-                idx = s.find("name:")
-                if idx != -1:
-                    nm = s[idx + 5:]
-                    while nm.startswith(" "):
-                        nm = nm[1:]
-                    nl = len(nm)
-                    while nl and nm[nl - 1] == " ":
-                        nl -= 1
-                    gname = nm[:nl][:63]
-                    if len(gname) >= 2 and gname[0] == '"' and gname[len(gname) - 1] == '"':
-                        gname = gname[1:-1]
-                cur_group = {"name": gname, "options": []}
-                m["variant_groups"].append(cur_group)
-                cur_opt = None
-            elif indent == 6 and s.startswith("-") and cur_group is not None:
-                idx = s.find("id:")
-                if idx != -1:
-                    idp = s[idx + 3:]
-                    while idp.startswith(" "):
-                        idp = idp[1:]
-                    il = len(idp)
-                    while il and idp[il - 1] == " ":
-                        il -= 1
-                    idv = idp[:il][:127]
-                    if len(idv) >= 2 and idv[0] == '"' and idv[len(idv) - 1] == '"':
-                        idv = idv[1:-1]
-                    cur_opt = {"id": idv, "filename": None}
-                    cur_group["options"].append(cur_opt)
-            elif indent == 8 and cur_group is not None and cur_opt is not None:
-                val = _ykv(s, "filename")
-                if val is not None:
-                    cur_opt["filename"] = _unquote1(val)
-
-    return m
-
-
-# ---------------------------------------------------------------------------
-# Card parser — parse_card_yaml (catalog.c:347) + the ability marker
+# Row assembly — the emit orders are the wire contract (goldens pin them)
 # ---------------------------------------------------------------------------
 
 
-def _parse_card_yaml(text):
-    c = {
-        "id": None,
-        "label": None,
-        "description": None,
-        "genre": None,
-        "icon": None,  # parsed, never emitted in the cards array
-        "api": False,
-        "families": [],
-        "principles": [],
-        "skills": [],  # ordered (id, label) pairs
-        "ability_route": None,  # plugin data: card.ability.default_family
-    }
-
-    section = 0
-    in_ability = False
-
-    for line in text.split("\n"):
-        indent = _yindent(line)
-        s = _ystrip(line)
-        if not s or s.startswith("#"):
-            continue
-
-        if indent == 0:
-            # Section dispatch (catalog.c:371-378)
-            if s == "card:":
-                section = 1
-            elif s == "families:":
-                section = 2
-            elif s == "principles:":
-                section = 3
-            elif s.startswith("parameters:"):
-                section = 4
-            elif s.startswith("skills:"):
-                section = 5
-            else:
-                section = 0
-            in_ability = False
-
-        # Card section (catalog.c:383-389)
-        if section == 1 and indent == 2:
-            val = _ykv(s, "id")
-            if val is not None:
-                c["id"] = _unquote1(val)
-            val = _ykv(s, "label")
-            if val is not None:
-                c["label"] = _unquote1(val)
-            val = _ykv(s, "description")
-            if val is not None:
-                c["description"] = _unquote1(val)
-            val = _ykv(s, "genre")
-            if val is not None:
-                c["genre"] = _unquote1(val)
-            val = _ykv(s, "icon")
-            if val is not None:
-                c["icon"] = _unquote1(val)
-            val = _ykv(s, "api")
-            if val is not None:
-                c["api"] = val[:1] in ("t", "1")
-            # plugin-data ability marker (a key the C parsers skip)
-            in_ability = _ykv(s, "ability") is not None
-        if section == 1 and indent == 4 and in_ability:
-            val = _ykv(s, "default_family")
-            if val is not None:
-                c["ability_route"] = _unquote1(val)
-
-        # Families section (catalog.c:393-400): "- id:" rows, any indent
-        if section == 2 and s.startswith("- id:"):
-            c["families"].append(_unquote1(_ystrip(s[5:])))
-
-        # Principles section (catalog.c:403-418): `- "…"` first quoted span
-        if section == 3 and s.startswith('- "'):
-            start = s.find('"', 2)
-            if start != -1:
-                end = s.find('"', start + 1)
-                if end != -1:
-                    c["principles"].append(s[start + 1:end])
-
-        # Skills section (catalog.c:421-435)
-        if section == 5 and indent == 2:
-            val = _ykv(s, "id")
-            if val is not None:
-                c["skills"].append([_unquote1(val), None])
-            val = _ykv(s, "label")
-            if val is not None and c["skills"]:
-                c["skills"][-1][1] = _unquote1(val)
-
-    return c
-
-
-# ---------------------------------------------------------------------------
-# Ability-tile parsers — ports of the server.cpp cs_* helpers that
-# catalog_abilities_splice (server.cpp:7299) uses to brand each tile.
-# These differ subtly from parse_card_yaml: they cut trailing " # comment"
-# (cs_cut_comment server.cpp:7190), clean with cs_clean (server.cpp:7200),
-# and truncate to the C stack-buffer caps.
-# ---------------------------------------------------------------------------
-
-
-def _cs_cut_comment(line):
-    """cs_cut_comment (server.cpp:7190): drop trailing ' # …' outside quotes."""
-    inq = False
-    for i, ch in enumerate(line):
-        if ch == '"':
-            inq = not inq
-        elif ch == "#" and not inq and i > 0 and line[i - 1] in " \t":
-            return line[:i]
-    return line
-
-
-def _cs_clean(s):
-    """cs_clean (server.cpp:7200): trim spaces both ends, strip one quote pair."""
-    s = s.rstrip(" \t\r\n").lstrip(" \t")
-    n = len(s)
-    if n >= 2 and ((s[0] == '"' and s[n - 1] == '"') or (s[0] == "'" and s[n - 1] == "'")):
-        return s[1:-1]
-    return s
-
-
-def _cap(s, n):
-    """C snprintf byte-cap: keep at most n bytes (then stay valid UTF-8)."""
-    return s.encode("utf-8")[:n].decode("utf-8", "ignore")
-
-
-def _card_identity_path(text):
-    """cs_card_identity_path (server.cpp:7432): id (FIRST wins),
-    label/icon/description (LAST non-empty wins), card: block only, rows
-    nested no deeper than 3 columns, buffers val[200] id[80] label[160]
-    icon[64] desc[512]."""
-    cid = label = icon = desc = ""
-    in_card = False
-    for raw in text.split("\n"):
-        line = _cs_cut_comment(raw)
-        if not line or line[0] in "\n\r":
-            continue
-        if line[0] not in " \t":
-            in_card = line.startswith("card:")
-            continue
-        if not in_card:
-            continue
-        ind = 0
-        while ind < len(line) and line[ind] in " \t":
-            ind += 1
-        if ind >= 4:
-            continue
-        p = line[ind:]
-        if p.startswith("label:"):
-            val = _cs_clean(_cap(p[6:], 199))
-            if val:
-                label = _cap(val, 159)
-        elif p.startswith("icon:"):
-            val = _cs_clean(_cap(p[5:], 199))
-            if val:
-                icon = _cap(val, 63)
-        elif p.startswith("description:"):
-            val = _cs_clean(_cap(p[12:], 199))
-            if val:
-                desc = _cap(val, 511)
-        elif p.startswith("id:") and not cid:
-            val = _cs_clean(_cap(p[3:], 199))
-            if val:
-                cid = _cap(val, 79)
-    return cid, label, icon, desc
-
-
-def _card_families_splice(text):
-    """The families: re-reader inside catalog_abilities_splice
-    (server.cpp:7348-7387): '- id:' rows indented 1-3 spaces only,
-    cs_clean'd, val capped at 95 bytes."""
-    fams = []
-    in_fam = False
-    for raw in text.split("\n"):
-        line = _cs_cut_comment(raw)
-        if not line or line[0] in "\n\r":
-            continue
-        if line[0] not in " \t":
-            in_fam = line.startswith("families:")
-            continue
-        if not in_fam:
-            continue
-        ind = 0
-        while ind < len(line) and line[ind] == " ":
-            ind += 1
-        p = line[ind:]
-        if ind >= 4 or p[:1] != "-":
-            continue
-        p = p[1:]
-        while p.startswith(" "):
-            p = p[1:]
-        if not p.startswith("id:"):
-            continue
-        val = _cs_clean(_cap(p[3:], 95))
-        if val:
-            fams.append(val)
-    return fams
-
-
-# ---------------------------------------------------------------------------
-# json_value (catalog.c:681): scalar yaml default -> JSON value.
-# "true"/"false"/"null" raw; fully-strtod-consumable numbers raw (typed
-# here — see module docstring for the formatting note); everything else a
-# string; empty/absent -> null.
-# ---------------------------------------------------------------------------
-
-_STRTOD_RE = re.compile(r"^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$")
-
-
-def _json_value(v):
-    if v is None or v == "":
-        return None
-    if v == "true":
-        return True
-    if v == "false":
-        return False
-    if v == "null":
-        return None
-    if _STRTOD_RE.match(v):
-        if any(ch in v for ch in ".eE"):
-            return float(v)
-        return int(v)
-    return v
-
-
-# ---------------------------------------------------------------------------
-# Row assembly — catalog_model_to_json (catalog.c:699) and
-# catalog_card_to_json (catalog.c:806) emit orders, as pre-ordered dicts.
-# (catalog.c:726's duplicate "family" emission collapses to one key — a
-# JSON parser reading the C output keeps a single value anyway.)
-# ---------------------------------------------------------------------------
-
-
-def _model_row(m):
-    row = {}
-    row["id"] = m["id"] or ""
-    row["family"] = m["id"] or ""
-    row["genre"] = m["genre"] or ""
-    row["label"] = m["label"] or ""
-    row["description"] = m["description"] or ""
-    src = {"type": m["source"]["type"] or ""}  # url never emitted (catalog.c:738-752)
-    if m["source"]["repo_id"] is not None:
-        src["repo_id"] = m["source"]["repo_id"]
-    if m["source"]["filename"] is not None:
-        src["filename"] = m["source"]["filename"]
-    row["source"] = src
-    row["loras"] = []  # lora_catalog: has no parser body in C (catalog.c:177)
-    defaults = {}
-    for k, v in m["defaults"]:
-        defaults[k] = _json_value(v)
-    row["defaults"] = defaults
-    row["engine"] = m["engine_plugin"] or ""
-    if m["form"]:
-        row["form"] = m["form"]
-    if m["agent_md_path"] is not None:
-        row["has_agent"] = True
-    # (2026-09-02) inference.yaml extinct — class carries recipes
-    _mcls = m.get("_model_class")
-    row["has_inference"] = bool(
-        getattr(_mcls, "prompt_upscale", None) or
-        getattr(_mcls, "lyrics_upscale", None)) if _mcls else False
-    row["has_rubric"] = m["rubric_path"] is not None
-    return row
-
-
-def _card_row(c):
+def _card_row(c: _CardFacts) -> dict[str, JsonValue]:
     row = {}
     row["id"] = c["id"] or ""
     row["label"] = c["label"] or ""
@@ -548,38 +111,34 @@ def _card_row(c):
     return row
 
 
-def _capability_entry(card_dir, card_text, route):
-    """One capabilities tile — catalog_abilities_splice's emit
-    (server.cpp:7397-7405): label/description/icon from the card identity
-    (cs_card_identity_path semantics), families re-read by the splice's
-    own families parser, kind/resolved from the route. Entry key order
-    mirrors the C format string: label, description, default_family,
-    families, kind, [icon], resolved."""
-    cid, clabel, cicon, cdesc = _card_identity_path(card_text)
-    cid = cid or card_dir        # fallbacks: the card's directory name
-    clabel = clabel or card_dir  # (C falls back to its ABIL.card label)
-    fams = _card_families_splice(card_text)
+def _capability_entry_from_class(card_dir_name: str, cls: type[ActionCard], route: str
+                                 ) -> tuple[str, dict[str, JsonValue]]:
+    """A capabilities tile from the card class — emit order: label,
+    description, default_family, families, kind, [icon], resolved."""
+    cid = cls.id or card_dir_name
+    clabel = cls.label or card_dir_name
     entry = {
         "label": clabel,
-        "description": cdesc,  # always present (C quotes even when empty)
+        "description": cls.description,
         "default_family": route,
-        "families": fams,
+        "families": list(cls.families_of()),
         "kind": "generation",
     }
-    if cicon:
-        entry["icon"] = cicon  # emitted only when non-empty (server.cpp:7393)
+    if cls.icon:
+        entry["icon"] = cls.icon
     entry["resolved"] = {"family": route, "model": route, "params": {}}
     return cid, entry
 
 
 # ---------------------------------------------------------------------------
-# Directory scanning — scan_models (catalog.c:533) and scan_cards
-# (catalog.c:582): raw directory order, models exactly three levels deep,
-# cards two, dot-entries and non-dirs skipped.
+# Directory scanning — models exactly three levels deep under
+# engines/<owner>/models/<genre>/<mid>/, cards under cards/ and
+# action_cards/ (genre-grouped one deeper). Dot-entries and non-dirs
+# skipped.
 # ---------------------------------------------------------------------------
 
 
-def _engine_owner_dirs(eng_root):
+def _engine_owner_dirs(eng_root: str | Path) -> Iterator[Path]:
     """Owner dirs under plugins/engines/: depth-2 plugins AND depth-3
     category subdirs (plugins/engines/<cat>/<plugin>/ — the cpp
     native-engine category, 2026-10-02). THE WALK LIVES IN plugins.py
@@ -590,14 +149,33 @@ def _engine_owner_dirs(eng_root):
     yield from _plugins.iter_plugin_dirs_under(Path(eng_root))
 
 
-def _scan_models(plugins_dir):
-    """Returns ordered (row, meta) pairs, one per model.yaml WITH a family
-    id — the C's flat n_models array. meta carries the studio claim for
-    the families section (catalog.c:908-919)."""
+def _dirs_under(parent: str) -> list[str]:
+    """Sorted non-hidden subdirectories of parent (the genre/mid two
+    steps of every model walk)."""
+    try:
+        entries = sorted(os.listdir(parent))
+    except OSError:
+        return []
+    return [os.path.join(parent, n) for n in entries
+            if not n.startswith(".") and os.path.isdir(os.path.join(parent, n))]
+
+
+def _load_class(mpy: str, owner: Path, repo_root: str) -> type[Model] | None:
+    """model.py -> class (same loader law as _scan_model_dir; the
+    repo_root is PASSED, never re-derived by counting dirnames)."""
+    _py = os.path.join(repo_root, "py")
+    if _py not in sys.path:
+        sys.path.insert(0, _py)
+    from melite_models import load_model_py
+    return load_model_py(mpy, owner.name if hasattr(owner, "name")
+                         else str(owner))
+
+
+def _scan_models(plugins_dir: str) -> list[tuple[dict[str, JsonValue], dict[str, str | bool | list[str] | None]]]:
+    """Returns ordered (row, meta) pairs, one per OFFERED model.py
+    class — unoffered classes serve no row (the offering law). meta
+    carries the studio claim for the families section."""
     pairs = []
-    # (2026-09-02) Engine layout: plugins/engines/<engine>/models/<genre>/.
-    # The depth-1 owner scan found nothing since the engine formalization.
-    # (2026-10-02) Category subdirs (cpp/) walk via _engine_owner_dirs.
     eng_root = os.path.join(plugins_dir, "engines")
     try:
         owner_dirs = list(_engine_owner_dirs(eng_root))
@@ -634,15 +212,15 @@ except Exception:
         """Loud 4xx before any run is registered (QUEUE LANE LAW)."""
 
 
-def _scan_model_dir(model_dir):
-    """scan_model_dir (catalog.c:467, superseded): model.py class → row;
-    unit assets (agents/inference/rubric) probed next to the class.
+def _scan_model_dir(model_dir: str) -> list[tuple[dict[str, JsonValue], dict[str, str | bool | list[str] | None]]]:
+    """model.py class → row; unit assets (agents/inference/rubric)
+    probed next to the class. The flip is TOTAL: every unit is a
+    model.py class; a model.yaml reappearing next to a model.py is a
+    LOUD refusal (two SSOTs is zero SSOTs).
 
-    (2026-09-02) The flip is TOTAL: every unit is a model.py class
-    (py/melite_models; docs/plans/
-    python-action-cards.md); model.yaml is extinct tree-wide. A yaml
-    reappearing next to a model.py is a LOUD refusal (two SSOTs is
-    zero SSOTs)."""
+    UNOFFERED classes (unoffered = True) return no row — the class
+    stays loadable (lane data awaits boarding), the wire stays
+    offered-only."""
     mpy = os.path.join(model_dir, "model.py")
     if not os.path.isfile(mpy):
         return []
@@ -660,6 +238,11 @@ def _scan_model_dir(model_dir):
     engine = os.path.basename(os.path.dirname(os.path.dirname(
         os.path.dirname(model_dir))))
     cls = load_model_py(mpy, engine)
+    if getattr(cls, "unoffered", False):
+        # OFFERING LAW: no card arm, no catalog row. The offering
+        # gate at class construction keeps form='' out; this skip
+        # keeps the class itself off the served wire.
+        return []
     meta = {"studio_tenant": None, "studio_owns_params": False,
             "studio_writes": [], "studio_size": "normal",
             "studio_layout": "studio"}
@@ -675,40 +258,39 @@ def _scan_model_dir(model_dir):
     return [(model_row(cls, model_dir), meta)]
 
 
-def _scan_cards(plugins_dir):
+def _scan_cards(plugins_dir: str, models: dict[str, dict[str, JsonValue]]
+                ) -> tuple[list[dict[str, JsonValue]], dict[str, dict[str, JsonValue]],
+                           list[slot_kinds.FormSlotBinding]]:
     rows = []
     capabilities = {}
-    # (2026-09-02) Engine layout: plugins/engines/<engine>/cards/<card>/
-    # AND plugins/engines/<engine>/action_cards/<card>/ (comfyui migrated
-    # 2026-09-02).  Both subtrees are scanned.
+    slot_bindings: list[slot_kinds.FormSlotBinding] = []
     eng_root = os.path.join(plugins_dir, "engines")
     try:
         owners = list(_engine_owner_dirs(eng_root))
     except OSError:
-        return rows, capabilities
+        return rows, capabilities, slot_bindings
     for owner in owners:
             for subdir in ("cards", "action_cards"):
                 cards_dir = os.path.join(owner, subdir)
                 if not os.path.isdir(cards_dir):
                     continue
                 with os.scandir(cards_dir) as cids:
-                    # SORTED walk (2026-09-02 reorg): the raw-readdir
-                    # mirror was a C fossil — machine-dependent order
-                    # goldens cannot survive. Sorted = deterministic
-                    # across machines; the card order the editor sees
-                    # is stable regardless of who cloned when.
+                    # SORTED walk: deterministic across machines; the
+                    # card order the editor sees is stable regardless
+                    # of who cloned when.
                     for cid in sorted(cids, key=lambda e: e.name):
                         if cid.name.startswith("."):
                             continue
                         card_dir = os.path.join(cards_dir, cid.name)
                         if not os.path.isdir(card_dir):
                             continue
-                        row, cap_key, cap_entry = _scan_card_dir(
-                            card_dir, cid.name)
+                        row, cap_key, cap_entry, card_slots = _scan_card_dir(
+                            card_dir, cid.name, models)
                         if row is not None:
                             rows.append(row)
                         if cap_key is not None:
                             capabilities[cap_key] = cap_entry
+                        slot_bindings.extend(card_slots)
                         # genre group layer (image/ video/ 3d/ motion/
                         # mask/): nested card dirs the editor's
                         # cardStudios glob also walks.
@@ -719,24 +301,25 @@ def _scan_cards(plugins_dir):
                                 sub_dir = os.path.join(card_dir, sub.name)
                                 if not os.path.isdir(sub_dir):
                                     continue
-                                row, cap_key, cap_entry = _scan_card_dir(
-                                    sub_dir, sub.name)
+                                row, cap_key, cap_entry, card_slots = _scan_card_dir(
+                                    sub_dir, sub.name, models)
                                 if row is not None:
                                     rows.append(row)
                                 if cap_key is not None:
                                     capabilities[cap_key] = cap_entry
-    return rows, capabilities
+                                slot_bindings.extend(card_slots)
+    return rows, capabilities, slot_bindings
 
 
-def _scan_card_dir(card_dir, card_name):
-    """scan_card_dir (catalog.c:506, superseded): card.py class → row;
-    only api=True classes serve. The ability marker (plugin data)
-    promotes the card to a capabilities tile.
-
-    (2026-09-02, the identity rung) card.yaml is EXTINCT — id/label/
-    description/genre/icon/api/ability/requires/principles/skills live
-    on the ActionCard class (py/melite_cards). A card.yaml next to
-    a card.py is a LOUD refusal (two SSOTs is zero SSOTs).
+def _scan_card_dir(card_dir: str, card_name: str, models: dict[str, dict[str, JsonValue]] | None
+                   ) -> tuple[dict[str, JsonValue] | None, str | None,
+                              dict[str, JsonValue] | None, list[slot_kinds.FormSlotBinding]]:
+    """card.py class → row; only api=True classes serve. The ability
+    marker (plugin data) promotes the card to a capabilities tile.
+    The identity rung: id/label/description/genre/icon/api/ability/
+    requires/principles/skills live on the ActionCard class
+    (py/melite_cards). A card.yaml next to a card.py is a LOUD
+    refusal (two SSOTs is zero SSOTs).
 
     THE CARD PATTERN (2026-09-03): python code lives in the card's
     py/ subfolder — <card>/py/card.py; a root card.py is the compat
@@ -745,18 +328,17 @@ def _scan_card_dir(card_dir, card_name):
                             os.path.join(card_dir, "card.py"))
                 if os.path.isfile(p)), None)
     if mpy is None:
-        return None, None, None
+        return None, None, None, []
     if os.path.isfile(os.path.join(card_dir, "card.yaml")):
         raise ValidationError(
             "%s carries BOTH card.py and card.yaml — the identity rung "
             "moved card.yaml onto the class; delete the yaml" % mpy)
     # engine dir: one hop above the cards/action_cards segment for
     # depth-1 card dirs, two for genre-grouped
-    # (action_cards/<genre>/<card>/, 2026-09-02 reorg); THE CARD
-    # PATTERN (2026-09-03) adds a py/ hop — stripped first.
-    # (2026-10-02) depth-3 category plugins (cpp/): climb to the dir
-    # whose PARENT is plugins/ — the repo root — instead of a fixed
-    # three-hop dirname (which lands on plugins/ for cpp plugins).
+    # (action_cards/<genre>/<card>/); THE CARD PATTERN adds a py/ hop
+    # — stripped first. Depth-3 category plugins (cpp/): climb to the
+    # dir whose PARENT is plugins/ — the repo root — instead of a
+    # fixed three-hop dirname.
     _d = os.path.dirname(card_dir)
     if os.path.basename(_d) == "py":
         _d = os.path.dirname(_d)
@@ -767,7 +349,7 @@ def _scan_card_dir(card_dir, card_name):
     while _root and os.path.basename(os.path.dirname(_root)) != "plugins" \
             and os.path.basename(_root) != "plugins":
         _root = os.path.dirname(_root)
-        if _root == os.sep or not _root:
+        if _root == os.path.sep or not _root:
             _root = engine_dir
             break
     repo_root = os.path.dirname(_root) if os.path.basename(
@@ -779,9 +361,9 @@ def _scan_card_dir(card_dir, card_name):
     engine = os.path.basename(engine_dir)
     cls = load_card_py(mpy, engine)
     if not cls.id:
-        return None, None, None
-    if not cls.api:  # API gate (catalog.c:517-518)
-        return None, None, None
+        return None, None, None, []
+    if not cls.api:  # API gate
+        return None, None, None, []
     c = {
         "id": cls.id, "label": cls.label, "description": cls.description,
         "genre": cls.genre, "icon": cls.icon,
@@ -798,25 +380,75 @@ def _scan_card_dir(card_dir, card_name):
     if c["ability_route"]:
         cap_key, cap_entry = _capability_entry_from_class(
             card_name, cls, c["ability_route"])
-    return _card_row(c), cap_key, cap_entry
 
-
-def _capability_entry_from_class(card_dir_name, cls, route):
-    """The class-driven _capability_entry — same emit order (label,
-    description, default_family, families, kind, [icon], resolved)."""
-    cid = cls.id or card_dir_name
-    clabel = cls.label or card_dir_name
-    entry = {
-        "label": clabel,
-        "description": cls.description,
-        "default_family": route,
-        "families": list(cls.families_of()),
-        "kind": "generation",
+    # Per-form / per-model slot bindings (2026-09-05, no-drop fix):
+    # every File/Image/Audio/Video field the card class declares is a
+    # slot the SlotGrid must render. Emit one FormSlotBinding per
+    # (card's form, boarded-model-route, field) — the frontend reads
+    # form_slots[form] / model_slots[model_route] to draw the squares.
+    # Kind: prefer the global slot_kinds vocab (the canonical kind for
+    # known names like source_image → image); else derive from the
+    # field's DSL type (image→image, audio→audio, video→video,
+    # file→any — File is generic, the card author didn't specify a
+    # kind, so "any" is honest and the wire remains permissive).
+    slot_bindings = []
+    import slot_kinds as _sk
+    _vocab_kinds = {r.slot: r.kind for r in _sk.VOCAB.slots}
+    _DSL_TO_KIND = {
+        "image": _sk.FileKind.IMAGE,
+        "audio": _sk.FileKind.AUDIO,
+        "video": _sk.FileKind.VIDEO,
+        "file": _sk.FileKind.ANY,
     }
-    if cls.icon:
-        entry["icon"] = cls.icon
-    entry["resolved"] = {"family": route, "model": route, "params": {}}
-    return cid, entry
+
+    def _emit(_form: str, _route: str) -> None:
+        for _fld in getattr(cls, "_fields_", ()):
+            _ft = getattr(_fld, "type", None)
+            if _ft not in _DSL_TO_KIND:
+                continue
+            _kind = _vocab_kinds.get(_fld.name) or _DSL_TO_KIND[_ft]
+            slot_bindings.append(
+                _sk.FormSlotBinding(
+                    form=_form, model_route=_route,
+                    field=_fld.name, kind=_kind))
+
+    if getattr(cls, "models", None):
+        for _model in cls.models:
+            _form = getattr(_model, "form", None)
+            _route = getattr(_model, "id", None)
+            if not _form or not _route:
+                raise ValidationError(
+                    "%s boards a model with no form/route "
+                    "(form=%r route=%r) — a card that cannot name its "
+                    "surface refuses, it never renders a default" % (
+                        cls.id, _form, _route))
+            _emit(_form, _route)
+    else:
+        # Legacy card shape (2026-09-05: exactly one in the tree,
+        # h3-timeline): no `models` tuple, the card names its family
+        # via ability.default_family. Resolve the form from the
+        # scanned models — LOUDLY (an unresolvable family is a
+        # misroute, never a silent skip).
+        _route = (cls.ability or {}).get("default_family") \
+            if isinstance(cls.ability, dict) else None
+        if not _route:
+            raise ValidationError(
+                "%s declares neither models nor "
+                "ability.default_family — the card names no lane and "
+                "refuses (QUEUE LANE LAW)" % cls.id)
+        _mrow = (models or {}).get(_route)
+        if _mrow is None:
+            raise ValidationError(
+                "%s names default_family %r with no boarded model — "
+                "the family is not in the catalog; misroute, not a "
+                "fallback" % (cls.id, _route))
+        if not _mrow.get("form"):
+            raise ValidationError(
+                "%s boards unoffered model %r (no form) — a card with "
+                "no surface refuses" % (cls.id, _route))
+        _emit(_mrow["form"], _route)
+
+    return _card_row(c), cap_key, cap_entry, slot_bindings
 
 
 # ---------------------------------------------------------------------------
@@ -824,16 +456,14 @@ def _capability_entry_from_class(card_dir_name, cls, route):
 # ---------------------------------------------------------------------------
 
 
-def scan_catalog(repo_root):
+def scan_catalog(repo_root: str) -> _Catalog:
     """Scan <repo_root>/plugins and build the full catalog object.
 
     Returns a dict with the four wire sections — models / families /
-    capabilities / cards — plus private '_' keys used by find_model and
-    diagnostics (to_json emits only the four). models/families are maps
-    keyed by family id: duplicate ids across plugin folders collapse
-    LAST-scan-row-wins, exactly like a JSON parser reading the C's
-    duplicate map keys (91 scanned rows -> 70 distinct families in this
-    tree).
+    capabilities / cards — plus private '_' keys used by find_model
+    and diagnostics (to_json emits only the four). models/families
+    are maps keyed by family id: duplicate ids across plugin folders
+    collapse last-scan-row-wins.
     """
     plugins_dir = os.path.join(os.fspath(repo_root), "plugins")
 
@@ -844,8 +474,8 @@ def scan_catalog(repo_root):
         models[row["id"]] = row
         fam = {"label": row["label"], "genre": row["genre"]}
         if meta["studio_tenant"]:
-            # Studio body claim (catalog.c:908-919): only models declaring
-            # studio: emit it — the editor's studio-tenant resolver.
+            # Studio body claim: only models declaring studio: emit
+            # it — the editor's studio-tenant resolver.
             fam["studio"] = {
                 "tenant": meta["studio_tenant"],
                 "owns_params": bool(meta["studio_owns_params"]),
@@ -855,7 +485,24 @@ def scan_catalog(repo_root):
             }
         families[row["id"]] = fam
 
-    cards, capabilities = _scan_cards(plugins_dir)
+    cards, capabilities, slot_bindings = _scan_cards(plugins_dir, models)
+
+    # Per-form / per-model slot vocabulary (2026-09-05, no-drop): every
+    # binary field the card classes declare is a slot the SlotGrid must
+    # render. Construction validates uniqueness (a form declares a
+    # field at most once) — the pydantic row refuses illegal vocabularies
+    # at BUILD time, not at first wire read. Pydantic failures surface
+    # LOUDLY here as a catalog-load refusal; that's the desired behavior
+    # (a duplicate declaration is a bug, not a silent default-card class).
+    import slot_kinds as _sk2
+    try:
+        form_slot_vocab = _sk2.FormSlotVocabulary(bindings=tuple(slot_bindings))
+    except Exception as _e:
+        raise RuntimeError(
+            "form slot vocabulary construction failed (the catalog "
+            "REFUSES to serve a card whose declared slots are inconsistent "
+            "— fix the card class; this is the no-drop law, 2026-09-05): %s"
+            % _e) from _e
 
     return {
         "models": models,
@@ -864,42 +511,107 @@ def scan_catalog(repo_root):
         "cards": cards,
         "_scan_models": [row for row, _ in scan_pairs],
         "_plugins_dir": plugins_dir,
+        "_form_slot_vocab": form_slot_vocab,
     }
 
 
-def to_json(catalog):
-    """catalog_to_json + catalog_abilities_splice (the served shape):
-    {"models":{…},"families":{…},"capabilities":{…},"cards":[…]} in the
-    C emit order, compact separators. Plus input_vocabulary (2026-09-02,
-    the gap-3 port): the slot SSOT from py/slot_kinds.py — the editor's
-    setInputVocabulary replaces its fallbacks field-by-field with this."""
+def to_json(catalog: _Catalog) -> str:
+    """The served shape:
+    {"models":{…},"families":{…},"capabilities":{…},"cards":[…]},
+    compact separators. Plus input_vocabulary — the slot SSOT from
+    py/slot_kinds.py merged with the per-form/per-model bindings derived
+    from the card classes' File/Image/Audio/Video field declarations
+    (the no-drop law, 2026-09-05: a card that declares an input slot
+    MUST have it in the served vocabulary, or the SlotGrid renders empty
+    — the silent default-card class). The editor's setInputVocabulary
+    replaces its fallbacks field-by-field with this."""
     import slot_kinds
+    vocab = slot_kinds.input_vocabulary()
+    form_vocab = catalog.get("_form_slot_vocab")
+    if form_vocab is not None:
+        vocab["form_slots"] = form_vocab.form_slots()
+        vocab["model_slots"] = form_vocab.model_slots()
+    else:
+        # Legacy / unbuilt — emit empty dicts (NEVER omit the keys:
+        # the editor's setInputVocabulary tests `form_slots in v` and
+        # the absent key would force the form-aware fallback. Empty
+        # dict = "no per-form declarations" — the global vocab still
+        # applies, the per-form path is a no-op.
+        vocab["form_slots"] = {}
+        vocab["model_slots"] = {}
     obj = {
         "models": catalog["models"],
         "families": catalog["families"],
         "capabilities": catalog["capabilities"],
         "cards": catalog["cards"],
-        "input_vocabulary": slot_kinds.input_vocabulary(),
+        "input_vocabulary": vocab,
     }
     return json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
 
 
-def find_model(catalog, model_id):
-    """catalog_find_model (catalog.c:629): FIRST scan-order row whose
-    family id matches, else None. (The models map collapses duplicates
-    last-wins; the C's per-model endpoint serves the first — so does this.)"""
+def find_model(catalog: _Catalog, model_id: str) -> dict[str, JsonValue] | None:
+    """First scan-order row whose family id matches, else None. (The
+    models map collapses duplicates last-wins; the per-model door
+    serves the first — so does this.)"""
     for row in catalog.get("_scan_models", ()):
         if row["id"] == model_id:
             return row
     return None
 
 
+def model_loras(repo_root: str, model_id: str) -> dict[str, JsonValue] | None:
+    """The /v1/loras door body: a model's DECLARED LoRA pack — the
+    LorasMod rows on the class (the mods flip: 'lora detection' is
+    class-declared python rows, never a disk scrape; the picker's
+    filenames are the row filenames, verbatim, in declaration order).
+    Unknown or unoffered model -> None (the door 404s; an unoffered
+    class serves nothing, same law as the catalog)."""
+    from melite_cards import LorasMod
+    repo_root = os.path.abspath(repo_root)
+    eng_root = os.path.join(repo_root, "plugins", "engines")
+    for owner in _engine_owner_dirs(eng_root):
+        models_dir = os.path.join(owner, "models")
+        if not os.path.isdir(models_dir):
+            continue
+        for genre_dir in _dirs_under(models_dir):
+            for model_dir in _dirs_under(genre_dir):
+                mpy = os.path.join(model_dir, "model.py")
+                if not os.path.isfile(mpy):
+                    continue
+                cls = _load_class(mpy, owner, repo_root)
+                if cls is None or cls.id != model_id or cls.unoffered:
+                    if cls is not None and cls.id == model_id:
+                        return None      # first match is the law; 404
+                    continue
+                rows = []
+                meta = {}
+                for mod in getattr(cls, "mods", ()):
+                    if not (isinstance(mod, type)
+                            and issubclass(mod, LorasMod)):
+                        continue
+                    for r in mod.rows:
+                        rows.append(r.filename)
+                        stem = r.filename.rsplit("/", 1)[-1]
+                        stem = re.sub(r"\.(safetensors|pt|bin)$", "", stem)
+                        m = {"label": r.label, "category": r.category,
+                             "default_strength": r.default_strength}
+                        meta[stem] = {k: v for k, v in m.items() if v != ""}
+                note = ("%d declared adapter%s — the family's LorasMod "
+                        "rows (mods/loras.py)" % (len(rows),
+                        "" if len(rows) == 1 else "s")) if rows else None
+                return {"model": model_id, "loras": rows,
+                        "note": note, "meta": meta}
+    return None
+
+
 # ---------------------------------------------------------------------------
-# Self-test — golden parity wall.
+# Self-test — the golden contract wall.
 # Run: python3 py/catalog.py
-# Deep-compares scan_catalog(repo) against tests/golden_http/model-catalog.json
-# (the C server's captured response), printing the FIRST divergence per
-# mismatch class; exits nonzero on any drift.
+# Deep-compares scan_catalog(repo) against tests/golden_http/
+# model-catalog.json (the estate's own wire-contract regression pin),
+# printing the FIRST divergence per mismatch class; exits nonzero on
+# any drift. Changing the golden is a deliberate regold — document
+# the cause in tests/golden_http/model-catalog.json.d/causes.md.
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
@@ -916,7 +628,7 @@ if __name__ == "__main__":
 
     divergences = []
 
-    def walk(a, b, path):
+    def walk(a: JsonValue, b: JsonValue, path: str) -> None:
         """Collect leaf divergences: class, path, golden value, py value."""
         if len(divergences) > 200:  # cap runaway drift reports
             return

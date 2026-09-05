@@ -8,7 +8,7 @@ from _anchor import REPO  # noqa: F401 — owns the py/ path insert
 from card_requires import check_card_requires, EXTENSION_NODE_TYPES
 
 
-def _ok(label, condition, detail=""):
+def _ok(label: str, condition: bool, detail: str = "") -> bool:
     status = "PASS" if condition else "FAIL"
     if detail:
         print(f"  {status}  {label} — {detail}")

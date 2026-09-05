@@ -153,7 +153,7 @@ def models() -> dict[str, type[BaseModel]]:
     return _discover_models()
 
 
-def test_discovery_finds_the_estate(models) -> None:
+def test_discovery_finds_the_estate(models: dict[str, type[BaseModel]]) -> None:
     """The sweep is not empty and covers the law's own named rows."""
     assert len(models) >= 20, (
         "discovery collapsed — the sweep must not silently shrink")
@@ -163,7 +163,7 @@ def test_discovery_finds_the_estate(models) -> None:
             "%s not discovered — the sweep has a hole" % expected)
 
 
-def test_every_model_forbids_extra_fields(models) -> None:
+def test_every_model_forbids_extra_fields(models: dict[str, type[BaseModel]]) -> None:
     """NO DEAD RIDERS: an unknown key is a construction refusal."""
     bad = [k for k, cls in models.items()
            if cls.model_config.get("extra") != "forbid"]
@@ -173,7 +173,7 @@ def test_every_model_forbids_extra_fields(models) -> None:
         "2026-09-04): %s" % sorted(bad))
 
 
-def test_every_model_is_frozen(models) -> None:
+def test_every_model_is_frozen(models: dict[str, type[BaseModel]]) -> None:
     """Rows are data: mutation after construction is banned (rung 2)."""
     bad = [k for k, cls in models.items()
            if cls.model_config.get("frozen") is not True]
@@ -188,7 +188,7 @@ def test_dead_riders_are_rejected_at_runtime(key: str) -> None:
     a minimal payload, refuses with extra_forbidden — the contract
     proven at runtime, not just declared in config."""
     cls = _discover_models()[key]
-    payload: dict = {}
+    payload: dict[str, int | bool | str | None] = {}
     for fname, finfo in cls.model_fields.items():
         ann = finfo.annotation
         if not finfo.is_required():

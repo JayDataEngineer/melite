@@ -422,8 +422,8 @@
       "label": "INT8 ConvRot",
       "owner": "turbo",
       "quant": "int8",
-      "route": "z-image",
-      "vram_peak_gb": 0.0
+      "route": "z-image-int8",
+      "vram_peak_gb": 14.0
     }
   ]
 }

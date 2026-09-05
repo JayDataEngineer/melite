@@ -7,7 +7,7 @@
   "enhance_prompt": null,
   "enhance_prompts": {
     "lyrics": "",
-    "prompt": "structure: [subject, motion, camera, environment, sound]; rules:; - motion is the verb chain, not a pose: name what CHANGES across the window; - one camera move per shot (push in, truck left, locked off) \u2014 never two; - carry the subject's identity words into every shot that shows them; - end each shot prompt with its soundscape in one clause (room tone, foley, music); - a shot that cannot say its motion in one sentence is two shots"
+    "prompt": "structure: [subject, motion, camera, environment, sound]; rules:; - motion is the verb chain, not a pose: name what CHANGES across the window; - one camera move per shot (push in, truck left, locked off) — never two; - carry the subject's identity words into every shot that shows them; - end each shot prompt with its soundscape in one clause (room tone, foley, music); - a shot that cannot say its motion in one sentence is two shots"
   },
   "features": {
     "modifiers": [],
@@ -34,7 +34,7 @@
       "placeholder": "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out",
       "required": true,
       "step": null,
-      "tooltip": "Verb-first motion + the sounds. For keyframes the image already sets the scene \u2014 prompt what CHANGES.",
+      "tooltip": "Verb-first motion + the sounds. For keyframes the image already sets the scene — prompt what CHANGES.",
       "type": "text",
       "visible_when": null,
       "width": null,
@@ -72,7 +72,7 @@
       "placeholder": "",
       "required": null,
       "step": null,
-      "tooltip": "Absolute path to a reference image for identity-locked generation. The hybrid model auto-routes to Ref2VA mode when connected. Optional \u2014 leave empty for standard FL2VA text-to-video.",
+      "tooltip": "Absolute path to a reference image for identity-locked generation. The hybrid model auto-routes to Ref2VA mode when connected. Optional — leave empty for standard FL2VA text-to-video.",
       "type": "text",
       "visible_when": null,
       "width": null,
@@ -284,7 +284,7 @@
           "name": "prompt",
           "placeholder": "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out",
           "required": true,
-          "tooltip": "Verb-first motion + the sounds. For keyframes the image already sets the scene \u2014 prompt what CHANGES.",
+          "tooltip": "Verb-first motion + the sounds. For keyframes the image already sets the scene — prompt what CHANGES.",
           "type": "text"
         },
         {
@@ -296,7 +296,7 @@
         {
           "label": "Reference image (Ref2VA identity lock)",
           "name": "ref_image",
-          "tooltip": "Absolute path to a reference image for identity-locked generation. The hybrid model auto-routes to Ref2VA mode when connected. Optional \u2014 leave empty for standard FL2VA text-to-video.",
+          "tooltip": "Absolute path to a reference image for identity-locked generation. The hybrid model auto-routes to Ref2VA mode when connected. Optional — leave empty for standard FL2VA text-to-video.",
           "type": "text"
         },
         {
@@ -396,5 +396,30 @@
   ],
   "service": "h3-timeline",
   "size": "huge",
-  "variants": []
+  "variants": [
+    {
+      "id": "h3",
+      "label": "Standard",
+      "group": "Variant",
+      "defaults": {},
+      "route": "h3-timeline",
+      "hint": null,
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    },
+    {
+      "id": "int8",
+      "label": "INT8 ConvRot",
+      "group": "Quant",
+      "defaults": {},
+      "route": "h3-timeline",
+      "hint": null,
+      "engine": "",
+      "quant": "int8",
+      "vram_peak_gb": 30.0,
+      "owner": "h3"
+    }
+  ]
 }

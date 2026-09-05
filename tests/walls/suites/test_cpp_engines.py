@@ -26,8 +26,14 @@ Covers:
 """
 
 import os
+import re
 import sys
 import unittest
+from types import ModuleType
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from melite_models import Model
 
 from _anchor import REPO
 
@@ -35,7 +41,7 @@ import flow_graph
 import plugins
 
 
-def _seed_graph(engine):
+def _seed_graph(engine: str) -> flow_graph.Skeleton:
     """A legal one-node skeleton seed for the bus call (the caller's
     own graph object — the bus replaces it in phase 2)."""
     row = flow_graph.NodeRow(
@@ -45,14 +51,14 @@ def _seed_graph(engine):
                                    nodes=(row,))
 
 
-def _bus(body, model, run_id, engine):
+def _bus(body: dict[str, dict[str, str | int | float | bool | list[str] | dict[str, str | int | float | bool | list[str]]]], model: str, run_id: str, engine: str) -> tuple[flow_graph.FlowGraph, dict[str, str | int | dict[str, str | int | float | bool]] | None]:
     """The gateway's exact hop: card_hooks.compose -> plugins.compose."""
     return plugins.compose(body, model, run_id, _seed_graph(engine),
                            [engine])
 
 
 class TestDiscovery(unittest.TestCase):
-    def test_five_engine_types_discover(self):
+    def test_five_engine_types_discover(self) -> None:
         """Five live engine types. ffmpeg_concat retired 2026-09-04:
         concat rides comfyui's VHS / melite-audio-nodes; the
         CLI-wrapper engine plugin and its dedicated type are gone."""
@@ -62,7 +68,7 @@ class TestDiscovery(unittest.TestCase):
             self.assertIn(etype, engines, "engine %r missing" % etype)
         self.assertNotIn("ffmpeg_concat", engines)
 
-    def test_cpp_category_dir_is_not_a_plugin(self):
+    def test_cpp_category_dir_is_not_a_plugin(self) -> None:
         """plugins/engines/cpp/ has no plugin markers — a category
         container, never discovered as an engine owner itself."""
         cpp = os.path.join(REPO, "plugins", "engines", "cpp")
@@ -104,24 +110,24 @@ MINI_SPEC = {
 class TestForgeBusContract(unittest.TestCase):
     OK = {"params": {"spec": MINI_SPEC}}
 
-    def test_phase1_missing_spec_refused_before_registration(self):
+    def test_phase1_missing_spec_refused_before_registration(self) -> None:
         with self.assertRaises(Exception) as cm:
             _bus({"params": {}}, "anycreature", "", "anycreature")
         self.assertIn("rc=-3", str(cm.exception))
         self.assertIn("spec", str(cm.exception))
 
-    def test_phase1_structural_floor_refused(self):
+    def test_phase1_structural_floor_refused(self) -> None:
         bad = {"params": {"spec": {"joints": {"H": [0, 0, 0]}}}}
         with self.assertRaises(Exception) as cm:
             _bus(bad, "anycreature", "", "anycreature")
         self.assertIn("chains", str(cm.exception))
 
-    def test_phase1_ok_returns_extra_no_graph(self):
+    def test_phase1_ok_returns_extra_no_graph(self) -> None:
         g, extra = _bus(self.OK, "anycreature", "", "anycreature")
         self.assertEqual(sorted(extra.keys()), ["spec"])
         self.assertIsInstance(g, flow_graph.FlowGraph)
 
-    def test_phase2_emits_skeleton_with_workflow_spec(self):
+    def test_phase2_emits_skeleton_with_workflow_spec(self) -> None:
         g, _extra = _bus(self.OK, "anycreature", "run-1", "anycreature")
         self.assertIsInstance(g, flow_graph.FlowGraph)
         self.assertEqual(len(g.nodes), 1)
@@ -137,32 +143,32 @@ class TestTextToMotionBusContract(unittest.TestCase):
     OK = {"params": {"prompt": "a knight walks forward, then bows",
                      "skeleton": "soma"}}
 
-    def test_phase1_missing_prompt_refused(self):
+    def test_phase1_missing_prompt_refused(self) -> None:
         with self.assertRaises(Exception) as cm:
             _bus({"params": {}}, "soma", "", "kimodo")
         self.assertIn("rc=-3", str(cm.exception))
         self.assertIn("prompt", str(cm.exception))
 
-    def test_phase1_bad_skeleton_refused(self):
+    def test_phase1_bad_skeleton_refused(self) -> None:
         bad = {"params": {"prompt": "walk", "skeleton": "trex"}}
         with self.assertRaises(Exception) as cm:
             _bus(bad, "soma", "", "kimodo")
         self.assertIn("skeleton", str(cm.exception))
 
-    def test_phase1_smplx_gate_refused_without_checkpoint(self):
+    def test_phase1_smplx_gate_refused_without_checkpoint(self) -> None:
         os.environ.pop("KIMODO_SMPLX_CHECKPOINT", None)
         gated = {"params": {"prompt": "wave", "skeleton": "smplx"}}
         with self.assertRaises(Exception) as cm:
             _bus(gated, "smplx", "", "kimodo")
         self.assertIn("licence", str(cm.exception).lower())
 
-    def test_phase1_smplx_gate_passes_with_checkpoint(self):
+    def test_phase1_smplx_gate_passes_with_checkpoint(self) -> None:
         gated = {"params": {"prompt": "wave", "skeleton": "smplx",
                             "smplx_checkpoint": "/data/smplx.gguf"}}
         g, _extra = _bus(gated, "smplx", "", "kimodo")
         self.assertIsInstance(g, flow_graph.FlowGraph)
 
-    def test_phase2_emits_skeleton_with_prompt_workflow(self):
+    def test_phase2_emits_skeleton_with_prompt_workflow(self) -> None:
         g, _extra = _bus(self.OK, "soma", "run-2", "kimodo")
         self.assertEqual(len(g.nodes), 1)
         node = g.nodes[0]
@@ -174,7 +180,7 @@ class TestTextToMotionBusContract(unittest.TestCase):
 
 
 class TestQuadRemeshBusContract(unittest.TestCase):
-    def _tmp_mesh(self):
+    def _tmp_mesh(self) -> str:
         import tempfile
         fd, path = tempfile.mkstemp(suffix=".obj")
         with os.fdopen(fd, "w") as f:
@@ -182,26 +188,26 @@ class TestQuadRemeshBusContract(unittest.TestCase):
         self.addCleanup(os.unlink, path)
         return path
 
-    def test_phase1_missing_input_refused(self):
+    def test_phase1_missing_input_refused(self) -> None:
         with self.assertRaises(Exception) as cm:
             _bus({"params": {}}, "autoremesher", "", "autoremesher")
         self.assertIn("rc=-3", str(cm.exception))
         self.assertIn("input", str(cm.exception))
 
-    def test_phase1_dead_input_refused_with_exact_path(self):
+    def test_phase1_dead_input_refused_with_exact_path(self) -> None:
         bad = {"params": {"input": "/nonexistent/mesh.obj"}}
         with self.assertRaises(Exception) as cm:
             _bus(bad, "autoremesher", "", "autoremesher")
         self.assertIn("/nonexistent/mesh.obj", str(cm.exception))
 
-    def test_phase1_bad_knob_range_refused(self):
+    def test_phase1_bad_knob_range_refused(self) -> None:
         bad = {"params": {"input": self._tmp_mesh(),
                           "target_quads": 10}}
         with self.assertRaises(Exception) as cm:
             _bus(bad, "autoremesher", "", "autoremesher")
         self.assertIn("target_quads", str(cm.exception))
 
-    def test_phase2_emits_skeleton_with_input_workflow(self):
+    def test_phase2_emits_skeleton_with_input_workflow(self) -> None:
         mesh = self._tmp_mesh()
         ok = {"params": {"input": mesh, "target_quads": 10000}}
         g, _extra = _bus(ok, "autoremesher", "run-3", "autoremesher")
@@ -223,7 +229,7 @@ class TestCardPattern(unittest.TestCase):
         ("audio-cpp", "action_cards/audio/music"),
     ]
 
-    def test_every_card_owns_the_pattern_files(self):
+    def test_every_card_owns_the_pattern_files(self) -> None:
         for plugin, card in self.CARDS:
             root = os.path.join(REPO, "plugins", "engines", "cpp",
                                 plugin, card, "py")
@@ -234,7 +240,7 @@ class TestCardPattern(unittest.TestCase):
                     "%s/%s/py/%s missing (THE CARD PATTERN)" % (
                         plugin, card, fname))
 
-    def test_plugin_compose_is_a_dispatcher(self):
+    def test_plugin_compose_is_a_dispatcher(self) -> None:
         """The plugin compose/__init__ carries the bus-arity door and
         NO inline arm logic: the arm files live in the card trees."""
         for plugin, _card in self.CARDS:
@@ -242,8 +248,13 @@ class TestCardPattern(unittest.TestCase):
                                 plugin, "compose", "__init__.py")
             with open(init, encoding="utf-8") as f:
                 text = f.read()
-            self.assertIn(
-                "def card_compose(body, model, run_id, graph)", text,
+            # the bus contract: annotated since the annotation hunt
+            # (annotations are the law) — names + order + arity, any
+            # annotation spelling, possibly across lines.
+            self.assertRegex(
+                text,
+                r"def card_compose\(\s*body\s*:[\s\S]*?,\s*model\s*:"
+                r"[\s\S]*?,\s*run_id\s*:[\s\S]*?,\s*graph\s*:",
                 "%s compose/ must speak the bus contract" % plugin)
             self.assertNotIn(
                 "NodeRow(", text,
@@ -253,7 +264,7 @@ class TestCardPattern(unittest.TestCase):
 class TestRendererArgv(unittest.TestCase):
     """rung 8 — the renderer owns the argv; execute never rebuilds."""
 
-    def _renderer(self, plugin, card_dir, alias):
+    def _renderer(self, plugin: str, card_dir: str, alias: str) -> ModuleType:
         import importlib.util
         pkg = os.path.join(REPO, "plugins", "engines", "cpp", plugin,
                            "action_cards", card_dir, "py")
@@ -264,7 +275,7 @@ class TestRendererArgv(unittest.TestCase):
         spec.loader.exec_module(mod)
         return mod
 
-    def test_quad_remesh_argv_is_the_eight_knob_cli(self):
+    def test_quad_remesh_argv_is_the_eight_knob_cli(self) -> None:
         r = self._renderer("autoremesher", "3d/quad-remesh",
                            "qr_renderer_check")
         cmd, out, report = r.build_argv(
@@ -280,7 +291,7 @@ class TestRendererArgv(unittest.TestCase):
         self.assertTrue(out.endswith("remeshed.obj"))
         self.assertTrue(report.endswith("remeshed_report.txt"))
 
-    def test_motion_argv_carries_prompt_and_skeleton(self):
+    def test_motion_argv_carries_prompt_and_skeleton(self) -> None:
         r = self._renderer("kimodo", "motion/text-to-motion",
                            "tm_renderer_check")
         cmd = r.build_argv(
@@ -294,7 +305,7 @@ class TestRendererArgv(unittest.TestCase):
 
 
 class TestKimodoModelRows(unittest.TestCase):
-    def _load(self, family):
+    def _load(self, family: str) -> "dict[str, type[Model]]":
         import importlib.util
         path = os.path.join(REPO, "plugins/engines/cpp/kimodo/models",
                             "motion", family, "model.py")
@@ -305,7 +316,7 @@ class TestKimodoModelRows(unittest.TestCase):
         return {c.__name__: c for c in mod.__dict__.values()
                 if isinstance(c, type)}
 
-    def test_soma_two_variants_two_cells_with_sha256(self):
+    def test_soma_two_variants_two_cells_with_sha256(self) -> None:
         cls = self._load("soma")["Soma"]
         self.assertEqual(len(cls.variants), 2)
         cells = [c for v in cls.variants for c in v.cells]
@@ -317,7 +328,7 @@ class TestKimodoModelRows(unittest.TestCase):
             self.assertEqual(cell.artifact.dest_root.value,
                              "KIMODO_ROOT")
 
-    def test_smplx_gated_ships_no_cells(self):
+    def test_smplx_gated_ships_no_cells(self) -> None:
         cls = self._load("smplx")["Smplx"]
         for v in cls.variants:
             self.assertEqual(v.cells, (),
@@ -328,7 +339,7 @@ class TestKnobSSOT(unittest.TestCase):
     """LAYER AUDIT: every card field has a card_knobs row on every
     model it boards (the music3 pattern; yaml is extinct)."""
 
-    def _fields(self, plugin, card_dir, alias):
+    def _fields(self, plugin: str, card_dir: str, alias: str) -> ModuleType:
         import importlib.util
         pkg = os.path.join(REPO, "plugins", "engines", "cpp", plugin,
                            "action_cards", card_dir, "py")
@@ -339,7 +350,7 @@ class TestKnobSSOT(unittest.TestCase):
         spec.loader.exec_module(mod)
         return mod
 
-    def test_forge_fields_all_in_knob_rows(self):
+    def test_forge_fields_all_in_knob_rows(self) -> None:
         from melite_models import load_model_py
         mod = self._fields("anycreature", "3d/forge",
                            "forge_card_check")
@@ -352,7 +363,7 @@ class TestKnobSSOT(unittest.TestCase):
                         "card fields missing knob rows: %s"
                         % (card_fields - knob_fields))
 
-    def test_quad_remesh_fields_all_in_knob_rows(self):
+    def test_quad_remesh_fields_all_in_knob_rows(self) -> None:
         from melite_models import load_model_py
         mod = self._fields("autoremesher", "3d/quad-remesh",
                            "qr_card_check")
@@ -363,7 +374,7 @@ class TestKnobSSOT(unittest.TestCase):
         knob_fields = {row["card"] for row in cls.card_knobs}
         self.assertTrue(card_fields <= knob_fields)
 
-    def test_no_card_knobs_yaml_survives(self):
+    def test_no_card_knobs_yaml_survives(self) -> None:
         """The yaml knob era is extinct tree-wide — rows live on the
         model class (the music3 pattern)."""
         import glob
@@ -374,7 +385,7 @@ class TestKnobSSOT(unittest.TestCase):
 
 
 class TestVendorLaw(unittest.TestCase):
-    def _module_paths(self):
+    def _module_paths(self) -> dict[str, str]:
         import configparser
         # strict=False: git tolerates duplicate keys (last wins)
         cp = configparser.ConfigParser(strict=False)
@@ -382,7 +393,7 @@ class TestVendorLaw(unittest.TestCase):
         return {cp.get(s, "path"): cp.get(s, "url") for s in
                 cp.sections() if cp.has_option(s, "path")}
 
-    def test_submodule_pins_declared(self):
+    def test_submodule_pins_declared(self) -> None:
         paths = self._module_paths()
         # vendor dir names carry the upstream repo's casing
         for pin, repo in (
@@ -396,7 +407,7 @@ class TestVendorLaw(unittest.TestCase):
                           "%s vendor pin missing from .gitmodules" % pin)
             self.assertIn(repo, paths[pin])
 
-    def test_vendored_engines_present(self):
+    def test_vendored_engines_present(self) -> None:
         cli = os.path.join(REPO, "plugins/engines/cpp/anycreature",
                            "vendor/anyCreature/engine/cli.js")
         self.assertTrue(os.path.isfile(cli), "vendored cli.js missing")
@@ -405,7 +416,7 @@ class TestVendorLaw(unittest.TestCase):
         self.assertTrue(os.path.isfile(capi),
                         "vendored kimodo C API header missing")
 
-    def test_vendored_engines_present(self):
+    def test_vendored_engines_present(self) -> None:
         cli = os.path.join(REPO, "plugins/engines/cpp/anycreature",
                            "vendor/anyCreature/engine/cli.js")
         self.assertTrue(os.path.isfile(cli), "vendored cli.js missing")

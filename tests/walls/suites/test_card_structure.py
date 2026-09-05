@@ -37,7 +37,7 @@ ALLOWED_ROOT = {"agents", "py", "ui", "tool.json", "README.md"}
 PY_REQUIRED = {"__init__.py", "compose.py"}
 
 
-def card_dirs():
+def card_dirs() -> list[tuple[str, str]]:
     """(genre, card_dir) for every card dir — skips non-genre roots
     (node_modules shared by the ui surfaces, dotdirs)."""
     out = []
@@ -57,7 +57,7 @@ def card_dirs():
     return out
 
 
-def cross_engine_owner(genre, cdir):
+def cross_engine_owner(genre: str, cdir: str) -> str | None:
     """The card id another engine's cards/ tree owns, or None."""
     card = os.path.basename(cdir)
     eng_root = os.path.join(REPO, "plugins", "engines")
@@ -70,7 +70,7 @@ def cross_engine_owner(genre, cdir):
     return None
 
 
-def _validate_card(genre, cdir):
+def _validate_card(genre: str, cdir: str) -> list[tuple[bool, str, str]]:
     """Validate a single card dir. Returns list of (ok, label, detail) tuples."""
     label = "%s/%s" % (genre, os.path.basename(cdir))
     entries = sorted(e for e in os.listdir(cdir) if not e.startswith("."))
@@ -118,22 +118,22 @@ def _validate_card(genre, cdir):
     return results
 
 
-def test_action_cards_discovered():
+def test_action_cards_discovered() -> None:
     dirs = card_dirs()
     assert len(dirs) >= 6, "only %d card dirs" % len(dirs)
 
 
-def test_golden_base_present():
+def test_golden_base_present() -> None:
     assert os.path.isdir(GOLDEN), GOLDEN
 
 
-def test_card_structure():
+def test_card_structure() -> None:
     for genre, cdir in card_dirs():
         for ok, label, detail in _validate_card(genre, cdir):
             assert ok, detail
 
 
-def test_dispatch_table():
+def test_dispatch_table() -> None:
     sys.path.insert(0, os.path.join(REPO, "py"))
     comfyui_root = os.path.join(REPO, "plugins", "engines", "comfyui")
     sys.path.insert(0, comfyui_root)
@@ -144,7 +144,7 @@ def test_dispatch_table():
         assert os.path.isfile(arm), "missing %s" % arm
 
 
-def test_model_dir_completeness():
+def test_model_dir_completeness() -> None:
     sys.path.insert(0, os.path.join(REPO, "py"))
     from melite_models import scan_engine_models
     _mcards = {mid: cls for mid, (_p, cls)
@@ -166,7 +166,9 @@ def test_model_dir_completeness():
         "z-image": "generate_t2i.json",
         "anima": "generate_t2i.json",
         "ideogram": "generate_t2i.json",
-        "img-edit": "edit_i2i.json",
+        # (2026-09-05 image-edit rework) `img-edit` retired — the
+        # survivor carries the lane's template.
+        "qwen-img-edit-2511": "edit_i2i.json",
         "qwen3-tts-voicedesign": "tts_t1.json",
         "voice-lock": "voicelock_t1.json",
         "sfx": "sfx_t1.json",
@@ -203,7 +205,7 @@ def test_model_dir_completeness():
                     "model %s missing %s in %s" % (mid, tmpl, mdir))
 
 
-def test_no_bytecode_tracked():
+def test_no_bytecode_tracked() -> None:
     tracked = subprocess.run(
         ["git", "-C", REPO, "ls-files", "--",
          "plugins/engines/comfyui/action_cards"],

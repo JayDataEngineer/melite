@@ -52,10 +52,9 @@
     },
     "image-edit": {
       "covers": [
-        "img-edit",
         "qwen-img-edit-2511"
       ],
-      "default_service": "img-edit",
+      "default_service": "qwen-img-edit-2511",
       "genre": "image",
       "hidden": false,
       "label": "Image Edit",

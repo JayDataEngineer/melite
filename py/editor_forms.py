@@ -1,72 +1,55 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Editor form/card-data readers — THE form surface (stdlib-only.
-Born as a port of the C gateway; C retired 2026-09-02. Since C
-retirement (2026-09-03) the golden_http pins are the estate's own
-wire contract — this module IS the implementation, not a twin.
+This module IS the implementation (the C twin was retired 2026-09-02;
+the golden_http pins are the estate's own wire contract).
 
-Routes ported (C sources in this repo):
-  GET /v1/forms                 -> handle_lane_registry "/v1/forms" branch
-                                   (src/server.cpp:7080-7113)
-  GET /v1/form-spec?model=<id>  -> handle_form_spec (src/server.cpp:7923-8452)
-                                   + card_spec_json (src/server.cpp:7729-7921)
-                                   + cs_find_card_yaml (src/server.cpp:7533-7611)
-                                   + catalog scan/parse (src/catalog.c)
+Routes served:
+  GET /v1/forms                 -> the _FORMS_TABLE below
+  GET /v1/form-spec?model=<id>  -> form_spec: catalog row + variants
+                                   + card surface + recipes
   GET /v1/kinds                 -> the first-party kind table declared in
-                                   py/card_kinds.py (the yaml scan is
-                                   extinct — see kinds() below)
+                                   py/card_kinds.py
 
 Where each route's data lives (everything is read from plugins/ at call time;
 no model or engine name is hardcoded as logic — see the one documented
 exception for /v1/forms below):
 
-  /v1/forms        FIXED OPERATOR SURFACE. In C this is a compiled-in literal
-                   (src/server.cpp:7087-7113, "operator card law" 2026-09-01)
-                   — it is NOT derived from plugins/ data, and plugins/ data
-                   cannot reproduce it (the tts entry deliberately diverges
-                   from its card.yaml: forms label "Speech" vs card label
-                   "TTS", default_service "qwen3-tts" vs card family
-                   "qwen3_tts"). This module ports the literal verbatim as
-                   _FORMS_TABLE below; the table's keys are also the C's
-                   ALLOWED_CARDS set (src/server.cpp:7585-7588), so the card
-                   finder derives its gate from the table, not a second list.
-  /v1/form-spec    model row: plugins/<owner>/models/<genre>/<id>/model.yaml
-                   (family:/defaults:/engine: sections, catalog.c parse);
-                   variants: <model-dir>/variants/<name>/variant.yaml;
-                   card surface (form/service/fields/schema_groups/
-                   features.modifiers): plugins/<owner>/cards/<card>/card.yaml
-                   `parameters:`; option vocabularies $samplers/$schedulers:
-                   plugins/melite-core/models/field_options.yaml; enhance
-                   recipes: <model-dir>/inference.yaml prompt_upscale:/
-                   lyrics_upscale: blocks (with the C's id-named-dir fallback
-                   probe across owners/genres); lane fallback:
-                   flows/<name>/flow.yaml (agent
-                   lane docs) or any flows/*/flow.yaml containing "type: <name>".
+  /v1/forms        FIXED OPERATOR SURFACE — declared verbatim as
+                   _FORMS_TABLE below, NOT derived from plugins/ data,
+                   and plugins/ data cannot reproduce it (the tts entry
+                   deliberately diverges from its card: forms label
+                   "Speech" vs card label "TTS", default_service
+                   "qwen3-tts" vs card family "qwen3_tts"). The table's
+                   keys are also the ALLOWED_CARDS set, so the card
+                   finder derives its gate from the table, not a second
+                   list.
+  /v1/form-spec    model row: plugins/<owner>/models/<genre>/<id>/
+                    model.py (the Model class — family/defaults/engine/
+                    offering); variants: the class's frozen rows;
+                    card surface (form/service/fields/schema_groups/
+                    features.modifiers): the card's declared surface;
+                    option vocabularies $samplers/$schedulers:
+                    plugins/melite-core/models/field_options.yaml;
+                    enhance recipes: the class's prompt_upscale:/
+                    lyrics_upscale: rows (with the id-named-dir fallback
+                    probe across owners/genres); lane fallback:
+                    flows/<name>/flow.yaml (agent
+                    lane docs) or any flows/*/flow.yaml containing "type: <name>".
   /v1/kinds        py/card_kinds.py TABLE (the first-party card-kind
-                   behavior flags; gateway infra, not plugin data — the
-                   C-era plugins/*/kinds/*.yaml scan is extinct)
+                    behavior flags; gateway infra, not plugin data —
+                    the old plugins/*/kinds/*.yaml scan is extinct)
 
-Faithful-bug ports (behavior the goldens captured; do NOT "fix"):
-  * enhance-prompts prompt-nullification probe (server.cpp:8406-8430) does
-    NOT skip blank lines, unlike card_spec_json — any blank (or top-level
+Wire quirks (behavior the goldens pin; changing one is a deliberate
+regold, never a "fix"):
+  * enhance-prompts prompt-nullification probe does
+    NOT skip blank lines — any blank (or top-level
     comment) line between `parameters:` and the `prompt:` field resets the
     section state, so a card with a blank line before `prompt:` advertises
     NO enhance recipe (prompt:null). This is why the image card serves
     prompt:null for its model.
-  * variant.yaml quant parsing (server.cpp:8187-8213) stops reading quant
-    attributes once `label` is seen (guard `!qlab[0]`), so route/vram after
-    label never register; vram_peak_gb therefore emits the atof default 0.
-  * variant rows/quant cells are emitted in raw readdir order of the
-    variants/ directory (os.scandir == readdir order on Linux); quant cells
-    dedupe on id across variants.
-
-C behaviors intentionally not ported (unreachable here):
-  * the 500 {"error":"no catalog loaded"} branch — catalog_scan never
-    returns NULL in C (src/catalog.c:613-625); the Python catalog is always
-    an (possibly empty) list.
-  * the C's second search bases ("plugins" vs "../plugins", "." vs
-    "../plugins") all resolve to this repo's plugins/ tree from any CWD the
-    golden capture used; the port takes repo_root/plugins once.
+  * variant rows/quant cells follow the class's declaration order;
+    quant cells dedupe on id across variants.
 
 Self-test: `python3 py/editor_forms.py` deep-compares every golden in
 tests/golden_http/ for these routes, prints the first divergence path per
@@ -78,8 +61,40 @@ from __future__ import annotations
 import json
 import os
 import sys
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, TypedDict
 
 import form_wire
+
+if TYPE_CHECKING:
+    from melite_cards import ActionCard, Field
+    from melite_models import Cell, Model, Variant
+
+# The wire-fragment shape: decoded JSON (objects, arrays, scalars).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
+
+# One yaml-era field row (the _new_field/_parse_card_parameters shape).
+type FieldRow = dict[str, str | float | bool]
+
+
+class CatalogRow(TypedDict, total=False):
+    """One _scan_catalog row: the class adapter's parser-row shape
+    (id/genre/label/engine_plugin/defaults/form) plus the catalog's
+    own family_id/inference_path and the riding _model_class."""
+    id: str
+    genre: str | None
+    label: str | None
+    engine_plugin: str | None
+    defaults: list[tuple[str, str]]
+    form: str | None
+    family_id: str
+    inference_path: None
+    _model_class: type[Model]
+
+
+# One _route_owner hit: the catalog row, the owning Model class and
+# the (variant, cell) matrix address the route resolves to.
+type RouteOwner = tuple[CatalogRow, "type[Model]", "Variant", "Cell"]
 
 try:
     # the same class as the gateway's (plugins.py defines the standalone
@@ -92,7 +107,7 @@ except Exception:
 __all__ = ["forms", "form_spec", "kinds"]
 
 # ─────────────────────────────────────────────────────────────────────────
-# /v1/forms — verbatim port of the C literal (src/server.cpp:7087-7113).
+# /v1/forms — the fixed operator surface, declared verbatim.
 # Fixed operator surface ("operator card law" 2026-09-01); not derivable
 # from plugins/ data (see module docstring). Order field and sidebar_key
 # are editor chrome, not model/engine names.
@@ -110,8 +125,11 @@ _FORMS_TABLE = {
                   "covers": ("krea-2", "z-image", "anima", "ideogram")},
     "image-edit": {"label": "Image Edit", "genre": "image", "order": 2,
                    "plugin": "comfyui", "sidebar_key": "image-edit",
-                   "default_service": "img-edit", "hidden": False,
-                   "covers": ("img-edit", "qwen-img-edit-2511")},
+                   "default_service": "qwen-img-edit-2511", "hidden": False,
+                   # (2026-09-05 image-edit rework) the pre-flip
+                   # `img-edit` family head is retired — same physical
+                   # lane, no cascade; the survivor boards alone.
+                   "covers": ("qwen-img-edit-2511",)},
     # audio A-cluster rehomed 2026-09-04 (music on native core;
     # tts/voice-lock/sfx on the split packs' classes)
     "tts": {"label": "Speech", "genre": "audio", "order": 3,
@@ -182,15 +200,15 @@ _FORMS_TABLE = {
     # cluster E (2026-09-04): the generic video card — ONE interface,
     # every non-h3 family (img-gen pattern; h3 stays on h3-timeline).
     # Covers = the RUNNABLE members only (2026-09-05): the ltx pair
-    # is unboarded (no card arm — form='' on their classes until the
-    # LTX lane boards).
+    # is unboarded (no card arm — unoffered on their classes until
+    # the LTX lane boards).
     "video-gen": {"label": "Video", "genre": "video", "order": 15,
                   "plugin": "comfyui", "sidebar_key": "video",
                   "default_service": "wan-vace", "hidden": False,
                   "covers": ("wan-vace", "scail2-animate")},
     # F-cluster (2026-09-04): the hidden tool card — tool lanes are
     # consumed BY other cards, never user surfaces. The pixel pair is
-    # unboarded (form='' until the upscale lane boards them).
+    # unboarded (unoffered until the upscale lane boards them).
     "upscale-tools": {"label": "Upscale Tools", "genre": "image",
                       "order": 16, "plugin": "comfyui",
                       "sidebar_key": "image",
@@ -210,33 +228,29 @@ _FORMS_TABLE = {
                   "covers": ("ideogram",)},
 }
 
-# The C's ALLOWED_CARDS gate (src/server.cpp:7585-7588) is exactly the keys
+# The C's ALLOWED_CARDS gate is exactly the keys
 # of the /v1/forms surface — derive it, keeping one closed surface.
 _ALLOWED_CARDS = frozenset(_FORMS_TABLE)
 
-# Binary card field types excluded from the flat `fields` list but kept in
-# `schema_groups` (src/server.cpp:7857-7859).
-_BINARY_FIELD_TYPES = frozenset(("image", "audio", "video", "file"))
-
-# Mod bag types that become modifier KINDS (src/server.cpp:8343).
+# Mod bag types that become modifier KINDS.
 _MOD_KIND_TYPES = frozenset(("loras", "controlnet"))
 
 # Enhance-recipe blocks read from a model unit's inference.yaml
-# (src/server.cpp:7991-7992).
+#.
 _RECIPE_KEYS = ("prompt_upscale:", "lyrics_upscale:")
 
 
-def forms(repo_root):
+def forms(repo_root: str) -> dict[str, dict[str, dict[str, JsonValue]]]:
     """GET /v1/forms -> {"forms": {card_id: {...}, ...}} (fixed surface)."""
     return {"forms": {k: dict(v) for k, v in _FORMS_TABLE.items()}}
 
 
 # ─────────────────────────────────────────────────────────────────────────
-# C line-buffer helpers (src/server.cpp:7190-7234)
+# line-buffer helpers
 # ─────────────────────────────────────────────────────────────────────────
 
-def _cut_comment(line):
-    """cs_cut_comment: cut a trailing '  # comment' not inside quotes."""
+def _cut_comment(line: str) -> str:
+    """cut_comment: cut a trailing '  # comment' not inside quotes."""
     inq = False
     for i, ch in enumerate(line):
         if ch == '"':
@@ -246,8 +260,8 @@ def _cut_comment(line):
     return line
 
 
-def _clean(s):
-    """cs_clean: trim spaces/tabs/CR/LF both ends, strip ONE quote pair."""
+def _clean(s: str) -> str:
+    """clean: trim spaces/tabs/CR/LF both ends, strip ONE quote pair."""
     s = s.strip(' \t\r\n')
     if len(s) >= 2 and ((s[0] == '"' and s[-1] == '"') or
                         (s[0] == "'" and s[-1] == "'")):
@@ -255,8 +269,8 @@ def _clean(s):
     return s
 
 
-def _is_number(s):
-    """cs_is_number: optional sign, digits, at most one dot."""
+def _is_number(s: str) -> bool:
+    """is_number: optional sign, digits, at most one dot."""
     if not s:
         return False
     p = s[1:] if s[0] in '-+' else s
@@ -274,23 +288,23 @@ def _is_number(s):
     return digits > 0
 
 
-def _num(s):
-    """Parse a cs_is_number-validated token the way the C emits it raw:
+def _num(s: str) -> int | float:
+    """Parse an is_number-validated token, emitting it raw:
     ints stay ints ('-1' -> -1), decimals stay floats ('12.0' -> 12.0)."""
     return float(s) if '.' in s else int(s)
 
 
-def _norm(s):
-    """cs_norm: '_' -> '-' for family-id matching."""
+def _norm(s: str) -> str:
+    """norm: '_' -> '-' for family-id matching."""
     return s.replace('_', '-')
 
 
-def _g(v):
+def _g(v: int | float) -> int | float:
     """C '%g' emission of a double: integral values print without '.0'."""
     return int(v) if float(v).is_integer() else float(v)
 
 
-def _scandir(path):
+def _scandir(path: str) -> list[str]:
     """Names in raw readdir order (C opendir/readdir); missing dir -> []."""
     try:
         with os.scandir(path) as it:
@@ -299,7 +313,7 @@ def _scandir(path):
         return []
 
 
-def _fgets(path):
+def _fgets(path: str) -> list[str]:
     """Yield lines the way C fgets does: each keeps its '\\n' (CR preserved,
     no universal-newline translation). Missing file yields nothing."""
     try:
@@ -311,7 +325,7 @@ def _fgets(path):
     return lines
 
 
-def _read_file(path):
+def _read_file(path: str) -> str | None:
     try:
         with open(path, 'r', encoding='utf-8', errors='surrogateescape',
                   newline='') as f:
@@ -321,13 +335,13 @@ def _read_file(path):
 
 
 # ─────────────────────────────────────────────────────────────────────────
-# Model catalog — port of src/catalog.c scan + parse
+# Model catalog — the engine/models scan + class adapter
 # (only the fields the three routes consume: id/genre/label, defaults,
 #  engine.plugin, and the model unit's inference.yaml path)
 # ─────────────────────────────────────────────────────────────────────────
 
-def _ykv(s, key):
-    """catalog.c ykv: value after 'key:' at the start of a stripped line."""
+def _ykv(s: str, key: str) -> str | None:
+    """ykv: value after 'key:' at the start of a stripped line."""
     if not s.startswith(key):
         return None
     if s[len(key)] != ':':
@@ -335,7 +349,7 @@ def _ykv(s, key):
     return s[len(key) + 1:].lstrip(' ')
 
 
-def _strip_quotes(v):
+def _strip_quotes(v: str) -> str:
     """ystrdup-style: strip ONE surrounding quote pair."""
     if len(v) >= 2 and ((v[0] == '"' and v[-1] == '"') or
                         (v[0] == "'" and v[-1] == "'")):
@@ -343,8 +357,8 @@ def _strip_quotes(v):
     return v
 
 
-def _parse_model_yaml(text):
-    """parse_model_yaml (src/catalog.c:143-322), restricted to the keys the
+def _parse_model_yaml(text: str) -> dict[str, str | list[tuple[str, str]] | None] | None:
+    """parse_model_yaml, restricted to the keys the
     form-spec route reads. Returns a row dict or None when no family id."""
     m = {"id": None, "genre": None, "label": None,
          "engine_plugin": None, "defaults": []}
@@ -397,8 +411,8 @@ def _parse_model_yaml(text):
     return m if m["id"] else None
 
 
-def _iter_plugin_engines(repo_root):
-    """The 2026-09 engine formalization layout (supersedes the C's
+def _iter_plugin_engines(repo_root: str) -> Iterator[tuple[str, str]]:
+    """The 2026-09 engine formalization layout (supersedes the old
     plugins/<owner>/ depth-1 scan): cards and models are ENGINE-owned at
     plugins/engines/<engine>/ — AND (2026-10-02) under category subdirs
     (plugins/engines/<cat>/<plugin>/ — the cpp native-engine category).
@@ -414,8 +428,8 @@ def _iter_plugin_engines(repo_root):
         yield pdir.name, str(pdir)
 
 
-def _scan_catalog(repo_root):
-    """scan_models (catalog.c port, engine layout): engine -> genre ->
+def _scan_catalog(repo_root: str) -> list[CatalogRow]:
+    """scan_models: engine -> genre ->
     model dir, raw readdir order per engine; catalog_find_model is
     first-match on family id among DECLARING rows."""
     models = []
@@ -466,7 +480,7 @@ def _scan_catalog(repo_root):
     return models
 
 
-def _plugin_engine_types(edir):
+def _plugin_engine_types(edir: str) -> set[str]:
     """The engine types a plugin dir DECLARES: engine.py ENGINE_TYPE
     (2026-09-02 flip), with engine.yaml fallback."""
     out = set()
@@ -498,12 +512,13 @@ def _plugin_engine_types(edir):
     return out
 
 
-def _model_row_from_py(repo_root, mpy, mid):
+def _model_row_from_py(repo_root: str, mpy: str, mid: str) -> CatalogRow | None:
     """The python flip's adapter: a Model class → the parser-row shape
     _scan_catalog/_find_model/form_spec consume (id/genre/label/
     engine_plugin/defaults pairs/form). Defaults values keep the wire's
-    raw-STRING form (the C's text heritage) — the typed-defaults wire
-    cleanup is its own later rung, not a silent change."""
+    raw-STRING form — the typed-defaults wire cleanup is its own later
+    rung, not a silent change. UNOFFERED classes return None — they
+    serve no form-spec either (offered means runnable)."""
     _py = os.path.join(repo_root, "py")
     if _py not in sys.path:
         sys.path.insert(0, _py)
@@ -511,6 +526,8 @@ def _model_row_from_py(repo_root, mpy, mid):
     engine = os.path.basename(os.path.dirname(os.path.dirname(
         os.path.dirname(mpy))))
     cls = load_model_py(mpy, engine)
+    if getattr(cls, "unoffered", False):
+        return None
     m = {"id": cls.id, "genre": cls.genre or None,
          "label": cls.label or None,
          "engine_plugin": cls.engine or None,
@@ -520,14 +537,15 @@ def _model_row_from_py(repo_root, mpy, mid):
     return m
 
 
-def _wire_str(v):
+def _wire_str(v: str | int | float | bool) -> str:
     """Native default → the C wire's raw string form."""
     if isinstance(v, bool):
         return "true" if v else "false"
     return str(v)
 
 
-def _variants_from_class(row, prefer_variant=None):
+def _variants_from_class(row: CatalogRow,
+                         prefer_variant: str | None = None) -> list[dict[str, JsonValue]] | None:
     """Variant rows + Quant cells from the CLASS tree — the collapse of
     the yaml's triplicated variants/ data (row + nested rows + quants)
     into one walk. Same wire shape as _variants, including the quant-id
@@ -539,12 +557,12 @@ def _variants_from_class(row, prefer_variant=None):
     seen_quant = set()
     for v in cls.variants:                 # frozen rows, not classes
         vlab = v.label or v.id
-        if 'a' <= vlab[0] <= 'z':           # the C's capitalize quirk
+        if 'a' <= vlab[0] <= 'z':           # display rule: labels render Capitalized
             vlab = chr(ord(vlab[0]) - 32) + vlab[1:]
         r = {"id": v.id, "label": vlab,
-             # variant defaults are RESOLVER data (merged_defaults); the
-             # wire row stayed {} in the C — expose deliberately later,
-             # not silently (parity law).
+             # variant defaults are RESOLVER data (merged_defaults);
+             # the wire row is {} by contract — expose deliberately,
+             # never silently.
              "defaults": {},
              "group": v.group or "Variant", "route": v.route or cls.id,
              "hint": v.hint or None, "engine": v.engine or cls.engine or ""}
@@ -557,15 +575,17 @@ def _variants_from_class(row, prefer_variant=None):
             if c.quant in seen_quant:
                 continue
             seen_quant.add(c.quant)
-            wire_vram = c.wire_vram if c.wire_vram is not None \
-                else (c.vram_peak_gb or 0)
             rows.append({"id": c.quant.value,
                          "label": c.label or c.quant.value,
                          "defaults": {}, "group": "Quant",
                          "quant": c.quant.value,
-                         "route": c.wire_route or c.route or v.route
-                         or cls.id,
-                         "vram_peak_gb": wire_vram,
+                         # TRUE cell attrs — the wire_route/wire_vram
+                         # faithful-bug overrides are retired
+                         # (2026-09-05): a quant row that lied about
+                         # its own route was a routing fossil, not a
+                         # format rule.
+                         "route": c.route or v.route or cls.id,
+                         "vram_peak_gb": c.vram_peak_gb or 0,
                          # The axis hierarchy link: the editor scopes the
                          # Quant select to the active variant's owner-
                          # linked cells. Without owner, every quant is
@@ -575,7 +595,7 @@ def _variants_from_class(row, prefer_variant=None):
     return rows
 
 
-def _find_model(models, family_id):
+def _find_model(models: list[CatalogRow], family_id: str) -> CatalogRow | None:
     """catalog_find_model, declarer-wins: among rows with this id, a row
     that DECLARES an engine beats a stanza-less bridge copy (resolve_model
     law — py/plugins.py). First declaring row in scan order wins."""
@@ -590,12 +610,12 @@ def _find_model(models, family_id):
 
 
 # ─────────────────────────────────────────────────────────────────────────
-# card.yaml discovery + identity — port of the cs_* helpers
-# (src/server.cpp:7237-7611)
+# card.yaml discovery + identity
+#
 # ─────────────────────────────────────────────────────────────────────────
 
-def _card_identity_path(yp):
-    """cs_card_identity_path: the card: block's id/label/icon/description.
+def _card_identity_path(yp: str) -> dict[str, str]:
+    """card_identity_path: the card: block's id/label/icon/description.
     id: first non-empty wins; label/icon/description: last non-empty wins."""
     out = {"id": "", "label": "", "icon": "", "description": ""}
     in_card = False
@@ -628,8 +648,8 @@ def _card_identity_path(yp):
     return out
 
 
-def _families_match(yp, model):
-    """cs_families_match: EXACT normalized match of any '- id:' row."""
+def _families_match(yp: str, model: str) -> bool:
+    """families_match: EXACT normalized match of any '- id:' row."""
     nmodel = _norm(model)
     in_fam = False
     for raw in _fgets(yp):
@@ -653,8 +673,8 @@ def _families_match(yp, model):
     return False
 
 
-def _first_family_is(yp, model):
-    """cs_first_family_is: the FIRST '- id:' row decides."""
+def _first_family_is(yp: str, model: str) -> bool:
+    """first_family_is: the FIRST '- id:' row decides."""
     nmodel = _norm(model)
     in_fam = False
     first = True
@@ -686,7 +706,7 @@ def _first_family_is(yp, model):
     return hit
 
 
-def _card_has_surface(yp):
+def _card_has_surface(yp: str) -> bool:
     """A card dir declares a FIELD SURFACE via a card.yaml `parameters:`
     block OR a sibling card.py (the python flip, 2026-09-02). The
     discovery gate; _load_card_surface enforces ONE of the two."""
@@ -695,7 +715,7 @@ def _card_has_surface(yp):
     return os.path.isfile(os.path.join(os.path.dirname(yp), "card.py"))
 
 
-def _has_parameters_block(yp):
+def _has_parameters_block(yp: str) -> bool:
     try:
         with open(yp, 'r', encoding='utf-8', errors='surrogateescape',
                   newline='') as f:
@@ -711,10 +731,10 @@ def _has_parameters_block(yp):
     return False
 
 
-def _find_card_yaml(repo_root, model):
-    """cs_find_card_yaml (src/server.cpp:7533-7611), class-driven since
+def _find_card_yaml(repo_root: str, model: str) -> str | None:
+    """find_card_yaml, class-driven since
     the identity rung (2026-09-02): the sole-owner card.py. Gate on the
-    /v1/forms card ids (the C's ALLOWED_CARDS — read from the CLASS id);
+    /v1/forms card ids (the ALLOWED_CARDS gate — read from the CLASS id);
     families must match (any row normalized), first-family match wins
     outright, first any-family match is the fallback candidate.
 
@@ -766,8 +786,8 @@ def _find_card_yaml(repo_root, model):
     return candidate
 
 
-def _option_list(repo_root, list_name, engine_dir):
-    """cs_option_list: samplers/schedulers from the ONE vocabulary —
+def _option_list(repo_root: str, list_name: str, engine_dir: str) -> list[str]:
+    """option_list: samplers/schedulers from the ONE vocabulary —
     engine.py Plugin class attrs (2026-09-02 flip), yaml fallback."""
     # plugin.py Plugin class — primary source (2026-09-02 field_options flip)
     # engine_dir is the plugin root (e.g. plugins/engines/comfyui)
@@ -809,7 +829,7 @@ def _option_list(repo_root, list_name, engine_dir):
 
 
 # ─────────────────────────────────────────────────────────────────────────
-# card.yaml parameters: — port of card_spec_json (src/server.cpp:7729-7921)
+# card.yaml parameters: — the card surface reader
 # ─────────────────────────────────────────────────────────────────────────
 
 _FIELD_ATTRS = ("type", "label", "group", "zone", "tooltip", "placeholder",
@@ -817,7 +837,7 @@ _FIELD_ATTRS = ("type", "label", "group", "zone", "tooltip", "placeholder",
 _FIELD_NUMS = ("order", "width", "columns", "min", "max", "step")
 
 
-def _new_field(name):
+def _new_field(name: str) -> FieldRow:
     f = {"name": name, "defval": "", "options": "", "required": False}
     for a in _FIELD_ATTRS:
         f[a] = ""
@@ -827,7 +847,7 @@ def _new_field(name):
     return f
 
 
-def _parse_card_parameters(yp):
+def _parse_card_parameters(yp: str) -> list[FieldRow]:
     """The card_spec_json parameters: parser. Returns the field list (in
     declaration order) or [] when the file has no parameters: fields."""
     fields = []
@@ -887,7 +907,7 @@ def _parse_card_parameters(yp):
     return fields
 
 
-def _atof(s):
+def _atof(s: str) -> float:
     """C atof: leading numeric prefix, 0.0 on none (values here are clean)."""
     try:
         return float(s)
@@ -906,8 +926,9 @@ def _atof(s):
             return 0.0
 
 
-def _emit_field(f, with_group, options_vocab):
-    """cs_emit_field: key order follows the C emission."""
+def _emit_field(f: FieldRow, with_group: bool,
+                 options_vocab: dict[str, list[str]]) -> dict[str, JsonValue]:
+    """emit_field: the wire emission key order (goldens pin it)."""
     o = {"name": f["name"]}
     if f["type"]:
         o["type"] = f["type"]
@@ -946,7 +967,7 @@ def _emit_field(f, with_group, options_vocab):
     return o
 
 
-def _families_keep(field, nmodel):
+def _families_keep(field: FieldRow, nmodel: str) -> bool:
     """card_spec_json families filter: a field naming families this model
     is not in (normalized exact) drops."""
     raw = field["families"]
@@ -956,7 +977,7 @@ def _families_keep(field, nmodel):
     return any(_norm(t) == nmodel for t in toks)
 
 
-def _engine_dir_of_card(card_path):
+def _engine_dir_of_card(card_path: str) -> str:
     """.../<engine>/{cards,action_cards}/<card>/[py/]card.py ->
     .../<engine> (the engine that owns the card — vocabulary and lanes
     resolve relative to it). Genre-grouped cards (action_cards/<genre>/
@@ -974,7 +995,7 @@ def _engine_dir_of_card(card_path):
 _MELITE_CARDS_PATH = os.path.join("py")
 
 
-def _load_card_class(yp):
+def _load_card_class(yp: str) -> type[ActionCard] | None:
     """The card.py ActionCard subclass for a card.yaml's dir, or None.
     The gateway imports the generic DSL from py/melite_cards (the
     py twin of ui_components — PLUGIN ARCHITECTURE LAW: grammar is
@@ -992,7 +1013,7 @@ def _load_card_class(yp):
     return _load(cppath, engine)
 
 
-def _card_spec(repo_root, model):
+def _card_spec(repo_root: str, model: str) -> dict[str, JsonValue] | None:
     """card_spec_json: the "form"/"service"/"fields"/"schema_groups" tail,
     or None when no card.yaml covers the model (legacy shape kept).
 
@@ -1039,10 +1060,15 @@ def _card_spec(repo_root, model):
         out["form"] = cid
     out["service"] = model
 
-    # flat fields — binary types excluded (schema_groups keeps them)
+    # flat fields — NO DROPS (2026-09-05). The old _BINARY_FIELD_TYPES
+    # filter omitted File/Image/Audio/Video rows from the flat list and
+    # relied on schema_groups alone — any consumer reading only flat
+    # fields rendered a card with no inputs (the silent default-card
+    # class). Binary fields ride the flat list too; schema_groups keeps
+    # the grouping on top. _BINARY_FIELD_TYPES is deleted.
     out["fields"] = [
         _emit_field(f, True, options_vocab)
-        for f in keep if f["type"] not in _BINARY_FIELD_TYPES
+        for f in keep
     ]
 
     # schema_groups — group by `group` attr, first-seen order
@@ -1073,7 +1099,7 @@ def _card_spec(repo_root, model):
     return out
 
 
-def _form_card_frag_for_model(repo_root, row):
+def _form_card_frag_for_model(repo_root: str, row: CatalogRow) -> dict[str, JsonValue] | None:
     """The no-own-card.py model → form-anchor fallback (2026-09-05).
 
     A model with no card.py of its own still belongs to a form
@@ -1098,10 +1124,10 @@ def _form_card_frag_for_model(repo_root, row):
     return None
 
 
-# features.modifiers — port of the mods-zone scan (src/server.cpp:8273-8397)
+# features.modifiers — the mods-zone scan
 # ─────────────────────────────────────────────────────────────────────────
 
-def _parse_mod_entries(yp):
+def _parse_mod_entries(yp: str) -> list[FieldRow]:
     """mods-zone parameter entries: {name,type,label,zone,min,max,step}."""
     entries = []
     P = None
@@ -1158,10 +1184,9 @@ def _parse_mod_entries(yp):
     return entries[:32]  # C me[32] cap
 
 
-def _modifiers(repo_root, model):
+def _modifiers(repo_root: str, model: str) -> list[dict[str, str | bool | list[dict[str, str | float]] | list[str]]]:
     """ModifierKind objects: bag-typed mods fields become kinds; scalar
-    knobs that FOLLOW a kind ride it as ModifierFields (src/server.cpp:
-    8341-8391). Scalars before any kind are dropped.
+    knobs that FOLLOW a kind ride it as ModifierFields. Scalars before any kind are dropped.
     card.py cards walk the class fields (same attrs, same order)."""
     yp = _find_card_yaml(repo_root, model)
     if yp is None:
@@ -1174,7 +1199,7 @@ def _modifiers(repo_root, model):
         # unscoped hand-list era's camouflage)
         nmodel = _norm(model)
 
-        def _in_family(fld):
+        def _in_family(fld: Field) -> bool:
             fams = getattr(fld, "families", ()) or ()
             return not fams or any(_norm(t) == nmodel for t in fams)
 
@@ -1221,11 +1246,11 @@ def _modifiers(repo_root, model):
 
 
 # ─────────────────────────────────────────────────────────────────────────
-# enhance recipes — port of the inference.yaml block readers
-# (src/server.cpp:7989-8102)
+# enhance recipes — the recipe block readers
+#
 # ─────────────────────────────────────────────────────────────────────────
 
-def _recipe_scan(path, key):
+def _recipe_scan(path: str, key: str) -> str:
     """One prompt_upscale:/lyrics_upscale: block: indented lines joined
     with '; '; ends at the next top-level non-comment key. 4096 clamp."""
     out = ""
@@ -1251,15 +1276,15 @@ def _recipe_scan(path, key):
     return out
 
 
-def _recipes(path):
+def _recipes(path: str) -> tuple[str, str]:
     if path is None:
         return "", ""
     return (_recipe_scan(path, _RECIPE_KEYS[0]),
             _recipe_scan(path, _RECIPE_KEYS[1]))
 
 
-def _recipes_fallback(repo_root, model_id):
-    """The id-named-dir probe (src/server.cpp:8041-8102): when the catalog
+def _recipes_fallback(repo_root: str, model_id: str) -> tuple[str, str]:
+    """The id-named-dir probe: when the catalog
     row's own inference.yaml gave no recipes, probe every owner for
     models/<genre>/<model-id>/inference.yaml. Per genre the FIRST owner
     holding the file wins; its blocks OVERWRITE the accumulated ones key
@@ -1289,10 +1314,10 @@ def _recipes_fallback(repo_root, model_id):
     return recipe, lrecipe
 
 
-def _card_declares_prompt(yp):
+def _card_declares_prompt(yp: str) -> bool:
     """The has_prompt probe. card.py cards consult the class (an honest
-    declaration list — the FAITHFUL BUG PORT below only applies to the
-    yaml surface it was ported from)."""
+    declaration list — the blank-line-reset quirk below only applies
+    to the yaml surface)."""
     cls = _load_card_class(yp)
     if cls is not None:
         return cls.declares_prompt()
@@ -1315,10 +1340,10 @@ def _card_declares_prompt(yp):
 
 
 # ─────────────────────────────────────────────────────────────────────────
-# variants — port of the variants/ matrix walk (src/server.cpp:8138-8264)
+# variants — the variants/ matrix walk
 # ─────────────────────────────────────────────────────────────────────────
 
-def _parse_variant(path):
+def _parse_variant(path: str) -> dict[str, str | float]:
     """variant.yaml: top-level label/hint/route for the Variant row; the
     FIRST quants: tier for the Quant cell. FAITHFUL BUG PORT: quant attrs
     stop being read once `label` is seen (guard !qlab[0]), so route and
@@ -1376,11 +1401,12 @@ def _parse_variant(path):
             "qid": qid, "qlab": qlab, "qroute": qroute, "vram": vram}
 
 
-def _variants(repo_root, model, prefer_variant=None):
+def _variants(repo_root: str, model: str,
+              prefer_variant: str | None = None) -> list[dict[str, JsonValue]]:
     """Variant rows + deduped Quant cells — the CLASS tree when the model
     is flipped (the cascade is structural), else <model-dir>/variants/
     yaml in readdir order; the model dir is dirname(inference_path) — no
-    inference.yaml means no variants (src/server.cpp:8145-8159)."""
+    inference.yaml means no variants."""
     from_class = _variants_from_class(model, prefer_variant)
     if from_class is not None:
         return from_class
@@ -1412,7 +1438,7 @@ def _variants(repo_root, model, prefer_variant=None):
         })
         if v["qid"]:
             # dedupe (group,id): one cell per quant tier id regardless of
-            # how many variants list it (src/server.cpp:8230-8245)
+            # how many variants list it
             if v["qid"] in seen_quant_ids:
                 continue
             seen_quant_ids.add(v["qid"])
@@ -1434,10 +1460,10 @@ def _variants(repo_root, model, prefer_variant=None):
 
 
 # ─────────────────────────────────────────────────────────────────────────
-# GET /v1/form-spec — port of handle_form_spec (src/server.cpp:7923-8452)
+# GET /v1/form-spec — the spec door
 # ─────────────────────────────────────────────────────────────────────────
 
-# Minimal lane/family display spec (src/server.cpp:7963-7966): display wire
+# Minimal lane/family display spec: display wire
 # only — the run door's no-fallback law is untouched. FORM WIRE GATE
 # (2026-09-05): served through the SAME frozen FormSpecRow with honest
 # empties — the old bare {defaults,variants,features,enhance_prompts}
@@ -1447,7 +1473,7 @@ _MINIMAL_LANE_SPEC = {"defaults": {}, "variants": [], "features": {},
                       "enhance_prompts": ""}
 
 
-def _minimal_lane_spec(model):
+def _minimal_lane_spec(model: str) -> form_wire.FormSpecRow:
     """The lane display spec, CONSTRUCTED through form_wire.FormSpecRow
     — required keys present, empties honest."""
     return form_wire.FormSpecRow(
@@ -1463,8 +1489,8 @@ _SAFE_ID = frozenset(
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
 
 
-def _lane_probe(repo_root, model):
-    """Unknown-catalog-name fallback (src/server.cpp:7946-7977): a
+def _lane_probe(repo_root: str, model: str) -> bool:
+    """Unknown-catalog-name fallback: a
     flows/<name>/flow.yaml on disk, or any flows/*/flow.yaml
     containing 'type: <name>', gets the minimal spec."""
     if os.path.exists(os.path.join(repo_root, "flows", model,
@@ -1479,7 +1505,7 @@ def _lane_probe(repo_root, model):
     return False
 
 
-def _route_owner(repo_root, route_id):
+def _route_owner(repo_root: str, route_id: str) -> RouteOwner | None:
     """(row, cls, variant, cell) for a variant route, or None — the
     model class whose _routes carries the route owns the spec."""
     from melite_models import scan_engine_models
@@ -1493,7 +1519,8 @@ def _route_owner(repo_root, route_id):
     return None
 
 
-def _form_spec_routed(repo_root, owner, route_id):
+def _form_spec_routed(repo_root: str, owner: RouteOwner,
+                       route_id: str) -> tuple[int, dict[str, JsonValue]]:
     """The route lens: the OWNING family's spec, stamped by the routed
     variant — model id, defaults, field defaults, and the quant rows
     anchored on the selected variant. The stamp is the variant's
@@ -1516,7 +1543,7 @@ def _form_spec_routed(repo_root, owner, route_id):
     return 200, spec
 
 
-def form_spec(repo_root, model_id):
+def form_spec(repo_root: str, model_id: str | None) -> tuple[int, dict[str, JsonValue]]:
     """GET /v1/form-spec?model=<id> -> (status_code, body_dict).
 
     200 + the spec envelope, or the C refusal shapes:
@@ -1569,7 +1596,7 @@ def form_spec(repo_root, model_id):
     lrecipe = "; ".join(_lraw) if isinstance(_lraw, tuple) else (_lraw or "")
 
     # the spec is branded by the CARD's ability label; the model stays an
-    # internal route (src/server.cpp:8108-8116)
+    # internal route
     card_yp = _find_card_yaml(repo_root, row["id"])
     _card_cls = _load_card_class(card_yp) if card_yp else None
     card_label = _card_cls.label if _card_cls else ""
@@ -1676,7 +1703,7 @@ def form_spec(repo_root, model_id):
 # is gateway infra now, declared as frozen pydantic rows (the
 # slot_kinds.py precedent); this projection is the only route body.
 
-def kinds(repo_root):
+def kinds(repo_root: str) -> dict[str, list[dict[str, str | bool]]]:
     """GET /v1/kinds -> {"kinds": [...]}. The first-party card-kind
     behavior flags, projected from py/card_kinds.py's TABLE (the SSOT —
     one declaration, validated at construction; no file scans)."""
@@ -1688,7 +1715,7 @@ def kinds(repo_root):
 # Self-test — structural JSON parity against the C goldens
 # ─────────────────────────────────────────────────────────────────────────
 
-def _first_diff(a, b, path="$"):
+def _first_diff(a: JsonValue, b: JsonValue, path: str = "$") -> str | None:
     """Deep compare; return the first divergence path or None."""
     if isinstance(a, dict) and isinstance(b, dict):
         for k in a.keys() | b.keys():
@@ -1700,7 +1727,9 @@ def _first_diff(a, b, path="$"):
             if d:
                 return d
         return None
-    if isinstance(a, list) and isinstance(b, list):
+    if isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)):
+        # tuple vs list is the same wire shape (JSON has one array
+        # kind — in-code rows are tuples, goldens parse as lists)
         if len(a) != len(b):
             return "%s: length %d != golden %d" % (path, len(a), len(b))
         for i, (x, y) in enumerate(zip(a, b)):
@@ -1715,12 +1744,12 @@ def _first_diff(a, b, path="$"):
     return None if a == b else "%s: %r != golden %r" % (path, a, b)
 
 
-def _main():
+def _main() -> None:
     here = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.dirname(here)
     golden_dir = os.path.join(repo_root, "tests", "golden_http")
 
-    def golden(name):
+    def golden(name: str) -> JsonValue:
         with open(os.path.join(golden_dir, name), encoding='utf-8') as f:
             return json.load(f)
 
@@ -1756,7 +1785,7 @@ def _main():
         if d:
             failures.append(("form-spec:" + model, d))
 
-    # refusal shapes (C literals, src/server.cpp:7932-7981)
+    # refusal shapes (the wire contract's fixed error bodies)
     status, body = form_spec(repo_root, "")
     if (status, body) == (400, {"error": "missing model param"}):
         print("form-spec missing model param  : PARITY OK (400)")

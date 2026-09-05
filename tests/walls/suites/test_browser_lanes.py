@@ -82,7 +82,7 @@ class BrowserLaneTests(unittest.TestCase):
     base_url = None
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         exe = _chromium()
         if not exe:
             raise unittest.SkipTest(
@@ -120,7 +120,7 @@ class BrowserLaneTests(unittest.TestCase):
         raise AssertionError("vite dev server did not become ready within 120s")
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         if cls.vite_proc is not None and cls.vite_proc.poll() is None:
             os.killpg(os.getpgid(cls.vite_proc.pid), signal.SIGTERM)
             try:
@@ -129,7 +129,7 @@ class BrowserLaneTests(unittest.TestCase):
                 os.killpg(os.getpgid(cls.vite_proc.pid), signal.SIGKILL)
                 cls.vite_proc.wait(timeout=10)
 
-    def test_harness_lanes_green(self):
+    def test_harness_lanes_green(self) -> None:
         env = dict(os.environ, BASE_URL=self.base_url)
         result = subprocess.run(
             [

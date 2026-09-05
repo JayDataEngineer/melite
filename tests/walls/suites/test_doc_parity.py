@@ -30,7 +30,7 @@ from co_script import registry, render  # noqa: E402
 PASS, FAIL = [], []
 
 
-def check(name, cond, detail=""):
+def check(name: str, cond: bool, detail: str = "") -> None:
     (PASS if cond else FAIL).append(name if cond else "%s: %s" % (name, detail))
 
 
@@ -44,7 +44,8 @@ _CARD_DIRS = [
 ]
 _MODEL_DIRS = [
     PLUGIN / "models" / "image" / "krea-2",
-    PLUGIN / "models" / "image" / "img-edit",
+    # (2026-09-05 image-edit rework) `img-edit` retired — survivor.
+    PLUGIN / "models" / "image" / "qwen-img-edit-2511",
     PLUGIN / "models" / "audio" / "music3",
     PLUGIN / "models" / "video" / "h3-timeline",
 ]
@@ -102,7 +103,7 @@ for card_path, family, internal in _CARD_DOCS:
 # 4. wire-form spot checks (run-inputs SSOT strings) ────────────────────
 
 
-def _node(graph, cls):
+def _node(graph: dict[str, dict[str, str | dict[str, str]]], cls: str) -> dict[str, str]:
     for n in graph.values():
         if n.get("class_type") == cls:
             return n["inputs"]
@@ -111,7 +112,8 @@ def _node(graph, cls):
 
 from _coscript import load_model_cls  # noqa: E402
 _KREA2 = load_model_cls("krea-2")
-_IMGEDIT = load_model_cls("img-edit")
+# (2026-09-05 image-edit rework) `img-edit` retired — survivor.
+_IMGEDIT = load_model_cls("qwen-img-edit-2511")
 _MUSIC3 = load_model_cls("music3")
 
 

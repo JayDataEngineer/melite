@@ -26,6 +26,7 @@ import sys
 import tempfile
 import time
 import uuid
+from collections.abc import Callable
 from pathlib import Path
 
 from _anchor import REPO
@@ -34,7 +35,7 @@ sys.path.insert(0, str(REPO / "plugins" / "engines" / "comfyui" / "compose"))
 PASS, FAIL = [], []
 
 
-def check(name, cond, detail=""):
+def check(name: str, cond: bool, detail: str = "") -> None:
     (PASS if cond else FAIL).append(name if cond else "%s: %s" % (name, detail))
 
 
@@ -64,7 +65,7 @@ except native.ComfyError as e:
 uploads = []
 
 
-def fake_upload(server, path):
+def fake_upload(server: str, path: str) -> dict[str, str]:
     uploads.append(path)
     return {"name": "ComfyUI_%04d.png" % len(uploads),
             "subfolder": "", "type": "input"}
@@ -99,7 +100,7 @@ q = asyncio.Queue()
 frames = []
 
 
-def report(u):
+def report(u: dict[str, str | dict[str, str | int]]) -> None:
     frames.append(u)
 
 
@@ -141,8 +142,13 @@ _the_run = None
 MIDFLIGHT = {}     # stage-dict snapshot taken INSIDE the fake engine
 
 
-async def fake_engine_execute(node, run_dir, inputs, stop_event,
-                              report=None):
+async def fake_engine_execute(
+    node: "flow_graph.NodeRow",
+    run_dir: str,
+    inputs: dict[str, str | int | float | bool],
+    stop_event: asyncio.Event,
+    report: Callable[[dict[str, str | dict[str, str | int]]], None] | None = None,
+) -> dict[str, dict[str, str] | list[str]]:
     """A compliant engine: reports progress mid-flight, completes."""
     if report:
         report({"progress": {"value": 4, "max": 10, "node": "2"}})
@@ -160,7 +166,7 @@ gw.runs["r1"] = type("R", (), {})()  # placeholder replaced below
 
 
 class FakeRun:
-    def __init__(self):
+    def __init__(self) -> None:
         self.run_id = "r1"
         self.status = "running"
         self.request = {}
@@ -186,7 +192,7 @@ class FakeRun:
         self.card_extra_inputs = {}
 
 
-async def run_report_battery():
+async def run_report_battery() -> tuple[FakeRun, list[dict[str, str | int | dict[str, str | int]]]]:
     # gateway.py owns its own load_engine (:300) — patch THE GATEWAY's
     # binding, not plugins'.
     gateway.load_engine = lambda t: type("M", (), {
@@ -230,7 +236,7 @@ check("terminal stage cleared progress",
 # ══════════════════════════════════════════════════════════════════════
 
 
-async def ws_door_battery():
+async def ws_door_battery() -> tuple[bytes, str, str, list[dict[str, str | dict[str, str | int]]]]:
     """(2026-09-05) The door is the REAL one: gateway._ws_starlette on
     a starlette WebSocketRoute, served by uvicorn — the raw
     gateway.handle + hand-rolled RFC 6455 server codec retired with
@@ -263,7 +269,7 @@ async def ws_door_battery():
         await asyncio.sleep(0.02)
     port = server.servers[0].sockets[0].getsockname()[1]
 
-    async def engine_side():
+    async def engine_side() -> None:
         # fixed-delay publish: waiting for the subscriber here RACES the
         # door teardown when the test client closes early — 50ms is
         # comfortably past the handshake + hydrate.
@@ -275,7 +281,7 @@ async def ws_door_battery():
         run.status = "completed"
         gw3.publish(run.run_id, {"type": "run", "status": "completed"})
 
-    async def client_side():
+    async def client_side() -> tuple[bytes, str, str, list[dict[str, str | dict[str, str | int]]]]:
         import hashlib
         reader, writer = await asyncio.open_connection("127.0.0.1", port)
         key = base64.b64encode(os.urandom(16)).decode()
@@ -386,7 +392,7 @@ check("every slot kinded (enum rows — unkinded is unbuildable)",
       all(r.kind in slot_kinds.FileKind for r in slot_kinds.VOCAB.slots))
 # the cross-row invariants are CONSTRUCTION-enforced (shape law): the
 # refused shapes prove the validator fires, not just a green path.
-def _refused(build):
+def _refused(build: Callable[[], slot_kinds.SlotVocabulary | slot_kinds.SlotDecl]) -> bool:
     try:
         build()
         return False

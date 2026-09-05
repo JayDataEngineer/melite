@@ -17,7 +17,7 @@ from co_script.blocks import core as B  # noqa: E402
 PASS, FAIL = [], []
 
 
-def check(name, cond, detail=""):
+def check(name: str, cond: bool, detail: str = "") -> None:
     (PASS if cond else FAIL).append(name if cond else "%s: %s" % (name, detail))
 
 

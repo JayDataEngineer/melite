@@ -43,11 +43,15 @@ IMPORT_SURFACES = [
     "flow",                    # py/flow.py: flows/<name>/flow.py resolver
     "manage",                  # py/manage.py: management-plane door
     "flow_graph",          # py/flow_graph.py: run graph emitter
+    # 2026-09-05: caught by the same meta-test after the estate-config
+    # + artifact-ref sweep — gateway imports them; they pin clean.
+    "estate_config",           # py/estate_config.py: deployment config row
+    "artifact_refs",           # py/artifact_refs.py: dangling-ref finder
 ]
 
 
 @pytest.mark.parametrize("surface", IMPORT_SURFACES, ids=IMPORT_SURFACES)
-def test_clean_import(surface):
+def test_clean_import(surface: str) -> None:
     """The import must complete, exit 0, produce no stderr, and
     finish quickly (no hanging network calls)."""
     started = time.monotonic()
@@ -85,7 +89,7 @@ n = sum(1 for _ in iter_plugin_dirs_under(Path('plugins')))
 print(f'discovered {n} plugin dirs')"""
 
 
-def test_plugin_discovery_finds_no_crashers():
+def test_plugin_discovery_finds_no_crashers() -> None:
     """Walk the plugin tree from a fresh subprocess via the broker
     API itself (the same code path the gateway uses). No exception
     should leak; the broker is supposed to skip broken plugins, not

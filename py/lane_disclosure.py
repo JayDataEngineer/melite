@@ -64,9 +64,28 @@ from __future__ import annotations
 import json
 import re
 import sys
+from collections.abc import Callable
 from pathlib import Path
+from typing import TypedDict
 
 import lane_wire
+
+# The wire-envelope shape: decoded JSON (objects, arrays, scalars).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
+
+
+class _ManifestEntry(TypedDict):
+    genre: str
+    rows: list[lane_wire.ToolManifestRow]
+
+
+# A read document: the frozen skill row + the path it was read from.
+type DocRow = tuple[lane_wire.SkillRow, str]
+
+
+class _CardBucket(TypedDict):
+    dir: Path
+    rows: list[DocRow]
 
 # a wire-contract refusal the disclosure engine could not construct
 # around — the doors translate it to a structured 500
@@ -83,11 +102,11 @@ _FM_RE = re.compile(
 _KV_RE = re.compile(r"^(name|description):\s*(.+?)\s*$", re.M)
 
 
-def _frontmatter(text: str) -> dict:
+def _frontmatter(text: str) -> dict[str, str]:
     """name/description from yaml frontmatter; falls back to the first
     heading line so an undecorated doc still indexes honestly."""
     m = _FM_RE.match(text)
-    out: dict = {}
+    out: dict[str, str] = {}
     if m:
         for k, v in _KV_RE.findall(m.group(1)):
             out[k] = v.strip().strip('"\'')
@@ -100,7 +119,7 @@ def _frontmatter(text: str) -> dict:
 
 def _read_doc(path: Path, sid: str, scope: str,
               genre: str | None = None, card: str | None = None,
-              model: str | None = None):
+              model: str | None = None) -> tuple[lane_wire.SkillRow, str] | None:
     """One doc → (frozen SkillRow, path) — the LANE WIRE GATE at the
     disk rim. A doc whose row cannot be built (empty id/name/scope,
     card+model both set) is SKIPPED LOUDLY, never served (RESILIENCE
@@ -126,17 +145,17 @@ def _read_doc(path: Path, sid: str, scope: str,
 # ---------------------------------------------------------------- scan
 
 
-def _engine_dirs():
+def _engine_dirs() -> list[Path]:
     if not ENGINES_ROOT.is_dir():
         return []
     return [d for d in sorted(ENGINES_ROOT.iterdir()) if d.is_dir()
             and (d / "action_cards").is_dir()]
 
 
-def _model_rows(engine: Path) -> list[tuple]:
+def _model_rows(engine: Path) -> list[DocRow]:
     """LEVEL 2 + GUIDE: models/<genre>/<id>/ agents + GUIDE.md.
     Rows are (SkillRow, path); unbuildable rows skip loudly."""
-    rows: list[tuple] = []
+    rows: list[DocRow] = []
     models_root = engine / "models"
     if not models_root.is_dir():
         return rows
@@ -173,12 +192,12 @@ def _model_rows(engine: Path) -> list[tuple]:
     return rows
 
 
-def _card_rows(engine: Path) -> tuple[list[tuple], dict]:
+def _card_rows(engine: Path) -> tuple[list[DocRow], dict[str, _CardBucket]]:
     """LEVEL 1: action_cards/<genre>/<card>/ AGENT.md + skills.
     Returns (rows, by_card_dir) for bundle assembly — rows are
     (SkillRow, path)."""
-    rows: list[tuple] = []
-    by_card: dict = {}
+    rows: list[DocRow] = []
+    by_card: dict[str, _CardBucket] = {}
     cards_root = engine / "action_cards"
     if not cards_root.is_dir():
         return rows, by_card
@@ -214,7 +233,7 @@ def _card_rows(engine: Path) -> tuple[list[tuple], dict]:
     return rows, by_card
 
 
-def _manifests(engine: Path) -> dict:
+def _manifests(engine: Path) -> dict[str, _ManifestEntry]:
     """card dir → {"genre", "rows"} — its tool.json manifests as frozen
     lane_wire.ToolManifestRow rows, plus the genre dir the card lives
     under (peek filters). The LANE WIRE GATE at the disk rim: a
@@ -223,7 +242,7 @@ def _manifests(engine: Path) -> dict:
     LOUDLY — the duck-typed isinstance-only admission era let those
     ride the agent surface silently (RESILIENCE LAW: document, then
     continue)."""
-    out: dict = {}
+    out: dict[str, _ManifestEntry] = {}
     cards_root = engine / "action_cards"
     if not cards_root.is_dir():
         return out
@@ -254,8 +273,8 @@ def _manifests(engine: Path) -> dict:
     return out
 
 
-def _model_ids(engine: Path) -> set:
-    ids: set = set()
+def _model_ids(engine: Path) -> set[str]:
+    ids: set[str] = set()
     models_root = engine / "models"
     if models_root.is_dir():
         for genre_dir in models_root.iterdir():
@@ -266,7 +285,7 @@ def _model_ids(engine: Path) -> set:
     return ids
 
 
-def _base_chain(family: str, all_ids: set) -> list[str]:
+def _base_chain(family: str, all_ids: set[str]) -> list[str]:
     """LEVEL 3: the base models a family derives from by leading token —
     h3-timeline → h3; h3-keyframe → h3. Exact id wins over prefixes."""
     out = []
@@ -283,7 +302,7 @@ _KINDS = {"action_card": "card", "card": "card",
           "template": "flow", "flow": "flow", "flow": "flow"}
 
 
-def _norm_kind(kind) -> str | None:
+def _norm_kind(kind: str | None) -> str | None:
     """Peek/load speak the agent's vocabulary: action_card / template
     (or flow) — normalized to the internal lane classes. Empty →
     None (unfiltered). Unknown → ValueError (named refusal).
@@ -308,7 +327,7 @@ def _norm_kind(kind) -> str | None:
 # ------------------------------------------------------------- flows
 
 
-def _flow_rows() -> list[tuple]:
+def _flow_rows() -> list[DocRow]:
     """LEVEL 4: flows/<name>/flow.py — the live PYTHON declarations.
 
     The registry lists ONLY lanes the run door can load: each row
@@ -323,7 +342,7 @@ def _flow_rows() -> list[tuple]:
     Rows are (SkillRow with typed steps, path); a row that cannot be
     BUILT is a code bug (LaneWireError), never a hidden lane."""
     import flow as flow_mod
-    rows: list[tuple] = []
+    rows: list[DocRow] = []
     root = REPO / "flows"
     if not root.is_dir():
         return rows
@@ -350,7 +369,7 @@ def _flow_rows() -> list[tuple]:
     return rows
 
 
-def flow_lanes() -> list[dict]:
+def flow_lanes() -> list[dict[str, str | int | None]]:
     """The flow template index (bundle list surface): one compact row
     per live flow declaration."""
     return [{"lane": r.name, "flow": r.id,
@@ -359,7 +378,7 @@ def flow_lanes() -> list[dict]:
             for r, _p in _flow_rows()]
 
 
-def peek(kind=None, genre=None) -> dict:
+def peek(kind: str | None = None, genre: str | None = None) -> dict[str, JsonValue]:
     """GET /v1/lanes — the PEEK table: one preview row per CALLABLE
     lane. The callable surface is action cards (the ONLY inference
     interface — queue law) plus flow templates (multi-step lanes that
@@ -426,19 +445,19 @@ def peek(kind=None, genre=None) -> dict:
 # ---------------------------------------------------------------- doors
 
 
-def card_tools() -> list:
+def card_tools() -> list[dict[str, JsonValue]]:
     """GET /v1/card-tools — every manifest on disk, flattened. Each
     row already passed the ToolManifestRow gate in _manifests (a
     manifest that cannot be built is skipped loudly there, never
     served here)."""
-    out: list = []
+    out: list[dict[str, JsonValue]] = []
     for engine in _engine_dirs():
         for entry in _manifests(engine).values():
             out.extend(m.wire() for m in entry["rows"])
     return out
 
 
-def skill_index() -> dict:
+def skill_index() -> dict[str, JsonValue]:
     """GET /v1/skills — one cheap row per document across ALL levels.
     Doc rows skip loudly at the _read_doc rim; the envelope itself is
     a frozen lane_wire row."""
@@ -457,7 +476,7 @@ def skill_index() -> dict:
             % lane_wire.refusal_reason(e)) from e
 
 
-def lane_bundle(lane: str, kind=None) -> tuple[int, dict]:
+def lane_bundle(lane: str, kind: str | None = None) -> tuple[int, dict[str, JsonValue]]:
     """GET /v1/cards/<lane>/bundle?kind=… — ONE lane's full surface, the
     LOAD tier: the card manifests (tools) + the merged skill rows across
     card level, model level, base chain, and the guide + the lane's
@@ -573,7 +592,7 @@ def lane_bundle(lane: str, kind=None) -> tuple[int, dict]:
                  % (lane, k or "any")}
 
 
-def _agent_block(agent_row) -> lane_wire.AgentBlock | None:
+def _agent_block(agent_row: tuple[lane_wire.SkillRow, str] | None) -> lane_wire.AgentBlock | None:
     """The lane's primary agent doc, INLINED — the load tier's promise:
     orientation arrives with the bundle, no second call needed."""
     if agent_row is None:
@@ -604,7 +623,7 @@ def _flow_orientation(r: lane_wire.SkillRow) -> str:
     return "\n".join(lines)
 
 
-def skill_read(sid: str, ledger=None) -> tuple[int, dict]:
+def skill_read(sid: str, ledger: Callable[[str, dict[str, str]], None] | None = None) -> tuple[int, dict[str, JsonValue]]:
     """GET /v1/skills/<id> — one document's full body, ledgered. The
     served row is a frozen lane_wire.SkillDocRow (an unbuildable body
     row cannot be served)."""

@@ -362,5 +362,30 @@
   ],
   "service": "anima",
   "size": null,
-  "variants": []
+  "variants": [
+    {
+      "id": "standard",
+      "label": "Standard",
+      "group": "Variant",
+      "defaults": {},
+      "route": "anima",
+      "hint": null,
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    },
+    {
+      "id": "f32",
+      "label": "F32",
+      "group": "Quant",
+      "defaults": {},
+      "route": "anima",
+      "hint": null,
+      "engine": "",
+      "quant": "f32",
+      "vram_peak_gb": 20.0,
+      "owner": "standard"
+    }
+  ]
 }

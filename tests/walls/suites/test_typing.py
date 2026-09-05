@@ -22,7 +22,7 @@ from _anchor import REPO
 PASS, FAIL = [], []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok: bool, detail: str = "") -> None:
     (PASS if ok else FAIL).append(name)
     print("  %s   %s%s" % ("ok" if ok else "FAIL", name,
                            "" if ok else ": %s" % detail))

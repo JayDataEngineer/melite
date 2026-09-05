@@ -35,7 +35,7 @@ PROVISIONER_PKG = PROVISIONER / "package.json"
 BIN = PROVISIONER / "bin" / "infer-provision.mjs"
 
 
-def _parse_patch_ids_and_names():
+def _parse_patch_ids_and_names() -> list[dict[str, str]]:
     text = PATCH.read_text()
     rows = []
     in_insert = False
@@ -62,7 +62,7 @@ def _parse_patch_ids_and_names():
     return rows
 
 
-def _parse_bin_web_rows():
+def _parse_bin_web_rows() -> list[str]:
     text = BIN.read_text()
     m = re.search(
         r"const\s+webRows\s*=\s*\[(.*?)\]",
@@ -74,16 +74,16 @@ def _parse_bin_web_rows():
 
 class TestCordisPatchGolden:
     @pytest.fixture(scope="module")
-    def patch_rows(self):
+    def patch_rows(self) -> list[dict[str, str]]:
         return _parse_patch_ids_and_names()
 
-    def test_patch_parses_with_unique_ids(self, patch_rows):
+    def test_patch_parses_with_unique_ids(self, patch_rows: list[dict[str, str]]) -> None:
         ids = [r["id"] for r in patch_rows]
         dups = {i for i in ids if ids.count(i) > 1}
         assert not dups, f"cordis.patch.yml has duplicate row ids: {sorted(dups)}"
         assert ids, "cordis.patch.yml declares no rows"
 
-    def test_every_row_has_an_npm_name(self, patch_rows):
+    def test_every_row_has_an_npm_name(self, patch_rows: list[dict[str, str]]) -> None:
         bad = []
         for r in patch_rows:
             n = r["name"]
@@ -94,13 +94,13 @@ class TestCordisPatchGolden:
                 bad.append(f"{r['id']!r}: {n!r} is not an npm-name shape")
         assert not bad, f"patch rows with invalid names: {bad}"
 
-    def test_every_row_name_is_a_provisioner_dep(self, patch_rows):
+    def test_every_row_name_is_a_provisioner_dep(self, patch_rows: list[dict[str, str]]) -> None:
         prov = json.loads(PROVISIONER_PKG.read_text())
         deps = set(prov.get("dependencies", {}).keys())
         missing = [r["name"] for r in patch_rows if r["name"] not in deps]
         assert not missing, f"patch names not declared in provisioner deps: {missing}"
 
-    def test_host_skill_filesystem_row_is_pinned_off(self):
+    def test_host_skill_filesystem_row_is_pinned_off(self) -> None:
         """The bundle pins the HOST `skill-filesystem` row OFF for every
         profile it mounts (progressive disclosure: no pre-loaded skill
         catalog — discovery is the gateway's lane/skill ladder; design
@@ -113,13 +113,13 @@ class TestCordisPatchGolden:
             "the skill-filesystem host-row pin is missing from the provisioner patch"
         )
 
-    def test_bin_web_rows_is_a_subset_of_patch_ids(self):
+    def test_bin_web_rows_is_a_subset_of_patch_ids(self) -> None:
         web = set(_parse_bin_web_rows())
         patch_ids = {r["id"] for r in _parse_patch_ids_and_names()}
         orphans = web - patch_ids
         assert not orphans, f"bin webRows references ids not in patch: {sorted(orphans)}"
 
-    def test_every_web_mount_row_appears_in_bin_web_rows(self):
+    def test_every_web_mount_row_appears_in_bin_web_rows(self) -> None:
         web_mount_ids = {
             "infer-card-deck",
             "infer-card-view-host",
@@ -135,7 +135,7 @@ class TestCordisPatchGolden:
 
 
 class TestProvisionerBinBundleList:
-    def test_provisioner_declares_its_bundle_patch(self):
+    def test_provisioner_declares_its_bundle_patch(self) -> None:
         prov = json.loads(PROVISIONER_PKG.read_text())
         b = prov.get("dsh", {}).get("bundle", {})
         assert b, f"{PROVISIONER_PKG} does not declare dsh.bundle"
@@ -143,7 +143,7 @@ class TestProvisionerBinBundleList:
         assert patch_path.exists(), f"dsh.bundle.patch = {b.get('patch')!r} does not resolve"
         assert patch_path == PATCH, f"dsh.bundle.patch points at {patch_path.name} not the golden {PATCH.name}"
 
-    def test_bin_exists_and_is_executable(self):
+    def test_bin_exists_and_is_executable(self) -> None:
         b = BIN
         assert b.exists(), f"{b} missing"
         import stat

@@ -28,6 +28,7 @@ import json
 import os
 import re
 import sys
+from types import ModuleType
 
 import pytest
 
@@ -38,20 +39,16 @@ COMPOSE_ROOT = os.path.join(REPO, "plugins", "engines", "comfyui",
 CARDS_ROOT = os.path.join(REPO, "plugins", "engines", "comfyui",
                           "action_cards")
 
-# Open lanes (audit 2026-09-05 — both files under parallel churn;
-# NOT this stroke's to rewire). EQUALITY-pinned: a fix deletes its
-# entry in the same stroke; a third open lane fails this wall.
-_UNGATED = {
-    "image/ideogram4": "no schema.py — duck-typed .get() reads; "
-                       "bogus knobs drop silent (rc=0, knob absent).",
-    "image/mask_studio": "recipe-gated only — outputs is strict, "
-                         "top-level knobs are open .get() reads.",
-}
+# Open lanes: NONE (2026-09-05 — the duck-typing sweep closed the last
+# two: ideogram4 grew IdeogramParams, mask_studio grew _FlatParams over
+# its flat top-level). The set is equality-pinned EMPTY: a new gateless
+# lane fails this wall, and there must never be one again.
+_UNGATED: dict[str, str] = {}
 
 _MODEL_CONFIG_RE = re.compile(r"model_config\s*=\s*(\{[^}]*\}|ConfigDict\([^)]*\))")
 
 
-def _arms():
+def _arms() -> list[tuple[str, str]]:
     out = []
     for genre in sorted(os.listdir(CARDS_ROOT)):
         gd = os.path.join(CARDS_ROOT, genre)
@@ -65,7 +62,7 @@ def _arms():
     return out
 
 
-def _load_arm(py_dir):
+def _load_arm(py_dir: str) -> ModuleType:
     for p in (os.path.join(REPO, "py"), COMPOSE_ROOT):
         if p not in sys.path:
             sys.path.insert(0, p)
@@ -121,7 +118,7 @@ def test_gated_arm_refuses_unknown_knob() -> None:
         "err=%r — a removed gate is a regression, restore it" % (rc, err))
 
 
-def _drop_probe(lane, body, model):
+def _drop_probe(lane: str, body: dict[str, dict[str, str | int]], model: str) -> None:
     """Tri-state: gap persists (pass) / gate landed (fail, flip me) /
     setup broke (fail, repair me). Never silently green."""
     arm = _load_arm(os.path.join(CARDS_ROOT, *lane.split("/"), "py"))
@@ -141,17 +138,34 @@ def _drop_probe(lane, body, model):
         % (lane, rc, err))
 
 
-def test_ungated_arm_drops_silent_ideogram4() -> None:
-    _drop_probe("image/ideogram4",
-                {"params": {"prompt": "audit probe", "bogus_knob": 7}},
-                "ideogram")
+def test_ideogram4_gate_refuses_unknown_knob() -> None:
+    """Flip of the old drop probe (the gate landed 2026-09-05 with
+    the duck-typing sweep): ideogram4 now refuses bogus knobs at the
+    phase-1 door instead of dropping them silent — same refusal shape
+    as the anny control."""
+    lane = os.path.join(CARDS_ROOT, "image", "ideogram4", "py")
+    rc, _, _, err = _load_arm(lane).compose(
+        {"params": {"prompt": "gate landed probe", "bogus_knob": 7}},
+        "ideogram", "")
+    assert rc == -3 and err is not None and "bogus_knob" in err, (
+        "ideogram4's forbid gate stopped refusing bogus knobs: rc=%r "
+        "err=%r — a removed gate is a regression, restore it"
+        % (rc, err))
 
 
-def test_recipe_gated_arm_drops_top_level_mask_studio() -> None:
+def test_mask_studio_gate_refuses_unknown_top_level_knob() -> None:
+    """Flip of the old drop probe (the top-level gate landed
+    2026-09-05 with the duck-typing sweep — _FlatParams forbids over
+    the stanza-less body): mask_studio refuses a bogus TOP-LEVEL knob
+    while its recipe sub-gate stays strict — no lane drops silent."""
     ms = os.path.join(CARDS_ROOT, "image", "mask_studio", "py")
     recipe = json.dumps(
         [{"selection": {"kind": "detect", "class": "face"}}])
-    _drop_probe("image/mask_studio",
-                {"params": {"input_image": os.path.join(ms, "schema.py"),
-                            "outputs": recipe, "bogus_knob": 7}},
-                "mask-studio")
+    rc, _, _, err = _load_arm(ms).compose(
+        {"params": {"input_image": os.path.join(ms, "schema.py"),
+                    "outputs": recipe, "bogus_knob": 7}},
+        "mask-studio", "")
+    assert rc == -3 and err is not None and "bogus_knob" in err, (
+        "mask_studio's top-level forbid gate stopped refusing bogus "
+        "knobs: rc=%r err=%r — a removed gate is a regression, "
+        "restore it" % (rc, err))

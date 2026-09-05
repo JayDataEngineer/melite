@@ -25,7 +25,7 @@ GOLDEN = REPO / "tests" / "golden_http"
 PASS = FAIL = 0
 
 
-def get(port, path):
+def get(port: int, path: str) -> tuple[int, dict[str, str | int | float | bool | list[str] | list[dict[str, str | int | float | bool | None]] | dict[str, str | int | float | bool | None] | None]]:
     try:
         with urllib.request.urlopen(
                 "http://127.0.0.1:%d%s" % (port, path), timeout=10) as r:
@@ -34,7 +34,7 @@ def get(port, path):
         return e.code, json.loads(e.read().decode() or "null")
 
 
-def deep_equal(a, b, path="$"):
+def deep_equal(a: str | int | float | bool | dict[str, str | int | float | bool | list[str] | dict[str, str] | None] | list[str | int | dict[str, str]] | None, b: str | int | float | bool | dict[str, str | int | float | bool | list[str] | dict[str, str] | None] | list[str | int | dict[str, str]] | None, path: str = "$") -> str | None:
     """Structural compare; returns first divergence path or None."""
     if type(a) is not type(b) and not (
             isinstance(a, (int, float)) and isinstance(b, (int, float))):
@@ -62,7 +62,7 @@ def deep_equal(a, b, path="$"):
     return None
 
 
-def shape_equal(a, b, path="$"):
+def shape_equal(a: str | int | float | bool | dict[str, str | int | float | bool | list[str] | dict[str, str] | None] | list[str | int | dict[str, str]] | None, b: str | int | float | bool | dict[str, str | int | float | bool | list[str] | dict[str, str] | None] | list[str | int | dict[str, str]] | None, path: str = "$") -> str | None:
     """Structural SHAPE compare (keys, nesting, list lengths) — ignores
     values.  Used for volatile data routes (runs, drafts)."""
     if type(a) is not type(b):
@@ -86,14 +86,14 @@ def shape_equal(a, b, path="$"):
     return None
 
 
-def check(name, ok, note=""):
+def check(name: str, ok: bool, note: str = "") -> None:
     global PASS, FAIL
     print("  %-4s %s%s" % ("ok" if ok else "FAIL", name,
                            (" — " + note) if (note and not ok) else ""))
     PASS, FAIL = PASS + (1 if ok else 0), FAIL + (0 if ok else 1)
 
 
-def main():
+def main() -> int:
     try:
         port, proc = boot_scratch_gateway(
             wait_path="/v1/queue", python=sys.executable,

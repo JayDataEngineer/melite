@@ -27,6 +27,7 @@ import json as _json
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Iterator
 
 import pytest
 
@@ -45,7 +46,12 @@ E2E_BODY = {
 }
 
 
-def _post(port, path, body, timeout=20):
+def _post(
+    port: int,
+    path: str,
+    body: dict[str, str | int | float],
+    timeout: int = 20,
+) -> tuple[int, dict[str, str | int | float | bool | list[str] | dict[str, str] | None]]:
     req = urllib.request.Request(
         "http://127.0.0.1:%d/%s" % (port, path),
         data=_json.dumps(body).encode("utf-8"),
@@ -62,7 +68,9 @@ def _post(port, path, body, timeout=20):
             return e.code, {"_raw": str(e)}
 
 
-def _get_json(port, path, timeout=20):
+def _get_json(
+    port: int, path: str, timeout: int = 20
+) -> tuple[int, dict[str, str | int | float | bool | list[str] | dict[str, str] | None]]:
     try:
         r = urllib.request.urlopen(
             "http://127.0.0.1:%d/%s" % (port, path), timeout=timeout)
@@ -77,7 +85,7 @@ def _get_json(port, path, timeout=20):
         return 0, {}
 
 
-def _get_bytes(port, path, timeout=30):
+def _get_bytes(port: int, path: str, timeout: int = 30) -> tuple[int, bytes]:
     try:
         r = urllib.request.urlopen(
             "http://127.0.0.1:%d/%s" % (port, path), timeout=timeout)
@@ -88,7 +96,7 @@ def _get_bytes(port, path, timeout=30):
         return 0, b""
 
 
-def _is_image(buf):
+def _is_image(buf: bytes) -> bool:
     if not buf or len(buf) < 12: return False
     # the FULL magic per format — buf[:2] == b"\x89PNG" compared two
     # bytes to a four-byte literal and was ALWAYS False (every PNG
@@ -100,7 +108,7 @@ def _is_image(buf):
 
 
 @pytest.fixture(scope="module")
-def scratch_gateway():
+def scratch_gateway() -> Iterator[int]:
     from _anchor import boot_scratch_gateway, reap_gateway
     import sys as _sys
     port, proc = boot_scratch_gateway(
@@ -110,7 +118,9 @@ def scratch_gateway():
     reap_gateway(proc)
 
 
-def _run_to_real_png(port, body, label):
+def _run_to_real_png(
+    port: int, body: dict[str, str | int | float], label: str
+) -> bytes:
     """The shared e2e spine: start → poll to terminal → asset bytes.
     Every boarded image family rides it (offered means runnable —
     operator order 2026-09-05)."""
@@ -204,7 +214,7 @@ def _run_to_real_png(port, body, label):
     return b""
 
 
-def test_e2e_krea_2_runs_to_a_real_png(scratch_gateway):
+def test_e2e_krea_2_runs_to_a_real_png(scratch_gateway: int) -> None:
     _run_to_real_png(scratch_gateway, E2E_BODY, "krea-2")
 
 
@@ -238,13 +248,13 @@ E2E_IDEOGRAM_BODY = {
 }
 
 
-def test_e2e_z_image_runs_to_a_real_png(scratch_gateway):
+def test_e2e_z_image_runs_to_a_real_png(scratch_gateway: int) -> None:
     _run_to_real_png(scratch_gateway, E2E_ZIMAGE_BODY, "z-image")
 
 
-def test_e2e_anima_runs_to_a_real_png(scratch_gateway):
+def test_e2e_anima_runs_to_a_real_png(scratch_gateway: int) -> None:
     _run_to_real_png(scratch_gateway, E2E_ANIMA_BODY, "anima")
 
 
-def test_e2e_ideogram_runs_to_a_real_png(scratch_gateway):
+def test_e2e_ideogram_runs_to_a_real_png(scratch_gateway: int) -> None:
     _run_to_real_png(scratch_gateway, E2E_IDEOGRAM_BODY, "ideogram")

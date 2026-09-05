@@ -24,17 +24,23 @@ This suite pins, for EVERY gated card:
   * the compose door refuses a typo'd knob with rc=-3 (the arm maps
     ValidationError to the refusal contract) and admits a clean body.
 
-mask_studio and ideogram4 are EXCLUDED (mid-migration by a
-concurrent lane; their gates land with that lane's merge)."""
+mask_studio is EXCLUDED (mid-migration; its top-level gate lands with
+that lane's merge). ideogram4's gate landed 2026-09-05 with this
+sweep and is INCLUDED in the table below."""
 
 import importlib.util
 import sys
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 from pydantic import ValidationError
 
 REPO = Path(__file__).resolve().parents[3]
+
+# One parametrized gate row: (card id, params-class name, schema
+# module, the card's numeric knob under test).
+GateRow = tuple[str, str, ModuleType, str]
 
 GATED = {
     "3d/anny": ("AnnyParams", {"body_glb": "x.glb"}, "resolution"),
@@ -50,6 +56,7 @@ GATED = {
                          {"prompt": "hat", "input_image": "x.png"},
                          "seed"),
     "image/image-gen": ("ImageGenParams", {"prompt": "a cat"}, "seed"),
+    "image/ideogram4": ("IdeogramParams", {"prompt": "sign"}, "seed"),
     "image/upscale-tools": ("UpscaleParams", {}, "seed"),
     "motion/motion": ("MotionGenParams", {"prompt": "walk"}, "seed"),
     "video/video-gen": ("VideoGenParams", {"prompt": "clip"}, "seed"),
@@ -58,7 +65,7 @@ GATED = {
 _sys_paths = []
 
 
-def _schema_mod(card):
+def _schema_mod(card: str) -> ModuleType:
     p = REPO / "plugins/engines/comfyui/action_cards" / card / "py" \
         / "schema.py"
     name = "gate_" + card.replace("/", "_")
@@ -72,7 +79,7 @@ def _schema_mod(card):
 
 
 @pytest.fixture(scope="module", params=sorted(GATED))
-def gate(request):
+def gate(request: pytest.FixtureRequest) -> GateRow:
     card = request.param
     mod = _schema_mod(card)
     return card, GATED[card][0], mod, GATED[card][2]
@@ -80,7 +87,7 @@ def gate(request):
 
 # ── the defaults contract ──────────────────────────────────────────
 
-def test_no_params_stanza_builds_defaults(gate):
+def test_no_params_stanza_builds_defaults(gate: GateRow) -> None:
     card, cls, mod, _num = gate
     doc = mod.parse_card({})
     doc2 = mod.parse_card({"model": "whatever"})   # no params stanza
@@ -88,14 +95,14 @@ def test_no_params_stanza_builds_defaults(gate):
     assert type(doc2).__name__ == cls
 
 
-def test_empty_params_stanza_builds_defaults(gate):
+def test_empty_params_stanza_builds_defaults(gate: GateRow) -> None:
     _card, _cls, mod, _num = gate
     assert mod.parse_card({"params": {}}) is not None
 
 
 # ── the dead-rider law ─────────────────────────────────────────────
 
-def test_unknown_knob_refuses_field_named(gate):
+def test_unknown_knob_refuses_field_named(gate: GateRow) -> None:
     card, _cls, mod, _num = gate
     with pytest.raises(ValidationError) as ei:
         mod.parse_card({"params": {"__dead_rider__": 1}})
@@ -103,7 +110,7 @@ def test_unknown_knob_refuses_field_named(gate):
     assert "__dead_rider__" in str(ei.value)
 
 
-def test_typo_knob_refuses_not_silently_defaults(gate):
+def test_typo_knob_refuses_not_silently_defaults(gate: GateRow) -> None:
     """THE sin this gate kills: `durations` must NOT render at the
     default duration — it refuses, naming the unknown key."""
     _card, _cls, mod, _num = gate
@@ -113,13 +120,13 @@ def test_typo_knob_refuses_not_silently_defaults(gate):
 
 # ── the garbage-typing law ─────────────────────────────────────────
 
-def test_garbage_numeric_refuses_loudly(gate):
+def test_garbage_numeric_refuses_loudly(gate: GateRow) -> None:
     _card, _cls, mod, num = gate
     with pytest.raises(ValidationError):
         mod.parse_card({"params": {num: "later"}})
 
 
-def test_string_numerics_coerce(gate):
+def test_string_numerics_coerce(gate: GateRow) -> None:
     """The editor sends wire ints as strings — lax coercion is the
     contract; only true garbage refuses."""
     _card, _cls, mod, num = gate
@@ -129,7 +136,7 @@ def test_string_numerics_coerce(gate):
 
 # ── every row rides the strictness config ──────────────────────────
 
-def test_every_gate_row_is_frozen_and_closed(gate):
+def test_every_gate_row_is_frozen_and_closed(gate: GateRow) -> None:
     _card, cls, mod, _num = gate
     row = getattr(mod, cls)
     assert row.model_config.get("frozen") is True
@@ -138,7 +145,7 @@ def test_every_gate_row_is_frozen_and_closed(gate):
 
 # ── the compose door maps refusal to rc=-3 ─────────────────────────
 
-def _load_compose(card):
+def _load_compose(card: str) -> ModuleType:
     p = REPO / "plugins/engines/comfyui/action_cards" / card / "py" \
         / "compose.py"
     name = "arm_" + card.replace("/", "_")
@@ -165,7 +172,7 @@ COMPOSE_CASES = {
 
 
 @pytest.mark.parametrize("card", sorted(COMPOSE_CASES))
-def test_compose_door_admits_clean_and_refuses_typos(card):
+def test_compose_door_admits_clean_and_refuses_typos(card: str) -> None:
     model, good = COMPOSE_CASES[card]
     arm = _load_compose(card)
     rc, _y, _extra, err = arm.compose(

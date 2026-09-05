@@ -39,9 +39,18 @@ from __future__ import annotations
 import importlib.util
 import re
 import sys
+from collections.abc import Iterable, Iterator
 from pathlib import Path
+from types import ModuleType
+from typing import TYPE_CHECKING
 
 from pydantic import (BaseModel, ConfigDict, Field, model_validator)
+
+if TYPE_CHECKING:
+    import flow_graph
+
+# The request-body shape: decoded JSON (objects, arrays, scalars).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
 
 REPO = Path(__file__).resolve().parent.parent
 PLUGINS_DIR = REPO / "plugins"
@@ -81,7 +90,7 @@ class EngineRef(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _root_defaults(cls, data):
+    def _root_defaults(cls, data: dict[str, str | Path] | EngineRef) -> dict[str, str | Path] | EngineRef:
         """plugin_root derives two levels up from engine_dir when the
         mount didn't state it (compose-first mounts state it)."""
         if isinstance(data, dict) and not data.get("plugin_root"):
@@ -97,7 +106,7 @@ class EngineRef(BaseModel):
                 data["plugin_root"] = parents[1]
         return data
 
-    def load(self, module_name):
+    def load(self, module_name: str) -> ModuleType | None:
         """Load engine.py/compose.py (standalone) or a compose/ package
         from the engine dir. Sibling modules (e.g. _config.py) resolve
         via the engine dir on sys.path; package-relative imports
@@ -149,7 +158,7 @@ class EngineRef(BaseModel):
         return None
 
 
-def _engine_type_of_dir(engine_dir):
+def _engine_type_of_dir(engine_dir: Path) -> str:
     """Engine type from engine.py (ENGINE_TYPE), else engine.yaml, else dir name.
 
     (2026-09-02) engine.py is the SSOT; engine.yaml is the yaml fallback.
@@ -188,13 +197,13 @@ def _engine_type_of_dir(engine_dir):
 _engines = None      # engine_type -> EngineRef
 
 
-def _has_plugin_marker(d):
+def _has_plugin_marker(d: Path) -> bool:
     """True if d looks like a plugin dir (has plugin.py, plugin.yaml,
     or an engines/ subdir)."""
     return (d / "plugin.py").is_file() or (d / "plugin.yaml").is_file() or (d / "engines").is_dir()
 
 
-def iter_plugin_dirs_under(root):
+def iter_plugin_dirs_under(root: Path) -> Iterator[Path]:
     """The ONE plugin-dir walk (public: scan_engines here, catalog.py,
     and editor_forms.py all consume it — one law, no per-consumer
     copies). Depth-2 (the original contract): plugins/<cat>/<plugin>.
@@ -214,14 +223,14 @@ def iter_plugin_dirs_under(root):
                     yield sub
 
 
-def _iter_plugin_dirs():
+def _iter_plugin_dirs() -> Iterator[Path]:
     """Yield every plugin directory under the scan roots
     (iter_plugin_dirs_under over each root)."""
     for root in _PLUGIN_SCAN_ROOTS:
         yield from iter_plugin_dirs_under(root)
 
 
-def scan_engines():
+def scan_engines() -> dict[str, EngineRef]:
     """Mount every plugin engine dir. Duplicate types fail LOUD."""
     global _engines
     if _engines is not None:
@@ -257,7 +266,11 @@ def scan_engines():
         ppy = plugin_dir / "plugin.py"
         if ppy.is_file():
             try:
-                ns = {}
+                # __file__ is seeded: an exec'd FILE must see its own
+                # path (a plugin deriving vocab from its data/ pin
+                # needs it — 2026-09-05, live-probed when the comfyui
+                # plugin's pin derivation mounted nothing).
+                ns = {"__file__": str(ppy)}
                 exec(ppy.read_text(), ns)
                 pcls = ns.get("Plugin")
                 if pcls is not None:
@@ -321,7 +334,7 @@ def scan_engines():
 # model resolution
 # ---------------------------------------------------------------------------
 
-def _model_engine_type(model_yaml_path):
+def _model_engine_type(model_yaml_path: Path) -> str:
     """engine: <t> top-level, or the nested `engine:\\n  plugin: <t>`.
 
     Mirrors the C catalog's engine stanza parse (engine section with a
@@ -346,7 +359,7 @@ def _model_engine_type(model_yaml_path):
     return etype
 
 
-def resolve_model(mid):
+def resolve_model(mid: str) -> tuple[str, str]:
     """Deterministic model → (engine_type, model_path) or LOUD refusal.
 
     (2026-09-02) The python flip: model.py units resolve through the
@@ -396,7 +409,7 @@ _engine_mods = {}
 _compose_mods = {}
 
 
-def load_engine(engine_type):
+def load_engine(engine_type: str) -> ModuleType | None:
     """The owning plugin's engine module. Checks engine.py for execute(),
     then the compose module (standalone compose.py or compose/ package).
 
@@ -435,7 +448,7 @@ def load_engine(engine_type):
         "engine.py or compose/" % (engine_type, ref.plugin_id))
 
 
-def load_compose(engine_type):
+def load_compose(engine_type: str) -> ModuleType | None:
     """The owning plugin's card_compose module — None when the engine
     takes no cards (dispatch never broadcasts)."""
     if engine_type in _compose_mods:
@@ -455,7 +468,9 @@ def load_compose(engine_type):
     return mod
 
 
-def compose(body, model, run_id, graph, engine_types):
+def compose(body: dict[str, JsonValue], model: str, run_id: str,
+            graph: flow_graph.FlowGraph, engine_types: Iterable[str]
+            ) -> tuple[flow_graph.FlowGraph, dict[str, JsonValue]]:
     """Run the OWNING plugin's card_compose over the graph.
 
     Dispatch mirrors the C server: the hook is selected by the graph's

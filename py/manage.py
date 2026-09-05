@@ -24,7 +24,11 @@ import subprocess
 import sys
 from enum import Enum
 from pathlib import Path
+from types import ModuleType
 from typing import Any, Callable, Optional
+
+# The management-plane shape: decoded JSON (objects, arrays, scalars).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -102,12 +106,12 @@ class ManageRequest(BaseModel):
 # ------------------------------------------------------------ plumbing
 
 
-def _ok(action: Action, detail: str, data: Any = None) -> tuple[int, dict]:
+def _ok(action: Action, detail: str, data: JsonValue = None) -> tuple[int, dict[str, JsonValue]]:
     return 200, {"action": action.value, "ok": True,
                  "detail": detail, "data": data}
 
 def _refuse(action: Action, code: int, why: str,
-            data: Any = None) -> tuple[int, dict]:
+            data: JsonValue = None) -> tuple[int, dict[str, JsonValue]]:
     return code, {"action": action.value, "ok": False,
                   "detail": why, "data": data}
 
@@ -119,7 +123,7 @@ def _need(req: ManageRequest, *fields: str) -> None:
             "%s requires: %s" % (req.action.value, ", ".join(missing)))
 
 
-def _need_comfy_mcp():
+def _need_comfy_mcp() -> ModuleType:
     """Import the management plane loudly, with the fix printed."""
     try:
         import comfy_mcp.server as sms  # noqa: F401
@@ -130,19 +134,19 @@ def _need_comfy_mcp():
             "(uv sync); run: uv run python tools/provision.py manage …")
 
 
-def _tool(sms, name: str) -> Callable:
+def _tool(sms: ModuleType, name: str) -> Callable[..., JsonValue]:
     """The @mcp.tool function, callable as a plain python function."""
     fn = getattr(sms, name)
     return getattr(fn, "fn", fn)
 
 
-def _call(fn, *a, **kw):
+def _call(fn: Callable[..., JsonValue], *a: JsonValue, **kw: JsonValue) -> JsonValue:
     """Invoke an @mcp.tool function — some are async, some sync."""
     r = fn(*a, **kw)
     return asyncio.run(r) if inspect.iscoroutine(r) else r
 
 
-def _ensure_routing() -> dict:
+def _ensure_routing() -> dict[str, str | bool]:
     """managed mode: point comfy-mcp's spawns at THIS runtime's comfy-cli
     and workspace (COMFY_BIN + COMFYUI_PATH + set-default — the same
     deployment glue provision.py owns; byo mode touches nothing)."""
@@ -225,7 +229,7 @@ def ensure_manager_security() -> str:
 # ------------------------------------------------------------- catalog
 
 
-def _resolve_catalog_artifact(mid: str, variant: str, quant: str) -> list[dict]:
+def _resolve_catalog_artifact(mid: str, variant: str, quant: str) -> list[dict[str, str]]:
     """model id → its declared provisions (or the resolved cell
     artifact). The SAME resolution the old /v1/models/provision route
     owned — moved here so both doors share one path."""
@@ -283,7 +287,7 @@ def _resolve_catalog_artifact(mid: str, variant: str, quant: str) -> list[dict]:
 # ------------------------------------------------------------ handlers
 
 
-def _probe_endpoint() -> dict:
+def _probe_endpoint() -> dict[str, JsonValue]:
     """The endpoint config's OWN server, probed live (/system_stats) —
     the REAL server view in both modes; comfy-cli only knows servers
     it launched itself, so status carries both views honestly."""
@@ -311,7 +315,7 @@ def _probe_endpoint() -> dict:
         return {"reachable": False, "url": url, "reason": str(e)[:120]}
 
 
-def _h_status(req: ManageRequest, sms) -> tuple[int, dict]:
+def _h_status(req: ManageRequest, sms: ModuleType) -> tuple[int, dict[str, JsonValue]]:
     info = _call(_tool(sms, "server_info"))
     sec = ensure_manager_security()
     active = _active_runs()
@@ -326,19 +330,19 @@ def _h_status(req: ManageRequest, sms) -> tuple[int, dict]:
                data)
 
 
-def _h_logs(req: ManageRequest, sms) -> tuple[int, dict]:
+def _h_logs(req: ManageRequest, sms: ModuleType) -> tuple[int, dict[str, JsonValue]]:
     data = _call(_tool(sms, "get_logs"), tail=max(1, min(req.tail, 2000)))
     return _ok(req.action, "%d log line(s)" % (len(data) if isinstance(data, list) else 1), data)
 
 
-def _h_search(req: ManageRequest, sms) -> tuple[int, dict]:
+def _h_search(req: ManageRequest, sms: ModuleType) -> tuple[int, dict[str, JsonValue]]:
     _need(req, "query")
     data = _call(_tool(sms, "search_models"), query=req.query)
     rows = data if isinstance(data, list) else (data or {}).get("models", [])
     return _ok(req.action, "%d hit(s) for %r" % (len(rows), req.query), data)
 
 
-def _h_install_extension(req: ManageRequest, sms) -> tuple[int, dict]:
+def _h_install_extension(req: ManageRequest, sms: ModuleType) -> tuple[int, dict[str, JsonValue]]:
     if not req.nodes:
         raise ValueError("install_extension requires: nodes")
     _ensure_routing()
@@ -352,7 +356,7 @@ def _h_install_extension(req: ManageRequest, sms) -> tuple[int, dict]:
                % ", ".join(req.nodes), rep)
 
 
-def _h_install_extension_url(req: ManageRequest, sms) -> tuple[int, dict]:
+def _h_install_extension_url(req: ManageRequest, sms: ModuleType) -> tuple[int, dict[str, JsonValue]]:
     _need(req, "url")
     routing = _ensure_routing()
     ensure_manager_security()
@@ -372,7 +376,7 @@ def _h_install_extension_url(req: ManageRequest, sms) -> tuple[int, dict]:
                    {"error": (r.stderr or r.stdout)[:500]})
 
 
-def _h_download_model(req: ManageRequest, sms) -> tuple[int, dict]:
+def _h_download_model(req: ManageRequest, sms: ModuleType) -> tuple[int, dict[str, JsonValue]]:
     _need(req, "url")
     _ensure_routing()
     wait = req.wait if req.wait is not None else False   # AI door: queue
@@ -419,7 +423,7 @@ def _model_present(relative_path: str, name: str) -> Optional[Path]:
     return cand if cand.is_file() else None
 
 
-def _h_provision_model(req: ManageRequest, sms) -> tuple[int, dict]:
+def _h_provision_model(req: ManageRequest, sms: ModuleType) -> tuple[int, dict[str, JsonValue]]:
     _need(req, "model")
     rows = _resolve_catalog_artifact(req.model, req.variant, req.quant)
     _ensure_routing()
@@ -455,7 +459,7 @@ def _h_provision_model(req: ManageRequest, sms) -> tuple[int, dict]:
                            "errors": errs or None}}
 
 
-def _guard_lifecycle(req: ManageRequest) -> tuple[int, dict] | None:
+def _guard_lifecycle(req: ManageRequest) -> tuple[int, dict[str, JsonValue]] | None:
     if req.force:
         return None
     active = _active_runs()
@@ -468,7 +472,7 @@ def _guard_lifecycle(req: ManageRequest) -> tuple[int, dict] | None:
     return None
 
 
-def _h_restart(req: ManageRequest, sms) -> tuple[int, dict]:
+def _h_restart(req: ManageRequest, sms: ModuleType) -> tuple[int, dict[str, JsonValue]]:
     blocked = _guard_lifecycle(req)
     if blocked:
         return blocked
@@ -493,7 +497,7 @@ def _h_restart(req: ManageRequest, sms) -> tuple[int, dict]:
         raise
 
 
-def _h_stop(req: ManageRequest, sms) -> tuple[int, dict]:
+def _h_stop(req: ManageRequest, sms: ModuleType) -> tuple[int, dict[str, JsonValue]]:
     blocked = _guard_lifecycle(req)
     if blocked:
         return blocked
@@ -502,13 +506,13 @@ def _h_stop(req: ManageRequest, sms) -> tuple[int, dict]:
     return _ok(req.action, "stop issued", rep)
 
 
-def _h_launch(req: ManageRequest, sms) -> tuple[int, dict]:
+def _h_launch(req: ManageRequest, sms: ModuleType) -> tuple[int, dict[str, JsonValue]]:
     _ensure_routing()
     rep = _call(_tool(sms, "launch_comfyui"), list(req.extra_args) or None)
     return _ok(req.action, "launch issued", rep)
 
 
-def _h_update(req: ManageRequest, sms) -> tuple[int, dict]:
+def _h_update(req: ManageRequest, sms: ModuleType) -> tuple[int, dict[str, JsonValue]]:
     if req.target not in ("comfy", "cli", "all"):
         raise ValueError("update target must be comfy|cli|all")
     blocked = _guard_lifecycle(req)
@@ -521,7 +525,7 @@ def _h_update(req: ManageRequest, sms) -> tuple[int, dict]:
     return _ok(req.action, "update(%s) accepted" % req.target, rep)
 
 
-def _h_switch_version(req: ManageRequest, sms) -> tuple[int, dict]:
+def _h_switch_version(req: ManageRequest, sms: ModuleType) -> tuple[int, dict[str, JsonValue]]:
     _need(req, "version")
     blocked = _guard_lifecycle(req)
     if blocked:
@@ -532,13 +536,13 @@ def _h_switch_version(req: ManageRequest, sms) -> tuple[int, dict]:
     return _ok(req.action, "switch to %s accepted" % req.version, rep)
 
 
-def _h_free(req: ManageRequest, sms) -> tuple[int, dict]:
+def _h_free(req: ManageRequest, sms: ModuleType) -> tuple[int, dict[str, JsonValue]]:
     rep = _call(_tool(sms, "free_memory"), unload_models=True,
                 free_memory=True)
     return _ok(req.action, "free issued (next worker iteration)", rep)
 
 
-_HANDLERS: dict[Action, Callable] = {
+_HANDLERS: dict[Action, Callable[[ManageRequest, ModuleType], tuple[int, dict[str, JsonValue]]]] = {
     Action.STATUS: _h_status,
     Action.LOGS: _h_logs,
     Action.SEARCH_MODELS: _h_search,
@@ -576,7 +580,7 @@ def _ensure_path() -> None:
             os.environ["PATH"] = str(bin_dir) + os.pathsep + cur
 
 
-def dispatch(body: dict) -> tuple[int, dict]:
+def dispatch(body: dict[str, JsonValue] | None) -> tuple[int, dict[str, JsonValue]]:
     """The one entry both doors call: (status, response-dict)."""
     _ensure_path()
     try:

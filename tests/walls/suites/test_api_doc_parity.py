@@ -29,7 +29,7 @@ DOC = REPO / "docs" / "gateway" / "endpoints.md"
 SPEC = REPO / "docs" / "gateway" / "openapi.yaml"
 
 
-def _table_surface():
+def _table_surface() -> set[tuple[str, str]]:
     """(method-label, path-or-template) for every route row."""
     out = set()
     for row in gateway.ROUTES:
@@ -39,7 +39,7 @@ def _table_surface():
     return out
 
 
-def _doc_surface():
+def _doc_surface() -> set[tuple[str, str]]:
     """Parse the generated markdown tables back into the same shape."""
     rows = set()
     for m in re.finditer(
@@ -48,7 +48,7 @@ def _doc_surface():
     return rows
 
 
-def _spec_surface():
+def _spec_surface() -> set[tuple[str, str]]:
     """(method, path) pairs from the openapi yaml (no yaml dep needed:
     the generator emits a flat, greppable layout)."""
     text = SPEC.read_text()
@@ -71,23 +71,27 @@ def _spec_surface():
     return out
 
 
-def test_route_table_nonempty_and_grouped():
-    # yaml+resume retirement 2026-09-05: 7 yaml doors + 1 resume = 38
-    assert len(gateway.ROUTES) == 38
+def test_route_table_nonempty_and_grouped() -> None:
+    # yaml+resume retirement 2026-09-05: 7 yaml doors + 1 resume = 38;
+    # poser bridge rebuilt same day (the studio mesh reads 404'd since
+    # the Bun-era server died): +1 studio-bridge door = 39
+    # +1 /v1/loras (2026-09-05): the door LoraPicker always fetched and
+    # the mods flip never built — declared LoraRow pack, class-sourced
+    assert len(gateway.ROUTES) == 40
     groups = {r.group for r in gateway.ROUTES}
     assert len(groups) >= 6
     for g in groups:
         assert g and g.strip() == g
 
 
-def test_doc_matches_table():
+def test_doc_matches_table() -> None:
     missing = _table_surface() - _doc_surface()
     extra = _doc_surface() - _table_surface()
     assert not missing, "routes missing from endpoints.md: %s" % sorted(missing)
     assert not extra, "doc rows with no route: %s" % sorted(extra)
 
 
-def test_spec_matches_table():
+def test_spec_matches_table() -> None:
     spec = _spec_surface()
     for label, tmpl in _table_surface():
         if label in ("WS", "ANY"):
@@ -98,7 +102,7 @@ def test_spec_matches_table():
                 "openapi.yaml missing %s %s" % (verb, path)
 
 
-def test_ws_rows_present_in_spec():
+def test_ws_rows_present_in_spec() -> None:
     text = SPEC.read_text()
     for row in gateway.ROUTES:
         if row.ws:
@@ -106,7 +110,7 @@ def test_ws_rows_present_in_spec():
             break
 
 
-def test_generator_check_mode_clean():
+def test_generator_check_mode_clean() -> None:
     """--check must pass: the on-disk files equal the table's output."""
     r = subprocess.run(
         [sys.executable, str(REPO / "tools" / "gen_api_docs.py"), "--check"],
@@ -115,7 +119,7 @@ def test_generator_check_mode_clean():
         "stale generated docs — run: .venv/bin/python tools/gen_api_docs.py\n%s" % r.stdout
 
 
-def test_no_retired_start_shapes_in_docs():
+def test_no_retired_start_shapes_in_docs() -> None:
     """The yaml START door retired 2026-09-04: docs must not teach it.
     Provenance docs (audits, logs, the retirement design record itself)
     legitimately MENTION the dead door — allowlisted by path."""

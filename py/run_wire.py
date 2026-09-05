@@ -29,7 +29,10 @@ instead of line surgery.
 from __future__ import annotations
 
 import enum
-from typing import Any, Literal
+from typing import Literal
+
+# The birth-doc shape: decoded JSON (objects, arrays, scalars).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
@@ -89,7 +92,7 @@ class RunRow(_Frozen):
     seed: int
     thumbnail: str
     artifacts: list[ArtifactRow | TruncationRow]
-    params: dict[str, Any]
+    params: dict[str, JsonValue]
     draft_id: str
 
 
@@ -145,7 +148,7 @@ class DraftBirthDoc(_Frozen):
     completedAt: int | None
 
 
-def validate_draft_birth(doc: dict) -> None:
+def validate_draft_birth(doc: dict[str, JsonValue]) -> None:
     """Gate a composed birth doc. Raises ValidationError on composer
     drift (an INTERNAL bug — the door serves it as a structured 500,
     never the caller's fault; their extras are never read here)."""

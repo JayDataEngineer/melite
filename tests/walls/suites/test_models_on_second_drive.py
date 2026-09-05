@@ -38,6 +38,8 @@ tests/walls/suites/test_models_on_second_drive.py
 import json
 import os
 import sys
+from collections.abc import Iterator
+from pathlib import Path
 
 from _anchor import REPO
 import estate_config  # noqa: E402  (the ONE parser)
@@ -87,7 +89,7 @@ _POINTERS = {
 }
 
 
-def configured_roots():
+def configured_roots() -> tuple[str, str, dict[str, str]]:
     """The DECLARED roots — the wall never names a disk spot
     itself. Reads the ROOT config (inference.config.json) through
     the ONE parser, with the comfyui endpoint's explicit overrides
@@ -108,7 +110,7 @@ def configured_roots():
     return base, dl, cats
 
 
-def _blobs(root):
+def _blobs(root: str | Path) -> Iterator[str]:
     for dirpath, _dirs, files in os.walk(root):
         # never descend into venvs/build caches — not model homes
         head = os.path.basename(dirpath)
@@ -127,10 +129,10 @@ def _blobs(root):
             yield p
 
 
-def main():
+def main() -> int:
     fails = 0
 
-    def check(ok, label, detail=""):
+    def check(ok: bool, label: str, detail: str = "") -> None:
         nonlocal fails
         print("  %s  %s%s" % ("ok " if ok else "FAIL", label,
                               (" — " + detail) if detail else ""))
@@ -196,7 +198,7 @@ def main():
     return 1 if fails else 0
 
 
-def _on_persistent(root):
+def _on_persistent(root: str) -> bool:
     """A configured root is persistent when it is NOT on the same
     filesystem as / (mountpoint differs somewhere along the path)."""
     try:

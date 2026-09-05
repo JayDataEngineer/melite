@@ -94,7 +94,7 @@ def _reason(error: ValidationError) -> str:
 
 # ── the schema ─────────────────────────────────────────────────────
 
-def _check_abs_root(value: object, key: str) -> str:
+def _check_abs_root(value: str | int | float | bool | None, key: str) -> str:
     """A global root: required, absolute, non-empty (ValueError core
     the pydantic validator and the RootConfigError wrapper share)."""
     raw = (str(value).strip() if value is not None else "")
@@ -112,7 +112,7 @@ def _check_abs_root(value: object, key: str) -> str:
     return os.path.abspath(raw)
 
 
-def _abs_root(value: object, key: str) -> str:
+def _abs_root(value: str | int | float | bool | None, key: str) -> str:
     """The RootConfigError surface over the shared check (kept as the
     module's own loud helper — wall-tested directly)."""
     try:
@@ -293,7 +293,7 @@ def engine_field(engine: str, field: str,
 
 
 def engine_port(engine: str,
-                endpoint_override: object | None = None) -> int:
+                endpoint_override: str | int | None = None) -> int:
     """The port (int) — derived from the URL when not set explicitly
     in the root config. This lets boot_cmd drift be caught: if the
     root config's URL says 18466, the port is 18466 regardless of

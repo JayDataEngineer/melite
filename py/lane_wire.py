@@ -34,7 +34,12 @@ not the wire's).
 from __future__ import annotations
 
 import enum
-from typing import Any, Literal
+from typing import Literal
+
+# The served-envelope shape: decoded JSON (objects, arrays, scalars).
+# Params-schema property VALUES stay open (card vocabulary, not the
+# wire's) — open as JSON, never as Anything.
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
@@ -60,7 +65,7 @@ class ParamsSchemaRow(_Frozen):
     (type / properties / required; property row VALUES stay open)."""
 
     type: str = Field(min_length=1)
-    properties: dict[str, Any] = Field(default_factory=dict)
+    properties: dict[str, JsonValue] = Field(default_factory=dict)
     required: list[str] = Field(default_factory=list)
 
 
@@ -83,7 +88,7 @@ class ToolManifestRow(_Frozen):
     params_schema: ParamsSchemaRow
     hidden: bool | None = None
 
-    def wire(self) -> dict[str, Any]:
+    def wire(self) -> dict[str, JsonValue]:
         """The served shape — hidden rides only when declared."""
         return self.model_dump(exclude_none=True)
 
@@ -133,8 +138,8 @@ class LanesEnvelope(_Frozen):
     lanes: list[CardLaneRow | FlowLaneRow]
     error: str | None = None
 
-    def wire(self) -> dict[str, Any]:
-        out: dict[str, Any] = {"count": self.count,
+    def wire(self) -> dict[str, JsonValue]:
+        out: dict[str, JsonValue] = {"count": self.count,
                                "lanes": [r.model_dump() for r in self.lanes]}
         if self.error is not None:
             out["error"] = self.error
@@ -186,7 +191,7 @@ class SkillRow(_Frozen):
                 % (self.step_count, len(self.steps)))
         return self
 
-    def wire(self) -> dict[str, Any]:
+    def wire(self) -> dict[str, JsonValue]:
         """The served shape — only the keys the source row carries."""
         return self.model_dump(exclude_none=True)
 
@@ -197,7 +202,7 @@ class SkillsEnvelope(_Frozen):
     count: int = Field(ge=0)
     skills: list[SkillRow]
 
-    def wire(self) -> dict[str, Any]:
+    def wire(self) -> dict[str, JsonValue]:
         return {"count": self.count, "skills": [r.wire() for r in self.skills]}
 
 
@@ -250,7 +255,7 @@ class BundleRow(_Frozen):
                     % len(self.tools))
         return self
 
-    def wire(self) -> dict[str, Any]:
+    def wire(self) -> dict[str, JsonValue]:
         # hand-assembled so each nested row keeps ITS OWN key discipline
         # (a recursive model_dump would re-include nested Nones)
         return {

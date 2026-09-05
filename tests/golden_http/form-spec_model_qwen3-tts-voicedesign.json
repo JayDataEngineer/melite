@@ -21,89 +21,97 @@
  },
  "fields": [
   {
-   "group": "voice",
-   "label": "Voice Name",
    "name": "voice_name",
-   "order": 0,
-   "required": true,
-   "tooltip": "Name for the locked persona \u2014 becomes the .qvoice filename stem. Reused across every future TTS render.",
    "type": "text",
-   "width": 1
-  },
-  {
-   "columns": 1,
+   "label": "Voice Name",
    "group": "voice",
-   "label": "Style Instruction",
-   "name": "style_instruction",
-   "order": 1,
+   "order": 0,
+   "width": 1,
    "required": true,
-   "tooltip": "The voice description \u2014 becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent').",
-   "type": "textarea"
+   "tooltip": "Name for the locked persona — becomes the .qvoice filename stem. Reused across every future TTS render."
   },
   {
-   "default": 0.7,
-   "group": "sampling",
-   "label": "Temperature",
-   "max": 2,
-   "min": 0,
+   "name": "style_instruction",
+   "type": "textarea",
+   "label": "Style Instruction",
+   "group": "voice",
+   "order": 1,
+   "columns": 1,
+   "required": true,
+   "tooltip": "The voice description — becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent')."
+  },
+  {
    "name": "temperature",
-   "order": 0,
-   "step": 0.05,
    "type": "slider",
-   "width": 1
-  },
-  {
-   "default": 0.9,
+   "label": "Temperature",
    "group": "sampling",
-   "label": "Top-P",
-   "max": 1,
+   "order": 0,
+   "width": 1,
    "min": 0,
+   "max": 2,
+   "step": 0.05,
+   "default": 0.7
+  },
+  {
    "name": "top_p",
-   "order": 1,
-   "step": 0.01,
    "type": "slider",
-   "width": 1
+   "label": "Top-P",
+   "group": "sampling",
+   "order": 1,
+   "width": 1,
+   "min": 0,
+   "max": 1,
+   "step": 0.01,
+   "default": 0.9
   },
   {
-   "default": 1.0,
-   "group": "sampling",
-   "label": "Speed",
-   "max": 2,
-   "min": 0.5,
    "name": "speed",
-   "order": 2,
-   "step": 0.1,
    "type": "slider",
-   "width": 1
-  },
-  {
-   "default": 1.05,
+   "label": "Speed",
    "group": "sampling",
-   "label": "Repetition Penalty",
+   "order": 2,
+   "width": 1,
+   "min": 0.5,
    "max": 2,
-   "min": 0.8,
+   "step": 0.1,
+   "default": 1.0
+  },
+  {
    "name": "repetition_penalty",
-   "order": 3,
-   "step": 0.01,
    "type": "slider",
-   "width": 1
+   "label": "Repetition Penalty",
+   "group": "sampling",
+   "order": 3,
+   "width": 1,
+   "min": 0.8,
+   "max": 2,
+   "step": 0.01,
+   "default": 1.05
   },
   {
-   "default": -1,
-   "group": "seed",
-   "label": "Seed",
    "name": "seed",
-   "order": 0,
    "type": "seed",
-   "width": 1
+   "label": "Seed",
+   "group": "seed",
+   "order": 0,
+   "width": 1,
+   "default": -1
   },
   {
+   "name": "qvoice",
+   "type": "file",
+   "label": "Voice (.qvoice)",
    "group": "qvoice",
-   "label": "PCA Steering",
+   "order": 0,
+   "tooltip": "Pre-computed speaker embedding (.qvoice/.voice — the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one."
+  },
+  {
    "name": "voice_pca_strengths",
+   "type": "textarea",
+   "label": "PCA Steering",
+   "group": "qvoice",
    "order": 1,
-   "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} \u2014 subtle voice direction without re-designing the persona.",
-   "type": "textarea"
+   "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} — subtle voice direction without re-designing the persona."
   }
  ],
  "form": "voice-lock",
@@ -118,7 +126,7 @@
      "name": "voice_name",
      "order": 0,
      "required": true,
-     "tooltip": "Name for the locked persona \u2014 becomes the .qvoice filename stem. Reused across every future TTS render.",
+     "tooltip": "Name for the locked persona — becomes the .qvoice filename stem. Reused across every future TTS render.",
      "type": "text",
      "width": 1
     },
@@ -128,7 +136,7 @@
      "name": "style_instruction",
      "order": 1,
      "required": true,
-     "tooltip": "The voice description \u2014 becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent').",
+     "tooltip": "The voice description — becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent').",
      "type": "textarea"
     }
    ],
@@ -211,14 +219,14 @@
      "label": "Voice (.qvoice)",
      "name": "qvoice",
      "order": 0,
-     "tooltip": "Pre-computed speaker embedding (.qvoice/.voice \u2014 the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one.",
+     "tooltip": "Pre-computed speaker embedding (.qvoice/.voice — the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one.",
      "type": "file"
     },
     {
      "label": "PCA Steering",
      "name": "voice_pca_strengths",
      "order": 1,
-     "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} \u2014 subtle voice direction without re-designing the persona.",
+     "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} — subtle voice direction without re-designing the persona.",
      "type": "textarea"
     }
    ],

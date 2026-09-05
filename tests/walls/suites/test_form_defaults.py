@@ -24,6 +24,8 @@ declarations.
 
 import os
 import re
+from collections.abc import Callable
+from types import ModuleType
 
 import pytest
 
@@ -31,7 +33,7 @@ from _anchor import REPO
 sys_path_setup = False
 
 
-def _ensure_sys_path():
+def _ensure_sys_path() -> None:
     global sys_path_setup
     if not sys_path_setup:
         import sys
@@ -40,7 +42,7 @@ def _ensure_sys_path():
         sys_path_setup = True
 
 
-def _find_card_classes():
+def _find_card_classes() -> list[tuple[str, str, str]]:
     """Yield (card_id, engine, path) for every action_cards/*/*/py/
     card.py that declares a class with id = '<X>'."""
     out = []
@@ -65,7 +67,7 @@ def _find_card_classes():
     return out
 
 
-def _card_field_names(card_cls):
+def _card_field_names(card_cls: type[object]) -> set[str]:
     """The card class's declared form fields (widget names)."""
     out = set()
     for fname in dir(card_cls):
@@ -79,7 +81,7 @@ def _card_field_names(card_cls):
     return out
 
 
-def _families_of(card_cls):
+def _families_of(card_cls: type[object]) -> set[str]:
     """A card's boarded families (the models= tuple, introspected)."""
     models = getattr(card_cls, "models", ()) or ()
     out = set()
@@ -96,7 +98,7 @@ IN_SCOPE = {"video-gen", "upscale-tools", "motion", "body",
 
 
 @pytest.fixture(scope="module")
-def card_and_model_classes():
+def card_and_model_classes() -> tuple[list[tuple[str, str, str]], dict[str, type[object]], ModuleType, Callable[[str, str], type[object]]]:
     _ensure_sys_path()
     import editor_forms as ef
     from melite_cards import load_card_py
@@ -109,7 +111,7 @@ def card_and_model_classes():
     return cards, model_classes, ef, load_card_py
 
 
-def test_form_card_model_triad(card_and_model_classes):
+def test_form_card_model_triad(card_and_model_classes: tuple[list[tuple[str, str, str]], dict[str, type[object]], ModuleType, Callable[[str, str], type[object]]]) -> None:
     """Every form-spec default lives on the card, and every form-spec
     field is declared on the card."""
     cards, model_classes, ef, load_card_py = card_and_model_classes

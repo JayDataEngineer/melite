@@ -71,7 +71,7 @@ PROVISIONER_LINKS = {
 }
 
 
-def _pkg_name(member_dir):
+def _pkg_name(member_dir: str) -> str | None:
     pj = os.path.join(member_dir, "package.json")
     if not os.path.isfile(pj):
         return None
@@ -85,13 +85,13 @@ def _pkg_name(member_dir):
 # ── 1. members exist, in the right family, with the right package names ──
 
 @pytest.mark.parametrize("d,name", sorted(WEB_DSH_MEMBERS.items()))
-def test_web_dsh_member_exists(d, name):
+def test_web_dsh_member_exists(d: str, name: str | None) -> None:
     path = os.path.join(REPO, "plugins", "web", "dsh", d)
     assert os.path.isdir(path), f"web/dsh/{d} missing"
 
 
 @pytest.mark.parametrize("d,name", sorted(WEB_DSH_MEMBERS.items()))
-def test_web_dsh_member_package_name(d, name):
+def test_web_dsh_member_package_name(d: str, name: str | None) -> None:
     if name is None:
         pytest.skip(f"{d} has no package")
     path = os.path.join(REPO, "plugins", "web", "dsh", d)
@@ -99,36 +99,36 @@ def test_web_dsh_member_package_name(d, name):
 
 
 @pytest.mark.parametrize("d,name", sorted(HARNESS_DSH_MEMBERS.items()))
-def test_harness_dsh_member_exists(d, name):
+def test_harness_dsh_member_exists(d: str, name: str | None) -> None:
     path = os.path.join(REPO, "plugins", "harness", "dsh", d)
     assert os.path.isdir(path), f"harness/dsh/{d} missing"
 
 
 @pytest.mark.parametrize("d,name", sorted(HARNESS_DSH_MEMBERS.items()))
-def test_harness_dsh_member_package_name(d, name):
+def test_harness_dsh_member_package_name(d: str, name: str | None) -> None:
     if name is None:
         pytest.skip(f"{d} has no package")
     path = os.path.join(REPO, "plugins", "harness", "dsh", d)
     assert _pkg_name(path) == name, _pkg_name(path)
 
 
-def test_editor_exists():
+def test_editor_exists() -> None:
     ed = os.path.join(REPO, "plugins", "web", "editor")
     assert os.path.isdir(ed)
 
 
-def test_editor_package_name():
+def test_editor_package_name() -> None:
     ed = os.path.join(REPO, "plugins", "web", "editor")
     assert _pkg_name(ed) == EDITOR_PKG_NAME, _pkg_name(ed)
 
 
-def test_plugins_dsh_retired():
+def test_plugins_dsh_retired() -> None:
     assert not os.path.exists(os.path.join(REPO, "plugins", "dsh"))
 
 
 # ── 2. the embedding: EDITOR_DIST traversal ─────────────────────────────
 
-def test_deck_editor_dist_traversal():
+def test_deck_editor_dist_traversal() -> None:
     deck_src = os.path.join(REPO, "plugins", "web", "dsh",
                             "melite-card-deck", "src", "index.ts")
     assert os.path.isfile(deck_src), "deck src missing"
@@ -148,7 +148,7 @@ def test_deck_editor_dist_traversal():
 
 # ── 3. the bridge ───────────────────────────────────────────────────────
 
-def test_card_view_embeds_deck_bridge():
+def test_card_view_embeds_deck_bridge() -> None:
     cv = os.path.join(REPO, "plugins", "web", "dsh", "melite-card-view",
                       "src", "client", "FlowCards.tsx")
     assert os.path.isfile(cv), "card-view FlowCards.tsx missing"
@@ -156,7 +156,7 @@ def test_card_view_embeds_deck_bridge():
     assert EMBED_BRIDGE_IMPORT in src
 
 
-def test_embed_bridge_file_exists():
+def test_embed_bridge_file_exists() -> None:
     bridge = os.path.join(REPO, "plugins", "web", "dsh",
                           "melite-card-deck", EMBED_BRIDGE_FILE)
     assert os.path.isfile(bridge), bridge
@@ -164,7 +164,7 @@ def test_embed_bridge_file_exists():
 
 # ── 4. workspace globs ─────────────────────────────────────────────────
 
-def test_root_workspace_globs():
+def test_root_workspace_globs() -> None:
     ws = os.path.join(REPO, "pnpm-workspace.yaml")
     assert os.path.isfile(ws), "root pnpm-workspace.yaml missing"
     text = open(ws, encoding="utf-8").read()
@@ -175,7 +175,7 @@ def test_root_workspace_globs():
 
 # ── 5. provisioner links both families ──────────────────────────────────
 
-def test_provisioner_links():
+def test_provisioner_links() -> None:
     pj = os.path.join(REPO, "plugins", "harness", "dsh", "provisioner",
                       "package.json")
     assert os.path.isfile(pj), "provisioner package.json missing"
@@ -193,5 +193,5 @@ def test_provisioner_links():
 # ── 6. the kit stays engine-agnostic ────────────────────────────────────
 
 @pytest.mark.parametrize("k", ["ui", "slots", "contracts", "formats", "catalog"])
-def test_kit_package_name(k):
+def test_kit_package_name(k: str) -> None:
     assert _pkg_name(os.path.join(REPO, "web", k)) == "@melite/%s" % k

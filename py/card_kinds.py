@@ -21,6 +21,8 @@ scans, no remember-to-check boot passes: an invalid table cannot be
 BUILT.
 """
 
+from __future__ import annotations
+
 from enum import Enum
 
 from pydantic import BaseModel, model_validator
@@ -141,7 +143,7 @@ TABLE = CardKindTable(
 )
 
 
-def kinds_wire() -> dict:
+def kinds_wire() -> dict[str, list[dict[str, str | bool]]]:
     """The wire shape consumed by the editor's syncPluginKinds — the
     projection of TABLE, never a second declaration. The icon rides only
     when declared (the C-era shape; absent means the default tile icon)."""

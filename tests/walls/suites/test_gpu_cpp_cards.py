@@ -97,7 +97,7 @@ BLOCKED_SPEC = {
 }
 
 
-def _heavy_spec():
+def _heavy_spec() -> dict[str, str | dict[str, list[int | float]] | dict[str, list[str]] | list[dict[str, str | int | list[list[int | float]]]] | dict[str, dict[str, str]]]:
     """A heavier creature for the serial audit — more volumes, high
     side counts: the run lasts long enough for the sampler to
     actually observe the queue (efficiency is not the concern here;
@@ -115,7 +115,7 @@ def _heavy_spec():
     return spec
 
 
-def _req(method, path, body=None, timeout=30):
+def _req(method: str, path: str, body: dict[str, str | dict[str, str | int | bool | float | list[dict[str, str | int]] | dict[str, str | dict[str, list[int | float]] | dict[str, list[str]] | list[dict[str, str | int | list[list[int | float]]]] | dict[str, dict[str, str]]]]] | None = None, timeout: int = 30) -> dict[str, str | int | float | bool | list[str] | list[dict[str, str]] | dict[str, str] | None]:
     data = json.dumps(body).encode() if body is not None else None
     r = urllib.request.Request(
         BASE + path, data=data, method=method,
@@ -124,13 +124,13 @@ def _req(method, path, body=None, timeout=30):
         return json.loads(resp.read().decode())
 
 
-def _submit(model, params):
+def _submit(model: str, params: dict[str, str | int | bool | float | list[dict[str, str | int]] | dict[str, str | dict[str, list[int | float]] | dict[str, list[str]] | list[dict[str, str | int | list[list[int | float]]]] | dict[str, dict[str, str]]]]) -> dict[str, str | int | float | bool | list[str] | list[dict[str, str]] | dict[str, str] | None]:
     return _req("POST", "/v1/flows/start",
                 {"model": model, "params": params})
 
 
-def _wait(run_id, deadline_s=180, want=("completed", "failed", "error",
-                                        "stopped")):
+def _wait(run_id: str, deadline_s: int = 180, want: tuple[str, ...] = ("completed", "failed", "error",
+                                        "stopped")) -> dict[str, str | int | float | bool | list[str] | list[dict[str, str]] | dict[str, str] | None]:
     """Poll until terminal; returns the final status dict."""
     end = time.time() + deadline_s
     while time.time() < end:
@@ -142,7 +142,7 @@ def _wait(run_id, deadline_s=180, want=("completed", "failed", "error",
                          % (run_id, deadline_s, d.get("status")))
 
 
-def _sidecar(run_id):
+def _sidecar(run_id: str) -> dict[str, str | int | float | bool | list[str] | list[dict[str, str]] | None]:
     with open(os.path.join(REPO, "data/runs/output", run_id,
                            "_flow.json"), encoding="utf-8") as f:
         return json.load(f)
@@ -157,7 +157,7 @@ def _sidecar(run_id):
 class TestGpuCppCards(unittest.TestCase):
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         # the gateway must be UP — a dead gateway is a FAILURE, never
         # a skip (the suite's whole point is the live queue)
         try:
@@ -169,7 +169,7 @@ class TestGpuCppCards(unittest.TestCase):
                 "(%s)" % (BASE, e))
         cls.forge_glb = None
 
-    def test_01_forge_green_through_the_queue(self):
+    def test_01_forge_green_through_the_queue(self) -> None:
         """The full chain: card → bus → renderer argv → node engine
         → GLB artifact recorded — the inputs/outputs the flow
         layer needs."""
@@ -194,7 +194,7 @@ class TestGpuCppCards(unittest.TestCase):
         self.assertEqual(sc["status"], "completed")
         self.assertIn(glb, sc.get("artifacts", []))
 
-    def test_02_forge_engine_block_refusal_is_loud(self):
+    def test_02_forge_engine_block_refusal_is_loud(self) -> None:
         """A structurally-valid but mechanically-doomed spec: the
         engine's BLOCK rides back as the run's EXACT error — a
         documented failure, never a silent empty completion."""
@@ -211,7 +211,7 @@ class TestGpuCppCards(unittest.TestCase):
         self.assertEqual(sc["status"], "failed")
         self.assertTrue(sc.get("error"), "sidecar carries no error")
 
-    def test_03_quad_remesh_produces_real_mesh(self):
+    def test_03_quad_remesh_produces_real_mesh(self) -> None:
         """REAL OUTPUT: the creature GLB (from test 01) converts to
         OBJ at the card's door (the engine's only format — a raw GLB
         segfaults it) and the engine returns a real remeshed quad
@@ -249,7 +249,7 @@ class TestGpuCppCards(unittest.TestCase):
                             for a in arts),
                         "no engine report artifact: %s" % arts)
 
-    def test_04_text_to_motion_produces_real_motion(self):
+    def test_04_text_to_motion_produces_real_motion(self) -> None:
         """REAL OUTPUT when the lane is provisioned (estate CLI
         wrapper + built generator + sha-verified weights under
         data/runtime/kimodo): a prompt → real motion.glb through the
@@ -287,7 +287,7 @@ class TestGpuCppCards(unittest.TestCase):
             self.assertTrue("cli" in err or "not found" in err,
                             "unexpected refusal: %r" % err[:200])
 
-    def test_05_engine_transition_forge_to_remesh(self):
+    def test_05_engine_transition_forge_to_remesh(self) -> None:
         """A 2-stage FLOW (2026-09-04 flows rework: the lane is now a
         Python declaration, not a runtime yaml): the creature GLB
         wires node-to-node ($forge.glb) across the anycreature->
@@ -347,7 +347,7 @@ class TestGpuCppCards(unittest.TestCase):
             import shutil
             shutil.rmtree(lane, ignore_errors=True)
 
-    def test_07_text_to_motion_transitions_sequence(self):
+    def test_07_text_to_motion_transitions_sequence(self) -> None:
         """The sequence door (kmd-generate --sequence): two prompts
         spliced at given frame boundaries → a real motion.glb with
         more than the default frame count (196) and the run's
@@ -374,7 +374,7 @@ class TestGpuCppCards(unittest.TestCase):
         self.assertTrue(any(a.endswith("motion.glb") for a in arts),
                         "no motion.glb: %s" % arts)
 
-    def test_08_text_to_motion_g1_glb_loud_refusal(self):
+    def test_08_text_to_motion_g1_glb_loud_refusal(self) -> None:
         """G1 generation works in the C engine, but the vendor's
         GLB exporter speaks soma30 only — the wrapper refuses LOUDLY
         at the card door with the exact reason (QUEUE LANE LAW)."""
@@ -395,7 +395,7 @@ class TestGpuCppCards(unittest.TestCase):
             "soma30" in err,
             "unexpected g1 refusal: %r" % err[:200])
 
-    def test_09_text_to_motion_smplx_licence_gate(self):
+    def test_09_text_to_motion_smplx_licence_gate(self) -> None:
         """SMPL-X is licence-gated (NVIDIA internal-R&D, no
         distribution) — the schema refuses LOUDLY before any spawn,
         naming the user-checkpoint param or env knob. The refusal
@@ -425,7 +425,7 @@ class TestGpuCppCards(unittest.TestCase):
             "SMPL-X refusal must name the licence gate knob: %r"
             % err[:200])
 
-    def test_10_stop_door_lands_on_cpp_run(self):
+    def test_10_stop_door_lands_on_cpp_run(self) -> None:
         """The stop door (the RESILIENCE LAW's <6s interrupt claim)
         works on a cpp run too: POST stop while kmd-generate is
         in flight, the run settles as 'stopped' in well under the
@@ -469,7 +469,7 @@ class TestGpuCppCards(unittest.TestCase):
                         "stop door took %.1fs (>15s) — the cpp "
                         "stop path is slow" % elapsed)
 
-    def test_11_cross_run_engine_transition_unloads(self):
+    def test_11_cross_run_engine_transition_unloads(self) -> None:
         """VRAM-release audit fix (2026-09-04): the engine boundary
         is GATEWAY-level. A comfyui card run followed by an
         anycreature card run — two SEPARATE runs — must fire the
@@ -508,7 +508,7 @@ class TestGpuCppCards(unittest.TestCase):
             "engine (comfyui /free) — sidecar stages: %s"
             % json.dumps(sc.get("stages"))[:300])
 
-    def test_06_queue_serializes_concurrent_submissions(self):
+    def test_06_queue_serializes_concurrent_submissions(self) -> None:
         """THE SERIAL AUDIT: two forge runs submitted back-to-back —
         at no sampled instant are two runs active, and BOTH are
         served (FIFO; the serial GPU law)."""
@@ -521,7 +521,7 @@ class TestGpuCppCards(unittest.TestCase):
                 rb = _req("GET", "/v1/flows/status/" + b["run_id"])
             except Exception:
                 break
-            def _active(d):
+            def _active(d: dict[str, str | int | float | bool | list[str] | list[dict[str, str]] | dict[str, str] | None]) -> bool:
                 s = d.get("status", "")
                 if s in ("completed", "failed", "stopped", "error"):
                     return False

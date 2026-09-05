@@ -52,7 +52,11 @@ START_BODY = {
 }
 
 
-def _post(url, body, timeout=20.0):
+def _post(
+    url: str,
+    body: dict[str, str | dict[str, str | int] | list[dict[str, str | dict[str, str | int]]]] | bytes,
+    timeout: float | int = 20.0,
+) -> tuple[int, dict[str, str | int]]:
     data = json.dumps(body).encode() if isinstance(body, dict) else body
     req = urllib.request.Request(
         url, data=data, method="POST",
@@ -65,7 +69,7 @@ def _post(url, body, timeout=20.0):
         return e.code, json.loads(e.read().decode() or "{}")
 
 
-def _get(url, timeout=10.0):
+def _get(url: str, timeout: float | int = 10.0) -> tuple[int, dict[str, str | int | list[dict[str, str | int | list[str]]]] | bytes]:
     try:
         with urllib.request.urlopen(urllib.request.Request(url), timeout=timeout) as r:
             body = r.read()
@@ -80,7 +84,7 @@ def _get(url, timeout=10.0):
         return 0, {"error": str(e)}
 
 
-def _poll_status(run_id):
+def _poll_status(run_id: str) -> dict[str, str | int | list[dict[str, str | int | list[str]]]]:
     deadline = time.time() + MAX_POLL_S
     last = {}
     while time.time() < deadline:
@@ -94,7 +98,7 @@ def _poll_status(run_id):
 
 
 @pytest.fixture(scope="module")
-def gateway_up():
+def gateway_up() -> bool:
     try:
         s = socket.create_connection(("127.0.0.1", 33081), timeout=2.0)
         s.close()
@@ -107,7 +111,7 @@ class TestRunLifecycle:
     """A real card-model run through the gateway, covering the full
     lifecycle: start -> queue -> terminal -> sidecar assertions."""
 
-    def test_card_model_start(self, gateway_up):
+    def test_card_model_start(self, gateway_up: bool) -> None:
         status, resp = _post(f"{GATEWAY_URL}/v1/flows/start", START_BODY)
         # The compose gate may reject due to infrastructure (pin drift,
         # no comfyui reachable). The lifecycle test is about runs that
@@ -190,7 +194,7 @@ class TestRunLifecycle:
                 f"the stage artifact URL the gateway stamps does not serve."
             )
 
-    def test_run_card_link_round_trips(self, gateway_up):
+    def test_run_card_link_round_trips(self, gateway_up: bool) -> None:
         """THE CARD-LINK WIRE (2026-09-04 audit, run→card reproducibility).
 
         The py gateway's submit() MUST capture draft_id from the start
@@ -272,7 +276,7 @@ class TestRunLifecycle:
             f"is gone — but we just saved it above, so it MUST exist."
         )
 
-    def test_run_card_link_malformed_refused(self, gateway_up):
+    def test_run_card_link_malformed_refused(self, gateway_up: bool) -> None:
         """A malformed draft_id MUST 4xx before any run registers.
 
         QUEUE LANE LAW: validation at construction. py/editor_runs

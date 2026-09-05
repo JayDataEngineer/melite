@@ -19,7 +19,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 
 
-def free_port():
+def free_port() -> int:
     """A free localhost port (bind :0, read it back, release)."""
     s = socket.socket()
     s.bind(("127.0.0.1", 0))
@@ -28,7 +28,7 @@ def free_port():
     return port
 
 
-def _serving(port, path, timeout=2.0):
+def _serving(port: int, path: str, timeout: float = 2.0) -> bool:
     """True once the port answers HTTP at all (any status) — a boot
     wait, not a contract check."""
     url = "http://127.0.0.1:%d%s" % (port, path)
@@ -42,8 +42,9 @@ def _serving(port, path, timeout=2.0):
         return False
 
 
-def boot_scratch_gateway(wait_path="/v1/health", python=None, tries=150,
-                         sleep=0.2, env=None):
+def boot_scratch_gateway(wait_path: str = "/v1/health", python: str | None = None,
+                         tries: int = 150, sleep: float = 0.2,
+                         env: dict[str, str] | None = None) -> tuple[int, subprocess.Popen[bytes]]:
     """Boot py/gateway.py on a scratch port; poll until wait_path
     serves. Returns (port, proc).
 
@@ -66,7 +67,7 @@ def boot_scratch_gateway(wait_path="/v1/health", python=None, tries=150,
         "scratch gateway did not boot on :%d (waited on %s)" % (port, wait_path))
 
 
-def reap_gateway(proc):
+def reap_gateway(proc: subprocess.Popen[bytes]) -> None:
     """The shutdown law on scratch gateways: SIGTERM, bounded wait,
     kill — a deliberate teardown manufactures zero zombies."""
     proc.terminate()
@@ -74,3 +75,17 @@ def reap_gateway(proc):
         proc.wait(timeout=15)
     except subprocess.TimeoutExpired:
         proc.kill()
+
+
+def stamp_xdist_group(config: "pytest.Config",
+                      items: "list[pytest.Item]", group: str,
+                      root: Path) -> None:
+    """Stamp every collected item with an xdist_group marker so
+    `pytest -n auto --dist=loadgroup` co-schedules a suite onto one
+    worker (tests/unit/conftest.py). The marker is inert without
+    pytest-xdist; with it, the group is the stable scheduling key.
+    (pytest imported lazily below; the annotations reference it as
+    the conftest-only world this function serves.)"""
+    import pytest as _pytest
+    for item in items:
+        item.add_marker(_pytest.mark.xdist_group(group))

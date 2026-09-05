@@ -30,6 +30,8 @@ sites; a new slot joins this file (and the editor fallback) in the
 same commit — the both-sides drift is what api:sync exists to catch.
 """
 
+from __future__ import annotations
+
 from enum import Enum
 
 from pydantic import BaseModel, field_validator, model_validator
@@ -129,7 +131,7 @@ VOCAB = SlotVocabulary(
 )
 
 
-def input_vocabulary() -> dict:
+def input_vocabulary() -> dict[str, list[str] | dict[str, str]]:
     """The wire shape consumed by the editor's setInputVocabulary —
     the projection of VOCAB, never a second declaration."""
     return {
@@ -137,3 +139,79 @@ def input_vocabulary() -> dict:
         "slot_kinds": {r.slot: r.kind.value for r in VOCAB.slots},
         "undeclared_slots": list(VOCAB.undeclared_slots),
     }
+
+
+# ── Per-form / per-model slot bindings (2026-09-05, no-drop fix) ─────────
+# A card class declares its binary (File/Image/Audio/Video) input fields
+# directly. The frontend's slot grid consumes form_slots[form] /
+# model_slots[service] to decide which squares to render; a form that
+# declares inputs (e.g. anny → form_3d_anny: body_glb, hair_glb,
+# outfit_glb, source_image) MUST carry them here or the SlotGrid renders
+# empty — the silent default-card class. This row is the typed carrier:
+# a (form, model_route, field) tuple, every entry backed by a card class
+# File declaration. No stringly handshakes (PYTHON SHAPE LAW rung 5).
+from pydantic import field_validator  # already imported above for SlotDecl
+
+
+class FormSlotBinding(BaseModel, frozen=True):
+    model_config = {"extra": "forbid"}
+
+    form: str
+    model_route: str
+    field: str
+    kind: FileKind
+
+    @field_validator("form", "model_route", "field")
+    @classmethod
+    def _shape(cls, v: str) -> str:
+        if not v or not all(c.islower() or c.isdigit() or c == "_" or c == "-"
+                            for c in v):
+            raise ValueError(
+                "form/model_route/field must be lowercase slug/snake: %r" % v)
+        return v
+
+
+class FormSlotVocabulary(BaseModel, frozen=True):
+    """The aggregated per-form / per-model slot bindings — built from
+    the card classes at catalog scan time (py/catalog.py). Construction
+    validates uniqueness (a form declares a field at most once) and
+    projects to the form_slots / model_slots dicts the editor reads."""
+
+    model_config = {"extra": "forbid"}
+
+    bindings: tuple[FormSlotBinding, ...]
+
+    @model_validator(mode="after")
+    def _cross(self) -> "FormSlotVocabulary":
+        # Uniqueness is per MODEL (a model declares a field at most
+        # once) — NOT per form. Several models can board the same form
+        # (qwen3-tts / qwen3-tts-base / qwen3-tts-voicedesign all board
+        # form_tts, each declaring the qvoice slot); the form's slot
+        # list is the UNION, deduplicated in form_slots(). A duplicate
+        # (model_route, field) is a double declaration and refuses.
+        seen_model: set[tuple[str, str]] = set()
+        for b in self.bindings:
+            if (b.model_route, b.field) in seen_model:
+                raise ValueError(
+                    "model %r declares field %r twice"
+                    % (b.model_route, b.field))
+            seen_model.add((b.model_route, b.field))
+        return self
+
+    def form_slots(self) -> dict[str, list[str]]:
+        out: dict[str, list[str]] = {}
+        for b in self.bindings:
+            if b.field not in out.setdefault(b.form, []):
+                out[b.form].append(b.field)
+        return out
+
+    def model_slots(self) -> dict[str, list[str]]:
+        out: dict[str, list[str]] = {}
+        for b in self.bindings:
+            out.setdefault(b.model_route, []).append(b.field)
+        return out
+
+
+def empty_form_slot_vocabulary() -> FormSlotVocabulary:
+    """The zero-binding vocabulary (legacy / unknown forms)."""
+    return FormSlotVocabulary(bindings=())

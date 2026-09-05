@@ -20,15 +20,20 @@ level.
 
 import os
 import sys
+from collections.abc import Iterator
+from typing import TYPE_CHECKING
 
 import pytest
+
+if TYPE_CHECKING:
+    from melite_models import Model
 
 REPO = os.path.normpath(os.path.join(os.path.dirname(
     os.path.abspath(__file__)), "..", "..", ".."))
 
 
 @pytest.fixture(scope="module", autouse=True)
-def _estate_paths():
+def _estate_paths() -> Iterator[None]:
     """Path setup LAZILY (R5: nothing executes at import/collection —
     the same inserts the loader owns in production, mirrored here
     once per module, before the first test runs)."""
@@ -45,13 +50,13 @@ def _estate_paths():
     yield
 
 
-def _comfyui_rows():
+def _comfyui_rows() -> Iterator[tuple[str, dict[str, str | int | bool | tuple[str, ...]]]]:
     for fid, fdef in editor_forms._FORMS_TABLE.items():
         if fdef.get("plugin") == "comfyui":
             yield fid, fdef
 
 
-def _load_model_class(mid):
+def _load_model_class(mid: str) -> "type[Model] | None":
     """The class the gateway's compose dispatch loads for mid —
     the same loader path (_coscript.model_pys + load_model_py)."""
     from melite_models import load_model_py
@@ -65,7 +70,7 @@ def _load_model_class(mid):
     return None
 
 
-def test_every_covered_model_resolves_a_card_arm():
+def test_every_covered_model_resolves_a_card_arm() -> None:
     """Form covers ⊆ boarded models whose arm directory exists —
     the resolution tier, every comfyui editor form."""
     for fid, fdef in _comfyui_rows():
@@ -87,7 +92,7 @@ def test_every_covered_model_resolves_a_card_arm():
             assert os.path.isfile(arm), "missing arm %s" % arm
 
 
-def test_covers_membership_matches_boarding():
+def test_covers_membership_matches_boarding() -> None:
     """The image form's covers are exactly the models boarding its
     arms — no ghost members, no silent absentees among the image
     families the catalog serves."""
@@ -118,16 +123,19 @@ def test_covers_membership_matches_boarding():
         % sorted(boarded - all_covers))
 
 
-def test_image_form_members_compose_phase1():
+def test_image_form_members_compose_phase1() -> None:
     """The compose tier: every image form member composes a run-input
     pool from the editor's Run body shape (prompt + string params) —
-    the exact door that served the z-image 400 before boarding."""
+    the exact door that served the z-image 400 before boarding.
+    The probe body is the UNIVERSAL knob set (the intersection the
+    shared Run shape sends every member); per-model extras (sampler
+    vocab, scheduler — ideogram serves no scheduler field) are each
+    card's own gate suite's business, not the boarding contract's."""
     for mid in editor_forms._FORMS_TABLE["image-gen"]["covers"]:
         body = {"model": mid,
                 "params": {"prompt": "wall boarding probe",
                            "width": "1024", "height": "1024",
-                           "steps": "8", "cfg": "1.0", "seed": "-1",
-                           "sampler": "euler", "scheduler": "simple"}}
+                           "steps": "8", "cfg": "1.0", "seed": "-1"}}
         rc, _y, extra, err = _compose_pkg.card_compose(body, mid, "", None)
         assert rc == 0, "model %s refused phase-1: %s" % (mid, err)
         inputs = (extra or {}).get("inputs") or {}
@@ -135,7 +143,7 @@ def test_image_form_members_compose_phase1():
             "model %s composed an input pool without the prompt" % mid)
 
 
-def test_image_form_members_render_phase2():
+def test_image_form_members_render_phase2() -> None:
     """Phase-2: the graph actually renders for every image form
     member — a template file existing is not enough; the workflow
     must build (run-graph truth, no GPU)."""
@@ -150,7 +158,7 @@ def test_image_form_members_render_phase2():
         assert nodes, "model %s rendered an empty node list" % mid
 
 
-def test_unboarded_model_refuses_loud_never_falls_back():
+def test_unboarded_model_refuses_loud_never_falls_back() -> None:
     """The banned fallback is dead: a model with no card raises the
     boarding refusal naming the model — and the message carries NO
     other lane's vocabulary (the pre-boarding 400 surfaced h3's
@@ -171,7 +179,7 @@ def test_unboarded_model_refuses_loud_never_falls_back():
                 "the silent fallback is back" % (ghost, msg))
 
 
-def test_h3_family_boards_the_timeline_package_arm():
+def test_h3_family_boards_the_timeline_package_arm() -> None:
     """The h3 trio composes through the EXPLICIT package arm — no
     member rides an absence route (it no longer exists)."""
     for mid in ("h3-timeline", "h3", "h3-keyframe"):
@@ -183,7 +191,7 @@ def test_h3_family_boards_the_timeline_package_arm():
     assert "h3-timeline" in _compose_pkg._PACKAGE_CARDS
 
 
-def test_cpp_form_plugins_own_compose_packages():
+def test_cpp_form_plugins_own_compose_packages() -> None:
     """Non-comfyui editor rows (the cpp engine plugins) resolve
     their own compose package through the plugin bus — offered
     means runnable there too, at the module level."""

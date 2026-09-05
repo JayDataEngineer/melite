@@ -24,6 +24,7 @@ Run: python3 tests/walls/suites/test_wire_surface.py   (part of the python gate 
 import os
 import re
 import unittest
+from collections.abc import Iterator
 
 from _anchor import REPO
 
@@ -49,20 +50,18 @@ GATEWAY_ROOT = os.path.join(REPO, "py")
 # exemption whose calls disappear (fossil guard below).
 # ─────────────────────────────────────────────────────────────────────────
 REVIEWING_PREFIXES = (
-    # LLM lane moved to DSH plugins; editor + web/catalog still carry the
-    # full client family. Found live: /v1/llm/health polled every 10s
-    # from boot, 404ing forever.
-    "/v1/llm/",
-    # Agent lane moved to DSH (vite.config: "no /agent lane and no proxy
-    # for it"); AgentSettingsPanel + webToolsStore/toolModeStore still emit.
-    "/v1/agent/",
-    # The whole poser lane: zero arms anywhere in py/. Vite proxies
-    # /poser → the gateway, which answers no-such-route for all of it.
-    "/poser/",
-    # Old ComfyUI-manager passthrough — retired by the PROVISIONING LAW
-    # (comfy-mcp is the one management plane; py/manage.py serves
-    # /v1/manage singular). The manager panel still emits the plural.
-    "/v1/manager/",
+    # ('/v1/llm/' WAS here — the keystore/enhance lane's last caller
+    # died 2026-09-05 with the door-gate kill stroke; exemption deleted
+    # in the same stroke, fossil-guard order.)
+    # ('/v1/agent/' WAS here — AgentSettingsPanel + webToolsStore/
+    # toolModeStore died the same day; exemption deleted in the same
+    # stroke.)
+    # (The poser lane WAS here — exempted while the whole prefix 404'd.
+    # The studio bridge was rebuilt 2026-09-05: the gateway now serves
+    # /poser/* by forwarding to the engine endpoint's poser pack, so
+    # the exemption retired with the fix.)
+    # ('/v1/manager/' WAS here — the ComfyUI-manager passthrough's last
+    # panel died 2026-09-05; exemption deleted in the same stroke.)
     # ComfyUI direct doors (endpoint / extensions install / interrupt).
     "/v1/comfyui/",
 )
@@ -70,23 +69,40 @@ REVIEWING_EXACT = (
     # C-retirement orphans: doors the deleted C server served, never
     # ported to the py gateway, still cited by the editorApi route map
     # ("audited against server/app.py" — a file that no longer exists).
-    "/v1/compose",
-    "/v1/loras",
-    "/v1/controlnets",
-    "/v1/flow-catalog",
-    "/v1/download-model/stream",
-    "/v1/media/upload",
-    "/v1/tools/speech-length",
+    # ('/v1/compose' WAS here — its last frontend caller was deleted
+    # 2026-09-05; the exemption died in the same stroke, fossil-guard
+    # order.)
+    # ('/v1/controlnets', '/v1/flow-catalog',
+    # '/v1/flows/yaml/export-comfyui' died the same day — callers gone,
+    # exemptions deleted in the same stroke.)
+    # ('/v1/loras' WAS here too — the py gateway grew the door
+    # (/v1/loras?model=, the declared LorasMod pack) 2026-09-05 and the
+    # LIVE process was brought to source parity the same hour; served
+    # now, so un-exempted. The query-string-literal caller shape ALSO
+    # forced the STRING_ROUTE_RE fix above.)
+    # ('/v1/download-model/stream' WAS here — ModelDownloadDialog died
+    # 2026-09-05; exemption deleted in the same stroke.)
+    # ('/v1/media/upload' WAS here — editorClient.uploadMedia died the
+    # same day; exemption deleted in the same stroke.)
+    # ('/v1/tools/speech-length' WAS here — the speechLength helper died
+    # the same day; exemption deleted in the same stroke.)
     "/v1/flows/render_glb",
     "/v1/flows/render_textured",
-    # GpuStatus polls /health at boot; the gateway has no root health arm.
-    "/health",
-    # Bare template prefix `/comfyui/${...}` — same dead family as above.
-    "/comfyui/",
+    # ('/health' WAS here — GpuStatus polled it at boot and the gateway
+    # has no root health arm; the caller died with the 2026-09-05
+    # editorClient cleanup, exemption deleted in the same stroke.)
+    # (Bare template prefix `/comfyui/${...}` WAS here — same dead family
+    # as above; last emitter died 2026-09-05, exemption deleted in the
+    # same stroke.)
 )
 
 STRING_ROUTE_RE = re.compile(
-    r"""["'`](/(?:v1|poser|comfyui|health)[A-Za-z0-9/_-]*)["'`]"""
+    # The optional `?...` tail catches query-STRING literals before the
+    # closing delimiter — `/v1/loras?model=${x}` (backticked) was blind
+    # to this wall until 2026-09-05: the ? blocked the quote anchor, the
+    # caller read as "no longer called", and a LIVE exemption
+    # (/v1/loras, LoraPicker) failed as stale. Query-stripped below.
+    r"""["'`](/(?:v1|poser|comfyui|health)[A-Za-z0-9/_-]*(?:\?[^"'`]*)?)["'`]"""
 )
 PATH_EQ_RE = re.compile(r'''path\s*(?:==|!=)\s*["'](/[A-Za-z0-9/_-]+)["']''')
 PATH_TARGET_EQ_RE = re.compile(r'''target\s*(?:==|!=)\s*["'](/[A-Za-z0-9/_-]+)["']''')
@@ -97,7 +113,7 @@ ROUTE_REGEX_RE = re.compile(r'''(?:re\.match|re\.fullmatch)\(\s*r?["'](\^/[^"']+
 DICT_KEY_RE = re.compile(r'''["'](/(?:v1|poser|comfyui|health)[A-Za-z0-9/_-]*)["']\s*:''')
 
 
-def _walk(root, suffixes=(".ts", ".tsx", ".py")):
+def _walk(root: str, suffixes: tuple[str, ...] = (".ts", ".tsx", ".py")) -> Iterator[str]:
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [
             d for d in dirnames
@@ -108,7 +124,7 @@ def _walk(root, suffixes=(".ts", ".tsx", ".py")):
                 yield os.path.join(dirpath, name)
 
 
-def frontend_routes():
+def frontend_routes() -> set[str]:
     """Every literal wire route (query-stripped) + template-literal prefixes."""
     routes = set()
     for path in _walk(FRONTEND_ROOTS[0]):
@@ -127,7 +143,7 @@ def frontend_routes():
     return routes
 
 
-def gateway_arms():
+def gateway_arms() -> tuple[set[str], set[str], set[str]]:
     """(exact_literals, prefix_arms, regex_patterns) the gateway can answer.
 
     The route table IS the wire SSOT (2026-09-04 Phase 1 refactor: the
@@ -148,11 +164,11 @@ def gateway_arms():
     return literals, prefixes, patterns
 
 
-def _normalize(route):
+def _normalize(route: str) -> str:
     return route.rstrip("/") or "/"
 
 
-def _matches(route, literals, prefixes, patterns):
+def _matches(route: str, literals: set[str], prefixes: set[str], patterns: set[str]) -> bool:
     """Exact arms match exactly; startswith arms match prefixes; regex
     arms fullmatch. Never conflate the three — /v1/tools (exact, a
     CHROME_STUBS key) must NOT cover /v1/tools/speech-length (dead)."""
@@ -173,7 +189,7 @@ def _matches(route, literals, prefixes, patterns):
 
 class WireSurfaceTests(unittest.TestCase):
 
-    def test_frontend_wire_is_served_by_gateway(self):
+    def test_frontend_wire_is_served_by_gateway(self) -> None:
         literals, prefixes, patterns = gateway_arms()
         self.assertTrue(literals or patterns, "no gateway route arms found — scan broken")
         exempt = REVIEWING_PREFIXES + tuple(REVIEWING_EXACT)
@@ -189,7 +205,7 @@ class WireSurfaceTests(unittest.TestCase):
             "face). Serve them, or delete the caller.",
         )
 
-    def test_reviewing_exemptions_are_not_yet_fossilized(self):
+    def test_reviewing_exemptions_are_not_yet_fossilized(self) -> None:
         # Every REVIEWING entry must name real frontend routes that are
         # really unserved — when a lane is settled (re-served or caller
         # deleted), its stale exemption must fail HERE, not rot silently.

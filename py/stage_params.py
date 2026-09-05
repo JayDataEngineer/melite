@@ -86,6 +86,9 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Type
 
 from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
 
+# The stage/request body shape: decoded JSON (objects, arrays, scalars).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
+
 
 # ── the closed Kind vocabulary lives in py/flow.py; we type-hint it
 #    but import lazily to avoid a cycle (flow.py imports stage_params,
@@ -119,14 +122,14 @@ if TYPE_CHECKING:
 # inside that package is fixed: "schema".
 
 
-def _import_schema_lazy(modname: str, classname: str) -> Callable:
+def _import_schema_lazy(modname: str, classname: str) -> Callable[[], Type[BaseModel]]:
     """Returns a no-arg callable that, on first call, imports the
     module and returns the class. Subsequent calls return the
     cached class. Raises ImportError at call time if the module is
     not mounted (the wall test mounts a stub before invoking)."""
-    cached: Dict[str, Any] = {}
+    cached: dict[str, Type[BaseModel] | BaseException] = {}
 
-    def _load():
+    def _load() -> Type[BaseModel]:
         if "cls" in cached:
             return cached["cls"]
         if "err" in cached:
@@ -218,12 +221,12 @@ class _KindValue:
     lazily because py/flow.py imports this module."""
 
     @staticmethod
-    def _kinds() -> set:
+    def _kinds() -> set[str]:
         from flow import Kind
         return {k.value for k in Kind}
 
     @staticmethod
-    def check(name: str, value: Any, where: str) -> Any:
+    def check(name: str, value: JsonValue, where: str) -> str:
         if not isinstance(value, str):
             raise ValueError(
                 "%s kind %r must be a string Kind.value "
@@ -274,7 +277,7 @@ class CardSchemaRow(_Frozen):
 
     @model_validator(mode="before")
     @classmethod
-    def _kind_check(cls, data: Any) -> Any:
+    def _kind_check(cls, data: JsonValue | CardSchemaRow) -> JsonValue | CardSchemaRow:
         if not isinstance(data, dict):
             return data
         for k in ("kind_inputs", "kind_outputs"):
@@ -345,13 +348,13 @@ class ParamSchemaRegistry(_Frozen):
                 % dupes)
         return self
 
-    def get(self, card_id: str):
+    def get(self, card_id: str) -> CardSchemaRow | None:
         for r in self.rows:
             if r.card_id == card_id:
                 return r
         return None
 
-    def card_ids(self) -> tuple:
+    def card_ids(self) -> tuple[str, ...]:
         return tuple(r.card_id for r in self.rows)
 
 
@@ -448,7 +451,7 @@ class StageParamError(ValueError):
     pydantic validators and the door both surface it LOUDLY."""
 
 
-def _resolve_schema(card_id: str):
+def _resolve_schema(card_id: str) -> Type[BaseModel] | None:
     """Lazy import — only at gate time. The wall test mounts
     the card packages via `_mount_cards_for_wall` before invoking;
     normal process paths (gateway, validate_engines) have the
@@ -462,7 +465,7 @@ def _resolve_schema(card_id: str):
     return loader()
 
 
-def validate_stage_params(card_id: str, params: Any,
+def validate_stage_params(card_id: str, params: JsonValue,
                           where: str = "stage") -> None:
     """Pass 1: the body gate. If `card_id` is in the registry,
     validate `params` against the schema_class. A typo'd knob
@@ -500,7 +503,7 @@ def validate_stage_params(card_id: str, params: Any,
     return
 
 
-def card_outputs(card_id: str) -> dict:
+def card_outputs(card_id: str) -> dict[str, str]:
     """The card's typed outputs (a {name: Kind.value} dict). Empty
     for an unknown card; callers fall through to engine
     DEFAULT_OUTPUT. The kind check downstream consults this when
@@ -511,7 +514,7 @@ def card_outputs(card_id: str) -> dict:
     return dict(row.kind_outputs)
 
 
-def card_inputs(card_id: str) -> dict:
+def card_inputs(card_id: str) -> dict[str, str]:
     """The card's typed inputs (a {name: Kind.value} dict). Empty
     for an unknown card. The lattice uses this when Stage.expected
     is empty — the card's contract fills the missing keys."""
@@ -524,7 +527,7 @@ def card_inputs(card_id: str) -> dict:
 # ── a stamp helper (the diagnostic sidecar) ────────────────────────
 
 
-def stamp_validated(card_id: str, params: Any) -> Any:
+def stamp_validated(card_id: str, params: JsonValue) -> JsonValue:
     """For the per-stage params dict: when the card has a schema,
     construct the validated row and store its dump in
     `params["_schema_validated"]`. The engine and the sidecar can

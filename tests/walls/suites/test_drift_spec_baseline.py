@@ -57,7 +57,7 @@ TWOSTEP = {
 # naming the offending surface — the same compile-time feedback
 # the AI iterates on.
 
-def test_drift_extra_top_level_key_refuses():
+def test_drift_extra_top_level_key_refuses() -> None:
     """The body carries a top-level key the schema doesn't declare.
     extra=forbid refuses AT CONSTRUCTION. (2026-09-05 retirement:
     a fossil flow spec carrying the yaml-era `edges` key refuses
@@ -69,7 +69,7 @@ def test_drift_extra_top_level_key_refuses():
     assert "fossil_field" in str(e.value)
 
 
-def test_drift_yaml_era_top_key_refuses():
+def test_drift_yaml_era_top_key_refuses() -> None:
     """The `edges` key from the yaml flow format retired 2026-09-05.
     A body carrying it refuses loud (the schema's _INLINE_TOP_KEYS
     is {id, description, stages}; edges is a dead key)."""
@@ -80,7 +80,7 @@ def test_drift_yaml_era_top_key_refuses():
     assert "edges" in str(e.value)
 
 
-def test_drift_stage_unknown_field_refuses():
+def test_drift_stage_unknown_field_refuses() -> None:
     """A stage row carries a field the Stage pydantic doesn't
     declare. extra=forbid refuses AT CONSTRUCTION. (The fossil
     yamlFlow/yamlRunId names retired — a stage row that names one
@@ -99,7 +99,7 @@ def test_drift_stage_unknown_field_refuses():
     assert "fossil_field" in str(e.value)
 
 
-def test_drift_unknown_engine_refuses():
+def test_drift_unknown_engine_refuses() -> None:
     """The spec renames a stage's engine to a name the plugin
     registry doesn't declare. The Flow constructor runs
     validate_engines (plugin bus) HERE and refuses the unknown
@@ -118,7 +118,7 @@ def test_drift_unknown_engine_refuses():
     assert "no-such-engine-xyz" in str(e.value)
 
 
-def test_drift_wire_to_nonexistent_stage_refuses():
+def test_drift_wire_to_nonexistent_stage_refuses() -> None:
     """A stage's input names a stage that doesn't exist. The
     typed-edge validation refuses — a wire that names a node that
     isn't in the graph can't be resolved (it would index-align
@@ -142,7 +142,7 @@ def test_drift_wire_to_nonexistent_stage_refuses():
     assert "ghost" in str(e.value)
 
 
-def test_drift_duplicate_stage_id_refuses():
+def test_drift_duplicate_stage_id_refuses() -> None:
     """Two stages share an id. The Flow schema's unique-id check
     refuses — the graph can't be index-aligned with duplicates
     (a re-run would round-robin between them and never know which
@@ -170,7 +170,7 @@ def test_drift_duplicate_stage_id_refuses():
 # same edges. The compile door is the SAME validation the run door
 # runs; what compiles here is what runs.
 
-def test_compiled_flow_equals_module_flow():
+def test_compiled_flow_equals_module_flow() -> None:
     """The compile door is the run door: a body that compiles
     produces a Flow identical to the module's declaration (same
     stages, same edges, same kinds). The drift wall is symmetric

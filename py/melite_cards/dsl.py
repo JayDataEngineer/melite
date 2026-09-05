@@ -22,9 +22,27 @@ emit in first-seen group order; the group label is the capitalized id;
 zone defaults to "params".
 """
 
+from __future__ import annotations
+
 import re
 from dataclasses import dataclass, replace
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar, TypedDict
+
+if TYPE_CHECKING:
+    from melite_models import Model
+
+# The wire-fragment shape: decoded JSON (objects, arrays, scalars).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
+
+
+class _CardNamespace(TypedDict, total=False):
+    """The class-body keys _CardMeta consumes (id/models/families/pack) —
+    Field members, methods and docstrings ride through to
+    type.__new__ opaquely."""
+    id: str
+    models: tuple[type[Model], ...]
+    families: tuple[str, ...]
+    pack: str
 
 IDENT_RE = re.compile(r"^[a-z_][a-z0-9_-]*$")
 _FIELD_NAME_RE = re.compile(r"^[a-z_][a-z0-9_]*$")
@@ -36,10 +54,6 @@ TYPE_NAMES = {
     "video": "video", "file": "file", "loras": "loras",
     "controlnet": "controlnet",
 }
-
-# Binary wire types: dropped from the flat fields list, kept in
-# schema_groups (editor_forms._BINARY_FIELD_TYPES — the C's law).
-BINARY_FIELD_TYPES = frozenset(("image", "audio", "video", "file"))
 
 
 class ValidationError(Exception):
@@ -54,12 +68,12 @@ class VocabRef:
 
     name: str
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not (isinstance(self.name, str) and self.name.startswith("$")):
             raise ValidationError(
                 "VocabRef name must start with '$' (got %r)" % (self.name,))
 
-    def resolve(self, options_vocab):
+    def resolve(self, options_vocab: dict[str, list[str]]) -> list[str]:
         key = self.name[1:]
         if key not in options_vocab:
             raise ValidationError(
@@ -86,17 +100,17 @@ class Field:
     min: float | int | None = None
     max: float | int | None = None
     step: float | None = None
-    default: object = None
+    default: str | int | float | bool | None = None
     required: bool = False
     placeholder: str = ""
     tooltip: str = ""
     visible_when: str = ""
-    options: object = None
-    families: tuple = ()
-    type: str = None
-    name: str = None                 # set once by _CardMeta
+    options: VocabRef | list[str] | tuple[str, ...] | str | None = None
+    families: tuple[str, ...] = ()
+    type: str | None = None
+    name: str | None = None          # set once by _CardMeta
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if isinstance(self.families, str):
             object.__setattr__(self, "families", (self.families,))
         object.__setattr__(self, "type",
@@ -107,7 +121,7 @@ class Field:
                 "Field needs a type — use a typed subclass or type=...")
         self._validate()
 
-    def _validate(self):
+    def _validate(self) -> None:
         if self.min is not None and self.max is not None \
                 and self.min > self.max:
             raise ValidationError(
@@ -129,14 +143,15 @@ class Field:
 
     # -- wire emission (the _emit_field key order, verbatim) -------------
 
-    def families_keep(self, nmodel):
+    def families_keep(self, nmodel: str) -> bool:
         """The yaml families filter: naming families the model is not in
         drops the field. Empty families = serves every model."""
         if not self.families:
             return True
         return any(_norm(f) == nmodel for f in self.families)
 
-    def emit(self, with_group, options_vocab):
+    def emit(self, with_group: bool,
+           options_vocab: dict[str, list[str]]) -> dict[str, JsonValue]:
         o = {"name": self.name}
         if self.type:
             o["type"] = self.type
@@ -220,17 +235,17 @@ class ControlNet(Field):
     TYPE = "controlnet"
 
 
-def _norm(s):
+def _norm(s: str | None) -> str:
     """The C's normalization: non-alnum → '-', lowercase."""
     return re.sub(r"[^a-z0-9]+", "-", (s or "").lower()).strip("-")
 
 
-def _g(v):
+def _g(v: int | float) -> int | float:
     """C '%g': integral values print without '.0'."""
     return int(v) if float(v).is_integer() else float(v)
 
 
-def _num_or_str(v):
+def _num_or_str(v: str | int | float | bool) -> str | int | float | bool:
     """Inline defaults — the yaml defval path verbatim (editor_forms
     _num): '42' → 42, '1.0' → 1.0. NO %g collapse on defaults (a
     declared 1.0 serves 1.0, like the yaml wire; min/max/step DO %g)."""
@@ -248,7 +263,7 @@ def _num_or_str(v):
     return s
 
 
-def _parse_options_str(field_name, raw):
+def _parse_options_str(field_name: str, raw: str) -> list[str]:
     """Inline JSON ('["negative", "positive"]') or a bare comma list."""
     import json
     if raw.startswith("["):
@@ -264,7 +279,8 @@ def _parse_options_str(field_name, raw):
         % (field_name, raw))
 
 
-def _absorb_models(name, cid, models, fields, seen):
+def _absorb_models(name: str, cid: str, models: tuple[type[Model], ...],
+                   fields: list[Field], seen: set[str]) -> tuple[list[Field], set[str]]:
     """The interlock's engine: board Model classes → derive the mods
     surface. MODS ARE MODEL-LEVEL DECLARATIONS (Model.mods tuples of
     ActionCardPack classes); the card never hand-lists mod fields —
@@ -322,14 +338,15 @@ def _absorb_models(name, cid, models, fields, seen):
     return out, seen
 
 
-def _field_sig(f):
+def _field_sig(f: Field) -> tuple[tuple[str, str], ...]:
     """A field's declaration shape, name/families aside (the merge
     key for same-pack flavors)."""
     return tuple(sorted((k, repr(v)) for k, v in vars(f).items()
                         if k not in ("name", "families")))
 
 
-def _assert_flavors_agree(name, first, other):
+def _assert_flavors_agree(name: str, first: type[ActionCardPack],
+                          other: type[ActionCardPack]) -> None:
     fi = {f.name: _field_sig(f) for f in first._fields_}
     oi = {f.name: _field_sig(f) for f in other._fields_}
     for nm in sorted(set(fi) & set(oi)):
@@ -363,7 +380,9 @@ class _CardMeta(type):
     that is the point). Card classes absorb model classes; model
     classes are designed to be absorbed — the interlock."""
 
-    def __new__(mcls, name, bases, ns):
+    def __new__(mcls: type[_CardMeta], name: str,
+                bases: tuple[type[ActionCard] | type[object], ...],
+                ns: _CardNamespace) -> type[ActionCard] | type[Mod]:
         cls = super().__new__(mcls, name, bases, ns)
         cid = ns.get("id", "")
         fields = []
@@ -403,6 +422,21 @@ class _CardMeta(type):
             raise ValidationError(
                 "%s: pack %r declares no fields — a pack is a field "
                 "block, an empty one is dead machinery" % (name, pack))
+        # PHANTOM PACK: a LorasMod flavor with zero rows advertises the
+        # LoRA control (the field rides the card) while /v1/loras would
+        # serve an empty list — the picker renders "nothing installed"
+        # over a declared capability (the ltx-2-3 lesson, mod-shaped:
+        # advertised surface must be servable surface). The base
+        # LorasMod itself (rows=()) is the schema parent and passes —
+        # only DECLARING flavors (direct subclasses) must carry rows.
+        if pack and not cid and bases and \
+                getattr(bases[0], "__name__", "") == "LorasMod" and \
+                not ns.get("rows", ()):
+            raise ValidationError(
+                "%s: a LorasMod flavor with zero rows is a phantom "
+                "capability — the LoRA control would render over an "
+                "empty /v1/loras pack; declare LoraRow rows or drop "
+                "the mod" % name)
         if fields and not cid and not pack:
             raise ValidationError(
                 "%s declares fields but no card id" % name)
@@ -483,20 +517,20 @@ class ActionCard(metaclass=_CardMeta):
     layout = "form"
 
     @classmethod
-    def families_of(cls):
+    def families_of(cls: type[ActionCard]) -> tuple[str, ...]:
         """Model families this card covers (the yaml `families:` rows).
         Subclasses declare as a tuple; order matters (first-family
         match wins the card outright)."""
         return tuple(getattr(cls, "families", ()))
 
     @classmethod
-    def declares_prompt(cls):
+    def declares_prompt(cls: type[ActionCard]) -> bool:
         """The _card_declares_prompt probe's class equivalent: does the
         surface carry a prompt field? (enhance recipe advertisement)."""
         return any(f.name == "prompt" for f in cls._fields_)
 
     @classmethod
-    def mod_entries(cls):
+    def mod_entries(cls: type[ActionCard]) -> list[Field]:
         """The mods-zone tail (loras/controlnet kinds + their trailing
         scalar knobs), in declaration order — the _modifiers port."""
         return list(cls._fields_)

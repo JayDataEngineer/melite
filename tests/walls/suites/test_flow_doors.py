@@ -18,11 +18,16 @@ the laws exist to prevent.
 import json as _json
 import urllib.request
 import urllib.error
+from collections.abc import Iterator
 
 import pytest
 
 
-def _post(port, path, body):
+def _post(
+    port: int,
+    path: str,
+    body: dict[str, str | list[dict[str, str]] | dict[str, str | list[dict[str, str]]]],
+) -> tuple[int, dict[str, str | int | float | bool | list[str] | dict[str, str] | None]]:
     """POST a JSON body to the scratch gateway; return (status, body)."""
     req = urllib.request.Request(
         "http://127.0.0.1:%d/%s" % (port, path),
@@ -41,7 +46,7 @@ def _post(port, path, body):
 
 
 @pytest.fixture(scope="module")
-def scratch_gateway():
+def scratch_gateway() -> Iterator[int]:
     from _anchor import boot_scratch_gateway, reap_gateway
     import sys as _sys
     port, proc = boot_scratch_gateway(
@@ -58,7 +63,10 @@ def scratch_gateway():
     {"model": "y", "flow_inline": {"id": "z", "stages": []}},
     {"flow": "x", "model": "y", "flow_inline": {"id": "z", "stages": []}},
 ])
-def test_http_flows_start_ambiguous_doors_refuse_4xx(scratch_gateway, body):
+def test_http_flows_start_ambiguous_doors_refuse_4xx(
+    scratch_gateway: int,
+    body: dict[str, str | list[dict[str, str]] | dict[str, str | list[dict[str, str]]]],
+) -> None:
     """Naming more than one of {flow, flow_inline, model} is
     ambiguous — the resolver must refuse 4xx and register NO run.
     The literal "ambiguous request" string pins the contract so a
@@ -69,7 +77,7 @@ def test_http_flows_start_ambiguous_doors_refuse_4xx(scratch_gateway, body):
     assert "ambiguous" in str(body_out).lower(), body_out
 
 
-def test_http_flows_start_unknown_keys_refuse_4xx(scratch_gateway):
+def test_http_flows_start_unknown_keys_refuse_4xx(scratch_gateway: int) -> None:
     """A request that names NO door at all (just an arbitrary key)
     also refuses — the resolver only accepts the three declared
     doors."""
@@ -79,7 +87,9 @@ def test_http_flows_start_unknown_keys_refuse_4xx(scratch_gateway):
 
 
 # ── 2. Validate-door compile-time refusal ──────────────────────────
-def test_http_flows_validate_inline_body_with_extra_top_keys_refuses_400(scratch_gateway):
+def test_http_flows_validate_inline_body_with_extra_top_keys_refuses_400(
+    scratch_gateway: int,
+) -> None:
     """The validate door accepts an INLINE flow body (id + stages);
     any top-level key outside the inline set is a refusal — the
     agent iterates without a queue slot."""
@@ -91,7 +101,9 @@ def test_http_flows_validate_inline_body_with_extra_top_keys_refuses_400(scratch
     assert "unknown keys" in str(body_out).lower(), body_out
 
 
-def test_http_flows_validate_inline_body_no_stages_refuses_400(scratch_gateway):
+def test_http_flows_validate_inline_body_no_stages_refuses_400(
+    scratch_gateway: int,
+) -> None:
     """An inline body without stages is structurally incomplete —
     the validate door returns a FlowError."""
     code, body_out = _post(
@@ -102,7 +114,7 @@ def test_http_flows_validate_inline_body_no_stages_refuses_400(scratch_gateway):
 
 
 # ── 3. Start-door semantic refusal (the "required param" class) ───
-def test_http_flows_start_empty_prompt_refuses_400(scratch_gateway):
+def test_http_flows_start_empty_prompt_refuses_400(scratch_gateway: int) -> None:
     """The krea-2 image card declares 'prompt' as a required
     parameter (form surface). The start door's semantic validator
     must refuse an empty/missing prompt with a 400 — the AI loop

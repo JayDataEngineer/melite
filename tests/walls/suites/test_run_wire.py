@@ -40,7 +40,12 @@ import run_wire  # noqa: E402
 
 # ── fixtures ───────────────────────────────────────────────────────
 
-def _run_dir(state, run_id, sidecar, media=None):
+def _run_dir(
+    state: Path,
+    run_id: str,
+    sidecar: dict[str, str | int] | None,
+    media: list[str] | None = None,
+) -> Path:
     d = state / "output" / run_id
     d.mkdir(parents=True)
     if sidecar is not None:              # None = legacy dir, no sidecar
@@ -57,7 +62,7 @@ GOOD_SIDECAR = {
 
 
 @pytest.fixture()
-def state_tree(tmp_path):
+def state_tree(tmp_path: Path) -> Path:
     root = tmp_path / "state"
     root.mkdir()
     (root / "drafts").mkdir()
@@ -66,7 +71,7 @@ def state_tree(tmp_path):
 
 # ── A. shape refusals happen AT CONSTRUCTION ───────────────────────
 
-def _row(**over):
+def _row(**over: str | int | list[dict[str, str | int]]) -> dict[str, str | int | list[dict[str, str | int]] | dict[str, int]]:
     base = dict(
         run_id="run-abc123-def456", name="krea-2", flow="krea-2",
         status="completed", created_at=1788563119, prompt="", seed=1,
@@ -75,34 +80,34 @@ def _row(**over):
     return base
 
 
-def test_run_row_refuses_unknown_status():
+def test_run_row_refuses_unknown_status() -> None:
     with pytest.raises(run_wire.ValidationError):
         run_wire.RunRow.model_validate(_row(status="runnng"))
 
 
-def test_run_row_refuses_negative_epoch():
+def test_run_row_refuses_negative_epoch() -> None:
     with pytest.raises(run_wire.ValidationError):
         run_wire.RunRow.model_validate(_row(created_at=-1))
 
 
-def test_run_row_refuses_non_run_id():
+def test_run_row_refuses_non_run_id() -> None:
     with pytest.raises(run_wire.ValidationError):
         run_wire.RunRow.model_validate(_row(run_id="../../etc/passwd"))
 
 
-def test_run_row_refuses_extra_keys():
+def test_run_row_refuses_extra_keys() -> None:
     with pytest.raises(run_wire.ValidationError):
         run_wire.RunRow.model_validate(_row(surprise=1))
 
 
-def test_run_row_refuses_unlisted_artifact_type():
+def test_run_row_refuses_unlisted_artifact_type() -> None:
     with pytest.raises(run_wire.ValidationError):
         run_wire.RunRow.model_validate(_row(artifacts=[
             {"name": "a.obj", "path": "./x", "bytes": 1,
              "url": "/v1/assets/runs/r/a.obj", "type": "mesh", "size": 1}]))
 
 
-def test_run_row_closed_status_vocab_is_complete():
+def test_run_row_closed_status_vocab_is_complete() -> None:
     served = {"running", "completed", "failed", "stopped", "success",
               "unknown"}
     assert served == {s.value for s in run_wire.RunStatus}
@@ -110,7 +115,7 @@ def test_run_row_closed_status_vocab_is_complete():
 
 # ── B. drifted sources degrade LOUDLY, listing continues ───────────
 
-def test_runs_listing_round_trips_and_serves_artifact_rows(state_tree):
+def test_runs_listing_round_trips_and_serves_artifact_rows(state_tree: Path) -> None:
     _run_dir(state_tree, "run-good0001-cafe", GOOD_SIDECAR,
              media=["SaveImage.0_gen_00001_.png"])
     out = editor_runs.runs(str(state_tree), limit=50)
@@ -125,7 +130,7 @@ def test_runs_listing_round_trips_and_serves_artifact_rows(state_tree):
     assert art.type == "image"
 
 
-def test_c_epoch_created_key_still_reads(state_tree):
+def test_c_epoch_created_key_still_reads(state_tree: Path) -> None:
     """The C-era `created` fallback is contract (2026-09-04 live bug:
     py runs read epoch 0 and buried fresh generations)."""
     _run_dir(state_tree, "run-old000001-beef",
@@ -136,21 +141,21 @@ def test_c_epoch_created_key_still_reads(state_tree):
     assert env.runs[0].created_at == 100
 
 
-def test_legacy_dir_without_sidecar_reads_success(state_tree):
+def test_legacy_dir_without_sidecar_reads_success(state_tree: Path) -> None:
     _run_dir(state_tree, "run-leg000001-face", None, media=["out.png"])
     env = run_wire.RunsEnvelope.model_validate(
         editor_runs.runs(str(state_tree)))
     assert env.runs[0].status is run_wire.RunStatus.SUCCESS
 
 
-def test_sidecar_without_status_reads_unknown(state_tree):
+def test_sidecar_without_status_reads_unknown(state_tree: Path) -> None:
     _run_dir(state_tree, "run-unst000001-aaaa", {"model": "krea-2"})
     env = run_wire.RunsEnvelope.model_validate(
         editor_runs.runs(str(state_tree)))
     assert env.runs[0].status is run_wire.RunStatus.UNKNOWN
 
 
-def test_zombie_running_sidecar_reads_failed(state_tree):
+def test_zombie_running_sidecar_reads_failed(state_tree: Path) -> None:
     _run_dir(state_tree, "run-zmb000001-bbbb",
              {"model": "krea-2", "status": "running", "created_at": 5})
     env = run_wire.RunsEnvelope.model_validate(
@@ -160,7 +165,7 @@ def test_zombie_running_sidecar_reads_failed(state_tree):
 
 # ── C. drafts index ────────────────────────────────────────────────
 
-def test_drafts_index_round_trips_with_fallback_fields(state_tree):
+def test_drafts_index_round_trips_with_fallback_fields(state_tree: Path) -> None:
     dr = state_tree / "drafts"
     (dr / "draft-11111111-a.json").write_text(
         json.dumps({"model": "krea-2", "name": " titled "}), encoding="utf-8")
@@ -175,7 +180,7 @@ def test_drafts_index_round_trips_with_fallback_fields(state_tree):
     assert by_id["draft-22222222-b"].model == ""
 
 
-def test_drafts_index_skips_non_json_and_short_names(state_tree):
+def test_drafts_index_skips_non_json_and_short_names(state_tree: Path) -> None:
     dr = state_tree / "drafts"
     (dr / "notes.txt").write_text("x")       # not .json
     (dr / ".json").write_text("{}")          # 5 chars: under the L<6 gate
@@ -186,7 +191,7 @@ def test_drafts_index_skips_non_json_and_short_names(state_tree):
 
 # ── D. live estate state (present) round-trips ─────────────────────
 
-def test_live_runs_state_round_trips():
+def test_live_runs_state_round_trips() -> None:
     state = REPO / "data" / "runs"
     if not (state / "output").is_dir():
         pytest.skip("no local run state on this machine")
@@ -199,7 +204,7 @@ def test_live_runs_state_round_trips():
 
 # ── E. the birth-doc gate (2026-09-05) ─────────────────────────────
 
-def test_birth_gate_accepts_every_composed_doc_shape():
+def test_birth_gate_accepts_every_composed_doc_shape() -> None:
     """drafts_save's composed doc validates at the door: normal saves,
     and the open-extras preservation (caller members ride untouched —
     the gate never reads them)."""
@@ -218,7 +223,7 @@ def test_birth_gate_accepts_every_composed_doc_shape():
         run_wire.validate_draft_birth(doc)
 
 
-def test_birth_gate_catches_composer_drift():
+def test_birth_gate_catches_composer_drift() -> None:
     """The subset gate refuses every drifted birth shape loudly —
     the corruption class that would otherwise persist silently."""
     from pydantic import ValidationError
@@ -247,15 +252,15 @@ def test_birth_gate_catches_composer_drift():
     assert good == {"draftId": None}             # no accidental mutation
 
 
-def test_birth_gate_serves_500_on_drift_never_persists(monkeypatch,
-                                                       tmp_path):
+def test_birth_gate_serves_500_on_drift_never_persists(monkeypatch: pytest.MonkeyPatch,
+                                                       tmp_path: Path) -> None:
     """If the composer ever emits drift, drafts_save refuses to
     PERSIST it — a structured 500, never a corrupted doc on disk."""
     import editor_runs as er
 
     original = er._ray_compose_draft_doc
 
-    def drifted(body, draft_id):
+    def drifted(body: dict[str, str], draft_id: str) -> dict[str, str | int | list[dict[str, str | list[str]]] | None]:
         doc = original(body, draft_id)
         doc["status"] = None                     # composer bug
         return doc

@@ -21,6 +21,7 @@ The engine.yaml concept lives in flows/<name>/flow.yaml
 """
 import ast
 import os
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Optional
 
@@ -32,6 +33,11 @@ from pydantic import BaseModel, Field
 
 REPO = Path(__file__).resolve().parents[3]
 PLUGINS_ROOT = REPO / "plugins"
+
+# A plugin.py Plugin class as AST-read: class-level literals (slugs,
+# tuples/lists of slugs, webui/dependency maps) or None when the file
+# declares nothing readable.
+PluginAttrs = dict[str, str | bool | tuple[str, ...] | list[str] | dict[str, str | tuple[str, ...]] | list[dict[str, str | tuple[str, ...]]] | tuple[dict[str, str | tuple[str, ...]], ...] | None]
 
 
 # --- the central spec ----------------------------------------------------
@@ -77,13 +83,13 @@ class NodesYamlDoc(BaseModel):
 
     @pydantic.field_validator("extensions", mode="before")
     @classmethod
-    def _null_is_empty(cls, v):
+    def _null_is_empty(cls, v: list[dict[str, str | bool | list[str]]] | str | None) -> list[dict[str, str | bool | list[str]]]:
         return [] if v is None else v
 
 
 # --- discovery (the actual estate layout) -------------------------------
 
-def discover_plugins():
+def discover_plugins() -> Iterator[tuple[str, Path]]:
     """Yield (plugin_id, plugin_dir) for every Python plugin.
 
     Layout: plugins/<group>/<id>/plugin.py
@@ -105,7 +111,7 @@ def discover_plugins():
 
 # --- AST-based plugin attr reading (no exec) ------------------------------
 
-def read_plugin_attrs(plugin_path):
+def read_plugin_attrs(plugin_path: Path) -> PluginAttrs | None:
     """Parse plugin.py with ast and collect class-level assignments.
     We do NOT import the module -- the test must be side-effect free."""
     src = plugin_path.read_text(encoding="utf-8")
@@ -131,7 +137,7 @@ PLUGIN_IDS = [pid for pid, _ in discover_plugins()]
 
 
 @pytest.mark.parametrize("plugin_id", PLUGIN_IDS, ids=PLUGIN_IDS)
-def test_plugin_has_plugin_class(plugin_id):
+def test_plugin_has_plugin_class(plugin_id: str) -> None:
     """Pattern 1 (structural) + 4 (manifest): the plugin class exists,
     its id matches the leaf, and its fields validate PluginSpec."""
     plugin_dir = next(d for pid, d in discover_plugins() if pid == plugin_id)
@@ -152,7 +158,7 @@ def test_plugin_has_plugin_class(plugin_id):
 
 @pytest.mark.parametrize("plugin_id", PLUGIN_IDS,
                          ids=PLUGIN_IDS)
-def test_plugin_has_models_for_every_genre(plugin_id):
+def test_plugin_has_models_for_every_genre(plugin_id: str) -> None:
     """If the plugin promises a genre, it MUST ship at least one
     model under models/<genre>/. Otherwise users hit a dead end."""
     plugin_dir = next(d for pid, d in discover_plugins() if pid == plugin_id)
@@ -171,7 +177,7 @@ def test_plugin_has_models_for_every_genre(plugin_id):
     )
 
 
-def discover_model_nodes_yamls(plugin_dir):
+def discover_model_nodes_yamls(plugin_dir: Path) -> Iterator[tuple[str, Path]]:
     """Yield (model_id, yaml_path) for every nodes.yaml under
     models/: BOTH the genre-level heads (models/<genre>/nodes.yaml —
     three files the old per-model-only walk silently skipped,
@@ -194,7 +200,7 @@ def discover_model_nodes_yamls(plugin_dir):
                 yield f"{genre.name}/{model.name}", nodes
 
 
-def gen_nodes_yamls():
+def gen_nodes_yamls() -> Iterator[tuple[str, Path]]:
     for pid, pdir in discover_plugins():
         for mid, path in discover_model_nodes_yamls(pdir):
             yield f"{pid}/{mid}", path
@@ -205,7 +211,7 @@ NODES_YAMLS = list(gen_nodes_yamls())
 
 @pytest.mark.parametrize("nodes_id", [nid for nid, _ in NODES_YAMLS],
                          ids=[nid for nid, _ in NODES_YAMLS])
-def test_model_nodes_yaml_validates(nodes_id):
+def test_model_nodes_yaml_validates(nodes_id: str) -> None:
     """Pattern 4 (manifest drift): every model has a nodes.yaml that
     validates against the REAL manifest schema (top level closed;
     every extension row closed and typed — the loader

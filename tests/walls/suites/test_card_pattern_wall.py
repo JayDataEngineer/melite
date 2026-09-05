@@ -55,6 +55,7 @@ import inspect
 import os
 import sys
 import unittest
+from collections.abc import Iterator
 
 from _anchor import REPO
 
@@ -64,7 +65,7 @@ import flow_graph
 _ENG_ROOT = os.path.join(REPO, "plugins", "engines")
 
 
-def _iter_card_dirs():
+def _iter_card_dirs() -> Iterator[tuple[str, str, str]]:
     """Yield (plugin, genre, card_dir) for every dir under any
     plugin's action_cards/<genre>/<card>/ that declares py/card.py —
     depth-2 plugins AND depth-3 category children (cpp)."""
@@ -97,7 +98,7 @@ def _iter_card_dirs():
                         yield pname, genre, cdir
 
 
-def _iter_all_compose_files():
+def _iter_all_compose_files() -> Iterator[str]:
     """Yield every compose module path the tree ships (compose/
     packages AND legacy engines/*/compose.py), depth-2 plugins and
     depth-3 category children alike."""
@@ -129,7 +130,7 @@ def _iter_all_compose_files():
                     yield cfile
 
 
-def _seed_graph(engine):
+def _seed_graph(engine: str) -> flow_graph.Skeleton:
     row = flow_graph.NodeRow(
         node_id="seed", node_type=engine, input_from=(),
         params={"workflow": {"seed": True}})
@@ -140,7 +141,7 @@ def _seed_graph(engine):
 class TestLaw1FileStructure(unittest.TestCase):
     """Every card owns the pattern set; the arm is never rootless."""
 
-    def test_every_card_owns_the_pattern_files(self):
+    def test_every_card_owns_the_pattern_files(self) -> None:
         cards = list(_iter_card_dirs())
         # the estate carries real cards — a zero means the walk broke
         self.assertGreater(len(cards), 8,
@@ -156,7 +157,7 @@ class TestLaw1FileStructure(unittest.TestCase):
                     "golden base h3-timeline)" % (
                         plugin, genre, os.path.basename(cdir), fname))
 
-    def test_action_cards_are_genre_grouped(self):
+    def test_action_cards_are_genre_grouped(self) -> None:
         """action_cards' direct children are GENRES (card dirs sit
         exactly one level below) — the walk's shape, pinned."""
         for plugin in sorted(os.listdir(_ENG_ROOT)):
@@ -180,7 +181,7 @@ class TestLaw1FileStructure(unittest.TestCase):
 class TestLaw2BusArity(unittest.TestCase):
     """card_compose speaks exactly (body, model, run_id, graph)."""
 
-    def test_every_compose_module_speaks_the_bus_contract(self):
+    def test_every_compose_module_speaks_the_bus_contract(self) -> None:
         import ast
         checked = 0
         for path in _iter_all_compose_files():
@@ -204,7 +205,7 @@ class TestLaw3BusDrive(unittest.TestCase):
     """Every engine's compose door is reachable through the exact
     gateway hop; an empty body refuses CLEANLY (never a crash)."""
 
-    def test_phase1_empty_body_clean_for_every_engine(self):
+    def test_phase1_empty_body_clean_for_every_engine(self) -> None:
         engines = plugins.scan_engines()
         compose_engines = []
         for etype in sorted(engines):
@@ -235,7 +236,7 @@ class TestLaw3BusDrive(unittest.TestCase):
             "(found %s)" % compose_engines)
 
 
-def _default_model(engine_type):
+def _default_model(engine_type: str) -> str:
     """A model name the dispatcher accepts: the plugin's first model
     row id (the class's card attribute names the card)."""
     engines = plugins.scan_engines()
@@ -257,7 +258,7 @@ def _default_model(engine_type):
 class TestLaw4IdentityGates(unittest.TestCase):
     """Every serving card declares an ability with a family route."""
 
-    def test_serving_cards_declare_ability(self):
+    def test_serving_cards_declare_ability(self) -> None:
         import catalog
         d = catalog.scan_catalog(REPO)
         cards = d.get("cards", [])
@@ -276,7 +277,7 @@ class TestLaw4IdentityGates(unittest.TestCase):
 class TestLaw5NoFossils(unittest.TestCase):
     """card.yaml and card_knobs.yaml are extinct tree-wide."""
 
-    def test_no_card_yaml(self):
+    def test_no_card_yaml(self) -> None:
         hits = []
         for root, _dirs, files in os.walk(os.path.join(REPO, "plugins")):
             if "__pycache__" in root or "vendor" in root \
@@ -289,7 +290,7 @@ class TestLaw5NoFossils(unittest.TestCase):
                          "card.yaml is EXTINCT — identity lives on the "
                          "ActionCard class (two SSOTs is zero SSOTs)")
 
-    def test_no_card_knobs_yaml(self):
+    def test_no_card_knobs_yaml(self) -> None:
         hits = []
         for root, _dirs, files in os.walk(os.path.join(REPO, "plugins")):
             if "__pycache__" in root or "vendor" in root \
@@ -308,7 +309,7 @@ class TestLaw6CategoryLaw(unittest.TestCase):
     container: EVERY child carries plugin markers (the shared walk's
     assumption — a stray markerless child would vanish silently)."""
 
-    def test_markerless_dirs_are_pure_categories(self):
+    def test_markerless_dirs_are_pure_categories(self) -> None:
         for entry in sorted(os.listdir(_ENG_ROOT)):
             e = os.path.join(_ENG_ROOT, entry)
             if not os.path.isdir(e) or entry.startswith("."):
@@ -342,7 +343,7 @@ class TestLaw7BoundaryLaw(unittest.TestCase):
     wall-shaped (PLUGIN ARCHITECTURE LAW: the bus is the only door
     between a plugin and the gateway)."""
 
-    def _py_files(self):
+    def _py_files(self) -> Iterator[tuple[str, str]]:
         for plugin in sorted(os.listdir(_ENG_ROOT)):
             proot = os.path.join(_ENG_ROOT, plugin)
             if not os.path.isdir(proot) or plugin.startswith("."):
@@ -354,7 +355,7 @@ class TestLaw7BoundaryLaw(unittest.TestCase):
                     if f.endswith(".py"):
                         yield plugin, os.path.join(root, f)
 
-    def _alias_map(self):
+    def _alias_map(self) -> dict[str, set[str]]:
         """plugin → set of package aliases its trees declare."""
         import re
         pat = re.compile(r'_PKG_ALIAS\s*=\s*["\']([\w.]+)["\']')
@@ -365,7 +366,7 @@ class TestLaw7BoundaryLaw(unittest.TestCase):
                     out.setdefault(plugin, set()).add(m.group(1))
         return out
 
-    def test_no_sibling_plugin_imports(self):
+    def test_no_sibling_plugin_imports(self) -> None:
         import ast
         aliases = self._alias_map()
         offenders = []
@@ -394,7 +395,7 @@ class TestLaw7BoundaryLaw(unittest.TestCase):
                             "(%s tree)" % (path, name, root))
         self.assertEqual(offenders, [])
 
-    def test_no_gateway_imports_in_plugin_trees(self):
+    def test_no_gateway_imports_in_plugin_trees(self) -> None:
         import ast
         offenders = []
         for plugin, path in self._py_files():
@@ -426,7 +427,7 @@ class TestLaw8CleanImport(unittest.TestCase):
 
     TIMEOUT = 60
 
-    def _import_targets(self):
+    def _import_targets(self) -> list[tuple[str, str, bool]]:
         """(label, path, is_package) for every door the bus loads."""
         targets = []
         for path in _iter_all_compose_files():
@@ -439,7 +440,7 @@ class TestLaw8CleanImport(unittest.TestCase):
                             init, True))
         return targets
 
-    def test_every_door_imports_clean_in_isolation(self):
+    def test_every_door_imports_clean_in_isolation(self) -> None:
         import subprocess
         # the REAL loader recipe for compose packages (whatever
         # machinery ref.load uses — the probe must not reinvent it)
@@ -494,7 +495,7 @@ class TestLaw9ManifestLaw(unittest.TestCase):
     statically (the loader reads these attrs; a drifted shape serves
     nothing)."""
 
-    def test_every_plugin_py_declares_the_manifest(self):
+    def test_every_plugin_py_declares_the_manifest(self) -> None:
         import ast
         checked = 0
         for plugin in sorted(os.listdir(_ENG_ROOT)):
@@ -558,7 +559,7 @@ class TestLaw10VendorRegistration(unittest.TestCase):
     move class) barks here — VENDOR LAW: submodule per engine,
     registered where it sits."""
 
-    def _gitlinks(self):
+    def _gitlinks(self) -> set[str]:
         import subprocess
         res = subprocess.run(
             ["git", "ls-files", "-s", "plugins/"],
@@ -568,7 +569,7 @@ class TestLaw10VendorRegistration(unittest.TestCase):
                 (line.split() for line in res.stdout.splitlines())
                 if parts and parts[0] == "160000"}
 
-    def _module_paths(self):
+    def _module_paths(self) -> set[str]:
         import configparser
         # strict=False: git itself tolerates duplicate keys in
         # .gitmodules (last wins) — the wall parses like git parses
@@ -577,7 +578,7 @@ class TestLaw10VendorRegistration(unittest.TestCase):
         return {cp.get(s, "path") for s in cp.sections()
                 if cp.has_option(s, "path")}
 
-    def test_gitlinks_and_gitmodules_agree(self):
+    def test_gitlinks_and_gitmodules_agree(self) -> None:
         gitlinks = self._gitlinks()
         declared = self._module_paths()
         self.assertTrue(gitlinks, "no submodules under plugins/ — "
@@ -604,7 +605,7 @@ class TestLaw11EngineABI(unittest.TestCase):
     optional. Every unload door (ENGINE TRANSITION ABI — boundary
     unloads await it) is async. AST-pinned across the estate."""
 
-    def _abi_files(self):
+    def _abi_files(self) -> Iterator[str]:
         for plugin in sorted(os.listdir(_ENG_ROOT)):
             proot = os.path.join(_ENG_ROOT, plugin)
             if not os.path.isdir(proot) or plugin.startswith("."):
@@ -616,7 +617,7 @@ class TestLaw11EngineABI(unittest.TestCase):
                     if f.endswith(".py"):
                         yield os.path.join(root, f)
 
-    def test_execute_and_unload_speak_the_abi(self):
+    def test_execute_and_unload_speak_the_abi(self) -> None:
         import ast
         offenders = []
         seen_execute = 0
@@ -665,7 +666,7 @@ class TestLaw12ArgvSSOT(unittest.TestCase):
     one home. An execute that hand-builds argv beside the renderer
     is two SSOTs, which is zero SSOTs."""
 
-    def test_flag_literals_only_in_renderers(self):
+    def test_flag_literals_only_in_renderers(self) -> None:
         import ast
         offenders = []
         cpp_root = os.path.join(_ENG_ROOT, "cpp")

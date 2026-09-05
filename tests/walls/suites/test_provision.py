@@ -31,32 +31,32 @@ COMFY_PROJECT = REPO / "infra" / "comfyui"
 
 # ── 1. the endpoint config ────────────────────────────────────────────
 
-def test_provision_mode_declared():
+def test_provision_mode_declared() -> None:
     cfg = json.loads(CONFIG.read_text())
     assert cfg.get("provision") in ("byo", "managed"), repr(cfg.get("provision"))
 
 
-def test_model_storage_keys_valid():
+def test_model_storage_keys_valid() -> None:
     cfg = json.loads(CONFIG.read_text())
     assert all(str(cfg.get(k, "")).strip()
                for k in ("model_base_path", "model_download_path")
                if cfg.get(k) is not None)
 
 
-def test_url_declared():
+def test_url_declared() -> None:
     cfg = json.loads(CONFIG.read_text())
     assert bool(cfg.get("url", "").strip())
 
 
 # ── 2. the estate env ────────────────────────────────────────────────
 
-def test_gateway_env_exists():
+def test_gateway_env_exists() -> None:
     gw = tomllib.loads((REPO / "pyproject.toml").read_text())
     deps = gw["project"]["dependencies"]
     assert bool(deps)
 
 
-def test_base_env_carrying_management_plane():
+def test_base_env_carrying_management_plane() -> None:
     gw = tomllib.loads((REPO / "pyproject.toml").read_text())
     deps = gw["project"]["dependencies"]
     _plane = ("pydantic", "comfy-script", "comfy-mcp", "comfyui-manager",
@@ -66,7 +66,7 @@ def test_base_env_carrying_management_plane():
     assert not missing, "missing: %s" % missing
 
 
-def test_dependency_groups_dev_only():
+def test_dependency_groups_dev_only() -> None:
     gw = tomllib.loads((REPO / "pyproject.toml").read_text())
     _mgmt = ("comfy-mcp", "comfyui-manager", "comfy-cli")
     _groups = gw.get("dependency-groups") or {}
@@ -78,20 +78,20 @@ def test_dependency_groups_dev_only():
         "groups %s / mgmt leak %s" % (_bad_groups, _mgmt_leak))
 
 
-def test_management_plane_stays_base():
+def test_management_plane_stays_base() -> None:
     gw = tomllib.loads((REPO / "pyproject.toml").read_text())
     _mgmt = ("comfy-mcp", "comfyui-manager", "comfy-cli")
     base_deps = "\n".join(gw["project"]["dependencies"])
     assert all(m in base_deps for m in _mgmt)
 
 
-def test_gateway_lock_tracked():
+def test_gateway_lock_tracked() -> None:
     assert (REPO / "uv.lock").is_file()
 
 
 # ── 3. the managed runtime ───────────────────────────────────────────
 
-def test_managed_core_pin_tracked():
+def test_managed_core_pin_tracked() -> None:
     cj = tomllib.loads((COMFY_PROJECT / "pyproject.toml").read_text())
     _pin = next(ln.strip() for ln in
                  (COMFY_PROJECT / "core.pin").read_text().splitlines()
@@ -99,54 +99,54 @@ def test_managed_core_pin_tracked():
     assert (COMFY_PROJECT / "core.pin").is_file() and len(_pin) >= 40
 
 
-def test_core_requirements_locked():
+def test_core_requirements_locked() -> None:
     cj = tomllib.loads((COMFY_PROJECT / "pyproject.toml").read_text())
     mdeps = cj["project"]["dependencies"]
     assert any("comfy-kitchen" in d for d in mdeps)
     assert any("comfyui-workflow-templates" in d for d in mdeps)
 
 
-def test_managed_lock_tracked():
+def test_managed_lock_tracked() -> None:
     assert (COMFY_PROJECT / "uv.lock").is_file()
 
 
-def test_comfyui_manager_as_install_rail():
+def test_comfyui_manager_as_install_rail() -> None:
     cj = tomllib.loads((COMFY_PROJECT / "pyproject.toml").read_text())
     mdeps = cj["project"]["dependencies"]
     assert any(d.startswith("comfyui-manager>=4") for d in mdeps)
 
 
-def test_managed_python_pin_is_range():
+def test_managed_python_pin_is_range() -> None:
     cj = tomllib.loads((COMFY_PROJECT / "pyproject.toml").read_text())
     assert "<" in cj["project"]["requires-python"]
 
 
 # ── 4. management plane: packages in-process ──────────────────────────
 
-def test_no_comfy_shell_wrapping():
+def test_no_comfy_shell_wrapping() -> None:
     prov_src = PROVISION.read_text()
     assert '"node", "install"' not in prov_src
     assert '"model", "download"' not in prov_src
     assert '"comfy-cli"' not in prov_src
 
 
-def test_provision_calls_comfy_mcp_in_process():
+def test_provision_calls_comfy_mcp_in_process() -> None:
     prov_src = PROVISION.read_text()
     assert "comfy_mcp" in prov_src and "install_node" in prov_src
     assert "download_model" in prov_src
 
 
-def test_bootstrap_py_deleted():
+def test_bootstrap_py_deleted() -> None:
     assert not (REPO / "bootstrap.py").exists()
 
 
-def test_setup_sh_routes_through_base_env():
+def test_setup_sh_routes_through_base_env() -> None:
     setup = (REPO / "setup.sh").read_text()
     assert "--group management" not in setup
     assert "provision.py" in setup
 
 
-def test_declaration_manifest_non_empty():
+def test_declaration_manifest_non_empty() -> None:
     r = subprocess.run([sys.executable, str(REPO / "infra" / "extension_lane.py"),
                         "--repo", str(REPO), "--format", "json"],
                        capture_output=True, text=True, cwd=str(REPO))
@@ -159,7 +159,7 @@ def test_declaration_manifest_non_empty():
 
 # ── 5. behavior: BYO never installs; dead instances refuse ────────────
 
-def test_sync_refuses_in_byo_mode():
+def test_sync_refuses_in_byo_mode() -> None:
     byo = Path("/tmp/_provision_byo.json")
     byo.write_text(json.dumps(
         {"provision": "byo", "url": "http://127.0.0.1:8188",
@@ -170,7 +170,7 @@ def test_sync_refuses_in_byo_mode():
     assert r.returncode == 2 and "never install" in r.stdout, "rc=%d" % r.returncode
 
 
-def test_verify_refuses_dead_instance():
+def test_verify_refuses_dead_instance() -> None:
     dead = Path("/tmp/_provision_dead.json")
     dead.write_text(json.dumps(
         {"provision": "byo", "url": "http://127.0.0.1:1",
@@ -180,7 +180,7 @@ def test_verify_refuses_dead_instance():
     assert r.returncode == 1 and "instance live" in r.stdout, "rc=%d" % r.returncode
 
 
-def test_byo_boot_cmd():
+def test_byo_boot_cmd() -> None:
     byo = Path("/tmp/_provision_byo.json")
     byo.write_text(json.dumps(
         {"provision": "byo", "url": "http://127.0.0.1:8188",
@@ -193,46 +193,46 @@ def test_byo_boot_cmd():
 
 # ── 6. agent harness mount ───────────────────────────────────────────
 
-def test_provisioner_bundle_tracked():
+def test_provisioner_bundle_tracked() -> None:
     PROV = REPO / "plugins" / "harness" / "dsh" / "provisioner"
     ppkg = json.loads((PROV / "package.json").read_text())
     assert (PROV / "cordis.patch.yml").is_file()
     assert ppkg.get("dsh", {}).get("bundle", {}).get("patch") == "./cordis.patch.yml"
 
 
-def test_provisioner_deps_relative_link():
+def test_provisioner_deps_relative_link() -> None:
     PROV = REPO / "plugins" / "harness" / "dsh" / "provisioner"
     ppkg = json.loads((PROV / "package.json").read_text())
     assert all(str(v).startswith("link:../") for v in ppkg["dependencies"].values())
 
 
-def test_bundle_patch_machine_neutral():
+def test_bundle_patch_machine_neutral() -> None:
     PROV = REPO / "plugins" / "harness" / "dsh" / "provisioner"
     sculpt = (PROV / "cordis.patch.yml").read_text()
     assert "/home/" not in sculpt and "sk-" not in sculpt
 
 
-def test_agent_sdk_pin_in_base():
+def test_agent_sdk_pin_in_base() -> None:
     gw = tomllib.loads((REPO / "pyproject.toml").read_text())
     deps = gw["project"]["dependencies"]
     assert any(d.startswith("deepseek-harness-sdk==") for d in deps)
 
 
-def test_profile_recipe_composes():
+def test_profile_recipe_composes() -> None:
     prov_src = PROVISION.read_text()
     assert '"@deepseek-ai/dsh-base"' in prov_src
     assert '"@deepseek-ai/dsh-sdk-app"' in prov_src
     assert '"@infer/dsh-provisioner"' in prov_src
 
 
-def test_gui_home_isolation_guard():
+def test_gui_home_isolation_guard() -> None:
     prov_src = PROVISION.read_text()
     assert "must differ from the GUI home" in prov_src
 
 
 # ── DECLARED AUTODOWNLOAD ─────────────────────────────────────────────
 
-def test_root_config_derivation():
+def test_root_config_derivation() -> None:
     sys.path.insert(0, str(REPO / "py"))
     import estate_config as _ec
     _cfg = json.loads((REPO / "plugins" / "engines" / "comfyui" /
@@ -247,7 +247,7 @@ def test_root_config_derivation():
     assert _ec_paths["download_root"].startswith("/mnt/")
 
 
-def test_bound_model_folders():
+def test_bound_model_folders() -> None:
     sys.path.insert(0, str(REPO / "py"))
     sys.path.insert(0, str(REPO / "tools"))
     import provision as _pv
@@ -266,20 +266,20 @@ def test_bound_model_folders():
     assert _bound["base_path"] == _ec_paths["read_root"]
 
 
-def test_cmd_paths_consuming_bound_model_folders():
+def test_cmd_paths_consuming_bound_model_folders() -> None:
     sys.path.insert(0, str(REPO / "tools"))
     import provision as _pv
     assert "bound_model_folders(cfg)" in inspect.getsource(_pv.cmd_paths)
 
 
-def test_manage_consumes_derivation():
+def test_manage_consumes_derivation() -> None:
     sys.path.insert(0, str(REPO / "py"))
     import manage as _mg
     assert "bound_model_folders" in inspect.getsource(_mg._model_present)
     assert "safe_load" not in inspect.getsource(_mg._model_present)
 
 
-def test_h3_declares_full_weight_set():
+def test_h3_declares_full_weight_set() -> None:
     sys.path.insert(0, str(REPO))
     from melite_models import load_model_py
     _h3 = load_model_py(

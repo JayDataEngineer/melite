@@ -30,7 +30,13 @@ import re
 import sys
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    import flow_graph
+
+# The request-body shape: decoded JSON (objects, arrays, scalars).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
 
 from pydantic import (BaseModel, ConfigDict, Field, ValidationError,
                       model_validator)
@@ -122,7 +128,7 @@ class Stage(BaseModel):
     id: str = Field(min_length=1)
     engine: str = Field(min_length=1)
     description: str = ""
-    params: dict[str, Any] = Field(default_factory=dict)
+    params: dict[str, JsonValue] = Field(default_factory=dict)
     inputs: dict[str, Edge] = Field(default_factory=dict)
     # what the stage PRODUCES, named per output channel. Defaults to
     # {"default": <engine.default_output>}; if the engine declares no
@@ -152,6 +158,19 @@ class Stage(BaseModel):
         if not FLOW_ID_RE.match(self.id):
             raise FlowError("stage id %r is not a legal identifier" % self.id)
         return self
+
+
+# STAGE-EXTRAS key set (2026-09-05): flow_from_body pulls stage fields
+# BY NAME, which bypasses Stage's extra=forbid — so this mirror set
+# hand-enforces it (a fossil field silently dropping is the incident
+# class). It MUST equal set(Stage.model_fields) exactly — the
+# hard-gates wall pins the equality, so adding a Stage field without
+# updating this set (or vice versa) fails loudly, never drifts.
+STAGE_KEYS = frozenset({
+    "id", "engine", "description", "params",
+    "inputs", "outputs", "expected",
+    "card", "card_io",     # CARD-STAGE LATTICE
+})
 
 
 class Flow(BaseModel):
@@ -358,7 +377,7 @@ class Flow(BaseModel):
     def engines(self) -> tuple[str, ...]:
         return tuple(st.engine for st in self.stages)
 
-    def to_graph(self):
+    def to_graph(self) -> flow_graph.FlowGraph:
         """The FlowGraph the executor consumes — the SAME typed
         contract compose arms hand the core (py/flow_graph.py).
 
@@ -519,7 +538,7 @@ def scan_flow_ids() -> list[str]:
 _INLINE_TOP_KEYS = {"id", "description", "stages"}
 
 
-def _inline_kind(where: str, value: object) -> Kind:
+def _inline_kind(where: str, value: JsonValue) -> Kind:
     if not isinstance(value, str):
         raise FlowError("%s: kind %r is not a string" % (where, value))
     try:
@@ -530,7 +549,7 @@ def _inline_kind(where: str, value: object) -> Kind:
             % (where, value, [k.value for k in Kind])) from None
 
 
-def _inline_edge(where: str, value: object) -> Edge:
+def _inline_edge(where: str, value: JsonValue) -> Edge:
     if not isinstance(value, dict):
         raise FlowError(
             "%s: edge %r is not an object — use {\"initial\": key} "
@@ -546,7 +565,7 @@ def _inline_edge(where: str, value: object) -> Edge:
         % (where, sorted(value)))
 
 
-def flow_from_body(body: object) -> Flow:
+def flow_from_body(body: JsonValue) -> Flow:
     """A JSON body -> a fully validated Flow (the AI compose surface).
 
     Shape:
@@ -589,19 +608,15 @@ def flow_from_body(body: object) -> Flow:
         # extra=forbid on Stage pydantic is bypassed here because
         # we pull fields by name; without this check a fossil
         # field (yamlFlow, yamlRunId, etc.) silently drops. Strict
-        # makes it loud.
-        _STAGE_KEYS = frozenset({
-            "id", "engine", "description", "params",
-            "inputs", "outputs", "expected",
-            "card", "card_io",     # CARD-STAGE LATTICE
-        })
-        st_extras = sorted(set(st) - _STAGE_KEYS)
+        # makes it loud. STAGE_KEYS is module-level (pinned equal to
+        # set(Stage.model_fields) by the hard-gates wall).
+        st_extras = sorted(set(st) - STAGE_KEYS)
         if st_extras:
             raise FlowError(
                 "stage[%d] %r: body carries unknown field(s) %s — "
                 "the schema declares %s (extra=forbid at the door)"
                 % (i, st.get("id", "<no id>"), st_extras,
-                   sorted(_STAGE_KEYS)))
+                   sorted(STAGE_KEYS)))
 
         if not isinstance(st, dict):
             raise FlowError("%s: %r is not an object" % (where, st))

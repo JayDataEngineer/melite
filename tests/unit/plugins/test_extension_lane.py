@@ -19,6 +19,7 @@ import importlib.util
 import sys
 import textwrap
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 
@@ -26,7 +27,7 @@ REPO = Path(__file__).resolve().parents[3]
 LANE = REPO / "infra" / "extension_lane.py"
 
 
-def _lane():
+def _lane() -> ModuleType:
     spec = importlib.util.spec_from_file_location(
         "extension_lane_test", LANE)
     mod = importlib.util.module_from_spec(spec)
@@ -36,7 +37,7 @@ def _lane():
 
 
 @pytest.fixture(scope="module")
-def lane():
+def lane() -> ModuleType:
     return _lane()
 
 
@@ -49,7 +50,7 @@ def _write_manifest(root: Path, name: str, text: str) -> Path:
 
 # ── the live tree ──────────────────────────────────────────────────
 
-def test_live_tree_merges_clean(lane):
+def test_live_tree_merges_clean(lane: ModuleType) -> None:
     """Every nodes.yaml in the estate validates + merges — the whole
     tree rides the typed row contract today."""
     rows = lane.merge_all(str(REPO))
@@ -59,7 +60,7 @@ def test_live_tree_merges_clean(lane):
         assert isinstance(r["required"], bool)
 
 
-def test_live_tree_rows_are_closed(lane):
+def test_live_tree_rows_are_closed(lane: ModuleType) -> None:
     """The merged rows carry ONLY the modeled keys (+_source): no
     rider keys leak from yaml into the install step."""
     allowed = {"name", "registry", "version", "url", "ref",
@@ -82,13 +83,13 @@ BAD_DOCS = {
 
 
 @pytest.mark.parametrize("label", sorted(BAD_DOCS))
-def test_bad_manifests_refuse_loudly(lane, tmp_path, label):
+def test_bad_manifests_refuse_loudly(lane: ModuleType, tmp_path: Path, label: str) -> None:
     p = _write_manifest(tmp_path, "nodes.yaml", BAD_DOCS[label])
     with pytest.raises(SystemExit):
         lane.load_extensions(str(p))
 
 
-def test_null_extensions_is_declared_nothing(lane, tmp_path):
+def test_null_extensions_is_declared_nothing(lane: ModuleType, tmp_path: Path) -> None:
     """`extensions:` followed only by comments parses as explicit
     null — a legal genre head (the family carries rows elsewhere)."""
     p = _write_manifest(
@@ -97,14 +98,14 @@ def test_null_extensions_is_declared_nothing(lane, tmp_path):
     assert lane.load_extensions(str(p)) == []
 
 
-def test_missing_extensions_key_is_empty(lane, tmp_path):
+def test_missing_extensions_key_is_empty(lane: ModuleType, tmp_path: Path) -> None:
     p = _write_manifest(tmp_path, "nodes.yaml", "# nothing yet\n")
     assert lane.load_extensions(str(p)) == []
 
 
 # ── the pin law: identical merges, divergent refuses ───────────────
 
-def _mkw(lane, tmp_path, files: dict) -> list:
+def _mkw(lane: ModuleType, tmp_path: Path, files: dict[tuple[str, str], str]) -> list[dict[str, str | bool | list[str]]]:
     for rel, text in files.items():
         _write_manifest(tmp_path / "plg" / rel[0], rel[1], text)
     return lane._merge_from([
@@ -112,7 +113,7 @@ def _mkw(lane, tmp_path, files: dict) -> list:
         for a, b in files])
 
 
-def test_identical_restatement_merges_as_one(lane, tmp_path):
+def test_identical_restatement_merges_as_one(lane: ModuleType, tmp_path: Path) -> None:
     row = "extensions:\n- name: pack-x\n  registry: reg\n  version: '2'\n"
     merged = _mkw(lane, tmp_path, {
         ("alpha", "nodes.yaml"): row,
@@ -122,7 +123,7 @@ def test_identical_restatement_merges_as_one(lane, tmp_path):
     assert names == ["pack-x"]
 
 
-def test_divergent_registry_pin_refuses(lane, tmp_path, capsys):
+def test_divergent_registry_pin_refuses(lane: ModuleType, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """THE url/ref-only-era hole: registry/version pins could
     diverge silently and merge as 'identical'. Now the pin identity
     is the FULL tuple — this refuses."""
@@ -136,7 +137,7 @@ def test_divergent_registry_pin_refuses(lane, tmp_path, capsys):
     assert "Divergent" in capsys.readouterr().err
 
 
-def test_divergent_version_pin_refuses(lane, tmp_path):
+def test_divergent_version_pin_refuses(lane: ModuleType, tmp_path: Path) -> None:
     with pytest.raises(SystemExit):
         _mkw(lane, tmp_path, {
             ("alpha", "nodes.yaml"):
@@ -148,7 +149,7 @@ def test_divergent_version_pin_refuses(lane, tmp_path):
         })
 
 
-def test_divergent_url_ref_still_refuses(lane, tmp_path):
+def test_divergent_url_ref_still_refuses(lane: ModuleType, tmp_path: Path) -> None:
     with pytest.raises(SystemExit):
         _mkw(lane, tmp_path, {
             ("alpha", "nodes.yaml"):
@@ -160,7 +161,7 @@ def test_divergent_url_ref_still_refuses(lane, tmp_path):
         })
 
 
-def test_row_is_frozen_and_closed(lane):
+def test_row_is_frozen_and_closed(lane: ModuleType) -> None:
     row = lane.ExtensionRow(name="x")
     assert row.model_config.get("frozen") is True
     assert row.model_config.get("extra") == "forbid"

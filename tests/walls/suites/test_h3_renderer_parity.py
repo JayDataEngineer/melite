@@ -52,7 +52,7 @@ REGEN = bool(os.environ.get("H3_PARITY_REGEN"))
 PASS, FAIL = [], []
 
 
-def check(name, cond, detail=""):
+def check(name: str, cond: bool, detail: str = "") -> None:
     (PASS if cond else FAIL).append(name if cond else "%s: %s" % (name, detail))
 
 
@@ -171,7 +171,7 @@ CASES = [
 ]
 
 
-def parity(name, doc):
+def parity(name: str, doc: dict[str, str | dict[str, str | int | float | bool | list[str | int]]]) -> None:
     """Renderer output vs the recording — reachable-subgraph isomorphism."""
     new = reachable(render("h3_window", doc), OI)
     golden = GOLDEN_DIR / ("%s.json" % name.replace(" ", "_"))

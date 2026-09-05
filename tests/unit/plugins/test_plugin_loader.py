@@ -39,8 +39,8 @@ import plugins  # noqa: E402
 COMPOSE_INIT = "# compose package marker\n"
 
 
-def _plugin(root, name, plugin_py=None, compose=True,
-            category="flat"):
+def _plugin(root: Path, name: str, plugin_py: str | None=None, compose: bool=True,
+            category: str="flat") -> tuple[Path, Path]:
     """Write one plugin dir under the scratch scan root; returns its
     path. category='flat' → <root>/<name>; 'cpp' → <root>/cpp/<name>
     (the depth-3 category-container shape)."""
@@ -64,7 +64,7 @@ GOOD_PLUGIN_PY = (
 
 
 @pytest.fixture()
-def scan(tmp_path, monkeypatch):
+def scan(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """A scratch scan root shaped like plugins/engines/ (plugins are
     direct marker-carrying children; category containers like cpp/
     recurse one level); resets the memoized table per test."""
@@ -77,7 +77,7 @@ def scan(tmp_path, monkeypatch):
 
 # ── the healthy mounts ─────────────────────────────────────────────
 
-def test_compose_first_mounts_declared_engines(scan):
+def test_compose_first_mounts_declared_engines(scan: Path) -> None:
     _plugin(scan, "demo", GOOD_PLUGIN_PY)
     table = plugins.scan_engines()
     assert "demo_engine" in table
@@ -86,7 +86,7 @@ def test_compose_first_mounts_declared_engines(scan):
     assert ref.plugin_root.name == "demo"     # mounts the plugin dir
 
 
-def test_legacy_engine_dir_mounts(scan):
+def test_legacy_engine_dir_mounts(scan: Path) -> None:
     root, pdir = _plugin(scan, "legacy", compose=False,
                          plugin_py="class Plugin:\n    id='l'\n")
     edir = pdir / "engines" / "native"
@@ -99,14 +99,14 @@ def test_legacy_engine_dir_mounts(scan):
     assert table["legacy_native"].plugin_root == pdir
 
 
-def test_category_containers_recurse(scan):
+def test_category_containers_recurse(scan: Path) -> None:
     _plugin(scan, "mine", GOOD_PLUGIN_PY, category="cpp")
     assert "demo_engine" in plugins.scan_engines()
 
 
 # ── the loud degradation paths ─────────────────────────────────────
 
-def test_exec_failure_is_loud_and_mounts_nothing(scan, capsys):
+def test_exec_failure_is_loud_and_mounts_nothing(scan: Path, capsys: pytest.CaptureFixture[str]) -> None:
     _plugin(scan, "broken", "class Plugin(:\n  oops\n")
     table = plugins.scan_engines()
     assert "broken" not in table.values()
@@ -114,7 +114,7 @@ def test_exec_failure_is_loud_and_mounts_nothing(scan, capsys):
     assert "refuses to exec" in capsys.readouterr().err
 
 
-def test_plugin_without_engines_is_loud(scan, capsys):
+def test_plugin_without_engines_is_loud(scan: Path, capsys: pytest.CaptureFixture[str]) -> None:
     # the typo class: `engine =` instead of `engines =`
     _plugin(scan, "typo", "class Plugin:\n    id = 'typo'\n"
                           "    engine = ('x',)\n")
@@ -124,13 +124,13 @@ def test_plugin_without_engines_is_loud(scan, capsys):
     assert "NO engines tuple" in err
 
 
-def test_plugin_py_without_plugin_class_is_loud(scan, capsys):
+def test_plugin_py_without_plugin_class_is_loud(scan: Path, capsys: pytest.CaptureFixture[str]) -> None:
     _plugin(scan, "noclass", "PLUGIN = 1\n")
     assert not plugins.scan_engines()
     assert "without a Plugin class" in capsys.readouterr().err
 
 
-def test_broken_engine_py_falls_through_loud_to_yaml(scan, capsys):
+def test_broken_engine_py_falls_through_loud_to_yaml(scan: Path, capsys: pytest.CaptureFixture[str]) -> None:
     root, pdir = _plugin(scan, "legacy", compose=False)
     edir = pdir / "engines" / "native"
     edir.mkdir(parents=True)
@@ -144,7 +144,7 @@ def test_broken_engine_py_falls_through_loud_to_yaml(scan, capsys):
     assert "refuses to exec" in err          # ...but never silently
 
 
-def test_undeclared_dir_mounts_under_dirname_loud(scan, capsys):
+def test_undeclared_dir_mounts_under_dirname_loud(scan: Path, capsys: pytest.CaptureFixture[str]) -> None:
     root, pdir = _plugin(scan, "legacy", compose=False)
     edir = pdir / "engines" / "stray"
     edir.mkdir(parents=True)
@@ -155,7 +155,7 @@ def test_undeclared_dir_mounts_under_dirname_loud(scan, capsys):
     assert "NO engine declaration" in capsys.readouterr().err
 
 
-def test_flow_style_plugin_yaml_is_loud_not_silent(scan, capsys):
+def test_flow_style_plugin_yaml_is_loud_not_silent(scan: Path, capsys: pytest.CaptureFixture[str]) -> None:
     # the line parser speaks block style only — flow style must say
     # so, not silently unmount the plugin
     root, pdir = _plugin(scan, "yamlplug", plugin_py=None)
@@ -165,7 +165,7 @@ def test_flow_style_plugin_yaml_is_loud_not_silent(scan, capsys):
     assert "parsed no engines" in capsys.readouterr().err
 
 
-def test_block_style_plugin_yaml_still_mounts(scan):
+def test_block_style_plugin_yaml_still_mounts(scan: Path) -> None:
     root, pdir = _plugin(scan, "yamlplug", plugin_py=None)
     (pdir / "plugin.yaml").write_text(
         "engines:\n  - yaml_engine\n", encoding="utf-8")
@@ -174,7 +174,7 @@ def test_block_style_plugin_yaml_still_mounts(scan):
 
 # ── ownership collisions ───────────────────────────────────────────
 
-def test_duplicate_legacy_types_refuse_loud(scan):
+def test_duplicate_legacy_types_refuse_loud(scan: Path) -> None:
     for name in ("one", "two"):
         root, pdir = _plugin(scan, name, compose=False)
         edir = pdir / "engines" / "e"
@@ -185,7 +185,7 @@ def test_duplicate_legacy_types_refuse_loud(scan):
         plugins.scan_engines()
 
 
-def test_legacy_owns_over_compose_first_loud(scan, capsys):
+def test_legacy_owns_over_compose_first_loud(scan: Path, capsys: pytest.CaptureFixture[str]) -> None:
     root, pdir = _plugin(scan, "legacy", compose=False)
     edir = pdir / "engines" / "e"
     edir.mkdir(parents=True)
@@ -200,14 +200,14 @@ def test_legacy_owns_over_compose_first_loud(scan, capsys):
 
 # ── EngineRef is a frozen row ──────────────────────────────────────
 
-def test_engine_ref_is_frozen(scan):
+def test_engine_ref_is_frozen(scan: Path) -> None:
     _plugin(scan, "demo", GOOD_PLUGIN_PY)
     ref = plugins.scan_engines()["demo_engine"]
     with pytest.raises(ValidationError):
         ref.engine_type = "mutated"
 
 
-def test_engine_ref_refuses_empty_and_riders():
+def test_engine_ref_refuses_empty_and_riders() -> None:
     with pytest.raises(ValidationError):
         plugins.EngineRef(plugin_id="", engine_dir=Path("/x"),
                           engine_type="t")
@@ -216,7 +216,7 @@ def test_engine_ref_refuses_empty_and_riders():
                           engine_type="t", __dead_rider__=1)
 
 
-def test_scan_is_memoized(scan):
+def test_scan_is_memoized(scan: Path) -> None:
     _plugin(scan, "demo", GOOD_PLUGIN_PY)
     first = plugins.scan_engines()
     assert plugins.scan_engines() is first   # one walk, then cached

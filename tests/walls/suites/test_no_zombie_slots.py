@@ -30,7 +30,7 @@ GATEWAY_URL = "http://127.0.0.1:33081"
 OUT_ROOT = REPO / "data" / "runs" / "output"
 
 
-def _http_post_json(url, body, timeout=10.0):
+def _http_post_json(url: str, body: dict[str, str] | list[str], timeout: float = 10.0) -> tuple[int, dict[str, str | int | float | bool | list[str] | dict[str, str] | None]]:
     data = json.dumps(body).encode()
     req = urllib.request.Request(
         url, data=data, method="POST",
@@ -49,7 +49,7 @@ def _http_post_json(url, body, timeout=10.0):
         return 0, {"error": str(e)}
 
 
-def _http_post_raw(url, body, timeout=10.0):
+def _http_post_raw(url: str, body: bytes, timeout: float = 10.0) -> tuple[int, str]:
     req = urllib.request.Request(
         url, data=body, method="POST",
         headers={"content-type": "application/json"},
@@ -63,7 +63,7 @@ def _http_post_raw(url, body, timeout=10.0):
         return 0, str(e)
 
 
-def _count_run_dirs():
+def _count_run_dirs() -> int:
     """Count every run directory under the gateway OUT_ROOT.
 
     Each run is a directory named run-<uuid>-<id> that contains the
@@ -77,7 +77,7 @@ def _count_run_dirs():
 
 
 @pytest.fixture(scope="module")
-def gateway_up():
+def gateway_up() -> bool:
     """Skip the module if the gateway is not listening on 33081.
 
     The dev gateway is the only live instance in the estate; if it is
@@ -112,7 +112,7 @@ class TestNoZombieSlots:
 
     @pytest.mark.parametrize("label,body", REJECTION_CASES,
                              ids=[c[0] for c in REJECTION_CASES])
-    def test_4xx_rejection_creates_no_sidecar(self, gateway_up, label, body):
+    def test_4xx_rejection_creates_no_sidecar(self, gateway_up: bool, label: str, body: dict[str, str] | list[str]) -> None:
         before = _count_run_dirs()
         status, resp = _http_post_json(f"{GATEWAY_URL}/v1/flows/start", body)
         after = _count_run_dirs()
@@ -131,7 +131,7 @@ class TestNoZombieSlots:
             "any run is registered (no zombie slots, no sidecars)."
         )
 
-    def test_malformed_json_4xx_no_sidecar(self, gateway_up):
+    def test_malformed_json_4xx_no_sidecar(self, gateway_up: bool) -> None:
         before = _count_run_dirs()
         status, body = _http_post_raw(
             f"{GATEWAY_URL}/v1/flows/start",
@@ -146,7 +146,7 @@ class TestNoZombieSlots:
             f"the sidecar ledger grew on a refusal. body={body!r}"
         )
 
-    def test_stop_door_on_unknown_run_is_clean(self, gateway_up):
+    def test_stop_door_on_unknown_run_is_clean(self, gateway_up: bool) -> None:
         """Stop on an unknown run must not create a sidecar.
 
         Stop is post-registration in normal use, but an unknown run

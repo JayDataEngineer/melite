@@ -5,7 +5,7 @@
   "enhance_prompt": null,
   "enhance_prompts": {
     "lyrics": "structure: [section tags, rhyme, hook law]; rules:; - every section wrapped in [tag]: [verse] [pre-chorus] [chorus] [bridge] [outro]; - keep verses concrete and grounded; the chorus earns the abstraction; - the hook repeats at least once, word-for-word; - short lines sing: 6-9 syllables default, break longer thoughts; - match the section energy to the arrangement block it sits over",
-    "prompt": "structure: [Genre, Vocal Details, Arrangement]; rules:; - Genre block first: era + region + 2-3 style anchors + tempo in BPM + key if known; - Vocal Details block: gender, register, delivery manner, one signature texture; - Arrangement block: the instrument story front to back \u2014 intro, build, drop, outro; - name production adjectives the ear can verify (dusty, wide, brickwalled); - never write lyric content in the caption \u2014 that lives in the lyrics field"
+    "prompt": "structure: [Genre, Vocal Details, Arrangement]; rules:; - Genre block first: era + region + 2-3 style anchors + tempo in BPM + key if known; - Vocal Details block: gender, register, delivery manner, one signature texture; - Arrangement block: the instrument story front to back — intro, build, drop, outro; - name production adjectives the ear can verify (dusty, wide, brickwalled); - never write lyric content in the caption — that lives in the lyrics field"
   },
   "features": {
     "modifiers": [],
@@ -89,7 +89,7 @@
       "placeholder": "",
       "required": null,
       "step": 0.1,
-      "tooltip": "Classifier-free guidance. IGNORED on Turbo (distilled weights \u2014 engine applies none); Base/SFT: 3.0-10.0, 7.0 recommended.",
+      "tooltip": "Classifier-free guidance. IGNORED on Turbo (distilled weights — engine applies none); Base/SFT: 3.0-10.0, 7.0 recommended.",
       "type": "slider",
       "visible_when": null,
       "width": 1,
@@ -292,7 +292,7 @@
           "name": "guidance_scale",
           "order": 1,
           "step": 0.1,
-          "tooltip": "Classifier-free guidance. IGNORED on Turbo (distilled weights \u2014 engine applies none); Base/SFT: 3.0-10.0, 7.0 recommended.",
+          "tooltip": "Classifier-free guidance. IGNORED on Turbo (distilled weights — engine applies none); Base/SFT: 3.0-10.0, 7.0 recommended.",
           "type": "slider",
           "width": 1
         },
@@ -399,5 +399,30 @@
   ],
   "service": "music3",
   "size": null,
-  "variants": []
+  "variants": [
+    {
+      "id": "standard",
+      "label": "Standard",
+      "group": "Variant",
+      "defaults": {},
+      "route": "music3",
+      "hint": null,
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    },
+    {
+      "id": "int8",
+      "label": "INT8 ConvRot",
+      "group": "Quant",
+      "defaults": {},
+      "route": "music3",
+      "hint": null,
+      "engine": "",
+      "quant": "int8",
+      "vram_peak_gb": 20.0,
+      "owner": "standard"
+    }
+  ]
 }

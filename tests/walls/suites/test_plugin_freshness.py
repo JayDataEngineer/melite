@@ -44,7 +44,7 @@ WEB_DSH = os.path.join(REPO, "plugins", "web", "dsh")
 HARNESS_DSH = os.path.join(REPO, "plugins", "harness", "dsh")
 
 
-def _newest(root, suffixes):
+def _newest(root: str, suffixes: tuple[str, ...]) -> tuple[float, str]:
     """Newest mtime under root for files matching suffixes (recursive).
 
     __tests__ pruned on purpose (2026-09-05): vitest files are never
@@ -65,7 +65,7 @@ def _newest(root, suffixes):
     return newest_t, newest_f
 
 
-def _fmt(t):
+def _fmt(t: float) -> str:
     return time.strftime("%H:%M:%S %Y-%m-%d", time.localtime(t))
 
 
@@ -82,7 +82,7 @@ F1_MEMBERS = [
 
 @pytest.mark.parametrize("base,plug", F1_MEMBERS,
                          ids=[m[1] for m in F1_MEMBERS])
-def test_f1_member_lib_freshness(base, plug):
+def test_f1_member_lib_freshness(base: str, plug: str) -> None:
     src = os.path.join(base, plug, "src")
     lib = os.path.join(base, plug, "lib")
     if not os.path.isdir(src) or not os.path.isdir(lib):
@@ -103,7 +103,7 @@ def test_f1_member_lib_freshness(base, plug):
 
 # ── F2: editor dist freshness ─────────────────────────────────────────
 
-def test_f2_editor_dist_freshness():
+def test_f2_editor_dist_freshness() -> None:
     ed_src = os.path.join(REPO, "plugins", "web", "editor", "src")
     ed_dist = os.path.join(REPO, "plugins", "web", "editor", "dist", "assets")
     feeds = [
@@ -127,7 +127,7 @@ def test_f2_editor_dist_freshness():
 
 # ── F3: wand reload nonce — content pin ────────────────────────────────
 
-def test_f3_deck_bundle_wand_nonce_pin():
+def test_f3_deck_bundle_wand_nonce_pin() -> None:
     deck_bundle = os.path.join(WEB_DSH, "melite-card-deck", "lib", "client.js")
     if not os.path.isfile(deck_bundle):
         pytest.skip("deck bundle not built")
@@ -138,7 +138,7 @@ def test_f3_deck_bundle_wand_nonce_pin():
 
 # ── F4: no shadowing `const at ` in the card-view bundle ───────────────
 
-def test_f4_card_view_no_shadowing_const_at():
+def test_f4_card_view_no_shadowing_const_at() -> None:
     view_bundle = os.path.join(WEB_DSH, "melite-card-view", "lib", "client.js")
     if not os.path.isfile(view_bundle):
         pytest.skip("card-view bundle not built")

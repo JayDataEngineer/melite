@@ -35,7 +35,7 @@ KREA_DIR = os.path.join(REPO, "plugins", "engines", "comfyui",
 _failures = []
 
 
-def check(name, cond, detail=""):
+def check(name: str, cond: bool, detail: str = "") -> None:
     print("%s %s%s" % ("  ok " if cond else "FAIL", name,
                        (" — %s" % detail) if (detail and not cond) else ""))
     if not cond:
@@ -80,14 +80,18 @@ check("cross-validation ran", checked == [("krea-2", "image-gen")],
 
 class _Bad(Model):
     id = "bad-bounds"
+    form = "form_generate"
     defaults = dict(steps=8)
     card = "image-gen"
+    variants = (Variant(id='std', cells=(Cell(quant='int8'),)),)
 
 
 class _Good(Model):
     id = "good-model"
+    form = "form_generate"
     defaults = dict(steps=8)
     card = "image-gen"
+    variants = (Variant(id='std', cells=(Cell(quant='int8'),)),)
 
 
 _bad_refused = False
@@ -114,7 +118,7 @@ with tempfile.TemporaryDirectory() as td:
     # two SSOTs: model.py + model.yaml in one dir
     with open(os.path.join(duo, "model.py"), "w") as f:
         f.write("from melite_models import Model\n"
-                "class X(Model):\n    id = 'image-gen'\n")
+                "class X(Model):\n    id = 'image-gen'\n    unoffered = True\n")
     with open(os.path.join(duo, "model.yaml"), "w") as f:
         f.write("family:\n  id: image-gen\n")
     refused = False
@@ -129,7 +133,7 @@ with tempfile.TemporaryDirectory() as td:
     os.makedirs(mis)
     with open(os.path.join(mis, "model.py"), "w") as f:
         f.write("from melite_models import Model\n"
-                "class X(Model):\n    id = 'other-id'\n")
+                "class X(Model):\n    id = 'other-id'\n    unoffered = True\n")
     refused = False
     try:
         load_model_py(os.path.join(mis, "model.py"), "comfyui")
@@ -144,7 +148,7 @@ with tempfile.TemporaryDirectory() as td:
         # shape law: cells are rows; a bad sha refuses AT CONSTRUCTION
         # (pydantic), the loader wraps it into the ModelError channel
         f.write("from melite_models import Model, Variant, Cell, CellArtifact\n"
-                "class X(Model):\n"
+                "class X(Model):\n    unoffered = True\n"
                 "    id = 'bad-sha'\n"
                 "    variants = (\n"
                 "        Variant(id='v', route='bad-sha', cells=(\n"
@@ -185,7 +189,7 @@ check("no renderer payload under models/ (rung 8)",
 # any model.py or mods/*.py under every engine's models tree. The
 # pattern matches the CALL (path.insert/append), not one spelling —
 # `import sys as _s; _s.path.insert(...)` is the same disease.
-def _rituals_in(text):
+def _rituals_in(text: str) -> bool:
     return "path.insert(" in text or "path.append(" in text
 _ritual_files = []
 for _mp in _REPO_P.glob("plugins/engines/*/models/**/model.py"):
@@ -201,7 +205,17 @@ check("zero sys.path rituals in the models tree (rung 5)",
 # route lens would be ambiguous otherwise). A route that names another
 # model's id is a LEGAL BRIDGE (h3's timeline variants submit as
 # model=h3-timeline — the C pattern), not a shadow: the family lookup
-# serves it, by design.
+# serves it, by design. So the "one owner" check applies to:
+#   • non-model routes (true shadows; the lens is ambiguous) — must be one
+#   • model-id routes — the family that IS the id owns it; a bridge
+#     variant on another model is an alias, not a co-owner (the gate
+#     that forced every model to declare variants 2026-09-05 means
+#     every family now claims its own id, and a bridge to that id is
+#     the legal alias pattern, not a second owner).
+# A TRUE ownership collision is a model-id claimed by >1 family (two
+# models both with id=='X') — the family id law (dir==id) already
+# prevents that at construction, so model-id routes are tautologically
+# one-family.
 _all_models = scan_engine_models(REPO)
 _route_owner = {}
 for _mid, (_path, _cls) in _all_models.items():
@@ -211,6 +225,11 @@ for _mid, (_path, _cls) in _all_models.items():
             _rs.add(_c.route or _v.route or _mid)
         for _r in _rs:
             _route_owner.setdefault(_r, set()).add(_mid)
+# model-id routes: collapse to the family that IS the id (bridges
+# drop; they are the legal alias pattern, see comment above)
+for _r in list(_route_owner):
+    if _r in _all_models:
+        _route_owner[_r] = {_r}
 _multi = {r: sorted(ms) for r, ms in _route_owner.items() if len(ms) > 1}
 check("every route owned by exactly one model",
       not _multi, repr(_multi))

@@ -29,6 +29,7 @@ Run: pytest tests/walls/suites/test_dsh_plugin_hygiene.py -v
 from __future__ import annotations
 
 import re
+from collections.abc import Iterator
 from pathlib import Path
 
 from _anchor import REPO
@@ -69,7 +70,7 @@ TIMER_CALL = re.compile(r"\b(?:setInterval|setTimeout)\s*\(")
 CLICK_CALL = re.compile(r"\.click\s*\(")
 
 
-def _plugin_sources():
+def _plugin_sources() -> Iterator[Path]:
     """Every non-test source file in the dsh plugin packages."""
     for root in DSH_ROOTS:
         if not root.exists():
@@ -118,7 +119,7 @@ def _mask_strings_and_comments(text: str) -> str:
     return "".join(out)
 
 
-def _timer_callbacks(masked: str):
+def _timer_callbacks(masked: str) -> Iterator[str]:
     """Yield the first (callback) argument of every timer call, strings
     masked. Balanced-paren scan from each call site's opening paren."""
     for m in TIMER_CALL.finditer(masked):
@@ -139,7 +140,7 @@ def _timer_callbacks(masked: str):
         yield masked[start:i]
 
 
-def test_no_timer_driven_clicks():
+def test_no_timer_driven_clicks() -> None:
     """A dsh plugin timer callback may never .click() — the flash bug's
     exact mechanism (a 400ms interval toggling the host's + menu)."""
     offenders = []
@@ -160,7 +161,7 @@ def test_no_timer_driven_clicks():
     )
 
 
-def test_no_host_chrome_hunt_markers():
+def test_no_host_chrome_hunt_markers() -> None:
     """dsh plugin sources must not hunt the shell's internals — hashed
     classes, menu roles, document-wide button sweeps, the expand label."""
     offenders = []
@@ -179,7 +180,7 @@ def test_no_host_chrome_hunt_markers():
     )
 
 
-def test_the_card_bleed_never_reaches_the_right_panel():
+def test_the_card_bleed_never_reaches_the_right_panel() -> None:
     """RIGHT-PANEL LAW (operator order, 2026-09-05, verbatim): "No
     matter what, I never want to see the full card bleed in the right
     panel. That whole issue is why the extension is in this messed-up
@@ -238,7 +239,7 @@ def test_the_card_bleed_never_reaches_the_right_panel():
     assert "refusing to guess" in entry_text, "entry must refuse on a null claim"
 
 
-def test_the_deck_machine_stays_dead():
+def test_the_deck_machine_stays_dead() -> None:
     """The specific fossil stays dead: no interval in the 300-500ms band
     with a latch query in any ray/melite/infer dsh client (the flash
     cadence signature, recorded so the class wall's blind spots stay

@@ -21,17 +21,19 @@
  },
  "fields": [
   {
-   "label": "Text",
    "name": "text",
-   "placeholder": "The words to speak",
+   "type": "textarea",
+   "label": "Text",
    "required": true,
-   "tooltip": "The text to synthesize",
-   "type": "textarea"
+   "placeholder": "The words to speak",
+   "tooltip": "The text to synthesize"
   },
   {
-   "default": "ryan",
-   "label": "Voice",
    "name": "voice",
+   "type": "select",
+   "label": "Voice",
+   "default": "ryan",
+   "tooltip": "Preset speaker persona (CustomVoice) or .qvoice embedding path",
    "options": [
     "ryan",
     "serena",
@@ -42,38 +44,44 @@
     "sohee",
     "ono_anna",
     "uncle_fu"
-   ],
-   "tooltip": "Preset speaker persona (CustomVoice) or .qvoice embedding path",
-   "type": "select"
+   ]
   },
   {
-   "label": "Style Instruction",
    "name": "style_instruction",
-   "tooltip": "Emotion and delivery control (e.g. 'speak with warm confidence')",
-   "type": "textarea"
+   "type": "textarea",
+   "label": "Style Instruction",
+   "tooltip": "Emotion and delivery control (e.g. 'speak with warm confidence')"
   },
   {
-   "default": 0.7,
-   "label": "Temperature",
-   "max": 2,
-   "min": 0,
    "name": "temperature",
+   "type": "slider",
+   "label": "Temperature",
+   "min": 0,
+   "max": 2,
    "step": 0.05,
-   "type": "slider"
+   "default": 0.7
   },
   {
-   "default": -1,
-   "label": "Seed",
    "name": "seed",
-   "type": "seed"
+   "type": "seed",
+   "label": "Seed",
+   "default": -1
   },
   {
+   "name": "qvoice",
+   "type": "file",
+   "label": "Voice (.qvoice)",
    "group": "qvoice",
-   "label": "PCA Steering",
+   "order": 0,
+   "tooltip": "Pre-computed speaker embedding (.qvoice/.voice — the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one."
+  },
+  {
    "name": "voice_pca_strengths",
+   "type": "textarea",
+   "label": "PCA Steering",
+   "group": "qvoice",
    "order": 1,
-   "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} \u2014 subtle voice direction without re-designing the persona.",
-   "type": "textarea"
+   "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} — subtle voice direction without re-designing the persona."
   }
  ],
  "form": "tts",
@@ -142,14 +150,14 @@
      "label": "Voice (.qvoice)",
      "name": "qvoice",
      "order": 0,
-     "tooltip": "Pre-computed speaker embedding (.qvoice/.voice \u2014 the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one.",
+     "tooltip": "Pre-computed speaker embedding (.qvoice/.voice — the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one.",
      "type": "file"
     },
     {
      "label": "PCA Steering",
      "name": "voice_pca_strengths",
      "order": 1,
-     "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} \u2014 subtle voice direction without re-designing the persona.",
+     "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} — subtle voice direction without re-designing the persona.",
      "type": "textarea"
     }
    ],

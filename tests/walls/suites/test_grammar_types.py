@@ -27,7 +27,7 @@ REPO = os.path.normpath(os.path.join(os.path.dirname(
 
 
 @pytest.fixture(scope="module", autouse=True)
-def _estate_path():
+def _estate_path() -> None:
     p = os.path.join(REPO, "py")
     if p not in sys.path:
         sys.path.insert(0, p)
@@ -39,7 +39,7 @@ from melite_models import (  # noqa: E402
 )
 
 
-def test_clip_type_is_typed_enum_or_none():
+def test_clip_type_is_typed_enum_or_none() -> None:
     """The field is ClipType|None — not str (rung 3)."""
     ann = LaneInputs.model_fields["clip_type"]
     assert ann.annotation is ClipType or ann.annotation == (
@@ -53,19 +53,24 @@ def test_clip_type_is_typed_enum_or_none():
     assert li_aud.clip_type is None
 
 
-def test_latent_node_is_typed_enum():
+def test_latent_node_is_typed_enum() -> None:
     ann = LaneInputs.model_fields["latent_node"]
     assert ann.annotation is LatentNode, \
         "LaneInputs.latent_node must be LatentNode (got %r)" % ann.annotation
     assert LaneInputs.model_fields["latent_node"].default is LatentNode.SD3
 
 
-def test_model_genre_is_genre_enum():
-    """Model declares `genre: Genre`; a typo refuses at class body."""
+def test_model_genre_is_genre_enum() -> None:
+    """Model declares `genre: Genre`; a typo refuses at class body.
+    Resolved through get_type_hints (the way Python resolves them) —
+    the module uses `from __future__ import annotations`, so raw
+    __annotations__ carry strings and the resolution is the honest
+    check."""
+    from typing import get_type_hints
     import melite_models.grammar as g
-    hints = getattr(Model, "__annotations__", {})
+    hints = get_type_hints(Model)
     assert hints.get("genre") is Genre, \
-        "Model.genre annotation must be Genre (got %r)" % hints.get("genre")
+        "Model.genre annotation must resolve to Genre (got %r)" % hints.get("genre")
     # Typo via direct construction
     with pytest.raises(ValueError):
         Genre("imag")
@@ -79,18 +84,18 @@ def test_model_genre_is_genre_enum():
     # throwaway subclass.)
 
 
-def test_clip_type_typo_refuses_at_construction():
+def test_clip_type_typo_refuses_at_construction() -> None:
     with pytest.raises((ValueError, Exception)):
         LaneInputs(clip_type="lumina_typo", unet="x.safetensors",
                    text_encoder="t.safetensors", vae="v.safetensors")
 
 
-def test_genre_typo_refuses_at_construction():
+def test_genre_typo_refuses_at_construction() -> None:
     with pytest.raises(ValueError):
         Genre("imag")
 
 
-def test_every_loaded_model_has_typed_genre_and_clip_type():
+def test_every_loaded_model_has_typed_genre_and_clip_type() -> None:
     """Every model class on the estate: genre is a Genre member (or
     Genre.NONE for utilities), clip_type is ClipType|None. The
     mechanical sweep turned `genre = "image"` into `Genre.IMAGE`

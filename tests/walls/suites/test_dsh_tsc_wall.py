@@ -18,7 +18,7 @@ import pytest
 from _anchor import REPO
 
 
-def _tsc_packages():
+def _tsc_packages() -> list[Path]:
     """Every dsh package with a tsconfig.json. Skips non-TS packages
     (provisioner is MJS-only, shared is build helpers, etc.) and
     skips examples/install-profile shells.
@@ -36,7 +36,7 @@ def _tsc_packages():
 
 
 @pytest.fixture(scope="module")
-def tsc_results():
+def tsc_results() -> dict[str, tuple[int, str]]:
     """Run tsc --noEmit in every dsh TS package.
 
     Returns {pkg_name: (returncode, stderr)}. A clean run has rc=0
@@ -52,7 +52,9 @@ def tsc_results():
     return out
 
 
-def test_every_dsh_typescript_package_typechecks_cleanly(tsc_results):
+def test_every_dsh_typescript_package_typechecks_cleanly(
+    tsc_results: dict[str, tuple[int, str]],
+) -> None:
     """Every dsh TS package must pass tsc --noEmit.
 
     A failure here means: a type regression was introduced and the
@@ -71,7 +73,9 @@ def test_every_dsh_typescript_package_typechecks_cleanly(tsc_results):
     assert not broken, msg
 
 
-def test_tsc_wall_covers_at_least_the_expected_packages(tsc_results):
+def test_tsc_wall_covers_at_least_the_expected_packages(
+    tsc_results: dict[str, tuple[int, str]],
+) -> None:
     """The wall must cover the three documented dsh TS packages.
 
     Catches the this-package-gained-a-tsconfig-and-was-silently-

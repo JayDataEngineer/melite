@@ -25,6 +25,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional, Tuple
 
+# The sidecar shape: decoded JSON (objects, arrays, scalars).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
+
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 # ONE type vocabulary with the runs listing (editor_runs.artifact_type)
@@ -113,7 +116,7 @@ def _sha256_file(path: str) -> Optional[str]:
     return h.hexdigest()
 
 
-def scan_run(run_dir: str, sidecar: Optional[dict] = None) -> RunIndex:
+def scan_run(run_dir: str, sidecar: Optional[dict[str, JsonValue]] = None) -> RunIndex:
     """Disk truth → typed rows. Files starting with `_` are estate
     bookkeeping (sidecars, generated posters), never deliverables.
     sidecar=None reads <run_dir>/_flow.json when present."""
@@ -157,7 +160,7 @@ def scan_run(run_dir: str, sidecar: Optional[dict] = None) -> RunIndex:
         artifacts=tuple(rows))
 
 
-def _read_sidecar(run_dir: str) -> dict:
+def _read_sidecar(run_dir: str) -> dict[str, JsonValue]:
     try:
         return json.loads(Path(run_dir, SIDECAR).read_text())
     except (OSError, ValueError):
@@ -166,7 +169,7 @@ def _read_sidecar(run_dir: str) -> dict:
 
 def assets_index(output_root: str, run: Optional[str] = None,
                  kind: Optional[str] = None, limit: int = 200,
-                 include_test: bool = False) -> dict:
+                 include_test: bool = False) -> dict[str, JsonValue]:
     """GET /v1/assets — the cross-run delivery view. Derived at read
     time; ?run= and ?kind= filter; limit caps run rows. Test runs
     (sidecar test:true) are EXCLUDED from the production view by
@@ -203,7 +206,8 @@ def assets_index(output_root: str, run: Optional[str] = None,
     return {"count": len(runs), "artifacts": total, "runs": runs}
 
 
-def completed_payload(run_dir: str, sidecar: Optional[dict] = None) -> Optional[dict]:
+def completed_payload(run_dir: str, sidecar: Optional[dict[str, JsonValue]] = None
+                      ) -> Optional[dict[str, JsonValue]]:
     """The run.completed ledger event payload — None when a run
     delivered nothing (failures stay run.*-quiet in the journal)."""
     idx = scan_run(run_dir, sidecar)

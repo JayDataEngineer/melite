@@ -24,7 +24,7 @@ import run_wire  # noqa: E402
 
 # ── A. every exported row class is a _Frozen subclass ───────────────
 
-def test_form_wire_exports_all_frozen():
+def test_form_wire_exports_all_frozen() -> None:
     """The wall: a form row is built only through pydantic
     construction. A literal that bypasses pydantic (class.__init__)
     still validates the same fields because _Frozen is the only
@@ -36,7 +36,7 @@ def test_form_wire_exports_all_frozen():
         assert issubclass(cls, form_wire._Frozen), name
 
 
-def test_run_wire_exports_all_frozen():
+def test_run_wire_exports_all_frozen() -> None:
     for name in ("ArtifactRow", "TruncationRow", "RunRow",
                  "RunsEnvelope", "DraftRow", "DraftsEnvelope"):
         cls = getattr(run_wire, name)
@@ -45,7 +45,7 @@ def test_run_wire_exports_all_frozen():
 
 # ── B. extras on every form row refuse construction ───────────────
 
-def test_form_field_row_extra_refused():
+def test_form_field_row_extra_refused() -> None:
     with pytest.raises(form_wire.ValidationError):
         form_wire.FormFieldRow.model_validate({
             "name": "prompt", "type": "str", "default": "",
@@ -53,7 +53,7 @@ def test_form_field_row_extra_refused():
         })
 
 
-def test_form_spec_row_extra_refused():
+def test_form_spec_row_extra_refused() -> None:
     with pytest.raises(form_wire.ValidationError):
         form_wire.FormSpecRow.model_validate({
             "model": "krea-2", "form": "image-gen",
@@ -65,7 +65,7 @@ def test_form_spec_row_extra_refused():
         })
 
 
-def test_variant_row_extra_refused():
+def test_variant_row_extra_refused() -> None:
     with pytest.raises(form_wire.ValidationError):
         form_wire.VariantRow.model_validate({
             "id": "raw", "label": "Raw",
@@ -75,7 +75,7 @@ def test_variant_row_extra_refused():
 
 # ── C. extras on every run row refuse construction ────────────────
 
-def test_run_row_extra_refused():
+def test_run_row_extra_refused() -> None:
     with pytest.raises(run_wire.ValidationError):
         run_wire.RunRow.model_validate({
             "run_id": "r1", "status": "completed", "model": "krea-2",
@@ -86,7 +86,7 @@ def test_run_row_extra_refused():
         })
 
 
-def test_artifact_row_extra_refused():
+def test_artifact_row_extra_refused() -> None:
     with pytest.raises(run_wire.ValidationError):
         run_wire.ArtifactRow.model_validate({
             "name": "out.png", "type": "image", "url": "/r/1/out.png",
@@ -94,7 +94,7 @@ def test_artifact_row_extra_refused():
         })
 
 
-def test_draft_row_extra_refused():
+def test_draft_row_extra_refused() -> None:
     with pytest.raises(run_wire.ValidationError):
         run_wire.DraftRow.model_validate({
             "draft_id": "d1", "name": "Card", "model": "krea-2",
@@ -109,7 +109,7 @@ def test_draft_row_extra_refused():
 # FlowListEntry in a sidecar context would also refuse because the
 # schema never had it — this wall just pins the symbol-absence.) ──
 
-def test_fossil_rows_removed():
+def test_fossil_rows_removed() -> None:
     """After the yaml retirement (2026-09-05) these symbols are
     gone from run_wire; importing them raises AttributeError. The
     schema's intent: the door closed, the row died, the wire stayed
@@ -125,7 +125,7 @@ def test_fossil_rows_removed():
 # fields, min_length, type — not just extras. A row with a missing
 # required field refuses. ──
 
-def test_run_row_missing_required_refuses():
+def test_run_row_missing_required_refuses() -> None:
     with pytest.raises(run_wire.ValidationError):
         run_wire.RunRow.model_validate({
             "run_id": "r1", "status": "completed",
@@ -133,7 +133,7 @@ def test_run_row_missing_required_refuses():
         })
 
 
-def test_form_field_row_min_length_refuses():
+def test_form_field_row_min_length_refuses() -> None:
     """PYTHON SHAPE LAW rung 2: validation AT CONSTRUCTION. A field
     with an empty name is unbuildable — the wire is a contract, the
     empty string is not a valid field identity."""

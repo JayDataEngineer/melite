@@ -38,7 +38,7 @@ GATEWAY_MODULES = (
 
 
 @pytest.mark.parametrize("modname", GATEWAY_MODULES)
-def test_module_imports_cleanly(modname):
+def test_module_imports_cleanly(modname: str) -> None:
     """Importing a module runs its top-level (class construction,
     table build, form_wire frozen rows). An invalid module raises
     HERE — the wall fails before the gateway is ever restarted."""
@@ -46,7 +46,7 @@ def test_module_imports_cleanly(modname):
     assert mod is not None
 
 
-def test_form_wire_genre_enum_is_closed():
+def test_form_wire_genre_enum_is_closed() -> None:
     """The closed genre vocabulary (PYTHON SHAPE LAW rung 3). A typo
     at construction refuses; this pin is the lockstep with the
     client schema's `FormSpec.genre` union and the model rows on
@@ -64,7 +64,7 @@ def test_form_wire_genre_enum_is_closed():
     )
 
 
-def test_card_kinds_runner_enum_is_closed():
+def test_card_kinds_runner_enum_is_closed() -> None:
     """The closed runner vocabulary mirrors the client
     cardSeam.KindRunner union. Same lockstep pin as genre."""
     import card_kinds

@@ -17,21 +17,40 @@ The MRO is the merge order. merged_defaults() walks family → variant
 
 Two validation layers, both boot-loud:
   1. DECLARED data validates at class creation (pydantic): source URLs,
-     sha256 hex, numeric types, lora strengths.
+     sha256 hex, numeric types, lora strengths. The OFFERING state is
+     a construction law too (see _boot_validate): a class is OFFERED
+     (form = "form_generate", the editor form it boards) or UNOFFERED
+     (unoffered = True, no card arm yet) — exactly one, never neither,
+     never both, never form = ''.
   2. The SERVED row (model_row(), disk probes included) validates at
-     scan time — a broken unit refuses before the wire.
+     scan time — a broken unit refuses before the wire. `form` is
+     REQUIRED on the wire row: the 2026-08-11 catalog contract (the
+     Zustand validator + pydantic, "impossible to fail this") makes
+     every served model routable and renderable; an unoffered family
+     serves no row at all (the scan skips it).
 
 Cross-validation with cards (the feature the yaml cascade cannot
 express): validate_against_cards() checks every model default against
 the owning card's field domains — names, enums ($samplers), min/max.
 """
 
+from __future__ import annotations
+
 import re
 
 from enum import Enum
+from typing import TYPE_CHECKING, TypedDict
 
 from pydantic import (BaseModel, Field, HttpUrl, ValidationError,
                       field_validator, model_validator)
+
+if TYPE_CHECKING:
+    from melite_cards import ActionCard, Mod
+
+# The served-row shape: decoded JSON (objects, arrays, scalars).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
+
+
 
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _SAFE_ID_RE = re.compile(r"[a-z0-9_-]+")
@@ -138,7 +157,7 @@ a stated-once basename like `unet`, no artifact row beside it.'''
     unet_unconditional: str = ""
 
     @model_validator(mode="after")
-    def _one_unet_source(self):
+    def _one_unet_source(self: "LaneInputs") -> "LaneInputs":
         if self.family:
             if self.unet or self.unet_variant or self.text_encoder \
                     or self.vae or self.checkpoint or self.texture_vae \
@@ -206,7 +225,7 @@ class Provision(BaseModel, frozen=True):
 
     @field_validator("sha256")
     @classmethod
-    def _hex(cls, v):
+    def _hex(cls: "type[Provision]", v: str | None) -> str | None:
         if v is not None and not _SHA256_RE.match(v):
             raise ValueError("provision sha256 must be 64 lowercase hex")
         return v
@@ -251,7 +270,7 @@ class Studio(BaseModel, frozen=True):
     kind: StudioKind = StudioKind.CUSTOM
 
     @model_validator(mode="after")
-    def _assembly_contract(self):
+    def _assembly_contract(self: "Studio") -> "Studio":
         if self.kind is StudioKind.ASSEMBLY:
             if not self.writes:
                 raise ValueError(
@@ -281,6 +300,15 @@ class Quant(str, Enum):
     BF16 = "bf16"
     F32 = "f32"
     LIGHTNING4 = "lightning4"
+    # NATIVE: the tier of a lane with NO weights matrix (preprocessors,
+    # transport tools, studios, utilities) — the cell ships no download
+    # place because the lane carries no weights. A real tier landing
+    # (rung 3: closed vocabularies extend when a real tier lands): the
+    # "no weights, no quant" lane is its own tier, not a quantized tier
+    # mis-stated. The dropdown shows it truthfully next to the int8 /
+    # fp8 / f32 family heads — one uniform shape, every lane covered
+    # (the ONE PATTERN, image-edit rework 2026-09-05).
+    NATIVE = "native"
 
 
 _QUANT_VALUES = frozenset(q.value for q in Quant)
@@ -338,14 +366,18 @@ class CellArtifact(BaseModel, frozen=True):
 
     @field_validator("sha256")
     @classmethod
-    def _hex64(cls, v):
+    def _hex64(cls: "type[CellArtifact]", v: str) -> str:
         if not _SHA256_RE.match(v):
             raise ValueError("sha256 must be 64 lowercase hex chars")
         return v
 
 
 class ModelRow(BaseModel, frozen=True):
-    """The catalog's served model row (catalog._model_row shape)."""
+    """The catalog's served model row. `form` is REQUIRED and non-empty
+    (the 2026-08-11 catalog contract: every served model routes and
+    renders — the frontend validator refuses a formless row at load,
+    and this schema refuses it at construction, which is the only
+    place a refusal belongs)."""
     model_config = {"extra": "forbid"}
 
     id: str
@@ -354,10 +386,9 @@ class ModelRow(BaseModel, frozen=True):
     label: str = ""
     description: str = ""
     source: SourceRow = SourceRow()
-    loras: list = []
     defaults: dict = {}
     engine: str = ""
-    form: str | None = None
+    form: str = Field(min_length=1)
     has_agent: bool | None = None
     has_inference: bool | None = None
     has_rubric: bool | None = None
@@ -381,13 +412,6 @@ class Cell(BaseModel, frozen=True):
     vram_peak_gb: float | None = Field(default=None, ge=0)
     resolver_defaults: dict = {}       # cascade merge (deepest layer)
     hide_from_dropdown: bool = False
-    # WIRE overrides — the faithful-bug port: the C's variant parser
-    # stops reading quant attrs once `label` is seen, so some served
-    # quant rows carry the MODEL route and vram 0 even when the file
-    # declares richer data. The row keeps the truth; the wire keeps
-    # the bug. Unset → falls back to the true attrs.
-    wire_route: str = ""
-    wire_vram: float | None = Field(default=None, ge=0)
     artifact: CellArtifact | None = None
 
 
@@ -409,13 +433,13 @@ class Variant(BaseModel, frozen=True):
 
     @field_validator("id")
     @classmethod
-    def _id_shape(cls, v):
+    def _id_shape(cls: "type[Variant]", v: str) -> str:
         if not _SAFE_ID_RE.fullmatch(v):
             raise ValueError("variant id must be [a-z0-9_-]+ (got %r)" % v)
         return v
 
     @model_validator(mode="after")
-    def _one_cell_per_quant(self):
+    def _one_cell_per_quant(self: "Variant") -> "Variant":
         quants = [c.quant for c in self.cells]
         dupes = {q for q in quants if quants.count(q) > 1}
         if dupes:
@@ -425,12 +449,42 @@ class Variant(BaseModel, frozen=True):
         return self
 
 
+# ── MODEL ATTRIBUTE ALLOWLIST (2026-09-05) ──────────────────────────────
+# The Model declaration surface is CLOSED. Top-level family attrs are read
+# with getattr-with-default (resolver_defaults {}, prompt_upscale (), …),
+# so a misspelled attr (reslover_defaults, lane_inputz) otherwise falls
+# back SILENTLY — author-time garbage in, runtime default out. Every data
+# name a family file may declare lives here (enumerated from all 55 model
+# files); anything else refuses at IMPORT with the fix-or-extend
+# instruction. New Model-level vocabulary is a deliberate grammar change
+# (add the name here), never a drive-by spelling.
+_MODEL_ATTRS = frozenset({
+    "id", "label", "description", "genre", "form", "engine",
+    "variants", "defaults", "resolver_defaults", "lane_inputs",
+    "card", "card_knobs", "mods", "source", "studio",
+    "prompt_upscale", "prompt_guide", "lyrics_upscale",
+    "provisions", "provisioning", "variant_groups", "unoffered",
+    "loras",
+    "architecture", "canvas_default", "loader", "tile",
+    "timeout_floor",
+})
+
+
+class _ModelNamespace(TypedDict, total=False):
+    """The class-body keys _ModelMeta consumes (variants/id) — methods,
+    docstrings and the rest ride through to type.__new__ opaquely."""
+    variants: tuple[Variant, ...]
+    id: str
+
+
 class _ModelMeta(type):
     """Collects `variants` (a tuple of Variant INSTANCES — rung 1) and
     enforces the family laws at class-creation time. No namespace
     scanning, no key-derivation: the class states its rows once."""
 
-    def __new__(mcls, name, bases, ns):
+    def __new__(mcls: "type[_ModelMeta]", name: str,
+                bases: tuple["type[Model]" | type[object], ...],
+                ns: _ModelNamespace) -> "type[Model]":
         cls = super().__new__(mcls, name, bases, ns)
         variants = []
         seen = {}
@@ -468,8 +522,27 @@ class _ModelMeta(type):
         cid = ns.get("id", "")
         if variants and not cid:
             raise ModelError("%s declares variants but no id" % name)
-        # boot-loud: declared data validates NOW (layer 1)
-        cls._boot_validate()
+        # ATTRIBUTE ALLOWLIST: unknown data names refuse at import —
+        # code (helpers), imports and privates ride free; the incident
+        # class is misspelled DATA falling back to grammar defaults.
+        for key, value in ns.items():
+            if key.startswith("_") or key in _MODEL_ATTRS:
+                continue
+            if callable(value) or isinstance(value, type) \
+                    or isinstance(value, (classmethod, staticmethod,
+                                          property)) \
+                    or type(value).__name__ == "module":
+                continue
+            raise ModelError(
+                "%s: unknown Model attribute %r — a typo here silently "
+                "falls back to the grammar default. Known attributes: "
+                "%s. If this is NEW Model-level vocabulary, add it to "
+                "_MODEL_ATTRS in py/melite_models/grammar.py; otherwise "
+                "fix the spelling" % (name, key, ", ".join(sorted(_MODEL_ATTRS))))
+        # boot-loud: declared data validates NOW (layer 1). root=True
+        # is the Model base itself — the offering gate is for UNITS
+        # (every subclass), never the root declaration surface.
+        cls._boot_validate(root=not bases)
         return cls
 
 
@@ -488,7 +561,17 @@ class Model(metaclass=_ModelMeta):
     label = ""
     description = ""
     engine = ""               # engine_plugin
+    # OFFERING (operator orders 2026-08-11 + 2026-09-05, reconciled
+    # 2026-09-05): a model is OFFERED (form = "form_generate" — the
+    # editor form it boards; the served row carries it, REQUIRED) or
+    # UNOFFERED (unoffered = True — no card arm yet; the scan keeps
+    # the class off the served catalog entirely). Exactly one of the
+    # two, enforced at class creation below. The form='' stringly
+    # hack (the 2026-09-05 cohort: ltx-2-3 et al) shipped keyless
+    # rows the frontend contract could only catch at RUNTIME — the
+    # construction refusal is the compile-time gate.
     form = None
+    unoffered = False
     card = ""
     # MODS ARE DECLARED HERE — the family's own mod set (ActionCardPack
     # classes from melite_cards): `mods = (LorasMod,)`. The card that
@@ -519,7 +602,65 @@ class Model(metaclass=_ModelMeta):
     card_knobs = ()         # model-level knob map (card/inject/kind/required)
 
     @classmethod
-    def _boot_validate(cls):
+    def _boot_validate(cls: "type[Model]", root: bool = False) -> None:
+        # OFFERING ⊕ UNOFFERED — the construction gate (2026-09-05):
+        # exactly one door, named, before any row can exist. This is
+        # where form='' dies: an empty-string form manufactured a
+        # served row with NO form key (the emitter's truthiness guard
+        # silently dropped it) and only the frontend contract caught
+        # it, at runtime, in the browser. Never again.
+        if not root:
+            if not isinstance(cls.unoffered, bool):
+                raise ModelError(
+                    "%s.unoffered must be a bool (got %r) — the "
+                    "offering state is declared, not spelled"
+                    % (cls.__name__, cls.unoffered))
+            if cls.form is not None and not (
+                    isinstance(cls.form, str) and cls.form.strip()):
+                raise ModelError(
+                    "%s.form = %r — the form='' unoffered hack is "
+                    "dead. An offered model names its editor form "
+                    "(non-empty string); an unboarded one declares "
+                    "unoffered = True and serves no row (offered "
+                    "means runnable)" % (cls.__name__, cls.form))
+            if cls.unoffered and cls.form:
+                raise ModelError(
+                    "%s declares form=%r AND unoffered=True — an "
+                    "ambiguous request; name exactly one door (QUEUE "
+                    "LANE LAW)" % (cls.__name__, cls.form))
+            if not cls.form and not cls.unoffered:
+                raise ModelError(
+                    "%s declares neither form nor unoffered — every "
+                    "model states its offering: form = '<editor "
+                    "form>' when it boards one, unoffered = True "
+                    "until it does" % cls.__name__)
+            # CASCADE GATE (2026-09-05, image-edit rework): every model
+            # declares its family head → variants → quant cells. A model
+            # with `variants = ()` (or no variants assignment at all) is
+            # the "rides on defaults" fossil — it served the catalog with
+            # no variant/quant surface, the card UI rendered an empty
+            # model/variant/quant selector, and the user could not tell
+            # which lane they were on. ONE PATTERN, OR COMPILE ERROR:
+            # an offered model with no variants is a construction refusal
+            # (the whole point of mono-python + pydantic — a declaration
+            # that cannot be built cannot ship). The same gate fires for
+            # an unoffered stub: the lane's INTENDED cascade is declared
+            # even when no card arms it yet, so the day the lane boards
+            # its card, the row already carries the truth.
+            #
+            # The root Model class itself is exempt (the declaration
+            # surface); every subclass is the rule.
+            if not cls.variants:
+                raise ModelError(
+                    "%s declares no variants — a Model without the "
+                    "family head → variants → quant cells cascade is a "
+                    "'rides on defaults' fossil and refuses at "
+                    "construction (ONE PATTERN, OR COMPILE ERROR). "
+                    "Declare `variants = (Variant(id=..., cells=(Cell("
+                    "quant=..., route=..., vram_peak_gb=...),)),)` — "
+                    "one row for a single-config lane (NATIVE for "
+                    "weightless tools, the true tier for weighted lanes), "
+                    "the full matrix for multi-config lanes." % cls.__name__)
         for lora in (cls.loras or ()):
             if not isinstance(lora, LoraRow):
                 raise ModelError(
@@ -626,7 +767,8 @@ class Model(metaclass=_ModelMeta):
     # ── cascade reads ─────────────────────────────────────────────
 
     @classmethod
-    def merged_defaults(cls, variant=None, quant=None):
+    def merged_defaults(cls: "type[Model]", variant: str | None = None,
+                        quant: str | None = None) -> dict[str, str | int | float | bool]:
         """Mods → family → variant → cell, later layers win (the MRO
         walk). The mods layer is ABSORBED, never hand-copied: each
         declared mod's field defaults form the cascade's base — the
@@ -652,7 +794,7 @@ class Model(metaclass=_ModelMeta):
         return out
 
     @classmethod
-    def loras_of(cls):
+    def loras_of(cls: "type[Model]") -> tuple[LoraRow, ...]:
         """The lora catalog through the ONE mod system: union of rows
         across every declared LorasMod-flavored mod. (The wire row
         stays [] — catalog.c:177 never parsed lora_catalog — but the
@@ -665,14 +807,14 @@ class Model(metaclass=_ModelMeta):
         return tuple(rows)
 
     @classmethod
-    def _variant_(cls, vid):
+    def _variant_(cls: "type[Model]", vid: str) -> Variant | None:
         for v in cls.variants:
             if v.id == vid:
                 return v
         return None
 
     @staticmethod
-    def _cell_(variant, quant):
+    def _cell_(variant: Variant, quant: str) -> Cell | None:
         q = Quant(quant)
         for c in variant.cells:
             if c.quant == q:
@@ -680,7 +822,7 @@ class Model(metaclass=_ModelMeta):
         return None
 
     @classmethod
-    def lane_unet_basename(cls):
+    def lane_unet_basename(cls: "type[Model]") -> str:
         """The unet checkpoint basename for card renderers: derived
         from the named cell's artifact, or the stated lane_inputs.unet.
         LOUD when the row points at a cell with no artifact."""
@@ -699,7 +841,8 @@ class Model(metaclass=_ModelMeta):
         return str(cell.artifact.source_url).rsplit("/", 1)[-1]
 
     @classmethod
-    def resolve(cls, variant=None, quant=None):
+    def resolve(cls: "type[Model]", variant: str | None = None,
+                quant: str | None = None) -> tuple[str, str, Cell | None]:
         """(route, engine, cell) for matrix coordinates — the resolver
         the yaml cascade buried in text scans. Unspecified coordinates
         fall to the FIRST declared variant / cell (the family default —
@@ -719,13 +862,21 @@ class Model(metaclass=_ModelMeta):
         return route, engine, ccls
 
 
-# ── the served-row emitter (parity with catalog._model_row) ─────────
+# ── the served-row emitter (the catalog row IS the wire contract) ───
 
 
-def model_row(cls, model_dir):
+def model_row(cls: type[Model], model_dir: str) -> dict[str, JsonValue]:
     """The catalog row, disk probes included (agent/inference/rubric),
-    pydantic-validated — layer 2. Mirrors catalog._model_row key-for-key."""
+    pydantic-validated — layer 2. `form` rides unconditionally: the
+    served-row schema requires it (an unoffered class refuses here —
+    the scan skips it before this point, and a direct call on one is
+    a bug this refusal names)."""
     import os
+    if cls.unoffered:
+        raise ModelError(
+            "%s is unoffered — it serves no catalog row; the scan "
+            "keeps it off the wire until its lane boards (offered "
+            "means runnable)" % cls.__name__)
     row = {}
     row["id"] = cls.id
     row["family"] = cls.id
@@ -738,11 +889,9 @@ def model_row(cls, model_dir):
         row["source"]["repo_id"] = src.repo_id
     if src is not None and src.filename is not None:
         row["source"]["filename"] = src.filename
-    row["loras"] = []          # the C never parsed lora_catalog (catalog.c:177)
     row["defaults"] = dict(cls.defaults or {})
     row["engine"] = cls.engine or ""
-    if cls.form:
-        row["form"] = cls.form
+    row["form"] = cls.form
     if os.path.isfile(os.path.join(model_dir, "agents", "AGENT.md")):
         row["has_agent"] = True
     # (2026-09-02) inference.yaml extinct — class carries recipes
@@ -765,7 +914,7 @@ import os as _os       # noqa: E402
 import sys as _sys     # noqa: E402
 
 
-def _repo_py_root(path):
+def _repo_py_root(path: str) -> str | None:
     """The repo's py/ package root for a file under it (walks up until
     a parent has py/melite_models). The LOADER owns import mechanics —
     model.py files declare, they never sys.path-insert (shape law
@@ -782,7 +931,7 @@ def _repo_py_root(path):
     return None
 
 
-def load_model_py(path, engine="engine"):
+def load_model_py(path: str, engine: str = "engine") -> type[Model]:
     """Import one model.py → its Model subclass (exactly one per file,
     loud otherwise). Asserts dirname == model id (naming law 1).
     Injects the repo py/ root (loader-owned) and converts pydantic
@@ -838,11 +987,11 @@ def load_model_py(path, engine="engine"):
     return cls
 
 
-def has_model_yaml(model_dir):
+def has_model_yaml(model_dir: str) -> bool:
     return _os.path.isfile(_os.path.join(model_dir, "model.yaml"))
 
 
-def load_mod(model_py_path, stem, class_name):
+def load_mod(model_py_path: str, stem: str, class_name: str) -> "type[Mod]":
     """Load a per-family mod subclass from models/<family>/mods/<stem>.py
     under a unique canonical name, returning its <class_name>. Called
     from model.py:
@@ -880,7 +1029,7 @@ def load_mod(model_py_path, stem, class_name):
     return cls
 
 
-def scan_engine_models(repo_root):
+def scan_engine_models(repo_root: str) -> dict[str, tuple[str, type[Model]]]:
     """Every models/<genre>/<id>/model.py under engines/*/, scan order:
     {model_id: (path, class)}. Duplicate ids LOUD."""
     out = {}
@@ -912,7 +1061,10 @@ def scan_engine_models(repo_root):
 # ── cross-validation — the killer feature ───────────────────────────
 
 
-def validate_against_cards(models, cards, engine_truth=()):
+def validate_against_cards(models: dict[str, tuple[str, "type[Model]"]],
+                           cards: dict[str, tuple[str, "type[ActionCard]"]],
+                           engine_truth: tuple[str, ...] = ()
+                           ) -> list[tuple[str, str]]:
     """Model defaults must live inside the owning card's field domains.
 
     models: {id: Model class}; cards: {card_id: ActionCard class};

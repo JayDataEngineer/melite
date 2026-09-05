@@ -38,6 +38,7 @@ never a second copy of the traversal (PLUGIN ARCHITECTURE LAW).
 
 import ast
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -68,9 +69,14 @@ ENGINE_ABI = {"ENGINE_TYPE", "execute", "stop", "unload",
 # ValidationError: re-export the core's 4xx plumbing consumes.
 # DEFAULT_OUTPUT: see ENGINE_ABI above; compose-first engines set it
 # on their __init__ instead of engine.py.
+# JsonValue/JsonDict (2026-09-05): the wire-shape type vocabulary of
+# card_compose's public signature — ABI because a consumer typing
+# against the callable needs them. (25+ per-module copies of the
+# alias block live across card arms — the one-home dedup is a
+# recorded future stroke, not this wall's concern.)
 COMPOSE_ABI = {"card_compose", "execute", "stop", "unload",
                "ValidationError", "ENGINE_TRUTH_KEYS",
-               "DEFAULT_OUTPUT"}
+               "DEFAULT_OUTPUT", "JsonValue", "JsonDict"}
 PLUGIN_ABI = {"Plugin"}
 
 
@@ -132,7 +138,7 @@ def _plugin_dirs() -> list[Path]:
     return out
 
 
-def test_s1_isolation_surfaces_exist_on_disk():
+def test_s1_isolation_surfaces_exist_on_disk() -> None:
     """R-stale: every pinned import surface is a real py/ module."""
     missing = sorted(
         s for s in _isolation_surfaces()
@@ -144,7 +150,7 @@ def test_s1_isolation_surfaces_exist_on_disk():
     )
 
 
-def test_s2_gateway_imports_are_pinned():
+def test_s2_gateway_imports_are_pinned() -> None:
     """R-orphan: every py/ module the gateway imports has a clean-import
     pin (or a documented exemption)."""
     pinned = set(_isolation_surfaces())
@@ -157,7 +163,7 @@ def test_s2_gateway_imports_are_pinned():
     )
 
 
-def _abi_targets():
+def _abi_targets() -> Iterator[tuple[str, Path, set[str]]]:
     """(label, path, allowed_set) for every plugin declaration file."""
     for pdir in _plugin_dirs():
         ppy = pdir / "plugin.py"
@@ -181,7 +187,7 @@ def _abi_targets():
                         yield (f.relative_to(REPO).as_posix(), f, abi)
 
 
-def test_s3_plugin_declaration_surfaces_are_closed():
+def test_s3_plugin_declaration_surfaces_are_closed() -> None:
     """R-ABI: public defines on broker-consumed files are exactly the
     ABI — typo'd hooks and dead code fail loudly instead of silently
     never being called."""
@@ -196,7 +202,7 @@ def test_s3_plugin_declaration_surfaces_are_closed():
     )
 
 
-def test_s3_engine_declarations_name_their_type():
+def test_s3_engine_declarations_name_their_type() -> None:
     """Every legacy engines/<dir>/engine.py declares ENGINE_TYPE —
     the broker's SSOT (dir-name fallback is the yaml-era relic)."""
     missing = []
