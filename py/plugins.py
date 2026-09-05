@@ -41,6 +41,8 @@ import re
 import sys
 from pathlib import Path
 
+from pydantic import (BaseModel, ConfigDict, Field, model_validator)
+
 REPO = Path(__file__).resolve().parent.parent
 PLUGINS_DIR = REPO / "plugins"
 # Scan roots: engine plugins under plugins/engine/*, agent plugins under
@@ -62,14 +64,38 @@ except Exception:
 # engine discovery
 # ---------------------------------------------------------------------------
 
-class EngineRef:
-    __slots__ = ("plugin_id", "engine_dir", "engine_type", "plugin_root")
+class EngineRef(BaseModel):
+    """One mounted engine (PYTHON SHAPE LAW rung 2: frozen row, not a
+    __slots__ duck class). engine_dir/engine_type/plugin_id are the
+    mount facts; plugin_root derives (compose-first plugins mount the
+    plugin dir itself, legacy shapes mount the engine dir two levels
+    down)."""
 
-    def __init__(self, plugin_id, engine_dir, engine_type, plugin_root=None):
-        self.plugin_id = plugin_id
-        self.engine_dir = engine_dir
-        self.engine_type = engine_type
-        self.plugin_root = plugin_root or engine_dir.parents[1]
+    model_config = ConfigDict(frozen=True, extra="forbid",
+                              arbitrary_types_allowed=True)
+
+    plugin_id: str = Field(min_length=1)
+    engine_dir: Path
+    engine_type: str = Field(min_length=1)
+    plugin_root: Path | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _root_defaults(cls, data):
+        """plugin_root derives two levels up from engine_dir when the
+        mount didn't state it (compose-first mounts state it)."""
+        if isinstance(data, dict) and not data.get("plugin_root"):
+            ed = data.get("engine_dir")
+            if ed is not None:
+                parents = Path(ed).parents
+                if len(parents) < 2:
+                    raise ValueError(
+                        "engine_dir %s is too shallow to derive "
+                        "plugin_root (state plugin_root explicitly)"
+                        % ed)
+                data = dict(data)
+                data["plugin_root"] = parents[1]
+        return data
 
     def load(self, module_name):
         """Load engine.py/compose.py (standalone) or a compose/ package
@@ -126,7 +152,10 @@ class EngineRef:
 def _engine_type_of_dir(engine_dir):
     """Engine type from engine.py (ENGINE_TYPE), else engine.yaml, else dir name.
 
-    (2026-09-02) engine.py is the SSOT; engine.yaml is the yaml fallback."""
+    (2026-09-02) engine.py is the SSOT; engine.yaml is the yaml fallback.
+    Every fallthrough is LOUD (RESILIENCE LAW: document, then continue) —
+    the silent-era `except: pass` let a broken engine.py silently mount
+    under its dirname."""
     epy = engine_dir / "engine.py"
     if epy.is_file():
         try:
@@ -134,8 +163,12 @@ def _engine_type_of_dir(engine_dir):
             exec(epy.read_text(), ns)
             if ns.get("ENGINE_TYPE"):
                 return ns["ENGINE_TYPE"]
-        except Exception:
-            pass
+            print("plugins: %s carries engine.py without ENGINE_TYPE "
+                  "— falling through to engine.yaml" % epy,
+                  file=sys.stderr)
+        except Exception as e:
+            print("plugins: %s refuses to exec (%s) — falling through "
+                  "to engine.yaml" % (epy, e), file=sys.stderr)
     ey = engine_dir / "engine.yaml"
     if ey.is_file():
         for line in ey.read_text().splitlines():
@@ -144,6 +177,11 @@ def _engine_type_of_dir(engine_dir):
                 t = s.partition(":")[2].strip()
                 if t:
                     return t
+        print("plugins: %s parsed no type — falling through to the "
+              "dirname" % ey, file=sys.stderr)
+    print("plugins: %s carries NO engine declaration — mounting under "
+          "the dirname (the no-declaration fallback; a declaration is "
+          "the intended shape)" % engine_dir, file=sys.stderr)
     return engine_dir.name
 
 
@@ -207,7 +245,9 @@ def scan_engines():
                     "engine type %r declared by BOTH %s and %s — one "
                     "owner per engine (PLUGIN ARCHITECTURE LAW)" % (
                         etype, found[etype].engine_dir, engine_dir))
-            found[etype] = EngineRef(plugin_dir.name, engine_dir, etype)
+            found[etype] = EngineRef(
+                plugin_id=plugin_dir.name, engine_dir=engine_dir,
+                engine_type=etype)
     # Compose-first plugins: plugin.py (or plugin.yaml) declares engines: [...];
     # compose/ package owns card_compose + optional execute (the
     # comfyui-mcp boundary). No engines/<dir>/ needed.
@@ -222,8 +262,18 @@ def scan_engines():
                 pcls = ns.get("Plugin")
                 if pcls is not None:
                     declared = list(getattr(pcls, "engines", ()))
-            except Exception:
-                pass
+                    if not declared:
+                        print("plugins: %s declares a Plugin class "
+                              "with NO engines tuple — the plugin "
+                              "mounts nothing (a typo like `engine =` "
+                              "lands here)" % ppy, file=sys.stderr)
+                else:
+                    print("plugins: %s carries plugin.py without a "
+                          "Plugin class — mounting nothing" % ppy,
+                          file=sys.stderr)
+            except Exception as e:
+                print("plugins: %s refuses to exec (%s) — the plugin "
+                      "mounts nothing" % (ppy, e), file=sys.stderr)
         if not declared:
             pyaml = plugin_dir / "plugin.yaml"
             if pyaml.is_file():
@@ -238,15 +288,31 @@ def scan_engines():
                             declared.append(s[2:].strip())
                         elif not s.startswith(" ") and s:
                             break
+                if not declared:
+                    # the line parser only speaks block style — a
+                    # flow-style `engines: [x]` yaml parses to nothing
+                    # here; say so instead of silently unmounting
+                    print("plugins: %s parsed no engines: entries "
+                          "(block style `- name` only) — the plugin "
+                          "mounts nothing" % pyaml, file=sys.stderr)
         compose_dir = plugin_dir / "compose"
         if not declared or not (compose_dir / "__init__.py").is_file():
             continue
         for etype in declared:
             if etype in found:
-                continue  # legacy engines/<dir> already owns it
+                # documented precedence: a legacy engines/<dir>/
+                # declaration owns the type over the compose-first
+                # declaration. Loud — a silent cede here would hide a
+                # two-owner drift the loud duplicate check catches for
+                # legacy-vs-legacy.
+                print("plugins: engine type %r declared by BOTH %s "
+                      "(legacy, owns it) and %s (compose-first, "
+                      "cedes)" % (etype, found[etype].engine_dir,
+                                  plugin_dir), file=sys.stderr)
+                continue
             found[etype] = EngineRef(
-                plugin_dir.name, plugin_dir, etype,
-                plugin_root=plugin_dir)
+                plugin_id=plugin_dir.name, engine_dir=plugin_dir,
+                engine_type=etype, plugin_root=plugin_dir)
     _engines = found
     return _engines
 

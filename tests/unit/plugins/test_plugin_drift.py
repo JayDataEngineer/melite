@@ -26,6 +26,7 @@ from typing import Optional
 
 import pytest
 import yaml
+import pydantic
 from pydantic import BaseModel, Field
 
 
@@ -47,12 +48,37 @@ class PluginSpec(BaseModel):
 
 
 class NodeYamlSpec(BaseModel):
-    """The minimal nodes.yaml schema. The gateway loads this to know
-    what node types the engine declares for a model -- a missing
-    nodes.yaml means the model cannot be composed."""
-    # we pin only the top-level shape; the inner node ids are owned
-    # by the engine and the gateway reads them opaquely.
-    nodes: dict = Field(default_factory=dict)
+    """The REAL nodes.yaml row (the 2026-09-05 duck-typing audit: the
+    old spec modeled a `nodes:` dict that no file on disk has ever
+    carried — with extra fields silently ignored, every file
+    validated VACUOUSLY, always green. The actual document is an
+    extensions manifest consumed by infra/extension_lane.py (merge)
+    and tools/provision.py (install); the row is CLOSED so a typo'd
+    key is a refusal, never a silently-skipped install)."""
+    model_config = pydantic.ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1)
+    registry: str = ""
+    version: str = ""
+    url: str = ""
+    ref: str = ""
+    required: bool = True
+    desc: str = ""
+    pip: tuple = ()
+
+
+class NodesYamlDoc(BaseModel):
+    """Top level of a nodes.yaml: `extensions` only, closed (a typo'd
+    `extentions:` dies; explicit null = declared-nothing, a legal
+    genre head whose family carries the rows elsewhere)."""
+    model_config = pydantic.ConfigDict(extra="forbid")
+
+    extensions: list = []
+
+    @pydantic.field_validator("extensions", mode="before")
+    @classmethod
+    def _null_is_empty(cls, v):
+        return [] if v is None else v
 
 
 # --- discovery (the actual estate layout) -------------------------------
@@ -146,13 +172,20 @@ def test_plugin_has_models_for_every_genre(plugin_id):
 
 
 def discover_model_nodes_yamls(plugin_dir):
-    """Yield (model_id, yaml_path) for every models/<genre>/<model>/nodes.yaml."""
+    """Yield (model_id, yaml_path) for every nodes.yaml under
+    models/: BOTH the genre-level heads (models/<genre>/nodes.yaml —
+    three files the old per-model-only walk silently skipped,
+    including the null-extensions video head) and the per-model
+    declarations (models/<genre>/<model>/nodes.yaml)."""
     models_root = plugin_dir / "models"
     if not models_root.is_dir():
         return
     for genre in sorted(models_root.iterdir()):
         if not genre.is_dir():
             continue
+        head = genre / "nodes.yaml"
+        if head.is_file():
+            yield f"{genre.name}/_", head
         for model in sorted(genre.iterdir()):
             if not model.is_dir():
                 continue
@@ -174,12 +207,19 @@ NODES_YAMLS = list(gen_nodes_yamls())
                          ids=[nid for nid, _ in NODES_YAMLS])
 def test_model_nodes_yaml_validates(nodes_id):
     """Pattern 4 (manifest drift): every model has a nodes.yaml that
-    validates against the minimal NodeYamlSpec. The gateway reads
-    this to know what node types the engine declares for a model --
-    malformed or missing is a contract break."""
+    validates against the REAL manifest schema (top level closed;
+    every extension row closed and typed — the loader
+    infra/extension_lane.py refuses the same shapes loudly, this
+    wall pins the tree never grows them)."""
     yaml_path = dict(NODES_YAMLS)[nodes_id]
     try:
         data = yaml.safe_load(yaml_path.read_text(encoding="utf-8")) or {}
     except yaml.YAMLError as e:
         pytest.fail(f"{nodes_id}: malformed nodes.yaml: {e}")
-    NodeYamlSpec(**data)
+    try:
+        doc = NodesYamlDoc.model_validate(data)
+    except pydantic.ValidationError as e:
+        pytest.fail(f"{nodes_id}: nodes.yaml refuses validation: {e}")
+    for row in doc.extensions:
+        NodeYamlSpec.model_validate(
+            row.model_dump() if hasattr(row, "model_dump") else row)
