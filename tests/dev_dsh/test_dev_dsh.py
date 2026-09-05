@@ -900,6 +900,7 @@ class TestDevDshClientBundleSet:
         }
         expected = {
             "@melite-plugin/dsh-card-view",
+            "@melite-plugin/dsh-card-deck",
             "@infer-media/dsh-media",
             "@infer-media/dsh-gallery",
         }
@@ -915,9 +916,10 @@ class TestDevDshClientBundleSet:
             f"{sorted(extra)}. A bundle was added without updating the "
             f"approved set here. The operator policy (2026-09-04) is: "
             f"no inference surfaces in the DSH sidebar - the main "
-            f"window owns cards, media, and flows. If this addition "
-            f"is intentional, update the expected set in this test "
-            f"in the same commit."
+            f"window owns cards, media, and flows (the card-deck is "
+            f"the surviving main-window host, d1c98e4). If this "
+            f"addition is intentional, update the expected set in "
+            f"this test in the same commit."
         )
 
 
