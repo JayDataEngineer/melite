@@ -1,3 +1,11 @@
+# AGENTS.md — prop-flow (agent lane notes)
+
+> This file was `flow.yaml` until 2026-09-05. The yaml flow format is
+> RETIRED estate-wide (the /v1/flows/yaml/* door family died with it);
+> this content survives as agent-facing LANE DOCUMENTATION only. It is
+> NOT a runtime flow format — the runtime doors are `flows/<name>/flow.py`
+> ({flow:name}), `{flow_inline}`, and `{model}`.
+
 name: prop-flow
 api: true
 description: >-

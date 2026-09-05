@@ -101,48 +101,6 @@ class RunsEnvelope(_Frozen):
     runs: list[RunRow]
 
 
-# ── flow documents family ──────────────────────────────────────────
-
-class FlowListEntry(_Frozen):
-    """GET /v1/flows/yaml/list row."""
-
-    filename: str = Field(min_length=1)
-    name: str = Field(min_length=1)
-    path: str
-
-
-class FlowListEnvelope(_Frozen):
-    flows: list[FlowListEntry]
-
-
-class FlowNodeRow(_Frozen):
-    """A flow doc's node ids (the studio's node strip)."""
-
-    id: str = Field(min_length=1)
-
-
-class FlowStepRow(_Frozen):
-    """A flow doc's step, in the wire shape the studio consumes:
-    family/service from the step's type, title from its id."""
-
-    family: str = Field(min_length=1)
-    service: str = Field(min_length=1)
-    title: str = Field(min_length=1)
-    params: list[Any]
-
-
-class FlowDetailEnvelope(_Frozen):
-    """GET /v1/flows/yaml/detail — the parsed flow document. The
-    description is the PARSED YAML value (block scalars resolved);
-    the `>-` indicator leak died with the string surgery."""
-
-    name: str = Field(min_length=1)
-    description: str
-    nodes: list[FlowNodeRow]
-    steps: list[FlowStepRow]
-    yaml: str
-
-
 # ── drafts family ──────────────────────────────────────────────────
 
 class DraftRow(_Frozen):

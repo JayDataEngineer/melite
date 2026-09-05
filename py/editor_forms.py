@@ -1669,25 +1669,6 @@ def _main():
         print("form-spec unknown model        : DRIFT —", status, body)
         failures.append(("form-spec:404", "%s %s" % (status, body)))
 
-    # lane fallback: a flows/<name>/flow.yaml lane gets the minimal
-    # display spec (shape check against live disk, C src/server.cpp:7958-7967)
-    lane = None
-    pdir = os.path.join(repo_root, "flows")
-    for name in sorted(_scandir(pdir)):
-        if os.path.isfile(os.path.join(pdir, name, "flow.yaml")):
-            lane = name
-            break
-    if lane is not None and _find_model(_scan_catalog(repo_root),
-                                        lane) is None:
-        status, body = form_spec(repo_root, lane)
-        if status == 200 and body == _MINIMAL_LANE_SPEC:
-            print("form-spec lane fallback (%s) : PARITY OK (minimal spec)"
-                  % lane)
-        else:
-            print("form-spec lane fallback (%s) : DRIFT — %s %s"
-                  % (lane, status, body))
-            failures.append(("form-spec:lane", "%s %s" % (status, body)))
-
     if failures:
         print("\n%d FAILURE(S)" % len(failures))
         return 1

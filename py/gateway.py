@@ -78,7 +78,7 @@ IDENT_RE = re.compile(r"^[a-z_][a-z0-9_-]*$")
 # route row. One constant, no restated coordinates. (Phase 2
 # consolidation, 2026-09-04: moved from /editor/assets/runs — outside
 # /v1 — to the assets family.)
-from editor_runs import ASSET_URL_PREFIX  # noqa: E402
+from editor_runs import ASSET_URL_PREFIX, draft_id_ok  # noqa: E402
 
 
 class ValidationError(Exception):
@@ -436,6 +436,14 @@ class Run:
     # before this field existed (and for any code path that builds a
     # Run without going through submit()).
     out_root: "Path" = field(default=None)  # type: ignore
+    # CARD LINKAGE (the run→card wire, 2026-09-04 audit): the sidecar
+    # MUST carry the draft_id the start body declared so /v1/flows/runs
+    # can answer "what card produced this" without round-tripping the
+    # drafts door. None for runs started bare (cardless test fixtures,
+    # direct API hits). Validated by draft_id_ok() at submit() — 96
+    # char cap, [A-Za-z0-9_-] — the same SSOT the drafts door uses.
+    # docs/queue/run-registry.md:41 / docs/queue/sidecar.md:36.
+    draft_id: str | None = None  # type: ignore
 
     @property
     def dir(self):
@@ -484,6 +492,19 @@ class Gateway:
     async def submit(self, body):
         resolved = resolve_request(body)
         run_id = "run-%s-%08x" % (uuid.uuid4().hex[:12], int(time.time() * 1000) & 0xFFFFFFFF)
+        # CARD LINKAGE (the run→card wire, 2026-09-04 audit): validate
+        # the body's draft_id at the registration door — the same
+        # draft_id_ok() the drafts door uses, so a bad wire never
+        # registers. None for runs that didn't come from a card.
+        # docs/queue/run-registry.md:41 / docs/cards/draft-door.md.
+        body_draft_id = body.get("draft_id")
+        if body_draft_id is not None:
+            if not isinstance(body_draft_id, str):
+                raise ValidationError("draft_id must be a string")
+            if body_draft_id != "" and not draft_id_ok(body_draft_id):
+                raise ValidationError(
+                    "draft_id malformed (96 char cap, [A-Za-z0-9_-] only): %r"
+                    % body_draft_id)
         is_card = isinstance(resolved, dict) and resolved.get("__card__")
         if is_card:
             # card-only model: phase 2 composes the REAL graph now that
@@ -509,7 +530,12 @@ class Gateway:
                     "card_compose produced an empty graph for %s" % resolved["name"])
         else:
             graph = resolved
-        run = Run(run_id=run_id, graph=graph, request=body)
+        run = Run(run_id=run_id, graph=graph, request=body,
+                  # normalize "" → None for the sidecar: a declared-but-
+                  # empty draft_id is indistinguishable from "not given"
+                  # and the click-contract gate would strip it anyway
+                  # (py/editor_runs.py:480, 2026-09-02 law).
+                  draft_id=body_draft_id if body_draft_id else None)
         run.card_extra_inputs = card_extra_inputs if is_card else {}
         # L3: route the run dir to the test root when the caller
         # declared test:true. The sidecar test flag is the SAME data
@@ -752,6 +778,12 @@ def sidecar(run):
     # body into the run's request dict and onto the sidecar. scan_run
     # reads it from here; assets_index (L2) uses it to keep test runs
     # out of the production view.
+    # CARD LINKAGE (the run→card wire, 2026-09-04 audit): the sidecar
+    # MUST persist draft_id (validated at submit()) so /v1/flows/runs
+    # can answer "what card produced this" without round-tripping the
+    # drafts door. None for cardless test runs and bare API hits —
+    # py/editor_runs.py:480 strips empty/missing anyway (click-
+    # contract law, 2026-09-02). docs/queue/sidecar.md:36.
     atomic_write(run.dir / "_flow.json", {
         "run_id": run.run_id,
         "status": run.status,
@@ -760,6 +792,7 @@ def sidecar(run):
         "artifacts": run.artifacts,
         "created_at": run.created_at,
         "test": bool(run.request.get("test", False)),
+        "draft_id": run.draft_id,
     })
 
 
@@ -1130,19 +1163,21 @@ async def _h_ws_fallback(ctx):
 
 async def _h_runs_list(ctx):
     import editor_runs as _er
-    return 200, _er.runs(str(STATE_ROOT))
+    # limit is honored (1..500 per editor_runs.runs clamp, ~6612).
+    # The default of 200 silently buries fresh generations under hundreds
+    # of older rows; the operator hit this on 2026-09-04 and the wall
+    # suite test_run_lifecycle calls ?limit=500 to surface its row
+    # regardless of archive size.
+    try:
+        limit = int(ctx.q("limit", "") or "200")
+    except ValueError:
+        limit = 200
+    return 200, _er.runs(str(STATE_ROOT), limit=limit)
 
 
 async def _h_run_detail(ctx):
     import editor_runs as _er
     return _er.run_detail(str(STATE_ROOT), ctx.m.group(1))
-
-
-async def _h_resume(ctx):
-    import editor_runs as _er
-    rid = ctx.path.split("/")[-1]
-    return _er.resume(str(STATE_ROOT), rid, ctx.json,
-                      flows_root=str(REPO / "flows"))
 
 
 async def _h_model_catalog(ctx):
@@ -1184,47 +1219,6 @@ async def _h_family_schema_one(ctx):
     import editor_runs as _er
     return _er.family_param_schema(
         _er.catalog_family_ids(str(REPO / "plugins")), ctx.m.group(1))
-
-
-async def _h_yaml_list(ctx):
-    import editor_runs as _er
-    return 200, _er.yaml_list(str(REPO / "flows"))
-
-
-async def _h_yaml_detail(ctx):
-    import editor_runs as _er
-    return _er.yaml_detail(str(REPO / "flows"), ctx.q("yaml", "") or None)
-
-
-async def _h_yaml_save(ctx):
-    import editor_runs as _er
-    return _er.yaml_save(str(REPO / "flows"), ctx.json)
-
-
-async def _h_yaml_delete(ctx):
-    import editor_runs as _er
-    fname = ctx.q("filename")
-    if fname is None and ctx.method == "POST":
-        try:
-            fname = json.loads(ctx.body.decode() or "{}").get("filename")
-        except json.JSONDecodeError:
-            pass
-    return _er.yaml_delete(str(REPO / "flows"), fname)
-
-
-async def _h_yaml_rename(ctx):
-    import editor_runs as _er
-    return _er.yaml_rename(str(REPO / "flows"), ctx.json)
-
-
-async def _h_yaml_validate(ctx):
-    import editor_runs as _er
-    return _er.yaml_validate(str(REPO / "flows"), ctx.json)
-
-
-async def _h_yaml_validate_simple(ctx):
-    import editor_runs as _er
-    return _er.yaml_validate_simple(str(REPO / "flows"), ctx.json)
 
 
 async def _h_drafts_list(ctx):
@@ -1389,9 +1383,6 @@ ROUTES: tuple = (
     Route(method="GET", path=r"^/v1/flows/runs/(.+)$", regex=True,
           template="/v1/flows/runs/{run_id}", group="Queue & runs",
           summary="One run", handler=_h_run_detail),
-    Route(method="POST", path=r"^/v1/flows/resume/", regex=True,
-          template="/v1/flows/resume/{run_id}", group="Queue & runs",
-          summary="Resume a stopped run", body="lenient", handler=_h_resume),
 
     # ── Assets & ledger ──────────────────────────────────────────────
     Route(method="GET", path="/v1/assets", group="Assets & ledger",
@@ -1450,32 +1441,9 @@ ROUTES: tuple = (
           group="Models & forms", summary="One family's param schema",
           handler=_h_family_schema_one),
 
-    # ── Templates & drafts (the flow.yaml library the editor edits) ──
-    Route(method="GET", path="/v1/flows/yaml/list",
-          group="Templates & drafts",
-          summary="Served templates (literal api: true gate)",
-          handler=_h_yaml_list),
-    Route(method="GET", path="/v1/flows/yaml/detail",
-          group="Templates & drafts", summary="One template (?yaml=)",
-          query=("yaml",), handler=_h_yaml_detail),
-    Route(method="POST", path="/v1/flows/yaml/save",
-          group="Templates & drafts", summary="Save", body="strict",
-          handler=_h_yaml_save),
-    Route(method="POST", path="/v1/flows/yaml/rename",
-          group="Templates & drafts", summary="Rename", body="strict",
-          handler=_h_yaml_rename),
-    Route(method="DELETE|POST", path="/v1/flows/yaml/delete",
-          group="Templates & drafts",
-          summary="Delete (?filename= or {filename})", body="raw",
-          handler=_h_yaml_delete),
-    Route(method="POST", path="/v1/flows/yaml/validate",
-          group="Templates & drafts",
-          summary="Contract-pinned 404 (no such C route; shape kept)",
-          body="lenient", handler=_h_yaml_validate),
-    Route(method="POST", path="/v1/flows/yaml/validate-simple",
-          group="Templates & drafts",
-          summary="Contract-pinned 404 (no such C route; shape kept)",
-          body="lenient", handler=_h_yaml_validate_simple),
+    # ── Templates & drafts (the draft library the editor edits;
+    # the flow.yaml template family retired 2026-09-05 — the yaml
+    # format died with the parser, NO LEGACY) ──
     Route(method="GET", path="/v1/flows/drafts", group="Templates & drafts",
           summary="Draft rows (params docs; click-contract)",
           handler=_h_drafts_list),
