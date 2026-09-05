@@ -293,3 +293,42 @@ def test_wire_variants_are_top_level_not_under_features(scratch_gateway):
         "FormFeaturesRow must not declare variants — the wire carries "
         "them at the FormSpec top level; a second declaration invites "
         "the wrong read back")
+
+
+def test_http_krea_2_int8_quant_owns_under_turbo(scratch_gateway):
+    """The axis-hierarchy link. flowAxisRows scopes the Quant select to
+    `quantRows.filter(e => e.owner === activeVariantRow)` — without
+    `owner` on the quant row every quant is orphaned and the row
+    silently disappears. The editor's reader was correct; the wire
+    never arrived. Pin the link for the seed krea-2 ladder."""
+    status, body = _http_get(scratch_gateway, "v1/form-spec?model=krea-2")
+    assert status == 200
+    by_id = {v["id"]: v for v in body["variants"]}
+    assert "int8" in by_id, "krea-2 must ship an int8 quant cell"
+    assert by_id["int8"].get("group") == "Quant"
+    owner = by_id["int8"].get("owner")
+    assert owner and owner in by_id, (
+        "int8 must be owner-linked to one of the model's Variant rows; "
+        "owner=%r — the editor's owner-scope hides an unlinked quant" % owner)
+
+
+def test_wire_every_quant_is_owner_linked_to_a_known_variant(scratch_gateway):
+    """The cross-model invariant. Every Quant row on the wire must point
+    at a Variant row of the same model — an orphan is a hidden quant."""
+    import lane_disclosure
+    for m in lane_disclosure.card_tools():
+        svc = m.get("model")
+        if not svc: continue
+        try:
+            status, body = _http_get(scratch_gateway,
+                                      "v1/form-spec?model=%s" % svc)
+        except Exception:
+            continue
+        if status != 200: continue
+        env = form_wire.FormSpecRow.model_validate(body)
+        ids = {v.id for v in env.variants}
+        for v in env.variants:
+            if (v.group or "") == "Quant":
+                assert v.owner and v.owner in ids, (
+                    "%s: quant %r owner=%r is empty or not a known "
+                    "variant of this model" % (svc, v.id, v.owner))

@@ -524,7 +524,13 @@ def _variants_from_class(row, prefer_variant=None):
                          "quant": c.quant.value,
                          "route": c.wire_route or c.route or v.route
                          or cls.id,
-                         "vram_peak_gb": wire_vram})
+                         "vram_peak_gb": wire_vram,
+                         # The axis hierarchy link: the editor scopes the
+                         # Quant select to the active variant's owner-
+                         # linked cells. Without owner, every quant is
+                         # orphaned and the row hides (the 'quants not
+                         # showing up' class).
+                         "owner": v.id})
     return rows
 
 
@@ -1353,6 +1359,11 @@ def _variants(repo_root, model, prefer_variant=None):
                 "quant": v["qid"],
                 "route": v["qroute"] or model["id"],
                 "vram_peak_gb": _g(v["vram"]),
+                # The parent variant dir (this loop's `name`) owns the
+                # quant cell — see _variants_from_class for the class-
+                # path twin. Without owner the editor's owner-scoping
+                # hides every quant.
+                "owner": name,
             })
     return rows
 

@@ -104,6 +104,13 @@ class VariantRow(_Frozen):
     engine: str = ""
     quant: str | None = None
     vram_peak_gb: int | float | None = None
+    # The parent Variant this cell is owned by (the axis hierarchy —
+    # flowAxisRows scopes the Quant select to the active variant's
+    # owner-linked cells: `quantRows.filter(e => e.owner === act)`).
+    # Default "" back-compat: the lane/peek spec serves an empty
+    # variants list so the field is never exercised there; class- and
+    # yaml-path emissions stamp the parent variant id.
+    owner: str = ""
 
 
 class ModifierFeatureRow(_Frozen):
