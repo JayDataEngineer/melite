@@ -165,8 +165,63 @@ class TestRailLayout(unittest.TestCase):
         cls.shape = ANNY_SHAPE.read_text(encoding="utf-8")
 
     def test_the_rail_is_tabbed(self):
-        self.assertIn('role="tablist"', self.component)
-        self.assertIn('role="tabpanel"', self.component)
+        # The strip is THE SHARED RailTabs component (operator order:
+        # "Reusing components") — the anny rail mounts it with the
+        # three big sections; Shape's sub-menus mount the same strip
+        # dense. role=tablist/tab live in the shared file.
+        shared = (
+            REPO / "plugins/engines/comfyui/action_cards/3d/ui"
+            "/railTabs.tsx"
+        )
+        self.assertTrue(shared.exists(), "the shared RailTabs strip vanished")
+        strip = shared.read_text(encoding="utf-8")
+        self.assertIn('role="tablist"', strip)
+        self.assertIn("aria-selected={value === t.id}", strip)
+        self.assertIn('role="tab"', strip)
+        self.assertIn("dense", strip, "the nested sub-menu level")
+        # the anny rail mounts the shared strip for the three sections
+        self.assertIn("<RailTabs<RailTabId>", self.component)
+        self.assertIn('{ id: "import", label: "Import" }', self.component,
+                      "Import is the third big section (the presets + "
+                      "MHR estimate order)")
+
+    def test_both_levels_reuse_the_strip(self):
+        # Shape's sub-menus (Phenotype/Body/Face) use the SAME strip,
+        # dense, inside the body panel's kit Tabs (state stays the
+        # Tabs' — TabsContent must live inside it).
+        panel = (
+            REPO / "plugins/engines/comfyui/action_cards/3d/body"
+            "/ui/studio/BodyShapePanel.tsx"
+        ).read_text(encoding="utf-8")
+        self.assertIn('from "../../../ui/railTabs"', panel)
+        self.assertRegex(panel, r"<RailTabs[\s\S]{0,120}dense", "the sub-menu level is dense")
+        # the kit TabsList/TabsTrigger are GONE from the panel (one
+        # strip shape, not two)
+        self.assertNotIn("TabsList", panel)
+        self.assertNotIn("TabsTrigger", panel)
+
+    def test_import_holds_presets_and_the_mhr_estimate(self):
+        # operator order: "It can be 'Import', and can also include
+        # our button that will upload and use MHR to make an ANNY
+        # estimation" — presets + AnnyHmrVerb live in the import pane;
+        # the character pane carries ONLY the shape band.
+        self.assertIn('{railTab === "import" &&', self.component)
+        self.assertIn("Estimate from photo — MHR", self.component)
+        self.assertRegex(
+            self.component,
+            r'\{railTab === "import" &&[\s\S]{0,600}<AnnyPresets',
+            "presets moved to Import",
+        )
+        self.assertRegex(
+            self.component,
+            r'\{railTab === "import" &&[\s\S]{0,1600}<AnnyHmrVerb',
+            "the estimate verb moved to Import",
+        )
+        self.assertRegex(
+            self.component,
+            r'\{railTab === "character" &&[\s\S]{0,600}<AnnyShapeBand',
+            "the character pane is the shape band",
+        )
 
     def test_the_pane_owns_the_scroll(self):
         self.assertRegex(
