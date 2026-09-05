@@ -296,8 +296,7 @@ class TestRailLayout(unittest.TestCase):
                       "the bridge mounts ONCE at the studio level — it "
                       "must not unmount when the panel moves rail↔drawer")
 
-    def test_the_assembly_truth_is_never_folded(self):
-        # 2026-09-06: the estimate result landed in a folded
+    def test_the_assembly_truth_is_never_folded(self):        # 2026-09-06: the estimate result landed in a folded
         # <details> — a completed run read as "the mesh never
         # changed" with the body one click away. A result the
         # operator cannot see is a result that did not happen.
@@ -312,6 +311,20 @@ class TestRailLayout(unittest.TestCase):
             self.component,
             "the always-open assembly section lost its label",
         )
+
+    def test_the_apply_chip_warns_before_replacing_an_estimate(self):
+        # 2026-09-06: the anny-params bake takes the lever recipe
+        # ALONE (no body input) — Apply after Estimate destroys the
+        # photo body. The chip must read the slot's body_origin and
+        # say "Replace estimated body", never a bland "Apply".
+        self.assertIn("replacesEstimate", self.component,
+                      "the studio stopped telling the viewport the "
+                      "slot holds an estimate")
+        self.assertIn("Replace estimated body", self.shape,
+                      "the Apply chip lost its replace warning")
+        self.assertIn("replaced, not tweaked", self.shape,
+                      "the replace title lost its plain-language "
+                      "warning")
 
 
 class TestBodyCardRetirementPending(unittest.TestCase):
