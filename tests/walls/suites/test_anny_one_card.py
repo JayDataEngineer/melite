@@ -296,6 +296,23 @@ class TestRailLayout(unittest.TestCase):
                       "the bridge mounts ONCE at the studio level — it "
                       "must not unmount when the panel moves rail↔drawer")
 
+    def test_the_assembly_truth_is_never_folded(self):
+        # 2026-09-06: the estimate result landed in a folded
+        # <details> — a completed run read as "the mesh never
+        # changed" with the body one click away. A result the
+        # operator cannot see is a result that did not happen.
+        self.assertNotRegex(
+            self.component,
+            r"<details[\s>]",
+            "the assembly section folded again — the estimate "
+            "result must be visible, never one click away",
+        )
+        self.assertIn(
+            'aria-label="Assembly and turnaround',
+            self.component,
+            "the always-open assembly section lost its label",
+        )
+
 
 class TestBodyCardRetirementPending(unittest.TestCase):
     """The body card still EXISTS this stroke (sequenced retirement —
