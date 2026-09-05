@@ -1,164 +1,15 @@
-import type { EnhanceModel } from "@melite/contracts"
-import { apiFetch } from "./api"
+import { apiFetch, externalUrl } from "./api"
 
-/**
- * Store an API key securely on the backend.
- * Returns the key_id to use for future enhancement calls.
- */
-export async function storeEnhanceKey(model: Omit<EnhanceModel, 'id' | 'keyId'>): Promise<string> {
-  const res = await apiFetch('/v1/llm/keys', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      name: model.name,
-      baseUrl: model.baseUrl,
-      apiKey: model.apiKey,
-      model: model.model,
-    }),
-  })
-
-  if (!res.ok) {
-    const body = await res.text()
-    throw new Error(`Failed to store API key (${res.status}): ${body.slice(0, 200)}`)
-  }
-
-  const data = await res.json()
-  return data.key_id
-}
-
-/**
- * List stored enhance keys (metadata only, no API keys).
- */
-export async function listEnhanceKeys(): Promise<Array<{ key_id: string; name: string; baseUrl: string; model: string }>> {
-  const res = await apiFetch('/v1/llm/keys')
-
-  if (!res.ok) {
-    const body = await res.text()
-    throw new Error(`Failed to list keys (${res.status}): ${body.slice(0, 200)}`)
-  }
-
-  const data = await res.json()
-  return data.keys || []
-}
-
-/**
- * Delete a stored enhance key.
- */
-export async function deleteEnhanceKey(keyId: string): Promise<void> {
-  const res = await apiFetch(`/v1/llm/keys/${keyId}`, {
-    method: 'DELETE',
-  })
-
-  if (!res.ok) {
-    const body = await res.text()
-    throw new Error(`Failed to delete key (${res.status}): ${body.slice(0, 200)}`)
-  }
-}
-
-/**
- * Change a stored key's MODEL in place (2026-08-18 — the provider-centric
- * switch). The key_id, credential, and base URL are untouched server-side;
- * only the model pick changes, so switching models never re-entering the
- * key. The next agent run picks the new model up automatically.
- */
-export async function updateEnhanceKeyModel(keyId: string, model: string): Promise<void> {
-  const res = await apiFetch(`/v1/llm/keys/${keyId}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model }),
-  })
-
-  if (!res.ok) {
-    const body = await res.text()
-    throw new Error(`Failed to update model (${res.status}): ${body.slice(0, 200)}`)
-  }
-}
-
-/**
- * Duplicate a saved endpoint under a NEW model, keeping the same provider
- * (base_url + api_key). The credential never crosses the wire — the clone
- * happens in-process on the backend. Returns the new endpoint's metadata
- * so the caller can add it to the store without a re-list.
- */
-export async function duplicateEnhanceKey(
-  keyId: string,
-  model: string,
-  name?: string,
-): Promise<{ key_id: string; name: string; base_url: string; model: string }> {
-  const res = await apiFetch(`/v1/llm/keys/${keyId}/duplicate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model, ...(name ? { name } : {}) }),
-  })
-
-  if (!res.ok) {
-    const body = await res.text()
-    throw new Error(`Failed to duplicate endpoint (${res.status}): ${body.slice(0, 200)}`)
-  }
-
-  const data = await res.json()
-  return data
-}
-
-/**
- * Enhance a prompt using a stored backend key.
- * The backend handles the API key securely.
- *
- * Returns structured JSON `{positive, negative}` — the backend asks the LLM
- * to produce both fields in one shot, model-aware (distilled variants return
- * `negative: ""` since they ignore negatives). For non-image services only
- * `positive` is populated. The legacy `result` field is still sent for any
- * caller that hasn't migrated; new code should read positive/negative.
- */
-export class KeyNotFoundError extends Error {
-  constructor() {
-    super("Key not found")
-    this.name = "KeyNotFoundError"
-  }
-}
+// The LLM-keystore plane (/v1/llm/keys, /v1/llm/enhance, storyboard,
+// ideogram-ai) is RETIRED (2026-09-05, door-gate kill stroke): the
+// gateway never served those doors, and dead UI over missing backends
+// is debt. Prompt enhancement rides the DSH harness door
+// (/melite-tools/enhance) — a real external service — with NO
+// keystore fallback. Standalone editors get an honest error.
 
 export interface EnhancedPrompt {
   positive: string
   negative: string
-}
-
-// ── Storyboard generation (same key-store pattern as enhance) ────────────
-
-/** A single LLM-drafted shot. The frontend hydrates this into a
- *  DirectorSegment — all the creative logic (system prompt, JSON
- *  extraction, normalization) lives server-side in /v1/llm/storyboard. */
-export interface StoryboardSegment {
-  prompt: string
-  duration: number
-  first_frame_prompt: string
-}
-
-export async function generateStoryboard(
-  keyId: string,
-  prompt: string,
-  count: number = 5,
-): Promise<StoryboardSegment[]> {
-  const res = await apiFetch('/v1/llm/storyboard', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      key_id: keyId,
-      prompt,
-      count,
-    }),
-  })
-
-  if (!res.ok) {
-    const body = await res.text()
-    if (res.status === 404 && body.includes("Key not found")) {
-      throw new KeyNotFoundError()
-    }
-    throw new Error(`Storyboard failed (${res.status}): ${body.slice(0, 200)}`)
-  }
-
-  const data = await res.json()
-  if (data.error) throw new Error(data.error)
-  return (data.segments ?? []) as StoryboardSegment[]
 }
 
 /**
@@ -177,7 +28,7 @@ async function enhanceViaHarness(
 ): Promise<EnhancedPrompt | null> {
   let res: Response
   try {
-    res = await apiFetch("/melite-tools/enhance", {
+    res = await apiFetch(externalUrl("/melite-tools/enhance"), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -208,44 +59,16 @@ async function enhanceViaHarness(
 }
 
 export async function enhancePrompt(
-  keyId: string,
   systemPrompt: string,
   prompt: string,
-  temperature?: number,
 ): Promise<EnhancedPrompt> {
-  // The harness model FIRST — zero configuration inside the DSH GUI.
-  const harnessed = await enhanceViaHarness(systemPrompt, prompt, temperature)
+  // The harness door — the ONLY enhance path. Zero configuration inside
+  // the DSH GUI; standalone editors get an honest error (no fallback).
+  const harnessed = await enhanceViaHarness(systemPrompt, prompt)
   if (harnessed !== null) return harnessed
-
-  // Standalone editor (no DSH host): the keystore flow, unchanged.
-  const res = await apiFetch('/v1/llm/enhance', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      key_id: keyId,
-      system_prompt: systemPrompt,
-      prompt: prompt,
-      // Sampling temperature — when provided it overrides the keystore's
-      // global knob (the sidebar's Parameters value). Undefined → the
-      // backend uses the global. 0.0 is a valid value, so no `||`.
-      ...(temperature !== undefined ? { temperature } : {}),
-    }),
-  })
-
-  if (!res.ok) {
-    const body = await res.text()
-    // Detect stale key that was lost on server restart
-    if (res.status === 404 && body.includes("Key not found")) {
-      throw new KeyNotFoundError()
-    }
-    throw new Error(`Enhancement failed (${res.status}): ${body.slice(0, 200)}`)
-  }
-
-  const data = await res.json()
-  // Backend returns both shapes: prefer structured fields, fall back to legacy.
-  const positive = String(data.positive ?? data.result ?? "").trim()
-  const negative = String(data.negative ?? "").trim()
-  return { positive, negative }
+  throw new Error(
+    "Prompt enhance runs inside the DeepSeek app (/melite-tools/enhance " +
+    "not answered here)")
 }
 
 /**
@@ -261,7 +84,7 @@ export async function agentEnhance(
   prompt: string,
   temperature?: number,
 ): Promise<Record<string, { positive: string; negative: string }>> {
-  const res = await apiFetch("/melite-tools/enhance", {
+  const res = await apiFetch(externalUrl("/melite-tools/enhance"), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -296,54 +119,3 @@ export async function agentEnhance(
   return results
 }
 
-// ─── Ideogram 4 structured AI ──────────────────────────────────────────────
-//
-// Calls /v1/llm/ideogram-ai — the backend loads the mode-specific system
-// prompt from config (single source of truth), calls a vision-capable LLM,
-// and returns the parsed Ideogram caption JSON. The frontend never sees the
-// prompt text — it just passes the mode + inputs.
-
-export type IdeogramAIMode = "generate" | "refine" | "transfer_composition" | "transfer_style"
-
-export interface IdeogramAIResult {
-  caption: Record<string, unknown>
-  mode: string
-  model: string
-  provider: string
-}
-
-export async function ideogramAI(
-  keyId: string,
-  mode: IdeogramAIMode,
-  opts: {
-    description?: string
-    changeRequest?: string
-    currentCaption?: Record<string, unknown> | null
-    imageB64?: string
-  },
-): Promise<IdeogramAIResult> {
-  const res = await apiFetch('/v1/llm/ideogram-ai', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      key_id: keyId,
-      mode,
-      description: opts.description ?? "",
-      change_request: opts.changeRequest ?? "",
-      current_caption: opts.currentCaption ?? null,
-      image_b64: opts.imageB64 ?? "",
-    }),
-  })
-
-  if (!res.ok) {
-    const body = await res.text()
-    if (res.status === 404 && body.includes("Key not found")) {
-      throw new KeyNotFoundError()
-    }
-    throw new Error(`Ideogram AI failed (${res.status}): ${body.slice(0, 300)}`)
-  }
-
-  const data = await res.json()
-  if (data.error) throw new Error(data.error)
-  return data as IdeogramAIResult
-}

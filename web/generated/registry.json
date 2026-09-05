@@ -384,6 +384,22 @@
       "component": true
     },
     {
+      "name": "posterStore",
+      "type": "registry:lib",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/posterStore.ts"
+        }
+      ],
+      "exports": [
+        "PosterState",
+        "PosterStore",
+        "createPosterStore"
+      ],
+      "component": false
+    },
+    {
       "name": "scroll-area",
       "type": "registry:ui",
       "package": "@melite/ui",
@@ -587,22 +603,6 @@
         "snapTime"
       ],
       "component": false
-    },
-    {
-      "name": "speechLength",
-      "type": "registry:ui",
-      "package": "@melite/ui",
-      "files": [
-        {
-          "path": "src/speechLength.ts"
-        }
-      ],
-      "exports": [
-        "SPEECH_LENGTH_ZERO",
-        "SpeechLengthResult",
-        "useSpeechLength"
-      ],
-      "component": true
     },
     {
       "name": "status",

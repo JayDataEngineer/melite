@@ -762,44 +762,6 @@ export interface components {
             params?: {
                 [key: string]: unknown;
             } | null;
-            /** Dry Run */
-            dry_run?: boolean | null;
-        } & {
-            [key: string]: unknown;
-        };
-        /**
-         * DryRunPlan
-         * @description The 200 body for a dry-run start. ``stages`` carries each stage's
-         *     family + EFFECTIVE params (compiled for the flat shape, YAML+overrides
-         *     merged for the yaml shape, authored for the inline-doc shape).
-         *     ``gates`` carries the pre-run verdicts: ``params_contract`` ("passed"
-         *     — anything else 400'd before this body), ``model_gate`` (None = every
-         *     stage's weights present; a dict = the download_required payload a real
-         *     start would return), ``queue`` (depth/max/full snapshot).
-         */
-        DryRunPlan: {
-            /**
-             * Status
-             * @default dry_run
-             * @constant
-             */
-            status: "dry_run";
-            /**
-             * Stages
-             * @default []
-             */
-            stages: {
-                [key: string]: unknown;
-            }[];
-            /**
-             * Gates
-             * @default {}
-             */
-            gates: {
-                [key: string]: unknown;
-            };
-            /** Filename */
-            filename?: string | null;
         } & {
             [key: string]: unknown;
         };
@@ -864,83 +826,6 @@ export interface components {
             queue_position?: number | null;
             /** Yaml Filename */
             yaml_filename?: string | null;
-        };
-        /**
-         * PreflightRequired
-         * @description 200 — extension preflight: install the listed custom nodes + restart
-         *     ComfyUI before retrying (same discriminating-status pattern as
-         *     download_required).
-         */
-        PreflightRequired: {
-            /**
-             * Status
-             * @default preflight_required
-             * @constant
-             */
-            status: "preflight_required";
-            /** Family */
-            family: string;
-            /** Reachable */
-            reachable: boolean;
-            /** Restart Required */
-            restart_required: boolean;
-            /** Needed */
-            needed: unknown[];
-        };
-        /**
-         * DownloadRequired
-         * @description 200 — weights missing; the frontend streams the download via
-         *     /v1/download-model/stream, then retries the same start body.
-         */
-        DownloadRequired: {
-            /**
-             * Status
-             * @default download_required
-             * @constant
-             */
-            status: "download_required";
-            /** Download Url */
-            download_url: string;
-            /** Model Filename */
-            model_filename?: string | null;
-            /** Model Dir */
-            model_dir?: string | null;
-            /** Message */
-            message?: string | null;
-            /** Name */
-            name?: string | null;
-            /** Kind */
-            kind?: string | null;
-        } & {
-            [key: string]: unknown;
-        };
-        /**
-         * RunStartBlocked
-         * @description 200 — the run-door BLOCKED the run (remote_inventory's
-         *     remote_check_file contract: "the frontend only special-cases
-         *     download_required; anything else renders as a generic error"). The
-         *     model is missing on the executor AND uninstallable through Manager
-         *     (model_not_in_remote_registry), or the probe itself failed FAIL-CLOSED
-         *     (executor_unreachable / executor_api_error — the run is blocked, not
-         *     passed). User-actionable guidance rides ``error``. This shape rides
-         *     the SAME 200 path as preflight/download (the client's no-run_id
-         *     branch renders it as the failure line) — before it was modeled here,
-         *     run_start_wire's success fallthrough turned these into unhandled
-         *     500s (2026-08-16: "4 validation errors for RunStartResult").
-         */
-        RunStartBlocked: {
-            /**
-             * Status
-             * @default error
-             * @constant
-             */
-            status: "error";
-            /** Code */
-            code?: string | null;
-            /** Error */
-            error?: string | null;
-        } & {
-            [key: string]: unknown;
         };
         /**
          * Violation
@@ -2119,13 +2004,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Success (run started — poll /v1/flows/status/{run_id}), or a discriminating preflight/download-required dict (200) that must be resolved before retrying the same body, or a blocked-run error (the model can't be provisioned — the error field carries the guidance), or a dry-run plan (dry_run: true — gates run, NOTHING minted). */
+            /** @description Success (run started — poll /v1/flows/status/{run_id}). */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RunStartResult"] | components["schemas"]["PreflightRequired"] | components["schemas"]["DownloadRequired"] | components["schemas"]["RunStartBlocked"] | components["schemas"]["DryRunPlan"];
+                    "application/json": components["schemas"]["RunStartResult"];
                 };
             };
             /** @description Contract violations — {error, violations} */

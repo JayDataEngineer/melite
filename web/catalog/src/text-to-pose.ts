@@ -402,9 +402,8 @@ export interface KimodoExample {
   meta: KimodoExampleMeta
 }
 export async function listExamples(model?: string): Promise<{ examples: KimodoExample[] }> {
-  const url = new URL("/poser/text-to-pose/examples", window.location.origin)
-  if (model) url.searchParams.set("model", model)
-  const res = await apiFetch(url.toString())
+  const q = model ? `?model=${encodeURIComponent(model)}` : ""
+  const res = await apiFetch(`/poser/text-to-pose/examples${q}`)
   if (!res.ok) throw new Error(`Examples list failed: HTTP ${res.status}`)
   return res.json()
 }
@@ -417,9 +416,8 @@ export async function loadExample(
   motion_size?: number
   constraints?: unknown[]
 }> {
-  const url = new URL(`/poser/text-to-pose/examples/${model}/${exampleId}`, window.location.origin)
-  if (loadGt) url.searchParams.set("load_gt", "true")
-  const res = await apiFetch(url.toString())
+  const q = loadGt ? `?load_gt=true` : ""
+  const res = await apiFetch(`/poser/text-to-pose/examples/${model}/${exampleId}${q}`)
   if (!res.ok) throw new Error(`Example load failed: HTTP ${res.status}`)
   return res.json()
 }

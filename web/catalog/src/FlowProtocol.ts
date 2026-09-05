@@ -10,7 +10,7 @@
 // (doc / flat / YAML-spec / auto-routed). /v1/flows/generate and
 // /v1/run live on for one release as aliases of the same handler; this
 // module posts to the canonical door. Unprovisioned models short-circuit
-// with the standard download_required dict (the server pre-checks weights
+
 // before compiling).
 //
 // The START POST uses raw fetch (NOT apiFetch) — a 504 retry would start a
@@ -25,7 +25,6 @@ import {
   validateRunStatusContract,
 } from "./runStatusContract"
 import { useRunStatusContractStore } from "./runStatusContractStore"
-import type { PreflightPayload, PreflightNeededEntry } from "@melite/contracts"
 
 /**
  * Extract the backend's error message from a non-2xx body for surfacing.
@@ -280,19 +279,8 @@ export async function pollFlowRun(
 
 export type CompiledGenerationResult =
   | { kind: "started"; runId: string; status: FlowRunStatus; urls: string[] }
-  | { kind: "download_required"; payload: Record<string, unknown> }
-  | { kind: "preflight_required"; payload: PreflightPayload }
 
 
-/**
- * The run-time extension preflight payload — what
- * POST /v1/flows/start returns (HTTP 200, status: "preflight_required")
- * when the family declares REQUIRED_EXTENSIONS and at least one is not
- * loaded in ComfyUI right now (verified via /object_info, see
- * backend/media/comfyui/runtime_preflight.py). The PreflightDialog renders
- * from this; on "Download & Restart" it POSTs the missing names to
- * /v1/comfyui/extensions/install (SSE), then the caller retries generate.
- */
 
 
 /**
@@ -302,7 +290,6 @@ export type CompiledGenerationResult =
  * door, flat shape (raw fetch — no retry, a retry would duplicate GPU
  * work), then polls /status. Returns:
  *   - started: run completed — urls are the artifact URLs
- *   - download_required: the server's provision-dialog dict (200)
  *
  * D3 (2026-08-06): every catalog form compiles to a family
  * (compile.py _FORM_CONFIGS), so the "uncompilable" 400 fallback to
@@ -449,12 +436,6 @@ export async function runCompiledGeneration(
       throw new Error(
         `generate failed: /v1/flows/start returned non-JSON body: ${text.slice(0, NON_JSON_BODY_CAP)}`,
       )
-    }
-    if (data.status === "download_required") {
-      return { kind: "download_required", payload: data }
-    }
-    if (data.status === "preflight_required") {
-      return { kind: "preflight_required", payload: data as unknown as PreflightPayload }
     }
     const runId = data.run_id
     if (typeof runId !== "string") {

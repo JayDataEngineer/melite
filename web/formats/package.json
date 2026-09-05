@@ -19,6 +19,7 @@
     "./downloads": "./src/downloads.ts",
     "./extractVideoFrame": "./src/extractVideoFrame.ts",
     "./formZones": "./src/formZones.ts",
+    "./glbLoad": "./src/glbLoad.ts",
     "./glbSkin": "./src/glbSkin.ts",
     "./handPose": "./src/handPose.ts",
     "./keyframeExtract": "./src/keyframeExtract.ts",
@@ -34,7 +35,9 @@
     "./poseCodec": "./src/poseCodec.ts",
     "./poseTransforms": "./src/poseTransforms.ts",
     "./promptTags": "./src/promptTags.ts",
+    "./poserSkin": "./src/poserSkin.ts",
     "./psdExport": "./src/psdExport.ts",
+    "./renderSnapshot": "./src/renderSnapshot.ts",
     "./sidebarGenres": "./src/sidebarGenres.ts",
     "./somaSkin": "./src/somaSkin.ts",
     "./specContract": "./src/specContract.ts"

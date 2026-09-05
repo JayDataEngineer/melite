@@ -37,9 +37,9 @@
  * hair layers share ONE rig) merge: vertices/faces concatenate, indices
  * offset — one SomaSkin, one deform pass.
  */
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js"
 import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js"
 import type { Object3D, SkinnedMesh } from "three"
+import { makeGLTFLoader } from "./glbLoad"
 import { invert4, restPoseFromBind, type SomaSkin } from "./somaSkin"
 
 /** SOMA-77 — the rig every SOMAX GLB carries (skin.name "SOMA-Mixamo"). */
@@ -77,7 +77,10 @@ export async function loadGlbSkin(url: string): Promise<SomaSkin> {
   const res = await fetch(url)
   if (!res.ok) throw new Error(`Failed to fetch character GLB: ${res.status}`)
   const buffer = await res.arrayBuffer()
-  const loader = new GLTFLoader()
+  // The shared loader kernel — DRACO-configured (a compressed character
+  // GLB parses identically here and in every viewer; before the kernel,
+  // this bare loader was the ONE GLB path in the estate with no decoder).
+  const loader = makeGLTFLoader()
   const gltf = await new Promise<GLTF>(
     (resolve, reject) => loader.parse(buffer, "", resolve, reject),
   )

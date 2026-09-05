@@ -156,9 +156,13 @@ export function validateCatalogContract(catalog: unknown): CatalogContractResult
     violations.push({ kind: id, message: `Model ${id} is not an object.` })
     continue
    }
-   // form mirrors the backend catalog validator's guarantee (form_spec.py:
-   // "catalog validator guarantees this exists") — a model without a form
-   // cannot resolve its form-spec and degrades every surface at once.
+   // form mirrors the backend's CONSTRUCTION guarantee (py/melite_models:
+   // the offering gate + ModelRow.form required — the ltx-2-3 incident,
+   // 2026-09-05, shipped form='' rows past every backend gate and only
+   // this validator caught them; the gate now refuses at class creation,
+   // pydantic refuses the row, the catalog wall pins both) — a model
+   // without a form cannot resolve its form-spec and degrades every
+   // surface at once.
    const missing: string[] = []
    if (!isNonEmptyString(entry.family)) missing.push("family")
    if (!isNonEmptyString(entry.form)) missing.push("form")

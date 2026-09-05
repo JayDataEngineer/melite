@@ -18,7 +18,6 @@ export interface NpyArray {
 }
 
 // ── ZIP signatures (little-endian on disk: 50 4b 0x 0x) ───────────────────
-const EOCD_SIG = 0x06054b50 // end of central directory
 const CDFH_SIG = 0x02014b50 // central directory file header
 // LFH_SIG isn't checked — we trust the central directory's local-header offset.
 

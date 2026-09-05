@@ -36,6 +36,35 @@
 // The signature matches `fetch()` exactly, so `fetch(...)` → `apiFetch(...)`
 // is a drop-in replacement at every call site. 4xx responses are returned
 // as-is (never retried) — only transient failures (5xx + network) retry.
+//
+// ─── THE DOOR GATE (2026-09-05, the loras incident) ──────────────────────
+// apiFetch/apiJson accept ONLY FetchUrl = GatewayDoorUrl | ExternalUrl.
+// GatewayDoorUrl is GENERATED from the gateway's route table
+// (tools/gen_gateway_doors.py — the wire SSOT): a frontend fetch of a
+// door the gateway does not serve is a COMPILE ERROR, not a runtime
+// 404 rendering "nothing found" over live data (LoraPicker fetched
+// /v1/loras over 12 declared krea-2 rows for exactly that reason).
+// Non-gateway services go through externalUrl(...) — a named, greppable
+// escape. There is no `string` overload: an unlisted door must not
+// compile. ─────────────────────────────────────────────────────────────────
+
+import type { GatewayDoorUrl } from "./generated/gatewayDoors"
+
+/** A URL outside the gateway (another service). Constructible ONLY via
+ * externalUrl() — never spell one inline at a fetch call site. */
+declare const externalBrand: unique symbol
+export type ExternalUrl = string & { readonly [externalBrand]: true }
+
+/** The named escape for non-gateway services (e.g. the melite-tools
+ * enhance server). Every use is deliberate and greppable. */
+export function externalUrl(
+  u: `/${string}` | `http${string}` | `data:${string}`,
+): ExternalUrl {
+  return u as ExternalUrl
+}
+
+/** Everything apiFetch/apiJson may fetch. */
+export type FetchUrl = GatewayDoorUrl | ExternalUrl
 
 const MAX_RETRIES = 4            // 5 attempts total (initial + 4 retries)
 const BASE_MS = 400              // first backoff
@@ -121,7 +150,7 @@ const inflight = new Map<string, Promise<Response>>()
  * MAX_RETRIES) or caller AbortError. Returns the Response for any HTTP
  * status (including 4xx/5xx) so existing `if (!res.ok)` checks keep working.
  */
-export async function apiFetch(input: string, init: RequestInit = {}): Promise<Response> {
+export async function apiFetch(input: FetchUrl, init: RequestInit = {}): Promise<Response> {
   const method = (init.method ?? 'GET').toUpperCase()
   const backend = isBackendUrl(input)
   const dedupKey = method === 'GET' && backend ? input : null
@@ -206,7 +235,7 @@ export async function apiFetch(input: string, init: RequestInit = {}): Promise<R
  * Convenience for JSON endpoints. Throws an Error on non-2xx (message
  * includes status + body excerpt) so callers can use try/catch directly.
  */
-export async function apiJson<T = unknown>(input: string, init?: RequestInit): Promise<T> {
+export async function apiJson<T = unknown>(input: FetchUrl, init?: RequestInit): Promise<T> {
   const res = await apiFetch(input, init)
   if (!res.ok) {
     // Read the body for error context, but do NOT swallow read failures.

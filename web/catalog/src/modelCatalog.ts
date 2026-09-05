@@ -15,7 +15,7 @@
 // promptGuide("krea-2-sd-q8") // → {title, sections:[...]}
 // modelLabel("krea-2") // → "Krea 2"
 
-import { apiFetch, apiJson } from "./api"
+import { apiJson } from "./api"
 import type { CardGenre } from "@melite/contracts"
 import { setInputVocabulary } from "./inputSlots"
 import {

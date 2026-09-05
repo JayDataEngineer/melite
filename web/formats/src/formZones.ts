@@ -32,8 +32,8 @@ export type FormZone = (typeof FORM_ZONES)[number]
 // cross-language drift-test pattern as WIRE_WIDGETS.
 type _WireZone = NonNullable<SchemaGroupDef["zone"]>
 type AssertNever<T extends never> = T
-type _ZoneParityWire = AssertNever<Exclude<_WireZone, FormZone>>
-type _ZoneParityFrontend = AssertNever<Exclude<FormZone, _WireZone>>
+export type _ZoneParityWire = AssertNever<Exclude<_WireZone, FormZone>>
+export type _ZoneParityFrontend = AssertNever<Exclude<FormZone, _WireZone>>
 
 /** A group without a zone tag (or with an unknown one) is params —
  * the backend default, mirrored here so the frontend never guesses. */
