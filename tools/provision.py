@@ -66,7 +66,10 @@ import urllib.request
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from types import ModuleType
-from typing import Protocol
+from typing import Protocol, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from melite_models import Provision
 
 REPO = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = REPO / "plugins" / "engines" / "comfyui" / "data" / "comfyui_endpoint.json"
@@ -861,6 +864,90 @@ def _cell_rows() -> Iterator[tuple[str, str, str, _CellArtifact]]:
                 yield mid, variant.id, cell.quant, art
 
 
+def _provision_rows() -> Iterator[tuple[str, "Provision"]]:
+    """Every declared Provision row the estate carries — the MODEL-side
+    download places (pydantic rows in model.py `provisions`, PYTHON
+    SHAPE LAW), via the catalog's own scanner. step_models walked CELL
+    artifacts only, so Provision rows (trellis2-native's five weights,
+    the anny base body) never materialized — this walk closes that
+    gap through the SAME download rail."""
+    sys.path.insert(0, str(REPO / "py"))
+    from melite_models import scan_engine_models
+    for mid, (_path, cls) in sorted(scan_engine_models(REPO).items()):
+        for prov in getattr(cls, "provisions", ()) or ():
+            yield mid, prov
+
+
+def _fetch_verified(download_model: Callable[..., _ToolResult],
+                    download: Callable[..., _ToolResult],
+                    workspace: Path, store_root: Path,
+                    label: str, url: str, name: str, sub: str,
+                    want: str) -> str:
+    """One artifact through the comfy-mcp download_model rail
+    (relative_path models/<category>), polled to completion and
+    sha256-verified after. Returns 'ok' | 'skipped' | 'bad' —
+    step_models owns the counting; this owns the rail."""
+    # RULING (operator 2026-09-21): provisioning goes through
+    # comfy-mcp/comfy-cli; dest_sub names the models folder
+    # CATEGORY — comfy-cli places under models/<category>, the
+    # instance's folder_paths/extra_model_paths decide where that
+    # category really lives.
+    rel = "models/%s" % sub if sub else "models"
+    dest = workspace / rel / name           # comfy-cli lands here
+    store = store_root / sub / name if sub else store_root / name
+    if store.exists():
+        return "skipped"
+    info("  [model] %s -> %s/" % (label, rel))
+    if DRY:
+        print("[dry-run] download_model %s -> %s/%s" % (url, rel, name))
+        return "skipped"
+    try:
+        rep = call(download_model, url, relative_path=rel,
+                   filename=name, wait=True, timeout_seconds=100.0)
+        # big transfers outlive one waited call: poll the handle
+        deadline = time.time() + 7200
+        while isinstance(rep, dict) and rep.get("timed_out") \
+                and rep.get("download_id") and time.time() < deadline:
+            rep = call(download, action="wait",
+                       download_id=rep["download_id"],
+                       timeout_seconds=3600.0)
+        if not (isinstance(rep, dict) and rep.get("status") == "completed"):
+            warn("  [model] %s: download did not complete: %s"
+                 % (name, str(rep)[:160]))
+            return "bad"
+    except Exception as exc:
+        warn("  [model] %s: download_model raised: %s" % (name, str(exc)[:160]))
+        return "bad"
+    verify_at = dest
+    # THE POINTER TEST: with download pointers laid (cmd_paths),
+    # dest resolves THROUGH the symlink onto the configured
+    # store — same real file, nothing to move. Only a download
+    # that landed on real runtime scratch (unpointered world,
+    # e.g. a fresh workspace before its first `paths` run) moves.
+    if store is not None and dest.exists() \
+            and os.path.realpath(str(dest)) != str(store) \
+            and store.parent.is_dir():
+        # landed in runtime scratch; move to the weights store —
+        # weights NEVER live in the runtime (extra_model_paths maps
+        # the categories to the store)
+        try:
+            store.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(dest), str(store))
+            verify_at = store
+            info("  [model] %s: moved to the weights store" % name)
+        except OSError as exc:
+            warn("  [model] %s: move to store failed (%s); verifying "
+                 "in place" % (name, exc))
+    if want:
+        got = sha256_of(verify_at).lower()
+        if got != want:
+            verify_at.unlink(missing_ok=True)
+            warn("  [model] %s: sha256 mismatch — deleted" % name)
+            return "bad"
+    info("  [model] %s: verified" % name)
+    return "ok"
+
+
 def step_models() -> bool:
     sms = need_comfy_mcp()
     workspace = workspace_from_server_info(sms)
@@ -869,85 +956,57 @@ def step_models() -> bool:
     download_model = tool(sms, "download_model")
     download = tool(sms, "download")
 
-    rows = list(_cell_rows())
-    if not rows:
-        info("no model.py cell artifacts declared")
-        return True
     cfg = load_config(DEFAULT_CONFIG)
     bound = bound_model_folders(cfg)   # THE ONE derivation
     store_root = Path(bound["download_path"])
     ok, bad, skipped = 0, 0, 0
-    for mid, vid, quant, art in rows:
+
+    def _tally(state: str) -> None:
+        nonlocal ok, bad, skipped
+        if state == "ok":
+            ok += 1
+        elif state == "bad":
+            bad += 1
+        else:
+            skipped += 1
+
+    for mid, vid, quant, art in _cell_rows():
         url = str(art.source_url)
         name = url.rsplit("/", 1)[-1].split("?")[0] or "%s_%s.safetensors" % (mid, vid)
         sub = (art.dest_sub or "").strip("/")
-        # RULING (operator 2026-09-21): provisioning goes through
-        # comfy-mcp/comfy-cli; dest_sub names the models folder
-        # CATEGORY — comfy-cli places under models/<category>, the
-        # instance's folder_paths/extra_model_paths decide where that
-        # category really lives.
-        rel = "models/%s" % sub if sub else "models"
-        dest = workspace / rel / name           # comfy-cli lands here
-        store = store_root / sub / name if sub else store_root / name
-        if store.exists():
-            skipped += 1
-            continue
-        info("  [model] %s/%s/%s -> %s/" % (mid, vid, quant, rel))
-        if DRY:
-            print("[dry-run] download_model %s -> %s/%s" % (url, rel, name))
-            continue
-        try:
-            rep = call(download_model, url, relative_path=rel,
-                       filename=name, wait=True, timeout_seconds=100.0)
-            # big transfers outlive one waited call: poll the handle
-            deadline = time.time() + 7200
-            while isinstance(rep, dict) and rep.get("timed_out") \
-                    and rep.get("download_id") and time.time() < deadline:
-                rep = call(download, action="wait",
-                           download_id=rep["download_id"],
-                           timeout_seconds=3600.0)
-            if not (isinstance(rep, dict) and rep.get("status") == "completed"):
-                warn("  [model] %s: download did not complete: %s"
-                     % (name, str(rep)[:160]))
-                bad += 1
-                continue
-        except Exception as exc:
-            warn("  [model] %s: download_model raised: %s" % (name, str(exc)[:160]))
+        want = (art.sha256 or "").strip().lower()
+        _tally(_fetch_verified(
+            download_model, download, workspace, store_root,
+            "%s/%s/%s" % (mid, vid, quant), url, name, sub, want))
+    # the Provision walk (pilot stroke 2, 2026-09-05): model-declared
+    # download places ride the SAME rail — relative_path
+    # models/<folder>, the row's own name (never re-derived from the
+    # url), sha256-verified after. A row with no url/name stays a
+    # LOUD bad (never a guessed download); a row with no sha is a
+    # LOUD bad (unverifiable bytes never land silently).
+    for mid, prov in _provision_rows():
+        url = str(getattr(prov, "url", "") or "")
+        name = (getattr(prov, "name", "") or "").strip()
+        sub = (getattr(prov, "folder", "") or "").strip("/")
+        want = (getattr(prov, "sha256", "") or "").strip().lower()
+        if not url or not name:
+            warn("  [model] %s provision %r has no url/name — refusing "
+                 "(declare the download place, never guess it)"
+                 % (mid, name))
             bad += 1
             continue
-        want = (art.sha256 or "").strip().lower()
-        verify_at = dest
-        # THE POINTER TEST: with download pointers laid (cmd_paths),
-        # dest resolves THROUGH the symlink onto the configured
-        # store — same real file, nothing to move. Only a download
-        # that landed on real runtime scratch (unpointered world,
-        # e.g. a fresh workspace before its first `paths` run) moves.
-        # The old `not dest.exists()` guard was dead code — dest
-        # always exists right after a completed download.
-        if store is not None and dest.exists() \
-                and os.path.realpath(str(dest)) != str(store) \
-                and store.parent.is_dir():
-            # landed in runtime scratch; move to the weights store —
-            # weights NEVER live in the runtime (extra_model_paths maps
-            # the categories to the store)
-            try:
-                store.parent.mkdir(parents=True, exist_ok=True)
-                shutil.move(str(dest), str(store))
-                verify_at = store
-                info("  [model] %s: moved to the weights store" % name)
-            except OSError as exc:
-                warn("  [model] %s: move to store failed (%s); verifying "
-                     "in place" % (name, exc))
-        if want:
-            got = sha256_of(verify_at).lower()
-            if got != want:
-                verify_at.unlink(missing_ok=True)
-                warn("  [model] %s: sha256 mismatch — deleted" % name)
-                bad += 1
-                continue
-        info("  [model] %s: verified" % name)
-        ok += 1
+        if not want:
+            warn("  [model] %s provision %r has no sha256 — refusing "
+                 "(unverifiable bytes never land)" % (mid, name))
+            bad += 1
+            continue
+        _tally(_fetch_verified(
+            download_model, download, workspace, store_root,
+            "%s/provision/%s" % (mid, name), url, name, sub, want))
 
+    if not ok and not skipped and not bad:
+        info("no model.py cell artifacts or provisions declared")
+        return True
     info("models: %d downloaded+verified, %d present, %d failed"
          % (ok, skipped, bad))
     return bad == 0
