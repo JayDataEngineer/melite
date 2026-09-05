@@ -1,3 +1,7 @@
+[submodule "melite-anny-estimator-nodes"]
+	path = vendor/comfyui_extensions/melite-anny-estimator-nodes
+	url = https://github.com/JayDataEngineer/melite-anny-estimator-nodes.git
+	branch = main
 [submodule "melite-tts-nodes"]
 	path = vendor/comfyui_extensions/melite-tts-nodes
 	url = https://github.com/JayDataEngineer/melite-tts-nodes.git
