@@ -30,6 +30,7 @@ parameterization, world vs bind pose).
 """
 
 from flow import Flow, Stage, FromInitial, Kind
+from melite_models import EstatePhotoRef
 
 FLOW = Flow(
     id="anny-hmr-commercial",
@@ -66,4 +67,11 @@ FLOW = Flow(
             },
         ),
     ),
+    # THE compile-time door (operator order, 2026-09-06:
+    # "WHERE THE [REDACTED 2026-11-05] IS COMPILE TIME ERRORS"): a photo that
+    # is browser-local or points at nothing on disk 4xxes at
+    # the start/validate doors — BEFORE any run registers —
+    # never a queued run dying in the engine with a node
+    # traceback.
+    initial_validators={"photo": EstatePhotoRef},
 )

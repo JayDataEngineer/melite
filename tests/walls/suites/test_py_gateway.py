@@ -476,3 +476,44 @@ def test_uploads_door_sanitizes_traversal(monkeypatch: pytest.MonkeyPatch,
     assert code == 200
     assert ".." not in out["path"]
     assert (tmp_path / out["path"]).is_file()
+
+
+# C22: the validate door's {flow} arm (2026-09-06 — "WHERE THE [REDACTED 2026-11-05]
+# IS COMPILE TIME ERRORS"). A named flow + its initials compile
+# through the EXACT initial door a start would run: ghost photos
+# 400 with the door text, stageable photos 200 with the stage view
+# — no queue slot, no sidecar, no registration either way.
+def test_validate_flow_arm_happy_path(monkeypatch: pytest.MonkeyPatch,
+                                      tmp_path: Path) -> None:
+    import asyncio
+    import gateway as gw_mod
+    target = tmp_path / "data" / "input"
+    target.mkdir(parents=True)
+    (target / "me.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+    monkeypatch.chdir(tmp_path)
+    code, out = asyncio.run(gw_mod._h_flows_validate(
+        _upload_ctx({"flow": "anny-hmr-commercial",
+                     "photo": "data/input/me.png"})))
+    assert code == 200, out
+    assert out["flow"] == "anny-hmr-commercial"
+    assert out["stages"][0]["id"] == "estimate"
+
+
+def test_validate_flow_arm_refusals(monkeypatch: pytest.MonkeyPatch,
+                                    tmp_path: Path) -> None:
+    import asyncio
+    import gateway as gw_mod
+    monkeypatch.chdir(tmp_path)
+    code, out = asyncio.run(gw_mod._h_flows_validate(
+        _upload_ctx({"flow": "anny-hmr-commercial",
+                     "photo": "data:image/png;base64,AAAA"})))
+    assert code == 400
+    assert "browser-local" in out["error"]
+    code, out = asyncio.run(gw_mod._h_flows_validate(
+        _upload_ctx({"flow": "anny-hmr-commercial",
+                     "photo": "data/input/ghost.png"})))
+    assert code == 400
+    assert "not on disk" in out["error"]
+    code, out = asyncio.run(gw_mod._h_flows_validate(
+        _upload_ctx({"flow": "no-such-flow", "photo": "x.png"})))
+    assert code == 400

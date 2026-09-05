@@ -21,6 +21,7 @@ from .presets import (  # noqa: F401
     all_presets, append_user_preset, delete_user_preset,
     read_user_presets, tenant_ledger_path,
 )
+from .refs import EstatePhotoRef  # noqa: F401
 
 __all__ = [
     "Cell", "Variant", "Model", "ModelRow", "SourceRow", "LoraRow",
@@ -35,4 +36,5 @@ __all__ = [
     "LocalChange", "PresetKnobs", "PresetLedgerError", "PresetOrigin",
     "PresetParts", "PRESET_PARAMS_FILENAME", "all_presets", "append_user_preset",
     "delete_user_preset", "read_user_presets", "tenant_ledger_path",
+    "EstatePhotoRef",
 ]

@@ -74,10 +74,15 @@ def test_commercial_carries_no_hardcoded_endpoint() -> None:
 
 # ── 2. door ──────────────────────────────────────────────────────────
 
-def test_commercial_resolves_through_the_flow_door() -> None:
+def test_commercial_resolves_through_the_flow_door(
+        monkeypatch, tmp_path) -> None:
     from gateway import resolve_request
+    target = tmp_path / "data" / "input"
+    target.mkdir(parents=True)
+    (target / "p.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+    monkeypatch.chdir(tmp_path)
     graph = resolve_request({"flow": "anny-hmr-commercial",
-                             "photo": "p.png"})
+                             "photo": "data/input/p.png"})
     (node,) = graph.nodes
     assert node.node_id == "estimate"
     assert node.node_type == "comfyui"

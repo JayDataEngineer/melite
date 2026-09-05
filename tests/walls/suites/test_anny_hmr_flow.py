@@ -95,12 +95,31 @@ def test_anny_hmr_carries_no_hardcoded_endpoint() -> None:
 
 # ── 2. door ──────────────────────────────────────────────────────────
 
-def test_anny_hmr_resolves_through_the_flow_door() -> None:
+def test_anny_hmr_resolves_through_the_flow_door(
+        monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    """The door resolves a STAGEABLE photo to a runnable graph — the
+    photo door (EstatePhotoRef) runs first, so the test stages a
+    real file, never a fake name."""
     from gateway import resolve_request
-    graph = resolve_request({"flow": "anny-hmr", "photo": "p.png"})
+    target = tmp_path / "data" / "input"
+    target.mkdir(parents=True)
+    (target / "p.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+    monkeypatch.chdir(tmp_path)
+    graph = resolve_request({"flow": "anny-hmr", "photo": "data/input/p.png"})
     (node,) = graph.nodes
     assert node.node_id == "estimate"
     assert node.node_type == "comfyui"
+
+
+def test_anny_hmr_door_refuses_a_ghost_photo() -> None:
+    """The compile-time promise: a photo with no file on disk never
+    reaches the queue (run-9e8fd6b813a2 died in the engine — now it
+    4xxes at resolve)."""
+    from gateway import resolve_request
+    with pytest.raises(Exception) as e:
+        resolve_request({"flow": "anny-hmr",
+                         "photo": "data/input/ghost.png"})
+    assert "not on disk" in str(e.value)
 
 
 # ── 3. refusal ───────────────────────────────────────────────────────
@@ -148,10 +167,11 @@ def test_verb_posts_the_queue_door_never_comfyui() -> None:
 
 def test_verb_is_one_button_no_picker_no_dead_refine() -> None:
     """The operator's no-dropdown order, pinned: no engine picker,
-    no dead refine button — and the way in (Upload source photo →
-    POST /v1/uploads) lives beside the button."""
+    no dead refine button — and the way in (the STANDARD image well,
+    kit SlotSquare → POST /v1/uploads) lives beside the button."""
     assert "Estimator engine" not in _VERB_SRC
     assert "ANNY_HMR_REFINE_REFUSAL" not in _VERB_SRC
     assert "Refine body (soon)" not in _VERB_SRC
-    assert "Upload source photo" in _VERB_SRC
+    assert "SlotSquare" in _VERB_SRC
     assert "/v1/uploads" in _VERB_SRC
+    assert "/v1/flows/validate" in _VERB_SRC

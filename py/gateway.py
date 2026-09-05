@@ -1443,6 +1443,10 @@ async def _h_flows_validate(ctx: _Ctx) -> HandlerResult:
       {flow_inline: {...}} -> typed flow compile (stage/edge/Kinds);
         200 carries the typed stage view (resolved output kinds
         included) so the agent sees the graph it just built.
+      {flow: name, ...initials} -> the named flow's initial door
+        (initial_validators over the body's extra keys — a ghost
+        photo 400s HERE with the same text a start would return,
+        minus the registration); 200 carries the same stage view.
       {model: mid, ...params} -> card phase 1: strict body, artifact
         sweep, card requires, the frozen card row — the same
         refusals a start hits, returned HERE for iteration.
@@ -1457,6 +1461,24 @@ async def _h_flows_validate(ctx: _Ctx) -> HandlerResult:
         return 200, {"ok": True, "model": str(body["model"]),
                      "card": True}
     import flow as flow_mod
+    if isinstance(body, dict) and "flow" in body \
+            and "flow_inline" not in body and "model" not in body:
+        try:
+            fl = flow_mod.load_flow(str(body["flow"]))
+            fl.validate_initial(dict(body))
+        except flow_mod.FlowError as e:
+            return 400, {"error": str(e)}
+        graph = fl.to_graph()
+        return 200, {
+            "ok": True,
+            "flow": fl.id,
+            "stages": [
+                {"id": n.node_id, "engine": n.node_type,
+                 "description": n.description,
+                 "inputs": list(n.input_from),
+                 "outputs": dict(n.outputs)}
+                for n in graph.nodes],
+        }
     try:
         fl = flow_mod.flow_from_body(ctx.json)
     except flow_mod.FlowError as e:
