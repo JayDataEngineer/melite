@@ -90,7 +90,10 @@ def _get_bytes(port, path, timeout=30):
 
 def _is_image(buf):
     if not buf or len(buf) < 12: return False
-    if buf[:2] == b"\x89PNG": return True
+    # the FULL magic per format — buf[:2] == b"\x89PNG" compared two
+    # bytes to a four-byte literal and was ALWAYS False (every PNG
+    # fetch warned, even the successful ones, since this wall landed)
+    if buf[:4] == b"\x89PNG\r\n\x1a\n"[:4]: return True
     if buf[:2] == b"\xff\xd8": return True
     if buf[:4] == b"RIFF" and buf[8:12] == b"WEBP": return True
     return False
@@ -175,11 +178,19 @@ def test_e2e_krea_2_runs_to_a_real_png(scratch_gateway):
     # the execution+wire pin holds everywhere.
     fetched = False
     buf = b""
-    if url.startswith("/"):
-        path = url.lstrip("/")
-        cr, buf = _get_bytes(scratch_gateway, path, timeout=30)
-        fetched = (cr == 200 and len(buf) > 0)
-    else:
+    cr = 0
+    # the asset door's URL shape is /v1/assets/runs/<run_id>/<file> (the
+    # same door the production gateway serves — verified live on :33081).
+    # The status payload's artifacts are ABSOLUTE PATHS; deriving the
+    # basename + run_id (instead of the old lstrip("/") of the abs path,
+    # which produced a URL the door never served — the 404 the old
+    # warning complained about) makes the bytes-fetch REAL on any
+    # correctly-wired scratch gateway.
+    fname = url.rstrip("/").rsplit("/", 1)[-1]
+    asset_path = "v1/assets/runs/%s/%s" % (run_id, fname)
+    cr, buf = _get_bytes(scratch_gateway, asset_path, timeout=30)
+    fetched = (cr == 200 and len(buf) > 0)
+    if not fetched and url.startswith("http"):
         try:
             r = urllib.request.urlopen(url, timeout=30)
             buf = r.read()

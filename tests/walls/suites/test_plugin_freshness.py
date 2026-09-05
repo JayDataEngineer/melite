@@ -45,11 +45,16 @@ HARNESS_DSH = os.path.join(REPO, "plugins", "harness", "dsh")
 
 
 def _newest(root, suffixes):
-    """Newest mtime under root for files matching suffixes (recursive)."""
+    """Newest mtime under root for files matching suffixes (recursive).
+
+    __tests__ pruned on purpose (2026-09-05): vitest files are never
+    vite build inputs (the editor's test config is a separate `test:`
+    block in vite.config.ts), so a test edit must not demand a dist
+    rebuild. The freshness contract is SHIPPED src vs dist."""
     newest_t = 0.0
     newest_f = ""
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in ("node_modules", ".git", "__pycache__", "dist", "lib")]
+        dirnames[:] = [d for d in dirnames if d not in ("node_modules", ".git", "__pycache__", "dist", "lib", "__tests__")]
         for fn in filenames:
             if not any(fn.endswith(s) for s in suffixes):
                 continue
