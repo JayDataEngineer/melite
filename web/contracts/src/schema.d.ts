@@ -669,6 +669,13 @@ export interface components {
             fields: components["schemas"]["FormField"][];
             /** Schema Groups */
             schema_groups: components["schemas"]["SchemaGroupDef"][];
+            /** Variants
+             *  @description Top-level on the wire (the form_wire.FormSpecRow
+             *  SSOT and the editor's flowAxisRows reader): the per-model
+             *  variant/quant toggle list. Not under `features` —
+             *  `features.variant_groups` (the group LABELS) lives there.
+             */
+            variants?: components["schemas"]["VariantDef"][] | null;
             features: components["schemas"]["FormFeatures"];
             guide: components["schemas"]["PromptGuide"] | null;
             /** Enhance Prompt */

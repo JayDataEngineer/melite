@@ -259,3 +259,37 @@ def test_http_card_tools_manifest_kinds_covered(scratch_gateway):
     assert status2 == 200
     for m in manifests:
         assert m.get("kind") in reg, (m.get("name"), m.get("kind"))
+
+
+def test_http_krea_2_carries_top_level_variants(scratch_gateway):
+    """The Variant/Quant tabs are read from spec.variants (top-level) in
+    flowAxisRows; the previous specFeatures?.variants read silently
+    returned [] for every card because the wire never nests variants
+    under features. Pin the location + the seed krea-2 ladder."""
+    status, body = _http_get(scratch_gateway, "v1/form-spec?model=krea-2")
+    assert status == 200
+    assert isinstance(body.get("variants"), list) and body["variants"], (
+        "form-spec must carry top-level `variants`; krea-2 seeds turbo/"
+        "int8/raw — their absence is the 'variants and quants not "
+        "showing up' bug class")
+    ids = {v["id"] for v in body["variants"]}
+    assert {"turbo", "int8", "raw"} <= ids, ids
+    # variant_groups (the LABELS) live under features — both paths in use.
+    assert "Variant" in (body.get("features") or {}).get("variant_groups", {})
+
+
+def test_wire_variants_are_top_level_not_under_features(scratch_gateway):
+    """Lockstep with flowAxisRows.tsx and form_wire.FormSpecRow."""
+    status, body = _http_get(scratch_gateway, "v1/form-spec?model=krea-2")
+    assert status == 200
+    env = form_wire.FormSpecRow.model_validate(body)
+    assert env.variants and env.variants[0].id == "turbo"
+    # FormFeaturesRow has no `variants` field — confirm the wire does not
+    # ALSO stuff them there (a duplicate would re-trigger the wrong read).
+    import pydantic
+    feats_model = form_wire.FormFeaturesRow
+    feats_shape = feats_model.model_fields
+    assert "variants" not in feats_shape, (
+        "FormFeaturesRow must not declare variants — the wire carries "
+        "them at the FormSpec top level; a second declaration invites "
+        "the wrong read back")
