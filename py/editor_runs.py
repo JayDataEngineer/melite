@@ -870,6 +870,15 @@ def drafts_save(drafts_root, body, draft_id=None):
     if draft_id is None:
         draft_id = _mint_draft_id()
     doc = _ray_compose_draft_doc(body, draft_id)
+    # the composed birth doc is a WIRE contract (the C retirement made
+    # the ray birth shape OURS) — gate the composer-owned keys at the
+    # door. A refusal is an internal bug, served as a structured 500;
+    # caller extras are never read by the gate and ride untouched.
+    import run_wire
+    try:
+        run_wire.validate_draft_birth(doc)
+    except Exception as e:
+        return 500, _err_body("draft composer drift: %s" % (e,))
     os.makedirs(drafts_root, exist_ok=True)
     path = os.path.join(drafts_root, draft_id + ".json")
     try:
