@@ -187,6 +187,31 @@ def test_tsx_names_the_declared_verbs_and_flows() -> None:
                 "declared %r engine" % (e.flow, e.id))
 
 
+def test_default_engine_is_the_sellable_lane() -> None:
+    """Declaration order IS preference order (operator order,
+    2026-09-06): the chip opens on engines[0], and engines[0] must be
+    the commercial SAM 3D Body chain — never the NAVER
+    non-commercial research lane. Both sides, same first id."""
+    from melite_cards import load_card_py
+    cls = load_card_py(
+        os.path.join(REPO, "plugins", "engines", "comfyui",
+                     "action_cards", "3d", "anny", "py", "card.py"))
+    verbs = {v.id: v for v, _ in cls._verbs_}
+    first = verbs["hmr-estimate"].engines[0]
+    assert first.id == "commercial", (
+        "the estimate verb must open on the sellable lane, not %r" % first.id)
+    assert first.flow == "anny-hmr-commercial"
+    src = _tsx()
+    i = src.find("export const ANNY_VERBS")
+    assert i >= 0, "ANNY_VERBS vanished from the TSX chip"
+    j = src.find("engines: [", i)
+    assert j >= 0, "the estimate verb lost its engines array"
+    m = re.search(r"\{\s*id:\s*\"([^\"]+)\"", src[j:])
+    assert m and m.group(1) == "commercial", (
+        "the TSX chip must list commercial first (it opens on "
+        "engines[0])")
+
+
 def test_no_silent_downgrade_on_both_sides() -> None:
     """The shared phrase: PY refusal contract + TSX renderer copy."""
     from melite_cards import load_card_py
