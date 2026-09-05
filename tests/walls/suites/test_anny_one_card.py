@@ -106,10 +106,11 @@ class TestWritesDeclared(unittest.TestCase):
 
 
 class TestBridgeScrubsTheBag(unittest.TestCase):
-    """The bridge is hydrate-only: no write-back of the bag, and a
-    one-time scrub lifts stragglers off existing stages (their keys
-    are unwritable AND unclearable otherwise — the schema forbids
-    them, no control touches them). New stages seed no legacy."""
+    """The bridge persists the DECLARED draft (sculpt — the finished
+    design, 2026-09-06), never the bag: a one-time scrub lifts
+    stragglers off existing stages (their keys are unwritable AND
+    unclearable otherwise — the schema forbids them, no control
+    touches them). New stages seed no legacy."""
 
     def setUp(self):
         self.shape = ANNY_SHAPE.read_text(encoding="utf-8")
@@ -118,8 +119,10 @@ class TestBridgeScrubsTheBag(unittest.TestCase):
         self.assertNotIn(
             "coeffs: editing.coeffs",
             self.shape,
-            "the scratchpad→params write-back is back — the Run "
-            "gate refuses these keys",
+            "the scratchpad→params write-back of the legacy bag is "
+            "back — the Run gate refuses these keys (the declared "
+            "sculpt draft is the legal successor, pinned in "
+            "test_anny_sculpt.py)",
         )
 
     def test_scrub_lifts_stragglers(self):
