@@ -226,12 +226,44 @@ class StudioLayout(str, Enum):
     panel = "panel"
 
 
+class StudioKind(str, Enum):
+    """Which body renders the claim (PYTHON SHAPE LAW rung 3: closed
+    vocabulary — a typo refuses at construction, never a mystery
+    default card at render).
+    CUSTOM = a bespoke tenant TSX (body/motion-studio/h3-timeline…);
+    ASSEMBLY = the shared generic AssemblyStudio (part-slot rail +
+    Stage viewport, @melite-plugin/3d/ui/studios/assembly) — the tenant
+    file is a slot-table declaration, not a second implementation."""
+    CUSTOM = "custom"
+    ASSEMBLY = "assembly"
+
+
 class Studio(BaseModel, frozen=True):
     """The families-section claim (catalog meta)."""
     model_config = {"extra": "forbid"}
     tenant: str
     owns_params: bool = False
     writes: tuple[str, ...] = ()
+    # Which body renders the claim. ASSEMBLY is a COMPILE-TIME
+    # contract, enforced below: the generic authors PARTS (slots),
+    # never params — an assembly that owns params, or that writes
+    # nothing, cannot be constructed.
+    kind: StudioKind = StudioKind.CUSTOM
+
+    @model_validator(mode="after")
+    def _assembly_contract(self):
+        if self.kind is StudioKind.ASSEMBLY:
+            if not self.writes:
+                raise ValueError(
+                    "Studio(kind=assembly) without writes: the generic "
+                    "AssemblyStudio authors part slots — declare the "
+                    "slot keys in writes (tenant=%r)" % self.tenant)
+            if self.owns_params:
+                raise ValueError(
+                    "Studio(kind=assembly) with owns_params=True: the "
+                    "generic never authors params (knobs ride the "
+                    "shell) — tenant=%r" % self.tenant)
+        return self
     # Presentation notches (web-registry §7 — they ride the data): the
     # shell reads them off the claim instead of hardcoding the frame.
     size: StudioSize = StudioSize.normal

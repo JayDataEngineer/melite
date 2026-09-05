@@ -854,7 +854,18 @@
     },
     "trellis2-native": {
       "genre": "3d",
-      "label": "TRELLIS.2 Native"
+      "label": "TRELLIS.2 Native",
+      "studio": {
+       "layout": "studio",
+       "owns_params": false,
+       "size": "normal",
+       "tenant": "3d/img_to_mesh",
+       "writes": [
+        "input_image",
+        "rigged_glb",
+        "target_glb"
+       ]
+      }
     },
     "trellis_native": {
       "genre": "3d",

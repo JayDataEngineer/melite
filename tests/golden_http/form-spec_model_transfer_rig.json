@@ -18,83 +18,102 @@
  },
  "fields": [
   {
-   "default": 42,
+   "name": "rigged_glb",
+   "type": "file",
+   "label": "Rigged source GLB",
    "group": "input",
-   "label": "Seed",
-   "name": "seed",
-   "order": 1,
-   "tooltip": "Same seed + image = same mesh take.",
-   "type": "seed",
-   "width": 1
+   "order": 0,
+   "columns": 1,
+   "tooltip": "The SOMA-rigged clean mesh — JOINTS_0/WEIGHTS_0 + armature. The rig donor."
   },
   {
-   "default": 1024,
-   "group": "generation",
-   "label": "Resolution",
+   "name": "target_glb",
+   "type": "file",
+   "label": "Target GLB",
+   "group": "input",
+   "order": 1,
+   "columns": 1,
+   "tooltip": "The clothed mesh — geometry + textures, no rig. Receives the rig."
+  },
+  {
+   "name": "seed",
+   "type": "seed",
+   "label": "Seed",
+   "group": "input",
+   "order": 1,
+   "width": 1,
+   "default": 42,
+   "tooltip": "Same seed + image = same mesh take."
+  },
+  {
    "name": "resolution",
+   "type": "select",
+   "label": "Resolution",
+   "group": "generation",
+   "order": 0,
+   "width": 1,
+   "default": 1024,
+   "tooltip": "512 fast (props/thumbnails), 1024 standard, 1536 hero (rides the upsample stage).",
    "options": [
     "512",
     "1024",
     "1536"
-   ],
-   "order": 0,
-   "tooltip": "512 fast (props/thumbnails), 1024 standard, 1536 hero (rides the upsample stage).",
-   "type": "select",
-   "width": 1
+   ]
   },
   {
-   "default": 12,
-   "group": "generation",
-   "label": "Steps",
-   "max": 60,
-   "min": 4,
    "name": "steps",
-   "order": 1,
-   "step": 1,
-   "tooltip": "STRUCTURE stage steps (the lift). Shape runs 20, texture 12 \u2014 calibrated upstream.",
    "type": "number",
-   "width": 1
+   "label": "Steps",
+   "group": "generation",
+   "order": 1,
+   "width": 1,
+   "min": 4,
+   "max": 60,
+   "step": 1,
+   "default": 12,
+   "tooltip": "STRUCTURE stage steps (the lift). Shape runs 20, texture 12 — calibrated upstream."
   },
   {
-   "default": 3.0,
-   "group": "generation",
-   "label": "CFG",
-   "max": 15,
-   "min": 1,
    "name": "cfg",
-   "order": 2,
-   "step": 0.5,
-   "tooltip": "Structure-stage guidance. Upstream template calibrates 7.5 for max fidelity; 3.0 runs looser/faster.",
    "type": "slider",
-   "width": 1
+   "label": "CFG",
+   "group": "generation",
+   "order": 2,
+   "width": 1,
+   "min": 1,
+   "max": 15,
+   "step": 0.5,
+   "default": 3.0,
+   "tooltip": "Structure-stage guidance. Upstream template calibrates 7.5 for max fidelity; 3.0 runs looser/faster."
   },
   {
-   "default": "auto",
-   "group": "generation",
-   "label": "Background removal",
    "name": "bg_removal",
+   "type": "select",
+   "label": "Background removal",
+   "group": "generation",
+   "order": 3,
+   "width": 1,
+   "default": "auto",
+   "tooltip": "auto/on: birefnet cuts the background (recommended). off: feed a pre-cleaned or alpha-cut image straight to conditioning.",
    "options": [
     "auto",
     "on",
     "off"
-   ],
-   "order": 3,
-   "tooltip": "auto/on: birefnet cuts the background (recommended). off: feed a pre-cleaned or alpha-cut image straight to conditioning.",
-   "type": "select",
-   "width": 1
+   ]
   },
   {
-   "group": "output",
-   "label": "Filename prefix",
    "name": "filename_prefix",
+   "type": "text",
+   "label": "Filename prefix",
+   "group": "output",
    "order": 0,
-   "tooltip": "Output .glb name prefix (the run stamps resolution + seed).",
-   "type": "text"
+   "tooltip": "Output .glb name prefix (the run stamps resolution + seed)."
   }
  ],
  "form": "img-to-mesh",
  "genre": "3d",
- "label": "Image \u2192 3D",
+ "label": "Image → 3D",
+ "layout": "studio",
  "model": "transfer_rig",
  "schema_groups": [
   {
@@ -104,7 +123,7 @@
      "label": "Rigged source GLB",
      "name": "rigged_glb",
      "order": 0,
-     "tooltip": "The SOMA-rigged clean mesh \u2014 JOINTS_0/WEIGHTS_0 + armature. The rig donor.",
+     "tooltip": "The SOMA-rigged clean mesh — JOINTS_0/WEIGHTS_0 + armature. The rig donor.",
      "type": "file"
     },
     {
@@ -112,7 +131,7 @@
      "label": "Target GLB",
      "name": "target_glb",
      "order": 1,
-     "tooltip": "The clothed mesh \u2014 geometry + textures, no rig. Receives the rig.",
+     "tooltip": "The clothed mesh — geometry + textures, no rig. Receives the rig.",
      "type": "file"
     },
     {
@@ -154,7 +173,7 @@
      "name": "steps",
      "order": 1,
      "step": 1,
-     "tooltip": "STRUCTURE stage steps (the lift). Shape runs 20, texture 12 \u2014 calibrated upstream.",
+     "tooltip": "STRUCTURE stage steps (the lift). Shape runs 20, texture 12 — calibrated upstream.",
      "type": "number",
      "width": 1
     },

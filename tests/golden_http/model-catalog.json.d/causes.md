@@ -198,3 +198,33 @@ reverted — it dragged parallel-session drift). The companion
 `form-spec_model_anny.json` regold carries `"layout": "studio"`.
 NOT bundled: the live `capabilities.image-edit` rename drift is a
 parallel session's in-flight work — left failing LOUD for its owner.
+
+## 2026-09-05 (h) — the generic abstraction: trellis2-native claims its studio (Anny rebased onto the shared body)
+The user's order: shared components and layouts, not per-card
+hand-rolls — Trellis rode the default form, Anny carried a bespoke
+~380-line body. Now ONE body (`3d/ui/studios/assembly.tsx` — the
+generic AssemblyStudio: part-slot rail + shared Stage + loud errors,
+exported as `@melite-plugin/3d/ui/studios/assembly`); Anny and
+Trellis are slot-table DECLARATIONS over it (ANNY_SLOTS /
+TRELLIS_SLOTS consts). Kimodo stays bespoke (its file is under
+parallel churn) but the generic exports rail/assets/error pieces
+separately (PartSlot / useStudioAssets / StudioErrorLine) for a
+one-import adoption — viewer-agnostic by construction.
+PURE PYTHON teeth (compile-time errors, per the order):
+`StudioKind` enum (custom|assembly — rung 3) + model_validator on
+`Studio` (assembly without writes, or with owns_params=True,
+refuses AT CONSTRUCTION — proven by direct construction probes).
+The kind never rides the wire (the catalog emitter is
+field-by-field; untouched); the walls read it from source.
+Walls (all in the previously-clean `test_studio_slots.py`):
+kind⟺body parity (assembly ⟺ generic import — negative-proven both
+directions) + slot-table parity (every slot key ⊆ the card's
+File/Image fields ∩ the family's studio.writes — a bogus key
+refuses). The pre-existing phantom/orphan pins cover the trellis
+claim automatically (tenant `3d/img_to_mesh` = the CARD DIR —
+the glob id rule, underscores and all).
+This stroke: `StudioKind` in grammar.py; kind=assembly on anny +
+trellis2-native; `layout='studio'` on img-to-mesh; two thin tenants;
+`trellis-studio.test.tsx` (the second adopter pin).
+Surgical regolds: ONLY `families.trellis2-native.studio` here and
+`"layout": "studio"` in `form-spec_model_trellis2-native.json`.

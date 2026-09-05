@@ -3,6 +3,7 @@
 from .grammar import (  # noqa: F401
     Cell, Variant, Model, ModelRow, SourceRow, LoraRow, CellArtifact,
     VariantGroup, GuideSection, PromptGuide, Provision, Studio,
+    StudioKind,
     LaneInputs,
     Quant, DestRoot, _repo_py_root,
     # closed-vocabulary enums (PYTHON SHAPE LAW rung 3: a closed
@@ -16,7 +17,7 @@ from .grammar import (  # noqa: F401
 __all__ = [
     "Cell", "Variant", "Model", "ModelRow", "SourceRow", "LoraRow",
     "CellArtifact", "VariantGroup", "GuideSection", "PromptGuide",
-    "Provision", "Studio", "LaneInputs", "Quant", "DestRoot", "_repo_py_root", "ModelError",
+    "Provision", "Studio", "StudioKind", "LaneInputs", "Quant", "DestRoot", "_repo_py_root", "ModelError",
     "Genre", "ClipType", "LatentNode",
     "model_row", "load_model_py",
     "load_mod", "scan_engine_models", "has_model_yaml",
