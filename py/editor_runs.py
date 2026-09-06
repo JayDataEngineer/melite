@@ -255,6 +255,7 @@ def content_type_of(name: str) -> str:
         "webp": "image/webp",
         "gif": "image/gif",
         "svg": "image/svg+xml",
+        "html": "text/html; charset=utf-8",
         "wav": "audio/wav",
         "flac": "audio/flac",
         "mp3": "audio/mpeg",
