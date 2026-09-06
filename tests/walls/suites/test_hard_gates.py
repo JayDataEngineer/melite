@@ -63,16 +63,19 @@ from melite_models import (  # noqa: E402
 
 def _model_universe() -> dict[str, type[object]]:
     """Every declared family: the canonical scan (plugins/engines/*/
-    models/) PLUS the cpp sub-engine trees (plugins/engines/cpp/*/
-    models/, one level deeper — scan_engine_models does not descend
-    there, but the forms table serves those families, so the gate
-    must see them too). {id: class}."""
+    models/) PLUS the native sub-engine trees (plugins/engines/<tier>/
+    <plugin>/models/, one level deeper for BOTH tiers — cpp and node
+    (anycreature moved 2026-09-06); scan_engine_models does not
+    descend there, but the forms table serves those families, so the
+    gate must see them too). {id: class}."""
     universe = {mid: cls for mid, (_p, cls)
                 in scan_engine_models(REPO).items()}
-    cpp_root = os.path.join(REPO, "plugins", "engines", "cpp")
-    if os.path.isdir(cpp_root):
-        for sub in sorted(os.listdir(cpp_root)):
-            models_dir = os.path.join(cpp_root, sub, "models")
+    for tier in ("cpp", "node"):
+        tier_root = os.path.join(REPO, "plugins", "engines", tier)
+        if not os.path.isdir(tier_root):
+            continue
+        for sub in sorted(os.listdir(tier_root)):
+            models_dir = os.path.join(tier_root, sub, "models")
             if not os.path.isdir(models_dir):
                 continue
             for genre in sorted(os.listdir(models_dir)):
@@ -83,7 +86,7 @@ def _model_universe() -> dict[str, type[object]]:
                     p = os.path.join(gdir, mid, "model.py")
                     if not os.path.isfile(p):
                         continue
-                    cls = load_model_py(p, "cpp")
+                    cls = load_model_py(p, tier)
                     universe.setdefault(cls.id, cls)
     return universe
 from melite_cards import scan_engine_cards  # noqa: E402
@@ -269,12 +272,13 @@ def test_sweep_accepts_live_ref_under_either_root(tmp_path: Path) -> None:
 
 # ── GATE 2b: resolve_request refuses before registration ──────────
 
-def _dangling_edit_body() -> dict[str, str | dict[str, str]]:
+# FLAT (flows rework 2026-09-05): the sweep walks the whole body
+# tree, so the flat shape flags $.input_image the same way.
+def _dangling_edit_body() -> dict[str, str]:
     return {"model": "qwen-img-edit-2511",
-            "params": {
-                "prompt": "she turns, wardrobe unchanged",
-                "input_image": ASSET_RUNS_PREFIX +
-                "run-8f43fa9b6e8b-71352e72/SaveImage.0_gen_00001_.png"}}
+            "prompt": "she turns, wardrobe unchanged",
+            "input_image": ASSET_RUNS_PREFIX +
+            "run-8f43fa9b6e8b-71352e72/SaveImage.0_gen_00001_.png"}
 
 
 def _run_dirs() -> tuple[set[str], set[str]]:
@@ -291,7 +295,7 @@ def test_resolve_request_refuses_dangling_before_registration() -> None:
     with pytest.raises(ValidationError) as ei:
         resolve_request(_dangling_edit_body())
     assert "dangling artifact ref" in str(ei.value)
-    assert "params.input_image" in str(ei.value)
+    assert "$.input_image" in str(ei.value)
     assert _run_dirs() == before
 
 
@@ -303,11 +307,15 @@ def test_resolve_request_refuses_dangling_before_registration() -> None:
 # ROW fired, never the sweep. The gate precedes all staging: these
 # probes have no side effects (no dirs, no copies).
 
-def _semantic_edit_body(**knobs: str | int | float | bool) -> dict[str, str | dict[str, str | int | float | bool]]:
-    params = {"prompt": "hat",
-              "input_image": os.path.join(REPO, "py", "artifact_refs.py"),
-              **knobs}
-    return {"model": "qwen-img-edit-2511", "params": params}
+# FLAT (flows rework 2026-09-05): card params ride top-level — the
+# retired nested stanza refuses at the compose gate before the row
+# validators ever see the knobs (so these bodies MUST be flat for
+# the semantic pins below to prove anything).
+def _semantic_edit_body(**knobs: str | int | float | bool) -> dict[str, str | int | float | bool]:
+    return {"model": "qwen-img-edit-2511",
+            "prompt": "hat",
+            "input_image": os.path.join(REPO, "py", "artifact_refs.py"),
+            **knobs}
 
 
 def test_semantic_neg_steps_refuses_field_named() -> None:
@@ -585,7 +593,19 @@ def test_start_door_400_leaves_queue_empty() -> None:
         tries=150, sleep=0.2, env=dict(_os.environ))
     try:
         url = "http://127.0.0.1:%d" % port
-        body = json.dumps(_dangling_edit_body()).encode()
+        # CARD BIRTH LAW (operator order 2026-09-06): the start door
+        # 4xxes a start without a doc-backed draft_id — this wall's
+        # subject is the DANGLING REF, so the incident body is born
+        # as a card first (one draft-door call), keeping the tested
+        # variable isolated.
+        draft_req = urllib.request.Request(
+            url + "/v1/flows/drafts",
+            data=json.dumps(_dangling_edit_body()).encode(),
+            headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(draft_req, timeout=15) as dr:
+            draft_id = json.loads(dr.read().decode())["draftId"]
+        body = json.dumps({**_dangling_edit_body(),
+                           "draft_id": draft_id}).encode()
         req = urllib.request.Request(
             url + "/v1/flows/start", data=body,
             headers={"Content-Type": "application/json"})

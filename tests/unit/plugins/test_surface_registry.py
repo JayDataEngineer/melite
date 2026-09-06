@@ -76,7 +76,13 @@ ENGINE_ABI = {"ENGINE_TYPE", "execute", "stop", "unload",
 # recorded future stroke, not this wall's concern.)
 COMPOSE_ABI = {"card_compose", "execute", "stop", "unload",
                "ValidationError", "ENGINE_TRUTH_KEYS",
-               "DEFAULT_OUTPUT", "JsonValue", "JsonDict"}
+               "DEFAULT_OUTPUT", "JsonValue", "JsonDict",
+               # validate_workflow (2026-09-06 gap-fix): engines MAY
+               # export it and the gateway's validate door CONSUMES it
+               # via load_engine (py/gateway.py:2197) — broker-called
+               # surface, therefore ABI; the wall's allowlist was
+               # stale the day the export landed.
+               "validate_workflow"}
 PLUGIN_ABI = {"Plugin"}
 
 

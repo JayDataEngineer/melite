@@ -47,6 +47,7 @@ import sys
 import threading
 import time
 import uuid
+from collections import deque
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -841,6 +842,16 @@ class Gateway:
         self.runs = {}
         self.order = []
         self.active = None
+        # ── observability (R2, 2026-09-06): /v1/metrics reads these ──
+        # boot_at anchors uptime; recent is the bounded ring of the
+        # last settled runs (queue wait + total seconds per run — the
+        # stage-duration histograms need per-stage timestamps first).
+        self.boot_at = time.time()
+        self.recent: deque[dict[str, JsonValue]] = deque(maxlen=50)
+        # off-loop I/O serializer (R2): one writer per gateway
+        # process — atomic_write's tmp path is per-file, and the
+        # per-run write ORDER is the sidecar contract.
+        self._io_lock = asyncio.Lock()
         # ENGINE TRANSITION state (gateway-level, 2026-09-04 audit):
         # the engine of the last STARTED stage, across runs — the
         # boundary unload fires when the next stage (this run or the
@@ -857,7 +868,13 @@ class Gateway:
         self.subscribers = {}
 
     def subscribe(self, run_id: str) -> asyncio.Queue[dict[str, JsonValue]]:
-        q = asyncio.Queue()
+        # R2 memory bound (2026-09-06): the bus is BOUNDED — a
+        # stalled subscriber can no longer grow its queue without
+        # end. 256 frames is seconds of progress ticks; publish()
+        # drops-oldest when full so the newest (terminal) frame
+        # always lands.
+        q: asyncio.Queue[dict[str, JsonValue]] = asyncio.Queue(
+            maxsize=SUBSCRIBER_Q_MAX)
         self.subscribers.setdefault(run_id, set()).add(q)
         return q
 
@@ -868,10 +885,60 @@ class Gateway:
             if not subs:
                 self.subscribers.pop(run_id, None)
 
+    async def _sidecar_offloop(self, run: Run) -> None:
+        """R2 off-loop I/O: the sidecar's blocking JSON dump runs in
+        a THREAD — the event loop keeps serving HTTP and the worker
+        while the disk write happens. Serialized per gateway: the
+        tmp+rename target is one path per run, so writes to the same
+        file can never interleave (write ORDER per run is the
+        contract). Sync callers (boot sweep, engine report callbacks
+        that fire inside await execute) keep the sync sidecar())."""
+        async with self._io_lock:
+            await asyncio.to_thread(sidecar, run)
+
+    def _evict_settled(self) -> None:
+        """R2 memory bound: cap the in-memory registry's SETTLED rows
+        at MAX_SETTLED_RUNS (oldest created_at leaves first). The
+        sidecar on disk is the SSOT for settled runs — the runs
+        list/detail doors read it; live_run_ids exists to mark LIVE
+        ids, and a settled row is not live. queued/running/stopped-
+        mid-shutdown rows are never evicted."""
+        settled = [r for r in self.runs.values()
+                   if r.status in ("completed", "failed")]
+        excess = len(settled) - MAX_SETTLED_RUNS
+        if excess <= 0:
+            return
+        for r in sorted(settled, key=lambda x: x.created_at)[:excess]:
+            self.runs.pop(r.run_id, None)
+
     def publish(self, run_id: str, event: dict[str, JsonValue]) -> None:
         for q in list(self.subscribers.get(run_id, ())):
             try:
                 q.put_nowait(event)
+            except asyncio.QueueFull:
+                # bounded bus: progress ticks are lossy-tolerant —
+                # drop the OLDEST buffered frame, deliver the newest
+                # (a terminal run frame rides the newest position,
+                # so the subscriber is always released).
+                try:
+                    q.get_nowait()
+                    q.put_nowait(event)
+                except Exception:
+                    pass
+            except Exception:
+                pass
+        # R2 all-run fan-out: the "*" channel mirrors every run's
+        # frames STAMPED with the run id (run-scoped subscribers
+        # see the ORIGINAL dict — the run frames are the contract).
+        for q in list(self.subscribers.get(ALL_RUNS, ())):
+            try:
+                q.put_nowait(dict(event, run=run_id))
+            except asyncio.QueueFull:
+                try:
+                    q.get_nowait()
+                    q.put_nowait(dict(event, run=run_id))
+                except Exception:
+                    pass
             except Exception:
                 pass
 
@@ -999,7 +1066,9 @@ class Gateway:
         # (L1) -- this is the directory-level enforcement.
         run.out_root = TEST_OUT_ROOT if test_flag else OUT_ROOT
         run.dir.mkdir(parents=True, exist_ok=True)
-        atomic_write(run.dir / "_request.json", body)
+        # off-loop (R2): unique path per run — no lock needed, the
+        # thread write just leaves the event loop
+        await asyncio.to_thread(atomic_write, run.dir / "_request.json", body)
         run.stages = [
             {"id": n.node_id, "name": n.node_id, "index": i,
              "status": "pending",
@@ -1023,7 +1092,14 @@ class Gateway:
         run.skipped_stages = list(getattr(resolved, "skipped", ()) or [])
         self.runs[run_id] = run
         self.order.append(run_id)
-        sidecar(run)
+        # R3 durable queue (2026-09-06): the queue order is a RECORD —
+        # run.queued in the ledger is what a restart reconciles
+        # against (boot_resurrect re-queues from the sidecar +
+        # request; docs/queue/gpu-fifo.md). One append-per-line, the
+        # journal never gates registration.
+        ledger("run.queued", {"run_id": run_id, "draft_id": run.draft_id,
+                              "pipeline": _pipeline_of(run)})
+        await self._sidecar_offloop(run)
         return run
 
     async def worker(self) -> None:
@@ -1035,7 +1111,10 @@ class Gateway:
             run = self.runs[run_id]
             self.active = run
             run.status = "running"
-            sidecar(run)
+            # observability stamp (in-memory only — the sidecar shape
+            # is the wall-pinned contract; /v1/metrics reads this)
+            run._started_at = time.time()
+            await self._sidecar_offloop(run)
             try:
                 await self.execute(run)
                 run.status = "stopped" if run.stop_event.is_set() else "completed"
@@ -1043,7 +1122,7 @@ class Gateway:
                 run.status = "stopped" if run.stop_event.is_set() else "failed"
                 run.error = "%s: %s" % (type(e).__name__, e)
             finally:
-                sidecar(run)
+                await self._sidecar_offloop(run)
                 if run.status == "completed":
                     # the asset-ledger rung (2026-09-03): the delivery
                     # lands in the journal as typed rows — indexing
@@ -1062,6 +1141,14 @@ class Gateway:
                 # status exactly once, then the door closes the socket.
                 self.publish(run.run_id, {"type": "run",
                                           "status": run.status})
+                run._finished_at = time.time()
+                self.recent.append(_recent_row(run))
+                # R2 memory bound: the registry keeps the last N
+                # settled runs (hydration + metrics); older completed
+                # rows leave — the sidecar stays the SSOT and
+                # live_run_ids only needs LIVE ids. Never touches a
+                # queued/running row.
+                self._evict_settled()
                 self.active = None
 
     async def _try_merged(self, run: Run, initial: dict[str, JsonValue]) -> bool:
@@ -1086,8 +1173,9 @@ class Gateway:
         engine_types = {n.node_type for n in nodes}
         if not nodes or len(engine_types) != 1:
             return False
+        engine_type = engine_types.pop()
         try:
-            eng = load_engine(engine_types.pop())
+            eng = load_engine(engine_type)
         except Exception:
             return False
         if not hasattr(eng, "execute_flow") \
@@ -1150,10 +1238,24 @@ class Gateway:
                         "index": st["index"], **updates})
                     return
 
+        # ENGINE TRANSITION (2026-09-06 gap-fix, live-probed by GPU
+        # test_11): the merged path skipped the boundary bookkeeping
+        # the per-stage loop owns — a merged comfyui run left
+        # last_engine_type stale, so the NEXT engine's run never saw
+        # a transition and the outgoing engine never unloaded (the
+        # VRAM-release audit's exact class). The boundary state is
+        # gateway-level; both paths maintain it identically.
+        prev_type = self.last_engine_type
+        if prev_type is not None and prev_type != engine_type:
+            outcome = await _engine_boundary_unload(prev_type, engine_type)
+            if outcome != "no-transition":
+                run.stages[0]["boundary_unload"] = outcome
+        self.last_engine_type = engine_type
+
         for stage in run.stages:
             stage["status"] = "running"
             stage["merged"] = True   # the sidecar shows the path
-            sidecar(run)
+            await self._sidecar_offloop(run)
             self.publish(run.run_id, {"type": "stage",
                                       "stage": stage["id"],
                                       "index": stage["index"],
@@ -1173,7 +1275,7 @@ class Gateway:
                         "type": "stage", "stage": stage["id"],
                         "index": stage["index"],
                         "status": stage["status"], "error": err})
-            sidecar(run)
+            await self._sidecar_offloop(run)
             if stopped:
                 run.status = "stopped"
                 return True
@@ -1192,14 +1294,14 @@ class Gateway:
             run.artifacts.extend(arts)
             if arts:
                 base = ASSET_URL_PREFIX + "/%s/" % run.run_id
-                names_ = [os.path.basename(str(a)) for a in arts]
+                names_ = [_artifact_rel(run, str(a)) for a in arts]
                 stage["url"] = base + names_[0]
                 stage["gallery"] = [
                     {"url": base + n, "name": n} for n in names_]
             stage["status"] = "completed"
             stage.pop("progress", None)
             stage.pop("activity", None)
-            sidecar(run)
+            await self._sidecar_offloop(run)
             self.publish(run.run_id, {"type": "stage",
                                       "stage": sid,
                                       "index": stage["index"],
@@ -1227,7 +1329,7 @@ class Gateway:
         for stage in run.stages:
             if run.stop_event.is_set():
                 stage["status"] = "stopped"
-                sidecar(run)
+                await self._sidecar_offloop(run)
                 return
             node = run.graph.nodes[stage["index"]]
             # ENGINE TRANSITION: the outgoing engine unloads before the
@@ -1244,10 +1346,10 @@ class Gateway:
                     prev_type, node.node_type)
                 if outcome != "no-transition":
                     stage["boundary_unload"] = outcome
-                    sidecar(run)
+                    await self._sidecar_offloop(run)
             self.last_engine_type = node.node_type
             stage["status"] = "running"
-            sidecar(run)
+            await self._sidecar_offloop(run)
             self.publish(run.run_id, {"type": "stage",
                                       "stage": stage["id"],
                                       "index": stage["index"],
@@ -1278,7 +1380,7 @@ class Gateway:
                 # failures were unresolvable $channels the sidecar
                 # could have named in one look).
                 stage["inputs"] = inputs
-                sidecar(run)
+                await self._sidecar_offloop(run)
                 params = expand_inject(node.params, inputs)
                 # STROKE 4 (2026-09-06): the CARD BRIDGE — a card=
                 # stage's params are the CARD DOC, not the engine
@@ -1347,7 +1449,7 @@ class Gateway:
                     # form the runs list serves. Generic: basename only,
                     # no lane knowledge; per-stage attribution is exact
                     # because it happens HERE, inside this stage's turn.
-                    stage_arts = [os.path.basename(str(a))
+                    stage_arts = [_artifact_rel(run, str(a))
                                   for a in result.get("artifacts", []) if a]
                     if stage_arts:
                         base = ASSET_URL_PREFIX + "/%s/" % run.run_id
@@ -1366,7 +1468,7 @@ class Gateway:
                                           "status": "failed",
                                           "error": stage["error"]})
                 raise
-            sidecar(run)
+            await self._sidecar_offloop(run)
 
     async def stop(self, run_id: str) -> dict[str, str]:
         run = self.runs.get(run_id)
@@ -1419,10 +1521,36 @@ class Gateway:
                 await asyncio.sleep(0.05)
             if self.active is not None:   # engine ignored the stop event
                 run.status = "stopped"
-                sidecar(run)
+                await self._sidecar_offloop(run)
                 self.active = None
         ledger("server.stop", {"reason": "signal"})
         os._exit(0)
+
+
+def _pipeline_of(run: Run) -> str:
+    """The door name the run was started with (QUEUE LANE LAW:
+    exactly one of flow | flow_inline | model). The sidecar's
+    `pipeline` and /v1/metrics' recent rows share this — one truth."""
+    inline = run.request.get("flow_inline")
+    return (run.request.get("flow")
+            or run.request.get("model")
+            or (inline.get("id", "")
+                if isinstance(inline, dict) else ""))
+
+
+def _recent_row(run: Run) -> dict[str, JsonValue]:
+    """One settled-run metrics row: queue wait + wall total, both
+    from the worker's stamps (absent stamps read as None — a run
+    settled outside the worker, e.g. a unit harness, reports no
+    timings rather than a lie)."""
+    started = getattr(run, "_started_at", None)
+    finished = getattr(run, "_finished_at", None)
+    wait = round(started - run.created_at, 3) \
+        if started is not None else None
+    total = round(finished - started, 3) \
+        if (started is not None and finished is not None) else None
+    return {"run_id": run.run_id, "pipeline": _pipeline_of(run),
+            "status": run.status, "wait_s": wait, "total_s": total}
 
 
 def sidecar(run: Run) -> None:
@@ -1444,11 +1572,7 @@ def sidecar(run: Run) -> None:
     # r.name. The C-era sidecar carried "model" — a key the py writer
     # NEVER wrote, so every py run served blank names until 2026-09-05
     # (0 of 550 on-disk sidecars carry "model"; nothing reads it).
-    inline = run.request.get("flow_inline")
-    pipeline = (run.request.get("flow")
-                or run.request.get("model")
-                or (inline.get("id", "")
-                    if isinstance(inline, dict) else ""))
+    pipeline = _pipeline_of(run)
     # WHAT WAS POSTED (2026-09-06 rework): the compiled graph rides
     # the sidecar verbatim (id/type/input_from/input_names/outputs/
     # params, the params including every inline workflow) — post-
@@ -1486,6 +1610,64 @@ def sidecar(run: Run) -> None:
 # ---------------------------------------------------------------------------
 
 LEDGER_PATH = OUT_ROOT / "_ledger.jsonl"
+
+# R2 memory bounds (2026-09-06): the WS bus queues are capped per
+# subscriber (drop-oldest under pressure — see Gateway.publish) and
+# the in-memory registry caps its SETTLED rows (the sidecar is the
+# SSOT; live ids are what live_run_ids needs).
+SUBSCRIBER_Q_MAX = 256
+MAX_SETTLED_RUNS = 500
+
+# R2 token auth (2026-09-06): the OPTIONAL bearer door. Unset env →
+# auth is OFF (the dev default — the editor talks to localhost
+# bare). Set → every HTTP/WS door except the exempt paths demands
+# `Authorization: Bearer <token>`; WS accepts `?token=<t>` too
+# (browsers cannot set WS headers). The token is read per request
+# so the door is testable without rebooting the process. Design
+# record docs/gateway/auth.md; wall tests/unit/runtime/test_auth_door.py.
+AUTH_TOKEN_ENV = "DSH_GATEWAY_TOKEN"
+AUTH_EXEMPT_PATHS = ("/v1/health",)
+
+# the all-run fan-out channel (R2, 2026-09-06): subscribing "*"
+# mirrors EVERY run's frames, each stamped with its run id. The
+# run-scoped frames stay byte-identical — the stamp lives only on
+# the mirror. Design record docs/gateway/ws-mcp.md; wall
+# tests/unit/runtime/test_all_runs_feed.py.
+ALL_RUNS = "*"
+
+
+def _artifact_rel(run: "Run", art: str) -> str:
+    """The URL-shape seam for stamped artifact links (2026-09-06,
+    exposed LIVE by the run-lifecycle wall): merged-path engines land
+    artifacts in STAGE SUBDIRS (<run>/<stage>/<file>) but the stamp
+    used basename — the door (/v1/assets/runs/<run>/<file>, joined
+    under output/) then 404'd its own gallery URL. The honest link is
+    the run-RELATIVE path. A path outside run.dir (odd engine
+    shapes) falls back to basename — never a traversal."""
+    try:
+        rel = os.path.relpath(str(art), str(run.dir))
+    except Exception:
+        return os.path.basename(str(art))
+    if rel.startswith("..") or rel == ".":
+        return os.path.basename(str(art))
+    return rel
+
+
+def _auth_token() -> str:
+    return os.environ.get(AUTH_TOKEN_ENV, "")
+
+
+def _auth_ok(path: str, authorization: str, query_token: str) -> bool:
+    """True when the request may pass. Auth OFF (empty token)
+    passes everything — the default deployment stays bare."""
+    tok = _auth_token()
+    if not tok:
+        return True
+    if path in AUTH_EXEMPT_PATHS:
+        return True
+    if authorization == "Bearer " + tok:
+        return True
+    return bool(query_token) and query_token == tok
 
 
 def ledger(event: str, data: dict[str, JsonValue] | None = None) -> None:
@@ -1538,16 +1720,80 @@ def sweep_sidecar(path: Path, why: str, queued_why: str = "") -> bool:
     return True
 
 
-def boot_sweep() -> int:
+def boot_resurrect(gw: Gateway) -> int:
+    """R3 durable queue (2026-09-06): a QUEUED sidecar at boot is WORK
+    WAITING, not a failure — the previous gateway died before the
+    worker reached it. Each is rebuilt from its durable record (the
+    sidecar's graph rows + _request.json, both written at
+    registration) and re-queued in created_at order (FIFO survives
+    the restart). A queued run whose draft doc is GONE does not
+    resurrect (CARD BIRTH LAW: the doc is the run's birth
+    certificate) — it sweeps below like any orphan. Design record:
+    docs/queue/gpu-fifo.md; wall: tests/unit/runtime/test_durable_queue.py."""
+    resurrected = 0
+    if not OUT_ROOT.is_dir():
+        return 0
+    # runtime import (TYPE_CHECKING owns the annotation names)
+    from flow_graph import FlowGraph, NodeRow as _NR
+    candidates: list[tuple[float, str, dict[str, JsonValue]]] = []
+    for d in sorted(OUT_ROOT.iterdir()):
+        if not d.is_dir() or not d.name.startswith("run-"):
+            continue
+        try:
+            doc = json.loads((d / "_flow.json").read_text())
+        except (OSError, ValueError):
+            continue
+        if doc.get("status") != "queued":
+            continue
+        candidates.append(
+            (float(doc.get("created_at") or 0.0), d.name, doc))
+    for created, run_id, doc in sorted(candidates, key=lambda c: c[0]):
+        try:
+            draft_id = str(doc.get("draft_id") or "")
+            if not draft_id or not (
+                    STATE_ROOT / "drafts" /
+                    (draft_id + ".json")).is_file():
+                continue  # no birth certificate — sweep it below
+            request = json.loads(
+                (OUT_ROOT / run_id / "_request.json").read_text())
+            graph = FlowGraph(
+                name=str(doc.get("pipeline") or run_id),
+                nodes=tuple(_NR(**{
+                    "id": r.get("id"), "type": r.get("type"),
+                    "input_from": tuple(r.get("input_from") or ()),
+                    "input_names": dict(r.get("input_names") or {}),
+                    "outputs": dict(r.get("outputs") or {}),
+                    "params": dict(r.get("params") or {}),
+                }) for r in (doc.get("graph") or [])))
+            run = Run(run_id=run_id, graph=graph, request=request,
+                      draft_id=draft_id)
+            if created:
+                run.created_at = created
+            run.stages = list(doc.get("stages") or [])
+            run.skipped_stages = list(doc.get("skipped_stages") or [])
+            gw.runs[run_id] = run
+            gw.order.append(run_id)
+            ledger("run.resurrected", {"run_id": run_id,
+                                       "draft_id": draft_id})
+            resurrected += 1
+        except Exception:
+            continue  # a half-written record sweeps below — LOUD there
+    return resurrected
+
+
+def boot_sweep(live_run_ids: tuple[str, ...] = ()) -> int:
     """Boot-time zombie sweep: every sidecar still claiming running/queued
-    belongs to a DEAD process (we just started — nothing is live yet).
-    Sweep BEFORE the gateway accepts traffic, so the ledger never shows
-    phantom active runs after a crash/restart."""
+    belongs to a DEAD process — EXCEPT the runs boot_resurrect just
+    re-queued (live_run_ids; their queued sidecar is the resurrected
+    work, not a zombie). Sweep BEFORE the gateway accepts traffic, so
+    the ledger never shows phantom active runs after a crash/restart."""
     swept = 0
     if not OUT_ROOT.is_dir():
         return 0
     for d in sorted(OUT_ROOT.iterdir()):
         if not d.is_dir() or not d.name.startswith("run-"):
+            continue
+        if d.name in live_run_ids:
             continue
         try:
             pre = json.loads((d / "_flow.json").read_text())
@@ -1640,6 +1886,16 @@ async def _ws_starlette(websocket: WebSocket) -> None:
     Starlette/uvicorn handles RFC 6455 framing, ping/pong, and close
     handshakes — the ~150 lines of hand-rolled WS helpers are gone.
     """
+    from urllib.parse import parse_qs as _pqs, urlparse as _purl
+    _q = _pqs(_purl(str(websocket.url)).query)
+    if not _auth_ok(websocket.url.path,
+                    websocket.headers.get("authorization", ""),
+                    (_q.get("token") or [""])[0]):
+        # auth ON and no token: refuse the HANDSHAKE (close before
+        # accept → HTTP 403 at upgrade). The browser WS API cannot
+        # set headers — ?token= is the door for it.
+        await websocket.close(code=4401, reason="unauthorized")
+        return
     await websocket.accept()
     gw = websocket.app.state.gw
 
@@ -1650,9 +1906,16 @@ async def _ws_starlette(websocket: WebSocket) -> None:
         qs = _pq(_up(str(websocket.url)).query)
         run_id = (qs.get("run_id") or qs.get("id") or [""])[0]
         path = websocket.url.path.rstrip("/")
-        if not run_id or path != "/v1/flows/events":
-            await websocket.close()
-            return
+        if not run_id:
+            if path == "/v1/flows/events":
+                # R2 all-run fan-out: the BARE door is the estate
+                # feed — every run's frames, stamped. It has NO
+                # terminal frame (the client closes); the hello
+                # snapshot below hydrates queue state.
+                run_id = ALL_RUNS
+            else:
+                await websocket.close()
+                return
 
     q = gw.subscribe(run_id)
 
@@ -1670,21 +1933,30 @@ async def _ws_starlette(websocket: WebSocket) -> None:
             return
 
     try:
-        # hydrate: the snapshot BEFORE the subscription would race
-        run = gw.runs.get(run_id)
-        if run is None:
-            await _send({"type": "run", "status": "unknown"})
+        if run_id == ALL_RUNS:
+            # hydrate the estate feed: queue + active. No terminal
+            # frame — the client closes; frames arrive stamped.
+            await _send({"type": "hello", "channel": ALL_RUNS,
+                         "queue_depth": len(gw.order),
+                         "queued": list(gw.order),
+                         "active": (gw.active.run_id
+                                    if gw.active else None)})
         else:
-            await _send({"type": "run", "status": run.status})
-            for st in run.stages:
-                patch = {"type": "stage", "stage": st["id"],
-                         "status": st["status"]}
-                if st.get("progress"):
-                    patch["progress"] = st["progress"]
-                if st.get("activity"):
-                    patch["activity"] = st["activity"]
-                if run.status in ("completed", "failed", "stopped"):
-                    await _send(patch)
+            # hydrate: the snapshot BEFORE the subscription races
+            run = gw.runs.get(run_id)
+            if run is None:
+                await _send({"type": "run", "status": "unknown"})
+            else:
+                await _send({"type": "run", "status": run.status})
+                for st in run.stages:
+                    patch = {"type": "stage", "stage": st["id"],
+                             "status": st["status"]}
+                    if st.get("progress"):
+                        patch["progress"] = st["progress"]
+                    if st.get("activity"):
+                        patch["activity"] = st["activity"]
+                    if run.status in ("completed", "failed", "stopped"):
+                        await _send(patch)
 
         # event loop: multiplex queue events and client reads
         read_mon = asyncio.ensure_future(_monitor_client())
@@ -1738,6 +2010,19 @@ async def _adapt(request: Request) -> Response:
     body = await request.body()
     target = request.url.path + ("?" + request.url.query
                                  if request.url.query else "")
+    if not _auth_ok(request.url.path,
+                    request.headers.get("authorization", ""), ""):
+        # auth ON: no exempt, no bearer — 401 BEFORE dispatch (the
+        # token never gates the health probe; heads-up orbit checks
+        # keep working)
+        return Response(
+            content=json.dumps({
+                "error": "unauthorized: missing or invalid bearer token "
+                         "(Authorization: Bearer <token>; set %s to "
+                         "enable)" % AUTH_TOKEN_ENV},
+                indent=2).encode(),
+            status_code=401, media_type="application/json",
+            headers={"WWW-Authenticate": "Bearer"})
     try:
         status, payload = await route(gw, request.method, target, body)
     except Exception as exc:
@@ -2242,6 +2527,43 @@ async def _h_asset_input(ctx: _Ctx) -> HandlerResult:
 
 async def _h_ledger(ctx: _Ctx) -> HandlerResult:
     return 200, ledger_tail(ctx.target)
+
+
+# ── observability (R2, 2026-09-06): the metrics door ──────────────────
+#
+# One GET answers "how is the queue" without scraping sidecars:
+# depth, the active run, registry counts, subscriber fan-out,
+# uptime, and the bounded recent ring (queue wait + wall total per
+# settled run). Stage-duration histograms wait for per-stage
+# timestamps (the sidecar shape is contract — additive-only the day
+# they land). Design record: docs/design/production-architecture-
+# review.md R2; wall: tests/unit/runtime/test_metrics_door.py.
+async def _h_metrics(ctx: _Ctx) -> HandlerResult:
+    gw = ctx.gw
+    counts: dict[str, int] = {}
+    for r in gw.runs.values():
+        counts[r.status] = counts.get(r.status, 0) + 1
+    active = gw.active
+    active_row: dict[str, JsonValue] | None = None
+    if active is not None:
+        started = getattr(active, "_started_at", None)
+        active_row = {
+            "run_id": active.run_id, "pipeline": _pipeline_of(active),
+            "status": active.status, "started_at": started,
+            "queue_wait_s": round(started - active.created_at, 3)
+            if started is not None else None}
+    return 200, {
+        "boot_at": gw.boot_at,
+        "uptime_s": round(time.time() - gw.boot_at, 3),
+        "queue_depth": len(gw.order),
+        "queued": list(gw.order),
+        "active": active_row,
+        "runs_registered": len(gw.runs),
+        "runs_by_status": counts,
+        "subscribers": {rid: len(qs)
+                        for rid, qs in sorted(gw.subscribers.items())},
+        "recent": list(gw.recent),
+    }
 
 
 # ── studio presets (stroke 3, 2026-09-06) ───────────────────────────
@@ -2977,6 +3299,10 @@ ROUTES: tuple = (
     Route(method="GET", path="/v1/ledger", group="Assets & ledger",
           summary="Tail the append-only journal (?limit= ?event= prefix)",
           query=("limit", "event"), handler=_h_ledger),
+    Route(method="GET", path="/v1/metrics", group="Observability",
+          summary="Queue + registry observability (depth, active run, "
+                  "status counts, recent wait/total timings)",
+          handler=_h_metrics),
     Route(method="GET", path=r"^/v1/assets/runs/", regex=True,
           template="/v1/assets/runs/{run_id}/{file}",
           group="Assets & ledger",
@@ -3221,8 +3547,13 @@ def ledger_tail(target: str) -> dict[str, list[JsonValue] | int]:
 
 async def main(port: int) -> None:
     gw = Gateway()
-    swept = boot_sweep()
+    # R3 durable queue: queued work RESURRECTS first (same run ids,
+    # FIFO order); the sweep then settles what is genuinely dead —
+    # crashed-mid-run sidecars and queued orphans (no draft doc).
+    resurrected = boot_resurrect(gw)
+    swept = boot_sweep(live_run_ids=tuple(gw.runs.keys()))
     ledger("server.boot", {"port": port, "swept": swept,
+                           "resurrected": resurrected,
                            "engine": "python-orchestrator"})
 
     # Starlette lifespan: startup boots the worker, shutdown marks

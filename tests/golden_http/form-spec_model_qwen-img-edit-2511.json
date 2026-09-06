@@ -9,197 +9,86 @@
       "name": "image2",
       "type": "image",
       "label": "Image 2",
-      "default": null,
-      "options": [],
       "group": "input",
-      "zone": "",
       "order": 0,
-      "required": null,
-      "columns": null,
-      "width": 1,
-      "min": null,
-      "max": null,
-      "step": null,
-      "placeholder": "",
-      "tooltip": "",
-      "visible_when": null
+      "width": 1
     },
     {
       "name": "image3",
       "type": "image",
       "label": "Image 3",
-      "default": null,
-      "options": [],
       "group": "input",
-      "zone": "",
       "order": 1,
-      "required": null,
-      "columns": null,
-      "width": 1,
-      "min": null,
-      "max": null,
-      "step": null,
-      "placeholder": "",
-      "tooltip": "",
-      "visible_when": null
+      "width": 1
     },
     {
       "name": "reference_images",
       "type": "image_list",
       "label": "Reference Images",
-      "default": [],
-      "options": [],
       "group": "input",
-      "zone": "",
       "order": 2,
-      "required": null,
-      "columns": null,
-      "width": null,
-      "min": null,
-      "max": null,
-      "step": null,
-      "placeholder": "",
-      "tooltip": "Multi-image picker (up to 3). Used by workflows that pass resolved image lists; complements the individual Image 2 / Image 3 slots above.",
-      "visible_when": null
+      "default": [],
+      "tooltip": "Multi-image picker (up to 3). Used by workflows that pass resolved image lists; complements the individual Image 2 / Image 3 slots above."
     },
     {
       "name": "prompt",
       "type": "textarea",
       "label": "Prompt",
-      "default": null,
-      "options": [],
       "group": "prompt",
-      "zone": "",
       "order": 0,
-      "required": true,
-      "columns": 2,
       "width": 1,
-      "min": null,
-      "max": null,
-      "step": null,
-      "placeholder": "",
-      "tooltip": "",
-      "visible_when": null
+      "columns": 2,
+      "required": true
     },
     {
       "name": "negative_prompt",
       "type": "textarea",
       "label": "Negative Prompt",
-      "default": null,
-      "options": [],
       "group": "prompt",
-      "zone": "",
       "order": 1,
-      "required": null,
-      "columns": null,
-      "width": 1,
-      "min": null,
-      "max": null,
-      "step": null,
-      "placeholder": "",
-      "tooltip": "",
-      "visible_when": "negative_prompt != null"
-    },
-    {
-      "name": "width",
-      "type": "number",
-      "label": "Width",
-      "default": 1024,
-      "options": [],
-      "group": "resolution",
-      "zone": "",
-      "order": 0,
-      "required": null,
-      "columns": 3,
-      "width": 1,
-      "min": 256,
-      "max": 2048,
-      "step": 16,
-      "placeholder": "",
-      "tooltip": "",
-      "visible_when": null
-    },
-    {
-      "name": "height",
-      "type": "number",
-      "label": "Height",
-      "default": 1024,
-      "options": [],
-      "group": "resolution",
-      "zone": "",
-      "order": 1,
-      "required": null,
-      "columns": null,
-      "width": 1,
-      "min": 256,
-      "max": 2048,
-      "step": 16,
-      "placeholder": "",
-      "tooltip": "",
-      "visible_when": null
+      "width": 1
     },
     {
       "name": "seed",
       "type": "seed",
       "label": "Seed",
-      "default": -1,
-      "options": [],
       "group": "resolution",
-      "zone": "",
       "order": 4,
-      "required": null,
-      "columns": null,
       "width": 1,
-      "min": null,
-      "max": null,
-      "step": null,
-      "placeholder": "",
-      "tooltip": "",
-      "visible_when": null
+      "default": -1
     },
     {
       "name": "steps",
       "type": "number",
       "label": "Steps",
-      "default": 4,
-      "options": [],
       "group": "sampling",
-      "zone": "",
       "order": 0,
-      "required": null,
-      "columns": null,
       "width": 1,
       "min": 1,
       "max": 50,
       "step": 1,
-      "placeholder": "",
-      "tooltip": "",
-      "visible_when": null
+      "default": 4
     },
     {
       "name": "cfg",
       "type": "slider",
       "label": "Guidance Scale",
-      "default": 1.0,
-      "options": [],
       "group": "sampling",
-      "zone": "",
       "order": 1,
-      "required": null,
-      "columns": null,
       "width": 1,
       "min": 0.1,
       "max": 10,
       "step": 0.1,
-      "placeholder": "",
-      "tooltip": "Qwen-Image-Edit uses low CFG (flow-matching).",
-      "visible_when": null
+      "default": 1.0,
+      "tooltip": "Qwen-Image-Edit uses low CFG (flow-matching)."
     },
     {
       "name": "sampler",
       "type": "select",
       "label": "Sampler",
-      "default": null,
+      "group": "sampling",
+      "order": 2,
+      "width": 1,
       "options": [
         "cfgpp_ud10_ab",
         "ddim",
@@ -246,25 +135,15 @@
         "seeds_3",
         "uni_pc",
         "uni_pc_bh2"
-      ],
-      "group": "sampling",
-      "zone": "",
-      "order": 2,
-      "required": null,
-      "columns": null,
-      "width": 1,
-      "min": null,
-      "max": null,
-      "step": null,
-      "placeholder": "",
-      "tooltip": "",
-      "visible_when": null
+      ]
     },
     {
       "name": "scheduler",
       "type": "select",
       "label": "Scheduler",
-      "default": null,
+      "group": "sampling",
+      "order": 3,
+      "width": 1,
       "options": [
         "beta",
         "ddim_uniform",
@@ -275,507 +154,298 @@
         "normal",
         "sgm_uniform",
         "simple"
-      ],
-      "group": "sampling",
-      "zone": "",
-      "order": 3,
-      "required": null,
-      "columns": null,
-      "width": 1,
-      "min": null,
-      "max": null,
-      "step": null,
-      "placeholder": "",
-      "tooltip": "",
-      "visible_when": null
-    },
-    {
-      "name": "preset",
-      "type": "select",
-      "label": "Workflow Preset",
-      "default": null,
-      "options": [],
-      "group": "edit_tuning",
-      "zone": "",
-      "order": 0,
-      "required": null,
-      "columns": null,
-      "width": 1,
-      "min": null,
-      "max": null,
-      "step": null,
-      "placeholder": "",
-      "tooltip": "Optional recipe preset \u2014 empty (default) = plain edit, the route's own catalog recipe (steps/cfg/loras from its defaults). vnccs_repose: the VNCCS re-pose recipe (external Lightning 4-step LoRA + VNCCS PoseStudio LoRA) for mesh-based re-pose flows \u2014 explicit only, never the default: its Lightning LoRA stacked on a Lightning-baked route (Apex int8, the fused lightning4) is double distillation (GPU-verified 2026-08-15). blue_mesh: blue-mesh overpaint mode \u2014 the builder loads the blue_mesh ControlNet stack.",
-      "visible_when": null
+      ]
     },
     {
       "name": "use_stock_nodes",
       "type": "boolean",
       "label": "Use Stock Nodes",
-      "default": false,
-      "options": [],
       "group": "edit_tuning",
-      "zone": "",
       "order": 1,
-      "required": null,
-      "columns": null,
       "width": 1,
-      "min": null,
-      "max": null,
-      "step": null,
-      "placeholder": "",
-      "tooltip": "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.",
-      "visible_when": null
+      "default": false,
+      "tooltip": "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly."
     },
     {
       "name": "double_reference",
       "type": "boolean",
       "label": "Double Reference",
-      "default": false,
-      "options": [],
       "group": "edit_tuning",
-      "zone": "",
       "order": 2,
-      "required": null,
-      "columns": null,
       "width": 1,
-      "min": null,
-      "max": null,
-      "step": null,
-      "placeholder": "",
-      "tooltip": "Encode the input image twice (VAE + vision encoder) for stronger identity preservation. Disable for faster runs where identity drift is acceptable.",
-      "visible_when": null
+      "default": false,
+      "tooltip": "Encode the input image twice (VAE + vision encoder) for stronger identity preservation. Disable for faster runs where identity drift is acceptable."
     },
     {
-      "name": "input_image",
+      "name": "image1",
       "type": "image",
-      "label": "Image",
-      "default": null,
-      "options": [],
+      "label": "Image 1",
       "group": "input",
-      "zone": "",
       "order": -1,
-      "required": true,
-      "columns": 3,
       "width": 1,
-      "min": null,
-      "max": null,
-      "step": null,
-      "placeholder": "",
-      "tooltip": "",
-      "visible_when": null
+      "columns": 3,
+      "required": true
     },
     {
       "name": "lanpaint_enabled",
       "type": "boolean",
       "label": "Force LanPaint",
-      "default": false,
-      "options": [],
       "group": "lanpaint",
-      "zone": "",
       "order": 1,
-      "required": null,
-      "columns": null,
-      "width": null,
-      "min": null,
-      "max": null,
-      "step": null,
-      "placeholder": "",
-      "tooltip": "",
-      "visible_when": "input_image != null"
+      "default": false,
+      "visible_when": "image1 != null"
     },
     {
       "name": "lanpaint_num_steps",
       "type": "number",
       "label": "Num Steps",
-      "default": 20,
-      "options": [],
       "group": "lanpaint",
-      "zone": "",
       "order": 2,
-      "required": null,
-      "columns": null,
       "width": 1,
       "min": 1,
       "max": 100,
       "step": 1,
-      "placeholder": "",
-      "tooltip": "",
+      "default": 20,
       "visible_when": "lanpaint_enabled == true"
     },
     {
       "name": "lanpaint_step_size",
       "type": "slider",
       "label": "Step Size",
-      "default": 1.0,
-      "options": [],
       "group": "lanpaint",
-      "zone": "",
       "order": 3,
-      "required": null,
-      "columns": null,
       "width": 1,
       "min": 0.1,
       "max": 2,
       "step": 0.1,
-      "placeholder": "",
-      "tooltip": "",
+      "default": 1.0,
       "visible_when": "lanpaint_enabled == true"
     },
     {
       "name": "lanpaint_lambda",
       "type": "slider",
       "label": "Lambda",
-      "default": 0.5,
-      "options": [],
       "group": "lanpaint",
-      "zone": "",
       "order": 4,
-      "required": null,
-      "columns": null,
       "width": 1,
       "min": 0,
       "max": 2,
       "step": 0.05,
-      "placeholder": "",
-      "tooltip": "",
+      "default": 0.5,
       "visible_when": "lanpaint_enabled == true"
     },
     {
       "name": "lanpaint_beta",
       "type": "slider",
       "label": "Beta",
-      "default": 0.5,
-      "options": [],
       "group": "lanpaint",
-      "zone": "",
       "order": 5,
-      "required": null,
-      "columns": null,
       "width": 1,
       "min": 0,
       "max": 2,
       "step": 0.05,
-      "placeholder": "",
-      "tooltip": "",
+      "default": 0.5,
       "visible_when": "lanpaint_enabled == true"
     },
     {
       "name": "lanpaint_friction",
       "type": "slider",
       "label": "Friction",
-      "default": 0.5,
-      "options": [],
       "group": "lanpaint",
-      "zone": "",
       "order": 6,
-      "required": null,
-      "columns": null,
       "width": 1,
       "min": 0,
       "max": 2,
       "step": 0.05,
-      "placeholder": "",
-      "tooltip": "",
+      "default": 0.5,
       "visible_when": "lanpaint_enabled == true"
     },
     {
       "name": "lanpaint_prompt_mode",
       "type": "select",
       "label": "Prompt Mode",
+      "group": "lanpaint",
+      "order": 7,
+      "width": 1,
       "default": "negative",
+      "visible_when": "lanpaint_enabled == true",
       "options": [
         "negative",
         "positive"
-      ],
-      "group": "lanpaint",
-      "zone": "",
-      "order": 7,
-      "required": null,
-      "columns": null,
-      "width": 1,
-      "min": null,
-      "max": null,
-      "step": null,
-      "placeholder": "",
-      "tooltip": "",
-      "visible_when": "lanpaint_enabled == true"
+      ]
     },
     {
       "name": "outpaint_top",
       "type": "slider",
       "label": "Expand Top",
-      "default": 0,
-      "options": [],
       "group": "lanpaint",
-      "zone": "",
       "order": 8,
-      "required": null,
-      "columns": null,
       "width": 1,
       "min": 0,
       "max": 512,
       "step": 8,
-      "placeholder": "",
-      "tooltip": "",
-      "visible_when": "input_image != null"
+      "default": 0,
+      "visible_when": "image1 != null"
     },
     {
       "name": "outpaint_right",
       "type": "slider",
       "label": "Expand Right",
-      "default": 0,
-      "options": [],
       "group": "lanpaint",
-      "zone": "",
       "order": 9,
-      "required": null,
-      "columns": null,
       "width": 1,
       "min": 0,
       "max": 512,
       "step": 8,
-      "placeholder": "",
-      "tooltip": "",
-      "visible_when": "input_image != null"
+      "default": 0,
+      "visible_when": "image1 != null"
     },
     {
       "name": "outpaint_bottom",
       "type": "slider",
       "label": "Expand Bottom",
-      "default": 0,
-      "options": [],
       "group": "lanpaint",
-      "zone": "",
       "order": 10,
-      "required": null,
-      "columns": null,
       "width": 1,
       "min": 0,
       "max": 512,
       "step": 8,
-      "placeholder": "",
-      "tooltip": "",
-      "visible_when": "input_image != null"
+      "default": 0,
+      "visible_when": "image1 != null"
     },
     {
       "name": "outpaint_left",
       "type": "slider",
       "label": "Expand Left",
-      "default": 0,
-      "options": [],
       "group": "lanpaint",
-      "zone": "",
       "order": 11,
-      "required": null,
-      "columns": null,
       "width": 1,
       "min": 0,
       "max": 512,
       "step": 8,
-      "placeholder": "",
-      "tooltip": "",
-      "visible_when": "input_image != null"
+      "default": 0,
+      "visible_when": "image1 != null"
     },
     {
       "name": "outpaint_overlap",
       "type": "slider",
       "label": "Overlap",
-      "default": 16,
-      "options": [],
       "group": "lanpaint",
-      "zone": "",
       "order": 8,
-      "required": null,
-      "columns": null,
       "width": 1,
       "min": 0,
       "max": 64,
       "step": 1,
-      "placeholder": "",
-      "tooltip": "",
-      "visible_when": "input_image != null"
+      "default": 16,
+      "visible_when": "image1 != null"
     },
     {
       "name": "loras",
       "type": "loras",
       "label": "LoRAs",
-      "default": null,
-      "options": [],
       "group": "loras_controlnet",
-      "zone": "",
-      "order": 0,
-      "required": null,
-      "columns": null,
-      "width": null,
-      "min": null,
-      "max": null,
-      "step": null,
-      "placeholder": "",
-      "tooltip": "",
-      "visible_when": null
+      "order": 0
     },
     {
       "name": "mask",
       "type": "mask",
       "label": "Region Mask",
-      "default": null,
-      "options": [],
       "group": "mask",
-      "zone": "",
       "order": -1,
-      "required": null,
-      "columns": null,
-      "width": null,
-      "min": null,
-      "max": null,
-      "step": null,
-      "placeholder": "",
-      "tooltip": "Add the mask mod, then drop an RGBA PNG whose alpha channel marks the region.",
-      "visible_when": null
+      "tooltip": "Add the mask mod, then drop an RGBA PNG whose alpha channel marks the region."
     },
     {
       "name": "input_mask",
       "type": "image",
       "label": "Region Mask",
-      "default": null,
-      "options": [],
       "group": "mask",
-      "zone": "",
       "order": 0,
-      "required": null,
-      "columns": null,
-      "width": null,
-      "min": null,
-      "max": null,
-      "step": null,
-      "placeholder": "",
-      "tooltip": "RGBA PNG whose alpha channel marks the region. Standalone: region semantics for this lane. Alongside lanpaint: the inpaint region \u2014 present with input_image, the builder switches to the lanpaint sampler.",
-      "visible_when": null
+      "tooltip": "RGBA PNG whose alpha channel marks the region. Standalone: region semantics for this lane. Alongside lanpaint: the inpaint region \u2014 present with image1, the builder switches to the lanpaint sampler."
     },
     {
       "name": "mask_mode",
       "type": "select",
       "label": "Region Mode",
+      "group": "mask",
+      "order": 1,
+      "width": 1,
       "default": "auto",
+      "tooltip": "How the mask is honored: auto (the lane's own region ControlNet if its weights are present, else crop+stitch), crop_stitch (crop to the mask + context, work the crop, composite back \u2014 pixels outside the mask never change), full_frame (legacy whole-image pass; unmasked regions may drift).",
       "options": [
         "auto",
         "crop_stitch",
         "full_frame"
-      ],
-      "group": "mask",
-      "zone": "",
-      "order": 1,
-      "required": null,
-      "columns": null,
-      "width": 1,
-      "min": null,
-      "max": null,
-      "step": null,
-      "placeholder": "",
-      "tooltip": "How the mask is honored: auto (the lane's own region ControlNet if its weights are present, else crop+stitch), crop_stitch (crop to the mask + context, work the crop, composite back \u2014 pixels outside the mask never change), full_frame (legacy whole-image pass; unmasked regions may drift).",
-      "visible_when": null
+      ]
     },
     {
       "name": "mask_context_pad",
       "type": "slider",
       "label": "Context Padding",
-      "default": 64,
-      "options": [],
       "group": "mask",
-      "zone": "",
       "order": 2,
-      "required": null,
-      "columns": null,
       "width": 1,
       "min": 0,
       "max": 256,
       "step": 8,
-      "placeholder": "",
-      "tooltip": "Pixels of surrounding context kept in the crop (crop_stitch mode). More context = more coherence; 64 is the sweet spot.",
-      "visible_when": null
+      "default": 64,
+      "tooltip": "Pixels of surrounding context kept in the crop (crop_stitch mode). More context = more coherence; 64 is the sweet spot."
     },
     {
       "name": "mask_grow",
       "type": "slider",
       "label": "Grow / Shrink",
-      "default": 8,
-      "options": [],
       "group": "mask",
-      "zone": "",
       "order": 3,
-      "required": null,
-      "columns": null,
       "width": 1,
       "min": -32,
       "max": 32,
       "step": 1,
-      "placeholder": "",
-      "tooltip": "Expand (+) or shrink (\u2212) the region by an exact pixel disk before the run. Applied host-side.",
-      "visible_when": null
+      "default": 8,
+      "tooltip": "Expand (+) or shrink (\u2212) the region by an exact pixel disk before the run. Applied host-side."
     },
     {
       "name": "mask_feather",
       "type": "slider",
       "label": "Feather",
-      "default": 8,
-      "options": [],
       "group": "mask",
-      "zone": "",
       "order": 4,
-      "required": null,
-      "columns": null,
       "width": 1,
       "min": 0,
       "max": 32,
       "step": 1,
-      "placeholder": "",
-      "tooltip": "Gaussian falloff the composite blends through \u2014 kills the pasted-on rectangle edge.",
-      "visible_when": null
+      "default": 8,
+      "tooltip": "Gaussian falloff the composite blends through \u2014 kills the pasted-on rectangle edge."
     },
     {
       "name": "mask_threshold",
       "type": "slider",
       "label": "Re-threshold",
-      "default": 0,
-      "options": [],
       "group": "mask",
-      "zone": "",
       "order": 5,
-      "required": null,
-      "columns": null,
       "width": 1,
       "min": 0,
       "max": 1,
       "step": 0.05,
-      "placeholder": "",
-      "tooltip": "Re-binarize the feathered mask at this level. 0 = keep the soft falloff.",
-      "visible_when": null
+      "default": 0,
+      "tooltip": "Re-binarize the feathered mask at this level. 0 = keep the soft falloff."
     },
     {
       "name": "mask_invert",
       "type": "boolean",
       "label": "Invert",
-      "default": false,
-      "options": [],
       "group": "mask",
-      "zone": "",
       "order": 6,
-      "required": null,
-      "columns": null,
       "width": 1,
-      "min": null,
-      "max": null,
-      "step": null,
-      "placeholder": "",
-      "tooltip": "Work OUTSIDE the painted region instead.",
-      "visible_when": null
+      "default": false,
+      "tooltip": "Work OUTSIDE the painted region instead."
     }
   ],
   "schema_groups": [
     {
       "id": "input",
       "label": "Input",
+      "order": 0,
+      "zone": "inputs",
       "fields": [
         {
           "name": "image2",
@@ -800,21 +470,21 @@
           "tooltip": "Multi-image picker (up to 3). Used by workflows that pass resolved image lists; complements the individual Image 2 / Image 3 slots above."
         },
         {
-          "name": "input_image",
+          "name": "image1",
           "type": "image",
-          "label": "Image",
+          "label": "Image 1",
           "order": -1,
           "width": 1,
           "columns": 3,
           "required": true
         }
-      ],
-      "order": 0,
-      "zone": "inputs"
+      ]
     },
     {
       "id": "prompt",
       "label": "Prompt",
+      "order": 1,
+      "zone": "params",
       "fields": [
         {
           "name": "prompt",
@@ -830,40 +500,16 @@
           "type": "textarea",
           "label": "Negative Prompt",
           "order": 1,
-          "width": 1,
-          "visible_when": "negative_prompt != null"
+          "width": 1
         }
-      ],
-      "order": 1,
-      "zone": "params"
+      ]
     },
     {
       "id": "resolution",
       "label": "Resolution",
+      "order": 2,
+      "zone": "params",
       "fields": [
-        {
-          "name": "width",
-          "type": "number",
-          "label": "Width",
-          "order": 0,
-          "width": 1,
-          "columns": 3,
-          "min": 256,
-          "max": 2048,
-          "step": 16,
-          "default": 1024
-        },
-        {
-          "name": "height",
-          "type": "number",
-          "label": "Height",
-          "order": 1,
-          "width": 1,
-          "min": 256,
-          "max": 2048,
-          "step": 16,
-          "default": 1024
-        },
         {
           "name": "seed",
           "type": "seed",
@@ -872,13 +518,13 @@
           "width": 1,
           "default": -1
         }
-      ],
-      "order": 2,
-      "zone": "params"
+      ]
     },
     {
       "id": "sampling",
       "label": "Sampling",
+      "order": 3,
+      "zone": "params",
       "fields": [
         {
           "name": "steps",
@@ -900,8 +546,8 @@
           "min": 0.1,
           "max": 10,
           "step": 0.1,
-          "tooltip": "Qwen-Image-Edit uses low CFG (flow-matching).",
-          "default": 1.0
+          "default": 1.0,
+          "tooltip": "Qwen-Image-Edit uses low CFG (flow-matching)."
         },
         {
           "name": "sampler",
@@ -975,31 +621,22 @@
             "simple"
           ]
         }
-      ],
-      "order": 3,
-      "zone": "params"
+      ]
     },
     {
       "id": "edit_tuning",
       "label": "Edit_tuning",
+      "order": 4,
+      "zone": "params",
       "fields": [
-        {
-          "name": "preset",
-          "type": "select",
-          "label": "Workflow Preset",
-          "order": 0,
-          "width": 1,
-          "tooltip": "Optional recipe preset \u2014 empty (default) = plain edit, the route's own catalog recipe (steps/cfg/loras from its defaults). vnccs_repose: the VNCCS re-pose recipe (external Lightning 4-step LoRA + VNCCS PoseStudio LoRA) for mesh-based re-pose flows \u2014 explicit only, never the default: its Lightning LoRA stacked on a Lightning-baked route (Apex int8, the fused lightning4) is double distillation (GPU-verified 2026-08-15). blue_mesh: blue-mesh overpaint mode \u2014 the builder loads the blue_mesh ControlNet stack.",
-          "options": []
-        },
         {
           "name": "use_stock_nodes",
           "type": "boolean",
           "label": "Use Stock Nodes",
           "order": 1,
           "width": 1,
-          "tooltip": "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.",
-          "default": false
+          "default": false,
+          "tooltip": "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly."
         },
         {
           "name": "double_reference",
@@ -1007,16 +644,16 @@
           "label": "Double Reference",
           "order": 2,
           "width": 1,
-          "tooltip": "Encode the input image twice (VAE + vision encoder) for stronger identity preservation. Disable for faster runs where identity drift is acceptable.",
-          "default": false
+          "default": false,
+          "tooltip": "Encode the input image twice (VAE + vision encoder) for stronger identity preservation. Disable for faster runs where identity drift is acceptable."
         }
-      ],
-      "order": 4,
-      "zone": "params"
+      ]
     },
     {
       "id": "lanpaint",
       "label": "Lanpaint",
+      "order": 5,
+      "zone": "params",
       "fields": [
         {
           "name": "lanpaint_enabled",
@@ -1024,7 +661,7 @@
           "label": "Force LanPaint",
           "order": 1,
           "default": false,
-          "visible_when": "input_image != null"
+          "visible_when": "image1 != null"
         },
         {
           "name": "lanpaint_num_steps",
@@ -1109,7 +746,7 @@
           "max": 512,
           "step": 8,
           "default": 0,
-          "visible_when": "input_image != null"
+          "visible_when": "image1 != null"
         },
         {
           "name": "outpaint_right",
@@ -1121,7 +758,7 @@
           "max": 512,
           "step": 8,
           "default": 0,
-          "visible_when": "input_image != null"
+          "visible_when": "image1 != null"
         },
         {
           "name": "outpaint_bottom",
@@ -1133,7 +770,7 @@
           "max": 512,
           "step": 8,
           "default": 0,
-          "visible_when": "input_image != null"
+          "visible_when": "image1 != null"
         },
         {
           "name": "outpaint_left",
@@ -1145,7 +782,7 @@
           "max": 512,
           "step": 8,
           "default": 0,
-          "visible_when": "input_image != null"
+          "visible_when": "image1 != null"
         },
         {
           "name": "outpaint_overlap",
@@ -1157,11 +794,9 @@
           "max": 64,
           "step": 1,
           "default": 16,
-          "visible_when": "input_image != null"
+          "visible_when": "image1 != null"
         }
-      ],
-      "order": 5,
-      "zone": "params"
+      ]
     },
     {
       "id": "loras_controlnet",
@@ -1180,6 +815,8 @@
     {
       "id": "mask",
       "label": "Mask",
+      "order": 7,
+      "zone": "mods",
       "fields": [
         {
           "name": "mask",
@@ -1193,7 +830,7 @@
           "type": "image",
           "label": "Region Mask",
           "order": 0,
-          "tooltip": "RGBA PNG whose alpha channel marks the region. Standalone: region semantics for this lane. Alongside lanpaint: the inpaint region \u2014 present with input_image, the builder switches to the lanpaint sampler."
+          "tooltip": "RGBA PNG whose alpha channel marks the region. Standalone: region semantics for this lane. Alongside lanpaint: the inpaint region \u2014 present with image1, the builder switches to the lanpaint sampler."
         },
         {
           "name": "mask_mode",
@@ -1266,9 +903,7 @@
           "default": false,
           "tooltip": "Work OUTSIDE the painted region instead."
         }
-      ],
-      "order": 7,
-      "zone": "mods"
+      ]
     }
   ],
   "features": {
@@ -1279,6 +914,11 @@
       },
       "Quant": {
         "label": "Quant"
+      },
+      "Recipe": {
+        "label": "Recipe",
+        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "default": "default"
       }
     }
   },
@@ -1340,6 +980,18 @@
       "quant": "int8",
       "vram_peak_gb": 20.0,
       "owner": "standard"
+    },
+    {
+      "id": "default",
+      "label": "Default",
+      "group": "Recipe",
+      "defaults": {},
+      "route": "",
+      "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
     }
   ],
   "guide": null,

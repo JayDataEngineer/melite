@@ -247,6 +247,20 @@ def main() -> int:
                                       ("action_cards", "image",
                                        "image-gen"))] + FLIPPED:
         cards[cid] = load_card_py(_card_py(engine, *home), engine)
+    # 2026-09-06 gap-fix: the card universe for the cross-audit is
+    # DISCOVERY, never this file's list — models board cards the
+    # FLIPPED rows never mentioned (the 3d cluster: fit/anny/
+    # img-to-mesh/skin; tagger, upscale-tools, motion, video-gen)
+    # and validate_against_cards refused them as "no known card".
+    # Every action_cards/*/*/py/card.py is the SSOT, same as the
+    # model scan; ui/ shells and motion-studio (no families) load
+    # harmlessly.
+    import glob as _glob
+    for cpath in sorted(_glob.glob(os.path.join(
+            REPO, "plugins", "engines", "comfyui", "action_cards",
+            "*", "*", "py", "card.py"))):
+        cls = load_card_py(cpath, "comfyui")
+        cards.setdefault(cls.id, cls)
     studio_models = {}
     for mid, cls in models.items():
         st = getattr(cls, "studio", None)
@@ -286,21 +300,22 @@ def main() -> int:
     _cc = _pl.load_compose("comfyui")
     _truth = _ac.ENGINE_TRUTH_KEYS + tuple(_cc.ENGINE_TRUTH_KEYS)
     pairs = validate_against_cards(models, cards, engine_truth=_truth)
+    # 2026-09-06 gap-fix: +6 pairs — the 3d cluster grew its own
+    # cards (fit, skin) and the tagger families (florence2,
+    # joycaption, joytag, wd14) board image/tagger; the universe
+    # walk above surfaced them (the hardcoded list had drifted).
     check("cross-validation pairs (all boarded families)",
           pairs == [("anima", "image-gen"),
                     ("anny", "anny"),
+                    ("fit", "fit"),
+                    ("florence2", "tagger"),
                     ("h3", "h3-timeline"),
                     ("h3-keyframe", "h3-timeline"),
                     ("h3-timeline", "h3-timeline"),
                     ("ideogram", "ideogram4"),
-                    # ("img-edit", "image-edit") died with the
-                    # 2026-09-05 img-edit → qwen-img-edit-2511 family
-                    # rename (the old family dir is gone; the pin
-                    # follows the tree, never the reverse).
-                    # ("input", "input-prep") boards 2026-09-05 — the
-                    # input lane is a real {model} card (weightless
-                    # NATIVE cascade, requires=()).
                     ("input", "input-prep"),
+                    ("joycaption", "tagger"),
+                    ("joytag", "tagger"),
                     ("kimodo", "motion"),
                     ("krea-2", "image-gen"),
                     ("mask-studio", "mask-studio"),
@@ -313,9 +328,11 @@ def main() -> int:
                     ("qwen3-tts-voicedesign", "voice-lock"),
                     ("scail2-animate", "video-gen"),
                     ("seedvr2_ema", "upscale-tools"),
+                    ("skin", "skin"),
                     ("transfer_rig", "img-to-mesh"),
                     ("trellis2-native", "img-to-mesh"),
                     ("wan-vace", "video-gen"),
+                    ("wd14", "tagger"),
                     ("z-image", "image-gen")], repr(pairs))
 
     # tool.json snapshots are DERIVED artifacts — the card class is the
@@ -817,7 +834,7 @@ def main() -> int:
         _artifact_mod.resolve(_strip, _AK.IMAGE)
     except ValueError:
         _dir_img = True
-    check("artifact ref primitive: five kinds, one law",
+    check("artifact ref primitive: six kinds, one law",
           _ok_img is not None and _ok_img.path == _png
           and _ok_strip is not None
           and _ok_strip.path == _strip and _ok_strip.ref == "runs/PRIOR/h3_context"
@@ -825,9 +842,13 @@ def main() -> int:
           and _wrong and _missing and _dir_img
           and not _artifact_mod.uploads(_AK.LATENT)
           and all(_artifact_mod.uploads(k) for k in
-                  (_AK.IMAGE, _AK.VIDEO, _AK.AUDIO, _AK.QVOICE))
+                  (_AK.IMAGE, _AK.VIDEO, _AK.AUDIO, _AK.QVOICE,
+                   _AK.MESH))
           and ".safetensors" not in _artifact_mod.upload_extensions()
-          and ".png" in _artifact_mod.upload_extensions(),
+          and ".png" in _artifact_mod.upload_extensions()
+          # the body-to-somax bridge (2026-09-06): mesh rides the
+          # submit-time upload walk or .glb refs never stage
+          and ".glb" in _artifact_mod.upload_extensions(),
           "kind walk/refusal/policy drifted")
 
     # ── CONTINUATION e2e: a latent ref flips window 1 to the chain
@@ -1012,7 +1033,8 @@ def main() -> int:
     # knob. Scope: the boarded mods' field names. (Name-collision
     # alone over-fires on shared vocabulary: mask-studio owns
     # input_image — the agents' MCP schema + the studio body write it
-    # — while LanPaintMod owns the same NAME for the inpaint lanes;
+    # — while LanPaintMod owned the same NAME for the inpaint lanes
+    # (2026-09-06 surface standard: the anchor is image1 now);
     # mask-studio boards no lanpaint family, so absorption brings
     # nothing to shadow.)
     _MODS_BY_NAME = {m.__name__: m for m in
@@ -1270,8 +1292,8 @@ def main() -> int:
     check("image-edit: input_mask is NOT a main slot (mods zone)",
           "input_mask" not in _ie_bindings,
           "main slots: %s" % _ie_bindings)
-    check("image-edit: image2/image3/input_image ARE main slots",
-          sorted(_ie_bindings) == ["image2", "image3", "input_image"],
+    check("image-edit: image1/image2/image3 ARE main slots",
+          sorted(_ie_bindings) == ["image1", "image2", "image3"],
           "got %s" % _ie_bindings)
     check("image-edit: optional slots carry declared defaults "
           "(a null square is legal on the family contract)",

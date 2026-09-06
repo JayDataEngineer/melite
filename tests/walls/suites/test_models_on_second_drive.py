@@ -78,11 +78,11 @@ _DERIVED_OK = {
 }
 
 # pointer artifacts that MUST hold (moved weights resolve through
-# them; the kimodo pointer target is declared here because kimodo
-# sits outside the comfyui endpoint config)
+# them). (2026-09-06: the kimodo pointer RETIRED with the cpp ggml
+# lane — data/runtime/kimodo deleted whole; the comfyui kimodo
+# weights ride the volume through extra_model_paths like every
+# other lane.)
 _POINTERS = {
-    os.path.join(REPO, "data/runtime/kimodo/weights/models"):
-        "/mnt/data/models/motion/kimodo/models",
     os.path.expanduser("~/.cache/anny"):
         "/mnt/data/models/3d/anny-cache",
 }
@@ -157,7 +157,22 @@ def main() -> int:
         check(not root.startswith(("/",)) or _on_persistent(root),
               "%s (%s) is not on the system root fs" % (name, root))
 
-    allowed_real = [os.path.realpath(r) for r in (base, dl) if r]
+    # the allowed homes are EVERY DECLARED root, never one engine's:
+    # the ROOT read/download roots (the persistent volume) plus each
+    # engine's narrowed base — all read from the config, no hardcoded
+    # spot. (2026-09-06 gap-fix: this was comfyui-only while the
+    # scan roots span the whole estate — a skintensors/anny pointer
+    # into the 3d volume home was flagged by drift.)
+    allowed_real = {os.path.realpath(r) for r in (base, dl) if r}
+    for eng in (estate_config.load().engines or {}):
+        try:
+            p = estate_config.model_paths(eng)
+        except Exception:
+            continue  # a misdeclared engine fails its own walls
+        allowed_real.update(os.path.realpath(r)
+                            for r in (p.get("read_root"),
+                                      p.get("download_root")) if r)
+    allowed_real = sorted(allowed_real)
     for root in _SCAN_ROOTS:
         if not os.path.isdir(root):
             continue

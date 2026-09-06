@@ -664,7 +664,15 @@ class TestLaw12ArgvSSOT(unittest.TestCase):
     """Under the cpp category, CLI flag literals live ONLY in
     renderer.py files — PYTHON SHAPE rung 8: the render truth has
     one home. An execute that hand-builds argv beside the renderer
-    is two SSOTs, which is zero SSOTs."""
+    is two SSOTs, which is zero SSOTs.
+
+    2026-09-06 (kernel-manifest stroke, landed): manifest.py argv
+    rows are the DECLARED reproduction of the renderer truth —
+    pinned byte-identical by tests/unit/runtime/test_kernel_manifest*
+    (parity wall, design record docs/design/kernel-manifest.md).
+    A manifest.py that declares a KernelManifest is the argv home
+    for its kernel, not a rogue second SSOT; anything else carrying
+    flag literals outside renderer.py still refuses."""
 
     def test_flag_literals_only_in_renderers(self) -> None:
         import ast
@@ -678,12 +686,19 @@ class TestLaw12ArgvSSOT(unittest.TestCase):
                 if not f.endswith(".py"):
                     continue
                 path = os.path.join(root, f)
-                scanned += 1
                 with open(path, encoding="utf-8") as fh:
-                    try:
-                        tree = ast.parse(fh.read())
-                    except SyntaxError:
-                        continue
+                    src = fh.read()
+                if os.path.basename(path) == "manifest.py" \
+                        and "KernelManifest(" in src:
+                    # the declared kernel-argv home (see class doc);
+                    # its parity with renderer.build_argv is pinned
+                    # by the kernel-manifest walls
+                    continue
+                scanned += 1
+                try:
+                    tree = ast.parse(src)
+                except SyntaxError:
+                    continue
                 for node in ast.walk(tree):
                     if isinstance(node, ast.Constant) \
                             and isinstance(node.value, str) \

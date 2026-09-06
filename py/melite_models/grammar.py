@@ -157,9 +157,27 @@ a stated-once basename like `unet`, no artifact row beside it.'''
     sampling_shift: float = 0.0
     latent_node: LatentNode = LatentNode.SD3
     unet_unconditional: str = ""
+    # the WEIGHTLESS lane (2026-09-06: fit + skin CPU surgery) — loads
+    # NOTHING (no checkpoint, no UNETLoader matrix). True demands every
+    # weight fact above stay empty (a weightless lane naming weights is
+    # a lie, rung 4); the renderer reads no loader rows for the lane.
+    # Retires the NO_WEIGHTS sentinel (a plausible-but-wrong filename
+    # was worse than a shape that says nothing).
+    weightless: bool = False
 
     @model_validator(mode="after")
     def _one_unet_source(self: "LaneInputs") -> "LaneInputs":
+        if self.weightless:
+            facts = (self.unet, self.unet_variant, self.unet_quant,
+                     self.text_encoder, self.vae, self.family,
+                     self.model_path, self.checkpoint, self.texture_vae,
+                     self.clip_vision, self.background_removal,
+                     self.unet_unconditional)
+            if self.clip_type is not None or any(facts):
+                raise ValueError(
+                    "lane_inputs: weightless=True loads nothing — "
+                    "naming a weight fact beside it is refused")
+            return self
         if self.family:
             if self.unet or self.unet_variant or self.text_encoder \
                     or self.vae or self.checkpoint or self.texture_vae \
@@ -196,11 +214,16 @@ a stated-once basename like `unet`, no artifact row beside it.'''
 
 
 class VariantGroup(BaseModel, frozen=True):
-    """A UI selector group (Variant/Quant/…) — rung 1: this is a row."""
+    """A UI selector group (Variant/Quant/…). `default` names the
+    variant the card LANDS on (operator order, 2026-09-06: "there
+    should be default, and that is what we land on") — empty = no
+    declared landing. The Model audit refuses a default that names no
+    variant of the group, at construction."""
     model_config = {"extra": "forbid"}
     id: str
     label: str = ""
     tooltip: str = ""
+    default: str = ""
 
 
 class GuideSection(BaseModel, frozen=True):
@@ -451,6 +474,25 @@ class Variant(BaseModel, frozen=True):
         return self
 
 
+# ── THE DEFAULT RECIPE (operator order, 2026-09-06: every card family
+# ships the 'default' recipe — always) ───────────────────────────────
+# The ONE canonical rows. A recipe is a patch-only Variant row
+# (group="Recipe", no route, no cells); the default stamps NOTHING
+# (defaults={}) — it is the neutral landing every fresh card opens
+# on. Declared ONCE here, injected by the metaclass below: restating
+# it in 60 family files is a drift surface (shape law rung 6), and a
+# family restating it with different stamps would fork the landing.
+DEFAULT_RECIPE = Variant(
+    id="default", label="Default", group="Recipe",
+    hint="The family default — no extra stamps; a fresh card lands here.",
+    defaults={},
+)
+RECIPE_GROUP = VariantGroup(
+    id="Recipe", label="Recipe", default="default",
+    tooltip="One-click recipes — patch-only rows that stamp picks onto "
+            "the draft; Default stamps nothing.")
+
+
 # ── MODEL ATTRIBUTE ALLOWLIST (2026-09-05) ──────────────────────────────
 # The Model declaration surface is CLOSED. Top-level family attrs are read
 # with getattr-with-default (resolver_defaults {}, prompt_upscale (), …),
@@ -507,6 +549,11 @@ class _ModelMeta(type):
         seen = {}
         for base in bases:
             for v in getattr(base, "variants", ()):
+                if v.id == "default":
+                    continue  # re-appended last below — variants[0]
+                              # stays the family head (resolve() falls
+                              # to it; a routeless row there would
+                              # route nowhere)
                 if v.id not in seen:
                     seen[v.id] = v
                     variants.append(v)
@@ -520,11 +567,25 @@ class _ModelMeta(type):
                     "%s.variants entries must be Variant instances "
                     "(got %s — cells are rows now, not subclasses)"
                     % (name, type(v).__name__))
+            if v.id == "default":
+                raise ModelError(
+                    "%s declares its own variant 'default' — the "
+                    "default recipe is the grammar's canonical row "
+                    "(DEFAULT_RECIPE): it rides every family "
+                    "automatically, identical everywhere. Declare "
+                    "only your EXTRA recipe rows (group=\"Recipe\", "
+                    "patch-only)" % name)
             if v.id in seen:
                 raise ModelError(
                     "%s: duplicate variant %r" % (name, v.id))
             seen[v.id] = v
             variants.append(v)
+        if bases and "default" not in seen:
+            # THE DEFAULT RECIPE (operator order 2026-09-06): every
+            # family ships it — appended LAST, never first (resolve()
+            # falls to variants[0]; the family head owns that seat).
+            variants.append(DEFAULT_RECIPE)
+            seen["default"] = DEFAULT_RECIPE
         cls.variants = tuple(variants)
         # estate character presets (stroke 3): frozen CharacterPreset
         # rows, inherited like variants (a sub-family re-states the
@@ -606,6 +667,50 @@ class _ModelMeta(type):
                 "%s. If this is NEW Model-level vocabulary, add it to "
                 "_MODEL_ATTRS in py/melite_models/grammar.py; otherwise "
                 "fix the spelling" % (name, key, ", ".join(sorted(_MODEL_ATTRS))))
+        # THE RECIPE GROUP (operator order 2026-09-06): the Recipe
+        # axis rides every family automatically — a family declaring
+        # its own Recipe group refuses (TWO declarations of the landing
+        # is how krea-2 landed on realism while every other card
+        # landed on nothing). Extra recipe ROWS (group="Recipe"
+        # Variants) are still declared per family; the GROUP (landing
+        # default="default") is grammar-owned.
+        if bases:
+            own_groups = ns.get("variant_groups", None)
+            if own_groups is not None and not isinstance(own_groups, tuple):
+                raise ModelError(
+                    "%s.variant_groups must be a tuple of VariantGroup "
+                    "rows (got %s)"
+                    % (name, type(own_groups).__name__))
+            for g in (own_groups or ()):
+                if isinstance(g, VariantGroup) and g.id == "Recipe":
+                    raise ModelError(
+                        "%s declares its own Recipe variant group "
+                        "(default=%r) — the Recipe group is "
+                        "grammar-owned (RECIPE_GROUP, landing "
+                        "default='default') and rides every family "
+                        "automatically. Remove the declaration; keep "
+                        "only your extra group=\"Recipe\" Variant rows"
+                        % (name, g.default))
+            raw_groups: tuple = own_groups if own_groups is not None else ()
+            if own_groups is None:
+                for b in bases:
+                    g = getattr(b, "variant_groups", ())
+                    if g:
+                        raw_groups = g
+                        break
+            groups = [g for g in raw_groups
+                      if not isinstance(g, VariantGroup) or g.id != "Recipe"]
+            if not groups:
+                # THE STANDARD PAIR (the served fallback in
+                # editor_forms._variant_groups): families that declare
+                # no groups still serve the Variant/Quant axes — the
+                # Recipe group alone would strand their Variant/Quant
+                # ROWS with no group entry (the axis rail keys off the
+                # group map; unmapped rows never render).
+                groups = [VariantGroup(id="Variant", label="Variant"),
+                          VariantGroup(id="Quant", label="Quant")]
+            groups.append(RECIPE_GROUP)
+            cls.variant_groups = tuple(groups)
         # boot-loud: declared data validates NOW (layer 1). root=True
         # is the Model base itself — the offering gate is for UNITS
         # (every subclass), never the root declaration surface.
@@ -728,7 +833,14 @@ class Model(metaclass=_ModelMeta):
             #
             # The root Model class itself is exempt (the declaration
             # surface); every subclass is the rule.
-            if not cls.variants:
+            #
+            # 2026-09-06 gap-fix: the DEFAULT_RECIPE auto-injection
+            # rides every family — `if not cls.variants` can never
+            # fire anymore (the injected row satisfies it) and the
+            # fossil gate went SILENT the day recipes landed. The
+            # gate now demands a FAMILY-declared cascade: any row
+            # other than the grammar-owned 'default' recipe.
+            if not any(v.id != "default" for v in cls.variants):
                 raise ModelError(
                     "%s declares no variants — a Model without the "
                     "family head → variants → quant cells cascade is a "
@@ -791,6 +903,15 @@ class Model(metaclass=_ModelMeta):
                 raise ModelError(
                     "%s.variant_groups entries must be VariantGroup rows"
                     % cls.__name__)
+            if g.default:
+                members = {v.id for v in (cls.variants or ())
+                           if v.group == g.id}
+                if g.default not in members:
+                    raise ModelError(
+                        "%s: variant group %r default %r names no "
+                        "variant of that group (members: %s)"
+                        % (cls.__name__, g.id, g.default,
+                           ", ".join(sorted(members)) or "none"))
         pg = cls.prompt_guide
         if pg is not None and not isinstance(pg, PromptGuide):
             raise ModelError(

@@ -12,6 +12,7 @@ from pydantic import ValidationError
 
 import flow as flow_mod
 from flow import Flow, Stage, FromInitial, FromStage, validate_engines
+from flow import FlowTool, FlowToolOverlay, FlowToolProperty, ToolParamType
 
 
 # ── registry sweep: every declared flow loads + is sound ──────────
@@ -134,6 +135,83 @@ def test_to_graph_emits_the_executor_contract() -> None:
     assert a.input_from == ("__initial__.prompt",)
     assert b.input_from == ("a.glb",)
     assert b.node_type == "comfyui"
+
+
+def test_to_graph_carries_expected_kinds() -> None:
+    """The receiving half of the typed-edge contract rides NodeRow
+    (2026-09-06, the body-to-somax bridge): the runner absolutizes
+    artifact refs on FILE-kind inputs — without the carry the wire's
+    spellings ride the workflow verbatim and the node refuses."""
+    fl = Flow(
+        id="probe", description="d",
+        stages=(
+            Stage(id="a", engine="comfyui",
+                  inputs={"glb": FromInitial(key="glb")},
+                  expected={"glb": flow_mod.Kind.mesh},
+                  outputs={"body": flow_mod.Kind.mesh}),
+        ))
+    (a,) = fl.to_graph().nodes
+    assert a.expected == {"glb": "mesh"}
+
+
+# ── the runner seam: artifact refs → absolute paths ───────────────
+
+def _rig_node(expected: dict[str, flow_mod.Kind] | None = None) -> "flow_graph.NodeRow":
+    import flow_graph
+    return flow_graph.NodeRow(
+        node_id="rig", node_type="comfyui",
+        expected=expected or {})
+
+
+class TestAbsolutizeArtifactRefs:
+    """The engine ABI resolves FILE-kind inputs from DISK; the wire's
+    spellings (asset URL, runs-relative) are rewritten at the runner
+    seam, loudly refusing the unresolvable (the 2026-09-06
+    body-to-somax incident: "source_glb not found")."""
+
+    def test_runs_relative_resolves_absolute(self) -> None:
+        from gateway import absolutize_artifact_refs
+        from artifact_refs import OUT_ROOT
+        real = sorted(Path(OUT_ROOT).glob("*/s3db_commercial_body.glb"))
+        if not real:
+            pytest.skip("no anny bake on this store")
+        rel = "%s/%s" % (real[0].parent.name, real[0].name)
+        out = absolutize_artifact_refs(
+            _rig_node({"glb": "mesh"}), {"glb": rel})
+        assert out["glb"] == str(real[0].resolve())
+
+    def test_asset_url_resolves_absolute(self) -> None:
+        from gateway import absolutize_artifact_refs
+        from artifact_refs import OUT_ROOT
+        real = sorted(Path(OUT_ROOT).glob("*/s3db_commercial_body.glb"))
+        if not real:
+            pytest.skip("no anny bake on this store")
+        url = "/v1/assets/runs/%s/%s" % (real[0].parent.name, real[0].name)
+        out = absolutize_artifact_refs(
+            _rig_node({"glb": "mesh"}), {"glb": url})
+        assert out["glb"] == str(real[0].resolve())
+
+    def test_dangling_ref_refuses_loudly(self) -> None:
+        from gateway import absolutize_artifact_refs
+        with pytest.raises(Exception, match="artifact ref unresolved"):
+            absolutize_artifact_refs(
+                _rig_node({"glb": "mesh"}),
+                {"glb": "run-nope/not-there.glb"})
+
+    def test_passthrough_shapes(self) -> None:
+        from gateway import absolutize_artifact_refs
+        node = _rig_node({"glb": "mesh", "prompt": "text"})
+        out = absolutize_artifact_refs(node, {
+            "glb": "/abs/path/body.glb",        # already engine-ABI space
+            "prompt": "run/x.glb as prompt text",  # non-file slot
+        })
+        assert out["glb"] == "/abs/path/body.glb"
+        assert out["prompt"] == "run/x.glb as prompt text"
+        # data: URLs ride untouched too (the upload pass owns them)
+        out2 = absolutize_artifact_refs(
+            _rig_node({"glb": "mesh"}),
+            {"glb": "data:;base64,Z2xURg=="})
+        assert out2["glb"] == "data:;base64,Z2xURg=="
 
 
 # ── the {flow} door (through the gateway's resolver) ───────────────
@@ -299,7 +377,9 @@ def test_engine_default_output_attribute_is_present() -> None:
     """The engine contract (flow-typed-edges.md): every engine
     module exposes DEFAULT_OUTPUT as a Kind member. Refuses at
     validate_engines if it's missing or non-Kind."""
-    for etype in ("comfyui", "anycreature", "autoremesher", "kimodo",
+    # (kimodo RETIRED 2026-09-06 with the cpp ggml lane — motion
+    # rides the comfyui engine; ONE-implementation rule)
+    for etype in ("comfyui", "anycreature", "autoremesher",
                   "audio_cpp"):
         # ffmpeg_concat retired 2026-09-04 (concat rides comfyui's
         # VHS / melite-audio-nodes); see audit round 8.
@@ -403,8 +483,17 @@ def test_live_door_refuses_wrong_kind_with_4xx(live_gateway_url: str, tmp_path: 
         with urllib.request.urlopen(live_gateway_url + "/v1/queue",
                                     timeout=3) as r:
             before_running = json.loads(r.read().decode())["running"]
-        # POST the broken flow
-        body = json.dumps({"flow": "_gap1_probe"}).encode()
+        # POST the broken flow. CARD BIRTH LAW (operator order
+        # 2026-09-06): the envelope carries a valid draft_id so the
+        # tested gate is the typed-edge refusal, not card birth.
+        draft_req = urllib.request.Request(
+            live_gateway_url + "/v1/flows/drafts",
+            data=json.dumps({"flow": "_gap1_probe"}).encode(),
+            headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(draft_req, timeout=5) as dr:
+            draft_id = json.loads(dr.read().decode())["draftId"]
+        body = json.dumps({"flow": "_gap1_probe",
+                           "draft_id": draft_id}).encode()
         req = urllib.request.Request(
             live_gateway_url + "/v1/flows/start",
             data=body, headers={"Content-Type": "application/json"})
@@ -511,3 +600,214 @@ def test_kind_seg_for_mask_driven_inpaint_stages() -> None:
         ))
     assert "expected seg" in str(exc.value)
     assert "got image" in str(exc.value)
+
+
+# ── headless single-tool flows (docs/design/flow-single-tool.md) ──
+
+def _tool(**kw: dict[str, FlowToolProperty] | tuple[str, ...] | tuple[FlowToolOverlay, ...]) -> FlowTool:
+    base: dict[str, object] = {
+        "properties": {
+            "mode": FlowToolProperty(
+                ptype=ToolParamType.string, enum=("a", "b"))},
+        "required": ("mode",),
+    }
+    base.update(kw)
+    return FlowTool(name="t_tool", description="t", **base)
+
+
+def _tool_flow(tool: FlowTool | None,
+               **stage_kw: dict[str, FromInitial | FromStage] | dict[str, flow_mod.Kind]) -> Flow:
+    kw: dict[str, object] = {"id": "s", "engine": "comfyui"}
+    kw.update(stage_kw)
+    return Flow(id="t", stages=(Stage(**kw),), tool=tool)
+
+
+def test_tool_enum_literal_must_match_type() -> None:
+    with pytest.raises(ValueError, match="not a string"):
+        FlowToolProperty(ptype=ToolParamType.string, enum=(1,))
+    with pytest.raises(ValueError, match="not a integer"):
+        FlowToolProperty(ptype=ToolParamType.integer, enum=(True,))
+
+
+def test_tool_default_must_match_type_and_enum() -> None:
+    with pytest.raises(ValueError, match="not a string"):
+        FlowToolProperty(ptype=ToolParamType.string, default=3)
+    with pytest.raises(ValueError, match="not in its enum"):
+        FlowToolProperty(
+            ptype=ToolParamType.string, enum=("a", "b"), default="z")
+
+
+def test_tool_bounds_need_numeric_type_and_order() -> None:
+    with pytest.raises(ValueError, match="numeric type"):
+        FlowToolProperty(ptype=ToolParamType.string, minimum=0)
+    with pytest.raises(ValueError, match="exceeds maximum"):
+        FlowToolProperty(
+            ptype=ToolParamType.integer, minimum=9, maximum=2)
+
+
+def test_tool_required_with_default_refused() -> None:
+    """required means the caller passes it — a default would mask
+    the absence at the submit defaults-merge, so the combination
+    refuses at construction instead of lying in the manifest."""
+    with pytest.raises(ValueError, match="carries a default"):
+        _tool(properties={
+            "mode": FlowToolProperty(
+                ptype=ToolParamType.string, enum=("a", "b"),
+                default="a")})
+
+
+def test_tool_required_unknown_param_refused() -> None:
+    with pytest.raises(ValueError, match="not in properties"):
+        _tool(required=("ghost",))
+
+
+def test_tool_overlay_unknown_param_and_stage_refused() -> None:
+    with pytest.raises(ValueError, match="not in properties"):
+        _tool(overlays=(FlowToolOverlay(
+            param="ghost", stage="s", path=("workflow",)),))
+    bad_stage = _tool(overlays=(FlowToolOverlay(
+        param="mode", stage="ghost", path=("workflow",)),))
+    with pytest.raises(ValueError, match="not a stage"):
+        _tool_flow(bad_stage)
+
+
+def test_tool_overlay_choices_need_matching_enum() -> None:
+    with pytest.raises(ValueError, match="without an enum"):
+        _tool(properties={
+            "mode": FlowToolProperty(ptype=ToolParamType.string)},
+            overlays=(FlowToolOverlay(
+                param="mode", stage="s", path=("workflow",),
+                choices={"a": {}}),))
+    with pytest.raises(ValueError, match="choice keys"):
+        _tool(overlays=(FlowToolOverlay(
+            param="mode", stage="s", path=("workflow",),
+            choices={"a": {}}),))
+
+
+def test_tool_required_param_must_reach_a_stage() -> None:
+    """A required knob no stage reads is a dead tool surface —
+    refused here, not as a silently-ignored body key on the GPU."""
+    with pytest.raises(ValueError, match="reaches no stage"):
+        _tool_flow(_tool())
+    # via an overlay bind ...
+    _tool_flow(_tool(overlays=(FlowToolOverlay(
+        param="mode", stage="s", path=("workflow",)),)))
+    # ... or via a FromInitial consumption (prompt-style knobs)
+    consumed = _tool(required=("mode",), properties={
+        "mode": FlowToolProperty(ptype=ToolParamType.string)})
+    _tool_flow(consumed, inputs={"mode": FromInitial(key="mode")},
+               expected={"mode": flow_mod.Kind.text})
+
+
+def test_tool_skill_ref_shape_refused() -> None:
+    with pytest.raises(ValueError, match="<scope>:<id>"):
+        Flow(id="t", stages=(Stage(id="s", engine="comfyui"),),
+             skill_refs=("noscope",))
+    with pytest.raises(ValueError, match="not one of"):
+        Flow(id="t", stages=(Stage(id="s", engine="comfyui"),),
+             skill_refs=("banana:x",))
+
+
+def test_validate_tool_params_door() -> None:
+    fl = _tool_flow(_tool(overlays=(FlowToolOverlay(
+        param="mode", stage="s", path=("workflow",)),)))
+    fl.validate_tool_params({"mode": "a"})  # no exception
+    for body, needle in (
+        ({}, "is required"),
+        ({"mode": "z"}, "not one of"),
+        ({"mode": 3}, "not a string"),
+    ):
+        with pytest.raises(ValueError, match=needle):
+            fl.validate_tool_params(body)
+    # unknown body keys are allowed — this door narrows the tool
+    # surface, it does not close the request
+    fl.validate_tool_params({"mode": "a", "whatever": 1})
+
+
+def test_validate_tool_params_coercion_and_bounds() -> None:
+    fl = _tool_flow(_tool(
+        properties={"n": FlowToolProperty(
+            ptype=ToolParamType.integer, default=1,
+            minimum=0, maximum=9)},
+        required=(),
+        overlays=(FlowToolOverlay(
+            param="n", stage="s", path=("w", "n")),)))
+    fl.validate_tool_params({"n": "7"})  # numeric strings coerce
+    fl.validate_tool_params({})  # absent optional validates
+    for body, needle in (
+        ({"n": "hot"}, "not a integer"),
+        ({"n": True}, "not a integer"),
+        ({"n": -1}, "below minimum"),
+        ({"n": 10}, "above maximum"),
+    ):
+        with pytest.raises(ValueError, match=needle):
+            fl.validate_tool_params(body)
+
+
+def test_apply_tool_defaults_absent_keys_only() -> None:
+    fl = _tool_flow(_tool(
+        properties={"n": FlowToolProperty(
+            ptype=ToolParamType.integer, default=1)},
+        required=(), overlays=()))
+    assert fl.apply_tool_defaults({"n": 5}) == {"n": 5}
+    assert fl.apply_tool_defaults({}) == {"n": 1}
+    assert fl.apply_tool_defaults({"n": None}) == {"n": 1}
+    plain = _tool_flow(None)
+    body = {"a": 1}
+    assert plain.apply_tool_defaults(body) is body
+
+
+def test_with_tool_params_stamps_and_leaves_declaration() -> None:
+    fl = Flow(id="t", stages=(Stage(
+        id="s", engine="comfyui",
+        params={"workflow": {"a": 1, "deep": {"seed": 1}}}),),
+        tool=FlowTool(
+            name="t_tool", description="t",
+            properties={
+                "whole": FlowToolProperty(ptype=ToolParamType.string, enum=("x",)),
+                "seed": FlowToolProperty(
+                    ptype=ToolParamType.integer, default=3)},
+            overlays=(
+                # declared narrow-first: the broad bind must still win
+                # the ordering (shortest-path-first, stable)
+                FlowToolOverlay(
+                    param="seed", stage="s",
+                    path=("workflow", "deep", "seed")),
+                FlowToolOverlay(
+                    param="whole", stage="s", path=("workflow",),
+                    choices={"x": {"deep": {"seed": 1}}}),),
+        ))
+    out = fl.with_tool_params({"whole": "x", "seed": 9})
+    wf = out.stages[0].params["workflow"]
+    assert wf == {"deep": {"seed": 9}}
+    # the frozen declaration never mutates
+    assert fl.stages[0].params["workflow"] == {
+        "a": 1, "deep": {"seed": 1}}
+
+
+def test_with_tool_params_overlay_onto_missing_stage_refuses() -> None:
+    fl = _tool_flow(_tool(overlays=(FlowToolOverlay(
+        param="mode", stage="s", path=("workflow",)),)))
+    pruned = fl.model_copy(update={"stages": ()})
+    with pytest.raises(ValueError, match="takes no overlays"):
+        pruned.with_tool_params({"mode": "a"})
+
+
+def test_image_upscale_sample_loads_and_compiles() -> None:
+    fl = flow_mod.load_flow("image-upscale")
+    assert fl.tool is not None and fl.tool.name == "image_upscale"
+    assert set(fl.tool.required) == {"image_model", "prompt"}
+    assert len(fl.skill_refs) == 5
+    graph, skipped = fl.compile({
+        "flow": "image-upscale", "prompt": "a fox",
+        "image_model": "krea-2", "seed": 7})
+    assert skipped == ()
+    (node,) = [n for n in graph.nodes if n.node_id == "make"]
+    wf = node.params["workflow"]
+    assert wf["CLIPLoader.0"]["inputs"]["clip_name"].startswith(
+        "qwen3vl")
+    assert wf["KSampler.0"]["inputs"]["seed"] == 7
+    assert wf["SeedVR2VideoUpscaler.0"]["inputs"]["image"] == \
+        ["VAEDecode.0", 0]
+    with pytest.raises(ValueError, match="is required"):
+        fl.compile({"flow": "image-upscale", "prompt": "x"})

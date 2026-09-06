@@ -130,17 +130,33 @@ def test_r5_collectible_suites_do_not_execute_at_import() -> None:
     suite that escaped the registry — pytest would run the whole wall
     once per collection. AST-only probe; the observed invariant across
     the plane: every converted/collectible suite has zero top-level
-    calls, every script suite with calls is ignore-globbed."""
+    calls, every script suite with calls is ignore-globbed.
+
+    2026-09-06 gap-fix: the ONE sanctioned top-level call is the
+    sys.path.insert bootstrap (PYTHON SHAPE LAW rung 5 — the guarded
+    repo-root two-liner for suites that must stand alone); 17 suites
+    carried exactly that and nothing else, and the blunt probe read
+    them as script escapes. The allowance is narrow: an Expr call on
+    sys.path.insert passes; every other top-level call still refuses.
+    """
     _, _, ignore_globs = _registries()
     offenders = []
     for path in sorted(SUITES.glob("test_*.py")):
         if _ignored(path.name, ignore_globs):
             continue
         tree = ast.parse(path.read_text())
-        calls = [
-            n for n in tree.body
-            if isinstance(n, ast.Expr) and isinstance(n.value, ast.Call)
-        ]
+        calls = []
+        for n in tree.body:
+            if not (isinstance(n, ast.Expr) and isinstance(n.value, ast.Call)):
+                continue
+            fn = n.value.func
+            if (isinstance(fn, ast.Attribute) and fn.attr == "insert"
+                    and isinstance(fn.value, ast.Attribute)
+                    and fn.value.attr == "path"
+                    and isinstance(fn.value.value, ast.Name)
+                    and fn.value.value.id == "sys"):
+                continue  # the sanctioned repo-root bootstrap
+            calls.append(n)
         if calls:
             offenders.append(path.name)
     assert not offenders, (

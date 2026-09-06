@@ -1,211 +1,213 @@
 {
- "defaults": {
-  "batch_size": "1",
-  "filename_prefix": "seedvr2",
-  "max_resolution": "4096",
-  "resolution": "1080",
-  "seed": "0"
- },
- "engine": "comfyui",
- "enhance_prompts": {
-  "lyrics": "",
-  "prompt": null
- },
- "features": {
-  "modifiers": [],
-  "variant_groups": {
-   "Quant": {
-    "label": "Quant"
-   },
-   "Variant": {
-    "label": "Variant"
-   }
-  }
- },
- "fields": [
-  {
-   "name": "input_image",
-   "type": "image",
-   "label": "Input image",
-   "group": "input",
-   "order": 0,
-   "width": 1,
-   "required": true,
-   "tooltip": "The frame to restore. Absolute mount path."
+  "defaults": {
+    "batch_size": "1",
+    "filename_prefix": "seedvr2",
+    "max_resolution": "4096",
+    "resolution": "1080",
+    "seed": "0"
   },
-  {
-   "name": "resolution",
-   "type": "number",
-   "label": "Target short side",
-   "group": "target",
-   "order": 0,
-   "width": 1,
-   "columns": 2,
-   "min": 256,
-   "max": 2160,
-   "step": 2,
-   "tooltip": "1080 = FHD rail. SeedVR2 redraws detail at this size."
+  "engine": "comfyui",
+  "enhance_prompts": {
+    "lyrics": "",
+    "prompt": null
   },
-  {
-   "name": "max_resolution",
-   "type": "number",
-   "label": "Max resolution",
-   "group": "target",
-   "order": 1,
-   "width": 1,
-   "columns": 2,
-   "min": 512,
-   "max": 4096,
-   "step": 64,
-   "tooltip": "The hard ceiling — inputs already past it pass through."
-  },
-  {
-   "name": "batch_size",
-   "type": "number",
-   "label": "Batch size",
-   "group": "run",
-   "order": 0,
-   "width": 1,
-   "min": 1,
-   "max": 16,
-   "step": 1,
-   "tooltip": "Video frames ride batches; images are batch 1."
-  },
-  {
-   "name": "seed",
-   "type": "seed",
-   "label": "Seed",
-   "group": "run",
-   "order": 1,
-   "width": 1,
-   "default": -1
-  },
-  {
-   "name": "filename_prefix",
-   "type": "text",
-   "label": "Filename prefix",
-   "group": "run",
-   "order": 2,
-   "width": 1
-  }
- ],
- "form": "upscale-tools",
- "genre": "image",
- "label": "Upscale Tools",
- "model": "seedvr2_ema",
- "schema_groups": [
-  {
-   "fields": [
-    {
-     "label": "Input image",
-     "name": "input_image",
-     "order": 0,
-     "required": true,
-     "tooltip": "The frame to restore. Absolute mount path.",
-     "type": "image",
-     "width": 1
+  "features": {
+    "modifiers": [],
+    "variant_groups": {
+      "Quant": {
+        "label": "Quant"
+      },
+      "Variant": {
+        "label": "Variant"
+      },
+      "Recipe": {
+        "label": "Recipe",
+        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "default": "default"
+      }
     }
-   ],
-   "id": "input",
-   "label": "Input",
-   "order": 0,
-   "zone": "params"
   },
-  {
-   "fields": [
+  "fields": [
     {
-     "columns": 2,
-     "label": "Target short side",
-     "max": 2160,
-     "min": 256,
-     "name": "resolution",
-     "order": 0,
-     "step": 2,
-     "tooltip": "1080 = FHD rail. SeedVR2 redraws detail at this size.",
-     "type": "number",
-     "width": 1
+      "name": "input_image",
+      "type": "image",
+      "label": "Input image",
+      "group": "input",
+      "order": 0,
+      "width": 1,
+      "required": true,
+      "tooltip": "The frame to restore. Absolute mount path."
     },
     {
-     "columns": 2,
-     "label": "Max resolution",
-     "max": 4096,
-     "min": 512,
-     "name": "max_resolution",
-     "order": 1,
-     "step": 64,
-     "tooltip": "The hard ceiling — inputs already past it pass through.",
-     "type": "number",
-     "width": 1
-    }
-   ],
-   "id": "target",
-   "label": "Target",
-   "order": 1,
-   "zone": "params"
-  },
-  {
-   "fields": [
-    {
-     "label": "Batch size",
-     "max": 16,
-     "min": 1,
-     "name": "batch_size",
-     "order": 0,
-     "step": 1,
-     "tooltip": "Video frames ride batches; images are batch 1.",
-     "type": "number",
-     "width": 1
+      "name": "resolution",
+      "type": "number",
+      "label": "Target short side",
+      "group": "target",
+      "order": 0,
+      "width": 1,
+      "columns": 2,
+      "min": 256,
+      "max": 2160,
+      "step": 2,
+      "tooltip": "1080 = FHD rail. SeedVR2 redraws detail at this size."
     },
     {
-     "default": -1,
-     "label": "Seed",
-     "name": "seed",
-     "order": 1,
-     "type": "seed",
-     "width": 1
+      "name": "max_resolution",
+      "type": "number",
+      "label": "Max resolution",
+      "group": "target",
+      "order": 1,
+      "width": 1,
+      "columns": 2,
+      "min": 512,
+      "max": 4096,
+      "step": 64,
+      "tooltip": "The hard ceiling \u2014 inputs already past it pass through."
     },
     {
-     "label": "Filename prefix",
-     "name": "filename_prefix",
-     "order": 2,
-     "type": "text",
-     "width": 1
+      "name": "batch_size",
+      "type": "number",
+      "label": "Batch size",
+      "group": "run",
+      "order": 0,
+      "width": 1,
+      "min": 1,
+      "max": 16,
+      "step": 1,
+      "tooltip": "Video frames ride batches; images are batch 1."
+    },
+    {
+      "name": "seed",
+      "type": "seed",
+      "label": "Seed",
+      "group": "run",
+      "order": 1,
+      "width": 1,
+      "default": -1
     }
-   ],
-   "id": "run",
-   "label": "Run",
-   "order": 2,
-   "zone": "params"
-  }
- ],
- "service": "seedvr2_ema",
- "variants": [
-  {
-   "defaults": {},
-   "engine": "comfyui",
-   "group": "Variant",
-   "hint": "3B EMA fp16 — fast, ~7 GB VRAM (DEFAULT). Precision ships with this body.",
-   "id": "3b",
-   "label": "3B FP16",
-   "route": "seedvr2_ema"
-  },
-  {
-   "defaults": {},
-   "engine": "comfyui",
-   "group": "Variant",
-   "hint": "7B EMA fp8_e4m3fn (mixed block-35 fp16) — beefier fine detail, ~3× slower.",
-   "id": "7b",
-   "label": "7B FP8",
-   "route": "seedvr2_ema_7b"
-  },
-  {
-   "defaults": {},
-   "engine": "comfyui",
-   "group": "Variant",
-   "hint": "EMA VAE helper weights — hidden (folded in 2026-08-16)",
-   "id": "vae-fp16",
-   "label": "VAE FP16",
-   "route": "seedvr2_ema_vae_fp16"
-  }
- ]
+  ],
+  "form": "upscale-tools",
+  "genre": "image",
+  "label": "Upscale Tools",
+  "model": "seedvr2_ema",
+  "schema_groups": [
+    {
+      "id": "input",
+      "label": "Input",
+      "order": 0,
+      "zone": "params",
+      "fields": [
+        {
+          "name": "input_image",
+          "type": "image",
+          "label": "Input image",
+          "order": 0,
+          "width": 1,
+          "required": true,
+          "tooltip": "The frame to restore. Absolute mount path."
+        }
+      ]
+    },
+    {
+      "id": "target",
+      "label": "Target",
+      "order": 1,
+      "zone": "params",
+      "fields": [
+        {
+          "name": "resolution",
+          "type": "number",
+          "label": "Target short side",
+          "order": 0,
+          "width": 1,
+          "columns": 2,
+          "min": 256,
+          "max": 2160,
+          "step": 2,
+          "tooltip": "1080 = FHD rail. SeedVR2 redraws detail at this size."
+        },
+        {
+          "name": "max_resolution",
+          "type": "number",
+          "label": "Max resolution",
+          "order": 1,
+          "width": 1,
+          "columns": 2,
+          "min": 512,
+          "max": 4096,
+          "step": 64,
+          "tooltip": "The hard ceiling \u2014 inputs already past it pass through."
+        }
+      ]
+    },
+    {
+      "id": "run",
+      "label": "Run",
+      "order": 2,
+      "zone": "params",
+      "fields": [
+        {
+          "name": "batch_size",
+          "type": "number",
+          "label": "Batch size",
+          "order": 0,
+          "width": 1,
+          "min": 1,
+          "max": 16,
+          "step": 1,
+          "tooltip": "Video frames ride batches; images are batch 1."
+        },
+        {
+          "name": "seed",
+          "type": "seed",
+          "label": "Seed",
+          "order": 1,
+          "width": 1,
+          "default": -1
+        }
+      ]
+    }
+  ],
+  "service": "seedvr2_ema",
+  "variants": [
+    {
+      "defaults": {},
+      "engine": "comfyui",
+      "group": "Variant",
+      "hint": "3B EMA fp16 \u2014 fast, ~7 GB VRAM (DEFAULT). Precision ships with this body.",
+      "id": "3b",
+      "label": "3B FP16",
+      "route": "seedvr2_ema"
+    },
+    {
+      "defaults": {},
+      "engine": "comfyui",
+      "group": "Variant",
+      "hint": "7B EMA fp8_e4m3fn (mixed block-35 fp16) \u2014 beefier fine detail, ~3\u00d7 slower.",
+      "id": "7b",
+      "label": "7B FP8",
+      "route": "seedvr2_ema_7b"
+    },
+    {
+      "defaults": {},
+      "engine": "comfyui",
+      "group": "Variant",
+      "hint": "EMA VAE helper weights \u2014 hidden (folded in 2026-08-16)",
+      "id": "vae-fp16",
+      "label": "VAE FP16",
+      "route": "seedvr2_ema_vae_fp16"
+    },
+    {
+      "id": "default",
+      "label": "Default",
+      "group": "Recipe",
+      "defaults": {},
+      "route": "",
+      "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    }
+  ]
 }
