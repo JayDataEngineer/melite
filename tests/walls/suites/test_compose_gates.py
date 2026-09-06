@@ -87,7 +87,22 @@ def _load_arm(py_dir: str) -> ModuleType:
     return mod
 
 
+def _delegates_to_road(py_dir: str) -> bool:
+    """Row-3 unification (2026-09-06): a migrated arm is voice +
+    a one-line emit_render delegation — the ROAD
+    (plugins/engines/comfyui/compose/card.py) owns the schema load
+    and the parse_card call. The gate is called, once, in the road;
+    the arm source carries no parse_card text by design."""
+    src = open(os.path.join(py_dir, "compose.py"), encoding="utf-8").read()
+    return "emit_render" in src
+
+
 def test_every_arm_ships_a_wired_forbid_gate() -> None:
+    road = open(os.path.join(COMPOSE_ROOT, "card.py"),
+                encoding="utf-8").read()
+    assert "parse_card" in road, (
+        "the render road stopped calling parse_card — every delegated "
+        "arm's gate died with it, restore the call")
     ungated = set()
     for lane, py_dir in _arms():
         sp = os.path.join(py_dir, "schema.py")
@@ -96,15 +111,21 @@ def test_every_arm_ships_a_wired_forbid_gate() -> None:
         if not os.path.isfile(sp):
             ungated.add(lane)
             continue
-        assert "schema" in src, (
-            "%s compose.py never touches its schema.py — a gate "
-            "that isn't called is documentation, not a gate" % lane)
-        if "parse_card" not in src:
-            # a schema wired for a SUB-gate only (mask_studio's
-            # recipe) still leaves top-level knobs open — the
-            # top-level door is parse_card, nothing else.
-            ungated.add(lane)
-            continue
+        if _delegates_to_road(py_dir):
+            # the road wires this arm's schema.py (load_schema +
+            # parse_card asserted above) — the forbid-row pin below
+            # still runs lane by lane.
+            pass
+        else:
+            assert "schema" in src, (
+                "%s compose.py never touches its schema.py — a gate "
+                "that isn't called is documentation, not a gate" % lane)
+            if "parse_card" not in src:
+                # a schema wired for a SUB-gate only still leaves
+                # top-level knobs open — the top-level door is
+                # parse_card, nothing else.
+                ungated.add(lane)
+                continue
         for cfg in _MODEL_CONFIG_RE.findall(
                 open(sp, encoding="utf-8").read()):
             assert "forbid" in cfg, (
