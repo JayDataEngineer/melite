@@ -22,6 +22,7 @@ No GPU, no network — the schema is the wall (test_flows.py pattern).
 """
 
 import pytest
+from pathlib import Path
 from pydantic import ValidationError
 
 import flow as flow_mod
@@ -96,7 +97,7 @@ def test_anny_hmr_carries_no_hardcoded_endpoint() -> None:
 # ── 2. door ──────────────────────────────────────────────────────────
 
 def test_anny_hmr_resolves_through_the_flow_door(
-        monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """The door resolves a STAGEABLE photo to a runnable graph — the
     photo door (EstatePhotoRef) runs first, so the test stages a
     real file, never a fake name."""

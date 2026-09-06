@@ -43,7 +43,9 @@ import os
 import re
 import shutil
 import sys
+from collections.abc import Iterator
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 from pydantic import ValidationError
@@ -64,7 +66,7 @@ from contextlib import contextmanager
 
 @contextmanager
 def _evict_collisions(engine: str, forged_card_py: str,
-                      forged_model_dir: str):
+                      forged_model_dir: str) -> Iterator[None]:
     """The estate loaders key modules by lane identity, not path: the
     model loader REFUSES a second path under one key (two-paths-one-
     key ModelError) and the card loader silently returns the FIRST
@@ -104,7 +106,7 @@ CANARY = {
 }
 
 
-def _canary_schema_mod(card: str):
+def _canary_schema_mod(card: str) -> ModuleType:
     p = CARDS / card / "py" / "schema.py"
     name = "canary_" + card.replace("/", "_")
     if name in sys.modules:
@@ -116,7 +118,7 @@ def _canary_schema_mod(card: str):
     return mod
 
 
-def test_canary_explicit_numeric_null_refuses():
+def test_canary_explicit_numeric_null_refuses() -> None:
     """The operator's incident, per door: a stated null on a
     defaulted numeric MUST refuse (absent rides the default; null is
     garbage). If any door admits it, the frontend strip rule has no
@@ -134,7 +136,7 @@ def test_canary_explicit_numeric_null_refuses():
         "returns): %r" % dead)
 
 
-def test_canary_unknown_key_refuses():
+def test_canary_unknown_key_refuses() -> None:
     """extra='forbid' must hold on every door — an unknown key that
     slides through renders at defaults (GPU cycles on wrong params,
     zero errors: the silent-garbage class)."""
@@ -153,7 +155,7 @@ def test_canary_unknown_key_refuses():
     assert not dead, "doors not forbidding unknown keys: %r" % dead
 
 
-def test_canary_garbage_and_wrong_types_refuse():
+def test_canary_garbage_and_wrong_types_refuse() -> None:
     """`steps: 'later'` and `prompt: {object}` must refuse LOUDLY on
     every door — never silently re-default, never accept."""
     dead = []
@@ -170,7 +172,7 @@ def test_canary_garbage_and_wrong_types_refuse():
 
 # ── Part B: the walls bite ────────────────────────────────────────
 
-def _forged_music_card(tmp_path: Path, old: str, new: str) -> str:
+def _forged_music_card(tmp_path: Path, old: str, new: str) -> tuple[str, str]:
     """A temp card copy the estate loader can actually load: the card
     resolves its boarded model via __file__ (../../../.. + models/),
     so the forgery mirrors the repo layout (action_cards + the
@@ -190,7 +192,7 @@ def _forged_music_card(tmp_path: Path, old: str, new: str) -> str:
     return str(dst / "card.py"), str(mdst)
 
 
-def test_knob_wall_bites_forged_default(tmp_path):
+def test_knob_wall_bites_forged_default(tmp_path: Path) -> None:
     """Forge duration 30 → 31 in a temp card copy (pristine sibling
     schema): the knob wall's predicate (card default == lane
     default) must come out FALSE — i.e. the wall WOULD fire. A wall
@@ -212,7 +214,7 @@ def test_knob_wall_bites_forged_default(tmp_path):
         "passed the wall predicate")
 
 
-def test_knob_wall_sides_come_from_different_files():
+def test_knob_wall_sides_come_from_different_files() -> None:
     """The conflation class: an envelope derived from the card agrees
     with the card trivially. The knob wall's two sides MUST load from
     two different files (card.py vs schema.py) — mutating one side
@@ -228,7 +230,7 @@ def test_knob_wall_sides_come_from_different_files():
     assert Path(card_py).name == "card.py"
 
 
-def test_surface_wall_bites_renamed_knob(tmp_path):
+def test_surface_wall_bites_renamed_knob(tmp_path: Path) -> None:
     """Forge duration → duration_typo_xyz: the renamed knob is card
     surface with no schema row — the surface wall's predicate (every
     surface name rides the envelope) must come out FALSE."""
@@ -249,7 +251,7 @@ def test_surface_wall_bites_renamed_knob(tmp_path):
         "SURFACE WALL IS BLIND: renamed knob rides the projection")
 
 
-def test_served_envelope_carries_the_row_not_the_card():
+def test_served_envelope_carries_the_row_not_the_card() -> None:
     """Behavioral proof of the derivation source: the card's Seed
     default is -1 (the RANDOM sentinel), the MusicParams row's is 0.
     The served envelope must carry 0 — a revert to card.py derivation
@@ -281,7 +283,7 @@ def _live_wall_names() -> set[str]:
     return names
 
 
-def test_design_records_name_live_walls():
+def test_design_records_name_live_walls() -> None:
     """DOCUMENTATION LAW's mirror: a record that names a `test_*`
     wall must name one that EXISTS (def or test module). Found
     2026-09-06 with `test_default_engine_is_the_sellable_lane`
@@ -541,16 +543,18 @@ def _doc_ghost_refs(text: str, doc: Path) -> set[str]:
     return ghosts
 
 
+_TREE_BASENAMES: set[str] = set()
+
+
 def _tree_basenames() -> set[str]:
-    if not hasattr(_tree_basenames, "cache"):
-        _tree_basenames.cache = set()  # type: ignore[attr-defined]
+    if not _TREE_BASENAMES:
         for p in Path(REPO).rglob("*"):
             if p.is_file():
-                _tree_basenames.cache.add(p.name)  # type: ignore[attr-defined]
-    return _tree_basenames.cache  # type: ignore[attr-defined]
+                _TREE_BASENAMES.add(p.name)
+    return _TREE_BASENAMES
 
 
-def test_docs_name_live_files():
+def test_docs_name_live_files() -> None:
     """The doc-rot ledger (2026-09-06 audit: 113 docs, 30 refs
     repaired in this stroke — pre-reorg path prefixes repointed at
     verified targets). Two dispositions per ref: `past` (the record's

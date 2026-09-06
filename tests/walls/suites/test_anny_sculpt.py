@@ -15,6 +15,7 @@ Apply re-spelling localChanges→dropped morphs) ends here:
 
 import os
 import unittest
+from types import ModuleType
 
 from _anchor import REPO
 
@@ -32,7 +33,7 @@ ANNY_COMPONENT = (
 )
 
 
-def _anny_schema():
+def _anny_schema() -> ModuleType:
     import importlib.util
 
     spec = importlib.util.spec_from_file_location(
@@ -48,14 +49,14 @@ def _anny_schema():
 
 
 class TestSculptDraftRow(unittest.TestCase):
-    def test_authored_accepts_and_defaults_neutral(self):
+    def test_authored_accepts_and_defaults_neutral(self) -> None:
         mod = _anny_schema()
         d = mod.SculptDraft()
         self.assertEqual(d.dialect, "authored")
         self.assertEqual(len(d.phenotype), 11)
         self.assertEqual(d.local_changes, {})
 
-    def test_refusals_are_loud(self):
+    def test_refusals_are_loud(self) -> None:
         from pydantic import ValidationError
 
         mod = _anny_schema()
@@ -71,9 +72,9 @@ class TestSculptDraftRow(unittest.TestCase):
         with self.assertRaises(ValidationError):
             mod.SculptDraft(dialect="estimated")
         with self.assertRaises(ValidationError):
-            mod.SculptDraft(coeffs=[0.5] * 11)  # type: ignore[call-arg]
+            mod.SculptDraft.model_validate({"coeffs": [0.5] * 11})
 
-    def test_card_row_carries_sculpt_and_still_refuses_null_and_bag(self):
+    def test_card_row_carries_sculpt_and_still_refuses_null_and_bag(self) -> None:
         from pydantic import ValidationError
 
         mod = _anny_schema()
@@ -86,14 +87,14 @@ class TestSculptDraftRow(unittest.TestCase):
         self.assertEqual(mod.AnnyParams().sculpt.phenotype, (0.5,) * 11)
         # explicit null refuses (a stated value, and a wrong one)
         with self.assertRaises(ValidationError):
-            mod.AnnyParams(sculpt=None)  # type: ignore[arg-type]
+            mod.AnnyParams.model_validate({"sculpt": None})
         # the legacy bag stays refused
         with self.assertRaises(ValidationError):
-            mod.AnnyParams(coeffs=[0.5] * 11)  # type: ignore[call-arg]
+            mod.AnnyParams.model_validate({"coeffs": [0.5] * 11})
 
 
 class TestSculptDeclared(unittest.TestCase):
-    def test_writes_declare_sculpt_and_still_refuse_the_bag(self):
+    def test_writes_declare_sculpt_and_still_refuse_the_bag(self) -> None:
         cls = load_model_py(ANNY_MODEL_PY, "comfyui")
         self.assertIn("sculpt", cls.studio.writes)
         for key in ("identityModel", "coeffs", "localChanges",
@@ -105,19 +106,19 @@ class TestBridgeAutosavesLegally(unittest.TestCase):
     """The write-back is back — declared this time. Pins the LEGAL
     shape (sculpt key only) and the bag's continued absence."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.shape = ANNY_SHAPE.read_text(encoding="utf-8")
         self.component = ANNY_COMPONENT.read_text(encoding="utf-8")
 
-    def test_write_back_persists_sculpt_only(self):
+    def test_write_back_persists_sculpt_only(self) -> None:
         self.assertIn("sculpt: pending", self.shape)
         self.assertNotIn("coeffs: editing.coeffs", self.shape)
 
-    def test_apply_posts_the_draft_verbatim(self):
+    def test_apply_posts_the_draft_verbatim(self) -> None:
         self.assertIn("JSON.stringify(draft)", self.shape)
         self.assertNotIn("localChanges: editing.localChanges", self.shape)
 
-    def test_seed_persists_the_draft_with_the_glb(self):
+    def test_seed_persists_the_draft_with_the_glb(self) -> None:
         self.assertIn("sculpt: draft", self.component)
 
 

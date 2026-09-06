@@ -52,17 +52,17 @@ KILLER = json.dumps({
 
 
 class TestTheModel:
-    def test_wire_string_and_parsed_doc_both_validate(self):
+    def test_wire_string_and_parsed_doc_both_validate(self) -> None:
         for raw in (GOOD_AUTHORED, json.loads(GOOD_AUTHORED)):
             m = AnnyBakeParams.model_validate(raw)
             assert m.dialect == "authored"
             assert m.local_changes == {"upperarm-fat-incr": 0.3}
 
-    def test_the_killer_list_local_changes_refuses(self):
+    def test_the_killer_list_local_changes_refuses(self) -> None:
         with pytest.raises(ValidationError):
             AnnyBakeParams.model_validate(KILLER)
 
-    def test_estimated_takes_raw_identity_coefficients(self):
+    def test_estimated_takes_raw_identity_coefficients(self) -> None:
         """No 0..1 check on the estimated phenotype (deliberate):
         the identity coefficients are MHR measurements, not slider
         positions — EstimatedParams and the node take them raw, so
@@ -101,32 +101,32 @@ class TestTheModel:
                      "local_changes": {}, "scale": [1.0]}),
          "not scale"),
     ])
-    def test_field_clean_refusals(self, bad, needle):
+    def test_field_clean_refusals(self, bad: str, needle: str) -> None:
         with pytest.raises(ValidationError) as e:
             AnnyBakeParams.model_validate(bad)
         assert needle in str(e.value)
 
 
 class TestTheFlowDoor:
-    def test_flow_declares_the_validator(self):
+    def test_flow_declares_the_validator(self) -> None:
         sys.path.insert(0, str(REPO))
         import flow as flow_mod
         fl = flow_mod.load_flow("anny-params")
         assert fl.initial_validators == {"params_json": AnnyBakeParams}
 
-    def test_killer_4xxes_before_registration(self):
+    def test_killer_4xxes_before_registration(self) -> None:
         import flow as flow_mod
         fl = flow_mod.load_flow("anny-params")
         with pytest.raises(FlowError):
             fl.validate_initial({"params_json": KILLER})
 
-    def test_good_dialects_pass(self):
+    def test_good_dialects_pass(self) -> None:
         import flow as flow_mod
         fl = flow_mod.load_flow("anny-params")
         fl.validate_initial({"params_json": GOOD_AUTHORED})
         fl.validate_initial({"params_json": GOOD_ESTIMATED})
 
-    def test_validator_must_be_a_model(self):
+    def test_validator_must_be_a_model(self) -> None:
         from flow import Flow, Stage, FromInitial, Kind
         with pytest.raises(Exception):
             Flow(id="bad-validators",
@@ -135,7 +135,7 @@ class TestTheFlowDoor:
                                expected={"x": Kind.text}),),
                  initial_validators={"x": "not-a-model"})
 
-    def test_gateway_resolves_through_the_door(self):
+    def test_gateway_resolves_through_the_door(self) -> None:
         from gateway import resolve_request, ValidationError as VErr
         with pytest.raises(VErr):
             resolve_request({"flow": "anny-params",
@@ -143,7 +143,7 @@ class TestTheFlowDoor:
 
 
 class TestServeSide:
-    def test_every_estate_row_serves_a_valid_canonical(self):
+    def test_every_estate_row_serves_a_valid_canonical(self) -> None:
         """The door serves params_json VALIDATED — a malformed
         declaration row refuses the door, never the studio's run."""
         from melite_models import load_model_py
@@ -154,7 +154,7 @@ class TestServeSide:
         for p in rows:
             AnnyBakeParams.model_validate(p.canonical_json())
 
-    def test_canonical_json_is_object_dialect(self):
+    def test_canonical_json_is_object_dialect(self) -> None:
         """local_changes serializes as the node's OBJECT, never the
         row tuple (the killer shape)."""
         from melite_models import load_model_py
@@ -168,7 +168,7 @@ class TestServeSide:
 
 
 class TestStudioSeam:
-    def test_posts_served_params_json_verbatim(self):
+    def test_posts_served_params_json_verbatim(self) -> None:
         src = COMPONENT.read_text()
         assert "selected.params_json" in src, \
             "the studio must post the door-served canonical string"
@@ -176,13 +176,13 @@ class TestStudioSeam:
         # the hand-rolled rebuild is DEAD — the drift class dies with it
         assert 'JSON.stringify({\n      dialect:' not in src
 
-    def test_door_serves_the_canonical_field(self):
+    def test_door_serves_the_canonical_field(self) -> None:
         src = GATEWAY_PY.read_text()
         assert 'p.canonical_json() if p.params else None' in src
         assert "AnnyBakeParams.model_validate" in src, \
             "serve-side belt: what the door serves must validate"
 
-    def test_notes_never_eat_the_card(self):
+    def test_notes_never_eat_the_card(self) -> None:
         """Operator order 2026-09-06: 'The ERROR MESSAGE takes up room
         on the [REDACTED 2026-11-05] card' — tenant notes clamp to two lines (full
         text on hover via title)."""

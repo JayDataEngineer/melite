@@ -23,16 +23,27 @@ or if probe setup broke under churn (telling the owner to repair
 the probe, never to delete it).
 """
 
+from __future__ import annotations
+
 import importlib.util
 import json
 import os
 import re
 import sys
-from types import ModuleType
+import typing
+from pathlib import Path
+from types import GenericAlias, ModuleType, UnionType
+from typing import TYPE_CHECKING
 
 import pytest
 
 from _anchor import REPO
+
+if TYPE_CHECKING:
+    from melite_cards import Field, Mod
+    from pydantic import BaseModel
+
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
 
 COMPOSE_ROOT = os.path.join(REPO, "plugins", "engines", "comfyui",
                             "compose")
@@ -205,13 +216,13 @@ def _compose_pkg() -> ModuleType:
     return pkg
 
 
-def _model_classes() -> dict[str, object]:
+def _model_classes() -> dict[str, type[object]]:
     from melite_models import scan_engine_models
     return {getattr(cls, "id", ""): cls
             for _, cls in scan_engine_models(REPO).values()}
 
 
-def _card_fields(card_id: str) -> list | None:
+def _card_fields(card_id: str) -> list[Field] | None:
     """Declared fields of a card id (hyphen + underscore spellings) —
     None when the card won't load (unboarded lane: skipped, never
     pinned)."""
@@ -229,8 +240,9 @@ def _card_fields(card_id: str) -> list | None:
     return None
 
 
-def _surface_payload(fields: list, model_defaults: dict | None = None,
-                     ) -> dict:
+def _surface_payload(fields: list[Field],
+                     model_defaults: dict[str, JsonValue] | None = None,
+                     ) -> dict[str, JsonValue]:
     """Full-surface dummy payload, editor-seeded: the MODEL default
     when the lane declares one (width/height ride 1024, never a kind
     dummy), else the field default, else a kind dummy (mirrors
@@ -379,7 +391,7 @@ _IMAGE_EDIT_FIRING = [
 ]
 
 
-def _image_edit_arm(tmp_path):
+def _image_edit_arm(tmp_path: Path) -> ModuleType:
     pkg = _compose_pkg()
     arm = pkg._load_arm_package("image/image-edit")
     with open(os.path.join(str(tmp_path), "anchor.png"), "wb") as fh:
@@ -390,7 +402,7 @@ def _image_edit_arm(tmp_path):
     return arm
 
 
-def _image_edit_plain() -> dict:
+def _image_edit_plain() -> dict[str, JsonValue]:
     """The editor's plain call, editor-seeded: lane-promise defaults
     for every mod knob, a prompt, an anchor. (2026-09-05: this exact
     shape 400'd with 27 extra_forbidden errors.)"""
@@ -414,7 +426,7 @@ def _image_edit_plain() -> dict:
     return payload
 
 
-def test_image_edit_plain_call_compiles(tmp_path) -> None:
+def test_image_edit_plain_call_compiles(tmp_path: Path) -> None:
     arm = _image_edit_arm(tmp_path)
     rc, _, _, err = arm.compose(
         {"params": _image_edit_plain()}, "qwen-img-edit-2511", "")
@@ -425,7 +437,9 @@ def test_image_edit_plain_call_compiles(tmp_path) -> None:
 
 
 @pytest.mark.parametrize("knob,value,field", _IMAGE_EDIT_FIRING)
-def test_image_edit_firing_refuses_field_named(tmp_path, knob, value, field) -> None:
+def test_image_edit_firing_refuses_field_named(
+        tmp_path: Path, knob: str, value: str | int | float | bool | list[str],
+        field: str) -> None:
     """MOD FIRING LAW: a firing request the plain-edit cut cannot
     honor refuses LOUD and field-named — never extra_forbidden (the
     schema admits the surface), never a silent plain edit."""
@@ -441,7 +455,7 @@ def test_image_edit_firing_refuses_field_named(tmp_path, knob, value, field) -> 
         "%s=%r refusal must name the field (got %r)" % (knob, value, err))
 
 
-def test_image_edit_garbage_knob_refuses_field_named(tmp_path) -> None:
+def test_image_edit_garbage_knob_refuses_field_named(tmp_path: Path) -> None:
     arm = _image_edit_arm(tmp_path)
     payload = _image_edit_plain()
     payload["definitely_not_a_param"] = 1
@@ -463,7 +477,7 @@ def test_image_edit_garbage_knob_refuses_field_named(tmp_path) -> None:
 # before the gate (one tile — max_stack 1 served).
 
 
-def test_image_edit_loras_door_resolves_runtime_catalog(tmp_path) -> None:
+def test_image_edit_loras_door_resolves_runtime_catalog(tmp_path: Path) -> None:
     """The operator's krea2 lora validates on the EDIT lane (phase 1
     echoes the resolved pick: catalog filename + row strength)."""
     arm = _image_edit_arm(tmp_path)
@@ -477,7 +491,7 @@ def test_image_edit_loras_door_resolves_runtime_catalog(tmp_path) -> None:
                       "strength": 0.7}], picks
 
 
-def test_image_edit_loras_door_refuses_unknown_loud(tmp_path) -> None:
+def test_image_edit_loras_door_refuses_unknown_loud(tmp_path: Path) -> None:
     """RUNTIME VALIDATION: an unknown id refuses naming the known
     catalog — never a hidden picker, never a silent drop."""
     arm = _image_edit_arm(tmp_path)
@@ -491,7 +505,7 @@ def test_image_edit_loras_door_refuses_unknown_loud(tmp_path) -> None:
         % (rc, err))
 
 
-def test_image_edit_loras_door_refuses_wrong_typed_bag(tmp_path) -> None:
+def test_image_edit_loras_door_refuses_wrong_typed_bag(tmp_path: Path) -> None:
     """A string loras bag is a stated wrong value — a loud refusal,
     never a char-iteration (the wall dummy is a string)."""
     arm = _image_edit_arm(tmp_path)
@@ -503,7 +517,7 @@ def test_image_edit_loras_door_refuses_wrong_typed_bag(tmp_path) -> None:
         "wrong-typed loras bag must refuse: rc=%r err=%r" % (rc, err))
 
 
-def test_image_edit_mask_tile_flattens_to_flat_wire(tmp_path) -> None:
+def test_image_edit_mask_tile_flattens_to_flat_wire(tmp_path: Path) -> None:
     """params.mask = [{input_mask, ...}] flattens onto the flat lane
     knobs BEFORE the gate — the tile fires the existing inpaint
     builder gate field-named (loud, exact), proving the bag reached
@@ -543,7 +557,7 @@ def test_image_edit_mask_kind_serves_one_tile_cap() -> None:
 # the input_mask default from the card field — no hand-mirror.
 
 
-def test_image_edit_class_admits_operator_payload(tmp_path) -> None:
+def test_image_edit_class_admits_operator_payload(tmp_path: Path) -> None:
     """The operator's exact failing shape passes phase 1: strings
     for numbers/booleans (lax), '' for reference_images, null for
     the un-tiled input_mask. The check runs against the CLASS
@@ -573,7 +587,7 @@ def test_image_edit_envelope_serves_mask_default() -> None:
     assert props["reference_images"] == {"type": "array", "default": []}, props["reference_images"]
 
 
-def test_image_edit_nonempty_string_array_still_refuses(tmp_path) -> None:
+def test_image_edit_nonempty_string_array_still_refuses(tmp_path: Path) -> None:
     """The admission is the EMPTY serializations only — a non-empty
     string for an array is ambiguous and refuses (never a split-guess)."""
     arm = _image_edit_arm(tmp_path)
@@ -624,11 +638,11 @@ def test_served_family_schemas_cover_card_surfaces() -> None:
 # allowlist (entries resolve against the model's OWN catalog rows —
 # an arbitrary filename can never ride the channel).
 
-def _mod_classes() -> list:
+def _mod_classes() -> list[type[Mod]]:
     from melite_cards import Mod
     out = []
 
-    def walk(cls) -> None:
+    def walk(cls: type[Mod]) -> None:
         for sub in cls.__subclasses__():
             out.append(sub)
             walk(sub)
@@ -704,7 +718,7 @@ def test_merged_defaults_fresh_per_call() -> None:
         "merged_defaults wrote home into cls.defaults — a LEAK")
 
 
-def test_loras_channel_allowlisted(tmp_path) -> None:
+def test_loras_channel_allowlisted(tmp_path: Path) -> None:
     """The loras channel resolves entries against the model's OWN
     catalog rows only — an unknown id refuses naming it (no
     arbitrary filename rides), and a family with no loras mod has
@@ -771,7 +785,7 @@ def test_envelope_service_never_reaches_params() -> None:
 # backend could not compile: an inference-time failure class, caught
 # here at compile time instead.
 
-def _route_wall_card(mid_fam: str):
+def _route_wall_card(mid_fam: str) -> type[object] | None:
     """The card class for a family id (generic plugin data), or None."""
     sys.path.insert(0, os.path.join(REPO, "py"))
     import melite_models as _mm
@@ -798,7 +812,7 @@ def _route_wall_card(mid_fam: str):
     return None
 
 
-def test_variant_routes_compile_through_gateway_door(tmp_path) -> None:
+def test_variant_routes_compile_through_gateway_door(tmp_path: Path) -> None:
     """Every route id a served variant row names resolves THROUGH the
     gateway validate door (resolve_card_model): the skeleton addresses
     the OWNING family, phase 1 composes, and the route's served
@@ -1143,7 +1157,7 @@ def test_recipe_serves_patch_only_on_the_wire() -> None:
 # envelope IS the schema projection, every card surface name rides
 # it, and numeric/bool UI defaults equal the lane defaults (seed,
 # display, AND run one value).
-def _wall_schema_row(card_py_path: str):
+def _wall_schema_row(card_py_path: str) -> type[BaseModel] | None:
     """The card's enforcement row, resolved INDEPENDENTLY of the
     serve path (this wall must not share the implementation it pins):
     sibling schema.py loaded standalone, parse_card's return
@@ -1196,14 +1210,15 @@ def _wall_schema_row(card_py_path: str):
     return None
 
 
-def _wall_project_row(row_cls) -> dict | None:
+def _wall_project_row(row_cls: type[BaseModel]) -> dict[str, dict[str, JsonValue]] | None:
     """Independent envelope projection of a schema row: name → JSON
     type + default (None defaults INCLUDED — the class's own
     null-admission for Optional slots/bags). Untyped annotations
     (object/Any/dict/mixed unions) carry NO type key."""
     import typing as _t
 
-    def jtype(ann):
+    def jtype(ann: type[object] | UnionType | GenericAlias
+              | typing._GenericAlias | str | None) -> str | None:
         if ann is None:
             return None
         origin = _t.get_origin(ann)

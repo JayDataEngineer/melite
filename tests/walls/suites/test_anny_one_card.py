@@ -49,7 +49,7 @@ STUDIO_CAPS = (
 CHARACTER_BAG = ("identityModel", "coeffs", "localChanges", "customTargets")
 
 
-def _anny_params():
+def _anny_params() -> type[object]:
     import importlib.util
 
     spec = importlib.util.spec_from_file_location(
@@ -69,13 +69,13 @@ class TestCharacterBagRemoved(unittest.TestCase):
     card schema — the Run gate's verbatim refusal named all four, so
     absence here is the fix, pinned."""
 
-    def test_bag_fields_absent(self):
+    def test_bag_fields_absent(self) -> None:
         P = _anny_params()
         for key in CHARACTER_BAG:
             self.assertNotIn(key, P.model_fields,
                              f"legacy {key} crept back onto AnnyParams")
 
-    def test_bag_values_refused_loud(self):
+    def test_bag_values_refused_loud(self) -> None:
         """extra="forbid": a straggler carrying the bag refuses at
         parse — never silently tolerated."""
         from pydantic import ValidationError
@@ -84,7 +84,7 @@ class TestCharacterBagRemoved(unittest.TestCase):
         with self.assertRaises(ValidationError):
             P(coeffs=[0.5] * 11, localChanges={"chest": 0.2})
 
-    def test_turnaround_row_parses_clean(self):
+    def test_turnaround_row_parses_clean(self) -> None:
         P = _anny_params()
         row = P(body_glb="runs/x/out/body.glb")
         self.assertEqual(row.body_glb, "runs/x/out/body.glb")
@@ -94,7 +94,7 @@ class TestWritesDeclared(unittest.TestCase):
     """E1: onSave writes what the registry declares, nothing more —
     and the registry no longer declares the legacy bag."""
 
-    def test_writes_refuse_the_bag(self):
+    def test_writes_refuse_the_bag(self) -> None:
         cls = load_model_py(ANNY_MODEL_PY, "comfyui")
         writes = cls.studio.writes
         for key in CHARACTER_BAG:
@@ -112,10 +112,10 @@ class TestBridgeScrubsTheBag(unittest.TestCase):
     unclearable otherwise — the schema forbids them, no control
     touches them). New stages seed no legacy."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.shape = ANNY_SHAPE.read_text(encoding="utf-8")
 
-    def test_no_write_back_of_the_bag(self):
+    def test_no_write_back_of_the_bag(self) -> None:
         self.assertNotIn(
             "coeffs: editing.coeffs",
             self.shape,
@@ -125,7 +125,7 @@ class TestBridgeScrubsTheBag(unittest.TestCase):
             "test_anny_sculpt.py)",
         )
 
-    def test_scrub_lifts_stragglers(self):
+    def test_scrub_lifts_stragglers(self) -> None:
         self.assertIn(
             "scrubLegacyBag",
             self.shape,
@@ -140,7 +140,7 @@ class TestBridgeScrubsTheBag(unittest.TestCase):
                 "the full removed bag",
             )
 
-    def test_caps_defaults_seed_no_legacy(self):
+    def test_caps_defaults_seed_no_legacy(self) -> None:
         caps = STUDIO_CAPS.read_text(encoding="utf-8")
         for key in CHARACTER_BAG:
             self.assertNotIn(
@@ -154,10 +154,10 @@ class TestShapeBandSeam(unittest.TestCase):
     """The band MOUNTS the body card's own components — no second
     implementation — and bakes through the queue (INFERENCE LAW)."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.shape = ANNY_SHAPE.read_text(encoding="utf-8")
 
-    def test_imports_the_body_cards_components(self):
+    def test_imports_the_body_cards_components(self) -> None:
         for piece in ("BodyShapePanel", "MeshPreviewCanvas", "bodyStudio"):
             self.assertIn(
                 f"../../../body/ui/studio/{piece}",
@@ -166,7 +166,7 @@ class TestShapeBandSeam(unittest.TestCase):
                 "a second implementation is the drift this merge bans",
             )
 
-    def test_apply_bakes_through_the_queue_flow(self):
+    def test_apply_bakes_through_the_queue_flow(self) -> None:
         self.assertIn(
             '"anny-params"',
             self.shape,
@@ -178,7 +178,7 @@ class TestShapeBandSeam(unittest.TestCase):
             "Apply must go through the queue door",
         )
 
-    def test_authored_dialect_verbatim(self):
+    def test_authored_dialect_verbatim(self) -> None:
         self.assertRegex(
             self.shape,
             r'dialect:\s*"authored"',
@@ -191,7 +191,7 @@ class TestShapeBandSeam(unittest.TestCase):
             "a null coeffs bag must fall back to the 11-dim neutral vector",
         )
 
-    def test_component_mounts_the_band(self):
+    def test_component_mounts_the_band(self) -> None:
         component = ANNY_COMPONENT.read_text(encoding="utf-8")
         self.assertIn(
             "<AnnyShapeBand",
@@ -209,11 +209,11 @@ class TestRailLayout(unittest.TestCase):
     viewport drawer but never co-renders two instances."""
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         cls.component = ANNY_COMPONENT.read_text(encoding="utf-8")
         cls.shape = ANNY_SHAPE.read_text(encoding="utf-8")
 
-    def test_the_rail_is_tabbed(self):
+    def test_the_rail_is_tabbed(self) -> None:
         # The strip is THE SHARED RailTabs component (operator order:
         # "Reusing components") — the anny rail mounts it with the
         # three big sections; Shape's sub-menus mount the same strip
@@ -234,7 +234,7 @@ class TestRailLayout(unittest.TestCase):
                       "Import is the third big section (the presets + "
                       "MHR estimate order)")
 
-    def test_both_levels_reuse_the_strip(self):
+    def test_both_levels_reuse_the_strip(self) -> None:
         # Shape's sub-menus (Phenotype/Body/Face) use the SAME strip,
         # dense, inside the body panel's kit Tabs (state stays the
         # Tabs' — TabsContent must live inside it).
@@ -249,7 +249,7 @@ class TestRailLayout(unittest.TestCase):
         self.assertNotIn("TabsList", panel)
         self.assertNotIn("TabsTrigger", panel)
 
-    def test_import_holds_presets_and_the_mhr_estimate(self):
+    def test_import_holds_presets_and_the_mhr_estimate(self) -> None:
         # operator order: "It can be 'Import', and can also include
         # our button that will upload and use MHR to make an ANNY
         # estimation" — presets + AnnyHmrVerb live in the import pane;
@@ -272,7 +272,7 @@ class TestRailLayout(unittest.TestCase):
             "the character pane is the shape band",
         )
 
-    def test_the_pane_owns_the_scroll(self):
+    def test_the_pane_owns_the_scroll(self) -> None:
         self.assertRegex(
             self.component,
             r'role="tabpanel"[\s\S]{0,200}overflow-y-auto',
@@ -286,20 +286,20 @@ class TestRailLayout(unittest.TestCase):
             "tab pane owns the one scroll surface",
         )
 
-    def test_shape_expands_into_the_drawer_not_a_second_panel(self):
+    def test_shape_expands_into_the_drawer_not_a_second_panel(self) -> None:
         self.assertIn("{shapeExpanded && <AnnyShapeDrawer", self.component)
         self.assertIn("{!shapeExpanded && <AnnyShapeBand", self.component,
                       "ONE BodyShapePanel instance: the drawer replaces "
                           "the rail band while expanded")
         self.assertIn("w-80", self.shape, "the drawer is the wide surface")
 
-    def test_the_bridge_survives_layout_moves(self):
+    def test_the_bridge_survives_layout_moves(self) -> None:
         self.assertIn("useAnnyShapeBridge(props.stage, props.onSave)",
                       self.component,
                       "the bridge mounts ONCE at the studio level — it "
                       "must not unmount when the panel moves rail↔drawer")
 
-    def test_the_assembly_truth_is_never_folded(self):        # 2026-09-06: the estimate result landed in a folded
+    def test_the_assembly_truth_is_never_folded(self) -> None:        # 2026-09-06: the estimate result landed in a folded
         # <details> — a completed run read as "the mesh never
         # changed" with the body one click away. A result the
         # operator cannot see is a result that did not happen.
@@ -315,7 +315,7 @@ class TestRailLayout(unittest.TestCase):
             "the always-open assembly section lost its label",
         )
 
-    def test_the_apply_chip_warns_before_replacing_an_estimate(self):
+    def test_the_apply_chip_warns_before_replacing_an_estimate(self) -> None:
         # 2026-09-06: the anny-params bake takes the lever recipe
         # ALONE (no body input) — Apply after Estimate destroys the
         # photo body. The chip must read the slot's body_origin and
@@ -336,7 +336,7 @@ class TestBodyCardRetirementPending(unittest.TestCase):
     When the retirement lands, DELETE this test with the card; until
     then this pin documents the transitional two-card state."""
 
-    def test_body_card_dir_still_present(self):
+    def test_body_card_dir_still_present(self) -> None:
         self.assertTrue(
             BODY_CARD.is_dir(),
             "the body card was deleted — retire this wall WITH it "

@@ -20,6 +20,11 @@ import pytest
 
 from _anchor import REPO
 
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
+type WorkflowNode = dict[str, JsonValue]
+type Workflow = dict[str, WorkflowNode]
+type NodesByClass = dict[str, list[tuple[str, WorkflowNode]]]
+
 
 @pytest.fixture(scope="module", autouse=True)
 def _estate_paths() -> Iterator[None]:
@@ -41,7 +46,7 @@ _PNG = ("data:image/png;base64," + base64.b64encode(
     b"\x89PNG\r\n\x1a\n" + b"\x00" * 32).decode())
 
 
-def _render(model: str, params: dict) -> dict:
+def _render(model: str, params: dict[str, JsonValue]) -> Workflow:
     rc, y, _extra, err = globals()["_compose_pkg"].card_compose(
         {"model": model, "params": params}, model, "wall-parity", None)
     assert rc == 0, err
@@ -51,20 +56,20 @@ def _render(model: str, params: dict) -> dict:
     return params["workflow"]
 
 
-def _by_class(wf: dict) -> dict:
+def _by_class(wf: Workflow) -> NodesByClass:
     out: dict = {}
     for nid, n in wf.items():
         out.setdefault(n["class_type"], []).append((str(nid), n))
     return out
 
 
-def _src(wf: dict, node: dict, key: str) -> tuple:
+def _src(wf: Workflow, node: WorkflowNode, key: str) -> tuple[str, WorkflowNode]:
     v = node["inputs"][key]
     assert isinstance(v, list), (key, v)
     return str(v[0]), wf[str(v[0])]
 
 
-def _samplers_by_stage(wf: dict, byc: dict) -> dict:
+def _samplers_by_stage(wf: Workflow, byc: NodesByClass) -> dict[str, str]:
     """KSampler node id -> stage, resolved by latent/conditioning wiring."""
     stages = {}
     for nid, n in byc["KSampler"]:
@@ -83,7 +88,7 @@ def _samplers_by_stage(wf: dict, byc: dict) -> dict:
     return stages
 
 
-def _chain(model: str, params: dict) -> tuple:
+def _chain(model: str, params: dict[str, JsonValue]) -> tuple[Workflow, NodesByClass]:
     wf = _render(model, params)
     return wf, _by_class(wf)
 

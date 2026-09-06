@@ -20,6 +20,10 @@ Pins what the commercial lane promises:
 No GPU, no network — the schema is the wall (test_flows.py pattern).
 """
 
+from pathlib import Path
+
+import pytest
+
 import flow as flow_mod
 from flow import Flow, Stage, FromInitial
 
@@ -75,7 +79,7 @@ def test_commercial_carries_no_hardcoded_endpoint() -> None:
 # ── 2. door ──────────────────────────────────────────────────────────
 
 def test_commercial_resolves_through_the_flow_door(
-        monkeypatch, tmp_path) -> None:
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     from gateway import resolve_request
     target = tmp_path / "data" / "input"
     target.mkdir(parents=True)
