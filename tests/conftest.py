@@ -17,7 +17,13 @@ REPO = Path(__file__).resolve().parent.parent
 # does the same insert on boot). ONE insert, owned here. The tests/
 # dir rides along for the shared bootstrap (tests/_bootstrap.py —
 # fixture audit 2026-09-04).
-for _p in (str(REPO / "py"), str(REPO / "tests")):
+for _p in (str(REPO / "py"), str(REPO / "tests"),
+           # lane lenses (row 3, 2026-09-06): fit_spec/skin_spec live
+           # in their cards' py/ dirs (plugin-owned, never core) —
+           # importable here beside py/ so the walls read the same
+           # files production loads.
+           str(REPO / "plugins/engines/comfyui/action_cards/3d/fit/py"),
+           str(REPO / "plugins/engines/comfyui/action_cards/3d/skin/py")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 

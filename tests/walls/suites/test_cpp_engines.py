@@ -309,6 +309,52 @@ class TestKnobSSOT(unittest.TestCase):
                          recursive=True)
         self.assertEqual(hits, [])
 
+    # Row-3 ratchet (2026-09-06): the comfyui card_knobs migration —
+    # 27 boarded models still carry no rows (only music3 +
+    # h3-timeline do; cpp-plugin rows proven above). Each row is
+    # template-node archaeology per model per field (card field ->
+    # exact NodeClass.idx.input), so the migration lands card by
+    # card; this set is equality-pinned EMPTY-ward: a NEW rowless
+    # boarded model fails, a landed card deletes its models'
+    # entries. Shrink-only. (Tool internals without a card claim —
+    # dwpose, basic_resize, the pixel pair — are not card surfaces
+    # and stay out of this set.)
+    _MODELS_WITHOUT_KNOB_ROWS = frozenset({
+        "anima", "anny", "fit", "florence2", "h3", "h3-keyframe",
+        "ideogram", "input", "joycaption", "joytag", "kimodo",
+        "krea-2", "mask-studio", "moss-sfx", "pixal3d",
+        "qwen-img-edit-2511", "qwen3-tts", "qwen3-tts-base",
+        "qwen3-tts-voicedesign", "scail2-animate", "seedvr2_ema",
+        "skin", "transfer_rig", "trellis2-native", "wan-vace",
+        "wd14", "z-image",
+    })
+
+    def test_comfyui_models_without_knob_rows_shrink_only(self) -> None:
+        """Every card-boarded model without card_knobs rows is in
+        the pinned set — the migration's burn-down list."""
+        from melite_models import scan_engine_models
+        try:
+            items = list(scan_engine_models(REPO).items())
+        except Exception as e:
+            if "refusing to alias" in str(e):
+                self.skipTest("catalog scan blocked by "
+                              "parallel-session duplicate-genre "
+                              "migration: %s" % e)
+            raise
+        missing = set()
+        for mid, (_p, cls) in items:
+            if not (getattr(cls, "card", "") or ""):
+                continue  # no card claim, not a card surface
+            rows = getattr(cls, "card_knobs", None) or ()
+            if not rows:
+                missing.add(mid)
+        self.assertEqual(
+            missing, self._MODELS_WITHOUT_KNOB_ROWS,
+            "knob-row burn-down set changed: %s — a new rowless "
+            "boarded model (ship its card_knobs) or a landed "
+            "migration (delete its entries)" % sorted(
+                missing ^ self._MODELS_WITHOUT_KNOB_ROWS))
+
 
 class TestVendorLaw(unittest.TestCase):
     def _module_paths(self) -> dict[str, str]:

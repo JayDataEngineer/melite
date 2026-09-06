@@ -20,6 +20,11 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'py'))
+# lane lens (row 3, 2026-09-06): skin_spec is card-owned — the skin
+# card's py/ dir rides first so the tool reads the file production
+# loads.
+sys.path.insert(0, os.path.join(
+    REPO, 'plugins/engines/comfyui/action_cards/3d/skin/py'))
 
 import numpy as np
 from PIL import Image

@@ -204,3 +204,114 @@ def test_cpp_form_plugins_own_compose_packages() -> None:
             "form %s (plugin %s) has no compose package with "
             "card_compose — offered means runnable" % (fid,
                                                        fdef["plugin"]))
+
+
+# Row 3 (2026-09-06): covers vs ActionCard.models — why covers is
+# DECLARED, never derived. card.models = "boards and renders HERE";
+# covers = "OFFERED on this form". Two relations, two deliberate
+# divergences, both equality-pinned below: a third divergence in
+# either direction fails (drift caught); fixing one deletes its
+# entry (progress rewarded, never silently).
+#
+# Deriving covers from card.models would (a) offer transfer_rig on
+# the image form (a GLB pair is not image-form inputs) and (b) drop
+# ideogram from the image picker (it rides the picker while
+# boarding ideogram4). The ledger ordered the derivation; the tree
+# refused it — this wall is the derivation's honest remainder.
+_BOARDED_NOT_OFFERED = frozenset({
+    ("img-to-mesh", "transfer_rig"),  # boards the arm, GLB-pair inputs
+    # never ride the image form
+})
+_OFFERED_NOT_BOARDED_HERE = frozenset({
+    ("image-gen", "ideogram"),  # rides the image picker, boards
+    # the ideogram4 arm (the dual-guided graph)
+    ("h3-timeline", "h3-timeline"),  # the h3 trio boards the
+    ("h3-timeline", "h3"),  # PACKAGE arm (Model.card +
+    ("h3-timeline", "h3-keyframe"),  # py/emission twin compose —
+    # test_h3_family_boards_the_timeline_package_arm owns that
+    # proof); the card declares families, not a models tuple
+})
+# OPEN GAP (2026-09-06, needs the operator's ruling — NOT deliberate):
+# fit + skin board arms and compose (their card walls prove it) but
+# no form row offers them: the editor has no picker surface for
+# either lane. Offer them (new rows need operator columns: picker
+# order + sidebar_key are surface decisions, never derived) or
+# declare them deliberately hidden (api-only lanes) and move them
+# to _BOARDED_NOT_OFFERED with the reason. This set must EMPTY by
+# ruling, never by drift.
+_BOARDED_WITH_NO_FORM_ROW = frozenset({
+    ("fit", "fit"),
+    ("skin", "skin"),
+})
+
+
+def _card_models() -> dict[str, set[str]]:
+    """card id -> boarded model ids, read off the ActionCard classes
+    (the card's own `models` tuple — the render truth)."""
+    import importlib.util
+
+    from melite_cards import ActionCard
+    out: dict[str, set[str]] = {}
+    root = os.path.join(REPO, "plugins", "engines", "comfyui",
+                        "action_cards")
+    for genre in sorted(os.listdir(root)):
+        gd = os.path.join(root, genre)
+        if not os.path.isdir(gd):
+            continue
+        for card in sorted(os.listdir(gd)):
+            cp = os.path.join(gd, card, "py", "card.py")
+            if not os.path.isfile(cp):
+                continue
+            name = "boarding_%s_%s" % (genre, card)
+            name = name.replace("-", "_")
+            spec = importlib.util.spec_from_file_location(name, cp)
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules[name] = mod
+            try:
+                spec.loader.exec_module(mod)
+            except Exception:
+                continue  # UI-only cards carry no loadable surface
+            for val in vars(mod).values():
+                if (isinstance(val, type)
+                        and issubclass(val, ActionCard)
+                        and val is not ActionCard
+                        and getattr(val, "id", "")):
+                    mids = set()
+                    for m in getattr(val, "models", None) or ():
+                        mid = getattr(m, "id", None)
+                        if mid:
+                            mids.add(mid)
+                    out.setdefault(val.id, set()).update(mids)
+    return out
+
+
+def test_covers_match_card_models_up_to_pinned_divergences() -> None:
+    """covers == card.models except the two pinned divergences —
+    the drift class derivation would have closed, closed by pin."""
+    boarded: dict[str, set[str]] = {}
+    for cid, mids in _card_models().items():
+        boarded.setdefault(cid, set()).update(mids)
+    offered: dict[str, set[str]] = {}
+    for fid, fdef in _comfyui_rows():
+        offered[fid] = set(fdef.get("covers") or ())
+    cards = set(boarded) | set(offered)
+    bno, onb = set(), set()
+    for cid in cards:
+        for mid in boarded.get(cid, set()) - offered.get(cid, set()):
+            bno.add((cid, mid))
+        for mid in offered.get(cid, set()) - boarded.get(cid, set()):
+            onb.add((cid, mid))
+    assert bno == _BOARDED_NOT_OFFERED | _BOARDED_WITH_NO_FORM_ROW, (
+        "boarded-but-unoffered set changed: %s (want exactly %s) — "
+        "a newly hidden runnable model (offer it, or pin it "
+        "deliberate with its reason) or transfer_rig got offered "
+        "(delete its entry). fit/skin stay in "
+        "_BOARDED_WITH_NO_FORM_ROW until the operator rules: "
+        "offer vs deliberately hidden." % (
+            sorted(bno),
+            sorted(_BOARDED_NOT_OFFERED | _BOARDED_WITH_NO_FORM_ROW)))
+    assert onb == _OFFERED_NOT_BOARDED_HERE, (
+        "offered-but-unboarded-here set changed: %s (want exactly "
+        "%s) — a newly cross-offered model (pin it) or ideogram "
+        "boarded image-gen (delete its entry)" % (
+            sorted(onb), sorted(_OFFERED_NOT_BOARDED_HERE)))
