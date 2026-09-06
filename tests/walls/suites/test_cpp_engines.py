@@ -517,6 +517,15 @@ class TestKnobSSOT(unittest.TestCase):
                 "audio/tts", "TtsCard", mid, genre="audio",
                 family="tts_t1")
 
+    def test_sfx_wire_all_in_knob_rows(self) -> None:
+        """Row-3 migration pattern (sixth card): the moss-sfx rows
+        speak card vocabulary (n_diffusion_steps/duration — the
+        renderer call site translates to node spelling), proven
+        against the headless-rendered AudiocoreTTS graph."""
+        self._assert_rows_match_renderer(
+            "audio/sfx", "SfxCard", "moss-sfx", genre="audio",
+            family="sfx_t1")
+
     def test_no_card_knobs_yaml_survives(self) -> None:
         """The yaml knob era is extinct tree-wide — rows live on the
         model class (the music3 pattern)."""
@@ -539,7 +548,7 @@ class TestKnobSSOT(unittest.TestCase):
     _MODELS_WITHOUT_KNOB_ROWS = frozenset({
         "anny", "fit", "h3", "h3-keyframe",
         "ideogram", "input", "kimodo",
-        "mask-studio", "moss-sfx", "pixal3d",
+        "mask-studio", "pixal3d",
         "qwen-img-edit-2511",
         "scail2-animate", "seedvr2_ema",
         "skin", "transfer_rig", "trellis2-native", "wan-vace",
