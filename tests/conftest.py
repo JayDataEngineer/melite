@@ -6,6 +6,7 @@ gateway modules directly (asset_ledger, catalog, plugins, ...)
 with no per-file sys.path.insert rituals.
 """
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -54,7 +55,7 @@ _DISCLOSURE_DOORS = ("peek", "card_tools", "skill_read")
 
 
 @pytest.fixture(autouse=True)
-def _no_leaked_disclosure_doubles():
+def _no_leaked_disclosure_doubles() -> Iterator[None]:
     import lane_disclosure as _ld
     before = {n: id(getattr(_ld, n)) for n in _DISCLOSURE_DOORS}
     yield

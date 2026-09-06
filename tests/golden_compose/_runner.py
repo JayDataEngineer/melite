@@ -33,6 +33,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
 sys.path.insert(0, str(REPO / "py"))
+
+from melite_cards.validators import JsonValue
 sys.path.insert(0, str(REPO / "plugins" / "engines" / "comfyui" / "compose"))
 
 import json as _j2  # noqa: E402
@@ -74,7 +76,7 @@ def _norm_str(v: str | int | float | bool | None) -> str | int | float | bool | 
     return v
 
 
-def _norm_num(g: object) -> object:
+def _norm_num(g: JsonValue) -> JsonValue:
     """Fold numeric-strings to numbers (native-type era companion to
     _norm_str): "42" -> 42, "4.5" -> 4.5. Non-numeric strings
     (prompts, filenames, sampler names) pass through untouched — only
