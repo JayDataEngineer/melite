@@ -589,6 +589,18 @@ class TestKnobSSOT(unittest.TestCase):
         self._assert_rows_match_renderer(
             "image/upscale-tools", "UpscaleToolsCard", "seedvr2_ema")
 
+    def test_video_gen_arms_all_in_knob_rows(self) -> None:
+        """Row-3 migration pattern (eleventh card, second multi-arm):
+        twelve rows on wan-vace, fourteen on scail2-animate — the
+        shared prompt/sampler block plus per-arm media inputs. The
+        voice's _ARMS triple yields its family at element 0; lane
+        facts ride the docs, never the wire."""
+        self._assert_rows_match_renderer(
+            "video/video-gen", "VideoGenCard", "wan-vace", genre="video")
+        self._assert_rows_match_renderer(
+            "video/video-gen", "VideoGenCard", "scail2-animate",
+            genre="video")
+
     def test_no_card_knobs_yaml_survives(self) -> None:
         """The yaml knob era is extinct tree-wide — rows live on the
         model class (the music3 pattern)."""
@@ -612,8 +624,7 @@ class TestKnobSSOT(unittest.TestCase):
         "anny", "fit", "h3", "h3-keyframe",
         "kimodo",
         "mask-studio", "pixal3d",
-        "scail2-animate",
-        "skin", "transfer_rig", "trellis2-native", "wan-vace",
+        "skin", "transfer_rig", "trellis2-native",
     })
 
     def test_comfyui_models_without_knob_rows_shrink_only(self) -> None:
