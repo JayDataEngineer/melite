@@ -9,7 +9,16 @@ verbatim."""
 
 from pathlib import Path
 
-from flow import Flow, Stage, FromInitial, Kind
+from flow import (
+    Flow,
+    FlowTool,
+    FlowToolOverlay,
+    FlowToolProperty,
+    FromInitial,
+    Kind,
+    Stage,
+    ToolParamType,
+)
 
 FLOW = Flow(
     id="audio-native-tts",
@@ -48,6 +57,37 @@ FLOW = Flow(
                 "out_dir": "./output",
                 "timeout_s": 1200,
             },
+        ),
+    ),
+    # ROW-4 TEMPLATE LIBRARY (2026-09-06): the headless surface —
+    # prompt rides the existing FromInitial (no overlay needed);
+    # seed stamps node 2 (AudiocoreTTS — seed input verified in
+    # tts_t1.json, not assumed).
+    tool=FlowTool(
+        name="speak",
+        description=(
+            "Qwen3-TTS 12Hz CustomVoice speech in one call — text "
+            "in, wav out (pure-ComfyUI audio lane)."),
+        properties={
+            "prompt": FlowToolProperty(
+                ptype=ToolParamType.string,
+                description="what to say",
+            ),
+            "seed": FlowToolProperty(
+                ptype=ToolParamType.integer,
+                description="voice sampler seed",
+                default=42,
+                minimum=0,
+                maximum=2**31 - 1,
+            ),
+        },
+        required=("prompt",),
+        overlays=(
+            FlowToolOverlay(
+                param="seed",
+                stage="tts",
+                path=("inject", "2.seed"),
+            ),
         ),
     ),
 )

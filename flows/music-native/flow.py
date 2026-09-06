@@ -13,7 +13,15 @@ Kinds come from the registry (prompt/lyrics: text in, default:
 audio out) — the stage declares NO outputs/expected rows: the card
 IS the contract."""
 
-from flow import Flow, Stage, FromInitial
+from flow import (
+    Flow,
+    FlowTool,
+    FlowToolOverlay,
+    FlowToolProperty,
+    FromInitial,
+    Stage,
+    ToolParamType,
+)
 
 FLOW = Flow(
     id="music-native",
@@ -43,6 +51,37 @@ FLOW = Flow(
                 "seed": -1,
                 "backend": "cuda",
             },
+        ),
+    ),
+    # ROW-4 TEMPLATE LIBRARY (2026-09-06): the headless surface —
+    # prompt rides the existing FromInitial (no overlay needed);
+    # duration bounds are the card schema's own caps (schema.py
+    # _duration_range 10..600, not retyped).
+    tool=FlowTool(
+        name="compose_music",
+        description=(
+            "audio.cpp native music generation in one call "
+            "(ACE-Step family) — prompt in, audio out."),
+        properties={
+            "prompt": FlowToolProperty(
+                ptype=ToolParamType.string,
+                description="what to play",
+            ),
+            "duration": FlowToolProperty(
+                ptype=ToolParamType.integer,
+                description="seconds of music (the card caps 10..600)",
+                default=120,
+                minimum=10,
+                maximum=600,
+            ),
+        },
+        required=("prompt",),
+        overlays=(
+            FlowToolOverlay(
+                param="duration",
+                stage="music",
+                path=("duration",),
+            ),
         ),
     ),
 )
