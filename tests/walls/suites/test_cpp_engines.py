@@ -402,7 +402,10 @@ class TestKnobSSOT(unittest.TestCase):
             "model.py"), "comfyui")
         rows = list(cls.card_knobs or ())
         graph = fn(doc_cls(), cls)
-        fed = set(doc_cls.model_fields) - {"filename_prefix"}
+        structural = self._structural(
+            card_subpath, card_cls, "st2_%s" % model_id)
+        fed = (set(doc_cls.model_fields)
+               - {"filename_prefix"} - structural)
         row_names = {r["card"] for r in rows}
         self.assertTrue(
             row_names <= wire,
@@ -526,6 +529,16 @@ class TestKnobSSOT(unittest.TestCase):
             "audio/sfx", "SfxCard", "moss-sfx", genre="audio",
             family="sfx_t1")
 
+    def test_image_edit_core_all_in_knob_rows(self) -> None:
+        """Row-3 migration pattern (seventh card): the plain-edit
+        core (anchor + prompt/sampler block) rows 1:1 onto the
+        headless-rendered graph — including the negative prompt's
+        second-instance .1 target. The mod-firing surface is
+        structural (the voice's own gate loops are the source)."""
+        self._assert_rows_match_renderer(
+            "image/image-edit", "ImageEditCard",
+            "qwen-img-edit-2511", family="image_edit")
+
     def test_no_card_knobs_yaml_survives(self) -> None:
         """The yaml knob era is extinct tree-wide — rows live on the
         model class (the music3 pattern)."""
@@ -549,7 +562,6 @@ class TestKnobSSOT(unittest.TestCase):
         "anny", "fit", "h3", "h3-keyframe",
         "ideogram", "input", "kimodo",
         "mask-studio", "pixal3d",
-        "qwen-img-edit-2511",
         "scail2-animate", "seedvr2_ema",
         "skin", "transfer_rig", "trellis2-native", "wan-vace",
     })
