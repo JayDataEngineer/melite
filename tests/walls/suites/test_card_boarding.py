@@ -3,7 +3,7 @@
 the unboarded data-family era ended).
 
 Every model a form OFFERS must board a compose arm and compose:
-  1. resolution — every _FORMS_TABLE cover (comfyui rows) declares
+  1. resolution — every derived-table cover (comfyui rows) declares
      a card whose arm directory exists;
   2. phase-1 compose — the image form's members compose a real
      run-input pool from a prompt body (the editor's Run shape);
@@ -51,7 +51,7 @@ def _estate_paths() -> Iterator[None]:
 
 
 def _comfyui_rows() -> Iterator[tuple[str, dict[str, str | int | bool | tuple[str, ...]]]]:
-    for fid, fdef in editor_forms._FORMS_TABLE.items():
+    for fid, fdef in editor_forms._forms_table(REPO).items():
         if fdef.get("plugin") == "comfyui":
             yield fid, fdef
 
@@ -109,7 +109,7 @@ def test_covers_membership_matches_boarding() -> None:
         card = getattr(cls, "card", "") or ""
         if getattr(cls, "genre", None) == Genre.IMAGE and card:
             boarded.add(mid)
-    covers = set(editor_forms._FORMS_TABLE["image-gen"]["covers"])
+    covers = set(editor_forms._forms_table(REPO)["image-gen"]["covers"])
     assert covers == boarded & covers and covers, (
         "image-gen covers %s but only %s board" % (sorted(covers),
                                                    sorted(boarded)))
@@ -131,7 +131,7 @@ def test_image_form_members_compose_phase1() -> None:
     shared Run shape sends every member); per-model extras (sampler
     vocab, scheduler — ideogram serves no scheduler field) are each
     card's own gate suite's business, not the boarding contract's."""
-    for mid in editor_forms._FORMS_TABLE["image-gen"]["covers"]:
+    for mid in editor_forms._forms_table(REPO)["image-gen"]["covers"]:
         body = {"model": mid,
                 "params": {"prompt": "wall boarding probe",
                            "width": "1024", "height": "1024",
@@ -147,7 +147,7 @@ def test_image_form_members_render_phase2() -> None:
     """Phase-2: the graph actually renders for every image form
     member — a template file existing is not enough; the workflow
     must build (run-graph truth, no GPU)."""
-    for mid in editor_forms._FORMS_TABLE["image-gen"]["covers"]:
+    for mid in editor_forms._forms_table(REPO)["image-gen"]["covers"]:
         body = {"model": mid,
                 "params": {"prompt": "wall boarding render",
                            "width": "768", "height": "768"}}
@@ -196,7 +196,7 @@ def test_cpp_form_plugins_own_compose_packages() -> None:
     their own compose package through the plugin bus — offered
     means runnable there too, at the module level."""
     import plugins as _plugins_bus
-    for fid, fdef in editor_forms._FORMS_TABLE.items():
+    for fid, fdef in editor_forms._forms_table(REPO).items():
         if fdef.get("plugin") == "comfyui":
             continue
         mod = _plugins_bus.load_compose(fdef["plugin"])
@@ -206,43 +206,33 @@ def test_cpp_form_plugins_own_compose_packages() -> None:
                                                        fdef["plugin"]))
 
 
-# Row 3 (2026-09-06): covers vs ActionCard.models — why covers is
-# DECLARED, never derived. card.models = "boards and renders HERE";
-# covers = "OFFERED on this form". Two relations, two deliberate
-# divergences, both equality-pinned below: a third divergence in
-# either direction fails (drift caught); fixing one deletes its
-# entry (progress rewarded, never silently).
-#
-# Deriving covers from card.models would (a) offer transfer_rig on
-# the image form (a GLB pair is not image-form inputs) and (b) drop
-# ideogram from the image picker (it rides the picker while
-# boarding ideogram4). The ledger ordered the derivation; the tree
-# refused it — this wall is the derivation's honest remainder.
-_BOARDED_NOT_OFFERED = frozenset({
-    ("img-to-mesh", "transfer_rig"),  # boards the arm, GLB-pair inputs
-    # never ride the image form
-})
+# Row 3 LANDED (2026-09-06): covers is DERIVED — the uniform Model.card
+# scan, sorted. card.models vs covers divergences that remain are the
+# card's own shape (the h3 trio declares families, not a models tuple),
+# equality-pinned below: shrink-only, every entry needs its reason.
+# Deriving covers from card.models would drop ideogram from the image
+# picker (it rides the picker while boarding ideogram4) — the scan is
+# the offering truth, the models tuple is the render truth.
+# PINNED DIVERGENCES (2026-09-06 ledger row 3: the derivation closed
+# the table-curated ones — transfer_rig is offered by img-to-mesh and
+# ideogram rides ideogram4 alone now, both by the uniform scan rule).
+# What remains is the card.models-vs-scan shape (the h3 trio boards
+# the PACKAGE arm — Model.card + py/emission twin compose, owned by
+# test_h3_family_boards_the_timeline_package_arm); the card declares
+# families, not a models tuple. These sets are equality-pinned:
+# shrink-only, every entry needs its reason.
+_BOARDED_NOT_OFFERED = frozenset()
 _OFFERED_NOT_BOARDED_HERE = frozenset({
-    ("image-gen", "ideogram"),  # rides the image picker, boards
-    # the ideogram4 arm (the dual-guided graph)
     ("h3-timeline", "h3-timeline"),  # the h3 trio boards the
     ("h3-timeline", "h3"),  # PACKAGE arm (Model.card +
     ("h3-timeline", "h3-keyframe"),  # py/emission twin compose —
     # test_h3_family_boards_the_timeline_package_arm owns that
     # proof); the card declares families, not a models tuple
 })
-# OPEN GAP (2026-09-06, needs the operator's ruling — NOT deliberate):
-# fit + skin board arms and compose (their card walls prove it) but
-# no form row offers them: the editor has no picker surface for
-# either lane. Offer them (new rows need operator columns: picker
-# order + sidebar_key are surface decisions, never derived) or
-# declare them deliberately hidden (api-only lanes) and move them
-# to _BOARDED_NOT_OFFERED with the reason. This set must EMPTY by
-# ruling, never by drift.
-_BOARDED_WITH_NO_FORM_ROW = frozenset({
-    ("fit", "fit"),
-    ("skin", "skin"),
-})
+# THE OPEN GAP — CLOSED 2026-09-06 by operator ruling (ALL MUST:
+# every card is offered — fit 20/3d, skin 21/3d). This set stays
+# EMPTY: a boarded model with no form row fails LOUD.
+_BOARDED_WITH_NO_FORM_ROW = frozenset()
 
 
 def _card_models() -> dict[str, set[str]]:
@@ -304,14 +294,10 @@ def test_covers_match_card_models_up_to_pinned_divergences() -> None:
     assert bno == _BOARDED_NOT_OFFERED | _BOARDED_WITH_NO_FORM_ROW, (
         "boarded-but-unoffered set changed: %s (want exactly %s) — "
         "a newly hidden runnable model (offer it, or pin it "
-        "deliberate with its reason) or transfer_rig got offered "
-        "(delete its entry). fit/skin stay in "
-        "_BOARDED_WITH_NO_FORM_ROW until the operator rules: "
-        "offer vs deliberately hidden." % (
+        "deliberate with its reason)" % (
             sorted(bno),
             sorted(_BOARDED_NOT_OFFERED | _BOARDED_WITH_NO_FORM_ROW)))
     assert onb == _OFFERED_NOT_BOARDED_HERE, (
         "offered-but-unboarded-here set changed: %s (want exactly "
-        "%s) — a newly cross-offered model (pin it) or ideogram "
-        "boarded image-gen (delete its entry)" % (
+        "%s) — a newly cross-offered model (pin it)" % (
             sorted(onb), sorted(_OFFERED_NOT_BOARDED_HERE)))

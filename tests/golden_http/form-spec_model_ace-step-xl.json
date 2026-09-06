@@ -1,11 +1,217 @@
 {
   "model": "ace-step-xl",
-  "form": "ace-step-xl",
+  "form": "music-native",
   "service": "ace-step-xl",
-  "label": "ACE-Step 1.5 XL Turbo",
+  "label": "Music (audio_cpp)",
   "genre": "audio",
-  "fields": [],
-  "schema_groups": [],
+  "fields": [
+    {
+      "name": "prompt",
+      "type": "textarea",
+      "label": "Music prompt",
+      "default": null,
+      "options": [],
+      "group": "input",
+      "zone": "",
+      "order": 0,
+      "required": true,
+      "columns": null,
+      "width": 2,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Genre, era, region, 2-3 style anchors, tempo in BPM, key if known",
+      "visible_when": null
+    },
+    {
+      "name": "lyrics",
+      "type": "textarea",
+      "label": "Lyrics (txt2music only)",
+      "default": null,
+      "options": [],
+      "group": "input",
+      "zone": "",
+      "order": 1,
+      "required": null,
+      "columns": null,
+      "width": 2,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Section tags [verse] [pre-chorus] [chorus] [bridge] [outro]; txt2music honours them, ACE-Step ignores",
+      "visible_when": null
+    },
+    {
+      "name": "duration",
+      "type": "slider",
+      "label": "",
+      "default": 120,
+      "options": [],
+      "group": "target",
+      "zone": "",
+      "order": 0,
+      "required": null,
+      "columns": null,
+      "width": null,
+      "min": 10,
+      "max": 600,
+      "step": 5,
+      "placeholder": "",
+      "tooltip": "Target length in seconds (audio.cpp caps at 10 minutes)",
+      "visible_when": null
+    },
+    {
+      "name": "seed",
+      "type": "seed",
+      "label": "Seed",
+      "default": -1,
+      "options": [],
+      "group": "run",
+      "zone": "",
+      "order": 0,
+      "required": null,
+      "columns": null,
+      "width": null,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "",
+      "visible_when": null
+    },
+    {
+      "name": "backend",
+      "type": "select",
+      "label": "Backend",
+      "default": "cuda",
+      "options": [
+        "cuda",
+        "cpu"
+      ],
+      "group": "run",
+      "zone": "",
+      "order": 1,
+      "required": null,
+      "columns": null,
+      "width": null,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "cuda = GPU; cpu = GGUF CPU path (CUDA absent)",
+      "visible_when": null
+    },
+    {
+      "name": "family",
+      "type": "select",
+      "label": "Family",
+      "default": "ace-step-xl",
+      "options": [
+        "ace-step-xl",
+        "ace-step-sft",
+        "minimax"
+      ],
+      "group": "run",
+      "zone": "",
+      "order": 2,
+      "required": null,
+      "columns": null,
+      "width": null,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "audio_cpp family — the renderer reads lane_inputs.family from the picked model row",
+      "visible_when": null
+    }
+  ],
+  "schema_groups": [
+    {
+      "id": "input",
+      "label": "Input",
+      "fields": [
+        {
+          "name": "prompt",
+          "type": "textarea",
+          "label": "Music prompt",
+          "order": 0,
+          "width": 2,
+          "required": true,
+          "tooltip": "Genre, era, region, 2-3 style anchors, tempo in BPM, key if known"
+        },
+        {
+          "name": "lyrics",
+          "type": "textarea",
+          "label": "Lyrics (txt2music only)",
+          "order": 1,
+          "width": 2,
+          "tooltip": "Section tags [verse] [pre-chorus] [chorus] [bridge] [outro]; txt2music honours them, ACE-Step ignores"
+        }
+      ],
+      "order": 0,
+      "zone": "params"
+    },
+    {
+      "id": "target",
+      "label": "Target",
+      "fields": [
+        {
+          "name": "duration",
+          "type": "slider",
+          "order": 0,
+          "min": 10,
+          "max": 600,
+          "step": 5,
+          "default": 120,
+          "tooltip": "Target length in seconds (audio.cpp caps at 10 minutes)"
+        }
+      ],
+      "order": 1,
+      "zone": "params"
+    },
+    {
+      "id": "run",
+      "label": "Run",
+      "fields": [
+        {
+          "name": "seed",
+          "type": "seed",
+          "label": "Seed",
+          "order": 0,
+          "default": -1
+        },
+        {
+          "name": "backend",
+          "type": "select",
+          "label": "Backend",
+          "order": 1,
+          "default": "cuda",
+          "tooltip": "cuda = GPU; cpu = GGUF CPU path (CUDA absent)",
+          "options": [
+            "cuda",
+            "cpu"
+          ]
+        },
+        {
+          "name": "family",
+          "type": "select",
+          "label": "Family",
+          "order": 2,
+          "default": "ace-step-xl",
+          "tooltip": "audio_cpp family — the renderer reads lane_inputs.family from the picked model row",
+          "options": [
+            "ace-step-xl",
+            "ace-step-sft",
+            "minimax"
+          ]
+        }
+      ],
+      "order": 2,
+      "zone": "params"
+    }
+  ],
   "features": {
     "modifiers": [],
     "variant_groups": {
@@ -24,8 +230,7 @@
   },
   "defaults": {
     "backend": "cuda",
-    "duration": "120",
-    "sample_rate": "44100"
+    "duration": "120"
   },
   "variants": [
     {

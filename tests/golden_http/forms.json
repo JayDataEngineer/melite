@@ -9,10 +9,9 @@
       "default_service": "krea-2",
       "hidden": false,
       "covers": [
-        "krea-2",
-        "z-image",
         "anima",
-        "ideogram"
+        "krea-2",
+        "z-image"
       ]
     },
     "image-edit": {
@@ -28,7 +27,7 @@
       ]
     },
     "tts": {
-      "label": "Speech",
+      "label": "TTS",
       "genre": "audio",
       "order": 3,
       "plugin": "comfyui",
@@ -64,6 +63,20 @@
         "music3"
       ]
     },
+    "h3-timeline": {
+      "label": "H3 Timeline",
+      "genre": "video",
+      "order": 6,
+      "plugin": "comfyui",
+      "sidebar_key": "video",
+      "default_service": "h3-timeline",
+      "hidden": false,
+      "covers": [
+        "h3",
+        "h3-keyframe",
+        "h3-timeline"
+      ]
+    },
     "sfx": {
       "label": "Sound Effects",
       "genre": "audio",
@@ -76,22 +89,8 @@
         "moss-sfx"
       ]
     },
-    "h3-timeline": {
-      "label": "H3 Timeline",
-      "genre": "video",
-      "order": 6,
-      "plugin": "comfyui",
-      "sidebar_key": "video",
-      "default_service": "h3-timeline",
-      "hidden": false,
-      "covers": [
-        "h3-timeline",
-        "h3",
-        "h3-keyframe"
-      ]
-    },
     "mask-studio": {
-      "label": "Mask",
+      "label": "Mask Studio",
       "genre": "image",
       "order": 8,
       "plugin": "comfyui",
@@ -123,13 +122,14 @@
       "default_service": "trellis2-native",
       "hidden": false,
       "covers": [
-        "trellis2-native",
-        "pixal3d"
+        "pixal3d",
+        "transfer_rig",
+        "trellis2-native"
       ]
     },
     "forge": {
       "label": "Creature Forge",
-      "genre": "creature",
+      "genre": "3d",
       "order": 11,
       "plugin": "anycreature",
       "sidebar_key": "3d",
@@ -172,8 +172,8 @@
       "default_service": "wan-vace",
       "hidden": false,
       "covers": [
-        "wan-vace",
-        "scail2-animate"
+        "scail2-animate",
+        "wan-vace"
       ]
     },
     "upscale-tools": {
@@ -221,10 +221,60 @@
       "default_service": "wd14",
       "hidden": false,
       "covers": [
-        "wd14",
-        "joytag",
         "florence2",
-        "joycaption"
+        "joycaption",
+        "joytag",
+        "wd14"
+      ]
+    },
+    "fit": {
+      "label": "Fit",
+      "genre": "3d",
+      "order": 20,
+      "plugin": "comfyui",
+      "sidebar_key": "3d",
+      "default_service": "fit",
+      "hidden": false,
+      "covers": [
+        "fit"
+      ]
+    },
+    "skin": {
+      "label": "Skin",
+      "genre": "3d",
+      "order": 21,
+      "plugin": "comfyui",
+      "sidebar_key": "3d",
+      "default_service": "skin",
+      "hidden": false,
+      "covers": [
+        "skin"
+      ]
+    },
+    "auto-rig": {
+      "label": "Auto Rig",
+      "genre": "3d",
+      "order": 22,
+      "plugin": "skintokens",
+      "sidebar_key": "3d",
+      "default_service": "skintokens",
+      "hidden": false,
+      "covers": [
+        "skintokens"
+      ]
+    },
+    "music-native": {
+      "label": "Music (audio_cpp)",
+      "genre": "audio",
+      "order": 23,
+      "plugin": "audio_cpp",
+      "sidebar_key": "audio",
+      "default_service": "ace-step-xl",
+      "hidden": false,
+      "covers": [
+        "ace-step-sft",
+        "ace-step-xl",
+        "txt2music"
       ]
     }
   }

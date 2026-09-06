@@ -51,3 +51,30 @@ The soma/smplx/g1 rows + the text-to-motion form + the
 text_to_motion_card tool leave the served surfaces (the comfyui
 kimodo row + motion_card remain). form-spec_model_soma.json
 deleted with the lane.
+
+## 2026-09-06 — ledger row 3: _FORMS_TABLE derived, restatement deleted
+
+Operator order ("THE SOURCE DECLARES WHAT THE END USERS CAN DO, NOT
+THE OTHER WAY AROUND"): `py/editor_forms.py` no longer declares the
+18-entry literal — every entry is one uniform projection of its card
+class (id/label/genre + sidebar trio) + the Model.card scan (covers),
+zero per-card branches. Design record
+docs/design/forms-table-derivation.md. DELIBERATE contract change;
+the wire deltas are exactly the surveyed set, nothing else
+(verified: derived-vs-literal full diff before the flip):
+
+- +4 entries (all carry boarded models; table-only was empty):
+  fit (20/3d/fit), skin (21/3d/skin), auto-rig (22/3d/skintokens),
+  music-native (23/audio/ace-step-xl).
+- Labels follow the cards: tts "Speech"→"TTS", mask-studio
+  "Mask"→"Mask Studio".
+- Genre follows the card: forge "creature"→"3d".
+- Covers follow the scan (sorted, deterministic): image-gen drops
+  ideogram (boards ideogram4); img-to-mesh gains transfer_rig
+  (boards img-to-mesh); h3-timeline/tagger/video-gen covers sorted
+  (member sets unchanged).
+- Entry order now follows sidebar_order (h3-timeline(6) before
+  sfx(7)); dict-order only, the editor sorts by `order`.
+
+Source: `forms()` == `_derive_forms_table` (cached per repo root);
+the ALLOWED_CARDS gate is the derived keys (no second list).

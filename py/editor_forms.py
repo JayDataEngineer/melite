@@ -5,7 +5,8 @@ This module IS the implementation (the C twin was retired 2026-09-02;
 the golden_http pins are the estate's own wire contract).
 
 Routes served:
-  GET /v1/forms                 -> the _FORMS_TABLE below
+  GET /v1/forms                 -> the derived forms table
+                                    (_derive_forms_table below)
   GET /v1/form-spec?model=<id>  -> form_spec: catalog row + variants
                                    + card surface + recipes
   GET /v1/kinds                 -> the first-party kind table declared in
@@ -15,12 +16,12 @@ Where each route's data lives (everything is read from plugins/ at call time;
 no model or engine name is hardcoded as logic — see the one documented
 exception for /v1/forms below):
 
-  /v1/forms        FIXED OPERATOR SURFACE — declared verbatim as
-                   _FORMS_TABLE below, NOT derived from plugins/ data,
-                   and plugins/ data cannot reproduce it (the tts entry
-                   deliberately diverges from its card: forms label
-                   "Speech" vs card label "TTS", default_service
-                   "qwen3-tts" vs card family "qwen3_tts"). The table's
+  /v1/forms        DERIVED OPERATOR SURFACE (ledger row 3, operator
+                   order 2026-09-06: "THE SOURCE DECLARES WHAT THE END
+                   USERS CAN DO, NOT THE OTHER WAY AROUND") — every
+                   entry is one uniform projection of a card class
+                   (id/label/genre + the sidebar trio) + the Model.card
+                   scan (covers), zero per-card branches. The table's
                    keys are also the ALLOWED_CARDS set, so the card
                    finder derives its gate from the table, not a second
                    list.
@@ -109,155 +110,129 @@ except Exception:
 __all__ = ["forms", "form_spec", "kinds"]
 
 # ─────────────────────────────────────────────────────────────────────────
-# /v1/forms — the fixed operator surface, declared verbatim.
-# Fixed operator surface ("operator card law" 2026-09-01); not derivable
-# from plugins/ data (see module docstring). Order field and sidebar_key
-# are editor chrome, not model/engine names.
+# /v1/forms — DERIVED from the cards, uniformly (ledger row 3,
+# operator order 2026-09-06: "THE SOURCE DECLARES WHAT THE END USERS
+# CAN DO, NOT THE OTHER WAY AROUND"). Every entry is ONE projection
+# of a card class + the Model.card scan — no card id appears below,
+# ever. Served order follows sidebar_order (deterministic). The
+# unoffered cohorts (ltx pair, pixel pair) stay absent BY CONSTRUCTION:
+# _scan_catalog excludes unoffered classes, so covers never offers
+# what cannot run — no per-card row needed to say so.
 # ─────────────────────────────────────────────────────────────────────────
-_FORMS_TABLE = {
-    "image-gen": {"label": "Image", "genre": "image", "order": 1,
-                  "plugin": "comfyui", "sidebar_key": "image",
-                  "default_service": "krea-2", "hidden": False,
-                  # The image-generation form's model membership (the
-                  # SSOT for the form-card fallback, 2026-09-05).
-                  # EVERY member boards a card arm: krea-2/z-image/
-                  # anima → image-gen; ideogram → ideogram4 (the
-                  # dual-guided graph, same editor form). Offered
-                  # means runnable — pinned by test_card_boarding.
-                  "covers": ("krea-2", "z-image", "anima", "ideogram")},
-    "image-edit": {"label": "Image Edit", "genre": "image", "order": 2,
-                   "plugin": "comfyui", "sidebar_key": "image-edit",
-                   "default_service": "qwen-img-edit-2511", "hidden": False,
-                   # (2026-09-05 image-edit rework) the pre-flip
-                   # `img-edit` family head is retired — same physical
-                   # lane, no cascade; the survivor boards alone.
-                   "covers": ("qwen-img-edit-2511",)},
-    # audio A-cluster rehomed 2026-09-04 (music on native core;
-    # tts/voice-lock/sfx on the split packs' classes)
-    "tts": {"label": "Speech", "genre": "audio", "order": 3,
-            "plugin": "comfyui", "sidebar_key": "audio",
-            "default_service": "qwen3-tts", "hidden": False,
-            "covers": ("qwen3-tts", "qwen3-tts-base")},
-    "voice-lock": {"label": "Voice Lock", "genre": "audio", "order": 4,
-                   "plugin": "comfyui", "sidebar_key": "audio",
-                   "default_service": "qwen3-tts-voicedesign", "hidden": False,
-                   "covers": ("qwen3-tts-voicedesign",)},
-    "music": {"label": "Music", "genre": "audio", "order": 5,
-              "plugin": "comfyui", "sidebar_key": "audio",
-              "default_service": "music3", "hidden": False,
-              "covers": ("music3",)},
-    "sfx": {"label": "Sound Effects", "genre": "audio", "order": 7,
-            "plugin": "comfyui", "sidebar_key": "audio",
-            "default_service": "moss-sfx", "hidden": False,
-            "covers": ("moss-sfx",)},
-    "h3-timeline": {"label": "H3 Timeline", "genre": "video", "order": 6,
-                    "plugin": "comfyui", "sidebar_key": "video",
-                    "default_service": "h3-timeline", "hidden": False,
-                    "covers": ("h3-timeline", "h3", "h3-keyframe")},
-    # mask B-cluster: the selection layer rides the image sidebar (the
-    # studio body's tenant is mask/mask_studio — the card is the authoring
-    # fallback surface)
-    "mask-studio": {"label": "Mask", "genre": "image", "order": 8,
-                    "plugin": "comfyui", "sidebar_key": "image",
-                    "default_service": "mask-studio", "hidden": False,
-                    "covers": ("mask-studio",)},
-    # cluster C stopgap (2026-09-04): kimodo text→motion on our own
-    # packs; the motion genre already rides the sidebar taxonomy.
-    # hy_motion dropped (2026-09-05): no model class exists — a
-    # ghost cover is an offer that cannot run
-    "motion": {"label": "Motion", "genre": "motion", "order": 9,
-               "plugin": "comfyui", "sidebar_key": "motion",
-               "default_service": "kimodo", "hidden": False,
-               "covers": ("kimodo",)},
-    # cluster C (2026-09-04): TRELLIS.2 native — image → textured
-    # .glb on ComfyUI core (no extension packs)
-    # cluster P (2026-09-05): pixal3d boards the same card as the
-    # pixel-aligned hero tier (same input shape + camera_fov) —
-    # covered so the editor offers the model switch. transfer_rig
-    # stays uncovered: different inputs (GLB pair, no image), it
-    # does not ride the image form.
-    "img-to-mesh": {"label": "Image → 3D", "genre": "3d", "order": 10,
-                    "plugin": "comfyui", "sidebar_key": "3d",
-                    "default_service": "trellis2-native", "hidden": False,
-                    "covers": ("trellis2-native", "pixal3d")},
-    # cpp native-engine category (2026-10-02): the vendored-subprocess
-    # engines join the SAME picker — generic form-specs (the card class
-    # Field rows), queue lane, no bespoke editor chrome yet.
-    "forge": {"label": "Creature Forge", "genre": "creature", "order": 11,
-              "plugin": "anycreature", "sidebar_key": "3d",
-              "default_service": "anycreature", "hidden": False,
-              "covers": ("anycreature",)},
-    # (the kimodo text-to-motion editor row RETIRED 2026-09-06 with
-    # the cpp ggml lane — motion composes through the comfyui
-    # kimodo card; the ONE-implementation rule)
-    "quad-remesh": {"label": "Quad Remesh", "genre": "3d", "order": 13,
-                    "plugin": "autoremesher", "sidebar_key": "3d",
-                    "default_service": "autoremesher", "hidden": False,
-                    "covers": ("autoremesher",)},
-    # cluster C2 (2026-09-04): anny — character assembly (composite
-    # body/hair/outfit + 8-view turnaround + SAM part sprites)
-    "anny": {"label": "Anny", "genre": "3d", "order": 14,
-             "plugin": "comfyui", "sidebar_key": "3d",
-             "default_service": "anny", "hidden": False,
-             "covers": ("anny",)},
-    # cluster E (2026-09-04): the generic video card — ONE interface,
-    # every non-h3 family (img-gen pattern; h3 stays on h3-timeline)
-    # cluster E (2026-09-04): the generic video card — ONE interface,
-    # every non-h3 family (img-gen pattern; h3 stays on h3-timeline).
-    # Covers = the RUNNABLE members only (2026-09-05): the ltx pair
-    # is unboarded (no card arm — unoffered on their classes until
-    # the LTX lane boards).
-    "video-gen": {"label": "Video", "genre": "video", "order": 15,
-                  "plugin": "comfyui", "sidebar_key": "video",
-                  "default_service": "wan-vace", "hidden": False,
-                  "covers": ("wan-vace", "scail2-animate")},
-    # F-cluster (2026-09-04): the hidden tool card — tool lanes are
-    # consumed BY other cards, never user surfaces. The pixel pair is
-    # unboarded (unoffered until the upscale lane boards them).
-    "upscale-tools": {"label": "Upscale Tools", "genre": "image",
-                      "order": 16, "plugin": "comfyui",
-                      "sidebar_key": "image",
-                      "default_service": "seedvr2_ema",
-                      "hidden": True,
-                      "covers": ("seedvr2_ema",)},
-    # ideogram4 (2026-09-05): the dual-guided typography card. HIDDEN
-    # row — ideogram rides the IMAGE-GEN picker (image-gen covers it);
-    # this row exists so the card id clears the _ALLOWED_CARDS gate
-    # and /v1/form-spec?model=ideogram serves the card surface (the
-    # same shape as upscale-tools: registered, not a user surface).
-    "ideogram4": {"label": "Ideogram", "genre": "image",
-                  "order": 17, "plugin": "comfyui",
-                  "sidebar_key": "image",
-                  "default_service": "ideogram",
-                  "hidden": True,
-                  "covers": ("ideogram",)},
-    # input-prep (2026-09-05): the weightless source lane boards.
-    # HIDDEN row — the input card is not a picker surface (the
-    # editor's InputCardEditor is its fixed-field surface); this row
-    # exists so the card id clears the _ALLOWED_CARDS gate and the
-    # boarding wall's offered-means-runnable holds (the same shape
-    # as upscale-tools/ideogram4: registered, not a user surface).
-    "input-prep": {"label": "Input Prep", "genre": "image",
-                   "order": 18, "plugin": "comfyui",
-                   "sidebar_key": "image",
-                   "default_service": "input",
-                   "hidden": True,
-                   "covers": ("input",)},
-    # tagger (2026-09-06): image prompt inversion — booru tags +
-    # captions for recreation. VISIBLE picker surface (the user tags
-    # their own images); all four families landed.
-    "tagger": {"label": "Tagger", "genre": "image",
-               "order": 19, "plugin": "comfyui",
-               "sidebar_key": "image",
-               "default_service": "wd14",
-               "hidden": False,
-               "covers": ("wd14", "joytag", "florence2",
-                          "joycaption")},
-}
+_FORMS_CACHE: dict[str, dict] = {}
 
-# The C's ALLOWED_CARDS gate is exactly the keys
-# of the /v1/forms surface — derive it, keeping one closed surface.
-_ALLOWED_CARDS = frozenset(_FORMS_TABLE)
+
+def _iter_card_paths(repo_root: str):
+    """(plugin dir, card.py path) for every card — the same two-level
+    walk _find_card_yaml uses (cards/ + action_cards/<genre>/<card>/),
+    every engine. THE CARD PATTERN: py/card.py wins; a root card.py
+    beside it is compat debris (two SSOTs refuse, like card.yaml).
+    The caller resolves the plugin dir to its mounted engine type
+    through the plugin bus (Plugin.engines) — dir spellings
+    (audio-cpp) never leak onto the wire (audio_cpp)."""
+    for _plugin_id, edir in _iter_plugin_engines(repo_root):
+        for subdir in ("cards", "action_cards"):
+            cdir = os.path.join(edir, subdir)
+            if not os.path.isdir(cdir):
+                continue
+            for card in _scandir(cdir):
+                if card.startswith("."):
+                    continue
+                card_path = os.path.join(cdir, card)
+                if not os.path.isdir(card_path):
+                    continue
+                inner = ([os.path.join(card_path, sub)
+                          for sub in _scandir(card_path)
+                          if not sub.startswith(".")]
+                         if os.path.isdir(card_path) else [])
+                for carddir in [card_path] + inner:
+                    pyc = os.path.join(carddir, "py", "card.py")
+                    rootc = os.path.join(carddir, "card.py")
+                    if os.path.isfile(pyc):
+                        if os.path.isfile(rootc):
+                            raise ValidationError(
+                                "%s carries BOTH py/card.py and card.py "
+                                "— one card, one class file" % carddir)
+                        yield edir, pyc
+                    elif os.path.isfile(rootc):
+                        yield edir, rootc
+
+
+def _derive_forms_table(repo_root: str) -> dict:
+    """The uniform projection (row 3): card class + Model.card scan.
+    Every refusal below fires identically for every card — a card that
+    cannot derive is broken source, never a table special case."""
+    from melite_cards import ActionCard as _AC
+    import plugins as _plugins_bus
+    by_dir = {os.path.abspath(str(ref.engine_dir)): etype
+              for etype, ref in _plugins_bus.scan_engines().items()}
+    cards: list[tuple[str, object]] = []
+    for plugin_dir, cpy in _iter_card_paths(repo_root):
+        engine_type = by_dir.get(os.path.abspath(plugin_dir))
+        if engine_type is None:
+            raise ValidationError(
+                "%s lives in a plugin dir that mounts no engine type "
+                "— a card without a lane cannot serve" % cpy)
+        cls = _load_card_class(cpy)
+        if cls is None or not getattr(cls, "id", ""):
+            raise ValidationError(
+                "%s yields no ActionCard subclass — a card.py with no "
+                "card is debris" % cpy)
+        if any(cls.id == _c.id for _, _c in cards):
+            raise ValidationError(
+                "duplicate card id %r (%s) — one card, one surface"
+                % (cls.id, cpy))
+        if (not isinstance(cls.sidebar_order, int)
+                or not cls.sidebar or not cls.default_service):
+            raise ValidationError(
+                "%s (%s) is missing the universal sidebar trio "
+                "(sidebar_order/sidebar/default_service) — ALL MUST"
+                % (cpy, cls.id))
+        if cls.sidebar not in _AC.SIDEBAR_SECTIONS:
+            raise ValidationError(
+                "%s (%s) sidebar %r is outside the universal sections "
+                "%s" % (cpy, cls.id, cls.sidebar,
+                        sorted(_AC.SIDEBAR_SECTIONS)))
+        cards.append((engine_type, cls))
+    boarded: dict[str, set] = {}
+    for row in _scan_catalog(repo_root):
+        mcls = row.get("_model_class")
+        card = getattr(mcls, "card", "") or ""
+        if card:
+            boarded.setdefault(card, set()).add(row["id"])
+    table = {}
+    for engine_type, cls in sorted(cards, key=lambda pc: pc[1].sidebar_order):
+        covers = tuple(sorted(boarded.get(cls.id, ())))
+        if cls.default_service not in covers:
+            raise ValidationError(
+                "%s default_service %r is unoffered (covers %r) — "
+                "the entry must open on a model it offers"
+                % (cls.id, cls.default_service, covers))
+        table[cls.id] = {"label": cls.label, "genre": cls.genre,
+                         "order": cls.sidebar_order, "plugin": engine_type,
+                         "sidebar_key": cls.sidebar,
+                         "default_service": cls.default_service,
+                         "hidden": bool(cls.sidebar_hidden),
+                         "covers": covers}
+    return table
+
+
+def _forms_table(repo_root: str) -> dict:
+    """The derived table, cached per repo root (the gateway imports
+    card/model modules per call already — same staleness class)."""
+    key = os.path.abspath(repo_root)
+    if key not in _FORMS_CACHE:
+        _FORMS_CACHE[key] = _derive_forms_table(repo_root)
+    return _FORMS_CACHE[key]
+
+
+def _allowed_cards(repo_root: str) -> frozenset:
+    """The ALLOWED_CARDS gate is exactly the derived surface's keys —
+    one closed surface, never a second list."""
+    return frozenset(_forms_table(repo_root))
+
+
+# (the restatement died 2026-09-06 — the table is derived above.)
 
 # Mod bag types that become modifier KINDS.
 _MOD_KIND_TYPES = frozenset(("loras", "controlnet", "mask"))
@@ -268,8 +243,9 @@ _RECIPE_KEYS = ("prompt_upscale:", "lyrics_upscale:")
 
 
 def forms(repo_root: str) -> dict[str, dict[str, dict[str, JsonValue]]]:
-    """GET /v1/forms -> {"forms": {card_id: {...}, ...}} (fixed surface)."""
-    return {"forms": {k: dict(v) for k, v in _FORMS_TABLE.items()}}
+    """GET /v1/forms -> {"forms": {card_id: {...}, ...}} (derived surface —
+    the card classes + the Model.card scan, uniformly)."""
+    return {"forms": {k: dict(v) for k, v in _forms_table(repo_root).items()}}
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -831,7 +807,7 @@ def _find_card_yaml(repo_root: str, model: str) -> str | None:
                 cls = _load_card_class(mpy)
                 if cls is None or not cls._fields_:
                     continue
-                if cls.id not in _ALLOWED_CARDS:
+                if cls.id not in _allowed_cards(repo_root):
                     continue
                 fams = [_norm(f) for f in cls.families_of()]
                 if nmodel not in fams:
@@ -1163,17 +1139,17 @@ def _form_card_frag_for_model(repo_root: str, row: CatalogRow) -> dict[str, Json
     """The no-own-card.py model → form-anchor fallback (2026-09-05).
 
     A model with no card.py of its own still belongs to a form
-    (_FORMS_TABLE's `covers` membership is the SSOT — every member
+    (the derived table's `covers` membership is the SSOT — every member
     BOARDS a compose arm; owning a card.py is a different thing from
     boarding). Its form-spec inherits the form's ANCHOR card's
     fields/schema_groups so the Parameters zone renders the
     universal surface — without this, models without their own
     card.py served 0 fields and the Parameters zone vanished on
     model swap. Declarative: the model→form membership lives in
-    _FORMS_TABLE, the anchor card is the form's `default_service`.
+    the derived table, the anchor card is the form's `default_service`.
     No model name is hardcoded in the body of this helper."""
     model_id = row.get("id", "")
-    for fid, fdef in _FORMS_TABLE.items():
+    for fid, fdef in _forms_table(repo_root).items():
         covers = fdef.get("covers") or ()
         if model_id not in covers:
             continue
@@ -1758,7 +1734,7 @@ def form_spec(repo_root: str, model_id: str | None) -> tuple[int, dict[str, Json
         # rendered the Model zone and nothing else ("it just allows me
         # to pick model"). The registry wins BEFORE the probe; a form
         # name can never read as a lane.
-        fdef = _FORMS_TABLE.get(model)
+        fdef = _forms_table(repo_root).get(model)
         if (fdef is not None and fdef["default_service"] != model
                 and _find_model(_scan_catalog(repo_root),
                                 fdef["default_service"]) is not None):
@@ -1820,7 +1796,7 @@ def form_spec(repo_root: str, model_id: str | None) -> tuple[int, dict[str, Json
         # Form-card fallback for cardless "data" models in a form
         # (2026-09-05): the model is listed in a form's `covers` and
         # inherits that form's anchor card's fields. Declarative — the
-        # membership is _FORMS_TABLE's `covers`, no model name here.
+        # membership is the derived table's `covers`, no model name here.
         frag = _form_card_frag_for_model(repo_root, row)
         frag_from_fallback = frag is not None
     if frag:
@@ -1835,7 +1811,7 @@ def form_spec(repo_root: str, model_id: str | None) -> tuple[int, dict[str, Json
         spec["service"] = row["id"]
     # CARDLESS MODELS — the contract (revised 2026-09-05):
     # A catalog row with NO card.py of its own still belongs to a
-    # form (the membership is _FORMS_TABLE's `covers`); its form-spec
+    # form (the membership is the derived table's `covers`); its form-spec
     # inherits the form's ANCHOR card's fields/schema_groups so the
     # Parameters zone renders the universal form. form/service default
     # to the model id (the spec is branded for THIS model), fields and

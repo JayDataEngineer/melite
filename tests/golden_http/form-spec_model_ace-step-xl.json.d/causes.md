@@ -22,3 +22,15 @@ recipe — always — and the Recipe rail renders ABOVE the Model row.
 Mode for THIS file: WHOLESALE regold (parity-pinned route —
 the golden must equal the live wire byte-for-byte; verified zero
 leaf divergences old→new outside the causes below).
+
+## 2026-09-06 — ledger row 3: music-native clears the derived gate
+
+The ALLOWED_CARDS gate is the derived forms keys — music-native
+(order 23, declared on its card) clears it, so
+/v1/form-spec?model=ace-step-xl serves the card tail (form
+music-native, card label, 6 Field rows) instead of the honest
+empties. Correction to the note above: the card was never
+fieldless — the `fields: []` was the gate-era empty, not the card
+surface. fit/skin/skintokens/ace-step-sft/txt2music specs gain
+their tails the same way (served, no goldens — same as most
+models).

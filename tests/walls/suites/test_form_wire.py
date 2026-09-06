@@ -45,7 +45,7 @@ REPO_S = str(REPO)
 
 # ── A. the regression: baseline card services resolve to full specs ─
 
-@pytest.mark.parametrize("svc", sorted(editor_forms._FORMS_TABLE))
+@pytest.mark.parametrize("svc", sorted(editor_forms._forms_table(REPO_S)))
 def test_every_form_name_resolves_to_a_full_spec(svc: str) -> None:
     code, spec = editor_forms.form_spec(REPO_S, svc)
     assert code == 200, (svc, code, spec)
@@ -153,7 +153,7 @@ def test_no_bare_minimal_literal_on_the_serving_path() -> None:
     assert "dict(_MINIMAL_LANE_SPEC)" not in src
     # the registry resolution precedes the probe CALL inside form_spec
     # (index the call site marker, not the def line)
-    i_reg = src.index('_FORMS_TABLE.get(model)')
+    i_reg = src.index('_forms_table(repo_root).get(model)')
     i_probe = src.index('if safe and _lane_probe(repo_root, model):')
     assert i_reg < i_probe
 
@@ -186,7 +186,7 @@ def scratch_gateway() -> Iterator[int]:
     reap_gateway(proc)
 
 
-@pytest.mark.parametrize("svc", sorted(editor_forms._FORMS_TABLE))
+@pytest.mark.parametrize("svc", sorted(editor_forms._forms_table(REPO_S)))
 def test_http_every_form_serves_the_full_contract(scratch_gateway: int, svc: str) -> None:
     status, body = _http_get(scratch_gateway, "v1/form-spec?model=%s" % svc)
     assert status == 200, (svc, status)
@@ -370,7 +370,7 @@ def test_card_kinds_table_input_runner_is_set() -> None:
 
 def test_http_cardless_models_in_a_form_serve_the_form_card() -> None:
     """The cardless-model → form-card fallback (2026-09-05). Every model
-    in _FORMS_TABLE[*].covers must serve the form's anchor card's
+    in the derived table's covers must serve the form's anchor card's
     fields on /v1/form-spec — a cardless "data" model (z-image, anima,
     ideogram in the image form) would otherwise serve 0 fields and the
     Parameters zone vanishes on model swap. The membership is the
@@ -378,7 +378,7 @@ def test_http_cardless_models_in_a_form_serve_the_form_card() -> None:
     import editor_forms
     import urllib.request
     import json as _json
-    for fid, fdef in editor_forms._FORMS_TABLE.items():
+    for fid, fdef in editor_forms._forms_table(REPO_S).items():
         covers = fdef.get("covers") or ()
         if not covers: continue
         anchor = fdef["default_service"]
@@ -432,7 +432,7 @@ def test_http_cardless_model_spec_keeps_its_own_identity(scratch_gateway: int) -
 
 def test_negative_prompt_is_never_visible_when_gated() -> None:
     offenders = []
-    for svc in sorted(editor_forms._FORMS_TABLE):
+    for svc in sorted(editor_forms._forms_table(REPO_S)):
         code, spec = editor_forms.form_spec(REPO_S, svc)
         assert code == 200, (svc, code)
         for f in spec.get("fields", []):
