@@ -401,7 +401,20 @@ class TestKnobSSOT(unittest.TestCase):
             REPO, "plugins/engines/comfyui/models", genre, model_id,
             "model.py"), "comfyui")
         rows = list(cls.card_knobs or ())
-        graph = fn(doc_cls(), cls)
+        # a doc with required fields (mask input_image) cannot render
+        # bare — fill required-only slots with type empties (the wall
+        # audits the DEFAULT graph shape, not values).
+        _req: dict[str, object] = {}
+        for _name, _f in doc_cls.model_fields.items():
+            if not _f.is_required():
+                continue
+            _ann = _f.annotation
+            _req[_name] = (
+                "" if _ann is str
+                else 0 if _ann in (int, float)
+                else False if _ann is bool
+                else None)
+        graph = fn(doc_cls(**_req), cls)
         structural = self._structural(
             card_subpath, card_cls, "st_%s" % model_id)
         wire = ((self._card_fields(card_subpath, card_cls,
@@ -438,6 +451,11 @@ class TestKnobSSOT(unittest.TestCase):
             "%s renderer-fed knobs missing rows: %s" % (
                 model_id, fed - row_names))
         for r in rows:
+            if not r["inject"]:
+                # compile-consumed row (mask-studio tier 2/3): no node
+                # target exists — the name∈wire check above is the
+                # whole audit; the row comment states the consumption.
+                continue
             node_key, _, inp = r["inject"].rpartition(".")
             node_cls, _, _idx = node_key.rpartition(".")
             self.assertIn(
@@ -601,6 +619,16 @@ class TestKnobSSOT(unittest.TestCase):
             "video/video-gen", "VideoGenCard", "scail2-animate",
             genre="video")
 
+    def test_mask_studio_compile_card_rows(self) -> None:
+        """Row-3 migration pattern (twelfth card, first COMPILE-CARD):
+        sixteen rows in three tiers — four direct injects onto the
+        headless-rendered mask graph, ten compile directives and two
+        config-gated inputs as empty-inject rows (splice skips them
+        by construction; the wall audits name∈wire + the comment)."""
+        self._assert_rows_match_renderer(
+            "image/mask_studio", "MaskStudioCard", "mask-studio",
+            family="mask_t1")
+
     def test_no_card_knobs_yaml_survives(self) -> None:
         """The yaml knob era is extinct tree-wide — rows live on the
         model class (the music3 pattern)."""
@@ -623,7 +651,7 @@ class TestKnobSSOT(unittest.TestCase):
     _MODELS_WITHOUT_KNOB_ROWS = frozenset({
         "anny", "fit", "h3", "h3-keyframe",
         "kimodo",
-        "mask-studio", "pixal3d",
+        "pixal3d",
         "skin", "transfer_rig", "trellis2-native",
     })
 
