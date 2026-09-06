@@ -315,6 +315,70 @@ class TestKnobSSOT(unittest.TestCase):
         structural = set(getattr(cls, "structural_knobs", None) or ())
         return {f.name for f in cls._fields_} - structural
 
+    def _assert_rows_match_renderer(self, card_subpath: str,
+                                      card_cls: str, model_id: str) -> None:
+        """Both-directions audit, renderer side (template=None lanes):
+        render the arm headlessly through its registered renderer and
+        prove every row's inject target (NodeClass.idx.input) names a
+        real built node input. The voice's own _ARMS map is the single
+        source for model->family — the wall never restates the
+        dispatch. Coverage both ways: rows name only card fields, and
+        every renderer-fed knob (doc fields minus the compose-stamped
+        filename_prefix) owns a row."""
+        import importlib.util
+        from melite_models import load_model_py
+        base = os.path.join(
+            REPO, "plugins", "engines", "comfyui", "action_cards",
+            *card_subpath.split("/"), "py")
+        compose_dir = os.path.join(
+            REPO, "plugins", "engines", "comfyui", "compose")
+        for _p in (compose_dir,
+                   os.path.join(compose_dir, "co_script")):
+            if _p not in sys.path:
+                sys.path.insert(0, _p)
+        vspec = importlib.util.spec_from_file_location(
+            "voice_%s" % model_id,
+            os.path.join(base, "compose.py"))
+        voice = importlib.util.module_from_spec(vspec)
+        vspec.loader.exec_module(voice)
+        family = voice._ARMS[model_id]
+        rspec = importlib.util.spec_from_file_location(
+            "renderer_%s" % model_id,
+            os.path.join(base, "renderer.py"))
+        rmod = importlib.util.module_from_spec(rspec)
+        sys.modules[rspec.name] = rmod
+        rspec.loader.exec_module(rmod)
+        from co_script.renderers import registry
+        fn, doc_cls = registry()[family]
+        card_fields = self._card_fields(
+            card_subpath, card_cls, "cf_%s" % model_id)
+        cls = load_model_py(os.path.join(
+            REPO, "plugins/engines/comfyui/models/image", model_id,
+            "model.py"), "comfyui")
+        rows = list(cls.card_knobs or ())
+        graph = fn(doc_cls(), cls)
+        fed = set(doc_cls.model_fields) - {"filename_prefix"}
+        row_names = {r["card"] for r in rows}
+        self.assertTrue(
+            row_names <= card_fields,
+            "%s rows name non-fields: %s" % (
+                model_id, row_names - card_fields))
+        self.assertTrue(
+            fed <= row_names,
+            "%s renderer-fed knobs missing rows: %s" % (
+                model_id, fed - row_names))
+        for r in rows:
+            node_key, _, inp = r["inject"].rpartition(".")
+            node_cls, _, _idx = node_key.rpartition(".")
+            self.assertIn(
+                node_key, graph,
+                "%s row %r names unbuilt node %r" % (
+                    model_id, r["card"], node_key))
+            self.assertIn(
+                inp, graph[node_key].get("inputs", {}),
+                "%s row %r names unknown input %r on %s" % (
+                    model_id, r["card"], inp, node_cls))
+
     def _assert_rows_name_real_inputs(self, model_subdir: str,
                                       template: str) -> None:
         """Both-directions audit, inject side: every card_knobs row's
@@ -385,6 +449,16 @@ class TestKnobSSOT(unittest.TestCase):
             self._assert_rows_name_real_inputs(
                 "image/%s" % mid, "generate_t2i.json")
 
+    def test_tagger_arms_all_in_knob_rows(self) -> None:
+        """Row-3 migration pattern (fourth card, first multi-arm):
+        each tagger model owns rows for exactly its arm's wired
+        subset (the union surface never lands whole on any model) —
+        proven against the headless-rendered graph, both directions,
+        with the voice's own _ARMS as the dispatch source."""
+        for mid in ("wd14", "joytag", "florence2", "joycaption"):
+            self._assert_rows_match_renderer(
+                "image/tagger", "TaggerCard", mid)
+
     def test_no_card_knobs_yaml_survives(self) -> None:
         """The yaml knob era is extinct tree-wide — rows live on the
         model class (the music3 pattern)."""
@@ -405,13 +479,12 @@ class TestKnobSSOT(unittest.TestCase):
     # dwpose, basic_resize, the pixel pair — are not card surfaces
     # and stay out of this set.)
     _MODELS_WITHOUT_KNOB_ROWS = frozenset({
-        "anny", "fit", "florence2", "h3", "h3-keyframe",
-        "ideogram", "input", "joycaption", "joytag", "kimodo",
+        "anny", "fit", "h3", "h3-keyframe",
+        "ideogram", "input", "kimodo",
         "mask-studio", "moss-sfx", "pixal3d",
         "qwen-img-edit-2511", "qwen3-tts", "qwen3-tts-base",
         "scail2-animate", "seedvr2_ema",
         "skin", "transfer_rig", "trellis2-native", "wan-vace",
-        "wd14",
     })
 
     def test_comfyui_models_without_knob_rows_shrink_only(self) -> None:
