@@ -662,6 +662,18 @@ class TestKnobSSOT(unittest.TestCase):
             "3d/img_to_mesh", "ImgToMeshCard", "transfer_rig",
             genre="3d")
 
+    def test_fit_skin_weightless_all_in_knob_rows(self) -> None:
+        """Row-3 migration pattern (sixteenth/seventeenth cards):
+        eighteen direct rows on fit (the twelve FitRow placement
+        inputs — the round-6 'compile-card' triage was wrong, the
+        lane is fully direct), nine on skin (kind compiles to
+        sidecar JSON, the selector's only honest row shape)."""
+        self._assert_rows_match_renderer(
+            "3d/fit", "FitCard", "fit", family="fit_t1", genre="3d")
+        self._assert_rows_match_renderer(
+            "3d/skin", "SkinCard", "skin", family="skin_t1",
+            genre="3d")
+
     def test_no_card_knobs_yaml_survives(self) -> None:
         """The yaml knob era is extinct tree-wide — rows live on the
         model class (the music3 pattern)."""
@@ -682,7 +694,7 @@ class TestKnobSSOT(unittest.TestCase):
     # dwpose, basic_resize, the pixel pair — are not card surfaces
     # and stay out of this set.)
     _MODELS_WITHOUT_KNOB_ROWS = frozenset({
-        "fit", "h3", "h3-keyframe", "skin",
+        "h3", "h3-keyframe",
     })
 
     def test_comfyui_models_without_knob_rows_shrink_only(self) -> None:
