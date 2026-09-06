@@ -640,7 +640,29 @@ class ActionCard(metaclass=_CardMeta):
                    `loras`, resolved at the door into node chains,
                    never NodeClass.idx.input targets). The BASE owns
                    the empty set; a card declares ONLY its own.
+      sidebar_order / sidebar / sidebar_hidden / default_service
+                   THE UNIVERSAL SIDEBAR (operator order 2026-09-06:
+                   "THE SOURCE DECLARES WHAT THE END USERS CAN DO,
+                   NOT THE OTHER WAY AROUND") — the /v1/forms entry
+                   derives from these uniformly, zero per-card
+                   branches: sidebar_order (the entry order; every
+                   card declares its own — ALL MUST), sidebar (the
+                   section, one of SIDEBAR_SECTIONS — the closed
+                   universal vocabulary, never free text),
+                   sidebar_hidden (default False — deviation-only
+                   like size/layout), default_service (the offered
+                   model the entry opens on; must be in the
+                   Model.card scan covers — walled). No card is
+                   exempt: the completeness wall refuses a card
+                   missing the trio.
     """
+
+    # the universal sidebar sections (the closed vocabulary — a card
+    # declaring outside it refuses at the derivation wall, never at
+    # serve time as a mystery section).
+    SIDEBAR_SECTIONS = frozenset({
+        "image", "image-edit", "audio", "video", "motion", "3d",
+    })
 
     id = ""
     label = ""
@@ -657,6 +679,13 @@ class ActionCard(metaclass=_CardMeta):
     layout = "form"
     # No structural keys by default — cards declare their own.
     structural_knobs = frozenset()
+    # The universal sidebar trio — NO base default (every card
+    # declares its own; the derivation + completeness wall refuse a
+    # card missing them). Hidden defaults False (deviation-only).
+    sidebar_order = None
+    sidebar = ""
+    sidebar_hidden = False
+    default_service = ""
 
     @classmethod
     def families_of(cls: type[ActionCard]) -> tuple[str, ...]:
