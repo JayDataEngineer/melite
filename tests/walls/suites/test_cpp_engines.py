@@ -315,14 +315,54 @@ class TestKnobSSOT(unittest.TestCase):
         structural = set(getattr(cls, "structural_knobs", None) or ())
         return {f.name for f in cls._fields_} - structural
 
+    def _structural(self, card_subpath: str, card_cls: str,
+                      alias: str) -> set:
+        """The card's declared structural keys (never knob-spliced)."""
+        import importlib.util
+        cpath = os.path.join(
+            REPO, "plugins", "engines", "comfyui", "action_cards",
+            *card_subpath.split("/"), "py", "card.py")
+        spec = importlib.util.spec_from_file_location(alias, cpath)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return set(getattr(getattr(mod, card_cls),
+                           "structural_knobs", None) or ())
+
+    def _schema_fields(self, card_subpath: str, alias: str) -> set:
+        """The wire surface: the schema's params-class fields (the ONE
+        *Params BaseModel defined in the card's schema.py). Cards
+        whose schema admits API-only knobs beyond the form Fields
+        (tts: qvoice/voice_pca_strengths/top_p/speed) cover the wire,
+        never the widget list — the knobmap surface IS the wire."""
+        import importlib.util
+        from pydantic import BaseModel
+        spath = os.path.join(
+            REPO, "plugins", "engines", "comfyui", "action_cards",
+            *card_subpath.split("/"), "py", "schema.py")
+        spec = importlib.util.spec_from_file_location(alias, spath)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        for name in dir(mod):
+            obj = getattr(mod, name)
+            if (isinstance(obj, type) and issubclass(obj, BaseModel)
+                    and obj is not BaseModel
+                    and obj.__module__ == spec.name
+                    and name != "SamplerParams"):
+                return set(obj.model_fields)
+        raise AssertionError("no params class in %s" % spath)
+
     def _assert_rows_match_renderer(self, card_subpath: str,
-                                      card_cls: str, model_id: str) -> None:
-        """Both-directions audit, renderer side (template=None lanes):
-        render the arm headlessly through its registered renderer and
-        prove every row's inject target (NodeClass.idx.input) names a
-        real built node input. The voice's own _ARMS map is the single
-        source for model->family — the wall never restates the
-        dispatch. Coverage both ways: rows name only card fields, and
+                                    card_cls: str, model_id: str,
+                                    genre: str = "image",
+                                    family: str | None = None) -> None:
+        """Both-directions audit, renderer side: render the arm
+        headlessly through its registered renderer and prove every
+        row's inject target (NodeClass.idx.input) names a real built
+        node input. Family comes from the voice's own _ARMS map when
+        present (multi-arm cards), else the explicit family (single
+        renderers serve the whole card). Coverage domain is the
+        schema wire surface (card Fields + API-only knobs), minus
+        the card's structural keys: rows name only wire knobs, and
         every renderer-fed knob (doc fields minus the compose-stamped
         filename_prefix) owns a row."""
         import importlib.util
@@ -341,7 +381,9 @@ class TestKnobSSOT(unittest.TestCase):
             os.path.join(base, "compose.py"))
         voice = importlib.util.module_from_spec(vspec)
         vspec.loader.exec_module(voice)
-        family = voice._ARMS[model_id]
+        family = (voice._ARMS[model_id] if hasattr(voice, "_ARMS")
+                  else family)
+        assert family, "no family for %s" % model_id
         rspec = importlib.util.spec_from_file_location(
             "renderer_%s" % model_id,
             os.path.join(base, "renderer.py"))
@@ -350,19 +392,22 @@ class TestKnobSSOT(unittest.TestCase):
         rspec.loader.exec_module(rmod)
         from co_script.renderers import registry
         fn, doc_cls = registry()[family]
-        card_fields = self._card_fields(
-            card_subpath, card_cls, "cf_%s" % model_id)
+        wire = ((self._card_fields(card_subpath, card_cls,
+                                   "cf_%s" % model_id)
+                 | self._schema_fields(card_subpath, "sf_%s" % model_id))
+                - self._structural(card_subpath, card_cls,
+                                   "st_%s" % model_id))
         cls = load_model_py(os.path.join(
-            REPO, "plugins/engines/comfyui/models/image", model_id,
+            REPO, "plugins/engines/comfyui/models", genre, model_id,
             "model.py"), "comfyui")
         rows = list(cls.card_knobs or ())
         graph = fn(doc_cls(), cls)
         fed = set(doc_cls.model_fields) - {"filename_prefix"}
         row_names = {r["card"] for r in rows}
         self.assertTrue(
-            row_names <= card_fields,
-            "%s rows name non-fields: %s" % (
-                model_id, row_names - card_fields))
+            row_names <= wire,
+            "%s rows name non-wire knobs: %s" % (
+                model_id, row_names - wire))
         self.assertTrue(
             fed <= row_names,
             "%s renderer-fed knobs missing rows: %s" % (
@@ -459,6 +504,19 @@ class TestKnobSSOT(unittest.TestCase):
             self._assert_rows_match_renderer(
                 "image/tagger", "TaggerCard", mid)
 
+    def test_tts_wire_all_in_knob_rows(self) -> None:
+        """Row-3 migration pattern (fifth card): the tts pair rows
+        the full nine-knob wire surface — five card Fields PLUS the
+        four schema-admitted API knobs (the surface is the wire, not
+        the widget list) — proven against the headless-rendered
+        AudiocoreTTS graph (the model-dir template predates
+        instruct/voice_file, so the dead-text audit would
+        under-verify here)."""
+        for mid in ("qwen3-tts", "qwen3-tts-base"):
+            self._assert_rows_match_renderer(
+                "audio/tts", "TtsCard", mid, genre="audio",
+                family="tts_t1")
+
     def test_no_card_knobs_yaml_survives(self) -> None:
         """The yaml knob era is extinct tree-wide — rows live on the
         model class (the music3 pattern)."""
@@ -482,7 +540,7 @@ class TestKnobSSOT(unittest.TestCase):
         "anny", "fit", "h3", "h3-keyframe",
         "ideogram", "input", "kimodo",
         "mask-studio", "moss-sfx", "pixal3d",
-        "qwen-img-edit-2511", "qwen3-tts", "qwen3-tts-base",
+        "qwen-img-edit-2511",
         "scail2-animate", "seedvr2_ema",
         "skin", "transfer_rig", "trellis2-native", "wan-vace",
     })
