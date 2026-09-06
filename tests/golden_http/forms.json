@@ -1,216 +1,204 @@
 {
   "forms": {
-    "anny": {
-      "covers": [
-        "anny"
-      ],
-      "default_service": "anny",
-      "genre": "3d",
-      "hidden": false,
-      "label": "Anny",
-      "order": 14,
-      "plugin": "comfyui",
-      "sidebar_key": "3d"
-    },
-    "forge": {
-      "covers": [
-        "anycreature"
-      ],
-      "default_service": "anycreature",
-      "genre": "creature",
-      "hidden": false,
-      "label": "Creature Forge",
-      "order": 11,
-      "plugin": "anycreature",
-      "sidebar_key": "3d"
-    },
-    "h3-timeline": {
-      "covers": [
-        "h3-timeline",
-        "h3",
-        "h3-keyframe"
-      ],
-      "default_service": "h3-timeline",
-      "genre": "video",
-      "hidden": false,
-      "label": "H3 Timeline",
-      "order": 6,
-      "plugin": "comfyui",
-      "sidebar_key": "video"
-    },
-    "ideogram4": {
-      "covers": [
-        "ideogram"
-      ],
-      "default_service": "ideogram",
-      "genre": "image",
-      "hidden": true,
-      "label": "Ideogram",
-      "order": 17,
-      "plugin": "comfyui",
-      "sidebar_key": "image"
-    },
-    "image-edit": {
-      "covers": [
-        "qwen-img-edit-2511"
-      ],
-      "default_service": "qwen-img-edit-2511",
-      "genre": "image",
-      "hidden": false,
-      "label": "Image Edit",
-      "order": 2,
-      "plugin": "comfyui",
-      "sidebar_key": "image-edit"
-    },
     "image-gen": {
+      "label": "Image",
+      "genre": "image",
+      "order": 1,
+      "plugin": "comfyui",
+      "sidebar_key": "image",
+      "default_service": "krea-2",
+      "hidden": false,
       "covers": [
         "krea-2",
         "z-image",
         "anima",
         "ideogram"
-      ],
-      "default_service": "krea-2",
+      ]
+    },
+    "image-edit": {
+      "label": "Image Edit",
       "genre": "image",
-      "hidden": false,
-      "label": "Image",
-      "order": 1,
+      "order": 2,
       "plugin": "comfyui",
-      "sidebar_key": "image"
-    },
-    "img-to-mesh": {
-      "covers": [
-        "trellis2-native",
-        "pixal3d"
-      ],
-      "default_service": "trellis2-native",
-      "genre": "3d",
+      "sidebar_key": "image-edit",
+      "default_service": "qwen-img-edit-2511",
       "hidden": false,
-      "label": "Image \u2192 3D",
-      "order": 10,
-      "plugin": "comfyui",
-      "sidebar_key": "3d"
-    },
-    "mask-studio": {
       "covers": [
-        "mask-studio"
-      ],
-      "default_service": "mask-studio",
-      "genre": "image",
-      "hidden": false,
-      "label": "Mask",
-      "order": 8,
-      "plugin": "comfyui",
-      "sidebar_key": "image"
-    },
-    "motion": {
-      "covers": [
-        "kimodo"
-      ],
-      "default_service": "kimodo",
-      "genre": "motion",
-      "hidden": false,
-      "label": "Motion",
-      "order": 9,
-      "plugin": "comfyui",
-      "sidebar_key": "motion"
-    },
-    "music": {
-      "covers": [
-        "music3"
-      ],
-      "default_service": "music3",
-      "genre": "audio",
-      "hidden": false,
-      "label": "Music",
-      "order": 5,
-      "plugin": "comfyui",
-      "sidebar_key": "audio"
-    },
-    "quad-remesh": {
-      "covers": [
-        "autoremesher"
-      ],
-      "default_service": "autoremesher",
-      "genre": "3d",
-      "hidden": false,
-      "label": "Quad Remesh",
-      "order": 13,
-      "plugin": "autoremesher",
-      "sidebar_key": "3d"
-    },
-    "sfx": {
-      "covers": [
-        "moss-sfx"
-      ],
-      "default_service": "moss-sfx",
-      "genre": "audio",
-      "hidden": false,
-      "label": "Sound Effects",
-      "order": 7,
-      "plugin": "comfyui",
-      "sidebar_key": "audio"
-    },
-    "text-to-motion": {
-      "covers": [
-        "soma"
-      ],
-      "default_service": "soma",
-      "genre": "motion",
-      "hidden": false,
-      "label": "Text \u2192 Motion",
-      "order": 12,
-      "plugin": "kimodo",
-      "sidebar_key": "motion"
+        "qwen-img-edit-2511"
+      ]
     },
     "tts": {
+      "label": "Speech",
+      "genre": "audio",
+      "order": 3,
+      "plugin": "comfyui",
+      "sidebar_key": "audio",
+      "default_service": "qwen3-tts",
+      "hidden": false,
       "covers": [
         "qwen3-tts",
         "qwen3-tts-base"
-      ],
-      "default_service": "qwen3-tts",
-      "genre": "audio",
-      "hidden": false,
-      "label": "Speech",
-      "order": 3,
-      "plugin": "comfyui",
-      "sidebar_key": "audio"
+      ]
     },
-    "upscale-tools": {
-      "covers": [
-        "seedvr2_ema"
-      ],
-      "default_service": "seedvr2_ema",
-      "genre": "image",
-      "hidden": true,
-      "label": "Upscale Tools",
-      "order": 16,
+    "voice-lock": {
+      "label": "Voice Lock",
+      "genre": "audio",
+      "order": 4,
       "plugin": "comfyui",
-      "sidebar_key": "image"
+      "sidebar_key": "audio",
+      "default_service": "qwen3-tts-voicedesign",
+      "hidden": false,
+      "covers": [
+        "qwen3-tts-voicedesign"
+      ]
+    },
+    "music": {
+      "label": "Music",
+      "genre": "audio",
+      "order": 5,
+      "plugin": "comfyui",
+      "sidebar_key": "audio",
+      "default_service": "music3",
+      "hidden": false,
+      "covers": [
+        "music3"
+      ]
+    },
+    "sfx": {
+      "label": "Sound Effects",
+      "genre": "audio",
+      "order": 7,
+      "plugin": "comfyui",
+      "sidebar_key": "audio",
+      "default_service": "moss-sfx",
+      "hidden": false,
+      "covers": [
+        "moss-sfx"
+      ]
+    },
+    "h3-timeline": {
+      "label": "H3 Timeline",
+      "genre": "video",
+      "order": 6,
+      "plugin": "comfyui",
+      "sidebar_key": "video",
+      "default_service": "h3-timeline",
+      "hidden": false,
+      "covers": [
+        "h3-timeline",
+        "h3",
+        "h3-keyframe"
+      ]
+    },
+    "mask-studio": {
+      "label": "Mask",
+      "genre": "image",
+      "order": 8,
+      "plugin": "comfyui",
+      "sidebar_key": "image",
+      "default_service": "mask-studio",
+      "hidden": false,
+      "covers": [
+        "mask-studio"
+      ]
+    },
+    "motion": {
+      "label": "Motion",
+      "genre": "motion",
+      "order": 9,
+      "plugin": "comfyui",
+      "sidebar_key": "motion",
+      "default_service": "kimodo",
+      "hidden": false,
+      "covers": [
+        "kimodo"
+      ]
+    },
+    "img-to-mesh": {
+      "label": "Image → 3D",
+      "genre": "3d",
+      "order": 10,
+      "plugin": "comfyui",
+      "sidebar_key": "3d",
+      "default_service": "trellis2-native",
+      "hidden": false,
+      "covers": [
+        "trellis2-native",
+        "pixal3d"
+      ]
+    },
+    "forge": {
+      "label": "Creature Forge",
+      "genre": "creature",
+      "order": 11,
+      "plugin": "anycreature",
+      "sidebar_key": "3d",
+      "default_service": "anycreature",
+      "hidden": false,
+      "covers": [
+        "anycreature"
+      ]
+    },
+    "quad-remesh": {
+      "label": "Quad Remesh",
+      "genre": "3d",
+      "order": 13,
+      "plugin": "autoremesher",
+      "sidebar_key": "3d",
+      "default_service": "autoremesher",
+      "hidden": false,
+      "covers": [
+        "autoremesher"
+      ]
+    },
+    "anny": {
+      "label": "Anny",
+      "genre": "3d",
+      "order": 14,
+      "plugin": "comfyui",
+      "sidebar_key": "3d",
+      "default_service": "anny",
+      "hidden": false,
+      "covers": [
+        "anny"
+      ]
     },
     "video-gen": {
+      "label": "Video",
+      "genre": "video",
+      "order": 15,
+      "plugin": "comfyui",
+      "sidebar_key": "video",
+      "default_service": "wan-vace",
+      "hidden": false,
       "covers": [
         "wan-vace",
         "scail2-animate"
-      ],
-      "default_service": "wan-vace",
-      "genre": "video",
-      "hidden": false,
-      "label": "Video",
-      "order": 15,
-      "plugin": "comfyui",
-      "sidebar_key": "video"
+      ]
     },
-    "voice-lock": {
-      "covers": [
-        "qwen3-tts-voicedesign"
-      ],
-      "default_service": "qwen3-tts-voicedesign",
-      "genre": "audio",
-      "hidden": false,
-      "label": "Voice Lock",
-      "order": 4,
+    "upscale-tools": {
+      "label": "Upscale Tools",
+      "genre": "image",
+      "order": 16,
       "plugin": "comfyui",
-      "sidebar_key": "audio"
+      "sidebar_key": "image",
+      "default_service": "seedvr2_ema",
+      "hidden": true,
+      "covers": [
+        "seedvr2_ema"
+      ]
+    },
+    "ideogram4": {
+      "label": "Ideogram",
+      "genre": "image",
+      "order": 17,
+      "plugin": "comfyui",
+      "sidebar_key": "image",
+      "default_service": "ideogram",
+      "hidden": true,
+      "covers": [
+        "ideogram"
+      ]
     },
     "input-prep": {
       "label": "Input Prep",
@@ -222,6 +210,21 @@
       "hidden": true,
       "covers": [
         "input"
+      ]
+    },
+    "tagger": {
+      "label": "Tagger",
+      "genre": "image",
+      "order": 19,
+      "plugin": "comfyui",
+      "sidebar_key": "image",
+      "default_service": "wd14",
+      "hidden": false,
+      "covers": [
+        "wd14",
+        "joytag",
+        "florence2",
+        "joycaption"
       ]
     }
   }

@@ -79,6 +79,69 @@ class TestCardToolsSmoke:
                 f"tool {tool.get('name', '?')!r} dropped a key: " \
                 f"have {sorted(tool.keys())}, required {sorted(required)}"
 
+    def test_lane_filter_serves_exactly_the_lane(self, live: "GatewayClient") -> None:
+        # The DSH lane-session contract (the 2026-09-06 kimodo 502):
+        # a lane session mounts ONE card's tool — the registrar
+        # demands EXACTLY the lane's manifest and 502s otherwise.
+        # The gateway must filter, never serve the unfiltered list
+        # where 1 was demanded.
+        code, body = live.get("/v1/card-tools?lane=motion")
+        assert code == 200
+        names = [t["name"] for t in body]
+        assert names == ["motion_card"], \
+            f"lane=motion must serve exactly motion_card, got {names}"
+
+    def test_lane_filter_resolves_model_ids(self, live: "GatewayClient") -> None:
+        # a bare model id lands on the card that boards it (models
+        # are not lanes) — anycreature → the forge card (the soma/
+        # text-to-motion variant retired 2026-09-06 with the cpp
+        # ggml kimodo lane)
+        code, body = live.get("/v1/card-tools?lane=anycreature")
+        assert code == 200
+        assert [t["name"] for t in body] == ["forge_card"]
+
+    def test_lane_filter_refuses_unknown_lanes(self, live: "GatewayClient") -> None:
+        # unknown lane = a NAMED 404 teaching the resolution
+        # vocabulary, never the unfiltered list
+        code, body = live.get("/v1/card-tools?lane=no-such-lane")
+        assert code == 404
+        assert "no such lane" in body.get("error", "")
+
+
+class TestModelProvisionsSmoke:
+    # /v1/models/<family>/provisions/<name> — the DECLARED viewer
+    # asset door (2026-09-06, the SOMA-skin 404): streams from the
+    # mount or ACQUIRES on demand through the comfy-mcp rail. Studio
+    # assets point here, never at vite-public blobs.
+
+    def test_provision_streams_or_acquires(self, live: "GatewayClient") -> None:
+        # the kimodo SOMA template skin: 200 with the sha-pinned
+        # byte count — cold (rail fetch + store landing) or warm
+        # (mount hit), the contract is the same answer
+        code, body, ctype = live.get_raw(
+            "/v1/models/kimodo/provisions/skin_standard.npz")
+        assert code == 200
+        assert isinstance(body, bytes)
+        assert "octet-stream" in ctype
+        assert len(body) == 531434, \
+            f"skin bytes drifted: {len(body)} != 531434 (the row's " \
+            "declared size — regold the declaration deliberately)"
+
+    def test_unknown_family_404s_named(self, live: "GatewayClient") -> None:
+        code, body = live.get(
+            "/v1/models/no-such-family/provisions/skin_standard.npz")
+        assert code == 404
+        assert "unknown model family" in body.get("error", "")
+
+    def test_unknown_provision_404s_listing_declared(
+            self, live: "GatewayClient") -> None:
+        code, body = live.get(
+            "/v1/models/kimodo/provisions/not-declared.npz")
+        assert code == 404
+        err = body.get("error", "")
+        assert "declares no provision" in err
+        assert "skin_standard.npz" in err  # teaches what IS declared
+
 
 class TestSkillsSmoke:
     # /v1/skills: the DSH skill catalog. Envelope mirrors /v1/assets.

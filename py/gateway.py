@@ -86,8 +86,8 @@ IDENT_RE = re.compile(r"^[a-z_][a-z0-9_-]*$")
 from editor_runs import ASSET_URL_PREFIX, draft_id_ok  # noqa: E402
 
 if TYPE_CHECKING:
-    from flow_graph import FlowGraph, FlowNode
-    from melite_models import CharacterPreset, Model
+    from flow_graph import FlowGraph, FlowNode, NodeRow
+    from melite_models import CharacterPreset, Model, Provision
 
 # The request-body shape: decoded JSON (objects, arrays, scalars).
 type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
@@ -780,8 +780,8 @@ async def _engine_boundary_unload(prev_type: str, node_type: str) -> str:
     outgoing engine unloads (if it exports the optional unload()
     ABI) — awaited, before the next engine's stage starts.
     Same-engine stages keep their cache (why trellis-after-image is
-    fast); subprocess engines (anycreature, autoremesher, kimodo)
-    unload by process exit and simply do not export unload().
+    fast); subprocess engines (anycreature, autoremesher) unload by
+    process exit and simply do not export unload().
 
     Returns the outcome for the sidecar — fired / absent /
     no-transition / error:<msg>. An unload failure NEVER kills the
@@ -805,6 +805,16 @@ class Run:
     run_id: str
     graph: FlowGraph
     request: dict[str, JsonValue]
+    # CARD BIRTH LAW (operator order 2026-09-06): required at
+    # CONSTRUCTION — a Run without a draft_id is an unbuildable
+    # shape, not a tolerated one. The start door validated it
+    # (non-empty, 96-char [A-Za-z0-9_-], doc exists at
+    # STATE_ROOT/drafts) BEFORE registration; direct constructions
+    # (unit-test harnesses) state their own id. The sidecar carries
+    # it verbatim so /v1/flows/runs answers "what card produced
+    # this" without round-tripping the drafts door.
+    # docs/queue/run-registry.md / docs/queue/sidecar.md.
+    draft_id: str
     status: str = "queued"
     error: str = ""
     stages: list[dict[str, JsonValue]] = field(default_factory=list)
@@ -816,14 +826,6 @@ class Run:
     # before this field existed (and for any code path that builds a
     # Run without going through submit()).
     out_root: Path | None = field(default=None)
-    # CARD LINKAGE (the run→card wire, 2026-09-04 audit): the sidecar
-    # MUST carry the draft_id the start body declared so /v1/flows/runs
-    # can answer "what card produced this" without round-tripping the
-    # drafts door. None for runs started bare (cardless test fixtures,
-    # direct API hits). Validated by draft_id_ok() at submit() — 96
-    # char cap, [A-Za-z0-9_-] — the same SSOT the drafts door uses.
-    # docs/queue/run-registry.md:41 / docs/queue/sidecar.md:36.
-    draft_id: str | None = None
     # BRANCH SYSTEM (2026-09-06): ids of declared stages pruned at
     # build time (Flow.compile) — recorded here so the sidecar and
     # the status door report what didn't run. [] is today's behavior.
@@ -890,22 +892,45 @@ class Gateway:
             raise ValidationError(
                 "test flag must be a boolean (got %s %r)"
                 % (type(test_flag).__name__, test_flag))
-        # CARD LINKAGE (the run→card wire, 2026-09-04 audit): validate
-        # the body's draft_id at the registration door — the same
-        # draft_id_ok() the drafts door uses, so a bad wire never
-        # registers. None for runs that didn't come from a card.
-        # ENVELOPE-FIRST (2026-09-06): the draft_id shape refuses
-        # BEFORE card compose — a malformed envelope must name its
-        # own field, never surface a downstream params refusal.
-        # docs/queue/run-registry.md:41 / docs/cards/draft-door.md.
+        # CARD BIRTH LAW (operator order 2026-09-06, verbatim: "IF
+        # THERE IS NO DRAFT_ID, THAT IS A HARD ERROR! THAT NEEDS TO
+        # HAPPEN!"): EVERY run is born from an action card. A start
+        # body without a valid draft_id — missing, empty, malformed,
+        # or naming a card doc that does not exist — is refused 4xx
+        # HERE, BEFORE any run registers (QUEUE LANE LAW: no zombie
+        # slots, no cardless rows). The click error this kills:
+        # "run has no action card (no draft_id in its run row)" — the
+        # media sidebar's Cards wand; with the door refusing, that
+        # row shape cannot be BORN. ENVELOPE-FIRST (2026-09-06): the
+        # draft_id checks refuse BEFORE card compose — a malformed
+        # envelope must name its own field, never surface a
+        # downstream params refusal. Callers without a card compose
+        # one first: POST /v1/flows/drafts (docs/cards/draft-door.md).
+        # Wall: tests/walls/suites/test_py_gateway.py
+        # TestStartDoorRequiresDraft (route-layer validation, 4xx
+        # BEFORE registration).
         body_draft_id = body.get("draft_id")
-        if body_draft_id is not None:
-            if not isinstance(body_draft_id, str):
-                raise ValidationError("draft_id must be a string")
-            if body_draft_id != "" and not draft_id_ok(body_draft_id):
-                raise ValidationError(
-                    "draft_id malformed (96 char cap, [A-Za-z0-9_-] only): %r"
-                    % body_draft_id)
+        if not isinstance(body_draft_id, str) or body_draft_id == "":
+            raise ValidationError(
+                "draft_id is required — every run is born from an "
+                "action card (CARD BIRTH LAW); compose the card first: "
+                "POST /v1/flows/drafts, then start with its draft_id "
+                "(docs/cards/draft-door.md)")
+        if not draft_id_ok(body_draft_id):
+            raise ValidationError(
+                "draft_id malformed (96 char cap, [A-Za-z0-9_-] only): %r"
+                % body_draft_id)
+        # EXISTENCE (the second half of the law): a draft_id pointing
+        # at nothing reproduces the EXACT click error the law kills —
+        # the click-contract (py/editor_runs.py) strips a draft_id
+        # whose doc is gone and the row degrades to draftless. An
+        # unresolved request refuses BEFORE registration, same as an
+        # unknown flow name (QUEUE LANE LAW).
+        if not (STATE_ROOT / "drafts" / (body_draft_id + ".json")).is_file():
+            raise ValidationError(
+                "unknown draft_id %r — no card doc at drafts/%s.json; "
+                "compose the card first: POST /v1/flows/drafts"
+                % (body_draft_id, body_draft_id))
         # HEADLESS-TOOL DEFAULTS (2026-09-06, design record
         # docs/design/flow-single-tool.md): a named flow with tool=... stamps
         # its knob defaults into the body (absent-keys-only) BEFORE resolve,
@@ -963,11 +988,11 @@ class Gateway:
         else:
             graph = resolved
         run = Run(run_id=run_id, graph=graph, request=body,
-                  # normalize "" → None for the sidecar: a declared-but-
-                  # empty draft_id is indistinguishable from "not given"
-                  # and the click-contract gate would strip it anyway
-                  # (py/editor_runs.py:480, 2026-09-02 law).
-                  draft_id=body_draft_id if body_draft_id else None)
+                  # CARD BIRTH LAW (validated at the top of submit()):
+                  # non-empty, doc-backed — the door refused every
+                  # other shape 4xx BEFORE registration, so the row
+                  # can never be born cardless.
+                  draft_id=body_draft_id)
         run.card_extra_inputs = card_extra_inputs if is_card else {}
         # L3: route the run dir to the test root when the caller
         # declared test:true. The sidecar test flag is the SAME data
@@ -1039,6 +1064,148 @@ class Gateway:
                                           "status": run.status})
                 self.active = None
 
+    async def _try_merged(self, run: Run, initial: dict[str, JsonValue]) -> bool:
+        """STROKE 5: the merged single-graph path for PURE-comfyui
+        flows. Returns True when the run was executed (or failed) on
+        the merged path; False means "not mergeable — run the
+        per-stage loop" (structural reasons only, decided BEFORE any
+        stage is marked running, so the fallback is clean).
+
+        Rows are built exactly as the per-stage loop would: the card
+        bridge composes card= docs, the engine's stage_workflow()
+        resolves workflow_file + inject. The engine's execute_flow
+        submits once; per-stage outputs/artifacts publish here with
+        the SAME carry/url/gallery shape the loop stamps."""
+        nodes = run.graph.nodes
+        # PLUGIN ARCHITECTURE LAW: the core names NO engine. The merge
+        # ABI is a CAPABILITY (execute_flow + stage_workflow on the
+        # engine module) — any single-engine flow whose engine declares
+        # it merges; mixed-engine flows never do (one graph per engine
+        # submission is the merge's own invariant). Wall: C19
+        # (test_py_gateway.py test_core_names_no_engine).
+        engine_types = {n.node_type for n in nodes}
+        if not nodes or len(engine_types) != 1:
+            return False
+        try:
+            eng = load_engine(engine_types.pop())
+        except Exception:
+            return False
+        if not hasattr(eng, "execute_flow") \
+                or not hasattr(eng, "stage_workflow"):
+            return False
+        rows = []
+        for stage in run.stages:
+            node = nodes[stage["index"]]
+            try:
+                params = dict(node.params or {})
+                if getattr(node, "card", ""):
+                    params = _card_bridge(node, params, run.run_id)
+                wf = eng.stage_workflow(params)
+                if not isinstance(wf, dict) or not wf:
+                    return False
+                rows.append({
+                    "stage_id": node.node_id,
+                    "workflow": wf,
+                    "input_names": dict(
+                        getattr(node, "input_names", None) or {}),
+                    "outputs": dict(node.outputs or {}),
+                    "output_nodes": (params.get("output_nodes") or {}),
+                    "params": params,
+                })
+            except Exception:
+                # the card bridge / workflow seam refused — the
+                # per-stage loop re-runs it inside the stage's own
+                # try, where the refusal lands in the sidecar
+                return False
+        # initials, name-keyed + absolutized per the nodes' FILE-kind
+        # expected (artifact-ref spellings resolve from disk — the
+        # same seam the loop applies per stage)
+        pool = dict(initial)
+        for node in nodes:
+            names = getattr(node, "input_names", None) or {}
+            ins = {}
+            for name, ref in names.items():
+                if str(ref).startswith("__initial__."):
+                    key = str(ref).split(".", 1)[1]
+                    if key in pool:
+                        ins[str(name)] = pool[key]
+                    elif str(name) in pool:
+                        ins[str(name)] = pool[str(name)]
+            try:
+                ins = absolutize_artifact_refs(node, ins)
+            except Exception:
+                pass   # the per-stage seam owns artifact refusals
+            pool.update(ins)
+
+        def _mreport(updates: dict[str, JsonValue]) -> None:
+            # flow-level progress folds onto the first stage still
+            # running (merged attribution is approximate; per-node
+            # granularity is the follow-up)
+            for st in run.stages:
+                if st["status"] == "running":
+                    st.update(updates)
+                    sidecar(run)
+                    self.publish(run.run_id, {
+                        "type": "stage", "stage": st["id"],
+                        "index": st["index"], **updates})
+                    return
+
+        for stage in run.stages:
+            stage["status"] = "running"
+            stage["merged"] = True   # the sidecar shows the path
+            sidecar(run)
+            self.publish(run.run_id, {"type": "stage",
+                                      "stage": stage["id"],
+                                      "index": stage["index"],
+                                      "status": "running"})
+        try:
+            result = await eng.execute_flow(
+                rows, str(run.dir), run.stop_event, report=_mreport,
+                initials=pool)
+        except Exception as e:
+            err = "%s: %s" % (type(e).__name__, e)
+            stopped = run.stop_event.is_set() and "stop" in err.lower()
+            for stage in run.stages:
+                if stage["status"] == "running":
+                    stage["status"] = "stopped" if stopped else "failed"
+                    stage["error"] = err
+                    self.publish(run.run_id, {
+                        "type": "stage", "stage": stage["id"],
+                        "index": stage["index"],
+                        "status": stage["status"], "error": err})
+            sidecar(run)
+            if stopped:
+                run.status = "stopped"
+                return True
+            raise
+        # publish per-stage outputs into the run's channel pool /
+        # sidecar exactly as the loop would (name + "stage.channel")
+        stages_out = (result or {}).get("stages") or {}
+        carry: dict[str, JsonValue] = {}
+        for stage in run.stages:
+            row = stages_out.get(stage["id"]) or {}
+            sid = stage["id"]
+            for k, v in (row.get("outputs") or {}).items():
+                carry[k] = v
+                carry["%s.%s" % (sid, k)] = v
+            arts = [a for a in (row.get("artifacts") or []) if a]
+            run.artifacts.extend(arts)
+            if arts:
+                base = ASSET_URL_PREFIX + "/%s/" % run.run_id
+                names_ = [os.path.basename(str(a)) for a in arts]
+                stage["url"] = base + names_[0]
+                stage["gallery"] = [
+                    {"url": base + n, "name": n} for n in names_]
+            stage["status"] = "completed"
+            stage.pop("progress", None)
+            stage.pop("activity", None)
+            sidecar(run)
+            self.publish(run.run_id, {"type": "stage",
+                                      "stage": sid,
+                                      "index": stage["index"],
+                                      "status": "completed"})
+        return True
+
     async def execute(self, run: Run) -> None:
         initial = initial_pool(run.request)
         # phase-1 card inputs ("inputs": {...}) land in the tensor pool
@@ -1047,6 +1214,15 @@ class Gateway:
         for k, v in (nested or {}).items():
             initial.setdefault(k, v)
         initial.setdefault("prompt", "")
+        # ── STROKE 5 (2026-09-06): the single-graph fast path ──────
+        # A pure-comfyui flow submits ONCE (the merged graph) instead
+        # of N per-stage submits — artifacts pass inside the engine.
+        # Any structural refusal falls back to the per-stage loop
+        # BELOW before anything is marked running (the loop surfaces
+        # the error in its own turn); once the merged graph is
+        # submitted, failures are run failures (no silent replay).
+        if await self._try_merged(run, dict(initial)):
+            return
         carry = {}
         for stage in run.stages:
             if run.stop_event.is_set():
@@ -1104,6 +1280,15 @@ class Gateway:
                 stage["inputs"] = inputs
                 sidecar(run)
                 params = expand_inject(node.params, inputs)
+                # STROKE 4 (2026-09-06): the CARD BRIDGE — a card=
+                # stage's params are the CARD DOC, not the engine
+                # surface. The owning arm composes the doc into
+                # engine params (workflow) through the plugin bus;
+                # the core names no card (PLUGIN ARCHITECTURE
+                # LAW). Wall: tests/unit/runtime/test_stage_card_
+                # lane.py.
+                if getattr(node, "card", ""):
+                    params = _card_bridge(node, params, run.run_id)
                 engine = load_engine(node.node_type)
                 # the engine ABI row: a VALIDATED NodeRow carrying the
                 # inject-expanded params (construction refuses a bad row)
@@ -1111,6 +1296,7 @@ class Gateway:
                 result = await engine.execute(
                     _pg.NodeRow(node_id=node.node_id,
                                 node_type=node.node_type, params=params,
+                                card=node.card,
                                 # ENGINE-OUTPUTS (§3, 2026-09-06): the
                                 # stage's DECLARED output channels ride
                                 # the ABI row so the engine can publish
@@ -1213,10 +1399,16 @@ class Gateway:
             for stage in run.stages:
                 if stage["status"] == "running":
                     n = self.graph_nodes(run)[stage["index"]]
-                    engine = load_engine(n["type"])
+                    # FlowNode is a frozen pydantic row: attribute access,
+                    # never dict indexing (n["type"] raised TypeError
+                    # OUTSIDE the try below, killing shutdown() before the
+                    # sidecar flush and os._exit — a deliberate SIGTERM
+                    # manufactured the exact zombie the docstring forbids.
+                    # Mirrors stop() (~1195), wall: test_shutdown_stop_path.
+                    engine = load_engine(n.node_type)
                     if hasattr(engine, "stop"):
                         try:
-                            await engine.stop({"params": n.get("params", {})}, str(run.dir))
+                            await engine.stop(n.params, str(run.dir))
                         except Exception:
                             pass
             # give the worker one loop turn to observe the stop event and
@@ -1238,12 +1430,13 @@ def sidecar(run: Run) -> None:
     # body into the run's request dict and onto the sidecar. scan_run
     # reads it from here; assets_index (L2) uses it to keep test runs
     # out of the production view.
-    # CARD LINKAGE (the run→card wire, 2026-09-04 audit): the sidecar
-    # MUST persist draft_id (validated at submit()) so /v1/flows/runs
-    # can answer "what card produced this" without round-tripping the
-    # drafts door. None for cardless test runs and bare API hits —
-    # py/editor_runs.py:480 strips empty/missing anyway (click-
-    # contract law, 2026-09-02). docs/queue/sidecar.md:36.
+    # CARD BIRTH LAW (operator order 2026-09-06): the sidecar ALWAYS
+    # persists a doc-backed draft_id (required at submit() and at Run
+    # construction) so /v1/flows/runs answers "what card produced
+    # this" without round-tripping the drafts door — a cardless row
+    # can no longer be born. The reader's click-contract
+    # (py/editor_runs.py) survives only as read-time defense for
+    # pre-law rows and user-deleted drafts. docs/queue/sidecar.md.
     # the door name (QUEUE LANE LAW: exactly one of flow | flow_inline |
     # model — resolved BEFORE registration, so exactly one of these is
     # ever truthy). The runs-list scan (py/editor_runs.py) lifts it
@@ -1307,14 +1500,19 @@ def ledger(event: str, data: dict[str, JsonValue] | None = None) -> None:
         pass   # the journal must never take the gateway down
 
 
-def sweep_sidecar(path: Path, why: str) -> bool:
+def sweep_sidecar(path: Path, why: str, queued_why: str = "") -> bool:
     """Patch a stale sidecar: every running/queued status (top-level AND
     per-stage) becomes failed, with the reason recorded in a "sweep" key.
-    Idempotent — an already-swept file has no active statuses left."""
+    Idempotent — an already-swept file has no active statuses left.
+    A run that was still QUEUED top-level when the process died never
+    executed any work: its sweep note and error say so (queued_why)
+    instead of implying a crash mid-run — "gateway restarted before
+    the run started, resubmit" is the honest failure."""
     try:
         obj = json.loads(Path(path).read_text())
     except (OSError, ValueError):
         return False
+    was_queued = obj.get("status") == "queued"
     touched = False
 
     def _patch(o: JsonValue) -> None:
@@ -1332,7 +1530,10 @@ def sweep_sidecar(path: Path, why: str) -> bool:
     _patch(obj)
     if not touched:
         return False
-    obj["sweep"] = why
+    note = queued_why if (was_queued and queued_why) else why
+    obj["sweep"] = note
+    if was_queued and queued_why:
+        obj["error"] = queued_why
     atomic_write(Path(path), obj)
     return True
 
@@ -1348,11 +1549,21 @@ def boot_sweep() -> int:
     for d in sorted(OUT_ROOT.iterdir()):
         if not d.is_dir() or not d.name.startswith("run-"):
             continue
+        try:
+            pre = json.loads((d / "_flow.json").read_text())
+        except (OSError, ValueError):
+            pre = {}
+        was_queued = pre.get("status") == "queued"
         if sweep_sidecar(
                 d / "_flow.json",
                 "gateway restarted (boot sweep): stale active sidecar "
-                "from a dead process"):
-            ledger("run.swept", {"run_id": d.name, "state": "failed",
+                "from a dead process",
+                queued_why=("gateway restarted before the run started "
+                            "(never executed) — resubmit") if was_queued
+                else ""):
+            ledger("run.swept", {"run_id": d.name,
+                                 "state": "queued_lost" if was_queued
+                                 else "failed",
                                  "error": "boot sweep"})
             swept += 1
     return swept
@@ -1373,13 +1584,18 @@ def sidecar_status(run_id: str) -> dict[str, JsonValue] | None:
                 "error": "unparseable sidecar", "stages": [],
                 "artifacts": [], "queue_position": 0}
     if obj.get("status") in ("running", "queued"):
+        queued = obj.get("status") == "queued"
         sweep_sidecar(
             path, "read-time sweep: stale running sidecar, "
-            "no live registry entry")
+            "no live registry entry",
+            queued_why=("run was still queued when the gateway vanished "
+                        "(never executed) — resubmit") if queued else "")
         ledger("run.swept", {"run_id": run_id, "state": "failed",
                              "error": "zombie swept at read time"})
         obj["status"] = "failed"
-        obj["error"] = "zombie swept at read time"
+        obj["error"] = ("run was still queued when the gateway vanished "
+                        "(never executed) — resubmit" if queued else
+                        "zombie swept at read time")
     obj.setdefault("run_id", run_id)
     obj.setdefault("stages", [])
     obj.setdefault("artifacts", [])
@@ -1677,7 +1893,24 @@ async def _h_flows_validate(ctx: _Ctx) -> HandlerResult:
             envelope if envelope is not None else ctx.json)
         graph, skipped = fl.compile(dict(ctx.json))
     except flow_mod.FlowError as e:
-        return 400, {"error": str(e)}
+        # STROKE 3 (2026-09-06): BATCH refusals — "error" stays the
+        # verbatim first refusal (wire compatibility); "errors" rows
+        # add every OTHER stage-local problem the door can name, so
+        # N mistakes cost ONE round-trip instead of N. Rows are
+        # ordered: the first refusal, then per-stage locals, then
+        # engine workflow checks (validate_workflow ABI — the comfyui
+        # pin sweep). Wall: test_validate_batch.py.
+        return 400, {"error": str(e),
+                     "errors": _validate_batch_rows(
+                         envelope if envelope is not None else ctx.json,
+                         str(e))}
+    # A flow-compiles-clean body can still carry workflow garbage (the
+    # flow layer never opens params) — the pin sweep runs on SUCCESS
+    # too: garbage graphs die at the door, not on GPU money.
+    wf_rows = _workflow_sweep(
+        (envelope if envelope is not None else ctx.json))
+    if wf_rows:
+        return 400, {"error": wf_rows[0]["error"], "errors": wf_rows}
     return 200, {
         "ok": True,
         "skipped": list(skipped),
@@ -1691,6 +1924,63 @@ async def _h_flows_validate(ctx: _Ctx) -> HandlerResult:
     }
 
 
+def _workflow_sweep(body: JsonValue) -> list[dict[str, str]]:
+    """The offline pin sweep, isolated: every stage whose engine
+    exports validate_workflow (comfyui today) gets its params row
+    checked. Runs on BOTH validate paths — a flow that compiles can
+    still carry a graph the estate pin refuses."""
+    stages = body.get("stages") if isinstance(body, dict) else None
+    if not isinstance(stages, list):
+        return []
+    rows: list[dict[str, str]] = []
+    for i, st in enumerate(stages):
+        if not isinstance(st, dict):
+            continue
+        engine = st.get("engine")
+        label = str(st.get("id", "stage[%d]" % i))
+        if not isinstance(engine, str):
+            continue
+        try:
+            vw = getattr(load_engine(engine), "validate_workflow", None)
+        except Exception:
+            vw = None
+        if vw is not None and isinstance(st.get("params"), dict):
+            for wrow in vw(st["params"]):
+                rows.append({"stage": label, "error": wrow})
+    return rows
+
+
+def _validate_batch_rows(body: JsonValue, first_error: str) -> list[dict[str, str]]:
+    """Every refusal the door can name, as structured rows.
+
+    Per-stage LOCAL probes strip inputs/expected (cross-stage wiring
+    is only checkable whole-flow — the first_error row carries it),
+    so a probe refusal is always about the stage row itself: unknown
+    fields, a dead engine, a kind typo in outputs, a card-schema
+    miss. Engines may export validate_workflow(params) (the offline
+    pin sweep) — called for every stage whose engine loads."""
+    import flow as flow_mod
+    rows: list[dict[str, str]] = [{"scope": "flow", "error": first_error}]
+    stages = body.get("stages") if isinstance(body, dict) else None
+    if not isinstance(stages, list):
+        return rows
+    for i, st in enumerate(stages):
+        label = st.get("id", "stage[%d]" % i) if isinstance(st, dict) \
+            else "stage[%d]" % i
+        if isinstance(st, dict):
+            probe = {"id": "probe", "stages": [
+                {k: v for k, v in st.items()
+                 if k not in ("inputs", "expected")}]}
+            try:
+                flow_mod.flow_from_body(probe)
+            except flow_mod.FlowError as e:
+                rows.append({"stage": str(label), "error": str(e)})
+    # engine workflow sweep (offline, pin-driven) — shared with the
+    # success path
+    rows.extend(_workflow_sweep(body))
+    return rows
+
+
 async def _h_queue(ctx: _Ctx) -> HandlerResult:
     gw = ctx.gw
     return 200, {
@@ -1701,7 +1991,7 @@ async def _h_queue(ctx: _Ctx) -> HandlerResult:
     }
 
 
-def _run_log_tail(obj: dict) -> str:
+def _run_log_tail(obj: dict[str, JsonValue]) -> str:
     """The run's log tail for the console drilldown (include_log) —
     SYNTHESIZED from real state, never fabricated: the run's status
     row + queue position, one line per stage (name: status, with the
@@ -1808,7 +2098,16 @@ async def _h_runs_list(ctx: _Ctx) -> HandlerResult:
         limit = int(_raw)
     except ValueError:
         return 400, {"error": "limit must be an integer (got %r)" % _raw}
-    return 200, _er.runs(str(STATE_ROOT), limit=limit)
+    # live_run_ids: the gateway's registry keys (run ids == run dir
+    # names). Without them editor_runs.runs misreads a LIVE running
+    # run as a zombie and serves "failed" for work that is still
+    # executing (the 2026-09-06 stroke-1 fix; wall:
+    # test_runs_list_passes_live_ids). Harness ctxs may carry no
+    # gateway (gw=None): no registry, no live ids — the sweep then
+    # behaves exactly as before the fix.
+    live = tuple(ctx.gw.runs) if getattr(ctx.gw, "runs", None) else ()
+    return 200, _er.runs(str(STATE_ROOT), limit=limit,
+                         live_run_ids=live)
 
 
 async def _h_run_detail(ctx: _Ctx) -> HandlerResult:
@@ -1864,6 +2163,17 @@ async def _h_family_schemas(ctx: _Ctx) -> HandlerResult:
     import editor_runs as _er
     return 200, _er.family_param_schemas(
         _er.catalog_family_ids(str(REPO / "plugins")))
+
+
+async def _h_schema(ctx: _Ctx) -> HandlerResult:
+    # STROKE 2 (2026-09-06): the whole authoring vocabulary in ONE
+    # payload — kinds, engines (+default outputs), the flow_inline
+    # stage shape, the doors, every declared flow with stage rows.
+    # Derived from the same rows the validators enforce (flow.py
+    # schema_snapshot); the AI stops reading plugin source to
+    # compose. Wall: tests/unit/runtime/test_schema_door.py.
+    import flow as _flow_mod
+    return 200, _flow_mod.schema_snapshot()
 
 
 async def _h_family_schema_one(ctx: _Ctx) -> HandlerResult:
@@ -1966,7 +2276,7 @@ def _preset_estate_rows(tenant: str) -> tuple[CharacterPreset, ...] | None:
     return tuple(getattr(cls, "character_presets", ()))
 
 
-def _provision_mount(cls: "type", prov: "object") -> tuple[str, Path] | None:
+def _provision_mount(cls: type[Model], prov: Provision) -> tuple[str, Path] | None:
     """Resolve a declared Provision to (disk_path, store_root) — the
     ONE resolution both provision doors share (the base-body door
     streams it; the model-provision door streams it or ON-DEMAND
@@ -2101,7 +2411,7 @@ def _family_by_id(fid: str) -> "type | None":
     return None
 
 
-def _fetch_provision_locked(cls: "type", prov: "object") -> str:
+def _fetch_provision_locked(cls: type[Model], prov: Provision) -> str:
     """Worker-thread body for the on-demand path (provision_rail
     drives async comfy-mcp tools via asyncio.run — it must never run
     on the serving loop). The per-provision lock serializes
@@ -2579,6 +2889,33 @@ async def _h_manage(ctx: _Ctx) -> HandlerResult:
                      "detail": "manage action timed out (900s)"}
 
 
+def _card_bridge(node: NodeRow, params: dict[str, JsonValue], run_id: str) -> dict[str, JsonValue]:
+    """STROKE 4 (2026-09-06): compose a card= stage's DOC into engine
+    params via the owning arm — the {model:} door's compose, run at
+    the flow stage's turn. The bus dispatches by engine type; the
+    model row rides params.model (gated non-empty at construction by
+    the registry's requires_model row). A refused compose is a LOUD
+    run failure with the arm's verbatim text (the construction gate
+    already caught shape errors; this catches row-level ones, e.g. an
+    unknown model id)."""
+    import plugins as _plugins
+    model = str(params.get("model") or "")
+    graph2, _extra = _plugins.compose(
+        {"params": dict(params)}, model, run_id, None,
+        [node.node_type])
+    nodes = getattr(graph2, "nodes", None) or ()
+    if not nodes:
+        raise RuntimeError(
+            "card %r (engine %r): the arm returned no graph — a card "
+            "stage needs the composed workflow, never a raw doc"
+            % (getattr(node, "card", ""), node.node_type))
+    composed = dict(nodes[0].params or {})
+    # the model row id stays visible to the engine surface (stop
+    # doors + sidecar provenance) without polluting the workflow
+    composed.setdefault("model", model)
+    return composed
+
+
 async def _h_health(ctx: _Ctx) -> HandlerResult:
     import editor_runs as _er
     return 200, _er.health()
@@ -2592,13 +2929,16 @@ async def _h_chrome(ctx: _Ctx) -> HandlerResult:
 ROUTES: tuple = (
     # ── Queue & runs (INFERENCE LAW: everything through the queue) ──
     Route(method="POST", path="/v1/flows/start", group="Queue & runs",
-          summary="Submit: {flow:name} or {model:id,...} — explicit, "
+          summary="Submit: {flow:name} or {model:id,...} + REQUIRED "
+                  "draft_id (CARD BIRTH LAW: compose the card at "
+                  "POST /v1/flows/drafts first) — explicit, "
                   "4xx BEFORE registration (QUEUE LANE LAW)",
           body="strict", handler=_h_flows_start),
     Route(method="POST", path="/v1/flows/validate", group="Queue & runs",
           summary="Compile an inline flow body ({flow_inline shape}) — "
-                  "verbatim refusals, no queue slot, no GPU, no "
-                  "sidecar (the AI feedback loop)",
+                  "verbatim refusals in BATCH (error = first, errors[] "
+                  "= every stage-local + workflow-pin problem, one "
+                  "round-trip), no queue slot, no GPU, no sidecar",
           body="strict", handler=_h_flows_validate),
     Route(method="GET", path="/v1/queue", group="Queue & runs",
           summary="Queue snapshot (queued/running/active)", handler=_h_queue),
@@ -2735,6 +3075,13 @@ ROUTES: tuple = (
           group="Models & forms",
           summary="Family param schemas (all families)",
           handler=_h_family_schemas),
+    Route(method="GET", path="/v1/schema", template="/v1/schema",
+          group="Flows & schema",
+          summary="The flow-authoring vocabulary (stroke 2): kinds, "
+                  "engines, the flow_inline stage shape, doors, and "
+                  "every declared flow — one payload so agents stop "
+                  "reading plugin source",
+          handler=_h_schema),
     Route(method="GET", path=r"^/v1/flows/families/(.+)/param-schema$",
           regex=True, template="/v1/flows/families/{family}/param-schema",
           group="Models & forms", summary="One family's param schema",

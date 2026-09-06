@@ -118,12 +118,14 @@ def main() -> int:
             # NATIVE 3D/AUDIO BOARDING (2026-09-06): the cpp engines'
             # cards serve via the shared card walk — quad-remesh
             # (autoremesher) + forge (anycreature) + the renamed
-            # music-native (ace-step-xl) + kimodo's text-to-motion
-            # (soma, side-boarding, goldened stable-tree).
+            # music-native (ace-step-xl). (kimodo's text-to-motion
+            # boarded here too, then retired the same day with its
+            # ggml lane — ONE-implementation rule.)
             ("form-spec?model=autoremesher", "deep"),
             ("form-spec?model=anycreature", "deep"),
             ("form-spec?model=ace-step-xl", "deep"),
-            ("form-spec?model=soma", "deep"),
+            # (form-spec?model=soma RETIRED 2026-09-06 with the cpp
+            # ggml kimodo lane — the ONE-implementation rule)
             ("kinds", "deep"),
             ("plugins", "deep"),
             ("health", "deep"),
@@ -184,8 +186,9 @@ def main() -> int:
         code, body = get(port, "/v1/flows/status/run-does-not-exist-000")
         check("status unknown run -> 404", code == 404, str(code))
 
-        # loud refusal band: start without a named flow is 400 BEFORE
-        # any run registration (QUEUE LANE LAW)
+        # loud refusal band: a cardless start ({}, no draft_id) is 400
+        # BEFORE any run registration (CARD BIRTH LAW 2026-09-06 on
+        # top of QUEUE LANE LAW)
         req = urllib.request.Request(
             "http://127.0.0.1:%d/v1/flows/start" % port,
             data=b"{}", headers={"content-type": "application/json"})

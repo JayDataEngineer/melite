@@ -25,7 +25,7 @@ What each probe proves:
   proportion) ride back as the run's EXACT error — a documented
   failure, never a silent empty completion (RESILIENCE LAW; the
   error-dict swallow hole was found and fixed building this suite)
-- missing-binary refusals: kimodo/autoremesher without their
+- missing-binary refusals: autoremesher without its
   binaries refuse LOUDLY naming the env knob (QUEUE LANE LAW: no
   silent fallback) — the error is the artifact
 - engine transition: a 2-stage yaml (forge → quad-remesh) passes
@@ -51,6 +51,9 @@ import urllib.request
 
 BASE = "http://127.0.0.1:33081"
 from _anchor import REPO
+
+# Draft envelopes are JSON (no future-import here — old-style alias).
+JsonValue = dict[str, "JsonValue"] | list["JsonValue"] | str | int | float | bool | None
 
 # the TRUE minimal green creature (live-probed against the engine's
 # mechanical checks: graded body rhythm + two support legs + palette)
@@ -124,9 +127,48 @@ def _req(method: str, path: str, body: dict[str, str | dict[str, str | int | boo
         return json.loads(resp.read().decode())
 
 
+# HYGIENE: every live run id submitted by this module, deleted in
+# tearDownModule — the output pool looks untouched after the sweep.
+# forge_glb paths point INTO run dirs but are only read mid-module;
+# deletion runs after the last test.
+_CREATED_RUNS: list[str] = []
+
+
+def _rm_run(run_id: str) -> None:
+    import shutil
+    try:
+        shutil.rmtree(os.path.join(REPO, "data/runs/output", run_id),
+                      ignore_errors=True)
+    except OSError:
+        pass
+
+
+def tearDownModule() -> None:
+    for run_id in _CREATED_RUNS:
+        _rm_run(run_id)
+    _CREATED_RUNS.clear()
+
+
+def _compose(body: dict[str, JsonValue]) -> str:
+    """CARD BIRTH LAW (operator order 2026-09-06): the start door
+    4xxes a start without a doc-backed draft_id — compose the card
+    first, return its draft_id for the start envelope."""
+    doc = _req("POST", "/v1/flows/drafts", body)
+    draft_id = doc.get("draftId")
+    assert isinstance(draft_id, str) and draft_id, \
+        "card compose returned no draftId: %s" % (doc,)
+    return draft_id
+
+
 def _submit(model: str, params: dict[str, str | int | bool | float | list[dict[str, str | int]] | dict[str, str | dict[str, list[int | float]] | dict[str, list[str]] | list[dict[str, str | int | list[list[int | float]]]] | dict[str, dict[str, str]]]]) -> dict[str, str | int | float | bool | list[str] | list[dict[str, str]] | dict[str, str] | None]:
-    return _req("POST", "/v1/flows/start",
-                {"model": model, "params": params})
+    # FLAT (flows rework 2026-09-05): card params ride top-level —
+    # a nested "params" key double-wraps and 400s at phase 1.
+    start = {"model": model, **params}
+    start["draft_id"] = _compose(start)
+    resp = _req("POST", "/v1/flows/start", start)
+    if isinstance(resp.get("run_id"), str):
+        _CREATED_RUNS.append(resp["run_id"])
+    return resp
 
 
 def _wait(run_id: str, deadline_s: int = 180, want: tuple[str, ...] = ("completed", "failed", "error",
@@ -150,7 +192,7 @@ def _sidecar(run_id: str) -> dict[str, str | int | float | bool | list[str] | li
 
 @unittest.skipIf(not os.environ.get("DSH_GPU_TESTS")
                  and not os.path.isdir(os.path.join(
-                     REPO, "plugins/engines/cpp/anycreature/vendor/"
+                     REPO, "plugins/engines/node/anycreature/vendor/"
                      "anyCreature/engine")),
     "anyCreature vendor tree absent — run git submodule update "
     "--init to enable the live cpp GPU suite")
@@ -249,44 +291,6 @@ class TestGpuCppCards(unittest.TestCase):
                             for a in arts),
                         "no engine report artifact: %s" % arts)
 
-    def test_04_text_to_motion_produces_real_motion(self) -> None:
-        """REAL OUTPUT when the lane is provisioned (estate CLI
-        wrapper + built generator + sha-verified weights under
-        data/runtime/kimodo): a prompt → real motion.glb through the
-        queue. Unprovisioned → the loud refusal naming KIMODO_BIN
-        (QUEUE LANE LAW). Both branches are the contract."""
-        wrapper = os.path.join(
-            REPO, "plugins/engines/cpp/kimodo/cli/kimodo_cli")
-        weights = os.path.join(
-            REPO, "data/runtime/kimodo/weights/generated/"
-            "llm2vec-text-bundle/tokenizer.gguf")
-        provisioned = os.path.isfile(wrapper) and os.path.isfile(
-            weights)
-        d = _submit("soma", {"prompt":
-                             "a knight walks, then bows deeply",
-                             "steps": 20})
-        final = _wait(d["run_id"],
-                      deadline_s=600 if provisioned else 180)
-        if provisioned:
-            self.assertEqual(final["status"], "completed",
-                             json.dumps(final)[:400])
-            arts = final.get("artifacts") or []
-            self.assertTrue(
-                any(a.endswith("motion.glb") for a in arts),
-                "no motion.glb artifact: %s" % arts)
-            glb = [a for a in arts if a.endswith("motion.glb")][0]
-            self.assertGreater(os.path.getsize(glb), 10000,
-                               "motion GLB suspiciously small")
-            with open(glb, "rb") as f:
-                self.assertEqual(f.read(4), b"glTF",
-                                 "not a GLB container")
-        else:
-            self.assertEqual(final["status"], "failed")
-            err = (final.get("error") or "").lower()
-            self.assertIn("kimodo", err)
-            self.assertTrue("cli" in err or "not found" in err,
-                            "unexpected refusal: %r" % err[:200])
-
     def test_05_engine_transition_forge_to_remesh(self) -> None:
         """A 2-stage FLOW (2026-09-04 flows rework: the lane is now a
         Python declaration, not a runtime yaml): the creature GLB
@@ -320,8 +324,11 @@ class TestGpuCppCards(unittest.TestCase):
                 "    ),\n"
                 ")\n")
         try:
-            d = _req("POST", "/v1/flows/start",
-                     {"flow": "gpu-test-cpp-transition"})
+            # CARD BIRTH LAW (operator order 2026-09-06): the start
+            # door 4xxes a start without a doc-backed draft_id.
+            start = {"flow": "gpu-test-cpp-transition"}
+            start["draft_id"] = _compose(start)
+            d = _req("POST", "/v1/flows/start", start)
             run_id = d["run_id"]
             final = _wait(run_id, deadline_s=600)
             sc = _sidecar(run_id)
@@ -347,100 +354,17 @@ class TestGpuCppCards(unittest.TestCase):
             import shutil
             shutil.rmtree(lane, ignore_errors=True)
 
-    def test_07_text_to_motion_transitions_sequence(self) -> None:
-        """The sequence door (kmd-generate --sequence): two prompts
-        spliced at given frame boundaries → a real motion.glb with
-        more than the default frame count (196) and the run's
-        stage sidecar names the prompt-transition structure."""
-        wrapper = os.path.join(
-            REPO, "plugins/engines/cpp/kimodo/cli/kimodo_cli")
-        if not os.path.isfile(wrapper):
-            self.skipTest("kimodo CLI wrapper not built")
-        if not os.path.isfile(os.path.join(
-                REPO, "data/runtime/kimodo/weights/generated/"
-                "llm2vec-text-bundle/tokenizer.gguf")):
-            self.skipTest("kimodo weights not provisioned")
-        d = _submit("soma", {
-            "prompt": "a knight walks forward",
-            "skeleton": "soma",
-            "steps": 15,
-            "transitions": [
-                {"frame": 0, "prompt": "a knight walks forward"},
-                {"frame": 60, "prompt": "the knight bows deeply"}]})
-        final = _wait(d["run_id"], deadline_s=600)
-        self.assertEqual(final["status"], "completed",
-                         json.dumps(final)[:400])
-        arts = final.get("artifacts") or []
-        self.assertTrue(any(a.endswith("motion.glb") for a in arts),
-                        "no motion.glb: %s" % arts)
-
-    def test_08_text_to_motion_g1_glb_loud_refusal(self) -> None:
-        """G1 generation works in the C engine, but the vendor's
-        GLB exporter speaks soma30 only — the wrapper refuses LOUDLY
-        at the card door with the exact reason (QUEUE LANE LAW)."""
-        wrapper = os.path.join(
-            REPO, "plugins/engines/cpp/kimodo/cli/kimodo_cli")
-        if not os.path.isfile(wrapper):
-            self.skipTest("kimodo CLI wrapper not built")
-        d = _submit("soma", {"prompt": "a test", "skeleton": "g1"})
-        final = _wait(d["run_id"], deadline_s=120)
-        # either the g1 GLB-exporter refusal OR the g1 gguf-missing
-        # refusal (the g1 weights aren't downloaded today) — both are
-        # honest documented failures
-        self.assertIn(final["status"], ("failed", "error"))
-        err = (final.get("error") or "").lower()
-        self.assertTrue(
-            ("g1" in err and "glb" in err) or
-            ("gguf" in err and "g1" in err) or
-            "soma30" in err,
-            "unexpected g1 refusal: %r" % err[:200])
-
-    def test_09_text_to_motion_smplx_licence_gate(self) -> None:
-        """SMPL-X is licence-gated (NVIDIA internal-R&D, no
-        distribution) — the schema refuses LOUDLY before any spawn,
-        naming the user-checkpoint param or env knob. The refusal
-        may ride as a route-layer 4xx (the card_compose phase 1
-        contract) or a run-stage failure — both are honest."""
-        import urllib.error
-        try:
-            d = _submit("soma", {"prompt": "a test",
-                                 "skeleton": "smplx"})
-        except urllib.error.HTTPError as e:
-            # the loud 4xx: read the JSON body, assert the refusal
-            # names the licence knob
-            body = json.loads(e.read().decode())
-            err = json.dumps(body).lower()
-            self.assertIn("smplx", err)
-            self.assertTrue(
-                "smplx_checkpoint" in err or "kimodo_smplx" in err,
-                "SMPL-X refusal must name the licence gate knob: "
-                "%r" % err[:200])
-            return
-        final = _wait(d["run_id"], deadline_s=60)
-        self.assertIn(final["status"], ("failed", "error"))
-        err = (final.get("error") or "").lower()
-        self.assertIn("smplx", err)
-        self.assertTrue(
-            "smplx_checkpoint" in err or "kimodo_smplx" in err,
-            "SMPL-X refusal must name the licence gate knob: %r"
-            % err[:200])
-
     def test_10_stop_door_lands_on_cpp_run(self) -> None:
         """The stop door (the RESILIENCE LAW's <6s interrupt claim)
         works on a cpp run too: POST stop while kmd-generate is
         in flight, the run settles as 'stopped' in well under the
         run's natural wall-time (we measure the stop latency, not
         the run duration)."""
-        wrapper = os.path.join(
-            REPO, "plugins/engines/cpp/kimodo/cli/kimodo_cli")
-        if not os.path.isfile(wrapper):
-            self.skipTest("kimodo CLI wrapper not built")
-        if not os.path.isfile(os.path.join(
-                REPO, "data/runtime/kimodo/weights/generated/"
-                "llm2vec-text-bundle/tokenizer.gguf")):
-            self.skipTest("kimodo weights not provisioned")
-        d = _submit("soma", {"prompt": "a long motion",
-                             "steps": 50})
+        # (subject re-pointed 2026-09-06: the cpp ggml kimodo lane
+        # retired — ONE-implementation rule, the NVIDIA-package wrap
+        # on the comfyui lane won; the heavy forge spec is the long
+        # in-flight cpp run now)
+        d = _submit("anycreature", {"spec": _heavy_spec()})
         run_id = d["run_id"]
         # wait for the ticket to flip (queue → running) — posting
         # stop on a queued run lands the flag for the NEXT run, not

@@ -62,12 +62,9 @@
 	path = vendor/comfyui_extensions/melite-model-base
 	url = https://github.com/JayDataEngineer/melite-model-base.git
 	branch = main
-[submodule "plugins/engines/cpp/anycreature/vendor/anyCreature"]
-	path = plugins/engines/cpp/anycreature/vendor/anyCreature
+[submodule "plugins/engines/node/anycreature/vendor/anyCreature"]
+	path = plugins/engines/node/anycreature/vendor/anyCreature
 	url = https://github.com/Ariescar/anyCreature
-[submodule "plugins/engines/cpp/kimodo/vendor/kimodo"]
-	path = plugins/engines/cpp/kimodo/vendor/kimodo
-	url = https://github.com/localai-org/kimodo.cpp
 [submodule "plugins/engines/cpp/autoremesher/vendor/autoremesher"]
 	path = plugins/engines/cpp/autoremesher/vendor/autoremesher
 	url = https://github.com/huxingyi/autoremesher

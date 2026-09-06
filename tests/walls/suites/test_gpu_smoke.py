@@ -26,26 +26,48 @@ Requirements (live half only): the gateway UP on 127.0.0.1:33081
 skips silently — the test_gpu_cpp_cards.py shape), node >= 18 for
 the anyCreature CLI, provisioned checkpoints for the ComfyUI lanes.
 
-First-GPU-run calibration (2026-09-06, no GPU on the dev box): the
-light values below are validator-sane by static inspection, NOT
-live-probed. A loud construction refusal on the GPU box names the
-knob — adjust the value, never the assertion shape.
+Live-probed 2026-09-06 on the RTX 4090 box through the operator
+queue (15/19 green). Four loud reds are RECORDED lane findings,
+not smoke bugs — see docs/design/gpu-smoke-per-card.md (h3 arm
+phase-1/phase-2 shape asymmetry; trellis dino checkpoint gap;
+audiocpp_cli unbuilt; tts speaker-ref gap). A loud refusal names
+the knob — adjust the value, never the assertion shape.
 """
 
 import json
 import os
 import time
 import unittest
+import urllib.error
 import urllib.request
 
 import pytest
 from _anchor import REPO
 from melite_cards import scan_engine_cards
+
+# Card params ride JSON (no future-import here — old-style alias).
+JsonValue = dict[str, "JsonValue"] | list["JsonValue"] | str | int | float | bool | None
 from test_gpu_cpp_cards import MINI_SPEC
 
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
+
 BASE = "http://127.0.0.1:33081"
-FIXTURE_PNG = "tests/integration/assets/source.png"
-CUBE_OBJ = "tests/walls/suites/assets/smoke_cube.obj"
+OUT_ROOT = REPO / "data" / "runs" / "output"
+
+
+def _rm_run(run_id: str) -> None:
+    """Best-effort delete of one live run directory."""
+    import shutil
+    try:
+        shutil.rmtree(OUT_ROOT / run_id, ignore_errors=True)
+    except OSError:
+        pass
+# ABSOLUTE (live-probed 2026-09-06): artifact-ref gates (image-edit)
+# resolve runs-relative refs under the output pool — a repo-relative
+# photo reads as "upstream output of run ?" and 400s. Absolute disk
+# paths pass every gate (plain-existence and artifact-ref alike).
+FIXTURE_PNG = os.path.join(str(REPO), "tests/integration/assets/source.png")
+CUBE_OBJ = os.path.join(str(REPO), "tests/walls/suites/assets/smoke_cube.obj")
 
 # card -> live probe. model = the card's default family (the
 # capabilities resolved row); params = the lightest validator-sane
@@ -56,18 +78,29 @@ SMOKE: dict[str, dict] = {
                         "resolution": 256, "samples": 1}},
     "forge": {"model": "anycreature", "deadline_s": 600,
               "params": {"spec": MINI_SPEC}},
+    # DOC shape (live-probed 2026-09-06): h3 nests its params
+    # stanza (H3Params: calls/width/height — steps/length are NOT doc
+    # keys, lane defaults apply); every call needs start_frame.
     "h3-timeline": {"model": "h3-timeline", "deadline_s": 1500,
                     "params": {"prompt": "a cube rotating on a table",
-                               "width": 256, "height": 160, "length": 9,
-                               "steps": 4, "seed": 42}},
+                               "seed": 42,
+                               "params": {"calls": [{"text": "a cube",
+                                                     "start_frame": 0,
+                                                     "end_frame": 8}],
+                                          "width": 256,
+                                          "height": 160}}},
     "ideogram4": {"model": "ideogram", "deadline_s": 1200,
                   "params": {"prompt": "a small red cube",
                              "width": 512, "height": 512,
                              "steps": 1, "seed": 7}},
+    # NO width/height (live-probed 2026-09-06): the plain path
+    # outputs input size and refuses explicit resize instead of
+    # silently ignoring it. @upload: stages the fixture through the
+    # browser upload door (POST /v1/uploads — the editor path) so
+    # the artifact-ref gate sees an input-dir name, not a repo path.
     "image-edit": {"model": "qwen-img-edit-2511", "deadline_s": 1200,
-                   "params": {"input_image": FIXTURE_PNG,
+                   "params": {"image1": "@upload:" + FIXTURE_PNG,
                               "prompt": "turn the subject blue",
-                              "width": 256, "height": 256,
                               "steps": 1, "seed": 7}},
     "image-gen": {"model": "krea-2", "deadline_s": 1200,
                   "params": {"prompt": "a small red cube on a table",
@@ -93,23 +126,34 @@ SMOKE: dict[str, dict] = {
     "music": {"model": "music3", "deadline_s": 1500,
               "params": {"prompt": "soft lofi loop", "duration": 10,
                          "n_diffusion_steps": 4, "seed": 7}},
+    # prompt rides explicitly (live-probed 2026-09-06): the card
+    # declares no fields but the schema requires prompt — a
+    # card/schema gap the audio lane owns.
     "music-native": {"model": "ace-step-xl", "deadline_s": 900,
-                     "params": {}},
+                     "params": {"prompt": "soft piano loop",
+                                "duration": 10, "seed": 7}},
     "quad-remesh": {"model": "autoremesher", "deadline_s": 600,
                     "params": {"input": CUBE_OBJ, "target_quads": 500}},
     "sfx": {"model": "moss-sfx", "deadline_s": 1200,
             "params": {"prompt": "a wooden door knock", "duration": 3,
                        "n_diffusion_steps": 4, "seed": 7}},
-    "text-to-motion": {"model": "soma", "deadline_s": 900,
-                       "params": {"prompt": "a person takes one step",
-                                  "steps": 2, "seed": 7}},
+    # tagger canary (2026-09-06): light ONNX lane; first run downloads
+    # the WD14 weights, after that seconds per image.
+    "tagger": {"model": "wd14", "deadline_s": 900,
+               "params": {"input_image": FIXTURE_PNG}},
+    # (the cpp ggml text-to-motion smoke RETIRED 2026-09-06 with the
+    # lane — motion rides the comfyui kimodo card; its GPU path is
+    # pinned by the kimodo-native flow run, not a per-card smoke)
     "tts": {"model": "qwen3-tts", "deadline_s": 900,
             "params": {"text": "Smoke test one two three."}},
     "upscale-tools": {"model": "seedvr2_ema", "deadline_s": 1200,
                       "params": {"input_image": FIXTURE_PNG,
                                  "resolution": 256}},
+    # wan-vace is reference-guided (VACE consumes reference_image —
+    # the lane refuses prompt-only); the fixture doubles as ref.
     "video-gen": {"model": "wan-vace", "deadline_s": 1800,
                   "params": {"prompt": "a cube rotating on a table",
+                             "reference_image": FIXTURE_PNG,
                              "width": 256, "height": 160, "length": 9,
                              "steps": 1, "seed": 7}},
     "voice-lock": {"model": "qwen3-tts-voicedesign", "deadline_s": 900,
@@ -149,9 +193,11 @@ class TestGpuSmokeCoverage:
             assert isinstance(probe["params"], dict), cid
             assert probe["deadline_s"] > 0, cid
             for k, v in probe["params"].items():
-                if isinstance(v, str) and (
-                        v.endswith(".png") or v.endswith(".obj")):
-                    assert os.path.isfile(os.path.join(str(REPO), v)), \
+                disk = (v[len("@upload:"):] if isinstance(v, str)
+                        and v.startswith("@upload:") else v)
+                if isinstance(disk, str) and (
+                        disk.endswith(".png") or disk.endswith(".obj")):
+                    assert os.path.isfile(disk), \
                         "%s param %s refs missing fixture %s" % (cid, k, v)
 
     def test_exclusions_cite_lane_reality(self) -> None:
@@ -161,17 +207,30 @@ class TestGpuSmokeCoverage:
 
 
 def _req(method: str, path: str,
-         body: dict | None = None, timeout: int = 30) -> dict:
+         body: dict[str, JsonValue] | None = None,
+         timeout: int = 30) -> dict[str, JsonValue]:
+    # refusal bodies ride IN the failure (INFERENCE LAW: probe the
+    # queue door only — no side-channel POST scripts to read them).
     data = json.dumps(body).encode() if body is not None else None
     r = urllib.request.Request(
         BASE + path, data=data, method=method,
         headers={"content-type": "application/json"})
-    with urllib.request.urlopen(r, timeout=timeout) as resp:
-        return json.loads(resp.read().decode())
+    try:
+        with urllib.request.urlopen(r, timeout=timeout) as resp:
+            return json.loads(resp.read().decode())
+    except urllib.error.HTTPError as e:
+        raise AssertionError(
+            "%s %s refused %s: %s"
+            % (method, path, e.code, e.read().decode()[:600]))
 
 
 @pytest.mark.gpu
 class TestGpuSmoke(unittest.TestCase):
+    def tearDown(self) -> None:
+        for run_id in getattr(self, "_runs", []):
+            _rm_run(run_id)
+        self._runs = []
+
     @classmethod
     def setUpClass(cls) -> None:
         try:
@@ -182,18 +241,51 @@ class TestGpuSmoke(unittest.TestCase):
                 "setsid .venv/bin/python py/gateway.py 33081 "
                 "(%s)" % (BASE, e))
 
-    def _smoke(self, cid: str) -> None:
+    def _upload(self, path: str) -> str:
+        import base64
+        with open(path, "rb") as fh:
+            data_url = ("data:image/png;base64," +
+                        base64.b64encode(fh.read()).decode())
+        d = _req("POST", "/v1/uploads",
+                 {"filename": os.path.basename(path), "data": data_url})
+        return os.path.basename(d["path"])
+
+    def _smoke(self, cid: str, model: str | None = None,
+               params: dict[str, JsonValue] | None = None,
+               deadline_s: int | None = None) -> None:
+        # model/params/deadline_s override the SMOKE row: second-family
+        # arm probes (tagger-joytag) ride the card's harness without a
+        # second registry row (the coverage wall keys SMOKE by card).
         probe = SMOKE[cid]
+        model = model or probe["model"]
+        params = dict(probe["params"] if params is None else params)
+        deadline_s = deadline_s or probe["deadline_s"]
+        for k, v in list(params.items()):
+            params[k] = (self._upload(v[len("@upload:"):])
+                         if isinstance(v, str) and
+                         v.startswith("@upload:") else v)
         # FLAT body (the start-door contract — flows rework 2026-09-05:
         # {model} + card params at top level; the gateway wraps into
         # {params:} for the arm. A nested "params" key double-wraps
-        # and 400s at phase 1 — live-probed 2026-09-06.)
-        d = _req("POST", "/v1/flows/start",
-                 {"model": probe["model"], **probe["params"]})
+        # and 400s at phase 1 — live-probed 2026-09-06. (h3-timeline
+        # is the deliberate exception: its DOC nests params.)
+        # CARD BIRTH LAW (operator order 2026-09-06): the start door
+        # 4xxes a start without a doc-backed draft_id — the card is
+        # composed FIRST (one draft-door call), then the run links
+        # to it.
+        start = {"model": model, **params}
+        draft = _req("POST", "/v1/flows/drafts", start)
+        assert isinstance(draft.get("draftId"), str) and draft["draftId"], \
+            "%s card compose refused: %s" % (cid, draft)
+        start["draft_id"] = draft["draftId"]
+        d = _req("POST", "/v1/flows/start", start)
         self.assertEqual(d.get("status"), "queued",
                          "%s submission refused: %s" % (cid, d))
         run_id = d["run_id"]
-        end = time.time() + probe["deadline_s"]
+        # HYGIENE: the live run is tracked for tearDown deletion even
+        # when a later assert fails — the output pool stays clean.
+        self._runs = getattr(self, "_runs", []) + [run_id]
+        end = time.time() + deadline_s
         final: dict = {}
         while time.time() < end:
             final = _req("GET", "/v1/flows/status/" + run_id)
@@ -252,8 +344,34 @@ class TestGpuSmoke(unittest.TestCase):
     def test_sfx_smoke(self) -> None:
         self._smoke("sfx")
 
-    def test_text_to_motion_smoke(self) -> None:
-        self._smoke("text-to-motion")
+    def test_tagger_smoke(self) -> None:
+        self._smoke("tagger")
+
+    def test_tagger_joytag_arm_smoke(self) -> None:
+        # second-family arm probe (2026-09-06): same card harness,
+        # joytag arm (CXH_JoyTag torch lane, pack-local checkpoint).
+        self._smoke("tagger", model="joytag",
+                    params={"input_image": FIXTURE_PNG,
+                            "threshold": 0.3,
+                            "add_tag": "smoke",
+                            "remove_tag": "blurry"},
+                    deadline_s=1200)
+
+    def test_tagger_florence2_arm_smoke(self) -> None:
+        # third-family arm probe (2026-09-06): Florence-2 captioning
+        # (loader + run nodes; first run self-downloads the checkpoint
+        # to ComfyUI/models/LLM — the long deadline covers it).
+        self._smoke("tagger", model="florence2",
+                    params={"input_image": FIXTURE_PNG},
+                    deadline_s=1800)
+
+    def test_tagger_joycaption_arm_smoke(self) -> None:
+        # fourth-family arm probe (2026-09-06): JoyCaption beta-one VLM
+        # (8B bf16; first run self-downloads ~16GB — the long deadline
+        # covers it).
+        self._smoke("tagger", model="joycaption",
+                    params={"input_image": FIXTURE_PNG},
+                    deadline_s=2400)
 
     def test_tts_smoke(self) -> None:
         self._smoke("tts")

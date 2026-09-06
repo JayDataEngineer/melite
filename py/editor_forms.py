@@ -187,11 +187,9 @@ _FORMS_TABLE = {
               "plugin": "anycreature", "sidebar_key": "3d",
               "default_service": "anycreature", "hidden": False,
               "covers": ("anycreature",)},
-    "text-to-motion": {"label": "Text → Motion", "genre": "motion",
-                       "order": 12, "plugin": "kimodo",
-                       "sidebar_key": "motion",
-                       "default_service": "soma", "hidden": False,
-                       "covers": ("soma",)},
+    # (the kimodo text-to-motion editor row RETIRED 2026-09-06 with
+    # the cpp ggml lane — motion composes through the comfyui
+    # kimodo card; the ONE-implementation rule)
     "quad-remesh": {"label": "Quad Remesh", "genre": "3d", "order": 13,
                     "plugin": "autoremesher", "sidebar_key": "3d",
                     "default_service": "autoremesher", "hidden": False,
@@ -245,6 +243,16 @@ _FORMS_TABLE = {
                    "default_service": "input",
                    "hidden": True,
                    "covers": ("input",)},
+    # tagger (2026-09-06): image prompt inversion — booru tags +
+    # captions for recreation. VISIBLE picker surface (the user tags
+    # their own images); all four families landed.
+    "tagger": {"label": "Tagger", "genre": "image",
+               "order": 19, "plugin": "comfyui",
+               "sidebar_key": "image",
+               "default_service": "wd14",
+               "hidden": False,
+               "covers": ("wd14", "joytag", "florence2",
+                          "joycaption")},
 }
 
 # The C's ALLOWED_CARDS gate is exactly the keys
@@ -614,12 +622,33 @@ def _variants_from_class(row: CatalogRow,
                          # format rule.
                          "route": c.route or v.route or cls.id,
                          "vram_peak_gb": c.vram_peak_gb or 0,
-                         # The axis hierarchy link: the editor scopes the
-                         # Quant select to the active variant's owner-
-                         # linked cells. Without owner, every quant is
-                         # orphaned and the row hides (the 'quants not
-                         # showing up' class).
-                         "owner": v.id})
+                        # The axis hierarchy link: the editor scopes the
+                        # Quant select to the active variant's owner-
+                        # linked cells. Without owner, every quant is
+                        # orphaned and the row hides (the 'quants not
+                        # showing up' class).
+                        "owner": v.id})
+    # DEFAULT-FIRST (2026-09-06): each group's declared default row
+    # serves FIRST within its group run (the grammar appends the
+    # canonical default recipe LAST in the variants tuple — resolve()
+    # owns variants[0] — so the wire bubbles it to the head of its
+    # group for display; the tuple order stays resolution truth).
+    # Minimal move: only the default row relocates (to its group's
+    # first slot); every other row keeps declaration order AND
+    # position (Variant/Quant interleaving untouched).
+    group_default = {g.id: g.default for g in (cls.variant_groups or ())
+                     if getattr(g, "default", "")}
+    if group_default:
+        for gid, did in group_default.items():
+            members = [i for i, r in enumerate(rows)
+                       if isinstance(r, dict) and r.get("group") == gid]
+            if not members:
+                continue
+            cur = next((i for i in members
+                        if rows[i].get("id") == did), None)
+            if cur is None or cur == members[0]:
+                continue
+            rows.insert(members[0], rows.pop(cur))
     return rows
 
 
@@ -1223,8 +1252,9 @@ def _variant_groups(mcls: type[Model] | None) -> dict[str, dict[str, str | None]
     if not declared:
         return {"Variant": {"label": "Variant"},
                 "Quant": {"label": "Quant"}}
-    return {g.id: {"label": g.label or g.id} | ({"tooltip": g.tooltip}
-                                                 if g.tooltip else {})
+    return {g.id: {"label": g.label or g.id}
+            | ({"tooltip": g.tooltip} if g.tooltip else {})
+            | ({"default": g.default} if g.default else {})
             for g in declared}
 
 

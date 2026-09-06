@@ -1,7 +1,10 @@
-"""test_cpp_engines.py — the cpp native-engine category's gates.
+"""test_cpp_engines.py — the native-engine category's gates.
 
 The category (operator order, 2026-10-02): plugins/engines/cpp/ —
 vendored native engines as submodules, compose-first plugins on top.
+(anyCreature moved to plugins/engines/node/ 2026-09-06 — a node.js
+CLI, never C++; its rows stay in this suite via the CARDS table's
+category column until a node suite earns them.)
 
 THE CARD PATTERN alignment (2026-10-02, second pass): the compose
 gates drive the BUS (plugins.compose) — the exact call path the
@@ -63,8 +66,10 @@ class TestDiscovery(unittest.TestCase):
         concat rides comfyui's VHS / melite-audio-nodes; the
         CLI-wrapper engine plugin and its dedicated type are gone."""
         engines = plugins.scan_engines()
+        # (kimodo RETIRED 2026-09-06 — the NVIDIA-package wrap on
+        # the comfyui lane is THE kimodo; ONE-implementation rule)
         for etype in ("anycreature", "audio_cpp", "autoremesher",
-                      "comfyui", "kimodo"):
+                      "comfyui"):
             self.assertIn(etype, engines, "engine %r missing" % etype)
         self.assertNotIn("ffmpeg_concat", engines)
 
@@ -139,46 +144,6 @@ class TestForgeBusContract(unittest.TestCase):
         self.assertIn("smooth_angle", wf)  # knobs spliced as spec fields
 
 
-class TestTextToMotionBusContract(unittest.TestCase):
-    OK = {"params": {"prompt": "a knight walks forward, then bows",
-                     "skeleton": "soma"}}
-
-    def test_phase1_missing_prompt_refused(self) -> None:
-        with self.assertRaises(Exception) as cm:
-            _bus({"params": {}}, "soma", "", "kimodo")
-        self.assertIn("rc=-3", str(cm.exception))
-        self.assertIn("prompt", str(cm.exception))
-
-    def test_phase1_bad_skeleton_refused(self) -> None:
-        bad = {"params": {"prompt": "walk", "skeleton": "trex"}}
-        with self.assertRaises(Exception) as cm:
-            _bus(bad, "soma", "", "kimodo")
-        self.assertIn("skeleton", str(cm.exception))
-
-    def test_phase1_smplx_gate_refused_without_checkpoint(self) -> None:
-        os.environ.pop("KIMODO_SMPLX_CHECKPOINT", None)
-        gated = {"params": {"prompt": "wave", "skeleton": "smplx"}}
-        with self.assertRaises(Exception) as cm:
-            _bus(gated, "smplx", "", "kimodo")
-        self.assertIn("licence", str(cm.exception).lower())
-
-    def test_phase1_smplx_gate_passes_with_checkpoint(self) -> None:
-        gated = {"params": {"prompt": "wave", "skeleton": "smplx",
-                            "smplx_checkpoint": "/data/smplx.gguf"}}
-        g, _extra = _bus(gated, "smplx", "", "kimodo")
-        self.assertIsInstance(g, flow_graph.FlowGraph)
-
-    def test_phase2_emits_skeleton_with_prompt_workflow(self) -> None:
-        g, _extra = _bus(self.OK, "soma", "run-2", "kimodo")
-        self.assertEqual(len(g.nodes), 1)
-        node = g.nodes[0]
-        self.assertEqual(node.node_type, "kimodo")
-        wf = node.params["workflow"]
-        self.assertEqual(wf["prompt"], self.OK["params"]["prompt"])
-        self.assertEqual(wf["skeleton"], "soma")
-        self.assertIn("seed", node.params)
-
-
 class TestQuadRemeshBusContract(unittest.TestCase):
     def _tmp_mesh(self) -> str:
         import tempfile
@@ -223,15 +188,14 @@ class TestCardPattern(unittest.TestCase):
     compose/ package dispatches — never owns the arm."""
 
     CARDS = [
-        ("anycreature", "action_cards/3d/forge"),
-        ("kimodo", "action_cards/motion/text-to-motion"),
-        ("autoremesher", "action_cards/3d/quad-remesh"),
-        ("audio-cpp", "action_cards/audio/music"),
+        ("node", "anycreature", "action_cards/3d/forge"),
+        ("cpp", "autoremesher", "action_cards/3d/quad-remesh"),
+        ("cpp", "audio-cpp", "action_cards/audio/music"),
     ]
 
     def test_every_card_owns_the_pattern_files(self) -> None:
-        for plugin, card in self.CARDS:
-            root = os.path.join(REPO, "plugins", "engines", "cpp",
+        for cat, plugin, card in self.CARDS:
+            root = os.path.join(REPO, "plugins", "engines", cat,
                                 plugin, card, "py")
             for fname in ("__init__.py", "card.py", "compose.py",
                           "schema.py", "renderer.py"):
@@ -243,8 +207,8 @@ class TestCardPattern(unittest.TestCase):
     def test_plugin_compose_is_a_dispatcher(self) -> None:
         """The plugin compose/__init__ carries the bus-arity door and
         NO inline arm logic: the arm files live in the card trees."""
-        for plugin, _card in self.CARDS:
-            init = os.path.join(REPO, "plugins", "engines", "cpp",
+        for cat, plugin, _card in self.CARDS:
+            init = os.path.join(REPO, "plugins", "engines", cat,
                                 plugin, "compose", "__init__.py")
             with open(init, encoding="utf-8") as f:
                 text = f.read()
@@ -264,9 +228,10 @@ class TestCardPattern(unittest.TestCase):
 class TestRendererArgv(unittest.TestCase):
     """rung 8 — the renderer owns the argv; execute never rebuilds."""
 
-    def _renderer(self, plugin: str, card_dir: str, alias: str) -> ModuleType:
+    def _renderer(self, cat: str, plugin: str,
+                    card_dir: str, alias: str) -> ModuleType:
         import importlib.util
-        pkg = os.path.join(REPO, "plugins", "engines", "cpp", plugin,
+        pkg = os.path.join(REPO, "plugins", "engines", cat, plugin,
                            "action_cards", card_dir, "py")
         spec = importlib.util.spec_from_file_location(
             alias, os.path.join(pkg, "renderer.py"),
@@ -276,7 +241,7 @@ class TestRendererArgv(unittest.TestCase):
         return mod
 
     def test_quad_remesh_argv_is_the_eight_knob_cli(self) -> None:
-        r = self._renderer("autoremesher", "3d/quad-remesh",
+        r = self._renderer("cpp", "autoremesher", "3d/quad-remesh",
                            "qr_renderer_check")
         cmd, out, report = r.build_argv(
             __import__("pathlib").Path("/bin/autoremesher"), "/tmp/run",
@@ -291,57 +256,18 @@ class TestRendererArgv(unittest.TestCase):
         self.assertTrue(out.endswith("remeshed.obj"))
         self.assertTrue(report.endswith("remeshed_report.txt"))
 
-    def test_motion_argv_carries_prompt_and_skeleton(self) -> None:
-        r = self._renderer("kimodo", "motion/text-to-motion",
-                           "tm_renderer_check")
-        cmd = r.build_argv(
-            __import__("pathlib").Path("/bin/kimodo_cli"), "/tmp/run",
-            {"workflow": {"prompt": "bow", "skeleton": "g1"},
-             "seed": 7, "steps": 60, "backend": "vulkan"})
-        joined = " ".join(cmd)
-        self.assertIn("--prompt bow", joined)
-        self.assertIn("--skeleton g1", joined)
-        self.assertIn("--backend vulkan", joined)
-
-
-class TestKimodoModelRows(unittest.TestCase):
-    def _load(self, family: str) -> "dict[str, type[Model]]":
-        import importlib.util
-        path = os.path.join(REPO, "plugins/engines/cpp/kimodo/models",
-                            "motion", family, "model.py")
-        spec = importlib.util.spec_from_file_location(
-            "kimodo_%s_check" % family, path)
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-        return {c.__name__: c for c in mod.__dict__.values()
-                if isinstance(c, type)}
-
-    def test_soma_two_variants_two_cells_with_sha256(self) -> None:
-        cls = self._load("soma")["Soma"]
-        self.assertEqual(len(cls.variants), 2)
-        cells = [c for v in cls.variants for c in v.cells]
-        self.assertEqual(len(cells), 2)
-        for cell in cells:
-            self.assertEqual(cell.quant.value, "f32")
-            self.assertTrue(cell.artifact.sha256)
-            self.assertTrue(cell.artifact.size_bytes > 0)
-            self.assertEqual(cell.artifact.dest_root.value,
-                             "KIMODO_ROOT")
-
-    def test_smplx_gated_ships_no_cells(self) -> None:
-        cls = self._load("smplx")["Smplx"]
-        for v in cls.variants:
-            self.assertEqual(v.cells, (),
-                             "gated licence — no downloadable artifact")
+    # (the soma/smplx/g1 model-row tests RETIRED 2026-09-06 with the
+    # cpp ggml lane — the comfyui kimodo row carries the family now)
 
 
 class TestKnobSSOT(unittest.TestCase):
     """LAYER AUDIT: every card field has a card_knobs row on every
     model it boards (the music3 pattern; yaml is extinct)."""
 
-    def _fields(self, plugin: str, card_dir: str, alias: str) -> ModuleType:
+    def _fields(self, cat: str, plugin: str,
+                  card_dir: str, alias: str) -> ModuleType:
         import importlib.util
-        pkg = os.path.join(REPO, "plugins", "engines", "cpp", plugin,
+        pkg = os.path.join(REPO, "plugins", "engines", cat, plugin,
                            "action_cards", card_dir, "py")
         spec = importlib.util.spec_from_file_location(
             alias, os.path.join(pkg, "card.py"),
@@ -352,10 +278,10 @@ class TestKnobSSOT(unittest.TestCase):
 
     def test_forge_fields_all_in_knob_rows(self) -> None:
         from melite_models import load_model_py
-        mod = self._fields("anycreature", "3d/forge",
+        mod = self._fields("node", "anycreature", "3d/forge",
                            "forge_card_check")
         card_fields = {f.name for f in mod.ForgeCard._fields_}
-        mpath = os.path.join(REPO, "plugins/engines/cpp/anycreature",
+        mpath = os.path.join(REPO, "plugins/engines/node/anycreature",
                              "models/3d/anycreature/model.py")
         cls = load_model_py(mpath, "anycreature")
         knob_fields = {row["card"] for row in cls.card_knobs}
@@ -365,7 +291,7 @@ class TestKnobSSOT(unittest.TestCase):
 
     def test_quad_remesh_fields_all_in_knob_rows(self) -> None:
         from melite_models import load_model_py
-        mod = self._fields("autoremesher", "3d/quad-remesh",
+        mod = self._fields("cpp", "autoremesher", "3d/quad-remesh",
                            "qr_card_check")
         card_fields = {f.name for f in mod.QuadRemeshCard._fields_}
         mpath = os.path.join(REPO, "plugins/engines/cpp/autoremesher",
@@ -397,10 +323,8 @@ class TestVendorLaw(unittest.TestCase):
         paths = self._module_paths()
         # vendor dir names carry the upstream repo's casing
         for pin, repo in (
-                ("plugins/engines/cpp/anycreature/vendor/anyCreature",
+                ("plugins/engines/node/anycreature/vendor/anyCreature",
                  "Ariescar/anyCreature"),
-                ("plugins/engines/cpp/kimodo/vendor/kimodo",
-                 "localai-org/kimodo.cpp"),
                 ("plugins/engines/cpp/autoremesher/vendor/autoremesher",
                  "huxingyi/autoremesher")):
             self.assertIn(pin, paths,
@@ -408,22 +332,9 @@ class TestVendorLaw(unittest.TestCase):
             self.assertIn(repo, paths[pin])
 
     def test_vendored_engines_present(self) -> None:
-        cli = os.path.join(REPO, "plugins/engines/cpp/anycreature",
+        cli = os.path.join(REPO, "plugins/engines/node/anycreature",
                            "vendor/anyCreature/engine/cli.js")
         self.assertTrue(os.path.isfile(cli), "vendored cli.js missing")
-        capi = os.path.join(REPO, "plugins/engines/cpp/kimodo",
-                            "vendor/kimodo/include/kimodo/kimodo_capi.h")
-        self.assertTrue(os.path.isfile(capi),
-                        "vendored kimodo C API header missing")
-
-    def test_vendored_engines_present(self) -> None:
-        cli = os.path.join(REPO, "plugins/engines/cpp/anycreature",
-                           "vendor/anyCreature/engine/cli.js")
-        self.assertTrue(os.path.isfile(cli), "vendored cli.js missing")
-        capi = os.path.join(REPO, "plugins/engines/cpp/kimodo",
-                            "vendor/kimodo/include/kimodo/kimodo_capi.h")
-        self.assertTrue(os.path.isfile(capi),
-                        "vendored kimodo C API header missing")
 
 
 if __name__ == "__main__":

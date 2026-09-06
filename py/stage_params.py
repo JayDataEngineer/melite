@@ -82,6 +82,9 @@ WHAT THIS MODULE DOES NOT DO:
 from __future__ import annotations
 
 import importlib
+import importlib.util
+import sys
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Type
 
 from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
@@ -155,46 +158,49 @@ def _import_schema_lazy(modname: str, classname: str) -> Callable[[], Type[BaseM
 # The wall test enumerates the schema.py tree and pins the import
 # list below. A drift in either direction (file on disk without
 # import, or import without file) is a wall failure.
+#
+# STROKE 4 (2026-09-06): _SCHEMA_TARGETS is the ONE source (module,
+# class) — _SCHEMA_BY_CARD (lazy loaders) derives from it, and the
+# collision-fallback mount in _resolve_schema re-derives from it. A
+# card whose dir basename collides across engines (music: comfyui
+# AND audio-cpp) resolves under its UNIQUE card-id name
+# ("music_native") — never the ambiguous flat dir name.
+
+_SCHEMA_TARGETS: Dict[str, tuple] = {
+    "image-gen":      ("image_gen.schema", "ImageGenParams"),
+    "image-edit":     ("image_edit.schema", "ImageEditParams"),
+    "upscale-tools":  ("upscale_tools.schema", "UpscaleParams"),
+    "mask-studio":    ("mask_studio.schema", "MaskStudioParams"),
+    "ideogram4":      ("ideogram4.schema", "Ideogram4Params"),
+    "video-gen":      ("video_gen.schema", "VideoGenParams"),
+    "h3-timeline":    ("h3_timeline.schema", "H3CardDoc"),
+    "music":          ("music.schema", "MusicParams"),
+    "tts":            ("tts.schema", "TtsParams"),
+    "voice-lock":     ("voice_lock.schema", "VoiceLockParams"),
+    "sfx":            ("sfx.schema", "SfxParams"),
+    "motion":         ("motion.schema", "MotionGenParams"),
+    "anny":           ("anny.schema", "AnnyParams"),
+    "img-to-mesh":    ("img_to_mesh.schema", "ImgToMeshParams"),
+    # ── STROKE 4 (2026-09-06): the eight rows that closed the
+    # bijection wall (test_registry_declares_every_action_card_
+    # schema was RED on these). kind contracts derived from each
+    # card's consuming flow / engine DEFAULT_OUTPUT.
+    "fit":            ("fit.schema", "FitParams"),
+    "skin":           ("skin.schema", "SkinParams"),
+    "tagger":         ("tagger.schema", "TaggerParams"),
+    "input-prep":     ("input_prep.schema", "InputPrepDoc"),
+    "forge":          ("forge.schema", "ForgeParams"),
+    "quad-remesh":    ("quad_remesh.schema", "RemeshParams"),
+    "auto-rig":       ("auto_rig.schema", "RigParams"),
+    # the cpp music card lives in a dir NAMED "music" (audio-cpp)
+    # — mounted under its unique card id to break the flat-name
+    # collision with the comfyui music card
+    "music-native":   ("music_native.schema", "MusicParams"),
+}
 
 _SCHEMA_BY_CARD: Dict[str, Callable] = {
-    "image-gen":      _import_schema_lazy(
-        "image_gen.schema", "ImageGenParams"),
-    "image-edit":     _import_schema_lazy(
-        "image_edit.schema", "ImageEditParams"),
-    "upscale-tools":  _import_schema_lazy(
-        "upscale_tools.schema", "UpscaleParams"),
-    "mask-studio":    _import_schema_lazy(
-        # mask_studio ships a recipe schema (SelectionRow / FilterRow /
-        # OutputRow) and a wire doc (H3Params inside h3_timeline).
-        # Its compose path uses `parse_recipe`; the schema gate
-        # needs a single closed-row class — H3Params is the
-        # wire doc shape (the h3 card is its closest cousin).
-        "mask_studio.schema", "H3Params"),
-    "ideogram4":      _import_schema_lazy(
-        # ideogram4 has no schema.py today (the image form is its
-        # wire surface); the wall test will skip a card without
-        # an on-disk schema.py. Gate is a no-op for ideogram4 —
-        # the field surface is the form, validated at the door.
-        "ideogram4.schema", "Ideogram4Params"),
-    "video-gen":      _import_schema_lazy(
-        "video_gen.schema", "VideoGenParams"),
-    "h3-timeline":    _import_schema_lazy(
-        "h3_timeline.schema", "H3CardDoc"),
-    "music":          _import_schema_lazy(
-        "music.schema", "MusicParams"),
-    "tts":            _import_schema_lazy(
-        "tts.schema", "TtsParams"),
-    "voice-lock":     _import_schema_lazy(
-        "voice_lock.schema", "VoiceLockParams"),
-    "sfx":            _import_schema_lazy(
-        "sfx.schema", "SfxParams"),
-    "motion":         _import_schema_lazy(
-        "motion.schema", "MotionGenParams"),
-    "anny":           _import_schema_lazy(
-        "anny.schema", "AnnyParams"),
-    "img-to-mesh":    _import_schema_lazy(
-        "img_to_mesh.schema", "ImgToMeshParams"),
-}
+    card: _import_schema_lazy(mod, cls)
+    for card, (mod, cls) in _SCHEMA_TARGETS.items()}
 
 
 # Cards whose on-disk schema.py is missing (or whose card has no
@@ -274,6 +280,13 @@ class CardSchemaRow(_Frozen):
     schema_class: Optional[Type[BaseModel]] = None
     kind_inputs: Dict[str, str] = {}
     kind_outputs: Dict[str, str] = {}
+    # STROKE 4 (2026-09-06): when True, a card= STAGE must carry
+    # params.model (the model row id the arm composes against — the
+    # flow-stage equivalent of the {model:} door). The gate refuses
+    # an empty one at Flow construction, so the refusal is compile-
+    # time, not a dead run. {model:} requests are unaffected: their
+    # model rides the request envelope, not the card doc.
+    requires_model: bool = False
 
     @model_validator(mode="before")
     @classmethod
@@ -440,6 +453,59 @@ REGISTRY = ParamSchemaRegistry(rows=(
         schema_class=None,
         kind_inputs={"input_image": "image"},
         kind_outputs={"default": "mesh"}),
+    # (the cpp kimodo text-to-motion row is RETIRED 2026-09-06 —
+    # the ONE-implementation rule: the NVIDIA-package wrap
+    # (melite-kimodo-nodes, comfyui lane, card='motion') is THE
+    # kimodo; the ggml second implementation died with its tree)
+    # ── STROKE 4 (2026-09-06): the eight rows that closed the
+    # bijection wall. Kind contracts derived from each card's
+    # consuming flow (fit-seat, skin-apply) and the cpp engines'
+    # DEFAULT_OUTPUT rows. requires_model marks the card whose arm
+    # composes against a named model row — today only music-native
+    # (the first production card= lane, flows/music-native).
+    CardSchemaRow(
+        card_id="fit", engine="comfyui",
+        kind_inputs={"body": "mesh", "prop": "mesh"},
+        kind_outputs={"default": "mesh"}),
+    CardSchemaRow(
+        card_id="skin", engine="comfyui",
+        kind_inputs={"body": "mesh", "kind": "text"},
+        kind_outputs={"default": "mesh"}),
+    CardSchemaRow(
+        # tagger: image in, tags/caption out — the text kind rides
+        # the tag string, the estate's prompt-side vocabulary
+        card_id="tagger", engine="comfyui",
+        kind_inputs={"input_image": "image"},
+        kind_outputs={"default": "text"}),
+    CardSchemaRow(
+        # input-prep: a file-reference transform (crop/scale/trim/
+        # volume) — refs ride the text kind, media-agnostic
+        card_id="input-prep", engine="comfyui",
+        kind_inputs={"source": "text"},
+        kind_outputs={"default": "text"}),
+    CardSchemaRow(
+        # forge (anycreature): the spec dict is a PARAM not a
+        # channel — no typed wired inputs; output is a mesh
+        card_id="forge", engine="anycreature",
+        kind_inputs={},
+        kind_outputs={"default": "mesh"}),
+    CardSchemaRow(
+        card_id="quad-remesh", engine="autoremesher",
+        kind_inputs={"input": "mesh"},
+        kind_outputs={"default": "mesh"}),
+    CardSchemaRow(
+        card_id="auto-rig", engine="skintokens",
+        kind_inputs={"input": "mesh"},
+        kind_outputs={"default": "mesh"}),
+    CardSchemaRow(
+        # THE first production card= lane (flows/music-native,
+        # stroke 4): prompt/lyrics in, audio out; the doc names
+        # its model row (params.model) — the {model:} door's
+        # flow-stage equivalent, gated at construction
+        card_id="music-native", engine="audio_cpp",
+        requires_model=True,
+        kind_inputs={"prompt": "text", "lyrics": "text"},
+        kind_outputs={"default": "audio"}),
 ))
 
 
@@ -451,6 +517,87 @@ class StageParamError(ValueError):
     pydantic validators and the door both surface it LOUDLY."""
 
 
+def _mount_card_fallback(card_id: str, pkg_name: str) -> bool:
+    """Loader-owned import mechanics (shape law rung 5): when the
+    flat package name never mounted (the music-native case — its
+    dir is NAMED music, colliding with the comfyui music card, so
+    no bus mounts it as "music_native"), locate the card via the
+    SSOT scan and mount its py/ package under the unique card-id
+    name. Returns True when the package is importable after the
+    call. A failed mount returns False — the caller surfaces the
+    ORIGINAL import error, never a guessed schema."""
+    if pkg_name in sys.modules:
+        return True
+    try:
+        from melite_cards.serialize import scan_engine_cards
+        repo = str(Path(__file__).resolve().parents[1])  # py/ → repo
+        entry = scan_engine_cards(repo).get(card_id)
+    except Exception:
+        return False
+    if not entry:
+        return False
+    py_dir = Path(entry[0]).parent           # <card>/py/card.py → py/
+    if not (py_dir / "__init__.py").is_file():
+        return False
+    spec = importlib.util.spec_from_file_location(
+        pkg_name, py_dir / "__init__.py",
+        submodule_search_locations=[str(py_dir)])
+    if spec is None or spec.loader is None:
+        return False
+    pkg = importlib.util.module_from_spec(spec)
+    sys.modules[pkg_name] = pkg
+    try:
+        spec.loader.exec_module(pkg)
+    except Exception:
+        sys.modules.pop(pkg_name, None)
+        return False
+    return True
+
+
+def _mount_cards_for_wall() -> None:
+    """Mount EVERY card py/ package under its dir-derived name (the
+    test recipe, loader-owned per rung 5): the SSOT scan enumerates
+    every plugin's action cards — comfyui AND the cpp natives (the
+    hardcoded comfyui-only glob missed the natives until
+    2026-09-06). Idempotent per process. Walls call this before
+    resolving schemas; the gateway never needs it (the bus mounts
+    at load)."""
+    global _CARDS_MOUNTED_FOR_WALL
+    if _CARDS_MOUNTED_FOR_WALL:
+        return
+    try:
+        from melite_cards.serialize import scan_engine_cards
+    except ImportError:
+        return
+    repo = str(Path(__file__).resolve().parents[1])  # py/ → repo
+    try:
+        entries = scan_engine_cards(repo).values()
+    except Exception:
+        return
+    for card_py, _cls in entries:
+        py_dir = Path(card_py).parent
+        if not (py_dir / "__init__.py").is_file():
+            continue
+        pkg_name = py_dir.parent.name.replace("-", "_")
+        if pkg_name in sys.modules:
+            continue
+        spec = importlib.util.spec_from_file_location(
+            pkg_name, py_dir / "__init__.py",
+            submodule_search_locations=[str(py_dir)])
+        if spec is None or spec.loader is None:
+            continue
+        pkg = importlib.util.module_from_spec(spec)
+        sys.modules[pkg_name] = pkg
+        try:
+            spec.loader.exec_module(pkg)
+        except Exception:
+            sys.modules.pop(pkg_name, None)
+    _CARDS_MOUNTED_FOR_WALL = True
+
+
+_CARDS_MOUNTED_FOR_WALL = False
+
+
 def _resolve_schema(card_id: str) -> Type[BaseModel] | None:
     """Lazy import — only at gate time. The wall test mounts
     the card packages via `_mount_cards_for_wall` before invoking;
@@ -459,10 +606,19 @@ def _resolve_schema(card_id: str) -> Type[BaseModel] | None:
     or None for cards without a schema.py."""
     if card_id in _CARDS_WITHOUT_SCHEMA:
         return None
-    loader = _SCHEMA_BY_CARD.get(card_id)
-    if loader is None:
+    target = _SCHEMA_TARGETS.get(card_id)
+    if target is None:
         return None
-    return loader()
+    try:
+        return _import_schema_lazy(*target)()
+    except ImportError:
+        # the flat name never mounted (cross-engine dir-name
+        # collision) — mount under the unique card-id name and
+        # build a FRESH lazy loader (the failed one caches its
+        # error per-closure)
+        if _mount_card_fallback(card_id, target[0].split(".")[0]):
+            return _import_schema_lazy(*target)()
+        raise
 
 
 def validate_stage_params(card_id: str, params: JsonValue,
@@ -484,6 +640,20 @@ def validate_stage_params(card_id: str, params: JsonValue,
             "%s: card %r is not in the ParamSchemaRegistry — either "
             "add a row to py/stage_params.py or omit `card=` "
             "(engine-only stages need no schema gate)"
+            % (where, card_id))
+    # STROKE 4: the model row a card stage composes against is a
+    # STAGE param (the {model:} door's flow equivalent) — the row
+    # flags the cards whose arm needs one, the gate refuses the
+    # empty spell at construction, compile-time, never a dead run.
+    # Runs BEFORE the schema pass so the refusal names the door
+    # shape even when the schema has no model field yet.
+    if row.requires_model and not (
+            isinstance(params, dict)
+            and str(params.get("model") or "").strip()):
+        raise StageParamError(
+            "%s: card %r requires params.model (the model row id the "
+            "card composes against — see GET /v1/models) — the "
+            "flow-stage equivalent of the {model:} door"
             % (where, card_id))
     schema = _resolve_schema(card_id)
     if schema is None:

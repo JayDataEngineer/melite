@@ -62,10 +62,9 @@ _SCAN_ROOTS = [
 
 # derived build output (regenerable; source lives on the volume)
 _DERIVED_OK = {
-    os.path.join(
-        REPO, "data/runtime/kimodo/weights/generated/"
-        "llm2vec-text-bundle"): "derived build product of the kimodo "
-        "generator; source LLM2Vec base is on the volume",
+    # (the kimodo ggml weights row RETIRED 2026-09-06 with the cpp
+    # lane — 15G build tree + weights deleted; the comfyui lane's
+    # weights ride its own HF/torch paths)
     # run OUTPUT artifacts (films/pngs/glbs + the trelliscpp debug
     # dumps) — products of runs, never weight files; the OUTPUT dir
     # is the ephemeral artifact home by config (output_dir)

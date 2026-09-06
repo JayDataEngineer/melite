@@ -127,3 +127,14 @@ another) refused export_boxes 'true' != True. Card fixed to
 default=True/False; this regold flips exactly those 5 served
 lines, proven by name-keyed live diff (mask_studio_card: 0
 remaining divergences).
+
+## 2026-09-06 — cpp ggml kimodo lane retired (regold)
+
+Operator order: wrap the NVIDIA python package — it was already
+wrapped (melite-kimodo-nodes: KimodoLoader/KimodoTextToPose over
+`kimodo` pkg, live-probed 2026-09-04); the cpp ggml port was the
+SECOND implementation and died by the ONE-implementation rule.
+The soma/smplx/g1 rows + the text-to-motion form + the
+text_to_motion_card tool leave the served surfaces (the comfyui
+kimodo row + motion_card remain). form-spec_model_soma.json
+deleted with the lane.

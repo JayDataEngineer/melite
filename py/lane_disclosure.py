@@ -64,6 +64,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+import types
 from collections.abc import Callable
 from pathlib import Path
 from typing import TypedDict
@@ -76,7 +77,16 @@ type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bo
 
 class _ManifestEntry(TypedDict):
     genre: str
+    dir: Path          # the card dir on disk (skill-bucket lookup)
     rows: list[lane_wire.ToolManifestRow]
+
+    # NOTE: the ENTRY KEY is the manifest's declared `card` id (the
+    # class id — the SSOT), never the dir name. Keyed by dir, the
+    # comfyui music card and the audio-cpp music-native card both
+    # claim lane "music" (the 2026-09-06 fork renamed the CLASS, not
+    # the dir) — the peek table served the same lane twice and
+    # resolution was engine-sort luck. Declared ids are unique per
+    # the fork pins (test_cpp_native_cards).
 
 
 # A read document: the frozen skill row + the path it was read from.
@@ -146,10 +156,23 @@ def _read_doc(path: Path, sid: str, scope: str,
 
 
 def _engine_dirs() -> list[Path]:
-    if not ENGINES_ROOT.is_dir():
-        return []
-    return [d for d in sorted(ENGINES_ROOT.iterdir()) if d.is_dir()
-            and (d / "action_cards").is_dir()]
+    """Every PLUGIN dir that owns action cards — the ONE shared walk
+    (plugins.iter_plugin_dirs_under), never a local copy.
+
+    The depth-2 drift (2026-09-06, the kimodo 502): this module kept
+    its own `ENGINES_ROOT.iterdir()` walk while every other consumer
+    (scan_engine_cards, catalog, editor_forms) rode the shared walk —
+    so the cpp natives under plugins/engines/<tier>/<plugin>/ (forge,
+    quad-remesh, music-native; kimodo's text-to-motion retired
+    2026-09-06 with its ggml lane) declared,
+    scanned, and RAN, but never mounted on the agent surface: no
+    peek row, no card-tools manifest, bundle 404. The DSH lane
+    registrar then threw ("resolved 15 manifests (must be exactly
+    1)") and the GUI surfaced a 502 on the card. One walk, every
+    consumer — the PLUGIN ARCHITECTURE LAW shape."""
+    import plugins as _plugins
+    return [d for d in _plugins.iter_plugin_dirs_under(ENGINES_ROOT)
+            if (d / "action_cards").is_dir()]
 
 
 def _model_rows(engine: Path) -> list[DocRow]:
@@ -268,8 +291,19 @@ def _manifests(engine: Path) -> dict[str, _ManifestEntry]:
             # entirely — peek must not advertise a lane whose tools
             # all failed the gate.
             continue
-        out[tj.parent.name] = {"genre": tj.parent.parent.name,
-                               "rows": kept}
+        # entry key = the DECLARED card id (see _ManifestEntry); a
+        # duplicate id across plugins skips LOUDLY (first engine in
+        # sorted order wins — the same precedence plugins.py states)
+        cid = kept[0].card
+        if cid in out:
+            print("[lane_disclosure] duplicate card id %r (%s, %s) — "
+                  "the later mount is skipped" % (cid, tj.parent,
+                                                  out[cid]["dir"]),
+                  file=sys.stderr)
+            continue
+        out[cid] = {"genre": tj.parent.parent.name,
+                    "dir": tj.parent,
+                    "rows": kept}
     return out
 
 
@@ -340,7 +374,13 @@ def _flow_rows() -> list[DocRow]:
     contract — id, stages, typed inputs/outputs, params — verbatim.
 
     Rows are (SkillRow with typed steps, path); a row that cannot be
-    BUILT is a code bug (LaneWireError), never a hidden lane."""
+    BUILT is a code bug (LaneWireError), never a hidden lane.
+
+    MEGA-SKILL MODE (2026-09-06 headless-flow record
+    docs/design/flow-single-tool.md): when flows/<name>/SKILL.md exists
+    it rides as the row path — skill_read serves the authored mega-skill
+    instead of the raw flow.py source. Otherwise the path is flow.py
+    (reading a flow template IS reading its contract)."""
     import flow as flow_mod
     rows: list[DocRow] = []
     root = REPO / "flows"
@@ -365,8 +405,85 @@ def _flow_rows() -> list[DocRow]:
             raise LaneWireError(
                 "flow %s: lane wire refusal: %s"
                 % (name, lane_wire.refusal_reason(e))) from e
-        rows.append((row, str(root / name / "flow.py")))
+        skill_md = root / name / "SKILL.md"
+        body_path = skill_md if skill_md.is_file() else root / name / "flow.py"
+        rows.append((row, str(body_path)))
     return rows
+
+
+def _flow_tool_manifest(fl: types.ModuleType) -> lane_wire.ToolManifestRow | None:
+    """A headless flow tool declaration -> its mountable manifest row
+    (kind flow-tool, flow=<id>), or None when the flow declares no tool.
+    The params_schema VALUE rows are tool vocabulary (knob type /
+    description / enum / default / bounds) — open as JSON, like card
+    property rows. A row that cannot be BUILT is internal drift
+    (LaneWireError), never a served half-manifest."""
+    tool = getattr(fl, "tool", None)
+    if tool is None:
+        return None
+    properties: dict[str, JsonValue] = {}
+    for pname, prop in tool.properties.items():
+        cell: dict[str, JsonValue] = {
+            "type": prop.ptype.value,
+            "description": prop.description or "",
+        }
+        if prop.enum:
+            cell["enum"] = list(prop.enum)
+        if prop.default is not None:
+            cell["default"] = prop.default
+        if prop.minimum is not None:
+            cell["minimum"] = prop.minimum
+        if prop.maximum is not None:
+            cell["maximum"] = prop.maximum
+        properties[pname] = cell
+    try:
+        return lane_wire.ToolManifestRow(
+            name=tool.name, version=tool.version, kind="flow-tool",
+            flow=fl.id, stage_title="%s (flow)" % fl.id,
+            description=str(tool.description or ""),
+            params_schema=lane_wire.ParamsSchemaRow(
+                type="object", properties=properties,
+                required=list(tool.required)))
+    except lane_wire.ValidationError as e:
+        raise LaneWireError(
+            "flow %s: tool manifest refusal: %s"
+            % (getattr(fl, "id", "?"),
+               lane_wire.refusal_reason(e))) from e
+
+
+def _flow_extra_skills(fl: types.ModuleType,
+                       exclude: set[str]) -> list[DocRow]:
+    """Consolidated-skills mode (headless-flow record): resolve the
+    flow skill_refs against the card/model/guide/flow rows every engine
+    serves. A ref that resolves nowhere skips LOUDLY (RESILIENCE LAW —
+    document, then continue; never break the bundle on one bad ref).
+    Order follows the declaration; exclude carries ids already riding."""
+    import sys as _sys
+    refs: list[str] = list(getattr(fl, "skill_refs", ()) or ())
+    if not refs:
+        return []
+    pool: dict[str, DocRow] = {}
+    for r, p in _flow_rows():
+        pool.setdefault(r.id, (r, p))
+    for engine in _engine_dirs():
+        for r, p in _model_rows(engine):
+            pool.setdefault(r.id, (r, p))
+        card_rows, _ = _card_rows(engine)
+        for r, p in card_rows:
+            pool.setdefault(r.id, (r, p))
+    out: list[DocRow] = []
+    for ref in refs:
+        if ref in exclude:
+            continue
+        hit = pool.get(ref)
+        if hit is None:
+            print("[lane_disclosure] flow %s: skill_ref %r resolves "
+                  "nowhere — skipped" % (getattr(fl, "id", "?"), ref),
+                  file=_sys.stderr)
+            continue
+        exclude.add(ref)
+        out.append(hit)
+    return out
 
 
 def flow_lanes() -> list[dict[str, str | int | None]]:
@@ -407,7 +524,10 @@ def peek(kind: str | None = None, genre: str | None = None) -> dict[str, JsonVal
                 g = str(entry.get("genre") or "").lower() or None
                 if genre and g != genre:
                     continue
-                skills = sum(1 for r, _p in card_rows if r.card == cid)
+                # skill rows bucket by the card DIR (the docs walk's
+                # key) — match on it, not the declared card id
+                dname = entry["dir"].name
+                skills = sum(1 for r, _p in card_rows if r.card == dname)
                 params = 0
                 title = None
                 for m in entry["rows"]:
@@ -445,12 +565,65 @@ def peek(kind: str | None = None, genre: str | None = None) -> dict[str, JsonVal
 # ---------------------------------------------------------------- doors
 
 
-def card_tools() -> list[dict[str, JsonValue]]:
+def _resolve_card_dir(manifests: dict[str, _ManifestEntry],
+                      lane: str) -> str | None:
+    """lane id → entry key (the DECLARED card id): the card id, the
+    card dir name, or the card whose manifest boards this MODEL id
+    (the lane_bundle resolution — a model is not a lane; a bare
+    model id lands on its card)."""
+    if lane in manifests:
+        return lane
+    for cid, entry in manifests.items():
+        if entry["dir"].name == lane:
+            return cid
+    for cid, entry in manifests.items():
+        if any(m.model == lane for m in entry["rows"]):
+            return cid
+    return None
+
+
+def card_tools(lane: str | None = None) -> list[dict[str, JsonValue]]:
     """GET /v1/card-tools — every manifest on disk, flattened. Each
     row already passed the ToolManifestRow gate in _manifests (a
     manifest that cannot be built is skipped loudly there, never
-    served here)."""
+    served here).
+
+    lane (the DSH lane-session contract, the 2026-09-06 502): a lane
+    session mounts ONE tool: a card lane mounts its card manifest, and a
+    flow lane mounts its flow-tool manifest when the declaration carries
+    tool=... (2026-09-06 headless-flow record
+    docs/design/flow-single-tool.md). The registrar demands EXACTLY that
+    manifest, never another lane's. The filter resolves the lane the same
+    way lane_bundle does (card dir name, the card boarding the model id,
+    or a headless flow id); an unknown lane is a LOUD 404-shaped refusal,
+    never the unfiltered list (15 manifests where 1 was demanded was the
+    502); a flow WITHOUT a tool 404s naming the missing headless surface.
+    The unfiltered list stays card-only."""
+    lane = (lane or "").strip()
     out: list[dict[str, JsonValue]] = []
+    if lane:
+        for engine in _engine_dirs():
+            manifests = _manifests(engine)
+            card_dir = _resolve_card_dir(manifests, lane)
+            if card_dir is not None:
+                out.extend(m.wire() for m in manifests[card_dir]["rows"])
+                return out
+        for r, _p in _flow_rows():
+            if r.name == lane or r.id == "flow:%s" % lane:
+                import flow as _flow_mod
+                fl = _flow_mod.load_flow(r.name)
+                manifest = _flow_tool_manifest(fl)
+                if manifest is None:
+                    raise LookupError(
+                        "flow %r declares no headless tool (no tool=... "
+                        "in flows/%s/flow.py) — there is no single tool "
+                        "to mount; load the template bundle instead"
+                        % (lane, r.name))
+                return [manifest.wire()]
+        raise LookupError(
+            "no such lane: %r — /v1/card-tools?lane= resolves a card "
+            "dir name (see /v1/lanes) or a model id landing on its "
+            "card" % lane)
     for engine in _engine_dirs():
         for entry in _manifests(engine).values():
             out.extend(m.wire() for m in entry["rows"])
@@ -506,26 +679,25 @@ def lane_bundle(lane: str, kind: str | None = None) -> tuple[int, dict[str, Json
         model_rows = _model_rows(engine)
         ids = _model_ids(engine)
 
-        # resolve: card dir name, or a card boarding this model (a
-        # model id is NOT a lane of its own — it lands on the card,
-        # the only run surface)
-        card_dir = lane if lane in manifests else None
-        if card_dir is None:
-            for cid, entry in manifests.items():
-                if any(m.model == lane for m in entry["rows"]):
-                    card_dir = cid
-                    break
+        # resolve: card id / dir name / model id (a model id is NOT a
+        # lane of its own — it lands on the card, the only run
+        # surface; _resolve_card_dir is the ONE resolver the
+        # card-tools lane filter and this door share)
+        card_key = _resolve_card_dir(manifests, lane)
         if k == "flow":
             continue                       # templates resolve below
-        if card_dir is None:
+        if card_key is None:
             continue                       # cards are the only lane class
-        tools = manifests[card_dir]["rows"]
-        families = [m.model for m in tools if m.model] or [card_dir]
+        entry = manifests[card_key]
+        tools = entry["rows"]
+        families = [m.model for m in tools if m.model] or [card_key]
         _, by_card = _card_rows(engine)
-        card_bucket_rows = list(by_card.get(card_dir, {}).get("rows", []))
+        # skill buckets key by the card DIR (the walk's own key)
+        card_bucket_rows = list(by_card.get(entry["dir"].name, {})
+                                .get("rows", []))
         agent_row = None
         for r in card_bucket_rows:
-            if r[0].id == "card:%s" % card_dir:
+            if r[0].id == "card:%s" % entry["dir"].name:
                 agent_row = r
                 break
 
@@ -558,7 +730,7 @@ def lane_bundle(lane: str, kind: str | None = None) -> tuple[int, dict[str, Json
         agent = _agent_block(agent_row)
         try:
             bundle = lane_wire.BundleRow(
-                lane=lane, card=card_dir,
+                lane=card_key, card=card_key,
                 kind=lane_wire.PeekKind.ACTION_CARD,
                 agent=agent, tools=list(tools),
                 flows=[], skills=uniq,
@@ -575,14 +747,27 @@ def lane_bundle(lane: str, kind: str | None = None) -> tuple[int, dict[str, Json
         for r, _p in _flow_rows():
             if r.name == lane or r.id == "flow:%s" % lane:
                 try:
+                    import flow as _flow_mod
+                    try:
+                        fl = _flow_mod.load_flow(r.name)
+                    except _flow_mod.FlowError as e:
+                        raise LaneWireError(
+                            "bundle refusal (%s): flow reload failed: %s"
+                            % (lane, e)) from e
+                    manifest = _flow_tool_manifest(fl)
+                    tools = [manifest] if manifest is not None else []
+                    seen = {r.id}
+                    extra = _flow_extra_skills(fl, seen)
+                    skills = [r] + [er for er, _p in extra]
                     agent = lane_wire.AgentBlock(
                         source=r.id, name=r.name,
-                        content=_flow_orientation(r))
+                        content=_flow_orientation(r, fl))
                     bundle = lane_wire.BundleRow(
                         lane=lane, card=None,
                         kind=lane_wire.PeekKind.TEMPLATE,
-                        agent=agent, tools=[], flows=[r], skills=[r],
-                        read_first=[r.id])
+                        agent=agent, tools=tools, flows=[r],
+                        skills=skills,
+                        read_first=[r.id] + [er.id for er, _p in extra])
                 except lane_wire.ValidationError as e:
                     raise LaneWireError(
                         "bundle refusal (%s): %s"
@@ -608,9 +793,13 @@ def _agent_block(agent_row: tuple[lane_wire.SkillRow, str] | None) -> lane_wire.
                                 content=body)
 
 
-def _flow_orientation(r: lane_wire.SkillRow) -> str:
+def _flow_orientation(r: lane_wire.SkillRow,
+                      fl: types.ModuleType | None = None) -> str:
     """Flows carry no AGENT.md — the orientation doc is COMPOSED from
-    the template itself: name, description, the step ladder."""
+    the template itself: name, description, the step ladder, plus the
+    headless-tool call shape when the flow declares tool=... (the
+    single-tool surface: call shape + knobs inline, zero extra
+    round-trips)."""
     steps = r.steps or []
     lines = ["# %s (flow template)" % r.name, ""]
     if r.description:
@@ -620,6 +809,35 @@ def _flow_orientation(r: lane_wire.SkillRow) -> str:
         lines.append("- **%s** (%s%s)" % (
             s.id, s.type,
             " · %s" % s.plugin if s.plugin else ""))
+    tool = getattr(fl, "tool", None) if fl is not None else None
+    if tool is not None:
+        lines += ["", "## Headless tool `%s`" % tool.name,
+                  str(tool.description or ""), "",
+                  "One call runs the whole flow — but CARD BIRTH LAW "
+                  "(2026-09-06): compose the card FIRST "
+                  "(POST /v1/flows/drafts with this same body takes "
+                  "a draftId), then start:", "",
+                  "    POST /v1/flows/start "
+                  "{\"flow\": \"%s\", \"draft_id\": \"<draftId>\", "
+                  "...params}" % r.name, "",
+                  "(A start without a doc-backed draft_id 4xxes BEFORE "
+                  "any run registers. Compile first without a queue "
+                  "slot: POST /v1/flows/validate.)", ""]
+        req = set(tool.required or ())
+        for pname, prop in tool.properties.items():
+            bits = [prop.ptype.value]
+            if prop.enum:
+                bits.append("one of %s" % (list(prop.enum),))
+            if pname in req:
+                bits.append("required")
+            elif prop.default is not None:
+                bits.append("default %r" % (prop.default,))
+            else:
+                bits.append("optional")
+            lines.append("- `%s` (%s)%s" % (
+                pname, ", ".join(bits),
+                (" — %s" % prop.description)
+                if prop.description else ""))
     return "\n".join(lines)
 
 
