@@ -36,7 +36,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Union
 
-from pydantic import BaseModel, ConfigDict, ValidationError, ValidationInfo
+from pydantic import BaseModel, ConfigDict, ValidationError, ValidationInfo, \
+    field_validator
 
 
 Num = Union[float, int]
@@ -161,6 +162,46 @@ def seed_integral(cls: ValidatorCls, v: Num) -> Num:
         raise ValueError("seed must be -1 (random) or a non-negative "
                          "integer (got %r)" % (v,))
     return int(f)
+
+
+class SamplerParams(BaseModel):
+    """The voice-sampler knob fragment (row 3, 2026-09-06 — the tts /
+    voice-lock collision ruling: TWO cards, ONE sampler law).
+
+    tts + voice-lock share sampler semantics (same node input names,
+    same defaults, same gates) across DIFFERENT nodes (AudiocoreTTS
+    vs AudiocoreVoiceStudio), different checkpoints (0.6B CustomVoice
+    vs 1.7B VoiceDesign), opposite .qvoice directions (consume vs
+    export — the TTS node has no export path: modes tts/clone/design
+    only, speaker_name a dead input, so a save/add-qvoice mod on
+    qwen3-tts is capability-dead). A union card would share nothing
+    but these five knobs — two lanes in a trenchcoat, not one
+    interface. Children add their lane knobs (text/voice/qvoice vs
+    voice_name/repetition_penalty) and restate model_config
+    (pydantic replaces base config — restating keeps frozen+forbid
+    visible at each door).
+
+    Deliberately NOT shared: card Fields (presentation — labels,
+    groups, orders are per-card surface) and renderer step docs
+    (tts wires `instruct`, voice-lock `style_instruction` —
+    renderer-local names, never wire).
+
+    Naming law: the gate below is `_positive_sampler` (never bare
+    `_positive`) — a child naming its own validator `_positive`
+    would SHADOW this gate off its inherited fields (Python class
+    attributes replace, never merge; pydantic keeps both only under
+    distinct names). Lane gates take distinct names
+    (voice-lock's is `_positive_repetition`)."""
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    style_instruction: str = ""
+    temperature: Num = 0.7
+    top_p: Num = 0.9
+    speed: Num = 1.0
+    seed: Num = 0
+
+    _positive_sampler = field_validator("temperature", "top_p", "speed")(positive)
+    _seed = field_validator("seed")(seed_integral)
 
 
 def non_negative(cls: ValidatorCls, v: Num, info: ValidationInfo) -> Num:

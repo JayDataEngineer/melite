@@ -300,6 +300,59 @@ class TestKnobSSOT(unittest.TestCase):
         knob_fields = {row["card"] for row in cls.card_knobs}
         self.assertTrue(card_fields <= knob_fields)
 
+    def test_voice_lock_fields_all_in_knob_rows(self) -> None:
+        """Row-3 migration pattern (second card after music3): the
+        voice-lock card's 7 Fields each own a card_knobs row on its
+        single boarded model — inject targets name the
+        renderer-built AudiocoreVoiceStudio inputs 1:1."""
+        import importlib.util
+
+        from melite_models import load_model_py
+        cpath = os.path.join(
+            REPO, "plugins", "engines", "comfyui", "action_cards",
+            "audio", "voice-lock", "py", "card.py")
+        spec = importlib.util.spec_from_file_location(
+            "vl_card_check", cpath)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        card_fields = {f.name for f in mod.VoiceLockCard._fields_}
+        mpath = os.path.join(
+            REPO, "plugins/engines/comfyui/models/audio",
+            "qwen3-tts-voicedesign/model.py")
+        cls = load_model_py(mpath, "comfyui")
+        knob_fields = {row["card"] for row in cls.card_knobs}
+        self.assertTrue(card_fields <= knob_fields,
+                        "voice-lock fields missing knob rows: %s"
+                        % (card_fields - knob_fields))
+
+    def test_knob_rows_name_real_renderer_inputs(self) -> None:
+        """Both-directions audit, inject side: every voice-lock row's
+        inject target (NodeClass.idx.input) names a node class the
+        renderer builds with that input — a row pointing at a dead
+        node is a lie the layer audit must catch, not documentation."""
+        import json as _json
+        from melite_models import load_model_py
+        cls = load_model_py(os.path.join(
+            REPO, "plugins/engines/comfyui/models/audio",
+            "qwen3-tts-voicedesign/model.py"), "comfyui")
+        tmpl = _json.load(open(os.path.join(
+            REPO, "plugins/engines/comfyui/models/audio",
+            "qwen3-tts-voicedesign/voicelock_t1.json"), encoding="utf-8"))
+        nodes = {v.get("class_type"): set((v.get("inputs") or {}))
+                 for v in tmpl.values()}
+        for row in cls.card_knobs:
+            # shape is NodeClass.idx.input — split off the LAST two dots
+            parts = row["inject"].rsplit(".", 2)
+            self.assertEqual(len(parts), 3,
+                             "row %r inject is not NodeClass.idx.input"
+                             % row["card"])
+            node, _idx, inp = parts
+            self.assertIn(node, nodes,
+                          "row %r names unknown node %r" % (row["card"], node))
+            self.assertIn(inp, nodes[node],
+                          "row %r names unknown input %r on %s"
+                          % (row["card"], inp, node))
+
     def test_no_card_knobs_yaml_survives(self) -> None:
         """The yaml knob era is extinct tree-wide — rows live on the
         model class (the music3 pattern)."""
@@ -324,7 +377,7 @@ class TestKnobSSOT(unittest.TestCase):
         "ideogram", "input", "joycaption", "joytag", "kimodo",
         "krea-2", "mask-studio", "moss-sfx", "pixal3d",
         "qwen-img-edit-2511", "qwen3-tts", "qwen3-tts-base",
-        "qwen3-tts-voicedesign", "scail2-animate", "seedvr2_ema",
+        "scail2-animate", "seedvr2_ema",
         "skin", "transfer_rig", "trellis2-native", "wan-vace",
         "wd14", "z-image",
     })

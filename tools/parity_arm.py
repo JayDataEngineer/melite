@@ -9,11 +9,12 @@ Exit 0 all-match, 1 diff.
 """
 import importlib.util
 import json
+import os
 import random
 import sys
 
 REPO = "/home/user/Documents/programs/active/inference.cpp"
-HEAD = "/tmp/estate-head"
+HEAD = os.environ.get("PARITY_HEAD", "/tmp/estate-head")
 
 
 def load(name: str, path: str):
