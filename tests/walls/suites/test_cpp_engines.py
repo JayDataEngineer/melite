@@ -629,6 +629,15 @@ class TestKnobSSOT(unittest.TestCase):
             "image/mask_studio", "MaskStudioCard", "mask-studio",
             family="mask_t1")
 
+    def test_anny_turnaround_all_in_knob_rows(self) -> None:
+        """Row-3 migration pattern (thirteenth card): seven rows onto
+        the headless-rendered anny graph — the body constant plus
+        the turnaround block; the SAM ingest lane is config-gated
+        (empty-inject row)."""
+        self._assert_rows_match_renderer(
+            "3d/anny", "AnnyCard", "anny", family="anny_t1",
+            genre="3d")
+
     def test_no_card_knobs_yaml_survives(self) -> None:
         """The yaml knob era is extinct tree-wide — rows live on the
         model class (the music3 pattern)."""
@@ -649,7 +658,7 @@ class TestKnobSSOT(unittest.TestCase):
     # dwpose, basic_resize, the pixel pair — are not card surfaces
     # and stay out of this set.)
     _MODELS_WITHOUT_KNOB_ROWS = frozenset({
-        "anny", "fit", "h3", "h3-keyframe",
+        "fit", "h3", "h3-keyframe",
         "kimodo",
         "pixal3d",
         "skin", "transfer_rig", "trellis2-native",
