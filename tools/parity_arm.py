@@ -11,6 +11,7 @@ import importlib.util
 import json
 import os
 import random
+import re
 import sys
 
 REPO = "/home/user/Documents/programs/active/inference.cpp"
@@ -76,10 +77,20 @@ if __name__ == "__main__":
             outs.append(json.loads(r.stdout))
         bad = 0
         nb = len(json.loads(raw))
+        # staged-copy names embed wall-clock seconds
+        # (input_<hex>_base) — the old/new sides run a second apart
+        # by construction, so normalize the stamp before comparing
+        # (the golden runner pattern-matches staged names likewise).
+        _stage_re = re.compile(r"input_[0-9a-f]+_")
+
+        def _norm(out: object) -> str:
+            return _stage_re.sub(
+                "input_TS_",
+                json.dumps(out, default=str))
         for i in range(nb):
             for j, rid in enumerate(("", "run-PARITY-1")):
                 o, n = outs[0][2 * i + j], outs[1][2 * i + j]
-                if json.dumps(o, default=str) == json.dumps(n, default=str):
+                if _norm(o) == _norm(n):
                     print("MATCH %d %r" % (i, rid))
                 else:
                     bad += 1

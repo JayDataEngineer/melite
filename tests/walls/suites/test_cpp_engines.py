@@ -392,20 +392,37 @@ class TestKnobSSOT(unittest.TestCase):
         rspec.loader.exec_module(rmod)
         from co_script.renderers import registry
         fn, doc_cls = registry()[family]
-        wire = ((self._card_fields(card_subpath, card_cls,
-                                   "cf_%s" % model_id)
-                 | self._schema_fields(card_subpath, "sf_%s" % model_id))
-                - self._structural(card_subpath, card_cls,
-                                   "st_%s" % model_id))
         cls = load_model_py(os.path.join(
             REPO, "plugins/engines/comfyui/models", genre, model_id,
             "model.py"), "comfyui")
         rows = list(cls.card_knobs or ())
         graph = fn(doc_cls(), cls)
         structural = self._structural(
-            card_subpath, card_cls, "st2_%s" % model_id)
-        fed = (set(doc_cls.model_fields)
-               - {"filename_prefix"} - structural)
+            card_subpath, card_cls, "st_%s" % model_id)
+        wire = ((self._card_fields(card_subpath, card_cls,
+                                   "cf_%s" % model_id)
+                 | self._schema_fields(card_subpath, "sf_%s" % model_id))
+                - structural)
+        import typing as _typing
+
+        def _scalar(field: object) -> bool:
+            # knobmap kinds are s/n/b — a dict/list-typed doc field
+            # (crop/scale transform rows) CANNOT own a scalar row
+            # today; the complex-knob row shape is a later stroke.
+            ann = getattr(field, "annotation", None)
+            args = [a for a in _typing.get_args(ann)
+                    if a is not type(None)]
+            core = args[0] if len(args) == 1 and ann is not None \
+                and _typing.get_origin(ann) is not None else ann
+            try:
+                return isinstance(core, type) and issubclass(
+                    core, (str, int, float, bool))
+            except TypeError:
+                return False
+
+        fed = {f for f in set(doc_cls.model_fields)
+               - {"filename_prefix"} - structural
+               if f in wire and _scalar(doc_cls.model_fields[f])}
         row_names = {r["card"] for r in rows}
         self.assertTrue(
             row_names <= wire,
@@ -548,6 +565,17 @@ class TestKnobSSOT(unittest.TestCase):
             "image/ideogram4", "Ideogram4Card", "ideogram",
             family="ideogram_t2i")
 
+    def test_input_prep_source_in_knob_rows(self) -> None:
+        """Row-3 migration pattern (ninth card): the intake lane
+        rows its one scalar knob (source → the image-branch
+        loader; the audio twin is comment-recorded). The fed-audit
+        now only demands rows for wire-member scalar doc fields —
+        derived keys (media_type) and nested transform rows
+        (crop/scale) are exempt by construction, not by list."""
+        self._assert_rows_match_renderer(
+            "image/input_prep", "InputPrepCard", "input",
+            family="input_prep")
+
     def test_no_card_knobs_yaml_survives(self) -> None:
         """The yaml knob era is extinct tree-wide — rows live on the
         model class (the music3 pattern)."""
@@ -569,7 +597,7 @@ class TestKnobSSOT(unittest.TestCase):
     # and stay out of this set.)
     _MODELS_WITHOUT_KNOB_ROWS = frozenset({
         "anny", "fit", "h3", "h3-keyframe",
-        "input", "kimodo",
+        "kimodo",
         "mask-studio", "pixal3d",
         "scail2-animate", "seedvr2_ema",
         "skin", "transfer_rig", "trellis2-native", "wan-vace",
