@@ -41,7 +41,7 @@
       "step": null,
       "placeholder": "",
       "tooltip": "",
-      "visible_when": "negative_prompt != null"
+      "visible_when": null
     },
     {
       "name": "width",
@@ -271,8 +271,7 @@
           "type": "textarea",
           "label": "Negative Prompt",
           "order": 1,
-          "width": 1,
-          "visible_when": "negative_prompt != null"
+          "width": 1
         }
       ],
       "order": 0,
@@ -341,8 +340,8 @@
           "min": 1,
           "max": 20,
           "step": 0.1,
-          "tooltip": "How closely the diffusion follows the prompt. Higher = stricter.",
-          "default": 4.5
+          "default": 4.5,
+          "tooltip": "How closely the diffusion follows the prompt. Higher = stricter."
         },
         {
           "name": "sampler",
@@ -557,7 +556,8 @@
       },
       "Recipe": {
         "label": "Recipe",
-        "tooltip": "One-click LoRA recipes — patch-only variant rows that stamp loras picks onto the draft; the picks fire through the loras door at compose (unknown ids refuse there, compile-time)."
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "default": "default"
       }
     }
   },
@@ -598,6 +598,15 @@
       "route": "krea-2-raw",
       "vram_peak_gb": 22.0,
       "owner": "raw"
+    },
+    {
+      "id": "default",
+      "label": "Default",
+      "defaults": {},
+      "group": "Recipe",
+      "route": "",
+      "hint": "The family default — no extra stamps; a fresh card lands here.",
+      "engine": "comfyui"
     },
     {
       "id": "realism",

@@ -419,3 +419,36 @@ def test_http_cardless_model_spec_keeps_its_own_identity(scratch_gateway: int) -
             "model %s serves form %r, expected %r"
             % (mid, body["form"], want_form))
         assert len(body.get("fields", [])) >= 1
+
+
+# ── the negative-prompt gate (2026-09-06) ──────────────────────────
+# Operator order, verbatim: "there is no negative prompt for Krea2???"
+# Root cause: card.py declared visible_when='negative_prompt != null'
+# — a key the draft never seeds can never become non-null, so the
+# field NEVER rendered on any card. The gate is deleted in all three
+# card.py (image-gen, image-edit, video-gen); the wire schema always
+# accepted it. This wall pins: every served form that DECLARES
+# negative_prompt serves it UNGATED (no visible_when on the row).
+
+def test_negative_prompt_is_never_visible_when_gated() -> None:
+    offenders = []
+    for svc in sorted(editor_forms._FORMS_TABLE):
+        code, spec = editor_forms.form_spec(REPO_S, svc)
+        assert code == 200, (svc, code)
+        for f in spec.get("fields", []):
+            if f.get("name") == "negative_prompt" and f.get("visible_when"):
+                offenders.append((svc, f["visible_when"]))
+    assert not offenders, (
+        "negative_prompt re-gated (the never-seeded-key chicken-and-egg "
+        "is back): %r" % (offenders,))
+
+
+def test_krea2_and_edit_declare_negative_prompt() -> None:
+    # the operators' cards actually carry the field
+    for mid in ("krea-2", "qwen-img-edit-2511"):
+        code, spec = editor_forms.form_spec(REPO_S, mid)
+        assert code == 200, (mid, code)
+        names = {f.get("name") for f in spec.get("fields", [])}
+        assert "negative_prompt" in names, (
+            "%s stopped declaring negative_prompt — the field vanished "
+            "from the card" % mid)

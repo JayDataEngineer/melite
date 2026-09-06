@@ -106,12 +106,21 @@ conversationally, and composes ONE card whose `calls` array carries
 every shot:
 
 ```bash
-curl -s -X POST localhost:33081/v1/flows/start \
+# CARD BIRTH LAW: compose the card FIRST (POST /v1/flows/drafts mints
+# the draftId), THEN start with the id on the envelope — a start
+# without a doc-backed draft_id 4xxes BEFORE any run registers.
+DID=$(curl -s -X POST localhost:33081/v1/flows/drafts \
   -H 'Content-Type: application/json' \
   -d '{"model":"h3-timeline","prompt":"one line",
        "params":{"calls":[{"text":"...","start_frame":0,"end_frame":90},
                           {"text":"...","start_frame":90,"end_frame":189}],
-                 "fps":24}}'
+                 "fps":24}}' | python3 -c 'import json,sys; print(json.load(sys.stdin)["draftId"])')
+curl -s -X POST localhost:33081/v1/flows/start \
+  -H 'Content-Type: application/json' \
+  -d "{\"model\":\"h3-timeline\",\"draft_id\":\"$DID\",\"prompt\":\"one line\",
+       \"params\":{\"calls\":[{\"text\":\"...\",\"start_frame\":0,\"end_frame\":90},
+                          {\"text\":\"...\",\"start_frame\":90,\"end_frame\":189}],
+                 \"fps\":24}}"
 ```
 
 Monitor `GET /v1/flows/status/<run_id>`; the run lands window MP4s +

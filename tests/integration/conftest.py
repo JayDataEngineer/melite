@@ -58,10 +58,27 @@ def _req(port: int, method: str, path: str, body: dict[str, JsonValue] | None = 
 
 
 class QueueDoor:
-    """The queue door, lawfully: submit -> poll -> artifact."""
+    """The queue door, lawfully: submit -> poll -> artifact.
+
+    HYGIENE LAW: every submitted run_id is tracked the moment it is
+    minted; the session fixture deletes its test-output dir at
+    teardown — the runs tree must look untouched after the sweep."""
 
     def __init__(self, port: int) -> None:
         self.port = port
+        self.runs: list[str] = []
+
+    def compose(self, body: dict[str, JsonValue]) -> str:
+        """CARD BIRTH LAW (operator order 2026-09-06): every run is
+        born from an action card — the start door 4xxes a start
+        without a doc-backed draft_id. Compose the card first (the
+        drafts door mints the doc), return its draft_id."""
+        code, resp = _req(self.port, "POST", "/v1/flows/drafts", body)
+        assert code == 200, "card compose refused (%d): %s" % (code, resp)
+        draft_id = resp.get("draftId") if isinstance(resp, dict) else None
+        assert isinstance(draft_id, str) and draft_id, \
+            "card compose returned no draftId: %s" % (resp,)
+        return draft_id
 
     def submit(self, body: dict[str, JsonValue]) -> str:
         # L4 of the test/prod barrier: every integration submission is
@@ -69,9 +86,15 @@ class QueueDoor:
         # real output root, the tag keeps it out of /v1/assets.
         tagged = dict(body)
         tagged.setdefault("test", True)
+        # CARD BIRTH LAW: a start body without a doc-backed draft_id
+        # 4xxes — compose the card unless the caller named its own.
+        if not isinstance(tagged.get("draft_id"), str) or not tagged["draft_id"]:
+            tagged["draft_id"] = self.compose(dict(tagged))
         code, resp = _req(self.port, "POST", "/v1/flows/start", tagged)
         assert code == 202, "submit refused (%d): %s" % (code, resp)
-        return resp["run_id"]
+        run_id = resp["run_id"]
+        self.runs.append(run_id)
+        return run_id
 
     def wait(self, run_id: str, timeout_s: float = 900.0,
              poll_s: float = 2.0) -> dict[str, JsonValue]:
@@ -103,6 +126,22 @@ class QueueDoor:
         _req(self.port, "POST", "/v1/flows/stop/%s" % run_id)
 
 
+def _sweep_test_runs(run_ids: list[str]) -> None:
+    """Delete test-output dirs for tracked runs. test:true runs
+    land under data/runs/test-output/ by construction (the directory
+    IS the test filter) — deleting a tracked id can never touch
+    operator state. The name guard refuses anything that is not a
+    gateway-minted run dir."""
+    import shutil
+    root = REPO / "data" / "runs" / "test-output"
+    for run_id in run_ids:
+        if not run_id.startswith("run-") or "/" in run_id:
+            continue
+        target = root / run_id
+        if target.is_dir():
+            shutil.rmtree(target, ignore_errors=True)
+
+
 @pytest.fixture(scope="session")
 def gateway() -> Iterator[QueueDoor]:
     """A scratch gateway process: boots on a free port, serves the
@@ -115,10 +154,12 @@ def gateway() -> Iterator[QueueDoor]:
             wait_path="/v1/forms", python=str(PY), env=dict(os.environ))
     except RuntimeError as e:
         pytest.fail(str(e))
+    door = QueueDoor(port)
     try:
-        yield QueueDoor(port)
+        yield door
     finally:
         _bootstrap.reap_gateway(proc)
+        _sweep_test_runs(door.runs)
 
 
 @pytest.fixture(scope="session")

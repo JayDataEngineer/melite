@@ -130,6 +130,10 @@ export interface ModifierSubcard {
  name?: string
  enabled: boolean
  strength: number
+ /** LoRA-only — false when the wire row carried NO strength (the
+  * recipe landing stamps {id}); the tile then displays the adapter's
+  * default_strength — the effective value compose seeds server-side. */
+ strengthSet?: boolean
  /** ControlNet-only — the type key (schema lookup) + conditioning image. */
  type?: string
  model?: string
@@ -139,9 +143,39 @@ export interface ModifierSubcard {
  end_percent?: number
 }
 
-/** Stable drag id: CN entries carry id; LoRAs key by name. */
+/** Stable drag id. Both entry kinds key by `id` (the lora entry's id IS
+ * the adapter catalog id). `?? name` tolerates pre-2026-09-06 drafts so
+ * old cards load; the next save rewrites them as id-keyed rows. */
 export function subcardId(kind: SubcardKind, entry: { id?: string; name?: string }): string {
- return kind === "controlnet" ? entry.id ?? "" : `lora-${entry.name ?? ""}`
+ return kind === "controlnet" ? entry.id ?? "" : `lora-${entry.id ?? entry.name ?? ""}`
+}
+
+/** Normalize a wire lora row: id wins, the fossil `name` key migrates.
+ * An empty id passes through — compose refuses it loudly; the tile still
+ * renders so the operator can see and delete the broken entry. */
+export function loraIdOf(entry: { id?: string; name?: string }): string {
+ return String(entry.id ?? entry.name ?? "").trim()
+}
+
+/** The migration shape: a pre-2026-09-06 wire row carried `name`
+ * instead of `id`. READ boundaries accept it (loraIdOf /
+ * normalizeLoraEntry / subcardId); WRITE boundaries emit ONLY
+ * LoRAEntry — the fossil key is never re-emitted. This is the ONE
+ * declared boundary type (no `as never` / `as {name?: string}`
+ * hand-casts at call sites). */
+export type LoraWireInput = { id?: string; name?: string; strength?: number }
+
+/** A fossil `{name, strength}` row (pre-2026-09-06 wire) becomes an
+ * id-keyed row — ONE shape leaves every boundary (modal draft, bag
+ * commit, run body). The fossil key is dropped, never re-emitted.
+ * A row missing `strength` (never emitted by the pre-flip UI, but a
+ * hand-edited draft may carry one) takes 1.0 — the same house default
+ * the catalog row seeds at compose. */
+export function normalizeLoraEntry(entry: LoraWireInput): LoRAEntry {
+ return {
+ id: loraIdOf(entry),
+ strength: typeof entry.strength === "number" ? entry.strength : 1.0,
+ }
 }
 
 // ── Derivation ────────────────────────────────────────────────────────────
@@ -151,14 +185,23 @@ export function subcardsFromParams(params: Record<string, unknown>): ModifierSub
  const loras = (params.loras as LoRAEntry[] | undefined) ?? []
  const cns = (params.controlnets as ControlNetEntry[] | undefined) ?? []
  return [
- ...loras.map((l) => ({
- id: subcardId("lora", l),
+ ...loras.map((l) => {
+ const lid = loraIdOf(l)
+ // A strength-less row (the recipe rows land {id} only — compose
+ // seeds the LoraRow default server-side) projects the 1.0 fallback
+ // so no renderer ever sees undefined; `strengthSet` lets the tile
+ // UPGRADE the display to the adapter's default_strength — the same
+ // effective value the run uses.
+ return {
+ id: `lora-${lid}`,
  kind: "lora" as SubcardKind,
- label: loraLabel(l.name),
- name: l.name,
+ label: loraLabel(lid),
+ name: lid,
  enabled: true,
- strength: l.strength,
- })),
+ strength: typeof l.strength === "number" ? l.strength : 1.0,
+ strengthSet: typeof l.strength === "number",
+ }
+ }),
  ...cns.map((c) => ({
  id: subcardId("controlnet", c),
  kind: "controlnet" as SubcardKind,
@@ -290,8 +333,8 @@ export function newControlnetEntry(
 
 /** New LoRA entry from an adapter name — default strength 1.0 (apply_loras'
  * own default when the spec omits it). */
-export function newLoraEntry(name: string): LoRAEntry {
- return { name, strength: 1.0 }
+export function newLoraEntry(id: string, strength = 1.0): LoRAEntry {
+ return { id, strength }
 }
 
 /**

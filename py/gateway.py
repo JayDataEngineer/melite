@@ -67,7 +67,14 @@ REPO = Path(__file__).resolve().parent.parent
 # C++ CMake dir the C server happened to cwd into; it is GONE.
 # (One hop runs/output: editor_runs' server_root contract appends
 # "output"; flattening it waits for that file to leave flight.)
-STATE_ROOT = REPO / "data" / "runs"
+# 2026-09-06 (single-writer lock seam): MELITE_STATE_ROOT moves the
+# whole state tree — the R2 one-writer lock makes a SECOND gateway
+# on the SAME root refuse loud, which is right for production but
+# must not wedge the wall suites' hermetic scratch gateways: they
+# boot with their own tmp root via this env (tests/_bootstrap.py
+# boot_scratch_gateway owns the isolation — the ONE home for boots).
+STATE_ROOT = Path(os.environ.get("MELITE_STATE_ROOT")
+                  or (REPO / "data" / "runs"))
 OUT_ROOT = STATE_ROOT / "output"
 # L3 of the test/prod barrier: test runs are routed to a sibling
 # root so the production output dir cannot contain them. /v1/assets
@@ -1298,6 +1305,10 @@ class Gateway:
                 stage["url"] = base + names_[0]
                 stage["gallery"] = [
                     {"url": base + n, "name": n} for n in names_]
+            # R3.2 RESUME RECORD (merged path harvest): same stamp
+            # as the per-stage loop — merged runs restart whole, but
+            # the record stays consistent for every completed stage.
+            stage["result_outputs"] = dict(row.get("outputs") or {})
             stage["status"] = "completed"
             stage.pop("progress", None)
             stage.pop("activity", None)
@@ -1323,7 +1334,12 @@ class Gateway:
         # BELOW before anything is marked running (the loop surfaces
         # the error in its own turn); once the merged graph is
         # submitted, failures are run failures (no silent replay).
-        if await self._try_merged(run, dict(initial)):
+        # R3.2: a RESUMED run (any stage already completed) never
+        # takes the merged path — one merged submit cannot honor a
+        # completed prefix; the per-stage loop's skip seam does.
+        if not any(st.get("status") == "completed"
+                   for st in run.stages) and \
+                await self._try_merged(run, dict(initial)):
             return
         carry = {}
         for stage in run.stages:
@@ -1331,6 +1347,16 @@ class Gateway:
                 stage["status"] = "stopped"
                 await self._sidecar_offloop(run)
                 return
+            if stage["status"] == "completed":
+                # R3.2 RESUME PREFIX: a completed stage (from the
+                # resume door) neither re-runs nor fires an engine
+                # transition; its recorded output channels re-enter
+                # the carry pool exactly as the fresh run's would —
+                # same names, same $channel spellings downstream.
+                for k, v in (stage.get("result_outputs") or {}).items():
+                    carry[k] = v
+                    carry["%s.%s" % (stage["id"], k)] = v
+                continue
             node = run.graph.nodes[stage["index"]]
             # ENGINE TRANSITION: the outgoing engine unloads before the
             # next engine's stage starts. The boundary state is
@@ -1395,45 +1421,87 @@ class Gateway:
                 # the engine ABI row: a VALIDATED NodeRow carrying the
                 # inject-expanded params (construction refuses a bad row)
                 import flow_graph as _pg
-                result = await engine.execute(
-                    _pg.NodeRow(node_id=node.node_id,
-                                node_type=node.node_type, params=params,
-                                card=node.card,
-                                # ENGINE-OUTPUTS (§3, 2026-09-06): the
-                                # stage's DECLARED output channels ride
-                                # the ABI row so the engine can publish
-                                # harvested files per channel (mesh wires
-                                # chain FromStage without lane knowledge).
-                                outputs=dict(node.outputs or {})),
-                    str(run.dir), inputs, run.stop_event, report=_report,
-                )
-                if result and result.get("error"):
-                    # ENGINE ABI: compose-first engines return their
-                    # refusal as an error DICT (never raise). The rim
-                    # honors it — a documented failure, never a silent
-                    # empty completion (RESILIENCE LAW).
-                    err_text = str(result["error"])
-                    # a deliberate STOP is its own class: the engine
-                    # answers {"error": "stopped"} when the stop door
-                    # fired, never a failure (RESILIENCE LAW: a stop
-                    # lands in <6s and reports 'stopped' — never
-                    # 'error'). Gate on the stop_event being set so a
-                    # spurious "stopped" in a normal failure still
-                    # raises.
-                    if run.stop_event.is_set() and "stop" in \
-                            err_text.lower():
-                        stage["status"] = "stopped"
-                        stage["error"] = err_text
-                        self.publish(run.run_id, {
-                            "type": "stage",
-                            "stage": stage["id"],
-                            "index": stage["index"],
-                            "status": "stopped",
-                            "error": err_text})
-                        break
-                    raise ValidationError(
-                        "engine %s: %s" % (
-                            node.node_type, err_text))
+                abi = _pg.NodeRow(node_id=node.node_id,
+                                  node_type=node.node_type, params=params,
+                                  card=node.card,
+                                  # ENGINE-OUTPUTS (§3, 2026-09-06): the
+                                  # stage's DECLARED output channels ride
+                                  # the ABI row so the engine can publish
+                                  # harvested files per channel (mesh wires
+                                  # chain FromStage without lane knowledge).
+                                  outputs=dict(node.outputs or {}))
+                # ── R3.3 RETRY ROWS (2026-09-06): policy as data ──
+                # retries/timeout_s ride the node row. An attempt
+                # that fails (exception OR engine error dict) re-runs
+                # while attempts remain; every retry is LEDGERED and
+                # stamped stage["retries_used"] — documented, then
+                # continued (RESILIENCE LAW). A deliberate STOP never
+                # retries. timeout_s is the RUNNER's budget
+                # (asyncio.wait_for) — params.timeout_s stays the
+                # engine's own door.
+                max_extra = int(getattr(node, "retries", 0) or 0)
+                budget = float(getattr(node, "timeout_s", 0.0) or 0.0)
+                attempt = 0
+                stopped_now = False
+                err_text = ""
+                while True:
+                    try:
+                        if budget > 0:
+                            result = await asyncio.wait_for(
+                                engine.execute(
+                                    abi, str(run.dir), inputs,
+                                    run.stop_event, report=_report),
+                                timeout=budget)
+                        else:
+                            result = await engine.execute(
+                                abi, str(run.dir), inputs,
+                                run.stop_event, report=_report)
+                    except Exception:
+                        if attempt < max_extra and not run.stop_event.is_set():
+                            attempt += 1
+                            self._note_stage_retry(
+                                run, stage, attempt,
+                                "attempt %d failed (exception)" % attempt)
+                            continue
+                        raise
+                    if result and result.get("error"):
+                        # ENGINE ABI: compose-first engines return their
+                        # refusal as an error DICT (never raise). The rim
+                        # honors it — a documented failure, never a
+                        # silent empty completion (RESILIENCE LAW).
+                        err_text = str(result["error"])
+                        # a deliberate STOP is its own class: the engine
+                        # answers {"error": "stopped"} when the stop
+                        # door fired, never a failure (RESILIENCE LAW:
+                        # a stop lands in <6s and reports 'stopped' —
+                        # never 'error'). Gate on the stop_event being
+                        # set so a spurious "stopped" in a normal
+                        # failure still raises. A stop NEVER retries.
+                        if run.stop_event.is_set() and "stop" in \
+                                err_text.lower():
+                            stopped_now = True
+                            break
+                        if attempt < max_extra and \
+                                not run.stop_event.is_set():
+                            attempt += 1
+                            self._note_stage_retry(
+                                run, stage, attempt,
+                                "attempt %d: %s" % (attempt, err_text))
+                            continue
+                        raise ValidationError(
+                            "engine %s: %s" % (
+                                node.node_type, err_text))
+                    break
+                if stopped_now:
+                    stage["status"] = "stopped"
+                    stage["error"] = err_text
+                    self.publish(run.run_id, {
+                        "type": "stage",
+                        "stage": stage["id"],
+                        "index": stage["index"],
+                        "status": "stopped",
+                        "error": err_text})
+                    break
                 if result:
                     for k, v in result.get("outputs", {}).items():
                         carry[k] = v
@@ -1456,6 +1524,15 @@ class Gateway:
                         stage["url"] = base + stage_arts[0]
                         stage["gallery"] = [
                             {"url": base + n, "name": n} for n in stage_arts]
+                # R3.2 RESUME RECORD: the stage's resolved OUTPUT
+                # CHANNEL VALUES ride the sidecar — the durable half
+                # of the carry pool. Without it a resume could rebuild
+                # the graph but not the wires (a downstream stage's
+                # $channels would resolve nothing). Key name says
+                # exactly what it is; the declared spec stays under
+                # "outputs" (sidecar.md).
+                stage["result_outputs"] = dict(
+                    result.get("outputs") or {}) if result else {}
                 stage["status"] = "completed"
                 stage.pop("progress", None)
                 stage.pop("activity", None)
@@ -1469,6 +1546,87 @@ class Gateway:
                                           "error": stage["error"]})
                 raise
             await self._sidecar_offloop(run)
+
+    def _note_stage_retry(self, run: Run, stage: dict[str, JsonValue],
+                          attempt: int, why: str) -> None:
+        """R3.3: one retry attempt, documented in all three places
+        a failure lives — the sidecar row (retries_used), the events
+        bus (live), the ledger (durable). Never a silent re-run."""
+        stage["retries_used"] = attempt
+        stage["retry_last_error"] = why
+        ledger("run.stage_retry", {
+            "run_id": run.run_id, "stage": str(stage.get("id")),
+            "attempt": attempt, "error": why})
+        self.publish(run.run_id, {
+            "type": "stage", "stage": str(stage.get("id")),
+            "index": stage.get("index"), "retry": attempt})
+
+    async def resume(self, run_id: str) -> dict[str, JsonValue]:
+        """R3.2 resume-from-stage (2026-09-06): a FAILED or STOPPED
+        run re-enters the queue under the SAME run id — its completed
+        stages stay completed (the per-stage loop's resume prefix
+        skips them and re-seeds the carry pool from the durable
+        result_outputs record), the first non-green stage is where
+        execution resumes. A merged single-graph run cannot honor a
+        prefix (one submit) — it restarts from stage 0 under the
+        same id, ledgered merged_restart. Refusals (4xx, before any
+        re-register): unknown run, live queued/running, completed,
+        unusable record. Design record docs/queue/run-registry.md;
+        wall tests/unit/runtime/test_resume_door.py."""
+        live = self.runs.get(run_id)
+        if live is not None and live.status in ("queued", "running"):
+            raise ValidationError(
+                "run %s is still %s — stop it before resuming"
+                % (run_id, live.status))
+        try:
+            doc = json.loads(
+                (OUT_ROOT / run_id / "_flow.json").read_text())
+        except (OSError, ValueError):
+            raise ValidationError("no durable record for run %r" % run_id)
+        status = str(doc.get("status") or "")
+        if live is not None and live.status in ("failed", "stopped"):
+            status = live.status   # the registry row is fresher truth
+        if status == "completed":
+            raise ValidationError(
+                "run %s completed — nothing to resume" % run_id)
+        if status not in ("failed", "stopped"):
+            raise ValidationError(
+                "run %s is %r — resume needs failed or stopped"
+                % (run_id, status or "unknown"))
+        run = _rebuild_run_from_record(run_id)
+        if run is None:
+            raise ValidationError(
+                "run %s record is unusable (draft doc gone or "
+                "half-written) — resubmit instead" % run_id)
+        merged = any(bool(st.get("merged")) for st in run.stages)
+        done = [i for i, st in enumerate(run.stages)
+                if st.get("status") == "completed"]
+        from_stage = 0 if merged else (done[-1] + 1 if done else 0)
+        for i, st in enumerate(run.stages):
+            if merged or i < from_stage:
+                if merged:
+                    st["status"] = "pending"   # restart whole
+            elif st.get("status") != "completed":
+                st["status"] = "pending"
+            if st.get("status") != "completed":
+                st.pop("error", None)
+            st.pop("progress", None)
+            st.pop("activity", None)
+        run.status = "queued"
+        run.error = ""
+        self.runs[run_id] = run
+        self.order.append(run_id)
+        kept = sum(1 for st in run.stages
+                   if st.get("status") == "completed")
+        ledger("run.resume", {"run_id": run_id,
+                               "from_stage": from_stage,
+                               "completed_stages": kept,
+                               "merged_restart": merged})
+        await self._sidecar_offloop(run)
+        return {"run_id": run_id, "status": "queued",
+                "resumed_from_stage": from_stage,
+                "completed_stages": kept,
+                "merged_restart": merged}
 
     async def stop(self, run_id: str) -> dict[str, str]:
         run = self.runs.get(run_id)
@@ -1720,6 +1878,53 @@ def sweep_sidecar(path: Path, why: str, queued_why: str = "") -> bool:
     return True
 
 
+def _rebuild_run_from_record(run_id: str) -> "Run | None":
+    """R3.2 (2026-09-06): rebuild a Run from its DURABLE record —
+    the sidecar's graph rows + _request.json + the draft doc (CARD
+    BIRTH LAW: the doc is the birth certificate; a record without
+    one is an orphan, never a run). Returns None when any piece is
+    missing or half-written — callers refuse loudly, they never
+    guess. Shared by boot_resurrect (queued work at boot) and the
+    resume door (failed/stopped work)."""
+    try:
+        doc = json.loads((OUT_ROOT / run_id / "_flow.json").read_text())
+    except (OSError, ValueError):
+        return None
+    draft_id = str(doc.get("draft_id") or "")
+    if not draft_id or not (
+            STATE_ROOT / "drafts" / (draft_id + ".json")).is_file():
+        return None
+    try:
+        request = json.loads(
+            (OUT_ROOT / run_id / "_request.json").read_text())
+    except (OSError, ValueError):
+        return None
+    # runtime import (TYPE_CHECKING owns the annotation names)
+    from flow_graph import FlowGraph
+    from flow_graph import NodeRow as _NR
+    try:
+        graph = FlowGraph(
+            name=str(doc.get("pipeline") or run_id),
+            nodes=tuple(_NR(**{
+                "id": r.get("id"), "type": r.get("type"),
+                "input_from": tuple(r.get("input_from") or ()),
+                "input_names": dict(r.get("input_names") or {}),
+                "outputs": dict(r.get("outputs") or {}),
+                "params": dict(r.get("params") or {}),
+            }) for r in (doc.get("graph") or [])))
+    except Exception:
+        return None
+    run = Run(run_id=run_id, graph=graph, request=request,
+              draft_id=draft_id)
+    created = float(doc.get("created_at") or 0.0)
+    if created:
+        run.created_at = created
+    run.stages = list(doc.get("stages") or [])
+    run.skipped_stages = list(doc.get("skipped_stages") or [])
+    run.artifacts = [str(a) for a in (doc.get("artifacts") or []) if a]
+    return run
+
+
 def boot_resurrect(gw: Gateway) -> int:
     """R3 durable queue (2026-09-06): a QUEUED sidecar at boot is WORK
     WAITING, not a failure — the previous gateway died before the
@@ -1733,9 +1938,7 @@ def boot_resurrect(gw: Gateway) -> int:
     resurrected = 0
     if not OUT_ROOT.is_dir():
         return 0
-    # runtime import (TYPE_CHECKING owns the annotation names)
-    from flow_graph import FlowGraph, NodeRow as _NR
-    candidates: list[tuple[float, str, dict[str, JsonValue]]] = []
+    candidates: list[tuple[float, str]] = []
     for d in sorted(OUT_ROOT.iterdir()):
         if not d.is_dir() or not d.name.startswith("run-"):
             continue
@@ -1746,35 +1949,16 @@ def boot_resurrect(gw: Gateway) -> int:
         if doc.get("status") != "queued":
             continue
         candidates.append(
-            (float(doc.get("created_at") or 0.0), d.name, doc))
-    for created, run_id, doc in sorted(candidates, key=lambda c: c[0]):
+            (float(doc.get("created_at") or 0.0), d.name))
+    for created, run_id in sorted(candidates, key=lambda c: c[0]):
         try:
-            draft_id = str(doc.get("draft_id") or "")
-            if not draft_id or not (
-                    STATE_ROOT / "drafts" /
-                    (draft_id + ".json")).is_file():
-                continue  # no birth certificate — sweep it below
-            request = json.loads(
-                (OUT_ROOT / run_id / "_request.json").read_text())
-            graph = FlowGraph(
-                name=str(doc.get("pipeline") or run_id),
-                nodes=tuple(_NR(**{
-                    "id": r.get("id"), "type": r.get("type"),
-                    "input_from": tuple(r.get("input_from") or ()),
-                    "input_names": dict(r.get("input_names") or {}),
-                    "outputs": dict(r.get("outputs") or {}),
-                    "params": dict(r.get("params") or {}),
-                }) for r in (doc.get("graph") or [])))
-            run = Run(run_id=run_id, graph=graph, request=request,
-                      draft_id=draft_id)
-            if created:
-                run.created_at = created
-            run.stages = list(doc.get("stages") or [])
-            run.skipped_stages = list(doc.get("skipped_stages") or [])
+            run = _rebuild_run_from_record(run_id)
+            if run is None:
+                continue  # orphan / half-written — sweep it below
             gw.runs[run_id] = run
             gw.order.append(run_id)
             ledger("run.resurrected", {"run_id": run_id,
-                                       "draft_id": draft_id})
+                                       "draft_id": run.draft_id})
             resurrected += 1
         except Exception:
             continue  # a half-written record sweeps below — LOUD there
@@ -2024,7 +2208,9 @@ async def _adapt(request: Request) -> Response:
             status_code=401, media_type="application/json",
             headers={"WWW-Authenticate": "Bearer"})
     try:
-        status, payload = await route(gw, request.method, target, body)
+        status, payload = await route(
+            gw, request.method, target, body,
+            headers={k.lower(): v for k, v in request.headers.items()})
     except Exception as exc:
         try:
             from traceback import format_exc
@@ -2072,10 +2258,11 @@ async def _adapt(request: Request) -> Response:
 class _Ctx:
     """One matched request: everything a handler may read."""
     __slots__ = ("gw", "method", "path", "target", "qs", "body", "json",
-                 "m", "row")
+                 "m", "row", "headers")
 
     def __init__(self, gw: Gateway, method: str, path: str, target: str,
-                 qs: dict[str, list[str]], body: bytes) -> None:
+                 qs: dict[str, list[str]], body: bytes,
+                 headers: dict[str, str] | None = None) -> None:
         self.gw = gw
         self.method = method
         self.path = path
@@ -2085,6 +2272,12 @@ class _Ctx:
         self.json = None
         self.m = None
         self.row = None
+        # R2 media (2026-09-06): request headers, LOWER-CASED keys —
+        # the asset door reads "range" for partial content (video
+        # scrubbing in the media sidebar needs 206s; a full-file
+        # stall per seek is not a video player). Default {} keeps
+        # route() callers without headers working (tests, WS paths).
+        self.headers = headers or {}
 
     def q(self, name: str, default: str | None = None) -> str | None:
         return self.qs.get(name, [default])[0]
@@ -2364,6 +2557,13 @@ async def _h_flows_stop(ctx: _Ctx) -> HandlerResult:
         return 400, {"error": str(e)}
 
 
+async def _h_flows_resume(ctx: _Ctx) -> HandlerResult:
+    try:
+        return 200, await ctx.gw.resume(ctx.m.group(1))
+    except ValidationError as e:
+        return 400, {"error": str(e)}
+
+
 async def _h_ws_fallback(ctx: _Ctx) -> HandlerResult:
     """Non-upgrade reach of a WS door: the unmatched-route 404 the
     if-chain era served (wire parity)."""
@@ -2496,12 +2696,59 @@ async def _h_drafts_get(ctx: _Ctx) -> HandlerResult:
     return code, doc
 
 
+def _parse_range(spec: str,
+                 size: int) -> "tuple[int, int] | None":
+    """R2 media (2026-09-06): parse one HTTP Range spec against a
+    body of size N. Returns (lo, hi) inclusive, or None = serve the
+    FULL body 200 (the documented honest fallback — a malformed,
+    multi-range, or unsatisfiable spec never strands the client;
+    browsers retry full). Forms honored: bytes=a-b, bytes=a-,
+    bytes=-suffix (last N)."""
+    spec = (spec or "").strip()
+    if not spec.lower().startswith("bytes=") or "," in spec:
+        return None
+    rng = spec.split("=", 1)[1].strip()
+    if "-" not in rng:
+        return None
+    lo_s, _, hi_s = rng.partition("-")
+    lo_s = lo_s.strip()
+    hi_s = hi_s.strip()
+    try:
+        if lo_s == "":
+            n = int(hi_s)
+            if n <= 0:
+                return None
+            return max(0, size - n), size - 1
+        lo = int(lo_s)
+        hi = int(hi_s) if hi_s else size - 1
+    except ValueError:
+        return None
+    if lo < 0 or hi < lo:
+        return None
+    if lo >= size:
+        return None   # unsatisfiable — honest full 200
+    return lo, min(hi, size - 1)
+
+
 async def _h_asset(ctx: _Ctx) -> HandlerResult:
     import editor_runs as _er
     rel = ctx.path[len(ASSET_URL_PREFIX + "/"):]
     code, data, ctype = _er.serve_asset(str(STATE_ROOT), rel)
     if code == 200:
-        return code, ({}, {"content-type": ctype}, data)
+        # R2 media: Range requests get true 206 partial content
+        # (Content-Range + inclusive slice); 200s still announce
+        # Accept-Ranges so players probe once. Malformed specs fall
+        # back to the full body — never a stranded seek.
+        span = _parse_range(ctx.headers.get("range", ""), len(data))
+        if span is not None:
+            lo, hi = span
+            return 206, ({}, {"content-type": ctype,
+                              "content-range": "bytes %d-%d/%d"
+                                              % (lo, hi, len(data)),
+                              "accept-ranges": "bytes"},
+                         data[lo:hi + 1])
+        return code, ({}, {"content-type": ctype,
+                           "accept-ranges": "bytes"}, data)
     return code, {"error": "not found"} if code == 404 else data
 
 
@@ -3275,6 +3522,12 @@ ROUTES: tuple = (
           template="/v1/flows/stop/{run_id}", group="Queue & runs",
           summary="The stop door (<6s, /interrupt, reports stopped)",
           handler=_h_flows_stop),
+    Route(method="POST", path=r"^/v1/flows/resume/(.+)$", regex=True,
+          template="/v1/flows/resume/{run_id}", group="Queue & runs",
+          summary="Resume a failed/stopped run from its last "
+                  "completed stage (R3.2; same run id, durable "
+                  "result_outputs record re-seeds the carry pool)",
+          handler=_h_flows_resume),
     Route(method="GET", path=r"^/v1/flows/events/(.+)$", regex=True, ws=True,
           template="/v1/flows/events/{run_id}", group="Queue & runs",
           summary="WS streaming door (path form; hijacked on Upgrade)",
@@ -3484,11 +3737,12 @@ ROUTES: tuple = (
 
 
 async def route(gw: Gateway, method: str, target: str,
-                body: bytes) -> HandlerResult:
+                body: bytes,
+                headers: dict[str, str] | None = None) -> HandlerResult:
     from urllib.parse import urlparse, parse_qs
     path = target.split("?")[0].rstrip("/") or "/"
     qs = parse_qs(urlparse(target).query)
-    ctx = _Ctx(gw, method, path, target, qs, body)
+    ctx = _Ctx(gw, method, path, target, qs, body, headers=headers)
     for row in ROUTES:
         if row.method != "*" and method not in row.method.split("|"):
             continue
@@ -3545,7 +3799,95 @@ def ledger_tail(target: str) -> dict[str, list[JsonValue] | int]:
     return {"entries": out, "shown": len(out), "matched": matched}
 
 
+def _pid_alive(pid: int) -> bool:
+    """Signal-0 probe: True when the pid exists (PermissionError
+    means it exists but belongs to another user — still ALIVE, the
+    whole point of the guard)."""
+    try:
+        os.kill(pid, 0)
+        return True
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+
+
+def acquire_lock(pid: int | None = None) -> "tuple[bool, str]":
+    """R2 single-writer (2026-09-06): ONE state root, ONE gateway
+    writing it. Two writers mean interleaved sidecar writes, double
+    FIFO workers claiming one GPU, and ledger rows from both — the
+    corruption class this lock makes unbornable. O_CREAT|O_EXCL;
+    on collision the holder pid is read: alive → REFUSE loud (the
+    caller exits before any boot side effect); dead or garbage →
+    steal (unlink + re-acquire, ledgered server.lock_stolen — a
+    crashed gateway must not wedge the estate). Design record
+    docs/queue/gpu-fifo.md; wall tests/unit/runtime/test_lockfile.py."""
+    pid = os.getpid() if pid is None else pid
+    lock = STATE_ROOT / "gateway.lock"
+    STATE_ROOT.mkdir(parents=True, exist_ok=True)
+    try:
+        fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+        with os.fdopen(fd, "w") as f:
+            f.write(str(pid))
+        return True, "acquired"
+    except FileExistsError:
+        pass
+    holder = ""
+    try:
+        holder = lock.read_text().strip()
+    except OSError:
+        pass
+    try:
+        hpid = int(holder)
+    except ValueError:
+        hpid = -1
+    if hpid > 0 and _pid_alive(hpid):
+        return False, "gateway.lock held by live pid %d" % hpid
+    try:
+        lock.unlink()
+    except OSError:
+        pass
+    ledger("server.lock_stolen", {"stale_pid": hpid})
+    try:
+        fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+        with os.fdopen(fd, "w") as f:
+            f.write(str(pid))
+        return True, "stolen from dead pid %d" % hpid
+    except OSError as e:
+        return False, "lock steal failed: %s" % e
+
+
+def release_lock(pid: int | None = None) -> None:
+    """Clean shutdown releases the single-writer lock — the next
+    boot acquires first-try instead of stealing (SIGKILL still
+    leaves the dead-pid steal path, documented above). PID-CHECKED:
+    a bind-failed boot (port already owned) must release only ITS
+    OWN lock, never the live daemon's — the watcher-spawn storm on
+    a taken port taught this the hard way (a blind unlink freed
+    the next spawn to steal + boot-sweep live runs)."""
+    pid = os.getpid() if pid is None else pid
+    lock = STATE_ROOT / "gateway.lock"
+    try:
+        if lock.read_text().strip() != str(pid):
+            return   # not ours — leave the real holder alone
+    except OSError:
+        return
+    try:
+        lock.unlink()
+    except OSError:
+        pass
+
+
 async def main(port: int) -> None:
+    # R2 single-writer: acquire BEFORE any boot side effect (no
+    # resurrection, no sweep, no worker) — a second gateway exits
+    # here, loud, having touched nothing.
+    locked, note = acquire_lock()
+    if not locked:
+        sys.stderr.write(
+            "[gateway] REFUSING TO START: %s — one writer per state "
+            "root\n" % note)
+        raise SystemExit(1)
     gw = Gateway()
     # R3 durable queue: queued work RESURRECTS first (same run ids,
     # FIFO order); the sweep then settles what is genuinely dead —
@@ -3571,6 +3913,7 @@ async def main(port: int) -> None:
                 pass
         asyncio.create_task(gw.worker())
         yield
+        release_lock()   # clean shutdown: the lock dies with the server
 
     # Build starlette routes:
     # - one catch-all HTTP route → _adapt (matches against ROUTES table)

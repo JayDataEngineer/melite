@@ -108,6 +108,25 @@ class TestNoZombieSlots:
         ("non-object body", []),
         ("flow with illegal identifier", {"flow": "no-such-lane-XYZ"}),
         ("model with illegal identifier", {"model": "no-such-model-XYZ"}),
+        # CARD BIRTH LAW (operator order 2026-09-06: "IF THERE IS NO
+        # DRAFT_ID, THAT IS A HARD ERROR! THAT NEEDS TO HAPPEN!"): a
+        # start without a doc-backed draft_id is refused 4xx BEFORE
+        # any run registers — no run_id, no sidecar, no dir. This is
+        # the HTTP twin of TestStartDoorRequiresDraft; together they
+        # make the media sidebar's "run has no action card (no
+        # draft_id in its run row)" click error unreachable for new
+        # runs (the row shape cannot be born).
+        ("cardless flow start", {"flow": "kimodo-native"}),
+        ("cardless model start", {"model": "krea-2",
+                                  "prompt": "never runs"}),
+        ("empty draft_id", {"model": "krea-2", "draft_id": "",
+                            "prompt": "never runs"}),
+        ("malformed draft_id", {"model": "krea-2",
+                                "draft_id": "bad id!",
+                                "prompt": "never runs"}),
+        ("dangling draft_id", {"model": "krea-2",
+                               "draft_id": "draft-does-not-exist-xyz",
+                               "prompt": "never runs"}),
     ]
 
     @pytest.mark.parametrize("label,body", REJECTION_CASES,

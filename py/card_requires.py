@@ -61,6 +61,14 @@ EXTENSION_NODE_TYPES: dict[str, set[str]] = {
     "comfyui-impact-pack": {"FaceDetailer", "SAMLoader", "UltralyticsDetectorProvider"},
     "comfyui-lanpaint": {"LanPaintSampler", "LanPaintInpaint"},
     "ComfyUI-GGUF": {"GGUFUnetLoader", "GGUFCLIPLoader"},
+    # tagger lanes (2026-09-06, live-probed: pysssss.py suffix is wire truth).
+    "ComfyUI-WD14-Tagger": {"WD14Tagger|pysssss"},
+    # joytag (2026-09-06, live-probed: bare CXH_ name, no suffix).
+    "Comfyui_joytag": {"CXH_JoyTag"},
+    # florence2 (2026-09-06, live-probed: kijai loader + run nodes).
+    "ComfyUI-Florence2": {"DownloadAndLoadFlorence2Model", "Florence2Run"},
+    # joycaption (2026-09-06, live-probed: fpgaminer JJC_-prefixed nodes).
+    "joycaption_comfyui": {"JJC_DownloadAndLoadJoyCaptionModel", "JJC_JoyCaption"},
     # Native-core capability gates (2026-09-06 img-to-mesh live-fire).
     # TRELLIS.2/Pixal3D/MoGe-FOV ship in comfy_extras on ComfyUI 0.34+
     # and are absent before it: capability, never a version string.
@@ -77,8 +85,10 @@ EXTENSION_NODE_TYPES: dict[str, set[str]] = {
 }
 
 
-def _fetch_object_info(server_url: str, timeout: float = 5.0) -> dict[str, JsonValue] | None:
+def _fetch_object_info(server_url: str | None, timeout: float = 5.0) -> dict[str, JsonValue] | None:
     """Fetch object_info from a running ComfyUI instance. Returns None on failure."""
+    if not server_url:
+        return None
     try:
         req = urllib.request.Request(
             f"{server_url.rstrip('/')}/object_info",
@@ -104,7 +114,11 @@ def _extension_on_disk(ext_name: str, custom_nodes_dir: str) -> bool:
 
 def check_card_requires(
     requires: list[str] | None,
-    server_url: str = "http://127.0.0.1:18465",
+    # No literal default (2026-09-06 tagger audit): the old 18465 default
+    # pointed at a FOREIGN ComfyUI (another world's instance) — the gate
+    # checked the wrong server. Callers route explicitly (the gateway
+    # passes the estate endpoint); None means disk-only verification.
+    server_url: str | None = None,
     custom_nodes_dir: str | None = None,
 ) -> tuple[bool, str]:
     """Check that all required extensions are available.

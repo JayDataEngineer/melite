@@ -36,7 +36,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Union
 
-from pydantic import BaseModel, ValidationInfo
+from pydantic import BaseModel, ConfigDict, ValidationError, ValidationInfo
 
 
 Num = Union[float, int]
@@ -48,6 +48,62 @@ JsonDict = dict[str, JsonValue]
 # params row, so type[object] (the wall's one precise top, not a
 # hidden value). Slot values ride the decoded-JSON envelope.
 ValidatorCls = type[object]
+
+
+class LoraWire(BaseModel):
+    """ONE wire shape for a lora tile (operator order, 2026-09-06: the
+    id flip — entries are `{id, strength?}`). `id` is the adapter's
+    catalog id (the form-spec modifiers.lora options `.value`). A
+    missing/None `strength` is "seed me at the catalog row's
+    default_strength" — compose's job, where the model rows live. The
+    fossil `name` key refuses AT CONSTRUCTION (lora_wire_bag carries
+    the teaching message) — never a silent resolve."""
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    id: str
+    strength: float | None = None
+
+
+def lora_wire_bag(cls: ValidatorCls, v: JsonValue) -> tuple[LoraWire, ...]:
+    """The loras bag → tuple[LoraWire, ...], validated AT CONSTRUCTION
+    (PYTHON SHAPE LAW — the id flip replaced compose's per-entry
+    hand-parse). Null bag = no tiles (the Mods drawer clears a mod by
+    nulling its bag); a lone dict wraps to one tile (the pre-tuple
+    editor precedent). Every refusal names the expected shape —
+    messages are VERBATIM the compose-era teachings (the wall pins
+    them)."""
+    if v is None:
+        return ()
+    entries = v
+    if isinstance(entries, dict):
+        entries = [entries]
+    if isinstance(entries, str) or not isinstance(entries, list):
+        raise ValueError(
+            "loras must be a list of {id, strength?} tile dicts "
+            "(got %r)" % (entries,))
+    rows: list[LoraWire] = []
+    for ent in entries:
+        if not isinstance(ent, dict):
+            raise ValueError(
+                "loras entries must be objects {id, strength?} "
+                "(got %r)" % (ent,))
+        keys = sorted(ent)
+        if "id" not in ent or not str(ent.get("id") or "").strip():
+            raise ValueError(
+                "loras entries are {id, strength} — got keys %s; "
+                "id is the adapter's catalog id (form-spec "
+                "modifiers.lora options)" % (keys,))
+        unknown = [k for k in keys if k not in ("id", "strength")]
+        if unknown:
+            raise ValueError(
+                "loras entries are {id, strength} — got keys %s; "
+                "id is the adapter's catalog id (form-spec "
+                "modifiers.lora options)" % (keys,))
+        rows.append(LoraWire(
+            id=str(ent["id"]).strip(),
+            strength=ent.get("strength"),
+        ))
+    return tuple(rows)
 
 
 def positive(cls: ValidatorCls, v: Num, info: ValidationInfo) -> Num:
@@ -174,12 +230,37 @@ def empty_slot_null_for(*, array_fields: frozenset[str] = frozenset()) -> Callab
     return _coerce
 
 
+# Door-envelope keys: gateway vocabulary, never card fields. Their
+# presence INSIDE the params stanza means the caller posted the
+# retired nested shape ({model, params: {...}} — pre flows-rework
+# 2026-09-05) and the gateway wrapped it a second time. No card
+# schema declares fields by these names (h3-timeline's own
+# model/params doc never routes through here), so the match is exact.
+_ENVELOPE_LEAK_KEYS = frozenset({"model", "params"})
+
+
 def parse_card_body(body: JsonDict, params_cls: type[BaseModel]) -> BaseModel:
     """Wire body → frozen params row (15-card consensus body): no
     params stanza = the defaults row; the compose door's own guards
     refuse the rest. Raises ValidationError with the EXACT
-    field-named reason (arms map it to rc=-3)."""
+    field-named reason (arms map it to rc=-3).
+
+    The retired nested stanza ({model, params: {...}}) refuses HERE
+    with its own name — never as a downstream "Extra inputs"
+    riddle. Deterministic: pure construction, no mounts, no GPU."""
     params = (body or {}).get("params")
     if not isinstance(params, dict):
         return params_cls()
+    leaked = sorted(k for k in params if k in _ENVELOPE_LEAK_KEYS)
+    if leaked:
+        raise ValidationError.from_exception_data(
+            params_cls.__name__,
+            [{"type": "value_error",
+              "loc": ("params",),
+              "input": params,
+              "ctx": {"error": ValueError(
+                  "retired nested 'params' stanza (flows rework "
+                  "2026-09-05): post card params flat at top level "
+                  "— envelope key(s) %s do not belong inside params"
+                  % leaked)}}])
     return params_cls(**params)

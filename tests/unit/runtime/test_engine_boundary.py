@@ -165,7 +165,8 @@ class TestRealLoop(unittest.TestCase):
                                           node_type=t)
                    for i, t in enumerate(node_types)])
         run = gateway.Run(run_id="run-bnd-%d" % self._seq,
-                          graph=g, request={})
+                          graph=g, request={},
+                          draft_id="d" * 96)  # CARD BIRTH LAW
         run.out_root = Path(self.tmp.name)
         run.stages = [{"id": n.node_id, "name": n.node_id,
                        "index": i, "status": "pending"}

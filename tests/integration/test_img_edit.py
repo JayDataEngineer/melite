@@ -18,14 +18,14 @@ pytestmark = pytest.mark.gpu
 
 def test_edit_with_feed_image(gateway: "QueueDoor",
                               assets: dict[str, str | None]) -> None:
+    # FLAT (flows rework 2026-09-05): card params ride top-level —
+    # a nested "params" key double-wraps and 400s at phase 1.
     run_id = gateway.submit({
         "model": "qwen-img-edit-2511",
-        "params": {
-            "prompt": "night scene, cool moonlight over the water, "
-                      "the sun becomes the moon",
-            "input_image": assets["source"],
-            "seed": 3,
-        },
+        "prompt": "night scene, cool moonlight over the water, "
+                  "the sun becomes the moon",
+        "input_image": assets["source"],
+        "seed": 3,
     })
     status = gateway.wait(run_id, timeout_s=900)
     assert status["status"] == "completed", status.get("error")

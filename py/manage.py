@@ -48,6 +48,8 @@ class Action(str, Enum):
     STATUS = "status"
     LOGS = "logs"
     SEARCH_MODELS = "search_models"
+    LIST_EXTENSIONS = "list_extensions"     # cm_cli simple-show installed
+    SNAPSHOT_LIST = "snapshot_list"         # cm_cli show snapshot-list
     # installs
     INSTALL_EXTENSION = "install_extension"
     INSTALL_EXTENSION_URL = "install_extension_url"
@@ -60,6 +62,10 @@ class Action(str, Enum):
     UPDATE = "update"
     SWITCH_VERSION = "switch_version"
     FREE = "free"
+    # snapshots (cm_cli rail): save reads state; RESTORE rewrites the
+    # extension tree + pip deps — it is lifecycle-guarded below
+    SNAPSHOT_SAVE = "snapshot_save"
+    SNAPSHOT_RESTORE = "snapshot_restore"
 
 
 # lifecycle actions that would kill a live GPU job — guarded (INFERENCE
@@ -67,6 +73,7 @@ class Action(str, Enum):
 # sanctioned way a run dies)
 LIFECYCLE_GUARDED = {
     Action.RESTART, Action.STOP, Action.SWITCH_VERSION, Action.UPDATE,
+    Action.SNAPSHOT_RESTORE,
 }
 
 
@@ -101,6 +108,8 @@ class ManageRequest(BaseModel):
     target: str = "comfy"              # update: comfy|cli|all
     extra_args: list[str] = Field(default_factory=list)
     force: bool = False                # override the active-run guard
+    # snapshot_restore: a snapshot filename from snapshot_list
+    snapshot: str = ""
 
 
 # ------------------------------------------------------------ plumbing
@@ -356,18 +365,46 @@ def _h_install_extension(req: ManageRequest, sms: ModuleType) -> tuple[int, dict
                % ", ".join(req.nodes), rep)
 
 
-def _h_install_extension_url(req: ManageRequest, sms: ModuleType) -> tuple[int, dict[str, JsonValue]]:
-    _need(req, "url")
-    routing = _ensure_routing()
-    ensure_manager_security()
-    workspace = Path(routing.get("workspace") or
-                     os.environ.get("COMFYUI_PATH") or RUNTIME)
+def _cm_cli(workspace: Path, args: list[str],
+            timeout: float) -> subprocess.CompletedProcess:
+    """Run ONE cm_cli command in the workspace (the comfyui-manager v4
+    rail — same shape install_extension_url pioneered). The interpreter
+    is the CURRENT env's python (the base env carries the manager;
+    managed routing has already pointed VIRTUAL_ENV at the runtime)."""
     venv = os.environ.get("VIRTUAL_ENV", "")
     py = Path(venv) / "bin" / "python" if venv else Path(sys.executable)
     env = {**os.environ, "COMFYUI_PATH": str(workspace)}
-    r = subprocess.run([str(py), "-m", "cm_cli", "install", req.url],
-                       capture_output=True, text=True,
-                       cwd=str(workspace), env=env, timeout=300)
+    return subprocess.run([str(py), "-m", "cm_cli", *args],
+                          capture_output=True, text=True,
+                          cwd=str(workspace), env=env, timeout=timeout)
+
+
+def _managed_workspace(req: "ManageRequest") -> tuple[
+        Optional[Path], Optional[tuple[int, dict[str, JsonValue]]]]:
+    """Browse/snapshot actions operate on the MANAGED workspace. A byo
+    endpoint refuses loudly — the estate never manages a user-owned
+    ComfyUI's extension tree (PROVISIONING LAW's two modes, kept
+    honest at every door)."""
+    routing = _ensure_routing()
+    if routing.get("mode") != "managed":
+        return None, _refuse(
+            req.action, 409,
+            "byo endpoint: %s reads the managed workspace — the estate "
+            "never touches a user-owned ComfyUI's packs/snapshots"
+            % req.action.value, {"mode": "byo"})
+    return Path(routing.get("workspace") or RUNTIME), None
+
+
+def _h_install_extension_url(req: ManageRequest, sms: ModuleType) -> tuple[int, dict[str, JsonValue]]:
+    _need(req, "url")
+    _ensure_routing()
+    ensure_manager_security()
+    workspace = Path(os.environ.get("COMFYUI_PATH") or RUNTIME)
+    try:
+        r = _cm_cli(workspace, ["install", req.url], timeout=300)
+    except subprocess.TimeoutExpired:
+        return _refuse(req.action, 504,
+                       "cm_cli install timed out (300s)")
     if r.returncode == 0:
         return _ok(req.action, "cm_cli installed %s (restart required)"
                    % req.url, {"restart_required": True,
@@ -542,10 +579,92 @@ def _h_free(req: ManageRequest, sms: ModuleType) -> tuple[int, dict[str, JsonVal
     return _ok(req.action, "free issued (next worker iteration)", rep)
 
 
+# -------------------------------------------------- browse + snapshots (cm_cli)
+
+# simple-show prints `Name@version` rows (names may contain spaces);
+# snapshot-list prints bare json filenames. Both leak bookkeeping lines
+# (FETCH/WARNING) — the regexes admit ONLY well-formed rows.
+_PACK_ROW = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_ .-]*@[A-Za-z0-9_.-]+$")
+_SNAP_ROW = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.-]*\.json$")
+
+
+def _h_list_extensions(req: ManageRequest, sms: ModuleType) -> tuple[int, dict[str, JsonValue]]:
+    workspace, refused = _managed_workspace(req)
+    if refused is not None:
+        return refused
+    try:
+        r = _cm_cli(workspace, ["simple-show", "installed"], timeout=180)
+    except subprocess.TimeoutExpired:
+        return _refuse(req.action, 504, "cm_cli simple-show timed out (180s)")
+    if r.returncode != 0:
+        return _refuse(req.action, 500, "cm_cli simple-show failed",
+                       {"error": (r.stderr or r.stdout)[-500:]})
+    rows = [ln.strip() for ln in r.stdout.splitlines()
+            if _PACK_ROW.fullmatch(ln.strip())]
+    return _ok(req.action, "%d installed pack(s)" % len(rows), rows)
+
+
+def _h_snapshot_list(req: ManageRequest, sms: ModuleType) -> tuple[int, dict[str, JsonValue]]:
+    workspace, refused = _managed_workspace(req)
+    if refused is not None:
+        return refused
+    try:
+        r = _cm_cli(workspace, ["show", "snapshot-list"], timeout=180)
+    except subprocess.TimeoutExpired:
+        return _refuse(req.action, 504, "cm_cli snapshot-list timed out (180s)")
+    if r.returncode != 0:
+        return _refuse(req.action, 500, "cm_cli snapshot-list failed",
+                       {"error": (r.stderr or r.stdout)[-500:]})
+    rows = [ln.strip() for ln in r.stdout.splitlines()
+            if _SNAP_ROW.fullmatch(ln.strip())]
+    return _ok(req.action, "%d snapshot(s)" % len(rows), rows)
+
+
+def _h_snapshot_save(req: ManageRequest, sms: ModuleType) -> tuple[int, dict[str, JsonValue]]:
+    workspace, refused = _managed_workspace(req)
+    if refused is not None:
+        return refused
+    try:
+        r = _cm_cli(workspace, ["save-snapshot"], timeout=300)
+    except subprocess.TimeoutExpired:
+        return _refuse(req.action, 504, "cm_cli save-snapshot timed out (300s)")
+    if r.returncode != 0:
+        return _refuse(req.action, 500, "cm_cli save-snapshot failed",
+                       {"error": (r.stderr or r.stdout)[-500:]})
+    m = re.search(r"saved as `([^`]+)`", r.stdout)
+    name = m.group(1) if m else "?"
+    return _ok(req.action, "snapshot saved: %s" % name,
+               {"snapshot": name, "stdout": r.stdout[-400:]})
+
+
+def _h_snapshot_restore(req: ManageRequest, sms: ModuleType) -> tuple[int, dict[str, JsonValue]]:
+    _need(req, "snapshot")
+    blocked = _guard_lifecycle(req)
+    if blocked:
+        return blocked
+    workspace, refused = _managed_workspace(req)
+    if refused is not None:
+        return refused
+    try:
+        r = _cm_cli(workspace, ["restore-snapshot", req.snapshot],
+                    timeout=600)
+    except subprocess.TimeoutExpired:
+        return _refuse(req.action, 504,
+                       "cm_cli restore-snapshot timed out (600s)")
+    if r.returncode != 0:
+        return _refuse(req.action, 500, "cm_cli restore-snapshot failed",
+                       {"error": (r.stderr or r.stdout)[-500:]})
+    return _ok(req.action, "restore of %s issued (restart required)"
+               % req.snapshot,
+               {"restart_required": True, "stdout": r.stdout[-800:]})
+
+
 _HANDLERS: dict[Action, Callable[[ManageRequest, ModuleType], tuple[int, dict[str, JsonValue]]]] = {
     Action.STATUS: _h_status,
     Action.LOGS: _h_logs,
     Action.SEARCH_MODELS: _h_search,
+    Action.LIST_EXTENSIONS: _h_list_extensions,
+    Action.SNAPSHOT_LIST: _h_snapshot_list,
     Action.INSTALL_EXTENSION: _h_install_extension,
     Action.INSTALL_EXTENSION_URL: _h_install_extension_url,
     Action.DOWNLOAD_MODEL: _h_download_model,
@@ -556,6 +675,8 @@ _HANDLERS: dict[Action, Callable[[ManageRequest, ModuleType], tuple[int, dict[st
     Action.UPDATE: _h_update,
     Action.SWITCH_VERSION: _h_switch_version,
     Action.FREE: _h_free,
+    Action.SNAPSHOT_SAVE: _h_snapshot_save,
+    Action.SNAPSHOT_RESTORE: _h_snapshot_restore,
 }
 
 

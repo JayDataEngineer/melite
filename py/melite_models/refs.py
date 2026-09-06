@@ -73,3 +73,52 @@ class EstatePhotoRef(BaseModel):
                 "photo %r is not on disk — nothing would stage to "
                 "the engine" % (self.path,))
         return self
+
+
+# The stageable mesh set: .glb ONLY. The fit lane stages GLB bytes
+# (fit_surgery.parse_glb reads the binary container magic — a .gltf
+# / .obj / .fbx initial would 4xx nowhere and die in the engine,
+# the exact class this door exists to prevent). If the lane ever
+# stages more, this set and its wall grow together.
+_GLB_EXTS = frozenset((".glb",))
+
+
+class EstateGlbRef(BaseModel):
+    """A mesh initial that WILL stage to the engine (fit-card stroke 3).
+
+    The EstatePhotoRef shape for GLB bodies/props: accepts the wire
+    STRING, refuses browser-local refs, non-.glb extensions, and
+    paths with no file on disk — 4xx BEFORE any run registers."""
+
+    model_config = _FROZEN
+
+    path: str
+
+    @model_validator(mode="before")
+    @classmethod
+    def _wire_string(cls, v: str | dict[str, JsonValue]) -> dict[str, JsonValue]:
+        if isinstance(v, str):
+            return {"path": v}
+        if isinstance(v, dict):
+            return v
+        raise ValueError("glb must be an estate path string, got %s"
+                         % type(v).__name__)
+
+    @model_validator(mode="after")
+    def _stageable(self) -> "EstateGlbRef":
+        p = self.path.strip()
+        if re.match(r"^(data|blob):", p, re.IGNORECASE):
+            raise ValueError(
+                "glb is browser-local — the lane composes estate "
+                "files (upload it first; the slot then holds "
+                "data/input/<file>)")
+        if not p.lower().endswith(tuple(sorted(_GLB_EXTS))):
+            raise ValueError(
+                "glb %r is not a stageable mesh (want %s)"
+                % (self.path, " ".join(sorted(_GLB_EXTS))))
+        cand = p if os.path.isabs(p) else os.path.join(os.getcwd(), p)
+        if not os.path.isfile(cand):
+            raise ValueError(
+                "glb %r is not on disk — nothing would stage to "
+                "the engine" % (self.path,))
+        return self

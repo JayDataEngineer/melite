@@ -91,7 +91,18 @@ def test_route_table_nonempty_and_grouped() -> None:
     # preview after reload (images only, flat names, traversal
     # refused; landed with commit 19fd84c1 — the pin catch-up is
     # this line)
-    assert len(gateway.ROUTES) == 46
+    # +1 Family param-schemas door (2026-09-06): * /v1/flows/families/
+    # param-schemas — every family's card param rows in one GET; the
+    # route landed with the door, this pin caught up in the stroke-1
+    # doc-truth sweep
+    # +1 Schema door (stroke 2, 2026-09-06): GET /v1/schema — the
+    # whole authoring vocabulary (kinds, engines, stage shape,
+    # doors, flows) in one payload; generated docs caught up in the
+    # same stroke
+    # +1 Metrics door (R2, 2026-09-06): GET /v1/metrics — queue +
+    # registry observability; generated docs caught up in the same
+    # stroke (wall: tests/unit/runtime/test_metrics_door.py)
+    assert len(gateway.ROUTES) == 50
     groups = {r.group for r in gateway.ROUTES}
     assert len(groups) >= 6
     for g in groups:

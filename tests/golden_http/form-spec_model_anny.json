@@ -21,7 +21,7 @@
       "max": null,
       "step": null,
       "placeholder": "",
-      "tooltip": "The base body \u2014 empty autoloads the Model-declared neutral body (anny-base-body.glb, provisioned); or attach a rigged/static character GLB. (Photo\u2192body estimation is the pilot arc; clothing composite moves to its own card later.)",
+      "tooltip": "The base body — empty autoloads the Model-declared neutral body (anny-base-body.glb, provisioned); or attach a rigged/static character GLB. (Photo→body estimation is the pilot arc; clothing composite moves to its own card later.)",
       "visible_when": null
     },
     {
@@ -40,7 +40,7 @@
       "max": null,
       "step": null,
       "placeholder": "",
-      "tooltip": "Character photo \u2014 SAM segments hair/outfit sprites (feeds the estimator arc).",
+      "tooltip": "Character photo — SAM segments hair/outfit sprites (feeds the estimator arc).",
       "visible_when": null
     },
     {
@@ -78,7 +78,7 @@
       "max": 3,
       "step": 0.05,
       "placeholder": "",
-      "tooltip": "Camera distance factor \u2014 larger frames the whole body looser.",
+      "tooltip": "Camera distance factor — larger frames the whole body looser.",
       "visible_when": null
     },
     {
@@ -97,7 +97,7 @@
       "max": 400,
       "step": 1,
       "placeholder": "",
-      "tooltip": "Lens focal length \u2014 lower = wider perspective.",
+      "tooltip": "Lens focal length — lower = wider perspective.",
       "visible_when": null
     },
     {
@@ -116,7 +116,7 @@
       "max": 4096,
       "step": 1,
       "placeholder": "",
-      "tooltip": "Render samples per view \u2014 more = cleaner but slower.",
+      "tooltip": "Render samples per view — more = cleaner but slower.",
       "visible_when": null
     },
     {
@@ -153,7 +153,7 @@
           "label": "Body GLB",
           "order": 0,
           "columns": 1,
-          "tooltip": "The base body \u2014 empty autoloads the Model-declared neutral body (anny-base-body.glb, provisioned); or attach a rigged/static character GLB. (Photo\u2192body estimation is the pilot arc; clothing composite moves to its own card later.)"
+          "tooltip": "The base body — empty autoloads the Model-declared neutral body (anny-base-body.glb, provisioned); or attach a rigged/static character GLB. (Photo→body estimation is the pilot arc; clothing composite moves to its own card later.)"
         }
       ],
       "order": 0,
@@ -168,7 +168,7 @@
           "type": "file",
           "label": "Source photo",
           "order": 0,
-          "tooltip": "Character photo \u2014 SAM segments hair/outfit sprites (feeds the estimator arc)."
+          "tooltip": "Character photo — SAM segments hair/outfit sprites (feeds the estimator arc)."
         }
       ],
       "order": 1,
@@ -200,7 +200,7 @@
           "max": 3,
           "step": 0.05,
           "default": 1.2,
-          "tooltip": "Camera distance factor \u2014 larger frames the whole body looser."
+          "tooltip": "Camera distance factor — larger frames the whole body looser."
         },
         {
           "name": "focal_length",
@@ -212,7 +212,7 @@
           "max": 400,
           "step": 1,
           "default": 50,
-          "tooltip": "Lens focal length \u2014 lower = wider perspective."
+          "tooltip": "Lens focal length — lower = wider perspective."
         },
         {
           "name": "samples",
@@ -224,7 +224,7 @@
           "max": 4096,
           "step": 1,
           "default": 64,
-          "tooltip": "Render samples per view \u2014 more = cleaner but slower."
+          "tooltip": "Render samples per view — more = cleaner but slower."
         },
         {
           "name": "transparent",
@@ -252,6 +252,11 @@
       },
       "Quant": {
         "label": "Quant"
+      },
+      "Recipe": {
+        "label": "Recipe",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "default": "default"
       }
     }
   },
@@ -286,6 +291,18 @@
       "quant": "native",
       "vram_peak_gb": 0,
       "owner": "standard"
+    },
+    {
+      "id": "default",
+      "label": "Default",
+      "group": "Recipe",
+      "defaults": {},
+      "route": "",
+      "hint": "The family default — no extra stamps; a fresh card lands here.",
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
     }
   ],
   "guide": null,

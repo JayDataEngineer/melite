@@ -242,6 +242,46 @@ check("non-model routes: one owner each (route lens unambiguous)",
 check("route map is non-empty (the lens has surface)",
       len(_non_model_routes) >= 2, repr(sorted(_non_model_routes)))
 
+# ── 5b. provisions: declared download places are sha-pinned and
+# mount-coherent (the 2026-09-06 SOMA-skin 404 class — the viewer
+# pointed at a vite-public blob that had drifted out of the tree;
+# the fix is the DECLARED row + the provision door, never a
+# committed binary). Every family's provisions carry url+name+sha256
+# (step_models refuses a sha-less row at walk time; the same
+# refusal lives in the on-demand rail) — and the kimodo skin's
+# folder is the SAME mount dir transfer_rig's lane_inputs names
+# (one file, two consumers, one download place).
+_prov_rows = []
+for _mid, (_path, _cls) in _all_models.items():
+    for _p in (getattr(_cls, "provisions", None) or ()):
+        _prov_rows.append((_mid, _p))
+check("estate declares provisions", len(_prov_rows) >= 1)
+_bad_prov = [(m, p.name) for m, p in _prov_rows
+             if not (str(getattr(p, "url", "") or "")
+                     and (getattr(p, "sha256", None) or ""))]
+check("every provision is url+sha pinned (unverifiable rows refuse)",
+      not _bad_prov, repr(_bad_prov))
+_kim = _all_models.get("kimodo")
+_kim_provs = tuple(getattr(_kim[1], "provisions", None) or ()) \
+    if _kim else ()
+_skin = next((p for p in _kim_provs
+              if p.name == "skin_standard.npz"), None)
+check("kimodo declares the SOMA template skin",
+      _skin is not None,
+      "provisions: %r" % [p.name for p in _kim_provs])
+if _skin is not None:
+    check("skin folder is the somaskel77 mount dir",
+          _skin.folder == "somaskel77", _skin.folder)
+    check("skin sha256 is 64-hex (the pinned bytes)",
+          len(_skin.sha256) == 64 and
+          all(c in "0123456789abcdef" for c in _skin.sha256))
+_tr = _all_models.get("transfer_rig")
+if _tr is not None and _skin is not None:
+    _tr_path = getattr(_tr[1].lane_inputs, "model_path", "") or ""
+    check("skin mount == transfer_rig's lane input (one file, two "
+          "consumers)",
+          _tr_path == "%s/%s" % (_skin.folder, _skin.name), _tr_path)
+
 # ── 6. end-to-end: catalog serves the class row ─────────────────────
 pairs = catalog._scan_model_dir(KREA_DIR)
 check("catalog serves one row", len(pairs) == 1)
@@ -253,7 +293,11 @@ check("catalog meta shape",
                      # presentation notches (web-registry §7), served
                      # since the Studio size/layout fields landed —
                      # pinned byte-level by the model-catalog golden
-                     "studio_size", "studio_layout"})
+                     "studio_size", "studio_layout",
+                     # ingestion vocabulary (2026-09-06, commit
+                     # 144224a8): the canvas drop gate reads
+                     # families.<id>.accepts off the served catalog.
+                     "accepts"})
 
 print()
 if _failures:

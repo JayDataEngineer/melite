@@ -21,7 +21,12 @@ import tempfile
 import time
 from pathlib import Path
 
+from collections.abc import Callable
+
 from _anchor import REPO
+
+# Resolved input pools are JSON values (annotations only).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
 
 sys.path.insert(0, str(REPO / "py"))
 
@@ -29,7 +34,10 @@ import flow_graph
 import gateway as gw_mod
 
 
-async def _stub_execute(node, run_dir, inputs, stop_event, report=None):
+async def _stub_execute(node: flow_graph.NodeRow, run_dir: str, inputs: dict[str, JsonValue],
+                        stop_event: asyncio.Event,
+                        report: Callable[[dict[str, JsonValue]], None] | None = None
+                        ) -> dict[str, dict[str, str] | list[str]]:
     if node.node_id == "rig":
         return {"outputs": {"glb": "/tmp/stub_body.glb"},
                 "artifacts": []}
@@ -37,7 +45,7 @@ async def _stub_execute(node, run_dir, inputs, stop_event, report=None):
 
 
 class _Run:
-    def __init__(self, tmp: Path):
+    def __init__(self, tmp: Path) -> None:
         self.run_id = "wall-witness"
         self.status = "running"
         self.request = {}
@@ -73,7 +81,7 @@ class _Run:
 
 
 class TestSidecarWitness:
-    def test_graph_and_inputs_ride_the_sidecar(self):
+    def test_graph_and_inputs_ride_the_sidecar(self) -> None:
         import unittest.mock as _mock
         with tempfile.TemporaryDirectory() as td:
             run = _Run(Path(td))

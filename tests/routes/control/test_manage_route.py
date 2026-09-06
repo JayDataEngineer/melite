@@ -35,6 +35,38 @@ class TestManageEnvelope:
         assert "detail" in body
 
 
+class TestManageBrowseSnapshot:
+    # the browse + snapshot lane (2026-09-06, cm_cli rail): the same
+    # envelope contract as every other action.
+
+    def test_list_extensions_dispatches(self, live: "GatewayClient") -> None:
+        code, body = live.post("/v1/manage", {"action": "list_extensions"})
+        assert code == 200
+        assert body.get("action") == "list_extensions"
+        assert body.get("ok") is True
+        assert isinstance(body.get("data"), list)
+
+    def test_snapshot_list_dispatches(self, live: "GatewayClient") -> None:
+        code, body = live.post("/v1/manage", {"action": "snapshot_list"})
+        assert code == 200
+        assert body.get("action") == "snapshot_list"
+        assert body.get("ok") is True
+        assert isinstance(body.get("data"), list)
+
+    def test_snapshot_restore_requires_snapshot(self, live: "GatewayClient") -> None:
+        # named refusal — never a silent default (PYTHON SHAPE law).
+        # GatewayClient.post returns the raw text for 4xx, so parse it.
+        import json
+
+        code, body = live.post("/v1/manage",
+                               {"action": "snapshot_restore"})
+        assert code == 422
+        if isinstance(body, str):
+            body = json.loads(body)
+        assert isinstance(body, dict)
+        assert "snapshot" in str(body.get("detail", ""))
+
+
 class TestManageDoorSingularity:
     # provisioning law: /v1/manage is the ONE management door.
     # C-era siblings (download, provision, install) are cut. This is

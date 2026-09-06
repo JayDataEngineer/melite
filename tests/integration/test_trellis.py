@@ -26,17 +26,17 @@ def test_trellis_img_to_mesh(gateway: "QueueDoor",
                              assets: dict[str, str | None]) -> None:
     """The standard lift: one image → one textured .glb."""
     door = gateway
+    # FLAT (flows rework 2026-09-05): card params ride top-level —
+    # a nested "params" key double-wraps and 400s at phase 1.
     run_id = door.submit({
         "model": "trellis2-native",
-        "params": {
-            "input_image": assets["source"],
-            "seed": 42,
-            "resolution": "1024",
-            "steps": 12,
-            "cfg": 3.0,
-            "bg_removal": "auto",
-            "filename_prefix": "trellis_canary",
-        },
+        "input_image": assets["source"],
+        "seed": 42,
+        "resolution": "1024",
+        "steps": 12,
+        "cfg": 3.0,
+        "bg_removal": "auto",
+        "filename_prefix": "trellis_canary",
     })
     out = door.wait(run_id, timeout_s=1800)
     names = [p.name for p in door.artifacts_on_disk(out)]
@@ -51,11 +51,9 @@ def test_trellis_hero_upsample(gateway: "QueueDoor",
     door = gateway
     run_id = door.submit({
         "model": "trellis2-native",
-        "params": {
-            "input_image": assets["source"],
-            "seed": 42,
-            "resolution": "1536",
-        },
+        "input_image": assets["source"],
+        "seed": 42,
+        "resolution": "1536",
     })
     out = door.wait(run_id, timeout_s=2400)
     names = [p.name for p in door.artifacts_on_disk(out)]

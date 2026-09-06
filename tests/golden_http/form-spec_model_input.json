@@ -15,6 +15,11 @@
       },
       "Variant": {
         "label": "Variant"
+      },
+      "Recipe": {
+        "label": "Recipe",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "default": "default"
       }
     }
   },
@@ -32,7 +37,7 @@
       "placeholder": "",
       "required": true,
       "step": null,
-      "tooltip": "The file to stage \u2014 upload, asset drop, prior-run artifact, or mount path. Image or audio (video is not boarded yet).",
+      "tooltip": "The file to stage — upload, asset drop, prior-run artifact, or mount path. Image or audio (video is not boarded yet).",
       "type": "file",
       "visible_when": null,
       "width": null,
@@ -54,7 +59,7 @@
           "name": "source",
           "order": 0,
           "required": true,
-          "tooltip": "The file to stage \u2014 upload, asset drop, prior-run artifact, or mount path. Image or audio (video is not boarded yet).",
+          "tooltip": "The file to stage — upload, asset drop, prior-run artifact, or mount path. Image or audio (video is not boarded yet).",
           "type": "file"
         }
       ],
@@ -90,6 +95,18 @@
       "quant": "native",
       "route": "input",
       "vram_peak_gb": 0
+    },
+    {
+      "id": "default",
+      "label": "Default",
+      "group": "Recipe",
+      "defaults": {},
+      "route": "",
+      "hint": "The family default — no extra stamps; a fresh card lands here.",
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
     }
   ]
 }

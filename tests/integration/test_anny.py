@@ -26,16 +26,16 @@ def test_anny_assemble_turnaround(gateway: "QueueDoor",
         pytest.skip("canonical rig GLBs missing — add rigged_char_canonical.glb"
                     " + outfit_cap.glb to tests/integration/assets/")
     door = gateway
+    # FLAT (flows rework 2026-09-05): card params ride top-level —
+    # a nested "params" key double-wraps and 400s at phase 1.
     run_id = door.submit({
         "model": "anny",
         "test": True,
-        "params": {
-            "body_glb": str(Path(assets["rigged_glb"]).parent
-                              / "rigged_char.glb"),   # bary body: blender-strict importable (the canonical
-            # rig fails Blender 4.2 gltf decode — noted defect)
-            "source_image": assets["source"],
-            "resolution": 512,
-        },
+        "body_glb": str(Path(assets["rigged_glb"]).parent
+                          / "rigged_char.glb"),   # bary body: blender-strict importable (the canonical
+        # rig fails Blender 4.2 gltf decode — noted defect)
+        "source_image": assets["source"],
+        "resolution": 512,
     })
     status = door.wait(run_id, timeout_s=600)
     assert status["status"] == "completed", status

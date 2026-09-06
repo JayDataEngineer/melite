@@ -23,16 +23,20 @@ import struct
 import sys
 import unittest
 from pathlib import Path
+from types import ModuleType
 
 import numpy as np
 
 from _anchor import REPO
 
+# glTF documents are JSON (annotations only).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
+
 _PACK = REPO / "vendor" / "comfyui_extensions" / "melite-autorig-nodes"
 _MOD = _PACK / "soma_weight_transfer.py"
 
 
-def _load():
+def _load() -> ModuleType:
     spec = ilu.spec_from_file_location("soma_uv_w", _MOD)
     mod = ilu.module_from_spec(spec)
     sys.modules["soma_uv_w"] = mod
@@ -40,14 +44,14 @@ def _load():
     return mod
 
 
-def _read_glb(path: Path):
+def _read_glb(path: Path) -> tuple[dict[str, JsonValue], bytes]:
     raw = path.read_bytes()
     jlen = struct.unpack("<I", raw[12:16])[0]
     gltf = json.loads(raw[20:20 + jlen])
     return gltf, raw[20 + jlen + 8:]
 
 
-def _acc_data(gltf: dict, bin_: bytes, idx: int):
+def _acc_data(gltf: dict[str, JsonValue], bin_: bytes, idx: int) -> np.ndarray:
     acc = gltf["accessors"][idx]
     bv = gltf["bufferViews"][acc["bufferView"]]
     off = bv.get("byteOffset", 0) + acc.get("byteOffset", 0)
@@ -57,7 +61,7 @@ def _acc_data(gltf: dict, bin_: bytes, idx: int):
                          offset=off).reshape(acc["count"], width)
 
 
-def _source_glb(tmp: Path, with_uv: bool):
+def _source_glb(tmp: Path, with_uv: bool) -> tuple[dict[str, JsonValue], bytes, Path]:
     """Minimal POSITION-only (or +UV) source GLB, 3 verts, 1 prim."""
     pos = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0],
                     [0.0, 0.0, 1.0]], dtype=np.float32)
@@ -97,12 +101,12 @@ def _source_glb(tmp: Path, with_uv: bool):
 
 
 class TestSomaxUvTransfer(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.mod = _load()
         import tempfile
         self.tmp = Path(tempfile.mkdtemp())
 
-    def _write(self, gltf, blob, path, src_uv):
+    def _write(self, gltf: dict[str, JsonValue], blob: bytes, path: Path, src_uv: np.ndarray) -> None:
         n77 = 77
         self.mod._write_rigged_glb(
             source_gltf=gltf, source_bin=blob,
@@ -117,7 +121,7 @@ class TestSomaxUvTransfer(unittest.TestCase):
             src_uv=src_uv,
         )
 
-    def test_shipped_layout_is_the_template(self):
+    def test_shipped_layout_is_the_template(self) -> None:
         uv = np.load(_PACK / "somaskel77_uv.npy")
         self.assertEqual(uv.shape, (18056, 2))
         self.assertEqual(uv.dtype, np.float32)
@@ -126,7 +130,7 @@ class TestSomaxUvTransfer(unittest.TestCase):
         self.assertLess(float(uv.min()), 0.0)
         self.assertGreater(float(uv.max()), 1.0)
 
-    def test_uv_bare_body_gains_texcoord(self):
+    def test_uv_bare_body_gains_texcoord(self) -> None:
         gltf, blob, src = _source_glb(self.tmp, with_uv=False)
         out = self.tmp / "rigged.glb"
         want = np.array([[-1.5, 3.0], [0.5, 5.0], [4.25, 0.125]],
@@ -140,7 +144,7 @@ class TestSomaxUvTransfer(unittest.TestCase):
         got = _acc_data(og, ob, attrs["TEXCOORD_0"])
         np.testing.assert_allclose(got, want, atol=1e-6)
 
-    def test_source_uvs_are_preserved(self):
+    def test_source_uvs_are_preserved(self) -> None:
         gltf, blob, src = _source_glb(self.tmp, with_uv=True)
         out = self.tmp / "rigged_keep.glb"
         self._write(gltf, blob, out,

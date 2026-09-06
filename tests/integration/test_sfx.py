@@ -19,15 +19,15 @@ def test_sfx_basic(gateway: "QueueDoor",
     """Bare sfx submit: describe the SOUND not the scene; short
     clip, few steps — a canary, not a showcase."""
     door = gateway          # the fixture IS the QueueDoor
+    # FLAT (flows rework 2026-09-05): card params ride top-level —
+    # a nested "params" key double-wraps and 400s at phase 1.
     run_id = door.submit({
         "model": "moss-sfx",
-        "params": {
-            "prompt": "deep cinematic whoosh with a metallic tail",
-            "duration": 3,
-            "n_diffusion_steps": 20,
-            "guidance_scale": 5.0,
-            "seed": 42,
-        },
+        "prompt": "deep cinematic whoosh with a metallic tail",
+        "duration": 3,
+        "n_diffusion_steps": 20,
+        "guidance_scale": 5.0,
+        "seed": 42,
     })
     out = door.wait(run_id, timeout_s=900)
     arts = door.artifacts_on_disk(out)   # Paths, verified non-empty

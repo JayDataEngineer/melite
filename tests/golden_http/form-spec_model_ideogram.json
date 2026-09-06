@@ -23,6 +23,11 @@
       },
       "Variant": {
         "label": "Variant"
+      },
+      "Recipe": {
+        "label": "Recipe",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "default": "default"
       }
     }
   },
@@ -154,7 +159,7 @@
       "placeholder": "",
       "required": null,
       "step": 0.05,
-      "tooltip": "Ideogram4 scheduler mean shift \u2014 the official Default preset is 0.5.",
+      "tooltip": "Ideogram4 scheduler mean shift — the official Default preset is 0.5.",
       "type": "slider",
       "visible_when": null,
       "width": 1,
@@ -173,7 +178,7 @@
       "placeholder": "",
       "required": null,
       "step": 0.05,
-      "tooltip": "Ideogram4 scheduler spread \u2014 the official Default preset is 1.75.",
+      "tooltip": "Ideogram4 scheduler spread — the official Default preset is 1.75.",
       "type": "slider",
       "visible_when": null,
       "width": 1,
@@ -337,7 +342,7 @@
           "name": "mu",
           "order": 2,
           "step": 0.05,
-          "tooltip": "Ideogram4 scheduler mean shift \u2014 the official Default preset is 0.5.",
+          "tooltip": "Ideogram4 scheduler mean shift — the official Default preset is 0.5.",
           "type": "slider",
           "width": 1
         },
@@ -348,7 +353,7 @@
           "name": "std",
           "order": 3,
           "step": 0.05,
-          "tooltip": "Ideogram4 scheduler spread \u2014 the official Default preset is 1.75.",
+          "tooltip": "Ideogram4 scheduler spread — the official Default preset is 1.75.",
           "type": "slider",
           "width": 1
         },
@@ -420,13 +425,25 @@
       "defaults": {},
       "engine": "comfyui",
       "group": "Variant",
-      "hint": "nvfp4 mixed-precision \u2014 DEFAULT",
+      "hint": "nvfp4 mixed-precision — DEFAULT",
       "id": "nf4",
       "label": "NF4",
       "owner": "",
       "quant": null,
       "route": "ideogram",
       "vram_peak_gb": null
+    },
+    {
+      "id": "default",
+      "label": "Default",
+      "group": "Recipe",
+      "defaults": {},
+      "route": "",
+      "hint": "The family default — no extra stamps; a fresh card lands here.",
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
     }
   ]
 }

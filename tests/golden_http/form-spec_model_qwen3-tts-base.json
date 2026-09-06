@@ -15,6 +15,11 @@
       },
       "Variant": {
         "label": "Variant"
+      },
+      "Recipe": {
+        "label": "Recipe",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "default": "default"
       }
     }
   },
@@ -137,7 +142,7 @@
       "placeholder": "",
       "required": null,
       "step": null,
-      "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} \u2014 subtle voice direction without re-designing the persona.",
+      "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} — subtle voice direction without re-designing the persona.",
       "type": "textarea",
       "visible_when": null,
       "width": null,
@@ -213,14 +218,14 @@
           "label": "Voice (.qvoice)",
           "name": "qvoice",
           "order": 0,
-          "tooltip": "Pre-computed speaker embedding (.qvoice/.voice \u2014 the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one.",
+          "tooltip": "Pre-computed speaker embedding (.qvoice/.voice — the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one.",
           "type": "file"
         },
         {
           "label": "PCA Steering",
           "name": "voice_pca_strengths",
           "order": 1,
-          "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} \u2014 subtle voice direction without re-designing the persona.",
+          "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} — subtle voice direction without re-designing the persona.",
           "type": "textarea"
         }
       ],
@@ -232,5 +237,18 @@
   ],
   "service": "qwen3-tts-base",
   "size": null,
-  "variants": []
+  "variants": [
+    {
+      "id": "default",
+      "label": "Default",
+      "group": "Recipe",
+      "defaults": {},
+      "route": "",
+      "hint": "The family default — no extra stamps; a fresh card lands here.",
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    }
+  ]
 }

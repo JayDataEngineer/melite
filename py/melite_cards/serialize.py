@@ -190,10 +190,13 @@ def tool_manifests(cls: type[ActionCard]) -> list[dict[str, JsonValue]]:
     family-specific violation is the server's LOUD refusal, never a
     silent drop.
 
-    The card-compose request contract: POST /v1/flows/start
-    {model: <chosen family>, params: {...}} — the manifest's top-level
-    `model` names the declared default route (single-family cards: the
-    only family, no param)."""
+    The card-compose request contract: POST /v1/flows/drafts with the
+    card body (the card is composed FIRST — CARD BIRTH LAW, operator
+    order 2026-09-06), then POST /v1/flows/start
+    {model: <chosen family>, params: {...}, draft_id: <minted>} — the
+    start door 4xxes any start without a doc-backed draft_id. The
+    manifest's top-level `model` names the declared default route
+    (single-family cards: the only family, no param)."""
     from .dsl import _norm
     fams = tuple(cls.families_of() or ())
     nfams = [_norm(f) for f in fams]

@@ -133,3 +133,22 @@ def test_every_loaded_model_has_typed_genre_and_clip_type() -> None:
                        (mid, li.clip_type, type(li.clip_type).__name__))
     assert not bad, "models with loose-typed closed vocabs:\n  " + \
         "\n  ".join(bad)
+
+
+def test_weightless_shape() -> None:
+    """The weightless lane (fit + skin CPU surgery, 2026-09-06): bare
+    LaneInputs(weightless=True) builds; any weight fact beside it
+    refuses; the NO_WEIGHTS sentinel is gone from the tree."""
+    li = LaneInputs(weightless=True)
+    assert li.weightless is True
+    assert li.family == "" and li.model_path == ""
+    with pytest.raises(Exception):
+        LaneInputs(weightless=True, unet="hero.safetensors")
+    with pytest.raises(Exception):
+        LaneInputs(weightless=True, family="skin",
+                   model_path="NO_WEIGHTS")
+    with pytest.raises(Exception):
+        LaneInputs(weightless=True, clip_type=ClipType.LUMINA2)
+    assert LaneInputs(weightless=False,
+                      unet="hero.safetensors").unet == "hero.safetensors"
+

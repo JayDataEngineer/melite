@@ -167,6 +167,54 @@ class TestBundleConstruction:
                 lane="x", card="x", kind="template",
                 tools=[], skills=[], read_first=[]))
 
+    def test_flow_tool_manifest_builds(self) -> None:
+        row = lane_wire.ToolManifestRow.model_validate(dict(
+            _manifest_row(), name="image_upscale", kind="flow-tool",
+            flow="image-upscale", card="",
+            params_schema={"type": "object",
+                           "properties": {
+                               "image_model": {"type": "string"}},
+                           "required": ["image_model"]}))
+        assert row.flow == "image-upscale"
+        wired = row.wire()
+        assert wired["flow"] == "image-upscale"
+        assert "card" not in wired
+
+    def test_tool_manifest_lane_address_xor(self) -> None:
+        with pytest.raises(ValidationError, match="exactly once"):
+            lane_wire.ToolManifestRow.model_validate(
+                dict(_manifest_row(), card=""))
+        with pytest.raises(ValidationError, match="exactly once"):
+            lane_wire.ToolManifestRow.model_validate(
+                dict(_manifest_row(), flow="image-upscale"))
+        with pytest.raises(ValidationError, match="flow-tool"):
+            lane_wire.ToolManifestRow.model_validate(
+                dict(_manifest_row(), flow="image-upscale", card="",
+                     kind="card-compose"))
+        with pytest.raises(ValidationError, match="flow-tool"):
+            lane_wire.ToolManifestRow.model_validate(
+                dict(_manifest_row(), kind="flow-tool"))
+
+    def test_template_bundle_with_flow_tool_builds(self) -> None:
+        tool = lane_wire.ToolManifestRow.model_validate(dict(
+            _manifest_row(), name="image_upscale", kind="flow-tool",
+            flow="image-upscale", card=""))
+        row = lane_wire.BundleRow.model_validate(dict(
+            lane="image-upscale", card=None, kind="template",
+            agent=self._agent(), tools=[tool], flows=[], skills=[],
+            read_first=[]))
+        assert row.tools[0].flow == "image-upscale"
+
+    def test_card_bundle_with_flow_tool_refuses(self) -> None:
+        tool = lane_wire.ToolManifestRow.model_validate(dict(
+            _manifest_row(), name="image_upscale", kind="flow-tool",
+            flow="image-upscale", card=""))
+        with pytest.raises(ValidationError, match="flow-tool"):
+            lane_wire.BundleRow.model_validate(dict(
+                lane="x", card="x", kind="action_card",
+                agent=self._agent(), tools=[tool], flows=[], skills=[],
+                read_first=[]))
+
 
 # ── B. wire() keeps the served key discipline ──────────────────────
 
@@ -241,8 +289,17 @@ def fixture_tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     manifest is malformed, one card whose docs carry an empty-scope
     row the gate must refuse."""
     root = tmp_path
-    cards = root / "plugins" / "engines" / "comfyui" / "action_cards" \
-        / "image"
+    engine = root / "plugins" / "engines" / "comfyui"
+    engine.mkdir(parents=True)
+    # the plugin MARKER — the shared walk (iter_plugin_dirs_under)
+    # mounts a plugin dir only when it declares itself; a marker-less
+    # dir is a category container and this single-level "engine"
+    # would never mount (the 2026-09-06 kimodo 502 lesson)
+    (engine / "plugin.py").write_text(
+        "from plugins import Plugin\n"
+        "Plugin(id='comfyui', engines=('comfyui',), genres=('image',))\n",
+        encoding="utf-8")
+    cards = engine / "action_cards" / "image"
     (cards / "good-card" / "agents").mkdir(parents=True)
     (cards / "good-card" / "tool.json").write_text(
         json.dumps([GOOD_MANIFEST]), encoding="utf-8")
@@ -293,8 +350,13 @@ class TestLoudSkip:
     def test_unreadable_manifest_json_skips_loudly(self, tmp_path: Path,
                                                    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
         root = tmp_path
-        cards = root / "plugins" / "engines" / "e" / "action_cards" \
-            / "image"
+        engine = root / "plugins" / "engines" / "e"
+        engine.mkdir(parents=True)
+        (engine / "plugin.py").write_text(  # the plugin marker (see fixture_tree)
+            "from plugins import Plugin\n"
+            "Plugin(id='e', engines=('e',), genres=('image',))\n",
+            encoding="utf-8")
+        cards = engine / "action_cards" / "image"
         (cards / "card").mkdir(parents=True)
         (cards / "card" / "tool.json").write_text("{not json",
                                                   encoding="utf-8")
@@ -313,7 +375,12 @@ class TestEstateSweep:
 
     def test_every_disk_manifest_validates(self) -> None:
         count = 0
-        for tj in REPO.rglob("plugins/engines/*/action_cards/*/*/tool.json"):
+        # `**` between engines/ and action_cards/ catches BOTH
+        # plugin shapes: engines/<plugin>/action_cards (comfyui)
+        # and engines/<category>/<plugin>/action_cards (the cpp
+        # natives — the glob missed them until 2026-09-06)
+        for tj in REPO.rglob(
+                "plugins/engines/**/action_cards/*/*/tool.json"):
             data = json.loads(tj.read_text(encoding="utf-8"))
             for m in (data if isinstance(data, list) else [data]):
                 lane_wire.ToolManifestRow.model_validate(m)
@@ -360,3 +427,62 @@ class TestEstateSweep:
             code, bundle = ld.lane_bundle(row["lane"])
             assert code == 200, bundle
             lane_wire.BundleRow.model_validate(bundle)
+
+
+# ── E. headless-flow lanes mount ONE tool (flow-single-tool.md) ────
+
+class TestHeadlessFlowBundle:
+    """The image-upscale estate pin: a flow with tool=... serves
+    exactly its flow-tool manifest (never card manifests), merges
+    its skill_refs into the bundle (consolidated skills), serves
+    SKILL.md as the flow skill body (mega-skill), and mounts through
+    the lane-scoped card-tools door — while the unfiltered list stays
+    card-only and toolless flows 404 the lane mount loudly."""
+
+    def test_bundle_mounts_exactly_its_flow_tool(self) -> None:
+        code, bundle = ld.lane_bundle("image-upscale", kind="template")
+        assert code == 200, bundle
+        row = lane_wire.BundleRow.model_validate(bundle)
+        assert len(row.tools) == 1
+        tool = row.tools[0]
+        assert (tool.name, tool.kind, tool.flow) == (
+            "image_upscale", "flow-tool", "image-upscale")
+        assert tool.card == ""
+        schema = tool.params_schema
+        assert set(schema.properties) == {
+            "image_model", "prompt", "seed"}
+        assert schema.required == ["image_model", "prompt"]
+
+    def test_bundle_merges_skill_refs(self) -> None:
+        code, bundle = ld.lane_bundle("image-upscale", kind="template")
+        assert code == 200
+        ids = [s["id"] for s in bundle["skills"]]
+        assert ids[0] == "flow:image-upscale"
+        for ref in ("card:image-gen", "card:upscale-tools",
+                    "model:krea-2"):
+            assert ref in ids, "skill_ref %r rides the bundle" % ref
+        assert bundle["read_first"][0] == "flow:image-upscale"
+        assert "## Headless tool" in bundle["agent"]["content"]
+
+    def test_flow_skill_body_is_the_mega_skill(self) -> None:
+        code, doc = ld.skill_read("flow:image-upscale")
+        assert code == 200
+        lane_wire.SkillDocRow.model_validate(doc)
+        assert doc["content"].startswith(
+            "# image-upscale (flow mega-skill)")
+
+    def test_lane_scoped_card_tools_mounts_the_flow_tool(self) -> None:
+        tools = ld.card_tools(lane="image-upscale")
+        assert [(t["name"], t["kind"]) for t in tools] == [
+            ("image_upscale", "flow-tool")] 
+        assert tools[0]["flow"] == "image-upscale"
+        assert "card" not in tools[0]
+
+    def test_toolless_flow_lane_mount_refuses_loudly(self) -> None:
+        with pytest.raises(LookupError, match="no headless tool"):
+            ld.card_tools(lane="kimodo-native")
+
+    def test_unfiltered_card_tools_stays_card_only(self) -> None:
+        for m in ld.card_tools():
+            assert m.get("card"), m.get("name")
+            assert "flow" not in m

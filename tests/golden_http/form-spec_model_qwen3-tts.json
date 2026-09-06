@@ -1,172 +1,190 @@
 {
- "defaults": {
-  "mode": "tts",
-  "variant": "customvoice"
- },
- "engine": "comfyui",
- "enhance_prompts": {
-  "lyrics": "",
-  "prompt": null
- },
- "features": {
-  "modifiers": [],
-  "variant_groups": {
-   "Quant": {
-    "label": "Quant"
-   },
-   "Variant": {
-    "label": "Variant"
-   }
-  }
- },
- "fields": [
-  {
-   "name": "text",
-   "type": "textarea",
-   "label": "Text",
-   "required": true,
-   "placeholder": "The words to speak",
-   "tooltip": "The text to synthesize"
+  "defaults": {
+    "mode": "tts",
+    "variant": "customvoice"
   },
-  {
-   "name": "voice",
-   "type": "select",
-   "label": "Voice",
-   "default": "ryan",
-   "tooltip": "Preset speaker persona (CustomVoice) or .qvoice embedding path",
-   "options": [
-    "ryan",
-    "serena",
-    "vivian",
-    "aiden",
-    "eric",
-    "dylan",
-    "sohee",
-    "ono_anna",
-    "uncle_fu"
-   ]
+  "engine": "comfyui",
+  "enhance_prompts": {
+    "lyrics": "",
+    "prompt": null
   },
-  {
-   "name": "style_instruction",
-   "type": "textarea",
-   "label": "Style Instruction",
-   "tooltip": "Emotion and delivery control (e.g. 'speak with warm confidence')"
-  },
-  {
-   "name": "temperature",
-   "type": "slider",
-   "label": "Temperature",
-   "min": 0,
-   "max": 2,
-   "step": 0.05,
-   "default": 0.7
-  },
-  {
-   "name": "seed",
-   "type": "seed",
-   "label": "Seed",
-   "default": -1
-  },
-  {
-   "name": "qvoice",
-   "type": "file",
-   "label": "Voice (.qvoice)",
-   "group": "qvoice",
-   "order": 0,
-   "tooltip": "Pre-computed speaker embedding (.qvoice/.voice — the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one."
-  },
-  {
-   "name": "voice_pca_strengths",
-   "type": "textarea",
-   "label": "PCA Steering",
-   "group": "qvoice",
-   "order": 1,
-   "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} — subtle voice direction without re-designing the persona."
-  }
- ],
- "form": "tts",
- "genre": "audio",
- "label": "TTS",
- "model": "qwen3-tts",
- "schema_groups": [
-  {
-   "fields": [
-    {
-     "label": "Text",
-     "name": "text",
-     "placeholder": "The words to speak",
-     "required": true,
-     "tooltip": "The text to synthesize",
-     "type": "textarea"
-    },
-    {
-     "default": "ryan",
-     "label": "Voice",
-     "name": "voice",
-     "options": [
-      "ryan",
-      "serena",
-      "vivian",
-      "aiden",
-      "eric",
-      "dylan",
-      "sohee",
-      "ono_anna",
-      "uncle_fu"
-     ],
-     "tooltip": "Preset speaker persona (CustomVoice) or .qvoice embedding path",
-     "type": "select"
-    },
-    {
-     "label": "Style Instruction",
-     "name": "style_instruction",
-     "tooltip": "Emotion and delivery control (e.g. 'speak with warm confidence')",
-     "type": "textarea"
-    },
-    {
-     "default": 0.7,
-     "label": "Temperature",
-     "max": 2,
-     "min": 0,
-     "name": "temperature",
-     "step": 0.05,
-     "type": "slider"
-    },
-    {
-     "default": -1,
-     "label": "Seed",
-     "name": "seed",
-     "type": "seed"
+  "features": {
+    "modifiers": [],
+    "variant_groups": {
+      "Quant": {
+        "label": "Quant"
+      },
+      "Variant": {
+        "label": "Variant"
+      },
+      "Recipe": {
+        "label": "Recipe",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "default": "default"
+      }
     }
-   ],
-   "id": "",
-   "label": "Parameters",
-   "order": 0,
-   "zone": "params"
   },
-  {
-   "fields": [
+  "fields": [
     {
-     "label": "Voice (.qvoice)",
-     "name": "qvoice",
-     "order": 0,
-     "tooltip": "Pre-computed speaker embedding (.qvoice/.voice — the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one.",
-     "type": "file"
+      "name": "text",
+      "type": "textarea",
+      "label": "Text",
+      "required": true,
+      "placeholder": "The words to speak",
+      "tooltip": "The text to synthesize"
     },
     {
-     "label": "PCA Steering",
-     "name": "voice_pca_strengths",
-     "order": 1,
-     "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} — subtle voice direction without re-designing the persona.",
-     "type": "textarea"
+      "name": "voice",
+      "type": "select",
+      "label": "Voice",
+      "default": "ryan",
+      "tooltip": "Preset speaker persona (CustomVoice) or .qvoice embedding path",
+      "options": [
+        "ryan",
+        "serena",
+        "vivian",
+        "aiden",
+        "eric",
+        "dylan",
+        "sohee",
+        "ono_anna",
+        "uncle_fu"
+      ]
+    },
+    {
+      "name": "style_instruction",
+      "type": "textarea",
+      "label": "Style Instruction",
+      "tooltip": "Emotion and delivery control (e.g. 'speak with warm confidence')"
+    },
+    {
+      "name": "temperature",
+      "type": "slider",
+      "label": "Temperature",
+      "min": 0,
+      "max": 2,
+      "step": 0.05,
+      "default": 0.7
+    },
+    {
+      "name": "seed",
+      "type": "seed",
+      "label": "Seed",
+      "default": -1
+    },
+    {
+      "name": "qvoice",
+      "type": "file",
+      "label": "Voice (.qvoice)",
+      "group": "qvoice",
+      "order": 0,
+      "tooltip": "Pre-computed speaker embedding (.qvoice/.voice — the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one."
+    },
+    {
+      "name": "voice_pca_strengths",
+      "type": "textarea",
+      "label": "PCA Steering",
+      "group": "qvoice",
+      "order": 1,
+      "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} — subtle voice direction without re-designing the persona."
     }
-   ],
-   "id": "qvoice",
-   "label": "Qvoice",
-   "order": 1,
-   "zone": "mods"
-  }
- ],
- "service": "qwen3-tts",
- "variants": []
+  ],
+  "form": "tts",
+  "genre": "audio",
+  "label": "TTS",
+  "model": "qwen3-tts",
+  "schema_groups": [
+    {
+      "fields": [
+        {
+          "label": "Text",
+          "name": "text",
+          "placeholder": "The words to speak",
+          "required": true,
+          "tooltip": "The text to synthesize",
+          "type": "textarea"
+        },
+        {
+          "default": "ryan",
+          "label": "Voice",
+          "name": "voice",
+          "options": [
+            "ryan",
+            "serena",
+            "vivian",
+            "aiden",
+            "eric",
+            "dylan",
+            "sohee",
+            "ono_anna",
+            "uncle_fu"
+          ],
+          "tooltip": "Preset speaker persona (CustomVoice) or .qvoice embedding path",
+          "type": "select"
+        },
+        {
+          "label": "Style Instruction",
+          "name": "style_instruction",
+          "tooltip": "Emotion and delivery control (e.g. 'speak with warm confidence')",
+          "type": "textarea"
+        },
+        {
+          "default": 0.7,
+          "label": "Temperature",
+          "max": 2,
+          "min": 0,
+          "name": "temperature",
+          "step": 0.05,
+          "type": "slider"
+        },
+        {
+          "default": -1,
+          "label": "Seed",
+          "name": "seed",
+          "type": "seed"
+        }
+      ],
+      "id": "",
+      "label": "Parameters",
+      "order": 0,
+      "zone": "params"
+    },
+    {
+      "fields": [
+        {
+          "label": "Voice (.qvoice)",
+          "name": "qvoice",
+          "order": 0,
+          "tooltip": "Pre-computed speaker embedding (.qvoice/.voice — the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one.",
+          "type": "file"
+        },
+        {
+          "label": "PCA Steering",
+          "name": "voice_pca_strengths",
+          "order": 1,
+          "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} — subtle voice direction without re-designing the persona.",
+          "type": "textarea"
+        }
+      ],
+      "id": "qvoice",
+      "label": "Qvoice",
+      "order": 1,
+      "zone": "mods"
+    }
+  ],
+  "service": "qwen3-tts",
+  "variants": [
+    {
+      "id": "default",
+      "label": "Default",
+      "group": "Recipe",
+      "defaults": {},
+      "route": "",
+      "hint": "The family default — no extra stamps; a fresh card lands here.",
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    }
+  ]
 }

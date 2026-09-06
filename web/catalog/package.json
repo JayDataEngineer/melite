@@ -14,6 +14,7 @@
     "./api": "./src/api.ts",
     "./catalogContract": "./src/catalogContract.ts",
     "./catalogContractStore": "./src/catalogContractStore.ts",
+    "./cardBirth": "./src/cardBirth.ts",
     "./comfyEvents": "./src/comfyEvents.ts",
     "./enhance": "./src/enhance.ts",
     "./enhancement": "./src/enhancement.ts",

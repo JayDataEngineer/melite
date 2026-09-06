@@ -47,6 +47,10 @@ IMPORT_SURFACES = [
     # + artifact-ref sweep — gateway imports them; they pin clean.
     "estate_config",           # py/estate_config.py: deployment config row
     "artifact_refs",           # py/artifact_refs.py: dangling-ref finder
+    # 2026-09-06: the SOMA-skin provisioning rail (model-provision
+    # doors, docs/design/model-provision-doors.md) — gateway imports
+    # it; it pins clean.
+    "provision_rail",          # py/provision_rail.py: on-demand provision
 ]
 
 

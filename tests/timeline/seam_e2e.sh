@@ -25,9 +25,18 @@ EOF
 }
 
 run_and_wait() { # echoes run_id; $1 = audio json suffix
-  local RID S
-  RID=$(curl -s -m 8 -X POST "$GW/v1/flows/start" -H 'content-type: application/json' \
-        -d "$(body "$1")" | python3 -c 'import json,sys; print(json.load(sys.stdin)["run_id"])')
+  local PAY DID RID S
+  PAY="$(body "$1")"
+  # CARD BIRTH LAW (operator order 2026-09-06): the start door 4xxes
+  # a start without a doc-backed draft_id — compose THIS run's card
+  # first (the exact body, preserved as the card extras), ride the
+  # minted id on the start envelope.
+  DID=$(curl -s -m 8 -X POST "$GW/v1/flows/drafts" -H 'content-type: application/json' \
+        -d "$PAY" | python3 -c 'import json,sys; print(json.load(sys.stdin)["draftId"])')
+  [ -n "$DID" ] || { echo "FAIL card compose returned no draftId"; FAILS=$((FAILS+1)); return; }
+  RID=$(echo "$PAY" | DID="$DID" python3 -c 'import json,os,sys; d=json.load(sys.stdin); d["draft_id"]=os.environ["DID"]; print(json.dumps(d))' \
+        | curl -s -m 8 -X POST "$GW/v1/flows/start" -H 'content-type: application/json' -d @- \
+        | python3 -c 'import json,sys; print(json.load(sys.stdin)["run_id"])')
   for i in $(seq 1 150); do
     S=$(curl -s -m 5 "$GW/v1/flows/status/$RID" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("status","?"))' 2>/dev/null)
     [ "$S" = "completed" ] || [ "$S" = "failed" ] && break

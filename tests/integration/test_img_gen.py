@@ -16,10 +16,12 @@ pytestmark = pytest.mark.gpu
 
 
 def test_bare_post(gateway: "QueueDoor") -> None:
+    # FLAT (flows rework 2026-09-05): card params ride top-level —
+    # a nested "params" key double-wraps and 400s at phase 1.
     run_id = gateway.submit({
         "model": "krea-2",
-        "params": {"prompt": "a red fox in snow, studio light",
-                   "seed": 7},
+        "prompt": "a red fox in snow, studio light",
+        "seed": 7,
     })
     status = gateway.wait(run_id, timeout_s=900)
     assert status["status"] == "completed", status.get("error")
@@ -32,11 +34,9 @@ def test_loras_mod_consumption(gateway: "QueueDoor") -> None:
     catalog row (turbo), default strength from the row."""
     run_id = gateway.submit({
         "model": "krea-2",
-        "params": {
-            "prompt": "a red fox in snow, crosshatched etching",
-            "seed": 11,
-            "loras": [{"id": "krea2_turbo_lora_rank_64_bf16"}],
-        },
+        "prompt": "a red fox in snow, crosshatched etching",
+        "seed": 11,
+        "loras": [{"id": "krea2_turbo_lora_rank_64_bf16"}],
     })
     status = gateway.wait(run_id, timeout_s=900)
     assert status["status"] == "completed", status.get("error")

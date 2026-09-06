@@ -36,11 +36,14 @@ sys.path.insert(0, str(REPO / "py"))
 
 from flow import load_flow  # noqa: E402  (path set above)
 
+# Decoded endpoint JSON (annotations only).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
+
 CONTRACTS_PATH = REPO / "infra" / "comfyui" / "contracts" / "object_info.json"
 FLOWS_DIR = REPO / "flows"
 
 
-def _get(url: str) -> dict:
+def _get(url: str) -> dict[str, JsonValue]:
     with urllib.request.urlopen(url, timeout=30) as r:
         return json.load(r)
 

@@ -185,6 +185,14 @@ class Stage(BaseModel):
     # the same pattern as Stage.outputs) can stamp it here.
     card: str = ""
     card_io: dict[str, Kind] = Field(default_factory=dict)
+    # ── R3.3 retry rows (2026-09-06) — policy as data ────────────
+    # retries: extra attempts after a failed attempt (0..5, the
+    # runner re-executes the stage and ledgers every retry).
+    # timeout_s: the RUNNER's stage budget (asyncio.wait_for) — NOT
+    # params.timeout_s (the engine's own door). Both optional;
+    # omission is today's fail-fast behavior.
+    retries: int = Field(default=0, ge=0, le=5)
+    timeout_s: float | None = Field(default=None)
 
     @model_validator(mode="after")
     def _id_legal(self) -> "Stage":
@@ -244,6 +252,10 @@ STAGE_KEYS = frozenset({
     "inputs", "outputs", "expected",
     "card", "card_io",     # CARD-STAGE LATTICE
     "skip_when",           # BRANCH SYSTEM
+    # 2026-09-06 gap-fix (caught by the mirror wall): the runner's
+    # retries/timeout_s fields landed on Stage without this set —
+    # the exact drift class STAGE_KEYS exists to refuse.
+    "retries", "timeout_s",
 })
 
 
@@ -994,6 +1006,14 @@ class Flow(BaseModel):
                     # values under the names $channels speak
                     input_names={name: e.ref()
                                  for name, e in st.inputs.items()},
+                    # STROKE 4 (2026-09-06): the card id rides the
+                    # ABI row — the worker's card bridge composes
+                    # the card doc into engine params (the arm
+                    # contract) before execute
+                    card=st.card,
+                    # R3.3: retry policy rides the ABI row verbatim
+                    retries=st.retries,
+                    timeout_s=st.timeout_s,
                     outputs={
                         k: v.value
                         for k, v in resolved.get(st.id, {}).items()
@@ -1100,6 +1120,180 @@ def scan_flow_ids() -> list[str]:
 # refuse, ambiguous edges refuse — nothing drops silently.
 
 _INLINE_TOP_KEYS = {"id", "description", "stages"}
+
+
+def schema_snapshot() -> "dict[str, object]":
+    """GET /v1/schema — the ENTIRE flow-authoring vocabulary in one
+    payload (stroke 2, docs/design/production-architecture-review.md:
+    the AI stops reading plugin source to compose). Everything here
+    is DERIVED from the same rows the validators enforce — the pin is
+    the wall (tests/unit/runtime/test_schema_door.py: the snapshot's
+    kinds/engines/flows answer the loaders, and the stage shape
+    matches STAGE_KEYS).
+
+    Sections:
+      kinds        — the closed Kind vocabulary (edge types)
+      engines      — engine id -> default_output kind (or null)
+      cards        — every registry card: engine, kind contract,
+                     requires_model, and the param JSON Schema
+                     generated from its schema row (null when the
+                     card ships no schema.py) — the machine UI a
+                     headless session fills to compose a card= stage
+      stage_shape  — the flow_inline stage row: every field, its wire
+                     name, and the two edge forms
+      flow_body    — top-level keys a {flow_inline} body may carry
+      doors        — the three request doors + the validate loop
+      flows        — every declared flow: description, stage rows
+                     (id/engine/card/inputs/outputs), tool params
+      pointers     — the vocabulary that lives on sibling doors
+                     (family param schemas, models) — not duplicated
+    """
+    import json as _json
+
+    import plugins as _plugins
+    engines: dict[str, object] = {}
+    for eid in sorted(_plugins.scan_engines()):
+        try:
+            mod = _plugins.load_engine(eid)
+            d = getattr(mod, "DEFAULT_OUTPUT", None)
+            engines[eid] = d.value if isinstance(d, Kind) else None
+        except Exception as e:   # an unloadable engine still lists
+            engines[eid] = {"error": "%s: %s" % (type(e).__name__, e)}
+
+    def _wire_edge(e: Edge) -> dict[str, str]:
+        if isinstance(e, FromInitial):
+            return {"initial": e.key}
+        if isinstance(e, FromStage):
+            return {"stage": e.stage, "output": e.output}
+        return {"ref": e.ref()}
+
+    flows: dict[str, object] = {}
+    for fid in scan_flow_ids():
+        row: dict[str, object]
+        try:
+            fl = load_flow(fid)
+            # the EFFECTIVE contract — to_graph resolves the card
+            # registry / engine defaults exactly as the executor
+            # will see them (a Stage row's empty outputs{} is NOT
+            # what a composer may wire against)
+            g = fl.to_graph()
+            gnodes = {n.node_id: n for n in g.nodes}
+            row = {
+                "description": fl.description,
+                "stages": [{
+                    "id": st.id,
+                    "engine": st.engine,
+                    "card": gnodes[st.id].card,
+                    "description": st.description,
+                    "inputs": {n: _wire_edge(e)
+                               for n, e in st.inputs.items()},
+                    "outputs": dict(gnodes[st.id].outputs or {}),
+                    "expected": {n: k.value
+                                 for n, k in st.expected.items()},
+                    "skip_when": ({"initial": st.skip_when.initial,
+                                   "when": st.skip_when.when.value}
+                                  if st.skip_when is not None else None),
+                } for st in fl.stages],
+            }
+        except Exception as e:   # a flow that no longer constructs
+            row = {"error": "%s: %s" % (type(e).__name__, e)}   # still lists
+        tp = FLOWS_ROOT / fid / "tool.json"
+        if tp.is_file():
+            try:
+                row["tool"] = _json.loads(
+                    tp.read_text()).get("params_schema")
+            except ValueError:
+                row["tool"] = {"error": "unparseable tool.json"}
+        flows[fid] = row
+
+    # STROKE 7 (2026-09-06): the card lattice as generated machine
+    # UI — every registry card's engine, kinds, model requirement,
+    # and param JSON Schema, DERIVED from the same rows the compile
+    # gate enforces (a headless session composes a valid card= stage
+    # from this ONE payload — no plugin source reading). A card
+    # whose schema refuses to resolve still lists (the snapshot
+    # rule: unloadable still lists, with the error inline); a card
+    # with no schema.py serves params null (the schemaless set is
+    # explicit in stage_params, never a silent omission).
+    import stage_params as _sp
+    cards: dict[str, object] = {}
+    for _row in _sp.REGISTRY.rows:
+        _entry: dict[str, object] = {
+            "engine": _row.engine,
+            "kind_inputs": dict(_row.kind_inputs),
+            "kind_outputs": dict(_row.kind_outputs),
+            "requires_model": bool(
+                getattr(_row, "requires_model", False)),
+        }
+        try:
+            _schema_cls = _sp._resolve_schema(_row.card_id)
+            _entry["params"] = _schema_cls.model_json_schema() \
+                if _schema_cls is not None else None
+        except Exception as e:   # resolve/import failure still lists
+            _entry["params"] = {"error": "%s: %s"
+                                % (type(e).__name__, e)}
+        cards[_row.card_id] = _entry
+
+    return {
+        "kinds": [k.value for k in Kind],
+        "engines": engines,
+        "cards": cards,
+        "stage_shape": {
+            "fields": sorted(STAGE_KEYS),
+            "id": "stage id (unique; edges reference it)",
+            "engine": "one of engines above (validated at compile)",
+            "card": "optional action-card id — opts the stage into "
+                    "the typed card gate (params validated against "
+                    "the card schema)",
+            "params": "the engine's verbatim surface (workflow / "
+                      "out_dir / timeout_s for comfyui; task/family "
+                      "for audio_cpp) — unvalidated here unless "
+                      "card= is set",
+            "inputs": 'name -> {"initial": key} (a request key) '
+                      'or {"stage": id, "output": name} (an earlier '
+                      "stage's output; kind is INFERRED upstream)",
+            "outputs": 'name -> Kind string (omit for the engine '
+                       "default)",
+            "expected": "name -> Kind string (what each input "
+                        "expects; required unless card= fills it)",
+            "skip_when": '{"initial": key, "when": "present|absent"}'
+                         " — prunes the stage at build time",
+            "edge_rules": "edges must point at EARLIER stages; a "
+                          "kind mismatch refuses at compile with "
+                          "both kinds named",
+        },
+        "flow_body": {
+            "keys": sorted(_INLINE_TOP_KEYS),
+            "example": {"id": "my-flow", "stages": [
+                {"id": "gen", "engine": "anycreature",
+                 "inputs": {"prompt": {"initial": "prompt"}},
+                 "expected": {"prompt": "text"}},
+                {"id": "remesh", "engine": "autoremesher",
+                 "inputs": {"mesh": {"stage": "gen", "output": "default"}},
+                 "expected": {"mesh": "mesh"}}]},
+        },
+        "doors": {
+            "start": "POST /v1/flows/start with exactly one of "
+                     '{"flow": name} | {"flow_inline": {...}} | '
+                     '{"model": id}, PLUS a REQUIRED doc-backed '
+                     '"draft_id" on the envelope (CARD BIRTH LAW: '
+                     "compose at POST /v1/flows/drafts first — a "
+                     "cardless start 4xxes BEFORE any run registers)",
+            "validate": "POST /v1/flows/validate with "
+                        '{"flow_inline": {...}} — verbatim compile '
+                        "refusals, no queue slot, no GPU, no sidecar",
+            "status": "GET /v1/flows/status/<run_id> — stages, "
+                      "progress, queue_position",
+            "stop": "POST /v1/flows/stop/<run_id>",
+        },
+        "flows": flows,
+        "pointers": {
+            "card_param_schemas":
+                "GET /v1/flows/families/param-schemas (per-family "
+                "card param envelopes)",
+            "models": "GET /v1/models (the model catalog)",
+        },
+    }
 
 
 def _inline_kind(where: str, value: JsonValue) -> Kind:

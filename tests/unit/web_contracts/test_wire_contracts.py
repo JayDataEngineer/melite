@@ -117,6 +117,7 @@ from tests.unit.web_contracts.models import (
     RetakeDef,
     RunBrickMeta,
     RunStartBlocked,
+    RunStartRequest,
     RunStartResult,
     RunStageWire,
     RunStatusEnum,
@@ -987,6 +988,20 @@ class TestFormSpec:
     def test_size_default_absent(self) -> None:
         s = self._make()
         assert s.size is None  # absent = default
+
+
+# ── RunStartRequest ───────────────────────────────────────────────────
+
+class TestRunStartRequest:
+    def test_draft_id_in_vocabulary(self) -> None:
+        """CARD BIRTH LAW (operator order 2026-09-06): draft_id is a
+        REQUIRED envelope key on POST /v1/flows/start — the mirror
+        must carry it (required-ness itself is walled at runtime by
+        TestStartDoorRequiresDraft; mirrors declare vocabulary)."""
+        assert "draft_id" in RunStartRequest.model_fields
+        r = RunStartRequest(model="krea-2", draft_id="draft-abc_123",
+                            prompt="a cube")
+        assert r.draft_id == "draft-abc_123"
 
 
 # ── RunStartResult ────────────────────────────────────────────────────

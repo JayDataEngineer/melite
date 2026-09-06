@@ -48,6 +48,7 @@ _CARD_DIRS = [
     PLUGIN / "action_cards" / "image" / "image-gen",
     PLUGIN / "action_cards" / "image" / "input_prep",
     PLUGIN / "action_cards" / "image" / "mask_studio",
+    PLUGIN / "action_cards" / "image" / "tagger",
     PLUGIN / "action_cards" / "image" / "upscale-tools",
     PLUGIN / "action_cards" / "motion" / "motion",
     PLUGIN / "action_cards" / "video" / "h3-timeline",
@@ -94,12 +95,25 @@ from melite_cards import load_card_py  # noqa: E402
 
 _CARD_DOCS = [
     (PLUGIN / "action_cards" / "image" / "image-gen" / "py" / "card.py", "image_t2i", ()),
-    # 'shift' is a renderer-internal knob (ModelSamplingAuraFlow template
-    # value the C port read from params but the card surface never
-    # offered — it rides the 1.0 default). Review round: surface it on
-    # the card or retire it from the doc.
+    # 'input_image' is the renderer-internal step_doc key (compose maps
+    # the wire anchor image1 onto it; the card surface speaks image1 —
+    # 2026-09-06 surface standard. NOT a card knob, never served).
+    # 'shift' was HERE as the review-round exemption (surface it or
+    # retire it) — the 2026-09-06 audit retired it from the doc (ghost
+    # knob: no card field, no family default; the AuraFlow node rides
+    # the fixed template-pinned 1.0, graph byte-identical).
     (PLUGIN / "action_cards" / "image" / "image-edit" / "py" / "card.py", "image_edit",
-     ("shift",)),
+     ("input_image",)),
+    # tagger (2026-09-06): all four arms' doc knobs speakable on the
+    # card (filename_prefix run-scoped, input_image renderer-internal).
+    (PLUGIN / "action_cards" / "image" / "tagger" / "py" / "card.py", "wd14_t1",
+     ("input_image",)),
+    (PLUGIN / "action_cards" / "image" / "tagger" / "py" / "card.py", "joytag_t1",
+     ("input_image",)),
+    (PLUGIN / "action_cards" / "image" / "tagger" / "py" / "card.py", "florence2_t1",
+     ("input_image",)),
+    (PLUGIN / "action_cards" / "image" / "tagger" / "py" / "card.py", "joycaption_t1",
+     ("input_image",)),
 ]
 for card_path, family, internal in _CARD_DOCS:
     card = load_card_py(str(card_path), "comfyui")
@@ -227,6 +241,80 @@ check("image_edit wire: seed/steps native int, cfg native float",
 
 # (interface wall moved above the t2i block — estate-wide measure)
 
+# ── TAGGER ARMS (2026-09-06 tagger-card stroke) ──
+# Four prompt-inversion families, one card. The load-bearing knots
+# this stroke live-proved: the caption OUTPUT INDEX (florence2 = 2,
+# joycaption = 1 — SaveText must link the caption STRING, never the
+# query / IMAGE / MASK / JSON), REQUIRED-with-default inputs riding
+# the graph (fill_mask, memory_mode, gen params — stripped = server
+# refusal), and the live node names (WD14Tagger|pysssss, CXH_JoyTag,
+# JJC_-prefixed JoyCaption).
+_TAGGER_MODELS = {m: load_model_cls(m) for m in (
+    "wd14", "joytag", "florence2", "joycaption")}
+
+g = render("wd14_t1", {"input_image": "a.png"}, model=_TAGGER_MODELS["wd14"])
+check("wd14 wire: seven live knobs, native types",
+      _node(g, "WD14Tagger|pysssss") == {
+          "model": "wd-v1-4-moat-tagger-v2", "threshold": 0.35,
+          "character_threshold": 0.85, "exclude_tags": "",
+          "replace_underscore": False, "trailing_comma": False,
+          "image": ["LoadImage.0", 0]},
+      repr(_node(g, "WD14Tagger|pysssss")))
+check("wd14 wire: SaveText links the tags output",
+      _node(g, "SaveText")["text"] == ["WD14Tagger|pysssss.0", 0],
+      repr(_node(g, "SaveText")["text"]))
+
+g = render("joytag_t1", {"input_image": "a.png"}, model=_TAGGER_MODELS["joytag"])
+# (node-side names: comfy-script maps the renderer's snake_case kwargs
+# onto the node's declared inputs — THRESHOLD/addTag/removeTag. The
+# graph above is what ComfyUI validates; the live run proved it.)
+check("joytag wire: threshold native float, tag strings",
+      _node(g, "CXH_JoyTag") == {"THRESHOLD": 0.2, "addTag": "",
+                                  "removeTag": "",
+                                  "image": ["LoadImage.0", 0]},
+      repr(_node(g, "CXH_JoyTag")))
+check("joytag wire: SaveText links the tags output",
+      _node(g, "SaveText")["text"] == ["CXH_JoyTag.0", 0],
+      repr(_node(g, "SaveText")["text"]))
+
+g = render("florence2_t1", {"input_image": "a.png"},
+           model=_TAGGER_MODELS["florence2"])
+check("florence2 wire: loader checkpoint + fp16 fixed",
+      _node(g, "DownloadAndLoadFlorence2Model") == {
+          "model": "MiaoshouAI/Florence-2-large-PromptGen-v2.0",
+          "precision": "fp16"},
+      repr(_node(g, "DownloadAndLoadFlorence2Model")))
+check("florence2 wire: task + fill_mask rides (required)",
+      _node(g, "Florence2Run")["task"] == "more_detailed_caption"
+      and _node(g, "Florence2Run")["fill_mask"] is True
+      and _node(g, "Florence2Run")["text_input"] == "",
+      repr(_node(g, "Florence2Run")))
+check("florence2 wire: SaveText links the caption (index 2)",
+      _node(g, "SaveText")["text"] == ["Florence2Run.0", 2],
+      repr(_node(g, "SaveText")["text"]))
+
+g = render("joycaption_t1", {"input_image": "a.png"},
+           model=_TAGGER_MODELS["joycaption"])
+check("joycaption wire: loader checkpoint + Default profile rides",
+      _node(g, "JJC_DownloadAndLoadJoyCaptionModel") == {
+          "model": "fancyfeast/llama-joycaption-beta-one-hf-llava",
+          "memory_mode": "Default", "keep_loaded": False},
+      repr(_node(g, "JJC_DownloadAndLoadJoyCaptionModel")))
+check("joycaption wire: templates + gen params native types",
+      _node(g, "JJC_JoyCaption")["caption_type"] == "Descriptive"
+      and _node(g, "JJC_JoyCaption")["caption_length"] == "long"
+      and _node(g, "JJC_JoyCaption")["extra_option1"] == ""
+      and _node(g, "JJC_JoyCaption")["max_new_tokens"] == 512
+      and type(_node(g, "JJC_JoyCaption")["max_new_tokens"]) is int
+      and _node(g, "JJC_JoyCaption")["temperature"] == 0.6
+      and isinstance(_node(g, "JJC_JoyCaption")["temperature"], float)
+      and _node(g, "JJC_JoyCaption")["top_p"] == 0.9
+      and _node(g, "JJC_JoyCaption")["top_k"] == 0,
+      repr(_node(g, "JJC_JoyCaption")))
+check("joycaption wire: SaveText links the caption (index 1, not query)",
+      _node(g, "SaveText")["text"] == ["JJC_JoyCaption.0", 1],
+      repr(_node(g, "SaveText")["text"]))
+
 g = render("image_edit", {"prompt": "a red fox", "input_image": "a.png"}, model=_IMGEDIT)
 check("image_edit graph matches the pinned node interface",
       _iface_mismatches(g) == [], _iface_mismatches(g))
@@ -263,7 +351,7 @@ _ESTATE_MODELS = {m: load_model_cls(m) for m in (
     "anny", "ideogram", "mask-studio", "kimodo", "moss-sfx",
     "pixal3d", "trellis2-native", "transfer_rig", "qwen3-tts",
     "qwen3-tts-voicedesign", "qwen-img-edit-2511", "krea-2",
-    "music3")}
+    "music3", "wd14", "joytag", "florence2", "joycaption")}
 _ESTATE_FAMILIES = [
     # (family, model-id-or-None, minimal doc)
     ("anny_t1", None, {"body_glb": "x"}),
@@ -285,6 +373,10 @@ _ESTATE_FAMILIES = [
     ("scail2_t1", None, {}),
     ("seedvr2_t1", None, {}),
     ("sfx_t1", "moss-sfx", {"prompt": "boom"}),
+    ("wd14_t1", "wd14", {"input_image": "a.png"}),
+    ("joytag_t1", "joytag", {"input_image": "a.png"}),
+    ("florence2_t1", "florence2", {"input_image": "a.png"}),
+    ("joycaption_t1", "joycaption", {"input_image": "a.png"}),
     ("transfer_rig_t1", "transfer_rig",
      {"rigged_glb": "r.glb", "target_glb": "t.glb"}),
     ("trellis_t1", "trellis2-native", {"input_image": "a.png"}),

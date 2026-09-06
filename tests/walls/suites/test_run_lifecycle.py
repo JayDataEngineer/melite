@@ -34,21 +34,41 @@ from _anchor import REPO
 
 GATEWAY_URL = "http://127.0.0.1:33081"
 OUT_ROOT = REPO / "data" / "runs" / "output"
+DRAFTS_ROOT = REPO / "data" / "runs" / "drafts"
+
+
+def _rm_draft(draft_id: str) -> None:
+    """Best-effort delete of one drafts-save artifact."""
+    try:
+        (DRAFTS_ROOT / (draft_id + ".json")).unlink(missing_ok=True)
+    except OSError:
+        pass
+
+
+def _rm_run(run_id: str) -> None:
+    """Best-effort delete of one run directory (sidecar + artifacts)."""
+    import shutil
+    try:
+        shutil.rmtree(OUT_ROOT / run_id, ignore_errors=True)
+    except OSError:
+        pass
 MAX_POLL_S = 120
 POLL_INTERVAL_S = 2
 
 # A card-model start body. krea-2 is the card-only model the operator
 # uses most (it has a minimal compose path — model + prompt + size +
 # steps + seed). The params are small to keep the run fast.
+# FLAT (flows rework 2026-09-05): card params ride top-level, never
+# under a "params" key — a nested params stanza double-wraps through
+# card_compose_body and 400s at phase 1 (caught live: the nested
+# shape skipped this whole suite as an "infra" 400).
 START_BODY = {
     "model": "krea-2",
-    "params": {
-        "prompt": "test lifecycle: a small gray cube on white, flat lighting",
-        "width": 512,
-        "height": 512,
-        "steps": 4,
-        "seed": 42,
-    },
+    "prompt": "test lifecycle: a small gray cube on white, flat lighting",
+    "width": 512,
+    "height": 512,
+    "steps": 4,
+    "seed": 42,
 }
 
 
@@ -109,25 +129,57 @@ def gateway_up() -> bool:
 
 class TestRunLifecycle:
     """A real card-model run through the gateway, covering the full
-    lifecycle: start -> queue -> terminal -> sidecar assertions."""
+    lifecycle: start -> queue -> terminal -> sidecar assertions.
+
+    HYGIENE LAW: every draft and run this class creates on the LIVE
+    gateway is deleted in teardown_method — the media sidebar and
+    drafts feed must look untouched after the sweep. State ids are
+    recorded the moment they are minted so even a mid-test assert
+    failure still cleans up."""
+
+    def setup_method(self) -> None:
+        self._drafts: list[str] = []
+        self._runs: list[str] = []
+
+    def teardown_method(self) -> None:
+        for draft_id in getattr(self, "_drafts", []):
+            _rm_draft(draft_id)
+        for run_id in getattr(self, "_runs", []):
+            _rm_run(run_id)
 
     def test_card_model_start(self, gateway_up: bool) -> None:
-        status, resp = _post(f"{GATEWAY_URL}/v1/flows/start", START_BODY)
-        # The compose gate may reject due to infrastructure (pin drift,
-        # no comfyui reachable). The lifecycle test is about runs that
-        # DO start; a 400 is an infrastructure skip, not a test failure.
-        if status == 400:
-            pytest.skip(
-                f"gateway rejected start at 400 (infra issue): "
-                f"{resp.get('error', '')}"
-            )
+        # CARD BIRTH LAW (operator order 2026-09-06): the start door
+        # 4xxes a start without a doc-backed draft_id — the card is
+        # composed FIRST (the same POST /v1/flows/drafts the deck
+        # studio sends), then the run links to it.
+        draft_status, draft_resp = _post(
+            f"{GATEWAY_URL}/v1/flows/drafts",
+            {"intent": "lifecycle card-model start",
+             "model": START_BODY["model"],
+             "stages": []})
+        assert draft_status == 200, (
+            f"could not compose card (status={draft_status}): "
+            f"{draft_resp.get('error', '')}")
+        draft_id = draft_resp.get("draftId", "")
+        assert isinstance(draft_id, str) and draft_id, (
+            f"card compose returned no draftId: {draft_resp}")
+        self._drafts.append(draft_id)
+        status, resp = _post(f"{GATEWAY_URL}/v1/flows/start",
+                             {**START_BODY, "draft_id": draft_id})
+        # A 400 is a FINDING, never weather: the retired-stanza gate
+        # (and every compose refusal) names its reason, so a refusal
+        # fails LOUD with the exact error. The ONLY skip is a dead
+        # gateway (gateway_up). This suite once skipped a whole
+        # quarter as an 'infra' 400 on the stale nested body — the
+        # skip masked a contract refusal as infrastructure.
         assert status == 202, (
-            f"POST /v1/flows/start returned {status} (expected 202 or 400 "
-            f"skip). resp={resp}"
+            f"POST /v1/flows/start returned {status} (expected 202). "
+            f"resp={resp}"
         )
         assert "run_id" in resp, f"202 without run_id: {resp}"
 
         run_id = resp["run_id"]
+        self._runs.append(run_id)
         assert resp.get("status") in ("queued", "running"), (
             f"new run status is {resp.get('status')!r} (expected queued/running)"
         )
@@ -220,29 +272,29 @@ class TestRunLifecycle:
         }
         draft_status, draft_resp = _post(
             f"{GATEWAY_URL}/v1/flows/drafts", draft_body)
-        if draft_status != 200:
-            pytest.skip(
-                f"could not save draft doc (status={draft_status}): "
-                f"{draft_resp.get('error', '')}")
+        # A refused draft save is a FINDING (see test_card_model_start:
+        # refusals name themselves and fail loud — the only skip is a
+        # dead gateway).
+        assert draft_status == 200, (
+            f"could not save draft doc (status={draft_status}): "
+            f"{draft_resp.get('error', '')}")
         # POST /v1/flows/drafts may rewrite the id (draft_id_ok validator);
         # use what the gateway returned, not our local DRAFT_ID.
         DRAFT_ID = draft_resp.get("draftId", DRAFT_ID)
+        self._drafts.append(DRAFT_ID)
 
         body = {
             "model": "krea-2",
             "draft_id": DRAFT_ID,
-            "params": {
-                "prompt": "lifecycle card-link: a tiny red dot",
-                "width": 256, "height": 256, "steps": 2, "seed": 99,
-            },
+            "prompt": "lifecycle card-link: a tiny red dot",
+            "width": 256, "height": 256, "steps": 2, "seed": 99,
         }
         status, resp = _post(f"{GATEWAY_URL}/v1/flows/start", body)
-        if status == 400:
-            pytest.skip(
-                f"gateway rejected start at 400 (infra issue): "
-                f"{resp.get('error', '')}")
-        assert status == 202, f"POST /v1/flows/start returned {status}: {resp}"
+        assert status == 202, (
+            f"POST /v1/flows/start returned {status} (expected 202). "
+            f"resp={resp}")
         run_id = resp["run_id"]
+        self._runs.append(run_id)
 
         terminal = _poll_status(run_id)
         assert terminal, "run never became terminal within 120s"

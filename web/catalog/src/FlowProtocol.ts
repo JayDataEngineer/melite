@@ -108,6 +108,13 @@ export type FlowRunStatus = Pick<
   /** Run-level failure detail — emitted by the runner on failed runs;
    *  not part of the contract core (declared here as a view extra). */
   error?: string
+  /** The run's console tail — served when the status door is asked
+   *  ?include_log=true (2026-09-06, the studio console drilldown):
+   *  run status + queue position, one line per stage (name: status,
+   *  live progress/activity), stage errors verbatim, artifact
+   *  basenames. Synthesized from real runner/sidecar state — never a
+   *  fabricated log. */
+  log_tail?: string
   [k: string]: unknown
 }
 
@@ -288,7 +295,10 @@ export type CompiledGenerationResult =
  *
  * POSTs {model, ...params} to /v1/flows/start — the canonical run-start
  * door, flat shape (raw fetch — no retry, a retry would duplicate GPU
- * work), then polls /status. Returns:
+ * work), then polls /status. CARD BIRTH LAW (operator order
+ * 2026-09-06): the card is composed FIRST (POST /v1/flows/drafts —
+ * ensureDraftId, ./cardBirth) and the minted draft_id rides the
+ * envelope to validate + start; the door 4xxes a start without one. Returns:
  *   - started: run completed — urls are the artifact URLs
  *
  * D3 (2026-08-06): every catalog form compiles to a family
@@ -419,6 +429,17 @@ export async function runCompiledGeneration(
     onTick?: (status: FlowRunStatus) => void
   },
 ): Promise<CompiledGenerationResult> {
+  // ── Fossil lora migration at the SEND boundary (2026-09-06) ────────
+  // A pre-flip bag may still carry `{name, strength}` rows (client
+  // state that predates the id flip). They leave as id rows — the
+  // compile door refuses the fossil key loudly; migrating here heals
+  // the card on the next click without operator action.
+  if (Array.isArray(body.loras)) {
+    const { normalizeLoraEntry } = await import("@melite/contracts")
+    type Wire = Parameters<typeof normalizeLoraEntry>[0]
+    body = { ...body, loras: (body.loras as unknown[]).map((e) =>
+      (e && typeof e === "object") ? normalizeLoraEntry(e as Wire) : e) }
+  }
   assertNoParamDrops(body)
   // ── Family-param contract gate (2026-08-14) ─────────────────────────
   // Validate params against the family's param schema BEFORE the fetch —
@@ -455,6 +476,14 @@ export async function runCompiledGeneration(
     // route stays authoritative last (the route-authority rule: a stale
     // params.model carrier never overrides the resolved route).
     typedBody = { ...typedParams, model: body.model }
+    // CARD BIRTH LAW (operator order 2026-09-06): the start door
+    // 4xxes any body without a valid draft_id, so the card is born
+    // FIRST — stamped from the TYPED body (what runs, not the raw
+    // draft) — and the same envelope rides validate + start. Paste
+    // after the coerce: an early stamp would leak into paramOnly
+    // above and false-positive as "unknown parameter".
+    const { ensureDraftId } = await import("./cardBirth")
+    typedBody.draft_id = await ensureDraftId(typedBody, signal)
     // COMPILE FIRST (pipe-carry retirement, 2026-09-05): the card body
     // compiles at POST /v1/flows/validate BEFORE any run registers —
     // the SAME phase-1 chain a start runs (strict body, artifact
@@ -473,6 +502,13 @@ export async function runCompiledGeneration(
         `card failed to compile: HTTP ${compileRes.status}${text ? `: ${describeErrorBody(text)}` : ""}${violationLines(text)}`,
       )
     }
+  }
+  // CARD BIRTH LAW (operator order 2026-09-06): non-model starts
+  // (named {flow}, inline bodies) ride the same envelope rule — the
+  // start door 4xxes a start without a doc-backed draft_id.
+  if (typeof typedBody.draft_id !== "string" || typedBody.draft_id === "") {
+    const { ensureDraftId } = await import("./cardBirth")
+    typedBody.draft_id = await ensureDraftId(typedBody, signal)
   }
   const res = await fetch("/v1/flows/start", {
     method: "POST",

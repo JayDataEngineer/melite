@@ -82,7 +82,12 @@ def test_tsc_wall_covers_at_least_the_expected_packages(
     excluded-from-the-wall class. If you add a new TS package, add
     it to this list in the same commit.
     """
-    expected = {"melite-card-deck", "melite-card-view", "melite-tools"}
+    expected = {"melite-card-deck", "melite-card-view", "melite-tools",
+                # 2026-09-06: media-plugin gained a tsconfig (a
+                # dsh-family member with a built lib — F1 in the
+                # freshness wall); discovery here caught it before
+                # it could be silently excluded.
+                "media-plugin"}
     actual = set(tsc_results.keys())
     missing = expected - actual
     extra = actual - expected

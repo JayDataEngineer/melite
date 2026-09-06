@@ -49,6 +49,24 @@ export type FormFeatures = components["schemas"]["FormFeatures"]
 /** Prompt guide sections from the family metadata. */
 export type FormGuide = components["schemas"]["FormGuide"]
 
+/** The declared LANDING variant of a group (operator order,
+ * 2026-09-06: "there should be default, and that is what we land
+ * on"). The generated VariantGroup schema predates the key (the wire
+ * row is dict-typed server-side), so this is the ONE typed read —
+ * absent/empty means no declared landing. Served by the family's
+ * VariantGroup.default, construction-validated to name a variant of
+ * the group. */
+export function variantGroupDefault(
+ spec: FormSpec | null | undefined,
+ groupId: string,
+): string | null {
+ const row = (spec?.features?.variant_groups ?? {}) as Record<
+  string, { default?: string | null }
+ >
+ const d = row[groupId]?.default
+ return typeof d === "string" && d.trim() !== "" ? d : null
+}
+
 /** The complete form descriptor — /v1/form-spec's 200 body. */
 export type FormSpec = components["schemas"]["FormSpec"]
 

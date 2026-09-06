@@ -24,16 +24,16 @@ def test_mask_body_primary(gateway: "QueueDoor",
     """Bare flat run: body primary → mask_combined + the drawn box
     manifest (the instance readback)."""
     door = gateway
+    # FLAT (flows rework 2026-09-05): card params ride top-level —
+    # a nested "params" key double-wraps and 400s at phase 1.
     run_id = door.submit({
         "model": "mask-studio",
-        "params": {
-            "input_image": assets["source"],
-            "detect_mode": "body",
-            "detection_threshold": 0.3,
-            "sam_threshold": 0.9,
-            "sam_dilation": 4,
-            "export_boxes": True,
-        },
+        "input_image": assets["source"],
+        "detect_mode": "body",
+        "detection_threshold": 0.3,
+        "sam_threshold": 0.9,
+        "sam_dilation": 4,
+        "export_boxes": True,
     })
     out = door.wait(run_id, timeout_s=600)
     arts = door.artifacts_on_disk(out)
@@ -51,11 +51,9 @@ def test_mask_recipe_multi(gateway: "QueueDoor",
               ' {"selection": {"kind": "sam3", "prompt": "the red hat"}}]')
     run_id = door.submit({
         "model": "mask-studio",
-        "params": {
-            "input_image": assets["source"],
-            "outputs": recipe,
-            "export_boxes": False,
-        },
+        "input_image": assets["source"],
+        "outputs": recipe,
+        "export_boxes": False,
     })
     out = door.wait(run_id, timeout_s=600)
     names = [p.name for p in door.artifacts_on_disk(out)]

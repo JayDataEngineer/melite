@@ -21,14 +21,14 @@ pytestmark = pytest.mark.gpu
 def test_seedvr2_restore(gateway: "QueueDoor",
                          assets: dict[str, str | None]) -> None:
     """seedvr2_ema: input frame → diffusion-restored png."""
+    # FLAT (flows rework 2026-09-05): card params ride top-level —
+    # a nested "params" key double-wraps and 400s at phase 1.
     run_id = gateway.submit({
         "model": "seedvr2_ema",
         "test": True,
-        "params": {
-            "input_image": assets["source"],
-            "resolution": 1080, "max_resolution": 4096,
-            "batch_size": 1, "seed": 42,
-        },
+        "input_image": assets["source"],
+        "resolution": 1080, "max_resolution": 4096,
+        "batch_size": 1, "seed": 42,
     })
     status = gateway.wait(run_id, timeout_s=1500)
     assert status["status"] == "completed", status.get("error")

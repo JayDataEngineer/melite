@@ -65,6 +65,7 @@
     "./switch": "./src/switch.tsx",
     "./tabs": "./src/tabs.tsx",
     "./textarea": "./src/textarea.tsx",
+    "./field": "./src/field.tsx",
     "./tip": "./src/tip.tsx",
     "./toast": "./src/toast.ts",
     "./tooltip": "./src/tooltip.tsx",

@@ -658,6 +658,12 @@ class FormSpec(BaseModel, frozen=True):
 # ── Run start / stop ──────────────────────────────────────────────────
 
 class RunStartRequest(BaseModel, frozen=False):  # extra="allow" in the wire
+    # CARD BIRTH LAW (operator order 2026-09-06): draft_id is REQUIRED
+    # on the wire — the gateway 4xxes a start without a doc-backed
+    # draft_id BEFORE any run registers. The mirror keeps it optional
+    # (mirrors declare vocabulary, not refusal) — required-ness is
+    # walled at runtime (TestStartDoorRequiresDraft).
+    draft_id: str | None = None
     route: bool | None = None
     flow: dict[str, Any] | None = None
     yaml: str | None = None

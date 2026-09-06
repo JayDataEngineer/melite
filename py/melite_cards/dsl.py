@@ -837,7 +837,7 @@ class MaskMod(Mod):
         order=0, default='',
         tooltip='RGBA PNG whose alpha channel marks the region. Standalone: '
                 'region semantics for this lane. Alongside lanpaint: the '
-                'inpaint region — present with input_image, the builder '
+                'inpaint region — present with image1, the builder '
                 'switches to the lanpaint sampler.')
     mask_mode = Select(label='Region Mode', group='mask', zone='mods',
         order=1, width=1, default='auto',
@@ -893,17 +893,22 @@ class QvoiceMod(Mod):
 
 
 class LanPaintMod(Mod):
-    """The LanPaint inpaint mod — input_image + a mask (the generic
+    """The LanPaint inpaint mod — image1 + a mask (the generic
     MaskMod, boarded beside this one) switch the builder to the
     lanpaint sampler. The mask slot and its host-side prep chain
     live in MaskMod now: attached composition, not lanpaint
     internals. Outpaint pads ride here (canvas expansion is part of
-    the inpaint flow)."""
+    the inpaint flow).
+
+    SLOT LAW (2026-09-06 image-edit surface standard): the anchor is
+    image1 — slot 1 of the image1/image2/image3 brick the estate
+    vocabulary (slot_kinds.VOCAB) already declares. image2/image3
+    live on the card; reference_images is the list-form twin."""
     pack = "lanpaint"
-    input_image = Image(label='Image', group='lanpaint', order=-1)
+    image1 = Image(label='Image 1', group='lanpaint', order=-1)
     lanpaint_enabled = Boolean(label='Force LanPaint', group='lanpaint',
                                order=1, default=False,
-                               visible_when='input_image != null')
+                               visible_when='image1 != null')
     lanpaint_num_steps = Number(label='Num Steps', group='lanpaint',
                                 order=2, width=1, min=1, max=100, step=1, default=20,
                                 visible_when='lanpaint_enabled == true')
@@ -926,16 +931,16 @@ class LanPaintMod(Mod):
                                   options=["negative", "positive"])
     outpaint_top = Slider(label='Expand Top', group='lanpaint', order=8,
                           width=1, min=0, max=512, step=8, default=0,
-                          visible_when='input_image != null')
+                          visible_when='image1 != null')
     outpaint_right = Slider(label='Expand Right', group='lanpaint',
                             order=9, width=1, min=0, max=512, step=8, default=0,
-                            visible_when='input_image != null')
+                            visible_when='image1 != null')
     outpaint_bottom = Slider(label='Expand Bottom', group='lanpaint',
                              order=10, width=1, min=0, max=512, step=8, default=0,
-                             visible_when='input_image != null')
+                             visible_when='image1 != null')
     outpaint_left = Slider(label='Expand Left', group='lanpaint', order=11,
                            width=1, min=0, max=512, step=8, default=0,
-                           visible_when='input_image != null')
+                           visible_when='image1 != null')
     outpaint_overlap = Slider(label='Overlap', group='lanpaint', order=8,
                               width=1, min=0, max=64, step=1, default=16,
-                              visible_when='input_image != null')
+                              visible_when='image1 != null')

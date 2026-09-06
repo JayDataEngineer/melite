@@ -27,15 +27,19 @@ for _p in (os.path.join(str(REPO), "plugins", "engines", "comfyui"),
 
 from flow import FlowError, FromInitial, FromStage, Stage, load_flow
 
+# Loaded workflows/templates are JSON documents (no future-import in
+# this module, so the alias uses the string-forward-ref form).
+JsonValue = dict[str, "JsonValue"] | list["JsonValue"] | str | int | float | bool | None
+
 CHAR = load_flow("character")
 
 
-def _donor(flow_id, stage_id):
+def _donor(flow_id: str, stage_id: str) -> Stage:
     donor = load_flow(flow_id)
     return next(s for s in donor.stages if s.id == stage_id)
 
 
-def _mine(stage_id):
+def _mine(stage_id: str) -> Stage:
     return next(s for s in CHAR.stages if s.id == stage_id)
 
 
@@ -46,7 +50,7 @@ class TestFromFlowFidelity:
         ("skin-apply", "coat", "coat"),
         ("fit-seat", "seat", "seat"),
     ])
-    def test_reused_row_is_the_donor_row(self, flow_id, stage_id, mine):
+    def test_reused_row_is_the_donor_row(self, flow_id: str, stage_id: str, mine: str) -> None:
         donor = _donor(flow_id, stage_id)
         got = _mine(mine)
         assert got.engine == donor.engine
@@ -55,7 +59,7 @@ class TestFromFlowFidelity:
         assert got.outputs == donor.outputs
         assert got.description == donor.description
 
-    def test_rewired_inputs(self):
+    def test_rewired_inputs(self) -> None:
         body = _mine("body")
         assert body.inputs == {"photo": FromStage(stage="img",
                                                     output="photo")}
@@ -72,19 +76,19 @@ class TestFromFlowFidelity:
         assert seat.inputs["prop"] == FromStage(stage="garment",
                                                   output="garment")
 
-    def test_unknown_donor_refuses(self):
+    def test_unknown_donor_refuses(self) -> None:
         with pytest.raises(FlowError, match="no such stage"):
             Stage.from_flow("skin-apply", "nope")
         with pytest.raises(FlowError, match="no flow at"):
             Stage.from_flow("no-such-flow", "coat")
 
-    def test_unknown_input_name_refuses(self):
+    def test_unknown_input_name_refuses(self) -> None:
         with pytest.raises(FlowError, match="unknown input"):
             Stage.from_flow("skin-apply", "coat",
                             inputs={"sidecar": FromInitial(key="x")})
 
 
-def _template():
+def _template() -> dict[str, JsonValue]:
     p = os.path.join(str(REPO), "plugins", "engines", "comfyui",
                      "models", "image", "z-image",
                      "generate_t2i.json")
@@ -97,8 +101,8 @@ class TestZImageBuilder:
         ("img", "$character_prompt", 20260906, "character_img"),
         ("gimg", "$garment_prompt", 20260907, "character_gimg"),
     ])
-    def test_builder_is_the_template_plus_swaps(self, mine, text,
-                                                 seed, prefix):
+    def test_builder_is_the_template_plus_swaps(self, mine: str, text: str,
+                                                 seed: int, prefix: str) -> None:
         want = _template()
         want["CLIPTextEncode.0"]["inputs"]["text"] = text
         want["KSampler.0"]["inputs"]["seed"] = seed
@@ -106,7 +110,7 @@ class TestZImageBuilder:
         assert _mine(mine).params["workflow"] == want
 
 
-def _render_pixal_canonical():
+def _render_pixal_canonical() -> dict[str, JsonValue]:
     img_py = os.path.join(str(REPO), "plugins", "engines", "comfyui",
                           "action_cards", "3d", "img_to_mesh", "py")
     spec = importlib.util.spec_from_file_location(
@@ -128,17 +132,17 @@ def _render_pixal_canonical():
 
 
 class TestGarmentWorkflow:
-    def test_workflow_is_the_renderer_output(self):
+    def test_workflow_is_the_renderer_output(self) -> None:
         assert (_mine("garment").params["workflow"]
                 == _render_pixal_canonical())
 
-    def test_remesh_tail_folded_in_chain(self):
+    def test_remesh_tail_folded_in_chain(self) -> None:
         wf = _mine("garment").params["workflow"]
         kinds = [v.get("class_type") for v in wf.values()]
         assert "RemeshMesh" in kinds and "DecimateMesh" in kinds
 
 
-def _full_initials():
+def _full_initials() -> dict[str, str | int | float]:
     return {
         "character_prompt": "a keeper of the caravan, full body",
         "garment_prompt": "a weathered leather duster coat",
@@ -161,7 +165,7 @@ def _full_initials():
 
 
 class TestGraphNames:
-    def test_compiled_rows_carry_the_name_map(self):
+    def test_compiled_rows_carry_the_name_map(self) -> None:
         graph = CHAR.to_graph()
         by_id = {n.node_id: n for n in graph.nodes}
         assert by_id["body"].input_names == {"photo": "img.photo"}
@@ -184,14 +188,14 @@ class TestGraphNames:
 
 
 class TestBranchCompile:
-    def test_full_gen_prunes_nothing(self):
+    def test_full_gen_prunes_nothing(self) -> None:
         pruned, skipped = CHAR.pruned_for(_full_initials())
         assert skipped == ()
         assert [s.id for s in pruned.stages] == [
             "img", "gimg", "body", "rig", "garment", "coat",
             "seat"]
 
-    def test_starter_branches_rewrite(self):
+    def test_starter_branches_rewrite(self) -> None:
         body = dict(_full_initials(), starter_image="s.png",
                     garment_image_1="g.png")
         pruned, skipped = CHAR.pruned_for(body)
@@ -204,7 +208,7 @@ class TestBranchCompile:
         assert by_id["garment"].inputs == {
             "garment_image": FromInitial(key="garment_image_1")}
 
-    def test_single_branch(self):
+    def test_single_branch(self) -> None:
         body = dict(_full_initials(), starter_image="s.png")
         pruned, skipped = CHAR.pruned_for(body)
         assert skipped == ("img",)

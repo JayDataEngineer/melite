@@ -45,6 +45,22 @@ def _post(
             return e.code, {}
 
 
+def _compose(
+    port: int,
+    body: dict[str, str | list[dict[str, str]] | dict[str, str | list[dict[str, str]]]],
+) -> str:
+    """CARD BIRTH LAW (operator order 2026-09-06): the start door
+    4xxes a start without a doc-backed draft_id. Walls whose subject
+    is a LATER gate (ambiguity, semantics) compose their card first
+    so the tested variable stays isolated."""
+    code, doc = _post(port, "v1/flows/drafts", body)
+    assert code == 200, "card compose refused: %s %s" % (code, doc)
+    draft_id = doc.get("draftId")
+    assert isinstance(draft_id, str) and draft_id, \
+        "card compose returned no draftId: %s" % (doc,)
+    return draft_id
+
+
 @pytest.fixture(scope="module")
 def scratch_gateway() -> Iterator[int]:
     from _anchor import boot_scratch_gateway, reap_gateway
@@ -71,8 +87,13 @@ def test_http_flows_start_ambiguous_doors_refuse_4xx(
     ambiguous — the resolver must refuse 4xx and register NO run.
     The literal "ambiguous request" string pins the contract so a
     silent fallback to a default model (the QUEUE LANE LAW's
-    banned-class) can't sneak back in."""
-    code, body_out = _post(scratch_gateway, "v1/flows/start", body)
+    banned-class) can't sneak back in.
+    CARD BIRTH LAW (operator order 2026-09-06): the envelope carries
+    a valid draft_id so the tested gate is ambiguity, not card
+    birth (a cardless two-door body refuses on the envelope first —
+    ENVELOPE-FIRST)."""
+    code, body_out = _post(scratch_gateway, "v1/flows/start",
+                           {**body, "draft_id": _compose(scratch_gateway, body)})
     assert code == 400, (code, body_out)
     assert "ambiguous" in str(body_out).lower(), body_out
 
@@ -120,11 +141,59 @@ def test_http_flows_start_empty_prompt_refuses_400(scratch_gateway: int) -> None
     must refuse an empty/missing prompt with a 400 — the AI loop
     gets the verbatim message. The "Image complete" run on the
     user's path only succeeded BECAUSE this gate held the empty
-    prompt at the client first; the server holds it the same way."""
+    prompt at the client first; the server holds it the same way.
+    CARD BIRTH LAW (operator order 2026-09-06): the envelope
+    carries a valid draft_id so the tested gate is the semantic
+    one, not card birth."""
+    start = {"model": "krea-2", "prompt": ""}
     code, body_out = _post(
         scratch_gateway, "v1/flows/start",
-        {"model": "krea-2", "prompt": ""},
+        {**start, "draft_id": _compose(scratch_gateway, start)},
     )
     assert code == 400, (code, body_out)
     msg = str(body_out).lower()
     assert "prompt" in msg, body_out
+
+
+# ── 4. Headless-flow tool params (docs/design/flow-single-tool.md) ─
+def test_http_flows_validate_headless_bad_enum_refuses_400(
+    scratch_gateway: int,
+) -> None:
+    """The image-upscale headless knob image_model is a closed enum:
+    an off-enum value 4xxes at the validate door with the param named
+    — no queue slot, no GPU claim."""
+    code, body_out = _post(
+        scratch_gateway, "v1/flows/validate",
+        {"flow": "image-upscale", "prompt": "a fox",
+         "image_model": "flux"},
+    )
+    assert code == 400, (code, body_out)
+    msg = str(body_out).lower()
+    assert "image_model" in msg, body_out
+    assert "krea-2" in msg, body_out
+
+
+def test_http_flows_validate_headless_missing_required_refuses_400(
+    scratch_gateway: int,
+) -> None:
+    """required means present (a required knob carries no default): a
+    headless call without image_model 4xxes naming it."""
+    code, body_out = _post(
+        scratch_gateway, "v1/flows/validate",
+        {"flow": "image-upscale", "prompt": "a fox"},
+    )
+    assert code == 400, (code, body_out)
+    assert "image_model" in str(body_out).lower(), body_out
+
+
+def test_http_flows_validate_headless_good_compiles_200(
+    scratch_gateway: int,
+) -> None:
+    """A well-formed headless call compiles (the seed default fills:
+    absent-keys-only at start, valid absent-optional at validate)."""
+    code, body_out = _post(
+        scratch_gateway, "v1/flows/validate",
+        {"flow": "image-upscale", "prompt": "a fox",
+         "image_model": "z-image"},
+    )
+    assert code == 200, (code, body_out)

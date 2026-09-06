@@ -49,14 +49,17 @@ def test_non_bool_test_flag_refused_before_registration(bad: str | int | list[bo
 
 
 def test_bool_false_flag_passes_the_flag_gate() -> None:
-    # the flag check passed when the refusal comes from the NEXT gate
-    # (resolve_request: no flow selected) — a different, named error
-    with pytest.raises(gateway.ValidationError, match="no flow selected"):
+    # the flag check passed when the refusal comes from the NEXT gate.
+    # ENVELOPE-FIRST (CARD BIRTH LAW, 2026-09-06): the draft gate now
+    # sits between the flag gate and resolve_request, so the named
+    # next-gate refusal is "draft_id is required", not "no flow
+    # selected" — the flag gate still passed (never "test flag").
+    with pytest.raises(gateway.ValidationError, match="draft_id is required"):
         _submit({"prompt": "x", "test": False})
 
 
 def test_bool_true_flag_passes_the_flag_gate() -> None:
-    with pytest.raises(gateway.ValidationError, match="no flow selected"):
+    with pytest.raises(gateway.ValidationError, match="draft_id is required"):
         _submit({"prompt": "x", "test": True})
 
 
@@ -104,7 +107,8 @@ def test_assets_index_integer_limit_serves() -> None:
      lambda: setattr(ld, "peek", lambda *a, **k: (_ for _ in ()).throw(
          ld.LaneWireError("boom: field reason")))),
     (gateway._h_card_tools, "/v1/card-tools",
-     lambda: setattr(ld, "card_tools", lambda: (_ for _ in ()).throw(
+     # the door passes ?lane= through — the double tolerates the arg
+     lambda: setattr(ld, "card_tools", lambda *a, **k: (_ for _ in ()).throw(
          ld.LaneWireError("boom: field reason")))),
 ])
 def test_lane_wire_refusal_serves_structured_500(handler: HandlerFn, path: str, setup: Callable[[], None]) -> None:
@@ -129,3 +133,46 @@ def test_skill_read_door_still_404s_unknown() -> None:
     code, body = ld.skill_read("no-such-skill")
     assert code == 404
     assert "no such skill" in body["error"]
+
+
+# ── drafts-get serves an OBJECT, never doubly-encoded text ──────────
+
+def test_drafts_get_door_serves_object_not_text(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Media->Cards regression ("flows aren't recreated"): drafts_get serves
+    VERBATIM disk TEXT; the handler passed that str straight through as the
+    payload and _adapt's json.dumps encoded it a second time — wire body
+    "\\"{...}\\"" — so res.json() handed hydrateDraft a string, stages
+    never hydrated, and the Cards studio opened empty. The door must answer
+    a dict whose stages is a list, single-encoded on the wire."""
+    import json as _json
+    import re as _re
+
+    import editor_runs as _er
+    monkeypatch.setattr(gateway, "STATE_ROOT", tmp_path)
+    st, saved = _er.drafts_save(str(tmp_path / "drafts"), {
+        "intent": "cards reopen probe",
+        "stages": [{"title": "S1", "service": "svc", "params": {}}],
+    })
+    assert st == 200
+    did = str(saved["draftId"])
+    path = "/v1/flows/drafts/" + did
+    ctx = gateway._Ctx(None, "GET", path, path, {}, b"")
+    ctx.m = _re.match(r"^/v1/flows/drafts/(.+)$", path)
+    code, payload = asyncio.run(gateway._h_drafts_get(ctx))
+    assert code == 200
+    assert isinstance(payload, dict), \
+        "door must serve an object, got %s" % type(payload).__name__
+    assert isinstance(payload.get("stages"), list)
+    assert payload["draft_id"] == did
+    # single-encoding: exactly what _adapt puts on the wire parses back
+    # to the same object (a str payload would come back a str here).
+    wire = _json.dumps(payload, indent=2, default=str)
+    assert isinstance(_json.loads(wire), dict)
+    # unknown ids still refuse 404 with the error dict, untouched.
+    missing = "/v1/flows/drafts/draft-nope"
+    mctx = gateway._Ctx(None, "GET", missing, missing, {}, b"")
+    mctx.m = _re.match(r"^/v1/flows/drafts/(.+)$", missing)
+    mcode, mbody = asyncio.run(gateway._h_drafts_get(mctx))
+    assert mcode == 404
+    assert isinstance(mbody, dict)

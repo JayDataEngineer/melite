@@ -20,16 +20,16 @@ pytestmark = pytest.mark.gpu
 def test_wan_vace_reference_film(gateway: "QueueDoor",
                                  assets: dict[str, str | None]) -> None:
     """wan-vace: reference image + prompt → one h264 film."""
+    # FLAT (flows rework 2026-09-05): card params ride top-level —
+    # a nested "params" key double-wraps and 400s at phase 1.
     run_id = gateway.submit({
         "model": "wan-vace",
         "test": True,
-        "params": {
-            "prompt": ("the figure turns slowly and raises one hand, "
-                       "cloth moving softly"),
-            "reference_image": assets["source"],
-            "width": 832, "height": 480, "length": 33, "fps": 24,
-            "steps": 4, "cfg": 1.0, "seed": 42,
-        },
+        "prompt": ("the figure turns slowly and raises one hand, "
+                   "cloth moving softly"),
+        "reference_image": assets["source"],
+        "width": 832, "height": 480, "length": 33, "fps": 24,
+        "steps": 4, "cfg": 1.0, "seed": 42,
     })
     status = gateway.wait(run_id, timeout_s=1500)
     assert status["status"] == "completed", status
@@ -48,13 +48,11 @@ def test_scail2_character_animation(gateway: "QueueDoor",
     run_id = gateway.submit({
         "model": "scail2-animate",
         "test": True,
-        "params": {
-            "prompt": "the character moves as driven",
-            "reference_image": assets["source"],
-            "pose_video": drive,
-            "width": 480, "height": 480, "length": 25, "fps": 24,
-            "steps": 12, "cfg": 5.0, "seed": 42,
-        },
+        "prompt": "the character moves as driven",
+        "reference_image": assets["source"],
+        "pose_video": drive,
+        "width": 480, "height": 480, "length": 25, "fps": 24,
+        "steps": 12, "cfg": 5.0, "seed": 42,
     })
     status = gateway.wait(run_id, timeout_s=2400)
     assert status["status"] == "completed", status

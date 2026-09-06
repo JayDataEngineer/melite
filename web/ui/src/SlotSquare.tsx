@@ -34,6 +34,9 @@ export const ASSET_DRAG_MIME = "application/tech-noir-asset"
 export function isImageUrl(value: string): boolean {
  return (
  /^data:image\//i.test(value) ||
+ // blob: — the fresh-upload object-URL preview (the upload rail's
+ // local mirror while the PARAM carries the estate path)
+ /^blob:/i.test(value) ||
  /^(?:https?:)?\/[^"'<>]*\.(?:png|jpe?g|webp|gif|bmp|avif)(?:[?#]|$)/i.test(value)
  )
 }

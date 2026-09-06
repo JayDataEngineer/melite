@@ -115,6 +115,100 @@ def test_ambiguous_doors_refused() -> None:
         resolve_request({"flow_inline": _INLINE_TWO_STEP, "model": "krea-2"})
 
 
+# ── CARD BIRTH LAW (operator order 2026-09-06, verbatim) ────────────
+#
+#   "IF THERE IS NO DRAFT_ID, THAT IS A HARD ERROR! THAT NEEDS TO
+#    HAPPEN!"
+#
+# Every run is born from an action card: submit() refuses a start
+# body without a valid, doc-backed draft_id 4xx BEFORE any run
+# registers. This is the wall that makes the media sidebar's
+# "run has no action card (no draft_id in its run row)" click error
+# UNREACHABLE for every run born after the law — the row shape
+# cannot exist. (QUEUE LANE LAW shape: refusal before registration,
+# no zombie slot; law text: AGENTS.md CARD BIRTH LAW.)
+
+import asyncio  # noqa: E402
+
+import gateway as gw_mod  # noqa: E402
+
+
+class TestStartDoorRequiresDraft:
+    """The registration door hard-refuses cardless starts."""
+
+    @staticmethod
+    def _gateway(monkeypatch: pytest.MonkeyPatch,
+                 tmp_path: Path) -> gw_mod.Gateway:
+        # submit()'s existence check reads STATE_ROOT; registration
+        # writes run dirs under OUT_ROOT/TEST_OUT_ROOT — all patched
+        # to the scratch so the wall never touches repo state.
+        monkeypatch.setattr(gw_mod, "STATE_ROOT", tmp_path)
+        monkeypatch.setattr(gw_mod, "OUT_ROOT", tmp_path / "output")
+        monkeypatch.setattr(gw_mod, "TEST_OUT_ROOT", tmp_path / "test-output")
+        return gw_mod.Gateway()
+
+    def test_missing_draft_id_refused_before_registration(
+            self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        gw = self._gateway(monkeypatch, tmp_path)
+        with pytest.raises(ValidationError) as ei:
+            asyncio.run(gw.submit({"flow_inline": _INLINE_TWO_STEP}))
+        assert "draft_id is required" in str(ei.value)
+        # 4xx BEFORE registration: no run row, no queue slot, no dir
+        assert gw.runs == {} and gw.order == []
+        assert not (tmp_path / "output").exists()
+
+    def test_envelope_first_draft_named_before_flow_resolution(
+            self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        # even a body that would ALSO refuse at resolve names its own
+        # field first — the envelope refusal never masquerades as a
+        # flow/params error (ENVELOPE-FIRST, 2026-09-06)
+        gw = self._gateway(monkeypatch, tmp_path)
+        with pytest.raises(ValidationError) as ei:
+            asyncio.run(gw.submit({"flow": "no-such-lane"}))
+        assert "draft_id is required" in str(ei.value)
+
+    def test_empty_and_malformed_draft_id_refused(
+            self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        gw = self._gateway(monkeypatch, tmp_path)
+        for bad, want in (("", "draft_id is required"),
+                          ("bad id!", "draft_id malformed"),
+                          ("draft/" + "x" * 90, "draft_id malformed")):
+            with pytest.raises(ValidationError) as ei:
+                asyncio.run(gw.submit(
+                    {"flow_inline": _INLINE_TWO_STEP, "draft_id": bad}))
+            assert want in str(ei.value)
+        assert gw.runs == {} and gw.order == []
+
+    def test_dangling_draft_id_refused(
+            self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        # a draft_id naming no card doc reproduces the exact click
+        # error the law kills (the reader strips dangling ids) — the
+        # door refuses it like any unresolved request
+        gw = self._gateway(monkeypatch, tmp_path)
+        with pytest.raises(ValidationError) as ei:
+            asyncio.run(gw.submit({"flow_inline": _INLINE_TWO_STEP,
+                                   "draft_id": "draft-nope"}))
+        assert "unknown draft_id" in str(ei.value)
+        assert gw.runs == {} and gw.order == []
+
+    def test_doc_backed_draft_registers_and_sidecar_carries_it(
+            self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        import editor_runs as _er
+        gw = self._gateway(monkeypatch, tmp_path)
+        code, resp = _er.drafts_save(
+            str(tmp_path / "drafts"), {"intent": "wall card",
+                                       "stages": []})
+        assert code == 200
+        did = resp["draftId"]
+        run = asyncio.run(gw.submit({"flow_inline": _INLINE_TWO_STEP,
+                                     "draft_id": did}))
+        assert run.draft_id == did
+        assert gw.order == [run.run_id]
+        flow_doc = json.loads(
+            (tmp_path / "output" / run.run_id / "_flow.json").read_text())
+        assert flow_doc["draft_id"] == did
+
+
 def test_validate_door_compiles_without_registering() -> None:
     """The HTTP door: 200 with the typed stage view, 400 with the
     verbatim compile refusal — no queue, no sidecar, no run dir."""

@@ -62,6 +62,15 @@ class TestTheFlow(unittest.TestCase):
         self.assertEqual(stage.expected["glb"], flow_mod.Kind.mesh)
         self.assertEqual(stage.outputs["body"], flow_mod.Kind.mesh)
 
+    def test_expected_kinds_ride_the_node_row(self) -> None:
+        """The 2026-09-06 live incident: Stage.expected existed but
+        to_graph dropped it — the runs-relative glb rode the workflow
+        verbatim and the node refused "source_glb not found". The
+        runner's absolutize seam reads NodeRow.expected; the carry is
+        the bridge's load-bearing wire."""
+        (node,) = _flow().to_graph().nodes
+        self.assertEqual(node.expected, {"glb": "mesh"})
+
     def test_the_flow_names_its_pipeline_explicitly(self) -> None:
         """QUEUE LANE LAW: a named flow dir + FLOW id — no fallback
         composition, no hardcoded engine endpoints."""
@@ -112,6 +121,96 @@ class TestTheStudioSeam(unittest.TestCase):
             "a failed convert surfaces loudly and falls back — never a "
             "dead viewport",
         )
+
+
+class TestTheLiveBridge(unittest.TestCase):
+    """The three defects the first LIVE conversion exposed (2026-09-06)
+    — each fixed at its SSOT, each pinned here so the bridge can never
+    silently regress to a shape that only fails at runtime."""
+
+    def _nodes_src(self) -> str:
+        p = os.path.join(
+            REPO, "vendor", "comfyui_extensions", "melite-autorig-nodes",
+            "nodes.py")
+        with open(p, encoding="utf-8") as f:
+            return f.read()
+
+    def test_mesh_rides_the_upload_walk(self) -> None:
+        """compose/artifact._EXTS carries MESH — without the row a
+        .glb rides the workflow untouched and the node refuses
+        "source_glb not found" (never staged to input/)."""
+        import sys
+        if str(REPO / "py") not in sys.path:
+            sys.path.insert(0, str(REPO / "py"))
+        sys.path.insert(
+            0, str(REPO / "plugins" / "engines" / "comfyui" / "compose"))
+        import artifact as _art
+        self.assertTrue(_art.uploads(_art.Kind.MESH))
+        self.assertIn(".glb", _art.upload_extensions())
+
+    def test_blender_resolves_lazily(self) -> None:
+        """The standalone-rig path (source_glb + glb) is pure
+        python+torch; the export node must not demand a Blender binary
+        before branching (the headless estate refusal,
+        "Blender binary not found"). The lazy sites resolve at use."""
+        src = self._nodes_src()
+        # no UNCONDITIONAL resolve ahead of the action dispatch —
+        # the lazy form (underscore) is the only spelling inside export
+        self.assertNotIn(
+            "        blender_bin = _resolve_blender_binary()",
+            src,
+            "blender must resolve at its use sites, never upfront")
+        self.assertIn("_blender_bin = _resolve_blender_binary()", src)
+
+    def test_runner_absolutizes_file_kind_refs(self) -> None:
+        """NodeRow.expected carries the receiving half of the typed
+        edges (the runner seam reads it to absolutize the wire's
+        artifact spellings — URL and runs-relative — before the
+        $-substitution deep-walk)."""
+        from gateway import absolutize_artifact_refs
+        out = absolutize_artifact_refs(
+            __import__("flow_graph").NodeRow(
+                node_id="rig", node_type="comfyui",
+                expected={"glb": "mesh"}),
+            {"glb": "/abs/already/engine-space.glb"})
+        self.assertEqual(out["glb"], "/abs/already/engine-space.glb")
+
+
+
+
+class TestTheAnnyVerb(unittest.TestCase):
+    """Pipeline step c (operator musing, 2026-09-06): the conversion as
+    an ANNY-card option — RigSomaxVerb posts body-to-somax behind the
+    scenes. KNOBLESS: no knobs to drop; the chip feeds the stage Body
+    into the flow glb initial. The global subaction wall sweeps
+    writes/requires/knobs-home/TSX; this pins the verb→flow address.
+    """
+
+    def test_verb_posts_the_bridge_flow(self) -> None:
+        import sys
+        sys.path.insert(0, str(REPO / "py"))
+        from melite_cards import SubActionMod
+        import importlib.util as _ilu
+        path = (REPO / "plugins" / "engines" / "comfyui" / "models"
+                / "3d" / "anny" / "mods" / "verbs.py")
+        spec = _ilu.spec_from_file_location(
+            "somax_verb_w", str(path),
+            submodule_search_locations=[str(path.parent)])
+        mod = _ilu.module_from_spec(spec)
+        sys.modules["somax_verb_w"] = mod
+        spec.loader.exec_module(mod)
+        verb = next(v for v in vars(mod).values()
+                    if isinstance(v, type) and issubclass(v, SubActionMod)
+                    and getattr(v, "id", None) == "rig-somax")
+        self.assertEqual(verb.writes, ("body_glb",))
+        self.assertEqual(verb.requires, ("melite-autorig-nodes",))
+        self.assertEqual(len(verb.engines), 1)
+        self.assertEqual(verb.engines[0].flow, "body-to-somax")
+        knobs = {k for k in vars(verb) if not k.startswith("_")
+                 and k not in ("id", "label", "engines", "writes",
+                               "requires")}
+        self.assertEqual(knobs, set())
+        self.assertIn("glb", set(_flow().stages[0].inputs))
 
 
 if __name__ == "__main__":

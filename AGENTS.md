@@ -51,6 +51,37 @@
   (tests/walls/suites/test_py_gateway.py,
   tests/walls/suites/test_http_parity.py).
 
+## CARD BIRTH LAW (operator order, 2026-09-06, verbatim)
+
+> "THIS SHOULD BE IMPOSSIBLE TO HAPPEN. NO MORE SILENT ERRORS."
+> "IF THERE IS NO DRAFT_ID, THAT IS A HARD ERROR!"
+> "THAT NEEDS TO HAPPEN!"
+
+- Every run is born from an action card. `POST /v1/flows/start`
+  REQUIRES a doc-backed `draft_id` on the envelope: missing, empty,
+  malformed, or dangling (no doc at `data/runs/drafts/<id>.json`)
+  refuses 4xx in `py/gateway.py` `submit()` BEFORE door resolution
+  and BEFORE any run registers (no run_id, no sidecar, no dir).
+  The ritual is compose-first: `POST /v1/flows/drafts` mints the
+  card doc (`{draftId}`), the start rides the id
+  (design record docs/cards/draft-door.md).
+- No door-side auto-mint (a banned silent fallback); minting lives
+  at the callers — the shared helper is `web/catalog/src/cardBirth.ts`
+  (`composeCard`, `ensureDraftId`, via `@melite/catalog`), and every
+  live starter (editor client, flow protocol, studio surfaces, agent
+  tools, `flows/sprite-sheet/sprite_sheet.py`) composes before it
+  starts. New starters use the helper; bare `{flow:}`/`{model:}`-without-draft
+  teachings are extinct-door fossils and 4xx.
+- Pre-law cardless rows are legacy, not precedent:
+  `tools/backfill_draft_id.py` re-links them; the media sidebar's
+  click-contract guard stays as loud read-time defense for rows whose
+  draft doc is gone.
+- Enforced by tests/walls/suites/test_py_gateway.py
+  (`TestStartDoorRequiresDraft`) and the cardless cases in
+  tests/walls/suites/test_no_zombie_slots.py — together they make the
+  sidebar's "run has no action card (no draft_id in its run row)"
+  click error unbornable for new runs.
+
 ## RESILIENCE LAW (operator order, 2026-08-29, verbatim)
 
 > "GATEWAY SHOULD NOT CRASH. A BAD RUN SHOULD NOT CRASH THE ENTIRE SYSTEM.

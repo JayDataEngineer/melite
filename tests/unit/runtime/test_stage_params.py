@@ -41,14 +41,16 @@ from melite_cards.serialize import scan_engine_cards
 
 
 REPO = Path(__file__).resolve().parents[3]
-COMFYUI = REPO / "plugins" / "engines" / "comfyui"
 
 
 # ── helpers: mount the card packages so the lazy imports in
 #    stage_params._SCHEMA_BY_CARD resolve. This mirrors what the
-#    comfyui bus does at runtime (plugins.py EngineRef.load +
+#    plugin buses do at runtime (plugins.py EngineRef.load +
 #    compose/_load_arm_package); the test does it once per session
-#    so every test sees the same mounted set.
+#    so every test sees the same mounted set. The enumeration rides
+#    the SSOT scan (every plugin's action cards — comfyui AND the
+#    cpp natives; the hardcoded comfyui-only glob missed them until
+#    2026-09-06, the kimodo 502 lesson in a second surface).
 
 _CARDS_MOUNTED = False
 
@@ -57,8 +59,8 @@ def _mount_cards() -> None:
     global _CARDS_MOUNTED
     if _CARDS_MOUNTED:
         return
-    sys.path.insert(0, str(COMFYUI))
-    for py_dir in sorted((COMFYUI / "action_cards").glob("*/*/py")):
+    for card_py, _cls in scan_engine_cards(str(REPO)).values():
+        py_dir = Path(card_py).parent
         if not (py_dir / "__init__.py").is_file():
             continue
         pkg_name = py_dir.parent.name.replace("-", "_")

@@ -70,27 +70,57 @@ class ParamsSchemaRow(_Frozen):
 
 
 class ToolManifestRow(_Frozen):
-    """One tool.json manifest row (GET /v1/card-tools, bundle tools).
+    """One tool manifest row (GET /v1/card-tools, bundle tools).
 
-    Empirical key set (13 estate manifests): name/version/kind/card/
-    model/stage_title/description/params_schema, plus `hidden` on the
-    one card that declares it. A manifest that cannot state its name,
-    version, kind, or card refuses AT CONSTRUCTION — the duck-typed
-    isinstance-only admission era is over."""
+    Two flavors, exactly one routing address each (constructed XOR):
+      * card tools (tool.json on disk): kind card-compose, card=<card
+        id> — the empirical key set (name/version/kind/card/model/
+        stage_title/description/params_schema, plus `hidden` on the
+        one card that declares it).
+      * flow tools (Flow.tool declarations, 2026-09-06 headless-flow
+        record docs/design/flow-single-tool.md): kind flow-tool,
+        flow=<flow id> — the SAME keys with the lane address in flow
+        instead of card, served in template bundles and the
+        lane-scoped card-tools door so a lane session mounts ONE tool.
+    A manifest that cannot state its name, version, kind, and exactly
+    one lane address refuses AT CONSTRUCTION."""
 
     name: str = Field(min_length=1)
     version: int = Field(ge=1)
     kind: str = Field(min_length=1)
-    card: str = Field(min_length=1)
+    card: str = ""
+    flow: str = ""
     model: str = ""
     stage_title: str = ""
     description: str = ""
     params_schema: ParamsSchemaRow
     hidden: bool | None = None
 
+    @model_validator(mode="after")
+    def _lane_address(self) -> "ToolManifestRow":
+        if bool(self.card) == bool(self.flow):
+            raise ValueError(
+                "a tool manifest names its lane exactly once "
+                "(card XOR flow — card=%r flow=%r)"
+                % (self.card, self.flow))
+        if self.flow and self.kind != "flow-tool":
+            raise ValueError(
+                "a flow-addressed manifest is kind flow-tool "
+                "(got kind=%r flow=%r)" % (self.kind, self.flow))
+        if self.card and self.kind == "flow-tool":
+            raise ValueError(
+                "a card-addressed manifest is never kind flow-tool "
+                "(card=%r)" % self.card)
+        return self
+
     def wire(self) -> dict[str, JsonValue]:
-        """The served shape — hidden rides only when declared."""
-        return self.model_dump(exclude_none=True)
+        """The served shape — card/flow/hidden ride only when set."""
+        out = self.model_dump(exclude_none=True)
+        if not self.card:
+            out.pop("card", None)
+        if not self.flow:
+            out.pop("flow", None)
+        return out
 
 
 # ── the peek table (GET /v1/lanes) ─────────────────────────────────
@@ -220,9 +250,12 @@ class AgentBlock(_Frozen):
 class BundleRow(_Frozen):
     """GET /v1/cards/<lane>/bundle 200 body. The class cross-invariant
     is THE disclosure contract: an action-card bundle carries its card
-    dir + manifests and NO flow rows; a template bundle carries the
-    flow row and NO card, NO manifests. A bundle that mixes classes
-    cannot be built."""
+    dir + card manifests (never flow-tools) and NO flow rows; a template
+    bundle carries the flow row and NO card — plus, when the flow
+    declares tool=... (2026-09-06 headless-flow record
+    docs/design/flow-single-tool.md), exactly its flow-tool manifest(s)
+    (never card manifests). A bundle that mixes classes cannot be
+    built."""
 
     lane: str = Field(min_length=1)
     card: str | None = None
@@ -249,10 +282,17 @@ class BundleRow(_Frozen):
                 raise ValueError(
                     "a template bundle carries no card dir (card=%r)"
                     % self.card)
-            if self.tools:
+            for t in self.tools:
+                if not t.flow or t.card:
+                    raise ValueError(
+                        "a template bundle carries only flow-tool "
+                        "manifests (got kind=%r card=%r flow=%r)"
+                        % (t.kind, t.card, t.flow))
+        for t in self.tools:
+            if self.kind is PeekKind.ACTION_CARD and t.flow:
                 raise ValueError(
-                    "a template bundle carries no tool manifests (%d)"
-                    % len(self.tools))
+                    "an action_card bundle carries no flow-tool "
+                    "manifests (flow=%r)" % t.flow)
         return self
 
     def wire(self) -> dict[str, JsonValue]:

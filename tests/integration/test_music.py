@@ -20,15 +20,15 @@ def test_music_basic(gateway: "QueueDoor",
     """Bare music3 submit: structured caption, short duration,
     real .wav lands on disk with bytes."""
     door = gateway          # the fixture IS the QueueDoor
+    # FLAT (flows rework 2026-09-05): card params ride top-level —
+    # a nested "params" key double-wraps and 400s at phase 1.
     run_id = door.submit({
         "model": "music3",
-        "params": {
-            "prompt": "ambient, warm analog pad, slow build, 90 BPM, "
-                      "no drums, D major",
-            "duration": 5,
-            "n_diffusion_steps": 8,
-            "seed": 7,
-        },
+        "prompt": "ambient, warm analog pad, slow build, 90 BPM, "
+                  "no drums, D major",
+        "duration": 5,
+        "n_diffusion_steps": 8,
+        "seed": 7,
     })
     out = door.wait(run_id, timeout_s=900)
     arts = door.artifacts_on_disk(out)   # Paths, verified non-empty

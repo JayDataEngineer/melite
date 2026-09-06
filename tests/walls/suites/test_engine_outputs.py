@@ -9,18 +9,30 @@ channel mapping + a stub-engine two-stage handoff through the real
 Gateway.execute.
 """
 
+from __future__ import annotations
+
 import asyncio
 import importlib.util
 import os
 import sys
 import tempfile
 import time
+from collections.abc import Callable
 from pathlib import Path
+from types import ModuleType
+from typing import TYPE_CHECKING
 
 from _anchor import REPO
 
+if TYPE_CHECKING:
+    # py/ joins sys.path inside the tests — never at module scope.
+    from flow_graph import NodeRow
 
-def _native():
+# Resolved run inputs are JSON values (annotations only).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
+
+
+def _native() -> ModuleType:
     p = os.path.join(REPO, "plugins", "engines", "comfyui", "compose")
     if p not in sys.path:
         sys.path.insert(0, p)
@@ -44,7 +56,7 @@ ARTS = [
 
 
 class TestPublishChannels:
-    def test_mesh_image_video_audio_map(self):
+    def test_mesh_image_video_audio_map(self) -> None:
         got = _NATIVE.publish_output_channels(
             {"glb": "mesh", "albedo": "image", "clip": "video",
              "voice": "audio"},
@@ -54,25 +66,25 @@ class TestPublishChannels:
                         "clip": "/r/turnaround.mp4",
                         "voice": "/r/voiceover.wav"}
 
-    def test_first_unmatched_wins_per_channel(self):
+    def test_first_unmatched_wins_per_channel(self) -> None:
         got = _NATIVE.publish_output_channels(
             {"first": "image", "second": "image"}, ARTS)
         assert got == {"first": "/r/skin_detail_albedo.png",
                         "second": "/r/skin_detail_normal.png"}
 
-    def test_non_file_kinds_publish_nothing(self):
+    def test_non_file_kinds_publish_nothing(self) -> None:
         got = _NATIVE.publish_output_channels(
             {"prompt": "text", "seed": "num", "side": "seg",
              "weights": "lora", "glb": "mesh"},
             ARTS)
         assert got == {"glb": "/r/skin_body_001.glb"}
 
-    def test_unmatched_channel_stays_unpublished(self):
+    def test_unmatched_channel_stays_unpublished(self) -> None:
         got = _NATIVE.publish_output_channels(
             {"glb": "mesh", "clip": "video"}, ["/r/kind.json"])
         assert got == {}
 
-    def test_uppercase_suffix_matches(self):
+    def test_uppercase_suffix_matches(self) -> None:
         got = _NATIVE.publish_output_channels(
             {"shot": "image"}, ["/r/FRONT.PNG"])
         assert got == {"shot": "/r/FRONT.PNG"}
@@ -82,7 +94,10 @@ SEEN_ROWS = {}
 SEEN_INPUTS = {}
 
 
-async def _stub_execute(node, run_dir, inputs, stop_event, report=None):
+async def _stub_execute(node: NodeRow, run_dir: str, inputs: dict[str, JsonValue],
+                        stop_event: asyncio.Event,
+                        report: Callable[[dict[str, JsonValue]], None] | None = None
+                        ) -> dict[str, dict[str, str] | list[str]]:
     SEEN_ROWS[node.node_id] = dict(getattr(node, "outputs", None) or {})
     SEEN_INPUTS[node.node_id] = dict(inputs)
     if node.node_id == "rig":
@@ -97,7 +112,7 @@ class TestInitialRefAliases:
     verbatim into LoadImage because initial refs published only under
     the initial's own key."""
 
-    def test_initial_ref_publishes_receiving_name(self):
+    def test_initial_ref_publishes_receiving_name(self) -> None:
         sys.path.insert(0, os.path.join(str(REPO), "py"))
         import flow_graph
         import gateway
@@ -112,7 +127,7 @@ class TestInitialRefAliases:
         assert out["starter_image"] == "/estate/starter.png"
         assert out["photo"] == "/estate/starter.png"
 
-    def test_initial_ref_without_alias_keeps_tensor_only(self):
+    def test_initial_ref_without_alias_keeps_tensor_only(self) -> None:
         sys.path.insert(0, os.path.join(str(REPO), "py"))
         import flow_graph
         import gateway
@@ -128,14 +143,14 @@ class TestInitialRefAliases:
 
 
 class TestMeshHandoff:
-    def test_from_stage_mesh_chains(self):
+    def test_from_stage_mesh_chains(self) -> None:
         sys.path.insert(0, os.path.join(str(REPO), "py"))
         import flow_graph
         import gateway as gw_mod
         import gateway
 
         class _Run:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.run_id = "wall-handoff"
                 self.status = "running"
                 self.request = {}

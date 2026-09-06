@@ -20,15 +20,15 @@ def test_tts_basic(gateway: "QueueDoor",
     """Bare tts submit: one line, preset persona, real audio lands
     on disk with bytes."""
     door = gateway          # the fixture IS the QueueDoor
+    # FLAT (flows rework 2026-09-05): card params ride top-level —
+    # a nested "params" key double-wraps and 400s at phase 1.
     run_id = door.submit({
         "model": "qwen3-tts",
-        "params": {
-            "text": "The audio migration is complete. Every card "
-                    "speaks Python now.",
-            "voice": "vivian",
-            "temperature": 0.8,
-            "seed": 42,
-        },
+        "text": "The audio migration is complete. Every card "
+                "speaks Python now.",
+        "voice": "vivian",
+        "temperature": 0.8,
+        "seed": 42,
     })
     out = door.wait(run_id, timeout_s=600)
     arts = door.artifacts_on_disk(out)   # Paths, verified non-empty

@@ -362,6 +362,60 @@ def test_schema_admits_card_surface_every_arm() -> None:
     assert probed > 0, "no arm probed — probe setup broke (%s)" % skipped
 
 
+# Arms whose schema declares its OWN model/params doc and never
+# routes parse_card_body (the retired-stanza gate does not apply —
+# the nested shape is their explicit contract, not the consensus
+# body). Equality-pinned: a second entry fails.
+_NESTED_DOC_ARMS = frozenset({"video/h3-timeline"})
+
+
+def test_retired_nested_stanza_refuses_named_every_arm() -> None:
+    """The pre flows-rework shape ({model, params: {...}} through a
+    drafts door or a stale caller) double-wraps through
+    card_compose_body — every consensus-body arm must refuse it with
+    the RETIRED-STANZA name, never a downstream 'Extra inputs'
+    riddle. Phase-1 door, in-process: pure construction, no mounts,
+    no GPU. (The lifecycle suite skipped a whole quarter as an
+    'infra' 400 on exactly this shape.)"""
+    pkg = _compose_pkg()
+    by_id = _model_classes()
+    probed, skipped = 0, []
+    for lane, py_dir in _arms():
+        if lane in _NESTED_DOC_ARMS:
+            continue
+        card = os.path.basename(os.path.dirname(py_dir))
+        model = next((mid for mid, cls in by_id.items()
+                      if getattr(cls, "card", None) in
+                      (card, card.replace("_", "-"),
+                       card.replace("-", "_"))), card)
+        try:
+            arm = pkg._load_arm_package(lane)
+        except Exception:
+            try:
+                arm = _load_arm(py_dir)
+            except Exception as e:
+                skipped.append("%s (arm won't load: %s)" % (lane, e))
+                continue
+        try:
+            rc, _, _, err = arm.compose(
+                {"params": {"model": model,
+                             "params": {"prompt": "wall probe"}}},
+                model, "")
+        except Exception as e:
+            pytest.fail(
+                "%s phase 1 CRASHED on the retired stanza (%s) — "
+                "the door must refuse (rc=-3), never raise" % (lane, e))
+        assert rc != 0, (
+            "%s ACCEPTED the retired nested stanza — a stale caller "
+            "would burn a GPU slot on a shape the rework retired" % lane)
+        assert "retired nested 'params' stanza" in (err or ""), (
+            "%s refused without the name (rc=%r err=%r) — the riddle "
+            "('Extra inputs') sends the caller lane-hunting instead "
+            "of flattening the body" % (lane, rc, err))
+        probed += 1
+    assert probed > 0, "no arm probed — probe setup broke (%s)" % skipped
+
+
 _IMAGE_EDIT_FIRING = [
     # (knob, firing value, the field the refusal must name)
     ("lanpaint_enabled", True, "lanpaint_enabled"),
@@ -370,7 +424,10 @@ _IMAGE_EDIT_FIRING = [
     ("image2", "b.png", "image2"),
     ("image3", "c.png", "image3"),
     ("reference_images", ["r.png"], "reference_images"),
-    ("preset", "fast", "preset"),
+    # NO preset row (2026-09-06, the image-gen pattern: the knob is
+    # dead — extra="forbid" refuses it, pinned generically by
+    # test_image_edit_garbage_knob_refuses_field_named; a firing row
+    # would assert never-extra_forbidden on a foreign key).
     ("use_stock_nodes", True, "use_stock_nodes"),
     ("double_reference", True, "double_reference"),
     ("width", 512, "width"),
@@ -413,15 +470,19 @@ def _image_edit_plain() -> dict[str, JsonValue]:
     payload = _surface_payload(
         fields, dict(getattr(qwen, "defaults", None) or {}))
     payload.update({"prompt": "make it dusk at the wall",
-                    "input_image": "anchor.png"})
-    # 37 field names, ALL defaulted (2026-09-05 compile-time
+                    "image1": "anchor.png"})
+    # 34 field names, ALL defaulted (2026-09-05 compile-time
     # incident: input_mask was the ONE undefaulted media slot — its
     # seeded null died at BOTH gates (no envelope default, no class
     # coercion). It now declares default '' = the schema row's absent
     # sentinel, like image2/image3 — so it SURVIVES stripping and its
-    # null square is legal. The count moved 32 → 34 → 36 → 37.)
-    assert len(payload) == 37, (
-        "image-edit surface changed shape: %d keys (want 37) — update "
+    # null square is legal. The count moved 32 → 34 → 36 → 37 → 35
+    # → 34 (2026-09-06: width/height left the surface — anchored
+    # lanes carry no resolution knobs; the anchor input_image→image1
+    # rename is count-neutral; then preset died — the image-gen
+    # pattern, a dropdown that could only 400).
+    assert len(payload) == 34, (
+        "image-edit surface changed shape: %d keys (want 34) — update "
         "the incident pin deliberately" % len(payload))
     return payload
 
@@ -464,6 +525,33 @@ def test_image_edit_garbage_knob_refuses_field_named(tmp_path: Path) -> None:
     assert rc == -3 and "definitely_not_a_param" in (err or ""), (
         "forbid gate stopped naming foreign knobs: rc=%r err=%r"
         % (rc, err))
+
+
+_DEAD_KNOBS = (("preset", "vnccs_repose"), ("shift", 5.0))
+
+
+@pytest.mark.parametrize("knob,value", _DEAD_KNOBS)
+def test_image_edit_dead_knob_stays_dead(
+        tmp_path: Path, knob: str, value: str | int | float) -> None:
+    """DEAD-KNOB LAW (2026-09-06 audit, operator order verbatim:
+    "THERE ARE NO WEIRD FIELDS"): preset (the image-gen-pattern kill
+    — a Select with options=[] whose every value 400'd) and shift
+    (the ghost knob — no card field, no family default, silently
+    reshaping the graph) refuse AT THE VALIDATION DOOR, naming the
+    key. The generic garbage-knob test pins forbid with a nonsense
+    key; THIS pins the two real corpses BY NAME — real corpses get
+    resurrected (a well-meaning schema re-add), nonsense keys don't.
+    A resurrected preset re-admits the only-400 dropdown; a
+    resurrected shift is worse (compose no longer reads it — a
+    silent drop, not even a refusal)."""
+    arm = _image_edit_arm(tmp_path)
+    payload = _image_edit_plain()
+    payload[knob] = value
+    rc, _, _, err = arm.compose(
+        {"params": payload}, "qwen-img-edit-2511", "")
+    assert rc == -3 and knob in (err or ""), (
+        "%s=%r compiled or refused unnamed (rc=%r err=%r) — the "
+        "dead knob resurrected" % (knob, value, rc, err))
 
 
 # ── THE LORAS DOOR + THE MASK TILE (2026-09-05 button order) ────
@@ -672,8 +760,8 @@ def test_flavor_override_never_back_mutates() -> None:
     anchor on it)."""
     from melite_cards import LanPaintMod
     base = {f.name: f for f in LanPaintMod._fields_}
-    assert base["input_image"].required is False, (
-        "LanPaintMod.input_image flipped to required — a flavor "
+    assert base["image1"].required is False, (
+        "LanPaintMod.image1 flipped to required — a flavor "
         "override leaked back into the generic mod")
     by_id = _model_classes()
     qwen = by_id.get("qwen-img-edit-2511")
@@ -681,10 +769,10 @@ def test_flavor_override_never_back_mutates() -> None:
     flavor = next(m for m in (qwen.mods or ())
                   if getattr(m, "pack", "") == "lanpaint")
     fl = {f.name: f for f in flavor._fields_}
-    assert fl["input_image"].required is True, (
+    assert fl["image1"].required is True, (
         "Lanpaint flavor lost its required anchor — the edit lane's "
         "declaration regressed")
-    assert base["input_image"].required is False  # again, after load
+    assert base["image1"].required is False  # again, after load
 
 
 def test_absorb_models_copies_fields() -> None:
@@ -884,7 +972,8 @@ def test_variant_routes_compile_through_gateway_door(tmp_path: Path) -> None:
                     continue
                 name = getattr(f, "name", "")
                 body[name] = "wall probe" if name not in (
-                    "input_image", "image", "ref_image", "source") \
+                    "input_image", "image1", "image", "ref_image",
+                    "source") \
                     else "__ANCHOR__"
             # lanes' input-existence grammars differ (image-edit
             # resolves /v1/assets URLs; the 3D lanes take literal

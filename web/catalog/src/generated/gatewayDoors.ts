@@ -21,12 +21,14 @@ export type GatewayDoorUrl =
   | `/v1/queue${DoorTail}`
   | `/v1/flows/status/${string}${DoorTail}`
   | `/v1/flows/stop/${string}${DoorTail}`
+  | `/v1/flows/resume/${string}${DoorTail}`
   | `/v1/flows/events/${string}${DoorTail}`
   | `/v1/flows/events?run_id=${string}${DoorTail}`
   | `/v1/flows/runs${DoorTail}`
   | `/v1/flows/runs/${string}${DoorTail}`
   | `/v1/assets${DoorTail}`
   | `/v1/ledger${DoorTail}`
+  | `/v1/metrics${DoorTail}`
   | `/v1/assets/runs/${string}${DoorTail}`
   | `/v1/assets/inputs/${string}${DoorTail}`
   | `/v1/uploads${DoorTail}`
@@ -44,6 +46,7 @@ export type GatewayDoorUrl =
   | `/v1/form-spec${DoorTail}`
   | `/v1/loras${DoorTail}`
   | `/v1/flows/families/param-schemas${DoorTail}`
+  | `/v1/schema${DoorTail}`
   | `/v1/flows/families/${string}${DoorTail}`
   | `/v1/flows/drafts${DoorTail}`
   | `/v1/flows/drafts/${string}${DoorTail}`

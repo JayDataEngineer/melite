@@ -14,12 +14,19 @@ fields after builtins). model_dump(by_alias=True) at a rim produces
 exactly the historical dict shape.
 """
 
-from typing import Any
+from typing import Any  # noqa: F401 — the pydantic `params` FIELD below
+# evaluates at runtime (no future-import in this module); the
+# annotation wall owns function signatures, not field types.
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+# Params trees are JSON documents (annotations only — the pydantic
+# `params` FIELD keeps its own declared type; see the module docstring
+# on why field types are a separate, runtime-visible decision).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
 
-def _dollar_tokens(value: Any) -> set[str]:
+
+def _dollar_tokens(value: JsonValue) -> set[str]:
     """Every whole-string $name in a params tree — the compile-time
     twin of gateway._deep_expand's tokenizer: a token is "$" plus the
     ENTIRE remaining string (embedded "x$seed y" is prompt prose, not
@@ -79,6 +86,26 @@ class NodeRow(BaseModel):
     # runs-relative spellings). Mirrors `outputs`: empty when the
     # stage omitted `expected`.
     expected: dict[str, str] = Field(default_factory=dict)
+    # STROKE 4 (2026-09-06): the action-card id when this node is a
+    # CARD stage (Stage.card → to_graph). "" is the engine-only
+    # default (every existing row). When set, the worker's card
+    # bridge composes the card doc (params) into engine params via
+    # the owning plugin's arm BEFORE execute — the node's params are
+    # the CARD DOC, not the engine surface. The bridge is generic:
+    # the arm's name is resolved through the plugin bus, the core
+    # names no card (PLUGIN ARCHITECTURE LAW).
+    card: str = Field(default="")
+    # R3.3 RETRY ROWS (2026-09-06): retry policy is DATA on the
+    # stage, never engine-side guessing. `retries` = extra attempts
+    # after a failed one (0 = today's fail-fast; capped at 5 — a
+    # flaky engine needs a couple of tries, not an infinite loop
+    # burning GPU-hours). `timeout_s` = the RUNNER's stage budget
+    # (asyncio.wait_for) — distinct from params.timeout_s, the
+    # ENGINE's own door. Every attempt is ledgered run.stage_retry
+    # and stamped stage["retries_used"] in the sidecar (RESILIENCE
+    # LAW: documented, then continued).
+    retries: int = Field(default=0, ge=0, le=5)
+    timeout_s: float | None = Field(default=None)
 
     @model_validator(mode="after")
     def _refs_nonempty(self) -> "NodeRow":
@@ -87,6 +114,10 @@ class NodeRow(BaseModel):
                 raise ValueError(
                     "node %r: input_from ref must be a non-empty string "
                     "(got %r)" % (self.node_id, ref))
+        if self.timeout_s is not None and self.timeout_s <= 0:
+            raise ValueError(
+                "node %r: timeout_s must be positive (got %r)"
+                % (self.node_id, self.timeout_s))
         return self
 
 

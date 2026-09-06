@@ -190,6 +190,10 @@ class FakeRun:
         # execute() finally-block before the report contract lands
         self.draft_id = None
         self.card_extra_inputs = {}
+        # BRANCH SYSTEM (2026-09-06): sidecar() reads the build-time
+        # prune record — a run without it dies at the first stage
+        # transition, before any report lands.
+        self.skipped_stages = []
 
 
 async def run_report_battery() -> tuple[FakeRun, list[dict[str, str | int | dict[str, str | int]]]]:

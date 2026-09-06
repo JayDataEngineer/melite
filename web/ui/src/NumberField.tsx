@@ -27,7 +27,7 @@
  */
 import { useCallback, useRef, useState, useEffect } from "react"
 import { cn } from "./utils"
-import { Tip } from "./tip"
+import { FieldLabel } from "./field"
 
 export interface NumberFieldProps {
  value: number
@@ -187,15 +187,9 @@ export function NumberField({
  const displayValue = Number.isFinite(value) ? String(value) : ""
 
  return (
- <label className={cn("flex flex-col gap-0.5", className)}>
+ <label className={cn("block", className)}>
  {label && (
- <Tip tip={tooltip || label}>
- <span
- className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground/60"
- >
- {label}
- </span>
- </Tip>
+ <FieldLabel label={label} tooltip={tooltip || label} />
  )}
  <div
  data-numberfield=""

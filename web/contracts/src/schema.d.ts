@@ -714,12 +714,19 @@ export interface components {
          *     not declared here are legal generation params (model_extra), scanned
          *     per-shape by :func:`validate_run_start` — never silently dropped.
          *
+         *     CARD BIRTH LAW (operator order 2026-09-06): `draft_id` is
+         *     REQUIRED — the gateway 4xxes a start without a doc-backed
+         *     draft_id BEFORE any run registers. Compose the card first
+         *     (POST /v1/flows/drafts), ride the minted id here.
+         *
          *     `reuse_run_id` is str | int because the yaml-spec helper has always
          *     str()-coerced it; the generation shape tolerates the same today.
          *     `seed` is str | int (the route shape forwards it uncoerced; the
          *     frontend sends numbers, the agent may send strings).
          */
         RunStartRequest: {
+            /** Draft Id */
+            draft_id: string;
             /** Route */
             route?: boolean | null;
             /** Flow */

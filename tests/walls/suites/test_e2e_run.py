@@ -123,8 +123,18 @@ def _run_to_real_png(
 ) -> bytes:
     """The shared e2e spine: start → poll to terminal → asset bytes.
     Every boarded image family rides it (offered means runnable —
-    operator order 2026-09-05)."""
-    code, rbody = _post(port, "v1/flows/start", body)
+    operator order 2026-09-05).
+    CARD BIRTH LAW (operator order 2026-09-06): the start door 4xxes
+    a start without a doc-backed draft_id — the card is composed
+    FIRST (one draft-door call on the same scratch gateway), then
+    the run links to it."""
+    draft_code, draft_body = _post(port, "v1/flows/drafts", body)
+    assert draft_code == 200, "%s card compose refused: %s %s" % (
+        label, draft_code, draft_body)
+    assert isinstance(draft_body.get("draftId"), str) and draft_body["draftId"], (
+        "%s card compose returned no draftId: %s" % (label, draft_body))
+    code, rbody = _post(port, "v1/flows/start",
+                        {**body, "draft_id": draft_body["draftId"]})
     if code not in (200, 202):
         msg = str(rbody).lower()
         unavailable = ("not available", "no engine", "no comfyui",

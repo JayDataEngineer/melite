@@ -21,8 +21,16 @@
  */
 
 import { parseNpz, type NpyArray } from "./npz"
+import { apiFetch } from "@melite/catalog"
 
-const SKIN_URL = "/editor/soma-skin-standard.npz"
+// The skin is a DECLARED provision on the kimodo family (models/
+// motion/kimodo/model.py _SOMA_SKIN) — the provision door streams it
+// from the weights mount and ACQUIRES it on demand (sha-verified
+// through the comfy-mcp rail) when missing. NEVER a vite-public
+// blob: the old /editor/soma-skin-standard.npz path 404'd whenever
+// the committed asset drifted from the declared one (2026-09-06).
+// Exported: the editor test wall pins the door shape.
+export const SKIN_URL = "/v1/models/kimodo/provisions/skin_standard.npz"
 const J = 77 // SOMA-77 joints
 const W = 8  // max influencing joints per vertex in skin_standard.npz
 
@@ -133,7 +141,7 @@ export function restPoseFromBind(bindRig: Float32Array, jointCount: number): {
 export async function loadSomaSkin(): Promise<SomaSkin> {
   if (_skinPromise) return _skinPromise
   _skinPromise = (async () => {
-    const res = await fetch(SKIN_URL)
+    const res = await apiFetch(SKIN_URL)
     if (!res.ok) throw new Error(`Failed to fetch SOMA skin: ${res.status}`)
     const bytes = new Uint8Array(await res.arrayBuffer())
     const arrays = await parseNpz(bytes)

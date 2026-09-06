@@ -28,9 +28,27 @@ class GatewayClient:
         self.timeout = timeout
 
     def get(self, path: str) -> tuple[int, JsonValue]:
+        # 4xx answers as (code, body) — symmetric with post(): a
+        # route-smoke probe may pin a NAMED refusal (e.g. the
+        # card-tools lane filter's 404), never an exception.
+        try:
+            with urllib.request.urlopen(
+                    self.base + path, timeout=self.timeout) as r:
+                return r.status, json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            raw = e.read().decode(errors="replace")
+            try:
+                return e.code, json.loads(raw)
+            except json.JSONDecodeError:
+                return e.code, raw[:300]
+
+    def get_raw(self, path: str) -> tuple[int, bytes, str]:
+        """Binary doors (the provision door streams npz/glb): status,
+        body BYTES, content-type — never a json parse."""
         with urllib.request.urlopen(
                 self.base + path, timeout=self.timeout) as r:
-            return r.status, json.loads(r.read())
+            return r.status, r.read(), \
+                r.headers.get("content-type", "")
 
     def post(self, path: str, body: dict[str, str]) -> tuple[int, dict[str, JsonValue] | str]:
         req = urllib.request.Request(

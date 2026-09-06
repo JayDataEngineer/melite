@@ -220,9 +220,35 @@ def _cjson_compact(value: JsonValue) -> str:
 # artifact typing (C artifact_type ~537 / content_type_of ~557)
 # ---------------------------------------------------------------------------
 
-_IMG = ("png", "jpg", "jpeg", "webp", "gif", "svg")
-_AUD = ("wav", "flac", "mp3", "ogg", "m4a", "aac")
-_VID = ("mp4", "webm", "mkv", "mov")
+def _media_kinds() -> dict[str, dict[str, list[str]]]:
+    """Single media-kind vocabulary (SSOT: plugins/web/dsh/media-plugin/media-kinds.json).
+    The TS panel and the runs-window test derive from the same file; the
+    parity wall pins all three. Import-time load: a missing file refuses
+    loudly here, never as an empty sidebar downstream."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.normpath(os.path.join(
+        here, os.pardir, "plugins", "web", "dsh", "media-plugin", "media-kinds.json"))
+    with open(path, encoding="utf-8") as f:
+        doc = json.load(f)
+    return doc["kinds"]
+
+
+def _media_policy() -> dict[str, int]:
+    """Door-tier caps from the same SSOT file (media-kinds.json `policy`)."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.normpath(os.path.join(
+        here, os.pardir, "plugins", "web", "dsh", "media-plugin", "media-kinds.json"))
+    with open(path, encoding="utf-8") as f:
+        doc = json.load(f)
+    return doc["policy"]
+
+
+_MEDIA_KINDS = _media_kinds()
+_MEDIA_POLICY = _media_policy()
+_IMG = tuple(_MEDIA_KINDS["image"]["exts"])
+_AUD = tuple(_MEDIA_KINDS["audio"]["exts"])
+_VID = tuple(_MEDIA_KINDS["video"]["exts"])
+_MODEL = tuple(_MEDIA_KINDS["model"]["exts"])
 
 
 def _ext(name: str) -> str:
@@ -238,7 +264,7 @@ def artifact_type(name: str) -> str:
         return "audio"
     if e in _VID:
         return "video"
-    if e in ("glb", "gltf"):
+    if e in _MODEL:
         return "model"
     if e == "json":
         return "spec"
@@ -272,15 +298,23 @@ def content_type_of(name: str) -> str:
 
 
 # media set for gallery ordering — run_dir_has_media (~6238): NOTE it is
-# NOT identical to artifact_type's media set (no svg, no mkv, no m4a/aac).
-_MEDIA_EXTS = ("png", "jpg", "jpeg", "webp", "gif",
-               "mp4", "webm", "mov",
-               "wav", "flac", "ogg", "mp3")
+# NOT identical to artifact_type's media set (gallery extras like svg, mkv,
+# m4a/aac classify but don't list — the split is declared per kind in
+# media-kinds.json `gallery`, not restated here).
+_MEDIA_EXTS = tuple(
+    e for k in ("video", "image", "audio", "model") for e in _MEDIA_KINDS[k]["gallery"]
+)
 
-_MAX_IMGS = 3          # payload diet: sidebar lists media + 3 frames (~594)
+_MAX_IMGS = int(_MEDIA_POLICY["maxListedImages"])  # SSOT: media-kinds.json policy (payload diet: sidebar lists media + N frames). The client-side display guard (frame dumps at >20 images, MediaPanel flatten) is documented against THIS number in the same file.
 
 
 def _run_dir_has_media(run_dir: str) -> bool:
+    """Top-level OR one level down. The merged single-graph path
+    lands artifacts at <run>/<stage>/<file> — a run WITH media must
+    never read as media-less: the media-first sort buried it under
+    the archive's media rows and the ?limit=500 window cut it off
+    entirely (live bug, run-lifecycle wall, 2026-09-06: fresh run
+    completed with artifacts, absent from /v1/flows/runs)."""
     try:
         names = os.listdir(run_dir)
     except OSError:
@@ -289,6 +323,16 @@ def _run_dir_has_media(run_dir: str) -> bool:
         e = _ext(name).lower()
         if e in _MEDIA_EXTS:
             return True
+    for name in names:
+        sub = os.path.join(run_dir, name)
+        try:
+            if not os.path.isdir(sub):
+                continue
+            for inner in os.listdir(sub):
+                if _ext(inner).lower() in _MEDIA_EXTS:
+                    return True
+        except OSError:
+            continue
     return False
 
 
@@ -303,7 +347,9 @@ def run_artifacts(out_dir: str, out_dir_literal: str) -> list[dict[str, str | in
     """C run_artifacts_json() (~587) as a list. out_dir_literal is the
     string the C embeds in "path" (it passes its "./output/<run>" string);
     rows: {name,path,bytes,url,type,size} + a trailing
-    {truncated,listed,total} marker when any entry went unlisted."""
+    {truncated,listed,total} marker when the image CAP dropped media
+    entries (total = media candidates only; sidecars/non-media never
+    count — a marker on every run is noise, not a cap signal)."""
     try:
         names = os.listdir(out_dir)
     except OSError:
@@ -311,19 +357,26 @@ def run_artifacts(out_dir: str, out_dir_literal: str) -> list[dict[str, str | in
     names.sort(key=lambda s: s.encode("utf-8", "surrogateescape"))
     arts = []
     listed = 0
-    total = 0
+    # MEDIA-CANDIDATE total (2026-09-06 fix): the marker flags the image
+    # CAP, so `total` counts only files that could ever list (media
+    # types). Sidecars and non-media never counted — counting them made
+    # every run carry {listed<total} (the sidebar's "capped" stat went
+    # 463/463 = pure noise the moment gap-6 surfaced it).
+    media_total = 0
     imgs = 0
     for name in names:
-        total += 1
         if name.startswith("_"):
             continue                        # sidecars + generated poster
         t = artifact_type(name)
         if t == "image":
+            media_total += 1
             imgs += 1
             if imgs > _MAX_IMGS:
                 continue
-        elif t not in ("video", "audio"):
-            continue                        # not media: not listed
+        elif t in ("video", "audio", "model"):
+            media_total += 1
+        else:
+            continue                        # not media: not listed, not total
         listed += 1
         size = _file_size(os.path.join(out_dir, name))
         arts.append({
@@ -335,8 +388,9 @@ def run_artifacts(out_dir: str, out_dir_literal: str) -> list[dict[str, str | in
             "type": t,
             "size": size,
         })
-    if total > listed:
-        arts.append({"truncated": True, "listed": listed, "total": total})
+    if media_total > listed:
+        arts.append({"truncated": True, "listed": listed,
+                     "total": media_total})
     return arts
 
 

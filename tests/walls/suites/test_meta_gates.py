@@ -100,7 +100,7 @@ CARDS = REPO / "plugins/engines/comfyui/action_cards"
 CANARY = {
     "audio/music": ("duration", {"prompt": "song"}),
     "image/image-edit": ("steps", {"prompt": "hat",
-                                   "input_image": "x.png"}),
+                                   "image1": "x.png"}),
     "image/image-gen": ("steps", {"prompt": "a cat"}),
     "video/video-gen": ("pose_strength", {"prompt": "clip"}),
 }

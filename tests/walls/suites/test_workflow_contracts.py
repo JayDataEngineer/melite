@@ -35,29 +35,32 @@ from flow import load_flow  # noqa: E402
 
 CONTRACTS = (REPO / "infra" / "comfyui" / "contracts"
              / "object_info.json")
+
+# Recorded object_info entries are JSON documents (annotations only).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
 FLOWS_DIR = REPO / "flows"
 COMBO_TYPE = "COMFY_DYNAMICCOMBO_V3"
 
 
-def _accepted(entry: dict) -> dict[str, list]:
+def _accepted(entry: dict[str, JsonValue]) -> dict[str, list[JsonValue]]:
     inp = entry.get("input", {}) or {}
-    merged: dict[str, list] = {}
+    merged: dict[str, list[JsonValue]] = {}
     for section in ("required", "optional"):
         for k, spec in (inp.get(section) or {}).items():
             merged[k] = spec if isinstance(spec, list) else [spec, {}]
     return merged
 
 
-def _is_combo(spec: list) -> bool:
+def _is_combo(spec: list[JsonValue]) -> bool:
     return bool(spec) and spec[0] == COMBO_TYPE
 
 
-def _combo_options(spec: list) -> list[dict]:
+def _combo_options(spec: list[JsonValue]) -> list[dict[str, JsonValue]]:
     opts = (spec[1] or {}).get("options", []) if len(spec) > 1 else []
     return opts if isinstance(opts, list) else []
 
 
-def _option_inputs(option: dict) -> set[str]:
+def _option_inputs(option: dict[str, JsonValue]) -> set[str]:
     inputs = (option.get("inputs") or {})
     out: set[str] = set()
     for section in ("required", "optional"):
@@ -65,8 +68,8 @@ def _option_inputs(option: dict) -> set[str]:
     return out
 
 
-def _check(nodes: dict, problems: list, flow: str, stage: str,
-           key: str, cls: str, inputs: dict) -> None:
+def _check(nodes: dict[str, dict[str, JsonValue]], problems: list[str], flow: str, stage: str,
+           key: str, cls: str, inputs: dict[str, JsonValue]) -> None:
     entry = nodes.get(cls)
     if entry is None:
         problems.append(
@@ -161,15 +164,16 @@ class TestContractRefusals:
                 "manifold": ["BOOLEAN", {"default": False}]}}},
         ]}]}}}
 
-    def _problems(self, nodes, cls, inputs):
+    def _problems(self, nodes: dict[str, dict[str, JsonValue]], cls: str,
+                    inputs: dict[str, JsonValue]) -> str:
         out: list[str] = []
         _check(nodes, out, "f", "s", "n", cls, inputs)
         return " | ".join(out)
 
-    def test_unrecorded_class(self):
+    def test_unrecorded_class(self) -> None:
         assert "NOT RECORDED" in self._problems({}, "Ghost", {})
 
-    def test_flat_combo_missing_dotted_subs(self):
+    def test_flat_combo_missing_dotted_subs(self) -> None:
         # attempt 5's exact shape: sign_mode present, NO dotted keys —
         # the live POST 400 required_input_missing; this wall says it
         # offline.
@@ -178,7 +182,7 @@ class TestContractRefusals:
         assert "required combo sub-input 'qef'" in msg
         assert "required_input_missing" in msg
 
-    def test_wrong_branch_value(self):
+    def test_wrong_branch_value(self) -> None:
         # 'sdf' IS a recorded branch and its required sub rides the
         # dotted key — the OTHER legal combo shape, clean.
         msg = self._problems({"M": self.COMBO_NODE}, "M",
@@ -186,20 +190,20 @@ class TestContractRefusals:
                               "sign_mode.manifold": False})
         assert msg == ""
 
-    def test_unrecorded_branch_value(self):
+    def test_unrecorded_branch_value(self) -> None:
         msg = self._problems({"M": self.COMBO_NODE}, "M",
                              {"mesh": ["x", 0], "sign_mode": "qef",
                               "sign_mode.qef": False})
         assert "not a recorded branch" in msg
 
-    def test_unknown_plain_key(self):
+    def test_unknown_plain_key(self) -> None:
         msg = self._problems({"M": self.COMBO_NODE}, "M",
                              {"mesh": ["x", 0], "sign_mode": "udf",
                               "sign_mode.qef": False,
                               "bandana": 3})
         assert "unknown input key 'bandana'" in msg
 
-    def test_dotted_key_on_non_combo(self):
+    def test_dotted_key_on_non_combo(self) -> None:
         msg = self._problems({"M": self.COMBO_NODE}, "M",
                              {"mesh": ["x", 0], "sign_mode": "udf",
                               "sign_mode.qef": False,
@@ -207,18 +211,18 @@ class TestContractRefusals:
         assert "non-combo input" in msg
 
 
-def test_contracts_recording_exists():
+def test_contracts_recording_exists() -> None:
     assert CONTRACTS.exists(), (
         "missing %s — run: uv run python tools/contract_snapshot.py"
         % CONTRACTS)
 
 
-def test_every_emitted_workflow_satisfies_its_contract():
+def test_every_emitted_workflow_satisfies_its_contract() -> None:
     problems = _violations()
     assert not problems, "\n" + "\n".join(problems)
 
 
-def test_remesh_combo_pin():
+def test_remesh_combo_pin() -> None:
     # THE incident pin: the garment remesh carries the ONE spelling
     # that both validates and executes — branch key as plain value +
     # every required sub as dotted keys.

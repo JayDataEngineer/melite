@@ -26,8 +26,13 @@ Run: pytest tests/walls/suites/test_dsh_enhance_door.py -v
 from __future__ import annotations
 
 import json
+import os
 import re
+import urllib.error
+import urllib.request
 from pathlib import Path
+
+import pytest
 
 from _anchor import REPO
 
@@ -80,3 +85,74 @@ def test_plugin_is_a_loadable_profile_bundle() -> None:
     body = patch.read_text(encoding="utf-8")
     assert "@melite-plugin/dsh-tools" in body and "insert" in body, (
         "the bundle patch does not insert the plugin row")
+
+
+def test_enhance_door_answers_live() -> None:
+    """THE connection test (operator order, 2026-09-06, verbatim
+    intent): "NICE TESTS IDIOT, YOU CAN'T EVEN TEST FOR A BASIC
+    CONNECTION." Source-greps passed while the button 404'd — the
+    :3080 host had booted 8.5h BEFORE the route restoration landed,
+    so the running process never registered the door. This probe
+    hits the live proof route (/melite-tools/catalog: GET, no LLM,
+    no side effects). Host unreachable (CI, host down) SKIPS —
+    nothing to judge. Host UP but door missing FAILS: the plugin is
+    not loaded in the RUNNING host — restart it
+    (dsh --profile web); the code is landed, the process is stale.
+    DSH_WEB overrides the host (default http://127.0.0.1:3080)."""
+    _probe_each_dsh_host()
+
+
+_DEFAULT_DSH_HOSTS = ("http://127.0.0.1:3080", "http://127.0.0.1:3909")
+
+
+def _dsh_hosts() -> list[str]:
+    raw = os.environ.get("DSH_HOSTS", os.environ.get("DSH_WEB", ""))
+    if raw.strip():
+        return [h.strip().rstrip("/") for h in raw.split(",") if h.strip()]
+    return list(_DEFAULT_DSH_HOSTS)
+
+
+def _probe_each_dsh_host() -> None:
+    """Both GUIs answer the door: :3080 (prod) and :3909 (test DSH —
+    2026-09-06: the operator presses ✦ on cards in the TEST host,
+    whose deck profile never carried the dsh-tools bundle at all).
+    Per host: unreachable SKIPS (CI — nothing to judge); up but
+    doorless FAILS with the fix (wire the bundle / restart)."""
+    probed = 0
+    for host in _dsh_hosts():
+        url = host + "/melite-tools/catalog"
+        try:
+            with urllib.request.urlopen(url, timeout=10) as res:
+                status = res.status
+                raw = res.read()
+        except urllib.error.HTTPError as e:
+            pytest.fail(
+                "the DSH host is UP at %s but %s answers %s — the "
+                "melite-tools plugin is not loaded in the RUNNING "
+                "process (boot predates the route, or the profile "
+                "never carried the bundle row). Wire it / restart "
+                "the host; the code is landed and the static walls "
+                "pass. This is the operator-quoted ✦-button failure, "
+                "caught here instead of on click." % (host, url, e.code))
+        except Exception as e:
+            continue  # no host here — nothing to judge on this one
+        probed += 1
+        assert status == 200, "%s proof route answered %s" % (host, status)
+        try:
+            body = json.loads(raw.decode("utf-8"))
+        except (ValueError, UnicodeDecodeError):
+            pytest.fail("%s proof route answered non-JSON — no "
+                        "harness route here (SPA fallback or proxy)"
+                        % host)
+        assert isinstance(body.get("tools"), list), (
+            "%s proof route answered JSON without a tools list — "
+            "wrong door" % host)
+        # 2026-09-06: the card's model picker is populated from the
+        # LIVE list — a host serving catalog without llmRoutes is a
+        # stale build (pre-model-pick), and the picker stays empty.
+        assert isinstance(body.get("llmRoutes"), list) and body["llmRoutes"], (
+            "%s proof route has no llmRoutes — stale plugin build "
+            "(pre-model-pick): rebuild + reboot" % host)
+    if probed == 0:
+        pytest.skip("no DSH host up at %r — nothing to judge"
+                    % _dsh_hosts())

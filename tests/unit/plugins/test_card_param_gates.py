@@ -53,7 +53,7 @@ GATED = {
                          {"voice_name": "v",
                           "style_instruction": "warm"}, "seed"),
     "image/image-edit": ("ImageEditParams",
-                         {"prompt": "hat", "input_image": "x.png"},
+                         {"prompt": "hat", "image1": "x.png"},
                          "seed"),
     "image/image-gen": ("ImageGenParams", {"prompt": "a cat"}, "seed"),
     "image/ideogram4": ("IdeogramParams", {"prompt": "sign"}, "seed"),
@@ -198,7 +198,7 @@ def test_optional_slot_null_is_the_empty_square(gate: GateRow) -> None:
     if cls != "ImageEditParams":
         pytest.skip("optional-slot law pinned on image-edit (the adopter)")
     doc = mod.parse_card({"params": {
-        "prompt": "hat", "input_image": "x.png",
+        "prompt": "hat", "image1": "x.png",
         "image2": None, "image3": None, "reference_images": None}})
     assert doc.image2 == "" and doc.image3 == ""
     assert doc.reference_images == []
@@ -210,4 +210,4 @@ def test_numeric_null_still_refuses(gate: GateRow) -> None:
         pytest.skip("numeric-null law pinned on image-edit (the adopter)")
     with pytest.raises(ValidationError):
         mod.parse_card({"params": {
-            "prompt": "hat", "input_image": "x.png", num: None}})
+            "prompt": "hat", "image1": "x.png", num: None}})

@@ -20,15 +20,15 @@ def test_voice_lock_export(gateway: "QueueDoor",
     """Design + export: a described persona becomes a reusable
     embedding file beside its preview audio."""
     door = gateway          # the fixture IS the QueueDoor
+    # FLAT (flows rework 2026-09-05): card params ride top-level —
+    # a nested "params" key double-wraps and 400s at phase 1.
     run_id = door.submit({
         "model": "qwen3-tts-voicedesign",
-        "params": {
-            "voice_name": "canary_persona",
-            "style_instruction": "A warm female voice with a British "
-                                 "accent, mid-thirties, speaks with "
-                                 "quiet authority",
-            "seed": 42,
-        },
+        "voice_name": "canary_persona",
+        "style_instruction": "A warm female voice with a British "
+                             "accent, mid-thirties, speaks with "
+                             "quiet authority",
+        "seed": 42,
     })
     out = door.wait(run_id, timeout_s=600)
     arts = door.artifacts_on_disk(out)   # Paths, verified non-empty

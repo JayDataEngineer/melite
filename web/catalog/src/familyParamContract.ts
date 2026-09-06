@@ -547,13 +547,13 @@ function checkModEntry(
           message: `expected a string, got ${typeof val}.`,
         })
       } else if (
-        name === "name" &&
+        name === "id" &&
         kindOptions.length > 0 &&
         !hasUploadDir &&
         !cnKind
       ) {
         // Weights-file adapter membership: the applier resolves the
-        // entry's ``name`` through the kind's curated options; an
+        // entry's ``id`` through the kind's curated options; an
         // undeclared adapter resolves to a nonexistent file and dies
         // mid-run. Upload_dir kinds are disk-driven (any name legal).
         if (!kindOptions.includes(val)) {

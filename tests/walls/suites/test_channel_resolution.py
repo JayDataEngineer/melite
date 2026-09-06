@@ -28,6 +28,9 @@ import pytest
 
 from _anchor import REPO
 
+# Node params are JSON values (annotations only).
+type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
+
 sys.path.insert(0, str(REPO / "py"))
 
 import flow as flow_mod
@@ -37,7 +40,7 @@ import gateway as gw_mod
 FLOWS_DIR = REPO / "flows"
 
 
-def _row(**kw):
+def _row(**kw: str | tuple[str, ...] | dict[str, JsonValue]) -> flow_graph.NodeRow:
     base = dict(id="use", type="comfyui", params={
         "workflow": {"n": {"class_type": "LoadImage",
                            "inputs": {"image": "$photo"}}}})
@@ -46,13 +49,13 @@ def _row(**kw):
 
 
 class TestUnresolvedChannels:
-    def test_dangling_token_reported_with_stage_and_pool(self):
+    def test_dangling_token_reported_with_stage_and_pool(self) -> None:
         g = flow_graph.FlowGraph(
             name="w", nodes=(_row(input_from=("__initial__.other",),),))
         bad = g.unresolved_channels()
         assert bad == (("use", "photo", ("other",)),)
 
-    def test_incident_shape_resolves_both_spellings(self):
+    def test_incident_shape_resolves_both_spellings(self) -> None:
         row = _row(
             params={"workflow": {"n": {"class_type": "LoadImage",
                                   "inputs": {"image": "$photo",
@@ -63,7 +66,7 @@ class TestUnresolvedChannels:
         g = flow_graph.FlowGraph(name="w", nodes=(row,))
         assert g.unresolved_channels() == ()
 
-    def test_prompt_prose_is_not_a_channel(self):
+    def test_prompt_prose_is_not_a_channel(self) -> None:
         # embedded $ ("x$seed y") is prose at runtime — only whole
         # strings starting with $ are tokens; the tokenizer mirrors
         # _deep_expand exactly.
@@ -71,7 +74,7 @@ class TestUnresolvedChannels:
         g = flow_graph.FlowGraph(name="w", nodes=(row,))
         assert g.unresolved_channels() == ()
 
-    def test_pool_mirrors_resolve_inputs_exactly(self):
+    def test_pool_mirrors_resolve_inputs_exactly(self) -> None:
         # THE MIRROR PIN: what the static check accepts is exactly
         # what the executor publishes — keys, no more, no less.
         row = _row(
@@ -85,7 +88,7 @@ class TestUnresolvedChannels:
             row, {"starter_image": "/s.png", "rig.body": "/b.glb"})
         assert pool == set(resolved)
 
-    def test_compile_refuses_with_stage_and_token(self):
+    def test_compile_refuses_with_stage_and_token(self) -> None:
         body = {
             "id": "w-dangle",
             "stages": [
@@ -102,7 +105,7 @@ class TestUnresolvedChannels:
         assert "unresolved $channel" in msg
         assert "'gen'" in msg and "$photo" in msg
 
-    def test_validate_door_refuses_inline_dangle(self):
+    def test_validate_door_refuses_inline_dangle(self) -> None:
         body = {
             "id": "w-dangle-door",
             "stages": [
@@ -118,7 +121,7 @@ class TestUnresolvedChannels:
 
 
 class TestEstateSweep:
-    def test_every_flow_on_disk_resolves_clean(self):
+    def test_every_flow_on_disk_resolves_clean(self) -> None:
         names = sorted(p.parent.name for p in
                        FLOWS_DIR.glob("*/flow.py"))
         assert names, "no flows found — the sweep went blind"

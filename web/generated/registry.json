@@ -285,6 +285,22 @@
       "component": true
     },
     {
+      "name": "field",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/field.tsx"
+        }
+      ],
+      "exports": [
+        "FIELD_CONTROL",
+        "FIELD_LABEL",
+        "FieldLabel"
+      ],
+      "component": true
+    },
+    {
       "name": "input",
       "type": "registry:ui",
       "package": "@melite/ui",

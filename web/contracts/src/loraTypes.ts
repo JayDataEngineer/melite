@@ -20,6 +20,11 @@
  *  format — emit it directly, consume it verbatim.
  */
 export interface LoRAEntry {
-  name: string
+  /** The adapter's CATALOG id (form-spec modifiers.lora options .value —
+   *  the same key compose resolves against the model's loras rows). The
+   *  pre-2026-09-06 `name` key was a wire drift: the editor emitted it,
+   *  compose read `id` — every editor-authored lora died at compile with
+   *  "lora '' is not in the catalog". ONE key, the catalog's own. */
+  id: string
   strength: number
 }

@@ -58,17 +58,39 @@ def check_server():
         return False
 
 
+def compose_card(body):
+    """CARD BIRTH LAW (operator order 2026-09-06): the start door
+    4xxes a start without a doc-backed draft_id — compose the card
+    first (POST /v1/flows/drafts mints the doc), ride the minted id
+    on the start envelope. Raises on any refusal: a refused compose
+    never proceeds to a start."""
+    req = urllib.request.Request(
+        f"{SERVER}/v1/flows/drafts",
+        data=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST"
+    )
+    resp = urllib.request.urlopen(req, timeout=30)
+    doc = json.loads(resp.read())
+    draft_id = doc.get("draftId")
+    if not isinstance(draft_id, str) or not draft_id:
+        raise RuntimeError("card compose returned no draftId — refusing to start cardless")
+    return draft_id
+
+
 def generate_frame(character, action, seed, output_dir):
     """Generate a single sprite frame via inference.cpp."""
     suffix = ACTION_PROMPTS.get(action, action)
     prompt = f"pixel art style, {character}, {suffix}, transparent background, clean edges, game sprite"
 
-    body = json.dumps({
+    payload = {
         "model": "z-image",
         "prompt": prompt,
         "seed": seed,
         "negative_prompt": "blurry, low quality, text, watermark, complex background, photorealistic"
-    }).encode()
+    }
+    payload["draft_id"] = compose_card(payload)
+    body = json.dumps(payload).encode()
 
     req = urllib.request.Request(
         f"{SERVER}/v1/flows/start",

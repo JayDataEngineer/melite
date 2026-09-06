@@ -26,8 +26,12 @@ import json
 import os
 import sys
 import unittest
+from types import ModuleType
 
 import pytest
+
+# Card params are JSON (no future-import here — old-style alias).
+JsonValue = dict[str, "JsonValue"] | list["JsonValue"] | str | int | float | bool | None
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "..", "py"))
@@ -44,7 +48,7 @@ def _read(rel: str) -> str:
         return f.read()
 
 
-def _compose():
+def _compose() -> ModuleType:
     import plugins as P
     return P.load_compose("skintokens")
 
@@ -103,7 +107,7 @@ class TestComposeDoors(unittest.TestCase):
     """Phase-1 (run_id='') refusals — everything that can 4xx dies
     BEFORE any run registers."""
 
-    def _refusal(self, params: dict) -> str:
+    def _refusal(self, params: dict[str, JsonValue]) -> str:
         comp = _compose()
         rc, _g, _extra, err = comp.card_compose(
             {"params": params}, "skintokens", "", None)
@@ -172,7 +176,7 @@ class TestRendererArgv(unittest.TestCase):
     text: rig MODEL_DIR MESH OUTPUT.glb [--device ...]
     [--postprocess]."""
 
-    def _renderer(self):
+    def _renderer(self) -> ModuleType:
         comp_mod = _compose()
         return sys.modules["skintokens_auto_rig"].renderer
 
@@ -266,6 +270,17 @@ class TestAutoRigLiveThroughQueue(unittest.TestCase):
                 "skintokens runtime absent (build + hf download — "
                 "see docs/design/auto-rig-skintokens.md)")
 
+    def _cleanup_run(self) -> None:
+        import shutil
+        run_id = getattr(self, "_run_id", "")
+        if run_id:
+            try:
+                shutil.rmtree(os.path.join(
+                    REPO, "data/runs/output", run_id),
+                    ignore_errors=True)
+            except OSError:
+                pass
+
     def test_statue_to_rigged_glb_through_the_queue(self) -> None:
         import glob
         import time
@@ -283,12 +298,23 @@ class TestAutoRigLiveThroughQueue(unittest.TestCase):
         # FLAT knobs, never nested: the gateway's card-envelope lift
         # restages every non-door top-level key as the ONE params
         # stanza (card_compose_body) — a nested {"params": {...}}
-        # would double-wrap and refuse
-        body = json.dumps({
+        # would double-wrap and refuse.
+        # CARD BIRTH LAW (operator order 2026-09-06): the start door
+        # 4xxes a start without a doc-backed draft_id — the card is
+        # composed FIRST (one draft-door call), then the run links
+        # to it.
+        card = {
             "model": "skintokens",
             "input": mesh,
             "device": "cpu",
-        }).encode()
+        }
+        draft_req = urllib.request.Request(
+            "http://127.0.0.1:33081/v1/flows/drafts",
+            data=json.dumps(card).encode(), method="POST",
+            headers={"content-type": "application/json"})
+        with urllib.request.urlopen(draft_req, timeout=30) as r:
+            card["draft_id"] = json.loads(r.read().decode())["draftId"]
+        body = json.dumps(card).encode()
         req = urllib.request.Request(
             "http://127.0.0.1:33081/v1/flows/start", data=body,
             method="POST",
@@ -297,6 +323,10 @@ class TestAutoRigLiveThroughQueue(unittest.TestCase):
             started = json.loads(r.read().decode())
         run_id = started.get("run_id") or started.get("id")
         self.assertTrue(run_id, started)
+        # HYGIENE: the live run dir is deleted even when a later
+        # assert fails — the output pool stays clean.
+        self._run_id = run_id
+        self.addCleanup(self._cleanup_run)
         deadline = time.time() + 2400
         status = None
         while time.time() < deadline:
