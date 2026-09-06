@@ -93,6 +93,34 @@ class FromInitial(Edge):
         return "__initial__.%s" % self.key
 
 
+class SkipWhen(str, Enum):
+    """The closed branch-condition vocabulary (PYTHON SHAPE LAW rung 3).
+
+    present = prune this stage when the request carries its initial;
+    absent  = prune this stage when the request does NOT carry it.
+    A typo is a construction refusal, not a silently-live stage."""
+    present = "present"
+    absent = "absent"
+
+
+class StageSkip(BaseModel):
+    """One stage's branch condition — the BRANCH system (2026-09-06,
+    design record docs/design/character-pipeline.md §2).
+
+    StageSkip(initial="starter_image", when=SkipWhen.present) means:
+    when the request carries `starter_image`, this stage's outputs are
+    assumed to come from that request key instead — the stage is
+    pruned at build time (start/validate doors, before registration)
+    and any remaining FromStage edge into it rewrites to
+    FromInitial("starter_image") (present-by-construction: the prune
+    only fires when the key is there). A remaining edge into a stage
+    pruned any other way is a loud FlowError, never a dangling wire."""
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    initial: str = Field(min_length=1)
+    when: SkipWhen
+
+
 class FromStage(Edge):
     """Wires an EARLIER stage's output into this stage: <stage>.<output>.
     The Kind is INFERRED at construction from the upstream stage's
@@ -142,6 +170,11 @@ class Stage(BaseModel):
     # `kind_inputs` is consulted (the AI's first typo class
     # — forgetting `expected=` — has a typed fallback).
     expected: dict[str, Kind] = Field(default_factory=dict)
+    # ── the branch opt-in (§2) ─────────────────────────────────────
+    # skip_when=None is today's behavior (the stage always runs).
+    # Setting it prunes the stage at build time when its condition
+    # fires — see StageSkip + Flow.pruned_for.
+    skip_when: StageSkip | None = None
     # ── the lattice opt-in (Path C) ───────────────────────────────
     # card="" is the engine-only default. Setting card="<id>" routes
     # the stage through the ParamSchemaRegistry gate (py/stage_params.py):
@@ -159,6 +192,46 @@ class Stage(BaseModel):
             raise FlowError("stage id %r is not a legal identifier" % self.id)
         return self
 
+    @classmethod
+    def from_flow(cls, flow_id: str, stage_id: str, *, id: str = "",
+                  inputs: dict[str, Edge] | None = None) -> "Stage":
+        """Reuse a donor flow's stage row (the character pipeline's
+        IMPORT — docs/design/character-pipeline.md §1: estimate/rig/
+        coat/seat ride the SAME row object their home flow validated,
+        so a home-flow edit propagates at import — zero drift by
+        construction, not by copying. Only `id` (pipeline readability)
+        and per-name `inputs` (rewiring donor FromInitials onto this
+        flow's FromStage/FromInitial edges) may change; every other
+        field — engine, params, expected, outputs, description — rides
+        verbatim. Rewiring an input name the donor does not declare
+        refuses loudly (a typo must not silently add an unwired
+        input — the Flow validator would refuse it anyway, but HERE
+        names the donor). The new Flow's construction re-runs every
+        wire/kind check over the rewired edges."""
+        donor = load_flow(flow_id)
+        orig: Stage | None = None
+        for st in donor.stages:
+            if st.id == stage_id:
+                orig = st
+                break
+        if orig is None:
+            raise FlowError(
+                "from_flow(%r, %r): the donor flow has no such stage "
+                "(has: %s)" % (
+                    flow_id, stage_id, [s.id for s in donor.stages]))
+        merged = dict(orig.inputs)
+        if inputs:
+            unknown = set(inputs) - set(orig.inputs)
+            if unknown:
+                raise FlowError(
+                    "from_flow(%r, %r): rewires unknown input(s) %s "
+                    "(donor declares: %s)" % (
+                        flow_id, stage_id, sorted(unknown),
+                        sorted(orig.inputs)))
+            merged.update(inputs)
+        return orig.model_copy(update={"id": id or orig.id,
+                                        "inputs": merged})
+
 
 # STAGE-EXTRAS key set (2026-09-05): flow_from_body pulls stage fields
 # BY NAME, which bypasses Stage's extra=forbid — so this mirror set
@@ -170,7 +243,195 @@ STAGE_KEYS = frozenset({
     "id", "engine", "description", "params",
     "inputs", "outputs", "expected",
     "card", "card_io",     # CARD-STAGE LATTICE
+    "skip_when",           # BRANCH SYSTEM
 })
+
+
+# The headless single-tool option (2026-09-06, design record
+# docs/design/flow-single-tool.md — the comfy-mcp shape: a template +
+# slots surface so ONE tool call runs the flow).
+#
+# An authored flow may declare tool=FlowTool(...): a constrained,
+# mountable headless surface (e.g. image-upscale with image_model in
+# {krea-2, z-image}). Tool params are request-body keys; overlays stamp
+# validated values into stage params at the door (BEFORE to_graph via
+# Flow.compile), while $key slots and initial_pool carry the rest at
+# runtime — no new door, no executor change. Opt-in: tool=None keeps
+# the flow exactly as today.
+
+type ToolScalar = str | int | float | bool
+
+
+class ToolParamType(str, Enum):
+    """The closed headless-knob vocabulary (rung 3: a typo is a
+    construction refusal, not a runtime route mismatch)."""
+    string = "string"
+    integer = "integer"
+    number = "number"
+    boolean = "boolean"
+
+
+def _scalar_matches(ptype: ToolParamType, value: ToolScalar) -> bool:
+    """Authored-literal coherence: bool is NOT an int (the isinstance
+    bleed would let True ride an integer enum). Strict at construction;
+    the door is laxer (numeric strings coerce — the lax-wire
+    precedent)."""
+    if isinstance(value, bool):
+        return ptype is ToolParamType.boolean
+    if isinstance(value, int):
+        return ptype in (ToolParamType.integer, ToolParamType.number)
+    if isinstance(value, float):
+        return ptype is ToolParamType.number
+    return ptype is ToolParamType.string
+
+
+def _coerce_tool_scalar(
+        ptype: ToolParamType, value: JsonValue) -> ToolScalar | None:
+    """Door-time coercion: the validated scalar, or None when the wire
+    value is not this type. Numeric strings coerce (the editor sends
+    wire ints as strings — lax-wire precedent); booleans never coerce
+    to or from numbers."""
+    if isinstance(value, bool):
+        return value if ptype is ToolParamType.boolean else None
+    if isinstance(value, int):
+        if ptype in (ToolParamType.integer, ToolParamType.number):
+            return value
+        return None
+    if isinstance(value, float):
+        if ptype is ToolParamType.number:
+            return value
+        if ptype is ToolParamType.integer and value.is_integer():
+            return int(value)
+        return None
+    if isinstance(value, str):
+        if ptype is ToolParamType.string:
+            return value
+        s = value.strip()
+        try:
+            if ptype is ToolParamType.integer:
+                if s.lstrip("-").isdigit() and s not in ("", "-"):
+                    return int(s)
+                return None
+            if ptype is ToolParamType.number:
+                return float(s)
+        except ValueError:
+            return None
+        return None
+    return None
+
+
+class FlowToolProperty(BaseModel):
+    """One headless knob: type + human description + optional closed
+    value set + optional default + optional numeric bounds."""
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    ptype: ToolParamType
+    description: str = ""
+    enum: tuple[ToolScalar, ...] = ()
+    default: ToolScalar | None = None
+    minimum: float | None = None
+    maximum: float | None = None
+
+    @model_validator(mode="after")
+    def _coherent(self) -> "FlowToolProperty":
+        for v in self.enum:
+            if not _scalar_matches(self.ptype, v):
+                raise FlowError(
+                    "tool property enum value %r is not a %s"
+                    % (v, self.ptype.value))
+        if self.default is not None:
+            if not _scalar_matches(self.ptype, self.default):
+                raise FlowError(
+                    "tool property default %r is not a %s"
+                    % (self.default, self.ptype.value))
+            if self.enum and self.default not in self.enum:
+                raise FlowError(
+                    "tool property default %r is not in its enum %s"
+                    % (self.default, list(self.enum)))
+        if self.minimum is not None or self.maximum is not None:
+            if self.ptype not in (
+                    ToolParamType.integer, ToolParamType.number):
+                raise FlowError(
+                    "tool property bounds need a numeric type "
+                    "(got %s)" % self.ptype.value)
+            if (self.minimum is not None and self.maximum is not None
+                    and self.minimum > self.maximum):
+                raise FlowError(
+                    "tool property minimum %r exceeds maximum %r"
+                    % (self.minimum, self.maximum))
+        return self
+
+
+class FlowToolOverlay(BaseModel):
+    """The structural bind (rung 5: tuples, not stringly inject keys):
+    stamp the validated param value into the stage params at path
+    (e.g. ("workflow",) selects a whole baked variant graph). With
+    choices, the enum value maps to a baked literal instead of
+    stamping raw (e.g. "krea-2" selects the krea+upscale graph)."""
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    param: str = Field(min_length=1)
+    stage: str = Field(min_length=1)
+    path: tuple[str, ...] = Field(min_length=1)
+    choices: dict[ToolScalar, JsonValue] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _path_shaped(self) -> "FlowToolOverlay":
+        for part in self.path:
+            if not part:
+                raise FlowError(
+                    "tool overlay path carries an empty key "
+                    "(param %r)" % self.param)
+        return self
+
+
+class FlowTool(BaseModel):
+    """The headless surface: mountable name + description + closed
+    knob table + required set + overlay binds. Emitted to the agent as
+    ONE tool manifest (kind flow-tool) in the template bundle."""
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    name: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    properties: dict[str, FlowToolProperty] = Field(min_length=1)
+    required: tuple[str, ...] = ()
+    overlays: tuple[FlowToolOverlay, ...] = ()
+    version: int = Field(default=1, ge=1)
+
+    @model_validator(mode="after")
+    def _tool_coherent(self) -> "FlowTool":
+        if not FLOW_ID_RE.match(self.name):
+            raise FlowError(
+                "tool name %r is not a legal identifier" % self.name)
+        for key in self.required:
+            if key not in self.properties:
+                raise FlowError(
+                    "tool required param %r is not in properties (%s)"
+                    % (key, sorted(self.properties)))
+            if self.properties[key].default is not None:
+                raise FlowError(
+                    "tool required param %r carries a default — required "
+                    "means the caller passes it (a default would mask "
+                    "the absence at the defaults-merge; leave it "
+                    "optional instead)" % key)
+        for ov in self.overlays:
+            prop = self.properties.get(ov.param)
+            if prop is None:
+                raise FlowError(
+                    "tool overlay param %r is not in properties (%s)"
+                    % (ov.param, sorted(self.properties)))
+            if ov.choices:
+                if not prop.enum:
+                    raise FlowError(
+                        "tool overlay param %r maps choices without an "
+                        "enum - the keys would be unvalidated" % ov.param)
+                if set(ov.choices) != set(prop.enum):
+                    raise FlowError(
+                        "tool overlay param %r choice keys %s != enum %s"
+                        % (ov.param, sorted(
+                            ov.choices, key=repr),
+                            list(prop.enum)))
+        return self
 
 
 class Flow(BaseModel):
@@ -195,6 +456,16 @@ class Flow(BaseModel):
     # the models (the dialect belongs to its domain — PLUGIN
     # ARCHITECTURE LAW); the core only invokes them.
     initial_validators: dict[str, type[BaseModel]] = Field(default_factory=dict)
+    # THE HEADLESS SINGLE-TOOL OPTION (2026-09-06, design record
+    # docs/design/flow-single-tool.md): tool=None is today behavior,
+    # untouched. Setting tool=FlowTool(...) mounts ONE constrained
+    # headless surface for the flow (ONE tool manifest in the template
+    # bundle, validated + overlaid at the doors via Flow.compile).
+    # skill_refs merges existing skill rows into the bundle
+    # (consolidated-skills mode); flows/<id>/SKILL.md, when present,
+    # overrides the flow skill body (mega-skill mode).
+    tool: FlowTool | None = None
+    skill_refs: tuple[str, ...] = ()
 
     @model_validator(mode="after")
     def _validators_are_models(self) -> "Flow":
@@ -223,6 +494,237 @@ class Flow(BaseModel):
                     "initial input %r: %s" % (key, e.errors()[0]["msg"]
                                               if e.errors() else str(e)))
 
+    @model_validator(mode="after")
+    def _tool_refs_shaped(self) -> "Flow":
+        for ref in self.skill_refs:
+            if not isinstance(ref, str) or ":" not in ref:
+                raise FlowError(
+                    "flow %r skill_ref %r is not shaped <scope>:<id>"
+                    % (self.id, ref))
+            scope = ref.split(":", 1)[0]
+            if scope not in ("card", "model", "guide", "flow"):
+                raise FlowError(
+                    "flow %r skill_ref %r scope %r is not one of "
+                    "card | model | guide | flow" % (self.id, ref, scope))
+        if self.tool is not None:
+            stages = {st.id for st in self.stages}
+            for ov in self.tool.overlays:
+                if ov.stage not in stages:
+                    raise FlowError(
+                        "flow %r tool overlay stage %r is not a stage (%s)"
+                        % (self.id, ov.stage, sorted(stages)))
+            bound = {ov.param for ov in self.tool.overlays}
+            consumed: set[str] = set()
+            for st in self.stages:
+                for edge in st.inputs.values():
+                    if isinstance(edge, FromInitial):
+                        consumed.add(edge.key)
+            for key in self.tool.required:
+                if key not in bound and key not in consumed:
+                    raise FlowError(
+                        "flow %r tool required param %r reaches no "
+                        "stage (overlay it or consume it via FromInitial)"
+                        % (self.id, key))
+        return self
+
+    def validate_tool_params(self, body: dict[str, JsonValue]) -> None:
+        if self.tool is None:
+            return
+        for name in sorted(self.tool.properties):
+            prop = self.tool.properties[name]
+            raw = body.get(name, None)
+            if raw is None:
+                if name in self.tool.required:
+                    raise FlowError(
+                        "flow %r headless param %r is required"
+                        % (self.id, name))
+                continue
+            value = _coerce_tool_scalar(prop.ptype, raw)
+            if value is None:
+                raise FlowError(
+                    "flow %r headless param %r: %r is not a %s"
+                    % (self.id, name, raw, prop.ptype.value))
+            if prop.enum and value not in prop.enum:
+                raise FlowError(
+                    "flow %r headless param %r: %r is not one of %s"
+                    % (self.id, name, raw, list(prop.enum)))
+            if isinstance(value, (int, float)) and not isinstance(
+                    value, bool):
+                if prop.minimum is not None and value < prop.minimum:
+                    raise FlowError(
+                        "flow %r headless param %r: %r is below minimum %s"
+                        % (self.id, name, raw, prop.minimum))
+                if prop.maximum is not None and value > prop.maximum:
+                    raise FlowError(
+                        "flow %r headless param %r: %r is above maximum %s"
+                        % (self.id, name, raw, prop.maximum))
+
+    def apply_tool_defaults(
+            self, body: dict[str, JsonValue]) -> dict[str, JsonValue]:
+        if self.tool is None:
+            return body
+        out = dict(body)
+        for name, prop in self.tool.properties.items():
+            if (name not in out or out[name] is None) \
+                    and prop.default is not None:
+                out[name] = prop.default
+        return out
+
+    def with_tool_params(self, body: dict[str, JsonValue]) -> "Flow":
+        if self.tool is None or not self.tool.overlays:
+            return self
+        import copy as _copy
+        stages = {st.id: st for st in self.stages}
+        stamped: dict[str, dict[str, JsonValue]] = {}
+        # Broad binds first (stable): a whole-workflow choice replace
+        # would wipe a narrower stamp applied before it, so overlays
+        # apply shortest-path-first whatever the declaration order.
+        binds = sorted(self.tool.overlays, key=lambda o: len(o.path))
+        for ov in binds:
+            st = stages.get(ov.stage)
+            if st is None:
+                raise FlowError(
+                    "flow %r tool overlay stage %r is gone "
+                    "(pruned branch takes no overlays; param %r)"
+                    % (self.id, ov.stage, ov.param))
+            prop = self.tool.properties[ov.param]
+            raw = body.get(ov.param, None)
+            if raw is None:
+                raw = prop.default
+            if raw is None:
+                raise FlowError(
+                    "flow %r tool overlay param %r is not provided "
+                    "and has no default" % (self.id, ov.param))
+            value = _coerce_tool_scalar(prop.ptype, raw)
+            if value is None:
+                raise FlowError(
+                    "flow %r headless param %r: %r is not a %s"
+                    % (self.id, ov.param, raw, prop.ptype.value))
+            literal: JsonValue = value
+            if ov.choices:
+                if value not in ov.choices:
+                    raise FlowError(
+                        "flow %r headless param %r: %r is not one of %s"
+                        % (self.id, ov.param, raw,
+                           list(prop.enum)))
+                literal = _copy.deepcopy(ov.choices[value])
+            params = stamped.get(ov.stage)
+            if params is None:
+                params = _copy.deepcopy(dict(st.params))
+                stamped[ov.stage] = params
+            cur = params
+            for part in ov.path[:-1]:
+                nxt = cur.get(part)
+                if nxt is None:
+                    nxt = {}
+                    cur[part] = nxt
+                if not isinstance(nxt, dict):
+                    raise FlowError(
+                        "flow %r tool overlay path %s hits a scalar at %r "
+                        "(stage %r)" % (self.id, list(ov.path),
+                                         part, ov.stage))
+                cur = nxt
+            cur[ov.path[-1]] = literal
+        kept = tuple(
+            st.model_copy(update={"params": stamped[st.id]})
+            if st.id in stamped else st
+            for st in self.stages)
+        return self.model_copy(update={"stages": kept})
+
+    def pruned_for(self, body: dict[str, JsonValue]
+                 ) -> tuple["Flow", tuple[str, ...]]:
+        """The BRANCH build step (2026-09-06, §2): evaluate every
+        stage\u2019s skip_when against the REQUEST body and prune.
+
+        Returns (flow-to-run, pruned-stage-ids in declaration order).
+        A flow with no skip_when anywhere returns (self, ()) —
+        today\u2019s behavior, untouched.
+
+        The merge rule (no new edge kind): a remaining FromStage(s, o)
+        into a stage pruned by a PRESENT trigger rewrites to
+        FromInitial(<the trigger key>) — present-by-construction,
+        the prune only fires when the request carries it. A remaining
+        edge into a stage pruned any other way (absent-trigger, or a
+        stage that never declared a branch) is a FlowError naming
+        stage + input + producer — never a dangling wire, never a
+        post-claim surprise.
+
+        The pruned flow is RECONSTRUCTED (Flow(...)), so every
+        construction validator re-runs over the kept stages; a fully
+        pruned flow refuses loudly instead of registering an empty run.
+        """
+        if not any(st.skip_when is not None for st in self.stages):
+            return self, ()
+        pruned: dict[str, StageSkip] = {}
+        kept: list[Stage] = []
+        for st in self.stages:
+            cond = st.skip_when
+            if cond is None:
+                kept.append(st)
+                continue
+            present = body.get(cond.initial) is not None
+            fire = present if cond.when is SkipWhen.present else not present
+            if fire:
+                pruned[st.id] = cond
+            else:
+                kept.append(st)
+        if not kept:
+            raise FlowError(
+                "flow %r: the branch pruned every stage (fired: %s) — "
+                "a run with no stages never registers"
+                % (self.id, sorted(pruned)))
+        rewrote = 0
+        merged: list[Stage] = []
+        for st in kept:
+            if not any(isinstance(e, FromStage) and e.stage in pruned
+                       for e in st.inputs.values()):
+                merged.append(st)
+                continue
+            new_inputs = dict(st.inputs)
+            for name, edge in st.inputs.items():
+                if not (isinstance(edge, FromStage)
+                        and edge.stage in pruned):
+                    continue
+                cond = pruned[edge.stage]
+                if cond.when is not SkipWhen.present:
+                    raise FlowError(
+                        "flow %r stage %r input %r wires FromStage(%r) "
+                        "to pruned stage %r (branch %r fired) — no "
+                        "request key to merge (absent-trigger prunes "
+                        "carry nothing)"
+                        % (self.id, st.id, name, edge.ref(), edge.stage,
+                           cond.initial))
+                new_inputs[name] = FromInitial(key=cond.initial)
+                rewrote += 1
+            merged.append(st.model_copy(update={"inputs": new_inputs}))
+        _ = rewrote  # structural count (kept for the audit trail)
+        return (Flow(id=self.id, description=self.description,
+                     stages=tuple(merged),
+                     initial_validators=dict(self.initial_validators),
+                     tool=self.tool, skill_refs=tuple(self.skill_refs)),
+                tuple(pruned))
+
+    def compile(self, body: dict[str, JsonValue]
+                 ) -> tuple["flow_graph.FlowGraph", tuple[str, ...]]:
+        """The start/validate build chain in ONE call: the compile-time
+        initial door (validate_initial), then the branch prune
+        (pruned_for), then to_graph on the kept stages with the pruned
+        ids stamped on the graph\u2019s `skipped` record.
+
+        Every refusal is a FlowError (4xx upstream) BEFORE any run
+        registers, any GPU claims, any sidecar. Flows without branches
+        or tools compile exactly as before (skipped == ()).
+
+        Headless-tool flows (tool is not None) run two extra links in
+        the same chain: validate_tool_params after the initial door,
+        and with_tool_params on the PRUNED flow before to_graph (an
+        overlay onto a pruned-away stage refuses loudly instead of
+        stamping a stage that never runs)."""
+        self.validate_initial(body)
+        self.validate_tool_params(body)
+        pruned_flow, skipped = self.pruned_for(body)
+        graph = pruned_flow.with_tool_params(body).to_graph()
+        return graph.model_copy(update={"skipped": tuple(skipped)}), skipped
     @model_validator(mode="after")
     def _wires_resolve(self) -> "Flow":
         if not FLOW_ID_RE.match(self.id):
@@ -472,9 +974,20 @@ class Flow(BaseModel):
                     description=st.description,
                     params=dict(st.params),
                     input_from=tuple(e.ref() for e in st.inputs.values()),
+                    # the receiving-name map (FromStage incident,
+                    # 2026-09-06): name -> ref so the runner can publish
+                    # values under the names $channels speak
+                    input_names={name: e.ref()
+                                 for name, e in st.inputs.items()},
                     outputs={
                         k: v.value
                         for k, v in resolved.get(st.id, {}).items()
+                    },
+                    # the receiving half of the same contract — the
+                    # runner absolutizes artifact refs on FILE-kind
+                    # inputs (see flow_graph.NodeRow.expected)
+                    expected={
+                        k: v.value for k, v in st.expected.items()
                     },
                 )
                 for st in self.stages),
@@ -601,6 +1114,34 @@ def _inline_edge(where: str, value: JsonValue) -> Edge:
         % (where, sorted(value)))
 
 
+def _inline_skip(where: str, value: JsonValue) -> StageSkip | None:
+    """{"initial": key, "when": present|absent} -> StageSkip (None
+    when the stage declares no branch)."""
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise FlowError(
+            "%s: skip_when %r is not an object — use {\"initial\": "
+            "key, \"when\": present|absent}" % (where, value))
+    if set(value) != {"initial", "when"}:
+        raise FlowError(
+            "%s: skip_when keys %s are not a branch shape — exactly "
+            "{\"initial\": key, \"when\": present|absent}"
+            % (where, sorted(value) if isinstance(value, dict) else value))
+    try:
+        when = SkipWhen(value["when"])
+    except ValueError:
+        raise FlowError(
+            "%s: %r is not a branch condition — the closed vocabulary "
+            "is %s" % (where, value["when"],
+                        [w.value for w in SkipWhen])) from None
+    initial = value["initial"]
+    if not isinstance(initial, str) or not initial:
+        raise FlowError("%s: skip initial %r is not a non-empty string"
+                        % (where, initial))
+    return StageSkip(initial=initial, when=when)
+
+
 def flow_from_body(body: JsonValue) -> Flow:
     """A JSON body -> a fully validated Flow (the AI compose surface).
 
@@ -612,6 +1153,8 @@ def flow_from_body(body: JsonValue) -> Flow:
                                  | {"stage": "id", "output": "name"}},
             "outputs": {"name": "<Kind>"},   # omit for engine default
             "expected": {"name": "<Kind>"},  # what each input expects
+            # ── BRANCH SYSTEM (2026-09-06, §2) ──
+            "skip_when": {"initial": "key", "when": "present|absent"}
             # ── CARD-STAGE LATTICE (2026-09-05, Path C) ──
             "card": "<id>",                   # opt in to the body gate
             "card_io": {"name": "<Kind>"}     # output override (rare)
@@ -673,6 +1216,7 @@ def flow_from_body(body: JsonValue) -> Flow:
                 name: _inline_kind(
                     "%s card_io %r" % (where, name), kind)
                 for name, kind in (st.get("card_io") or {}).items()}
+            skip_when = _inline_skip(where, st.get("skip_when"))
             rows.append(Stage(
                 id=str(st.get("id", "")),
                 engine=str(st.get("engine", "")),
@@ -680,7 +1224,7 @@ def flow_from_body(body: JsonValue) -> Flow:
                 params=dict(st.get("params") or {}),
                 inputs=inputs, outputs=outputs, expected=expected,
                 card=str(st.get("card", "") or ""),
-                card_io=card_io))
+                card_io=card_io, skip_when=skip_when))
         except FlowError as e:
             raise e
         except Exception as e:

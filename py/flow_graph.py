@@ -28,6 +28,15 @@ class NodeRow(BaseModel):
     node_type: str = Field(min_length=1, alias="type")
     # explicit wiring only: __initial__.$tensor / prior-node outputs
     input_from: tuple[str, ...] = ()
+    # the receiving-name map (2026-09-06, the character flow's
+    # FromStage incident: input_from refs lose the STAGE's input
+    # names — resolve_inputs keyed FromStage values by ref
+    # ("rig.body") while $channels + `expected` speak names
+    # ("body"), so "$body" rode the workflow verbatim and the node
+    # refused it. name -> ref, built at to_graph from Stage.inputs;
+    # the runner publishes each value under its receiving names too.
+    # {} is today's behavior (hand-built rows, card skeletons).
+    input_names: dict[str, str] = Field(default_factory=dict)
     # authored node documentation (human prose in flow.yaml);
     # engines never read it
     description: str = ""
@@ -41,6 +50,14 @@ class NodeRow(BaseModel):
     # Carried into the run sidecar so MCP introspection and editor
     # graph views see the typed chain past construction.
     outputs: dict[str, str] = Field(default_factory=dict)
+    # the SAME contract's receiving half: what each input EXPECTS,
+    # Kind.value strings. The runner reads it to absolutize
+    # artifact-ref values on FILE-kind inputs (the engine ABI speaks
+    # absolute paths — the $-substitution and the submit-time upload
+    # walk both resolve from disk, never from the wire's URL or
+    # runs-relative spellings). Mirrors `outputs`: empty when the
+    # stage omitted `expected`.
+    expected: dict[str, str] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def _refs_nonempty(self) -> "NodeRow":
@@ -66,6 +83,11 @@ class FlowGraph(BaseModel):
     engine_type: str = Field(default="", alias="type")
     description: str = ""
     nodes: tuple[NodeRow, ...] = ()
+    skipped: tuple[str, ...] = ()
+    # BRANCH SYSTEM (2026-09-06): ids of declared stages pruned at
+    # build time (Flow.compile) — recorded here so registration and
+    # the validate door report what didn't run without touching the
+    # stage rows every consumer iterates. () is today's behavior.
 
     @model_validator(mode="after")
     def _unique_ids(self) -> "FlowGraph":

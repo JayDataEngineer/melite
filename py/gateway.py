@@ -209,17 +209,18 @@ def resolve_request(body: JsonValue) -> FlowGraph | dict[str, JsonValue]:
             # THE COMPILE-TIME INITIAL DOOR (2026-09-06): flow-declared
             # pydantic models validate present initial keys BEFORE any
             # run registers — a bad dialect 4xxes field-clean here,
-            # never as a node traceback after a GPU claim.
-            fl.validate_initial(body)
-            return fl.to_graph()
+            # never as a node traceback after a GPU claim. compile()
+            # runs that door, then the BRANCH prune, then to_graph.
+            graph, _skipped = fl.compile(dict(body))
+            return graph
         except flow_mod.FlowError as e:
             raise ValidationError(str(e))
     if "flow_inline" in body:
         import flow as flow_mod
         try:
             fl = flow_mod.flow_from_body(body["flow_inline"])
-            fl.validate_initial(body)
-            return fl.to_graph()
+            graph, _skipped = fl.compile(dict(body))
+            return graph
         except flow_mod.FlowError as e:
             raise ValidationError(str(e))
     if "model" in body:
@@ -405,7 +406,23 @@ def resolve_card_model(body: dict[str, JsonValue], mid: str
         try:
             from py.card_requires import check_card_requires
             custom_nodes_dir = str(REPO / "vendor" / "comfyui_extensions")
-            ok, msg = check_card_requires(requires, custom_nodes_dir=custom_nodes_dir)
+            # ESTATE ROUTING (2026-09-06 tagger audit): the gate reads the
+            # ESTATE's ComfyUI (exactly-one-url, the poser-bridge shape) —
+            # never a literal default port (18465 was a foreign instance).
+            # Unresolvable config degrades to disk-only (None), which is
+            # exactly the unreachable-server behavior (T7 refusal stands).
+            _estate_url = None
+            try:
+                from estate_config import load as _load_ecfg
+                _urls = [e.url for e in _load_ecfg().engines.values()
+                         if getattr(e, "url", None)]
+                if len(_urls) == 1:
+                    _estate_url = _urls[0]
+            except Exception:
+                _estate_url = None
+            ok, msg = check_card_requires(
+                requires, server_url=_estate_url,
+                custom_nodes_dir=custom_nodes_dir)
             if not ok:
                 raise ValidationError("card requires: %s" % msg)
         except ImportError:
@@ -527,9 +544,17 @@ def _card_field_names(model_cls: type[Model]) -> set[str] | None:
             + list(plugins_dir.glob("engines/*/action_cards/*/card.py"))
             + list(plugins_dir.glob("engines/*/action_cards/*/*/card.py"))):
         pdir = cpy.parent
-        engine = (pdir.parent.parent.name
-                  if pdir.parent.name in ("cards", "action_cards")
-                  else pdir.parent.parent.parent.name)
+        # TWO-LEVEL PARITY (2026-09-06 tagger audit): genre/card depth
+        # (action_cards/image/tagger/py) resolves like _find_card_requires
+        # — the old derivation read engine="action_cards" here, so the
+        # family-defaults overlay silently declined for EVERY two-level
+        # card (florence2's family model default never stamped).
+        if pdir.name == "py":
+            engine = pdir.parent.parent.parent.parent.name
+        else:
+            engine = (pdir.parent.parent.name
+                      if pdir.parent.name in ("cards", "action_cards")
+                      else pdir.parent.parent.parent.name)
         try:
             ccls = load_card_py(str(cpy), engine)
         except Exception:
@@ -543,10 +568,21 @@ def resolve_inputs(node: FlowNode,
                    initial: dict[str, JsonValue]) -> dict[str, JsonValue]:
     """Explicit wiring only: input_from entries like __initial__.PROMPT."""
     out = {}
+    # the receiving-name map (NodeRow.input_names, name -> ref): every
+    # resolved value is ALSO published under the stage-input names
+    # that reference it — $channels + `expected` speak NAMES ("body")
+    # while FromStage refs key by producer ("rig.body"). Without this
+    # a chained "$body" rode the workflow verbatim (2026-09-06).
+    names = getattr(node, "input_names", None) or {}
+    by_ref: dict[str, list[str]] = {}
+    for _name, _ref in names.items():
+        by_ref.setdefault(_ref, []).append(_name)
     for ref in node.input_from:
         if not ref.startswith("__initial__."):
             if ref in initial:
                 out[ref] = initial[ref]
+                for _name in by_ref.get(ref, ()):
+                    out[_name] = initial[ref]
                 continue
             raise ValidationError(
                 "node %r: input_from ref %r unresolved (neither __initial__ nor a prior node output)"
@@ -557,13 +593,72 @@ def resolve_inputs(node: FlowNode,
             alt = tensor.lstrip("$")
             params = initial.get("params") or {}
             if isinstance(params, dict) and alt in params:
-                out[tensor] = params[alt]
-                continue
-            if alt in initial:
-                out[tensor] = initial[alt]
-                continue
-            raise ValidationError("node %r: __initial__.%s not provided in request" % (node.node_id, tensor))
-        out[tensor] = initial[tensor]
+                value = params[alt]
+            elif alt in initial:
+                value = initial[alt]
+            else:
+                raise ValidationError("node %r: __initial__.%s not provided in request" % (node.node_id, tensor))
+        else:
+            value = initial[tensor]
+        out[tensor] = value
+        # receiving-name aliases apply to INITIAL refs too: a present-prune
+        # rewrite (FromStage → FromInitial) must still feed the donor's
+        # $channels under the receiving name ("photo"), exactly as a live
+        # producer ref would (starter-branch incident 2026-09-06: "$photo"
+        # rode the workflow verbatim into LoadImage).
+        for _name in by_ref.get(ref, ()):
+            out[_name] = value
+    return out
+
+
+# FILE-kind slots on the flow's typed-edge contract: values on these
+# inputs may arrive as the WIRE's artifact spellings (the asset URL
+# /v1/assets/runs/<run>/<file>, or the runs-relative <run>/<file>)
+# and are rewritten to absolute disk paths at the runner seam — the
+# engine ABI ($-substitution + the submit-time upload walk) resolves
+# from DISK, never from the wire spellings (the body-to-somax bridge
+# incident, 2026-09-06: a runs-relative glb rode a workflow verbatim
+# and the node refused "source_glb not found").
+_FILE_KINDS = frozenset(("image", "video", "audio", "mesh"))
+
+
+def absolutize_artifact_refs(node: FlowNode,
+                             inputs: dict[str, JsonValue]
+                             ) -> dict[str, JsonValue]:
+    """Rewrite artifact-ref values on FILE-kind inputs to absolute
+    disk paths. Artifact refs are GATEWAY vocabulary (the same
+    resolve_artifact_file find_dangling_refs admits at the door), so
+    this is core-generic — no lane knowledge. A stated ref that
+    resolves nowhere refuses LOUDLY here (QUEUE LANE LAW: the failure
+    documents itself before the engine claims anything); absolute
+    paths, data: URLs, $refs, and non-file slots ride untouched."""
+    from artifact_refs import (ASSET_RUNS_PREFIX, ArtifactRefError,
+                               resolve_artifact_file)
+    exp = getattr(node, "expected", None) or {}
+    out = dict(inputs)
+    for slot, kind in exp.items():
+        if str(kind) not in _FILE_KINDS:
+            continue
+        v = out.get(slot)
+        if not isinstance(v, str):
+            continue
+        s = v.strip()
+        if s.startswith(ASSET_RUNS_PREFIX):
+            pass  # the wire's artifact URL — form 2 below resolves it
+        elif not s or s.startswith(("/", "$", "data:")):
+            # absolute path / tensor ref / inline bytes — already in
+            # engine-ABI space
+            continue
+        elif "/" not in s:
+            # a bare filename is the caller's staging concern (the
+            # ComfyUI input dir), the same refusal artifact_refs makes
+            continue
+        try:
+            out[slot] = resolve_artifact_file(s)
+        except ArtifactRefError as e:
+            raise ValidationError(
+                "node %r: input %r artifact ref unresolved (%s)" % (
+                    node.node_id, slot, e))
     return out
 
 
@@ -729,6 +824,10 @@ class Run:
     # char cap, [A-Za-z0-9_-] — the same SSOT the drafts door uses.
     # docs/queue/run-registry.md:41 / docs/queue/sidecar.md:36.
     draft_id: str | None = None
+    # BRANCH SYSTEM (2026-09-06): ids of declared stages pruned at
+    # build time (Flow.compile) — recorded here so the sidecar and
+    # the status door report what didn't run. [] is today's behavior.
+    skipped_stages: list[str] = field(default_factory=list)
 
     @property
     def dir(self) -> Path:
@@ -807,6 +906,25 @@ class Gateway:
                 raise ValidationError(
                     "draft_id malformed (96 char cap, [A-Za-z0-9_-] only): %r"
                     % body_draft_id)
+        # HEADLESS-TOOL DEFAULTS (2026-09-06, design record
+        # docs/design/flow-single-tool.md): a named flow with tool=... stamps
+        # its knob defaults into the body (absent-keys-only) BEFORE resolve,
+        # so _request.json shows exactly what ran and initial_pool carries
+        # the $key scalars the stages substitute. ONLY when the request
+        # names exactly the {flow} door (the resolver's own exclusivity
+        # predicate): an ambiguous body must reach resolve_request's
+        # ambiguity refusal VERBATIM (QUEUE LANE LAW — the merge never
+        # jumps the gate). Flows without a tool return the body untouched
+        # (zero behavior change).
+        _doors = [k for k in ("flow", "flow_inline", "model")
+                  if k in body]
+        if _doors == ["flow"] and isinstance(body.get("flow"), str):
+            import flow as _flow_mod
+            try:
+                body = _flow_mod.load_flow(
+                    str(body["flow"])).apply_tool_defaults(body)
+            except _flow_mod.FlowError as e:
+                raise ValidationError(str(e))
         resolved = resolve_request(body)
         run_id = "run-%s-%08x" % (uuid.uuid4().hex[:12], int(time.time() * 1000) & 0xFFFFFFFF)
         is_card = isinstance(resolved, dict) and resolved.get("__card__")
@@ -824,8 +942,15 @@ class Gateway:
                     # serializes for an in-process hop. The body the arm
                     # receives is the LIFTED one (params stanza only —
                     # the envelope never reaches a card arm).
+                    # STAMPED (2026-09-06 tagger audit): phase 2 composes
+                    # the SAME overlaid body phase 1 validated — the raw
+                    # body drops family defaults (florence2 compiled WD14's
+                    # checkpoint knob and ComfyUI refused it). Idempotent
+                    # (absent-keys-only); the editor's seeded stamps pass
+                    # through byte-identical.
                     graph, extra2 = card_hooks.compose(
-                        card_compose_body(body), resolved["name"],
+                        card_compose_body(_route_stamp_overlay(
+                            body, resolved["name"])), resolved["name"],
                         run_id, graph, [etype])
                     for k, v in (extra2 or {}).items():
                         card_extra_inputs.setdefault(k, v)
@@ -858,9 +983,19 @@ class Gateway:
              # introspection and editor graph views see the chain past
              # construction. Empty when the stage omitted outputs and
              # its engine's DEFAULT_OUTPUT was unknown at load.
-             "outputs": dict(n.outputs or {})}
+             "outputs": dict(n.outputs or {}),
+             # the receiving half — what each input expects. The runner
+             # reads it to absolutize artifact refs (see
+             # absolutize_artifact_refs); the sidecar carries it for
+             # the same introspection parity.
+             "expected": dict(n.expected or {})}
             for i, n in enumerate(graph.nodes)
         ]
+        # BRANCH RECORD: the graph carries the build-time prune (its
+        # `skipped` record, stamped by Flow.compile) into the run so
+        # the sidecar + status report it; the card arm is a bare dict
+        # (no branches — single-stage compose), hence getattr.
+        run.skipped_stages = list(getattr(resolved, "skipped", ()) or [])
         self.runs[run_id] = run
         self.order.append(run_id)
         sidecar(run)
@@ -956,6 +1091,10 @@ class Gateway:
                                            **updates})
             try:
                 inputs = resolve_inputs(node, dict(initial, **carry))
+                # artifact refs on FILE-kind inputs become absolute
+                # disk paths BEFORE the $-substitution deep-walk —
+                # engines resolve from disk, never wire spellings
+                inputs = absolutize_artifact_refs(node, inputs)
                 params = expand_inject(node.params, inputs)
                 engine = load_engine(node.node_type)
                 # the engine ABI row: a VALIDATED NodeRow carrying the
@@ -963,7 +1102,13 @@ class Gateway:
                 import flow_graph as _pg
                 result = await engine.execute(
                     _pg.NodeRow(node_id=node.node_id,
-                                node_type=node.node_type, params=params),
+                                node_type=node.node_type, params=params,
+                                # ENGINE-OUTPUTS (§3, 2026-09-06): the
+                                # stage's DECLARED output channels ride
+                                # the ABI row so the engine can publish
+                                # harvested files per channel (mesh wires
+                                # chain FromStage without lane knowledge).
+                                outputs=dict(node.outputs or {})),
                     str(run.dir), inputs, run.stop_event, report=_report,
                 )
                 if result and result.get("error"):
@@ -1108,6 +1253,7 @@ def sidecar(run: Run) -> None:
         "status": run.status,
         "error": json.dumps(run.error)[:20000] if run.error else "",
         "stages": run.stages,
+        "skipped_stages": list(run.skipped_stages),
         "artifacts": run.artifacts,
         "created_at": run.created_at,
         "test": run.request.get("test", False),
@@ -1483,13 +1629,13 @@ async def _h_flows_validate(ctx: _Ctx) -> HandlerResult:
             and "stages" not in body:
         try:
             fl = flow_mod.load_flow(str(body["flow"]))
-            fl.validate_initial(dict(body))
+            graph, skipped = fl.compile(dict(body))
         except flow_mod.FlowError as e:
             return 400, {"error": str(e)}
-        graph = fl.to_graph()
         return 200, {
             "ok": True,
             "flow": fl.id,
+            "skipped": list(skipped),
             "stages": [
                 {"id": n.node_id, "engine": n.node_type,
                  "description": n.description,
@@ -1497,13 +1643,22 @@ async def _h_flows_validate(ctx: _Ctx) -> HandlerResult:
                  "outputs": dict(n.outputs)}
                 for n in graph.nodes],
         }
+    # INLINE ENVELOPE parity with resolve_request (2026-09-06, branch
+    # system): {"flow_inline": {...}, ...initials} compiles the nested
+    # shape with the FULL body as the initial pool — a starter_image
+    # riding alongside an inline branch must reach pruned_for. A bare
+    # flow shape (no flow_inline key) compiles as itself, as before.
+    envelope = ctx.json.get("flow_inline") \
+        if isinstance(ctx.json, dict) else None
     try:
-        fl = flow_mod.flow_from_body(ctx.json)
+        fl = flow_mod.flow_from_body(
+            envelope if envelope is not None else ctx.json)
+        graph, skipped = fl.compile(dict(ctx.json))
     except flow_mod.FlowError as e:
         return 400, {"error": str(e)}
-    graph = fl.to_graph()
     return 200, {
         "ok": True,
+        "skipped": list(skipped),
         "flow": fl.id,
         "stages": [
             {"id": n.node_id, "engine": n.node_type,
@@ -1591,6 +1746,7 @@ async def _h_flows_status(ctx: _Ctx) -> HandlerResult:
         "run_id": run.run_id,
         "status": run.status,
         "stages": run.stages,
+        "skipped_stages": list(run.skipped_stages),
         "artifacts": run.artifacts,
         "error": run.error,
         "queue_position": (ctx.gw.order.index(run.run_id)
@@ -1706,7 +1862,21 @@ async def _h_drafts_save(ctx: _Ctx) -> HandlerResult:
 
 async def _h_drafts_get(ctx: _Ctx) -> HandlerResult:
     import editor_runs as _er
-    return _er.drafts_get(str(STATE_ROOT / "drafts"), ctx.m.group(1))
+    code, body = _er.drafts_get(str(STATE_ROOT / "drafts"), ctx.m.group(1))
+    if code != 200:
+        return code, body
+    # drafts_get serves VERBATIM disk bytes (str) — the wire contract is
+    # a JSON OBJECT. Parse once here: a str payload would ride _adapt's
+    # json.dumps a second time (wire body "\"{...}\"") and every
+    # Media->Cards open would hydrate zero stages (res.json() hands
+    # hydrateDraft a string — the "flows aren't recreated" break).
+    try:
+        doc = json.loads(body) if isinstance(body, str) else body
+    except (ValueError, TypeError) as exc:
+        return 500, {"error": "draft corrupt on disk: %s" % exc}
+    if not isinstance(doc, dict):
+        return 500, {"error": "draft corrupt on disk: not an object"}
+    return code, doc
 
 
 async def _h_asset(ctx: _Ctx) -> HandlerResult:
