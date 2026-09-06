@@ -112,7 +112,102 @@ _T = TypeVar("_T")
 
 
 class ValidationError(Exception):
-    """Loud 4xx before any run is registered (QUEUE LANE LAW)."""
+    """Loud 4xx before any run is registered (QUEUE LANE LAW).
+
+    R4.2 (2026-09-06): the refusal carries MACHINE keys beside the
+    human text — code (stable taxonomy, ALWAYS set), loc (which
+    field/stage, when the raiser knows), expected/got (when the
+    raiser holds both sides). str(e) is the VERBATIM legacy text:
+    refusal-parity goldens compare the message class, so the text
+    never changes for structure's sake. The default code
+    invalid_request means exactly what it says — the door refused
+    the request, read error for why; raisers that know more set a
+    precise code."""
+
+    def __init__(self, message: str, *, code: str = "invalid_request",
+                 loc: str | None = None,
+                 expected: str | None = None,
+                 got: str | None = None) -> None:
+        super().__init__(message)
+        self.code = code
+        self.loc = loc
+        self.expected = expected
+        self.got = got
+
+
+def _refusal(e: ValidationError) -> dict[str, JsonValue]:
+    """R4.2: a caught refusal → the wire envelope. error is the
+    verbatim text (wire compatibility); code always rides; loc /
+    expected / got ride only when the raiser set them (absent keys
+    are honest — never null placeholders)."""
+    body: dict[str, JsonValue] = {"error": str(e), "code": e.code}
+    if e.loc is not None:
+        body["loc"] = e.loc
+    if e.expected is not None:
+        body["expected"] = e.expected
+    if e.got is not None:
+        body["got"] = e.got
+    return body
+
+
+def _pydantic_first(e: BaseException) -> dict[str, JsonValue] | None:
+    """R4.2: the first pydantic error row off e, its cause chain
+    (depth 3), or its stringified text — whichever carries it.
+    The card arms stringify the refusal at the package boundary
+    (compose.py `card params refused: %s`), so the live object is
+    usually gone and only the stable pydantic summary text remains
+    (`1 validation error for MusicParams\\nprompt\\n  ...
+    [type=string_type, input_value=...`). Best-effort throughout:
+    anything unrecognized yields None and the refusal rides
+    code-only (honest — never a guessed loc)."""
+    seen = 0
+    cur: BaseException | None = e
+    while cur is not None and seen < 4:
+        seen += 1
+        fn = getattr(cur, "errors", None)
+        if type(cur).__name__ == "ValidationError" and callable(fn):
+            try:
+                rows = fn()
+            except Exception:
+                rows = []
+            if rows and isinstance(rows[0], dict):
+                return rows[0]
+        nxt = getattr(cur, "__cause__", None) \
+            or getattr(cur, "__context__", None)
+        cur = nxt if isinstance(nxt, BaseException) else None
+    import re
+    m = re.search(
+        r"(\d+) validation errors? for \S+\n"
+        r"([A-Za-z_][A-Za-z0-9_]*)\n  ([^\n\[]+)"
+        r"\[type=([a-z_]+),", str(e))
+    if m:
+        return {"loc": (m.group(2),), "msg": m.group(3).strip(),
+                "type": m.group(4),
+                "input": (re.search(r"input_value=(.*?)(, input_type|\])",
+                                      str(e)) or [None, ""])[1]}
+    return None
+
+
+def _compose_refusal(phase: str, e: Exception) -> ValidationError:
+    """R4.2: a card_compose arm failure → a structured refusal.
+    A pydantic ValidationError (parse_card_body's field-named
+    refusal — the rc=-3 class) carries its OWN loc/input natively:
+    the first error row maps to loc (params.<field>), expected (the
+    pydantic error type), got (the offending input, stringified).
+    Anything else is a phase failure with the verbatim text.
+    Duck-typed — the gateway never imports pydantic for this."""
+    first = _pydantic_first(e)
+    if first is not None:
+        raw_loc = first.get("loc", ())
+        loc = "params." + ".".join(
+            str(p) for p in raw_loc) if raw_loc else "params"
+        return ValidationError(
+            "card_compose phase %s: %s" % (phase, e),
+            code="card_compose", loc=loc,
+            expected=str(first.get("type", "")),
+            got=str(first.get("input", ""))[:200])
+    return ValidationError("card_compose phase %s: %s" % (phase, e),
+                           code="card_compose")
 
 
 
@@ -456,7 +551,7 @@ def resolve_card_model(body: dict[str, JsonValue], mid: str
         _, extra = card_hooks.compose(
             card_compose_body(body), fam, "", skeleton, [etype])
     except Exception as e:
-        raise ValidationError("card_compose phase 1: %s" % e)
+        raise _compose_refusal("1", e)
     return skeleton, etype, extra
 
 
@@ -963,7 +1058,10 @@ class Gateway:
         # guard for its own callers, but the test-flag read below
         # touches body before it runs. 4xx BEFORE any run registers.
         if not isinstance(body, dict):
-            raise ValidationError("request body must be a JSON object")
+            raise ValidationError(
+                "request body must be a JSON object",
+                code="bad_envelope", loc="body",
+                expected="object", got=type(body).__name__)
         # the test flag routes the run dir (L3) and stamps the sidecar
         # (L1) — duck-typed truthiness here would let "false" (a
         # STRING) route a production run into the test root and lie
@@ -973,7 +1071,9 @@ class Gateway:
         if not isinstance(test_flag, bool):
             raise ValidationError(
                 "test flag must be a boolean (got %s %r)"
-                % (type(test_flag).__name__, test_flag))
+                % (type(test_flag).__name__, test_flag),
+                code="bad_envelope", loc="test",
+                expected="boolean", got=type(test_flag).__name__)
         # CARD BIRTH LAW (operator order 2026-09-06, verbatim: "IF
         # THERE IS NO DRAFT_ID, THAT IS A HARD ERROR! THAT NEEDS TO
         # HAPPEN!"): EVERY run is born from an action card. A start
@@ -997,11 +1097,16 @@ class Gateway:
                 "draft_id is required — every run is born from an "
                 "action card (CARD BIRTH LAW); compose the card first: "
                 "POST /v1/flows/drafts, then start with its draft_id "
-                "(docs/cards/draft-door.md)")
+                "(docs/cards/draft-door.md)",
+                code="draft_required", loc="draft_id",
+                expected="doc-backed draft id", got="absent")
         if not draft_id_ok(body_draft_id):
             raise ValidationError(
                 "draft_id malformed (96 char cap, [A-Za-z0-9_-] only): %r"
-                % body_draft_id)
+                % body_draft_id,
+                code="draft_malformed", loc="draft_id",
+                expected="[A-Za-z0-9_-]{1,96}",
+                got=str(body_draft_id)[:60])
         # EXISTENCE (the second half of the law): a draft_id pointing
         # at nothing reproduces the EXACT click error the law kills —
         # the click-contract (py/editor_runs.py) strips a draft_id
@@ -1012,7 +1117,10 @@ class Gateway:
             raise ValidationError(
                 "unknown draft_id %r — no card doc at drafts/%s.json; "
                 "compose the card first: POST /v1/flows/drafts"
-                % (body_draft_id, body_draft_id))
+                % (body_draft_id, body_draft_id),
+                code="draft_unknown", loc="draft_id",
+                expected="existing card doc",
+                got=str(body_draft_id)[:60])
         # HEADLESS-TOOL DEFAULTS (2026-09-06, design record
         # docs/design/flow-single-tool.md): a named flow with tool=... stamps
         # its knob defaults into the body (absent-keys-only) BEFORE resolve,
@@ -1031,7 +1139,8 @@ class Gateway:
                 body = _flow_mod.load_flow(
                     str(body["flow"])).apply_tool_defaults(body)
             except _flow_mod.FlowError as e:
-                raise ValidationError(str(e))
+                raise ValidationError(str(e), code="flow_compile",
+                                        loc="flow")
         resolved = resolve_request(body)
         run_id = "run-%s-%08x" % (uuid.uuid4().hex[:12], int(time.time() * 1000) & 0xFFFFFFFF)
         is_card = isinstance(resolved, dict) and resolved.get("__card__")
@@ -1062,7 +1171,7 @@ class Gateway:
                     for k, v in (extra2 or {}).items():
                         card_extra_inputs.setdefault(k, v)
                 except Exception as e:
-                    raise ValidationError("card_compose phase 2: %s" % e)
+                    raise _compose_refusal("2", e)
             import flow_graph as _pg
             if not (isinstance(graph, _pg.FlowGraph) and graph.nodes):
                 raise ValidationError(
@@ -1636,27 +1745,36 @@ class Gateway:
         if live is not None and live.status in ("queued", "running"):
             raise ValidationError(
                 "run %s is still %s — stop it before resuming"
-                % (run_id, live.status))
+                % (run_id, live.status),
+                code="run_live", loc="run_id",
+                expected="failed|stopped", got=live.status)
         try:
             doc = json.loads(
                 (OUT_ROOT / run_id / "_flow.json").read_text())
         except (OSError, ValueError):
-            raise ValidationError("no durable record for run %r" % run_id)
+            raise ValidationError("no durable record for run %r" % run_id,
+                                    code="run_unknown", loc="run_id")
         status = str(doc.get("status") or "")
         if live is not None and live.status in ("failed", "stopped"):
             status = live.status   # the registry row is fresher truth
         if status == "completed":
             raise ValidationError(
-                "run %s completed — nothing to resume" % run_id)
+                "run %s completed — nothing to resume" % run_id,
+                code="run_completed", loc="run_id",
+                expected="failed|stopped", got="completed")
         if status not in ("failed", "stopped"):
             raise ValidationError(
                 "run %s is %r — resume needs failed or stopped"
-                % (run_id, status or "unknown"))
+                % (run_id, status or "unknown"),
+                code="run_not_resumable", loc="run_id",
+                expected="failed|stopped",
+                got=status or "unknown")
         run = _rebuild_run_from_record(run_id)
         if run is None:
             raise ValidationError(
                 "run %s record is unusable (draft doc gone or "
-                "half-written) — resubmit instead" % run_id)
+                "half-written) — resubmit instead" % run_id,
+                code="run_record_unusable", loc="run_id")
         merged = any(bool(st.get("merged")) for st in run.stages)
         done = [i for i, st in enumerate(run.stages)
                 if st.get("status") == "completed"]
@@ -1704,26 +1822,34 @@ class Gateway:
         if live is not None and live.status in ("queued", "running"):
             raise ValidationError(
                 "run %s is still %s — wait for it to settle or stop "
-                "it first" % (run_id, live.status))
+                "it first" % (run_id, live.status),
+                code="run_live", loc="run_id",
+                expected="completed|failed|stopped", got=live.status)
         try:
             doc = json.loads(
                 (OUT_ROOT / run_id / "_flow.json").read_text())
         except (OSError, ValueError):
-            raise ValidationError("no durable record for run %r" % run_id)
+            raise ValidationError("no durable record for run %r" % run_id,
+                                    code="run_unknown", loc="run_id")
         if not str(doc.get("draft_id") or ""):
             raise ValidationError(
                 "run %s is a cardless legacy row (no draft_id) — "
-                "compose a fresh card to replay it" % run_id)
+                "compose a fresh card to replay it" % run_id,
+                code="run_cardless", loc="draft_id",
+                expected="doc-backed draft id", got="absent")
         try:
             request = json.loads(
                 (OUT_ROOT / run_id / "_request.json").read_text())
         except (OSError, ValueError):
             raise ValidationError(
                 "run %s has no recorded request body — cannot "
-                "replay" % run_id)
+                "replay" % run_id,
+                code="run_record_unusable", loc="run_id")
         if not isinstance(request, dict):
             raise ValidationError(
-                "run %s recorded a non-object request body" % run_id)
+                "run %s recorded a non-object request body" % run_id,
+                code="run_record_unusable", loc="run_id",
+                expected="object", got=type(request).__name__)
         replay = await self.submit(dict(request))   # the SAME door
         ledger("run.reproduce", {"run_id": replay.run_id,
                                   "replay_of": run_id})
@@ -1733,7 +1859,8 @@ class Gateway:
     async def stop(self, run_id: str) -> dict[str, str]:
         run = self.runs.get(run_id)
         if run is None:
-            raise ValidationError("unknown run_id %r" % run_id)
+            raise ValidationError("unknown run_id %r" % run_id,
+                                    code="run_unknown", loc="run_id")
         if run.status not in ("queued", "running"):
             return {"error": "cannot stop run in state %s" % run.status}
         run.stop_event.set()
@@ -2404,7 +2531,7 @@ async def _h_flows_start(ctx: _Ctx) -> HandlerResult:
     try:
         run = await ctx.gw.submit(ctx.json)
     except ValidationError as e:
-        return 400, {"error": str(e)}
+        return 400, _refusal(e)
     return 202, {"run_id": run.run_id, "status": run.status}
 
 
@@ -2434,7 +2561,7 @@ async def _h_flows_validate(ctx: _Ctx) -> HandlerResult:
             _strict_body(body)
             resolve_request(body)   # {model} arm: phase 1 inside
         except ValidationError as e:
-            return 400, {"error": str(e)}
+            return 400, _refusal(e)
         return 200, {"ok": True, "model": str(body["model"]),
                      "card": True,
                      # R4.3: queue truth now (engine medians unknown
@@ -2452,7 +2579,8 @@ async def _h_flows_validate(ctx: _Ctx) -> HandlerResult:
             fl = flow_mod.load_flow(str(body["flow"]))
             graph, skipped = fl.compile(dict(body))
         except flow_mod.FlowError as e:
-            return 400, {"error": str(e)}
+            return 400, {"error": str(e), "code": "flow_compile",
+                           "loc": "flow"}
         return 200, {
             "ok": True,
             "flow": fl.id,
@@ -2485,7 +2613,8 @@ async def _h_flows_validate(ctx: _Ctx) -> HandlerResult:
         # ordered: the first refusal, then per-stage locals, then
         # engine workflow checks (validate_workflow ABI — the comfyui
         # pin sweep). Wall: test_validate_batch.py.
-        return 400, {"error": str(e),
+        return 400, {"error": str(e), "code": "flow_compile",
+                     "loc": "flow",
                      "errors": _validate_batch_rows(
                          envelope if envelope is not None else ctx.json,
                          str(e))}
@@ -2495,7 +2624,10 @@ async def _h_flows_validate(ctx: _Ctx) -> HandlerResult:
     wf_rows = _workflow_sweep(
         (envelope if envelope is not None else ctx.json))
     if wf_rows:
-        return 400, {"error": wf_rows[0]["error"], "errors": wf_rows}
+        return 400, {"error": wf_rows[0]["error"],
+                       "code": "workflow_pin",
+                       "loc": wf_rows[0].get("stage", "flow"),
+                       "errors": wf_rows}
     return 200, {
         "ok": True,
         "skipped": list(skipped),
@@ -2533,7 +2665,10 @@ def _workflow_sweep(body: JsonValue) -> list[dict[str, str]]:
             vw = None
         if vw is not None and isinstance(st.get("params"), dict):
             for wrow in vw(st["params"]):
-                rows.append({"stage": label, "error": wrow})
+                # R4.2: pin rows carry their own code + loc — the
+                # agent loop routes on code, reads error for why.
+                rows.append({"stage": label, "error": wrow,
+                             "code": "workflow_pin"})
     return rows
 
 
@@ -2547,7 +2682,12 @@ def _validate_batch_rows(body: JsonValue, first_error: str) -> list[dict[str, st
     miss. Engines may export validate_workflow(params) (the offline
     pin sweep) — called for every stage whose engine loads."""
     import flow as flow_mod
-    rows: list[dict[str, str]] = [{"scope": "flow", "error": first_error}]
+    # R4.2: every row carries code + loc (the batch is the agent
+    # loop's cheapest iteration — N mistakes, ONE round-trip, each
+    # row routable).
+    rows: list[dict[str, str]] = [{"scope": "flow", "error": first_error,
+                                    "code": "flow_compile",
+                                    "loc": "flow"}]
     stages = body.get("stages") if isinstance(body, dict) else None
     if not isinstance(stages, list):
         return rows
@@ -2561,7 +2701,8 @@ def _validate_batch_rows(body: JsonValue, first_error: str) -> list[dict[str, st
             try:
                 flow_mod.flow_from_body(probe)
             except flow_mod.FlowError as e:
-                rows.append({"stage": str(label), "error": str(e)})
+                rows.append({"stage": str(label), "error": str(e),
+                             "code": "flow_compile"})
     # engine workflow sweep (offline, pin-driven) — shared with the
     # success path
     rows.extend(_workflow_sweep(body))
@@ -2663,21 +2804,21 @@ async def _h_flows_stop(ctx: _Ctx) -> HandlerResult:
     try:
         return 200, await ctx.gw.stop(ctx.m.group(1))
     except ValidationError as e:
-        return 400, {"error": str(e)}
+        return 400, _refusal(e)
 
 
 async def _h_flows_resume(ctx: _Ctx) -> HandlerResult:
     try:
         return 200, await ctx.gw.resume(ctx.m.group(1))
     except ValidationError as e:
-        return 400, {"error": str(e)}
+        return 400, _refusal(e)
 
 
 async def _h_flows_reproduce(ctx: _Ctx) -> HandlerResult:
     try:
         return 200, await ctx.gw.reproduce(ctx.m.group(1))
     except ValidationError as e:
-        return 400, {"error": str(e)}
+        return 400, _refusal(e)
 
 
 async def _h_ws_fallback(ctx: _Ctx) -> HandlerResult:
@@ -3937,14 +4078,26 @@ async def route(gw: Gateway, method: str, target: str,
             try:
                 ctx.json = json.loads(body.decode() or "{}")
             except json.JSONDecodeError as e:
-                return 400, {"error": "bad JSON: %s" % e}
+                return 400, {"error": "bad JSON: %s" % e,
+                               "code": "bad_json"}
         elif row.body == "lenient":
             try:
                 ctx.json = json.loads(body.decode() or "{}")
             except json.JSONDecodeError:
                 ctx.json = {}
-        return await row.handler(ctx)
-    return 404, {"error": "no such route %s %s" % (method, path)}
+        status, payload = await row.handler(ctx)
+        # R4.2 DISPATCHER NORMALIZATION (the long tail, one edit):
+        # EVERY 4xx object body leaves with a code. Doors that know
+        # their refusal set it explicitly (draft_required,
+        # flow_compile, card_compose, run_live, ...); the rest ride
+        # invalid_request — documented, honest, machine-readable.
+        # error TEXT is never touched here (refusal parity).
+        if 400 <= status < 500 and isinstance(payload, dict) \
+                and "code" not in payload:
+            payload["code"] = "invalid_request"
+        return status, payload
+    return 404, {"error": "no such route %s %s" % (method, path),
+                   "code": "no_such_route"}
 
 
 def ledger_tail(target: str) -> dict[str, list[JsonValue] | int]:
