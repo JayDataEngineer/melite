@@ -28,8 +28,10 @@ export type GatewayDoorUrl =
   | `/v1/assets${DoorTail}`
   | `/v1/ledger${DoorTail}`
   | `/v1/assets/runs/${string}${DoorTail}`
+  | `/v1/assets/inputs/${string}${DoorTail}`
   | `/v1/uploads${DoorTail}`
   | `/v1/studios/${string}${DoorTail}`
+  | `/v1/models/${string}${DoorTail}`
   | `/v1/lanes${DoorTail}`
   | `/v1/kinds${DoorTail}`
   | `/v1/card-tools${DoorTail}`

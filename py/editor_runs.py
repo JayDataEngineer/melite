@@ -1008,6 +1008,39 @@ def serve_asset(server_root: str, rel_path: str) -> tuple[int, bytes, str]:
 
 
 # ---------------------------------------------------------------------------
+# GET /v1/assets/inputs/<file> — the estate input preview door
+# (2026-09-06, operator order: "We need to have an image preview when
+# the card is drilled out for ANNY and IMAGE->3d"). The uploads door
+# writes browser files to data/input/ and returns the repo-relative
+# path — a path no <img> can load, so a drilled-out card showed NO
+# preview of its own source photo after reload. This door serves
+# those bytes back: IMAGES ONLY (the uploads door's own allowlist),
+# single flat segment (uploads never nest), traversal refused.
+# ---------------------------------------------------------------------------
+
+_INPUT_IMAGE_EXTS = {".png": "image/png", ".jpg": "image/jpeg",
+                     ".jpeg": "image/jpeg", ".webp": "image/webp"}
+
+
+def serve_input_asset(repo_root: str, name: str) -> tuple[int, bytes, str]:
+    """One uploaded input image, or the refusal. (status, bytes, type)."""
+    if not name or "/" in name or "\\" in name or ".." in name:
+        return 400, b'{"error":"bad path"}', _ERR_JSON
+    ext = os.path.splitext(name)[1].lower()
+    ctype = _INPUT_IMAGE_EXTS.get(ext)
+    if ctype is None:
+        return 400, b'{"error":"inputs door serves png/jpeg/webp only"}', \
+            _ERR_JSON
+    path = os.path.join(repo_root, "data", "input", name)
+    try:
+        with open(path, "rb") as f:
+            data = f.read()
+    except OSError:
+        return 404, b'{"error":"input not found"}', _ERR_JSON
+    return 200, data, ctype
+
+
+# ---------------------------------------------------------------------------
 # family param schemas — handle_family_param_schema[s] (~5853)
 # ---------------------------------------------------------------------------
 

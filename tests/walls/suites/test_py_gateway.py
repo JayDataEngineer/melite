@@ -481,6 +481,56 @@ def test_uploads_door_sanitizes_traversal(monkeypatch: pytest.MonkeyPatch,
     assert (tmp_path / out["path"]).is_file()
 
 
+# C23: the input preview door (2026-09-06 — "We need to have an image
+# preview when the card is drilled out for ANNY and IMAGE->3d"). The
+# uploads rail returns repo-relative data/input/<name> paths no <img>
+# can load; this door serves those bytes back so the drilled-out card
+# keeps its source-image preview after reload.
+class _PathCtx:
+    """Handler double for path-shaped GET doors."""
+    def __init__(self, path: str) -> None:
+        self.path = path
+
+
+def test_input_preview_door_roundtrip(monkeypatch: pytest.MonkeyPatch,
+                                      tmp_path: Path) -> None:
+    import asyncio
+    import gateway as gw_mod
+    monkeypatch.setattr(gw_mod, "REPO", tmp_path)
+    # upload through the real door, then serve the returned path back
+    code, out = asyncio.run(gw_mod._h_uploads(
+        _upload_ctx({"filename": "me.png", "data": _tiny_png_data_url()})))
+    assert code == 200
+    name = out["path"].rsplit("/", 1)[1]
+    code, data = asyncio.run(gw_mod._h_asset_input(
+        _PathCtx("/v1/assets/inputs/" + name)))
+    assert code == 200, data
+    headers, body = data[1], data[2]
+    assert headers["content-type"] == "image/png"
+    assert body.startswith(b"\x89PNG")
+
+
+def test_input_preview_door_refusal_matrix(monkeypatch: pytest.MonkeyPatch,
+                                           tmp_path: Path) -> None:
+    import asyncio
+    import gateway as gw_mod
+    monkeypatch.setattr(gw_mod, "REPO", tmp_path)
+    target = tmp_path / "data" / "input"
+    target.mkdir(parents=True)
+    (target / "real.png").write_bytes(b"\x89PNG")
+    for path, want, needle in [
+        ("/v1/assets/inputs/real.png", 200, None),
+        ("/v1/assets/inputs/ghost.png", 404, "input not found"),
+        ("/v1/assets/inputs/../../py/gateway.py", 400, "bad path"),
+        ("/v1/assets/inputs/nested/real.png", 400, "bad path"),
+        ("/v1/assets/inputs/secret.txt", 400, "png/jpeg/webp only"),
+    ]:
+        code, out = asyncio.run(gw_mod._h_asset_input(_PathCtx(path)))
+        assert code == want, (path, code, out)
+        if needle is not None:
+            assert needle in out["error"], (path, out)
+
+
 # C22: the validate door's {flow} arm (2026-09-06 — "WHERE THE [REDACTED 2026-11-05]
 # IS COMPILE TIME ERRORS"). A named flow + its initials compile
 # through the EXACT initial door a start would run: ghost photos

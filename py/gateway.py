@@ -44,6 +44,7 @@ import re
 import signal
 import struct
 import sys
+import threading
 import time
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterable
@@ -1523,15 +1524,70 @@ async def _h_queue(ctx: _Ctx) -> HandlerResult:
     }
 
 
+def _run_log_tail(obj: dict) -> str:
+    """The run's log tail for the console drilldown (include_log) —
+    SYNTHESIZED from real state, never fabricated: the run's status
+    row + queue position, one line per stage (name: status, with the
+    LIVE progress/activity the report contract stamps mid-run), stage
+    errors verbatim, artifacts on completion. The gateway keeps no
+    retained event history (publish fans out to live subscribers
+    only) and no persisted stdout — this IS the honest tail: every
+    line derives from a field the runner/sidecar actually wrote.
+    Capped (the tail stays a tail: last 80 lines)."""
+    lines: list[str] = []
+    status = str(obj.get("status") or "?")
+    qp = obj.get("queue_position")
+    head = "run: " + status
+    if status == "queued" and isinstance(qp, int) and qp > 0:
+        head += " (queue position %d)" % qp
+    if obj.get("error"):
+        head += " — " + str(obj["error"])[:300]
+    lines.append(head)
+    for st in (obj.get("stages") or []):
+        if not isinstance(st, dict):
+            continue
+        name = str(st.get("name") or st.get("id") or "stage")
+        line = "%s: %s" % (name, st.get("status") or "?")
+        p = st.get("progress")
+        if isinstance(p, dict) and p.get("max"):
+            line += " — %s/%s" % (p.get("value"), p.get("max"))
+        a = st.get("activity")
+        if isinstance(a, dict):
+            ph = str(a.get("phase") or "")
+            msg = a.get("message")
+            nc = a.get("node_class")
+            line += " [%s%s]" % (ph, ": " + str(msg or nc)
+                                 if (msg or nc) else "")
+        if st.get("error"):
+            line += "\n  error: " + str(st["error"])[:300]
+        lines.append(line)
+    arts = obj.get("artifacts")
+    if arts:
+        names = []
+        for a in arts[:6]:
+            v = (a.get("url") if isinstance(a, dict) else a) or \
+                (a.get("name") if isinstance(a, dict) else a)
+            s = str(v or "").rsplit("/", 1)[-1]
+            if s:
+                names.append(s)
+        if names:
+            lines.append("artifacts: " + ", ".join(names))
+    return "\n".join(lines[-80:])
+
+
 async def _h_flows_status(ctx: _Ctx) -> HandlerResult:
     rid = ctx.m.group(1)
+    include_log = str(ctx.q("include_log", "")).lower() in \
+        ("1", "true", "yes")
     run = ctx.gw.runs.get(rid)
     if run is None:
         stored = sidecar_status(rid)
         if stored is None:
             return 404, {"error": "unknown run_id"}
+        if include_log:
+            stored["log_tail"] = _run_log_tail(stored)
         return 200, stored
-    return 200, {
+    body = {
         "run_id": run.run_id,
         "status": run.status,
         "stages": run.stages,
@@ -1540,6 +1596,12 @@ async def _h_flows_status(ctx: _Ctx) -> HandlerResult:
         "queue_position": (ctx.gw.order.index(run.run_id)
                            if run.run_id in ctx.gw.order else 0),
     }
+    # include_log (2026-09-06, the studio console drilldown): the
+    # client RPC always documented this enrichment; the door now
+    # honors it — every wide surface can render the run's real tail.
+    if include_log:
+        body["log_tail"] = _run_log_tail(body)
+    return 200, body
 
 
 async def _h_flows_stop(ctx: _Ctx) -> HandlerResult:
@@ -1656,6 +1718,26 @@ async def _h_asset(ctx: _Ctx) -> HandlerResult:
     return code, {"error": "not found"} if code == 404 else data
 
 
+async def _h_asset_input(ctx: _Ctx) -> HandlerResult:
+    # THE INPUT PREVIEW DOOR (2026-09-06, operator order: "We need
+    # to have an image preview when the card is drilled out for ANNY
+    # and IMAGE->3d"): the uploads door returns repo-relative
+    # data/input/<name> paths — composable, but no <img> can load
+    # them, so a drilled-out card showed no preview of its own
+    # source photo. This streams those bytes back (images only —
+    # the uploads door's own allowlist; flat names; traversal
+    # refused).
+    import editor_runs as _er
+    from urllib.parse import unquote as _uq
+    name = _uq(ctx.path[len("/v1/assets/inputs/"):])
+    code, data, ctype = _er.serve_input_asset(str(REPO), name)
+    if code == 200:
+        return code, ({}, {"content-type": ctype}, data)
+    if code == 404:
+        return code, {"error": "input not found"}
+    return code, {"error": data.decode("utf-8", "replace")}
+
+
 async def _h_ledger(ctx: _Ctx) -> HandlerResult:
     return 200, ledger_tail(ctx.target)
 
@@ -1692,13 +1774,55 @@ def _preset_estate_rows(tenant: str) -> tuple[CharacterPreset, ...] | None:
     return tuple(getattr(cls, "character_presets", ()))
 
 
+def _provision_mount(cls: "type", prov: "object") -> tuple[str, Path] | None:
+    """Resolve a declared Provision to (disk_path, store_root) — the
+    ONE resolution both provision doors share (the base-body door
+    streams it; the model-provision door streams it or ON-DEMAND
+    fetches through the rail into the same store). The mount path
+    derives the same way compose resolves lane inputs: the engine
+    endpoint file's extra_model_folders map + model_paths read_root;
+    the store root is the endpoint's declared download place (the
+    rail lands at store_root/<folder>/<name>). None = the family
+    declares no engine (a loud caller-side refusal, never a core
+    fallback)."""
+    engine = getattr(cls, "engine", "") or ""
+    if not engine:  # QUEUE LANE LAW: no default engine names — the
+        # family declares its engine (anny: engine = 'comfyui' in the
+        # plugin, where lane knowledge belongs); without one we
+        # refuse, never guess.
+        return None
+    ep_path = REPO / "plugins" / "engines" / engine / "data" / (
+        engine + "_endpoint.json")
+    try:
+        ep = json.loads(ep_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        ep = {}
+    folders = ep.get("extra_model_folders") or {}
+    sub = str(folders.get(prov.folder, prov.folder)
+              or prov.folder).strip().strip("/")
+    if isinstance(ep.get("model_base_path"), str) \
+            and ep["model_base_path"].strip():
+        overrides = {"model_base_path": ep["model_base_path"].strip()}
+    else:
+        overrides = {}
+    from estate_config import model_paths as _model_paths
+    roots = _model_paths(engine,
+                         endpoint_overrides=overrides)
+    disk = os.path.join(roots["read_root"], sub, prov.name)
+    store_root = Path(str(ep.get("model_download_path")
+                          or ep.get("model_base_path")
+                          or roots["read_root"]).strip())
+    return disk, store_root
+
+
 async def _h_base_body(ctx: _Ctx) -> HandlerResult:
     """Stream the family's declared neutral mannequin (2026-09-06):
     the studio viewport shows it while the body slot is empty
     (display-only — it never writes params). GENERIC: the Model's
     base_body names the provision; the mount path derives the same
     way compose resolves it (endpoint file + model_paths read_root
-    + the provision's folder). Loud 404s: unknown tenant, no
+    + the provision's folder — _provision_mount, the ONE resolution
+    the provision doors share). Loud 404s: unknown tenant, no
     declared base body, or not provisioned on disk (the phase-1
     door refuses the same way at run time — card-open stays
     honest)."""
@@ -1719,32 +1843,11 @@ async def _h_base_body(ctx: _Ctx) -> HandlerResult:
     if prov is None:  # the metaclass refuses this at import; double-guard
         return 500, {"error": "base body %r is not a declared "
                      "provision" % (base_name,)}
-    engine = getattr(cls, "engine", "") or ""
-    if not engine:  # QUEUE LANE LAW: no default engine names — the
-        # family declares its engine (anny: engine = 'comfyui' in the
-        # plugin, where lane knowledge belongs); a family without one
-        # refuses here, never a hardcoded core fallback.
+    resolved = _provision_mount(cls, prov)
+    if resolved is None:
         return 500, {"error": "family %r declares no engine"
                      % (getattr(cls, "id", tenant),)}
-    ep_path = REPO / "plugins" / "engines" / engine / "data" / (
-        engine + "_endpoint.json") if engine else None
-    try:
-        ep = json.loads(ep_path.read_text(encoding="utf-8")) \
-            if ep_path is not None else {}
-    except (OSError, ValueError):
-        ep = {}
-    folders = ep.get("extra_model_folders") or {}
-    sub = str(folders.get(prov.folder, prov.folder)
-              or prov.folder).strip().strip("/")
-    if isinstance(ep.get("model_base_path"), str) \
-            and ep["model_base_path"].strip():
-        overrides = {"model_base_path": ep["model_base_path"].strip()}
-    else:
-        overrides = {}
-    from estate_config import model_paths as _model_paths
-    roots = _model_paths(engine,
-                         endpoint_overrides=overrides)
-    disk = os.path.join(roots["read_root"], sub, prov.name)
+    disk, _store = resolved
     if not os.path.isfile(disk):
         return 404, {"error": "base body %r is not provisioned "
                      "(missing %s — provision it: models lane)"
@@ -1754,6 +1857,116 @@ async def _h_base_body(ctx: _Ctx) -> HandlerResult:
             data = f.read()
     except OSError as e:
         return 500, {"error": "base body unreadable: %s" % e}
+    return 200, ({}, {"content-type": _er.content_type_of(disk)},
+                 data)
+
+
+# ── the provision door (2026-09-06) ─────────────────────────────────
+#
+# GET /v1/models/<family>/provisions/<name> — a model-DECLARED viewer
+# asset (melite_models Provision row) streamed on demand; when the
+# mount misses, the door ACQUIRES it through the ONE rail
+# (py/provision_rail — comfy-mcp download_model, sha256-verified,
+# landed in the weights store) and streams it. Studio viewer assets
+# point HERE, never at vite-public blobs: a declared row is
+# auto-provisioned (the tools/provision.py walk), on-demand fetched
+# (this door), sha-pinned, and mount-resolved — the
+# /editor/soma-skin-standard.npz 404 class (2026-09-06) dies at the
+# root.
+#
+# Laws kept:
+#   PLUGIN ARCHITECTURE LAW — the core names no lane: the family and
+#   the provision row resolve through the model scan; the door is a
+#   GENERIC stream-or-fetch.
+#   PROVISIONING LAW — acquisition rides comfy-mcp in-process (the
+#   base env; the service unit runs the base env python), never a
+#   second rail, never a shell script.
+#   RESILIENCE LAW — rail failures are loud 502s naming the exact
+#   reason + the manual fallback; concurrent demands serialize on a
+#   per-provision lock; the loop never blocks (thread offload).
+
+_PROVISION_LOCKS: dict[str, "threading.Lock"] = {}
+_PROVISION_LOCKS_GUARD = threading.Lock()
+
+
+def _provision_lock(key: str) -> "threading.Lock":
+    with _PROVISION_LOCKS_GUARD:
+        lk = _PROVISION_LOCKS.get(key)
+        if lk is None:
+            lk = threading.Lock()
+            _PROVISION_LOCKS[key] = lk
+        return lk
+
+
+def _family_by_id(fid: str) -> "type | None":
+    """The Model class for a family id — the model-scan lookup (the
+    provision door's resolution; the studios door resolves by tenant
+    the same way)."""
+    from melite_models import scan_engine_models
+    for _path, cls in scan_engine_models(str(REPO)).values():
+        if getattr(cls, "id", "") == fid:
+            return cls
+    return None
+
+
+def _fetch_provision_locked(cls: "type", prov: "object") -> str:
+    """Worker-thread body for the on-demand path (provision_rail
+    drives async comfy-mcp tools via asyncio.run — it must never run
+    on the serving loop). The per-provision lock serializes
+    concurrent demands; the lock holder re-checks the mount (the
+    previous holder may have landed the bytes)."""
+    import provision_rail
+    with _provision_lock("%s/%s" % (getattr(cls, "id", "?"), prov.name)):
+        resolved = _provision_mount(cls, prov)
+        if resolved is None:
+            raise provision_rail.ProvisionRailError(
+                "family %r declares no engine" % getattr(cls, "id", "?"))
+        disk, store_root = resolved
+        if os.path.isfile(disk):
+            return disk
+        return str(provision_rail.fetch_provision(
+            url=str(prov.url), name=prov.name,
+            sub=(getattr(prov, "folder", "") or "").strip("/"),
+            sha256=(prov.sha256 or ""), store_root=store_root))
+
+
+async def _h_model_provision(ctx: _Ctx) -> HandlerResult:
+    import editor_runs as _er
+    fid, pname = ctx.m.group(1), ctx.m.group(2)
+    cls = _family_by_id(fid)
+    if cls is None:
+        return 404, {"error": "unknown model family %r — provisions "
+                     "resolve through the model scan (see "
+                     "/v1/model-catalog)" % fid}
+    declared = tuple(getattr(cls, "provisions", None) or ())
+    prov = next((p for p in declared if p.name == pname), None)
+    if prov is None:
+        return 404, {"error": "family %r declares no provision %r "
+                     "(declared: %s)"
+                     % (fid, pname,
+                        ", ".join(p.name for p in declared) or "none")}
+    resolved = _provision_mount(cls, prov)
+    if resolved is None:
+        return 500, {"error": "family %r declares no engine" % (fid,)}
+    disk, _store = resolved
+    if not os.path.isfile(disk):
+        # ON DEMAND: acquire through the ONE rail, off the loop
+        import provision_rail
+        try:
+            disk = await asyncio.to_thread(
+                _fetch_provision_locked, cls, prov)
+        except provision_rail.ProvisionRailError as e:
+            return 502, {"error": "provision fetch (%s/%s): %s"
+                         % (fid, pname, e)}
+        except Exception as e:  # noqa: BLE001 — the door 502s, never blind-500s
+            return 502, {"error": "provision fetch (%s/%s) failed: "
+                         "%s: %s" % (fid, pname,
+                                     e.__class__.__name__, e)}
+    try:
+        with open(disk, "rb") as f:
+            data = f.read()
+    except OSError as e:
+        return 500, {"error": "provision unreadable: %s" % e}
     return 200, ({}, {"content-type": _er.content_type_of(disk)},
                  data)
 
@@ -2087,9 +2300,15 @@ async def _h_assets_index(ctx: _Ctx) -> HandlerResult:
 async def _h_card_tools(ctx: _Ctx) -> HandlerResult:
     import lane_disclosure as _ld
     try:
-        return 200, _ld.card_tools()
+        return 200, _ld.card_tools(ctx.q("lane"))
     except _ld.LaneWireError as e:
         return 500, {"error": "lane wire refusal (card-tools): %s" % e}
+    except LookupError as e:
+        # the lane-scoped door: an unknown lane is a NAMED 404, never
+        # the unfiltered list (the DSH lane registrar demands exactly
+        # the lane's manifest — the 2026-09-06 kimodo 502 was 15
+        # manifests served where 1 was demanded)
+        return 404, {"error": str(e)}
 
 
 async def _h_skills(ctx: _Ctx) -> HandlerResult:
@@ -2193,7 +2412,10 @@ ROUTES: tuple = (
           summary="Queue snapshot (queued/running/active)", handler=_h_queue),
     Route(method="GET", path=r"^/v1/flows/status/(.+)$", regex=True,
           template="/v1/flows/status/{run_id}", group="Queue & runs",
-          summary="Status + stages + artifacts + queue position",
+          summary="Status + stages + artifacts + queue position "
+                  "(?include_log=true adds log_tail — the run's "
+                  "real-state console lines for the drilldown)",
+          query=("include_log",),
           handler=_h_flows_status),
     Route(method="POST", path=r"^/v1/flows/stop/(.+)$", regex=True,
           template="/v1/flows/stop/{run_id}", group="Queue & runs",
@@ -2228,6 +2450,13 @@ ROUTES: tuple = (
           group="Assets & ledger",
           summary="Stream one artifact (the only tree the gallery "
                   "proxy may touch)", handler=_h_asset),
+    Route(method="GET", path=r"^/v1/assets/inputs/", regex=True,
+          template="/v1/assets/inputs/{file}",
+          group="Assets & ledger",
+          summary="Stream one uploaded input image (the data/input "
+                  "preview door — png/jpeg/webp only, flat names; "
+                  "the drilled-out card pins its source photo "
+                  "through this)", handler=_h_asset_input),
     Route(method="POST", path="/v1/uploads", group="Assets & ledger",
           summary="Browser file → data/input (strict JSON {filename, "
                   "data:} — the data: URL a FileReader produces; "
@@ -2260,6 +2489,16 @@ ROUTES: tuple = (
           summary="Stream the family's declared neutral mannequin "
                   "(the studio viewport shows it while the body "
                   "slot is empty)", handler=_h_base_body),
+    Route(method="GET",
+          path=r"^/v1/models/([^/]+)/provisions/([^/]+)$", regex=True,
+          template="/v1/models/{family}/provisions/{name}",
+          group="Models & forms",
+          summary="Stream a model-DECLARED provision (viewer asset): "
+                  "served from the mount, or ACQUIRED on demand "
+                  "through the comfy-mcp rail (sha256-verified, "
+                  "landed in the weights store) when missing — "
+                  "studio assets point here, never at vite-public "
+                  "blobs", handler=_h_model_provision),
 
     # ── Lane discovery (progressive disclosure) ──────────────────────
     Route(method="GET", path="/v1/lanes", group="Lane discovery",
@@ -2268,7 +2507,9 @@ ROUTES: tuple = (
     Route(method="GET", path="/v1/kinds", group="Lane discovery",
           summary="The kind vocabulary", handler=_h_kinds),
     Route(method="GET", path="/v1/card-tools", group="Lane discovery",
-          summary="Every card manifest (the lane list source)",
+          summary="Every card manifest (the lane list source); "
+                  "?lane=<id> serves exactly that lane's manifest(s) "
+                  "— the DSH lane-session contract (unknown lane: 404)",
           handler=_h_card_tools),
     Route(method="GET", path=r"^/v1/cards/([^/]+)/bundle$", regex=True,
           template="/v1/cards/{lane}/bundle", group="Lane discovery",

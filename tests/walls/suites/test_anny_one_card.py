@@ -343,6 +343,24 @@ class TestRailLayout(unittest.TestCase):
             "figure renders the neutral base; no preview GLB fetch",
         )
 
+    def test_source_photo_pin_survives_reload(self) -> None:
+        # 2026-09-06, verbatim: "We need to have an image preview
+        # when the card is drilled out for ANNY and IMAGE->3d". The
+        # photo is an estate path (data/input/<name>) no <img> can
+        # load; the pin maps it through estateInputUrl (the input
+        # preview door /v1/assets/inputs/<name>) so the opened card
+        # shows what the body came from — the Meshy/Luma reference
+        # pattern, over the one mesh.
+        for needle, why in [
+            ("ReferenceImageBadge", "the source-photo pin vanished — "
+             "a drilled-out card shows no preview of its own input"),
+            ("estateInputUrl", "the pin stopped mapping the estate "
+             "path through the input preview door — the preview dies "
+             "on reload"),
+            ('label="Source photo"', "the pin lost its label"),
+        ]:
+            self.assertIn(needle, self.component, why)
+
     def test_the_apply_chip_warns_before_replacing_an_estimate(self) -> None:
         # 2026-09-06: the anny-params bake takes the lever recipe
         # ALONE (no body input) — Apply after Estimate destroys the
