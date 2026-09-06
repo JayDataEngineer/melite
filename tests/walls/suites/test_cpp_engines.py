@@ -381,8 +381,13 @@ class TestKnobSSOT(unittest.TestCase):
             os.path.join(base, "compose.py"))
         voice = importlib.util.module_from_spec(vspec)
         vspec.loader.exec_module(voice)
-        family = (voice._ARMS[model_id] if hasattr(voice, "_ARMS")
-                  else family)
+        if hasattr(voice, "_ARMS"):
+            _arm = voice._ARMS[model_id]
+            # the map's value shape is the voice's own business
+            # (tagger: bare family; upscale: (arm, template,
+            # required-paths) triple) — element 0 is the family.
+            family = _arm[0] if isinstance(_arm, (tuple, list)) \
+                else _arm
         assert family, "no family for %s" % model_id
         rspec = importlib.util.spec_from_file_location(
             "renderer_%s" % model_id,
@@ -576,6 +581,14 @@ class TestKnobSSOT(unittest.TestCase):
             "image/input_prep", "InputPrepCard", "input",
             family="input_prep")
 
+    def test_upscale_wire_all_in_knob_rows(self) -> None:
+        """Row-3 migration pattern (tenth card): five rows onto the
+        headless-rendered SeedVR2 graph — the voice's _ARMS triple
+        yields its family at element 0, the lane-fact doc keys
+        (dit/vae_model) are wire-exempt by construction."""
+        self._assert_rows_match_renderer(
+            "image/upscale-tools", "UpscaleToolsCard", "seedvr2_ema")
+
     def test_no_card_knobs_yaml_survives(self) -> None:
         """The yaml knob era is extinct tree-wide — rows live on the
         model class (the music3 pattern)."""
@@ -599,7 +612,7 @@ class TestKnobSSOT(unittest.TestCase):
         "anny", "fit", "h3", "h3-keyframe",
         "kimodo",
         "mask-studio", "pixal3d",
-        "scail2-animate", "seedvr2_ema",
+        "scail2-animate",
         "skin", "transfer_rig", "trellis2-native", "wan-vace",
     })
 
