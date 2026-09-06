@@ -85,7 +85,13 @@ def test_route_table_nonempty_and_grouped() -> None:
     # +1 Uploads door (2026-09-06): POST /v1/uploads (browser file
     # → data/input — the photo flows' composable intake; the route
     # landed with the door, the pin + generated docs caught up here)
-    assert len(gateway.ROUTES) == 45
+    # +1 Inputs preview door (2026-09-06, the drilled-out preview
+    # order): GET /v1/assets/inputs/{file} — serves the bytes the
+    # uploads door wrote so a drilled-out card keeps its source-image
+    # preview after reload (images only, flat names, traversal
+    # refused; landed with commit 19fd84c1 — the pin catch-up is
+    # this line)
+    assert len(gateway.ROUTES) == 46
     groups = {r.group for r in gateway.ROUTES}
     assert len(groups) >= 6
     for g in groups:

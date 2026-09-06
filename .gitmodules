@@ -71,3 +71,6 @@
 [submodule "plugins/engines/cpp/autoremesher/vendor/autoremesher"]
 	path = plugins/engines/cpp/autoremesher/vendor/autoremesher
 	url = https://github.com/huxingyi/autoremesher
+[submodule "plugins/engines/cpp/skintokens/vendor/skin-tokens.cpp"]
+	path = plugins/engines/cpp/skintokens/vendor/skin-tokens.cpp
+	url = https://github.com/localai-org/skin-tokens.cpp

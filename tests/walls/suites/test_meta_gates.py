@@ -280,6 +280,14 @@ def _live_wall_names() -> set[str]:
             continue
         names.update(re.findall(r"^def (test_[A-Za-z0-9_]+)\(", src,
                                 re.M))
+        # METHOD walls (2026-09-06): unittest TestCase methods are as
+        # citable as module functions — the one-mesh + source-pin
+        # records named class methods (test_one_mesh_no_second_scene,
+        # test_source_photo_pin_survives_reload) and read as ghosts
+        # because the ledger only matched column-0 defs. An indented
+        # def is a wall.
+        names.update(re.findall(r"^[ \t]+def (test_[A-Za-z0-9_]+)\(",
+                                src, re.M))
     return names
 
 
