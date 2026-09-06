@@ -1473,8 +1473,13 @@ async def _h_flows_validate(ctx: _Ctx) -> HandlerResult:
         return 200, {"ok": True, "model": str(body["model"]),
                      "card": True}
     import flow as flow_mod
+    # A body carrying BOTH a flow name and inline shape (stages) is an
+    # inline body with an extra top key — NOT a named-flow request.
+    # It falls through to flow_from_body, whose unknown-keys refusal
+    # names the offender (QUEUE LANE LAW: ambiguous requests refuse).
     if isinstance(body, dict) and "flow" in body \
-            and "flow_inline" not in body and "model" not in body:
+            and "flow_inline" not in body and "model" not in body \
+            and "stages" not in body:
         try:
             fl = flow_mod.load_flow(str(body["flow"]))
             fl.validate_initial(dict(body))
