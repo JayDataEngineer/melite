@@ -310,9 +310,37 @@ class TestRailLayout(unittest.TestCase):
             "result must be visible, never one click away",
         )
         self.assertIn(
-            'aria-label="Assembly and turnaround',
+            'aria-label="Assembly — the character',
             self.component,
             "the always-open assembly section lost its label",
+        )
+
+    def test_one_mesh_no_second_scene(self) -> None:
+        # 2026-09-06, verbatim: "Can you tell of an app that has two
+        # meshes like this? Where there are two sources of truth you
+        # guess between at all times?" then "DO IT. I WANT A REAL
+        # APP, NOT SOME TOY APP YOU LIKE BECAUSE IT IS EASY." No real
+        # character app (MetaHuman, MakeHuman, DAZ) shows two meshes:
+        # params are the SSOT, ONE live mesh renders them, the baked
+        # result is an export. The native anny figure IS the mesh;
+        # the GLB is an artifact (slot chip + turnaround input).
+        self.assertIn(
+            'viewport="none"',
+            self.component,
+            "the anny card stopped passing viewport=\"none\" — the "
+            "GLB Stage came back as a second scene to guess against",
+        )
+        self.assertNotIn(
+            "<Stage ",
+            self.component,
+            "the anny card renders a GLB Stage directly — only the "
+            "shared AssemblyStudio may, and anny opted out",
+        )
+        self.assertNotIn(
+            "/v1/studios/3d/anny/base-body",
+            self.component,
+            "the base-body placeholder fetch came back — the native "
+            "figure renders the neutral base; no preview GLB fetch",
         )
 
     def test_the_apply_chip_warns_before_replacing_an_estimate(self) -> None:

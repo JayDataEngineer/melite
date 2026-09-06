@@ -1,6 +1,6 @@
-"""Open-card mannequin wall (2026-09-06: the base ANNY loads when the
-card opens — the viewport shows the declared neutral body while the
-Body slot is empty).
+"""Base-body wall (the base ANNY autoloads at COMPOSE when the Body
+slot is empty; the studio's native figure renders the neutral body
+— the one-mesh order killed the GLB preview).
 
 Pins the stroke end to end:
 
@@ -9,9 +9,12 @@ Pins the stroke end to end:
      none). The anny family names its provisioned neutral body.
   2. DOOR — GET /v1/studios/{tenant}/base-body streams the
      provisioned file (generic tenant lookup, loud 404s).
-  3. STUDIO — the placeholder is DISPLAY-ONLY (never written to
-     params) and yields to real content; a door refusal keeps the
-     explicit empty state.
+  3. STUDIO — ONE MESH (2026-09-06, verbatim: "DO IT. I WANT A REAL
+     APP"): the anny studio renders NO GLB preview — the native
+     figure IS the mesh, so no base-body fetch, no placeholder feed.
+     The shared AssemblyStudio keeps the generic placeholder
+     machinery for stage tenants (Trellis); anny passes
+     viewport="none".
 
 No GPU, no network — rows, route registration, and source text.
 """
@@ -103,12 +106,13 @@ def test_base_body_door_is_generic_over_tenants() -> None:
 
 # ── 3. studio ────────────────────────────────────────────────────
 
-def test_studio_fetches_base_body_display_only() -> None:
+def test_studio_renders_no_glb_preview_one_mesh() -> None:
     with open(ANNY_TSX, encoding="utf-8") as f:
         src = f.read()
-    assert "/v1/studios/3d/anny/base-body" in src
-    assert "placeholderAssets" in src
-    assert "DISPLAY-ONLY" in src
+    # ONE MESH: no base-body preview fetch (the native anny figure
+    # renders the neutral base itself) and no Stage feed.
+    assert "/v1/studios/3d/anny/base-body" not in src
+    assert 'viewport="none"' in src
 
 
 def test_placeholder_yields_to_real_content() -> None:
