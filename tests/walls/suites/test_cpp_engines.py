@@ -674,6 +674,62 @@ class TestKnobSSOT(unittest.TestCase):
             "3d/skin", "SkinCard", "skin", family="skin_t1",
             genre="3d")
 
+    def test_h3_chain_surface_identical_on_every_boarded_model(
+            self) -> None:
+        """Row-3 migration pattern (the chain road's last pair):
+        three models board h3-timeline — one card, ONE knob
+        vocabulary. The card_name -> inject maps are IDENTICAL on
+        all three (a knob the card offers has a row on EVERY model
+        it boards — the plugin law's both directions); every inject
+        is a real H3WindowInject validation_alias (the chain road's
+        inject-side audit — the aliases are the lane's inject-address
+        SSOT); every presets.yaml knob name is in the surface (the
+        preset loader refuses otherwise, pinned here before it can
+        drift)."""
+        import importlib.util
+        from melite_models import load_model_py
+        compose_dir = os.path.join(
+            REPO, "plugins", "engines", "comfyui", "compose")
+        for _p in (compose_dir,
+                   os.path.join(compose_dir, "co_script")):
+            if _p not in sys.path:
+                sys.path.insert(0, _p)
+        maps = {}
+        for mid in ("h3", "h3-keyframe", "h3-timeline"):
+            cls = load_model_py(os.path.join(
+                REPO, "plugins/engines/comfyui/models/video", mid,
+                "model.py"), "comfyui")
+            maps[mid] = {r["card"]: r.get("inject", "")
+                         for r in (cls.card_knobs or ())
+                         if isinstance(r, dict) and r.get("card")}
+        self.assertEqual(maps["h3"], maps["h3-timeline"])
+        self.assertEqual(maps["h3-keyframe"], maps["h3-timeline"])
+        rspec = importlib.util.spec_from_file_location(
+            "renderer_h3_chain",
+            os.path.join(
+                REPO, "plugins/engines/comfyui/action_cards/video",
+                "h3-timeline/py/renderer.py"))
+        rmod = importlib.util.module_from_spec(rspec)
+        sys.modules[rspec.name] = rmod
+        rspec.loader.exec_module(rmod)
+        aliases = {f.validation_alias
+                   for f in rmod.H3WindowInject.model_fields.values()
+                   if isinstance(f.validation_alias, str)}
+        for mid, m in maps.items():
+            bad = sorted(i for i in m.values() if i not in aliases)
+            self.assertEqual(
+                bad, [],
+                "%s rows name non-window injects: %s" % (mid, bad))
+        import yaml
+        with open(os.path.join(
+                REPO, "plugins/engines/comfyui/models/video",
+                "h3-timeline/presets.yaml")) as _fh:
+            _preset_rows = (yaml.safe_load(_fh) or {}).get("rows", [])
+        preset_knobs = set()
+        for _r in _preset_rows:
+            preset_knobs.update((_r or {}).get("knobs", {}))
+        self.assertLessEqual(preset_knobs, set(maps["h3-timeline"]))
+
     def test_no_card_knobs_yaml_survives(self) -> None:
         """The yaml knob era is extinct tree-wide — rows live on the
         model class (the music3 pattern)."""
@@ -684,18 +740,14 @@ class TestKnobSSOT(unittest.TestCase):
         self.assertEqual(hits, [])
 
     # Row-3 ratchet (2026-09-06): the comfyui card_knobs migration —
-    # 27 boarded models still carry no rows (only music3 +
-    # h3-timeline do; cpp-plugin rows proven above). Each row is
+    # COMPLETE. Every card-boarded model carries rows (the set below
+    # is EMPTY — equality-pinned, so a NEW rowless boarded model
+    # fails LOUD). The migration landed card by card; each row is
     # template-node archaeology per model per field (card field ->
-    # exact NodeClass.idx.input), so the migration lands card by
-    # card; this set is equality-pinned EMPTY-ward: a NEW rowless
-    # boarded model fails, a landed card deletes its models'
-    # entries. Shrink-only. (Tool internals without a card claim —
-    # dwpose, basic_resize, the pixel pair — are not card surfaces
-    # and stay out of this set.)
-    _MODELS_WITHOUT_KNOB_ROWS = frozenset({
-        "h3", "h3-keyframe",
-    })
+    # exact NodeClass.idx.input). (Tool internals without a card
+    # claim — dwpose, basic_resize, the pixel pair — are not card
+    # surfaces and stay out of this set.)
+    _MODELS_WITHOUT_KNOB_ROWS: frozenset = frozenset()
 
     def test_comfyui_models_without_knob_rows_shrink_only(self) -> None:
         """Every card-boarded model without card_knobs rows is in
