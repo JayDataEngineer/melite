@@ -219,6 +219,8 @@ def test_validate_door_compiles_without_registering() -> None:
     class _Ctx:
         def __init__(self, j: dict[str, str | list[dict[str, str | dict[str, str] | dict[str, dict[str, str]]]]]) -> None:
             self.json = j
+            # R4.3: validate reads ctx.gw for the cost block
+            self.gw = gw_mod.Gateway()
 
     code, body = asyncio.run(
         gw_mod._h_flows_validate(_Ctx(copy.deepcopy(_INLINE_TWO_STEP))))
@@ -385,12 +387,18 @@ def test_validate_model_arm_catches_card_errors_compile_time() -> None:
     class _Ctx:
         def __init__(self, j: dict[str, str | int | dict[str, list[str]]]) -> None:
             self.json = j
+            self.gw = gw_mod.Gateway()   # R4.3: validate cost block
 
     # 1. a clean card compiles
     code, out = asyncio.run(gw_mod._h_flows_validate(
         _Ctx({"model": "krea-2", "prompt": "x"})))
     assert code == 200
-    assert out == {"ok": True, "model": "krea-2", "card": True}
+    # R4.3: the model-arm 200 now also carries the cost block
+    # (queue truth; engine medians unknown until compose builds
+    # the graph, so stages is empty here)
+    assert out == {"ok": True, "model": "krea-2", "card": True,
+                   "cost": {"queue_depth": 0, "eta_queue_s": None,
+                            "stages": []}}
 
     # 2. an unknown knob is the frozen-row refusal (the 2026-09-05 live
     # failure: ImageGenParams stepz "Extra inputs are not permitted") —
@@ -514,9 +522,14 @@ def test_golden_parity_wall() -> None:
 # repo-relative path. Refusals are 4xx — never a stored partial.
 # REPO is monkeypatched so the wall never touches the real stream.
 class _UploadCtx:
-    """The uploads-door request double: carries the JSON doc."""
+    """The uploads-door request double: carries the JSON doc.
+    Also doubles for validate-door calls — R4.3 added the cost
+    block, which reads ctx.gw (fresh Gateway: empty rings, honest
+    Nones)."""
     def __init__(self, j: JsonValue) -> None:
         self.json = j
+        import gateway as _gw
+        self.gw = _gw.Gateway()
 
 
 def _upload_ctx(doc: JsonValue) -> _UploadCtx:

@@ -52,6 +52,8 @@ export type GatewayDoorUrl =
   | `/v1/flows/drafts/${string}${DoorTail}`
   | `/v1/manage${DoorTail}`
   | `/poser/${string}${DoorTail}`
+  | `/v1/flows/reproduce/${string}${DoorTail}`
+  | `/v1/agent/boot${DoorTail}`
   | `/v1/health${DoorTail}`
   | `/v1/themes${DoorTail}`
   | `/v1/tags${DoorTail}`

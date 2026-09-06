@@ -32,7 +32,10 @@ JsonValue = dict[str, "JsonValue"] | list["JsonValue"] | str | int | float | boo
 
 
 def _validate(body: dict[str, JsonValue]) -> tuple[int, dict[str, JsonValue]]:
-    ctx = SimpleNamespace(json=body)
+    # R4.3: the validate door reads ctx.gw for the cost block —
+    # the fake ctx carries a real Gateway (empty history rings;
+    # cost answers honest Nones)
+    ctx = SimpleNamespace(json=body, gw=gateway.Gateway())
     code, payload = asyncio.run(gateway._h_flows_validate(ctx))
     return code, payload
 

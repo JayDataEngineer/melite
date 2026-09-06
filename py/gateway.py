@@ -855,6 +855,14 @@ class Gateway:
         # stage-duration histograms need per-stage timestamps first).
         self.boot_at = time.time()
         self.recent: deque[dict[str, JsonValue]] = deque(maxlen=50)
+        # ── cost/preview history (R4.3, 2026-09-06): bounded RAM
+        # rings feeding the validate door's cost block — per-engine
+        # stage durations + whole-run totals. Bounded (64/128
+        # samples), honest (None before samples exist — never a
+        # invented ETA), and READ-ONLY for the door: the worker
+        # records, validate reports.
+        self._stage_hist: dict[str, list[float]] = {}
+        self._run_totals: list[float] = []
         # off-loop I/O serializer (R2): one writer per gateway
         # process — atomic_write's tmp path is per-file, and the
         # per-run write ORDER is the sidecar contract.
@@ -1150,6 +1158,12 @@ class Gateway:
                                           "status": run.status})
                 run._finished_at = time.time()
                 self.recent.append(_recent_row(run))
+                # R4.3: the run total feeds the queue ETA (median of
+                # the last N settled totals × current depth)
+                started = getattr(run, "_started_at", None)
+                if started is not None:
+                    self._run_totals.append(run._finished_at - started)
+                    del self._run_totals[:-128]
                 # R2 memory bound: the registry keeps the last N
                 # settled runs (hydration + metrics); older completed
                 # rows leave — the sidecar stays the SSOT and
@@ -1358,6 +1372,8 @@ class Gateway:
                     carry["%s.%s" % (stage["id"], k)] = v
                 continue
             node = run.graph.nodes[stage["index"]]
+            stage_t0 = time.time()   # R4.3: duration feeds the
+            # validate door's cost preview (median per engine)
             # ENGINE TRANSITION: the outgoing engine unloads before the
             # next engine's stage starts. The boundary state is
             # GATEWAY-level (self.last_engine_type) — a switch between
@@ -1533,6 +1549,13 @@ class Gateway:
                 # "outputs" (sidecar.md).
                 stage["result_outputs"] = dict(
                     result.get("outputs") or {}) if result else {}
+                # R4.3: the stage's wall-clock duration rides the row
+                # AND the per-engine history ring (validate's cost
+                # preview reads the ring; merged-path runs report the
+                # run-level total in /v1/metrics recent instead).
+                stage["duration_s"] = round(time.time() - stage_t0, 3)
+                self._record_stage_duration(
+                    node.node_type, stage["duration_s"])
                 stage["status"] = "completed"
                 stage.pop("progress", None)
                 stage.pop("activity", None)
@@ -1546,6 +1569,42 @@ class Gateway:
                                           "error": stage["error"]})
                 raise
             await self._sidecar_offloop(run)
+
+    def _record_stage_duration(self, engine_type: str,
+                               seconds: float) -> None:
+        """R4.3: one completed stage duration into the bounded
+        per-engine ring (64 samples — enough for a stable median,
+        small enough to forget a stale regime)."""
+        ring = self._stage_hist.setdefault(engine_type, [])
+        ring.append(seconds)
+        del ring[:-64]
+
+    def cost_preview(self, engine_types: "list[str] | None" = None,
+                     ) -> dict[str, JsonValue]:
+        """R4.3 (2026-09-06): what a validate-time agent needs to
+        CHOOSE — queue depth ahead, a rough whole-queue ETA (median
+        of the last settled run totals × depth), and per-engine
+        stage medians with their sample counts. Every unknown is
+        None/0, never a guess: no history yet means median_s null +
+        samples 0 and eta_queue_s null (an agent sees "no data",
+        not a fabricated minute)."""
+        import statistics
+        depth = len(self.order)
+        totals = self._run_totals
+        eta: float | None = None
+        if totals and depth:
+            eta = round(statistics.median(totals) * depth, 1)
+        stages_out: list[dict[str, JsonValue]] = []
+        for et in engine_types or []:
+            ring = self._stage_hist.get(et) or []
+            stages_out.append({
+                "engine": et,
+                "median_s": round(statistics.median(ring), 3)
+                if ring else None,
+                "samples": len(ring)})
+        return {"queue_depth": depth,
+                "eta_queue_s": eta,
+                "stages": stages_out}
 
     def _note_stage_retry(self, run: Run, stage: dict[str, JsonValue],
                           attempt: int, why: str) -> None:
@@ -1627,6 +1686,49 @@ class Gateway:
                 "resumed_from_stage": from_stage,
                 "completed_stages": kept,
                 "merged_restart": merged}
+
+    async def reproduce(self, run_id: str) -> dict[str, JsonValue]:
+        """R4.5 (2026-09-06): one call = "run that again, exactly".
+        The durable record IS the replay source: _request.json holds
+        the EXACT body that produced the run (sha-identical replay
+        was proven possible by hand on the image-upscale record);
+        this door re-submits it through the SAME submit() the start
+        door rides — draft law, door resolution, registration, all
+        one code path, zero restatement. The replay is a NEW run id
+        (the original record stays untouched); the original draft
+        doc must still exist (CARD BIRTH LAW — no door-side
+        auto-mint; submit re-validates). Refusals: unknown record,
+        still-live run, cardless legacy row.
+        Wall: tests/unit/runtime/test_reproduce_door.py."""
+        live = self.runs.get(run_id)
+        if live is not None and live.status in ("queued", "running"):
+            raise ValidationError(
+                "run %s is still %s — wait for it to settle or stop "
+                "it first" % (run_id, live.status))
+        try:
+            doc = json.loads(
+                (OUT_ROOT / run_id / "_flow.json").read_text())
+        except (OSError, ValueError):
+            raise ValidationError("no durable record for run %r" % run_id)
+        if not str(doc.get("draft_id") or ""):
+            raise ValidationError(
+                "run %s is a cardless legacy row (no draft_id) — "
+                "compose a fresh card to replay it" % run_id)
+        try:
+            request = json.loads(
+                (OUT_ROOT / run_id / "_request.json").read_text())
+        except (OSError, ValueError):
+            raise ValidationError(
+                "run %s has no recorded request body — cannot "
+                "replay" % run_id)
+        if not isinstance(request, dict):
+            raise ValidationError(
+                "run %s recorded a non-object request body" % run_id)
+        replay = await self.submit(dict(request))   # the SAME door
+        ledger("run.reproduce", {"run_id": replay.run_id,
+                                  "replay_of": run_id})
+        return {"run_id": replay.run_id, "status": replay.status,
+                "replay_of": run_id}
 
     async def stop(self, run_id: str) -> dict[str, str]:
         run = self.runs.get(run_id)
@@ -2334,7 +2436,10 @@ async def _h_flows_validate(ctx: _Ctx) -> HandlerResult:
         except ValidationError as e:
             return 400, {"error": str(e)}
         return 200, {"ok": True, "model": str(body["model"]),
-                     "card": True}
+                     "card": True,
+                     # R4.3: queue truth now (engine medians unknown
+                     # until the card compose builds the graph)
+                     "cost": ctx.gw.cost_preview([])}
     import flow as flow_mod
     # A body carrying BOTH a flow name and inline shape (stages) is an
     # inline body with an extra top key — NOT a named-flow request.
@@ -2352,6 +2457,8 @@ async def _h_flows_validate(ctx: _Ctx) -> HandlerResult:
             "ok": True,
             "flow": fl.id,
             "skipped": list(skipped),
+            "cost": ctx.gw.cost_preview(
+                [n.node_type for n in graph.nodes]),
             "stages": [
                 {"id": n.node_id, "engine": n.node_type,
                  "description": n.description,
@@ -2393,6 +2500,8 @@ async def _h_flows_validate(ctx: _Ctx) -> HandlerResult:
         "ok": True,
         "skipped": list(skipped),
         "flow": fl.id,
+        "cost": ctx.gw.cost_preview(
+            [n.node_type for n in graph.nodes]),
         "stages": [
             {"id": n.node_id, "engine": n.node_type,
              "description": n.description,
@@ -2560,6 +2669,13 @@ async def _h_flows_stop(ctx: _Ctx) -> HandlerResult:
 async def _h_flows_resume(ctx: _Ctx) -> HandlerResult:
     try:
         return 200, await ctx.gw.resume(ctx.m.group(1))
+    except ValidationError as e:
+        return 400, {"error": str(e)}
+
+
+async def _h_flows_reproduce(ctx: _Ctx) -> HandlerResult:
+    try:
+        return 200, await ctx.gw.reproduce(ctx.m.group(1))
     except ValidationError as e:
         return 400, {"error": str(e)}
 
@@ -2811,6 +2927,58 @@ async def _h_metrics(ctx: _Ctx) -> HandlerResult:
                         for rid, qs in sorted(gw.subscribers.items())},
         "recent": list(gw.recent),
     }
+
+
+async def _h_agent_boot(ctx: _Ctx) -> HandlerResult:
+    """R4.1 (2026-09-06): the ONE boot call for a headless agent
+    session — gateway runtime truth + health + the whole discovery
+    spread (lanes, card tools, skills, model catalog, authoring
+    schema) in a single payload. Today the same picture costs five
+    round-trips before the first compose; an agent that must
+    discover its tools per-session pays it every boot.
+
+    FAULT-ISOLATED SECTIONS (RESILIENCE LAW): a broken lane wire or
+    catalog must not take the manifest down — the failing section
+    answers {"error": ...} and the rest ships. Every payload is the
+    SAME builder its dedicated door serves (no restatement drift:
+    lane_disclosure/catalog/flow.schema_snapshot are the SSOTs).
+    Ledgered agent.boot (the headless session's first row).
+    Wall: tests/unit/runtime/test_agent_boot.py."""
+    import catalog as _cat
+    import editor_runs as _er
+    import flow as _flow_mod
+    import lane_disclosure as _ld
+    gw = ctx.gw
+
+    def _section(build: "Callable[[], JsonValue]") -> JsonValue:
+        try:
+            return build()
+        except Exception as e:   # document, then continue
+            return {"error": "%s: %s" % (type(e).__name__, e)}
+
+    counts: dict[str, int] = {}
+    for r in gw.runs.values():
+        counts[r.status] = counts.get(r.status, 0) + 1
+    manifest: dict[str, JsonValue] = {
+        "gateway": {
+            "version": "0.1.0", "routes": len(ROUTES),
+            "boot_at": gw.boot_at,
+            "uptime_s": round(time.time() - gw.boot_at, 3)},
+        "health": _section(lambda: _er.health()),
+        "queue": {
+            "depth": len(gw.order), "queued": list(gw.order),
+            "active": (gw.active.run_id if gw.active else None),
+            "runs_by_status": counts},
+        "lanes": _section(lambda: _ld.peek(None, None)),
+        "card_tools": _section(lambda: _ld.card_tools(None)),
+        "skills": _section(lambda: _ld.skill_index()),
+        "model_catalog": _section(lambda: json.loads(
+            _cat.to_json(_cat.scan_catalog(str(REPO))))),
+        "schema": _section(lambda: _flow_mod.schema_snapshot()),
+    }
+    ledger("agent.boot", {"routes": len(ROUTES),
+                           "uptime_s": manifest["gateway"]["uptime_s"]})
+    return 200, manifest
 
 
 # ── studio presets (stroke 3, 2026-09-06) ───────────────────────────
@@ -3696,6 +3864,17 @@ ROUTES: tuple = (
           handler=_h_poser_bridge),
 
     # ── Health & chrome ──────────────────────────────────────────────
+    Route(method="POST", path=r"^/v1/flows/reproduce/(.+)$", regex=True,
+          template="/v1/flows/reproduce/{run_id}", group="Agent plane",
+          summary="R4.5: re-submit a settled run's EXACT recorded "
+                  "request as a NEW run (one call; the original "
+                  "record stays untouched)",
+          handler=_h_flows_reproduce),
+    Route(method="GET", path="/v1/agent/boot", group="Agent plane",
+          summary="R4.1 boot manifest: gateway truth + health + all "
+                  "discovery (lanes, card tools, skills, models, "
+                  "schema) in ONE fault-isolated payload",
+          handler=_h_agent_boot),
     Route(method="GET", path="/v1/health", group="Health & chrome",
           summary="Liveness", handler=_h_health),
     Route(method="GET", path="/v1/themes", group="Health & chrome",

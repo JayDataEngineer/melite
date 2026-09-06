@@ -102,7 +102,7 @@ def test_route_table_nonempty_and_grouped() -> None:
     # +1 Metrics door (R2, 2026-09-06): GET /v1/metrics — queue +
     # registry observability; generated docs caught up in the same
     # stroke (wall: tests/unit/runtime/test_metrics_door.py)
-    assert len(gateway.ROUTES) == 50
+    assert len(gateway.ROUTES) == 52
     groups = {r.group for r in gateway.ROUTES}
     assert len(groups) >= 6
     for g in groups:
