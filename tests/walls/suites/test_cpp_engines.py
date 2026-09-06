@@ -648,6 +648,20 @@ class TestKnobSSOT(unittest.TestCase):
             "motion/motion", "MotionCard", "kimodo", family="motion_t1",
             genre="motion")
 
+    def test_img_to_mesh_arms_all_in_knob_rows(self) -> None:
+        """Row-3 migration pattern (fifteenth card, third multi-arm):
+        thirty-one rows on trellis2-native, thirty-two on pixal3d
+        (the shared lift chain + camera_fov), two on transfer_rig.
+        The voice's _ARMS pairs yield the family at element 0."""
+        self._assert_rows_match_renderer(
+            "3d/img_to_mesh", "ImgToMeshCard", "trellis2-native",
+            genre="3d")
+        self._assert_rows_match_renderer(
+            "3d/img_to_mesh", "ImgToMeshCard", "pixal3d", genre="3d")
+        self._assert_rows_match_renderer(
+            "3d/img_to_mesh", "ImgToMeshCard", "transfer_rig",
+            genre="3d")
+
     def test_no_card_knobs_yaml_survives(self) -> None:
         """The yaml knob era is extinct tree-wide — rows live on the
         model class (the music3 pattern)."""
@@ -668,9 +682,7 @@ class TestKnobSSOT(unittest.TestCase):
     # dwpose, basic_resize, the pixel pair — are not card surfaces
     # and stay out of this set.)
     _MODELS_WITHOUT_KNOB_ROWS = frozenset({
-        "fit", "h3", "h3-keyframe",
-        "pixal3d",
-        "skin", "transfer_rig", "trellis2-native",
+        "fit", "h3", "h3-keyframe", "skin",
     })
 
     def test_comfyui_models_without_knob_rows_shrink_only(self) -> None:
