@@ -633,6 +633,13 @@ class ActionCard(metaclass=_CardMeta):
                    standard fill-in, image preview on top; studio = an
                    interactive body tenant (mask, timeline). The BASE
                    owns the default; declare only the deviation.
+      structural_knobs
+                   STRUCTURAL keys — legal wire the card consumes
+                   itself, never knob-spliced (the knobmap surface's
+                   extra_legal: mod-absorbed fields like image-gen's
+                   `loras`, resolved at the door into node chains,
+                   never NodeClass.idx.input targets). The BASE owns
+                   the empty set; a card declares ONLY its own.
     """
 
     id = ""
@@ -648,6 +655,8 @@ class ActionCard(metaclass=_CardMeta):
     # Notch defaults — the system provides; cards state exceptions only.
     size = "default"
     layout = "form"
+    # No structural keys by default — cards declare their own.
+    structural_knobs = frozenset()
 
     @classmethod
     def families_of(cls: type[ActionCard]) -> tuple[str, ...]:
