@@ -724,6 +724,21 @@ class Flow(BaseModel):
         self.validate_tool_params(body)
         pruned_flow, skipped = self.pruned_for(body)
         graph = pruned_flow.with_tool_params(body).to_graph()
+        # $CHANNEL RESOLUTION DOOR (2026-09-06, the 11-attempt proof's
+        # biggest bill): every $name a stage's params reference must
+        # resolve against the pool the executor publishes for it —
+        # refusing HERE, at both doors, before a queue slot or a GPU
+        # claim. Three queued runs once died discovering what the graph
+        # already knew ("$photo"/"$seed" rode workflows verbatim).
+        bad = graph.unresolved_channels()
+        if bad:
+            head = "; ".join(
+                "stage %r references $%s (available: %s)"
+                % (nid, tok, ", ".join(pool) or "nothing")
+                for nid, tok, pool in bad[:3])
+            raise FlowError(
+                "unresolved $channel(s): %s%s"
+                % (head, " … +%d more" % (len(bad) - 3) if len(bad) > 3 else ""))
         return graph.model_copy(update={"skipped": tuple(skipped)}), skipped
     @model_validator(mode="after")
     def _wires_resolve(self) -> "Flow":

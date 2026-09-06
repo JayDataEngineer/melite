@@ -1095,6 +1095,14 @@ class Gateway:
                 # disk paths BEFORE the $-substitution deep-walk —
                 # engines resolve from disk, never wire spellings
                 inputs = absolutize_artifact_refs(node, inputs)
+                # WHAT WAS POSTED (2026-09-06 rework): the resolved
+                # input pool per stage rides the sidecar — a failed
+                # run shows EXACTLY what each stage received. The
+                # 11-attempt character proof ran blind here (three
+                # failures were unresolvable $channels the sidecar
+                # could have named in one look).
+                stage["inputs"] = inputs
+                sidecar(run)
                 params = expand_inject(node.params, inputs)
                 engine = load_engine(node.node_type)
                 # the engine ABI row: a VALIDATED NodeRow carrying the
@@ -1248,6 +1256,19 @@ def sidecar(run: Run) -> None:
                 or run.request.get("model")
                 or (inline.get("id", "")
                     if isinstance(inline, dict) else ""))
+    # WHAT WAS POSTED (2026-09-06 rework): the compiled graph rides
+    # the sidecar verbatim (id/type/input_from/input_names/outputs/
+    # params, the params including every inline workflow) — post-
+    # mortem reads see exactly what the executor consumed, never an
+    # inference. Large by design; _flow.json is cheap next to glbs.
+    graph_rows = [{
+        "id": n.node_id,
+        "type": n.node_type,
+        "input_from": list(n.input_from),
+        "input_names": dict(n.input_names),
+        "outputs": dict(n.outputs or {}),
+        "params": dict(n.params or {}),
+    } for n in run.graph.nodes]
     atomic_write(run.dir / "_flow.json", {
         "run_id": run.run_id,
         "status": run.status,
@@ -1259,6 +1280,7 @@ def sidecar(run: Run) -> None:
         "test": run.request.get("test", False),
         "draft_id": run.draft_id,
         "pipeline": pipeline,
+        "graph": graph_rows,
     })
 
 

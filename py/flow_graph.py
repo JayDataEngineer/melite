@@ -19,6 +19,27 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
+def _dollar_tokens(value: Any) -> set[str]:
+    """Every whole-string $name in a params tree — the compile-time
+    twin of gateway._deep_expand's tokenizer: a token is "$" plus the
+    ENTIRE remaining string (embedded "x$seed y" is prompt prose, not
+    a channel). One tokenizer, two sites: the wall pins that they
+    agree."""
+    if isinstance(value, str):
+        return {value[1:]} if value.startswith("$") and len(value) > 1 else set()
+    if isinstance(value, list):
+        out: set[str] = set()
+        for v in value:
+            out |= _dollar_tokens(v)
+        return out
+    if isinstance(value, dict):
+        out = set()
+        for v in value.values():
+            out |= _dollar_tokens(v)
+        return out
+    return set()
+
+
 class NodeRow(BaseModel):
     """One flow node — the engine ABI row (id/type/input_from/params)."""
     model_config = ConfigDict(
@@ -97,6 +118,46 @@ class FlowGraph(BaseModel):
                 raise ValueError("duplicate node id %r" % n.node_id)
             seen.add(n.node_id)
         return self
+
+    def _channel_pool(self, node: "NodeRow") -> set[str]:
+        """The names the executor would publish for this node — the
+        EXACT mirror of py/gateway.py resolve_inputs' output keys:
+        producer refs ("rig.body") land verbatim, initial refs
+        publish their TENSOR key (the __initial__ spelling never
+        rides the pool), and every input_names receiving name joins.
+        test_channel_resolution pins the mirror property so this set
+        and the resolver cannot drift."""
+        pool = set(node.input_names)
+        for ref in node.input_from:
+            if ref.startswith("__initial__."):
+                pool.add(ref.split(".", 1)[1])
+            else:
+                pool.add(ref)
+        return pool
+
+    def unresolved_channels(
+            self) -> tuple[tuple[str, str, tuple[str, ...]], ...]:
+        """Every $name a node's params reference that NOTHING provides.
+
+        The runtime substitution (gateway._deep_expand) passes unknown
+        $-strings through SILENTLY — prompt text is a legitimate
+        "$100 bill" — so a mistyped or unwired channel surfaces only
+        as a downstream engine refusal ("Invalid image file: $photo",
+        character flow attempts 1/8 + the starter branch, 2026-09-06:
+        three queued GPU runs spent discovering a wiring bug the graph
+        already knew). This is the compile-time twin: the same
+        whole-string tokenizer (a token is "$" + the entire remaining
+        string, exactly what _deep_expand would try), judged against
+        the same pool resolve_inputs builds. What refuses here could
+        never have resolved there."""
+        bad: list[tuple[str, str, tuple[str, ...]]] = []
+        for node in self.nodes:
+            pool = self._channel_pool(node)
+            for token in _dollar_tokens(node.params):
+                if token not in pool:
+                    bad.append((node.node_id, token,
+                                tuple(sorted(pool))))
+        return tuple(bad)
 
 
 class Skeleton(FlowGraph):
