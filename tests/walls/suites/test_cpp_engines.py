@@ -539,6 +539,15 @@ class TestKnobSSOT(unittest.TestCase):
             "image/image-edit", "ImageEditCard",
             "qwen-img-edit-2511", family="image_edit")
 
+    def test_ideogram_core_all_in_knob_rows(self) -> None:
+        """Row-3 migration pattern (eighth card): nine rows onto
+        the headless-rendered ideogram graph — width/height target
+        the latent canvas (the renderer fans out to the scheduler;
+        the row model is 1:1, the twin is comment-recorded)."""
+        self._assert_rows_match_renderer(
+            "image/ideogram4", "Ideogram4Card", "ideogram",
+            family="ideogram_t2i")
+
     def test_no_card_knobs_yaml_survives(self) -> None:
         """The yaml knob era is extinct tree-wide — rows live on the
         model class (the music3 pattern)."""
@@ -560,7 +569,7 @@ class TestKnobSSOT(unittest.TestCase):
     # and stay out of this set.)
     _MODELS_WITHOUT_KNOB_ROWS = frozenset({
         "anny", "fit", "h3", "h3-keyframe",
-        "ideogram", "input", "kimodo",
+        "input", "kimodo",
         "mask-studio", "pixal3d",
         "scail2-animate", "seedvr2_ema",
         "skin", "transfer_rig", "trellis2-native", "wan-vace",
