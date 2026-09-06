@@ -51,11 +51,23 @@ def boot_scratch_gateway(wait_path: str = "/v1/health", python: str | None = Non
     CALLER OWNS REAPING — reap_gateway(proc). python defaults to
     sys.executable (the integration plane passes the repo venv
     python); env defaults to a copy of os.environ.
+
+    2026-09-06 (single-writer lock seam): a scratch gateway ALWAYS
+    boots with its OWN state root (MELITE_STATE_ROOT → a fresh tmp
+    dir) unless the caller pinned one in env — the R2 one-writer
+    lock refuses a second writer on the production root, and the
+    hermetic suites must never contend with (or write into) the
+    live estate's runs/ tree. Scratch roots die with the tmp parent.
     """
     port = free_port()
+    boot_env = dict(env if env is not None else os.environ)
+    if "MELITE_STATE_ROOT" not in boot_env:
+        import tempfile
+        root = Path(tempfile.mkdtemp(prefix="melite-scratch-"))
+        boot_env["MELITE_STATE_ROOT"] = str(root)
     proc = subprocess.Popen(
         [python or sys.executable, str(REPO / "py" / "gateway.py"), str(port)],
-        cwd=str(REPO), env=env if env is not None else dict(os.environ),
+        cwd=str(REPO), env=boot_env,
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         start_new_session=True)
     for _ in range(tries):

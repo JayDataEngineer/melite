@@ -6,6 +6,15 @@
 # plugins, py/plugins.py mounts them). This unit supervises :33081 with
 # Restart=always.
 #
+# BASE ENV (2026-09-06, PROVISIONING LAW — "comfy-mcp needs to be in
+# the [REDACTED 2026-11-05] base. OUR SYSTEM DOES NOT RUN WITHOUT THAT"): the unit
+# runs the repo's base env python (.venv, uv-synced from pyproject —
+# pydantic, comfy-mcp, comfy-script…), NOT the system python. The
+# gateway's own surface stays stdlib-only at import; the on-demand
+# provision door (py/provision_rail) lazy-imports comfy_mcp —
+# importable only in the base env. The canonical smoke check
+# (tools/smoke-single-gateway.sh) pins the same interpreter.
+#
 # PORT LAW: every skill and the dsh melite-card-deck proxy point at
 # http://localhost:33081 — do not move the port.
 #
@@ -22,7 +31,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=%h/Documents/programs/active/inference.cpp
-ExecStart=/usr/bin/python3 %h/Documents/programs/active/inference.cpp/py/gateway.py 33081
+ExecStart=%h/Documents/programs/active/inference.cpp/.venv/bin/python %h/Documents/programs/active/inference.cpp/py/gateway.py 33081
 Restart=always
 RestartSec=3
 
