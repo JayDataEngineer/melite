@@ -22,7 +22,7 @@ import sys
 PASS = FAIL = 0
 
 
-def check(name, ok, note=""):
+def check(name: str, ok: bool, note: str = "") -> None:
     global PASS, FAIL
     print("  %-4s %s%s" % ("ok" if ok else "FAIL", name,
                             (" — " + str(note)[:160] if note and not ok else "")))
@@ -54,9 +54,10 @@ sys.path.insert(0, qdir)
 # the arm module loads as a package (compose.py uses relative
 # imports — the plugin's own _load_card_package shape)
 import importlib.util as _ilu
+from types import ModuleType
 
 
-def _load_arm(pkgname, carddir):
+def _load_arm(pkgname: str, carddir: str) -> ModuleType:
     pkg = _ilu.module_from_spec(
         _ilu.spec_from_loader(pkgname, loader=None, is_package=True))
     pkg.__path__ = [carddir]

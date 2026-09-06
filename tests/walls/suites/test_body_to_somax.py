@@ -23,7 +23,7 @@ MOTION_TSX = os.path.join(
 FLOW_PY = os.path.join(REPO, "flows", "body-to-somax", "flow.py")
 
 
-def _flow():
+def _flow() -> flow_mod.Flow:
     import sys
 
     if str(REPO / "py") not in sys.path:
@@ -34,12 +34,12 @@ def _flow():
 class TestTheFlow(unittest.TestCase):
     """One stage, the baked node in standalone-rig mode, mesh→mesh."""
 
-    def test_flow_constructs_with_one_stage(self):
+    def test_flow_constructs_with_one_stage(self) -> None:
         f = _flow()
         self.assertEqual(f.id, "body-to-somax")
         self.assertEqual([s.id for s in f.stages], ["rig"])
 
-    def test_the_baked_node_in_standalone_rig_mode(self):
+    def test_the_baked_node_in_standalone_rig_mode(self) -> None:
         f = _flow()
         wf = f.stages[0].params["workflow"]
         self.assertIn("rig", wf)
@@ -55,14 +55,14 @@ class TestTheFlow(unittest.TestCase):
         # decimation sheds skin weights at the seams — never here
         self.assertEqual(inputs["decimate_ratio"], 0.0)
 
-    def test_typed_edges_mesh_to_mesh(self):
+    def test_typed_edges_mesh_to_mesh(self) -> None:
         f = _flow()
         stage = f.stages[0]
         self.assertIn("glb", stage.inputs)
         self.assertEqual(stage.expected["glb"], flow_mod.Kind.mesh)
         self.assertEqual(stage.outputs["body"], flow_mod.Kind.mesh)
 
-    def test_the_flow_names_its_pipeline_explicitly(self):
+    def test_the_flow_names_its_pipeline_explicitly(self) -> None:
         """QUEUE LANE LAW: a named flow dir + FLOW id — no fallback
         composition, no hardcoded engine endpoints."""
         self.assertTrue(
@@ -78,10 +78,10 @@ class TestTheStudioSeam(unittest.TestCase):
     """The motion studio converts BEHIND THE SCENES on
     NotSomaxGlbError — through the queue door, once (no retry)."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.src = open(MOTION_TSX, encoding="utf-8").read()
 
-    def test_not_somax_triggers_the_queue_convert(self):
+    def test_not_somax_triggers_the_queue_convert(self) -> None:
         self.assertIn(
             "e instanceof NotSomaxGlbError",
             self.src,
@@ -98,14 +98,14 @@ class TestTheStudioSeam(unittest.TestCase):
             "through the queue door (INFERENCE LAW)",
         )
 
-    def test_converted_glb_skins_not_fallback_only(self):
+    def test_converted_glb_skins_not_fallback_only(self) -> None:
         self.assertRegex(
             self.src,
             r"loadGlbSkin\(rigged\)",
             "the converted GLB must actually skin (the success path)",
         )
 
-    def test_failure_keeps_the_mannequin_fallback(self):
+    def test_failure_keeps_the_mannequin_fallback(self) -> None:
         self.assertIn(
             "auto-convert failed",
             self.src,

@@ -41,7 +41,7 @@ def _src(path: str) -> str:
 
 
 class TestNodeSurfacesTheRecipe(unittest.TestCase):
-    def test_preset_json_rides_the_ui_surface(self):
+    def test_preset_json_rides_the_ui_surface(self) -> None:
         src = _src(VENDOR_NODES_PY)
         # the ONE shared filename (rung 6), on the harvested surface
         self.assertIn('"%s"' % PRESET_PARAMS_FILENAME, src)
@@ -50,7 +50,7 @@ class TestNodeSurfacesTheRecipe(unittest.TestCase):
 
 
 class TestIgnoreListMatchesSomax(unittest.TestCase):
-    def test_literal_equals_source(self):
+    def test_literal_equals_source(self) -> None:
         def _labels(src: str) -> list[str]:
             m = re.search(
                 r'ignore_names\s*=\s*\[([^\]]*)\]', src)
@@ -71,7 +71,7 @@ class TestIgnoreListMatchesSomax(unittest.TestCase):
 
 
 class TestFlowDeclaresTheRecipe(unittest.TestCase):
-    def test_docstring_names_the_harvest(self):
+    def test_docstring_names_the_harvest(self) -> None:
         self.assertIn(PRESET_PARAMS_FILENAME, _src(FLOW_PY))
 
 

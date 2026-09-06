@@ -71,6 +71,7 @@ for name, (fn, doc) in sorted(registry().items()):
           "registered without doc= — raw-dict renderers are banned")
 
 # 2. h3 knob SSOT: card_knobs ⊆ doc aliases (or pin prefixes) ──────────
+from melite_cards.validators import JsonDict, JsonValue  # noqa: E402
 from melite_models import load_model_py  # noqa: E402
 
 h3_cls = load_model_py(str(_MODEL_DIRS[3] / "model.py"), "comfyui")
@@ -142,7 +143,7 @@ _MUSIC3 = load_model_cls("music3")
 # outputs skip — they are references, not scalars). Estate-wide:
 # every rendered graph below is measured, not just the edit lane
 # where the incident bit.
-def _pin_inputs():
+def _pin_inputs() -> dict[str, JsonValue]:
     from co_script import nodes as _n
     oi, _sha = _n._load_pin_dict()
     return oi
@@ -153,7 +154,7 @@ _IFACE_ATOM = {"INT": "int", "FLOAT": "float", "STRING": "str",
                "BOOLEAN": "bool"}
 
 
-def _iface_mismatches(graph):
+def _iface_mismatches(graph: dict[str, JsonDict]) -> list[str]:
     bad = []
     for nid, node in graph.items():
         cls = node.get("class_type")

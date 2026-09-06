@@ -28,6 +28,7 @@ No GPU, no network — models + the walk with a stubbed transport.
 import os
 import sys
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 from pydantic import ValidationError
@@ -132,7 +133,7 @@ def test_flow_door_4xxes_before_registration(
 
 # ── 3. the staging walk ──────────────────────────────────────────
 
-def _native():
+def _native() -> ModuleType:
     import native as native_mod
     return native_mod
 

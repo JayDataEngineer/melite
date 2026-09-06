@@ -27,6 +27,7 @@ import os
 import sys
 from collections.abc import Iterator
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 
@@ -60,7 +61,7 @@ _PNG = "data:image/png;base64,%s" % _TINY_PNG_B64
 _GLB = "data:;base64,%s" % _TINY_GLB_B64
 
 
-def _arm() -> object:
+def _arm() -> ModuleType:
     mod = sys.modules.get("img_to_mesh.compose")
     if mod is None:
         mod = _compose_pkg._load_arm_package("3d/img_to_mesh")

@@ -21,6 +21,7 @@ import os
 import sys
 from collections.abc import Iterator
 from pathlib import Path
+from types import ModuleType
 from typing import TYPE_CHECKING
 
 import pytest
@@ -64,7 +65,7 @@ def _load_model_class(mid: str) -> "type[Model] | None":
     return None
 
 
-def _arm_compose_module() -> object:
+def _arm_compose_module() -> ModuleType:
     """The loaded input-prep arm module (package alias input_prep).
 
     Loading the package has no side effects (no staging, no GPU);

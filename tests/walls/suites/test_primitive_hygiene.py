@@ -59,8 +59,8 @@ _KIT_NAMES = frozenset({
 })
 
 
-def _lane_py_files():
-    out = []
+def _lane_py_files() -> list[str]:
+    out: list[str] = []
     for genre in sorted(os.listdir(LANES)):
         gdir = os.path.join(LANES, genre)
         if not os.path.isdir(gdir):
@@ -98,7 +98,7 @@ def test_no_shadow_primitive_defs() -> None:
 
 # ── leaked-double static pin ──────────────────────────────────────
 
-def _py_top_levels():
+def _py_top_levels() -> set[str]:
     pydir = os.path.join(REPO, "py")
     return {f[:-3] for f in os.listdir(pydir) if f.endswith(".py")}
 
@@ -115,7 +115,7 @@ _SETATTR_ALLOWLIST = {
 }
 
 
-def _estate_aliases(tree):
+def _estate_aliases(tree: ast.Module) -> set[str]:
     """Local names bound to estate modules (py/ top-levels,
     plugins.*) by import statements in this file."""
     tops = _py_top_levels()

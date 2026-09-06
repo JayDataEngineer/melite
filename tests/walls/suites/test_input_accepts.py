@@ -26,20 +26,20 @@ INPUT_MODEL_PY = os.path.join(
     "model.py")
 
 
-def _input_cls():
+def _input_cls() -> type[Model]:
     return load_model_py(INPUT_MODEL_PY, "comfyui")
 
 
 class TestInputDeclaresItsIngestion(unittest.TestCase):
-    def test_image_and_audio(self):
+    def test_image_and_audio(self) -> None:
         self.assertEqual(tuple(_input_cls().accepts), ("image", "audio"))
 
-    def test_default_is_empty(self):
+    def test_default_is_empty(self) -> None:
         self.assertEqual(tuple(Model.accepts), ())
 
 
 class TestAcceptsRefusesUnknownAtConstruction(unittest.TestCase):
-    def test_bogus_member_dies(self):
+    def test_bogus_member_dies(self) -> None:
         from melite_models import Cell, Quant, Variant
 
         with self.assertRaises(ModelError) as ctx:
@@ -58,7 +58,7 @@ class TestAcceptsRefusesUnknownAtConstruction(unittest.TestCase):
 
 
 class TestCatalogServesAccepts(unittest.TestCase):
-    def test_families_input_carries_the_key(self):
+    def test_families_input_carries_the_key(self) -> None:
         served = _catalog.scan_catalog(str(REPO))
         fam = served["families"]["input"]
         self.assertEqual(fam["accepts"], ["image", "audio"])

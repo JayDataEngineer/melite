@@ -14,7 +14,7 @@ import pytest
 from _anchor import REPO
 
 from gateway import (  # noqa: E402
-    ValidationError, expand_inject, resolve_request,
+    JsonValue, ValidationError, expand_inject, resolve_request,
 )
 from flow_graph import NodeRow  # noqa: E402
 import flow as flow_mod  # noqa: E402
@@ -419,11 +419,14 @@ def test_golden_parity_wall() -> None:
 # data/input/<stem>-<id>.<ext> and returns the composable
 # repo-relative path. Refusals are 4xx — never a stored partial.
 # REPO is monkeypatched so the wall never touches the real stream.
-def _upload_ctx(doc: object) -> object:
-    class _Ctx:
-        def __init__(self, j: object) -> None:
-            self.json = j
-    return _Ctx(doc)
+class _UploadCtx:
+    """The uploads-door request double: carries the JSON doc."""
+    def __init__(self, j: JsonValue) -> None:
+        self.json = j
+
+
+def _upload_ctx(doc: JsonValue) -> _UploadCtx:
+    return _UploadCtx(doc)
 
 
 def _tiny_png_data_url() -> str:
