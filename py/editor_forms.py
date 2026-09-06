@@ -70,7 +70,7 @@ import form_wire
 
 if TYPE_CHECKING:
     from melite_cards import ActionCard, Field
-    from melite_models import Cell, Model, Variant
+    from melite_models import Cell, LoraRow, Model, Variant
 
 # The wire-fragment shape: decoded JSON (objects, arrays, scalars).
 type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
@@ -1215,7 +1215,7 @@ def _parse_mod_entries(yp: str) -> list[FieldRow]:
     return entries[:32]  # C me[32] cap
 
 
-def _variant_groups(mcls: object | None) -> dict[str, dict[str, str | None]]:
+def _variant_groups(mcls: type[Model] | None) -> dict[str, dict[str, str | None]]:
     """The family's declared VariantGroup rows as the wire's group map
     (label + tooltip per id); the standard Variant/Quant pair when the
     family declares none."""
@@ -1228,7 +1228,7 @@ def _variant_groups(mcls: object | None) -> dict[str, dict[str, str | None]]:
             for g in declared}
 
 
-def _runtime_lora_rows(repo_root: str) -> list:
+def _runtime_lora_rows(repo_root: str) -> list[LoraRow]:
     """The RUNTIME LORA CATALOG: every LoraRow every family declares,
     scanned live at serve time (operator order, 2026-09-05, verbatim:
     "I DON'T SEE MY KREA2 LORAS... RUNTIME VALIDATION" — a family that
@@ -1255,7 +1255,7 @@ def _runtime_lora_rows(repo_root: str) -> list:
     return rows
 
 
-def _modifiers(repo_root: str, model: str, mcls: object | None = None) -> list[dict[str, str | bool | list[dict[str, str | float]] | list[str]]]:
+def _modifiers(repo_root: str, model: str, mcls: type[Model] | None = None) -> list[dict[str, str | bool | list[dict[str, str | float]] | list[str]]]:
     """ModifierKind objects: bag-typed mods fields become kinds; scalar
     knobs that FOLLOW a kind ride it as ModifierFields. Scalars before any kind are dropped.
     card.py cards walk the class fields (same attrs, same order)."""

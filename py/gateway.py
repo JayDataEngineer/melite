@@ -441,7 +441,7 @@ def _route_family(mid: str, body: dict[str, JsonValue]) -> str:
     return cls.id if cls is not None else mid
 
 
-def _route_owner(mid: str):
+def _route_owner(mid: str) -> str | None:
     """The Model class whose _routes owns mid, or None. Generic
     plugin data (melite_models scan) — no lane knowledge here."""
     from melite_models import scan_engine_models
@@ -503,7 +503,7 @@ def _route_stamp_overlay(body: dict[str, JsonValue],
     return out
 
 
-def _card_field_names(model_cls) -> set[str] | None:
+def _card_field_names(model_cls: type[Model]) -> set[str] | None:
     """The owning card's field surface (generic plugin data: the
     model names the card, the card declares the fields), or None
     when resolution fails (the overlay then declines — LOUD beats
@@ -790,12 +790,13 @@ class Gateway:
             raise ValidationError(
                 "test flag must be a boolean (got %s %r)"
                 % (type(test_flag).__name__, test_flag))
-        resolved = resolve_request(body)
-        run_id = "run-%s-%08x" % (uuid.uuid4().hex[:12], int(time.time() * 1000) & 0xFFFFFFFF)
         # CARD LINKAGE (the run→card wire, 2026-09-04 audit): validate
         # the body's draft_id at the registration door — the same
         # draft_id_ok() the drafts door uses, so a bad wire never
         # registers. None for runs that didn't come from a card.
+        # ENVELOPE-FIRST (2026-09-06): the draft_id shape refuses
+        # BEFORE card compose — a malformed envelope must name its
+        # own field, never surface a downstream params refusal.
         # docs/queue/run-registry.md:41 / docs/cards/draft-door.md.
         body_draft_id = body.get("draft_id")
         if body_draft_id is not None:
@@ -805,6 +806,8 @@ class Gateway:
                 raise ValidationError(
                     "draft_id malformed (96 char cap, [A-Za-z0-9_-] only): %r"
                     % body_draft_id)
+        resolved = resolve_request(body)
+        run_id = "run-%s-%08x" % (uuid.uuid4().hex[:12], int(time.time() * 1000) & 0xFFFFFFFF)
         is_card = isinstance(resolved, dict) and resolved.get("__card__")
         if is_card:
             # card-only model: phase 2 composes the REAL graph now that

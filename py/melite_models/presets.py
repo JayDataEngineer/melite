@@ -34,6 +34,8 @@ from typing import Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from melite_cards.validators import JsonValue
+
 _FROZEN = ConfigDict(frozen=True, extra="forbid")
 
 # The params artifact filename (written by the commercial worker
@@ -104,7 +106,7 @@ class AnnyBakeParams(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _parse_wire(cls, v: object) -> object:
+    def _parse_wire(cls, v: JsonValue | bytes | bytearray) -> JsonValue | bytes | bytearray:
         """The wire value IS a JSON string (the flow's initial input);
         accept both it and an already-parsed doc, refuse everything
         else — ONE hook (two hooks raced: the object check fired on

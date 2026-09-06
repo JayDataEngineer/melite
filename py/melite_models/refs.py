@@ -16,6 +16,8 @@ import re
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
+from melite_cards.validators import JsonValue
+
 _FROZEN = ConfigDict(frozen=True, extra="forbid")
 
 # The stageable image set — restated from the submit-time SSOT
@@ -45,7 +47,7 @@ class EstatePhotoRef(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _wire_string(cls, v: object) -> object:
+    def _wire_string(cls, v: str | dict[str, JsonValue]) -> dict[str, JsonValue]:
         if isinstance(v, str):
             return {"path": v}
         if isinstance(v, dict):

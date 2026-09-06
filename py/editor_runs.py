@@ -71,6 +71,14 @@ import threading
 import time
 
 import run_wire
+import types
+import typing
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from types import ModuleType
+
+    from pydantic import BaseModel
 
 # The served-envelope shape: decoded JSON (objects, arrays, scalars).
 type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
@@ -1007,7 +1015,7 @@ _MODEL_BY_ID_MISS: object = object()
 _MODEL_BY_ID_CACHE: dict[str, object] | None | object = _MODEL_BY_ID_MISS
 
 
-def _model_by_id(repo_root: str) -> dict[str, object] | None:
+def _model_by_id(repo_root: str) -> dict[str, type[BaseModel]] | None:
     """family id → Model class over the real plugins tree (one scan,
     cached per process; None when the tree won't resolve)."""
     global _MODEL_BY_ID_CACHE
@@ -1041,7 +1049,7 @@ _FAMILY_PROPS_CACHE: dict[str, dict[str, dict[str, JsonValue]] | None] = {}
 _SCHEMA_MOD_CACHE: dict[str, object | None] = {}
 
 
-def _schema_row_for_card(card_py_path: str) -> object | None:
+def _schema_row_for_card(card_py_path: str) -> type[BaseModel] | None:
     """The card's enforcement row (sibling schema.py's Params class) —
     the SAME row the backend wire gate (parse_card) constructs, loaded
     standalone by path (never through the engine bus). Resolution:
@@ -1117,7 +1125,7 @@ def _schema_row_for_card(card_py_path: str) -> object | None:
     return None
 
 
-def _props_from_schema_row(row_cls: object) -> dict[str, dict[str, JsonValue]] | None:
+def _props_from_schema_row(row_cls: type[BaseModel]) -> dict[str, dict[str, JsonValue]] | None:
     """Project a frozen schema.py row (pydantic model) to the envelope
     props: field name → JSON type + declared default (None defaults
     INCLUDED — an Optional-bag/slot None default is the class's own
@@ -1155,12 +1163,24 @@ def _props_from_schema_row(row_cls: object) -> dict[str, dict[str, JsonValue]] |
         if has_default and isinstance(
                 default, (str, int, float, bool, list, dict)) \
                 or (has_default and default is None):
-            entry["default"] = default  # type: ignore[assignment]
+            entry["default"] = default
         props[str(name)] = entry
     return props or None
 
 
-def _schema_annotation_json_type(ann: object, _typing: object) -> str | None:
+# The shapes a pydantic field annotation takes in this estate's card
+# schemas: a plain type, a PEP 604 union, a builtin generic
+# (types.GenericAlias, e.g. list[int]), a typing form (Optional /
+# Union / Annotated / Literal — typing._GenericAlias subclasses), a
+# forward-ref string, or None when the field declares none. The wall
+# bans bare object/Any, so the open domain is spelled closed — every
+# member names a real class (typing._GenericAlias is private but has
+# been stable for a decade; revisiting it is a deliberate chore).
+AnnotationForm = (type | types.UnionType | types.GenericAlias
+                  | typing._GenericAlias | str | None)
+
+
+def _schema_annotation_json_type(ann: AnnotationForm, _typing: ModuleType) -> str | None:
     """Pydantic annotation → envelope JSON type. Optional/nullable
     unwraps to the carried type; a pure-numeric union (int/float) is
     "number" (the click gate treats integer as valid for number, and
