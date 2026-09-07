@@ -67,3 +67,6 @@
 [submodule "plugins/engines/cpp/skintokens/vendor/skin-tokens.cpp"]
 	path = plugins/engines/cpp/skintokens/vendor/skin-tokens.cpp
 	url = https://github.com/localai-org/skin-tokens.cpp
+[submodule "vendor/comfyui_extensions/melite-blender-proxy-nodes"]
+	path = vendor/comfyui_extensions/melite-blender-proxy-nodes
+	url = https://github.com/JayDataEngineer/melite-blender-proxy-nodes.git

@@ -122,6 +122,11 @@ EXTENSION_NODE_TYPES: dict[str, set[str]] = {
     },
     "ComfyUI-MoGe": {"MoGeGeometryToFOV"},
     "melite-autorig-nodes": {"KimodoTransferWeights", "SaveRiggedModel"},
+    # Blender proxy (Law 0, 2026-09-07: graphs drive headless Blender
+    # through these nodes; the binary itself is a SYSTEM requirement).
+    "melite-blender-proxy-nodes": {
+        "MeliteBlenderRunScript", "MeliteBlenderExport",
+    },
 }
 
 
