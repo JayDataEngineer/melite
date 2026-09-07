@@ -166,29 +166,21 @@ def _import_schema_lazy(modname: str, classname: str) -> Callable[[], Type[BaseM
 # AND audio-cpp) resolves under its UNIQUE card-id name
 # ("music_native") — never the ambiguous flat dir name.
 
+# STAGE 4 (2026-09-07, b324c480 + 852725bb): the comfyui arms'
+# py/schema.py files are RETIRED (render plane) — only the card.py
+# DECLARATIONS were restored (declaration-vs-render is the
+# retirement line). Rows below are the survivors with a live
+# on-disk schema.py: the three native 3d cards, the cpp music
+# card (flat `music` name — the unit walls resolve it there), and
+# music-native (same file, unique-name fallback mount). Every
+# other card joins _CARDS_WITHOUT_SCHEMA (the ideogram4
+# precedent): the body gate no-ops, the static kind contract
+# still gates. A card that regrows schema.py MUST rejoin here
+# AND drop from that set.
+
 _SCHEMA_TARGETS: Dict[str, tuple] = {
-    "image-gen":      ("image_gen.schema", "ImageGenParams"),
-    "image-edit":     ("image_edit.schema", "ImageEditParams"),
-    "upscale-tools":  ("upscale_tools.schema", "UpscaleParams"),
-    "mask-studio":    ("mask_studio.schema", "MaskStudioParams"),
     "ideogram4":      ("ideogram4.schema", "Ideogram4Params"),
-    "video-gen":      ("video_gen.schema", "VideoGenParams"),
-    "h3-timeline":    ("h3_timeline.schema", "H3CardDoc"),
     "music":          ("music.schema", "MusicParams"),
-    "tts":            ("tts.schema", "TtsParams"),
-    "voice-lock":     ("voice_lock.schema", "VoiceLockParams"),
-    "sfx":            ("sfx.schema", "SfxParams"),
-    "motion":         ("motion.schema", "MotionGenParams"),
-    "anny":           ("anny.schema", "AnnyParams"),
-    "img-to-mesh":    ("img_to_mesh.schema", "ImgToMeshParams"),
-    # ── STROKE 4 (2026-09-06): the eight rows that closed the
-    # bijection wall (test_registry_declares_every_action_card_
-    # schema was RED on these). kind contracts derived from each
-    # card's consuming flow / engine DEFAULT_OUTPUT.
-    "fit":            ("fit.schema", "FitParams"),
-    "skin":           ("skin.schema", "SkinParams"),
-    "tagger":         ("tagger.schema", "TaggerParams"),
-    "input-prep":     ("input_prep.schema", "InputPrepDoc"),
     "forge":          ("forge.schema", "ForgeParams"),
     "quad-remesh":    ("quad_remesh.schema", "RemeshParams"),
     "auto-rig":       ("auto_rig.schema", "RigParams"),
@@ -207,7 +199,17 @@ _SCHEMA_BY_CARD: Dict[str, Callable] = {
 # schema.py at all) — the gate skips them. The wall test pins this
 # list against the disk so a card that gains a schema.py file MUST
 # join `_SCHEMA_BY_CARD` AND its row must drop out of this set.
-_CARDS_WITHOUT_SCHEMA: frozenset = frozenset({"ideogram4"})
+# STAGE 4 (2026-09-07): the sixteen comfyui render-plane schemas
+# retired with the arms — declarations (card.py) live on, so the
+# rows stay in REGISTRY (static kind contract still gates) while
+# the body gate no-ops (the ideogram4 precedent, generalized).
+_CARDS_WITHOUT_SCHEMA: frozenset = frozenset({
+    "ideogram4",
+    "image-gen", "image-edit", "upscale-tools", "mask-studio",
+    "video-gen", "h3-timeline", "tts", "voice-lock", "sfx",
+    "motion", "anny", "img-to-mesh", "fit", "skin", "tagger",
+    "input-prep",
+})
 
 
 # ── the registry rows ──────────────────────────────────────────────

@@ -550,6 +550,28 @@ def compose(body: dict[str, JsonValue], model: str, run_id: str,
                 "card_compose rc=%d (%s.%s): %s" % (
                     rc, ref.plugin_id, etype, err or "no detail"))
         if new_graph is not None and new_graph is not graph:
+            # the CLI shell's success contract carries the graph as
+            # JSON TEXT (subprocess boundary) — the API-format node
+            # map {node_id: {class_type, inputs}}, NOT a FlowGraph
+            # document. The rim parses and wraps it as ONE stage row
+            # (mergegraph.py plan_merge ABI: each row is
+            # {stage_id, workflow} with workflow = the FULL node map)
+            # carrying the incoming graph's metadata.
+            if isinstance(new_graph, str):
+                import json as _json
+                import flow_graph as _fg
+                node_map = _json.loads(new_graph)
+                _meta = graph if isinstance(graph, _fg.FlowGraph) else None
+                new_graph = {
+                    "name": (_meta.name if _meta is not None else None) or model,
+                    "engine_type": (_meta.engine_type if _meta is not None else None) or "comfyui",
+                    "description": _meta.description if _meta is not None else "card-composed",
+                    "nodes": [{
+                        "id": (_meta.name if _meta is not None else None) or model,
+                        "type": str((_meta.engine_type if _meta is not None else None) or "card"),
+                        "params": {"workflow": dict(node_map or {})},
+                    }],
+                }
             # the rim: arm output is a typed FlowGraph or refuses
             # LOUDLY by field name — a malformed graph can never ride
             import flow_graph
