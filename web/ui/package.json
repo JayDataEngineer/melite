@@ -31,6 +31,7 @@
     "./NumberField": "./src/NumberField.tsx",
     "./ProvenanceBadge": "./src/ProvenanceBadge.tsx",
     "./SlotSquare": "./src/SlotSquare.tsx",
+    "./studioShell": "./src/studioShell.tsx",
     "./WirePickerModal": "./src/WirePickerModal.tsx",
     "./accordion": "./src/accordion.tsx",
     "./avatar": "./src/avatar.tsx",

@@ -1,0 +1,142 @@
+"""test_shell_seams — ROW 5 stroke 1 / THE SHELL (2026-09-07).
+
+The studio body is ONE estate primitive with three declared seams
+(RAIL / CENTER / BOTTOM) and shell-owned chrome — extracted from
+AssemblyStudio, which rode it unchanged (anny + trellis tenants,
+same DOM, same tests). This wall refuses the drift shapes (pure
+tree walk + module parse, no node needed):
+
+  1. THE SHELL EXISTS, GENRE-BLIND — web/ui/src/studioShell.tsx
+     (the @melite/ui home, above the genre ui/ packages per the
+     PRIMITIVE HOME LAW) imports NO genre module: no 3d, no video,
+     no mask, no timeline, no viewers/Stage. A genre import in the
+     shell is card knowledge leaking into the chrome — the C-
+     ancestry shape at UI scale (four bespoke shells drifting).
+  2. THE SEAM CONTRACT IS TYPED AND MINIMAL — the props interface
+     declares exactly rail + center + bottom + errors; rail and
+     center are REQUIRED (a studio without a rail or a center is
+     not a studio); no card/lane/flow vocabulary may appear.
+  3. THE CHROME IS OWNED ONCE — the loud error line's DEFINITION
+     lives in the shell and nowhere else in a tenant tree (a
+     re-export for adoption compatibility is legal; a second
+     definition is a drift copy).
+  4. THE GENRE TENANTS RIDE IT — the assembly body (the extraction
+     source, both 3d tenants) renders <StudioShell with the rail=
+     and center= seams; the bespoke pre-shell shape (StudioRail +
+     hand-rolled column div in the same file) refuses.
+
+Design record: docs/design/studio-shell.md §2 + §7 stroke 1.
+"""
+import os
+import re
+
+REPO = os.path.normpath(os.path.join(os.path.dirname(
+    os.path.abspath(__file__)), "..", "..", ".."))
+
+SHELL = os.path.join(REPO, "web", "ui", "src", "studioShell.tsx")
+ASSEMBLY = os.path.join(
+    REPO, "plugins", "engines", "comfyui", "action_cards",
+    "3d", "ui", "studios", "assembly.tsx")
+
+# genre vocabulary the shell must never name (module-level import
+# scan; comments are not scanned — an import is a dependency, not
+# prose)
+_GENRE_MODULE_RE = re.compile(
+    r"""^\s*import\b[^;]*?\bfrom\b\s*['"][^'"]*("""
+    r"viewers|Stage3D|timeline|mask|paint|canvas|video|motion"
+    r")", re.MULTILINE | re.IGNORECASE)
+
+_IMPORT_RE = re.compile(r"""^\s*import\b[^;]*?from\b\s*['"]([^'"]+)['"]""",
+                        re.MULTILINE)
+
+
+def test_the_shell_exists_at_the_genre_neutral_home():
+    assert os.path.isfile(SHELL), \
+        "web/ui/src/studioShell.tsx — THE SHELL lives in @melite/ui " \
+        "(above the genre ui/ packages; PRIMITIVE HOME LAW)"
+    src = open(SHELL, encoding="utf-8").read()
+    for needed in ("StudioShell", "StudioShellErrorLine",
+                   "StudioShellProps"):
+        assert needed in src, "the shell module names %s" % needed
+
+
+def test_the_shell_is_genre_blind():
+    src = open(SHELL, encoding="utf-8").read()
+    hits = _GENRE_MODULE_RE.findall(src)
+    assert not hits, \
+        "the shell imports genre vocabulary (%s) — card knowledge " \
+        "in the chrome; the tenant declares, the shell renders" % hits
+    # the only workspace imports allowed: the rail portal + contracts
+    for mod in _IMPORT_RE.findall(src):
+        if mod.startswith("."):
+            continue
+        assert mod in ("react", "lucide-react", "@melite/slots"), \
+            "shell imports %r — the seam stays layout-only; a new " \
+            "dependency is a deliberate contract change" % mod
+
+
+def test_the_seam_contract_is_typed_and_minimal():
+    src = open(SHELL, encoding="utf-8").read()
+    m = re.search(r"export interface StudioShellProps \{(.*?)\n\}",
+                  src, re.DOTALL)
+    assert m, "StudioShellProps is exported (the typed seam contract)"
+    body = m.group(1)
+    # optionality: rail + center REQUIRED; bottom + errors optional
+    for seam in ("rail", "center"):
+        line = [l for l in body.splitlines()
+                if re.search(r"\b%s\??\s*:" % seam, l)]
+        assert line, "the %s seam is declared" % seam
+        assert not line[0].strip().startswith("%s?" % seam), \
+            "the %s seam is REQUIRED (a studio without it is not a " \
+            "studio)" % seam
+    for opt in ("bottom?", "errors?"):
+        assert opt in body, "the %s seam is optional" % opt[:-1]
+    # no card/lane/flow vocabulary rides the seam contract
+    for banned in ("CardStage", "onSave", "model", "flow", "lane"):
+        assert banned not in body, \
+            "the seam contract names %r — the shell owns no card " \
+            "state (E1); tenants pass content, not card rows" % banned
+
+
+def test_the_chrome_is_owned_once():
+    # the error line's DEFINITION: exactly the shell module
+    definer = re.compile(r"function\s+StudioShellErrorLine\s*\(")
+    assert definer.search(open(SHELL, encoding="utf-8").read()), \
+        "the shell defines StudioShellErrorLine (shell-owned chrome)"
+    # a tenant tree may RE-EXPORT it (adoption compat) but never
+    # define a second copy under any name the shell also exports
+    roots = [os.path.join(REPO, "plugins", "engines")]
+    for root in roots:
+        for dirpath, _dirs, files in os.walk(root):
+            if "node_modules" in dirpath:
+                continue
+            for f in files:
+                if not f.endswith((".ts", ".tsx")):
+                    continue
+                p = os.path.join(dirpath, f)
+                if os.path.samefile(p, SHELL):
+                    continue
+                src = open(p, encoding="utf-8").read()
+                hit = re.search(
+                    r"function\s+(\w*ErrorLine\w*)\s*\(", src)
+                if hit:
+                    assert "StudioShellErrorLine" not in src or \
+                        "export {" in src.split(hit.group(0))[0][-200:], \
+                        "%s defines an error-line component (%s) — " \
+                        "chrome drift; ride the shell's" % (
+                            os.path.relpath(p, REPO), hit.group(1))
+
+
+def test_the_assembly_tenants_ride_the_shell():
+    src = open(ASSEMBLY, encoding="utf-8").read()
+    assert "<StudioShell" in src, \
+        "AssemblyStudio renders StudioShell (the extraction source " \
+        "rides it — anny + trellis unchanged)"
+    for seam in ("rail={", "center="):
+        assert seam in src, "the assembly body declares the %s seam" \
+            % seam[:-1]
+    # the bespoke pre-shell shape died: no direct StudioRail render
+    # in the tenant body (the shell owns the rail portal now)
+    assert "<StudioRail>" not in src, \
+        "AssemblyStudio hand-rolls the rail portal — the shell owns " \
+        "the rail/center/bottom layout (the pre-shell shape)"

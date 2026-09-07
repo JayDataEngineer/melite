@@ -654,6 +654,23 @@
       "component": false
     },
     {
+      "name": "studioShell",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/studioShell.tsx"
+        }
+      ],
+      "exports": [
+        "StudioShell",
+        "StudioShellError",
+        "StudioShellErrorLine",
+        "StudioShellProps"
+      ],
+      "component": true
+    },
+    {
       "name": "switch",
       "type": "registry:ui",
       "package": "@melite/ui",
