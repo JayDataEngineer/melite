@@ -50,7 +50,7 @@ _IMPORT_RE = re.compile(r"""^\s*import\b[^;]*?from\b\s*['"]([^'"]+)['"]""",
                         re.MULTILINE)
 
 
-def test_the_shell_exists_at_the_genre_neutral_home():
+def test_the_shell_exists_at_the_genre_neutral_home() -> None:
     assert os.path.isfile(SHELL), \
         "web/ui/src/studioShell.tsx — THE SHELL lives in @melite/ui " \
         "(above the genre ui/ packages; PRIMITIVE HOME LAW)"
@@ -60,7 +60,7 @@ def test_the_shell_exists_at_the_genre_neutral_home():
         assert needed in src, "the shell module names %s" % needed
 
 
-def test_the_shell_is_genre_blind():
+def test_the_shell_is_genre_blind() -> None:
     src = open(SHELL, encoding="utf-8").read()
     hits = _GENRE_MODULE_RE.findall(src)
     assert not hits, \
@@ -75,7 +75,7 @@ def test_the_shell_is_genre_blind():
             "dependency is a deliberate contract change" % mod
 
 
-def test_the_seam_contract_is_typed_and_minimal():
+def test_the_seam_contract_is_typed_and_minimal() -> None:
     src = open(SHELL, encoding="utf-8").read()
     m = re.search(r"export interface StudioShellProps \{(.*?)\n\}",
                   src, re.DOTALL)
@@ -98,7 +98,7 @@ def test_the_seam_contract_is_typed_and_minimal():
             "state (E1); tenants pass content, not card rows" % banned
 
 
-def test_the_chrome_is_owned_once():
+def test_the_chrome_is_owned_once() -> None:
     # the error line's DEFINITION: exactly the shell module
     definer = re.compile(r"function\s+StudioShellErrorLine\s*\(")
     assert definer.search(open(SHELL, encoding="utf-8").read()), \
@@ -127,7 +127,7 @@ def test_the_chrome_is_owned_once():
                             os.path.relpath(p, REPO), hit.group(1))
 
 
-def test_the_assembly_tenants_ride_the_shell():
+def test_the_assembly_tenants_ride_the_shell() -> None:
     src = open(ASSEMBLY, encoding="utf-8").read()
     assert "<StudioShell" in src, \
         "AssemblyStudio renders StudioShell (the extraction source " \
@@ -163,7 +163,7 @@ _PAINT_BANNED = ("mask", "detect", "prep", "bbox", "instance",
                  "sam3", "yolo", "segm", "person", "recipe")
 
 
-def test_paint_canvas2d_exists_at_the_genre_home():
+def test_paint_canvas2d_exists_at_the_genre_home() -> None:
     assert os.path.isfile(PAINT), \
         "image/ui/PaintCanvas2D.tsx — the 2D viewport primitive at " \
         "the image genre home (Stage3D symmetry: 3d/ui/viewers). " \
@@ -183,7 +183,7 @@ def test_paint_canvas2d_exists_at_the_genre_home():
             "render" % word
 
 
-def test_the_mask_studio_rides_the_shell():
+def test_the_mask_studio_rides_the_shell() -> None:
     src = open(MASK_STUDIO, encoding="utf-8").read()
     assert "<StudioShell" in src, \
         "MaskStudioEditor renders StudioShell (stroke 3: the second " \
@@ -196,7 +196,7 @@ def test_the_mask_studio_rides_the_shell():
         "owns the portal since stroke 1"
 
 
-def test_the_mask_canvas_composes_the_primitive():
+def test_the_mask_canvas_composes_the_primitive() -> None:
     src = open(MASK_CANVAS, encoding="utf-8").read()
     assert "<PaintCanvas2D" in src, \
         "StudioCanvas composes PaintCanvas2D (the wrapper/canvas/" \
@@ -247,7 +247,7 @@ def _tenant_files() -> list[str]:
     return out
 
 
-def test_every_tenant_declares_a_shell_table_within_the_unions():
+def test_every_tenant_declares_a_shell_table_within_the_unions() -> None:
     decl_src = open(SHELL_DECL, encoding="utf-8").read()
     viewports = _union_members(decl_src, "ViewportKind")
     bars = _union_members(decl_src, "BarKind")
@@ -277,7 +277,7 @@ def test_every_tenant_declares_a_shell_table_within_the_unions():
             "%s: center seam row missing from the table" % rel
 
 
-def test_union_members_name_real_primitives_only():
+def test_union_members_name_real_primitives_only() -> None:
     # no speculative kinds: every ViewportKind/BarKind member maps to
     # a primitive that EXISTS — stage3d→3d/ui/viewers Stage,
     # paint2d→image/ui PaintCanvas2D, recipe→OutputStrip,
@@ -313,7 +313,7 @@ VERB_RIDERS = [
 ]
 
 
-def test_verbchip_exists_genre_blind():
+def test_verbchip_exists_genre_blind() -> None:
     assert os.path.isfile(VERB_CHIP), \
         "web/ui/src/verbChip.tsx — VerbChip (@melite/ui), the one " \
         "verb UX primitive (§4)"
@@ -328,7 +328,7 @@ def test_verbchip_exists_genre_blind():
             "bones" % word
 
 
-def test_the_verb_gestures_ride_the_shared_chip():
+def test_the_verb_gestures_ride_the_shared_chip() -> None:
     for f in VERB_RIDERS:
         rel = os.path.relpath(f, REPO)
         src = open(f, encoding="utf-8").read()
@@ -356,7 +356,7 @@ VIEWPORT_OVERLAYS = os.path.join(
     REPO, "web", "ui", "src", "viewportOverlays.tsx")
 
 
-def test_overlay_unions_closed_and_renderer_genre_blind():
+def test_overlay_unions_closed_and_renderer_genre_blind() -> None:
     src = open(VIEWPORT_OVERLAYS, encoding="utf-8").read()
     for name, members in (
         ("OverlayKind", {"toggle", "segmented", "status"}),
@@ -376,7 +376,7 @@ def test_overlay_unions_closed_and_renderer_genre_blind():
             "owns chrome" % word
 
 
-def test_both_viewport_primitives_carry_the_seam():
+def test_both_viewport_primitives_carry_the_seam() -> None:
     for f, marker in (
         (PAINT, "overlays?: readonly ViewportOverlay[]"),
         (os.path.join(REPO, "plugins", "engines", "comfyui",
@@ -392,7 +392,7 @@ def test_both_viewport_primitives_carry_the_seam():
             "%s renders ViewportOverlays" % os.path.relpath(f, REPO)
 
 
-def test_the_first_overlay_gesture_rides_the_seam():
+def test_the_first_overlay_gesture_rides_the_seam() -> None:
     src = open(MASK_CANVAS, encoding="utf-8").read()
     assert 'kind: "status"' in src, \
         "StudioCanvas declares its detecting pill as a status row " \

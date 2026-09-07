@@ -8,6 +8,7 @@ card-subpath like image/ideogram4. Bodies: JSON list of bodies.
 Exit 0 all-match, 1 diff.
 """
 import importlib.util
+import types
 import json
 import os
 import random
@@ -18,7 +19,7 @@ REPO = "/home/user/Documents/programs/active/inference.cpp"
 HEAD = os.environ.get("PARITY_HEAD", "/tmp/estate-head")
 
 
-def load(name: str, path: str):
+def load(name: str, path: str) -> "types.ModuleType":
     spec = importlib.util.spec_from_file_location(name, path)
     mod = importlib.util.module_from_spec(spec)
     sys.modules[name] = mod
@@ -26,7 +27,8 @@ def load(name: str, path: str):
     return mod
 
 
-def run(arm, model: str, body: dict, run_id: str):
+def run(arm: "types.ModuleType", model: str, body: "dict[str, object]",
+        run_id: str) -> "tuple[object, ...] | None":
     try:
         return arm.compose(dict(body), model, run_id)
     except Exception as e:  # noqa: BLE001 — parity surface, report verbatim
@@ -83,7 +85,7 @@ if __name__ == "__main__":
         # (the golden runner pattern-matches staged names likewise).
         _stage_re = re.compile(r"input_[0-9a-f]+_")
 
-        def _norm(out: object) -> str:
+        def _norm(out: "object | None") -> str:
             return _stage_re.sub(
                 "input_TS_",
                 json.dumps(out, default=str))

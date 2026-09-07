@@ -122,7 +122,7 @@ __all__ = ["forms", "form_spec", "kinds"]
 _FORMS_CACHE: dict[str, dict] = {}
 
 
-def _iter_card_paths(repo_root: str):
+def _iter_card_paths(repo_root: str) -> "Iterator[tuple[str, Path]]":
     """(plugin dir, card.py path) for every card — the same two-level
     walk _find_card_yaml uses (cards/ + action_cards/<genre>/<card>/),
     every engine. THE CARD PATTERN: py/card.py wins; a root card.py
@@ -158,7 +158,7 @@ def _iter_card_paths(repo_root: str):
                         yield edir, rootc
 
 
-def _derive_forms_table(repo_root: str) -> dict:
+def _derive_forms_table(repo_root: str) -> "dict[str, dict[str, object]]":
     """The uniform projection (row 3): card class + Model.card scan.
     Every refusal below fires identically for every card — a card that
     cannot derive is broken source, never a table special case."""
@@ -217,7 +217,7 @@ def _derive_forms_table(repo_root: str) -> dict:
     return table
 
 
-def _forms_table(repo_root: str) -> dict:
+def _forms_table(repo_root: str) -> "dict[str, dict[str, object]]":
     """The derived table, cached per repo root (the gateway imports
     card/model modules per call already — same staleness class)."""
     key = os.path.abspath(repo_root)
@@ -226,7 +226,7 @@ def _forms_table(repo_root: str) -> dict:
     return _FORMS_CACHE[key]
 
 
-def _allowed_cards(repo_root: str) -> frozenset:
+def _allowed_cards(repo_root: str) -> frozenset[str]:
     """The ALLOWED_CARDS gate is exactly the derived surface's keys —
     one closed surface, never a second list."""
     return frozenset(_forms_table(repo_root))

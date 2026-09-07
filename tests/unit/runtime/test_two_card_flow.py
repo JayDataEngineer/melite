@@ -25,6 +25,7 @@ Design record: docs/design/row4-executor-tts-lane.md §image-upscale.
 from __future__ import annotations
 
 import copy
+import types
 import json
 
 import pytest
@@ -35,7 +36,7 @@ import stage_params
 from flow import Flow, FlowToolOverlay, FromInitial, FromStage, Kind, Stage
 
 
-def _load():
+def _load() -> "types.ModuleType":
     return flow_mod.load_flow("image-upscale")
 
 
@@ -112,7 +113,7 @@ def test_expand_doc_spells_resolves_wired_names() -> None:
     assert out["model"] == "seedvr2_ema"
 
 
-def test_bridge_expands_spells_from_stage_inputs(tmp_path) -> None:
+def test_bridge_expands_spells_from_stage_inputs(tmp_path: Path) -> None:
     # the per-stage path: the resolved inputs publish the artifact
     # path under the wire name — the bridge substitutes BEFORE the
     # arm composes (an arm with a file-existence gate must see the
@@ -166,7 +167,7 @@ def test_arm_phase1_still_refuses_nonspell_garbage() -> None:
 
 # ── 3. the path this flow takes ─────────────────────────────────────
 
-def _merged_rows(pool):
+def _merged_rows(pool: "list[dict[str, object]]") -> "list[dict[str, object]]":
     g = _load().to_graph()
     rows = []
     for n in g.nodes:

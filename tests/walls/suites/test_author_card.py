@@ -17,6 +17,7 @@ Design record: docs/design/row7-card-authoring.md.
 import shutil
 import subprocess
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -47,13 +48,13 @@ def _copy_tts(tmp_path: Path) -> Path:
     return tmp_path / "tts"
 
 
-def _park(name: str):
+def _park(name: str) -> "tuple[Path, Path]":
     """Copy tts/py to a parked REAL-tree card dir (model loads are
     __file__-relative — tmp copies break them). Caller removes."""
     from contextlib import contextmanager
 
     @contextmanager
-    def _ctx():
+    def _ctx() -> "Iterator[Path]":
         parked = (REPO / "plugins/engines/comfyui/action_cards/audio"
                   / name)
         shutil.copytree(TTS_PY, parked / "py",
@@ -140,7 +141,7 @@ def test_engine_native_names_scope() -> None:
 import json  # noqa: E402
 
 
-def _spec(tmp_path: Path, **over: object) -> Path:
+def _spec(tmp_path: Path, **over: "str | int | float | bool | None") -> Path:
     base: dict = {
         "card_id": "wall-demo", "genre": "audio", "engine": "comfyui",
         "label": "Wall Demo", "description": "scaffold proof card",
@@ -252,7 +253,7 @@ def test_scaffold_is_deterministic(tmp_path: Path) -> None:
                             "ghost/model.py",
                   "class": "Ghost"}]}, "not in the tree"),
 ])
-def test_spec_refusals_name_the_rule(tmp_path: Path, over: dict,
+def test_spec_refusals_name_the_rule(tmp_path: Path, over: "dict[str, object]",
                                      needle: str) -> None:
     proc = _scaffold("--spec-file", str(_spec(tmp_path, **over)),
                      "--out", str(tmp_path / "card"))
@@ -277,7 +278,7 @@ from contextlib import contextmanager  # noqa: E402
 
 
 @contextmanager
-def _boarded_stage():
+def _boarded_stage() -> "Iterator[Path]":
     """Park a claiming model + scaffold an in-tree card, board it,
     YIELD, then restore EVERYTHING (stage_params bytes, parks).
     The wall mutates the tree and proves the restore byte-exact."""
@@ -386,7 +387,7 @@ def test_board_writes_tool_json() -> None:
      '"default"'),
     (None, "spec.kinds"),
 ])
-def test_board_refuses_kinds(tmp_path: Path, kinds: object,
+def test_board_refuses_kinds(tmp_path: Path, kinds: "list[str]",
                              needle: str) -> None:
     spec = json.loads(_spec(tmp_path).read_text())
     spec["kinds"] = kinds

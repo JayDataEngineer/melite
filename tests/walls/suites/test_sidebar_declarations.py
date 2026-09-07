@@ -30,7 +30,7 @@ ROOTS = (
 )
 
 
-def _load_cards():
+def _load_cards() -> "dict[str, dict[str, object]]":
     cards = {}
     for root in ROOTS:
         for path in sorted(glob.glob(
@@ -55,7 +55,7 @@ def _load_cards():
 CARDS = _load_cards()
 
 
-def test_every_card_declares_the_sidebar_trio():
+def test_every_card_declares_the_sidebar_trio() -> None:
     missing = sorted(
         cid for cid, (_, cls) in CARDS.items()
         if not isinstance(getattr(cls, "sidebar_order", None), int)
@@ -65,14 +65,14 @@ def test_every_card_declares_the_sidebar_trio():
         "cards missing the universal sidebar trio: %s" % missing
 
 
-def test_sidebar_values_inside_the_closed_vocabulary():
+def test_sidebar_values_inside_the_closed_vocabulary() -> None:
     bad = sorted(
         cid for cid, (_, cls) in CARDS.items()
         if cls.sidebar not in ActionCard.SIDEBAR_SECTIONS)
     assert not bad, "sidebar outside SIDEBAR_SECTIONS: %s" % bad
 
 
-def test_sidebar_orders_unique():
+def test_sidebar_orders_unique() -> None:
     seen = {}
     dupes = set()
     for cid, (_, cls) in CARDS.items():
@@ -84,7 +84,7 @@ def test_sidebar_orders_unique():
     assert not dupes, "shared sidebar_order values: %s" % sorted(dupes)
 
 
-def test_base_owns_no_sidebar_default():
+def test_base_owns_no_sidebar_default() -> None:
     # A base default would exempt cards silently (a special clause by
     # another name) — the trio has no default, hidden stays opt-out.
     assert ActionCard.sidebar_order is None

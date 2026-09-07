@@ -177,7 +177,7 @@ class TestBranchDoors:
 
         class _NoHistoryGw:
             @staticmethod
-            def cost_preview(engine_types=None) -> dict:
+            def cost_preview(engine_types: "list[str] | None" = None) -> "dict[str, object]":
                 return {}
 
         code, body = asyncio.run(gw_mod._h_flows_validate(_Ctx({

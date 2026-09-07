@@ -29,7 +29,7 @@ def _estate_paths() -> Iterator[None]:
     yield
 
 
-def _tooled() -> dict[str, object]:
+def _tooled() -> "dict[str, object]":
     out = {}
     for fid in flow.scan_flow_ids():
         fl = flow.load_flow(fid)
@@ -50,7 +50,7 @@ def test_library_holds_the_curated_set() -> None:
         % (sorted(tooled), sorted(CURATED)))
 
 
-def _example(prop: object) -> object:
+def _example(prop: "flow.FlowToolProperty") -> "str | int | float | bool":
     if getattr(prop, "enum", ()):
         return prop.enum[0]
     if prop.ptype is flow.ToolParamType.string:
@@ -62,7 +62,7 @@ def _example(prop: object) -> object:
     return True
 
 
-def _full_body(fl: object) -> dict[str, object]:
+def _full_body(fl: "flow.Flow") -> "dict[str, object]":
     body: dict[str, object] = {"prompt": "wall template probe"}
     for name, prop in fl.tool.properties.items():
         if name not in body:

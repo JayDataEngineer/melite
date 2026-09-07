@@ -33,7 +33,7 @@ from collections.abc import Iterator
 import pytest
 
 
-def _post(port: int, path: str, body: dict) -> tuple[int, dict]:
+def _post(port: int, path: str, body: "dict[str, object]") -> "tuple[int, dict[str, object]]":
     req = urllib.request.Request(
         "http://127.0.0.1:%d/%s" % (port, path),
         data=_json.dumps(body).encode("utf-8"),
@@ -50,7 +50,7 @@ def _post(port: int, path: str, body: dict) -> tuple[int, dict]:
             return e.code, {}
 
 
-def _get(port: int, path: str) -> tuple[int, dict]:
+def _get(port: int, path: str) -> "tuple[int, dict[str, object]]":
     try:
         r = urllib.request.urlopen(
             "http://127.0.0.1:%d/%s" % (port, path), timeout=15)
@@ -73,7 +73,7 @@ def scratch_gateway() -> Iterator[int]:
     reap_gateway(proc)
 
 
-def _compose(port: int, body: dict) -> str:
+def _compose(port: int, body: "dict[str, object]") -> str:
     """CARD BIRTH LAW: compose the card first, start rides the id.
 
     The draft door speaks the card shape (stage inputs are upstream
@@ -98,14 +98,14 @@ def _compose(port: int, body: dict) -> str:
     return draft_id
 
 
-def _start(port: int, body: dict) -> tuple[int, dict]:
+def _start(port: int, body: "dict[str, object]") -> "tuple[int, dict[str, object]]":
     draft_id = _compose(port, body)
     return _post(port, "v1/flows/start",
                  {"flow_inline": body, "draft_id": draft_id})
 
 
 def _wait_terminal(port: int, run_id: str,
-                   timeout: float = 60.0) -> dict:
+                   timeout: float = 60.0) -> "dict[str, object]":
     deadline = time.time() + timeout
     last: dict = {}
     while time.time() < deadline:
@@ -207,7 +207,7 @@ def test_sim_kind_mismatch_refuses_pre_slot(
 _STORM_SEED = 20260907
 
 
-def _storm_body(kind: str, tag: str) -> dict:
+def _storm_body(kind: str, tag: str) -> "dict[str, object]":
     """One single-stage sim flow per storm op kind."""
     params: dict = {"echo": "storm-%s-%s" % (kind, tag)}
     if kind == "fail":
@@ -285,7 +285,7 @@ class TestTransitionLattice:
     """The queue's state machine, driven cell by cell through the
     live scratch gateway on the sim backend (no GPU, no mocks)."""
 
-    def _stage(self, sid: str, echo: str, **params) -> dict:
+    def _stage(self, sid: str, echo: str, **params: "str | int | float | bool | None") -> "dict[str, object]":
         p: dict = {"echo": echo}
         p.update(params)
         return {"id": sid, "engine": "sim", "params": p,

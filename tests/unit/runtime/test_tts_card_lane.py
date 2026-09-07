@@ -132,7 +132,7 @@ def test_schema_door_serves_the_card_lane() -> None:
     assert st["engine"] == "comfyui"
 
 
-def _bridge_voice(params: dict) -> object:
+def _bridge_voice(params: "dict[str, object]") -> "dict[str, object]":
     fl = flow.load_flow("audio-native-tts")
     n = fl.to_graph().nodes[0]
     import copy

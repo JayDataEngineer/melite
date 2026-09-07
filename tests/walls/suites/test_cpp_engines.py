@@ -301,7 +301,7 @@ class TestKnobSSOT(unittest.TestCase):
         self.assertTrue(card_fields <= knob_fields)
 
     def _card_fields(self, card_subpath: str, card_cls: str,
-                       alias: str) -> set:
+                       alias: str) -> set[str]:
         """Card Field names for a comfyui card (direct path load —
         the _fields helper only addresses categorized engine dirs)."""
         import importlib.util
@@ -316,7 +316,7 @@ class TestKnobSSOT(unittest.TestCase):
         return {f.name for f in cls._fields_} - structural
 
     def _structural(self, card_subpath: str, card_cls: str,
-                      alias: str) -> set:
+                      alias: str) -> set[str]:
         """The card's declared structural keys (never knob-spliced)."""
         import importlib.util
         cpath = os.path.join(
@@ -328,7 +328,7 @@ class TestKnobSSOT(unittest.TestCase):
         return set(getattr(getattr(mod, card_cls),
                            "structural_knobs", None) or ())
 
-    def _schema_fields(self, card_subpath: str, alias: str) -> set:
+    def _schema_fields(self, card_subpath: str, alias: str) -> set[str]:
         """The wire surface: the schema's params-class fields (the ONE
         *Params BaseModel defined in the card's schema.py). Cards
         whose schema admits API-only knobs beyond the form Fields
@@ -423,7 +423,7 @@ class TestKnobSSOT(unittest.TestCase):
                 - structural)
         import typing as _typing
 
-        def _scalar(field: object) -> bool:
+        def _scalar(field: "str | tuple[str, object]") -> bool:
             # knobmap kinds are s/n/b — a dict/list-typed doc field
             # (crop/scale transform rows) CANNOT own a scalar row
             # today; the complex-knob row shape is a later stroke.

@@ -19,6 +19,7 @@ the mechanical boarding the scaffold prints. compose.py/renderer.py
 stubs are the lane arm's problem (slice 4).
 """
 import importlib.util
+import types
 import os
 import sys
 
@@ -102,7 +103,7 @@ def _card_paths(card_dir: str) -> list[str]:
     return [p for p in out if os.path.isdir(p)]
 
 
-def _load_module(path: str, name: str):
+def _load_module(path: str, name: str) -> "types.ModuleType":
     spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
         _fail("cannot load %s" % path)
@@ -129,7 +130,7 @@ def _engine_of(card_dir: str) -> str:
         return "?"
 
 
-def _dummy_for(annotation) -> object:
+def _dummy_for(annotation: "str | type | None") -> "str | int | float | bool | list | dict | None":
     import typing
     if typing.get_origin(annotation) is not None:
         args = typing.get_args(annotation)
@@ -147,7 +148,7 @@ def _dummy_for(annotation) -> object:
     return None
 
 
-def _sees_unknown_knob(cls, kwargs: dict) -> bool:
+def _sees_unknown_knob(cls: "type[object]", kwargs: "dict[str, object]") -> bool:
     """The forbid probe through content noise: an unknown knob must
     raise extra_forbidden EVEN when content validators also fire."""
     try:
@@ -164,7 +165,7 @@ def _sees_unknown_knob(cls, kwargs: dict) -> bool:
     return False
 
 
-def _defined_models(mod):
+def _defined_models(mod: "types.ModuleType") -> "list[type]":
     from pydantic import BaseModel
     return [v for v in vars(mod).values()
             if isinstance(v, type) and issubclass(v, BaseModel)
@@ -212,7 +213,7 @@ def _prove_grammar(cls, where: str) -> None:
     return
 
 
-def _check_schema(py_dir: str, gate_class=None) -> None:
+def _check_schema(py_dir: str, gate_class: "type | None" = None) -> None:
     path = os.path.join(py_dir, "schema.py")
     if not os.path.isfile(path):
         _fail("missing schema.py in %s" % py_dir)
@@ -289,7 +290,7 @@ def _check_registry(card_id: str, engine: str) -> None:
               % (getattr(row, "engine", None), engine))
 
 
-def _check_linkage(card_id: str, py_dir: str):
+def _check_linkage(card_id: str, py_dir: str) -> None:
     """The _SCHEMA_TARGETS leg (STROKE 4 bijection, per-card): the
     entry must resolve THROUGH stage_params' own loader to the
     class defined in THIS dir's schema.py (module-file identity).
@@ -403,7 +404,7 @@ def _camel(card_id: str) -> str:
                    _norm(card_id).split("_") if w)
 
 
-def _validate_spec(spec: dict) -> list[str]:
+def _validate_spec(spec: "dict[str, object]") -> list[str]:
     """The spec grammar — refusals name the rule, never a traceback."""
     errs: list[str] = []
     import re
@@ -448,7 +449,7 @@ def _validate_spec(spec: dict) -> list[str]:
     return errs
 
 
-def _schema_py(spec: dict, cls: str) -> str:
+def _schema_py(spec: "dict[str, object]", cls: str) -> str:
     lines = [
         '"""%s — the card param document (scaffolded, row 7).'
         % spec["card_id"],
@@ -493,7 +494,7 @@ def _schema_py(spec: dict, cls: str) -> str:
     return "\n".join(lines)
 
 
-def _card_py(spec: dict, cls: str, py_dir: str) -> str:
+def _card_py(spec: "dict[str, object]", cls: str, py_dir: str) -> str:
     loads = []
     names = []
     for m in spec.get("models", []):
@@ -530,7 +531,7 @@ def _card_py(spec: dict, cls: str, py_dir: str) -> str:
     ])
 
 
-def _stub_py(spec: dict, kind: str) -> str:
+def _stub_py(spec: "dict[str, object]", kind: str) -> str:
     if kind == "compose":
         body = ("def compose_%s(doc) -> dict:\n"
                 '    """The card arm (slice 3) — phase 1 validates, '
@@ -562,7 +563,7 @@ def _stub_py(spec: dict, kind: str) -> str:
     ])
 
 
-def scaffold(spec: dict, out: str) -> int:
+def scaffold(spec: "dict[str, object]", out: str) -> int:
     """Write the five-file anatomy from a validated spec. Pure
     function of the spec (no timestamps) — scaffold twice,
     byte-identical."""
@@ -610,7 +611,7 @@ _KINDS = {"text", "image", "video", "audio", "mesh", "num",
 _STAGE_PARAMS = os.path.join(REPO, "py", "stage_params.py")
 
 
-def _validate_board_spec(spec: dict) -> list[str]:
+def _validate_board_spec(spec: "dict[str, object]") -> list[str]:
     errs = _validate_spec(spec)
     if not spec.get("engine"):
         errs.append("board needs spec.engine (the row names it)")
@@ -654,7 +655,7 @@ def _splice_once(path: str, anchor: str, insert: str,
     return None
 
 
-def board(spec: dict, card_dir: str) -> int:
+def board(spec: "dict[str, object]", card_dir: str) -> int:
     """Board a scaffolded card: model back-claims, _SCHEMA_TARGETS
     entry, REGISTRY row, tool.json regen — then the full check.
     All preconditions verify BEFORE the first write (no
