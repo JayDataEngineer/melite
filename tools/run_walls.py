@@ -25,6 +25,8 @@ began; this tool makes it impossible to "just run the directory".
 """
 
 import argparse
+import ast
+import re
 import subprocess
 import sys
 import time
@@ -32,7 +34,27 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 SUITE_DIR = REPO / "tests" / "walls" / "suites"
+CONFTEST = REPO / "tests" / "walls" / "conftest.py"
 PY = sys.executable
+
+
+def script_style_suites() -> set[str]:
+    """The conftest's collect_ignore_glob is THE collection authority:
+    suites listed there execute at import (module-level sys.exit —
+    their check()/exit-code/stdout discipline IS the contract, per
+    tests/walls/test_walls.py). Running those under pytest is a
+    category error (INTERNALERROR on the exit); they run as plain
+    `python3 <suite>` and the exit code is the verdict — the same
+    ritual test_walls.py's subprocess orchestrator uses."""
+    tree = ast.parse(CONFTEST.read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Assign)
+                and any(isinstance(t, ast.Name) and t.id == "collect_ignore_glob"
+                        for t in node.targets)):
+            return {elt.value for elt in node.value.elts
+                    if isinstance(elt, ast.Constant)
+                    and isinstance(elt.value, str)}
+    raise SystemExit("cannot read collect_ignore_glob from %s" % CONFTEST)
 
 
 def suites(filter_sub: str) -> list[Path]:
@@ -65,12 +87,19 @@ def main() -> int:
         return 0
 
     red: list[tuple[str, int]] = []
+    gated: list[str] = []
+    script_style = {"tests/walls/" + s for s in script_style_suites()}
     t0 = time.time()
     for i, path in enumerate(rows, 1):
-        cmd = [PY, "-m", "pytest", str(path),
-               "-p", "no:randomly", "-q", "--no-header"]
-        if args.mark:
-            cmd += ["-m", args.mark]
+        rel = "tests/walls/suites/%s" % path.name
+        if rel in script_style:
+            # script-style: plain subprocess, exit code is the verdict
+            cmd = [PY, str(path)]
+        else:
+            cmd = [PY, "-m", "pytest", str(path),
+                   "-p", "no:randomly", "-q", "--no-header"]
+            if args.mark:
+                cmd += ["-m", args.mark]
         t1 = time.time()
         try:
             proc = subprocess.run(
@@ -80,15 +109,25 @@ def main() -> int:
         except subprocess.TimeoutExpired:
             rc = 124
         dt = time.time() - t1
-        flag = "ok " if rc == 0 else "RED"
-        print("[%2d/%2d] %s %-42s rc=%-3d %5.1fs"
-              % (i, len(rows), flag, path.stem, rc, dt),
+        # pytest rc=5 (no tests collected): a marker-gated suite run
+        # without its mark — a gate, not a failure
+        if rc == 5 and not args.mark and rel not in script_style:
+            gated.append(path.stem)
+            flag = "gate"
+        else:
+            flag = "ok " if rc == 0 else "RED"
+        print("[%2d/%2d] %s %-42s rc=%-3d %5.1fs%s"
+              % (i, len(rows), flag, path.stem, rc, dt,
+                 "  (script-style)" if rel in script_style else ""),
               flush=True)
-        if rc != 0:
+        if rc != 0 and flag != "gate":
             red.append((path.stem, rc))
 
-    print("--- %d suites, %d red, %.0fs total"
-          % (len(rows), len(red), time.time() - t0))
+    print("--- %d suites, %d red, %d gated, %.0fs total"
+          % (len(rows), len(red), len(gated), time.time() - t0))
+    for stem in gated:
+        print("gate %-42s 0 collected without --mark (marker-gated by design)"
+              % stem)
     for stem, rc in red:
         print("RED %-42s rc=%d" % (stem, rc))
     return 1 if red else 0
