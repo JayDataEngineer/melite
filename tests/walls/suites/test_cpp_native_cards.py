@@ -94,6 +94,16 @@ mesh = ("data/runs/test-output/run-49b55276d56a-69fe881b/"
 rc, g, x, err = qarm.compose({"params": {"input": mesh}},
                               "autoremesher", "")
 check("quad phase-1 accepts the trellis mesh", rc == 0, err)
+# Law-0 binary gate (2026-09-07): the accepts exercise the pass leg
+# (this tree carries runtime builds); the refusal is mocked so it
+# stays hermetic on binary-less machines.
+from unittest import mock as _mock  # noqa: E402
+_qr = sys.modules["quad_arm_pkg.renderer"]
+with _mock.patch.object(_qr, "resolve_cli", return_value=None):
+    rc, g, x, err = qarm.compose({"params": {"input": mesh}},
+                                  "autoremesher", "")
+check("quad phase-1 refuses missing binary", rc == -3 and
+      "AUTOREMESHER_BIN" in (err or ""), err)
 rc, g, x, err = qarm.compose(
     {"params": {"input": mesh, "target_quads": 5000}},
     "autoremesher", "run-t")
@@ -104,6 +114,61 @@ check("quad skeleton engine_type",
 check("quad skeleton single node", g is not None and len(g.nodes) == 1)
 check("quad budget rides the node",
       g is not None and g.nodes[0].params.get("target_quads") == 5000)
+
+# -- auto-rig doors ------------------------------------------------------
+# (Law-0 stroke 2026-09-07: this card had no door coverage at all —
+# the wall pinned quad + forge + the music fork only.)
+sdir = os.path.join(REPO, "plugins", "engines", "cpp", "skintokens",
+                    "action_cards", "3d", "auto-rig", "py")
+sarm = _load_arm("rig_arm_pkg", sdir)
+
+rc, g, x, err = sarm.compose({"params": {}}, "skintokens", "")
+check("rig phase-1 refuses missing input", rc == -3, err)
+_sr = sys.modules["rig_arm_pkg.renderer"]
+with _mock.patch.object(_sr, "resolve_cli", return_value=None):
+    rc, g, x, err = sarm.compose({"params": {"input": mesh}},
+                                  "skintokens", "")
+check("rig phase-1 refuses missing binary", rc == -3 and
+      "SKINTOKENS_BIN" in (err or ""), err)
+with _mock.patch.object(_sr, "resolve_model_dir", return_value=None):
+    rc, g, x, err = sarm.compose({"params": {"input": mesh}},
+                                  "skintokens", "")
+check("rig phase-1 refuses missing weights", rc == -3 and
+      "SKINTOKENS_MODEL_DIR" in (err or ""), err)
+# accept leg: BYO env fakes (sys.executable + any dir satisfy the
+# presence probes; run-time provenance stays the runtime builds).
+_saved = {v: os.environ.get(v) for v in
+          ("SKINTOKENS_BIN", "SKINTOKENS_MODEL_DIR")}
+os.environ["SKINTOKENS_BIN"] = sys.executable
+os.environ["SKINTOKENS_MODEL_DIR"] = REPO
+try:
+    rc, g, x, err = sarm.compose({"params": {"input": mesh}},
+                                  "skintokens", "")
+    check("rig phase-1 accepts the trellis mesh", rc == 0, err)
+    rc, g, x, err = sarm.compose({"params": {"input": mesh}},
+                                  "skintokens", "run-t")
+    check("rig phase-2 emits skeleton", rc == 0 and g is not None, err)
+    check("rig skeleton engine_type",
+          g is not None and g.engine_type == "skintokens",
+          getattr(g, "engine_type", None))
+finally:
+    for _v, _val in _saved.items():
+        if _val is None:
+            os.environ.pop(_v, None)
+        else:
+            os.environ[_v] = _val
+
+# -- music-native doors ----------------------------------------------------
+# (Same stroke: the binary gate; the doc/model gates predate it.)
+audir = os.path.join(REPO, "plugins", "engines", "cpp", "audio-cpp",
+                     "action_cards", "audio", "music", "py")
+auarm = _load_arm("mus_arm_pkg", audir)
+_mr = sys.modules["mus_arm_pkg.renderer"]
+with _mock.patch.object(_mr, "resolve_cli", return_value=None):
+    rc, g, x, err = auarm.compose({"params": {"prompt": "test"}},
+                                   "ace-step-xl", "")
+check("music-native phase-1 refuses missing binary", rc == -3 and
+      "AUDIO_CPP_CLI" in (err or ""), err)
 
 # -- forge doors --------------------------------------------------------
 fdir = os.path.join(REPO, "plugins/engines/node/anycreature",
