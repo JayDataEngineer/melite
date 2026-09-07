@@ -367,8 +367,8 @@ def build_gap_seed(root) -> None:
     """Phase-E fixture root. Grows one gap per stroke (G1..G6 below)."""
     from pathlib import Path as _P
     root = _P(root)
-    # exist_ok: G1+G2 share one seed built twice (one bases call per
-    # gap); writes below are idempotent rewrites.
+    # exist_ok: one bases call per gap rebuilds the (per-phase)
+    # seed dir; writes below are idempotent rewrites.
     (root / "drafts").mkdir(parents=True, exist_ok=True)
     (root / "drafts" / "d1.json").write_text("{}")
     out = root / "output"
@@ -483,16 +483,17 @@ def py_gap(root) -> tuple:
         return (0, None, "unparseable py gap boot out: %r" % e)
 
 
-def phase_e_gap_bases(base, helper: str) -> tuple:
+def phase_e_gap_bases(base, helper: str, tag: str) -> tuple:
     """Dual Phase-E boots on the current gap seed. Returns
-    (pyRoot, tsRoot, py, ts) or Nones when either side fails to boot."""
-    seedE = base / "seedE"
+    (pyRoot, tsRoot, py, ts) or Nones when either side fails to boot.
+    Unique subdirs per phase (seedE/pyE/tsE suffixed): the boots
+    mutate roots in place (sweep writes + ledger appends), so sharing
+    fixed dirnames across phases crashes the second copytree — and
+    deleting (rmtree) would destroy the earlier phase's swept roots
+    a debugger may still want."""
+    seedE = base / ("seedE-" + tag)
     build_gap_seed(seedE)
-    pyE, tsE = base / "pyE", base / "tsE"
-    # fresh copies per gap (G1+G2 share one base): the boots mutate
-    # roots in place (sweep writes + ledger appends).
-    shutil.rmtree(pyE, ignore_errors=True)
-    shutil.rmtree(tsE, ignore_errors=True)
+    pyE, tsE = base / ("pyE-" + tag), base / ("tsE-" + tag)
     shutil.copytree(seedE, pyE)
     shutil.copytree(seedE, tsE)
     prc, py, pnote = py_gap(pyE)
@@ -507,7 +508,7 @@ def phase_e_gap_bases(base, helper: str) -> tuple:
 def phase_e_g1(base, helper: str) -> None:
     # NOTE: scoped to the run-g1- prefix — later gaps share this
     # seed, and only the global ledger leg sees the whole root.
-    pyE, tsE, py, ts = phase_e_gap_bases(base, helper)
+    pyE, tsE, py, ts = phase_e_gap_bases(base, helper, "g1")
     if py is None or ts is None:
         return
     ts_live = sorted(k for k in ts["live"] if k.startswith("run-g1-"))
@@ -541,7 +542,7 @@ def phase_e_g1(base, helper: str) -> None:
 
 def phase_e_g2(base, helper: str) -> None:
     # Scoped to the run-g2- prefix (shares the gap seed with G1).
-    pyE, tsE, py, ts = phase_e_gap_bases(base, helper)
+    pyE, tsE, py, ts = phase_e_gap_bases(base, helper, "g2")
     if py is None or ts is None:
         return
     ts_live = sorted(k for k in ts["live"] if k.startswith("run-g2-"))
