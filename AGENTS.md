@@ -82,6 +82,32 @@
   sidebar's "run has no action card (no draft_id in its run row)"
   click error unbornable for new runs.
 
+## OUTPUT CONTRACT (operator order, 2026-09-07, verbatim)
+
+> "Yes, fill ALL the gaps, half state, incomplete state = bad"
+
+- Every action card DECLARES what a completed run DELIVERS: typed
+  `card_outputs = (OutputRow(patterns=(".png",), label="..."),)` rows
+  on the ActionCard (frozen pydantic, `extra="forbid"`, patterns
+  lowercase dot-suffixes, any-of; the metaclass refuses non-OutputRow
+  rows at boot). Named `card_outputs`, never bare `outputs` — that is
+  live wire-field vocabulary (mask_studio's recipe textarea).
+- The gateway ENFORCES the declaration at both doors: `{model}` runs
+  at settle and `card=` flow stages per node — a run delivering none
+  of a row's patterns fails with the exact refusal (card id, row
+  label, patterns, delivered artifacts) in `run.error`. Outputs are
+  recorded AND promised; RESILIENCE LAW shape (documented failure,
+  queue continues).
+- The same order closed the defaults blanket: every value-shaped card
+  field (Number/Slider/Seed/Boolean/Select/Textarea/Text) carries
+  `required=True` OR an explicit `default=` mirroring the card's
+  `schema.py` default exactly; slot-shaped fields are exempt (empty
+  slot is their semantic).
+- Enforced by `tests/walls/suites/test_output_contract.py` (22/22
+  declare, rows typed, gate exact) and the defaults + render-road
+  legs of `tests/walls/suites/test_card_pattern_wall.py`. The pattern
+  canon row is `docs/patterns/master-patterns.md` §P03/§P04.
+
 ## RESILIENCE LAW (operator order, 2026-08-29, verbatim)
 
 > "GATEWAY SHOULD NOT CRASH. A BAD RUN SHOULD NOT CRASH THE ENTIRE SYSTEM.

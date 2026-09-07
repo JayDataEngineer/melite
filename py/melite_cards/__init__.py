@@ -25,6 +25,7 @@ __version__ = "0.1.0"
 
 from .dsl import (          # noqa: F401
     ActionCard,
+    OutputRow,
     Mod,
     ActionCardPack,
     SubActionMod,
@@ -56,7 +57,7 @@ from .serialize import (  # noqa: F401
     field_spec, load_card_py, scan_engine_cards, tool_manifests)
 
 __all__ = [
-    "ActionCard", "Mod", "ActionCardPack", "SubActionMod", "VerbEngine", "LorasMod", "ControlNetMod", "MaskMod", "QvoiceMod",
+    "ActionCard", "OutputRow", "Mod", "ActionCardPack", "SubActionMod", "VerbEngine", "LorasMod", "ControlNetMod", "MaskMod", "QvoiceMod",
     "LanPaintMod", "Field", "Select", "Textarea", "Text", "Number",
     "Slider", "Seed", "Boolean", "Image", "Audio", "Video", "File",
     "Loras", "ControlNet", "VocabRef", "ValidationError",

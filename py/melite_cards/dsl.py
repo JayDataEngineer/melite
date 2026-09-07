@@ -28,6 +28,8 @@ import re
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, ClassVar, TypedDict
 
+from pydantic import BaseModel, Field as FieldMin, field_validator
+
 if TYPE_CHECKING:
     from melite_models import Model
 
@@ -594,7 +596,62 @@ class _CardMeta(type):
             raise ValidationError(
                 "%s.layout must be 'form' | 'studio' (got %r)"
                 % (name, layout))
+        # OUTPUT CONTRACT (operator order, 2026-09-07): card_outputs
+        # rows are typed OutputRow instances — a dict/plain row is a
+        # boot-LOUD refusal, same gate shape as the knob-row flip.
+        # Named card_outputs (parallel to the models' card_knobs):
+        # bare `outputs` collides with wire FIELDS (mask_studio's
+        # recipe textarea is literally named outputs).
+        # (The EVERY-CARD-DECLARES law is the output-contract wall's,
+        # not the metaclass's — probe cards in tests stay legal.)
+        _outs = ns.get("card_outputs", None)
+        if _outs is None:
+            _outs = tuple(getattr(cls, "card_outputs", ()) or ())
+        for _o in _outs:
+            if not isinstance(_o, OutputRow):
+                raise ValidationError(
+                    "%s.card_outputs rows must be OutputRow(...) "
+                    "instances (typed frozen rows), got %r" % (name, _o))
+        # stamp ONLY when declared (or inherited non-empty): verbs and
+        # mods never carry the attr in their own __dict__ — the knob
+        # walks (`vars(cls)` minus knowns) stay clean, inheritance
+        # still resolves () from the base for undeclared classes.
+        if _outs or "card_outputs" in ns:
+            cls.card_outputs = tuple(_outs)
         return cls
+
+
+class OutputRow(BaseModel, frozen=True):
+    """One PROMISED output artifact kind (OUTPUT CONTRACT, operator
+    order 2026-09-07: "All the action cards have like... defaults,
+    recipes, input + output gates"). A card declares what a completed
+    run DELIVERS; the gateway's completion gate refuses a run that
+    delivers none of a row's patterns — inputs were already gated in
+    types; outputs stop being merely recorded (RESILIENCE LAW shape:
+    the refusal documents itself, the queue continues).
+
+    patterns: lowercase FILE SUFFIXES, any-of semantics ((".glb",)
+    or (".png", ".jpg")); label: the human phrase the refusal and
+    the surface speak; many: count intent for the surface (the gate
+    is >=1 either way — a batch that promises frames refuses when it
+    delivers zero, not when it delivers one).
+    """
+
+    patterns: tuple[str, ...] = FieldMin(min_length=1)
+    label: str = FieldMin(min_length=1)
+    many: bool = False
+    # no dead riders (strictness wall): an unknown key refuses
+    model_config = {"extra": "forbid"}
+
+    @field_validator("patterns")
+    @classmethod
+    def _suffix_law(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        for p in v:
+            if not p.startswith(".") or p != p.lower() or len(p) < 2:
+                raise ValueError(
+                    "output patterns are lowercase dot-suffixes "
+                    "(('.glb',) — got %r)" % (p,))
+        return v
 
 
 class ActionCard(metaclass=_CardMeta):
@@ -679,6 +736,10 @@ class ActionCard(metaclass=_CardMeta):
     layout = "form"
     # No structural keys by default — cards declare their own.
     structural_knobs = frozenset()
+    # OUTPUT CONTRACT: what a completed run DELIVERS (typed rows; the
+    # completeness wall refuses a real card declaring none). Named
+    # card_outputs — `outputs` is live wire-field vocabulary.
+    card_outputs: tuple[OutputRow, ...] = ()
     # The universal sidebar trio — NO base default (every card
     # declares its own; the derivation + completeness wall refuse a
     # card missing them). Hidden defaults False (deviation-only).
