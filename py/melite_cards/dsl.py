@@ -762,6 +762,13 @@ class ActionCard(metaclass=_CardMeta):
     # every other key LOUDLY (QUEUE LANE LAW: no silent drops — the
     # 2026-09-05 stepz class never rides silently again).
     admits: tuple[str, ...] = ()
+    # SPELL PARAMS — the file-typed params that may carry a $spell
+    # ("$image": a WIRED STAGE INPUT, not a file). The retired
+    # compose.py row-4 semantics: a body whose spell param carries a
+    # $-value composes NO graph at phase-1 — the pool passes through
+    # and the runtime wires the producer link IN-GRAPH on the merged
+    # path (test_two_card_flow pins both legs).
+    spell_params: tuple[str, ...] = ()
 
     @classmethod
     def families_of(cls: type[ActionCard]) -> tuple[str, ...]:

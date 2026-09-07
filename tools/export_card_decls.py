@@ -104,6 +104,10 @@ def card_decl(cid: str, cls) -> dict:
         "id": cls.id,
         "skeleton": cls.skeleton or "",
         "admits": sorted(admits),
+        # $spell-bearing file params (row-4: spell bodies compose NO
+        # graph at phase-1 — the pool passes; the runtime wires the
+        # producer link on the merged path)
+        "spells": sorted(set(getattr(cls, "spell_params", ()) or ())),
         "boarded": fams,
         "requires": list(cls.requires or ()),
         "requiresByFamily": {k: list(v) for k, v in (rbf or {}).items()},

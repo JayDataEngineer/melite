@@ -40,11 +40,20 @@ SNAP = flow.schema_snapshot()
 CARDS = SNAP["cards"]
 ROWS = {r.card_id: r for r in sp.REGISTRY.rows}
 
-SCHEMALESS = {"ideogram4"}   # no schema.py; the row declares no gate
+# DECLARATIONS-PLANE STROKE (2026-09-07): the schemaless class is
+# the REGISTRY's frozenset (py/stage_params._CARDS_WITHOUT_SCHEMA —
+# STAGE 4 dropped the 16 comfyui schema.py rows, P32 added quad as
+# the 17th). The wall cross-checks the SERVED /v1/forms view against
+# the registry SSOT — serve and registry can never drift apart.
+from stage_params import _CARDS_WITHOUT_SCHEMA as SCHEMALESS
 SEMANTIC = {                 # content gates, not shapes — the schema
-    "forge": "creature spec is missing",          # gets us TO the gate
-    "h3-timeline": "no calls in card body",
-    "input-prep": "could not detect the source media type",
+    "forge": "creature spec is missing",   # gets us TO the gate
+    # h3-timeline ("no calls in card body") and input-prep ("could
+    # not detect the source media type") gates MOVED PLANES with the
+    # schema.py retirement: the Cordis compose door owns them now
+    # (cli.ts — the h3 derivation law; the input-prep media sniff),
+    # walled by the cordis goldens + validate parity. The py
+    # stage-params plane no longer sees them (both cards schemaless).
 }
 
 
