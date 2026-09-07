@@ -403,13 +403,22 @@ def _find_card_requires(mid: str, plugins_dir: str | None = None) -> list[str]:
     except ImportError:
         return []
     card_id = None
+    # LOUD DISCOVERY (2026-09-07 review M1): the old silent continues
+    # let a broken model.py/card.py VANISH from requires resolution —
+    # the extension gate silently resolved [] (a live 2026-09-06 bug
+    # class). Failures are collected; a resolution that comes up empty
+    # with swallowed failures REFUSES with all of them; a resolution
+    # that succeeds still LOGS what it stepped over (never silent).
+    _load_failures: list[str] = []
     for engine_dir in sorted(plugins_dir.glob("engines/*")):
         for mpy in sorted(engine_dir.glob("models/*/*/model.py")):
             if mpy.parent.name != mid:
                 continue
             try:
                 cls = load_model_py(str(mpy), engine_dir.name)
-            except Exception:
+            except Exception as e:
+                _load_failures.append("%s (%s: %s)" % (
+                    mpy.relative_to(REPO), type(e).__name__, e))
                 continue
             if cls.card:
                 card_id = cls.card
@@ -441,7 +450,9 @@ def _find_card_requires(mid: str, plugins_dir: str | None = None) -> list[str]:
                           if pdir.parent.name in ("cards", "action_cards")
                           else pdir.parent.parent.parent.name)
             cls = load_card_py(str(cpy), engine)
-        except Exception:
+        except Exception as e:
+            _load_failures.append("%s (%s: %s)" % (
+                cpy.relative_to(REPO), type(e).__name__, e))
             continue
         if card_id:
             if cls.id != card_id:
@@ -464,7 +475,17 @@ def _find_card_requires(mid: str, plugins_dir: str | None = None) -> list[str]:
                              else [_val])
                     reqs.extend(_more)
                     break
+        if _load_failures:
+            print("[requires:%s] stepped over broken declarations while "
+                  "resolving: %s" % (mid, "; ".join(_load_failures)),
+                  flush=True)
         return reqs
+    if _load_failures:
+        raise RuntimeError(
+            "requires resolution for %r found no card AND stepped over "
+            "broken declarations — fix these (the extension gate "
+            "refuses to resolve silently-empty): %s"
+            % (mid, "; ".join(_load_failures)))
     return []
 
 
@@ -1290,7 +1311,7 @@ class Gateway:
 
         Rows are built exactly as the per-stage loop would: the card
         bridge composes card= docs, the engine's stage_workflow()
-        resolves workflow_file + inject. The engine's execute_flow
+        resolves the inline workflow + inject. The engine's execute_flow
         submits once; per-stage outputs/artifacts publish here with
         the SAME carry/url/gallery shape the loop stamps."""
         nodes = run.graph.nodes
@@ -2975,6 +2996,21 @@ async def _h_drafts_get(ctx: _Ctx) -> HandlerResult:
     return code, doc
 
 
+async def _h_draft_stage_patch(ctx: _Ctx) -> HandlerResult:
+    import editor_runs as _er
+    code, body = _er.draft_stage_patch(
+        str(STATE_ROOT / "drafts"), ctx.m.group(1), ctx.m.group(2),
+        ctx.json)
+    return code, body
+
+
+async def _h_draft_stage_result(ctx: _Ctx) -> HandlerResult:
+    import editor_runs as _er
+    code, body = _er.draft_stage_result(
+        str(STATE_ROOT / "drafts"), ctx.m.group(1), ctx.m.group(2))
+    return code, body
+
+
 def _parse_range(spec: str,
                  size: int) -> "tuple[int, int] | None":
     """R2 media (2026-09-06): parse one HTTP Range spec against a
@@ -4051,6 +4087,22 @@ ROUTES: tuple = (
           handler=_h_drafts_list),
     Route(method="POST", path="/v1/flows/drafts", group="Templates & drafts",
           summary="Save a draft", body="strict", handler=_h_drafts_save),
+    # Stage-result loop (specific BEFORE the greedy :id GET — first
+    # match wins; the greedy arm would swallow these paths and 400
+    # "bad id", the silent-400 class the browser misfire monitor
+    # caught live). PATCH persists the result outbox; GET serves the
+    # run-truth verify loop. Both reconcile 200 (delivered/found
+    # flags), never 404.
+    Route(method="PATCH", path=r"^/v1/flows/drafts/([^/]+)/stages/([^/]+)$",
+          regex=True, template="/v1/flows/drafts/{draft_id}/stages/{stage_id}",
+          group="Templates & drafts", summary="Persist a stage result patch",
+          body="strict", handler=_h_draft_stage_patch),
+    Route(method="GET",
+          path=r"^/v1/flows/drafts/([^/]+)/stages/([^/]+)/result$",
+          regex=True,
+          template="/v1/flows/drafts/{draft_id}/stages/{stage_id}/result",
+          group="Templates & drafts", summary="One stage's persisted result",
+          handler=_h_draft_stage_result),
     Route(method="GET", path=r"^/v1/flows/drafts/(.+)$", regex=True,
           template="/v1/flows/drafts/{draft_id}",
           group="Templates & drafts", summary="One draft",
