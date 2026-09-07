@@ -25,7 +25,7 @@ tree walk + module parse, no node needed):
      and center= seams; the bespoke pre-shell shape (StudioRail +
      hand-rolled column div in the same file) refuses.
 
-Design record: docs/design/studio-shell.md §2 + §7 strokes 1-4.
+Design record: docs/design/studio-shell.md §2 + §4 + §7 strokes 1-5.
 """
 import os
 import re
@@ -293,3 +293,56 @@ def test_union_members_name_real_primitives_only():
         REPO, "plugins", "engines", "comfyui", "action_cards",
         "image", "mask_studio", "ui", "studio", "OutputStrip.tsx"))
     assert os.path.isdir(os.path.join(REPO, "web", "timeline"))
+
+
+# ── stroke 5 (2026-09-07): ONE verb UX across every card ──────────────
+#
+# Every in-card action is the same shape: the CHIP (icon → spinner,
+# phase label) + the NOTE line under it (feedback in place, §5.4 —
+# never a toast). VerbChip (@melite/ui) is the bones; tenants map
+# their phases and notes. This wall refuses the hand-rolled copies.
+
+VERB_CHIP = os.path.join(REPO, "web", "ui", "src", "verbChip.tsx")
+VERB_RIDERS = [
+    os.path.join(REPO, "plugins", "engines", "comfyui",
+                 "action_cards", "3d", "anny", "ui", "studio",
+                 "component.tsx"),
+    os.path.join(REPO, "plugins", "engines", "comfyui",
+                 "action_cards", "image", "mask_studio", "ui",
+                 "studio", "Sam3PromptBox.tsx"),
+]
+
+
+def test_verbchip_exists_genre_blind():
+    assert os.path.isfile(VERB_CHIP), \
+        "web/ui/src/verbChip.tsx — VerbChip (@melite/ui), the one " \
+        "verb UX primitive (§4)"
+    src = open(VERB_CHIP, encoding="utf-8").read()
+    code = re.sub(r"/\*.*?\*/", "", src, flags=re.DOTALL)
+    code = re.sub(r"^\s*//.*$", "", code, flags=re.MULTILINE)
+    low = code.lower()
+    for word in ("card", "flow", "mask", "anny", "sam3", "queue"):
+        assert word not in low, \
+            "VerbChip names %r — card vocabulary in the verb " \
+            "primitive; the tenant maps phases, the chip renders " \
+            "bones" % word
+
+
+def test_the_verb_gestures_ride_the_shared_chip():
+    for f in VERB_RIDERS:
+        rel = os.path.relpath(f, REPO)
+        src = open(f, encoding="utf-8").read()
+        assert "<VerbChip" in src, \
+            "%s renders VerbChip (one verb UX — §4)" % rel
+        # the hand-rolled chip bones died with the primitive: no
+        # brand-chip class combo, and (in the chip-only rider) no
+        # spinner-swap left — anny's five gestures all ride the
+        # chip; Sam3PromptBox keeps ONE status glyph in its box
+        # header (the ride-along indicator, not a verb chip)
+        assert "border-brand/40 bg-brand/10" not in src, \
+            "%s hand-rolls the chip chrome — VerbChip owns the " \
+            "actions-zone shape" % rel
+        if rel.endswith("anny/ui/studio/component.tsx"):
+            assert "Loader2" not in src, \
+                "%s hand-rolls the spinner swap — VerbChip owns " \
+                "the in-flight icon" % rel

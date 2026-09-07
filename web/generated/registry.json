@@ -829,6 +829,21 @@
         "parseNumber"
       ],
       "component": false
+    },
+    {
+      "name": "verbChip",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/verbChip.tsx"
+        }
+      ],
+      "exports": [
+        "VerbChip",
+        "VerbChipProps"
+      ],
+      "component": true
     }
   ]
 }
