@@ -23,8 +23,44 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import urllib.request
 from pathlib import Path
+
+# LAW 0 (2026-09-07): extensions that shell out to a host binary carry
+# the binary as a SYSTEM requirement. Extension name → (env overrides,
+# binary). The resolution mirrors the pack's own resolver exactly — e.g.
+# melite-autorig-nodes shells `blender -b` (KimodoExportFBX export + the
+# MIMO validation render; weights transfer itself is pure numpy) and its
+# _resolve_blender_binary reads SKINTOKEN_BLENDER_BIN / BLENDER_BIN first,
+# then PATH — so the compose gate refuses with the same need the node
+# would name at prompt time, one queue slot earlier (QUEUE LANE LAW:
+# 4xx BEFORE registration, never a GPU-claimed failure).
+SYSTEM_BINARY_REQUIRES: dict[str, tuple[tuple[str, ...], str]] = {
+    "melite-autorig-nodes": (("SKINTOKEN_BLENDER_BIN", "BLENDER_BIN"), "blender"),
+}
+
+
+def _check_system_binaries(
+    requires: list[str],
+) -> tuple[bool, str]:
+    """Refuse when a required extension's host binary is unresolvable."""
+    for ext_name in requires:
+        spec = SYSTEM_BINARY_REQUIRES.get(ext_name.strip())
+        if not spec:
+            continue
+        env_vars, binary = spec
+        if any(os.environ.get(v) for v in env_vars):
+            continue
+        if shutil.which(binary) is None:
+            return False, (
+                "missing system requirement: %r (extension %r shells out "
+                "to it) — install Blender and put it on PATH, or point "
+                "%s at the binary" % (binary, ext_name.strip(),
+                                      " or ".join(env_vars))
+            )
+    return True, ""
+
 
 # The object_info shape: decoded JSON (objects, arrays, scalars).
 type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
@@ -52,10 +88,14 @@ EXTENSION_NODE_TYPES: dict[str, set[str]] = {
         "MiniMaxMusic3TextEncode", "EmptyMiniMaxMusic3LatentAudio",
         "SaveAudioAdvanced", "AudiocoreTTS", "LoadAudiocoreModel",
     },
-    "melite-anny-estimator-nodes": {
-        "MultiHMR2ImageToAnny", "AnnyFitOptimize",
+    # ONE humanoid pack (2026-09-07 merge: the anny-estimator family
+    # folded in — all six Anny node types ride the kimodo install unit;
+    # node type names unchanged, so flows keep resolving).
+    "melite-kimodo-nodes": {
+        "KimodoLoader", "KimodoTextToPose",
+        "MultiHMR2ImageToAnny", "AnnySelectPerson", "AnnyGroundBody",
+        "AnnyFitOptimize", "Sam3dBodyImageToAnny", "AnnyParamsToGlb",
     },
-    "melite-kimodo-nodes": {"KimodoLoader", "KimodoTextToPose"},
     "qweneditutils": {"TextEncodeQwenImageEditPlus"},
     "vnccs_utils": {"ModelSamplingAuraFlow", "UniCanvasNode"},
     "comfyui-impact-pack": {"FaceDetailer", "SAMLoader", "UltralyticsDetectorProvider"},
@@ -134,6 +174,12 @@ def check_card_requires(
     """
     if not requires:
         return True, ""
+
+    # SYSTEM binaries first: host-local, always decidable, no server
+    # needed. A missing binary refuses before any object_info probe.
+    ok, msg = _check_system_binaries(requires)
+    if not ok:
+        return False, msg
 
     # Fetch object_info if possible
     object_info = _fetch_object_info(server_url)

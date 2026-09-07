@@ -159,5 +159,47 @@ r = _ok("T10 class-declared requires resolve", not _unresolved,
         f"unresolved: {sorted(_unresolved)}" if _unresolved else "all resolve")
 passed += r; failed += (not r)
 
+# ── T11: LAW 0 system-binary requirement (2026-09-07) ──
+# melite-autorig-nodes shells `blender -b`; the compose gate refuses
+# BEFORE any run registers when the binary is unresolvable. Fully
+# mocked — deterministic on machines with or without Blender.
+import os as _os  # noqa: E402
+from unittest import mock  # noqa: E402
+from card_requires import SYSTEM_BINARY_REQUIRES  # noqa: E402
+r = _ok("T11 autorig pins the blender system requirement",
+        SYSTEM_BINARY_REQUIRES.get("melite-autorig-nodes") ==
+        (("SKINTOKEN_BLENDER_BIN", "BLENDER_BIN"), "blender"),
+        "Law-0 pair drifted")
+passed += r; failed += (not r)
+_saved_env = {v: _os.environ.get(v) for v in
+              ("SKINTOKEN_BLENDER_BIN", "BLENDER_BIN")}
+try:
+    for v in ("SKINTOKEN_BLENDER_BIN", "BLENDER_BIN"):
+        _os.environ.pop(v, None)
+    with mock.patch("shutil.which", return_value=None):
+        ok, msg = check_card_requires(
+            ["melite-autorig-nodes"], server_url=None,
+            custom_nodes_dir="/tmp/nonexistent")
+    r = _ok("T11 missing blender binary refuses at compose", not ok and
+            "blender" in msg, msg if ok else "refused with the need named")
+    passed += r; failed += (not r)
+    # Env override bypasses the PATH probe (mirrors the pack resolver).
+    _os.environ["BLENDER_BIN"] = "/opt/blender/blender"
+    with mock.patch("shutil.which", return_value=None):
+        ok, msg = check_card_requires(
+            ["melite-autorig-nodes"], server_url=None,
+            custom_nodes_dir="/tmp/nonexistent")
+    r = _ok("T11 BLENDER_BIN override passes the binary leg",
+            not ok and "blender" not in msg,
+            "binary leg leaked past the override" if ok or
+            "blender" in msg else "fell through to the extension check")
+    passed += r; failed += (not r)
+finally:
+    for v, val in _saved_env.items():
+        if val is None:
+            _os.environ.pop(v, None)
+        else:
+            _os.environ[v] = val
+
 print(f"\n{'PASS' if not failed else 'FAIL'} {passed} / FAIL {failed}")
 sys.exit(1 if failed else 0)
