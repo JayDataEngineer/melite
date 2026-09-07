@@ -82,9 +82,28 @@ def verb_meta(vcls, vfams) -> dict:
 def card_decl(cid: str, cls) -> dict:
     fams = list(cls.families_of() or ())
     rbf = getattr(cls, "requires_by_family", None)
+    # THE ADMISSION CONTRACT row ("admission is the surface" —
+    # docs/design/image-edit-param-contract.md): every key compose
+    # admits beyond the knobs = the boarded families' studio.writes
+    # (the E4 contract, observed ⊆ declared) ∪ the card's renderer
+    # vocab (admits attr, exact names or trailing-* prefixes). The
+    # compose gate consumes THIS row — cards never decide admission
+    # ad hoc, and no key rides silently (QUEUE LANE LAW).
+    admits = set(getattr(cls, "admits", ()) or ())
+    try:
+        from melite_models import scan_engine_models
+        cat = scan_engine_models(str(REPO))
+        for fam in fams:
+            hit = cat.get(fam)
+            if hit is not None:
+                st = getattr(hit[1], "studio", None)
+                admits.update(getattr(st, "writes", ()) or ())
+    except Exception:
+        pass
     return {
         "id": cls.id,
         "skeleton": cls.skeleton or "",
+        "admits": sorted(admits),
         "boarded": fams,
         "requires": list(cls.requires or ()),
         "requiresByFamily": {k: list(v) for k, v in (rbf or {}).items()},

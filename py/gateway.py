@@ -364,7 +364,10 @@ def card_compose_body(body: dict[str, JsonValue]
                       ) -> dict[str, JsonValue]:
     """The body a card arm receives: the run body minus the gateway
     envelope, restaged as the ONE params stanza. Wall-pinned shape —
-    the arms' flat-form branch is retired with it."""
+    the arms' flat-form branch is retired with it. The NESTED form
+    (a body carrying its own `params` key) rides THROUGH as a
+    params.params key — the wall pins it; the compose plane (cordis
+    CLI) unwraps the stanza before the admission gate."""
     return {"params": {k: v for k, v in body.items()
                        if k not in CARD_ENVELOPE_KEYS}}
 

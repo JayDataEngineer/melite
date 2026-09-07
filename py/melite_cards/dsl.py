@@ -754,6 +754,14 @@ class ActionCard(metaclass=_CardMeta):
     # cutover rim names the row from the exported decls, never a
     # hardcode (QUEUE LANE LAW).
     skeleton = ""
+    # PARAM ADMISSION — the closed list of keys the compose admits
+    # BEYOND the card knobs (studio vocab rides studio.writes via the
+    # exporter; this attr carries the RENDERER vocabulary the retired
+    # renderer documented — h3's variant/k/ctx_*/sla_*/motion_*/...).
+    # Exact names or trailing-* prefixes. The compose door refuses
+    # every other key LOUDLY (QUEUE LANE LAW: no silent drops — the
+    # 2026-09-05 stepz class never rides silently again).
+    admits: tuple[str, ...] = ()
 
     @classmethod
     def families_of(cls: type[ActionCard]) -> tuple[str, ...]:

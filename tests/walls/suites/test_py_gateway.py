@@ -400,13 +400,16 @@ def test_validate_model_arm_catches_card_errors_compile_time() -> None:
                    "cost": {"queue_depth": 0, "eta_queue_s": None,
                             "stages": []}}
 
-    # 2. an unknown knob is the frozen-row refusal (the 2026-09-05 live
-    # failure: ImageGenParams stepz "Extra inputs are not permitted") —
-    # at COMPILE time, not inference time
+    # 2. an unknown knob refuses at COMPILE time via the admission
+    #    contract gate (cordis CLI, cli.ts — "admission is the
+    #    surface", docs/design/image-edit-param-contract.md). The
+    #    pydantic-era voice ("Extra inputs are not permitted") retired
+    #    with the py schema gate; the cutover voice names the card and
+    #    the key (no silent drops, QUEUE LANE LAW).
     code, out = asyncio.run(gw_mod._h_flows_validate(
         _Ctx({"model": "krea-2", "prompt": "x", "stepz": 1})))
     assert code == 400
-    assert "Extra inputs are not permitted" in out["error"]
+    assert "unknown param(s) on the image-gen card: stepz" in out["error"]
 
     # 3. a dangling artifact ref is the sweep refusal (the 2026-09-05
     # live failure: SaveImage gallery url of a pruned run)
