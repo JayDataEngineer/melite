@@ -1,0 +1,22 @@
+{
+  "name": "@melite-plugin/timeline",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./timeline/index.ts",
+  "types": "./timeline/index.ts",
+  "exports": {
+    "./ui/timeline": "./timeline/index.ts",
+    "./ui/store": "./store/index.ts",
+    "./ui/playback": "./playback/index.ts",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@melite/catalog": "workspace:*",
+    "@melite/contracts": "workspace:*",
+    "@melite/ui": "workspace:*",
+    "lucide-react": "*",
+    "react": "*",
+    "react-dom": "*",
+    "zustand": "*"
+  }
+}
