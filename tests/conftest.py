@@ -18,12 +18,10 @@ REPO = Path(__file__).resolve().parent.parent
 # dir rides along for the shared bootstrap (tests/_bootstrap.py —
 # fixture audit 2026-09-04).
 for _p in (str(REPO / "py"), str(REPO / "tests"),
-           # lane lenses (row 3, 2026-09-06): fit_spec/skin_spec live
-           # in their cards' py/ dirs (plugin-owned, never core) —
-           # importable here beside py/ so the walls read the same
-           # files production loads.
-           str(REPO / "plugins/engines/comfyui/action_cards/3d/fit/py"),
-           str(REPO / "plugins/engines/comfyui/action_cards/3d/skin/py")):
+           # (2026-09-07) the fit/skin lane-lens inserts (fit_spec/
+           # skin_spec in the cards' py/ dirs) died with the python
+           # render plane (commit b324c480) — removed, not commented.
+           ):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 

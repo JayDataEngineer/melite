@@ -20,15 +20,15 @@ are safe to collect — pytest handles unittest.TestCase natively.
 # To convert a suite to native pytest: rewrite it to use assert
 # statements, remove the main() guard, and REMOVE it from this list.
 collect_ignore_glob = [
-    "suites/test_co_script.py",
     "suites/test_card_requires.py",
     "suites/test_http_parity.py",
-    "suites/test_python_cards.py",
     "suites/test_python_models.py",
     "suites/test_typing.py",
     "suites/test_workflow_transpile.py",
-    "suites/test_doc_parity.py",
-    "suites/test_h3_renderer_parity.py",
+    # (2026-09-07) RETIRED with the python render plane (b324c480),
+    # tombstoned as comment-only stubs (inert either way):
+    # test_co_script.py, test_python_cards.py, test_doc_parity.py,
+    # test_h3_renderer_parity.py.
     "suites/test_streaming.py",
     "suites/test_models_on_second_drive.py",
     # wired 2026-09-05 with its SUBPROCESS_WALLS entry: the cpp

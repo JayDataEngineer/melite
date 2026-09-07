@@ -100,10 +100,12 @@ def _covered(route: str, static: set[str], dynamic: set[str]) -> bool:
     return False
 
 
-# KNOWN DRIFT - the fossil field this wall found on its FIRST run
-# (2026-09-04; every entry live-404-confirmed against the running
-# gateway). All are legacy editor surfaces calling doors that died
-# with the C gateway or never existed in py:
+# KNOWN DRIFT — emptied 2026-09-07 (the legacy-removal stroke): every
+# entry below was verified unreferenced-or-served against prod src
+# (this wall's own quote-anchored extraction) and deleted. History
+# (all recovered, callers deleted or doors ported — the last three,
+# /v1/comfyui/interrupt repointed at the stop door, render_glb +
+# render_textured callers deleted, died in this stroke):
 #   - /v1/manager/* (13 doors): the ComfyUI manager panel store.
 #     The gateway serves one /v1/manage door instead.
 #   - /v1/agent/*: the editor agent-settings lane (dead surface in
@@ -113,38 +115,11 @@ def _covered(route: str, static: set[str], dynamic: set[str]) -> bool:
 #     /v1/flows/render_*, /v1/flows/yaml/export-comfyui: editor
 #     client doors with no py-side door at all.
 # Fix = either port the doors or delete the callers (product call,
-# not a test change). Remove entries here in the same commit that
-# fixes their drift. NEW drift (a rename sweep missing a surface)
-# still fails this wall - that is its job.
-KNOWN_DRIFT = {
-    "/v1/agent/tool-mode",
-    "/v1/agent/web-tools",
-    "/v1/comfyui/endpoint",
-    "/v1/comfyui/extensions/install",
-    "/v1/comfyui/interrupt",
-    "/v1/compose",
-    "/v1/controlnets",
-    "/v1/download-model/stream",
-    "/v1/flow-catalog",
-    "/v1/flows/render_glb",
-    "/v1/flows/render_textured",
-    "/v1/flows/yaml/export-comfyui",
-    "/v1/loras",
-    "/v1/manager/check-active-models",
-    "/v1/manager/check-active-nodes",
-    "/v1/manager/check-updates",
-    "/v1/manager/install-model",
-    "/v1/manager/install-node",
-    "/v1/manager/models",
-    "/v1/manager/reboot",
-    "/v1/manager/start",
-    "/v1/manager/status",
-    "/v1/manager/stop",
-    "/v1/manager/switch-version",
-    "/v1/manager/update-all",
-    "/v1/manager/update-comfyui",
-    "/v1/media/upload",
-}
+# not a test change). NEW drift (a rename sweep missing a surface)
+# still fails this wall - that is its job. If a NEW known-drift
+# entry ever lands here, give it the fossil-guard treatment from
+# test_wire_surface (an exemption whose calls disappear must fail).
+KNOWN_DRIFT = set()  # type: set[str]
 
 
 def test_every_referenced_v1_route_is_served() -> None:

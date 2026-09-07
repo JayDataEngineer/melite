@@ -35,29 +35,22 @@ VENV_PY = REPO / ".venv" / "bin" / "python"
 # by pytest directly from suites/ and are NOT listed here.
 SUBPROCESS_WALLS = [
     "tests/walls/suites/test_python_models.py",
-    "tests/walls/suites/test_python_cards.py",   # recovered 2026-09-05
     "tests/walls/suites/test_typing.py",
     "tests/walls/suites/test_workflow_transpile.py",
     "tests/walls/suites/test_streaming.py",
-    "tests/walls/suites/test_doc_parity.py",
     "tests/walls/suites/test_wire_surface.py",
     "tests/walls/suites/test_models_on_second_drive.py",
-    "tests/golden_compose/_runner.py",
+    # (2026-09-07) RETIRED from this list, tombstoned with the python
+    # render plane (commit b324c480): test_python_cards.py,
+    # test_doc_parity.py, test_h3_renderer_parity.py,
+    # test_co_script.py, tests/golden_compose/_runner.py — the
+    # subject lives in the Cordis TS plane, walled by
+    # tests/walls/suites/test_cordis_compose.py.
     # unittest-style suites — pytest collects them but they also work
     # as subprocess walls; listed here for the subprocess harness
     "tests/walls/suites/test_cpp_engines.py",
     "tests/walls/suites/test_card_pattern_wall.py",
     "tests/walls/suites/test_web_harness_pages.py",
-    # recovered 2026-09-05 from KNOWN_DRIFT — recorded-renderer-output
-    # parity (the hand-written window templates retired with dcfa4c7;
-    # goldens in suites/golden_h3/, regen via H3_PARITY_REGEN=1)
-    "tests/walls/suites/test_h3_renderer_parity.py",
-    # recovered 2026-09-05 from KNOWN_DRIFT — the pin is live truth
-    # (1310 nodes post-consolidation); probe rides SaveImage, floor
-    # >1200
-    "tests/walls/suites/test_co_script.py",
-    # recovered 2026-09-05 from KNOWN_DRIFT — T3/T6 spoke stale names;
-    # the checks mirror the h3-timeline card's real requires now
     "tests/walls/suites/test_card_requires.py",
     # recovered 2026-09-05 from KNOWN_DRIFT — deliberate golden bumps
     # from the scratch gateway + runs-count invariant corrected to >=

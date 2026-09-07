@@ -23,8 +23,8 @@ from _anchor import REPO
 from melite_models import PRESET_PARAMS_FILENAME
 
 VENDOR_NODES_PY = os.path.join(
-    REPO, "vendor", "comfyui_extensions", "melite-anny-estimator-nodes",
-    "nodes.py")
+    REPO, "vendor", "comfyui_extensions", "melite-kimodo-nodes",
+    "nodes_anny.py")
 SOMAX_IDENTITY_PY = os.path.join(
     REPO, "data", "runtime", "anny-commercial", "SOMA-X", "soma",
     "body", "identity_model.py")

@@ -86,22 +86,15 @@ def _discover_locked() -> dict[str, type[BaseModel]]:
             if comp.is_dir():
                 sys.path.insert(0, str(comp))
 
-    # co_script's renderer registry is name-keyed and refuses
-    # duplicates; importing card renderer.py files here would poison
-    # it for every later in-process test (the gateway compose hook
-    # re-execs the same files under loader names). Snapshot + clear
-    # (a prior suite's loader run may have registered already),
-    # discover, restore — the sweep leaves no trace in module state.
-    # NOTE: `import co_script.renderers as m` binds the FUNCTION the
-    # package __init__ re-exports over the attribute — from-imports
-    # bind the registry dicts themselves, immune to the shadowing.
-    from co_script.renderers import _FNS, _RENDERERS
-    reg_snapshot = (dict(_RENDERERS), dict(_FNS))
-    _RENDERERS.clear()
-    _FNS.clear()
+    # (2026-09-07) the co_script renderer-registry snapshot/clear/
+    # restore dance died with the python render plane (b324c480):
+    # co_script/ and the card renderer.py files no longer exist, so
+    # there is no shared registry left to poison. The sweep itself is
+    # unchanged — it imports the surviving surface (py/, models/,
+    # compose/*.py, the cpp/node arms' py/, compose/ui/).
 
     found: dict[str, type[BaseModel]] = {}
-    try:
+    if True:
         for f in _target_files():
             rel = str(f.relative_to(REPO))
             modname = "strictwall_" + rel.replace(
@@ -135,12 +128,6 @@ def _discover_locked() -> dict[str, type[BaseModel]]:
                         and obj is not BaseModel
                         and obj.__module__ == qname):
                     found["%s:%s" % (f.relative_to(REPO), name)] = obj
-    finally:
-        from co_script.renderers import _FNS, _RENDERERS
-        _RENDERERS.clear()
-        _RENDERERS.update(reg_snapshot[0])
-        _FNS.clear()
-        _FNS.update(reg_snapshot[1])
     _MODELS = found
     return found
 

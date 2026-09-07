@@ -37,17 +37,14 @@ TARGETS = [
     "py/lane_wire.py",
     # THE root config schema (pydantic flip 2026-09-05)
     "py/estate_config.py",
-    # the single-node skeleton emission (THE ACTION CARD LAW at
-    # construction)
-    "plugins/engines/comfyui/compose/co_script/skeleton.py",
-    # the h3-timeline card: typed wire + the compose door + emission
-    "plugins/engines/comfyui/action_cards/video/h3-timeline/py/schema.py",
-    "plugins/engines/comfyui/action_cards/video/h3-timeline/py/compose.py",
-    "plugins/engines/comfyui/action_cards/video/h3-timeline/py/emission/graph.py",
-    # the workflow->python extraction tool (subgraph inlining trick)
-    "tools/workflow_transpile.py",
-    # the PRESET pattern: named recipes as validated lane data
-    "plugins/engines/comfyui/compose/presets.py",
+    # (2026-09-07, render-plane retirement b324c480) the co_script
+    # skeleton + h3 arm targets are deleted with the python render
+    # plane; the TS plane is erasable-syntax (no mypy surface).
+    # (2026-09-07, retirement b324c480) tools/workflow_transpile.py
+    # deleted with the render plane (workflow->python extraction has
+    # no python plane to extract for).
+    # (2026-09-07, retirement b324c480) compose/presets.py deleted
+    # with the render plane.
 ]
 
 # ── config cannot be quietly loosened ───────────────────────────────

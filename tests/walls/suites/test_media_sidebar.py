@@ -69,6 +69,11 @@ def test_py_derives_from_ssot() -> None:
     # hand-kept copy in the py door.
     doc = json.loads((MEDIA / "media-kinds.json").read_text(encoding="utf-8"))
     assert editor_runs._MAX_IMGS == doc["policy"]["maxListedImages"]
+    # One document, one read: kinds + policy derive from _MEDIA_DOC
+    # (the duplicated _media_kinds/_media_policy loaders are gone).
+    assert not hasattr(editor_runs, "_media_policy"), "dead loader kept"
+    assert editor_runs._MEDIA_KINDS is editor_runs._MEDIA_DOC["kinds"]
+    assert editor_runs._MEDIA_POLICY is editor_runs._MEDIA_DOC["policy"]
 
 
 def test_client_imports_ssot() -> None:
@@ -160,6 +165,53 @@ def test_marker_counts_media_candidates_only() -> None:
         assert marker and marker[0]["total"] == 4 and marker[0]["listed"] == 3, (
             "image cap must flag exactly the dropped media"
         )
+
+
+def test_artifacts_descend_one_level() -> None:
+    # 2026-09-06 fix: the merged single-graph path lands ComfyUI outputs
+    # at <run>/generate/<file> — the sort (`_run_dir_has_media`) already
+    # descended, the listing did not (61 runs read as media-less).
+    # `name` stays the bare filename; `path`/`url` carry the nested
+    # relpath the asset door serves (`..` refused at serve time).
+    import tempfile
+
+    sys.path.insert(0, str(REPO / "py"))
+    try:
+        import editor_runs
+    finally:
+        sys.path.remove(str(REPO / "py"))
+    with tempfile.TemporaryDirectory() as td:
+        from pathlib import Path as P
+        P(td, "_flow.json").write_text("{}", encoding="utf-8")
+        P(td, "top.mp4").write_bytes(b"x")
+        gen = P(td, "generate")
+        gen.mkdir()
+        (gen / "SaveImage.0_gen_00001_.png").write_bytes(b"y")
+        (gen / "_thumb.png").write_bytes(b"z")
+        deep = gen / "deeper"
+        deep.mkdir()
+        (deep / "x.png").write_bytes(b"w")
+        priv = P(td, "_priv")
+        priv.mkdir()
+        (priv / "q.png").write_bytes(b"v")
+        arts = editor_runs.run_artifacts(td, "./output/run-t1")
+        urls = [a.get("url") for a in arts if a.get("url")]
+        assert urls == [
+            "/v1/assets/runs/run-t1/top.mp4",
+            "/v1/assets/runs/run-t1/generate/SaveImage.0_gen_00001_.png",
+        ], "top-first order, bare names, nested rels: %s" % urls
+        assert arts[1]["name"] == "SaveImage.0_gen_00001_.png"
+        assert arts[1]["path"] == ("./output/run-t1/generate/"
+                                     "SaveImage.0_gen_00001_.png")
+        assert not any(a.get("truncated") for a in arts)
+        # nested-only run still gets its poster through the same rule
+        only = P(td, "only")
+        only.mkdir()
+        (only / "b.png").write_bytes(b"y")
+        P(td, "top.mp4").unlink()
+        (gen / "SaveImage.0_gen_00001_.png").unlink()
+        assert editor_runs._run_thumbnail(td, "run-t1") == \
+            "/v1/assets/runs/run-t1/only/b.png"
 
 
 def test_built_bundles_fresh() -> None:

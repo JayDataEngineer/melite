@@ -45,20 +45,25 @@ def check(name: str, cond: bool, detail: str = "") -> None:
 
 import native  # noqa: E402
 
-# A1/A2: workflow splice — dict passthrough + file load + loud refusal
+# A1/A2: workflow splice — dict passthrough + loud refusal.
+# workflow_file retired 2026-09-07 (no live emitter): a node carrying
+# one refuses LOUD, it never file-loads.
 wf = {"3": {"class_type": "KSampler", "inputs": {"seed": 7}}}
 check("splice dict passthrough",
       native._splice_workflow({"workflow": wf}) is wf)
 with tempfile.TemporaryDirectory() as td:
     p = Path(td) / "wf.json"
     p.write_text(json.dumps(wf))
-    check("splice file load",
-          native._splice_workflow({"workflow_file": str(p)}) == wf)
+    try:
+        native._splice_workflow({"workflow_file": str(p)})
+        check("splice workflow_file RETIRED", False, "no raise")
+    except native.ComfyError as e:
+        check("splice workflow_file RETIRED", "retired" in str(e))
 try:
     native._splice_workflow({})
     check("splice refusal LOUD", False, "no raise")
 except native.ComfyError as e:
-    check("splice refusal LOUD", "neither workflow" in str(e))
+    check("splice refusal LOUD", "no inline workflow" in str(e))
 
 # A3: upload walk — local media paths rewritten to server names,
 # non-path strings untouched, one upload per distinct file.

@@ -49,6 +49,12 @@ GATEWAY_ROOT = os.path.join(REPO, "py")
 # census so NEW drift still fails, and test_wire_surface fails on any
 # exemption whose calls disappear (fossil guard below).
 # ─────────────────────────────────────────────────────────────────────────
+# EMPTIED 2026-09-07 (the legacy-removal stroke): the last REVIEWING
+# entries died here — /v1/comfyui/interrupt repointed at the queue's
+# stop door (cancelRun Arm 1), render_glb + render_textured callers
+# deleted. The WAS-here history below stays as the audit trail; a NEW
+# entry lands here only with a date, a reason, and the operator's
+# serve/stub/delete decision.
 REVIEWING_PREFIXES = (
     # ('/v1/llm/' WAS here — the keystore/enhance lane's last caller
     # died 2026-09-05 with the door-gate kill stroke; exemption deleted
@@ -62,8 +68,10 @@ REVIEWING_PREFIXES = (
     # the exemption retired with the fix.)
     # ('/v1/manager/' WAS here — the ComfyUI-manager passthrough's last
     # panel died 2026-09-05; exemption deleted in the same stroke.)
-    # ComfyUI direct doors (endpoint / extensions install / interrupt).
-    "/v1/comfyui/",
+    # ('/v1/comfyui/' WAS here — ComfyUI direct doors (endpoint /
+    # extensions install / interrupt). The interrupt call died
+    # 2026-09-07: cancelRun Arm 1 rides the queue's stop door now;
+    # exemption deleted in the same stroke, fossil-guard order.)
 )
 REVIEWING_EXACT = (
     # C-retirement orphans: doors the deleted C server served, never
@@ -86,8 +94,10 @@ REVIEWING_EXACT = (
     # same day; exemption deleted in the same stroke.)
     # ('/v1/tools/speech-length' WAS here — the speechLength helper died
     # the same day; exemption deleted in the same stroke.)
-    "/v1/flows/render_glb",
-    "/v1/flows/render_textured",
+    # ('/v1/flows/render_glb', '/v1/flows/render_textured' WAS here —
+    # C-retirement orphans the py gateway never ported; their last
+    # frontend callers (renderGlb/renderTextured) died 2026-09-07;
+    # exemptions deleted in the same stroke, fossil-guard order.)
     # ('/health' WAS here — GpuStatus polled it at boot and the gateway
     # has no root health arm; the caller died with the 2026-09-05
     # editorClient cleanup, exemption deleted in the same stroke.)

@@ -19,6 +19,7 @@ This wall:
 
 import os
 import sys
+from typing import cast
 
 import pytest
 
@@ -35,6 +36,7 @@ def _estate_path() -> None:
 
 from melite_models import (  # noqa: E402
     Model, LaneInputs, Genre, ClipType, LatentNode,
+    Variant, Cell, Quant,
     load_model_py, scan_engine_models,
 )
 
@@ -75,13 +77,27 @@ def test_model_genre_is_genre_enum() -> None:
     with pytest.raises(ValueError):
         Genre("imag")
     # A real Model subclass with `genre = "imag"` (legacy str) must
-    # coerce or refuse — the metaclass's coerce handles str→enum, but
-    # the COERCED value must be Genre.NONE (unknown) or refuse. We
-    # accept that the metaclass raises; the test just pins "no
-    # silent pass-through as a raw str" on the booted class.
-    # (The metaclass coerces str→enum via Genre(str); a typo
-    # raises ValueError — the test below verifies that via a
-    # throwaway subclass.)
+    # REFUSE at class creation — the metaclass's coerce retired
+    # 2026-09-07 with the sweep complete (no model.py states a raw
+    # str; the typed-genre wall below pins it).
+    with pytest.raises(Exception) as ei:
+
+        class _BadGenre(Model):
+            id = "bad-genre-probe"
+            unoffered = True
+            # cast states the LIE to the static checker (the value IS
+            # a raw str); the runtime boot gate must refuse it — no
+            # silenced checker, the annotations wall allows none
+            genre = cast("Genre", "imag")
+            variants = (
+                Variant(
+                    id="probe",
+                    cells=(Cell(quant=Quant.NATIVE),),
+                ),
+            )
+
+    assert "raw str" in str(ei.value), \
+        "genre=str must refuse naming the str (%r)" % (ei.value,)
 
 
 def test_clip_type_typo_refuses_at_construction() -> None:

@@ -127,6 +127,189 @@ def test_the_chrome_is_owned_once() -> None:
                             os.path.relpath(p, REPO), hit.group(1))
 
 
+# ── the chrome stroke (2026-09-07): every big-view tenant rides ──────
+# THE SHELL + the shared chrome kit — the hand-rolled twins die.
+# Design record: docs/design/studio-chrome.md.
+
+MOTION_STUDIO = os.path.join(
+    REPO, "plugins", "engines", "comfyui", "action_cards",
+    "motion", "motion-studio", "ui", "studio", "component.tsx")
+H3_STUDIO = os.path.join(
+    REPO, "plugins", "engines", "comfyui", "action_cards",
+    "video", "h3-timeline", "ui", "studio", "component.tsx")
+H3_STRIP = os.path.join(
+    REPO, "plugins", "engines", "comfyui", "action_cards",
+    "video", "h3-timeline", "ui", "studio", "StudioStripPane.tsx")
+H3_PREVIEW = os.path.join(
+    REPO, "plugins", "engines", "comfyui", "action_cards",
+    "video", "h3-timeline", "ui", "studio", "StudioPreview.tsx")
+ANNY_STUDIO = os.path.join(
+    REPO, "plugins", "engines", "comfyui", "action_cards",
+    "3d", "anny", "ui", "studio", "component.tsx")
+ANNY_SHAPE = os.path.join(
+    REPO, "plugins", "engines", "comfyui", "action_cards",
+    "3d", "anny", "ui", "studio", "shape.tsx")
+TIMELINE_BAR = os.path.join(
+    REPO, "web", "timeline", "timeline", "MotionTimelineBar.tsx")
+
+
+def test_the_motion_tenant_rides_the_shell() -> None:
+    src = open(MOTION_STUDIO, encoding="utf-8").read()
+    assert "<StudioShell" in src, \
+        "MotionCardEditor renders StudioShell (the chrome stroke: " \
+        "the motion studio rides the declared seams, not the " \
+        "hand-rolled column)"
+    for seam in ("rail={", "center={", "bottom="):
+        assert seam in src, \
+            "the motion body declares the %s seam" % seam[:-1]
+    assert "<StudioRail" not in src, \
+        "MotionCardEditor hand-rolls the rail portal — the shell " \
+        "owns the portal"
+    assert "<ViewportFrame" in src, \
+        "the motion stage rides ViewportFrame (drop handlers ride " \
+        "the div props)"
+    assert "<PaneShell" in src and "<PaneHeader" in src, \
+        "the motion bar rides the shared strip kit (PaneShell + " \
+        "PaneHeader)"
+
+
+def test_the_h3_tenant_rides_the_shell() -> None:
+    src = open(H3_STUDIO, encoding="utf-8").read()
+    assert "<StudioShell" in src, \
+        "VideoTimelineStudio renders StudioShell (the chrome " \
+        "stroke: the H3 studio rides the declared seams)"
+    for seam in ("rail={", "center={", "bottom="):
+        assert seam in src, \
+            "the h3 body declares the %s seam" % seam[:-1]
+    assert "<StudioRail" not in src, \
+        "VideoTimelineStudio hand-rolls the rail portal — the " \
+        "shell owns the portal"
+
+
+def test_the_temporal_tenants_share_the_strip_kit() -> None:
+    # the two timeline-bearing cards (motion + h3) share ONE strip
+    # chrome: PaneShell (the box) + PaneHeader (the header row),
+    # with dialect overrides through className — never a second
+    # hand-rolled box
+    strip = open(H3_STRIP, encoding="utf-8").read()
+    assert "<PaneShell" in strip and "<PaneHeader" in strip, \
+        "StudioStripPane rides the shared strip kit"
+    motion = open(MOTION_STUDIO, encoding="utf-8").read()
+    assert "<PaneShell" in motion, \
+        "the motion bar rides the same PaneShell (one box dialect " \
+        "per tenant through className, not a fork)"
+    # the BAR itself carries the styling seam (the shadcn rule):
+    # className + theme props on the shared component
+    bar = open(TIMELINE_BAR, encoding="utf-8").read()
+    assert "className?: string" in bar, \
+        "MotionTimelineBar takes className — a shared component " \
+        "is styleable like every other primitive"
+    assert "theme?: MotionTimelineBarTheme" in bar, \
+        "MotionTimelineBar takes a theme palette override"
+    assert "style?: CSSProperties" in bar, \
+        "MotionTimelineBar forwards style"
+
+
+def test_the_h3_preview_rides_the_pane_kit() -> None:
+    src = open(H3_PREVIEW, encoding="utf-8").read()
+    assert 'variant="preview"' in src, \
+        "StudioPreview rides the preview PaneHeader"
+    assert "<EmptyState" in src, \
+        "StudioPreview rides EmptyState for the no-render block"
+
+
+def test_the_anny_leftovers_ride_the_kit() -> None:
+    src = open(ANNY_STUDIO, encoding="utf-8").read()
+    assert "<ViewportFrame" in src, \
+        "the anny figure rides ViewportFrame (min-h-440 through " \
+        "className)"
+    shape = open(ANNY_SHAPE, encoding="utf-8").read()
+    assert "<RailSection" in shape, \
+        "AnnyShapeBand rides RailSection"
+
+
+def test_the_dead_h3_twins_stay_dead() -> None:
+    # the aspirational slot decomposition (TimelinePreview /
+    # TimelineFooter / timelineContext / timelineSlots) never
+    # compiled and never mounted — deleted 2026-09-07. ONE preview
+    # pane, ONE strip pane (the Studio* pair)
+    studio_dir = os.path.dirname(H3_STUDIO)
+    for gone in ("TimelinePreview.tsx", "TimelineFooter.tsx",
+                 "timelineContext.ts", "timelineSlots.ts"):
+        assert not os.path.exists(os.path.join(studio_dir, gone)), \
+            "%s is a dead twin — deleted 2026-09-07; do not " \
+            "resurrect" % gone
+    # the element-slot seam it registered into died with it: the
+    # slots package carries no unclaimed studio element slots
+    seams = os.path.join(REPO, "web", "slots", "src",
+                         "cardElementSeams.ts")
+    src = open(seams, encoding="utf-8").read()
+    assert "export const cardStudioPreviewSlot" not in src, \
+        "the studio preview element slot is dead chrome — the " \
+        "shell center seam owns the preview"
+    assert "export const cardStudioStripSlot" not in src, \
+        "the studio strip element slot is dead chrome — the shell " \
+        "bottom seam owns the strip"
+
+# ANCHOR seam constants (plugin-layout stroke, 2026-09-07)
+ANCHOR = os.path.join(REPO, "web", "ui", "src",
+    "viewport-anchor.tsx")
+# promoted to the kit 2026-09-07 (the pattern-violations audit's
+# promotion rule: two consumers, pure content) —
+# web/ui/src/reference-image-badge.tsx, exported from @melite/ui
+REFERENCE_BADGE = os.path.join(
+    REPO, "web", "ui", "src", "reference-image-badge.tsx")
+ASSEMBLY_STUDIO = os.path.join(
+    REPO, "plugins", "engines", "comfyui", "action_cards",
+    "3d", "ui", "studios", "assembly.tsx")
+
+
+def test_the_anchor_seam_is_closed_and_geometry_only() -> None:
+    # ViewportAnchor — the floating-content seam (pins, drawers,
+    # notices, washes, bars). Since the map stroke the dock union
+    # lives ONCE in py/ui_map.py (see test_ui_map_parity.py — the
+    # written-once wall); this leg pins the tsx side: the anchor
+    # imports the generated face and carries GEOMETRY only — z
+    # rides className (the drawer z-10, a wash z-20, a pill z-30
+    # are tenant stacking stories).
+    src = open(ANCHOR, encoding="utf-8").read()
+    assert 'from "./uiMap.generated"' in src, \
+        "the anchor rides the generated map face — no hand-spelled union"
+    assert '"z-"' not in src, \
+        "no z in the anchor base — stacking rides className"
+    assert 'data-slot="viewport-anchor"' in src, \
+        "the anchor is a shadcn-rule primitive (data-slot + cn)"
+
+
+def test_the_anny_window_specials_ride_anchor_seams() -> None:
+    # THE named example (operator order 2026-09-07: "notice how
+    # ANNY does very special stuff over the window"): everything
+    # floating over the anny window DECLARES its dock; the leaves
+    # are pure content.
+    comp = open(ANNY_STUDIO, encoding="utf-8").read()
+    assert 'dock="top-right"' in comp, \
+        "the source pin declares its dock"
+    assert 'dock="edge-right"' in comp, \
+        "the shape drawer declares its dock"
+    shape = open(ANNY_SHAPE, encoding="utf-8").read()
+    assert 'dock="top-right"' in shape, \
+        "the floating apply verb declares its dock"
+    assert 'dock="bottom"' in shape, \
+        "the notice strip declares its dock"
+    # the leaves carry look, never geometry
+    badge = open(REFERENCE_BADGE, encoding="utf-8").read()
+    assert 'absolute right-2' not in badge, \
+        "ReferenceImageBadge self-positions — flip it to pure " \
+        "content and dock it with ViewportAnchor"
+    assert 'data-slot="reference-image-badge"' in badge, \
+        "the promoted badge follows the shadcn rules (data-slot)"
+    assert 'absolute inset-y-0' not in shape, \
+        "AnnyShapeDrawer self-positions — pure panel, the caller docks"
+    # the assembly badge site rides the same anchor
+    asm = open(ASSEMBLY_STUDIO, encoding="utf-8").read()
+    assert 'dock="top-right"' in asm, \
+        "assembly docks the shared source pin the same way"
+
 def test_the_assembly_tenants_ride_the_shell() -> None:
     src = open(ASSEMBLY, encoding="utf-8").read()
     assert "<StudioShell" in src, \
@@ -230,10 +413,17 @@ TENANT_GLOB = os.path.join(
     "ui", "studio", "component.tsx")
 
 
+# the unions live in the generated face of py/ui_map.py since the
+# map stroke — the helpers read the MAP (the SSOT), so this suite
+# and test_ui_map_parity.py agree by construction
+UI_MAP_GENERATED = os.path.join(
+    REPO, "web", "ui", "src", "uiMap.generated.ts")
+
+
 def _union_members(src: str, name: str) -> set[str]:
     m = re.search(r"export type %s\s*=\s*([^\n]+)" % name, src)
-    assert m, "%s union exists in shellDeclaration.ts" % name
-    return set(re.findall(r'"([a-z0-9_]+)"', m.group(1)))
+    assert m, "%s union exists in uiMap.generated.ts" % name
+    return set(re.findall(r'"([a-z0-9_-]+)"', m.group(1)))
 
 
 def _tenant_files() -> list[str]:
@@ -247,10 +437,69 @@ def _tenant_files() -> list[str]:
     return out
 
 
+# THE TENANT RIDE LAW (pattern-violations audit, 2026-09-07)
+# Every studio tenant either RIDES StudioShell (rail=/center=/
+# bottom= as props — the shell owns the rail portal) or carries a
+# RECORDED exemption. A tenant rendering <StudioRail> JSX is the
+# pre-shell hand-rolled shape (the drift class the chrome stroke
+# killed) — the exemption dict is the only legal survivor, and
+# every entry names its design record.
+TENANT_RIDE_EXEMPT = {
+    # img_to_mesh rides VIA AssemblyStudio (the trellis-via-
+    # assembly pattern — the delegation the source scan cannot
+    # see; its shellDeclaration documents the same table).
+    os.path.join("3d", "img_to_mesh", "ui", "studio",
+                  "component.tsx"):
+        "rides via AssemblyStudio (studio-plugin-layout.md)",
+    # (2026-09-07, the gaps-closing stroke: canvas-ideogen reshaped
+    # onto the shell — rail = params + toolbar + tabs, center = the
+    # canvas; body migrated the same day. Only delegations remain.)
+}
+
+
+def test_every_tenant_rides_the_shell_or_is_exempt() -> None:
+    ride, exempt = [], []
+    for f in _tenant_files():
+        rel = os.path.relpath(f, REPO)
+        rel = rel.replace(
+            os.path.join("plugins", "engines", "comfyui",
+                         "action_cards") + os.sep, "")
+        src = open(f, encoding="utf-8").read()
+        if "<StudioShell" in src:
+            ride.append(rel)
+        else:
+            exempt.append(rel)
+    # everyone riding needs no exemption; everyone not riding MUST
+    # be in the recorded dict
+    for rel in exempt:
+        assert rel in TENANT_RIDE_EXEMPT, (
+            "%s neither rides StudioShell nor carries a recorded "
+            "exemption — migrate it (rail=/center=/bottom= props; "
+            "the shell owns the portal) or record why" % rel
+        )
+    assert ride, "at least one tenant rides the shell"
+
+
+def test_no_tenant_hand_rolls_the_rail_portal() -> None:
+    # the shell owns the StudioRail portal; a tenant rendering the
+    # JSX is the pre-shell shape (only the recorded exemptions
+    # survive, and they are dying)
+    for f in _tenant_files():
+        rel = os.path.relpath(f, REPO)
+        rel = rel.replace(
+            os.path.join("plugins", "engines", "comfyui",
+                         "action_cards") + os.sep, "")
+        src = open(f, encoding="utf-8").read()
+        if "<StudioRail" in src:
+            assert rel in TENANT_RIDE_EXEMPT, (
+                "%s hand-rolls the rail portal — the shell owns "
+                "it (ride StudioShell with rail={...})" % rel
+            )
+
 def test_every_tenant_declares_a_shell_table_within_the_unions() -> None:
-    decl_src = open(SHELL_DECL, encoding="utf-8").read()
-    viewports = _union_members(decl_src, "ViewportKind")
-    bars = _union_members(decl_src, "BarKind")
+    map_src = open(UI_MAP_GENERATED, encoding="utf-8").read()
+    viewports = _union_members(map_src, "ViewportKind")
+    bars = _union_members(map_src, "BarKind")
     assert {"stage3d", "paint2d", "native"} <= viewports
     assert {"recipe", "timeline"} <= bars
     for f in _tenant_files():
@@ -358,11 +607,17 @@ VIEWPORT_OVERLAYS = os.path.join(
 
 def test_overlay_unions_closed_and_renderer_genre_blind() -> None:
     src = open(VIEWPORT_OVERLAYS, encoding="utf-8").read()
+    # the unions live in the generated face of py/ui_map.py since
+    # the map stroke; the renderer re-exports them (and the
+    # written-once wall refuses any second spelling)
+    map_src = open(UI_MAP_GENERATED, encoding="utf-8").read()
+    assert 'from "./uiMap.generated"' in src, \
+        "the renderer rides the generated map face"
     for name, members in (
         ("OverlayKind", {"toggle", "segmented", "status"}),
         ("OverlayDock", {"tl", "tr", "bl", "br"}),
     ):
-        m = re.search(r"export type %s\s*=\s*([^\n]+)" % name, src)
+        m = re.search(r"export type %s\s*=\s*([^\n]+)" % name, map_src)
         assert m, "%s closed union exists" % name
         got = set(re.findall(r'"([a-z0-9_]+)"', m.group(1)))
         assert got == members, "%s members: %s" % (name, sorted(got))

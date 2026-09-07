@@ -49,15 +49,12 @@ ANNY_MODEL_PY = os.path.join(
 ANNY_VERBS_PY = os.path.join(
     REPO, "plugins", "engines", "comfyui", "models", "3d", "anny",
     "mods", "verbs.py")
-ANNY_CARD_PY = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "action_cards", "3d",
-    "anny", "py", "card.py")
 ANNY_TSX = os.path.join(
     REPO, "plugins", "engines", "comfyui", "action_cards", "3d",
     "anny", "ui", "studio", "component.tsx")
 PACK_NODES_PY = os.path.join(
     REPO, "vendor", "comfyui_extensions",
-    "melite-anny-estimator-nodes", "nodes.py")
+    "melite-kimodo-nodes", "nodes_anny.py")
 PARAMS_FLOW_PY = os.path.join(REPO, "flows", "anny-params", "flow.py")
 BAKE_PY = os.path.join(REPO, "flows", "anny-params", "bake_params.py")
 COMMERCIAL_WORKER_PY = os.path.join(
@@ -276,16 +273,12 @@ def test_canonical_file_row_has_no_dialect() -> None:
 
 # ── 5. verbs ────────────────────────────────────────────────────────
 
-def test_preset_verbs_mounted_with_the_right_planes() -> None:
-    from melite_cards import load_card_py
-    cls = load_card_py(ANNY_CARD_PY)
-    verbs = {v.id: v for v, _fams in cls._verbs_}
-    save, load = verbs["preset-save"], verbs["preset-load"]
-    assert [e.local for e in save.engines] == ["save-preset"]
-    assert save.writes == (), "local verbs hydrate no card field"
-    assert [e.flow for e in load.engines] == ["anny-params"]
-    assert load.writes == ("body_glb",)
-    flow_mod.load_flow("anny-params")  # the load plane exists
+# test_preset_verbs_mounted_with_the_right_planes RETIRED 2026-09-07
+# (python render plane b324c480): its subject was the python anny
+# CARD class (action_cards/3d/anny/py/card.py, preset-save/load
+# verb mounting via load_card_py). The load plane it also touched
+# (flows/anny-params) stays pinned below by
+# test_anny_params_flow_wires_the_bake_node.
 
 
 def test_anny_params_flow_wires_the_bake_node() -> None:

@@ -206,9 +206,11 @@ class TestTheAnnyVerb(unittest.TestCase):
         self.assertEqual(verb.requires, ("melite-autorig-nodes",))
         self.assertEqual(len(verb.engines), 1)
         self.assertEqual(verb.engines[0].flow, "body-to-somax")
+        # card_outputs: the P03 OUTPUT CONTRACT declaration row,
+        # not a knob (walled in test_output_contract.py).
         knobs = {k for k in vars(verb) if not k.startswith("_")
                  and k not in ("id", "label", "engines", "writes",
-                               "requires")}
+                               "requires", "card_outputs")}
         self.assertEqual(knobs, set())
         self.assertIn("glb", set(_flow().stages[0].inputs))
 
