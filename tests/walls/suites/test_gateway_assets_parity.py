@@ -12,7 +12,7 @@ doors byte-identical to the py gateway:
   GET /v1/assets/inputs/*   (_h_asset_input — REAL byte serve)
 
 Method: build a small FIXTURE tree at wall runtime, copy it to two
-roots (py / ts — never shared: the py boot appends server.boot to
+roots (py / ts — never shared: each boot appends server.boot to
 its own journal), boot py via boot_scratch_gateway
 (MELITE_STATE_ROOT=py_root) + the TS server (MELITE_STATE_ROOT=
 ts_root, ephemeral port, QUEUE LANE LAW), then dual-serve every
@@ -225,14 +225,18 @@ def main() -> int:
         py_env["MELITE_STATE_ROOT"] = str(py_root)
         py_env.pop("DSH_GATEWAY_TOKEN", None)
         py_port, py_proc = boot_scratch_gateway(env=py_env)
-        # The py boot appends server.boot to ITS journal — rewrite the
-        # deterministic fixture after boot (the ts server never writes).
+        # Both boots append server.boot to their journals (py main()
+        # 4489; the TS P5 boot writes the same row) — rewrite the
+        # deterministic fixture after each boot so the byte legs see
+        # the fixture alone.
         (py_root / "output" / "_ledger.jsonl").write_text(
             "\n".join(LEDGER_LINES) + "\n", encoding="utf-8")
         ts_env = dict(os.environ)
         ts_env["MELITE_STATE_ROOT"] = str(ts_root)
         ts_env.pop("DSH_GATEWAY_TOKEN", None)
         ts_port, ts_proc = boot_ts(ts_env)
+        (ts_root / "output" / "_ledger.jsonl").write_text(
+            "\n".join(LEDGER_LINES) + "\n", encoding="utf-8")
         print("py :%d vs ts :%d" % (py_port, ts_port))
 
         # ── JSON doors ──
@@ -451,6 +455,8 @@ def main() -> int:
         (py_root / "output" / "_ledger.jsonl").write_text(
             "\n".join(LEDGER_LINES) + "\n", encoding="utf-8")
         ts_port, ts_proc = boot_ts(ts_env)
+        (ts_root / "output" / "_ledger.jsonl").write_text(
+            "\n".join(LEDGER_LINES) + "\n", encoding="utf-8")
         print("auth-on py :%d vs ts :%d" % (py_port, ts_port))
         dual(py_port, ts_port, "/v1/assets", "auth off -> 401")
         dual(py_port, ts_port, cov, "auth off byte -> 401")
