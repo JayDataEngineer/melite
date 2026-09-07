@@ -104,17 +104,26 @@ def _heavy_spec() -> dict[str, str | dict[str, list[int | float]] | dict[str, li
     """A heavier creature for the serial audit — more volumes, high
     side counts: the run lasts long enough for the sampler to
     actually observe the queue (efficiency is not the concern here;
-    observability is)."""
+    observability is).
+
+    2026-09-07: scaled ~6x (128/96 sides, 5-ring profiles) — the
+    64/48-side shape completed sub-second on the RTX 4090 box and
+    test_10's stop missed it twice in a row (run settled before the
+    claim loop ever saw "running"). A stop test needs an in-flight
+    window; the weight IS the fixture."""
     spec = json.loads(json.dumps(MINI_SPEC))
     spec["name"] = "heavy-audit-creature"
     spec["volumes"] = [
         {"chain": "body", "material": "fur_body", "frame": "up",
-         "sides": 64, "profile": [[0.0, 0.085, 0.0], [0.45, 0.10, 0.01],
+         "sides": 128, "profile": [[0.0, 0.085, 0.0], [0.25, 0.095, 0.005],
+                                   [0.45, 0.10, 0.01], [0.7, 0.07, 0.02],
                                    [1.0, 0.045, 0.03]]},
         {"chain": "lleg", "material": "fur_leg", "frame": "up",
-         "sides": 48, "profile": [[0.0, 0.05, 0.0], [1.0, 0.03, 0.0]]},
+         "sides": 96, "profile": [[0.0, 0.05, 0.0], [0.33, 0.045, 0.005],
+                                  [0.66, 0.038, 0.01], [1.0, 0.03, 0.0]]},
         {"chain": "rleg", "material": "fur_leg", "frame": "up",
-         "sides": 48, "profile": [[0.0, 0.05, 0.0], [1.0, 0.03, 0.0]]}]
+         "sides": 96, "profile": [[0.0, 0.05, 0.0], [0.33, 0.045, 0.005],
+                                  [0.66, 0.038, 0.01], [1.0, 0.03, 0.0]]}]
     return spec
 
 
@@ -379,7 +388,10 @@ class TestGpuCppCards(unittest.TestCase):
                           % (run_id, s.get("status")))
             if s.get("status") == "running":
                 break
-            time.sleep(0.3)
+            # 0.1s, not 0.3s (2026-09-07: on the 4090 box the whole
+            # run fits inside a few 0.3s windows — the claim loop
+            # must open sooner)
+            time.sleep(0.1)
         t0 = time.time()
         _req("POST", "/v1/flows/stop/" + run_id, timeout=5)
         # generous deadline — the run may take seconds to notice the
