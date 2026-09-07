@@ -168,8 +168,17 @@ class TestBranchDoors:
         import gateway as gw_mod
 
         class _Ctx:
+            # the door reads ctx.json (the request) and ctx.gw (the
+            # R4.3 cost_preview — added after this stub was written;
+            # a minimal gw whose preview answers "no data" honestly)
             def __init__(self, j: dict[str, JsonValue]) -> None:
                 self.json = j
+                self.gw = _NoHistoryGw()
+
+        class _NoHistoryGw:
+            @staticmethod
+            def cost_preview(engine_types=None) -> dict:
+                return {}
 
         code, body = asyncio.run(gw_mod._h_flows_validate(_Ctx({
             "flow_inline": copy.deepcopy(_INLINE_BRANCH),

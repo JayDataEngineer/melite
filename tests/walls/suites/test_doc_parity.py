@@ -221,7 +221,9 @@ check("image_t2i wire: width native int",
 check("image_t2i graph matches the pinned node interface",
       _iface_mismatches(g) == [], _iface_mismatches(g))
 
-g = render("image_edit", {"prompt": "a red fox", "input_image": "a.png"}, model=_IMGEDIT)
+# row 3 (8eca726e): the doc speaks card vocabulary — `image1`,
+# the retired `input_image` alias (schema comment documents it)
+g = render("image_edit", {"prompt": "a red fox", "image1": "a.png"}, model=_IMGEDIT)
 # NATIVE NODE TYPES (2026-09-05 compile-time incident): the doc's
 # ints/floats ride unchanged — the pinned object_info declares
 # shift FLOAT, seed/steps INT, cfg FLOAT (the "%g"/"%d" wire-string
@@ -315,12 +317,12 @@ check("joycaption wire: SaveText links the caption (index 1, not query)",
       _node(g, "SaveText")["text"] == ["JJC_JoyCaption.0", 1],
       repr(_node(g, "SaveText")["text"]))
 
-g = render("image_edit", {"prompt": "a red fox", "input_image": "a.png"}, model=_IMGEDIT)
+g = render("image_edit", {"prompt": "a red fox", "image1": "a.png"}, model=_IMGEDIT)
 check("image_edit graph matches the pinned node interface",
       _iface_mismatches(g) == [], _iface_mismatches(g))
 # the loras stack rides the same law (filenames are STRINGS for the
 # loader's STRING input, strengths are FLOATS):
-g = render("image_edit", {"prompt": "a red fox", "input_image": "a.png",
+g = render("image_edit", {"prompt": "a red fox", "image1": "a.png",
                           "loras": [{"filename": "krea-2/krea2_realism_lora.safetensors",
                                      "strength": 0.7}]}, model=_IMGEDIT)
 check("image_edit lora stack matches the pinned node interface",
@@ -360,7 +362,7 @@ _ESTATE_FAMILIES = [
     ("h3_window", None, {"variant": "t4_open"}),
     ("ideogram_t2i", "ideogram", {"prompt": "a red fox"}),
     ("image_edit", "qwen-img-edit-2511", {"prompt": "a red fox",
-                                          "input_image": "a.png"}),
+                                          "image1": "a.png"}),
     ("image_t2i", "krea-2", {"prompt": "a red fox"}),
     ("input_prep", None, {}),
     ("input_t1", None, {}),

@@ -143,3 +143,22 @@ def test_unknown_bone_is_loud(tmp_path: Path) -> None:
     row = AttachmentRow(model='keeper_hat', bone='mixamorig:Nose', mode='socket')
     with pytest.raises(ValueError, match='mixamorig:Nose'):
         fit_file(BODY, PROPS['keeper_hat'], row)
+
+
+def test_fit_spec_builds_under_bare_exec_load() -> None:
+    """(2026-09-07 gpu-smoke sweep) Some loaders mount card py via
+    bare exec() into a synthetic namespace (no real module record).
+    There, pydantic DEFERS the build and AttachmentRow landed "not
+    fully defined" — the fit lane refused every placement at compose
+    time (rc=-3, live-probed). fit_spec now force-rebuilds its rows
+    in-module; this pin holds the class of fix: the spec file must
+    complete under ANY load context, not just a real import."""
+    import fit_spec as _real  # already on sys.path (module import)
+    spec_path = Path(_real.__file__)
+    ns: dict = {'__name__': 'fit_spec_bare_exec'}
+    exec(compile(spec_path.read_text(encoding='utf-8'),
+                 str(spec_path), 'exec'), ns)
+    row = ns['AttachmentRow'].model_validate(
+        {'model': 'cap', 'bone': 'head', 'mode': 'socket'})
+    assert row.mode.value == 'socket'
+    assert ns['FitRequest'].__pydantic_complete__ is True

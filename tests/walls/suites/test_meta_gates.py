@@ -326,6 +326,24 @@ _DOC_TOKEN_RE = re.compile(
     r"`([A-Za-z0-9_./-]+\.(?:py|json|tsx?|ts|yaml|md|toml))`")
 
 DOC_GHOSTS: dict[str, dict[str, str]] = {
+    # (2026-09-07 hardening sweep — each ghost is either a historical
+    # journal reference (the record's own subject: a deletion or a
+    # same-day run report) or parked uncommitted WIP)
+    "docs/audits/media-sidebar-audit.md": {
+        "src/client/__tests__/panels.test.tsx": "parked-wip",
+        "src/index.ts": "parked-wip",
+    },
+    "docs/design/image-edit-surface-standard.md": {
+        ".d/causes.md": "past",
+        "presets/blue_mesh.yaml": "deleted-in-record",
+    },
+    "docs/design/one-contract-compose.md": {
+        "co_script/emit.py": "retired-with-compose-move",
+    },
+    "docs/design/parameter-surface.md": {
+        "infer-daisy-studio/e2e/test_live.py": "past-run-journal",
+        "py/card.py": "past-run-journal",
+    },
     "docs/audits/bootstrap-audit.md": {
         "PIN.md": "past",
         "config/comfyui/extra_model_paths.yaml": "past",

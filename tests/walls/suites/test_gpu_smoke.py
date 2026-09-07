@@ -165,7 +165,26 @@ SMOKE: dict[str, dict] = {
 # card -> WHY it has no live probe. Empty today (all 19 boarded);
 # an entry must name the lane reality (unprovisioned checkpoint,
 # remote-money lane, binary without a box build), never "later".
-EXCLUDED: dict[str, str] = {}
+EXCLUDED: dict[str, str] = {
+    # (2026-09-07 sweep — all three live-probed before recording)
+    "auto-rig": "live queue probes in test_skintensors_card.py "
+                "(the lane's dedicated wall)",
+    # fit + skin: their glb intake is ARTIFACT-REF ONLY (py/
+    # artifact_refs.py — a prior run's output under the run pool;
+    # /v1/uploads stages png/jpeg/webp and mimes GLBs wrong, so a
+    # standalone light probe cannot feed the lane, and no cheap
+    # queue-native glb producer exists). The compose+placement
+    # math is pinned offline (test_fit_e2e, test_fit_verbs,
+    # test_skin_pack, test_skin_verbs). The 2026-09-07 sweep DID
+    # drive both cards live to the compose door and caught + fixed
+    # a real lane bug (fit_spec bare-exec model_rebuild, pinned in
+    # test_fit_e2e). Unblocked when a fixture-assets door or a
+    # light glb producer lands.
+    "fit": "glb intake is aref-only (prior-run artifacts); offline "
+           "suites pin the placement math",
+    "skin": "glb intake is aref-only (prior-run artifacts); offline "
+            "suites pin the meld math",
+}
 
 
 class TestGpuSmokeCoverage:
