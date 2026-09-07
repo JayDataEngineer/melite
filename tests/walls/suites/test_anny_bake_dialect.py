@@ -185,9 +185,14 @@ class TestStudioSeam:
     def test_notes_never_eat_the_card(self) -> None:
         """Operator order 2026-09-06: 'The ERROR MESSAGE takes up room
         on the [REDACTED 2026-11-05] card' — tenant notes clamp to two lines (full
-        text on hover via title)."""
+        text on hover via title). Stroke 5 (2026-09-07) moved most
+        note lines onto VerbChip; the clamp lives there now — the
+        tenant keeps its own for every note it still renders."""
         src = COMPONENT.read_text()
-        assert src.count("line-clamp-2") >= 2
+        assert src.count("line-clamp-2") >= 1
+        chip = (REPO / "web/ui/src/verbChip.tsx").read_text()
+        assert "line-clamp-2" in chip, \
+            "VerbChip's note line must clamp (the shared note render)"
         shape = (REPO / "plugins/engines/comfyui/action_cards/3d/anny"
                  / "ui/studio/shape.tsx").read_text()
         assert "line-clamp-3" in shape
