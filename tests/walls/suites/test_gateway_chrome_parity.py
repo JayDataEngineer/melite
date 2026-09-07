@@ -27,9 +27,11 @@ Run: python3 tests/walls/suites/test_gateway_chrome_parity.py
 
 import asyncio
 import json
+import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -95,9 +97,15 @@ def boot_ts() -> tuple[int, "subprocess.Popen[bytes]"]:
     node = shutil.which("node")
     if node is None:
         raise RuntimeError("node not on PATH")
+    # Hermetic state root: chrome doors are source-anchored reads,
+    # but the TS single-writer lock gate refuses a second writer on
+    # a shared root — never boot the estate root from a wall.
+    env = dict(os.environ)
+    env["MELITE_STATE_ROOT"] = tempfile.mkdtemp(prefix="chrome-parity-")
     proc = subprocess.Popen(
         [node, "--experimental-strip-types", str(TS_SERVER)],
-        cwd=str(REPO), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        cwd=str(REPO), env=env, stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
         text=True, start_new_session=True)
     assert proc.stdout is not None
     deadline = time.time() + 25

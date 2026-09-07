@@ -124,6 +124,13 @@ def boot_ts(tmp: str) -> tuple[int, "subprocess.Popen[str]"]:
         raise RuntimeError("node not on PATH")
     env = dict(os.environ)
     env["MELITE_REPO_ROOT"] = tmp
+    # Hermetic state root (DISJOINT from tmp: the wall walks tmp and
+    # requires every staged file under data/input): the uploads
+    # doors never read stateRoot, but the TS single-writer lock gate
+    # refuses a second writer on a shared root — never boot the
+    # estate root from a wall.
+    env["MELITE_STATE_ROOT"] = tempfile.mkdtemp(
+        prefix="uploads-parity-state-")
     env["DSH_GATEWAY_TOKEN"] = TOKEN
     proc = subprocess.Popen(
         [node, "--experimental-strip-types", str(TS_SERVER)],

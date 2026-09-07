@@ -30,9 +30,11 @@ _h_flows_validate, 2719-2890; resolve_request 279-336; strict body
 Dual-serve against the REAL repo tree (no hermetic REPO: the pin,
 facts, model dirs, flows/ and the cordis CLI all live there): py
 runs in-process through gateway.route (REPO source-anchored); the
-TS server boots over HTTP with MELITE_REPO_ROOT/MELITE_STATE_ROOT
-scrubbed from its env (parity needs them unset-or-equal — py REPO
-knows no override). DSH_GATEWAY_TOKEN is set for the TS server
+TS server boots over HTTP with MELITE_REPO_ROOT scrubbed from
+its env (parity needs it unset — py REPO knows no override) and
+MELITE_STATE_ROOT pinned to scratch (the single-writer lock gate
+refuses a wall boot on the estate root). DSH_GATEWAY_TOKEN is set
+for the TS server
 only; every TS call carries it (except the 401 leg).
 
 DOCUMENTED non-goals (the door header + this wall say so, and the
@@ -56,6 +58,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -119,7 +122,12 @@ def boot_ts() -> tuple[int, "subprocess.Popen[str]"]:
     # Parity needs these unset-or-equal (py REPO is
     # source-anchored and knows no override) — scrub, then prove.
     env.pop("MELITE_REPO_ROOT", None)
-    env.pop("MELITE_STATE_ROOT", None)
+    # ...except STATE: the validate doors resolve artifact roots off
+    # the source tree, but bootState still takes the single-writer
+    # lock on the state root — a wall must never boot the estate
+    # root (the live gateway holds its lock), so pin scratch.
+    env["MELITE_STATE_ROOT"] = tempfile.mkdtemp(
+        prefix="validate-parity-")
     env["DSH_GATEWAY_TOKEN"] = TOKEN
     proc = subprocess.Popen(
         [node, "--experimental-strip-types", str(TS_SERVER)],
