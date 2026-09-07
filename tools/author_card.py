@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
-"""author_card — the card-authoring door, check half (row 7, 2026-09-07).
+"""author_card — the card-authoring door (row 7, 2026-09-07).
 
 An agent boarding a card by hand edits five files + a registry row
-and finds out at GPU time. This gate checks the ANATOMY without the
-gateway (fast, agent-usable) — the fixed shape from
-docs/design/row7-card-authoring.md:
+and finds out at GPU time. Two halves, one door:
 
   check <card_id>          a boarded card (dir + schema + card + row)
   check --dir <card-dir>   a scaffold dir (no registry row yet)
+  scaffold --spec-file <json> --out <dir>
+                           write the five-file anatomy from a spec
 
-Exit 0: anatomically boardable. Exit 1: the EXACT missing piece.
-The scaffold generator (slice 2) writes dirs this gate accepts.
+Exit 0: anatomically boardable / scaffolded. Exit 1: the EXACT
+missing piece (or the spec refusal). The scaffold writes dirs the
+check accepts — `scaffold` then `check --dir` is the authoring
+loop. The REGISTRY ROW is printed, not written (boarding slice);
+compose.py/renderer.py are honest stubs (the lane arm is slice 3).
 """
 import importlib.util
 import os
@@ -342,8 +345,229 @@ def _report(card_id: str) -> int:
     return 0
 
 
+_SPEC_TYPES = {"str": "str", "int": "int", "float": "float",
+               "bool": "bool"}
+_SPEC_DEFAULTS = {"str": '""', "int": "0", "float": "0.0",
+                  "bool": "False"}
+
+
+def _camel(card_id: str) -> str:
+    return "".join(w.capitalize() for w in
+                   _norm(card_id).split("_") if w)
+
+
+def _validate_spec(spec: dict) -> list[str]:
+    """The spec grammar — refusals name the rule, never a traceback."""
+    errs: list[str] = []
+    import re
+    cid = spec.get("card_id", "")
+    if not re.match(r"^[a-z_][a-z0-9_-]*$", cid or ""):
+        errs.append("card_id %r must match ^[a-z_][a-z0-9_-]*$ "
+                    "(the metaclass IDENT_RE)" % (cid,))
+    for key in ("genre", "label", "description"):
+        if not spec.get(key):
+            errs.append("spec needs %r (the card declares it)" % key)
+    seen: set[str] = set()
+    for i, p in enumerate(spec.get("params", [])):
+        name = p.get("name", "")
+        if not re.match(r"^[a-z_][a-z0-9_]*$", name or ""):
+            errs.append("params[%d].name %r must be a lowercase "
+                        "identifier (the metaclass _FIELD_NAME_RE)"
+                        % (i, name))
+        if name in seen:
+            errs.append("params[%d].name %r restated (rung 6)"
+                        % (i, name))
+        seen.add(name)
+        if p.get("type") not in _SPEC_TYPES:
+            errs.append("params[%d].type %r not in %s (closed "
+                        "vocabulary — rung 3)"
+                        % (i, p.get("type"),
+                           sorted(_SPEC_TYPES)))
+        if p.get("required") and "default" in p:
+            errs.append("params[%d] %r: required + default is a "
+                        "contradiction — pick one" % (i, name))
+    models = spec.get("models", [])
+    if not models:
+        errs.append("models: a card boards at least one Model class "
+                    "(the metaclass refuses models=() — name the "
+                    "model file + class)")
+    for i, m in enumerate(models):
+        if not m.get("file") or not m.get("class"):
+            errs.append("models[%d] needs {file, class} (repo-"
+                        "relative model file + class name)" % i)
+        elif not os.path.isfile(os.path.join(REPO, m["file"])):
+            errs.append("models[%d].file %r not in the tree"
+                        % (i, m["file"]))
+    return errs
+
+
+def _schema_py(spec: dict, cls: str) -> str:
+    lines = [
+        '"""%s — the card param document (scaffolded, row 7).'
+        % spec["card_id"],
+        "",
+        "ONE frozen row (extra=\"forbid\"): a typo'd knob is a",
+        "field-named refusal at the VALIDATION door, never a silently-",
+        "defaulted GPU run. Semantic guards (validators) and the lane",
+        "arm land in the boarding slices — this file is the grammar.",
+        '"""',
+        "",
+        "from pydantic import BaseModel, ConfigDict",
+        "from melite_cards import validators as _v",
+        "from melite_cards.validators import JsonDict",
+        "",
+        "",
+        "class %sParams(BaseModel):" % cls,
+        '    """The wire param surface (card fields), typed + closed."""',
+        '    model_config = ConfigDict(frozen=True, extra="forbid")',
+        "",
+    ]
+    for p in spec.get("params", []):
+        t = _SPEC_TYPES[p["type"]]
+        if p.get("required"):
+            lines.append("    %s: %s" % (p["name"], t))
+        elif "default" in p:
+            lines.append("    %s: %s = %r" % (p["name"], t,
+                                              p["default"]))
+        else:
+            lines.append("    %s: %s = %s" % (p["name"], t,
+                                              _SPEC_DEFAULTS[p["type"]]))
+    if spec.get("requires_model"):
+        lines.append('    # the flow-stage model row (card= stages name it).')
+        lines.append('    model: str = ""')
+    lines += [
+        "",
+        "",
+        "def parse_card(body: JsonDict) -> %sParams:" % cls,
+        '    """Wire body → frozen row (shared construction door)."""',
+        "    return _v.parse_card_body(body, %sParams)" % cls,
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def _card_py(spec: dict, cls: str, py_dir: str) -> str:
+    loads = []
+    names = []
+    for m in spec.get("models", []):
+        var = m["class"]
+        rel = os.path.relpath(os.path.join(REPO, m["file"]), py_dir)
+        loads.append("%s = load_model_py(os.path.join(_HERE, %r), %r)"
+                     % (var, rel, spec.get("engine", "comfyui")))
+        names.append(var)
+    return "\n".join([
+        '# %s (scaffolded, row 7).' % spec["card_id"],
+        "#",
+        "# TODO(boarding): the sidebar trio",
+        "# (sidebar_order/sidebar/default_service), form fields,",
+        "# ability tile. The completeness wall refuses the card until",
+        "# the trio lands — this file is the skeleton.",
+        "",
+        "import os",
+        "",
+        "from melite_cards import ActionCard",
+        "from melite_models import load_model_py",
+        "",
+        "_HERE = os.path.dirname(os.path.abspath(__file__))",
+        "",
+    ] + loads + [
+        "",
+        "",
+        "class %sCard(ActionCard):" % cls,
+        "    id = '%s'" % spec["card_id"],
+        "    label = '%s'" % spec["label"],
+        "    description = '%s'" % spec["description"],
+        "    genre = '%s'" % spec["genre"],
+        "    models = (%s,)" % ", ".join(names),
+        "",
+    ])
+
+
+def _stub_py(spec: dict, kind: str) -> str:
+    if kind == "compose":
+        body = ("def compose_%s(doc) -> dict:\n"
+                '    """The card arm (slice 3) — phase 1 validates, '
+                'phase 2 renders."""\n'
+                "    raise NotImplementedError(\n"
+                "        \"%s: lane arm not authored (row-7 slice 3)\")\n"
+                % (_norm(spec["card_id"]), spec["card_id"]))
+        head = "the %s card arm (scaffolded, row 7 — STUB)."
+    else:
+        body = ("def render_%s(doc) -> dict:\n"
+                '    """The graph emitter (slice 3 — models never '
+                'render, rung 8)."""\n'
+                "    raise NotImplementedError(\n"
+                "        \"%s: graph emitter not authored "
+                "(row-7 slice 3)\")\n"
+                % (_norm(spec["card_id"]), spec["card_id"]))
+        head = "the %s graph emitter (scaffolded, row 7 — STUB)."
+    return "\n".join([
+        '"""%s' % (head % spec["card_id"]),
+        "",
+        "Import-safe by construction (stdlib only) — the anatomy",
+        "gate never imports these; the lane slice replaces them.",
+        '"""',
+        "",
+        "from __future__ import annotations",
+        "",
+        "",
+        body,
+    ])
+
+
+def scaffold(spec: dict, out: str) -> int:
+    """Write the five-file anatomy from a validated spec. Pure
+    function of the spec (no timestamps) — scaffold twice,
+    byte-identical."""
+    errs = _validate_spec(spec)
+    if errs:
+        print("author_card: spec refused:")
+        for e in errs:
+            print("  - %s" % e)
+        return 1
+    if os.path.exists(out) and os.listdir(out):
+        print("author_card: out dir %r not empty — refusing to "
+              "clobber (delete it or pick another)" % out)
+        return 1
+    cls = _camel(spec["card_id"])
+    py_dir = os.path.join(out, "py")
+    os.makedirs(py_dir, exist_ok=True)
+    files = {
+        "__init__.py": ("# %s — the card package — python lives HERE "
+                        "(THE CARD PATTERN, golden base).\n"
+                        % spec["card_id"]),
+        "card.py": _card_py(spec, cls, os.path.abspath(py_dir)),
+        "schema.py": _schema_py(spec, cls),
+        "compose.py": _stub_py(spec, "compose"),
+        "renderer.py": _stub_py(spec, "renderer"),
+    }
+    for leaf, text in files.items():
+        with open(os.path.join(py_dir, leaf), "w") as f:
+            f.write(text)
+    print("author_card: scaffolded %r -> %s"
+          % (spec["card_id"], out))
+    print("  registry row (boarding slice applies it, never hand-"
+          "shaped):")
+    print('    card_id="%s", engine="%s",  # schema: %sParams, '
+          "requires_model=%s"
+          % (spec["card_id"], spec.get("engine", "<engine>"), cls,
+             bool(spec.get("requires_model"))))
+    return 0
+
+
 if __name__ == "__main__":
     import argparse
+    import json
+    if len(sys.argv) > 1 and sys.argv[1] == "scaffold":
+        ap = argparse.ArgumentParser(description=__doc__)
+        ap.add_argument("--spec-file", required=True,
+                        help="the card spec (JSON)")
+        ap.add_argument("--out", required=True,
+                        help="the card dir to write")
+        args = ap.parse_args(sys.argv[2:])
+        with open(args.spec_file) as f:
+            _spec = json.load(f)
+        sys.exit(scaffold(_spec, args.out))
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("card_id")
     ap.add_argument("--dir", default=None,

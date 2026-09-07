@@ -133,3 +133,139 @@ def test_engine_native_names_scope() -> None:
     proc = _run("forge")
     assert proc.returncode == 1, proc.stdout
     assert "engine-native" in proc.stdout, proc.stdout
+
+
+# --- row-7 slice 2: the scaffold generator -------------------------
+
+import json  # noqa: E402
+
+
+def _spec(tmp_path: Path, **over: object) -> Path:
+    base: dict = {
+        "card_id": "wall-demo", "genre": "audio", "engine": "comfyui",
+        "label": "Wall Demo", "description": "scaffold proof card",
+        "requires_model": True,
+        "models": [{"file": "plugins/engines/comfyui/models/audio/"
+                            "qwen3-tts/model.py",
+                    "class": "Qwen3Tts"}],
+        "params": [{"name": "text", "type": "str", "required": True},
+                   {"name": "temperature", "type": "float",
+                    "default": 0.7}],
+    }
+    base.update(over)
+    path = tmp_path / "spec.json"
+    path.write_text(json.dumps(base))
+    return path
+
+
+def _scaffold(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, str(TOOL), "scaffold", *args],
+        capture_output=True, text=True, timeout=120)
+
+
+def test_scaffold_then_check_names_model_claim(
+        tmp_path: Path) -> None:
+    """The authoring loop, half 1: scaffold a card naming a model
+    that does NOT claim it — check fails LOUD naming the remedy
+    (the model's to declare), never a silent GPU run."""
+    out = tmp_path / "wall-card"
+    proc = _scaffold("--spec-file", str(_spec(tmp_path)),
+                     "--out", str(out))
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    for leaf in ("__init__.py", "card.py", "schema.py",
+                 "compose.py", "renderer.py"):
+        assert (out / "py" / leaf).is_file(), leaf
+    proc = _run("wall-demo", "--dir", str(out))
+    assert proc.returncode == 1, proc.stdout
+    assert "does not claim this card back" in proc.stdout, \
+        proc.stdout
+
+
+def test_scaffold_full_loop_passes() -> None:
+    """Half 2: park a model copy CLAIMING the new card, scaffold
+    against it — check passes fully (schema, id, cross-hook).
+    Real-tree parks, removed in finally."""
+    model_dir = (REPO / "plugins/engines/comfyui/models/audio"
+                 / "wall-tmp-fam")
+    src = REPO / "plugins/engines/comfyui/models/audio/moss-sfx" \
+        / "model.py"
+    text = src.read_text()
+    assert "card = 'sfx'" in text, \
+        "moss-sfx model shape moved — the wall's premise moved"
+    model_dir.mkdir()
+    (model_dir / "model.py").write_text(
+        text.replace("class MossSfx(Model):",
+                     "class WallTmpFam(Model):")
+        .replace("id = 'moss-sfx'", "id = 'wall-tmp-fam'")
+        .replace("card = 'sfx'", "card = 'wall-tmp-card'"))
+    try:
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            spec = {
+                "card_id": "wall-tmp-card", "genre": "audio",
+                "engine": "comfyui", "label": "Wall Tmp",
+                "description": "full-loop proof card",
+                "models": [{"file": "plugins/engines/comfyui/models/"
+                                    "audio/wall-tmp-fam/model.py",
+                            "class": "WallTmpFam"}],
+                "params": [{"name": "text", "type": "str",
+                            "required": True}],
+            }
+            spec_file = Path(tmp) / "spec.json"
+            spec_file.write_text(json.dumps(spec))
+            out = Path(tmp) / "card"
+            proc = _scaffold("--spec-file", str(spec_file),
+                             "--out", str(out))
+            assert proc.returncode == 0, proc.stdout + proc.stderr
+            proc = _run("wall-tmp-card", "--dir", str(out))
+            assert proc.returncode == 0, proc.stdout
+    finally:
+        shutil.rmtree(model_dir, ignore_errors=True)
+
+
+def test_scaffold_is_deterministic(tmp_path: Path) -> None:
+    """Scaffold is a pure function of the spec — twice,
+    byte-identical (a generator that drifts is a second truth)."""
+    spec = str(_spec(tmp_path))
+    outs = []
+    for leaf in ("one", "two"):
+        out = tmp_path / leaf
+        proc = _scaffold("--spec-file", spec, "--out", str(out))
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+        outs.append(out)
+    for leaf in ("__init__.py", "card.py", "schema.py",
+                 "compose.py", "renderer.py"):
+        a = (outs[0] / "py" / leaf).read_bytes()
+        b = (outs[1] / "py" / leaf).read_bytes()
+        assert a == b, "scaffold drifted on %s" % leaf
+
+
+@pytest.mark.parametrize("over,needle", [
+    ({"card_id": "Has Space"}, "must match"),
+    ({"params": [{"name": "ok", "type": "colour"}]}, "closed"),
+    ({"params": [{"name": "ok", "type": "str", "required": True,
+                  "default": "x"}]}, "contradiction"),
+    ({"models": []}, "at least one"),
+    ({"models": [{"file": "nope/model.py"}]}, "{file, class}"),
+    ({"models": [{"file": "plugins/engines/comfyui/models/audio/"
+                            "ghost/model.py",
+                  "class": "Ghost"}]}, "not in the tree"),
+])
+def test_spec_refusals_name_the_rule(tmp_path: Path, over: dict,
+                                     needle: str) -> None:
+    proc = _scaffold("--spec-file", str(_spec(tmp_path, **over)),
+                     "--out", str(tmp_path / "card"))
+    assert proc.returncode == 1, proc.stdout
+    assert needle in proc.stdout, proc.stdout
+
+
+def test_scaffold_refuses_clobber(tmp_path: Path) -> None:
+    out = tmp_path / "card"
+    (out / "py").mkdir(parents=True)
+    (out / "py" / "x.py").write_text("mine")
+    proc = _scaffold("--spec-file", str(_spec(tmp_path)),
+                     "--out", str(out))
+    assert proc.returncode == 1, proc.stdout
+    assert "clobber" in proc.stdout, proc.stdout
+    assert (out / "py" / "x.py").read_text() == "mine"
