@@ -13,10 +13,18 @@ wall proves the seams headless, no GPU:
   4. a kind-mismatch wire refuses at the VALIDATE door (no slot,
      no sidecar — the AI iterates free).
 
+Slice 2 (convergence plane, same file, TestStorm): a SEEDED storm
+of starts/stops must converge — every run terminal, every failure
+exact, and a clean run completes AFTER the storm (the queue
+continues). No hypothesis on the box; determinism comes from a
+pinned seed + stop-only-slow discipline (a stopped run is always
+still working — never a race with completion).
+
 Design record: docs/design/row6-sim-backend.md. Runs against a
 scratch gateway (own state root — never the live estate).
 """
 import json as _json
+import random
 import time
 import urllib.request
 import urllib.error
@@ -194,3 +202,64 @@ def test_sim_kind_mismatch_refuses_pre_slot(
                        {"flow_inline": body})
     assert code in (400, 422), \
         "kind mismatch must refuse pre-slot: %s %s" % (code, resp)
+
+
+_STORM_SEED = 20260907
+
+
+def _storm_body(kind: str, tag: str) -> dict:
+    """One single-stage sim flow per storm op kind."""
+    params: dict = {"echo": "storm-%s-%s" % (kind, tag)}
+    if kind == "fail":
+        params["fail"] = "storm-fail-exact-%s" % tag
+    if kind == "slow":
+        params["sleep_s"] = 30
+    return {"id": "storm-%s-%s" % (kind, tag), "stages": [
+        {"id": "only", "engine": "sim",
+         "params": params, "outputs": {"txt": "text"}}]}
+
+
+class TestStorm:
+    """The convergence plane: a seeded storm of starts/stops must
+    CONVERGE — every run terminal, every failure exact, and (the
+    RESILIENCE LAW half) a clean run completes after the storm."""
+
+    def test_storm_converges(self, scratch_gateway: int) -> None:
+        port = scratch_gateway
+        rng = random.Random(_STORM_SEED)
+        plan = (["slow"] * 2 + ["echo"] * 3 + ["fail"] * 2)
+        rng.shuffle(plan)
+        expect: dict[str, str] = {}
+        for i, kind in enumerate(plan):
+            tag = "%d" % i
+            code, resp = _start(port, _storm_body(kind, tag))
+            assert code in (200, 202), \
+                "storm start %s refused: %s %s" % (kind, code, resp)
+            expect[resp["run_id"]] = kind
+        # stop ONLY the slows (always still working — deterministic,
+        # never a race with completion); fast runs settle on their own.
+        time.sleep(2.0)
+        for run_id, kind in expect.items():
+            if kind == "slow":
+                code, _ = _post(port, "v1/flows/stop/%s" % run_id, {})
+                assert code == 200, "storm stop refused: %s" % (run_id,)
+        finals = {r: _wait_terminal(port, r, timeout=120.0)
+                  for r in expect}
+        assert len(finals) == len(expect), "a storm run was LOST"
+        for run_id, final in finals.items():
+            kind = expect[run_id]
+            status = final.get("status")
+            if kind == "echo":
+                assert status == "completed", (run_id, final)
+            elif kind == "fail":
+                assert status == "failed", (run_id, final)
+                assert "storm-fail-exact-" in str(
+                    final.get("error", "")), (run_id, final)
+            else:
+                assert status == "stopped", (run_id, final)
+        # the queue continues: a clean run AFTER the storm completes.
+        code, resp = _start(port, _storm_body("echo", "after"))
+        assert code in (200, 202), \
+            "post-storm start refused: %s %s" % (code, resp)
+        final = _wait_terminal(port, resp["run_id"])
+        assert final.get("status") == "completed", final
