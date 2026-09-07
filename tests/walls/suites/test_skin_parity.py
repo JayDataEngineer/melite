@@ -92,6 +92,14 @@ def test_surgery_attaches_textures() -> None:
                if (m.get("pbrMetallicRoughness") or {}).get("baseColorTexture")]
     assert touched, "no material carries the albedo"
     assert all("normalTexture" in m for m in touched)
+    # Meld 4.38 v1.4 law (ported 2026-09-07): bump OFF (scale 0 — the
+    # UV-path bump mottled the skin) + matte roughness (1 - 0.18).
+    assert all(m["normalTexture"].get("scale") == 0.0 for m in touched), \
+        "bump re-enabled on projection UVs (meld 4.38 v1.4 forbids)"
+    assert all((m.get("pbrMetallicRoughness") or {}).get("roughnessFactor") == 0.82
+               for m in touched), "skin sheen drifted from matte 0.82"
+    assert all((m.get("pbrMetallicRoughness") or {}).get("metallicFactor") == 0.0
+               for m in touched), "skin metallic drifted from 0.0"
     assert record["materials_touched"] == len(touched)
 
 

@@ -113,6 +113,12 @@ def test_write_pack_round_trips_controller_schema(tmp_path: Path) -> None:
         'uv': 'somax',
         'size': 256,
         'seed': SKIN_SEED,
+        # Meld 4.38 v1.3-v1.4 shader law (skin_spec port 2026-09-07):
+        # bump OFF, matte, triplanar detail.
+        'normal_strength': 0.0,
+        'smoothness': 0.18,
+        'metallic': 0.0,
+        'triplanar_density': 3.0,
     }
     assert sidecar(spec, row_for('keeper')) == body
 
