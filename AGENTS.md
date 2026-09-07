@@ -1,5 +1,28 @@
 # AGENTS.md — LAWS FOR THIS MACHINE
 
+## LAW 0 (operator order, 2026-09-07, verbatim intent)
+
+> "The Engine is Comfyui, extensions to the Engine's functionality is
+>  done through vendored Comfyui Extensions, the role of this code is
+>  to place API calls to Comfyui and Comfyui-Manager, we can prevent
+>  drift."
+
+- The engine is ComfyUI — upstream-owned, never reimplemented here.
+  This repo places API calls (validated params → workflow graph →
+  ComfyUI `/prompt` → artifacts); it does not implement inference
+  ops. A capability the stock engine lacks arrives as a vendored
+  ComfyUI extension submodule, never as estate-side compute.
+- ComfyUI-Manager is the install rail (EXTENSION LAW); Blender, where
+  needed, is a declared requirement served by a ComfyUI node, never a
+  subprocess the estate owns.
+- Drift prevention: a vendored pack with no card graph referencing its
+  nodes is cruft — archived to `archive/vendor/comfyui_extensions/`
+  (restore procedure in `archive/README.md`), never left live. An
+  archive restore without a consumer is re-cruft and refuses review.
+- Anything expressible as a stock-node subgraph is a graph (client
+  side), never a node (server side).
+
+
 ## INFERENCE LAW (operator order, 2026-08-29, verbatim)
 
 > "ONLY USE INFERENCE THROUGH THE QUEUE SYSTEM, NEVER USE THE INFERENCE SYSTEM DIRECTLY"
@@ -154,9 +177,13 @@ Full detail, timings, and VRAM evidence: docs/audits/queue-audit.md.
   compose + execute), `models/<genre>/<model>/model.py`
   (self-contained families), and `action_cards/<genre>/<card>/py/`
   (card defs + lane code). A compose-first plugin has NO engine.py:
-  execution rides comfyui-mcp. The legacy
-  `engines/<dir>/engine.yaml` + `engine.py` shape survives only in
-  audio-cpp (ffmpeg retired 2026-09-04). Phase 1 (run_id="") is the
+  execution rides comfyui-mcp. The only `engine.py` in the tree is the
+  deliberate queue-native test backend
+  `plugins/engines/sim/engines/sim/engine.py` (boards no models,
+  serves no cards; design record `docs/design/row6-sim-backend.md`);
+  the engine-yaml/engine-module legacy shape has no other survivor.
+  The ffmpeg engine plugin is retired (no `plugins/engines/ffmpeg/`
+  directory). Phase 1 (run_id="") is the
   VALIDATION DOOR: document construction IS the gate — key admission,
   artifact-ref existence on the mounts, and semantic laws are
   pydantic validators (PYTHON SHAPE LAW: no post-hoc walks);
@@ -262,7 +289,9 @@ parent); anything with behavior or per-family taxonomy.
   for deliberate audit). docs/comfyui/comfy-mcp.md §8 is the design
   record.
 - Our AUTHORED packs live as submodules in ONE place:
-  `vendor/comfyui_extensions/<pack>` (each its own repo). Nothing
+  `vendor/comfyui_extensions/<pack>` (each its own repo). Retired
+  packs archive to `archive/vendor/comfyui_extensions/<pack>`
+  (Law 0; restore procedure in `archive/README.md`). Nothing
   under any plugin's tree carries a pack copy — the fossil
   `plugins/engines/comfyui/custom_nodes/` (17 dirs, ~235 MB,
   drifting from the live ray binds) was deleted 2026-09-03.
@@ -405,6 +434,13 @@ order — nothing here requires it.
   chat alone.
 - The record map (who holds what):
   - `AGENTS.md` — laws (verbatim orders + enforcement shape).
+  - `docs/patterns/master-patterns.md` — THE pattern canon: every
+    pattern in the estate with its wall, verify command, and fix
+    recipe, plus THE LOOP (the AI verification protocol — operator
+    order, 2026-09-07: "we can constantly verify and send weak AI to
+    go and clean up the bad patterns. So the loop is on the AI and not
+    me manually checking"). A pattern born lands in the canon the SAME
+    stroke; a pattern that dies is marked RETIRED, never deleted.
   - `docs/design/*.md` — thinking: patterns, contracts, stroke plans;
     every record carries a Date and a Status (THINKING | landed | law).
   - `docs/audits/*.md` — evidence: probes, timings, numbers.

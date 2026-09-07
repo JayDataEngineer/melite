@@ -1,7 +1,3 @@
-[submodule "melite-anny-estimator-nodes"]
-	path = vendor/comfyui_extensions/melite-anny-estimator-nodes
-	url = https://github.com/JayDataEngineer/melite-anny-estimator-nodes.git
-	branch = main
 [submodule "melite-tts-nodes"]
 	path = vendor/comfyui_extensions/melite-tts-nodes
 	url = https://github.com/JayDataEngineer/melite-tts-nodes.git
@@ -31,7 +27,7 @@
 	url = https://github.com/JayDataEngineer/melite-utility-nodes.git
 	branch = main
 [submodule "melite-anigen-nodes"]
-	path = vendor/comfyui_extensions/melite-anigen-nodes
+	path = archive/vendor/comfyui_extensions/melite-anigen-nodes
 	url = https://github.com/JayDataEngineer/melite-anigen-nodes.git
 	branch = main
 [submodule "melite-autorig-nodes"]
@@ -39,23 +35,23 @@
 	url = https://github.com/JayDataEngineer/melite-autorig-nodes.git
 	branch = main
 [submodule "melite-hymotion-nodes"]
-	path = vendor/comfyui_extensions/melite-hymotion-nodes
+	path = archive/vendor/comfyui_extensions/melite-hymotion-nodes
 	url = https://github.com/JayDataEngineer/melite-hymotion-nodes.git
 	branch = main
 [submodule "melite-seethrough-nodes"]
-	path = vendor/comfyui_extensions/melite-seethrough-nodes
+	path = archive/vendor/comfyui_extensions/melite-seethrough-nodes
 	url = https://github.com/JayDataEngineer/melite-seethrough-nodes.git
 	branch = main
 [submodule "melite-step1x-nodes"]
-	path = vendor/comfyui_extensions/melite-step1x-nodes
+	path = archive/vendor/comfyui_extensions/melite-step1x-nodes
 	url = https://github.com/JayDataEngineer/melite-step1x-nodes.git
 	branch = main
 [submodule "melite-stretchy-nodes"]
-	path = vendor/comfyui_extensions/melite-stretchy-nodes
+	path = archive/vendor/comfyui_extensions/melite-stretchy-nodes
 	url = https://github.com/JayDataEngineer/melite-stretchy-nodes.git
 	branch = main
 [submodule "melite-video-nodes"]
-	path = vendor/comfyui_extensions/melite-video-nodes
+	path = archive/vendor/comfyui_extensions/melite-video-nodes
 	url = https://github.com/JayDataEngineer/melite-video-nodes.git
 	branch = main
 [submodule "melite-model-base"]
