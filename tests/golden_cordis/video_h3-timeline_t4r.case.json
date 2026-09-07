@@ -1,0 +1,20 @@
+{
+  "card": "h3-timeline",
+  "model": "h3-timeline",
+  "run_id": "testrun",
+  "params": {
+    "variant": "t4r",
+    "noise_seed": 42,
+    "prompt": "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out",
+    "ctx_save_prefix": "runs/testrun/h3_context/clip",
+    "ctx_save_clip_index": 1,
+    "k": 1,
+    "fps_seconds": 10.0,
+    "image_name": "guide.png",
+    "ref_image_size": "704x1280",
+    "width": 1344,
+    "height": 768,
+    "steps": 12,
+    "shift_audio": 5.0
+  }
+}
