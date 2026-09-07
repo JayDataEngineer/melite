@@ -102,7 +102,11 @@ def test_route_table_nonempty_and_grouped() -> None:
     # +1 Metrics door (R2, 2026-09-06): GET /v1/metrics — queue +
     # registry observability; generated docs caught up in the same
     # stroke (wall: tests/unit/runtime/test_metrics_door.py)
-    assert len(gateway.ROUTES) == 52
+    # +2 Draft-stage result-loop doors (2026-09-07 legacy-removal
+    # stroke): PATCH /v1/flows/drafts/{draft_id}/stages/{stage_id}
+    # persists the result outbox, GET .../result serves the run-truth
+    # verify loop; generated docs caught up in the same stroke
+    assert len(gateway.ROUTES) == 54
     groups = {r.group for r in gateway.ROUTES}
     assert len(groups) >= 6
     for g in groups:
@@ -151,6 +155,9 @@ def test_no_retired_start_shapes_in_docs() -> None:
     provenance = {
         "audits", "migration-log.md", "py-gateway-switchover.md",
         "flows.md",   # docs/queue/flows.md — the retirement design record
+        # the 2026-09-07 review quotes the retired shapes as FINDING
+        # EVIDENCE (H3) — citations, not teachings
+        "declarative-pattern-review.md",
     }
     banned = []
     for doc in REPO.glob("docs/**/*.md"):

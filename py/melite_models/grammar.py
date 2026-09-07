@@ -236,6 +236,8 @@ class KnobRow(BaseModel, frozen=True):
     card: str = Field(min_length=1)
     inject: str = ""
     kind: KnobKind = KnobKind.STRING
+    # no dead riders (strictness wall): an unknown key refuses
+    model_config = {"extra": "forbid"}
 
 
 # ── head-setting rows — typed declarations, not honor-system dicts ──

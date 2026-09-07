@@ -333,6 +333,11 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         "src/client/__tests__/panels.test.tsx": "parked-wip",
         "src/index.ts": "parked-wip",
     },
+    # mono-app M2 names the PLANNED DSL module — lands with that
+    # stroke; the ledger entry retires when ui/studio.py exists
+    "docs/design/python-mono-app.md": {
+        "ui/studio.py": "planned-m2-dsl",
+    },
     "docs/design/image-edit-surface-standard.md": {
         ".d/causes.md": "past",
         "presets/blue_mesh.yaml": "deleted-in-record",

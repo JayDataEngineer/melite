@@ -287,7 +287,13 @@ class TestRailLayout(unittest.TestCase):
         )
 
     def test_shape_expands_into_the_drawer_not_a_second_panel(self) -> None:
-        self.assertIn("{shapeExpanded && <AnnyShapeDrawer", self.component)
+        # 2026-09-07: the drawer rides a ViewportAnchor (edge-right)
+        # over the figure — the gate stays shapeExpanded, ONE panel.
+        self.assertRegex(
+            self.component,
+            r"\{shapeExpanded && \(\s*\n\s*<ViewportAnchor[^>]*>\s*\n"
+            r"\s*<AnnyShapeDrawer",
+        )
         self.assertIn("{!shapeExpanded && <AnnyShapeBand", self.component,
                       "ONE BodyShapePanel instance: the drawer replaces "
                           "the rail band while expanded")
@@ -309,9 +315,15 @@ class TestRailLayout(unittest.TestCase):
             "the assembly section folded again — the estimate "
             "result must be visible, never one click away",
         )
-        self.assertIn(
-            'aria-label="Assembly — the character',
+        # 2026-09-07 kit-era amendment: the raw <section aria-label=...>
+        # wrapper became the kit RailSection, which DERIVES the
+        # section's aria-label from its title prop (web/ui/src/
+        # rail-section.tsx) — the accessible name is pinned through
+        # the title on the anny-assembly-truth section.
+        self.assertRegex(
             self.component,
+            r'(?s)<RailSection\s*id="anny-assembly-truth"'
+            r'.*?title="Assembly — ',
             "the always-open assembly section lost its label",
         )
 

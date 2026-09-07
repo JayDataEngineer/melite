@@ -85,9 +85,9 @@ for f in inject_model.model_fields.values():
     if a:
         aliases.add(a)
 for row in getattr(h3_cls, "card_knobs", ()):
-    addr = row.get("inject", "")
+    addr = row.inject
     ok = addr in aliases or any(addr.startswith(p) for p in _PIN_PREFIXES)
-    check("h3 knob %s -> %s" % (row.get("card"), addr), ok,
+    check("h3 knob %s -> %s" % (row.card, addr), ok,
           "not a H3WindowInject alias (knob map drifted from the doc)")
 
 # 3. card surface covers the doc knobs ─────────────────────────────────
