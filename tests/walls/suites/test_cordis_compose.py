@@ -47,7 +47,10 @@ if not any(name.startswith("image_z-image") for name, *_ in GRAPH_CASES):
 # must refuse LOUD (exit != 0, message names the cause, no stdout).
 REFUSAL_CASES = [
     ("refuse_unknown_card", "nope-card", "z-image", "t", {}, "unknown card"),
-    ("refuse_unboarded_model", "image-gen", "krea-2", "t", {}, "not boarded"),
+    # krea-2 boarded image-gen per py truth (families krea-2/z-image/anima;
+    # image-gen boarding fix) — kimodo (a motion model) is the unboarded
+    # stand-in so the not-boarded gate stays pinned.
+    ("refuse_unboarded_model", "image-gen", "kimodo", "t", {}, "not boarded"),
     ("refuse_empty_prompt", "image-gen", "z-image", "t",
      {"prompt": "   "}, "prompt"),
     ("refuse_missing_facts_card", "image-gen", "z-image", "t",
