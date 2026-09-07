@@ -140,3 +140,70 @@ def test_the_assembly_tenants_ride_the_shell():
     assert "<StudioRail>" not in src, \
         "AssemblyStudio hand-rolls the rail portal — the shell owns " \
         "the rail/center/bottom layout (the pre-shell shape)"
+
+
+# ── stroke 3 (2026-09-07): the CENTER seam is swappable ──────────────────
+# PaintCanvas2D is the 2D viewport primitive (Stage3D's counterpart);
+# mask studio rides THE SHELL with it in the center — proving the
+# seam hosts a second viewport genre without the shell learning it.
+
+PAINT = os.path.join(
+    REPO, "plugins", "engines", "comfyui", "action_cards",
+    "image", "ui", "PaintCanvas2D.tsx")
+MASK_STUDIO = os.path.join(
+    REPO, "plugins", "engines", "comfyui", "action_cards",
+    "image", "mask_studio", "ui", "studio", "component.tsx")
+MASK_CANVAS = os.path.join(
+    REPO, "plugins", "engines", "comfyui", "action_cards",
+    "image", "mask_studio", "ui", "studio", "StudioCanvas.tsx")
+
+# mask vocabulary the viewport primitive must never name (the card
+# declares producers; the primitive renders canvas)
+_PAINT_BANNED = ("mask", "detect", "prep", "bbox", "instance",
+                 "sam3", "yolo", "segm", "person", "recipe")
+
+
+def test_paint_canvas2d_exists_at_the_genre_home():
+    assert os.path.isfile(PAINT), \
+        "image/ui/PaintCanvas2D.tsx — the 2D viewport primitive at " \
+        "the image genre home (Stage3D symmetry: 3d/ui/viewers). " \
+        "ONE consumer today (mask); the move-up trigger is the " \
+        "second genre consumer (PRIMITIVE HOME LAW, §6)"
+    src = open(PAINT, encoding="utf-8").read()
+    # CODE, not prose: provenance comments may name where the
+    # primitive came from; the vocabulary ban is about identifiers,
+    # props, and JSX (what the contract IS)
+    code = re.sub(r"/\*.*?\*/", "", src, flags=re.DOTALL)
+    code = re.sub(r"^\s*//.*$", "", code, flags=re.MULTILINE)
+    low = code.lower()
+    for word in _PAINT_BANNED:
+        assert word not in low, \
+            "PaintCanvas2D names %r — mask vocabulary in the " \
+            "viewport primitive; the card declares, primitives " \
+            "render" % word
+
+
+def test_the_mask_studio_rides_the_shell():
+    src = open(MASK_STUDIO, encoding="utf-8").read()
+    assert "<StudioShell" in src, \
+        "MaskStudioEditor renders StudioShell (stroke 3: the second " \
+        "genre rides THE SHELL — center seam proven swappable)"
+    for seam in ("rail={", "center=", "bottom="):
+        assert seam in src, "the mask body declares the %s seam" \
+            % seam[:-1]
+    assert "<StudioRail" not in src, \
+        "MaskStudioEditor hand-rolls the rail portal — the shell " \
+        "owns the portal since stroke 1"
+
+
+def test_the_mask_canvas_composes_the_primitive():
+    src = open(MASK_CANVAS, encoding="utf-8").read()
+    assert "<PaintCanvas2D" in src, \
+        "StudioCanvas composes PaintCanvas2D (the wrapper/canvas/" \
+        "transform/triage live in the primitive)"
+    assert "<canvas" not in src, \
+        "StudioCanvas hand-rolls the canvas element — the viewport " \
+        "primitive owns it (no second canvas implementation)"
+    assert "role=\"status\"" not in src, \
+        "StudioCanvas duplicates the loading skeleton — the " \
+        "primitive owns the decode state"
