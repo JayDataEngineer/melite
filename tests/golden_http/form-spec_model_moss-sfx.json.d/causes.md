@@ -22,3 +22,14 @@ the default recipe row (inserted head of the Recipe run, exact live
 bytes) + the Recipe variant_groups entry (exact live bytes) changed;
 every other byte is untouched, including this lane's unrelated drift,
 which stays its lane's business.
+
+## 2026-09-07 — committed-evolution catch-up (Cordis cards 10-13)
+
+Parity-pinned this stroke. The golden lagged committed classes
+(variant rows now standard+quant+default recipe; tts defaults
+mode/variant -> voice; tts-base field surface grown) — working
+tree clean for the lane, no in-flight work absorbed.
+Served-verbatim rewrite; envelope/null deltas are the
+serialization blanket. Same stroke declares melite-audio-nodes on
+tts/sfx/voice-lock (music3 verified stock-only) and trims the
+three core node names from the pack's map set.

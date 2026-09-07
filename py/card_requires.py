@@ -96,9 +96,13 @@ EXTENSION_NODE_TYPES: dict[str, set[str]] = {
     # renderer loads/combines through VHS on both families; key is
     # the exact install folder (the disk fallback compares exact).
     "comfyui-videohelpersuite": {"VHS_LoadVideoPath", "VHS_VideoCombine"},
+    # (Cordis audio sweep, 2026-09-07: MiniMaxMusic3TextEncode +
+    # EmptyMiniMaxMusic3LatentAudio + SaveAudioAdvanced are CORE —
+    # comfy_extras.nodes_minimax_music / nodes_audio — not pack
+    # nodes. Dropped from this set; the Audiocore legs are the
+    # pack's true capabilities.)
     "melite-audio-nodes": {
-        "MiniMaxMusic3TextEncode", "EmptyMiniMaxMusic3LatentAudio",
-        "SaveAudioAdvanced", "AudiocoreTTS", "LoadAudiocoreModel",
+        "AudiocoreTTS", "LoadAudiocoreModel", "AudiocoreVoiceStudio",
     },
     # ONE humanoid pack (2026-09-07 merge: the anny-estimator family
     # folded in — all six Anny node types ride the kimodo install unit;

@@ -13,13 +13,13 @@
       "Quant": {
         "label": "Quant"
       },
+      "Recipe": {
+        "default": "default",
+        "label": "Recipe",
+        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing."
+      },
       "Variant": {
         "label": "Variant"
-      },
-      "Recipe": {
-        "label": "Recipe",
-        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
-        "default": "default"
       }
     }
   },
@@ -133,6 +133,25 @@
       "columns": null,
       "default": null,
       "group": "qvoice",
+      "label": "Voice (.qvoice)",
+      "max": null,
+      "min": null,
+      "name": "qvoice",
+      "options": [],
+      "order": 0,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "Pre-computed speaker embedding (.qvoice/.voice \u2014 the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one.",
+      "type": "file",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": null,
+      "group": "qvoice",
       "label": "PCA Steering",
       "max": null,
       "min": null,
@@ -142,7 +161,7 @@
       "placeholder": "",
       "required": null,
       "step": null,
-      "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} — subtle voice direction without re-designing the persona.",
+      "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} \u2014 subtle voice direction without re-designing the persona.",
       "type": "textarea",
       "visible_when": null,
       "width": null,
@@ -218,14 +237,14 @@
           "label": "Voice (.qvoice)",
           "name": "qvoice",
           "order": 0,
-          "tooltip": "Pre-computed speaker embedding (.qvoice/.voice — the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one.",
+          "tooltip": "Pre-computed speaker embedding (.qvoice/.voice \u2014 the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one.",
           "type": "file"
         },
         {
           "label": "PCA Steering",
           "name": "voice_pca_strengths",
           "order": 1,
-          "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} — subtle voice direction without re-designing the persona.",
+          "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} \u2014 subtle voice direction without re-designing the persona.",
           "type": "textarea"
         }
       ],
@@ -239,16 +258,40 @@
   "size": null,
   "variants": [
     {
+      "defaults": {},
+      "engine": "comfyui",
+      "group": "Variant",
+      "hint": null,
+      "id": "standard",
+      "label": "Standard",
+      "owner": "",
+      "quant": null,
+      "route": "qwen3-tts-base",
+      "vram_peak_gb": null
+    },
+    {
+      "defaults": {},
+      "engine": "",
+      "group": "Quant",
+      "hint": null,
+      "id": "native",
+      "label": "Native",
+      "owner": "standard",
+      "quant": "native",
+      "route": "qwen3-tts-base",
+      "vram_peak_gb": 0
+    },
+    {
+      "defaults": {},
+      "engine": "comfyui",
+      "group": "Recipe",
+      "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
       "id": "default",
       "label": "Default",
-      "group": "Recipe",
-      "defaults": {},
-      "route": "",
-      "hint": "The family default — no extra stamps; a fresh card lands here.",
-      "engine": "comfyui",
+      "owner": "",
       "quant": null,
-      "vram_peak_gb": null,
-      "owner": ""
+      "route": "",
+      "vram_peak_gb": null
     }
   ]
 }

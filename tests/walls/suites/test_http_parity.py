@@ -134,6 +134,12 @@ def main() -> int:
             # declares VideoHelperSuite (VHS load/combine, both fams).
             ("form-spec?model=wan-vace", "deep"),
             ("form-spec?model=scail2-animate", "deep"),
+            # CORDIS CARDS 10-13 (2026-09-07): audio declares the
+            # Audiocore pack (tts/sfx/voice-lock); music3 is core.
+            ("form-spec?model=qwen3-tts", "deep"),
+            ("form-spec?model=qwen3-tts-base", "deep"),
+            ("form-spec?model=moss-sfx", "deep"),
+            ("form-spec?model=qwen3-tts-voicedesign", "deep"),
             ("form-spec?model=h3-timeline", "deep"),
             ("form-spec?model=music3", "deep"),
             # NATIVE 3D/AUDIO BOARDING (2026-09-06): the cpp engines'
