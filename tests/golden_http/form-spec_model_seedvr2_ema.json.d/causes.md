@@ -35,3 +35,23 @@ every other byte is untouched, including this lane's unrelated drift,
 which stays its lane's business.
 
 - 2026-09-06: fields regolded from the card CLASS (the SSOT) — the 2026-09-06 image-edit/video-gen/upscale-tools card rework (input_image->image1, visible_when relaxation, field count changes) landed with the classes but the goldens lagged; served==fragment verified before write.
+
+## 2026-09-07 — envelope catch-up (Cordis card 5: upscale-tools)
+
+Parity-pinned this stroke (the golden existed but was unpinned).
+Live-vs-golden leaf diff, every delta classified — zero CHANGED
+leaves (no value drift, no lane rework):
+
+- `$.contract: null` + `$.enhance_prompt: null`: envelope additions
+  every fresh golden carries; this one predates them.
+- `$.fields[N].{columns,default,max,min,placeholder,step,
+  visible_when,zone}: null`: the serve now emits explicit nulls for
+  absent field attrs (serialization blanket); the golden omits them.
+- `$.defaults.filename_prefix` DROPPED from live: the 2026-09-06
+  standard-fields sweep above (deliberate, already documented).
+
+Served-verbatim rewrite from the scratch-gateway live body. Same
+stroke declares the card's three renderer packs
+(`ComfyUI-SeedVR2_VideoUpscaler` + `ComfyUI-KJNodes` +
+`comfyui_nvidia_rtx_nodes`) — the RTX pack had no map entry and the
+card had no declaration.

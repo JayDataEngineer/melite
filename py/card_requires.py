@@ -79,10 +79,18 @@ EXTENSION_NODE_TYPES: dict[str, set[str]] = {
     "ComfyUI-Frame-Interpolation": {"FrameInterpolate", "FrameInterpolationModelLoader"},
     "ComfyUI-KJNodes": {
         "ImageSharpenKJ", "ModelAttentionBackend", "ModelPreviewOverrideKJ",
+        "ImageConcatMulti",  # the upscale-tools A/B fragment
     },
     "ComfyUI-SeedVR2_VideoUpscaler": {
         "SeedVR2LoadDiTModel", "SeedVR2LoadVAEModel", "SeedVR2VideoUpscaler",
     },
+    # NVIDIA RTX Video Super Resolution (Cordis card 5, 2026-09-07):
+    # single-node pack, folder-verified on the estate server
+    # (custom_nodes/comfyui_nvidia_rtx_nodes, pyproject 0.1.3); the
+    # Manager registry slug is UNVERIFIED — the rail decl stays
+    # unwritten until the slug is read off a real Manager, never
+    # guessed (a guessed slug is drift with authority).
+    "comfyui_nvidia_rtx_nodes": {"RTXVideoSuperResolution"},
     "ComfyUI-LTXVideo": {"LTX_lora_loader", "CreateVideo"},
     "melite-audio-nodes": {
         "MiniMaxMusic3TextEncode", "EmptyMiniMaxMusic3LatentAudio",

@@ -122,6 +122,9 @@ def main() -> int:
             ("form-spec?model=joytag", "deep"),
             ("form-spec?model=florence2", "deep"),
             ("form-spec?model=joycaption", "deep"),
+            # CORDIS CARD 5 (2026-09-07): upscale-tools declares all
+            # three renderer packs (SeedVR2 + KJNodes + NVIDIA RTX).
+            ("form-spec?model=seedvr2_ema", "deep"),
             ("form-spec?model=h3-timeline", "deep"),
             ("form-spec?model=music3", "deep"),
             # NATIVE 3D/AUDIO BOARDING (2026-09-06): the cpp engines'
