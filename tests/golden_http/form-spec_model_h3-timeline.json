@@ -44,25 +44,6 @@
       "visible_when": null
     },
     {
-      "name": "ref_image",
-      "type": "text",
-      "label": "Reference image (Ref2VA identity lock)",
-      "default": null,
-      "options": [],
-      "group": "",
-      "zone": "",
-      "order": null,
-      "required": null,
-      "columns": null,
-      "width": null,
-      "min": null,
-      "max": null,
-      "step": null,
-      "placeholder": "",
-      "tooltip": "Absolute path to a reference image for identity-locked generation. The hybrid model auto-routes to Ref2VA mode when connected. Optional — leave empty for standard FL2VA text-to-video.",
-      "visible_when": null
-    },
-    {
       "name": "seed",
       "type": "seed",
       "label": "Seed",
@@ -271,12 +252,6 @@
           "type": "text",
           "label": "First frame (keyframe lanes)",
           "tooltip": "Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline."
-        },
-        {
-          "name": "ref_image",
-          "type": "text",
-          "label": "Reference image (Ref2VA identity lock)",
-          "tooltip": "Absolute path to a reference image for identity-locked generation. The hybrid model auto-routes to Ref2VA mode when connected. Optional — leave empty for standard FL2VA text-to-video."
         },
         {
           "name": "seed",

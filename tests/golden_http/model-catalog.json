@@ -341,8 +341,7 @@
         "rescale_shape": 0.5,
         "override_struct": 0.667,
         "override_shape": 0.769,
-        "seed": 42,
-        "filename_prefix": "trellis2_native"
+        "seed": 42
       },
       "engine": "comfyui",
       "form": "form_img_to_mesh",
@@ -389,8 +388,7 @@
         "override_struct": 0.667,
         "override_shape": 0.769,
         "seed": 42,
-        "camera_fov": "auto",
-        "filename_prefix": "pixal3d"
+        "camera_fov": "auto"
       },
       "engine": "comfyui",
       "form": "form_img_to_mesh",

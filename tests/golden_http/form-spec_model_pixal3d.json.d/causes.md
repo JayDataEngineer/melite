@@ -59,3 +59,14 @@ defaults move with the knobs (end-to-end wall: official_parity
 
 
 
+
+## 2026-09-07 — OUTPUT-CONTRACT + defaults-blanket stroke (operator order "fill ALL the gaps")
+
+Regenerated from the live served body. Two change classes, both
+deliberate: (a) DENSITY — the served rows are now dense
+FormFieldRow.model_dump() rows (the 2026-09-05 post-regen shape the
+older sparse 3D goldens predated); verified field-by-field that no
+shared-key value changed. (b) one field REMOVED per file (see below) —
+a dead-promise deletion, not drift. Semantic diff old-vs-new names
+exactly the removal, zero additions, zero value changes.
+Removed here: filename_prefix (09-06 sweep fossil — the run owns output names; card field + pixal3d model default died).

@@ -386,3 +386,12 @@ Row 4 slice 2 (6ec2ac3c, the audio-native-tts card lane) added the
 regold — the parity suite failed on the missing key through slices
 3–4. Regolded during row 4's image-upscale conversion stroke (the
 two-card flow). One key, one model, nothing else moved.
+
+## 2026-09-07 — OUTPUT-CONTRACT + defaults-blanket stroke (operator order "fill ALL the gaps")
+
+`filename_prefix` leaves the trellis2-native + pixal3d model default
+rows (the 09-06 sweep made the run own output names; the img-to-mesh
+card field died this stroke, so the model defaults that still named
+it were dangling — `test_python_cards` refuses a model default naming
+no card field). Nothing else changes (rewritten ensure_ascii=False to
+match the file's existing convention).

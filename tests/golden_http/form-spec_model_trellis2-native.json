@@ -1,251 +1,302 @@
 {
-  "defaults": {
-    "ao_size": "1024",
-    "atlas_size": "4096",
-    "bg_removal": "auto",
-    "cfg": "7.5",
-    "decimate_faces": "700000",
-    "filename_prefix": "trellis2_native",
-    "normal_size": "2048",
-    "override_shape": "0.769",
-    "override_struct": "0.667",
-    "remesh_resolution": "768",
-    "rescale_shape": "0.5",
-    "rescale_struct": "0.7",
-    "resolution": "1024",
-    "sd3_shift": "5.0",
-    "seed": "42",
-    "shape_cfg": "7.5",
-    "shape_sampler": "euler",
-    "shape_scheduler": "normal",
-    "shape_steps": "20",
-    "smooth_angle": "180",
-    "steps": "12",
-    "struct_sampler": "euler",
-    "struct_scheduler": "normal",
-    "tex1_cfg": "7.5",
-    "tex1_sampler": "euler",
-    "tex1_scheduler": "simple",
-    "tex1_steps": "12",
-    "tex2_cfg": "1.0",
-    "tex2_sampler": "euler",
-    "tex2_scheduler": "normal",
-    "tex2_steps": "12"
-  },
-  "engine": "comfyui",
-  "enhance_prompts": {
-    "lyrics": "",
-    "prompt": null
-  },
-  "features": {
-    "modifiers": [],
-    "variant_groups": {
-      "Quant": {
-        "label": "Quant"
-      },
-      "Variant": {
-        "label": "Variant"
-      },
-      "Recipe": {
-        "label": "Recipe",
-        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
-        "default": "default"
-      }
-    }
-  },
+  "model": "trellis2-native",
+  "form": "img-to-mesh",
+  "service": "trellis2-native",
+  "label": "Image → 3D",
+  "genre": "3d",
   "fields": [
     {
       "name": "input_image",
       "type": "file",
       "label": "Source image",
+      "default": null,
+      "options": [],
       "group": "input",
+      "zone": "",
       "order": 0,
-      "columns": 1,
       "required": true,
-      "tooltip": "One clear object, tight framing. Background is removed automatically (birefnet) unless bg_removal=off."
+      "columns": 1,
+      "width": null,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "One clear object, tight framing. Background is removed automatically (birefnet) unless bg_removal=off.",
+      "visible_when": null
     },
     {
       "name": "seed",
       "type": "seed",
       "label": "Seed",
-      "group": "input",
-      "order": 1,
-      "width": 1,
       "default": 42,
-      "tooltip": "Same seed + image = same mesh take."
+      "options": [],
+      "group": "input",
+      "zone": "",
+      "order": 1,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Same seed + image = same mesh take.",
+      "visible_when": null
     },
     {
       "name": "resolution",
       "type": "select",
       "label": "Resolution",
-      "group": "generation",
-      "order": 0,
-      "width": 1,
       "default": 1024,
-      "tooltip": "Upsample target (official pins 1536). All tiers run the full official chain — upsample + both texture passes + remesh tail.",
       "options": [
         "512",
         "1024",
         "1536"
-      ]
+      ],
+      "group": "generation",
+      "zone": "",
+      "order": 0,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Upsample target (official pins 1536). All tiers run the full official chain — upsample + both texture passes + remesh tail.",
+      "visible_when": null
     },
     {
       "name": "steps",
       "type": "number",
       "label": "Steps",
+      "default": 12,
+      "options": [],
       "group": "generation",
+      "zone": "",
       "order": 1,
+      "required": null,
+      "columns": null,
       "width": 1,
       "min": 4,
       "max": 60,
       "step": 1,
-      "default": 12,
-      "tooltip": "STRUCTURE stage steps (the lift). Shape + texture stages ride their own knobs in the Stage section."
+      "placeholder": "",
+      "tooltip": "STRUCTURE stage steps (the lift). Shape + texture stages ride their own knobs in the Stage section.",
+      "visible_when": null
     },
     {
       "name": "cfg",
       "type": "slider",
       "label": "CFG",
+      "default": 7.5,
+      "options": [],
       "group": "generation",
+      "zone": "",
       "order": 2,
+      "required": null,
+      "columns": null,
       "width": 1,
       "min": 1,
       "max": 15,
       "step": 0.5,
-      "default": 7.5,
-      "tooltip": "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance — blobby trash out of the box). Lower runs looser."
+      "placeholder": "",
+      "tooltip": "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance — blobby trash out of the box). Lower runs looser.",
+      "visible_when": null
     },
     {
       "name": "bg_removal",
       "type": "select",
       "label": "Background removal",
-      "group": "generation",
-      "order": 3,
-      "width": 1,
       "default": "auto",
-      "tooltip": "auto/on: birefnet cuts the background (recommended). off: feed a pre-cleaned or alpha-cut image straight to conditioning.",
       "options": [
         "auto",
         "on",
         "off"
-      ]
+      ],
+      "group": "generation",
+      "zone": "",
+      "order": 3,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "auto/on: birefnet cuts the background (recommended). off: feed a pre-cleaned or alpha-cut image straight to conditioning.",
+      "visible_when": null
     },
     {
       "name": "shape_steps",
       "type": "number",
       "label": "Shape steps",
       "default": 20,
+      "options": [],
       "group": "stage",
+      "zone": "",
       "order": 0,
+      "required": null,
+      "columns": null,
       "width": 1,
       "min": 4,
       "max": 60,
       "step": 1,
-      "tooltip": "Shape-stage steps. 20 is the official template calibration."
+      "placeholder": "",
+      "tooltip": "Shape-stage steps. 20 is the official template calibration.",
+      "visible_when": null
     },
     {
       "name": "shape_cfg",
       "type": "slider",
       "label": "Shape CFG",
       "default": 7.5,
+      "options": [],
       "group": "stage",
+      "zone": "",
       "order": 1,
+      "required": null,
+      "columns": null,
       "width": 1,
       "min": 1,
       "max": 15,
       "step": 0.5,
-      "tooltip": "Shape-stage guidance. 7.5 is the official template calibration."
+      "placeholder": "",
+      "tooltip": "Shape-stage guidance. 7.5 is the official template calibration.",
+      "visible_when": null
     },
     {
       "name": "tex1_steps",
       "type": "number",
       "label": "Texture pass 1 steps",
       "default": 12,
+      "options": [],
       "group": "stage",
+      "zone": "",
       "order": 2,
+      "required": null,
+      "columns": null,
       "width": 1,
       "min": 4,
       "max": 60,
       "step": 1,
-      "tooltip": "First texture pass steps (upsampled latent, simple scheduler). 12 is the official calibration."
+      "placeholder": "",
+      "tooltip": "First texture pass steps (upsampled latent, simple scheduler). 12 is the official calibration.",
+      "visible_when": null
     },
     {
       "name": "tex1_cfg",
       "type": "slider",
       "label": "Texture pass 1 CFG",
       "default": 7.5,
+      "options": [],
       "group": "stage",
+      "zone": "",
       "order": 3,
+      "required": null,
+      "columns": null,
       "width": 1,
       "min": 1,
       "max": 15,
       "step": 0.5,
-      "tooltip": "First texture pass guidance. 7.5 is the official calibration."
+      "placeholder": "",
+      "tooltip": "First texture pass guidance. 7.5 is the official calibration.",
+      "visible_when": null
     },
     {
       "name": "tex2_steps",
       "type": "number",
       "label": "Texture pass 2 steps",
       "default": 12,
+      "options": [],
       "group": "stage",
+      "zone": "",
       "order": 4,
+      "required": null,
+      "columns": null,
       "width": 1,
       "min": 4,
       "max": 60,
       "step": 1,
-      "tooltip": "Second texture pass steps (raw unet — the detail pass). 12 is the official calibration."
+      "placeholder": "",
+      "tooltip": "Second texture pass steps (raw unet — the detail pass). 12 is the official calibration.",
+      "visible_when": null
     },
     {
       "name": "tex2_cfg",
       "type": "slider",
       "label": "Texture pass 2 CFG",
       "default": 1.0,
+      "options": [],
       "group": "stage",
+      "zone": "",
       "order": 5,
+      "required": null,
+      "columns": null,
       "width": 1,
       "min": 1,
       "max": 15,
       "step": 0.5,
-      "tooltip": "Second texture pass guidance. 1.0 is the official calibration (near-verbatim detail sampling)."
+      "placeholder": "",
+      "tooltip": "Second texture pass guidance. 1.0 is the official calibration (near-verbatim detail sampling).",
+      "visible_when": null
     },
     {
       "name": "remesh_resolution",
       "type": "number",
       "label": "Remesh resolution",
       "default": 768,
+      "options": [],
       "group": "mesh",
+      "zone": "",
       "order": 0,
+      "required": null,
+      "columns": null,
       "width": 1,
       "min": 128,
       "max": 2048,
       "step": 64,
-      "tooltip": "UDF remesh voxel resolution. 768 is the official calibration; lower = lighter mesh, coarser surface."
+      "placeholder": "",
+      "tooltip": "UDF remesh voxel resolution. 768 is the official calibration; lower = lighter mesh, coarser surface.",
+      "visible_when": null
     },
     {
       "name": "decimate_faces",
       "type": "number",
       "label": "Decimate faces",
       "default": 700000,
+      "options": [],
       "group": "mesh",
+      "zone": "",
       "order": 1,
+      "required": null,
+      "columns": null,
       "width": 1,
       "min": 10000,
       "max": 2000000,
       "step": 10000,
-      "tooltip": "Exact face count after decimation (midpoint placement). 700000 is the official calibration."
+      "placeholder": "",
+      "tooltip": "Exact face count after decimation (midpoint placement). 700000 is the official calibration.",
+      "visible_when": null
     },
     {
       "name": "smooth_angle",
       "type": "slider",
       "label": "Smooth angle",
       "default": 180,
+      "options": [],
       "group": "mesh",
+      "zone": "",
       "order": 2,
+      "required": null,
+      "columns": null,
       "width": 1,
       "min": 0,
       "max": 180,
       "step": 5,
-      "tooltip": "Normal-smoothing crease angle, applied before unwrap and after texturing. 180 is the official calibration."
+      "placeholder": "",
+      "tooltip": "Normal-smoothing crease angle, applied before unwrap and after texturing. 180 is the official calibration.",
+      "visible_when": null
     },
     {
       "name": "atlas_size",
@@ -257,9 +308,17 @@
         "4096"
       ],
       "group": "bake",
+      "zone": "",
       "order": 0,
+      "required": null,
+      "columns": null,
       "width": 1,
-      "tooltip": "Unwrap + baked color atlas resolution. 4096 is the official calibration (VRAM-heavy); 2048 is the lighter fallback."
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Unwrap + baked color atlas resolution. 4096 is the official calibration (VRAM-heavy); 2048 is the lighter fallback.",
+      "visible_when": null
     },
     {
       "name": "ao_size",
@@ -271,9 +330,17 @@
         "1024"
       ],
       "group": "bake",
+      "zone": "",
       "order": 1,
+      "required": null,
+      "columns": null,
       "width": 1,
-      "tooltip": "Ambient-occlusion bake resolution. 1024 is the official calibration."
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Ambient-occlusion bake resolution. 1024 is the official calibration.",
+      "visible_when": null
     },
     {
       "name": "normal_size",
@@ -285,9 +352,17 @@
         "2048"
       ],
       "group": "bake",
+      "zone": "",
       "order": 2,
+      "required": null,
+      "columns": null,
       "width": 1,
-      "tooltip": "Normal-map bake resolution. 2048 is the official calibration."
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Normal-map bake resolution. 2048 is the official calibration.",
+      "visible_when": null
     },
     {
       "name": "struct_sampler",
@@ -342,9 +417,17 @@
         "uni_pc_bh2"
       ],
       "group": "lab",
+      "zone": "",
       "order": 0,
+      "required": null,
+      "columns": null,
       "width": 1,
-      "tooltip": "Structure-stage sampler. euler is the official template pick."
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Structure-stage sampler. euler is the official template pick.",
+      "visible_when": null
     },
     {
       "name": "struct_scheduler",
@@ -363,9 +446,17 @@
         "simple"
       ],
       "group": "lab",
+      "zone": "",
       "order": 1,
+      "required": null,
+      "columns": null,
       "width": 1,
-      "tooltip": "Structure-stage scheduler. normal is the official pick."
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Structure-stage scheduler. normal is the official pick.",
+      "visible_when": null
     },
     {
       "name": "shape_sampler",
@@ -420,9 +511,17 @@
         "uni_pc_bh2"
       ],
       "group": "lab",
+      "zone": "",
       "order": 2,
+      "required": null,
+      "columns": null,
       "width": 1,
-      "tooltip": "Shape-stage sampler. euler is the official pick."
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Shape-stage sampler. euler is the official pick.",
+      "visible_when": null
     },
     {
       "name": "shape_scheduler",
@@ -441,9 +540,17 @@
         "simple"
       ],
       "group": "lab",
+      "zone": "",
       "order": 3,
+      "required": null,
+      "columns": null,
       "width": 1,
-      "tooltip": "Shape-stage scheduler. normal is the official pick."
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Shape-stage scheduler. normal is the official pick.",
+      "visible_when": null
     },
     {
       "name": "tex1_sampler",
@@ -498,9 +605,17 @@
         "uni_pc_bh2"
       ],
       "group": "lab",
+      "zone": "",
       "order": 4,
+      "required": null,
+      "columns": null,
       "width": 1,
-      "tooltip": "First texture pass sampler. euler is the official pick."
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "First texture pass sampler. euler is the official pick.",
+      "visible_when": null
     },
     {
       "name": "tex1_scheduler",
@@ -519,9 +634,17 @@
         "simple"
       ],
       "group": "lab",
+      "zone": "",
       "order": 5,
+      "required": null,
+      "columns": null,
       "width": 1,
-      "tooltip": "First texture pass scheduler. simple is the official pick (the only non-normal scheduler in the template)."
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "First texture pass scheduler. simple is the official pick (the only non-normal scheduler in the template).",
+      "visible_when": null
     },
     {
       "name": "tex2_sampler",
@@ -576,9 +699,17 @@
         "uni_pc_bh2"
       ],
       "group": "lab",
+      "zone": "",
       "order": 6,
+      "required": null,
+      "columns": null,
       "width": 1,
-      "tooltip": "Second texture pass sampler. euler is the official pick."
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Second texture pass sampler. euler is the official pick.",
+      "visible_when": null
     },
     {
       "name": "tex2_scheduler",
@@ -597,181 +728,204 @@
         "simple"
       ],
       "group": "lab",
+      "zone": "",
       "order": 7,
+      "required": null,
+      "columns": null,
       "width": 1,
-      "tooltip": "Second texture pass scheduler. normal is the official pick."
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Second texture pass scheduler. normal is the official pick.",
+      "visible_when": null
     },
     {
       "name": "sd3_shift",
       "type": "number",
       "label": "SD3 shift",
       "default": 5.0,
+      "options": [],
       "group": "lab",
+      "zone": "",
       "order": 8,
+      "required": null,
+      "columns": null,
       "width": 1,
       "min": 1,
       "max": 10,
       "step": 0.5,
-      "tooltip": "ModelSamplingSD3 shift on the structure arm. 5.0 is the official template calibration."
+      "placeholder": "",
+      "tooltip": "ModelSamplingSD3 shift on the structure arm. 5.0 is the official template calibration.",
+      "visible_when": null
     },
     {
       "name": "rescale_struct",
       "type": "slider",
       "label": "Structure rescale",
       "default": 0.7,
+      "options": [],
       "group": "lab",
+      "zone": "",
       "order": 9,
+      "required": null,
+      "columns": null,
       "width": 1,
       "min": 0.1,
       "max": 1,
       "step": 0.05,
-      "tooltip": "Structure-arm RescaleCFG multiplier. 0.7 is the official calibration."
+      "placeholder": "",
+      "tooltip": "Structure-arm RescaleCFG multiplier. 0.7 is the official calibration.",
+      "visible_when": null
     },
     {
       "name": "rescale_shape",
       "type": "slider",
       "label": "Shape rescale",
       "default": 0.5,
+      "options": [],
       "group": "lab",
+      "zone": "",
       "order": 10,
+      "required": null,
+      "columns": null,
       "width": 1,
       "min": 0.1,
       "max": 1,
       "step": 0.05,
-      "tooltip": "Shape-arm RescaleCFG multiplier (also feeds texture pass 1 — one node). 0.5 is the official calibration."
+      "placeholder": "",
+      "tooltip": "Shape-arm RescaleCFG multiplier (also feeds texture pass 1 — one node). 0.5 is the official calibration.",
+      "visible_when": null
     },
     {
       "name": "override_struct",
       "type": "slider",
       "label": "Structure override %",
       "default": 0.667,
+      "options": [],
       "group": "lab",
+      "zone": "",
       "order": 11,
+      "required": null,
+      "columns": null,
       "width": 1,
       "min": 0,
       "max": 1,
       "step": 0.001,
-      "tooltip": "Structure-arm CFGOverride start percent. 0.667 is the official calibration."
+      "placeholder": "",
+      "tooltip": "Structure-arm CFGOverride start percent. 0.667 is the official calibration.",
+      "visible_when": null
     },
     {
       "name": "override_shape",
       "type": "slider",
       "label": "Shape override %",
       "default": 0.769,
+      "options": [],
       "group": "lab",
+      "zone": "",
       "order": 12,
+      "required": null,
+      "columns": null,
       "width": 1,
       "min": 0,
       "max": 1,
       "step": 0.001,
-      "tooltip": "Shape-arm CFGOverride start percent. 0.769 is the official calibration."
-    },
-    {
-      "name": "filename_prefix",
-      "type": "text",
-      "label": "Filename prefix",
-      "group": "output",
-      "order": 0,
-      "tooltip": "Output .glb name prefix (the run stamps resolution + seed)."
+      "placeholder": "",
+      "tooltip": "Shape-arm CFGOverride start percent. 0.769 is the official calibration.",
+      "visible_when": null
     }
   ],
-  "form": "img-to-mesh",
-  "genre": "3d",
-  "label": "Image → 3D",
-  "layout": "studio",
-  "model": "trellis2-native",
   "schema_groups": [
     {
-      "fields": [
-        {
-          "columns": 1,
-          "label": "Source image",
-          "name": "input_image",
-          "order": 0,
-          "required": true,
-          "tooltip": "One clear object, tight framing. Background is removed automatically (birefnet) unless bg_removal=off.",
-          "type": "file"
-        },
-        {
-          "default": 42,
-          "label": "Seed",
-          "name": "seed",
-          "order": 1,
-          "tooltip": "Same seed + image = same mesh take.",
-          "type": "seed",
-          "width": 1
-        }
-      ],
       "id": "input",
       "label": "Input",
+      "fields": [
+        {
+          "name": "input_image",
+          "type": "file",
+          "label": "Source image",
+          "order": 0,
+          "columns": 1,
+          "required": true,
+          "tooltip": "One clear object, tight framing. Background is removed automatically (birefnet) unless bg_removal=off."
+        },
+        {
+          "name": "seed",
+          "type": "seed",
+          "label": "Seed",
+          "order": 1,
+          "width": 1,
+          "default": 42,
+          "tooltip": "Same seed + image = same mesh take."
+        }
+      ],
       "order": 0,
       "zone": "params"
     },
     {
+      "id": "generation",
+      "label": "Generation",
       "fields": [
         {
-          "default": 1024,
-          "label": "Resolution",
           "name": "resolution",
+          "type": "select",
+          "label": "Resolution",
+          "order": 0,
+          "width": 1,
+          "default": 1024,
+          "tooltip": "Upsample target (official pins 1536). All tiers run the full official chain — upsample + both texture passes + remesh tail.",
           "options": [
             "512",
             "1024",
             "1536"
-          ],
-          "order": 0,
-          "tooltip": "Upsample target (official pins 1536). All tiers run the full official chain — upsample + both texture passes + remesh tail.",
-          "type": "select",
-          "width": 1
+          ]
         },
         {
-          "default": 12,
-          "label": "Steps",
-          "max": 60,
-          "min": 4,
           "name": "steps",
-          "order": 1,
-          "step": 1,
-          "tooltip": "STRUCTURE stage steps (the lift). Shape + texture stages ride their own knobs in the Stage section.",
           "type": "number",
-          "width": 1
+          "label": "Steps",
+          "order": 1,
+          "width": 1,
+          "min": 4,
+          "max": 60,
+          "step": 1,
+          "default": 12,
+          "tooltip": "STRUCTURE stage steps (the lift). Shape + texture stages ride their own knobs in the Stage section."
         },
         {
-          "default": 7.5,
-          "label": "CFG",
-          "max": 15,
-          "min": 1,
           "name": "cfg",
-          "order": 2,
-          "step": 0.5,
-          "tooltip": "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance — blobby trash out of the box). Lower runs looser.",
           "type": "slider",
-          "width": 1
+          "label": "CFG",
+          "order": 2,
+          "width": 1,
+          "min": 1,
+          "max": 15,
+          "step": 0.5,
+          "default": 7.5,
+          "tooltip": "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance — blobby trash out of the box). Lower runs looser."
         },
         {
-          "default": "auto",
-          "label": "Background removal",
           "name": "bg_removal",
+          "type": "select",
+          "label": "Background removal",
+          "order": 3,
+          "width": 1,
+          "default": "auto",
+          "tooltip": "auto/on: birefnet cuts the background (recommended). off: feed a pre-cleaned or alpha-cut image straight to conditioning.",
           "options": [
             "auto",
             "on",
             "off"
-          ],
-          "order": 3,
-          "tooltip": "auto/on: birefnet cuts the background (recommended). off: feed a pre-cleaned or alpha-cut image straight to conditioning.",
-          "type": "select",
-          "width": 1
+          ]
         }
       ],
-      "id": "generation",
-      "label": "Generation",
       "order": 1,
       "zone": "params"
     },
     {
       "id": "stage",
       "label": "Stage",
-      "order": 2,
-      "zone": "params",
       "fields": [
         {
           "name": "shape_steps",
@@ -845,13 +999,13 @@
           "default": 1.0,
           "tooltip": "Second texture pass guidance. 1.0 is the official calibration (near-verbatim detail sampling)."
         }
-      ]
+      ],
+      "order": 2,
+      "zone": "params"
     },
     {
       "id": "mesh",
       "label": "Mesh",
-      "order": 3,
-      "zone": "params",
       "fields": [
         {
           "name": "remesh_resolution",
@@ -889,13 +1043,13 @@
           "default": 180,
           "tooltip": "Normal-smoothing crease angle, applied before unwrap and after texturing. 180 is the official calibration."
         }
-      ]
+      ],
+      "order": 3,
+      "zone": "params"
     },
     {
       "id": "bake",
       "label": "Bake",
-      "order": 4,
-      "zone": "params",
       "fields": [
         {
           "name": "atlas_size",
@@ -936,13 +1090,13 @@
             "2048"
           ]
         }
-      ]
+      ],
+      "order": 4,
+      "zone": "params"
     },
     {
       "id": "lab",
       "label": "Lab",
-      "order": 5,
-      "zone": "params",
       "fields": [
         {
           "name": "struct_sampler",
@@ -1308,70 +1462,119 @@
           "default": 0.769,
           "tooltip": "Shape-arm CFGOverride start percent. 0.769 is the official calibration."
         }
-      ]
-    },
-    {
-      "fields": [
-        {
-          "label": "Filename prefix",
-          "name": "filename_prefix",
-          "order": 0,
-          "tooltip": "Output .glb name prefix (the run stamps resolution + seed).",
-          "type": "text"
-        }
       ],
-      "id": "output",
-      "label": "Output",
-      "order": 6,
+      "order": 5,
       "zone": "params"
     }
   ],
-  "service": "trellis2-native",
+  "features": {
+    "modifiers": [],
+    "variant_groups": {
+      "Variant": {
+        "label": "Variant"
+      },
+      "Quant": {
+        "label": "Quant"
+      },
+      "Recipe": {
+        "label": "Recipe",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "default": "default"
+      }
+    }
+  },
+  "defaults": {
+    "resolution": "1024",
+    "bg_removal": "auto",
+    "steps": "12",
+    "cfg": "7.5",
+    "shape_steps": "20",
+    "shape_cfg": "7.5",
+    "tex1_steps": "12",
+    "tex1_cfg": "7.5",
+    "tex2_steps": "12",
+    "tex2_cfg": "1.0",
+    "remesh_resolution": "768",
+    "decimate_faces": "700000",
+    "smooth_angle": "180",
+    "atlas_size": "4096",
+    "ao_size": "1024",
+    "normal_size": "2048",
+    "struct_sampler": "euler",
+    "struct_scheduler": "normal",
+    "shape_sampler": "euler",
+    "shape_scheduler": "normal",
+    "tex1_sampler": "euler",
+    "tex1_scheduler": "simple",
+    "tex2_sampler": "euler",
+    "tex2_scheduler": "normal",
+    "sd3_shift": "5.0",
+    "rescale_struct": "0.7",
+    "rescale_shape": "0.5",
+    "override_struct": "0.667",
+    "override_shape": "0.769",
+    "seed": "42"
+  },
   "variants": [
     {
-      "defaults": {},
-      "engine": "comfyui",
-      "group": "Variant",
-      "hint": "Standard resolution — DEFAULT",
       "id": "1024",
       "label": "1024",
-      "route": "trellis2-native"
+      "group": "Variant",
+      "defaults": {},
+      "route": "trellis2-native",
+      "hint": "Standard resolution — DEFAULT",
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
     },
     {
-      "defaults": {},
-      "group": "Quant",
       "id": "bf16",
       "label": "BF16",
+      "group": "Quant",
+      "defaults": {},
+      "route": "trellis2-native-bf16",
+      "hint": null,
+      "engine": "",
       "quant": "bf16",
-      "route": "trellis2-native",
-      "vram_peak_gb": 0.0
+      "vram_peak_gb": 12.0,
+      "owner": "1024"
     },
     {
-      "defaults": {},
-      "group": "Quant",
       "id": "int8",
       "label": "INT8 ConvRot",
+      "group": "Quant",
+      "defaults": {},
+      "route": "trellis2-native-int8",
+      "hint": null,
+      "engine": "",
       "quant": "int8",
-      "route": "trellis2-native",
-      "vram_peak_gb": 0.0
+      "vram_peak_gb": 8.0,
+      "owner": "1024"
     },
     {
-      "defaults": {},
-      "engine": "comfyui",
-      "group": "Variant",
-      "hint": "Quality resolution — hero assets, final production",
       "id": "1536",
       "label": "1536",
-      "route": "trellis2-native-1536"
+      "group": "Variant",
+      "defaults": {},
+      "route": "trellis2-native-1536",
+      "hint": "Quality resolution — hero assets, final production",
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
     },
     {
-      "defaults": {},
-      "engine": "comfyui",
-      "group": "Variant",
-      "hint": "Fast resolution — props, thumbnails, iteration",
       "id": "512",
       "label": "512",
-      "route": "trellis2-native-512"
+      "group": "Variant",
+      "defaults": {},
+      "route": "trellis2-native-512",
+      "hint": "Fast resolution — props, thumbnails, iteration",
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
     },
     {
       "id": "default",
@@ -1385,5 +1588,16 @@
       "vram_peak_gb": null,
       "owner": ""
     }
-  ]
+  ],
+  "guide": null,
+  "engine": "comfyui",
+  "enhance_prompt": null,
+  "enhance_prompts": {
+    "prompt": null,
+    "lyrics": ""
+  },
+  "size": null,
+  "layout": "studio",
+  "loader_info": null,
+  "contract": null
 }

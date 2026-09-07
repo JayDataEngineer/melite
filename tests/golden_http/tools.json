@@ -298,10 +298,6 @@
             "type": "string",
             "description": "Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline."
           },
-          "ref_image": {
-            "type": "string",
-            "description": "Absolute path to a reference image for identity-locked generation. The hybrid model auto-routes to Ref2VA mode when connected. Optional — leave empty for standard FL2VA text-to-video."
-          },
           "seed": {
             "type": "integer",
             "default": 42,
@@ -1121,10 +1117,6 @@
               "trellis2-native",
               "pixal3d"
             ]
-          },
-          "filename_prefix": {
-            "type": "string",
-            "description": "Output .glb name prefix (the run stamps resolution + seed)."
           }
         },
         "required": []

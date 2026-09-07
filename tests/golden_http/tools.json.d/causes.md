@@ -138,3 +138,15 @@ The soma/smplx/g1 rows + the text-to-motion form + the
 text_to_motion_card tool leave the served surfaces (the comfyui
 kimodo row + motion_card remain). form-spec_model_soma.json
 deleted with the lane.
+
+## 2026-09-07 — OUTPUT-CONTRACT + defaults-blanket stroke (operator order "fill ALL the gaps")
+
+Two dead-promise card fields deleted, so they leave the served tool
+surface: `ref_image` leaves h3_timeline_card params (a dead promise —
+the h3 schema is extra=forbid with no such row and compose never read
+it; the Ref2VA lock rides the wired guide image, not a card knob),
+`filename_prefix` leaves img_to_mesh_card params (the 09-06 sweep made
+the run own output names; the card field died, then the pixal3d +
+trellis2-native model defaults that still named it). required lists
+unchanged (tts stays ['text']). Verified: semantic diff old-vs-new =
+exactly these two prop removals, nothing else.

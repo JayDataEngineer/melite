@@ -33,3 +33,14 @@ recipe — always — and the Recipe rail renders ABOVE the Model row.
 Mode for THIS file: WHOLESALE regold (parity-pinned route —
 the golden must equal the live wire byte-for-byte; verified zero
 leaf divergences old→new outside the causes below).
+
+## 2026-09-07 — OUTPUT-CONTRACT + defaults-blanket stroke (operator order "fill ALL the gaps")
+
+Regenerated from the live served body. Two change classes, both
+deliberate: (a) DENSITY — the served rows are now dense
+FormFieldRow.model_dump() rows (the 2026-09-05 post-regen shape the
+older sparse 3D goldens predated); verified field-by-field that no
+shared-key value changed. (b) one field REMOVED per file (see below) —
+a dead-promise deletion, not drift. Semantic diff old-vs-new names
+exactly the removal, zero additions, zero value changes.
+Removed here: ref_image (dead promise — schema extra=forbid admits no such row, compose never read it).

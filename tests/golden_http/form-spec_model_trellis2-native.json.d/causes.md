@@ -67,3 +67,14 @@ the default recipe row (inserted head of the Recipe run, exact live
 bytes) + the Recipe variant_groups entry (exact live bytes) changed;
 every other byte is untouched, including this lane's unrelated drift,
 which stays its lane's business.
+
+## 2026-09-07 — OUTPUT-CONTRACT + defaults-blanket stroke (operator order "fill ALL the gaps")
+
+Regenerated from the live served body. Two change classes, both
+deliberate: (a) DENSITY — the served rows are now dense
+FormFieldRow.model_dump() rows (the 2026-09-05 post-regen shape the
+older sparse 3D goldens predated); verified field-by-field that no
+shared-key value changed. (b) one field REMOVED per file (see below) —
+a dead-promise deletion, not drift. Semantic diff old-vs-new names
+exactly the removal, zero additions, zero value changes.
+Removed here: filename_prefix (09-06 sweep fossil — the run owns output names; card field + trellis2-native model default died).
