@@ -125,6 +125,10 @@ def main() -> int:
             # CORDIS CARD 5 (2026-09-07): upscale-tools declares all
             # three renderer packs (SeedVR2 + KJNodes + NVIDIA RTX).
             ("form-spec?model=seedvr2_ema", "deep"),
+            # CORDIS CARDS 6+7 (2026-09-07): input-prep + mask-studio
+            # are stock-only (Load/Save + comfy_extras detectors).
+            ("form-spec?model=input", "deep"),
+            ("form-spec?model=mask-studio", "deep"),
             ("form-spec?model=h3-timeline", "deep"),
             ("form-spec?model=music3", "deep"),
             # NATIVE 3D/AUDIO BOARDING (2026-09-06): the cpp engines'

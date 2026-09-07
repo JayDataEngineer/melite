@@ -33,3 +33,18 @@ the default recipe row (inserted head of the Recipe run, exact live
 bytes) + the Recipe variant_groups entry (exact live bytes) changed;
 every other byte is untouched, including this lane's unrelated drift,
 which stays its lane's business.
+
+## 2026-09-07 — envelope + variant-rows catch-up (Cordis cards 6+7)
+
+Parity-pinned this stroke. Deltas, all classified:
+
+- `$.contract` / `$.enhance_prompt` nulls + explicit-null field
+  attrs: the serialization blanket (same as the seedvr2_ema entry
+  above — no lane content).
+- `variants[]`: the golden carried ONLY the universal default
+  recipe; live serves the committed class shape (standard +
+  f32 quant + default recipe). The model.py shape is committed
+  HEAD, not in-flight work — the golden simply predates it.
+
+Served-verbatim rewrite. (input-prep's golden needed no touch —
+it matched live as-is.)
