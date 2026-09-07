@@ -22,3 +22,10 @@ the default recipe row (inserted head of the Recipe run, exact live
 bytes) + the Recipe variant_groups entry (exact live bytes) changed;
 every other byte is untouched, including this lane's unrelated drift,
 which stays its lane's business.
+
+## 2026-09-07 — committed-evolution catch-up (Cordis cards 18+19)
+
+Parity-pinned this stroke. Variant-rows + envelope evolution
+against committed classes (lane tree clean except the sibling's
+frontend tsx) — served-verbatim rewrite, no values changed
+beyond the committed shape.

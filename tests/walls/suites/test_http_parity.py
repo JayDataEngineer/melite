@@ -149,6 +149,9 @@ def main() -> int:
             ("form-spec?model=trellis2-native", "deep"),
             ("form-spec?model=pixal3d", "deep"),
             ("form-spec?model=transfer_rig", "deep"),
+            # CORDIS CARDS 18+19 (2026-09-07): motion decls cover the
+            # renderer (kimodo x2 + poser); forge walled natively.
+            ("form-spec?model=kimodo", "deep"),
             ("form-spec?model=h3-timeline", "deep"),
             ("form-spec?model=music3", "deep"),
             # NATIVE 3D/AUDIO BOARDING (2026-09-06): the cpp engines'
