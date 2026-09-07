@@ -269,3 +269,155 @@ def test_scaffold_refuses_clobber(tmp_path: Path) -> None:
     assert proc.returncode == 1, proc.stdout
     assert "clobber" in proc.stdout, proc.stdout
     assert (out / "py" / "x.py").read_text() == "mine"
+
+
+# --- row-7 slice 3: board (mechanical boarding) ---------------------
+
+from contextlib import contextmanager  # noqa: E402
+
+
+@contextmanager
+def _boarded_stage():
+    """Park a claiming model + scaffold an in-tree card, board it,
+    YIELD, then restore EVERYTHING (stage_params bytes, parks).
+    The wall mutates the tree and proves the restore byte-exact."""
+    repo = REPO
+    model_dir = (repo / "plugins/engines/comfyui/models/audio"
+                 / "wall-tmp-board-fam")
+    card_dir = (repo / "plugins/engines/comfyui/action_cards/audio"
+                / "wall-tmp-board")
+    sp_path = repo / "py" / "stage_params.py"
+    sp_bak = sp_path.read_bytes()
+    src = (repo / "plugins/engines/comfyui/models/audio/moss-sfx"
+           / "model.py").read_text()
+    assert "card = 'sfx'" in src, \
+        "moss-sfx model shape moved — the wall's premise moved"
+    model_dir.mkdir()
+    (model_dir / "model.py").write_text(
+        src.replace("class MossSfx(Model):",
+                    "class WallTmpBoardFam(Model):")
+        .replace("id = 'moss-sfx'", "id = 'wall-tmp-board-fam'"))
+    spec = {
+        "card_id": "wall-tmp-board", "genre": "audio",
+        "engine": "comfyui", "label": "Wall Board",
+        "description": "board proof card",
+        "models": [{"file": "plugins/engines/comfyui/models/audio/"
+                            "wall-tmp-board-fam/model.py",
+                    "class": "WallTmpBoardFam"}],
+        "params": [{"name": "text", "type": "str", "required": True}],
+        "kinds": {"inputs": {"text": "text"},
+                  "outputs": {"default": "audio"}},
+    }
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        spec_file = Path(tmp) / "spec.json"
+        spec_file.write_text(json.dumps(spec))
+        proc = _scaffold("--spec-file", str(spec_file),
+                         "--out", str(card_dir))
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+        proc = subprocess.run(
+            [sys.executable, str(TOOL), "board",
+             "--spec-file", str(spec_file),
+             "--dir", str(card_dir)],
+            capture_output=True, text=True, timeout=300)
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+        assert "BOARDED" in proc.stdout, proc.stdout
+        try:
+            yield spec
+        finally:
+            sp_path.write_bytes(sp_bak)
+            shutil.rmtree(model_dir, ignore_errors=True)
+            shutil.rmtree(card_dir, ignore_errors=True)
+            assert sp_path.read_bytes() == sp_bak, \
+                "stage_params.py restore not byte-exact"
+
+
+def test_board_full_check_passes() -> None:
+    with _boarded_stage():
+        proc = _run("wall-tmp-board")
+        assert proc.returncode == 0, proc.stdout
+
+
+def test_board_production_gate_sees_card() -> None:
+    """The boarded card is gated by the REAL door: a bogus knob
+    refuses at validate_stage_params, a clean body passes."""
+    with _boarded_stage():
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            probe = Path(tmp) / "probe.py"
+            probe.write_text(
+                "import sys\n"
+                "sys.path.insert(0, 'py')\n"
+                "import stage_params as sp\n"
+                "sp._mount_cards_for_wall()\n"
+                "sp.validate_stage_params("
+                "'wall-tmp-board', {'text': 'wall'})\n"
+                "print('clean body accepted')\n"
+                "try:\n"
+                "    sp.validate_stage_params('wall-tmp-board',"
+                " {'text': 'wall', 'bogus_knob': 1})\n"
+                "except Exception as e:\n"
+                "    print('bogus refused:', str(e)[:80])\n"
+                "else:\n"
+                "    print('BOGUS ACCEPTED')\n")
+            proc = subprocess.run(
+                [sys.executable, str(probe)],
+                capture_output=True, text=True, timeout=120)
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+        assert "clean body accepted" in proc.stdout, \
+            proc.stdout + proc.stderr
+        assert "bogus refused" in proc.stdout, \
+            proc.stdout + proc.stderr
+
+
+def test_board_writes_tool_json() -> None:
+    with _boarded_stage():
+        snap = (REPO / "plugins/engines/comfyui/action_cards/audio"
+                / "wall-tmp-board" / "tool.json")
+        assert snap.is_file(), "board never regenerated tool.json"
+        assert "wall-tmp-board" in snap.read_text(), \
+            "tool.json is not this card's snapshot"
+
+
+@pytest.mark.parametrize("kinds,needle", [
+    ({"inputs": {"text": "colour"}, "outputs": {"default": "audio"}},
+     "py/flow.py Kind"),
+    ({"inputs": {"text": "text"}, "outputs": {"noise": "audio"}},
+     '"default"'),
+    (None, "spec.kinds"),
+])
+def test_board_refuses_kinds(tmp_path: Path, kinds: object,
+                             needle: str) -> None:
+    spec = json.loads(_spec(tmp_path).read_text())
+    spec["kinds"] = kinds
+    spec_file = tmp_path / "kinds-spec.json"
+    spec_file.write_text(json.dumps(spec))
+    proc = subprocess.run(
+        [sys.executable, str(TOOL), "board",
+         "--spec-file", str(spec_file),
+         "--dir", str(tmp_path / "card")],
+        capture_output=True, text=True, timeout=120)
+    assert proc.returncode == 1, proc.stdout
+    assert needle in proc.stdout, proc.stdout
+
+
+def test_board_refuses_boarded_card(tmp_path: Path) -> None:
+    """Board on tts refuses BEFORE any write — stage_params.py
+    bytes identical after (no half-boards, not even a start)."""
+    sp_path = REPO / "py" / "stage_params.py"
+    before = sp_path.read_bytes()
+    spec = json.loads(_spec(tmp_path).read_text())
+    spec["card_id"] = "tts"
+    spec["kinds"] = {"inputs": {"text": "text"},
+                     "outputs": {"default": "audio"}}
+    spec_file = tmp_path / "tts-spec.json"
+    spec_file.write_text(json.dumps(spec))
+    proc = subprocess.run(
+        [sys.executable, str(TOOL), "board",
+         "--spec-file", str(spec_file),
+         "--dir", str(REPO / "plugins/engines/comfyui/action_cards"
+                      / "audio/tts")],
+        capture_output=True, text=True, timeout=120)
+    assert proc.returncode == 1, proc.stdout
+    assert "already has a REGISTRY row" in proc.stdout, proc.stdout
+    assert sp_path.read_bytes() == before

@@ -8,12 +8,15 @@ and finds out at GPU time. Two halves, one door:
   check --dir <card-dir>   a scaffold dir (no registry row yet)
   scaffold --spec-file <json> --out <dir>
                            write the five-file anatomy from a spec
+  board --spec-file <json> --dir <in-tree-card-dir>
+                           board it (model back-claims, registry
+                           rows, tool.json) + full check
 
-Exit 0: anatomically boardable / scaffolded. Exit 1: the EXACT
-missing piece (or the spec refusal). The scaffold writes dirs the
-check accepts — `scaffold` then `check --dir` is the authoring
-loop. The REGISTRY ROW is printed, not written (boarding slice);
-compose.py/renderer.py are honest stubs (the lane arm is slice 3).
+Exit 0: anatomically boardable / scaffolded / boarded. Exit 1: the
+EXACT missing piece (or the spec refusal). The scaffold writes dirs
+the check accepts once the named model claims them; board performs
+the mechanical boarding the scaffold prints. compose.py/renderer.py
+stubs are the lane arm's problem (slice 4).
 """
 import importlib.util
 import os
@@ -267,6 +270,9 @@ def _check_card(py_dir: str, card_id: str) -> None:
 
 
 def _check_registry(card_id: str, engine: str) -> None:
+    """The REGISTRY row leg: exists + engine matches the dir. (The
+    row's schema_class is always None — the schema gate rides
+    _SCHEMA_TARGETS, verified by _check_linkage.)"""
     try:
         import stage_params as sp
     except ImportError as e:
@@ -277,23 +283,53 @@ def _check_registry(card_id: str, engine: str) -> None:
     if not rows:
         _fail("no stage_params REGISTRY row for card %r" % card_id)
         return
-def _check_registry(card_id: str, engine: str):
-    """Returns the row's schema_class (or None) — the gate target."""
-    try:
-        import stage_params as sp
-    except ImportError as e:
-        _fail("stage_params unavailable (%s)" % e)
-        return None
-    rows = [r for r in sp.REGISTRY.rows
-            if getattr(r, "card_id", None) == card_id]
-    if not rows:
-        _fail("no stage_params REGISTRY row for card %r" % card_id)
-        return None
     row = rows[0]
     if getattr(row, "engine", None) != engine:
         _fail("registry row engine %r != card engine dir %r"
               % (getattr(row, "engine", None), engine))
-    return getattr(row, "schema_class", None)
+
+
+def _check_linkage(card_id: str, py_dir: str):
+    """The _SCHEMA_TARGETS leg (STROKE 4 bijection, per-card): the
+    entry must resolve THROUGH stage_params' own loader to the
+    class defined in THIS dir's schema.py (module-file identity).
+    Returns the resolved class (the grammar target), or None for
+    the no-op class (entry resolves to None — schema.py must then
+    be absent)."""
+    try:
+        import stage_params as sp
+    except ImportError as e:
+        _fail("stage_params unavailable (%s)" % e)
+        return None
+    entry = sp._SCHEMA_TARGETS.get(card_id)
+    if entry is None:
+        _fail("no _SCHEMA_TARGETS entry for card %r (STROKE 4 "
+              "bijection)" % card_id)
+        return None
+    try:
+        sp._mount_cards_for_wall()
+        resolved = sp._resolve_schema(card_id)
+    except Exception as e:
+        _fail("_SCHEMA_TARGETS %r refuses to resolve (%s: %s)"
+              % (entry, type(e).__name__, e))
+        return None
+    schema_path = os.path.join(py_dir, "schema.py")
+    if resolved is None:
+        if os.path.isfile(schema_path):
+            _fail("%r resolves to None (no-op class) but %s exists"
+                  % (card_id, schema_path))
+        return None
+    mod_file = sys.modules.get(
+        getattr(resolved, "__module__", ""), None)
+    mod_file = getattr(mod_file, "__file__", None)
+    if mod_file is None or os.path.realpath(mod_file) != \
+            os.path.realpath(schema_path):
+        _fail("_SCHEMA_TARGETS %r resolves to %s (from %s), not "
+              "this dir's schema.py — a lookalike, not boarding"
+              % (entry, getattr(resolved, "__name__", resolved),
+                 mod_file))
+        return None
+    return resolved
 
 
 def check(card_id: str, card_dir: str | None = None) -> int:
@@ -325,7 +361,18 @@ def check(card_id: str, card_dir: str | None = None) -> int:
         gate_class = None
         if not scaffold_stage and card_dir.startswith(
                 os.path.join(REPO, "plugins")):
-            gate_class = _check_registry(card_id, _engine_of(card_dir))
+            _check_registry(card_id, _engine_of(card_dir))
+            gate_class = _check_linkage(card_id, py_dir)
+            if _FAILS:
+                return _report(card_id)
+            if gate_class is not None:
+                _prove_grammar(
+                    gate_class, gate_class.__name__)
+                _check_card(py_dir, card_id)
+                return _report(card_id)
+            # no-op class (resolves to None): schema leg skipped.
+            _check_card(py_dir, card_id)
+            return _report(card_id)
         _check_schema(py_dir, gate_class)
         _check_card(py_dir, card_id)
     finally:
@@ -555,6 +602,194 @@ def scaffold(spec: dict, out: str) -> int:
     return 0
 
 
+_KINDS = {"text", "image", "video", "audio", "mesh", "num",
+          "lora", "seg"}  # py/flow.py Kind — the closed edge-type
+                          # vocabulary (rung 3). Board refuses a
+                          # kind the Flow validator would refuse.
+
+_STAGE_PARAMS = os.path.join(REPO, "py", "stage_params.py")
+
+
+def _validate_board_spec(spec: dict) -> list[str]:
+    errs = _validate_spec(spec)
+    if not spec.get("engine"):
+        errs.append("board needs spec.engine (the row names it)")
+    kinds = spec.get("kinds")
+    if not isinstance(kinds, dict):
+        errs.append("board needs spec.kinds {inputs: {...}, "
+                    "outputs: {...}} (the row's kind contract)")
+        return errs
+    for side in ("inputs", "outputs"):
+        part = kinds.get(side)
+        if not isinstance(part, dict):
+            errs.append("spec.kinds.%s must be a {name: kind} map"
+                        % side)
+            continue
+        for name, kind in part.items():
+            if kind not in _KINDS:
+                errs.append("spec.kinds.%s.%s kind %r not in %s "
+                            "(py/flow.py Kind)"
+                            % (side, name, kind, sorted(_KINDS)))
+    if isinstance(kinds.get("outputs"), dict) and \
+            "default" not in kinds["outputs"]:
+        errs.append('spec.kinds.outputs needs the "default" key '
+                    "(every row names its default output)")
+    return errs
+
+
+def _splice_once(path: str, anchor: str, insert: str,
+                 what: str) -> str | None:
+    """Exact-string, exactly-once APPEND after the anchor (the
+    anchor is a full unique block — a bare row-end line is NOT
+    unique, five audio rows share it). The file is read fresh,
+    written once — no half-boards (all preconditions verify before
+    the first write)."""
+    with open(path) as f:
+        text = f.read()
+    if text.count(anchor) != 1:
+        return ("%s: anchor found %d times (need exactly 1 — file "
+                "moved, hand-board it)" % (what, text.count(anchor)))
+    with open(path, "w") as f:
+        f.write(text.replace(anchor, anchor + insert))
+    return None
+
+
+def board(spec: dict, card_dir: str) -> int:
+    """Board a scaffolded card: model back-claims, _SCHEMA_TARGETS
+    entry, REGISTRY row, tool.json regen — then the full check.
+    All preconditions verify BEFORE the first write (no
+    half-boards); every splice is exact + exactly-once."""
+    errs = _validate_board_spec(spec)
+    card_id = spec.get("card_id", "")
+    if errs:
+        print("author_card: board spec refused:")
+        for e in errs:
+            print("  - %s" % e)
+        return 1
+    card_dir = os.path.abspath(card_dir)
+    if not card_dir.startswith(os.path.join(REPO, "plugins")):
+        print("author_card: board needs the card IN the tree "
+              "(got %r)" % card_dir)
+        return 1
+    if not os.path.isdir(os.path.join(card_dir, "py")):
+        print("author_card: no py/ in %r — scaffold first"
+              % card_dir)
+        return 1
+    try:
+        import stage_params as sp
+    except ImportError as e:
+        print("author_card: stage_params unavailable (%s)" % e)
+        return 1
+    if any(getattr(r, "card_id", None) == card_id
+           for r in sp.REGISTRY.rows):
+        print("author_card: card %r already has a REGISTRY row — "
+              "board is for unboarded cards" % card_id)
+        return 1
+    if card_id in sp._SCHEMA_TARGETS:
+        print("author_card: card %r already has a _SCHEMA_TARGETS "
+              "entry" % card_id)
+        return 1
+    import re
+    import subprocess
+    claims: list[tuple[str, str, str]] = []
+    for m in spec.get("models", []):
+        mpath = os.path.join(REPO, m["file"])
+        with open(mpath) as f:
+            mtext = f.read()
+        hits = re.findall(r"^(\s*card\s*=\s*['\"])([^'\"]*)(['\"])",
+                          mtext, re.M)
+        if len(hits) != 1:
+            print("author_card: %s has %d card-claim lines "
+                  "(need exactly 1)" % (m["file"], len(hits)))
+            return 1
+        if hits[0][1] == card_id:
+            print("author_card: %s already claims %r"
+                  % (m["file"], card_id))
+            return 1
+        claims.append((mpath, hits[0][0] + hits[0][1] + hits[0][2],
+                       hits[0][0] + card_id + hits[0][2]))
+    import shutil
+    import tempfile
+    # the drift probe runs with the new card MOVED OUT OF THE TREE:
+    # the pre-claim scaffold is un-importable by design (the
+    # back-claim refusal IS the authoring loop), so the scan would
+    # crash on it — probe the TRUE tree state, then move it back.
+    hold_root = tempfile.mkdtemp(prefix="author_board_hold_")
+    hold = os.path.join(hold_root, os.path.basename(card_dir))
+    shutil.move(card_dir, hold)
+    try:
+        drift = subprocess.run(
+            [sys.executable, os.path.join(
+                REPO, "tools", "gen_tool_json.py")],
+            capture_output=True, text=True, timeout=300)
+    finally:
+        shutil.move(hold, card_dir)
+        shutil.rmtree(hold_root, ignore_errors=True)
+    if drift.returncode != 0:
+        print("author_card: tool.json snapshots drifted — regen "
+              "first (board never piles onto drift):")
+        print((drift.stdout + drift.stderr).strip()[-1500:])
+        return 1
+    # ---- writes (preconditions all green) ----
+    for mpath, old, new in claims:
+        with open(mpath) as f:
+            mtext = f.read()
+        with open(mpath, "w") as f:
+            f.write(mtext.replace(old, new))
+        print("author_card: %s claims %r"
+              % (os.path.relpath(mpath, REPO), card_id))
+    cls = _camel(card_id)
+    norm = _norm(card_id)
+    anchor_t = ('    "music-native":   ("music_native.schema", '
+                '"MusicParams"),\n')
+    err = _splice_once(
+        _STAGE_PARAMS, anchor_t,
+        '    "%s": ("%s.schema", "%sParams"),\n'
+        % (card_id, norm, cls), "_SCHEMA_TARGETS")
+    if err:
+        print("author_card: " + err)
+        return 1
+    kinds = spec["kinds"]
+    row = ["    CardSchemaRow(",
+           '        card_id="%s", engine="%s",' % (
+               card_id, spec["engine"])]
+    if spec.get("requires_model"):
+        row.append("        requires_model=True,")
+    row.append("        kind_inputs={%s}," % ", ".join(
+        '"%s": "%s"' % kv for kv in kinds["inputs"].items()))
+    row.append("        kind_outputs={%s})," % ", ".join(
+        '"%s": "%s"' % kv for kv in kinds["outputs"].items()))
+    anchor_r = ('        card_id="music-native", engine="audio_cpp",\n'
+                "        requires_model=True,\n"
+                '        kind_inputs={"prompt": "text", "lyrics": "text"},\n'
+                '        kind_outputs={"default": "audio"}),\n')
+    err = _splice_once(_STAGE_PARAMS, anchor_r,
+                       "\n".join(row) + "\n", "REGISTRY")
+    if err:
+        print("author_card: " + err)
+        return 1
+    print("author_card: registry rows written for %r" % card_id)
+    gen = subprocess.run(
+        [sys.executable, os.path.join(REPO, "tools", "gen_tool_json.py"),
+         "--write"], capture_output=True, text=True, timeout=300)
+    print(gen.stdout.strip())
+    if gen.returncode != 0:
+        print("author_card: tool.json regen failed AFTER the "
+              "splices — tree needs a hand (loud, never silent)")
+        return 1
+    post = subprocess.run(
+        [sys.executable, os.path.join(REPO, "tools", "author_card.py"),
+         card_id], capture_output=True, text=True, timeout=300)
+    print(post.stdout.strip())
+    if post.returncode != 0:
+        print("author_card: boarded but the full check fails — "
+              "hand-board the remainder (loud, never silent)")
+        return 1
+    print("author_card: card %r BOARDED (registry + claim + "
+          "tool.json + full check)" % card_id)
+    return 0
+
+
 if __name__ == "__main__":
     import argparse
     import json
@@ -568,6 +803,16 @@ if __name__ == "__main__":
         with open(args.spec_file) as f:
             _spec = json.load(f)
         sys.exit(scaffold(_spec, args.out))
+    if len(sys.argv) > 1 and sys.argv[1] == "board":
+        ap = argparse.ArgumentParser(description=__doc__)
+        ap.add_argument("--spec-file", required=True,
+                        help="the card spec (JSON, with kinds)")
+        ap.add_argument("--dir", required=True,
+                        help="the in-tree card dir to board")
+        args = ap.parse_args(sys.argv[2:])
+        with open(args.spec_file) as f:
+            _spec = json.load(f)
+        sys.exit(board(_spec, args.dir))
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("card_id")
     ap.add_argument("--dir", default=None,
