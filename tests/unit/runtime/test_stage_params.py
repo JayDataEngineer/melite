@@ -276,8 +276,9 @@ def test_card_stage_expected_filled_from_registry() -> None:
               params={"workflow": {"1": {"class_type": "Foo"}}}),
         Stage(id="tts", engine="comfyui", card="tts",
               inputs={"prompt": FromStage(stage="src", output="txt")},
-              # no expected= — the registry fills it
-              params={"text": "hi"}),
+              # no expected= — the registry fills it (the model row
+              # rides along: tts requires_model since row 4)
+              params={"text": "hi", "model": "qwen3-tts"}),
     ))
     # the construction succeeded — the kind check used the
     # registry's kind_inputs["prompt"]=text to fill
@@ -491,14 +492,12 @@ def test_precedence_card_io_wins_over_registry() -> None:
 
 
 def test_existing_flows_still_load() -> None:
-    """The two on-disk flows (audio-native-tts, kimodo-native) are
-    engine-only and must still load without touching them. The
-    lattice is additive — no behavior change for card="".
-    """
-    fl = flow.load_flow("audio-native-tts")
-    assert fl.id == "audio-native-tts"
-    assert fl.stages[0].engine == "comfyui"
-    assert fl.stages[0].card == ""
+    """kimodo-native stays engine-only and loads untouched — the
+    lattice is additive, no behavior change for card="".
+
+    audio-native-tts LEFT this set 2026-09-06 (ROW 4: the second
+    production card= lane — its conversion proof lives in
+    tests/unit/runtime/test_tts_card_lane.py)."""
     fl = flow.load_flow("kimodo-native")
     assert fl.id == "kimodo-native"
     assert fl.stages[0].engine == "comfyui"

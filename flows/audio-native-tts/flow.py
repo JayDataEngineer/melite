@@ -7,8 +7,6 @@ DROPPED (the engine's _server_url() config/env seam owns the
 endpoint, QUEUE LANE LAW). params are the comfyui engine's surface,
 verbatim."""
 
-from pathlib import Path
-
 from flow import (
     Flow,
     FlowTool,
@@ -28,41 +26,33 @@ FLOW = Flow(
         "container (pure-ComfyUI audio lane; retires the C audio "
         "engine for TTS)."),
     stages=(
+        # ROW 4 (2026-09-06): the second production card= lane — the
+        # stage names the CARD, not the engine surface. params ARE the
+        # card doc (schema-gated at construction: a typo'd knob
+        # refuses the Flow(...) line); the worker's CARD BRIDGE
+        # composes the doc into the comfyui workflow via the owning
+        # arm at run time. The $spell passes construction non-empty
+        # and rides expand_inject (the music-native pattern). The
+        # "wav" output channel stays EXPLICIT (card_io, the lane
+        # wall's precedent) — downstream artifact names don't move.
         Stage(
             id="tts",
             engine="comfyui",
-            description="Qwen3-TTS text to speech via live ComfyUI nodes",
+            card="tts",
+            description="Qwen3-TTS text to speech via the tts card",
             inputs={"prompt": FromInitial(key="prompt")},
-            # the flow-typed-edges contract: tts wants text
-            # (and overrides the comfyui engine default Kind.image
-            # with Kind.audio on the named "wav" output)
-            expected={"prompt": Kind.text},
-            outputs={"wav": Kind.audio},
+            card_io={"wav": Kind.audio},
             params={
-                # workflow_file: the qwen3-tts CustomVoice 0.6B
-                # template (audio lane, 2026-09-05 fix). The previous
-                # hardcoded path (qwen3_tts_gate/tts.json) was a
-                # fossil that never existed on disk — the flow 400d
-                # at the engine's _splice_workflow gate. The live
-                # model classes (plugins/engines/comfyui/models/
-                # audio/{qwen3-tts,qwen3-tts-base,qwen3-tts-
-                # voicedesign}/) own tts_t1.json; this flow picks
-                # the CustomVoice variant.
-                "workflow_file": str(
-                    Path(__file__).resolve().parent.parent.parent
-                    / "plugins/engines/comfyui/models/audio/"
-                      "qwen3-tts/tts_t1.json"
-                ),
-                "inject": {"2.prompt": "$prompt", "2.seed": 42},
-                "out_dir": "./output",
-                "timeout_s": 1200,
+                "model": "qwen3-tts",
+                "text": "$prompt",
+                "seed": 42,
             },
         ),
     ),
     # ROW-4 TEMPLATE LIBRARY (2026-09-06): the headless surface —
     # prompt rides the existing FromInitial (no overlay needed);
-    # seed stamps node 2 (AudiocoreTTS — seed input verified in
-    # tts_t1.json, not assumed).
+    # seed stamps the CARD DOC field (card= conversion — the arm
+    # owns the node injects now, the flow no longer names node 2).
     tool=FlowTool(
         name="speak",
         description=(
@@ -86,7 +76,7 @@ FLOW = Flow(
             FlowToolOverlay(
                 param="seed",
                 stage="tts",
-                path=("inject", "2.seed"),
+                path=("seed",),
             ),
         ),
     ),

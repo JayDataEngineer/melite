@@ -426,6 +426,10 @@ REGISTRY = ParamSchemaRegistry(rows=(
     CardSchemaRow(
         card_id="tts", engine="comfyui",
         schema_class=None,
+        # ROW 4 (2026-09-06): the second production card= lane
+        # (flows/audio-native-tts) — the arm needs the model row
+        # (knobmap existence gate), refused empty at construction.
+        requires_model=True,
         kind_inputs={"prompt": "text"},
         kind_outputs={"default": "audio"}),
     CardSchemaRow(

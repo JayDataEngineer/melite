@@ -3777,9 +3777,15 @@ def _card_bridge(node: NodeRow, params: dict[str, JsonValue], run_id: str) -> di
     already caught shape errors; this catches row-level ones, e.g. an
     unknown model id)."""
     import plugins as _plugins
-    model = str(params.get("model") or "")
+    # ROW 4 (2026-09-06): the consensus body shape — model rides the
+    # ENVELOPE (the compose arg), never inside params (the shared
+    # parse_card_body leak gate refuses it there; the {model:} door
+    # already speaks this shape). Arms that read the doc fallback
+    # (music) still resolve — the arg wins, the doc is fallback.
+    doc = dict(params)
+    model = str(doc.pop("model", "") or "")
     graph2, _extra = _plugins.compose(
-        {"params": dict(params)}, model, run_id, None,
+        {"params": doc}, model, run_id, None,
         [node.node_type])
     nodes = getattr(graph2, "nodes", None) or ()
     if not nodes:

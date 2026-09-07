@@ -32,10 +32,7 @@ def test_every_flow_loads_and_matches_its_dir() -> None:
 
 
 def test_converted_flows_keep_their_engine_params() -> None:
-    """The conversion is FAITHFUL: the comfyui engine surface rides
-    verbatim (workflow_file+inject for tts, inline workflow for
-    kimodo) and NO server_url fossil survives (QUEUE LANE LAW:
-    the engine's config/env seam owns the endpoint).
+    """The conversion is FAITHFUL — lane by lane, deliberate.
 
     Trellis retired 2026-09-05: the broken flow
     flows/trellis2-gate/flow.py bypassed the img-to-mesh action
@@ -45,14 +42,22 @@ def test_converted_flows_keep_their_engine_params() -> None:
     BakeTextureFromVoxel → ApplyTextureToMesh). The card IS the
     trellis lane — {model: "trellis2-native", input_image: ...} —
     not a flow. Verified live: a single run produced
-    trellis2_native_00007.glb (24MB) via the model door. The
-    estate has 2 flows: audio-native-tts, kimodo-native."""
+    trellis2_native_00007.glb (24MB) via the model door.
+
+    audio-native-tts converted 2026-09-06 (ROW 4: the second
+    production card= lane) — the stage names the CARD, params ARE
+    the card doc (model row + text $spell + seed); the arm owns
+    workflow_file/inject now. The estate has 1 engine-only flow:
+    kimodo-native."""
     tts = flow_mod.load_flow("audio-native-tts")
     (st,) = tts.stages
     assert st.engine == "comfyui"
-    assert st.params["inject"] == {"2.prompt": "$prompt", "2.seed": 42}
+    assert st.card == "tts"
+    assert st.params["model"] == "qwen3-tts"
+    assert st.params["text"] == "$prompt"
+    assert st.params["seed"] == 42
     assert "server_url" not in st.params
-    assert st.params["timeout_s"] == 1200
+    assert "workflow_file" not in st.params and "inject" not in st.params
 
     kimodo = flow_mod.load_flow("kimodo-native")
     (st,) = kimodo.stages
@@ -218,7 +223,10 @@ class TestAbsolutizeArtifactRefs:
 
 def test_flow_door_resolves() -> None:
     from gateway import resolve_request
-    g = resolve_request({"flow": "audio-native-tts"})
+    # tool-bearing flows take their required params at the door
+    # (row 4 slice 1: prompt is required on speak) — the resolve
+    # carries the request body, same as a start would.
+    g = resolve_request({"flow": "audio-native-tts", "prompt": "x"})
     assert g.name == "audio-native-tts"
     assert [n.node_type for n in g.nodes] == ["comfyui"]
 
