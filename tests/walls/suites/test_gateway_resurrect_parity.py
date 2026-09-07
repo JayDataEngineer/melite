@@ -309,6 +309,7 @@ PY_GAP_SRC = (
     "import gateway as g\n"
     "gw = g.Gateway()\n"
     "r = g.boot_resurrect(gw)\n"
+    "o = list(gw.order)\n"
     "live = {}\n"
     "for rid in sorted(gw.runs.keys()):\n"
     "    run = gw.runs[rid]\n"
@@ -324,8 +325,8 @@ PY_GAP_SRC = (
     "        continue\n"
     "    if isinstance(obj, dict) and 'sweep' in obj:\n"
     "        swept_ids.append(d)\n"
-    "print(json.dumps({'resurrected': r, 'live': live, 'swept': s,\n"
-    " 'sweptIds': swept_ids}))\n"
+    "print(json.dumps({'resurrected': r, 'order': o, 'live': live,\n"
+    " 'swept': s, 'sweptIds': swept_ids}))\n"
 )
 
 TS_GAP_SRC = (
@@ -340,7 +341,8 @@ TS_GAP_SRC = (
     "const swept = coreSweep(root, live);\n"
     "const liveSorted = {};\n"
     "for (const k of Object.keys(captured).sort()) liveSorted[k] = captured[k];\n"
-    "console.log(JSON.stringify({ resurrected: live.length, live: liveSorted,\n"
+    "console.log(JSON.stringify({ resurrected: live.length, order: live,\n"
+    " live: liveSorted,\n"
     " swept: swept.length, sweptIds: [...swept].sort() }));\n"
 ) % str(TS_QUEUE)
 
@@ -371,6 +373,10 @@ def build_gap_seed(root) -> None:
     # seed dir; writes below are idempotent rewrites.
     (root / "drafts").mkdir(parents=True, exist_ok=True)
     (root / "drafts" / "d1.json").write_text("{}")
+    # G4: a directory named <id>.json is NOT a birth certificate
+    # (is_file, gateway.py 2304-2305) — a read probe would agree on
+    # files but the shapes differ, so the wall needs the real dir.
+    (root / "drafts" / "ddir.json").mkdir(parents=True, exist_ok=True)
     out = root / "output"
     out.mkdir(parents=True, exist_ok=True)
     # ── G1: graph rule (FlowGraph({}) resurrects missing/empty;
@@ -443,6 +449,69 @@ def build_gap_seed(root) -> None:
             graph=[{"id": "w", "type": "c"}], skipped_stages=5)
     put_gap(out, "run-g2-stagebool", 1700000211,
             graph=[{"id": "w", "type": "c"}], stages=True)
+    # ── G3: artifacts ride [str(a) for a in (x or []) if a]
+    #    (gateway.py 2334) — falsy dropped, True/None keep py
+    #    spellings, containers ride py reprs (nested strings quoted,
+    #    exactly str() semantics). run-g3-j05 mirrors the contention
+    #    J05 run-ar vector verbatim. ──
+    put_gap(out, "run-g3-j05", 1700000301,
+            graph=[{"id": "w", "type": "c"}], stages="ab",
+            skipped_stages=[7, "s", None],
+            artifacts=["", None, 0, False, "a", True, 1, 1.5, [1],
+                       {"k": 1}, 0.0])
+    put_gap(out, "run-g3-nested", 1700000302,
+            graph=[{"id": "w", "type": "c"}],
+            artifacts=[[1, "a"], {"k": "v"}, [True, None], "x"])
+    put_gap(out, "run-g3-falsy", 1700000303,
+            graph=[{"id": "w", "type": "c"}],
+            artifacts=[0, 0.0, "", [], {}, None, False])
+    # ── G4: the birth certificate is drafts/<id>.json is_file
+    #    (gateway.py 2304-2305) — numeric/bool/empty draft_ids never
+    #    name a file, and a directory named <id>.json is not one. ──
+    put_gap(out, "run-g4-ok", 1700000401,
+            graph=[{"id": "w", "type": "c"}])
+    put_gap(out, "run-g4-int", 1700000402,
+            graph=[{"id": "w", "type": "c"}], draft_id=5)
+    put_gap(out, "run-g4-bool", 1700000403,
+            graph=[{"id": "w", "type": "c"}], draft_id=True)
+    put_gap(out, "run-g4-dir", 1700000404,
+            graph=[{"id": "w", "type": "c"}], draft_id="ddir")
+    put_gap(out, "run-g4-empty", 1700000405,
+            graph=[{"id": "w", "type": "c"}], draft_id="")
+    # ── G5: created_at rides float(x or 0.0) (gateway.py 2329) —
+    #    ints/floats/numeric strings (padded too) order by value,
+    #    falsy (None/False/0/"") rides 0. Garbage ("abc", lists,
+    #    dicts) kills the whole PY boot at candidate time
+    #    (float() OUTSIDE the per-id try, ~2361-2362) — the garbage
+    #    leg lives in its own root below (phase_e_g5_garbage), never
+    #    in this shared seed. ──
+    put_gap(out, "run-g5-int", 1700000501,
+            graph=[{"id": "w", "type": "c"}])
+    put_gap(out, "run-g5-float", 0,
+            graph=[{"id": "w", "type": "c"}], created_at=1700000502.5)
+    put_gap(out, "run-g5-numstr", 0,
+            graph=[{"id": "w", "type": "c"}], created_at="1700000503")
+    put_gap(out, "run-g5-spacestr", 0,
+            graph=[{"id": "w", "type": "c"}], created_at=" 1700000504 ")
+    put_gap(out, "run-g5-none", 0,
+            graph=[{"id": "w", "type": "c"}], created_at=None)
+    put_gap(out, "run-g5-false", 0,
+            graph=[{"id": "w", "type": "c"}], created_at=False)
+    put_gap(out, "run-g5-zero", 0,
+            graph=[{"id": "w", "type": "c"}], created_at=0)
+    put_gap(out, "run-g5-empty", 0,
+            graph=[{"id": "w", "type": "c"}], created_at="")
+    put_gap(out, "run-g5-true", 0,
+            graph=[{"id": "w", "type": "c"}], created_at=True)
+    # ── G6: swept-file literal fidelity (PINNED-DIVERGENCE, never a
+    #    fix — post-parse TS cannot tell int from integral float).
+    #    A stale RUNNING row (never resurrects, always sweeps) whose
+    #    sidecar spells created_at 100.0: py's atomic_write keeps the
+    #    float literal, TS writes 100. ──
+    put_gap(out, "run-g6-float", 0,
+            graph=[{"id": "w", "type": "c"}], created_at=100.0,
+            status="running",
+            stages=[{"id": "w", "index": 0, "status": "running"}])
 
 
 GAP_G1_LIVE = sorted([
@@ -467,6 +536,37 @@ GAP_G2_LIVE = sorted([
 GAP_G2_SWEPT = sorted([
     "run-g2-stageint", "run-g2-skipint", "run-g2-stagebool",
 ])
+
+GAP_G3_LIVE = sorted([
+    "run-g3-j05", "run-g3-nested", "run-g3-falsy",
+])
+
+# The contention-J05 vector, spelled out (no goldens: the dual
+# rebuilt-values leg proves ts==py; this pins the py truth).
+GAP_G3_J05_ARTIFACTS = ["a", "True", "1", "1.5", "[1]", "{'k': 1}"]
+GAP_G3_NESTED_ARTIFACTS = ["[1, 'a']", "{'k': 'v'}", "[True, None]",
+                           "x"]
+
+GAP_G4_LIVE = ["run-g4-ok"]
+
+GAP_G4_SWEPT = sorted([
+    "run-g4-int", "run-g4-bool", "run-g4-dir", "run-g4-empty",
+])
+
+GAP_G5_LIVE = sorted([
+    "run-g5-int", "run-g5-float", "run-g5-numstr", "run-g5-spacestr",
+    "run-g5-none", "run-g5-false", "run-g5-zero", "run-g5-empty",
+    "run-g5-true",
+])
+
+# FIFO by coerced created_at (zeros in stable scan order, then
+# True==1.0, then by value) — mirrors the contention-J05 want_order
+# precedent.
+GAP_G5_ORDER = [
+    "run-g5-empty", "run-g5-false", "run-g5-none", "run-g5-zero",
+    "run-g5-true", "run-g5-int", "run-g5-float", "run-g5-numstr",
+    "run-g5-spacestr",
+]
 
 
 def py_gap(root) -> tuple:
@@ -583,6 +683,168 @@ def phase_e_g2(base, helper: str) -> None:
     except OSError:
         same = False
     check("E-G2 swept bytes run-g2-stageint", same)
+
+
+def phase_e_g3(base, helper: str) -> None:
+    # Scoped to the run-g3- prefix (shares the gap seed with G1/G2).
+    pyE, tsE, py, ts = phase_e_gap_bases(base, helper, "g3")
+    if py is None or ts is None:
+        return
+    ts_live = sorted(k for k in ts["live"] if k.startswith("run-g3-"))
+    py_live = sorted(k for k in py["live"] if k.startswith("run-g3-"))
+    check("E-G3 live sets agree + py truth",
+          ts_live == py_live == GAP_G3_LIVE,
+          "ts=%r py=%r" % (ts_live, py_live))
+    ok_vals = all(ts["live"].get(rid) == py["live"].get(rid)
+                  for rid in GAP_G3_LIVE)
+    check("E-G3 rebuilt values agree", ok_vals,
+          "py=%r ts=%r" % (py["live"], ts["live"]))
+    # J05 mirror: the contention vector, spelled out on both sides.
+    j05_py = py["live"].get("run-g3-j05", {})
+    j05_ts = ts["live"].get("run-g3-j05", {})
+    check("E-G3 J05 spellings",
+          j05_py.get("stages") == ["a", "b"]
+          and j05_py.get("skipped_stages") == [7, "s", None]
+          and j05_py.get("artifacts") == GAP_G3_J05_ARTIFACTS
+          and j05_ts.get("stages") == ["a", "b"]
+          and j05_ts.get("skipped_stages") == [7, "s", None]
+          and j05_ts.get("artifacts") == GAP_G3_J05_ARTIFACTS,
+          "py=%r ts=%r" % (j05_py, j05_ts))
+    check("E-G3 falsy artifacts ride []",
+          py["live"].get("run-g3-falsy", {}).get("artifacts") == []
+          and ts["live"].get("run-g3-falsy", {}).get("artifacts")
+          == [],
+          "py=%r ts=%r" % (py["live"].get("run-g3-falsy"),
+                            ts["live"].get("run-g3-falsy")))
+    # Nested containers ride py reprs (nested strings quoted —
+    # exactly str() semantics, gateway.py 2334).
+    check("E-G3 nested reprs",
+          py["live"].get("run-g3-nested", {}).get("artifacts")
+          == GAP_G3_NESTED_ARTIFACTS
+          and ts["live"].get("run-g3-nested", {}).get("artifacts")
+          == GAP_G3_NESTED_ARTIFACTS,
+          "py=%r ts=%r" % (py["live"].get("run-g3-nested"),
+                            ts["live"].get("run-g3-nested")))
+
+
+def phase_e_g4(base, helper: str) -> None:
+    # Scoped to the run-g4- prefix (shares the gap seed with G1–G3).
+    pyE, tsE, py, ts = phase_e_gap_bases(base, helper, "g4")
+    if py is None or ts is None:
+        return
+    ts_live = sorted(k for k in ts["live"] if k.startswith("run-g4-"))
+    py_live = sorted(k for k in py["live"] if k.startswith("run-g4-"))
+    check("E-G4 live sets agree + py truth",
+          ts_live == py_live == GAP_G4_LIVE,
+          "ts=%r py=%r" % (ts_live, py_live))
+    ts_swept = [i for i in ts["sweptIds"] if i.startswith("run-g4-")]
+    py_swept = [i for i in py["sweptIds"] if i.startswith("run-g4-")]
+    check("E-G4 numeric/dir/empty drafts orphan + sweep",
+          ts_swept == py_swept == GAP_G4_SWEPT,
+          "ts=%r py=%r" % (ts_swept, py_swept))
+    for rid in ("run-g4-dir", "run-g4-int"):
+        try:
+            pb = (pyE / "output" / rid / "_flow.json").read_bytes()
+            tb = (tsE / "output" / rid / "_flow.json").read_bytes()
+            same = pb == tb
+        except OSError:
+            same = False
+        check("E-G4 swept bytes " + rid, same)
+    # The birth-certificate probe is read-only: the directory still
+    # stands (no file conjured over it) on both sides.
+    from pathlib import Path as _P
+    check("E-G4 draft dir intact",
+          (pyE / "drafts" / "ddir.json").is_dir()
+          and not (pyE / "drafts" / "ddir.json").is_file()
+          and (tsE / "drafts" / "ddir.json").is_dir()
+          and not (tsE / "drafts" / "ddir.json").is_file())
+
+
+def phase_e_g5(base, helper: str) -> None:
+    # Scoped to the run-g5- prefix (shares the gap seed with G1–G4).
+    pyE, tsE, py, ts = phase_e_gap_bases(base, helper, "g5")
+    if py is None or ts is None:
+        return
+    ts_live = sorted(k for k in ts["live"] if k.startswith("run-g5-"))
+    py_live = sorted(k for k in py["live"] if k.startswith("run-g5-"))
+    check("E-G5 live sets agree + py truth",
+          ts_live == py_live == GAP_G5_LIVE,
+          "ts=%r py=%r" % (ts_live, py_live))
+    ok_vals = all(ts["live"].get(rid) == py["live"].get(rid)
+                  for rid in GAP_G5_LIVE)
+    check("E-G5 rebuilt values agree", ok_vals,
+          "py=%r ts=%r" % (py["live"], ts["live"]))
+    ts_order = [i for i in ts.get("order", [])
+                if i.startswith("run-g5-")]
+    py_order = [i for i in py.get("order", [])
+                if i.startswith("run-g5-")]
+    check("E-G5 FIFO-by-coerced-created agree + py truth",
+          ts_order == py_order == GAP_G5_ORDER,
+          "ts=%r py=%r" % (ts_order, py_order))
+    # Garbage created_at in its OWN root: py's candidate float()
+    # kills the whole boot (ValueError outside the per-id try);
+    # TS coerces 0 and boots with the row first.
+    seedG = base / "seedE-g5x"
+    seedG.mkdir(parents=True, exist_ok=True)
+    put_gap(seedG / "output", "run-g5x-garbage", 0,
+            graph=[{"id": "w", "type": "c"}], created_at="abc")
+    put_gap(seedG / "output", "run-g5x-ok", 100,
+            graph=[{"id": "w", "type": "c"}])
+    (seedG / "drafts").mkdir(parents=True, exist_ok=True)
+    (seedG / "drafts" / "d1.json").write_text("{}")
+    pyG, tsG = base / "pyE-g5x", base / "tsE-g5x"
+    shutil.copytree(seedG, pyG)
+    shutil.copytree(seedG, tsG)
+    prc, _, pnote = py_gap(pyG)
+    check("E-G5 garbage kills py boot",
+          prc != 0 and "ValueError" in pnote,
+          "rc=%r %r" % (prc, pnote[-160:]))
+    trc, tsg, tnote = ts_boot(tsG, helper)
+    check("E-G5 ts coerces garbage 0 first",
+          trc == 0 and tsg is not None
+          and tsg["order"] == ["run-g5x-garbage", "run-g5x-ok"]
+          and sorted(tsg["live"].keys())
+          == ["run-g5x-garbage", "run-g5x-ok"]
+          and tsg["swept"] == 0,
+          "%r %r" % (tsg, tnote))
+
+
+def phase_e_g6(base, helper: str) -> None:
+    # PINNED-DIVERGENCE (never a fix): post-parse TS cannot tell int
+    # from integral float, so a swept file carrying 100.0 keeps the
+    # float literal on the py side and writes 100 on the TS side.
+    # The leg pins the divergence exactly: literal spellings +
+    # all-else-byte-equal + parsed-equal.
+    pyE, tsE, py, ts = phase_e_gap_bases(base, helper, "g6")
+    if py is None or ts is None:
+        return
+    check("E-G6 stale float row never resurrects",
+          "run-g6-float" not in py["live"]
+          and "run-g6-float" not in ts["live"])
+    check("E-G6 stale float row sweeps both",
+          "run-g6-float" in py["sweptIds"]
+          and "run-g6-float" in ts["sweptIds"],
+          "py=%r ts=%r" % (py["sweptIds"], ts["sweptIds"]))
+    try:
+        pb = (pyE / "output" / "run-g6-float" / "_flow.json"
+              ).read_bytes()
+        tb = (tsE / "output" / "run-g6-float" / "_flow.json"
+              ).read_bytes()
+    except OSError:
+        pb, tb = b"", b""
+    check("E-G6 py keeps 100.0, TS writes 100",
+          pb.count(b"100.0") == 1 and b"100.0" not in tb
+          and b'"created_at": 100.0' in pb
+          and b'"created_at": 100' in tb,
+          "py %dB ts %dB" % (len(pb), len(tb)))
+    check("E-G6 all-else-byte-equal",
+          pb.replace(b"100.0", b"100") == tb
+          if pb and tb else False)
+    try:
+        parsed_same = json.loads(pb) == json.loads(tb)
+    except ValueError:
+        parsed_same = False
+    check("E-G6 swept parsed-equal", parsed_same)
 
 
 def boot_ts(env: dict) -> tuple:
@@ -969,6 +1231,10 @@ def main() -> int:
         _P(gap_helper).write_text(TS_GAP_SRC)
         phase_e_g1(base, gap_helper)
         phase_e_g2(base, gap_helper)
+        phase_e_g3(base, gap_helper)
+        phase_e_g4(base, gap_helper)
+        phase_e_g5(base, gap_helper)
+        phase_e_g6(base, gap_helper)
     finally:
         for proc in procs:
             try:
