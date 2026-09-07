@@ -187,6 +187,15 @@ importers:
         specifier: '*'
         version: 3.18.2
 
+  plugins/gateway:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   plugins/harness/dsh/melite-preset: {}
 
   plugins/harness/dsh/melite-tools:
