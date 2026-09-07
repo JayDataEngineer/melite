@@ -1302,7 +1302,7 @@ def schema_snapshot() -> "dict[str, object]":
                 {"id": "gen", "engine": "anycreature",
                  "inputs": {"prompt": {"initial": "prompt"}},
                  "expected": {"prompt": "text"}},
-                {"id": "remesh", "engine": "autoremesher",
+                {"id": "remesh", "engine": "comfyui",
                  "inputs": {"mesh": {"stage": "gen", "output": "default"}},
                  "expected": {"mesh": "mesh"}}]},
         },

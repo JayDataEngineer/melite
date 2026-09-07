@@ -38,6 +38,11 @@ from pathlib import Path
 # 4xx BEFORE registration, never a GPU-claimed failure).
 SYSTEM_BINARY_REQUIRES: dict[str, tuple[tuple[str, ...], str]] = {
     "melite-autorig-nodes": (("SKINTOKEN_BLENDER_BIN", "BLENDER_BIN"), "blender"),
+    # melite-autoremesher-nodes shells the autoremesher BINARY (its
+    # own _resolve_binary reads AUTOREMESHER_BIN first, then PATH —
+    # so the gate refuses with the same need the node would name at
+    # prompt time, one queue slot earlier).
+    "melite-autoremesher-nodes": (("AUTOREMESHER_BIN",), "autoremesher"),
 }
 
 
@@ -55,8 +60,8 @@ def _check_system_binaries(
         if shutil.which(binary) is None:
             return False, (
                 "missing system requirement: %r (extension %r shells out "
-                "to it) — install Blender and put it on PATH, or point "
-                "%s at the binary" % (binary, ext_name.strip(),
+                "to it) — install %s and put it on PATH, or point "
+                "%s at the binary" % (binary, ext_name.strip(), binary,
                                       " or ".join(env_vars))
             )
     return True, ""
@@ -138,6 +143,9 @@ EXTENSION_NODE_TYPES: dict[str, set[str]] = {
     },
     "ComfyUI-MoGe": {"MoGeGeometryToFOV"},
     "melite-autorig-nodes": {"KimodoTransferWeights", "SaveRiggedModel"},
+    # quad-remesh lane (2026-09-07, the cpp→node cutover): AutoRemesher
+    # (quad remesh — GLB in, remeshed GLB out).
+    "melite-autoremesher-nodes": {"AutoRemesher"},
     # Blender proxy (Law 0, 2026-09-07: graphs drive headless Blender
     # through these nodes; the binary itself is a SYSTEM requirement).
     "melite-blender-proxy-nodes": {

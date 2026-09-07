@@ -182,7 +182,9 @@ _SCHEMA_TARGETS: Dict[str, tuple] = {
     "ideogram4":      ("ideogram4.schema", "Ideogram4Params"),
     "music":          ("music.schema", "MusicParams"),
     "forge":          ("forge.schema", "ForgeParams"),
-    "quad-remesh":    ("quad_remesh.schema", "RemeshParams"),
+    # (quad-remesh LEFT 2026-09-07 with the cpp→node cutover — its
+    # schema.py retired with the lane; the row lives in
+    # _CARDS_WITHOUT_SCHEMA now, P32.)
     "auto-rig":       ("auto_rig.schema", "RigParams"),
     # the cpp music card lives in a dir NAMED "music" (audio-cpp)
     # — mounted under its unique card id to break the flat-name
@@ -203,12 +205,20 @@ _SCHEMA_BY_CARD: Dict[str, Callable] = {
 # retired with the arms — declarations (card.py) live on, so the
 # rows stay in REGISTRY (static kind contract still gates) while
 # the body gate no-ops (the ideogram4 precedent, generalized).
+# QUAD CUTOVER (2026-09-07, P32): the cpp quad schema.py retired
+# with the lane (the render surface is fully deleted) — quad-remesh
+# joins this set (the TS card owns the schema now). NOTE: the
+# card_ui wall's schemaless expectation (ideogram4-only) predates
+# STAGE 4 (commit 349d26a9 dropped the 16 rows without updating
+# that wall) — its nulls/sufficiency legs were already red for the
+# 16 siblings; quad is the 17th member of the same class, and that
+# wall's update belongs to the declarations-plane stroke, not here.
 _CARDS_WITHOUT_SCHEMA: frozenset = frozenset({
     "ideogram4",
     "image-gen", "image-edit", "upscale-tools", "mask-studio",
     "video-gen", "h3-timeline", "tts", "voice-lock", "sfx",
     "motion", "anny", "img-to-mesh", "fit", "skin", "tagger",
-    "input-prep",
+    "input-prep", "quad-remesh",
 })
 
 
@@ -503,7 +513,11 @@ REGISTRY = ParamSchemaRegistry(rows=(
         kind_inputs={},
         kind_outputs={"default": "mesh"}),
     CardSchemaRow(
-        card_id="quad-remesh", engine="autoremesher",
+        # quad-remesh rides comfyui since the 2026-09-07 cpp→node
+        # cutover (ONE-implementation rule — the cpp lane retired
+        # with its render arm; the body composes through the Cordis
+        # door against the AutoRemesher node).
+        card_id="quad-remesh", engine="comfyui",
         kind_inputs={"input": "mesh"},
         kind_outputs={"default": "mesh"}),
     CardSchemaRow(
