@@ -293,6 +293,12 @@ def _boarded_stage() -> "Iterator[Path]":
            / "model.py").read_text()
     assert "card = 'sfx'" in src, \
         "moss-sfx model shape moved — the wall's premise moved"
+    # a KILLED prior run (timeout mid-test) leaves its finally-block
+    # unexecuted — pre-clean the wall-owned tmp paths so one crashed
+    # run never cascades red into every card-walking suite (2026-09-07:
+    # the orphaned wall-tmp-board scaffold redded 31 suites)
+    shutil.rmtree(model_dir, ignore_errors=True)
+    shutil.rmtree(card_dir, ignore_errors=True)
     model_dir.mkdir()
     (model_dir / "model.py").write_text(
         src.replace("class MossSfx(Model):",

@@ -51,6 +51,7 @@ LAW 12 (argv SSOT law) — under the cpp category, CLI flag literals
     the render truth has one home).
 """
 
+import glob
 import inspect
 import os
 import sys
@@ -711,6 +712,133 @@ class TestLaw12ArgvSSOT(unittest.TestCase):
                                 % (path, node.lineno, node.value))
         self.assertGreater(scanned, 20,
                            "too few cpp files scanned — walk broke")
+        self.assertEqual(offenders, [])
+
+
+class TestRenderRoadUniformity(unittest.TestCase):
+    """M3 (pattern-uniformity audit remainder): every comfyui card
+    renderer rides the SAME co_script rail (render_kit kit import +
+    renderers.register) — no arm invents its own emission path; the
+    two-level plugin arms (cpp/*, node/*) speak the ONE compose
+    contract `compose(body, model, run_id) -> (rc, graph, extra,
+    error)` for their own engines. Contract-uniform, not drift."""
+
+    def test_every_comfyui_renderer_rides_the_rail(self) -> None:
+        base = os.path.join(REPO, "plugins", "engines", "comfyui",
+                            "action_cards")
+        checked = 0
+        for genre in sorted(os.listdir(base)):
+            gdir = os.path.join(base, genre)
+            if not os.path.isdir(gdir):
+                continue
+            for card in sorted(os.listdir(gdir)):
+                r = os.path.join(gdir, card, "py", "renderer.py")
+                if not os.path.isfile(r):
+                    continue
+                with open(r, encoding="utf-8") as f:
+                    src = f.read()
+                self.assertIn(
+                    "from co_script.render_kit import", src,
+                    "%s/%s: renderer does not ride the co_script "
+                    "render_kit rail (M3: one emission road, "
+                    "h3-timeline's n-window lane included — its "
+                    "frames ride the rail too, see "
+                    "docs/cards/n-window-law.md)" % (genre, card))
+                self.assertIn(
+                    "co_script.renderers", src,
+                    "%s/%s: renderer never registers on the "
+                    "co_script rail" % (genre, card))
+                checked += 1
+        self.assertGreaterEqual(checked, 18,
+                                "renderer walk broke (found %d)" % checked)
+
+    def test_two_level_arms_speak_the_compose_contract(self) -> None:
+        import ast
+        arms = []
+        # two shapes: engines/<plugin>/action_cards (comfyui — owned
+        # by the bus-contract leg above) and engines/<family>/<plugin>/
+        # action_cards (the cpp/* + node/* two-level arms)
+        cands = sorted(
+            glob.glob(os.path.join(REPO, "plugins", "engines", "*",
+                                   "*", "action_cards", "*", "*", "py",
+                                   "compose.py")))
+        for cpy in cands:
+            parts = cpy.split(os.sep)
+            engine = parts[parts.index("engines") + 2]  # <family>/<plugin>
+            with open(cpy, encoding="utf-8") as f:
+                tree = ast.parse(f.read())
+            fn = next(
+                (n for n in ast.walk(tree)
+                 if isinstance(n, ast.FunctionDef)
+                 and n.name == "compose"), None)
+            self.assertIsNotNone(
+                fn, "%s: two-level arm has no compose door" % cpy)
+            self.assertEqual(
+                [a.arg for a in fn.args.args],
+                ["body", "model", "run_id"],
+                "%s: compose arity drift — the contract is "
+                "(body, model, run_id) -> (rc, graph, extra, "
+                "error)" % cpy)
+            arms.append(engine)
+        self.assertGreaterEqual(len(arms), 4,
+                                "two-level arm walk broke (found %s)"
+                                % arms)
+
+
+class TestDefaultsBlanket(unittest.TestCase):
+    """The defaults blanket (operator order, 2026-09-07: every card
+    carries defaults): every VALUE-shaped field (Number, Slider,
+    Seed, Boolean, Select, Textarea, Text) either requires its value
+    (required=True) or states an explicit default — no silent
+    None-limbo. Slot-shaped fields (File/Image/Audio/Video/Mask/
+    Loras/ControlNet) are EXEMPT: empty slot is their semantic (the
+    optional-slots law, default=[] on the family contract)."""
+
+    SLOT_FIELDS = {"File", "Image", "Audio", "Video", "Mask",
+                   "Loras", "ControlNet", "ImageList"}
+
+    def test_value_fields_never_limbo(self) -> None:
+        import ast
+        from melite_cards.dsl import ActionCard as _AC
+        base = os.path.join(REPO, "py", "melite_cards", "dsl.py")
+        with open(base, encoding="utf-8") as f:
+            tree = ast.parse(f.read())
+        field_ctors = {
+            n.name for n in ast.walk(tree)
+            if isinstance(n, ast.ClassDef) and n.name in {
+                "Number", "Slider", "Seed", "Boolean", "Select",
+                "Textarea", "Text"}}
+        self.assertTrue(field_ctors, "dsl field walk broke")
+        offenders = []
+        cards = 0
+        cbase = os.path.join(REPO, "plugins", "engines")
+        # both shapes: engines/<plugin>/action_cards and
+        # engines/<family>/<plugin>/action_cards
+        card_pys = sorted(set(
+            glob.glob(os.path.join(cbase, "*", "action_cards", "*",
+                                   "*", "py", "card.py")))
+            | set(glob.glob(os.path.join(cbase, "*", "*", "action_cards",
+                                         "*", "*", "py", "card.py"))))
+        for cpy in card_pys:
+            cards += 1
+            with open(cpy, encoding="utf-8") as f:
+                tree = ast.parse(f.read())
+            for node in ast.walk(tree):
+                if not (isinstance(node, ast.Call)
+                        and isinstance(node.func, ast.Name)
+                        and node.func.id in field_ctors):
+                    continue
+                kw = {k.arg: k.value for k in node.keywords}
+                req = kw.get("required")
+                dflt = kw.get("default")
+                explicit_req = (req is not None
+                                and getattr(req, "value", False) is True)
+                explicit_dflt = dflt is not None
+                if not (explicit_req or explicit_dflt):
+                    offenders.append(
+                        "%s:%d %s field (no required, no default)"
+                        % (cpy, node.lineno, node.func.id))
+        self.assertGreaterEqual(cards, 20, "card walk broke")
         self.assertEqual(offenders, [])
 
 
