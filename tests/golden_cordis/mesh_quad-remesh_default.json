@@ -1,0 +1,15 @@
+{
+  "AutoRemesher.0": {
+    "class_type": "AutoRemesher",
+    "inputs": {
+      "filename_prefix": "testrun/remeshed",
+      "glb_path": "/mnt/runs/testrun/dense_input.glb",
+      "target_quads": 50000,
+      "adaptivity": 1,
+      "anisotropy": 1,
+      "edge_scaling": 1,
+      "sharp_edge": 90,
+      "preset": ""
+    }
+  }
+}
