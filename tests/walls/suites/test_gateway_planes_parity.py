@@ -299,6 +299,41 @@ def build_fixture(root: Path) -> None:
       "FLOW = Flow(id=\"notool\", description=\"tool-less flow\",\n"
       "  stages=(Stage(id=\"s1\", engine=\"sim\"),))\n")
 
+    # ── frozen discovery catalog (the TS planes doors read flow
+    # declarations + agent/boot catalog/schema natively from
+    # plugins/gateway/data/discovery-catalog.json under the
+    # disclosure root — no runtime python). Stage the fixture's own
+    # freeze with the SAME functions the exporter uses
+    # (export_discovery_catalog.collect_flows + catalog.scan_catalog/
+    # to_json + flow.schema_snapshot), so this wall pins the native
+    # read path byte-for-byte; estate freshness (regen vs the
+    # checked-in file) lives in the discovery wall's freshness leg.
+    import importlib.util as _ilu
+
+    import catalog as _catmod
+    _spec = _ilu.spec_from_file_location(
+        "export_discovery_catalog",
+        str(REPO / "tools" / "export_discovery_catalog.py"))
+    assert _spec is not None and _spec.loader is not None
+    _expmod = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(_expmod)
+    # schema_snapshot() enumerates FLOWS_ROOT (its "flows" section) —
+    # pin the root BEFORE snapshotting, exactly as the retired probe
+    # did (PROBE_SRC set FLOWS_ROOT then dumped schema_snapshot).
+    flowmod.FLOWS_ROOT = root / "flows"
+    _frozen = {
+        "catalog": json.loads(
+            _catmod.to_json(_catmod.scan_catalog(str(root)))),
+        "schema": flowmod.schema_snapshot(),
+        "flows": _expmod.collect_flows(str(root)),
+    }
+    _fro = root / "plugins" / "gateway" / "data"
+    _fro.mkdir(parents=True, exist_ok=True)
+    (_fro / "discovery-catalog.json").write_text(
+        json.dumps(_frozen, indent=2, ensure_ascii=False, default=str)
+        + "\n",
+        encoding="utf-8")
+
 
 def journal_rows(state_root: Path) -> list[dict]:
     out = []
@@ -317,7 +352,6 @@ def boot_ts(fixture: Path, state: Path) -> tuple[int, "subprocess.Popen[str]"]:
     env = dict(os.environ)
     env["MELITE_REPO_ROOT"] = str(fixture)
     env["MELITE_STATE_ROOT"] = str(state)
-    env["MELITE_PYTHON"] = sys.executable
     env["DSH_GATEWAY_TOKEN"] = TOKEN
     proc = subprocess.Popen(
         [node, "--experimental-strip-types", str(TS_SERVER)],
@@ -551,7 +585,27 @@ def main() -> int:
                   and isinstance(r.get("ts"), int)
                   for r in py_rows + ts_rows))
 
-        # ── 8. auth parity: bad bearer 401s on a plane door ──
+        # ── 8. architecture pin: the native data SSOT — the planes
+        # doors read flow declarations + agent/boot catalog/schema
+        # from the frozen discovery-catalog.json (no runtime python;
+        # the stdio probe is retired). The dual legs above prove the
+        # read path byte-for-byte; the text pin below locks it
+        # (the discovery wall's no-bridge pin precedent).
+        _psrc = (REPO / "plugins" / "gateway" / "src" / "doors"
+                 / "planes.ts").read_text(encoding="utf-8")
+        _pcode = "\n".join(
+            ln for ln in _psrc.splitlines()
+            if not ln.lstrip().startswith("//"))
+        check("no runtime-py probe",
+              "execFileSync" not in _pcode
+              and "spawnSync" not in _pcode
+              and "PROBE_SRC" not in _pcode
+              and "MELITE_PYTHON" not in _pcode)
+        check("native frozen SSOT",
+              "catalogPath" in _pcode
+              and "frozenSection" in _pcode)
+
+        # ── 9. auth parity: bad bearer 401s on a plane door ──
         want_401 = json.dumps({
             "error": "unauthorized: missing or invalid bearer token "
                      "(Authorization: Bearer <token>; set DSH_GATEWAY_TOKEN "

@@ -38,8 +38,8 @@ status + byte-equality on bodies (+ content-type parity):
     first-64KB prefix pins (both sides materialize the whole file
     before first byte, so a prefix read never holds GBs in the
     wall); giant provisions above PREFIX_MAX SKIP with a note
-    (dual-materializing 5-27GB per side would swap-OOM the wall
-    box — flaky, never a pin). Declared-but-missing provisions are
+    (dual-materializing GBs per side OOM-kills the runner under
+    wall-box pressure — flaky, never a pin). Declared-but-missing provisions are
     SKIPPED with a note (both sides would on-demand fetch through
     the rail — network in a wall is flaky, never a pin);
   - trailing-slash + query-strip normalization, method-mismatch
@@ -48,7 +48,11 @@ status + byte-equality on bodies (+ content-type parity):
     shapes, wrong token, query token refused on HTTP, /v1/health
     exempt, bearer 200s);
   - node -e unit legs for the TS-only deployment envelopes (503
-    missing-interpreter, 502 dead-runner).
+    missing-catalog, 503 unparseable-catalog).
+  - FRESHNESS WALL: regen tools/export_discovery_catalog.py from the
+    live py tree and diff against plugins/gateway/data/
+    discovery-catalog.json (pins the JSON vs the py scan — catches
+    drift while py still lives; post-py the file is the frozen truth).
 
 Roots: decl scans are REPO-anchored (catalog/forms/schema read the
 product tree, never MELITE_STATE_ROOT), so no fixture tree is
@@ -58,10 +62,10 @@ lock — a wall NEVER boots a default-root TS (both servers get
 fixture roots; the TS boot without one would contend with live
 state).
 
-Runner interpreter: MELITE_MANAGE_PYTHON=sys.executable (the wall's
-own interpreter — demonstrably estate-capable since this process
-imports gateway). Production defaults to <repo>/.venv/bin/python
-(the base env the service unit runs).
+The TS side serves the frozen export natively (no runtime python —
+the stdio bridge is retired). Production serves the same file; a
+missing/unparseable file 503s loud (regenerate: python3
+tools/export_discovery_catalog.py).
 
 Run: python3 tests/walls/suites/test_gateway_discovery_parity.py
 """
@@ -86,11 +90,14 @@ TOKEN = "wall-discovery-token-%d" % os.getpid()
 
 TS_SERVER = REPO / "plugins" / "gateway" / "src" / "server.ts"
 TS_DISCOVERY = REPO / "plugins" / "gateway" / "src" / "doors" / "discovery.ts"
+TS_CATALOG = (REPO / "plugins" / "gateway" / "data"
+              / "discovery-catalog.json")
+TS_EXPORT_TOOL = REPO / "tools" / "export_discovery_catalog.py"
 
 JSON_HEADERS = ("content-type", "content-length")
 
 FULL_BYTES_MAX = 256 * 1024 * 1024
-PREFIX_MAX = 4 * 1024 * 1024 * 1024
+PREFIX_MAX = 1024 * 1024 * 1024
 PREFIX_LEN = 64 * 1024
 
 
@@ -240,6 +247,35 @@ def provision_plan() -> tuple[list[tuple[str, str, int]],
     return on_disk, missing
 
 
+def canon_diff(a, b, path: str = "$") -> str | None:
+    """First divergence between regen and the checked-in export: dicts
+    compare order-insensitive (key sets + recurse), lists ordered
+    (wire order is the contract), scalars exact. None when equal."""
+    if isinstance(a, dict) and isinstance(b, dict):
+        for k in a.keys() | b.keys():
+            if k not in a:
+                return "%s.%s: missing in regen" % (path, k)
+            if k not in b:
+                return "%s.%s: missing in checked-in file" % (path, k)
+            d = canon_diff(a[k], b[k], "%s.%s" % (path, k))
+            if d:
+                return d
+        return None
+    if isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)):
+        if len(a) != len(b):
+            return "%s: length %d != checked-in %d" % (path, len(a), len(b))
+        for i, (x, y) in enumerate(zip(a, b)):
+            d = canon_diff(x, y, "%s[%d]" % (path, i))
+            if d:
+                return d
+        return None
+    if isinstance(a, bool) or isinstance(b, bool):
+        return None if a is b else "%s: %r != checked-in %r" % (path, a, b)
+    if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+        return None if a == b else "%s: %r != checked-in %r" % (path, a, b)
+    return None if a == b else "%s: %r != checked-in %r" % (path, a, b)
+
+
 def main() -> int:
     base = None
     py_proc = ts_proc = None
@@ -257,7 +293,6 @@ def main() -> int:
         py_port, py_proc = boot_scratch_gateway(env=py_env)
         ts_env = dict(os.environ)
         ts_env["MELITE_STATE_ROOT"] = str(ts_root)
-        ts_env["MELITE_MANAGE_PYTHON"] = sys.executable
         ts_env.pop("DSH_GATEWAY_TOKEN", None)
         ts_port, ts_proc = boot_ts(ts_env)
         print("py :%d vs ts :%d" % (py_port, ts_port))
@@ -430,39 +465,110 @@ def main() -> int:
         check("form-spec ensure_ascii escapes",
               "\\u2014" in pb.decode() and "\\u2014" in tb.decode())
 
-        # ── architecture pin: decl truth flows through the py
-        # bridge — the snapshots are not a second SSOT here (their
-        # key coverage cannot serve these doors byte-identical; see
-        # doors/discovery.ts header).
+        # ── architecture pin: the native data SSOT — the doors read
+        # the frozen discovery-catalog.json (no runtime python, no
+        # second snapshot). The wall below proves the freeze matches
+        # the live py scan (freshness), so the file is the truth.
         src = TS_DISCOVERY.read_text(encoding="utf-8")
+        code = "\n".join(
+            ln for ln in src.splitlines()
+            if not ln.lstrip().startswith("//"))
+        check("no runtime-py bridge",
+              "spawnSync" not in code
+              and "discoveryRunner" not in code
+              and "managePyDirs" not in code
+              and "resolveManagePython" not in code)
+        check("native catalog SSOT",
+              "discovery-catalog.json" in code)
         check("no snapshot second-SSOT",
-              "card-decls.json" not in src and "model-facts.json" not in src
-              and "vocab.ts" not in src)
+              "card-decls.json" not in code
+              and "model-facts.json" not in code
+              and "vocab.ts" not in code)
+
+        # ── FRESHNESS WALL: regen the export from the live py tree
+        # and diff against the checked-in file (pins the JSON vs the
+        # py scan — catches drift while py still lives; post-py the
+        # file becomes the frozen truth). Regen runs from the repo
+        # root with absolute paths only (a relative root collides
+        # with the loader's module cache — two paths, one key).
+        check("export tool present", TS_EXPORT_TOOL.is_file())
+        check("catalog file present", TS_CATALOG.is_file())
+        try:
+            regen = subprocess.run(
+                [sys.executable, str(TS_EXPORT_TOOL)],
+                cwd=str(REPO), capture_output=True, text=True, timeout=600)
+            regen_ok = regen.returncode == 0 and regen.stdout.strip() != ""
+            if not regen_ok:
+                check("freshness regen runs", False,
+                      "rc=%d %s" % (regen.returncode,
+                                    (regen.stderr or regen.stdout)[-300:]))
+            else:
+                try:
+                    fresh = json.loads(regen.stdout)
+                    frozen = json.loads(
+                        TS_CATALOG.read_text(encoding="utf-8"))
+                    d = canon_diff(fresh, frozen)
+                    check("freshness regen == checked-in",
+                          d is None, d or "")
+                except ValueError as e:
+                    check("freshness regen parses", False, str(e)[:200])
+                live_models = set(model_ids)
+                frozen_models = set(
+                    frozen.get("catalog", {}).get("models", {}).keys())
+                check("freshness covers live catalog ids",
+                      live_models == frozen_models,
+                      "live-only %r frozen-only %r"
+                      % (sorted(live_models - frozen_models)[:5],
+                         sorted(frozen_models - live_models)[:5]))
+                live_fams = set(family_ids)
+                frozen_fams = set(frozen.get("family_ids", []))
+                check("freshness covers live family ids",
+                      live_fams == frozen_fams,
+                      "live-only %r frozen-only %r"
+                      % (sorted(live_fams - frozen_fams)[:5],
+                         sorted(frozen_fams - live_fams)[:5]))
+                import flow as _flowmod
+                _flowmod.FLOWS_ROOT = REPO / "flows"
+                live_flows = set(_flowmod.scan_flow_ids())
+                frozen_flows = {
+                    r["id"] for r in frozen.get("flows", [])
+                    if isinstance(r, dict) and isinstance(
+                        r.get("id"), str)}
+                check("freshness covers live flow ids",
+                      live_flows == frozen_flows,
+                      "live-only %r frozen-only %r"
+                      % (sorted(live_flows - frozen_flows)[:5],
+                         sorted(frozen_flows - live_flows)[:5]))
+        except subprocess.TimeoutExpired:
+            check("freshness regen runs", False, "timed out (600s)")
 
         # ── TS-only deployment envelopes (node -e units; py has no
-        # counterpart — the bridge runner is down, not the builder).
+        # counterpart — the catalog file is down, not the builder).
         node = shutil.which("node")
+        bad_root = base / "bad-root"
+        (bad_root / "plugins" / "gateway" / "data").mkdir(parents=True)
+        (bad_root / "plugins" / "gateway" / "data"
+         / "discovery-catalog.json").write_text(
+            "{not json", encoding="utf-8")
         units = (
-            ("503 missing-interpreter",
-             {"MELITE_MANAGE_PYTHON": "/nonexistent-probe-python-xyz"},
+            ("503 missing-catalog",
              "import('%s').then(m=>{const r=m.dispatchDiscovery("
-             "'_h_kinds','GET','/v1/kinds','/v1/kinds');"
+             "'_h_kinds','GET','/v1/kinds','/v1/kinds',"
+             "'/nonexistent-probe-repo-xyz');"
              "console.log(JSON.stringify([r.status,r.body]));})"
              % TS_DISCOVERY.as_uri(),
-             lambda got: got[0] == 503 and "discovery bridge unavailable"
-             in got[1] and "nonexistent-probe-python-xyz" in got[1]),
-            ("502 dead-runner",
-             {"MELITE_MANAGE_PYTHON": "/bin/false"},
+             lambda got: got[0] == 503 and "discovery catalog unavailable"
+             in got[1] and "export_discovery_catalog" in got[1]),
+            ("503 unparseable-catalog",
              "import('%s').then(m=>{const r=m.dispatchDiscovery("
-             "'_h_kinds','GET','/v1/kinds','/v1/kinds');"
+             "'_h_kinds','GET','/v1/kinds','/v1/kinds',%s);"
              "console.log(JSON.stringify([r.status,r.body]));})"
-             % TS_DISCOVERY.as_uri(),
-             lambda got: got[0] == 502 and "discovery runner failed"
-             in got[1] and "_h_kinds" in got[1]),
+             % (TS_DISCOVERY.as_uri(), json.dumps(str(bad_root))),
+             lambda got: got[0] == 503 and "discovery catalog unavailable"
+             in got[1]),
         )
-        for name, extra_env, probe, pred in units:
+        for name, probe, pred in units:
             env = dict(os.environ)
-            env.update(extra_env)
             r = subprocess.run(
                 [node, "--experimental-strip-types",
                  "--input-type=module", "-e", probe],
