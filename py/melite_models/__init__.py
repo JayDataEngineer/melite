@@ -7,6 +7,9 @@ from .grammar import (  # noqa: F401
     DEFAULT_RECIPE, RECIPE_GROUP,
     LaneInputs,
     Quant, DestRoot, _repo_py_root,
+    # knob splice rows (2026-09-07 KnobRow flip — typed, construction-
+    # validated; the dict fossil and its dead 'required' key are gone)
+    KnobRow, KnobKind,
     # closed-vocabulary enums (PYTHON SHAPE LAW rung 3: a closed
     # set is a TYPE — a typo refuses construction, not a runtime
     # node mismatch or a wall that only fires when the lane trips)

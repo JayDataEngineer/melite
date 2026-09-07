@@ -284,7 +284,7 @@ class TestKnobSSOT(unittest.TestCase):
         mpath = os.path.join(REPO, "plugins/engines/node/anycreature",
                              "models/3d/anycreature/model.py")
         cls = load_model_py(mpath, "anycreature")
-        knob_fields = {row["card"] for row in cls.card_knobs}
+        knob_fields = {row.card for row in cls.card_knobs}
         self.assertTrue(card_fields <= knob_fields,
                         "card fields missing knob rows: %s"
                         % (card_fields - knob_fields))
@@ -297,7 +297,7 @@ class TestKnobSSOT(unittest.TestCase):
         mpath = os.path.join(REPO, "plugins/engines/cpp/autoremesher",
                              "models/3d/autoremesher/model.py")
         cls = load_model_py(mpath, "autoremesher")
-        knob_fields = {row["card"] for row in cls.card_knobs}
+        knob_fields = {row.card for row in cls.card_knobs}
         self.assertTrue(card_fields <= knob_fields)
 
     def _card_fields(self, card_subpath: str, card_cls: str,
@@ -441,7 +441,7 @@ class TestKnobSSOT(unittest.TestCase):
         fed = {f for f in set(doc_cls.model_fields)
                - {"filename_prefix"} - structural
                if f in wire and _scalar(doc_cls.model_fields[f])}
-        row_names = {r["card"] for r in rows}
+        row_names = {r.card for r in rows}
         self.assertTrue(
             row_names <= wire,
             "%s rows name non-wire knobs: %s" % (
@@ -451,21 +451,21 @@ class TestKnobSSOT(unittest.TestCase):
             "%s renderer-fed knobs missing rows: %s" % (
                 model_id, fed - row_names))
         for r in rows:
-            if not r["inject"]:
+            if not r.inject:
                 # compile-consumed row (mask-studio tier 2/3): no node
                 # target exists — the name∈wire check above is the
                 # whole audit; the row comment states the consumption.
                 continue
-            node_key, _, inp = r["inject"].rpartition(".")
+            node_key, _, inp = r.inject.rpartition(".")
             node_cls, _, _idx = node_key.rpartition(".")
             self.assertIn(
                 node_key, graph,
                 "%s row %r names unbuilt node %r" % (
-                    model_id, r["card"], node_key))
+                    model_id, r.card, node_key))
             self.assertIn(
                 inp, graph[node_key].get("inputs", {}),
                 "%s row %r names unknown input %r on %s" % (
-                    model_id, r["card"], inp, node_cls))
+                    model_id, r.card, inp, node_cls))
 
     def _assert_rows_name_real_inputs(self, model_subdir: str,
                                       template: str) -> None:
@@ -485,16 +485,16 @@ class TestKnobSSOT(unittest.TestCase):
                  for v in tmpl.values()}
         for row in cls.card_knobs:
             # shape is NodeClass.idx.input — split off the LAST two dots
-            parts = row["inject"].rsplit(".", 2)
+            parts = row.inject.rsplit(".", 2)
             self.assertEqual(len(parts), 3,
                              "row %r inject is not NodeClass.idx.input"
-                             % row["card"])
+                             % row.card)
             node, _idx, inp = parts
             self.assertIn(node, nodes,
-                          "row %r names unknown node %r" % (row["card"], node))
+                          "row %r names unknown node %r" % (row.card, node))
             self.assertIn(inp, nodes[node],
                           "row %r names unknown input %r on %s"
-                          % (row["card"], inp, node))
+                          % (row.card, inp, node))
 
     def test_voice_lock_fields_all_in_knob_rows(self) -> None:
         """Row-3 migration pattern (second card after music3): the
@@ -508,7 +508,7 @@ class TestKnobSSOT(unittest.TestCase):
             REPO, "plugins/engines/comfyui/models/audio",
             "qwen3-tts-voicedesign/model.py")
         cls = load_model_py(mpath, "comfyui")
-        knob_fields = {row["card"] for row in cls.card_knobs}
+        knob_fields = {row.card for row in cls.card_knobs}
         self.assertTrue(card_fields <= knob_fields,
                         "voice-lock fields missing knob rows: %s"
                         % (card_fields - knob_fields))
@@ -530,7 +530,7 @@ class TestKnobSSOT(unittest.TestCase):
                 REPO, "plugins/engines/comfyui/models/image",
                 mid, "model.py")
             cls = load_model_py(mpath, "comfyui")
-            knob_fields = {row["card"] for row in cls.card_knobs}
+            knob_fields = {row.card for row in cls.card_knobs}
             self.assertTrue(card_fields <= knob_fields,
                             "image-gen fields missing knob rows on %s: %s"
                             % (mid, card_fields - knob_fields))
@@ -699,9 +699,8 @@ class TestKnobSSOT(unittest.TestCase):
             cls = load_model_py(os.path.join(
                 REPO, "plugins/engines/comfyui/models/video", mid,
                 "model.py"), "comfyui")
-            maps[mid] = {r["card"]: r.get("inject", "")
-                         for r in (cls.card_knobs or ())
-                         if isinstance(r, dict) and r.get("card")}
+            maps[mid] = {r.card: r.inject
+                         for r in (cls.card_knobs or ())}
         self.assertEqual(maps["h3"], maps["h3-timeline"])
         self.assertEqual(maps["h3-keyframe"], maps["h3-timeline"])
         rspec = importlib.util.spec_from_file_location(

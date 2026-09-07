@@ -77,10 +77,10 @@ class ModelError(Exception):
 
 class Genre(str, Enum):
     """The model's family genre — closed (the 7 lanes the estate
-    supports). A typo refuses construction; a string assignment on a
-    Model subclass is coerced to the enum in the metaclass so model.py
-    files that still state `genre = "image"` keep working, but a wall
-    pins the type"""
+    supports). A typo refuses construction; a raw-string assignment
+    on a Model subclass refuses at class creation (the str-coercion
+    backstop retired 2026-09-07 with the sweep complete — every
+    model.py states the member, and the wall pins it)"""
     IMAGE = "image"
     VIDEO = "video"
     AUDIO = "audio"
@@ -207,7 +207,35 @@ a stated-once basename like `unet`, no artifact row beside it.'''
         return self
 
 
+class KnobKind(str, Enum):
+    """The knob value vocabulary (closed — rung 3): a typo refuses
+    construction, never a silent splice default."""
+    NUMBER = "n"
+    STRING = "s"
+    BOOLEAN = "b"
 
+
+class KnobRow(BaseModel, frozen=True):
+    """One card-knob declaration — the compose splice SSOT (a card
+    knob must have a row on every model it boards; LAYER AUDIT
+    enforces both directions). Frozen pydantic, validated AT
+    CONSTRUCTION (rung 2): the dict-shaped fossil this replaces let
+    a row missing its `card` key vanish SILENTLY in knobmap.load —
+    the exact silent-error class the laws ban
+    (docs/design/declarative-pattern-review.md H1/H2, fixed
+    2026-09-07; the dead `required` key died in the same flip — it
+    was read by nothing).
+
+    `inject` targets `NodeClass.idx.input` (or a `cli:--flag` on the
+    native exec lanes) — open vocab, plain str. An EMPTY inject is
+    the explicit "arm-consumed, not spliced" marker: the field is
+    admitted (the layer audit demands its row) but the card's own
+    compose code consumes it — e.g. anny's source_image rides
+    resolve_mount_input, no node target.
+    """
+    card: str = Field(min_length=1)
+    inject: str = ""
+    kind: KnobKind = KnobKind.STRING
 
 
 # ── head-setting rows — typed declarations, not honor-system dicts ──
@@ -782,7 +810,7 @@ class Model(metaclass=_ModelMeta):
     # Semicolon-joined rule text; same wire shape the yaml reader produces.
     prompt_upscale = ()
     lyrics_upscale = ()
-    card_knobs = ()         # model-level knob map (card/inject/kind/required)
+    card_knobs = ()         # typed KnobRow tuples (card/inject/kind)
 
     @classmethod
     def _boot_validate(cls: "type[Model]", root: bool = False) -> None:
@@ -856,6 +884,16 @@ class Model(metaclass=_ModelMeta):
                 raise ModelError(
                     "%s: loras must be LoraRow instances (got %s)"
                     % (cls.__name__, type(lora).__name__))
+        # knob rows are TYPED (2026-09-07 KnobRow flip): a dict here
+        # is the pre-flip fossil shape — refuse LOUD with the fix,
+        # never the silent knobmap drop the dict era allowed
+        for _row in (cls.card_knobs or ()):
+            if not isinstance(_row, KnobRow):
+                raise ModelError(
+                    "%s: card_knobs entries must be KnobRow instances "
+                    "(got %s) — KnobRow(card=..., inject=..., "
+                    "kind='n'|'s'|'b'); the dict shape is extinct"
+                    % (cls.__name__, type(_row).__name__))
         mods = cls.mods or ()
         if not isinstance(mods, tuple):
             raise ModelError("%s.mods must be a tuple (got %s)"
@@ -965,12 +1003,18 @@ class Model(metaclass=_ModelMeta):
                     "which carries no artifact — state unet= instead"
                     % (cls.__name__, li.unet_variant, li.unet_quant))
         # GENRE: type IS the gate (rung 3: a `genre = "typo"` line in
-        # a model.py would be coerced here; a real `Genre.typo` fails
-        # at class-body evaluation). The legacy _GENRE_VALUES wall
-        # check is dead with the enum — rung 6, no restated
-        # coordinates.
+        # a model.py refuses HERE at class creation; a real
+        # `Genre.typo` fails at class-body evaluation). The str
+        # coercion backstop retired 2026-09-07 — the sweep converted
+        # every model.py to members and the typed-genre wall pins it,
+        # so a raw str is a regression, not a migration state. The
+        # legacy _GENRE_VALUES wall check is dead with the enum —
+        # rung 6, no restated coordinates.
         if isinstance(cls.genre, str) and not isinstance(cls.genre, Genre):
-            cls.genre = Genre(cls.genre)
+            raise ModelError(
+                "%s.genre is a raw str %r — state the Genre member "
+                "(the str-coercion backstop is retired)"
+                % (cls.__name__, cls.genre))
         elif cls.genre is None:
             cls.genre = Genre.NONE
         # variant/cell rows validate AT CONSTRUCTION (pydantic frozen)

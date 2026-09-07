@@ -76,7 +76,7 @@ class TestLaneStructure(unittest.TestCase):
         self.assertEqual(cls.engine, "skintokens")
         # the CLI surface rows — live-probed from skintokens-cli's
         # usage text, never README memory
-        knobs = {(k["card"], k["inject"]) for k in cls.card_knobs}
+        knobs = {(k.card, k.inject) for k in cls.card_knobs}
         self.assertEqual(knobs, {
             ("input", "cli:positional:mesh"),
             ("device", "cli:--device"),

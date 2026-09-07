@@ -391,6 +391,10 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         "card_knobs.yaml": "past",
         "h3_chain.py": "past",
         "h3_seam_nodes.py": "past",
+        # deleted 2026-09-07 (KnobRow flip stroke): the fossil audit
+        # tool read the extinct card_knobs.yaml against pre-reorg
+        # paths — the live audit is test_cpp_engines TestKnobSSOT
+        "tools/layer_audit.py": "deleted-in-record",
         "melite-h3-motion-nodes/h3_seam_nodes.py": "past",
         "tests/test_v7_knobs.py": "past",
         "window1_load.json": "past",
