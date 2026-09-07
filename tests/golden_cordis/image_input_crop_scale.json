@@ -1,0 +1,44 @@
+{
+  "ImageCrop.0": {
+    "class_type": "ImageCrop",
+    "inputs": {
+      "height": 768,
+      "image": [
+        "LoadImage.0",
+        0
+      ],
+      "width": 768,
+      "x": 0,
+      "y": 128
+    }
+  },
+  "ImageScale.0": {
+    "class_type": "ImageScale",
+    "inputs": {
+      "crop": "disabled",
+      "height": 1024,
+      "image": [
+        "ImageCrop.0",
+        0
+      ],
+      "upscale_method": "lanczos",
+      "width": 1024
+    }
+  },
+  "LoadImage.0": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "koi_pond.png"
+    }
+  },
+  "SaveImage.0": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "testrun/input_prep",
+      "images": [
+        "ImageScale.0",
+        0
+      ]
+    }
+  }
+}
