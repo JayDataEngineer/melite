@@ -1312,12 +1312,34 @@ class Gateway:
                 or not hasattr(eng, "stage_workflow"):
             return False
         rows = []
+        # the initials pool (name-keyed, artifact-absolutized) is
+        # built BEFORE the bridge loop: a card doc's $spells expand
+        # against it (the merged path's own substitution seam runs
+        # AFTER the bridge — an arm with a file-existence gate would
+        # see the raw spell and refuse)
+        pool = dict(initial)
+        for node in nodes:
+            names = getattr(node, "input_names", None) or {}
+            ins = {}
+            for name, ref in names.items():
+                if str(ref).startswith("__initial__."):
+                    key = str(ref).split(".", 1)[1]
+                    if key in pool:
+                        ins[str(name)] = pool[key]
+                    elif str(name) in pool:
+                        ins[str(name)] = pool[str(name)]
+            try:
+                ins = absolutize_artifact_refs(node, ins)
+            except Exception:
+                pass   # the per-stage seam owns artifact refusals
+            pool.update(ins)
         for stage in run.stages:
             node = nodes[stage["index"]]
             try:
                 params = dict(node.params or {})
                 if getattr(node, "card", ""):
-                    params = _card_bridge(node, params, run.run_id)
+                    params = _card_bridge(node, params, run.run_id,
+                                          inputs=pool)
                 wf = eng.stage_workflow(params)
                 if not isinstance(wf, dict) or not wf:
                     return False
@@ -1335,25 +1357,24 @@ class Gateway:
                 # per-stage loop re-runs it inside the stage's own
                 # try, where the refusal lands in the sidecar
                 return False
+        # ROW 4 (2026-09-07, live-probed run-c97e67b10fb8): DRY-RUN
+        # the plan here. A plan-time refusal (a producer link that
+        # would land in a file slot — the upscale arm's LoadImage)
+        # must fall back to the per-stage path BEFORE any stage is
+        # marked running; before this seam the refusal surfaced at
+        # execute_flow's POST /prompt, past the fallback point, and
+        # failed the whole run. Capability-gated like the merge ABI
+        # itself (an engine without plan_merge keeps the old shape).
+        _plan = getattr(eng, "plan_merge", None)
+        if _plan is not None:
+            try:
+                _plan(rows, dict(pool))
+            except Exception:
+                return False
         # initials, name-keyed + absolutized per the nodes' FILE-kind
         # expected (artifact-ref spellings resolve from disk — the
-        # same seam the loop applies per stage)
-        pool = dict(initial)
-        for node in nodes:
-            names = getattr(node, "input_names", None) or {}
-            ins = {}
-            for name, ref in names.items():
-                if str(ref).startswith("__initial__."):
-                    key = str(ref).split(".", 1)[1]
-                    if key in pool:
-                        ins[str(name)] = pool[key]
-                    elif str(name) in pool:
-                        ins[str(name)] = pool[str(name)]
-            try:
-                ins = absolutize_artifact_refs(node, ins)
-            except Exception:
-                pass   # the per-stage seam owns artifact refusals
-            pool.update(ins)
+        # same seam the loop applies per stage) — already built
+        # above (pool), before the bridge loop
 
         def _mreport(updates: dict[str, JsonValue]) -> None:
             # flow-level progress folds onto the first stage still
@@ -1541,7 +1562,8 @@ class Gateway:
                 # LAW). Wall: tests/unit/runtime/test_stage_card_
                 # lane.py.
                 if getattr(node, "card", ""):
-                    params = _card_bridge(node, params, run.run_id)
+                    params = _card_bridge(node, params, run.run_id,
+                                          inputs=inputs)
                 engine = load_engine(node.node_type)
                 # the engine ABI row: a VALIDATED NodeRow carrying the
                 # inject-expanded params (construction refuses a bad row)
@@ -3767,7 +3789,34 @@ async def _h_manage(ctx: _Ctx) -> HandlerResult:
                      "detail": "manage action timed out (900s)"}
 
 
-def _card_bridge(node: NodeRow, params: dict[str, JsonValue], run_id: str) -> dict[str, JsonValue]:
+def _expand_doc_spells(params: dict[str, JsonValue],
+                       inputs: dict[str, JsonValue]
+                       ) -> dict[str, JsonValue]:
+    """The CARD-STAGE doc spell seam (row 4, 2026-09-07): a card=
+    stage's params ARE the card doc, and a doc value may be a
+    $spell naming one of the stage's WIRED INPUTS ("$prompt",
+    "$image"). The arm composes the doc into a workflow — an arm
+    that validates file existence (upscale's phase-1) must see the
+    RESOLVED value, never the spell. Core-generic and lane-blind:
+    spell → input name, resolved against the stage's input pool
+    (the same names resolve_inputs publishes). Unknown $-strings
+    ride untouched (prompt text is a legitimate "$100 bill" — the
+    same law as _deep_expand); the arm's own guards refuse what
+    stays unresolved."""
+    out = dict(params)
+    for k, v in params.items():
+        if isinstance(v, str) and v.startswith("$"):
+            name = v[1:]
+            if name in inputs:
+                out[k] = inputs[name]
+            elif ("$" + name) in inputs:
+                out[k] = inputs["$" + name]
+    return out
+
+
+def _card_bridge(node: NodeRow, params: dict[str, JsonValue], run_id: str,
+                 inputs: dict[str, JsonValue] | None = None
+                 ) -> dict[str, JsonValue]:
     """STROKE 4 (2026-09-06): compose a card= stage's DOC into engine
     params via the owning arm — the {model:} door's compose, run at
     the flow stage's turn. The bus dispatches by engine type; the
@@ -3782,7 +3831,20 @@ def _card_bridge(node: NodeRow, params: dict[str, JsonValue], run_id: str) -> di
     # parse_card_body leak gate refuses it there; the {model:} door
     # already speaks this shape). Arms that read the doc fallback
     # (music) still resolve — the arg wins, the doc is fallback.
+    # ROW 4 (2026-09-07): doc $spells expand against the stage's
+    # resolved inputs FIRST (arms with file-existence phase-1 gates
+    # must see the resolved value; the two-card flow's artifact
+    # handoff depends on it).
+    if inputs:
+        params = _expand_doc_spells(params, inputs)
     doc = dict(params)
+    # expand_inject unconditionally stamps an `inject` key (the
+    # legacy engine channel); a card doc never carries one — every
+    # card schema forbids extras — so strip it when the NODE did
+    # not declare it (run-66387f5a5e18: the empty stamp refused the
+    # whole compose with a misleading extra_forbidden)
+    if "inject" in doc and "inject" not in (node.params or {}):
+        del doc["inject"]
     model = str(doc.pop("model", "") or "")
     graph2, _extra = _plugins.compose(
         {"params": doc}, model, run_id, None,

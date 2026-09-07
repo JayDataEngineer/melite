@@ -382,6 +382,10 @@ REGISTRY = ParamSchemaRegistry(rows=(
     CardSchemaRow(
         card_id="image-gen", engine="comfyui",
         schema_class=None,  # resolved lazily via _SCHEMA_BY_CARD["image-gen"]()
+        # ROW 4 (2026-09-07, image-upscale conversion): the first
+        # TWO-card flow — both stages name their model row (the
+        # tts/music precedent; the bridge pops it into the envelope).
+        requires_model=True,
         kind_inputs={"prompt": "text",
                      "reference_image": "image"},
         kind_outputs={"default": "image"}),
@@ -392,8 +396,11 @@ REGISTRY = ParamSchemaRegistry(rows=(
                      "input_image": "image"},
         kind_outputs={"default": "image"}),
     CardSchemaRow(
+        # ROW 4 (2026-09-07, image-upscale conversion): requires_model
+        # — the SeedVR2 arm resolves its row from params.model
         card_id="upscale-tools", engine="comfyui",
         schema_class=None,
+        requires_model=True,
         kind_inputs={"image": "image"},
         kind_outputs={"default": "image"}),
     CardSchemaRow(

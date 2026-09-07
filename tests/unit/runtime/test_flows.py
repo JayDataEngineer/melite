@@ -810,12 +810,19 @@ def test_image_upscale_sample_loads_and_compiles() -> None:
         "flow": "image-upscale", "prompt": "a fox",
         "image_model": "krea-2", "seed": 7})
     assert skipped == ()
-    (node,) = [n for n in graph.nodes if n.node_id == "make"]
-    wf = node.params["workflow"]
-    assert wf["CLIPLoader.0"]["inputs"]["clip_name"].startswith(
-        "qwen3vl")
-    assert wf["KSampler.0"]["inputs"]["seed"] == 7
-    assert wf["SeedVR2VideoUpscaler.0"]["inputs"]["image"] == \
-        ["VAEDecode.0", 0]
+    (make, polish) = graph.nodes
+    # ROW 4 (2026-09-07): the first TWO-CARD flow — no stage carries
+    # a workflow; each names a card and its doc knobs
+    assert make.card == "image-gen" and polish.card == "upscale-tools"
+    assert make.params["model"] == "krea-2"
+    assert make.params["prompt"] == "$prompt"
+    assert make.params["seed"] == 7          # the overlay stamps BOTH
+    assert polish.params["seed"] == 7
+    assert polish.params["input_image"] == "$image"  # the wired input
+    # the typed handoff: make.image → polish.image (Kind.image both
+    # sides; the effective expected carries the FILE kind)
+    assert make.input_names == {"prompt": "__initial__.prompt"}
+    assert polish.input_names == {"image": "make.image"}
+    assert polish.expected == {"image": "image"}
     with pytest.raises(ValueError, match="is required"):
         fl.compile({"flow": "image-upscale", "prompt": "x"})

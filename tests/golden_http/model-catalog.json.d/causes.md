@@ -378,3 +378,11 @@ The soma/smplx/g1 rows + the text-to-motion form + the
 text_to_motion_card tool leave the served surfaces (the comfyui
 kimodo row + motion_card remain). form-spec_model_soma.json
 deleted with the lane.
+
+## 2026-09-07 — qwen3-tts defaults.voice: "vivian"
+
+Row 4 slice 2 (6ec2ac3c, the audio-native-tts card lane) added the
+`voice` default to the qwen3-tts model row but shipped without this
+regold — the parity suite failed on the missing key through slices
+3–4. Regolded during row 4's image-upscale conversion stroke (the
+two-card flow). One key, one model, nothing else moved.

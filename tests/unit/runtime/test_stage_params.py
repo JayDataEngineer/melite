@@ -299,7 +299,7 @@ def test_kind_mismatch_against_card_outputs_refused() -> None:
         Flow(id="img-to-text", stages=(
             Stage(id="gen", engine="comfyui", card="image-gen",
                   inputs={"prompt": FromInitial(key="prompt")},
-                  params={"prompt": "a cat"}),
+                  params={"model": "krea-2", "prompt": "a cat"}),
             Stage(id="vid", engine="comfyui", card="video-gen",
                   inputs={"prompt": FromStage(stage="gen",
                                               output="default")},
@@ -321,7 +321,7 @@ def test_kind_mismatch_image_to_text_input_refused() -> None:
         Flow(id="img-to-motion", stages=(
             Stage(id="gen", engine="comfyui", card="image-gen",
                   inputs={"prompt": FromInitial(key="prompt")},
-                  params={"prompt": "a cat"}),
+                  params={"model": "krea-2", "prompt": "a cat"}),
             Stage(id="m", engine="comfyui", card="motion",
                   inputs={"prompt": FromStage(stage="gen",
                                               output="default")},
@@ -338,7 +338,7 @@ def test_valid_kind_chain_image_to_mesh_passes() -> None:
     fl = Flow(id="img-to-mesh", stages=(
         Stage(id="gen", engine="comfyui", card="image-gen",
               inputs={"prompt": FromInitial(key="prompt")},
-              params={"prompt": "a cat"}),
+              params={"model": "krea-2", "prompt": "a cat"}),
         Stage(id="im", engine="comfyui", card="img-to-mesh",
               inputs={"input_image": FromStage(stage="gen",
                                               output="default")},
@@ -409,7 +409,7 @@ def test_inline_flow_kind_mismatch_refused() -> None:
         "stages": [
             {"id": "gen", "engine": "comfyui", "card": "image-gen",
              "inputs": {"prompt": {"initial": "prompt"}},
-             "params": {"prompt": "a cat"}},
+             "params": {"model": "krea-2", "prompt": "a cat"}},
             {"id": "vid", "engine": "comfyui", "card": "video-gen",
              "inputs": {"prompt": {"stage": "gen",
                                    "output": "default"}},
@@ -430,7 +430,7 @@ def test_inline_flow_clean_card_constructs() -> None:
         "stages": [
             {"id": "gen", "engine": "comfyui", "card": "image-gen",
              "inputs": {"prompt": {"initial": "prompt"}},
-             "params": {"prompt": "a cat"}},
+             "params": {"model": "krea-2", "prompt": "a cat"}},
             {"id": "anny", "engine": "comfyui", "card": "anny",
              "inputs": {"source_image": {"stage": "gen",
                                          "output": "default"}},

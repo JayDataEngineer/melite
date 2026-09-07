@@ -51,9 +51,16 @@ _WF_GEN = {
     "s": {"class_type": "SaveImage",
           "inputs": {"images": ["k", 0]}},
 }
+# ROW 4 (2026-09-07): the cross-stage consumer's $spell must sit
+# in a TENSOR slot — live-probed run-c97e67b10fb8 refused a producer
+# link landing in LoadImage's file slot (exception_during_inner_
+# validation at POST /prompt). The fixture's consumer is a tensor
+# node; the file-slot refusal has its own wall below.
 _WF_EDIT = {
-    "l": {"class_type": "LoadImage", "inputs": {"image": "$photo"}},
-    "s": {"class_type": "SaveImage", "inputs": {"images": ["l", 0]}},
+    "k": {"class_type": "ImageScale", "inputs": {
+        "image": "$photo", "upscale_method": "lanczos",
+        "width": 1920, "height": 1080, "crop": "disabled"}},
+    "s": {"class_type": "SaveImage", "inputs": {"images": ["k", 0]}},
 }
 
 
@@ -70,9 +77,9 @@ def _two_stage_rows() -> list[dict[str, JsonValue]]:
 def test_planner_namespaces_and_links_cross_stage() -> None:
     plan = eng.plan_merge(_two_stage_rows(), {})
     wf = plan["workflow"]
-    assert sorted(wf) == ["edit::l", "edit::s", "gen::k", "gen::s"]
+    assert sorted(wf) == ["edit::k", "edit::s", "gen::k", "gen::s"]
     # the $photo spell became a DIRECT link to the upstream producer
-    assert wf["edit::l"]["inputs"]["image"] == ["gen::s", 0]
+    assert wf["edit::k"]["inputs"]["image"] == ["gen::s", 0]
     # the producers map is namespaced, channel-keyed
     assert plan["producers"]["gen"] == {"gen::s": "default"}
 
@@ -309,7 +316,7 @@ def test_execute_flow_submits_once_and_harvests_per_stage(
     gen_out = result["stages"]["gen"]["outputs"]
     assert list(gen_out) == ["default"]
     # the submitted graph carried the DIRECT link, not a disk path
-    assert _fake_upload.wf["edit::l"]["inputs"]["image"] == ["gen::s", 0]
+    assert _fake_upload.wf["edit::k"]["inputs"]["image"] == ["gen::s", 0]
 
 
 def _fake_upload(server: str, wf: dict[str, dict[str, JsonValue]]
@@ -327,20 +334,36 @@ async def _fake_tap(server: str, client_id: str,
 # ── coverage: what the REAL flows do today ──────────────────────────
 
 def test_real_flow_coverage() -> None:
-    """Pinned 2026-09-06: single-stage pure-comfyui flows merge (the
-    merged path is their normal path — one submit); the multi-stage
-    character pipeline REFUSES at its mesh wires (non-Save producers
-    need output_nodes declarations — the declared-producer follow-up,
-    gated on a live socket-type canary) and falls back per-stage;
-    music-native is mixed (audio_cpp) and never enters the path."""
-    def build(fid: str) -> tuple[tuple[NodeRow, ...], list[dict[str, JsonValue]]]:
+    """Pinned 2026-09-06, updated ROW 4 (2026-09-07): pure-comfyui
+    card flows merge (image-upscale is now TWO card stages — the
+    bridge expands doc $spells against the initials pool the merged
+    path builds, both Save producers auto-bind, ONE submit); the
+    multi-stage character pipeline REFUSES at its mesh wires (non-
+    Save producers need output_nodes declarations — the declared-
+    producer follow-up, gated on a live socket-type canary) and
+    falls back per-stage; music-native is mixed (audio_cpp) and
+    never enters the path."""
+    def build(fid: str, initials: dict[str, JsonValue] | None = None) -> tuple[tuple[NodeRow, ...], list[dict[str, JsonValue]]]:
         fl = flow.load_flow(fid)
         nodes = fl.to_graph().nodes
+        # the merged path's own pool build: name-keyed initials,
+        # artifact-absolutized per FILE-kind expected
+        pool = dict(initials or {})
+        for n in nodes:
+            names = getattr(n, "input_names", None) or {}
+            ins = {}
+            for name, ref in names.items():
+                if str(ref).startswith("__initial__."):
+                    key = str(ref).split(".", 1)[1]
+                    if key in pool:
+                        ins[str(name)] = pool[key]
+            pool.update(ins)
         rows = []
         for n in nodes:
             params = dict(n.params or {})
             if getattr(n, "card", ""):
-                params = gateway._card_bridge(n, params, "probe")
+                params = gateway._card_bridge(n, params, "probe",
+                                              inputs=pool)
             wf = eng.stage_workflow(params)
             rows.append({"stage_id": n.node_id, "workflow": wf,
                          "input_names": dict(n.input_names or {}),
@@ -349,12 +372,22 @@ def test_real_flow_coverage() -> None:
                          "params": params})
         return nodes, rows
 
-    nodes, rows = build("image-upscale")
+    nodes, rows = build("image-upscale", {"prompt": "x"})
     assert all(n.node_type == "comfyui" for n in nodes)
-    eng.plan_merge(rows, {"prompt": "x"})          # merges (1 stage)
+    # ROW 4 (2026-09-07, live-probed run-c97e67b10fb8): the upscale
+    # arm renders its wired input through LoadImage — a producer
+    # link cannot land in a file slot, so the plan REFUSES and the
+    # gateway falls back per-stage (the disk handoff path). The
+    # tensor entry (drop the loader) is the recorded follow-up.
+    with pytest.raises(Exception, match="file slot"):
+        eng.plan_merge(rows, {"prompt": "x"})
 
     nodes, rows = build("character")
-    with pytest.raises(Exception, match="body.body"):
+    # the character pipeline's body stage ALSO renders its wired
+    # image through LoadImage — the file-slot gate fires BEFORE the
+    # mesh-wire gate (both refuse at plan time; both fall back
+    # per-stage). ROW 4 2026-09-07: the earlier refusal class wins.
+    with pytest.raises(Exception, match="file slot"):
         eng.plan_merge(rows, {"prompt": "x", "character_prompt": "x",
                               "garment_prompt": "x"})
 

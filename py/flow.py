@@ -599,6 +599,19 @@ class Flow(BaseModel):
                     "flow %r tool overlay stage %r is gone "
                     "(pruned branch takes no overlays; param %r)"
                     % (self.id, ov.stage, ov.param))
+            # ROW 4 (2026-09-07): a card= stage's params ARE the card
+            # doc — an overlay path speaking the workflow template
+            # vocabulary would silently stamp a doc key the card's
+            # schema forbids (the compose refusal names it only at
+            # run time). Refuse at the lever's own door.
+            if st.card and ov.path[0] in ("workflow", "workflow_file",
+                                          "inject"):
+                raise FlowError(
+                    "flow %r tool overlay param %r targets stage %r "
+                    "path %r — a card= stage's overlay path speaks "
+                    "the CARD DOC (e.g. ('model',)), never the "
+                    "workflow template vocabulary"
+                    % (self.id, ov.param, ov.stage, ov.path[0]))
             prop = self.tool.properties[ov.param]
             raw = body.get(ov.param, None)
             if raw is None:
@@ -991,6 +1004,20 @@ class Flow(BaseModel):
                 resolved[st.id] = {"default": default}
             # else: leave unresolved — NodeRow.outputs stays empty,
             # the sidecar will show '' for that stage's output kind
+        # the effective INPUT contract too (the same fill the kind
+        # gate applies): card kind_inputs type the stage's unwired
+        # keys, so the runner's FILE-kind absolutization sees the
+        # artifact slots on card= stages (a FromStage handoff that
+        # never absolutizes rides a wire spelling into the engine).
+        expected_rows: dict[str, dict[str, Kind]] = {}
+        for st in self.stages:
+            eff: dict[str, Kind] = dict(st.expected)
+            if st.card and st.inputs:
+                card_in = stage_params.card_inputs(st.card)
+                for name in st.inputs:
+                    if name not in eff and name in card_in:
+                        eff[name] = Kind(card_in[name])
+            expected_rows[st.id] = eff
         return flow_graph.FlowGraph(
             name=self.id,
             description=self.description,
@@ -1022,7 +1049,14 @@ class Flow(BaseModel):
                     # runner absolutizes artifact refs on FILE-kind
                     # inputs (see flow_graph.NodeRow.expected)
                     expected={
-                        k: v.value for k, v in st.expected.items()
+                        # the EFFECTIVE contract (card kind_inputs
+                        # fill the unwired keys — the same ladder as
+                        # outputs; the raw st.expected leaves the
+                        # FILE-kind absolutization blind on card=
+                        # stages, the FromStage artifact handoff
+                        # never resolves to disk)
+                        k: v.value
+                        for k, v in expected_rows[st.id].items()
                     },
                 )
                 for st in self.stages),

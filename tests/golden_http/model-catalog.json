@@ -80,7 +80,8 @@
         "type": ""
       },
       "defaults": {
-        "mode": "tts"
+        "mode": "tts",
+        "voice": "vivian"
       },
       "engine": "comfyui",
       "form": "form_tts",
