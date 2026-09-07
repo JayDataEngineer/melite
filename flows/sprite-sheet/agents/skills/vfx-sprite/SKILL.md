@@ -12,17 +12,22 @@ recognition-gated. Delivery converts black to alpha.
 
 ## The lane
 
-`data/flows/vfx_sprite.yaml` (2 bricks — cheap; batch freely).
+One image-gen run per effect sprite (the yaml lane files retired
+2026-09-04 together with the retired `{"yaml": ...}` door —
+`data/flows/*.yaml` is documentation, not a runtime format). Live
+door: the `image-gen` card through the queue, compose-first.
 
 ## Run loop
 
 ```bash
-cp data/flows/vfx_sprite.yaml data/flows/vfx_<effect>.yaml
-# edit prompt + expect + seed
-curl -X POST localhost:33081/v1/flows/yaml/validate \
-  -H 'content-type: application/json' -d '{"yaml":"vfx_<effect>.yaml"}'
+# 1. compose the card doc (body verbatim) -> {"draftId": "..."}
+curl -X POST localhost:33081/v1/flows/drafts \
+  -H 'content-type: application/json' \
+  -d '{"model":"image-gen","prompt":"<effect substance>, isolated on a pure solid black background, no ground, no scene","seed":<seed>}'
+# 2. start the SAME body plus the draft_id (CARD BIRTH LAW)
 curl -X POST localhost:33081/v1/flows/start \
-  -H 'content-type: application/json' -d '{"yaml":"vfx_<effect>.yaml"}'
+  -H 'content-type: application/json' \
+  -d '{"model":"image-gen","prompt":"<...>","seed":<seed>,"draft_id":"<draftId>"}'
 curl -s localhost:33081/v1/flows/status/<run_id>
 ```
 

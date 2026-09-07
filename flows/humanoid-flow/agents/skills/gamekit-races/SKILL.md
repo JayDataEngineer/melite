@@ -60,12 +60,24 @@ plain bone transforms the same zero-clip way).
 
 ## Run (queue door — the only inference door)
 
-Gateway: `http://127.0.0.1:18090` (discover live: `ss -ltnp | grep inference_cli`).
+Gateway: `http://127.0.0.1:33081` (canonical port; the retired
+port must never be used — nothing may serve there).
 
-Start:
-`curl -s -X POST http://127.0.0.1:18090/v1/flows/start -d '{"yaml":"trellis_native","prompt":"<attachment>"}'`
+Mesh generation is the `img-to-mesh` card now (the `trellis_native`
+yaml name died with the yaml door, 2026-09-04) — compose-first, then
+start riding the draft_id:
 
-Poll: `curl -s http://127.0.0.1:18090/v1/flows/status/<run_id>`
+```bash
+curl -s -X POST localhost:33081/v1/flows/drafts \
+  -H 'content-type: application/json' \
+  -d '{"model":"img-to-mesh","image1":"<attachment aref>"}'
+# -> {"draftId":"..."} then the SAME body plus draft_id:
+curl -s -X POST localhost:33081/v1/flows/start \
+  -H 'content-type: application/json' \
+  -d '{"model":"img-to-mesh","image1":"<attachment aref>","draft_id":"<draftId>"}'
+```
+
+Poll: `curl -s http://127.0.0.1:33081/v1/flows/status/<run_id>`
 
 ## Assembly (container blender)
 

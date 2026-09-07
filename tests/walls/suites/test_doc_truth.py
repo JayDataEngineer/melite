@@ -213,3 +213,42 @@ def test_first_card_lane_and_bridge() -> None:
     """card-stage-typing.md: the lattice is load-bearing (bridge + lane)."""
     assert callable(gw_mod._card_bridge)
     assert (REPO / "flows" / "music-native" / "flow.py").is_file()
+
+
+# ── G. teachings honesty (2026-09-07 review H3/H4) ────────────────────
+
+# The agent-facing lane docs (flows/**/SKILL.md, AGENTS.md, *.py) are
+# the headless product's front door. Teaching a retired door, the
+# forbidden :18090 port, or the deleted inference_cli binary as a LIVE
+# ritual is drift with extra authority — an agent following it fails
+# at every step. Lines naming a thing AS retired/deleted (deliberate
+# dead provenance) pass; anything else fails.
+_FORBIDDEN_TEACHINGS: tuple[tuple[str, str], ...] = (
+    ('"yaml":', "the {yaml:} door retired 2026-09-04"),
+    ("'yaml':", "the {yaml:} door retired 2026-09-04"),
+    ("/v1/flows/yaml", "the /v1/flows/yaml/* door family is dead"),
+    (":18090", "the retired port — nothing may serve there"),
+    ("localhost:18090", "the retired port — nothing may serve there"),
+    ("inference_cli", "the C binary is deleted (C retirement)"),
+)
+_PROVENANCE_WORDS = ("RETIRED", "retired", "deleted", "forbidden",
+                     "gone with", "never the retired")
+
+
+def test_agent_lane_docs_teach_only_live_doors() -> None:
+    offenders: list[str] = []
+    for p in sorted((REPO / "flows").rglob("*")):
+        if p.suffix not in (".md", ".py") or not p.is_file():
+            continue
+        for i, line in enumerate(
+                p.read_text(encoding="utf-8", errors="replace")
+                .splitlines(), 1):
+            if any(w in line for w in _PROVENANCE_WORDS):
+                continue  # deliberate dead provenance
+            for needle, why in _FORBIDDEN_TEACHINGS:
+                if needle in line:
+                    offenders.append("%s:%d %s (%s)"
+                                     % (p.relative_to(REPO), i, needle, why))
+    assert offenders == [], (
+        "agent-facing lane docs teaching extinct rituals:\n  "
+        + "\n  ".join(offenders))

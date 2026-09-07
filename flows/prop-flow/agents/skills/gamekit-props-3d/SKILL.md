@@ -27,8 +27,10 @@ yawed and locomotion plays sideways). Dominance 0.8605 / dual_bound 0.168
 with alignment vs 0.8022/0.268 without.
 
 ## Run + gate
-Standard start door via gateway `http://127.0.0.1:18090`; then vision-gate
-per vision-gate/SKILL.md.
+Standard start door via the queue gateway `http://127.0.0.1:33081`
+(canonical port — :18090 is retired, nothing may serve there),
+compose-first (`POST /v1/flows/drafts` → draftId, then the start
+riding `draft_id`); then vision-gate per vision-gate/SKILL.md.
 
 ## Deliver
 GLB + FBX into data/delivery/unity/<category>/<name>/ (FBX via the container

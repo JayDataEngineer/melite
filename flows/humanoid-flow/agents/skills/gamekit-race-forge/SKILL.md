@@ -31,8 +31,9 @@ ask nothing.
 - Container discipline: docker cp in, run blender --background --python,
   docker cp out. NEVER rewrite a docker-cp'd file in place (overlayfs
   EACCES) — cp to a fresh name inside the container first.
-- Gateway: http://127.0.0.1:18090; start via POST /v1/flows/start,
-  poll /v1/flows/status/<run_id>.
+- Gateway: http://127.0.0.1:33081; compose-first (POST
+  /v1/flows/drafts → draftId), start via POST /v1/flows/start riding
+  the draft_id, poll /v1/flows/status/<run_id>.
 
 ## The one-shot recipe
 

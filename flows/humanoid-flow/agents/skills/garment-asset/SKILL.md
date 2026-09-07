@@ -14,20 +14,29 @@ hero lane's composite.
 
 ## The lane
 
-`data/flows/garment_asset.yaml` (served spec space — run by filename).
+`data/flows/garment_asset.yaml` is LANE DOCUMENTATION (the yaml flow
+format retired 2026-09-04 with the whole `{"yaml": ...}` door family
+— yaml files are no longer runtime-startable). The lane's live shape
+is a `{flow_inline}` body carrying the same brick graph, or the
+owning card — both through the queue, compose-first.
 
 ## The run loop (headless, exact calls)
 
 ```bash
-# 1. copy per piece (NEVER edit the frozen original in place)
-cp data/flows/garment_asset.yaml data/flows/<piece-name>.yaml
-# 2. edit ONLY the attachment bricks (see customization)
-# 3. validate (GPU-free)
-curl -X POST localhost:33081/v1/flows/yaml/validate \
-  -H 'content-type: application/json' -d '{"yaml":"<piece-name>.yaml"}'
-# 4. run
+# 1. edit a COPY of the documentation spec (attachment bricks only —
+#    see customization); encode the graph as flow_inline rows
+# 2. compose the card doc (body verbatim) -> {"draftId": "..."}
+curl -X POST localhost:33081/v1/flows/drafts \
+  -H 'content-type: application/json' \
+  -d '{"flow_inline":{...the edited brick graph...}}'
+# 3. GPU-free compile check (verbatim refusals, no queue slot)
+curl -X POST localhost:33081/v1/flows/validate \
+  -H 'content-type: application/json' \
+  -d '{"flow_inline":{...}}'
+# 4. run: the SAME body plus draft_id (CARD BIRTH LAW)
 curl -X POST localhost:33081/v1/flows/start \
-  -H 'content-type: application/json' -d '{"yaml":"<piece-name>.yaml"}'
+  -H 'content-type: application/json' \
+  -d '{"flow_inline":{...},"draft_id":"<draftId>"}'
 # 5. poll until completed/failed
 curl -s localhost:33081/v1/flows/status/<run_id> | jq '.status, .stages[] | {family_id, status}'
 ```

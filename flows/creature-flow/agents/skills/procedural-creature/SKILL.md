@@ -30,12 +30,12 @@ MIT). Spec authoring doctrine: the clone's `cards/SYNTAX.md` + the
 ## Run loop
 
 1. Author or pick the spec. Default lane uses the upstream wolf anchor;
-   for a new creature write `data/flows/<creature>.yaml` with either
-   `spec_path:` (repo-relative file) or inline `spec:` (OBJECT — never a
-   string; the family BLOCKS strings).
-2. `POST /v1/flows/yaml/validate {"yaml":"<creature>.yaml"}` must be
-   ok before starting.
-3. `POST /v1/flows/start {"yaml":"<creature>.yaml"}` -> poll
+   a new creature is a spec OBJECT (never a string; the family BLOCKS
+   strings) carried on the `anycreature` card run — `data/flows/*.yaml`
+   is documentation since the yaml door retired 2026-09-04.
+2. Compose-first: `POST /v1/flows/drafts` with
+   `{"model":"anycreature","spec":{...}}` → `{"draftId":"..."}`.
+3. Start the SAME body plus `"draft_id"` -> poll
    `GET /v1/flows/status/{run_id}`.
 4. Steps: anycreature (build) -> verify_glb (ADVISORY: fail_on never,
    stages structural/weights/deformation/visual — no arm_hand on beasts;

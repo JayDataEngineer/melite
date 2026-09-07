@@ -15,7 +15,7 @@ left import-law mistakes; both paths below encode those lessons.
 Requests are FORMAL now (2026-08-26 — docs/reference/ADR-ASSET-REGISTRY.md):
 
 - **Queue**: `POST /v1/requests (gateway API)
-  `curl -X POST http://127.0.0.1:18090/v1/requests -d '{"class":"..","asset_id":"..","spec":".."}'
+  `curl -X POST http://127.0.0.1:33081/v1/requests -d '{"class":"..","asset_id":"..","spec":".."}'
   (or MCP `meld-assets` -> `submit_asset_request`). One OPEN request per asset id.
 - **Work order**: `python3 scripts/process_requests.py list` -> `claim`
   (serial GPU law: one active machine-wide) -> run the class lane -> gate ->

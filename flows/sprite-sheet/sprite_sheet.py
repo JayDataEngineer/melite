@@ -18,7 +18,9 @@ Or use programmatically:
   )
 
 Requires:
-  - inference.cpp server running on :18090
+  - the queue gateway running on :33081 (INFERENCE_SERVER env; the
+    py gateway boots via the estate's managed ritual — wiki.md; the
+    C-era `inference_cli serve --port 18090` binary is deleted)
   - rembg + pillow (pip install rembg pillow)
   - z-image model available on the server
 """
@@ -31,7 +33,14 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 
-SERVER = os.environ.get("INFERENCE_SERVER", "http://127.0.0.1:18090")
+# No fallback (QUEUE LANE LAW — and :18090 is the RETIRED port where
+# nothing may serve; the 2026-09-07 review flagged the old default).
+# INFERENCE_SERVER names the queue gateway (canonical :33081).
+SERVER = os.environ.get("INFERENCE_SERVER", "")
+if not SERVER:
+    sys.exit("INFERENCE_SERVER is required (e.g. "
+             "INFERENCE_SERVER=http://127.0.0.1:33081) — no fallback, "
+             "and never the retired :18090")
 
 # Action -> prompt suffix mapping
 ACTION_PROMPTS = {
@@ -204,7 +213,7 @@ def generate_sprite_sheet(character, actions, output_path, cols=None,
     if not skip_generation:
         if not check_server():
             print(f"ERROR: inference.cpp server not reachable at {SERVER}")
-            print("Start it: cd build && ./inference_cli serve --port 18090 --plugin-dir . --catalog-dir ..")
+            print("Start the queue gateway (py gateway on :33081 — see docs/wiki.md boot ritual)")
             return None
 
         # Generate all frames
