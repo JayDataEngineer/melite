@@ -57,7 +57,7 @@ RESURRECT/SWEEP MAPPING DECISIONS (py cites — read fully):
     try/except → skip) — the core coerces non-numbers to 0 (never
     throws).
 
-Method — fixture state roots, four phases (no goldens anywhere):
+Method — fixture state roots, five phases (no goldens anywhere):
   Phase A (dual boot-function, no scalars): seed -> pyA/tsA copies;
     py boot_resurrect+boot_sweep via a python subprocess, TS via a
     node script importing queue.ts. Counts + FIFO ids + swept
@@ -75,6 +75,12 @@ Method — fixture state roots, four phases (no goldens anywhere):
     clean, scalars untouched, detail 200s, status 500-class pins).
   Phase D (idempotence): a second sweep settles nothing on either
     side (0/0, files unchanged).
+  Phase E (banked G1–G6 py-faith legs, P5 follow-up): the gap seed
+    (build_gap_seed, one queued run per behavior) boots RICH on both
+    sides (py_gap/ts_gap dump per-live draft/stages/skipped/
+    artifacts): live sets + rebuilt values + swept sets/bytes +
+    ledger events must agree where py survives; TS-only legs where
+    py crashes the whole boot.
 
 Run: python3 tests/walls/suites/test_gateway_resurrect_parity.py
 """
@@ -287,6 +293,295 @@ def ledger_events(root) -> list:
         rows.append((obj.get("event"),
                      json.dumps(obj.get("data"), sort_keys=True)))
     return sorted(rows)
+
+
+# ── Phase E: banked G1–G6 py-faith legs (P5 follow-up stroke) ──
+# Each gap pins PY behavior from py/gateway.py _rebuild_run_from_record
+# (2291-2335) + boot_resurrect candidates (2338-2376): dual-serve legs
+# where py survives (py/ts direct-function boots must agree), TS-only
+# legs where py crashes the whole boot (py rc != 0, TS boots clean).
+# The seed grows one gap per stroke; queue.ts moves one gap at a time.
+
+PY_GAP_SRC = (
+    "import json, os, sys\n"
+    "sys.path.insert(0, 'py')\n"
+    "sys.dont_write_bytecode = True\n"
+    "import gateway as g\n"
+    "gw = g.Gateway()\n"
+    "r = g.boot_resurrect(gw)\n"
+    "live = {}\n"
+    "for rid in sorted(gw.runs.keys()):\n"
+    "    run = gw.runs[rid]\n"
+    "    live[rid] = {'draft_id': run.draft_id, 'stages': run.stages,\n"
+    "                 'skipped_stages': run.skipped_stages,\n"
+    "                 'artifacts': run.artifacts}\n"
+    "s = g.boot_sweep(tuple(gw.runs.keys()))\n"
+    "swept_ids = []\n"
+    "for d in sorted(os.listdir(g.OUT_ROOT)):\n"
+    "    try:\n"
+    "        obj = json.loads((g.OUT_ROOT / d / '_flow.json').read_text())\n"
+    "    except (OSError, ValueError):\n"
+    "        continue\n"
+    "    if isinstance(obj, dict) and 'sweep' in obj:\n"
+    "        swept_ids.append(d)\n"
+    "print(json.dumps({'resurrected': r, 'live': live, 'swept': s,\n"
+    " 'sweptIds': swept_ids}))\n"
+)
+
+TS_GAP_SRC = (
+    "import { resurrectRuns as coreResurrect,"
+    " bootSweep as coreSweep } from '%s';\n"
+    "const root = process.argv[2];\n"
+    "const captured = {};\n"
+    "const live = coreResurrect(root, (run) => {\n"
+    "  captured[run.runId] = { draft_id: run.draftId, stages: run.stages,\n"
+    "    skipped_stages: run.skippedStages, artifacts: run.artifacts };\n"
+    "});\n"
+    "const swept = coreSweep(root, live);\n"
+    "const liveSorted = {};\n"
+    "for (const k of Object.keys(captured).sort()) liveSorted[k] = captured[k];\n"
+    "console.log(JSON.stringify({ resurrected: live.length, live: liveSorted,\n"
+    " swept: swept.length, sweptIds: [...swept].sort() }));\n"
+) % str(TS_QUEUE)
+
+_GAP_MISSING = object()
+
+
+def put_gap(out, rid: str, created: int, graph=_GAP_MISSING, **kw) -> None:
+    """One queued Phase-E sidecar (+ its _request.json). graph may be
+    absent (the _GAP_MISSING default), None, or any JSON shape."""
+    from pathlib import Path as _P
+    d = _P(str(out)) / rid
+    d.mkdir(parents=True, exist_ok=True)
+    doc = {"run_id": rid, "status": "queued", "pipeline": "p",
+           "draft_id": "d1", "created_at": created}
+    if graph is not _GAP_MISSING:
+        doc["graph"] = graph
+    doc.update(kw)
+    (d / "_flow.json").write_text(json.dumps(doc))
+    (d / "_request.json").write_text(
+        json.dumps({"draft_id": "d1", "prompt": "x"}))
+
+
+def build_gap_seed(root) -> None:
+    """Phase-E fixture root. Grows one gap per stroke (G1..G6 below)."""
+    from pathlib import Path as _P
+    root = _P(root)
+    # exist_ok: G1+G2 share one seed built twice (one bases call per
+    # gap); writes below are idempotent rewrites.
+    (root / "drafts").mkdir(parents=True, exist_ok=True)
+    (root / "drafts" / "d1.json").write_text("{}")
+    out = root / "output"
+    out.mkdir(parents=True, exist_ok=True)
+    # ── G1: graph rule (FlowGraph({}) resurrects missing/empty;
+    #    NodeRow extra-keys survive, mistypes orphan) ──
+    put_gap(out, "run-g1-missing", 1700000101)
+    put_gap(out, "run-g1-empty", 1700000102, graph=[])
+    put_gap(out, "run-g1-none", 1700000103, graph=None)
+    put_gap(out, "run-g1-false", 1700000104, graph=False)
+    put_gap(out, "run-g1-extra", 1700000105,
+            graph=[{"id": "w", "type": "c", "zzz": 1}])
+    put_gap(out, "run-g1-ifstr", 1700000106,
+            graph=[{"id": "w", "type": "c", "input_from": "ab"}])
+    put_gap(out, "run-g1-ifempty", 1700000107,
+            graph=[{"id": "w", "type": "c", "input_from": ""}])
+    put_gap(out, "run-g1-nonefields", 1700000108,
+            graph=[{"id": "w", "type": "c", "input_from": None,
+                    "input_names": None, "outputs": None,
+                    "params": None}])
+    put_gap(out, "run-g1-dict", 1700000109, graph={"a": 1})
+    put_gap(out, "run-g1-str", 1700000110, graph="hi")
+    put_gap(out, "run-g1-rowempty", 1700000111, graph=[{}])
+    put_gap(out, "run-g1-noid", 1700000112, graph=[{"type": "c"}])
+    put_gap(out, "run-g1-notype", 1700000113, graph=[{"id": "w"}])
+    put_gap(out, "run-g1-intid", 1700000114,
+            graph=[{"id": 5, "type": "c"}])
+    put_gap(out, "run-g1-emptyid", 1700000115,
+            graph=[{"id": "", "type": "c"}])
+    put_gap(out, "run-g1-badref", 1700000116,
+            graph=[{"id": "w", "type": "c", "input_from": [""]}])
+    put_gap(out, "run-g1-badrefnum", 1700000117,
+            graph=[{"id": "w", "type": "c", "input_from": 5}])
+    put_gap(out, "run-g1-badnames", 1700000118,
+            graph=[{"id": "w", "type": "c",
+                    "input_names": {"a": 1}}])
+    put_gap(out, "run-g1-badparams", 1700000119,
+            graph=[{"id": "w", "type": "c", "params": [1]}])
+    put_gap(out, "run-g1-dup", 1700000120,
+            graph=[{"id": "w", "type": "c"},
+                   {"id": "w", "type": "c"}])
+    put_gap(out, "run-g1-badout", 1700000121,
+            graph=[{"id": "w", "type": "c", "outputs": {"a": 1}}])
+    # ── G2: stages/skipped ride list(doc.get(..) or []) — dicts
+    #    ride their keys, strings their chars, ints/True orphan ──
+    put_gap(out, "run-g2-stages", 1700000201,
+            graph=[{"id": "w", "type": "c"}],
+            stages=[{"id": "w", "index": 0, "status": "pending"},
+                    {"id": "x"}])
+    put_gap(out, "run-g2-stageints", 1700000202,
+            graph=[{"id": "w", "type": "c"}], stages=[1, 2])
+    put_gap(out, "run-g2-skippedints", 1700000203,
+            graph=[{"id": "w", "type": "c"}],
+            skipped_stages=[1, 2])
+    put_gap(out, "run-g2-skippedstr", 1700000204,
+            graph=[{"id": "w", "type": "c"}],
+            skipped_stages=["a", "b"])
+    put_gap(out, "run-g2-stagedict", 1700000205,
+            graph=[{"id": "w", "type": "c"}],
+            stages={"a": 1, "b": 2})
+    put_gap(out, "run-g2-stagestr", 1700000206,
+            graph=[{"id": "w", "type": "c"}], stages="hi")
+    put_gap(out, "run-g2-skippeddict", 1700000207,
+            graph=[{"id": "w", "type": "c"}],
+            skipped_stages={"a": 1})
+    put_gap(out, "run-g2-skipstr", 1700000208,
+            graph=[{"id": "w", "type": "c"}],
+            skipped_stages="hi")
+    put_gap(out, "run-g2-stageint", 1700000209,
+            graph=[{"id": "w", "type": "c"}], stages=5)
+    put_gap(out, "run-g2-skipint", 1700000210,
+            graph=[{"id": "w", "type": "c"}], skipped_stages=5)
+    put_gap(out, "run-g2-stagebool", 1700000211,
+            graph=[{"id": "w", "type": "c"}], stages=True)
+
+
+GAP_G1_LIVE = sorted([
+    "run-g1-missing", "run-g1-empty", "run-g1-none", "run-g1-false",
+    "run-g1-extra", "run-g1-ifstr", "run-g1-ifempty",
+    "run-g1-nonefields",
+])
+
+GAP_G1_SWEPT = sorted([
+    "run-g1-dict", "run-g1-str", "run-g1-rowempty", "run-g1-noid",
+    "run-g1-notype", "run-g1-intid", "run-g1-emptyid", "run-g1-badref",
+    "run-g1-badrefnum", "run-g1-badnames", "run-g1-badparams",
+    "run-g1-dup", "run-g1-badout",
+])
+
+GAP_G2_LIVE = sorted([
+    "run-g2-stages", "run-g2-stageints", "run-g2-skippedints",
+    "run-g2-skippedstr", "run-g2-stagedict", "run-g2-stagestr",
+    "run-g2-skippeddict", "run-g2-skipstr",
+])
+
+GAP_G2_SWEPT = sorted([
+    "run-g2-stageint", "run-g2-skipint", "run-g2-stagebool",
+])
+
+
+def py_gap(root) -> tuple:
+    """Rich py boot (no worker): returns (rc, payload-or-None, tail)."""
+    env = dict(os.environ, MELITE_STATE_ROOT=str(root))
+    p = subprocess.run(
+        [sys.executable, "-c", PY_GAP_SRC], cwd=str(REPO), env=env,
+        capture_output=True, text=True, timeout=120)
+    if p.returncode != 0:
+        return (p.returncode, None, (p.stderr or "")[-400:])
+    try:
+        return (0, json.loads(p.stdout.strip().splitlines()[-1]), "")
+    except Exception as e:
+        return (0, None, "unparseable py gap boot out: %r" % e)
+
+
+def phase_e_gap_bases(base, helper: str) -> tuple:
+    """Dual Phase-E boots on the current gap seed. Returns
+    (pyRoot, tsRoot, py, ts) or Nones when either side fails to boot."""
+    seedE = base / "seedE"
+    build_gap_seed(seedE)
+    pyE, tsE = base / "pyE", base / "tsE"
+    # fresh copies per gap (G1+G2 share one base): the boots mutate
+    # roots in place (sweep writes + ledger appends).
+    shutil.rmtree(pyE, ignore_errors=True)
+    shutil.rmtree(tsE, ignore_errors=True)
+    shutil.copytree(seedE, pyE)
+    shutil.copytree(seedE, tsE)
+    prc, py, pnote = py_gap(pyE)
+    check("E py boots", prc == 0 and py is not None, pnote)
+    trc, ts, tnote = ts_boot(tsE, helper)
+    check("E ts boots", trc == 0 and ts is not None, tnote)
+    if py is None or ts is None:
+        return (None, None, None, None)
+    return (pyE, tsE, py, ts)
+
+
+def phase_e_g1(base, helper: str) -> None:
+    # NOTE: scoped to the run-g1- prefix — later gaps share this
+    # seed, and only the global ledger leg sees the whole root.
+    pyE, tsE, py, ts = phase_e_gap_bases(base, helper)
+    if py is None or ts is None:
+        return
+    ts_live = sorted(k for k in ts["live"] if k.startswith("run-g1-"))
+    py_live = sorted(k for k in py["live"] if k.startswith("run-g1-"))
+    check("E-G1 live sets agree + py truth",
+          ts_live == py_live == GAP_G1_LIVE,
+          "ts=%r py=%r" % (ts_live, py_live))
+    ts_swept = [i for i in ts["sweptIds"] if i.startswith("run-g1-")]
+    py_swept = [i for i in py["sweptIds"] if i.startswith("run-g1-")]
+    check("E-G1 swept agree + py truth",
+          ts_swept == py_swept == GAP_G1_SWEPT
+          and ts["resurrected"] == py["resurrected"]
+          and ts["swept"] == py["swept"],
+          "ts=%r py=%r" % (ts, py))
+    ok_vals = all(ts["live"].get(rid) == py["live"].get(rid)
+                  for rid in GAP_G1_LIVE)
+    check("E-G1 rebuilt values agree", ok_vals,
+          "py=%r ts=%r" % (py["live"], ts["live"]))
+    for rid in ("run-g1-dict", "run-g1-dup"):
+        try:
+            pb = (pyE / "output" / rid / "_flow.json").read_bytes()
+            tb = (tsE / "output" / rid / "_flow.json").read_bytes()
+            same = pb == tb
+        except OSError:
+            same = False
+        check("E-G1 swept bytes " + rid, same)
+    check("E-G1 ledger events agree",
+          ledger_events(pyE) == ledger_events(tsE),
+          "%r vs %r" % (ledger_events(tsE), ledger_events(pyE)))
+
+
+def phase_e_g2(base, helper: str) -> None:
+    # Scoped to the run-g2- prefix (shares the gap seed with G1).
+    pyE, tsE, py, ts = phase_e_gap_bases(base, helper)
+    if py is None or ts is None:
+        return
+    ts_live = sorted(k for k in ts["live"] if k.startswith("run-g2-"))
+    py_live = sorted(k for k in py["live"] if k.startswith("run-g2-"))
+    check("E-G2 live sets agree + py truth",
+          ts_live == py_live == GAP_G2_LIVE,
+          "ts=%r py=%r" % (ts_live, py_live))
+    ok_vals = all(ts["live"].get(rid) == py["live"].get(rid)
+                  for rid in GAP_G2_LIVE)
+    check("E-G2 rebuilt values agree", ok_vals,
+          "py=%r ts=%r" % (py["live"], ts["live"]))
+    check("E-G2 verbatim int rows",
+          ts["live"].get("run-g2-stageints", {}).get("stages") == [1, 2]
+          and ts["live"].get("run-g2-skippedints", {}).get(
+              "skipped_stages") == [1, 2],
+          "%r" % (ts["live"],))
+    check("E-G2 dict/str ride keys/chars",
+          ts["live"].get("run-g2-stagedict", {}).get("stages")
+          == ["a", "b"]
+          and ts["live"].get("run-g2-stagestr", {}).get("stages")
+          == ["h", "i"]
+          and ts["live"].get("run-g2-skippeddict", {}).get(
+              "skipped_stages") == ["a"]
+          and ts["live"].get("run-g2-skipstr", {}).get(
+              "skipped_stages") == ["h", "i"],
+          "%r" % (ts["live"],))
+    ts_swept = [i for i in ts["sweptIds"] if i.startswith("run-g2-")]
+    py_swept = [i for i in py["sweptIds"] if i.startswith("run-g2-")]
+    check("E-G2 int/bool rows orphan + sweep",
+          ts_swept == py_swept == GAP_G2_SWEPT,
+          "ts=%r py=%r" % (ts_swept, py_swept))
+    try:
+        pb = (pyE / "output" / "run-g2-stageint" / "_flow.json"
+              ).read_bytes()
+        tb = (tsE / "output" / "run-g2-stageint" / "_flow.json"
+              ).read_bytes()
+        same = pb == tb
+    except OSError:
+        same = False
+    check("E-G2 swept bytes run-g2-stageint", same)
 
 
 def boot_ts(env: dict) -> tuple:
@@ -667,6 +962,12 @@ def main() -> int:
             check("D swept stable " + rid,
                   (pyA / "output" / rid / "_flow.json").read_bytes()
                   == (tsA / "output" / rid / "_flow.json").read_bytes())
+
+        # ── Phase E: banked G1–G6 py-faith legs (one call per gap) ──
+        gap_helper = str(base / "ts_gap.mjs")
+        _P(gap_helper).write_text(TS_GAP_SRC)
+        phase_e_g1(base, gap_helper)
+        phase_e_g2(base, gap_helper)
     finally:
         for proc in procs:
             try:

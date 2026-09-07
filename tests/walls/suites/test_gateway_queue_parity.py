@@ -43,6 +43,14 @@ lock, retries, persistence/journal shapes, refusal texts):
     J04 resurrect order: queued sidecars with shuffled created_at +
         a draftless orphan — py boot_resurrect order ==
         created_at-sorted == node plan; orphan skipped both sides.
+    J05 rebuild value parity (py _rebuild oracle, no goldens):
+        graph-missing/[] res + list-_request res (no dict check)
+        + draft-DIRECTORY orphan (is_file) + artifact py-spellings
+        (falsy filter, True/1/1.5/[1]/{'k': 1}) + verbatim
+        stages/skipped rows (chars/keys/mixed) + numeric-string
+        created ordering + raise-road (stages 5) skip, then the
+        garbage-created TS-only leg (py candidate float() kills
+        the whole boot; TS coerces 0 and boots).
   Phase R — refusal chain-order + lifecycle unknowns (dual-serve):
     R01 double-fault bodies take py's ENVELOPE-FIRST order both
         sides (bad-test beats missing-draft; bad-draft beats knob;
@@ -192,6 +200,14 @@ if (op === "validate") {
   out.swept = q.bootSweep(arg.root, arg.live ?? []);
 } else if (op === "plan") {
   out.plan = q.planResurrect(arg.root);
+} else if (op === "build") {
+  try {
+    const r = q.buildRebuiltRun(arg.root, arg.runId);
+    out.built = { draft_id: r.draftId, stages: r.stages,
+      skipped_stages: r.skippedStages, artifacts: r.artifacts };
+  } catch (e) {
+    out.built = null;
+  }
 } else if (op === "retry") {
   out.retry = q.shouldRetry(arg);
   out.note = q.noteStageRetry("run-x", "w", 0, arg.attempt,
@@ -641,6 +657,19 @@ PY_RESURRECT_SRC = (
     "n = g.boot_resurrect(gw);"
     "print(json.dumps({'n': n, 'order': gw.order}))"
 )
+PY_BUILD_SRC = (
+    "import sys, json\nsys.path.insert(0, 'py')\n"
+    "import gateway as g\n"
+    "rid = %r\n"
+    "try:\n"
+    " r = g._rebuild_run_from_record(rid)\n"
+    "except Exception:\n"
+    " r = 'RAISED'\n"
+    "print(json.dumps('RAISED' if r == 'RAISED' else (None if r is None"
+    " else {'draft_id': r.draft_id, 'stages': r.stages,"
+    " 'skipped_stages': r.skipped_stages,"
+    " 'artifacts': r.artifacts})))"
+)
 
 
 def stale_fixture(root: str) -> None:
@@ -823,6 +852,94 @@ def phase_j() -> None:
           == py4["order"]
           and ts4["plan"]["orphans"] == ["run-orph"],
           "ts=%r py=%r %s %s" % (ts4, py4, note4, pnote4))
+    # J05: rebuild value parity (graph-missing/list-request res +
+    # draft-dir orphan + artifact py-spellings + verbatim rows +
+    # numeric-string created + raise-road skip), then the
+    # garbage-created TS-only leg (py boot dies there).
+    r5 = tempfile.mkdtemp(prefix="wall-qp-j5-")
+    out5 = Path(r5) / "output"
+    out5.mkdir(parents=True, exist_ok=True)
+    (Path(r5) / "drafts").mkdir(parents=True, exist_ok=True)
+    (Path(r5) / "drafts" / "d1.json").write_text("{}")
+    (Path(r5) / "drafts" / "ddir.json").mkdir()
+    graph = [{"id": "g", "type": "comfyui"}]
+    j5docs = {
+        # rid: (created, draft, extra sidecar keys, request text)
+        "run-m1": (300, "d1", {}, None),
+        "run-m2": (100, "d1", {"graph": []}, None),
+        "run-lr": (200, "d1", {"graph": graph}, "[1, 2]"),
+        "run-dd": (50, "ddir", {"graph": graph}, None),
+        "run-ar": (400, "d1", {"graph": graph, "stages": "ab",
+                               "skipped_stages": [7, "s", None],
+                               "artifacts": ["", None, 0, False, "a",
+                                             True, 1, 1.5, [1],
+                                             {"k": 1}, 0.0]}, None),
+        "run-ns": ("123", "d1", {"graph": graph}, None),
+        "run-ns2": (500, "d1", {"graph": graph}, None),
+        "run-rb": (600, "d1", {"graph": graph, "stages": 5}, None),
+    }
+    for rid, (created, did, extra, req) in j5docs.items():
+        doc = {"run_id": rid, "status": "queued", "error": "",
+               "stages": [], "skipped_stages": [], "artifacts": [],
+               "created_at": created, "test": False, "draft_id": did,
+               "pipeline": "wall"}
+        doc.update(extra)
+        # run-m1: missing graph (base doc carries none); run-m2: [].
+        (out5 / rid).mkdir(exist_ok=True)
+        (out5 / rid / "_flow.json").write_text(json.dumps(doc))
+        (out5 / rid / "_request.json").write_text(
+            req if req is not None else json.dumps({"draft_id": did}))
+    rp5 = Path(tempfile.mkdtemp(prefix="wall-qp-j5py-"))
+    shutil.copytree(r5, rp5 / "seed", dirs_exist_ok=True)
+    for child in (rp5 / "seed").iterdir():
+        shutil.move(str(child), str(rp5 / child.name))
+    (rp5 / "seed").rmdir()
+    ts5, note5 = node_run("plan", {"root": r5})
+    py5, pnote5 = py_run(PY_RESURRECT_SRC, str(rp5))
+    want_order = ["run-m2", "run-ns", "run-lr", "run-m1", "run-ar",
+                  "run-ns2"]
+    check("J05 plan order + orphans agree incl list-request, "
+          "draft-dir, numstr-created, raise-road",
+          ts5 is not None and py5 is not None
+          and ts5["plan"]["order"] == want_order == py5["order"]
+          and ts5["plan"]["orphans"] == ["run-dd", "run-rb"],
+          "ts=%r py=%r %s %s" % (ts5, py5, note5, pnote5))
+    for rid in ("run-ar", "run-m1"):
+        tsb, bnote = node_run("build", {"root": r5, "runId": rid})
+        pyb, pynote = py_run(PY_BUILD_SRC % rid, str(rp5))
+        check("J05 rebuilt values " + rid,
+              tsb is not None and pyb is not None
+              and tsb["built"] == pyb,
+              "ts=%r py=%r %s %s" % (tsb, pyb, bnote, pynote))
+    # Garbage created_at: py's candidate float() kills the whole
+    # boot (documented non-ported crash); TS coerces 0 and boots.
+    r6 = tempfile.mkdtemp(prefix="wall-qp-j6-")
+    out6 = Path(r6) / "output"
+    out6.mkdir(parents=True, exist_ok=True)
+    (Path(r6) / "drafts").mkdir(parents=True, exist_ok=True)
+    (Path(r6) / "drafts" / "d1.json").write_text("{}")
+    for rid, created in (("run-gx", "abc"), ("run-ok", 100)):
+        doc = {"run_id": rid, "status": "queued", "error": "",
+               "stages": [], "skipped_stages": [], "artifacts": [],
+               "created_at": created, "test": False, "draft_id": "d1",
+               "pipeline": "wall", "graph": graph}
+        (out6 / rid).mkdir(exist_ok=True)
+        (out6 / rid / "_flow.json").write_text(json.dumps(doc))
+        (out6 / rid / "_request.json").write_text(
+            json.dumps({"draft_id": "d1"}))
+    rp6 = Path(tempfile.mkdtemp(prefix="wall-qp-j6py-"))
+    shutil.copytree(r6, rp6 / "seed", dirs_exist_ok=True)
+    for child in (rp6 / "seed").iterdir():
+        shutil.move(str(child), str(rp6 / child.name))
+    (rp6 / "seed").rmdir()
+    py6, pnote6 = py_run(PY_RESURRECT_SRC, str(rp6))
+    ts6, note6 = node_run("plan", {"root": r6})
+    check("J05 garbage-created: py boot dies, TS coerces 0 first",
+          py6 is None and "rc=" in pnote6
+          and ts6 is not None
+          and ts6["plan"]["order"] == ["run-gx", "run-ok"]
+          and ts6["plan"]["orphans"] == [],
+          "py=%r ts=%r %s %s" % (py6, ts6, pnote6, note6))
 
 
 # ── Phase R: refusal chain-order + lifecycle unknowns ────────────
