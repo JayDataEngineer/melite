@@ -91,18 +91,23 @@ def test_enhance_door_answers_live() -> None:
     """THE connection test (operator order, 2026-09-06, verbatim
     intent): "NICE TESTS IDIOT, YOU CAN'T EVEN TEST FOR A BASIC
     CONNECTION." Source-greps passed while the button 404'd — the
-    :3080 host had booted 8.5h BEFORE the route restoration landed,
-    so the running process never registered the door. This probe
-    hits the live proof route (/melite-tools/catalog: GET, no LLM,
-    no side effects). Host unreachable (CI, host down) SKIPS —
-    nothing to judge. Host UP but door missing FAILS: the plugin is
-    not loaded in the RUNNING host — restart it
-    (dsh --profile web); the code is landed, the process is stale.
-    DSH_WEB overrides the host (default http://127.0.0.1:3080)."""
+    host had booted BEFORE the route restoration landed, so the
+    running process never registered the door. This probe hits the
+    live proof route (/melite-tools/catalog: GET, no LLM, no side
+    effects) on the TEST DSH ONLY. Host unreachable (CI, host down)
+    SKIPS — nothing to judge. Host UP but door missing FAILS: the
+    plugin is not loaded in the RUNNING test host — restart the
+    TEST DSH; the code is landed, the process is stale.
+
+    PROD IS OFF LIMITS (operator order, 2026-09-07, verbatim):
+    "What? NEVER use 3080, that is prod, ONLY use the TEST DSH.
+    PROD 3080 is OFF LIMITS." The default host list is the TEST DSH
+    (:3909) and NOTHING else. DSH_HOSTS/DSH_WEB override the list
+    for DELIBERATE operator-aimed probes — never as a default."""
     _probe_each_dsh_host()
 
 
-_DEFAULT_DSH_HOSTS = ("http://127.0.0.1:3080", "http://127.0.0.1:3909")
+_DEFAULT_DSH_HOSTS = ("http://127.0.0.1:3909",)
 
 
 def _dsh_hosts() -> list[str]:
@@ -113,11 +118,13 @@ def _dsh_hosts() -> list[str]:
 
 
 def _probe_each_dsh_host() -> None:
-    """Both GUIs answer the door: :3080 (prod) and :3909 (test DSH —
-    2026-09-06: the operator presses ✦ on cards in the TEST host,
-    whose deck profile never carried the dsh-tools bundle at all).
-    Per host: unreachable SKIPS (CI — nothing to judge); up but
-    doorless FAILS with the fix (wire the bundle / restart)."""
+    """The TEST DSH answers the door (:3909 — 2026-09-06: the
+    operator presses ✦ on cards in the TEST host, whose deck
+    profile never carried the dsh-tools bundle at all; 2026-09-07:
+    prod :3080 removed from the defaults — OFF LIMITS, tests never
+    touch it). Per host: unreachable SKIPS (CI — nothing to judge);
+    up but doorless FAILS with the fix (wire the bundle / restart
+    the TEST host)."""
     probed = 0
     for host in _dsh_hosts():
         url = host + "/melite-tools/catalog"
