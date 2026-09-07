@@ -1,0 +1,138 @@
+{
+  "CLIPLoader.0": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image"
+    }
+  },
+  "KSampler.0": {
+    "class_type": "KSampler",
+    "inputs": {
+      "cfg": 1.0,
+      "denoise": 1.0,
+      "latent_image": [
+        "VAEEncode.0",
+        0
+      ],
+      "model": [
+        "ModelSamplingAuraFlow.0",
+        0
+      ],
+      "negative": [
+        "TextEncodeQwenImageEditPlus.1",
+        0
+      ],
+      "positive": [
+        "TextEncodeQwenImageEditPlus.0",
+        0
+      ],
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "seed": 42,
+      "steps": 4
+    }
+  },
+  "LoadImage.0": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "portrait.png",
+      "upload": "image"
+    }
+  },
+  "ModelSamplingAuraFlow.0": {
+    "class_type": "ModelSamplingAuraFlow",
+    "inputs": {
+      "model": [
+        "UNETLoader.0",
+        0
+      ],
+      "shift": 1.0
+    }
+  },
+  "SaveImage.0": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "testrun/edit",
+      "images": [
+        "VAEDecode.0",
+        0
+      ]
+    }
+  },
+  "TextEncodeQwenImageEditPlus.0": {
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "inputs": {
+      "clip": [
+        "CLIPLoader.0",
+        0
+      ],
+      "image1": [
+        "LoadImage.0",
+        0
+      ],
+      "prompt": "make the sky a deep twilight purple, keep the koi and the ripples unchanged",
+      "vae": [
+        "VAELoader.0",
+        0
+      ]
+    }
+  },
+  "TextEncodeQwenImageEditPlus.1": {
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "inputs": {
+      "clip": [
+        "CLIPLoader.0",
+        0
+      ],
+      "image1": [
+        "LoadImage.0",
+        0
+      ],
+      "prompt": "",
+      "vae": [
+        "VAELoader.0",
+        0
+      ]
+    }
+  },
+  "UNETLoader.0": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "qwen_image_edit_2511_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "VAEDecode.0": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "KSampler.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ]
+    }
+  },
+  "VAEEncode.0": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": [
+        "LoadImage.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ]
+    }
+  },
+  "VAELoader.0": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    }
+  }
+}

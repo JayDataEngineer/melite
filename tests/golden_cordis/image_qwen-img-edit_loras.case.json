@@ -1,0 +1,19 @@
+{
+  "card": "image-edit",
+  "model": "qwen-img-edit-2511",
+  "run_id": "testrun",
+  "params": {
+    "prompt": "replace the background with a misty pine forest, keep the subject and framing unchanged",
+    "negative_prompt": "blur, jpeg artifacts, extra fingers",
+    "image1": "portrait.png",
+    "seed": 1234,
+    "steps": 20,
+    "cfg": 2.5,
+    "sampler": "res_multistep",
+    "scheduler": "beta",
+    "loras": [
+      { "name": "lightning_8step_lora.safetensors", "strength": 1.0 },
+      { "name": "sarah_edition_lora.safetensors", "strength": 0.6 }
+    ]
+  }
+}
