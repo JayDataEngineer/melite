@@ -31,7 +31,11 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=%h/Documents/programs/active/inference.cpp
+Environment=PATH=/home/user/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ExecStart=%h/Documents/programs/active/inference.cpp/.venv/bin/python %h/Documents/programs/active/inference.cpp/py/gateway.py 33081
+# FLIP (staged, NOT live — uncomment at flip, comment the py ExecStart above):
+# Environment=GATEWAY_PORT=33081
+# ExecStart=/home/user/.local/bin/node --experimental-strip-types %h/Documents/programs/active/inference.cpp/plugins/gateway/src/server.ts
 Restart=always
 RestartSec=3
 
