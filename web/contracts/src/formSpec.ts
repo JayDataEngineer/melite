@@ -11,7 +11,8 @@
 
 /** One select option — a display ``label`` distinct from the wire ``value``.
  *
- *  The backend's SelectOption (media/comfyui/schema.py) serializes to this
+ *  The gateway openapi's FormFieldOption
+ *  (components["schemas"]["FormFieldOption"]) serializes to this
  *  shape; plain strings (value == label) are also valid. SchemaField renders
  *  the label and sends the value; the enhance detail modes (Face / Hands /
  *  Body) and any future labeled select rely on this. Generated from the
