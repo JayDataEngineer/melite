@@ -5,7 +5,6 @@
   "params": {
     "prompt": "a slow tai chi form",
     "seed": 42,
-    "preview_glb": "/mnt/melite_weights/rigs/somax.glb",
-    "fps": 30.0
+    "preview_glb": "/mnt/melite_weights/rigs/somax.glb"
   }
 }
