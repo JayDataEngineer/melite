@@ -263,3 +263,186 @@ class TestStorm:
             "post-storm start refused: %s %s" % (code, resp)
         final = _wait_terminal(port, resp["run_id"])
         assert final.get("status") == "completed", final
+
+
+# ── Row 6 slice 3 — the PROPERTY PLANE (the transition lattice) ────────
+#
+# The storm (slice 2) proves convergence on one seeded mix; the
+# property plane proves the LATTICE systematically: for every
+# reachable (state × gesture) cell, the landing state + the exact
+# invariants. Same fixture, same helpers — new invariants join the
+# plane here, never a new harness (the row-6 record's growth law).
+#
+#   running × stop     → stopped               (slice 1, kept)
+#   queued  × stop     → stopped WITHOUT executing (the FIFO seam)
+#   terminal × stop    → error reply, status UNCHANGED (no flips)
+#   stopped × resume   → completed, CARRY intact (prefix proof)
+#   failed  × resume   → the SAME stage fails exactly (prefix proof)
+#   completed × resume → 4xx run_completed
+#   live    × resume   → 4xx run_live
+
+class TestTransitionLattice:
+    """The queue's state machine, driven cell by cell through the
+    live scratch gateway on the sim backend (no GPU, no mocks)."""
+
+    def _stage(self, sid: str, echo: str, **params) -> dict:
+        p: dict = {"echo": echo}
+        p.update(params)
+        return {"id": sid, "engine": "sim", "params": p,
+                "outputs": {"txt": "text"}}
+
+    def test_queued_stop_never_executes(self, scratch_gateway: int) -> None:
+        # A slow run holds the FIFO ticket; a second run QUEUES. The
+        # stop door on a queued run must land `stopped` with ZERO
+        # stage execution — no artifact, no engine transition, and
+        # the holder unaffected (it completes after).
+        port = scratch_gateway
+        code, holder = _start(port, {
+            "id": "lattice-holder", "stages": [
+                self._stage("hold", "lattice-holder-echo", sleep_s=8)]})
+        assert code in (200, 202), (code, holder)
+        code, queued = _start(port, {
+            "id": "lattice-queued", "stages": [
+                self._stage("q", "lattice-queued-echo")]})
+        assert code in (200, 202), (code, queued)
+        qid = queued["run_id"]
+        # the queued run sits at status queued (the holder is busy)
+        code, snap = _get(port, "v1/flows/status/%s" % qid)
+        assert code == 200 and snap.get("status") in ("queued",), snap
+        code, resp = _post(port, "v1/flows/stop/%s" % qid, {})
+        assert code == 200, "queued stop refused: %s %s" % (code, resp)
+        final = _wait_terminal(port, qid)
+        assert final.get("status") == "stopped", final
+        stages = final.get("stages", [])
+        for s in stages:
+            assert s.get("status") not in ("completed", "running"), \
+                "queued-stop run executed a stage: %s" % (s,)
+            assert not s.get("url"), \
+                "queued-stop run produced an artifact: %s" % (s,)
+        # the holder was never disturbed — it still completes
+        hfinal = _wait_terminal(port, holder["run_id"], timeout=60)
+        assert hfinal.get("status") == "completed", hfinal
+
+    def test_terminal_stop_never_flips_status(
+            self, scratch_gateway: int) -> None:
+        # stop on a terminal run answers an ERROR body and the
+        # status stays what it was — no resurrection, no flips.
+        port = scratch_gateway
+        code, resp = _start(port, {
+            "id": "lattice-done", "stages": [
+                self._stage("d", "lattice-done-echo")]})
+        assert code in (200, 202), (code, resp)
+        rid = resp["run_id"]
+        final = _wait_terminal(port, rid)
+        assert final.get("status") == "completed", final
+        code, again = _post(port, "v1/flows/stop/%s" % rid, {})
+        assert code == 200, (code, again)  # the door answers politely…
+        assert "error" in again, \
+            "stop on a completed run must say so: %s" % (again,)
+        code, after = _get(port, "v1/flows/status/%s" % rid)
+        assert after.get("status") == "completed", \
+            "terminal stop FLIPPED the status: %s" % (after,)
+
+    _CHAIN_SLOW2 = {
+        "id": "lattice-carry",
+        "stages": [
+            {"id": "first", "engine": "sim",
+             "params": {"echo": "lattice-carry-seed"},
+             "outputs": {"txt": "text"}},
+            {"id": "second", "engine": "sim",
+             "params": {"echo": "lattice-carry-second",
+                        "sleep_s": 8},
+             "inputs": {"prior": {"stage": "first", "output": "txt"}},
+             "expected": {"prior": "text"},
+             "outputs": {"txt": "text"}}],
+    }
+
+    def test_stopped_resume_completes_with_carry(
+            self, scratch_gateway: int) -> None:
+        # stopped × resume → completed, and the resumed stage 2
+        # carries stage 1's artifact (the pool re-seeded from the
+        # durable record) — the prefix proof, end to end.
+        port = scratch_gateway
+        code, resp = _start(port, self._CHAIN_SLOW2)
+        assert code in (200, 202), (code, resp)
+        rid = resp["run_id"]
+        time.sleep(2.5)  # stage 1 (fast) green; stage 2 mid-sleep
+        code, stopped = _post(port, "v1/flows/stop/%s" % rid, {})
+        assert code == 200, (code, stopped)
+        final = _wait_terminal(port, rid)
+        assert final.get("status") == "stopped", final
+        stages = {s["id"]: s for s in final.get("stages", [])}
+        assert stages["first"].get("status") == "completed", stages
+        # resume under the SAME id: only stage 2 re-runs
+        code, rresp = _post(port, "v1/flows/resume/%s" % rid, {})
+        assert code in (200, 202), "resume refused: %s %s" % (code, rresp)
+        rfinal = _wait_terminal(port, rid, timeout=60)
+        assert rfinal.get("status") == "completed", rfinal
+        rstages = {s["id"]: s for s in rfinal.get("stages", [])}
+        second = rstages["second"]
+        assert second.get("url", "").endswith(".txt"), second
+        rel = second["url"].split("/v1/assets/runs/%s/" % rid, 1)[-1]
+        req = urllib.request.Request(
+            "http://127.0.0.1:%d/v1/assets/runs/%s/%s" % (port, rid, rel))
+        with urllib.request.urlopen(req, timeout=15) as r:
+            text = r.read().decode("utf-8")
+        assert "lattice-carry-seed" in text \
+            and "lattice-carry-second" in text, \
+            "resumed stage lost the carry pool: %s" % text
+
+    def test_failed_resume_reaches_same_stage_exactly(
+            self, scratch_gateway: int) -> None:
+        # failed × resume → the prefix re-runs from the first
+        # non-green stage and the SAME stage fails with the SAME
+        # exact message (stage 1 stays green; determinism held).
+        port = scratch_gateway
+        body = {"id": "lattice-refail", "stages": [
+            self._stage("first", "lattice-refail-seed"),
+            {"id": "second", "engine": "sim",
+             "params": {"echo": "y", "fail": "lattice-refail-boom"},
+             "inputs": {"prior": {"stage": "first", "output": "txt"}},
+             "expected": {"prior": "text"},
+             "outputs": {"txt": "text"}}]}
+        code, resp = _start(port, body)
+        assert code in (200, 202), (code, resp)
+        rid = resp["run_id"]
+        final = _wait_terminal(port, rid)
+        assert final.get("status") == "failed", final
+        assert "lattice-refail-boom" in str(final.get("error", "")), final
+        code, rresp = _post(port, "v1/flows/resume/%s" % rid, {})
+        assert code in (200, 202), "resume refused: %s %s" % (code, rresp)
+        rfinal = _wait_terminal(port, rid, timeout=60)
+        assert rfinal.get("status") == "failed", rfinal
+        assert "lattice-refail-boom" in str(rfinal.get("error", "")), \
+            rfinal
+        rstages = {s["id"]: s for s in rfinal.get("stages", [])}
+        assert rstages["first"].get("status") == "completed", \
+            "resume re-ran the green prefix: %s" % (rstages,)
+
+    def test_completed_resume_refused(self, scratch_gateway: int) -> None:
+        port = scratch_gateway
+        code, resp = _start(port, {
+            "id": "lattice-cres", "stages": [
+                self._stage("d", "lattice-cres-echo")]})
+        assert code in (200, 202), (code, resp)
+        rid = resp["run_id"]
+        assert _wait_terminal(port, rid).get("status") == "completed"
+        code, rresp = _post(port, "v1/flows/resume/%s" % rid, {})
+        assert code in (400, 422), \
+            "completed resume must 4xx: %s %s" % (code, rresp)
+
+    def test_live_resume_refused(self, scratch_gateway: int) -> None:
+        port = scratch_gateway
+        code, resp = _start(port, {
+            "id": "lattice-live", "stages": [
+                self._stage("slow", "x", sleep_s=8)]})
+        assert code in (200, 202), (code, resp)
+        rid = resp["run_id"]
+        time.sleep(1.0)
+        code, rresp = _post(port, "v1/flows/resume/%s" % rid, {})
+        assert code in (400, 422), \
+            "live resume must 4xx: %s %s" % (code, rresp)
+        # leave the scratch queue clean for the next cell
+        code, stopped = _post(port, "v1/flows/stop/%s" % rid, {})
+        assert code == 200, (code, stopped)
+        assert _wait_terminal(port, rid).get("status") == "stopped"
