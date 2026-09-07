@@ -47,14 +47,104 @@ check("quad-remesh is api", CARDS["quad-remesh"][1].api is True)
 check("forge is api", CARDS["forge"][1].api is True)
 
 # -- quad-remesh doors -------------------------------------------------
-qdir = os.path.join(REPO, "plugins", "engines", "cpp", "autoremesher",
-                    "action_cards", "3d", "quad-remesh", "py")
-sys.path.insert(0, os.path.join(REPO, "plugins", "engines", "cpp"))
-sys.path.insert(0, qdir)
-# the arm module loads as a package (compose.py uses relative
+# (ONE-IMPLEMENTATION RULE, 2026-09-07, the cpp→node cutover: the cpp
+# arm retired with the lane — declarations stream, so the py card.py
+# moved comfyui-side and the render arm is the Cordis TS card now.
+# These legs drive the SAME doors through the CLI compose door
+# (node --experimental-strip-types), the wall's no-GPU/no-engine-
+# binary shape unchanged: the CLI emits graphs, never runs them.)
+import shutil as _shutil  # noqa: E402
+import subprocess as _sp  # noqa: E402
+
+_QCARD = "quad-remesh"
+_QMODEL = "autoremesher"
+_QFACTS = os.path.join(REPO, "plugins", "engines", "comfyui",
+                       "cordis", "data", "model-facts.json")
+_QCLI = os.path.join(REPO, "plugins", "engines", "comfyui",
+                     "cordis", "src", "cli.ts")
+
+
+def _qcompose(params: dict, run_id: str = "") -> "tuple[int, object, str]":
+    """The Cordis door for the quad card: (rc, graph-or-None,
+    last-stderr-line). Mirrors tests/walls/suites/test_cordis_compose
+    run_cli (same argv, same hermetic env)."""
+    argv = [_shutil.which("node") or "node",
+            "--experimental-strip-types", "--no-warnings",
+            _QCLI, "compose",
+            "--card", _QCARD, "--model", _QMODEL,
+            "--facts", _QFACTS,
+            "--params", json.dumps(params)]
+    if run_id:
+        argv += ["--run-id", run_id]
+    proc = _sp.run(argv, capture_output=True, text=True, timeout=120,
+                   env={"PATH": "/usr/bin:/bin:/usr/local/bin",
+                        "NODE_OPTIONS": "--no-warnings"},
+                   cwd=REPO)
+    graph = None
+    if proc.returncode == 0:
+        try:
+            graph = json.loads(proc.stdout)
+        except ValueError:
+            graph = None
+    tail = [l for l in (proc.stderr or "").strip().splitlines()
+            if l.strip()]
+    return proc.returncode, graph, (tail[-1] if tail else "")
+
+
+rc, _g, err = _qcompose({})
+check("quad phase-1 refuses missing input",
+      rc != 0 and "'input'" in (err or ""), err)
+rc, _g, err = _qcompose({"input": "x.obj", "smooth_normal": 0.5})
+check("quad phase-1 refuses smooth_normal (node hardcodes 0.0)",
+      rc != 0 and "smooth_normal" in (err or "")
+      and "nodes.py" in (err or ""), err)
+rc, g, err = _qcompose({"input": "x.obj", "target_quads": 5000},
+                       "run-t")
+check("quad phase-2 emits the single-node graph",
+      rc == 0 and isinstance(g, dict)
+      and list((g or {}).keys()) == ["AutoRemesher.0"], err)
+check("quad budget rides the node",
+      isinstance(g, dict)
+      and (g.get("AutoRemesher.0") or {}).get("inputs", {}).get(
+          "target_quads") == 5000)
+check("quad prefix is run-scoped",
+      isinstance(g, dict)
+      and (g.get("AutoRemesher.0") or {}).get("inputs", {}).get(
+          "filename_prefix") == "run-t/remeshed")
+check("quad preset is the empty budget literal",
+      isinstance(g, dict)
+      and (g.get("AutoRemesher.0") or {}).get("inputs", {}).get(
+          "preset") == "")
+
+# RETIRED with the cpp arm (same stroke — the doors they pinned no
+# longer exist, and their behavior moved):
+# - "quad phase-1 refuses dead ref": the retired arm admitted the
+#   file at compose; the TS arm (the transfer_rig precedent) passes
+#   the path string through — the NODE refuses a dead ref LOUD at
+#   prompt time ("input not found", nodes.py), never silently.
+# - "quad phase-1 refuses negative budget": the retired schema.py
+#   floors retired with the arm; numerics pass through per the
+#   img-to-mesh precedent (closed vocabs refuse, Sliders ride) —
+#   the node budget law owns them (preset "" + target_quads 0
+#   raises IN THE NODE, silent defaults banned).
+# - "quad phase-1 refuses missing binary" (AUTOREMESHER_BIN mock):
+#   the arm's resolve_cli gate moved to the rim —
+#   py/card_requires.py SYSTEM_BINARY_REQUIRES (the T12 leg in
+#   test_card_requires.py pins the pair hermetically) + the compose
+#   door's missing-extension refusal off the live pin.
+# - "quad accepts the trellis mesh" (mesh bytes under data/runs):
+#   compose no longer touches the file — no admission, no fixture
+#   (the SWEEP-BAIT fragility dies with the leg).
+
+# -- auto-rig doors ------------------------------------------------------
+# (Law-0 stroke 2026-09-07: this card had no door coverage at all —
+# the wall pinned quad + forge + the music fork only.)
+# the surviving arms load as packages (compose.py uses relative
 # imports — the plugin's own _load_card_package shape)
+sys.path.insert(0, os.path.join(REPO, "plugins", "engines", "cpp"))
 import importlib.util as _ilu
 from types import ModuleType
+from unittest import mock as _mock  # noqa: E402
 
 
 def _load_arm(pkgname: str, carddir: str) -> ModuleType:
@@ -70,54 +160,10 @@ def _load_arm(pkgname: str, carddir: str) -> ModuleType:
     return mod
 
 
-qarm = _load_arm("quad_arm_pkg", qdir)
-
-# arm bodies ride {params: {...}} (the gateway wraps at the HTTP rim)
-rc, g, x, err = qarm.compose({"params": {}}, "autoremesher", "")
-check("quad phase-1 refuses missing input", rc == -3, err)
-rc, g, x, err = qarm.compose({"params": {"input": "nope.obj"}},
-                              "autoremesher", "")
-check("quad phase-1 refuses dead ref", rc == -3, err)
-rc, g, x, err = qarm.compose(
-    {"params": {"input": "x.obj", "target_quads": -5}}, "autoremesher", "")
-check("quad phase-1 refuses negative budget", rc == -3, err)
-
-# SWEEP-BAIT (2026-09-06 incident): this mesh lives under
-# data/runs/test-output/ — the test:true pool test sweeps own.
-# The big test-output sweep deleted it and broke these five checks;
-# restored from the data/temp copy of the same generation. If this
-# path goes missing again, point it at ANY trellis2_native mesh
-# (data/temp/ carries the same generation) — the checks only need
-# mesh bytes for admission, never the run.
+# the rig accept legs need mesh bytes for admission (never the run):
+# ANY trellis2_native mesh under data/ will do.
 mesh = ("data/runs/test-output/run-49b55276d56a-69fe881b/"
         "trellis2_native_00005.glb")
-rc, g, x, err = qarm.compose({"params": {"input": mesh}},
-                              "autoremesher", "")
-check("quad phase-1 accepts the trellis mesh", rc == 0, err)
-# Law-0 binary gate (2026-09-07): the accepts exercise the pass leg
-# (this tree carries runtime builds); the refusal is mocked so it
-# stays hermetic on binary-less machines.
-from unittest import mock as _mock  # noqa: E402
-_qr = sys.modules["quad_arm_pkg.renderer"]
-with _mock.patch.object(_qr, "resolve_cli", return_value=None):
-    rc, g, x, err = qarm.compose({"params": {"input": mesh}},
-                                  "autoremesher", "")
-check("quad phase-1 refuses missing binary", rc == -3 and
-      "AUTOREMESHER_BIN" in (err or ""), err)
-rc, g, x, err = qarm.compose(
-    {"params": {"input": mesh, "target_quads": 5000}},
-    "autoremesher", "run-t")
-check("quad phase-2 emits skeleton", rc == 0 and g is not None, err)
-check("quad skeleton engine_type",
-      g is not None and g.engine_type == "autoremesher",
-      getattr(g, "engine_type", None))
-check("quad skeleton single node", g is not None and len(g.nodes) == 1)
-check("quad budget rides the node",
-      g is not None and g.nodes[0].params.get("target_quads") == 5000)
-
-# -- auto-rig doors ------------------------------------------------------
-# (Law-0 stroke 2026-09-07: this card had no door coverage at all —
-# the wall pinned quad + forge + the music fork only.)
 sdir = os.path.join(REPO, "plugins", "engines", "cpp", "skintokens",
                     "action_cards", "3d", "auto-rig", "py")
 sarm = _load_arm("rig_arm_pkg", sdir)

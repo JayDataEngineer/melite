@@ -387,7 +387,9 @@ def test_engine_default_output_attribute_is_present() -> None:
     validate_engines if it's missing or non-Kind."""
     # (kimodo RETIRED 2026-09-06 with the cpp ggml lane — motion
     # rides the comfyui engine; ONE-implementation rule)
-    for etype in ("comfyui", "anycreature", "autoremesher",
+    # (autoremesher RETIRED 2026-09-07 with the cpp quad lane — the
+    # remesh rides the comfyui engine; ONE-implementation rule)
+    for etype in ("comfyui", "anycreature",
                   "audio_cpp"):
         # ffmpeg_concat retired 2026-09-04 (concat rides comfyui's
         # VHS / melite-audio-nodes); see audit round 8.

@@ -19,10 +19,13 @@ _h_flows_validate, 2719-2890; resolve_request 279-336; strict body
     one per engine default_output, which pins ENGINE_TABLE
     behaviorally against py's scan_engines + DEFAULT_OUTPUT).
   CODE legs (status + code agree, text native by documented
-    channel): the three non-cordis python compose arms
-    (audio_cpp / anycreature / autoremesher return live graphs and
+    channel): the two non-cordis python compose arms
+    (audio_cpp / anycreature return live graphs and
     python-schema texts the TS plane does not own in this stroke)
     and the interpreter-class 500s (TypeError texts differ).
+    (autoremesher LEFT the code legs 2026-09-07 — the cpp→node
+    cutover made it a cordis arm; its golden + bare bodies ride the
+    byte legs now.)
   The 401 shape is asserted from the static literal (py in-process
     route() has no auth gate; the TS shape mirrors _adapt
     2607-2619, as the uploads wall does).
@@ -40,7 +43,7 @@ only; every TS call carries it (except the 401 leg).
 DOCUMENTED non-goals (the door header + this wall say so, and the
 wall EXCLUDES the inputs that would diverge):
   - non-cordis compose SUCCESS inputs (py 200s through the python
-    schema arms, e.g. autoremesher with a live input; the TS stub
+    schema arms, e.g. anycreature with a live spec; the TS stub
     400s — verdict differs by construction, unported half).
   - the card-requires gate (skipped; wall-pinned passing for every
     golden mid) and _route_stamp_overlay (stamp-equivalence: the
@@ -296,17 +299,25 @@ BYTE_BODIES: list[tuple[str, object]] = [
     ("engine-audio-cpp", {"flow_inline": {"id": "w", "stages": [
         {"id": "a", "engine": "audio_cpp"}]}}),
     ("engine-autoremesher", {"flow_inline": {"id": "w", "stages": [
+        # (2026-09-07: the engine retired with the cpp→node cutover
+        # — this leg now pins the UNKNOWN-ENGINE refusal parity:
+        # both sides 400 the retired type byte-identical.)
         {"id": "a", "engine": "autoremesher"}]}}),
     ("engine-sim", {"flow_inline": {"id": "w", "stages": [
         {"id": "a", "engine": "sim"}]}}),
     ("engine-skintokens", {"flow_inline": {"id": "w", "stages": [
         {"id": "a", "engine": "skintokens"}]}}),
+    # (2026-09-07: the bare autoremesher model is a cordis arm now —
+    # the missing-input refusal agrees byte-exact, so it rides here,
+    # not in CODE_BODIES.)
+    ("auto-bare", {"model": "autoremesher"}),
 ]
 
 CODE_BODIES: list[tuple[str, object]] = [
     ("ace-bare", {"model": "ace-step-xl"}),
     ("any-bare", {"model": "anycreature"}),
-    ("auto-bare", {"model": "autoremesher"}),
+    # (auto-bare MOVED to BYTE_BODIES 2026-09-07 — the autoremesher
+    # model is a cordis arm now, refusal agrees byte-exact.)
 ]
 
 STATUS_BODIES: list[tuple[str, object]] = [
@@ -316,7 +327,10 @@ STATUS_BODIES: list[tuple[str, object]] = [
      {"flow_inline": {"id": "w", "stages": [[5]]}}),
 ]
 
-PYTHON_ARM_MIDS = ("ace-step-xl", "anycreature", "autoremesher")
+# (autoremesher LEFT this tuple 2026-09-07 — the model is a cordis
+# arm now, so its golden rides the byte legs like every other
+# cordis mid.)
+PYTHON_ARM_MIDS = ("ace-step-xl", "anycreature")
 
 # One Gateway for the py side (200s read cost_preview off it; the
 # fresh-gateway empty-queue shape is what both sides assert).

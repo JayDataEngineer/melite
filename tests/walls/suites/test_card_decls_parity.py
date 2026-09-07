@@ -6,8 +6,10 @@ step 2): tools/export_card_decls.py emits
 plugins/engines/comfyui/cordis/data/card-decls.json (nothing imports it
 yet). This wall regenerates to temp and asserts BYTE-EQUALITY with the
 committed snapshot (fail on drift — regenerate + inspect, never hand-
-edit), and asserts all 18 comfyui card ids are present (the 4
-non-comfyui cards the shared scanner also sees ride along, never gate).
+edit), and asserts all 19 comfyui card ids are present (the 3
+non-comfyui cards the shared scanner also sees ride along, never
+gate — quad-remesh moved comfyui-side 2026-09-07 with the cpp→node
+cutover).
 
 Run: python3 tests/walls/suites/test_card_decls_parity.py
 """
@@ -24,7 +26,7 @@ EXPORTER = REPO / "tools" / "export_card_decls.py"
 COMMITTED = REPO / "plugins" / "engines" / "comfyui" / "cordis" / "data" \
     / "card-decls.json"
 
-# The 18 comfyui action_cards (map §0 ground truth — card ids, hyphens).
+# The 19 comfyui action_cards (map §0 ground truth — card ids, hyphens).
 COMFYUI_IDS = sorted([
     "anny", "fit", "img-to-mesh", "skin",
     "music", "sfx", "tts", "voice-lock",
@@ -32,6 +34,9 @@ COMFYUI_IDS = sorted([
     "input-prep", "mask-studio", "tagger",
     "upscale-tools", "motion",
     "h3-timeline", "video-gen",
+    # quad-remesh (2026-09-07, the cpp→node cutover — the ONE-
+    # implementation rule: the cpp lane retired with its render arm).
+    "quad-remesh",
 ])
 
 PASS: list[str] = []
@@ -73,7 +78,7 @@ def main() -> int:
     if missing:
         FAIL.append(f"missing comfyui cards: {', '.join(missing)}")
     else:
-        PASS.append(f"18-comfyui-present ({len(decls)} cards total)")
+        PASS.append(f"19-comfyui-present ({len(decls)} cards total)")
 
     for p in PASS:
         print(f"  ok   {p}")

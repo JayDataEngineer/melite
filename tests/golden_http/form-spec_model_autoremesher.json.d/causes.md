@@ -22,3 +22,15 @@ recipe — always — and the Recipe rail renders ABOVE the Model row.
 Mode for THIS file: WHOLESALE regold (parity-pinned route —
 the golden must equal the live wire byte-for-byte; verified zero
 leaf divergences old→new outside the causes below).
+
+## 2026-09-07 — cpp→node cutover (ONE-implementation rule)
+
+The quad-remesh card moved comfyui-side (declarations stream); the
+autoremesher model row is engine=comfyui now. Served diff vs the
+2026-09-06 capture: top-level `defaults` {} (the old cpp-lane
+derivation stringified the six knob defaults; the comfyui lane
+serves per-field defaults in `fields[]` + variant defaults — both
+{} here), `engine` autoremesher→comfyui (top level + both
+variants). Fields (7), routes, services unchanged. Recaptured from
+served /v1/form-spec on a scratch gateway; pinned by
+tests/walls/suites/test_http_parity.py.

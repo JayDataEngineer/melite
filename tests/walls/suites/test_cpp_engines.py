@@ -68,9 +68,11 @@ class TestDiscovery(unittest.TestCase):
         engines = plugins.scan_engines()
         # (kimodo RETIRED 2026-09-06 — the NVIDIA-package wrap on
         # the comfyui lane is THE kimodo; ONE-implementation rule)
-        for etype in ("anycreature", "audio_cpp", "autoremesher",
-                      "comfyui"):
+        # (autoremesher RETIRED 2026-09-07 — the node-pack wrap on
+        # the comfyui lane is THE remesher; ONE-implementation rule)
+        for etype in ("anycreature", "audio_cpp", "comfyui"):
             self.assertIn(etype, engines, "engine %r missing" % etype)
+        self.assertNotIn("autoremesher", engines)
         self.assertNotIn("ffmpeg_concat", engines)
 
     def test_cpp_category_dir_is_not_a_plugin(self) -> None:
@@ -145,41 +147,61 @@ class TestForgeBusContract(unittest.TestCase):
 
 
 class TestQuadRemeshBusContract(unittest.TestCase):
-    def _tmp_mesh(self) -> str:
-        import tempfile
-        fd, path = tempfile.mkstemp(suffix=".obj")
-        with os.fdopen(fd, "w") as f:
-            f.write("# stub obj\n")
-        self.addCleanup(os.unlink, path)
-        return path
+    """THE BUS CONTRACT for the remesh lane — post-cutover shape.
+
+    (2026-09-07, the cpp→node cutover, ONE-implementation rule: the
+    cpp arm retired with the lane, so the bus hop the gateway walks
+    is plugins.compose(..., engine ["comfyui"]) — the comfyui rim
+    shelling the Cordis door. The phase-2 graph is the rim's wrap:
+    ONE stage row id'd by the card-declared skeleton carrying the
+    full node map as its workflow. The retired legs below name
+    where their behavior moved — no silent coverage loss.)
+    """
+
+    def _lane(self, body: dict, run_id: str) -> tuple:
+        # the gateway's exact hop for the remesh lane: the MODEL id
+        # survives (params.model / stage_params), the ENGINE is the
+        # lane that owns the body now.
+        return _bus(body, "autoremesher", run_id, "comfyui")
 
     def test_phase1_missing_input_refused(self) -> None:
         with self.assertRaises(Exception) as cm:
-            _bus({"params": {}}, "autoremesher", "", "autoremesher")
-        self.assertIn("rc=-3", str(cm.exception))
+            self._lane({"params": {}}, "")
+        self.assertIn("rc=1", str(cm.exception))
         self.assertIn("input", str(cm.exception))
 
-    def test_phase1_dead_input_refused_with_exact_path(self) -> None:
-        bad = {"params": {"input": "/nonexistent/mesh.obj"}}
+    def test_phase1_smooth_normal_refused(self) -> None:
+        # the node hardcodes --smooth-normal 0.0 (nodes.py) — a
+        # nonzero card value is a lie the door refuses LOUD.
+        bad = {"params": {"input": "x.obj", "smooth_normal": 0.5}}
         with self.assertRaises(Exception) as cm:
-            _bus(bad, "autoremesher", "", "autoremesher")
-        self.assertIn("/nonexistent/mesh.obj", str(cm.exception))
+            self._lane(bad, "")
+        self.assertIn("rc=1", str(cm.exception))
+        self.assertIn("smooth_normal", str(cm.exception))
 
-    def test_phase1_bad_knob_range_refused(self) -> None:
-        bad = {"params": {"input": self._tmp_mesh(),
-                          "target_quads": 10}}
-        with self.assertRaises(Exception) as cm:
-            _bus(bad, "autoremesher", "", "autoremesher")
-        self.assertIn("target_quads", str(cm.exception))
+    # (RETIRED with the cpp arm: "dead input refused with exact
+    # path" — the arm admitted the file; the TS door (the
+    # transfer_rig precedent) passes the path string through and the
+    # NODE refuses a dead ref LOUD at prompt time, never silently.
+    # "bad knob range refused" — the schema.py floors retired with
+    # the arm; numerics ride per the img-to-mesh precedent and the
+    # node budget law owns them.)
 
-    def test_phase2_emits_skeleton_with_input_workflow(self) -> None:
-        mesh = self._tmp_mesh()
-        ok = {"params": {"input": mesh, "target_quads": 10000}}
-        g, _extra = _bus(ok, "autoremesher", "run-3", "autoremesher")
+    def test_phase2_emits_skeleton_row_with_node_workflow(self) -> None:
+        ok = {"params": {"input": "x.obj", "target_quads": 10000}}
+        g, extra = self._lane(ok, "run-3")
+        self.assertEqual(len(g.nodes), 1)
         node = g.nodes[0]
-        self.assertEqual(node.node_type, "autoremesher")
-        self.assertEqual(node.params["workflow"]["input"], mesh)
-        self.assertEqual(node.params["target_quads"], 10000)
+        # the row id is the card-declared skeleton (the rim's wrap
+        # contract), never the model name.
+        self.assertEqual(node.node_id, "quad-remesh")
+        self.assertEqual(extra.get("skeleton"), "quad-remesh")
+        wf = node.params["workflow"]
+        self.assertEqual(sorted(wf.keys()), ["AutoRemesher.0"])
+        self.assertEqual(wf["AutoRemesher.0"]["inputs"]["glb_path"],
+                         "x.obj")
+        self.assertEqual(
+            wf["AutoRemesher.0"]["inputs"]["target_quads"], 10000)
 
 
 class TestCardPattern(unittest.TestCase):
@@ -189,8 +211,14 @@ class TestCardPattern(unittest.TestCase):
 
     CARDS = [
         ("node", "anycreature", "action_cards/3d/forge"),
-        ("cpp", "autoremesher", "action_cards/3d/quad-remesh"),
         ("cpp", "audio-cpp", "action_cards/audio/music"),
+        # (the ("cpp", "autoremesher", "action_cards/3d/quad-remesh")
+        # row RETIRED 2026-09-07 with the lane — the cpp→node
+        # cutover, ONE-implementation rule: the card moved
+        # comfyui-side (declarations stream) and the render arm is
+        # the Cordis TS card. The comfyui lane's contract is pinned
+        # by the drift walls (decl_schema_parity 19×4, card_decls
+        # parity) + the cordis compose wall, not by this file.)
     ]
 
     def test_every_card_owns_the_pattern_files(self) -> None:
@@ -240,21 +268,14 @@ class TestRendererArgv(unittest.TestCase):
         spec.loader.exec_module(mod)
         return mod
 
-    def test_quad_remesh_argv_is_the_eight_knob_cli(self) -> None:
-        r = self._renderer("cpp", "autoremesher", "3d/quad-remesh",
-                           "qr_renderer_check")
-        cmd, out, report = r.build_argv(
-            __import__("pathlib").Path("/bin/autoremesher"), "/tmp/run",
-            {"workflow": {"input": "in.obj"}, "target_quads": 1234,
-             "edge_scaling": 1.5, "sharp_edge": 45.0,
-             "smooth_normal": 0.2, "adaptivity": 1.2,
-             "anisotropy": 1.0})
-        for flag in ("--input", "--output", "--report", "--target-quads",
-                     "--edge-scaling", "--sharp-edge", "--smooth-normal",
-                     "--adaptivity", "--anisotropy"):
-            self.assertIn(flag, cmd)
-        self.assertTrue(out.endswith("remeshed.obj"))
-        self.assertTrue(report.endswith("remeshed_report.txt"))
+    # (test_quad_remesh_argv_is_the_eight_knob_cli RETIRED
+    # 2026-09-07 with the lane — it drove the deleted renderer.py's
+    # build_argv. The eight-knob CLI truth it pinned now lives in the
+    # node pack (vendor/.../melite-autoremesher-nodes/nodes.py) +
+    # the Cordis literal (cordis/src/cards/quad-remesh.ts) + the
+    # golden (tests/golden_cordis/mesh_quad-remesh_default.json).
+    # The surviving argv parity lives in test_kernel_manifest_audio
+    # / test_kernel_manifest_forge.)
 
     # (the soma/smplx/g1 model-row tests RETIRED 2026-09-06 with the
     # cpp ggml lane — the comfyui kimodo row carries the family now)

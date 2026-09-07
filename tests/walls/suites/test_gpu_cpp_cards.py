@@ -25,12 +25,11 @@ What each probe proves:
   proportion) ride back as the run's EXACT error — a documented
   failure, never a silent empty completion (RESILIENCE LAW; the
   error-dict swallow hole was found and fixed building this suite)
-- missing-binary refusals: autoremesher without its
-  binaries refuse LOUDLY naming the env knob (QUEUE LANE LAW: no
-  silent fallback) — the error is the artifact
-- engine transition: a 2-stage yaml (forge → quad-remesh) passes
-  the creature GLB node-to-node ($forge.glb wiring), the engine
-  boundary never crashes the run, and stage 2 documents its refusal
+- missing-binary refusals: (the autoremesher probe RETIRED 2026-09-07
+  with the cpp quad lane — the binary requirement moved to the rim,
+  pinned hermetically by test_card_requires T12, no GPU needed)
+- engine transition: (the forge → quad-remesh 2-stage probe RETIRED
+  2026-09-07 with the lane — test_05 names the ComfyUI re-probe)
 - serial audit: two forge submissions observed LIVE — at no sampled
   instant are two runs active, and the queue serves both (FIFO, one
   active at a time — the serial GPU law)
@@ -263,105 +262,34 @@ class TestGpuCppCards(unittest.TestCase):
         self.assertTrue(sc.get("error"), "sidecar carries no error")
 
     def test_03_quad_remesh_produces_real_mesh(self) -> None:
-        """REAL OUTPUT: the creature GLB (from test 01) converts to
-        OBJ at the card's door (the engine's only format — a raw GLB
-        segfaults it) and the engine returns a real remeshed quad
-        mesh + report. Requires the built binary under
-        data/runtime/autoremesher (qmake+make; skip if absent)."""
-        binpath = os.path.join(REPO, "data/runtime/autoremesher",
-                               "autoremesher")
-        if not os.path.isfile(binpath):
-            self.skipTest("autoremesher not built — cd "
-                          "data/runtime/autoremesher && qmake "
-                          "../../../plugins/engines/cpp/autoremesher/"
-                          "vendor/autoremesher/autoremesher.pro && "
-                          "make -j4")
-        mesh = TestGpuCppCards.forge_glb
-        if not mesh:   # solo invocation — forge our own input first
-            d = _submit("anycreature", {"spec": MINI_SPEC})
-            f = _wait(d["run_id"])
-            self.assertEqual(f["status"], "completed")
-            mesh = (f.get("artifacts") or [""])[0]
-            TestGpuCppCards.forge_glb = mesh
-        self.assertTrue(mesh and mesh.endswith(".glb"),
-                        "no forge GLB available as remesh input")
-        d = _submit("autoremesher", {"input": mesh,
-                                     "target_quads": 2000})
-        final = _wait(d["run_id"], deadline_s=600)
-        self.assertEqual(final["status"], "completed",
-                         json.dumps(final)[:400])
-        arts = final.get("artifacts") or []
-        self.assertTrue(any(a.endswith("remeshed.obj") for a in arts),
-                        "no remeshed.obj artifact: %s" % arts)
-        obj = [a for a in arts if a.endswith("remeshed.obj")][0]
-        self.assertGreater(os.path.getsize(obj), 5000,
-                           "remeshed mesh suspiciously small")
-        self.assertTrue(any(a.endswith("remeshed_report.txt")
-                            for a in arts),
-                        "no engine report artifact: %s" % arts)
+        """RETIRED 2026-09-07 with the quad lane (the cpp→node
+        cutover, ONE-implementation rule): this probe submitted model
+        autoremesher through the retired cpp subprocess spawn. The
+        lane executes through ComfyUI now (the AutoRemesher node) —
+        the submit path it pinned no longer exists, so the body is
+        a skip, not a rewrite: a rewrite needs a live re-probe.
+        RE-PROBE (GPU host with ComfyUI + melite-autoremesher-nodes
+        + AUTOREMESHER_BIN): submit model autoremesher {input: GLB,
+        target_quads: 2000} through the live queue; expect completed
+        + the node's mesh/report artifacts on the run."""
+        self.skipTest(
+            "retired with the cpp quad lane 2026-09-07 — re-probe "
+            "procedure in the docstring (needs live ComfyUI + pack)")
 
     def test_05_engine_transition_forge_to_remesh(self) -> None:
-        """A 2-stage FLOW (2026-09-04 flows rework: the lane is now a
-        Python declaration, not a runtime yaml): the creature GLB
-        wires node-to-node ($forge.glb) across the anycreature->
-        autoremesher boundary via a STRUCTURAL edge (FromStage), and
-        BOTH stages produce REAL artifacts (GLB + remeshed OBJ). The
-        full unloads story: subprocess engines exit between stages;
-        the boundary never crashes the run."""
-        lane = os.path.join(REPO, "flows",
-                            "gpu-test-cpp-transition")
-        os.makedirs(lane, exist_ok=True)
-        flow_py = os.path.join(lane, "flow.py")
-        with open(flow_py, "w", encoding="utf-8") as f:
-            f.write(
-                "from flow import Flow, Stage, FromStage, Kind\n\n"
-                "FLOW = Flow(\n"
-                "    id='gpu-test-cpp-transition',\n"
-                "    description='Live GPU-suite lane: forge a creature, "
-                "hand the GLB to quad-remesh across the engine boundary.',\n"
-                "    stages=(\n"
-                "        Stage(id='forge', engine='anycreature',\n"
-                "              description='compile the minimal creature',\n"
-                "              outputs={'glb': Kind.mesh},\n"
-                "              params=" + repr({"workflow": MINI_SPEC}) + "),\n"
-                "        Stage(id='remesh', engine='autoremesher',\n"
-                "              description='quad-remesh the creature GLB',\n"
-                "              inputs={'glb': FromStage(stage='forge', output='glb')},\n"
-                "              expected={'glb': Kind.mesh},\n"
-                "              params=" + repr({"workflow": {"input": "$forge.glb"},
-                                   "target_quads": 2000}) + "),\n"
-                "    ),\n"
-                ")\n")
-        try:
-            # CARD BIRTH LAW (operator order 2026-09-06): the start
-            # door 4xxes a start without a doc-backed draft_id.
-            start = {"flow": "gpu-test-cpp-transition"}
-            start["draft_id"] = _compose(start)
-            d = _req("POST", "/v1/flows/start", start)
-            run_id = d["run_id"]
-            final = _wait(run_id, deadline_s=600)
-            sc = _sidecar(run_id)
-            stages = {s["id"]: s for s in sc.get("stages", [])}
-            self.assertEqual(
-                stages["forge"]["status"], "completed",
-                "stage 1 (forge) failed: %s"
-                % json.dumps(stages.get("forge", {}))[:300])
-            remesh = stages["remesh"]
-            self.assertEqual(
-                remesh["status"], "completed",
-                "stage 2 (remesh) failed: %s"
-                % json.dumps(remesh)[:300])
-            arts = sc.get("artifacts") or []
-            self.assertTrue(
-                any(a.endswith("creature.glb") for a in arts),
-                "stage 1 artifact missing: %s" % arts)
-            self.assertTrue(
-                any(a.endswith("remeshed.obj") for a in arts),
-                "stage 2 artifact missing (the transition must carry "
-                "REAL output node-to-node): %s" % arts)
-        finally:
-            import shutil
-            shutil.rmtree(lane, ignore_errors=True)
+        """RETIRED 2026-09-07 with the quad lane (the cpp→node
+        cutover, ONE-implementation rule): this probe wired forge →
+        quad-remesh across the anycreature→autoremesher boundary, and
+        the remesh stage's engine no longer exists (its flow now
+        refuses at validate — pinned byte-exact by the validate
+        parity wall's engine-autoremesher leg). Same disposition as
+        test_03: the body is a skip, not a rewrite.
+        RE-PROBE (GPU host with ComfyUI + pack): the same 2-stage
+        flow with the remesh stage on engine comfyui; expect both
+        stages completed + the node-to-node GLB→mesh artifacts."""
+        self.skipTest(
+            "retired with the cpp quad lane 2026-09-07 — re-probe "
+            "procedure in the docstring (needs live ComfyUI + pack)")
 
     def test_10_stop_door_lands_on_cpp_run(self) -> None:
         """The stop door (the RESILIENCE LAW's <6s interrupt claim)

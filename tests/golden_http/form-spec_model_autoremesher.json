@@ -221,14 +221,7 @@
       }
     }
   },
-  "defaults": {
-    "target_quads": "50000",
-    "edge_scaling": "1.0",
-    "sharp_edge": "90.0",
-    "smooth_normal": "0.0",
-    "adaptivity": "1.0",
-    "anisotropy": "1.0"
-  },
+  "defaults": {},
   "variants": [
     {
       "id": "standard",
@@ -237,7 +230,7 @@
       "defaults": {},
       "route": "autoremesher",
       "hint": null,
-      "engine": "autoremesher",
+      "engine": "comfyui",
       "quant": null,
       "vram_peak_gb": null,
       "owner": ""
@@ -261,14 +254,14 @@
       "defaults": {},
       "route": "",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
-      "engine": "autoremesher",
+      "engine": "comfyui",
       "quant": null,
       "vram_peak_gb": null,
       "owner": ""
     }
   ],
   "guide": null,
-  "engine": "autoremesher",
+  "engine": "comfyui",
   "enhance_prompt": null,
   "enhance_prompts": {
     "prompt": null,

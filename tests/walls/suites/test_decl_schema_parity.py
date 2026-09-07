@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Declaration-schema parity wall (RED wall, part 1 of 2 — wall-first).
 
-Compares, PER CARD (the 18 comfyui cards), the python declaration plane
+Compares, PER CARD (the 19 comfyui cards), the python declaration plane
 (plugins/engines/comfyui/cordis/data/card-decls.json — generated from
 card.py: boarded/REQUIRES/schemaMeta) against the hand-mirrored TS card
 surface (plugins/engines/comfyui/cordis/src/cards/*.ts).
@@ -319,8 +319,8 @@ def main() -> int:
         print(f"FAIL card-decls.json unreadable: {e}")
         return 1
     ts_files = sorted(CARDS.glob("*.ts"))
-    if len(ts_files) != 18:
-        FAIL.append(f"wall:card-count: expected 18 TS cards, found {len(ts_files)}")
+    if len(ts_files) != 19:
+        FAIL.append(f"wall:card-count: expected 19 TS cards, found {len(ts_files)}")
     matrix: list[tuple[str, str, str, str, str]] = []
 
     for path in ts_files:

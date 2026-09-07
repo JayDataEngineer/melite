@@ -128,9 +128,9 @@ class TestBoundaryRule(unittest.TestCase):
         failing = _StubEngine(fails=True)
         auto = _StubEngine()
         self.reg["comfyui"] = failing
-        self.reg["autoremesher"] = auto
+        self.reg["audio_cpp"] = auto
         outcome = asyncio.run(
-            gateway._engine_boundary_unload("comfyui", "autoremesher"))
+            gateway._engine_boundary_unload("comfyui", "audio_cpp"))
         self.assertTrue(outcome.startswith("error:"))
         self.assertIn("status 500", outcome)
         self.assertEqual(failing.calls, 1, "the unload was attempted")
@@ -192,8 +192,8 @@ class TestRealLoop(unittest.TestCase):
         comfy = _StubEngine()
         auto = _StubEngine()
         self.reg["comfyui"] = comfy
-        self.reg["autoremesher"] = auto
-        run = self._run("comfyui", "comfyui", "autoremesher")
+        self.reg["audio_cpp"] = auto
+        run = self._run("comfyui", "comfyui", "audio_cpp")
         self._execute(run)
         self.assertEqual(comfy.calls, 1, "outgoing engine unloads once")
         self.assertEqual(auto.calls, 0, "incoming engine never unloads")
@@ -234,8 +234,8 @@ class TestRealLoop(unittest.TestCase):
         failing = _StubEngine(fails=True)
         auto = _StubEngine()
         self.reg["comfyui"] = failing
-        self.reg["autoremesher"] = auto
-        run = self._run("comfyui", "autoremesher")
+        self.reg["audio_cpp"] = auto
+        run = self._run("comfyui", "audio_cpp")
         self._execute(run)
         self.assertTrue(run.stages[1].get("boundary_unload", "")
                         .startswith("error:"))
@@ -279,11 +279,11 @@ class TestRealLoop(unittest.TestCase):
         comfy = _Boom()
         auto = _StubEngine()
         self.reg["comfyui"] = comfy
-        self.reg["autoremesher"] = auto
+        self.reg["audio_cpp"] = auto
         run1 = self._run("comfyui")
         with self.assertRaises(RuntimeError):
             self._execute(run1)
-        run2 = self._run("autoremesher")
+        run2 = self._run("audio_cpp")
         self._execute(run2)
         self.assertEqual(comfy.calls, 1)
         self.assertEqual(run2.stages[0].get("boundary_unload"), "fired")

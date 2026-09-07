@@ -78,3 +78,12 @@ the wire deltas are exactly the surveyed set, nothing else
 
 Source: `forms()` == `_derive_forms_table` (cached per repo root);
 the ALLOWED_CARDS gate is the derived keys (no second list).
+
+## 2026-09-07 — cpp→node cutover, quad-remesh entry only
+
+`forms.quad-remesh.plugin` autoremesher→comfyui (the card moved
+lanes; every other entry byte-identical). Recaptured from served
+/v1/forms on a scratch gateway; pinned by
+tests/walls/suites/test_http_parity.py. (The three h3-timeline legs
+that fail alongside are NOT this stroke — they track the parent's
+in-flight card.py work at HEAD; see the stroke record.)

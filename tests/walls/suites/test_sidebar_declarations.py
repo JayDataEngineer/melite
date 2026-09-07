@@ -24,7 +24,9 @@ from melite_cards import ActionCard  # noqa: E402
 ROOTS = (
     "plugins/engines/comfyui/action_cards",
     "plugins/engines/cpp/audio-cpp/action_cards",
-    "plugins/engines/cpp/autoremesher/action_cards",
+    # (the cpp/autoremesher root RETIRED 2026-09-07 with the lane —
+    # the quad-remesh card moved comfyui-side, covered by the first
+    # root; the lane holds vendor/ only now.)
     "plugins/engines/cpp/skintokens/action_cards",
     "plugins/engines/node/anycreature/action_cards",
 )

@@ -201,5 +201,48 @@ finally:
         else:
             _os.environ[v] = val
 
+# ── T12: LAW 0 system-binary requirement for the remesh pack ──
+# (2026-09-07, the cpp→node cutover): melite-autoremesher-nodes
+# shells the AutoRemesher binary; the arm's resolve_cli gate moved
+# to the rim (SYSTEM_BINARY_REQUIRES) with this wall as its
+# hermetic pin — same shape as T11, no server, no binary.
+r = _ok("T12 autoremesher pins the binary system requirement",
+        SYSTEM_BINARY_REQUIRES.get("melite-autoremesher-nodes") ==
+        (("AUTOREMESHER_BIN",), "autoremesher"),
+        "Law-0 pair drifted")
+passed += r; failed += (not r)
+_saved12 = _os.environ.get("AUTOREMESHER_BIN")
+try:
+    _os.environ.pop("AUTOREMESHER_BIN", None)
+    with mock.patch("shutil.which", return_value=None):
+        ok, msg = check_card_requires(
+            ["melite-autoremesher-nodes"], server_url=None,
+            custom_nodes_dir="/tmp/nonexistent")
+    r = _ok("T12 missing autoremesher binary refuses at compose",
+            not ok and "autoremesher" in msg,
+            msg if ok else "refused with the need named")
+    passed += r; failed += (not r)
+    _os.environ["AUTOREMESHER_BIN"] = "/opt/autoremesher/bin/cli"
+    with mock.patch("shutil.which", return_value=None):
+        ok, msg = check_card_requires(
+            ["melite-autoremesher-nodes"], server_url=None,
+            custom_nodes_dir="/tmp/nonexistent")
+    r = _ok("T12 AUTOREMESHER_BIN override passes the binary leg",
+            # the pack name itself contains "autoremesher" — the
+            # discriminator is the BINARY hint ("install
+            # autoremesher"), which must be gone; the refusal that
+            # remains names the missing EXTENSION pack.
+            not ok and "install autoremesher" not in msg
+            and "melite-autoremesher-nodes" in msg,
+            "binary leg leaked past the override" if ok or
+            "install autoremesher" in msg
+            else "fell through past the extension check: %s" % msg[:120])
+    passed += r; failed += (not r)
+finally:
+    if _saved12 is None:
+        _os.environ.pop("AUTOREMESHER_BIN", None)
+    else:
+        _os.environ["AUTOREMESHER_BIN"] = _saved12
+
 print(f"\n{'PASS' if not failed else 'FAIL'} {passed} / FAIL {failed}")
 sys.exit(1 if failed else 0)
