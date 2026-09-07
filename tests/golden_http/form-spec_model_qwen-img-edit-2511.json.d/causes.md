@@ -109,3 +109,22 @@ every other byte is untouched, including this lane's unrelated drift,
 which stays its lane's business.
 
 - 2026-09-06: fields regolded from the card CLASS (the SSOT) — the 2026-09-06 image-edit/video-gen/upscale-tools card rework (input_image->image1, visible_when relaxation, field count changes) landed with the classes but the goldens lagged; served==fragment verified before write.
+
+## 2026-09-07 — Cordis card 3 HOLD (do NOT regold yet)
+
+The migration tried to parity-pin this golden and found live-vs-golden
+drift that is the owning lane's in-flight rework, not contract lag:
+
+- `defaults`: golden carries `width`/`height` = 1024 + `steps` = 8;
+  live serves neither resolution default and `steps` = 4.
+- `variants[]`: labels/hints reworded (Lightning is now the 4-step
+  distilled default path).
+- `features.modifiers`: live carries the runtime-catalog LoRA packs;
+  the golden has none.
+
+Per this file's own convention (surgical-only while the rework is
+mid-flight) the pin was REVERTED, not regolded — absorbing 350+
+leaves of another lane's unfinished work into contract would be
+exactly the drift class the goldens exist to catch. Regold belongs
+to the lane owner when the rework lands. (Cordis lane-flag: image-edit
+is HANDS-OFF until then.)
