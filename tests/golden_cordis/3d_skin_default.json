@@ -8,7 +8,7 @@
   "PrimitiveString.1": {
     "class_type": "PrimitiveString",
     "inputs": {
-      "value": "{}"
+      "value": "{\"category\": \"humanoid\", \"kind\": \"keeper\", \"metallic\": 0.0, \"normal_strength\": 0.0, \"seed\": 20260906, \"size\": 512, \"smoothness\": 0.18, \"texture\": \"young_caucasian_male\", \"tint\": [0.85, 0.7, 0.55], \"triplanar_density\": 3.0, \"uv\": \"somax\"}"
     }
   },
   "RayRenderGLBViews.0": {

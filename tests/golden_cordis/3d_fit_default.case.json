@@ -4,6 +4,7 @@
   "run_id": "testrun",
   "params": {
     "body_glb": "/mnt/melite_weights/annies/base_body.glb",
-    "prop_glb": "/mnt/melite_weights/props/sword.glb"
+    "prop_glb": "/mnt/melite_weights/props/sword.glb",
+    "bone": "mixamorig:Head"
   }
 }
