@@ -116,6 +116,12 @@ def main() -> int:
             # CORDIS CARD 2 (2026-09-07): ideogram4 rides core nodes
             # (Ideogram4Scheduler live) — its golden was unpinned.
             ("form-spec?model=ideogram", "deep"),
+            # CORDIS CARD 4 (2026-09-07): tagger families were never
+            # pinned — goldens captured live in the same stroke.
+            ("form-spec?model=wd14", "deep"),
+            ("form-spec?model=joytag", "deep"),
+            ("form-spec?model=florence2", "deep"),
+            ("form-spec?model=joycaption", "deep"),
             ("form-spec?model=h3-timeline", "deep"),
             ("form-spec?model=music3", "deep"),
             # NATIVE 3D/AUDIO BOARDING (2026-09-06): the cpp engines'
