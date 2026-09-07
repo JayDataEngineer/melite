@@ -1,26 +1,19 @@
 {
+  "contract": null,
   "defaults": {
-    "fps": "16",
-    "frames": "81",
-    "guide_scale": "5.0",
-    "guide_strength": "3.0",
+    "cfg": "5.0",
+    "fps": "24",
     "height": "480",
-    "mode": "animate",
-    "model_name": "scail2_14B_fp8_scaled.safetensors",
-    "output_format": "mp4",
-    "relay_epsilon": "0.001",
-    "retake_enabled": "false",
-    "retake_start_frame": "0",
-    "retake_strength": "1.0",
-    "sampling_steps": "40",
+    "length": "25",
+    "pose_strength": "1.0",
+    "sampler": "euler",
+    "scheduler": "simple",
     "seed": "42",
-    "upscale_cfg": "1.0",
-    "upscale_denoise": "0.3",
-    "upscale_enabled": "false",
-    "upscale_steps": "10",
-    "width": "832"
+    "steps": "12",
+    "width": "480"
   },
   "engine": "comfyui",
+  "enhance_prompt": null,
   "enhance_prompts": {
     "lyrics": "",
     "prompt": ""
@@ -31,121 +24,196 @@
       "Quant": {
         "label": "Quant"
       },
+      "Recipe": {
+        "default": "default",
+        "label": "Recipe",
+        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing."
+      },
       "Variant": {
         "label": "Variant"
-      },
-      "Recipe": {
-        "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
-        "default": "default"
       }
     }
   },
   "fields": [
     {
-      "name": "prompt",
-      "type": "textarea",
-      "label": "Prompt",
-      "group": "prompt",
-      "order": 0,
-      "width": 1,
       "columns": 2,
-      "required": true
-    },
-    {
-      "name": "negative_prompt",
-      "type": "textarea",
-      "label": "Negative Prompt",
+      "default": null,
       "group": "prompt",
-      "order": 1,
-      "width": 1
+      "label": "Prompt",
+      "max": null,
+      "min": null,
+      "name": "prompt",
+      "options": [],
+      "order": 0,
+      "placeholder": "",
+      "required": true,
+      "step": null,
+      "tooltip": "",
+      "type": "textarea",
+      "visible_when": null,
+      "width": 1,
+      "zone": ""
     },
     {
-      "name": "width",
-      "type": "number",
+      "columns": null,
+      "default": null,
+      "group": "prompt",
+      "label": "Negative Prompt",
+      "max": null,
+      "min": null,
+      "name": "negative_prompt",
+      "options": [],
+      "order": 1,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "",
+      "type": "textarea",
+      "visible_when": null,
+      "width": 1,
+      "zone": ""
+    },
+    {
+      "columns": 3,
+      "default": null,
+      "group": "resolution",
       "label": "Width",
-      "group": "resolution",
-      "order": 0,
-      "width": 1,
-      "columns": 3,
-      "min": 320,
       "max": 1280,
-      "step": 16
-    },
-    {
-      "name": "height",
-      "type": "number",
-      "label": "Height",
-      "group": "resolution",
-      "order": 1,
-      "width": 1,
       "min": 320,
-      "max": 720,
-      "step": 16
-    },
-    {
-      "name": "length",
-      "type": "number",
-      "label": "Frames",
-      "group": "resolution",
-      "order": 2,
-      "width": 1,
-      "columns": 3,
-      "min": 9,
-      "max": 121,
-      "step": 4,
-      "tooltip": "4n+1 (Wan latent grid). 49 \u2248 2s, 81 \u2248 3.4s at 24fps."
-    },
-    {
-      "name": "fps",
-      "type": "number",
-      "label": "FPS",
-      "group": "resolution",
-      "order": 3,
-      "width": 1,
-      "min": 8,
-      "max": 30,
-      "step": 1
-    },
-    {
-      "name": "seed",
-      "type": "seed",
-      "label": "Seed",
-      "group": "resolution",
-      "order": 4,
-      "width": 1,
-      "default": -1
-    },
-    {
-      "name": "steps",
-      "type": "number",
-      "label": "Steps",
-      "group": "sampling",
+      "name": "width",
+      "options": [],
       "order": 0,
+      "placeholder": "",
+      "required": null,
+      "step": 16,
+      "tooltip": "",
+      "type": "number",
+      "visible_when": null,
       "width": 1,
-      "min": 1,
-      "max": 50,
-      "step": 1
+      "zone": ""
     },
     {
-      "name": "cfg",
-      "type": "slider",
-      "label": "Guidance Scale",
-      "group": "sampling",
+      "columns": null,
+      "default": null,
+      "group": "resolution",
+      "label": "Height",
+      "max": 720,
+      "min": 320,
+      "name": "height",
+      "options": [],
       "order": 1,
+      "placeholder": "",
+      "required": null,
+      "step": 16,
+      "tooltip": "",
+      "type": "number",
+      "visible_when": null,
       "width": 1,
-      "min": 1,
-      "max": 12,
-      "step": 0.1,
-      "tooltip": "Lightning-distilled lanes run CFG 1 (guidance baked in)."
+      "zone": ""
     },
     {
-      "name": "sampler",
-      "type": "select",
-      "label": "Sampler",
-      "group": "sampling",
+      "columns": 3,
+      "default": null,
+      "group": "resolution",
+      "label": "Frames",
+      "max": 121,
+      "min": 9,
+      "name": "length",
+      "options": [],
       "order": 2,
+      "placeholder": "",
+      "required": null,
+      "step": 4,
+      "tooltip": "4n+1 (Wan latent grid). 49 \u2248 2s, 81 \u2248 3.4s at 24fps.",
+      "type": "number",
+      "visible_when": null,
       "width": 1,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": null,
+      "group": "resolution",
+      "label": "FPS",
+      "max": 30,
+      "min": 8,
+      "name": "fps",
+      "options": [],
+      "order": 3,
+      "placeholder": "",
+      "required": null,
+      "step": 1,
+      "tooltip": "",
+      "type": "number",
+      "visible_when": null,
+      "width": 1,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": -1,
+      "group": "resolution",
+      "label": "Seed",
+      "max": null,
+      "min": null,
+      "name": "seed",
+      "options": [],
+      "order": 4,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "",
+      "type": "seed",
+      "visible_when": null,
+      "width": 1,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": null,
+      "group": "sampling",
+      "label": "Steps",
+      "max": 50,
+      "min": 1,
+      "name": "steps",
+      "options": [],
+      "order": 0,
+      "placeholder": "",
+      "required": null,
+      "step": 1,
+      "tooltip": "",
+      "type": "number",
+      "visible_when": null,
+      "width": 1,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": null,
+      "group": "sampling",
+      "label": "Guidance Scale",
+      "max": 12,
+      "min": 1,
+      "name": "cfg",
+      "options": [],
+      "order": 1,
+      "placeholder": "",
+      "required": null,
+      "step": 0.1,
+      "tooltip": "Lightning-distilled lanes run CFG 1 (guidance baked in).",
+      "type": "slider",
+      "visible_when": null,
+      "width": 1,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": null,
+      "group": "sampling",
+      "label": "Sampler",
+      "max": null,
+      "min": null,
+      "name": "sampler",
       "options": [
         "cfgpp_ud10_ab",
         "ddim",
@@ -192,15 +260,25 @@
         "seeds_3",
         "uni_pc",
         "uni_pc_bh2"
-      ]
+      ],
+      "order": 2,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "",
+      "type": "select",
+      "visible_when": null,
+      "width": 1,
+      "zone": ""
     },
     {
-      "name": "scheduler",
-      "type": "select",
-      "label": "Scheduler",
+      "columns": null,
+      "default": null,
       "group": "sampling",
-      "order": 3,
-      "width": 1,
+      "label": "Scheduler",
+      "max": null,
+      "min": null,
+      "name": "scheduler",
       "options": [
         "beta",
         "ddim_uniform",
@@ -211,161 +289,192 @@
         "normal",
         "sgm_uniform",
         "simple"
-      ]
+      ],
+      "order": 3,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "",
+      "type": "select",
+      "visible_when": null,
+      "width": 1,
+      "zone": ""
     },
     {
-      "name": "reference_image",
-      "type": "image",
+      "columns": null,
+      "default": null,
+      "group": "input",
       "label": "Reference image",
-      "group": "input",
+      "max": null,
+      "min": null,
+      "name": "reference_image",
+      "options": [],
       "order": 0,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "The anchor frame \u2014 identity, subject, scene (wan-vace); the character to animate (scail2-animate).",
+      "type": "image",
+      "visible_when": null,
       "width": 1,
-      "tooltip": "The anchor frame \u2014 identity, subject, scene (wan-vace); the character to animate (scail2-animate)."
+      "zone": ""
     },
     {
-      "name": "pose_video",
-      "type": "video",
-      "label": "Driving video",
+      "columns": null,
+      "default": null,
       "group": "input",
+      "label": "Driving video",
+      "max": null,
+      "min": null,
+      "name": "pose_video",
+      "options": [],
       "order": 1,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "The motion source \u2014 SCAIL-2 drives the reference character with this video.",
+      "type": "video",
+      "visible_when": null,
       "width": 1,
-      "tooltip": "The motion source \u2014 SCAIL-2 drives the reference character with this video."
+      "zone": ""
     },
     {
-      "name": "pose_strength",
-      "type": "slider",
-      "label": "Pose strength",
-      "group": "sampling",
-      "order": 2,
-      "width": 1,
-      "min": 0,
-      "max": 2,
-      "step": 0.05,
+      "columns": null,
       "default": 1.0,
-      "tooltip": "How tightly SCAIL-2 follows the driving motion."
+      "group": "sampling",
+      "label": "Pose strength",
+      "max": 2,
+      "min": 0,
+      "name": "pose_strength",
+      "options": [],
+      "order": 2,
+      "placeholder": "",
+      "required": null,
+      "step": 0.05,
+      "tooltip": "How tightly SCAIL-2 follows the driving motion.",
+      "type": "slider",
+      "visible_when": null,
+      "width": 1,
+      "zone": ""
     }
   ],
   "form": "video-gen",
   "genre": "video",
+  "guide": null,
   "label": "Video",
+  "layout": null,
+  "loader_info": null,
   "model": "scail2-animate",
   "schema_groups": [
     {
+      "fields": [
+        {
+          "columns": 2,
+          "label": "Prompt",
+          "name": "prompt",
+          "order": 0,
+          "required": true,
+          "type": "textarea",
+          "width": 1
+        },
+        {
+          "label": "Negative Prompt",
+          "name": "negative_prompt",
+          "order": 1,
+          "type": "textarea",
+          "width": 1
+        }
+      ],
       "id": "prompt",
       "label": "Prompt",
       "order": 0,
-      "zone": "params",
-      "fields": [
-        {
-          "name": "prompt",
-          "type": "textarea",
-          "label": "Prompt",
-          "order": 0,
-          "width": 1,
-          "columns": 2,
-          "required": true
-        },
-        {
-          "name": "negative_prompt",
-          "type": "textarea",
-          "label": "Negative Prompt",
-          "order": 1,
-          "width": 1
-        }
-      ]
+      "zone": "params"
     },
     {
+      "fields": [
+        {
+          "columns": 3,
+          "label": "Width",
+          "max": 1280,
+          "min": 320,
+          "name": "width",
+          "order": 0,
+          "step": 16,
+          "type": "number",
+          "width": 1
+        },
+        {
+          "label": "Height",
+          "max": 720,
+          "min": 320,
+          "name": "height",
+          "order": 1,
+          "step": 16,
+          "type": "number",
+          "width": 1
+        },
+        {
+          "columns": 3,
+          "label": "Frames",
+          "max": 121,
+          "min": 9,
+          "name": "length",
+          "order": 2,
+          "step": 4,
+          "tooltip": "4n+1 (Wan latent grid). 49 \u2248 2s, 81 \u2248 3.4s at 24fps.",
+          "type": "number",
+          "width": 1
+        },
+        {
+          "label": "FPS",
+          "max": 30,
+          "min": 8,
+          "name": "fps",
+          "order": 3,
+          "step": 1,
+          "type": "number",
+          "width": 1
+        },
+        {
+          "default": -1,
+          "label": "Seed",
+          "name": "seed",
+          "order": 4,
+          "type": "seed",
+          "width": 1
+        }
+      ],
       "id": "resolution",
       "label": "Resolution",
       "order": 1,
-      "zone": "params",
-      "fields": [
-        {
-          "name": "width",
-          "type": "number",
-          "label": "Width",
-          "order": 0,
-          "width": 1,
-          "columns": 3,
-          "min": 320,
-          "max": 1280,
-          "step": 16
-        },
-        {
-          "name": "height",
-          "type": "number",
-          "label": "Height",
-          "order": 1,
-          "width": 1,
-          "min": 320,
-          "max": 720,
-          "step": 16
-        },
-        {
-          "name": "length",
-          "type": "number",
-          "label": "Frames",
-          "order": 2,
-          "width": 1,
-          "columns": 3,
-          "min": 9,
-          "max": 121,
-          "step": 4,
-          "tooltip": "4n+1 (Wan latent grid). 49 \u2248 2s, 81 \u2248 3.4s at 24fps."
-        },
-        {
-          "name": "fps",
-          "type": "number",
-          "label": "FPS",
-          "order": 3,
-          "width": 1,
-          "min": 8,
-          "max": 30,
-          "step": 1
-        },
-        {
-          "name": "seed",
-          "type": "seed",
-          "label": "Seed",
-          "order": 4,
-          "width": 1,
-          "default": -1
-        }
-      ]
+      "zone": "params"
     },
     {
-      "id": "sampling",
-      "label": "Sampling",
-      "order": 2,
-      "zone": "params",
       "fields": [
         {
-          "name": "steps",
-          "type": "number",
           "label": "Steps",
-          "order": 0,
-          "width": 1,
-          "min": 1,
           "max": 50,
-          "step": 1
-        },
-        {
-          "name": "cfg",
-          "type": "slider",
-          "label": "Guidance Scale",
-          "order": 1,
-          "width": 1,
           "min": 1,
-          "max": 12,
-          "step": 0.1,
-          "tooltip": "Lightning-distilled lanes run CFG 1 (guidance baked in)."
+          "name": "steps",
+          "order": 0,
+          "step": 1,
+          "type": "number",
+          "width": 1
         },
         {
-          "name": "sampler",
-          "type": "select",
+          "label": "Guidance Scale",
+          "max": 12,
+          "min": 1,
+          "name": "cfg",
+          "order": 1,
+          "step": 0.1,
+          "tooltip": "Lightning-distilled lanes run CFG 1 (guidance baked in).",
+          "type": "slider",
+          "width": 1
+        },
+        {
           "label": "Sampler",
-          "order": 2,
-          "width": 1,
+          "name": "sampler",
           "options": [
             "cfgpp_ud10_ab",
             "ddim",
@@ -412,14 +521,14 @@
             "seeds_3",
             "uni_pc",
             "uni_pc_bh2"
-          ]
+          ],
+          "order": 2,
+          "type": "select",
+          "width": 1
         },
         {
-          "name": "scheduler",
-          "type": "select",
           "label": "Scheduler",
-          "order": 3,
-          "width": 1,
+          "name": "scheduler",
           "options": [
             "beta",
             "ddim_uniform",
@@ -430,60 +539,92 @@
             "normal",
             "sgm_uniform",
             "simple"
-          ]
+          ],
+          "order": 3,
+          "type": "select",
+          "width": 1
         },
         {
-          "name": "pose_strength",
-          "type": "slider",
-          "label": "Pose strength",
-          "order": 2,
-          "width": 1,
-          "min": 0,
-          "max": 2,
-          "step": 0.05,
           "default": 1.0,
-          "tooltip": "How tightly SCAIL-2 follows the driving motion."
+          "label": "Pose strength",
+          "max": 2,
+          "min": 0,
+          "name": "pose_strength",
+          "order": 2,
+          "step": 0.05,
+          "tooltip": "How tightly SCAIL-2 follows the driving motion.",
+          "type": "slider",
+          "width": 1
         }
-      ]
+      ],
+      "id": "sampling",
+      "label": "Sampling",
+      "order": 2,
+      "zone": "params"
     },
     {
+      "fields": [
+        {
+          "label": "Reference image",
+          "name": "reference_image",
+          "order": 0,
+          "tooltip": "The anchor frame \u2014 identity, subject, scene (wan-vace); the character to animate (scail2-animate).",
+          "type": "image",
+          "width": 1
+        },
+        {
+          "label": "Driving video",
+          "name": "pose_video",
+          "order": 1,
+          "tooltip": "The motion source \u2014 SCAIL-2 drives the reference character with this video.",
+          "type": "video",
+          "width": 1
+        }
+      ],
       "id": "input",
       "label": "Input",
       "order": 3,
-      "zone": "params",
-      "fields": [
-        {
-          "name": "reference_image",
-          "type": "image",
-          "label": "Reference image",
-          "order": 0,
-          "width": 1,
-          "tooltip": "The anchor frame \u2014 identity, subject, scene (wan-vace); the character to animate (scail2-animate)."
-        },
-        {
-          "name": "pose_video",
-          "type": "video",
-          "label": "Driving video",
-          "order": 1,
-          "width": 1,
-          "tooltip": "The motion source \u2014 SCAIL-2 drives the reference character with this video."
-        }
-      ]
+      "zone": "params"
     }
   ],
   "service": "scail2-animate",
+  "size": null,
   "variants": [
     {
+      "defaults": {},
+      "engine": "comfyui",
+      "group": "Variant",
+      "hint": null,
+      "id": "standard",
+      "label": "Standard",
+      "owner": "",
+      "quant": null,
+      "route": "scail2-animate",
+      "vram_peak_gb": null
+    },
+    {
+      "defaults": {},
+      "engine": "",
+      "group": "Quant",
+      "hint": null,
+      "id": "fp8",
+      "label": "FP8",
+      "owner": "standard",
+      "quant": "fp8",
+      "route": "scail2-animate",
+      "vram_peak_gb": 24.0
+    },
+    {
+      "defaults": {},
+      "engine": "comfyui",
+      "group": "Recipe",
+      "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
       "id": "default",
       "label": "Default",
-      "group": "Recipe",
-      "defaults": {},
-      "route": "",
-      "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
-      "engine": "comfyui",
+      "owner": "",
       "quant": null,
-      "vram_peak_gb": null,
-      "owner": ""
+      "route": "",
+      "vram_peak_gb": null
     }
   ]
 }

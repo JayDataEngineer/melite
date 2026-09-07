@@ -37,3 +37,13 @@ every other byte is untouched, including this lane's unrelated drift,
 which stays its lane's business.
 
 - 2026-09-06: fields regolded from the card CLASS (the SSOT) — the 2026-09-06 image-edit/video-gen/upscale-tools card rework (input_image->image1, visible_when relaxation, field count changes) landed with the classes but the goldens lagged; served==fragment verified before write.
+
+## 2026-09-07 — committed-evolution catch-up (Cordis cards 8+9)
+
+Parity-pinned this stroke. The golden lagged COMMITTED classes
+(knob-flip + video-gen knob rows + lane defaults restructures —
+EasyCache/block-swap/guide_* retired from the surface, cfg/length/
+seed/steps/sampler/scheduler now served; scail2 carries the fp8
+quant row). Working tree was clean for the lane (no in-flight
+work to absorb), so served-verbatim rewrite. Envelope/null
+deltas are the serialization blanket (same as seedvr2_ema).

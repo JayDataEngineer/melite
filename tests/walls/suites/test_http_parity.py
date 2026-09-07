@@ -129,6 +129,11 @@ def main() -> int:
             # are stock-only (Load/Save + comfy_extras detectors).
             ("form-spec?model=input", "deep"),
             ("form-spec?model=mask-studio", "deep"),
+            # CORDIS CARDS 8+9 (2026-09-07): h3-timeline resolves its
+            # six packs clean (verified, already pinned); video-gen
+            # declares VideoHelperSuite (VHS load/combine, both fams).
+            ("form-spec?model=wan-vace", "deep"),
+            ("form-spec?model=scail2-animate", "deep"),
             ("form-spec?model=h3-timeline", "deep"),
             ("form-spec?model=music3", "deep"),
             # NATIVE 3D/AUDIO BOARDING (2026-09-06): the cpp engines'

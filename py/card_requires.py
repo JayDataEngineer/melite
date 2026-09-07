@@ -92,6 +92,10 @@ EXTENSION_NODE_TYPES: dict[str, set[str]] = {
     # guessed (a guessed slug is drift with authority).
     "comfyui_nvidia_rtx_nodes": {"RTXVideoSuperResolution"},
     "ComfyUI-LTXVideo": {"LTX_lora_loader", "CreateVideo"},
+    # VideoHelperSuite (Cordis card 9, 2026-09-07): the video-gen
+    # renderer loads/combines through VHS on both families; key is
+    # the exact install folder (the disk fallback compares exact).
+    "comfyui-videohelpersuite": {"VHS_LoadVideoPath", "VHS_VideoCombine"},
     "melite-audio-nodes": {
         "MiniMaxMusic3TextEncode", "EmptyMiniMaxMusic3LatentAudio",
         "SaveAudioAdvanced", "AudiocoreTTS", "LoadAudiocoreModel",
