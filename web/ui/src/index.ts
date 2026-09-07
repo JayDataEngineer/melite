@@ -4,6 +4,7 @@
 export * from "./NumberField"
 export * from "./ProvenanceBadge"
 export * from "./SlotSquare"
+export * from "./shellDeclaration"
 export * from "./studioShell"
 export * from "./WirePickerModal"
 export * from "./cardControls"

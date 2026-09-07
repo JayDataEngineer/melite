@@ -533,6 +533,26 @@
       "component": true
     },
     {
+      "name": "shellDeclaration",
+      "type": "registry:lib",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/shellDeclaration.ts"
+        }
+      ],
+      "exports": [
+        "BarKind",
+        "BottomSeam",
+        "CenterSeam",
+        "RailSeam",
+        "ShellDeclaration",
+        "ViewportKind",
+        "defineShellDeclaration"
+      ],
+      "component": false
+    },
+    {
       "name": "shortcuts",
       "type": "registry:ui",
       "package": "@melite/ui",

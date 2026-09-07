@@ -25,7 +25,7 @@ tree walk + module parse, no node needed):
      and center= seams; the bespoke pre-shell shape (StudioRail +
      hand-rolled column div in the same file) refuses.
 
-Design record: docs/design/studio-shell.md §2 + §7 stroke 1.
+Design record: docs/design/studio-shell.md §2 + §7 strokes 1-4.
 """
 import os
 import re
@@ -207,3 +207,89 @@ def test_the_mask_canvas_composes_the_primitive():
     assert "role=\"status\"" not in src, \
         "StudioCanvas duplicates the loading skeleton — the " \
         "primitive owns the decode state"
+
+
+# ── stroke 4 (2026-09-07): typed shell tables — compile teeth
+# mirrored by a tree walk ─────────────────────────────────────────
+#
+# ViewportKind/BarKind are CLOSED unions in @melite/ui
+# (shellDeclaration.ts) — TS refuses a bad kind at build. This wall
+# pins the two things a compiler cannot see: every cardStudios-glob
+# tenant DECLARES a table (no undeclared bespoke bodies), and the
+# declared kinds are members of the unions as they exist in the tree
+# (a tenant kind drifting outside the parsed union = a stale table
+# riding renamed vocabulary).
+
+SHELL_DECL = os.path.join(
+    REPO, "web", "ui", "src", "shellDeclaration.ts")
+
+# the cardStudios tenant glob (plugins/web/editor/src/surfaces/flow/
+# cardStudios.ts PLUGIN_TENANT_LOADERS): every studio body claim
+TENANT_GLOB = os.path.join(
+    REPO, "plugins", "engines", "*", "action_cards", "*", "*",
+    "ui", "studio", "component.tsx")
+
+
+def _union_members(src: str, name: str) -> set[str]:
+    m = re.search(r"export type %s\s*=\s*([^\n]+)" % name, src)
+    assert m, "%s union exists in shellDeclaration.ts" % name
+    return set(re.findall(r'"([a-z0-9_]+)"', m.group(1)))
+
+
+def _tenant_files() -> list[str]:
+    out: list[str] = []
+    import glob as _glob
+    for f in _glob.glob(TENANT_GLOB):
+        if "node_modules" in f:
+            continue
+        out.append(f)
+    assert out, "the cardStudios glob shape found tenants"
+    return out
+
+
+def test_every_tenant_declares_a_shell_table_within_the_unions():
+    decl_src = open(SHELL_DECL, encoding="utf-8").read()
+    viewports = _union_members(decl_src, "ViewportKind")
+    bars = _union_members(decl_src, "BarKind")
+    assert {"stage3d", "paint2d", "native"} <= viewports
+    assert {"recipe", "timeline"} <= bars
+    for f in _tenant_files():
+        rel = os.path.relpath(f, REPO)
+        src = open(f, encoding="utf-8").read()
+        assert "defineShellDeclaration" in src, \
+            "%s declares its shell ride through the typed " \
+            "construction door (no bespoke undeclared body)" % rel
+        m = re.search(
+            r"export const shellDeclaration = defineShellDeclaration\("
+            r"[\s\S]*?\)", src)
+        assert m, "%s exports shellDeclaration (the seam table)" % rel
+        table = m.group(0)
+        kinds = re.findall(r'kind:\s*"([a-z0-9_]+)"', table)
+        assert kinds, "%s: the table declares at least a center kind" % rel
+        for k in kinds:
+            assert k in viewports | bars, \
+                "%s declares kind %r outside the closed unions " \
+                "(ViewportKind %s / BarKind %s)" % (
+                    rel, k, sorted(viewports), sorted(bars))
+        # the center seam is required data (a studio without a center
+        # is not a studio)
+        assert "center:" in table, \
+            "%s: center seam row missing from the table" % rel
+
+
+def test_union_members_name_real_primitives_only():
+    # no speculative kinds: every ViewportKind/BarKind member maps to
+    # a primitive that EXISTS — stage3d→3d/ui/viewers Stage,
+    # paint2d→image/ui PaintCanvas2D, recipe→OutputStrip,
+    # timeline→@melite-plugin/timeline. (native names the tenant's
+    # own viewport riding the seam directly.)
+    assert os.path.isfile(os.path.join(
+        REPO, "plugins", "engines", "comfyui", "action_cards",
+        "3d", "ui", "viewers", "Stage.tsx"))
+    assert os.path.isfile(os.path.join(
+        REPO, "plugins", "engines", "comfyui", "action_cards",
+        "image", "ui", "PaintCanvas2D.tsx"))
+    assert os.path.isfile(os.path.join(
+        REPO, "plugins", "engines", "comfyui", "action_cards",
+        "image", "mask_studio", "ui", "studio", "OutputStrip.tsx"))
+    assert os.path.isdir(os.path.join(REPO, "web", "timeline"))
