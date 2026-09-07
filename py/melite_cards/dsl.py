@@ -747,6 +747,13 @@ class ActionCard(metaclass=_CardMeta):
     sidebar = ""
     sidebar_hidden = False
     default_service = ""
+    # The SKELETON name — the FlowGraph stage-row id a compose emits
+    # (the retired compose.py voice rows' skeleton=; h3 rides
+    # "h3-film", image cards "generate", music "music", voice-lock
+    # "voicelock", input-prep "input_prep"). Card-declared truth: the
+    # cutover rim names the row from the exported decls, never a
+    # hardcode (QUEUE LANE LAW).
+    skeleton = ""
 
     @classmethod
     def families_of(cls: type[ActionCard]) -> tuple[str, ...]:

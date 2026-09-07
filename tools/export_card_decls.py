@@ -84,6 +84,7 @@ def card_decl(cid: str, cls) -> dict:
     rbf = getattr(cls, "requires_by_family", None)
     return {
         "id": cls.id,
+        "skeleton": cls.skeleton or "",
         "boarded": fams,
         "requires": list(cls.requires or ()),
         "requiresByFamily": {k: list(v) for k, v in (rbf or {}).items()},

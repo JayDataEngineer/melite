@@ -562,12 +562,20 @@ def compose(body: dict[str, JsonValue], model: str, run_id: str,
                 import flow_graph as _fg
                 node_map = _json.loads(new_graph)
                 _meta = graph if isinstance(graph, _fg.FlowGraph) else None
+                # stage-row id: the CARD-DECLARED skeleton (the shell's
+                # extra carries card-decls.json's skeleton row — the
+                # retired compose.py voice verbatim; "generate"/"music"/
+                # "h3-film"/...), never the model name.
+                _skel = ""
+                if isinstance(mod_extra, dict):
+                    _skel = str(mod_extra.get("skeleton") or "")
+                _row_id = _skel or model
                 new_graph = {
                     "name": (_meta.name if _meta is not None else None) or model,
                     "engine_type": (_meta.engine_type if _meta is not None else None) or "comfyui",
                     "description": _meta.description if _meta is not None else "card-composed",
                     "nodes": [{
-                        "id": (_meta.name if _meta is not None else None) or model,
+                        "id": _row_id,
                         "type": str((_meta.engine_type if _meta is not None else None) or "card"),
                         "params": {"workflow": dict(node_map or {})},
                     }],
