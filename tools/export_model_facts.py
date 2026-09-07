@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Export model facts JSON for the Cordis compose plane.
 
-Authored by the py model classes during the TS migration (PYTHON
-SHAPE LAW rung 8: models ship data, cards render). One row per
-boarded family + the EXTENSION-LAW node map. Regenerate:
+AUTO-SCAN: every comfyui family under plugins/engines/comfyui/models
+that carries lane_inputs lands a row (id-keyed, card-attributed from
+the model class). No manual list — a boarded family without a facts
+row is unbornable. The EXTENSION-LAW node map rides along.
 
     python3 tools/export_model_facts.py \
         > plugins/engines/comfyui/cordis/data/model-facts.json
@@ -18,11 +19,6 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "py"))
 
-# The boarded families, per card, migration-ladder order.
-CARD_FAMILIES: dict[str, list[str]] = {
-    "image-gen": ["z-image"],
-}
-
 
 def main() -> None:
     from melite_models import scan_engine_models
@@ -30,30 +26,27 @@ def main() -> None:
     models = scan_engine_models(str(REPO))
 
     # EXTENSION-LAW node map (authored by py/card_requires.py during
-    # the migration; TS gate reads it as data).
+    # the migration; the TS gate reads it as data).
     sys.path.insert(0, str(REPO / "plugins" / "engines" / "comfyui"))
     from card_requires import EXTENSION_NODE_TYPES
 
     rows: dict[str, dict] = {}
-    for card, families in CARD_FAMILIES.items():
-        for fam in families:
-            if fam not in models:
-                raise SystemExit(f"model '{fam}' not scanned — is it a real family dir?")
-            m = models[fam][1]
-            li = m.lane_inputs
-            rows[fam] = {
-                "id": m.id,
-                "card": m.card,
-                "defaults": dict(m.defaults or {}),
-                "lane_inputs": {
-                    "unet": m.lane_unet_basename(),
-                    "text_encoder": li.text_encoder,
-                    "clip_type": getattr(li.clip_type, "value", str(li.clip_type)),
-                    "vae": li.vae,
-                    "sampling_shift": li.sampling_shift,
-                    "latent_node": getattr(li.latent_node, "value", str(li.latent_node)),
-                },
-            }
+    for mid, (_path, cls) in sorted(models.items()):
+        li = getattr(cls, "lane_inputs", None)
+        if li is None:
+            continue  # native/cpp families carry no comfyui lane rows
+        try:
+            unet = cls.lane_unet_basename()
+        except Exception:
+            unet = None  # non-unet-shaped lanes (3D/motion) derive none
+        row = dict(li.model_dump()) if hasattr(li, "model_dump") else dict(li)
+        row["unet"] = unet
+        rows[mid] = {
+            "id": cls.id,
+            "card": cls.card,
+            "defaults": dict(cls.defaults or {}),
+            "lane_inputs": row,
+        }
 
     out = {
         "models": rows,

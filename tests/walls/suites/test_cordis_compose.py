@@ -27,12 +27,21 @@ FACTS = PKG / "data" / "model-facts.json"
 PASS: list[str] = []
 FAIL: list[str] = []
 
-# (name, card, model, run_id, params) — graph must equal the golden.
-GRAPH_CASES = [
-    ("image_z-image_default", "image-gen", "z-image", "testrun",
-     {"prompt": "a glowing koi pond at dusk, ripples catching violet light",
-      "seed": 42}),
-]
+# Graph cases AUTO-DISCOVER from tests/golden_cordis/*.case.json —
+# {"card","model","run_id","params"} beside the matching .json golden.
+# A case lands by dropping two files; no shared-file edit (parallel
+# port substrate).
+GRAPH_CASES = []
+for case_file in sorted(GOLDEN.glob("*.case.json")):
+    c = json.loads(case_file.read_text())
+    GRAPH_CASES.append((case_file.name[:-len(".case.json")],
+                        c["card"], c["model"], c.get("run_id", "testrun"),
+                        c.get("params", {})))
+GENERIC_CASE = ("image_z-image_default", "image-gen", "z-image", "testrun",
+                {"prompt": "a glowing koi pond at dusk, ripples catching violet light",
+                 "seed": 42})
+if not any(name.startswith("image_z-image") for name, *_ in GRAPH_CASES):
+    GRAPH_CASES.append(GENERIC_CASE)
 
 # (name, card, model, run_id, params, refusal_substring) — the door
 # must refuse LOUD (exit != 0, message names the cause, no stdout).
