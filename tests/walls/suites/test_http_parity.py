@@ -140,6 +140,15 @@ def main() -> int:
             ("form-spec?model=qwen3-tts-base", "deep"),
             ("form-spec?model=moss-sfx", "deep"),
             ("form-spec?model=qwen3-tts-voicedesign", "deep"),
+            # CORDIS CARDS 14-17 (2026-09-07): 3D/body decls verified
+            # complete (renderer-vs-decl: every non-core node rides
+            # the declared pack); fit+skin goldens captured+ pinned.
+            ("form-spec?model=anny", "deep"),
+            ("form-spec?model=fit", "deep"),
+            ("form-spec?model=skin", "deep"),
+            ("form-spec?model=trellis2-native", "deep"),
+            ("form-spec?model=pixal3d", "deep"),
+            ("form-spec?model=transfer_rig", "deep"),
             ("form-spec?model=h3-timeline", "deep"),
             ("form-spec?model=music3", "deep"),
             # NATIVE 3D/AUDIO BOARDING (2026-09-06): the cpp engines'

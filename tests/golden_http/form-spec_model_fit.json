@@ -1,0 +1,618 @@
+{
+  "contract": null,
+  "defaults": {},
+  "engine": "comfyui",
+  "enhance_prompt": null,
+  "enhance_prompts": {
+    "lyrics": "",
+    "prompt": null
+  },
+  "features": {
+    "modifiers": [],
+    "variant_groups": {
+      "Quant": {
+        "label": "Quant"
+      },
+      "Recipe": {
+        "default": "default",
+        "label": "Recipe",
+        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing."
+      },
+      "Variant": {
+        "label": "Variant"
+      }
+    }
+  },
+  "fields": [
+    {
+      "columns": null,
+      "default": null,
+      "group": "parts",
+      "label": "Body GLB",
+      "max": null,
+      "min": null,
+      "name": "body_glb",
+      "options": [],
+      "order": 0,
+      "placeholder": "",
+      "required": true,
+      "step": null,
+      "tooltip": "",
+      "type": "file",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": null,
+      "group": "parts",
+      "label": "Prop GLB",
+      "max": null,
+      "min": null,
+      "name": "prop_glb",
+      "options": [],
+      "order": 1,
+      "placeholder": "",
+      "required": true,
+      "step": null,
+      "tooltip": "",
+      "type": "file",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": "mixamorig:Head",
+      "group": "placement",
+      "label": "Bone",
+      "max": null,
+      "min": null,
+      "name": "bone",
+      "options": [],
+      "order": 0,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "",
+      "type": "text",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": "socket",
+      "group": "placement",
+      "label": "Law",
+      "max": null,
+      "min": null,
+      "name": "align",
+      "options": [
+        "socket",
+        "fit",
+        "grip"
+      ],
+      "order": 1,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "",
+      "type": "select",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": "0,0,0",
+      "group": "placement",
+      "label": "Offset",
+      "max": null,
+      "min": null,
+      "name": "position",
+      "options": [],
+      "order": 2,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "",
+      "type": "text",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": "0,0,0",
+      "group": "placement",
+      "label": "Rotation",
+      "max": null,
+      "min": null,
+      "name": "rotation",
+      "options": [],
+      "order": 3,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "",
+      "type": "text",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": 0,
+      "group": "fit",
+      "label": "Fit ratio",
+      "max": 10,
+      "min": 0,
+      "name": "fit_ratio",
+      "options": [],
+      "order": 0,
+      "placeholder": "",
+      "required": null,
+      "step": 0.01,
+      "tooltip": "",
+      "type": "number",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": null,
+      "group": "fit",
+      "label": "Measure to",
+      "max": null,
+      "min": null,
+      "name": "fit_ref_bone",
+      "options": [],
+      "order": 1,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "",
+      "type": "text",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": null,
+      "group": "fit",
+      "label": "Measure from",
+      "max": null,
+      "min": null,
+      "name": "fit_ref_bone2",
+      "options": [],
+      "order": 2,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "",
+      "type": "text",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": 0.22,
+      "group": "fit",
+      "label": "Seat ratio",
+      "max": 1,
+      "min": 0,
+      "name": "seat_ratio",
+      "options": [],
+      "order": 3,
+      "placeholder": "",
+      "required": null,
+      "step": 0.01,
+      "tooltip": "",
+      "type": "number",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": null,
+      "group": "grip",
+      "label": "Finger bone",
+      "max": null,
+      "min": null,
+      "name": "finger_bone",
+      "options": [],
+      "order": 0,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "",
+      "type": "text",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": null,
+      "group": "grip",
+      "label": "Thumb bone",
+      "max": null,
+      "min": null,
+      "name": "thumb_bone",
+      "options": [],
+      "order": 1,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "",
+      "type": "text",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": 0,
+      "group": "grip",
+      "label": "Target width",
+      "max": 10,
+      "min": 0,
+      "name": "target_width",
+      "options": [],
+      "order": 2,
+      "placeholder": "",
+      "required": null,
+      "step": 0.01,
+      "tooltip": "",
+      "type": "number",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": 768,
+      "group": "turnaround",
+      "label": "View resolution",
+      "max": 2048,
+      "min": 256,
+      "name": "resolution",
+      "options": [],
+      "order": 0,
+      "placeholder": "",
+      "required": null,
+      "step": 64,
+      "tooltip": "",
+      "type": "slider",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": 1.2,
+      "group": "turnaround",
+      "label": "Framing",
+      "max": 3,
+      "min": 1,
+      "name": "framing",
+      "options": [],
+      "order": 1,
+      "placeholder": "",
+      "required": null,
+      "step": 0.05,
+      "tooltip": "",
+      "type": "slider",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": 50,
+      "group": "turnaround",
+      "label": "Focal length",
+      "max": 400,
+      "min": 10,
+      "name": "focal_length",
+      "options": [],
+      "order": 2,
+      "placeholder": "",
+      "required": null,
+      "step": 1,
+      "tooltip": "",
+      "type": "slider",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": 64,
+      "group": "turnaround",
+      "label": "Samples",
+      "max": 4096,
+      "min": 1,
+      "name": "samples",
+      "options": [],
+      "order": 3,
+      "placeholder": "",
+      "required": null,
+      "step": 1,
+      "tooltip": "",
+      "type": "number",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    },
+    {
+      "columns": null,
+      "default": "true",
+      "group": "turnaround",
+      "label": "Background",
+      "max": null,
+      "min": null,
+      "name": "transparent",
+      "options": [
+        "true",
+        "false"
+      ],
+      "order": 4,
+      "placeholder": "",
+      "required": null,
+      "step": null,
+      "tooltip": "",
+      "type": "select",
+      "visible_when": null,
+      "width": null,
+      "zone": ""
+    }
+  ],
+  "form": "fit",
+  "genre": "3d",
+  "guide": null,
+  "label": "Fit",
+  "layout": null,
+  "loader_info": null,
+  "model": "fit",
+  "schema_groups": [
+    {
+      "fields": [
+        {
+          "label": "Body GLB",
+          "name": "body_glb",
+          "order": 0,
+          "required": true,
+          "type": "file"
+        },
+        {
+          "label": "Prop GLB",
+          "name": "prop_glb",
+          "order": 1,
+          "required": true,
+          "type": "file"
+        }
+      ],
+      "id": "parts",
+      "label": "Parts",
+      "order": 0,
+      "zone": "params"
+    },
+    {
+      "fields": [
+        {
+          "default": "mixamorig:Head",
+          "label": "Bone",
+          "name": "bone",
+          "order": 0,
+          "type": "text"
+        },
+        {
+          "default": "socket",
+          "label": "Law",
+          "name": "align",
+          "options": [
+            "socket",
+            "fit",
+            "grip"
+          ],
+          "order": 1,
+          "type": "select"
+        },
+        {
+          "default": "0,0,0",
+          "label": "Offset",
+          "name": "position",
+          "order": 2,
+          "type": "text"
+        },
+        {
+          "default": "0,0,0",
+          "label": "Rotation",
+          "name": "rotation",
+          "order": 3,
+          "type": "text"
+        }
+      ],
+      "id": "placement",
+      "label": "Placement",
+      "order": 1,
+      "zone": "params"
+    },
+    {
+      "fields": [
+        {
+          "default": 0,
+          "label": "Fit ratio",
+          "max": 10,
+          "min": 0,
+          "name": "fit_ratio",
+          "order": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "label": "Measure to",
+          "name": "fit_ref_bone",
+          "order": 1,
+          "type": "text"
+        },
+        {
+          "label": "Measure from",
+          "name": "fit_ref_bone2",
+          "order": 2,
+          "type": "text"
+        },
+        {
+          "default": 0.22,
+          "label": "Seat ratio",
+          "max": 1,
+          "min": 0,
+          "name": "seat_ratio",
+          "order": 3,
+          "step": 0.01,
+          "type": "number"
+        }
+      ],
+      "id": "fit",
+      "label": "Fit",
+      "order": 2,
+      "zone": "params"
+    },
+    {
+      "fields": [
+        {
+          "label": "Finger bone",
+          "name": "finger_bone",
+          "order": 0,
+          "type": "text"
+        },
+        {
+          "label": "Thumb bone",
+          "name": "thumb_bone",
+          "order": 1,
+          "type": "text"
+        },
+        {
+          "default": 0,
+          "label": "Target width",
+          "max": 10,
+          "min": 0,
+          "name": "target_width",
+          "order": 2,
+          "step": 0.01,
+          "type": "number"
+        }
+      ],
+      "id": "grip",
+      "label": "Grip",
+      "order": 3,
+      "zone": "params"
+    },
+    {
+      "fields": [
+        {
+          "default": 768,
+          "label": "View resolution",
+          "max": 2048,
+          "min": 256,
+          "name": "resolution",
+          "order": 0,
+          "step": 64,
+          "type": "slider"
+        },
+        {
+          "default": 1.2,
+          "label": "Framing",
+          "max": 3,
+          "min": 1,
+          "name": "framing",
+          "order": 1,
+          "step": 0.05,
+          "type": "slider"
+        },
+        {
+          "default": 50,
+          "label": "Focal length",
+          "max": 400,
+          "min": 10,
+          "name": "focal_length",
+          "order": 2,
+          "step": 1,
+          "type": "slider"
+        },
+        {
+          "default": 64,
+          "label": "Samples",
+          "max": 4096,
+          "min": 1,
+          "name": "samples",
+          "order": 3,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": "true",
+          "label": "Background",
+          "name": "transparent",
+          "options": [
+            "true",
+            "false"
+          ],
+          "order": 4,
+          "type": "select"
+        }
+      ],
+      "id": "turnaround",
+      "label": "Turnaround",
+      "order": 4,
+      "zone": "params"
+    }
+  ],
+  "service": "fit",
+  "size": null,
+  "variants": [
+    {
+      "defaults": {},
+      "engine": "comfyui",
+      "group": "Variant",
+      "hint": null,
+      "id": "standard",
+      "label": "Standard",
+      "owner": "",
+      "quant": null,
+      "route": "fit",
+      "vram_peak_gb": null
+    },
+    {
+      "defaults": {},
+      "engine": "",
+      "group": "Quant",
+      "hint": null,
+      "id": "native",
+      "label": "Native",
+      "owner": "standard",
+      "quant": "native",
+      "route": "fit",
+      "vram_peak_gb": 0
+    },
+    {
+      "defaults": {},
+      "engine": "comfyui",
+      "group": "Recipe",
+      "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+      "id": "default",
+      "label": "Default",
+      "owner": "",
+      "quant": null,
+      "route": "",
+      "vram_peak_gb": null
+    }
+  ]
+}
