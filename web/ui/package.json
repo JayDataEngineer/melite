@@ -34,6 +34,7 @@
     "./shellDeclaration": "./src/shellDeclaration.ts",
     "./studioShell": "./src/studioShell.tsx",
     "./verbChip": "./src/verbChip.tsx",
+    "./viewportOverlays": "./src/viewportOverlays.tsx",
     "./WirePickerModal": "./src/WirePickerModal.tsx",
     "./accordion": "./src/accordion.tsx",
     "./avatar": "./src/avatar.tsx",

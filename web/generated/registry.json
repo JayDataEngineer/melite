@@ -844,6 +844,23 @@
         "VerbChipProps"
       ],
       "component": true
+    },
+    {
+      "name": "viewportOverlays",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/viewportOverlays.tsx"
+        }
+      ],
+      "exports": [
+        "OverlayDock",
+        "OverlayKind",
+        "ViewportOverlay",
+        "ViewportOverlays"
+      ],
+      "component": true
     }
   ]
 }

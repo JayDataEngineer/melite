@@ -25,7 +25,7 @@ tree walk + module parse, no node needed):
      and center= seams; the bespoke pre-shell shape (StudioRail +
      hand-rolled column div in the same file) refuses.
 
-Design record: docs/design/studio-shell.md §2 + §4 + §7 strokes 1-5.
+Design record: docs/design/studio-shell.md §2 + §2.5 + §4 + §7 strokes 1-6.
 """
 import os
 import re
@@ -346,3 +346,59 @@ def test_the_verb_gestures_ride_the_shared_chip():
             assert "Loader2" not in src, \
                 "%s hand-rolls the spinner swap — VerbChip owns " \
                 "the in-flight icon" % rel
+
+
+# ── stroke 6 (2026-09-07): the OVERLAY seam on the viewport
+# primitives — typed rows, closed kind/dock unions, renderer-owned
+# positioning ──────────────────────────────────────────────────────
+
+VIEWPORT_OVERLAYS = os.path.join(
+    REPO, "web", "ui", "src", "viewportOverlays.tsx")
+
+
+def test_overlay_unions_closed_and_renderer_genre_blind():
+    src = open(VIEWPORT_OVERLAYS, encoding="utf-8").read()
+    for name, members in (
+        ("OverlayKind", {"toggle", "segmented", "status"}),
+        ("OverlayDock", {"tl", "tr", "bl", "br"}),
+    ):
+        m = re.search(r"export type %s\s*=\s*([^\n]+)" % name, src)
+        assert m, "%s closed union exists" % name
+        got = set(re.findall(r'"([a-z0-9_]+)"', m.group(1)))
+        assert got == members, "%s members: %s" % (name, sorted(got))
+    code = re.sub(r"/\*.*?\*/", "", src, flags=re.DOTALL)
+    code = re.sub(r"^\s*//.*$", "", code, flags=re.MULTILINE)
+    low = code.lower()
+    for word in ("card", "mask", "detect", "anny", "flow", "sam3"):
+        assert word not in low, \
+            "viewportOverlays names %r — card vocabulary in the " \
+            "seam renderer; the card declares rows, the renderer " \
+            "owns chrome" % word
+
+
+def test_both_viewport_primitives_carry_the_seam():
+    for f, marker in (
+        (PAINT, "overlays?: readonly ViewportOverlay[]"),
+        (os.path.join(REPO, "plugins", "engines", "comfyui",
+                      "action_cards", "3d", "ui", "viewers",
+                      "Stage.tsx"),
+         "overlays?: readonly ViewportOverlay[]"),
+    ):
+        src = open(f, encoding="utf-8").read()
+        assert marker in src, \
+            "%s declares the overlays seam (§2.5 — the viewport " \
+            "primitive owns the positioned wrapper)" % os.path.relpath(f, REPO)
+        assert "<ViewportOverlays" in src, \
+            "%s renders ViewportOverlays" % os.path.relpath(f, REPO)
+
+
+def test_the_first_overlay_gesture_rides_the_seam():
+    src = open(MASK_CANVAS, encoding="utf-8").read()
+    assert 'kind: "status"' in src, \
+        "StudioCanvas declares its detecting pill as a status row " \
+        "(the seam's first consumer)"
+    # the hand-rolled absolute DOM died with the seam: no docked
+    # status pill chrome left in the tenant
+    assert "absolute left-2 top-2" not in src, \
+        "StudioCanvas hand-rolls a tl-docked pill — declare it as " \
+        "an overlay row; the renderer owns the dock"
