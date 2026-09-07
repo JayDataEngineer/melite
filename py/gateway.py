@@ -382,6 +382,113 @@ def initial_pool(request: dict[str, JsonValue]) -> dict[str, JsonValue]:
 # sorted, LOUD refusals. The C glob-order bug dies here.)
 
 
+# OUTPUT CONTRACT (operator order, 2026-09-07: "All the action cards
+# have like... defaults, recipes, input + output gates") — the card
+# declares what a completed run DELIVERS (typed OutputRow rows on the
+# ActionCard); the gateway refuses a run that delivers none of a
+# row's patterns. Inputs were already gated in types; outputs stop
+# being merely recorded.
+
+_CARD_GLOB_PATTERNS = (
+    "engines/*/cards/*/card.py",
+    "engines/*/action_cards/*/card.py",
+    "engines/*/action_cards/*/*/card.py",
+    "engines/*/action_cards/*/*/py/card.py",
+)
+
+
+def _card_class_paths(plugins_dir: Path) -> list[Path]:
+    """Every card.py the discovery plane sees (sorted, deterministic)."""
+    out: list = []
+    for pat in _CARD_GLOB_PATTERNS:
+        out.extend(plugins_dir.glob(pat))
+    return sorted(out)
+
+
+def _load_card_class(card_id: str) -> "type | None":
+    """card id -> the ActionCard subclass (or None, LOUD on failure).
+
+    Shared by the requires walk and the output-contract gate — one
+    resolution plane, no per-caller glob drift.
+    """
+    import sys as _sys
+    py_dir = str(REPO / "py")
+    if py_dir not in _sys.path:
+        _sys.path.insert(0, py_dir)
+    try:
+        from melite_cards import load_card_py
+    except ImportError:
+        print("[card-load] melite_cards unavailable", flush=True)
+        return None
+    for cpy in _card_class_paths(REPO / "plugins"):
+        try:
+            pdir = cpy.parent
+            if pdir.name == "py":
+                engine = pdir.parent.parent.parent.parent.name
+            else:
+                engine = (pdir.parent.parent.name
+                          if pdir.parent.name in ("cards", "action_cards")
+                          else pdir.parent.parent.parent.name)
+            cls = load_card_py(str(cpy), engine)
+        except Exception as e:
+            # LOUD but non-fatal: discovery must not die on one broken
+            # file (the requires walk collects these; here a print is
+            # the honest floor)
+            print("[card-load] %s failed to load (%s: %s)" % (
+                cpy.relative_to(REPO), type(e).__name__, e), flush=True)
+            continue
+        if getattr(cls, "id", "") == card_id:
+            return cls
+    return None
+
+
+def _card_id_for_model(mid: str) -> "str | None":
+    """model id -> the card id the model declares (or None).
+
+    Mirrors the requires walk's first loop: the model class names its
+    card; no card attr = the family fallback owns it (caller decides).
+    """
+    import sys as _sys
+    py_dir = str(REPO / "py")
+    if py_dir not in _sys.path:
+        _sys.path.insert(0, py_dir)
+    try:
+        from melite_models import load_model_py
+    except ImportError:
+        return None
+    plugins_dir = REPO / "plugins"
+    for engine_dir in sorted(plugins_dir.glob("engines/*")):
+        for mpy in sorted(engine_dir.glob("models/*/*/model.py")):
+            if mpy.parent.name != mid:
+                continue
+            try:
+                cls = load_model_py(str(mpy), engine_dir.name)
+            except Exception:
+                continue
+            if cls.card:
+                return cls.card
+    return None
+
+
+def _output_violation(card_cls: type[object], artifacts: "list[str] | None") -> str | None:
+    """The OUTPUT CONTRACT check: None = honored; str = the exact
+    refusal (documented failure — RESILIENCE LAW shape, the queue
+    continues). Suffix match, case-insensitive, any-of per row."""
+    rows = getattr(card_cls, "card_outputs", ()) or ()
+    if not rows:
+        return None
+    arts = [str(a).lower() for a in (artifacts or []) if a]
+    for row in rows:
+        if not any(a.endswith(tuple(row.patterns)) for a in arts):
+            return ("output contract violation: card %r promises %s "
+                    "(%s) but the run delivered none of them; "
+                    "artifacts: %s" % (
+                        getattr(card_cls, "id", "?"), row.label,
+                        ", ".join(row.patterns),
+                        ", ".join(sorted(set(arts))[:8]) or "(none)"))
+    return None
+
+
 def _find_card_requires(mid: str, plugins_dir: str | None = None) -> list[str]:
     """Resolve model id -> the owning CARD's requires list (or []).
 
@@ -429,11 +536,7 @@ def _find_card_requires(mid: str, plugins_dir: str | None = None) -> list[str]:
     # card whose families include them (h3-timeline: the model declares
     # no card, the card declares the family)
     nmid = mid.replace("_", "-")
-    for cpy in sorted(
-        list(plugins_dir.glob("engines/*/cards/*/card.py"))
-        + list(plugins_dir.glob("engines/*/action_cards/*/card.py"))
-        + list(plugins_dir.glob("engines/*/action_cards/*/*/card.py"))
-        + list(plugins_dir.glob("engines/*/action_cards/*/*/py/card.py"))):
+    for cpy in _card_class_paths(plugins_dir):
         try:
             # depth-1 card dir → engine 3 hops up; genre-grouped
             # (action_cards/<genre>/<card>/) → 4 (2026-09-02 reorg);
@@ -1268,6 +1371,29 @@ class Gateway:
                 run.error = "%s: %s" % (type(e).__name__, e)
             finally:
                 await self._sidecar_offloop(run)
+                # OUTPUT CONTRACT, run-level arm ({model} card runs):
+                # a completed run must have delivered what its card
+                # promises. Honored by the per-stage arm inside flows;
+                # this is the card-door close-out. A violation flips
+                # the run to failed with the exact refusal (documented
+                # failure — the gateway survives, the queue continues).
+                if run.status == "completed":
+                    _mid = run.request.get("model") or ""
+                    if _mid:
+                        try:
+                            _cid = _card_id_for_model(str(_mid))
+                            _cc = _load_card_class(_cid) if _cid else None
+                            if _cc is not None:
+                                _v = _output_violation(_cc, run.artifacts)
+                                if _v:
+                                    run.status = "failed"
+                                    run.error = _v
+                                    await self._sidecar_offloop(run)
+                        except Exception as _e:  # gate must not sink the queue
+                            print("[output-contract] gate error for %s: "
+                                  "%s: %s" % (run.run_id,
+                                              type(_e).__name__, _e),
+                                  flush=True)
                 if run.status == "completed":
                     # the asset-ledger rung (2026-09-03): the delivery
                     # lands in the journal as typed rows — indexing
@@ -1692,6 +1818,18 @@ class Gateway:
                         stage["url"] = base + stage_arts[0]
                         stage["gallery"] = [
                             {"url": base + n, "name": n} for n in stage_arts]
+                    # OUTPUT CONTRACT, per-stage arm: a card= stage
+                    # ran a CARD — its own result must deliver what
+                    # the card promises. A stage that completes while
+                    # delivering nothing it promises is a documented
+                    # failure, never a silent empty completion.
+                    if node.card:
+                        _cc = _load_card_class(str(node.card))
+                        if _cc is not None:
+                            _v = _output_violation(
+                                _cc, result.get("artifacts"))
+                            if _v:
+                                raise ValidationError(_v)
                 # R3.2 RESUME RECORD: the stage's resolved OUTPUT
                 # CHANNEL VALUES ride the sidecar — the durable half
                 # of the carry pool. Without it a resume could rebuild
