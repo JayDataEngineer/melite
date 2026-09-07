@@ -1,0 +1,9 @@
+{
+  "card": "img-to-mesh",
+  "model": "transfer_rig",
+  "run_id": "testrun",
+  "params": {
+    "rigged_glb": "/mnt/runs/testrun/donor_rigged.glb",
+    "target_glb": "/mnt/runs/testrun/clothed_target.glb"
+  }
+}

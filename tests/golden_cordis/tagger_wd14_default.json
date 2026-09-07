@@ -1,0 +1,34 @@
+{
+  "LoadImage.0": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "a.png"
+    }
+  },
+  "SaveText.0": {
+    "class_type": "SaveText",
+    "inputs": {
+      "filename_prefix": "testrun/tags",
+      "format": "txt",
+      "text": [
+        "WD14Tagger|pysssss.0",
+        0
+      ]
+    }
+  },
+  "WD14Tagger|pysssss.0": {
+    "class_type": "WD14Tagger|pysssss",
+    "inputs": {
+      "character_threshold": 0.85,
+      "exclude_tags": "",
+      "image": [
+        "LoadImage.0",
+        0
+      ],
+      "model": "wd-v1-4-moat-tagger-v2",
+      "replace_underscore": false,
+      "threshold": 0.35,
+      "trailing_comma": false
+    }
+  }
+}

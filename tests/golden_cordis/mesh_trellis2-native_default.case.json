@@ -1,0 +1,9 @@
+{
+  "card": "img-to-mesh",
+  "model": "trellis2-native",
+  "run_id": "testrun",
+  "params": {
+    "input_image": "koi_statue.png",
+    "seed": 42
+  }
+}

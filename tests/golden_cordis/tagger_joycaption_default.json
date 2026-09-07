@@ -1,0 +1,52 @@
+{
+  "JJC_DownloadAndLoadJoyCaptionModel.0": {
+    "class_type": "JJC_DownloadAndLoadJoyCaptionModel",
+    "inputs": {
+      "keep_loaded": false,
+      "memory_mode": "Default",
+      "model": "fancyfeast/llama-joycaption-beta-one-hf-llava"
+    }
+  },
+  "JJC_JoyCaption.0": {
+    "class_type": "JJC_JoyCaption",
+    "inputs": {
+      "caption_length": "long",
+      "caption_type": "Descriptive",
+      "extra_option1": "",
+      "extra_option2": "",
+      "extra_option3": "",
+      "extra_option4": "",
+      "extra_option5": "",
+      "image": [
+        "LoadImage.0",
+        0
+      ],
+      "max_new_tokens": 512,
+      "model": [
+        "JJC_DownloadAndLoadJoyCaptionModel.0",
+        0
+      ],
+      "person_name": "",
+      "temperature": 0.6,
+      "top_k": 0,
+      "top_p": 0.9
+    }
+  },
+  "LoadImage.0": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "a.png"
+    }
+  },
+  "SaveText.0": {
+    "class_type": "SaveText",
+    "inputs": {
+      "filename_prefix": "testrun/tags",
+      "format": "txt",
+      "text": [
+        "JJC_JoyCaption.0",
+        1
+      ]
+    }
+  }
+}

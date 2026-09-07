@@ -1,0 +1,142 @@
+{
+  "FitProp.0": {
+    "class_type": "FitProp",
+    "inputs": {
+      "body_glb_path": [
+        "PrimitiveString.0",
+        0
+      ],
+      "prop_glb_path": [
+        "PrimitiveString.1",
+        0
+      ],
+      "row_json": [
+        "FitRow.0",
+        0
+      ]
+    }
+  },
+  "FitRow.0": {
+    "class_type": "FitRow",
+    "inputs": {
+      "align": "socket",
+      "bone": "",
+      "finger_bone": "",
+      "fit_ratio": 0.0,
+      "fit_ref_bone": "",
+      "fit_ref_bone2": "",
+      "model_name": "prop",
+      "position": "0,0,0",
+      "rotation": "0,0,0",
+      "seat_ratio": 0.22,
+      "target_width": 0.0,
+      "thumb_bone": ""
+    }
+  },
+  "PrimitiveString.0": {
+    "class_type": "PrimitiveString",
+    "inputs": {
+      "value": "/mnt/melite_weights/annies/base_body.glb"
+    }
+  },
+  "PrimitiveString.1": {
+    "class_type": "PrimitiveString",
+    "inputs": {
+      "value": "/mnt/melite_weights/props/sword.glb"
+    }
+  },
+  "RayRenderGLBViews.0": {
+    "class_type": "RayRenderGLBViews",
+    "inputs": {
+      "focal_length": 50,
+      "framing": 1.2,
+      "glb_path": [
+        "FitProp.0",
+        0
+      ],
+      "resolution": 768,
+      "samples": 64,
+      "transparent": true
+    }
+  },
+  "SaveImage.0": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "testrun/out_front",
+      "images": [
+        "RayRenderGLBViews.0",
+        0
+      ]
+    }
+  },
+  "SaveImage.1": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "testrun/out_front_right",
+      "images": [
+        "RayRenderGLBViews.0",
+        1
+      ]
+    }
+  },
+  "SaveImage.2": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "testrun/out_right",
+      "images": [
+        "RayRenderGLBViews.0",
+        2
+      ]
+    }
+  },
+  "SaveImage.3": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "testrun/out_back_right",
+      "images": [
+        "RayRenderGLBViews.0",
+        3
+      ]
+    }
+  },
+  "SaveImage.4": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "testrun/out_back",
+      "images": [
+        "RayRenderGLBViews.0",
+        4
+      ]
+    }
+  },
+  "SaveImage.5": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "testrun/out_back_left",
+      "images": [
+        "RayRenderGLBViews.0",
+        5
+      ]
+    }
+  },
+  "SaveImage.6": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "testrun/out_left",
+      "images": [
+        "RayRenderGLBViews.0",
+        6
+      ]
+    }
+  },
+  "SaveImage.7": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "testrun/out_front_left",
+      "images": [
+        "RayRenderGLBViews.0",
+        7
+      ]
+    }
+  }
+}

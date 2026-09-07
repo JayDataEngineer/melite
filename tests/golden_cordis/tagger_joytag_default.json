@@ -1,0 +1,31 @@
+{
+  "CXH_JoyTag.0": {
+    "class_type": "CXH_JoyTag",
+    "inputs": {
+      "THRESHOLD": 0.2,
+      "addTag": "",
+      "image": [
+        "LoadImage.0",
+        0
+      ],
+      "removeTag": ""
+    }
+  },
+  "LoadImage.0": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "a.png"
+    }
+  },
+  "SaveText.0": {
+    "class_type": "SaveText",
+    "inputs": {
+      "filename_prefix": "testrun/tags",
+      "format": "txt",
+      "text": [
+        "CXH_JoyTag.0",
+        0
+      ]
+    }
+  }
+}

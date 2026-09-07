@@ -1,0 +1,9 @@
+{
+  "card": "motion",
+  "model": "kimodo",
+  "run_id": "testrun",
+  "params": {
+    "prompt": "a slow tai chi form",
+    "seed": 42
+  }
+}

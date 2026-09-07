@@ -1,0 +1,8 @@
+{
+  "card": "tagger",
+  "model": "florence2",
+  "run_id": "testrun",
+  "params": {
+    "input_image": "a.png"
+  }
+}

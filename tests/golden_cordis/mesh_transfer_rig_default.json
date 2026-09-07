@@ -1,0 +1,36 @@
+{
+  "KimodoTransferWeights.0": {
+    "class_type": "KimodoTransferWeights",
+    "inputs": {
+      "rigged_path": [
+        "PrimitiveString.0",
+        0
+      ],
+      "target_path": [
+        "PrimitiveString.1",
+        0
+      ]
+    }
+  },
+  "PrimitiveString.0": {
+    "class_type": "PrimitiveString",
+    "inputs": {
+      "value": "/mnt/runs/testrun/donor_rigged.glb"
+    }
+  },
+  "PrimitiveString.1": {
+    "class_type": "PrimitiveString",
+    "inputs": {
+      "value": "/mnt/runs/testrun/clothed_target.glb"
+    }
+  },
+  "SaveRiggedModel.0": {
+    "class_type": "SaveRiggedModel",
+    "inputs": {
+      "rigged_path": [
+        "KimodoTransferWeights.0",
+        0
+      ]
+    }
+  }
+}

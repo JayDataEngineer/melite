@@ -1,0 +1,11 @@
+{
+  "card": "video-gen",
+  "model": "scail2-animate",
+  "run_id": "testrun",
+  "params": {
+    "prompt": "a character waving",
+    "seed": 42,
+    "reference_image": "/mnt/melite_weights/input/samples/char.png",
+    "pose_video": "/mnt/melite_weights/input/samples/wave.mp4"
+  }
+}

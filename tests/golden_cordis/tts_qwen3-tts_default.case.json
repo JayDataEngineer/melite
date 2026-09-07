@@ -1,0 +1,9 @@
+{
+  "card": "tts",
+  "model": "qwen3-tts",
+  "run_id": "testrun",
+  "params": {
+    "text": "The koi pond hums as dusk settles in.",
+    "seed": 42
+  }
+}

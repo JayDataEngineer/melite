@@ -1,0 +1,42 @@
+{
+  "DownloadAndLoadFlorence2Model.0": {
+    "class_type": "DownloadAndLoadFlorence2Model",
+    "inputs": {
+      "model": "MiaoshouAI/Florence-2-large-PromptGen-v2.0",
+      "precision": "fp16"
+    }
+  },
+  "Florence2Run.0": {
+    "class_type": "Florence2Run",
+    "inputs": {
+      "fill_mask": true,
+      "florence2_model": [
+        "DownloadAndLoadFlorence2Model.0",
+        0
+      ],
+      "image": [
+        "LoadImage.0",
+        0
+      ],
+      "task": "more_detailed_caption",
+      "text_input": ""
+    }
+  },
+  "LoadImage.0": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "a.png"
+    }
+  },
+  "SaveText.0": {
+    "class_type": "SaveText",
+    "inputs": {
+      "filename_prefix": "testrun/tags",
+      "format": "txt",
+      "text": [
+        "Florence2Run.0",
+        2
+      ]
+    }
+  }
+}

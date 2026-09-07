@@ -1,0 +1,9 @@
+{
+  "card": "upscale-tools",
+  "model": "seedvr2_ema",
+  "run_id": "testrun",
+  "params": {
+    "input_image": "/mnt/melite_weights/input/samples/koi.png",
+    "seed": 42
+  }
+}

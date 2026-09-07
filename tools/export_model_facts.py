@@ -34,7 +34,17 @@ def main() -> None:
     for mid, (_path, cls) in sorted(models.items()):
         li = getattr(cls, "lane_inputs", None)
         if li is None:
-            continue  # native/cpp families carry no comfyui lane rows
+            # Lane-less families (tagger T1s: the loader nodes
+            # self-provision) still ship DEFAULTS — the card reads
+            # no lane fields. Native/cpp families (no .card) stay out.
+            if getattr(cls, "card", None):
+                rows[mid] = {
+                    "id": cls.id,
+                    "card": cls.card,
+                    "defaults": dict(cls.defaults or {}),
+                    "lane_inputs": {},
+                }
+            continue
         try:
             unet = cls.lane_unet_basename()
         except Exception:
