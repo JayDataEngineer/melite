@@ -68,6 +68,10 @@ SUBPROCESS_WALLS = [
     # standalone (20/20) so it rides the subprocess wall, not the
     # ignore void — owner converts or owns it from here.
     "tests/walls/suites/test_cpp_native_cards.py",
+    # wired 2026-09-08 (purge S-facts): the hand-owned facts freeze
+    # wall — script-style like its neighbors (runs the registry
+    # dumper; green standalone 13/13).
+    "tests/walls/suites/test_model_facts_frozen.py",
 ]
 
 # Suites that are broken at HEAD by drift OUTSIDE this lane. Each

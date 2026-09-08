@@ -150,7 +150,7 @@ export class ComfyUIService extends Service {
     }
     if (!this.facts) throw new ComposeRefusal('no-facts', 'model facts not loaded — the compose door requires --facts')
     const model = this.facts.models[modelId]
-    if (!model) throw new ComposeRefusal('no-model-facts', `model '${modelId}' has no facts row (regenerate: python3 tools/export_model_facts.py)`)
+    if (!model) throw new ComposeRefusal('no-model-facts', `model '${modelId}' has no facts row (hand-edit packages/engines/comfyui/cordis/data/model-facts.json — it is hand-owned frozen data, never regenerated)`)
     if (model.card !== cardId) throw new ComposeRefusal('card-mismatch', `model '${modelId}' facts name card '${model.card}', not '${cardId}'`)
 
     // params cascade: schema defaults ← model defaults ← explicit params

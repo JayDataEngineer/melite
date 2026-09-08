@@ -13,8 +13,8 @@
 //   GET /v1/schema                         (_h_schema, 3091-3099)
 //   GET /v1/flows/families/*/param-schema  (_h_family_schema_one, 3102-3105)
 //
-// ARCHITECTURE (data-SSOT, the card-decls.json + model-facts.json
-// pattern): every JSON arm serves the authoring-time export
+// ARCHITECTURE (data-SSOT, the frozen-JSON pattern): every JSON
+// arm serves the authoring-time export
 // packages/gateway/data/discovery-catalog.json (frozen by
 // tools/export_discovery_catalog.py, which CALLS the real py
 // functions — catalog.scan_catalog/to_json, editor_forms.forms/
@@ -25,15 +25,15 @@
 // the checked-in file (freshness leg — catches drift while py
 // still lives; post-py the file is the frozen truth).
 //
-// Why a frozen export instead of decl-derived reads off
-// card-decls.json + model-facts.json (the first sketch): the
-// snapshots do not carry what the doors serve, so a derivation
+// Why a frozen export instead of decl-derived reads off the
+// (now-deleted) card-decls.json + model-facts.json (the first
+// sketch — retired with the purge): the snapshots do not carry what the doors serve, so a derivation
 // CANNOT be byte-identical (probed 2026-09-07):
 //   - model rows need label/description/source/form/engine/genre +
 //     has_inference/has_rubric (melite_models/grammar.py model_row
 //     1127-1166); model-facts.json rows carry no label, no
 //     description, no source, no form. The live catalog serves 55
-//     model rows; the facts file holds 29.
+//     model rows; the facts file holds only the compose-plane rows.
 //   - the LorasMod rows and the Provision rows exist on NEITHER
 //     snapshot.
 //   - the family param envelopes derive from the schema.py

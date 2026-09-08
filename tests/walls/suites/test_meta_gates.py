@@ -403,6 +403,9 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         "card-decls.json": "deleted-in-record",
         "py/card.py": "deleted-in-record",
         "tools/export_card_decls.py": "deleted-in-record",
+        # (2026-09-08 purge S-facts — the model-facts exporter
+        # deletion; same dispositions, this doc is the record.)
+        "tools/export_model_facts.py": "deleted-in-record",
     },
     "docs/design/ts-migration-ladder-2026-09-07.md": {
         "card-decls.json": "past",
@@ -416,6 +419,9 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         "card-decls.json": "past",
         "packages/engines/comfyui/cordis/data/card-decls.json": "past",
         "tools/export_card_decls.py": "past",
+        # (2026-09-08 purge S-facts — the survey's #2 row names the
+        # facts exporter as live; completed record, historic ref.)
+        "tools/export_model_facts.py": "past",
     },
     "docs/design/cpp-node-cutover-quad-remesh-2026-09-07.md": {
         "card-decls.json": "past",
