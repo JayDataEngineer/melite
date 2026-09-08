@@ -377,12 +377,27 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
         }
       }
     }
+    const flavorsOf = cardSvc.flavorRegistrations();
     for (const d of decls) {
       for (const entry of d.mods ?? []) {
         if (packs.has(entry) || verbs.has(entry)) continue;
         throw new ModelError(
           `model ${d.id}: DECL.mods '${entry}' names no registered pack or verb — a dead boarding is drift, not a skip (the amnesty is over)`,
         );
+      }
+      // the satisfaction law's third edge: a DECLARED pack boarding
+      // with no flavor registering for THIS family = the mutation
+      // silently never lands (delete the family's mods/<pack>.ts
+      // while another family keeps the pack alive — the surface
+      // loses the join with no refusal). Drift, refuses.
+      for (const entry of d.mods ?? []) {
+        if (verbs.has(entry)) continue;
+        const mine = flavorsOf.some((f) => f.pack === entry && f.families.includes(d.id));
+        if (!mine) {
+          throw new ModelError(
+            `model ${d.id}: DECL.mods boards '${entry}' but no flavor of that pack registers for it — ship families/${d.genre}/${d.id}/mods/${entry}.ts (a boarding without its flavor is a silent dead mutation)`,
+          );
+        }
       }
     }
   }

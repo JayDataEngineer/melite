@@ -199,6 +199,18 @@ test("the correction stroke: flavors are family-owned and the boarding is bidire
         `${fam} carries a '${flavor.pack}' flavor its DECL does not board`);
     }
   }
+  // every DECLARED pack boarding HAS a flavor for that family (the
+  // satisfaction law's third edge — a boarding whose flavor file
+  // was lost is a silent dead mutation, the boot gate refuses it)
+  for (const id of modelIds()) {
+    for (const entry of getModel(id).mods ?? []) {
+      if (verbs.has(entry)) continue;
+      assert.ok(
+        svc.flavorRegistrations().some((f) => f.pack === entry && f.families.includes(id)),
+        `${id} boards '${entry}' with no flavor file — families/<genre>/${id}/mods/${entry}.ts must exist`,
+      );
+    }
+  }
   // the pack taxonomy is the distinct category (controlnet rides
   // registered-but-unboarded — the py truth, it waits for a
   // truthful boarder)
