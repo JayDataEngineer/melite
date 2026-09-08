@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "JoyCaption",
   "description": "Stylized natural-language image captioning (JoyCaption beta-one, 8B VLM) — descriptive / SD-prompt / MJ / booru-list templates for recreating images in FLUX / Ideogram / image-edit.",
   "engine": "comfyui",
-  "form": "form_tagger",
-  "card": "tagger",
-  "unoffered": false,
   "defaults": {
     "checkpoint": "fancyfeast/llama-joycaption-beta-one-hf-llava",
     "caption_type": "Descriptive",

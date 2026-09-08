@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "SCAIL-2",
   "description": "SCAIL-2 character animation — drives a reference character from a video and colored mask.",
   "engine": "comfyui",
-  "form": "form_video_director",
-  "card": "video-gen",
-  "unoffered": false,
   "defaults": {
     "width": 480,
     "height": 480,

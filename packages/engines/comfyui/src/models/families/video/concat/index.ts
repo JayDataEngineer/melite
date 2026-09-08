@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "Media Merge",
   "description": ">-",
   "engine": "",
-  "form": "form_media_merge",
-  "card": "",
-  "unoffered": false,
   "defaults": {
     "operation": "concat",
     "output_artifact": "video"

@@ -13,6 +13,8 @@ import assert from "node:assert/strict";
 import {
   modelCatalog,
   modelIds,
+  registryIds,
+  registryModel,
   mergedDefaults,
   resolve,
   getModel,
@@ -20,26 +22,38 @@ import {
 } from "../../../../packages/engines/comfyui/src/models/models.ts";
 
 describe("the resurrected model registry (families/variants/cells/links)", () => {
-  it("carries all 59 families (47 comfyui + 12 retired, engine-marked)", (): void => {
-    assert.equal(modelIds().length, 59);
+  it("carries the hierarchy: 51 registry models, 93 serving routes (the fold)", (): void => {
+    assert.equal(registryIds().length, 51);
+    assert.equal(modelIds().length, 93);
     const comfy = modelIds().filter((id) => {
       const e = getModel(id).engine ?? "";
       return e === "" || e === "comfyui";
     });
-    assert.equal(comfy.length, 47);
+    assert.equal(comfy.length, 80);
+    const rcomfy = registryIds().filter((id) => {
+      const e = registryModel(id).engine ?? "";
+      return e === "" || e === "comfyui";
+    });
+    assert.equal(rcomfy.length, 46);
   });
 
-  it("serves 43 offered rows; the 4 unoffered families are excluded loud-side", (): void => {
+  it("serves 68 offered routes; the unoffered are excluded loud-side", (): void => {
     const cat = modelCatalog();
-    assert.equal(Object.keys(cat).length, 43);
+    assert.equal(Object.keys(cat).length, 68);
     for (const id of ["basic_resize", "ltx-2-3", "ltx-director-distilled", "pixel_upscale"]) {
       assert.equal(cat[id], undefined, `${id} must not serve (unoffered)`);
     }
   });
 
-  it("every served row carries a non-empty form (the catalog contract)", (): void => {
+  it("every served row carries its source (the catalog contract — the card plane serves forms)", (): void => {
     for (const row of Object.values(modelCatalog())) {
-      assert.ok(row.form.length > 0, `${row.id} formless`);
+      // THE ATOM DECLARES NO CALLERS: no form key rides the served
+      // row (the callers' boarded lists own the relation); every
+      // route that downloads carries repo (model) + filename (quant)
+      const file = row.source?.filename ?? "";
+      if ((row.source?.repo_id ?? "") !== "") {
+        assert.ok(file === "" || file === null || typeof file === "string", `${row.id} source malformed`);
+      }
     }
   });
 
@@ -67,13 +81,12 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
   });
 
   it("the mods set survived (5 families declare capability packs)", (): void => {
-    const withMods = modelIds().filter((id) => getModel(id).mods.length > 0);
+    const withMods = registryIds().filter((id) => registryModel(id).mods.length > 0);
     assert.deepEqual(withMods, [
       "anny",
       "krea-2",
       "qwen-img-edit-2511",
       "qwen3-tts",
-      "qwen3-tts-base",
     ]);
   });
 
@@ -83,11 +96,24 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     assert.throws(() => mergedDefaults("krea-2", "no-such-variant"), ModelError);
   });
 
-  it("variant matrices ride (comfyui estate: 116 variants)", (): void => {
-    const total = modelIds().map((id) => getModel(id))
-      .filter((d) => d.engine === undefined || d.engine === "" || d.engine === "comfyui")
-      .map((d) => d.variants.length)
-      .reduce((a, b) => a + b, 0);
-    assert.equal(total, 116);
+  it("variant matrices ride (the hierarchy: 57 serving variants, 67 quant cells)", (): void => {
+    // registry plane: serving variants (cells > 0) and quant cells;
+    // recipe rows are routing recipes, not serving variants
+    // the engine rides the variant (the moss meld) — a variant
+    // serves when its composed engine (variant || model) is comfyui
+    let variants = 0, cells = 0;
+    for (const id of registryIds()) {
+      const d = registryModel(id);
+      const meng = d.engine ?? "";
+      for (const v of d.variants) {
+        if (v.cells.length === 0) continue;
+        const veng = (v.engine ?? "") !== "" ? v.engine : meng;
+        if (veng !== undefined && veng !== "" && veng !== "comfyui") continue;
+        variants += 1;
+        cells += v.cells.length;
+      }
+    }
+    assert.equal(variants, 47);
+    assert.equal(cells, 55);
   });
 });

@@ -14,14 +14,10 @@ export const DECL: ModelDecl = {
   "label": "MiniMax Music 3",
   "description": "MiniMax Music 3 text-to-music with lyrics",
   "engine": "comfyui",
-  "form": "form_music",
-  "card": "music",
-  "unoffered": false,
   "defaults": {},
   "source": {
     "type": "huggingface",
     "repo_id": "audio-cpp/MiniMax-Music3-GGUF",
-    "filename": "MiniMax-Music3-GGUF",
     "note": ""
   },
   "base_body": "",
@@ -38,6 +34,9 @@ export const DECL: ModelDecl = {
       "resolver_defaults": {},
       "cells": [
         {
+          "source": {
+            "filename": "MiniMax-Music3-GGUF"
+          },
           "quant": "int8",
           "label": "INT8 ConvRot",
           "route": "music3",

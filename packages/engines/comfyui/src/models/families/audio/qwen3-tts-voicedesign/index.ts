@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "Qwen3-TTS VoiceDesign 1.7B",
   "description": "Qwen3-TTS 12Hz VoiceDesign 1.7B — instruction-following voice design; the voice-lock lane",
   "engine": "comfyui",
-  "form": "form_tts",
-  "card": "voice-lock",
-  "unoffered": false,
   "defaults": {
     "mode": "design",
     "variant": "voicedesign"

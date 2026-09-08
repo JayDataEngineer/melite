@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "Mask",
   "description": "Selection-only mask card: RT-DETR proposes, SAM3 refines → named class masks for inpaint flows.",
   "engine": "comfyui",
-  "form": "form_mask_studio",
-  "card": "mask-studio",
-  "unoffered": false,
   "defaults": {
     "output_mode": "segm",
     "detect_mode": "body",

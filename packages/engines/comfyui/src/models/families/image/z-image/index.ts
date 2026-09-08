@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "Z-Image",
   "description": "Fast Z-Image / Z-Image Turbo text-to-image generation.",
   "engine": "comfyui",
-  "form": "form_generate",
-  "card": "image-gen",
-  "unoffered": false,
   "defaults": {
     "scheduler": "simple",
     "width": 1024,

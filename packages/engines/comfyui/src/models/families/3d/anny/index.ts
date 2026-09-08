@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "Anny (character assembly)",
   "description": "Assemble a character — composite body/hair/outfit GLBs, render the 8-view turnaround, segment a source photo into part sprites.",
   "engine": "comfyui",
-  "form": "form_3d_anny",
-  "card": "anny",
-  "unoffered": false,
   "defaults": {
     "resolution": 768,
     "framing": 1.2,

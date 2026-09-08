@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "DWPose",
   "description": "DWPose whole-body pose detection (preprocessor for pose-guided generation).",
   "engine": "comfyui",
-  "form": "form_edit",
-  "card": "",
-  "unoffered": false,
   "defaults": {
     "cfg": 1,
     "scheduler": "simple",

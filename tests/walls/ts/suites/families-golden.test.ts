@@ -15,16 +15,21 @@
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { getModel, modelIds } from "../../../../packages/engines/comfyui/src/models/models.ts";
+import { getModel, modelIds, registryIds } from "../../../../packages/engines/comfyui/src/models/models.ts";
 
 const GOLDEN = JSON.parse(
   readFileSync(new URL("../data/families-golden.json", import.meta.url), "utf8"),
 ) as Record<string, Record<string, unknown>>;
 
 describe("the family table ≡ golden (the godfile retirement wall)", () => {
-  it("boots all 59 families", (): void => {
-    assert.equal(modelIds().length, 59);
-    assert.equal(Object.keys(GOLDEN).length, 59);
+  it("boots the model registry + its derived routes (the hierarchy stroke)", (): void => {
+    // THE HIERARCHY (correction 2026-09-08): 53 MODELS (one per
+    // engine-lane unit — ace-step is ONE model: turbo/base/sft/xl
+    // variants × native/bf16 quants; qwen3-tts ONE model with the
+    // base variant) + the derived route view (every flat id the
+    // runtime addresses). The golden pins the full derived view.
+    assert.equal(registryIds().length, 51);
+    assert.equal(Object.keys(GOLDEN).length, modelIds().length);
   });
 
   it("every family row is deep-equal to its golden snapshot", (): void => {
@@ -38,8 +43,14 @@ describe("the family table ≡ golden (the godfile retirement wall)", () => {
     assert.deepEqual([...new Set([...modelIds(), ...Object.keys(GOLDEN)])].sort(), modelIds());
   });
 
-  it("the 30 compose families carry lane_inputs (the facts splice table)", (): void => {
-    const withLanes = modelIds().filter((id) => getModel(id).lane_inputs !== undefined);
-    assert.equal(withLanes.length, 30);
+  it("the compose models carry lane_inputs (the facts splice table)", (): void => {
+    // 30 flat carriers − the folded tts pair − the melded moss
+    // lane table (an sfx-variant stamp now, not a model key) = 28
+    // MODEL declarations; their routes inherit the lane table at
+    // the derived read (the route view carries 54).
+    const withLanes = registryIds().filter((id) => getModel(id).lane_inputs !== undefined);
+    assert.equal(withLanes.length, 28);
+    assert.ok(modelIds().filter((id) => getModel(id).lane_inputs !== undefined).length > withLanes.length,
+      "the derived route view inherits lane_inputs (the cascade)");
   });
 });

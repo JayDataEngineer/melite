@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "SeedVR2 Upscaler",
   "description": "SeedVR2 diffusion-based super-resolution (3B EMA FP16 default, 7B EMA FP8",
   "engine": "comfyui",
-  "form": "form_upscale",
-  "card": "upscale-tools",
-  "unoffered": false,
   "defaults": {
     "batch_size": 1,
     "max_resolution": 4096,

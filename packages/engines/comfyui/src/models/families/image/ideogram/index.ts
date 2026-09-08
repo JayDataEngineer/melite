@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "Ideogram",
   "description": "Typography-aware text-to-image with clean, legible text rendering.",
   "engine": "comfyui",
-  "form": "form_generate",
-  "card": "ideogram4",
-  "unoffered": false,
   "defaults": {
     "mu": 0.5,
     "std": 1.75,

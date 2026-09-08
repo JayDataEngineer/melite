@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "Anima",
   "description": "Anime/illustration text-to-image. Cosmos-Predict2 base with Danbooru-style prompting.",
   "engine": "comfyui",
-  "form": "form_generate",
-  "card": "image-gen",
-  "unoffered": false,
   "defaults": {
     "width": 1024,
     "height": 1024,

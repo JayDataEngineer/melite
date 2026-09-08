@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "Trellis (Native)",
   "description": "Native trellis.cpp GGML engine — image to UV-textured GLB with the reference-parity C++ postprocess (weld, fill, DC remesh, CuMesh QEM, xatlas, trilinear PBR bake). 50s per asset on the 4090; no confetti.",
   "engine": "",
-  "form": "form_3d_trellis_native",
-  "card": "",
-  "unoffered": false,
   "defaults": {
     "resolution": 1024,
     "quant": "q8",

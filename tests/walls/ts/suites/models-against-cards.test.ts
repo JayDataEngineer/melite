@@ -15,11 +15,13 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { loadCardDefs } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
+import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 import {
   ModelError,
   getModel,
   modelIds,
+  registryIds,
+  registryModel,
 } from "../../../../packages/engines/comfyui/src/models/models.ts";
 import {
   fieldDomains,
@@ -29,10 +31,29 @@ import {
 
 const here = fileURLToPath(import.meta.url);
 
-/** The registered table as decls (the family plugins' sum — the
- *  validateRegistryAgainstCards input since the godfile retired). */
+/** The registered table as decls (the REGISTRY plane — raw model
+ *  atoms; the route view merges variant resolver_defaults into
+ *  defaults, which the card-domain gate must never see). */
 function allDecls() {
-  return modelIds().map((id) => getModel(id));
+  return registryIds().map((id) => registryModel(id));
+}
+
+/** Route id → its cascade-derived view (the check's subject for
+ *  boarded routes — mirrors the boot's threading). */
+function allRouteViews(): Map<string, ReturnType<typeof getModel>> {
+  const out = new Map<string, ReturnType<typeof getModel>>();
+  for (const id of modelIds()) out.set(id, getModel(id));
+  return out;
+}
+
+/** THE CALLER OWNS THE EDGE: card id → its boarded atoms (the
+ *  only form the relation exists in — models declare no callers). */
+async function allBoardings(): Promise<Map<string, readonly string[]>> {
+  await loadCardDefs();
+  const svc = theService();
+  const out = new Map<string, readonly string[]>();
+  for (const id of svc.cardIds()) out.set(id, svc.getCardDef(id)?.boarded ?? []);
+  return out;
 }
 
 /** comfyui compose's engine truth (ENGINE_TRUTH_KEYS @ 034e1f97,
@@ -75,28 +96,30 @@ async function tableWith(
 describe("models against cards (the cross-validation, resurrected)", () => {
   it("every model default lives inside its owning card's field domains", async (): Promise<void> => {
     const cards = await cardTable();
-    const checked = validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH);
-    // every family with a card ref is checked (19 card refs in the registry)
-    assert.ok(checked.length >= 19, `expected ≥19 checked pairs, got ${checked.length}`);
+    const checked = validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH, await allBoardings(), new Set(modelIds()), allRouteViews());
+    // every caller-owned pair is checked (29 boardings across the card set)
+    assert.ok(checked.length >= 29, `expected ≥29 checked pairs, got ${checked.length}`);
   });
 
   it("every non-empty COMFYUI card ref names a REGISTERED card (the amnesty is over)", async (): Promise<void> => {
     const cards = await cardTable();
-    for (const id of modelIds()) {
-      const decl = getModel(id);
-      // LAW 0: retired-engine rows carry their own engines' dead
-      // card refs (music-native, auto-rig) — data, not drift
-      if (decl.engine !== undefined && decl.engine !== "" && decl.engine !== "comfyui") continue;
-      const cardId = decl.card ?? "";
-      if (cardId === "") continue;
-      assert.ok(cards.has(cardId), `dead card ref: '${cardId}'`);
+    // THE CARD SELECTS THE ATOMS: a boarded id naming no
+    // registered atom refuses (caller-owned edge, the dead-ref
+    // gate in its caller-side form)
+    const known = new Set(modelIds());
+    await loadCardDefs();
+    const svc = theService();
+    for (const cardId of svc.cardIds()) {
+      for (const boarded of svc.getCardDef(cardId)?.boarded ?? []) {
+        assert.ok(known.has(boarded), `card '${cardId}' boards '${boarded}' — no such atom`);
+      }
     }
   });
 
   it("a default naming no card field refuses LOUD", async (): Promise<void> => {
     const cards = await tableWith("image-gen", new Map([["steps", { min: 1, max: 150 }]]));
     assert.throws(
-      () => validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH),
+      () => validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH, new Map([["image-gen", registryIds()]])),
       (err: unknown): boolean =>
         err instanceof ModelError &&
         String(err.message).includes("names no field on card"),
@@ -107,7 +130,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // poisoned bounds — the semantics probe, never real data drift
     const cards = await tableWith("image-gen", new Map([["steps", { min: 1000, max: 2000 }], ["width", { min: 1 }, ], ["height", { min: 1 }], ["cfg", { min: 0 }], ["sampler", {}], ["scheduler", {}], ["model", {}], ["seed", {}]]));
     assert.throws(
-      () => validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH),
+      () => validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH, new Map([["image-gen", registryIds()]])),
       (err: unknown): boolean =>
         err instanceof ModelError &&
         String(err.message).includes("outside card image-gen field bounds"),
@@ -117,7 +140,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
   it("an enum miss refuses LOUD", async (): Promise<void> => {
     const cards = await tableWith("image-gen", new Map([["steps", {}], ["width", {}], ["height", {}], ["cfg", {}], ["sampler", { options: ["euler_ancestral"] }], ["scheduler", {}], ["model", {}], ["seed", {}]]));
     assert.throws(
-      () => validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH),
+      () => validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH, new Map([["image-gen", registryIds()]])),
       (err: unknown): boolean =>
         err instanceof ModelError &&
         String(err.message).includes("not in card image-gen options"),
@@ -126,12 +149,12 @@ describe("models against cards (the cross-validation, resurrected)", () => {
 
   it("a dead card ref refuses LOUD (never a skip)", (): void => {
     const cards: CardDomains = new Map([["some-other-card", new Map()]]);
-    // anny's ref is 'anny' — absent from this table
+    // caller-owned form: a caller naming a nonexistent atom refuses
     assert.throws(
-      () => validateRegistryAgainstCards(allDecls(), cards),
+      () => validateRegistryAgainstCards(allDecls(), cards, [], new Map([["ghost-caller", ["no-such-atom"]]])),
       (err: unknown): boolean =>
         err instanceof ModelError &&
-        String(err.message).includes("the migration amnesty is over"),
+        String(err.message).includes("no such model registered"),
     );
   });
 
@@ -141,13 +164,15 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // ENGINE_TRUTH_KEYS declaration). Without the truth keys the
     // refusal fires; with them the full estate validates CLEAN.
     const cards = await cardTable();
+    const boarded = await allBoardings();
+    const served = new Set(modelIds());
     assert.throws(
-      () => validateRegistryAgainstCards(allDecls(), cards),
+      () => validateRegistryAgainstCards(allDecls(), cards, [], boarded, served),
       (err: unknown): boolean =>
         err instanceof ModelError && String(err.message).includes("qwen3-tts: default 'mode'"),
     );
-    const checked = validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH);
-    assert.ok(checked.length >= 30, `expected 30 checked pairs, got ${checked.length}`);
+    const checked = validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH, boarded, served, allRouteViews());
+    assert.ok(checked.length >= 29, `expected 29 checked pairs, got ${checked.length}`);
   });
 
   it("fieldDomains extracts schemastery min/max/options", (): void => {

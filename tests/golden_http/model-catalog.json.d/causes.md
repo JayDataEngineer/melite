@@ -10,3 +10,13 @@ serve is the derivation law's truth again (1344x768 form defaults,
 3 families: h3-timeline/h3/h3-keyframe — fresh-scan verified both
 on production :33081 and a scratch boot). Regolded from the live
 scratch serve; verified by test_http_parity 48/0.
+
+## 2026-09-08 — the moss meld (operator order: combine the three)
+
+moss-sfx + moss-tts + moss_voicegenerator are ONE model `moss`
+(tts / voicegen / sfx variants, cells moss-tts /
+moss_voicegenerator / moss-sfx — every flat address survives).
+The engine rides the variant (comfyui sfx + audio_cpp GGUF), so
+the served set is unchanged at 68 (moss-sfx serves; the GGUF
+three ride frozen). Registry 53→51, routes 92→93. Regolded from
+the live serve; walls 17/17.

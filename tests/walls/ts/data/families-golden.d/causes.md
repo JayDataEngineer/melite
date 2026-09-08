@@ -21,3 +21,25 @@ packs as a distinct category, flavors family-owned"):
 
 Also this stroke: families restructured to directories
 (`families/<genre>/<id>/index.ts`, the py model.py layout).
+
+## 2026-09-08 (later) — the hierarchy stroke (operator order:
+## "THEY ARE ONE MODEL")
+
+ace-step ×6 flat rows and the qwen3-tts pair collapsed into TWO
+model declarations (53 registry models total, from 59 flat ones)
+— the py flattener had exploded one model per quant/variant copy
+into sibling rows. The hierarchy rides the cascade the paper
+prescribes: variant = intercept (resolver stamps, lane stamps,
+card/source overrides), quant = cell head; the flat ids survive
+as cell/variant ROUTES (derived serving — the golden now pins the
+full 92-route derived view; every runtime address unchanged).
+
+## 2026-09-08 — the moss meld + recipe sources die (operator order)
+
+Combine moss-sfx + moss-tts + moss_voicegenerator into ONE model
+`moss` (tts / voicegen / sfx variants; the engine rides the
+variant — comfyui sfx + audio_cpp GGUF). Registry 53→51, routes
+92→93, served 68 unchanged (moss-sfx serves; the GGUF three ride
+frozen). Plus: recipe-row `source` blocks stripped from
+ace-step/moss-tts-local/txt2music (a recipe stamps picks, never
+downloads — ONLY THE QUANT CARRIES THE DOWNLOAD).

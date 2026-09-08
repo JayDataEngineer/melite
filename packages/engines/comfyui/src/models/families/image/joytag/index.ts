@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "JoyTag",
   "description": "Booru keyword tagger (JoyTag lineage) — thresholded Danbooru tags with add/remove lists for recreation workflows. Torch lane, node-local checkpoint.",
   "engine": "comfyui",
-  "form": "form_tagger",
-  "card": "tagger",
-  "unoffered": false,
   "defaults": {
     "threshold": 0.2,
     "add_tag": "",

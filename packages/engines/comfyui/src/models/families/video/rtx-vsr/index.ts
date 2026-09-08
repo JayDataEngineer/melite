@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "Video Upscale",
   "description": ">-",
   "engine": "",
-  "form": "form_video_upscale",
-  "card": "",
-  "unoffered": false,
   "defaults": {
     "batch_size": 5,
     "cfg": 4,

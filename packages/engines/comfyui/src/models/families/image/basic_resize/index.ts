@@ -14,7 +14,6 @@ export const DECL: ModelDecl = {
   "label": "Basic Resize",
   "description": ">-",
   "engine": "",
-  "card": "",
   "unoffered": true,
   "defaults": {
     "resize_method": "lanczos",

@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "Kimodo (text → motion)",
   "description": "Kinematic motion diffusion (NVIDIA Kimodo-SOMA): text → SOMA-77 pose NPZ, chainable, skinnable onto rigged GLBs.",
   "engine": "comfyui",
-  "form": "form_motion_kimodo",
-  "card": "motion",
-  "unoffered": false,
   "defaults": {
     "cfg_type": "separated",
     "cfg_weight_a": 2.5,

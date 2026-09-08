@@ -20,18 +20,10 @@ import { family as transfer_rig } from "./3d/transfer_rig/index.ts";
 import { family as trellis2Native } from "./3d/trellis2-native/index.ts";
 import { family as trellis_native } from "./3d/trellis_native/index.ts";
 import { family as aceStep } from "./audio/ace-step/index.ts";
-import { family as aceStepBase } from "./audio/ace-step-base/index.ts";
-import { family as aceStepBaseBf16 } from "./audio/ace-step-base-bf16/index.ts";
-import { family as aceStepBf16 } from "./audio/ace-step-bf16/index.ts";
-import { family as aceStepSft } from "./audio/ace-step-sft/index.ts";
-import { family as aceStepXl } from "./audio/ace-step-xl/index.ts";
-import { family as mossSfx } from "./audio/moss-sfx/index.ts";
-import { family as mossTts } from "./audio/moss-tts/index.ts";
+import { family as moss } from "./audio/moss/index.ts";
 import { family as mossTtsLocal } from "./audio/moss-tts-local/index.ts";
-import { family as moss_voicegenerator } from "./audio/moss_voicegenerator/index.ts";
 import { family as music3 } from "./audio/music3/index.ts";
 import { family as qwen3Tts } from "./audio/qwen3-tts/index.ts";
-import { family as qwen3TtsBase } from "./audio/qwen3-tts-base/index.ts";
 import { family as qwen3TtsVoicedesign } from "./audio/qwen3-tts-voicedesign/index.ts";
 import { family as txt2music } from "./audio/txt2music/index.ts";
 import { family as anima } from "./image/anima/index.ts";
@@ -81,18 +73,10 @@ export const FAMILY_PLUGINS: Plugin[] = [
   trellis2Native,
   trellis_native,
   aceStep,
-  aceStepBase,
-  aceStepBaseBf16,
-  aceStepBf16,
-  aceStepSft,
-  aceStepXl,
-  mossSfx,
-  mossTts,
+  moss,
   mossTtsLocal,
-  moss_voicegenerator,
   music3,
   qwen3Tts,
-  qwen3TtsBase,
   qwen3TtsVoicedesign,
   txt2music,
   anima,

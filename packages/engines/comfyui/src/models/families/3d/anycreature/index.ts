@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "anyCreature",
   "description": "Text → game-ready 3D creature (JSON spec → skinned GLB)",
   "engine": "anycreature",
-  "form": "form_forge",
-  "card": "forge",
-  "unoffered": false,
   "defaults": {
     "smooth_angle": 50,
     "build": "default",

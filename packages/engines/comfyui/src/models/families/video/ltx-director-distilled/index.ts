@@ -14,7 +14,6 @@ export const DECL: ModelDecl = {
   "label": "LTX 2.3",
   "description": "LTX 2.3 text- and image-to-video generation via the Director workflow.",
   "engine": "",
-  "card": "",
   "unoffered": true,
   "defaults": {
     "anchor_strength": 0.7,

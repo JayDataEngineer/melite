@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "Krea 2",
   "description": "High-quality general text-to-image generation.",
   "engine": "comfyui",
-  "form": "form_generate",
-  "card": "image-gen",
-  "unoffered": false,
   "defaults": {
     "scheduler": "normal",
     "width": 1024,

@@ -1,7 +1,11 @@
-// families/audio/qwen3-tts.ts — the qwen3-tts family declaration
-// (generated 2026-09-08 from the frozen registry + facts, then
-// hand-owned: this file IS the family's truth — a change here is a
-// family change, nothing else moves).
+// families/audio/qwen3-tts — the qwen3-tts MODEL declaration (ONE
+// model — the correction stroke 2026-09-08). The py truth:
+// qwen3-tts and qwen3-tts-base declared the SAME class Qwen3Tts —
+// one model, the base checkpoint is a VARIANT (an intercept over
+// the model's base lane: resolver stamp variant:'base' + the
+// model_path stamp), not a sibling row. The flat id survives as
+// the variant's route; the qvoice pack boards the MODEL (inherited
+// by every variant and quant — the mutation law).
 //
 // PLUGIN SHAPE (the discharge stroke): every family is a plugin
 // declaring itself through ctx.models.registerFamily inside
@@ -11,12 +15,9 @@ import type { ModelDecl } from "../../../contract.ts";
 
 export const DECL: ModelDecl = {
   "id": "qwen3-tts",
-  "label": "Qwen3-TTS CustomVoice 0.6B",
-  "description": "Qwen3-TTS 12Hz CustomVoice 0.6B — preset personas and instruct-text emotion control",
+  "label": "Qwen3-TTS 0.6B",
+  "description": "Qwen3-TTS 12Hz 0.6B — text-to-speech",
   "engine": "comfyui",
-  "form": "form_tts",
-  "card": "tts",
-  "unoffered": false,
   "defaults": {
     "mode": "tts",
     "voice": "vivian"
@@ -29,7 +30,8 @@ export const DECL: ModelDecl = {
   "variants": [
     {
       "id": "standard",
-      "label": "Standard",
+      "label": "CustomVoice",
+      "description": "preset personas and instruct-text emotion control",
       "hint": "",
       "group": "Variant",
       "route": "qwen3-tts",
@@ -40,6 +42,31 @@ export const DECL: ModelDecl = {
           "quant": "native",
           "label": "Native",
           "route": "qwen3-tts",
+          "engine": "",
+          "resolver_defaults": {},
+          "hide_from_dropdown": false
+        }
+      ]
+    },
+    {
+      "id": "base",
+      "label": "Base",
+      "description": "plain text-to-speech, no persona",
+      "hint": "",
+      "group": "Variant",
+      "route": "qwen3-tts-base",
+      "engine": "",
+      "resolver_defaults": {
+        "variant": "base"
+      },
+      "lane_inputs": {
+        "model_path": "qwen3-tts"
+      },
+      "cells": [
+        {
+          "quant": "native",
+          "label": "Native",
+          "route": "qwen3-tts-base",
           "engine": "",
           "resolver_defaults": {},
           "hide_from_dropdown": false

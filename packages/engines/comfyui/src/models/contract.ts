@@ -94,6 +94,15 @@ export const CellArtifact: z<CellArtifact> = z.object({
 export interface CellRow {
   quant: string;
   label: string;
+  /** ONLY THE QUANT CARRIES THE DOWNLOAD (operator order
+   *  2026-09-08): the cell names its own artifact file — the
+   *  model carries the repo, variants carry nothing
+   *  downloadable, and the route's source composes the two. */
+  source?: SourceRow | null;
+  /** The quant's own flat label/description overrides (the bf16
+   *  copy's full truth) — the derived route view prefers
+   *  cell → variant → model. */
+  description?: string;
   route: string;
   engine: string;
   vram_peak_gb?: number;
@@ -105,6 +114,8 @@ export interface CellRow {
 export const CellRow: z<CellRow> = z.object({
   quant: z.string().pattern(SAFE_ID_RE),
   label: z.string().default(""),
+  source: z.union([SourceRow, z.const(null)]),
+  description: z.string().default(""),
   route: z.string().default(""),
   engine: z.string().default(""),
   vram_peak_gb: z.number().min(0),
@@ -116,12 +127,19 @@ export const CellRow: z<CellRow> = z.object({
 export interface VariantRow {
   id: string;
   label: string;
+  /** The variant's own flat description override (the derived
+   *  route view prefers cell → variant → model). */
+  description?: string;
   hint: string;
   group: string;
   route: string;
   engine: string;
   order?: number;
   resolver_defaults: Record<string, unknown>;
+  /** The variant's LANE INPUT stamps (the intercept over the
+   *  model's base lane_inputs — e.g. the base checkpoint's
+   *  model_path; merged base ← variant at the derived read). */
+  lane_inputs?: Record<string, unknown>;
   wire_defaults?: Record<string, unknown> | null;
   cells: CellRow[];
 }
@@ -129,12 +147,14 @@ export interface VariantRow {
 export const VariantRow: z<VariantRow> = z.object({
   id: z.string().pattern(SAFE_ID_RE),
   label: z.string().default(""),
+  description: z.string().default(""),
   hint: z.string().default(""),
   group: z.string().default("Variant"),
   route: z.string().default(""),
   engine: z.string().default(""),
   order: z.number(),
   resolver_defaults: z.dict(z.any()).default({}),
+  lane_inputs: z.dict(z.any()).default({}),
   wire_defaults: z.union([z.dict(z.any()), z.const(null)]),
   cells: z.array(CellRow).default([]),
 });
@@ -168,9 +188,9 @@ export interface ModelDecl {
   label: string;
   description: string;
   engine: string;
-  form?: string | null;
-  card: string;
-  unoffered: boolean;
+  /** Present-only-when-true: an unoffered model registers but
+   *  serves no surface. The DEFAULT is offered — no key. */
+  unoffered?: boolean;
   defaults?: Record<string, unknown>;
   source?: { type?: string; repo_id?: string; filename?: string | null; note?: string } | null;
   studio?: {
@@ -199,8 +219,8 @@ export interface ModelDecl {
   has_rubric: boolean;
 }
 
-/** The catalog's served model row (form REQUIRED — every served model
- *  routes and renders; an unoffered family serves no row at all). */
+/** The catalog's served model row (the engine gate serves — an
+ *  unoffered family serves no row at all). */
 export interface ModelRow {
   id: string;
   family: string;
@@ -210,7 +230,6 @@ export interface ModelRow {
   source: SourceRow;
   defaults: Record<string, unknown>;
   engine: string;
-  form: string;
   has_agent?: boolean;
   has_inference?: boolean;
   has_rubric?: boolean;
@@ -225,7 +244,6 @@ export const ModelRow: z<ModelRow> = z.object({
   source: SourceRow.default({ type: "" }),
   defaults: z.dict(z.any()).default({}),
   engine: z.string().default(""),
-  form: z.string().min(1),
   has_agent: z.boolean(),
   has_inference: z.boolean(),
   has_rubric: z.boolean(),

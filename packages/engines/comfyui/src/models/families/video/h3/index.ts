@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "MiniMax H3",
   "description": "MiniMax H3 joint video + audio generation. Native AV output — describe both motion and",
   "engine": "comfyui",
-  "form": "form_video_director",
-  "card": "h3-timeline",
-  "unoffered": false,
   "defaults": {
     "width": 1344,
     "height": 768,

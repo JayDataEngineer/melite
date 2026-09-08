@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "MiniMax H3 keyframe-to-video",
   "description": "",
   "engine": "comfyui",
-  "form": "form_video_director",
-  "card": "h3-timeline",
-  "unoffered": false,
   "defaults": {
     "width": 768,
     "height": 448,

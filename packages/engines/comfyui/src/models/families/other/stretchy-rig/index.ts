@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "Stretchy Rig",
   "description": "Stretchy Studio auto-rig — DWPose TensorRT whole-body keypoints for 2D character animation.",
   "engine": "",
-  "form": "form_image_stretchy_rig",
-  "card": "",
-  "unoffered": false,
   "defaults": {
     "yolox_precision": "fp16",
     "dwpose_precision": "fp32"

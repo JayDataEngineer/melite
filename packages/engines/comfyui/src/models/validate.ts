@@ -78,31 +78,60 @@ export function validateRegistryAgainstCards(
   decls: readonly ModelDecl[],
   cards: CardDomains,
   engineTruth: readonly string[] = [],
+  /** THE CALLER OWNS THE EDGE: card id → the atoms it boards
+   *  (CardDefinition.boarded — the only place the relation
+   *  lives; the model declares NOTHING about its callers). */
+  boardings?: ReadonlyMap<string, readonly string[]>,
+  /** The served address set (registry models + derived routes —
+   *  a caller may board a route; the atom it resolves to is the
+   *  check's subject). */
+  servedIds?: ReadonlySet<string>,
+  /** Route id → its cascade-derived view (getModel over the served
+   *  plane) — a boarded route validates against its resolved
+   *  view; registry decls always win on id collision. */
+  routeViews?: ReadonlyMap<string, ModelDecl>,
 ): Array<[string, string]> {
   const truth = new Set(engineTruth);
   const checked: Array<[string, string]> = [];
-  for (const decl of decls) {
-    const mid = decl.id;
-    // LAW 0: only comfyui families validate against the live card
-    // plane — retired-engine rows are frozen data (engine-marked),
-    // their card refs name the cards their OWN engine served
-    // (music-native/auto-rig — deleted with the engine, not drift).
-    if (decl.engine !== undefined && decl.engine !== "" && decl.engine !== "comfyui") continue;
-    const cardId: string = decl.card ?? "";
-    if (cardId !== "" && !cards.has(cardId)) {
-      throw new ModelError(
-        `model ${mid}: card='${cardId}' names no known card — the ` +
-          `migration amnesty is over; a dead card ref is drift, not a skip`,
-      );
+  const byId = new Map(decls.map((d): [string, ModelDecl] => [d.id, d]));
+  if (routeViews !== undefined) {
+    for (const [route, view] of routeViews) {
+      if (!byId.has(route)) byId.set(route, view);
     }
-    if (cardId === "") continue;
+  }
+  // THE CARD SELECTS THE ATOMS — iterate the callers' boarded
+  // lists; a caller naming no registered atom REFUSES (its
+  // selection names real atoms or it is drift).
+  if (boardings !== undefined) {
+    for (const [cardId, boarded] of boardings) {
+      for (const mid of boarded) {
+        const known = byId.has(mid) || (servedIds !== undefined && servedIds.has(mid));
+        if (!known) {
+          throw new ModelError(
+            `card '${cardId}' boards '${mid}' — no such model registered (the card selects atoms; a selection naming nothing is drift, not a skip)`,
+          );
+        }
+      }
+    }
+  }
+  if (boardings === undefined) return checked;
+  for (const [cardId, boarded] of boardings) {
     const domains = cards.get(cardId);
     if (domains === undefined) continue;
-    for (const [key, val] of Object.entries(decl.defaults ?? {})) {
-      if (truth.has(key)) continue;
-      const domain: FieldDomain | undefined = domains.get(key);
-      if (domain === undefined) {
-        throw new ModelError(
+    for (const mid of boarded) {
+      const decl = byId.get(mid);
+      // LAW 0: only comfyui families validate against the live
+      // card plane — retired-engine rows are frozen data
+      // (engine-marked), their boardings name the cards their OWN
+      // engine served (deleted with the engine, not drift).
+      if (decl === undefined) continue;
+      if (decl.engine !== undefined && decl.engine !== "" && decl.engine !== "comfyui") continue;
+      checked.push([mid, cardId]);
+      for (const [key, val] of Object.entries(decl.defaults ?? {})) {
+        if (truth.has(key)) continue;
+        const domain: FieldDomain | undefined = domains.get(key);
+        if (domain === undefined) {
+          throw new ModelError(
           `model ${mid}: default '${key}' names no field on card ${cardId}`,
         );
       }
@@ -122,8 +151,8 @@ export function validateRegistryAgainstCards(
           `model ${mid}: default ${key}='${val}' not in card ${cardId} options`,
         );
       }
+      }
     }
-    checked.push([mid, cardId]);
   }
   return checked;
 }

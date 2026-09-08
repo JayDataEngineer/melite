@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "Florence-2",
   "description": "Natural-language image captioning (Florence-2 large, PromptGen-tuned) — dense descriptive prompts for recreating images in FLUX / Ideogram / image-edit.",
   "engine": "comfyui",
-  "form": "form_tagger",
-  "card": "tagger",
-  "unoffered": false,
   "defaults": {
     "checkpoint": "MiaoshouAI/Florence-2-large-PromptGen-v2.0",
     "caption_task": "more_detailed_caption"

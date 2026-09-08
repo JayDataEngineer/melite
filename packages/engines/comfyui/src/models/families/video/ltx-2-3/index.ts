@@ -14,7 +14,6 @@ export const DECL: ModelDecl = {
   "label": "LTX 2.3",
   "description": ">-",
   "engine": "",
-  "card": "",
   "unoffered": true,
   "defaults": {
     "width": 1280,

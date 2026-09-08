@@ -180,13 +180,14 @@ test("the correction stroke: flavors are family-owned and the boarding is bidire
   // the flavor set ≡ the DECL.mods boardings, both planes read
   // (the boot interlock enforces this loudly; this pin reads the
   // settled state so a silent regression shows as drift)
-  const { modelIds, getModel } = await import(
+  const { modelIds, registryIds, getModel } = await import(
     "../../../../packages/engines/comfyui/src/models/models.ts"
   );
   const packs = new Set(svc.packNames());
   const verbs = new Set(svc.verbIds());
-  // every DECL.mods entry is a live pack or verb id
-  for (const id of modelIds()) {
+  // every DECL.mods entry is a live pack or verb id (the MODEL
+  // plane — variant routes inherit the boarding, never re-declare)
+  for (const id of registryIds()) {
     for (const entry of getModel(id).mods ?? []) {
       assert.ok(packs.has(entry) || verbs.has(entry),
         `${id} boards '${entry}' — dead boarding (the amnesty is over)`);
@@ -202,7 +203,7 @@ test("the correction stroke: flavors are family-owned and the boarding is bidire
   // every DECLARED pack boarding HAS a flavor for that family (the
   // satisfaction law's third edge — a boarding whose flavor file
   // was lost is a silent dead mutation, the boot gate refuses it)
-  for (const id of modelIds()) {
+  for (const id of registryIds()) {
     for (const entry of getModel(id).mods ?? []) {
       if (verbs.has(entry)) continue;
       assert.ok(

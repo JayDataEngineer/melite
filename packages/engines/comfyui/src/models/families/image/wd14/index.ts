@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "WD14 Tagger",
   "description": "Booru keyword tagger (WaifuDiffusion v3 lineage) — comma-separated Danbooru tags for NovelAI / Pony / Illustrious recreation. Light ONNX lane, first run downloads weights.",
   "engine": "comfyui",
-  "form": "form_tagger",
-  "card": "tagger",
-  "unoffered": false,
   "defaults": {
     "checkpoint": "wd-v1-4-moat-tagger-v2",
     "threshold": 0.35,

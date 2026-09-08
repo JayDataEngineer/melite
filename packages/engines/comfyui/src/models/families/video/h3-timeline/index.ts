@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "H3 Timeline (multi-window)",
   "description": ">-",
   "engine": "comfyui",
-  "form": "form_video_director",
-  "card": "h3-timeline",
-  "unoffered": false,
   "defaults": {
     "seed": 42
   },

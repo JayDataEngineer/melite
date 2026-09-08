@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "Step1X-3D Texture",
   "description": "Diffusion-based 3D texture synthesis — 1 reference image → 6 multi-view images via SDXL ig2mv flow → baked onto UV atlas. Fills ALL surfaces (no coverage gaps unlike camera projection). 3.5B model, ~15s on 4090.",
   "engine": "",
-  "form": "form_3d_step1x_texture",
-  "card": "",
-  "unoffered": false,
   "defaults": {
     "preset": "standard",
     "texture_size": 2048,

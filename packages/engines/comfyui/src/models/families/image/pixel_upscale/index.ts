@@ -14,7 +14,6 @@ export const DECL: ModelDecl = {
   "label": "Pixel Upscaler",
   "description": ">-",
   "engine": "",
-  "card": "",
   "unoffered": true,
   "defaults": {
     "batch_size": 5,

@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "SkinTokens",
   "description": "Static mesh GLB → generated skeleton + learned skin weights → rigged GLB (TokenRig on GGML, CPU)",
   "engine": "skintokens",
-  "form": "form_auto_rig",
-  "card": "auto-rig",
-  "unoffered": false,
   "defaults": {
     "device": "cpu",
     "postprocess": false

@@ -40,11 +40,6 @@ export function isServedFamily(decl: ModelDecl): boolean {
 }
 
 function servedRow(decl: ModelDecl): ModelRow {
-  if (typeof decl.form !== "string" || decl.form === "") {
-    throw new ModelError(
-      `${decl.id}: form is REQUIRED on the served row (every served model routes and renders)`,
-    );
-  }
   const row: ModelRow = {
     id: decl.id,
     family: decl.id,
@@ -58,7 +53,6 @@ function servedRow(decl: ModelDecl): ModelRow {
     },
     defaults: decl.defaults ?? {},
     engine: decl.engine ?? "",
-    form: decl.form,
     has_inference: decl.has_inference === true,
     has_rubric: decl.has_rubric === true,
     ...(decl.has_agent === true ? { has_agent: true } : {}),

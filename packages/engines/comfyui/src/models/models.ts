@@ -26,6 +26,11 @@ export function getModel(id: string): ModelDecl {
 
 export const modelIds = (): string[] => modelsService().modelIds();
 
+/** The MODEL registry ids — one per model (the declaration plane,
+ *  vs the served route view). */
+export const registryModel = (id: string) => modelsService().registryModel(id);
+export const registryIds = (): string[] => modelsService().registryIds();
+
 export function mergedDefaults(
   id: string,
   variant?: string | null,

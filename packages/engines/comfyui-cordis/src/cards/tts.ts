@@ -28,7 +28,7 @@ export function apply(ctx: Context): void {
     skeleton: 'tts',
     // both Qwen3-TTS families board here (CustomVoice + Base); the
     // VoiceDesign lane belongs to voice-lock.
-    boarded: ['qwen3-tts', 'qwen3-tts-base'],
+    boarded: ['qwen3-tts'],
     // Load + TTS ride the authored Audiocore pack; SaveAudio is core.
     requires: ['melite-audio-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,

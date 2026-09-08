@@ -76,7 +76,11 @@ function validateDecl(decl: ModelDecl): void {
 }
 
 export class ModelsService extends Service {
-  private readonly table = new Map<string, ModelDecl>();
+  private readonly table = new Map<string, ModelDecl>()
+  /** The derived route index: flat id → owning model + variant (the
+   *  hierarchy's derived realization — built at registration,
+   *  read at serving; dispose retracts). */
+  private readonly routes = new Map<string, { modelId: string; variantId: string; cellRoute: boolean }>();
   /** registry rows by repo root (the artifact-reader half merged
    *  from catalog.ts 2026-09-08 — root-independent values,
    *  fiber-owned; fixture roots under MELITE_REPO_ROOT resolve at
@@ -104,9 +108,61 @@ export class ModelsService extends Service {
         `model '${decl.id}' registered twice — one owner per model id (the interlock)`,
       );
     }
+    // THE ROUTE INDEX (the hierarchy stroke 2026-09-08): every
+    // variant/cell route claims back into its OWNING model — one
+    // route owner (a flat id claimed by two models is drift, the
+    // flattener's sin refusing to repeat). The head's own route is
+    // the model id itself.
+    const claims: { route: string; variantId: string; cellRoute: boolean }[] = [];
+    // COMPLETENESS (§3.2.2 satisfaction law): the model's own id is
+    // an address — if no variant/cell route claims it, the head
+    // address composes through the family default (the first
+    // variant with cells). A registered atom that serves no
+    // address is an unsatisfying boot — refused below, never
+    // silently unaddressable.
+    const resolving = decl.variants.find((v) => v.cells.length > 0) ?? decl.variants[0]
+    if (resolving !== undefined && !decl.variants.some((v) => v.route === decl.id) && !decl.variants.some((v) => v.cells.some((c) => c.route === decl.id))) {
+      claims.unshift({ route: decl.id, variantId: resolving.id, cellRoute: false })
+    }
+    for (const variant of decl.variants) {
+      if (variant.route !== "") {
+        claims.push({ route: variant.route, variantId: variant.id, cellRoute: false });
+      }
+      for (const cell of variant.cells) {
+        if (cell.route !== "" && cell.route !== variant.route) {
+          claims.push({ route: cell.route, variantId: variant.id, cellRoute: true })
+        }
+      }
+    }
+    for (const claim of claims) {
+      // a SELF-ROUTE (the claim equals the model's own id) is the
+      // model's composed head — it SUPERSEDES any alias a sibling
+      // model's variant laid on the same flat id
+      if (claim.route === decl.id) {
+        this.routes.set(claim.route, { modelId: decl.id, variantId: claim.variantId, cellRoute: claim.cellRoute })
+        continue
+      }
+      // a route that IS a registered model's id belongs to that
+      // model (its own self-route); the sibling variant's claim on
+      // the same flat id is its derived alias — the model wins
+      if (this.table.has(claim.route)) continue
+      const prior = this.routes.get(claim.route);
+      // one owner per flat id — but a model may reuse its own route
+      // across variants (a shared artifact addressing); only a
+      // CROSS-model claim is drift
+      if (prior !== undefined && prior.modelId !== decl.id) {
+        throw new ModelError(
+          `route '${claim.route}' claimed by both '${prior.modelId}' and '${decl.id}' — one owner per flat id (the flattener's sin refuses to repeat)`,
+        );
+      }
+      if (prior === undefined) {
+        this.routes.set(claim.route, { modelId: decl.id, variantId: claim.variantId, cellRoute: claim.cellRoute })
+      }
+    }
     this.table.set(decl.id, decl);
     return (): void => {
       this.table.delete(decl.id);
+      for (const claim of claims) this.routes.delete(claim.route)
     };
   }
 
@@ -121,19 +177,92 @@ export class ModelsService extends Service {
     return this.table.size;
   }
 
-  /** Registered ids, scan order. */
+  /** The SERVED enumeration (derived realization, paper §3.3):
+   *  model ids ∪ their variant/cell routes — the flat ids every
+   *  downstream address (catalog, doors, facts, flows, specs)
+   *  already knows. One component, many addressed cells. */
   modelIds(): string[] {
+    return [...new Set([...this.table.keys(), ...this.routes.keys()])].sort();
+  }
+
+  /** The MODEL registry ids (the declaration count — one per py
+   *  class; the hierarchy's registry plane, vs the served view). */
+  registryIds(): string[] {
     return [...this.table.keys()].sort();
   }
 
-  /** The registered declaration (loud on unknown — the py
-   *  find_model refusal). */
-  getModel(id: string): ModelDecl {
-    const decl = this.table.get(id);
-    if (decl === undefined) {
-      throw new ModelError(`unknown model '${id}' (registered: ${this.modelIds().slice(0, 12).join(", ")}…)`);
+  /** The RAW model declaration (the atom as authored — no variant
+   *  deltas composed). Registry-plane readers use this. */
+  registryModel(id: string): ModelDecl {
+    const head = this.table.get(id)
+    if (head === undefined) {
+      throw new ModelError(`no registered model '${id}' (routes compose; the registry holds atoms)`)
     }
-    return decl;
+    return head
+  }
+
+  /** The declaration for an address — EVERY served id composes
+   *  through the cascade (the model id itself carries a route
+   *  row: its resolving variant + cell; paper §3.2.3: base ←
+   *  variant ← cell, the monoid merge — label/description
+   *  resolved cell→variant→model, defaults and lane_inputs
+   *  unioned through the intercepts). Derived, never stored:
+   *  recovery discards it wholesale. The raw atom is
+   *  registryModel. */
+  getModel(id: string): ModelDecl {
+    const route = this.routes.get(id)
+    if (route !== undefined) {
+      const model = this.table.get(route.modelId)
+      if (model === undefined) {
+        throw new ModelError(`route '${id}' points at unregistered model '${route.modelId}' — index drift`)
+      }
+      const variant = model.variants.find((v) => v.id === route.variantId)
+      if (variant === undefined) {
+        throw new ModelError(`route '${id}' points at unknown variant '${route.variantId}' of '${model.id}' — index drift`)
+      }
+      // a variant-level address resolves its DEFAULT CELL (the one
+      // routing to the address, else the variant's first cell) —
+      // the quant's source/defaults compose the address view
+      const cell = variant.cells.find((c) => c.route === id) ?? (route.cellRoute ? undefined : variant.cells[0])
+      // attach override keys ONLY when a layer declares them — a
+      // spread of absent layers would mint undefined-valued own
+      // keys (deepEqual drift vs the golden's JSON round-trip)
+      //
+      // THE MUTATION SHAPE (operator order 2026-09-08: "THE MODEL
+      // ISN'T BEING MUTATED, READ THE DESCRIPTION"): the atom
+      // declares its identity ONCE; variants carry TOKENS
+      // (Turbo/Base/SFT/XL) + real delta descriptions; cells carry
+      // QUANT tokens (Q8/BF16/Native). The flat truth COMPOSES at
+      // read: label = model + variant + quant tokens joined;
+      // description = the variant's real delta, else the model's.
+      const labelTokens = [model.label, variant.label ?? "", cell?.label ?? ""].filter((t) => t !== "")
+      const derived: ModelDecl = {
+        ...model,
+        id,
+        label: labelTokens.join(" "),
+        description: (variant.description ?? "") !== "" ? variant.description! : model.description,
+      }
+      // ONLY THE QUANT CARRIES THE DOWNLOAD: the model's repo +
+      // the CELL's artifact filename compose the route's source
+      const cellSource: { filename?: string | null } | null | undefined = cell?.source;
+      if (cellSource !== null && cellSource !== undefined) {
+        derived.source = { ...(model.source ?? {}), filename: cellSource.filename! }
+      }
+      if (model.defaults !== undefined || Object.keys(variant.resolver_defaults ?? {}).length > 0) {
+        derived.defaults = { ...(model.defaults ?? {}), ...variant.resolver_defaults, ...(cell?.resolver_defaults ?? {}) }
+      }
+      if (model.lane_inputs !== undefined || variant.lane_inputs !== undefined) {
+        derived.lane_inputs = { ...(model.lane_inputs ?? {}), ...(variant.lane_inputs ?? {}) }
+      }
+      // THE ENGINE RIDES THE VARIANT (the moss meld 2026-09-08): a
+      // family can span runtimes (comfyui sfx + audio_cpp GGUF) —
+      // the address view carries the variant's engine, else the
+      // cell's, else the atom's
+      if ((variant.engine ?? "") !== "") derived.engine = variant.engine
+      else if (cell !== undefined && (cell.engine ?? "") !== "") derived.engine = cell.engine
+      return derived
+    }
+    throw new ModelError(`unknown model '${id}' (registered: ${this.modelIds().slice(0, 12).join(", ")}…)`)
   }
 
   /** The variant coordinate (first declared = the family default,
@@ -227,7 +356,13 @@ export class ModelsService extends Service {
    *  one place: catalogEmission's buildCatalog over the SAME
    *  registration set). */
   servedModels(): Record<string, ModelRow> {
-    return buildCatalog(this.allDecls()).models;
+    // THE DERIVED SERVING (the hierarchy stroke): every route of
+    // every model enumerates (the flat ids the runtime knows +
+    // the variant/cell routes one model serves) — getModel
+    // resolves the cascade per route; isServedFamily filters as
+    // before. The registry (allDecls) is the declaration plane;
+    // serving is the derived realization (never stored).
+    return buildCatalog(this.modelIds().map((id) => this.getModel(id))).models;
   }
 
   // ── the artifact-reader half (merged from catalog.ts, the same
@@ -324,6 +459,7 @@ let booted: ModelsService | null = null;
 async function validateBootContracts(svc: ModelsService): Promise<void> {
   const decls = svc.allDecls();
   let domains: import("./validate.ts").CardDomains | null = null;
+  const boardings = new Map<string, readonly string[]>();
   let factsModels: Record<string, { card?: string }> | null = null;
   let cardSvc: ReturnType<
     typeof import("../../../comfyui-cordis/src/cardDefs.ts").theService
@@ -341,6 +477,13 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
       if (dict !== undefined) table.set(id, fieldDomains(dict as never));
     }
     domains = table;
+    // THE CALLER OWNS THE EDGE: card id → its boarded atoms (the
+    // only form the relation exists in — models declare nothing
+    // about their callers)
+    for (const id of cardSvc.cardIds()) {
+      const def = cardSvc.getCardDef(id);
+      if (def !== undefined) boardings.set(id, def.boarded);
+    }
     const { readFileSync } = await import("node:fs");
     const raw = JSON.parse(readFileSync(new URL("../../../comfyui-cordis/data/model-facts.json", import.meta.url), "utf8")) as { models?: Record<string, { card?: string }> };
     factsModels = raw.models ?? null;
@@ -350,9 +493,21 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
     // logged skip (walls pin the full path)
     console.warn("[models] card-plane cross-validation skipped:", (err as Error).message);
   }
+  // §3.2.2 SATISFACTION GATE: every registered atom serves an
+  // address — an unaddressable model refuses the boot (named,
+  // loud; never a silent hole in the serving plane).
+  for (const id of svc.registryIds()) {
+    if (!svc.modelIds().includes(id)) {
+      throw new ModelError(`model '${id}' registers but serves no address — every atom resolves through its ladder (add a variant/cell route or a resolving default)`)
+    }
+  }
   if (domains !== null) {
     const { validateRegistryAgainstCards } = await import("./validate.ts");
-    validateRegistryAgainstCards(decls, domains, ["mode", "variant"]);
+    validateRegistryAgainstCards(
+      decls, domains, ["mode", "variant"], boardings,
+      new Set(svc.modelIds()),
+      new Map(svc.modelIds().map((id): [string, ModelDecl] => [id, svc.getModel(id)])),
+    );
   }
   // ── THE MOD INTERLOCK (the correction stroke 2026-09-08): the
   // flavor↔DECL.mods satisfaction gate — the paper's §3.2.2 law, a
@@ -369,7 +524,7 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
     const verbs = new Set(cardSvc.verbIds());
     for (const flavor of cardSvc.flavorRegistrations()) {
       for (const fam of flavor.families) {
-        const d = svc.getModel(fam);
+        const d = svc.registryModel(fam);
         if (!(d.mods ?? []).includes(flavor.pack)) {
           throw new ModelError(
             `model ${fam}: a '${flavor.pack}' flavor is registered for it but DECL.mods does not board the pack — an undeclared mutation (the model declares its mods, nothing else)`,
@@ -401,12 +556,20 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
       }
     }
   }
-  if (factsModels !== null) {
+  if (factsModels !== null && boardings.size > 0) {
+    const callersOf = new Map<string, string[]>();
+    for (const [cardId, boarded] of boardings) {
+      for (const mid of boarded) {
+        const list = callersOf.get(mid) ?? [];
+        list.push(cardId);
+        callersOf.set(mid, list);
+      }
+    }
     for (const d of decls) {
       const f = factsModels[d.id];
       if (f === undefined) continue;
-      if (typeof f.card === "string" && f.card !== (d.card ?? "")) {
-        throw new ModelError(`model ${d.id}: facts card '${f.card}' ≠ registered card '${d.card ?? ""}' (the compose contract)`);
+      if (typeof f.card === "string" && !(callersOf.get(d.id) ?? []).includes(f.card)) {
+        throw new ModelError(`model ${d.id}: facts card '${f.card}' is not one of its callers [${(callersOf.get(d.id) ?? []).join(", ")}] (the card selects atoms; the facts may not name a caller the cards do not)`);
       }
     }
   }

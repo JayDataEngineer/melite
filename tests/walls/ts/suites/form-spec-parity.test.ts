@@ -17,7 +17,7 @@ import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
-import { modelIds, getModel } from "../../../../packages/engines/comfyui/src/models/models.ts";
+import { modelIds, registryIds, getModel } from "../../../../packages/engines/comfyui/src/models/models.ts";
 
 const CATALOG = JSON.parse(
   readFileSync(
@@ -28,8 +28,24 @@ const CATALOG = JSON.parse(
   form_specs: Record<string, { body: { fields: unknown[]; schema_groups: unknown[] } }>;
 };
 
+// THE SPEC PLANE serves (caller, atom) pairs — the card-carrying
+// served ids (registry models + boarded ROUTES like moss-sfx: THE
+// CARD SELECTS THE ATOMS, and a caller may board a route). Variant
+// routes no caller boards (krea-2-raw, ace-step-sft…) serve their
+// frozen rows through the door's fallthrough — never live-pinned.
 const KNOWN = new Set(modelIds());
 const DECLS = new Map(modelIds().map((id) => [id, getModel(id)]));
+
+/** The caller of an atom (THE CARD SELECTS THE ATOMS — the model
+ *  declares nothing about its callers): the card whose boarded
+ *  list names it. */
+function callerOf(svc: ReturnType<typeof theService>, modelId: string): string | null {
+  for (const cardId of svc.cardIds()) {
+    const def = svc.getCardDef(cardId);
+    if (def !== undefined && def.boarded.includes(modelId)) return cardId;
+  }
+  return null;
+}
 
 function comparedSpecs(): string[] {
   const svc = theService();
@@ -38,8 +54,7 @@ function comparedSpecs(): string[] {
     // retired cells (anny-hmr &c) stay frozen-only — the table's
     // families are the live surface
     if (!KNOWN.has(modelId)) continue;
-    const decl = DECLS.get(modelId);
-    if (!decl?.card || svc.getCardDef(decl.card) === undefined) continue;
+    if (callerOf(svc, modelId) === null) continue;
     out.push(modelId);
   }
   return out;
@@ -49,7 +64,12 @@ describe("live formSpec ≡ frozen referee (the parity wall)", () => {
   it("boots the card plane and covers every card-carrying spec", async (): Promise<void> => {
     await loadCardDefs();
     const specs = comparedSpecs();
-    assert.equal(specs.length, 30, "the frozen catalog carries 30 card-carrying specs");
+    // 29: 28 registry models + the sfx card's boarded ROUTE
+    // moss-sfx (the caller boards the address, not the model).
+    // the qwen3-tts-base fold serves its frozen spec through the
+    // door's fallthrough (the tts card boards the model; the
+    // route inherits) — never live-pinned.
+    assert.equal(specs.length, 29, "the frozen catalog carries 29 card-carrying specs");
   });
 
   it("fields arrays are byte-equal for every spec", async (): Promise<void> => {
@@ -57,7 +77,9 @@ describe("live formSpec ≡ frozen referee (the parity wall)", () => {
     const svc = theService();
     for (const modelId of comparedSpecs()) {
       const ref = CATALOG.form_specs[modelId].body;
-      const live = svc.formSpec(getModel(modelId).card as string, modelId);
+      const caller = callerOf(svc, modelId);
+      assert.ok(caller !== null, `${modelId}: no caller boards it`);
+      const live = svc.formSpec(caller, modelId);
       assert.ok(live !== null, `${modelId}: no live spec`);
       assert.deepEqual(
         JSON.stringify(live?.fields),
@@ -72,7 +94,9 @@ describe("live formSpec ≡ frozen referee (the parity wall)", () => {
     const svc = theService();
     for (const modelId of comparedSpecs()) {
       const ref = CATALOG.form_specs[modelId].body;
-      const live = svc.formSpec(getModel(modelId).card as string, modelId);
+      const caller = callerOf(svc, modelId);
+      assert.ok(caller !== null, `${modelId}: no caller boards it`);
+      const live = svc.formSpec(caller, modelId);
       assert.deepEqual(
         JSON.stringify(live?.schema_groups),
         JSON.stringify(ref.schema_groups),
@@ -92,7 +116,13 @@ describe("live formSpec ≡ frozen referee (the parity wall)", () => {
     assert.ok(!opts.includes("not_a_sampler"));
   });
 
-  it("the table still serves 59 families through the family plugins", (): Promise<void> => {
-    assert.equal(modelIds().length, 59);
+  it("the hierarchy: 51 models, every flat route still serves", (): Promise<void> => {
+    // THE HIERARCHY STROKE (2026-09-08): one model per engine-lane
+    // unit (ace-step ×6 flat ids = ONE model: variants × quants);
+    // every flat id the runtime has ever addressed still serves.
+    assert.equal(registryIds().length, 51);
+    for (const flat of ["ace-step", "ace-step-bf16", "ace-step-base", "ace-step-base-bf16", "ace-step-sft", "ace-step-xl", "qwen3-tts", "qwen3-tts-base"]) {
+      assert.ok(modelIds().includes(flat), flat + " still serves (the flat ids survive as routes)");
+    }
   });
 });

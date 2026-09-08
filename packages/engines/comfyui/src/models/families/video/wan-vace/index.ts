@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "Wan2.2 VACE",
   "description": "Wan2.2 VACE video generation with reference-frame and mask control.",
   "engine": "comfyui",
-  "form": "form_video_director",
-  "card": "video-gen",
-  "unoffered": false,
   "defaults": {
     "width": 832,
     "height": 480,

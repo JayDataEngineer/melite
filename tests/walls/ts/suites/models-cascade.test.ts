@@ -36,7 +36,8 @@ describe("the defaults cascade is the cordis primitive (A3)", () => {
     const svc = modelsService();
     assert.ok(svc instanceof ModelsService, "modelsService() returns a Service instance");
     assert.equal(svc.name, MODELS_SERVICE);
-    assert.equal(svc.modelIds().length, 59, "every frozen row registered through the service at boot");
+    assert.equal(svc.registryIds().length, 51, "every registered model through the service at boot");
+    assert.equal(svc.modelIds().length, 93, "every flat id still serves (routes over the registry)");
   });
 
   it("registerFamily refuses duplicates LOUD (one owner per id)", (): void => {

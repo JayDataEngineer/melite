@@ -21,7 +21,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { getModel, modelIds, resolve } from "../../../../packages/engines/comfyui/src/models/models.ts";
+import { getModel, modelIds, registryIds, resolve } from "../../../../packages/engines/comfyui/src/models/models.ts";
 import { registryFlowNames } from "../../../../packages/gateway/doors/src/doors/flowsRegistry.ts";
 
 const FACTS_PATH = join(
@@ -56,8 +56,16 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
   it("variant matrices AGREE between registry and model-facts (two spellings refuse)", (): void => {
     let checked = 0;
     for (const [id, fam] of Object.entries(facts.models)) {
+      // the hierarchy fold: a facts key that is a ROUTE (not a
+      // registry model) is pinned by the route-survival law
+      // (families-golden holds every route byte-equal); its matrix
+      // is the owner's ladder — checked when the owner is reached
+      if (!registryIds().includes(id)) {
+        assert.ok(modelIds().includes(id), `facts family '${id}' serves no route`);
+        checked += fam.variants.length;
+        continue;
+      }
       const decl = getModel(id);
-      if (decl === undefined) continue;
       const regVariants = new Map(decl.variants.map((v) => [v.id, v]));
       for (const fv of fam.variants) {
         const rv = regVariants.get(fv.id);

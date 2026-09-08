@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "Image Edit",
   "description": "Instruction-driven image editing and manipulation — the Qwen-Image-Edit 2511 lane (the image-edit card arms this family; the pre-flip img-edit head is retired, same physical lane, its assets merged here 2026-09-05).",
   "engine": "comfyui",
-  "form": "form_edit",
-  "card": "image-edit",
-  "unoffered": false,
   "defaults": {
     "use_stock_nodes": false,
     "steps": 4,

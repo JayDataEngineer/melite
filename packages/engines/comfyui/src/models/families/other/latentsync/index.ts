@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "LatentSync",
   "description": "LatentSync — local-only lip-sync that aligns mouth shapes to audio in a video.",
   "engine": "comfyui",
-  "form": "form_edit",
-  "card": "",
-  "unoffered": false,
   "defaults": {
     "scheduler": "simple",
     "width": 1024,

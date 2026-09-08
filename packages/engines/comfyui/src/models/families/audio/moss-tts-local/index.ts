@@ -14,16 +14,12 @@ export const DECL: ModelDecl = {
   "label": "MOSS-TTS Local v1.5",
   "description": "MOSS-TTS Local Transformer v1.5",
   "engine": "audio_cpp",
-  "form": "form_tts",
-  "card": "",
-  "unoffered": false,
   "defaults": {
     "backend": "cuda"
   },
   "source": {
     "type": "huggingface",
     "repo_id": "audio-cpp/audio.cpp-gguf",
-    "filename": "MOSS-TTS-Local-v1.5-GGUF",
     "note": ""
   },
   "base_body": "",
@@ -40,6 +36,9 @@ export const DECL: ModelDecl = {
       "resolver_defaults": {},
       "cells": [
         {
+          "source": {
+            "filename": "MOSS-TTS-Local-v1.5-GGUF"
+          },
           "quant": "native",
           "label": "Native",
           "route": "moss-tts-local",

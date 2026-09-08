@@ -14,9 +14,6 @@ export const DECL: ModelDecl = {
   "label": "MiniMax Music 3 (txt2music)",
   "description": "MiniMax Music 3 text-to-music with lyrics (audio.cpp t2m)",
   "engine": "audio_cpp",
-  "form": "form_music",
-  "card": "music-native",
-  "unoffered": false,
   "defaults": {
     "backend": "cuda",
     "duration": 120,
@@ -25,7 +22,6 @@ export const DECL: ModelDecl = {
   "source": {
     "type": "huggingface",
     "repo_id": "audio-cpp/MiniMax-Music3-GGUF",
-    "filename": "MiniMax-Music3-GGUF",
     "note": ""
   },
   "base_body": "",
@@ -42,6 +38,9 @@ export const DECL: ModelDecl = {
       "resolver_defaults": {},
       "cells": [
         {
+          "source": {
+            "filename": "MiniMax-Music3-GGUF"
+          },
           "quant": "native",
           "label": "Native",
           "route": "txt2music",
