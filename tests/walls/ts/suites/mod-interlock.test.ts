@@ -422,3 +422,61 @@ test("the verb mirror: every mounted verb is boarded by its families' DECLs", as
     }
   }
 });
+
+test("THE DOOR GATE: _h_loras 404s every atom that boards no loras (z-image's last mile)", async () => {
+  // the operator's catch (verbatim: z-image has no mods): the
+  // frozen loras map keys EVERY mid (mod-less atoms carry an empty
+  // list), and hasOwn alone 200d a mods offer onto them — z-image
+  // served 200-empty, the deleted txt2music/mask-studio 200d too.
+  // The endpoint satisfies ONLY for boarding atoms (live registry
+  // read, same 404 body as unknown — never a skip, never a 500).
+  const doors = await import("../../../../packages/gateway/doors/src/doors/discovery.ts");
+  const root = new URL("../../../..", import.meta.url).pathname;
+  const hit = (mid: string) =>
+    doors.dispatchDiscovery("_h_loras", "GET", "/v1/loras", `/v1/loras?model=${mid}`, root);
+  // boarders serve
+  for (const mid of ["krea-2", "qwen-img-edit-2511"]) {
+    assert.equal(hit(mid)?.status, 200, `${mid} boards loras — must serve`);
+  }
+  // mod-less atoms refuse (z-image first — the reported violation)
+  for (const mid of ["z-image", "anima", "dwpose", "somax"]) {
+    const r = hit(mid);
+    assert.equal(r?.status, 404, `${mid} boards no loras — must 404, got ${r?.status}`);
+  }
+  // deleted models refuse (thrown out of the live registry)
+  for (const mid of ["txt2music", "mask-studio", "moss-tts"]) {
+    assert.equal(hit(mid)?.status, 404, `deleted '${mid}' must 404`);
+  }
+  // the old arms are untouched: unknown 404s, empty 400s
+  assert.equal(hit("no-such-model")?.status, 404);
+  assert.equal(
+    doors.dispatchDiscovery("_h_loras", "GET", "/v1/loras", "/v1/loras", root)?.status,
+    400,
+  );
+});
+
+test("THE DOOR OFFER: the catalog serves the live offer only (no hollow, no deleted)", async () => {
+  // the compliance stroke's second half: unoffering 13 hollow
+  // atoms moved the live catalog (67→53) but the door serves the
+  // FROZEN capture (55 keys — hollow + deleted). servedCatalog
+  // filters frozen bodies to the live serve law; _h_model_one
+  // 404s filtered mids even when the capture keys them.
+  const doors = await import("../../../../packages/gateway/doors/src/doors/discovery.ts");
+  const root = new URL("../../../..", import.meta.url).pathname;
+  const cat = doors.dispatchDiscovery("_h_model_catalog", "GET", "/v1/model-catalog", "/v1/model-catalog", root);
+  assert.equal(cat?.status, 200);
+  const body = JSON.parse(String(cat?.body)) as { models: Record<string, unknown>; families: Record<string, unknown> };
+  assert.equal(Object.keys(body.models).length, 53);
+  assert.equal(Object.keys(body.families).length, 53);
+  for (const mid of ["z-image", "krea-2", "qwen-img-edit-2511"]) {
+    assert.ok(mid in body.models, `${mid} is offered and composable — must serve`);
+  }
+  for (const mid of ["dwpose", "somax", "concat", "txt2music", "mask-studio", "moss-tts"]) {
+    assert.ok(!(mid in body.models), `'${mid}' is unoffered/deleted — must not serve, door serves ${Object.keys(body.models).length}`);
+  }
+  const one = (mid: string) =>
+    doors.dispatchDiscovery("_h_model_one", "GET", `/v1/model-catalog/${mid}`, `/v1/model-catalog/${mid}`, root);
+  assert.equal(one("z-image")?.status, 200);
+  assert.equal(one("dwpose")?.status, 404);
+  assert.equal(one("txt2music")?.status, 404);
+});

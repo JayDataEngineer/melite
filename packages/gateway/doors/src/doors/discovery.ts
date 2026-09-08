@@ -336,6 +336,54 @@ export function modelParam(target: string): string {
   return vals.length > 0 ? (vals[0] as string) : "";
 }
 
+/** The door's boarding read (the _h_loras consumption gate): the
+ *  live registry is the boarding truth — a mid whose derived view
+ *  boards the pack satisfies; deleted mids throw out of getModel
+ *  (same false — the endpoint 404s, never a skip, never a 500). */
+function boardsPack(mid: string, pack: string): boolean {
+  try {
+    return ((getModel(mid).mods ?? []) as readonly string[]).includes(pack);
+  } catch {
+    return false;
+  }
+}
+
+/** The catalog's live offer (the unoffered stroke, 2026-09-08):
+ *  the frozen capture is py's body truth (per-row bytes preserved),
+ *  but WHAT serves is the live SERVE LAW — buildCatalog's served
+ *  key set. Hollow atoms (unoffered) and deleted mids never offer,
+ *  however stale the capture. Computed per request (pure in-memory
+ *  build — the door already pays file IO per request by design). */
+function liveServedKeys(): Set<string> {
+  try {
+    const live = buildCatalog(modelIds().map((id) => getModel(id)));
+    return new Set(Object.keys((live as unknown as Record<string, Record<string, unknown>>).models));
+  } catch {
+    return new Set<string>();
+  }
+}
+
+/** The frozen catalog filtered to the live offer (models +
+ *  families only — capabilities/cards/vocabulary are not offers).
+ *  A filter error serves the capture unfiltered (the door stays
+ *  up; the walls pin the filtered shape, not the fallback). */
+function servedCatalog(catalog: Record<string, unknown>): Record<string, unknown> {
+  let keys: Set<string>;
+  try {
+    keys = liveServedKeys();
+  } catch {
+    return catalog;
+  }
+  if (keys.size === 0) return catalog;
+  const out: Record<string, unknown> = { ...(catalog as Record<string, unknown>) };
+  for (const section of ["models", "families"] as const) {
+    const rows = catalog[section] as Record<string, unknown>;
+    const kept: Record<string, unknown> = {};
+    for (const k of Object.keys(rows)) if (keys.has(k)) kept[k] = rows[k];
+    out[section] = kept;
+  }
+  return out;
+}
 /** py %r of a str (the provision refusal formatter, gateway.py
  *  3519-3535): single quotes unless the value holds one (then double
  *  quotes); both quotes present falls back to single with escapes.
@@ -600,14 +648,15 @@ export function handleDiscovery(
     const catalog = doc["catalog"] as Record<string, unknown>;
     const models = catalog["models"] as Record<string, unknown>;
     if (handler === "_h_model_catalog") {
-      // gateway.py 3041-3043: 200 + the whole to_json object.
-      return jsonArm(200, catalog);
+      // gateway.py 3041-3043: 200 + the whole to_json object —
+      // filtered to the LIVE offer (servedCatalog: frozen bodies,
+      // live serve law — unoffered/deleted mids never offer).
+      return jsonArm(200, servedCatalog(catalog));
     }
     if (handler === "_h_model_one") {
-      // gateway.py 3046-3051: first scan-order match or 404.
-      // The row regex is ROUTES' own (^/v1/model-catalog/(.+)$) —
-      // ctx.ts already matched it to land here; the group is
-      // re-read, never re-spelled as a route.
+      // gateway.py 3046-3051: first scan-order match or 404 —
+      // plus the live offer (an unoffered/deleted mid 404s even
+      // when the capture still keys it).
       const m: RegExpExecArray | null =
         /^\/v1\/model-catalog\/(.+)$/.exec(path);
       const mid: string = m !== null ? String(m[1]) : "";
@@ -615,8 +664,9 @@ export function handleDiscovery(
       const known: boolean =
         Array.isArray(order) &&
         (order as unknown[]).some((v: unknown): boolean => v === mid);
-      if (known && hasOwn(models, mid)) {
-        return jsonArm(200, (models as Record<string, unknown>)[mid]);
+      const offered = servedCatalog(catalog)["models"] as Record<string, unknown>;
+      if (known && hasOwn(offered, mid)) {
+        return jsonArm(200, (offered as Record<string, unknown>)[mid]);
       }
       return jsonArm(404, { error: "model not found" });
     }
@@ -778,12 +828,19 @@ export function handleDiscovery(
     if (handler === "_h_loras") {
       // gateway.py 3070-3082 + catalog.model_loras: empty model
       // 400s; unknown (or known-but-None, same body) 404s.
+      //
+      // THE CONSUMPTION GATE at the door (paper §3.2.2): the frozen
+      // map keys EVERY mid (mod-less atoms carry an empty list), so
+      // hasOwn alone 200s a mods offer onto atoms that board no
+      // pack — z-image served 200-empty here. The endpoint satisfies
+      // ONLY for atoms boarding 'loras' (the live registry is the
+      // boarding truth; deleted mids throw out of it → same 404).
       const model: string = modelParam(target);
       if (model === "") {
         return jsonArm(400, { error: "missing model param" });
       }
       const loras = doc["loras"] as Record<string, unknown>;
-      if (hasOwn(loras, model)) {
+      if (hasOwn(loras, model) && boardsPack(model, "loras")) {
         return jsonArm(200, (loras as Record<string, unknown>)[model]);
       }
       return jsonArm(404, { error: "model not found" });
