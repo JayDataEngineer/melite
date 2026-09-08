@@ -65,7 +65,7 @@ describe("the served catalog vs the tree golden (A1)", () => {
     const goldenServed = new Set(
       Object.keys(golden.models).filter((id) => !RETIRED_IN_GOLDEN.includes(id as never)),
     );
-    assert.equal(Object.keys(cat.models).length, 67);
+    assert.equal(Object.keys(cat.models).length, 53);
     for (const id of goldenServed) {
       const g = golden.models[id];
       const mine = cat.models[id];
@@ -108,7 +108,7 @@ describe("the served catalog vs the tree golden (A1)", () => {
   });
 
   it("families section matches the golden on all served ids", (): void => {
-    assert.equal(Object.keys(cat.families).length, 67);
+    assert.equal(Object.keys(cat.families).length, 53);
     for (const [id, fam] of Object.entries(cat.families)) {
       assert.deepEqual(fam, golden.families[id], `family ${id} diverges`);
     }

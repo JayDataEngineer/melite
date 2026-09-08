@@ -42,26 +42,6 @@
    "has_inference": false,
    "has_rubric": false
   },
-  "auto-detect": {
-   "id": "auto-detect",
-   "family": "auto-detect",
-   "genre": "image",
-   "label": "Auto Detect Standard Native (weightless)",
-   "description": "Auto Detect — automatically selects the best model and conditioning for a given input.",
-   "source": {
-    "type": ""
-   },
-   "defaults": {
-    "output_mode": "segm",
-    "detect_mode": "face",
-    "detection_threshold": 0.35,
-    "sam_dilation": 0,
-    "sam_threshold": 0.93
-   },
-   "engine": "",
-   "has_inference": false,
-   "has_rubric": false
-  },
   "autoremesher": {
    "id": "autoremesher",
    "family": "autoremesher",
@@ -72,44 +52,6 @@
     "type": ""
    },
    "defaults": {},
-   "engine": "comfyui",
-   "has_inference": false,
-   "has_rubric": false
-  },
-  "concat": {
-   "id": "concat",
-   "family": "concat",
-   "genre": "video",
-   "label": "Media Merge Standard Native (weightless)",
-   "description": ">-",
-   "source": {
-    "type": ""
-   },
-   "defaults": {
-    "operation": "concat",
-    "output_artifact": "video"
-   },
-   "engine": "",
-   "has_inference": false,
-   "has_rubric": false
-  },
-  "dwpose": {
-   "id": "dwpose",
-   "family": "dwpose",
-   "genre": "other",
-   "label": "DWPose Standard Native (weightless)",
-   "description": "DWPose whole-body pose detection (preprocessor for pose-guided generation).",
-   "source": {
-    "type": ""
-   },
-   "defaults": {
-    "cfg": 1,
-    "scheduler": "simple",
-    "width": 1024,
-    "height": 1024,
-    "steps": 1,
-    "sampler": "euler"
-   },
    "engine": "comfyui",
    "has_inference": false,
    "has_rubric": false
@@ -140,100 +82,6 @@
    "defaults": {
     "checkpoint": "MiaoshouAI/Florence-2-large-PromptGen-v2.0",
     "caption_task": "more_detailed_caption"
-   },
-   "engine": "comfyui",
-   "has_inference": false,
-   "has_rubric": false
-  },
-  "flux-fill-dev": {
-   "id": "flux-fill-dev",
-   "family": "flux-fill-dev",
-   "genre": "image",
-   "label": "Inpaint OneReward",
-   "description": "Dual-engine masked region inpainting — FLUX.1-Fill (dedicated fill arch) or LanPaint on any base model.",
-   "source": {
-    "type": ""
-   },
-   "defaults": {
-    "inpaint_context_pad": 64,
-    "inpaint_detail": "crop+stitch",
-    "inpaint_edge_extend": 0,
-    "inpaint_target_size": 1024,
-    "outpaint_bottom": 0,
-    "outpaint_left": 0,
-    "outpaint_overlap": 16,
-    "outpaint_right": 0,
-    "outpaint_top": 0,
-    "refine_denoise": 0.4,
-    "mode": "replace",
-    "steps": 20,
-    "cfg": 1,
-    "guidance": 30,
-    "sampler": "euler",
-    "scheduler": "normal",
-    "seed": 42,
-    "mask_grow": 8,
-    "mask_feather": 8,
-    "mask_threshold": 0,
-    "mask_invert": false
-   },
-   "engine": "",
-   "has_inference": false,
-   "has_rubric": false
-  },
-  "flux-fill-onereward": {
-   "id": "flux-fill-onereward",
-   "family": "flux-fill-onereward",
-   "genre": "image",
-   "label": "Inpaint OneReward",
-   "description": "Dual-engine masked region inpainting — FLUX.1-Fill (dedicated fill arch) or LanPaint on any base model.",
-   "source": {
-    "type": ""
-   },
-   "defaults": {
-    "inpaint_context_pad": 64,
-    "inpaint_detail": "crop+stitch",
-    "inpaint_edge_extend": 0,
-    "inpaint_target_size": 1024,
-    "outpaint_bottom": 0,
-    "outpaint_left": 0,
-    "outpaint_overlap": 16,
-    "outpaint_right": 0,
-    "outpaint_top": 0,
-    "refine_denoise": 0.4,
-    "mode": "replace",
-    "steps": 20,
-    "cfg": 1,
-    "guidance": 30,
-    "sampler": "euler",
-    "scheduler": "normal",
-    "seed": 42,
-    "mask_grow": 8,
-    "mask_feather": 8,
-    "mask_threshold": 0,
-    "mask_invert": false
-   },
-   "engine": "",
-   "has_inference": false,
-   "has_rubric": false
-  },
-  "gem_soma": {
-   "id": "gem_soma",
-   "family": "gem_soma",
-   "genre": "other",
-   "label": "SOMA Standard Native (weightless)",
-   "description": "GEM-X SOMA pose estimation and retargeting.",
-   "source": {
-    "type": "",
-    "repo_id": "nvidia/soma-x"
-   },
-   "defaults": {
-    "scheduler": "simple",
-    "width": 1024,
-    "height": 1024,
-    "steps": 25,
-    "sampler": "euler",
-    "cfg": 7
    },
    "engine": "comfyui",
    "has_inference": false,
@@ -487,59 +335,6 @@
    "has_inference": true,
    "has_rubric": false,
    "has_agent": true
-  },
-  "latentsync": {
-   "id": "latentsync",
-   "family": "latentsync",
-   "genre": "other",
-   "label": "LatentSync Standard Native (weightless)",
-   "description": "LatentSync — local-only lip-sync that aligns mouth shapes to audio in a video.",
-   "source": {
-    "type": ""
-   },
-   "defaults": {
-    "scheduler": "simple",
-    "width": 1024,
-    "height": 1024,
-    "steps": 25,
-    "sampler": "euler",
-    "cfg": 1
-   },
-   "engine": "comfyui",
-   "has_inference": false,
-   "has_rubric": false
-  },
-  "mesh_refine": {
-   "id": "mesh_refine",
-   "family": "mesh_refine",
-   "genre": "3d",
-   "label": "UltraShape Mesh Refine Standard Native",
-   "description": "Image-guided coarse-mesh refinement (UltraShape 1.0 DiT) — carves sharp limb separation + hard-surface edges into blobby TRELLIS output using the SAME guide image the mesh was generated from. The pre-rig cleanup step: run BEFORE SOMAX so proximity-based weight transfer can't glue arm vertices to torso bones.",
-   "source": {
-    "type": ""
-   },
-   "defaults": {
-    "box_v": 1,
-    "mc_level": 0,
-    "normalize_scale": 0.99,
-    "num_latents": 32768,
-    "num_sharp_points": 204800,
-    "num_uniform_points": 204800,
-    "preset": "standard",
-    "dtype": "bfloat16",
-    "low_vram": false,
-    "steps": 50,
-    "guidance_scale": 5,
-    "octree_resolution": 384,
-    "num_chunks": 8000,
-    "remove_bg": false,
-    "seed": 42,
-    "file_format": "glb",
-    "filename_prefix": "ultrashape_refined"
-   },
-   "engine": "",
-   "has_inference": false,
-   "has_rubric": false
   },
   "moss-sfx": {
    "id": "moss-sfx",
@@ -1103,37 +898,6 @@
    "has_inference": true,
    "has_rubric": false
   },
-  "rtx-vsr": {
-   "id": "rtx-vsr",
-   "family": "rtx-vsr",
-   "genre": "video",
-   "label": "Video Upscale Standard Native",
-   "description": ">-",
-   "source": {
-    "type": ""
-   },
-   "defaults": {
-    "batch_size": 5,
-    "cfg": 4,
-    "color_match_enabled": true,
-    "denoise": 0.3,
-    "dit_model": "seedvr2_ema_3b_fp16.safetensors",
-    "filename_prefix": "upscaled_video",
-    "fps": 24,
-    "seed": 0,
-    "steps": 20,
-    "upscaler_model": "4xNomos2_hq_dat2.pth",
-    "vae_model": "ema_vae_fp16.safetensors",
-    "mode": "rtx_vsr",
-    "rtx_two_pass": true,
-    "rtx_mode": "vsr",
-    "target_resolution": 1080,
-    "rtx_strength": 0.6
-   },
-   "engine": "",
-   "has_inference": false,
-   "has_rubric": false
-  },
   "scail2-animate": {
    "id": "scail2-animate",
    "family": "scail2-animate",
@@ -1156,27 +920,6 @@
     "seed": 42
    },
    "engine": "comfyui",
-   "has_inference": false,
-   "has_rubric": false
-  },
-  "see-through": {
-   "id": "see-through",
-   "family": "see-through",
-   "genre": "other",
-   "label": "See-Through Standard Native (weightless)",
-   "description": "See-Through anime layer decomposition — splits an image into character, clothing, and background layers.",
-   "source": {
-    "type": "",
-    "repo_id": "layerdifforg/seethroughv0.0.2_layerdiff3d"
-   },
-   "defaults": {
-    "resolution": 1280,
-    "resolution_depth": 768,
-    "inference_steps": 30,
-    "tblr_split": false,
-    "seed": 42
-   },
-   "engine": "",
    "has_inference": false,
    "has_rubric": false
   },
@@ -1248,65 +991,6 @@
    },
    "defaults": {},
    "engine": "comfyui",
-   "has_inference": false,
-   "has_rubric": false
-  },
-  "somax": {
-   "id": "somax",
-   "family": "somax",
-   "genre": "3d",
-   "label": "SOMAX Standard Native",
-   "description": "TRELLIS → SOMA weight transfer — image to SOMAX rigged GLB with anatomically correct SOMA-77 skeleton weights.",
-   "source": {
-    "type": "",
-    "repo_id": "nvidia/soma-x"
-   },
-   "defaults": {
-    "filename_prefix": "KimodoAnimated",
-    "file_format": "glb",
-    "decimate_ratio": 0.2,
-    "preserve_texture": true,
-    "in_place": true
-   },
-   "engine": "",
-   "has_inference": false,
-   "has_rubric": false
-  },
-  "step1x_texture": {
-   "id": "step1x_texture",
-   "family": "step1x_texture",
-   "genre": "3d",
-   "label": "Step1X-3D Texture Standard Native",
-   "description": "Diffusion-based 3D texture synthesis — 1 reference image → 6 multi-view images via SDXL ig2mv flow → baked onto UV atlas. Fills ALL surfaces (no coverage gaps unlike camera projection). 3.5B model, ~15s on 4090.",
-   "source": {
-    "type": ""
-   },
-   "defaults": {
-    "preset": "standard",
-    "texture_size": 2048,
-    "render_size": 2048,
-    "remove_bg": false,
-    "seed": 2025,
-    "filename_prefix": "step1x_texture"
-   },
-   "engine": "",
-   "has_inference": false,
-   "has_rubric": false
-  },
-  "stretchy-rig": {
-   "id": "stretchy-rig",
-   "family": "stretchy-rig",
-   "genre": "other",
-   "label": "Stretchy Rig Standard Native (weightless)",
-   "description": "Stretchy Studio auto-rig — DWPose TensorRT whole-body keypoints for 2D character animation.",
-   "source": {
-    "type": ""
-   },
-   "defaults": {
-    "yolox_precision": "fp16",
-    "dwpose_precision": "fp32"
-   },
-   "engine": "",
    "has_inference": false,
    "has_rubric": false
   },
@@ -1729,30 +1413,6 @@
    "has_inference": false,
    "has_rubric": false
   },
-  "trellis_native": {
-   "id": "trellis_native",
-   "family": "trellis_native",
-   "genre": "3d",
-   "label": "Trellis (Native) Standard Native",
-   "description": "Native trellis.cpp GGML engine — image to UV-textured GLB with the reference-parity C++ postprocess (weld, fill, DC remesh, CuMesh QEM, xatlas, trilinear PBR bake). 50s per asset on the 4090; no confetti.",
-   "source": {
-    "type": "",
-    "repo_id": "ilintar/trellis2-gguf"
-   },
-   "defaults": {
-    "resolution": 1024,
-    "quant": "q8",
-    "bg_removal": "auto",
-    "band": 0,
-    "texture_size": 2048,
-    "webp_quality": 90,
-    "filename_prefix": "trelliscpp",
-    "seed": 42
-   },
-   "engine": "",
-   "has_inference": false,
-   "has_rubric": false
-  },
   "wan-vace": {
    "id": "wan-vace",
    "family": "wan-vace",
@@ -1866,21 +1526,9 @@
     "layout": "studio"
    }
   },
-  "auto-detect": {
-   "label": "Auto Detect Standard Native (weightless)",
-   "genre": "image"
-  },
   "autoremesher": {
    "label": "AutoRemesher Standard Native",
    "genre": "3d"
-  },
-  "concat": {
-   "label": "Media Merge Standard Native (weightless)",
-   "genre": "video"
-  },
-  "dwpose": {
-   "label": "DWPose Standard Native (weightless)",
-   "genre": "other"
   },
   "fit": {
    "label": "Fit Standard Native",
@@ -1889,18 +1537,6 @@
   "florence2": {
    "label": "Florence-2 Standard F32",
    "genre": "image"
-  },
-  "flux-fill-dev": {
-   "label": "Inpaint OneReward",
-   "genre": "image"
-  },
-  "flux-fill-onereward": {
-   "label": "Inpaint OneReward",
-   "genre": "image"
-  },
-  "gem_soma": {
-   "label": "SOMA Standard Native (weightless)",
-   "genre": "other"
   },
   "h3": {
    "label": "MiniMax H3 FL2VA ⚡ Turbo",
@@ -2002,14 +1638,6 @@
   "krea-2-raw": {
    "label": "Krea 2 Raw INT8 ConvRot",
    "genre": "image"
-  },
-  "latentsync": {
-   "label": "LatentSync Standard Native (weightless)",
-   "genre": "other"
-  },
-  "mesh_refine": {
-   "label": "UltraShape Mesh Refine Standard Native",
-   "genre": "3d"
   },
   "moss-sfx": {
    "label": "MOSS-SFX v2 Standard Native",
@@ -2178,17 +1806,9 @@
    "label": "Qwen3-TTS 0.6B VoiceDesign Native",
    "genre": "audio"
   },
-  "rtx-vsr": {
-   "label": "Video Upscale Standard Native",
-   "genre": "video"
-  },
   "scail2-animate": {
    "label": "SCAIL-2 Standard FP8",
    "genre": "video"
-  },
-  "see-through": {
-   "label": "See-Through Standard Native (weightless)",
-   "genre": "other"
   },
   "seedvr2_ema": {
    "label": "SeedVR2 Upscaler 3B FP16",
@@ -2205,25 +1825,6 @@
   "skin": {
    "label": "Skin Standard Native",
    "genre": "3d"
-  },
-  "somax": {
-   "label": "SOMAX Standard Native",
-   "genre": "3d",
-   "studio": {
-    "tenant": "3d/body",
-    "owns_params": false,
-    "writes": [],
-    "size": "normal",
-    "layout": "studio"
-   }
-  },
-  "step1x_texture": {
-   "label": "Step1X-3D Texture Standard Native",
-   "genre": "3d"
-  },
-  "stretchy-rig": {
-   "label": "Stretchy Rig Standard Native (weightless)",
-   "genre": "other"
   },
   "transfer_rig": {
    "label": "Transfer Rig Standard Native",
@@ -2363,10 +1964,6 @@
     "size": "normal",
     "layout": "studio"
    }
-  },
-  "trellis_native": {
-   "label": "Trellis (Native) Standard Native",
-   "genre": "3d"
   },
   "wan-vace": {
    "label": "Wan2.2 VACE Lightning",

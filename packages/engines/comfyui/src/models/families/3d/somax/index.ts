@@ -14,6 +14,7 @@ export const DECL: ModelDecl = {
   "label": "SOMAX",
   "description": "TRELLIS → SOMA weight transfer — image to SOMAX rigged GLB with anatomically correct SOMA-77 skeleton weights.",
   "engine": "",
+  "unoffered": true,
   "defaults": {
     "filename_prefix": "KimodoAnimated",
     "file_format": "glb",

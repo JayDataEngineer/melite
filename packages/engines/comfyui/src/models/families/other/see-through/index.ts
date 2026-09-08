@@ -14,6 +14,7 @@ export const DECL: ModelDecl = {
   "label": "See-Through",
   "description": "See-Through anime layer decomposition — splits an image into character, clothing, and background layers.",
   "engine": "",
+  "unoffered": true,
   "defaults": {
     "resolution": 1280,
     "resolution_depth": 768,

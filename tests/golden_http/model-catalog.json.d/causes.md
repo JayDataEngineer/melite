@@ -36,3 +36,9 @@ native music3 stands alone. Served 68. Walls 17/17.
 ## 2026-09-08 — mask-studio phantom DELETED (operator order)
 
 Action card, not a model. Served 67. Walls 17/17.
+
+## 2026-09-08 — 13 hollow atoms unoffered (operator order)
+
+Served 67→53 (13 owners + the flux-fill-onereward variant
+route, which rides its owner out). New wall: every served
+owner is claimed (against-cards). Walls 17/17.

@@ -175,6 +175,34 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     assert.ok(checked.length >= 28, `expected 28 checked pairs, got ${checked.length}`);
   });
 
+  it("every served owner is claimed (the catalog offers only runnable atoms)", async (): Promise<void> => {
+    // paper §3.2.2 at the catalog plane: a served address no caller
+    // boards is an unsatisfiable offer (the 13 hollow models,
+    // 2026-09-08 — served, callerless, unrunnable). The unit is the
+    // OWNER: variants inherit callers through the model boarding.
+    // Unoffered/foreign-engine atoms never serve — this wall and
+    // the SERVE LAW read one rule.
+    const { buildCatalog } = await import("../../../../packages/engines/comfyui/src/models/catalogEmission.ts");
+    const boarded = await allBoardings();
+    const claimed = new Set<string>();
+    for (const list of boarded.values()) for (const b of list) claimed.add(b);
+    const cat = buildCatalog(modelIds().map((id) => getModel(id)));
+    const servedAddr = new Set(Object.keys(cat.models));
+    const owners = new Map<string, string[]>();
+    for (const addr of servedAddr) {
+      const o = [...registryIds()].find((rid) => {
+        const d = registryModel(rid);
+        return d.variants.some((v) => v.route === addr || v.cells.some((c) => c.route === addr));
+      });
+      assert.ok(o !== undefined, `served address '${addr}' has no owning atom`);
+      owners.set(o, [...(owners.get(o) ?? []), addr]);
+    }
+    for (const [o, addrs] of owners) {
+      const covered = [o, ...addrs].some((a) => claimed.has(a));
+      assert.ok(covered, `served owner '${o}' is claimed by no card (board it or unoffer it — the catalog offers only runnable atoms)`);
+    }
+  });
+
   it("fieldDomains extracts schemastery min/max/options", (): void => {
     // schemastery truth (probed 2026-09-08): the union's
     // alternatives live at .list (NODE level), each const carries

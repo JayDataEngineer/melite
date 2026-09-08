@@ -75,3 +75,14 @@ The flows wall learns ACTION-CARD lanes from the live card plane
 (facts row still truly describes the lane). Trade, stated loud:
 the rt_detr provision row dies with the phantom — no catalog
 install rail for it; the weights must be on disk.
+
+## 2026-09-08 — 13 hollow atoms unoffered (operator order: models in compliance)
+
+Served but callerless and unrunnable (no card, no flow, no
+lanes, no inference — the catalog offered what no lane could
+run): auto-detect, concat, dwpose, flux-fill-dev, gem_soma,
+latentsync, mesh_refine, rtx-vsr, see-through, somax (its
+weights ride the anny rig-somax verb flow, not its address),
+step1x_texture, stretchy-rig, trellis_native. DECLs gain
+"unoffered": true (the basic_resize precedent — declared and
+addressable, not offered). Registry 48 / routes 91 untouched.

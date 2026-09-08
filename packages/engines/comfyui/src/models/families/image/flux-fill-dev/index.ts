@@ -14,6 +14,7 @@ export const DECL: ModelDecl = {
   "label": "Inpaint",
   "description": "Dual-engine masked region inpainting — FLUX.1-Fill (dedicated fill arch) or LanPaint on any base model.",
   "engine": "",
+  "unoffered": true,
   "defaults": {
     "inpaint_context_pad": 64,
     "inpaint_detail": "crop+stitch",

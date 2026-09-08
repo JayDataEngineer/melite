@@ -14,6 +14,7 @@ export const DECL: ModelDecl = {
   "label": "SOMA",
   "description": "GEM-X SOMA pose estimation and retargeting.",
   "engine": "comfyui",
+  "unoffered": true,
   "defaults": {
     "scheduler": "simple",
     "width": 1024,

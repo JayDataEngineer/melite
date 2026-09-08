@@ -14,6 +14,7 @@ export const DECL: ModelDecl = {
   "label": "Auto Detect",
   "description": "Auto Detect — automatically selects the best model and conditioning for a given input.",
   "engine": "",
+  "unoffered": true,
   "defaults": {
     "output_mode": "segm",
     "detect_mode": "face",

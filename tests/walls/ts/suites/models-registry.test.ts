@@ -37,10 +37,15 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     assert.equal(rcomfy.length, 44);
   });
 
-  it("serves 68 offered routes; the unoffered are excluded loud-side", (): void => {
+  it("serves 53 offered routes; the unoffered are excluded loud-side", (): void => {
     const cat = modelCatalog();
-    assert.equal(Object.keys(cat).length, 67);
-    for (const id of ["basic_resize", "ltx-2-3", "ltx-director-distilled", "pixel_upscale"]) {
+    assert.equal(Object.keys(cat).length, 53);
+    // the 4 fragment/retired unoffered + the 13 hollow atoms
+    // (2026-09-08: served but callerless and unrunnable — the
+    // catalog offers only runnable atoms, walled in
+    // models-against-cards) + flux-fill-onereward (rides its
+    // unoffered owner out).
+    for (const id of ["basic_resize", "ltx-2-3", "ltx-director-distilled", "pixel_upscale", "auto-detect", "concat", "dwpose", "flux-fill-dev", "flux-fill-onereward", "gem_soma", "latentsync", "mesh_refine", "rtx-vsr", "see-through", "somax", "step1x_texture", "stretchy-rig", "trellis_native"]) {
       assert.equal(cat[id], undefined, `${id} must not serve (unoffered)`);
     }
   });

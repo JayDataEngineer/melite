@@ -1233,6 +1233,7 @@
   "label": "Auto Detect Standard Native (weightless)",
   "description": "Auto Detect — automatically selects the best model and conditioning for a given input.",
   "engine": "",
+  "unoffered": true,
   "defaults": {
    "output_mode": "segm",
    "detect_mode": "face",
@@ -1465,6 +1466,7 @@
   "label": "Media Merge Standard Native (weightless)",
   "description": ">-",
   "engine": "",
+  "unoffered": true,
   "defaults": {
    "operation": "concat",
    "output_artifact": "video"
@@ -1536,6 +1538,7 @@
   "label": "DWPose Standard Native (weightless)",
   "description": "DWPose whole-body pose detection (preprocessor for pose-guided generation).",
   "engine": "comfyui",
+  "unoffered": true,
   "defaults": {
    "cfg": 1,
    "scheduler": "simple",
@@ -1769,6 +1772,7 @@
   "label": "Inpaint OneReward",
   "description": "Dual-engine masked region inpainting — FLUX.1-Fill (dedicated fill arch) or LanPaint on any base model.",
   "engine": "",
+  "unoffered": true,
   "defaults": {
    "inpaint_context_pad": 64,
    "inpaint_detail": "crop+stitch",
@@ -1851,6 +1855,7 @@
   "label": "Inpaint OneReward",
   "description": "Dual-engine masked region inpainting — FLUX.1-Fill (dedicated fill arch) or LanPaint on any base model.",
   "engine": "",
+  "unoffered": true,
   "defaults": {
    "inpaint_context_pad": 64,
    "inpaint_detail": "crop+stitch",
@@ -1933,6 +1938,7 @@
   "label": "SOMA Standard Native (weightless)",
   "description": "GEM-X SOMA pose estimation and retargeting.",
   "engine": "comfyui",
+  "unoffered": true,
   "defaults": {
    "scheduler": "simple",
    "width": 1024,
@@ -3593,6 +3599,7 @@
   "label": "LatentSync Standard Native (weightless)",
   "description": "LatentSync — local-only lip-sync that aligns mouth shapes to audio in a video.",
   "engine": "comfyui",
+  "unoffered": true,
   "defaults": {
    "scheduler": "simple",
    "width": 1024,
@@ -4670,6 +4677,7 @@
   "label": "UltraShape Mesh Refine Standard Native",
   "description": "Image-guided coarse-mesh refinement (UltraShape 1.0 DiT) — carves sharp limb separation + hard-surface edges into blobby TRELLIS output using the SAME guide image the mesh was generated from. The pre-rig cleanup step: run BEFORE SOMAX so proximity-based weight transfer can't glue arm vertices to torso bones.",
   "engine": "",
+  "unoffered": true,
   "defaults": {
    "box_v": 1,
    "mc_level": 0,
@@ -8730,6 +8738,7 @@
   "label": "Video Upscale Standard Native",
   "description": ">-",
   "engine": "",
+  "unoffered": true,
   "defaults": {
    "batch_size": 5,
    "cfg": 4,
@@ -8913,6 +8922,7 @@
   "label": "See-Through Standard Native (weightless)",
   "description": "See-Through anime layer decomposition — splits an image into character, clothing, and background layers.",
   "engine": "",
+  "unoffered": true,
   "defaults": {
    "resolution": 1280,
    "resolution_depth": 768,
@@ -9445,6 +9455,7 @@
   "label": "SOMAX Standard Native",
   "description": "TRELLIS → SOMA weight transfer — image to SOMAX rigged GLB with anatomically correct SOMA-77 skeleton weights.",
   "engine": "",
+  "unoffered": true,
   "defaults": {
    "filename_prefix": "KimodoAnimated",
    "file_format": "glb",
@@ -9533,6 +9544,7 @@
   "label": "Step1X-3D Texture Standard Native",
   "description": "Diffusion-based 3D texture synthesis — 1 reference image → 6 multi-view images via SDXL ig2mv flow → baked onto UV atlas. Fills ALL surfaces (no coverage gaps unlike camera projection). 3.5B model, ~15s on 4090.",
   "engine": "",
+  "unoffered": true,
   "defaults": {
    "preset": "standard",
    "texture_size": 2048,
@@ -9608,6 +9620,7 @@
   "label": "Stretchy Rig Standard Native (weightless)",
   "description": "Stretchy Studio auto-rig — DWPose TensorRT whole-body keypoints for 2D character animation.",
   "engine": "",
+  "unoffered": true,
   "defaults": {
    "yolox_precision": "fp16",
    "dwpose_precision": "fp32"
@@ -11888,6 +11901,7 @@
   "label": "Trellis (Native) Standard Native",
   "description": "Native trellis.cpp GGML engine — image to UV-textured GLB with the reference-parity C++ postprocess (weld, fill, DC remesh, CuMesh QEM, xatlas, trilinear PBR bake). 50s per asset on the 4090; no confetti.",
   "engine": "",
+  "unoffered": true,
   "defaults": {
    "resolution": 1024,
    "quant": "q8",

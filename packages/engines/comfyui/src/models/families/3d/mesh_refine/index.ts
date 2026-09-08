@@ -14,6 +14,7 @@ export const DECL: ModelDecl = {
   "label": "UltraShape Mesh Refine",
   "description": "Image-guided coarse-mesh refinement (UltraShape 1.0 DiT) — carves sharp limb separation + hard-surface edges into blobby TRELLIS output using the SAME guide image the mesh was generated from. The pre-rig cleanup step: run BEFORE SOMAX so proximity-based weight transfer can't glue arm vertices to torso bones.",
   "engine": "",
+  "unoffered": true,
   "defaults": {
     "box_v": 1,
     "mc_level": 0,

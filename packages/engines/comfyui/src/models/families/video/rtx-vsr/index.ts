@@ -14,6 +14,7 @@ export const DECL: ModelDecl = {
   "label": "Video Upscale",
   "description": ">-",
   "engine": "",
+  "unoffered": true,
   "defaults": {
     "batch_size": 5,
     "cfg": 4,
