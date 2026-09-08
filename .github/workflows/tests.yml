@@ -11,22 +11,20 @@ permissions:
 
 jobs:
   fast-suite:
-    # The README's documented runner — the fast, no-GPU set:
-    # unit (pytest-collected) + routes (skip when no gateway) +
-    # walls (test_walls.py subprocess-pins every script suite).
-    # Live GPU inference stays opt-in locally (pytest -m gpu) — it
-    # needs the standing gateway + ComfyUI and is never CI's to spend.
-    name: unit + routes + walls (no GPU)
+    # The README's documented runner — the TS walls are the whole
+    # fast suite (node tests/walls/ts/run.mjs). The py battery
+    # tests/walls/suites/*.py and the estate pytest planes
+    # (tests/unit, tests/routes) are deleted per NO-ESTATE-PYTHON
+    # LAW, never revived. Live GPU inference stays opt-in locally —
+    # it needs the standing gateway + ComfyUI and is never CI's
+    # to spend.
+    name: walls (no GPU)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-node@v4
         with:
-          python-version: "3.13"
-          enable-cache: true
-      - name: Sync the base env (uv.lock)
-        run: uv sync --frozen
+          node-version: "22"
       - name: Run the fast suite
-        run: uv run pytest tests/unit tests/routes tests/walls -q
+        run: node tests/walls/ts/run.mjs
