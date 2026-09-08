@@ -46,7 +46,7 @@ import subprocess
 
 from _anchor import REPO
 
-ROUTES_TS = REPO / "packages" / "gateway" / "src" / "routes.ts"
+ROUTES_TS = REPO / "packages" / "gateway-core" / "src" / "routes.ts"
 
 EXPECT_ROWS = 54
 

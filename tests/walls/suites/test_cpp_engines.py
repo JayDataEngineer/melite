@@ -98,7 +98,7 @@ check("no live code references retired engine paths",
       not bad, f"violations: {bad[:4]}")
 
 # 4. the TS engine table is comfyui-only.
-fv = os.path.join(REPO, "packages", "gateway", "src", "doors",
+fv = os.path.join(REPO, "packages", "gateway-doors", "src", "doors",
                   "flowsValidate.ts")
 with open(fv, encoding="utf-8") as f:
     body = f.read()

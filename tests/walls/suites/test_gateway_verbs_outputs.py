@@ -6,7 +6,7 @@ enforced in the TS door"): the anny SubAction verbs are wired as code
 paths today (py verbs.py classes → mounted on the anny card → TSX
 chips posting flows / the tenant-local preset action) with ZERO TS
 presence (drift item 5). This wall pins their port as DECL DATA —
-packages/gateway/src/schema/verbs.ts (verb → card/params table, the
+packages/gateway-core/src/schema/verbs.ts (verb → card/params table, the
 door dispatching table-driven) — and pins the card_outputs settle
 gate in the same module (TS outputViolation / applyRunContract,
 wired into the TS serve path: doors/flowsRun.ts runOne, no-op
@@ -81,7 +81,7 @@ models/3d/anny/model.py:110 (frozen as FROZEN_MOUNTED — model.py is
 S-oracle prey, not this stroke); contract python/melite_cards/dsl.py
 SubActionMod 857-869 + VerbEngine 822-854 (frozen as
 FROZEN_VERB_ORACLE rows); outputs gate
-packages/gateway/src/schema/verbs.ts outputViolation +
+packages/gateway-core/src/schema/verbs.ts outputViolation +
 applyRunContract (served via doors/flowsRun.ts runOne); TSX renderer
 action_cards/3d/anny/ui/studio/component.tsx
 ANNY_VERBS 97-134 + ANNY_PRESET_VERBS 447-448.
@@ -111,7 +111,7 @@ from _anchor import REPO
 
 import flow as flow_mod
 
-TS_VERBS = REPO / "packages" / "gateway" / "src" / "schema" / "verbs.ts"
+TS_VERBS = REPO / "packages" / "gateway-core" / "src" / "schema" / "verbs.ts"
 TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 VERBS_PY = (REPO / "packages" / "engines" / "comfyui" / "models" / "3d"
             / "anny" / "mods" / "verbs.py")

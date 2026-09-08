@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """test_gateway_flows_run_parity.py — P4 flows-run TS-ONLY wall.
 
-Pins the TypeScript engine-IO half (packages/gateway/src/engine/
+Pins the TypeScript engine-IO half (packages/engines/comfyui/src/
 comfyui.ts via doors/flowsRun.ts + the ctx.ts seam) against frozen
 literals and frozen TS goldens (golden_ts/
 test_gateway_flows_run_parity/, causes.md there):
@@ -126,7 +126,7 @@ sys.dont_write_bytecode = True
 
 PASS = FAIL = 0
 DID = "wall-flows-draft-1"
-ENGINE_TS = REPO / "packages" / "gateway" / "src" / "engine" / "comfyui.ts"
+ENGINE_TS = REPO / "packages" / "engines" / "comfyui" / "src" / "comfyui.ts"
 GOLDEN_DIR = (REPO / "tests" / "walls" / "suites" / "golden_ts" /
               "test_gateway_flows_run_parity")
 WF = {"1": {"class_type": "EmptyLatentImage",
@@ -489,7 +489,7 @@ def main() -> int:
 
         # ── Phase C: engine-behavior pins (node harness vs literals) ──
         # The harness drives the TS port of the comfyui execute lane
-        # (packages/gateway/src/engine/comfyui.ts: executeSingle /
+        # (packages/engines/comfyui/src/comfyui.ts: executeSingle /
         # executeFlow over the stub); the keeper engine libs
         # (packages/engines/comfyui/compose/native.py, mergegraph.py)
         # are engine libs, not the gateway oracle — untouched, and no

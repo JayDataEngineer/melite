@@ -1,0 +1,22 @@
+{
+  "name": "@melite/engine-comfyui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The ComfyUI engine leaf (STAGE 1 of the DSH bundle split; first tenant of the engines/ domain \u2014 MCP-as-cards slots beside it): engine HTTP client, repr helpers, merge rows. Action-card trees stay in place (planes walks + wall path pins byte-stable).",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

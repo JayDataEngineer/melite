@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """test_gateway_uploads_parity.py — POST /v1/uploads TS wall (P3), TS-ONLY.
 
-Pins the TypeScript write door (packages/gateway/src/doors/uploads.ts
+Pins the TypeScript write door (packages/gateway-doors/src/doors/uploads.ts
 via ctx.ts dispatch):
 
   small-file round-trip (response shape {path, bytes} + staged

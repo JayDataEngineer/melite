@@ -2,7 +2,7 @@
 """test_gateway_resurrect_parity.py — P5 boot-resurrect + stale-sweep wall (TS-ONLY).
 
 Proves the TypeScript single queue core
-(packages/gateway/src/queue/queue.ts: resurrectRuns/bootSweep, wired
+(packages/queue/src/queue/queue.ts: resurrectRuns/bootSweep, wired
 into the boot in apps/gateway/src/main.ts via bootQueue) reconciles
 a dead gateway's state root:
 
@@ -113,7 +113,7 @@ sys.dont_write_bytecode = True
 
 PASS = FAIL = 0
 TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
-TS_QUEUE = REPO / "packages" / "gateway" / "src" / "queue" / "queue.ts"
+TS_QUEUE = REPO / "packages" / "queue" / "src" / "queue" / "queue.ts"
 GOLDEN_DIR = (REPO / "tests" / "walls" / "suites" / "golden_ts" /
               "test_gateway_resurrect_parity")
 

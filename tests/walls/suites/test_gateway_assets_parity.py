@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """test_gateway_assets_parity.py — Phase-3 TS asset READ doors wall, TS-ONLY.
 
-Pins the TypeScript asset doors (packages/gateway/src/doors/assets.ts:
+Pins the TypeScript asset doors (packages/gateway-doors/src/doors/assets.ts:
 hAssetsIndex over the index view, hLedger over the journal tail,
 hAsset as the REAL byte serve + ranges, hAssetInput as the REAL byte
 serve over the uploads allowlist; static code tables from
@@ -76,7 +76,7 @@ sys.dont_write_bytecode = True
 PASS = FAIL = 0
 TOKEN = "wall-assets-token-%d" % os.getpid()
 
-TS_ASSETS = REPO / "packages" / "gateway" / "src" / "doors" / "assets.ts"
+TS_ASSETS = REPO / "packages" / "gateway-doors" / "src" / "doors" / "assets.ts"
 CAPTURE = REPO / "packages" / "gateway" / "scripts" / "capture_assets.py"
 INPUT_DIR = REPO / "data" / "input"
 GOLDEN_DIR = (REPO / "tests" / "walls" / "suites" / "golden_ts" /

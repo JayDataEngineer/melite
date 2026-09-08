@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """test_gateway_studios_parity.py — FLIP-GAP studios doors wall, TS-ONLY.
 
-Pins the pure-TS port (packages/gateway/src/doors/studios.ts over
+Pins the pure-TS port (packages/gateway-doors/src/doors/studios.ts over
 the ROUTES mirror, minimal ctx.ts arms) serving the 4 studios doors:
 
   GET    /v1/studios/{tenant}/presets          (presets list)
@@ -85,7 +85,7 @@ PASS = FAIL = 0
 TOKEN = "wall-studios-token-%d" % os.getpid()
 
 TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
-TS_STUDIOS = REPO / "packages" / "gateway" / "src" / "doors" / "studios.ts"
+TS_STUDIOS = REPO / "packages" / "gateway-doors" / "src" / "doors" / "studios.ts"
 GOLDEN_DIR = (REPO / "tests" / "walls" / "suites" / "golden_ts" /
               "test_gateway_studios_parity")
 

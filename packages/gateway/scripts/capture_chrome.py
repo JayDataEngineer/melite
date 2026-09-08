@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""capture_chrome.py — regenerate packages/gateway/src/doors/chrome.ts.
+"""capture_chrome.py — regenerate packages/gateway-doors/src/doors/chrome.ts.
 
 Phase 1 (gateway manifest .scratch/gateway-ts-map.md Phase 1): the
 J1-J10 health/chrome doors as STATIC captured JSON. The bodies are
@@ -10,7 +10,7 @@ the oracle died 2026-09-08, these bytes are the contract):
 
   python3 packages/gateway/scripts/capture_chrome.py
 
-emits packages/gateway/src/doors/chrome.ts with one raw-JSON string
+emits packages/gateway-doors/src/doors/chrome.ts with one raw-JSON string
 constant per door (the exact json.dumps(payload, indent=2,
 default=str) bytes _adapt would send) plus the CHROME_BODIES map.
 Re-running is idempotent: identical py outputs -> identical file
@@ -46,7 +46,8 @@ DOORS: tuple = (
     ("MODELS", "/v1/models", _er.models),
 )
 
-OUT = REPO / "packages" / "gateway" / "src" / "doors" / "chrome.ts"
+OUT = (REPO / "packages" / "gateway-doors" / "src" / "doors"
+       / "chrome.ts")
 
 
 def main() -> int:

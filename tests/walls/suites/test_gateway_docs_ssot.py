@@ -17,7 +17,7 @@ A. THE DELETE-RUNS DECISION:
    falls to the dispatcher fallthrough, as the drafts parity wall
    pins).
    The runs posture is therefore the fallthrough itself: the TS
-   dispatcher (packages/gateway/src/core/context.ts) answers 404
+   dispatcher (packages/gateway-core/src/core/context.ts) answers 404
    {"error": "no such route <METHOD> <path>", "code":
    "no_such_route"} (path normalized — trailing slashes stripped
    before the match AND the error text).
@@ -70,7 +70,7 @@ from _anchor import REPO, boot_scratch_gateway, reap_gateway
 
 import editor_runs  # noqa: E402  (keeper lib, not the oracle)
 
-ROUTES_TS = REPO / "packages" / "gateway" / "src" / "routes.ts"
+ROUTES_TS = REPO / "packages" / "gateway-core" / "src" / "routes.ts"
 DOORS_TS = REPO / "packages" / "web-kit" / "catalog" / "src" / "generated" / "gatewayDoors.ts"
 
 EXPECT_ROWS = 54

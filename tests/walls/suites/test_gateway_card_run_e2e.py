@@ -3,7 +3,7 @@
 
 The card lane's honest end-to-end test: boot the TS gateway ALONE on
 a scratch root, POST {model:} runs at /v1/flows/start, and prove the
-in-process composer arm (packages/gateway/src/doors/flowsCard.ts —
+in-process composer arm (packages/gateway-doors/src/doors/flowsCard.ts —
 resolve -> sweep -> overlay -> compose -> the single stage row ->
 the engine layer) reaches a real PNG off the live managed ComfyUI
 (http://127.0.0.1:18466), with the R3 durable queue (verbatim

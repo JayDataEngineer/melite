@@ -3,31 +3,24 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "The gateway HTTP shell + queue (routes.ts is the AUTHORED wire SSOT — the retired py table is the checked mirror). First-class plugin under the packages/* workspace glob; engine-agnostic, shells multiple engines via @comfyui/cordis (Phase 1+). Runtime is node --experimental-strip-types (erasable-syntax TS); no build step.",
+  "description": "The gateway BUNDLE (STAGE 1 of the DSH bundle split, dsh-base shape): composition + cordis.config.json manifest ownership; code lives in @melite/gateway-core, @melite/gateway-doors, @melite/queue, @melite/engine-comfyui. Runtime is node --experimental-strip-types (erasable-syntax TS); no build step.",
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./routes": "./src/routes.ts",
     "./package.json": "./package.json"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@comfyui/cordis": "workspace:*",
-    "@deepseek-ai/cordis": "^4.0.2",
-    "@deepseek-ai/schemastery": "*",
-    "@deepseek-ai/cordis-plugin-loader": "workspace:*",
-    "@deepseek-ai/cordis-plugin-timer": "workspace:*",
-    "@deepseek-ai/cordis-plugin-logger-console": "workspace:*",
-    "@deepseek-ai/dsh-host-webserver": "workspace:*",
-    "@deepseek-ai/dsh-storage": "0.0.1-rc.1",
-    "@deepseek-ai/dsh-storage-json": "0.0.1-rc.1",
-    "@deepseek-ai/dsh-storage-domain": "0.0.1-rc.1",
-    "zod": "4.5.4"
+    "@melite/engine-comfyui": "workspace:*",
+    "@melite/gateway-core": "workspace:*",
+    "@melite/gateway-doors": "workspace:*",
+    "@melite/queue": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "@deepseek-ai/cordis": "^4.0.2"
   }
 }

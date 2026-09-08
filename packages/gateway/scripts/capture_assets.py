@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""capture_assets.py — regenerate packages/gateway/src/doors/assetTables.ts.
+"""capture_assets.py — regenerate packages/gateway-core/src/core/assetTables.ts.
 
 P3 (gateway manifest Phase 3, .scratch/gateway-ts-map.md): the 4 asset
 READ doors are REAL byte/JSON serves in TS (doors/assets.ts), not
@@ -50,7 +50,8 @@ _PROBE = sorted(
     | {e.lower() for e in _al._DOC}
     | {"json", "txt", "md", "yaml", "html", "svg", "gif"})
 
-OUT = REPO / "packages" / "gateway" / "src" / "doors" / "assetTables.ts"
+OUT = (REPO / "packages" / "gateway-core" / "src" / "core"
+       / "assetTables.ts")
 
 
 def _render() -> str:

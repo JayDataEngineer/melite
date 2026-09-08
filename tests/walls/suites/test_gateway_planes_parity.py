@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """test_gateway_planes_parity.py — FLIP-GAP STROKE readiness wall §1, TS-ONLY.
 
-Pins the TypeScript planes port (packages/gateway/src/doors/planes.ts
+Pins the TypeScript planes port (packages/gateway-doors/src/doors/planes.ts
 via the ctx.ts dispatchPlanes arm) on the seven lane-discovery +
 agent-plane doors:
 
@@ -522,7 +522,7 @@ def main() -> int:
         # the stdio probe is retired). The golden legs above prove the
         # read path byte-for-byte; the text pin below locks it
         # (the discovery wall's no-bridge pin precedent).
-        _psrc = (REPO / "packages" / "gateway" / "src" / "doors"
+        _psrc = (REPO / "packages" / "gateway-doors" / "src" / "doors"
                  / "planes.ts").read_text(encoding="utf-8")
         _pcode = "\n".join(
             ln for ln in _psrc.splitlines()

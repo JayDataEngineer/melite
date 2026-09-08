@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Routes wall — the AUTHORED TS table pinned TS-only.
 
-SSOT FLIP (generators STEP 2, 2026-09-08): packages/gateway/src/routes.ts
+SSOT FLIP (generators STEP 2, 2026-09-08): packages/gateway-core/src/routes.ts
 is hand-authored (the wire SSOT); tools/gen_routes_mirror.py is DELETED.
 
 ORACLE DEATH (2026-09-08): python/gateway.py — the retired serving
@@ -45,7 +45,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
 
-MIRROR = REPO / "packages" / "gateway" / "src" / "routes.ts"
+MIRROR = REPO / "packages" / "gateway-core" / "src" / "routes.ts"
 GENERATOR = REPO / "tools" / "gen_routes_mirror.py"
 GATEWAY_PKG = REPO / "packages" / "gateway"
 
@@ -231,7 +231,7 @@ def main() -> int:
     r = subprocess.run(
         ["node", "--experimental-strip-types", "--no-warnings",
          "--input-type=module", "-e",
-         "import('./packages/gateway/src/routes.ts').then(m => "
+         "import('./packages/gateway-core/src/routes.ts').then(m => "
          "console.log(m.ROUTES.length + ' ' + m.ROUTE_COUNT))"],
         capture_output=True, text=True, timeout=120, cwd=str(REPO))
     if r.returncode == 0 and r.stdout.strip() == "%d %d" % (EXPECT_ROWS,

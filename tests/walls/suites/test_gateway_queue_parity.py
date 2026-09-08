@@ -2,7 +2,7 @@
 """test_gateway_queue_parity.py — P5 queue-core wall (TS-ONLY).
 
 Pins the TypeScript single-module core
-(packages/gateway/src/queue/queue.ts — the serial-GPU state machine:
+(packages/queue/src/queue/queue.ts — the serial-GPU state machine:
 enqueue/dequeue ordering, single-writer lock, retries,
 persistence/journal shapes, refusal texts; the lock-first boot gate
 is wired in apps/gateway/src/main.ts):
@@ -122,7 +122,7 @@ sys.dont_write_bytecode = True
 
 PASS = FAIL = 0
 TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
-TS_QUEUE = REPO / "packages" / "gateway" / "src" / "queue" / "queue.ts"
+TS_QUEUE = REPO / "packages" / "queue" / "src" / "queue" / "queue.ts"
 GOLDEN_DIR = (REPO / "tests" / "walls" / "suites" / "golden_ts" /
               "test_gateway_queue_parity")
 

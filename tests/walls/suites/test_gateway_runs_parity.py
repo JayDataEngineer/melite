@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """test_gateway_runs_parity.py — runs-lane read doors + events-stream wall (TS-ONLY).
 
-Pins the TypeScript gateway (packages/gateway/src/doors/runs.ts over the
+Pins the TypeScript gateway (packages/gateway-doors/src/doors/runs.ts over the
 ROUTES mirror, ctx.ts dispatch arms, the queue.ts boot sweep, server.ts
 upgrade seam) serving the runs read doors + the events-stream door:
 
@@ -20,7 +20,7 @@ upgrade seam) serving the runs read doors + the events-stream door:
 
 Method: build ONE fixture tree at wall runtime, boot ONE TS server on
 it (ephemeral port, QUEUE LANE LAW). The boot sweep owns stale files
-before traffic (packages/gateway/src/queue/queue.ts bootSweep), so no
+before traffic (packages/queue/src/queue/queue.ts bootSweep), so no
 sidecar sync is needed — there is no second server. Every shape is
 served once and pinned:
 
@@ -62,9 +62,9 @@ per the operator order "we do not need parity, we need to migrate,
 not keep the old machinery". The second-server legs, the boot-swept
 sidecar sync, and the unshipped direct-call differential prep harness
 are retired with this stroke; the HTTP wall below is the contract now.
-TS cites: packages/gateway/src/doors/runs.ts (queue/list/detail/
-status/fallback frames), packages/gateway/src/ctx.ts + core/errors.ts
-(auth gate + envelopes), packages/gateway/src/queue/queue.ts (boot
+TS cites: packages/gateway-doors/src/doors/runs.ts (queue/list/detail/
+status/fallback frames), packages/gateway-core/src/ctx.ts + core/errors.ts
+(auth gate + envelopes), packages/queue/src/queue/queue.ts (boot
 sweep notes), apps/gateway/src/main.ts (TS entry).
 
 Date: 2026-09-08. Status: landed (oracle-death re-derivation).
@@ -320,7 +320,7 @@ def pin_500(ts_port: int, path: str, name: str) -> None:
     """500-class pin (valid-JSON-non-object sidecars): the 500 texts
     embed the host stack and differ honestly across runtimes. Pin
     status 500 + envelope keys + the route field, never bytes
-    (packages/gateway/src/core/errors.ts 500 envelope)."""
+    (packages/gateway-core/src/core/errors.ts 500 envelope)."""
     st, body, _ = http(ts_port, path, headers=auth())
     try:
         td = json.loads(body)
@@ -335,7 +335,7 @@ def pin_500(ts_port: int, path: str, name: str) -> None:
 
 def pin_401(ts_port: int, path: str, name: str,
             headers: dict | None = None) -> None:
-    """Auth-refusal shape pin (packages/gateway/src/core/errors.ts
+    """Auth-refusal shape pin (packages/gateway-core/src/core/errors.ts
     authCheck: the gate answers BEFORE dispatcher normalization, so
     the 401 carries no code)."""
     st, body, hd = http(ts_port, path, headers={} if headers is None
@@ -423,7 +423,7 @@ def pin_ws(ts_port: int, target: str, name: str, golden_name: str,
            headers: dict | None = None) -> None:
     """One WS door: 101, first-frame bytes equal the golden, then
     hold-silence (no second frame within the window — the
-    no-heartbeat/no-replay contract, packages/gateway/src/doors/
+    no-heartbeat/no-replay contract, packages/gateway-doors/src/doors/
     runs.ts stream-framing decision)."""
     s = None
     try:
@@ -557,7 +557,7 @@ def main() -> int:
             "status-run-nope.json", expect=404)
 
         # ── read-time sweep reports: fresh stale pair written post-boot,
-        # read TWICE each. TS-ONLY semantics (packages/gateway/src/doors/
+        # read TWICE each. TS-ONLY semantics (packages/gateway-doors/src/doors/
         # runs.ts D1): the read door composes the report WITHOUT the
         # write, so every read is pristine — both reads pin the same
         # golden and idempotence follows transitively (no TS-vs-TS leg).

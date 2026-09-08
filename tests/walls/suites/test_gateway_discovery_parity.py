@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """test_gateway_discovery_parity.py — FLIP-GAP TS discovery READ doors wall (TS-ONLY).
 
-Proves the TypeScript port (packages/gateway/src/doors/discovery.ts
+Proves the TypeScript port (packages/gateway-doors/src/doors/discovery.ts
 over the ROUTES mirror, ctx.ts arms) serves the 10 discovery doors
 with the pinned TS contract:
 
@@ -119,7 +119,7 @@ sys.dont_write_bytecode = True
 PASS = FAIL = 0
 TOKEN = "wall-discovery-token-%d" % os.getpid()
 
-TS_DISCOVERY = REPO / "packages" / "gateway" / "src" / "doors" / "discovery.ts"
+TS_DISCOVERY = REPO / "packages" / "gateway-doors" / "src" / "doors" / "discovery.ts"
 TS_CATALOG = (REPO / "packages" / "gateway" / "data"
               / "discovery-catalog.json")
 GOLDEN_DIR = (REPO / "tests" / "walls" / "suites" / "golden_ts"
@@ -285,7 +285,7 @@ def keeper_mount(engine: str, folder: str, name: str) -> str | None:
     """Resolve a declared provision to its disk path through keeper
     libs ONLY (endpoint file + estate model paths — the estate model
     scan, never the serving oracle): the mount derivation the TS
-    door ports (packages/gateway/src/doors/discovery.ts provision
+    door ports (packages/gateway-doors/src/doors/discovery.ts provision
     mount). None = the family declares no engine."""
     if not engine:
         return None
@@ -707,7 +707,7 @@ def main() -> int:
          / "discovery-catalog.json").write_text(
             "{not json", encoding="utf-8")
         # '_h_kinds' below is the TS dispatch-table key
-        # (packages/gateway/src/doors/discovery.ts DISCOVERY_HANDLERS)
+        # (packages/gateway-doors/src/doors/discovery.ts DISCOVERY_HANDLERS)
         # the node probe passes to dispatchDiscovery — the TS API's
         # own arm name, not the retired oracle.
         units = (

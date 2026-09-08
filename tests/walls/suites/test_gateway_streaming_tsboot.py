@@ -2,7 +2,7 @@
 """test_gateway_streaming_tsboot.py — P6 streaming battery on the TS boot.
 
 Ladder P6 (WS absolute last — battery C): the WS codec + upgrade
-handler live in packages/gateway/src/doors/runs.ts; this stroke runs
+handler live in packages/gateway-doors/src/doors/runs.ts; this stroke runs
 the FULL streaming battery against the TS boot ALONE (TS is the
 writer) — ONE boot per auth regime, every leg TS-vs-literal against
 the frozen vectors beside this suite
@@ -96,7 +96,7 @@ sys.dont_write_bytecode = True
 PASS = FAIL = 0
 DID = "wall-stream-draft-1"
 TOKEN = "wall-stream-token-%d" % os.getpid()
-RUNS_TS = REPO / "packages" / "gateway" / "src" / "doors" / "runs.ts"
+RUNS_TS = REPO / "packages" / "gateway-doors" / "src" / "doors" / "runs.ts"
 WF = {"1": {"class_type": "EmptyLatentImage",
             "inputs": {"width": 64, "height": 64, "batch_size": 1}}}
 HISTORY_OK = {"status": {"status_str": "success", "completed": True},

@@ -4,7 +4,7 @@
 Ladder P1 (editor manifest §1.6 + §5 step 1): the frozen wire contract
 (FormFieldRow, SchemaGroupRow, VariantRow, ModifierFeatureRow,
 FormFeaturesRow, FormSpecRow + KindGenre + refusal_reason) ported to
-packages/gateway/src/schema/formWire.ts. This wall refuses drift between
+packages/gateway-core/src/schema/formWire.ts. This wall refuses drift between
 the two sides:
 
   1. AGREEMENT — every tests/golden_http/form-spec*.json sample validates
@@ -39,7 +39,7 @@ sys.path.insert(0, str(REPO / "python"))
 import form_wire  # noqa: E402
 from pydantic import ValidationError  # noqa: E402
 
-FORMWIRE = REPO / "packages" / "gateway" / "src" / "schema" / "formWire.ts"
+FORMWIRE = REPO / "packages" / "gateway-core" / "src" / "schema" / "formWire.ts"
 GOLDENS = REPO / "tests" / "golden_http"
 FIXTURES = Path(__file__).resolve().parent / "formwire_fixtures"
 

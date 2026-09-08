@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """test_gateway_drafts_parity.py — P4 draft CRUD doors TS-ONLY wall.
 
-Pins the TypeScript port (packages/gateway/src/doors/drafts.ts via
+Pins the TypeScript port (packages/gateway-doors/src/doors/drafts.ts via
 ctx.ts dispatch):
 
   full create/get/patch/result/list lifecycle, patch-merge semantics
@@ -18,7 +18,7 @@ so create pins compare shape + field-equality while every stable
 pin is bytes against the frozen goldens in
 golden_ts/test_gateway_drafts_parity/, causes.md there).
 
-TS cites: packages/gateway/src/doors/drafts.ts (the door),
+TS cites: packages/gateway-doors/src/doors/drafts.ts (the door),
 python/editor_runs.py 818-1204 (file semantics),
 python/run_wire.py 151-170 (birth gate).
 

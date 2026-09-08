@@ -73,7 +73,7 @@ def rows_are_typed() -> None:
 
 def gate_helper_behavior() -> None:
     """Leg 3: the violation helper honors and refuses exactly — via
-    the TS door's copy (packages/gateway/src/schema/verbs.ts
+    the TS door's copy (packages/gateway-core/src/schema/verbs.ts
     outputViolation, transcribed 1:1 from the py helper that died
     with the oracle).
 
@@ -93,7 +93,7 @@ def gate_helper_behavior() -> None:
     import subprocess
 
     driver = (
-        "import('./packages/gateway/src/schema/verbs.ts').then(m => {"
+        "import('./packages/gateway-core/src/schema/verbs.ts').then(m => {"
         " const f = m.outputViolation;"
         " const out = ["
         "  f('no-such-card', []),"

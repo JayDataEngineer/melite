@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """test_gateway_bridges_parity.py — P6 bridges TS wall.
 
-Pins the TypeScript bridge doors (packages/gateway/src/doors/
+Pins the TypeScript bridge doors (packages/gateway-doors/src/doors/
 bridges.ts via the ctx.ts seam: POST /v1/manage → the manage
 subprocess bridge, GET|POST ^/poser/ → the studio forward) against
 their verbatim TS-side contracts — every leg TS-vs-literal (status
@@ -106,7 +106,7 @@ sys.dont_write_bytecode = True
 PASS = FAIL = 0
 
 VENV_PY = REPO / ".venv" / "bin" / "python"
-BRIDGES_TS = REPO / "packages" / "gateway" / "src" / "doors" / "bridges.ts"
+BRIDGES_TS = REPO / "packages" / "gateway-doors" / "src" / "doors" / "bridges.ts"
 
 TOKEN = "wall-bridges-token-2026-09-07"
 

@@ -3,7 +3,7 @@
 
 Pins the TypeScript HTTP shell (apps/gateway/src/main.ts +
 ctx.ts over the ROUTES mirror, bodies from
-packages/gateway/src/doors/chrome.ts) serving the 10 chrome/health
+packages/gateway-doors/src/doors/chrome.ts) serving the 10 chrome/health
 doors:
 
   J1 /v1/health  J2 /v1/themes  J3 /v1/tags  J4 /v1/services
@@ -63,7 +63,7 @@ DOORS = (
 UNKNOWN = "/v1/does-not-exist-parity-probe-xyz"
 
 TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
-TS_CTX = REPO / "packages" / "gateway" / "src" / "ctx.ts"
+TS_CTX = REPO / "packages" / "gateway-core" / "src" / "ctx.ts"
 GOLDEN_DIR = (REPO / "tests" / "walls" / "suites" / "golden_ts" /
               "test_gateway_chrome_parity")
 

@@ -3,7 +3,7 @@
 wall (P4, validate-door stroke), TS-ONLY.
 
 Pins the TypeScript validate door
-(packages/gateway/src/doors/flowsValidate.ts via the ctx.ts
+(packages/gateway-doors/src/doors/flowsValidate.ts via the ctx.ts
 _h_flows_validate arm):
 
   BYTE legs (status + full response bytes pin the frozen goldens in

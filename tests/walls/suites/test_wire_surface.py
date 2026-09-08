@@ -10,7 +10,7 @@ browser lanes pin the DOM. This gate pins the seam:
 
   * every wire route the frontend can emit (editor src + the @melite
     workspace packages it imports) must match a route arm in the TS
-    gateway's authored wire table (packages/gateway/src/routes.ts:
+    gateway's authored wire table (packages/gateway-core/src/routes.ts:
     literal rows, `^...`-prefix regex rows, and `^...$` fullmatch
     regex rows).
   * frontend template routes (`/v1/flows/drafts/${id}`) match as
@@ -49,7 +49,7 @@ FRONTEND_ROOTS = (
     os.path.join(REPO, "packages", "web-kit", "formats", "src"),
     os.path.join(REPO, "packages", "web-kit", "contracts", "src"),
 )
-ROUTES_TS = os.path.join(REPO, "packages", "gateway", "src", "routes.ts")
+ROUTES_TS = os.path.join(REPO, "packages", "gateway-core", "src", "routes.ts")
 
 # ─────────────────────────────────────────────────────────────────────────
 # REVIEWING exemptions — KNOWN drift, live-confirmed 2026-10-02 against the
@@ -247,7 +247,7 @@ def _str_field(obj: str, name: str) -> str:
 def gateway_arms() -> tuple[set[str], set[str], set[str]]:
     """(exact_literals, prefix_arms, regex_patterns) the gateway can answer.
 
-    The route table IS the wire SSOT (packages/gateway/src/routes.ts,
+    The route table IS the wire SSOT (packages/gateway-core/src/routes.ts,
     hand-authored) — read it directly with the mirror's string-aware
     scan, no node needed. Literal rows are exact arms; regex rows
     anchored both ends are fullmatch patterns; open-ended regex rows

@@ -13,7 +13,7 @@ This wall extracts both sides from SOURCE (no network, no GPU):
   - tests, dists, and libs excluded (test fixtures use fake URLs).
 
   SERVED: every /v1 route the TS gateway answers — the authored wire
-  SSOT (packages/gateway/src/routes.ts: literal rows + template
+  SSOT (packages/gateway-core/src/routes.ts: literal rows + template
   prefixes) PLUS the /v1 stubs the card-deck host owns (/v1/llm -
   the assistant lives in DSH).
 
@@ -43,7 +43,7 @@ from pathlib import Path
 
 from _anchor import REPO
 
-ROUTES_TS = REPO / "packages" / "gateway" / "src" / "routes.ts"
+ROUTES_TS = REPO / "packages" / "gateway-core" / "src" / "routes.ts"
 DECK_HOST = REPO / "packages" / "web" / "dsh" / "melite-card-deck" / "src" / "index.ts"
 
 # The mirror wall owns the authored row count (54 rows 2026-09-08);

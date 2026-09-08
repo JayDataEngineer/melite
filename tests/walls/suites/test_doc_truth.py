@@ -14,7 +14,8 @@ dataclass, the Gateway registry, the in-process WS door, the
 shutdown shape, the card bridge) is RETIRED WITH CAUSE below —
 each names the TS surface that covers it now. The behavioral
 needles that moved to the TS plane read TS source
-(packages/gateway/src/**) instead; the doc-hygiene legs (flows.md
+(packages/gateway-doors/src/** + packages/gateway-core/src/** +
+packages/queue/src/** + packages/engines/comfyui/src/**) instead; the doc-hygiene legs (flows.md
 honesty, agent-lane teachings) never touched the oracle and stay.
 
 Pinned (all offline, no GPU, no gateway boot):
@@ -53,10 +54,10 @@ from pathlib import Path
 
 from _anchor import REPO
 
-QUEUE_TS = REPO / "packages" / "gateway" / "src" / "queue" / "queue.ts"
-RESURRECT_TS = (REPO / "packages" / "gateway" / "src" / "queue"
+QUEUE_TS = REPO / "packages" / "queue" / "src" / "queue" / "queue.ts"
+RESURRECT_TS = (REPO / "packages" / "queue" / "src" / "queue"
                 / "resurrect.ts")
-ROUTES_TS = REPO / "packages" / "gateway" / "src" / "routes.ts"
+ROUTES_TS = REPO / "packages" / "gateway-core" / "src" / "routes.ts"
 _FLOWS_MD = REPO / "docs" / "queue" / "flows.md"
 
 
@@ -118,7 +119,7 @@ def test_atomic_write_round_trip(tmp_path: Path) -> None:
     """sidecar.md: one tmp+rename function — content lands, no leftovers."""
     target = tmp_path / "w.json"
     out = _node_eval(
-        "import('./packages/gateway/src/queue/queue.ts').then(async m => {"
+        "import('./packages/queue/src/queue/queue.ts').then(async m => {"
         " const {writeFileSync, readdirSync, readFileSync} = await import('node:fs');"
         " m.atomicWriteJson(%s, {a: 1});"
         " console.log(JSON.stringify({"
@@ -171,7 +172,7 @@ def test_ws_surface_matches_doc() -> None:
 def test_durable_queue_truth() -> None:
     """gpu-fifo.md (R3): registration records run.queued; a restart
     resurrects run.resurrected rows; the sweep shields live ids."""
-    run_src = (REPO / "packages" / "gateway" / "src" / "doors"
+    run_src = (REPO / "packages" / "gateway-doors" / "src" / "doors"
                / "flowsRun.ts").read_text(encoding="utf-8")
     assert "run.queued" in run_src
     src = _ts_source(QUEUE_TS)

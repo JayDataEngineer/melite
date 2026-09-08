@@ -22,8 +22,8 @@ ORACLE DEATH 2026-09-08 (operator order verbatim: "we do not need
 parity, we need to migrate, not keep the old machinery"): the door
 legs used to read the retired py serving stack's source text. They
 now read the TS source of truth — the authored wire table
-(packages/gateway/src/routes.ts, the template row) plus the TS door
-implementation (packages/gateway/src/doors/studios.ts, the generic
+(packages/gateway-core/src/routes.ts, the template row) plus the TS door
+implementation (packages/gateway-doors/src/doors/studios.ts, the generic
 tenant lookup + loud 404s) — following
 tests/walls/suites/test_routes_mirror.py.
 
@@ -40,9 +40,9 @@ ANNY_MODEL_PY = os.path.join(
     REPO, "packages", "engines", "comfyui", "models", "3d", "anny",
     "model.py")
 ROUTES_TS = os.path.join(
-    REPO, "packages", "gateway", "src", "routes.ts")
+    REPO, "packages", "gateway-core", "src", "routes.ts")
 STUDIOS_TS = os.path.join(
-    REPO, "packages", "gateway", "src", "doors", "studios.ts")
+    REPO, "packages", "gateway-doors", "src", "doors", "studios.ts")
 ANNY_TSX = os.path.join(
     REPO, "packages", "engines", "comfyui", "action_cards", "3d",
     "anny", "ui", "studio", "component.tsx")

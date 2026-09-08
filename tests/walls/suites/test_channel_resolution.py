@@ -17,7 +17,7 @@ parity, we need to migrate, not keep the old machinery"): the
 py-mirror leg (static pool == py resolve_inputs keys) died with
 the py serving oracle — there is no py executor to agree with.
 The static check lives in the TS door now
-(packages/gateway/src/doors/flowsValidate.ts compileFlow: pool =
+(packages/gateway-doors/src/doors/flowsValidate.ts compileFlow: pool =
 inputNames + __initial__ tails + producer refs); the mirror is
 re-pinned as TS-HTTP legs below (a dangling body 400s naming
 stage + token + pool; a resolved body 200s), so the check and

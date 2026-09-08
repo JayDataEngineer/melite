@@ -1,4 +1,4 @@
-// GENERATED from packages/gateway/src/routes.ts (the wire SSOT) by
+// GENERATED from packages/gateway-core/src/routes.ts (the wire SSOT) by
 // packages/web-kit/catalog/scripts/gen-gateway-doors.ts — DO NOT EDIT. Regenerate after every
 // route change; tests/walls/suites/test_gateway_doors.py refuses
 // staleness.

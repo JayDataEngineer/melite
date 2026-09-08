@@ -28,8 +28,8 @@ ORACLE DEATH 2026-09-08 (operator order verbatim: "we do not need
 parity, we need to migrate, not keep the old machinery"): the tenant
 door leg used to read the retired py serving stack's source text. It
 now reads the TS source of truth — the authored wire table
-(packages/gateway/src/routes.ts, the preset template rows) plus the
-TS door implementation (packages/gateway/src/doors/studios.ts, the
+(packages/gateway-core/src/routes.ts, the preset template rows) plus the
+TS door implementation (packages/gateway-doors/src/doors/studios.ts, the
 file→estimated promotion) — following
 tests/walls/suites/test_routes_mirror.py.
 
@@ -71,9 +71,9 @@ BAKE_PY = os.path.join(REPO, "flows", "anny-params", "bake_params.py")
 COMMERCIAL_WORKER_PY = os.path.join(
     REPO, "flows", "anny-hmr-commercial", "worker.py")
 ROUTES_TS = os.path.join(
-    REPO, "packages", "gateway", "src", "routes.ts")
+    REPO, "packages", "gateway-core", "src", "routes.ts")
 STUDIOS_TS = os.path.join(
-    REPO, "packages", "gateway", "src", "doors", "studios.ts")
+    REPO, "packages", "gateway-doors", "src", "doors", "studios.ts")
 PRESETS_PY = os.path.join(REPO, "python", "melite_models", "presets.py")
 
 

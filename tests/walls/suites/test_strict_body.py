@@ -22,7 +22,7 @@ parity, we need to migrate, not keep the old machinery"): the wall
 used to import the retired-knob SSOT from the py serving oracle
 and unit-called py resolve_request in-process. Both died with the oracle. The knob
 list is FROZEN here as a literal (the TS door owns its own copy:
-packages/gateway/src/core/params.ts RETIRED_RUNNER_KNOBS); every
+packages/gateway-core/src/core/params.ts RETIRED_RUNNER_KNOBS); every
 leg POSTs to the TS gateway (apps/gateway/src/main.ts via the
 shared boot_scratch_gateway helper) and asserts 400 + the knob
 text. To ADD a knob to the refusal set, edit the TS constant AND
@@ -59,7 +59,7 @@ from _anchor import REPO, boot_scratch_gateway, reap_gateway
 # the py SSOT import died with the oracle). A body carrying any of
 # these is a silent-drop attempt; the door must refuse loud (400,
 # not 200 with a dropped key). Mirrors the TS door's copy
-# (packages/gateway/src/core/params.ts RETIRED_RUNNER_KNOBS) —
+# (packages/gateway-core/src/core/params.ts RETIRED_RUNNER_KNOBS) —
 # edit both in the same stroke.
 RETIRED_RUNNER_KNOBS = frozenset({
     "start_from", "stop_after", "reuse_run_id", "partial_run",
@@ -135,7 +135,7 @@ def test_retired_knobs_literal_is_nonempty_and_frozen(ts_gate: int) -> None:
     is the reason the wall exists) AND match the TS door's copy
     (drift between the two fails here, not silently at one door)."""
     assert len(RETIRED_RUNNER_KNOBS) >= 1
-    text = (REPO / "packages" / "gateway" / "src" / "core"
+    text = (REPO / "packages" / "gateway-core" / "src" / "core"
             / "params.ts").read_text(encoding="utf-8")
     for knob in sorted(RETIRED_RUNNER_KNOBS):
         assert '"%s"' % knob in text, \
