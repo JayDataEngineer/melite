@@ -86,6 +86,41 @@ JsonValue = str | int | float | bool | None | list["JsonValue"] | dict[str, "Jso
 JsonDict = dict[str, JsonValue]
 
 
+_REGISTRY_CACHE: dict | None = None
+
+
+def _registry_row(card: str) -> dict:
+    """The card's registry census row ({spells, skeleton, ...}) via
+    the serving-owned dump-registry.ts (one node spawn per worker
+    boot, cached on success). PURGE S-decls 2026-09-08: this replaces
+    the card-decls.json file read — same row shape the $spell branch
+    + stage-row extra consumed (spells list, skeleton string).
+    Failure returns {} WITHOUT caching (the next call retries —
+    the deleted file's except-{} behavior, preserved)."""
+    global _REGISTRY_CACHE
+    if _REGISTRY_CACHE is None:
+        import json as _json
+        import shutil as _shutil
+        import subprocess as _sp
+        node = _shutil.which("node")
+        dumper = (_PLUGIN_ROOT / "cordis" / "src"
+                  / "dump-registry.ts")
+        try:
+            if node is None or not dumper.is_file():
+                return {}
+            proc = _sp.run(
+                [node, "--experimental-strip-types",
+                 "--no-warnings", str(dumper)],
+                capture_output=True, text=True, timeout=180,
+                cwd=str(_PLUGIN_ROOT.parents[2]))
+            if proc.returncode != 0:
+                return {}
+            _REGISTRY_CACHE = (
+                _json.loads(proc.stdout).get("cards") or {})
+        except Exception:
+            return {}
+    row = _REGISTRY_CACHE.get(card)
+    return row if isinstance(row, dict) else {}
 
 def _card_of(model: str) -> str | None:
     """The model CLASS decides (model.py flip — class beats yaml).
@@ -151,22 +186,16 @@ def card_compose(body: JsonDict, model: str, run_id: str,
     # THE $SPELL BRANCH (retired compose.py row-4 semantics, the
     # contract row restored): a PHASE-1 call (run_id="" — the
     # validation-door shape, no run context) whose SPELL param
-    # (card-decls "spells" row — file-typed params that may name a
+    # (the registry "spells" row — file-typed params that may name a
     # wired stage input) carries a $-value composes NO graph: shape
     # validated, the pool passes, no refusal. A RUN-CONTEXT call
     # (the card bridge — run_id set) composes VERBATIM: the $spell
     # wires into the Load* file slot, the merged path (mergegraph
     # plan_merge) refuses the link-in-file-slot LOUDLY and the
     # per-stage loop substitutes the resolved artifact at the
-    # bridge. Pinned by test_two_card_flow (tolerates-the-spell +
-    # refuses-link-in-file-slot legs).
-    _decl = {}
-    try:
-        _decl = _json.loads(
-            (_PLUGIN_ROOT / "cordis" / "data" / "card-decls.json")
-            .read_text()).get(card) or {}
-    except Exception:
-        _decl = {}
+    # bridge. (The $spell legs' test source is deleted; the compose
+    # goldens pin graph bytes. Behavior preserved via the registry.)
+    _decl = _registry_row(card)
     if not run_id:
         _spells = _decl.get("spells", ()) or ()
         _pool = {k: params[k] for k in _spells
@@ -191,10 +220,10 @@ def card_compose(body: JsonDict, model: str, run_id: str,
         detail = lines[-1] if lines else "no detail (rc=%d)" % proc.returncode
         return (proc.returncode, None, None, detail)
     # the skeleton rides the extra: the rim names the FlowGraph
-    # stage-row from the CARD-DECLARED id (card-decls.json — the
-    # retired compose.py voice rows' skeleton=, SSOT'd), never a
+    # stage-row from the CARD-DECLARED id (the registry skeleton —
+    # the retired compose.py voice rows' skeleton=, SSOT'd), never a
     # hardcode. Empty skeleton (cpp-lane cards) names the model.
-    # (_decl already loaded for the spell branch — same read.)
+    # (_decl already loaded for the spell branch — same lookup.)
     _skel = str(_decl.get("skeleton") or "")
     return (0, proc.stdout, {"skeleton": _skel}, None)
 

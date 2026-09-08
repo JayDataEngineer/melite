@@ -29,6 +29,15 @@ export interface CardDefinition {
    *  card precedent): skip the {model:} demand everywhere (cardGate,
    *  compose, CLI). Default true — every existing card needs one. */
   requiresModel?: boolean
+  /** Admission extras (the py class-attr `admits` half): params the
+   *  compose door admits BEYOND the schema knobs (route stamps,
+   *  renderer vocab, studio writes flattened at port time). Most
+   *  cards carry none — the schema IS the surface. */
+  admits?: readonly string[]
+  /** $spell-eligible params (the py `spell_params` half): file slots
+   *  whose "$name" values pool for two-card-flow handoff instead of
+   *  composing. Empty/absent = no spell pooling. */
+  spells?: readonly string[]
   /** Extension packs the card's renderers ride (EXTENSION LAW). */
   requires?: readonly string[]
   /** Per-family extension packs — the py requires_by_family mirror.

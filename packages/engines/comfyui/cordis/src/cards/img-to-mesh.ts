@@ -23,17 +23,14 @@
 // apply_mask/batch_size/force_projection/fov_x_degrees. Everything
 // else is exactly the inputs the python renderers pass — no more.
 //
-// REQUIRES SHAPE: the python card declares per-family requires
-// (action_cards/3d/img_to_mesh/python/card.py requires_by_family —
-// trellis2-native→comfyui-core-trellis2, pixal3d→
-// comfyui-core-trellis2+ComfyUI-MoGe, transfer_rig→
-// melite-autorig-nodes; card-level requires is EMPTY). Card-level
-// `requires` carries the UNION (flat consumers + the drift wall's
-// (b) flat leg), while `requiresByFamily` below carries the py map
-// verbatim — the compose door merges the ACTIVE family's slice
-// (py gateway _find_card_requires precedent: card.requires +
-// requires_by_family[model]); gating on the union alone over-claims
-// (a trellis run must never demand the autorig pack).
+// REQUIRES SHAPE: per-family requires (trellis2-native→
+// comfyui-core-trellis2, pixal3d→comfyui-core-trellis2+ComfyUI-MoGe,
+// transfer_rig→melite-autorig-nodes; card-level requires is EMPTY).
+// Card-level `requires` carries the UNION (flat consumers + the drift
+// wall's (b) flat leg), while `requiresByFamily` below carries the
+// per-family map — the compose door merges the ACTIVE family's slice;
+// gating on the union alone over-claims (a trellis run must never
+// demand the autorig pack).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { trellisArm, pixalArm, transferRigArm, admitMeshLift } from '../kit.ts'

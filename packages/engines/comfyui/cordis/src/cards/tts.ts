@@ -6,7 +6,7 @@ import { ttsT1 } from '../kit.ts'
 
 const schema = z.object({
   text: z.string().description('The text to synthesize').extra('extra', { required: true }),
-  // py card.py truth (card-decls.json): voice rides 'ryan', temperature
+  // ported voice surface (purge S-decls: the py card is deleted —
   // 0.7, seed -1; style_instruction/qvoice/voice_pca are ABSENT/defaultless
   // (bare = optional at parse, ''-absent at compose via ?? '' below).
   // NO speed/top_p (py declares no such knobs — they ride the

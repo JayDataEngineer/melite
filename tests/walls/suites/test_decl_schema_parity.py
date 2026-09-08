@@ -17,7 +17,9 @@
 #   per compose) + the compose goldens;
 # (d) defaults → tests/golden_cordis/*.json behaviorally (a wrong default
 #   changes graph bytes and goes red).
-# Py-side self-consistency survives untouched: test_card_decls_parity.py
-# (export byte-equality) + the test_hard_gates.py gen_tool_json leg.
+# Registry-side consistency: test_card_decls_parity.py (registry
+# tombstone wall — the retired export + snapshot named there so the
+# deletion is pinned, not silent) + the test_hard_gates.py frozen
+# snapshot-shape leg.
 # Kept as a tombstone (not deleted) so wall-name ledgers and history stay
 # intact; do not extend.

@@ -1,4 +1,4 @@
 {
-  "error": "card_compose phase 1: card_compose rc=1 (comfyui.comfyui): compose-door: unknown param(s) on the image-edit card: height, width (admission is the declared surface \u2014 knobs + contract admits; see card-decls.json)",
+  "error": "card_compose phase 1: card_compose rc=1 (comfyui.comfyui): compose-door: unknown param(s) on the image-edit card: height, width (admission is the declared surface \u2014 knobs + contract admits; see the card's TS definition)",
   "code": "card_compose"
 }

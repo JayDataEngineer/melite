@@ -43,6 +43,11 @@ export function apply(ctx: Context): void {
     skeleton: 'generate',
     boarded: ['seedvr2_ema'],
     requires: ['ComfyUI-SeedVR2_VideoUpscaler', 'ComfyUI-KJNodes', 'comfyui_nvidia_rtx_nodes'],
+    // ADMISSION EXTRAS + SPELLS (the py class-attr halves verbatim:
+    // admits minus studio writes, and the $spell-eligible file slot
+    // for two-card-flow handoff).
+    admits: ['filename_prefix'],
+    spells: ['input_image'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g, runId) {
       if (!p.input_image || !(p.input_image as string).trim()) {

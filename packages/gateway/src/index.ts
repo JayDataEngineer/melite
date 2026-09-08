@@ -26,3 +26,4 @@ export { handleWsUpgrade } from "./doors/runs.ts";
 export { bootGatewayContext, refusalLine } from "./core/context.ts";
 export { createProcessShutdown } from "./core/processShutdown.ts";
 export { BOOT_ENGINE, bootState } from "./core/gateway.ts";
+export { primeCardRegistry } from "./doors/flowsCard.ts";

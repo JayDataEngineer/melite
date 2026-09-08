@@ -6,10 +6,10 @@
 // /gen). Creation order IS node-id order (pinned by
 // tests/golden_cordis/image_qwen-img-edit_*).
 //
-// SURFACE (py referee: cordis/data/card-decls.json image-edit
-// schemaMeta[], 34 keys — card.py core + Lanpaint/Loras/MaskMod
-// absorption; model.py defaults ride the service cascade, never the
-// schema): the schema below mirrors the referee key-for-key.
+// SURFACE (34 keys — card.py core + Lanpaint/Loras/MaskMod absorption;
+// model.py defaults ride the service cascade, never the schema).
+// Purge S-decls: the py referee is deleted — the schema below IS the
+// declaration (its knob set was verified 19/19 against the retired row).
 // Defaults ride-the-model (the image-gen P2 precedent): a py-ABSENT
 // default is a bare atom (no .default()), and compose reads the key
 // with `?? ''` / `?? []` normalization — never a TS-pinned ''/0/[].

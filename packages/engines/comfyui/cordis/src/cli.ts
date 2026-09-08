@@ -60,7 +60,8 @@ async function main(): Promise<void> {
     const mod = await import(new URL(`./cards/${f}`, import.meta.url).href)
     if (typeof mod.apply === 'function') await ctx.plugin(mod)
   }
-  ctx.comfyui.setFacts(loadFacts(args.facts))
+  const factsDoc = loadFacts(args.facts)
+  ctx.comfyui.setFacts(factsDoc)
 
   // --model is required UNLESS the card declares requiresModel:
   // false (pure-tool cards with no families ride model-less — the
@@ -98,27 +99,34 @@ async function main(): Promise<void> {
   }
 
   // ── THE ADMISSION CONTRACT GATE (compose = the single translation
-  // rim; the contract row is the truth — "admission is the surface",
-  // docs/design/image-edit-param-contract.md). Every param key must
-  // be a declared knob (the card's schema) or ride the contract's
-  // admits row (studio.writes ∪ renderer vocab; exact names or
-  // trailing-* prefixes). Everything else refuses LOUD at compile
-  // time — a silent drop is banned (QUEUE LANE LAW; the 2026-09-05
-  // stepz class never rides silently again).
-  const declsPath = new URL('../data/card-decls.json', import.meta.url).pathname
-  const decls = JSON.parse((await import('node:fs')).readFileSync(declsPath, 'utf8')) as Record<string, { schemaMeta?: { name?: string }[]; admits?: string[] }>
-  const decl = decls[args.card]
-  // no contract row -> the compose door's own unknown-card refusal
-  // fires below (its voice is the pinned one — the gate never
-  // shadows it)
-  if (decl !== undefined) {
-    const knobs = new Set((decl.schemaMeta ?? []).map((f) => f.name).filter((n): n is string => typeof n === 'string'))
-    const admits = decl.admits ?? []
+  // rim; the card definition is the truth — "admission is the
+  // surface", docs/design/image-edit-param-contract.md). Every param
+  // key must be a declared knob (the card's schema carrier) or ride
+  // the admits (def.admits extras ∪ the boarded families' studio
+  // writes; exact names or trailing-* prefixes). Everything else
+  // refuses LOUD at compile time — a silent drop is banned (QUEUE
+  // LANE LAW; the 2026-09-05 stepz class never rides silently
+  // again). The gate reads the card registry (the single declaration).
+  const def = ctx.comfyui.getCardDef(args.card)
+  // no def -> the compose door's own unknown-card refusal fires
+  // below (its voice is the pinned one — the gate never shadows it)
+  if (def !== undefined) {
+    const carrier = (def as { schemaCarrier?: unknown }).schemaCarrier ?? def.schema
+    // Schemastery schemas are CALLABLE (the def types .schema as a
+    // function) — typeof is 'function', not 'object'. .dict rides
+    // the callable either way.
+    const dict = ((typeof carrier === 'object' || typeof carrier === 'function') && carrier !== null
+      ? (carrier as { dict?: unknown }).dict : undefined) as Record<string, unknown> | undefined ?? {}
+    const knobs = new Set(Object.keys(dict))
+    const admits: string[] = [...(def.admits ?? [])]
+    for (const fam of def.boarded) {
+      for (const w of factsDoc.models[fam]?.studio?.writes ?? []) admits.push(w)
+    }
     const admitted = (key: string): boolean => knobs.has(key) || admits.some((a) => a === key || (a.endsWith('*') && key.startsWith(a.slice(0, -1))))
     const pkeys = Object.keys((params ?? {}) as Record<string, unknown>)
     const unknown = pkeys.filter((k) => !admitted(k)).sort()
     if (unknown.length > 0) {
-      die(`unknown param(s) on the ${args.card} card: ${unknown.join(', ')} (admission is the declared surface — knobs + contract admits; see card-decls.json)`)
+      die(`unknown param(s) on the ${args.card} card: ${unknown.join(', ')} (admission is the declared surface — knobs + contract admits; see the card's TS definition)`)
     }
   }
 

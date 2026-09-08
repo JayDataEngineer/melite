@@ -2,7 +2,7 @@
 // Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
 // Instrumental = lyrics "" (MiniMax's own convention — baked, never
 // an absent ref). Stock-only: the MiniMax nodes ride upstream core;
-// no extension to declare (python card.py carries no requires).
+// no extension to declare (the retired card carried no requires).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { musicT1 } from '../kit.ts'

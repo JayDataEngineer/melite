@@ -27,6 +27,10 @@ export function apply(ctx: Context): void {
     // ImageScale/SaveImage + LoadAudio/SaveAudio are ComfyUI core —
     // no requires to declare.
     boarded: ['input'],
+    // ADMISSION EXTRAS (the py class-attr half verbatim: the
+    // retired row's admits minus the boarded families' studio
+    // writes, which the projection unions from the facts file).
+    admits: ['crop', 'media_type', 'scale'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, _model, g, runId) {
       if (typeof p.source !== 'string' || !p.source.trim()) {

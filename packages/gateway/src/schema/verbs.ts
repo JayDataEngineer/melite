@@ -30,11 +30,10 @@
 //   - the outputs gate: python/gateway.py _output_violation 473-489 (the
 //     TEXT), the run-level arm 1374-1396 ({model} runs flip to failed),
 //     the per-stage arm 1821-1832 (card= stages raise ValidationError).
-//   - the outputs rows: every card's card_outputs (OutputRow rows,
-//     dsl.py 624-654) via the generated snapshot
-//     packages/engines/comfyui/cordis/data/card-decls.json outputs[]
-//     (byte-pinned to py by test_card_decls_parity.py — the chain of
-//     trust this table rides; the wall re-pins every row).
+//   - the outputs rows: hand-owned (transcribed once from the
+//     retired card-decls.json outputs[] at purge S-decls 2026-09-08;
+//     every row's content pins behaviorally in the verbs wall O02–O05,
+//     row shape in O01).
 //
 // THE 7-VERB CENSUS (closed — the wall asserts no 8th on either side):
 //   hmr-estimate  queue   commercial  → anny-hmr-commercial  (mounted)
@@ -458,12 +457,10 @@ export interface OutputDecl {
 }
 
 /**
- * Every card's promised outputs (id-sorted; transcribed from the
- * generated card-decls.json outputs[] — the wall re-pins all rows
- * against that snapshot, which test_card_decls_parity.py byte-pins
- * to py. MONO-ENGINE 2026-09-08: auto-rig / forge / music-native
- * rows retired with their engines (quarantine 47e1c583 — the same
- * verdict class as the card-decls golden 22->19, causes beside it);
+ * Every card's promised outputs (id-sorted; hand-owned — transcribed
+ * from the retired card-decls.json outputs[] at purge S-decls
+ * 2026-09-08. MONO-ENGINE 2026-09-08: auto-rig / forge / music-native
+ * rows retired with their engines (quarantine 47e1c583);
  * unknown/rowless cards pass the settle gate (the None-class skip).
  */
 export const CARD_OUTPUTS: Readonly<Record<string, readonly OutputDecl[]>> = {

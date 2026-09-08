@@ -40,16 +40,29 @@ REPO = os.path.normpath(os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
 sys.path.insert(0, os.path.join(REPO, "python"))
 
-from melite_cards import scan_engine_cards  # noqa: E402
+# PURGE S-decls (2026-09-08): the card.py scan is deleted — the
+# census reads the TS registry through the shared dumper (the
+# single declaration). {id: row}.
+import subprocess as _sp  # noqa: E402
 
-CARDS = scan_engine_cards(REPO)
+_qdump = _sp.run(
+    ["node", "--experimental-strip-types", "--no-warnings",
+     os.path.join(REPO, "packages", "engines", "comfyui", "cordis",
+                   "src", "dump-registry.ts")],
+    cwd=REPO, capture_output=True, text=True, timeout=180)
+assert _qdump.returncode == 0, \
+    "registry dumper rc=%d %s" % (_qdump.returncode,
+                                  (_qdump.stderr or "")[-300:])
+CARDS = json.loads(_qdump.stdout.strip().splitlines()[-1])["cards"]
 
-# -- scan visibility (the mono-engine shape) ----------------------------
-check("quad-remesh scans", "quad-remesh" in CARDS)
+# -- registry visibility (the mono-engine shape) -------------------
+check("quad-remesh registers", "quad-remesh" in CARDS)
 check("comfyui music keeps its id",
-      "music" in CARDS and "comfyui" in CARDS["music"][0]
-      and "music3" in CARDS["music"][1].families_of())
-check("quad-remesh is api", CARDS["quad-remesh"][1].api is True)
+      "music" in CARDS
+      and "music3" in CARDS["music"]["boarded"])
+check("quad-remesh is a serving card",
+      len(CARDS["quad-remesh"]["boarded"]) > 0
+      and len(CARDS["quad-remesh"]["knobs"]) > 0)
 # (RETIRED 2026-09-08 with the quarantine: forge / music-native /
 # auto-rig scans — their engines live under vendor/retired-engines/.)
 
@@ -147,8 +160,12 @@ _peek_ids = sorted(r["lane"] for r in _ld.peek()["lanes"]
 check("peek lists quad-remesh", "quad-remesh" in _peek_ids)
 check("peek lane ids are unique", len(_peek_ids) == len(set(_peek_ids)),
       [i for i in _peek_ids if _peek_ids.count(i) > 1])
-_scan_api = sorted(cid for cid, (_p, cls) in CARDS.items() if cls.api)
-check("peek serves every api card (the shared walk)",
+# (PURGE S-decls: the served set is the registry now. Peek is the
+# model-lane surface — every card boarding a family must be
+# peek-served. Pure-tool cards (no boarded family) disclose through
+# /v1/tools, pinned by the chrome wall.)
+_scan_api = sorted(cid for cid, row in CARDS.items() if row["boarded"])
+check("peek serves every boarding registry card (the shared walk)",
       set(_scan_api) <= set(_peek_ids),
       sorted(set(_scan_api) - set(_peek_ids)))
 

@@ -48,7 +48,7 @@
 //      runId) — the same call cli.ts:118 makes. ComposeRefusal.code
 //      maps to the refusal detail.
 //  10. stage-row wrap (the rim, plugins.py:566-588): {id: skeleton
-//      (card-decls.json, fallback: the posted mid), engine comfyui,
+//      (the card definition, fallback: the posted mid), engine comfyui,
 //      params: {workflow: graph}} — submitted through the EXISTING
 //      engine layer (engine/comfyui.ts executeFlow) exactly like
 //      flow_inline runs (L3 routing, upload walk, harvest,
@@ -72,8 +72,8 @@
 
 import { Context } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
-import { ComfyUIService, ComposeRefusal, loadFacts } from "@comfyui/cordis";
-import type { FactsFile } from "@comfyui/cordis";
+import { ComfyUIService, ComposeRefusal, loadCardDefs, loadFacts } from "@comfyui/cordis";
+import type { CardDefinition, FactsFile } from "@comfyui/cordis";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -155,6 +155,9 @@ export interface ModelFactsRow {
   readonly card: string;
   readonly defaults: Record<string, unknown>;
   readonly variants: VariantRow[];
+  /** The assembly-studio declaration (hand-owned model-facts.json
+   *  carries it; the projection unions its writes into admits). */
+  readonly studio?: { readonly writes?: readonly unknown[] };
 }
 
 export interface CardDeclRow {
@@ -167,18 +170,13 @@ export interface CardDeclRow {
 
 let factsCache: Record<string, ModelFactsRow> | null = null;
 let declsCache: Record<string, CardDeclRow> | null = null;
+let defsCache: Map<string, CardDefinition> | null = null;
 let oiCache: { mtimeMs: number; doc: Record<string, unknown> } | null = null;
 let oiPathCache: string | null = null;
 
 function factsPath(): string {
   return join(
     resolveRepoRoot(), "packages", "engines", "comfyui", "cordis", "data", "model-facts.json",
-  );
-}
-
-function declsPath(): string {
-  return join(
-    resolveRepoRoot(), "packages", "engines", "comfyui", "cordis", "data", "card-decls.json",
   );
 }
 
@@ -191,6 +189,7 @@ function objectInfoPath(): string {
 export function resetCardCachesForTests(): void {
   factsCache = null;
   declsCache = null;
+  defsCache = null;
   oiCache = null;
   oiPathCache = null;
   modelMidsCache = null;
@@ -207,32 +206,66 @@ function loadModelFacts(): Record<string, ModelFactsRow> {
   return factsCache;
 }
 
+/** Prime the card registry (PURGE S-decls): the registry loads
+ *  async (dynamic card-module imports) but the validate rim is sync
+ *  (handleFlowsValidate → modelArm → overlayCardParams), so every
+ *  gateway boot primes once and the request path projects
+ *  synchronously. Called at both main.ts boot sites; unprimed sync
+ *  access throws LOUD (never a fallback). */
+export async function primeCardRegistry(): Promise<void> {
+  defsCache = await loadCardDefs();
+}
+
 function loadCardDecls(): Record<string, CardDeclRow> {
   if (declsCache !== null) return declsCache;
-  const doc: unknown = JSON.parse(readFileSync(declsPath(), "utf8"));
+  if (defsCache === null) {
+    throw new Error(
+      "[card_registry] unprimed: boot must await primeCardRegistry() " +
+        "before the validate/compose rim serves (both main.ts boot " +
+        "sites prime; walls boot through startServer which primes)",
+    );
+  }
+  const facts: Record<string, ModelFactsRow> = loadModelFacts();
   const out: Record<string, CardDeclRow> = {};
-  if (typeof doc === "object" && doc !== null) {
-    for (const [id, row] of Object.entries(doc as Record<string, unknown>)) {
-      const rec: Record<string, unknown> =
-        typeof row === "object" && row !== null && !Array.isArray(row)
-          ? (row as Record<string, unknown>)
-          : {};
-      const meta: unknown = rec["schemaMeta"];
-      const names: string[] = Array.isArray(meta)
-        ? (meta as Array<Record<string, unknown>>)
-            .map((f) => f["name"])
-            .filter((n: unknown): n is string => typeof n === "string")
-        : [];
-      const strList = (v: unknown): string[] =>
-        Array.isArray(v) ? v.filter((e: unknown): e is string => typeof e === "string") : [];
-      out[id] = {
-        skeleton: typeof rec["skeleton"] === "string" ? (rec["skeleton"] as string) : "",
-        boarded: strList(rec["boarded"]),
-        schemaNames: names,
-        admits: strList(rec["admits"]),
-        spells: strList(rec["spells"]),
-      };
+  for (const [id, def] of defsCache) {
+    // The emitter's carrier line (toolsEmit.ts mirror): normal cards
+    // carry the Schemastery object as .schema; wrapped cards (h3)
+    // project .schemaCarrier. schemaNames = the knob surface.
+    // Schemastery schemas are CALLABLE (def types .schema as a
+    // function) — typeof is 'function', not 'object'.
+    const carrier: unknown =
+      (def as { schemaCarrier?: unknown }).schemaCarrier ?? def.schema;
+    const dict: Record<string, unknown> =
+      (typeof carrier === "object" || typeof carrier === "function") && carrier !== null
+        ? ((carrier as { dict?: unknown }).dict as Record<string, unknown> ?? {})
+        : {};
+    const names: string[] = Object.keys(dict);
+    // The admits rule (the retired exporter's gathering, inlined —
+    // purge S-decls: the exporter is deleted, this projection is the
+    // rule's home): admits = class-attr extras (def.admits) ∪ the
+    // families' studio writes (trailing-* ride verbatim — the
+    // admission gate matches them as prefixes). Schema knobs are
+    // NOT admits members — the gate checks knobs separately.
+    const seen = new Set<string>();
+    const admits: string[] = [];
+    const take = (v: unknown): void => {
+      if (typeof v === "string" && !seen.has(v)) {
+        seen.add(v);
+        admits.push(v);
+      }
+    };
+    for (const a of def.admits ?? []) take(a);
+    for (const fam of def.boarded) {
+      const writes: unknown = facts[fam]?.studio?.writes;
+      if (Array.isArray(writes)) for (const w of writes) take(w);
     }
+    out[id] = {
+      skeleton: def.skeleton,
+      boarded: [...def.boarded],
+      schemaNames: names,
+      admits,
+      spells: [...(def.spells ?? [])],
+    };
   }
   declsCache = out;
   return declsCache;
@@ -676,7 +709,7 @@ export function prepareCardParams(
     throw new CardArmError(
       400,
       "card_compose phase " + phase + ": unknown card " + pyReprStr(famRow.card) +
-        " (no card-decls.json row for the card model " + pyReprStr(mid) + " names)",
+        " (no registered card definition for the card model " + pyReprStr(mid) + " names)",
       "card_compose",
     );
   }
@@ -699,7 +732,7 @@ export function prepareCardParams(
 // identical params (phase-1 with run_id "" on both). Precondition:
 // mid is legal and resolves to a cordis family (the caller's own
 // checks refuse first, same voices). Throws CardArmError on unknown
-// variant/quant or a missing card-decls row.
+// variant/quant or an unregistered card.
 
 export interface OverlaidCard {
   readonly fam: string;
@@ -727,7 +760,7 @@ export function overlayCardParams(
     throw new CardArmError(
       400,
       "card_compose phase 1: unknown card " + pyReprStr(famRow.card) +
-        " (no card-decls.json row for the card model " + pyReprStr(mid) + " names)",
+        " (no registered card definition for the card model " + pyReprStr(mid) + " names)",
       "card_compose",
     );
   }
@@ -800,7 +833,7 @@ async function composeOnce(
       };
     }
   }
-  // THE ADMISSION CONTRACT GATE (cli.ts:102-116 verbatim voice):
+  // THE ADMISSION CONTRACT GATE (cli.ts admission verbatim voice):
   // every param key must be a declared knob or ride the admits row.
   const decls: Record<string, CardDeclRow> = loadCardDecls();
   const decl: CardDeclRow | undefined = decls[card];
@@ -815,7 +848,7 @@ async function composeOnce(
       throw phaseRefusal(
         phase,
         "compose-door: unknown param(s) on the " + card + " card: " + unknown.join(", ") +
-          " (admission is the declared surface — knobs + contract admits; see card-decls.json)",
+          " (admission is the declared surface — knobs + contract admits; see the card's TS definition)",
       );
     }
   }

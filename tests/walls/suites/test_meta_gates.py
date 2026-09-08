@@ -37,66 +37,25 @@ appendix)."""
 
 from __future__ import annotations
 
-import importlib.util
-import inspect
-import os
 import re
-import shutil
-import sys
-from collections.abc import Iterator
 from pathlib import Path
-from types import ModuleType
 
 import pytest
-from pydantic import ValidationError
 
 from _anchor import REPO
-
-sys.path.insert(0, os.path.join(str(REPO), "python"))
-from melite_cards import load_card_py  # noqa: E402 — pre-imported so the
-                                        # module-evicting fixture below
-                                        # never unloads estate loaders
-
-import test_compose_gates as walls  # noqa: E402 — the meta-test drives
-                                    # the wall's OWN helpers
-
-
-from contextlib import contextmanager
-
-
-@contextmanager
-def _evict_collisions(engine: str, forged_card_py: str,
-                      forged_model_dir: str) -> Iterator[None]:
-    """The estate loaders key modules by lane identity, not path: the
-    model loader REFUSES a second path under one key (two-paths-one-
-    key ModelError) and the card loader silently returns the FIRST
-    class cached under the key (stale hit). A forgery must therefore
-    save + evict the REAL lane's keys, run, evict its own
-    registrations, and restore the saved objects (same objects, no
-    re-exec — the process world is exactly as found)."""
-    from melite_cards.serialize import _module_name
-    keys = ["plugin_models.%s.%s" % (
-                engine, os.path.basename(forged_model_dir)),
-            _module_name(engine, os.path.dirname(forged_card_py))]
-    saved = {k: sys.modules[k] for k in keys if k in sys.modules}
-    for k in saved:
-        del sys.modules[k]
-    before = set(sys.modules)
-    try:
-        yield
-    finally:
-        for k in [k for k in sys.modules if k not in before]:
-            del sys.modules[k]
-        sys.modules.update(saved)
 
 CARDS = REPO / "packages/engines/comfyui/action_cards"
 
 
-# ── Part A: the canary ────────────────────────────────────────────
+# ── Part A: the canary (subjects absent — tombstoned) ──────────
 
-# Lane → (strict-null-refusing numeric, minimal valid params). The
-# numeric MUST be one the row refuses as explicit null (the
-# required_positive/present class — omit-to-default, never null).
+# Lane → (strict-null-refusing numeric, minimal valid params). KEPT
+# as the restoration pointer: the three canary legs below drove the
+# py schema.py doors (explicit-null refusal, extra='forbid',
+# garbage/wrong-type refusal). The subjects were already absent at
+# purge S-decls (no schema.py anywhere under action_cards/ — the
+# legs errored FileNotFound, pre-existing red). If S-flows restores
+# py schema doors, restore the three legs around this census.
 CANARY = {
     "audio/music": ("duration", {"prompt": "song"}),
     "image/image-edit": ("steps", {"prompt": "hat",
@@ -106,163 +65,48 @@ CANARY = {
 }
 
 
-def _canary_schema_mod(card: str) -> ModuleType:
-    p = CARDS / card / "python" / "schema.py"
-    name = "canary_" + card.replace("/", "_")
-    if name in sys.modules:
-        return sys.modules[name]
-    spec = importlib.util.spec_from_file_location(name, str(p))
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[name] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
-
-def test_canary_explicit_numeric_null_refuses() -> None:
-    """The operator's incident, per door: a stated null on a
-    defaulted numeric MUST refuse (absent rides the default; null is
-    garbage). If any door admits it, the frontend strip rule has no
-    backstop and untouched knobs 400 again."""
-    dead = []
-    for card, (num, minimal) in sorted(CANARY.items()):
-        mod = _canary_schema_mod(card)
-        try:
-            mod.parse_card({"params": dict(minimal, **{num: None})})
-        except ValidationError:
-            continue
-        dead.append(card)
-    assert not dead, (
-        "doors admitting explicit numeric null (the music3 incident "
-        "returns): %r" % dead)
-
-
-def test_canary_unknown_key_refuses() -> None:
-    """extra='forbid' must hold on every door — an unknown key that
-    slides through renders at defaults (GPU cycles on wrong params,
-    zero errors: the silent-garbage class)."""
-    dead = []
-    for card, (_num, minimal) in sorted(CANARY.items()):
-        mod = _canary_schema_mod(card)
-        try:
-            mod.parse_card({"params": dict(minimal,
-                                            __dead_rider__=1)})
-        except ValidationError as e:
-            if "extra_forbidden" in str(e.errors()):
-                continue
-            dead.append("%s (wrong refusal: %s)" % (card, e.errors()))
-            continue
-        dead.append("%s (admitted)" % card)
-    assert not dead, "doors not forbidding unknown keys: %r" % dead
-
-
-def test_canary_garbage_and_wrong_types_refuse() -> None:
-    """`steps: 'later'` and `prompt: {object}` must refuse LOUDLY on
-    every door — never silently re-default, never accept."""
-    dead = []
-    for card, (num, minimal) in sorted(CANARY.items()):
-        mod = _canary_schema_mod(card)
-        for lie in ({num: "later"}, {"prompt": {"object": True}}):
-            try:
-                mod.parse_card({"params": dict(minimal, **lie)})
-            except ValidationError:
-                continue
-            dead.append("%s admits %r" % (card, lie))
-    assert not dead, "doors admitting garbage: %r" % dead
+def test_canary_subjects_absent_legs_stay_retired() -> None:
+    """The three canary legs (null/garbage/unknown-key refusal on the
+    py schema.py doors) died with their subjects — no schema.py
+    exists under action_cards/. A canary that cannot load its door
+    is decorative; if a subject reappears this tombstone fails and
+    the legs come back around CANARY above."""
+    present = [(CARDS / card / "python" / "schema.py").as_posix()
+               for card in CANARY
+               if (CARDS / card / "python" / "schema.py").is_file()]
+    assert not present, \
+        "schema.py door(s) restored — restore the canary legs: %r" \
+        % present
 
 
 # ── Part B: the walls bite ────────────────────────────────────────
 
-def _forged_music_card(tmp_path: Path, old: str, new: str) -> tuple[str, str]:
-    """A temp card copy the estate loader can actually load: the card
-    resolves its boarded model via __file__ (../../../.. + models/),
-    so the forgery mirrors the repo layout (action_cards + the
-    boarded model dir), with ONLY card.py mutated."""
-    root = tmp_path / "forge"
-    dst = root / "packages/engines/comfyui/action_cards/audio/music/py"
-    dst.mkdir(parents=True)
-    src = CARDS / "audio/music/py"
-    shutil.copy(src / "schema.py", dst / "schema.py")
-    text = (src / "card.py").read_text()
-    assert old in text, "forge anchor moved — repair the probe"
-    (dst / "card.py").write_text(text.replace(old, new, 1))
-    msrc = REPO / ("packages/engines/comfyui/models/audio/music3")
-    mdst = root / "packages/engines/comfyui/models/audio/music3"
-    shutil.copytree(msrc, mdst)
-    sys.path.insert(0, os.path.join(str(REPO), "python"))
-    return str(dst / "card.py"), str(mdst)
+def test_card_schema_forge_legs_retired_with_card_py() -> None:
+    """Retired 2026-09-08 purge S-decls: the three card.py-forge legs
+    (bites_forged_default, sides_come_from_different_files,
+    bites_renamed_knob) proved the PY knob/surface walls bit on the
+    card.py-vs-schema.py duality. card.py is deleted — the duality
+    has no two sides (the TS registry is the single declaration; the
+    admission gate + compose goldens own the surface now). A wall
+    that forges a deleted file is decorative."""
+    card_py = (CARDS / "audio/music/python/card.py")
+    assert not card_py.is_file(), \
+        "card.py reappeared — the forge legs stay retired"
+    assert not (REPO / "tools" / "export_card_decls.py").is_file(), \
+        "exporter reappeared — the forge legs stay retired"
 
 
-def test_knob_wall_bites_forged_default(tmp_path: Path) -> None:
-    """Forge duration 30 → 31 in a temp card copy (pristine sibling
-    schema): the knob wall's predicate (card default == lane
-    default) must come out FALSE — i.e. the wall WOULD fire. A wall
-    that still passes on this input is decorative."""
-    forged_py, forged_model = _forged_music_card(
-        tmp_path, "default=30,", "default=31,")
-    with _evict_collisions("comfyui", forged_py, forged_model):
-        row = walls._wall_schema_row(forged_py)
-        assert row is not None, "wall resolver lost the forged lane"
-        card_cls = load_card_py(forged_py, "comfyui")
-    forged = next(f.default for f in card_cls._fields_
-                  if f.name == "duration")
-    lane = row.model_fields["duration"].get_default(
-        call_default_factory=True)
-    assert (forged, lane) == (31, 30), (
-        "forge did not take: card=%r lane=%r" % (forged, lane))
-    assert forged != lane, (
-        "KNOB WALL IS BLIND: forged card default 31 == lane 30 "
-        "passed the wall predicate")
-
-
-def test_knob_wall_sides_come_from_different_files() -> None:
-    """The conflation class: an envelope derived from the card agrees
-    with the card trivially. The knob wall's two sides MUST load from
-    two different files (card.py vs schema.py) — mutating one side
-    can never move the other."""
-    card_py = (CARDS / "audio/music/python/card.py").as_posix()
-    row = walls._wall_schema_row(card_py)
-    assert row is not None
-    row_file = inspect.getfile(row)
-    assert row_file != card_py, (
-        "wall reads both sides from one file — conflation blind")
-    assert Path(row_file).name == "schema.py", (
-        "lane side must resolve to schema.py, got %s" % row_file)
-    assert Path(card_py).name == "card.py"
-
-
-def test_surface_wall_bites_renamed_knob(tmp_path: Path) -> None:
-    """Forge duration → duration_typo_xyz: the renamed knob is card
-    surface with no schema row — the surface wall's predicate (every
-    surface name rides the envelope) must come out FALSE."""
-    forged_py, forged_model = _forged_music_card(
-        tmp_path,
-        "duration                 = Slider",
-        "duration_typo_xyz        = Slider")
-    with _evict_collisions("comfyui", forged_py, forged_model):
-        row = walls._wall_schema_row(forged_py)
-        assert row is not None
-        card_cls = load_card_py(forged_py, "comfyui")
-        surface = [f.name for f in card_cls._fields_]
-        assert "duration_typo_xyz" in surface, "forge did not take"
-        proj = walls._wall_project_row(row)
-        assert proj is not None
-        missing = [n for n in surface if n not in proj]
-    assert "duration_typo_xyz" in missing, (
-        "SURFACE WALL IS BLIND: renamed knob rides the projection")
-
-
-def test_served_envelope_carries_the_row_not_the_card() -> None:
-    """Behavioral proof of the derivation source: the card's Seed
-    default is -1 (the RANDOM sentinel), the MusicParams row's is 0.
-    The served envelope must carry 0 — a revert to card.py derivation
-    serves -1 and fails HERE, not at the user's click."""
-    sys.path.insert(0, os.path.join(str(REPO), "python"))
-    import editor_runs as _er
-    served = _er._family_surface_props("music3")
-    assert served is not None, "music3 serves no envelope"
-    assert served["seed"]["default"] == 0, (
-        "envelope seed default is %r — card.py derivation (row says "
-        "0, card says -1)" % (served["seed"].get("default"),))
+def test_served_envelope_derivation_duality_retired() -> None:
+    """Retired 2026-09-08 purge S-decls: the served-envelope leg
+    proved the envelope carried the schema ROW's seed default (0),
+    not the card's (-1 sentinel) — via editor_runs._family_surface_props,
+    which loads the card class. card.py is deleted, so the duality
+    has no card side (the loader raises on the missing file). The
+    live successors: the compose goldens (a wrong default changes
+    graph bytes) + the G3 frozen snapshot shape. A revert to
+    card.py derivation is unexpressible — there is no card.py."""
+    assert not (CARDS / "audio/music/python/card.py").is_file(), \
+        "card.py reappeared — restore the derivation-duality leg"
 
 
 # ── Part C: the ledger ────────────────────────────────────────────
@@ -549,6 +393,46 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         "kick_queue_consumer.py": "rot",
         "packages/comfyui/cards/video_timeline/form_video_timeline.yaml": "rot",
         "packages/comfyui/models/video/h3-timeline/card_knobs.yaml": "rot",
+    },
+    # (2026-09-08 purge S-decls — the card.py/exporter/snapshot
+    # deletion. "deleted-in-record" where the doc IS the deletion
+    # record; "past" where a completed record names the machinery
+    # as live. The py/card.py + plugins/*/py/card.py refs died
+    # earlier (py/ -> python/ rename) — accounted here as found.)
+    "docs/design/python-purge-2026-09-08.md": {
+        "card-decls.json": "deleted-in-record",
+        "py/card.py": "deleted-in-record",
+        "tools/export_card_decls.py": "deleted-in-record",
+    },
+    "docs/design/ts-migration-ladder-2026-09-07.md": {
+        "card-decls.json": "past",
+        "export_card_decls.py": "past",
+        "tools/export_card_decls.py": "past",
+    },
+    "docs/design/card-lane-port-survey-2026-09-08.md": {
+        "card-decls.json": "past",
+    },
+    "docs/design/generators-port-survey-2026-09-08.md": {
+        "card-decls.json": "past",
+        "packages/engines/comfyui/cordis/data/card-decls.json": "past",
+        "tools/export_card_decls.py": "past",
+    },
+    "docs/design/cpp-node-cutover-quad-remesh-2026-09-07.md": {
+        "card-decls.json": "past",
+        "tools/export_card_decls.py": "past",
+    },
+    "docs/design/anny-base-body.md": {
+        "py/card.py": "past",
+    },
+    "docs/design/cordis-compose-runtime-2026-09-07.md": {
+        "py/card.py": "past",
+    },
+    "docs/design/parameter-surface.md": {
+        "py/card.py": "past",
+    },
+    "docs/design/image-edit-surface-standard.md": {
+        "plugins/engines/comfyui/action_cards/image/tagger/py/card.py": "past",
+        "plugins/engines/comfyui/action_cards/image/upscale-tools/py/card.py": "past",
     },
 }
 

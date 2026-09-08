@@ -38,3 +38,12 @@ Both rounds served statuses {200, 400} only, same set per leg.
 Regolden only for a deliberate TS validate-door behavior change,
 with a dated note here. Never regolden to chase a red wall — the
 wall failing against these bytes means the door moved.
+
+## 2026-09-08: dangle-escape + golden_qwen-img-edit-2511 voice re-truth (purge S-decls)
+
+The admission-refusal tail changed from "see card-decls.json" to
+"see the card's TS definition" — the file is dying (registry
+projection owns admission now: knobs from the schema carrier,
+extras from def.admits, studio writes from the facts file).
+Refusal MEANING unchanged (same params refused on the same
+cards); only the pointer moves to the living source.

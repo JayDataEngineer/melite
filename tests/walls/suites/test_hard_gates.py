@@ -36,19 +36,22 @@ card/lane (present and future), not just the lane that burned:
   (GATE B) are unported in TS — see the checklist there.
 
   GATE 3 (silent served-manifest drift): the card-dir tool.json
-  files are SERVED (/v1/card-tools via lane_disclosure) and DERIVED
-  (gen_tool_json from the card classes). Four of them drifted
-  silently because no wall ran the generator's check mode. This
-  suite runs it: any drift is a failure, regen is deliberate.
+  files are SERVED (/v1/card-tools via lane_disclosure) and FROZEN
+  (the gen_tool_json generator died with card.py, purge S-decls
+  2026-09-08 — re-derivation rides S-snapshots). Four of them once
+  drifted silently because no wall ran the generator's check mode;
+  until re-derivation this suite pins the frozen shape: every
+  snapshot parses, carries card/model rows with params_schema
+  properties, and names a registered card.
 
 Native pytest (assert-based) — auto-collected, no registry edit.
 No GPU, no ComfyUI: one scratch-gateway boot for the HTTP proof.
 """
 
-import importlib.util
 import io
 import json
 import os
+import subprocess
 import sys
 import urllib.request
 from collections.abc import Iterator
@@ -92,7 +95,6 @@ def _model_universe() -> dict[str, type[object]]:
                     cls = load_model_py(p, tier)
                     universe.setdefault(cls.id, cls)
     return universe
-from melite_cards import scan_engine_cards  # noqa: E402
 import editor_forms  # noqa: E402
 from artifact_refs import (  # noqa: E402
     ASSET_RUNS_PREFIX, OUT_ROOT, TEST_OUT_ROOT, find_dangling_refs,
@@ -150,19 +152,46 @@ def test_scanned_models_all_carry_cascade() -> None:
 
 
 # ── GATE 1b: card-side boarding validity ──────────────────────────
+# (PURGE S-decls 2026-09-08: card.py is deleted — boarding rides the
+# TS registry, read through the shared dumper. The model universe
+# stays py (model.py is S-facts prey, not this stroke).)
 
-def _boarded_family_ids(card_cls: type[object]) -> set[str]:
-    """Both boarding spellings: models= classes AND families= ids
-    (the package-load arms like h3-timeline board by family)."""
-    ids = set()
-    for m in (getattr(card_cls, "models", None) or ()):
-        if isinstance(m, type) and issubclass(m, Model):
-            ids.add(m.id)
-        else:
-            ids.add("!non-Model:%r" % (m,))
-    for fam in (card_cls.families_of() or ()):
-        ids.add(str(fam))
-    return ids
+def _registry_cards() -> dict:
+    """{card id: dumper row} (boarded/requires/knobs/skeleton)."""
+    p = subprocess.run(
+        ["node", "--experimental-strip-types", "--no-warnings",
+         os.path.join(REPO, "packages", "engines", "comfyui", "cordis",
+                       "src", "dump-registry.ts")],
+        cwd=str(REPO), capture_output=True, text=True, timeout=180)
+    assert p.returncode == 0, \
+        "registry dumper rc=%d %s" % (p.returncode, (p.stderr or "")[-300:])
+    return json.loads(p.stdout.strip().splitlines()[-1])["cards"]
+
+
+# The retired card.py ability.default_family map, frozen at the cut
+# (the ability dict dies with the oracle; the pin — every default
+# names a boarded family — survives against the registry).
+FROZEN_DEFAULT_FAMILIES = {
+    "anny": "anny",
+    "fit": "fit",
+    "h3-timeline": "h3-timeline",
+    "ideogram4": "ideogram",
+    "image-edit": "qwen-img-edit-2511",
+    "image-gen": "krea-2",
+    "img-to-mesh": "trellis2-native",
+    "input-prep": "input",
+    "mask-studio": "mask-studio",
+    "motion": "kimodo",
+    "music": "music3",
+    "quad-remesh": "autoremesher",
+    "sfx": "moss-sfx",
+    "skin": "skin",
+    "tagger": "wd14",
+    "tts": "qwen3-tts",
+    "upscale-tools": "seedvr2_ema",
+    "video-gen": "wan-vace",
+    "voice-lock": "qwen3-tts-voicedesign",
+}
 
 
 def test_cards_board_only_cascaded_models() -> None:
@@ -170,15 +199,12 @@ def test_cards_board_only_cascaded_models() -> None:
     a card can never board a fossil (default mode always shows the
     cascade), a ghost (no such family), or a non-Model."""
     universe = _model_universe()
-    cards = scan_engine_cards(REPO)
-    assert cards, "no cards scanned"
+    cards = _registry_cards()
+    assert cards, "no cards registered"
     bad = []
     for cid in sorted(cards):
-        _path, cls = cards[cid]
-        for fid in sorted(_boarded_family_ids(cls)):
-            if fid.startswith("!non-Model:"):
-                bad.append("%s boards %s" % (cid, fid))
-            elif fid not in universe:
+        for fid in sorted(cards[cid]["boarded"]):
+            if fid not in universe:
                 bad.append("%s boards ghost family %r" % (cid, fid))
             elif not getattr(universe[fid], "variants", ()):
                 bad.append("%s boards fossil %s (no variants)"
@@ -189,16 +215,16 @@ def test_cards_board_only_cascaded_models() -> None:
 def test_card_default_family_points_at_boarded_cascade() -> None:
     """ability.default_family (the default-mode lane) must be a
     boarded family id — a typo'd default fails HERE, never as an
-    empty selector in the editor."""
-    cards = scan_engine_cards(REPO)
+    empty selector in the editor. The defaults are the frozen
+    FROZEN_DEFAULT_FAMILIES map (transcribed from the retired card.py
+    ability dicts); the boarded half is the live registry."""
+    cards = _registry_cards()
     bad = []
     for cid in sorted(cards):
-        _path, cls = cards[cid]
-        ability = getattr(cls, "ability", None) or {}
-        default = ability.get("default_family")
+        default = FROZEN_DEFAULT_FAMILIES.get(cid)
         if not default:
             continue
-        boarded = _boarded_family_ids(cls)
+        boarded = set(cards[cid]["boarded"])
         if default not in boarded:
             bad.append("%s default_family %r not boarded (boards %s)"
                        % (cid, default, sorted(boarded)))
@@ -448,26 +474,41 @@ def test_seed_rows_refuse_below_minus_one() -> None:
     assert not bad, "admits seed=-2 (below the -1 sentinel): %s" % bad
 
 
-FILE_SLOT_TYPES = frozenset(
-    ["image", "audio", "video", "file", "image_list"])
+# (Retired 2026-09-08 purge S-decls: FILE_SLOT_TYPES named the py
+# field-type vocabulary (image/audio/video/file/image_list). File
+# slots now enumerate from the registry's role=='path' knobs +
+# _IMAGE_LIST_SLOTS above.)
 
 
-def _card_file_slots(card_cls: type[object]) -> list[tuple[str, str]]:
-    """Every input slot that can carry an artifact URL: the binary
-    field rows (image/audio/video/file) PLUS list-typed image rows
-    (reference_images — a LIST of refs, the shape the first sweep
-    version walked straight past)."""
-    return [(f.name, f.type) for f in (card_cls._fields_ or ())
-            if getattr(f, "type", None) in FILE_SLOT_TYPES]
+# The estate's ONE role-less list slot (the image-edit brick's
+# list-form twin — bare z.array(z.string()), no .role; admitted,
+# never silently mapped). A second list slot extends this set.
+_IMAGE_LIST_SLOTS = frozenset(["reference_images"])
 
 
-def _card_route(card_cls: type[object]) -> str | None:
-    """The model-door id for a card body: default_family, else the
-    first boarded family. None means the card routes no model body."""
-    ability = getattr(card_cls, "ability", None) or {}
-    if ability.get("default_family"):
-        return ability["default_family"]
-    boarded = sorted(_boarded_family_ids(card_cls))
+def _card_file_slots(card_row: dict) -> list[tuple[str, str]]:
+    """Every input slot that can carry an artifact URL, from the
+    registry row: role=='path' knobs (the params-emit mirror) PLUS
+    the frozen list-slot set. (Cut proof 2026-09-08: this census ==
+    the retired py field census per card except h3-timeline, which
+    GAINS its image slot — the retired census was blind there; the
+    TS declaration owns the truth.)"""
+    out = []
+    for k in card_row.get("knobs", []):
+        if k.get("role") == "path":
+            out.append((k["name"], "file"))
+        elif k.get("array") and k.get("name") in _IMAGE_LIST_SLOTS:
+            out.append((k["name"], "image_list"))
+    return out
+
+
+def _card_route(cid: str, card_row: dict) -> str | None:
+    """The model-door id for a card body: frozen default_family,
+    else the first boarded family. None means the card routes no
+    model body (pure-tool cards)."""
+    if cid in FROZEN_DEFAULT_FAMILIES:
+        return FROZEN_DEFAULT_FAMILIES[cid]
+    boarded = sorted(card_row.get("boarded", ()))
     return boarded[0] if boarded else None
 
 
@@ -492,19 +533,37 @@ def test_sweep_sees_nested_shapes() -> None:
     assert found.get("$.params.slots.mask") == ref
 
 
+# Pure-tool cards (boarded == [] — no model family routes them;
+# they disclose via /v1/tools, pinned by the chrome wall) are OUTSIDE
+# the sweep's jurisdiction: the sweep posts model bodies through the
+# validate door, which cannot route them. The skip set is pinned
+# EXACT — a card that LOSES its boarded families fails here, loudly,
+# instead of silently leaving the sweep.
+PURE_TOOL_CARDS = frozenset(["clothing-placement"])
+
+
+def _routable_cards(cards: dict) -> dict:
+    skipped = {cid for cid, row in cards.items()
+               if not row.get("boarded")}
+    assert skipped == PURE_TOOL_CARDS, \
+        "sweep skip set drifted (a card lost its boarded families, " \
+        "or a new pure-tool card landed unpinned): %r" % sorted(skipped)
+    return {cid: row for cid, row in cards.items()
+            if cid not in skipped}
+
+
 def test_sweep_covers_every_card_file_slot() -> None:
     """MECHANISM COVERAGE (the generic answer to 'any card'): for
-    EVERY scanned card, EVERY file-carrying slot is visible to the
-    sweep — a dangling URL placed in that slot is flagged with the
-    slot in its path. A card whose inputs the sweep cannot see is
-    listed here, loudly, by name."""
-    cards = scan_engine_cards(REPO)
+    EVERY routable registered card, EVERY file-carrying slot is
+    visible to the sweep — a dangling URL placed in that slot is
+    flagged with the slot in its path. A card whose inputs the sweep
+    cannot see is listed here, loudly, by name."""
+    cards = _routable_cards(_registry_cards())
     blind, total = [], 0
     for cid in sorted(cards):
-        _path, cls = cards[cid]
-        for name, stype in _card_file_slots(cls):
+        for name, stype in _card_file_slots(cards[cid]):
             total += 1
-            body = {"model": _card_route(cls) or cid,
+            body = {"model": _card_route(cid, cards[cid]) or cid,
                     "params": {name: _dangling_for(stype)}}
             found = find_dangling_refs(body)
             if not any(name in loc for _loc, r, _w in found
@@ -526,16 +585,13 @@ def test_every_card_refuses_dangling_before_registration(
     now POSTs the side-effect-free validate door (the TS sweep
     walks the whole body tree before admission, so stale slot
     names still flag at their $.params.<slot> location)."""
-    cards = scan_engine_cards(REPO)
+    cards = _routable_cards(_registry_cards())
     admitted, total = [], 0
     assert _queue_empty(_sg)
     for cid in sorted(cards):
-        _path, cls = cards[cid]
-        route = _card_route(cls)
-        if route is None:
-            admitted.append("%s: no routable family" % cid)
-            continue
-        for name, stype in _card_file_slots(cls):
+        route = _card_route(cid, cards[cid])
+        assert route is not None, cid  # _routable_cards guarantees it
+        for name, stype in _card_file_slots(cards[cid]):
             total += 1
             body = {"model": route,
                     "params": {name: _dangling_for(stype)}}
@@ -593,21 +649,38 @@ def test_start_door_400_leaves_queue_empty() -> None:
         reap_gateway(proc)
 
 
-# ── GATE 3: served snapshot freshness ─────────────────────────────
+# ── GATE 3: served snapshot frozen shape ─────────────────────────
+# (PURGE S-decls 2026-09-08: the generator read the card classes —
+# both die here; the snapshots are hand-owned frozen data until
+# S-snapshots re-derives them from the registry. This gate pins the
+# frozen shape so a corrupted snapshot fails HERE, not at serve.)
 
-def test_tool_snapshots_match_card_classes(capsys: pytest.CaptureFixture[str]) -> None:
-    """gen_tool_json check mode: ANY drift fails. Regen is a
-    deliberate `--write`, never silent hand-edit drift."""
-    spec = importlib.util.spec_from_file_location(
-        "gen_tool_json",
-        os.path.join(REPO, "tools", "gen_tool_json.py"))
-    mod = importlib.util.module_from_spec(spec)
-    old_argv = sys.argv
-    sys.argv = ["gen_tool_json.py"]
-    try:
-        spec.loader.exec_module(mod)
-        rc = mod.main()
-    finally:
-        sys.argv = old_argv
-    out = capsys.readouterr().out
-    assert rc == 0, "tool.json drift (served manifests stale):\n" + out
+def test_tool_snapshots_frozen_shape() -> None:
+    cards = _registry_cards()
+    snaps = sorted(
+        (REPO / "packages" / "engines" / "comfyui"
+         / "action_cards").rglob("tool.json"))
+    assert snaps, "no tool.json snapshots — the served manifests"
+    bad = []
+    for snap in snaps:
+        try:
+            rows = json.loads(snap.read_text(encoding="utf-8"))
+        except ValueError as e:
+            bad.append("%s: unparseable (%s)" % (snap.name, e))
+            continue
+        if not isinstance(rows, list) or not rows:
+            bad.append("%s: not a non-empty row list" % snap.name)
+            continue
+        for row in rows:
+            if not isinstance(row, dict):
+                bad.append("%s: row not an object" % snap.name)
+                continue
+            cid = row.get("card")
+            if cid not in cards:
+                bad.append("%s: names unregistered card %r"
+                           % (snap.name, cid))
+            props = (row.get("params_schema") or {}).get("properties")
+            if not isinstance(props, dict) or not props:
+                bad.append("%s: %s params_schema has no properties"
+                           % (snap.name, cid))
+    assert not bad, bad

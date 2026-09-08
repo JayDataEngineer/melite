@@ -1,11 +1,10 @@
 // Tier 3 — the h3-timeline card (the h3_window renderer port).
 //
 // CARD SURFACE vs RENDERER VOCABULARY (2026-09-07): the schema below
-// mirrors ONLY the python card's own fields —
-// packages/engines/comfyui/action_cards/video/h3-timeline/python/card.py
-// (H3TimelineCard: prompt, image, seed, width, height, length, steps,
-// sharpen_enabled, sharpen_strength, interpolate_enabled,
-// shift_video, shift_audio — 12 keys). The window families (t4r /
+// mirrors ONLY the retired python card's own fields (H3TimelineCard:
+// prompt, image, seed, width, height, length, steps, sharpen_enabled,
+// sharpen_strength, interpolate_enabled, shift_video, shift_audio —
+// 12 keys; card.py deleted purge S-decls 2026-09-08). The window families (t4r /
 // t4_open / t4_chain), the motion-context chaining rail, and the SLA /
 // SR / interp leaves are the RENDERER vocabulary the compose body
 // still reads: those keys ride the compose door's explicit-params
@@ -494,11 +493,15 @@ export function apply(ctx: Context): void {
     id: 'h3-timeline',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'h3-film',
-    // BOARDING (resolved zero-regold 2026-09-07): py card.py boards
-    // all three families and the parity referee (card-decls.json)
-    // agrees, so this triple boards green with the frozen golden
+    // BOARDING (resolved zero-regold 2026-09-07): the card boards
+    // all three families, so this triple boards green with the frozen golden
     // video_h3_open-cascade composing model 'h3' through this card.
     boarded: ['h3-timeline', 'h3', 'h3-keyframe'],
+    // ADMISSION EXTRAS (the py class-attr half verbatim: the
+    // retired row's admits minus the boarded families' studio
+    // writes, which the projection unions from the facts file —
+    // trailing-* ride verbatim, the gate matches them as prefixes).
+    admits: ['ctx_*', 'fps_seconds', 'image_name', 'k', 'motion_*', 'noise_seed', 'ref_image_size', 'sla_*', 'variant'],
     // the six packs the window graph rides (EXTENSION LAW — mirrors
     // the python card's requires tuple verbatim)
     requires: [

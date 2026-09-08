@@ -18,22 +18,29 @@ O02–O05 used to assert the TS refusal bytes == the retired py
 serving oracle's output-violation text (a lazy `import gateway`).
 They now assert the TS bytes == the frozen TS goldens beside this
 suite (golden_ts/test_gateway_verbs_outputs/refusals.json, causes
-recorded in its causes.md). The V-phase verb-table legs compare the
+recorded in its causes.md). The V-phase verb-table legs compared the
 TS table against keeper oracles (the verbs.py source module, the
-card-decls.json snapshot, the TSX chips) — those oracles are product
-sources, not the serving oracle, and stay.
+card-decls.json snapshot, the TSX chips).
+PURGE S-decls 2026-09-08: the scan oracle (card.py _verbs_ mounts)
++ tools/export_card_decls.verb_meta + the card-decls.json snapshot
+are deleted — V01/V03–V06 read the FROZEN_KEEPERS below (transcribed
+from those oracles at the cut). The verbs.py module + the TSX chips
+stay live witnesses. O01 (CARD_OUTPUTS == decls outputs[]) is
+retired with the snapshot: the table is hand-owned, every row's
+content pins behaviorally in O02–O05, and O01 now pins row shape +
+the deletion.
 
 Date: 2026-09-08. Status: landed (oracle-death re-derivation).
 
   Phase V — every verb dispatched table-driven:
-    V01 the closed 7-verb census, three py witnesses (mounted scan +
-        verbs.py module + the two TSX verb tables) + the mount map
-        (5 mounted, rig-somax + apply-skin declared-but-unmounted).
+    V01 the closed 7-verb census: the frozen mount map (5 mounted,
+        rig-somax + apply-skin declared-but-unmounted) + the live
+        verbs.py module + the two TSX verb tables.
     V02 the TS table names exactly the 7 (no 8th either side).
     V03 per-verb agreement, field-for-field on the dispatch surface
         (label/card/families/engines/writes/requires + every knob's
-        name/kind/required/default/options vs tools/export_card_decls
-        verb_meta — the same oracle that feeds card-decls.json).
+        name/kind/required/default/options vs the frozen verb_meta
+        rows — transcribed from the retired scan oracle at the cut).
     V04 dispatch agreement: each verb resolves to its declared flow
         (queue work) or local action (preset-save never burns a
         serial-GPU slot), with card + writes context.
@@ -44,11 +51,10 @@ Date: 2026-09-08. Status: landed (oracle-death re-derivation).
         flow loads (flow_mod.load_flow) and every requires pack is
         in-tree (vendor/comfyui_extensions/<pack>).
   Phase O — outputs enforcement (the TS contract, frozen as goldens):
-    O01 the TS CARD_OUTPUTS table == card-decls.json outputs[] for
-        all 19 cards (that snapshot is byte-pinned by
-        test_card_decls_parity.py — the chain of trust, cited here;
-        mono-engine 2026-09-08: auto-rig / forge / music-native
-        retired with their engines, quarantine 47e1c583).
+    O01 row shape (labels + patterns non-empty on every row) + the
+        retired snapshot stays deleted (mono-engine 2026-09-08:
+        auto-rig / forge / music-native retired with their engines,
+        quarantine 47e1c583; content pins ride O02–O05).
     O02 golden artifact sets pass the TS side (TS outputViolation):
         mesh + views, multi-row cards, any-of rows,
         case-insensitive suffixes.
@@ -71,8 +77,10 @@ against a dead engine port — connection-refused, never inference).
 Keeper cites: verbs packages/engines/comfyui/models/3d/anny/mods/verbs.py
 (EstimateBody 21-33, Dress 36-80, Prop 83-123, RigSomax 126-143,
 ApplySkin 145-179, SavePreset 181-200, LoadPreset 203-221); mount
-models/3d/anny/model.py:110; contract python/melite_cards/dsl.py
-SubActionMod 857-869 + VerbEngine 822-854; outputs gate
+models/3d/anny/model.py:110 (frozen as FROZEN_MOUNTED — model.py is
+S-oracle prey, not this stroke); contract python/melite_cards/dsl.py
+SubActionMod 857-869 + VerbEngine 822-854 (frozen as
+FROZEN_VERB_ORACLE rows); outputs gate
 packages/gateway/src/schema/verbs.ts outputViolation +
 applyRunContract (served via doors/flowsRun.ts runOne); TSX renderer
 action_cards/3d/anny/ui/studio/component.tsx
@@ -102,15 +110,9 @@ import pytest
 from _anchor import REPO
 
 import flow as flow_mod
-from melite_cards.serialize import scan_engine_cards
-
-sys.path.insert(0, str(REPO / "tools"))
-import export_card_decls as declx  # noqa: E402
 
 TS_VERBS = REPO / "packages" / "gateway" / "src" / "schema" / "verbs.ts"
 TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
-CARD_DECLS_JSON = (REPO / "packages" / "engines" / "comfyui" / "cordis"
-                   / "data" / "card-decls.json")
 VERBS_PY = (REPO / "packages" / "engines" / "comfyui" / "models" / "3d"
             / "anny" / "mods" / "verbs.py")
 TSX = (REPO / "packages" / "engines" / "comfyui" / "action_cards" / "3d"
@@ -195,30 +197,23 @@ def _verbs_module():
     return mod
 
 
-@pytest.fixture(scope="module")
-def py_mounted() -> dict[str, list[str]]:
-    """{card id: [mounted verb ids in mount order]} (scan oracle)."""
-    out: dict[str, list[str]] = {}
-    for cid, (_path, cls) in sorted(scan_engine_cards(REPO).items()):
-        verbs = getattr(cls, "_verbs_", ())
-        if verbs:
-            out[cid] = [vcls.id for (vcls, _vfams) in verbs]
-    return out
+# ── frozen verb keepers (purge S-decls 2026-09-08) ──
+# Transcribed from the retired oracles at the cut (scan of the
+# deleted card.py _verbs_ mounts + tools/export_card_decls.verb_meta
+# + the verbs.py module for the unmounted pair). The oracles are
+# gone; these literals pin the content the TS table must carry.
+# V01/V03–V06 read them; the verbs.py module + TSX chips stay live.
+FROZEN_MOUNTED = {'anny': ['hmr-estimate', 'preset-save', 'preset-load', 'dress', 'prop']}
 
-
-@pytest.fixture(scope="module")
-def py_oracle(py_cards: dict) -> dict:
-    """{verb id: verb_meta row} — mounted via the scan classes, the
-    declared-but-unmounted pair via the verbs.py module directly."""
-    mod = _verbs_module()
-    by_id: dict = {}
-    for _cid, cls in sorted(py_cards.items()):
-        for vcls, vfams in getattr(cls, "_verbs_", ()):
-            by_id[vcls.id] = declx.verb_meta(vcls, vfams)
-    for name in ("RigSomaxVerb", "ApplySkinVerb"):
-        vcls = getattr(mod, name)
-        by_id[vcls.id] = declx.verb_meta(vcls, (["anny"],))
-    return by_id
+FROZEN_VERB_ORACLE = {
+    'apply-skin': {'engines': [{'flow': 'skin-apply', 'id': 'coat', 'local': '', 'refusal': ''}], 'families': [['anny']], 'id': 'apply-skin', 'knobs': [{'default': 'keeper', 'families': [], 'group': '', 'label': 'Kind', 'name': 'kind', 'options': ['keeper', 'ash_nomad', 'villager_elder', 'villager', 'caravan_trader', 'amf_warden', 'cherusci_scrivener', 'marrow_raider', 'amalgam_horror', 'arena_factor', 'bone_crane', 'dune_hound', 'emberwing', 'gloom_tortoise', 'husk_stalker', 'ironvein_construct', 'meld_creature', 'moss_elk', 'ridge_lizard', 'sand_skimmer'], 'placeholder': '', 'required': False, 'tooltip': 'Which meld kind skins the body (tint stays data in the sidecar).', 'type': 'select', 'visibleWhen': '', 'zone': ''}, {'default': 512, 'families': [], 'group': '', 'label': 'Map size', 'name': 'map_size', 'options': ['256', '512', '1024', '2048'], 'placeholder': '', 'required': False, 'tooltip': 'Detail-map resolution (SkinPack + SkinSidecar must agree — one knob feeds both).', 'type': 'select', 'visibleWhen': '', 'zone': ''}, {'default': 20260906, 'families': [], 'group': '', 'label': 'Seed', 'min': 0, 'name': 'seed', 'placeholder': '', 'required': False, 'step': 1, 'tooltip': 'The deterministic detail seed (SKIN_SEED — same seed, same pores).', 'type': 'number', 'visibleWhen': '', 'zone': ''}], 'label': 'Apply skin detail', 'requires': ['melite-poser-nodes'], 'writes': ['body_glb']},
+    'dress': {'engines': [{'flow': 'fit-seat', 'id': 'seat', 'local': '', 'refusal': ''}], 'families': ['anny'], 'id': 'dress', 'knobs': [{'families': [], 'group': '', 'label': 'Outfit GLB', 'name': 'prop', 'placeholder': '', 'required': True, 'tooltip': 'The outfit/prop mesh (.glb estate path or run artifact ref).', 'type': 'text', 'visibleWhen': '', 'zone': ''}, {'families': [], 'group': '', 'label': 'Prop name', 'name': 'model_name', 'placeholder': '', 'required': False, 'tooltip': "Unity lookup name — the chip fills the outfit filename stem; empty seats as 'prop'.", 'type': 'text', 'visibleWhen': '', 'zone': ''}, {'default': 'mixamorig:Spine', 'families': [], 'group': '', 'label': 'Bone', 'name': 'bone', 'placeholder': '', 'required': False, 'tooltip': 'Which bone carries the outfit (coat: Spine, hat: mixamorig:Head).', 'type': 'text', 'visibleWhen': '', 'zone': ''}, {'default': 'socket', 'families': [], 'group': '', 'label': 'Law', 'name': 'align', 'options': ['socket', 'fit', 'grip'], 'placeholder': '', 'required': False, 'tooltip': "socket: hang (coat); fit: measure + scale (hat); grip: hand-lock (weapon — the prop verb's default).", 'type': 'select', 'visibleWhen': '', 'zone': ''}, {'default': '0,0,0', 'families': [], 'group': '', 'label': 'Offset', 'name': 'position', 'placeholder': '', 'required': False, 'tooltip': 'x,y,z meters added after the law (grip forbids non-zero).', 'type': 'text', 'visibleWhen': '', 'zone': ''}, {'default': '0,0,0', 'families': [], 'group': '', 'label': 'Rotation', 'name': 'rotation', 'placeholder': '', 'required': False, 'tooltip': 'x,y,z Unity degrees applied pre-seat (grip forbids non-zero).', 'type': 'text', 'visibleWhen': '', 'zone': ''}, {'default': 0, 'families': [], 'group': '', 'label': 'Fit ratio', 'min': 0, 'name': 'fit_ratio', 'placeholder': '', 'required': False, 'step': 0.01, 'tooltip': 'fit law: prop width as a fraction of the bone span (hat: 1).', 'type': 'number', 'visibleWhen': '', 'zone': ''}, {'families': [], 'group': '', 'label': 'Measure to', 'name': 'fit_ref_bone', 'placeholder': '', 'required': False, 'tooltip': "fit law: the span's far bone (required when fit_ratio > 0).", 'type': 'text', 'visibleWhen': '', 'zone': ''}, {'families': [], 'group': '', 'label': 'Measure from', 'name': 'fit_ref_bone2', 'placeholder': '', 'required': False, 'tooltip': "fit law: the span's near bone (hat: mixamorig:Neck).", 'type': 'text', 'visibleWhen': '', 'zone': ''}, {'default': 0.22, 'families': [], 'group': '', 'label': 'Seat ratio', 'max': 1, 'min': 0, 'name': 'seat_ratio', 'placeholder': '', 'required': False, 'step': 0.01, 'tooltip': 'How far down the span the prop seats (hat: 0.22). Grip ignores this.', 'type': 'number', 'visibleWhen': '', 'zone': ''}, {'families': [], 'group': '', 'label': 'Finger bone', 'name': 'finger_bone', 'placeholder': '', 'required': False, 'tooltip': 'grip law: the blade-axis finger (weapon: mixamorig:RightHandMiddle1).', 'type': 'text', 'visibleWhen': '', 'zone': ''}, {'families': [], 'group': '', 'label': 'Thumb bone', 'name': 'thumb_bone', 'placeholder': '', 'required': False, 'tooltip': 'grip law: the clamp thumb (weapon: mixamorig:RightHandThumb1).', 'type': 'text', 'visibleWhen': '', 'zone': ''}, {'default': 0, 'families': [], 'group': '', 'label': 'Target width', 'min': 0, 'name': 'target_width', 'placeholder': '', 'required': False, 'step': 0.01, 'tooltip': 'grip law: scale-then-grip width in meters (sword: 0.25). fit forbids non-zero.', 'type': 'number', 'visibleWhen': '', 'zone': ''}], 'label': 'Dress with outfit', 'requires': ['melite-poser-nodes'], 'writes': ['body_glb']},
+    'hmr-estimate': {'engines': [{'flow': 'anny-hmr-commercial', 'id': 'commercial', 'local': '', 'refusal': ''}], 'families': ['anny'], 'id': 'hmr-estimate', 'knobs': [{'default': 0, 'families': [], 'group': '', 'label': 'Person', 'min': 0, 'name': 'person_index', 'placeholder': '', 'required': False, 'step': 1, 'tooltip': 'Which detected person to fit (0 = the most confident detection).', 'type': 'number', 'visibleWhen': '', 'zone': ''}], 'label': 'Estimate body from photo', 'requires': ['melite-kimodo-nodes'], 'writes': ['body_glb']},
+    'preset-load': {'engines': [{'flow': 'anny-params', 'id': 'instantiate', 'local': '', 'refusal': ''}], 'families': ['anny'], 'id': 'preset-load', 'knobs': [{'families': [], 'group': '', 'label': 'Preset', 'name': 'preset_id', 'placeholder': '', 'required': True, 'tooltip': 'Estate archetype id or user row id (user-N).', 'type': 'text', 'visibleWhen': '', 'zone': ''}], 'label': 'Load character preset', 'requires': ['melite-kimodo-nodes'], 'writes': ['body_glb']},
+    'preset-save': {'engines': [{'flow': None, 'id': 'save', 'local': 'save-preset', 'refusal': ''}], 'families': ['anny'], 'id': 'preset-save', 'knobs': [{'families': [], 'group': '', 'label': 'Preset name', 'name': 'name', 'placeholder': '', 'required': True, 'tooltip': 'Label for the saved character row.', 'type': 'text', 'visibleWhen': '', 'zone': ''}], 'label': 'Save character as preset', 'requires': [], 'writes': []},
+    'prop': {'engines': [{'flow': 'fit-seat', 'id': 'seat', 'local': '', 'refusal': ''}], 'families': ['anny'], 'id': 'prop', 'knobs': [{'families': [], 'group': '', 'label': 'Prop GLB', 'name': 'prop', 'placeholder': '', 'required': True, 'tooltip': 'The weapon/prop mesh (.glb estate path or run artifact ref).', 'type': 'text', 'visibleWhen': '', 'zone': ''}, {'families': [], 'group': '', 'label': 'Prop name', 'name': 'model_name', 'placeholder': '', 'required': False, 'tooltip': "Unity lookup name — the chip fills the prop filename stem; empty seats as 'prop'.", 'type': 'text', 'visibleWhen': '', 'zone': ''}, {'default': 'mixamorig:RightHand', 'families': [], 'group': '', 'label': 'Bone', 'name': 'bone', 'placeholder': '', 'required': False, 'tooltip': 'Which bone carries the prop (weapon: the hand).', 'type': 'text', 'visibleWhen': '', 'zone': ''}, {'default': 'grip', 'families': [], 'group': '', 'label': 'Law', 'name': 'align', 'options': ['socket', 'fit', 'grip'], 'placeholder': '', 'required': False, 'tooltip': 'grip: hand-lock (weapon default); socket/fit: hang or measure a carried prop.', 'type': 'select', 'visibleWhen': '', 'zone': ''}, {'default': '0,0,0', 'families': [], 'group': '', 'label': 'Offset', 'name': 'position', 'placeholder': '', 'required': False, 'tooltip': 'x,y,z meters added after the law (grip forbids non-zero).', 'type': 'text', 'visibleWhen': '', 'zone': ''}, {'default': '0,0,0', 'families': [], 'group': '', 'label': 'Rotation', 'name': 'rotation', 'placeholder': '', 'required': False, 'tooltip': 'x,y,z Unity degrees applied pre-seat (grip forbids non-zero).', 'type': 'text', 'visibleWhen': '', 'zone': ''}, {'default': 0, 'families': [], 'group': '', 'label': 'Fit ratio', 'min': 0, 'name': 'fit_ratio', 'placeholder': '', 'required': False, 'step': 0.01, 'tooltip': 'fit law only (grip + socket leave 0).', 'type': 'number', 'visibleWhen': '', 'zone': ''}, {'families': [], 'group': '', 'label': 'Measure to', 'name': 'fit_ref_bone', 'placeholder': '', 'required': False, 'tooltip': "fit law: the span's far bone.", 'type': 'text', 'visibleWhen': '', 'zone': ''}, {'families': [], 'group': '', 'label': 'Measure from', 'name': 'fit_ref_bone2', 'placeholder': '', 'required': False, 'tooltip': "fit law: the span's near bone.", 'type': 'text', 'visibleWhen': '', 'zone': ''}, {'default': 0.22, 'families': [], 'group': '', 'label': 'Seat ratio', 'max': 1, 'min': 0, 'name': 'seat_ratio', 'placeholder': '', 'required': False, 'step': 0.01, 'tooltip': 'socket/fit seating depth. Grip ignores this.', 'type': 'number', 'visibleWhen': '', 'zone': ''}, {'default': 'mixamorig:RightHandMiddle1', 'families': [], 'group': '', 'label': 'Finger bone', 'name': 'finger_bone', 'placeholder': '', 'required': False, 'tooltip': 'grip law: the blade-axis finger.', 'type': 'text', 'visibleWhen': '', 'zone': ''}, {'default': 'mixamorig:RightHandThumb1', 'families': [], 'group': '', 'label': 'Thumb bone', 'name': 'thumb_bone', 'placeholder': '', 'required': False, 'tooltip': 'grip law: the clamp thumb.', 'type': 'text', 'visibleWhen': '', 'zone': ''}, {'default': 0.25, 'families': [], 'group': '', 'label': 'Target width', 'min': 0, 'name': 'target_width', 'placeholder': '', 'required': False, 'step': 0.01, 'tooltip': 'grip law: scale-then-grip width in meters (sword: 0.25).', 'type': 'number', 'visibleWhen': '', 'zone': ''}], 'label': 'Seat prop in hand', 'requires': ['melite-poser-nodes'], 'writes': ['body_glb']},
+    'rig-somax': {'engines': [{'flow': 'body-to-somax', 'id': 'convert', 'local': '', 'refusal': ''}], 'families': [['anny']], 'id': 'rig-somax', 'knobs': [], 'label': 'Convert to SOMAX rig', 'requires': ['melite-autorig-nodes'], 'writes': ['body_glb']},
+}
 
 
 def _knob_proj(km: dict) -> dict:
@@ -252,12 +247,6 @@ def tsx_verbs() -> dict[str, list[str]]:
             "presets": _tsx_ids(presets.group(1))}
 
 
-@pytest.fixture(scope="module")
-def py_cards() -> dict:
-    return {cid: cls for cid, (_p, cls)
-            in scan_engine_cards(REPO).items()}
-
-
 # ── frozen TS refusal goldens (oracle-death: the py comparison ──
 # ── side is gone; the TS bytes are the contract) ────────────────
 
@@ -282,12 +271,11 @@ def refusal_goldens() -> dict:
 # ── Phase V ──
 
 def test_V01_closed_seven_verb_census(
-        py_mounted: dict[str, list[str]],
         tsx_verbs: dict[str, list[str]],
-        py_oracle: dict) -> None:
+) -> None:
     mounted_ids = sorted(
-        {v for vs in py_mounted.values() for v in vs})
-    assert py_mounted.get("anny") == EXPECTED_MOUNTED, py_mounted
+        {v for vs in FROZEN_MOUNTED.values() for v in vs})
+    assert FROZEN_MOUNTED.get("anny") == EXPECTED_MOUNTED, FROZEN_MOUNTED
     assert mounted_ids == sorted(EXPECTED_MOUNTED), mounted_ids
     mod = _verbs_module()
     module_ids = sorted(
@@ -299,7 +287,7 @@ def test_V01_closed_seven_verb_census(
         ["hmr-estimate", "dress", "prop", "rig-somax", "apply-skin"])
     assert sorted(tsx_verbs["presets"]) == sorted(
         ["preset-save", "preset-load"])
-    assert sorted(py_oracle) == EXPECTED_VERBS
+    assert sorted(FROZEN_VERB_ORACLE) == EXPECTED_VERBS
     for vid in EXPECTED_UNMOUNTED:
         assert vid not in mounted_ids, vid
 
@@ -310,11 +298,11 @@ def test_V02_ts_table_names_exactly_the_seven(ts_dump: dict) -> None:
 
 
 def test_V03_per_verb_dispatch_surface_agreement(
-        ts_dump: dict, py_oracle: dict) -> None:
+        ts_dump: dict) -> None:
     ts = {v["id"]: v for v in ts_dump["verbs"]}
     assert sorted(ts) == EXPECTED_VERBS
     for vid in EXPECTED_VERBS:
-        want, got = py_oracle[vid], ts[vid]
+        want, got = FROZEN_VERB_ORACLE[vid], ts[vid]
         assert got["label"] == want["label"], vid
         assert got["card"] == "anny", vid
         assert got["families"] == ["anny"], vid
@@ -334,22 +322,22 @@ def test_V03_per_verb_dispatch_surface_agreement(
 
 
 def test_V04_dispatch_resolves_declared_targets(
-        driver: Path, py_oracle: dict) -> None:
+        driver: Path) -> None:
     cases = [{"verb": vid} for vid in EXPECTED_VERBS]
     cases += [{"verb": "dress", "engine": "seat"},
               {"verb": "preset-save", "engine": "save"}]
     got = node_run(driver, "dispatch", {"cases": cases})["results"]
     assert len(got) == len(cases)
     for case, res in zip(cases, got):
-        eng = py_oracle[case["verb"]]["engines"][0]
+        eng = FROZEN_VERB_ORACLE[case["verb"]]["engines"][0]
         if "engine" in case:
-            eng = next(e for e in py_oracle[case["verb"]]["engines"]
+            eng = next(e for e in FROZEN_VERB_ORACLE[case["verb"]]["engines"]
                        if e["id"] == case["engine"])
         if eng["flow"] is not None:
             assert res == {"kind": "flow", "verb": case["verb"],
                            "engine": eng["id"], "flow": eng["flow"],
                            "card": "anny", "writes": list(
-                               py_oracle[case["verb"]]["writes"])}, case
+                               FROZEN_VERB_ORACLE[case["verb"]]["writes"])}, case
         else:
             assert res["kind"] == "local" and \
                 res["action"] == eng["local"], (case, res)
@@ -365,8 +353,8 @@ def _py_repr_list(ids: list[str]) -> str:
 
 
 def test_V05_unknown_verb_refusal_agreement(
-        driver: Path, py_oracle: dict) -> None:
-    assert "nope" not in py_oracle
+        driver: Path) -> None:
+    assert "nope" not in FROZEN_VERB_ORACLE
     res = node_run(driver, "dispatch",
                    {"cases": [{"verb": "nope"}]})["results"][0]
     assert res["code"] == "invalid_request"
@@ -375,8 +363,8 @@ def test_V05_unknown_verb_refusal_agreement(
 
 
 def test_V06_unknown_engine_refusal_agreement(
-        driver: Path, py_oracle: dict) -> None:
-    assert [e["id"] for e in py_oracle["dress"]["engines"]] == ["seat"]
+        driver: Path) -> None:
+    assert [e["id"] for e in FROZEN_VERB_ORACLE["dress"]["engines"]] == ["seat"]
     res = node_run(driver, "dispatch", {"cases": [
         {"verb": "dress", "engine": "bogus"}]})["results"][0]
     assert res["code"] == "invalid_request"
@@ -400,19 +388,27 @@ def test_V07_table_dispatches_only_to_real_targets(
 
 # ── Phase O ──
 
-def _decl_outputs() -> dict[str, list[dict]]:
-    decls = json.loads(CARD_DECLS_JSON.read_text(encoding="utf-8"))
-    return {cid: [{"patterns": list(r["patterns"]), "label": r["label"]}
-                  for r in decl["outputs"]]
-            for cid, decl in sorted(decls.items())}
+# O01 (retired 2026-09-08 purge S-decls): the TS CARD_OUTPUTS table
+# == card-decls.json outputs[] leg died with the snapshot. The table
+# is hand-owned now (transcribed once, in verbs.ts); every row's
+# CONTENT pins behaviorally — O02 runs every row's golden artifacts,
+# O03/O04 pin refusal text carrying each row's labels. What remains
+# here: row shape (no empty promises served) + the deletion itself.
 
-
-def test_O01_outputs_table_matches_generated_decls(ts_dump: dict) -> None:
-    want = _decl_outputs()
-    assert sorted(ts_dump["outputs"]) == sorted(want), \
-        sorted(set(ts_dump["outputs"]) ^ set(want))
-    for cid in want:
-        assert ts_dump["outputs"][cid] == want[cid], cid
+def test_O01_outputs_table_shape_and_snapshot_gone(
+        ts_dump: dict) -> None:
+    outputs = ts_dump["outputs"]
+    assert outputs, "CARD_OUTPUTS empty — the contract table is gone"
+    for cid, rows in sorted(outputs.items()):
+        assert isinstance(rows, list) and rows, (cid, "no rows")
+        for row in rows:
+            assert isinstance(row.get("label"), str) \
+                and row["label"].strip(), (cid, "label-less row")
+            assert isinstance(row.get("patterns"), list) \
+                and row["patterns"], (cid, "pattern-less row")
+    assert not (REPO / "packages" / "engines" / "comfyui" / "cordis"
+                / "data" / "card-decls.json").is_file(), \
+        "card-decls.json reappeared — the snapshot stays deleted"
 
 
 GOLDEN_SETS: list[tuple[str, list]] = [

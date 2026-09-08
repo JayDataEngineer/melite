@@ -19,8 +19,8 @@ import z from '@deepseek-ai/schemastery'
 import { maskT1 } from '../kit.ts'
 
 const schema = z.object({
-  // py card.py truth (card-decls.json, 17 keys): the declared knob
-  // surface. The legacy TS renderer keys (primary_class/prompt,
+  // the declared knob surface (17 keys — purge S-decls: the py card
+  // is deleted, this schema is the declaration). The legacy TS renderer keys (primary_class/prompt,
   // refine_iterations, exports/export_kind, scope_bbox, union_...,
   // primary_via_rtdetr/is_paint) ride the door's explicit-params
   // overlay (non-strict object) so the pinned recipe golden keeps
@@ -72,6 +72,10 @@ export function apply(ctx: Context): void {
     // ()): SAM3_Detect/RTDETR_detect ride comfy_extras core; no
     // extension pack to declare.
     boarded: ['mask-studio'],
+    // ADMISSION EXTRAS (the py class-attr half verbatim: the
+    // retired row's admits minus the boarded families' studio
+    // writes, which the projection unions from the facts file).
+    admits: ['export_kind', 'exports', 'primary_class', 'primary_is_paint', 'primary_via_rtdetr', 'refine_iterations', 'scope_bbox', 'union_paint_into_combined'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g, runId) {
       if (typeof p.input_image !== 'string' || !p.input_image.trim()) {

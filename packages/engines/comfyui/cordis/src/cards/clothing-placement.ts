@@ -1,11 +1,10 @@
 // Tier 3 — the clothing-placement card (the Blender MCP card):
 // garment-on-body placement through a PERSISTENT Blender session.
 //
-// PURE LAW-0 CARD (2026-09-08 purge-complaint ruling): NO card.py,
-// NO card-decls.json row, NO exporter touch. The compose door's
-// decl-row uses don't apply (no model→family resolution —
-// requiresModel: false; the admission pre-check skips when no row
-// exists) and the card's own Schemastery parse is the real gate.
+// PURE LAW-0 CARD (2026-09-08 purge-complaint ruling): TS-native from
+// birth — no model→family resolution (requiresModel: false; the
+// admission pre-check skips when no row exists) and the card's own
+// Schemastery parse is the real gate.
 // The card RUNS via the flow path (card stages → cardGate →
 // ctx.comfyui.compose), never the {model:}/draft path.
 //

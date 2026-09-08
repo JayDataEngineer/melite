@@ -66,9 +66,11 @@ export const inject = ['comfyui']
 export function apply(ctx: Context): void {
   ctx.comfyui.registerCard({
     id: 'tagger',
-    // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
+    // stage-row id the compose emits (purge S-decls verdict: the
+    // retired row carried "" — engine truth wins, recorded in
+    // docs/design/python-purge-2026-09-08.md).
     skeleton: 'tagger',
-    // the four boarded families (card.py's models tuple).
+    // the four boarded families.
     boarded: ['wd14', 'joytag', 'florence2', 'joycaption'],
     // Per-family gates (py requires_by_family verbatim — each arm's
     // pack is checked only for its own family; a wd14 run never

@@ -116,12 +116,15 @@ r = _ok("T9 card.yaml parse with requires", True,
         f"{req_count}/{card_count} cards have requires")
 passed += r; failed += (not r)
 
-# ── T10: every class-declared require resolves (2026-09-06) ──
-# card.yaml is extinct; requires rides the card class (requires +
-# requires_by_family). Every named id must hit the node-type map or
-# the vendor disk — the two strategies that can satisfy the gate.
-# (Strategy-3 heuristic names are best-effort by design and stay out.)
-from melite_cards import load_card_py  # noqa: E402
+# ── T10: every registry-declared require resolves (2026-09-06;
+# re-homed 2026-09-08 purge S-decls: card.py is deleted — requires
+# rides the TS registry (requires + requiresByFamily), read through
+# the shared registry dumper). Every named id must hit the node-type
+# map or the vendor disk — the two strategies that can satisfy the
+# gate. (Strategy-3 heuristic names are best-effort by design and
+# stay out.)
+import json as _json  # noqa: E402
+import subprocess as _sp  # noqa: E402
 _mapped = set(EXTENSION_NODE_TYPES.keys())
 _vendor = set()
 _vdir = REPO / "vendor" / "comfyui_extensions"
@@ -129,33 +132,24 @@ if _vdir.is_dir():
     _vendor = {e.name.lower() for e in _vdir.iterdir()}
 _unresolved = set()
 
-discover = set()
-for _pat in ("engines/*/cards/*/card.py",
-               "engines/*/action_cards/*/card.py",
-               "engines/*/action_cards/*/*/card.py",
-               "engines/*/action_cards/*/*/python/card.py"):
-    discover |= set((REPO / "packages").glob(_pat))
-for _cpy in sorted(discover):
-    try:
-        _pdir = _cpy.parent
-        if _pdir.name == "py":
-            _eng = _pdir.parent.parent.parent.parent.name
-        elif _pdir.parent.name in ("cards", "action_cards"):
-            _eng = _pdir.parent.parent.name
-        else:
-            _eng = _pdir.parent.parent.parent.name
-        _cls = load_card_py(str(_cpy), _eng)
-    except Exception:
-        continue
-    _named = list(getattr(_cls, "requires", ()) or [])
-    _fam = getattr(_cls, "requires_by_family", {}) or {}
+discover = _sp.run(
+    ["node", "--experimental-strip-types", "--no-warnings",
+     str(REPO / "packages" / "engines" / "comfyui" / "cordis"
+         / "src" / "dump-registry.ts")],
+    cwd=str(REPO), capture_output=True, text=True, timeout=180)
+_cards = _json.loads(
+    discover.stdout.strip().splitlines()[-1])["cards"] \
+    if discover.returncode == 0 else {}
+for _cid in sorted(_cards):
+    _named = list(_cards[_cid].get("requires", ()))
+    _fam = _cards[_cid].get("requiresByFamily", {}) or {}
     if isinstance(_fam, dict):
         for _v in _fam.values():
-            _named.extend(list(_v) if isinstance(_v, (tuple, list)) else [_v])
+            _named.extend(list(_v) if isinstance(_v, (list, tuple)) else [_v])
     for _ext in _named:
         if _ext not in _mapped and _ext.lower() not in _vendor:
-            _unresolved.add("%s (%s)" % (_ext, _cls.id))
-r = _ok("T10 class-declared requires resolve", not _unresolved,
+            _unresolved.add("%s (%s)" % (_ext, _cid))
+r = _ok("T10 registry-declared requires resolve", not _unresolved,
         f"unresolved: {sorted(_unresolved)}" if _unresolved else "all resolve")
 passed += r; failed += (not r)
 
