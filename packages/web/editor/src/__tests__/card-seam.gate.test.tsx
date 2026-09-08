@@ -198,7 +198,7 @@ describe("source gates (the unions stay dead)", () => {
     expect(readFileSync("src/surfaces/flow/flowCardTypes.ts", "utf8")).not.toContain(
       "export type CardKind",
     )
-    expect(readFileSync("../../../web/contracts/src/FlowTypes.ts", "utf8")).not.toContain(
+    expect(readFileSync("../../web-kit/contracts/src/FlowTypes.ts", "utf8")).not.toContain(
       "export type StageKind",
     )
   })

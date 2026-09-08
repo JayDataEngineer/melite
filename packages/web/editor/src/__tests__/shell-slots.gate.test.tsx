@@ -214,7 +214,7 @@ describe("activity rail seam gate", () => {
     // not tabs — Pose's rail icon died; the seat stays open for a
     // future registration.
     expect(idsOf("activity.studio")).toEqual([])
-    expect(idsOf("activity.foot")).toEqual(["plugins"])
+    expect(idsOf("activity.foot")).toEqual(["packages"])
   })
 
   it("renders the rail live from the registry (owner share reaches entries)", () => {

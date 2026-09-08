@@ -28,7 +28,7 @@ const FIRST_PARTY: Record<string, string[]> = {
   // tabs — Pose's rail icon died; the seat stays open for a future
   // registration.
   "activity.studio": [],
-  "activity.foot": ["plugins"],
+  "activity.foot": ["packages"],
   // H-RIGHT: the right sidebar's internal tab panes ride the library
   // center (mode coupling via each pane's `modes` meta). The settings +
   // comfy-manager panes died with their dialogs — workspace is the only

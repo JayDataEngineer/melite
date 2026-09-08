@@ -25,7 +25,7 @@ const EDITOR_ROOT = resolve(HERE, "../..")
 // web-family reorg (2026-09): the @melite packages moved from
 // editor/packages/ to the web/ registry root (web-registry design) — the gate walks
 // the REAL package homes, the law is unchanged.
-const PACKAGES_DIR = join(EDITOR_ROOT, "..", "..", "..", "web")
+const PACKAGES_DIR = join(EDITOR_ROOT, "..", "..", "web-kit")
 
 /** Bare-spec imports legal in EVERY package without declaration (types). */
 const GLOBAL_TYPE_ALLOW = new Set(["react", "react/jsx-runtime"])

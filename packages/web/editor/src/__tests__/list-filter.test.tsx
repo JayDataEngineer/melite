@@ -66,13 +66,13 @@ function renderList(opts?: { initialSort?: string }) {
 // ── Twin-test: SORT_OPTIONS (TS) == sort_options (JSON SSOT) ─────────────
 describe("SORT_OPTIONS twin-test (TS mirror ↔ JSON SSOT)", () => {
   it("reads the declarative JSON spec from disk", () => {
-    const path = resolve(__dirname, "../../../../../web/ui/src/list_filters.json")
+    const path = resolve(__dirname, "../../../../web-kit/ui/src/list_filters.json")
     const raw = readFileSync(path, "utf8")
     expect(() => JSON.parse(raw)).not.toThrow()
   })
 
   it("has the SAME keys as the JSON sort_options", () => {
-    const path = resolve(__dirname, "../../../../../web/ui/src/list_filters.json")
+    const path = resolve(__dirname, "../../../../web-kit/ui/src/list_filters.json")
     const json = JSON.parse(readFileSync(path, "utf8"))
     const jsonKeys = Object.keys(json.sort_options).sort()
     const tsKeys = Object.keys(SORT_OPTIONS).sort()
@@ -80,7 +80,7 @@ describe("SORT_OPTIONS twin-test (TS mirror ↔ JSON SSOT)", () => {
   })
 
   it("each TS entry matches the JSON {field, order, rule, label}", () => {
-    const path = resolve(__dirname, "../../../../../web/ui/src/list_filters.json")
+    const path = resolve(__dirname, "../../../../web-kit/ui/src/list_filters.json")
     const json = JSON.parse(readFileSync(path, "utf8"))
     for (const [key, expected] of Object.entries(json.sort_options)) {
       const actual = SORT_OPTIONS[key]
