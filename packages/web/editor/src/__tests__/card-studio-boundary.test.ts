@@ -386,12 +386,12 @@ describe("plugin ui tenant boundary (§16 E-TENANTS)", () => {
   })
 
   // ── THE WEB REGISTRY (docs/design/web-registry.md §6) ──────────────────
-  // The composed catalog (packages/web-kit/generated/registry.json — gen_registry.py's derived
+  // The composed catalog (packages/web-kit/generated/registry.json — gen-registry.ts's derived
   // artifact) is the POOL. A tenant importing a kit component the pool
   // does not list is drift: either the registry snapshot is stale
   // (regenerate) or the import is a typo riding a dead export.
   it("every tenant's @melite/ui imports are registry members (the pool is the catalog)", () => {
-    const catalogPath = resolve(HERE, "../../../../../web/generated/registry.json")
+    const catalogPath = resolve(HERE, "../../../../web-kit/generated/registry.json")
     const catalog = JSON.parse(readFileSync(catalogPath, "utf8")) as {
       items: { name: string; exports?: string[] }[]
     }

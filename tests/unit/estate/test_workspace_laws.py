@@ -67,9 +67,13 @@ class TestPnpmWorkspace:
         assert n > 18, f"only {n} members -- workspace regressed?"
 
     def test_gen_registry_dry_run(self, repo: Path) -> None:
+        # RE-POINTED 2026-09-08 (generators STEP 1): the registry
+        # generator is TS-native now (the SSOT is TS package exports);
+        # the wall keeps its leg and swaps only the reader.
         r = subprocess.run(
-            ["python3", "tools/gen_registry.py"],
-            cwd=repo, capture_output=True, text=True, timeout=60)
+            ["node", "--experimental-strip-types", "--no-warnings",
+             "packages/web-kit/scripts/gen-registry.ts", "--check"],
+            cwd=repo, capture_output=True, text=True, timeout=120)
         assert r.returncode == 0, \
             f"registry drift: stdout={r.stdout[:200]} stderr={r.stderr[:200]}"
         assert "matches the packages" in r.stdout
