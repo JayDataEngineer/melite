@@ -15,7 +15,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
+import { loadCardDefs, theService } from "../../../../packages/engines/comfyui/src/cardDefs.ts";
 import {
   ModelError,
   getModel,

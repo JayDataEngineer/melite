@@ -1,0 +1,2504 @@
+{
+  "cards": {
+    "anny": {
+      "outputs": [
+        {
+          "label": "Rigged body mesh",
+          "many": false,
+          "patterns": [
+            ".glb"
+          ]
+        }
+      ]
+    },
+    "fit": {
+      "outputs": [
+        {
+          "label": "Fitted prop-in-hand mesh",
+          "many": false,
+          "patterns": [
+            ".glb"
+          ]
+        },
+        {
+          "label": "Fit record",
+          "many": false,
+          "patterns": [
+            ".json"
+          ]
+        }
+      ]
+    },
+    "h3-timeline": {
+      "outputs": [
+        {
+          "label": "Timeline frames",
+          "many": true,
+          "patterns": [
+            ".png"
+          ]
+        }
+      ]
+    },
+    "ideogram4": {
+      "outputs": [
+        {
+          "label": "Generated image",
+          "many": false,
+          "patterns": [
+            ".png"
+          ]
+        }
+      ]
+    },
+    "image-edit": {
+      "outputs": [
+        {
+          "label": "Edited image",
+          "many": false,
+          "patterns": [
+            ".png"
+          ]
+        }
+      ]
+    },
+    "image-gen": {
+      "outputs": [
+        {
+          "label": "Generated image",
+          "many": false,
+          "patterns": [
+            ".png"
+          ]
+        }
+      ]
+    },
+    "img-to-mesh": {
+      "outputs": [
+        {
+          "label": "Generated mesh",
+          "many": false,
+          "patterns": [
+            ".glb"
+          ]
+        }
+      ],
+      "requires_by_family": {
+        "pixal3d": [
+          "comfyui-core-trellis2",
+          "ComfyUI-MoGe"
+        ],
+        "transfer_rig": [
+          "melite-autorig-nodes"
+        ],
+        "trellis2-native": [
+          "comfyui-core-trellis2"
+        ]
+      }
+    },
+    "input-prep": {
+      "outputs": [
+        {
+          "label": "Staged media artifact",
+          "many": false,
+          "patterns": [
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".webp",
+            ".gif",
+            ".wav",
+            ".mp3",
+            ".flac"
+          ]
+        }
+      ]
+    },
+    "mask-studio": {
+      "outputs": [
+        {
+          "label": "Mask PNG",
+          "many": false,
+          "patterns": [
+            ".png"
+          ]
+        }
+      ]
+    },
+    "motion": {
+      "outputs": [
+        {
+          "label": "Motion clip",
+          "many": false,
+          "patterns": [
+            ".npz"
+          ]
+        }
+      ]
+    },
+    "music": {
+      "outputs": [
+        {
+          "label": "Generated audio",
+          "many": false,
+          "patterns": [
+            ".mp3",
+            ".flac",
+            ".wav"
+          ]
+        }
+      ]
+    },
+    "quad-remesh": {
+      "outputs": [
+        {
+          "label": "Remeshed mesh",
+          "many": false,
+          "patterns": [
+            ".glb"
+          ]
+        }
+      ]
+    },
+    "sfx": {
+      "outputs": [
+        {
+          "label": "Generated sound effect",
+          "many": false,
+          "patterns": [
+            ".flac",
+            ".wav"
+          ]
+        }
+      ]
+    },
+    "skin": {
+      "outputs": [
+        {
+          "label": "Skin textures (albedo + normal)",
+          "many": false,
+          "patterns": [
+            ".png"
+          ]
+        },
+        {
+          "label": "Skin-kind sidecar",
+          "many": false,
+          "patterns": [
+            ".json"
+          ]
+        }
+      ]
+    },
+    "tagger": {
+      "outputs": [
+        {
+          "label": "Tags/caption text",
+          "many": false,
+          "patterns": [
+            ".txt"
+          ]
+        }
+      ],
+      "requires_by_family": {
+        "florence2": [
+          "ComfyUI-Florence2"
+        ],
+        "joycaption": [
+          "joycaption_comfyui"
+        ],
+        "joytag": [
+          "Comfyui_joytag"
+        ],
+        "wd14": [
+          "ComfyUI-WD14-Tagger"
+        ]
+      }
+    },
+    "tts": {
+      "outputs": [
+        {
+          "label": "Spoken audio",
+          "many": false,
+          "patterns": [
+            ".flac",
+            ".mp3",
+            ".wav"
+          ]
+        }
+      ]
+    },
+    "upscale-tools": {
+      "outputs": [
+        {
+          "label": "Upscaled image",
+          "many": false,
+          "patterns": [
+            ".png"
+          ]
+        }
+      ]
+    },
+    "video-gen": {
+      "outputs": [
+        {
+          "label": "Generated video",
+          "many": false,
+          "patterns": [
+            ".mp4",
+            ".webm"
+          ]
+        }
+      ]
+    },
+    "voice-lock": {
+      "outputs": [
+        {
+          "label": "Voice-locked audio",
+          "many": false,
+          "patterns": [
+            ".flac",
+            ".mp3",
+            ".wav"
+          ]
+        }
+      ]
+    }
+  },
+  "extension_node_types": {
+    "ComfyUI-Florence2": [
+      "DownloadAndLoadFlorence2Model",
+      "Florence2Run"
+    ],
+    "ComfyUI-Frame-Interpolation": [
+      "FrameInterpolate",
+      "FrameInterpolationModelLoader"
+    ],
+    "ComfyUI-GGUF": [
+      "GGUFCLIPLoader",
+      "GGUFUnetLoader"
+    ],
+    "ComfyUI-KJNodes": [
+      "ImageConcatMulti",
+      "ImageSharpenKJ",
+      "ModelAttentionBackend",
+      "ModelPreviewOverrideKJ"
+    ],
+    "ComfyUI-LTXVideo": [
+      "CreateVideo",
+      "LTX_lora_loader"
+    ],
+    "ComfyUI-MoGe": [
+      "MoGeGeometryToFOV"
+    ],
+    "ComfyUI-PlagueKind-Nodes": [
+      "H3AdaLNLoRAFix",
+      "H3SLAAttention",
+      "PlagueKindBundleIn",
+      "PlagueKindBundleOut"
+    ],
+    "ComfyUI-SeedVR2_VideoUpscaler": [
+      "SeedVR2LoadDiTModel",
+      "SeedVR2LoadVAEModel",
+      "SeedVR2VideoUpscaler"
+    ],
+    "ComfyUI-WD14-Tagger": [
+      "WD14Tagger|pysssss"
+    ],
+    "Comfyui_joytag": [
+      "CXH_JoyTag"
+    ],
+    "comfyui-core-trellis2": [
+      "EmptyTrellis2LatentStructure",
+      "Pixal3DConditioning",
+      "Trellis2Conditioning",
+      "Trellis2ShapeStage",
+      "Trellis2TextureStage",
+      "VaeDecodeShapeTrellis",
+      "VaeDecodeStructureTrellis2",
+      "VaeDecodeTextureTrellis"
+    ],
+    "comfyui-h3-motion-context": [
+      "MiniMaxH3MotionContext",
+      "MiniMaxH3MotionContextLoadLatent",
+      "MiniMaxH3MotionContextSaveLatent",
+      "MiniMaxH3MotionContextTrim"
+    ],
+    "comfyui-impact-pack": [
+      "FaceDetailer",
+      "SAMLoader",
+      "UltralyticsDetectorProvider"
+    ],
+    "comfyui-lanpaint": [
+      "LanPaintInpaint",
+      "LanPaintSampler"
+    ],
+    "comfyui-videohelpersuite": [
+      "VHS_LoadVideoPath",
+      "VHS_VideoCombine"
+    ],
+    "comfyui_nvidia_rtx_nodes": [
+      "RTXVideoSuperResolution"
+    ],
+    "joycaption_comfyui": [
+      "JJC_DownloadAndLoadJoyCaptionModel",
+      "JJC_JoyCaption"
+    ],
+    "melite-audio-nodes": [
+      "AudiocoreTTS",
+      "AudiocoreVoiceStudio",
+      "LoadAudiocoreModel"
+    ],
+    "melite-autoremesher-nodes": [
+      "AutoRemesher"
+    ],
+    "melite-autorig-nodes": [
+      "KimodoTransferWeights",
+      "SaveRiggedModel"
+    ],
+    "melite-blender-proxy-nodes": [
+      "MeliteBlenderExport",
+      "MeliteBlenderMCPCall",
+      "MeliteBlenderRunScript"
+    ],
+    "melite-kimodo-nodes": [
+      "AnnyFitOptimize",
+      "AnnyGroundBody",
+      "AnnyParamsToGlb",
+      "AnnySelectPerson",
+      "KimodoLoader",
+      "KimodoTextToPose",
+      "MultiHMR2ImageToAnny",
+      "Sam3dBodyImageToAnny"
+    ],
+    "qweneditutils": [
+      "TextEncodeQwenImageEditPlus"
+    ],
+    "vnccs_utils": [
+      "ModelSamplingAuraFlow",
+      "UniCanvasNode"
+    ]
+  },
+  "meta": {
+    "status": "CARD-OWNED SLICES (merged 2026-09-08, package-boundary extermination): model-owned keys (defaults/lane_inputs/variants/variant_groups/mods/accepts/studio) DERIVE from the registry at load (facts.ts) \u2014 this file keeps ONLY what the registry cannot carry: per-card outputs/requires_by_family, per-address card_knobs, the row roster, extension_node_types. mask-studio stays whole: unoffered, no DECL, card-owned.",
+    "wall": "tests/walls/ts/suites/models-flows.test.ts (AGREE + derivation)"
+  },
+  "rows": {
+    "anima": {
+      "card": "image-gen",
+      "card_knobs": [
+        {
+          "card": "prompt",
+          "inject": "CLIPTextEncode.0.text",
+          "kind": "s"
+        },
+        {
+          "card": "negative_prompt",
+          "inject": "CLIPTextEncode.1.text",
+          "kind": "s"
+        },
+        {
+          "card": "width",
+          "inject": "EmptyLatentImage.0.width",
+          "kind": "n"
+        },
+        {
+          "card": "height",
+          "inject": "EmptyLatentImage.0.height",
+          "kind": "n"
+        },
+        {
+          "card": "seed",
+          "inject": "KSampler.0.seed",
+          "kind": "n"
+        },
+        {
+          "card": "steps",
+          "inject": "KSampler.0.steps",
+          "kind": "n"
+        },
+        {
+          "card": "cfg",
+          "inject": "KSampler.0.cfg",
+          "kind": "n"
+        },
+        {
+          "card": "sampler",
+          "inject": "KSampler.0.sampler_name",
+          "kind": "s"
+        },
+        {
+          "card": "scheduler",
+          "inject": "KSampler.0.scheduler",
+          "kind": "s"
+        }
+      ]
+    },
+    "anny": {
+      "card": "anny",
+      "card_knobs": [
+        {
+          "card": "body_glb",
+          "inject": "PrimitiveString.0.value",
+          "kind": "s"
+        },
+        {
+          "card": "resolution",
+          "inject": "RayRenderGLBViews.0.resolution",
+          "kind": "n"
+        },
+        {
+          "card": "framing",
+          "inject": "RayRenderGLBViews.0.framing",
+          "kind": "n"
+        },
+        {
+          "card": "focal_length",
+          "inject": "RayRenderGLBViews.0.focal_length",
+          "kind": "n"
+        },
+        {
+          "card": "samples",
+          "inject": "RayRenderGLBViews.0.samples",
+          "kind": "n"
+        },
+        {
+          "card": "transparent",
+          "inject": "RayRenderGLBViews.0.transparent",
+          "kind": "b"
+        },
+        {
+          "card": "source_image",
+          "inject": "",
+          "kind": "s"
+        }
+      ]
+    },
+    "autoremesher": {
+      "card": "quad-remesh",
+      "card_knobs": [
+        {
+          "card": "input",
+          "inject": "AutoRemesher.0.glb_path",
+          "kind": "s"
+        },
+        {
+          "card": "target_quads",
+          "inject": "AutoRemesher.0.target_quads",
+          "kind": "n"
+        },
+        {
+          "card": "edge_scaling",
+          "inject": "AutoRemesher.0.edge_scaling",
+          "kind": "n"
+        },
+        {
+          "card": "sharp_edge",
+          "inject": "AutoRemesher.0.sharp_edge",
+          "kind": "n"
+        },
+        {
+          "card": "smooth_normal",
+          "inject": "",
+          "kind": "n"
+        },
+        {
+          "card": "adaptivity",
+          "inject": "AutoRemesher.0.adaptivity",
+          "kind": "n"
+        },
+        {
+          "card": "anisotropy",
+          "inject": "AutoRemesher.0.anisotropy",
+          "kind": "n"
+        }
+      ]
+    },
+    "fit": {
+      "card": "fit",
+      "card_knobs": [
+        {
+          "card": "body_glb",
+          "inject": "PrimitiveString.0.value",
+          "kind": "s"
+        },
+        {
+          "card": "prop_glb",
+          "inject": "PrimitiveString.1.value",
+          "kind": "s"
+        },
+        {
+          "card": "bone",
+          "inject": "FitRow.0.bone",
+          "kind": "s"
+        },
+        {
+          "card": "align",
+          "inject": "FitRow.0.align",
+          "kind": "s"
+        },
+        {
+          "card": "position",
+          "inject": "FitRow.0.position",
+          "kind": "s"
+        },
+        {
+          "card": "rotation",
+          "inject": "FitRow.0.rotation",
+          "kind": "s"
+        },
+        {
+          "card": "fit_ratio",
+          "inject": "FitRow.0.fit_ratio",
+          "kind": "n"
+        },
+        {
+          "card": "fit_ref_bone",
+          "inject": "FitRow.0.fit_ref_bone",
+          "kind": "s"
+        },
+        {
+          "card": "fit_ref_bone2",
+          "inject": "FitRow.0.fit_ref_bone2",
+          "kind": "s"
+        },
+        {
+          "card": "seat_ratio",
+          "inject": "FitRow.0.seat_ratio",
+          "kind": "n"
+        },
+        {
+          "card": "finger_bone",
+          "inject": "FitRow.0.finger_bone",
+          "kind": "s"
+        },
+        {
+          "card": "thumb_bone",
+          "inject": "FitRow.0.thumb_bone",
+          "kind": "s"
+        },
+        {
+          "card": "target_width",
+          "inject": "FitRow.0.target_width",
+          "kind": "n"
+        },
+        {
+          "card": "resolution",
+          "inject": "RayRenderGLBViews.0.resolution",
+          "kind": "n"
+        },
+        {
+          "card": "framing",
+          "inject": "RayRenderGLBViews.0.framing",
+          "kind": "n"
+        },
+        {
+          "card": "focal_length",
+          "inject": "RayRenderGLBViews.0.focal_length",
+          "kind": "n"
+        },
+        {
+          "card": "samples",
+          "inject": "RayRenderGLBViews.0.samples",
+          "kind": "n"
+        },
+        {
+          "card": "transparent",
+          "inject": "RayRenderGLBViews.0.transparent",
+          "kind": "b"
+        }
+      ]
+    },
+    "florence2": {
+      "card": "tagger",
+      "card_knobs": [
+        {
+          "card": "input_image",
+          "inject": "LoadImage.0.image",
+          "kind": "s"
+        },
+        {
+          "card": "checkpoint",
+          "inject": "DownloadAndLoadFlorence2Model.0.model",
+          "kind": "s"
+        },
+        {
+          "card": "caption_task",
+          "inject": "Florence2Run.0.task",
+          "kind": "s"
+        }
+      ]
+    },
+    "h3": {
+      "card": "h3-timeline",
+      "card_knobs": [
+        {
+          "card": "steps",
+          "inject": "Scheduler.0.steps",
+          "kind": "n"
+        },
+        {
+          "card": "sampling_steps",
+          "inject": "Scheduler.0.steps",
+          "kind": "n"
+        },
+        {
+          "card": "denoise",
+          "inject": "Scheduler.0.denoise",
+          "kind": "n"
+        },
+        {
+          "card": "sampler",
+          "inject": "SamplerSel.0.sampler_name",
+          "kind": "s"
+        },
+        {
+          "card": "scheduler",
+          "inject": "Scheduler.0.scheduler",
+          "kind": "s"
+        },
+        {
+          "card": "shift_video",
+          "inject": "MiniMaxH3SigmaShift.0.shift_video",
+          "kind": "n"
+        },
+        {
+          "card": "shift_audio",
+          "inject": "MiniMaxH3SigmaShift.0.shift_audio",
+          "kind": "n"
+        },
+        {
+          "card": "width",
+          "inject": "MiniMaxH3ReferenceToVideo.0.width",
+          "kind": "n"
+        },
+        {
+          "card": "height",
+          "inject": "MiniMaxH3ReferenceToVideo.0.height",
+          "kind": "n"
+        },
+        {
+          "card": "lora_strength",
+          "inject": "LTX_lora_loader.0.stack_data",
+          "kind": "n"
+        },
+        {
+          "card": "lora_name",
+          "inject": "LTX_lora_loader.0.stack_data",
+          "kind": "s"
+        },
+        {
+          "card": "h3_sla_sparsity",
+          "inject": "H3SLAAttention.0.sparsity_ratio",
+          "kind": "n"
+        },
+        {
+          "card": "h3_sla_block_size",
+          "inject": "H3SLAAttention.0.block_size",
+          "kind": "s"
+        },
+        {
+          "card": "h3_sla_min_seq_len",
+          "inject": "H3SLAAttention.0.min_seq_len",
+          "kind": "n"
+        },
+        {
+          "card": "h3_sla_dense_last_steps",
+          "inject": "H3SLAAttention.0.dense_last_steps",
+          "kind": "n"
+        },
+        {
+          "card": "h3_sla_dense_steps",
+          "inject": "H3SLAAttention.0.dense_steps",
+          "kind": "s"
+        },
+        {
+          "card": "h3_sla_dense_backend",
+          "inject": "H3SLAAttention.0.dense_backend",
+          "kind": "s"
+        },
+        {
+          "card": "h3_sla_protect_audio",
+          "inject": "H3SLAAttention.0.protect_audio",
+          "kind": "b"
+        },
+        {
+          "card": "h3_sla_stabilize_motion",
+          "inject": "H3SLAAttention.0.stabilize_motion",
+          "kind": "b"
+        },
+        {
+          "card": "h3_sla_reference_protection",
+          "inject": "H3SLAAttention.0.reference_protection",
+          "kind": "s"
+        },
+        {
+          "card": "h3_sla_disable_fp16_accum",
+          "inject": "H3SLAAttention.0.disable_fp16_accum",
+          "kind": "b"
+        },
+        {
+          "card": "sharpen_enabled",
+          "inject": "SharpenSwitch.0.switch",
+          "kind": "b"
+        },
+        {
+          "card": "sharpen_method",
+          "inject": "ImageSharpenKJ.0.method.method",
+          "kind": "s"
+        },
+        {
+          "card": "sharpen_strength",
+          "inject": "ImageSharpenKJ.0.method.strength",
+          "kind": "n"
+        },
+        {
+          "card": "sharpen_radius",
+          "inject": "ImageSharpenKJ.0.method.radius",
+          "kind": "n"
+        },
+        {
+          "card": "sharpen_threshold",
+          "inject": "ImageSharpenKJ.0.method.threshold",
+          "kind": "n"
+        },
+        {
+          "card": "sharpen_iterations",
+          "inject": "ImageSharpenKJ.0.method.iterations",
+          "kind": "n"
+        },
+        {
+          "card": "interpolate_enabled",
+          "inject": "InterpSwitch.0.switch",
+          "kind": "b"
+        },
+        {
+          "card": "interpolate_multiplier",
+          "inject": "FrameInterpolate.0.multiplier",
+          "kind": "n"
+        },
+        {
+          "card": "interpolate_model",
+          "inject": "FrameInterpolationModelLoader.0.model_name",
+          "kind": "s"
+        },
+        {
+          "card": "superres_enabled",
+          "inject": "SRSwitch.0.switch",
+          "kind": "b"
+        },
+        {
+          "card": "superres_model",
+          "inject": "SeedVR2LoadDiTModel.0.model",
+          "kind": "s"
+        },
+        {
+          "card": "superres_resolution",
+          "inject": "SeedVR2VideoUpscaler.0.resolution",
+          "kind": "n"
+        },
+        {
+          "card": "h3_ref_image_size",
+          "inject": "MiniMaxH3ReferenceToVideo.0.ref_image_size",
+          "kind": "s"
+        }
+      ]
+    },
+    "h3-keyframe": {
+      "card": "h3-timeline",
+      "card_knobs": [
+        {
+          "card": "steps",
+          "inject": "Scheduler.0.steps",
+          "kind": "n"
+        },
+        {
+          "card": "sampling_steps",
+          "inject": "Scheduler.0.steps",
+          "kind": "n"
+        },
+        {
+          "card": "denoise",
+          "inject": "Scheduler.0.denoise",
+          "kind": "n"
+        },
+        {
+          "card": "sampler",
+          "inject": "SamplerSel.0.sampler_name",
+          "kind": "s"
+        },
+        {
+          "card": "scheduler",
+          "inject": "Scheduler.0.scheduler",
+          "kind": "s"
+        },
+        {
+          "card": "shift_video",
+          "inject": "MiniMaxH3SigmaShift.0.shift_video",
+          "kind": "n"
+        },
+        {
+          "card": "shift_audio",
+          "inject": "MiniMaxH3SigmaShift.0.shift_audio",
+          "kind": "n"
+        },
+        {
+          "card": "width",
+          "inject": "MiniMaxH3ReferenceToVideo.0.width",
+          "kind": "n"
+        },
+        {
+          "card": "height",
+          "inject": "MiniMaxH3ReferenceToVideo.0.height",
+          "kind": "n"
+        },
+        {
+          "card": "lora_strength",
+          "inject": "LTX_lora_loader.0.stack_data",
+          "kind": "n"
+        },
+        {
+          "card": "lora_name",
+          "inject": "LTX_lora_loader.0.stack_data",
+          "kind": "s"
+        },
+        {
+          "card": "h3_sla_sparsity",
+          "inject": "H3SLAAttention.0.sparsity_ratio",
+          "kind": "n"
+        },
+        {
+          "card": "h3_sla_block_size",
+          "inject": "H3SLAAttention.0.block_size",
+          "kind": "s"
+        },
+        {
+          "card": "h3_sla_min_seq_len",
+          "inject": "H3SLAAttention.0.min_seq_len",
+          "kind": "n"
+        },
+        {
+          "card": "h3_sla_dense_last_steps",
+          "inject": "H3SLAAttention.0.dense_last_steps",
+          "kind": "n"
+        },
+        {
+          "card": "h3_sla_dense_steps",
+          "inject": "H3SLAAttention.0.dense_steps",
+          "kind": "s"
+        },
+        {
+          "card": "h3_sla_dense_backend",
+          "inject": "H3SLAAttention.0.dense_backend",
+          "kind": "s"
+        },
+        {
+          "card": "h3_sla_protect_audio",
+          "inject": "H3SLAAttention.0.protect_audio",
+          "kind": "b"
+        },
+        {
+          "card": "h3_sla_stabilize_motion",
+          "inject": "H3SLAAttention.0.stabilize_motion",
+          "kind": "b"
+        },
+        {
+          "card": "h3_sla_reference_protection",
+          "inject": "H3SLAAttention.0.reference_protection",
+          "kind": "s"
+        },
+        {
+          "card": "h3_sla_disable_fp16_accum",
+          "inject": "H3SLAAttention.0.disable_fp16_accum",
+          "kind": "b"
+        },
+        {
+          "card": "sharpen_enabled",
+          "inject": "SharpenSwitch.0.switch",
+          "kind": "b"
+        },
+        {
+          "card": "sharpen_method",
+          "inject": "ImageSharpenKJ.0.method.method",
+          "kind": "s"
+        },
+        {
+          "card": "sharpen_strength",
+          "inject": "ImageSharpenKJ.0.method.strength",
+          "kind": "n"
+        },
+        {
+          "card": "sharpen_radius",
+          "inject": "ImageSharpenKJ.0.method.radius",
+          "kind": "n"
+        },
+        {
+          "card": "sharpen_threshold",
+          "inject": "ImageSharpenKJ.0.method.threshold",
+          "kind": "n"
+        },
+        {
+          "card": "sharpen_iterations",
+          "inject": "ImageSharpenKJ.0.method.iterations",
+          "kind": "n"
+        },
+        {
+          "card": "interpolate_enabled",
+          "inject": "InterpSwitch.0.switch",
+          "kind": "b"
+        },
+        {
+          "card": "interpolate_multiplier",
+          "inject": "FrameInterpolate.0.multiplier",
+          "kind": "n"
+        },
+        {
+          "card": "interpolate_model",
+          "inject": "FrameInterpolationModelLoader.0.model_name",
+          "kind": "s"
+        },
+        {
+          "card": "superres_enabled",
+          "inject": "SRSwitch.0.switch",
+          "kind": "b"
+        },
+        {
+          "card": "superres_model",
+          "inject": "SeedVR2LoadDiTModel.0.model",
+          "kind": "s"
+        },
+        {
+          "card": "superres_resolution",
+          "inject": "SeedVR2VideoUpscaler.0.resolution",
+          "kind": "n"
+        },
+        {
+          "card": "h3_ref_image_size",
+          "inject": "MiniMaxH3ReferenceToVideo.0.ref_image_size",
+          "kind": "s"
+        }
+      ]
+    },
+    "h3-timeline": {
+      "card": "h3-timeline",
+      "card_knobs": [
+        {
+          "card": "steps",
+          "inject": "Scheduler.0.steps",
+          "kind": "n"
+        },
+        {
+          "card": "sampling_steps",
+          "inject": "Scheduler.0.steps",
+          "kind": "n"
+        },
+        {
+          "card": "denoise",
+          "inject": "Scheduler.0.denoise",
+          "kind": "n"
+        },
+        {
+          "card": "sampler",
+          "inject": "SamplerSel.0.sampler_name",
+          "kind": "s"
+        },
+        {
+          "card": "scheduler",
+          "inject": "Scheduler.0.scheduler",
+          "kind": "s"
+        },
+        {
+          "card": "shift_video",
+          "inject": "MiniMaxH3SigmaShift.0.shift_video",
+          "kind": "n"
+        },
+        {
+          "card": "shift_audio",
+          "inject": "MiniMaxH3SigmaShift.0.shift_audio",
+          "kind": "n"
+        },
+        {
+          "card": "width",
+          "inject": "MiniMaxH3ReferenceToVideo.0.width",
+          "kind": "n"
+        },
+        {
+          "card": "height",
+          "inject": "MiniMaxH3ReferenceToVideo.0.height",
+          "kind": "n"
+        },
+        {
+          "card": "lora_strength",
+          "inject": "LTX_lora_loader.0.stack_data",
+          "kind": "n"
+        },
+        {
+          "card": "lora_name",
+          "inject": "LTX_lora_loader.0.stack_data",
+          "kind": "s"
+        },
+        {
+          "card": "h3_sla_sparsity",
+          "inject": "H3SLAAttention.0.sparsity_ratio",
+          "kind": "n"
+        },
+        {
+          "card": "h3_sla_block_size",
+          "inject": "H3SLAAttention.0.block_size",
+          "kind": "s"
+        },
+        {
+          "card": "h3_sla_min_seq_len",
+          "inject": "H3SLAAttention.0.min_seq_len",
+          "kind": "n"
+        },
+        {
+          "card": "h3_sla_dense_last_steps",
+          "inject": "H3SLAAttention.0.dense_last_steps",
+          "kind": "n"
+        },
+        {
+          "card": "h3_sla_dense_steps",
+          "inject": "H3SLAAttention.0.dense_steps",
+          "kind": "s"
+        },
+        {
+          "card": "h3_sla_dense_backend",
+          "inject": "H3SLAAttention.0.dense_backend",
+          "kind": "s"
+        },
+        {
+          "card": "h3_sla_protect_audio",
+          "inject": "H3SLAAttention.0.protect_audio",
+          "kind": "b"
+        },
+        {
+          "card": "h3_sla_stabilize_motion",
+          "inject": "H3SLAAttention.0.stabilize_motion",
+          "kind": "b"
+        },
+        {
+          "card": "h3_sla_reference_protection",
+          "inject": "H3SLAAttention.0.reference_protection",
+          "kind": "s"
+        },
+        {
+          "card": "h3_sla_disable_fp16_accum",
+          "inject": "H3SLAAttention.0.disable_fp16_accum",
+          "kind": "b"
+        },
+        {
+          "card": "sharpen_enabled",
+          "inject": "SharpenSwitch.0.switch",
+          "kind": "b"
+        },
+        {
+          "card": "sharpen_method",
+          "inject": "ImageSharpenKJ.0.method.method",
+          "kind": "s"
+        },
+        {
+          "card": "sharpen_strength",
+          "inject": "ImageSharpenKJ.0.method.strength",
+          "kind": "n"
+        },
+        {
+          "card": "sharpen_radius",
+          "inject": "ImageSharpenKJ.0.method.radius",
+          "kind": "n"
+        },
+        {
+          "card": "sharpen_threshold",
+          "inject": "ImageSharpenKJ.0.method.threshold",
+          "kind": "n"
+        },
+        {
+          "card": "sharpen_iterations",
+          "inject": "ImageSharpenKJ.0.method.iterations",
+          "kind": "n"
+        },
+        {
+          "card": "interpolate_enabled",
+          "inject": "InterpSwitch.0.switch",
+          "kind": "b"
+        },
+        {
+          "card": "interpolate_multiplier",
+          "inject": "FrameInterpolate.0.multiplier",
+          "kind": "n"
+        },
+        {
+          "card": "interpolate_model",
+          "inject": "FrameInterpolationModelLoader.0.model_name",
+          "kind": "s"
+        },
+        {
+          "card": "superres_enabled",
+          "inject": "SRSwitch.0.switch",
+          "kind": "b"
+        },
+        {
+          "card": "superres_model",
+          "inject": "SeedVR2LoadDiTModel.0.model",
+          "kind": "s"
+        },
+        {
+          "card": "superres_resolution",
+          "inject": "SeedVR2VideoUpscaler.0.resolution",
+          "kind": "n"
+        },
+        {
+          "card": "h3_ref_image_size",
+          "inject": "MiniMaxH3ReferenceToVideo.0.ref_image_size",
+          "kind": "s"
+        }
+      ]
+    },
+    "ideogram": {
+      "card": "ideogram4",
+      "card_knobs": [
+        {
+          "card": "prompt",
+          "inject": "CLIPTextEncode.0.text",
+          "kind": "s"
+        },
+        {
+          "card": "width",
+          "inject": "EmptyFlux2LatentImage.0.width",
+          "kind": "n"
+        },
+        {
+          "card": "height",
+          "inject": "EmptyFlux2LatentImage.0.height",
+          "kind": "n"
+        },
+        {
+          "card": "steps",
+          "inject": "Ideogram4Scheduler.0.steps",
+          "kind": "n"
+        },
+        {
+          "card": "cfg",
+          "inject": "DualModelGuider.0.cfg",
+          "kind": "n"
+        },
+        {
+          "card": "mu",
+          "inject": "Ideogram4Scheduler.0.mu",
+          "kind": "n"
+        },
+        {
+          "card": "std",
+          "inject": "Ideogram4Scheduler.0.std",
+          "kind": "n"
+        },
+        {
+          "card": "sampler",
+          "inject": "KSamplerSelect.0.sampler_name",
+          "kind": "s"
+        },
+        {
+          "card": "seed",
+          "inject": "RandomNoise.0.noise_seed",
+          "kind": "n"
+        }
+      ]
+    },
+    "input": {
+      "card": "input-prep",
+      "card_knobs": [
+        {
+          "card": "source",
+          "inject": "LoadImage.0.image",
+          "kind": "s"
+        }
+      ]
+    },
+    "joycaption": {
+      "card": "tagger",
+      "card_knobs": [
+        {
+          "card": "input_image",
+          "inject": "LoadImage.0.image",
+          "kind": "s"
+        },
+        {
+          "card": "checkpoint",
+          "inject": "JJC_DownloadAndLoadJoyCaptionModel.0.model",
+          "kind": "s"
+        },
+        {
+          "card": "caption_type",
+          "inject": "JJC_JoyCaption.0.caption_type",
+          "kind": "s"
+        },
+        {
+          "card": "caption_length",
+          "inject": "JJC_JoyCaption.0.caption_length",
+          "kind": "s"
+        },
+        {
+          "card": "extra_option",
+          "inject": "JJC_JoyCaption.0.extra_option1",
+          "kind": "s"
+        }
+      ]
+    },
+    "joytag": {
+      "card": "tagger",
+      "card_knobs": [
+        {
+          "card": "input_image",
+          "inject": "LoadImage.0.image",
+          "kind": "s"
+        },
+        {
+          "card": "threshold",
+          "inject": "CXH_JoyTag.0.THRESHOLD",
+          "kind": "n"
+        },
+        {
+          "card": "add_tag",
+          "inject": "CXH_JoyTag.0.addTag",
+          "kind": "s"
+        },
+        {
+          "card": "remove_tag",
+          "inject": "CXH_JoyTag.0.removeTag",
+          "kind": "s"
+        }
+      ]
+    },
+    "kimodo": {
+      "card": "motion",
+      "card_knobs": [
+        {
+          "card": "prompt",
+          "inject": "KimodoTextToPose.0.prompt",
+          "kind": "s"
+        },
+        {
+          "card": "seed",
+          "inject": "KimodoTextToPose.0.seed",
+          "kind": "n"
+        },
+        {
+          "card": "duration_sec",
+          "inject": "KimodoTextToPose.0.duration_sec",
+          "kind": "n"
+        },
+        {
+          "card": "diffusion_steps",
+          "inject": "KimodoTextToPose.0.diffusion_steps",
+          "kind": "n"
+        },
+        {
+          "card": "num_samples",
+          "inject": "KimodoTextToPose.0.num_samples",
+          "kind": "n"
+        },
+        {
+          "card": "num_transition_frames",
+          "inject": "KimodoTextToPose.0.num_transition_frames",
+          "kind": "n"
+        },
+        {
+          "card": "cfg_type",
+          "inject": "KimodoTextToPose.0.cfg_type",
+          "kind": "s"
+        },
+        {
+          "card": "cfg_weight_a",
+          "inject": "KimodoTextToPose.0.cfg_weight_a",
+          "kind": "n"
+        },
+        {
+          "card": "cfg_weight_b",
+          "inject": "KimodoTextToPose.0.cfg_weight_b",
+          "kind": "n"
+        },
+        {
+          "card": "motion_npz",
+          "inject": "",
+          "kind": "s"
+        },
+        {
+          "card": "motion_prompts",
+          "inject": "",
+          "kind": "s"
+        },
+        {
+          "card": "motion_constraints",
+          "inject": "",
+          "kind": "s"
+        },
+        {
+          "card": "preview_glb",
+          "inject": "",
+          "kind": "s"
+        }
+      ]
+    },
+    "krea-2": {
+      "card": "image-gen",
+      "card_knobs": [
+        {
+          "card": "prompt",
+          "inject": "CLIPTextEncode.0.text",
+          "kind": "s"
+        },
+        {
+          "card": "negative_prompt",
+          "inject": "CLIPTextEncode.1.text",
+          "kind": "s"
+        },
+        {
+          "card": "width",
+          "inject": "EmptySD3LatentImage.0.width",
+          "kind": "n"
+        },
+        {
+          "card": "height",
+          "inject": "EmptySD3LatentImage.0.height",
+          "kind": "n"
+        },
+        {
+          "card": "seed",
+          "inject": "KSampler.0.seed",
+          "kind": "n"
+        },
+        {
+          "card": "steps",
+          "inject": "KSampler.0.steps",
+          "kind": "n"
+        },
+        {
+          "card": "cfg",
+          "inject": "KSampler.0.cfg",
+          "kind": "n"
+        },
+        {
+          "card": "sampler",
+          "inject": "KSampler.0.sampler_name",
+          "kind": "s"
+        },
+        {
+          "card": "scheduler",
+          "inject": "KSampler.0.scheduler",
+          "kind": "s"
+        }
+      ]
+    },
+    "mask-studio": {
+      "card": "mask-studio",
+      "frozen": {
+        "card": "mask-studio",
+        "card_knobs": [
+          {
+            "card": "input_image",
+            "inject": "LoadImage.0.image",
+            "kind": "s"
+          },
+          {
+            "card": "detection_threshold",
+            "inject": "RTDETR_detect.0.threshold",
+            "kind": "n"
+          },
+          {
+            "card": "max_instances",
+            "inject": "RTDETR_detect.0.max_detections",
+            "kind": "n"
+          },
+          {
+            "card": "sam_threshold",
+            "inject": "",
+            "kind": "n"
+          },
+          {
+            "card": "detect_mode",
+            "inject": "",
+            "kind": "s"
+          },
+          {
+            "card": "output_mode",
+            "inject": "",
+            "kind": "s"
+          },
+          {
+            "card": "instance_filter",
+            "inject": "",
+            "kind": "s"
+          },
+          {
+            "card": "export_boxes",
+            "inject": "",
+            "kind": "b"
+          },
+          {
+            "card": "export_face",
+            "inject": "",
+            "kind": "b"
+          },
+          {
+            "card": "export_hands",
+            "inject": "",
+            "kind": "b"
+          },
+          {
+            "card": "export_body",
+            "inject": "",
+            "kind": "b"
+          },
+          {
+            "card": "export_paint",
+            "inject": "",
+            "kind": "b"
+          },
+          {
+            "card": "roi",
+            "inject": "",
+            "kind": "s"
+          },
+          {
+            "card": "outputs",
+            "inject": "",
+            "kind": "s"
+          },
+          {
+            "card": "sam_dilation",
+            "inject": "",
+            "kind": "n"
+          },
+          {
+            "card": "paint_mask",
+            "inject": "",
+            "kind": "s"
+          }
+        ],
+        "defaults": {
+          "detect_mode": "body",
+          "detection_threshold": 0.35,
+          "export_body": false,
+          "export_boxes": true,
+          "export_face": false,
+          "export_hands": false,
+          "export_paint": false,
+          "instance_filter": "all",
+          "max_instances": 0,
+          "output_mode": "segm",
+          "outputs": "[]",
+          "sam3_prompt": null,
+          "sam_dilation": 0,
+          "sam_threshold": 0.93
+        },
+        "id": "mask-studio",
+        "lane_inputs": {
+          "background_removal": "",
+          "checkpoint": "sam3.1_multiplex_fp16.safetensors",
+          "clip_type": null,
+          "clip_vision": "",
+          "family": "",
+          "latent_node": "EmptySD3LatentImage",
+          "model_path": "",
+          "sampling_shift": 0.0,
+          "text_encoder": "",
+          "texture_vae": "",
+          "unet": "rt_detr_v4-x-hgnet_fp32.safetensors",
+          "unet_quant": "",
+          "unet_unconditional": "",
+          "unet_variant": "",
+          "vae": "",
+          "weightless": false
+        },
+        "outputs": [
+          {
+            "label": "Mask PNG",
+            "many": false,
+            "patterns": [
+              ".png"
+            ]
+          }
+        ],
+        "studio": {
+          "kind": "custom",
+          "layout": "studio",
+          "owns_params": true,
+          "size": "normal",
+          "tenant": "image/mask_studio",
+          "writes": [
+            "input_image",
+            "detect_mode",
+            "detection_threshold",
+            "sam_threshold",
+            "sam_dilation",
+            "output_mode",
+            "sam3_prompt",
+            "export_boxes",
+            "export_face",
+            "export_hands",
+            "export_body",
+            "export_paint",
+            "paint_mask",
+            "instance_filter",
+            "max_instances",
+            "outputs",
+            "roi"
+          ]
+        },
+        "variant_groups": [
+          {
+            "default": "",
+            "id": "Variant",
+            "label": "Variant",
+            "tooltip": ""
+          },
+          {
+            "default": "",
+            "id": "Quant",
+            "label": "Quant",
+            "tooltip": ""
+          },
+          {
+            "default": "default",
+            "id": "Recipe",
+            "label": "Recipe",
+            "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing."
+          }
+        ],
+        "variants": [
+          {
+            "cells": [
+              {
+                "artifact": "",
+                "label": "F32",
+                "quant": "f32",
+                "route": "mask-studio",
+                "vram_peak_gb": 12.0
+              }
+            ],
+            "defaults": {},
+            "group": "Variant",
+            "id": "standard",
+            "label": "Standard",
+            "resolver_defaults": {},
+            "route": "mask-studio"
+          },
+          {
+            "cells": [],
+            "defaults": {},
+            "group": "Recipe",
+            "id": "default",
+            "label": "Default",
+            "resolver_defaults": {},
+            "route": ""
+          }
+        ]
+      }
+    },
+    "moss-sfx": {
+      "card": "sfx",
+      "card_knobs": [
+        {
+          "card": "prompt",
+          "inject": "AudiocoreTTS.0.prompt",
+          "kind": "s"
+        },
+        {
+          "card": "guidance_scale",
+          "inject": "AudiocoreTTS.0.guidance_scale",
+          "kind": "n"
+        },
+        {
+          "card": "n_diffusion_steps",
+          "inject": "AudiocoreTTS.0.num_inference_steps",
+          "kind": "n"
+        },
+        {
+          "card": "duration",
+          "inject": "AudiocoreTTS.0.duration_seconds",
+          "kind": "n"
+        },
+        {
+          "card": "seed",
+          "inject": "AudiocoreTTS.0.seed",
+          "kind": "n"
+        }
+      ]
+    },
+    "music3": {
+      "card": "music",
+      "card_knobs": [
+        {
+          "card": "prompt",
+          "inject": "MiniMaxMusic3TextEncode.0.caption",
+          "kind": "s"
+        },
+        {
+          "card": "lyrics",
+          "inject": "MiniMaxMusic3TextEncode.0.lyrics",
+          "kind": "s"
+        },
+        {
+          "card": "duration",
+          "inject": "EmptyMiniMaxMusic3LatentAudio.0.seconds",
+          "kind": "n"
+        },
+        {
+          "card": "seed",
+          "inject": "KSampler.0.seed",
+          "kind": "n"
+        },
+        {
+          "card": "guidance_scale",
+          "inject": "KSampler.0.cfg",
+          "kind": "n"
+        },
+        {
+          "card": "n_diffusion_steps",
+          "inject": "KSampler.0.steps",
+          "kind": "n"
+        },
+        {
+          "card": "lm_cfg_scale",
+          "inject": "MiniMaxMusic3TextEncode.0.cfg_scale",
+          "kind": "n"
+        }
+      ]
+    },
+    "pixal3d": {
+      "card": "img-to-mesh",
+      "card_knobs": [
+        {
+          "card": "input_image",
+          "inject": "LoadImage.0.image",
+          "kind": "s"
+        },
+        {
+          "card": "seed",
+          "inject": "KSampler.0.seed",
+          "kind": "n"
+        },
+        {
+          "card": "resolution",
+          "inject": "Trellis2UpsampleStage.0.target_resolution",
+          "kind": "n"
+        },
+        {
+          "card": "steps",
+          "inject": "KSampler.0.steps",
+          "kind": "n"
+        },
+        {
+          "card": "cfg",
+          "inject": "KSampler.0.cfg",
+          "kind": "n"
+        },
+        {
+          "card": "bg_removal",
+          "inject": "",
+          "kind": "s"
+        },
+        {
+          "card": "camera_fov",
+          "inject": "",
+          "kind": "s"
+        },
+        {
+          "card": "shape_steps",
+          "inject": "KSampler.1.steps",
+          "kind": "n"
+        },
+        {
+          "card": "shape_cfg",
+          "inject": "KSampler.1.cfg",
+          "kind": "n"
+        },
+        {
+          "card": "tex1_steps",
+          "inject": "KSampler.2.steps",
+          "kind": "n"
+        },
+        {
+          "card": "tex1_cfg",
+          "inject": "KSampler.2.cfg",
+          "kind": "n"
+        },
+        {
+          "card": "tex2_steps",
+          "inject": "KSampler.3.steps",
+          "kind": "n"
+        },
+        {
+          "card": "tex2_cfg",
+          "inject": "KSampler.3.cfg",
+          "kind": "n"
+        },
+        {
+          "card": "remesh_resolution",
+          "inject": "RemeshMesh.0.resolution",
+          "kind": "n"
+        },
+        {
+          "card": "decimate_faces",
+          "inject": "DecimateMesh.0.target_face_count",
+          "kind": "n"
+        },
+        {
+          "card": "smooth_angle",
+          "inject": "MeshSmoothNormals.0.crease_angle",
+          "kind": "n"
+        },
+        {
+          "card": "atlas_size",
+          "inject": "UnwrapMesh.0.resolution",
+          "kind": "n"
+        },
+        {
+          "card": "ao_size",
+          "inject": "BakeAmbientOcclusion.0.resolution",
+          "kind": "n"
+        },
+        {
+          "card": "normal_size",
+          "inject": "BakeNormalMapFromMesh.0.resolution",
+          "kind": "n"
+        },
+        {
+          "card": "struct_sampler",
+          "inject": "KSampler.0.sampler_name",
+          "kind": "s"
+        },
+        {
+          "card": "struct_scheduler",
+          "inject": "KSampler.0.scheduler",
+          "kind": "s"
+        },
+        {
+          "card": "shape_sampler",
+          "inject": "KSampler.1.sampler_name",
+          "kind": "s"
+        },
+        {
+          "card": "shape_scheduler",
+          "inject": "KSampler.1.scheduler",
+          "kind": "s"
+        },
+        {
+          "card": "tex1_sampler",
+          "inject": "KSampler.2.sampler_name",
+          "kind": "s"
+        },
+        {
+          "card": "tex1_scheduler",
+          "inject": "KSampler.2.scheduler",
+          "kind": "s"
+        },
+        {
+          "card": "tex2_sampler",
+          "inject": "KSampler.3.sampler_name",
+          "kind": "s"
+        },
+        {
+          "card": "tex2_scheduler",
+          "inject": "KSampler.3.scheduler",
+          "kind": "s"
+        },
+        {
+          "card": "sd3_shift",
+          "inject": "ModelSamplingSD3.0.shift",
+          "kind": "n"
+        },
+        {
+          "card": "rescale_struct",
+          "inject": "RescaleCFG.0.multiplier",
+          "kind": "n"
+        },
+        {
+          "card": "rescale_shape",
+          "inject": "RescaleCFG.1.multiplier",
+          "kind": "n"
+        },
+        {
+          "card": "override_struct",
+          "inject": "CFGOverride.0.start_percent",
+          "kind": "n"
+        },
+        {
+          "card": "override_shape",
+          "inject": "CFGOverride.1.start_percent",
+          "kind": "n"
+        }
+      ]
+    },
+    "qwen-img-edit-2511": {
+      "card": "image-edit",
+      "card_knobs": [
+        {
+          "card": "image1",
+          "inject": "LoadImage.0.image",
+          "kind": "s"
+        },
+        {
+          "card": "prompt",
+          "inject": "TextEncodeQwenImageEditPlus.0.prompt",
+          "kind": "s"
+        },
+        {
+          "card": "negative_prompt",
+          "inject": "TextEncodeQwenImageEditPlus.1.prompt",
+          "kind": "s"
+        },
+        {
+          "card": "seed",
+          "inject": "KSampler.0.seed",
+          "kind": "n"
+        },
+        {
+          "card": "steps",
+          "inject": "KSampler.0.steps",
+          "kind": "n"
+        },
+        {
+          "card": "cfg",
+          "inject": "KSampler.0.cfg",
+          "kind": "n"
+        },
+        {
+          "card": "sampler",
+          "inject": "KSampler.0.sampler_name",
+          "kind": "s"
+        },
+        {
+          "card": "scheduler",
+          "inject": "KSampler.0.scheduler",
+          "kind": "s"
+        }
+      ]
+    },
+    "qwen3-tts": {
+      "card": "tts",
+      "card_knobs": [
+        {
+          "card": "text",
+          "inject": "AudiocoreTTS.0.prompt",
+          "kind": "s"
+        },
+        {
+          "card": "voice",
+          "inject": "AudiocoreTTS.0.voice",
+          "kind": "s"
+        },
+        {
+          "card": "style_instruction",
+          "inject": "AudiocoreTTS.0.instruct",
+          "kind": "s"
+        },
+        {
+          "card": "qvoice",
+          "inject": "AudiocoreTTS.0.voice_file",
+          "kind": "s"
+        },
+        {
+          "card": "voice_pca_strengths",
+          "inject": "AudiocoreTTS.0.voice_pca_strengths",
+          "kind": "s"
+        },
+        {
+          "card": "temperature",
+          "inject": "AudiocoreTTS.0.temperature",
+          "kind": "n"
+        },
+        {
+          "card": "top_p",
+          "inject": "AudiocoreTTS.0.top_p",
+          "kind": "n"
+        },
+        {
+          "card": "speed",
+          "inject": "AudiocoreTTS.0.speed",
+          "kind": "n"
+        },
+        {
+          "card": "seed",
+          "inject": "AudiocoreTTS.0.seed",
+          "kind": "n"
+        }
+      ]
+    },
+    "qwen3-tts-base": {
+      "card": "tts",
+      "card_knobs": [
+        {
+          "card": "text",
+          "inject": "AudiocoreTTS.0.prompt",
+          "kind": "s"
+        },
+        {
+          "card": "voice",
+          "inject": "AudiocoreTTS.0.voice",
+          "kind": "s"
+        },
+        {
+          "card": "style_instruction",
+          "inject": "AudiocoreTTS.0.instruct",
+          "kind": "s"
+        },
+        {
+          "card": "qvoice",
+          "inject": "AudiocoreTTS.0.voice_file",
+          "kind": "s"
+        },
+        {
+          "card": "voice_pca_strengths",
+          "inject": "AudiocoreTTS.0.voice_pca_strengths",
+          "kind": "s"
+        },
+        {
+          "card": "temperature",
+          "inject": "AudiocoreTTS.0.temperature",
+          "kind": "n"
+        },
+        {
+          "card": "top_p",
+          "inject": "AudiocoreTTS.0.top_p",
+          "kind": "n"
+        },
+        {
+          "card": "speed",
+          "inject": "AudiocoreTTS.0.speed",
+          "kind": "n"
+        },
+        {
+          "card": "seed",
+          "inject": "AudiocoreTTS.0.seed",
+          "kind": "n"
+        }
+      ]
+    },
+    "qwen3-tts-voicedesign": {
+      "card": "voice-lock",
+      "card_knobs": [
+        {
+          "card": "voice_name",
+          "inject": "AudiocoreVoiceStudio.0.name",
+          "kind": "s"
+        },
+        {
+          "card": "style_instruction",
+          "inject": "AudiocoreVoiceStudio.0.instruct",
+          "kind": "s"
+        },
+        {
+          "card": "temperature",
+          "inject": "AudiocoreVoiceStudio.0.temperature",
+          "kind": "n"
+        },
+        {
+          "card": "top_p",
+          "inject": "AudiocoreVoiceStudio.0.top_p",
+          "kind": "n"
+        },
+        {
+          "card": "speed",
+          "inject": "AudiocoreVoiceStudio.0.speed",
+          "kind": "n"
+        },
+        {
+          "card": "repetition_penalty",
+          "inject": "AudiocoreVoiceStudio.0.repetition_penalty",
+          "kind": "n"
+        },
+        {
+          "card": "seed",
+          "inject": "AudiocoreVoiceStudio.0.seed",
+          "kind": "n"
+        }
+      ]
+    },
+    "scail2-animate": {
+      "card": "video-gen",
+      "card_knobs": [
+        {
+          "card": "prompt",
+          "inject": "CLIPTextEncode.0.text",
+          "kind": "s"
+        },
+        {
+          "card": "negative_prompt",
+          "inject": "CLIPTextEncode.1.text",
+          "kind": "s"
+        },
+        {
+          "card": "reference_image",
+          "inject": "LoadImage.0.image",
+          "kind": "s"
+        },
+        {
+          "card": "pose_video",
+          "inject": "VHS_LoadVideoPath.0.video",
+          "kind": "s"
+        },
+        {
+          "card": "pose_strength",
+          "inject": "WanSCAILToVideo.0.pose_strength",
+          "kind": "n"
+        },
+        {
+          "card": "width",
+          "inject": "WanSCAILToVideo.0.width",
+          "kind": "n"
+        },
+        {
+          "card": "height",
+          "inject": "WanSCAILToVideo.0.height",
+          "kind": "n"
+        },
+        {
+          "card": "length",
+          "inject": "WanSCAILToVideo.0.length",
+          "kind": "n"
+        },
+        {
+          "card": "fps",
+          "inject": "VHS_VideoCombine.0.frame_rate",
+          "kind": "n"
+        },
+        {
+          "card": "seed",
+          "inject": "KSampler.0.seed",
+          "kind": "n"
+        },
+        {
+          "card": "steps",
+          "inject": "KSampler.0.steps",
+          "kind": "n"
+        },
+        {
+          "card": "cfg",
+          "inject": "KSampler.0.cfg",
+          "kind": "n"
+        },
+        {
+          "card": "sampler",
+          "inject": "KSampler.0.sampler_name",
+          "kind": "s"
+        },
+        {
+          "card": "scheduler",
+          "inject": "KSampler.0.scheduler",
+          "kind": "s"
+        }
+      ]
+    },
+    "seedvr2_ema": {
+      "card": "upscale-tools",
+      "card_knobs": [
+        {
+          "card": "input_image",
+          "inject": "LoadImage.0.image",
+          "kind": "s"
+        },
+        {
+          "card": "seed",
+          "inject": "SeedVR2VideoUpscaler.0.seed",
+          "kind": "n"
+        },
+        {
+          "card": "resolution",
+          "inject": "SeedVR2VideoUpscaler.0.resolution",
+          "kind": "n"
+        },
+        {
+          "card": "max_resolution",
+          "inject": "SeedVR2VideoUpscaler.0.max_resolution",
+          "kind": "n"
+        },
+        {
+          "card": "batch_size",
+          "inject": "SeedVR2VideoUpscaler.0.batch_size",
+          "kind": "n"
+        }
+      ]
+    },
+    "skin": {
+      "card": "skin",
+      "card_knobs": [
+        {
+          "card": "body_glb",
+          "inject": "PrimitiveString.0.value",
+          "kind": "s"
+        },
+        {
+          "card": "kind",
+          "inject": "",
+          "kind": "s"
+        },
+        {
+          "card": "map_size",
+          "inject": "SkinPack.0.size",
+          "kind": "n"
+        },
+        {
+          "card": "seed",
+          "inject": "SkinPack.0.seed",
+          "kind": "n"
+        },
+        {
+          "card": "resolution",
+          "inject": "RayRenderGLBViews.0.resolution",
+          "kind": "n"
+        },
+        {
+          "card": "framing",
+          "inject": "RayRenderGLBViews.0.framing",
+          "kind": "n"
+        },
+        {
+          "card": "focal_length",
+          "inject": "RayRenderGLBViews.0.focal_length",
+          "kind": "n"
+        },
+        {
+          "card": "samples",
+          "inject": "RayRenderGLBViews.0.samples",
+          "kind": "n"
+        },
+        {
+          "card": "transparent",
+          "inject": "RayRenderGLBViews.0.transparent",
+          "kind": "b"
+        }
+      ]
+    },
+    "transfer_rig": {
+      "card": "img-to-mesh",
+      "card_knobs": [
+        {
+          "card": "rigged_glb",
+          "inject": "PrimitiveString.0.value",
+          "kind": "s"
+        },
+        {
+          "card": "target_glb",
+          "inject": "PrimitiveString.1.value",
+          "kind": "s"
+        }
+      ]
+    },
+    "trellis2-native": {
+      "card": "img-to-mesh",
+      "card_knobs": [
+        {
+          "card": "input_image",
+          "inject": "LoadImage.0.image",
+          "kind": "s"
+        },
+        {
+          "card": "seed",
+          "inject": "KSampler.0.seed",
+          "kind": "n"
+        },
+        {
+          "card": "resolution",
+          "inject": "Trellis2UpsampleStage.0.target_resolution",
+          "kind": "n"
+        },
+        {
+          "card": "steps",
+          "inject": "KSampler.0.steps",
+          "kind": "n"
+        },
+        {
+          "card": "cfg",
+          "inject": "KSampler.0.cfg",
+          "kind": "n"
+        },
+        {
+          "card": "bg_removal",
+          "inject": "",
+          "kind": "s"
+        },
+        {
+          "card": "shape_steps",
+          "inject": "KSampler.1.steps",
+          "kind": "n"
+        },
+        {
+          "card": "shape_cfg",
+          "inject": "KSampler.1.cfg",
+          "kind": "n"
+        },
+        {
+          "card": "tex1_steps",
+          "inject": "KSampler.2.steps",
+          "kind": "n"
+        },
+        {
+          "card": "tex1_cfg",
+          "inject": "KSampler.2.cfg",
+          "kind": "n"
+        },
+        {
+          "card": "tex2_steps",
+          "inject": "KSampler.3.steps",
+          "kind": "n"
+        },
+        {
+          "card": "tex2_cfg",
+          "inject": "KSampler.3.cfg",
+          "kind": "n"
+        },
+        {
+          "card": "remesh_resolution",
+          "inject": "RemeshMesh.0.resolution",
+          "kind": "n"
+        },
+        {
+          "card": "decimate_faces",
+          "inject": "DecimateMesh.0.target_face_count",
+          "kind": "n"
+        },
+        {
+          "card": "smooth_angle",
+          "inject": "MeshSmoothNormals.0.crease_angle",
+          "kind": "n"
+        },
+        {
+          "card": "atlas_size",
+          "inject": "UnwrapMesh.0.resolution",
+          "kind": "n"
+        },
+        {
+          "card": "ao_size",
+          "inject": "BakeAmbientOcclusion.0.resolution",
+          "kind": "n"
+        },
+        {
+          "card": "normal_size",
+          "inject": "BakeNormalMapFromMesh.0.resolution",
+          "kind": "n"
+        },
+        {
+          "card": "struct_sampler",
+          "inject": "KSampler.0.sampler_name",
+          "kind": "s"
+        },
+        {
+          "card": "struct_scheduler",
+          "inject": "KSampler.0.scheduler",
+          "kind": "s"
+        },
+        {
+          "card": "shape_sampler",
+          "inject": "KSampler.1.sampler_name",
+          "kind": "s"
+        },
+        {
+          "card": "shape_scheduler",
+          "inject": "KSampler.1.scheduler",
+          "kind": "s"
+        },
+        {
+          "card": "tex1_sampler",
+          "inject": "KSampler.2.sampler_name",
+          "kind": "s"
+        },
+        {
+          "card": "tex1_scheduler",
+          "inject": "KSampler.2.scheduler",
+          "kind": "s"
+        },
+        {
+          "card": "tex2_sampler",
+          "inject": "KSampler.3.sampler_name",
+          "kind": "s"
+        },
+        {
+          "card": "tex2_scheduler",
+          "inject": "KSampler.3.scheduler",
+          "kind": "s"
+        },
+        {
+          "card": "sd3_shift",
+          "inject": "ModelSamplingSD3.0.shift",
+          "kind": "n"
+        },
+        {
+          "card": "rescale_struct",
+          "inject": "RescaleCFG.0.multiplier",
+          "kind": "n"
+        },
+        {
+          "card": "rescale_shape",
+          "inject": "RescaleCFG.1.multiplier",
+          "kind": "n"
+        },
+        {
+          "card": "override_struct",
+          "inject": "CFGOverride.0.start_percent",
+          "kind": "n"
+        },
+        {
+          "card": "override_shape",
+          "inject": "CFGOverride.1.start_percent",
+          "kind": "n"
+        }
+      ]
+    },
+    "wan-vace": {
+      "card": "video-gen",
+      "card_knobs": [
+        {
+          "card": "prompt",
+          "inject": "CLIPTextEncode.0.text",
+          "kind": "s"
+        },
+        {
+          "card": "negative_prompt",
+          "inject": "CLIPTextEncode.1.text",
+          "kind": "s"
+        },
+        {
+          "card": "reference_image",
+          "inject": "LoadImage.0.image",
+          "kind": "s"
+        },
+        {
+          "card": "width",
+          "inject": "WanVaceToVideo.0.width",
+          "kind": "n"
+        },
+        {
+          "card": "height",
+          "inject": "WanVaceToVideo.0.height",
+          "kind": "n"
+        },
+        {
+          "card": "length",
+          "inject": "WanVaceToVideo.0.length",
+          "kind": "n"
+        },
+        {
+          "card": "fps",
+          "inject": "VHS_VideoCombine.0.frame_rate",
+          "kind": "n"
+        },
+        {
+          "card": "seed",
+          "inject": "KSampler.0.seed",
+          "kind": "n"
+        },
+        {
+          "card": "steps",
+          "inject": "KSampler.0.steps",
+          "kind": "n"
+        },
+        {
+          "card": "cfg",
+          "inject": "KSampler.0.cfg",
+          "kind": "n"
+        },
+        {
+          "card": "sampler",
+          "inject": "KSampler.0.sampler_name",
+          "kind": "s"
+        },
+        {
+          "card": "scheduler",
+          "inject": "KSampler.0.scheduler",
+          "kind": "s"
+        }
+      ]
+    },
+    "wd14": {
+      "card": "tagger",
+      "card_knobs": [
+        {
+          "card": "input_image",
+          "inject": "LoadImage.0.image",
+          "kind": "s"
+        },
+        {
+          "card": "checkpoint",
+          "inject": "WD14Tagger|pysssss.0.model",
+          "kind": "s"
+        },
+        {
+          "card": "threshold",
+          "inject": "WD14Tagger|pysssss.0.threshold",
+          "kind": "n"
+        },
+        {
+          "card": "character_threshold",
+          "inject": "WD14Tagger|pysssss.0.character_threshold",
+          "kind": "n"
+        },
+        {
+          "card": "exclude_tags",
+          "inject": "WD14Tagger|pysssss.0.exclude_tags",
+          "kind": "s"
+        },
+        {
+          "card": "replace_underscore",
+          "inject": "WD14Tagger|pysssss.0.replace_underscore",
+          "kind": "b"
+        },
+        {
+          "card": "trailing_comma",
+          "inject": "WD14Tagger|pysssss.0.trailing_comma",
+          "kind": "b"
+        }
+      ]
+    },
+    "z-image": {
+      "card": "image-gen",
+      "card_knobs": [
+        {
+          "card": "prompt",
+          "inject": "CLIPTextEncode.0.text",
+          "kind": "s"
+        },
+        {
+          "card": "negative_prompt",
+          "inject": "CLIPTextEncode.1.text",
+          "kind": "s"
+        },
+        {
+          "card": "width",
+          "inject": "EmptySD3LatentImage.0.width",
+          "kind": "n"
+        },
+        {
+          "card": "height",
+          "inject": "EmptySD3LatentImage.0.height",
+          "kind": "n"
+        },
+        {
+          "card": "seed",
+          "inject": "KSampler.0.seed",
+          "kind": "n"
+        },
+        {
+          "card": "steps",
+          "inject": "KSampler.0.steps",
+          "kind": "n"
+        },
+        {
+          "card": "cfg",
+          "inject": "KSampler.0.cfg",
+          "kind": "n"
+        },
+        {
+          "card": "sampler",
+          "inject": "KSampler.0.sampler_name",
+          "kind": "s"
+        },
+        {
+          "card": "scheduler",
+          "inject": "KSampler.0.scheduler",
+          "kind": "s"
+        }
+      ]
+    }
+  }
+}

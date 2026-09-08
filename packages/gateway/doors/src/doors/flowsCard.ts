@@ -6,9 +6,9 @@
 // submit's phase-2 arm (1273-1305) + the rim wrap (infra/python/plugins.py
 // card_hooks.compose 525-600), with the survey's verdict
 // (docs/design/card-lane-port-survey-2026-09-08.md §0 + §5): import
-// @comfyui/cordis IN-PROCESS — no template SSOT, no subprocess, no
+// @melite/engine-comfyui IN-PROCESS — no template SSOT, no subprocess, no
 // class-tree port. The graph truth already lives in TS
-// (packages/engines/comfyui-cordis/src — 19 cards, golden-pinned);
+// (packages/engines/comfyui/src — 19 cards, golden-pinned);
 // this arm only changes the CALL PATH (subprocess shell -> import).
 //
 // THE CHAIN (py order, mirrored step-for-step):
@@ -72,8 +72,8 @@
 
 import { Context, Service } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
-import { ComfyUIService, ComposeRefusal, loadCardDefs, loadFacts, theService } from "@comfyui/cordis";
-import type { CardDefinition, FactsFile } from "@comfyui/cordis";
+import { bootModels, ComfyUIService, ComposeRefusal, getModel, loadCardDefs, loadFacts, registryIds, registryModel, theService } from "@melite/engine-comfyui";
+import type { CardDefinition, FactsFile, FactsReads } from "@melite/engine-comfyui";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -164,12 +164,12 @@ export interface CardDeclRow {
 }
 
 function factsPath(): string {
-  // Post-flatten estate layout: packages/<domain>/<pkg> — the
-  // comfyui CORDIS package is packages/engines/comfyui-cordis.
-  // (The pre-flatten 'engines/comfyui/cordis' path died with the
-  // estate flattening; caught LIVE by the A2 flow probe 2026-09-08.)
+  // Merged 2026-09-08 (package-boundary extermination): the compose
+  // plane lives in packages/engines/comfyui/src, its facts data in
+  // packages/engines/comfyui/data (until the Decl x Facts unification
+  // derives rows from the registry and deletes the file).
   return join(
-    resolveRepoRoot(), "packages", "engines", "comfyui-cordis", "data", "model-facts.json",
+    resolveRepoRoot(), "packages", "engines", "comfyui", "data", "model-facts.json",
   );
 }
 
@@ -252,6 +252,8 @@ export class CardRegistryService extends Service {
   private defs: Map<string, CardDefinition> | null = null;
   /** The frozen model facts (lazy — strict load, throws LOUD). */
   private facts: Record<string, ModelFactsRow> | null = null;
+  /** Registry reads for the row derivation (primed with the models boot). */
+  private reads: FactsReads | null = null;
   /** The decl projection (lazy — derived from defs + facts). */
   private decls: Record<string, CardDeclRow> | null = null;
   /** The pin snapshot (mtime-keyed). */
@@ -276,6 +278,11 @@ export class CardRegistryService extends Service {
   async prime(): Promise<void> {
     this.defs = await loadCardDefs();
     this.decls = null;
+    // the models boot feeds the row derivation (facts.ts renders
+    // rows through these reads — one spelling, no frozen matrix).
+    await bootModels();
+    this.reads = { getModel, registryIds, registryModel };
+    this.facts = null;
   }
 
   /** Test seam: drop all registry state (walls boot fresh processes;
@@ -283,6 +290,7 @@ export class CardRegistryService extends Service {
   resetForTests(): void {
     this.defs = null;
     this.facts = null;
+    this.reads = null;
     this.decls = null;
     this.oi = null;
     this.oiPath = null;
@@ -308,14 +316,24 @@ export class CardRegistryService extends Service {
   /** The frozen model facts (strict — a missing file throws LOUD;
    *  the validate door keeps its absent-file degrade by catching
    *  this at its own call site). */
+  /** Sync read of the primed registry reads (unprimed access throws LOUD). */
+  readsSync(): FactsReads {
+    if (this.reads === null) {
+      throw new Error(
+        "[card_registry] unprimed: boot must await the gateway-card-registry " +
+          "provider (or ctx.cardRegistry.prime()) before rows derive " +
+          "(the models boot feeds facts.ts through these reads)",
+      );
+    }
+    return this.reads;
+  }
+
   modelFacts(): Record<string, ModelFactsRow> {
     if (this.facts !== null) return this.facts;
-    const doc: unknown = JSON.parse(readFileSync(factsPath(), "utf8"));
-    const models: unknown = (doc as Record<string, unknown>)["models"];
-    this.facts =
-      typeof models === "object" && models !== null
-        ? (models as Record<string, ModelFactsRow>)
-        : {};
+    // rows assemble from the registry + frozen card slices (the
+    // derivation is the single matrix — no frozen spelling).
+    const doc: FactsFile = loadFacts(factsPath(), this.readsSync());
+    this.facts = doc.models as unknown as Record<string, ModelFactsRow>;
     return this.facts;
   }
 
@@ -514,12 +532,6 @@ export class CardRegistryService extends Service {
     return { fam, card: famRow.card, params: liftCardParams(stamped) };
   }
 
-  /** The facts document loader — the plane's own loader (facts.ts),
-   *  so the in-process arm reads exactly what the CLI door reads. */
-  cardFactsFile(): FactsFile {
-    return loadFacts(factsPath());
-  }
-
   /** In-process compose (the core: steps 7-9) — per-call throwaway
    *  Context + ComfyUIService (owned by the call, never shared). */
   private async composeOnce(
@@ -557,7 +569,7 @@ export class CardRegistryService extends Service {
         await ctx.plugin(mod);
       }
     }
-    ctx.comfyui.setFacts(loadFacts(factsPath()));
+    ctx.comfyui.setFacts(loadFacts(factsPath(), this.readsSync()));
     ctx.comfyui.setObjectInfo(oi);
     // THE NESTED STANZA UNWRAP (cli.ts:82-91): a `params` dict key in
     // the incoming params IS the stanza; siblings merge over it.
@@ -984,8 +996,8 @@ export interface OverlaidCard {
 
 // ── in-process compose (the core: steps 7-9) ───────────────────────
 // (Lives on the service now — composeOnce is a private
-// CardRegistryService method, cardFactsFile/phase1Card/phase2Card
-// are public methods.)
+// CardRegistryService method, phase1Card/phase2Card are public
+// methods; rows derive in modelFacts(), no raw file readers.)
 
 export interface ComposedCard {
   readonly graph: Record<string, unknown>;
@@ -994,7 +1006,7 @@ export interface ComposedCard {
 }
 
 function cordisSrcDir(): string {
-  const entry: string = fileURLToPath(import.meta.resolve("@comfyui/cordis"));
+  const entry: string = fileURLToPath(import.meta.resolve("@melite/engine-comfyui"));
   return dirname(entry);
 }
 

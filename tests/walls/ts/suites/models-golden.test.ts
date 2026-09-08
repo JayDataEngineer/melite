@@ -144,7 +144,7 @@ describe("the served catalog vs the tree golden (A1)", () => {
 describe("the identity rung rides the live card defs (phase 2 start)", () => {
   it("every ring card carries identity on its CardDefinition", async (): Promise<void> => {
     const { loadCardDefs } = await import(
-      "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts"
+      "../../../../packages/engines/comfyui/src/cardDefs.ts"
     );
     const defs = await loadCardDefs();
     const ringIds = new Set(CARD_IDENTITY.map((c) => c.id));

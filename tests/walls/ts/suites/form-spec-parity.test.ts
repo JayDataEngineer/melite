@@ -16,7 +16,7 @@
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
+import { loadCardDefs, theService } from "../../../../packages/engines/comfyui/src/cardDefs.ts";
 import { modelIds, registryIds, getModel } from "../../../../packages/engines/comfyui/src/models/models.ts";
 
 const CATALOG = JSON.parse(

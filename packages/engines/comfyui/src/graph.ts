@@ -19,6 +19,10 @@ export class OutputHandle {
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue }
 export type NodeInputs = Record<string, JsonValue | OutputHandle>
+/** The node() sink: the /prompt wire is untyped JSON (validation
+ *  lives in the admission gate + object_info autofill, never in TS
+ *  assignability — the serializer already coerces per value). */
+export type NodeInputsLoose = Record<string, unknown>
 
 /** The serialized /prompt graph — plain JSON, nothing more. */
 export type PromptGraph = Record<string, { class_type: string; inputs: Record<string, JsonValue> }>
@@ -90,11 +94,11 @@ export class GraphBuilder {
   }
 
   /** Add a ComfyUI node; returns its output-slot accessor. */
-  node(classType: string, inputs: NodeInputs = {}): NodeRef {
+  node(classType: string, inputs: NodeInputsLoose = {}): NodeRef {
     const n = this.counters.get(classType) ?? 0
     this.counters.set(classType, n + 1)
     const id = `${classType}.${n}`
-    const filled: NodeInputs = { ...this.autofill(classType), ...inputs }
+    const filled: NodeInputs = { ...this.autofill(classType), ...(inputs as NodeInputs) }
     this.nodes[id] = { class_type: classType, inputs: filled }
     return { id, out: (slot = 0) => new OutputHandle(id, slot) }
   }

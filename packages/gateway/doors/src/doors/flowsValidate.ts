@@ -88,7 +88,7 @@ import {
 } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { CardDefinition } from "@comfyui/cordis";
+import type { CardDefinition } from "@melite/engine-comfyui";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
@@ -1400,12 +1400,12 @@ function findDanglingRefs(body: Record<string, unknown>): Array<[string, string,
 // refusal — faked byte-exact under PYDANTIC_PIN).
 function composeViaCli(fam: string, card: string, params: Record<string, unknown>): Refusal | null {
   const repo: string = resolveRepoRoot();
-  const cli: string = join(repo, "packages", "engines", "comfyui-cordis", "src", "cli.ts");
+  const cli: string = join(repo, "packages", "engines", "comfyui", "src", "cli.ts");
   const facts: string = join(
     repo,
     "packages",
     "engines",
-    "comfyui-cordis",
+    "comfyui",
     "data",
     "model-facts.json",
   );

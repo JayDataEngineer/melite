@@ -2,7 +2,7 @@
 // (the py models/image/krea-2/mods/loras.py, 1:1): the Raw-variant
 // training set, applied on Turbo. FAMILY-OWNED DATA — the rows
 // live with the family (never in the pack contract, never in the
-// family DECL); the pack contract (comfyui-cordis/src/mods/
+// family DECL); the pack contract (engines/comfyui src/mods/
 // packs.ts) supplies the inherited fields. Registered as an effect
 // on the cards boot's fiber: dispose retracts the flavor, the
 // family's surface loses the mutation (revertible; the model

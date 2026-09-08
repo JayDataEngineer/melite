@@ -1345,7 +1345,7 @@ async function executeFlowInner(
 // injected by cards", is the shape copied here). RUNTIME key and
 // inject spelling are the canon 'comfyui'; the TypeScript property
 // spelling ctx.comfyui stays owned by the card plane's augmentation
-// (@comfyui/cordis service.ts declares comfyui: ComfyUIService — a
+// (service.ts declares comfyui: ComfyUIService — a
 // second augmentation with a different type would be a TS2717 merge
 // clash, so this module deliberately declares NONE). Typed access
 // is needComfyUI(ctx) below (ctx.get + instanceof + LOUD miswire —

@@ -121,7 +121,7 @@ const paramSchema = z.object({
   steps: z.number().description("Steps").min(4).max(30).default(12).extra('extra', { order: null, tooltip: "12 for draft; 30 standard; 10 with the turbo LoRA", wtype: 'number' }),
   sharpen_enabled: z.boolean().description("FSR Sharpening").default(false).extra('extra', { order: null, tooltip: "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural." }),
   sharpen_strength: z.number().description("Sharpen Strength").min(0).max(1).step(0.05).default(0.3).extra('extra', { order: null, tooltip: "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.", wtype: 'number' }),
-  interpolate_enabled: z.boolean().description("FILM Interpolation").default("false").extra('extra', { order: null, tooltip: "Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time." }),
+  interpolate_enabled: z.boolean().description("FILM Interpolation").default("false" as unknown as boolean).extra('extra', { order: null, tooltip: "Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time." }),
   // nullable inner: min/max validate only the number branch — null
   // (the family-literal resolution path) passes untouched.
   shift_video: nullable(z.number().description("Video Shift").min(1).max(20).step(0.5).default(8).extra('extra', { order: null, tooltip: "Timestep shift for video attention. Higher = more coherent motion.", wtype: 'number' })),
@@ -138,7 +138,7 @@ const paramSchema = z.object({
  *  them and the compose door overlays explicit params last (the
  *  img-to-mesh filename_prefix precedent). */
 function schema(v: unknown): Record<string, unknown> {
-  const out = paramSchema(v ?? {})
+  const out: Record<string, unknown> = paramSchema(v ?? {})
   const raw = (v ?? {}) as Record<string, unknown>
   let variant = typeof raw.variant === 'string' ? raw.variant : undefined
   // variant DERIVATION (retired timeline/laws.py, b324c480^ —
@@ -247,7 +247,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): void {
     // (template link severed, node orphaned) — mirrored by passing the
     // scalar straight when sla_switch is set.
     const fpsNode = g.node('PrimitiveFloat', { value: 24.0 }).out()  // id .0 — CreateVideo.fps walks first
-    let slaSel: OutputHandle | boolean = p.sla_switch ?? null
+    let slaSel: OutputHandle | boolean | null = (p.sla_switch as boolean | undefined) ?? null
     if (slaSel === null) slaSel = g.node('PrimitiveBoolean', { value: false }).out()
     const picked = g.node('ComfySwitchNode', { switch: slaSel, on_true: chunked, on_false: sla }).out()
     const loraModel = g.node('LTX_lora_loader', {

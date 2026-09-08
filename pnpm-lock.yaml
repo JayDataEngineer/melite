@@ -45,18 +45,6 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/engines/comfyui-cordis:
-    dependencies:
-      '@deepseek-ai/cordis':
-        specifier: ^4.0.2
-        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@deepseek-ai/schemastery':
-        specifier: '*'
-        version: 3.18.2
-      '@melite/engine-comfyui':
-        specifier: workspace:*
-        version: link:../comfyui
-
   packages/engines/comfyui/action_cards:
     dependencies:
       '@melite-plugin/3d':
@@ -285,9 +273,6 @@ importers:
 
   packages/gateway/doors:
     dependencies:
-      '@comfyui/cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)

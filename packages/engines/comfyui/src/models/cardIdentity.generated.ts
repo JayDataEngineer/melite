@@ -1,7 +1,7 @@
 // models/cardIdentity.generated.ts — THE CARD IDENTITY RING +
 // CAPABILITY TILES + SLOT VOCAB, frozen from the py truth.
 //
-// The TS card plane (comfyui-cordis registerCard) carries the LIVE
+// The TS card plane (registerCard, engines/comfyui src) carries the LIVE
 // system (schema/compose/boarded) but NOT the identity rung —
 // label/description/genre/icon/ability died with card.py. This is
 // that rung as FROZEN DATA, extracted by running the golden's own

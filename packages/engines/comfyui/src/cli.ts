@@ -36,7 +36,7 @@ async function main(): Promise<void> {
   if (cmd !== 'compose') die(`unknown command '${cmd ?? '(none)'}' — usage: compose --card <id> --model <id> --facts <file> [--params <json>] [--run-id <id>] [--object-info <file>]`)
   const args = parseArgs(rest)
   if (!args.card) die('--card is required')
-  if (!args.facts) die('--facts is required (hand-owned frozen data: packages/engines/comfyui-cordis/data/model-facts.json)')
+  if (!args.facts) die('--facts is required (card-owned slices: packages/engines/comfyui/data/model-facts.json; rows derive from the registry)')
   const runId = args.runId ?? 'run'
   let params: unknown = {}
   if (args.params) {
@@ -60,7 +60,11 @@ async function main(): Promise<void> {
     const mod = await import(new URL(`./cards/${f}`, import.meta.url).href)
     if (typeof mod.apply === 'function') await ctx.plugin(mod)
   }
-  const factsDoc = loadFacts(args.facts)
+  // the registry boots first: rows derive through its reads
+  // (facts.ts renders through injected reads — no frozen rows).
+  const { bootModels, getModel, registryIds, registryModel } = await import('./models/models.ts')
+  await bootModels()
+  const factsDoc = loadFacts(args.facts, { getModel, registryIds, registryModel })
   ctx.comfyui.setFacts(factsDoc)
 
   // --model is required UNLESS the card declares requiresModel:

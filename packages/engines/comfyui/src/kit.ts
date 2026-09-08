@@ -84,7 +84,7 @@ export function imageT2I(p: Record<string, unknown>, model: ModelFacts, g: Graph
   const { clip, vae } = loadTextPair(g, li)
   const pos = g.node('CLIPTextEncode', { clip, text: p.prompt })
   const neg = g.node('CLIPTextEncode', { clip, text: p.negative_prompt ?? '' })
-  const latent = g.node(li.latent_node, { batch_size: 1, width: p.width, height: p.height })
+  const latent = g.node(String(li.latent_node), { batch_size: 1, width: p.width, height: p.height })
   const sampled = g.node('KSampler', {
     seed,
     steps: p.steps,
@@ -694,7 +694,7 @@ export function skinLane(p: Record<string, unknown>, g: GraphBuilder, runId: str
   if (seed === -1) seed = Math.floor(Math.random() * 2147483647)
   const prefix = `${runId}/out`
   const bodyPath = g.node('PrimitiveString', { value: body }).out()
-  const sidecarText = g.node('PrimitiveString', { value: sidecarJson(String(p.kind ?? ''), size, seed) }).out()
+  const sidecarText = g.node('PrimitiveString', { value: sidecarJson(String(p.kind ?? ''), size, seed as number) }).out()
   const pack = g.node('SkinPack', { size, seed })
   g.node('SaveImage', { images: pack.out(0), filename_prefix: `${prefix}_albedo` })
   g.node('SaveImage', { images: pack.out(1), filename_prefix: `${prefix}_normal` })

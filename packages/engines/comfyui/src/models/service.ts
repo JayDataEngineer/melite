@@ -468,27 +468,27 @@ let booted: ModelsService | null = null;
  *  .card ≡ decl.card). A refusal here is a BOOT refusal — the
  *  table never half-serves (the transactional law).
  *
- * SEAM (no static cross-package dep): the card/facts plane is
- *  comfyui-cordis — loaded through a DYNAMIC import (relative
- *  source path, sibling engine package); a bare-comfyui boot
- *  (no cards around) skips the card check loudly-noted, the
- *  facts file still gates. */
+ * SEAM (no static cross-package dep): the card/facts plane loads through a DYNAMIC import (merged
+ *  2026-09-08: one package now — dynamic defers past module
+ *  evaluation, cardDefs ↔ service would cycle statically); a
+ *  cardless boot skips the card check loudly-noted, the facts
+ *  file still gates. */
 async function validateBootContracts(svc: ModelsService): Promise<void> {
   const decls = svc.allDecls();
   let domains: import("./validate.ts").CardDomains | null = null;
   const boardings = new Map<string, readonly string[]>();
   let factsModels: Record<string, { card?: string }> | null = null;
   let cardSvc: ReturnType<
-    typeof import("../../../comfyui-cordis/src/cardDefs.ts").theService
+    typeof import("../cardDefs.ts").theService
   > | null = null;
   let packFate: Record<string, string> | null = null;
   try {
-    const cards = await import("../../../comfyui-cordis/src/cardDefs.ts");
+    const cards = await import("../cardDefs.ts");
     await cards.loadCardDefs();
     cardSvc = cards.theService();
     // the pack fate table (the consumption gate's boot leg — gate
     // (d)): same dynamic seam as the card plane, same degrade.
-    const guard = await import("../../../comfyui-cordis/src/mods/guard.ts");
+    const guard = await import("../mods/guard.ts");
     packFate = guard.PACK_FATE as Record<string, string>;
     const { fieldDomains } = await import("./validate.ts");
     // built as mutable Maps, read as the CardDomains readonly view
@@ -506,9 +506,17 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
       const def = cardSvc.getCardDef(id);
       if (def !== undefined) boardings.set(id, def.boarded);
     }
-    const { readFileSync } = await import("node:fs");
-    const raw = JSON.parse(readFileSync(new URL("../../../comfyui-cordis/data/model-facts.json", import.meta.url), "utf8")) as { models?: Record<string, { card?: string }> };
-    factsModels = raw.models ?? null;
+    // the rows assemble from the registry + frozen card slices
+    // (facts.ts derivation, same dynamic seam as the card plane:
+    // static would cycle service→facts→models→service against
+    // the top-level boot) — the boot reads the same contract
+    // compose reads, never a second file spelling.
+    const { loadFacts } = await import("../facts.ts");
+    factsModels = loadFacts(resolveRepoRoot() + "/packages/engines/comfyui/data/model-facts.json", {
+      getModel: (id: string) => svc.getModel(id),
+      registryIds: () => svc.registryIds(),
+      registryModel: (id: string) => svc.registryModel(id),
+    }).models;
   } catch (err) {
     // the card plane is a sibling that may not ship with every
     // consumer — the boot continues, the check degrades to a

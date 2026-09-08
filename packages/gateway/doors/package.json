@@ -25,7 +25,6 @@
     "./planes": "./src/entries/planes.ts"
   },
   "dependencies": {
-    "@comfyui/cordis": "workspace:*",
     "@deepseek-ai/cordis": "^4.0.2",
     "@melite/engine-comfyui": "workspace:*",
     "@melite/gateway-core": "workspace:*",

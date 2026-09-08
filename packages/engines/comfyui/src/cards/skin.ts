@@ -16,7 +16,7 @@ const schema = z.object({
   kind: vocabulary(["keeper", "villager", "villager_elder", "ash_nomad", "caravan_trader", "arena_factor", "amf_warden", "marrow_raider", "dune_hound", "sand_skimmer", "ridge_lizard", "moss_elk", "gloom_tortoise", "emberwing", "bone_crane", "husk_stalker", "ironvein_construct", "cherusci_scrivener", "amalgam_horror", "meld_creature"]).description("Kind").default("keeper").extra('extra', { order: 0, group: "skin", wtype: 'select' }),
   // the Select sends wire strings ("512") — coerced at the closed
   // vocabulary in compose, never silently rescaled
-  map_size: vocabulary(['256', '512', '1024', '2048']).description("Map size").default(512).extra('extra', { order: 1, group: "skin", wtype: 'select' }),
+  map_size: vocabulary(['256', '512', '1024', '2048']).description("Map size").default(512 as unknown as string).extra('extra', { order: 1, group: "skin", wtype: 'select' }),
   // seed sentinel LAW outranks the retired py floor (served min:0 was
   // py-authored; -1=random is the cross-card agent contract — the
   // emitter regenerates served bytes from TS meta, so the floor rides

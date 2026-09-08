@@ -19,6 +19,8 @@
 // golden ritual, pinned by the wall.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
+import type { ModelFacts } from '../facts.ts'
+import type { GraphBuilder } from '../graph.ts'
 import { wanVace, scail2, VIDEO_NEGATIVE_FALLBACK, VIDEO_REQUIRED_PATHS } from '../kit.ts'
 import { SAMPLERS, SCHEDULERS } from '../../../comfyui/src/models/vocab.ts'
 

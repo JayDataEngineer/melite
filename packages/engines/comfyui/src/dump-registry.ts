@@ -9,7 +9,7 @@
 //
 // Usage:
 //   node --experimental-strip-types --no-warnings \
-//     packages/engines/comfyui-cordis/src/dump-registry.ts
+//     packages/engines/comfyui/src/dump-registry.ts
 //
 // Emits: {"cards": {<id>: {"skeleton": str, "boarded": [str],
 //   "requires": [str], "requiresByFamily": {fam: [str]},

@@ -14,8 +14,8 @@
 // registered card with NO base row refuses LOUD (a new card lands
 // its base row beside its card file — never a silent drop); a base
 // row with no registered card rides frozen (toolsEmit today).
-import { emitParamsSchema } from "@comfyui/cordis";
-import type { CardDefinition } from "@comfyui/cordis";
+import { emitParamsSchema } from "@melite/engine-comfyui";
+import type { CardDefinition } from "@melite/engine-comfyui";
 import { TOOLS_JSON } from "./chrome.ts";
 import type { ManifestRow } from "./planes.ts";
 

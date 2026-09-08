@@ -3,13 +3,15 @@
 //
 // The registry's variants/routes are not museum data: the compose
 // plane (the {model:} arm, R1 variant/quant contract) resolves runs
-// through model-facts.json — the LIVE variant matrix the card
-// compose consumes. This wall pins the cross-plane agreement:
+// through loadFacts rows — the DERIVED variant matrix the card
+// compose consumes (facts.ts assembles each row from the registry +
+// frozen card slices; one spelling is truth, the row is its derived
+// realization). This wall pins the cross-plane agreement:
 //
-//   1. every family in model-facts.json exists in the registry;
+//   1. every assembled row exists in the registry (or serves a route);
 //   2. for every such family, the variant ids, cell quants, cell
 //      routes and variant routes AGREE between the registry and the
-//      facts (two spellings of one matrix = drift, refuses LOUD);
+//      row (derivation that drifts from truth refuses LOUD);
 //   3. the flows plane's registry (flowsRegistry, rebuilt 918c48a0)
 //      is loadable and its flow names are legal ids — the models
 //      plane's VerbEngine flow arms (phase 2) will name these.
@@ -18,11 +20,11 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { getModel, modelIds, registryIds, resolve } from "../../../../packages/engines/comfyui/src/models/models.ts";
-import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
+import { getModel, modelIds, registryIds, registryModel, resolve } from "../../../../packages/engines/comfyui/src/models/models.ts";
+import { loadFacts } from "../../../../packages/engines/comfyui/src/facts.ts";
+import { loadCardDefs, theService } from "../../../../packages/engines/comfyui/src/cardDefs.ts";
 import { registryFlowNames } from "../../../../packages/gateway/doors/src/doors/flowsRegistry.ts";
 
 /** Facts keys no model serves are ACTION-CARD lanes (pure-tool
@@ -47,7 +49,7 @@ const FACTS_PATH = join(
   "..",
   "packages",
   "engines",
-  "comfyui-cordis",
+  "comfyui",
   "data",
   "model-facts.json",
 );
@@ -55,9 +57,9 @@ const FACTS_PATH = join(
 interface FactsCell { quant: string; route: string }
 interface FactsVariant { id: string; route: string; cells: FactsCell[] }
 
-const facts = JSON.parse(readFileSync(FACTS_PATH, "utf8")) as {
-  models: Record<string, { variants: FactsVariant[] }>;
-};
+/** Registry reads for the derivation (facts.ts renders through injected reads). */
+const reads = { getModel, registryIds, registryModel };
+const facts = loadFacts(FACTS_PATH, reads);
 
 describe("the models plane feeds the compose/flows plane (A2)", () => {
   it("every compose-plane family exists in the registry", async (): Promise<void> => {
