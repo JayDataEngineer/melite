@@ -3,9 +3,10 @@
 // STAGE 1 (DSH bundle split, 2026-09-08): moved verbatim from
 // doors/assets.ts (AssetRoots, ASSET_URL_PREFIX, readSidecar,
 // sha256File, scanRun) — disk truth is storage-domain; the doors
-// import it from here. resolveInputDir is the storage copy (5-up
-// root: packages/gateway-core/src/storage/); the uploads-door copy
-// stays (4-up root: packages/gateway-doors/src/doors/).
+// import it from here. resolveRepoRoot is the ENGINE's (the one
+// canonical resolver; the per-file copies died 2026-09-08).
+
+import { resolveRepoRoot } from "@melite/engine-comfyui";
 
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -28,14 +29,6 @@ export interface AssetRoots {
  *  constant, no restated coordinates. */
 export const ASSET_URL_PREFIX: string = "/v1/assets/runs";
 
-/** Repo root: MELITE_REPO_ROOT env else the checkout root,
- *  file-anchored (5 ups: packages/gateway-core/src/storage/). */
-function resolveRepoRoot(): string {
-  const override: string = process.env["MELITE_REPO_ROOT"] ?? "";
-  if (override !== "") return override;
-  const here: string = dirname(fileURLToPath(import.meta.url));
-  return resolve(here, "..", "..", "..", "..", "..");
-}
 
 /** The estate input stream dir — mirrors REPO / "data" / "input". */
 export function resolveInputDir(): string {

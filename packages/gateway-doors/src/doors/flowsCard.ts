@@ -78,7 +78,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { DOOR_KEYS, FLOW_ID_RE } from "@melite/gateway-core";
-import { pyReprStr } from "@melite/engine-comfyui";
+import { pyReprStr, resolveRepoRoot } from "@melite/engine-comfyui";
 
 /** The card-envelope keys (gateway.py:360 CARD_ENVELOPE_KEYS =
  *  DOOR_KEYS + draft/test/service): select the graph, never ride it. */
@@ -126,15 +126,6 @@ function phaseRefusal(phase: string, detail: string): CardArmError {
   );
 }
 
-// ── repo anchoring (the uploads.ts pattern: MELITE_REPO_ROOT else
-// file-anchored; DOORS→src→gateway→packages→repo = 4 hops) ─────────
-
-function resolveRepoRoot(): string {
-  const override: string = process.env["MELITE_REPO_ROOT"] ?? "";
-  if (override !== "") return override;
-  const here: string = dirname(fileURLToPath(import.meta.url));
-  return resolve(here, "..", "..", "..", "..");
-}
 
 // ── frozen data paths (facts + pin snapshot) ───────────────────────
 // (Stroke 2a, DSH-AS-LANGUAGE LAW: the module-level caches that used

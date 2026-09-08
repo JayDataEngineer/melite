@@ -27,6 +27,7 @@
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
 
+import { resolveRepoRoot } from "@melite/engine-comfyui";
 import { readdirSync, renameSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -53,15 +54,6 @@ import type {
  *  seam, never a hardcode; QUEUE LANE LAW). */
 export const STORAGE_ROOT_ENV: string = "MELITE_STORAGE_ROOT";
 
-/** Repo root: MELITE_REPO_ROOT override, else this file's py-parity
- *  resolution (this file is <repo>/packages/gateway-core/src/storage/store.ts,
- *  four levels down — the same relation the doors use). */
-function resolveRepoRoot(): string {
-  const override: string = process.env["MELITE_REPO_ROOT"] ?? "";
-  if (override !== "") return override;
-  const here: string = dirname(fileURLToPath(import.meta.url));
-  return resolve(here, "..", "..", "..", "..");
-}
 
 /** The json backend's unit-file root: the union of both doors'
  *  resolution (state root for the assets tree, repo root for the input

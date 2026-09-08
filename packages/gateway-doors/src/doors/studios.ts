@@ -118,15 +118,12 @@ import { matchRoute } from "@melite/gateway-core";
 // Roots + estate snapshot.
 // ---------------------------------------------------------------------------
 
-/** Repo root seam (uploads.ts resolveRepoRoot): MELITE_REPO_ROOT
- *  wins (the wall points it at a fixture tree), else the
- *  file-anchored product tree — py's gateway.REPO either way. */
-export function resolveRepoRoot(): string {
-  const override: string = process.env["MELITE_REPO_ROOT"] ?? "";
-  if (override !== "") return override;
-  const here: string = dirname(fileURLToPath(import.meta.url));
-  return resolve(here, "..", "..", "..", "..");
-}
+/** Repo root: the ENGINE owns the resolution (MELITE_REPO_ROOT
+ *  override else source-relative 4-up; the 9 hand-rolled copies
+ *  died 2026-09-08). Re-export keeps this module's wall-pinned
+ *  address. */
+import { resolveRepoRoot } from "@melite/engine-comfyui";
+export { resolveRepoRoot };
 
 /** Pydantic MAJOR.MINOR baked into refusal footers (probed
  *  2026-09-07: pydantic 2.13.5 / core 2.46.5). The wall pins the

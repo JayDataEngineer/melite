@@ -79,6 +79,7 @@
 //
 // Erasable-syntax TS only (estate convention): no enums, import
 // type for types, .ts specifiers for relative imports.
+import { resolveRepoRoot } from "@melite/engine-comfyui";
 import { execFileSync } from "node:child_process";
 import {
   existsSync,
@@ -172,16 +173,6 @@ const STAGE_KEYS_SORTED: readonly string[] = [
 const FLOW_ID_RE: RegExp = /^[a-z_][a-z0-9_-]*$/;
 // Pydantic message pin (see header): the faked 2.13 shapes.
 const PYDANTIC_URL: string = "https://errors.pydantic.dev/2.13/v/";
-
-// ── repo anchoring (the uploads.ts pattern: MELITE_REPO_ROOT else
-// file-anchored; parity needs it unset-or-equal — py REPO is
-// source-anchored and knows no override) ─────────────────────────
-function resolveRepoRoot(): string {
-  const override: string = process.env["MELITE_REPO_ROOT"] ?? "";
-  if (override !== "") return override;
-  const here: string = dirname(fileURLToPath(import.meta.url));
-  return resolve(here, "..", "..", "..", "..");
-}
 
 // ── python repr/str mirrors ─────────────────────────────────────
 // pyReprStr: python repr() of a str — single quotes, backslash +

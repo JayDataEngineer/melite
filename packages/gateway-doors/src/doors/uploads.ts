@@ -64,15 +64,12 @@ export const UPLOAD_IMAGE_TYPES: Record<string, string> = {
 /** Decoded-bytes cap — mirrors _UPLOAD_MAX_BYTES = 20 * 1024 * 1024. */
 export const UPLOAD_MAX_BYTES: number = 20 * 1024 * 1024;
 
-/** Repo root: MELITE_REPO_ROOT override, else this file's py-parity
- *  resolution (py REPO = Path(__file__).parent.parent — this file is
- *  <repo>/packages/gateway-doors/src/doors/uploads.ts, four levels down). */
-export function resolveRepoRoot(): string {
-  const override: string = process.env["MELITE_REPO_ROOT"] ?? "";
-  if (override !== "") return override;
-  const here: string = dirname(fileURLToPath(import.meta.url));
-  return resolve(here, "..", "..", "..", "..");
-}
+/** Repo root: the ENGINE owns the resolution (MELITE_REPO_ROOT
+ *  override else source-relative 4-up — every home lands the same
+ *  depth; the 9 hand-rolled copies died 2026-09-08, zero-compromise
+ *  followup). Re-export keeps this module's wall-pinned address. */
+import { resolveRepoRoot } from "@melite/engine-comfyui";
+export { resolveRepoRoot };
 
 /** The estate input stream dir — mirrors REPO / "data" / "input". */
 export function resolveInputDir(): string {
