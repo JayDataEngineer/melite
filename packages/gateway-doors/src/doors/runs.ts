@@ -1477,7 +1477,9 @@ export function deliverBusFrame(
   }
 }
 
-setBusPublisher(deliverBusFrame);
+// Fiber-owned (include stroke 2026-09-08): import-time
+// registration hit cross-module TDZ under concurrent loader
+// import; unload unregisters (a dead socket set never publishes).
 
 /** The upgrade door: handshake, auth, registry hydrate, then hold
  *  for live bus frames until a terminal run frame closes the socket
@@ -1833,7 +1835,8 @@ export const flowsStatusDoors: Plugin = {
  *  inside the listener — no central table. */
 export const runsDoors: Plugin = {
   name: "gateway-runs",
-  apply(ctx: Context): void {
+  apply(ctx: Context): () => void {
+    setBusPublisher(deliverBusFrame);
     ctx.on(
       "gateway/request",
       (req: GatewayRequest): DispatchResult | undefined => {
@@ -1858,5 +1861,8 @@ export const runsDoors: Plugin = {
         return undefined;
       },
     );
+    return (): void => {
+      setBusPublisher(null);
+    };
   },
 };

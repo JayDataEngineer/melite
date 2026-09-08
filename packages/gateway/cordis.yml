@@ -1,0 +1,59 @@
+# cordis.yml — the gateway LEAF (the root Include reads this file).
+# SSOT for the boot row set (STAGE 3 shape + DSH include discipline):
+# a top-level row ARRAY (the include requires it); later layers
+# (cordis.patch.yml: operator overrides) patch by id. The gateway
+# lifecycle row is BOOT-OWNED (created programmatically with the full
+# JS GatewayConfig — never the leaf, never an operator patch).
+# Row: {id (stable), name (plugin address), config?, disabled?}.
+# ORDER IS DISPATCH ORDER (F3 stage-patch-before-greedy-draft —
+# providers before consumers, gateway-errors first). Runtime values
+# ride !!js expressions against ctx.gatewayRuntime (published by
+# core/context.ts before the include mounts — the DSH dshHomePath
+# shape); secrets stay env-referenced, never pinned.
+  - id: gateway-errors
+    name: cordis:gateway-errors
+  - id: logger-console
+    name: '@deepseek-ai/cordis-plugin-logger-console'
+  - id: timer
+    name: '@deepseek-ai/cordis-plugin-timer'
+  - id: webserver
+    name: '@deepseek-ai/dsh-host-webserver'
+    config: !!js gatewayRuntime.webserver
+  - id: storage-hub
+    name: cordis:storage-hub
+  - id: storage-json
+    name: cordis:storage-json
+    config: !!js gatewayRuntime.storageJson
+  - id: storage-domain
+    name: cordis:storage-domain
+    config: !!js gatewayRuntime.storageDomain
+  - id: gateway-uploads
+    name: '@melite/gateway-doors/uploads'
+  - id: gateway-validate
+    name: '@melite/gateway-doors/validate'
+  - id: gateway-flows-start
+    name: '@melite/gateway-doors/flows-start'
+  - id: gateway-flows-status
+    name: '@melite/gateway-doors/flows-status'
+  - id: gateway-flows-stop
+    name: '@melite/gateway-doors/flows-stop'
+  - id: gateway-flows-resume
+    name: '@melite/queue/flows-resume'
+  - id: gateway-flows-reproduce
+    name: '@melite/queue/flows-reproduce'
+  - id: gateway-bridges
+    name: '@melite/gateway-doors/bridges'
+  - id: gateway-discovery
+    name: '@melite/gateway-doors/discovery'
+  - id: gateway-runs
+    name: '@melite/gateway-doors/runs'
+  - id: gateway-chrome
+    name: '@melite/gateway-doors/chrome'
+  - id: gateway-assets
+    name: '@melite/gateway-doors/assets'
+  - id: gateway-drafts
+    name: '@melite/gateway-doors/drafts'
+  - id: gateway-studios
+    name: '@melite/gateway-doors/studios'
+  - id: gateway-planes
+    name: '@melite/gateway-doors/planes'

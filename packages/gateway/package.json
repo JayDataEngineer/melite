@@ -16,7 +16,13 @@
     "@melite/engine-comfyui": "workspace:*",
     "@melite/gateway-core": "workspace:*",
     "@melite/gateway-doors": "workspace:*",
-    "@melite/queue": "workspace:*"
+    "@melite/queue": "workspace:*",
+    "@deepseek-ai/cordis-plugin-include": "workspace:*",
+    "@deepseek-ai/cordis-plugin-group": "workspace:*",
+    "@deepseek-ai/cordis-plugin-loader": "workspace:*",
+    "@deepseek-ai/cordis-plugin-logger-console": "workspace:*",
+    "@deepseek-ai/cordis-plugin-timer": "workspace:*",
+    "@deepseek-ai/dsh-host-webserver": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",

@@ -1,0 +1,37 @@
+{
+  "_comment": "Vendored boundary config (mirrors harness vendor/loader/tsconfig.json relaxations; layout adapted \u2014 no harness tsconfig.base.json here). FULL EMIT into gitignored lib/ (lib/*.js + lib/types/*.d.ts, the harness lib/ layout): the harness sources are NOT strip-types-erasable (parameter properties), so the runtime loads the emitted JS while the gateway program consumes the declarations via tsconfig paths \u2014 the strict gateway program never typechecks these sources. Rebuild: plugins/gateway/scripts/link-vendored-platform.sh paths: single-identity rule (D2) \u2014 cordis resolves to this member's own node_modules copy (=== gateway-core's program copy, verified same store path) and the loader to its built lib/types, exactly the gateway-core program shape; without it the dsh-family registry graph splits same-version peer contexts and nominal Context/Fiber types diverge (TS2345/TS2339).",
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "strict": true,
+    "noImplicitAny": false,
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false,
+    "noImplicitOverride": false,
+    "noFallthroughCasesInSwitch": true,
+    "types": [
+      "node"
+    ],
+    "rootDir": "src",
+    "outDir": "lib",
+    "declaration": true,
+    "declarationMap": true,
+    "declarationDir": "lib/types",
+    "paths": {
+      "@deepseek-ai/cordis-plugin-loader": [
+        "../loader/lib/types"
+      ],
+      "@deepseek-ai/cordis": [
+        "./node_modules/@deepseek-ai/cordis/lib/types/index.d.ts"
+      ]
+    }
+  },
+  "include": [
+    "src"
+  ]
+}

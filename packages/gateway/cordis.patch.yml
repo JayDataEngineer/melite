@@ -1,64 +1,7 @@
-# cordis.patch.yml — the gateway BUNDLE patch (STAGE 3, dsh-base shape).
-# Authored SSOT for the boot row set (replaces cordis.config.json — deleted).
-# Shape: one `- insert:` row list; later layers override by id (dsh-base rule).
-# Row: {id (stable — the loader diffs modification vs remove+add by id),
-#   name (plugin address: npm subpaths for doors/arms, cordis: for core services),
-#   config? ($runtime = built per boot in core/context.ts — roots/port/engine/claimLock;
-#   the queue parity + e2e walls boot isolated roots via env, so runtime config is NEVER pinned here),
-#   disabled?: entry kept, mounting skipped}.
-# ORDER IS DISPATCH ORDER (sequential create; the F3 stage-patch-before-greedy-draft
-# contract rides it — providers before consumers, gateway-errors first).
-# Vendored platform services (never reimplemented, never registry-installed):
-# loader 1.0.2 / timer 1.1.3 / logger-console 1.0.1 / webserver 0.1.0-rc.8 (+estate divergence).
-# cordis itself: registry ^4.0.2 (NOT vendored — operator step 3).
-- insert:
-  - id: gateway-errors
-    name: cordis:gateway-errors
-  - id: logger-console
-    name: '@deepseek-ai/cordis-plugin-logger-console'
-  - id: timer
-    name: '@deepseek-ai/cordis-plugin-timer'
-  - id: webserver
-    name: '@deepseek-ai/dsh-host-webserver'
-    config: $runtime
-  - id: storage-hub
-    name: cordis:storage-hub
-  - id: storage-json
-    name: cordis:storage-json
-    config: $runtime
-  - id: storage-domain
-    name: cordis:storage-domain
-    config: $runtime
-  - id: gateway-uploads
-    name: '@melite/gateway-doors/uploads'
-  - id: gateway-validate
-    name: '@melite/gateway-doors/validate'
-  - id: gateway-flows-start
-    name: '@melite/gateway-doors/flows-start'
-  - id: gateway-flows-status
-    name: '@melite/gateway-doors/flows-status'
-  - id: gateway-flows-stop
-    name: '@melite/gateway-doors/flows-stop'
-  - id: gateway-flows-resume
-    name: '@melite/queue/flows-resume'
-  - id: gateway-flows-reproduce
-    name: '@melite/queue/flows-reproduce'
-  - id: gateway-bridges
-    name: '@melite/gateway-doors/bridges'
-  - id: gateway-discovery
-    name: '@melite/gateway-doors/discovery'
-  - id: gateway-runs
-    name: '@melite/gateway-doors/runs'
-  - id: gateway-chrome
-    name: '@melite/gateway-doors/chrome'
-  - id: gateway-assets
-    name: '@melite/gateway-doors/assets'
-  - id: gateway-drafts
-    name: '@melite/gateway-doors/drafts'
-  - id: gateway-studios
-    name: '@melite/gateway-doors/studios'
-  - id: gateway-planes
-    name: '@melite/gateway-doors/planes'
-  - id: gateway
-    name: cordis:gateway
-    config: $runtime
+# cordis.patch.yml — the OPERATOR layer (root Include `patches`).
+# DSH shape: patch lists compose over the leaf (cordis.yml) — one
+# layer per source, later rows override by id, misses warn-and-skip.
+# Patch: {id, config?/disabled?/name?...} or {insert: [...]}.
+# Empty today: the leaf carries the full row set. Pin operator
+# overrides here (disable doors, engine select) — config, not code.
+[]

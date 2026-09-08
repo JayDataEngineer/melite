@@ -211,9 +211,11 @@ export function liveRunStatus(runId: string): string | null {
 }
 
 // Queue seam (STAGE 1 split): the reproduce/resume arms read live
-// status through the queue's probe slot — registered here where the
-// RUNS registry lives (the setBusPublisher pattern below).
-registerRunStatusProbe(liveRunStatus);
+// status through the queue's probe slot — registered in the start
+// door's apply (fiber-owned: unload unregisters; a disabled start
+// door degrades the arms to registry reads, never a stale probe).
+// Import-time registration is banned (concurrent loader import
+// cycles hit the slot's TDZ — include stroke 2026-09-08).
 
 /** The P6 live-bus publisher seam (runs.ts owns the sockets): the
  *  worker publishes stage flips + the terminal run frame here; the
@@ -1246,7 +1248,8 @@ export function parseIncludeLog(first: string | null): boolean {
 export const flowsStartDoors: Plugin = {
   name: "gateway-flows-start",
   inject: ["gatewayError"],
-  apply(ctx: Context): void {
+  apply(ctx: Context): () => void {
+    registerRunStatusProbe(liveRunStatus);
     ctx.on(
       "gateway/request",
       async (req: GatewayRequest): Promise<DispatchResult | undefined> => {
@@ -1280,6 +1283,9 @@ export const flowsStartDoors: Plugin = {
         };
       },
     );
+    return (): void => {
+      registerRunStatusProbe(null);
+    };
   },
 };
 

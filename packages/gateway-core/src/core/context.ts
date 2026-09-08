@@ -1,146 +1,81 @@
 // core/context.ts — the gateway IS a Cordis app: one root Context.
 //
-// The boot is LOADER-DRIVEN (PLATFORM TIER law, docs/patterns/
-// cordis-core.md): `new Context()` (the proxy root), then the
-// Loader service owns the plugin tree from the checked-in bundle
-// patch (`packages/gateway/cordis.patch.yml` — the boot row SSOT,
-// dsh-base `- insert:` shape).
-// Loadable plugins (doors, queue arms, vendored platform services)
-// ride REAL specifiers: pre-imported through the workspace links
-// and aliased under their entry ids at create time (the loader must
-// never bare-import from a vendored realpath — resolution would walk
-// upward past the gateway links).
+// The boot is INCLUDE-DRIVEN (DSH shape, app-boot mountRootInclude):
+// `new Context()` (the proxy root), the Loader service, builtins for
+// the `cordis:` locals + the vendored `include`/`group` carriers,
+// then ONE root Include on the leaf `packages/gateway/cordis.yml`
+// with the operator layer (`cordis.patch.yml`) as its patches.
+// Runtime values ride `!!js` expressions against ctx.gatewayRuntime
+// (published before the include mounts — the DSH dshHomePath shape).
 //
-// Entries are created SEQUENTIALLY in manifest order (one awaited
-// loader.create per entry — never the bulk group update, which fans
-// out concurrently): registration order IS dispatch order (serial
-// bail serves the first answering listener, so the F3
-// stage-patch-before-greedy-draft contract rides order here exactly
-// as it did in the old arm chain).
+// What died in the include stroke (2026-09-08): the hand-parsed
+// patch YAML (readManifest), the `$runtime` marker, the pre-import +
+// builtins-alias machinery for workspace specifiers (the loader's
+// internal.import resolves them through the leaf's baseUrl —
+// packages/gateway/ carries the @melite/* workspace links), and the
+// sequential createEntry loop. What stays: registerBuiltins for the
+// `cordis:` locals (error plugin, storage pieces, gateway assembler
+// — none has a package address), the programmatic gateway row (full
+// JS GatewayConfig, boot-owned), refusalLine (the loader's entry
+// wrap is unchanged).
 //
-// Two entry points because dispatch-as-library must stay pure (the
-// old rule: dispatch never boots the queue):
-//   - ensureDoorContext() — every manifest entry EXCEPT the gateway
-//     lifecycle entry (error service + door plugins + timer +
-//     logger-console). Backs ctx.ts dispatch(). No lock, no queue
-//     boot, no side effects beyond registration. Singleton per
-//     process.
-//   - bootGatewayContext(config) — doors first, then the gateway
-//     entry (gate + bootQueue on start, stop-ledger + unlock on
-//     dispose) with the runtime config (roots/port/engine/claimLock
-//     ride env per boot — never the manifest). Backs startServer().
-//     Guarded to one gateway entry per process.
+// ORDER NOTE: EntryGroup.update fans out concurrently, so door
+// listener attach order is completion order, not leaf order. The F3
+// stage-patch-before-greedy-draft contract rides order — pinned by
+// the dispatch-order walls (sandbox boot probes, not assumption).
 //
-// The loader WRAPS entry failures ("failed to apply loader entry
-// <id> (<name>): <original>", cause-chained): refusalLine() recovers
-// the byte-exact gate refusal for the main's stderr (the queue
-// parity wall pins the REFUSING line byte-equal).
+// Two entry points because dispatch-as-library must stay pure:
+//   - ensureDoorContext() — the leaf rows (error service + doors +
+//     platform services). Backs ctx.ts dispatch(). No lock, no queue
+//     boot. Singleton per process.
+//   - bootGatewayContext(config) — doors first, then the gateway row
+//     (gate + bootQueue on start, stop-ledger + unlock on dispose).
+//     Backs startServer(). One gateway entry per process.
 //
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
 
-import { readFileSync } from "node:fs";
-import { load as yamlLoad } from "js-yaml";
 import { Context } from "@deepseek-ai/cordis";
 import type { Fiber } from "@deepseek-ai/cordis";
 import Loader from "@deepseek-ai/cordis-plugin-loader";
 import type { EntryOptions } from "@deepseek-ai/cordis-plugin-loader";
+import Include from "@deepseek-ai/cordis-plugin-include";
+import type { PatchOptions } from "@deepseek-ai/cordis-plugin-include";
+import Group from "@deepseek-ai/cordis-plugin-group";
 import { gatewayErrors } from "./errors.ts";
 import { storageHub } from "../storage/hub.ts";
 import {
   storageDomainFacility,
   storageJsonBackend,
 } from "../storage/plugins.ts";
-import { resolveStorageRoot } from "../storage/store.ts";
 import { gatewayPlugin } from "./gateway.ts";
 import type { GatewayConfig } from "./gateway.ts";
 
-/** One patch row (cordis.patch.yml `- insert:` entry). */
-interface ManifestEntry {
-  readonly id: string;
-  readonly name: string;
-  readonly config?: unknown;
-  readonly disabled?: boolean;
+/** Boot-published runtime values for the leaf's `!!js` rows
+ *  (webserver host/port, storage configs). Set on the context
+ *  BEFORE the root include mounts — `with(ctx)` scope, so rows
+ *  read them as bare `gatewayRuntime.*` (DSH: ctx.dshHomePath). */
+export interface GatewayRuntime {
+  readonly webserver: { readonly host: string; readonly port: number };
+  readonly storageJson: { readonly root: string };
+  readonly storageDomain: { readonly backend: string };
 }
 
-/** The gateway lifecycle entry id (runtime config — never manifest). */
+declare module "@deepseek-ai/cordis" {
+  interface Context {
+    gatewayRuntime?: GatewayRuntime;
+  }
+}
+
+/** The gateway lifecycle entry id (boot-owned — never the leaf). */
 const GATEWAY_ENTRY_ID: string = "gateway";
 
-/** The webserver entry's $runtime config (host/port ride the boot
- *  caller — never the manifest, same law as the gateway entry; the
- *  vendored plugin owns listen/close/disposal). Set by
- *  bootGatewayContext BEFORE the door context caches: the first boot
- *  of a process owns it (prod passes one port to both its boots;
- *  every wall process is single-boot). */
-let runtimeWebServerConfig: Record<string, unknown> = {
-  host: "127.0.0.1",
-  port: 0,
-};
-
-/** The checked-in bundle patch — the boot row SSOT (STAGE 3,
- *  dsh-base shape: `- insert:` rows; later layers override by id).
- *  Read once. ORDER IS DISPATCH ORDER. */
-let manifestEntries: readonly ManifestEntry[] | null = null;
-
-function readManifest(): readonly ManifestEntry[] {
-  if (manifestEntries !== null) return manifestEntries;
-  const url = new URL(
-    "../../../gateway/cordis.patch.yml",
-    import.meta.url,
-  );
-  // js-yaml is a DIRECT dep (exact pin) — the harness ships no YAML
-  // reader in the vendored set (DSH-AS-LANGUAGE audit: loader reads
-  // entries, never files), so the registry copy is the honest rail.
-  const raw: unknown = yamlLoad(readFileSync(url, "utf8")) as unknown;
-  // dsh-base patch shape: the document is a LIST whose item carries
-  // the `insert` rows (later layers override by id).
-  const doc: unknown =
-    Array.isArray(raw) && raw.length === 1 ? raw[0] : raw;
-  const rows: unknown =
-    typeof doc === "object" && doc !== null && !Array.isArray(doc)
-      ? (doc as Record<string, unknown>)["insert"]
-      : undefined;
-  if (!Array.isArray(rows)) {
-    throw new Error("[gateway-ts] cordis.patch.yml has no insert array");
-  }
-  const entries: ManifestEntry[] = [];
-  for (const row of rows) {
-    if (
-      typeof row === "object" &&
-      row !== null &&
-      typeof (row as Record<string, unknown>)["id"] === "string" &&
-      typeof (row as Record<string, unknown>)["name"] === "string"
-    ) {
-      const rec = row as Record<string, unknown>;
-      entries.push({
-        id: rec["id"] as string,
-        name: rec["name"] as string,
-        ...(rec["config"] !== undefined ? { config: rec["config"] } : {}),
-        ...(rec["disabled"] === true ? { disabled: true as boolean } : {}),
-      });
-    } else {
-      throw new Error("[gateway-ts] cordis.patch.yml has a malformed row");
-    }
-  }
-  manifestEntries = entries;
-  return manifestEntries;
-}
-
-/** Loader builtins for the NON-loadable remainder (STAGE 2: the 15
- *  doors + 2 queue arms mount by npm specifier via createEntry's
- *  pre-import; only core-owned services stay here — the error
- *  plugin, the composed storage pieces, and the gateway assembler
- *  itself, none of which has a package address yet). Keys are BARE (the loader strips the `cordis:` prefix before
- *  the builtins lookup — name.slice(7)). The vendored platform
- *  services ride builtins too, but they are registered DYNAMICALLY
- *  in createEntry (pre-imported by real specifier through the
- *  gateway's workspace links, then aliased under the entry id):
- *  the loader must NEVER bare-import from a vendored realpath
- *  (resolution would walk upward past the gateway links), so every
- *  entry resolves through builtins — one mechanism, manifest order.
- *  The persistence tier (hub → json backend → domain facility)
- *  rides the same table: the storage packages' plugin pieces are
- *  composed in src/storage/plugins.ts, then aliased here. */
+/** Loader builtins for the NON-loadable remainder: the `cordis:`
+ *  locals (none has a package address — the error plugin, the
+ *  composed storage pieces, the gateway assembler itself) plus the
+ *  two vendored tree carriers (include + group, by real specifier
+ *  through the workspace links). Door/platform rows import by bare
+ *  specifier through the leaf's baseUrl (packages/gateway/ links). */
 function registerBuiltins(ctx: Context): void {
   const table: Record<string, unknown> = {
     "gateway-errors": gatewayErrors,
@@ -148,78 +83,57 @@ function registerBuiltins(ctx: Context): void {
     "storage-json": storageJsonBackend,
     "storage-domain": storageDomainFacility,
     gateway: gatewayPlugin,
+    include: Include,
+    group: Group,
   };
   for (const [key, plugin] of Object.entries(table)) {
     ctx.loader.builtins[key] = plugin;
   }
 }
 
+/** The operator layer (cordis.patch.yml) as Include patches — the
+ *  DSH loadOptionalPatches shape: absent file = no layer (never a
+ *  boot failure); a present file parses as a patch list (each row a
+ *  PatchOptions: {id,...overrides} or {insert:[...]}). Read with the
+ *  include's own entryListSchema so `!!js` in operator overrides
+ *  parses exactly as the include mounts it. */
+async function loadOperatorPatches(): Promise<PatchOptions[] | undefined> {
+  const url = new URL("../../../gateway/cordis.patch.yml", import.meta.url);
+  let text: string;
+  try {
+    const fs = await import("node:fs");
+    text = fs.readFileSync(url, "utf8");
+  } catch {
+    return undefined;
+  }
+  const yaml = await import("js-yaml");
+  const { entryListSchema } = await import(
+    "@deepseek-ai/cordis-plugin-include"
+  );
+  const data: unknown = (yaml as { load: (s: string, o: unknown) => unknown }).load(
+    text,
+    { schema: entryListSchema },
+  );
+  if (!Array.isArray(data)) {
+    throw new Error("[gateway-ts] cordis.patch.yml must be a patch list");
+  }
+  return data as PatchOptions[];
+}
+
 let doorsReady: Promise<Context> | null = null;
 let gatewayFiber: (Fiber & PromiseLike<Fiber>) | null = null;
 
-/** Create one manifest entry (id-stable; skips entries already in
- *  the tree so re-entry is a no-op, never a restart). The $runtime
- *  marker means the config is built programmatically per boot (never
- *  pinned): the gateway entry's lifecycle config rides the boot
- *  caller, the storage entries' configs ride env (the json root is
- *  resolveStorageRoot — scratch-pinned per boot like every other
- *  root; the domain routes every domain at the json backend). */
-async function createEntry(ctx: Context, entry: ManifestEntry): Promise<void> {
-  // H3 (homolog 06): disabled entries are kept, never mounted.
-  if (entry.disabled === true) return;
-  try {
-    ctx.loader.resolve(entry.id);
-    return;
-  } catch {
-    /* absent — create below */
-  }
-  // H1 (homolog 06): platform names are REAL specifiers. Pre-import
-  // through the gateway's workspace links and alias under the entry
-  // id — the loader's bare import would resolve from the vendored
-  // realpath past our links, and builtins dereference only under the
-  // cordis: prefix.
-  let loadName: string = entry.name;
-  if (!loadName.startsWith("cordis:")) {
-    const mod = (await import(entry.name)) as { default?: unknown };
-    ctx.loader.builtins[entry.id] = mod.default ?? mod;
-    loadName = `cordis:${entry.id}`;
-  } else if (ctx.loader.builtins[loadName.slice(7)] === undefined) {
-    throw new Error(
-      `[gateway-ts] no builtin registered for loader entry ${entry.id} (${entry.name})`,
-    );
-  }
-  const base = { id: entry.id, name: loadName };
-  let options: EntryOptions;
-  if (entry.config === "$runtime" && entry.id === "storage-json") {
-    options = {
-      ...base,
-      config: { root: resolveStorageRoot() } as unknown as Record<string, unknown>,
-    };
-  } else if (entry.config === "$runtime" && entry.id === "storage-domain") {
-    options = {
-      ...base,
-      config: { backend: "json" } as unknown as Record<string, unknown>,
-    };
-  } else if (entry.config === "$runtime" && entry.id === "webserver") {
-    options = { ...base, config: runtimeWebServerConfig };
-  } else if (entry.config !== undefined && entry.config !== "$runtime") {
-    options = {
-      ...base,
-      config: entry.config as Record<string, unknown>,
-    };
-  } else {
-    options = { ...base };
-  }
-  // The create() type omits id (auto-assign), but the runtime honors
-  // an explicit id via ensureId — the manifest ids stay stable.
-  await ctx.loader.create(options as Omit<EntryOptions, "id">);
-}
-
-/** The error service + door plugins + platform services, in
- *  manifest order. Resolves once the loader tree settles (a failing
- *  entry rejects here — LOUD, like the old import graph: a broken
- *  door module crashed the boot). */
-export function ensureDoorContext(): Promise<Context> {
+/** The error service + door plugins + platform services, in leaf
+ *  order. Resolves once the loader tree settles (a failing entry
+ *  rejects here — LOUD, like the old import graph: a broken door
+ *  module crashed the boot). The leaf's `!!js` rows read
+ *  ctx.gatewayRuntime — published here BEFORE the include mounts
+ *  (first boot of the process owns it; every wall process is
+ *  single-boot). Library boots (no port) take the inert webserver
+ *  seat {127.0.0.1, 0} exactly as the old module default did;
+ *  storage roots ride env (resolveStorageRoot — scratch-pinned per
+ *  boot); the domain routes every domain at the json backend. */
+export function ensureDoorContext(port: number = 0): Promise<Context> {
   if (doorsReady === null) {
     doorsReady = (async (): Promise<Context> => {
       const ctx = new Context();
@@ -227,10 +141,27 @@ export function ensureDoorContext(): Promise<Context> {
         baseUrl: new URL("../../", import.meta.url).href,
       });
       registerBuiltins(ctx);
-      for (const entry of readManifest()) {
-        if (entry.id === GATEWAY_ENTRY_ID) continue;
-        await createEntry(ctx, entry);
-      }
+      const { resolveStorageRoot } = await import("../storage/store.ts");
+      ctx.gatewayRuntime = {
+        webserver: { host: "127.0.0.1", port },
+        storageJson: { root: resolveStorageRoot() },
+        storageDomain: { backend: "json" },
+      };
+      const leaf = new URL(
+        "../../../gateway/cordis.yml",
+        import.meta.url,
+      ).href;
+      const patches = await loadOperatorPatches();
+      await ctx.loader.create({
+        id: "include",
+        name: "cordis:include",
+        config: {
+          path: leaf,
+          ...(patches !== undefined && patches.length > 0
+            ? { patches }
+            : {}),
+        },
+      } as Omit<EntryOptions, "id">);
       await ctx.loader.await();
       return ctx;
     })();
@@ -270,13 +201,10 @@ export async function bootGatewayContext(config: GatewayConfig): Promise<{
   ctx: Context;
   gate: Fiber & PromiseLike<Fiber>;
 }> {
-  // The webserver entry is created inside ensureDoorContext (manifest
-  // order) — publish its runtime config BEFORE the context caches.
-  runtimeWebServerConfig = {
-    host: "127.0.0.1",
-    port: config.port,
-  };
-  const ctx: Context = await ensureDoorContext();
+  // The webserver entry mounts inside ensureDoorContext (leaf
+  // order) — its runtime port rides the boot caller, never the
+  // leaf. The first boot of the process owns the cached context.
+  const ctx: Context = await ensureDoorContext(config.port);
   if (gatewayFiber === null) {
     const gwOptions: EntryOptions = {
       id: GATEWAY_ENTRY_ID,
