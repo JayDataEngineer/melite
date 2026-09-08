@@ -9,8 +9,8 @@ NOT be collected by pytest. We use collect_ignore_glob to exclude
 them. The subprocess orchestrator (test_walls.py) runs the
 unconverted suites and pins the exit code instead.
 
-unittest-style suites (test_cpp_engines, test_browser_lanes, etc.)
-are safe to collect — pytest handles unittest.TestCase natively.
+unittest-style suites (test_browser_lanes, etc.) are safe to
+collect — pytest handles unittest.TestCase natively.
 """
 
 # Script-style suites that execute at import time and/or call
@@ -34,4 +34,9 @@ collect_ignore_glob = [
     # wired 2026-09-05 with its SUBPROCESS_WALLS entry: the cpp
     # lane's new script-style suite (sys.exit at import — uncollectable).
     "suites/test_cpp_native_cards.py",
+    # (2026-09-08) the quarantine wall was re-derived from unittest
+    # to script-style (top-level check()s + sys.exit) — this conftest's
+    # docstring claim about it was stale; the subprocess orchestrator
+    # (test_walls.py) runs it.
+    "suites/test_cpp_engines.py",
 ]
