@@ -136,3 +136,134 @@
   Card graphs become Cordis/TS declarations; orchestration rides
   the MCP-as-cards rail. Walls pin the new shapes; the old modules
   are deleted, never ported line-for-line.
+
+## THE CORDIS STDLIB (operator order, 2026-09-08: "read the CORDIS
+## documentation from the Deepseek GitHub we downloaded, right now,
+## and transfer that to Agents.md")
+
+- SOURCE OF TRUTH: the generated catalog in the DSH clone
+  `docs/cordis-api/{context,service,registry,events,fiber,inherited}.md`
+  (generated from `vendor/cordis/src/*.ts` by gen-cordis-catalog;
+  every primitive below carries its vendor source pointer). The
+  runtime package is `@deepseek-ai/cordis` (v4.0.2, pinned per
+  package). This section is the distilled stdlib — the
+  DSH-AS-LANGUAGE LAW's reference card. When a capability below
+  exists, USING IT is mandatory; hand-rolling it is the defect
+  class the law names.
+
+### Plugin + lifecycle (registry.ts, fiber.ts)
+
+- `ctx.plugin(p, ...args)` — load a plugin. Entrypoint shapes
+  (registry.ts:92): a function `(ctx, config)`, a class
+  constructed `(ctx, config)`, or an object `{ apply(ctx, config) }`.
+  Shared metadata on any shape: `name`, `Config` (standard-schema
+  validator applied to config BEFORE start), `inject` (required
+  services), `provide`, `intercept`. Returns the Fiber (awaitable —
+  settles when loading finished, rejects on config/startup error).
+- `ctx.inject(deps, callback)` (registry.ts:176) — run a callback
+  once the required services are available; the callback unloads
+  and RE-RUNS whenever a required service changes. Deps: array
+  (names) or object (name → intercept config).
+- Fiber (fiber.ts:184) — one loaded plugin instance: `fiber.uid`,
+  `fiber.ctx` (the child context), `fiber.config` (validated),
+  `fiber.state`, `fiber.dispose()`, `fiber.restart()`,
+  `fiber.update(config)` (validate → `internal/update` waterfall →
+  restart), `fiber.await()` (rethrows startup errors).
+- `ctx.effect(fn, label?)` (fiber.ts:415) — cleanup-aware effect:
+  `fn` runs immediately, returns a disposer (or iterable of them);
+  disposers run in REVERSE order at unload. THE lifecycle primitive
+  for anything owning resources.
+
+### Services (service.ts, reflect.ts)
+
+- `class X extends Service { constructor(ctx, name) { super(ctx, name) } }`
+  — registers itself as `ctx.<name>` immediately; removed with the
+  owning fiber. Static symbol members (service.ts:13-25):
+  `Service.init` (post-construction hook), `Service.check`
+  (availability predicate), `Service.config` (phantom
+  intercept-config type), `Service.invoke` (callable services —
+  how `ctx.logger()` works), `Service.extend`, `Service.tracker`,
+  `Service.resolveConfig`.
+- `ctx.provide(name, value)` (reflect.ts:44) — register a service
+  value owned by the current fiber; disposer unregisters (waking
+  dependents). `ctx.get(name)` (reflect.ts:17) — read without
+  inject; `ctx.set(name, value)` (reflect.ts:29) — overwrite, only
+  by the providing fiber.
+- `ctx.mixin(name, keys)` (reflect.ts:67) — expose a service's
+  members directly on ctx (how `ctx.on` forwards to
+  `ctx.events.on`). `ctx.accessor(name, {get, set})`
+  (reflect.ts:56) — computed ctx property.
+- Typing: `declare module '@deepseek-ai/cordis' { interface Context { mySvc: MyService } }`
+  — the module-augmentation seam (service.ts:72 is the estate's
+  own example for `ctx.comfyui`).
+
+### Inherency — intercept + resolveConfig (context.ts:139, service.ts:86)
+
+- `ctx.intercept(name, config)` — a child context carrying a
+  service-scoped intercept entry. Plugins loaded below it see
+  `config` merged into the service's resolved config (ancestor
+  entries first). The parent is NOT affected.
+- `svc[Service.resolveConfig](base?, head?)` (service.ts:86) —
+  walks the context's intercept chain root-closer-first, then
+  merges `base → intercepts... → head` via the service's
+  `Config.merge` when declared, else `Object.assign`. THE cascade
+  primitive: family defaults = base, variant = the intercept,
+  cell = head (the estate's models/cascade.ts is the worked
+  example, wall-pinned in tests/walls/ts/suites/models-cascade.test.ts).
+
+### Scoped children (context.ts)
+
+- `ctx.extend(meta)` (context.ts:99) — prototypal child context,
+  meta shadows; parent untouched.
+- `ctx.isolate(name, label?)` (context.ts:121) — child with an
+  independent service scope for `name` (same label joins scopes).
+  THE primitive for parallel instances of one service.
+- `Context.is(value)` (context.ts:61) — brand test across realms.
+
+### Events (events.ts)
+
+- Register: `ctx.on(name, listener, opts?)` / `ctx.once` —
+  listener owned by the current fiber; disposer removes. Options:
+  `prepend`, `global`.
+- Dispatch modes (events.ts:32): `emit` (sync, fire-and-forget),
+  `parallel` (await all together), `serial` (await in order until
+  one bails — first bail value wins), `bail` (sync first-bail),
+  `waterfall` (last arg is `next`; not calling it VETOES).
+- Harness events on every context: `internal/plugin`,
+  `internal/status`, `internal/service`, `internal/update`,
+  `internal/get`, `internal/set`, `hmr/change`, `hmr/reload`,
+  `exit` (loader) — see inherited.md.
+
+### Schemastery (`@deepseek-ai/schemastery`)
+
+- The schema language of the same family: `z.object({...})`,
+  `z.string()/.number()/.boolean()/.array()/.union()/.const()`,
+  `.dict` (object schemas expose the field table directly),
+  `.description(label)`, `.min/.max/.step`, `.default(v)`,
+  `.extra('extra', {...})` for x-extensions (x-families,
+  visibleWhen, group/zone/order UI meta), `.pattern()` (NOT
+  .regexp), `z.dict(z.any())` for records. Unions expose
+  `.meta.list` with consts = the enum options. The estate's params
+  emitter (params-emit.ts) and card schemas ride it; a card's
+  schema IS its single knob declaration.
+
+### ESTATE MOUNTS (the worked examples in this tree)
+
+- `ctx.comfyui` — ComfyUIService (comfyui-cordis/src/service.ts):
+  cards register through `registerCard(def)`; compose/facts/
+  object-info gating live on the service. THE pattern for any
+  registry-plane: registration through a Service, validation loud
+  at registration, reads through service members — never a module
+  const + free functions.
+- `models.defaults` — ModelDefaultsService
+  (engines/comfyui/src/models/cascade.ts): the intercept/
+  resolveConfig worked example.
+- Cards are plugins (cards/*.ts export `apply(ctx)` + `inject:
+  ['comfyui']`); loadCardDefs boots a Context and auto-loads every
+  module — the plugin registry IS the card set.
+- PORT LAW (standing): a ported py system is REGISTERED THROUGH
+  SERVICES with boot-loud validation — not frozen JSON + free
+  functions over it. Data tables may be frozen (catalog rows);
+  SYSTEMS (registration, validation, absorption, resolution) ride
+  ctx.plugin/Service/intercept. When this law and a shortcut
+  conflict, the law wins.
