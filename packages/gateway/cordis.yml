@@ -29,6 +29,10 @@
     config: !!js gatewayRuntime.storageDomain
   - id: gateway-uploads
     name: '@melite/gateway-doors/uploads'
+  - id: engine-model-catalog
+    name: '@melite/engine-comfyui/catalog-registry'
+  - id: engine-comfyui
+    name: '@melite/engine-comfyui/comfyui-host'
   - id: gateway-card-registry
     name: '@melite/gateway-doors/card-registry'
   - id: gateway-validate

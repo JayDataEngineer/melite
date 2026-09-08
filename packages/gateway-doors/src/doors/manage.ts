@@ -23,6 +23,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync, renameSync } from
 import { join } from "node:path";
 import { callMcpTool } from "./mcp.ts";
 import { PyNum } from "@melite/gateway-core";
+import type { ModelsService } from "@melite/engine-comfyui";
 
 // ── SSOT vocabulary ─────────────────────────────────────────────────
 // Closed vocabulary — a typo is a 422, not a silent miss.
@@ -71,6 +72,11 @@ export interface ManageCtx {
   repoRoot: string;
   /** Absolute vendor `comfy-mcp` server binary. */
   serverBin: string;
+  /** The models catalog (stroke 4a: injected by the bridges door
+   *  from the engine-model-catalog provider — required, never
+   *  optional: a door without its catalog is a miswire, and the
+   *  type error at the construction site is the loudest refusal). */
+  models: ModelsService;
 }
 
 interface Req {
@@ -497,34 +503,20 @@ interface CatalogRow {
   relative_path: string;
 }
 
-/** The models-plane TS catalog (resolveCatalogArtifact +
- *  checkModelPresent) lands as packages/engine-comfyui catalog — until
- *  then the dynamic import misses and provision_model refuses LOUDLY
- *  (503, never a silent skip). No code change heals it: the import
- *  resolves the moment the module lands. */
-async function catalogModule(): Promise<{
-  resolveCatalogArtifact: (mid: string, variant: string, quant: string) => CatalogRow[];
-  checkModelPresent: (relativePath: string, name: string) => string | null;
-}> {
-  // Non-literal specifier: tsc does not resolve it (the models
-  // plane exports it from the engine index); a miss refuses LOUDLY.
-  const specifier: string = "@melite/engine-comfyui";
-  try {
-    return (await import(specifier)) as {
-      resolveCatalogArtifact: (mid: string, variant: string, quant: string) => CatalogRow[];
-      checkModelPresent: (relativePath: string, name: string) => string | null;
-    };
-  } catch {
-    throw unavailable("model catalog is migrating to Cordis (models-plane stroke) — provision_model refuses meanwhile");
-  }
-}
-
+/** The models-plane catalog (stroke 4a, DSH-AS-LANGUAGE LAW): the
+ *  SEAM is ctx.models (ModelsService, injected by the bridges door
+ *  from the engine-model-catalog provider row) — the old
+ *  catalogModule() dynamic import with its NON-LITERAL specifier
+ *  (the tsc dodge) and its 503 miss-leg are DELETED. A missing
+ *  provider fails the door LOUD at inject (the framework's answer),
+ *  never a 503 from inside the handler. The repoRoot rides the
+ *  request ctx (fixture roots under MELITE_REPO_ROOT in walls) —
+ *  the service keys its cache by it. */
 async function hProvisionModel(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   need(req, "model");
-  const cat = await catalogModule();
   let rows: CatalogRow[];
   try {
-    rows = cat.resolveCatalogArtifact(req.model, req.variant, req.quant);
+    rows = ctx.models.resolveCatalogArtifact(req.model, req.variant, req.quant, ctx.repoRoot);
   } catch (e) {
     throw notFound((e as Error).message);
   }
@@ -534,7 +526,7 @@ async function hProvisionModel(req: Req, ctx: ManageCtx): Promise<[number, Manag
   const present: string[] = [];
   const errs: Array<{ file: string; error: string }> = [];
   for (const row of rows) {
-    if (cat.checkModelPresent(row.relative_path, row.name) !== null) {
+    if (ctx.models.checkModelPresent(row.relative_path, row.name, ctx.repoRoot) !== null) {
       present.push(row.name);
       continue;
     }

@@ -52,6 +52,8 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { Context, Service } from "@deepseek-ai/cordis";
+import type { Plugin } from "@deepseek-ai/cordis";
 
 import {
   type EngineJson,
@@ -198,7 +200,14 @@ function parseCatalog(text: string, path: string): CatalogModel[] {
 
 let CACHE: CatalogModel[] | null = null;
 
-/** The catalog rows (cached per process — DATA file, live-read). */
+/** The catalog rows (cached per process — DATA file, live-read).
+ *
+ *  NON-PLUGIN callers only (walls/probes/unit — no Context). Plugin
+ *  paths (the manage door) thread ctx.models and read through
+ *  ModelsService.models() — the service owns its own per-fiber
+ *  cache below, so the door never touches this module handle
+ *  (DSH-AS-LANGUAGE LAW: the seam is the service, never the import).
+ *  Both caches parse through parseCatalog — one parser, never two. */
 export function loadCatalogModels(
   repoRoot: string = resolveRepoRoot(),
 ): CatalogModel[] {
@@ -237,6 +246,10 @@ function provisionDest(folder: string): string {
  * manage._resolve_catalog_artifact. Variant "" = family default
  * (first variant); quant "" = variant default (first cell).
  * Throws CatalogMiss with the legacy texts on a catalog miss.
+ *
+ * NON-PLUGIN callers only (walls/probes/unit — no Context). Plugin
+ * paths read through ModelsService.resolveCatalogArtifact (same pure
+ * core below, service-owned cache). Documented split, never two truths.
  */
 export function resolveCatalogArtifact(
   mid: string,
@@ -244,7 +257,18 @@ export function resolveCatalogArtifact(
   quant = "",
   repoRoot: string = resolveRepoRoot(),
 ): CatalogArtifactRow[] {
-  const models: CatalogModel[] = loadCatalogModels(repoRoot);
+  return resolveArtifactRows(loadCatalogModels(repoRoot), mid, variant, quant);
+}
+
+/** The pure resolution core (no I/O, no cache): the model table in,
+ *  rows out. Shared by the module function (non-plugin callers) and
+ *  ModelsService.resolveCatalogArtifact (plugin paths). */
+export function resolveArtifactRows(
+  models: CatalogModel[],
+  mid: string,
+  variant = "",
+  quant = "",
+): CatalogArtifactRow[] {
   const model: CatalogModel | undefined = models.find((m) => m.id === mid);
   if (model === undefined) {
     throw new CatalogMiss("model " + pyRepr(mid) + " not found in catalog");
@@ -321,23 +345,42 @@ export function runtimeModelsRoot(repoRoot: string = resolveRepoRoot()): string 
  * (model_base_path + extra_model_folders from the endpoint machine
  * statement; stock folders map to themselves). No base configured
  * = mount leg skipped (the py SystemExit collapses to None).
+ *
+ * NON-PLUGIN callers only (walls/probes/unit — no Context). Plugin
+ * paths read through ModelsService.checkModelPresent (same pure core
+ * below). Documented split, never two truths.
  */
 export function checkModelPresent(
   relativePath: string,
   name: string,
   repoRoot: string = resolveRepoRoot(),
 ): string | null {
+  let cfg: Record<string, EngineJson> | null;
+  try {
+    cfg = loadEndpointConfig();
+  } catch {
+    cfg = null;
+  }
+  return findModelPresent(relativePath, name, repoRoot, cfg);
+}
+
+/** The pure presence core (I/O: existsSync probes only, no cache):
+ *  cfg null = mount leg skipped (unparseable endpoint collapses to
+ *  None, same as the module function's try/catch). Shared by the
+ *  module function (non-plugin callers) and
+ *  ModelsService.checkModelPresent (plugin paths). */
+export function findModelPresent(
+  relativePath: string,
+  name: string,
+  repoRoot: string,
+  cfg: Record<string, EngineJson> | null,
+): string | null {
   const folder: string = relativePath.startsWith("models/")
     ? relativePath.slice("models/".length)
     : relativePath;
   const runtimeHit: string = join(runtimeModelsRoot(repoRoot), folder, name);
   if (existsSync(runtimeHit)) return runtimeHit;
-  let cfg: Record<string, EngineJson>;
-  try {
-    cfg = loadEndpointConfig();
-  } catch {
-    return null;
-  }
+  if (cfg === null) return null;
   const rawBase: unknown = cfg["model_base_path"];
   const base: string =
     typeof rawBase === "string" ? rawBase.trim() : String(rawBase ?? "").trim();
@@ -358,4 +401,132 @@ export function checkModelPresent(
     rest !== "" ? join(base, sub, rest, name) : join(base, sub, name);
   if (existsSync(mountHit)) return mountHit;
   return null;
+}
+
+// ── the models catalog as a Cordis Service (stroke 4a,
+// DSH-AS-LANGUAGE LAW) ───────────────────────────────────────────
+// SERVICE NAME: 'models' (ctx.models) — the short camelCase service
+// key per the ctx.gatewayError precedent and the sibling strokes 2a
+// ('cardRegistry') / 2b ('runs'). The long form 'modelCatalog' was
+// considered and declined: the short name matches the models-plane
+// lane. Documented here per the task.
+//
+// OWNS: the per-fiber provisions.json row cache (keyed by repoRoot —
+// the manage door serves fixture roots under MELITE_REPO_ROOT in
+// walls, so the key is the caller's root, never the boot root) and
+// every catalog-derived operation (resolve/check). The DATA file
+// (models/provisions.json) stays frozen data — untouched. The pure
+// cores above (resolveArtifactRows/findModelPresent/parseCatalog)
+// stay module functions — they take explicit args and hold no
+// state. The module-level CACHE + loadCatalogModels stay for
+// NON-PLUGIN callers (walls/probes/unit — no Context); every door
+// with catalog reads injects 'models' and uses ctx.models (never
+// the module handle, never a dynamic import — the manage door's old
+// catalogModule() non-literal-specifier dodge is deleted: a missing
+// provider fails the door LOUD at inject, the framework's answer).
+export class ModelsService extends Service {
+  /** provisions.json rows by repo root (the retired module CACHE,
+   *  fiber-owned now — stroke-2a defect class). */
+  private rows: Map<string, CatalogModel[]> = new Map();
+
+  constructor(ctx: Context) {
+    super(ctx, "models");
+  }
+
+  /** Test seam: drop all catalog state (walls boot fresh processes;
+   *  belt-and-braces for in-process reuse — the RunsService parity). */
+  resetForTests(): void {
+    this.rows.clear();
+  }
+
+  /** The catalog rows for one repo root (strict — a missing or
+   *  malformed DATA file throws LOUD via readFileSync/parseCatalog,
+   *  never a silent empty catalog). */
+  catalogModels(repoRoot: string = resolveRepoRoot()): CatalogModel[] {
+    const hit: CatalogModel[] | undefined = this.rows.get(repoRoot);
+    if (hit !== undefined) return hit;
+    const path: string = join(
+      repoRoot,
+      "packages",
+      "engines",
+      "comfyui",
+      "models",
+      "provisions.json",
+    );
+    const parsed: CatalogModel[] = parseCatalog(readFileSync(path, "utf8"), path);
+    this.rows.set(repoRoot, parsed);
+    return parsed;
+  }
+
+  /** The downloadable rows for (model, variant, quant) — the plugin
+   *  face of resolveArtifactRows (same pure core, service-owned
+   *  cache). Throws CatalogMiss with the legacy texts (the manage
+   *  door maps them to 404). */
+  resolveCatalogArtifact(
+    mid: string,
+    variant = "",
+    quant = "",
+    repoRoot: string = resolveRepoRoot(),
+  ): CatalogArtifactRow[] {
+    return resolveArtifactRows(this.catalogModels(repoRoot), mid, variant, quant);
+  }
+
+  /** The on-disk hit for (relativePath, name), else null — the
+   *  plugin face of findModelPresent (same pure core). The endpoint
+   *  config loads live per call (mount bindings are deploy truth,
+   *  never cached past the rows). */
+  checkModelPresent(
+    relativePath: string,
+    name: string,
+    repoRoot: string = resolveRepoRoot(),
+  ): string | null {
+    let cfg: Record<string, EngineJson> | null;
+    try {
+      cfg = loadEndpointConfig();
+    } catch {
+      cfg = null;
+    }
+    return findModelPresent(relativePath, name, repoRoot, cfg);
+  }
+}
+
+declare module "@deepseek-ai/cordis" {
+  interface Context {
+    models: ModelsService;
+  }
+}
+
+/** The provider plugin (fiber-owned): owns the ModelsService
+ *  lifetime. No prime step (rows load lazily per repo root —
+ *  fixture roots under MELITE_REPO_ROOT resolve at request time,
+ *  never at boot). Manifest row engine-model-catalog rides BEFORE
+ *  every consumer (the manage door via gateway-bridges).
+ *  Loadable entry: packages/engines/comfyui/src/entries/
+ *  catalog-registry.ts (the DSH leaf discipline — addressed code
+ *  loads by address, never as a `cordis:` builtin). */
+export const modelsProvider: Plugin = {
+  name: "engine-model-catalog",
+  apply(ctx: Context): void {
+    new ModelsService(ctx);
+  },
+};
+
+/** Resolve the service for request-path helpers that take it as an
+ *  optional trailing param (the stroke-2b shape): an explicit arg
+ *  wins. Null = the caller forgot to thread ctx.models — a bug, so
+ *  reads throw LOUD (a catalog read without a catalog is never an
+ *  empty answer). Door listeners MUST pass ctx.models (their inject
+ *  declares it). */
+export function needModels(
+  models: ModelsService | null | undefined,
+  where: string,
+): ModelsService {
+  if (models === null || models === undefined) {
+    throw new Error(
+      "[models] no ModelsService for " + where +
+        " — doors inject 'models' and pass ctx.models " +
+        "(the manifest's engine-model-catalog row provides at boot)",
+    );
+  }
+  return models;
 }

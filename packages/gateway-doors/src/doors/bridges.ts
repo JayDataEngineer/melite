@@ -98,6 +98,8 @@ import {
 } from "./assets.ts";
 import { dispatchManage } from "./manage.ts";
 import { isRecord, parseStrictJson } from "@melite/gateway-core";
+import { needModels } from "@melite/engine-comfyui";
+import type { ModelsService } from "@melite/engine-comfyui";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
@@ -458,11 +460,14 @@ export function manageActionName(doc: unknown): unknown {
  *  502 rail-failed + last-500 stderr). rawBody is the dispatcher's raw
  *  request bytes (already strict-accepted); empty feeds b"{}" per
  *  `or "{}"`. Async: dispatch rides the MCP rail (./manage.ts) to the
- *  vendor server — no estate Python anywhere. */
+ *  vendor server — no estate Python anywhere. models is the injected
+ *  ModelsService (stroke 4a: the listener passes ctx.models — the
+ *  door never imports the catalog, the seam is the service). */
 export async function handleManage(
   doc: unknown,
   rawBody: Uint8Array,
   repoRoot: string = resolveRepoRoot(),
+  models?: ModelsService | null,
 ): Promise<BridgeResult> {
   // The .get crash leg first (see manageActionName): a truthy
   // non-dict never reaches the plane.
@@ -493,7 +498,11 @@ export async function handleManage(
     stdinDoc = {};
   }
   try {
-    const [code, rep] = await dispatchManage(stdinDoc, { repoRoot, serverBin });
+    const [code, rep] = await dispatchManage(stdinDoc, {
+      repoRoot,
+      serverBin,
+      models: needModels(models, "manage door"),
+    });
     return {
       status: code,
       body: dumpsPy(normalize4xx(code, rep)),
@@ -525,7 +534,9 @@ export async function handleManage(
 
 /** Dispatch bridge rows by handler name. Async: the poser arm
  *  forwards over the network; the manage arm dispatches Cordis-native
- *  over the MCP rail (./manage.ts). */
+ *  over the MCP rail (./manage.ts). models is the injected
+ *  ModelsService (null only for non-plugin callers — the listener
+ *  always passes ctx.models). */
 export async function dispatchBridges(
   handler: string,
   method: string,
@@ -533,12 +544,13 @@ export async function dispatchBridges(
   body: Uint8Array,
   doc: unknown,
   repoRoot: string = resolveRepoRoot(),
+  models?: ModelsService | null,
 ): Promise<BridgeResult | null> {
   if (handler === "_h_poser_bridge") {
     return await handlePoserBridge(method, target, body, repoRoot);
   }
   if (handler === "_h_manage") {
-    return handleManage(doc, body, repoRoot);
+    return handleManage(doc, body, repoRoot, models);
   }
   return null;
 }
@@ -558,7 +570,7 @@ export async function dispatchBridges(
  *  Matches its own rows inside the listener — no central table. */
 export const bridgesDoors: Plugin = {
   name: "gateway-bridges",
-  inject: ["gatewayError"],
+  inject: ["gatewayError", "models"],
   apply(ctx: Context): void {
     ctx.on(
       "gateway/request",
@@ -593,6 +605,8 @@ export const bridgesDoors: Plugin = {
           req.target,
           req.body,
           parsed.doc,
+          resolveRepoRoot(),
+          ctx.models,
         );
         if (bridged !== null) return bridged;
         return undefined;

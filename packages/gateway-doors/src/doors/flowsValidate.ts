@@ -82,7 +82,6 @@
 import { execFileSync } from "node:child_process";
 import {
   existsSync,
-  readFileSync,
   readdirSync,
   statSync,
 } from "node:fs";
@@ -1197,32 +1196,28 @@ function batchRows(body: unknown, firstError: string, cards?: CardRegistryServic
       }
     }
   }
-  for (const wrow of sweepWorkflows(body)) rows.push(wrow);
+  for (const wrow of sweepWorkflows(body, cards)) rows.push(wrow);
   return rows;
 }
 
 // ── pin sweep (python/gateway.py:2827 _workflow_sweep +
 // compose/__init__.py:198 validate_workflow) ─────────────────────
-let pinCache: Set<string> | null = null;
-
-function pinNodeClasses(): Set<string> {
-  if (pinCache !== null) return pinCache;
-  try {
-    const pinPath: string = join(resolveRepoRoot(), "packages", "engines", "comfyui", "data", "object_info.json");
-    const obj: unknown = JSON.parse(readFileSync(pinPath, "utf8"));
-    pinCache =
-      typeof obj === "object" && obj !== null
-        ? new Set(Object.keys(obj as Record<string, unknown>))
-        : new Set();
-  } catch {
-    // an unreadable pin must not brick the door — empty set makes
-    // every class "unknown" (compose/__init__.py:190-194).
-    pinCache = new Set();
-  }
-  return pinCache;
+// STROKE 4b (the stroke-2a followup — same defect class): the
+// module-level pinCache singleton (read-once, never refreshed) is
+// DEAD. The pin now reads through ctx.cardRegistry.objectInfo()
+// (the service owns the snapshot, mtime-keyed — a re-pin is never
+// stale, strictly fresher than the old read-once cache). Absent or
+// unreadable pin degrades to the empty set (every class "unknown" —
+// compose/__init__.py:190-194), exactly as before. Non-plugin
+// callers pass no cards and get the same degrade (a unit caller
+// with no registry cannot know the pin — fail-open set, never a
+// throw on this sweep leg).
+function pinNodeClasses(cards?: CardRegistryService | null): Set<string> {
+  if (cards === null || cards === undefined) return new Set();
+  return new Set(Object.keys(cards.objectInfo() ?? {}));
 }
 
-function validateWorkflow(params: unknown): string[] {
+function validateWorkflow(params: unknown, cards?: CardRegistryService | null): string[] {
   const wf: unknown =
     typeof params === "object" && params !== null && !Array.isArray(params)
       ? (params as Record<string, unknown>)["workflow"]
@@ -1233,7 +1228,7 @@ function validateWorkflow(params: unknown): string[] {
     typeof wfRec["workflow"] === "object" && wfRec["workflow"] !== null && !Array.isArray(wfRec["workflow"])
       ? wfRec["workflow"]
       : wf;
-  const known: Set<string> = pinNodeClasses();
+  const known: Set<string> = pinNodeClasses(cards);
   const rows: string[] = [];
   for (const [nodeId, node] of Object.entries(raw as Record<string, unknown>)) {
     const cls: unknown =
@@ -1257,7 +1252,7 @@ function validateWorkflow(params: unknown): string[] {
   return rows;
 }
 
-function sweepWorkflows(body: unknown): Array<Record<string, unknown>> {
+function sweepWorkflows(body: unknown, cards?: CardRegistryService | null): Array<Record<string, unknown>> {
   const stages: unknown =
     typeof body === "object" && body !== null && !Array.isArray(body)
       ? (body as Record<string, unknown>)["stages"]
@@ -1278,7 +1273,7 @@ function sweepWorkflows(body: unknown): Array<Record<string, unknown>> {
     if (typeof rec["params"] !== "object" || rec["params"] === null || Array.isArray(rec["params"])) {
       continue;
     }
-    for (const wrow of validateWorkflow(rec["params"])) {
+    for (const wrow of validateWorkflow(rec["params"], cards)) {
       rows.push({ stage: label, error: wrow, code: "workflow_pin" });
     }
   }
@@ -1742,7 +1737,7 @@ function serveSubject(
     }
     throw e;
   }
-  const wfRows: Array<Record<string, unknown>> = sweepWorkflows(subject);
+  const wfRows: Array<Record<string, unknown>> = sweepWorkflows(subject, cards);
   if (wfRows.length > 0) {
     const first: Record<string, unknown> = wfRows[0] as Record<string, unknown>;
     return {

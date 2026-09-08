@@ -93,12 +93,17 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   executeFlow,
+  needComfyUI,
   pyReprStr,
   pyReprStrList,
   spliceWorkflow,
   stopForRunDir,
 } from "@melite/engine-comfyui";
-import type { EngineJson, MergeRow } from "@melite/engine-comfyui";
+import type {
+  ComfyUIHostService,
+  EngineJson,
+  MergeRow,
+} from "@melite/engine-comfyui";
 import { applyRunContract } from "@melite/gateway-core";
 import {
   appendLedger,
@@ -771,6 +776,7 @@ export async function handleFlowsStart(
   doc: unknown,
   svc?: RunsService | null,
   cards?: CardRegistryService | null,
+  comfy?: ComfyUIHostService | null,
 ): Promise<Refusal & { runId?: string }> {
   // Envelope structure rides the admission gate (schemastery);
   // every refusal below keeps its pinned text, in the original
@@ -856,7 +862,7 @@ export async function handleFlowsStart(
     );
   }
   if ("model" in body) {
-    return handleCardStart(body, testFlag, draftId, svc, cards);
+    return handleCardStart(body, testFlag, draftId, svc, cards, comfy);
   }
   if (!("flow_inline" in body)) {
     if (!("flow" in body)) {
@@ -872,13 +878,13 @@ export async function handleFlowsStart(
       (shim as Record<string, unknown>)["flow_inline"],
     );
     if (!("stages" in compiled)) return compiled;
-    return registerCompiled(compiled, testFlag, draftId, svc);
+    return registerCompiled(compiled, testFlag, draftId, svc, comfy);
   }
   const compiled: { stages: CompiledStage[] } | Refusal = compileFlowInline(
     body["flow_inline"],
   );
   if (!("stages" in compiled)) return compiled;
-  return registerCompiled(compiled, testFlag, draftId, svc);
+  return registerCompiled(compiled, testFlag, draftId, svc, comfy);
 }
 
 // ── registration (the shared single-stage tail: the existing
@@ -890,6 +896,7 @@ function registerCompiled(
   testFlag: boolean,
   draftId: string,
   svc?: RunsService | null,
+  comfy?: ComfyUIHostService | null,
 ): Refusal & { runId?: string } {
   if (compiled.stages.length !== 1) {
     return refusal(
@@ -937,7 +944,7 @@ function registerCompiled(
   }
   s.runs.set(runId, run);
   s.order.push(runId);
-  void pump(s);
+  void pump(s, comfy);
   return {
     status: 202,
     payload: { run_id: runId, status: "queued" },
@@ -974,6 +981,7 @@ async function handleCardStart(
   draftId: string,
   svc?: RunsService | null,
   cards?: CardRegistryService | null,
+  comfy?: ComfyUIHostService | null,
 ): Promise<Refusal & { runId?: string }> {
   const mid: string = pyStrMid(body["model"]);
   const registry: CardRegistryService = needCardRegistry(cards, "handleCardStart");
@@ -1084,7 +1092,7 @@ async function handleCardStart(
     draft_id: draftId,
     pipeline: pipelineOf(body),
   });
-  void pump(s);
+  void pump(s, comfy);
   return {
     status: 202,
     payload: { run_id: runId, status: "queued" },
@@ -1119,7 +1127,10 @@ function errText(err: unknown): string {
   return errName(err) + ": " + msg;
 }
 
-async function pump(svc: RunsService): Promise<void> {
+async function pump(
+  svc: RunsService,
+  comfy?: ComfyUIHostService | null,
+): Promise<void> {
   if (svc.pumping) return;
   svc.pumping = true;
   try {
@@ -1128,14 +1139,18 @@ async function pump(svc: RunsService): Promise<void> {
       if (next === undefined) return;
       const run: RunRecord | undefined = svc.runs.get(next);
       if (run === undefined) continue;
-      await runOne(run, svc);
+      await runOne(run, svc, comfy);
     }
   } finally {
     svc.pumping = false;
   }
 }
 
-async function runOne(run: RunRecord, svc: RunsService): Promise<void> {
+async function runOne(
+  run: RunRecord,
+  svc: RunsService,
+  comfy?: ComfyUIHostService | null,
+): Promise<void> {
   run.status = "running";
   for (const stage of run.stages) {
     stage["status"] = "running";
@@ -1205,13 +1220,20 @@ async function runOne(run: RunRecord, svc: RunsService): Promise<void> {
       stage["activity"] =
         "merged submit (" + rows.length + " stages, " + nodeCount + " nodes)";
     }
-    const result = await executeFlow(
-      rows,
-      run.dir,
-      inputNames,
-      {},
-      { shouldStop: (): boolean => run.stopFlag },
-    );
+    // Stroke 4b: the worker submits through the injected engine
+    // service (ctx.comfyui via needComfyUI at the door). The module
+    // executeFlow leg below is the NON-PLUGIN path (walls/probes/unit
+    // with no Context — documented split, never a silent downgrade:
+    // doors always pass an explicit service).
+    const engine: ComfyUIHostService | null =
+      comfy !== null && comfy !== undefined ? comfy : null;
+    const result = engine !== null
+      ? await engine.executeFlow(rows, run.dir, inputNames, {}, {
+        shouldStop: (): boolean => run.stopFlag,
+      })
+      : await executeFlow(rows, run.dir, inputNames, {}, {
+        shouldStop: (): boolean => run.stopFlag,
+      });
     for (const stage of run.stages) {
       const row = result.stages[stage.id] ?? { outputs: {}, artifacts: [] };
       const arts: string[] = row.artifacts.filter(
@@ -1394,10 +1416,12 @@ export function handleFlowsStatus(
  *  flag + engine interrupt (kicked in-flight; the dispatcher
  *  stays synchronous — the wall pins the receipt BODY and the
  *  terminal "stopped" convergence, not the latency).
- *  Stable name; door listeners pass ctx.runs. */
+ *  Stable name; door listeners pass ctx.runs + needComfyUI(ctx)
+ *  (stroke 4b — the engine interrupt rides the injected service). */
 export function handleFlowsStop(
   runId: string,
   svc?: RunsService | null,
+  comfy?: ComfyUIHostService | null,
 ): Refusal {
   const s: RunsService | null = pick(svc);
   if (s === null) {
@@ -1414,7 +1438,14 @@ export function handleFlowsStop(
     };
   }
   run.stopFlag = true;
-  void stopForRunDir(run.dir).catch((): void => {
+  // Stroke 4b: the interrupt rides the injected engine service
+  // (ctx.comfyui via needComfyUI at the door); the module leg is
+  // the NON-PLUGIN path (no Context — documented split).
+  const stopper: () => Promise<void> =
+    comfy !== null && comfy !== undefined
+      ? (): Promise<void> => comfy.stopForRunDir(run.dir)
+      : (): Promise<void> => stopForRunDir(run.dir);
+  void stopper().catch((): void => {
     // the flag is the authority; a failed interrupt POST still
     // lands via the worker's stop check (best-effort, as py).
   });
@@ -1430,7 +1461,8 @@ export function parseIncludeLog(first: string | null): boolean {
 }
 
 /** The flows start door as a self-registering
- *  plugin: registry-live runs over the engine/comfyui.ts client;
+ *  plugin: registry-live runs over the injected engine service
+ *  (ctx.comfyui — the engine-comfyui provider row, stroke 4b);
  *  start strict-parses under route()'s strict contract. Matches its
  *  own row inside the listener — no central table. Reads/writes the
  *  registry through ctx.runs (the probe registration lives in the
@@ -1438,7 +1470,7 @@ export function parseIncludeLog(first: string | null): boolean {
  *  ctx.cardRegistry (the card-registry provider — stroke 2a). */
 export const flowsStartDoors: Plugin = {
   name: "gateway-flows-start",
-  inject: ["gatewayError", "runs", "cardRegistry"],
+  inject: ["gatewayError", "runs", "cardRegistry", "comfyui"],
   apply(ctx: Context): void {
     ctx.on(
       "gateway/request",
@@ -1463,7 +1495,12 @@ export const flowsStartDoors: Plugin = {
         const answered: {
           status: number;
           payload: Record<string, unknown>;
-        } = await handleFlowsStart(parsed.doc, ctx.runs, ctx.cardRegistry);
+        } = await handleFlowsStart(
+          parsed.doc,
+          ctx.runs,
+          ctx.cardRegistry,
+          needComfyUI(ctx, "flows-start door"),
+        );
         errors.normalize4xx(answered.status, answered.payload);
         return {
           status: answered.status,
@@ -1479,10 +1516,11 @@ export const flowsStartDoors: Plugin = {
 /** The flows stop door as a self-registering
  *  plugin: regex arms ride the match groups. Matches its own row
  *  inside the listener — no central table. Reads/writes the registry
- *  through ctx.runs. */
+ *  through ctx.runs; the engine interrupt rides ctx.comfyui (stroke
+ *  4b — the engine-comfyui provider row). */
 export const flowsStopDoors: Plugin = {
   name: "gateway-flows-stop",
-  inject: ["gatewayError", "runs"],
+  inject: ["gatewayError", "runs", "comfyui"],
   apply(ctx: Context): void {
     ctx.on(
       "gateway/request",
@@ -1499,7 +1537,11 @@ export const flowsStopDoors: Plugin = {
         const answered: {
           status: number;
           payload: Record<string, unknown>;
-        } = handleFlowsStop(runId, ctx.runs);
+        } = handleFlowsStop(
+          runId,
+          ctx.runs,
+          needComfyUI(ctx, "flows-stop door"),
+        );
         errors.normalize4xx(answered.status, answered.payload);
         return {
           status: answered.status,

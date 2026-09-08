@@ -92,6 +92,8 @@ import {
 import { request as httpRequest } from "node:http";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { Context, Service } from "@deepseek-ai/cordis";
+import type { Plugin } from "@deepseek-ai/cordis";
 
 /** LOUD transport failure (never a silent fallback — native.py:67). */
 export class ComfyError extends Error {
@@ -117,7 +119,16 @@ export interface ActivePrompt {
   readonly server: string;
 }
 
-/** run_dir -> live prompt (the stop door's handle). */
+/** run_dir -> live prompt (the stop door's handle).
+ *
+ *  NON-PLUGIN callers only (walls/probes/unit — no Context): the
+ *  module executeSingle/executeFlow register here, module
+ *  stopForRunDir reads here. Plugin paths (doors) register/read
+ *  through ComfyUIHostService.prompts (fiber-owned, below) — never
+ *  this handle. The two registries are coherent per calling
+ *  convention (plugin→service, standalone→module); never mix them
+ *  within one call chain (documented split, the ModelsService
+ *  precedent — the seam is the service, never the import). */
 const ACTIVE: Map<string, ActivePrompt> = new Map();
 
 /** Read-only view for doors (size probes in tests only). */
@@ -561,9 +572,23 @@ export async function interrupt(server: string, promptId: string): Promise<void>
   }
 }
 
-/** The stop door's engine handle — mirrors native.stop (537-565). */
+/** The stop door's engine handle — mirrors native.stop (537-565).
+ *
+ *  NON-PLUGIN callers only (walls/probes/unit — no Context).
+ *  Plugin paths (the flows-stop door) read through
+ *  ComfyUIHostService.stopForRunDir (the fiber-owned prompts map).
+ *  Documented split, never two truths (shared inner below). */
 export async function stopForRunDir(runDir: string): Promise<void> {
-  const rec: ActivePrompt | undefined = ACTIVE.get(String(runDir));
+  return stopForRunDirInner(runDir, ACTIVE);
+}
+
+/** Shared stop core (no resolution, no registry choice): delete
+ *  from queue + interrupt, best-effort. */
+async function stopForRunDirInner(
+  runDir: string,
+  active: Map<string, ActivePrompt>,
+): Promise<void> {
+  const rec: ActivePrompt | undefined = active.get(String(runDir));
   if (rec === undefined) return;
   await interrupt(rec.server, rec.promptId);
 }
@@ -573,10 +598,18 @@ export async function stopForRunDir(runDir: string): Promise<void> {
  *  {"unload_models": true, "free_memory": true}. Raises ComfyError on
  *  a non-2xx so the caller can DOCUMENT a failed unload (RESILIENCE
  *  LAW) and continue — never silently resident. Unwired (single-engine
- *  preview — flowsRun.ts owns the boundary call when it lands). */
+ *  preview — flowsRun.ts owns the boundary call when it lands).
+ *
+ *  NON-PLUGIN callers only (walls/probes/unit — no Context).
+ *  Plugin paths use ComfyUIHostService.unloadModels (same inner). */
 export async function unloadModels(serverOverride: string = ""): Promise<void> {
   const server: string =
     serverOverride !== "" ? serverOverride : resolveEngineBaseUrl();
+  return unloadModelsInner(server);
+}
+
+/** Shared unload core (no resolution): POST /free, LOUD on non-2xx. */
+async function unloadModelsInner(server: string): Promise<void> {
   const { status } = await httpCall(
     "POST",
     server + "/free",
@@ -873,7 +906,12 @@ async function pollToTerminal(
   }
 }
 
-/** native.execute port (per-stage submit + poll + fetch). */
+/** native.execute port (per-stage submit + poll + fetch).
+ *
+ *  NON-PLUGIN callers only (walls/probes/unit — no Context).
+ *  Plugin paths (doors) use ComfyUIHostService.executeSingle (same
+ *  inner, fiber-owned prompts map + service-resolved server).
+ *  Documented split, never two truths. */
 export async function executeSingle(
   runDir: string,
   nodeParams: Record<string, EngineJson>,
@@ -883,13 +921,25 @@ export async function executeSingle(
 ): Promise<ExecuteResult> {
   const server: string =
     serverOverride !== "" ? serverOverride : resolveEngineBaseUrl();
+  return executeSingleInner(runDir, nodeParams, nodeOutputs, opts, server, ACTIVE);
+}
+
+/** Shared execute core (no resolution, no registry choice). */
+async function executeSingleInner(
+  runDir: string,
+  nodeParams: Record<string, EngineJson>,
+  nodeOutputs: Record<string, EngineJson>,
+  opts: ExecuteOpts,
+  server: string,
+  active: Map<string, ActivePrompt>,
+): Promise<ExecuteResult> {
   const params: Record<string, EngineJson> = { ...nodeParams };
   const wf: Record<string, EngineJson> = spliceWorkflow(params);
   const staged = await uploadReferenced(server, wf);
   const timeoutS: number = Number(params["timeout_s"] ?? 2400) || 2400;
   const deadline: number = Date.now() + timeoutS * 1000;
   const { promptId } = await submitPrompt(server, staged.graph, false);
-  ACTIVE.set(String(runDir), {
+  active.set(String(runDir), {
     promptId,
     clientId: "",
     server,
@@ -1210,7 +1260,12 @@ export interface FlowResult {
 }
 
 /** mergegraph.execute_flow port: plan, submit ONCE, tap-less poll,
- *  per-stage harvest. */
+ *  per-stage harvest.
+ *
+ *  NON-PLUGIN callers only (walls/probes/unit — no Context).
+ *  Plugin paths (the flows-start worker) use
+ *  ComfyUIHostService.executeFlow (same inner, fiber-owned prompts
+ *  map + service-resolved server). Documented split, never two truths. */
 export async function executeFlow(
   rows: MergeRow[],
   runDir: string,
@@ -1219,12 +1274,25 @@ export async function executeFlow(
   opts: ExecuteOpts = {},
   serverOverride: string = "",
 ): Promise<FlowResult> {
-  const plan = planMerge(rows, { ...initials }, inputNames);
   const server: string =
     serverOverride !== "" ? serverOverride : resolveEngineBaseUrl();
+  return executeFlowInner(rows, runDir, inputNames, initials, opts, server, ACTIVE);
+}
+
+/** Shared merged core (no resolution, no registry choice). */
+async function executeFlowInner(
+  rows: MergeRow[],
+  runDir: string,
+  inputNames: Record<string, Record<string, string>>,
+  initials: Record<string, EngineJson>,
+  opts: ExecuteOpts,
+  server: string,
+  active: Map<string, ActivePrompt>,
+): Promise<FlowResult> {
+  const plan = planMerge(rows, { ...initials }, inputNames);
   const staged = await uploadReferenced(server, plan.workflow);
   const { promptId, clientId } = await submitPrompt(server, staged.graph, true);
-  ACTIVE.set(String(runDir), { promptId, clientId, server });
+  active.set(String(runDir), { promptId, clientId, server });
   // the merged deadline: the SUM of the stages' own budgets
   // (mergegraph 318-327); per-stage floors apply.
   let budget: number = 0;
@@ -1266,6 +1334,226 @@ export async function executeFlow(
     }
     return { stages: results, promptId };
   } finally {
-    ACTIVE.delete(String(runDir));
+    active.delete(String(runDir));
   }
+}
+
+// ── the engine client as a Cordis Service (stroke 4b,
+// DSH-AS-LANGUAGE LAW) ───────────────────────────────────────────
+// SERVICE NAME: 'comfyui' (the estate canon's own named exemplar —
+// the card plane's ctx.comfyui, "provided once by the host plugin,
+// injected by cards", is the shape copied here). RUNTIME key and
+// inject spelling are the canon 'comfyui'; the TypeScript property
+// spelling ctx.comfyui stays owned by the card plane's augmentation
+// (@comfyui/cordis service.ts declares comfyui: ComfyUIService — a
+// second augmentation with a different type would be a TS2717 merge
+// clash, so this module deliberately declares NONE). Typed access
+// is needComfyUI(ctx) below (ctx.get + instanceof + LOUD miswire —
+// one cast site; it even catches a card-plane instance stranded on
+// the gateway fiber). The gateway fiber provides the host service;
+// the card plane's throwaway compose Context provides its own —
+// different fibers, same key, never the same registry.
+//
+// OWNS: the fiber-owned live-prompt map (the retired module ACTIVE
+// handle's plugin face — stroke-2 defect class) and the endpoint
+// server resolution (lazy once-per-fiber, cached).
+//
+// CONFIG (each decision documented — the task's init/Config rule):
+//   - static provider Config {url?, host?, port?}: the DSH-faithful
+//     host/port/url triple (host+port compose to http://host:port
+//     when url is absent). Hand-rolled validator (parseComfyUIHostConfig
+//     below) — schemastery is NOT a dep of the engine leaf and the
+//     task bans new npm deps, so the validator IS the schema (LOUD
+//     on wrong shapes, never a silent coerce).
+//   - explicit Config url wins (operator pin > everything).
+//   - COMFYUI_URL env: stays — WALL-PINNED engine truth (the e2e
+//     walls boot COMFYUI_URL=stub_url; the card e2e pins :18466).
+//   - COMFYUI_ENDPOINT_CONFIG env path: stays — the deploy seam
+//     (explicit file pin, read live per resolution).
+//   - data/comfyui_endpoint.json url: stays — estate truth (the
+//     endpoint machine statement; NO default, NO hardcoded
+//     host/port — QUEUE LANE LAW).
+//   - INFERENCE_TEST_SANDBOX gate: stays — engine-truth mirror
+//     (_config.py: a sandboxed test with no env path resolves to
+//     {}, never the product file).
+//   - MELITE_REPO_ROOT: stays — the wall fixture seam (fixture
+//     repo roots carry no endpoint file -> LOUD ComfyError only
+//     when a caller actually submits, never at boot: the TS walls
+//     boot fixture repos with no endpoint url, so resolution is
+//     LAZY (first use), never at provide time).
+
+/** Static provider config — the DSH host/port/url triple. */
+export interface ComfyUIHostConfig {
+  readonly url?: string;
+  readonly host?: string;
+  readonly port?: number;
+}
+
+/** The Config schema (hand-rolled — see the header note): unknown
+ *  in, validated triple out. Wrong shapes throw LOUD. */
+export function parseComfyUIHostConfig(raw: unknown): ComfyUIHostConfig {
+  if (raw === undefined || raw === null) return {};
+  if (typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error(
+      "[comfyui] host Config must be an object {url?, host?, port?} — got " +
+        (Array.isArray(raw) ? "array" : typeof raw),
+    );
+  }
+  const rec: Record<string, unknown> = raw as Record<string, unknown>;
+  const out: { url?: string; host?: string; port?: number } = {};
+  if (rec["url"] !== undefined) {
+    if (typeof rec["url"] !== "string" || (rec["url"] as string).trim() === "") {
+      throw new Error("[comfyui] host Config url must be a non-empty string");
+    }
+    out.url = (rec["url"] as string).trim().replace(/\/+$/, "");
+  }
+  if (rec["host"] !== undefined) {
+    if (typeof rec["host"] !== "string" || (rec["host"] as string).trim() === "") {
+      throw new Error("[comfyui] host Config host must be a non-empty string");
+    }
+    out.host = (rec["host"] as string).trim();
+  }
+  if (rec["port"] !== undefined) {
+    if (
+      typeof rec["port"] !== "number" ||
+      !Number.isInteger(rec["port"]) ||
+      (rec["port"] as number) < 1 ||
+      (rec["port"] as number) > 65535
+    ) {
+      throw new Error("[comfyui] host Config port must be an integer 1..65535");
+    }
+    out.port = rec["port"] as number;
+  }
+  return out;
+}
+
+export class ComfyUIHostService extends Service {
+  /** Provider-configured base (operator pin — wins over env/file). */
+  private readonly configured: string | null;
+  /** Lazily resolved server (once per fiber — see resetForTests). */
+  private resolved: string | null = null;
+  /** Live prompts (run_dir -> handle — the retired module ACTIVE
+   *  handle's fiber-owned successor). */
+  private readonly prompts: Map<string, ActivePrompt> = new Map();
+
+  constructor(ctx: Context, config: ComfyUIHostConfig = {}) {
+    super(ctx, "comfyui");
+    if (config.url !== undefined) {
+      this.configured = config.url;
+    } else if (config.host !== undefined || config.port !== undefined) {
+      const host: string = config.host ?? "127.0.0.1";
+      const port: number = config.port ?? 8188;
+      this.configured = "http://" + host + ":" + String(port);
+    } else {
+      this.configured = null;
+    }
+  }
+
+  /** Test seam: drop the resolved server + all live-prompt handles
+   *  (walls boot fresh processes; belt-and-braces for in-process
+   *  reuse — the RunsService parity). */
+  resetForTests(): void {
+    this.resolved = null;
+    this.prompts.clear();
+  }
+
+  /** The engine base URL (lazy once-per-fiber): Config pin >
+   *  COMFYUI_URL env (wall-pinned) > endpoint file (estate truth).
+   *  Absent everywhere = the LOUD ComfyError (native 82-84 — NO
+   *  default, NO hardcoded host/port). */
+  baseUrl(): string {
+    if (this.resolved !== null) return this.resolved;
+    const server: string =
+      this.configured !== null ? this.configured : resolveEngineBaseUrl();
+    this.resolved = server;
+    return server;
+  }
+
+  /** Per-stage submit + poll + fetch (the plugin face of
+   *  executeSingleInner — same inner, fiber-owned prompts). */
+  executeSingle(
+    runDir: string,
+    nodeParams: Record<string, EngineJson>,
+    nodeOutputs: Record<string, EngineJson>,
+    opts: ExecuteOpts = {},
+  ): Promise<ExecuteResult> {
+    return executeSingleInner(
+      runDir,
+      nodeParams,
+      nodeOutputs,
+      opts,
+      this.baseUrl(),
+      this.prompts,
+    );
+  }
+
+  /** Merged submit ONCE + tap-less poll + per-stage harvest (the
+   *  plugin face of executeFlowInner — the flows-start worker's
+   *  path). */
+  executeFlow(
+    rows: MergeRow[],
+    runDir: string,
+    inputNames: Record<string, Record<string, string>>,
+    initials: Record<string, EngineJson>,
+    opts: ExecuteOpts = {},
+  ): Promise<FlowResult> {
+    return executeFlowInner(
+      rows,
+      runDir,
+      inputNames,
+      initials,
+      opts,
+      this.baseUrl(),
+      this.prompts,
+    );
+  }
+
+  /** Interrupt + dequeue the live prompt for one run dir (the
+   *  plugin face of stopForRunDirInner — the flows-stop door's
+   *  path). Unknown dir = silent no-op (the flag is the authority,
+   *  as py). */
+  stopForRunDir(runDir: string): Promise<void> {
+    return stopForRunDirInner(runDir, this.prompts);
+  }
+
+  /** Drop every cached model + the execution cache from VRAM (the
+   *  plugin face of unloadModelsInner). */
+  unloadModels(): Promise<void> {
+    return unloadModelsInner(this.baseUrl());
+  }
+}
+
+/** The provider plugin (fiber-owned): owns the ComfyUIHostService
+ *  lifetime. No prime step (resolution is lazy at first use — the
+ *  fixture boots of the TS walls carry no endpoint url, so provide
+ *  time must never resolve). Manifest row engine-comfyui rides
+ *  BEFORE every consumer (flows-start, flows-stop). Loadable entry:
+ *  packages/engines/comfyui/src/entries/comfyui-host.ts (the DSH
+ *  leaf discipline — addressed code loads by address, never as a
+ *  `cordis:` builtin). */
+export const comfyuiHostProvider: Plugin = {
+  name: "engine-comfyui",
+  apply(ctx: Context, config?: unknown): void {
+    new ComfyUIHostService(ctx, parseComfyUIHostConfig(config));
+  },
+};
+
+/** Resolve the service for request-path helpers that take it as an
+ *  optional trailing param (the stroke-2b shape): an explicit arg
+ *  wins. Null = the caller forgot to thread ctx.comfyui — a bug, so
+ *  reads throw LOUD (an engine call without an engine is never a
+ *  silent module fallback). Door listeners MUST pass
+ *  needComfyUI(ctx) (their inject declares 'comfyui'). */
+export function needComfyUI(
+  ctx: Context,
+  where: string,
+): ComfyUIHostService {
+  const svc: unknown = ctx.get("comfyui");
+  if (svc instanceof ComfyUIHostService) return svc;
+  throw new Error(
+    "[comfyui] no ComfyUIHostService for " + where +
+      " — doors inject 'comfyui' and pass needComfyUI(ctx) " +
+      "(the manifest's engine-comfyui row provides at boot; a " +
+      "card-plane ComfyUIService on this fiber is a miswire)",
+  );
 }
