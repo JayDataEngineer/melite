@@ -2,19 +2,30 @@
 // port). One place per multi-node consensus; cards call blocks,
 // never raw node chains, so lane facts stay single-sourced.
 import { GraphBuilder, OutputHandle } from '../graph.ts'
+import type { JsonValue, NodeRef } from '../graph.ts'
 import type { LaneInputsFacts } from '../facts.ts'
 
 /** The text-encode pair: CLIPLoader + VAELoader from lane rows.
  *  Returns OUTPUT HANDLES (never NodeRefs — a ref in an inputs bag
  *  serializes as a scalar and the wall goes red). */
 export function loadTextPair(g: GraphBuilder, li: LaneInputsFacts): { clip: OutputHandle; vae: OutputHandle } {
-  const clip = g.node('CLIPLoader', { clip_name: li.text_encoder, type: li.clip_type }).out()
-  const vae = g.node('VAELoader', { vae_name: li.vae }).out()
+  // (2026-09-08: the `as JsonValue` casts — lane rows are honestly
+  // unknown-typed; the node inputs bag needs JsonValue. The cast is
+  // type-level only; whatever the row carries rides unchanged.)
+  const clip = g.node('CLIPLoader', { clip_name: li.text_encoder as JsonValue, type: li.clip_type as JsonValue }).out()
+  const vae = g.node('VAELoader', { vae_name: li.vae as JsonValue }).out()
   return { clip, vae }
 }
 
-/** The image-lane tail: VAEDecode + SaveImage under the prefix. */
-export function decodeSave(g: GraphBuilder, sampled: OutputHandle, vae: OutputHandle, filenamePrefix: string): OutputHandle {
+/** The image-lane tail: VAEDecode + SaveImage under the prefix.
+ *  Returns the SaveImage NODE REF (terminal — no downstream wire):
+ *  callers take `.out()` off it (kit.ts imageT2I) or discard it.
+ *  (2026-09-08: the declared return was OutputHandle, which the
+ *  implementation never returned — a NodeRef. OutputHandle has no
+ *  .out() method, so "fixing" the implementation to match the
+ *  declaration would crash kit.ts:88 at runtime; the declaration
+ *  now names the truth. Type-level only; runtime-identical.) */
+export function decodeSave(g: GraphBuilder, sampled: OutputHandle, vae: OutputHandle, filenamePrefix: string): NodeRef {
   const decoded = g.node('VAEDecode', { samples: sampled, vae })
   return g.node('SaveImage', { images: decoded.out(), filename_prefix: filenamePrefix })
 }

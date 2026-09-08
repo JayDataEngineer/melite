@@ -42,17 +42,16 @@
 //   The (comfyui.comfyui) compose prefix rides ENGINE_TABLE[comfyui]
 //   (plugin dir name + engine type, as scan_engines reports them).
 //
-// STAMP EQUIVALENCE (why the TS arm skips _route_stamp_overlay,
-// gateway.py:702): the overlay stamps family defaults for absent
-// keys — exactly the model-defaults layer the cordis CLI merges
-// anyway (same class rows via tools/export_model_facts.py) — so the
-// merged params are identical for family mids. Variant routes
-// (krea-2-raw) resolve to the family THROUGH the facts variant
-// tables (mirroring _route_family), and the CLI is addressed with
-// the family id exactly as card_compose is (compose/__init__.py:126
-// + gateway.py:669). Missing-required refusals are value-free, so
-// the overlay is invisible on every wall leg; the header + wall say
-// so, not the code alone.
+// STAMP OVERLAY (gateway.py _route_stamp_overlay 702-751, shared
+// via doors/flowsCard.ts overlayCardParams — the SAME helper the
+// start door's phase-1 runs, so validate+start compose identical
+// params): family defaults + the selected variant's
+// resolver_defaults, absent-keys-only, filtered to the card field
+// surface; R1 variant/quant keys consumed. Missing-required
+// refusals are value-free, so the overlay is invisible on every
+// byte leg; on variant routes (krea-2-raw's steps=52) it is
+// load-bearing — the CLI merges only family defaults, exactly as
+// card_compose does after the py overlay.
 //
 // RETRIES/TIMEOUT_S QUIRK (flow.py:1463-1470): flow_from_body pulls
 // stage fields BY NAME and never passes retries/timeout_s to
@@ -81,6 +80,7 @@ import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "../core/errors.ts";
 import type { GatewayRequest } from "../ctx.ts";
 import { matchRoute } from "../routeUtil.ts";
+import { CardArmError, overlayCardParams } from "./flowsCard.ts";
 import {
   checkStrictBody,
   DOOR_KEYS,
@@ -145,14 +145,11 @@ const STAGE_KEYS_SORTED: readonly string[] = [
 
 // ── strict-body vocab (python/gateway.py:230-245) ───────────────────
 // Owned by the admission gate (src/core/params.ts — the SSOT shared
-// with the start door); the CARD_ENVELOPE_KEYS lift + id REs below
-// stay here (flow-construction semantics, not envelope admission).
-const CARD_ENVELOPE_KEYS: readonly string[] = [
-  ...DOOR_KEYS,
-  "draft_id",
-  "test",
-  "service",
-];
+// with the start door); the envelope lift the modelArm used to own
+// here moved to doors/flowsCard.ts (overlayCardParams — the SAME
+// lift the start door runs, so validate+start compose identical
+// params). The id REs below stay here (flow-construction semantics,
+// not envelope admission).
 
 const FLOW_ID_RE: RegExp = /^[a-z_][a-z0-9_-]*$/;
 // Pydantic message pin (see header): the faked 2.13 shapes.
@@ -1657,11 +1654,29 @@ function modelArm(body: Record<string, unknown>): FlowsValidateAnswer {
       }),
     };
   }
-  const params: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(body)) {
-    if (!(CARD_ENVELOPE_KEYS as readonly string[]).includes(k)) params[k] = v;
+  // THE ROUTE-LENS STAMP OVERLAY (gateway.py _route_stamp_overlay
+  // 705-751, shared with the start door via doors/flowsCard.ts):
+  // family defaults + the selected variant's resolver_defaults,
+  // absent-keys-only, filtered to the card field surface; the R1
+  // variant/quant contract keys are consumed (matched against the
+  // facts matrix, never ridden to compose). Invisible on every
+  // byte leg (the CLI merges the same family defaults anyway;
+  // missing-required refusals are value-free) and load-bearing on
+  // variant routes (krea-2-raw's steps=52).
+  let overlaid: { fam: string; card: string; params: Record<string, unknown> };
+  try {
+    overlaid = overlayCardParams(body, mid);
+  } catch (e) {
+    if (e instanceof CardArmError) {
+      return {
+        status: 400,
+        payload: refusalEnvelope({ message: e.message, code: e.code }),
+      };
+    }
+    throw e;
   }
-  const refused: Refusal | null = composeViaCli(fam, famRow.card, params);
+  const params: Record<string, unknown> = overlaid.params;
+  const refused: Refusal | null = composeViaCli(overlaid.fam, overlaid.card, params);
   if (refused !== null) {
     return { status: 400, payload: refusalEnvelope(refused) };
   }

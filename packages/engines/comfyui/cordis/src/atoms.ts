@@ -6,7 +6,11 @@ import z from '@deepseek-ai/schemastery'
 
 type Meta = { label?: string; group?: string; order?: number; tooltip?: string }
 
-const atom = <T>(schema: T, meta: Meta): T => Object.assign(schema, { meta })
+// (2026-09-08: the `as T` cast — Object.assign's `T & {meta}`
+// return is the runtime truth (the meta rides the schema object),
+// but the declared surface stays T so every card's schema type is
+// unchanged. Type-level only; runtime-identical.)
+const atom = <T extends object>(schema: T, meta: Meta): T => Object.assign(schema, { meta }) as T
 
 export const Text = (meta: Meta = {}) => atom(z.string(), meta)
 export const Textarea = (meta: Meta = {}) => atom(z.string(), meta)

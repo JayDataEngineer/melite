@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@comfyui/cordis": "workspace:*",
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/schemastery": "*",
     "@deepseek-ai/cordis-plugin-loader": "workspace:*",

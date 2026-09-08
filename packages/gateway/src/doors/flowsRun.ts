@@ -46,16 +46,22 @@
 //     pins the receipt BODY and the terminal "stopped" convergence,
 //     not the latency).
 //
-// SERVED SHAPE (preview scope): single-stage flow_inline runs whose
-// stage engine is "comfyui" with params.workflow (+ optional inject,
-// timeout_s, output_nodes). Named flows ({flow:}), card models
-// ({model:}) and multi-stage graphs stay on the py gateway — those
-// doors refuse here with an explicit preview_scope 400 (never a
-// silent accept, QUEUE LANE LAW).
+// SERVED SHAPE: single-stage flow_inline runs whose stage engine is
+// "comfyui" with params.workflow (+ optional inject, timeout_s,
+// output_nodes), AND card-model runs ({model:} — the card composer
+// arm in ./flowsCard.ts: resolve -> sweep -> overlay -> in-process
+// compose -> the single stage row -> the same engine layer).
+// Named flows ({flow:}) and multi-stage graphs stay on the py
+// gateway — those doors refuse here with an explicit preview_scope
+// 400 (never a silent accept, QUEUE LANE LAW).
 // DOCUMENTED PREVIEW GAPS (py stays authoritative):
-//   - no sidecar writes (_request.json/_flow.json) and no ledger
-//     rows: status reads are registry-live; a restarted TS process
-//     reports unknown run_id (py falls back to sidecar_status).
+//   - flow_inline runs write no sidecar (_request.json/_flow.json)
+//     and no ledger rows: status reads are registry-live; a
+//     restarted TS process reports unknown run_id (py falls back
+//     to sidecar_status). CARD RUNS close this gap: the card arm
+//     writes the verbatim _request.json + the _flow.json sidecar
+//     document (queue.ts sidecarDoc, py sidecar() key order) and
+//     the run.queued ledger row (py submit 1347-1351).
 //   - progress/activity ticks stay tap-less: the engine poll reports
 //     nothing mid-run, so py's _mreport activity frames
 //     (gateway.py 1526-1537) have no TS source — the bus carries the
@@ -90,6 +96,20 @@ import {
 } from "../engine/comfyui.ts";
 import type { EngineJson, MergeRow } from "../engine/comfyui.ts";
 import { applyRunContract } from "../schema/verbs.ts";
+import {
+  appendLedger,
+  atomicWriteJson,
+  pipelineOf,
+  sidecarDoc,
+} from "../queue/queue.ts";
+import type { GraphRow } from "../queue/queue.ts";
+import {
+  CardArmError,
+  phase1Card,
+  phase2Card,
+  pyStrMid,
+} from "./flowsCard.ts";
+import type { Phase1Card } from "./flowsCard.ts";
 import { terminalFrame } from "../queue/queue.ts";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "../core/errors.ts";
@@ -149,10 +169,9 @@ export interface RunRecord {
   outputNodes: Record<string, EngineJson>[];
   /** P6 OUTPUT CONTRACT context: the card whose promise the settle
    *  gate enforces (py worker run-level arm, gateway.py 1380-1391).
-   *  The submit door never sets it ({model:} / card= runs refuse
-   *  preview_scope there), so it is absent on every served shape —
-   *  the status body builder names explicit keys and never leaks it.
-   *  It activates the day card/model runs ride this worker. */
+   *  Set by the {model:} card arm (the composed card id); absent on
+   *  flow_inline rows. The status body builder names explicit keys
+   *  and never leaks it. */
   cardId?: string;
 }
 
@@ -531,8 +550,11 @@ function newRunId(): string {
 
 /** POST /v1/flows/start — mirrors _h_flows_start + submit's
  *  pre-registration chain. Returns the (status, payload) pair; the
- *  dispatcher serializes via serializePy (byte-identical bodies). */
-export function handleFlowsStart(doc: unknown): Refusal & { runId?: string } {
+ *  dispatcher serializes via serializePy (byte-identical bodies).
+ *  Async: the {model:} arm composes in-process (flowsCard.ts). */
+export async function handleFlowsStart(
+  doc: unknown,
+): Promise<Refusal & { runId?: string }> {
   // Envelope structure rides the admission gate (schemastery);
   // every refusal below keeps its pinned text, in the original
   // order. The on-disk draft lookup stays here (domain, not type).
@@ -616,14 +638,14 @@ export function handleFlowsStart(doc: unknown): Refusal & { runId?: string } {
       "invalid_request",
     );
   }
+  if ("model" in body) {
+    return handleCardStart(body, testFlag, draftId);
+  }
   if (!("flow_inline" in body)) {
-    if ("flow" in body || "model" in body) {
-      const which: string = "flow" in body ? "flow" : "model";
+    if ("flow" in body) {
       return refusal(
         400,
-        "{" +
-          which +
-          "} runs stay on the py gateway in the TS preview — " +
+        "{flow} runs stay on the py gateway in the TS preview — " +
           "serve flow_inline comfyui runs here",
         "preview_scope",
       );
@@ -678,6 +700,144 @@ export function handleFlowsStart(doc: unknown): Refusal & { runId?: string } {
     { [st.id]: st.inputNames };
   RUNS.set(runId, run);
   ORDER.push(runId);
+  void pump();
+  return {
+    status: 202,
+    payload: { run_id: runId, status: "queued" },
+    runId,
+  };
+}
+
+// ── the {model:} card arm (resolve -> compose -> register) ──
+
+/** Map a CardArmError onto the refusal envelope (byte parity: the
+ *  error verbatim + code + loc/expected/got only when set). */
+function cardRefusal(err: CardArmError): Refusal {
+  return refusal(
+    err.status,
+    err.message,
+    err.code,
+    err.loc,
+    err.expected,
+    err.got,
+  );
+}
+
+/** The card start arm (py submit's {model:} path 1273-1351):
+ *  phase-1 compose (run_id "") BEFORE registration (a params
+ *  refusal names its field, never a zombie slot), mint the run id,
+ *  phase-2 compose the SAME overlaid body with the real id, wrap
+ *  the PromptGraph as the single stage row (the rim), register +
+ *  sidecar (_request.json verbatim + _flow.json) + the run.queued
+ *  ledger row, pump. Every compose failure refuses with the phase-N
+ *  voice and registers nothing. */
+async function handleCardStart(
+  body: Record<string, unknown>,
+  testFlag: boolean,
+  draftId: string,
+): Promise<Refusal & { runId?: string }> {
+  const mid: string = pyStrMid(body["model"]);
+  let p1: Phase1Card;
+  try {
+    p1 = await phase1Card(body, mid);
+  } catch (e) {
+    if (e instanceof CardArmError) return cardRefusal(e);
+    throw e;
+  }
+  const runId: string = newRunId();
+  let graph: Record<string, unknown>;
+  try {
+    graph = (await phase2Card(p1, runId)).graph;
+  } catch (e) {
+    if (e instanceof CardArmError) return cardRefusal(e);
+    throw e;
+  }
+  const skeleton: string = p1.skeleton;
+  const dir: string = join(resolveOutRoot(testFlag), runId);
+  mkdirSync(dir, { recursive: true });
+  const params: Record<string, EngineJson> = {
+    workflow: graph as unknown as EngineJson,
+  };
+  const run: RunRecord = {
+    runId,
+    status: "queued",
+    stages: [
+      {
+        id: skeleton,
+        name: skeleton,
+        index: 0,
+        status: "pending",
+        outputs: {},
+        expected: {},
+      },
+    ],
+    skippedStages: [],
+    artifacts: [],
+    error: "",
+    draftId,
+    dir,
+    testFlag,
+    stopFlag: false,
+    params: [params],
+    outputNodes: [{}],
+    cardId: p1.card,
+  };
+  (run as { inputNames?: Record<string, Record<string, string>> }).inputNames =
+    { [skeleton]: {} };
+  const createdAt: number = Date.now() / 1000;
+  const graphRows: GraphRow[] = [
+    {
+      id: skeleton,
+      type: "comfyui",
+      input_from: [],
+      input_names: {},
+      outputs: {},
+      params: { workflow: graph },
+    },
+  ];
+  RUNS.set(runId, run);
+  ORDER.push(runId);
+  // R3 durable queue (submit 1322 + 1347-1351): the verbatim request
+  // rides _request.json, the compiled document rides _flow.json, and
+  // run.queued in the ledger is what a restart reconciles against.
+  const stateRoot: string = resolveStateRoot();
+  try {
+    atomicWriteJson(join(dir, "_request.json"), body);
+  } catch {
+    /* the sidecar must never take registration down */
+  }
+  try {
+    atomicWriteJson(
+      join(dir, "_flow.json"),
+      sidecarDoc({
+        runId,
+        status: "queued",
+        error: "",
+        stages: run.stages.map((s) => ({
+          id: s.id,
+          name: s.name,
+          index: s.index,
+          status: s.status,
+          outputs: { ...(s.outputs as Record<string, unknown>) },
+          expected: { ...(s.expected as Record<string, unknown>) },
+        })),
+        skippedStages: [],
+        artifacts: [],
+        createdAt,
+        testFlag,
+        draftId,
+        pipeline: pipelineOf(body),
+        graph: graphRows,
+      }),
+    );
+  } catch {
+    /* the sidecar must never take registration down */
+  }
+  appendLedger(stateRoot, "run.queued", {
+    run_id: runId,
+    draft_id: draftId,
+    pipeline: pipelineOf(body),
+  });
   void pump();
   return {
     status: 202,
@@ -840,10 +1000,10 @@ async function runOne(run: RunRecord): Promise<void> {
     // exact refusal (documented failure, the queue continues). No
     // per-stage arm here: py's merged path (_try_merged) has none —
     // the per-stage gate lives in the per-stage loop (py 1821-1832)
-    // this preview worker does not run. cardId is never set by the
-    // submit door (preview_scope), so this is a no-op on every
-    // served shape — the wall exercises applyRunContract directly,
-    // py-vs-TS byte-equal.
+    // this preview worker does not run. cardId rides the {model:}
+    // card arm (absent on flow_inline rows, where the gate stays a
+    // no-op — the wall exercises applyRunContract directly,
+    // py-vs-TS byte-equal).
     if (run.status === "completed") {
       const settled = applyRunContract(
         { status: run.status, error: run.error },
@@ -1017,7 +1177,7 @@ export const flowsStartDoors: Plugin = {
   apply(ctx: Context): void {
     ctx.on(
       "gateway/request",
-      (req: GatewayRequest): DispatchResult | undefined => {
+      async (req: GatewayRequest): Promise<DispatchResult | undefined> => {
         const hit = matchRoute(req.method, req.path);
         if (hit === null || hit.row.handler !== "_h_flows_start") {
           return undefined;
@@ -1038,7 +1198,7 @@ export const flowsStartDoors: Plugin = {
         const answered: {
           status: number;
           payload: Record<string, unknown>;
-        } = handleFlowsStart(parsed.doc);
+        } = await handleFlowsStart(parsed.doc);
         errors.normalize4xx(answered.status, answered.payload);
         return {
           status: answered.status,

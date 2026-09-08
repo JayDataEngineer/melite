@@ -27,6 +27,11 @@ export interface CardDefinition {
   boarded: readonly string[]
   /** Extension packs the card's renderers ride (EXTENSION LAW). */
   requires?: readonly string[]
+  /** Per-family extension packs — the py requires_by_family mirror.
+   *  (2026-09-08: declared on the base interface — the compose door
+   *  below already read it; tagger.ts / img-to-mesh.ts module
+   *  augmentations merge the identical shape. Type-level only.) */
+  requiresByFamily?: Record<string, readonly string[]>
   /** Schemastery schema of the card params (validated before compose). */
   schema: (v: unknown) => Record<string, unknown>
   /** Build the graph. Order of node creation IS the node-id order. */
@@ -100,7 +105,7 @@ export class ComfyUIService extends Service {
     } catch (e) {
       throw new ComposeRefusal('bad-params', `card '${cardId}' refused params: ${(e as Error).message}`)
     }
-    merged = { ...merged, ...Object.fromEntries(Object.entries(model.defaults).filter(([, v]) => v !== null && !(v instanceof Array))), ...((params ?? {}) as Record<string, unknown>) }
+    merged = { ...merged, ...Object.fromEntries(Object.entries(model.defaults).filter(([, v]) => v !== null && !Array.isArray(v))), ...((params ?? {}) as Record<string, unknown>) }
 
     // EXTENSION LAW gate: family slice wins when present (py
     // requires_by_family precedent); flat union otherwise.
