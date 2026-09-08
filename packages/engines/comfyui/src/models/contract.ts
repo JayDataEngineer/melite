@@ -36,7 +36,9 @@ export const SAFE_ID_RE = /^[a-z0-9_-]+$/;
 // ── served/emitted rows ─────────────────────────────────────────────
 
 export interface SourceRow {
-  type: string;
+  /** Absent = untyped (every reader ?? ""s — the download law
+   *  composes repo + filename, never the type). */
+  type?: string;
   repo_id?: string;
   filename?: string;
 }
@@ -103,11 +105,15 @@ export interface CellRow {
    *  copy's full truth) — the derived route view prefers
    *  cell → variant → model. */
   description?: string;
-  route: string;
-  engine: string;
+  /** Absent = unaddressable (the flattener's "" sentinel is
+   *  retired — readers test truthiness, never ==""). */
+  route?: string;
+  /** Absent = the atom's engine (every reader ?? ""s). */
+  engine?: string;
   vram_peak_gb?: number;
-  resolver_defaults: Record<string, unknown>;
-  hide_from_dropdown: boolean;
+  resolver_defaults?: Record<string, unknown>;
+  /** Present-only-when-true (absent ≡ shown). */
+  hide_from_dropdown?: boolean;
   artifact?: CellArtifact | null;
 }
 
@@ -130,12 +136,17 @@ export interface VariantRow {
   /** The variant's own flat description override (the derived
    *  route view prefers cell → variant → model). */
   description?: string;
-  hint: string;
+  /** Absent = no hint (readers ?? "" — the "" sentinel is spam). */
+  hint?: string;
+  /** The dropdown group — always written (the UI defaults absent
+   *  to Quant, NOT Variant: stripping lies about membership). */
   group: string;
-  route: string;
-  engine: string;
+  /** Absent = unaddressable (truthiness-tested, never ==""). */
+  route?: string;
+  /** Absent = the atom's engine (every reader ?? ""s). */
+  engine?: string;
   order?: number;
-  resolver_defaults: Record<string, unknown>;
+  resolver_defaults?: Record<string, unknown>;
   /** The variant's LANE INPUT stamps (the intercept over the
    *  model's base lane_inputs — e.g. the base checkpoint's
    *  model_path; merged base ← variant at the derived read). */
@@ -162,8 +173,8 @@ export const VariantRow: z<VariantRow> = z.object({
 export interface VariantGroupRow {
   id: string;
   label: string;
-  tooltip: string;
-  default: string;
+  tooltip?: string;
+  default?: string;
 }
 
 export const VariantGroupRow: z<VariantGroupRow> = z.object({
@@ -181,13 +192,21 @@ export interface ProvisionRow {
   size_bytes?: number;
 }
 
-/** The family declaration — the model.py unit's data shape. */
+/** The family declaration — the model.py unit's data shape.
+ *
+ *  CONFORMANCE (operator order 2026-09-08 — the z-image verdict):
+ *  absent ≡ empty, enforced by the readers (?? [] / ?? "" /
+ *  === true — audited, wall-pinned). A declaration writes ONLY
+ *  what it means: no `"mods": []`, no `"engine": ""`, no
+ *  `: false`, no `{}`. The `as unknown as` cast is banned —
+ *  every DECL is `: ModelDecl`, tsc is the conformance gate. */
 export interface ModelDecl {
   id: string;
   genre: string;
   label: string;
-  description: string;
-  engine: string;
+  description?: string;
+  /** Absent = comfyui (every reader ?? ""s). */
+  engine?: string;
   /** Present-only-when-true: an unoffered model registers but
    *  serves no surface. The DEFAULT is offered — no key. */
   unoffered?: boolean;
@@ -201,22 +220,23 @@ export interface ModelDecl {
     layout?: string;
     kind?: string;
   } | null;
-  mods: string[];
+  /** Absent = boards nothing (the z-image shape). */
+  mods?: string[];
   variants: VariantRow[];
-  variant_groups: VariantGroupRow[];
-  provisions: ProvisionRow[];
+  variant_groups?: VariantGroupRow[];
+  provisions?: ProvisionRow[];
   prompt_guide?: Record<string, unknown> | null;
-  base_body: string;
-  accepts: string[];
+  base_body?: string;
+  accepts?: string[];
   timeout_floor?: number;
-  canvas_default: boolean;
+  canvas_default?: boolean;
   character_presets?: ReadonlyArray<Record<string, unknown>>;
   /** Per-family graph-variance rows (z-image's AuraFlow sampling
    *  shift, qwen-3 encoder — the lane's own input truth). */
   lane_inputs?: Record<string, unknown>;
-  has_agent: boolean;
-  has_inference: boolean;
-  has_rubric: boolean;
+  has_agent?: boolean;
+  has_inference?: boolean;
+  has_rubric?: boolean;
 }
 
 /** The catalog's served model row (the engine gate serves — an

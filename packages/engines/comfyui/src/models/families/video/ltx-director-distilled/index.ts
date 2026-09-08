@@ -13,7 +13,6 @@ export const DECL: ModelDecl = {
   "id": "ltx-director-distilled",
   "label": "LTX 2.3",
   "description": "LTX 2.3 text- and image-to-video generation via the Director workflow.",
-  "engine": "",
   "unoffered": true,
   "defaults": {
     "anchor_strength": 0.7,
@@ -68,9 +67,7 @@ export const DECL: ModelDecl = {
     "scheduler": "beta",
     "negative_prompt": null
   },
-  "base_body": "",
   "genre": "video",
-  "mods": [],
   "variants": [
     {
       "id": "dev",
@@ -78,9 +75,7 @@ export const DECL: ModelDecl = {
       "hint": "30+ step, max quality — different checkpoint",
       "group": "Variant",
       "route": "ltx-director-dev",
-      "engine": "",
       "order": 1,
-      "resolver_defaults": {},
       "cells": []
     },
     {
@@ -89,9 +84,7 @@ export const DECL: ModelDecl = {
       "hint": "8-step, ~3s/segment on a 4090 — fast preview tier",
       "group": "Variant",
       "route": "ltx-director-distilled",
-      "engine": "",
       "order": 0,
-      "resolver_defaults": {},
       "cells": []
     },
     {
@@ -100,9 +93,7 @@ export const DECL: ModelDecl = {
       "hint": "Legacy standard route — same distilled-1.1 checkpoint as the head; folded in from video/ltx2 (2026-08-16 combine), hidden",
       "group": "Variant",
       "route": "ltx2",
-      "engine": "",
       "order": 3,
-      "resolver_defaults": {},
       "cells": []
     },
     {
@@ -110,25 +101,17 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
   "variant_groups": [
     {
       "id": "Variant",
       "label": "Variant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Quant",
       "label": "Quant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Recipe",
@@ -137,13 +120,7 @@ export const DECL: ModelDecl = {
       "default": "default"
     }
   ],
-  "provisions": [],
-  "accepts": [],
-  "canvas_default": false,
-  "has_agent": false,
-  "has_inference": false,
-  "has_rubric": false
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-ltx-director-distilled",

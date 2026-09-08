@@ -125,11 +125,13 @@ export class ModelsService extends Service {
       claims.unshift({ route: decl.id, variantId: resolving.id, cellRoute: false })
     }
     for (const variant of decl.variants) {
-      if (variant.route !== "") {
+      // truthiness, never =="" (the conformance stroke: absent
+      // route = unaddressable — undefined must not claim).
+      if (variant.route) {
         claims.push({ route: variant.route, variantId: variant.id, cellRoute: false });
       }
       for (const cell of variant.cells) {
-        if (cell.route !== "" && cell.route !== variant.route) {
+        if (cell.route && cell.route !== variant.route) {
           claims.push({ route: cell.route, variantId: variant.id, cellRoute: true })
         }
       }
@@ -236,11 +238,15 @@ export class ModelsService extends Service {
       // read: label = model + variant + quant tokens joined;
       // description = the variant's real delta, else the model's.
       const labelTokens = [model.label, variant.label ?? "", cell?.label ?? ""].filter((t) => t !== "")
+      // absent ≡ empty (the conformance stroke): a missing model
+      // description mints NO key — assigning undefined would mint
+      // an undefined-valued own key (the drift above).
+      const deltaDesc = (variant.description ?? "") !== "" ? variant.description! : model.description;
       const derived: ModelDecl = {
         ...model,
         id,
         label: labelTokens.join(" "),
-        description: (variant.description ?? "") !== "" ? variant.description! : model.description,
+        ...(deltaDesc ? { description: deltaDesc } : {}),
       }
       // ONLY THE QUANT CARRIES THE DOWNLOAD: the model's repo +
       // the CELL's artifact filename compose the route's source
@@ -314,7 +320,7 @@ export class ModelsService extends Service {
     const c = this.cellOf(v, quant ?? null);
     return this.cascade(
       decl.defaults ?? {},
-      v.resolver_defaults,
+      v.resolver_defaults ?? {},
       c !== null && c.resolver_defaults !== undefined ? c.resolver_defaults : null,
     );
   }
@@ -353,7 +359,10 @@ export class ModelsService extends Service {
     const v = this.variantOf(decl, variant ?? null);
     const c = this.cellOf(v, quant ?? null);
     return {
-      route: c !== null && c.route !== "" ? c.route : v.route,
+      // unaddressable coordinates resolve to the owner (the claim
+      // table unshifts decl.id for exactly this variant — a route
+      // never renders "").
+      route: (c !== null && c.route ? c.route : v.route) ?? decl.id,
       engine: (decl.engine ?? "") !== "" ? (decl.engine as string) : "comfyui",
       cell: c,
       variant: v,

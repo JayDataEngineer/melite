@@ -24,7 +24,6 @@ export const DECL: ModelDecl = {
     "mode": "tts",
     "voice": "vivian"
   },
-  "base_body": "",
   "genre": "audio",
   "mods": [
     "qvoice"
@@ -34,19 +33,13 @@ export const DECL: ModelDecl = {
       "id": "standard",
       "label": "CustomVoice",
       "description": "preset personas and instruct-text emotion control",
-      "hint": "",
       "group": "Variant",
       "route": "qwen3-tts",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [
         {
           "quant": "native",
           "label": "Native",
           "route": "qwen3-tts",
-          "engine": "",
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -54,10 +47,8 @@ export const DECL: ModelDecl = {
       "id": "base",
       "label": "Base",
       "description": "plain text-to-speech, no persona",
-      "hint": "",
       "group": "Variant",
       "route": "qwen3-tts-base",
-      "engine": "",
       "resolver_defaults": {
         "variant": "base"
       },
@@ -69,9 +60,6 @@ export const DECL: ModelDecl = {
           "quant": "native",
           "label": "Native",
           "route": "qwen3-tts-base",
-          "engine": "",
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -79,10 +67,8 @@ export const DECL: ModelDecl = {
       "id": "voicedesign",
       "label": "VoiceDesign",
       "description": "instruction-following voice design; the voice-lock lane",
-      "hint": "",
       "group": "Variant",
       "route": "qwen3-tts-voicedesign",
-      "engine": "",
       "resolver_defaults": {
         "mode": "design",
         "variant": "voicedesign",
@@ -93,9 +79,6 @@ export const DECL: ModelDecl = {
           "quant": "native",
           "label": "Native",
           "route": "qwen3-tts-voicedesign",
-          "engine": "",
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -104,25 +87,17 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
   "variant_groups": [
     {
       "id": "Variant",
       "label": "Variant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Quant",
       "label": "Quant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Recipe",
@@ -131,12 +106,7 @@ export const DECL: ModelDecl = {
       "default": "default"
     }
   ],
-  "provisions": [],
-  "accepts": [],
-  "canvas_default": false,
-  "has_agent": false,
   "has_inference": true,
-  "has_rubric": false,
   "lane_inputs": {
     "background_removal": "",
     "checkpoint": "",
@@ -155,7 +125,7 @@ export const DECL: ModelDecl = {
     "vae": "",
     "weightless": false
   }
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-qwen3-tts",

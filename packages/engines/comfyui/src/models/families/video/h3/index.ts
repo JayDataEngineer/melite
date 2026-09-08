@@ -23,9 +23,7 @@ export const DECL: ModelDecl = {
     "shift_audio": 3,
     "seed": 42
   },
-  "base_body": "",
   "genre": "video",
-  "mods": [],
   "variants": [
     {
       "id": "fl2va",
@@ -33,9 +31,7 @@ export const DECL: ModelDecl = {
       "hint": "Text-to-video, first/last frame to video. 30-step standard pass — highest quality.",
       "group": "Variant",
       "route": "h3",
-      "engine": "",
       "order": 0,
-      "resolver_defaults": {},
       "cells": []
     },
     {
@@ -44,9 +40,7 @@ export const DECL: ModelDecl = {
       "hint": "FL2VA with the Turbo LoRA + 10-step fast pass. Good for motion- composition iteration before a final",
       "group": "Variant",
       "route": "h3",
-      "engine": "",
       "order": 1,
-      "resolver_defaults": {},
       "cells": []
     },
     {
@@ -55,9 +49,7 @@ export const DECL: ModelDecl = {
       "hint": "Reference-based video (images, videos, audio as refs). 30-step standard pass.",
       "group": "Variant",
       "route": "h3-ref2va",
-      "engine": "",
       "order": 2,
-      "resolver_defaults": {},
       "cells": []
     },
     {
@@ -66,9 +58,7 @@ export const DECL: ModelDecl = {
       "hint": "Ref2VA with the Turbo LoRA + 10-step fast pass for reference-based video iteration.",
       "group": "Variant",
       "route": "h3-ref2va",
-      "engine": "",
       "order": 3,
-      "resolver_defaults": {},
       "cells": []
     },
     {
@@ -77,9 +67,7 @@ export const DECL: ModelDecl = {
       "hint": "30-step windows, hybrid FL2VA/Ref2VA model, SLA sparse attention — fastest path.",
       "group": "Variant",
       "route": "h3-timeline",
-      "engine": "",
       "order": 0,
-      "resolver_defaults": {},
       "cells": []
     },
     {
@@ -88,9 +76,7 @@ export const DECL: ModelDecl = {
       "hint": "Identity-locked multi-beat — reference images condition every window. Standard variant now handles this automatically.",
       "group": "Variant",
       "route": "h3-timeline-ref",
-      "engine": "",
       "order": 7,
-      "resolver_defaults": {},
       "cells": []
     },
     {
@@ -99,9 +85,7 @@ export const DECL: ModelDecl = {
       "hint": "The managed Turbo LoRA + 10-step windows — the fast iteration loop (same LoRA/steps pair as the",
       "group": "Variant",
       "route": "h3-timeline",
-      "engine": "",
       "order": 1,
-      "resolver_defaults": {},
       "cells": []
     },
     {
@@ -109,25 +93,17 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
   "variant_groups": [
     {
       "id": "Variant",
       "label": "Variant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Quant",
       "label": "Quant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Recipe",
@@ -186,13 +162,8 @@ export const DECL: ModelDecl = {
       "sha256": "7098acf3ee75028fd9fcd948f50fcc8d995057fabb76f86bd3ca2c0ffc58e409"
     }
   ],
-  "accepts": [],
-  "canvas_default": false,
   "has_agent": true,
-  "has_inference": false,
-  "has_rubric": false,
-  "lane_inputs": {}
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-h3",

@@ -14,27 +14,18 @@ export const DECL: ModelDecl = {
   "label": "Input Prep",
   "description": "Source intake: attach an image or audio file (upload, asset drop, prior run) — staged, optionally transformed, emitted as a media artifact for downstream cards to wire.",
   "engine": "comfyui",
-  "defaults": {},
-  "base_body": "",
   "genre": "image",
-  "mods": [],
   "variants": [
     {
       "id": "standard",
       "label": "Standard",
-      "hint": "",
       "group": "Variant",
       "route": "input",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [
         {
           "quant": "native",
           "label": "Native (weightless)",
           "route": "input",
-          "engine": "",
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -43,25 +34,17 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
   "variant_groups": [
     {
       "id": "Variant",
       "label": "Variant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Quant",
       "label": "Quant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Recipe",
@@ -70,17 +53,11 @@ export const DECL: ModelDecl = {
       "default": "default"
     }
   ],
-  "provisions": [],
   "accepts": [
     "image",
     "audio"
   ],
-  "canvas_default": false,
-  "has_agent": false,
-  "has_inference": false,
-  "has_rubric": false,
-  "lane_inputs": {}
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-input",

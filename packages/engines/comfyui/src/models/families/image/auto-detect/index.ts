@@ -13,7 +13,6 @@ export const DECL: ModelDecl = {
   "id": "auto-detect",
   "label": "Auto Detect",
   "description": "Auto Detect — automatically selects the best model and conditioning for a given input.",
-  "engine": "",
   "unoffered": true,
   "defaults": {
     "output_mode": "segm",
@@ -22,26 +21,18 @@ export const DECL: ModelDecl = {
     "sam_dilation": 0,
     "sam_threshold": 0.93
   },
-  "base_body": "",
   "genre": "image",
-  "mods": [],
   "variants": [
     {
       "id": "standard",
       "label": "Standard",
-      "hint": "",
       "group": "Variant",
       "route": "auto-detect",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [
         {
           "quant": "native",
           "label": "Native (weightless)",
           "route": "auto-detect",
-          "engine": "",
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -50,25 +41,17 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
   "variant_groups": [
     {
       "id": "Variant",
       "label": "Variant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Quant",
       "label": "Quant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Recipe",
@@ -77,13 +60,7 @@ export const DECL: ModelDecl = {
       "default": "default"
     }
   ],
-  "provisions": [],
-  "accepts": [],
-  "canvas_default": false,
-  "has_agent": false,
-  "has_inference": false,
-  "has_rubric": false
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-auto-detect",

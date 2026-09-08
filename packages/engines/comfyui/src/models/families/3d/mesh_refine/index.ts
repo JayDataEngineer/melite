@@ -13,7 +13,6 @@ export const DECL: ModelDecl = {
   "id": "mesh_refine",
   "label": "UltraShape Mesh Refine",
   "description": "Image-guided coarse-mesh refinement (UltraShape 1.0 DiT) — carves sharp limb separation + hard-surface edges into blobby TRELLIS output using the SAME guide image the mesh was generated from. The pre-rig cleanup step: run BEFORE SOMAX so proximity-based weight transfer can't glue arm vertices to torso bones.",
-  "engine": "",
   "unoffered": true,
   "defaults": {
     "box_v": 1,
@@ -34,26 +33,18 @@ export const DECL: ModelDecl = {
     "file_format": "glb",
     "filename_prefix": "ultrashape_refined"
   },
-  "base_body": "",
   "genre": "3d",
-  "mods": [],
   "variants": [
     {
       "id": "standard",
       "label": "Standard",
-      "hint": "",
       "group": "Variant",
       "route": "mesh_refine",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [
         {
           "quant": "native",
           "label": "Native",
           "route": "mesh_refine",
-          "engine": "",
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -62,25 +53,17 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
   "variant_groups": [
     {
       "id": "Variant",
       "label": "Variant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Quant",
       "label": "Quant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Recipe",
@@ -89,13 +72,7 @@ export const DECL: ModelDecl = {
       "default": "default"
     }
   ],
-  "provisions": [],
-  "accepts": [],
-  "canvas_default": false,
-  "has_agent": false,
-  "has_inference": false,
-  "has_rubric": false
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-mesh_refine",

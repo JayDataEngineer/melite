@@ -53,27 +53,19 @@ export const DECL: ModelDecl = {
     "size": "huge",
     "layout": "studio"
   },
-  "base_body": "",
   "genre": "video",
-  "mods": [],
   "variants": [
     {
       "id": "h3",
       "label": "Standard",
-      "hint": "",
       "group": "Variant",
       "route": "h3-timeline",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [
         {
           "quant": "int8",
           "label": "INT8 ConvRot",
           "route": "h3-timeline",
-          "engine": "",
           "vram_peak_gb": 30,
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -82,25 +74,17 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
   "variant_groups": [
     {
       "id": "Variant",
       "label": "Variant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Quant",
       "label": "Quant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Recipe",
@@ -165,13 +149,9 @@ export const DECL: ModelDecl = {
       "sha256": "8e505d95dd1561d47abd43d4238fd40d9bb1ae9e147ed0a4cba778d76ae4db48"
     }
   ],
-  "accepts": [],
-  "canvas_default": false,
   "has_agent": true,
   "has_inference": true,
-  "has_rubric": false,
-  "lane_inputs": {}
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-h3-timeline",

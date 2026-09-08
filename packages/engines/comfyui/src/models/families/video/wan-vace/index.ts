@@ -25,9 +25,7 @@ export const DECL: ModelDecl = {
     "scheduler": "simple",
     "seed": 42
   },
-  "base_body": "",
   "genre": "video",
-  "mods": [],
   "variants": [
     {
       "id": "base",
@@ -35,9 +33,7 @@ export const DECL: ModelDecl = {
       "hint": "DEFAULT — 25-step HIGH fp8 checkpoint, director-quality",
       "group": "Variant",
       "route": "wan-vace",
-      "engine": "",
       "order": 0,
-      "resolver_defaults": {},
       "cells": []
     },
     {
@@ -46,9 +42,7 @@ export const DECL: ModelDecl = {
       "hint": "6-step + lightx2v distill LoRA on the base HIGH model",
       "group": "Variant",
       "route": "wan-vace",
-      "engine": "",
       "order": 2,
-      "resolver_defaults": {},
       "cells": []
     },
     {
@@ -57,9 +51,7 @@ export const DECL: ModelDecl = {
       "hint": "30-step HIGH expert — maximum detail",
       "group": "Variant",
       "route": "wan-vace",
-      "engine": "",
       "order": 1,
-      "resolver_defaults": {},
       "cells": []
     },
     {
@@ -68,9 +60,7 @@ export const DECL: ModelDecl = {
       "hint": "4-step + Wan Lightning LoRA on the base HIGH model (~6× faster)",
       "group": "Variant",
       "route": "wan-vace",
-      "engine": "",
       "order": 3,
-      "resolver_defaults": {},
       "cells": []
     },
     {
@@ -78,25 +68,17 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
   "variant_groups": [
     {
       "id": "Variant",
       "label": "Variant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Quant",
       "label": "Quant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Recipe",
@@ -105,12 +87,6 @@ export const DECL: ModelDecl = {
       "default": "default"
     }
   ],
-  "provisions": [],
-  "accepts": [],
-  "canvas_default": false,
-  "has_agent": false,
-  "has_inference": false,
-  "has_rubric": false,
   "lane_inputs": {
     "background_removal": "",
     "checkpoint": "",
@@ -129,7 +105,7 @@ export const DECL: ModelDecl = {
     "vae": "Wan2_1_VAE_bf16.safetensors",
     "weightless": false
   }
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-wan-vace",

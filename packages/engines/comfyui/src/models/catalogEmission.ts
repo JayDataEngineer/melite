@@ -45,7 +45,7 @@ function servedRow(decl: ModelDecl): ModelRow {
     family: decl.id,
     genre: decl.genre,
     label: decl.label,
-    description: decl.description,
+    description: decl.description ?? "",
     source: {
       type: decl.source?.type ?? "",
       ...(decl.source?.repo_id ? { repo_id: decl.source.repo_id } : {}),

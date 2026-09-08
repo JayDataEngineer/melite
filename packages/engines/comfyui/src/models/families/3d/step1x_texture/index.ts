@@ -13,7 +13,6 @@ export const DECL: ModelDecl = {
   "id": "step1x_texture",
   "label": "Step1X-3D Texture",
   "description": "Diffusion-based 3D texture synthesis — 1 reference image → 6 multi-view images via SDXL ig2mv flow → baked onto UV atlas. Fills ALL surfaces (no coverage gaps unlike camera projection). 3.5B model, ~15s on 4090.",
-  "engine": "",
   "unoffered": true,
   "defaults": {
     "preset": "standard",
@@ -23,26 +22,18 @@ export const DECL: ModelDecl = {
     "seed": 2025,
     "filename_prefix": "step1x_texture"
   },
-  "base_body": "",
   "genre": "3d",
-  "mods": [],
   "variants": [
     {
       "id": "standard",
       "label": "Standard",
-      "hint": "",
       "group": "Variant",
       "route": "step1x_texture",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [
         {
           "quant": "native",
           "label": "Native",
           "route": "step1x_texture",
-          "engine": "",
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -51,25 +42,17 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
   "variant_groups": [
     {
       "id": "Variant",
       "label": "Variant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Quant",
       "label": "Quant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Recipe",
@@ -78,13 +61,7 @@ export const DECL: ModelDecl = {
       "default": "default"
     }
   ],
-  "provisions": [],
-  "accepts": [],
-  "canvas_default": false,
-  "has_agent": false,
-  "has_inference": false,
-  "has_rubric": false
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-step1x_texture",

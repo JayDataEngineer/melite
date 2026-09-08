@@ -27,12 +27,12 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     assert.equal(modelIds().length, 91);
     const comfy = modelIds().filter((id) => {
       const e = getModel(id).engine ?? "";
-      return e === "" || e === "comfyui";
+      return (e ?? "") === "" || e === "comfyui";
     });
     assert.equal(comfy.length, 79);
     const rcomfy = registryIds().filter((id) => {
       const e = registryModel(id).engine ?? "";
-      return e === "" || e === "comfyui";
+      return (e ?? "") === "" || e === "comfyui";
     });
     assert.equal(rcomfy.length, 44);
   });
@@ -86,7 +86,7 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
   });
 
   it("the mods set survived (5 families declare capability packs)", (): void => {
-    const withMods = registryIds().filter((id) => registryModel(id).mods.length > 0);
+    const withMods = registryIds().filter((id) => (registryModel(id).mods ?? []).length > 0);
     assert.deepEqual(withMods, [
       "anny",
       "krea-2",

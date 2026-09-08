@@ -35,7 +35,6 @@ export const DECL: ModelDecl = {
     "body": "Flow-matching lane: keep Guidance low (default 1.0; Standard stamps 2.5)",
     "list": []
   },
-  "base_body": "",
   "genre": "image",
   "mods": [
     "lanpaint",
@@ -49,7 +48,6 @@ export const DECL: ModelDecl = {
       "hint": "4-step distilled checkpoint (lightx2v Lightning) — fast (DEFAULT)",
       "group": "Variant",
       "route": "qwen-img-edit-2511-lightning4",
-      "engine": "",
       "order": 0,
       "resolver_defaults": {
         "steps": 4
@@ -59,10 +57,7 @@ export const DECL: ModelDecl = {
           "quant": "lightning4",
           "label": "FP8 Lightning",
           "route": "qwen-img-edit-2511-lightning4",
-          "engine": "",
           "vram_peak_gb": 20,
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -72,7 +67,6 @@ export const DECL: ModelDecl = {
       "hint": "20 steps, cfg 2.5 — highest quality path, the INT8 ConvRot merge.",
       "group": "Variant",
       "route": "qwen-img-edit-2511",
-      "engine": "",
       "order": 1,
       "resolver_defaults": {
         "steps": 20,
@@ -83,10 +77,7 @@ export const DECL: ModelDecl = {
           "quant": "int8",
           "label": "INT8 ConvRot",
           "route": "qwen-img-edit-2511-int8",
-          "engine": "",
           "vram_peak_gb": 20,
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -95,11 +86,7 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
   "variant_groups": [
@@ -107,13 +94,11 @@ export const DECL: ModelDecl = {
       "id": "Variant",
       "label": "Variant",
       "tooltip": "Base checkpoint — Lightning (4-step distilled, fast default) or Standard (20-step reference, highest quality).",
-      "default": ""
     },
     {
       "id": "Quant",
       "label": "Quant",
       "tooltip": "Quantization tier — FP8 Lightning (the distilled checkpoint) or INT8 ConvRot (the reference merge).",
-      "default": ""
     },
     {
       "id": "Recipe",
@@ -122,12 +107,8 @@ export const DECL: ModelDecl = {
       "default": "default"
     }
   ],
-  "provisions": [],
-  "accepts": [],
-  "canvas_default": false,
   "has_agent": true,
   "has_inference": true,
-  "has_rubric": false,
   "lane_inputs": {
     "background_removal": "",
     "checkpoint": "",
@@ -146,7 +127,7 @@ export const DECL: ModelDecl = {
     "vae": "qwen_image_vae.safetensors",
     "weightless": false
   }
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-qwen-img-edit-2511",

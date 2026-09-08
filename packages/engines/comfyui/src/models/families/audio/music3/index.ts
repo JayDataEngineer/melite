@@ -14,24 +14,18 @@ export const DECL: ModelDecl = {
   "label": "MiniMax Music 3",
   "description": "MiniMax Music 3 text-to-music with lyrics",
   "engine": "comfyui",
-  "defaults": {},
   "source": {
     "type": "huggingface",
     "repo_id": "audio-cpp/MiniMax-Music3-GGUF",
     "note": ""
   },
-  "base_body": "",
   "genre": "audio",
-  "mods": [],
   "variants": [
     {
       "id": "standard",
       "label": "Standard",
-      "hint": "",
       "group": "Variant",
       "route": "music3",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [
         {
           "source": {
@@ -40,10 +34,7 @@ export const DECL: ModelDecl = {
           "quant": "int8",
           "label": "INT8 ConvRot",
           "route": "music3",
-          "engine": "",
           "vram_peak_gb": 20,
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -52,25 +43,17 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
   "variant_groups": [
     {
       "id": "Variant",
       "label": "Variant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Quant",
       "label": "Quant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Recipe",
@@ -79,12 +62,7 @@ export const DECL: ModelDecl = {
       "default": "default"
     }
   ],
-  "provisions": [],
-  "accepts": [],
-  "canvas_default": false,
-  "has_agent": false,
   "has_inference": true,
-  "has_rubric": false,
   "lane_inputs": {
     "background_removal": "",
     "checkpoint": "",
@@ -103,7 +81,7 @@ export const DECL: ModelDecl = {
     "vae": "minimax_music3_dav.safetensors",
     "weightless": false
   }
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-music3",

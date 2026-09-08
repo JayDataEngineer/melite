@@ -13,7 +13,6 @@ export const DECL: ModelDecl = {
   "id": "see-through",
   "label": "See-Through",
   "description": "See-Through anime layer decomposition — splits an image into character, clothing, and background layers.",
-  "engine": "",
   "unoffered": true,
   "defaults": {
     "resolution": 1280,
@@ -28,26 +27,18 @@ export const DECL: ModelDecl = {
     "filename": null,
     "note": ""
   },
-  "base_body": "",
   "genre": "other",
-  "mods": [],
   "variants": [
     {
       "id": "standard",
       "label": "Standard",
-      "hint": "",
       "group": "Variant",
       "route": "see-through",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [
         {
           "quant": "native",
           "label": "Native (weightless)",
           "route": "see-through",
-          "engine": "",
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -56,25 +47,17 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
   "variant_groups": [
     {
       "id": "Variant",
       "label": "Variant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Quant",
       "label": "Quant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Recipe",
@@ -83,13 +66,7 @@ export const DECL: ModelDecl = {
       "default": "default"
     }
   ],
-  "provisions": [],
-  "accepts": [],
-  "canvas_default": false,
-  "has_agent": false,
-  "has_inference": false,
-  "has_rubric": false
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-see-through",

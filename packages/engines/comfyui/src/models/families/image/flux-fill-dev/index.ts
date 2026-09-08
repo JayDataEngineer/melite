@@ -13,7 +13,6 @@ export const DECL: ModelDecl = {
   "id": "flux-fill-dev",
   "label": "Inpaint",
   "description": "Dual-engine masked region inpainting — FLUX.1-Fill (dedicated fill arch) or LanPaint on any base model.",
-  "engine": "",
   "unoffered": true,
   "defaults": {
     "inpaint_context_pad": 64,
@@ -38,9 +37,7 @@ export const DECL: ModelDecl = {
     "mask_threshold": 0,
     "mask_invert": false
   },
-  "base_body": "",
   "genre": "image",
-  "mods": [],
   "variants": [
     {
       "id": "onereward",
@@ -48,9 +45,7 @@ export const DECL: ModelDecl = {
       "hint": "SOTA true-CFG RLHF fine-tune (non-commercial license)",
       "group": "Variant",
       "route": "flux-fill-onereward",
-      "engine": "",
       "order": 0,
-      "resolver_defaults": {},
       "cells": []
     },
     {
@@ -58,25 +53,17 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
   "variant_groups": [
     {
       "id": "Variant",
       "label": "Variant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Quant",
       "label": "Quant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Recipe",
@@ -85,13 +72,7 @@ export const DECL: ModelDecl = {
       "default": "default"
     }
   ],
-  "provisions": [],
-  "accepts": [],
-  "canvas_default": false,
-  "has_agent": false,
-  "has_inference": false,
-  "has_rubric": false
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-flux-fill-dev",

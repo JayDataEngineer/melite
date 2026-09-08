@@ -31,9 +31,7 @@ export const DECL: ModelDecl = {
     "size": "normal",
     "layout": "studio"
   },
-  "base_body": "",
   "genre": "image",
-  "mods": [],
   "variants": [
     {
       "id": "nf4",
@@ -41,9 +39,7 @@ export const DECL: ModelDecl = {
       "hint": "nvfp4 mixed-precision — DEFAULT",
       "group": "Variant",
       "route": "ideogram",
-      "engine": "",
       "order": 0,
-      "resolver_defaults": {},
       "cells": []
     },
     {
@@ -51,25 +47,17 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
   "variant_groups": [
     {
       "id": "Variant",
       "label": "Variant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Quant",
       "label": "Quant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Recipe",
@@ -78,12 +66,6 @@ export const DECL: ModelDecl = {
       "default": "default"
     }
   ],
-  "provisions": [],
-  "accepts": [],
-  "canvas_default": false,
-  "has_agent": false,
-  "has_inference": false,
-  "has_rubric": false,
   "lane_inputs": {
     "background_removal": "",
     "checkpoint": "",
@@ -102,7 +84,7 @@ export const DECL: ModelDecl = {
     "vae": "flux2-vae.safetensors",
     "weightless": false
   }
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-ideogram",

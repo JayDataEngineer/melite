@@ -46,11 +46,12 @@ describe("the family table ≡ golden (the godfile retirement wall)", () => {
   it("the compose models carry lane_inputs (the facts splice table)", (): void => {
     // 30 flat carriers − the folded tts pair − the melded
     // voicedesign lane table − the mask-studio phantom (an action
-    // card now, its pins card-owned) = 27 MODEL declarations; their
-    // routes inherit the lane table at the derived read (the route
-    // view carries 54).
+    // card now, its pins card-owned) = 27 MODEL declarations − the
+    // 8 whose lane table was an EMPTY dict (conformance stroke
+    // 2026-09-08: absent ≡ empty, nothing reads them) = 19; their
+    // routes inherit the lane table at the derived read.
     const withLanes = registryIds().filter((id) => getModel(id).lane_inputs !== undefined);
-    assert.equal(withLanes.length, 27);
+    assert.equal(withLanes.length, 19);
     assert.ok(modelIds().filter((id) => getModel(id).lane_inputs !== undefined).length > withLanes.length,
       "the derived route view inherits lane_inputs (the cascade)");
   });

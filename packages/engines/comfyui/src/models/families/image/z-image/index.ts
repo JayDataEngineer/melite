@@ -23,9 +23,7 @@ export const DECL: ModelDecl = {
     "cfg": 1,
     "negative_prompt": null
   },
-  "base_body": "",
   "genre": "image",
-  "mods": [],
   "variants": [
     {
       "id": "turbo",
@@ -33,18 +31,13 @@ export const DECL: ModelDecl = {
       "hint": "8-step distilled — fast (DEFAULT)",
       "group": "Variant",
       "route": "z-image",
-      "engine": "",
       "order": 0,
-      "resolver_defaults": {},
       "cells": [
         {
           "quant": "int8",
           "label": "INT8 ConvRot",
           "route": "z-image-int8",
-          "engine": "",
           "vram_peak_gb": 14,
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -53,25 +46,17 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
   "variant_groups": [
     {
       "id": "Variant",
       "label": "Variant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Quant",
       "label": "Quant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Recipe",
@@ -80,12 +65,6 @@ export const DECL: ModelDecl = {
       "default": "default"
     }
   ],
-  "provisions": [],
-  "accepts": [],
-  "canvas_default": false,
-  "has_agent": false,
-  "has_inference": false,
-  "has_rubric": false,
   "lane_inputs": {
     "background_removal": "",
     "checkpoint": "",
@@ -104,7 +83,7 @@ export const DECL: ModelDecl = {
     "vae": "ae.safetensors",
     "weightless": false
   }
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-z-image",

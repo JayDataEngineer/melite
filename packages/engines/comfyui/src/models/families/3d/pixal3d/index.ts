@@ -59,9 +59,7 @@ export const DECL: ModelDecl = {
     "size": "normal",
     "layout": "studio"
   },
-  "base_body": "",
   "genre": "3d",
-  "mods": [],
   "variants": [
     {
       "id": "1024",
@@ -69,27 +67,19 @@ export const DECL: ModelDecl = {
       "hint": "Standard resolution — DEFAULT",
       "group": "Variant",
       "route": "pixal3d",
-      "engine": "",
       "order": 0,
-      "resolver_defaults": {},
       "cells": [
         {
           "quant": "bf16",
           "label": "BF16",
           "route": "pixal3d-bf16",
-          "engine": "",
           "vram_peak_gb": 12,
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         },
         {
           "quant": "int8",
           "label": "INT8 ConvRot",
           "route": "pixal3d-int8",
-          "engine": "",
           "vram_peak_gb": 8,
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -99,27 +89,19 @@ export const DECL: ModelDecl = {
       "hint": "Quality resolution — hero assets, final production",
       "group": "Variant",
       "route": "pixal3d-1536",
-      "engine": "",
       "order": 2,
-      "resolver_defaults": {},
       "cells": [
         {
           "quant": "bf16",
           "label": "BF16",
           "route": "pixal3d-1536-bf16",
-          "engine": "",
           "vram_peak_gb": 16,
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         },
         {
           "quant": "int8",
           "label": "INT8 ConvRot",
           "route": "pixal3d-1536-int8",
-          "engine": "",
           "vram_peak_gb": 10,
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -129,27 +111,19 @@ export const DECL: ModelDecl = {
       "hint": "Fast resolution — props, thumbnails, iteration",
       "group": "Variant",
       "route": "pixal3d-512",
-      "engine": "",
       "order": 1,
-      "resolver_defaults": {},
       "cells": [
         {
           "quant": "bf16",
           "label": "BF16",
           "route": "pixal3d-512-bf16",
-          "engine": "",
           "vram_peak_gb": 8,
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         },
         {
           "quant": "int8",
           "label": "INT8 ConvRot",
           "route": "pixal3d-512-int8",
-          "engine": "",
           "vram_peak_gb": 5,
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -158,25 +132,17 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
   "variant_groups": [
     {
       "id": "Variant",
       "label": "Variant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Quant",
       "label": "Quant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Recipe",
@@ -229,11 +195,6 @@ export const DECL: ModelDecl = {
       "size_bytes": 661859924
     }
   ],
-  "accepts": [],
-  "canvas_default": false,
-  "has_agent": false,
-  "has_inference": false,
-  "has_rubric": false,
   "lane_inputs": {
     "background_removal": "birefnet.safetensors",
     "checkpoint": "",
@@ -252,7 +213,7 @@ export const DECL: ModelDecl = {
     "vae": "trellis_2_shape_vae_bf16.safetensors",
     "weightless": false
   }
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-pixal3d",

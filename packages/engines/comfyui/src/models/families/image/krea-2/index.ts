@@ -42,7 +42,6 @@ export const DECL: ModelDecl = {
       "Camera / composition"
     ]
   },
-  "base_body": "",
   "genre": "image",
   "mods": [
     "loras"
@@ -54,7 +53,6 @@ export const DECL: ModelDecl = {
       "hint": "8-step distilled — fast, photorealistic (DEFAULT)",
       "group": "Variant",
       "route": "krea-2",
-      "engine": "",
       "order": 0,
       "resolver_defaults": {
         "model": "krea-2"
@@ -64,9 +62,6 @@ export const DECL: ModelDecl = {
           "quant": "int8",
           "label": "INT8 ConvRot",
           "route": "krea-2",
-          "engine": "",
-          "resolver_defaults": {},
-          "hide_from_dropdown": false,
           "artifact": {
             "source_url": "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/diffusion_models/krea2_turbo_int8_convrot.safetensors",
             "size_bytes": 13492686496,
@@ -84,7 +79,6 @@ export const DECL: ModelDecl = {
       "hint": "52-step base checkpoint — the variant the loras train on (DEFAULT here)",
       "group": "Variant",
       "route": "krea-2-raw",
-      "engine": "",
       "order": 1,
       "resolver_defaults": {
         "model": "krea-2-raw",
@@ -96,10 +90,7 @@ export const DECL: ModelDecl = {
           "quant": "int8",
           "label": "INT8 ConvRot",
           "route": "krea-2-raw",
-          "engine": "",
           "vram_peak_gb": 22,
-          "resolver_defaults": {},
-          "hide_from_dropdown": false,
           "artifact": {
             "source_url": "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/diffusion_models/krea2_raw_int8_convrot.safetensors",
             "size_bytes": 13492686496,
@@ -116,10 +107,7 @@ export const DECL: ModelDecl = {
       "label": "Realism",
       "hint": "The realism recipe — krea2_realism_lora at the catalog row's default strength (0.7)",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
       "order": 0,
-      "resolver_defaults": {},
       "cells": [],
       "wire_defaults": {
         "loras": [
@@ -134,11 +122,7 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
   "variant_groups": [
@@ -146,13 +130,11 @@ export const DECL: ModelDecl = {
       "id": "Variant",
       "label": "Variant",
       "tooltip": "Base checkpoint — Turbo (8-step distilled, fast/photorealistic) or Raw (52-step base, for LoRA training).",
-      "default": ""
     },
     {
       "id": "Quant",
       "label": "Quant",
       "tooltip": "Quantization tier — INT8 ConvRot (the official Comfy-Org convrot artifact, DEFAULT).",
-      "default": ""
     },
     {
       "id": "Recipe",
@@ -161,13 +143,10 @@ export const DECL: ModelDecl = {
       "default": "default"
     }
   ],
-  "provisions": [],
-  "accepts": [],
   "timeout_floor": 300,
   "canvas_default": true,
   "has_agent": true,
   "has_inference": true,
-  "has_rubric": false,
   "lane_inputs": {
     "background_removal": "",
     "checkpoint": "",
@@ -186,7 +165,7 @@ export const DECL: ModelDecl = {
     "vae": "qwen_image_vae.safetensors",
     "weightless": false
   }
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-krea-2",

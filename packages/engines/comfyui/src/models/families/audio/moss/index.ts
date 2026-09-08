@@ -34,19 +34,14 @@ export const DECL: ModelDecl = {
     "repo_id": "audio-cpp/audio.cpp-gguf",
     "note": ""
   },
-  "base_body": "",
   "genre": "audio",
-  "mods": [],
   "variants": [
     {
       "id": "tts",
       "label": "TTS Nano",
       "description": "the Nano 100M checkpoint — plain text-to-speech",
-      "hint": "",
       "group": "Variant",
       "route": "moss-tts",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [
         {
           "source": {
@@ -55,9 +50,6 @@ export const DECL: ModelDecl = {
           "quant": "native",
           "label": "Native",
           "route": "moss-tts",
-          "engine": "",
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -65,11 +57,8 @@ export const DECL: ModelDecl = {
       "id": "voicegen",
       "label": "VoiceGenerator",
       "description": "voice design",
-      "hint": "",
       "group": "Variant",
       "route": "moss_voicegenerator",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [
         {
           "source": {
@@ -78,9 +67,6 @@ export const DECL: ModelDecl = {
           "quant": "native",
           "label": "Native",
           "route": "moss_voicegenerator",
-          "engine": "",
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -88,11 +74,8 @@ export const DECL: ModelDecl = {
       "id": "tts-local",
       "label": "TTS Local",
       "description": "the Local Transformer v1.5 checkpoint",
-      "hint": "",
       "group": "Variant",
       "route": "moss-tts-local",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [
         {
           "source": {
@@ -101,9 +84,6 @@ export const DECL: ModelDecl = {
           "quant": "native",
           "label": "Native",
           "route": "moss-tts-local",
-          "engine": "",
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -112,25 +92,17 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
   "variant_groups": [
     {
       "id": "Variant",
       "label": "Variant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Quant",
       "label": "Quant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Recipe",
@@ -139,13 +111,7 @@ export const DECL: ModelDecl = {
       "default": "default"
     }
   ],
-  "provisions": [],
-  "accepts": [],
-  "canvas_default": false,
-  "has_agent": false,
-  "has_inference": false,
-  "has_rubric": false
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-moss",

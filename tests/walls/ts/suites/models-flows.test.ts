@@ -89,8 +89,12 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
       for (const fv of fam.variants) {
         const rv = regVariants.get(fv.id);
         assert.ok(rv !== undefined, `${id}: facts variant '${fv.id}' absent from the registry`);
+        // THE CONFORMANCE LENS (2026-09-08): absent ≡ "" by law —
+        // the registry writes nothing, the facts file keeps its
+        // "" spelling (compose readers untouched). Real drift
+        // (two different addresses) still refuses below.
         assert.equal(
-          rv.route, fv.route,
+          rv.route ?? "", fv.route,
           `${id}/${fv.id}: route drift (registry '${rv.route}' vs facts '${fv.route}')`,
         );
         const regCells = new Map(rv.cells.map((c) => [c.quant, c]));
@@ -98,7 +102,7 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
           const rc = regCells.get(fc.quant);
           assert.ok(rc !== undefined, `${id}/${fv.id}/${fc.quant}: facts cell absent from the registry`);
           assert.equal(
-            rc.route, fc.route,
+            rc.route ?? "", fc.route,
             `${id}/${fv.id}/${fc.quant}: cell route drift ('${rc.route}' vs '${fc.route}')`,
           );
           checked++;
@@ -137,9 +141,9 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
     for (const rid of registryIds()) {
       const decl = registryModel(rid);
       for (const v of decl.variants) {
-        if (v.route !== "") ownerOf.set(v.route, rid);
+        if (v.route) ownerOf.set(v.route, rid);
         for (const c of v.cells) {
-          if (c.route !== "") ownerOf.set(c.route, rid);
+          if (c.route) ownerOf.set(c.route, rid);
         }
       }
     }

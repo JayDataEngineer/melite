@@ -20,9 +20,7 @@ export const DECL: ModelDecl = {
     "resolution": 1080,
     "seed": 0
   },
-  "base_body": "",
   "genre": "image",
-  "mods": [],
   "variants": [
     {
       "id": "3b",
@@ -30,9 +28,7 @@ export const DECL: ModelDecl = {
       "hint": "3B EMA fp16 — fast, ~7 GB VRAM (DEFAULT). Precision ships with this body.",
       "group": "Variant",
       "route": "seedvr2_ema",
-      "engine": "",
       "order": 0,
-      "resolver_defaults": {},
       "cells": []
     },
     {
@@ -41,9 +37,7 @@ export const DECL: ModelDecl = {
       "hint": "7B EMA fp8_e4m3fn (mixed block-35 fp16) — beefier fine detail, ~3× slower.",
       "group": "Variant",
       "route": "seedvr2_ema_7b",
-      "engine": "",
       "order": 1,
-      "resolver_defaults": {},
       "cells": []
     },
     {
@@ -52,9 +46,7 @@ export const DECL: ModelDecl = {
       "hint": "EMA VAE helper weights — hidden (folded in 2026-08-16)",
       "group": "Variant",
       "route": "seedvr2_ema_vae_fp16",
-      "engine": "",
       "order": 4,
-      "resolver_defaults": {},
       "cells": []
     },
     {
@@ -62,25 +54,17 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
   "variant_groups": [
     {
       "id": "Variant",
       "label": "Variant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Quant",
       "label": "Quant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Recipe",
@@ -89,12 +73,6 @@ export const DECL: ModelDecl = {
       "default": "default"
     }
   ],
-  "provisions": [],
-  "accepts": [],
-  "canvas_default": false,
-  "has_agent": false,
-  "has_inference": false,
-  "has_rubric": false,
   "lane_inputs": {
     "background_removal": "",
     "checkpoint": "",
@@ -113,7 +91,7 @@ export const DECL: ModelDecl = {
     "vae": "ema_vae_fp16.safetensors",
     "weightless": false
   }
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-seedvr2_ema",

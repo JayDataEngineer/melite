@@ -170,3 +170,75 @@ describe("law-text hygiene (TS sources)", () => {
     assert.deepEqual(bad, [], "dead-authority claims:\n" + bad.join("\n"));
   });
 });
+
+describe("declaration conformance (the z-image verdict, 2026-09-08)", () => {
+  // Operator order, verbatim context: a DECL pasted raw showed
+  // ~25 dead keys (`"mods": []`, `"engine": ""`, `: false` ×3,
+  // `"route": ""`…) under an `as unknown as ModelDecl` cast — the
+  // cast confessed what the spam proved: 0 conformance. The
+  // contract now reads absent ≡ empty (audited readers,
+  // contract.ts header), every DECL is `: ModelDecl` with no cast
+  // (tsc is the gate), and this wall pins the file text: no cast,
+  // no dead keys, tree-wide across all 48 families.
+  const FAM_ROOT = join(REPO_ROOT, "packages", "engines", "comfyui", "src", "models", "families");
+  const DEAD: RegExp[] = [
+    /"mods": \[\]/,
+    /"provisions": \[\]/,
+    /"accepts": \[\]/,
+    /"base_body": ""/,
+    /"canvas_default": false/,
+    /"has_(agent|inference|rubric)": false/,
+    /"engine": ""/,
+    /"description": ""/,
+    /"defaults": \{\}/,
+    /"lane_inputs": \{\}/,
+    /"resolver_defaults": \{\}/,
+    /"wire_defaults": (\{\}|null)/,
+    /"variant_groups": \[\]/,
+    /"hint": ""/,
+    /"route": ""/,
+    /"tooltip": ""/,
+    /"hide_from_dropdown": false/,
+    /as unknown as ModelDecl/,
+  ];
+  // "default": "" only inside variant_groups blocks (a card knob
+  // named default elsewhere is a different key) — checked
+  // structurally below, not in DEAD.
+  function famFiles(dir: string): string[] {
+    const out: string[] = [];
+    for (const e of readdirSync(dir)) {
+      const p = join(dir, e);
+      if (statSync(p).isDirectory()) out.push(...famFiles(p));
+      else if (e === "index.ts") out.push(p);
+    }
+    return out;
+  }
+  it("no cast, no dead keys in any family declaration", () => {
+    const bad: string[] = [];
+    // the families/index.ts barrel declares no DECL — every
+    // DECL file is `: ModelDecl`-annotated (tsc-gated), so the
+    // annotation itself is the membership test, not the path.
+    const files = famFiles(FAM_ROOT).filter((f) => /export const DECL: ModelDecl/.test(readFileSync(f, "utf-8")));
+    assert.ok(files.length === 48, `expected 48 family declarations, got ${files.length}`);
+    for (const file of files) {
+      const text: string = readFileSync(file, "utf-8");
+      for (const pat of DEAD) {
+        const m = pat.exec(text);
+        if (m !== null) bad.push(file.slice(REPO_ROOT.length + 1) + ": " + m[0]);
+      }
+      // variant-group defaults: strip "" (absent = no default)
+      const lines = text.split("\n");
+      let inGroups = false;
+      let depth = 0;
+      for (const line of lines) {
+        if (/"variant_groups": \[/.test(line)) { inGroups = true; depth = 0; }
+        if (inGroups) {
+          depth += (line.match(/\[/g) ?? []).length - (line.match(/\]/g) ?? []).length;
+          if (/"default": "",?/.test(line)) bad.push(file.slice(REPO_ROOT.length + 1) + ": " + line.trim());
+          if (depth <= 0 && /\]/.test(line)) inGroups = false;
+        }
+      }
+    }
+    assert.deepEqual(bad, [], "declaration spam (absent ≡ empty — write nothing):\n" + bad.join("\n"));
+  });
+});

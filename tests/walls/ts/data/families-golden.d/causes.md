@@ -86,3 +86,13 @@ weights ride the anny rig-somax verb flow, not its address),
 step1x_texture, stretchy-rig, trellis_native. DECLs gain
 "unoffered": true (the basic_resize precedent — declared and
 addressable, not offered). Registry 48 / routes 91 untouched.
+
+## 2026-09-08 — declaration conformance (operator order, the z-image verdict)
+
+1142 dead keys stripped across all 48 DECLs (absent ≡ empty —
+audited readers, contract.ts header); the `as unknown as
+ModelDecl` cast banned (tsc enforces `: ModelDecl` — the cast
+hid real errors: SourceRow.type, cascade/route/derivation
+undefined leaks, all fixed). Derived views drop
+undefined-description keys (own-key law). Registry 48 /
+routes 91 / served 53 unchanged.

@@ -13,7 +13,6 @@ export const DECL: ModelDecl = {
   "id": "pixel_upscale",
   "label": "Pixel Upscaler",
   "description": ">-",
-  "engine": "",
   "unoffered": true,
   "defaults": {
     "batch_size": 5,
@@ -31,28 +30,20 @@ export const DECL: ModelDecl = {
     "target_scale": 4,
     "mode": "upscale"
   },
-  "base_body": "",
   "genre": "image",
-  "mods": [],
   "variants": [
     {
       "id": "grl",
       "label": "",
-      "hint": "",
       "group": "Variant",
       "route": "pixel_apisr_grl",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": []
     },
     {
       "id": "rrdb",
       "label": "",
-      "hint": "",
       "group": "Variant",
       "route": "pixel_apisr_rrdb",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": []
     },
     {
@@ -60,25 +51,17 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
   "variant_groups": [
     {
       "id": "Variant",
       "label": "Variant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Quant",
       "label": "Quant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Recipe",
@@ -87,13 +70,7 @@ export const DECL: ModelDecl = {
       "default": "default"
     }
   ],
-  "provisions": [],
-  "accepts": [],
-  "canvas_default": false,
-  "has_agent": false,
-  "has_inference": false,
-  "has_rubric": false
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-pixel_upscale",

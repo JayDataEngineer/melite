@@ -480,3 +480,32 @@ test("THE DOOR OFFER: the catalog serves the live offer only (no hollow, no dele
   assert.equal(one("dwpose")?.status, 404);
   assert.equal(one("txt2music")?.status, 404);
 });
+
+test("THE RAW FILE: the frozen loras map keys boarding atoms only (z-image never again)", async () => {
+  // the operator's order (verbatim: z-image has no mods): the
+  // capture keyed all 55 mids (54 empty-list ballast — z-image
+  // sitting inside the section called loras). Cut 2026-09-08 to
+  // the live boarding truth; this wall pins set equality so no
+  // future capture re-adds a non-boarder key.
+  const frozen = JSON.parse(
+    readFileSync(new URL("../../../../packages/gateway/shell/data/discovery-catalog.json", import.meta.url), "utf8"),
+  ) as { loras: Record<string, { loras: unknown[] }> };
+  const { registryIds, registryModel } = await import("../../../../packages/engines/comfyui/src/models/models.ts");
+  const boarders = new Set<string>();
+  for (const rid of registryIds()) {
+    const mods = (registryModel(rid).mods ?? []) as readonly string[];
+    // OWNERS only: routes inherit the owner's rows through the
+    // card surface (cardModFields/modRows) — the legacy endpoint
+    // is py-parity (exact keys; a boarding route 404s here exactly
+    // as py 404d it — the union serves it elsewhere).
+    if (mods.includes("loras")) boarders.add(rid);
+  }
+  const keys = new Set(Object.keys(frozen.loras));
+  for (const k of keys) {
+    assert.ok(boarders.has(k), `frozen loras map keys non-boarder '${k}' — cut it (the map offers mods; only boarders may appear)`);
+  }
+  for (const b of boarders) {
+    assert.ok(keys.has(b), `loras boarder '${b}' missing from the frozen map — the door serves rows from it`);
+  }
+  assert.ok(!("z-image" in frozen.loras), "z-image must never key the loras map");
+});

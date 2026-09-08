@@ -18,27 +18,19 @@ export const DECL: ModelDecl = {
     "checkpoint": "MiaoshouAI/Florence-2-large-PromptGen-v2.0",
     "caption_task": "more_detailed_caption"
   },
-  "base_body": "",
   "genre": "image",
-  "mods": [],
   "variants": [
     {
       "id": "standard",
       "label": "Standard",
-      "hint": "",
       "group": "Variant",
       "route": "florence2",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [
         {
           "quant": "f32",
           "label": "F32",
           "route": "florence2",
-          "engine": "",
           "vram_peak_gb": 6,
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -47,25 +39,17 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
   "variant_groups": [
     {
       "id": "Variant",
       "label": "Variant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Quant",
       "label": "Quant",
-      "tooltip": "",
-      "default": ""
     },
     {
       "id": "Recipe",
@@ -74,14 +58,7 @@ export const DECL: ModelDecl = {
       "default": "default"
     }
   ],
-  "provisions": [],
-  "accepts": [],
-  "canvas_default": false,
-  "has_agent": false,
-  "has_inference": false,
-  "has_rubric": false,
-  "lane_inputs": {}
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-florence2",

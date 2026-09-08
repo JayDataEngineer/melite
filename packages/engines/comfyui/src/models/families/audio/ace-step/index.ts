@@ -42,19 +42,14 @@ export const DECL: ModelDecl = {
     "repo_id": "audio-cpp/audio.cpp-gguf",
     "note": ""
   },
-  "base_body": "",
   "genre": "audio",
-  "mods": [],
   "variants": [
     {
       "id": "standard",
       "label": "Turbo",
       "description": "the turbo distill — fast defaults",
-      "hint": "",
       "group": "Variant",
       "route": "ace-step",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [
         {
           "source": {
@@ -63,9 +58,6 @@ export const DECL: ModelDecl = {
           "quant": "native",
           "label": "Q8",
           "route": "ace-step",
-          "engine": "",
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         },
         {
           "source": {
@@ -74,9 +66,6 @@ export const DECL: ModelDecl = {
           "quant": "bf16",
           "label": "BF16",
           "route": "ace-step-bf16",
-          "engine": "",
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -84,11 +73,8 @@ export const DECL: ModelDecl = {
       "id": "base",
       "label": "Base",
       "description": "the base checkpoint — no turbo distill",
-      "hint": "",
       "group": "Variant",
       "route": "ace-step-base",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [
         {
           "source": {
@@ -97,9 +83,6 @@ export const DECL: ModelDecl = {
           "quant": "native",
           "label": "Q8",
           "route": "ace-step-base",
-          "engine": "",
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         },
         {
           "source": {
@@ -108,9 +91,6 @@ export const DECL: ModelDecl = {
           "quant": "bf16",
           "label": "BF16",
           "route": "ace-step-base-bf16",
-          "engine": "",
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -118,10 +98,8 @@ export const DECL: ModelDecl = {
       "id": "sft",
       "label": "SFT",
       "description": "the finetune",
-      "hint": "",
       "group": "Variant",
       "route": "ace-step-sft",
-      "engine": "",
       "resolver_defaults": {
         "duration": 120,
         "sample_rate": 44100
@@ -134,9 +112,6 @@ export const DECL: ModelDecl = {
           "quant": "native",
           "label": "Q8",
           "route": "ace-step-sft",
-          "engine": "",
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -144,10 +119,8 @@ export const DECL: ModelDecl = {
       "id": "xl",
       "label": "XL Turbo",
       "description": "the audio.cpp flagship",
-      "hint": "",
       "group": "Variant",
       "route": "ace-step-xl",
-      "engine": "",
       "resolver_defaults": {
         "duration": 120,
         "sample_rate": 44100
@@ -160,9 +133,6 @@ export const DECL: ModelDecl = {
           "quant": "bf16",
           "label": "BF16",
           "route": "ace-step-xl",
-          "engine": "",
-          "resolver_defaults": {},
-          "hide_from_dropdown": false
         }
       ]
     },
@@ -171,21 +141,11 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
-      "route": "",
-      "engine": "",
-      "resolver_defaults": {},
       "cells": [],
-      "wire_defaults": {}
     }
   ],
-  "variant_groups": [],
-  "provisions": [],
-  "accepts": [],
-  "canvas_default": false,
   "has_agent": true,
-  "has_inference": false,
-  "has_rubric": false
-} as unknown as ModelDecl;
+};
 
 export const family: Plugin = {
   name: "family-ace-step",
