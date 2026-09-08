@@ -23,6 +23,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync, renameSync } from
 import { join } from "node:path";
 import { callMcpTool } from "./mcp.ts";
 import { PyNum } from "@melite/gateway-core";
+import { loadEndpointConfig } from "@melite/engine-comfyui";
 import type { ModelsService } from "@melite/engine-comfyui";
 
 // ── SSOT vocabulary ─────────────────────────────────────────────────
@@ -205,13 +206,12 @@ interface Routing {
   workspace?: string;
 }
 
+/** The endpoint config view — the ENGINE owns this read (env path
+ *  first, sandbox leak gate, LOUD on unparseable); the manage door
+ *  consumes it, never re-implements path+parse (the duplicate
+ *  hand-roll died 2026-09-08, zero-compromise followup). */
 function endpointConfig(repoRoot: string): Record<string, unknown> {
-  const p = join(repoRoot, "packages", "engines", "comfyui", "data", "comfyui_endpoint.json");
-  try {
-    return JSON.parse(readFileSync(p, "utf-8")) as Record<string, unknown>;
-  } catch {
-    return {};
-  }
+  return loadEndpointConfig();
 }
 
 /** Managed mode: point the vendor rail at THIS runtime's comfy-cli and
