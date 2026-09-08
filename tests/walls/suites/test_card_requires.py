@@ -37,7 +37,7 @@ passed += r; failed += (not r)
 # the MultiRef fork"; the fork name was never a card declaration).
 ok, msg = check_card_requires(
     ["comfyui-h3-motion-context"],
-    server_url="http://127.0.0.1:18465",
+    server_url="http://127.0.0.1:18466",
 )
 r = _ok("T3 installed extension via object_info", ok, msg)
 passed += r; failed += (not r)
@@ -45,7 +45,7 @@ passed += r; failed += (not r)
 # ── T4: fake extension with no node mapping and no disk ──
 ok, msg = check_card_requires(
     ["FakeNonExistentExtension12345"],
-    server_url="http://127.0.0.1:18465",
+    server_url="http://127.0.0.1:18466",
     custom_nodes_dir="/tmp/nonexistent",
 )
 r = _ok("T4 fake extension refused", not ok, "correctly refused" if not ok else msg)
@@ -54,7 +54,7 @@ passed += r; failed += (not r)
 # ── T5: mixed real + fake ──
 ok, msg = check_card_requires(
     ["ComfyUI-KJNodes", "FakeNonExistentExtension12345"],
-    server_url="http://127.0.0.1:18465",
+    server_url="http://127.0.0.1:18466",
     custom_nodes_dir="/tmp/nonexistent",
 )
 r = _ok("T5 mixed real+fake refuses", not ok)
@@ -74,7 +74,7 @@ ok, msg = check_card_requires(
         "ComfyUI-SeedVR2_VideoUpscaler",
         "ComfyUI-LTXVideo",
     ],
-    server_url="http://127.0.0.1:18465",
+    server_url="http://127.0.0.1:18466",
 )
 r = _ok("T6 h3-timeline requires all installed", ok, msg)
 passed += r; failed += (not r)
