@@ -57,7 +57,9 @@ const RETIRED_IN_GOLDEN = [
 ] as const;
 
 describe("the served catalog vs the tree golden (A1)", () => {
-  const cat = buildCatalog();
+  // the table read (the decls param) — the registry module is
+  // retired; the family plugins' sum IS the catalog input
+  const cat = buildCatalog(modelIds().map((id) => getModel(id)));
 
   it("every shared model row is DEEP-EQUAL to the golden (never dump-vs-dump)", (): void => {
     const goldenServed = new Set(
