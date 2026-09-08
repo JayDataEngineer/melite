@@ -1,5 +1,5 @@
 // gen-api-docs — generate the gateway API surface docs FROM the
-// authored route table (the wire SSOT in packages/gateway-core/src/routes.ts).
+// authored route table (the wire SSOT in packages/gateway/core/src/routes.ts).
 //
 // TS port of tools/gen_api_docs.py (deleted at cut). Same-in/same-out:
 // the same INTRO + grouping + _doc_path/_spec_path rendering from the
@@ -39,7 +39,7 @@ import { fileURLToPath } from "node:url";
 
 const HERE: string = dirname(fileURLToPath(import.meta.url));
 const REPO: string = join(HERE, "..", "..", "..");
-const ROUTES_TS: string = join(REPO, "packages", "gateway-core", "src", "routes.ts");
+const ROUTES_TS: string = join(REPO, "packages", "gateway", "core", "src", "routes.ts");
 const DOC_REL: string = "docs/gateway/endpoints.md";
 const SPEC_REL: string = "docs/gateway/openapi.yaml";
 

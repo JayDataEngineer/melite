@@ -1400,7 +1400,7 @@ function findDanglingRefs(body: Record<string, unknown>): Array<[string, string,
 // refusal — faked byte-exact under PYDANTIC_PIN).
 function composeViaCli(fam: string, card: string, params: Record<string, unknown>): Refusal | null {
   const repo: string = resolveRepoRoot();
-  const cli: string = join(repo, "packages", "engines", "comfyui", "cordis", "src", "cli.ts");
+  const cli: string = join(repo, "packages", "engines", "comfyui-cordis", "src", "cli.ts");
   const facts: string = join(
     repo,
     "packages",
@@ -1652,7 +1652,7 @@ function namedArm(body: Record<string, unknown>, cards?: CardRegistryService | n
   const badInitial: string | null = registryInitialsError(expanded, body, {
     repoRoot: repo,
     stateRoot: process.env["MELITE_STATE_ROOT"] ?? join(repo, "data", "runs"),
-    kindsPath: join(repo, "packages", "web", "dsh", "media-plugin", "media-kinds.json"),
+    kindsPath: join(repo, "packages", "web", "media-plugin", "media-kinds.json"),
   });
   if (badInitial !== null) {
     return {

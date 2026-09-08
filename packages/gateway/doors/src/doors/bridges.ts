@@ -146,8 +146,10 @@ export { resolveRepoRoot };
 /** File-anchored repo root (no env): where the product manage source
  *  lives even when MELITE_REPO_ROOT points at a fixture tree. */
 function anchoredRepoRoot(): string {
-  const here: string = dirname(fileURLToPath(import.meta.url));
-  return resolve(here, "..", "..", "..", "..");
+  // P37: the canonical resolver (the engine's) — STAGE 2 moved this
+  // file one tier deeper; a local hop count is exactly the bug class
+  // the convergence exists to kill.
+  return resolveRepoRoot();
 }
 
 /** Python repr() of a str — single quotes, double-quoted only when

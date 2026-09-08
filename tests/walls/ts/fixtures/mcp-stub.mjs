@@ -2,7 +2,7 @@
 // mcp-stub.mjs — the fake VENDOR comfy-mcp server for the walls plane.
 //
 // Speaks just enough newline-delimited JSON-RPC over stdio for the
-// SDK client in packages/gateway-doors/src/doors/mcp.ts (initialize
+// SDK client in packages/gateway/doors/src/doors/mcp.ts (initialize
 // handshake + tools/call with canned payloads). Hermetic by design:
 // no network, no disk writes, instant answers. Point the sandbox at it
 // via MELITE_COMFY_MCP_BIN=<this file> (executable bit set).

@@ -16,7 +16,7 @@
 //                  vendor packs symlinked from vendor/comfyui_extensions;
 //                  url+ref declarations via the cm_cli engine binary.
 //   models         comfy-mcp download_model per frozen-catalog provision
-//                  row (packages/gateway/data/discovery-catalog.json),
+//                  row (packages/gateway/shell/data/discovery-catalog.json),
 //                  polled to completion, sha256-verified after.
 //   all            extensions + models.
 //
@@ -52,7 +52,7 @@ const DEFAULT_CONFIG: string = join(REPO, "packages", "engines", "comfyui",
 const ROOT_CONFIG: string = join(REPO, "inference.config.json");
 const RUNTIME: string = join(REPO, "data", "runtime", "comfyui");
 const COMFY_PROJECT: string = join(REPO, "infra", "comfyui");
-const CATALOG: string = join(REPO, "packages", "gateway", "data",
+const CATALOG: string = join(REPO, "packages", "gateway", "shell", "data",
   "discovery-catalog.json");
 
 let DRY = false;
@@ -1162,7 +1162,7 @@ interface ProvisionRow {
 
 function catalogProvisions(): Array<{ family: string; row: ProvisionRow }> {
   // The MODEL-side download places, TS-natively from the hand-owned
-  // frozen catalog (packages/gateway/data/discovery-catalog.json —
+  // frozen catalog (packages/gateway/shell/data/discovery-catalog.json —
   // the model.py cell/provision walks died with the py plane; the
   // frozen rows are the surviving declaration surface).
   const doc = JSON.parse(readFileSync(CATALOG, "utf8")) as {
@@ -1290,7 +1290,7 @@ async function stepModels(): Promise<boolean> {
 
 // ── agent harness home (server mount) ────────────────────────────
 
-const DSH_PROVISIONER: string = join(REPO, "packages", "harness", "dsh",
+const DSH_PROVISIONER: string = join(REPO, "packages", "harness",
   "provisioner");
 const DSH_PROVISIONER_NAME = "@infer/dsh-provisioner";
 const DSH_HARNESS_HOME: string = join(REPO, "data", "runtime",

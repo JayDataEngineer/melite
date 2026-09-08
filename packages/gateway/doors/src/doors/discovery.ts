@@ -15,7 +15,7 @@
 //
 // ARCHITECTURE (data-SSOT, the frozen-JSON pattern): every JSON
 // arm serves the authoring-time export
-// packages/gateway/data/discovery-catalog.json (frozen by
+// packages/gateway/shell/data/discovery-catalog.json (frozen by
 // tools/export_discovery_catalog.py, which CALLS the real py
 // functions — catalog.scan_catalog/to_json, editor_forms.forms/
 // kinds/form_spec, catalog.model_loras, editor_runs.
@@ -189,7 +189,7 @@ function hasOwn(obj: unknown, key: string): boolean {
  *  unknown — arms pick their section; parseJson keeps every number
  *  literal as PyNum so dumpsPy re-emits it verbatim. */
 export function catalogPath(repoRoot: string): string {
-  return join(repoRoot, "packages", "gateway", "data", "discovery-catalog.json");
+  return join(repoRoot, "packages", "gateway", "shell", "data", "discovery-catalog.json");
 }
 
 function loadCatalog(repoRoot: string): Record<string, unknown> {

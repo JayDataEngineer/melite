@@ -1,10 +1,10 @@
 // FROZEN (all but TOOLS_JSON — see below) by
-// packages/gateway/scripts/capture_chrome.py — DO NOT EDIT the
+// packages/gateway/shell/scripts/capture_chrome.py — DO NOT EDIT the
 // frozen constants. TOOLS_JSON is HAND-OWNED (the S-snapshots
 // projection base: tool names/stage titles/descriptions) — edit it
 // deliberately with a chrome-wall regold, never by regeneration.
 // Generator RETIRED 2026-09-08 with the py oracle
-// (packages/gateway/scripts/capture_chrome.py deleted — hygiene
+// (packages/gateway/shell/scripts/capture_chrome.py deleted — hygiene
 // sweep; the constants below are the frozen contract).
 // Source of truth: python/editor_runs.health/themes/tags/services/
 //   right_panes/ui_slots/tools/shell/plugins_registry/models

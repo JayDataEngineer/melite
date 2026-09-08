@@ -1,6 +1,6 @@
 // The gateway wire table SSOT — AUTHORED, not generated.
 //
-// packages/gateway-core/src/routes.ts is hand-edited: one rigid object
+// packages/gateway/core/src/routes.ts is hand-edited: one rigid object
 // literal per row, first-match-wins order. The retired python serving
 // stack (python/gateway.py ROUTES) is the CHECKED MIRROR: it must
 // still match this table row-for-row

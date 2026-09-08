@@ -3,7 +3,7 @@
 // The boot is INCLUDE-DRIVEN (DSH shape, app-boot mountRootInclude):
 // `new Context()` (the proxy root), the Loader service, builtins for
 // the `cordis:` locals + the vendored `include`/`group` carriers,
-// then ONE root Include on the leaf `packages/gateway/cordis.yml`
+// then ONE root Include on the leaf `packages/gateway/shell/cordis.yml`
 // with the operator layer (`cordis.patch.yml`) as its patches.
 // Runtime values ride `!!js` expressions against ctx.gatewayRuntime
 // (published before the include mounts — the DSH dshHomePath shape).
@@ -147,8 +147,11 @@ export function ensureDoorContext(port: number = 0): Promise<Context> {
         storageJson: { root: resolveStorageRoot() },
         storageDomain: { backend: "json" },
       };
+      // STRUCTURE STAGE 2: core moved one tier deeper
+      // (packages/gateway/core/src/core/) — the leaf is the SHELL's
+      // (packages/gateway/shell/cordis.yml), 3 hops up + shell.
       const leaf = new URL(
-        "../../../gateway/cordis.yml",
+        "../../../shell/cordis.yml",
         import.meta.url,
       ).href;
       const patches = await loadOperatorPatches();

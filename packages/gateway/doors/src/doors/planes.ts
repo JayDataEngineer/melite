@@ -34,7 +34,7 @@
 // declarations now (doors/flowsRegistry.ts — the flows/*/flow.py
 // authoring plane died 2026-09-08 under NO-ESTATE-PYTHON). The
 // disclosure rows still ride the authoring-time export
-// packages/gateway/data/discovery-catalog.json ("flows" section,
+// packages/gateway/shell/data/discovery-catalog.json ("flows" section,
 // frozen by tools/export_discovery_catalog.py collect_flows — the
 // discovery-lane data-SSOT pattern: the generator dies with py,
 // the data stands; the discovery wall's freshness leg diffs regen

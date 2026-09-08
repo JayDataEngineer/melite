@@ -18,7 +18,7 @@ served /v1/tools surface with their engines (quarantine 47e1c583 —
 anycreature / skintokens / audio-cpp dead; card-decls golden went
 22->19 the same day, causes beside it). The living derivation
 (python/editor_runs.tools, scan-driven) serves 19 tools;
-packages/gateway/src/doors/chrome.ts regenerated via its capture
+packages/gateway/shell/src/doors/chrome.ts regenerated via its capture
 script (other 9 doors byte-identical). Regolded from the live
 scratch serve (removals-only diff, 19 survivors byte-identical);
 verified by test_http_parity + test_gateway_chrome_parity.

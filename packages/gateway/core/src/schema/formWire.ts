@@ -65,7 +65,7 @@
 // parse…" suffixes — those describe the rejected input, not the
 // contract).
 
-import type { FormSpec } from "../../../web-kit/contracts/src/formSpec.ts";
+import type { FormSpec } from "../../../../web-kit/contracts/src/formSpec.ts";
 
 /**
  * The openapi compile-time view, re-exported so GET-door code imports

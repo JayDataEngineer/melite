@@ -3,7 +3,7 @@
 // Successor of tests/walls/suites/test_manage_parity.py (condemned —
 // read-only spec, never edited). The SSOT moved: python/manage.py's
 // Action enum is dead (RIP c0aa2187); the vocabulary lives in
-// packages/gateway-doors/src/doors/manage.ts (ACTIONS + HANDLERS +
+// packages/gateway/doors/src/doors/manage.ts (ACTIONS + HANDLERS +
 // LIFECYCLE_GUARDED) and this wall scans those SOURCES as text —
 // text-scan by design (the layer-audit pattern): no imports, so the
 // wall reads the sources the way an auditor would.
@@ -36,9 +36,9 @@ import assert from "node:assert/strict";
 import { REPO_ROOT } from "../helpers/boot.ts";
 import { blockOf, diffSets, readSource, stringLiterals } from "../helpers/scan.ts";
 
-const MANAGE_REL = "packages/gateway-doors/src/doors/manage.ts";
-const PANEL_REL = "packages/web/dsh/melite-card-deck/src/client/assets-tab.tsx";
-const TOOL_REL = "packages/harness/dsh/melite-tools/src/tools/comfy-manage.ts";
+const MANAGE_REL = "packages/gateway/doors/src/doors/manage.ts";
+const PANEL_REL = "packages/web/melite-card-deck/src/client/assets-tab.tsx";
+const TOOL_REL = "packages/harness/melite-tools/src/tools/comfy-manage.ts";
 
 /** The closed vocabulary (the contract — every row below is asserted). */
 const CONTRACT: ReadonlySet<string> = new Set([

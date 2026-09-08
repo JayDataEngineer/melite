@@ -11,7 +11,7 @@ serving oracle's `python/gateway.py _output_violation` text, computed
 live via a lazy `import gateway`. The oracle is deleted, so there is
 no second side to agree with. Per the lane rule (py-bytes-vs-ts-bytes
 with no literals → freeze the TS side's current bytes), the TS
-`outputViolation` texts (packages/gateway/src/schema/verbs.ts) were
+`outputViolation` texts (packages/gateway/shell/src/schema/verbs.ts) were
 frozen as refusals.json on 2026-09-08:
 
 - O03 — the 7 deficient-output refusals (empty, None, views-only,

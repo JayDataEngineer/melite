@@ -13,7 +13,7 @@ import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 const cardsDir = new URL('.', import.meta.url).pathname
-  // tests/walls/helpers/ -> repo/packages/engines/comfyui/cordis/src/cards/
+  // tests/walls/helpers/ -> repo/packages/engines/comfyui-cordis/src/cards/
 const repoCards = join(cardsDir, '..', '..', '..',
   'packages', 'engines', 'comfyui', 'cordis', 'src', 'cards')
 

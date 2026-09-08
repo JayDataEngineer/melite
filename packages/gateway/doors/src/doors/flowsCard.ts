@@ -8,7 +8,7 @@
 // (docs/design/card-lane-port-survey-2026-09-08.md §0 + §5): import
 // @comfyui/cordis IN-PROCESS — no template SSOT, no subprocess, no
 // class-tree port. The graph truth already lives in TS
-// (packages/engines/comfyui/cordis/src — 19 cards, golden-pinned);
+// (packages/engines/comfyui-cordis/src — 19 cards, golden-pinned);
 // this arm only changes the CALL PATH (subprocess shell -> import).
 //
 // THE CHAIN (py order, mirrored step-for-step):
@@ -356,7 +356,7 @@ export class CardRegistryService extends Service {
   }
 
   /** resolve_model's existence half — RE-HOMED 2026-09-08 on the
-   *  frozen discovery catalog (packages/gateway/data/
+   *  frozen discovery catalog (packages/gateway/shell/data/
    *  discovery-catalog.json, .catalog.models keys; hand-owned since
    *  purge S-catalog, wall-pinned). It replaces the
    *  models/<genre>/<mid>/model.py fs scan (estate-python purge
@@ -367,7 +367,7 @@ export class CardRegistryService extends Service {
   modelMids(): Set<string> {
     if (this.mids !== null) return this.mids;
     const path: string = join(
-      resolveRepoRoot(), "packages", "gateway", "data", "discovery-catalog.json",
+      resolveRepoRoot(), "packages", "gateway", "shell", "data", "discovery-catalog.json",
     );
     const doc: unknown = JSON.parse(readFileSync(path, "utf8")) as unknown;
     const models: unknown =
@@ -655,7 +655,7 @@ declare module "@deepseek-ai/cordis" {
  *  only after the registry is primed. Manifest row
  *  gateway-card-registry rides BEFORE every consumer (validate,
  *  flows-start, chrome, planes — the stroke-2b row placement rule).
- *  Loadable entry: packages/gateway-doors/src/entries/
+ *  Loadable entry: packages/gateway/doors/src/entries/
  *  card-registry.ts (the DSH leaf discipline — addressed code
  *  loads by address, never as a `cordis:` builtin). */
 export const cardRegistryProvider = {

@@ -18,8 +18,8 @@ set -u
 CHECK=0
 if [ "${1:-}" = "--check" ]; then CHECK=1; fi
 
-REPO="$(cd "$(dirname "$0")/../../.." && pwd)"
-GW="$REPO/packages/gateway"
+REPO="$(cd "$(dirname "$0")/../../../.." && pwd)"
+GW="$REPO/packages/gateway/shell"
 VP="$REPO/vendor/cordis_plugins"
 FAIL=0
 
@@ -45,7 +45,7 @@ if [ "$CHECK" = "1" ]; then
   #    Resolve from the boot owner (gateway-core) first, then the rim
   #    (gateway): the tier split post-reorg, and names live on either.
   for name in cordis-plugin-loader cordis-plugin-timer cordis-plugin-logger-console dsh-host-webserver cordis-plugin-include cordis-plugin-group; do
-    real="$(node -p "require.resolve('@deepseek-ai/$name/package.json', { paths: ['$GW/../gateway-core/src', '$GW/src'] })" 2>/dev/null || true)"
+    real="$(node -p "require.resolve('@deepseek-ai/$name/package.json', { paths: ['$REPO/packages/gateway/core/src', '$REPO/packages/gateway/doors/src', '$GW/src'] })" 2>/dev/null || true)"
     case "$real" in
       "$VP"/*) : ;;
       *) fail "@deepseek-ai/$name resolves to $real (expected under $VP)" ;;
@@ -72,7 +72,7 @@ if [ "$CHECK" = "1" ]; then
   # 4. lockfile shows link: for the gateway importers (workspace:*
   #    by construction; this catches a registry-pin regression).
   #    Importers post-reorg: packages/gateway (transport rim) +
-  #    packages/gateway-core (context boot). The pre-reorg
+  #    packages/gateway/core (context boot). The pre-reorg
   #    `plugins/gateway:` block reference died with the reorg.
   gwblock="$(sed -n '/^  packages\/gateway:/,/^  packages\//p;/^  packages\/gateway-core:/,/^  packages\//p' "$REPO/pnpm-lock.yaml")"
   for pkg in loader timer logger-console webserver include group; do

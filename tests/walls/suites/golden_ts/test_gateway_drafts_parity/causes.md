@@ -62,6 +62,6 @@ sync_mtimes; the patched file is compact JSON with no clock).
 ## Regolden rule
 
 Regolden only for a deliberate TS-door behavior change
-(packages/gateway/src/doors/drafts.ts), with a dated note here.
+(packages/gateway/shell/src/doors/drafts.ts), with a dated note here.
 Never regolden to chase a red wall — the wall failing against
 these bytes means the door moved.

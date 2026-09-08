@@ -31,7 +31,7 @@ files on 2026-09-08:
   envelope.
 - readtime-run-rtR.json / readtime-run-rtQ.json — read-time sweep
   reports for sidecars written post-boot. TS-ONLY semantics: the read
-  door composes the report WITHOUT the write (packages/gateway/src/
+  door composes the report WITHOUT the write (packages/gateway/shell/src/
   doors/runs.ts D1), so every read is pristine — the suite reads each
   twice and pins both against the same golden (idempotence follows
   transitively; no TS-vs-TS leg is committed).
@@ -62,7 +62,7 @@ Deliberately NOT goldens (shape pins in the suite, never bytes):
 
 ## TS-only semantics worth knowing
 
-- Boot sweep owns stale files before traffic (packages/gateway/src/
+- Boot sweep owns stale files before traffic (packages/gateway/shell/src/
   queue/queue.ts bootSweep: stale running/queued sidecars are rewritten
   with the "sweep" note + ledger row). Read-time stale sidecars
   (written post-boot) get the composed report instead ("zombie swept

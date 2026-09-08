@@ -1,5 +1,5 @@
 // gen-gateway-doors — generate the frontend's DOOR TYPES from the
-// route table (the wire SSOT in packages/gateway-core/src/routes.ts).
+// route table (the wire SSOT in packages/gateway/core/src/routes.ts).
 //
 // TS port of tools/gen_gateway_doors.py (deleted at cut — its OUT_PATH
 // still spelled the dead pre-move web/catalog tree, pre-broken P4).
@@ -36,13 +36,13 @@ import { fileURLToPath } from "node:url";
 
 const HERE: string = dirname(fileURLToPath(import.meta.url));
 const REPO: string = join(HERE, "..", "..", "..", "..");
-const ROUTES_TS: string = join(REPO, "packages", "gateway-core", "src", "routes.ts");
+const ROUTES_TS: string = join(REPO, "packages", "gateway", "core", "src", "routes.ts");
 const SNAP_REL: string =
   "packages/web-kit/catalog/src/generated/gatewayDoors.ts";
 
 const HEADER: string =
   [
-    "// GENERATED from packages/gateway-core/src/routes.ts (the wire SSOT) by",
+    "// GENERATED from packages/gateway/core/src/routes.ts (the wire SSOT) by",
     "// packages/web-kit/catalog/scripts/gen-gateway-doors.ts — DO NOT EDIT. Regenerate after every",
     "// route change; tests/walls/suites/test_gateway_doors.py refuses",
     "// staleness.",

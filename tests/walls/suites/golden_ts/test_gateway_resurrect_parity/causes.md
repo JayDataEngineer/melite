@@ -15,7 +15,7 @@ these files on 2026-09-08:
 
 - swept-qorph.json / swept-r1.json — the Phase-A seed's two swept
   sidecars after a direct-function TS boot (resurrectRuns +
-  bootSweep from packages/gateway/src/queue/queue.ts). Phase B's
+  bootSweep from packages/gateway/shell/src/queue/queue.ts). Phase B's
   real-server boot writes byte-identical files (verified at freeze
   time), so both phases pin this one pair.
 - a-ledger.json — the Phase-A normalized ledger (ts-stripped,

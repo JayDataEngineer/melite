@@ -11,7 +11,7 @@ leg asserted py-bytes == ts-bytes over the 10 discovery READ doors.
 The py serving oracle is deleted, so there is no second side to agree
 with. Per the lane rule (dual-boot walls become TS-ONLY, expected
 bytes = the TS side's current bytes), the 268 TS vectors served by
-packages/gateway/src/doors/discovery.ts were frozen as these files on
+packages/gateway/shell/src/doors/discovery.ts were frozen as these files on
 2026-09-08.
 
 Each `<name>.json` is an envelope pinning the full served contract
@@ -63,7 +63,7 @@ Each vector captured TWICE from fresh TS boots + fresh state roots
 on 2026-09-08 (throwaway probe script, not committed):
 268/268 byte-identical across both captures (status + body). The TS
 discovery arms serve the frozen export
-(packages/gateway/data/discovery-catalog.json) deterministically, so
+(packages/gateway/shell/data/discovery-catalog.json) deterministically, so
 no clock or id lives in these bytes.
 
 ## Deliberately NOT frozen here

@@ -212,7 +212,7 @@ describe("manage plane-unavailable template (sandbox boot, bogus bin)", () => {
 
 describe("resolveComfyMcpBin unit probe (env pin + anchor default)", () => {
   it("default is the anchored base-env bin; the env pin wins", (): void => {
-    const bridges: string = join(REPO_ROOT, "packages", "gateway-doors", "src", "doors", "bridges.ts");
+    const bridges: string = join(REPO_ROOT, "packages", "gateway", "doors", "src", "doors", "bridges.ts");
     const wantDefault: string = join(REPO_ROOT, "infra", "python", ".venv", "bin", "comfy-mcp");
     const probe: string =
       "import(" + JSON.stringify("file://" + bridges) + ").then((m) => {" +

@@ -15,7 +15,7 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 const REPO = process.argv[2]
-const doors = join(REPO, 'packages/gateway-doors/src/doors')
+const doors = join(REPO, 'packages/gateway/doors/src/doors')
 const { loadCardDefs } = await import(
   pathToFileURL(join(REPO, 'packages', 'engines', 'comfyui', 'cordis', 'src', 'index.ts')).href
 )

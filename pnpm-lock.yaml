@@ -20,7 +20,7 @@ importers:
     dependencies:
       '@melite/gateway':
         specifier: workspace:*
-        version: link:../../packages/gateway
+        version: link:../../packages/gateway/shell
 
   packages/engines/comfyui:
     dependencies:
@@ -34,6 +34,15 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+
+  packages/engines/comfyui-cordis:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
 
   packages/engines/comfyui/action_cards:
     dependencies:
@@ -197,81 +206,29 @@ importers:
         specifier: ^19.2.6
         version: 19.2.8(react@19.2.8)
 
-  packages/engines/comfyui/cordis:
-    dependencies:
-      '@deepseek-ai/cordis':
-        specifier: ^4.0.2
-        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@deepseek-ai/schemastery':
-        specifier: '*'
-        version: 3.18.2
-
-  packages/gateway:
-    dependencies:
-      '@deepseek-ai/cordis-plugin-group':
-        specifier: workspace:*
-        version: link:../../vendor/cordis_plugins/group
-      '@deepseek-ai/cordis-plugin-include':
-        specifier: workspace:*
-        version: link:../../vendor/cordis_plugins/include
-      '@deepseek-ai/cordis-plugin-loader':
-        specifier: workspace:*
-        version: link:../../vendor/cordis_plugins/loader
-      '@deepseek-ai/cordis-plugin-logger-console':
-        specifier: workspace:*
-        version: link:../../vendor/cordis_plugins/logger-console
-      '@deepseek-ai/cordis-plugin-timer':
-        specifier: workspace:*
-        version: link:../../vendor/cordis_plugins/timer
-      '@deepseek-ai/dsh-host-webserver':
-        specifier: workspace:*
-        version: link:../../vendor/cordis_plugins/webserver
-      '@melite/engine-comfyui':
-        specifier: workspace:*
-        version: link:../engines/comfyui
-      '@melite/gateway-core':
-        specifier: workspace:*
-        version: link:../gateway-core
-      '@melite/gateway-doors':
-        specifier: workspace:*
-        version: link:../gateway-doors
-      '@melite/queue':
-        specifier: workspace:*
-        version: link:../queue
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: ^4.0.2
-        version: 4.0.2(@deepseek-ai/cordis-plugin-include@vendor+cordis_plugins+include)(@deepseek-ai/cordis-plugin-loader@vendor+cordis_plugins+loader)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/gateway-core:
+  packages/gateway/core:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@vendor+cordis_plugins+include)(@deepseek-ai/cordis-plugin-loader@vendor+cordis_plugins+loader)
       '@deepseek-ai/cordis-plugin-group':
         specifier: workspace:*
-        version: link:../../vendor/cordis_plugins/group
+        version: link:../../../vendor/cordis_plugins/group
       '@deepseek-ai/cordis-plugin-include':
         specifier: workspace:*
-        version: link:../../vendor/cordis_plugins/include
+        version: link:../../../vendor/cordis_plugins/include
       '@deepseek-ai/cordis-plugin-loader':
         specifier: workspace:*
-        version: link:../../vendor/cordis_plugins/loader
+        version: link:../../../vendor/cordis_plugins/loader
       '@deepseek-ai/cordis-plugin-logger-console':
         specifier: workspace:*
-        version: link:../../vendor/cordis_plugins/logger-console
+        version: link:../../../vendor/cordis_plugins/logger-console
       '@deepseek-ai/cordis-plugin-timer':
         specifier: workspace:*
-        version: link:../../vendor/cordis_plugins/timer
+        version: link:../../../vendor/cordis_plugins/timer
       '@deepseek-ai/dsh-host-webserver':
         specifier: workspace:*
-        version: link:../../vendor/cordis_plugins/webserver
+        version: link:../../../vendor/cordis_plugins/webserver
       '@deepseek-ai/dsh-storage':
         specifier: 0.0.1-rc.1
         version: 0.0.1-rc.1(@deepseek-ai/cordis@4.0.2(@deepseek-ai/cordis-plugin-include@vendor+cordis_plugins+include)(@deepseek-ai/cordis-plugin-loader@vendor+cordis_plugins+loader))(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2(@deepseek-ai/cordis-plugin-include@vendor+cordis_plugins+include)(@deepseek-ai/cordis-plugin-loader@vendor+cordis_plugins+loader)))
@@ -286,10 +243,10 @@ importers:
         version: 3.18.2
       '@melite/engine-comfyui':
         specifier: workspace:*
-        version: link:../engines/comfyui
+        version: link:../../engines/comfyui
       '@melite/gateway-doors':
         specifier: workspace:*
-        version: link:../gateway-doors
+        version: link:../doors
       '@melite/queue':
         specifier: workspace:*
         version: link:../queue
@@ -313,20 +270,20 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/gateway-doors:
+  packages/gateway/doors:
     dependencies:
       '@comfyui/cordis':
         specifier: workspace:*
-        version: link:../engines/comfyui/cordis
+        version: link:../../engines/comfyui-cordis
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
       '@melite/engine-comfyui':
         specifier: workspace:*
-        version: link:../engines/comfyui
+        version: link:../../engines/comfyui
       '@melite/gateway-core':
         specifier: workspace:*
-        version: link:../gateway-core
+        version: link:../core
       '@melite/queue':
         specifier: workspace:*
         version: link:../queue
@@ -341,9 +298,74 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/harness/dsh/melite-preset: {}
+  packages/gateway/queue:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/cordis-plugin-timer':
+        specifier: workspace:*
+        version: link:../../../vendor/cordis_plugins/timer
+      '@melite/engine-comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui
+      '@melite/gateway-core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
-  packages/harness/dsh/melite-tools:
+  packages/gateway/shell:
+    dependencies:
+      '@deepseek-ai/cordis-plugin-group':
+        specifier: workspace:*
+        version: link:../../../vendor/cordis_plugins/group
+      '@deepseek-ai/cordis-plugin-include':
+        specifier: workspace:*
+        version: link:../../../vendor/cordis_plugins/include
+      '@deepseek-ai/cordis-plugin-loader':
+        specifier: workspace:*
+        version: link:../../../vendor/cordis_plugins/loader
+      '@deepseek-ai/cordis-plugin-logger-console':
+        specifier: workspace:*
+        version: link:../../../vendor/cordis_plugins/logger-console
+      '@deepseek-ai/cordis-plugin-timer':
+        specifier: workspace:*
+        version: link:../../../vendor/cordis_plugins/timer
+      '@deepseek-ai/dsh-host-webserver':
+        specifier: workspace:*
+        version: link:../../../vendor/cordis_plugins/webserver
+      '@melite/engine-comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui
+      '@melite/gateway-core':
+        specifier: workspace:*
+        version: link:../core
+      '@melite/gateway-doors':
+        specifier: workspace:*
+        version: link:../doors
+      '@melite/queue':
+        specifier: workspace:*
+        version: link:../queue
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@vendor+cordis_plugins+include)(@deepseek-ai/cordis-plugin-loader@vendor+cordis_plugins+loader)
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/harness/melite-preset: {}
+
+  packages/harness/melite-tools:
     dependencies:
       unrun:
         specifier: ^0.3.1
@@ -362,7 +384,7 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/harness/dsh/provisioner:
+  packages/harness/provisioner:
     dependencies:
       '@infer-media/dsh-gallery':
         specifier: link:../../../web/dsh/infer-gallery
@@ -380,7 +402,7 @@ importers:
         specifier: link:../melite-tools
         version: link:../melite-tools
 
-  packages/harness/dsh/testkit:
+  packages/harness/testkit:
     devDependencies:
       '@testing-library/dom':
         specifier: ^10.4.1
@@ -409,28 +431,6 @@ importers:
       vitest:
         specifier: ^4.1.11
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(happy-dom@20.13.1)(jsdom@29.1.1)(vite@8.2.2(@types/node@24.13.3)(jiti@2.7.0))
-
-  packages/queue:
-    dependencies:
-      '@deepseek-ai/cordis':
-        specifier: ^4.0.2
-        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@deepseek-ai/cordis-plugin-timer':
-        specifier: workspace:*
-        version: link:../../vendor/cordis_plugins/timer
-      '@melite/engine-comfyui':
-        specifier: workspace:*
-        version: link:../engines/comfyui
-      '@melite/gateway-core':
-        specifier: workspace:*
-        version: link:../gateway-core
-    devDependencies:
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
 
   packages/web-kit/catalog:
     dependencies:
@@ -569,195 +569,6 @@ importers:
       zustand:
         specifier: '*'
         version: 5.0.15(@types/react@19.2.18)(immer@10.2.0)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
-
-  packages/web/dsh/infer-gallery:
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: ^4.0.1
-        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@deepseek-ai/dsh-client-connection':
-        specifier: ^0.1.0-rc.7
-        version: 0.1.0-rc.8(b7301c03fd06b5200a6abb6ffcbfa292)
-      '@deepseek-ai/dsh-client-runtime':
-        specifier: ^0.1.0-rc.7
-        version: 0.1.0-rc.8(35ab811903e9465a80ce1f3aae1ad48c)
-      '@deepseek-ai/dsh-client-ui-slots':
-        specifier: ^0.1.0-rc.7
-        version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))
-      '@deepseek-ai/dsh-host-webserver':
-        specifier: ^0.1.0-rc.7
-        version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      '@types/react':
-        specifier: ~18.3.1
-        version: 18.3.31
-      '@types/react-dom':
-        specifier: ^18.3.5
-        version: 18.3.7(@types/react@18.3.31)
-      lightningcss:
-        specifier: ^1.30.0
-        version: 1.33.0
-      react:
-        specifier: ^19.2.6
-        version: 19.2.8
-      react-dom:
-        specifier: ^19.2.6
-        version: 19.2.8(react@19.2.8)
-      tsdown:
-        specifier: ^0.22.14
-        version: 0.22.14(typescript@5.7.3)(unrun@0.3.1)
-      typescript:
-        specifier: ~5.7.2
-        version: 5.7.3
-      unrun:
-        specifier: ^0.3.1
-        version: 0.3.1
-
-  packages/web/dsh/media-plugin:
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: ^4.0.1
-        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@deepseek-ai/dsh-client-connection':
-        specifier: ^0.1.0-rc.7
-        version: 0.1.0-rc.8(b7301c03fd06b5200a6abb6ffcbfa292)
-      '@deepseek-ai/dsh-client-runtime':
-        specifier: ^0.1.0-rc.7
-        version: 0.1.0-rc.8(35ab811903e9465a80ce1f3aae1ad48c)
-      '@deepseek-ai/dsh-client-ui-slots':
-        specifier: ^0.1.0-rc.7
-        version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))
-      '@deepseek-ai/dsh-host-webserver':
-        specifier: ^0.1.0-rc.7
-        version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))
-      '@testing-library/jest-dom':
-        specifier: ^6.10.0
-        version: 6.10.0(@testing-library/dom@10.4.1)
-      '@testing-library/react':
-        specifier: ^16.3.3
-        version: 16.3.3(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      '@types/react':
-        specifier: ~18.3.1
-        version: 18.3.31
-      '@types/react-dom':
-        specifier: ~18.3.5
-        version: 18.3.7(@types/react@18.3.31)
-      jsdom:
-        specifier: ^29.1.1
-        version: 29.1.1
-      lightningcss:
-        specifier: ^1.30.0
-        version: 1.33.0
-      react:
-        specifier: ^19.2.6
-        version: 19.2.8
-      react-dom:
-        specifier: ^19.2.6
-        version: 19.2.8(react@19.2.8)
-      tsdown:
-        specifier: ^0.22.14
-        version: 0.22.14(typescript@5.7.3)(unrun@0.3.1)
-      typescript:
-        specifier: ~5.7.2
-        version: 5.7.3
-      vitest:
-        specifier: ^5.0.0
-        version: 5.0.0(@opentelemetry/api@1.9.1)(@types/node@22.20.1)(happy-dom@20.13.1)(jsdom@29.1.1)(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0))
-
-  packages/web/dsh/melite-card-deck:
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: ^4.0.1
-        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@deepseek-ai/dsh-client-runtime':
-        specifier: 0.1.0-rc.8
-        version: 0.1.0-rc.8(35ab811903e9465a80ce1f3aae1ad48c)
-      '@deepseek-ai/dsh-host-webserver':
-        specifier: ^0.1.0-rc.7
-        version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))
-      '@playwright/test':
-        specifier: ^1.62.1
-        version: 1.62.1
-      '@testing-library/react':
-        specifier: ^16.3.3
-        version: 16.3.3(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@testing-library/user-event':
-        specifier: ^14.6.7
-        version: 14.6.7(@testing-library/dom@10.4.1)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      '@types/react':
-        specifier: ^18.3.31
-        version: 18.3.31
-      '@types/react-dom':
-        specifier: ^18.3.7
-        version: 18.3.7(@types/react@18.3.31)
-      jsdom:
-        specifier: ^29.1.1
-        version: 29.1.1
-      react:
-        specifier: ^19.2.6
-        version: 19.2.8
-      react-dom:
-        specifier: ^19.2.6
-        version: 19.2.8(react@19.2.8)
-      tsdown:
-        specifier: ^0.22.14
-        version: 0.22.14(typescript@5.7.3)(unrun@0.3.1)
-      typescript:
-        specifier: ~5.7.2
-        version: 5.7.3
-      vitest:
-        specifier: ^4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.20.1)(happy-dom@20.13.1)(jsdom@29.1.1)(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0))
-
-  packages/web/dsh/melite-card-view:
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: ^4.0.1
-        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@deepseek-ai/dsh-client-connection':
-        specifier: ^0.1.0-rc.7
-        version: 0.1.0-rc.8(b7301c03fd06b5200a6abb6ffcbfa292)
-      '@deepseek-ai/dsh-client-runtime':
-        specifier: ^0.1.0-rc.7
-        version: 0.1.0-rc.8(35ab811903e9465a80ce1f3aae1ad48c)
-      '@deepseek-ai/dsh-client-ui-slots':
-        specifier: ^0.1.0-rc.7
-        version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))
-      '@deepseek-ai/dsh-host-webserver':
-        specifier: ^0.1.0-rc.7
-        version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      '@types/react':
-        specifier: ~18.3.1
-        version: 18.3.31
-      '@types/react-dom':
-        specifier: ^18.3.5
-        version: 18.3.7(@types/react@18.3.31)
-      lightningcss:
-        specifier: ^1.30.0
-        version: 1.33.0
-      react:
-        specifier: ^19.2.6
-        version: 19.2.8
-      react-dom:
-        specifier: ^19.2.6
-        version: 19.2.8(react@19.2.8)
-      tsdown:
-        specifier: ^0.22.14
-        version: 0.22.14(typescript@5.7.3)(unrun@0.3.1)
-      typescript:
-        specifier: ~5.7.2
-        version: 5.7.3
 
   packages/web/editor:
     dependencies:
@@ -1005,6 +816,195 @@ importers:
       vitest:
         specifier: ^4.1.8
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(happy-dom@20.13.1)(jsdom@29.1.1)(vite@8.2.2(@types/node@24.13.3)(jiti@2.7.0))
+
+  packages/web/infer-gallery:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.1
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/dsh-client-connection':
+        specifier: ^0.1.0-rc.7
+        version: 0.1.0-rc.8(b7301c03fd06b5200a6abb6ffcbfa292)
+      '@deepseek-ai/dsh-client-runtime':
+        specifier: ^0.1.0-rc.7
+        version: 0.1.0-rc.8(35ab811903e9465a80ce1f3aae1ad48c)
+      '@deepseek-ai/dsh-client-ui-slots':
+        specifier: ^0.1.0-rc.7
+        version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))
+      '@deepseek-ai/dsh-host-webserver':
+        specifier: ^0.1.0-rc.7
+        version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      '@types/react':
+        specifier: ~18.3.1
+        version: 18.3.31
+      '@types/react-dom':
+        specifier: ^18.3.5
+        version: 18.3.7(@types/react@18.3.31)
+      lightningcss:
+        specifier: ^1.30.0
+        version: 1.33.0
+      react:
+        specifier: ^19.2.6
+        version: 19.2.8
+      react-dom:
+        specifier: ^19.2.6
+        version: 19.2.8(react@19.2.8)
+      tsdown:
+        specifier: ^0.22.14
+        version: 0.22.14(typescript@5.7.3)(unrun@0.3.1)
+      typescript:
+        specifier: ~5.7.2
+        version: 5.7.3
+      unrun:
+        specifier: ^0.3.1
+        version: 0.3.1
+
+  packages/web/media-plugin:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.1
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/dsh-client-connection':
+        specifier: ^0.1.0-rc.7
+        version: 0.1.0-rc.8(b7301c03fd06b5200a6abb6ffcbfa292)
+      '@deepseek-ai/dsh-client-runtime':
+        specifier: ^0.1.0-rc.7
+        version: 0.1.0-rc.8(35ab811903e9465a80ce1f3aae1ad48c)
+      '@deepseek-ai/dsh-client-ui-slots':
+        specifier: ^0.1.0-rc.7
+        version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))
+      '@deepseek-ai/dsh-host-webserver':
+        specifier: ^0.1.0-rc.7
+        version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))
+      '@testing-library/jest-dom':
+        specifier: ^6.10.0
+        version: 6.10.0(@testing-library/dom@10.4.1)
+      '@testing-library/react':
+        specifier: ^16.3.3
+        version: 16.3.3(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      '@types/react':
+        specifier: ~18.3.1
+        version: 18.3.31
+      '@types/react-dom':
+        specifier: ~18.3.5
+        version: 18.3.7(@types/react@18.3.31)
+      jsdom:
+        specifier: ^29.1.1
+        version: 29.1.1
+      lightningcss:
+        specifier: ^1.30.0
+        version: 1.33.0
+      react:
+        specifier: ^19.2.6
+        version: 19.2.8
+      react-dom:
+        specifier: ^19.2.6
+        version: 19.2.8(react@19.2.8)
+      tsdown:
+        specifier: ^0.22.14
+        version: 0.22.14(typescript@5.7.3)(unrun@0.3.1)
+      typescript:
+        specifier: ~5.7.2
+        version: 5.7.3
+      vitest:
+        specifier: ^5.0.0
+        version: 5.0.0(@opentelemetry/api@1.9.1)(@types/node@22.20.1)(happy-dom@20.13.1)(jsdom@29.1.1)(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0))
+
+  packages/web/melite-card-deck:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.1
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/dsh-client-runtime':
+        specifier: 0.1.0-rc.8
+        version: 0.1.0-rc.8(35ab811903e9465a80ce1f3aae1ad48c)
+      '@deepseek-ai/dsh-host-webserver':
+        specifier: ^0.1.0-rc.7
+        version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))
+      '@playwright/test':
+        specifier: ^1.62.1
+        version: 1.62.1
+      '@testing-library/react':
+        specifier: ^16.3.3
+        version: 16.3.3(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@testing-library/user-event':
+        specifier: ^14.6.7
+        version: 14.6.7(@testing-library/dom@10.4.1)
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      '@types/react':
+        specifier: ^18.3.31
+        version: 18.3.31
+      '@types/react-dom':
+        specifier: ^18.3.7
+        version: 18.3.7(@types/react@18.3.31)
+      jsdom:
+        specifier: ^29.1.1
+        version: 29.1.1
+      react:
+        specifier: ^19.2.6
+        version: 19.2.8
+      react-dom:
+        specifier: ^19.2.6
+        version: 19.2.8(react@19.2.8)
+      tsdown:
+        specifier: ^0.22.14
+        version: 0.22.14(typescript@5.7.3)(unrun@0.3.1)
+      typescript:
+        specifier: ~5.7.2
+        version: 5.7.3
+      vitest:
+        specifier: ^4.1.11
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.20.1)(happy-dom@20.13.1)(jsdom@29.1.1)(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0))
+
+  packages/web/melite-card-view:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.1
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/dsh-client-connection':
+        specifier: ^0.1.0-rc.7
+        version: 0.1.0-rc.8(b7301c03fd06b5200a6abb6ffcbfa292)
+      '@deepseek-ai/dsh-client-runtime':
+        specifier: ^0.1.0-rc.7
+        version: 0.1.0-rc.8(35ab811903e9465a80ce1f3aae1ad48c)
+      '@deepseek-ai/dsh-client-ui-slots':
+        specifier: ^0.1.0-rc.7
+        version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))
+      '@deepseek-ai/dsh-host-webserver':
+        specifier: ^0.1.0-rc.7
+        version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      '@types/react':
+        specifier: ~18.3.1
+        version: 18.3.31
+      '@types/react-dom':
+        specifier: ^18.3.5
+        version: 18.3.7(@types/react@18.3.31)
+      lightningcss:
+        specifier: ^1.30.0
+        version: 1.33.0
+      react:
+        specifier: ^19.2.6
+        version: 19.2.8
+      react-dom:
+        specifier: ^19.2.6
+        version: 19.2.8(react@19.2.8)
+      tsdown:
+        specifier: ^0.22.14
+        version: 0.22.14(typescript@5.7.3)(unrun@0.3.1)
+      typescript:
+        specifier: ~5.7.2
+        version: 5.7.3
 
   vendor/cordis_plugins/group:
     dependencies:
