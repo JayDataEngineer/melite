@@ -29,7 +29,7 @@ fails — route through the kit or amend this wall deliberately.
 Non-card chrome (modals, canvas, tiles, sidebars) is out of scope.
 
 5. Studio tenants + genre viewer packs (every tsx under
-   plugins/engines/*/action_cards/) ride the kit too — no card goes
+   packages/engines/*/action_cards/) ride the kit too — no card goes
    around the shared atoms (the 2026-09-06 audit answer: the default
    path never did; 60+ raw sites across anny/body/mask/h3/motion/
    ideogram/viewers did and were migrated). The walk discovers new
@@ -40,8 +40,8 @@ import re
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
-GEN = REPO / "plugins/web/editor/src/surfaces/generate"
-FLOW = REPO / "plugins/web/editor/src/surfaces/flow"
+GEN = REPO / "packages/web/editor/src/surfaces/generate"
+FLOW = REPO / "packages/web/editor/src/surfaces/flow"
 
 # the card render path — every file that renders card params/axes
 CARD_PATH = [
@@ -136,10 +136,10 @@ def test_card_path_atoms_come_from_the_kit() -> None:
 
 def test_tenant_tree_has_zero_raw_elements() -> None:
     """No card goes around the kit: every tsx under every
-    plugins/engines/*/action_cards/ (studio tenants, timeline, genre
+    packages/engines/*/action_cards/ (studio tenants, timeline, genre
     viewer packs, shared lane rails) renders zero raw form elements.
     The glob discovers new tenant files — no list to forget."""
-    tsx = sorted((REPO / "plugins/engines").glob("*/action_cards/**/*.tsx"))
+    tsx = sorted((REPO / "packages/engines").glob("*/action_cards/**/*.tsx"))
     assert len(tsx) > 40, (
         "tenant walk found %d tsx — the glob broke" % len(tsx))
     bad = {}

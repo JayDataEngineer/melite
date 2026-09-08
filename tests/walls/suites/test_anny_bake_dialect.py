@@ -28,7 +28,7 @@ from flow import FlowError
 from melite_models import AnnyBakeParams
 
 FLOW_PY = REPO / "flows" / "anny-params" / "flow.py"
-COMPONENT = (REPO / "plugins" / "engines" / "comfyui" / "action_cards"
+COMPONENT = (REPO / "packages" / "engines" / "comfyui" / "action_cards"
              / "3d" / "anny" / "ui" / "studio" / "component.tsx")
 GATEWAY_PY = REPO / "py" / "gateway.py"
 
@@ -147,7 +147,7 @@ class TestServeSide:
         """The door serves params_json VALIDATED — a malformed
         declaration row refuses the door, never the studio's run."""
         from melite_models import load_model_py
-        anny = load_model_py(REPO / "plugins/engines/comfyui/models/3d"
+        anny = load_model_py(REPO / "packages/engines/comfyui/models/3d"
                              "/anny/model.py", "comfyui")
         rows = [c for c in anny.character_presets if c.params]
         assert rows, "estate archetypes vanished"
@@ -158,7 +158,7 @@ class TestServeSide:
         """local_changes serializes as the node's OBJECT, never the
         row tuple (the killer shape)."""
         from melite_models import load_model_py
-        anny = load_model_py(REPO / "plugins/engines/comfyui/models/3d"
+        anny = load_model_py(REPO / "packages/engines/comfyui/models/3d"
                              "/anny/model.py", "comfyui")
         for p in anny.character_presets:
             if not p.params:
@@ -193,6 +193,6 @@ class TestStudioSeam:
         chip = (REPO / "web/ui/src/verbChip.tsx").read_text()
         assert "line-clamp-2" in chip, \
             "VerbChip's note line must clamp (the shared note render)"
-        shape = (REPO / "plugins/engines/comfyui/action_cards/3d/anny"
+        shape = (REPO / "packages/engines/comfyui/action_cards/3d/anny"
                  / "ui/studio/shape.tsx").read_text()
         assert "line-clamp-3" in shape

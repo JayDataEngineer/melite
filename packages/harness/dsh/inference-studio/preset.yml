@@ -1,0 +1,3 @@
+name: Inference Studio
+description: The inference.cpp agent — peeks the lane table (lane_bundle_peek), loads the lane (lane_bundle_load: agent doc inline + card contract), reads deep craft (skill_read), composes ONE action card (build_flow) that renders in chat; only you press Run. All inference rides the serial GPU queue.
+order: 6

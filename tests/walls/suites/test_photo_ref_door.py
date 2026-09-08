@@ -37,7 +37,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _anchor import REPO  # noqa: E402
 
 sys.path.insert(0, str(REPO))
-sys.path.insert(0, str(REPO / "plugins" / "engines" / "comfyui"
+sys.path.insert(0, str(REPO / "packages" / "engines" / "comfyui"
                        / "compose"))
 
 import flow as flow_mod  # noqa: E402

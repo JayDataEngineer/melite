@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.join(REPO, 'py'))
 # card's py/ dir rides first so the tool reads the file production
 # loads.
 sys.path.insert(0, os.path.join(
-    REPO, 'plugins/engines/comfyui/action_cards/3d/skin/py'))
+    REPO, 'packages/engines/comfyui/action_cards/3d/skin/py'))
 
 import numpy as np
 from PIL import Image

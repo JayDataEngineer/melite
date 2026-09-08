@@ -1,0 +1,21 @@
+# The lane's render-time prompt framing — AUTHORED STEERING, loaded as
+# a declaration (the operator ruling, 2026-09-04: instructions live in
+# the agents surface; the emitter is mechanics and NEVER authors
+# prompts). Each window's prompt at render time = preamble + the call's
+# text as composed. Verified by rendered films — do not "improve":
+# chain windows lose their continuity without this framing.
+#
+# pre_start: prepended to window 1 of a fresh multi-window film.
+# pre_chain: prepended to chain windows (printf %d = the shot number).
+pre_start: |-
+  Create the opening clip for a new continuous video. Establish coherent subject identity, camera, lighting, environment, motion, voice, ambience, and audiovisual timing so later masked extensions can continue seamlessly. If an H3 keyframe is enabled at frame 1, treat it as the exact opening image and animate naturally forward. Connected reference images are identity/appearance references only and should not force their pose, framing, expression, or lighting onto the shot.
+
+  [Shot 1] 
+pre_chain: |-
+  Continue the existing scene from the previous generated H3 clip with no cut, reset, or re-establishment. The incoming protected audiovisual latent prefix is authoritative for current pose, motion, camera trajectory, facial state, lighting, environment, object state, voice, ambience, and timing. Connected reference images are optional; use them only to preserve stable subject identity and appearance beneath that incoming state.
+
+  [Shot %d] Continue the exact motion and sound already in progress, then develop the next action naturally. 
+# identity_pin: the subject pin line template ({identity} slot). The
+# pin rides continuation prompts to hold the subject across seams;
+# WHICH prompts carry it is card policy, the wording is authored here.
+identity_pin: "[Identity, hold exactly] {identity} "

@@ -1,0 +1,91 @@
+[
+  {
+    "name": "h3_timeline_card",
+    "version": 1,
+    "kind": "card-compose",
+    "card": "h3-timeline",
+    "model": "h3-timeline",
+    "stage_title": "H3 Timeline",
+    "description": "THE video interface — multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "Verb-first motion + the sounds. For keyframes the image already sets the scene — prompt what CHANGES."
+        },
+        "image": {
+          "type": "string",
+          "description": "Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline."
+        },
+        "seed": {
+          "type": "integer",
+          "default": 42,
+          "description": "Same seed across re-rolls = same world texture"
+        },
+        "width": {
+          "type": "number",
+          "minimum": 448,
+          "maximum": 1344,
+          "default": 768,
+          "description": "Width"
+        },
+        "height": {
+          "type": "number",
+          "minimum": 448,
+          "maximum": 768,
+          "default": 448,
+          "description": "Height"
+        },
+        "length": {
+          "type": "number",
+          "minimum": 21,
+          "maximum": 362,
+          "default": 56,
+          "description": "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s"
+        },
+        "steps": {
+          "type": "number",
+          "minimum": 4,
+          "maximum": 30,
+          "default": 12,
+          "description": "12 for draft; 30 standard; 10 with the turbo LoRA"
+        },
+        "sharpen_enabled": {
+          "type": "boolean",
+          "default": "true",
+          "description": "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural."
+        },
+        "sharpen_strength": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.3,
+          "description": "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off."
+        },
+        "interpolate_enabled": {
+          "type": "boolean",
+          "default": "false",
+          "description": "Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time."
+        },
+        "shift_video": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 20,
+          "default": 12.0,
+          "description": "Timestep shift for video attention. Higher = more coherent motion."
+        },
+        "shift_audio": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 3.0,
+          "description": "Timestep shift for audio attention. Lower = more detailed sound."
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    }
+  }
+]

@@ -1,0 +1,17 @@
+{
+  "name": "@melite-plugin/video",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./viewers/index.ts",
+  "types": "./viewers/index.ts",
+  "exports": {
+    "./ui/viewers": "./viewers/index.ts",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@melite/contracts": "workspace:*",
+    "lucide-react": "*",
+    "react": "*",
+    "react-dom": "*"
+  }
+}

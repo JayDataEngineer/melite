@@ -1,0 +1,365 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@radix-ui/colors/blue-dark.css";
+@import "@radix-ui/colors/slate-dark.css";
+
+/* OUT-OF-ROOT SOURCE (2026-10-02): @melite/ui (web/ui) is a workspace
+   package OUTSIDE the vite root, so Tailwind v4's automatic detection
+   never scanned it — its utilities (the dialog's top-[50%] /
+   translate-* centering, arbitrary z) silently never generated, and
+   every modal rendered at flow-bottom in dev. Found from the card
+   harness lane: the ServicePicker dialog was unreachable ("element is
+   outside of the viewport"). The app page loads the SAME css — this
+   was an estate-wide dev gap, not a harness artifact. */
+@source "../../../../web/ui/src";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: 'Geist Variable', sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* ── TECH NOIR — light fallback (app ships dark-only, but keep tokens sane) ── */
+:root {
+  --brand: oklch(0.72 0.17 196);
+  --brand-foreground: oklch(0.16 0.04 264);
+  --background: oklch(0.985 0.002 264);
+  --foreground: oklch(0.18 0.013 264);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.013 264);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.013 264);
+  --primary: oklch(0.72 0.17 196);
+  --primary-foreground: oklch(0.16 0.04 264);
+  --secondary: oklch(0.965 0.006 264);
+  --secondary-foreground: oklch(0.18 0.013 264);
+  --muted: oklch(0.965 0.006 264);
+  --muted-foreground: oklch(0.52 0.014 264);
+  --accent: oklch(0.955 0.01 264);
+  --accent-foreground: oklch(0.18 0.013 264);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.90 0.008 264);
+  --input: oklch(0.90 0.008 264);
+  --ring: oklch(0.72 0.17 196 / 55%);
+  --chart-1: oklch(0.72 0.17 196);
+  --chart-2: oklch(0.70 0.15 160);
+  --chart-3: oklch(0.72 0.16 300);
+  --chart-4: oklch(0.78 0.16 80);
+  --chart-5: oklch(0.65 0.20 15);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0.003 264);
+  --sidebar-foreground: oklch(0.18 0.013 264);
+  --sidebar-primary: oklch(0.72 0.17 196);
+  --sidebar-primary-foreground: oklch(0.16 0.04 264);
+  --sidebar-accent: oklch(0.955 0.01 264);
+  --sidebar-accent-foreground: oklch(0.18 0.013 264);
+  --sidebar-border: oklch(0.90 0.008 264);
+  --sidebar-ring: oklch(0.72 0.17 196 / 55%);
+}
+
+/* ── TECH NOIR — signature dark theme (Radix Colors) ───────────────────────
+   Built on @radix-ui/colors — perceptually-tuned scales by WorkOS/Radix.
+   Two scales are used:
+     • blue-dark  → the deepest surfaces (sidebar + canvas). Delivers the
+       "deep midnight navy" character without going cartoonish.
+     • slate-dark → elevated surfaces + text + borders. Cooler than gray-dark
+       (subtle blue cast) but more neutral than blue-dark, so content readable.
+
+   ── Brightness hierarchy (eyes drawn to the LIGHT) ─────────────────────────
+   The CENTER workspace is where creative work happens, so it must be the
+   visual focus. Sidebars recede; cards float. Tier order, darkest → brightest:
+
+       sidebar (blue-1, #0d1520)  ← darkest, RECEDES
+       canvas  (blue-2, #111927)  ← the workspace, MEDIUM
+       card    (slate-4)          ← content surfaces, BRIGHTER
+       popover (slate-5)          ← floating dialogs, BRIGHTEST
+
+   This inverts the common AI-app mistake of making the sidebar LIGHTER than
+   the canvas — which pulls the eye AWAY from the work. Pure black is also
+   avoided: deep navy (~L 0.07–0.10) keeps text contrast manageable and
+   reduces halation vs pure-black/pure-white.
+
+   The brand stays electric teal-cyan (oklch 0.84 0.158 196) — the
+   COMPLEMENTARY accent to deep navy, so it glows neon-on-noir (Tron / Blade
+   Runner look) rather than competing with an analogous sky-cyan. */
+.dark {
+  --brand: oklch(0.84 0.158 196);            /* electric teal-cyan (neon-on-noir) */
+  --brand-foreground: oklch(0.16 0.05 264);
+
+  /* ── Surfaces — full NAVY scale, dark + muted workspace ───────────────
+	     The workspace stays DARK and muted — blue-2 is near-black with a
+	     subtle blue tint (L≈0.087, chroma 0.07). The navy CHARACTER comes
+	     from cards (blue-3, where chroma crosses 0.15 and the blue reads)
+	     and the electric cyan brand. Sidebar ties to the darkest tier so
+	     structural chrome recedes. Text + 1px borders stay neutral slate
+	     (the proven colored-surface / neutral-text pattern used by Vercel,
+	     Linear, Supabase).
+
+	       sidebar   var(--blue-1)   #0d1520  L=0.066  ← darkest, RECEDES
+	       canvas    var(--blue-2)   #111927  L=0.087  ← dark muted workspace
+	       card      var(--blue-3)   #0d2847  L=0.158  ← NAVY — content floats
+	       popover   var(--blue-4)   #003362  L=0.210  ← BRIGHTEST, dialogs
+
+	     The big lightness jump (blue-2→blue-3: +0.07) is INTENTIONAL —
+	     it's the visual separation between the dark workspace and content
+	     cards that float above it. The sidebar↔canvas gap (0.066→0.087)
+	     is subtle by design: chrome and workspace read as one dark base.
+	*/
+  --background: var(--blue-2);               /* canvas — dark muted (L=0.087) */
+  --sidebar: var(--blue-1);                  /* sidebar + header — DARKEST, recedes */
+  --sidebar-accent: var(--blue-3);           /* sidebar hover — navy lift */
+  --card: var(--blue-3);                     /* content cards — NAVY (L=0.158) */
+  --popover: var(--blue-4);                  /* floating dialogs — brightest tier */
+  --secondary: var(--blue-3);                /* secondary buttons, same tier as card */
+  --muted: var(--blue-1);                    /* recessed areas — darkest, recedes with sidebar */
+  --accent: var(--blue-4);                   /* generic hover surface */
+
+  /* ── Text (slate-dark scale — cool off-white for low glare) ─────────── */
+  --foreground: var(--slate-12);             /* primary text — bright cool-white */
+  --muted-foreground: var(--slate-11);       /* secondary text — readable on all tiers */
+  --card-foreground: var(--slate-12);
+  --popover-foreground: var(--slate-12);
+  --sidebar-foreground: var(--slate-12);
+  --sidebar-accent-foreground: var(--slate-12);
+  --secondary-foreground: var(--slate-12);
+  --accent-foreground: var(--slate-12);
+
+  /* ── Brand / primary ────────────────────────────────────────────────── */
+  --primary: oklch(0.84 0.158 196);
+  --primary-foreground: oklch(0.16 0.05 264);
+  --sidebar-primary: oklch(0.84 0.158 196);
+  --sidebar-primary-foreground: oklch(0.16 0.05 264);
+
+  /* ── Borders — Radix slate-dark-6 is perceptually tuned to read on every
+     surface tier without being harsh. Inputs get slate-7 (one brighter) so
+     they pop slightly more than panel seams. ──────────────────────────── */
+  --border: var(--slate-6);
+  --input: var(--slate-7);
+  --sidebar-border: var(--slate-6);
+  --ring: oklch(0.84 0.158 196 / 50%);       /* cyan focus halo */
+  --sidebar-ring: oklch(0.84 0.158 196 / 50%);
+
+  /* ── States ────────────────────────────────────────────────────────── */
+  --destructive: oklch(0.66 0.21 25);
+
+  /* ── Charts (unchanged) ────────────────────────────────────────────── */
+  --chart-1: oklch(0.84 0.158 196);
+  --chart-2: oklch(0.70 0.15 160);
+  --chart-3: oklch(0.72 0.16 300);
+  --chart-4: oklch(0.78 0.16 80);
+  --chart-5: oklch(0.65 0.20 15);
+
+  --animate-shimmer: shimmer-sweep var(--shimmer-duration, 1000ms) linear infinite both;
+
+  /* Ideogram 4 canvas accents — cyan for objects, violet for text.
+     Used by IdeogramCanvasEditor to color bbox outlines, handles, and
+     type tags so they read against the dark canvas background. */
+  --canvas-bg: var(--blue-2);                /* matches --background — dark muted */
+  --ideo-obj: oklch(0.84 0.158 196);         /* matches brand cyan */
+  --ideo-text: oklch(0.78 0.13 295);         /* violet complement */
+}
+
+@keyframes shimmer-sweep {
+  from { background-position: 150% 0; }
+  to { background-position: -100% 0; }
+}
+
+@utility shimmer {
+  background-image: linear-gradient(90deg, transparent 40%, hsl(var(--muted-foreground) / 0.1) 50%, transparent 60%);
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+}
+
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  html { color-scheme: dark; overflow: hidden; }
+  body {
+    @apply bg-background text-foreground antialiased overflow-hidden;
+    font-feature-settings: "cv11", "ss01", "ss03";
+    background-image:
+      radial-gradient(120% 80% at 50% -10%, oklch(0.84 0.158 196 / 0.09) 0%, transparent 55%),
+      radial-gradient(80% 60% at 100% 110%, oklch(0.62 0.16 290 / 0.07) 0%, transparent 50%);
+    background-attachment: fixed;
+  }
+  ::selection { background: oklch(0.84 0.158 196 / 30%); color: inherit; }
+
+  /* Cyan-tinted scrollbars to match the brand */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.84 0.158 196 / 22%) transparent;
+  }
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb {
+    background: oklch(0.84 0.158 196 / 18%);
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 999px;
+  }
+  *::-webkit-scrollbar-thumb:hover { background: oklch(0.84 0.158 196 / 35%); background-clip: content-box; }
+}
+
+/* ── Brand utilities ─────────────────────────────────────────────────────── */
+
+/* A horizontal neon hairline — used under the app header. */
+@utility tn-hairline {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    oklch(0.84 0.158 196 / 40%) 50%,
+    transparent 100%
+  );
+}
+
+/* Subtle top-edge "neon seam" for primary panels (use with `relative`). */
+@utility tn-seam {
+  position: relative;
+  box-shadow: inset 0 1px 0 0 oklch(0.84 0.158 196 / 14%);
+}
+
+/* Tabular numerics for compact numeric inputs. */
+@utility tn-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ── Reasoning card markdown body ──────────────────────────────────────────
+   The custom ReasoningCard (src/surfaces/shared/ReasoningCard.tsx) renders
+   the model's pre-answer monologue as markdown via Streamdown. Streamdown
+   emits raw HTML elements (p, ul, ol, pre, code, h1–h6, blockquote, table)
+   which need base styling — without `@tailwindcss/typography` (not in the
+   deps), bare elements render unstyled and the card reads as a wall of
+   same-weight text (the "poorly formatted" complaint, 2026-08-07).
+
+   Scoped to `.reasoning-card-body` (the className ReasoningCard sets on
+   the Streamdown wrapper div) so the rules don't bleed into the assistant
+   message markdown or anywhere else. Amber-tinted to match the card. */
+.reasoning-card-body p { margin: 0 0 0.5rem 0; line-height: 1.55; }
+.reasoning-card-body p:last-child { margin-bottom: 0; }
+.reasoning-card-body ul,
+.reasoning-card-body ol { margin: 0.25rem 0 0.5rem 0; padding-left: 1.25rem; }
+.reasoning-card-body li { margin: 0.125rem 0; }
+.reasoning-card-body li > p { margin: 0; }
+.reasoning-card-body h1,
+.reasoning-card-body h2,
+.reasoning-card-body h3,
+.reasoning-card-body h4 {
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 0.75rem 0 0.375rem 0;
+  color: rgb(254 243 199 / 0.9); /* amber-100/90 — matches the card header */
+}
+.reasoning-card-body h1 { font-size: 0.95rem; }
+.reasoning-card-body h2 { font-size: 0.9rem; }
+.reasoning-card-body h3,
+.reasoning-card-body h4 { font-size: 0.85rem; }
+.reasoning-card-body h1:first-child,
+.reasoning-card-body h2:first-child,
+.reasoning-card-body h3:first-child,
+.reasoning-card-body h4:first-child { margin-top: 0; }
+.reasoning-card-body pre {
+  margin: 0.375rem 0;
+  padding: 0.5rem 0.625rem;
+  background: rgb(0 0 0 / 0.25);
+  border: 1px solid rgb(217 119 6 / 0.18); /* amber-600/18 */
+  border-radius: 0.375rem;
+  overflow-x: auto;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  font-family: var(--font-mono);
+}
+.reasoning-card-body pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+.reasoning-card-body code {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 0.05rem 0.25rem;
+  background: rgb(217 119 6 / 0.14);
+  border-radius: 0.2rem;
+}
+.reasoning-card-body blockquote {
+  margin: 0.375rem 0;
+  padding-left: 0.625rem;
+  border-left: 2px solid rgb(217 119 6 / 0.4);
+  color: rgb(253 230 138 / 0.65); /* amber-200/65 — slightly dimmer */
+}
+.reasoning-card-body blockquote p { margin: 0; }
+.reasoning-card-body a {
+  color: rgb(252 211 77 / 0.95); /* amber-300/95 */
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.reasoning-card-body hr {
+  margin: 0.625rem 0;
+  border: 0;
+  border-top: 1px solid rgb(217 119 6 / 0.22);
+}
+.reasoning-card-body table {
+  margin: 0.375rem 0;
+  border-collapse: collapse;
+  font-size: 0.7rem;
+}
+.reasoning-card-body th,
+.reasoning-card-body td {
+  padding: 0.2rem 0.4rem;
+  border: 1px solid rgb(217 119 6 / 0.22);
+  text-align: left;
+}
+.reasoning-card-body th { background: rgb(217 119 6 / 0.1); font-weight: 600; }
+/* Thin amber-tinted scrollbar inside the card body — matches the app's
+   cyan-tinted scrollbar convention but toned to the reasoning palette. */
+.reasoning-card-body::-webkit-scrollbar { width: 6px; height: 6px; }
+.reasoning-card-body::-webkit-scrollbar-track { background: transparent; }
+.reasoning-card-body::-webkit-scrollbar-thumb {
+  background: rgb(217 119 6 / 0.3);
+  border-radius: 999px;
+}
+.reasoning-card-body::-webkit-scrollbar-thumb:hover {
+  background: rgb(217 119 6 / 0.5);
+}

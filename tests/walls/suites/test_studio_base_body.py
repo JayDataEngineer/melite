@@ -26,14 +26,14 @@ from melite_models import Genre, Model, ModelError, Provision, load_model_py
 from _anchor import REPO
 
 ANNY_MODEL_PY = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "models", "3d", "anny",
+    REPO, "packages", "engines", "comfyui", "models", "3d", "anny",
     "model.py")
 GATEWAY_PY = os.path.join(REPO, "py", "gateway.py")
 ANNY_TSX = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "action_cards", "3d",
+    REPO, "packages", "engines", "comfyui", "action_cards", "3d",
     "anny", "ui", "studio", "component.tsx")
 ASSEMBLY_TSX = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "action_cards", "3d",
+    REPO, "packages", "engines", "comfyui", "action_cards", "3d",
     "ui", "studios", "assembly.tsx")
 
 

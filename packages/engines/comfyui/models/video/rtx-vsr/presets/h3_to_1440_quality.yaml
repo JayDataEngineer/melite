@@ -1,0 +1,18 @@
+# ─── Preset: the quality path — H3 → SeedVR2 to 1440p ───────────────────
+# Best detail reconstruction.
+# Tree migration 2026-08-16: moved verbatim from the flat video_upscale.yaml
+# file-level `presets:` block (never attached by the flat loader; the tree
+# attach RESTORES these — the file stem IS the preset id).
+
+label: H3 → 1440p (SeedVR2 Quality)
+description: >-
+  Upscale MiniMax H3 output to 1440p via SeedVR2 diffusion re-synthesis.
+  Slowest pathway (~15-30s per frame) but the cleanest detail — especially
+  on VAE-degraded flat regions. Use for hero shots where quality > speed.
+params:
+  mode: seedvr2
+  dit_model: seedvr2_ema_3b_fp16.safetensors
+  vae_model: ema_vae_fp16.safetensors
+  target_resolution: 1440
+  batch_size: 5
+  target_scale: 2.0

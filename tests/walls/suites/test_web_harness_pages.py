@@ -26,7 +26,7 @@ import re
 import unittest
 
 from _anchor import REPO
-EDITOR = os.path.join(REPO, "plugins", "web", "editor")
+EDITOR = os.path.join(REPO, "packages", "web", "editor")
 
 MODULE_SRC_RE = re.compile(r'<script[^>]+type="module"[^>]+src="([^"]+)"')
 # Pages that deliberately do NOT mount an in-repo module entry (static

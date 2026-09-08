@@ -1,0 +1,24 @@
+[
+  {
+    "name": "input_prep_card",
+    "version": 1,
+    "kind": "card-compose",
+    "card": "input-prep",
+    "model": "input",
+    "stage_title": "Input Prep",
+    "description": "Source intake: attach an image or audio file (upload, asset drop, prior run) — staged, optionally transformed, emitted as a media artifact for downstream cards to wire.",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string",
+          "format": "path",
+          "description": "The file to stage — upload, asset drop, prior-run artifact, or mount path. Image or audio (video is not boarded yet)."
+        }
+      },
+      "required": [
+        "source"
+      ]
+    }
+  }
+]

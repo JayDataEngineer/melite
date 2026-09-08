@@ -3,7 +3,7 @@
 the route table (the wire SSOT in py/gateway.py).
 
 Emits:
-  plugins/gateway/src/routes.ts — the `GatewayRoute` row type + the
+  packages/gateway/src/routes.ts — the `GatewayRoute` row type + the
     full ROUTES table as a GENERATED MIRROR (Phase 0 of the
     gateway → TypeScript cutover, .scratch/gateway-ts-map.md §5:
     SSOT retarget with no behavior change).
@@ -12,7 +12,7 @@ Every field the table carries that TypeScript can express lands in
 the mirror: method/path/template/group/summary/query/bodyKind/
 regex/ws/attr, plus the python handler's NAME as a traceability
 string (the callable itself cannot cross the language boundary —
-the Phase 1+ door ports in plugins/gateway/src/doors/ map each
+the Phase 1+ door ports in packages/gateway/src/doors/ map each
 row to its TS implementation via this name).
 
 Erasable-syntax TS only (node --experimental-strip-types, the
@@ -36,7 +36,7 @@ sys.path.insert(0, str(REPO / "py"))
 
 import gateway  # noqa: E402  (stdlib only; the table imports clean)
 
-OUT_PATH = REPO / "plugins" / "gateway" / "src" / "routes.ts"
+OUT_PATH = REPO / "packages" / "gateway" / "src" / "routes.ts"
 
 HEADER = """// GENERATED from py/gateway.py ROUTES (the wire SSOT) by
 // tools/gen_routes_mirror.py — DO NOT EDIT. Regenerate after every

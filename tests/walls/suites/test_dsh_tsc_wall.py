@@ -23,7 +23,7 @@ def _tsc_packages() -> list[Path]:
     (provisioner is MJS-only, shared is build helpers, etc.) and
     skips examples/install-profile shells.
     """
-    roots = [REPO / "plugins" / "harness" / "dsh", REPO / "plugins" / "web" / "dsh"]
+    roots = [REPO / "packages" / "harness" / "dsh", REPO / "packages" / "web" / "dsh"]
     out = []
     for root in roots:
         if not root.exists():

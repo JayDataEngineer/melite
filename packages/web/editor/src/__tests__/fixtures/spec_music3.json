@@ -1,0 +1,560 @@
+{
+  "model": "music3",
+  "form": "form_music",
+  "genre": "audio",
+  "service": "ace_step",
+  "label": "Music",
+  "sidebar_key": "generate_music",
+  "fields": [
+    {
+      "name": "preset",
+      "type": "select",
+      "label": "Workflow Preset",
+      "default": "song",
+      "options": [
+        {
+          "value": "draft_short",
+          "label": "Draft (30 s)"
+        },
+        {
+          "value": "final_long",
+          "label": "Final (2 min)"
+        },
+        {
+          "value": "song",
+          "label": "Song (60 s)"
+        }
+      ],
+      "required": false,
+      "step": null,
+      "tooltip": "Recipe shortcut — Draft (30 s) for fast iteration while composing, Song (60 s) the official template default, Final (2 min) for complete songs. Fills untouched fields (Duration / Steps); values you've set win.",
+      "section": "core",
+      "order": 0
+    },
+    {
+      "name": "prompt",
+      "type": "textarea",
+      "label": "Caption",
+      "default": "",
+      "options": null,
+      "required": true,
+      "step": null,
+      "tooltip": "Structured music description in three sections: Global Metadata (genre, subgenre, BPM, key, scale, emotional progression, listening scenario, production profile) → Vocal Details (gender, timbre, performance style, harmony, backing, vocal effects) → Arrangement (instruments, section evolution, groove, bass, percussion, textures, spatial effects).",
+      "section": "core",
+      "order": 0
+    },
+    {
+      "name": "lyrics",
+      "type": "textarea",
+      "label": "Lyrics",
+      "default": "",
+      "options": null,
+      "required": false,
+      "step": null,
+      "tooltip": "Lyrics with section tags: [Intro] [Verse] [Pre-Chorus] [Chorus] [Bridge] [Instrumental] [Solo] [Outro]. Tags are the only executable structural instructions — the text itself conveys mood. Empty = instrumental. Caption + lyrics must stay under 5000 tokens.",
+      "section": "core",
+      "order": 1
+    },
+    {
+      "name": "max_duration",
+      "type": "number",
+      "label": "Duration (s)",
+      "default": 60,
+      "options": null,
+      "required": false,
+      "step": 1,
+      "tooltip": "Target song length in seconds (4–300 = 5 minutes; the node clamps at 360). Longer songs take more time and VRAM.",
+      "section": "core",
+      "order": 0,
+      "min": 4,
+      "max": 300
+    },
+    {
+      "name": "cfg_scale",
+      "type": "number",
+      "label": "CFG",
+      "default": 1.7,
+      "options": null,
+      "required": false,
+      "step": 0.1,
+      "tooltip": "Classifier-free guidance. Flow matching forces the conditioning_scale to ones (cfg ≈ 1.0) — this value rides both MiniMaxMusic3TextEncode and KSampler (official template default 1.7).",
+      "section": "core",
+      "order": 1,
+      "min": 0,
+      "max": 10
+    },
+    {
+      "name": "top_k",
+      "type": "number",
+      "label": "Top-K",
+      "default": 50,
+      "options": null,
+      "required": false,
+      "step": 1,
+      "tooltip": "Text-encoder sampling Top-K (template default 50).",
+      "section": "core",
+      "order": 2,
+      "min": 1,
+      "max": 1000
+    },
+    {
+      "name": "steps",
+      "type": "number",
+      "label": "Diffusion Steps",
+      "default": 30,
+      "options": null,
+      "required": false,
+      "step": 1,
+      "tooltip": "Flow-matching denoising steps (official template: 30).",
+      "section": "core",
+      "order": 3,
+      "min": 1,
+      "max": 100
+    },
+    {
+      "name": "tiled_decode",
+      "type": "boolean",
+      "label": "Tiled Decode",
+      "default": false,
+      "options": null,
+      "required": false,
+      "step": null,
+      "tooltip": "Decode the audio VAE in overlapping tiles to drastically cut VRAM for long songs. Slightly slower with a small seam risk; off on high-VRAM GPUs.",
+      "section": "core",
+      "order": 4
+    },
+    {
+      "name": "seed",
+      "type": "seed",
+      "label": "Seed",
+      "default": -1,
+      "options": null,
+      "required": false,
+      "step": null,
+      "tooltip": null,
+      "section": "core",
+      "order": 0
+    },
+    {
+      "name": "output_format",
+      "type": "select",
+      "label": "Format",
+      "default": "flac",
+      "options": [
+        "flac",
+        "mp3"
+      ],
+      "required": false,
+      "step": null,
+      "tooltip": "Output container: FLAC (lossless, SaveAudio) or MP3 (SaveAudioMP3, with quality control).",
+      "section": "core",
+      "order": 0
+    },
+    {
+      "name": "mp3_quality",
+      "type": "select",
+      "label": "MP3 Quality",
+      "default": "V0",
+      "options": [
+        "V0",
+        "128k",
+        "320k"
+      ],
+      "required": false,
+      "step": null,
+      "tooltip": "MP3 encoder quality — V0 (≈245 kbps VBR), 128k, or 320k CBR. Only applies when Format = mp3.",
+      "section": "core",
+      "order": 1
+    }
+  ],
+  "schema_groups": [
+    {
+      "id": "workflow",
+      "label": "Workflow Preset",
+      "tooltip": "",
+      "order": -15,
+      "collapsed": false,
+      "visible_when": null,
+      "columns": 1,
+      "layout": "grid",
+      "families": null,
+      "forms": null,
+      "hidden": false,
+      "zone": "params",
+      "fields": [
+        {
+          "name": "preset",
+          "type": "select",
+          "label": "Workflow Preset",
+          "default": "song",
+          "min": null,
+          "max": null,
+          "step": null,
+          "options": [
+            {
+              "value": "draft_short",
+              "label": "Draft (30 s)"
+            },
+            {
+              "value": "final_long",
+              "label": "Final (2 min)"
+            },
+            {
+              "value": "song",
+              "label": "Song (60 s)"
+            }
+          ],
+          "tooltip": "Recipe shortcut — Draft (30 s) for fast iteration while composing, Song (60 s) the official template default, Final (2 min) for complete songs. Fills untouched fields (Duration / Steps); values you've set win.",
+          "visible_when": null,
+          "order": 0,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "prompt",
+      "label": "Prompt",
+      "tooltip": "",
+      "order": -10,
+      "collapsed": false,
+      "visible_when": null,
+      "columns": 1,
+      "layout": "stacked",
+      "families": null,
+      "forms": null,
+      "hidden": false,
+      "zone": "params",
+      "fields": [
+        {
+          "name": "prompt",
+          "type": "textarea",
+          "label": "Caption",
+          "default": "",
+          "min": null,
+          "max": null,
+          "step": null,
+          "options": null,
+          "tooltip": "Structured music description in three sections: Global Metadata (genre, subgenre, BPM, key, scale, emotional progression, listening scenario, production profile) → Vocal Details (gender, timbre, performance style, harmony, backing, vocal effects) → Arrangement (instruments, section evolution, groove, bass, percussion, textures, spatial effects).",
+          "visible_when": null,
+          "order": 0,
+          "width": 2,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": true
+        },
+        {
+          "name": "lyrics",
+          "type": "textarea",
+          "label": "Lyrics",
+          "default": "",
+          "min": null,
+          "max": null,
+          "step": null,
+          "options": null,
+          "tooltip": "Lyrics with section tags: [Intro] [Verse] [Pre-Chorus] [Chorus] [Bridge] [Instrumental] [Solo] [Outro]. Tags are the only executable structural instructions — the text itself conveys mood. Empty = instrumental. Caption + lyrics must stay under 5000 tokens.",
+          "visible_when": null,
+          "order": 1,
+          "width": 2,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "generation",
+      "label": "Generation",
+      "tooltip": "",
+      "order": 0,
+      "collapsed": false,
+      "visible_when": null,
+      "columns": 2,
+      "layout": "grid",
+      "families": null,
+      "forms": null,
+      "hidden": false,
+      "zone": "params",
+      "fields": [
+        {
+          "name": "max_duration",
+          "type": "slider",
+          "label": "Duration (s)",
+          "default": 60,
+          "min": 4,
+          "max": 300,
+          "step": 1,
+          "options": null,
+          "tooltip": "Target song length in seconds (4–300 = 5 minutes; the node clamps at 360). Longer songs take more time and VRAM.",
+          "visible_when": null,
+          "order": 0,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "cfg_scale",
+          "type": "slider",
+          "label": "CFG",
+          "default": 1.7,
+          "min": 0,
+          "max": 10,
+          "step": 0.1,
+          "options": null,
+          "tooltip": "Classifier-free guidance. Flow matching forces the conditioning_scale to ones (cfg ≈ 1.0) — this value rides both MiniMaxMusic3TextEncode and KSampler (official template default 1.7).",
+          "visible_when": null,
+          "order": 1,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "top_k",
+          "type": "number",
+          "label": "Top-K",
+          "default": 50,
+          "min": 1,
+          "max": 1000,
+          "step": 1,
+          "options": null,
+          "tooltip": "Text-encoder sampling Top-K (template default 50).",
+          "visible_when": null,
+          "order": 2,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "steps",
+          "type": "number",
+          "label": "Diffusion Steps",
+          "default": 30,
+          "min": 1,
+          "max": 100,
+          "step": 1,
+          "options": null,
+          "tooltip": "Flow-matching denoising steps (official template: 30).",
+          "visible_when": null,
+          "order": 3,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "tiled_decode",
+          "type": "boolean",
+          "label": "Tiled Decode",
+          "default": false,
+          "min": null,
+          "max": null,
+          "step": null,
+          "options": null,
+          "tooltip": "Decode the audio VAE in overlapping tiles to drastically cut VRAM for long songs. Slightly slower with a small seam risk; off on high-VRAM GPUs.",
+          "visible_when": null,
+          "order": 4,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "seed",
+      "label": "Seed",
+      "tooltip": "",
+      "order": 30,
+      "collapsed": false,
+      "visible_when": null,
+      "columns": 2,
+      "layout": "grid",
+      "families": null,
+      "forms": null,
+      "hidden": false,
+      "zone": "params",
+      "fields": [
+        {
+          "name": "seed",
+          "type": "seed",
+          "label": "Seed",
+          "default": -1,
+          "min": null,
+          "max": null,
+          "step": null,
+          "options": null,
+          "tooltip": "",
+          "visible_when": null,
+          "order": 0,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "output",
+      "label": "Output",
+      "tooltip": "",
+      "order": 40,
+      "collapsed": false,
+      "visible_when": null,
+      "columns": 2,
+      "layout": "grid",
+      "families": null,
+      "forms": null,
+      "hidden": false,
+      "zone": "params",
+      "fields": [
+        {
+          "name": "output_format",
+          "type": "select",
+          "label": "Format",
+          "default": "flac",
+          "min": null,
+          "max": null,
+          "step": null,
+          "options": [
+            "flac",
+            "mp3"
+          ],
+          "tooltip": "Output container: FLAC (lossless, SaveAudio) or MP3 (SaveAudioMP3, with quality control).",
+          "visible_when": null,
+          "order": 0,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "mp3_quality",
+          "type": "select",
+          "label": "MP3 Quality",
+          "default": "V0",
+          "min": null,
+          "max": null,
+          "step": null,
+          "options": [
+            "V0",
+            "128k",
+            "320k"
+          ],
+          "tooltip": "MP3 encoder quality — V0 (≈245 kbps VBR), 128k, or 320k CBR. Only applies when Format = mp3.",
+          "visible_when": "output_format == 'mp3'",
+          "order": 1,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        }
+      ]
+    }
+  ],
+  "variants": null,
+  "features": {
+    "retake": null,
+    "outputs": [
+      {
+        "id": "flac",
+        "label": "FLAC (lossless)",
+        "default": true,
+        "params": null
+      },
+      {
+        "id": "mp3",
+        "label": "MP3",
+        "params": {
+          "mp3_quality": "V0"
+        },
+        "default": false
+      }
+    ],
+    "modifiers": null,
+    "variant_groups": null
+  },
+  "guide": {
+    "title": "MiniMax Music 3 Song Generation",
+    "sections": [
+      {
+        "label": "Caption — three structured sections (model card recipe)",
+        "body": "Global Metadata: Basic Attributes (BPM, key, scale, genre), Global Emotional Progression, Application Scenarios & Imagery, Sonics & Production Profile. Vocal Details: Vocal Gender & Timbre, Vocal Style, Harmony/Backing Vocals, Vocal FX — omit for instrumentals. Arrangement: Instrument Lifecycle Description (primary/secondary layering), Groove & Foundation Progression, Embellishments, Textures & Spatial FX. Plain \"Label: text\" lines, no markdown (the caption cleaner strips it). The more specific, the closer the result — the caption is the full musical direction.",
+        "code": null,
+        "list_": null
+      },
+      {
+        "label": "Lyrics — section tags are executable",
+        "body": "Tags [intro] [verse] [pre-chorus] [chorus] [post-chorus] [bridge] [instrumental] [solo] [outro] control song structure — each tag ALONE on its own line (words on a tag line are dropped); they are the only structural instructions; the lyric text itself conveys mood. Empty lyrics = instrumental. Prompt + lyrics combined must stay under 5000 tokens.",
+        "code": null,
+        "list_": null
+      },
+      {
+        "label": "Specs (from model card)",
+        "body": "Output: 32 kHz 16-bit stereo, up to 300 s (9000 acoustic frames). Max duration 360 s at 25 fps frame rate. Defaults: max_duration 60 s, cfg_scale 1.7, top_k 50, 30 sampling steps (euler / simple).",
+        "code": null,
+        "list_": null
+      }
+    ]
+  },
+  "enhance_prompt": "You are a music-caption-rewriter for MiniMax Music 3 (MiniMax-AI's own prompting recipe). Transform the user's rough music idea into a STRUCTURED CAPTION of exactly three labeled sections — the model's native conditioning format.\n\n- The caption is CONDITIONING, not prose: three labeled sections in the fixed order Global Metadata, Vocal Details, Arrangement — the shape of MiniMax's official examples (Basic Attributes / Global Emotional Progression / Application Scenarios & Imagery / Sonics & Production Profile; Vocal Gender & Timbre / Vocal Style / Harmony/Backing Vocals / Vocal FX; Instrument Lifecycle / Groove & Foundation Progression / Embellishments, Textures & Spatial FX).\n- Target 250-450 words total: concrete musical language (keys, textures, grooves), not tag dumps and not decorative prose.\n- Lyrics are a SEPARATE field with their own Enhance button — never fold lyric lines into the caption; use the song's lyrical mood only as broad emotional context.\n- If the song is instrumental (or the user asked for instrumental), OMIT Vocal Details and say the piece is instrumental, naming the lead-melody instrument.\n- Do NOT fabricate exact BPM/key/vocal gender the user never gave — use qualitative tempo (or a range) unless explicit; enrich, never replace, the user's core intent (genre, mood, instruments, vocal direction).\n\nWrite the description as a STRUCTURED CAPTION of exactly three labeled\nsections — MiniMax Music 3's native conditioning format (the model's own\nmusic-caption-rewriter recipe, ported from MiniMax-AI/MiniMax-Music3).\nPLAIN TEXT ONLY: the section name on its own line, subsections as\n\"Label: text\" lines — no markdown headings, no bullets, no bold (the\nmodel's caption cleaner strips markdown; see the bundled templates for\nthe exact shape). Full sentences per label, NOT dense style tags.\n\n## Structure (the three sections, in order)\n\n1. Global Metadata — open with one Basic Attributes line (tempo — exact\n   BPM only if the user gave one or it is strongly justified; key and\n   scale only when explicit or musically useful; genre / subgenre).\n   Then these labeled paragraphs:\n   - Global Emotional Progression: the arc across sections in one\n     flowing sentence-set (opening mood → build → climax → landing)\n   - Application Scenarios & Imagery: 2-3 vivid listening scenarios\n   - Sonics & Production Profile: the mix character (stereo image,\n     frequency balance, dynamics, loudness feel)\n\n2. Vocal Details — OMIT ENTIRELY for instrumental tracks. For vocal\n   music, labeled paragraphs:\n   - Vocal Gender & Timbre: e.g. Singer A (Female), register and\n     texture\n   - Vocal Style: how the delivery evolves per section (verse vs\n     pre-chorus vs chorus vs outro)\n   - Harmony/Backing Vocals: where harmonies appear, their intervals\n     or voicing, what stays solo\n   - Vocal FX: restrained effects (reverb, delay, doubling,\n     saturation) and where they apply\n\n3. Arrangement — a section-by-section timeline, labeled paragraphs:\n   - Instrument Lifecycle Description (Primary/Secondary Layering):\n     primary instruments that anchor the track and when secondary\n     layers enter/exit\n   - Groove & Foundation Progression: how drums/bass develop per\n     section (what enters, drops out, intensifies)\n   - Embellishments, Textures & Spatial FX: risers, counter-melodies,\n     ear candy, reverb/delay washes — only where relevant\n\n## Rules\n- The user's core intent (genre, mood, instruments, vocal direction)\n  is IMMUTABLE — enrich, never replace. Preserve explicit exclusions\n  and an explicit instrumental request (never add vocals).\n- Never quote or paraphrase the user's lyric lines in the caption.\n- Keep the caption 250-450 words; caption + lyrics must stay under\n  5000 tokens total (the model's conditioning budget).\n- No song title, no track ID, no reasoning trace, no mixing-engineer\n  advice — musical direction only.\n- Musical directions (tempo, instruments, dynamics) belong in the\n  CAPTION, never inside lyric section tags.\n\n\n    ## Output format — STRICT\n    Return ONLY a single JSON object. No markdown fences, no explanation,\n    no text before or after. The whole response must be parseable by\n    JSON.parse.\n\n    Schema:\n      {\"positive\": \"<your output>\", \"negative\": \"\"}\n\n    Rules:\n    - \"positive\" is always filled with your output per the instructions above.\n    - \"negative\" is always the empty string \"\".\n    - Both values are plain strings. Escape inner quotes and newlines per JSON.\n    - Never wrap the whole response in extra quotes.",
+  "enhance_prompts": {
+    "prompt": "You are a music-caption-rewriter for MiniMax Music 3 (MiniMax-AI's own prompting recipe). Transform the user's rough music idea into a STRUCTURED CAPTION of exactly three labeled sections — the model's native conditioning format.\n\n- The caption is CONDITIONING, not prose: three labeled sections in the fixed order Global Metadata, Vocal Details, Arrangement — the shape of MiniMax's official examples (Basic Attributes / Global Emotional Progression / Application Scenarios & Imagery / Sonics & Production Profile; Vocal Gender & Timbre / Vocal Style / Harmony/Backing Vocals / Vocal FX; Instrument Lifecycle / Groove & Foundation Progression / Embellishments, Textures & Spatial FX).\n- Target 250-450 words total: concrete musical language (keys, textures, grooves), not tag dumps and not decorative prose.\n- Lyrics are a SEPARATE field with their own Enhance button — never fold lyric lines into the caption; use the song's lyrical mood only as broad emotional context.\n- If the song is instrumental (or the user asked for instrumental), OMIT Vocal Details and say the piece is instrumental, naming the lead-melody instrument.\n- Do NOT fabricate exact BPM/key/vocal gender the user never gave — use qualitative tempo (or a range) unless explicit; enrich, never replace, the user's core intent (genre, mood, instruments, vocal direction).\n\nWrite the description as a STRUCTURED CAPTION of exactly three labeled\nsections — MiniMax Music 3's native conditioning format (the model's own\nmusic-caption-rewriter recipe, ported from MiniMax-AI/MiniMax-Music3).\nPLAIN TEXT ONLY: the section name on its own line, subsections as\n\"Label: text\" lines — no markdown headings, no bullets, no bold (the\nmodel's caption cleaner strips markdown; see the bundled templates for\nthe exact shape). Full sentences per label, NOT dense style tags.\n\n## Structure (the three sections, in order)\n\n1. Global Metadata — open with one Basic Attributes line (tempo — exact\n   BPM only if the user gave one or it is strongly justified; key and\n   scale only when explicit or musically useful; genre / subgenre).\n   Then these labeled paragraphs:\n   - Global Emotional Progression: the arc across sections in one\n     flowing sentence-set (opening mood → build → climax → landing)\n   - Application Scenarios & Imagery: 2-3 vivid listening scenarios\n   - Sonics & Production Profile: the mix character (stereo image,\n     frequency balance, dynamics, loudness feel)\n\n2. Vocal Details — OMIT ENTIRELY for instrumental tracks. For vocal\n   music, labeled paragraphs:\n   - Vocal Gender & Timbre: e.g. Singer A (Female), register and\n     texture\n   - Vocal Style: how the delivery evolves per section (verse vs\n     pre-chorus vs chorus vs outro)\n   - Harmony/Backing Vocals: where harmonies appear, their intervals\n     or voicing, what stays solo\n   - Vocal FX: restrained effects (reverb, delay, doubling,\n     saturation) and where they apply\n\n3. Arrangement — a section-by-section timeline, labeled paragraphs:\n   - Instrument Lifecycle Description (Primary/Secondary Layering):\n     primary instruments that anchor the track and when secondary\n     layers enter/exit\n   - Groove & Foundation Progression: how drums/bass develop per\n     section (what enters, drops out, intensifies)\n   - Embellishments, Textures & Spatial FX: risers, counter-melodies,\n     ear candy, reverb/delay washes — only where relevant\n\n## Rules\n- The user's core intent (genre, mood, instruments, vocal direction)\n  is IMMUTABLE — enrich, never replace. Preserve explicit exclusions\n  and an explicit instrumental request (never add vocals).\n- Never quote or paraphrase the user's lyric lines in the caption.\n- Keep the caption 250-450 words; caption + lyrics must stay under\n  5000 tokens total (the model's conditioning budget).\n- No song title, no track ID, no reasoning trace, no mixing-engineer\n  advice — musical direction only.\n- Musical directions (tempo, instruments, dynamics) belong in the\n  CAPTION, never inside lyric section tags.\n\n\n    ## Output format — STRICT\n    Return ONLY a single JSON object. No markdown fences, no explanation,\n    no text before or after. The whole response must be parseable by\n    JSON.parse.\n\n    Schema:\n      {\"positive\": \"<your output>\", \"negative\": \"\"}\n\n    Rules:\n    - \"positive\" is always filled with your output per the instructions above.\n    - \"negative\" is always the empty string \"\".\n    - Both values are plain strings. Escape inner quotes and newlines per JSON.\n    - Never wrap the whole response in extra quotes.",
+    "lyrics": "You are a lyric editor for MiniMax Music 3 song generation.\n\nOutput ONLY the lyrics — no explanations, no quotes, no preamble.\n\n- Structure with section tags, each ALONE on its own line: [intro]\n  [verse] [pre-chorus] [chorus] [post-chorus] [bridge]\n  [instrumental] [solo] [outro] — words on a tag line are DROPPED,\n  so keep the tag bare (add descriptors only when essential, e.g.\n  [Chorus - anthemic]).\n- Musical directions (tempo, instruments, dynamics) belong in the\n  CAPTION field, never inside the lyrics.\n- PRESERVE the user's lyric text — polish rhythm, imagery, and meter;\n  NEVER rewrite into prose, never paraphrase the lines away, never add\n  an unrelated story\n- Keep lines short and singable (6-10 syllables) so the AI can fit\n  them naturally\n- Use UPPERCASE for emphasized/shouted words\n- Use (parentheses) for background vocals or echoes\n- Match the language the user wrote in (English, Spanish, Japanese,\n  Chinese, etc.)\n- If the user provided rough lyrics, POLISH them: fix rhythm, improve\n  imagery, tighten meter\n- If the user provided only a mood or theme, WRITE full lyrics\n  matching it\n- If the user left the field empty with no direction, keep it empty\n  (empty lyrics = instrumental in music3)\n- Caption + lyrics together must stay under 5000 tokens — trim\n  redundant verses if needed\n- A typical structure: [intro] → [verse] → [pre-chorus] → [chorus] →\n  [verse] → [chorus] → [bridge] → [chorus] → [outro]\n\n\n    ## Output format — STRICT\n    Return ONLY a single JSON object. No markdown fences, no explanation,\n    no text before or after. The whole response must be parseable by\n    JSON.parse.\n\n    Schema:\n      {\"positive\": \"<your output>\", \"negative\": \"\"}\n\n    Rules:\n    - \"positive\" is always filled with your output per the instructions above.\n    - \"negative\" is always the empty string \"\".\n    - Both values are plain strings. Escape inner quotes and newlines per JSON.\n    - Never wrap the whole response in extra quotes."
+  },
+  "defaults": {
+    "seed": -1,
+    "mp3_quality": "V0",
+    "output_format": "flac",
+    "preset": "song",
+    "max_duration": 60,
+    "cfg_scale": 1.7,
+    "top_k": 50,
+    "steps": 30,
+    "tiled_decode": false
+  },
+  "loader_info": {
+    "loader": "checkpoint",
+    "vae": "minimax_music3_dav.safetensors",
+    "text_encoder": "minimax_music3_text_encoder_pruned_int8_convrot.safetensors",
+    "clip_type": "minimax"
+  },
+  "contract": null
+}

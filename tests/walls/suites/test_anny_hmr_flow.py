@@ -3,7 +3,7 @@
 Date: 2026-09-05 · Status: landed (pilot record docs/plans/anny-pilot.md
 §4 stroke 1 — HMR as the first SUB-ACTION verb; flow
 flows/anny-hmr/flow.py; chip
-plugins/engines/comfyui/action_cards/3d/anny/ui/studio/component.tsx).
+packages/engines/comfyui/action_cards/3d/anny/ui/studio/component.tsx).
 
 Pins what stroke 1 promises and nothing it defers:
   1. SHAPE — the flow loads through the plugin bus (engines resolve),
@@ -144,7 +144,7 @@ def test_image_into_mesh_wire_refuses_at_construction() -> None:
 # ── 4. verb contract (source-text pin — the chip has no unit harness)
 # ─────────────────────────────────────────────────────────────────────
 
-_VERB_SRC = (REPO / "plugins/engines/comfyui/action_cards/3d/anny/ui"
+_VERB_SRC = (REPO / "packages/engines/comfyui/action_cards/3d/anny/ui"
              / "studio/component.tsx").read_text(encoding="utf-8")
 
 

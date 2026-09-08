@@ -72,7 +72,7 @@ def test_timeline_package_lives_outside_card_dirs() -> None:
 
 def test_no_relative_import_reaches_another_cards_package() -> None:
     bad: list[str] = []
-    for root, _dirs, files in os.walk(os.path.join(REPO, "plugins")):
+    for root, _dirs, files in os.walk(os.path.join(REPO, "packages")):
         if "node_modules" in root.split(os.sep):
             continue
         for name in files:

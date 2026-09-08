@@ -1,0 +1,64 @@
+[
+  {
+    "name": "anny_card",
+    "version": 1,
+    "kind": "card-compose",
+    "card": "anny",
+    "model": "anny",
+    "stage_title": "Anny",
+    "description": "Assemble a character — composite body/hair/outfit GLBs, render the 8-view turnaround, segment a source photo into part sprites.",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "body_glb": {
+          "type": "string",
+          "format": "path",
+          "description": "The base body — empty autoloads the Model-declared neutral body (anny-base-body.glb, provisioned); or attach a rigged/static character GLB. (Photo→body estimation is the pilot arc; clothing composite moves to its own card later.)"
+        },
+        "source_image": {
+          "type": "string",
+          "format": "path",
+          "description": "Character photo — SAM segments hair/outfit sprites (feeds the estimator arc)."
+        },
+        "resolution": {
+          "type": "number",
+          "minimum": 256,
+          "maximum": 2048,
+          "default": 768,
+          "description": "Pixel size of each turnaround view."
+        },
+        "framing": {
+          "type": "number",
+          "minimum": 1.0,
+          "maximum": 3.0,
+          "default": 1.2,
+          "description": "Camera distance factor — larger frames the whole body looser."
+        },
+        "focal_length": {
+          "type": "number",
+          "minimum": 10,
+          "maximum": 400,
+          "default": 50,
+          "description": "Lens focal length — lower = wider perspective."
+        },
+        "samples": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 4096,
+          "default": 64,
+          "description": "Render samples per view — more = cleaner but slower."
+        },
+        "transparent": {
+          "type": "string",
+          "enum": [
+            "true",
+            "false"
+          ],
+          "default": "true",
+          "description": "Transparent turnaround background (for compositing into sheets)."
+        }
+      },
+      "required": []
+    }
+  }
+]

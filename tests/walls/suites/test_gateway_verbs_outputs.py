@@ -6,7 +6,7 @@ enforced in the TS door"): the anny SubAction verbs are wired as code
 paths today (py verbs.py classes → mounted on the anny card → TSX
 chips posting flows / the tenant-local preset action) with ZERO TS
 presence (drift item 5). This wall pins their port as DECL DATA —
-plugins/gateway/src/schema/verbs.ts (verb → card/params table, the
+packages/gateway/src/schema/verbs.ts (verb → card/params table, the
 door dispatching table-driven) — and pins the card_outputs settle
 gate in the same module (py/gateway.py _output_violation 473-489),
 wired into the TS serve path (doors/flowsRun.ts runOne, no-op
@@ -53,7 +53,7 @@ Py vs TS agreement is byte equality on refusal texts, value equality
 on tables/dispatch. No GPU, no network (O06 boots the TS door
 against a dead engine port — connection-refused, never inference).
 
-Py cites: verbs plugins/engines/comfyui/models/3d/anny/mods/verbs.py
+Py cites: verbs packages/engines/comfyui/models/3d/anny/mods/verbs.py
 (EstimateBody 21-33, Dress 36-80, Prop 83-123, RigSomax 126-143,
 ApplySkin 145-179, SavePreset 181-200, LoadPreset 203-221); mount
 models/3d/anny/model.py:110; contract py/melite_cards/dsl.py
@@ -91,13 +91,13 @@ from melite_cards.serialize import scan_engine_cards
 sys.path.insert(0, str(REPO / "tools"))
 import export_card_decls as declx  # noqa: E402
 
-TS_VERBS = REPO / "plugins" / "gateway" / "src" / "schema" / "verbs.ts"
-TS_SERVER = REPO / "plugins" / "gateway" / "src" / "server.ts"
-CARD_DECLS_JSON = (REPO / "plugins" / "engines" / "comfyui" / "cordis"
+TS_VERBS = REPO / "packages" / "gateway" / "src" / "schema" / "verbs.ts"
+TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+CARD_DECLS_JSON = (REPO / "packages" / "engines" / "comfyui" / "cordis"
                    / "data" / "card-decls.json")
-VERBS_PY = (REPO / "plugins" / "engines" / "comfyui" / "models" / "3d"
+VERBS_PY = (REPO / "packages" / "engines" / "comfyui" / "models" / "3d"
             / "anny" / "mods" / "verbs.py")
-TSX = (REPO / "plugins" / "engines" / "comfyui" / "action_cards" / "3d"
+TSX = (REPO / "packages" / "engines" / "comfyui" / "action_cards" / "3d"
        / "anny" / "ui" / "studio" / "component.tsx")
 VENDOR_PACKS = REPO / "vendor" / "comfyui_extensions"
 

@@ -1,0 +1,44 @@
+extensions:
+- name: comfyui-h3-motion-context
+  registry: comfyui-h3-motion-context
+  version: 0.5.1
+  required: true
+  desc: 'BASE pack for H3 motion context: MiniMaxH3MotionContext, MotionContextTrim,
+    MotionContextSaveLatent, MotionContextLoadLatent. Owns the four shared class names
+    under coexistence with the MultiRef fork. Name = the real install dir (mcp registry
+    id); pinned at the v0.5.1 tag the estate runs (core 0.34.0 required
+    by ext 0.4.0+).'
+- name: Comfyui-PlagueKind-Nodes
+  url: https://github.com/PlagueKind/Comfyui-PlagueKind-Nodes.git
+  ref: 01f186e
+  required: true
+  pip:
+  - comfy-kitchen==0.2.31
+  desc: "H3SLAAttention (SLA sparse attention), H3AdaLNLoRAFix, ComfySwitchNode, PlagueKindBundleIn/Out\
+    \ (the 20-slot reference-media bus, load-bearing since move C), unified resize.\
+    \ Pinned v1.4.2 (01f186e) \u2014 the ref the estate EXECUTED for the 2026-09-01\
+    \ contest piece (run-6a96c100); container copy verified pristine at this ref.\
+    \ Upstream has since tagged v1.4.3 (066ada9); re-pin only with a lane re-render."
+- name: ComfyUI-VideoHelperSuite
+  registry: comfyui-videohelpersuite
+  version: 1.7.9
+  required: true
+  desc: Video I/O utilities (VHS preview/metadata flags in window graphs).
+- name: ComfyUI-KJNodes
+  url: https://github.com/kijai/ComfyUI-KJNodes.git
+  # 2026-09-06 gap-fix: ref 'master' was a FLOATING pin (the
+  # no-hardcodes class) — pinned to the installed commit
+  # (pyproject 1.5.0).
+  ref: e8e88f7c88e3f6205b122f5de87e69a09fbce5ac
+  required: true
+  desc: ImageSharpenKJ + ModelPreviewOverrideKJ (post-ladder polish in window graphs).
+- name: rgthree-comfy
+  registry: rgthree-comfy
+  version: 1.0.2608210019
+  required: true
+  desc: Fast Groups Bypasser nodes present in the window graphs.
+- name: Nvidia_RTX_Nodes_ComfyUI
+  url: https://github.com/Comfy-Org/Nvidia_RTX_Nodes_ComfyUI
+  ref: 892515e3eb9a4920a131a502a047e47adca9eb0d
+  required: true
+  desc: RTXVideoSuperResolution (bypassed group; class must register).

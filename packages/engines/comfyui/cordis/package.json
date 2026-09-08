@@ -1,0 +1,23 @@
+{
+  "name": "@comfyui/cordis",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The comfyui engine's Cordis compose plane (Law 0 amendment, 2026-09-07): handle-based graph builder, node blocks, Schemastery atoms, card plugins, and the compose door the gateway shells. Runtime is node --experimental-strip-types (erasable-syntax TS); no build step.",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./graph": "./src/graph.ts",
+    "./atoms": "./src/atoms.ts",
+    "./service": "./src/service.ts",
+    "./cli": "./src/cli.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "compose": "node --experimental-strip-types src/cli.ts"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/schemastery": "*"
+  }
+}

@@ -1,8 +1,8 @@
 """test_cpp_engines.py — the native-engine category's gates.
 
-The category (operator order, 2026-10-02): plugins/engines/cpp/ —
+The category (operator order, 2026-10-02): packages/engines/cpp/ —
 vendored native engines as submodules, compose-first plugins on top.
-(anyCreature moved to plugins/engines/node/ 2026-09-06 — a node.js
+(anyCreature moved to packages/engines/node/ 2026-09-06 — a node.js
 CLI, never C++; its rows stay in this suite via the CARDS table's
 category column until a node suite earns them.)
 
@@ -76,9 +76,9 @@ class TestDiscovery(unittest.TestCase):
         self.assertNotIn("ffmpeg_concat", engines)
 
     def test_cpp_category_dir_is_not_a_plugin(self) -> None:
-        """plugins/engines/cpp/ has no plugin markers — a category
+        """packages/engines/cpp/ has no plugin markers — a category
         container, never discovered as an engine owner itself."""
-        cpp = os.path.join(REPO, "plugins", "engines", "cpp")
+        cpp = os.path.join(REPO, "packages", "engines", "cpp")
         self.assertFalse(os.path.isfile(os.path.join(cpp, "plugin.py")))
         self.assertFalse(os.path.isfile(os.path.join(cpp, "plugin.yaml")))
         self.assertFalse(os.path.isdir(os.path.join(cpp, "engines")))
@@ -223,7 +223,7 @@ class TestCardPattern(unittest.TestCase):
 
     def test_every_card_owns_the_pattern_files(self) -> None:
         for cat, plugin, card in self.CARDS:
-            root = os.path.join(REPO, "plugins", "engines", cat,
+            root = os.path.join(REPO, "packages", "engines", cat,
                                 plugin, card, "py")
             for fname in ("__init__.py", "card.py", "compose.py",
                           "schema.py", "renderer.py"):
@@ -236,7 +236,7 @@ class TestCardPattern(unittest.TestCase):
         """The plugin compose/__init__ carries the bus-arity door and
         NO inline arm logic: the arm files live in the card trees."""
         for cat, plugin, _card in self.CARDS:
-            init = os.path.join(REPO, "plugins", "engines", cat,
+            init = os.path.join(REPO, "packages", "engines", cat,
                                 plugin, "compose", "__init__.py")
             with open(init, encoding="utf-8") as f:
                 text = f.read()
@@ -259,7 +259,7 @@ class TestRendererArgv(unittest.TestCase):
     def _renderer(self, cat: str, plugin: str,
                     card_dir: str, alias: str) -> ModuleType:
         import importlib.util
-        pkg = os.path.join(REPO, "plugins", "engines", cat, plugin,
+        pkg = os.path.join(REPO, "packages", "engines", cat, plugin,
                            "action_cards", card_dir, "py")
         spec = importlib.util.spec_from_file_location(
             alias, os.path.join(pkg, "renderer.py"),
@@ -305,16 +305,16 @@ class TestVendorLaw(unittest.TestCase):
         paths = self._module_paths()
         # vendor dir names carry the upstream repo's casing
         for pin, repo in (
-                ("plugins/engines/node/anycreature/vendor/anyCreature",
+                ("packages/engines/node/anycreature/vendor/anyCreature",
                  "Ariescar/anyCreature"),
-                ("plugins/engines/cpp/autoremesher/vendor/autoremesher",
+                ("packages/engines/cpp/autoremesher/vendor/autoremesher",
                  "huxingyi/autoremesher")):
             self.assertIn(pin, paths,
                           "%s vendor pin missing from .gitmodules" % pin)
             self.assertIn(repo, paths[pin])
 
     def test_vendored_engines_present(self) -> None:
-        cli = os.path.join(REPO, "plugins/engines/node/anycreature",
+        cli = os.path.join(REPO, "packages/engines/node/anycreature",
                            "vendor/anyCreature/engine/cli.js")
         self.assertTrue(os.path.isfile(cli), "vendored cli.js missing")
 

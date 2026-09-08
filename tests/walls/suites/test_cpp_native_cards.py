@@ -1,6 +1,6 @@
 """test_cpp_native_cards.py — the cpp native-engine boarding wall.
 
-Why this suite: plugins/engines/* natives (autoremesher, anycreature,
+Why this suite: packages/engines/* natives (autoremesher, anycreature,
 audio-cpp) sat fully-declared but UNSERVED — scan_engine_cards
 walked depth-2 only, so quad-remesh + forge never reached /v1/tools,
 the queue, or the UI. The fix (shared plugins.py walk) + the
@@ -58,9 +58,9 @@ import subprocess as _sp  # noqa: E402
 
 _QCARD = "quad-remesh"
 _QMODEL = "autoremesher"
-_QFACTS = os.path.join(REPO, "plugins", "engines", "comfyui",
+_QFACTS = os.path.join(REPO, "packages", "engines", "comfyui",
                        "cordis", "data", "model-facts.json")
-_QCLI = os.path.join(REPO, "plugins", "engines", "comfyui",
+_QCLI = os.path.join(REPO, "packages", "engines", "comfyui",
                      "cordis", "src", "cli.ts")
 
 
@@ -141,7 +141,7 @@ check("quad preset is the empty budget literal",
 # the wall pinned quad + forge + the music fork only.)
 # the surviving arms load as packages (compose.py uses relative
 # imports — the plugin's own _load_card_package shape)
-sys.path.insert(0, os.path.join(REPO, "plugins", "engines", "cpp"))
+sys.path.insert(0, os.path.join(REPO, "packages", "engines", "cpp"))
 import importlib.util as _ilu
 from types import ModuleType
 from unittest import mock as _mock  # noqa: E402
@@ -164,7 +164,7 @@ def _load_arm(pkgname: str, carddir: str) -> ModuleType:
 # ANY trellis2_native mesh under data/ will do.
 mesh = ("data/runs/test-output/run-49b55276d56a-69fe881b/"
         "trellis2_native_00005.glb")
-sdir = os.path.join(REPO, "plugins", "engines", "cpp", "skintokens",
+sdir = os.path.join(REPO, "packages", "engines", "cpp", "skintokens",
                     "action_cards", "3d", "auto-rig", "py")
 sarm = _load_arm("rig_arm_pkg", sdir)
 
@@ -206,7 +206,7 @@ finally:
 
 # -- music-native doors ----------------------------------------------------
 # (Same stroke: the binary gate; the doc/model gates predate it.)
-audir = os.path.join(REPO, "plugins", "engines", "cpp", "audio-cpp",
+audir = os.path.join(REPO, "packages", "engines", "cpp", "audio-cpp",
                      "action_cards", "audio", "music", "py")
 auarm = _load_arm("mus_arm_pkg", audir)
 _mr = sys.modules["mus_arm_pkg.renderer"]
@@ -217,7 +217,7 @@ check("music-native phase-1 refuses missing binary", rc == -3 and
       "AUDIO_CPP_CLI" in (err or ""), err)
 
 # -- forge doors --------------------------------------------------------
-fdir = os.path.join(REPO, "plugins/engines/node/anycreature",
+fdir = os.path.join(REPO, "packages/engines/node/anycreature",
                     "action_cards", "3d", "forge", "py")
 farm = _load_arm("forge_arm_pkg", fdir)
 
@@ -233,7 +233,7 @@ rc, g, x, err = farm.compose(
 check("forge phase-1 refuses unknown build", rc == -3, err)
 
 wolf = json.load(open(os.path.join(
-    REPO, "plugins/engines/node/anycreature", "vendor",
+    REPO, "packages/engines/node/anycreature", "vendor",
     "anyCreature", "calibration", "wolf_green.json"), encoding="utf-8"))
 rc, g, x, err = farm.compose({"params": {"spec": wolf}}, "anycreature", "")
 check("forge phase-1 accepts the wolf spec", rc == 0, err)

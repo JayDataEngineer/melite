@@ -22,7 +22,7 @@ Two drift classes nothing else pins (from the drift-playbook pass,
         * plugin.py      -> exactly `Plugin` (id/label/engines/... are
                             class-attribute ROWS, not code surface)
         * engine.py      -> ENGINE_TYPE (+ optional execute/stop/unload
-                            per docs/plugins/abi.md — the gateway
+                            per docs/packages/abi.md — the gateway
                             hasattr/getattr-probes exactly these)
         * compose pkg    -> card_compose (+ optional execute/stop/
                             unload, + ValidationError re-export the
@@ -51,7 +51,7 @@ REPO = Path(__file__).resolve().parents[3]
 # The isolation pin's list, read structurally (not imported — keep the
 # subprocess suite self-contained; this pin fails loudly if the list
 # moves or renames).
-ISOLATION_FILE = REPO / "tests/unit/plugins/test_plugin_isolation.py"
+ISOLATION_FILE = REPO / "tests/unit/packages/test_plugin_isolation.py"
 
 # py/ modules the gateway may import WITHOUT an isolation pin:
 # document each exemption with its reason or do not add it.
@@ -137,7 +137,7 @@ def _gateway_local_imports() -> set[str]:
 
 
 def _plugin_dirs() -> list[Path]:
-    roots = [REPO / "plugins" / cat for cat in ("engines", "web")]
+    roots = [REPO / "packages" / cat for cat in ("engines", "web")]
     out = []
     for root in roots:
         out.extend(plugin_broker.iter_plugin_dirs_under(root))
@@ -203,7 +203,7 @@ def test_s3_plugin_declaration_surfaces_are_closed() -> None:
         if rogue:
             offenders.append("%s: %s" % (label, sorted(rogue)))
     assert not offenders, (
-        "public defines outside the plugin ABI (docs/plugins/abi.md; "
+        "public defines outside the plugin ABI (docs/packages/abi.md; "
         "rename with a leading _ or delete): %s" % offenders
     )
 

@@ -1,0 +1,91 @@
+// routeUtil.ts — shared routing primitives as plain functions.
+//
+// The old GatewayRouterService (src/core/router.ts, deleted this
+// stroke) wrapped exactly these three helpers behind provide/inject.
+// A service buys load-gating and teardown; pure request math needs
+// neither, so the framework pattern here is a util, not a service
+// (CORDIS CORE law, docs/patterns/cordis-core.md): every door plugin
+// matches its own rows inside its 'gateway/request' listener via
+// matchRoute, and ctx.ts normalizes via normalizePath. No fiber
+// owns them; no plugin injects them.
+//
+// Logic relocated VERBATIM from the deleted service (which itself
+// relocated them verbatim from ctx.ts): path normalization mirrors
+// route()'s target.split("?")[0].rstrip("/") or "/"; matchRoute is
+// first-match-wins over ROUTES (regex arms emulate re.match —
+// anchored at the start, prefix ok; row order is the contract: the
+// F3 stage-patch arm stays BEFORE the greedy draft :id arm exactly
+// as in the python table). The query parse stays hand-rolled: the
+// package tsconfig carries lib ES2022 only (no DOM), so
+// URLSearchParams is unavailable — and parse_qs semantics here need
+// only split/decode/accumulate.
+//
+// Erasable-syntax TS only (node --experimental-strip-types): no
+// enums, import type for types, .ts specifiers for relative imports.
+
+import { ROUTES } from "./routes.ts";
+import type { GatewayRoute } from "./routes.ts";
+
+/** Path normalization — mirrors route(): target.split("?")[0]
+ *  .rstrip("/") or "/". */
+export function normalizePath(target: string): string {
+  const bare: string = target.split("?")[0] ?? "";
+  const stripped: string = bare.replace(/\/+$/, "");
+  return stripped === "" ? "/" : stripped;
+}
+
+/** Query parse for the request record (chrome doors ignore it; kept
+ *  so the shape stays faithful to route()'s parse_qs). */
+export function parseQuery(target: string): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  const qpos: number = target.indexOf("?");
+  if (qpos < 0) return out;
+  const query: string = target.slice(qpos + 1);
+  if (query === "") return out;
+  for (const pair of query.split("&")) {
+    if (pair === "") continue;
+    const eq: number = pair.indexOf("=");
+    const rawKey: string = eq < 0 ? pair : pair.slice(0, eq);
+    const rawVal: string = eq < 0 ? "" : pair.slice(eq + 1);
+    let key: string;
+    let value: string;
+    try {
+      key = decodeURIComponent(rawKey.replace(/\+/g, " "));
+    } catch {
+      key = rawKey;
+    }
+    try {
+      value = decodeURIComponent(rawVal.replace(/\+/g, " "));
+    } catch {
+      value = rawVal;
+    }
+    const cur: string[] | undefined = out[key];
+    if (cur === undefined) out[key] = [value];
+    else cur.push(value);
+  }
+  return out;
+}
+
+/** First-match-wins over ROUTES — mirrors route()'s loop. Regex arms
+ *  emulate re.match (match must start at index 0; a trailing $ still
+ *  pins the end, a bare prefix still matches). Row order is the
+ *  contract (F3 stage-patch before greedy draft :id). */
+export function matchRoute(
+  method: string,
+  path: string,
+): { row: GatewayRoute; m: RegExpExecArray | null } | null {
+  for (const row of ROUTES) {
+    if (row.method !== "*" && !row.method.split("|").includes(method)) {
+      continue;
+    }
+    if (row.regex) {
+      const re: RegExp = new RegExp(row.path);
+      const m: RegExpExecArray | null = re.exec(path);
+      if (m === null || m.index !== 0) continue;
+      return { row, m };
+    }
+    if (path !== row.path) continue;
+    return { row, m: null };
+  }
+  return null;
+}

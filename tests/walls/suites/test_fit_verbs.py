@@ -40,9 +40,9 @@ if TYPE_CHECKING:
     # melite_cards joins sys.path inside _estate_paths — never at module scope.
     from melite_cards import SubActionMod
 
-FIT_PY = os.path.join(REPO, "plugins", "engines", "comfyui",
+FIT_PY = os.path.join(REPO, "packages", "engines", "comfyui",
                       "action_cards", "3d", "fit", "py")
-VERBS_PY = os.path.join(REPO, "plugins", "engines", "comfyui",
+VERBS_PY = os.path.join(REPO, "packages", "engines", "comfyui",
                         "models", "3d", "anny", "mods")
 PACK = os.path.join(REPO, "vendor", "comfyui_extensions",
                      "melite-poser-nodes", "fit_surgery.py")
@@ -65,8 +65,8 @@ KNOB_SETS = {
 @pytest.fixture(scope="module", autouse=True)
 def _estate_paths() -> Iterator[None]:
     for p in (os.path.join(REPO, "py"),
-              os.path.join(REPO, "plugins", "engines", "comfyui"),
-              os.path.join(REPO, "plugins", "engines", "comfyui", "compose")):
+              os.path.join(REPO, "packages", "engines", "comfyui"),
+              os.path.join(REPO, "packages", "engines", "comfyui", "compose")):
         if p not in sys.path:
             sys.path.insert(0, p)
     yield

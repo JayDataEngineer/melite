@@ -7,12 +7,12 @@ The discovery doors (GET /v1/model-catalog, /v1/model-catalog/*,
 /v1/flows/families/*/param-schema) serve repo-tree-derived reads the
 old TS bridge computed by spawning python per request. This exporter
 runs those SAME py functions at AUTHORING time and freezes their
-answers as data; plugins/gateway/src/doors/discovery.ts serves the
+answers as data; packages/gateway/src/doors/discovery.ts serves the
 frozen answers natively (the card-decls.json + model-facts.json
 data-SSOT pattern: generators die with py; data stands).
 
     python3 tools/export_discovery_catalog.py \
-        > plugins/gateway/data/discovery-catalog.json
+        > packages/gateway/data/discovery-catalog.json
 
 Completeness (no reimplementation, no hardcoded lists):
   - form_specs: every key the form_spec() decision tree can serve
@@ -61,7 +61,7 @@ sys.path.insert(0, str(REPO / "py"))
 
 def collect_flows(repo: str) -> list:
     """Freeze the planes-door flow declarations (the probe shape in
-    plugins/gateway/src/doors/planes.ts PROBE_SRC, mode 'flows').
+    packages/gateway/src/doors/planes.ts PROBE_SRC, mode 'flows').
 
     One row per scan_flow_ids() entry, in scan order: loadable flows
     carry id/description/stages/tool/skill_refs/has_skill_md;
@@ -186,7 +186,7 @@ def main() -> None:
             loras[mid] = body
 
     # ── family param schemas (the served map + the id order) ──
-    family_ids = _er.catalog_family_ids(os.path.join(repo, "plugins"))
+    family_ids = _er.catalog_family_ids(os.path.join(repo, "packages"))
     family_schemas = _er.family_param_schemas(family_ids)
 
     # ── schema snapshot (served object verbatim) ──

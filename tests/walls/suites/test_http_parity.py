@@ -166,7 +166,7 @@ def main() -> int:
             # (form-spec?model=soma RETIRED 2026-09-06 with the cpp
             # ggml kimodo lane — the ONE-implementation rule)
             ("kinds", "deep"),
-            ("plugins", "deep"),
+            ("packages", "deep"),
             ("health", "deep"),
             ("themes", "deep"),
             ("tags", "deep"),

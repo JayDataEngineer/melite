@@ -102,7 +102,7 @@ class _CardBucket(TypedDict):
 LaneWireError = lane_wire.LaneWireError
 
 REPO = Path(__file__).resolve().parent.parent
-ENGINES_ROOT = REPO / "plugins" / "engines"
+ENGINES_ROOT = REPO / "packages" / "engines"
 
 # ---------------------------------------------------------------- parse
 
@@ -162,7 +162,7 @@ def _engine_dirs() -> list[Path]:
     The depth-2 drift (2026-09-06, the kimodo 502): this module kept
     its own `ENGINES_ROOT.iterdir()` walk while every other consumer
     (scan_engine_cards, catalog, editor_forms) rode the shared walk —
-    so the cpp natives under plugins/engines/<tier>/<plugin>/ (forge,
+    so the cpp natives under packages/engines/<tier>/<plugin>/ (forge,
     quad-remesh, music-native; kimodo's text-to-motion retired
     2026-09-06 with its ggml lane) declared,
     scanned, and RAN, but never mounted on the agent surface: no

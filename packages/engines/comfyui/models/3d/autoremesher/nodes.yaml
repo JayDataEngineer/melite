@@ -1,0 +1,16 @@
+# autoremesher — ComfyUI extension dependencies (quad-remesh lane,
+# 2026-09-07). The lane rides OUR authored pack
+# (melite-autoremesher-nodes — AutoRemesher: GLB in, remeshed GLB
+# out); bound live via the vendor tree.
+# SYSTEM REQUIREMENT (Law 0, 2026-09-07): the pack shells the
+# autoremesher BINARY (GLB→OBJ→quads→GLB through trimesh) — the
+# binary must resolve engine-side (AUTOREMESHER_BIN, or the
+# references/autoremesher build beside the repo). Enforced at
+# compose by py/card_requires.py SYSTEM_BINARY_REQUIRES, not just
+# noted here.
+extensions:
+- name: melite-autoremesher-nodes
+  registry: melite-autoremesher-nodes
+  version: 0.1.0
+  required: true
+  desc: AutoRemesher (quad remesh — explicit budget, no silent defaults). Requires the autoremesher binary engine-side (AUTOREMESHER_BIN or references/autoremesher build).

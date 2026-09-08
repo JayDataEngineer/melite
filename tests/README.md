@@ -22,7 +22,7 @@ the root:
       unit/                      no server, milliseconds
         conftest.py              make_run factory (tmp_path-based)
         estate/                  config, workspace laws, boundary-drift linter
-        plugins/                 plugin contract sweep, subprocess isolation,
+        packages/                 plugin contract sweep, subprocess isolation,
                                   surface registry meta-test (import + ABI
                                   closure — test_surface_registry.py)
         runtime/                 asset ledger (PYTHON SHAPE + RESILIENCE, unit)
@@ -109,5 +109,5 @@ Boot:
 * REGISTRY HONESTY -- every walls suite is run by something and every
   gateway-imported py/ module has a clean-import pin; plugin
   declaration files expose exactly the ABI (walls/test_registry.py +
-  unit/plugins/test_surface_registry.py; full record in
+  unit/packages/test_surface_registry.py; full record in
   docs/audits/fixture-audit.md)

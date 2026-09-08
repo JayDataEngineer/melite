@@ -1,0 +1,14 @@
+# @infer/daisy-studio - cordis patch for the DSH web sidebar.
+#
+# The studio is a separate process (uvicorn, port 33092). DSH never
+# imports it; the sidebar gets a button that opens it in a new tab.
+# Additive patch, outer overrides win (disabled: true hides the row).
+- id: infer-daisy-studio-launch
+  config:
+    title: 'Daisy Studio'
+    description: 'Open the FastHTML + daisyUI studio (operate / chat / gallery)'
+    url: !!js 'http://' + (process.env.STUDIO_HOST || process.env.FLOATER_HOST || '127.0.0.1') + ':' + (process.env.STUDIO_PORT || process.env.FLOATER_PORT || '33092')
+    openIn: 'new-tab'
+    icon: 'layout-grid'
+    healthCheck: !!js '/healthz'
+    precedence: 51

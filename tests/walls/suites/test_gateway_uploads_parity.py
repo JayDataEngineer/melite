@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """test_gateway_uploads_parity.py — POST /v1/uploads TS parity wall (P3).
 
-Proves the TypeScript write door (plugins/gateway/src/doors/uploads.ts
+Proves the TypeScript write door (packages/gateway/src/doors/uploads.ts
 via ctx.ts dispatch) answers byte-identical to the py gateway
 (py/gateway.py _h_uploads, 3734-3768; strict body 4335-4340; R4.2
 normalization 4353-4355; auth gate _adapt 2607-2619):
@@ -61,7 +61,7 @@ from gateway import route as py_route  # noqa: E402
 PASS = FAIL = 0
 
 TOKEN = "uploads-parity-token"
-TS_SERVER = REPO / "plugins" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
 
 PATH_RE = re.compile(r"^data/input/[A-Za-z0-9_-]{1,48}-[0-9a-f]{8}\.(png|jpg|webp)$")
 

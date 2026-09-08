@@ -1,0 +1,67 @@
+# @infer/daisy-studio — pure-Python (FastHTML + daisyUI) studio UI
+# for the inference.cpp gateway. Plugin env, NOT a base-env dep.
+#
+# Stays opt-in: PROVISIONING LAW keeps the management plane in the
+# gateway base env; a UI is not a base-env concern. The user installs
+# this with `uv tool install ./plugins/harness/dsh/infer-daisy-studio`.
+#
+# Styling is FrankenUI shadcn-slate via MonsterUI, daisy kept on (no Node, no Vite).
+# The LLM loop wraps the DeepSeek harness PYTHON package lazily
+# (see src/infer_daisy_studio/chat.py) — no new toolchain.
+[project]
+name = "infer-daisy-studio"
+version = "0.1.0"
+description = "FastHTML + daisyUI studio for the inference.cpp flow system — lanes, chat agent, gallery, all in one Python process"
+requires-python = ">=3.11"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [
+  { name = "inference.cpp estate" },
+]
+keywords = ["inference", "fasthtml", "daisyui", "ui", "flows", "queue", "chat"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Multimedia :: Graphics",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+# Styling is daisyUI only (vendored under src/infer_daisy_studio/assets,
+# served from /assets - zero CDN). The MonsterUI/FrankenUI header layer was
+# removed 2026-09-06: its :root var remap forced light values over daisy
+# dark and we carry zero uk-* markup. httpx powers the gateway client;
+# uvicorn serves; pydantic rows the wire.
+# deepseek-harness-sdk is deliberately NOT a hard dep: chat.py imports it
+# lazily so the operator surface boots anywhere (chat shows a disabled
+# banner until the SDK env is present — RESILIENCE LAW, never a boot crash).
+dependencies = [
+  "python-fasthtml>=0.12",
+  "httpx>=0.27",
+  "uvicorn>=0.30",
+  "pydantic>=2.6",
+]
+
+[project.scripts]
+# `uv run infer-daisy-studio` (or `uvx infer-daisy-studio` once installed)
+infer-daisy-studio = "infer_daisy_studio.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/mel-est/inference.cpp"
+Source = "https://github.com/mel-est/inference.cpp/tree/main/plugins/harness/dsh/infer-daisy-studio"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/infer_daisy_studio"]
+
+# ── plugin-local pytest config ─────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra -q"

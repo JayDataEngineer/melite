@@ -45,7 +45,7 @@ from _anchor import REPO
 import estate_config  # noqa: E402  (the ONE parser)
 
 ENDPOINT_CFG = os.path.join(
-    REPO, "plugins/engines/comfyui/data/comfyui_endpoint.json")
+    REPO, "packages/engines/comfyui/data/comfyui_endpoint.json")
 
 # model-weight extensions; floor excludes fixtures (source.png,
 # rigged_char.glb, drive_pose.mp4 are test inputs, not weights)

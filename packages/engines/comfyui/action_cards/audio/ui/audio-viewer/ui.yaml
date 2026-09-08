@@ -1,0 +1,7 @@
+# audio's audio-viewer claim (the viewer seam, 2026-08-21): audio
+# rendering. Component owns the mode dispatch — tile → AudioWaveform
+# (the read-only peaks cell the run cards use), full → AudioPlayer (the
+# WaveSurfer transport). Tenant: ui/viewers.
+slot: audio-viewer
+precedence: 10
+title: Audio viewer (audio default)

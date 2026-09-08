@@ -1,0 +1,12 @@
+# seedvr2_ema — ComfyUI extension dependencies (cluster F boarding,
+# 2026-09-04). The SeedVR2 lane rides the pack's own loader +
+# upscaler nodes; everything else is ComfyUI core (LoadImage,
+# SaveImage).
+extensions:
+- name: ComfyUI-SeedVR2_VideoUpscaler
+  registry: comfyui-seedvr2-videoupscaler
+  version: 1.1.0
+  required: true
+  desc: SeedVR2LoadDiTModel + SeedVR2LoadVAEModel + SeedVR2VideoUpscaler
+    (the diffusion upscale lane; the pack's model registry discovers
+    the SEEDVR2 volume dir).

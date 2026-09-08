@@ -3,7 +3,7 @@
 
 Ladder P0, declarations stream (.scratch/declarations-ts-map.md §5
 step 2): tools/export_card_decls.py emits
-plugins/engines/comfyui/cordis/data/card-decls.json (nothing imports it
+packages/engines/comfyui/cordis/data/card-decls.json (nothing imports it
 yet). This wall regenerates to temp and asserts BYTE-EQUALITY with the
 committed snapshot (fail on drift — regenerate + inspect, never hand-
 edit), and asserts all 19 comfyui card ids are present (the 3
@@ -23,7 +23,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
 EXPORTER = REPO / "tools" / "export_card_decls.py"
-COMMITTED = REPO / "plugins" / "engines" / "comfyui" / "cordis" / "data" \
+COMMITTED = REPO / "packages" / "engines" / "comfyui" / "cordis" / "data" \
     / "card-decls.json"
 
 # The 19 comfyui action_cards (map §0 ground truth — card ids, hyphens).

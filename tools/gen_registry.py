@@ -13,8 +13,8 @@ THE LAW:
     domain components built from primitives: FilmPlayer, NumberField,
     ProvenanceBadge...).
   * ANYONE CAN HOST A CATALOG (the fork mechanic): every
-    plugins/engines/<engine>/ui/ and
-    plugins/engines/<engine>/action_cards/<genre>/ui/ package may
+    packages/engines/<engine>/ui/ and
+    packages/engines/<engine>/action_cards/<genre>/ui/ package may
     carry its own registry.json fragment (same schema, relative
     files); the composed catalog merges core + every fragment.
   * the boundary gate consumes this file: a tenant importing a
@@ -119,7 +119,7 @@ def _fragment_items() -> list[dict[str, str | int | float | bool | list[str] | l
     registry.json (the fork mechanic — a plugin publishing components
     into the pool)."""
     items = []
-    eng_root = os.path.join(REPO, "plugins", "engines")
+    eng_root = os.path.join(REPO, "packages", "engines")
     if not os.path.isdir(eng_root):
         return items
     for engine in sorted(os.listdir(eng_root)):

@@ -1292,7 +1292,7 @@ def scan_engine_models(repo_root: str) -> dict[str, tuple[str, type[Model]]]:
     """Every models/<genre>/<id>/model.py under engines/*/, scan order:
     {model_id: (path, class)}. Duplicate ids LOUD."""
     out = {}
-    eng_root = _os.path.join(repo_root, "plugins", "engines")
+    eng_root = _os.path.join(repo_root, "packages", "engines")
     if not _os.path.isdir(eng_root):
         return out
     for engine in sorted(_os.listdir(eng_root)):

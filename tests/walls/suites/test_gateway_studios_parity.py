@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """test_gateway_studios_parity.py — FLIP-GAP studios doors parity wall.
 
-Proves the pure-TS port (plugins/gateway/src/doors/studios.ts over
+Proves the pure-TS port (packages/gateway/src/doors/studios.ts over
 the ROUTES mirror, minimal ctx.ts arms) serves the 4 studios doors
 byte-identical to the py gateway:
 
@@ -83,8 +83,8 @@ sys.path.insert(0, str(REPO / "py"))
 PASS = FAIL = 0
 TOKEN = "wall-studios-token-%d" % os.getpid()
 
-TS_SERVER = REPO / "plugins" / "gateway" / "src" / "server.ts"
-TS_STUDIOS = REPO / "plugins" / "gateway" / "src" / "doors" / "studios.ts"
+TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+TS_STUDIOS = REPO / "packages" / "gateway" / "src" / "doors" / "studios.ts"
 
 
 def check(name: str, ok: bool, note: str = "") -> None:

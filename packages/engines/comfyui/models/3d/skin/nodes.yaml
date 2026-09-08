@@ -1,0 +1,10 @@
+# skin — ComfyUI extension dependencies (skin-card stroke 2, 2026-09-06).
+# The skinning lane rides OUR authored pack (melite-poser-nodes — SkinPack
+# deterministic detail maps + SkinApply GLB texture surgery); bound live via
+# the vendor symlink. check_card_requires resolves this against object_info.
+extensions:
+- name: melite-poser-nodes
+  registry: melite-poser-nodes
+  version: 0.1.0
+  required: true
+  desc: SkinPack (deterministic detail maps, CPU) + SkinApply (GLB texture surgery) + RayRenderGLBViews (proof turnaround).

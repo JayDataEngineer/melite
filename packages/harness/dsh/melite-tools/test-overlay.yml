@@ -1,0 +1,10 @@
+# W2 boot-verification overlay — disposable port so the live GUI (:3080)
+# is never touched. Entry paths are ABSOLUTE: the loader resolves
+# relative names against the profile dir (~/.dsh/profiles/web/), not
+# this file. Boot:
+#   dsh --profile web --patch <this file> web
+# then curl http://127.0.0.1:3082/melite-tools/catalog
+- id: webserver
+  config:
+    host: 127.0.0.1
+    port: 3082

@@ -12,7 +12,7 @@ minimumReleaseAge: 0
 ## `pnpm install` works on every platform).
 ##
 ## ROOT SINCE 2026-09-02: the editor moved OUT of core (web/editor →
-## plugins/web/editor). It is a CONSUMER — an alternative pathway to the
+## packages/web/editor). It is a CONSUMER — an alternative pathway to the
 ## dsh plugins, not infrastructure — so it joins as a workspace MEMBER
 ## like every other plugin (core ships py/ + the contract; nothing else).
 ## The generic UI kit lives at web/ (THE WEB REGISTRY ruling, 2026-09-03,
@@ -20,20 +20,20 @@ minimumReleaseAge: 0
 ## pathways — the editor and every engine plugin consume it; no consumer
 ## hosts shared infrastructure in its subtree.
 packages:
-  - 'plugins/*'                           # single-package plugins
+  - 'packages/*'                           # single-package plugins
   - 'vendor/cordis_plugins/*'             # VENDORED platform tier (2026-09-08: harness-vendor discipline — loader/timer/logger-console as workspace members, consumed via workspace:*; pnpm materializes the links, no registry copy can exist)
-  - 'plugins/engines/*/cordis'            # ROW 6 (2026-09-07): the engine's Cordis compose plane (@comfyui/cordis — Law 0 amendment; TS cards, graph builder, compose door)
-  - 'plugins/harness/dsh/*'               # the DSH harness family (agent tools, presets, provisioner)
-  - 'plugins/web/dsh/*'                   # the DSH web family (chat/sidebar panels — embeds the editor)
-  - 'plugins/web/editor'                  # the editor pathway (the card surface DSH embeds)
+  - 'packages/engines/*/cordis'            # ROW 6 (2026-09-07): the engine's Cordis compose plane (@comfyui/cordis — Law 0 amendment; TS cards, graph builder, compose door)
+  - 'packages/harness/dsh/*'               # the DSH harness family (agent tools, presets, provisioner)
+  - 'packages/web/dsh/*'                   # the DSH web family (chat/sidebar panels — embeds the editor)
+  - 'packages/web/editor'                  # the editor pathway (the card surface DSH embeds)
   - 'web/*'                               # @melite/{ui,slots,contracts,formats,catalog} — the generic kit (web/ at root)
-  - 'plugins/engines/*/action_cards/*/ui' # engine UI tenants (@melite-plugin/{video,3d,audio,motion})
-  - 'plugins/engines/*/action_cards/*/*/ui' # genre-grouped card lanes
+  - 'packages/engines/*/action_cards/*/ui' # engine UI tenants (@melite-plugin/{video,3d,audio,motion})
+  - 'packages/engines/*/action_cards/*/*/ui' # genre-grouped card lanes
     # (ROW 5, 2026-09-07: @melite-plugin/timeline moved OUT of
     # video/h3-timeline/ui to web/timeline — PRIMITIVE HOME LAW, a
     # cross-genre primitive must not live inside one card's dir.
     # The glob stays for future genre-grouped lanes.)
-  - 'plugins/engines/*/action_cards'      # card tenants (resolution scope; @comfyui/cards)
+  - 'packages/engines/*/action_cards'      # card tenants (resolution scope; @comfyui/cards)
 
 ## ONE REACT for the whole workspace (web-registry move, 2026-09-03):
 ## the @melite kit packages declare react:"*" (they render wherever a

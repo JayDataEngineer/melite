@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """test_gateway_chrome_parity.py — Phase-1 TS shell parity wall (J1-J10).
 
-Proves the TypeScript HTTP shell (plugins/gateway/src/server.ts +
+Proves the TypeScript HTTP shell (packages/gateway/src/server.ts +
 ctx.ts over the ROUTES mirror, bodies from
-plugins/gateway/src/doors/chrome.ts) serves the 10 chrome/health
+packages/gateway/src/doors/chrome.ts) serves the 10 chrome/health
 doors byte-identical to the py gateway:
 
   J1 /v1/health  J2 /v1/themes  J3 /v1/tags  J4 /v1/services
@@ -62,8 +62,8 @@ DOORS = (
 
 UNKNOWN = "/v1/does-not-exist-parity-probe-xyz"
 
-TS_SERVER = REPO / "plugins" / "gateway" / "src" / "server.ts"
-TS_CTX = REPO / "plugins" / "gateway" / "src" / "ctx.ts"
+TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+TS_CTX = REPO / "packages" / "gateway" / "src" / "ctx.ts"
 
 
 def check(name: str, ok: bool, note: str = "") -> None:

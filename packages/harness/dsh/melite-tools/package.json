@@ -1,0 +1,27 @@
+{
+  "name": "@melite-plugin/dsh-tools",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./lib/index.mjs"
+  },
+  "scripts": {
+    "build": "tsdown src/index.ts --format esm --dts --outDir lib",
+    "typecheck": "tsc --noEmit",
+    "test:smoke": "node test/smoke.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@types/node": "^22.20.0",
+    "tsdown": "^0.22.14",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "unrun": "^0.3.1"
+  }
+}

@@ -1,0 +1,20 @@
+# ─── Preset: the balanced path — H3 → Spatial+KSampler to 1080p ─────────
+# Mid-tier.
+# Tree migration 2026-08-16: moved verbatim from the flat video_upscale.yaml
+# file-level `presets:` block (never attached by the flat loader; the tree
+# attach RESTORES these — the file stem IS the preset id).
+
+label: H3 → 1080p (Spatial Balanced)
+description: >-
+  Upscale MiniMax H3 output to 1080p via pixel-SR (Nomos2) + low-denoise
+  KSampler + ColorMatch. Mid-tier: slower than RTX VSR, faster than
+  SeedVR2. Use when RTX VSR isn't available (non-Nvidia GPU) and SeedVR2
+  is too slow.
+params:
+  mode: spatial_ksampler
+  upscaler_model: 4xNomos2_hq_dat2.pth
+  target_resolution: 1080
+  denoise: 0.30
+  steps: 20
+  cfg: 4.0
+  color_match_enabled: true

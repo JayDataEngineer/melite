@@ -1,0 +1,10 @@
+# TRELLIS.2 Native ComfyUI extension dependencies
+#
+# Phase T (2026-09-03): the ComfyUI-TRELLIS2 pack and the melite-trelliscpp
+# pack are RETIRED from the server — ComfyUI 0.34.3 serves TRELLIS.2
+# natively (comfy_extras.nodes_trellis2, nodes_bg_removal). Background
+# removal is the stock RemoveBackground + a provisioned birefnet.safetensors
+# model file (see model.py provisions), NOT an extension. This lane
+# therefore declares NO extensions; the stock weight set rides the
+# model class provisions.
+extensions: []

@@ -2,7 +2,7 @@
 """test_gateway_streaming_tsboot.py — P6 streaming battery flipped to the TS boot.
 
 Ladder P6 (WS absolute last — battery C): the WS codec + upgrade
-handler already landed (plugins/gateway/src/doors/runs.ts); this
+handler already landed (packages/gateway/src/doors/runs.ts); this
 stroke runs the FULL streaming battery against the TS boot ALONE
 (py STOPPED throughout Phase T — TS is the writer).
 
@@ -109,8 +109,8 @@ sys.dont_write_bytecode = True
 PASS = FAIL = 0
 DID = "wall-stream-draft-1"
 TOKEN = "wall-stream-token-%d" % os.getpid()
-TS_SERVER = REPO / "plugins" / "gateway" / "src" / "server.ts"
-RUNS_TS = REPO / "plugins" / "gateway" / "src" / "doors" / "runs.ts"
+TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+RUNS_TS = REPO / "packages" / "gateway" / "src" / "doors" / "runs.ts"
 WF = {"1": {"class_type": "EmptyLatentImage",
             "inputs": {"width": 64, "height": 64, "batch_size": 1}}}
 HISTORY_OK = {"status": {"status_str": "success", "completed": True},

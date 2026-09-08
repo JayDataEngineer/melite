@@ -21,7 +21,7 @@ from melite_cards.validators import JsonValue
 _FROZEN = ConfigDict(frozen=True, extra="forbid")
 
 # The stageable image set — restated from the submit-time SSOT
-# (plugins/engines/comfyui/compose/artifact.py _EXTS[Kind.IMAGE];
+# (packages/engines/comfyui/compose/artifact.py _EXTS[Kind.IMAGE];
 # a compose import would drag plugin path mechanics into the shared
 # models — the wall pins literal == table, the params-artifact
 # precedent in presets.py). What the lane stages is what the door

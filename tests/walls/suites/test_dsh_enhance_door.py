@@ -36,7 +36,7 @@ import pytest
 
 from _anchor import REPO
 
-PLUGIN = REPO / "plugins" / "harness" / "dsh" / "melite-tools"
+PLUGIN = REPO / "packages" / "harness" / "dsh" / "melite-tools"
 CLIENT = REPO / "web" / "catalog" / "src" / "enhance.ts"
 
 

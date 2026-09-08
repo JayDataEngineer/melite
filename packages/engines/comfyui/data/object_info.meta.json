@@ -1,0 +1,8 @@
+{
+  "schema": "object_info_pin/1",
+  "source_url": "http://127.0.0.1:18466",
+  "captured_at": "2026-09-07T16:13:04+00:00",
+  "node_count": 1330,
+  "sha256": "e97aeaebfdeab78891c1d8a0c2e13027e63ab4f5ba38f3b36a391ca87fa5a943",
+  "law": "PIN: compose resolves node schemas from THIS snapshot. Refresh is an explicit door; drift is a loud diff, never a silent fallback."
+}

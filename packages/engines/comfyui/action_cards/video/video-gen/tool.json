@@ -1,0 +1,108 @@
+[
+  {
+    "name": "video_gen_card",
+    "version": 1,
+    "kind": "card-compose",
+    "card": "video-gen",
+    "model": "wan-vace",
+    "stage_title": "Video",
+    "description": "Text/reference-to-video — the generate_video interface card boarding wan-vace and scail2-animate; one surface, one arm per family",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "enum": [
+            "wan-vace",
+            "scail2-animate"
+          ],
+          "description": "The boarded family to run — the request's top-level `model`. Options: wan-vace, scail2-animate.",
+          "default": "wan-vace"
+        },
+        "prompt": {
+          "type": "string",
+          "description": "Prompt"
+        },
+        "negative_prompt": {
+          "type": "string",
+          "description": "Negative Prompt"
+        },
+        "width": {
+          "type": "number",
+          "minimum": 320,
+          "maximum": 1280,
+          "description": "Width"
+        },
+        "height": {
+          "type": "number",
+          "minimum": 320,
+          "maximum": 720,
+          "description": "Height"
+        },
+        "length": {
+          "type": "number",
+          "minimum": 9,
+          "maximum": 121,
+          "description": "4n+1 (Wan latent grid). 49 ≈ 2s, 81 ≈ 3.4s at 24fps."
+        },
+        "fps": {
+          "type": "number",
+          "minimum": 8,
+          "maximum": 30,
+          "description": "FPS"
+        },
+        "seed": {
+          "type": "integer",
+          "default": -1,
+          "description": "Seed"
+        },
+        "steps": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 50,
+          "description": "Steps"
+        },
+        "cfg": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 12,
+          "description": "Lightning-distilled lanes run CFG 1 (guidance baked in)."
+        },
+        "sampler": {
+          "type": "string",
+          "description": "Sampler — options resolve from the $samplers vocabulary at serve time"
+        },
+        "scheduler": {
+          "type": "string",
+          "description": "Scheduler — options resolve from the $schedulers vocabulary at serve time"
+        },
+        "reference_image": {
+          "type": "string",
+          "format": "path",
+          "description": "The anchor frame — identity, subject, scene (wan-vace); the character to animate (scail2-animate)."
+        },
+        "pose_video": {
+          "type": "string",
+          "format": "path",
+          "description": "The motion source — SCAIL-2 drives the reference character with this video.",
+          "x-families": [
+            "scail2-animate"
+          ]
+        },
+        "pose_strength": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 2.0,
+          "default": 1.0,
+          "description": "How tightly SCAIL-2 follows the driving motion.",
+          "x-families": [
+            "scail2-animate"
+          ]
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    }
+  }
+]

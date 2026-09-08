@@ -63,8 +63,8 @@ sys.dont_write_bytecode = True
 import gateway  # noqa: E402  (path anchored by _anchor)
 import editor_runs  # noqa: E402  (the dead-code precedent lives here)
 
-TS_SERVER = REPO / "plugins" / "gateway" / "src" / "server.ts"
-ROUTES_TS = REPO / "plugins" / "gateway" / "src" / "routes.ts"
+TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+ROUTES_TS = REPO / "packages" / "gateway" / "src" / "routes.ts"
 DOORS_TS = REPO / "web" / "catalog" / "src" / "generated" / "gatewayDoors.ts"
 
 TOKEN = "wall-docs-ssot-token-%d" % os.getpid()
@@ -322,7 +322,7 @@ def test_regen_noop_no_caller_diff() -> None:
     assert _git("status", "--short") == before, \
         "regen changed the tree — the check legs above should have caught it"
     consumers = _git("grep", "-l", "GatewayDoorUrl", "--",
-                     "web", "plugins").split()
+                     "web", "packages").split()
     generated = {c for c in consumers if "/generated/" in c}
     assert consumers, "no GatewayDoorUrl consumers found — grep scope rotted"
     assert generated, "generated gatewayDoors.ts not in grep hits"

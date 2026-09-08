@@ -1,0 +1,60 @@
+[
+  {
+    "name": "music_card",
+    "version": 1,
+    "kind": "card-compose",
+    "card": "music",
+    "model": "music3",
+    "stage_title": "Music",
+    "description": "Generate music — MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, pop, soul, guitar, 105 BPM'."
+        },
+        "lyrics": {
+          "type": "string",
+          "description": "Lyrics with structure tags: [verse], [chorus], [bridge]. Empty = instrumental."
+        },
+        "duration": {
+          "type": "number",
+          "minimum": 5,
+          "maximum": 360,
+          "default": 30,
+          "description": "Target audio length in seconds (5-360)."
+        },
+        "guidance_scale": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 10,
+          "default": 1.7,
+          "description": "Classifier-free guidance (KSampler cfg). 1.7 = lane default."
+        },
+        "n_diffusion_steps": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 30,
+          "description": "Flow-matching denoising steps. 30 = lane default. Never 0."
+        },
+        "lm_cfg_scale": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 1.7,
+          "description": "Lyric-encoder guidance (MiniMaxMusic3TextEncode cfg_scale). 1.7 = lane default."
+        },
+        "seed": {
+          "type": "integer",
+          "default": -1,
+          "description": "Seed"
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    }
+  }
+]

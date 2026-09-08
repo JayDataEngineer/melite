@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """test_gateway_assets_parity.py — Phase-3 TS asset READ doors parity wall.
 
-Proves the TypeScript port (plugins/gateway/src/doors/assets.ts over
+Proves the TypeScript port (packages/gateway/src/doors/assets.ts over
 the ROUTES mirror, static tables from
-plugins/gateway/scripts/capture_assets.py) serves the 4 asset READ
+packages/gateway/scripts/capture_assets.py) serves the 4 asset READ
 doors byte-identical to the py gateway:
 
   GET /v1/assets            (_h_assets_index — dynamic JSON)
@@ -60,9 +60,9 @@ sys.dont_write_bytecode = True
 PASS = FAIL = 0
 TOKEN = "wall-assets-token-%d" % os.getpid()
 
-TS_SERVER = REPO / "plugins" / "gateway" / "src" / "server.ts"
-TS_ASSETS = REPO / "plugins" / "gateway" / "src" / "doors" / "assets.ts"
-CAPTURE = REPO / "plugins" / "gateway" / "scripts" / "capture_assets.py"
+TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+TS_ASSETS = REPO / "packages" / "gateway" / "src" / "doors" / "assets.ts"
+CAPTURE = REPO / "packages" / "gateway" / "scripts" / "capture_assets.py"
 INPUT_DIR = REPO / "data" / "input"
 
 INAME_PNG = "wall-assets-hero-%d.png" % os.getpid()

@@ -293,7 +293,7 @@ class TestComfyuiUnloadExported(unittest.TestCase):
     """The comfyui engine owns the real unload(): POST /free."""
 
     def test_comfyui_compose_exports_unload(self) -> None:
-        compose_dir = _REPO / "plugins" / "engines" / "comfyui" / "compose"
+        compose_dir = _REPO / "packages" / "engines" / "comfyui" / "compose"
         sys.path.insert(0, str(compose_dir))
         try:
             spec = importlib.util.spec_from_file_location(
@@ -338,14 +338,14 @@ class TestComfyuiUnloadHTTP(unittest.TestCase):
         cls.port = cls.srv.server_address[1]
         threading.Thread(target=cls.srv.serve_forever,
                          daemon=True).start()
-        compose_dir = _REPO / "plugins" / "engines" / "comfyui" / "compose"
+        compose_dir = _REPO / "packages" / "engines" / "comfyui" / "compose"
         sys.path.insert(0, str(compose_dir))
         cls.native = importlib.import_module("native")
 
     @classmethod
     def tearDownClass(cls) -> None:
         cls.srv.shutdown()
-        sys.path.remove(str(_REPO / "plugins" / "engines" /
+        sys.path.remove(str(_REPO / "packages" / "engines" /
                             "comfyui" / "compose"))
 
     def setUp(self) -> None:

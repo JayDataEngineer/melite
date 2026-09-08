@@ -34,14 +34,14 @@ REPO = Path(__file__).resolve().parents[2]
 
 
 PROFILE_DIR_LIVE = Path.home() / ".dsh-test" / "profiles" / "web"
-PROVISIONER_PKG = REPO / "plugins" / "harness" / "dsh" / "provisioner" / "package.json"
+PROVISIONER_PKG = REPO / "packages" / "harness" / "dsh" / "provisioner" / "package.json"
 
 
 def _provisioner_link_deps() -> dict[str, str]:
     """Return {npm_name: link_relpath} for every link: dep in the
     provisioner package.json. pnpm link: deps are resolved from
     inside the provisioner dir, so the symlink targets live under
-    REPO/plugins/... via the relative path."""
+    REPO/packages/... via the relative path."""
     data = json.loads(PROVISIONER_PKG.read_text())
     out = {}
     for name, ver in (data.get("dependencies") or {}).items():
@@ -53,7 +53,7 @@ def _provisioner_link_deps() -> dict[str, str]:
 def _live_profile_link_symlinks() -> dict[str, Path]:
     """Return {npm_name: resolved_target_path} for every symlink in
     the live dev profile's node_modules whose target is a file under
-    REPO/plugins/ (a repo-link, vs pnpm's own managed deps). Skip
+    REPO/packages/ (a repo-link, vs pnpm's own managed deps). Skip
     any symlink whose target is outside REPO.
     """
     nm = PROFILE_DIR_LIVE / "node_modules"
@@ -73,12 +73,12 @@ def _live_profile_link_symlinks() -> dict[str, Path]:
                 # The symlink target is missing (the bug we are testing for).
                 out[pkg.name] = None
                 continue
-            # Only count repo-link symlinks (targets under REPO/plugins/).
+            # Only count repo-link symlinks (targets under REPO/packages/).
             try:
                 rel = target.relative_to(REPO)
             except ValueError:
                 continue
-            if not str(rel).startswith("plugins/"):
+            if not str(rel).startswith("packages/"):
                 continue
             # Use the npm-name from the package.json (preferred) or
             # the symlink basename.
@@ -134,7 +134,7 @@ class TestProfileReinstallHealth:
         """No dangling symlinks exist anywhere in node_modules.
 
         This is the broader version of test_no_dangling_repo_link_symlinks:
-        it catches dangling symlinks whose target is NOT under REPO/plugins/
+        it catches dangling symlinks whose target is NOT under REPO/packages/
         too (e.g. a leftover from a pnpm global or a manual install).
         """
         dangling = [name for name, status in all_profile_symlinks.items()
@@ -149,7 +149,7 @@ class TestProfileReinstallHealth:
 
     def test_no_dangling_repo_link_symlinks(self, live_links: dict[str, Path | None]) -> None:
         """Every repo-link symlink in node_modules resolves to a real
-        directory under REPO/plugins/. A dangling symlink is the
+        directory under REPO/packages/. A dangling symlink is the
         class of bug the operator hit on the 2026-09-04 sidebar
         retirement (dsh-media symlink remained after the package was
         deleted). Fix: re-run the launcher with --reinstall.
@@ -204,7 +204,7 @@ class TestProfileReinstallHealth:
 
     def test_every_link_dep_target_is_a_real_plugin(self, provisioner_deps: dict[str, str]) -> None:
         """The link: target paths in the provisioner package.json
-        resolve to a real directory under REPO/plugins/. A typo in
+        resolve to a real directory under REPO/packages/. A typo in
         the link path would break the launcher (pnpm refuses an
         unresolvable link: target).
         """
@@ -214,8 +214,8 @@ class TestProfileReinstallHealth:
                 f"provisioner dep {name!r} link: {rel!r} does not "
                 f"resolve to a real directory (looked at {target})"
             )
-            assert str(target).startswith(str(REPO / "plugins") + "/") or True, (
-                "link: target should live under REPO/plugins/"
+            assert str(target).startswith(str(REPO / "packages") + "/") or True, (
+                "link: target should live under REPO/packages/"
             )
             pj = target / "package.json"
             assert pj.exists(), (

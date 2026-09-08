@@ -43,7 +43,7 @@ def _find_card_dir(card_id: str) -> str | None:
     hyphens (mask_studio for mask-studio). One owner — two hits is
     a drift refusal."""
     roots = []
-    engines = os.path.join(REPO, "plugins", "engines")
+    engines = os.path.join(REPO, "packages", "engines")
     if not os.path.isdir(engines):
         return None
     for engine in sorted(os.listdir(engines)):
@@ -361,7 +361,7 @@ def check(card_id: str, card_dir: str | None = None) -> int:
     try:
         gate_class = None
         if not scaffold_stage and card_dir.startswith(
-                os.path.join(REPO, "plugins")):
+                os.path.join(REPO, "packages")):
             _check_registry(card_id, _engine_of(card_dir))
             gate_class = _check_linkage(card_id, py_dir)
             if _FAILS:
@@ -668,7 +668,7 @@ def board(spec: "dict[str, object]", card_dir: str) -> int:
             print("  - %s" % e)
         return 1
     card_dir = os.path.abspath(card_dir)
-    if not card_dir.startswith(os.path.join(REPO, "plugins")):
+    if not card_dir.startswith(os.path.join(REPO, "packages")):
         print("author_card: board needs the card IN the tree "
               "(got %r)" % card_dir)
         return 1

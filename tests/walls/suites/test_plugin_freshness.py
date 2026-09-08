@@ -9,8 +9,8 @@ bit the deck/card-view plugins when two copies existed (ray checkout +
 this repo) and a fix landed in one while the other kept serving.
 
 Post-split layout (2026-09-02): the SSOT checkout is THIS repo —
-plugins/web/dsh (the panels), plugins/harness/dsh (the tools), and
-plugins/web/editor (the card surface the deck host serves). The ray
+packages/web/dsh (the panels), packages/harness/dsh (the tools), and
+packages/web/editor (the card surface the deck host serves). The ray
 twin-checkout watch is RETIRED: one repo, one truth.
 
 Checks:
@@ -22,7 +22,7 @@ Checks:
       the ui_components + engines trees that feed its build)
   F3  content pin: the deck client bundle carries the wand reload nonce
       (_r=) — revert of the recreate-caching fix fails the build gate.
-      (The behavioral drive lives in plugins/harness/dsh/testkit —
+      (The behavioral drive lives in packages/harness/dsh/testkit —
       deck-canvas-open.test.tsx, 6/6 green since the 2026-09-02 port
       of the machine from the ray twin. This pin stays as the
       shipped-artifact guard.)
@@ -40,8 +40,8 @@ import pytest
 
 from _anchor import REPO
 
-WEB_DSH = os.path.join(REPO, "plugins", "web", "dsh")
-HARNESS_DSH = os.path.join(REPO, "plugins", "harness", "dsh")
+WEB_DSH = os.path.join(REPO, "packages", "web", "dsh")
+HARNESS_DSH = os.path.join(REPO, "packages", "harness", "dsh")
 
 
 def _newest(root: str, suffixes: tuple[str, ...]) -> tuple[float, str]:
@@ -104,11 +104,11 @@ def test_f1_member_lib_freshness(base: str, plug: str) -> None:
 # ── F2: editor dist freshness ─────────────────────────────────────────
 
 def test_f2_editor_dist_freshness() -> None:
-    ed_src = os.path.join(REPO, "plugins", "web", "editor", "src")
-    ed_dist = os.path.join(REPO, "plugins", "web", "editor", "dist", "assets")
+    ed_src = os.path.join(REPO, "packages", "web", "editor", "src")
+    ed_dist = os.path.join(REPO, "packages", "web", "editor", "dist", "assets")
     feeds = [
-        os.path.join(REPO, "plugins", "web", "ui_components"),
-        os.path.join(REPO, "plugins", "engines"),
+        os.path.join(REPO, "packages", "web", "ui_components"),
+        os.path.join(REPO, "packages", "engines"),
     ]
     if not os.path.isdir(ed_src) or not os.path.isdir(ed_dist):
         pytest.skip("editor dist not built")

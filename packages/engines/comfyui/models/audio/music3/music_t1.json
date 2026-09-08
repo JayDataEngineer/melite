@@ -1,0 +1,106 @@
+{
+ "UNETLoader.0": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "minimax_music3_dit_int8_convrot.safetensors",
+   "weight_dtype": "default"
+  }
+ },
+ "CLIPLoader.0": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "minimax_music3_text_encoder_pruned_int8_convrot.safetensors",
+   "type": "minimax",
+   "model_options": "default"
+  }
+ },
+ "VAELoader.0": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_music3_dav.safetensors"
+  }
+ },
+ "MiniMaxMusic3TextEncode.0": {
+  "class_type": "MiniMaxMusic3TextEncode",
+  "inputs": {
+   "clip": [
+    "CLIPLoader.0",
+    0
+   ],
+   "caption": "REPLACED_BY_INJECT",
+   "lyrics": "REPLACED_BY_INJECT",
+   "seed": "REPLACED_BY_INJECT",
+   "max_duration": "REPLACED_BY_INJECT",
+   "cfg_scale": "1.7",
+   "top_k": 50
+  }
+ },
+ "ConditioningZeroOut.0": {
+  "class_type": "ConditioningZeroOut",
+  "inputs": {
+   "conditioning": [
+    "MiniMaxMusic3TextEncode.0",
+    0
+   ]
+  }
+ },
+ "EmptyMiniMaxMusic3LatentAudio.0": {
+  "class_type": "EmptyMiniMaxMusic3LatentAudio",
+  "inputs": {
+   "seconds": "REPLACED_BY_INJECT",
+   "batch_size": 1
+  }
+ },
+ "KSampler.0": {
+  "class_type": "KSampler",
+  "inputs": {
+   "model": [
+    "UNETLoader.0",
+    0
+   ],
+   "seed": "REPLACED_BY_INJECT",
+   "steps": "30",
+   "cfg": "1.7",
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "positive": [
+    "MiniMaxMusic3TextEncode.0",
+    0
+   ],
+   "negative": [
+    "ConditioningZeroOut.0",
+    0
+   ],
+   "latent_image": [
+    "EmptyMiniMaxMusic3LatentAudio.0",
+    0
+   ],
+   "denoise": 1.0
+  }
+ },
+ "VAEDecodeAudio.0": {
+  "class_type": "VAEDecodeAudio",
+  "inputs": {
+   "samples": [
+    "KSampler.0",
+    0
+   ],
+   "vae": [
+    "VAELoader.0",
+    0
+   ]
+  }
+ },
+ "SaveAudioAdvanced.0": {
+  "class_type": "SaveAudioAdvanced",
+  "inputs": {
+   "audio": [
+    "VAEDecodeAudio.0",
+    0
+   ],
+   "filename_prefix": "REPLACED_BY_INJECT",
+   "format": "mp3",
+   "format.quality": "V0"
+  }
+ }
+}

@@ -12,7 +12,7 @@ Routes served:
   GET /v1/kinds                 -> the first-party kind table declared in
                                    py/card_kinds.py
 
-Where each route's data lives (everything is read from plugins/ at call time;
+Where each route's data lives (everything is read from packages/ at call time;
 no model or engine name is hardcoded as logic — see the one documented
 exception for /v1/forms below):
 
@@ -25,7 +25,7 @@ exception for /v1/forms below):
                    keys are also the ALLOWED_CARDS set, so the card
                    finder derives its gate from the table, not a second
                    list.
-  /v1/form-spec    model row: plugins/<owner>/models/<genre>/<id>/
+  /v1/form-spec    model row: packages/<owner>/models/<genre>/<id>/
                     model.py (the Model class — family/defaults/engine/
                     offering); variants: the class's frozen rows;
                     card surface (form/service/fields/schema_groups/
@@ -41,7 +41,7 @@ exception for /v1/forms below):
                     lane docs) or any flows/*/flow.yaml containing "type: <name>".
   /v1/kinds        py/card_kinds.py TABLE (the first-party card-kind
                     behavior flags; gateway infra, not plugin data —
-                    the old plugins/*/kinds/*.yaml scan is extinct)
+                    the old packages/*/kinds/*.yaml scan is extinct)
 
 Wire quirks (behavior the goldens pin; changing one is a deliberate
 regold, never a "fix"):
@@ -416,9 +416,9 @@ def _parse_model_yaml(text: str) -> dict[str, str | list[tuple[str, str]] | None
 
 def _iter_plugin_engines(repo_root: str) -> Iterator[tuple[str, str]]:
     """The 2026-09 engine formalization layout (supersedes the old
-    plugins/<owner>/ depth-1 scan): cards and models are ENGINE-owned at
-    plugins/engines/<engine>/ — AND (2026-10-02) under category subdirs
-    (plugins/engines/<cat>/<plugin>/ — the cpp native-engine category).
+    packages/<owner>/ depth-1 scan): cards and models are ENGINE-owned at
+    packages/engines/<engine>/ — AND (2026-10-02) under category subdirs
+    (packages/engines/<cat>/<plugin>/ — the cpp native-engine category).
     THE WALK LIVES IN plugins.py (iter_plugin_dirs_under — one law,
     every consumer). Bridge copies (a model dir under an engine whose
     model.yaml declares a DIFFERENT engine — e.g. comfyui's audio bridge
@@ -426,7 +426,7 @@ def _iter_plugin_engines(repo_root: str) -> Iterator[tuple[str, str]]:
     declarer rule in py/plugins.py."""
     from pathlib import Path
     import plugins as _plugins
-    eng_root = os.path.join(repo_root, "plugins", "engines")
+    eng_root = os.path.join(repo_root, "packages", "engines")
     for pdir in _plugins.iter_plugin_dirs_under(Path(eng_root)):
         yield pdir.name, str(pdir)
 
@@ -774,8 +774,8 @@ def _find_card_yaml(repo_root: str, model: str) -> str | None:
     Candidacy needs a FIELD SURFACE (declared fields on the class) —
     identity-only cards (sfx) stay non-candidates exactly as the yaml
     era served them (no parameters block → skip). Scan depth is the
-    engine layout: plugins/engines/<engine>/cards/ AND
-    plugins/engines/<engine>/action_cards/<genre>/<card>/ (comfyui
+    engine layout: packages/engines/<engine>/cards/ AND
+    packages/engines/<engine>/action_cards/<genre>/<card>/ (comfyui
     regrouped 2026-09-02 — same two-level walk the catalog and the
     editor's cardStudios glob do)."""
     candidate = None
@@ -823,7 +823,7 @@ def _option_list(repo_root: str, list_name: str, engine_dir: str) -> list[str]:
     """option_list: samplers/schedulers from the ONE vocabulary —
     engine.py Plugin class attrs (2026-09-02 flip), yaml fallback."""
     # plugin.py Plugin class — primary source (2026-09-02 field_options flip)
-    # engine_dir is the plugin root (e.g. plugins/engines/comfyui).
+    # engine_dir is the plugin root (e.g. packages/engines/comfyui).
     # The file location rides the exec namespace: Plugin class bodies
     # may derive their vocab from files beside the plugin (the comfyui
     # object_info pin), and a bare exec has no __file__.
@@ -1246,7 +1246,7 @@ def _runtime_lora_rows(repo_root: str) -> list[LoraRow]:
     seen: set[str] = set()
     import glob as _glob
     from melite_models import load_model_py
-    pat = os.path.join(repo_root, "plugins", "engines", "*",
+    pat = os.path.join(repo_root, "packages", "engines", "*",
                        "models", "*", "*", "model.py")
     for mp in sorted(_glob.glob(pat)):
         try:
@@ -1433,7 +1433,7 @@ def _recipes_fallback(repo_root: str, model_id: str) -> tuple[str, str]:
     with content), and the genre loop stops once a prompt recipe lands.
     This is how a row whose unit lacks inference.yaml (music3) borrows
     recipes from another owner's id-named unit."""
-    plugins = os.path.join(repo_root, "plugins", "engines")
+    plugins = os.path.join(repo_root, "packages", "engines")
     recipe, lrecipe = "", ""
     for genre in ("image", "video", "audio", "text"):
         found = None
@@ -1866,8 +1866,8 @@ def form_spec(repo_root: str, model_id: str | None) -> tuple[int, dict[str, Json
 # ─────────────────────────────────────────────────────────────────────────
 # GET /v1/kinds — the first-party kind table (py/card_kinds.py).
 # ─────────────────────────────────────────────────────────────────────────
-# The C-era file scan (plugins/*/kinds/*.yaml, kinds_parse_file) is
-# EXTINCT: the files rode out with the dead plugins/core plugin (6a86082)
+# The C-era file scan (packages/*/kinds/*.yaml, kinds_parse_file) is
+# EXTINCT: the files rode out with the dead packages/core plugin (6a86082)
 # and the lane went dark — the editor's fail-safe kindDef gated every
 # form-spec fetch OFF and cards rendered without form fields. The table
 # is gateway infra now, declared as frozen pydantic rows (the

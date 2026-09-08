@@ -36,8 +36,8 @@ from collections.abc import Iterator
 import pytest
 
 from _anchor import REPO
-MODELS_ROOT = os.path.join(REPO, "plugins", "engines", "comfyui", "models")
-CARDS_ROOT = os.path.join(REPO, "plugins", "engines")
+MODELS_ROOT = os.path.join(REPO, "packages", "engines", "comfyui", "models")
+CARDS_ROOT = os.path.join(REPO, "packages", "engines")
 
 # Studio(tenant='...') — single or double quotes, the declaration
 # site. One nesting level tolerated between Studio( and tenant=

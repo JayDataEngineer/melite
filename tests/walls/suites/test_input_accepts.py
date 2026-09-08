@@ -22,7 +22,7 @@ import catalog as _catalog
 from melite_models import Model, ModelError, load_model_py
 
 INPUT_MODEL_PY = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "models", "image", "input",
+    REPO, "packages", "engines", "comfyui", "models", "image", "input",
     "model.py")
 
 

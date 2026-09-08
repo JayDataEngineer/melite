@@ -369,7 +369,7 @@ class TestPluginRow:
     def test_construction(self) -> None:
         p = PluginRow(
             id="comfyui", version="0.1.0", name="ComfyUI",
-            enabled=True, lanes=["image", "video"], root="plugins/engines/comfyui",
+            enabled=True, lanes=["image", "video"], root="packages/engines/comfyui",
         )
         assert p.hooks is None
 

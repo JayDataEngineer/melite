@@ -7,7 +7,7 @@ The fragment contract (editor_forms._card_spec, recovered from the C):
                       k), "zone" ("params" default), "fields":
                       [emit(f, with_group=False) ...]}]}
 
-Discovery: plugins/engines/<engine>/cards/<card>/card.py — one
+Discovery: packages/engines/<engine>/cards/<card>/card.py — one
 ActionCard subclass per module (multiple subclasses is a LOUD refusal;
 one card per dir, the filesystem IS the card).
 """
@@ -93,7 +93,7 @@ def scan_engine_cards(repo_root: str) -> dict[str, tuple[str, type[ActionCard]]]
     from pathlib import Path
     import plugins as _plugins
     out = {}
-    eng_root = os.path.join(repo_root, "plugins", "engines")
+    eng_root = os.path.join(repo_root, "packages", "engines")
     if not os.path.isdir(eng_root):
         return out
     for pdir in _plugins.iter_plugin_dirs_under(Path(eng_root)):

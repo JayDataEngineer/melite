@@ -48,7 +48,7 @@ def _pin_compose_card() -> None:
     (the loader's own resolution) for this process. Estate-wide fix
     (dotted imports across the arms) is next-conversion work,
     noted in docs/design/row4-executor-tts-lane.md."""
-    compose_dir = str(REPO / "plugins/engines/comfyui/compose")
+    compose_dir = str(REPO / "packages/engines/comfyui/compose")
     if compose_dir in sys.path:
         sys.path.remove(compose_dir)
     sys.path.insert(0, compose_dir)
@@ -56,7 +56,7 @@ def _pin_compose_card() -> None:
     # (e.g. the music lane wall, running before this module) binds
     # bare `card` while a card DEFINITION dir leads the path — the
     # stale sys.modules entry would win over the corrected path.
-    helper_file = str(REPO / "plugins/engines/comfyui/compose/card.py")
+    helper_file = str(REPO / "packages/engines/comfyui/compose/card.py")
     if getattr(sys.modules.get("card"), "__file__", "") != helper_file:
         sys.modules.pop("card", None)
         import importlib

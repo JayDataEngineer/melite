@@ -35,7 +35,7 @@ REPO = os.path.normpath(os.path.join(os.path.dirname(
 
 SHELL = os.path.join(REPO, "web", "ui", "src", "studioShell.tsx")
 ASSEMBLY = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "action_cards",
+    REPO, "packages", "engines", "comfyui", "action_cards",
     "3d", "ui", "studios", "assembly.tsx")
 
 # genre vocabulary the shell must never name (module-level import
@@ -105,7 +105,7 @@ def test_the_chrome_is_owned_once() -> None:
         "the shell defines StudioShellErrorLine (shell-owned chrome)"
     # a tenant tree may RE-EXPORT it (adoption compat) but never
     # define a second copy under any name the shell also exports
-    roots = [os.path.join(REPO, "plugins", "engines")]
+    roots = [os.path.join(REPO, "packages", "engines")]
     for root in roots:
         for dirpath, _dirs, files in os.walk(root):
             if "node_modules" in dirpath:
@@ -132,22 +132,22 @@ def test_the_chrome_is_owned_once() -> None:
 # Design record: docs/design/studio-chrome.md.
 
 MOTION_STUDIO = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "action_cards",
+    REPO, "packages", "engines", "comfyui", "action_cards",
     "motion", "motion-studio", "ui", "studio", "component.tsx")
 H3_STUDIO = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "action_cards",
+    REPO, "packages", "engines", "comfyui", "action_cards",
     "video", "h3-timeline", "ui", "studio", "component.tsx")
 H3_STRIP = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "action_cards",
+    REPO, "packages", "engines", "comfyui", "action_cards",
     "video", "h3-timeline", "ui", "studio", "StudioStripPane.tsx")
 H3_PREVIEW = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "action_cards",
+    REPO, "packages", "engines", "comfyui", "action_cards",
     "video", "h3-timeline", "ui", "studio", "StudioPreview.tsx")
 ANNY_STUDIO = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "action_cards",
+    REPO, "packages", "engines", "comfyui", "action_cards",
     "3d", "anny", "ui", "studio", "component.tsx")
 ANNY_SHAPE = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "action_cards",
+    REPO, "packages", "engines", "comfyui", "action_cards",
     "3d", "anny", "ui", "studio", "shape.tsx")
 TIMELINE_BAR = os.path.join(
     REPO, "web", "timeline", "timeline", "MotionTimelineBar.tsx")
@@ -260,7 +260,7 @@ ANCHOR = os.path.join(REPO, "web", "ui", "src",
 REFERENCE_BADGE = os.path.join(
     REPO, "web", "ui", "src", "reference-image-badge.tsx")
 ASSEMBLY_STUDIO = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "action_cards",
+    REPO, "packages", "engines", "comfyui", "action_cards",
     "3d", "ui", "studios", "assembly.tsx")
 
 
@@ -331,13 +331,13 @@ def test_the_assembly_tenants_ride_the_shell() -> None:
 # seam hosts a second viewport genre without the shell learning it.
 
 PAINT = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "action_cards",
+    REPO, "packages", "engines", "comfyui", "action_cards",
     "image", "ui", "PaintCanvas2D.tsx")
 MASK_STUDIO = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "action_cards",
+    REPO, "packages", "engines", "comfyui", "action_cards",
     "image", "mask_studio", "ui", "studio", "component.tsx")
 MASK_CANVAS = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "action_cards",
+    REPO, "packages", "engines", "comfyui", "action_cards",
     "image", "mask_studio", "ui", "studio", "StudioCanvas.tsx")
 
 # mask vocabulary the viewport primitive must never name (the card
@@ -406,10 +406,10 @@ def test_the_mask_canvas_composes_the_primitive() -> None:
 SHELL_DECL = os.path.join(
     REPO, "web", "ui", "src", "shellDeclaration.ts")
 
-# the cardStudios tenant glob (plugins/web/editor/src/surfaces/flow/
+# the cardStudios tenant glob (packages/web/editor/src/surfaces/flow/
 # cardStudios.ts PLUGIN_TENANT_LOADERS): every studio body claim
 TENANT_GLOB = os.path.join(
-    REPO, "plugins", "engines", "*", "action_cards", "*", "*",
+    REPO, "packages", "engines", "*", "action_cards", "*", "*",
     "ui", "studio", "component.tsx")
 
 
@@ -462,7 +462,7 @@ def test_every_tenant_rides_the_shell_or_is_exempt() -> None:
     for f in _tenant_files():
         rel = os.path.relpath(f, REPO)
         rel = rel.replace(
-            os.path.join("plugins", "engines", "comfyui",
+            os.path.join("packages", "engines", "comfyui",
                          "action_cards") + os.sep, "")
         src = open(f, encoding="utf-8").read()
         if "<StudioShell" in src:
@@ -487,7 +487,7 @@ def test_no_tenant_hand_rolls_the_rail_portal() -> None:
     for f in _tenant_files():
         rel = os.path.relpath(f, REPO)
         rel = rel.replace(
-            os.path.join("plugins", "engines", "comfyui",
+            os.path.join("packages", "engines", "comfyui",
                          "action_cards") + os.sep, "")
         src = open(f, encoding="utf-8").read()
         if "<StudioRail" in src:
@@ -533,13 +533,13 @@ def test_union_members_name_real_primitives_only() -> None:
     # timeline→@melite-plugin/timeline. (native names the tenant's
     # own viewport riding the seam directly.)
     assert os.path.isfile(os.path.join(
-        REPO, "plugins", "engines", "comfyui", "action_cards",
+        REPO, "packages", "engines", "comfyui", "action_cards",
         "3d", "ui", "viewers", "Stage.tsx"))
     assert os.path.isfile(os.path.join(
-        REPO, "plugins", "engines", "comfyui", "action_cards",
+        REPO, "packages", "engines", "comfyui", "action_cards",
         "image", "ui", "PaintCanvas2D.tsx"))
     assert os.path.isfile(os.path.join(
-        REPO, "plugins", "engines", "comfyui", "action_cards",
+        REPO, "packages", "engines", "comfyui", "action_cards",
         "image", "mask_studio", "ui", "studio", "OutputStrip.tsx"))
     assert os.path.isdir(os.path.join(REPO, "web", "timeline"))
 
@@ -553,10 +553,10 @@ def test_union_members_name_real_primitives_only() -> None:
 
 VERB_CHIP = os.path.join(REPO, "web", "ui", "src", "verbChip.tsx")
 VERB_RIDERS = [
-    os.path.join(REPO, "plugins", "engines", "comfyui",
+    os.path.join(REPO, "packages", "engines", "comfyui",
                  "action_cards", "3d", "anny", "ui", "studio",
                  "component.tsx"),
-    os.path.join(REPO, "plugins", "engines", "comfyui",
+    os.path.join(REPO, "packages", "engines", "comfyui",
                  "action_cards", "image", "mask_studio", "ui",
                  "studio", "Sam3PromptBox.tsx"),
 ]
@@ -634,7 +634,7 @@ def test_overlay_unions_closed_and_renderer_genre_blind() -> None:
 def test_both_viewport_primitives_carry_the_seam() -> None:
     for f, marker in (
         (PAINT, "overlays?: readonly ViewportOverlay[]"),
-        (os.path.join(REPO, "plugins", "engines", "comfyui",
+        (os.path.join(REPO, "packages", "engines", "comfyui",
                       "action_cards", "3d", "ui", "viewers",
                       "Stage.tsx"),
          "overlays?: readonly ViewportOverlay[]"),

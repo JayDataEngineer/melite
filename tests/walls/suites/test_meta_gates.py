@@ -89,7 +89,7 @@ def _evict_collisions(engine: str, forged_card_py: str,
             del sys.modules[k]
         sys.modules.update(saved)
 
-CARDS = REPO / "plugins/engines/comfyui/action_cards"
+CARDS = REPO / "packages/engines/comfyui/action_cards"
 
 
 # ── Part A: the canary ────────────────────────────────────────────
@@ -178,15 +178,15 @@ def _forged_music_card(tmp_path: Path, old: str, new: str) -> tuple[str, str]:
     so the forgery mirrors the repo layout (action_cards + the
     boarded model dir), with ONLY card.py mutated."""
     root = tmp_path / "forge"
-    dst = root / "plugins/engines/comfyui/action_cards/audio/music/py"
+    dst = root / "packages/engines/comfyui/action_cards/audio/music/py"
     dst.mkdir(parents=True)
     src = CARDS / "audio/music/py"
     shutil.copy(src / "schema.py", dst / "schema.py")
     text = (src / "card.py").read_text()
     assert old in text, "forge anchor moved — repair the probe"
     (dst / "card.py").write_text(text.replace(old, new, 1))
-    msrc = REPO / ("plugins/engines/comfyui/models/audio/music3")
-    mdst = root / "plugins/engines/comfyui/models/audio/music3"
+    msrc = REPO / ("packages/engines/comfyui/models/audio/music3")
+    mdst = root / "packages/engines/comfyui/models/audio/music3"
     shutil.copytree(msrc, mdst)
     sys.path.insert(0, os.path.join(str(REPO), "py"))
     return str(dst / "card.py"), str(mdst)
@@ -357,16 +357,16 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         "infra/comfyui/stage/extra_model_paths.yaml": "past",
         "model.yaml": "past",
         "model_manifest.py": "past",
-        "plugins/MIGRATION.md": "past",
-        "plugins/comfyui/nodes.yaml": "past",
-        "plugins/comfyui/nodes/extensions.yaml": "past",
-        "plugins/gens/nodes/extensions.yaml": "past",
-        "plugins/melite-manager/manager/extra_model_paths.yaml": "past",
+        "packages/MIGRATION.md": "past",
+        "packages/comfyui/nodes.yaml": "past",
+        "packages/comfyui/nodes/extensions.yaml": "past",
+        "packages/gens/nodes/extensions.yaml": "past",
+        "packages/melite-manager/manager/extra_model_paths.yaml": "past",
         "setup_comfyui.py": "past",
         "sync_local_comfyui.py": "past",
     },
     "docs/audits/dsh-plugin-consolidation.md": {
-        "plugins/melite-video/cards/video_timeline/component.tsx": "past",
+        "packages/melite-video/cards/video_timeline/component.tsx": "past",
     },
     "docs/audits/queue-audit.md": {
         "flows/_gap1_probe/flow.py": "past",
@@ -387,7 +387,7 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         "melite-h3-motion-nodes/h3_seam_nodes.py": "past",
     },
     "docs/comfyui/execution.md": {
-        "plugins/engines/comfyui/nodes.yaml": "rot",
+        "packages/engines/comfyui/nodes.yaml": "rot",
     },
     "docs/comfyui/plaguekind-1to1.md": {
         "tools/plaguekind_parity.py": "past",
@@ -466,7 +466,7 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
     },
     "docs/plans/comfyui-consolidation-plan.md": {
         "anny_phenotype_map.yaml": "past",
-        "plugins/melite-manager/manager/extra_model_paths.yaml": "past",
+        "packages/melite-manager/manager/extra_model_paths.yaml": "past",
     },
     "docs/plans/cpp-engines.md": {
         "card_knobs.yaml": "past",
@@ -479,7 +479,7 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         "card.yaml": "past",
         "card_knobs.yaml": "past",
         "melite-core/_shared.yaml": "past",
-        "plugins/agent/dsh/melite-core/models/field_options.yaml": "past",
+        "packages/agent/dsh/melite-core/models/field_options.yaml": "past",
     },
     "docs/plans/root-config-gap-fix.md": {
         "py/__init__.py": "past",
@@ -487,11 +487,11 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
     "docs/plans/typed-step-docs.md": {
         "tests/test_co_script_parity_cards.py": "past",
     },
-    "docs/plugins/card-compose.md": {
+    "docs/packages/card-compose.md": {
         "card_knobs.yaml": "rot",
         "py/timeline/compile.py": "rot",
     },
-    "docs/plugins/catalog.md": {
+    "docs/packages/catalog.md": {
         "card.yaml": "rot",
         "grading_rubric.yaml": "rot",
         "inference.yaml": "rot",
@@ -500,7 +500,7 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         "preset.yaml": "rot",
         "variant.yaml": "rot",
     },
-    "docs/plugins/registry.md": {
+    "docs/packages/registry.md": {
         "compose/__init__.py": "rot",
         "nodes/extensions.yaml": "rot",
     },
@@ -527,17 +527,17 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         "mesh3d/postprocess/remesh.py": "past",
         "model.yaml": "past",
         "pixal3d_native.ts": "past",
-        "plugins/anny/cards/body/card.yaml": "past",
-        "plugins/comfyui/models/3d/trellis2-native/model.yaml": "past",
-        "plugins/comfyui/nodes/extensions.yaml": "past",
-        "plugins/kimodo/cards/motion-gen/card.yaml": "past",
-        "plugins/melite-3d/cards/3d/form_3d_autoremesher.yaml": "past",
-        "plugins/melite-3d/families/autoremesher.ts": "past",
-        "plugins/melite-3d/families/trellis2_native.ts": "past",
-        "plugins/melite-3d/graph/form_3d_trellis2_native.builder.ts": "past",
-        "plugins/melite-3d/models/3d/autoremesher/model.yaml": "past",
-        "plugins/melite-motion/cards/motion_kimodo/form_motion_kimodo.yaml": "past",
-        "plugins/melite-motion/graph/form_motion_kimodo.builder.ts": "past",
+        "packages/anny/cards/body/card.yaml": "past",
+        "packages/comfyui/models/3d/trellis2-native/model.yaml": "past",
+        "packages/comfyui/nodes/extensions.yaml": "past",
+        "packages/kimodo/cards/motion-gen/card.yaml": "past",
+        "packages/melite-3d/cards/3d/form_3d_autoremesher.yaml": "past",
+        "packages/melite-3d/families/autoremesher.ts": "past",
+        "packages/melite-3d/families/trellis2_native.ts": "past",
+        "packages/melite-3d/graph/form_3d_trellis2_native.builder.ts": "past",
+        "packages/melite-3d/models/3d/autoremesher/model.yaml": "past",
+        "packages/melite-motion/cards/motion_kimodo/form_motion_kimodo.yaml": "past",
+        "packages/melite-motion/graph/form_motion_kimodo.builder.ts": "past",
         "presets/prop.yaml": "past",
         "tts_audio_suite_engines.yaml": "past",
         "variants/1024/variant.yaml": "past",
@@ -547,8 +547,8 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
     },
     "docs/wiki.md": {
         "kick_queue_consumer.py": "rot",
-        "plugins/comfyui/cards/video_timeline/form_video_timeline.yaml": "rot",
-        "plugins/comfyui/models/video/h3-timeline/card_knobs.yaml": "rot",
+        "packages/comfyui/cards/video_timeline/form_video_timeline.yaml": "rot",
+        "packages/comfyui/models/video/h3-timeline/card_knobs.yaml": "rot",
     },
 }
 

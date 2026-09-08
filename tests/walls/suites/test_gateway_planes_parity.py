@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """test_gateway_planes_parity.py — FLIP-GAP STROKE readiness wall §1.
 
-Proves the TypeScript planes port (plugins/gateway/src/doors/planes.ts
+Proves the TypeScript planes port (packages/gateway/src/doors/planes.ts
 via the ctx.ts dispatchPlanes arm) answers byte-identical to the py
 gateway on the seven lane-discovery + agent-plane doors:
 
@@ -63,7 +63,7 @@ from gateway import route as py_route  # noqa: E402
 PASS = FAIL = 0
 TOKEN = "planes-parity-token-%d" % os.getpid()
 
-TS_SERVER = REPO / "plugins" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
 
 PY_GW: gwmod.Gateway | None = None
 
@@ -181,7 +181,7 @@ def dual_modulo_clock(ts_port: int, py_target: str, ts_path: str, name: str,
 
 
 def build_fixture(root: Path) -> None:
-    eng = root / "plugins" / "engines"
+    eng = root / "packages" / "engines"
 
     def w(rel: str, text: str) -> None:
         p = root / rel
@@ -189,42 +189,42 @@ def build_fixture(root: Path) -> None:
         p.write_text(text, encoding="utf-8")
 
     # ── plug-a: one card + one model family, all doc classes ──
-    w("plugins/engines/plug-a/plugin.yaml", "name: plug-a\n")
-    w("plugins/engines/plug-a/action_cards/photo/acard/tool.json",
+    w("packages/engines/plug-a/plugin.yaml", "name: plug-a\n")
+    w("packages/engines/plug-a/action_cards/photo/acard/tool.json",
       json.dumps({"name": "acard_tool", "version": 1, "kind": "card-compose",
                   "card": "acard", "model": "amodel",
                   "stage_title": "A Card", "description": "Does A things.",
                   "params_schema": {"type": "object",
                                     "properties": {"prompt": {"type": "string"}},
                                     "required": ["prompt"]}}))
-    w("plugins/engines/plug-a/action_cards/photo/acard/AGENT.md",
+    w("packages/engines/plug-a/action_cards/photo/acard/AGENT.md",
       "---\nname: acard agent\ndescription: the acard craft\n---\n"
       "# Acard\nCompose laws.\n")
     # dir-form skill (SKILL.md) + file-form skill (.md straight).
-    w("plugins/engines/plug-a/action_cards/photo/acard/agents/skills/"
+    w("packages/engines/plug-a/action_cards/photo/acard/agents/skills/"
       "astem/SKILL.md", "# A skill\nBody A.\n")
-    w("plugins/engines/plug-a/action_cards/photo/acard/agents/skills/"
+    w("packages/engines/plug-a/action_cards/photo/acard/agents/skills/"
       "aflat.md", "# A flat skill\nFlat body.\n")
-    w("plugins/engines/plug-a/models/photo/amodel/GUIDE.md",
+    w("packages/engines/plug-a/models/photo/amodel/GUIDE.md",
       "---\nname: amodel guide\ndescription: operating guide\n---\n"
       "# Guide\nRules.\n")
-    w("plugins/engines/plug-a/models/photo/amodel/agents/AGENT.md",
+    w("packages/engines/plug-a/models/photo/amodel/agents/AGENT.md",
       "---\nname: amodel agent\ndescription: model craft\n---\n"
       "# Model\nCraft.\n")
-    w("plugins/engines/plug-a/models/photo/amodel/agents/skills/"
+    w("packages/engines/plug-a/models/photo/amodel/agents/skills/"
       "mstem/SKILL.md",
       "---\nname: mstem skill\ndescription: model skill\n---\n"
       "# MSkill\nM body.\n")
-    w("plugins/engines/plug-a/models/photo/amodel/agents/skills/"
+    w("packages/engines/plug-a/models/photo/amodel/agents/skills/"
       "extra.md", "---\ndescription: model extra file skill\n---\n"
       "# extra\nExtra body.\n")
     # no-heading doc: name falls back to the file stem.
-    w("plugins/engines/plug-a/models/photo/amodel/agents/skills/"
+    w("packages/engines/plug-a/models/photo/amodel/agents/skills/"
       "bare.md", "Just body, no heading.\n")
 
     # ── plug-b: LIST manifest (two tools, second hidden) + refusals ──
-    w("plugins/engines/plug-b/plugin.yaml", "name: plug-b\n")
-    w("plugins/engines/plug-b/action_cards/photo/bcard/tool.json",
+    w("packages/engines/plug-b/plugin.yaml", "name: plug-b\n")
+    w("packages/engines/plug-b/action_cards/photo/bcard/tool.json",
       json.dumps([
           {"name": "bcard_tool", "version": 2, "kind": "card-compose",
            "card": "bcard", "model": "amodel",
@@ -239,37 +239,37 @@ def build_fixture(root: Path) -> None:
                              "properties": {"prompt": {"type": "string"},
                                             "seed": {"type": "integer"}},
                              "required": ["prompt", "seed"]}}]))
-    w("plugins/engines/plug-b/action_cards/photo/bcard/AGENT.md",
+    w("packages/engines/plug-b/action_cards/photo/bcard/AGENT.md",
       "# B agent\nB laws.\n")
     # refused manifest (name + params_schema missing).
-    w("plugins/engines/plug-b/action_cards/photo/badcard/tool.json",
+    w("packages/engines/plug-b/action_cards/photo/badcard/tool.json",
       json.dumps({"version": 1, "kind": "card-compose", "card": "badcard"}))
     # unreadable manifest (bad JSON) — the card is absent everywhere.
-    w("plugins/engines/plug-b/action_cards/photo/badjson/tool.json", "{nope")
+    w("packages/engines/plug-b/action_cards/photo/badjson/tool.json", "{nope")
 
     # ── plug-c: declared id != dir name + h3 base chain, no AGENT ──
-    w("plugins/engines/plug-c/plugin.yaml", "name: plug-c\n")
-    w("plugins/engines/plug-c/action_cards/photo/ccarddir/tool.json",
+    w("packages/engines/plug-c/plugin.yaml", "name: plug-c\n")
+    w("packages/engines/plug-c/action_cards/photo/ccarddir/tool.json",
       json.dumps({"name": "ccard_tool", "version": 1, "kind": "card-compose",
                   "card": "ccard", "model": "h3-timeline",
                   "stage_title": "C Card", "description": "Does C things.",
                   "params_schema": {"type": "object", "properties": {},
                                     "required": []}}))
     # No AGENT.md under ccarddir: bundle agent null, no card:ccard skill.
-    w("plugins/engines/plug-c/models/photo/h3/GUIDE.md",
+    w("packages/engines/plug-c/models/photo/h3/GUIDE.md",
       "---\nname: h3 guide\ndescription: base guide\n---\n"
       "# H3\nBase rules.\n")
-    w("plugins/engines/plug-c/models/photo/h3-timeline/agents/AGENT.md",
+    w("packages/engines/plug-c/models/photo/h3-timeline/agents/AGENT.md",
       "---\nname: h3-timeline agent\ndescription: child craft\n---\n"
       "# H3T\nChild craft.\n")
 
     # ── underscore genre: never on the callable surface ──
-    w("plugins/engines/plug-a/action_cards/_hid/hcard/tool.json",
+    w("packages/engines/plug-a/action_cards/_hid/hcard/tool.json",
       json.dumps({"name": "hcard_tool", "version": 1, "kind": "card-compose",
                   "card": "hcard",
                   "params_schema": {"type": "object", "properties": {},
                                     "required": []}}))
-    w("plugins/engines/plug-a/action_cards/_hid/hcard/AGENT.md",
+    w("packages/engines/plug-a/action_cards/_hid/hcard/AGENT.md",
       "# H agent\nHidden laws.\n")
 
     # ── flows: tooled mega-skill template + tool-less template ──
@@ -301,7 +301,7 @@ def build_fixture(root: Path) -> None:
 
     # ── frozen discovery catalog (the TS planes doors read flow
     # declarations + agent/boot catalog/schema natively from
-    # plugins/gateway/data/discovery-catalog.json under the
+    # packages/gateway/data/discovery-catalog.json under the
     # disclosure root — no runtime python). Stage the fixture's own
     # freeze with the SAME functions the exporter uses
     # (export_discovery_catalog.collect_flows + catalog.scan_catalog/
@@ -327,7 +327,7 @@ def build_fixture(root: Path) -> None:
         "schema": flowmod.schema_snapshot(),
         "flows": _expmod.collect_flows(str(root)),
     }
-    _fro = root / "plugins" / "gateway" / "data"
+    _fro = root / "packages" / "gateway" / "data"
     _fro.mkdir(parents=True, exist_ok=True)
     (_fro / "discovery-catalog.json").write_text(
         json.dumps(_frozen, indent=2, ensure_ascii=False, default=str)
@@ -385,7 +385,7 @@ def main() -> int:
 
         # Hermetic py gateway: disclosure + state globals at the fixture.
         ldmod.REPO = fixture
-        ldmod.ENGINES_ROOT = fixture / "plugins" / "engines"
+        ldmod.ENGINES_ROOT = fixture / "packages" / "engines"
         flowmod.FLOWS_ROOT = fixture / "flows"
         gwmod.REPO = fixture
         gwmod.STATE_ROOT = py_state
@@ -591,7 +591,7 @@ def main() -> int:
         # the stdio probe is retired). The dual legs above prove the
         # read path byte-for-byte; the text pin below locks it
         # (the discovery wall's no-bridge pin precedent).
-        _psrc = (REPO / "plugins" / "gateway" / "src" / "doors"
+        _psrc = (REPO / "packages" / "gateway" / "src" / "doors"
                  / "planes.ts").read_text(encoding="utf-8")
         _pcode = "\n".join(
             ln for ln in _psrc.splitlines()

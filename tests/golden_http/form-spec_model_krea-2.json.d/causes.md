@@ -22,7 +22,7 @@ nothing else):
   are legal values again, the exact lag the pin flip was built for);
 - `scheduler` options: same 9 values, pin (sorted) order.
 
-Source: `plugins/engines/comfyui/plugin.py::_pin_vocab` via
+Source: `packages/engines/comfyui/plugin.py::_pin_vocab` via
 `py/editor_forms.py::_option_list` (the class/table is the SSOT;
 this golden pins its served emission).
 Re-asserted from served `/v1/form-spec?model=krea-2` on a scratch

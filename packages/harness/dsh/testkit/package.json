@@ -1,0 +1,19 @@
+{
+  "name": "@melite-plugin/dsh-testkit",
+  "private": true,
+  "description": "Test toolchain for the split DSH family \u2014 one vitest runner for harness members AND packages/web/dsh members (the old infer-dsh root package's role, post-split)",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.3",
+    "@types/react": "~18.3.31",
+    "@types/react-dom": "~18.3.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "happy-dom": "^20.12.0",
+    "react": "~18.3.1",
+    "react-dom": "~18.3.1",
+    "vitest": "^4.1.11"
+  }
+}

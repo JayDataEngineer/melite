@@ -1,0 +1,9 @@
+# florence2 lane extension declarations (tagger-card stroke, 2026-09-06).
+# The tagger card's Florence-2 nodes (kijai). Registry-canonical bare id
+# (PIN LAW); installed via the URL form of the same engine rail.
+extensions:
+  - name: ComfyUI-Florence2
+    registry: ComfyUI-Florence2
+    version: 1.1.0
+    required: true
+    desc: "Florence-2 captioning (DownloadAndLoadFlorence2Model + Florence2Run). Checkpoint self-downloads to ComfyUI/models/LLM on first run."

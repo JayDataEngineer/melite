@@ -32,7 +32,7 @@ is no hiding behind it):
   5. test_no_ignores — the ignore comment in any spelling refuses.
      A silenced checker is a louder cheat than a missing annotation.
 
-Scope: py/ plugins/ tools/ tests/ infra/ — the code we own. data/
+Scope: py/ packages/ tools/ tests/ infra/ — the code we own. data/
 (checkouts, runtime), vendor/ and references/ (foreign code) are out
 by PATH, never by exemption list: there is no allowlist in this file,
 and there never will be. The wall scans itself (it lives under
@@ -48,7 +48,7 @@ from pathlib import Path
 
 from _anchor import REPO
 
-SCOPES = ["py", "plugins", "tools", "tests", "infra"]
+SCOPES = ["py", "packages", "tools", "tests", "infra"]
 SKIP_PARTS = {"__pycache__", ".venv", "node_modules", "data", "vendor", "references"}
 
 EXEMPT_PARAM_NAMES = {"self", "cls"}

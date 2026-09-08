@@ -18,7 +18,7 @@ refusing. DELIBERATE contract change, two hunks:
   body (anny-base-body.glb, provisioned); or attach a rigged/static
   character GLB".
 
-Source: `plugins/engines/comfyui/action_cards/3d/anny/py/card.py`
+Source: `packages/engines/comfyui/action_cards/3d/anny/py/card.py`
 (the card class is the SSOT; this golden pins its served emission).
 Re-asserted from served `/v1/form-spec?model=anny` on a scratch
 gateway (no live restart — the parity suite's own boot path);

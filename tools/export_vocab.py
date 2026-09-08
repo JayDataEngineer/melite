@@ -16,7 +16,7 @@ SSOT inputs (read-only; never edited here):
                                     to REFUSE a name collision: a vocab union taking
                                     a seam-union name would be a second spelling.
 
-Output: plugins/engines/comfyui/cordis/src/generated/vocab.ts —
+Output: packages/engines/comfyui/cordis/src/generated/vocab.ts —
 const-unions (NO TS enums: the Cordis plane runs on node
 --experimental-strip-types, erasable syntax only) + tables (SLOTS,
 SLOT_KINDS, UNDECLARED_SLOTS, CARD_KINDS, SIDEBAR_SECTIONS). Sorted,
@@ -66,7 +66,7 @@ from melite_models.grammar import (  # noqa: E402
 
 GENERATED = (
     REPO
-    / "plugins"
+    / "packages"
     / "engines"
     / "comfyui"
     / "cordis"

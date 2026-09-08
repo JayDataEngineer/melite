@@ -1,7 +1,7 @@
 """card_kinds.py — the card-kind behavior-flag SSOT (gap repair, 2026-09-03).
 
 The kinds lane (GET /v1/kinds -> pluginKinds.ts -> cardSeam.ts) ran on
-plugins/<plugin>/kinds/*.yaml files until plugins/core was removed as a
+packages/<plugin>/kinds/*.yaml files until packages/core was removed as a
 dead C plugin (6a86082) — the seven FIRST-PARTY kind files rode out with
 it and the lane went dark: the editor's kindDef() fell to the fail-safe
 UNKNOWN def (formSpec: false), so the spec contract store never fetched
@@ -105,7 +105,7 @@ class CardKindTable(BaseModel, frozen=True):
 
 
 # THE declaration — the single instance everything else derives from.
-# Rows mirror the original plugins/core/kinds/*.yaml table 1:1 (recovered
+# Rows mirror the original packages/core/kinds/*.yaml table 1:1 (recovered
 # from 8adcb19; the jsdom fixture meliteCoreKinds.ts pins the same set).
 TABLE = CardKindTable(
     kinds=(

@@ -1,0 +1,1763 @@
+{
+  "model": "z-image-base",
+  "form": "form_generate",
+  "genre": "image",
+  "service": "comfyui",
+  "label": "Generate",
+  "sidebar_key": "generate",
+  "fields": [
+    {
+      "name": "preset",
+      "type": "select",
+      "label": "Workflow Preset",
+      "default": "",
+      "options": [
+        {
+          "value": "inpaint_lanpaint",
+          "label": "Inpaint (LanPaint)"
+        }
+      ],
+      "required": false,
+      "step": null,
+      "tooltip": "Recipe shortcut — the LanPaint quick reference (tuning defaults). Fills untouched fields; values you've set win.",
+      "section": "core",
+      "order": 0
+    },
+    {
+      "name": "prompt",
+      "type": "textarea",
+      "label": "Prompt",
+      "default": "",
+      "options": null,
+      "required": true,
+      "step": null,
+      "tooltip": null,
+      "section": "core",
+      "order": 0
+    },
+    {
+      "name": "negative_prompt",
+      "type": "textarea",
+      "label": "Negative Prompt",
+      "default": "blurry, low quality, deformed, bad anatomy, extra fingers, watermark, cropped",
+      "options": null,
+      "required": false,
+      "step": null,
+      "tooltip": null,
+      "section": "core",
+      "order": 1
+    },
+    {
+      "name": "width",
+      "type": "number",
+      "label": "Width",
+      "default": 1024,
+      "options": null,
+      "required": false,
+      "step": 16,
+      "tooltip": null,
+      "section": "core",
+      "order": 0,
+      "min": 256,
+      "max": 2048
+    },
+    {
+      "name": "height",
+      "type": "number",
+      "label": "Height",
+      "default": 1024,
+      "options": null,
+      "required": false,
+      "step": 16,
+      "tooltip": null,
+      "section": "core",
+      "order": 1,
+      "min": 256,
+      "max": 2048
+    },
+    {
+      "name": "seed",
+      "type": "seed",
+      "label": "Seed",
+      "default": -1,
+      "options": null,
+      "required": false,
+      "step": null,
+      "tooltip": null,
+      "section": "core",
+      "order": 4
+    },
+    {
+      "name": "steps",
+      "type": "number",
+      "label": "Steps",
+      "default": 50,
+      "options": null,
+      "required": false,
+      "step": 1,
+      "tooltip": null,
+      "section": "core",
+      "order": 0,
+      "min": 1,
+      "max": 100
+    },
+    {
+      "name": "cfg",
+      "type": "number",
+      "label": "Guidance Scale",
+      "default": 4,
+      "options": null,
+      "required": false,
+      "step": 0.1,
+      "tooltip": "How closely the diffusion follows the prompt. Higher = stricter.",
+      "section": "core",
+      "order": 1,
+      "min": 1,
+      "max": 20
+    },
+    {
+      "name": "sampler",
+      "type": "select",
+      "label": "Sampler",
+      "default": "er_sde",
+      "options": [
+        "euler",
+        "euler_ancestral",
+        "euler_cfg_pp",
+        "dpmpp_2m",
+        "dpmpp_2m_sde",
+        "dpmpp_2m_sde_gpu",
+        "dpmpp_3m_sde",
+        "dpm_fast",
+        "lcm",
+        "er_sde",
+        "lms",
+        "heun"
+      ],
+      "required": false,
+      "step": null,
+      "tooltip": null,
+      "section": "core",
+      "order": 2
+    },
+    {
+      "name": "scheduler",
+      "type": "select",
+      "label": "Scheduler",
+      "default": "normal",
+      "options": [
+        "normal",
+        "karras",
+        "exponential",
+        "sgm_uniform",
+        "simple",
+        "ddim_uniform",
+        "beta",
+        "linear_quadratic",
+        "kl_optimal"
+      ],
+      "required": false,
+      "step": null,
+      "tooltip": null,
+      "section": "core",
+      "order": 3
+    },
+    {
+      "name": "controlnet_strength_floor",
+      "type": "number",
+      "label": "ControlNet Strength Floor",
+      "default": 0,
+      "options": null,
+      "required": false,
+      "step": 0.05,
+      "tooltip": "Minimum strength any ControlNet in the stack may apply at. Entries below this are clamped UP (with a log line). 0.0 = no floor. Raise this when stacking many weak ControlNets that cost VRAM without visual benefit.",
+      "section": "advanced",
+      "order": 2,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "lanpaint_enabled",
+      "type": "boolean",
+      "label": "Force LanPaint",
+      "default": false,
+      "options": null,
+      "required": false,
+      "step": null,
+      "tooltip": null,
+      "section": "advanced",
+      "order": 1
+    },
+    {
+      "name": "lanpaint_num_steps",
+      "type": "number",
+      "label": "Num Steps",
+      "default": 20,
+      "options": null,
+      "required": false,
+      "step": 1,
+      "tooltip": null,
+      "section": "advanced",
+      "order": 2,
+      "min": 1,
+      "max": 100
+    },
+    {
+      "name": "lanpaint_step_size",
+      "type": "number",
+      "label": "Step Size",
+      "default": 1,
+      "options": null,
+      "required": false,
+      "step": 0.1,
+      "tooltip": null,
+      "section": "advanced",
+      "order": 3,
+      "min": 0.1,
+      "max": 2
+    },
+    {
+      "name": "lanpaint_lambda",
+      "type": "number",
+      "label": "Lambda",
+      "default": 0.5,
+      "options": null,
+      "required": false,
+      "step": 0.05,
+      "tooltip": null,
+      "section": "advanced",
+      "order": 4,
+      "min": 0,
+      "max": 2
+    },
+    {
+      "name": "lanpaint_beta",
+      "type": "number",
+      "label": "Beta",
+      "default": 0.5,
+      "options": null,
+      "required": false,
+      "step": 0.05,
+      "tooltip": null,
+      "section": "advanced",
+      "order": 5,
+      "min": 0,
+      "max": 2
+    },
+    {
+      "name": "lanpaint_friction",
+      "type": "number",
+      "label": "Friction",
+      "default": 0.5,
+      "options": null,
+      "required": false,
+      "step": 0.05,
+      "tooltip": null,
+      "section": "advanced",
+      "order": 6,
+      "min": 0,
+      "max": 2
+    },
+    {
+      "name": "lanpaint_prompt_mode",
+      "type": "select",
+      "label": "Prompt Mode",
+      "default": "negative",
+      "options": [
+        "negative",
+        "positive"
+      ],
+      "required": false,
+      "step": null,
+      "tooltip": null,
+      "section": "advanced",
+      "order": 7
+    },
+    {
+      "name": "mask_grow",
+      "type": "number",
+      "label": "Grow / Shrink",
+      "default": 8,
+      "options": null,
+      "required": false,
+      "step": 1,
+      "tooltip": null,
+      "section": "advanced",
+      "order": 8,
+      "min": -32,
+      "max": 32
+    },
+    {
+      "name": "mask_feather",
+      "type": "number",
+      "label": "Feather",
+      "default": 8,
+      "options": null,
+      "required": false,
+      "step": 1,
+      "tooltip": null,
+      "section": "advanced",
+      "order": 9,
+      "min": 0,
+      "max": 32
+    },
+    {
+      "name": "mask_threshold",
+      "type": "number",
+      "label": "Re-threshold",
+      "default": 0,
+      "options": null,
+      "required": false,
+      "step": 0.05,
+      "tooltip": null,
+      "section": "advanced",
+      "order": 10,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "mask_invert",
+      "type": "boolean",
+      "label": "Invert",
+      "default": false,
+      "options": null,
+      "required": false,
+      "step": null,
+      "tooltip": null,
+      "section": "advanced",
+      "order": 11
+    },
+    {
+      "name": "outpaint_top",
+      "type": "number",
+      "label": "Expand Top",
+      "default": 0,
+      "options": null,
+      "required": false,
+      "step": 8,
+      "tooltip": null,
+      "section": "advanced",
+      "order": 12,
+      "min": 0,
+      "max": 512
+    },
+    {
+      "name": "outpaint_right",
+      "type": "number",
+      "label": "Expand Right",
+      "default": 0,
+      "options": null,
+      "required": false,
+      "step": 8,
+      "tooltip": null,
+      "section": "advanced",
+      "order": 13,
+      "min": 0,
+      "max": 512
+    },
+    {
+      "name": "outpaint_bottom",
+      "type": "number",
+      "label": "Expand Bottom",
+      "default": 0,
+      "options": null,
+      "required": false,
+      "step": 8,
+      "tooltip": null,
+      "section": "advanced",
+      "order": 14,
+      "min": 0,
+      "max": 512
+    },
+    {
+      "name": "outpaint_left",
+      "type": "number",
+      "label": "Expand Left",
+      "default": 0,
+      "options": null,
+      "required": false,
+      "step": 8,
+      "tooltip": null,
+      "section": "advanced",
+      "order": 15,
+      "min": 0,
+      "max": 512
+    },
+    {
+      "name": "outpaint_overlap",
+      "type": "number",
+      "label": "Overlap",
+      "default": 16,
+      "options": null,
+      "required": false,
+      "step": 1,
+      "tooltip": null,
+      "section": "advanced",
+      "order": 16,
+      "min": 0,
+      "max": 64
+    }
+  ],
+  "schema_groups": [
+    {
+      "id": "preset",
+      "label": "Workflow Preset",
+      "tooltip": "",
+      "order": -12,
+      "collapsed": false,
+      "visible_when": null,
+      "columns": 1,
+      "layout": "grid",
+      "families": [
+        "z-image"
+      ],
+      "forms": null,
+      "hidden": false,
+      "zone": "params",
+      "fields": [
+        {
+          "name": "preset",
+          "type": "select",
+          "label": "Workflow Preset",
+          "default": "",
+          "min": null,
+          "max": null,
+          "step": null,
+          "options": [
+            {
+              "value": "inpaint_lanpaint",
+              "label": "Inpaint (LanPaint)"
+            }
+          ],
+          "tooltip": "Recipe shortcut — the LanPaint quick reference (tuning defaults). Fills untouched fields; values you've set win.",
+          "visible_when": null,
+          "order": 0,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "prompt",
+      "label": "Prompt",
+      "tooltip": "",
+      "order": -10,
+      "collapsed": false,
+      "visible_when": null,
+      "columns": 2,
+      "layout": "grid",
+      "families": null,
+      "forms": null,
+      "hidden": false,
+      "zone": "params",
+      "fields": [
+        {
+          "name": "prompt",
+          "type": "textarea",
+          "label": "Prompt",
+          "default": "",
+          "min": null,
+          "max": null,
+          "step": null,
+          "options": null,
+          "tooltip": "",
+          "visible_when": null,
+          "order": 0,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": true
+        },
+        {
+          "name": "negative_prompt",
+          "type": "textarea",
+          "label": "Negative Prompt",
+          "default": "blurry, low quality, deformed, bad anatomy, extra fingers, watermark, cropped",
+          "min": null,
+          "max": null,
+          "step": null,
+          "options": null,
+          "tooltip": "",
+          "visible_when": "negative_prompt != null",
+          "order": 1,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "resolution",
+      "label": "Resolution & Timing",
+      "tooltip": "",
+      "order": -5,
+      "collapsed": false,
+      "visible_when": null,
+      "columns": 3,
+      "layout": "grid",
+      "families": null,
+      "forms": null,
+      "hidden": false,
+      "zone": "params",
+      "fields": [
+        {
+          "name": "width",
+          "type": "number",
+          "label": "Width",
+          "default": 1024,
+          "min": 256,
+          "max": 2048,
+          "step": 16,
+          "options": null,
+          "tooltip": "",
+          "visible_when": null,
+          "order": 0,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "height",
+          "type": "number",
+          "label": "Height",
+          "default": 1024,
+          "min": 256,
+          "max": 2048,
+          "step": 16,
+          "options": null,
+          "tooltip": "",
+          "visible_when": null,
+          "order": 1,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "seed",
+          "type": "seed",
+          "label": "Seed",
+          "default": -1,
+          "min": null,
+          "max": null,
+          "step": null,
+          "options": null,
+          "tooltip": "",
+          "visible_when": null,
+          "order": 4,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "sampling",
+      "label": "Sampling",
+      "tooltip": "",
+      "order": 10,
+      "collapsed": false,
+      "visible_when": null,
+      "columns": 2,
+      "layout": "grid",
+      "families": null,
+      "forms": null,
+      "hidden": false,
+      "zone": "params",
+      "fields": [
+        {
+          "name": "steps",
+          "type": "number",
+          "label": "Steps",
+          "default": 50,
+          "min": 1,
+          "max": 100,
+          "step": 1,
+          "options": null,
+          "tooltip": "",
+          "visible_when": null,
+          "order": 0,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "cfg",
+          "type": "slider",
+          "label": "Guidance Scale",
+          "default": 4,
+          "min": 1,
+          "max": 20,
+          "step": 0.1,
+          "options": null,
+          "tooltip": "How closely the diffusion follows the prompt. Higher = stricter.",
+          "visible_when": null,
+          "order": 1,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "sampler",
+          "type": "select",
+          "label": "Sampler",
+          "default": "er_sde",
+          "min": null,
+          "max": null,
+          "step": null,
+          "options": [
+            "euler",
+            "euler_ancestral",
+            "euler_cfg_pp",
+            "dpmpp_2m",
+            "dpmpp_2m_sde",
+            "dpmpp_2m_sde_gpu",
+            "dpmpp_3m_sde",
+            "dpm_fast",
+            "lcm",
+            "er_sde",
+            "lms",
+            "heun"
+          ],
+          "tooltip": "",
+          "visible_when": null,
+          "order": 2,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "scheduler",
+          "type": "select",
+          "label": "Scheduler",
+          "default": "normal",
+          "min": null,
+          "max": null,
+          "step": null,
+          "options": [
+            "normal",
+            "karras",
+            "exponential",
+            "sgm_uniform",
+            "simple",
+            "ddim_uniform",
+            "beta",
+            "linear_quadratic",
+            "kl_optimal"
+          ],
+          "tooltip": "",
+          "visible_when": null,
+          "order": 3,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "loras_controlnet",
+      "label": "LoRAs & ControlNet",
+      "tooltip": "",
+      "order": 20,
+      "collapsed": true,
+      "visible_when": null,
+      "columns": 2,
+      "layout": "grid",
+      "families": null,
+      "forms": null,
+      "hidden": false,
+      "zone": "mods",
+      "fields": [
+        {
+          "name": "loras",
+          "type": "loras",
+          "label": "LoRAs",
+          "default": null,
+          "min": null,
+          "max": null,
+          "step": null,
+          "options": null,
+          "tooltip": "",
+          "visible_when": null,
+          "order": 0,
+          "width": 2,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "controlnet",
+          "type": "controlnet",
+          "label": "ControlNet",
+          "default": null,
+          "min": null,
+          "max": null,
+          "step": null,
+          "options": null,
+          "tooltip": "",
+          "visible_when": null,
+          "order": 1,
+          "width": 2,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "controlnet_strength_floor",
+          "type": "slider",
+          "label": "ControlNet Strength Floor",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.05,
+          "options": null,
+          "tooltip": "Minimum strength any ControlNet in the stack may apply at. Entries below this are clamped UP (with a log line). 0.0 = no floor. Raise this when stacking many weak ControlNets that cost VRAM without visual benefit.",
+          "visible_when": null,
+          "order": 2,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "lanpaint",
+      "label": "Inpaint (LanPaint)",
+      "tooltip": "",
+      "order": 30,
+      "collapsed": true,
+      "visible_when": null,
+      "columns": 2,
+      "layout": "grid",
+      "families": null,
+      "forms": null,
+      "hidden": true,
+      "zone": "params",
+      "fields": [
+        {
+          "name": "input_image",
+          "type": "image",
+          "label": "Image",
+          "default": null,
+          "min": null,
+          "max": null,
+          "step": null,
+          "options": null,
+          "tooltip": "",
+          "visible_when": null,
+          "order": -1,
+          "width": 2,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "lanpaint_mask",
+          "type": "image",
+          "label": "Inpaint Mask",
+          "default": null,
+          "min": null,
+          "max": null,
+          "step": null,
+          "options": null,
+          "tooltip": "RGBA PNG whose alpha channel marks the region to regenerate. When present alongside input_image, build_txt2img switches to LanPaintKSampler.",
+          "visible_when": "input_image != null",
+          "order": 0,
+          "width": 2,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "lanpaint_enabled",
+          "type": "boolean",
+          "label": "Force LanPaint",
+          "default": false,
+          "min": null,
+          "max": null,
+          "step": null,
+          "options": null,
+          "tooltip": "",
+          "visible_when": "input_image != null",
+          "order": 1,
+          "width": 2,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "lanpaint_num_steps",
+          "type": "number",
+          "label": "Num Steps",
+          "default": 20,
+          "min": 1,
+          "max": 100,
+          "step": 1,
+          "options": null,
+          "tooltip": "",
+          "visible_when": "lanpaint_enabled == true",
+          "order": 2,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "lanpaint_step_size",
+          "type": "slider",
+          "label": "Step Size",
+          "default": 1,
+          "min": 0.1,
+          "max": 2,
+          "step": 0.1,
+          "options": null,
+          "tooltip": "",
+          "visible_when": "lanpaint_enabled == true",
+          "order": 3,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "lanpaint_lambda",
+          "type": "slider",
+          "label": "Lambda",
+          "default": 0.5,
+          "min": 0,
+          "max": 2,
+          "step": 0.05,
+          "options": null,
+          "tooltip": "",
+          "visible_when": "lanpaint_enabled == true",
+          "order": 4,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "lanpaint_beta",
+          "type": "slider",
+          "label": "Beta",
+          "default": 0.5,
+          "min": 0,
+          "max": 2,
+          "step": 0.05,
+          "options": null,
+          "tooltip": "",
+          "visible_when": "lanpaint_enabled == true",
+          "order": 5,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "lanpaint_friction",
+          "type": "slider",
+          "label": "Friction",
+          "default": 0.5,
+          "min": 0,
+          "max": 2,
+          "step": 0.05,
+          "options": null,
+          "tooltip": "",
+          "visible_when": "lanpaint_enabled == true",
+          "order": 6,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "lanpaint_prompt_mode",
+          "type": "select",
+          "label": "Prompt Mode",
+          "default": "negative",
+          "min": null,
+          "max": null,
+          "step": null,
+          "options": [
+            "negative",
+            "positive"
+          ],
+          "tooltip": "",
+          "visible_when": "lanpaint_enabled == true",
+          "order": 7,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "mask_grow",
+          "type": "slider",
+          "label": "Grow / Shrink",
+          "default": 8,
+          "min": -32,
+          "max": 32,
+          "step": 1,
+          "options": null,
+          "tooltip": "",
+          "visible_when": "input_image != null",
+          "order": 8,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "mask_feather",
+          "type": "slider",
+          "label": "Feather",
+          "default": 8,
+          "min": 0,
+          "max": 32,
+          "step": 1,
+          "options": null,
+          "tooltip": "",
+          "visible_when": "input_image != null",
+          "order": 9,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "mask_threshold",
+          "type": "slider",
+          "label": "Re-threshold",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.05,
+          "options": null,
+          "tooltip": "",
+          "visible_when": "input_image != null",
+          "order": 10,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "mask_invert",
+          "type": "boolean",
+          "label": "Invert",
+          "default": false,
+          "min": null,
+          "max": null,
+          "step": null,
+          "options": null,
+          "tooltip": "",
+          "visible_when": "input_image != null",
+          "order": 11,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "outpaint_top",
+          "type": "slider",
+          "label": "Expand Top",
+          "default": 0,
+          "min": 0,
+          "max": 512,
+          "step": 8,
+          "options": null,
+          "tooltip": "",
+          "visible_when": "input_image != null",
+          "order": 12,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "outpaint_right",
+          "type": "slider",
+          "label": "Expand Right",
+          "default": 0,
+          "min": 0,
+          "max": 512,
+          "step": 8,
+          "options": null,
+          "tooltip": "",
+          "visible_when": "input_image != null",
+          "order": 13,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "outpaint_bottom",
+          "type": "slider",
+          "label": "Expand Bottom",
+          "default": 0,
+          "min": 0,
+          "max": 512,
+          "step": 8,
+          "options": null,
+          "tooltip": "",
+          "visible_when": "input_image != null",
+          "order": 14,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "outpaint_left",
+          "type": "slider",
+          "label": "Expand Left",
+          "default": 0,
+          "min": 0,
+          "max": 512,
+          "step": 8,
+          "options": null,
+          "tooltip": "",
+          "visible_when": "input_image != null",
+          "order": 15,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        },
+        {
+          "name": "outpaint_overlap",
+          "type": "slider",
+          "label": "Overlap",
+          "default": 16,
+          "min": 0,
+          "max": 64,
+          "step": 1,
+          "options": null,
+          "tooltip": "",
+          "visible_when": "input_image != null",
+          "order": 16,
+          "width": 1,
+          "extension": null,
+          "widget": null,
+          "families": null,
+          "forms": null,
+          "internal": false,
+          "required": false
+        }
+      ]
+    }
+  ],
+  "variants": [
+    {
+      "id": "turbo",
+      "label": "Turbo",
+      "defaults": {
+        "model": "z-image"
+      },
+      "group": "Variant",
+      "hint": "8-step distilled — fast (DEFAULT)",
+      "default_preset": null,
+      "route": "z-image",
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "note": null,
+      "hides_groups": null,
+      "only_routes": null,
+      "strip": null,
+      "owner": null,
+      "live": null
+    },
+    {
+      "id": "base",
+      "label": "Base",
+      "defaults": {
+        "model": "z-image-base"
+      },
+      "group": "Variant",
+      "hint": "50-step base checkpoint — higher quality, LoRA training",
+      "default_preset": null,
+      "route": "z-image-base",
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "note": null,
+      "hides_groups": null,
+      "only_routes": null,
+      "strip": null,
+      "owner": null,
+      "live": null
+    },
+    {
+      "id": "int8",
+      "label": "INT8 ConvRot",
+      "defaults": {
+        "model": "z-image-base-int8"
+      },
+      "group": "Quant",
+      "hint": "50-step base — DEFAULT",
+      "default_preset": null,
+      "route": "z-image-base-int8",
+      "engine": "comfyui",
+      "quant": "int8",
+      "vram_peak_gb": 14,
+      "note": null,
+      "hides_groups": null,
+      "only_routes": null,
+      "strip": [
+        "z-image-base",
+        "z-image-base-int8"
+      ],
+      "owner": "base",
+      "live": null
+    }
+  ],
+  "features": {
+    "retake": null,
+    "variant_groups": {
+      "Variant": {
+        "label": "Variant",
+        "tooltip": "Base checkpoint — Turbo (8-step distilled, fast) or Base (50-step, higher quality / LoRA training).",
+        "filters_on": null
+      },
+      "Quant": {
+        "label": "Quant",
+        "tooltip": "Quantization tier — INT8 ConvRot (the official Comfy-Org convrot artifact, DEFAULT) or BF16. The Q8/Q5 GGUF tiers were retired 2026-08-21 — ComfyUI-approved safetensors only. Each tier exists for BOTH variants; the composer picks the combined route.",
+        "filters_on": "Variant"
+      }
+    },
+    "modifiers": [
+      {
+        "kind": "clip_skip",
+        "label": "CLIP Skip",
+        "cardinality": "scalar",
+        "max_stack": null,
+        "param_key": "clip_skip",
+        "fields": [
+          {
+            "name": "count",
+            "type": "integer",
+            "label": "Skip Layers",
+            "min": -12,
+            "max": 12,
+            "step": null,
+            "options": null,
+            "default": -1,
+            "tooltip": "Negative values skip the last N CLIP transformer layers — -1 removes the final layer (the common anime-style tuning)."
+          }
+        ],
+        "options": [],
+        "upload_dir": null,
+        "tooltip": "Skip the last N CLIP transformer layers before conditioning.",
+        "declaration_only": null,
+        "order": 2,
+        "options_scanned": null
+      },
+      {
+        "kind": "controlnet",
+        "label": "ControlNet Stack",
+        "cardinality": "list",
+        "max_stack": 5,
+        "param_key": "controlnets",
+        "fields": [
+          {
+            "name": "type",
+            "type": "select",
+            "label": "Type",
+            "min": null,
+            "max": null,
+            "step": null,
+            "options": null,
+            "default": null,
+            "tooltip": null
+          },
+          {
+            "name": "image_b64",
+            "type": "image",
+            "label": "Conditioning",
+            "min": null,
+            "max": null,
+            "step": null,
+            "options": null,
+            "default": null,
+            "tooltip": null
+          },
+          {
+            "name": "artifact",
+            "type": "string",
+            "label": "Artifact",
+            "min": null,
+            "max": null,
+            "step": null,
+            "options": null,
+            "default": null,
+            "tooltip": "Flow-wired Conditioning source — the ctx artifact name (e.g. ``front_pose``) produced by an upstream brick. Takes precedence over image_b64 at run time: when the artifact is present in ctx, the brick uploads THAT file as the Conditioning image. Set by the flow YAML (``controlnets: [{type: openpose, artifact: front_pose, ...}]``) and surfaced read-only in the card so the user can see which upstream brick feeds this CN."
+          },
+          {
+            "name": "strength",
+            "type": "float",
+            "label": "Strength",
+            "min": 0,
+            "max": 2,
+            "step": 0.05,
+            "options": null,
+            "default": 0.7,
+            "tooltip": null
+          },
+          {
+            "name": "start_percent",
+            "type": "float",
+            "label": "Start",
+            "min": 0,
+            "max": 1,
+            "step": 0.05,
+            "options": null,
+            "default": 0,
+            "tooltip": null
+          },
+          {
+            "name": "end_percent",
+            "type": "float",
+            "label": "End",
+            "min": 0,
+            "max": 1,
+            "step": 0.05,
+            "options": null,
+            "default": 1,
+            "tooltip": null
+          }
+        ],
+        "options": [
+          {
+            "value": "depth",
+            "label": "Depth",
+            "tooltip": "Body volume + pose lock. The SOMA flow auto-injects this for character generation.",
+            "model": "z-image-fun-union-2.1/Z-Image-Turbo-Fun-Controlnet-Union-2.1-2602-8steps.safetensors",
+            "source": null,
+            "defaults": {
+              "strength": 1
+            },
+            "installed": true,
+            "metadata": {
+              "preprocessor": "depth_anything"
+            }
+          },
+          {
+            "value": "pose",
+            "label": "Body Pose (OpenPose)",
+            "tooltip": "Joint sticks — skeleton-driven pose control. Pairs with depth for full pose lock.",
+            "model": "z-image-fun-union-2.1/Z-Image-Turbo-Fun-Controlnet-Union-2.1-2602-8steps.safetensors",
+            "source": null,
+            "defaults": {
+              "strength": 0.8
+            },
+            "installed": true,
+            "metadata": {
+              "preprocessor": "dwpose"
+            }
+          },
+          {
+            "value": "canny",
+            "label": "Edges (Canny)",
+            "tooltip": "Strict edge preservation. Good for outlines / silhouettes.",
+            "model": "z-image-fun-union-2.1/Z-Image-Turbo-Fun-Controlnet-Union-2.1-2602-8steps.safetensors",
+            "source": null,
+            "defaults": {
+              "strength": 0.7
+            },
+            "installed": true,
+            "metadata": {
+              "preprocessor": "canny"
+            }
+          },
+          {
+            "value": "mlsd",
+            "label": "Straight Lines (MLSD)",
+            "tooltip": "Architectural / hard-surface lines. Good for props and environments.",
+            "model": "z-image-fun-union-2.1/Z-Image-Turbo-Fun-Controlnet-Union-2.1-2602-8steps.safetensors",
+            "source": null,
+            "defaults": {
+              "strength": 0.7
+            },
+            "installed": true,
+            "metadata": {
+              "preprocessor": "mlsd"
+            }
+          },
+          {
+            "value": "hed",
+            "label": "Soft Edges (HED)",
+            "tooltip": "Sketch-quality soft edges. Good for painterly styles.",
+            "model": "z-image-fun-union-2.1/Z-Image-Turbo-Fun-Controlnet-Union-2.1-2602-8steps.safetensors",
+            "source": null,
+            "defaults": {
+              "strength": 0.7
+            },
+            "installed": true,
+            "metadata": {
+              "preprocessor": "hed"
+            }
+          },
+          {
+            "value": "scribble",
+            "label": "Scribble",
+            "tooltip": "Rough sketch input — the CN treats any high-contrast marks as structure.",
+            "model": "z-image-fun-union-2.1/Z-Image-Turbo-Fun-Controlnet-Union-2.1-2602-8steps.safetensors",
+            "source": null,
+            "defaults": {
+              "strength": 0.7
+            },
+            "installed": true,
+            "metadata": {
+              "preprocessor": "pidinet"
+            }
+          },
+          {
+            "value": "gray",
+            "label": "Grayscale Reference",
+            "tooltip": "Tonal reference — lighting and shading guide.",
+            "model": "z-image-fun-union-2.1/Z-Image-Turbo-Fun-Controlnet-Union-2.1-2602-8steps.safetensors",
+            "source": null,
+            "defaults": {
+              "strength": 0.6
+            },
+            "installed": true,
+            "metadata": {
+              "preprocessor": "none"
+            }
+          }
+        ],
+        "upload_dir": null,
+        "tooltip": null,
+        "declaration_only": null,
+        "order": 0,
+        "options_scanned": true
+      },
+      {
+        "kind": "ip_adapter",
+        "label": "IP-Adapter Stack",
+        "cardinality": "list",
+        "max_stack": 5,
+        "param_key": "ip_adapters",
+        "fields": [
+          {
+            "name": "image",
+            "type": "image",
+            "label": "Reference Image",
+            "min": null,
+            "max": null,
+            "step": null,
+            "options": null,
+            "default": null,
+            "tooltip": null
+          },
+          {
+            "name": "kind",
+            "type": "select",
+            "label": "Mode",
+            "min": null,
+            "max": null,
+            "step": null,
+            "options": [
+              "style",
+              "composition",
+              "face",
+              "generic"
+            ],
+            "default": "style",
+            "tooltip": null
+          },
+          {
+            "name": "weight",
+            "type": "float",
+            "label": "Weight",
+            "min": 0,
+            "max": 2,
+            "step": 0.05,
+            "options": null,
+            "default": 1,
+            "tooltip": null
+          }
+        ],
+        "options": [
+          {
+            "value": "style",
+            "label": "Style",
+            "tooltip": "Encoder-only LIGHT preset — transfers look/feel.",
+            "model": "ip-adapter-light_v11.safetensors",
+            "source": null,
+            "defaults": {
+              "weight": 1
+            },
+            "installed": null,
+            "metadata": {
+              "clip_vision": "IPAdapter_model.safetensors"
+            }
+          },
+          {
+            "value": "composition",
+            "label": "Composition",
+            "tooltip": "COMPOSITION preset — borrows layout/structure.",
+            "model": "ip-adapter-plus_sd15.safetensors",
+            "source": null,
+            "defaults": {
+              "weight": 1
+            },
+            "installed": null,
+            "metadata": {
+              "clip_vision": "IPAdapter_model.safetensors"
+            }
+          },
+          {
+            "value": "face",
+            "label": "Face",
+            "tooltip": "FACEID preset — identity lock.",
+            "model": "ip-adapter-faceid-plusv2_sd15.safetensors",
+            "source": null,
+            "defaults": {
+              "weight": 0.85
+            },
+            "installed": null,
+            "metadata": {
+              "clip_vision": "IPAdapter_model.safetensors"
+            }
+          },
+          {
+            "value": "generic",
+            "label": "Generic",
+            "tooltip": "STANDARD preset — unspecified projection.",
+            "model": "ip-adapter_sd15.safetensors",
+            "source": null,
+            "defaults": {
+              "weight": 1
+            },
+            "installed": null,
+            "metadata": {
+              "clip_vision": "IPAdapter_model.safetensors"
+            }
+          }
+        ],
+        "upload_dir": null,
+        "tooltip": null,
+        "declaration_only": null,
+        "order": 3,
+        "options_scanned": null
+      },
+      {
+        "kind": "lora",
+        "label": "LoRA Adapters",
+        "cardinality": "list",
+        "max_stack": null,
+        "param_key": "loras",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string",
+            "label": "Adapter",
+            "min": null,
+            "max": null,
+            "step": null,
+            "options": null,
+            "default": null,
+            "tooltip": null
+          },
+          {
+            "name": "strength",
+            "type": "float",
+            "label": "Strength",
+            "min": -2,
+            "max": 5,
+            "step": 0.05,
+            "options": null,
+            "default": 1,
+            "tooltip": null
+          }
+        ],
+        "options": [
+          {
+            "value": "z-image/z-image-3d-mmorpg",
+            "label": "z-image/z-image-3d-mmorpg",
+            "tooltip": null,
+            "model": "z-image/z-image-3d-mmorpg.safetensors",
+            "source": null,
+            "defaults": null,
+            "installed": true,
+            "metadata": null
+          },
+          {
+            "value": "z-image/z-image-classic-painting",
+            "label": "z-image/z-image-classic-painting",
+            "tooltip": null,
+            "model": "z-image/z-image-classic-painting.safetensors",
+            "source": null,
+            "defaults": null,
+            "installed": true,
+            "metadata": null
+          },
+          {
+            "value": "z-image/z-image-coloring-book",
+            "label": "z-image/z-image-coloring-book",
+            "tooltip": null,
+            "model": "z-image/z-image-coloring-book.safetensors",
+            "source": null,
+            "defaults": null,
+            "installed": true,
+            "metadata": null
+          },
+          {
+            "value": "z-image/z-image-dejpeg",
+            "label": "z-image/z-image-dejpeg",
+            "tooltip": null,
+            "model": "z-image/z-image-dejpeg.safetensors",
+            "source": null,
+            "defaults": null,
+            "installed": true,
+            "metadata": null
+          },
+          {
+            "value": "z-image/z-image-pixel-art",
+            "label": "z-image/z-image-pixel-art",
+            "tooltip": null,
+            "model": "z-image/z-image-pixel-art.safetensors",
+            "source": null,
+            "defaults": null,
+            "installed": true,
+            "metadata": null
+          },
+          {
+            "value": "z-image/z-image-realism",
+            "label": "z-image/z-image-realism",
+            "tooltip": null,
+            "model": "z-image/z-image-realism.safetensors",
+            "source": null,
+            "defaults": null,
+            "installed": true,
+            "metadata": null
+          },
+          {
+            "value": "z-image/z-image-sunbleached",
+            "label": "z-image/z-image-sunbleached",
+            "tooltip": null,
+            "model": "z-image/z-image-sunbleached.safetensors",
+            "source": null,
+            "defaults": null,
+            "installed": true,
+            "metadata": null
+          }
+        ],
+        "upload_dir": "z-image",
+        "tooltip": null,
+        "declaration_only": null,
+        "order": 1,
+        "options_scanned": true
+      }
+    ],
+    "outputs": [
+      {
+        "id": "png",
+        "label": "PNG",
+        "default": true,
+        "params": null
+      }
+    ]
+  },
+  "guide": {
+    "title": "Z-Image Prompting Guide",
+    "sections": [
+      {
+        "label": "Format",
+        "body": "Continuous descriptive prose (NOT tag lists)",
+        "code": null,
+        "list_": null
+      },
+      {
+        "label": "Length",
+        "body": "80-200 words",
+        "code": null,
+        "list_": null
+      },
+      {
+        "label": "Structure (order matters)",
+        "body": null,
+        "code": null,
+        "list_": [
+          "Subject identity and action",
+          "Physical description (face, hair, clothing, textures)",
+          "Hand/object interactions and spatial details",
+          "Background/environment with depth layers",
+          "Lighting, atmosphere, color palette",
+          "Camera/framing (for photorealism)"
+        ]
+      },
+      {
+        "label": "What to include",
+        "body": null,
+        "code": null,
+        "list_": [
+          "Specific demographics: `young Chinese woman` not `woman`",
+          "Specific garments: `cream-colored wool turtleneck`",
+          "Fabric behavior: `slightly wrinkled linen`",
+          "Spatial positions: `on the left`, `in the foreground`",
+          "Lighting: `warm golden-hour sunlight from camera left`"
+        ]
+      },
+      {
+        "label": "What to avoid",
+        "body": null,
+        "code": null,
+        "list_": [
+          "Meta-tags: `8K, masterpiece, trending on artstation`",
+          "Other-model syntax: `score_9, plms, euler a`",
+          "Negation: `no hat` → use `bareheaded`"
+        ]
+      },
+      {
+        "label": "Negative prompts",
+        "body": "Active for the Base variant — use for quality issues and unwanted features. The Turbo variant ignores negative prompts (CFG disabled).",
+        "code": null,
+        "list_": null
+      }
+    ]
+  },
+  "enhance_prompt": "You are a Z-Image prompting expert. Transform the user's rough prompt into an optimal Z-Image prompt.\n\n- This is for Z-Image Base. Key facts that affect how you write:\n- Negative prompts are ACTIVE and are the PRIMARY steering mechanism\n- ALWAYS produce an effective negative prompt in the \"negative\" field: quality degraders (blurry, low quality, distorted), anatomical failures (extra fingers, bad anatomy, deformed hands), and style bleed the user DIDN'T ask for\n- Match the negative's language to the positive's steering — never override the user's stated style intent\n- Keep negative prompts under 50 words\n- Positive prompts: aim for 80-200 words\n- This model is more forgiving and produces higher diversity than Turbo\n\nWrite the prompt as continuous descriptive prose — NOT comma-separated tag lists. Natural language produces better results than keyword stacks on these models.\n\n## Structure (order matters — lead with what's most important)\n1. Subject identity and core action/pose\n2. Detailed physical description — body, face, hair, clothing, textures\n3. Hand/object interactions and spatial details\n4. Background/environment with depth layers — near, mid, far\n5. Lighting, atmosphere, and color palette\n6. Camera/lens/framing (only if photorealistic)\n\n## Enhancement Methodology\n1. Lock the user's core intent — subject, action, colors, text are IMMUTABLE\n2. If the request is abstract, construct a complete visualizable scene first\n3. Inject professional aesthetics: composition, lighting, material textures, color scheme, spatial depth\n4. Any text that should appear IN the image must be in double quotes: sign reading \"OPEN\"\n5. Output must be objective and concrete. No metaphors or emotional rhetoric\n\n## What to include\n- Specific demographics when relevant: \"young Chinese woman\" not \"woman\"\n- Facial features, expression, gaze direction\n- Hair: style, color, length, accessories\n- Garments named specifically: \"cream-colored wool turtleneck\" not \"sweater\"\n- Fabric behavior: \"slightly wrinkled linen\", \"glossy patent leather\"\n- Spatial positions: \"on the left\", \"in the foreground\", \"behind her\"\n- Light source, direction, color temperature: \"warm golden-hour sunlight from camera left\"\n- Camera details for photorealism: \"85mm portrait lens, shallow depth of field\"\n\n## What NEVER to include\n- Meta-tags: \"8K\", \"masterpiece\", \"best quality\", \"highly detailed\", \"trending on artstation\"\n- Other-model syntax: \"score_9\", \"plms\", \"euler a\", \"dpm++ 2m\"\n- Negation in positive prompts: \"no hat\" → rephrase as \"bareheaded\"\n- Empty/vague backgrounds — always describe the environment\n\nChinese and English both work natively — you may mix them.\n\n## Output format — STRICT\nReturn ONLY a single JSON object. No markdown fences, no explanation, no\ntext before or after. The whole response must be parseable by JSON.parse.\n\nSchema:\n  {\"positive\": \"<the enhanced positive prompt>\", \"negative\": \"<negative prompt or empty string>\"}\n\nRules:\n- \"positive\" is always filled with the enhanced prompt per the methodology above.\n- \"negative\" is filled with an effective negative prompt IF the model uses\n  negatives (you noted whether it does above). Otherwise set \"negative\" to \"\".\n- Both values are plain strings. Escape inner quotes and newlines per JSON.\n- Never wrap the whole response in extra quotes. The JSON object itself is\n  the response.\n",
+  "enhance_prompts": {
+    "prompt": "You are a Z-Image prompting expert. Transform the user's rough prompt into an optimal Z-Image prompt.\n\n- This is for Z-Image Base. Key facts that affect how you write:\n- Negative prompts are ACTIVE and are the PRIMARY steering mechanism\n- ALWAYS produce an effective negative prompt in the \"negative\" field: quality degraders (blurry, low quality, distorted), anatomical failures (extra fingers, bad anatomy, deformed hands), and style bleed the user DIDN'T ask for\n- Match the negative's language to the positive's steering — never override the user's stated style intent\n- Keep negative prompts under 50 words\n- Positive prompts: aim for 80-200 words\n- This model is more forgiving and produces higher diversity than Turbo\n\nWrite the prompt as continuous descriptive prose — NOT comma-separated tag lists. Natural language produces better results than keyword stacks on these models.\n\n## Structure (order matters — lead with what's most important)\n1. Subject identity and core action/pose\n2. Detailed physical description — body, face, hair, clothing, textures\n3. Hand/object interactions and spatial details\n4. Background/environment with depth layers — near, mid, far\n5. Lighting, atmosphere, and color palette\n6. Camera/lens/framing (only if photorealistic)\n\n## Enhancement Methodology\n1. Lock the user's core intent — subject, action, colors, text are IMMUTABLE\n2. If the request is abstract, construct a complete visualizable scene first\n3. Inject professional aesthetics: composition, lighting, material textures, color scheme, spatial depth\n4. Any text that should appear IN the image must be in double quotes: sign reading \"OPEN\"\n5. Output must be objective and concrete. No metaphors or emotional rhetoric\n\n## What to include\n- Specific demographics when relevant: \"young Chinese woman\" not \"woman\"\n- Facial features, expression, gaze direction\n- Hair: style, color, length, accessories\n- Garments named specifically: \"cream-colored wool turtleneck\" not \"sweater\"\n- Fabric behavior: \"slightly wrinkled linen\", \"glossy patent leather\"\n- Spatial positions: \"on the left\", \"in the foreground\", \"behind her\"\n- Light source, direction, color temperature: \"warm golden-hour sunlight from camera left\"\n- Camera details for photorealism: \"85mm portrait lens, shallow depth of field\"\n\n## What NEVER to include\n- Meta-tags: \"8K\", \"masterpiece\", \"best quality\", \"highly detailed\", \"trending on artstation\"\n- Other-model syntax: \"score_9\", \"plms\", \"euler a\", \"dpm++ 2m\"\n- Negation in positive prompts: \"no hat\" → rephrase as \"bareheaded\"\n- Empty/vague backgrounds — always describe the environment\n\nChinese and English both work natively — you may mix them.\n\n## Output format — STRICT\nReturn ONLY a single JSON object. No markdown fences, no explanation, no\ntext before or after. The whole response must be parseable by JSON.parse.\n\nSchema:\n  {\"positive\": \"<the enhanced positive prompt>\", \"negative\": \"<negative prompt or empty string>\"}\n\nRules:\n- \"positive\" is always filled with the enhanced prompt per the methodology above.\n- \"negative\" is filled with an effective negative prompt IF the model uses\n  negatives (you noted whether it does above). Otherwise set \"negative\" to \"\".\n- Both values are plain strings. Escape inner quotes and newlines per JSON.\n- Never wrap the whole response in extra quotes. The JSON object itself is\n  the response.\n"
+  },
+  "defaults": {
+    "seed": -1,
+    "controlnet_strength_floor": 0,
+    "lanpaint_beta": 0.5,
+    "lanpaint_enabled": false,
+    "lanpaint_friction": 0.5,
+    "lanpaint_lambda": 0.5,
+    "lanpaint_num_steps": 20,
+    "lanpaint_prompt_mode": "negative",
+    "lanpaint_step_size": 1,
+    "mask_feather": 8,
+    "mask_grow": 8,
+    "mask_invert": false,
+    "mask_threshold": 0,
+    "outpaint_bottom": 0,
+    "outpaint_left": 0,
+    "outpaint_overlap": 16,
+    "outpaint_right": 0,
+    "outpaint_top": 0,
+    "scheduler": "normal",
+    "width": 1024,
+    "height": 1024,
+    "steps": 50,
+    "sampler": "er_sde",
+    "cfg": 4,
+    "negative_prompt": "blurry, low quality, deformed, bad anatomy, extra fingers, watermark, cropped",
+    "model": "z-image-base"
+  },
+  "loader_info": {
+    "loader": "checkpoint",
+    "vae": "ae.safetensors",
+    "text_encoder": "qwen_3_4b.safetensors",
+    "clip_type": "qwen_image"
+  },
+  "contract": null
+}

@@ -1,11 +1,11 @@
 """test_web_family.py — the web-family alignment gate.
 
-The contract under test (plugins/web/README.md):
+The contract under test (packages/web/README.md):
 
-  plugins/web/editor    = THE card surface (builds to editor/dist)
-  plugins/web/dsh       = DSH windows onto it (deck HOST serves the dist,
+  packages/web/editor    = THE card surface (builds to editor/dist)
+  packages/web/dsh       = DSH windows onto it (deck HOST serves the dist,
                           card-view CLIENT embeds it in iframes)
-  plugins/harness/dsh   = agent abilities (tools/presets/provisioning)
+  packages/harness/dsh   = agent abilities (tools/presets/provisioning)
 
 They are ONE card surface seen through two windows — the split is logical.
 This gate encodes that alignment as DATA (a pydantic-style table of
@@ -55,13 +55,13 @@ EMBED_BRIDGE_FILE = "src/client/embed-bridge.ts"
 
 # What the root workspace MUST glob (members resolve through these):
 REQUIRED_WORKSPACE_GLOBS = (
-    "plugins/harness/dsh/*",
-    "plugins/web/dsh/*",
-    "plugins/web/editor",
+    "packages/harness/dsh/*",
+    "packages/web/dsh/*",
+    "packages/web/editor",
     "web/*",
 )
 
-# provisioner links: name → path from plugins/harness/dsh/provisioner
+# provisioner links: name → path from packages/harness/dsh/provisioner
 PROVISIONER_LINKS = {
     "@melite-plugin/dsh-tools":     "../melite-tools",
     "@melite-plugin/dsh-card-view": "../../../web/dsh/melite-card-view",
@@ -86,7 +86,7 @@ def _pkg_name(member_dir: str) -> str | None:
 
 @pytest.mark.parametrize("d,name", sorted(WEB_DSH_MEMBERS.items()))
 def test_web_dsh_member_exists(d: str, name: str | None) -> None:
-    path = os.path.join(REPO, "plugins", "web", "dsh", d)
+    path = os.path.join(REPO, "packages", "web", "dsh", d)
     assert os.path.isdir(path), f"web/dsh/{d} missing"
 
 
@@ -94,13 +94,13 @@ def test_web_dsh_member_exists(d: str, name: str | None) -> None:
 def test_web_dsh_member_package_name(d: str, name: str | None) -> None:
     if name is None:
         pytest.skip(f"{d} has no package")
-    path = os.path.join(REPO, "plugins", "web", "dsh", d)
+    path = os.path.join(REPO, "packages", "web", "dsh", d)
     assert _pkg_name(path) == name, _pkg_name(path)
 
 
 @pytest.mark.parametrize("d,name", sorted(HARNESS_DSH_MEMBERS.items()))
 def test_harness_dsh_member_exists(d: str, name: str | None) -> None:
-    path = os.path.join(REPO, "plugins", "harness", "dsh", d)
+    path = os.path.join(REPO, "packages", "harness", "dsh", d)
     assert os.path.isdir(path), f"harness/dsh/{d} missing"
 
 
@@ -108,28 +108,28 @@ def test_harness_dsh_member_exists(d: str, name: str | None) -> None:
 def test_harness_dsh_member_package_name(d: str, name: str | None) -> None:
     if name is None:
         pytest.skip(f"{d} has no package")
-    path = os.path.join(REPO, "plugins", "harness", "dsh", d)
+    path = os.path.join(REPO, "packages", "harness", "dsh", d)
     assert _pkg_name(path) == name, _pkg_name(path)
 
 
 def test_editor_exists() -> None:
-    ed = os.path.join(REPO, "plugins", "web", "editor")
+    ed = os.path.join(REPO, "packages", "web", "editor")
     assert os.path.isdir(ed)
 
 
 def test_editor_package_name() -> None:
-    ed = os.path.join(REPO, "plugins", "web", "editor")
+    ed = os.path.join(REPO, "packages", "web", "editor")
     assert _pkg_name(ed) == EDITOR_PKG_NAME, _pkg_name(ed)
 
 
 def test_plugins_dsh_retired() -> None:
-    assert not os.path.exists(os.path.join(REPO, "plugins", "dsh"))
+    assert not os.path.exists(os.path.join(REPO, "packages", "dsh"))
 
 
 # ── 2. the embedding: EDITOR_DIST traversal ─────────────────────────────
 
 def test_deck_editor_dist_traversal() -> None:
-    deck_src = os.path.join(REPO, "plugins", "web", "dsh",
+    deck_src = os.path.join(REPO, "packages", "web", "dsh",
                             "melite-card-deck", "src", "index.ts")
     assert os.path.isfile(deck_src), "deck src missing"
     src = open(deck_src, encoding="utf-8").read()
@@ -139,17 +139,17 @@ def test_deck_editor_dist_traversal() -> None:
     assert m, "EDITOR_DIST declares the family-relative traversal"
     parts = [p.strip().strip("'\"") for p in m.group(1).split(",")[1:]]
     assert parts == ["..", "..", "..", "editor", "dist"], parts
-    lib = os.path.join(REPO, "plugins", "web", "dsh",
+    lib = os.path.join(REPO, "packages", "web", "dsh",
                        "melite-card-deck", "lib")
     resolved = os.path.normpath(os.path.join(lib, *parts))
-    expected = os.path.join(REPO, "plugins", "web", "editor", "dist")
+    expected = os.path.join(REPO, "packages", "web", "editor", "dist")
     assert resolved == expected, f"{resolved} != {expected}"
 
 
 # ── 3. the bridge ───────────────────────────────────────────────────────
 
 def test_card_view_embeds_deck_bridge() -> None:
-    cv = os.path.join(REPO, "plugins", "web", "dsh", "melite-card-view",
+    cv = os.path.join(REPO, "packages", "web", "dsh", "melite-card-view",
                       "src", "client", "FlowCards.tsx")
     assert os.path.isfile(cv), "card-view FlowCards.tsx missing"
     src = open(cv, encoding="utf-8").read()
@@ -157,7 +157,7 @@ def test_card_view_embeds_deck_bridge() -> None:
 
 
 def test_embed_bridge_file_exists() -> None:
-    bridge = os.path.join(REPO, "plugins", "web", "dsh",
+    bridge = os.path.join(REPO, "packages", "web", "dsh",
                           "melite-card-deck", EMBED_BRIDGE_FILE)
     assert os.path.isfile(bridge), bridge
 
@@ -176,7 +176,7 @@ def test_root_workspace_globs() -> None:
 # ── 5. provisioner links both families ──────────────────────────────────
 
 def test_provisioner_links() -> None:
-    pj = os.path.join(REPO, "plugins", "harness", "dsh", "provisioner",
+    pj = os.path.join(REPO, "packages", "harness", "dsh", "provisioner",
                       "package.json")
     assert os.path.isfile(pj), "provisioner package.json missing"
     with open(pj, encoding="utf-8") as f:

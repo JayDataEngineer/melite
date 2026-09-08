@@ -36,7 +36,7 @@ cluttering the main inputs". Three deliberate changes:
 
 Design record: docs/design/image-edit-optional-slots-mask-mod.md.
 Walls: tests/walls/suites/test_python_cards.py (image-edit slot
-walls), tests/unit/plugins/test_card_param_gates.py (null law).
+walls), tests/unit/packages/test_card_param_gates.py (null law).
 
 ## 2026-09-05 — button order: loras door + mask tile bag join the card surface
 
@@ -61,9 +61,9 @@ an addable tile kind. Four deliberate hunks, all class-driven:
   membership grows by the bag anchor.
 
 Source: `py/melite_cards/dsl.py` (the `Mask` field type),
-`plugins/engines/comfyui/models/image/qwen-img-edit-2511/mods/
+`packages/engines/comfyui/models/image/qwen-img-edit-2511/mods/
 {loras,lanpaint}.py` + `model.py` (the boarded packs),
-`plugins/engines/comfyui/action_cards/image/image-edit/py/
+`packages/engines/comfyui/action_cards/image/image-edit/py/
 {card,schema,compose,renderer}.py` (admission + the runtime-catalog
 door + the LoraLoaderModelOnly stack). Regenerated from the class
 fragment (`field_spec` projected through the `FormFieldRow` atom —

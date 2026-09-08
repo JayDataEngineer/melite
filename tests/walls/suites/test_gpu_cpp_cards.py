@@ -200,7 +200,7 @@ def _sidecar(run_id: str) -> dict[str, str | int | float | bool | list[str] | li
 
 @unittest.skipIf(not os.environ.get("DSH_GPU_TESTS")
                  and not os.path.isdir(os.path.join(
-                     REPO, "plugins/engines/node/anycreature/vendor/"
+                     REPO, "packages/engines/node/anycreature/vendor/"
                      "anyCreature/engine")),
     "anyCreature vendor tree absent — run git submodule update "
     "--init to enable the live cpp GPU suite")

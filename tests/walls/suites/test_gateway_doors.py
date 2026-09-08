@@ -57,7 +57,7 @@ def test_generated_doors_are_fresh() -> None:
 def test_the_frontend_compiles_against_the_door_gate() -> None:
     """tsc IS the gate: every apiFetch/apiJson call site must satisfy
     FetchUrl. Unserved doors compile ONLY through unservedDoor(…)."""
-    editor = REPO / "plugins" / "web" / "editor"
+    editor = REPO / "packages" / "web" / "editor"
     tsc = editor / "node_modules" / ".bin" / "tsc"
     if not tsc.exists():
         import pytest

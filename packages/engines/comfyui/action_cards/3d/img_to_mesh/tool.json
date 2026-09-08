@@ -1,0 +1,372 @@
+[
+  {
+    "name": "img_to_mesh_card",
+    "version": 1,
+    "kind": "card-compose",
+    "card": "img-to-mesh",
+    "model": "trellis2-native",
+    "stage_title": "Image → 3D",
+    "description": "The 3D lane — lift one image into a textured mesh (.glb) on native TRELLIS.2 (DINOv3 conditioning) or native Pixal3D (pixel-aligned + MoGe camera FOV, hero tier), or copy a rig onto a target GLB (transfer_rig); one surface, one arm per family.",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "enum": [
+            "trellis2-native",
+            "pixal3d",
+            "transfer_rig"
+          ],
+          "description": "The boarded family to run — the request's top-level `model`. Options: trellis2-native, pixal3d, transfer_rig.",
+          "default": "trellis2-native"
+        },
+        "input_image": {
+          "type": "string",
+          "format": "path",
+          "description": "One clear object, tight framing. Background is removed automatically (birefnet) unless bg_removal=off.",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "rigged_glb": {
+          "type": "string",
+          "format": "path",
+          "description": "The SOMA-rigged clean mesh — JOINTS_0/WEIGHTS_0 + armature. The rig donor.",
+          "x-families": [
+            "transfer_rig"
+          ]
+        },
+        "target_glb": {
+          "type": "string",
+          "format": "path",
+          "description": "The clothed mesh — geometry + textures, no rig. Receives the rig.",
+          "x-families": [
+            "transfer_rig"
+          ]
+        },
+        "seed": {
+          "type": "integer",
+          "default": 42,
+          "description": "Same seed + image = same mesh take."
+        },
+        "resolution": {
+          "type": "string",
+          "enum": [
+            "512",
+            "1024",
+            "1536"
+          ],
+          "default": "1024",
+          "description": "Upsample target (official pins 1536). All tiers run the full official chain — upsample + both texture passes + remesh tail."
+        },
+        "steps": {
+          "type": "number",
+          "minimum": 4,
+          "maximum": 60,
+          "default": 12,
+          "description": "STRUCTURE stage steps (the lift). Shape + texture stages ride their own knobs in the Stage section."
+        },
+        "cfg": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 15,
+          "default": 7.5,
+          "description": "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance — blobby trash out of the box). Lower runs looser."
+        },
+        "bg_removal": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "on",
+            "off"
+          ],
+          "default": "auto",
+          "description": "auto/on: birefnet cuts the background (recommended). off: feed a pre-cleaned or alpha-cut image straight to conditioning."
+        },
+        "camera_fov": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "35",
+            "49.13",
+            "60",
+            "75",
+            "90"
+          ],
+          "default": "auto",
+          "description": "Pixal3D only — per-image horizontal FoV feeding the camera transform matrix. auto: MoGeInference estimates from the source image (recommended); a literal degree value skips MoGe (operator-vouched camera, e.g. calibrated).",
+          "x-families": [
+            "pixal3d"
+          ]
+        },
+        "shape_steps": {
+          "type": "number",
+          "minimum": 4,
+          "maximum": 60,
+          "default": 20,
+          "description": "Shape-stage steps. 20 is the official template calibration.",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "shape_cfg": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 15,
+          "default": 7.5,
+          "description": "Shape-stage guidance. 7.5 is the official template calibration.",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "tex1_steps": {
+          "type": "number",
+          "minimum": 4,
+          "maximum": 60,
+          "default": 12,
+          "description": "First texture pass steps (upsampled latent, simple scheduler). 12 is the official calibration.",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "tex1_cfg": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 15,
+          "default": 7.5,
+          "description": "First texture pass guidance. 7.5 is the official calibration.",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "tex2_steps": {
+          "type": "number",
+          "minimum": 4,
+          "maximum": 60,
+          "default": 12,
+          "description": "Second texture pass steps (raw unet — the detail pass). 12 is the official calibration.",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "tex2_cfg": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 15,
+          "default": 1.0,
+          "description": "Second texture pass guidance. 1.0 is the official calibration (near-verbatim detail sampling).",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "remesh_resolution": {
+          "type": "number",
+          "minimum": 128,
+          "maximum": 2048,
+          "default": 768,
+          "description": "UDF remesh voxel resolution. 768 is the official calibration; lower = lighter mesh, coarser surface.",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "decimate_faces": {
+          "type": "number",
+          "minimum": 10000,
+          "maximum": 2000000,
+          "default": 700000,
+          "description": "Exact face count after decimation (midpoint placement). 700000 is the official calibration.",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "smooth_angle": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 180,
+          "default": 180,
+          "description": "Normal-smoothing crease angle, applied before unwrap and after texturing. 180 is the official calibration.",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "atlas_size": {
+          "type": "string",
+          "enum": [
+            "2048",
+            "4096"
+          ],
+          "default": "4096",
+          "description": "Unwrap + baked color atlas resolution. 4096 is the official calibration (VRAM-heavy); 2048 is the lighter fallback.",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "ao_size": {
+          "type": "string",
+          "enum": [
+            "512",
+            "1024"
+          ],
+          "default": "1024",
+          "description": "Ambient-occlusion bake resolution. 1024 is the official calibration.",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "normal_size": {
+          "type": "string",
+          "enum": [
+            "1024",
+            "2048"
+          ],
+          "default": "2048",
+          "description": "Normal-map bake resolution. 2048 is the official calibration.",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "struct_sampler": {
+          "type": "string",
+          "default": "euler",
+          "description": "Structure-stage sampler. euler is the official template pick. — options resolve from the $samplers vocabulary at serve time",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "struct_scheduler": {
+          "type": "string",
+          "default": "normal",
+          "description": "Structure-stage scheduler. normal is the official pick. — options resolve from the $schedulers vocabulary at serve time",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "shape_sampler": {
+          "type": "string",
+          "default": "euler",
+          "description": "Shape-stage sampler. euler is the official pick. — options resolve from the $samplers vocabulary at serve time",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "shape_scheduler": {
+          "type": "string",
+          "default": "normal",
+          "description": "Shape-stage scheduler. normal is the official pick. — options resolve from the $schedulers vocabulary at serve time",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "tex1_sampler": {
+          "type": "string",
+          "default": "euler",
+          "description": "First texture pass sampler. euler is the official pick. — options resolve from the $samplers vocabulary at serve time",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "tex1_scheduler": {
+          "type": "string",
+          "default": "simple",
+          "description": "First texture pass scheduler. simple is the official pick (the only non-normal scheduler in the template). — options resolve from the $schedulers vocabulary at serve time",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "tex2_sampler": {
+          "type": "string",
+          "default": "euler",
+          "description": "Second texture pass sampler. euler is the official pick. — options resolve from the $samplers vocabulary at serve time",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "tex2_scheduler": {
+          "type": "string",
+          "default": "normal",
+          "description": "Second texture pass scheduler. normal is the official pick. — options resolve from the $schedulers vocabulary at serve time",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "sd3_shift": {
+          "type": "number",
+          "minimum": 1.0,
+          "maximum": 10.0,
+          "default": 5.0,
+          "description": "ModelSamplingSD3 shift on the structure arm. 5.0 is the official template calibration.",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "rescale_struct": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 1.0,
+          "default": 0.7,
+          "description": "Structure-arm RescaleCFG multiplier. 0.7 is the official calibration.",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "rescale_shape": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 1.0,
+          "default": 0.5,
+          "description": "Shape-arm RescaleCFG multiplier (also feeds texture pass 1 — one node). 0.5 is the official calibration.",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "override_struct": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.667,
+          "description": "Structure-arm CFGOverride start percent. 0.667 is the official calibration.",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        },
+        "override_shape": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.769,
+          "description": "Shape-arm CFGOverride start percent. 0.769 is the official calibration.",
+          "x-families": [
+            "trellis2-native",
+            "pixal3d"
+          ]
+        }
+      },
+      "required": []
+    }
+  }
+]

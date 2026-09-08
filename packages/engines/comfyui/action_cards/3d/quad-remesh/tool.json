@@ -1,0 +1,65 @@
+[
+  {
+    "name": "quad_remesh_card",
+    "version": 1,
+    "kind": "card-compose",
+    "card": "quad-remesh",
+    "model": "autoremesher",
+    "stage_title": "Quad Remesh",
+    "description": "High-poly mesh → clean quad topology",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "input": {
+          "type": "string",
+          "description": "OBJ/STL/PLY path or artifact-ref from a previous card"
+        },
+        "target_quads": {
+          "type": "number",
+          "minimum": 100,
+          "maximum": 1000000,
+          "default": 50000,
+          "description": "Target quad count"
+        },
+        "edge_scaling": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 10.0,
+          "default": 1.0,
+          "description": "Edge scaling"
+        },
+        "sharp_edge": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 180.0,
+          "default": 90.0,
+          "description": "Sharp edge"
+        },
+        "smooth_normal": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.0,
+          "description": "Smooth normal"
+        },
+        "adaptivity": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 2.0,
+          "default": 1.0,
+          "description": "Adaptivity"
+        },
+        "anisotropy": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 2.0,
+          "default": 1.0,
+          "description": "Anisotropy"
+        }
+      },
+      "required": [
+        "input"
+      ]
+    }
+  }
+]

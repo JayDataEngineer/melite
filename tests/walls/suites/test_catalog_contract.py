@@ -107,7 +107,7 @@ def test_served_models_are_offered_and_formed() -> None:
     from pathlib import Path
     from melite_models import load_model_py
     import plugins as _plugins
-    eng_root = Path(REPO) / "plugins" / "engines"
+    eng_root = Path(REPO) / "packages" / "engines"
     classes = {}
     for owner in _plugins.iter_plugin_dirs_under(eng_root):
         models_dir = owner / "models"
@@ -241,7 +241,7 @@ def _class_for(model_id: str, repo: str) -> type[Model]:
     from melite_models import load_model_py
     import plugins as _plugins
     from pathlib import Path
-    eng_root = Path(repo) / "plugins" / "engines"
+    eng_root = Path(repo) / "packages" / "engines"
     for owner in _plugins.iter_plugin_dirs_under(eng_root):
         models_dir = owner / "models"
         if not models_dir.is_dir():

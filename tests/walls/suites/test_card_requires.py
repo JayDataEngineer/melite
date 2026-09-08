@@ -63,7 +63,7 @@ passed += r; failed += (not r)
 # ── T6: h3-timeline card's REAL requires (all installed on this
 # server) — 2026-09-05 drift fix: the list mirrors the card class
 # requires (the video-gen card declares NONE — its families ride core
-# + VHS; 'melite-video' is declared once in plugins/melite-video/
+# + VHS; 'melite-video' is declared once in packages/melite-video/
 # nodes/extensions.yaml, never a card require).
 ok, msg = check_card_requires(
     [
@@ -134,7 +134,7 @@ for _pat in ("engines/*/cards/*/card.py",
                "engines/*/action_cards/*/card.py",
                "engines/*/action_cards/*/*/card.py",
                "engines/*/action_cards/*/*/py/card.py"):
-    discover |= set((REPO / "plugins").glob(_pat))
+    discover |= set((REPO / "packages").glob(_pat))
 for _cpy in sorted(discover):
     try:
         _pdir = _cpy.parent

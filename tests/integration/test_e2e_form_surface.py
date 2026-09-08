@@ -77,7 +77,7 @@ def _http(method: str, port: int, path: str) -> tuple[int, JsonValue]:
 
 
 # ── the routing law (the viewer's claim) ──────────────────────────────
-# Mirrored from plugins/web/editor/src/surfaces/assets/AssetMedia.tsx
+# Mirrored from packages/web/editor/src/surfaces/assets/AssetMedia.tsx
 # (isMeshAsset / isMotionAsset regexes). A regression in either side
 # must show here — the editor routes by extension, this is the E2E
 # claim.

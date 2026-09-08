@@ -30,7 +30,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from _anchor import REPO
-sys.path.insert(0, str(REPO / "plugins" / "engines" / "comfyui" / "compose"))
+sys.path.insert(0, str(REPO / "packages" / "engines" / "comfyui" / "compose"))
 
 PASS, FAIL = [], []
 

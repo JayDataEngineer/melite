@@ -1,0 +1,141 @@
+{
+ "draft_id": "draft-6a95dfb2-792668ff96c0-1",
+ "intent": "Neon Rain Ramen \u2014 a lone customer's late-night bowl at a glowing alley stall, 4 shots, ~14.4s.",
+ "stages": [
+  {
+   "runStatus": "done",
+   "result": {
+    "assetUrls": [
+     "/editor/assets/runs/run-6a95dfb2-7926687f86c0-1/stitch_video_0.mp4",
+     "/editor/assets/runs/run-6a95dfb2-7926687f86c0-1/window1_video_0.mp4",
+     "/editor/assets/runs/run-6a95dfb2-7926687f86c0-1/window2_video_0.mp4",
+     "/editor/assets/runs/run-6a95dfb2-7926687f86c0-1/window3_video_0.mp4",
+     "/editor/assets/runs/run-6a95dfb2-7926687f86c0-1/window4_video_0.mp4"
+    ],
+    "artifacts": {
+     "video": "/editor/assets/runs/run-6a95dfb2-7926687f86c0-1/stitch_video_0.mp4",
+     "video_w1_main": "/editor/assets/runs/run-6a95dfb2-7926687f86c0-1/window1_video_0.mp4",
+     "video_w2_main": "/editor/assets/runs/run-6a95dfb2-7926687f86c0-1/window2_video_0.mp4",
+     "video_w3_main": "/editor/assets/runs/run-6a95dfb2-7926687f86c0-1/window3_video_0.mp4",
+     "video_w4_main": "/editor/assets/runs/run-6a95dfb2-7926687f86c0-1/window4_video_0.mp4",
+     "windowFilms": [
+      "/editor/assets/runs/run-6a95dfb2-7926687f86c0-1/window1_video_0.mp4",
+      "/editor/assets/runs/run-6a95dfb2-7926687f86c0-1/window2_video_0.mp4",
+      "/editor/assets/runs/run-6a95dfb2-7926687f86c0-1/window3_video_0.mp4",
+      "/editor/assets/runs/run-6a95dfb2-7926687f86c0-1/window4_video_0.mp4"
+     ],
+     "seams": []
+    },
+    "metadata": {
+     "runId": "run-6a95dfb2-7926687f86c0-1",
+     "seam": "latent-chain",
+     "windows": 4,
+     "history": [
+      {
+       "runId": "run-6a95dfb2-7926687f86c0-1",
+       "status": "completed",
+       "at": 1788207124,
+       "durationSec": 15,
+       "video": "/editor/assets/runs/run-6a95dfb2-7926687f86c0-1/stitch_video_0.mp4"
+      }
+     ],
+     "film": {
+      "fps": 24,
+      "totalFrames": 390,
+      "windows": [
+       {
+        "start": 0,
+        "len": 90,
+        "trim": 0,
+        "docStart": 0,
+        "docSpan": 90
+       },
+       {
+        "start": 90,
+        "len": 124,
+        "trim": 24,
+        "docStart": 90,
+        "docSpan": 100
+       },
+       {
+        "start": 190,
+        "len": 124,
+        "trim": 24,
+        "docStart": 190,
+        "docSpan": 100
+       },
+       {
+        "start": 290,
+        "len": 124,
+        "trim": 24,
+        "docStart": 290,
+        "docSpan": 100
+       }
+      ]
+     },
+     "durationSec": 16.25
+    },
+    "completedAt": 1788207124000,
+    "durationSec": 16.25
+   },
+   "id": "s_0",
+   "title": "H3 Timeline",
+   "kind": "generation",
+   "service": "h3-timeline",
+   "inputs": [
+    ""
+   ],
+   "provenance": "agent",
+   "params": {
+    "calls": [
+     {
+      "text": "integrated_multimodal_description: [Shot 1] Live-action cinematic night scene. A neon-lit ramen stall stands in a narrow city alley on a rainy night: red and cyan neon signs glow above a small canvas awning, warm yellow lantern light spills over a wooden counter, steam rises steadily from broth pots, and rain falls through the frame in fine streaks, pooling into neon reflections on the wet asphalt. Behind the counter the vendor's silhouette moves slowly, wiping bowls. The camera pushes in with small amplitude at slow speed from the far end of the alley toward the glowing stall; no customers are seated yet, the stall hums alone in the rain.\noverall_soundscape: Steady rain drums on the stall's canvas awning and hisses on the wet asphalt; broth simmers with a low wet murmur and a soft steam hiss; distant city traffic hums far off in the rain.\nnon_diegetic_music: A slow, sparse neon-noir score \u2014 muted electric piano notes over a low warm synth pad, quiet rain-stick shimmer and soft brushed percussion at a slow, patient tempo.",
+      "start_frame": 0,
+      "end_frame": 5
+     },
+     {
+      "text": "integrated_multimodal_description: [Shot 2] Live-action cinematic night scene, same neon-lit ramen stall in the narrow rainy alley: red and cyan neon signs, canvas awning, warm lantern light over the wooden counter, steam rising from broth pots, rain streaking the frame. A lone customer in a charcoal raincoat with damp dark hair steps in from the rain, sits down on a stool at the counter and rests his hands on the wood as the vendor glances up; the camera keeps pushing in with small amplitude at slow speed, sliding closer toward the customer's back and shoulder in one continuous move. The vendor greets him quietly: <d>[ja] \u3044\u3089\u3063\u3057\u3083\u3044\u307e\u305b\u3002</d>\noverall_soundscape: Steady rain drums on the stall's canvas awning and hisses on the wet asphalt; broth simmers with a low wet murmur and a soft steam hiss; distant city traffic hums far off in the rain. Wet footsteps approach on the asphalt, a wooden stool scrapes softly, and the charcoal raincoat rustles as the customer settles.\nnon_diegetic_music: A slow, sparse neon-noir score \u2014 muted electric piano notes over a low warm synth pad, quiet rain-stick shimmer and soft brushed percussion at a slow, patient tempo.",
+      "start_frame": 5,
+      "end_frame": 61
+     },
+     {
+      "text": "",
+      "start_frame": 61,
+      "end_frame": 147
+     },
+     {
+      "text": "",
+      "start_frame": 147,
+      "end_frame": 175
+     },
+     {
+      "text": "integrated_multimodal_description: [Shot 3] Live-action cinematic night scene, close-up at the same neon-lit ramen stall counter: a steaming ramen bowl held in the customer's hands, warm lantern light glinting off the ceramic, red and cyan neon reflected in the broth's surface, steam curling up thick and slow. The customer in the charcoal raincoat lifts the bowl in both hands, then raises chopsticks and draws up a tangle of noodles; broth steam wraps around his fingers. The camera continues its slow push, then settles into a slow tilt up with small amplitude, following the rising steam; rain still streaks the neon bokeh behind.\noverall_soundscape: Steady rain drums on the stall's canvas awning and hisses on the wet asphalt; broth simmers with a low wet murmur and a soft steam hiss; distant city traffic hums far off in the rain. Chopsticks tap lightly on the ceramic bowl and noodles are slurped with a soft, warming draw of breath.\nnon_diegetic_music: A slow, sparse neon-noir score \u2014 muted electric piano notes over a low warm synth pad, quiet rain-stick shimmer and soft brushed percussion at a slow, patient tempo.",
+      "start_frame": 175,
+      "end_frame": 260
+     },
+     {
+      "text": "integrated_multimodal_description: [Shot 4] Live-action cinematic night scene, back at the far end of the alley: the lone customer in the charcoal raincoat with damp dark hair walks away from the neon-lit ramen stall into the falling rain, shoulders hunched, passing under a string of red lanterns; behind him the stall keeps glowing \u2014 red and cyan neon, steam still rising from the broth pots into the rain, the vendor's silhouette drying a bowl. The camera pulls out with small amplitude at slow speed, letting the customer shrink into the rainy dark while the stall's glow holds the frame.\noverall_soundscape: Steady rain drums on the stall's canvas awning and hisses on the wet asphalt; broth simmers with a low wet murmur and a soft steam hiss; distant city traffic hums far off in the rain. The customer's wet footsteps recede slowly down the alley, fading under the rain.\nnon_diegetic_music: A slow, sparse neon-noir score \u2014 muted electric piano notes over a low warm synth pad, quiet rain-stick shimmer and soft brushed percussion at a slow, patient tempo, thinning to a lone piano note as the customer disappears.",
+      "start_frame": 260,
+      "end_frame": 345
+     }
+    ],
+    "fps": 24,
+    "intent": "Neon Rain Ramen \u2014 a lone customer's late-night bowl at a glowing alley stall, 4 shots, ~14.4s.",
+    "seed": 42,
+    "continuity": "Same stall, same night, same rain throughout: red and cyan neon signs, canvas awning, wooden counter, broth steam rising into the rain. The customer appears in shots 2-4 with identical wording \u2014 charcoal raincoat, damp dark hair. Rain-on-awning ambient bed and the neon-noir music track repeat verbatim in every call; one new diegetic sound layer enters per call (footsteps/stool, chopsticks/slurp, receding footsteps)."
+   }
+  }
+ ],
+ "status": "ready",
+ "createdAt": 1788207124000,
+ "completedAt": null,
+ "history": [
+  {
+   "runId": "run-6a95dfb2-7926687f86c0-1",
+   "status": "completed",
+   "at": 1788207124,
+   "durationSec": 15,
+   "video": "/editor/assets/runs/run-6a95dfb2-7926687f86c0-1/stitch_video_0.mp4"
+  }
+ ]
+}

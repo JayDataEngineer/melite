@@ -1,0 +1,7 @@
+label: Quality
+description: "4096×4096 texture for production assets. ~2× slower."
+params:
+  texture_size: 4096
+  render_size: 4096
+  remove_bg: false
+  seed: 2025

@@ -1,0 +1,10 @@
+# wan-vace — ComfyUI extension dependencies (cluster E boarding,
+# 2026-09-04). The VACE lane rides ComfyUI CORE nodes (WanVaceToVideo,
+# ModelMergeWAN2_1, UNETLoader, CLIPLoader, VAELoader, KSampler,
+# VAEDecode) plus VHS for the film container — no WanVideoWrapper.
+extensions:
+- name: ComfyUI-VideoHelperSuite
+  registry: comfyui-videohelpersuite
+  version: 1.7.9
+  required: true
+  desc: VHS_VideoCombine (the h264-mp4 film container).

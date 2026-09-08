@@ -4,13 +4,13 @@
 # Operator insight (2026-09-05): "you might need to rebuild / restart."
 # The `dsh web` node on the deck host (:3909) serves the editor dist
 # as static assets AND proxies /v1 to the gateway. The node is a
-# long-running process; after a `pnpm build` in plugins/web/editor,
+# long-running process; after a `pnpm build` in packages/web/editor,
 # the node may serve cached hashed assets (the same index.html /
 # asset-XYZ.js even after the dist changed). A fresh browser load
 # still gets the old bundle → "nothing changed" on the user's side.
 #
 # This script:
-#   1. Rebuilds the editor dist (pnpm build in plugins/web/editor).
+#   1. Rebuilds the editor dist (pnpm build in packages/web/editor).
 #   2. Finds the running `dsh web` node (by --port arg) and sends
 #      SIGTERM (it restarts via the dsh task board, OR you restart
 #      it manually — the script prints the exact command).
@@ -28,7 +28,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-EDITOR_DIR="$REPO_ROOT/plugins/web/editor"
+EDITOR_DIR="$REPO_ROOT/packages/web/editor"
 PORT="${1:-3909}"
 
 echo "==> build editor dist"

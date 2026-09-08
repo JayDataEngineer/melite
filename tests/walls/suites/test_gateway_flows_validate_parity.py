@@ -3,7 +3,7 @@
 parity wall (P4, validate-door stroke).
 
 Proves the TypeScript validate door
-(plugins/gateway/src/doors/flowsValidate.ts via the ctx.ts
+(packages/gateway/src/doors/flowsValidate.ts via the ctx.ts
 _h_flows_validate arm) answers like the py gateway (py/gateway.py
 _h_flows_validate, 2719-2890; resolve_request 279-336; strict body
 248-277; R4.2 normalization; _adapt indent-2 serialization):
@@ -78,7 +78,7 @@ PASS = FAIL = 0
 BYTE_OK = CODE_OK = 0
 
 TOKEN = "flows-validate-parity-token"
-TS_SERVER = REPO / "plugins" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
 
 
 def check(name: str, ok: bool, note: str = "") -> None:

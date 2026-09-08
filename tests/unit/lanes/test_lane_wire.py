@@ -285,11 +285,11 @@ GOOD_MANIFEST = {
 
 @pytest.fixture()
 def fixture_tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """A scratch plugins/engines tree: one good card, one card whose
+    """A scratch packages/engines tree: one good card, one card whose
     manifest is malformed, one card whose docs carry an empty-scope
     row the gate must refuse."""
     root = tmp_path
-    engine = root / "plugins" / "engines" / "comfyui"
+    engine = root / "packages" / "engines" / "comfyui"
     engine.mkdir(parents=True)
     # the plugin MARKER — the shared walk (iter_plugin_dirs_under)
     # mounts a plugin dir only when it declares itself; a marker-less
@@ -313,7 +313,7 @@ def fixture_tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
          "params_schema": {"type": "object", "properties": {},
                            "required": []}}]), encoding="utf-8")
     monkeypatch.setattr(ld, "ENGINES_ROOT",
-                        root / "plugins" / "engines")
+                        root / "packages" / "engines")
     monkeypatch.setattr(ld, "REPO", root)
     monkeypatch.setattr(ld, "_flow_rows", lambda: [])
     return root
@@ -350,7 +350,7 @@ class TestLoudSkip:
     def test_unreadable_manifest_json_skips_loudly(self, tmp_path: Path,
                                                    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
         root = tmp_path
-        engine = root / "plugins" / "engines" / "e"
+        engine = root / "packages" / "engines" / "e"
         engine.mkdir(parents=True)
         (engine / "plugin.py").write_text(  # the plugin marker (see fixture_tree)
             "from plugins import Plugin\n"
@@ -361,7 +361,7 @@ class TestLoudSkip:
         (cards / "card" / "tool.json").write_text("{not json",
                                                   encoding="utf-8")
         monkeypatch.setattr(ld, "ENGINES_ROOT",
-                            root / "plugins" / "engines")
+                            root / "packages" / "engines")
         monkeypatch.setattr(ld, "_flow_rows", lambda: [])
         assert ld.card_tools() == []
         assert "unreadable" in capsys.readouterr().err
@@ -380,7 +380,7 @@ class TestEstateSweep:
         # and engines/<category>/<plugin>/action_cards (the cpp
         # natives — the glob missed them until 2026-09-06)
         for tj in REPO.rglob(
-                "plugins/engines/**/action_cards/*/*/tool.json"):
+                "packages/engines/**/action_cards/*/*/tool.json"):
             data = json.loads(tj.read_text(encoding="utf-8"))
             for m in (data if isinstance(data, list) else [data]):
                 lane_wire.ToolManifestRow.model_validate(m)

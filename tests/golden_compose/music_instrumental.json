@@ -25,7 +25,7 @@
  },
  "phase2": {
   "rc": 0,
-  "yaml": "name: music3\ntype: comfyui\ndescription: music card composed by plugin\n\nnodes:\n  - id: music\n    type: comfyui\n    input_from:\n      - __initial__.$prompt\n      - __initial__.$lyrics\n      - __initial__.$duration\n      - __initial__.$seed\n    params: {\"workflow_file\":\"/home/user/Documents/programs/active/inference.cpp/build/../plugins/engines/comfyui/models/audio/music3/music_t1.json\",\"out_dir\":\"./output\",\"timeout_s\":1800,\"inject\":{\"MiniMaxMusic3TextEncode.0.caption\": \"$prompt\", \"MiniMaxMusic3TextEncode.0.lyrics\": \"$lyrics\", \"MiniMaxMusic3TextEncode.0.seed\": \"$seed\", \"MiniMaxMusic3TextEncode.0.max_duration\": \"$duration\", \"EmptyMiniMaxMusic3LatentAudio.0.seconds\": \"$duration\", \"KSampler.0.seed\": \"$seed\", \"SaveAudioAdvanced.0.filename_prefix\": \"run-GOLDEN-0001/music\"}}\n",
+  "yaml": "name: music3\ntype: comfyui\ndescription: music card composed by plugin\n\nnodes:\n  - id: music\n    type: comfyui\n    input_from:\n      - __initial__.$prompt\n      - __initial__.$lyrics\n      - __initial__.$duration\n      - __initial__.$seed\n    params: {\"workflow_file\":\"/home/user/Documents/programs/active/inference.cpp/build/../packages/engines/comfyui/models/audio/music3/music_t1.json\",\"out_dir\":\"./output\",\"timeout_s\":1800,\"inject\":{\"MiniMaxMusic3TextEncode.0.caption\": \"$prompt\", \"MiniMaxMusic3TextEncode.0.lyrics\": \"$lyrics\", \"MiniMaxMusic3TextEncode.0.seed\": \"$seed\", \"MiniMaxMusic3TextEncode.0.max_duration\": \"$duration\", \"EmptyMiniMaxMusic3LatentAudio.0.seconds\": \"$duration\", \"KSampler.0.seed\": \"$seed\", \"SaveAudioAdvanced.0.filename_prefix\": \"run-GOLDEN-0001/music\"}}\n",
   "extra": {}
  }
 }

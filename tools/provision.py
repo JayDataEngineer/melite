@@ -46,7 +46,7 @@ Commands:
   boot-cmd    print the exact launch for the configured mode
   extensions | models | all [--dry-run]
   dsh         materialize the agent harness home + estate server
-              profile (recipe: plugins/harness/dsh/provisioner)
+              profile (recipe: packages/harness/dsh/provisioner)
 """
 
 from __future__ import annotations
@@ -72,7 +72,7 @@ if TYPE_CHECKING:
     from melite_models import Provision
 
 REPO = Path(__file__).resolve().parents[1]
-DEFAULT_CONFIG = REPO / "plugins" / "engines" / "comfyui" / "data" / "comfyui_endpoint.json"
+DEFAULT_CONFIG = REPO / "packages" / "engines" / "comfyui" / "data" / "comfyui_endpoint.json"
 RUNTIME = REPO / "data" / "runtime" / "comfyui"
 COMFY_PROJECT = REPO / "infra" / "comfyui"
 LANE = REPO / "infra" / "extension_lane.py"
@@ -99,14 +99,14 @@ class _CellArtifact(Protocol):
     dest_sub: str
 
 # ── agent harness mount (dsh) — recipe → materialized home ─────────
-# The estate sculpt is @infer/dsh-provisioner (plugins/harness/dsh):
+# The estate sculpt is @infer/dsh-provisioner (packages/harness/dsh):
 # app-agnostic + machine-neutral, rows by package name (its README
 # owns the law). This step materializes the SERVER mount: a fresh
 # harness home whose 'estate' profile composes dsh-base + dsh-sdk-app
 # (the JSON-RPC server, shipped by the pip runtime's bundled wheel) +
 # the provisioner. The GUI home (~/.dsh) is NEVER touched — isolation
 # is the mount's whole point.
-DSH_PROVISIONER = REPO / "plugins" / "harness" / "dsh" / "provisioner"
+DSH_PROVISIONER = REPO / "packages" / "harness" / "dsh" / "provisioner"
 DSH_PROVISIONER_NAME = "@infer/dsh-provisioner"
 DSH_HARNESS_HOME = REPO / "data" / "runtime" / "dsh-harness-home"
 DSH_PROFILE = "estate"

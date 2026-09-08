@@ -5,7 +5,7 @@ Two param dialects, NO lossy bridge between them (the record §2: a
 preset stores VERBATIM what produced it):
 
   authored   the 11-dim authoring dialect (ray inheritance:
-             plugins/melite-3d phenotype map — gender/age/muscle/
+             packages/melite-3d phenotype map — gender/age/muscle/
              weight/height/proportions/cupsize/firmness/african/
              asian/caucasian + named local-change morphs). Estate
              rows + hand tweaks speak this.

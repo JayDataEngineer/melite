@@ -11,7 +11,7 @@ the default lock — boots here MUST use isolated MELITE_STATE_ROOTs):
   -> runs list/detail agreement -> events/WS frames
   -> resurrect-after-restart (kill TS, reboot, sidecar restore).
 
-Plus the sim test backend leg (plugins/engines/sim/ — the ladder's
+Plus the sim test backend leg (packages/engines/sim/ — the ladder's
 deliberate Law-0 test double, tests/walls/suites/test_sim_backend.py):
 its agreement legs ported to run against TS.
 
@@ -59,7 +59,7 @@ Py cites: submit 1179-1270, worker 1353-1371, _try_merged
 boot_sweep 2378-2409, sidecar_status 2412-2470, status
 2954-2982, runs list 3011-3035, detail editor_runs 656-806,
 WS 2516-2585, lock 4405-4479, sim engine
-plugins/engines/sim/engines/sim/engine.py.
+packages/engines/sim/engines/sim/engine.py.
 
 Date: 2026-09-07. Status: landed (P5 gate stroke).
 
@@ -86,7 +86,7 @@ from _anchor import REPO, boot_scratch_gateway, reap_gateway
 sys.dont_write_bytecode = True
 
 PASS = FAIL = 0
-TS_SERVER = REPO / "plugins" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
 WF = {"1": {"class_type": "EmptyLatentImage",
             "inputs": {"width": 64, "height": 64, "batch_size": 1}}}
 HISTORY_OK = {"status": {"status_str": "success", "completed": True},

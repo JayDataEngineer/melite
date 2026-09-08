@@ -1,0 +1,24 @@
+{
+  "name": "@melite-plugin/3d",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./viewers/index.ts",
+  "types": "./viewers/index.ts",
+  "exports": {
+    "./ui/viewers": "./viewers/index.ts",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@melite/catalog": "workspace:*",
+    "@melite/contracts": "workspace:*",
+    "@melite/formats": "workspace:*",
+    "@melite/ui": "workspace:*",
+    "@react-three/drei": "*",
+    "@react-three/fiber": "*",
+    "lucide-react": "*",
+    "react": "*",
+    "react-dom": "*",
+    "three": "*",
+    "zustand": "*"
+  }
+}

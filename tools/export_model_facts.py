@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Export model facts JSON for the Cordis compose plane.
 
-AUTO-SCAN: every comfyui family under plugins/engines/comfyui/models
+AUTO-SCAN: every comfyui family under packages/engines/comfyui/models
 that carries lane_inputs lands a row (id-keyed, card-attributed from
 the model class). No manual list — a boarded family without a facts
 row is unbornable. The EXTENSION-LAW node map rides along.
 
     python3 tools/export_model_facts.py \
-        > plugins/engines/comfyui/cordis/data/model-facts.json
+        > packages/engines/comfyui/cordis/data/model-facts.json
 """
 
 from __future__ import annotations
@@ -128,7 +128,7 @@ def main() -> None:
 
     # EXTENSION-LAW node map (authored by py/card_requires.py during
     # the migration; the TS gate reads it as data).
-    sys.path.insert(0, str(REPO / "plugins" / "engines" / "comfyui"))
+    sys.path.insert(0, str(REPO / "packages" / "engines" / "comfyui"))
     from card_requires import EXTENSION_NODE_TYPES
 
     # Owning-card lookup for the outputs contract copy (+ per-family

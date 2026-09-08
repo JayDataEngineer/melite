@@ -2,9 +2,9 @@
 """Declaration-schema parity wall (RED wall, part 1 of 2 — wall-first).
 
 Compares, PER CARD (the 19 comfyui cards), the python declaration plane
-(plugins/engines/comfyui/cordis/data/card-decls.json — generated from
+(packages/engines/comfyui/cordis/data/card-decls.json — generated from
 card.py: boarded/REQUIRES/schemaMeta) against the hand-mirrored TS card
-surface (plugins/engines/comfyui/cordis/src/cards/*.ts).
+surface (packages/engines/comfyui/cordis/src/cards/*.ts).
 
 Run: python3 tests/walls/suites/test_decl_schema_parity.py
 
@@ -72,8 +72,8 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
-CARDS = REPO / "plugins" / "engines" / "comfyui" / "cordis" / "src" / "cards"
-DECLS = REPO / "plugins" / "engines" / "comfyui" / "cordis" / "data" / "card-decls.json"
+CARDS = REPO / "packages" / "engines" / "comfyui" / "cordis" / "src" / "cards"
+DECLS = REPO / "packages" / "engines" / "comfyui" / "cordis" / "data" / "card-decls.json"
 
 PASS: list[str] = []
 FAIL: list[str] = []

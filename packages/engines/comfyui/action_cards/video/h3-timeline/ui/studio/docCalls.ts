@@ -1,0 +1,347 @@
+/**
+ * h3-timeline studio split (2026-09-06) — PURE MOVE from
+ * ui/studio/component.tsx. No behavior change: headers/footers are new,
+ * every logic line is verbatim from the monolith (source range noted).
+ */
+import type { TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/ui/timeline"
+import type { BeatKnobs, CallRefs, DocBeatSegment, DocCall, DocKeyframe } from "./docModel"
+import { CALL_KNOB_KEYS, GUIDE_KINDS, KIND_OF_TRACK, STARTER_CALLS } from "./docModel"
+import { splitRefList } from "./refUtils"
+
+export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall[] {
+  // Layer B: `calls` is the vocabulary (2026-08-16, the B/C conflation
+  // fix). Legacy docs wrote `beats` where every beat was a call in
+  // disguise — map 1:1 (text, no inner segments; the family does the
+  // same). Both present = a backend hard error (never a silent choice);
+  // the studio renders `calls` — the compile refuses the ambiguous doc.
+  //
+  // STRING CALLS (2026-08-30 "it only shows the first gen"): legacy
+  // docs stored `calls` as a JSON string (`"[{...}]"`). Array.isArray
+  // on a string is false — the function fell through to STARTER_CALLS
+  // (1 default call), the persist effect wrote 1 call back, and the
+  // multi-call plan was destroyed permanently. Parse string-encoded
+  // arrays before checking Array.isArray; reject everything else.
+  let callsRaw = raw.calls
+  if (typeof callsRaw === "string" && callsRaw.trimStart().startsWith("[")) {
+    try {
+      const parsed: unknown = JSON.parse(callsRaw)
+      if (Array.isArray(parsed)) callsRaw = parsed
+    } catch { /* unparseable — fall through to beats / STARTER */ }
+  }
+  let beatsRaw = raw.beats
+  if (typeof beatsRaw === "string" && beatsRaw.trimStart().startsWith("[")) {
+    try {
+      const parsed: unknown = JSON.parse(beatsRaw)
+      if (Array.isArray(parsed)) beatsRaw = parsed
+    } catch { /* unparseable — fall through */ }
+  }
+  const list = Array.isArray(callsRaw) && callsRaw.length > 0
+    ? callsRaw
+    : Array.isArray(beatsRaw) && beatsRaw.length > 0
+      ? beatsRaw
+      : null
+  if (!list) return STARTER_CALLS
+  const calls: DocCall[] = []
+  for (const c of list) {
+    if (typeof c !== "object" || c === null) continue
+    const r = c as Record<string, unknown>
+    const start = Number(r.start_frame)
+    const end = Number(r.end_frame)
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) continue
+    const call: DocCall = { text: "", start_frame: Math.round(start), end_frame: Math.round(end) }
+    // The prompt: `text` XOR `beats` (Layer C segments within the call).
+    // A doc carrying BOTH is already refused by the compiler — the
+    // studio renders the segments (the richer surface) and drops the
+    // text with a warning: the surface IS the resolution, never a
+    // re-send of an invalid doc.
+    const rawSegs = r.beats
+    if (Array.isArray(rawSegs) && rawSegs.length > 0) {
+      const segs: DocBeatSegment[] = []
+      for (const s of rawSegs) {
+        if (typeof s !== "object" || s === null) continue
+        const sr = s as Record<string, unknown>
+        const sText = typeof sr.text === "string" ? sr.text : ""
+        const sStart = Number(sr.start_frame)
+        const sEnd = Number(sr.end_frame)
+        if (!Number.isFinite(sStart) || !Number.isFinite(sEnd) || sEnd <= sStart) continue
+        segs.push({ text: sText, start_frame: Math.round(sStart), end_frame: Math.round(sEnd) })
+      }
+      if (segs.length) {
+        // CROSSING stays (a bar overlapping the call may run into a
+        // neighbor — the compiler slices it); a bar wholly OUTSIDE its
+        // call is an orphan the compiler refuses — drop it with a warn
+        // (forgiving hydration, never a re-send of an invalid doc).
+        const kept = segs.filter(
+          (s) => s.start_frame < call.end_frame && s.end_frame > call.start_frame,
+        )
+        if (kept.length < segs.length) {
+          console.warn(
+            `VideoTimelineStudio: call ${calls.length} carries beats wholly outside its span ` +
+            `[${call.start_frame},${call.end_frame}) — dropping them (a segment must overlap ` +
+            `its call; CROSSING a boundary is fine, orphaning is not)`,
+          )
+        }
+        if (kept.length) {
+          call.beats = kept
+          if (typeof r.text === "string" && r.text.trim()) {
+            console.warn("VideoTimelineStudio: call carries BOTH `text` and `beats` — rendering the segments; the compiler refuses both")
+          }
+        }
+      }
+    }
+    if (!call.beats && typeof r.text === "string") call.text = r.text
+    // Call-attached guides: string sources only, blank trimmed away.
+    for (const kind of GUIDE_KINDS) {
+      const src = r[kind]
+      if (typeof src === "string" && src.trim()) call[kind] = src
+    }
+    // Frame-conditioning subcards: the closing still + the prev-video
+    // opener (string / positive-number sources; foreign types drop —
+    // forgiving hydration, never a re-send of an invalid doc).
+    if (typeof r.last_frame === "string" && r.last_frame.trim()) {
+      call.last_frame = r.last_frame
+    }
+    const ps = r.first_frame_prev_sec
+    if (typeof ps === "number" && Number.isFinite(ps) && ps > 0) {
+      call.first_frame_prev_sec = ps
+    }
+    if (r.transition === "extend" || r.transition === "cut") {
+      call.transition = r.transition
+    }
+    // Per-call identity refs (Ref2VA): arrays or comma strings → the
+    // UI's comma-joined form (serialize splits them back to arrays).
+    if (r.refs !== null && typeof r.refs === "object" && !Array.isArray(r.refs)) {
+      const rr = r.refs as Record<string, unknown>
+      const join = (v: unknown): string | undefined => {
+        if (Array.isArray(v)) {
+          const arr = v.map(String).map(s => s.trim()).filter(Boolean)
+          return arr.length ? arr.join(", ") : undefined
+        }
+        if (typeof v === "string" && v.trim()) return v.trim()
+        return undefined
+      }
+      const refs: CallRefs = {}
+      const im = join(rr.images), vi = join(rr.videos)
+      const au = join(rr.audios), va = join(rr.video_audios)
+      if (im) refs.images = im
+      if (vi) refs.videos = vi
+      if (au) refs.audios = au
+      if (va) refs.video_audios = va
+      if (Object.keys(refs).length) call.refs = refs
+    }
+    // Per-call knobs: vocabulary-gated hydration — a foreign key is
+    // dropped with a warning, NEVER re-sent (the backend refuses unknown
+    // keys; the UI must not author them either).
+    if (r.knobs !== null && typeof r.knobs === "object") {
+      const knobs: BeatKnobs = {}
+      for (const [k, v] of Object.entries(r.knobs as Record<string, unknown>)) {
+        if (!CALL_KNOB_KEYS.has(k)) {
+          console.warn(`VideoTimelineStudio: dropping unknown call knob "${k}" (backend CALL_KNOB_KEYS vocabulary)`)
+          continue
+        }
+        if (v === null || v === undefined || v === "") continue
+        if (k === "steps") { // the canonical pair - one knob
+          const n = Number(v)
+          if (Number.isFinite(n)) knobs.sampling_steps = n
+        } else if (k === "sampling_steps" || k === "denoise"
+                   || k === "shift_video" || k === "shift_audio"
+                   || k === "cfg" || k === "h3_context_steps" || k === "h3_audio_context_steps"
+                   || k === "h3_sla_sparsity" || k === "h3_sla_min_seq_len"
+                   || k === "h3_sla_dense_last_steps" || k === "sharpen_strength"
+                   || k === "sharpen_radius" || k === "sharpen_threshold"
+                   || k === "sharpen_iterations" || k === "interpolate_multiplier") {
+          // the NUMBER-valued keys - per-literal writes so TS checks
+          // each against the exact property type.
+          const n = Number(v)
+          if (Number.isFinite(n)) {
+            if (k === "sampling_steps") knobs.sampling_steps = n
+            else if (k === "denoise") knobs.denoise = n
+            else if (k === "shift_video") knobs.shift_video = n
+            else if (k === "shift_audio") knobs.shift_audio = n
+            else if (k === "cfg") knobs.cfg = n
+            else if (k === "h3_context_steps") knobs.h3_context_steps = n
+            else if (k === "h3_audio_context_steps") knobs.h3_audio_context_steps = n
+            else if (k === "h3_sla_sparsity") knobs.h3_sla_sparsity = n
+            else if (k === "h3_sla_min_seq_len") knobs.h3_sla_min_seq_len = n
+            else if (k === "h3_sla_dense_last_steps") knobs.h3_sla_dense_last_steps = n
+            else if (k === "sharpen_strength") knobs.sharpen_strength = n
+            else if (k === "sharpen_radius") knobs.sharpen_radius = n
+            else if (k === "sharpen_threshold") knobs.sharpen_threshold = n
+            else if (k === "sharpen_iterations") knobs.sharpen_iterations = n
+            else if (k === "interpolate_multiplier") knobs.interpolate_multiplier = n
+          }
+        } else if (k === "sampler" || k === "scheduler") {
+          if (typeof v === "string" && v.trim()) knobs[k] = v
+        } else if (k === "h3_sla_block_size") {
+          if (v === "64" || v === "128") knobs.h3_sla_block_size = v
+        } else if (k === "h3_sla_reference_protection") {
+          if (v === "Off" || v === "Light" || v === "Heavy Enforcement") knobs.h3_sla_reference_protection = v
+        } else if (k === "h3_sla_dense_backend") {
+          if (v === "comfy_kitchen" || v === "pytorch" || v === "auto") knobs.h3_sla_dense_backend = v
+        } else if (k === "h3_sla_dense_steps") {
+          if (typeof v === "string" && /^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$/.test(v.trim())) {
+            knobs.h3_sla_dense_steps = v.trim()
+          }
+        } else if (k === "sharpen_method") {
+          if (v === "rcas" || v === "adaptive_usm" || v === "high_pass" || v === "deconvolution") {
+            knobs.sharpen_method = v
+          }
+        } else if (k === "interpolate_model") {
+          if (v === "film_net_fp16.safetensors" || v === "rife47.pth") knobs.interpolate_model = v
+        } else if (k === "h3_fp16_accumulation" || k === "h3_torch_compile"
+                   || k === "h3_sla_protect_audio" || k === "h3_sla_stabilize_motion"
+                   || k === "h3_sla_disable_fp16_accum" || k === "sharpen_enabled"
+                   || k === "interpolate_enabled") {
+          // the boolean-valued keys + stringified forms.
+          const b = typeof v === "boolean" ? v : v === "true" ? true : v === "false" ? false : undefined
+          if (b !== undefined) {
+            if (k === "h3_fp16_accumulation") knobs.h3_fp16_accumulation = b
+            else if (k === "h3_torch_compile") knobs.h3_torch_compile = b
+            else if (k === "h3_sla_protect_audio") knobs.h3_sla_protect_audio = b
+            else if (k === "h3_sla_stabilize_motion") knobs.h3_sla_stabilize_motion = b
+            else if (k === "h3_sla_disable_fp16_accum") knobs.h3_sla_disable_fp16_accum = b
+            else if (k === "sharpen_enabled") knobs.sharpen_enabled = b
+            else if (k === "interpolate_enabled") knobs.interpolate_enabled = b
+          }
+        }
+      }
+      if (Object.keys(knobs).length) call.knobs = knobs
+    }
+    calls.push(call)
+  }
+  if (calls.length === 0) return STARTER_CALLS
+  // Sorted (plan_windows' vocabulary is sorted calls); NOT re-tiled — a
+  // hand-authored gap stays visible and the compiler's refusal stays the
+  // honest gate. The tenant's own writes always maintain contiguity.
+  return calls.sort((a, b) => a.start_frame - b.start_frame)
+}
+
+export function hydrateKeyframes(raw: unknown): DocKeyframe[] {
+  if (!Array.isArray(raw)) return []
+  const out: DocKeyframe[] = []
+  for (const k of raw) {
+    if (typeof k !== "object" || k === null) continue
+    const r = k as Record<string, unknown>
+    const frame = Number(r.frame)
+    const kind = KIND_OF_TRACK[String(r.kind)]
+    if (!Number.isFinite(frame) || !kind) continue
+    out.push({ frame: Math.round(frame), kind, source: typeof r.source === "string" ? r.source : "" })
+  }
+  return out
+}
+
+export const hasKnobs = (c: DocCall): boolean =>
+  !!c.knobs && Object.keys(c.knobs).length > 0
+
+/** Document → bar prompts. end_frame inclusive; uuid is the call's index
+ * (index-derived ids are stable for the life of a gesture — no gesture
+ * spans a structural change, and every render re-derives consistently).
+ * `override` = the call carries per-call knobs → the cyan dot (Layer C
+ * shows where a call departs from the run's globals). A segment-mode
+ * call's strip text is its segments joined — the narrative the call
+ * renders (the bar's dblclick edit targets segment 0's text). */
+export function callsToPrompts(calls: DocCall[], fps: number): TimelinePrompt[] {
+  return calls.map((c, i): TimelinePrompt => ({
+    uuid: `call-${i}`,
+    // Compact clip header: index + duration scan before the prompt text
+    // (the strip truncates long prompts — the prefix survives the cut).
+    text: `C${i + 1} · ${((c.end_frame - c.start_frame) / Math.max(1, fps)).toFixed(1)}s — ` +
+      (c.beats?.length ? c.beats.map((s) => s.text).join(" · ") : (c.text ?? "")),
+    start_frame: c.start_frame,
+    end_frame: c.end_frame - 1,
+    color: null,
+    override: hasKnobs(c),
+    // (Layer B) this call carries a reference-audio guide — the violet
+    // speaker dot; absent = no reference audio for this window.
+    audio: !!(c.audio ?? "").trim(),
+    // (Layer B) total reference-image count: the guide image + the
+    // per-call refs.images extras. 0 = no badge on the clip.
+    refImages: (() => {
+      const extras = splitRefList(c.refs?.images).length
+      const guide = (c.image ?? "").trim() ? 1 : 0
+      return extras + guide
+    })(),
+    // (F9) seam mode — rendered as a glyph at the clip's right edge so
+    // the cut-vs-extend distinction is visible at a glance on the bar.
+    seam: c.transition === "extend" ? "extend" : "cut",
+  }))
+}
+
+/** Document keyframes → bar diamonds. Same index-derived uuid contract.
+ * Legacy/frame-exact keyframes only — beat-attached guides are NOT lane
+ * diamonds (2026-08-15): the beat is one entity and its guides live in
+ * the beat panel; the lanes render only when the document actually
+ * carries hand keyframes. */
+export function keyframesToLanes(kfs: DocKeyframe[]): TimelineKeyframe[] {
+  return kfs.map((k, i): TimelineKeyframe => ({
+    uuid: `kf-${i}`,
+    track_id: k.kind,
+    frame: k.frame < 0 ? 0 : k.frame, // negative (from-the-end) frames are
+    // JSON-authoring vocabulary; the lane clamps them to 0 — the raw
+    // value survives in the strip's frame field for exact editing.
+    value: null,
+  }))
+}
+
+/** Calls → the persisted document shape (the `calls` vocabulary, Layer
+ * B): guide keys ride ONLY when non-blank (blank = none — the planner's
+ * contract, kept here so the saved doc never carries "" noise); knobs
+ * ride only when non-empty, and every knob value is written VERBATIM
+ * (undefined was never stored — the setter deletes the key, so absent
+ * IS inherit, never null). Layer C: a lone full-span segment collapses
+ * back to `text` (lossless — the join of one segment is the segment
+ * itself); multi-segment calls keep `beats` and drop the text key. */
+export function serializeCalls(calls: DocCall[]): DocCall[] {
+  return calls.map((c) => {
+    const out: DocCall = {
+      text: c.text ?? "",
+      start_frame: c.start_frame,
+      end_frame: c.end_frame,
+    }
+    const segs = c.beats ?? []
+    if (segs.length === 1
+        && segs[0]!.start_frame === c.start_frame
+        && segs[0]!.end_frame === c.end_frame) {
+      out.text = segs[0]!.text
+    } else if (segs.length > 0) {
+      out.beats = segs.map((s) => ({ ...s }))
+      delete out.text
+    }
+    for (const kind of GUIDE_KINDS) {
+      const src = c[kind]
+      if (src && src.trim()) out[kind] = src
+    }
+    // The frame-conditioning subcards ride the same blank-never rule:
+    // a cleared subcard deletes its key (last_frame "" = no closing
+    // still; first_frame_prev_sec null = no prev-video opener).
+    if (c.last_frame && c.last_frame.trim()) out.last_frame = c.last_frame
+    if (c.first_frame_prev_sec != null) out.first_frame_prev_sec = c.first_frame_prev_sec
+    if (c.transition === "extend" || c.transition === "cut") out.transition = c.transition
+    // Per-call refs: the wire form is the COMMA STRING — same as the
+    // run-level h3_ref_images (the backend stagers read IsString; the
+    // 2026-09-02 audit found this serializer writing ARRAYS the
+    // compiler silently dropped, and the strict gate now refuses).
+    // Data:-aware split (an inline upload carries its own comma).
+    if (c.refs) {
+      const join = (s?: string): string | undefined => {
+        const chips = splitRefList(s)
+        return chips.length ? chips.join(", ") : undefined
+      }
+      const images = join(c.refs.images)
+      if (images) {
+        out.refs = { ...(out.refs ?? {}), images } as CallRefs
+      }
+    }
+    if (hasKnobs(c)) out.knobs = { ...c.knobs }
+    return out
+  })
+}
+
+export const callIndexOf = (id: string): number => {
+  const i = Number(id.replace(/^call-/, ""))
+  return Number.isInteger(i) ? i : -1
+}
+export const kfIndexOf = (id: string): number => {
+  const i = Number(id.replace(/^kf-/, ""))
+  return Number.isInteger(i) ? i : -1
+}

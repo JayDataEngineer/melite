@@ -1,0 +1,7 @@
+label: Standard
+description: "384 octree, 50 steps. ≈8GB VRAM — the limb-separation cleanup for SOMAX rigging needs no more."
+params:
+  octree_resolution: 384
+  steps: 50
+  guidance_scale: 5.0
+  seed: 42

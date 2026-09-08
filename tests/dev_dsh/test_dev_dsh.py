@@ -4,8 +4,8 @@
 WHY THIS FILE EXISTS
 
 The dev DSH lives at https://cloud.tailb1e597.ts.net:3909/ and is the
-testbed for the DSH extensions built in this repo (plugins/harness/dsh/
-and plugins/web/dsh/). It is launched by ~/bin/inference-dev-dsh.sh
+testbed for the DSH extensions built in this repo (packages/harness/dsh/
+and packages/web/dsh/). It is launched by ~/bin/inference-dev-dsh.sh
 which materializes ~/.dsh-test/profiles/web/ — an isolated DSH home
 that must NEVER touch the prod profile at ~/.dsh/profiles/web/.
 
@@ -55,7 +55,7 @@ DEV_TAILNET_FQDN = "cloud.tailb1e597.ts.net"
 DSH_HOME_DEV = Path.home() / ".dsh-test"
 PROFILE_DIR = DSH_HOME_DEV / "profiles" / "web"
 PROVISIONER = Path(__file__).resolve().parents[2] / \
-    "plugins" / "harness" / "dsh" / "provisioner"
+    "packages" / "harness" / "dsh" / "provisioner"
 LOG_PATH = DSH_HOME_DEV / f"test-web.{DEV_PORT}.log"
 LAUNCHER = Path.home() / "bin" / "inference-dev-dsh.sh"
 
@@ -171,14 +171,14 @@ def bundle_rows() -> list[_BundleRow]:
 
 @pytest.fixture(scope="module")
 def plugin_injects(repo: Path) -> list[_PluginInject]:
-    """For every plugin in plugins/{harness,web}/dsh/, return its
+    """For every plugin in packages/{harness,web}/dsh/, return its
     client-half `inject` array (the services it depends on at boot).
 
     Each entry: {pkg, source, inject:[...]}.
     """
     out: list[_PluginInject] = []
     for sub in ("harness", "web"):
-        base = repo / "plugins" / sub / "dsh"
+        base = repo / "packages" / sub / "dsh"
         if not base.exists():
             continue
         for pkg_dir in sorted(p for p in base.iterdir() if p.is_dir()):
@@ -297,7 +297,7 @@ class TestBundleContract:
         )
 
     def test_provisioner_declares_every_built_plugin_as_link_dep(self, repo: Path) -> None:
-        """Every plugin directory under plugins/{harness,web}/dsh/ with a
+        """Every plugin directory under packages/{harness,web}/dsh/ with a
         real `lib/` build must appear as a link: dep in the
         provisioner's package.json. Otherwise the loader can't find it.
         """
@@ -320,7 +320,7 @@ class TestBundleContract:
 
 
 class TestPluginStructure:
-    """Every plugin in plugins/{harness,web}/dsh/ with a client half must
+    """Every plugin in packages/{harness,web}/dsh/ with a client half must
     have BOTH a built lib/client.js AND a declared `inject` array. The
     latter is what the cordis loader uses to wait for services — and
     the failure mode we hit was that some `inject: [...]` services
@@ -329,7 +329,7 @@ class TestPluginStructure:
 
     @pytest.mark.parametrize("sub", ["harness", "web"])
     def test_every_plugin_has_lib_artifacts(self, repo: Path, sub: str) -> None:
-        base = repo / "plugins" / sub / "dsh"
+        base = repo / "packages" / sub / "dsh"
         if not base.exists():
             pytest.skip(f"{base} not present")
         missing: list[str] = []

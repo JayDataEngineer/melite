@@ -29,12 +29,12 @@ from pathlib import Path
 JsonValue = dict[str, "JsonValue"] | list["JsonValue"] | str | int | float | bool | None
 
 REPO = Path(__file__).resolve().parents[3]
-MEDIA = REPO / "plugins" / "web" / "dsh" / "media-plugin"
+MEDIA = REPO / "packages" / "web" / "dsh" / "media-plugin"
 HOST_SRC = MEDIA / "src" / "index.ts"
 CLIENT_SRC = MEDIA / "src" / "client"
 HOST_LIB = MEDIA / "lib" / "index.js"
 CLIENT_LIB = MEDIA / "lib" / "client.js"
-DECK_ENTRY = REPO / "plugins" / "web" / "dsh" / "melite-card-deck" / "src" / "client" / "deck-sidebar-entry.tsx"
+DECK_ENTRY = REPO / "packages" / "web" / "dsh" / "melite-card-deck" / "src" / "client" / "deck-sidebar-entry.tsx"
 
 
 def _kinds() -> dict[str, JsonValue]:

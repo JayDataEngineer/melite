@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     # py/ joins sys.path inside _estate_paths — never at module scope.
     from flow import Flow
 
-VERBS_PY = os.path.join(REPO, "plugins", "engines", "comfyui",
+VERBS_PY = os.path.join(REPO, "packages", "engines", "comfyui",
                         "models", "3d", "anny", "mods")
 PACKDIR = os.path.join(REPO, "vendor", "comfyui_extensions",
                        "melite-poser-nodes")
@@ -43,8 +43,8 @@ PACKDIR = os.path.join(REPO, "vendor", "comfyui_extensions",
 
 def _estate_paths() -> None:
     for p in (os.path.join(REPO, "py"),
-              os.path.join(REPO, "plugins", "engines", "comfyui"),
-              os.path.join(REPO, "plugins", "engines", "comfyui", "compose")):
+              os.path.join(REPO, "packages", "engines", "comfyui"),
+              os.path.join(REPO, "packages", "engines", "comfyui", "compose")):
         if p not in sys.path:
             sys.path.insert(0, p)
 

@@ -59,13 +59,13 @@
 	url = https://github.com/JayDataEngineer/melite-model-base.git
 	branch = main
 [submodule "plugins/engines/node/anycreature/vendor/anyCreature"]
-	path = plugins/engines/node/anycreature/vendor/anyCreature
+	path = packages/engines/node/anycreature/vendor/anyCreature
 	url = https://github.com/Ariescar/anyCreature
 [submodule "plugins/engines/cpp/autoremesher/vendor/autoremesher"]
-	path = plugins/engines/cpp/autoremesher/vendor/autoremesher
+	path = packages/engines/cpp/autoremesher/vendor/autoremesher
 	url = https://github.com/huxingyi/autoremesher
 [submodule "plugins/engines/cpp/skintokens/vendor/skin-tokens.cpp"]
-	path = plugins/engines/cpp/skintokens/vendor/skin-tokens.cpp
+	path = packages/engines/cpp/skintokens/vendor/skin-tokens.cpp
 	url = https://github.com/localai-org/skin-tokens.cpp
 [submodule "vendor/comfyui_extensions/melite-blender-proxy-nodes"]
 	path = vendor/comfyui_extensions/melite-blender-proxy-nodes

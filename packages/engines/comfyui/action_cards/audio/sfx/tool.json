@@ -1,0 +1,49 @@
+[
+  {
+    "name": "sfx_card",
+    "version": 1,
+    "kind": "card-compose",
+    "card": "sfx",
+    "model": "moss-sfx",
+    "stage_title": "Sound Effects",
+    "description": "Generate sound effects — MOSS-SFX v2, describe the SOUND not the scene",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "Describe the SOUND itself, not the scene (e.g. 'sharp metallic clang with long decay')"
+        },
+        "guidance_scale": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 20,
+          "default": 5.0,
+          "description": "Diffusion classifier-free guidance"
+        },
+        "n_diffusion_steps": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 500,
+          "default": 50,
+          "description": "More = higher quality, slower"
+        },
+        "duration": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 300,
+          "default": 10.0,
+          "description": "Output length in seconds"
+        },
+        "seed": {
+          "type": "integer",
+          "default": -1,
+          "description": "Seed"
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    }
+  }
+]

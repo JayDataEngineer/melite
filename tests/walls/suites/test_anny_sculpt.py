@@ -22,14 +22,14 @@ from _anchor import REPO
 from melite_models import load_model_py
 
 ANNY_MODEL_PY = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "models", "3d", "anny",
+    REPO, "packages", "engines", "comfyui", "models", "3d", "anny",
     "model.py")
 ANNY_SHAPE = (
-    REPO / "plugins/engines/comfyui/action_cards/3d/anny/ui/studio/shape.tsx"
+    REPO / "packages/engines/comfyui/action_cards/3d/anny/ui/studio/shape.tsx"
 )
 ANNY_COMPONENT = (
     REPO
-    / "plugins/engines/comfyui/action_cards/3d/anny/ui/studio/component.tsx"
+    / "packages/engines/comfyui/action_cards/3d/anny/ui/studio/component.tsx"
 )
 
 
@@ -40,7 +40,7 @@ def _anny_schema() -> ModuleType:
         "_anny_schema_sculpt",
         os.path.join(
             REPO,
-            "plugins/engines/comfyui/action_cards/3d/anny/py/schema.py",
+            "packages/engines/comfyui/action_cards/3d/anny/py/schema.py",
         ),
     )
     mod = importlib.util.module_from_spec(spec)

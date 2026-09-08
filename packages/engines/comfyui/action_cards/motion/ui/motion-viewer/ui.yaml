@@ -1,0 +1,7 @@
+# motion's motion-viewer claim (the viewer seam, 2026-08-21): the
+# NPZ render path for AssetMedia tiles + dialogs. Component owns the
+# mode dispatch — tile → MotionPoster (the skinned midpoint frame), full
+# → MotionViewer (the playback canvas). Tenant: ui/viewers.
+slot: motion-viewer
+precedence: 10
+title: Motion NPZ viewer (motion default)

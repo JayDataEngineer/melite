@@ -1,0 +1,61 @@
+# THE PRESETS — named recipes the lane owns (the pattern:
+# compose/presets.py loads, the validation door refuses unknown
+# names, projection lays preset knobs as the FLOOR under explicit
+# card params and preset lora rows over the 'default' stack role).
+#
+# Every value here is traceable to upstream evidence: the density
+# tiers and reference-protection notes are plaguekind's own
+# MarkdownNote (Sparse Density Notes / Reference protection), and
+# the lora rows are his proven turbo stack (see
+# references/plaguekind/ and PARITY.md).
+#
+# laws:
+#   knobs must be card knobs (checked against the model's
+#     card_knobs surface at load)
+#   loras are loras-mount-relative and must match the payload's
+#     Provision rows (the same wall that pins lora_stack.yaml)
+rows:
+  - name: match-pytorch
+    description: >-
+      sparsity 0.85 — "match pytorch quality" tier (plaguekind's
+      sparse-density notes: 0.80-0.85); the conservative lane
+    knobs:
+      h3_sla_sparsity: 0.85
+
+  - name: default
+    description: >-
+      sparsity 0.9 — plaguekind's default tier, minimal degradation
+    knobs:
+      h3_sla_sparsity: 0.9
+
+  - name: anime-boost
+    description: >-
+      sparsity 0.95 — "HUGE boost, 2d/anime use" (plaguekind's
+      sparse-density notes)
+    knobs:
+      h3_sla_sparsity: 0.95
+
+  - name: protected-refs
+    description: >-
+      light reference protection — "Light uses fixed 0.85 reference
+      sparsity and guarantees the best-scoring 15% of each visual-
+      reference range" (node spec); plaguekind's own instance ships
+      with protection ON; his note: "only use if having issues", at
+      the default density. DRIFT NOTE: our managed instance serves
+      the COMBO spec (Heavy Enforcement/Light/Off — this preset uses
+      the option string); the newer upstream node is BOOLEAN — when
+      the managed extension updates, this row flips to true.
+    knobs:
+      h3_sla_sparsity: 0.9
+      h3_sla_reference_protection: Light
+
+  - name: turbo-768
+    description: >-
+      the 768p turbo dareties as the WHOLE stack (plaguekind's
+      turbo-lora setup: the 768p v4 turbo rides solo at 0.6, the
+      fro v4 row drops); density at the default tier
+    knobs:
+      h3_sla_sparsity: 0.9
+    loras:
+      - lora: h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors
+        strength: 0.6

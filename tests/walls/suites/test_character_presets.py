@@ -44,13 +44,13 @@ from melite_models import (
 )
 
 ANNY_MODEL_PY = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "models", "3d", "anny",
+    REPO, "packages", "engines", "comfyui", "models", "3d", "anny",
     "model.py")
 ANNY_VERBS_PY = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "models", "3d", "anny",
+    REPO, "packages", "engines", "comfyui", "models", "3d", "anny",
     "mods", "verbs.py")
 ANNY_TSX = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "action_cards", "3d",
+    REPO, "packages", "engines", "comfyui", "action_cards", "3d",
     "anny", "ui", "studio", "component.tsx")
 PACK_NODES_PY = os.path.join(
     REPO, "vendor", "comfyui_extensions",

@@ -2,7 +2,7 @@
 """Engine-agnostic card form grammar: py/melite_cards is the py twin
 of web/ (the web registry root) — generic infrastructure, no lane knowledge
 (PLUGIN ARCHITECTURE LAW). The CLASSES live engine-owned at
-plugins/engines/<engine>/cards/<card>/card.py and carry the surface.
+packages/engines/<engine>/cards/<card>/card.py and carry the surface.
 
 Why python beats the yaml it replaces (docs/plans/python-action-cards.md):
   * one SSOT — tool.json / card_knobs generation later ride the class

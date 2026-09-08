@@ -18,7 +18,7 @@ from _anchor import REPO
 import flow as flow_mod
 
 MOTION_TSX = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "action_cards", "motion",
+    REPO, "packages", "engines", "comfyui", "action_cards", "motion",
     "motion-studio", "ui", "studio", "component.tsx")
 FLOW_PY = os.path.join(REPO, "flows", "body-to-somax", "flow.py")
 
@@ -143,7 +143,7 @@ class TestTheLiveBridge(unittest.TestCase):
         if str(REPO / "py") not in sys.path:
             sys.path.insert(0, str(REPO / "py"))
         sys.path.insert(
-            0, str(REPO / "plugins" / "engines" / "comfyui" / "compose"))
+            0, str(REPO / "packages" / "engines" / "comfyui" / "compose"))
         import artifact as _art
         self.assertTrue(_art.uploads(_art.Kind.MESH))
         self.assertIn(".glb", _art.upload_extensions())
@@ -191,7 +191,7 @@ class TestTheAnnyVerb(unittest.TestCase):
         sys.path.insert(0, str(REPO / "py"))
         from melite_cards import SubActionMod
         import importlib.util as _ilu
-        path = (REPO / "plugins" / "engines" / "comfyui" / "models"
+        path = (REPO / "packages" / "engines" / "comfyui" / "models"
                 / "3d" / "anny" / "mods" / "verbs.py")
         spec = _ilu.spec_from_file_location(
             "somax_verb_w", str(path),

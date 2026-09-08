@@ -7,7 +7,7 @@ need testing around this massive testing gap"):
 
 The existing dev DSH suite (tests/dev_dsh/test_dev_dsh.py) probes
 ~2 routes through the dev DSH origin (/v1/forms, /editor/). The
-editor's client code (plugins/web/editor/src/) fetches at least 9
+editor's client code (packages/web/editor/src/) fetches at least 9
 distinct /v1/* routes — the form-spec per-model probe, the
 model-catalog, themes, tags, services, kinds, queue, and the
 /v1/forms?tag= variant. When the upstream estate gateway serves
@@ -68,7 +68,7 @@ def dev_dsh_up() -> Iterator[bool]:
         "dev DSH not listening on :%d — opt-in infra; skip" % DEV_PORT)
 
 # Every route the editor's client code fetches (grep of
-# plugins/web/editor/src for /v1/<path>). When the editor adds a
+# packages/web/editor/src for /v1/<path>). When the editor adds a
 # new route, ADD IT HERE — a missing entry is the wall's job to
 # catch (so a route that ships without a probe is a red).
 EDITOR_ROUTES = [

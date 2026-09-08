@@ -1,0 +1,51 @@
+{
+  "1": {
+    "class_type": "LoadImage",
+    "inputs": {"image": "example.png"}
+  },
+  "2": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {"ckpt_name": "sam3.1_multiplex_fp16.safetensors"}
+  },
+  "3": {
+    "class_type": "UNETLoader",
+    "inputs": {"unet_name": "rt_detr_v4-x-hgnet_fp32.safetensors", "weight_dtype": "default"}
+  },
+  "4": {
+    "class_type": "RTDETR_detect",
+    "inputs": {
+      "model": ["3", 0],
+      "image": ["1", 0],
+      "threshold": 0.35,
+      "class_name": "person",
+      "max_detections": 100
+    }
+  },
+  "5": {
+    "class_type": "SAM3_Detect",
+    "inputs": {
+      "model": ["2", 0],
+      "image": ["1", 0],
+      "bboxes": ["4", 0],
+      "threshold": 0.93,
+      "refine_iterations": 2,
+      "individual_masks": false
+    }
+  },
+  "6": {
+    "class_type": "MaskToImage",
+    "inputs": {"mask": ["5", 0]}
+  },
+  "7": {
+    "class_type": "SaveImage",
+    "inputs": {"images": ["6", 0], "filename_prefix": "mask/mask_combined"}
+  },
+  "8": {
+    "class_type": "DrawBBoxes",
+    "inputs": {"bboxes": ["4", 0], "image": ["1", 0]}
+  },
+  "9": {
+    "class_type": "SaveImage",
+    "inputs": {"images": ["8", 0], "filename_prefix": "mask/detect_boxes"}
+  }
+}

@@ -1,0 +1,23 @@
+# kimodo lane extension declarations (EXTENSION LAW: declared, never
+# vendored under a plugin tree; the packs live as vendor submodules,
+# the management plane installs). In-tree names resolve against the
+# vendor/comfyui_extensions dir at the compose gate.
+#
+# 2026-09-06: this lane is THE kimodo (the cpp ggml lane retired the
+# same day — ONE-implementation rule; the wrap won). The
+# "stopgap" label in the desc below was era-naming — this pack has
+# been the implementation since 2026-09-04.
+extensions:
+  - name: melite-kimodo-nodes
+    registry: melite-kimodo-nodes
+    version: 0.1.0
+    required: true
+    desc: KimodoLoader + KimodoTextToPose (the NVIDIA-package wrap — THE kimodo implementation) — text to SOMA-77 motion NPZ.
+  # 2026-09-06 gap-fix: pin restated in the canonical shape (name +
+  # registry + version, the fit/skin/anny rows) — a bare-name row
+  # forked the pin and extension_lane refused the whole manifest.
+  - name: melite-poser-nodes
+    registry: melite-poser-nodes
+    version: 0.1.0
+    required: true
+    desc: RaySomaxBake — skins the motion NPZ onto a SOMAX-rigged character GLB.

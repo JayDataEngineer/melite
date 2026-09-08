@@ -1,7 +1,7 @@
 """arch_lint -- the estate boundary-drift linter (2026-09-03).
 
 The four contracts (each maps to an operator law):
-  1. core_is_generic         py/ must not import from plugins/, vendor/, or references/
+  1. core_is_generic         py/ must not import from packages/, vendor/, or references/
   2. plugins_are_independent  the three plugin groups (engines, harness, web) do not import each other
   3. vendor_packs_isolated   each vendor/comfyui_extensions/<pack> is its own repo
   4. references_is_study_only references/ is read-only -- no one imports it
@@ -88,14 +88,14 @@ def _top_group(path: Path) -> str | None:
     if not parts:
         return None
     head = parts[0]
-    if head in ("py", "plugins", "vendor", "references"):
+    if head in ("py", "packages", "vendor", "references"):
         return head
     return None
 
 
 def _plugins_subgroup(path: Path) -> str | None:
     try:
-        rel = path.resolve().relative_to(REPO / "plugins")
+        rel = path.resolve().relative_to(REPO / "packages")
     except ValueError:
         return None
     parts = rel.parts
@@ -117,15 +117,15 @@ def _vendor_pack(path: Path) -> str | None:
 
 def contract_core_is_generic(all_imports: list[tuple[Path, int, str]]) -> list[tuple[Path, int, str]]:
     """PLUGIN ARCHITECTURE LAW: py/ is generic. No py/ file may
-    import from plugins/, vendor/, or references/.
+    import from packages/, vendor/, or references/.
 
     SELF-IMPORT NOTE: py/plugins.py is a module INSIDE py/ whose
     name happens to start with "plugins". An "import plugins" inside
     a py/ file is a self-import into py/plugins.py (the plugin
     directory iterator / contract broker), not a cross-tree reach
-    into the plugins/ directory tree. We exclude it."""
+    into the packages/ directory tree. We exclude it."""
     py_self_imports = {
-        "plugins",                       # py/plugins.py (self)
+        "packages",                       # py/plugins.py (self)
         # add future py/ internal modules here if they ever get
         # module names that collide with top-level tree names.
     }
@@ -142,7 +142,7 @@ def contract_core_is_generic(all_imports: list[tuple[Path, int, str]]) -> list[t
                 f"core is generic: {mod!r} in py/"))
         if mod.endswith("/<relative>"):
             top = mod.split("/")[0]
-            if top in ("plugins", "vendor", "references"):
+            if top in ("packages", "vendor", "references"):
                 violations.append((path, line_no,
                     f"core is generic: relative import lands in {top}"))
     return violations
@@ -185,7 +185,7 @@ def contract_plugins_are_independent(all_imports: list[tuple[Path, int, str]]) -
                 if my_group and my_group != other:
                     violations.append((path, line_no,
                         f"plugins are independent: relative import into "
-                        f"plugins/{other}/ from plugins/{my_group}/"))
+                        f"packages/{other}/ from packages/{my_group}/"))
     return violations
 
 

@@ -29,7 +29,7 @@ import pytest
 
 from _anchor import REPO
 
-PROVISIONER = REPO / "plugins" / "harness" / "dsh" / "provisioner"
+PROVISIONER = REPO / "packages" / "harness" / "dsh" / "provisioner"
 PATCH = PROVISIONER / "cordis.patch.yml"
 PROVISIONER_PKG = PROVISIONER / "package.json"
 BIN = PROVISIONER / "bin" / "infer-provision.mjs"

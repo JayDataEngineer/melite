@@ -1,5 +1,5 @@
 """test_skintensors_card.py — walls for the auto-rig lane
-(plugins/engines/cpp/skintokens).
+(packages/engines/cpp/skintokens).
 
 Design record: docs/design/auto-rig-skintokens.md (2026-09-06,
 operator order: "Does this have a place in our workflow?" then
@@ -39,7 +39,7 @@ sys.path.insert(0, os.path.join(HERE, "_anchor"))
 
 from _anchor import REPO  # noqa: E402
 
-LANE = os.path.join(REPO, "plugins", "engines", "cpp", "skintokens")
+LANE = os.path.join(REPO, "packages", "engines", "cpp", "skintokens")
 CARD = os.path.join(LANE, "action_cards", "3d", "auto-rig")
 
 
@@ -60,7 +60,7 @@ class TestLaneStructure(unittest.TestCase):
         refs = P.scan_engines()
         self.assertIn("skintokens", refs,
                       "the skintokens engine did not mount — the "
-                      "plugin scan must find plugins/engines/cpp/"
+                      "plugin scan must find packages/engines/cpp/"
                       "skintokens (plugin.py marker)")
         src = _read("plugin.py")
         self.assertIn('engines = ("skintokens",)', src)

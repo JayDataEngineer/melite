@@ -6,18 +6,18 @@ engine, next to its models/knob data, and is discovered from
 plugin-owned declarations:
 
     Legacy shape (audio-cpp):
-        plugins/<id>/engines/<dir>/engine.yaml    type: <engine type>
-        plugins/<id>/engines/<dir>/engine.py      async execute(...)
-        plugins/<id>/engines/<dir>/compose.py     card_compose(...)
+        packages/<id>/engines/<dir>/engine.yaml    type: <engine type>
+        packages/<id>/engines/<dir>/engine.py      async execute(...)
+        packages/<id>/engines/<dir>/compose.py     card_compose(...)
     ffmpeg retired 2026-09-04 — concat rides comfyui's VHS /
     melite-audio-nodes; the CLI-wrapper engine plugin and its
     type are gone.
 
     Compose-first shape (comfyui — operator order 2026-09-02):
-        plugins/<id>/plugin.yaml                  engines: [type]
-        plugins/<id>/compose/                     card_compose + execute
-        plugins/<id>/models/                      self-contained model families
-        plugins/<id>/action_cards/                card defs + unique lane code
+        packages/<id>/plugin.yaml                  engines: [type]
+        packages/<id>/compose/                     card_compose + execute
+        packages/<id>/models/                      self-contained model families
+        packages/<id>/action_cards/                card defs + unique lane code
 
     The gateway resolves engine type FROM THE GRAPH — it names no lane
     and no engine. Compose-first plugins own execution via comfyui-mcp
@@ -28,7 +28,7 @@ banned shape — lane names in the core). Duplicate type declarations
 across plugins fail LOUD at scan, not silently last-writer-wins.
 
 Model resolution is DETERMINISTIC (the C glob-order bug dies here):
-every copy of plugins/*/models/*/<mid>/model.yaml is collected, copies
+every copy of packages/*/models/*/<mid>/model.yaml is collected, copies
 that DECLARE an engine win over silent copies, first declarer in sorted
 plugin order owns the model. No declarer → LOUD refusal (QUEUE LANE
 LAW: refuse to guess).
@@ -53,11 +53,11 @@ if TYPE_CHECKING:
 type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
 
 REPO = Path(__file__).resolve().parent.parent
-PLUGINS_DIR = REPO / "plugins"
-# Scan roots: engine plugins under plugins/engine/*, agent plugins under
-# plugins/agent/*, web plugins under plugins/web/*.  Each plugin dir
+PLUGINS_DIR = REPO / "packages"
+# Scan roots: engine plugins under packages/engine/*, agent plugins under
+# packages/agent/*, web plugins under packages/web/*.  Each plugin dir
 # (depth-2 under a category) may own engines/ and/or models/.
-_PLUGIN_SCAN_ROOTS = [REPO / "plugins" / cat for cat in ("engines", "web")]
+_PLUGIN_SCAN_ROOTS = [REPO / "packages" / cat for cat in ("engines", "web")]
 IDENT_RE = re.compile(r"^[a-z_][a-z0-9_-]*$")
 
 try:
@@ -206,7 +206,7 @@ def _has_plugin_marker(d: Path) -> bool:
 def iter_plugin_dirs_under(root: Path) -> Iterator[Path]:
     """The ONE plugin-dir walk (public: scan_engines here, catalog.py,
     and editor_forms.py all consume it — one law, no per-consumer
-    copies). Depth-2 (the original contract): plugins/<cat>/<plugin>.
+    copies). Depth-2 (the original contract): packages/<cat>/<plugin>.
     Depth-3 (category subdirs, 2026-10-02): a dir with no plugin
     markers of its own is a CATEGORY CONTAINER (cpp/), not a plugin —
     recurse one level into its marker-carrying children."""
@@ -476,7 +476,7 @@ def load_engine(engine_type: str) -> ModuleType | None:
     ref = engines.get(engine_type)
     if ref is None:
         raise ValidationError(
-            "no engine plugin for type %r (no plugins/*/engines/*/engine.py "
+            "no engine plugin for type %r (no packages/*/engines/*/engine.py "
             "or engine.yaml declares it)" % engine_type)
     # try engine.py first
     mod = ref.load("engine")

@@ -1,0 +1,37 @@
+{
+  "1": {
+    "class_type": "LoadAudiocoreModel",
+    "inputs": {
+      "family": "qwen3_tts",
+      "model_path": "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged",
+      "extras": "{\"variant\": \"voicedesign\"}"
+    }
+  },
+  "2": {
+    "class_type": "AudiocoreVoiceStudio",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "mode": "export_lite",
+      "name": "persona",
+      "instruct": "A warm female voice with a British accent",
+      "temperature": 0.7,
+      "top_p": 0.9,
+      "speed": 1.0,
+      "repetition_penalty": 1.05,
+      "seed": 42
+    }
+  },
+  "3": {
+    "class_type": "SaveAudio",
+    "inputs": {
+      "audio": [
+        "2",
+        0
+      ],
+      "filename_prefix": "voicelock"
+    }
+  }
+}

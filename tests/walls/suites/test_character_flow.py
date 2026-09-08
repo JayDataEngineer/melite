@@ -19,8 +19,8 @@ from _anchor import REPO
 PY = os.path.join(str(REPO), "py")
 if PY not in sys.path:
     sys.path.insert(0, PY)
-for _p in (os.path.join(str(REPO), "plugins", "engines", "comfyui"),
-           os.path.join(str(REPO), "plugins", "engines", "comfyui",
+for _p in (os.path.join(str(REPO), "packages", "engines", "comfyui"),
+           os.path.join(str(REPO), "packages", "engines", "comfyui",
                         "compose")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
@@ -89,7 +89,7 @@ class TestFromFlowFidelity:
 
 
 def _template() -> dict[str, JsonValue]:
-    p = os.path.join(str(REPO), "plugins", "engines", "comfyui",
+    p = os.path.join(str(REPO), "packages", "engines", "comfyui",
                      "models", "image", "z-image",
                      "generate_t2i.json")
     with open(p) as fh:
@@ -111,14 +111,14 @@ class TestZImageBuilder:
 
 
 def _render_pixal_canonical() -> dict[str, JsonValue]:
-    img_py = os.path.join(str(REPO), "plugins", "engines", "comfyui",
+    img_py = os.path.join(str(REPO), "packages", "engines", "comfyui",
                           "action_cards", "3d", "img_to_mesh", "py")
     spec = importlib.util.spec_from_file_location(
         "i2m_rend_char_w", os.path.join(img_py, "renderer.py"))
     rend = importlib.util.module_from_spec(spec)
     sys.modules["i2m_rend_char_w"] = rend
     spec.loader.exec_module(rend)
-    mdir = os.path.join(str(REPO), "plugins", "engines", "comfyui",
+    mdir = os.path.join(str(REPO), "packages", "engines", "comfyui",
                         "models", "3d", "pixal3d", "model.py")
     spec2 = importlib.util.spec_from_file_location(
         "pixal3d_model_char_w", mdir)

@@ -1,0 +1,50 @@
+# 3d ComfyUI extension dependencies (genre-level in-tree packs).
+# ONE-PATTERN: every extension link lives in exactly ONE nodes.yaml;
+# family-specific node packs that ship WITH the estate declare here.
+#
+# ANNY PATH RECORD (2026-09-03): melite-anny-nodes (our ctypes anny
+# shape-basis pack) retired — zero consumers; the anny shape lane lives
+# in the ray Body Studio HTTP flow. Upstream ameliacode/
+# ComfyUI-SMPLx-Estimator was evaluated as the replacement and
+# DISQUALIFIED: every graph requires Load SMPLx -> SMPLX_NEUTRAL.npz,
+# and SMPL-X is paywalled (operator: "we never use SMPLX"). The
+# license-clean image->humanoid path is anny-native: Multi-HMR2 (free
+# NAVER non-commercial ckpt) predicts anny directly; anny is Apache
+# 2.0; SOMA-X/kimodo (NVIDIA, free) already serve the rig/motion side
+# in the ray estate. A downstream SMPL-X->SOMA-X converter cannot
+# remove the paywall — the SMPL-X file is needed at prediction time.
+# Anny estate (2026-09-07 merge: the melite-anny-estimator-nodes pack
+# folded INTO melite-kimodo-nodes — one install unit for the humanoid
+# family, shared torch/melite_model_base spine. This lane declares the
+# SAME pack the motion lane declares; node type names unchanged, so
+# flows/templates/snapshots keep working. NAVER non-commercial research
+# ckpts (multihmr2.pt auto-downloads; anny-fit's checkpoints live in
+# the side checkout per its INSTALL.md).
+extensions:
+  - name: melite-kimodo-nodes
+    registry: melite-kimodo-nodes
+    version: 0.1.0
+    required: false
+    desc: >-
+      Image -> Anny (all-age parametric human model), both engines:
+      MultiHMR2ImageToAnny wraps naver/multi-hmr2 (regression,
+      in-process, VRAM-tracked via melite_model_base) — multi-person
+      Anny params (.pkl world param) + meshes (.glb) + optional render.
+      AnnyFitOptimize wraps naver/anny-fit (camera-space optimization,
+      out-of-process over ANNYFIT_SRC) — preprocess (detect+ViTPose+
+      camera+densekp+VLM+MultiHMR init) -> optimize -> refined params
+      (.npz) + before/after renders. NAVER non-commercial licenses
+      on both upstreams; Anny itself Apache 2.0.
+    pip:
+      - "multihmr2 @ git+https://github.com/naver/multi-hmr2.git@f066532d096034700e5ba8b7b1ca655729d3ea6e"
+  - name: melite-autoremesher-nodes
+    registry: melite-autoremesher-nodes
+    version: 0.1.0
+    required: false
+    desc: >-
+      In-tree quad-remesh pack: vendored huxingyi/autoremesher CLI
+      (references/autoremesher, offscreen subprocess) with in-process
+      trimesh GLB<->OBJ conversion. Budget classes stay DATA in
+      melite-3d presets yaml; resolution chain explicit > preset >
+      defaults, loud on missing budgets. Phase 0 of the consolidation
+      plan.

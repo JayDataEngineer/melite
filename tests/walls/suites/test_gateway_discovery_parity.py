@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """test_gateway_discovery_parity.py — FLIP-GAP TS discovery READ doors parity wall.
 
-Proves the TypeScript port (plugins/gateway/src/doors/discovery.ts
+Proves the TypeScript port (packages/gateway/src/doors/discovery.ts
 over the ROUTES mirror, ctx.ts arms) serves the 10 discovery doors
 byte-identical to the py gateway:
 
@@ -42,6 +42,20 @@ status + byte-equality on bodies (+ content-type parity):
     wall-box pressure — flaky, never a pin). Declared-but-missing provisions are
     SKIPPED with a note (both sides would on-demand fetch through
     the rail — network in a wall is flaky, never a pin);
+  - SYNTHETIC-FIXTURE provisions legs (the >2GB streaming pin):
+    the mount resolves through the real store (endpoint file +
+    model_paths read_root — machine paths, never fixtures), so the
+    wall plants a temp file at a DECLARED-but-missing mount path
+    (never clobbering — the path must not exist; deleted in a
+    finally so the slot returns to missing): a 16KB known-bytes
+    file dual-served byte-exact (the small-file regression leg for
+    the chunked read path, incl. a Range-header-ignored pin — py
+    never calls _parse_range on this door, so Range rides ignored
+    to the full 200 on both sides) and a 2.5GB SPARSE file
+    (truncate — disk cost ~0, past node's 2GiB readFileSync
+    ceiling) dual-served with status + content-type +
+    content-length + STREAMED byte-count pins (drained in chunks
+    and discarded — GBs never sit in the wall client);
   - trailing-slash + query-strip normalization, method-mismatch
     404s, ensure_ascii + float-literal pins;
   - auth-gate parity with the token OFF and ON (reboot both: 401
@@ -50,7 +64,7 @@ status + byte-equality on bodies (+ content-type parity):
   - node -e unit legs for the TS-only deployment envelopes (503
     missing-catalog, 503 unparseable-catalog).
   - FRESHNESS WALL: regen tools/export_discovery_catalog.py from the
-    live py tree and diff against plugins/gateway/data/
+    live py tree and diff against packages/gateway/data/
     discovery-catalog.json (pins the JSON vs the py scan — catches
     drift while py still lives; post-py the file is the frozen truth).
 
@@ -88,9 +102,9 @@ sys.path.insert(0, str(REPO / "py"))
 PASS = FAIL = 0
 TOKEN = "wall-discovery-token-%d" % os.getpid()
 
-TS_SERVER = REPO / "plugins" / "gateway" / "src" / "server.ts"
-TS_DISCOVERY = REPO / "plugins" / "gateway" / "src" / "doors" / "discovery.ts"
-TS_CATALOG = (REPO / "plugins" / "gateway" / "data"
+TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+TS_DISCOVERY = REPO / "packages" / "gateway" / "src" / "doors" / "discovery.ts"
+TS_CATALOG = (REPO / "packages" / "gateway" / "data"
               / "discovery-catalog.json")
 TS_EXPORT_TOOL = REPO / "tools" / "export_discovery_catalog.py"
 
@@ -99,6 +113,13 @@ JSON_HEADERS = ("content-type", "content-length")
 FULL_BYTES_MAX = 256 * 1024 * 1024
 PREFIX_MAX = 1024 * 1024 * 1024
 PREFIX_LEN = 64 * 1024
+
+# Synthetic-fixture sizes: the small regression rides real known
+# bytes (16KB — every byte value, byte-exact dual); the giant leg
+# rides a 2.5GB SPARSE file (past node's 2GiB readFileSync ceiling
+# — the flip-debt pin; truncate keeps disk cost ~0).
+SYNTH_SMALL = bytes(list(range(256)) * 64)
+SYNTH_GIANT_SIZE = 2684354560  # 2.5GiB
 
 
 def check(name: str, ok: bool, note: str = "") -> None:
@@ -186,6 +207,36 @@ def dual_prefix(py_port: int, ts_port: int, path: str, name: str) -> None:
                    ph.get("content-type"), th.get("content-type"),
                    ph.get("content-length"), th.get("content-length")))
     check(name, ok, note)
+
+
+def stream_count(port: int, path: str) -> tuple[int | None, int, bytes,
+                                              bytes, dict]:
+    """status + headers + TOTAL byte count, drained in 4MB chunks and
+    discarded — pins >2GB provision parity without materializing
+    GBs in the wall client. Returns (status, total, head16, tail16,
+    headers)."""
+    import http.client
+    conn = http.client.HTTPConnection("127.0.0.1", port, timeout=900)
+    try:
+        conn.request("GET", path)
+        r = conn.getresponse()
+        total = 0
+        head = b""
+        tail = b""
+        while True:
+            chunk = r.read(4 * 1024 * 1024)
+            if not chunk:
+                break
+            if len(head) < 16:
+                head = (head + chunk)[:16]
+            tail = (tail + chunk)[-16:]
+            total += len(chunk)
+        return (r.status, total, head, tail,
+                {k.lower(): v for k, v in r.getheaders()})
+    except Exception as e:
+        return (None, -1, b"", b"", {"transport": str(e)})
+    finally:
+        conn.close()
 
 
 def boot_ts(env: dict) -> tuple[int, "subprocess.Popen[str]"]:
@@ -447,6 +498,97 @@ def main() -> int:
             path = "/v1/models/%s/provisions/%s" % (fid, pname)
             dual_prefix(py_port, ts_port, path,
                         "GET %s (prefix %dMB)" % (path, size // 1048576))
+        # ── synthetic-fixture legs (the >2GB streaming pin) ──
+        # The mount resolves through the real store, so a synthetic
+        # provision rides a DECLARED-but-missing slot: plant a temp
+        # file at its mount path (never clobbering — the path must
+        # not exist), dual-serve it, delete it in the finally (the
+        # slot returns to missing; the rail-fetch skip above is
+        # restored). No slot (or an unwritable/unparented mount) =
+        # SKIP with a note, never a pin.
+        synth_disk: str | None = None
+        try:
+            if missing:
+                mfid, mpname = missing[0]
+                mcls = _gw._family_by_id(mfid)
+                mprov = next(
+                    (p for p in
+                     (getattr(mcls, "provisions", None) or ())
+                     if p.name == mpname), None)
+                mres = (_gw._provision_mount(mcls, mprov)
+                        if mcls is not None and mprov is not None
+                        else None)
+                if mres is not None and not os.path.exists(mres[0]) \
+                        and os.path.isdir(os.path.dirname(mres[0])):
+                    synth_disk = mres[0]
+                    spath = ("/v1/models/%s/provisions/%s"
+                             % (mfid, mpname))
+                    with open(synth_disk, "wb") as f:
+                        f.write(SYNTH_SMALL)
+                    dual(py_port, ts_port, spath,
+                         "synthetic small provisions bytes (%s)" % mpname)
+                    for port, tag in ((py_port, "py"), (ts_port, "ts")):
+                        st, body, h = http(port, spath)
+                        check("synthetic %s content-length %s"
+                              % (tag, mpname),
+                              st == 200 and len(body) == len(SYNTH_SMALL)
+                              and int(h.get("content-length", "-1"))
+                              == len(body))
+                    dual(py_port, ts_port, spath,
+                         "synthetic provisions range ignored (%s)" % mpname,
+                         headers={"Range": "bytes=0-99"})
+                    for port, tag in ((py_port, "py"), (ts_port, "ts")):
+                        st, body, h = http(
+                            port, spath, headers={"Range": "bytes=0-99"})
+                        check("synthetic %s range ignored full-200 %s"
+                              % (tag, mpname),
+                              st == 200 and body == SYNTH_SMALL)
+                    os.unlink(synth_disk)
+                    # SPARSE giant: truncate keeps disk cost ~0; zeros
+                    # are the honest fixture (a hole reads as zeros on
+                    # both sides — head/tail pins below prove it).
+                    with open(synth_disk, "wb"):
+                        pass
+                    os.truncate(synth_disk, SYNTH_GIANT_SIZE)
+                    ps, pn, phd, ptl, ph = stream_count(py_port, spath)
+                    ts_, tn, thd, ttl, th = stream_count(ts_port, spath)
+                    check("synthetic >2GB py status/length",
+                          ps == 200 and pn == SYNTH_GIANT_SIZE
+                          and int(ph.get("content-length", "-1"))
+                          == SYNTH_GIANT_SIZE,
+                          "status %r counted %d len %r"
+                          % (ps, pn, ph.get("content-length")))
+                    check("synthetic >2GB ts status/length",
+                          ts_ == 200 and tn == SYNTH_GIANT_SIZE
+                          and int(th.get("content-length", "-1"))
+                          == SYNTH_GIANT_SIZE,
+                          "status %r counted %d len %r"
+                          % (ts_, tn, th.get("content-length")))
+                    check("synthetic >2GB content-type parity",
+                          ps == 200 and ts_ == 200
+                          and ph.get("content-type")
+                          == th.get("content-type"),
+                          "%r/%r" % (ph.get("content-type"),
+                                     th.get("content-type")))
+                    check("synthetic >2GB byte counts agree",
+                          ps == 200 and ts_ == 200
+                          and pn == tn == SYNTH_GIANT_SIZE,
+                          "py %d ts %d" % (pn, tn))
+                    check("synthetic >2GB head/tail zeros",
+                          phd == thd == b"\0" * 16
+                          and ptl == ttl == b"\0" * 16,
+                          "py %r/%r ts %r/%r" % (phd, ptl, thd, ttl))
+                else:
+                    print("  skip synthetic-fixture legs "
+                          "(slot occupied/unresolvable)")
+            else:
+                print("  skip synthetic-fixture legs (no missing slot)")
+        finally:
+            if synth_disk is not None:
+                try:
+                    os.unlink(synth_disk)
+                except OSError:
+                    pass
         dual(py_port, ts_port,
              "/v1/models/anny/provisions/anny-base-body.glb",
              "provisions POST 404", "POST")
@@ -546,8 +688,8 @@ def main() -> int:
         # counterpart — the catalog file is down, not the builder).
         node = shutil.which("node")
         bad_root = base / "bad-root"
-        (bad_root / "plugins" / "gateway" / "data").mkdir(parents=True)
-        (bad_root / "plugins" / "gateway" / "data"
+        (bad_root / "packages" / "gateway" / "data").mkdir(parents=True)
+        (bad_root / "packages" / "gateway" / "data"
          / "discovery-catalog.json").write_text(
             "{not json", encoding="utf-8")
         units = (

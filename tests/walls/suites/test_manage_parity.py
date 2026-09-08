@@ -25,9 +25,9 @@ import re
 from _anchor import REPO
 
 MANAGE = REPO / "py" / "manage.py"
-PANEL = (REPO / "plugins" / "web" / "dsh" / "melite-card-deck" /
+PANEL = (REPO / "packages" / "web" / "dsh" / "melite-card-deck" /
          "src" / "client" / "assets-tab.tsx")
-TOOL = (REPO / "plugins" / "harness" / "dsh" / "melite-tools" /
+TOOL = (REPO / "packages" / "harness" / "dsh" / "melite-tools" /
         "src" / "tools" / "comfy-manage.ts")
 
 

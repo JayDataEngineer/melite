@@ -24,7 +24,7 @@ Run dirs are drop-in compatible: output/RUN_ID/_request.json,
 _flow.json (atomic tmp+rename), engine artifacts beside them.
 
 Engines + card composition live in the OWNING PLUGIN (PLUGIN
-ARCHITECTURE LAW): plugins/<id>/engines/<dir>/engine.yaml declares the
+ARCHITECTURE LAW): packages/<id>/engines/<dir>/engine.yaml declares the
 type; engine.py exports
     async def execute(node, run_dir, inputs, stop_event) -> dict
     async def stop(node, run_dir) -> None   (optional)
@@ -423,7 +423,7 @@ def _load_card_class(card_id: str) -> "type | None":
     except ImportError:
         print("[card-load] melite_cards unavailable", flush=True)
         return None
-    for cpy in _card_class_paths(REPO / "plugins"):
+    for cpy in _card_class_paths(REPO / "packages"):
         try:
             pdir = cpy.parent
             if pdir.name == "py":
@@ -459,7 +459,7 @@ def _card_id_for_model(mid: str) -> "str | None":
         from melite_models import load_model_py
     except ImportError:
         return None
-    plugins_dir = REPO / "plugins"
+    plugins_dir = REPO / "packages"
     for engine_dir in sorted(plugins_dir.glob("engines/*")):
         for mpy in sorted(engine_dir.glob("models/*/*/model.py")):
             if mpy.parent.name != mid:
@@ -501,9 +501,9 @@ def _find_card_requires(mid: str, plugins_dir: str | None = None) -> list[str]:
     card.yaml is extinct; requires rides the class.
     """
     if plugins_dir is None:
-        plugins_dir = REPO / "plugins"
+        plugins_dir = REPO / "packages"
     import sys as _sys
-    # Cards + models DSL now live in py/ (gateway infra, not plugins/).
+    # Cards + models DSL now live in py/ (gateway infra, not packages/).
     py_dir = str(REPO / "py")
     if py_dir not in _sys.path:
         _sys.path.insert(0, py_dir)
@@ -767,7 +767,7 @@ def _card_field_names(model_cls: type[Model]) -> set[str] | None:
         from melite_cards import load_card_py
     except ImportError:
         return None
-    plugins_dir = REPO / "plugins"
+    plugins_dir = REPO / "packages"
     for cpy in sorted(
         list(plugins_dir.glob("engines/*/action_cards/*/py/card.py"))
             + list(plugins_dir.glob("engines/*/action_cards/*/*/py/card.py"))
@@ -3088,7 +3088,7 @@ async def _h_loras(ctx: _Ctx) -> HandlerResult:
 async def _h_family_schemas(ctx: _Ctx) -> HandlerResult:
     import editor_runs as _er
     return 200, _er.family_param_schemas(
-        _er.catalog_family_ids(str(REPO / "plugins")))
+        _er.catalog_family_ids(str(REPO / "packages")))
 
 
 async def _h_schema(ctx: _Ctx) -> HandlerResult:
@@ -3105,7 +3105,7 @@ async def _h_schema(ctx: _Ctx) -> HandlerResult:
 async def _h_family_schema_one(ctx: _Ctx) -> HandlerResult:
     import editor_runs as _er
     return _er.family_param_schema(
-        _er.catalog_family_ids(str(REPO / "plugins")), ctx.m.group(1))
+        _er.catalog_family_ids(str(REPO / "packages")), ctx.m.group(1))
 
 
 async def _h_drafts_list(ctx: _Ctx) -> HandlerResult:
@@ -3370,7 +3370,7 @@ def _provision_mount(cls: type[Model], prov: Provision) -> tuple[str, Path] | No
         # plugin, where lane knowledge belongs); without one we
         # refuse, never guess.
         return None
-    ep_path = REPO / "plugins" / "engines" / engine / "data" / (
+    ep_path = REPO / "packages" / "engines" / engine / "data" / (
         engine + "_endpoint.json")
     try:
         ep = json.loads(ep_path.read_text(encoding="utf-8"))

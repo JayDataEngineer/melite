@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """py/catalog.py — the estate's model catalog builder.
 
-THE catalog module (there is no other): scans plugins/engines/** for
+THE catalog module (there is no other): scans packages/engines/** for
 model.py classes and card.py classes, assembles the served catalog,
 and pins its own output against tests/golden_http/model-catalog.json
 — the estate's wire contract regression pin.
@@ -139,8 +139,8 @@ def _capability_entry_from_class(card_dir_name: str, cls: type[ActionCard], rout
 
 
 def _engine_owner_dirs(eng_root: str | Path) -> Iterator[Path]:
-    """Owner dirs under plugins/engines/: depth-2 plugins AND depth-3
-    category subdirs (plugins/engines/<cat>/<plugin>/ — the cpp
+    """Owner dirs under packages/engines/: depth-2 plugins AND depth-3
+    category subdirs (packages/engines/<cat>/<plugin>/ — the cpp
     native-engine category, 2026-10-02). THE WALK LIVES IN plugins.py
     (iter_plugin_dirs_under — one law, every consumer: scan_engines,
     this scan, editor_forms). Yields Path objects."""
@@ -341,7 +341,7 @@ def _scan_card_dir(card_dir: str, card_name: str, models: dict[str, dict[str, Js
     # depth-1 card dirs, two for genre-grouped
     # (action_cards/<genre>/<card>/); THE CARD PATTERN adds a py/ hop
     # — stripped first. Depth-3 category plugins (cpp/): climb to the
-    # dir whose PARENT is plugins/ — the repo root — instead of a
+    # dir whose PARENT is packages/ — the repo root — instead of a
     # fixed three-hop dirname.
     _d = os.path.dirname(card_dir)
     if os.path.basename(_d) == "py":
@@ -476,7 +476,7 @@ def scan_catalog(repo_root: str) -> _Catalog:
     are maps keyed by family id: duplicate ids across plugin folders
     collapse last-scan-row-wins.
     """
-    plugins_dir = os.path.join(os.fspath(repo_root), "plugins")
+    plugins_dir = os.path.join(os.fspath(repo_root), "packages")
 
     scan_pairs = _scan_models(plugins_dir)
     models = {}
@@ -584,7 +584,7 @@ def model_loras(repo_root: str, model_id: str) -> dict[str, JsonValue] | None:
     class serves nothing, same law as the catalog)."""
     from melite_cards import LorasMod
     repo_root = os.path.abspath(repo_root)
-    eng_root = os.path.join(repo_root, "plugins", "engines")
+    eng_root = os.path.join(repo_root, "packages", "engines")
     for owner in _engine_owner_dirs(eng_root):
         models_dir = os.path.join(owner, "models")
         if not os.path.isdir(models_dir):

@@ -82,6 +82,7 @@ if TYPE_CHECKING:
 
 # The served-envelope shape: decoded JSON (objects, arrays, scalars).
 type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
+type JsonDict = dict[str, JsonValue]
 
 # The artifact-serving URL prefix — the ONE door clients fetch run media
 # from. Owns the stamping here (runs list rows, poster) and is imported
@@ -220,31 +221,26 @@ def _cjson_compact(value: JsonValue) -> str:
 # artifact typing (C artifact_type ~537 / content_type_of ~557)
 # ---------------------------------------------------------------------------
 
-def _media_kinds() -> dict[str, dict[str, list[str]]]:
-    """Single media-kind vocabulary (SSOT: plugins/web/dsh/media-plugin/media-kinds.json).
-    The TS panel and the runs-window test derive from the same file; the
-    parity wall pins all three. Import-time load: a missing file refuses
-    loudly here, never as an empty sidebar downstream."""
+def _load_media_doc() -> "dict[str, object]":
+    """The media SSOT document (packages/web/dsh/media-plugin/
+    media-kinds.json) — the ONE file read behind the kind vocabulary
+    AND the door-tier caps. Import-time load: a missing file refuses
+    loudly here, never as an empty sidebar downstream. (2026-09-06:
+    `_media_kinds()`/`_media_policy()` duplicated this body line for
+    line — one helper now.)"""
     here = os.path.dirname(os.path.abspath(__file__))
     path = os.path.normpath(os.path.join(
-        here, os.pardir, "plugins", "web", "dsh", "media-plugin", "media-kinds.json"))
+        here, os.pardir, "packages", "web", "dsh", "media-plugin", "media-kinds.json"))
     with open(path, encoding="utf-8") as f:
-        doc = json.load(f)
-    return doc["kinds"]
+        return json.load(f)
 
 
-def _media_policy() -> dict[str, int]:
-    """Door-tier caps from the same SSOT file (media-kinds.json `policy`)."""
-    here = os.path.dirname(os.path.abspath(__file__))
-    path = os.path.normpath(os.path.join(
-        here, os.pardir, "plugins", "web", "dsh", "media-plugin", "media-kinds.json"))
-    with open(path, encoding="utf-8") as f:
-        doc = json.load(f)
-    return doc["policy"]
-
-
-_MEDIA_KINDS = _media_kinds()
-_MEDIA_POLICY = _media_policy()
+_MEDIA_DOC = _load_media_doc()
+# Single media-kind vocabulary. The TS panel and the runs-window test
+# derive from the same file; the parity wall pins all three.
+_MEDIA_KINDS = _MEDIA_DOC["kinds"]
+# Door-tier caps from the same SSOT file (`policy`).
+_MEDIA_POLICY = _MEDIA_DOC["policy"]
 _IMG = tuple(_MEDIA_KINDS["image"]["exts"])
 _AUD = tuple(_MEDIA_KINDS["audio"]["exts"])
 _VID = tuple(_MEDIA_KINDS["video"]["exts"])
@@ -336,6 +332,47 @@ def _run_dir_has_media(run_dir: str) -> bool:
     return False
 
 
+def _media_candidates(out_dir: str) -> list[tuple[str, str]]:
+    """(relpath, abspath) media-candidate files: top-level first, then one
+    level down into non-sidecar subdirs — the SAME rule `_run_dir_has_media`
+    uses to decide a run HAS media (the merged single-graph path lands
+    ComfyUI outputs at <run>/generate/<file>; the sort knew, the listing
+    didn't — 61 runs read as media-less, 2026-09-06). Deterministic:
+    top-level sorted, then (subdir, file) sorted. `_`-prefixed files and
+    dirs are sidecars at every level. The image-cap diet and the marker
+    count span both levels as ONE run."""
+    try:
+        names = sorted(os.listdir(out_dir),
+                       key=lambda s: s.encode("utf-8", "surrogateescape"))
+    except OSError:
+        return []
+    cands: list[tuple[str, str]] = []
+    subs: list[str] = []
+    for name in names:
+        if name.startswith("_"):
+            continue                        # sidecars + generated poster
+        full = os.path.join(out_dir, name)
+        if os.path.isdir(full):
+            subs.append(name)
+        else:
+            cands.append((name, full))
+    for sub in subs:
+        try:
+            inner = sorted(os.listdir(os.path.join(out_dir, sub)),
+                           key=lambda s: s.encode("utf-8", "surrogateescape"))
+        except OSError:
+            continue
+        for name in inner:
+            if name.startswith("_"):
+                continue
+            rel = "%s/%s" % (sub, name)
+            full = os.path.join(out_dir, sub, name)
+            if os.path.isdir(full):
+                continue                    # one level down ONLY, never deeper
+            cands.append((rel, full))
+    return cands
+
+
 def _file_size(path: str) -> int:
     try:
         return os.path.getsize(path)
@@ -349,12 +386,12 @@ def run_artifacts(out_dir: str, out_dir_literal: str) -> list[dict[str, str | in
     rows: {name,path,bytes,url,type,size} + a trailing
     {truncated,listed,total} marker when the image CAP dropped media
     entries (total = media candidates only; sidecars/non-media never
-    count — a marker on every run is noise, not a cap signal)."""
-    try:
-        names = os.listdir(out_dir)
-    except OSError:
-        names = []
-    names.sort(key=lambda s: s.encode("utf-8", "surrogateescape"))
+    count — a marker on every run is noise, not a cap signal). One
+    level down: candidates come from `_media_candidates` (top-level +
+    <run>/<subdir>/<file>); `name` stays the bare filename for display
+    while `path`/`url` carry the true nested relpath (the asset door
+    serves nested rels — same join, `..` refused)."""
+    cands = _media_candidates(out_dir)
     arts = []
     listed = 0
     # MEDIA-CANDIDATE total (2026-09-06 fix): the marker flags the image
@@ -364,9 +401,9 @@ def run_artifacts(out_dir: str, out_dir_literal: str) -> list[dict[str, str | in
     # 463/463 = pure noise the moment gap-6 surfaced it).
     media_total = 0
     imgs = 0
-    for name in names:
-        if name.startswith("_"):
-            continue                        # sidecars + generated poster
+    run_base = os.path.basename(out_dir_literal.rstrip("/"))
+    for rel, full in cands:
+        name = rel.rsplit("/", 1)[-1]
         t = artifact_type(name)
         if t == "image":
             media_total += 1
@@ -378,13 +415,12 @@ def run_artifacts(out_dir: str, out_dir_literal: str) -> list[dict[str, str | in
         else:
             continue                        # not media: not listed, not total
         listed += 1
-        size = _file_size(os.path.join(out_dir, name))
+        size = _file_size(full)
         arts.append({
             "name": name,
-            "path": "%s/%s" % (out_dir_literal, name),
+            "path": "%s/%s" % (out_dir_literal, rel),
             "bytes": size,
-            "url": "%s/%s/%s" % (ASSET_URL_PREFIX,
-                                 os.path.basename(out_dir_literal.rstrip("/")), name),
+            "url": "%s/%s/%s" % (ASSET_URL_PREFIX, run_base, rel),
             "type": t,
             "size": size,
         })
@@ -396,18 +432,15 @@ def run_artifacts(out_dir: str, out_dir_literal: str) -> list[dict[str, str | in
 
 def _run_thumbnail(run_dir: str, run_id: str) -> str:
     """C run_thumbnail() (~6160): cached poster wins, else first image by
-    sorted name. (Poster GENERATION — ensure_run_previews — is not ported:
+    sorted name (one level down included — same `_media_candidates`
+    rule as the listing, so a nested-only run still gets its poster).
+    (Poster GENERATION — ensure_run_previews — is not ported:
     it forks ffmpeg and writes into the run dir.)"""
     if os.path.exists(os.path.join(run_dir, "_poster.jpg")):
         return "%s/%s/_poster.jpg" % (ASSET_URL_PREFIX, run_id)
-    try:
-        names = sorted(os.listdir(run_dir),
-                       key=lambda s: s.encode("utf-8", "surrogateescape"))
-    except OSError:
-        return ""
-    for name in names:
-        if artifact_type(name) == "image":
-            return "%s/%s/%s" % (ASSET_URL_PREFIX, run_id, name)
+    for rel, _full in _media_candidates(run_dir):
+        if artifact_type(rel.rsplit("/", 1)[-1]) == "image":
+            return "%s/%s/%s" % (ASSET_URL_PREFIX, run_id, rel)
     return ""
 
 
@@ -1039,6 +1072,139 @@ def drafts_delete(drafts_root: str, draft_id: str) -> tuple[int, dict[str, str]]
 
 
 # ---------------------------------------------------------------------------
+# PATCH + GET /v1/flows/drafts/:id/stages/:sid[/result] — the draft-stage
+# result loop (2026-09-07 stroke: the Patch door drafts_delete's
+# docstring always promised, but no arm served it).
+#
+# The frontend's result outbox (durable PATCH per completed stage —
+# result/runStatus/params/inputs/inputOutputs) and the run-truth
+# verify loop (GET .../result per done stage per open) both 404/400'd:
+# every persist retried forever and every verify silently skipped.
+# These two arms close the loop against the draft doc on disk — the
+# same doc hydrateDraft reads, so a persisted result IS the rehydrated
+# card (runStatus "done" + result → DONE, the card-harness contract).
+#
+# Monitor-safe by design: reconcile doors never 404. A gone target
+# (rebuilt draft, pruned stage) answers 200 with delivered:false /
+# found:false — the outbox drops the zombie without a wire misfire,
+# and the verify loop skips. Only malformed ids / bodies 400, and
+# only unreadable disk 500s. No silent drops: unknown patch keys
+# refuse loudly, never ignored.
+# ---------------------------------------------------------------------------
+
+_STAGE_PATCH_KEYS = ("result", "runStatus", "params", "inputs",
+                     "inputOutputs")
+
+
+def _atomic_write_draft(path: str, doc: "JsonDict") -> bool:
+    """tmp+rename atomic persist (resilience law: no torn docs)."""
+    tmp = path + ".tmp"
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(doc, f, separators=(",", ":"), ensure_ascii=False)
+        os.replace(tmp, path)
+    except OSError:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        return False
+    return True
+
+
+def _load_draft_doc(drafts_root: str,
+                    draft_id: str) -> "tuple[JsonDict | None, str | None]":
+    """(doc, None), or (None, reason) with reason in
+    {"bad_id", "draft not found", "draft corrupt on disk"}."""
+    if not draft_id_ok(draft_id):
+        return None, "bad_id"
+    try:
+        with open(os.path.join(drafts_root, draft_id + ".json"), "r",
+                  encoding="utf-8", errors="surrogateescape") as f:
+            doc = json.load(f)
+    except FileNotFoundError:
+        return None, "draft not found"
+    except (OSError, ValueError):
+        return None, "draft corrupt on disk"
+    if not isinstance(doc, dict) or not isinstance(doc.get("stages"),
+                                                      list):
+        return None, "draft corrupt on disk"
+    return doc, None
+
+
+def _stage_row(doc: "JsonDict", stage_id: str) -> "JsonDict | None":
+    if not stage_id or "/" in stage_id or len(stage_id) > 128:
+        return None
+    for st in doc["stages"]:
+        if isinstance(st, dict) and st.get("id") == stage_id:
+            return st
+    return None
+
+
+def draft_stage_patch(drafts_root: str, draft_id: str, stage_id: str,
+                      patch: "JsonDict") -> "tuple[int, JsonDict]":
+    """PATCH one stage row: merge the outbox body, persist atomically."""
+    if not isinstance(patch, dict):
+        return 400, _err_body("patch body must be an object")
+    unknown = [k for k in patch if k not in _STAGE_PATCH_KEYS]
+    if unknown:
+        return 400, _err_body("unknown stage patch key(s): %s (want %s)"
+                              % (", ".join(sorted(str(k) for k in unknown)),
+                                 ", ".join(_STAGE_PATCH_KEYS)))
+    shapes = (("result", dict), ("runStatus", str), ("params", dict),
+              ("inputs", list), ("inputOutputs", list))
+    for key, want in shapes:
+        if key in patch and not isinstance(patch[key], want):
+            return 400, _err_body("stage patch %r must be %s"
+                                  % (key, want.__name__))
+    doc, reason = _load_draft_doc(drafts_root, draft_id)
+    if doc is None:
+        if reason == "bad_id":
+            return 400, _err_body("bad id")
+        if reason == "draft corrupt on disk":
+            return 500, _err_body(reason)
+        return 200, {"draftId": draft_id, "stageId": stage_id,
+                     "delivered": False, "reason": reason}
+    st = _stage_row(doc, stage_id)
+    if st is None:
+        return 200, {"draftId": draft_id, "stageId": stage_id,
+                     "delivered": False, "reason": "stage not found"}
+    if "result" in patch:
+        st["result"] = patch["result"]
+    if "runStatus" in patch:
+        st["runStatus"] = patch["runStatus"]
+    if "params" in patch:
+        merged = st.get("params")
+        if not isinstance(merged, dict):
+            merged = {}
+        merged.update(patch["params"])
+        st["params"] = merged
+    for key in ("inputs", "inputOutputs"):
+        if key in patch:
+            st[key] = patch[key]
+    if not _atomic_write_draft(os.path.join(drafts_root,
+                                            draft_id + ".json"), doc):
+        return 500, _err_body("cannot persist draft")
+    return 200, {"draftId": draft_id, "stageId": stage_id,
+                 "delivered": True,
+                 "patched": sorted(patch.keys())}
+
+
+def draft_stage_result(drafts_root: str, draft_id: str,
+                       stage_id: str) -> "tuple[int, JsonDict]":
+    """GET one stage's persisted result for the verify loop."""
+    doc, reason = _load_draft_doc(drafts_root, draft_id)
+    if doc is None:
+        if reason == "bad_id":
+            return 400, _err_body("bad id")
+        return 200, {"found": False}
+    st = _stage_row(doc, stage_id)
+    if st is None or not isinstance(st.get("result"), dict):
+        return 200, {"found": False}
+    return 200, {"found": True, "result": st["result"]}
+
+
+# ---------------------------------------------------------------------------
 # GET /editor/assets/runs/<run_id>/<file> — handle_asset (~6763)
 # ---------------------------------------------------------------------------
 
@@ -1344,7 +1510,7 @@ def _family_surface_props(family_id: str
             hits = []
             for cand in cands:
                 hits = sorted(glob.glob(os.path.join(
-                    repo, "plugins", "engines", "*", "action_cards",
+                    repo, "packages", "engines", "*", "action_cards",
                     "*", cand, "py", "card.py")))
                 if hits:
                     break
@@ -1402,10 +1568,10 @@ def family_param_schema(family_ids: list[str], family_id: str) -> tuple[int, dic
 
 def catalog_family_ids(plugins_root: str) -> list[str]:
     """Data-driven family list: the model CLASS ids under
-    plugins/engines/<engine>/models/<genre>/<id>/model.py (the flip —
+    packages/engines/<engine>/models/<genre>/<id>/model.py (the flip —
     model.yaml is extinct). No engine or lane name is known here — the
     tree is the vocabulary. (2026-09-02: healed the stale pre-engine
-    plugins/<owner>/models depth that found NOTHING since the engine
+    packages/<owner>/models depth that found NOTHING since the engine
     move.)"""
     ids = []
     eng_root = os.path.join(plugins_root, "engines")
@@ -1517,10 +1683,10 @@ def _ui_claims_from(owner: str, ui_dir: str) -> list[dict[str, JsonValue]]:
 def ui_slots() -> dict[str, list[dict[str, JsonValue]]]:
     """The ui-claim lane (GET /v1/ui-slots) — DERIVED from the plugin
     ui.yaml declarations, not stubbed: the first-party chrome claims
-    under plugins/melite-core/ui/<id>/ (the zeroth plugin — the asset
+    under packages/melite-core/ui/<id>/ (the zeroth plugin — the asset
     preview cell, the media sidebar, the tile run affordance), plugin
-    claims under plugins/engines/<engine>/ui/<id>/, and card claims
-    under plugins/engines/<engine>/action_cards/<card>/ui/<id>/. The
+    claims under packages/engines/<engine>/ui/<id>/, and card claims
+    under packages/engines/<engine>/action_cards/<card>/ui/<id>/. The
     wire's plugin field names the OWNING dir (what the editor's
     component glob derives); a dropped-in claim directory lights its
     lane on the next GET — the same contract door tools() opens for
@@ -1528,9 +1694,9 @@ def ui_slots() -> dict[str, list[dict[str, JsonValue]]]:
     repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     claims: list = []
     # FIRST-PARTY CHROME is STATIC in the shell (web-registry ruling
-    # 2026-09-03): plugins/melite-core is deleted; this wire serves
+    # 2026-09-03): packages/melite-core is deleted; this wire serves
     # PLUGIN claims only.
-    eng_root = os.path.join(repo, "plugins", "engines")
+    eng_root = os.path.join(repo, "packages", "engines")
     if os.path.isdir(eng_root):
         for engine in sorted(os.listdir(eng_root)):
             e_dir = os.path.join(eng_root, engine)
@@ -1905,7 +2071,7 @@ def _selftest() -> None:
               st == 404 and one == {"error": "Unknown family_id 'zzz'",
                                     "family_id": "zzz"})
         # catalog scan is data-driven over the real plugins tree
-        ids = catalog_family_ids(os.path.join(repo, "plugins"))
+        ids = catalog_family_ids(os.path.join(repo, "packages"))
         check("catalog_family_ids scans the plugins tree (non-empty, no "
               "engine names in code)", len(ids) > 0, "ids=%r" % ids[:5])
     finally:

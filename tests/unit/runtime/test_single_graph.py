@@ -4,7 +4,7 @@ flows submit ONCE.
 Design record: docs/design/one-contract-compose.md tier 1 (landed).
 Two layers pinned:
 
-  PLANNER (plugins/engines/comfyui/compose/mergegraph.py, pure):
+  PLANNER (packages/engines/comfyui/compose/mergegraph.py, pure):
     * namespacing (<stage>::<node>) + the cross-stage $spell →
       DIRECT node link (artifacts pass inside the engine)
     * initials substitute from the request pool

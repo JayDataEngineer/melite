@@ -1,0 +1,27 @@
+{
+  "$schema": "https://schemas.linxin666.org/dsh-skin/v2.json",
+  "skinManifestVersion": 2,
+  "id": "standalone-classic",
+  "name": "独立站经典",
+  "nameEn": "Standalone Classic",
+  "version": "1.0.0",
+  "author": "pux-melite",
+  "tagline": "Melite 编辑器独立站时代的午夜海军蓝 · 电青信号 · 遮蔽阶梯 · 侧栏文字调灰",
+  "description": "把 Melite 编辑器做独立应用时的内置暗色调色板搬进 DSH：Radix blue-dark 面板遮蔽阶梯（侧栏 #0d1520 最暗后退 → 工作区 #111927 → 卡片 #0d2847 浮起 → 对话框 #003362 最亮），配 slate 文字与电青色 oklch(0.84 0.158 196)。唯一刻意偏差：左侧栏标签按需求从亮白降到安静的冷灰（L2 data-dsh-surface=sidebar 锚定，只影响侧栏）。纯 L1 token + 一段 L2 语义选择器，零补丁零脚本。",
+  "tags": [
+    "melite",
+    "navy",
+    "cyan",
+    "classic",
+    "tokens"
+  ],
+  "accent": "#00c3c7",
+  "order": 50,
+  "preview": {
+    "light": "preview/light.png",
+    "dark": "preview/dark.png"
+  },
+  "contributes": {
+    "stylesheet": "skin.css"
+  }
+}

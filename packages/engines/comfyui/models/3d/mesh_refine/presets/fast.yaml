@@ -1,0 +1,7 @@
+label: Fast
+description: "256 octree, 25 steps. Quick silhouette pass for previews."
+params:
+  octree_resolution: 256
+  steps: 25
+  guidance_scale: 5.0
+  seed: 42

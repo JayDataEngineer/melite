@@ -46,7 +46,7 @@ def _target_files() -> list[Path]:
     sys.path.insert(0, str(REPO / "py"))
     import plugins as _plugins
     for pdir in _plugins.iter_plugin_dirs_under(
-            REPO / "plugins" / "engines"):
+            REPO / "packages" / "engines"):
         files += pdir.glob("models/*/*/model.py")
         files += pdir.glob("models/*/*/mods/*.py")
         files += pdir.glob("action_cards/*/*/py/*.py")
@@ -79,7 +79,7 @@ def _discover_locked() -> dict[str, type[BaseModel]]:
     # compose libraries resolve from the plugin root and the compose
     # package dir (co_script / _coscript) — the same contract
     # py/plugins.py load_engine honors for card py modules
-    for eng in (REPO / "plugins/engines").iterdir():
+    for eng in (REPO / "packages/engines").iterdir():
         if eng.is_dir():
             sys.path.insert(0, str(eng))
             comp = eng / "compose"

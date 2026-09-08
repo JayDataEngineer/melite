@@ -2,7 +2,7 @@
 """test_gateway_queue_parity.py — P5 queue-core parity wall.
 
 Proves the TypeScript single-module core
-(plugins/gateway/src/queue/queue.ts, lock-first boot gate wired in
+(packages/gateway/src/queue/queue.ts, lock-first boot gate wired in
 server.ts isMain) is the py queue machinery
 (py/gateway.py: enqueue/dequeue ordering, serial-GPU single-writer
 lock, retries, persistence/journal shapes, refusal texts):
@@ -104,8 +104,8 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(REPO / "py"))
 
 PASS = FAIL = 0
-TS_SERVER = REPO / "plugins" / "gateway" / "src" / "server.ts"
-TS_QUEUE = REPO / "plugins" / "gateway" / "src" / "queue" / "queue.ts"
+TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+TS_QUEUE = REPO / "packages" / "gateway" / "src" / "queue" / "queue.ts"
 
 WF = {"1": {"class_type": "EmptyLatentImage",
             "inputs": {"width": 64, "height": 64, "batch_size": 1}}}

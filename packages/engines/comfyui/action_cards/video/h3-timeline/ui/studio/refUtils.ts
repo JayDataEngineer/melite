@@ -1,0 +1,78 @@
+/**
+ * h3-timeline studio split (2026-09-06) — PURE MOVE from
+ * ui/studio/component.tsx. No behavior change: headers/footers are new,
+ * every logic line is verbatim from the monolith (source range noted).
+ */
+/** One upstream image artifact — a link-to-previous-output picker row. */
+export interface LinkArtifact {
+  /** The ctx-key NAME the picker writes (what _resolveSource resolves). */
+  name: string
+  /** Servable URL — the row's thumbnail. */
+  url: string
+  /** The owning upstream card's title. */
+  title: string
+}
+
+/** Genre of an artifact by name AND url — the ref buckets are
+ * GENRE-TYPED (images → ref_image_*, videos → ref_video_*, audios →
+ * ref_audio_*, video_audios → ref_video_audio_*): a picker that offers
+ * "a.png" inside Ref videos is the freetext bug wearing a costume.
+ * (2026-09-02 audit) extension-only was blind to THIS estate's own
+ * artifact names — video_w1_main carries no extension and classed
+ * "other", so the run's own films never appeared in ANY picker. Estate
+ * name patterns + the URL's extension (served URLs carry real ones). */
+export function refGenreOf(name: string, url?: string): "image" | "video" | "audio" | "other" {
+  const n = name.toLowerCase()
+  if (/^video_w\d+_/.test(n)) {
+    // window renders: *_main / *_seam* / the final cut are FILMS;
+    // *_last_frame and the *_prev seam stills are IMAGES.
+    if (n.endsWith("_last_frame") || n.includes("_prev")) return "image"
+    return "video"
+  }
+  const src = `${n} ${url ? url.toLowerCase().split("?")[0] : ""}`
+  const e = (src.split(".").pop() ?? "").split(/[^a-z0-9]/)[0] ?? ""
+  if (["png", "jpg", "jpeg", "webp", "gif", "bmp", "avif"].includes(e)) return "image"
+  if (["mp4", "webm", "mov", "mkv", "avi", "m4v"].includes(e)) return "video"
+  if (["mp3", "wav", "flac", "ogg", "m4a", "aac", "opus"].includes(e)) return "audio"
+  return "other"
+}
+
+/** Split a serialized ref list WITHOUT shredding data: URLs — the
+ * wire format is a comma list, but an inline upload carries its OWN
+ * comma (data:<mime>;base64,<payload>). Same state machine as the
+ * backend's cc_split_ref_list: inside a data: token, the first comma
+ * is the mime separator, later commas end the token. */
+export function splitRefList(v: string | undefined): string[] {
+  if (!v) return []
+  const out: string[] = []
+  let i = 0
+  while (i < v.length) {
+    while (i < v.length && (v[i] === "," || v[i] === " " || v[i] === "\t")) i++
+    if (i >= v.length) break
+    const start = i
+    const isData = v.startsWith("data:", i)
+    let mimeComma = false
+    while (i < v.length) {
+      if (v[i] === ",") {
+        if (isData && !mimeComma) { mimeComma = true; i++; continue }
+        break
+      }
+      i++
+    }
+    let end = i
+    while (end > start && (v[end - 1] === " " || v[end - 1] === "\t")) end--
+    if (end > start) out.push(v.slice(start, end))
+  }
+  return out
+}
+
+export const REF_UPLOAD_SPEC: Record<"image" | "video" | "audio", { accept: string; maxMb: number; note: string }> = {
+  image: { accept: "image/*", maxMb: 20, note: "≤20 MB" },
+  video: { accept: "video/*", maxMb: 24, note: "≤24 MB" },
+  audio: { accept: "audio/*", maxMb: 16, note: "≤16 MB" },
+}
+/** Chip hover note: a known upstream artifact names its card, an
+ * unknown name is flagged (it would pass through unresolved). */
+export function artifactThumbNote(name: string): string {
+  return `artifact: ${name}`
+}

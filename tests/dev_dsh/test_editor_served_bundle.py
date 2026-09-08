@@ -113,7 +113,7 @@ class TestEditorServedBundle:
         assert "What do you want to make" not in all_js, (
             "the served editor JS still contains the retired "
             "capability-grid copy. The dist is stale relative to "
-            "src — rebuild plugins/web/editor."
+            "src — rebuild packages/web/editor."
         )
 
     def test_action_card_picker_copy_is_deployed(self, all_js: str) -> None:
@@ -122,7 +122,7 @@ class TestEditorServedBundle:
         assert "Your action cards" in all_js, (
             "the served editor JS lacks the action-card picker "
             "headline. The dist predates the one-surface rewrite — "
-            "rebuild plugins/web/editor."
+            "rebuild packages/web/editor."
         )
 
     def test_no_retired_ray_deck_routes_in_served_js(self, all_js: str) -> None:

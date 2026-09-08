@@ -35,8 +35,8 @@ from pathlib import Path
 from _anchor import REPO
 
 DSH_ROOTS = [
-    REPO / "plugins" / "harness" / "dsh",
-    REPO / "plugins" / "web" / "dsh",
+    REPO / "packages" / "harness" / "dsh",
+    REPO / "packages" / "web" / "dsh",
 ]
 
 # Timer callbacks whose click is justified — stem -> reason. EMPTY today:
@@ -211,7 +211,7 @@ def test_the_card_bleed_never_reaches_the_right_panel() -> None:
     # 2/3. the deck fullbleed contract. OVERLAY_CSS is one backtick
     # rule per array element — every rule that hides must carry the
     # COLUMN_HOST_ATTR identifier (the placed-only scope).
-    fb = REPO / "plugins/web/dsh/melite-card-deck/src/client/deck-fullbleed.ts"
+    fb = REPO / "packages/web/dsh/melite-card-deck/src/client/deck-fullbleed.ts"
     assert fb.exists(), "deck-fullbleed.ts is the bleed owner — it must exist"
     text = fb.read_text()
     start = text.index("const OVERLAY_CSS")
@@ -232,7 +232,7 @@ def test_the_card_bleed_never_reaches_the_right_panel() -> None:
     )
     assert "closest(RIGHT_PANEL_HOST_SEL)" in text, "right-panel host refusal missing"
 
-    entry = REPO / "plugins/web/dsh/melite-card-deck/src/client/deck-sidebar-entry.tsx"
+    entry = REPO / "packages/web/dsh/melite-card-deck/src/client/deck-sidebar-entry.tsx"
     assert entry.exists()
     entry_text = entry.read_text()
     assert "claimCenterColumn()" in entry_text, "entry must claim via the proven anchor"

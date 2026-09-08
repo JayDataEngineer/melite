@@ -34,7 +34,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 REPO = Path(__file__).resolve().parent.parent
 STATE_RUNS = REPO / "data" / "runs" / "output"
-DEFAULT_CONFIG = (REPO / "plugins" / "engines" / "comfyui" /
+DEFAULT_CONFIG = (REPO / "packages" / "engines" / "comfyui" /
                     "data" / "comfyui_endpoint.json")
 RUNTIME = REPO / "data" / "runtime" / "comfyui"
 
@@ -242,7 +242,7 @@ def _resolve_catalog_artifact(mid: str, variant: str, quant: str) -> list[dict[s
     """model id → its declared provisions (or the resolved cell
     artifact). The SAME resolution the old /v1/models/provision route
     owned — moved here so both doors share one path."""
-    plugins_root = REPO / "plugins"
+    plugins_root = REPO / "packages"
     eng_root = plugins_root / "engines"
     found = None
     if eng_root.is_dir():

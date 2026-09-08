@@ -113,7 +113,7 @@ def test_explicit_type_strings_stay_in_vocabulary() -> None:
     closed = set(TYPE_NAMES)
     offenders: dict[str, list[str]] = {}
     dispensed_files: set[str] = set()
-    base = os.path.join(REPO, "plugins", "engines")
+    base = os.path.join(REPO, "packages", "engines")
     for engine in sorted(os.listdir(base)):
         cards = os.path.join(base, engine, "action_cards")
         if not os.path.isdir(cards):

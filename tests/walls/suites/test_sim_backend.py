@@ -1,6 +1,6 @@
 """test_sim_backend — ROW 6 slice 1 (2026-09-07): the sim backend.
 
-The queue-native test engine (plugins/engines/sim/) executes flows
+The queue-native test engine (packages/engines/sim/) executes flows
 through the REAL worker loop — draft → start → per-stage execute →
 sidecar → artifacts — with zero inference (text files only). This
 wall proves the seams headless, no GPU:

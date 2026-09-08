@@ -1,0 +1,129 @@
+[
+  {
+    "name": "fit_card",
+    "version": 1,
+    "kind": "card-compose",
+    "card": "fit",
+    "model": "fit",
+    "stage_title": "Fit",
+    "description": "Seat a static prop onto a SOMAX body under the placement laws.",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "body_glb": {
+          "type": "string",
+          "format": "path",
+          "description": "Body GLB"
+        },
+        "prop_glb": {
+          "type": "string",
+          "format": "path",
+          "description": "Prop GLB"
+        },
+        "bone": {
+          "type": "string",
+          "default": "mixamorig:Head",
+          "description": "Bone"
+        },
+        "align": {
+          "type": "string",
+          "enum": [
+            "socket",
+            "fit",
+            "grip"
+          ],
+          "default": "socket",
+          "description": "Law"
+        },
+        "position": {
+          "type": "string",
+          "default": "0,0,0",
+          "description": "Offset"
+        },
+        "rotation": {
+          "type": "string",
+          "default": "0,0,0",
+          "description": "Rotation"
+        },
+        "fit_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 0,
+          "description": "Fit ratio"
+        },
+        "fit_ref_bone": {
+          "type": "string",
+          "description": "Measure to"
+        },
+        "fit_ref_bone2": {
+          "type": "string",
+          "description": "Measure from"
+        },
+        "seat_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.22,
+          "description": "Seat ratio"
+        },
+        "finger_bone": {
+          "type": "string",
+          "description": "Finger bone"
+        },
+        "thumb_bone": {
+          "type": "string",
+          "description": "Thumb bone"
+        },
+        "target_width": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 0,
+          "description": "Target width"
+        },
+        "resolution": {
+          "type": "number",
+          "minimum": 256,
+          "maximum": 2048,
+          "default": 768,
+          "description": "View resolution"
+        },
+        "framing": {
+          "type": "number",
+          "minimum": 1.0,
+          "maximum": 3.0,
+          "default": 1.2,
+          "description": "Framing"
+        },
+        "focal_length": {
+          "type": "number",
+          "minimum": 10,
+          "maximum": 400,
+          "default": 50,
+          "description": "Focal length"
+        },
+        "samples": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 4096,
+          "default": 64,
+          "description": "Samples"
+        },
+        "transparent": {
+          "type": "string",
+          "enum": [
+            "true",
+            "false"
+          ],
+          "default": "true",
+          "description": "Background"
+        }
+      },
+      "required": [
+        "body_glb",
+        "prop_glb"
+      ]
+    }
+  }
+]

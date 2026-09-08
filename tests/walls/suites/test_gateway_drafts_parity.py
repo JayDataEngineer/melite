@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """test_gateway_drafts_parity.py — P4 draft CRUD doors TS parity wall.
 
-Proves the TypeScript port (plugins/gateway/src/doors/drafts.ts via
+Proves the TypeScript port (packages/gateway/src/doors/drafts.ts via
 ctx.ts dispatch) answers byte-identical to the py gateway
 (py/gateway.py draft arms 3108-3149; strict bodies 4335-4340; R4.2
 normalization 4353-4355; auth gate _adapt 2607-2619; file semantics
@@ -66,7 +66,7 @@ sys.dont_write_bytecode = True
 PASS = FAIL = 0
 TOKEN = "drafts-parity-token-%d" % os.getpid()
 
-TS_SERVER = REPO / "plugins" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
 
 DRAFT_ID_RE = re.compile(r"^draft-[0-9a-f]+-[0-9a-f]+-[0-9a-f]+$")
 

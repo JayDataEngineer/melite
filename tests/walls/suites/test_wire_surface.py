@@ -31,7 +31,7 @@ from _anchor import REPO
 # Frontend roots whose wire surface we pin. __tests__/__e2e__ fixtures and
 # spec files are excluded — mock-server tests deliberately cite dead doors.
 FRONTEND_ROOTS = (
-    os.path.join(REPO, "plugins", "web", "editor", "src"),
+    os.path.join(REPO, "packages", "web", "editor", "src"),
     os.path.join(REPO, "web", "catalog", "src"),
     os.path.join(REPO, "web", "ui", "src"),
     os.path.join(REPO, "web", "formats", "src"),

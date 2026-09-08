@@ -1,0 +1,9 @@
+# wd14 — ComfyUI extension dependencies (tagger-card stroke, 2026-09-06).
+# The tag lane rides the pack's own node; LoadImage + SaveText are ComfyUI core.
+extensions:
+- name: ComfyUI-WD14-Tagger
+  registry: ComfyUI-WD14-Tagger
+  version: 1.0.1
+  required: true
+  desc: WD14Tagger (booru interrogator — IMAGE + model/thresholds → STRING tags;
+    weights auto-download from HuggingFace SmilingWolf/* on first run).

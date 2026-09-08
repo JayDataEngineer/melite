@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """test_gateway_runs_parity.py — runs-lane read doors + events-stream parity wall.
 
-Proves the TypeScript port (plugins/gateway/src/doors/runs.ts over the
+Proves the TypeScript port (packages/gateway/src/doors/runs.ts over the
 ROUTES mirror, ctx.ts dispatch arms, server.ts upgrade seam) serves the
 runs read doors + the events-stream door byte-identical to the py gateway:
 
@@ -83,7 +83,7 @@ sys.dont_write_bytecode = True
 PASS = FAIL = 0
 TOKEN = "wall-runs-token-%d" % os.getpid()
 
-TS_SERVER = REPO / "plugins" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
 
 PARITY_HEADERS = ("content-type", "content-length")
 

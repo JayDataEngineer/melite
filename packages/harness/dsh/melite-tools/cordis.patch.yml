@@ -1,0 +1,13 @@
+# melite-tools bundle patch: inserts the host plugin row into a profile
+# roster. Applied as a profile bundle layer (the dsh.bundle.patch
+# manifest field); activate with
+# `dsh plugin --profile <name> add <path-to-melite-tools>`.
+#
+# The plugin registers the estate's tool surface AND the editor's ✦
+# Enhance host routes (/melite-tools/enhance — the DSH-model door, one
+# execution core with the enhance_prompt tool; /melite-tools/catalog).
+- insert:
+    - id: melite-tools
+      name: '@melite-plugin/dsh-tools'
+      config:
+        gatewayUrl: http://localhost:33081

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """test_gateway_queue_refusals.py — P5 queue-refusal parity wall (ladder P5 gate).
 
-Proves the TypeScript queue core (plugins/gateway/src/queue/* over the
+Proves the TypeScript queue core (packages/gateway/src/queue/* over the
 ctx.ts seam + doors/flowsRun.ts + doors/runs.ts) refuses byte-identical
 to the py gateway (py/gateway.py) on every queue-door refusal leg —
 the wall-first port of the refusal battery (test_py_gateway.py refusal
@@ -98,11 +98,11 @@ sys.dont_write_bytecode = True
 PASS = FAIL = 0
 DID = "wall-queue-draft-1"
 GONE_DRAFT = "wall-gone-draft-9"
-TS_SERVER = REPO / "plugins" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
 # Adjudication 2026-09-07: the P5 core is single-module lock-first —
 # the lock helper lives in queue.ts (queue lane); this wall's node
 # harness imports it from there (was queue/lock.ts, deleted).
-TS_LOCK = REPO / "plugins" / "gateway" / "src" / "queue" / "queue.ts"
+TS_LOCK = REPO / "packages" / "gateway" / "src" / "queue" / "queue.ts"
 WF = {"1": {"class_type": "EmptyLatentImage",
             "inputs": {"width": 64, "height": 64, "batch_size": 1}}}
 

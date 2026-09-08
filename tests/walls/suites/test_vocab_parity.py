@@ -5,7 +5,7 @@
 
 py/card_kinds.py + py/slot_kinds.py + py/flow.py::Kind +
 py/melite_models/grammar.py + ActionCard.SIDEBAR_SECTIONS are the SSOT.
-tools/export_vocab.py emits plugins/engines/comfyui/cordis/src/
+tools/export_vocab.py emits packages/engines/comfyui/cordis/src/
 generated/vocab.ts from them (shadow artifact — nothing imports it
 yet). This wall refuses three drift classes:
 
@@ -60,7 +60,7 @@ from melite_models.grammar import (  # noqa: E402
 EXPORTER = REPO / "tools" / "export_vocab.py"
 GENERATED = (
     REPO
-    / "plugins"
+    / "packages"
     / "engines"
     / "comfyui"
     / "cordis"

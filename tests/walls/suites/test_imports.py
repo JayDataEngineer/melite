@@ -33,7 +33,7 @@ GATEWAY_MODULES = (
     "editor_forms",
     "editor_runs",
     "lane_disclosure",
-    "plugins",
+    "packages",
 )
 
 

@@ -1,0 +1,21 @@
+{
+  "1": {
+    "class_type": "KimodoLoader",
+    "inputs": {"model_name": "Kimodo-SOMA-RP-v1.1"}
+  },
+  "2": {
+    "class_type": "KimodoTextToPose",
+    "inputs": {
+      "model": ["1", 0],
+      "prompt": "a person walks forward, then waves with the right hand",
+      "seed": 42,
+      "duration_sec": 5.0,
+      "diffusion_steps": 25,
+      "num_samples": 1,
+      "num_transition_frames": 10,
+      "cfg_type": "separated",
+      "cfg_weight_a": 2.5,
+      "cfg_weight_b": 5.0
+    }
+  }
+}

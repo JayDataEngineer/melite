@@ -53,7 +53,7 @@ my = cfg.get("tool", {}).get("mypy", {})
 check("mypy strict configured", my.get("strict") is True,
       repr(my))
 check("pydantic plugin rides (construction is the gate)",
-      "pydantic.mypy" in my.get("plugins", []), repr(my.get("plugins")))
+      "pydantic.mypy" in my.get("packages", []), repr(my.get("plugins")))
 check("unmigrated deps stay silent (ratchet, not roadblock)",
       my.get("follow_imports") == "silent", repr(my.get("follow_imports")))
 

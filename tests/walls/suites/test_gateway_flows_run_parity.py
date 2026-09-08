@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """test_gateway_flows_run_parity.py — P4 flows-run TS parity wall.
 
-Proves the TypeScript engine-IO half (plugins/gateway/src/engine/
+Proves the TypeScript engine-IO half (packages/gateway/src/engine/
 comfyui.ts via doors/flowsRun.ts + the ctx.ts seam) answers
 byte-identical to the py gateway (py/gateway.py _h_flows_start /
 _h_flows_status / _h_flows_stop over Gateway.submit/status/stop, and
-the comfyui execute lane plugins/engines/comfyui/compose/native.py +
+the comfyui execute lane packages/engines/comfyui/compose/native.py +
 mergegraph.py):
 
   Phase A — door refusal parity (dual-served py vs TS, byte-equal):
@@ -105,12 +105,12 @@ from _anchor import REPO, boot_scratch_gateway, reap_gateway
 
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(REPO / "py"))
-sys.path.insert(0, str(REPO / "plugins" / "engines" / "comfyui" / "compose"))
+sys.path.insert(0, str(REPO / "packages" / "engines" / "comfyui" / "compose"))
 
 PASS = FAIL = 0
 DID = "wall-flows-draft-1"
-TS_SERVER = REPO / "plugins" / "gateway" / "src" / "server.ts"
-ENGINE_TS = REPO / "plugins" / "gateway" / "src" / "engine" / "comfyui.ts"
+TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+ENGINE_TS = REPO / "packages" / "gateway" / "src" / "engine" / "comfyui.ts"
 WF = {"1": {"class_type": "EmptyLatentImage",
             "inputs": {"width": 64, "height": 64, "batch_size": 1}}}
 HISTORY_OK = {"status": {"status_str": "success", "completed": True},

@@ -47,11 +47,11 @@ from melite_cards.serialize import scan_engine_cards
 if TYPE_CHECKING:
     from melite_cards import ActionCard
 
-MODELS_ROOT = os.path.join(REPO, "plugins", "engines", "comfyui",
+MODELS_ROOT = os.path.join(REPO, "packages", "engines", "comfyui",
                            "models")
 VENDOR_PACKS = os.path.join(REPO, "vendor", "comfyui_extensions")
 ANNY_TSX = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "action_cards", "3d",
+    REPO, "packages", "engines", "comfyui", "action_cards", "3d",
     "anny", "ui", "studio", "component.tsx")
 
 _FAM_RE = re.compile(r"^    id\s*=\s*['\"]([^'\"]+)['\"]", re.M)
@@ -171,7 +171,7 @@ def _tsx() -> str:
 def test_tsx_names_the_declared_verbs_and_flows() -> None:
     from melite_cards import load_card_py
     cls = load_card_py(
-        os.path.join(REPO, "plugins", "engines", "comfyui",
+        os.path.join(REPO, "packages", "engines", "comfyui",
                      "action_cards", "3d", "anny", "py", "card.py"))
     src = _tsx()
     assert cls._verbs_, "anny card mounts no verbs — nothing to par"
@@ -195,7 +195,7 @@ def test_estimate_verb_is_commercial_only() -> None:
     refine. Both sides, same single id."""
     from melite_cards import load_card_py
     cls = load_card_py(
-        os.path.join(REPO, "plugins", "engines", "comfyui",
+        os.path.join(REPO, "packages", "engines", "comfyui",
                      "action_cards", "3d", "anny", "py", "card.py"))
     verbs = {v.id: v for v, _ in cls._verbs_}
     (only,) = verbs["hmr-estimate"].engines

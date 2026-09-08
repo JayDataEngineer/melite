@@ -29,7 +29,7 @@ SOMAX_IDENTITY_PY = os.path.join(
     REPO, "data", "runtime", "anny-commercial", "SOMA-X", "soma",
     "body", "identity_model.py")
 SHAPE_TSX = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "action_cards", "3d",
+    REPO, "packages", "engines", "comfyui", "action_cards", "3d",
     "anny", "ui", "studio", "shape.tsx")
 FLOW_PY = os.path.join(
     REPO, "flows", "anny-hmr-commercial", "flow.py")

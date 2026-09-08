@@ -2,7 +2,7 @@
 
 Each plugin type (engine, web, harness) declares a file structure contract:
 what files MUST exist, what shape they must have, and what cross-file
-constraints apply. These tests scan the actual plugins/ directory and
+constraints apply. These tests scan the actual packages/ directory and
 validate every plugin against its type's schema.
 
 Laws enforced (from AGENTS.md):
@@ -31,7 +31,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 REPO = Path(__file__).resolve().parents[3]
-PLUGINS_ROOT = REPO / "plugins"
+PLUGINS_ROOT = REPO / "packages"
 
 # A plugin.py Plugin class as AST-read: class-level literals (slugs,
 # tuples/lists of slugs, webui/dependency maps) or None when the file
@@ -124,7 +124,7 @@ class EngineDirDecl(BaseModel, frozen=True):
 # ═══════════════════════════════════════════════════════════════════════
 
 class ModelDirDecl(BaseModel, frozen=True):
-    """One model directory under plugins/<plugin>/models/<genre>/<model>/.
+    """One model directory under packages/<plugin>/models/<genre>/<model>/.
     Validated from the filesystem — checks existence and shape of
     model.py, nodes.yaml, mods/, agents/, presets/."""
     plugin_id: str
@@ -223,7 +223,7 @@ def _ast_read_plugin_class(plugin_py: Path) -> PluginAttrs | None:
 
 def _detect_plugin_type(plugin_dir: Path) -> PluginType:
     """Detect plugin type from directory location and contents.
-    Layout: plugins/<type_plural>/<name>/"""
+    Layout: packages/<type_plural>/<name>/"""
     parent_name = plugin_dir.parent.name
     if parent_name == "engines":
         return PluginType.ENGINE
@@ -252,14 +252,14 @@ def _discover_all_plugins() -> list[tuple[str, Path, PluginType]]:
         for child in sorted(root_cat.iterdir()):
             if not child.is_dir():
                 continue
-            # Depth-2: plugins/<cat>/<plugin>/
+            # Depth-2: packages/<cat>/<plugin>/
             if (child / "plugin.py").is_file() or \
                (child / "plugin.yaml").is_file() or \
                (child / "engines").is_dir():
                 ptype = _detect_plugin_type(child)
                 results.append((child.name, child, ptype))
             else:
-                # Depth-3 category containers: plugins/<cat>/<subcat>/<plugin>/
+                # Depth-3 category containers: packages/<cat>/<subcat>/<plugin>/
                 for sub in sorted(child.iterdir()):
                     if not sub.is_dir():
                         continue
@@ -334,7 +334,7 @@ def _discover_all_cards() -> list[tuple[str, Path, CardAttrs]]:
     """Every action_cards/<genre>/<card>/py/card.py across all engine
     plugins (depth-2 and depth-3 containers alike)."""
     out: list[tuple[str, Path, CardAttrs]] = []
-    eng_root = REPO / "plugins" / "engines"
+    eng_root = REPO / "packages" / "engines"
     for plugin_dir in sorted(eng_root.iterdir()):
         if not plugin_dir.is_dir():
             continue

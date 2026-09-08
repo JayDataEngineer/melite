@@ -1,0 +1,56 @@
+[
+  {
+    "name": "forge_card",
+    "version": 1,
+    "kind": "card-compose",
+    "card": "forge",
+    "model": "anycreature",
+    "stage_title": "Creature Forge",
+    "description": "Breed a creature spec → validate → compile to GLB",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "smooth_angle": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 180,
+          "default": 50,
+          "description": "Crease threshold — higher = smoother"
+        },
+        "build": {
+          "type": "string",
+          "enum": [
+            "default",
+            "rigid"
+          ],
+          "default": "default",
+          "description": "'rigid' for robots/crystals"
+        },
+        "ao": {
+          "type": "string",
+          "enum": [
+            "true",
+            "false"
+          ],
+          "default": "true",
+          "description": "Per-vertex AO bake"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "minion",
+            "npc",
+            "boss"
+          ],
+          "default": "npc",
+          "description": "Budget and threshold presets"
+        },
+        "shading": {
+          "type": "string",
+          "description": "Colour ramp JSON — {gradient:{top,bottom}, noise:{size,amount}}"
+        }
+      },
+      "required": []
+    }
+  }
+]

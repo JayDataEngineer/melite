@@ -1,0 +1,77 @@
+# @infer/flow-tavern — pure-Python (FastHTML + MonsterUI) flow UI
+# for the inference.cpp gateway. Plugin env, NOT a base-env dep.
+#
+# Stays opt-in: PROVISIONING LAW keeps the management plane in the
+# gateway base env; a UI is not a base-env concern. The user installs
+# this with `uv tool install ./plugins/harness/dsh/infer-flow-tavern`
+# (or runs it ephemeral with `uvx --from ... infer-flow-tavern`).
+#
+# The plugin talks to the gateway over HTTP only — it never imports
+# py/ or plugins/engines/* in-process, so it boots anywhere the
+# gateway is reachable (local, remote, cloud) and never has to share
+# a venv with the GPU serving runtime.
+[project]
+name = "infer-flow-tavern"
+version = "0.1.0"
+description = "FastHTML + MonsterUI sidebar UI for the inference.cpp flow system — lanes, drafts, runs, SSE status, all in one Python process"
+requires-python = ">=3.11"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [
+  { name = "inference.cpp estate" },
+]
+keywords = ["inference", "fasthtml", "monsterui", "shadcn", "ui", "flows", "queue"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Multimedia :: Graphics",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+# Hard-pin fasthtml + monsterui (FrankenUI under the hood, CDN-shipped
+# from the browser — no Node, no Vite, no bundler, the very point).
+# httpx powers the gateway client (HTTP/1.1 + SSE; uvicorn-thread
+# concurrency is fine for a single-user flow UI).
+# uvicorn is the server (FastHTML's serve() is a thin shim over it).
+dependencies = [
+  "python-fasthtml>=0.12",
+  "monsterui>=1.0",
+  "httpx>=0.27",
+  "uvicorn>=0.30",
+  "pydantic>=2.6",
+]
+
+[project.scripts]
+# `uv run infer-flow-tavern` (or `uvx infer-flow-tavern` once installed)
+infer-flow-tavern = "infer_flow_tavern.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/mel-est/inference.cpp"
+Source = "https://github.com/mel-est/inference.cpp/tree/main/plugins/harness/dsh/infer-flow-tavern"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/infer_flow_tavern"]
+
+# ── plugin-local pytest config ─────────────────────────────────────
+# The plugin is its own uv env (PROVISIONING LAW: the management plane
+# stays base; a UI is opt-in). When the operator runs `uv run pytest`
+# from THIS directory, this `[tool.pytest.ini_options]` block is
+# picked up FIRST — the root repo's `pyproject.toml` has its own
+# `addopts = "-m 'not gpu' -q"` for the gateway suite, and we don't
+# want that filter to drop the plugin's HTTP-mocked tests by accident.
+# The plugin is opt-in, so it has no opt-in marker; tests run by
+# default. The `testpaths` here confines collection to the plugin's
+# own `tests/` dir so a `uv run pytest` from the plugin root doesn't
+# try to collect the gateway's test tree.
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra -q"

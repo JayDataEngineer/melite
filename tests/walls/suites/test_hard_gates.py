@@ -62,8 +62,8 @@ from melite_models import (  # noqa: E402
 
 
 def _model_universe() -> dict[str, type[object]]:
-    """Every declared family: the canonical scan (plugins/engines/*/
-    models/) PLUS the native sub-engine trees (plugins/engines/<tier>/
+    """Every declared family: the canonical scan (packages/engines/*/
+    models/) PLUS the native sub-engine trees (packages/engines/<tier>/
     <plugin>/models/, one level deeper for BOTH tiers — cpp and node
     (anycreature moved 2026-09-06); scan_engine_models does not
     descend there, but the forms table serves those families, so the
@@ -71,7 +71,7 @@ def _model_universe() -> dict[str, type[object]]:
     universe = {mid: cls for mid, (_p, cls)
                 in scan_engine_models(REPO).items()}
     for tier in ("cpp", "node"):
-        tier_root = os.path.join(REPO, "plugins", "engines", tier)
+        tier_root = os.path.join(REPO, "packages", "engines", tier)
         if not os.path.isdir(tier_root):
             continue
         for sub in sorted(os.listdir(tier_root)):
@@ -390,16 +390,16 @@ _SEED_ADMIT_EXEMPT = frozenset({"video/h3-timeline"})
 def _seed_rows() -> list[tuple[str, str, type[object]]]:
     import importlib.util
     for extra in (os.path.join(REPO, "py"),
-                  os.path.join(REPO, "plugins", "engines", "comfyui",
+                  os.path.join(REPO, "packages", "engines", "comfyui",
                                "compose")):
         if extra not in sys.path:
             sys.path.insert(0, extra)
     out = []
     # (label-prefix, cards-root): comfyui lanes plus every cpp
     # plugin's action_cards — one walk, no lane hides.
-    roots = [("", os.path.join(REPO, "plugins", "engines", "comfyui",
+    roots = [("", os.path.join(REPO, "packages", "engines", "comfyui",
                                 "action_cards"))]
-    cpp_plugin = os.path.join(REPO, "plugins", "engines", "cpp")
+    cpp_plugin = os.path.join(REPO, "packages", "engines", "cpp")
     if os.path.isdir(cpp_plugin):
         for plugin in sorted(os.listdir(cpp_plugin)):
             cands = os.path.join(cpp_plugin, plugin, "action_cards")

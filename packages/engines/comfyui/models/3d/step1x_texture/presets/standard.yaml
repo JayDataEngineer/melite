@@ -1,0 +1,7 @@
+label: Standard
+description: "2048×2048 texture, 6 views, seed 2025. Balanced quality and speed."
+params:
+  texture_size: 2048
+  render_size: 2048
+  remove_bg: false
+  seed: 2025

@@ -1,0 +1,68 @@
+[
+  {
+    "name": "ideogram4_card",
+    "version": 1,
+    "kind": "card-compose",
+    "card": "ideogram4",
+    "model": "ideogram",
+    "stage_title": "Ideogram",
+    "description": "Typography-aware text-to-image with clean, legible text rendering.",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "Prompt"
+        },
+        "width": {
+          "type": "number",
+          "minimum": 256,
+          "maximum": 2048,
+          "description": "Width"
+        },
+        "height": {
+          "type": "number",
+          "minimum": 256,
+          "maximum": 2048,
+          "description": "Height"
+        },
+        "seed": {
+          "type": "integer",
+          "default": -1,
+          "description": "Seed"
+        },
+        "steps": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 100,
+          "description": "Steps"
+        },
+        "cfg": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "How closely the diffusion follows the prompt. Higher = stricter."
+        },
+        "mu": {
+          "type": "number",
+          "minimum": -10,
+          "maximum": 10,
+          "description": "Ideogram4 scheduler mean shift — the official Default preset is 0.5."
+        },
+        "std": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5,
+          "description": "Ideogram4 scheduler spread — the official Default preset is 1.75."
+        },
+        "sampler": {
+          "type": "string",
+          "description": "Sampler — options resolve from the $samplers vocabulary at serve time"
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    }
+  }
+]

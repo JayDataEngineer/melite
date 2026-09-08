@@ -1,0 +1,14 @@
+# anny lane extension declarations (EXTENSION LAW: declared, never
+# vendored under a plugin tree; the packs live as vendor submodules,
+# the management plane installs). In-tree names resolve against the
+# vendor/comfyui_extensions dir at the compose gate.
+extensions:
+  # 2026-09-06 gap-fix: pin restated in the canonical shape (name +
+  # registry + version, the fit/skin/transfer_rig rows) — a bare-name
+  # row forked the pin and extension_lane refused the whole manifest
+  # ("divergent pins for melite-poser-nodes"), 0 entries served.
+  - name: melite-poser-nodes
+    registry: melite-poser-nodes
+    version: 0.1.0
+    required: true
+    desc: The character-assembly engine room (the ANNY stopgap pack) — CompositeCharacter (body+hair+outfit), RayRenderGLBViews (8-view turnaround), RaySAMSegmentHairClothing (SAM vit_b part sprites).

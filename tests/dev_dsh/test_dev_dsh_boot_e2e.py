@@ -162,15 +162,15 @@ def main() -> int:
 
         # ── CLIENT-BUNDLE LOADER SET ─────────────────────────────────
         # The module loader fetches each dsh.client bundle at
-        # /plugins/<npm-name>/client.js?rev=<hash>. The set of OUR
+        # /packages/<npm-name>/client.js?rev=<hash>. The set of OUR
         # packages in that list proves the inference extensions load.
         #   - @melite-plugin/dsh-card-view MUST load (chat cards);
         #   - @infer-media/dsh-media MUST load (media integration);
         #   - @infer-media/dsh-gallery MUST load (runs gallery);
         #   - @melite-plugin/dsh-card-deck MUST NOT load (client half
         #     removed; host-only package).
-        fetched = {u.split("/plugins/")[-1].split("/client.js")[0]
-                   for u in request_urls if "/plugins/" in u and "/client.js" in u}
+        fetched = {u.split("/packages/")[-1].split("/client.js")[0]
+                   for u in request_urls if "/packages/" in u and "/client.js" in u}
         must_load = {"@melite-plugin/dsh-card-view",
                     "@melite-plugin/dsh-card-deck",
                     "@infer-media/dsh-media",

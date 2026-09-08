@@ -32,9 +32,9 @@ def _estate_paths() -> Iterator[None]:
     # mounts) is owned by tests/conftest.py — the ONE place for path
     # setup — so import order can never unseat it.
     for p in (os.path.join(REPO, "py"),
-              os.path.join(REPO, "plugins", "engines", "comfyui"),
+              os.path.join(REPO, "packages", "engines", "comfyui"),
               os.path.join(
-                  REPO, "plugins", "engines", "comfyui", "compose")):
+                  REPO, "packages", "engines", "comfyui", "compose")):
         if p not in sys.path:
             sys.path.insert(0, p)
     import compose

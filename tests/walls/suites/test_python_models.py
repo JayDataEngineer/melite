@@ -29,7 +29,7 @@ from melite_models import (  # noqa: E402
 )
 from melite_cards import load_card_py  # noqa: E402
 
-KREA_DIR = os.path.join(REPO, "plugins", "engines", "comfyui",
+KREA_DIR = os.path.join(REPO, "packages", "engines", "comfyui",
                         "models", "image", "krea-2")
 
 _failures = []
@@ -70,7 +70,7 @@ check("engine comfyui", engine == "comfyui", engine)
 check("cell artifact validates", cell.artifact.size_bytes > 0)
 
 # ── 3. cross-validation: model defaults ⊆ card field domains ────────
-card = load_card_py(os.path.join(REPO, "plugins", "engines", "comfyui",
+card = load_card_py(os.path.join(REPO, "packages", "engines", "comfyui",
                                  "action_cards", "image", "image-gen",
                                  "py", "card.py"))
 checked = validate_against_cards({"krea-2": cls}, {"image-gen": card})
@@ -179,9 +179,9 @@ from pathlib import Path as _P
 _REPO_P = _P(REPO)
 _renderer_like = sorted(
     str(p.relative_to(_REPO_P)) for p in
-    _REPO_P.glob("plugins/engines/*/models/**/co_script_renderer.py")) + \
+    _REPO_P.glob("packages/engines/*/models/**/co_script_renderer.py")) + \
     sorted(str(p.relative_to(_REPO_P)) for p in
-           _REPO_P.glob("plugins/engines/*/models/**/renderer.py"))
+           _REPO_P.glob("packages/engines/*/models/**/renderer.py"))
 check("no renderer payload under models/ (rung 8)",
       not _renderer_like, "; ".join(_renderer_like[:3]))
 
@@ -192,10 +192,10 @@ check("no renderer payload under models/ (rung 8)",
 def _rituals_in(text: str) -> bool:
     return "path.insert(" in text or "path.append(" in text
 _ritual_files = []
-for _mp in _REPO_P.glob("plugins/engines/*/models/**/model.py"):
+for _mp in _REPO_P.glob("packages/engines/*/models/**/model.py"):
     if _rituals_in(_mp.read_text(errors="replace")):
         _ritual_files.append(str(_mp.relative_to(REPO)))
-for _mp in _REPO_P.glob("plugins/engines/*/models/**/mods/*.py"):
+for _mp in _REPO_P.glob("packages/engines/*/models/**/mods/*.py"):
     if _rituals_in(_mp.read_text(errors="replace")):
         _ritual_files.append(str(_mp.relative_to(REPO)))
 check("zero sys.path rituals in the models tree (rung 5)",

@@ -1,0 +1,30 @@
+# The quick reference — applies the inpaint mod on Z-Image (2026-08-16).
+# The mods ref validates against the declaration-only ``inpaint`` bag at
+# catalog load (kind = the bag's param_key, option = the bag's declared
+# option) and carries NO wire params — the mod's effect is load-time
+# (the lanpaint route synthesis). The recipe params below are the
+# LanPaint tuning defaults the inpaint card's lanpaint routes carry
+# (verbatim from the retired comfyui/inpaint.yaml z-image-inpaint entry).
+label: Inpaint (LanPaint)
+description: Quick reference — the LanPaint inpaint mod on Z-Image.
+params:
+  mode: replace
+  steps: 20
+  cfg: 4.0
+  sampler: euler
+  scheduler: normal
+  seed: 42
+  lanpaint_num_steps: 5
+  lanpaint_lambda: 16.0
+  lanpaint_step_size: 0.2
+  lanpaint_beta: 1.0
+  lanpaint_friction: 15.0
+  lanpaint_prompt_mode: "Image First"
+  lanpaint_early_stop: 1
+  mask_grow: 8
+  mask_feather: 8
+  mask_threshold: 0.0
+  mask_invert: false
+mods:
+- kind: inpaint
+  option: lanpaint

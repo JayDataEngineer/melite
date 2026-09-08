@@ -1,5 +1,5 @@
 """FORGE PORT WALL (gap 1, lane 2, 2026-09-06) — anyCreature rides
-the kernel manifest (plugins/engines/node/anycreature/manifest.py +
+the kernel manifest (packages/engines/node/anycreature/manifest.py +
 the compose shim; mechanics in py/kernel_exec.py).
 
 The two-binary shape ($bin = the node interpreter = argv[0];

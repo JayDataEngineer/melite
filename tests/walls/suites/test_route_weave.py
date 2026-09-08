@@ -9,7 +9,7 @@ until someone probed by hand.
 This wall extracts both sides from SOURCE (no network, no GPU):
 
   REFERENCED: every quoted /v1/... literal in the production source
-  of the web family (web/catalog, plugins/web/editor, plugins/web/dsh)
+  of the web family (web/catalog, packages/web/editor, packages/web/dsh)
   - tests, dists, and libs excluded (test fixtures use fake URLs).
 
   SERVED: every /v1 route the py gateway answers (static literals +
@@ -31,12 +31,12 @@ from pathlib import Path
 from _anchor import REPO
 
 GATEWAY = REPO / "py" / "gateway.py"
-DECK_HOST = REPO / "plugins" / "web" / "dsh" / "melite-card-deck" / "src" / "index.ts"
+DECK_HOST = REPO / "packages" / "web" / "dsh" / "melite-card-deck" / "src" / "index.ts"
 
 WEB_SOURCES = [
     REPO / "web" / "catalog" / "src",
-    REPO / "plugins" / "web" / "editor" / "src",
-    REPO / "plugins" / "web" / "dsh",
+    REPO / "packages" / "web" / "editor" / "src",
+    REPO / "packages" / "web" / "dsh",
 ]
 
 SKIP_PARTS = {"__tests__", "node_modules", "dist", "lib", "test", "e2e"}

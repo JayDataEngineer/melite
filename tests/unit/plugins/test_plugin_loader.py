@@ -65,7 +65,7 @@ GOOD_PLUGIN_PY = (
 
 @pytest.fixture()
 def scan(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """A scratch scan root shaped like plugins/engines/ (plugins are
+    """A scratch scan root shaped like packages/engines/ (plugins are
     direct marker-carrying children; category containers like cpp/
     recurse one level); resets the memoized table per test."""
     root = tmp_path / "engines"

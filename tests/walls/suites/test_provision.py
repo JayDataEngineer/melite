@@ -24,7 +24,7 @@ from pathlib import Path
 import pytest
 
 from _anchor import REPO
-CONFIG = REPO / "plugins" / "engines" / "comfyui" / "data" / "comfyui_endpoint.json"
+CONFIG = REPO / "packages" / "engines" / "comfyui" / "data" / "comfyui_endpoint.json"
 PROVISION = REPO / "tools" / "provision.py"
 COMFY_PROJECT = REPO / "infra" / "comfyui"
 
@@ -194,20 +194,20 @@ def test_byo_boot_cmd() -> None:
 # ── 6. agent harness mount ───────────────────────────────────────────
 
 def test_provisioner_bundle_tracked() -> None:
-    PROV = REPO / "plugins" / "harness" / "dsh" / "provisioner"
+    PROV = REPO / "packages" / "harness" / "dsh" / "provisioner"
     ppkg = json.loads((PROV / "package.json").read_text())
     assert (PROV / "cordis.patch.yml").is_file()
     assert ppkg.get("dsh", {}).get("bundle", {}).get("patch") == "./cordis.patch.yml"
 
 
 def test_provisioner_deps_relative_link() -> None:
-    PROV = REPO / "plugins" / "harness" / "dsh" / "provisioner"
+    PROV = REPO / "packages" / "harness" / "dsh" / "provisioner"
     ppkg = json.loads((PROV / "package.json").read_text())
     assert all(str(v).startswith("link:../") for v in ppkg["dependencies"].values())
 
 
 def test_bundle_patch_machine_neutral() -> None:
-    PROV = REPO / "plugins" / "harness" / "dsh" / "provisioner"
+    PROV = REPO / "packages" / "harness" / "dsh" / "provisioner"
     sculpt = (PROV / "cordis.patch.yml").read_text()
     assert "/home/" not in sculpt and "sk-" not in sculpt
 
@@ -235,7 +235,7 @@ def test_gui_home_isolation_guard() -> None:
 def test_root_config_derivation() -> None:
     sys.path.insert(0, str(REPO / "py"))
     import estate_config as _ec
-    _cfg = json.loads((REPO / "plugins" / "engines" / "comfyui" /
+    _cfg = json.loads((REPO / "packages" / "engines" / "comfyui" /
                        "data" / "comfyui_endpoint.json").read_text())
     _ec_paths = _ec.model_paths(
         "comfyui", endpoint_overrides={
@@ -252,7 +252,7 @@ def test_bound_model_folders() -> None:
     sys.path.insert(0, str(REPO / "tools"))
     import provision as _pv
     import estate_config as _ec
-    _cfg = json.loads((REPO / "plugins" / "engines" / "comfyui" /
+    _cfg = json.loads((REPO / "packages" / "engines" / "comfyui" /
                        "data" / "comfyui_endpoint.json").read_text())
     _ec_paths = _ec.model_paths(
         "comfyui", endpoint_overrides={
@@ -283,7 +283,7 @@ def test_h3_declares_full_weight_set() -> None:
     sys.path.insert(0, str(REPO))
     from melite_models import load_model_py
     _h3 = load_model_py(
-        str(REPO / "plugins/engines/comfyui/models/video/h3-timeline/model.py"),
+        str(REPO / "packages/engines/comfyui/models/video/h3-timeline/model.py"),
         "comfyui")
     _declared = {p.name for p in _h3.provisions}
     for _need_w in ("qwen3vl_32b_minimax_h3_int8_convrot.safetensors",

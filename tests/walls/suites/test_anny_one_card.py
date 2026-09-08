@@ -29,16 +29,16 @@ from _anchor import REPO
 from melite_models import load_model_py
 
 ANNY_MODEL_PY = os.path.join(
-    REPO, "plugins", "engines", "comfyui", "models", "3d", "anny",
+    REPO, "packages", "engines", "comfyui", "models", "3d", "anny",
     "model.py")
 ANNY_SHAPE = (
-    REPO / "plugins/engines/comfyui/action_cards/3d/anny/ui/studio/shape.tsx"
+    REPO / "packages/engines/comfyui/action_cards/3d/anny/ui/studio/shape.tsx"
 )
 ANNY_COMPONENT = (
     REPO
-    / "plugins/engines/comfyui/action_cards/3d/anny/ui/studio/component.tsx"
+    / "packages/engines/comfyui/action_cards/3d/anny/ui/studio/component.tsx"
 )
-BODY_CARD = REPO / "plugins/engines/comfyui/action_cards/3d/body"
+BODY_CARD = REPO / "packages/engines/comfyui/action_cards/3d/body"
 STUDIO_CAPS = (
     REPO / "web/slots/src/studioCapabilities.ts"
 )
@@ -56,7 +56,7 @@ def _anny_params() -> type[object]:
         "_anny_schema",
         os.path.join(
             REPO,
-            "plugins/engines/comfyui/action_cards/3d/anny/py/schema.py",
+            "packages/engines/comfyui/action_cards/3d/anny/py/schema.py",
         ),
     )
     mod = importlib.util.module_from_spec(spec)
@@ -219,7 +219,7 @@ class TestRailLayout(unittest.TestCase):
         # three big sections; Shape's sub-menus mount the same strip
         # dense. role=tablist/tab live in the shared file.
         shared = (
-            REPO / "plugins/engines/comfyui/action_cards/3d/ui"
+            REPO / "packages/engines/comfyui/action_cards/3d/ui"
             "/railTabs.tsx"
         )
         self.assertTrue(shared.exists(), "the shared RailTabs strip vanished")
@@ -239,7 +239,7 @@ class TestRailLayout(unittest.TestCase):
         # dense, inside the body panel's kit Tabs (state stays the
         # Tabs' — TabsContent must live inside it).
         panel = (
-            REPO / "plugins/engines/comfyui/action_cards/3d/body"
+            REPO / "packages/engines/comfyui/action_cards/3d/body"
             "/ui/studio/BodyShapePanel.tsx"
         ).read_text(encoding="utf-8")
         self.assertIn('from "../../../ui/railTabs"', panel)

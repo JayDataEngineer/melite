@@ -1,0 +1,21 @@
+# THE LORA STACK — lane data the plugin owns, next to its model (the
+# same channel as card_knobs.yaml; loaded by the card's timeline
+# knobs into a chain.LoraStack mod).
+#
+# roles:
+#   default — rides when the wire carries no user lora; a user's
+#             lora_name/lora_strength REPLACES this row
+#   always  — rides EVERY stack (the turbo distillation accelerator)
+#
+# paths are ComfyUI loras-mount-relative and MUST match the model
+# payload's Provision rows (folder: loras/h3) — the wall in
+# tests/walls/suites/test_python_cards.py pins them together, and binds the
+# default+always serialization byte-equal to the renderer template's
+# LORA_STACK_GOLD (one SSOT, no silent drift).
+rows:
+  - role: default
+    lora: h3/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors
+    str: 0.4
+  - role: always
+    lora: h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors
+    str: 0.6

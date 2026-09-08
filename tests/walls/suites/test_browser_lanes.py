@@ -30,7 +30,7 @@ import unittest
 import urllib.request
 
 from _anchor import REPO
-EDITOR = os.path.join(REPO, "plugins", "web", "editor")
+EDITOR = os.path.join(REPO, "packages", "web", "editor")
 LANES = (
     "e2e/card-harness.spec.ts",
     "e2e/loading-bar.spec.ts",

@@ -2,7 +2,7 @@
 """Cordis compose parity wall — the TS compose door vs the recorded
 python-renderer goldens (tests/golden_cordis/*.json).
 
-The Cordis plane (plugins/engines/comfyui/cordis — Law 0 amendment,
+The Cordis plane (packages/engines/comfyui/cordis — Law 0 amendment,
 2026-09-07) builds the /prompt graph via node --experimental-strip-types.
 This wall shells the CLI for every pinned case and deep-compares the
 stdout graph against the golden. Refusals (unknown card, unboarded
@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
-PKG = REPO / "plugins" / "engines" / "comfyui" / "cordis"
+PKG = REPO / "packages" / "engines" / "comfyui" / "cordis"
 GOLDEN = REPO / "tests" / "golden_cordis"
 FACTS = PKG / "data" / "model-facts.json"
 

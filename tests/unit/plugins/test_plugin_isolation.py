@@ -30,7 +30,7 @@ REPO = Path(__file__).resolve().parents[3]
 
 
 IMPORT_SURFACES = [
-    "plugins",                 # py/plugins.py: the plugin discovery broker
+    "packages",                 # py/plugins.py: the plugin discovery broker
     "catalog",                 # py/catalog.py: model catalog scanner
     "lane_disclosure",          # py/lane_disclosure.py: lane listing
     "asset_ledger",            # py/asset_ledger.py: the asset-ledger rung

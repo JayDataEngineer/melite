@@ -33,7 +33,7 @@ type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bo
 
 
 def _native() -> ModuleType:
-    p = os.path.join(REPO, "plugins", "engines", "comfyui", "compose")
+    p = os.path.join(REPO, "packages", "engines", "comfyui", "compose")
     if p not in sys.path:
         sys.path.insert(0, p)
     spec = importlib.util.spec_from_file_location(

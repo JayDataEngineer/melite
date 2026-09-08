@@ -8,7 +8,7 @@ files. The TS plugins (harness/dsh, web/editor) have their own
 drift surface in the TypeScript test estate.
 
 What this test enforces (every plugin, every time):
-  * plugins/<group>/<plugin>/plugin.py exposes a Plugin class with
+  * packages/<group>/<plugin>/plugin.py exposes a Plugin class with
     the central Pydantic spec (id, label, engines, genres, ...)
   * the plugin's declared id matches the directory leaf name
   * for every genre the plugin promises, at least one model exists
@@ -32,7 +32,7 @@ from pydantic import BaseModel, Field
 
 
 REPO = Path(__file__).resolve().parents[3]
-PLUGINS_ROOT = REPO / "plugins"
+PLUGINS_ROOT = REPO / "packages"
 
 # A plugin.py Plugin class as AST-read: class-level literals (slugs,
 # tuples/lists of slugs, webui/dependency maps) or None when the file
@@ -43,7 +43,7 @@ PluginAttrs = dict[str, str | bool | tuple[str, ...] | list[str] | dict[str, str
 # --- the central spec ----------------------------------------------------
 
 class PluginSpec(BaseModel):
-    """Mirrors plugins/<group>/<id>/plugin.py::Plugin (shape only)."""
+    """Mirrors packages/<group>/<id>/plugin.py::Plugin (shape only)."""
     id: str = Field(min_length=1)
     label: str = Field(min_length=1)
     description: str = Field(min_length=1)
@@ -92,7 +92,7 @@ class NodesYamlDoc(BaseModel):
 def discover_plugins() -> Iterator[tuple[str, Path]]:
     """Yield (plugin_id, plugin_dir) for every Python plugin.
 
-    Layout: plugins/<group>/<id>/plugin.py
+    Layout: packages/<group>/<id>/plugin.py
     Group is the classification (engines/harness/web); the LEAF id
     is the plugin name. TS-only groups (harness/dsh, web/editor)
     have no plugin.py and are out of scope here.

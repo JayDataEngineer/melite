@@ -1,0 +1,47 @@
+[
+  {
+    "name": "upscale_tools_card",
+    "version": 1,
+    "kind": "card-compose",
+    "card": "upscale-tools",
+    "model": "seedvr2_ema",
+    "stage_title": "Upscale Tools",
+    "description": "Diffusion upscale (SeedVR2-3B fp16) — the hidden tool card; also home of the consumed tool fragments (resize, pixel-upscale, rtx-vsr, concat, input)",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "input_image": {
+          "type": "string",
+          "format": "path",
+          "description": "The frame to restore. Absolute mount path."
+        },
+        "resolution": {
+          "type": "number",
+          "minimum": 256,
+          "maximum": 2160,
+          "description": "1080 = FHD rail. SeedVR2 redraws detail at this size."
+        },
+        "max_resolution": {
+          "type": "number",
+          "minimum": 512,
+          "maximum": 4096,
+          "description": "The hard ceiling — inputs already past it pass through."
+        },
+        "batch_size": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 16,
+          "description": "Video frames ride batches; images are batch 1."
+        },
+        "seed": {
+          "type": "integer",
+          "default": -1,
+          "description": "Seed"
+        }
+      },
+      "required": [
+        "input_image"
+      ]
+    }
+  }
+]

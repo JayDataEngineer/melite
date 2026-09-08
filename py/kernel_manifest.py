@@ -15,7 +15,7 @@ sha256 refuses); the card lattice is NOT restated (the manifest
 names the card id — schema + Kind rows derive from the stage_params
 REGISTRY, rung 6); validation happens AT CONSTRUCTION.
 
-The manifest is DATA owned by the plugin (plugins/engines/cpp/
+The manifest is DATA owned by the plugin (packages/engines/cpp/
 <id>/manifest.py); the mechanics live in kernel_exec.py
 (core-generic: spawn, timeout, stop, harvest — no lane knowledge,
 PLUGIN ARCHITECTURE LAW). The plugin's execute() keeps ONLY its

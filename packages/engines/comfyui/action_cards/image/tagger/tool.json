@@ -1,0 +1,150 @@
+[
+  {
+    "name": "tagger_card",
+    "version": 1,
+    "kind": "card-compose",
+    "card": "tagger",
+    "model": "wd14",
+    "stage_title": "Tagger",
+    "description": "Image prompt inversion — booru keyword tags (WD14, JoyTag) and natural-language captions (Florence-2, JoyCaption) for recreating images in NovelAI / Pony / FLUX / Ideogram. Tags persist as a tags.txt run artifact.",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "enum": [
+            "wd14",
+            "joytag",
+            "florence2",
+            "joycaption"
+          ],
+          "description": "The boarded family to run — the request's top-level `model`. Options: wd14, joytag, florence2, joycaption.",
+          "default": "wd14"
+        },
+        "input_image": {
+          "type": "string",
+          "format": "path",
+          "description": "The image to invert. Absolute mount path or artifact ref."
+        },
+        "checkpoint": {
+          "type": "string",
+          "default": "wd-v1-4-moat-tagger-v2",
+          "description": "The WD14 weights name (auto-downloaded on first run)."
+        },
+        "threshold": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.35,
+          "description": "General-tag confidence floor."
+        },
+        "character_threshold": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.85,
+          "description": "Character-tag confidence floor — keep high."
+        },
+        "exclude_tags": {
+          "type": "string",
+          "description": "Comma-separated tags to prune from the output."
+        },
+        "replace_underscore": {
+          "type": "boolean",
+          "default": false,
+          "description": "Emit \"silver hair\" instead of \"silver_hair\"."
+        },
+        "trailing_comma": {
+          "type": "boolean",
+          "default": false,
+          "description": "Terminate the tag list with a comma (prompt-paste shape)."
+        },
+        "add_tag": {
+          "type": "string",
+          "description": "JoyTag: tags force-prepended to the output (comma-separated). Ignored by WD14."
+        },
+        "remove_tag": {
+          "type": "string",
+          "description": "JoyTag: tags pruned from the output (comma-separated). Ignored by WD14."
+        },
+        "caption_task": {
+          "type": "string",
+          "enum": [
+            "region_caption",
+            "dense_region_caption",
+            "region_proposal",
+            "caption",
+            "detailed_caption",
+            "more_detailed_caption",
+            "caption_to_phrase_grounding",
+            "referring_expression_segmentation",
+            "ocr",
+            "ocr_with_region",
+            "docvqa",
+            "prompt_gen_tags",
+            "prompt_gen_mixed_caption",
+            "prompt_gen_analyze",
+            "prompt_gen_mixed_caption_plus"
+          ],
+          "default": "more_detailed_caption",
+          "description": "Florence-2: the vision task (live task vocabulary). Ignored by WD14/JoyTag."
+        },
+        "caption_type": {
+          "type": "string",
+          "enum": [
+            "Descriptive",
+            "Descriptive (Casual)",
+            "Straightforward",
+            "Stable Diffusion Prompt",
+            "MidJourney",
+            "Danbooru tag list",
+            "e621 tag list",
+            "Rule34 tag list",
+            "Booru-like tag list",
+            "Art Critic",
+            "Product Listing",
+            "Social Media Post"
+          ],
+          "default": "Descriptive",
+          "description": "JoyCaption: the caption template (live vocabulary). Ignored by WD14/JoyTag/Florence-2."
+        },
+        "caption_length": {
+          "type": "string",
+          "enum": [
+            "any",
+            "very short",
+            "short",
+            "medium-length",
+            "long",
+            "very long"
+          ],
+          "default": "long",
+          "description": "JoyCaption: target length (the node also takes word counts 20-260 — bare/API bodies only). Ignored by other families."
+        },
+        "extra_option": {
+          "type": "string",
+          "enum": [
+            "",
+            "Include information about lighting.",
+            "Include information about camera angle.",
+            "Include information about whether there is a watermark or not.",
+            "Include information about whether there are JPEG artifacts or not.",
+            "Do NOT include anything sexual; keep it PG.",
+            "Do NOT mention the image's resolution.",
+            "You MUST include information about the subjective aesthetic quality of the image from low to very high.",
+            "Include information on the image's composition style, such as leading lines, rule of thirds, or symmetry.",
+            "Do NOT mention any text that is in the image.",
+            "Specify the depth of field and whether the background is in focus or blurred.",
+            "Do NOT use any ambiguous language.",
+            "ONLY describe the most important elements of the image.",
+            "Your response will be used by a text-to-image model, so avoid useless meta phrases."
+          ],
+          "description": "JoyCaption: one appended instruction (the full 28-option list rides bare/API bodies). Ignored by other families."
+        }
+      },
+      "required": [
+        "input_image"
+      ]
+    }
+  }
+]

@@ -1,0 +1,126 @@
+{
+ "CompositeCharacter.0": {
+  "class_type": "CompositeCharacter",
+  "inputs": {
+   "body_glb_path": [
+    "PrimitiveString.0",
+    0
+   ]
+  }
+ },
+ "LoadImage.0": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "tests/integration/assets/source.png"
+  }
+ },
+ "PrimitiveString.0": {
+  "class_type": "PrimitiveString",
+  "inputs": {
+   "value": "tests/integration/assets/rigged_char_canonical.glb"
+  }
+ },
+ "RayRenderGLBViews.0": {
+  "class_type": "RayRenderGLBViews",
+  "inputs": {
+   "focal_length": 50,
+   "framing": 1.2,
+   "glb_path": [
+    "CompositeCharacter.0",
+    0
+   ],
+   "resolution": 768,
+   "samples": 64,
+   "transparent": true
+  }
+ },
+ "RaySAMSegmentHairClothing.0": {
+  "class_type": "RaySAMSegmentHairClothing",
+  "inputs": {
+   "image": [
+    "LoadImage.0",
+    0
+   ]
+  }
+ },
+ "SaveImage.0": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "filename_prefix": "anny_front",
+   "images": [
+    "RayRenderGLBViews.0",
+    0
+   ]
+  }
+ },
+ "SaveImage.1": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "filename_prefix": "anny_front_right",
+   "images": [
+    "RayRenderGLBViews.0",
+    1
+   ]
+  }
+ },
+ "SaveImage.2": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "filename_prefix": "anny_right",
+   "images": [
+    "RayRenderGLBViews.0",
+    2
+   ]
+  }
+ },
+ "SaveImage.3": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "filename_prefix": "anny_back_right",
+   "images": [
+    "RayRenderGLBViews.0",
+    3
+   ]
+  }
+ },
+ "SaveImage.4": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "filename_prefix": "anny_back",
+   "images": [
+    "RayRenderGLBViews.0",
+    4
+   ]
+  }
+ },
+ "SaveImage.5": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "filename_prefix": "anny_back_left",
+   "images": [
+    "RayRenderGLBViews.0",
+    5
+   ]
+  }
+ },
+ "SaveImage.6": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "filename_prefix": "anny_left",
+   "images": [
+    "RayRenderGLBViews.0",
+    6
+   ]
+  }
+ },
+ "SaveImage.7": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "filename_prefix": "anny_front_left",
+   "images": [
+    "RayRenderGLBViews.0",
+    7
+   ]
+  }
+ }
+}

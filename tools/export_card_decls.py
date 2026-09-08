@@ -7,7 +7,7 @@ that the TS `cards/<id>.decl.ts` layer will derive from (nothing imports
 it yet — this stroke lands the generator + the snapshot, no importers).
 
     python3 tools/export_card_decls.py \
-        > plugins/engines/comfyui/cordis/data/card-decls.json
+        > packages/engines/comfyui/cordis/data/card-decls.json
 
 AUTO-SCAN via melite_cards.scan_engine_cards (no manual list): all 18
 comfyui cards land; the 4 non-comfyui cards the shared scanner also sees
@@ -141,7 +141,7 @@ def main() -> None:
     foreign: list[str] = []
     for cid in sorted(cards):
         path, cls = cards[cid]
-        if "plugins/engines/comfyui/" not in path.replace("\\", "/"):
+        if "packages/engines/comfyui/" not in path.replace("\\", "/"):
             # Non-comfyui cards ride the shared scanner — INCLUDED,
             # announced loud (never skipped silent, never a crash).
             foreign.append(cid)
