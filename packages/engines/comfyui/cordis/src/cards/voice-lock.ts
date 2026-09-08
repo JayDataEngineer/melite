@@ -5,13 +5,16 @@ import z from '@deepseek-ai/schemastery'
 import { voicelockT1 } from '../kit.ts'
 
 const schema = z.object({
-  voice_name: z.string(),
-  style_instruction: z.string(),
-  temperature: z.number().default(0.7),
-  top_p: z.number().default(0.9),
-  speed: z.number().default(1.0),
-  repetition_penalty: z.number().default(1.05),
-  seed: z.number().min(-1).default(-1),
+  voice_name: z.string().description(
+    "Name for the locked persona — becomes the .qvoice filename stem. Reused across every future TTS render."),
+  style_instruction: z.string().description(
+    "The voice description — becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent')."),
+  temperature: z.number().min(0).max(2).default(0.7).description('Temperature'),
+  top_p: z.number().min(0).max(1).default(0.9).description('Top-P'),
+  speed: z.number().min(0.5).max(2).default(1.0).description('Speed'),
+  repetition_penalty: z.number().min(0.8).max(2).default(1.05).description(
+    'Repetition Penalty'),
+  seed: z.number().min(-1).step(1).default(-1).description('Seed'),
 })
 
 export const inject = ['comfyui']

@@ -1,21 +1,36 @@
 // Tier 3 — the image-gen card (the image_t2i renderer port).
 // Decl (contract-derived: id/skeleton/boarded/schema) + admission +
 // one kit recipe call — the lane body lives in src/kit.ts.
+//
+// CARD UI ON SCHEMAMASTERY META (2026-09-08, Phase-2 pilot): the
+// knob UI contract rides the schema itself — .description() is the
+// label/tooltip, .min()/.max() the ranges, .extra() the x-extensions
+// (x-families here). The model knob is deliberately NOT in this
+// schema: the {model:} door owns admission (the 422 refusal is
+// wall-pinned) and the served UI preselect derives from boarded[0]
+// — one source (the boarded array), two projections. The chrome
+// serve path walks this meta; the py manifest no longer declares
+// this card's UI.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { imageT2I, finalizeImageGen } from '../kit.ts'
 
 const schema = z.object({
-  prompt: z.string(),
-  negative_prompt: z.string(),
-  width: z.number().default(1024),
-  height: z.number().default(1024),
-  steps: z.number().default(8),
-  cfg: z.number().default(4.5),
-  sampler: z.string(),
-  scheduler: z.string(),
-  seed: z.number().min(-1).default(-1),
-  loras: z.array(z.object({ name: z.string(), strength: z.number() })),
+  prompt: z.string().description('Prompt'),
+  negative_prompt: z.string().description('Negative Prompt'),
+  width: z.number().min(256).max(2048).default(1024).description('Width'),
+  height: z.number().min(256).max(2048).default(1024).description('Height'),
+  steps: z.number().min(1).max(100).default(8).description('Steps'),
+  cfg: z.number().min(1).max(20).default(4.5).description(
+    'How closely the diffusion follows the prompt. Higher = stricter.'),
+  sampler: z.string().description(
+    'Sampler — options resolve from the $samplers vocabulary at serve time'),
+  scheduler: z.string().description(
+    'Scheduler — options resolve from the $schedulers vocabulary at serve time'),
+  seed: z.number().min(-1).step(1).default(-1).description('Seed'),
+  loras: z.array(z.object({ name: z.string(), strength: z.number() }))
+    .description('LoRAs')
+    .extra('extra', { families: ['krea-2'] }),
 })
 
 export const inject = ['comfyui']

@@ -7,16 +7,21 @@ import z from '@deepseek-ai/schemastery'
 import { upscaleLane } from '../kit.ts'
 
 const schema = z.object({
-  input_image: z.string(),
+  input_image: z.string().role('path').description(
+    'The frame to restore. Absolute mount path.'),
   // ride-the-model keys (py ABSENT: no schema default — the
   // compose-door cascade overlays model defaults, then explicit
   // params): resolution/max_resolution/batch_size ride the seedvr2_ema
   // model row (1080/4096/1); seed rides py -1 (model row carries 0,
-  // explicit wins — the golden pins explicit 42).
-  seed: z.number().min(-1).default(-1),
-  resolution: z.number(),
-  max_resolution: z.number(),
-  batch_size: z.number(),
+  // explicit wins — the golden pins explicit 42). Ranges/labels ride
+  // schema meta (2026-09-08 Phase-2 sweep); defaults stay cascade-owned.
+  seed: z.number().min(-1).step(1).default(-1).description('Seed'),
+  resolution: z.number().min(256).max(2160).description(
+    '1080 = FHD rail. SeedVR2 redraws detail at this size.'),
+  max_resolution: z.number().min(512).max(4096).description(
+    'The hard ceiling — inputs already past it pass through.'),
+  batch_size: z.number().min(1).max(16).description(
+    'Video frames ride batches; images are batch 1.'),
   // NO dit_model/vae_model (py card declares no such knobs — the
   // weights ride lane_inputs.unet/vae; old drafts naming them still
   // parse via the door's non-strict overlay but compose never reads

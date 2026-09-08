@@ -5,11 +5,15 @@ import z from '@deepseek-ai/schemastery'
 import { sfxT1 } from '../kit.ts'
 
 const schema = z.object({
-  prompt: z.string(),
-  guidance_scale: z.number().default(5.0),
-  n_diffusion_steps: z.number().default(50),
-  duration: z.number().default(10.0),
-  seed: z.number().min(-1).default(-1),
+  prompt: z.string().description(
+    "Describe the SOUND itself, not the scene (e.g. 'sharp metallic clang with long decay')"),
+  guidance_scale: z.number().min(0).max(20).default(5.0).description(
+    'Diffusion classifier-free guidance'),
+  n_diffusion_steps: z.number().min(1).max(500).default(50).description(
+    'More = higher quality, slower'),
+  duration: z.number().min(0.5).max(300).default(10.0).description(
+    'Output length in seconds'),
+  seed: z.number().min(-1).step(1).default(-1).description('Seed'),
 })
 
 export const inject = ['comfyui']
