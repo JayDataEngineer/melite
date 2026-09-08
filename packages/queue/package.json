@@ -7,7 +7,9 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./flows-resume": "./src/entries/flows-resume.ts",
+    "./flows-reproduce": "./src/entries/flows-reproduce.ts"
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",

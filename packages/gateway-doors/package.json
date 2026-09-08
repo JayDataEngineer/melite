@@ -7,7 +7,20 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./uploads": "./src/entries/uploads.ts",
+    "./validate": "./src/entries/validate.ts",
+    "./flows-start": "./src/entries/flows-start.ts",
+    "./flows-stop": "./src/entries/flows-stop.ts",
+    "./flows-status": "./src/entries/flows-status.ts",
+    "./bridges": "./src/entries/bridges.ts",
+    "./discovery": "./src/entries/discovery.ts",
+    "./runs": "./src/entries/runs.ts",
+    "./chrome": "./src/entries/chrome.ts",
+    "./assets": "./src/entries/assets.ts",
+    "./drafts": "./src/entries/drafts.ts",
+    "./studios": "./src/entries/studios.ts",
+    "./planes": "./src/entries/planes.ts"
   },
   "dependencies": {
     "@comfyui/cordis": "workspace:*",

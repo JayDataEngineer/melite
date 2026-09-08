@@ -55,19 +55,6 @@ import {
   storageJsonBackend,
 } from "../storage/plugins.ts";
 import { resolveStorageRoot } from "../storage/store.ts";
-import { uploadsDoors } from "@melite/gateway-doors";
-import { validateDoors } from "@melite/gateway-doors";
-import { flowsStartDoors, flowsStopDoors } from "@melite/gateway-doors";
-import { flowsStatusDoors, runsDoors } from "@melite/gateway-doors";
-import { flowsResumeDoors } from "@melite/queue";
-import { flowsReproduceDoors } from "@melite/queue";
-import { bridgesDoors } from "@melite/gateway-doors";
-import { discoveryDoors } from "@melite/gateway-doors";
-import { chromeDoors } from "@melite/gateway-doors";
-import { assetsDoors } from "@melite/gateway-doors";
-import { draftsDoors } from "@melite/gateway-doors";
-import { studiosDoors } from "@melite/gateway-doors";
-import { planesDoors } from "@melite/gateway-doors";
 import { gatewayPlugin } from "./gateway.ts";
 import type { GatewayConfig } from "./gateway.ts";
 
@@ -133,9 +120,11 @@ function readManifest(): readonly ManifestEntry[] {
   return manifestEntries;
 }
 
-/** Local plugins as loader builtins (named exports cannot ride a
- *  specifier import — the owning module hands the object over).
- *  Keys are BARE (the loader strips the `cordis:` prefix before
+/** Loader builtins for the NON-loadable remainder (STAGE 2: the 15
+ *  doors + 2 queue arms mount by npm specifier via createEntry's
+ *  pre-import; only core-owned services stay here — the error
+ *  plugin, the composed storage pieces, and the gateway assembler
+ *  itself, none of which has a package address yet). Keys are BARE (the loader strips the `cordis:` prefix before
  *  the builtins lookup — name.slice(7)). The vendored platform
  *  services ride builtins too, but they are registered DYNAMICALLY
  *  in createEntry (pre-imported by real specifier through the
@@ -152,21 +141,6 @@ function registerBuiltins(ctx: Context): void {
     "storage-hub": storageHub,
     "storage-json": storageJsonBackend,
     "storage-domain": storageDomainFacility,
-    "gateway-uploads": uploadsDoors,
-    "gateway-validate": validateDoors,
-    "gateway-flows-start": flowsStartDoors,
-    "gateway-flows-status": flowsStatusDoors,
-    "gateway-flows-stop": flowsStopDoors,
-    "gateway-flows-resume": flowsResumeDoors,
-    "gateway-flows-reproduce": flowsReproduceDoors,
-    "gateway-bridges": bridgesDoors,
-    "gateway-discovery": discoveryDoors,
-    "gateway-runs": runsDoors,
-    "gateway-chrome": chromeDoors,
-    "gateway-assets": assetsDoors,
-    "gateway-drafts": draftsDoors,
-    "gateway-studios": studiosDoors,
-    "gateway-planes": planesDoors,
     gateway: gatewayPlugin,
   };
   for (const [key, plugin] of Object.entries(table)) {
