@@ -66,6 +66,15 @@ export function finalizeImageGen(graph: PromptGraph): PromptGraph {
  *  verbatim from the image-gen card). */
 export function imageT2I(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): OutputHandle {
   const li = model.lane_inputs
+  // GATE S (the seed-sentinel contract, estate law): -1 is RANDOM —
+  // the dice mints HERE in the lane (the skin lane's GATE S
+  // precedent: mint at render so every node sharing the seed shares
+  // the MINTED value); below -1 or a non-int refuses loud.
+  let seed = p.seed
+  if (typeof seed !== 'number' || !Number.isInteger(seed) || seed < -1) {
+    throw new Error(`seed = ${String(p.seed)}: -1 (random) or a non-negative int is required`)
+  }
+  if (seed === -1) seed = Math.floor(Math.random() * 2147483647)
   let unet: OutputHandle = g.node('UNETLoader', { unet_name: li.unet, weight_dtype: 'default' }).out()
   if (li.sampling_shift) {
     unet = g.node('ModelSamplingAuraFlow', { model: unet, shift: li.sampling_shift }).out()
@@ -76,7 +85,7 @@ export function imageT2I(p: Record<string, unknown>, model: ModelFacts, g: Graph
   const neg = g.node('CLIPTextEncode', { clip, text: p.negative_prompt ?? '' })
   const latent = g.node(li.latent_node, { batch_size: 1, width: p.width, height: p.height })
   const sampled = g.node('KSampler', {
-    seed: p.seed,
+    seed,
     steps: p.steps,
     cfg: p.cfg,
     sampler_name: p.sampler,

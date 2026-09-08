@@ -23,11 +23,19 @@
 //   compose arms (the python schema registries — audio_cpp,
 //   anycreature, autoremesher, skintokens — return live graphs py
 //   validates in-process; there is no TS plane for them in this
-//   stroke), card= stages (python/stage_params.py registry), loadable
+//   stroke), loadable
 //   named flows (flows/<id>/flow.py executes model classes), and the
 //   card-requires gate (needs card classes + estate config + vendor
 //   disk — the wall proves it passes for every golden mid, so the
 //   skip is verdict-safe on the pinned estate).
+//   PORTED NATIVE 2026-09-08 (the AI-ladder probe found the gap):
+//   card= stages validate against the TS single declaration —
+//   cardGate resolves the live card registry (loadCardDefs, the
+//   compose door's own cache) at plugin apply and runs the
+//   Schemastery schema parse per stage; the model-present gate text
+//   stays byte-identical, the schema refusal envelope is
+//   "schema refused body — <schemastery msg>" (field+floor named,
+//   e.g. "$.seed expected number >= -1 but got -2").
 //
 // DERIVED TABLES (no hardcodes per QUEUE LANE LAW — each is pinned by
 // the wall against live py, so drift fails LOUD, never silent):
@@ -76,6 +84,7 @@ import {
 } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadCardDefs, type CardDefinition } from "@comfyui/cordis";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "../core/errors.ts";
 import type { GatewayRequest } from "../ctx.ts";
@@ -739,14 +748,21 @@ function wiresResolve(flowId: string, stages: StageRow[]): void {
   }
 }
 
-// cardGateStub — the CARD-STAGE LATTICE body gate's deterministic
-// prefix (python/flow.py:793 _card_params_gate -> stage_params): a card=
-// stage without params.model refuses with this exact text (probed).
-// Anything past it needs the python card registry (unported half)
-// and refuses native (code-identical, text-native).
-function cardGateStub(flowId: string, st: StageRow): void {
+// cardDefs — the live card registry for the card-stage lattice,
+// resolved ONCE at plugin apply (before any request handler runs —
+// the closure hands the sync validators a ready map; no async
+// ripple through kindsOk's three sync call sites).
+let cardDefs: Map<string, CardDefinition> | null = null;
+
+// cardGate — the CARD-STAGE LATTICE body gate (python/flow.py:793
+// _card_params_gate -> stage_params.validate_stage_params, PORTED
+// NATIVE 2026-09-08): (1) the model gate stays byte-identical (the
+// wall pins it); (2) the schema pass rides the TS single
+// declaration — loadCardDefs' Schemastery schema parse, the same
+// validator compose runs, never a second truth.
+function cardGate(flowId: string, st: StageRow): void {
   const model: unknown = st.params["model"];
-  if (!model) {
+  if (!model || !String(model).trim()) {
     throw new FlowError(
       "flow " +
         pyReprStr(flowId) +
@@ -759,16 +775,34 @@ function cardGateStub(flowId: string, st: StageRow): void {
         "of the {model:} door",
     );
   }
-  throw new FlowError(
-    "flow " +
-      pyReprStr(flowId) +
-      " stage " +
-      pyReprStr(st.id) +
-      ": card " +
-      pyReprStr(st.card) +
-      " stages validate against the python card registry " +
-      "(python/stage_params.py — unported half in this stroke)",
-  );
+  const def = cardDefs?.get(st.card);
+  if (def === undefined) {
+    throw new FlowError(
+      "flow " +
+        pyReprStr(flowId) +
+        " stage " +
+        pyReprStr(st.id) +
+        ": card " +
+        pyReprStr(st.card) +
+        " is not a registered card (the card set boots from " +
+        "src/cards — see GET /v1/tools for the served surface)",
+    );
+  }
+  try {
+    def.schema(st.params ?? {});
+  } catch (exc) {
+    const msg = exc instanceof Error ? exc.message : String(exc);
+    throw new FlowError(
+      "flow " +
+        pyReprStr(flowId) +
+        " stage " +
+        pyReprStr(st.id) +
+        ": card " +
+        pyReprStr(st.card) +
+        " schema refused body — " +
+        msg,
+    );
+  }
 }
 
 // kindsOk with engineDefaults ({} at construction = deferred,
@@ -781,7 +815,7 @@ function kindsOk(
   // The lattice gate is its own pass BEFORE kinds (flow.py:793
   // docstring: "Runs BEFORE _validate_kinds").
   for (const st of stages) {
-    if (st.card) cardGateStub(flowId, st);
+    if (st.card) cardGate(flowId, st);
   }
   const outputsByStage: Map<string, Map<string, string>> = new Map();
   for (const st of stages) {
@@ -1838,7 +1872,8 @@ export function handleFlowsValidate(doc: unknown): FlowsValidateAnswer {
 export const validateDoors: Plugin = {
   name: "gateway-validate",
   inject: ["gatewayError"],
-  apply(ctx: Context): void {
+  async apply(ctx: Context): Promise<void> {
+    cardDefs = await loadCardDefs();
     ctx.on(
       "gateway/request",
       (req: GatewayRequest): DispatchResult | undefined => {
