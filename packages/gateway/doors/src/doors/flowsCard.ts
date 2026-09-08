@@ -72,7 +72,7 @@
 
 import { Context, Service } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
-import { ComfyUIService, ComposeRefusal, loadCardDefs, loadFacts } from "@comfyui/cordis";
+import { ComfyUIService, ComposeRefusal, loadCardDefs, loadFacts, theService } from "@comfyui/cordis";
 import type { CardDefinition, FactsFile } from "@comfyui/cordis";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
@@ -580,8 +580,26 @@ export class CardRegistryService extends Service {
     if (decl !== undefined) {
       const knobs: Set<string> = new Set(decl.schemaNames);
       const admits: readonly string[] = decl.admits;
+      // THE ABSORBED MOD SURFACE (the py interlock, 2026-09-08):
+      // admission is the declared surface — and the mod fields a
+      // family ABSORBS are part of that surface (registerMod through
+      // the service; scope = declaring ∩ boarded, filtered to THIS
+      // run's family exactly as the emission scopes).
+      let modNames: Set<string> = new Set();
+      try {
+        modNames = new Set(
+          theService()
+            .cardModFields(card)
+            .filter((a) => a.families.includes(fam))
+            .flatMap((a) => Object.keys(a.fields.dict ?? {})),
+        );
+      } catch {
+        // card defs not booted in this fiber — the mod surface is
+        // empty here; the knobs+admits rows still gate.
+      }
       const admitted = (key: string): boolean =>
         knobs.has(key) ||
+        modNames.has(key) ||
         admits.some((a) => a === key || (a.endsWith("*") && key.startsWith(a.slice(0, -1))));
       const unknown: string[] = Object.keys(lifted).filter((k) => !admitted(k)).sort();
       if (unknown.length > 0) {

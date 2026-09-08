@@ -401,31 +401,6 @@ export class ComfyUIService extends Service {
     }
   }
 
-  /** The mod's catalog rows for one family (lora picks). THE
-   *  RUNTIME CATALOG LAW: a flavor with runtimeCatalog and no own
-   *  rows serves the UNION of every flavor's declared rows of the
-   *  same pack; family rows always win over the union. */
-  modRows(pack: string, family: string): readonly LoraRowDecl[] {
-    const own = this.modRegistrations.find(
-      (m) => m.pack === pack && m.families.includes(family),
-    )
-    if (own === undefined) return []
-    if ((own.rows ?? []).length > 0 || own.runtimeCatalog !== true) return own.rows ?? []
-    const union = new Map<string, LoraRowDecl>()
-    for (const m of this.modRegistrations) {
-      if (m.pack !== pack) continue
-      for (const row of m.rows ?? []) union.set(row.id, row)
-    }
-    return [...union.values()]
-  }
-
-  /** The verbs mounted on a card (SubActionMods of its boarded
-   *  families — knobs NEVER on the card surface). */
-  cardVerbs(cardId: string): VerbRegistration[] {
-    const def = this.cards.get(cardId)
-    if (def === undefined) return []
-    return [...this.verbs.values()].filter((v) => v.families.some((fam) => def.boarded.includes(fam)))
-  }
 
 
   setFacts(facts: FactsFile): void {
