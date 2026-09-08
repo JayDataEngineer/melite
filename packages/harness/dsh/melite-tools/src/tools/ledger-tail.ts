@@ -42,6 +42,15 @@ export function ledgerTail(gatewayUrl: string): ToolDefinition {
       },
       required: [],
     },
+    presentCall(args) {
+      const a = (typeof args === "object" && args !== null ? args : {}) as { limit?: unknown; event?: unknown };
+      return {
+        card: 'generic',
+        title: 'Ledger tail',
+        kind: 'read',
+        rawInput: { limit: a.limit, event: a.event },
+      };
+    },
     output: {
       schema: {
         type: 'object',
@@ -65,7 +74,7 @@ export function ledgerTail(gatewayUrl: string): ToolDefinition {
       },
     },
     async execute(args, exec) {
-      const a = args as { limit?: unknown; event?: unknown }
+      const a = (typeof args === "object" && args !== null ? args : {}) as { limit?: unknown; event?: unknown }
       const q: string[] = []
       if (typeof a.limit === 'number' && Number.isFinite(a.limit) && a.limit > 0) {
         q.push('limit=' + encodeURIComponent(String(Math.floor(a.limit))))

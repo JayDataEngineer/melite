@@ -36,6 +36,15 @@ export function runStatus(gatewayUrl: string): ToolDefinition {
       },
       required: ['runId'],
     },
+    presentCall(args) {
+      const a = (typeof args === "object" && args !== null ? args : {}) as { runId?: unknown };
+      return {
+        card: 'generic',
+        title: `Run status: ${String(a.runId ?? '?')}`,
+        kind: 'read',
+        rawInput: String(a.runId ?? '?'),
+      };
+    },
     output: {
       schema: {
         type: 'object',
@@ -71,7 +80,7 @@ export function runStatus(gatewayUrl: string): ToolDefinition {
       },
     },
     async execute(args, exec) {
-      const a = args as { runId?: unknown }
+      const a = (typeof args === "object" && args !== null ? args : {}) as { runId?: unknown }
       const runId = typeof a.runId === 'string' ? a.runId : ''
       if (!runId) return jsonClean({ error: 'runId is required' })
       let res: Record<string, unknown>

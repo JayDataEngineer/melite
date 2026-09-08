@@ -83,7 +83,7 @@ declare namespace StandardSchemaV1 {
   type InferOutput<Schema extends StandardTypedV1> = StandardTypedV1.InferOutput<Schema>;
 }
 //#endregion
-//#region ../../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.1_@deepseek-ai+cordis-plugin-include@1.0.6_@deepseek-ai+cordis-plugin-loader@1.0.2/node_modules/@deepseek-ai/cordis/lib/types/utils.d.ts
+//#region ../../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.2_@deepseek-ai+cordis-plugin-include@1.0.6_@deepseek-ai+cordis-plugin-loader@1.0.3/node_modules/@deepseek-ai/cordis/lib/types/utils.d.ts
 /** Ordered collection of disposable values with O(1) deletion by value. */
 declare class DisposableList<T extends WeakKey> {
   private sn;
@@ -116,7 +116,7 @@ declare const symbols: {
   resolveConfig: typeof Service.resolveConfig;
 };
 //#endregion
-//#region ../../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.1_@deepseek-ai+cordis-plugin-include@1.0.6_@deepseek-ai+cordis-plugin-loader@1.0.2/node_modules/@deepseek-ai/cordis/lib/types/registry.d.ts
+//#region ../../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.2_@deepseek-ai+cordis-plugin-include@1.0.6_@deepseek-ai+cordis-plugin-loader@1.0.3/node_modules/@deepseek-ai/cordis/lib/types/registry.d.ts
 /**
  * Service dependency declaration accepted by plugins and the `@Inject`
  * decorator.
@@ -308,7 +308,7 @@ declare class RegistryService {
   plugin(plugin: Plugin, config?: any, getOuterStack?: () => string[]): Fiber & PromiseLike<Fiber>;
 }
 //#endregion
-//#region ../../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.1_@deepseek-ai+cordis-plugin-include@1.0.6_@deepseek-ai+cordis-plugin-loader@1.0.2/node_modules/@deepseek-ai/cordis/lib/types/reflect.d.ts
+//#region ../../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.2_@deepseek-ai+cordis-plugin-include@1.0.6_@deepseek-ai+cordis-plugin-loader@1.0.3/node_modules/@deepseek-ai/cordis/lib/types/reflect.d.ts
 declare module './context.ts' {
   interface Context {
     /**
@@ -492,7 +492,7 @@ declare class ReflectService {
   bind<T extends Function>(callback: T): T;
 }
 //#endregion
-//#region ../../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.1_@deepseek-ai+cordis-plugin-include@1.0.6_@deepseek-ai+cordis-plugin-loader@1.0.2/node_modules/@deepseek-ai/cordis/lib/types/fiber.d.ts
+//#region ../../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.2_@deepseek-ai+cordis-plugin-include@1.0.6_@deepseek-ai+cordis-plugin-loader@1.0.3/node_modules/@deepseek-ai/cordis/lib/types/fiber.d.ts
 declare module './context.ts' {
   interface Context extends Pick<Fiber, 'effect'> {
     /** The fiber (plugin runtime instance) that owns this context. */
@@ -653,7 +653,7 @@ declare class Fiber {
   update(config: any, noSave?: boolean): void | Promise<void>;
 }
 //#endregion
-//#region ../../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.1_@deepseek-ai+cordis-plugin-include@1.0.6_@deepseek-ai+cordis-plugin-loader@1.0.2/node_modules/@deepseek-ai/cordis/lib/types/events.d.ts
+//#region ../../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.2_@deepseek-ai+cordis-plugin-include@1.0.6_@deepseek-ai+cordis-plugin-loader@1.0.3/node_modules/@deepseek-ai/cordis/lib/types/events.d.ts
 /** Extract the parameter tuple from a function type. */
 type Parameters<F> = F extends ((...args: infer P) => any) ? P : never;
 /** Extract the return type from a function type. */
@@ -884,7 +884,7 @@ interface Events {
   'internal/dispatch'(mode: DispatchMode, name: string, args: any[], thisArg: any): void;
 }
 //#endregion
-//#region ../../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.1_@deepseek-ai+cordis-plugin-include@1.0.6_@deepseek-ai+cordis-plugin-loader@1.0.2/node_modules/@deepseek-ai/cordis/lib/types/logger.d.ts
+//#region ../../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.2_@deepseek-ai+cordis-plugin-include@1.0.6_@deepseek-ai+cordis-plugin-loader@1.0.3/node_modules/@deepseek-ai/cordis/lib/types/logger.d.ts
 declare module './context.ts' {
   interface Intercept {
     logger: LoggerService.Intercept;
@@ -972,7 +972,7 @@ declare class LoggerService {
   [symbols.invoke](name?: string): Logger;
 }
 //#endregion
-//#region ../../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.1_@deepseek-ai+cordis-plugin-include@1.0.6_@deepseek-ai+cordis-plugin-loader@1.0.2/node_modules/@deepseek-ai/cordis/lib/types/context.d.ts
+//#region ../../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.2_@deepseek-ai+cordis-plugin-include@1.0.6_@deepseek-ai+cordis-plugin-loader@1.0.3/node_modules/@deepseek-ai/cordis/lib/types/context.d.ts
 /**
  * Public shape of a Cordis context.
  *
@@ -1067,7 +1067,7 @@ declare class Context {
   intercept(name: string, config: any): this;
 }
 //#endregion
-//#region ../../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.1_@deepseek-ai+cordis-plugin-include@1.0.6_@deepseek-ai+cordis-plugin-loader@1.0.2/node_modules/@deepseek-ai/cordis/lib/types/service.d.ts
+//#region ../../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.2_@deepseek-ai+cordis-plugin-include@1.0.6_@deepseek-ai+cordis-plugin-loader@1.0.3/node_modules/@deepseek-ai/cordis/lib/types/service.d.ts
 /**
  * Base class for services that expose a named API on `ctx`.
  *
@@ -1266,7 +1266,7 @@ declare function normalizeGatewayUrl(gatewayUrl: string): string;
 /**
  * card-tools.ts — the PLUGIN SYSTEM registrar (2026-08-30).
  *
- * Complex cards OWN their tools: plugins/<owner>/cards/<card>/tool.json
+ * Complex cards OWN their tools: packages/<owner>/cards/<card>/tool.json
  * (beside the card's form) declares name/description/model + the params
  * schema + a small constraint vocabulary. This module fetches
  * GET /v1/card-tools and registers ONE DSH tool per manifest — the
@@ -1280,52 +1280,222 @@ declare function buildFlowLike(): any;
 /** Fetch manifests + build one DSH tool per card. */
 declare function cardTools(gatewayUrl: string, signal?: AbortSignal, lane?: string): Promise<Tool[]>;
 //#endregion
-//#region src/types.d.ts
+//#region src/vendored/dsh-tool-types.d.ts
 /**
- * Local structural types for the DSH tool registry seam.
+ * Vendored tool-registry type surface — src-copy, not a hand mirror.
  *
- * `@deepseek-ai/dsh-tools` is not a resolvable dependency of this workspace
- * (the melite/dsh workspace installs only cordis + tsdown + typescript), so the
- * plugin hands the registry plain `ToolDefinition` object literals instead of
- * calling `defineTool()`. The runtime contract these types mirror (verified
- * against @deepseek-ai/dsh-tools 0.1.0-rc.7 lib/index.js):
+ * Upstream: https://github.com/deepseek-ai/deepseek-harness
+ * Pinned at commit `141eb6f` (2026-08-19).
+ * - `ToolSchema`, `TextBlock` ← `packages/llm/llm/src/types.ts`
+ *   (ToolSchema:333-338, TextBlock:53-57).
+ * - `JsonSchemaType`, `JsonSchemaScalar`, `JsonSchemaNode` ←
+ *   `packages/core/tools/src/json-schema.ts` (18-21, 31-50).
+ * - `JsonValue` ← `packages/core/session/src/json.ts` (13).
+ * - `ToolOutputDefinition`, `ToolDefinition`, `ToolResult`,
+ *   `GenericCallView`, `GenericResultView`, `ToolCallKind` ←
+ *   `packages/core/tools/src/index.ts` (ToolOutputDefinition:212-219,
+ *   ToolDefinition:222-290, ToolResult:292-303) and `src/presentation.ts`
+ *   (ToolCallKind:17, GenericCallView:51-77, GenericResultView:143-154).
  *
- * - `ToolRuntime.register(definition)` requires `output { schema, render }`,
- *   asserts `output.schema` against its supported JSON-Schema subset, and
- *   rejects the reserved name `run_code`.
- * - `parameters` is projected verbatim as the model-facing JSON Schema —
- *   an object root with `properties` / `required`.
- * - A thrown `execute` is materialized by the registry as an error result
- *   whose content is the error message — that is how gateway 4xx bodies
- *   reach the model verbatim.
+ * License: MIT, Copyright (c) 2026 DeepSeek (upstream notice preserved
+ * in this file's tail).
  *
- * Supported schema keywords (dsh-tools json-schema subset): type, oneOf,
- * properties, required, additionalProperties, items, enum, const plus the
- * annotations description/title/default/examples. Type arrays are NOT
- * supported; nullable fields stay undeclared and ride
- * `additionalProperties: true`.
+ * ADAPTATIONS (declared, with cause — DSH-AS-LANGUAGE ledger):
+ *
+ * 1. `execute` takes `exec: ToolExec` ({ signal }) where upstream takes
+ *    `ToolRunContext`. Cause: the full context chain (ToolExecution →
+ *    ToolExecutionInput → Agent, UserMessage, tokens) is host-plane
+ *    machinery this plugin never touches — every body below uses only
+ *    `exec.signal`. The narrowing is contravariant-safe: a body that
+ *    accepts { signal } accepts any ToolRunContext at runtime.
+ * 2. `output.render` returns `TextBlock[]` where upstream returns
+ *    `ContentBlock[]`. Cause: this plugin renders text only (its
+ *    TextBlock is upstream's TextBlock verbatim, so the array type is
+ *    assignable upward — no practical divergence).
+ * 3. Omitted optional members (never used by this plugin; omission is
+ *    the designed default): `finalizeContent` (needs the ToolExecution
+ *    chain), `timeoutMs`, `isConcurrencySafe`, `presentationMeta`,
+ *    `presentResult` (see 4), terminal/diff/search/read/web view
+ *    variants (this plugin's calls are gateway fetches — generic
+ *    cards only).
+ * 4. `presentResult` is vendored in the type but intentionally
+ *    UNIMPLEMENTED by every tool below. Cause: it receives
+ *    (args, result: ToolResult) where result carries RENDERED content
+ *    blocks, not the canonical value — a completion title naming e.g.
+ *    the draft id would mean re-parsing rendered text. Omission keeps
+ *    the pending title + raw result content, which is the designed
+ *    default and already carries the ids (the render-text contract).
+ *
+ * RUNTIME contract (verified against the registry — carried over from
+ * the mirror this file replaces; behavior, not types):
+ * - `ToolRuntime.register(definition)` requires `output { schema,
+ *   render }`, asserts `output.schema` against the supported
+ *   JSON-Schema subset (the keywords below + annotations
+ *   description/title/default/examples; type arrays NOT supported),
+ *   and rejects the reserved name `run_code`.
+ * - `parameters` is projected verbatim as the model-facing JSON
+ *   Schema — an object root with `properties` / `required`.
+ * - A thrown `execute` is materialized by the registry as an error
+ *   result whose content is the error message — that is how gateway
+ *   4xx bodies reach the model verbatim.
+ * - `presentCall` must be pure and side-effect-free: a UI may call it
+ *   during live streaming AND session-log replay, so it depends only
+ *   on `args` and must never throw on malformed input.
  */
-/** One model-facing content block (the only kind this plugin renders). */
+/** Lossless JSON value (dsh session/src/json.ts:13, verbatim). */
+type JsonValue = null | boolean | number | string | JsonValue[] | {
+  [key: string]: JsonValue;
+};
+/** Scalar-only schema types accepted by literal constraints. */
+type JsonSchemaScalar = string | number | boolean | null;
+/** Single-type keywords accepted by the enforced subset. */
+type JsonSchemaType = 'object' | 'array' | 'string' | 'number' | 'integer' | 'boolean' | 'null';
+/**
+ * One raw JSON Schema node in the enforced subset (dsh-tools
+ * src/json-schema.ts:31-50, verbatim).
+ */
+interface JsonSchemaNode {
+  /** Omit with no constraints for any JSON value, or use `oneOf`. */
+  type?: JsonSchemaType;
+  /** Exactly one branch must validate; at least two branches are required. */
+  oneOf?: JsonSchemaNode[];
+  /** Nested property schemas (`type: 'object'` only). */
+  properties?: Record<string, JsonSchemaNode>;
+  /** Required property names; each must appear in `properties`. */
+  required?: string[];
+  /** `false` rejects undeclared keys; absent/`true` follows JSON Schema's open default. */
+  additionalProperties?: boolean;
+  /** Item schema (`type: 'array'` only); absent accepts any JSON item. */
+  items?: JsonSchemaNode;
+  /** Allowed values for a scalar node. */
+  enum?: JsonSchemaScalar[];
+  /** The single allowed value for a scalar node. */
+  const?: JsonSchemaScalar;
+  /** Annotation, ignored for validation. */
+  description?: string;
+  /** Annotation, ignored for validation. */
+  title?: string;
+  /** Annotation, ignored for validation but required to be lossless JSON. */
+  default?: JsonValue;
+  /** Annotation, ignored for validation but required to be lossless JSON. */
+  examples?: JsonValue;
+}
+/** Plain text visible to the end user (dsh-llm src/types.ts:53-57, verbatim). */
 interface TextBlock {
   type: 'text';
   text: string;
 }
-/** Execution identity handed to a tool body (subset the tools use). */
+/**
+ * A tool's model-facing shape: name, description, arguments schema
+ * (dsh-llm src/types.ts:333-338, verbatim).
+ */
+interface ToolSchema {
+  name: string;
+  description: string;
+  /** JSON Schema object for the arguments. */
+  parameters: Record<string, unknown>;
+}
+/** Execution identity handed to a tool body (adaptation 1: narrowed). */
 interface ToolExec {
   readonly signal: AbortSignal;
 }
-/** Registry-ready tool definition — the structural subset we register. */
-interface ToolDefinition {
-  name: string;
-  description: string;
-  /** Raw JSON Schema object root (implicit open object of parameters). */
-  parameters: Record<string, unknown>;
-  output: {
-    /** Raw JSON Schema enforced against every successful canonical value. */
-    schema: Record<string, unknown>;
-    render(args: unknown, value: unknown): TextBlock[];
-  };
+/**
+ * Mandatory canonical output declaration (dsh-tools src/index.ts:212-219,
+ * verbatim except adaptation 2 on `render`).
+ */
+interface ToolOutputDefinition {
+  /** Raw supported JSON Schema enforced against every successful canonical value. */
+  readonly schema: JsonSchemaNode;
+  /** Pure projection from validated arguments and value to model content. */
+  render(args: unknown, value: JsonValue): TextBlock[];
+}
+/**
+ * Category of a tool call, used by a UI to pick an icon or treatment
+ * (dsh-tools src/presentation.ts:17, verbatim).
+ */
+type ToolCallKind = 'read' | 'edit' | 'delete' | 'move' | 'search' | 'execute' | 'fetch' | 'other';
+/**
+ * The default pending-call card (dsh-tools src/presentation.ts:51-77,
+ * verbatim). Any tool whose call is not a terminal or a diff uses this.
+ */
+interface GenericCallView {
+  card: 'generic';
+  /**
+   * Human-readable, always-visible label describing what THIS call does.
+   * Keep it short — a UI shows it as a card header / log line.
+   */
+  title: string;
+  /** Category for icon/treatment; defaults to `other` when omitted. */
+  kind?: ToolCallKind;
+  /**
+   * The salient input to show in a detail/expanded view. Omit to show
+   * nothing; a string renders as-is, an object as pretty JSON. NOT the
+   * full raw args object unless that is genuinely what a reader wants.
+   */
+  rawInput?: unknown;
+}
+/**
+ * The default completed card (dsh-tools src/presentation.ts:143-154,
+ * verbatim except the TextBlock adaptation — same cause as `render`).
+ * Vendored for the `presentResult` signature; no tool below implements it.
+ */
+interface GenericResultView {
+  card: 'generic';
+  /** Replacement title for the completed call. Omit to keep the pending-state title. */
+  title?: string;
+  /**
+   * UI-facing result content, reformatted from the model-facing result.
+   * Omit to let the UI render the raw result content.
+   */
+  content?: TextBlock[];
+}
+/**
+ * The completed outcome handed to `presentResult` (dsh-tools
+ * src/index.ts:292-303, verbatim; vendored for the signature even
+ * though this plugin implements no presentResult — adaptation 4).
+ */
+interface ToolResult {
+  /** The final model-facing content (or the rendered error text on failure). */
+  content: TextBlock[];
+  /** Whether the call failed. */
+  isError: boolean;
+  /**
+   * The tool-private presentation payload projected by its output
+   * declaration and threaded verbatim from the `tool/result` event.
+   * Absent when the tool declared no projector or the call was nested
+   * under a composite transport.
+   */
+  meta?: JsonValue;
+}
+/**
+ * A registered tool: its schema plus the execution function (dsh-tools
+ * src/index.ts:222-290 — vendored subset; see adaptations 1-4).
+ */
+interface ToolDefinition extends ToolSchema {
+  /** Mandatory canonical output declaration. */
+  readonly output: ToolOutputDefinition;
+  /**
+   * Run one accepted call and return only its canonical lossless-JSON value.
+   * Async work must observe or forward `exec.signal` and settle only after its
+   * owned work reaches quiescence.
+   * @param args - losslessly snapshotted, frozen model arguments.
+   * @param exec - execution identity and cancellation signal (narrowed — adaptation 1).
+   * @returns the canonical value declared by `output.schema`.
+   */
   execute(args: unknown, exec: ToolExec): Promise<unknown>;
+  /**
+   * Optional: how to present the PENDING state of one call in a UI, derived
+   * from the call's `args`. Returns a `card`-tagged render intent, or
+   * `undefined` (or omit the method) to fall back to a generic presentation
+   * (title = tool name, raw args as input). Pure and side-effect-free.
+   */
+  presentCall?(args: unknown): GenericCallView | undefined;
+  /**
+   * Optional: how to present the COMPLETED state. UNIMPLEMENTED by this
+   * plugin — adaptation 4 records why; the signature rides along so the
+   * vendored shape stays recognizable.
+   */
+  presentResult?(args: unknown, result: ToolResult): GenericResultView | undefined;
 }
 //#endregion
 //#region src/tools/card-run.d.ts

@@ -60,6 +60,16 @@ export function modelCatalog(gatewayUrl: string): ToolDefinition {
         },
       },
     },
+    presentCall(args) {
+      const a = (typeof args === "object" && args !== null ? args : {}) as { query?: unknown };
+      const q = typeof a.query === 'string' && a.query.length > 0 ? a.query : undefined;
+      return {
+        card: 'generic',
+        title: q ? `Catalog search: ${q}` : 'Model catalog',
+        kind: q ? 'search' : 'read',
+        rawInput: q ?? '(full scan)',
+      };
+    },
     output: {
       schema: {
         type: 'object',
@@ -87,7 +97,7 @@ export function modelCatalog(gatewayUrl: string): ToolDefinition {
       },
     },
     async execute(args, exec) {
-      const a = args as { query?: unknown; limit?: unknown; detail?: unknown }
+      const a = (typeof args === "object" && args !== null ? args : {}) as { query?: unknown; limit?: unknown; detail?: unknown }
       const catalog = await gatewayRequest(gatewayUrl, 'GET', '/v1/model-catalog', undefined, exec.signal, CATALOG_TIMEOUT_MS) as {
         families?: Record<string, unknown>
         models?: Record<string, ModelEntry>

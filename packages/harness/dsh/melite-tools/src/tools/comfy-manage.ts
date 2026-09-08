@@ -96,6 +96,15 @@ export function comfyManage(gatewayUrl: string): ToolDefinition {
       },
       required: ['action'],
     },
+    presentCall(args) {
+      const a = (typeof args === "object" && args !== null ? args : {}) as { action?: unknown };
+      return {
+        card: 'generic',
+        title: `ComfyUI ${String(a.action ?? '?')}`,
+        kind: 'execute',
+        rawInput: String(a.action ?? '?'),
+      };
+    },
     output: {
       schema: {
         type: 'object',

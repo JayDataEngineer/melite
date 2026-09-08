@@ -58,6 +58,16 @@ export function enhancePrompt(
       },
       required: ['model', 'prompt'],
     },
+    presentCall(args) {
+      const a = (typeof args === "object" && args !== null ? args : {}) as { model?: unknown; prompt?: unknown; field?: unknown };
+      const head = String(a.prompt ?? '').slice(0, 120);
+      return {
+        card: 'generic',
+        title: `Enhance prompt (${String(a.model ?? '?')}${a.field ? `:${String(a.field)}` : ''})`,
+        kind: 'other',
+        rawInput: head,
+      };
+    },
     output: {
       schema: {
         type: 'object',
@@ -93,7 +103,7 @@ export function enhancePrompt(
       },
     },
     async execute(args, exec) {
-      const a = args as { model?: unknown; prompt?: unknown; field?: unknown; temperature?: unknown }
+      const a = (typeof args === "object" && args !== null ? args : {}) as { model?: unknown; prompt?: unknown; field?: unknown; temperature?: unknown }
       if (typeof a.model !== 'string' || a.model.length === 0) {
         throw new Error('enhance_prompt: "model" is required (a catalog model id string)')
       }

@@ -78,6 +78,15 @@ export function laneBundleLoad(gatewayUrl: string): ToolDefinition {
       },
       required: ['kind', 'name'],
     },
+    presentCall(args) {
+      const a = (typeof args === "object" && args !== null ? args : {}) as { kind?: unknown; name?: unknown };
+      return {
+        card: 'generic',
+        title: `Load ${String(a.kind ?? '?')} bundle: ${String(a.name ?? '?')}`,
+        kind: 'fetch',
+        rawInput: { kind: String(a.kind ?? '?'), name: String(a.name ?? '?') },
+      };
+    },
     output: {
       schema: {
         type: 'object',
@@ -97,7 +106,7 @@ export function laneBundleLoad(gatewayUrl: string): ToolDefinition {
         required: ['lane', 'kind', 'agent'],
       },
       render: (args, value) => {
-        const a = args as { name?: string }
+        const a = (typeof args === "object" && args !== null ? args : {}) as { name?: string }
         const v = value as { kind?: string; agent?: { name?: string }; tools?: unknown[]; skills?: unknown[] }
         return [{
           type: 'text',
@@ -109,7 +118,7 @@ export function laneBundleLoad(gatewayUrl: string): ToolDefinition {
       },
     },
     async execute(args, exec) {
-      const a = args as { kind?: unknown; name?: unknown }
+      const a = (typeof args === "object" && args !== null ? args : {}) as { kind?: unknown; name?: unknown }
       const kind = typeof a.kind === 'string' ? a.kind : ''
       const name = typeof a.name === 'string' ? a.name : ''
       const res = await gatewayRequest(

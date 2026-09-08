@@ -31,6 +31,15 @@ export function skillRead(gatewayUrl: string): ToolDefinition {
       },
       required: ['id'],
     },
+    presentCall(args) {
+      const a = (typeof args === "object" && args !== null ? args : {}) as { id?: unknown };
+      return {
+        card: 'generic',
+        title: `Read skill ${String(a.id ?? '?')}`,
+        kind: 'read',
+        rawInput: String(a.id ?? '?'),
+      };
+    },
     output: {
       schema: {
         type: 'object',
@@ -44,7 +53,7 @@ export function skillRead(gatewayUrl: string): ToolDefinition {
         required: ['id', 'content'],
       },
       render: (args, value) => {
-        const a = args as { id?: string }
+        const a = (typeof args === "object" && args !== null ? args : {}) as { id?: string }
         const v = value as { id?: string; name?: string }
         return [{
           type: 'text',
@@ -53,7 +62,7 @@ export function skillRead(gatewayUrl: string): ToolDefinition {
       },
     },
     async execute(args, exec) {
-      const a = args as { id?: unknown }
+      const a = (typeof args === "object" && args !== null ? args : {}) as { id?: unknown }
       if (typeof a.id !== 'string' || a.id.length === 0) {
         throw new Error('skill_read: "id" is required (a skill id string from skill_index)')
       }

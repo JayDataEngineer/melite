@@ -75,6 +75,15 @@ export function cardRun(gatewayUrl: string): ToolDefinition {
       },
       required: ['draftId'],
     },
+    presentCall(args) {
+      const a = (typeof args === "object" && args !== null ? args : {}) as { draftId?: unknown; test?: unknown };
+      return {
+        card: 'generic',
+        title: `Run card ${String(a.draftId ?? '?')}`,
+        kind: 'execute',
+        rawInput: String(a.draftId ?? '?'),
+      };
+    },
     output: {
       schema: {
         type: 'object',
@@ -98,7 +107,7 @@ export function cardRun(gatewayUrl: string): ToolDefinition {
       },
     },
     async execute(args, exec) {
-      const a = args as { draftId?: unknown; test?: unknown }
+      const a = (typeof args === "object" && args !== null ? args : {}) as { draftId?: unknown; test?: unknown }
       const draftId = typeof a.draftId === 'string' ? a.draftId : ''
       if (!draftId) return jsonClean({ error: 'draftId is required' })
 

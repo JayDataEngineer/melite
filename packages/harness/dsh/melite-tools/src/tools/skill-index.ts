@@ -35,6 +35,9 @@ export function skillIndex(gatewayUrl: string): ToolDefinition {
       properties: {},
       required: [],
     },
+    presentCall() {
+      return { card: 'generic', title: 'Skill index', kind: 'search' };
+    },
     output: {
       schema: {
         type: 'object',

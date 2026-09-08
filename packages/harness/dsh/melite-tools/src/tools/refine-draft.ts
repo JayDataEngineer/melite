@@ -60,6 +60,15 @@ export function refineDraft(gatewayUrl: string): ToolDefinition {
       },
       required: ['draftId', 'params'],
     },
+    presentCall(args) {
+      const a = (typeof args === "object" && args !== null ? args : {}) as { draftId?: unknown; stage?: unknown };
+      return {
+        card: 'generic',
+        title: `Refine draft ${String(a.draftId ?? '?')}`,
+        kind: 'edit',
+        rawInput: { draftId: String(a.draftId ?? '?'), stage: String(a.stage ?? 'first') },
+      };
+    },
     output: {
       schema: {
         type: 'object',
@@ -82,7 +91,7 @@ export function refineDraft(gatewayUrl: string): ToolDefinition {
       },
     },
     async execute(args, exec) {
-      const a = args as { draftId?: unknown; params?: unknown; stage?: unknown }
+      const a = (typeof args === "object" && args !== null ? args : {}) as { draftId?: unknown; params?: unknown; stage?: unknown }
       if (typeof a.draftId !== 'string' || a.draftId.length === 0) {
         throw new Error('refine_draft: "draftId" is required (the draft id from build_flow)')
       }

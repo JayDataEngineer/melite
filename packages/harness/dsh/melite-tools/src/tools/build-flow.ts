@@ -225,6 +225,16 @@ export function buildFlow(gatewayUrl: string): ToolDefinition {
         },
       },
     },
+    presentCall(args) {
+      const a = (typeof args === "object" && args !== null ? args : {}) as { model?: unknown; flow?: { stages?: unknown } };
+      const stages = Array.isArray(a.flow?.stages) ? a.flow.stages.length : 0;
+      return {
+        card: 'generic',
+        title: stages > 0 ? `Build flow (${stages} stages)` : `Build flow: ${String(a.model ?? '?')}`,
+        kind: 'execute',
+        rawInput: stages > 0 ? { stages } : { model: String(a.model ?? '?') },
+      };
+    },
     output: {
       schema: {
         type: 'object',
@@ -257,7 +267,7 @@ export function buildFlow(gatewayUrl: string): ToolDefinition {
       },
     },
     async execute(args, exec) {
-      const a = args as {
+      const a = (typeof args === "object" && args !== null ? args : {}) as {
         model?: unknown; prompt?: unknown
         params?: Record<string, unknown>
         flow?: Record<string, unknown>

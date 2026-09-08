@@ -69,6 +69,15 @@ export function flowRun(gatewayUrl: string): ToolDefinition {
       },
       required: ['template'],
     },
+    presentCall(args) {
+      const a = (typeof args === "object" && args !== null ? args : {}) as { template?: unknown };
+      return {
+        card: 'generic',
+        title: `Run flow ${String(a.template ?? '?')}`,
+        kind: 'execute',
+        rawInput: String(a.template ?? '?'),
+      };
+    },
     output: {
       schema: {
         type: 'object',
@@ -91,7 +100,7 @@ export function flowRun(gatewayUrl: string): ToolDefinition {
       },
     },
     async execute(args, exec) {
-      const a = args as { template?: unknown; params?: unknown; test?: unknown }
+      const a = (typeof args === "object" && args !== null ? args : {}) as { template?: unknown; params?: unknown; test?: unknown }
       const template = typeof a.template === 'string' ? a.template : ''
       if (!template) return jsonClean({ error: 'template is required' })
       const overrides = (a.params && typeof a.params === 'object' && !Array.isArray(a.params))

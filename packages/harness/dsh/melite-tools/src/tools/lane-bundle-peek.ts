@@ -64,6 +64,15 @@ export function laneBundlePeek(gatewayUrl: string): ToolDefinition {
       },
       required: [],
     },
+    presentCall(args) {
+      const a = (typeof args === "object" && args !== null ? args : {}) as { kind?: unknown; genre?: unknown };
+      return {
+        card: 'generic',
+        title: `Peek ${String(a.kind ?? '?')} bundles`,
+        kind: 'read',
+        rawInput: String(a.genre ?? a.kind ?? '?'),
+      };
+    },
     output: {
       schema: {
         type: 'object',
@@ -90,7 +99,7 @@ export function laneBundlePeek(gatewayUrl: string): ToolDefinition {
       },
     },
     async execute(args, exec) {
-      const a = args as { kind?: unknown; genre?: unknown }
+      const a = (typeof args === "object" && args !== null ? args : {}) as { kind?: unknown; genre?: unknown }
       let path = '/v1/lanes'
       const q: string[] = []
       if (typeof a.kind === 'string' && a.kind.length > 0) q.push('kind=' + encodeURIComponent(a.kind))

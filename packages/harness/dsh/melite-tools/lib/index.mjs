@@ -84,7 +84,7 @@ function fuseSignals(...signals) {
 /**
 * card-tools.ts — the PLUGIN SYSTEM registrar (2026-08-30).
 *
-* Complex cards OWN their tools: plugins/<owner>/cards/<card>/tool.json
+* Complex cards OWN their tools: packages/<owner>/cards/<card>/tool.json
 * (beside the card's form) declares name/description/model + the params
 * schema + a small constraint vocabulary. This module fetches
 * GET /v1/card-tools and registers ONE DSH tool per manifest — the
@@ -382,6 +382,15 @@ function cardRun(gatewayUrl) {
 			},
 			required: ["draftId"]
 		},
+		presentCall(args) {
+			const a = typeof args === "object" && args !== null ? args : {};
+			return {
+				card: "generic",
+				title: `Run card ${String(a.draftId ?? "?")}`,
+				kind: "execute",
+				rawInput: String(a.draftId ?? "?")
+			};
+		},
 		output: {
 			schema: {
 				type: "object",
@@ -423,7 +432,7 @@ function cardRun(gatewayUrl) {
 			}
 		},
 		async execute(args, exec) {
-			const a = args;
+			const a = typeof args === "object" && args !== null ? args : {};
 			const draftId = typeof a.draftId === "string" ? a.draftId : "";
 			if (!draftId) return jsonClean({ error: "draftId is required" });
 			let docRes;
@@ -527,6 +536,15 @@ function flowRun(gatewayUrl) {
 			},
 			required: ["template"]
 		},
+		presentCall(args) {
+			const a = typeof args === "object" && args !== null ? args : {};
+			return {
+				card: "generic",
+				title: `Run flow ${String(a.template ?? "?")}`,
+				kind: "execute",
+				rawInput: String(a.template ?? "?")
+			};
+		},
 		output: {
 			schema: {
 				type: "object",
@@ -560,7 +578,7 @@ function flowRun(gatewayUrl) {
 			}
 		},
 		async execute(args, exec) {
-			const a = args;
+			const a = typeof args === "object" && args !== null ? args : {};
 			const template = typeof a.template === "string" ? a.template : "";
 			if (!template) return jsonClean({ error: "template is required" });
 			const overrides = a.params && typeof a.params === "object" && !Array.isArray(a.params) ? a.params : {};
@@ -648,6 +666,15 @@ function runStatus(gatewayUrl) {
 			} },
 			required: ["runId"]
 		},
+		presentCall(args) {
+			const a = typeof args === "object" && args !== null ? args : {};
+			return {
+				card: "generic",
+				title: `Run status: ${String(a.runId ?? "?")}`,
+				kind: "read",
+				rawInput: String(a.runId ?? "?")
+			};
+		},
 		output: {
 			schema: {
 				type: "object",
@@ -690,7 +717,7 @@ function runStatus(gatewayUrl) {
 			}
 		},
 		async execute(args, exec) {
-			const a = args;
+			const a = typeof args === "object" && args !== null ? args : {};
 			const runId = typeof a.runId === "string" ? a.runId : "";
 			if (!runId) return jsonClean({ error: "runId is required" });
 			let res;
@@ -814,6 +841,16 @@ function buildFlow(gatewayUrl) {
 				}
 			}
 		},
+		presentCall(args) {
+			const a = typeof args === "object" && args !== null ? args : {};
+			const stages = Array.isArray(a.flow?.stages) ? a.flow.stages.length : 0;
+			return {
+				card: "generic",
+				title: stages > 0 ? `Build flow (${stages} stages)` : `Build flow: ${String(a.model ?? "?")}`,
+				kind: "execute",
+				rawInput: stages > 0 ? { stages } : { model: String(a.model ?? "?") }
+			};
+		},
 		output: {
 			schema: {
 				type: "object",
@@ -852,7 +889,7 @@ function buildFlow(gatewayUrl) {
 			}
 		},
 		async execute(args, exec) {
-			const a = args;
+			const a = typeof args === "object" && args !== null ? args : {};
 			if (a.flow !== void 0) return composeMulti(gatewayUrl, a.flow, exec.signal);
 			return composeSingle(gatewayUrl, a, exec.signal);
 		}
@@ -1044,6 +1081,15 @@ function comfyManage(gatewayUrl) {
 				}
 			},
 			required: ["action"]
+		},
+		presentCall(args) {
+			const a = typeof args === "object" && args !== null ? args : {};
+			return {
+				card: "generic",
+				title: `ComfyUI ${String(a.action ?? "?")}`,
+				kind: "execute",
+				rawInput: String(a.action ?? "?")
+			};
 		},
 		output: {
 			schema: {
@@ -1370,6 +1416,16 @@ function enhancePrompt(gatewayUrl, llm, getDefaultLlm) {
 			},
 			required: ["model", "prompt"]
 		},
+		presentCall(args) {
+			const a = typeof args === "object" && args !== null ? args : {};
+			const head = String(a.prompt ?? "").slice(0, 120);
+			return {
+				card: "generic",
+				title: `Enhance prompt (${String(a.model ?? "?")}${a.field ? `:${String(a.field)}` : ""})`,
+				kind: "other",
+				rawInput: head
+			};
+		},
 		output: {
 			schema: {
 				type: "object",
@@ -1414,7 +1470,7 @@ function enhancePrompt(gatewayUrl, llm, getDefaultLlm) {
 			}
 		},
 		async execute(args, exec) {
-			const a = args;
+			const a = typeof args === "object" && args !== null ? args : {};
 			if (typeof a.model !== "string" || a.model.length === 0) throw new Error("enhance_prompt: \"model\" is required (a catalog model id string)");
 			if (typeof a.prompt !== "string") throw new Error("enhance_prompt: \"prompt\" is required (the user's rough words)");
 			if (a.field !== void 0 && typeof a.field !== "string") throw new Error("enhance_prompt: \"field\" must be a string when given");
@@ -1462,6 +1518,15 @@ function laneBundlePeek(gatewayUrl) {
 			},
 			required: []
 		},
+		presentCall(args) {
+			const a = typeof args === "object" && args !== null ? args : {};
+			return {
+				card: "generic",
+				title: `Peek ${String(a.kind ?? "?")} bundles`,
+				kind: "read",
+				rawInput: String(a.genre ?? a.kind ?? "?")
+			};
+		},
 		output: {
 			schema: {
 				type: "object",
@@ -1488,7 +1553,7 @@ function laneBundlePeek(gatewayUrl) {
 			}
 		},
 		async execute(args, exec) {
-			const a = args;
+			const a = typeof args === "object" && args !== null ? args : {};
 			let path = "/v1/lanes";
 			const q = [];
 			if (typeof a.kind === "string" && a.kind.length > 0) q.push("kind=" + encodeURIComponent(a.kind));
@@ -1529,6 +1594,18 @@ function laneBundleLoad(gatewayUrl) {
 				}
 			},
 			required: ["kind", "name"]
+		},
+		presentCall(args) {
+			const a = typeof args === "object" && args !== null ? args : {};
+			return {
+				card: "generic",
+				title: `Load ${String(a.kind ?? "?")} bundle: ${String(a.name ?? "?")}`,
+				kind: "fetch",
+				rawInput: {
+					kind: String(a.kind ?? "?"),
+					name: String(a.name ?? "?")
+				}
+			};
 		},
 		output: {
 			schema: {
@@ -1571,7 +1648,7 @@ function laneBundleLoad(gatewayUrl) {
 				]
 			},
 			render: (args, value) => {
-				const a = args;
+				const a = typeof args === "object" && args !== null ? args : {};
 				const v = value;
 				return [{
 					type: "text",
@@ -1580,7 +1657,7 @@ function laneBundleLoad(gatewayUrl) {
 			}
 		},
 		async execute(args, exec) {
-			const a = args;
+			const a = typeof args === "object" && args !== null ? args : {};
 			const kind = typeof a.kind === "string" ? a.kind : "";
 			const name = typeof a.name === "string" ? a.name : "";
 			const res = await gatewayRequest(gatewayUrl, "GET", "/v1/cards/" + encodeURIComponent(name) + "/bundle?kind=" + encodeURIComponent(kind), void 0, exec.signal, TIMEOUT_MS$1);
@@ -1669,6 +1746,16 @@ function modelCatalog(gatewayUrl) {
 				}
 			}
 		},
+		presentCall(args) {
+			const a = typeof args === "object" && args !== null ? args : {};
+			const q = typeof a.query === "string" && a.query.length > 0 ? a.query : void 0;
+			return {
+				card: "generic",
+				title: q ? `Catalog search: ${q}` : "Model catalog",
+				kind: q ? "search" : "read",
+				rawInput: q ?? "(full scan)"
+			};
+		},
 		output: {
 			schema: {
 				type: "object",
@@ -1706,7 +1793,7 @@ function modelCatalog(gatewayUrl) {
 			}
 		},
 		async execute(args, exec) {
-			const a = args;
+			const a = typeof args === "object" && args !== null ? args : {};
 			const catalog = await gatewayRequest(gatewayUrl, "GET", "/v1/model-catalog", void 0, exec.signal, CATALOG_TIMEOUT_MS);
 			const models = catalog.models ?? {};
 			const q = typeof a.query === "string" ? a.query.toLowerCase() : "";
@@ -1791,6 +1878,18 @@ function refineDraft(gatewayUrl) {
 			},
 			required: ["draftId", "params"]
 		},
+		presentCall(args) {
+			const a = typeof args === "object" && args !== null ? args : {};
+			return {
+				card: "generic",
+				title: `Refine draft ${String(a.draftId ?? "?")}`,
+				kind: "edit",
+				rawInput: {
+					draftId: String(a.draftId ?? "?"),
+					stage: String(a.stage ?? "first")
+				}
+			};
+		},
 		output: {
 			schema: {
 				type: "object",
@@ -1826,7 +1925,7 @@ function refineDraft(gatewayUrl) {
 			}
 		},
 		async execute(args, exec) {
-			const a = args;
+			const a = typeof args === "object" && args !== null ? args : {};
 			if (typeof a.draftId !== "string" || a.draftId.length === 0) throw new Error("refine_draft: \"draftId\" is required (the draft id from build_flow)");
 			if (a.params === null || typeof a.params !== "object" || Array.isArray(a.params)) throw new Error("refine_draft: \"params\" is required (an object of keys to merge, e.g. {\"seed\":42})");
 			const raw = await gatewayRequest(gatewayUrl, "GET", "/v1/flows/drafts/" + encodeURIComponent(a.draftId), void 0, exec.signal, TIMEOUT_MS);
@@ -1877,6 +1976,13 @@ function skillIndex(gatewayUrl) {
 			properties: {},
 			required: []
 		},
+		presentCall() {
+			return {
+				card: "generic",
+				title: "Skill index",
+				kind: "search"
+			};
+		},
 		output: {
 			schema: {
 				type: "object",
@@ -1925,6 +2031,15 @@ function skillRead(gatewayUrl) {
 			} },
 			required: ["id"]
 		},
+		presentCall(args) {
+			const a = typeof args === "object" && args !== null ? args : {};
+			return {
+				card: "generic",
+				title: `Read skill ${String(a.id ?? "?")}`,
+				kind: "read",
+				rawInput: String(a.id ?? "?")
+			};
+		},
 		output: {
 			schema: {
 				type: "object",
@@ -1947,7 +2062,7 @@ function skillRead(gatewayUrl) {
 				required: ["id", "content"]
 			},
 			render: (args, value) => {
-				const a = args;
+				const a = typeof args === "object" && args !== null ? args : {};
 				const v = value;
 				return [{
 					type: "text",
@@ -1956,7 +2071,7 @@ function skillRead(gatewayUrl) {
 			}
 		},
 		async execute(args, exec) {
-			const a = args;
+			const a = typeof args === "object" && args !== null ? args : {};
 			if (typeof a.id !== "string" || a.id.length === 0) throw new Error("skill_read: \"id\" is required (a skill id string from skill_index)");
 			const res = await gatewayRequest(gatewayUrl, "GET", "/v1/skills/" + encodeURIComponent(a.id), void 0, exec.signal, READ_TIMEOUT_MS);
 			return {
@@ -1991,6 +2106,18 @@ function ledgerTail(gatewayUrl) {
 			},
 			required: []
 		},
+		presentCall(args) {
+			const a = typeof args === "object" && args !== null ? args : {};
+			return {
+				card: "generic",
+				title: "Ledger tail",
+				kind: "read",
+				rawInput: {
+					limit: a.limit,
+					event: a.event
+				}
+			};
+		},
 		output: {
 			schema: {
 				type: "object",
@@ -2024,7 +2151,7 @@ function ledgerTail(gatewayUrl) {
 			}
 		},
 		async execute(args, exec) {
-			const a = args;
+			const a = typeof args === "object" && args !== null ? args : {};
 			const q = [];
 			if (typeof a.limit === "number" && Number.isFinite(a.limit) && a.limit > 0) q.push("limit=" + encodeURIComponent(String(Math.floor(a.limit))));
 			else if (typeof a.limit === "string" && a.limit.length > 0) q.push("limit=" + encodeURIComponent(a.limit));
