@@ -14,6 +14,7 @@ import {
 } from "./contract.ts";
 import { MODEL_REGISTRY } from "./registry.generated.ts";
 import { buildCatalog } from "./catalogEmission.ts";
+import { resolveCascade } from "./cascade.ts";
 
 export { MODEL_REGISTRY } from "./registry.generated.ts";
 export * from "./contract.ts";
@@ -61,17 +62,22 @@ export function mergedDefaults(
   variant?: string | null,
   quant?: string | null,
 ): Record<string, unknown> {
+  // THE CASCADE RIDES CORDIS (A3): family defaults = base, the
+  // resolving variant's resolver_defaults = the intercept, the
+  // resolving cell's = head — merged by Service[symbols.
+  // resolveConfig] (see cascade.ts). No hand-rolled Object.assign
+  // chain in the resolve path.
   const decl: ModelDecl = getModel(id);
-  const out: Record<string, unknown> = { ...(decl.defaults ?? {}) };
-  if (variant !== undefined || quant !== undefined) {
-    const v: VariantRow = variantOf(decl, variant ?? null);
-    Object.assign(out, v.resolver_defaults);
-    const c: CellRow | null = cellOf(v, quant ?? null);
-    if (c !== null && c.resolver_defaults !== undefined) {
-      Object.assign(out, c.resolver_defaults);
-    }
+  if (variant === undefined && quant === undefined) {
+    return { ...(decl.defaults ?? {}) };
   }
-  return out;
+  const v: VariantRow = variantOf(decl, variant ?? null);
+  const c: CellRow | null = cellOf(v, quant ?? null);
+  return resolveCascade(
+    decl.defaults ?? {},
+    v.resolver_defaults,
+    c !== null && c.resolver_defaults !== undefined ? c.resolver_defaults : null,
+  );
 }
 
 /**
