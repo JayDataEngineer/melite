@@ -85,3 +85,29 @@
   launchers, other checkouts, host config) are off-limits unless the
   operator explicitly sends the agent out. A path outside the root is
   not read, listed, or quoted — even when it would explain something.
+
+## DSH-AS-LANGUAGE LAW (operator order, 2026-09-08, verbatim)
+
+> "I want to use dsh / cordis as a programming language. Whenever we
+>  hand roll, we run a risk of the code being unmaintainable and
+>  obsolete."
+
+- The estate is written IN cordis, not on top of it. DSH/Cordis is
+  the programming language; their primitives are the stdlib.
+- IMPORT-DON'T-HAND-ROLL: before any estate-side implementation of
+  a capability, the audit question is "does the harness ship this?"
+  If yes: vendor it (src-copy at the pinned harness commit,
+  workspace member, lib built per host — the webserver path,
+  vendor/cordis_plugins/README.md) and record any divergence with
+  cause. Hand-rolling a shipped primitive is a defect class, not a
+  style choice.
+- The standing audit record is docs/design/import-dsh-wheels-2026-09-08.md
+  (receipts per wheel; import stroke queued; declined candidates
+  carry quoted-source receipts — owning engine truth is NOT
+  hand-rolling: the queue/single-writer, door rim, and compose
+  plane are estate truths, engine-coupled or wall-pinned).
+- Progressive disclosure (tools + prompts via context trees) is the
+  TARGET STATE for the deck-host lane — scheduled, not conditional:
+  ride their ctx.tools/ctx.extend/system-prompt machinery when the
+  estate mounts as plugins; the API-side disclosure ladder remains
+  the heterogeneous-consumer surface meanwhile.
