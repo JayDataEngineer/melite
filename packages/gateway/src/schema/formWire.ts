@@ -14,7 +14,7 @@
 // tests/walls/suites/test_formwire_parity.py (py-vs-ts accept/reject
 // agreement on every golden + refusal parity on malformed fixtures).
 //
-// NO SECOND TRUTH: the openapi re-export (web/contracts' formSpec.ts)
+// NO SECOND TRUTH: the openapi re-export (packages/web-kit/contracts' formSpec.ts)
 // is the compile-time view. This module imports FormSpec (re-exported
 // below so GET-door code has ONE import site) and adds ONLY what that
 // module lacks: the closed-key runtime validator + the refusalReason
@@ -23,8 +23,8 @@
 // the generated openapi view disagree, THE GATE WINS (see DRIFT).
 //
 // VALIDATOR CHOICE: hand-written, zero-dependency, in the web-kit's
-// existing wire-gate style (web/formats' validateSpecContract,
-// web/catalog's validateCatalogContract: an isObj guard plus a
+// existing wire-gate style (packages/web-kit/formats' validateSpecContract,
+// packages/web-kit/catalog's validateCatalogContract: an isObj guard plus a
 // violations array — no library). The estate's other vocabularies were
 // considered and rejected:
 //   - zod is a declared-but-unused dep of packages/web/editor (zero

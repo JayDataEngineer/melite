@@ -22,7 +22,7 @@ from melite_models import (
                            Quant, SourceRow, Studio, Variant)
 
 # The SOMA-77 template skin — the LBS bind (bind mesh + rig + weights)
-# the motion viewers deform client-side (web/formats somaSkin.ts) and
+# the motion viewers deform client-side (packages/web-kit/formats somaSkin.ts) and
 # the SAME file transfer_rig's lane_inputs names (somaskel77/
 # skin_standard.npz — one download place, two consumers). PUBLIC
 # upstream asset (nv-tlabs/kimodo ships it in-repo; the HF weight
