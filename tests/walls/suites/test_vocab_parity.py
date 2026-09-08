@@ -1,61 +1,39 @@
 #!/usr/bin/env python3
-"""Vocab parity wall — the generated TS face vs the py declarations
-(ladder P1, declarations manifest .scratch/declarations-ts-map.md
-§4.4 + §5 step 7-vocabs).
+"""Vocab parity wall — the HAND-OWNED vocab.ts vs the frozen wants.
 
-python/card_kinds.py + python/slot_kinds.py + python/flow.py::Kind +
-python/melite_models/grammar.py + ActionCard.SIDEBAR_SECTIONS are the SSOT.
-tools/export_vocab.py emits packages/engines/comfyui/cordis/src/
-generated/vocab.ts from them (shadow artifact — nothing imports it
-yet). This wall refuses three drift classes:
+PURGE S-vocab (2026-09-08): tools/export_vocab.py + python/card_kinds.py
++ python/slot_kinds.py are deleted. packages/engines/comfyui/cordis/src/
+generated/vocab.ts is hand-owned frozen data (header re-truthed) — the
+want-sides below are FROZEN literals transcribed from the deleted py
+SSOT at the cut (verified byte-faithful: this wall passed 26/26
+unchanged against the untouched file at transcription time). A hand
+edit to vocab.ts without updating the literal fails HERE; the file's
+own header names this wall.
 
-  1. STALE FACE — regen-to-temp byte-equality (drift refuses).
-  2. MEMBER ROT — member-set equality py-vs-ts per union (py side
-     imported live, ts side parsed stdlib-only: no TS toolchain).
+This wall refuses three drift classes (same legs, frozen wants):
+
+  1. STALE FACE — retired with the exporter (tombstone print below);
+     the hand-owned header pin + exporter-deletion pin replace it.
+  2. MEMBER ROT — frozen member-set equality vs ts per union (ts side
+     parsed stdlib-only: no TS toolchain).
   3. TABLE ROT — CARD_KINDS rows (every flag), SLOT_KINDS entries,
      SLOTS / SIDEBAR_SECTIONS / UNDECLARED_SLOTS sets, sorted order.
 Plus two hygiene gates: no TS `enum` (erasable-syntax law — the
 Cordis plane runs on node --experimental-strip-types) and no second
-spelling of the sibling-owned seam unions (python/ui_map.py owns them;
-the MAP stroke's uiMap.generated.ts is their only face).
-
-NEXT STEPS (filed, not half-built — the exporter's refinements verdict):
-python/melite_cards/validators.py semantics (positive/seed/ranged/
-lora-bag/slot-null/envelope) become generated zod refinements with a
-refusal-text parity wall (manifest §5 step 6 shape) once the decl
-cutover reaches the gates. Porting them here — per-use bounds
-factories, a row shape, schema context — without the zod harness
-would be dual-serve drift, so this wall pins vocabs only.
+spelling of the sibling-owned seam unions (python/ui_map.py owned
+them; the MAP stroke's uiMap.generated.ts is their only face —
+ui_map.py dies in this same stroke, the seam NAMES below are frozen
+identifiers, not imports).
 
 Run: python3 tests/walls/suites/test_vocab_parity.py
 """
 
 from __future__ import annotations
 
-import importlib.util
 import re
-import sys
-import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "python"))
-
-import card_kinds  # noqa: E402
-import flow as _flow  # noqa: E402
-import slot_kinds  # noqa: E402
-import ui_map as _ui_map  # noqa: E402  (read-only: second-spelling guard)
-from melite_cards.dsl import ActionCard  # noqa: E402
-from melite_models.grammar import (  # noqa: E402
-    ClipType,
-    Genre,
-    KnobKind,
-    LatentNode,
-    Quant,
-    StudioKind,
-    StudioLayout,
-    StudioSize,
-)
 
 EXPORTER = REPO / "tools" / "export_vocab.py"
 GENERATED = (
@@ -81,12 +59,92 @@ def _bad(name: str, why: str) -> None:
     FAIL.append("%s: %s" % (name, why))
 
 
-def _load_exporter():
-    spec = importlib.util.spec_from_file_location("export_vocab", EXPORTER)
-    assert spec is not None and spec.loader is not None
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+# ── FROZEN WANTS (transcribed 2026-09-08 from the deleted py SSOT:
+# card_kinds.TABLE + BadgeTone + KindRunner, slot_kinds.VOCAB +
+# FileKind, flow.Kind, grammar Genre/Quant/ClipType/LatentNode/
+# KnobKind/StudioSize/StudioLayout/StudioKind, dsl SIDEBAR_SECTIONS,
+# ui_map seam names). Hand edits to vocab.ts update these literals. ──
+FROZEN_UNIONS: dict[str, list[str]] = {
+    "GenreValues": ["", "3d", "audio", "image", "motion", "other",
+                    "text", "video"],
+    "KindValues": ["audio", "image", "lora", "mesh", "num", "seg",
+                   "text", "video"],
+    "FileKindValues": ["any", "audio", "glb", "image", "mask", "motion",
+                       "text", "video", "voice"],
+    "BadgeToneValues": ["brand", "default"],
+    "KindRunnerValues": ["", "input"],
+    "SidebarSectionValues": ["3d", "audio", "image", "image-edit",
+                             "motion", "video"],
+    "QuantValues": ["bf16", "f32", "fp8", "int8", "lightning4", "native"],
+    "ClipTypeValues": ["ideogram4", "krea2", "lumina2", "minimax",
+                       "qwen_image", "stable_diffusion", "wan"],
+    "LatentNodeValues": ["EmptyFlux2LatentImage", "EmptyLatentImage",
+                         "EmptySD3LatentImage"],
+    "KnobKindValues": ["b", "n", "s"],
+    "StudioSizeValues": ["huge", "normal", "wide"],
+    "StudioLayoutValues": ["panel", "studio"],
+    "StudioKindValues": ["assembly", "custom"],
+    "SlotValues": ["end_image", "first_frame", "image1", "image2",
+                   "image3", "input_glb", "input_image", "input_mask",
+                   "lanpaint_mask", "last_frame", "prev_motion_artifact",
+                   "preview_glb", "reference_audio", "reference_image",
+                   "source_glb", "source_image", "voice_file"],
+    "CardKindValues": ["body", "card-compose", "chain", "compound",
+                       "generation", "input", "preview", "studio-link"],
+}
+
+# (slot, kind) in declaration order — slot_kinds.VOCAB.slots sorted
+# by slot at the cut (the order_SLOTS pin keeps it so).
+FROZEN_SLOT_ROWS: list[tuple[str, str]] = [
+    ("end_image", "image"),
+    ("first_frame", "image"),
+    ("image1", "image"),
+    ("image2", "image"),
+    ("image3", "image"),
+    ("input_glb", "glb"),
+    ("input_image", "image"),
+    ("input_mask", "mask"),
+    ("lanpaint_mask", "mask"),
+    ("last_frame", "image"),
+    ("prev_motion_artifact", "motion"),
+    ("preview_glb", "glb"),
+    ("reference_audio", "audio"),
+    ("reference_image", "image"),
+    ("source_glb", "glb"),
+    ("source_image", "image"),
+    ("voice_file", "voice"),
+]
+
+FROZEN_UNDECLARED: list[str] = ["lanpaint_mask"]
+
+FROZEN_SIDEBAR: list[str] = ["3d", "audio", "image", "image-edit",
+                             "motion", "video"]
+
+# kind -> (runnable, executable, formSpec, compound, opensStudio,
+# badgeTone, runner, icon) — card_kinds.TABLE rows sorted by kind.
+FROZEN_CARD_ROWS: dict[str, tuple[str, ...]] = {
+    "body": ("false", "false", "false", "false", "false",
+             "default", "", '"Box"'),
+    "card-compose": ("true", "true", "true", "false", "false",
+                     "default", "", "null"),
+    "chain": ("true", "true", "true", "false", "false",
+              "default", "", "null"),
+    "compound": ("true", "true", "false", "true", "false",
+                 "default", "", "null"),
+    "generation": ("true", "true", "true", "false", "false",
+                   "default", "", "null"),
+    "input": ("true", "true", "false", "false", "false",
+              "default", "input", "null"),
+    "preview": ("true", "true", "false", "false", "false",
+                "default", "", "null"),
+    "studio-link": ("true", "false", "false", "false", "true",
+                    "brand", "", "null"),
+}
+
+# The sibling-owned seam union NAMES (ui_map.py identifiers, frozen —
+# the MAP stroke's uiMap.generated.ts is their only face).
+FROZEN_SEAM = ["ViewportKind", "BarKind", "OverlayKind", "OverlayDock",
+               "ViewportAnchorDock"]
 
 
 def _values_block(src: str, const: str) -> list[str] | None:
@@ -101,56 +159,42 @@ def _values_block(src: str, const: str) -> list[str] | None:
 
 def main() -> int:
     if not GENERATED.is_file():
-        print("FAIL vocab.ts does not exist — run "
-              "python3 tools/export_vocab.py --write")
+        print("FAIL vocab.ts does not exist — it is hand-owned frozen "
+              "data, restore it from git")
         return 1
     ts = GENERATED.read_text(encoding="utf-8")
-    mod = _load_exporter()
 
-    # ── 1. STALE FACE: regen-to-temp byte-equality ──────────────────
-    want = mod.render()
-    with tempfile.NamedTemporaryFile(
-            "w", suffix=".ts", delete=False,
-            encoding="utf-8") as fh:
-        fh.write(want)
-        tmp = Path(fh.name)
-    try:
-        if tmp.read_bytes() != GENERATED.read_bytes():
-            _bad("stale_face",
-                 "vocab.ts differs from export_vocab.render() — run "
-                 "python3 tools/export_vocab.py --write")
-        else:
-            _ok("stale_face")
-    finally:
-        tmp.unlink(missing_ok=True)
+    # ── 1. STALE FACE: retired with the exporter — its regen drove
+    # the retired serving stack, so running it here would re-anchor
+    # the wall to deleted machinery. The hand-owned header pin +
+    # exporter-deletion pin replace it.
+    print("  retired stale-face regen (the file is hand-owned now — "
+          "header + exporter-absence pinned below)")
+    if "HAND-OWNED" in ts and "Regenerate:" not in ts:
+        _ok("hand_owned_header")
+    else:
+        _bad("hand_owned_header",
+             "vocab.ts header must mark the file HAND-OWNED with no "
+             "Regenerate pointer (it may name the deleted exporter "
+             "as provenance)")
+    if not EXPORTER.is_file():
+        _ok("exporter_deleted")
+    else:
+        _bad("exporter_deleted",
+             "tools/export_vocab.py still exists — the stale-face "
+             "regen would re-anchor to it")
 
-    # ── 2. MEMBER ROT: py-vs-ts per union ───────────────────────────
-    slot_rows = sorted(slot_kinds.VOCAB.slots, key=lambda r: r.slot)
-    card_rows = sorted(card_kinds.TABLE.kinds, key=lambda r: r.kind)
-    unions: dict[str, list[str]] = {
-        "GenreValues": sorted(m.value for m in Genre),
-        "KindValues": sorted(m.value for m in _flow.Kind),
-        "FileKindValues": sorted(m.value for m in slot_kinds.FileKind),
-        "BadgeToneValues": sorted(m.value for m in card_kinds.BadgeTone),
-        "KindRunnerValues": sorted(m.value for m in card_kinds.KindRunner),
-        "SidebarSectionValues": sorted(ActionCard.SIDEBAR_SECTIONS),
-        "QuantValues": sorted(m.value for m in Quant),
-        "ClipTypeValues": sorted(m.value for m in ClipType),
-        "LatentNodeValues": sorted(m.value for m in LatentNode),
-        "KnobKindValues": sorted(m.value for m in KnobKind),
-        "StudioSizeValues": sorted(m.value for m in StudioSize),
-        "StudioLayoutValues": sorted(m.value for m in StudioLayout),
-        "StudioKindValues": sorted(m.value for m in StudioKind),
-        "SlotValues": [r.slot for r in slot_rows],
-        "CardKindValues": [r.kind for r in card_rows],
-    }
+    # ── 2. MEMBER ROT: frozen-vs-ts per union ───────────────────────
+    slot_rows = FROZEN_SLOT_ROWS
+    card_rows = sorted(FROZEN_CARD_ROWS)
+    unions = FROZEN_UNIONS
     for const, members in unions.items():
         got = _values_block(ts, const)
         if got is None:
             _bad("union_%s" % const, "no `export const %s` block" % const)
         elif got != members:
             _bad("union_%s" % const,
-                 "py %s != ts %s" % (members, got))
+                 "frozen %s != ts %s" % (members, got))
         else:
             _ok("union_%s" % const)
 
@@ -163,9 +207,9 @@ def main() -> int:
         m = re.search(r"export const SLOTS: readonly string\[\] = \[(.*?)\];",
                       ts, re.DOTALL)
         got = re.findall(r'"((?:[^"\\]|\\.)*)"', m.group(1)) if m else None
-        want_slots = [r.slot for r in slot_rows]
+        want_slots = [slot for slot, _kind in slot_rows]
         if got != want_slots:
-            _bad("table_SLOTS", "py %s != ts %s" % (want_slots, got))
+            _bad("table_SLOTS", "frozen %s != ts %s" % (want_slots, got))
         else:
             _ok("table_SLOTS")
 
@@ -174,10 +218,10 @@ def main() -> int:
         ts, re.DOTALL)
     entries = dict(re.findall(r'"((?:[^"\\]|\\.)*)": "((?:[^"\\]|\\.)*)"',
                               m.group(1))) if m else None
-    want_kinds = {r.slot: r.kind.value for r in slot_rows}
+    want_kinds = {slot: kind for slot, kind in slot_rows}
     if entries != want_kinds:
         _bad("table_SLOT_KINDS",
-             "py %s != ts %s" % (want_kinds, entries))
+             "frozen %s != ts %s" % (want_kinds, entries))
     else:
         _ok("table_SLOT_KINDS")
 
@@ -185,9 +229,9 @@ def main() -> int:
         r"export const UNDECLARED_SLOTS: readonly string\[\] = \[(.*?)\];",
         ts, re.DOTALL)
     got = re.findall(r'"((?:[^"\\]|\\.)*)"', m.group(1)) if m else None
-    want_und = sorted(slot_kinds.VOCAB.undeclared_slots)
+    want_und = FROZEN_UNDECLARED
     if got != want_und:
-        _bad("table_UNDECLARED_SLOTS", "py %s != ts %s" % (want_und, got))
+        _bad("table_UNDECLARED_SLOTS", "frozen %s != ts %s" % (want_und, got))
     else:
         _ok("table_UNDECLARED_SLOTS")
 
@@ -195,9 +239,9 @@ def main() -> int:
         r"export const SIDEBAR_SECTIONS: readonly SidebarSection\[\] = "
         r"\[(.*?)\];", ts, re.DOTALL)
     got = re.findall(r'"((?:[^"\\]|\\.)*)"', m.group(1)) if m else None
-    want_sec = sorted(ActionCard.SIDEBAR_SECTIONS)
+    want_sec = FROZEN_SIDEBAR
     if got != want_sec:
-        _bad("table_SIDEBAR_SECTIONS", "py %s != ts %s" % (want_sec, got))
+        _bad("table_SIDEBAR_SECTIONS", "frozen %s != ts %s" % (want_sec, got))
     else:
         _ok("table_SIDEBAR_SECTIONS")
 
@@ -214,18 +258,7 @@ def main() -> int:
             (kind, run, exe, fs, comp, studio,
              tone, runner, icon) = rm.groups()
             ts_rows[kind] = (run, exe, fs, comp, studio, tone, runner, icon)
-    py_rows = {}
-    for r in card_rows:
-        py_rows[r.kind] = (
-            "true" if r.runnable else "false",
-            "true" if r.executable else "false",
-            "true" if r.formSpec else "false",
-            "true" if r.compound else "false",
-            "true" if r.opensStudio else "false",
-            r.badgeTone.value,
-            r.runner.value,
-            "null" if r.icon is None else '"%s"' % r.icon,
-        )
+    py_rows = dict(FROZEN_CARD_ROWS)
     if ts_rows != py_rows:
         only_py = sorted(set(py_rows) - set(ts_rows))
         only_ts = sorted(set(ts_rows) - set(py_rows))
@@ -237,13 +270,13 @@ def main() -> int:
     else:
         _ok("table_CARD_KINDS")
 
-    # sorted-order pins (determinism is the contract)
-    for label, seq in (("SLOTS", [r.slot for r in slot_rows]),
-                       ("CardKind", [r.kind for r in card_rows]),
-                       ("SIDEBAR_SECTIONS",
-                        sorted(ActionCard.SIDEBAR_SECTIONS))):
+    # sorted-order pins (determinism is the contract — frozen seqs
+    # must stay sorted; a hand edit inserting out of order fails here)
+    for label, seq in (("SLOTS", [slot for slot, _kind in slot_rows]),
+                       ("CardKind", card_rows),
+                       ("SIDEBAR_SECTIONS", FROZEN_SIDEBAR)):
         if list(seq) != sorted(seq):
-            _bad("order_%s" % label, "py order is not sorted" % label)
+            _bad("order_%s" % label, "frozen order is not sorted" % label)
         else:
             _ok("order_%s" % label)
 
@@ -253,9 +286,7 @@ def main() -> int:
                             "erasable syntax only (const-unions)")
     else:
         _ok("no_ts_enums")
-    seam = [m.__name__ for m in (
-        _ui_map.ViewportKind, _ui_map.BarKind, _ui_map.OverlayKind,
-        _ui_map.OverlayDock, _ui_map.ViewportAnchorDock)]
+    seam = FROZEN_SEAM
     dupes = [n for n in seam
              if re.search(r"export (?:const|type) %s\b" % n, ts)]
     if dupes:
@@ -273,4 +304,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    import sys
+    sys.exit(main())

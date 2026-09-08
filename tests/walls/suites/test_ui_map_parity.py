@@ -1,40 +1,39 @@
 """test_ui_map_parity — THE MAP WALL (2026-09-07, the map stroke;
 design record docs/design/ui-map.md).
 
-python/ui_map.py is the SSOT of every closed seam union. This wall
-refuses all three drift classes:
+PURGE S-vocab (2026-09-08): python/ui_map.py + tools/gen_ui_map.py are
+deleted. packages/web-kit/ui/src/uiMap.generated.ts is HAND-OWNED
+frozen data (header re-truthed) — the kit imports it and re-exports
+it; no second hand-written union may exist in packages/web-kit/ui/src.
+This wall refuses the surviving drift classes:
 
-  1. STALE FACE — the generated ts file must match the map
-     (gen_ui_map dry run, exit 1 on drift).
+  1. STALE FACE — retired with the generator (tombstone below); the
+     hand-owned header pin + generator-deletion pin replace it.
   2. SECOND SPELLING — no hand-written union may exist anywhere
-     in packages/web-kit/ui/src except the generated file (the written-once
+     in packages/web-kit/ui/src except the generated face (the written-once
      law: everything in the ui is written once, apart from the
      map).
   3. VOCABULARY ROT — the member sets are pinned here by name,
-     so deleting or renaming a member is a deliberate act the
-     walls see.
+     parsed from the face stdlib-only (no TS toolchain), so deleting
+     or renaming a member is a deliberate act the walls see.
 
-Plus the M2 DSL skeleton: the frozen pydantic rows refuse bogus
-members at construction and refuse mutation after.
+RETIRED with ui_map.py (tombstones, not silence — the behaviors died
+with the module, deliberately):
+  - rows_refuse_bogus_members_at_construction: the closed vocabulary
+    is a TS union now — a typo refuses at COMPILE time (tsc), which
+    is stronger than the pydantic construction refusal was.
+  - rows_are_frozen: frozen-ness was a pydantic property; the face's
+    unions are compile-time closed sets, nothing to mutate.
+  - a_studio_declares_as_rows: the py DSL breath died with the
+    module; the tsx row-renderer stays queued behind its first
+    consumer (unchanged).
+  - center_is_required: a py-required-field gate with no TS
+    counterpart — the face declares unions, not rows.
 """
 import re
-import subprocess
-import sys
 from pathlib import Path
 
 from _anchor import REPO
-
-sys.path.insert(0, str(REPO / "python"))
-
-import ui_map  # noqa: E402
-from ui_map import (  # noqa: E402
-    AnchorRow,
-    BottomSeamRow,
-    CenterSeamRow,
-    OverlayRow,
-    ShellRows,
-    ValidationError,
-)
 
 GENERATED = REPO / "packages" / "web-kit" / "ui" / "src" / "uiMap.generated.ts"
 GEN_TOOL = REPO / "tools" / "gen_ui_map.py"
@@ -43,23 +42,46 @@ UI_SRC = REPO / "packages" / "web-kit" / "ui" / "src"
 # THE seam unions — the only vocabulary the map owns. A union
 # name here may be declared ONLY in the generated face. (Kit
 # -internal unions outside the portability surface — e.g.
-# cardControls' ControlDensity — are free until a python-side
-# consumer promotes them into the map.)
+# cardControls' ControlDensity — are free until a consumer
+# promotes them into the map.)
 _SEAM_UNIONS = ("ViewportKind", "BarKind", "OverlayKind",
                 "OverlayDock", "ViewportAnchorDock")
 _UNION_DECL = re.compile(
     r'^export type (\w+) = "', re.MULTILINE)
 
+# FROZEN member sets (transcribed 2026-09-08 from the deleted
+# ui_map.py enums — verified against the untouched face at the cut).
+_FROZEN_MEMBERS = {
+    "ViewportKind": {"stage3d", "paint2d", "native"},
+    "BarKind": {"recipe", "timeline"},
+    "OverlayKind": {"toggle", "segmented", "status"},
+    "OverlayDock": {"tl", "tr", "bl", "br"},
+    "ViewportAnchorDock": {"top-right", "top-left", "bottom-right",
+                           "bottom-left", "bottom-center", "bottom",
+                           "fill", "edge-right", "edge-left"},
+}
 
-def test_the_generated_face_is_fresh() -> None:
-    # gen_ui_map dry run: exit 0 only when the generated file
-    # matches python/ui_map.py byte-for-byte
-    out = subprocess.run(  # noqa: S603
-        [sys.executable, str(GEN_TOOL)], capture_output=True, text=True
+
+def _face_members(src: str, union: str) -> set[str]:
+    """Parse `export type <union> = "a" | "b" ...` stdlib-only."""
+    m = re.search(r"^export type %s = (.*?);?$" % re.escape(union),
+                  src, re.MULTILINE)
+    assert m is not None, "no `export type %s` block in the face" % union
+    return set(re.findall(r'"((?:[^"\\]|\\.)*)"', m.group(1)))
+
+
+def test_the_generated_face_is_hand_owned() -> None:
+    # the generator is gone — the face carries a HAND-OWNED header
+    # with no Regenerate pointer (it may name the deleted generator
+    # as provenance)
+    assert not GEN_TOOL.is_file(), (
+        "tools/gen_ui_map.py still exists — the dry-run regen would "
+        "re-anchor to it"
     )
-    assert out.returncode == 0, (
-        "uiMap.generated.ts is stale — run "
-        "python3 tools/gen_ui_map.py --write: %s" % out.stdout
+    src = GENERATED.read_text(encoding="utf-8")
+    assert "HAND-OWNED" in src and "Regenerate:" not in src, (
+        "uiMap.generated.ts header must mark the file HAND-OWNED "
+        "with no Regenerate pointer"
     )
 
 
@@ -81,88 +103,16 @@ def test_the_unions_are_written_once() -> None:
         else:
             assert not decls, (
                 "%s hand-spells %s — the seam vocabulary lives ONCE"
-                " in python/ui_map.py; import the generated face"
+                " in uiMap.generated.ts; import the generated face"
                 % (f.name, ", ".join(decls)),
             )
 
 
 def test_the_vocabulary_is_pinned() -> None:
-    # member sets by name: deleting/renaming a member is a
-    # deliberate act these pins make visible
-    assert {m.value for m in ui_map.ViewportKind} == {
-        "stage3d", "paint2d", "native"
-    }
-    assert {m.value for m in ui_map.BarKind} == {"recipe", "timeline"}
-    assert {m.value for m in ui_map.OverlayKind} == {
-        "toggle", "segmented", "status"
-    }
-    assert {m.value for m in ui_map.OverlayDock} == {
-        "tl", "tr", "bl", "br"
-    }
-    assert {m.value for m in ui_map.ViewportAnchorDock} == {
-        "top-right", "top-left", "bottom-right", "bottom-left",
-        "bottom-center", "bottom", "fill", "edge-right", "edge-left",
-    }
-
-
-def test_rows_refuse_bogus_members_at_construction() -> None:
-    # closed vocabularies by enum — a typo is a construction
-    # refusal, never a runtime route mismatch. The bogus rows are
-    # built through a ** spread (deliberately dynamic: the wrong
-    # shape must reach pydantic, not the type checker — and NO
-    # ignore comments: test_python_annotations hunts silencers).
-    for build, why in [
-        (lambda: ShellRows(**{"center": {"kind": "holodeck"}}),
-         "a bogus ViewportKind"),
-        (lambda: AnchorRow(**{"id": "x", "dock": "middle"}),
-         "a bogus dock"),
-        (lambda: OverlayRow(**{"id": "x", "kind": "dial",
-                               "dock": "tl"}),
-         "a bogus OverlayKind"),
-    ]:
-        try:
-            build()
-            raised = False
-        except ValidationError:
-            raised = True
-        assert raised, "%s must refuse at construction" % why
-
-
-def test_rows_are_frozen() -> None:
-    rows = ShellRows(center=CenterSeamRow(kind="native"))
-    try:  # builtin setattr — the same mutation the frozen law
-        # refuses, but statically opaque (no ignore comment, and the
-        # anti-cheat wall stays green)
-        setattr(rows, "bottom", BottomSeamRow(kind="timeline"))
-        raised = False
-    except ValidationError:
-        raised = True
-    assert raised, "rows are frozen — mutation refuses"
-
-
-def test_a_studio_declares_as_rows() -> None:
-    # the first DSL breath: the h3 studio's shell shape as python
-    # rows — the same vocabulary the tsx declaration speaks,
-    # validated here at construction (the ts row-renderer that
-    # walks these rows is queued behind its first consumer)
-    rows = ShellRows(
-        center=CenterSeamRow(kind="native"),
-        bottom=BottomSeamRow(kind="timeline"),
-        rail={"slots": ["a", "b"]},
-        overlays=(OverlayRow(id="detect", kind="status", dock="tl"),),
-        anchors=(AnchorRow(id="source-pin", dock="top-right"),),
-    )
-    assert rows.center.kind.value == "native"
-    assert rows.bottom is not None and rows.bottom.kind.value == "timeline"
-    assert rows.anchors[0].dock.value == "top-right"
-
-
-def test_center_is_required() -> None:
-    # a studio without a center is not a studio (** spread: the
-    # missing-field refusal belongs to pydantic, not the checker)
-    try:
-        ShellRows(**{})
-        raised = False
-    except ValidationError:
-        raised = True
-    assert raised
+    # member sets by name, parsed from the face: deleting/renaming
+    # a member is a deliberate act these pins make visible
+    src = GENERATED.read_text(encoding="utf-8")
+    for union, want in _FROZEN_MEMBERS.items():
+        assert _face_members(src, union) == want, (
+            "%s drifted from the frozen set" % union
+        )

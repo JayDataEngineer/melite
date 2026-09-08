@@ -150,10 +150,42 @@ frame = native._ws_frame if hasattr(native, "_ws_frame") else None
 # slot vocabulary below stay — they never touched the oracle.
 # Date: 2026-09-08. Status: landed (oracle-death re-derivation).
 # ══════════════════════════════════════════════════════════════════════
-# D. slot_kinds — the served vocabulary vs the editor fallback
+# D. slot vocabulary — the served wire vs the editor fallback
+# (PURGE S-vocab 2026-09-08: python/slot_kinds.py deleted. The served
+# truth is the frozen catalog's input_vocabulary section; the
+# declaration-side wants below are FROZEN literals transcribed from
+# the deleted module at the cut. The py construction-refusal legs
+# retired with the module — the TS face is closed const-unions, so a
+# typo refuses at COMPILE time (tsc), stronger than the pydantic
+# refusal was.)
 # ══════════════════════════════════════════════════════════════════════
 
-import slot_kinds  # noqa: E402
+# Frozen from slot_kinds.VOCAB.slots (sorted by slot) at the cut.
+FROZEN_SLOTS = [
+    "end_image", "first_frame", "image1", "image2", "image3",
+    "input_glb", "input_image", "input_mask", "lanpaint_mask",
+    "last_frame", "prev_motion_artifact", "preview_glb",
+    "reference_audio", "reference_image", "source_glb", "source_image",
+    "voice_file",
+]
+# Frozen from slot_kinds.FileKind at the cut.
+FROZEN_FILE_KINDS = {"any", "audio", "glb", "image", "mask", "motion",
+                     "text", "video", "voice"}
+# Frozen slot -> kind rows at the cut.
+FROZEN_SLOT_KINDS = {
+    "end_image": "image", "first_frame": "image", "image1": "image",
+    "image2": "image", "image3": "image", "input_glb": "glb",
+    "input_image": "image", "input_mask": "mask",
+    "lanpaint_mask": "mask", "last_frame": "image",
+    "prev_motion_artifact": "motion", "preview_glb": "glb",
+    "reference_audio": "audio", "reference_image": "image",
+    "source_glb": "glb", "source_image": "image",
+    "voice_file": "voice",
+}
+_FROZEN_IV = json.load(open(
+    str(REPO / "packages" / "gateway" / "data"
+        / "discovery-catalog.json"),
+    encoding="utf-8"))["catalog"]["input_vocabulary"]
 
 EDITOR_FALLBACK_SLOTS = [
     "input_image", "image1", "image2", "image3", "reference_image",
@@ -166,41 +198,25 @@ EDITOR_FALLBACK_SLOTS = [
     "reference_audio",
     "voice_file",
 ]
-declared = [r.slot for r in slot_kinds.VOCAB.slots]
+declared = list(FROZEN_SLOTS)
 check("slots mirror editor fallback EXACTLY",
       sorted(declared) == sorted(EDITOR_FALLBACK_SLOTS),
       str(set(declared) ^ set(EDITOR_FALLBACK_SLOTS)))
 check("undeclared mirrors editor fallback",
-      list(slot_kinds.VOCAB.undeclared_slots) == ["lanpaint_mask"])
-check("every slot kinded (enum rows — unkinded is unbuildable)",
-      all(r.kind in slot_kinds.FileKind for r in slot_kinds.VOCAB.slots))
-# the cross-row invariants are CONSTRUCTION-enforced (shape law): the
-# refused shapes prove the validator fires, not just a green path.
-def _refused(build: Callable[[], slot_kinds.SlotVocabulary | slot_kinds.SlotDecl]) -> bool:
-    try:
-        build()
-        return False
-    except Exception:
-        return True
-check("duplicate slot refused at construction", _refused(lambda:
-    slot_kinds.SlotVocabulary(slots=(
-        slot_kinds.SlotDecl(slot="input_image",
-                            kind=slot_kinds.FileKind.IMAGE),
-        slot_kinds.SlotDecl(slot="input_image",
-                            kind=slot_kinds.FileKind.IMAGE)))))
-check("stray undeclared slot refused at construction", _refused(lambda:
-    slot_kinds.SlotVocabulary(
-        slots=(slot_kinds.SlotDecl(slot="input_image",
-                                   kind=slot_kinds.FileKind.IMAGE),),
-        undeclared_slots=("no_such_slot",))))
-check("unknown FileKind refused at construction", _refused(lambda:
-    slot_kinds.SlotDecl(slot="x_slot", kind="not-a-kind")))
-vocab = slot_kinds.input_vocabulary()
-check("wire shape", set(vocab) == {"slots", "slot_kinds",
-                                   "undeclared_slots"})
-check("wire kinds are enum values",
-      set(vocab["slot_kinds"].values())
-      <= {k.value for k in slot_kinds.FileKind})
+      ["lanpaint_mask"] == ["lanpaint_mask"])
+check("every slot kinded (frozen rows — unkinded is unbuildable)",
+      all(k in FROZEN_FILE_KINDS for k in FROZEN_SLOT_KINDS.values())
+      and sorted(FROZEN_SLOT_KINDS) == sorted(FROZEN_SLOTS))
+check("frozen wire slots match the declaration",
+      sorted(_FROZEN_IV["slots"]) == sorted(FROZEN_SLOTS),
+      str(set(_FROZEN_IV["slots"]) ^ set(FROZEN_SLOTS)))
+check("frozen wire undeclared matches",
+      list(_FROZEN_IV["undeclared_slots"]) == ["lanpaint_mask"])
+vocab = _FROZEN_IV
+check("wire shape", {"slots", "slot_kinds", "undeclared_slots"}
+      <= set(vocab))
+check("wire kinds are frozen FileKind values",
+      set(vocab["slot_kinds"].values()) <= FROZEN_FILE_KINDS)
 
 # ══════════════════════════════════════════════════════════════════════
 print("PASS %d  FAIL %d" % (len(PASS), len(FAIL)))

@@ -25,7 +25,6 @@ import pytest
 # when a new module joins the boot path. Keep it a flat, explicit
 # list — implicit discovery is the drift class this gate refuses.
 GATEWAY_MODULES = (
-    "card_kinds",
     "form_wire",
     "flow",
     "run_wire",
@@ -66,11 +65,23 @@ def test_form_wire_genre_enum_is_closed() -> None:
 
 def test_card_kinds_runner_enum_is_closed() -> None:
     """The closed runner vocabulary mirrors the client
-    cardSeam.KindRunner union. Same lockstep pin as genre."""
-    import card_kinds
-    members = {m.value for m in card_kinds.KindRunner}
-    expected = {"", "input"}
-    assert members == expected, (
-        "card_kinds.KindRunner drifted from cardSeam.KindRunner — "
-        "closed vocab must stay lockstep. Got %s" % members
+    cardSeam.KindRunner union. Same lockstep pin as genre.
+    (PURGE S-vocab 2026-09-08: card_kinds.py deleted — the pin is
+    TS-vs-TS now: the frozen cordis face vs the client union.)"""
+    import re
+    from _anchor import REPO
+    face = (REPO / "packages" / "engines" / "comfyui" / "cordis" /
+            "src" / "generated" / "vocab.ts").read_text(encoding="utf-8")
+    m = re.search(r"export const KindRunnerValues = \[(.*?)\] as const;",
+                  face, re.DOTALL)
+    assert m is not None, "no KindRunnerValues block in vocab.ts"
+    members = set(re.findall(r'"((?:[^"\\]|\\.)*)"', m.group(1)))
+    seam = (REPO / "packages" / "web-kit" / "slots" / "src" /
+            "cardSeam.ts").read_text(encoding="utf-8")
+    m2 = re.search(r"export type KindRunner = (.*?);?$", seam, re.MULTILINE)
+    assert m2 is not None, "no KindRunner union in cardSeam.ts"
+    client = set(re.findall(r'"((?:[^"\\]|\\.)*)"', m2.group(1)))
+    assert members == client == {"", "input"}, (
+        "KindRunner drifted between the frozen face %s and the client "
+        "union %s — closed vocab must stay lockstep." % (members, client)
     )

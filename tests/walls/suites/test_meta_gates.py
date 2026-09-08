@@ -181,6 +181,9 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
     # stroke; the ledger entry retires when ui/studio.py exists
     "docs/design/python-mono-app.md": {
         "ui/studio.py": "planned-m2-dsl",
+        # (2026-09-08 purge S-vocab — pre-existing old-tier ref,
+        # accounted as found.)
+        "py/ui_map.py": "past",
     },
     "docs/design/image-edit-surface-standard.md": {
         ".d/causes.md": "past",
@@ -277,6 +280,10 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
     },
     "docs/design/progress-streaming.md": {
         "compose/co_script/mcp.py": "rot",
+        # (2026-09-08 purge S-vocab — pre-existing refs, one old-tier
+        # one bare; accounted as found.)
+        "py/slot_kinds.py": "past",
+        "slot_kinds.py": "past",
     },
     "docs/design/studio-shell.md": {
         "video/h3-timeline/ui/package.json": "rot",
@@ -301,6 +308,9 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         "action_cards/audio/music/music.py": "past",
         "action_cards/video/h3-timeline/emit.py": "past",
         "pipeline-card.test.tsx": "past",
+        # (2026-09-08 purge S-vocab — analogy ref to the deleted
+        # module ("the same way TABLE is declared"); historic.)
+        "py/slot_kinds.py": "past",
     },
     "docs/plans/comfy-script-meeting-point.md": {
         "comfy.yaml": "past",
@@ -350,6 +360,9 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
     },
     "docs/queue/card-stage-typing.md": {
         "python/schema.py": "rot",
+        # (2026-09-08 purge S-vocab — analogy ref to the deleted
+        # module; historic, don't follow the path.)
+        "py/card_kinds.py": "past",
     },
     "docs/queue/flows.md": {
         "FlowsPane.tsx": "rot",
@@ -414,11 +427,26 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         "py/catalog.py": "deleted-in-record",
         # (the S-catalog plan line names the bare exporter.)
         "export_discovery_catalog.py": "deleted-in-record",
+        # (2026-09-08 purge S-vocab — the vocab/map exporters +
+        # card_kinds/slot_kinds/ui_map deletion; this doc is the
+        # record. The bare slot_kinds.py is the record's own
+        # streaming-section prose.)
+        "tools/export_vocab.py": "deleted-in-record",
+        "tools/gen_ui_map.py": "deleted-in-record",
+        "slot_kinds.py": "deleted-in-record",
+        # (the S-vocab section names the deleted modules.)
+        "python/card_kinds.py": "deleted-in-record",
+        "python/slot_kinds.py": "deleted-in-record",
+        "python/ui_map.py": "deleted-in-record",
     },
     "docs/design/ts-migration-ladder-2026-09-07.md": {
         "card-decls.json": "past",
         "export_card_decls.py": "past",
         "tools/export_card_decls.py": "past",
+        # (2026-09-08 purge S-vocab — pre-existing map refs,
+        # accounted as found.)
+        "gen_ui_map.py": "past",
+        "py/ui_map.py": "past",
     },
     "docs/design/card-lane-port-survey-2026-09-08.md": {
         "card-decls.json": "past",
@@ -435,6 +463,14 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         "tools/export_discovery_catalog.py": "past",
         # (S-catalog UPDATE cell names the deleted module; same.)
         "python/catalog.py": "past",
+        # (2026-09-08 purge S-vocab — the #4/#6 rows name the vocab
+        # + map exporters as live; completed record, historic ref.)
+        "tools/export_vocab.py": "past",
+        "tools/gen_ui_map.py": "past",
+        # (the S-vocab UPDATE cells name the deleted modules; same.)
+        "python/card_kinds.py": "past",
+        "python/slot_kinds.py": "past",
+        "python/ui_map.py": "past",
     },
     "docs/design/cpp-node-cutover-quad-remesh-2026-09-07.md": {
         "card-decls.json": "past",
@@ -452,6 +488,10 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
     "docs/design/image-edit-surface-standard.md": {
         "plugins/engines/comfyui/action_cards/image/tagger/py/card.py": "past",
         "plugins/engines/comfyui/action_cards/image/upscale-tools/py/card.py": "past",
+        # (2026-09-08 purge S-vocab — pre-existing old-tier ref;
+        # NOTE: this second block shadows the first one above —
+        # duplicate dict keys, last wins. Entries must live HERE.)
+        "py/slot_kinds.py": "past",
     },
     # (2026-09-08 purge S-catalog — py/catalog.py refs died with the
     # py/ -> python/ rename (pre-existing); the python/catalog.py
@@ -460,12 +500,28 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
     # to reword: rot.)
     "docs/design/ai-studio-export-2026-09-07.md": {
         "py/catalog.py": "past",
+        # (2026-09-08 purge S-vocab — pre-existing old-tier refs,
+        # accounted as found.)
+        "py/card_kinds.py": "past",
+        "py/slot_kinds.py": "past",
+        "py/ui_map.py": "past",
     },
     "docs/design/image-edit-optional-slots-mask-mod.md": {
         "py/catalog.py": "past",
     },
     "docs/plugins/catalog.md": {
         "py/catalog.py": "rot",
+    },
+    # (2026-09-08 purge S-vocab — completed records naming the
+    # deleted vocab modules; historic refs.)
+    "docs/audits/pattern-violations-audit.md": {
+        "py/ui_map.py": "past",
+    },
+    "docs/audits/ts-gap-audit.md": {
+        "py/card_kinds.py": "past",
+    },
+    "docs/design/ui-map.md": {
+        "py/ui_map.py": "past",
     },
 }
 

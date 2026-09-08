@@ -1863,21 +1863,20 @@ def form_spec(repo_root: str, model_id: str | None) -> tuple[int, dict[str, Json
 
 
 # ─────────────────────────────────────────────────────────────────────────
-# GET /v1/kinds — the first-party kind table (python/card_kinds.py).
-# ─────────────────────────────────────────────────────────────────────────
-# The C-era file scan (packages/*/kinds/*.yaml, kinds_parse_file) is
-# EXTINCT: the files rode out with the dead packages/core plugin (6a86082)
-# and the lane went dark — the editor's fail-safe kindDef gated every
-# form-spec fetch OFF and cards rendered without form fields. The table
-# is gateway infra now, declared as frozen pydantic rows (the
-# slot_kinds.py precedent); this projection is the only route body.
+# GET /v1/kinds — RETIRED purge S-vocab (2026-09-08): the frozen
+# pydantic rows (python/card_kinds.py, the slot_kinds.py precedent)
+# are deleted; the TS discovery door serves the frozen catalog.
+# The stub below is the only route body left standing.
 
 def kinds(repo_root: str) -> dict[str, list[dict[str, str | bool]]]:
-    """GET /v1/kinds -> {"kinds": [...]}. The first-party card-kind
-    behavior flags, projected from python/card_kinds.py's TABLE (the SSOT —
-    one declaration, validated at construction; no file scans)."""
-    import card_kinds as _ck
-    return _ck.kinds_wire()
+    """GET /v1/kinds -> {"kinds": [...]}. RETIRED purge S-vocab
+    (2026-09-08): python/card_kinds.py is deleted — /v1/kinds serves
+    the frozen discovery-catalog.json natively via the TS door
+    (packages/gateway/src/doors/discovery.ts). This stub throws LOUD
+    so a caller finds the migration instead of a ModuleNotFoundError."""
+    raise RuntimeError(
+        "editor_forms.kinds retired (purge S-vocab): /v1/kinds serves "
+        "the frozen catalog via the TS discovery door")
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -1932,13 +1931,9 @@ def _main() -> None:
     if d:
         failures.append(("forms", d))
 
-    # GET /v1/kinds
-    got, want = kinds(repo_root), golden("kinds.json")
-    d = _first_diff(got, want)
-    print("GET /v1/kinds                 :",
-          "PARITY OK" if d is None else "DRIFT — %s" % d)
-    if d:
-        failures.append(("kinds", d))
+    # GET /v1/kinds — RETIRED purge S-vocab (2026-09-08): kinds()
+    # throws; the TS discovery door owns the lane now.
+    print("GET /v1/kinds                 : RETIRED (purge S-vocab)")
 
     # GET /v1/form-spec — the three golden models
     for model in ("krea-2", "h3-timeline", "music3"):

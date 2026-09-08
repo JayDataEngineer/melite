@@ -1,11 +1,11 @@
 /**
- * GENERATED from python/card_kinds.py + python/slot_kinds.py + python/flow.py::Kind
- * + python/melite_models/grammar.py + ActionCard.SIDEBAR_SECTIONS — DO NOT EDIT.
- * Regenerate: python3 tools/export_vocab.py --write
- * Manifest: .scratch/declarations-ts-map.md §4.4 + §5 step 7-vocabs.
- * The parity wall (tests/walls/suites/test_vocab_parity.py) refuses drift.
- * python/ui_map.py seam unions are sibling-owned (uiMap.generated.ts) and are
- * deliberately NOT re-declared here — a second spelling refuses the wall.
+ * HAND-OWNED frozen vocabularies (purge S-vocab 2026-09-08 — the py
+ * SSOT (card_kinds/slot_kinds/flow.Kind/grammar/dsl) + tools/
+ * export_vocab.py are deleted). Edits by hand; the parity wall
+ * (tests/walls/suites/test_vocab_parity.py) pins every union, table
+ * row, and sorted order against frozen literals. Never regenerated.
+ * The sibling-owned seam unions live in uiMap.generated.ts only —
+ * a second spelling here refuses the wall.
  */
 
 /** Model family genre (grammar.py Genre — the 7 lanes + unordered). */

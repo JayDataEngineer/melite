@@ -1,9 +1,10 @@
 /**
- * GENERATED from python/ui_map.py — DO NOT EDIT.
- * Regenerate: python3 tools/gen_ui_map.py --write
- * The map is the SSOT (docs/design/ui-map.md); this file is its
- * TypeScript face. The parity wall refuses drift, and the
- * written-once wall refuses any second hand-written union.
+ * HAND-OWNED frozen seam unions (purge S-vocab 2026-09-08 —
+ * python/ui_map.py + tools/gen_ui_map.py are deleted). Edits by
+ * hand; the map wall (tests/walls/suites/test_ui_map_parity.py)
+ * pins every member set, and the written-once leg refuses any
+ * second hand-written union. Never regenerated. The map design
+ * record is docs/design/ui-map.md.
  */
 
 /**

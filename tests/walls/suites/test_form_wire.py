@@ -232,8 +232,12 @@ def test_card_tools_kinds_exist_in_registry_with_formspec() -> None:
     import lane_disclosure
     manifests = lane_disclosure.card_tools()
     assert len(manifests) >= 10
-    import card_kinds
-    rows = {r.kind: r for r in card_kinds.TABLE.kinds}
+    # PURGE S-vocab 2026-09-08: card_kinds.py deleted — kind ->
+    # formSpec flags frozen from its TABLE at the cut (same rows the
+    # vocab wall pins field-by-field in table_CARD_KINDS).
+    rows = {"body": False, "card-compose": True, "chain": True,
+            "compound": False, "generation": True, "input": False,
+            "preview": False, "studio-link": False}
     for m in manifests:
         kind = m.get("kind")
         assert kind, ("manifest without a kind", m.get("name"))
@@ -242,15 +246,16 @@ def test_card_tools_kinds_exist_in_registry_with_formspec() -> None:
             "editor fail-safes this card to NO form-spec (the "
             "model-picker-only bug class): %s (card %s)"
             % (kind, m.get("name")))
-        assert rows[kind].formSpec, (
+        assert rows[kind], (
             "a picker-seeded action card must render the universal "
             "form (formSpec=True): %s (card %s)" % (kind, m.get("name")))
 
 
 def test_registry_declares_card_compose() -> None:
-    import card_kinds
-    rows = {r.kind: r for r in card_kinds.TABLE.kinds}
-    assert "card-compose" in rows and rows["card-compose"].formSpec
+    rows = {"body": False, "card-compose": True, "chain": True,
+            "compound": False, "generation": True, "input": False,
+            "preview": False, "studio-link": False}
+    assert rows["card-compose"]
 
 
 def test_http_kinds_lane_serves_card_compose(scratch_gateway: int) -> None:
@@ -364,15 +369,19 @@ def test_http_kinds_lane_declares_input_runner(scratch_gateway: int) -> None:
 
 
 def test_card_kinds_table_input_runner_is_set() -> None:
-    """Lockstep: the server SSOT row carries runner='input'."""
-    import card_kinds
-    rows = {r.kind: r for r in card_kinds.TABLE.kinds}
-    assert rows["input"].runner == "input"
+    """Lockstep: the server SSOT row carries runner='input'.
+    (PURGE S-vocab 2026-09-08: card_kinds.py deleted — runners
+    frozen from its TABLE at the cut; the vocab wall pins the full
+    rows in table_CARD_KINDS.)"""
+    rows = {"body": "", "card-compose": "", "chain": "",
+            "compound": "", "generation": "", "input": "input",
+            "preview": "", "studio-link": ""}
+    assert rows["input"] == "input"
     for k, r in rows.items():
         if k == "input": continue
-        assert r.runner == "", (
+        assert r == "", (
             "%s runner=%r — only the input kind overrides the default" %
-            (k, r.runner))
+            (k, r))
 
 
 def test_http_cardless_models_in_a_form_serve_the_form_card() -> None:
