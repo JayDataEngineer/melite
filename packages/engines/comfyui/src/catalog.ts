@@ -393,102 +393,11 @@ export function findModelPresent(
 // catalogModule() non-literal-specifier dodge is deleted: a
 // missing provider fails the door LOUD at inject, the framework's
 // answer).
-export class ModelsService extends Service {
-  /** registry rows by repo root (root-independent values — the
-   *  retired module CACHE shape, fiber-owned now — stroke-2a
-   *  defect class). */
-  private rows: Map<string, CatalogModel[]> = new Map();
+// ── THE SERVICE (moved 2026-09-08 to src/models/service.ts: ONE
+// ctx.models — the artifact readers merged with the registry
+// registration/resolution/cascade system behind the PORT LAW).
+// The pure cores above stay here; the service, its provider, and
+// needModels live in the models module; the package index
+// re-exports both, so "@melite/engine-comfyui" surface is
+// unchanged.
 
-  constructor(ctx: Context) {
-    super(ctx, "models");
-  }
-
-  /** Test seam: drop all catalog state (walls boot fresh processes;
-   *  belt-and-braces for in-process reuse — the RunsService parity). */
-  resetForTests(): void {
-    this.rows.clear();
-  }
-
-  /** The catalog rows for one repo root (the compiled-in registry —
-   *  never a silent empty catalog; malformed rows died at the
-   *  metaclass dump, which is the only place a refusal belongs). */
-  catalogModels(repoRoot: string = resolveRepoRoot()): CatalogModel[] {
-    const hit: CatalogModel[] | undefined = this.rows.get(repoRoot);
-    if (hit !== undefined) return hit;
-    const parsed: CatalogModel[] = loadCatalogModels(repoRoot);
-    this.rows.set(repoRoot, parsed);
-    return parsed;
-  }
-
-  /** The downloadable rows for (model, variant, quant) — the plugin
-   *  face of resolveArtifactRows (same pure core, service-owned
-   *  cache). Throws CatalogMiss with the legacy texts (the manage
-   *  door maps them to 404). */
-  resolveCatalogArtifact(
-    mid: string,
-    variant = "",
-    quant = "",
-    repoRoot: string = resolveRepoRoot(),
-  ): CatalogArtifactRow[] {
-    return resolveArtifactRows(this.catalogModels(repoRoot), mid, variant, quant);
-  }
-
-  /** The on-disk hit for (relativePath, name), else null — the
-   *  plugin face of findModelPresent (same pure core). The endpoint
-   *  config loads live per call (mount bindings are deploy truth,
-   *  never cached past the rows). */
-  checkModelPresent(
-    relativePath: string,
-    name: string,
-    repoRoot: string = resolveRepoRoot(),
-  ): string | null {
-    let cfg: Record<string, EngineJson> | null;
-    try {
-      cfg = loadEndpointConfig();
-    } catch {
-      cfg = null;
-    }
-    return findModelPresent(relativePath, name, repoRoot, cfg);
-  }
-}
-
-declare module "@deepseek-ai/cordis" {
-  interface Context {
-    models: ModelsService;
-  }
-}
-
-/** The provider plugin (fiber-owned): owns the ModelsService
- *  lifetime. No prime step (rows load lazily per repo root —
- *  fixture roots under MELITE_REPO_ROOT resolve at request time,
- *  never at boot). Manifest row engine-model-catalog rides BEFORE
- *  every consumer (the manage door via gateway-bridges).
- *  Loadable entry: packages/engines/comfyui/src/entries/
- *  catalog-registry.ts (the DSH leaf discipline — addressed code
- *  loads by address, never as a `cordis:` builtin). */
-export const modelsProvider: Plugin = {
-  name: "engine-model-catalog",
-  apply(ctx: Context): void {
-    new ModelsService(ctx);
-  },
-};
-
-/** Resolve the service for request-path helpers that take it as an
- *  optional trailing param (the stroke-2b shape): an explicit arg
- *  wins. Null = the caller forgot to thread ctx.models — a bug, so
- *  reads throw LOUD (a catalog read without a catalog is never an
- *  empty answer). Door listeners MUST pass ctx.models (their inject
- *  declares it). */
-export function needModels(
-  models: ModelsService | null | undefined,
-  where: string,
-): ModelsService {
-  if (models === null || models === undefined) {
-    throw new Error(
-      "[models] no ModelsService for " + where +
-        " — doors inject 'models' and pass ctx.models " +
-        "(the manifest's engine-model-catalog row provides at boot)",
-    );
-  }
-  return models;
-}

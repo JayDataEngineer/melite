@@ -1,17 +1,20 @@
-// models-cascade.test.ts — THE CORDIS-INHERENCY CASCADE WALL
-// (correction stroke A3: the cascade is the framework's, not ours).
+// models-cascade.test.ts — THE CORDIS-INHERENCY CASCADE WALL +
+// THE MODELS-SERVICE WALL (A3, then the PORT LAW landing
+// 2026-09-08: "the Models are not cordis" — they are).
 //
 // The operator's charge (a): the cascade was hand-rolled on
-// Object.assign — a DSH-AS-LANGUAGE defect. This wall pins the
-// rebuilt shape:
+// Object.assign — a DSH-AS-LANGUAGE defect. This wall pins:
 //   - the defaults merge rides Service[symbols.resolveConfig] with
-//     ctx.intercept carrying the variant (imported from the real
+//     ctx.intercept carrying the variant (the real
 //     @deepseek-ai/cordis, not a reimplementation);
 //   - the precedence is the py compose's: family base < variant
 //     intercept < cell head (closest wins);
 //   - the root context stays clean (an intercept on one family's
 //     resolution never leaks into another);
-//   - the krea-2 pins hold byte-for-byte.
+//   - the krea-2 pins hold byte-for-byte;
+//   - THE SERVICE SHAPE (PORT LAW): models register through
+//     ModelsService (boot-loud validation), duplicates refuse,
+//     the frozen registry rode at boot.
 //
 // Run: node --experimental-strip-types --test tests/walls/ts/suites/models-cascade.test.ts
 
@@ -21,15 +24,34 @@ import assert from "node:assert/strict";
 // node_modules); from tests/ the pnpm store path is direct:
 import { Context, Service, symbols } from "../../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.2_@deepseek-ai+cordis-plugin-include@1.0.6_@deepseek-ai+cordis-plugin-loader@1.0.3/node_modules/@deepseek-ai/cordis/lib/index.js";
 import {
-  DEFAULTS_SERVICE,
+  MODELS_SERVICE,
+  ModelsService,
   resolveCascade,
-  cascadeReady,
-} from "../../../../packages/engines/comfyui/src/models/cascade.ts";
+  modelsService,
+} from "../../../../packages/engines/comfyui/src/models/models.ts";
 import { mergedDefaults } from "../../../../packages/engines/comfyui/src/models/models.ts";
 
 describe("the defaults cascade is the cordis primitive (A3)", () => {
-  it("cascade module booted the real service", (): void => {
-    assert.equal(cascadeReady(), true);
+  it("the models system is a booted Service (the PORT LAW)", (): void => {
+    const svc = modelsService();
+    assert.ok(svc instanceof ModelsService, "modelsService() returns a Service instance");
+    assert.equal(svc.name, MODELS_SERVICE);
+    assert.equal(svc.modelIds().length, 59, "every frozen row registered through the service at boot");
+  });
+
+  it("registerModel refuses duplicates LOUD (one owner per id)", (): void => {
+    const svc = modelsService();
+    const decl = svc.getModel("z-image");
+    assert.throws(() => svc.registerModel(decl), /registered twice/, "duplicate registration must refuse");
+  });
+
+  it("registerModel refuses corrupt rows at the gate (the metaclass's import-time validation)", (): void => {
+    const svc = modelsService();
+    assert.throws(
+      () => svc.registerModel({ ...svc.getModel("z-image"), id: "Bad-Id", genre: "Genre.IMAGE" } as never),
+      /lowercase|genre/,
+      "enum-repr corruption refuses at registration",
+    );
   });
 
   it("resolveCascade = base → intercept → head, via symbols.resolveConfig", (): void => {
@@ -69,10 +91,10 @@ describe("the defaults cascade is the cordis primitive (A3)", () => {
         new Probe(c);
       },
     });
-    // the shipped static resolves to the SAME symbol we key with —
-    // proof we ride the framework's class, not a copy
+    // the shipped static resolves to the SAME symbol the service's
+    // cascade keys with — proof we ride the framework's class, not a copy
     assert.equal(Service.resolveConfig, symbols.resolveConfig);
-    assert.notEqual(DEFAULTS_SERVICE, "");
+    assert.notEqual(MODELS_SERVICE, "");
   });
 
   it("krea-2 pins hold byte-for-byte on the primitive", (): void => {
