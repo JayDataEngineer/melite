@@ -6,7 +6,9 @@
 // every 200 body validates here, and malformed card data refuses LOUD
 // with a field-named reason instead of serving a hollow 200.
 //
-// SSOT: infra/python/form_wire.py is authoritative. This file mirrors its six
+// SSOT: THIS file is authoritative (infra/python/form_wire.py was deleted
+// under NO-ESTATE-PYTHON — RIP c0aa2187; the twin became the truth). This
+// file mirrors its six
 // frozen rows (FormFieldRow, SchemaGroupRow, VariantRow,
 // ModifierFeatureRow, FormFeaturesRow, FormSpecRow), the KindGenre
 // vocabulary, and refusal_reason — key sets, required-ness, and

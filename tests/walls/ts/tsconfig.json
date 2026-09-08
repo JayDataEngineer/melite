@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "lib": ["ES2022"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    // pnpm does not hoist @types/node to the repo root, and the wall
+    // plane owns no package.json (no new deps) — borrow the nearest
+    // leaf's copy (gateway-doors devDeps pin @types/node).
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "typeRoots": ["../../../packages/gateway-doors/node_modules/@types"]
+  },
+  "include": ["helpers/**/*.ts", "suites/**/*.test.ts"]
+}

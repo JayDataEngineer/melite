@@ -3,9 +3,12 @@
  *
  * Wraps the estate's management plane — comfy-mcp (comfy-cli wrapper) +
  * comfyui-manager (security=medium, confirm-gated) + comfy-cli — behind
- * ONE action-dispatch tool. The SSOT is python/manage.py; this tool is its
+ * ONE action-dispatch tool. The SSOT is
+ * packages/gateway-doors/src/doors/manage.ts (ACTIONS + HANDLERS +
+ * LIFECYCLE_GUARDED — python/manage.py is deleted); this tool is its
  * AI door (POST /v1/manage). The manual door is
- * `uv run python tools/provision.py manage <action>`.
+ * `provision manage <action>` (packages/engines/comfyui/scripts/provision.ts,
+ * via ./setup.sh manage …).
  *
  * INFRA UPKEEP, NOT EXECUTION (INFERENCE LAW): no action runs
  * inference. Lifecycle actions (restart/stop/switch_version/update)
