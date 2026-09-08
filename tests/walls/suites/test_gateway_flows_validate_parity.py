@@ -311,13 +311,18 @@ BYTE_BODIES: list[tuple[str, object]] = [
     # the missing-input refusal agrees byte-exact, so it rides here,
     # not in CODE_BODIES.)
     ("auto-bare", {"model": "autoremesher"}),
+    # (RE-DERIVED 2026-09-08: ace-step-xl + anycreature MOVED HERE —
+    # their engines are QUARANTINED to vendor/retired-engines
+    # (mono-engine law, operator order 2026-09-08); both gateways
+    # refuse identically, byte-exact, like auto-bare before them.)
+    ("ace-bare", {"model": "ace-step-xl"}),
+    ("any-bare", {"model": "anycreature"}),
 ]
 
 CODE_BODIES: list[tuple[str, object]] = [
-    ("ace-bare", {"model": "ace-step-xl"}),
-    ("any-bare", {"model": "anycreature"}),
-    # (auto-bare MOVED to BYTE_BODIES 2026-09-07 — the autoremesher
-    # model is a cordis arm now, refusal agrees byte-exact.)
+    # (EMPTIED 2026-09-08: the python-arm mids retired with their
+    # engines — vendor/retired-engines/ holds them. No model has a
+    # py-only schema arm anymore; every leg is byte.)
 ]
 
 STATUS_BODIES: list[tuple[str, object]] = [
@@ -327,10 +332,10 @@ STATUS_BODIES: list[tuple[str, object]] = [
      {"flow_inline": {"id": "w", "stages": [[5]]}}),
 ]
 
-# (autoremesher LEFT this tuple 2026-09-07 — the model is a cordis
-# arm now, so its golden rides the byte legs like every other
-# cordis mid.)
-PYTHON_ARM_MIDS = ("ace-step-xl", "anycreature")
+# (EMPTIED 2026-09-08 — the python-arm mids retired with their
+# engines into vendor/retired-engines/. No mid keeps a py-only
+# schema arm; every golden rides the byte legs.)
+PYTHON_ARM_MIDS: tuple[str, ...] = ()
 
 # One Gateway for the py side (200s read cost_preview off it; the
 # fresh-gateway empty-queue shape is what both sides assert).

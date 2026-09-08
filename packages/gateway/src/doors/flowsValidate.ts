@@ -99,17 +99,16 @@ export interface FlowsValidateAnswer {
 
 // ── derived tables ──────────────────────────────────────────────
 // ENGINE_TABLE: engine_type -> {plugin_id, default_output kind}.
-// Probed live 2026-09-07 from python/plugins.py scan_engines() +
-// DEFAULT_OUTPUT (plugin dirs: comfyui, sim, cpp/audio-cpp,
-// cpp/skintokens, node/anycreature — autoremesher RETIRED 2026-09-07
-// with the cpp→node cutover, ONE-implementation rule). The wall
-// re-derives this table per run — drift fails loud.
+// MONO-ENGINE LAW (operator order, 2026-09-08: "we are building an
+// api caller for comfyui, not having engines anymore"): ComfyUI is
+// the only engine. The old engine tiers (cpp/audio-cpp,
+// cpp/skintokens, cpp/autoremesher, node/anycreature, sim —
+// estate-owned subprocess compute, every card decl-only and never
+// composable) are QUARANTINED to vendor/retired-engines/ pending
+// rebirth as vendored ComfyUI custom nodes. Probed live from
+// python/plugins.py scan_engines(); the wall re-derives per run.
 const ENGINE_TABLE: Record<string, { plugin: string; def: string }> = {
-  anycreature: { plugin: "anycreature", def: "mesh" },
-  audio_cpp: { plugin: "audio-cpp", def: "audio" },
   comfyui: { plugin: "comfyui", def: "image" },
-  sim: { plugin: "sim", def: "text" },
-  skintokens: { plugin: "skintokens", def: "mesh" },
 };
 
 // ── closed vocabularies (python/flow.py Kind / SkipWhen order) ──────
