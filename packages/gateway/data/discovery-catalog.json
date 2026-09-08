@@ -1,7 +1,8 @@
 {
   "meta": {
-    "generator": "tools/export_discovery_catalog.py",
-    "note": "authoring-time freeze of the discovery doors; TS serves this file natively (no runtime py). Regenerate on any model/card/flow/lane change; the discovery wall diffs regen vs this file."
+    "generator": "tools/export_discovery_catalog.py (DELETED purge S-catalog 2026-09-08)",
+    "status": "HAND-OWNED frozen data: edits by hand, wall-pinned. Never regenerated.",
+    "wall": "tests/walls/suites/test_gateway_discovery_parity.py (frozen-truth legs + TS goldens pin the served bytes); tests/walls/suites/test_gateway_planes_parity.py (flows-section splice against a checked-in fixture freeze)."
   },
   "catalog": {
     "models": {

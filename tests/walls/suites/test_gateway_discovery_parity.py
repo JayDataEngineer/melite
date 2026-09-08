@@ -718,7 +718,8 @@ def main() -> int:
              "console.log(JSON.stringify([r.status,r.body]));})"
              % TS_DISCOVERY.as_uri(),
              lambda got: got[0] == 503 and "discovery catalog unavailable"
-             in got[1] and "export_discovery_catalog" in got[1]),
+             in got[1] and "hand-owned frozen data" in got[1]
+             and "export_discovery_catalog" not in got[1]),
             ("503 unparseable-catalog",
              "import('%s').then(m=>{const r=m.dispatchDiscovery("
              "'_h_kinds','GET','/v1/kinds','/v1/kinds',%s);"

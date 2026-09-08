@@ -184,9 +184,10 @@ function hasOwn(obj: unknown, key: string): boolean {
   );
 }
 
-/** The frozen export (tools/export_discovery_catalog.py shape). Kept
- *  as unknown — arms pick their section; parseJson keeps every
- *  number literal as PyNum so dumpsPy re-emits it verbatim. */
+/** The frozen catalog (hand-owned frozen data since purge
+ *  S-catalog 2026-09-08 — the py exporter is deleted). Kept as
+ *  unknown — arms pick their section; parseJson keeps every number
+ *  literal as PyNum so dumpsPy re-emits it verbatim. */
 export function catalogPath(repoRoot: string): string {
   return join(repoRoot, "packages", "gateway", "data", "discovery-catalog.json");
 }
@@ -202,7 +203,8 @@ function loadCatalog(repoRoot: string): Record<string, unknown> {
         path +
         " (" +
         (exc instanceof Error ? exc.message : String(exc)) +
-        ") — regenerate: python3 tools/export_discovery_catalog.py",
+        ") — the file is hand-owned frozen data; restore it from " +
+        "git, do not regenerate",
     );
   }
   try {

@@ -406,6 +406,14 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         # (2026-09-08 purge S-facts — the model-facts exporter
         # deletion; same dispositions, this doc is the record.)
         "tools/export_model_facts.py": "deleted-in-record",
+        # (2026-09-08 purge S-catalog — the catalog exporter +
+        # catalog.py deletion; this doc is the record.)
+        "python/catalog.py": "deleted-in-record",
+        "tools/export_discovery_catalog.py": "deleted-in-record",
+        # (the record's own rename-history prose names the old tier.)
+        "py/catalog.py": "deleted-in-record",
+        # (the S-catalog plan line names the bare exporter.)
+        "export_discovery_catalog.py": "deleted-in-record",
     },
     "docs/design/ts-migration-ladder-2026-09-07.md": {
         "card-decls.json": "past",
@@ -422,6 +430,11 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         # (2026-09-08 purge S-facts — the survey's #2 row names the
         # facts exporter as live; completed record, historic ref.)
         "tools/export_model_facts.py": "past",
+        # (2026-09-08 purge S-catalog — the survey's #3 row names the
+        # catalog exporter as live; completed record, historic ref.)
+        "tools/export_discovery_catalog.py": "past",
+        # (S-catalog UPDATE cell names the deleted module; same.)
+        "python/catalog.py": "past",
     },
     "docs/design/cpp-node-cutover-quad-remesh-2026-09-07.md": {
         "card-decls.json": "past",
@@ -439,6 +452,20 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
     "docs/design/image-edit-surface-standard.md": {
         "plugins/engines/comfyui/action_cards/image/tagger/py/card.py": "past",
         "plugins/engines/comfyui/action_cards/image/upscale-tools/py/card.py": "past",
+    },
+    # (2026-09-08 purge S-catalog — py/catalog.py refs died with the
+    # py/ -> python/ rename (pre-existing); the python/catalog.py
+    # deletion makes them doubly dead. Design records: past. The
+    # live plugin doc's boot-mechanism claim is the catalog lane's
+    # to reword: rot.)
+    "docs/design/ai-studio-export-2026-09-07.md": {
+        "py/catalog.py": "past",
+    },
+    "docs/design/image-edit-optional-slots-mask-mod.md": {
+        "py/catalog.py": "past",
+    },
+    "docs/plugins/catalog.md": {
+        "py/catalog.py": "rot",
     },
 }
 

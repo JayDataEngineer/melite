@@ -70,6 +70,9 @@ TOKEN = "planes-parity-token-%d" % os.getpid()
 TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 GOLDEN_DIR = (REPO / "tests" / "walls" / "suites" / "golden_ts" /
               "test_gateway_planes_parity")
+# PURGE S-catalog (2026-09-08): the fixture's frozen catalog is
+# checked in (hand-owned) — the exporter that generated it is gone.
+FIXTURES = REPO / "tests" / "walls" / "suites" / "planes_fixtures"
 
 # The 11 journaled skill.read ids, in journal order (the two flow:
 # reads 404 and never journal — TS WINS, the stale 13 is dropped).
@@ -302,35 +305,17 @@ def build_fixture(root: Path) -> None:
     # declarations + agent/boot catalog/schema natively from
     # packages/gateway/data/discovery-catalog.json under the
     # disclosure root — no runtime python). Stage the fixture's own
-    # freeze with the SAME functions the exporter uses
-    # (export_discovery_catalog.collect_flows + catalog.scan_catalog/
-    # to_json + flow.schema_snapshot), so this wall pins the native
-    # read path byte-for-byte; estate freshness (regen vs the
-    # checked-in file) lives in the discovery wall's freshness leg.
-    import importlib.util as _ilu
-
-    import catalog as _catmod
-    import flow as flowmod
-    _spec = _ilu.spec_from_file_location(
-        "export_discovery_catalog",
-        str(REPO / "tools" / "export_discovery_catalog.py"))
-    assert _spec is not None and _spec.loader is not None
-    _expmod = _ilu.module_from_spec(_spec)
-    _spec.loader.exec_module(_expmod)
-    # schema_snapshot() enumerates FLOWS_ROOT (its "flows" section) —
-    # pin the root BEFORE snapshotting.
-    flowmod.FLOWS_ROOT = root / "flows"
-    _frozen = {
-        "catalog": json.loads(
-            _catmod.to_json(_catmod.scan_catalog(str(root)))),
-        "schema": flowmod.schema_snapshot(),
-        "flows": _expmod.collect_flows(str(root)),
-    }
+    # freeze from the CHECKED-IN copy
+    # (tests/walls/suites/planes_fixtures/discovery-catalog.json —
+    # captured 2026-09-08 with the retired exporter's own functions,
+    # byte-identical to what they generated; hand-owned from here).
+    # Estate freshness (regen vs the checked-in file) died with the
+    # exporter — the discovery wall's frozen-truth legs own the live
+    # file now.
     _fro = root / "packages" / "gateway" / "data"
     _fro.mkdir(parents=True, exist_ok=True)
     (_fro / "discovery-catalog.json").write_text(
-        json.dumps(_frozen, indent=2, ensure_ascii=False, default=str)
-        + "\n",
+        (FIXTURES / "discovery-catalog.json").read_text(encoding="utf-8"),
         encoding="utf-8")
 
 
