@@ -249,7 +249,15 @@ export class ModelsService extends Service {
         derived.source = { ...(model.source ?? {}), filename: cellSource.filename! }
       }
       if (model.defaults !== undefined || Object.keys(variant.resolver_defaults ?? {}).length > 0) {
-        derived.defaults = { ...(model.defaults ?? {}), ...variant.resolver_defaults, ...(cell?.resolver_defaults ?? {}) }
+        // A NULL STAMP UNSETS (the voicedesign meld 2026-09-08): the
+        // intercept retracts the base default — a variant that
+        // doesn't use an inherited key (voicedesign ≠ persona voice)
+        // nulls it, and the key leaves the derived view entirely
+        const merged: Record<string, unknown> = { ...(model.defaults ?? {}), ...variant.resolver_defaults, ...(cell?.resolver_defaults ?? {}) }
+        for (const k of Object.keys(merged)) {
+          if (merged[k] === null || merged[k] === undefined) delete merged[k];
+        }
+        derived.defaults = merged
       }
       if (model.lane_inputs !== undefined || variant.lane_inputs !== undefined) {
         derived.lane_inputs = { ...(model.lane_inputs ?? {}), ...(variant.lane_inputs ?? {}) }

@@ -529,7 +529,6 @@
     "export_hands": false,
     "export_body": false,
     "export_paint": false,
-    "sam3_prompt": null,
     "export_boxes": true,
     "instance_filter": "all",
     "max_instances": 0,
@@ -1120,8 +1119,8 @@
    "id": "qwen3-tts-voicedesign",
    "family": "qwen3-tts-voicedesign",
    "genre": "audio",
-   "label": "Qwen3-TTS VoiceDesign 1.7B Standard Native",
-   "description": "Qwen3-TTS 12Hz VoiceDesign 1.7B — instruction-following voice design; the voice-lock lane",
+   "label": "Qwen3-TTS 0.6B VoiceDesign Native",
+   "description": "instruction-following voice design; the voice-lock lane",
    "source": {
     "type": ""
    },
@@ -1130,7 +1129,7 @@
     "variant": "voicedesign"
    },
    "engine": "comfyui",
-   "has_inference": false,
+   "has_inference": true,
    "has_rubric": false
   },
   "rtx-vsr": {
@@ -1843,8 +1842,7 @@
     "height": 1024,
     "steps": 8,
     "sampler": "res_multistep",
-    "cfg": 1,
-    "negative_prompt": null
+    "cfg": 1
    },
    "engine": "comfyui",
    "has_inference": false,
@@ -1865,8 +1863,7 @@
     "height": 1024,
     "steps": 8,
     "sampler": "res_multistep",
-    "cfg": 1,
-    "negative_prompt": null
+    "cfg": 1
    },
    "engine": "comfyui",
    "has_inference": false,
@@ -2236,7 +2233,7 @@
    "genre": "audio"
   },
   "qwen3-tts-voicedesign": {
-   "label": "Qwen3-TTS VoiceDesign 1.7B Standard Native",
+   "label": "Qwen3-TTS 0.6B VoiceDesign Native",
    "genre": "audio"
   },
   "rtx-vsr": {

@@ -24,8 +24,6 @@ import { family as moss } from "./audio/moss/index.ts";
 import { family as mossSfx } from "./audio/moss-sfx/index.ts";
 import { family as music3 } from "./audio/music3/index.ts";
 import { family as qwen3Tts } from "./audio/qwen3-tts/index.ts";
-import { family as qwen3TtsVoicedesign } from "./audio/qwen3-tts-voicedesign/index.ts";
-import { family as txt2music } from "./audio/txt2music/index.ts";
 import { family as anima } from "./image/anima/index.ts";
 import { family as autoDetect } from "./image/auto-detect/index.ts";
 import { family as basic_resize } from "./image/basic_resize/index.ts";
@@ -77,8 +75,6 @@ export const FAMILY_PLUGINS: Plugin[] = [
   mossSfx,
   music3,
   qwen3Tts,
-  qwen3TtsVoicedesign,
-  txt2music,
   anima,
   autoDetect,
   basic_resize,

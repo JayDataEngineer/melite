@@ -7,7 +7,7 @@
 // + its causes.md) — every served row deep-equal on shared ids,
 // the five sections structurally complete, and every divergence
 // NAMED (never silent):
-//   - the golden's 12 retired-engine families: the registry CARRIES
+//   - the golden's 11 retired-engine families: the registry CARRIES
 //     them as frozen data (engine-marked) but the wire never serves
 //     them (LAW 0 — the final py serve agreed: 43);
 //   - the golden's 3 since-deleted cards (music-native, auto-rig,
@@ -53,7 +53,7 @@ const golden = JSON.parse(readFileSync(GOLDEN_PATH, "utf8")) as {
 const RETIRED_IN_GOLDEN = [
   "ace-step", "ace-step-base", "ace-step-base-bf16", "ace-step-bf16",
   "ace-step-sft", "ace-step-xl", "anycreature", "moss-tts",
-  "moss-tts-local", "moss_voicegenerator", "skintokens", "txt2music",
+  "moss-tts-local", "moss_voicegenerator", "skintokens",
 ] as const;
 
 describe("the served catalog vs the tree golden (A1)", () => {
@@ -97,14 +97,14 @@ describe("the served catalog vs the tree golden (A1)", () => {
     }
   });
 
-  it("the registry CARRIES the 12 retired families as engine-marked frozen data", (): void => {
+  it("the registry CARRIES the 11 retired families as engine-marked frozen data", (): void => {
     for (const id of RETIRED_IN_GOLDEN) {
       const decl = getModel(id);
       assert.ok(decl !== undefined, `retired family ${id} missing from the registry`);
       assert.ok(decl.engine !== "comfyui" && decl.engine !== "", `${id} must carry its retired engine marker (got '${decl.engine}')`);
       assert.equal(isServedFamily(decl), false, `${id} must never serve (LAW 0)`);
     }
-    assert.equal(modelIds().length, 93);
+    assert.equal(modelIds().length, 92);
   });
 
   it("families section matches the golden on all served ids", (): void => {

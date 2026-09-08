@@ -51,3 +51,13 @@ Restored as its own model (own lane table, own comfyui engine);
 moss-tts-local folds INTO moss instead (same GGUF home, same
 runtime — tts / voicegen / tts-local). Registry stays 51, routes
 stay 93, served stays 68 — a swap, not a fold.
+
+## 2026-09-08 — voicedesign meld + txt2music deletion (operator orders)
+
+qwen3-tts-voicedesign folds INTO qwen3-tts (same qwen3_tts lane,
+same engine — a variant, not a sibling; resolver stamps
+mode:'design' + variant:'voicedesign' + voice:NULL — a null stamp
+unsets the inherited persona default at the derived merge).
+txt2music DELETED — the retired-GGUF dupe of the native comfyui
+music3 (same weights, no callers). Registry 51→50→49, routes 93→92,
+served 68 throughout.

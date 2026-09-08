@@ -1,11 +1,13 @@
 // families/audio/qwen3-tts — the qwen3-tts MODEL declaration (ONE
-// model — the correction stroke 2026-09-08). The py truth:
-// qwen3-tts and qwen3-tts-base declared the SAME class Qwen3Tts —
-// one model, the base checkpoint is a VARIANT (an intercept over
-// the model's base lane: resolver stamp variant:'base' + the
-// model_path stamp), not a sibling row. The flat id survives as
-// the variant's route; the qvoice pack boards the MODEL (inherited
-// by every variant and quant — the mutation law).
+// model — the correction stroke 2026-09-08, extended same day).
+// The py truth: qwen3-tts and qwen3-tts-base declared the SAME class
+// Qwen3Tts — one model, the base checkpoint is a VARIANT (an
+// intercept over the model's base lane), not a sibling row. The
+// VoiceDesign 1.7B checkpoint rides the SAME qwen3_tts lane (same
+// family stamp, same model_path, same engine) — a third variant,
+// not a sibling model. The flat ids survive as variant routes; the
+// qvoice pack boards the MODEL (inherited by every variant and
+// quant — the mutation law).
 //
 // PLUGIN SHAPE (the discharge stroke): every family is a plugin
 // declaring itself through ctx.models.registerFamily inside
@@ -67,6 +69,30 @@ export const DECL: ModelDecl = {
           "quant": "native",
           "label": "Native",
           "route": "qwen3-tts-base",
+          "engine": "",
+          "resolver_defaults": {},
+          "hide_from_dropdown": false
+        }
+      ]
+    },
+    {
+      "id": "voicedesign",
+      "label": "VoiceDesign",
+      "description": "instruction-following voice design; the voice-lock lane",
+      "hint": "",
+      "group": "Variant",
+      "route": "qwen3-tts-voicedesign",
+      "engine": "",
+      "resolver_defaults": {
+        "mode": "design",
+        "variant": "voicedesign",
+        "voice": null
+      },
+      "cells": [
+        {
+          "quant": "native",
+          "label": "Native",
+          "route": "qwen3-tts-voicedesign",
           "engine": "",
           "resolver_defaults": {},
           "hide_from_dropdown": false

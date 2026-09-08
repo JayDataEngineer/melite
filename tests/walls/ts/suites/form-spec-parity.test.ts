@@ -116,11 +116,11 @@ describe("live formSpec ≡ frozen referee (the parity wall)", () => {
     assert.ok(!opts.includes("not_a_sampler"));
   });
 
-  it("the hierarchy: 51 models, every flat route still serves", (): Promise<void> => {
+  it("the hierarchy: 49 models, every flat route still serves", (): Promise<void> => {
     // THE HIERARCHY STROKE (2026-09-08): one model per engine-lane
     // unit (ace-step ×6 flat ids = ONE model: variants × quants);
     // every flat id the runtime has ever addressed still serves.
-    assert.equal(registryIds().length, 51);
+    assert.equal(registryIds().length, 49);
     for (const flat of ["ace-step", "ace-step-bf16", "ace-step-base", "ace-step-base-bf16", "ace-step-sft", "ace-step-xl", "qwen3-tts", "qwen3-tts-base"]) {
       assert.ok(modelIds().includes(flat), flat + " still serves (the flat ids survive as routes)");
     }

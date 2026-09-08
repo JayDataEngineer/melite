@@ -22,9 +22,9 @@ import {
 } from "../../../../packages/engines/comfyui/src/models/models.ts";
 
 describe("the resurrected model registry (families/variants/cells/links)", () => {
-  it("carries the hierarchy: 51 registry models, 93 serving routes (the fold)", (): void => {
-    assert.equal(registryIds().length, 51);
-    assert.equal(modelIds().length, 93);
+  it("carries the hierarchy: 49 registry models, 92 serving routes (the fold)", (): void => {
+    assert.equal(registryIds().length, 49);
+    assert.equal(modelIds().length, 92);
     const comfy = modelIds().filter((id) => {
       const e = getModel(id).engine ?? "";
       return e === "" || e === "comfyui";
@@ -34,7 +34,7 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
       const e = registryModel(id).engine ?? "";
       return e === "" || e === "comfyui";
     });
-    assert.equal(rcomfy.length, 46);
+    assert.equal(rcomfy.length, 45);
   });
 
   it("serves 68 offered routes; the unoffered are excluded loud-side", (): void => {
