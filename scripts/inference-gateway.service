@@ -1,9 +1,9 @@
 # inference-gateway.service — reference copy of the CANONICAL gateway unit
 #
 # STATUS 2026-09-02 (python flip): the C server (build/inference_cli) is
-# RETIRED — the gateway is the python orchestrator (py/gateway.py,
+# RETIRED — the gateway is the python orchestrator (python/gateway.py,
 # stdlib-only asyncio; engines + card compose live in the OWNING
-# plugins, py/plugins.py mounts them). This unit supervises :33081 with
+# plugins, python/plugins.py mounts them). This unit supervises :33081 with
 # Restart=always.
 #
 # BASE ENV (2026-09-06, PROVISIONING LAW — "comfy-mcp needs to be in
@@ -11,7 +11,7 @@
 # runs the repo's base env python (.venv, uv-synced from pyproject —
 # pydantic, comfy-mcp, comfy-script…), NOT the system python. The
 # gateway's own surface stays stdlib-only at import; the on-demand
-# provision door (py/provision_rail) lazy-imports comfy_mcp —
+# provision door (python/provision_rail) lazy-imports comfy_mcp —
 # importable only in the base env. The canonical smoke check
 # (tools/smoke-single-gateway.sh) pins the same interpreter.
 #
@@ -32,7 +32,7 @@ After=network.target
 Type=simple
 WorkingDirectory=%h/Documents/programs/active/inference.cpp
 Environment=PATH=/home/user/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=%h/Documents/programs/active/inference.cpp/.venv/bin/python %h/Documents/programs/active/inference.cpp/py/gateway.py 33081
+ExecStart=%h/Documents/programs/active/inference.cpp/.venv/bin/python %h/Documents/programs/active/inference.cpp/python/gateway.py 33081
 # FLIP (staged, NOT live — uncomment at flip, comment the py ExecStart above):
 # Environment=GATEWAY_PORT=33081
 # ExecStart=/home/user/.local/bin/node --experimental-strip-types %h/Documents/programs/active/inference.cpp/packages/gateway/src/server.ts

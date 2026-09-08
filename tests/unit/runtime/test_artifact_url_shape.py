@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import gateway as gw_mod  # noqa: E402
 from flow_graph import FlowGraph, NodeRow  # noqa: E402
@@ -60,7 +60,7 @@ def test_outside_run_dir_falls_back_to_basename(
 
 
 def test_both_stamp_sites_use_the_seam() -> None:
-    src = (REPO / "py" / "gateway.py").read_text()
+    src = (REPO / "python" / "gateway.py").read_text()
     assert "os.path.basename(str(a)) for a in" not in src
     assert src.count("_artifact_rel(run,") == 2
 

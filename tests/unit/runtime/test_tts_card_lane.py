@@ -27,7 +27,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import flow  # noqa: E402
 import gateway  # noqa: E402
@@ -42,7 +42,7 @@ def _pin_compose_card() -> None:
     resolves via sys.path. `_mount_cards_for_wall` inserts card
     DEFINITION dirs (each with its own card.py) ahead of the
     compose dir, so the first in-process bridge in a combined run
-    can resolve `card` to e.g. skin/py/card.py (no emit_render).
+    can resolve `card` to e.g. skin/python/card.py (no emit_render).
     The serving gateway never hits this (the bus owns load order
     — proven by two live runs). Lead with the compose package dir
     (the loader's own resolution) for this process. Estate-wide fix

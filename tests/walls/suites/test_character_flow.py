@@ -16,7 +16,7 @@ import pytest
 
 from _anchor import REPO
 
-PY = os.path.join(str(REPO), "py")
+PY = os.path.join(str(REPO), "python")
 if PY not in sys.path:
     sys.path.insert(0, PY)
 for _p in (os.path.join(str(REPO), "packages", "engines", "comfyui"),
@@ -112,7 +112,7 @@ class TestZImageBuilder:
 
 def _render_pixal_canonical() -> dict[str, JsonValue]:
     img_py = os.path.join(str(REPO), "packages", "engines", "comfyui",
-                          "action_cards", "3d", "img_to_mesh", "py")
+                          "action_cards", "3d", "img_to_mesh", "python")
     spec = importlib.util.spec_from_file_location(
         "i2m_rend_char_w", os.path.join(img_py, "renderer.py"))
     rend = importlib.util.module_from_spec(spec)

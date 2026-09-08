@@ -17,7 +17,7 @@ The card composes via the `h3_timeline_card` tool call — one call composes ALL
 3. Each window is a free Push from your precise description into the bottomless folding AI.
 4. Length snaps to the 17k+5 frame grid at 24fps (56, 124, 362...).
 5. For timelines: describe a first frame. Then what it becomes at the end of that frame, and the sound that goes with it — per-window. Same seed across a shot's re-rolls keeps the world texture.
-6. Don't speak sampler knobs as overrides unless needed — the card clones occlusion switches from the knob map SSOT, the right values come from the model's `card_knobs` tuple (rows in `model.py`; the on-disk `card_knobs.yaml` is extinct — `py/melite_models/knobmap.py` docstring: "zero copies on disk").
+6. Don't speak sampler knobs as overrides unless needed — the card clones occlusion switches from the knob map SSOT, the right values come from the model's `card_knobs` tuple (rows in `model.py`; the on-disk `card_knobs.yaml` is extinct — `python/melite_models/knobmap.py` docstring: "zero copies on disk").
 7. Validation errors name the call and the fix — read it, apply it, resubmit.
 
 ## Doors

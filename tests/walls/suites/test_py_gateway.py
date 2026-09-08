@@ -506,7 +506,7 @@ def test_music3_composes_music_node() -> None:
 # C19: no engine names in the core (ffmpeg_concat retired 2026-09-04
 # — the core never named it and never should; the check is gone too)
 def test_core_names_no_engine() -> None:
-    gw_src = (REPO / "py" / "gateway.py").read_text()
+    gw_src = (REPO / "python" / "gateway.py").read_text()
     core_ok = not any(t in gw_src for t in ('"comfyui"', '"audio_cpp"'))
     assert core_ok, "engine literal in gateway.py"
 
@@ -631,7 +631,7 @@ def test_input_preview_door_refusal_matrix(monkeypatch: pytest.MonkeyPatch,
     for path, want, needle in [
         ("/v1/assets/inputs/real.png", 200, None),
         ("/v1/assets/inputs/ghost.png", 404, "input not found"),
-        ("/v1/assets/inputs/../../py/gateway.py", 400, "bad path"),
+        ("/v1/assets/inputs/../../python/gateway.py", 400, "bad path"),
         ("/v1/assets/inputs/nested/real.png", 400, "bad path"),
         ("/v1/assets/inputs/secret.txt", 400, "png/jpeg/webp only"),
     ]:

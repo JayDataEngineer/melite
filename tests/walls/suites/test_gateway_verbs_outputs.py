@@ -8,7 +8,7 @@ chips posting flows / the tenant-local preset action) with ZERO TS
 presence (drift item 5). This wall pins their port as DECL DATA —
 packages/gateway/src/schema/verbs.ts (verb → card/params table, the
 door dispatching table-driven) — and pins the card_outputs settle
-gate in the same module (py/gateway.py _output_violation 473-489),
+gate in the same module (python/gateway.py _output_violation 473-489),
 wired into the TS serve path (doors/flowsRun.ts runOne, no-op
 without card context).
 
@@ -56,9 +56,9 @@ against a dead engine port — connection-refused, never inference).
 Py cites: verbs packages/engines/comfyui/models/3d/anny/mods/verbs.py
 (EstimateBody 21-33, Dress 36-80, Prop 83-123, RigSomax 126-143,
 ApplySkin 145-179, SavePreset 181-200, LoadPreset 203-221); mount
-models/3d/anny/model.py:110; contract py/melite_cards/dsl.py
+models/3d/anny/model.py:110; contract python/melite_cards/dsl.py
 SubActionMod 857-869 + VerbEngine 822-854; outputs gate
-py/gateway.py 473-489 + run-level arm 1374-1396 + per-stage arm
+python/gateway.py 473-489 + run-level arm 1374-1396 + per-stage arm
 1821-1832; TSX renderer action_cards/3d/anny/ui/studio/component.tsx
 ANNY_VERBS 97-134 + ANNY_PRESET_VERBS 447-448.
 
@@ -242,7 +242,7 @@ _gateway = None
 def _gw():
     global _gateway
     if _gateway is None:
-        sys.path.insert(0, str(REPO / "py"))
+        sys.path.insert(0, str(REPO / "python"))
         import gateway as g
         _gateway = g
     return _gateway

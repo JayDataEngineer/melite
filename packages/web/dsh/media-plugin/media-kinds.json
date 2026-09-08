@@ -1,7 +1,7 @@
 {
-  "$comment": "Single media-kind vocabulary (SSOT). Consumers: py/editor_runs.py (classifier + gallery sets), MediaPanel.tsx kindOf (derived, never restated), test/runs-window.mjs MEDIA set. gallery = exts that list in the sidebar; exts = full classifier (gallery extras like svg/mkv/m4a/aac classify but don't list — deliberate, documented here, not scattered). Parity enforced by tests/walls/suites/test_media_sidebar.py.",
+  "$comment": "Single media-kind vocabulary (SSOT). Consumers: python/editor_runs.py (classifier + gallery sets), MediaPanel.tsx kindOf (derived, never restated), test/runs-window.mjs MEDIA set. gallery = exts that list in the sidebar; exts = full classifier (gallery extras like svg/mkv/m4a/aac classify but don't list — deliberate, documented here, not scattered). Parity enforced by tests/walls/suites/test_media_sidebar.py.",
   "policy": {
-    "$comment": "Door-tier caps consumed by py/editor_runs.py (_MAX_IMGS). The client's display-tier guard (frame dumps hidden at >20 images, MediaPanel flatten) is a fallback for gateways that don't truncate; this door flags truncation via the run row's `truncated` marker {listed,total}.",
+    "$comment": "Door-tier caps consumed by python/editor_runs.py (_MAX_IMGS). The client's display-tier guard (frame dumps hidden at >20 images, MediaPanel flatten) is a fallback for gateways that don't truncate; this door flags truncation via the run row's `truncated` marker {listed,total}.",
     "maxListedImages": 3
   },
   "kinds": {

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Formwire parity wall — py/form_wire.py vs its TypeScript gate twin.
+"""Formwire parity wall — python/form_wire.py vs its TypeScript gate twin.
 
 Ladder P1 (editor manifest §1.6 + §5 step 1): the frozen wire contract
 (FormFieldRow, SchemaGroupRow, VariantRow, ModifierFeatureRow,
@@ -34,7 +34,7 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import form_wire  # noqa: E402
 from pydantic import ValidationError  # noqa: E402

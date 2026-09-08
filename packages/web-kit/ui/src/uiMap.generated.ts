@@ -1,5 +1,5 @@
 /**
- * GENERATED from py/ui_map.py — DO NOT EDIT.
+ * GENERATED from python/ui_map.py — DO NOT EDIT.
  * Regenerate: python3 tools/gen_ui_map.py --write
  * The map is the SSOT (docs/design/ui-map.md); this file is its
  * TypeScript face. The parity wall refuses drift, and the

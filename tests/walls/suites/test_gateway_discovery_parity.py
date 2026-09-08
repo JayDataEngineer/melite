@@ -97,7 +97,7 @@ import urllib.request
 from _anchor import REPO, boot_scratch_gateway, reap_gateway
 
 sys.dont_write_bytecode = True
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 PASS = FAIL = 0
 TOKEN = "wall-discovery-token-%d" % os.getpid()
@@ -485,7 +485,7 @@ def main() -> int:
         for fid, pname in small:
             path = "/v1/models/%s/provisions/%s" % (fid, pname)
             dual(py_port, ts_port, path, "GET %s (bytes)" % path)
-            for port, tag in ((py_port, "py"), (ts_port, "ts")):
+            for port, tag in ((py_port, "python"), (ts_port, "ts")):
                 st, body, h = http(port, path)
                 check("%s provisions content-length %s" % (tag, pname),
                       st == 200 and int(h.get("content-length", "-1"))
@@ -527,7 +527,7 @@ def main() -> int:
                         f.write(SYNTH_SMALL)
                     dual(py_port, ts_port, spath,
                          "synthetic small provisions bytes (%s)" % mpname)
-                    for port, tag in ((py_port, "py"), (ts_port, "ts")):
+                    for port, tag in ((py_port, "python"), (ts_port, "ts")):
                         st, body, h = http(port, spath)
                         check("synthetic %s content-length %s"
                               % (tag, mpname),
@@ -537,7 +537,7 @@ def main() -> int:
                     dual(py_port, ts_port, spath,
                          "synthetic provisions range ignored (%s)" % mpname,
                          headers={"Range": "bytes=0-99"})
-                    for port, tag in ((py_port, "py"), (ts_port, "ts")):
+                    for port, tag in ((py_port, "python"), (ts_port, "ts")):
                         st, body, h = http(
                             port, spath, headers={"Range": "bytes=0-99"})
                         check("synthetic %s range ignored full-200 %s"

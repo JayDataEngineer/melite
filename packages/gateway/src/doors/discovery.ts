@@ -1,7 +1,7 @@
 // doors/discovery.ts — the NATIVE port of the 10 discovery READ doors
 // (no runtime python; the stdio bridge is retired).
 //
-// Handlers (py/gateway.py names in parens; ROUTES mirror rows):
+// Handlers (python/gateway.py names in parens; ROUTES mirror rows):
 //   GET /v1/model-catalog                  (_h_model_catalog, 3041-3043)
 //   GET /v1/model-catalog/*                (_h_model_one, 3046-3051)
 //   GET /v1/models/*/provisions/*          (_h_model_provision, 3509-3547)
@@ -337,7 +337,7 @@ function joinRoot(root: string, sub: string): string {
   return join(root, s);
 }
 
-/** The model_paths derivation (py/estate_config.py 228-266): the
+/** The model_paths derivation (python/estate_config.py 228-266): the
  *  ROOT config's models roots (ABSOLUTE, required — missing/empty/
  *  relative dies LOUD, QUEUE LANE LAW) joined with the engine base,
  *  engine-endpoint overrides winning when set (and absolute). Reads

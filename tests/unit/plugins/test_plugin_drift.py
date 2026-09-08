@@ -2,7 +2,7 @@
 against the central contract (pattern 1 + 4 from the drift playbook).
 
 ADAPTED to this estate: plugins are discovered via filesystem glob
-(py/plugins.py:iter_plugin_dirs_under), not Python importlib. The
+(python/plugins.py:iter_plugin_dirs_under), not Python importlib. The
 "plugin" is a Plugin dataclass in plugin.py + per-model nodes.yaml
 files. The TS plugins (harness/dsh, web/editor) have their own
 drift surface in the TypeScript test estate.

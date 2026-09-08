@@ -2,7 +2,7 @@
 
 ## 2026-09-05 — the options vocab actually loads (object_info pin)
 
-`py/editor_forms.py::_option_list` exec'd the engine's `plugin.py`
+`python/editor_forms.py::_option_list` exec'd the engine's `plugin.py`
 with a BARE namespace — no `__file__` — so the comfyui `Plugin`
 class body (which derives `samplers`/`schedulers` from the
 `object_info.json` pin at class-definition time, the declared SSOT
@@ -23,7 +23,7 @@ nothing else):
 - `scheduler` options: same 9 values, pin (sorted) order.
 
 Source: `packages/engines/comfyui/plugin.py::_pin_vocab` via
-`py/editor_forms.py::_option_list` (the class/table is the SSOT;
+`python/editor_forms.py::_option_list` (the class/table is the SSOT;
 this golden pins its served emission).
 Re-asserted from served `/v1/form-spec?model=krea-2` on a scratch
 gateway (no live restart).
@@ -67,7 +67,7 @@ entries only. Verified: patched file is leaf-identical to the live
 Operator order, verbatim: every card family ships the 'default'
 recipe — always — and the Recipe rail renders ABOVE the Model row.
 
-- `py/melite_models/grammar.py`: canonical `DEFAULT_RECIPE`
+- `python/melite_models/grammar.py`: canonical `DEFAULT_RECIPE`
   (Variant id=default, group=Recipe, patch-only, defaults={}) +
   `RECIPE_GROUP` (landing default='default'). The metaclass appends
   both to EVERY family (variants LAST — resolve() owns variants[0];
@@ -77,7 +77,7 @@ recipe — always — and the Recipe rail renders ABOVE the Model row.
 - krea-2's family-owned Recipe group (landing realism) refused under
   the new law and was removed — realism stays as an OPT-IN extra;
   a fresh card lands on Default (no LoRA stamp).
-- `py/editor_forms.py`: each group's default row serves first within
+- `python/editor_forms.py`: each group's default row serves first within
   its group run (display order only; tuple order untouched).
 Mode for THIS file: WHOLESALE regold (parity-pinned route —
 the golden must equal the live wire byte-for-byte; verified zero

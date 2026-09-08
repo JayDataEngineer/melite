@@ -156,7 +156,7 @@ export function validateCatalogContract(catalog: unknown): CatalogContractResult
     violations.push({ kind: id, message: `Model ${id} is not an object.` })
     continue
    }
-   // form mirrors the backend's CONSTRUCTION guarantee (py/melite_models:
+   // form mirrors the backend's CONSTRUCTION guarantee (python/melite_models:
    // the offering gate + ModelRow.form required — the ltx-2-3 incident,
    // 2026-09-05, shipped form='' rows past every backend gate and only
    // this validator caught them; the gate now refuses at class creation,

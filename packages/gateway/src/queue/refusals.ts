@@ -1,7 +1,7 @@
 // queue/refusals.ts — the shared refusal-envelope helper for the
 // P5 queue refusal arms (resume / reproduce / lock-adjacent doors).
 //
-// Shape mirrors py/gateway.py _refusal (138-150): {error, code} then
+// Shape mirrors python/gateway.py _refusal (138-150): {error, code} then
 // loc / expected / got ONLY when the raiser sets them (absent keys
 // are honest — never null placeholders). Key order is the contract
 // (error, code, loc, expected, got) — the dispatcher serializes via

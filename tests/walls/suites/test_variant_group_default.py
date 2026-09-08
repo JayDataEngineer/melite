@@ -6,7 +6,7 @@ Operator orders (verbatim):
   default, never on nothing.
 - 2026-09-06 (recipe audit): every card family ships the 'default'
   recipe — ALWAYS. The Recipe group is grammar-owned (RECIPE_GROUP in
-  py/melite_models/grammar.py): it rides every family automatically
+  python/melite_models/grammar.py): it rides every family automatically
   with landing default='default'. A family declaring its own Recipe
   group, or its own variant id 'default', refuses at IMPORT.
 
@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 from melite_models import Model, ModelError, Variant, VariantGroup  # noqa: E402
 

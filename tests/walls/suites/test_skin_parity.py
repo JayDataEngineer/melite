@@ -23,7 +23,7 @@ from _anchor import REPO
 JsonValue = dict[str, "JsonValue"] | list["JsonValue"] | str | int | float | bool | None
 
 sys.path.insert(0, os.path.join(str(REPO), "tools"))
-sys.path.insert(0, os.path.join(str(REPO), "py"))
+sys.path.insert(0, os.path.join(str(REPO), "python"))
 
 from skin_pack import generate_detail_maps as estate_maps
 

@@ -233,7 +233,7 @@ def test_gui_home_isolation_guard() -> None:
 # ── DECLARED AUTODOWNLOAD ─────────────────────────────────────────────
 
 def test_root_config_derivation() -> None:
-    sys.path.insert(0, str(REPO / "py"))
+    sys.path.insert(0, str(REPO / "python"))
     import estate_config as _ec
     _cfg = json.loads((REPO / "packages" / "engines" / "comfyui" /
                        "data" / "comfyui_endpoint.json").read_text())
@@ -248,7 +248,7 @@ def test_root_config_derivation() -> None:
 
 
 def test_bound_model_folders() -> None:
-    sys.path.insert(0, str(REPO / "py"))
+    sys.path.insert(0, str(REPO / "python"))
     sys.path.insert(0, str(REPO / "tools"))
     import provision as _pv
     import estate_config as _ec
@@ -273,7 +273,7 @@ def test_cmd_paths_consuming_bound_model_folders() -> None:
 
 
 def test_manage_consumes_derivation() -> None:
-    sys.path.insert(0, str(REPO / "py"))
+    sys.path.insert(0, str(REPO / "python"))
     import manage as _mg
     assert "bound_model_folders" in inspect.getsource(_mg._model_present)
     assert "safe_load" not in inspect.getsource(_mg._model_present)

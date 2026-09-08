@@ -1,9 +1,9 @@
 // doors/flowsRun.ts — the POST /v1/flows/start, GET
 // /v1/flows/status/<id>, POST /v1/flows/stop/<id> arms (TS port of
-// py/gateway.py _h_flows_start/_h_flows_status/_h_flows_stop over the
+// python/gateway.py _h_flows_start/_h_flows_status/_h_flows_stop over the
 // Gateway.submit/status/stop registry, P4 engine-IO scope).
 //
-// WHAT THIS PORTS (line-cited against py/gateway.py):
+// WHAT THIS PORTS (line-cited against python/gateway.py):
 //   - submit envelope order (1179-1270): body-must-be-object
 //     (bad_envelope/body), test-must-be-bool (bad_envelope/test),
 //     CARD BIRTH LAW draft_id required (draft_required) / malformed

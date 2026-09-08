@@ -3,7 +3,7 @@
 
 Proves the TypeScript engine-IO half (packages/gateway/src/engine/
 comfyui.ts via doors/flowsRun.ts + the ctx.ts seam) answers
-byte-identical to the py gateway (py/gateway.py _h_flows_start /
+byte-identical to the py gateway (python/gateway.py _h_flows_start /
 _h_flows_status / _h_flows_stop over Gateway.submit/status/stop, and
 the comfyui execute lane packages/engines/comfyui/compose/native.py +
 mergegraph.py):
@@ -104,7 +104,7 @@ from pathlib import Path
 from _anchor import REPO, boot_scratch_gateway, reap_gateway
 
 sys.dont_write_bytecode = True
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 sys.path.insert(0, str(REPO / "packages" / "engines" / "comfyui" / "compose"))
 
 PASS = FAIL = 0

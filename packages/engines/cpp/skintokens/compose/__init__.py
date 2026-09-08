@@ -1,14 +1,14 @@
 """compose/ — the skintensors plugin's translation service.
 
-Contract (py/plugins.py — the BUS contract every plugin speaks):
+Contract (python/plugins.py — the BUS contract every plugin speaks):
     card_compose(body, model, run_id, graph)
         -> (rc, new_graph, extra_dict, error_str)
     execute(node, run_dir, inputs, stop_event, report=None) -> dict
     stop(params, run_dir)
 
 Dispatch is DATA, THE CARD PATTERN (golden base: h3-timeline): the
-card owns its arm — action_cards/<genre>/<card>/py/compose.py — and
-this package loads the card's py/ as a PACKAGE and calls
+card owns its arm — action_cards/<genre>/<card>/python/compose.py — and
+this package loads the card's python/ as a PACKAGE and calls
 `compose(body, model, run_id)` (the autoremesher precedent, the
 compose-first cpp lane).
 """
@@ -33,7 +33,7 @@ from pathlib import Path
 _COMPOSE_DIR = Path(__file__).resolve().parent
 _PLUGIN_ROOT = _COMPOSE_DIR.parent
 # plugin root = <repo>/packages/engines/cpp/skintokens → parents[3]
-_PY = str(_PLUGIN_ROOT.parents[3] / "py")
+_PY = str(_PLUGIN_ROOT.parents[3] / "python")
 if _PY not in sys.path:
     sys.path.insert(0, _PY)
 
@@ -55,7 +55,7 @@ def _load_card_package(card_dir: str) -> ModuleType:
     namespace; relative imports inside the arm resolve)."""
     if _PKG_ALIAS in sys.modules:
         return sys.modules[_PKG_ALIAS]
-    pkg_dir = _PLUGIN_ROOT / "action_cards" / card_dir / "py"
+    pkg_dir = _PLUGIN_ROOT / "action_cards" / card_dir / "python"
     spec = importlib.util.spec_from_file_location(
         _PKG_ALIAS, pkg_dir / "__init__.py",
         submodule_search_locations=[str(pkg_dir)])

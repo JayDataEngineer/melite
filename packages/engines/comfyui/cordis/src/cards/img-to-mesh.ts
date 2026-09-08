@@ -24,7 +24,7 @@
 // else is exactly the inputs the python renderers pass — no more.
 //
 // REQUIRES SHAPE: the python card declares per-family requires
-// (action_cards/3d/img_to_mesh/py/card.py requires_by_family —
+// (action_cards/3d/img_to_mesh/python/card.py requires_by_family —
 // trellis2-native→comfyui-core-trellis2, pixal3d→
 // comfyui-core-trellis2+ComfyUI-MoGe, transfer_rig→
 // melite-autorig-nodes; card-level requires is EMPTY). Card-level

@@ -16,7 +16,7 @@ docs/design/image-edit-surface-standard.md.
 Operator order, verbatim: every card family ships the 'default'
 recipe — always — and the Recipe rail renders ABOVE the Model row.
 
-- `py/melite_models/grammar.py`: canonical `DEFAULT_RECIPE`
+- `python/melite_models/grammar.py`: canonical `DEFAULT_RECIPE`
   (Variant id=default, group=Recipe, patch-only, defaults={}) +
   `RECIPE_GROUP` (landing default='default'). The metaclass appends
   both to EVERY family (variants LAST — resolve() owns variants[0];
@@ -26,7 +26,7 @@ recipe — always — and the Recipe rail renders ABOVE the Model row.
 - krea-2's family-owned Recipe group (landing realism) refused under
   the new law and was removed — realism stays as an OPT-IN extra;
   a fresh card lands on Default (no LoRA stamp).
-- `py/editor_forms.py`: each group's default row serves first within
+- `python/editor_forms.py`: each group's default row serves first within
   its group run (display order only; tuple order untouched).
 Mode for THIS file: SURGICAL patch (NOT parity-pinned) — only
 the default recipe row (inserted head of the Recipe run, exact live

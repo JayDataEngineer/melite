@@ -30,7 +30,7 @@ Laws kept:
 - PLUGIN ARCHITECTURE LAW: this module is engine-owned; the gateway
   knows nothing about ComfyUI. `report` is a GENERIC contract.
 
-Gateway ABI (what py/plugins.py executes):
+Gateway ABI (what python/plugins.py executes):
     async execute(node, run_dir, inputs, stop_event, report=None) -> dict
     async stop(params, run_dir)
 

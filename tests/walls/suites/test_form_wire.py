@@ -15,7 +15,7 @@ matches — and answered HTTP 200 with the hollow _MINIMAL_LANE_SPEC
 schema_groups). The card modal rendered the Model zone and nothing
 else. The universal action form had nothing to render.
 
-The gate under test (py/form_wire.py + editor_forms.form_spec):
+The gate under test (python/form_wire.py + editor_forms.form_spec):
   * every 200 is CONSTRUCTED as a frozen FormSpecRow — model, form,
     service, label, genre, fields, schema_groups, features, defaults,
     variants REQUIRED (packages/web-kit/contracts declares the same);
@@ -149,7 +149,7 @@ def test_variant_routes_validate_too() -> None:
 # ── E. structure pin: the hollow literal is gone from the route ────
 
 def test_no_bare_minimal_literal_on_the_serving_path() -> None:
-    src = (REPO / "py" / "editor_forms.py").read_text(encoding="utf-8")
+    src = (REPO / "python" / "editor_forms.py").read_text(encoding="utf-8")
     assert "dict(_MINIMAL_LANE_SPEC)" not in src
     # the registry resolution precedes the probe CALL inside form_spec
     # (index the call site marker, not the def line)

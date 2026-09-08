@@ -1,4 +1,4 @@
-"""The flow declaration layer (py/flow.py + flows/*/) — PYTHON SHAPE
+"""The flow declaration layer (python/flow.py + flows/*/) — PYTHON SHAPE
 LAW pins: validation AT CONSTRUCTION, structural edges, declarer-wins
 loading, and the {flow} door's refusal contract (QUEUE LANE LAW).
 No GPU, no network — the schema is the wall. Design record:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """tools/gen_api_docs.py — generate the gateway API surface docs FROM
-the route table (the wire SSOT in py/gateway.py).
+the route table (the wire SSOT in python/gateway.py).
 
 Emits:
   docs/gateway/endpoints.md   — the human wire table (grouped)
@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import gateway  # noqa: E402  (stdlib only; the table imports clean)
 
@@ -33,7 +33,7 @@ SPEC_PATH = REPO / "docs" / "gateway" / "openapi.yaml"
 
 INTRO = """# Gateway endpoints — the LIVE wire table
 
-GENERATED from the route table in `py/gateway.py` (`ROUTES`) by
+GENERATED from the route table in `python/gateway.py` (`ROUTES`) by
 `tools/gen_api_docs.py` — edit the table, not this file. The wall
 `tests/walls/suites/test_api_doc_parity.py` refuses drift between the
 table, this page, and `openapi.yaml`.
@@ -123,7 +123,7 @@ def _spec_path(row: gateway.Route) -> tuple[str, list[dict[str, str | bool | dic
 
 def gen_spec() -> str:
     lines = [
-        "# GENERATED from py/gateway.py ROUTES by tools/gen_api_docs.py —",
+        "# GENERATED from python/gateway.py ROUTES by tools/gen_api_docs.py —",
         "# edit the table, not this file. Paths + parameters only:",
         "# response bodies are pinned by tests/golden_http/ (the wire",
         "# contract's byte authority), so this spec carries no schemas.",

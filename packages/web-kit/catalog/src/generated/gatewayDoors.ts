@@ -1,4 +1,4 @@
-// GENERATED from py/gateway.py ROUTES (the wire SSOT) by
+// GENERATED from python/gateway.py ROUTES (the wire SSOT) by
 // tools/gen_gateway_doors.py — DO NOT EDIT. Regenerate after every
 // route change; tests/walls/suites/test_gateway_doors.py refuses
 // staleness.

@@ -12,7 +12,7 @@
 // manage.dispatch in a base-env python and passes [code, rep] back.
 // This module maps envelope shapes and refusal texts only.
 //
-// WHAT EACH ARM MIRRORS (line-cited against py/gateway.py):
+// WHAT EACH ARM MIRRORS (line-cited against python/gateway.py):
 //   POSER (_h_poser_bridge, 3801-3853):
 //   - target resolution (3806-3822): the ONE url-bearing engine in
 //     inference.config.json (engines.<name>.url — QUEUE LANE LAW,
@@ -73,8 +73,8 @@
 //     join semantics); missing → the byte-identical 503 (3944-3948).
 //   - manage source dir: <repo>/py (py str(REPO/"py"), 3927/3942),
 //     resolved against the same repo root; when MELITE_REPO_ROOT
-//     points at a fixture tree without py/, the file-anchored repo
-//     py/ is appended as fallback (production: identical single dir;
+//     points at a fixture tree without python/, the file-anchored repo
+//     python/ is appended as fallback (production: identical single dir;
 //     the manage SOURCE is product code, never a fixture).
 //   - stdin (3950-3952): py feeds json.dumps(body_json) — the parsed
 //     doc re-serialized. This door feeds the RAW request bytes (the
@@ -451,7 +451,7 @@ export function resolveManagePython(repoRoot: string): string {
 
 /** Manage source dirs for sys.path (py str(REPO/"py"), 3927/3942):
  *  <repo>/py first when present (the MELITE_REPO_ROOT tree), always
- *  backed by the file-anchored product py/ (the manage SOURCE is
+ *  backed by the file-anchored product python/ (the manage SOURCE is
  *  product code, never a wall fixture). */
 export function managePyDirs(repoRoot: string): string[] {
   const dirs: string[] = [];

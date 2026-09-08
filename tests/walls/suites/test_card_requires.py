@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Tests for py/card_requires.py — card extension requirement validation."""
+"""Tests for python/card_requires.py — card extension requirement validation."""
 
 import sys
 from pathlib import Path
 
-from _anchor import REPO  # noqa: F401 — owns the py/ path insert
+from _anchor import REPO  # noqa: F401 — owns the python/ path insert
 from card_requires import check_card_requires, EXTENSION_NODE_TYPES
 
 
@@ -133,7 +133,7 @@ discover = set()
 for _pat in ("engines/*/cards/*/card.py",
                "engines/*/action_cards/*/card.py",
                "engines/*/action_cards/*/*/card.py",
-               "engines/*/action_cards/*/*/py/card.py"):
+               "engines/*/action_cards/*/*/python/card.py"):
     discover |= set((REPO / "packages").glob(_pat))
 for _cpy in sorted(discover):
     try:

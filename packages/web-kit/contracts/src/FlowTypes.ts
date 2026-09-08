@@ -139,7 +139,7 @@ export interface BackendDraft {
   flow?: InlineFlowBody
 }
 
-/** One typed edge row of an inline flow (py/flow.py flow_from_body
+/** One typed edge row of an inline flow (python/flow.py flow_from_body
  * contract): an initial-pool key, or an upstream stage output. */
 export type InlineFlowEdge = { initial: string } | { stage: string; output: string }
 
@@ -158,7 +158,7 @@ export interface InlineFlowStage {
 
 /** The agent-compiled multi-step pipeline as the gateway accepts it
  * (``{flow_inline: ...}`` at /v1/flows/start and /v1/flows/validate —
- * py/flow.py ``flow_from_body``). */
+ * python/flow.py ``flow_from_body``). */
 export interface InlineFlowBody {
   id: string
   description?: string

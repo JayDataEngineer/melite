@@ -13,7 +13,7 @@ Every suite lives in a folder for its plane — nothing piles up at
 the root:
 
     tests/
-      conftest.py                root: repo fixture + the ONE py/ sys.path insert
+      conftest.py                root: repo fixture + the ONE python/ sys.path insert
       _bootstrap.py              shared test plumbing: REPO, free_port,
                                   boot_scratch_gateway(), reap_gateway() —
                                   the only gateway-boot implementation
@@ -63,7 +63,7 @@ the root:
 ## Conventions
 
 * unit tests take fixtures (tmp_path, make_run); no per-file sys.path
-  rituals -- the root conftest owns the py/ path. Script-world suites
+  rituals -- the root conftest owns the python/ path. Script-world suites
   (walls/suites) take `from _anchor import REPO` — the same single
   anchor for their world. Nobody writes parents[3] chains.
 * a test that boots a gateway uses boot_scratch_gateway()/reap_gateway
@@ -86,14 +86,14 @@ The routes suites hit 127.0.0.1:33081 (TEST_GATEWAY_BASE overrides).
 Boot:
 
     pkill -f "gateway.py 33081"   # operator only
-    cd <repo> && setsid /usr/bin/python3 py/gateway.py 33081 \
+    cd <repo> && setsid /usr/bin/python3 python/gateway.py 33081 \
       >> data/gateway.log 2>&1 < /dev/null &
 
 ## The laws the tests pin
 
 * PYTHON SHAPE LAW -- frozen rows, closed enums (unit/runtime/test_asset_ledger)
 * RESILIENCE LAW -- indexing never raises (unit/runtime/test_asset_ledger)
-* PLUGIN ARCHITECTURE -- py/ is generic; plugins independent (unit/
+* PLUGIN ARCHITECTURE -- python/ is generic; plugins independent (unit/
   estate/test_architectural_contracts)
 * EXTENSION LAW -- vendor packs isolated, references study-only (same)
 * PROVISIONING LAW -- /v1/manage is the ONE door (routes/control/
@@ -107,7 +107,7 @@ Boot:
 * Secrets safety -- llm_keystore cannot be committed (unit/estate/
   test_workspace_laws)
 * REGISTRY HONESTY -- every walls suite is run by something and every
-  gateway-imported py/ module has a clean-import pin; plugin
+  gateway-imported python/ module has a clean-import pin; plugin
   declaration files expose exactly the ABI (walls/test_registry.py +
   unit/packages/test_surface_registry.py; full record in
   docs/audits/fixture-audit.md)

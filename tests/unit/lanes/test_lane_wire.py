@@ -3,7 +3,7 @@
 The run_wire/form_wire precedent applied to the last unvalidated
 serving family (2026-09-05): every row /v1/lanes, /v1/card-tools,
 /v1/skills, /v1/skills/<id>, and /v1/cards/<lane>/bundle serves is a
-frozen py/lane_wire.py row. This suite pins:
+frozen python/lane_wire.py row. This suite pins:
 
   * shape refusals happen AT CONSTRUCTION (PYTHON SHAPE LAW): an
     empty name, a zero version, a dead rider key, a skill row scoped

@@ -32,7 +32,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import gateway as gw_mod  # noqa: E402
 from flow_graph import FlowGraph, NodeRow  # noqa: E402
@@ -206,6 +206,6 @@ def test_orphan_record_refuses(scratch: Path) -> None:
 
 
 def test_both_harvests_stamp_result_outputs() -> None:
-    src = (REPO / "py" / "gateway.py").read_text()
+    src = (REPO / "python" / "gateway.py").read_text()
     assert src.count('stage["result_outputs"]') >= 2
     assert "resumed_from_stage" in src

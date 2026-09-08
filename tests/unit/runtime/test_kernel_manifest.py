@@ -4,7 +4,7 @@ every native codebase (design record docs/design/one-contract-compose.md
 
 Three layers pinned:
 
-  CONTRACT (py/kernel_manifest.py — PYTHON SHAPE LAW rows):
+  CONTRACT (python/kernel_manifest.py — PYTHON SHAPE LAW rows):
     * closed enums; all-or-nothing artifacts; frozen rows;
       exec/subprocess coherence + card-lattice membership +
       engine match, all AT CONSTRUCTION
@@ -16,7 +16,7 @@ Three layers pinned:
       full knobs AND omitted knobs (schema defaults)
     * binary search order == resolve_cli (env → runtime → vendor)
 
-  GENERIC ENGINE (py/kernel_exec.py — mechanics, no lane knowledge):
+  GENERIC ENGINE (python/kernel_exec.py — mechanics, no lane knowledge):
     * success harvest (channels + artifacts), rc!=0 stderr capture,
       missing-output refusal, timeout kill, mid-run stop kill,
       missing-binary loud dict, unknown-spell loud dict,
@@ -46,7 +46,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import plugins  # noqa: E402
 from flow_graph import NodeRow  # noqa: E402
@@ -114,7 +114,7 @@ def test_resolve_spell() -> None:
 # the deleted resolve_cli — the argv truth they pinned now lives in
 # the TS literal + the golden
 # (tests/golden_cordis/mesh_quad-remesh_default.json), and the
-# binary requirement lives in py/card_requires.py
+# binary requirement lives in python/card_requires.py
 # SYSTEM_BINARY_REQUIRES (pinned hermetically by test_card_requires
 # T12). The surviving subprocess lanes pin their own parity in
 # test_kernel_manifest_audio.py / test_kernel_manifest_forge.py.

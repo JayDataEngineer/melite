@@ -28,7 +28,7 @@ from _anchor import REPO
 # Resolved input pools are JSON values (annotations only).
 type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
 
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import flow_graph
 import gateway as gw_mod

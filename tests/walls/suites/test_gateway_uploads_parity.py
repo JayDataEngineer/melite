@@ -3,7 +3,7 @@
 
 Proves the TypeScript write door (packages/gateway/src/doors/uploads.ts
 via ctx.ts dispatch) answers byte-identical to the py gateway
-(py/gateway.py _h_uploads, 3734-3768; strict body 4335-4340; R4.2
+(python/gateway.py _h_uploads, 3734-3768; strict body 4335-4340; R4.2
 normalization 4353-4355; auth gate _adapt 2607-2619):
 
   small-file byte-equal round-trip (response shape {path, bytes} +
@@ -53,7 +53,7 @@ import urllib.request
 from _anchor import REPO
 
 sys.dont_write_bytecode = True
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import gateway as gwmod  # noqa: E402
 from gateway import route as py_route  # noqa: E402

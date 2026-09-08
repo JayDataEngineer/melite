@@ -56,7 +56,7 @@ def _anny_params() -> type[object]:
         "_anny_schema",
         os.path.join(
             REPO,
-            "packages/engines/comfyui/action_cards/3d/anny/py/schema.py",
+            "packages/engines/comfyui/action_cards/3d/anny/python/schema.py",
         ),
     )
     mod = importlib.util.module_from_spec(spec)

@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 from melite_cards import scan_engine_cards  # noqa: E402
 from melite_cards.dsl import _num_or_str, _parse_options_str  # noqa: E402

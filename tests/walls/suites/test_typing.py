@@ -31,12 +31,12 @@ def check(name: str, ok: bool, detail: str = "") -> None:
 # ── the ratchet: only grows ─────────────────────────────────────────
 TARGETS = [
     # THE graph contract (compose arms ↔ gateway core)
-    "py/flow_graph.py",
+    "python/flow_graph.py",
     # the lane-disclosure wire contract (frozen rows, fully annotated
     # at birth, 2026-09-05)
-    "py/lane_wire.py",
+    "python/lane_wire.py",
     # THE root config schema (pydantic flip 2026-09-05)
-    "py/estate_config.py",
+    "python/estate_config.py",
     # (2026-09-07, render-plane retirement b324c480) the co_script
     # skeleton + h3 arm targets are deleted with the python render
     # plane; the TS plane is erasable-syntax (no mypy surface).

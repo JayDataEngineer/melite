@@ -27,7 +27,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 # Schema documents are JSON (no future-import here — old-style alias).
 JsonValue = dict[str, "JsonValue"] | list["JsonValue"] | str | int | float | bool | None
@@ -41,7 +41,7 @@ CARDS = SNAP["cards"]
 ROWS = {r.card_id: r for r in sp.REGISTRY.rows}
 
 # DECLARATIONS-PLANE STROKE (2026-09-07): the schemaless class is
-# the REGISTRY's frozenset (py/stage_params._CARDS_WITHOUT_SCHEMA —
+# the REGISTRY's frozenset (python/stage_params._CARDS_WITHOUT_SCHEMA —
 # STAGE 4 dropped the 16 comfyui schema.py rows, P32 added quad as
 # the 17th). The wall cross-checks the SERVED /v1/forms view against
 # the registry SSOT — serve and registry can never drift apart.

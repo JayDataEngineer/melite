@@ -18,7 +18,7 @@ to data/runtime/<engine>/ (never committed); execute resolves env
 override → runtime build → loud 4xx. Weights are never vendored.
 
 Discovery note: the loader's category-subdir recursion is the one core
-change this category needs (py/plugins.py `_iter_plugin_dirs` is depth-2
+change this category needs (python/plugins.py `_iter_plugin_dirs` is depth-2
 today). Until it lands, this README is the only resident — which the scan
 ignores harmlessly.
 

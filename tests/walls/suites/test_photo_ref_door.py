@@ -8,7 +8,7 @@ The run-9e8fd6b813a2 failure proved BOTH gaps live:
 1. THE DOOR — the start/validate doors compiled the graph shape but
    never checked the photo initial: a browser-local data: URL or a
    path with no file on disk queued a run that could only die in
-   the engine. Now EstatePhotoRef (py/melite_models/refs.py) guards
+   the engine. Now EstatePhotoRef (python/melite_models/refs.py) guards
    the photo initial on BOTH photo flows (initial_validators — the
    AnnyBakeParams door pattern): browser-local, non-image, and
    missing-file photos 4xx BEFORE any run registers.
@@ -74,7 +74,7 @@ def test_wire_string_accepted_dict_accepted_garbage_refused(
     ("data:image/png;base64,AAAA", "browser-local"),
     ("blob:http://x/1", "browser-local"),
     ("data/input/x.txt", "not a stageable image"),
-    ("py/gateway.py", "not a stageable image"),
+    ("python/gateway.py", "not a stageable image"),
 ])
 def test_door_refusal_matrix(bad: str, needle: str,
                              monkeypatch: pytest.MonkeyPatch,

@@ -16,7 +16,7 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__)))))
-sys.path.insert(0, os.path.join(REPO, "py"))
+sys.path.insert(0, os.path.join(REPO, "python"))
 sys.path.insert(0, REPO)
 
 from melite_cards import ActionCard  # noqa: E402
@@ -36,7 +36,7 @@ def _load_cards() -> "dict[str, dict[str, object]]":
     cards = {}
     for root in ROOTS:
         for path in sorted(glob.glob(
-                os.path.join(REPO, root, "*", "*", "py", "card.py"))):
+                os.path.join(REPO, root, "*", "*", "python", "card.py"))):
             alias = "sbw_" + path.replace("/", "_")
             spec = importlib.util.spec_from_file_location(alias, path)
             mod = importlib.util.module_from_spec(spec)

@@ -9,7 +9,7 @@
 [project]
 name = "melite-gateway"
 version = "0.1.0"
-description = "inference.cpp estate gateway (py/ + plugin compose)"
+description = "inference.cpp estate gateway (python/ + plugin compose)"
 requires-python = ">=3.12"
 dependencies = [
     "pydantic>=2.13",

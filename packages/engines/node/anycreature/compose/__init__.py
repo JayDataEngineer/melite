@@ -5,7 +5,7 @@ this engine produces a glb mesh. Flows that omit `outputs` on a
 stage using this engine get the default Kind.mesh output named
 "default"; the Flow validator type-checks edges at construction.
 
-Contract (py/plugins.py — the BUS contract every plugin speaks):
+Contract (python/plugins.py — the BUS contract every plugin speaks):
     card_compose(body, model, run_id, graph)
         -> (rc, new_graph, extra_dict, error_str)
     execute(node, run_dir, inputs, stop_event, report=None) -> dict
@@ -14,8 +14,8 @@ Contract (py/plugins.py — the BUS contract every plugin speaks):
 
 
 Dispatch is DATA, THE CARD PATTERN (golden base: h3-timeline): the
-card owns its arm — action_cards/<genre>/<card>/py/compose.py — and
-this package loads the card's py/ as a PACKAGE (relative imports
+card owns its arm — action_cards/<genre>/<card>/python/compose.py — and
+this package loads the card's python/ as a PACKAGE (relative imports
 resolve; same mechanics as comfyui's _load_lane_package) and calls
 `compose(body, model, run_id)`. The arm returns a Skeleton STRUCTURE
 (python hands python structures — rung 5); the bus re-validates it
@@ -43,7 +43,7 @@ from types import ModuleType
 _COMPOSE_DIR = Path(__file__).resolve().parent
 _PLUGIN_ROOT = _COMPOSE_DIR.parent
 # plugin root = <repo>/packages/engines/node/anycreature → repo is parents[3]
-_PY = str(_PLUGIN_ROOT.parents[3] / "py")
+_PY = str(_PLUGIN_ROOT.parents[3] / "python")
 if _PY not in sys.path:
     sys.path.insert(0, _PY)
 
@@ -53,7 +53,7 @@ from flow_graph import FlowGraph  # noqa: E402,F401
 type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
 
 # engine-owned mapping: card id → the action_cards/<genre>/<dir> whose
-# py/ package owns the arm (compose dispatch is engine knowledge)
+# python/ package owns the arm (compose dispatch is engine knowledge)
 _CARD_DIR_BY_CARD = {
     "forge": "3d/forge",
 }
@@ -67,7 +67,7 @@ def _load_card_package(card_dir: str) -> ModuleType:
     relative imports inside the arm resolve)."""
     if _PKG_ALIAS in sys.modules:
         return sys.modules[_PKG_ALIAS]
-    pkg_dir = _PLUGIN_ROOT / "action_cards" / card_dir / "py"
+    pkg_dir = _PLUGIN_ROOT / "action_cards" / card_dir / "python"
     spec = importlib.util.spec_from_file_location(
         _PKG_ALIAS, pkg_dir / "__init__.py",
         submodule_search_locations=[str(pkg_dir)])
@@ -129,7 +129,7 @@ def _card_dir(model: str) -> str:
 # execute — PORT 2 (2026-09-06): the manifest port. This shim keeps
 # ONLY lane translation (the input-presence gate, the cli.js +
 # interpreter resolution, the spec file write); spawn/timeout/stop/
-# harvest ride the generic engine (py/kernel_exec.py) driven by
+# harvest ride the generic engine (python/kernel_exec.py) driven by
 # manifest.py data. Normal-path behavior is identical
 # (wall-pinned parity); the stop path is STRICTLY better (killed
 # mid-run, not noticed after).

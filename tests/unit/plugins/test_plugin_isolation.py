@@ -6,11 +6,11 @@ side-effects the import graph. We assert this by importing the
 plugin infrastructure in a fresh subprocess and checking it
 completes cleanly with no stderr noise.
 
-The actual import surface for this estate is py/plugins.py (the
+The actual import surface for this estate is python/plugins.py (the
 plugin discovery broker). The engine plugins themselves are loaded
 by reading engine.yaml and exec()-ing plugin.py at compose time,
 NOT by Python import. So the clean-import assertion lives on
-py/plugins + the gateway-facing model catalog (py/catalog.py).
+python/plugins + the gateway-facing model catalog (python/catalog.py).
 
 If a plugin DID introduce an import-time side effect (e.g., import
 requests at module top-level, or a module-level network call), the
@@ -30,27 +30,27 @@ REPO = Path(__file__).resolve().parents[3]
 
 
 IMPORT_SURFACES = [
-    "packages",                 # py/plugins.py: the plugin discovery broker
-    "catalog",                 # py/catalog.py: model catalog scanner
-    "lane_disclosure",          # py/lane_disclosure.py: lane listing
-    "asset_ledger",            # py/asset_ledger.py: the asset-ledger rung
+    "packages",                 # python/plugins.py: the plugin discovery broker
+    "catalog",                 # python/catalog.py: model catalog scanner
+    "lane_disclosure",          # python/lane_disclosure.py: lane listing
+    "asset_ledger",            # python/asset_ledger.py: the asset-ledger rung
     # 2026-09-04: the surface-registry meta-test (test_surface_registry.py)
     # caught these five gateway-imported modules running unpinned —
-    # every py/ sibling py/gateway.py imports must have a clean-import
+    # every python/ sibling python/gateway.py imports must have a clean-import
     # pin here or a documented exemption there.
-    "editor_forms",            # py/editor_forms.py: editor form discovery
-    "editor_runs",             # py/editor_runs.py: editor run routing
-    "flow",                    # py/flow.py: flows/<name>/flow.py resolver
-    "manage",                  # py/manage.py: management-plane door
-    "flow_graph",          # py/flow_graph.py: run graph emitter
+    "editor_forms",            # python/editor_forms.py: editor form discovery
+    "editor_runs",             # python/editor_runs.py: editor run routing
+    "flow",                    # python/flow.py: flows/<name>/flow.py resolver
+    "manage",                  # python/manage.py: management-plane door
+    "flow_graph",          # python/flow_graph.py: run graph emitter
     # 2026-09-05: caught by the same meta-test after the estate-config
     # + artifact-ref sweep — gateway imports them; they pin clean.
-    "estate_config",           # py/estate_config.py: deployment config row
-    "artifact_refs",           # py/artifact_refs.py: dangling-ref finder
+    "estate_config",           # python/estate_config.py: deployment config row
+    "artifact_refs",           # python/artifact_refs.py: dangling-ref finder
     # 2026-09-06: the SOMA-skin provisioning rail (model-provision
     # doors, docs/design/model-provision-doors.md) — gateway imports
     # it; it pins clean.
-    "provision_rail",          # py/provision_rail.py: on-demand provision
+    "provision_rail",          # python/provision_rail.py: on-demand provision
 ]
 
 
@@ -59,11 +59,11 @@ def test_clean_import(surface: str) -> None:
     """The import must complete, exit 0, produce no stderr, and
     finish quickly (no hanging network calls)."""
     started = time.monotonic()
-    # py/ scripts are importable as TOP-LEVEL modules (asset_ledger,
-    # plugins, catalog, ...) when py/ itself is on sys.path. py/ is
+    # python/ scripts are importable as TOP-LEVEL modules (asset_ledger,
+    # plugins, catalog, ...) when python/ itself is on sys.path. python/ is
     # NOT a package (no __init__.py); the gateway does the same on
     # boot.
-    code = "import sys; sys.path.insert(0, 'py'); import " + surface
+    code = "import sys; sys.path.insert(0, 'python'); import " + surface
     proc = subprocess.run(
         [sys.executable, "-c", code],
         cwd=REPO, capture_output=True, text=True, timeout=10,
@@ -84,9 +84,9 @@ def test_clean_import(surface: str) -> None:
 
 
 # Triple-quoted with REAL newlines. The Python source the
-# subprocess runs (after sys.path is extended with the py/ dir).
+# subprocess runs (after sys.path is extended with the python/ dir).
 DISCOVERY_CODE = """import sys
-sys.path.insert(0, 'py')
+sys.path.insert(0, 'python')
 from plugins import iter_plugin_dirs_under
 from pathlib import Path
 n = sum(1 for _ in iter_plugin_dirs_under(Path('plugins')))

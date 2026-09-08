@@ -22,7 +22,7 @@ cluttering the main inputs". Three deliberate changes:
 
 - `fields[].default` — `reference_images` now serves `default: []`
   (was absent). The Field DSL's `default` accepts lists
-  (`py/melite_cards/dsl.py` — `_num_or_str` passes sequences
+  (`python/melite_cards/dsl.py` — `_num_or_str` passes sequences
   verbatim, never str()-collapsed). image2/image3 serve `default: ""`
   on the FAMILY CONTRACT only (the form-spec's flat list drops
   empty-string defaults by its own convention — `!= ""` guard).
@@ -60,10 +60,10 @@ an addable tile kind. Four deliberate hunks, all class-driven:
   (the group still exists for the flat lane wire); only its
   membership grows by the bag anchor.
 
-Source: `py/melite_cards/dsl.py` (the `Mask` field type),
+Source: `python/melite_cards/dsl.py` (the `Mask` field type),
 `packages/engines/comfyui/models/image/qwen-img-edit-2511/mods/
 {loras,lanpaint}.py` + `model.py` (the boarded packs),
-`packages/engines/comfyui/action_cards/image/image-edit/py/
+`packages/engines/comfyui/action_cards/image/image-edit/python/
 {card,schema,compose,renderer}.py` (admission + the runtime-catalog
 door + the LoraLoaderModelOnly stack). Regenerated from the class
 fragment (`field_spec` projected through the `FormFieldRow` atom —
@@ -90,7 +90,7 @@ modifiers hunk.
 Operator order, verbatim: every card family ships the 'default'
 recipe — always — and the Recipe rail renders ABOVE the Model row.
 
-- `py/melite_models/grammar.py`: canonical `DEFAULT_RECIPE`
+- `python/melite_models/grammar.py`: canonical `DEFAULT_RECIPE`
   (Variant id=default, group=Recipe, patch-only, defaults={}) +
   `RECIPE_GROUP` (landing default='default'). The metaclass appends
   both to EVERY family (variants LAST — resolve() owns variants[0];
@@ -100,7 +100,7 @@ recipe — always — and the Recipe rail renders ABOVE the Model row.
 - krea-2's family-owned Recipe group (landing realism) refused under
   the new law and was removed — realism stays as an OPT-IN extra;
   a fresh card lands on Default (no LoRA stamp).
-- `py/editor_forms.py`: each group's default row serves first within
+- `python/editor_forms.py`: each group's default row serves first within
   its group run (display order only; tuple order untouched).
 Mode for THIS file: SURGICAL patch (NOT parity-pinned) — only
 the default recipe row (inserted head of the Recipe run, exact live

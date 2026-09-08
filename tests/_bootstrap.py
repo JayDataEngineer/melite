@@ -2,7 +2,7 @@
 scratch-gateway mechanics (fixture audit 2026-09-04, F6/F7).
 
 Importable from every pytest context: the root conftest
-(tests/conftest.py) puts this directory on sys.path alongside py/.
+(tests/conftest.py) puts this directory on sys.path alongside python/.
 The script-style walls suites reach it through the shim
 tests/walls/suites/_anchor.py, which owns the script world's path
 inserts. Nothing self-rolls a REPO anchor or a gateway boot again.
@@ -45,7 +45,7 @@ def _serving(port: int, path: str, timeout: float = 2.0) -> bool:
 def boot_scratch_gateway(wait_path: str = "/v1/health", python: str | None = None,
                          tries: int = 150, sleep: float = 0.2,
                          env: dict[str, str] | None = None) -> tuple[int, subprocess.Popen[bytes]]:
-    """Boot py/gateway.py on a scratch port; poll until wait_path
+    """Boot python/gateway.py on a scratch port; poll until wait_path
     serves. Returns (port, proc).
 
     CALLER OWNS REAPING — reap_gateway(proc). python defaults to
@@ -66,7 +66,7 @@ def boot_scratch_gateway(wait_path: str = "/v1/health", python: str | None = Non
         root = Path(tempfile.mkdtemp(prefix="melite-scratch-"))
         boot_env["MELITE_STATE_ROOT"] = str(root)
     proc = subprocess.Popen(
-        [python or sys.executable, str(REPO / "py" / "gateway.py"), str(port)],
+        [python or sys.executable, str(REPO / "python" / "gateway.py"), str(port)],
         cwd=str(REPO), env=boot_env,
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         start_new_session=True)

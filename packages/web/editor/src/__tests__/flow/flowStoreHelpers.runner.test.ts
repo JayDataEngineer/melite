@@ -1,7 +1,7 @@
 // flowStoreHelpers.runner.test.ts — pin the declarative runner
 // resolution (2026-09-05). The resolver MUST be data-driven: the
 // kind's `runner` flag + the stage's own `flowName`. No hardcoded
-// kind-name branches in the dispatch (the SSOT is py/card_kinds.py).
+// kind-name branches in the dispatch (the SSOT is python/card_kinds.py).
 //
 // setup.ts registers the MELITE_CORE_KINDS fixture into the kinds
 // registry before this suite runs, so resolveStageRunner sees real
@@ -69,14 +69,14 @@ describe("resolveStageRunner — declarative dispatch contract", () => {
  // (2026-09-05) the "unknown runner" test was removed when the
  // runner vocabulary tightened to a closed union (KindRunner =
  // "" | "input"). An unknown runner is now a CONSTRUCTION
- // refusal — the server's KindRunner enum (py/card_kinds) and the
+ // refusal — the server's KindRunner enum (python/card_kinds) and the
  // client's KindRunner union both reject it at the source (a
  // typo refuses at registerCardKind / pydantic), so the
  // resolver's defense is unreachable from typed code. The
  // closed-vocab invariant is the test.
 })
 
-describe("kinds registry lockstep (client mirror of py/card_kinds.py)", () => {
+describe("kinds registry lockstep (client mirror of python/card_kinds.py)", () => {
  it("every first-party kind is registered (fixture fed setup.ts)", () => {
   for (const k of ["generation", "chain", "card-compose", "input",
        "preview", "body", "compound", "studio-link"]) {

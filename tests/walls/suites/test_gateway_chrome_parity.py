@@ -20,7 +20,7 @@ plus the py unknown-path 404 shape and the R4.2 4xx-code
 normalization fallback (pinned at the ctx.ts unit level: no J-door
 returns 4xx over HTTP, so the fallback has no HTTP exercise — the
 unit asserts add/preserve/ignore semantics mirroring
-py/gateway.py:4347-4356).
+python/gateway.py:4347-4356).
 
 Run: python3 tests/walls/suites/test_gateway_chrome_parity.py
 """
@@ -39,7 +39,7 @@ import urllib.request
 from _anchor import REPO
 
 sys.dont_write_bytecode = True
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import catalog  # noqa: F401  (derived-door rail; import proves availability)
 import editor_runs  # noqa: F401  (bodies ride this module; see below)

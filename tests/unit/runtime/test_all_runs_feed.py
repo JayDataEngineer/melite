@@ -28,7 +28,7 @@ from starlette.routing import WebSocketRoute as WSRoute
 from starlette.testclient import TestClient
 
 REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import gateway as gw_mod  # noqa: E402
 

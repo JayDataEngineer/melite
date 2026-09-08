@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 
 def _artifact_basename(artifact) -> str:
@@ -126,7 +126,7 @@ def main() -> None:
 
     models = scan_engine_models(str(REPO))
 
-    # EXTENSION-LAW node map (authored by py/card_requires.py during
+    # EXTENSION-LAW node map (authored by python/card_requires.py during
     # the migration; the TS gate reads it as data).
     sys.path.insert(0, str(REPO / "packages" / "engines" / "comfyui"))
     from card_requires import EXTENSION_NODE_TYPES

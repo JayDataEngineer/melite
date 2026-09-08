@@ -1,5 +1,5 @@
 // uploads.ts — the POST /v1/uploads write door (TS port of
-// py/gateway.py _h_uploads, gateway.py:3734-3768).
+// python/gateway.py _h_uploads, gateway.py:3734-3768).
 //
 // THE WIRE (web-plane caller: packages/web-kit/catalog/src/uploadToEstate.ts —
 // File → FileReader data: URL → fetch("/v1/uploads",

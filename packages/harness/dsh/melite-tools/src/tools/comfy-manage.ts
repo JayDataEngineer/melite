@@ -3,7 +3,7 @@
  *
  * Wraps the estate's management plane — comfy-mcp (comfy-cli wrapper) +
  * comfyui-manager (security=medium, confirm-gated) + comfy-cli — behind
- * ONE action-dispatch tool. The SSOT is py/manage.py; this tool is its
+ * ONE action-dispatch tool. The SSOT is python/manage.py; this tool is its
  * AI door (POST /v1/manage). The manual door is
  * `uv run python tools/provision.py manage <action>`.
  *

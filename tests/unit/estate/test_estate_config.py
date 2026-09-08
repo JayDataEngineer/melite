@@ -1,5 +1,5 @@
 """THE ROOT CONFIG TEST SUITE (operator order 2026-09-04).
-Tests the ONE parser (py/estate_config.py) and the endpoint sync
+Tests the ONE parser (python/estate_config.py) and the endpoint sync
 (provision paths) — the two layers that make inference.config.json
 the SSOT for the whole estate.
 
@@ -19,7 +19,7 @@ import pytest
 REPO = Path(__file__).resolve().parents[3]
 CONFIG = REPO / "inference.config.json"
 ENDPOINT = REPO / "packages" / "engines" / "comfyui" / "data" / "comfyui_endpoint.json"
-# py/ is on sys.path via the root conftest (tests/conftest.py) — no
+# python/ is on sys.path via the root conftest (tests/conftest.py) — no
 # per-file insert (fixture audit 2026-09-04, F4).
 import estate_config  # noqa: E402
 

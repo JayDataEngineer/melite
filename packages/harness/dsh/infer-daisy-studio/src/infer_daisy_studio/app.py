@@ -7,7 +7,7 @@ Chat wraps the deepseek_harness Python package in-process (chat.py).
 Gallery grids runs with status badges + thumbnails.
 
 INVARIANTS: gateway_client.py owns endpoint paths; no hardcoded gateway
-endpoint; 4xx surfaces VERBATIM; no py/ or packages/engines imports here.
+endpoint; 4xx surfaces VERBATIM; no python/ or packages/engines imports here.
 """
 
 from __future__ import annotations

@@ -4,7 +4,7 @@
  * Flow: sidebar tile click → card lands on canvas → click tile → detail expands.
  *
  * The form fields ride the kinds lane: GET /v1/kinds must register
- * "generation" with formSpec:true (py/card_kinds.py's TABLE — restored
+ * "generation" with formSpec:true (python/card_kinds.py's TABLE — restored
  * 2026-09-03 after the packages/core deletion darkened the lane) for the
  * spec contract store to fetch the form-spec and the ParamGrid to render.
  *

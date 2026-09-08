@@ -331,7 +331,7 @@ class TestRunLifecycle:
     def test_run_card_link_malformed_refused(self, gateway_up: bool) -> None:
         """A malformed draft_id MUST 4xx before any run registers.
 
-        QUEUE LANE LAW: validation at construction. py/editor_runs
+        QUEUE LANE LAW: validation at construction. python/editor_runs
         .py:1080 draft_id_ok() is the SSOT — 96 char cap, [A-Za-z0-9_-].
         A bad wire must NEVER register, never write a sidecar.
         """

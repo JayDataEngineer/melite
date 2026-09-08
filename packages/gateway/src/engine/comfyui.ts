@@ -17,7 +17,7 @@
 //     / "merged run exceeded" texts; per-stage harvest into per-stage
 //     sub-dirs with prefix-stripped output keys).
 // doors/flowsRun.ts drives executeFlow (the gateway's pure-comfyui
-// path is the merged one — py/gateway.py _try_merged, 1631-1634).
+// path is the merged one — python/gateway.py _try_merged, 1631-1634).
 //
 // FAITHFUL MIRRORS (line-cited against native.py unless noted):
 //   - endpoint: COMFYUI_URL env (non-empty wins, trailing slashes
@@ -139,7 +139,7 @@ export function resolveRepoRoot(): string {
   if (override !== "") return override;
   const here: string = dirname(fileURLToPath(import.meta.url));
   // ENGINE→src→gateway→plugins→repo (4 hops) — the py hop count
-  // (parent.parent from py/) transcribed literally landed 3 hops at
+  // (parent.parent from python/) transcribed literally landed 3 hops at
   // packages/; caught LIVE by the flip, same class as flowsRun.
   return resolve(here, "..", "..", "..", "..");
 }

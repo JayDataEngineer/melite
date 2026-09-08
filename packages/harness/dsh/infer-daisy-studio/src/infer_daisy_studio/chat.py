@@ -12,7 +12,7 @@ LAW HONOR:
     methods below so the operator surface boots anywhere — rooms
     without the SDK get a disabled-chat banner, never a boot crash
     (RESILIENCE LAW: document the failure, then continue).
-  PLUGIN ARCHITECTURE LAW: this module never imports py/ or
+  PLUGIN ARCHITECTURE LAW: this module never imports python/ or
     packages/engines/* . The gateway owns lanes/cards; the harness
     owns the LLM turn; this module only glues them.
 """

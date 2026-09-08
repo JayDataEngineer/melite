@@ -3,7 +3,7 @@
 ## 2026-09-07 — initial capture (Cordis compose plane, tagger card)
 
 Captured from the PRODUCTION python renderer (`render("florence2_t1",
-doc, Florence2Captioner)`, action_cards/image/tagger/py/renderer.py)
+doc, Florence2Captioner)`, action_cards/image/tagger/python/renderer.py)
 with the _step_doc shape for run_id "testrun": input_image "a.png",
 filename_prefix "testrun/tags", checkpoint
 MiaoshouAI/Florence-2-large-PromptGen-v2.0, caption_task

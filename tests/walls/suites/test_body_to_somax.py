@@ -26,8 +26,8 @@ FLOW_PY = os.path.join(REPO, "flows", "body-to-somax", "flow.py")
 def _flow() -> flow_mod.Flow:
     import sys
 
-    if str(REPO / "py") not in sys.path:
-        sys.path.insert(0, str(REPO / "py"))
+    if str(REPO / "python") not in sys.path:
+        sys.path.insert(0, str(REPO / "python"))
     return flow_mod.load_flow("body-to-somax")
 
 
@@ -140,8 +140,8 @@ class TestTheLiveBridge(unittest.TestCase):
         .glb rides the workflow untouched and the node refuses
         "source_glb not found" (never staged to input/)."""
         import sys
-        if str(REPO / "py") not in sys.path:
-            sys.path.insert(0, str(REPO / "py"))
+        if str(REPO / "python") not in sys.path:
+            sys.path.insert(0, str(REPO / "python"))
         sys.path.insert(
             0, str(REPO / "packages" / "engines" / "comfyui" / "compose"))
         import artifact as _art
@@ -188,7 +188,7 @@ class TestTheAnnyVerb(unittest.TestCase):
 
     def test_verb_posts_the_bridge_flow(self) -> None:
         import sys
-        sys.path.insert(0, str(REPO / "py"))
+        sys.path.insert(0, str(REPO / "python"))
         from melite_cards import SubActionMod
         import importlib.util as _ilu
         path = (REPO / "packages" / "engines" / "comfyui" / "models"

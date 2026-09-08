@@ -42,7 +42,7 @@ def main() -> int:
     sys.path.append(root + "/py")
     sys.path.append(root + "/packages/engines/comfyui/compose")
     arm = load("compose_%s_%s" % (side, card.replace("/", "_")),
-               "%s/packages/engines/comfyui/action_cards/%s/py/compose.py"
+               "%s/packages/engines/comfyui/action_cards/%s/python/compose.py"
                % (root, card))
     if side == "old":
         # the old arms' standalone schema fallback exec's schema.py
@@ -52,7 +52,7 @@ def main() -> int:
         # arms as proper packages, so this never fires live; the
         # harness pre-registers the module to match production.
         load("card_schema_gate",
-             "%s/packages/engines/comfyui/action_cards/%s/py/schema.py"
+             "%s/packages/engines/comfyui/action_cards/%s/python/schema.py"
              % (root, card))
     out = []
     for i, b in enumerate(bodies):

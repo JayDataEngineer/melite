@@ -207,7 +207,7 @@ export function resolveStageRunner(stage: FlowStage):
    refusal: `stage "${stage.title}" is a container (kind=${stage.kind}) and does not run on its own` }
  }
  // Kind-declared runner family (step 3) — the closed vocabulary lives
- // in py/card_kinds.py; the client mirror is the KindEntry.runner.
+ // in python/card_kinds.py; the client mirror is the KindEntry.runner.
  // Today only "input" overrides the default; the closed set is the
  // union of the server SSOT + the resolver's switch below.
  if (def.runner === "input") return { runner: "input" }

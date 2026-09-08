@@ -13,7 +13,7 @@
  * cache, one behavior; the studios import it from here.
  *
  * The /poser prefix reaches the poser pack through the gateway's
- * studio bridge (py/gateway.py — rebuilt 2026-09-05; vite proxies
+ * studio bridge (python/gateway.py — rebuilt 2026-09-05; vite proxies
  * /poser → gateway → the engine endpoint's poser routes).
  */
 import { apiFetch } from "@melite/catalog"

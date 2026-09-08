@@ -4,7 +4,7 @@
 
 Captured from the PRODUCTION python renderer
 (`render("joycaption_t1", doc, JoyCaptioner)`,
-action_cards/image/tagger/py/renderer.py) with the _step_doc shape for
+action_cards/image/tagger/python/renderer.py) with the _step_doc shape for
 run_id "testrun": input_image "a.png", filename_prefix "testrun/tags",
 checkpoint fancyfeast/llama-joycaption-beta-one-hf-llava, caption_type
 Descriptive, caption_length long, extra_option "". memory_mode

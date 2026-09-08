@@ -11,7 +11,7 @@ Pinned (all offline, no GPU, no gateway boot):
   A. run-registry.md — Run requires draft_id, carries skipped_stages,
      has no ticket fields; Gateway owns runs/order/active; the worker
      polls 50 ms with no ticket machinery.
-  B. sidecar.md — no boot_recover_queue anywhere in py/; boot_sweep
+  B. sidecar.md — no boot_recover_queue anywhere in python/; boot_sweep
      settles with queued_lost + a never-executed note; atomic_write
      is tmp+rename (behavioral); the sidecar writer carries draft_id.
   C. ws-mcp.md — both WS routes registered, no SSE/MCP ghost routes;
@@ -44,11 +44,11 @@ from starlette.websockets import WebSocketDisconnect
 
 from _anchor import REPO
 
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import gateway as gw_mod  # noqa: E402
 
-_GW_SRC = REPO / "py" / "gateway.py"
+_GW_SRC = REPO / "python" / "gateway.py"
 _FLOWS_MD = REPO / "docs" / "queue" / "flows.md"
 
 
@@ -57,9 +57,9 @@ def _gw_source() -> str:
 
 
 def _py_tree_hits(needle: str) -> list[str]:
-    """Relative py/ files whose text contains needle (no caches)."""
+    """Relative python/ files whose text contains needle (no caches)."""
     hits: list[str] = []
-    for p in sorted((REPO / "py").rglob("*.py")):
+    for p in sorted((REPO / "python").rglob("*.py")):
         if "__pycache__" in p.parts:
             continue
         if needle in p.read_text(encoding="utf-8", errors="replace"):

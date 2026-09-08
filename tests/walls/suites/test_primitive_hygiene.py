@@ -5,7 +5,7 @@ Two gap classes this stroke paid for, pinned here so they cannot recur:
 1. SHADOW PRIMITIVES (the 2026-09-05 extraction stroke) — RETIRED
    2026-09-07 with the python render plane (commit b324c480): the
    kit (compose/co_script/) and the comfyui lane files it scanned
-   (action_cards/*/*/py/{compose,renderer,schema}.py) are deleted.
+   (action_cards/*/*/python/{compose,renderer,schema}.py) are deleted.
    The TS plane owns that surface now, walled by
    suites/test_cordis_compose.py — the shadow scan is retired, not
    forgotten.
@@ -26,11 +26,11 @@ import os
 
 import pytest
 
-from _anchor import REPO  # tests/ + py/ inserts, owned by the shim
+from _anchor import REPO  # tests/ + python/ inserts, owned by the shim
 
 
 def _py_top_levels() -> set[str]:
-    pydir = os.path.join(REPO, "py")
+    pydir = os.path.join(REPO, "python")
     return {f[:-3] for f in os.listdir(pydir) if f.endswith(".py")}
 
 
@@ -47,7 +47,7 @@ _SETATTR_ALLOWLIST = {
 
 
 def _estate_aliases(tree: ast.Module) -> set[str]:
-    """Local names bound to estate modules (py/ top-levels,
+    """Local names bound to estate modules (python/ top-levels,
     plugins.*) by import statements in this file."""
     tops = _py_top_levels()
     aliases = set()

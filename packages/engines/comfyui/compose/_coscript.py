@@ -47,7 +47,7 @@ JsonDict = dict[str, JsonValue]
 # tree's _routes map so the dirname globs below always receive a real
 # model dir. (2026-09-05: the picker offers these routes and they
 # died at every glob site; resolution at ONE choke point per process
-# — py/plugins.py resolve_model does the same for the gateway door.)
+# — python/plugins.py resolve_model does the same for the gateway door.)
 _ROUTE_FAMILY_CACHE: dict[str, str] = {}
 
 
@@ -66,7 +66,7 @@ def family_id_for(model: str) -> str:
             break
     if not has_dir:
         try:
-            _pyroot = str(REPO / "py")
+            _pyroot = str(REPO / "python")
             if _pyroot not in sys.path:
                 sys.path.insert(0, _pyroot)
             from melite_models import scan_engine_models
@@ -121,11 +121,11 @@ def resolve_mount_input(params: JsonDict, key: str, repo: str | Path, *,
 def load_card_renderer(card_dir: str | Path) -> types.ModuleType | None:
     """Load (and cache) a CARD package's self-registering renderer
     module. THE CARD PATTERN (operator order, 2026-09-03): python
-    code lives in the card's py/ subfolder —
-    action_cards/<genre>/<card>/py/renderer.py — uniform since the
+    code lives in the card's python/ subfolder —
+    action_cards/<genre>/<card>/python/renderer.py — uniform since the
     2026-09-04 structure audit (golden base: h3-timeline, whose
-    chain seam passes the py/ package root itself; both the card
-    dir and its py/ root are accepted here). A ROOT-level
+    chain seam passes the python/ package root itself; both the card
+    dir and its python/ root are accepted here). A ROOT-level
     renderer.py is a LOUD refusal, never a compat fallback (the
     fallback was the wrong-structure camouflage). Returns None when
     the card ships no renderer.
@@ -136,7 +136,7 @@ def load_card_renderer(card_dir: str | Path) -> types.ModuleType | None:
     accepted) cached under TWO keys, imported renderer.py TWICE
     under two aliases, and the second @register raised 'duplicate
     trellis_t1' — solo suites passed, batch order decided who fired
-    first. The key is now the py/ dir that OWNS renderer.py: one
+    first. The key is now the python/ dir that OWNS renderer.py: one
     card, one import, per process, whatever the caller spelled."""
     key = os.path.abspath(str(card_dir))
     if os.path.basename(key) == "py":
@@ -145,18 +145,18 @@ def load_card_renderer(card_dir: str | Path) -> types.ModuleType | None:
         root_renderer = os.path.join(key, os.pardir, "renderer.py")
         cand = os.path.join(key, "renderer.py")
     else:
-        py_key = os.path.join(key, "py")
+        py_key = os.path.join(key, "python")
         root_renderer = os.path.join(key, "renderer.py")
-        cand = os.path.join(key, "py", "renderer.py")
+        cand = os.path.join(key, "python", "renderer.py")
     if os.path.isfile(root_renderer):
         raise ValidationError(
             "%s ships a ROOT renderer.py — python lives in the "
-            "card's py/ subfolder (THE CARD PATTERN, golden base: "
+            "card's python/ subfolder (THE CARD PATTERN, golden base: "
             "action_cards/video/h3-timeline)" % card_dir)
     path = cand if os.path.isfile(cand) else None
     if path is None:
         return None
-    # cross-spelling cache: the py/ dir is the one true key (an
+    # cross-spelling cache: the python/ dir is the one true key (an
     # older entry cached under the card-dir spelling still resolves)
     cached = _MOD_CACHE.get(py_key)
     if cached is not None:

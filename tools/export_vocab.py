@@ -6,12 +6,12 @@ ADDITIVE ONLY: nothing imports the output yet (shadow artifact) — the
 cutover consumers land in later steps behind py==ts parity walls.
 
 SSOT inputs (read-only; never edited here):
-  py/card_kinds.py                  BadgeTone, KindRunner, 8 CardKindRows, kinds_wire
-  py/slot_kinds.py                  FileKind, 17 SlotDecls, undeclared_slots, bindings
-  py/melite_models/grammar.py       Genre, ClipType, LatentNode, Quant, KnobKind, Studio*
-  py/flow.py                        Kind (the closed edge-type vocabulary)
-  py/melite_cards/dsl.py            ActionCard.SIDEBAR_SECTIONS (the sidebar trio gate)
-  py/ui_map.py                      5 seam enums — READ ONLY (sibling MAP stroke owns
+  python/card_kinds.py                  BadgeTone, KindRunner, 8 CardKindRows, kinds_wire
+  python/slot_kinds.py                  FileKind, 17 SlotDecls, undeclared_slots, bindings
+  python/melite_models/grammar.py       Genre, ClipType, LatentNode, Quant, KnobKind, Studio*
+  python/flow.py                        Kind (the closed edge-type vocabulary)
+  python/melite_cards/dsl.py            ActionCard.SIDEBAR_SECTIONS (the sidebar trio gate)
+  python/ui_map.py                      5 seam enums — READ ONLY (sibling MAP stroke owns
                                     packages/web-kit/ui/src/uiMap.generated.ts). Imported solely
                                     to REFUSE a name collision: a vocab union taking
                                     a seam-union name would be a second spelling.
@@ -24,7 +24,7 @@ deterministic, GENERATED header. One row per CARD_KINDS line (the
 parity wall regex-parses rows stdlib-only).
 
 REFINEMENTS VERDICT (validators.py — NOT landed, deliberately):
-py/melite_cards/validators.py semantics (positive/seed/ranged/
+python/melite_cards/validators.py semantics (positive/seed/ranged/
 lora-bag/slot-null/envelope) are per-FIELD gates with per-use bounds
 (ranged/int_ranged factories), a row shape (LoraWire), schema context
 (parse_card_body, empty_slot_null_for array_fields) and verbatim
@@ -46,7 +46,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import card_kinds  # noqa: E402
 import flow as _flow  # noqa: E402
@@ -75,7 +75,7 @@ GENERATED = (
     / "vocab.ts"
 )
 
-# The sibling-owned seam-union names (py/ui_map.py → uiMap.generated.ts).
+# The sibling-owned seam-union names (python/ui_map.py → uiMap.generated.ts).
 # A vocab union taking one of these names would be a second spelling —
 # refuse at generation time, never as consumer confusion.
 _SEAM_NAMES = frozenset(
@@ -90,12 +90,12 @@ _SEAM_NAMES = frozenset(
 )
 
 _HEADER = """/**
- * GENERATED from py/card_kinds.py + py/slot_kinds.py + py/flow.py::Kind
- * + py/melite_models/grammar.py + ActionCard.SIDEBAR_SECTIONS — DO NOT EDIT.
+ * GENERATED from python/card_kinds.py + python/slot_kinds.py + python/flow.py::Kind
+ * + python/melite_models/grammar.py + ActionCard.SIDEBAR_SECTIONS — DO NOT EDIT.
  * Regenerate: python3 tools/export_vocab.py --write
  * Manifest: .scratch/declarations-ts-map.md §4.4 + §5 step 7-vocabs.
  * The parity wall (tests/walls/suites/test_vocab_parity.py) refuses drift.
- * py/ui_map.py seam unions are sibling-owned (uiMap.generated.ts) and are
+ * python/ui_map.py seam unions are sibling-owned (uiMap.generated.ts) and are
  * deliberately NOT re-declared here — a second spelling refuses the wall.
  */
 """
@@ -137,7 +137,7 @@ def render() -> str:
         ("Genre", _enum_members(Genre),
          "Model family genre (grammar.py Genre — the 7 lanes + unordered)."),
         ("Kind", _enum_members(_flow.Kind),
-         "Flow edge-type vocabulary (py/flow.py Kind — what flows on the wire)."),
+         "Flow edge-type vocabulary (python/flow.py Kind — what flows on the wire)."),
         ("FileKind", _enum_members(slot_kinds.FileKind),
          "Input-slot file-kind vocabulary (slot_kinds.py FileKind)."),
         ("BadgeTone", _enum_members(card_kinds.BadgeTone),

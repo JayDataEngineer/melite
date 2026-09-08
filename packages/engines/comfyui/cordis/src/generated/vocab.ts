@@ -1,10 +1,10 @@
 /**
- * GENERATED from py/card_kinds.py + py/slot_kinds.py + py/flow.py::Kind
- * + py/melite_models/grammar.py + ActionCard.SIDEBAR_SECTIONS — DO NOT EDIT.
+ * GENERATED from python/card_kinds.py + python/slot_kinds.py + python/flow.py::Kind
+ * + python/melite_models/grammar.py + ActionCard.SIDEBAR_SECTIONS — DO NOT EDIT.
  * Regenerate: python3 tools/export_vocab.py --write
  * Manifest: .scratch/declarations-ts-map.md §4.4 + §5 step 7-vocabs.
  * The parity wall (tests/walls/suites/test_vocab_parity.py) refuses drift.
- * py/ui_map.py seam unions are sibling-owned (uiMap.generated.ts) and are
+ * python/ui_map.py seam unions are sibling-owned (uiMap.generated.ts) and are
  * deliberately NOT re-declared here — a second spelling refuses the wall.
  */
 
@@ -12,7 +12,7 @@
 export const GenreValues = ["", "3d", "audio", "image", "motion", "other", "text", "video"] as const;
 export type Genre = (typeof GenreValues)[number];
 
-/** Flow edge-type vocabulary (py/flow.py Kind — what flows on the wire). */
+/** Flow edge-type vocabulary (python/flow.py Kind — what flows on the wire). */
 export const KindValues = ["audio", "image", "lora", "mesh", "num", "seg", "text", "video"] as const;
 export type Kind = (typeof KindValues)[number];
 

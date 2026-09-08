@@ -50,7 +50,7 @@
 
 import z from "@deepseek-ai/schemastery";
 
-// ── shared vocab SSOT (py/gateway.py:230-245, 248-276) ──────────
+// ── shared vocab SSOT (python/gateway.py:230-245, 248-276) ──────────
 // The retired-runner-knob + pipe-carry + door-key sets were
 // copy-pasted in doors/flowsRun.ts and doors/flowsValidate.ts (and
 // draft_id_ok thrice). One list now — drift fails at the import,

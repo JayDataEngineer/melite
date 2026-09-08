@@ -18,7 +18,7 @@ Covers:
   arm's (rc, Skeleton, extra, error); phase 1 refuses with rc=-3 +
   the exact message; phase 2 emits a one-node skeleton whose params
   carry the workflow dict (THE ACTION CARD LAW)
-- the card pattern: py/compose.py + py/schema.py + py/renderer.py in
+- the card pattern: python/compose.py + python/schema.py + python/renderer.py in
   every card tree; the plugin compose/ is a pure dispatcher
 - renderer argv: the CLI truth lives in the card's renderer.py
 - model rows: variants/cells/artifacts (sha256+bytes), gated smplx
@@ -206,7 +206,7 @@ class TestQuadRemeshBusContract(unittest.TestCase):
 
 class TestCardPattern(unittest.TestCase):
     """THE CARD PATTERN (golden base: h3-timeline): every card owns
-    py/compose.py + py/schema.py + py/renderer.py; the plugin's
+    python/compose.py + python/schema.py + python/renderer.py; the plugin's
     compose/ package dispatches — never owns the arm."""
 
     CARDS = [
@@ -224,12 +224,12 @@ class TestCardPattern(unittest.TestCase):
     def test_every_card_owns_the_pattern_files(self) -> None:
         for cat, plugin, card in self.CARDS:
             root = os.path.join(REPO, "packages", "engines", cat,
-                                plugin, card, "py")
+                                plugin, card, "python")
             for fname in ("__init__.py", "card.py", "compose.py",
                           "schema.py", "renderer.py"):
                 self.assertTrue(
                     os.path.isfile(os.path.join(root, fname)),
-                    "%s/%s/py/%s missing (THE CARD PATTERN)" % (
+                    "%s/%s/python/%s missing (THE CARD PATTERN)" % (
                         plugin, card, fname))
 
     def test_plugin_compose_is_a_dispatcher(self) -> None:
@@ -260,7 +260,7 @@ class TestRendererArgv(unittest.TestCase):
                     card_dir: str, alias: str) -> ModuleType:
         import importlib.util
         pkg = os.path.join(REPO, "packages", "engines", cat, plugin,
-                           "action_cards", card_dir, "py")
+                           "action_cards", card_dir, "python")
         spec = importlib.util.spec_from_file_location(
             alias, os.path.join(pkg, "renderer.py"),
             submodule_search_locations=[pkg])
@@ -284,7 +284,7 @@ class TestRendererArgv(unittest.TestCase):
 class TestKnobSSOT(unittest.TestCase):
     """RETIRED 2026-09-07 with the python render plane (commit
     b324c480): this class read every comfyui arm's fields from the
-    deleted py/{renderer,schema}.py to audit card_knobs coverage.
+    deleted python/{renderer,schema}.py to audit card_knobs coverage.
     Knob truth now lives in the TS card schemas + facts lane_inputs,
     pinned wire-stable by tests/golden_cordis/ (a dropped knob
     changes the graph → wall red). The cpp/node-native knobs below

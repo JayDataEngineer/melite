@@ -6,7 +6,7 @@
  *
  * The start door (POST /v1/flows/start) refuses ANY body without a
  * valid, doc-backed draft_id — 4xx BEFORE any run registers
- * (py/gateway.py submit(); wall:
+ * (python/gateway.py submit(); wall:
  * tests/walls/suites/test_py_gateway.py::TestStartDoorRequiresDraft).
  * Every run is born from an action card; a cardless row cannot be
  * born, so the media sidebar's "run has no action card (no draft_id
@@ -25,7 +25,7 @@ export interface DraftComposeResult {
 
 /** Mint the card doc for a start body. The doc carries the body
  *  verbatim (intent/stages/model/params become the card extras —
- *  see py/editor_runs.py drafts_save), so what the card shows is
+ *  see python/editor_runs.py drafts_save), so what the card shows is
  *  what the run consumed. Throws LOUDLY on any refusal — a refused
  *  compose never proceeds to a start (no silent cardless runs). */
 export async function composeCard(

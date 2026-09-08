@@ -5,7 +5,7 @@ Every finding class from docs/audits/media-sidebar-audit.md gets a
 mechanical pin — all OFFLINE (tree reads + built bundles, no gateway,
 no browser):
 
-- KIND PARITY (F1): media-kinds.json is the SSOT — py/editor_runs.py
+- KIND PARITY (F1): media-kinds.json is the SSOT — python/editor_runs.py
   derives its classifier + gallery sets from it (import the module,
   compare the effective tuples), and the BUILT client bundle embeds
   every gallery ext (kindOf regexes carry them literally).
@@ -53,11 +53,11 @@ def test_kind_vocabulary_shape() -> None:
 
 def test_py_derives_from_ssot() -> None:
     kinds = _kinds()
-    sys.path.insert(0, str(REPO / "py"))
+    sys.path.insert(0, str(REPO / "python"))
     try:
         import editor_runs
     finally:
-        sys.path.remove(str(REPO / "py"))
+        sys.path.remove(str(REPO / "python"))
     gallery = {e for k in ("video", "image", "audio", "model") for e in kinds[k]["gallery"]}
     assert set(editor_runs._MEDIA_EXTS) == gallery
     assert set(editor_runs._IMG) == set(kinds["image"]["exts"])
@@ -143,11 +143,11 @@ def test_marker_counts_media_candidates_only() -> None:
     # "capped" = noise that hid real cap signals).
     import tempfile
 
-    sys.path.insert(0, str(REPO / "py"))
+    sys.path.insert(0, str(REPO / "python"))
     try:
         import editor_runs
     finally:
-        sys.path.remove(str(REPO / "py"))
+        sys.path.remove(str(REPO / "python"))
     with tempfile.TemporaryDirectory() as td:
         from pathlib import Path as P
         P(td, "_flow.json").write_text("{}", encoding="utf-8")
@@ -175,11 +175,11 @@ def test_artifacts_descend_one_level() -> None:
     # relpath the asset door serves (`..` refused at serve time).
     import tempfile
 
-    sys.path.insert(0, str(REPO / "py"))
+    sys.path.insert(0, str(REPO / "python"))
     try:
         import editor_runs
     finally:
-        sys.path.remove(str(REPO / "py"))
+        sys.path.remove(str(REPO / "python"))
     with tempfile.TemporaryDirectory() as td:
         from pathlib import Path as P
         P(td, "_flow.json").write_text("{}", encoding="utf-8")

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """backfill_draft_id — the 2026-09-04 audit's run→card wire repair.
 
-The py gateway (py/gateway.py, post C-retirement 2026-09-03) silently
+The py gateway (python/gateway.py, post C-retirement 2026-09-03) silently
 dropped `draft_id` at registration AND at sidecar write. The reader
-(py/editor_runs.py:467) still expects to find it on disk. The result:
+(python/editor_runs.py:467) still expects to find it on disk. The result:
 the media sidebar's "Cards" wand refuses every click with "no draft_id
 in its run row" — even when the start body DID carry draft_id (now
 fixed at submit()).
@@ -28,7 +28,7 @@ This tool repairs existing state in two passes:
      no recorded outcome; the sweep just marks the run for the next
      reading as failed.
 
-Validated by click-contract law (py/editor_runs.py:480, 2026-09-02):
+Validated by click-contract law (python/editor_runs.py:480, 2026-09-02):
 rows with no draft_id never advertise one, so a row whose draft was
 deleted (or never set) reads as draftless without a 404 — no behavior
 regression.

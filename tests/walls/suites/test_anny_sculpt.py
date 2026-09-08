@@ -40,7 +40,7 @@ def _anny_schema() -> ModuleType:
         "_anny_schema_sculpt",
         os.path.join(
             REPO,
-            "packages/engines/comfyui/action_cards/3d/anny/py/schema.py",
+            "packages/engines/comfyui/action_cards/3d/anny/python/schema.py",
         ),
     )
     mod = importlib.util.module_from_spec(spec)

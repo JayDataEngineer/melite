@@ -3,7 +3,7 @@
  *
  *   Ray ComfyUI — the ComfyUI MANAGER, NATIVE (2026-09-06): a direct GUI
  *     on the estate's management plane. Every button is ONE action of
- *     the py/manage.py SSOT (comfy-mcp + comfyui-manager + comfy-cli
+ *     the python/manage.py SSOT (comfy-mcp + comfyui-manager + comfy-cli
  *     behind POST /v1/manage — PROVISIONING LAW's "management is python
  *     packages"), reached same-origin through THIS plugin's own /v1
  *     gateway proxy. The vocabulary mirrors the comfy_manage agent tool
@@ -42,7 +42,7 @@ interface ManageReply {
   data?: unknown
 }
 
-/** The status action's data member — py/manage.py `_h_status`. */
+/** The status action's data member — python/manage.py `_h_status`. */
 interface StatusView {
   endpoint?: {
     reachable?: boolean

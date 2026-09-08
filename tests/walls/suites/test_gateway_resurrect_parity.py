@@ -4,7 +4,7 @@
 Proves the TypeScript single queue core
 (packages/gateway/src/queue/queue.ts: resurrectRuns/bootSweep, wired
 into server.ts bootState) reconciles a dead gateway's state
-root exactly like the py gateway (py/gateway.py boot path 4485-4486):
+root exactly like the py gateway (python/gateway.py boot path 4485-4486):
 
   resurrect: every QUEUED sidecar with a doc-backed draft + a
              parseable _request.json + object graph rows re-queues in
@@ -221,7 +221,7 @@ def dual(py_port: int, ts_port: int, path: str, name: str) -> None:
 
 PY_BOOT_SRC = (
     "import json, sys\n"
-    "sys.path.insert(0, 'py')\n"
+    "sys.path.insert(0, 'python')\n"
     "sys.dont_write_bytecode = True\n"
     "import gateway as g\n"
     "gw = g.Gateway()\n"
@@ -296,15 +296,15 @@ def ledger_events(root) -> list:
 
 
 # ── Phase E: banked G1–G6 py-faith legs (P5 follow-up stroke) ──
-# Each gap pins PY behavior from py/gateway.py _rebuild_run_from_record
+# Each gap pins PY behavior from python/gateway.py _rebuild_run_from_record
 # (2291-2335) + boot_resurrect candidates (2338-2376): dual-serve legs
-# where py survives (py/ts direct-function boots must agree), TS-only
+# where py survives (python/ts direct-function boots must agree), TS-only
 # legs where py crashes the whole boot (py rc != 0, TS boots clean).
 # The seed grows one gap per stroke; queue.ts moves one gap at a time.
 
 PY_GAP_SRC = (
     "import json, os, sys\n"
-    "sys.path.insert(0, 'py')\n"
+    "sys.path.insert(0, 'python')\n"
     "sys.dont_write_bytecode = True\n"
     "import gateway as g\n"
     "gw = g.Gateway()\n"
@@ -1073,7 +1073,7 @@ def main() -> int:
         unknown = b'{"type":"run","status":"unknown"}'
         for target, n in (("/v1/flows/events/run-done", "ws-unknown-done"),
                           ("/v1/flows/events/run-r1", "ws-unknown-r1")):
-            for port, side in ((py_port, "py"), (ts_port, "ts")):
+            for port, side in ((py_port, "python"), (ts_port, "ts")):
                 s = None
                 try:
                     s, status, rest = ws_handshake(port, target)

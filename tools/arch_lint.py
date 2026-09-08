@@ -1,7 +1,7 @@
 """arch_lint -- the estate boundary-drift linter (2026-09-03).
 
 The four contracts (each maps to an operator law):
-  1. core_is_generic         py/ must not import from packages/, vendor/, or references/
+  1. core_is_generic         python/ must not import from packages/, vendor/, or references/
   2. plugins_are_independent  the three plugin groups (engines, harness, web) do not import each other
   3. vendor_packs_isolated   each vendor/comfyui_extensions/<pack> is its own repo
   4. references_is_study_only references/ is read-only -- no one imports it
@@ -116,17 +116,17 @@ def _vendor_pack(path: Path) -> str | None:
 
 
 def contract_core_is_generic(all_imports: list[tuple[Path, int, str]]) -> list[tuple[Path, int, str]]:
-    """PLUGIN ARCHITECTURE LAW: py/ is generic. No py/ file may
+    """PLUGIN ARCHITECTURE LAW: python/ is generic. No python/ file may
     import from packages/, vendor/, or references/.
 
-    SELF-IMPORT NOTE: py/plugins.py is a module INSIDE py/ whose
+    SELF-IMPORT NOTE: python/plugins.py is a module INSIDE python/ whose
     name happens to start with "plugins". An "import plugins" inside
-    a py/ file is a self-import into py/plugins.py (the plugin
+    a python/ file is a self-import into python/plugins.py (the plugin
     directory iterator / contract broker), not a cross-tree reach
     into the packages/ directory tree. We exclude it."""
     py_self_imports = {
-        "packages",                       # py/plugins.py (self)
-        # add future py/ internal modules here if they ever get
+        "packages",                       # python/plugins.py (self)
+        # add future python/ internal modules here if they ever get
         # module names that collide with top-level tree names.
     }
     violations = []
@@ -139,7 +139,7 @@ def contract_core_is_generic(all_imports: list[tuple[Path, int, str]]) -> list[t
                 or mod.startswith("vendor")
                 or mod.startswith("references")):
             violations.append((path, line_no,
-                f"core is generic: {mod!r} in py/"))
+                f"core is generic: {mod!r} in python/"))
         if mod.endswith("/<relative>"):
             top = mod.split("/")[0]
             if top in ("packages", "vendor", "references"):
@@ -230,7 +230,7 @@ def contract_references_is_study_only(all_imports: list[tuple[Path, int, str]]) 
 
 
 CONTRACTS = [
-    ("core_is_generic", "py/ is generic -- the gateway names no lane, no engine", contract_core_is_generic),
+    ("core_is_generic", "python/ is generic -- the gateway names no lane, no engine", contract_core_is_generic),
     ("plugins_are_independent", "the three plugin groups (engines, harness, web) do not import each other", contract_plugins_are_independent),
     ("vendor_packs_isolated", "each vendor/comfyui_extensions/<pack> is its own repo", contract_vendor_packs_isolated),
     ("references_is_study_only", "references/ is read-only study -- no one imports it", contract_references_is_study_only),

@@ -3,8 +3,8 @@
 (ladder P1, declarations manifest .scratch/declarations-ts-map.md
 §4.4 + §5 step 7-vocabs).
 
-py/card_kinds.py + py/slot_kinds.py + py/flow.py::Kind +
-py/melite_models/grammar.py + ActionCard.SIDEBAR_SECTIONS are the SSOT.
+python/card_kinds.py + python/slot_kinds.py + python/flow.py::Kind +
+python/melite_models/grammar.py + ActionCard.SIDEBAR_SECTIONS are the SSOT.
 tools/export_vocab.py emits packages/engines/comfyui/cordis/src/
 generated/vocab.ts from them (shadow artifact — nothing imports it
 yet). This wall refuses three drift classes:
@@ -16,11 +16,11 @@ yet). This wall refuses three drift classes:
      SLOTS / SIDEBAR_SECTIONS / UNDECLARED_SLOTS sets, sorted order.
 Plus two hygiene gates: no TS `enum` (erasable-syntax law — the
 Cordis plane runs on node --experimental-strip-types) and no second
-spelling of the sibling-owned seam unions (py/ui_map.py owns them;
+spelling of the sibling-owned seam unions (python/ui_map.py owns them;
 the MAP stroke's uiMap.generated.ts is their only face).
 
 NEXT STEPS (filed, not half-built — the exporter's refinements verdict):
-py/melite_cards/validators.py semantics (positive/seed/ranged/
+python/melite_cards/validators.py semantics (positive/seed/ranged/
 lora-bag/slot-null/envelope) become generated zod refinements with a
 refusal-text parity wall (manifest §5 step 6 shape) once the decl
 cutover reaches the gates. Porting them here — per-use bounds
@@ -39,7 +39,7 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import card_kinds  # noqa: E402
 import flow as _flow  # noqa: E402

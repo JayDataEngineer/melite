@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""gen_ui_map — emit the TypeScript face of py/ui_map.py (the map
+"""gen_ui_map — emit the TypeScript face of python/ui_map.py (the map
 stroke, 2026-09-07; design record docs/design/ui-map.md).
 
 THE LAW (same shape as gen_registry):
-  * py/ui_map.py is the SSOT. packages/web-kit/ui/src/uiMap.generated.ts is a
+  * python/ui_map.py is the SSOT. packages/web-kit/ui/src/uiMap.generated.ts is a
     DERIVED ARTIFACT — hand edits are drift; this tool regenerates
     and the parity wall (dry run, exit 1 on drift) pins it.
   * The kit imports the generated unions and RE-EXPORTS them; no
@@ -18,7 +18,7 @@ import os
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(REPO, "py"))
+sys.path.insert(0, os.path.join(REPO, "python"))
 
 import ui_map  # noqa: E402
 
@@ -34,7 +34,7 @@ ENUMS = [
 ]
 
 HEADER = """/**
- * GENERATED from py/ui_map.py — DO NOT EDIT.
+ * GENERATED from python/ui_map.py — DO NOT EDIT.
  * Regenerate: python3 tools/gen_ui_map.py --write
  * The map is the SSOT (docs/design/ui-map.md); this file is its
  * TypeScript face. The parity wall refuses drift, and the
@@ -76,7 +76,7 @@ def main() -> int:
     if have != want:
         print("DRIFT: %s is stale — run --write" % GENERATED)
         return 1
-    print("%s matches py/ui_map.py (%d enums)" % (GENERATED, len(ENUMS)))
+    print("%s matches python/ui_map.py (%d enums)" % (GENERATED, len(ENUMS)))
     return 0
 
 

@@ -31,7 +31,7 @@ def _estate_paths() -> Iterator[None]:
     # The writable comfy_script shadow (read-only site-packages
     # mounts) is owned by tests/conftest.py — the ONE place for path
     # setup — so import order can never unseat it.
-    for p in (os.path.join(REPO, "py"),
+    for p in (os.path.join(REPO, "python"),
               os.path.join(REPO, "packages", "engines", "comfyui"),
               os.path.join(
                   REPO, "packages", "engines", "comfyui", "compose")):

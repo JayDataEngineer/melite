@@ -757,7 +757,7 @@ def main() -> int:
             except Exception:
                 rl = {}
             # Queued rows never list (RunRow has no "queued" member —
-            # py/run_wire.py RunStatus + doors/runs.ts RUN_STATUS;
+            # python/run_wire.py RunStatus + doors/runs.ts RUN_STATUS;
             # refused rows are SKIPPED, count keeps them — the C
             # contract, proved on both sides by the resurrect wall).
             # The scalar seed (run-e2e-arr, status unknown) DOES list;

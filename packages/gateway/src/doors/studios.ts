@@ -1,5 +1,5 @@
 // Studios doors — the pure-TS port of the FLIP-GAP readiness-audit
-// §1 studios door set (py/gateway.py 3321-3439, 3549-3711):
+// §1 studios door set (python/gateway.py 3321-3439, 3549-3711):
 //
 //   GET  /v1/studios/{tenant}/presets          (_h_presets_list)
 //   POST /v1/studios/{tenant}/presets          (_h_presets_save)
@@ -15,7 +15,7 @@
 // the base-body legs.
 //
 // Pure-TS by task order ("read it, don't assume" — the ledger
-// append/delete IS atomic tmp+rename in py/melite_models/
+// append/delete IS atomic tmp+rename in python/melite_models/
 // presets.py:358-429, so the port is atomic tmp+rename too; the
 // per-provision fetch lock has no TS counterpart because NEITHER
 // studios arm fetches — base-body 404s the miss, the fetch lives
@@ -1082,7 +1082,7 @@ export function validCharacterPreset(
   // bad — the top model still refuses whenever anything failed.
   if (bad || errs.length > 0) return null;
   // _check_origin_coherence (order + texts verbatim from
-  // py/melite_models/presets.py — the dialect-mismatch errors fire
+  // python/melite_models/presets.py — the dialect-mismatch errors fire
   // AFTER the presence errors, and params_ref-before-dialect
   // within each branch).
   if (origin === "file") {
@@ -1242,7 +1242,7 @@ export function canonicalJson(row: ValidRow): string {
 // ---------------------------------------------------------------------------
 
 /** Validate a served params_json through the AnnyBakeParams shape
- *  (py/melite_models/presets.py AnnyBakeParams — the serve-side
+ *  (python/melite_models/presets.py AnnyBakeParams — the serve-side
  *  belt). After-validator failures render with the WIRE STRING as
  *  input_value (probed: the original str, not the parsed doc).
  *  Returns the full "N validation error(s)..." text, or null. */
@@ -1366,7 +1366,7 @@ export function validateBakeParams(s: string): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// Ledger IO (atomic tmp+rename — py/melite_models/presets.py:358-429).
+// Ledger IO (atomic tmp+rename — python/melite_models/presets.py:358-429).
 // ---------------------------------------------------------------------------
 
 /** py _TENANT_RE (presets.py:57) — FULL match with the $ anchor
@@ -1532,7 +1532,7 @@ function deleteUserPreset(
 }
 
 // ---------------------------------------------------------------------------
-// Artifact refs (py/artifact_refs.py:53-103 — the four checked slots
+// Artifact refs (python/artifact_refs.py:53-103 — the four checked slots
 // resolve through this; existence-verified, traversal-loud).
 // ---------------------------------------------------------------------------
 
@@ -1569,7 +1569,7 @@ function isFile(p: string): boolean {
 }
 
 export function resolveArtifactFile(ref: string, outRoot: string): string {
-  // py/artifact_refs.py resolve_artifact_file — all FOUR ref forms,
+  // python/artifact_refs.py resolve_artifact_file — all FOUR ref forms,
   // verbatim messages, NO percent-decoding (ref values ride the
   // JSON body, never the URL path).
   const raw: string = (ref ?? "").trim();
@@ -1804,7 +1804,7 @@ export function tryPromote(
 
 // ---------------------------------------------------------------------------
 // Mount (endpoint file + estate_config read root + folder — the ONE
-// resolution the provision doors share, py/gateway.py:3353-3391).
+// resolution the provision doors share, python/gateway.py:3353-3391).
 // ---------------------------------------------------------------------------
 
 function readEndpoint(repoRoot: string, engine: string): Record<string, unknown> {

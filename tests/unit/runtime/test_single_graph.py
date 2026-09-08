@@ -13,7 +13,7 @@ Two layers pinned:
       refuse; the declared row wins
     * a wire to an upstream that produces nothing refuses
 
-  WORKER PATH (py/gateway.py _try_merged):
+  WORKER PATH (python/gateway.py _try_merged):
     * a pure-comfyui run executes via ONE execute_flow call, every
       stage row completes with outputs/artifacts stamped (the same
       carry/url/gallery shape the per-stage loop writes), and the
@@ -34,7 +34,7 @@ import pytest
 type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
 
 REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import gateway  # noqa: E402
 import flow  # noqa: E402

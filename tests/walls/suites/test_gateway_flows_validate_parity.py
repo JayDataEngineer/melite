@@ -4,7 +4,7 @@ parity wall (P4, validate-door stroke).
 
 Proves the TypeScript validate door
 (packages/gateway/src/doors/flowsValidate.ts via the ctx.ts
-_h_flows_validate arm) answers like the py gateway (py/gateway.py
+_h_flows_validate arm) answers like the py gateway (python/gateway.py
 _h_flows_validate, 2719-2890; resolve_request 279-336; strict body
 248-277; R4.2 normalization; _adapt indent-2 serialization):
 
@@ -69,7 +69,7 @@ import urllib.request
 from _anchor import REPO
 
 sys.dont_write_bytecode = True
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import gateway as gwmod  # noqa: E402
 from gateway import Gateway, route as py_route  # noqa: E402

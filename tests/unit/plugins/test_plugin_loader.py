@@ -3,7 +3,7 @@ hermetic.
 
 The drift/isolation suites pin the HEALTHY tree (declarations match
 dirs, genres deliver models). What nothing pinned was the loader's
-own DEGRADATION paths (py/plugins.py) — the 2026-09-05 duck-typing
+own DEGRADATION paths (python/plugins.py) — the 2026-09-05 duck-typing
 sweep found every fallthrough SILENT:
 
   * exec(plugin.py) failures vanished into `except: pass` — a plugin
@@ -31,7 +31,7 @@ import pytest
 from pydantic import ValidationError
 
 REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import plugins  # noqa: E402
 

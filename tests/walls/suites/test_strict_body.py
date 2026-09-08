@@ -5,7 +5,7 @@ scalar run inputs. Body keys that the runner never reads are
 pollution (they ride _request.json, lie in the tensor pool as inert
 passengers, and teach callers the wrong shape). The C-era runner knob
 names are explicitly refused — they survived a deprecation cycle as
-silent drops; strict=True kills them at the door (py/gateway.py
+silent drops; strict=True kills them at the door (python/gateway.py
 _strict_body). The body-vocab is:
 
   - DOOR_KEYS  — the four door forms (yaml, flow, flow_inline, model).
@@ -19,7 +19,7 @@ problem (not the gateway's); the model class is the door for
 knob-shape validation.
 
 The retired-knob list is the implementation's SSOT
-(py/gateway.py:RETIRED_RUNNER_KNOBS); the wall imports it directly
+(python/gateway.py:RETIRED_RUNNER_KNOBS); the wall imports it directly
 so the test can't drift from the implementation. To ADD a knob to
 the refusal set, edit the constant — the wall's parametrize grows
 in lockstep.

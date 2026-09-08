@@ -30,7 +30,7 @@ from melite_models import AnnyBakeParams
 FLOW_PY = REPO / "flows" / "anny-params" / "flow.py"
 COMPONENT = (REPO / "packages" / "engines" / "comfyui" / "action_cards"
              / "3d" / "anny" / "ui" / "studio" / "component.tsx")
-GATEWAY_PY = REPO / "py" / "gateway.py"
+GATEWAY_PY = REPO / "python" / "gateway.py"
 
 GOOD_AUTHORED = json.dumps({
     "dialect": "authored",

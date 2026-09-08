@@ -25,7 +25,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import gateway as gw_mod  # noqa: E402
 from flow import Stage  # noqa: E402
@@ -217,9 +217,9 @@ def test_timeout_budget_passes_fast_engine(
 
 
 def test_to_graph_carries_retry_rows_source_pin() -> None:
-    src = (REPO / "py" / "flow.py").read_text()
+    src = (REPO / "python" / "flow.py").read_text()
     assert "retries=st.retries" in src
     assert "timeout_s=st.timeout_s" in src
-    gsrc = (REPO / "py" / "gateway.py").read_text()
+    gsrc = (REPO / "python" / "gateway.py").read_text()
     assert 'getattr(node, "retries", 0)' in gsrc
     assert 'getattr(node, "timeout_s", 0.0)' in gsrc

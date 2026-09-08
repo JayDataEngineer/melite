@@ -23,7 +23,7 @@ from types import SimpleNamespace
 import asyncio
 
 REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import gateway  # noqa: E402
 

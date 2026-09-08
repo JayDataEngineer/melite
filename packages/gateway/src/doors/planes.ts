@@ -564,7 +564,7 @@ function frontmatter(text: string): { name: string; description: string } {
 }
 
 // ---------------------------------------------------------------------------
-// lane-wire gates (py/lane_wire.py — pydantic v2 lax, move-for-move)
+// lane-wire gates (python/lane_wire.py — pydantic v2 lax, move-for-move)
 // ---------------------------------------------------------------------------
 
 interface ManifestRow {

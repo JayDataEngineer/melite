@@ -3,7 +3,7 @@
 2026-09-03. Method: three-way cross-reference —
 (1) what each pack registers (`NODE_CLASS_MAPPINGS`),
 (2) what this estate actually wires (templates under `models/**.json`,
-`flows/*.yaml`, `py/card_requires.py`, repo-wide name grep incl.
+`flows/*.yaml`, `python/card_requires.py`, repo-wide name grep incl.
 skills),
 (3) what the LIVE server exposes (`GET :18465/object_info`, 3099 nodes,
 ComfyUI **0.33.0**).
@@ -76,7 +76,7 @@ continuation physics on one server:
   0.34.3 at /mnt/data/comfyui-root (bind-mounted /root), packs bind-mounted
   from the RAY estate (`ray/custom_nodes/*`) — deployment-side, not this
   repo. This repo declares; the server satisfies.
-- Compose gate: `check_card_requires` (py/gateway.py) resolves card
+- Compose gate: `check_card_requires` (python/gateway.py) resolves card
   `requires` against live object_info + `vendor/comfyui_extensions/`.
 
 ## Phased plan
@@ -86,7 +86,7 @@ continuation physics on one server:
 `models/3d/trellis2_gate/img2mesh.json` to the stock TRELLIS node
 names exactly as the updated server's object_info registers them;
 updated `flows/trellis2-gate/flow.yaml` inject keys,
-`py/card_requires.py` (`ComfyUI-TRELLIS2` row), and the live-nodes
+`python/card_requires.py` (`ComfyUI-TRELLIS2` row), and the live-nodes
 snapshot. Gate lane stays live only after the server update.~
 Execution record: packs retired from BOTH homes (ray compose bind line
 removed; persistent `/root/ComfyUI/custom_nodes` copies moved to

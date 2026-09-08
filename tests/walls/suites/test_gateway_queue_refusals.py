@@ -3,7 +3,7 @@
 
 Proves the TypeScript queue core (packages/gateway/src/queue/* over the
 ctx.ts seam + doors/flowsRun.ts + doors/runs.ts) refuses byte-identical
-to the py gateway (py/gateway.py) on every queue-door refusal leg —
+to the py gateway (python/gateway.py) on every queue-door refusal leg —
 the wall-first port of the refusal battery (test_py_gateway.py refusal
 legs + every refusal text/code across the queue doors):
 
@@ -56,9 +56,9 @@ Py cites (every leg names its lines; texts are verbatim contracts):
   1195-1200, draft_required 1219-1226, draft_malformed 1227-1233,
   draft_unknown 1240-1247; _strict_body knob 263-267, carry 270-276;
   ambiguous 304-307, no-flow 335-336; flow_from_body top keys
-  1413-1417 (py/flow.py); _h_queue 2893-2900; status unknown 2959-2962;
+  1413-1417 (python/flow.py); _h_queue 2893-2900; status unknown 2959-2962;
   stop unknown 2042-2044; runs limit 3019-3023; ws fallback 3005-3008;
-  run_detail unknown 667-668 (py/editor_runs.py); resume refusals
+  run_detail unknown 667-668 (python/editor_runs.py); resume refusals
   1926-1958; reproduce refusals 2002-2033; lock 4405-4447.
 
 KNOWN divergences (asserted as shape, never bytes):
@@ -205,7 +205,7 @@ def node_lock(root: str) -> dict:
 def py_lock(root: str) -> dict:
     proc = subprocess.run(
         [sys.executable, "-c",
-         "import json,sys; sys.path.insert(0,'py');"
+         "import json,sys; sys.path.insert(0,'python');"
          "import gateway as g;"
          "from pathlib import Path;"
          "g.STATE_ROOT = Path(%r);"
@@ -467,7 +467,7 @@ def main() -> int:
         # ── Phase D: full-queue + contention (never a refusal) ──
         burst_ok = True
         for i in range(5):
-            for port, side in ((py_port, "py"), (ts_port, "ts")):
+            for port, side in ((py_port, "python"), (ts_port, "ts")):
                 st, raw = http(port, "/v1/flows/start", start_body())
                 if st != 202:
                     burst_ok = False

@@ -18,7 +18,7 @@ agents/
 
 ## What goes here
 
-Instructions for the composing model. The card's utility bootstraps in `agent.card.ts` and reads all files in this folder automatically. No Python code lives here. Schema, data, and task flows live in `py/`.
+Instructions for the composing model. The card's utility bootstraps in `agent.card.ts` and reads all files in this folder automatically. No Python code lives here. Schema, data, and task flows live in `python/`.
 
 ## THE ACTION CARD LAW (2026-09-04)
 

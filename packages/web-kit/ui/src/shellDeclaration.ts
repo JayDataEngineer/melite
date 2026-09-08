@@ -31,7 +31,7 @@
  * module too (same import discipline as studioShell.tsx).
  */
 
-/* The seam vocabularies are WRITTEN ONCE in py/ui_map.py (the map
+/* The seam vocabularies are WRITTEN ONCE in python/ui_map.py (the map
  * SSOT); this module re-exports their generated TypeScript face.
  * Do not hand-spell a union here — the written-once wall refuses
  * it (tests/walls/suites/test_ui_map_parity.py). */

@@ -5,7 +5,7 @@ this engine produces audio. Flows that omit `outputs` on a stage
 using this engine get the default Kind.audio output named
 "default"; the Flow validator type-checks edges at construction.
 
-Contract (py/plugins.py — the BUS contract every plugin speaks):
+Contract (python/plugins.py — the BUS contract every plugin speaks):
     card_compose(body, model, run_id, graph)
         -> (rc, new_graph, extra_dict, error_str)
     execute(node, run_dir, inputs, stop_event, report=None) -> dict
@@ -15,7 +15,7 @@ TWO surfaces, ONE door (2026-09-04 compliance pass, operator order:
 "just add a few of the most recent ones to the models, make a basic
 action card"):
 
-1. THE MUSIC CARD — action_cards/audio/music/py/ (THE CARD PATTERN,
+1. THE MUSIC CARD — action_cards/audio/music/python/ (THE CARD PATTERN,
    golden base h3-timeline): boards the three most-recent upstream
    families (ace-step-xl, ace-step-sft, txt2music). The model
    class's `card` attribute names the dispatch (PLUGIN ARCHITECTURE
@@ -52,7 +52,7 @@ _COMPOSE_DIR = Path(__file__).resolve().parent
 _PLUGIN_ROOT = _COMPOSE_DIR.parent
 # plugin root = <repo>/packages/engines/cpp/audio-cpp → repo is parents[3]
 _REPO = _PLUGIN_ROOT.parents[3]
-_PY = str(_REPO / "py")
+_PY = str(_REPO / "python")
 if _PY not in sys.path:
     sys.path.insert(0, _PY)
 
@@ -100,7 +100,7 @@ def _load_card_package(card_dir: str) -> ModuleType:
     relative imports inside the arm resolve)."""
     if _PKG_ALIAS in sys.modules:
         return sys.modules[_PKG_ALIAS]
-    pkg_dir = _PLUGIN_ROOT / "action_cards" / card_dir / "py"
+    pkg_dir = _PLUGIN_ROOT / "action_cards" / card_dir / "python"
     spec = importlib.util.spec_from_file_location(
         _PKG_ALIAS, pkg_dir / "__init__.py",
         submodule_search_locations=[str(pkg_dir)])

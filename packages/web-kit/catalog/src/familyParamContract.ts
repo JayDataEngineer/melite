@@ -117,7 +117,7 @@ export function isFamilySchemaCachePopulated(): boolean {
  *    click gate doesn't second-guess cross-lane bodies. On lanes
  *    that DON'T declare them the backend forbid row voices LOUD —
  *    admission ≠ permission, the hard gate decides.
- *  • SLOT / TRANSPORT VOCABULARY (py/slot_kinds.py SlotDecl + the
+ *  • SLOT / TRANSPORT VOCABULARY (python/slot_kinds.py SlotDecl + the
  *    flow upstream injector): input slots (first_frame, last_frame,
  *    input_glb, source_glb, outfit_glb, hair_glb, motion_npz,
  *    prev_motion_artifact, lanpaint_mask), modifier bags (loras,
@@ -130,7 +130,7 @@ export function isFamilySchemaCachePopulated(): boolean {
  *    fields on their lanes; backend voices misuse field-named).
  *
  * CUT 2026-09-05 (zero backend presence — no card field, no reader
- * in py/ or the plugin tree, unwaved by any live sender):
+ * in python/ or the plugin tree, unwaved by any live sender):
  * pose_image_b64, vace_name, motion_bg_image, loras_selected (the
  * flow draft still carries loras_selected as transport, but NOTHING
  * reads it — a silent-drop fossil; the flow lane owns that

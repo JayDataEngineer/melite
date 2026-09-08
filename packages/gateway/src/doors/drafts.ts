@@ -1,17 +1,17 @@
 // drafts.ts — the P4 TS port of the 5 draft CRUD doors.
 //
-// Handlers (py/gateway.py names in parens; ROUTES rows already mirror):
+// Handlers (python/gateway.py names in parens; ROUTES rows already mirror):
 //   GET    /v1/flows/drafts                          (_h_drafts_list)
 //   POST   /v1/flows/drafts                          (_h_drafts_save, body strict)
 //   PATCH  /v1/flows/drafts/:id/stages/:sid          (_h_draft_stage_patch, strict)
 //   GET    /v1/flows/drafts/:id/stages/:sid/result    (_h_draft_stage_result)
 //   GET    /v1/flows/drafts/:id                      (_h_drafts_get)
-// DELETE is deliberately ABSENT: py/editor_runs.py drafts_delete
+// DELETE is deliberately ABSENT: python/editor_runs.py drafts_delete
 // (1065-1071) is unwired dead code — its docstring says NO SUCH ROUTE
 // — so DELETE falls through to the 404 no-such-route shape exactly
 // as py route() answers it. Inventing persistence would DIVERGE.
 //
-// FILE SEMANTICS (py/editor_runs.py 818-1204, probed live 2026-09-07):
+// FILE SEMANTICS (python/editor_runs.py 818-1204, probed live 2026-09-07):
 //   - dir: STATE_ROOT/drafts (gateway.py 76-77 + 3108-3148: every
 //     drafts arm serves str(STATE_ROOT / "drafts")); defaultDraftRoots
 //     below mirrors the resolution (MELITE_STATE_ROOT else the

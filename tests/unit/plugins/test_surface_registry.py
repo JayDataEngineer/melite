@@ -4,20 +4,20 @@ Two drift classes nothing else pins (from the drift-playbook pass,
 2026-09-04):
 
   S1  STALE SURFACE — IMPORT_SURFACES in test_plugin_isolation.py is
-      a static list; a renamed/deleted py/ module leaves a ghost entry
+      a static list; a renamed/deleted python/ module leaves a ghost entry
       that still gets "imported" in a subprocess (which then fails, or
       worse, imports something else that shadows the name).
 
-  S2  ORPHAN SURFACE — the inverse: a py/ module the GATEWAY imports
+  S2  ORPHAN SURFACE — the inverse: a python/ module the GATEWAY imports
       that is NOT in IMPORT_SURFACES has no clean-import pin. Import-
       time side effects (network, filesystem, global mutation) would
       ship to production unwatched. The gateway's import graph is
       ast-walked (lazy function-level imports included — stdlib and
-      site-packages excluded), so a new `import X` in py/gateway.py
+      site-packages excluded), so a new `import X` in python/gateway.py
       with no isolation pin fails here the same day.
 
   S3  CLOSED ABI — the plugin declaration surfaces the BROKER consumes
-      are closed sets (py/plugins.py is the contract):
+      are closed sets (python/plugins.py is the contract):
 
         * plugin.py      -> exactly `Plugin` (id/label/engines/... are
                             class-attribute ROWS, not code surface)
@@ -43,8 +43,8 @@ from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "py"))
-import plugins as plugin_broker  # noqa: E402  (py/plugins.py, the broker)
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "python"))
+import plugins as plugin_broker  # noqa: E402  (python/plugins.py, the broker)
 
 REPO = Path(__file__).resolve().parents[3]
 
@@ -53,7 +53,7 @@ REPO = Path(__file__).resolve().parents[3]
 # moves or renames).
 ISOLATION_FILE = REPO / "tests/unit/packages/test_plugin_isolation.py"
 
-# py/ modules the gateway may import WITHOUT an isolation pin:
+# python/ modules the gateway may import WITHOUT an isolation pin:
 # document each exemption with its reason or do not add it.
 GATEWAY_IMPORT_EXEMPT: set[str] = set()
 
@@ -61,11 +61,11 @@ ENGINE_ABI = {"ENGINE_TYPE", "execute", "stop", "unload",
                # DEFAULT_OUTPUT: the flow-typed-edges contract
                # (docs/queue/flow-typed-edges.md) — the Kind this
                # engine produces when a stage omits `outputs`. Read
-               # by py/flow.py:validate_engines().
+               # by python/flow.py:validate_engines().
                "DEFAULT_OUTPUT"}
 # ENGINE_TRUTH_KEYS: each engine's run-truth keys, declared in its
 # compose and consumed by the walls (test_python_cards.py reads the
-# module attribute) — documented contract in py/melite_models/grammar.py.
+# module attribute) — documented contract in python/melite_models/grammar.py.
 # ValidationError: re-export the core's 4xx plumbing consumes.
 # DEFAULT_OUTPUT: see ENGINE_ABI above; compose-first engines set it
 # on their __init__ instead of engine.py.
@@ -79,7 +79,7 @@ COMPOSE_ABI = {"card_compose", "execute", "stop", "unload",
                "DEFAULT_OUTPUT", "JsonValue", "JsonDict",
                # validate_workflow (2026-09-06 gap-fix): engines MAY
                # export it and the gateway's validate door CONSUMES it
-               # via load_engine (py/gateway.py:2197) — broker-called
+               # via load_engine (python/gateway.py:2197) — broker-called
                # surface, therefore ABI; the wall's allowlist was
                # stale the day the export landed.
                "validate_workflow"}
@@ -123,16 +123,16 @@ def _isolation_surfaces() -> list[str]:
 
 
 def _gateway_local_imports() -> set[str]:
-    """py/ sibling modules the gateway imports anywhere (ast-walk,
+    """python/ sibling modules the gateway imports anywhere (ast-walk,
     lazy imports included)."""
-    tree = ast.parse((REPO / "py/gateway.py").read_text())
+    tree = ast.parse((REPO / "python/gateway.py").read_text())
     found: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             found |= {a.name.split(".")[0] for a in node.names}
         elif isinstance(node, ast.ImportFrom) and node.module:
             found.add(node.module.split(".")[0])
-    py_mods = {p.stem for p in (REPO / "py").glob("*.py")}
+    py_mods = {p.stem for p in (REPO / "python").glob("*.py")}
     return found & py_mods
 
 
@@ -145,24 +145,24 @@ def _plugin_dirs() -> list[Path]:
 
 
 def test_s1_isolation_surfaces_exist_on_disk() -> None:
-    """R-stale: every pinned import surface is a real py/ module."""
+    """R-stale: every pinned import surface is a real python/ module."""
     missing = sorted(
         s for s in _isolation_surfaces()
-        if not (REPO / "py" / (s + ".py")).is_file()
+        if not (REPO / "python" / (s + ".py")).is_file()
     )
     assert not missing, (
-        "IMPORT_SURFACES entries with no py/<name>.py on disk (module "
+        "IMPORT_SURFACES entries with no python/<name>.py on disk (module "
         "renamed/deleted, pin is stale): %s" % missing
     )
 
 
 def test_s2_gateway_imports_are_pinned() -> None:
-    """R-orphan: every py/ module the gateway imports has a clean-import
+    """R-orphan: every python/ module the gateway imports has a clean-import
     pin (or a documented exemption)."""
     pinned = set(_isolation_surfaces())
     uncovered = _gateway_local_imports() - pinned - GATEWAY_IMPORT_EXEMPT
     assert not uncovered, (
-        "py/ modules imported by py/gateway.py with NO clean-import "
+        "python/ modules imported by python/gateway.py with NO clean-import "
         "pin in test_plugin_isolation.py: %s — add them to "
         "IMPORT_SURFACES (or GATEWAY_IMPORT_EXEMPT with a reason)"
         % sorted(uncovered)

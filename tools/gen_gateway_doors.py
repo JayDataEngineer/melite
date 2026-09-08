@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """tools/gen_gateway_doors.py — generate the frontend's DOOR TYPES from
-the route table (the wire SSOT in py/gateway.py).
+the route table (the wire SSOT in python/gateway.py).
 
 Emits:
   packages/web-kit/catalog/src/generated/gatewayDoors.ts — the `GatewayDoorUrl`
@@ -24,13 +24,13 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import gateway  # noqa: E402  (stdlib only; the table imports clean)
 
 OUT_PATH = REPO / "web" / "catalog" / "src" / "generated" / "gatewayDoors.ts"
 
-HEADER = """// GENERATED from py/gateway.py ROUTES (the wire SSOT) by
+HEADER = """// GENERATED from python/gateway.py ROUTES (the wire SSOT) by
 // tools/gen_gateway_doors.py — DO NOT EDIT. Regenerate after every
 // route change; tests/walls/suites/test_gateway_doors.py refuses
 // staleness.

@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import mcp_door as mc  # noqa: E402
 import gateway as gw_mod  # noqa: E402
@@ -135,7 +135,7 @@ def test_post_without_body_stays_post(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_dump_subprocess_offline(tmp_path: Path) -> None:
     out = tmp_path / "tools.json"
-    r = subprocess.run([sys.executable, str(REPO / "py" / "mcp_door.py"),
+    r = subprocess.run([sys.executable, str(REPO / "python" / "mcp_door.py"),
                         "--dump", str(out)], capture_output=True, text=True,
                         timeout=60)
     assert r.returncode == 0, r.stderr

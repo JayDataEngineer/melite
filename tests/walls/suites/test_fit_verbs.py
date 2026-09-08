@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from melite_cards import SubActionMod
 
 FIT_PY = os.path.join(REPO, "packages", "engines", "comfyui",
-                      "action_cards", "3d", "fit", "py")
+                      "action_cards", "3d", "fit", "python")
 VERBS_PY = os.path.join(REPO, "packages", "engines", "comfyui",
                         "models", "3d", "anny", "mods")
 PACK = os.path.join(REPO, "vendor", "comfyui_extensions",
@@ -64,7 +64,7 @@ KNOB_SETS = {
 
 @pytest.fixture(scope="module", autouse=True)
 def _estate_paths() -> Iterator[None]:
-    for p in (os.path.join(REPO, "py"),
+    for p in (os.path.join(REPO, "python"),
               os.path.join(REPO, "packages", "engines", "comfyui"),
               os.path.join(REPO, "packages", "engines", "comfyui", "compose")):
         if p not in sys.path:

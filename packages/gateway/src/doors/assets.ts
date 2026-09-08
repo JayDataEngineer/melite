@@ -1,6 +1,6 @@
 // assets.ts — the Phase-3 TS port of the 4 asset READ doors.
 //
-// Handlers (py/gateway.py names in parens; ROUTES mirror rows):
+// Handlers (python/gateway.py names in parens; ROUTES mirror rows):
 //   GET /v1/assets            (_h_assets_index) — JSON, dynamic
 //   GET /v1/ledger            (_h_ledger)       — JSON, dynamic
 //   GET /v1/assets/runs/*     (_h_asset)        — REAL byte serve
@@ -14,9 +14,9 @@
 // lowercase \uXXXX, surrogate pairs as two escapes) and the
 // dispatcher serves them untouched (parse+reserialize would drift).
 //
-// RANGE SEMANTICS (py/gateway.py _parse_range 3152-3183 + _h_asset
+// RANGE SEMANTICS (python/gateway.py _parse_range 3152-3183 + _h_asset
 // 3186-3205, probed live 2026-09-07 — there is NO 416 anywhere in
-// py; grep "416" over py/ is empty):
+// py; grep "416" over python/ is empty):
 //   - bytes=a-b / bytes=a- / bytes=-suffix / BYTES= (case-insensitive
 //     scheme) -> 206 + Content-Range "bytes lo-hi/size" + inclusive
 //     slice; hi clamps to size-1; suffix clamps to (0, size-1) — an
@@ -75,15 +75,15 @@ import type { GatewayRequest } from "../ctx.ts";
 import { matchRoute, parseQuery } from "../routeUtil.ts";
 import { reconcileAssetsTier } from "../storage/store.ts";
 
-/** The artifact-serving URL prefix — owned by py/editor_runs
+/** The artifact-serving URL prefix — owned by python/editor_runs
  *  (ASSET_URL_PREFIX); stamped here for the rel slice, one
  *  constant, no restated coordinates. */
 export const ASSET_URL_PREFIX: string = "/v1/assets/runs";
 
-/** The input-preview URL prefix (py/gateway.py _h_asset_input). */
+/** The input-preview URL prefix (python/gateway.py _h_asset_input). */
 export const INPUT_URL_PREFIX: string = "/v1/assets/inputs";
 
-/** Error-body content type (py/editor_runs._ERR_JSON). */
+/** Error-body content type (python/editor_runs._ERR_JSON). */
 export const ERR_JSON: string = "application/json";
 
 /** Resolved filesystem roots for the doors (see header). */
@@ -438,7 +438,7 @@ export function dumpsPy(payload: unknown, indent: number = 2): string {
 // ---------------------------------------------------------------------------
 
 /** ext (after the LAST dot, lowercased) -> wire content-type
- *  (py/editor_runs.content_type_of — table GENERATED, never
+ *  (python/editor_runs.content_type_of — table GENERATED, never
  *  hand-copied; unknown exts -> application/octet-stream). */
 export function contentTypeOf(name: string): string {
   const dot: number = name.lastIndexOf(".");
@@ -473,7 +473,7 @@ function mediaKinds(repoKindsPath: string): {
 }
 
 /** The runs-registry seam (P4): the gallery sets + door-tier policy
- *  py/editor_runs.py reads from the SAME media-kinds.json doc —
+ *  python/editor_runs.py reads from the SAME media-kinds.json doc —
  *  _MEDIA_EXTS (run media sort) and _MAX_IMGS (the run_artifacts
  *  image cap + truncation marker). Same request-time read + loud
  *  refusal discipline as mediaKinds (one SSOT file, no restatement).
@@ -529,7 +529,7 @@ export function mediaVocab(repoKindsPath: string): MediaVocab {
   return mediaKindsCache;
 }
 
-/** filename -> AssetKind string (py/asset_ledger.kind_for: the estate
+/** filename -> AssetKind string (python/asset_ledger.kind_for: the estate
  *  media vocab first, then mesh/doc code sets, else "other"). */
 export function kindFor(
   name: string,
@@ -557,7 +557,7 @@ export function kindFor(
 }
 
 /** Parse one HTTP Range spec against a body of size N — mirrors
- *  py/gateway.py _parse_range EXACTLY (see header): (lo, hi)
+ *  python/gateway.py _parse_range EXACTLY (see header): (lo, hi)
  *  inclusive, or null = serve the FULL body 200. */
 export function parseRange(
   spec: string,
@@ -593,7 +593,7 @@ export function parseRange(
 
 const BAD_PATH_RAW: Uint8Array = Buffer.from('{"error":"bad path"}', "utf8");
 
-/** Read one artifact: mirrors py/editor_runs.serve_asset — empty rel
+/** Read one artifact: mirrors python/editor_runs.serve_asset — empty rel
  *  or ANY ".." substring -> 400; directories -> empty 200
  *  octet-stream; missing -> 404; else the bytes + content type. */
 function readAsset(
@@ -796,7 +796,7 @@ function sha256File(full: string): string | null {
   }
 }
 
-/** Disk truth -> typed rows (py/asset_ledger.scan_run): `_`-prefixed
+/** Disk truth -> typed rows (python/asset_ledger.scan_run): `_`-prefixed
  *  names skipped, non-files skipped, empty files skipped, rows carry
  *  name/run_id/kind/bytes/sha256/url. A NON-directory run path reads
  *  as an empty row set (listdir fails -> no names — mirrors py).

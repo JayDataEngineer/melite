@@ -11,7 +11,7 @@ browser lanes pin the DOM. This gate pins the seam:
   * every wire route the frontend can emit (editor src + the @melite
     workspace packages it imports) must match a route arm in the py
     gateway (literal `path ==` / `startswith(` arms and `re.match(r"^...")`
-    regex arms across py/*.py).
+    regex arms across python/*.py).
   * frontend template routes (`/v1/flows/drafts/${id}`) match as
     prefixes against gateway regex arms.
 
@@ -37,7 +37,7 @@ FRONTEND_ROOTS = (
     os.path.join(REPO, "packages", "web-kit", "formats", "src"),
     os.path.join(REPO, "packages", "web-kit", "contracts", "src"),
 )
-GATEWAY_ROOT = os.path.join(REPO, "py")
+GATEWAY_ROOT = os.path.join(REPO, "python")
 
 # ─────────────────────────────────────────────────────────────────────────
 # REVIEWING exemptions — KNOWN drift, live-confirmed 2026-10-02 against the
@@ -157,7 +157,7 @@ def gateway_arms() -> tuple[set[str], set[str], set[str]]:
     """(exact_literals, prefix_arms, regex_patterns) the gateway can answer.
 
     The route table IS the wire SSOT (2026-09-04 Phase 1 refactor: the
-    if-chain became ROUTES rows in py/gateway.py) — read it directly.
+    if-chain became ROUTES rows in python/gateway.py) — read it directly.
     Literal rows are exact arms; regex rows anchored both ends are
     fullmatch patterns; open-ended regex rows (^prefix with no $) are
     prefix arms (the old path.startswith(...) semantics).

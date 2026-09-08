@@ -81,8 +81,8 @@ FAILS = []
 
 # the ROOT config's ONE parser (inference.config.json — operator
 # order 2026-09-04: model storage configured from the project root)
-if str(REPO / "py") not in sys.path:
-    sys.path.insert(0, str(REPO / "py"))
+if str(REPO / "python") not in sys.path:
+    sys.path.insert(0, str(REPO / "python"))
 import estate_config  # noqa: E402
 
 # Honest typing shapes (annotation-only; no runtime behavior).
@@ -286,7 +286,7 @@ def bound_model_folders(cfg: _EndpointConfig) -> _BoundLayout:
 
     Where models live and download to is configured FROM THE ROOT
     OF THE PROJECT (operator order 2026-09-04): inference.config.json
-    owns the global roots + per-engine bases (py/estate_config.py is
+    owns the global roots + per-engine bases (python/estate_config.py is
     its ONE parser); the endpoint's model_base_path /
     model_download_path, when SET, override per-engine. Unset
     endpoint keys inherit the root config — a user configures the
@@ -550,7 +550,7 @@ def cmd_verify(cfg: _EndpointConfig) -> None:
     check("provision mode declared", cfg.get("provision") in ("byo", "managed"),
           repr(cfg.get("provision")))
     # model storage resolves FROM THE ROOT OF THE PROJECT
-    # (inference.config.json via py/estate_config.py; endpoint keys
+    # (inference.config.json via python/estate_config.py; endpoint keys
     # override only when set). Empty endpoint keys are a misconfig
     # (dies LOUD in bound_model_folders; reported here too).
     for k in ("model_base_path", "model_download_path"):
@@ -853,7 +853,7 @@ def _cell_rows() -> Iterator[tuple[str, str, str, _CellArtifact]]:
     catalog's own scanner. The model.yaml-glob era was a fossil that
     matched nothing after the root reorganization (same class as the
     extension_lane bug; walled by tests)."""
-    sys.path.insert(0, str(REPO / "py"))
+    sys.path.insert(0, str(REPO / "python"))
     from melite_models import scan_engine_models
     for mid, (_path, cls) in sorted(scan_engine_models(REPO).items()):
         for variant in getattr(cls, "variants", ()) or ():
@@ -871,7 +871,7 @@ def _provision_rows() -> Iterator[tuple[str, "Provision"]]:
     artifacts only, so Provision rows (trellis2-native's five weights,
     the anny base body) never materialized — this walk closes that
     gap through the SAME download rail."""
-    sys.path.insert(0, str(REPO / "py"))
+    sys.path.insert(0, str(REPO / "python"))
     from melite_models import scan_engine_models
     for mid, (_path, cls) in sorted(scan_engine_models(REPO).items()):
         for prov in getattr(cls, "provisions", ()) or ():
@@ -1184,7 +1184,7 @@ def run_declarations(args: argparse.Namespace) -> int:
 
 
 def cmd_manage(argv: list[str]) -> int:
-    """manual door of the ONE ComfyUI manager (py/manage.py — the SSOT;
+    """manual door of the ONE ComfyUI manager (python/manage.py — the SSOT;
     the AI door is POST /v1/manage → the comfy_manage DSH tool).
 
     usage: provision.py manage <action> [key=value ...] [positional…]
@@ -1233,7 +1233,7 @@ def cmd_manage(argv: list[str]) -> int:
         body["nodes"] = [body["nodes"]]
     body.setdefault("wait", True)                    # CLI blocks by default
 
-    _py = str(Path(__file__).resolve().parent.parent / "py")
+    _py = str(Path(__file__).resolve().parent.parent / "python")
     if _py not in sys.path:
         sys.path.insert(0, _py)
     import manage as _mg

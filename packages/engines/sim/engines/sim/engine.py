@@ -20,9 +20,9 @@ ENGINE_TYPE = "sim"
 
 def __getattr__(name: str) -> "str":
     # Lazy DEFAULT_OUTPUT: the scanner bare-exec()s this file
-    # (no py/ on the path — a top-level `from flow import` would
+    # (no python/ on the path — a top-level `from flow import` would
     # die at discovery), while every real consumer (validate door,
-    # worker loop) runs with py/ importable. Resolve on first
+    # worker loop) runs with python/ importable. Resolve on first
     # attribute access, never at module top.
     if name == "DEFAULT_OUTPUT":
         from flow import Kind

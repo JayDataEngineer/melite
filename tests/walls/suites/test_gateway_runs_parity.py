@@ -403,7 +403,7 @@ def dual_ws(py_port: int, ts_port: int, target: str, name: str,
     """One WS door: 101 both, first-frame bytes equal to `want` on
     both, then hold-silence (no second frame within the window —
     the no-heartbeat/no-replay contract)."""
-    for port, side in ((py_port, "py"), (ts_port, "ts")):
+    for port, side in ((py_port, "python"), (ts_port, "ts")):
         s = None
         try:
             s, status, rest = ws_handshake(port, target, headers)
@@ -433,7 +433,7 @@ def dual_ws_403(py_port: int, ts_port: int, target: str, name: str,
                 headers: dict | None = None) -> None:
     """Auth-on WS refusal: 403 + empty body on both (uvicorn turns
     py's pre-accept close into the 403; the TS door writes it)."""
-    for port, side in ((py_port, "py"), (ts_port, "ts")):
+    for port, side in ((py_port, "python"), (ts_port, "ts")):
         s = None
         try:
             s, status, rest = ws_handshake(port, target, headers)

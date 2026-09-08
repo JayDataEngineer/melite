@@ -36,7 +36,7 @@ import type { ReactElement, ReactNode } from "react"
 import { Loader2 } from "lucide-react"
 import { cn } from "./utils"
 
-/* The overlay vocabularies live ONCE in py/ui_map.py (the map
+/* The overlay vocabularies live ONCE in python/ui_map.py (the map
  * SSOT); re-exported here from the generated face. */
 import type { OverlayDock, OverlayKind } from "./uiMap.generated"
 

@@ -24,7 +24,7 @@ import os
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(REPO, "py"))
+sys.path.insert(0, os.path.join(REPO, "python"))
 
 _FAILS: list[str] = []
 
@@ -59,7 +59,7 @@ def _find_card_dir(card_id: str) -> str | None:
                     and _norm(d) == _norm(card_id)]
             for hit in hits:
                 hdir = os.path.join(gdir, hit)
-                if os.path.isdir(os.path.join(hdir, "py")):
+                if os.path.isdir(os.path.join(hdir, "python")):
                     roots.append(hdir)
                     continue
                 for group in sorted(os.listdir(hdir)):
@@ -92,7 +92,7 @@ def _card_paths(card_dir: str) -> list[str]:
     engine's compose/ dir (the bus load order — h3's schema reads
     the artifact helper from there, deferred to validation time,
     so the paths must HOLD for the whole check)."""
-    here = os.path.join(os.path.abspath(card_dir), "py")
+    here = os.path.join(os.path.abspath(card_dir), "python")
     out = [here]
     parts = here.split(os.sep)
     if "engines" in parts:
@@ -348,11 +348,11 @@ def check(card_id: str, card_dir: str | None = None) -> int:
                       % card_id)
             return _report(card_id)
         card_dir = found
-    py_dir = os.path.join(card_dir, "py")
+    py_dir = os.path.join(card_dir, "python")
     for leaf in ("__init__.py", "card.py", "schema.py",
                  "compose.py", "renderer.py"):
         if not os.path.isfile(os.path.join(py_dir, leaf)):
-            _fail("missing py/%s in %s (the fit/skin hole class)"
+            _fail("missing python/%s in %s (the fit/skin hole class)"
                   % (leaf, card_dir))
     held = _card_paths(card_dir)
     for p in held:
@@ -578,7 +578,7 @@ def scaffold(spec: "dict[str, object]", out: str) -> int:
               "clobber (delete it or pick another)" % out)
         return 1
     cls = _camel(spec["card_id"])
-    py_dir = os.path.join(out, "py")
+    py_dir = os.path.join(out, "python")
     os.makedirs(py_dir, exist_ok=True)
     files = {
         "__init__.py": ("# %s — the card package — python lives HERE "
@@ -604,11 +604,11 @@ def scaffold(spec: "dict[str, object]", out: str) -> int:
 
 
 _KINDS = {"text", "image", "video", "audio", "mesh", "num",
-          "lora", "seg"}  # py/flow.py Kind — the closed edge-type
+          "lora", "seg"}  # python/flow.py Kind — the closed edge-type
                           # vocabulary (rung 3). Board refuses a
                           # kind the Flow validator would refuse.
 
-_STAGE_PARAMS = os.path.join(REPO, "py", "stage_params.py")
+_STAGE_PARAMS = os.path.join(REPO, "python", "stage_params.py")
 
 
 def _validate_board_spec(spec: "dict[str, object]") -> list[str]:
@@ -629,7 +629,7 @@ def _validate_board_spec(spec: "dict[str, object]") -> list[str]:
         for name, kind in part.items():
             if kind not in _KINDS:
                 errs.append("spec.kinds.%s.%s kind %r not in %s "
-                            "(py/flow.py Kind)"
+                            "(python/flow.py Kind)"
                             % (side, name, kind, sorted(_KINDS)))
     if isinstance(kinds.get("outputs"), dict) and \
             "default" not in kinds["outputs"]:
@@ -672,8 +672,8 @@ def board(spec: "dict[str, object]", card_dir: str) -> int:
         print("author_card: board needs the card IN the tree "
               "(got %r)" % card_dir)
         return 1
-    if not os.path.isdir(os.path.join(card_dir, "py")):
-        print("author_card: no py/ in %r — scaffold first"
+    if not os.path.isdir(os.path.join(card_dir, "python")):
+        print("author_card: no python/ in %r — scaffold first"
               % card_dir)
         return 1
     try:

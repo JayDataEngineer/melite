@@ -48,7 +48,7 @@ import { kindDef } from "@melite/slots"
 // resolves through this glob over
 // packages/engines/*/action_cards/<genre>/<card>/ui/studio/component.tsx
 // (operator order 2026-09-03: ALL card UI lives under the card's ui/
-// subfolder — the card root carries data + py/ only; a custom UI is an
+// subfolder — the card root carries data + python/ only; a custom UI is an
 // OVERRIDE of the default schema form, never a second definition site)
 // — code-split in build (one dynamic chunk per plugin card body).
 // THE 2026-09 FORMALIZATION: packages/engines/<engine>/cards/<plugin>/<card>/

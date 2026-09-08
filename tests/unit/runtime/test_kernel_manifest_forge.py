@@ -1,6 +1,6 @@
 """FORGE PORT WALL (gap 1, lane 2, 2026-09-06) — anyCreature rides
 the kernel manifest (packages/engines/node/anycreature/manifest.py +
-the compose shim; mechanics in py/kernel_exec.py).
+the compose shim; mechanics in python/kernel_exec.py).
 
 The two-binary shape ($bin = the node interpreter = argv[0];
 $cli/$spec/$cli_dir = caller-resolved lane extras) and the vendor-
@@ -23,7 +23,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import plugins  # noqa: E402
 from flow_graph import NodeRow  # noqa: E402

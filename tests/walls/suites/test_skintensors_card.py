@@ -34,7 +34,7 @@ import pytest
 JsonValue = dict[str, "JsonValue"] | list["JsonValue"] | str | int | float | bool | None
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(HERE, "..", "..", "py"))
+sys.path.insert(0, os.path.join(HERE, "..", "..", "python"))
 sys.path.insert(0, os.path.join(HERE, "_anchor"))
 
 from _anchor import REPO  # noqa: E402
@@ -258,7 +258,7 @@ class TestAutoRigLiveThroughQueue(unittest.TestCase):
         except Exception as e:
             raise AssertionError(
                 "gateway not reachable on 127.0.0.1:33081 — restart "
-                "it first (setsid uv run python py/gateway.py 33081) "
+                "it first (setsid uv run python python/gateway.py 33081) "
                 "(%s)" % e)
         cls.cli = os.path.join(REPO, "data/runtime/skintokens/bin",
                                "skintokens-cli")

@@ -10,7 +10,7 @@
 // the same lanes). The capability section is GONE: the action cards
 // (/v1/card-tools, one tile per packages/*/cards/*/tool.json manifest)
 // ARE the picker. This is the same law the lane table already enforces
-// (py/lane_disclosure.py): the callable surface is action_card |
+// (python/lane_disclosure.py): the callable surface is action_card |
 // template — nothing else births a card here.
 //
 // MODELS ARE NOT ENTRIES (same day: "the only way to actually do

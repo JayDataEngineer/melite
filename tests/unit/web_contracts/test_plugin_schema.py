@@ -72,7 +72,7 @@ class Genre(str, Enum):
 
 class PluginClassDecl(BaseModel, frozen=True):
     """The Plugin class as declared in plugin.py — parsed via AST.
-    This mirrors py/plugins.py's exec()-based discovery shape."""
+    This mirrors python/plugins.py's exec()-based discovery shape."""
     id: str = Field(min_length=1)
     label: str = Field(min_length=1)
     description: str = Field(min_length=1)
@@ -331,7 +331,7 @@ def _ast_read_card_class(card_py: Path) -> CardAttrs | None:
 
 
 def _discover_all_cards() -> list[tuple[str, Path, CardAttrs]]:
-    """Every action_cards/<genre>/<card>/py/card.py across all engine
+    """Every action_cards/<genre>/<card>/python/card.py across all engine
     plugins (depth-2 and depth-3 containers alike)."""
     out: list[tuple[str, Path, CardAttrs]] = []
     eng_root = REPO / "packages" / "engines"
@@ -346,7 +346,7 @@ def _discover_all_cards() -> list[tuple[str, Path, CardAttrs]]:
             ac_root = cont / "action_cards"
             if not ac_root.is_dir():
                 continue
-            for card_py in sorted(ac_root.glob("*/*/py/card.py")):
+            for card_py in sorted(ac_root.glob("*/*/python/card.py")):
                 attrs = _ast_read_card_class(card_py)
                 if attrs is not None:
                     out.append((cont.name, card_py, attrs))

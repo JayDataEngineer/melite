@@ -172,7 +172,7 @@ def test_tsx_names_the_declared_verbs_and_flows() -> None:
     from melite_cards import load_card_py
     cls = load_card_py(
         os.path.join(REPO, "packages", "engines", "comfyui",
-                     "action_cards", "3d", "anny", "py", "card.py"))
+                     "action_cards", "3d", "anny", "python", "card.py"))
     src = _tsx()
     assert cls._verbs_, "anny card mounts no verbs — nothing to par"
     for vcls, _fams in cls._verbs_:
@@ -196,7 +196,7 @@ def test_estimate_verb_is_commercial_only() -> None:
     from melite_cards import load_card_py
     cls = load_card_py(
         os.path.join(REPO, "packages", "engines", "comfyui",
-                     "action_cards", "3d", "anny", "py", "card.py"))
+                     "action_cards", "3d", "anny", "python", "card.py"))
     verbs = {v.id: v for v, _ in cls._verbs_}
     (only,) = verbs["hmr-estimate"].engines
     assert only.id == "commercial", (

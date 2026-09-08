@@ -2,7 +2,7 @@
 """Routes-mirror wall — the py ROUTES table vs its GENERATED TS mirror.
 
 Phase 0 of the gateway → TypeScript cutover (.scratch/gateway-ts-map.md
-§5): packages/gateway/src/routes.ts is emitted FROM py/gateway.py ROUTES
+§5): packages/gateway/src/routes.ts is emitted FROM python/gateway.py ROUTES
 by tools/gen_routes_mirror.py. This wall refuses drift between the two
 sides of that generation:
 
@@ -31,7 +31,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import gateway  # noqa: E402  (stdlib only; the table imports clean)
 

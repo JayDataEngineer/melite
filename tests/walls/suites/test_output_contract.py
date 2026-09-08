@@ -25,7 +25,7 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__)))))
-sys.path.insert(0, os.path.join(REPO, "py"))
+sys.path.insert(0, os.path.join(REPO, "python"))
 
 from melite_cards import load_card_py  # noqa: E402
 from melite_cards.dsl import OutputRow, ActionCard  # noqa: E402

@@ -2,7 +2,7 @@
 //
 // CARD SURFACE vs RENDERER VOCABULARY (2026-09-07): the schema below
 // mirrors ONLY the python card's own fields —
-// packages/engines/comfyui/action_cards/video/h3-timeline/py/card.py
+// packages/engines/comfyui/action_cards/video/h3-timeline/python/card.py
 // (H3TimelineCard: prompt, image, seed, width, height, length, steps,
 // sharpen_enabled, sharpen_strength, interpolate_enabled,
 // shift_video, shift_audio — 12 keys). The window families (t4r /

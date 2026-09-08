@@ -23,7 +23,7 @@
 # This is the operator's "rebuild/restart" button. It does NOT
 # touch the gateway (the gateway is a separate process on :33081;
 # restart with: pkill -TERM -f 'gateway.py 33081' && setsid
-# .venv/bin/python py/gateway.py 33081).
+# .venv/bin/python python/gateway.py 33081).
 
 set -euo pipefail
 

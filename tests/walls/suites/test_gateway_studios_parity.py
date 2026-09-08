@@ -78,7 +78,7 @@ from pathlib import Path
 from _anchor import REPO, reap_gateway  # noqa: F401  (reap unused; kept for symmetry)
 
 sys.dont_write_bytecode = True
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 PASS = FAIL = 0
 TOKEN = "wall-studios-token-%d" % os.getpid()
@@ -208,7 +208,7 @@ RECORD: list | None = None
 def serve(target: str, method: str = "GET", body: bytes = b"",
           headers: dict | None = None, ts_port: int = 0,
           name: str = "") -> tuple[int | None, bytes]:
-    if VIA in ("both", "py"):
+    if VIA in ("both", "python"):
         s, b, _ = py_serve(target, method, body, headers)
     else:
         s, b, _ = http(ts_port, target, method, body, headers)

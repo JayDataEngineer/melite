@@ -54,7 +54,7 @@ class Kind(str, Enum):
 
 # The extension SSOT. qvoice shares the audio set: a voice sample IS
 # audio media; the kind names the ROLE (clone anchor). mesh carries
-# the container family py/flow.py's Kind names (glb/obj/fbx/usd) —
+# the container family python/flow.py's Kind names (glb/obj/fbx/usd) —
 # the submit-time walk stages them into ComfyUI's input store so
 # rig/mesh nodes read input/<name> (the body-to-somax bridge,
 # 2026-09-06: without the row a .glb rode the workflow untouched and

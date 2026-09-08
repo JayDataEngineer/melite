@@ -21,7 +21,7 @@ REPO = os.path.normpath(os.path.join(os.path.dirname(
 
 @pytest.fixture(scope="module", autouse=True)
 def _estate_paths() -> Iterator[None]:
-    for p in (os.path.join(REPO, "py"),):
+    for p in (os.path.join(REPO, "python"),):
         if p not in sys.path:
             sys.path.insert(0, p)
     import flow
@@ -116,7 +116,7 @@ def test_stamped_flow_compiles() -> None:
 
 
 def test_manifest_emits() -> None:
-    sys.path.insert(0, os.path.join(REPO, "py"))
+    sys.path.insert(0, os.path.join(REPO, "python"))
     import lane_disclosure
     for fid, fl in sorted(_tooled().items()):
         row = lane_disclosure._flow_tool_manifest(fl)

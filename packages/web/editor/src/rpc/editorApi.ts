@@ -148,7 +148,7 @@ export interface KindEntry {
  *  OVERRIDE of a render cell at a precedence tier. The slot union lives
  *  in the frontend (shell/uiSlotSeam consumers); the first-party
  *  defaults ride this wire too, at precedence 10 — served from the
- *  plugin ui.yaml declarations (py/editor_runs.py ui_slots), the same
+ *  plugin ui.yaml declarations (python/editor_runs.py ui_slots), the same
  *  lane any override rides. */
 
 

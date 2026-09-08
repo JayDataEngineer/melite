@@ -27,7 +27,7 @@
 import type { ComponentProps } from "react"
 import { cn } from "./utils"
 
-/* The dock vocabulary lives ONCE in py/ui_map.py (the map SSOT);
+/* The dock vocabulary lives ONCE in python/ui_map.py (the map SSOT);
  * re-exported here from the generated face — do not hand-spell
  * it (the written-once wall refuses). */
 import type { ViewportAnchorDock } from "./uiMap.generated"

@@ -8,7 +8,7 @@ blindspot").
 
 Scope: every reconstruction the runs / drafts doors serve — GET
 /v1/flows/runs rows and the drafts index — is CONSTRUCTED as a frozen
-pydantic row (py/run_wire.py) and every served payload round-trips
+pydantic row (python/run_wire.py) and every served payload round-trips
 through the same models. The wall pins:
 
   * shape refusals happen AT CONSTRUCTION (PYTHON SHAPE LAW: a bad

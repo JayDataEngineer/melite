@@ -47,7 +47,7 @@ export const shellDeclaration = defineShellDeclaration({
 })
 
 // ── ACTIONS band: SubAction verbs (pilot stroke 1, 2026-09-05;
-// ── dsl contract landed 2026-09-06: SubActionMod in py/melite_cards
+// ── dsl contract landed 2026-09-06: SubActionMod in python/melite_cards
 // ── + EstimateBodyVerb in models/3d/anny/mods/verbs.py, wall-pinned
 // ── by tests/walls/suites/test_subaction_verbs.py) ─────────────────
 // THE FIRST VERB-CHIP PATTERN (no card had one — this is the minimal

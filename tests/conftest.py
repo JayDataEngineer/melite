@@ -1,7 +1,7 @@
 """tests/ root conftest — the ONE place path setup happens.
 
 pytest loads this before collecting anything under tests/. The
-repo py/ dir goes on sys.path here so every test can import the
+repo python/ dir goes on sys.path here so every test can import the
 gateway modules directly (asset_ledger, catalog, plugins, ...)
 with no per-file sys.path.insert rituals.
 """
@@ -12,14 +12,14 @@ from pathlib import Path
 import pytest
 REPO = Path(__file__).resolve().parent.parent
 
-# the estate's py/ scripts are importable as TOP-LEVEL modules when
-# py/ itself is on sys.path (py/ has no __init__.py; the gateway
+# the estate's python/ scripts are importable as TOP-LEVEL modules when
+# python/ itself is on sys.path (python/ has no __init__.py; the gateway
 # does the same insert on boot). ONE insert, owned here. The tests/
 # dir rides along for the shared bootstrap (tests/_bootstrap.py —
 # fixture audit 2026-09-04).
-for _p in (str(REPO / "py"), str(REPO / "tests"),
+for _p in (str(REPO / "python"), str(REPO / "tests"),
            # (2026-09-07) the fit/skin lane-lens inserts (fit_spec/
-           # skin_spec in the cards' py/ dirs) died with the python
+           # skin_spec in the cards' python/ dirs) died with the python
            # render plane (commit b324c480) — removed, not commented.
            ):
     if _p not in sys.path:

@@ -17,7 +17,7 @@
 
 import { Context, Service } from "@deepseek-ai/cordis";
 
-/** Bearer env var — the same constant as py/gateway.py AUTH_TOKEN_ENV. */
+/** Bearer env var — the same constant as python/gateway.py AUTH_TOKEN_ENV. */
 export const AUTH_TOKEN_ENV: string = "DSH_GATEWAY_TOKEN";
 
 /** Health probe stays reachable with auth on (py AUTH_EXEMPT_PATHS). */

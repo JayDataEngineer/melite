@@ -148,7 +148,7 @@ def _card_field_names(tenant: str) -> set[str]:
     names = set()
     for eng in os.listdir(CARDS_ROOT):
         cand = os.path.join(CARDS_ROOT, eng, "action_cards", genre,
-                            card, "py", "card.py")
+                            card, "python", "card.py")
         if not os.path.isfile(cand):
             continue
         for line in open(cand, encoding="utf-8"):

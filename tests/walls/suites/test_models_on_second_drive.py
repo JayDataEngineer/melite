@@ -5,7 +5,7 @@ system drive — and the configuration is made AT THE ROOT OF THE
 PROJECT (operator order 2026-09-04): `inference.config.json` at
 the repo root owns the global models roots + per-engine bases for
 the WHOLE estate (comfyui, kimodo, every engine), parsed by
-py/estate_config.py — the ONE parser. Engine-level configs (the
+python/estate_config.py — the ONE parser. Engine-level configs (the
 comfyui endpoint) override only when their keys are explicitly set.
 
   models.read_root      — where weights live (absolute, required)

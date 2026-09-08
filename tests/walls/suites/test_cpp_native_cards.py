@@ -31,7 +31,7 @@ def check(name: str, ok: bool, note: str = "") -> None:
 
 REPO = os.path.normpath(os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
-sys.path.insert(0, os.path.join(REPO, "py"))
+sys.path.insert(0, os.path.join(REPO, "python"))
 
 from melite_cards import scan_engine_cards  # noqa: E402
 
@@ -129,7 +129,7 @@ check("quad preset is the empty budget literal",
 #   raises IN THE NODE, silent defaults banned).
 # - "quad phase-1 refuses missing binary" (AUTOREMESHER_BIN mock):
 #   the arm's resolve_cli gate moved to the rim —
-#   py/card_requires.py SYSTEM_BINARY_REQUIRES (the T12 leg in
+#   python/card_requires.py SYSTEM_BINARY_REQUIRES (the T12 leg in
 #   test_card_requires.py pins the pair hermetically) + the compose
 #   door's missing-extension refusal off the live pin.
 # - "quad accepts the trellis mesh" (mesh bytes under data/runs):
@@ -165,7 +165,7 @@ def _load_arm(pkgname: str, carddir: str) -> ModuleType:
 mesh = ("data/runs/test-output/run-49b55276d56a-69fe881b/"
         "trellis2_native_00005.glb")
 sdir = os.path.join(REPO, "packages", "engines", "cpp", "skintokens",
-                    "action_cards", "3d", "auto-rig", "py")
+                    "action_cards", "3d", "auto-rig", "python")
 sarm = _load_arm("rig_arm_pkg", sdir)
 
 rc, g, x, err = sarm.compose({"params": {}}, "skintokens", "")
@@ -207,7 +207,7 @@ finally:
 # -- music-native doors ----------------------------------------------------
 # (Same stroke: the binary gate; the doc/model gates predate it.)
 audir = os.path.join(REPO, "packages", "engines", "cpp", "audio-cpp",
-                     "action_cards", "audio", "music", "py")
+                     "action_cards", "audio", "music", "python")
 auarm = _load_arm("mus_arm_pkg", audir)
 _mr = sys.modules["mus_arm_pkg.renderer"]
 with _mock.patch.object(_mr, "resolve_cli", return_value=None):
@@ -218,7 +218,7 @@ check("music-native phase-1 refuses missing binary", rc == -3 and
 
 # -- forge doors --------------------------------------------------------
 fdir = os.path.join(REPO, "packages/engines/node/anycreature",
-                    "action_cards", "3d", "forge", "py")
+                    "action_cards", "3d", "forge", "python")
 farm = _load_arm("forge_arm_pkg", fdir)
 
 rc, g, x, err = farm.compose({"params": {}}, "anycreature", "")

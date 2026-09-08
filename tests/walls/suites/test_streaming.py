@@ -179,7 +179,7 @@ class FakeRun:
         self.stop_event = asyncio.Event()
         self.stages = [{"id": "s0", "name": "gen", "index": 0,
                         "status": "running"}]
-        # the typed graph contract (py/flow_graph.py): execute()
+        # the typed graph contract (python/flow_graph.py): execute()
         # reads run.graph.nodes — a raw dict stopped working the day
         # FlowGraph landed (2026-09-04 repair, flows rework round)
         import flow_graph

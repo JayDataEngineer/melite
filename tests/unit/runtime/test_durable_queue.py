@@ -29,7 +29,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import gateway as gw_mod  # noqa: E402
 
@@ -156,7 +156,7 @@ def test_submit_records_run_queued_in_the_ledger(scratch: Path) -> None:
 
 
 def test_main_resurrects_before_sweeping() -> None:
-    src = (REPO / "py" / "gateway.py").read_text()
+    src = (REPO / "python" / "gateway.py").read_text()
     main_at = src.index("async def main(")
     assert src.index("boot_resurrect(gw)", main_at) \
         < src.index("boot_sweep(", main_at)

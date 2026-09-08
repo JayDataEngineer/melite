@@ -28,7 +28,7 @@ from _anchor import REPO
 ANNY_MODEL_PY = os.path.join(
     REPO, "packages", "engines", "comfyui", "models", "3d", "anny",
     "model.py")
-GATEWAY_PY = os.path.join(REPO, "py", "gateway.py")
+GATEWAY_PY = os.path.join(REPO, "python", "gateway.py")
 ANNY_TSX = os.path.join(
     REPO, "packages", "engines", "comfyui", "action_cards", "3d",
     "anny", "ui", "studio", "component.tsx")

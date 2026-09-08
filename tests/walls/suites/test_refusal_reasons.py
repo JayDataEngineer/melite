@@ -23,7 +23,7 @@ import unittest
 from pydantic import ValidationError
 
 REPO = pathlib.Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import lane_wire  # noqa: E402
 import run_wire  # noqa: E402

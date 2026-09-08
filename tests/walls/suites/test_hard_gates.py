@@ -314,7 +314,7 @@ def test_resolve_request_refuses_dangling_before_registration() -> None:
 def _semantic_edit_body(**knobs: str | int | float | bool) -> dict[str, str | int | float | bool]:
     return {"model": "qwen-img-edit-2511",
             "prompt": "hat",
-            "input_image": os.path.join(REPO, "py", "artifact_refs.py"),
+            "input_image": os.path.join(REPO, "python", "artifact_refs.py"),
             **knobs}
 
 
@@ -350,7 +350,7 @@ def test_flat_form_typo_refuses_field_named() -> None:
     """Flat bodies (no params stanza) validate as rows too — a flat
     stepz refused here instead of riding silently."""
     body = {"model": "qwen-img-edit-2511", "prompt": "hat",
-            "input_image": os.path.join(REPO, "py", "artifact_refs.py"),
+            "input_image": os.path.join(REPO, "python", "artifact_refs.py"),
             "stepz": 9}
     with pytest.raises(ValidationError) as ei:
         resolve_request(body)
@@ -389,7 +389,7 @@ _SEED_ADMIT_EXEMPT = frozenset({"video/h3-timeline"})
 
 def _seed_rows() -> list[tuple[str, str, type[object]]]:
     import importlib.util
-    for extra in (os.path.join(REPO, "py"),
+    for extra in (os.path.join(REPO, "python"),
                   os.path.join(REPO, "packages", "engines", "comfyui",
                                "compose")):
         if extra not in sys.path:
@@ -411,7 +411,7 @@ def _seed_rows() -> list[tuple[str, str, type[object]]]:
             if not os.path.isdir(gd):
                 continue
             for card in sorted(os.listdir(gd)):
-                sp = os.path.join(gd, card, "py", "schema.py")
+                sp = os.path.join(gd, card, "python", "schema.py")
                 if not os.path.isfile(sp):
                     continue
                 lane = prefix + genre + "/" + card

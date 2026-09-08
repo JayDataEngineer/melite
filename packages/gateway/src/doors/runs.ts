@@ -1,7 +1,7 @@
 // runs.ts — the P4 TS port of the runs-registry READ doors + the
 // events stream door.
 //
-// Handlers (py/gateway.py names in parens; ROUTES mirror rows):
+// Handlers (python/gateway.py names in parens; ROUTES mirror rows):
 //   GET /v1/queue                 (_h_queue)        — JSON, stateless
 //   GET /v1/flows/status/{run_id} (_h_flows_status) — JSON from sidecar
 //   GET /v1/flows/runs            (_h_runs_list)    — JSON from disk scan
@@ -129,7 +129,7 @@ import type { GatewayRequest } from "../ctx.ts";
 import { matchRoute, parseQuery } from "../routeUtil.ts";
 
 // ── queue ──────────────────────────────────────────────────────────
-// py/gateway.py _h_queue 2893-2907: queued=len(order), running=1/0,
+// python/gateway.py _h_queue 2893-2907: queued=len(order), running=1/0,
 // active=run_id/"", queued_ids=list(order). P5: the snapshot reads
 // the flowsRun registry (boot-resurrected queued work + preview
 // starts) — an empty registry serves the same empty bytes as before.
@@ -150,7 +150,7 @@ export function hQueue(): AssetResult {
   };
 }
 
-// ── C-parity text surgery (py/editor_runs.py 83-334) ───────────────
+// ── C-parity text surgery (python/editor_runs.py 83-334) ───────────────
 
 /** _strtol (editor_runs.py 96-102): optional space, optional sign,
  *  then digits; 0 when no digits lead. */
@@ -318,7 +318,7 @@ function fmtStrPy(v: unknown): string {
   return String(u);
 }
 
-// ── media helpers (py/editor_runs.py 238-270, 335-444) ─────────────
+// ── media helpers (python/editor_runs.py 238-270, 335-444) ─────────────
 
 /** artifact_type (editor_runs.py 272-290): estate media vocab (DATA
  *  sets) first, then json->spec, txt/md/yaml->text, else file. The
@@ -1127,7 +1127,7 @@ export function hFlowsStatus(
   };
 }
 
-// ── the WS-fallback 404 (py/gateway.py _h_ws_fallback 3005-3009) ───
+// ── the WS-fallback 404 (python/gateway.py _h_ws_fallback 3005-3009) ───
 // NOTE the code: py's handler returns the dict WITHOUT a code and
 // route()'s R4.2 normalization stamps invalid_request — NOT the
 // no_such_route of a genuinely unmatched path. The port stamps the
@@ -1170,7 +1170,7 @@ export function dispatchRuns(
 }
 
 // ── the events stream door: WS frames + upgrade ───────────────────
-// py/gateway.py _ws_starlette 2472-2584. Frame bytes = starlette
+// python/gateway.py _ws_starlette 2472-2584. Frame bytes = starlette
 // send_json = json.dumps(data, separators=(",",":"), ensure_ascii=
 // False): compact + raw UTF-8. JSON.stringify already uses compact
 // separators and emits raw UTF-8 for the JSON-representable domain

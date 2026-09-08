@@ -80,6 +80,6 @@ def live() -> Iterator[GatewayClient]:
         pytest.skip(
             "gateway unreachable at " + BASE
             + " (" + e.__class__.__name__ + "); boot with: "
-            "cd <repo> && setsid /usr/bin/python3 py/gateway.py 33081"
+            "cd <repo> && setsid /usr/bin/python3 python/gateway.py 33081"
         )
     return client

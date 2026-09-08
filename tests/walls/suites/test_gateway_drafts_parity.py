@@ -3,9 +3,9 @@
 
 Proves the TypeScript port (packages/gateway/src/doors/drafts.ts via
 ctx.ts dispatch) answers byte-identical to the py gateway
-(py/gateway.py draft arms 3108-3149; strict bodies 4335-4340; R4.2
+(python/gateway.py draft arms 3108-3149; strict bodies 4335-4340; R4.2
 normalization 4353-4355; auth gate _adapt 2607-2619; file semantics
-py/editor_runs.py 818-1204; birth gate py/run_wire.py 151-170):
+python/editor_runs.py 818-1204; birth gate python/run_wire.py 151-170):
 
   full create/get/patch/result/list lifecycle, patch-merge semantics
   (shallow params merge, replace-the-rest, atomic tmp+rename), the
@@ -705,7 +705,7 @@ def main() -> int:
               "counts %r/%r" % (tj.get("count"), pj.get("count")))
 
         # ── 13. concurrent creates: N parallel 200s, distinct ids ──
-        for port, root, tag in ((py_port, py_root, "py"),
+        for port, root, tag in ((py_port, py_root, "python"),
                                (ts_port, ts_root, "ts")):
             before = set(os.listdir(root / "drafts"))
             ids: list[str] = []

@@ -1,6 +1,6 @@
 // queue.ts — P5 queue-core port (the serial-GPU state machine).
 //
-// WHAT THIS PORTS (line-cited against py/gateway.py; Date 2026-09-07,
+// WHAT THIS PORTS (line-cited against python/gateway.py; Date 2026-09-07,
 // Status: landed — wall tests/walls/suites/test_gateway_queue_parity.py):
 //   - single-writer lock (R2, 2026-09-06): acquireLock/releaseLock +
 //     the dead-pid steal ledgered server.lock_stolen (4405-4468),

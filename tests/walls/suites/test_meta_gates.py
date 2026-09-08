@@ -52,7 +52,7 @@ from pydantic import ValidationError
 
 from _anchor import REPO
 
-sys.path.insert(0, os.path.join(str(REPO), "py"))
+sys.path.insert(0, os.path.join(str(REPO), "python"))
 from melite_cards import load_card_py  # noqa: E402 — pre-imported so the
                                         # module-evicting fixture below
                                         # never unloads estate loaders
@@ -107,7 +107,7 @@ CANARY = {
 
 
 def _canary_schema_mod(card: str) -> ModuleType:
-    p = CARDS / card / "py" / "schema.py"
+    p = CARDS / card / "python" / "schema.py"
     name = "canary_" + card.replace("/", "_")
     if name in sys.modules:
         return sys.modules[name]
@@ -188,7 +188,7 @@ def _forged_music_card(tmp_path: Path, old: str, new: str) -> tuple[str, str]:
     msrc = REPO / ("packages/engines/comfyui/models/audio/music3")
     mdst = root / "packages/engines/comfyui/models/audio/music3"
     shutil.copytree(msrc, mdst)
-    sys.path.insert(0, os.path.join(str(REPO), "py"))
+    sys.path.insert(0, os.path.join(str(REPO), "python"))
     return str(dst / "card.py"), str(mdst)
 
 
@@ -219,7 +219,7 @@ def test_knob_wall_sides_come_from_different_files() -> None:
     with the card trivially. The knob wall's two sides MUST load from
     two different files (card.py vs schema.py) — mutating one side
     can never move the other."""
-    card_py = (CARDS / "audio/music/py/card.py").as_posix()
+    card_py = (CARDS / "audio/music/python/card.py").as_posix()
     row = walls._wall_schema_row(card_py)
     assert row is not None
     row_file = inspect.getfile(row)
@@ -256,7 +256,7 @@ def test_served_envelope_carries_the_row_not_the_card() -> None:
     default is -1 (the RANDOM sentinel), the MusicParams row's is 0.
     The served envelope must carry 0 — a revert to card.py derivation
     serves -1 and fails HERE, not at the user's click."""
-    sys.path.insert(0, os.path.join(str(REPO), "py"))
+    sys.path.insert(0, os.path.join(str(REPO), "python"))
     import editor_runs as _er
     served = _er._family_surface_props("music3")
     assert served is not None, "music3 serves no envelope"
@@ -347,7 +347,7 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
     },
     "docs/design/parameter-surface.md": {
         "infer-daisy-studio/e2e/test_live.py": "past-run-journal",
-        "py/card.py": "past-run-journal",
+        "python/card.py": "past-run-journal",
     },
     "docs/audits/bootstrap-audit.md": {
         "PIN.md": "past",
@@ -406,10 +406,10 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         "window1_t4_audio.json": "past",
     },
     "docs/design/anny-base-body.md": {
-        "py/card.py": "rot",
-        "py/compose.py": "rot",
-        "py/renderer.py": "rot",
-        "py/schema.py": "rot",
+        "python/card.py": "rot",
+        "python/compose.py": "rot",
+        "python/renderer.py": "rot",
+        "python/schema.py": "rot",
     },
     "docs/design/anny-native-viewport.md": {
         "soma/assets.py": "rot",
@@ -420,7 +420,7 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
     "docs/design/doc-rot-ledger.md": {
         "card_knobs.yaml": "past",
         "flow.yaml": "past",
-        "image-edit/py/schema.py": "past",
+        "image-edit/python/schema.py": "past",
         "models/3d/anny/model.py": "past",
         "nope_nothing_here.py": "past",
     },
@@ -438,8 +438,8 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         "video/h3-timeline/ui/package.json": "rot",
     },
     "docs/design/validated-row-gates.md": {
-        "py/compose.py": "rot",
-        "py/schema.py": "rot",
+        "python/compose.py": "rot",
+        "python/schema.py": "rot",
     },
     "docs/design/web-registry.md": {
         "ui/studio/component.tsx": "rot",
@@ -482,14 +482,14 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         "packages/agent/dsh/melite-core/models/field_options.yaml": "past",
     },
     "docs/plans/root-config-gap-fix.md": {
-        "py/__init__.py": "past",
+        "python/__init__.py": "past",
     },
     "docs/plans/typed-step-docs.md": {
         "tests/test_co_script_parity_cards.py": "past",
     },
     "docs/packages/card-compose.md": {
         "card_knobs.yaml": "rot",
-        "py/timeline/compile.py": "rot",
+        "python/timeline/compile.py": "rot",
     },
     "docs/packages/catalog.md": {
         "card.yaml": "rot",
@@ -505,7 +505,7 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         "nodes/extensions.yaml": "rot",
     },
     "docs/queue/card-stage-typing.md": {
-        "py/schema.py": "rot",
+        "python/schema.py": "rot",
     },
     "docs/queue/flows.md": {
         "FlowsPane.tsx": "rot",

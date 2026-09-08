@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING
 from _anchor import REPO
 
 if TYPE_CHECKING:
-    # py/ joins sys.path inside the tests — never at module scope.
+    # python/ joins sys.path inside the tests — never at module scope.
     from flow_graph import NodeRow
 
 # Resolved run inputs are JSON values (annotations only).
@@ -113,7 +113,7 @@ class TestInitialRefAliases:
     the initial's own key."""
 
     def test_initial_ref_publishes_receiving_name(self) -> None:
-        sys.path.insert(0, os.path.join(str(REPO), "py"))
+        sys.path.insert(0, os.path.join(str(REPO), "python"))
         import flow_graph
         import gateway
 
@@ -128,7 +128,7 @@ class TestInitialRefAliases:
         assert out["photo"] == "/estate/starter.png"
 
     def test_initial_ref_without_alias_keeps_tensor_only(self) -> None:
-        sys.path.insert(0, os.path.join(str(REPO), "py"))
+        sys.path.insert(0, os.path.join(str(REPO), "python"))
         import flow_graph
         import gateway
 
@@ -144,7 +144,7 @@ class TestInitialRefAliases:
 
 class TestMeshHandoff:
     def test_from_stage_mesh_chains(self) -> None:
-        sys.path.insert(0, os.path.join(str(REPO), "py"))
+        sys.path.insert(0, os.path.join(str(REPO), "python"))
         import flow_graph
         import gateway as gw_mod
         import gateway

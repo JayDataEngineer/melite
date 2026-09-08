@@ -2,7 +2,7 @@
 
 The contract under test (docs/design/dsh-comfy-manager-tab.md):
 
-  py/manage.py's Action enum is the SSOT vocabulary. EVERY door that
+  python/manage.py's Action enum is the SSOT vocabulary. EVERY door that
   speaks management must name the SAME actions:
 
     panel  (assets-tab.tsx)  ⊆ enum   — a button can only dispatch real
@@ -24,7 +24,7 @@ import re
 
 from _anchor import REPO
 
-MANAGE = REPO / "py" / "manage.py"
+MANAGE = REPO / "python" / "manage.py"
 PANEL = (REPO / "packages" / "web" / "dsh" / "melite-card-deck" /
          "src" / "client" / "assets-tab.tsx")
 TOOL = (REPO / "packages" / "harness" / "dsh" / "melite-tools" /

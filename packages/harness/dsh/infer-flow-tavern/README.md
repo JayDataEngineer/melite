@@ -134,7 +134,7 @@ Two modules, deliberately:
 | **QUEUE LANE LAW** | The launcher refuses an empty / schemeless `GATEWAY_URL` at construction. `FLOATER_ALLOW_LOCAL=1` is the explicit opt-in to the canonical fallback (never a silent default). The start door sends `{flow: lane_id}` — never hardcoded model names. |
 | **RESILIENCE LAW** | Gateway errors are surfaced VERBATIM in the UI (the sidecar's `error` field, the validate door's compile refusal). No generic "failed" toast. |
 | **PYTHON SHAPE LAW** | The client is frozen pydantic rows. Closed vocabs (run status colors) are explicit. `Lane`, `Draft`, `Run`, `StageRow` are classes; statuses, lane kinds, etc. are *not* stringly-typed — they pass through mapping tables that the operator can grep. |
-| **PLUGIN ARCHITECTURE LAW** | This is a *harness* plugin, not an engine plugin. It does not import `py/` or `packages/engines/*` — gateway ownership of the lane/card surface is untouched. |
+| **PLUGIN ARCHITECTURE LAW** | This is a *harness* plugin, not an engine plugin. It does not import `python/` or `packages/engines/*` — gateway ownership of the lane/card surface is untouched. |
 | **EXTENSION LAW** | The Tavern ships zero vendored ComfyUI nodes. It reads the gateway's wire only. |
 | **PROVISIONING LAW** | This is its own `pyproject.toml`, not a base-env dep. The management plane stays base; a UI is opt-in. |
 

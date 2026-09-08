@@ -13,7 +13,7 @@ const R = (p: string) => path.resolve(__dirname, p)
 
 // Architecture: Browser → Vite (:5173) → py gateway (:33081)
 //
-// The python gateway (py/gateway.py — THE gateway since the C
+// The python gateway (python/gateway.py — THE gateway since the C
 // retirement, 2026-09-03) hosts the workstation API surface
 // (catalog, forms, runs, assets). The conversational agent moved OUT
 // of the gateway 2026-08-21 (it lives in the DSH plugins now) —

@@ -21,7 +21,7 @@ from pathlib import Path
 
 _PLUGIN_ROOT = Path(__file__).resolve().parent
 _REPO = _PLUGIN_ROOT.parents[3]
-_PY = str(_REPO / "py")
+_PY = str(_REPO / "python")
 if _PY not in sys.path:
     sys.path.insert(0, _PY)
 

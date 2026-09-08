@@ -59,8 +59,8 @@ PARAMS_FLOW_PY = os.path.join(REPO, "flows", "anny-params", "flow.py")
 BAKE_PY = os.path.join(REPO, "flows", "anny-params", "bake_params.py")
 COMMERCIAL_WORKER_PY = os.path.join(
     REPO, "flows", "anny-hmr-commercial", "worker.py")
-GATEWAY_PY = os.path.join(REPO, "py", "gateway.py")
-PRESETS_PY = os.path.join(REPO, "py", "melite_models", "presets.py")
+GATEWAY_PY = os.path.join(REPO, "python", "gateway.py")
+PRESETS_PY = os.path.join(REPO, "python", "melite_models", "presets.py")
 
 
 def _anny() -> type[Model]:
@@ -275,7 +275,7 @@ def test_canonical_file_row_has_no_dialect() -> None:
 
 # test_preset_verbs_mounted_with_the_right_planes RETIRED 2026-09-07
 # (python render plane b324c480): its subject was the python anny
-# CARD class (action_cards/3d/anny/py/card.py, preset-save/load
+# CARD class (action_cards/3d/anny/python/card.py, preset-save/load
 # verb mounting via load_card_py). The load plane it also touched
 # (flows/anny-params) stays pinned below by
 # test_anny_params_flow_wires_the_bake_node.

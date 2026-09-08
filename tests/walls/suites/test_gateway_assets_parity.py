@@ -319,7 +319,7 @@ def main() -> int:
         # content-length honesty on a byte door.
         for path in ("/v1/assets/runs/run-a1/cover.png",
                      "/v1/assets/inputs/" + INAME_PNG):
-            for port, tag in ((py_port, "py"), (ts_port, "ts")):
+            for port, tag in ((py_port, "python"), (ts_port, "ts")):
                 st, body, h = http(port, path)
                 check("%s content-length %s" % (tag, path),
                       st == 200 and int(h.get("content-length", "-1"))
@@ -376,7 +376,7 @@ def main() -> int:
                      "/v1/assets?include_test=false",
                      "/v1/assets?include_test="):
             dual(py_port, ts_port, path, "GET %s" % path)
-        for port, tag in ((py_port, "py"), (ts_port, "ts")):
+        for port, tag in ((py_port, "python"), (ts_port, "ts")):
             _, body, _ = http(port, "/v1/ledger?limit=500")
             try:
                 doc = json.loads(body.decode())

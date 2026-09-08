@@ -3,13 +3,13 @@
 Two contracts, one file:
 
 A. THE DELETE-RUNS DECISION (py cites — read fully, not a preference):
-   py/gateway.py ROUTES carries exactly ONE DELETE row —
+   python/gateway.py ROUTES carries exactly ONE DELETE row —
    DELETE /v1/studios/{tenant}/presets/{preset_id} (gateway.py
    4141-4147, _h_presets_delete). NO DELETE row touches
    /v1/flows/runs* (the Queue & runs block, gateway.py 4051-4095,
    is POST/GET only: start, validate, queue, status, stop, resume,
    events x2, runs list, run detail).
-   py/editor_runs.py carries NO runs_delete/run_delete symbol at all
+   python/editor_runs.py carries NO runs_delete/run_delete symbol at all
    — not even the unwired dead-code twin the drafts precedent has
    (drafts_delete, editor_runs.py 1065-1071, whose docstring says it
    "answers the unmatched-route shape rather than inventing

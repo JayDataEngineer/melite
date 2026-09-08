@@ -19,7 +19,7 @@
 //   - the mount set: models/3d/anny/model.py:110 (EstimateBody,
 //     SavePreset, LoadPreset, Dress, Prop — RigSomax + ApplySkin are
 //     DECLARED but unmounted; both still dispatch — see below).
-//   - the contract: py/melite_cards/dsl.py SubActionMod 857-869 +
+//   - the contract: python/melite_cards/dsl.py SubActionMod 857-869 +
 //     VerbEngine 822-854 (exactly one of flow | local | refusal per
 //     engine; queue + local engines never mix in one verb).
 //   - the interim renderer copies (proof the verbs are wired as code
@@ -27,7 +27,7 @@
 //     ANNY_VERBS 97-134 (hmr-estimate, dress, prop, rig-somax,
 //     apply-skin) + ANNY_PRESET_VERBS 447-448 (preset-save,
 //     preset-load). The union with the mounted set is exactly these 7.
-//   - the outputs gate: py/gateway.py _output_violation 473-489 (the
+//   - the outputs gate: python/gateway.py _output_violation 473-489 (the
 //     TEXT), the run-level arm 1374-1396 ({model} runs flip to failed),
 //     the per-stage arm 1821-1832 (card= stages raise ValidationError).
 //   - the outputs rows: every card's card_outputs (OutputRow rows,
@@ -513,7 +513,7 @@ export const CARD_OUTPUTS: Readonly<Record<string, readonly OutputDecl[]>> = {
 };
 
 /**
- * The OUTPUT CONTRACT check (py/gateway.py _output_violation 473-489,
+ * The OUTPUT CONTRACT check (python/gateway.py _output_violation 473-489,
  * transcribed 1:1): null = honored; string = the exact refusal.
  * Suffix match, case-insensitive, any-of per row; the FIRST violating
  * row in declaration order wins; unknown/rowless cards pass (the

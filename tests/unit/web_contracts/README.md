@@ -2,7 +2,7 @@
 
 Python-side pydantic mirrors of every TypeScript wire type in `packages/web-kit/contracts/src/`.
 These models and tests serve ONLY the test suite — the gateway's own pydantic
-models (in `py/`) remain the runtime authority.
+models (in `python/`) remain the runtime authority.
 
 ## Architecture
 

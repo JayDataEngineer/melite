@@ -7,7 +7,7 @@
 # (or runs it ephemeral with `uvx --from ... infer-flow-tavern`).
 #
 # The plugin talks to the gateway over HTTP only — it never imports
-# py/ or plugins/engines/* in-process, so it boots anywhere the
+# python/ or plugins/engines/* in-process, so it boots anywhere the
 # gateway is reachable (local, remote, cloud) and never has to share
 # a venv with the GPU serving runtime.
 [project]

@@ -101,7 +101,7 @@ export const createExecuteSlice = (
  // COMPILE-TIME GUARD (2026-09-05): resolve the runner DECLARATIVELY
  // from the kind's `runner` flag and the stage's own `flowName` — no
  // hardcoded kind-name branches (the dispatcher's SSOT is
- // py/card_kinds.py). A refusal here is a clean toast, NOT a thrown
+ // python/card_kinds.py). A refusal here is a clean toast, NOT a thrown
  // Error at run time — "this should be caught compile time".
  const resolution = resolveStageRunner(stage)
  if (resolution.runner === null) {

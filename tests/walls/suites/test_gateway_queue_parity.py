@@ -4,7 +4,7 @@
 Proves the TypeScript single-module core
 (packages/gateway/src/queue/queue.ts, lock-first boot gate wired in
 server.ts isMain) is the py queue machinery
-(py/gateway.py: enqueue/dequeue ordering, serial-GPU single-writer
+(python/gateway.py: enqueue/dequeue ordering, serial-GPU single-writer
 lock, retries, persistence/journal shapes, refusal texts):
 
   Phase L — lock contention (py STOPPED throughout this phase: no
@@ -101,7 +101,7 @@ from pathlib import Path
 from _anchor import REPO, boot_scratch_gateway, reap_gateway
 
 sys.dont_write_bytecode = True
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 PASS = FAIL = 0
 TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
@@ -342,7 +342,7 @@ def seed_draft(root: str, did: str = "d1") -> None:
 # ── Phase L: lock contention ─────────────────────────────────────
 
 PY_HOLDER_SRC = (
-    "import sys, time; sys.path.insert(0, 'py');"
+    "import sys, time; sys.path.insert(0, 'python');"
     "import gateway as g;"
     "ok, note = g.acquire_lock();"
     "sys.stdout.write('READY %s\\n' % ok); sys.stdout.flush();"
@@ -616,7 +616,7 @@ def phase_q() -> None:
 # ── Phase J: persistence/journal shapes ──────────────────────────
 
 PY_LEDGER_SRC = (
-    "import sys; sys.path.insert(0, 'py');"
+    "import sys; sys.path.insert(0, 'python');"
     "import gateway as g;"
     "g.ledger('run.stage_retry', {'run_id': 'run-x', 'stage': 'w',"
     " 'attempt': 2, 'error': 'boom-2'});"
@@ -625,7 +625,7 @@ PY_LEDGER_SRC = (
 )
 
 PY_SUBMIT_SRC = (
-    "import sys, json, asyncio; sys.path.insert(0, 'py');"
+    "import sys, json, asyncio; sys.path.insert(0, 'python');"
     "import gateway as g;"
     "gw = g.Gateway();"
     "run = asyncio.run(gw.submit(%s));"
@@ -637,7 +637,7 @@ PY_SUBMIT_SRC = (
 )
 
 PY_SWEEP_SRC = (
-    "import sys, json; sys.path.insert(0, 'py');"
+    "import sys, json; sys.path.insert(0, 'python');"
     "from pathlib import Path;"
     "import gateway as g;"
     "out = Path(%s) / 'output';"
@@ -651,14 +651,14 @@ PY_SWEEP_SRC = (
 )
 
 PY_RESURRECT_SRC = (
-    "import sys, json; sys.path.insert(0, 'py');"
+    "import sys, json; sys.path.insert(0, 'python');"
     "import gateway as g;"
     "gw = g.Gateway();"
     "n = g.boot_resurrect(gw);"
     "print(json.dumps({'n': n, 'order': gw.order}))"
 )
 PY_BUILD_SRC = (
-    "import sys, json\nsys.path.insert(0, 'py')\n"
+    "import sys, json\nsys.path.insert(0, 'python')\n"
     "import gateway as g\n"
     "rid = %r\n"
     "try:\n"

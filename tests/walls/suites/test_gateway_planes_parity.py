@@ -53,7 +53,7 @@ from pathlib import Path
 from _anchor import REPO, reap_gateway
 
 sys.dont_write_bytecode = True
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import flow as flowmod  # noqa: E402
 import gateway as gwmod  # noqa: E402
@@ -154,7 +154,7 @@ def dual_modulo_clock(ts_port: int, py_target: str, ts_path: str, name: str,
             note += " clock %s py=%r ts=%r" % (k, pv, tv)
     # agent/boot nests its process clock under gateway (3269-3318):
     # shape-check + strip before the byte-compare below.
-    for doc, side in ((pj, "py"), (tj, "ts")):
+    for doc, side in ((pj, "python"), (tj, "ts")):
         gw = doc.get("gateway")
         if isinstance(gw, dict):
             for k in ("boot_at", "uptime_s"):

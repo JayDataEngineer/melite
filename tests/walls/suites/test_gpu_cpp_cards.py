@@ -215,7 +215,7 @@ class TestGpuCppCards(unittest.TestCase):
         except Exception as e:
             raise AssertionError(
                 "gateway not reachable on %s — restart it first: "
-                "setsid .venv/bin/python py/gateway.py 33081 "
+                "setsid .venv/bin/python python/gateway.py 33081 "
                 "(%s)" % (BASE, e))
         cls.forge_glb = None
 

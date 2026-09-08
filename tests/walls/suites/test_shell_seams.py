@@ -267,7 +267,7 @@ ASSEMBLY_STUDIO = os.path.join(
 def test_the_anchor_seam_is_closed_and_geometry_only() -> None:
     # ViewportAnchor — the floating-content seam (pins, drawers,
     # notices, washes, bars). Since the map stroke the dock union
-    # lives ONCE in py/ui_map.py (see test_ui_map_parity.py — the
+    # lives ONCE in python/ui_map.py (see test_ui_map_parity.py — the
     # written-once wall); this leg pins the tsx side: the anchor
     # imports the generated face and carries GEOMETRY only — z
     # rides className (the drawer z-10, a wash z-20, a pill z-30
@@ -413,7 +413,7 @@ TENANT_GLOB = os.path.join(
     "ui", "studio", "component.tsx")
 
 
-# the unions live in the generated face of py/ui_map.py since the
+# the unions live in the generated face of python/ui_map.py since the
 # map stroke — the helpers read the MAP (the SSOT), so this suite
 # and test_ui_map_parity.py agree by construction
 UI_MAP_GENERATED = os.path.join(
@@ -607,7 +607,7 @@ VIEWPORT_OVERLAYS = os.path.join(
 
 def test_overlay_unions_closed_and_renderer_genre_blind() -> None:
     src = open(VIEWPORT_OVERLAYS, encoding="utf-8").read()
-    # the unions live in the generated face of py/ui_map.py since
+    # the unions live in the generated face of python/ui_map.py since
     # the map stroke; the renderer re-exports them (and the
     # written-once wall refuses any second spelling)
     map_src = open(UI_MAP_GENERATED, encoding="utf-8").read()

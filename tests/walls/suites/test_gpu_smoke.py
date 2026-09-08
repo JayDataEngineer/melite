@@ -169,7 +169,7 @@ EXCLUDED: dict[str, str] = {
     # (2026-09-07 sweep — all three live-probed before recording)
     "auto-rig": "live queue probes in test_skintensors_card.py "
                 "(the lane's dedicated wall)",
-    # fit + skin: their glb intake is ARTIFACT-REF ONLY (py/
+    # fit + skin: their glb intake is ARTIFACT-REF ONLY (python/
     # artifact_refs.py — a prior run's output under the run pool;
     # /v1/uploads stages png/jpeg/webp and mimes GLBs wrong, so a
     # standalone light probe cannot feed the lane, and no cheap
@@ -257,7 +257,7 @@ class TestGpuSmoke(unittest.TestCase):
         except Exception as e:
             raise AssertionError(
                 "gateway not reachable on %s — restart it first: "
-                "setsid .venv/bin/python py/gateway.py 33081 "
+                "setsid .venv/bin/python python/gateway.py 33081 "
                 "(%s)" % (BASE, e))
 
     def _upload(self, path: str) -> str:

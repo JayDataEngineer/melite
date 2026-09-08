@@ -4,7 +4,7 @@ These models are the Python-side SSOT for the web contract validation
 tests.  They are derived 1:1 from the TypeScript definitions — every
 field, every enum, every nested structure.  They live in tests/ because
 they serve ONLY the test suite; the gateway's own pydantic models (in
-py/) remain the runtime authority.
+python/) remain the runtime authority.
 
 PYTHON SHAPE LAW compliance:
   - Frozen models (data-is-instances rule)

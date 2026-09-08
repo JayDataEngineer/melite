@@ -32,7 +32,7 @@ import pytest
 from _anchor import REPO
 
 if TYPE_CHECKING:
-    # py/ joins sys.path inside _estate_paths — never at module scope.
+    # python/ joins sys.path inside _estate_paths — never at module scope.
     from flow import Flow
 
 VERBS_PY = os.path.join(REPO, "packages", "engines", "comfyui",
@@ -42,7 +42,7 @@ PACKDIR = os.path.join(REPO, "vendor", "comfyui_extensions",
 
 
 def _estate_paths() -> None:
-    for p in (os.path.join(REPO, "py"),
+    for p in (os.path.join(REPO, "python"),
               os.path.join(REPO, "packages", "engines", "comfyui"),
               os.path.join(REPO, "packages", "engines", "comfyui", "compose")):
         if p not in sys.path:

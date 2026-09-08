@@ -1,5 +1,5 @@
 // meliteCoreKinds — the vitest seed for the kinds lane. The TRUTH is
-// py/card_kinds.py's TABLE (served on GET /v1/kinds); this fixture is the
+// python/card_kinds.py's TABLE (served on GET /v1/kinds); this fixture is the
 // jsdom suite's stand-in for that wire (no server in vitest). The
 // cross-door wall (tests/walls/suites/test_form_wire.py G) holds the
 // manifest-kind ⊆ registry invariant server-side.
@@ -20,8 +20,8 @@ interface KindSeed {
   // Declarative runner family (the dispatcher's SSOT). Absent ===
   // "" (default rule: flowName → chain, executable card → generation).
   // The input kind overrides to its own runner. Lockstep with
-  // py/card_kinds.py.
-  // Mirror py/card_kinds.KindRunner — closed vocab (lockstep with
+  // python/card_kinds.py.
+  // Mirror python/card_kinds.KindRunner — closed vocab (lockstep with
   // cardSeam.KindRunner; the fixture is the jsdom stand-in for the
   // /v1/kinds wire).
   runner?: "" | "input";

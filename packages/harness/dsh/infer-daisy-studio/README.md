@@ -56,7 +56,7 @@ status, validate, start, stop, events. Chat (`chat.py`) is the only place
 
 - QUEUE LANE LAW: explicit gateway URL, `{flow: lane}` naming, no fallbacks.
 - RESILIENCE LAW: 4xx and chat failures surface verbatim, never bare failed.
-- PLUGIN ARCH LAW: harness plugin, no `py/` or engine imports.
+- PLUGIN ARCH LAW: harness plugin, no `python/` or engine imports.
 - PROVISIONING LAW: own env, opt-in install, SDK kept lazy.
 - PYTHON SHAPE LAW: frozen rows on the wire, structural agent surface.
 

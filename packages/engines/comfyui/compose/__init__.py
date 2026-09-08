@@ -2,7 +2,7 @@
 2026-09-02: three folders — action_cards, models, compose; the compose
 package IS the engine surface).
 
-Contract (py/plugins.py, compose-first shape):
+Contract (python/plugins.py, compose-first shape):
     card_compose(body, model, run_id, yaml_text)
         -> (rc, yaml_text, extra_dict, error_str)
     execute(node, run_dir, inputs, stop_event, report=None) -> dict
@@ -43,7 +43,7 @@ from pathlib import Path
 
 _COMPOSE_DIR = Path(__file__).resolve().parent
 _PLUGIN_ROOT = _COMPOSE_DIR.parent
-# compose/ joins sys.path via the LOADER (py/plugins.py EngineRef.load —
+# compose/ joins sys.path via the LOADER (python/plugins.py EngineRef.load —
 # shape law rung 5), so every top-level importable below (native,
 # _config, _coscript) resolves without any path ritual here. Tests own
 # their own path setup, as always.
@@ -67,7 +67,7 @@ from melite_cards.dsl import ValidationError  # noqa: E402
 # dispatch is engine knowledge (PLUGIN ARCHITECTURE LAW). Genre groups
 # since the 2026-09-02 reorg: image/ audio/ video/ 3d/ motion/ mask/.
 # THE CARD PATTERN, uniform arm name (golden base: h3-timeline):
-# every card's compose arm is <card>/py/compose.py — no per-card
+# every card's compose arm is <card>/python/compose.py — no per-card
 # module stems (the generate/edit/music era ended 2026-09-04, the
 # structure audit: one shape, every card, walls pin it).
 # engine-owned run truth (PLUGIN ARCHITECTURE LAW): keys the card
@@ -75,7 +75,7 @@ from melite_cards.dsl import ValidationError  # noqa: E402
 # (tts/design) rides defaults and the renderer reads it as data.
 ENGINE_TRUTH_KEYS = ("mode", "variant")
 
-# The PACKAGE-load arms: every arm whose py/ is a package (has
+# The PACKAGE-load arms: every arm whose python/ is a package (has
 # __init__.py — THE CARD PATTERN's required entry, so ALL of them)
 # loads under its canonical alias (dir basename, hyphens→underscores;
 # package-relative imports inside the arm — `from . import schema` —
@@ -92,7 +92,7 @@ def _card_of(model: str) -> str | None:
     None = unboarded (the caller refuses LOUD — never a fallback)."""
     from _coscript import model_pys
     # melite_models resolves via the caller's process (the gateway runs
-    # with py/ as its script dir; the loader injects py/ at model
+    # with python/ as its script dir; the loader injects python/ at model
     # resolution — plugins.py load path). No path ritual here.
     for mpy in model_pys(model):
         try:

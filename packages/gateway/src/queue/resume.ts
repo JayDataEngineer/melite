@@ -1,5 +1,5 @@
 // queue/resume.ts — the POST /v1/flows/resume/<id> REFUSAL arm (TS
-// port of py/gateway.py Gateway.resume's refusal gates 1925-1958 +
+// port of python/gateway.py Gateway.resume's refusal gates 1925-1958 +
 // _h_flows_resume 2991-2995).
 //
 // WHAT THIS PORTS (every text byte-identical, codes/loc/expected/got

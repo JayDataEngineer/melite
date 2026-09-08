@@ -30,7 +30,7 @@ from pathlib import Path
 
 from _anchor import REPO
 
-GATEWAY = REPO / "py" / "gateway.py"
+GATEWAY = REPO / "python" / "gateway.py"
 DECK_HOST = REPO / "packages" / "web" / "dsh" / "melite-card-deck" / "src" / "index.ts"
 
 WEB_SOURCES = [

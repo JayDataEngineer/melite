@@ -1,7 +1,7 @@
 """test_ui_map_parity — THE MAP WALL (2026-09-07, the map stroke;
 design record docs/design/ui-map.md).
 
-py/ui_map.py is the SSOT of every closed seam union. This wall
+python/ui_map.py is the SSOT of every closed seam union. This wall
 refuses all three drift classes:
 
   1. STALE FACE — the generated ts file must match the map
@@ -24,7 +24,7 @@ from pathlib import Path
 
 from _anchor import REPO
 
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import ui_map  # noqa: E402
 from ui_map import (  # noqa: E402
@@ -53,7 +53,7 @@ _UNION_DECL = re.compile(
 
 def test_the_generated_face_is_fresh() -> None:
     # gen_ui_map dry run: exit 0 only when the generated file
-    # matches py/ui_map.py byte-for-byte
+    # matches python/ui_map.py byte-for-byte
     out = subprocess.run(  # noqa: S603
         [sys.executable, str(GEN_TOOL)], capture_output=True, text=True
     )
@@ -81,7 +81,7 @@ def test_the_unions_are_written_once() -> None:
         else:
             assert not decls, (
                 "%s hand-spells %s — the seam vocabulary lives ONCE"
-                " in py/ui_map.py; import the generated face"
+                " in python/ui_map.py; import the generated face"
                 % (f.name, ", ".join(decls)),
             )
 

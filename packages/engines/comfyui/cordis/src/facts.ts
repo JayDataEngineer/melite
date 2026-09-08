@@ -88,7 +88,7 @@ export interface StudioFacts {
 }
 
 /** The extension node map (EXTENSION LAW gate data): pack name →
- *  node class types it provides. Authored by py/card_requires.py
+ *  node class types it provides. Authored by python/card_requires.py
  *  during migration. */
 export interface FactsFile {
   models: Record<string, ModelFacts>

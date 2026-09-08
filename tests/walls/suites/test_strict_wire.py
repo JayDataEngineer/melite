@@ -4,7 +4,7 @@
 row that crosses a pydantic boundary validates AT CONSTRUCTION with
 extra=forbid. A literal carrying an unknown key is unbuildable — the
 schema refuses, the caller surfaces the refusal, the wire stays
-honest. The _Frozen base in py/form_wire.py and py/run_wire.py
+honest. The _Frozen base in python/form_wire.py and python/run_wire.py
 declares the constraint; this wall pins that every exported row class
 inherits it AND refuses a literal with an unknown key.
 

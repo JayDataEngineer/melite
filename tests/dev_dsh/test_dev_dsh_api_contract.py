@@ -122,7 +122,7 @@ def _assert_json_envelope(label: str, status: int, body: bytes, route: str) -> N
     """A 200 OR a 4xx/5xx with a JSON body carrying a real error
     message. Bare text = the old swallowed-exception leak (the
     "Internal Server Error" the user saw on form-spec?model=anny).
-    The surfacing fix in py/gateway.py _adapt means a 500 has
+    The surfacing fix in python/gateway.py _adapt means a 500 has
     `{"error": "...", "traceback": "..."}` — the wall pins the
     shape so a regression to bare text is a red."""
     if status == 200:
@@ -220,7 +220,7 @@ def test_gateway_surfaces_uncaught_exceptions_as_json() -> None:
     import asyncio
     import sys
     sys.path.insert(0, os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "..", "..", "py"))
+        os.path.dirname(os.path.abspath(__file__)), "..", "..", "python"))
     import gateway
     from starlette.requests import Request
 

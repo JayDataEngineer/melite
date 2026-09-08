@@ -1,6 +1,6 @@
 """test_imports — the import-smoke gate.
 
-A wall that imports every py/ module we ship. Catches the class of
+A wall that imports every python/ module we ship. Catches the class of
 "orphan syntax error after a bad edit that only surfaces at process
 boot" (2026-09-05: a box-drawing line left orphaned by a python
 str.replace produced a SyntaxError that the gateway returned 500
@@ -8,7 +8,7 @@ for, and only the live curl surfaced it). Importing IS the
 construction (PYTHON SHAPE LAW); an invalid module cannot be built,
 and therefore cannot be imported, and therefore cannot be shipped.
 
-Scope: the gateway's py/ surface — the modules the running process
+Scope: the gateway's python/ surface — the modules the running process
 imports. A bare `import x` runs the module top-level, so a typo in a
 class body, a missing symbol, a bad str.replace, all fail HERE
 before the gateway is ever restarted. Pairs with the runtime walls
@@ -21,7 +21,7 @@ import importlib
 import pytest
 
 
-# Every gateway py/ module that must import cleanly. Add to this list
+# Every gateway python/ module that must import cleanly. Add to this list
 # when a new module joins the boot path. Keep it a flat, explicit
 # list — implicit discovery is the drift class this gate refuses.
 GATEWAY_MODULES = (

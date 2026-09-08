@@ -34,7 +34,7 @@ from _anchor import REPO
 def _served() -> tuple[set[str], set[str]]:
     """(literal doors, regex stems). A literal row serves ONLY itself
     (+query); a regex row serves its stem's tails."""
-    sys.path.insert(0, str(REPO / "py"))
+    sys.path.insert(0, str(REPO / "python"))
     import gateway
     literals, regex_stems = set(), set()
     for row in gateway.ROUTES:

@@ -1,5 +1,5 @@
 // queue/reproduce.ts — the POST /v1/flows/reproduce/<id> REFUSAL
-// arm (TS port of py/gateway.py Gateway.reproduce's refusal gates
+// arm (TS port of python/gateway.py Gateway.reproduce's refusal gates
 // 2002-2033 + _h_flows_reproduce 2998-3002).
 //
 // WHAT THIS PORTS (every text byte-identical, codes/loc/expected/got

@@ -13,7 +13,7 @@ model/variant/quant selector). DELIBERATE contract change, one form:
   `"qwen-img-edit-2511"` (the editor's default model for the Image
   Edit form follows the boarded family — issue (a) of the rework).
 
-Source: `py/editor_forms.py` `_FORMS_TABLE["image-edit"]` (the fixed
+Source: `python/editor_forms.py` `_FORMS_TABLE["image-edit"]` (the fixed
 operator surface — the class/table is the SSOT, this golden pins it).
 No other form changed (verified: full-route live-vs-golden diff shows
 only `image-edit`).
@@ -55,7 +55,7 @@ deleted with the lane.
 ## 2026-09-06 — ledger row 3: _FORMS_TABLE derived, restatement deleted
 
 Operator order ("THE SOURCE DECLARES WHAT THE END USERS CAN DO, NOT
-THE OTHER WAY AROUND"): `py/editor_forms.py` no longer declares the
+THE OTHER WAY AROUND"): `python/editor_forms.py` no longer declares the
 18-entry literal — every entry is one uniform projection of its card
 class (id/label/genre + sidebar trio) + the Model.card scan (covers),
 zero per-card branches. Design record

@@ -104,7 +104,7 @@ _TYPE_RE = re.compile(r"Field\(\s*type\s*=\s*['\"]([^'\"]+)['\"]")
 # subclass deletes the last entry.
 _TYPE_DISPENSATION = {"image_list"}
 _DISPENSATED_CARDS = {
-    os.path.join("image", "image-edit", "py", "card.py"),
+    os.path.join("image", "image-edit", "python", "card.py"),
 }
 
 
@@ -123,7 +123,7 @@ def test_explicit_type_strings_stay_in_vocabulary() -> None:
             if not os.path.isdir(gd):
                 continue
             for card_dir in sorted(os.listdir(gd)):
-                cp = os.path.join(gd, card_dir, "py", "card.py")
+                cp = os.path.join(gd, card_dir, "python", "card.py")
                 if not os.path.isfile(cp):
                     continue
                 rel = os.path.relpath(cp, cards)

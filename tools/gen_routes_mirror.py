@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """tools/gen_routes_mirror.py — generate the gateway ROUTES mirror FROM
-the route table (the wire SSOT in py/gateway.py).
+the route table (the wire SSOT in python/gateway.py).
 
 Emits:
   packages/gateway/src/routes.ts — the `GatewayRoute` row type + the
@@ -32,13 +32,13 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO / "py"))
+sys.path.insert(0, str(REPO / "python"))
 
 import gateway  # noqa: E402  (stdlib only; the table imports clean)
 
 OUT_PATH = REPO / "packages" / "gateway" / "src" / "routes.ts"
 
-HEADER = """// GENERATED from py/gateway.py ROUTES (the wire SSOT) by
+HEADER = """// GENERATED from python/gateway.py ROUTES (the wire SSOT) by
 // tools/gen_routes_mirror.py — DO NOT EDIT. Regenerate after every
 // route change; tests/walls/suites/test_routes_mirror.py refuses
 // drift (row-count 54 + template-set equality py-vs-ts).
@@ -55,10 +55,10 @@ HEADER = """// GENERATED from py/gateway.py ROUTES (the wire SSOT) by
 // enums, no namespaces — bodyKind is a string union, query is a
 // readonly array, every row is a plain object literal.
 
-/** Request-body discipline, mirroring Route.body in py/gateway.py. */
+/** Request-body discipline, mirroring Route.body in python/gateway.py. */
 export type BodyKind = "none" | "strict" | "lenient" | "raw";
 
-/** One route row — the TS mirror of Route in py/gateway.py. */
+/** One route row — the TS mirror of Route in python/gateway.py. */
 export interface GatewayRoute {
   /** "GET" | "POST" | "DELETE" | "PATCH" | "A|B" multi-arm | "*" any. */
   readonly method: string;

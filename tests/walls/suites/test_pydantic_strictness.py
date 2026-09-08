@@ -16,7 +16,7 @@ an otherwise-minimal payload, must refuse with `extra_forbidden` —
 proving the contract at RUNTIME, not just in config text.
 
 Discovery mirrors the estate's own import surface (loader-owned
-mechanics, shape law rung 5): repo py/ on sys.path, each engine's
+mechanics, shape law rung 5): repo python/ on sys.path, each engine's
 plugin root on sys.path (the compose/ library contract), naive spec
 import per file, LOUD on holes — a target file that fails to import
 fails this suite, so the sweep can never silently shrink.
@@ -35,21 +35,21 @@ REPO = Path(__file__).resolve().parents[3]
 # a pydantic row the gateway constructs at runtime.
 def _target_files() -> list[Path]:
     files: list[Path] = []
-    files += (REPO / "py").glob("*.py")
-    files += (REPO / "py/melite_models").glob("*.py")
-    files += (REPO / "py/melite_cards").glob("*.py")
-    # THE ONE plugin-dir walk (py/plugins.py:iter_plugin_dirs_under —
+    files += (REPO / "python").glob("*.py")
+    files += (REPO / "python/melite_models").glob("*.py")
+    files += (REPO / "python/melite_cards").glob("*.py")
+    # THE ONE plugin-dir walk (python/plugins.py:iter_plugin_dirs_under —
     # no per-consumer copies): depth-2 plugins AND depth-3 category
     # containers (cpp/<plugin>). The 2026-09-05 audit found the old
     # per-engine globs silently missed ALL 40 files under cpp/ —
     # every cpp plugin's rows were unswept.
-    sys.path.insert(0, str(REPO / "py"))
+    sys.path.insert(0, str(REPO / "python"))
     import plugins as _plugins
     for pdir in _plugins.iter_plugin_dirs_under(
             REPO / "packages" / "engines"):
         files += pdir.glob("models/*/*/model.py")
         files += pdir.glob("models/*/*/mods/*.py")
-        files += pdir.glob("action_cards/*/*/py/*.py")
+        files += pdir.glob("action_cards/*/*/python/*.py")
         # the compose packages (card/chain/artifact/preset rows — the
         # 2026-09-05 sweep found these extra=ignore, silently dropping
         # dead riders; the glob hole is why it survived)
@@ -75,10 +75,10 @@ def _discover_models() -> dict[str, type[BaseModel]]:
 
 
 def _discover_locked() -> dict[str, type[BaseModel]]:
-    sys.path.insert(0, str(REPO / "py"))
+    sys.path.insert(0, str(REPO / "python"))
     # compose libraries resolve from the plugin root and the compose
     # package dir (co_script / _coscript) — the same contract
-    # py/plugins.py load_engine honors for card py modules
+    # python/plugins.py load_engine honors for card py modules
     for eng in (REPO / "packages/engines").iterdir():
         if eng.is_dir():
             sys.path.insert(0, str(eng))
@@ -90,8 +90,8 @@ def _discover_locked() -> dict[str, type[BaseModel]]:
     # restore dance died with the python render plane (b324c480):
     # co_script/ and the card renderer.py files no longer exist, so
     # there is no shared registry left to poison. The sweep itself is
-    # unchanged — it imports the surviving surface (py/, models/,
-    # compose/*.py, the cpp/node arms' py/, compose/ui/).
+    # unchanged — it imports the surviving surface (python/, models/,
+    # compose/*.py, the cpp/node arms' python/, compose/ui/).
 
     found: dict[str, type[BaseModel]] = {}
     if True:
@@ -100,7 +100,7 @@ def _discover_locked() -> dict[str, type[BaseModel]]:
             modname = "strictwall_" + rel.replace(
                 "/", "_").replace(".", "_").replace("-", "_")
             # package-member files (a dir with __init__.py, e.g. the h3
-            # card's py/ tree) import under a synthetic parent package so
+            # card's python/ tree) import under a synthetic parent package so
             # relative imports resolve — the same context the card loader
             # provides at runtime
             parent_pkg = None

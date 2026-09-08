@@ -4,7 +4,7 @@
 Proves the TypeScript bridge doors (packages/gateway/src/doors/
 bridges.ts via the ctx.ts seam: POST /v1/manage → the manage
 subprocess bridge, GET|POST ^/poser/ → the studio forward) answer
-byte-identical to the py gateway (py/gateway.py _h_manage /
+byte-identical to the py gateway (python/gateway.py _h_manage /
 _h_poser_bridge):
 
   Phase A — poser forward parity (dual-served py vs TS against a
@@ -239,7 +239,7 @@ if _cfg:
 
 def boot_py(env: dict, port: int) -> "subprocess.Popen[bytes]":
     proc = subprocess.Popen(
-        [str(VENV_PY), str(REPO / "py" / "gateway.py"), str(port)],
+        [str(VENV_PY), str(REPO / "python" / "gateway.py"), str(port)],
         cwd=str(REPO), env=env,
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         start_new_session=True)
@@ -356,7 +356,7 @@ def main() -> int:
     py_env["MELITE_STATE_ROOT"] = str(py_root)
     py_env["DSH_GATEWAY_TOKEN"] = TOKEN
     py_env["WALL_ESTATE_CONFIG"] = str(py_cfg)
-    py_env["PYTHONPATH"] = (str(shim) + os.pathsep + str(REPO / "py")
+    py_env["PYTHONPATH"] = (str(shim) + os.pathsep + str(REPO / "python")
                             + os.pathsep + py_env.get("PYTHONPATH", ""))
     ts_env = dict(os.environ)
     ts_env["MELITE_STATE_ROOT"] = str(ts_root)

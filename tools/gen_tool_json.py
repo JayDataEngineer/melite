@@ -20,7 +20,7 @@ import os
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(REPO, "py"))
+sys.path.insert(0, os.path.join(REPO, "python"))
 
 from melite_cards import scan_engine_cards, tool_manifests  # noqa: E402
 
@@ -32,7 +32,7 @@ def main() -> int:
     for cid in sorted(cards):
         path, cls = cards[cid]
         # THE CARD PATTERN (2026-09-03): card.py lives in the card's
-        # py/ subfolder; the tool.json SNAPSHOT is derived data and
+        # python/ subfolder; the tool.json SNAPSHOT is derived data and
         # sits at the CARD ROOT (beside tool.json's serving-era home)
         snap_dir = os.path.dirname(path)
         if os.path.basename(snap_dir) == "py":
