@@ -190,7 +190,7 @@ class TestStudioSeam:
         tenant keeps its own for every note it still renders."""
         src = COMPONENT.read_text()
         assert src.count("line-clamp-2") >= 1
-        chip = (REPO / "web/ui/src/verbChip.tsx").read_text()
+        chip = (REPO / "packages/web-kit/ui/src/verbChip.tsx").read_text()
         assert "line-clamp-2" in chip, \
             "VerbChip's note line must clamp (the shared note render)"
         shape = (REPO / "packages/engines/comfyui/action_cards/3d/anny"

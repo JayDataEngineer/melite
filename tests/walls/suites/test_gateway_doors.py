@@ -7,7 +7,7 @@ installed" while the python rows existed. No gate refused the gap
 because nothing cross-checked the two sides.
 
 The automation this wall pins:
-  1. GENERATION — web/catalog/src/generated/gatewayDoors.ts is
+  1. GENERATION — packages/web-kit/catalog/src/generated/gatewayDoors.ts is
      generated FROM gateway.ROUTES (tools/gen_gateway_doors.py).
      A stale generated file fails --check here.
   2. THE COMPILE GATE — apiFetch/apiJson accept ONLY

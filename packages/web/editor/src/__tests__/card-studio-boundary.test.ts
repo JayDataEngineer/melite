@@ -386,7 +386,7 @@ describe("plugin ui tenant boundary (§16 E-TENANTS)", () => {
   })
 
   // ── THE WEB REGISTRY (docs/design/web-registry.md §6) ──────────────────
-  // The composed catalog (web/generated/registry.json — gen_registry.py's derived
+  // The composed catalog (packages/web-kit/generated/registry.json — gen_registry.py's derived
   // artifact) is the POOL. A tenant importing a kit component the pool
   // does not list is drift: either the registry snapshot is stale
   // (regenerate) or the import is a typo riding a dead export.
@@ -398,7 +398,7 @@ describe("plugin ui tenant boundary (§16 E-TENANTS)", () => {
     // The pool is the EXPORT NAMES (what a consumer imports), not the
     // item names — one item can provide many idents (utils -> cn).
     const pool = new Set(catalog.items.flatMap((i) => i.exports ?? [i.name]))
-    expect(pool.size, "web/generated/registry.json is composed and non-empty").toBeGreaterThan(0)
+    expect(pool.size, "packages/web-kit/generated/registry.json is composed and non-empty").toBeGreaterThan(0)
     const failures: string[] = []
     const files = [...pluginUiFiles(), ...studioTenants()]
     expect(files.length).toBeGreaterThan(0)

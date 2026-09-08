@@ -194,4 +194,4 @@ def test_provisioner_links() -> None:
 
 @pytest.mark.parametrize("k", ["ui", "slots", "contracts", "formats", "catalog"])
 def test_kit_package_name(k: str) -> None:
-    assert _pkg_name(os.path.join(REPO, "web", k)) == "@melite/%s" % k
+    assert _pkg_name(os.path.join(REPO, "packages", "web-kit", k)) == "@melite/%s" % k

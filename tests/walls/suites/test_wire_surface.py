@@ -32,10 +32,10 @@ from _anchor import REPO
 # spec files are excluded — mock-server tests deliberately cite dead doors.
 FRONTEND_ROOTS = (
     os.path.join(REPO, "packages", "web", "editor", "src"),
-    os.path.join(REPO, "web", "catalog", "src"),
-    os.path.join(REPO, "web", "ui", "src"),
-    os.path.join(REPO, "web", "formats", "src"),
-    os.path.join(REPO, "web", "contracts", "src"),
+    os.path.join(REPO, "packages", "web-kit", "catalog", "src"),
+    os.path.join(REPO, "packages", "web-kit", "ui", "src"),
+    os.path.join(REPO, "packages", "web-kit", "formats", "src"),
+    os.path.join(REPO, "packages", "web-kit", "contracts", "src"),
 )
 GATEWAY_ROOT = os.path.join(REPO, "py")
 

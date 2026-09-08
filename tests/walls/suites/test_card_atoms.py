@@ -6,7 +6,7 @@ Operator orders (verbatim, 2026-09-06 recipe audit + shadcn stroke):
 
 The baseline:
 
-1. `@melite/ui` (web/ui/src) is the ONLY atom source: the shadcn kit
+1. `@melite/ui` (packages/web-kit/ui/src) is the ONLY atom source: the shadcn kit
    (cva + cn + data-slot primitives, subpath imports). Card surfaces
    never hand-roll field widgets.
 2. `SchemaField.tsx` is the ONE field primitive: its widget vocabulary

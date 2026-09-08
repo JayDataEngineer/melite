@@ -41,11 +41,15 @@
  * deselects (the post-pointerup synthetic click is suppressed).
  *
  * Theme: the navy/cyan tokens (bg --blue-2 #111927, playhead brand cyan
- * #00E9EC), matching the 2026-08-14 timeline re-skin.
+ * #00E9EC), matching the 2026-08-14 timeline re-skin. The palette is
+ * themeable per mount (the 2026-09-07 styling seam: className/style on
+ * the root, theme.{barBg,playhead} for the accents) — defaults render
+ * byte-identical, so no tenant changes.
  */
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import type { CSSProperties } from "react"
 import { Film, Image, ListMusic, Music, X, ZoomIn, ZoomOut } from "lucide-react"
-import { ASSET_DRAG_MIME } from "@melite/ui"
+import { ASSET_DRAG_MIME, cn } from "@melite/ui"
 import { MOTION_TIMELINE_TRACKS } from "./viser-timeline/motionTimelineState"
 import { PROMPT_COLORS } from "./viser-timeline/styles"
 import { Button } from "@melite/ui/button"
@@ -236,6 +240,24 @@ export interface MotionTimelineBarProps {
   onAudioClipDelete?: (layerId: string, clipId: string) => void
   /** Detach a wired layer (its × in the gutter). */
   onAudioDetach?: (layerId: string) => void
+  /** ── STYLING SEAM (2026-09-07, the shadcn rule): the bar is a
+   *  shared component and takes className/style like every other
+   *  primitive — the tenant's shell (border, rounding) rides the
+   *  root; twMerge resolves conflicts. Absent → byte-identical. */
+  className?: string
+  style?: CSSProperties
+  /** Palette overrides — the navy/cyan defaults ARE the 2026-08-14
+   *  re-skin; a tenant restyles (e.g. matches a themed studio)
+   *  without forking the bar. Partial: unset keys keep defaults. */
+  theme?: MotionTimelineBarTheme
+}
+
+/** The bar's themeable palette (defaults: the navy/cyan tokens). */
+export interface MotionTimelineBarTheme {
+  /** The bar's background wash (default #111927, --blue-2). */
+  barBg?: string
+  /** The playhead + seam/extend accent (default brand cyan #00E9EC). */
+  playhead?: string
 }
 
 /** One persistent audio bed rendered as a native timeline track. */
@@ -335,7 +357,13 @@ export function MotionTimelineBar({
   onAudioClipMove,
   onAudioClipDelete,
   onAudioDetach,
+  className,
+  style,
+  theme,
 }: MotionTimelineBarProps) {
+  // Theme resolution — unset keys keep the verbatim defaults.
+  const barBg = theme?.barBg ?? BAR_BG
+  const playhead = theme?.playhead ?? PLAYHEAD
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const dragRef = useRef<Drag | null>(null)
   // A drag that actually traveled suppresses the synthetic click the
@@ -785,8 +813,8 @@ export function MotionTimelineBar({
   return (
     <div
       data-testid="motion-timeline-bar"
-      className="flex select-none"
-      style={{ background: BAR_BG }}
+      className={cn("flex select-none", className)}
+      style={{ background: barBg, ...style }}
     >
       {/* ── Label gutter (pinned — never scrolls) ────────────────────────── */}
       <div
@@ -955,7 +983,7 @@ export function MotionTimelineBar({
               <span
                 data-testid="motion-timeline-timecode"
                 className="sticky left-0 z-10 flex h-full items-center pl-1.5 pr-2 font-mono text-[10px] leading-none tabular-nums text-brand"
-                style={{ background: BAR_BG, boxShadow: "2px 0 6px -2px rgba(0,0,0,0.8)" }}
+                style={{ background: barBg, boxShadow: "2px 0 6px -2px rgba(0,0,0,0.8)" }}
               >
                 {fmtTimecode(frameIdx, fps)}
               </span>
@@ -1080,7 +1108,7 @@ export function MotionTimelineBar({
                     {p.seam === "extend" && !isFirst && (
                       <div
                         className="absolute left-0 top-0 z-35 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                        style={{ background: PLAYHEAD, boxShadow: `0 0 4px ${PLAYHEAD}` }}
+                        style={{ background: playhead, boxShadow: `0 0 4px ${playhead}` }}
                         title="extend — latent tail carries across this seam"
                       />
                     )}
@@ -1517,14 +1545,14 @@ export function MotionTimelineBar({
               style={{
                 left: frameToPx(frameIdx),
                 width: 2,
-                background: PLAYHEAD,
-                boxShadow: `0 0 6px ${PLAYHEAD}66`,
+                background: playhead,
+                boxShadow: `0 0 6px ${playhead}66`,
                 transform: "translateX(-50%)",
               }}
             >
               <span
                 className="absolute -top-0 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full border border-white/50"
-                style={{ background: PLAYHEAD }}
+                style={{ background: playhead }}
               />
             </div>
           </div>

@@ -44,10 +44,18 @@ class TestSecretSafety:
 
 
 class TestPnpmWorkspace:
-    def test_no_packages_glob(self, repo: Path) -> None:
+    def test_packages_domain_globs(self, repo: Path) -> None:
+        # RE-DERIVED 2026-09-08 (operator order: 'do the full
+        # restructure'; canon docs/dsh-homolog/structure.md): the old
+        # no-packages law pinned the pnpm-era straggler dir; packages/
+        # is now THE domain root (DSH shape: packages/<domain>/<pkg>).
+        # The wall pins the NEW invariant instead: the domain globs
+        # exist and no root-level plugin stragglers remain.
         body = _read("pnpm-workspace.yaml", repo)
-        assert "'packages/*'" not in body, \
-            "pnpm-workspace.yaml still globs packages/*"
+        assert "'packages/*'" in body, \
+            "pnpm-workspace.yaml lost the packages/* domain glob"
+        assert "'plugins/*'" not in body, \
+            "pnpm-workspace.yaml still globs the retired plugins/* root"
 
     def test_workspace_parses(self, repo: Path) -> None:
         r = subprocess.run(
@@ -73,14 +81,22 @@ class TestDerivedArtifactHome:
             "web/registry.json exists at the web root"
 
     def test_generated_registry_present(self, repo: Path) -> None:
-        assert _exists("web/generated/registry.json", repo)
-        data = json.loads(_read("web/generated/registry.json", repo))
+        assert _exists("packages/web-kit/generated/registry.json", repo)
+        data = json.loads(_read("packages/web-kit/generated/registry.json", repo))
         assert "items" in data
         assert len(data["items"]) > 0
         for it in data["items"][:3]:
             assert "name" in it
             assert "package" in it
 
-    def test_no_packages_dir(self, repo: Path) -> None:
-        assert not _exists("packages", repo), \
-            "packages/ directory exists -- the straggler dir is back"
+    def test_packages_domain_root(self, repo: Path) -> None:
+        # RE-DERIVED 2026-09-08: packages/ is the DSH-shape domain
+        # root (structure.md); the straggler-dir law died with the
+        # plugins/ -> packages/ restructure. The root kit lives at
+        # packages/web-kit/ (the generic @melite kit above pathways).
+        assert _exists("packages/gateway", repo), \
+            "packages/gateway missing -- the domain root broke"
+        assert not _exists("web", repo), \
+            "root web/ straggler is back -- the kit lives at packages/web-kit/"
+        assert not _exists("plugins", repo), \
+            "root plugins/ straggler is back -- the restructure renamed it"

@@ -2,7 +2,7 @@
 
 The 2026-08-11 directive: "make declarative contracts in the Zustand
 and pydantic so it's impossible to fail this". Only the Zustand half
-existed — web/catalog/src/catalogContract.ts — and on 2026-09-05 it
+existed — packages/web-kit/catalog/src/catalogContract.ts — and on 2026-09-05 it
 caught at RUNTIME (operator-visible toast) what every backend gate had
 shipped: four `form = ''` model rows with the key silently dropped.
 

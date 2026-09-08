@@ -40,7 +40,7 @@ ANNY_COMPONENT = (
 )
 BODY_CARD = REPO / "packages/engines/comfyui/action_cards/3d/body"
 STUDIO_CAPS = (
-    REPO / "web/slots/src/studioCapabilities.ts"
+    REPO / "packages/web-kit/slots/src/studioCapabilities.ts"
 )
 
 # The REMOVED ray Character bag — the exact keys the body card's
@@ -317,7 +317,7 @@ class TestRailLayout(unittest.TestCase):
         )
         # 2026-09-07 kit-era amendment: the raw <section aria-label=...>
         # wrapper became the kit RailSection, which DERIVES the
-        # section's aria-label from its title prop (web/ui/src/
+        # section's aria-label from its title prop (packages/web-kit/ui/src/
         # rail-section.tsx) — the accessible name is pinned through
         # the title on the anny-assembly-truth section.
         self.assertRegex(

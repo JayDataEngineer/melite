@@ -6,7 +6,7 @@ wall refuses two shapes (pure tree walk, no node needed):
 
   1. MISPLACED PACKAGE — the @melite-plugin/timeline package (video
      AND motion consumers) must not live under any card dir. Landed
-     2026-09-07: video/h3-timeline/ui → web/timeline, zero consumer
+     2026-09-07: video/h3-timeline/ui → packages/web-kit/timeline, zero consumer
      changes (the package NAME is unchanged; only the home moved).
   2. PATH-CONSUMED PACKAGE — no .ts/.tsx relative import may target
      a directory that owns a package.json under a DIFFERENT card

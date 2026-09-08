@@ -36,15 +36,11 @@ import type { ReactElement, ReactNode } from "react"
 import { Loader2 } from "lucide-react"
 import { cn } from "./utils"
 
-/** What a row renders as (closed union; members name REAL controls).
- *  • toggle — one chip, active|inactive, fires onAct per press.
- *  • segmented — one-of-many chips, the active option lit.
- *  • status — a non-interactive live pill (progress at the gesture
- *    that started it; e.g. a run in flight). */
-export type OverlayKind = "toggle" | "segmented" | "status"
+/* The overlay vocabularies live ONCE in py/ui_map.py (the map
+ * SSOT); re-exported here from the generated face. */
+import type { OverlayDock, OverlayKind } from "./uiMap.generated"
 
-/** Which viewport corner the row docks to (closed union). */
-export type OverlayDock = "tl" | "tr" | "bl" | "br"
+export type { OverlayDock, OverlayKind }
 
 export interface ViewportOverlay {
   /** Stable row id (grouping + React keys). */

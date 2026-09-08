@@ -12,7 +12,7 @@ SSOT inputs (read-only; never edited here):
   py/flow.py                        Kind (the closed edge-type vocabulary)
   py/melite_cards/dsl.py            ActionCard.SIDEBAR_SECTIONS (the sidebar trio gate)
   py/ui_map.py                      5 seam enums — READ ONLY (sibling MAP stroke owns
-                                    web/ui/src/uiMap.generated.ts). Imported solely
+                                    packages/web-kit/ui/src/uiMap.generated.ts). Imported solely
                                     to REFUSE a name collision: a vocab union taking
                                     a seam-union name would be a second spelling.
 

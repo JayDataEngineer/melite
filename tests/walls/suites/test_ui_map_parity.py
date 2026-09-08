@@ -7,7 +7,7 @@ refuses all three drift classes:
   1. STALE FACE — the generated ts file must match the map
      (gen_ui_map dry run, exit 1 on drift).
   2. SECOND SPELLING — no hand-written union may exist anywhere
-     in web/ui/src except the generated file (the written-once
+     in packages/web-kit/ui/src except the generated file (the written-once
      law: everything in the ui is written once, apart from the
      map).
   3. VOCABULARY ROT — the member sets are pinned here by name,

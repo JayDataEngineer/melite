@@ -3,7 +3,7 @@
 the route table (the wire SSOT in py/gateway.py).
 
 Emits:
-  web/catalog/src/generated/gatewayDoors.ts — the `GatewayDoorUrl`
+  packages/web-kit/catalog/src/generated/gatewayDoors.ts — the `GatewayDoorUrl`
     template-literal union every apiJson/apiFetch call site must
     satisfy. A frontend door with no backend route row is a COMPILE
     ERROR (tsc), not a runtime 404 over live data — the loras

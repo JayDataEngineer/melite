@@ -52,7 +52,7 @@ describe("package closure (the @melite graph is the law)", () => {
   const pkgs = readdirSync(PACKAGES_DIR, { withFileTypes: true })
     .filter((d) => d.isDirectory())
     // a package DECLARES itself (package.json); derived dirs like
-    // web/generated (36fb6d9) are not packages — never were
+    // packages/web-kit/generated (36fb6d9) are not packages — never were
     .filter((d) => existsSync(join(PACKAGES_DIR, d.name, "package.json")))
     .map((d) => d.name)
 
@@ -61,7 +61,7 @@ describe("package closure (the @melite graph is the law)", () => {
       const pj = JSON.parse(readFileSync(join(PACKAGES_DIR, name, "package.json"), "utf8"))
       // TWO namespaces, both first-class: @melite/<dir> (the src/
       // workspace shape) and @melite-plugin/<dir> (the PRIMITIVE
-      // HOME packages — web/timeline kept its published name in the
+      // HOME packages — packages/web-kit/timeline kept its published name in the
       // stroke-2 move so zero consumers changed; ledger row 5
       // slice 1, 2026-09-07). Anything else is an undeclared
       // namespace.
@@ -77,7 +77,7 @@ describe("package closure (the @melite graph is the law)", () => {
       const pkgRoot = join(PACKAGES_DIR, name)
       const declared = new Set(Object.keys(JSON.parse(readFileSync(join(pkgRoot, "package.json"), "utf8")).dependencies ?? {}))
       // the scan root: src/ for the workspace shape, the package
-      // root for the exports-map shape (web/timeline) — node_modules
+      // root for the exports-map shape (packages/web-kit/timeline) — node_modules
       // never walks
       const srcRoot = existsSync(join(pkgRoot, "src")) ? join(pkgRoot, "src") : pkgRoot
       for (const file of walk(srcRoot).filter((f) => !f.includes(`/node_modules/`))) {
@@ -108,7 +108,7 @@ describe("package closure (the @melite graph is the law)", () => {
   it("every package has exactly one declaration site (its package.json main)", () => {
     // ONE canonical entry, declared ONCE: the main field. The
     // src/-shape packages point at src/index.ts; the exports-map
-    // shape (web/timeline) at ./timeline/index.ts — both are the
+    // shape (packages/web-kit/timeline) at ./timeline/index.ts — both are the
     // single declaration site their consumers resolve through.
     for (const name of pkgs) {
       const pj = JSON.parse(readFileSync(join(PACKAGES_DIR, name, "package.json"), "utf8"))

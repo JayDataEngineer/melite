@@ -70,54 +70,12 @@ export interface CardRunElement {
 
 export const cardRunSlot = createUiSlot<CardRunElement, CardRunProps>("card-run")
 
-// ── studio preview cell ─────────────────────────────────────────────
-/** The STUDIO's preview region — the right-side viewport above the
- *  timeline strip. For image cards this is the generated image; for
- *  video timeline this is the FilmPlayer + run history; for audio this
- *  is the waveform. The default claim renders the stage's first
- *  artifact URL as an <img> or <video>; overrides (timeline, body-3d)
- *  render their own rich preview. */
-export interface CardStudioPreviewProps {
-  stage: CardStage
-  /** The stage's first artifact URL, when one exists. */
-  url: string | undefined
-  genre: CardGenre
-  running: boolean
-}
-
-export interface CardStudioPreviewElement {
-  Preview: ComponentType<CardStudioPreviewProps>
-}
-
-export const cardStudioPreviewSlot = createUiSlot<CardStudioPreviewElement, CardStudioPreviewProps>("card-studio-preview")
-
-// ── studio strip cell ──────────────────────────────────────────────
-/** The STUDIO's bottom strip — pinned below the preview, above the
- *  card edge. A GENERIC composition slot: each card type puts whatever
- *  it needs here.
- *
- *  Video timeline  → MotionTimelineBar (calls, beats, audio lanes, keyframes)
- *  Image gen       → reference image strip / prompt history / thumbnail gallery
- *  Audio           → waveform / clip arrangement / stem mixer
- *  3D              → material picker / turntable controls
- *  Most cards      → null claim (no strip needed)
- *
- *  The strip is the interaction model for temporal cards — drag edges
- *  to move cuts, click to select, double-click to add. Non-temporal
- *  cards may use it for reference grids, input pickers, or status bars.
- *  The slot is ONE place; multiple children may compose inside it
- *  (the host renders the first claim, like every other slot). */
-export interface CardStudioStripProps {
-  stage: CardStage
-  running: boolean
-  /** Param write channel — the strip may own params (timeline bar
-   *  writes frame positions, audio clips; reference strip writes
-   *  image URLs; etc.). */
-  onSave: (params: Record<string, unknown>) => void
-}
-
-export interface CardStudioStripElement {
-  Strip: ComponentType<CardStudioStripProps>
-}
-
-export const cardStudioStripSlot = createUiSlot<CardStudioStripElement, CardStudioStripProps>("card-studio-strip")
+// ── studio cells ───────────────────────────────────────────────────
+// (History, 2026-09-07: the studio preview/strip ELEMENT slots
+//  (cardStudioPreviewSlot / cardStudioStripSlot) are DELETED — the
+//  aspirational element-slot decomposition never gained a consumer.
+//  The studio's preview + strip ride the StudioShell CENTER and
+//  BOTTOM seams now (tenant-declared ReactNode, the shared pane
+//  kit's PaneShell/PaneHeader chrome — docs/design/studio-chrome.md),
+//  which composes without a claim registry. The card TILE's element
+//  slots above stay live: icon/preview/run are tile chrome.)

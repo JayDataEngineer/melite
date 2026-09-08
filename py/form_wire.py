@@ -36,7 +36,7 @@ VALUES stay open (Any) — per-type field payloads (options rows,
 visible_when clauses, loader_info) are the cards' vocabulary, not the
 wire's. Adding a KEY is a deliberate model extension, never drift.
 
-Client-side note: web/contracts' FormSpec schema agrees — fields and
+Client-side note: packages/web-kit/contracts' FormSpec schema agrees — fields and
 schema_groups are required, not optional. The client's
 validateSpecContract let the hollow spec through as "loaded"; the
 server gate makes that class unreachable regardless.
@@ -159,7 +159,7 @@ class FormFeaturesRow(_Frozen):
 class FormSpecRow(_Frozen):
     """GET /v1/form-spec 200 body — the COMPLETE form descriptor.
 
-    Required keys are the contract web/contracts declares; a body
+    Required keys are the contract packages/web-kit/contracts declares; a body
     without them is the hollow-spec class this module exists to kill.
 
     genre stays plain str (open vocabulary): the wire serves "creature"

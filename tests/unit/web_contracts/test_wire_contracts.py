@@ -1,5 +1,5 @@
 """Wire-contract validation tests — pydantic wrappers over the TypeScript
-web contracts (web/contracts/src/).
+web contracts (packages/web-kit/contracts/src/).
 
 These tests validate that the Python-side pydantic mirrors in models.py
 correctly enforce every constraint declared in the TypeScript types.

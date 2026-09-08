@@ -18,7 +18,7 @@ else. The universal action form had nothing to render.
 The gate under test (py/form_wire.py + editor_forms.form_spec):
   * every 200 is CONSTRUCTED as a frozen FormSpecRow — model, form,
     service, label, genre, fields, schema_groups, features, defaults,
-    variants REQUIRED (web/contracts declares the same);
+    variants REQUIRED (packages/web-kit/contracts declares the same);
   * form names resolve through the /v1/forms registry to their
     default_service model's FULL spec (image-gen -> krea-2, 10
     fields) — the registry wins BEFORE the lane probe;

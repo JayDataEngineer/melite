@@ -31,20 +31,13 @@
  * module too (same import discipline as studioShell.tsx).
  */
 
-/** The CENTER seam's viewport primitives (closed union).
- *  • stage3d — the shared 3d Stage (3d/ui/viewers Stage).
- *  • paint2d — PaintCanvas2D (image/ui, stroke 3).
- *  • native  — the tenant's OWN viewport rides the center seam
- *    directly (anny's one-mesh figure order: the tenant component
- *    IS the mesh; no second scene). */
-export type ViewportKind = "stage3d" | "paint2d" | "native"
+/* The seam vocabularies are WRITTEN ONCE in py/ui_map.py (the map
+ * SSOT); this module re-exports their generated TypeScript face.
+ * Do not hand-spell a union here — the written-once wall refuses
+ * it (tests/walls/suites/test_ui_map_parity.py). */
+import type { BarKind, ViewportKind } from "./uiMap.generated"
 
-/** The BOTTOM seam's bar primitives (closed union). Omit `bottom`
- *  for none — absence is not a kind.
- *  • recipe  — OutputStrip (one subcard per armed recipe).
- *  • timeline — the motion/video transport bar
- *    (@melite-plugin/timeline). */
-export type BarKind = "recipe" | "timeline"
+export type { BarKind, ViewportKind }
 
 /** One declared seam row. `kind` is the closed-vocabulary member;
  *  seam-specific data rides beside it as rows grow. */

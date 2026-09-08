@@ -3,11 +3,11 @@
 stroke, 2026-09-07; design record docs/design/ui-map.md).
 
 THE LAW (same shape as gen_registry):
-  * py/ui_map.py is the SSOT. web/ui/src/uiMap.generated.ts is a
+  * py/ui_map.py is the SSOT. packages/web-kit/ui/src/uiMap.generated.ts is a
     DERIVED ARTIFACT — hand edits are drift; this tool regenerates
     and the parity wall (dry run, exit 1 on drift) pins it.
   * The kit imports the generated unions and RE-EXPORTS them; no
-    second hand-written union may exist in web/ui/src (the
+    second hand-written union may exist in packages/web-kit/ui/src (the
     written-once wall enforces this by scan).
 
 Usage:
@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.join(REPO, "py"))
 
 import ui_map  # noqa: E402
 
-GENERATED = os.path.join(REPO, "web", "ui", "src", "uiMap.generated.ts")
+GENERATED = os.path.join(REPO, "packages", "web-kit", "ui", "src", "uiMap.generated.ts")
 
 # declaration order is the emission order
 ENUMS = [

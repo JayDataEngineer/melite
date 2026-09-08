@@ -26,11 +26,11 @@ packages:
   - 'packages/harness/dsh/*'               # the DSH harness family (agent tools, presets, provisioner)
   - 'packages/web/dsh/*'                   # the DSH web family (chat/sidebar panels — embeds the editor)
   - 'packages/web/editor'                  # the editor pathway (the card surface DSH embeds)
-  - 'web/*'                               # @melite/{ui,slots,contracts,formats,catalog} — the generic kit (web/ at root)
+  - 'packages/web-kit/*'                               # @melite/{ui,slots,contracts,formats,catalog} — the generic kit (web/ at root)
   - 'packages/engines/*/action_cards/*/ui' # engine UI tenants (@melite-plugin/{video,3d,audio,motion})
   - 'packages/engines/*/action_cards/*/*/ui' # genre-grouped card lanes
     # (ROW 5, 2026-09-07: @melite-plugin/timeline moved OUT of
-    # video/h3-timeline/ui to web/timeline — PRIMITIVE HOME LAW, a
+    # video/h3-timeline/ui to packages/web-kit/timeline — PRIMITIVE HOME LAW, a
     # cross-genre primitive must not live inside one card's dir.
     # The glob stays for future genre-grouped lanes.)
   - 'packages/engines/*/action_cards'      # card tenants (resolution scope; @comfyui/cards)

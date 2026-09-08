@@ -285,6 +285,22 @@
       "component": true
     },
     {
+      "name": "empty-state",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/empty-state.tsx"
+        }
+      ],
+      "exports": [
+        "EmptyState",
+        "EmptyStateProps",
+        "EmptyStateVariant"
+      ],
+      "component": true
+    },
+    {
       "name": "field",
       "type": "registry:ui",
       "package": "@melite/ui",
@@ -383,6 +399,23 @@
       "component": true
     },
     {
+      "name": "pane-header",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/pane-header.tsx"
+        }
+      ],
+      "exports": [
+        "PaneHeader",
+        "PaneHeaderProps",
+        "PaneHeaderVariant",
+        "PaneShell"
+      ],
+      "component": true
+    },
+    {
       "name": "popover",
       "type": "registry:ui",
       "package": "@melite/ui",
@@ -429,6 +462,36 @@
         "createPosterStore"
       ],
       "component": false
+    },
+    {
+      "name": "rail-section",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/rail-section.tsx"
+        }
+      ],
+      "exports": [
+        "RailSection",
+        "RailSectionProps"
+      ],
+      "component": true
+    },
+    {
+      "name": "reference-image-badge",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/reference-image-badge.tsx"
+        }
+      ],
+      "exports": [
+        "ReferenceImageBadge",
+        "ReferenceImageBadgeProps"
+      ],
+      "component": true
     },
     {
       "name": "scroll-area",
@@ -542,12 +605,10 @@
         }
       ],
       "exports": [
-        "BarKind",
         "BottomSeam",
         "CenterSeam",
         "RailSeam",
         "ShellDeclaration",
-        "ViewportKind",
         "defineShellDeclaration"
       ],
       "component": false
@@ -785,6 +846,24 @@
       "component": true
     },
     {
+      "name": "uiMap.generated",
+      "type": "registry:lib",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/uiMap.generated.ts"
+        }
+      ],
+      "exports": [
+        "BarKind",
+        "OverlayDock",
+        "OverlayKind",
+        "ViewportAnchorDock",
+        "ViewportKind"
+      ],
+      "component": false
+    },
+    {
       "name": "use-hover-scrub",
       "type": "registry:hook",
       "package": "@melite/ui",
@@ -846,6 +925,36 @@
       "component": true
     },
     {
+      "name": "viewport-anchor",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/viewport-anchor.tsx"
+        }
+      ],
+      "exports": [
+        "ViewportAnchor",
+        "ViewportAnchorProps"
+      ],
+      "component": true
+    },
+    {
+      "name": "viewport-frame",
+      "type": "registry:ui",
+      "package": "@melite/ui",
+      "files": [
+        {
+          "path": "src/viewport-frame.tsx"
+        }
+      ],
+      "exports": [
+        "ViewportFrame",
+        "ViewportFrameProps"
+      ],
+      "component": true
+    },
+    {
       "name": "viewportOverlays",
       "type": "registry:ui",
       "package": "@melite/ui",
@@ -855,8 +964,6 @@
         }
       ],
       "exports": [
-        "OverlayDock",
-        "OverlayKind",
         "ViewportOverlay",
         "ViewportOverlays"
       ],

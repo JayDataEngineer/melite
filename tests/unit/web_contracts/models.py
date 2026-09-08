@@ -1,4 +1,4 @@
-"""Pydantic mirrors of every TypeScript wire type in web/contracts/src/.
+"""Pydantic mirrors of every TypeScript wire type in packages/web-kit/contracts/src/.
 
 These models are the Python-side SSOT for the web contract validation
 tests.  They are derived 1:1 from the TypeScript definitions — every

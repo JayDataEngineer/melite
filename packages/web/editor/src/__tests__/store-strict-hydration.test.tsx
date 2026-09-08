@@ -25,7 +25,7 @@ import {
 import type { FlowRunStatus } from "@melite/catalog"
 import type { FlowStage } from "@melite/contracts"
 
-/** The FlowStage contract's known keys (web/contracts/src/FlowTypes.ts).
+/** The FlowStage contract's known keys (packages/web-kit/contracts/src/FlowTypes.ts).
  * Source of truth — when a field is added, add it here. When a field
  * is removed, delete it from here. The wall's intent: hydration
  * output keys are a SUBSET of this set. */

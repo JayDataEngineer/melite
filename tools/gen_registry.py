@@ -86,7 +86,7 @@ def _kit_items() -> list[dict[str, str | list[dict[str, str]] | list[str] | bool
     """Core items: one per exported component of the kit packages."""
     items = []
     for pkg_dir, pkg_name in sorted(_KIT_PACKAGES.items()):
-        src = os.path.join(REPO, "web", pkg_dir, "src")
+        src = os.path.join(REPO, "packages", "web-kit", pkg_dir, "src")
         for fn in sorted(os.listdir(src)):
             if not fn.endswith((".tsx", ".ts")) or fn == "index.ts":
                 continue
@@ -149,20 +149,20 @@ def main() -> int:
         "items": _kit_items() + _fragment_items(),
     }
     text = json.dumps(registry, indent=2, ensure_ascii=False) + "\n"
-    snap = os.path.join(REPO, "web", "generated", "registry.json")
+    snap = os.path.join(REPO, "packages", "web-kit", "generated", "registry.json")
     old = open(snap, encoding="utf-8").read() if os.path.exists(snap) else None
     if old == text:
-        print("web/generated/registry.json matches the packages (%d items)"
+        print("packages/web-kit/generated/registry.json matches the packages (%d items)"
               % len(registry["items"]))
         return 0
     if write:
         with open(snap, "w", encoding="utf-8") as f:
             f.write(text)
-        print("wrote web/generated/registry.json (%d items: %d core + %d plugin)"
+        print("wrote packages/web-kit/generated/registry.json (%d items: %d core + %d plugin)"
               % (len(registry["items"]), len(_kit_items()),
                  len(_fragment_items())))
         return 0
-    print("DRIFT web/generated/registry.json — run with --write")
+    print("DRIFT packages/web-kit/generated/registry.json — run with --write")
     return 1
 
 

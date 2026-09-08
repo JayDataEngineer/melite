@@ -6,7 +6,7 @@ AssemblyStudio, which rode it unchanged (anny + trellis tenants,
 same DOM, same tests). This wall refuses the drift shapes (pure
 tree walk + module parse, no node needed):
 
-  1. THE SHELL EXISTS, GENRE-BLIND — web/ui/src/studioShell.tsx
+  1. THE SHELL EXISTS, GENRE-BLIND — packages/web-kit/ui/src/studioShell.tsx
      (the @melite/ui home, above the genre ui/ packages per the
      PRIMITIVE HOME LAW) imports NO genre module: no 3d, no video,
      no mask, no timeline, no viewers/Stage. A genre import in the
@@ -33,7 +33,7 @@ import re
 REPO = os.path.normpath(os.path.join(os.path.dirname(
     os.path.abspath(__file__)), "..", "..", ".."))
 
-SHELL = os.path.join(REPO, "web", "ui", "src", "studioShell.tsx")
+SHELL = os.path.join(REPO, "packages", "web-kit", "ui", "src", "studioShell.tsx")
 ASSEMBLY = os.path.join(
     REPO, "packages", "engines", "comfyui", "action_cards",
     "3d", "ui", "studios", "assembly.tsx")
@@ -52,7 +52,7 @@ _IMPORT_RE = re.compile(r"""^\s*import\b[^;]*?from\b\s*['"]([^'"]+)['"]""",
 
 def test_the_shell_exists_at_the_genre_neutral_home() -> None:
     assert os.path.isfile(SHELL), \
-        "web/ui/src/studioShell.tsx — THE SHELL lives in @melite/ui " \
+        "packages/web-kit/ui/src/studioShell.tsx — THE SHELL lives in @melite/ui " \
         "(above the genre ui/ packages; PRIMITIVE HOME LAW)"
     src = open(SHELL, encoding="utf-8").read()
     for needed in ("StudioShell", "StudioShellErrorLine",
@@ -150,7 +150,7 @@ ANNY_SHAPE = os.path.join(
     REPO, "packages", "engines", "comfyui", "action_cards",
     "3d", "anny", "ui", "studio", "shape.tsx")
 TIMELINE_BAR = os.path.join(
-    REPO, "web", "timeline", "timeline", "MotionTimelineBar.tsx")
+    REPO, "packages", "web-kit", "timeline", "timeline", "MotionTimelineBar.tsx")
 
 
 def test_the_motion_tenant_rides_the_shell() -> None:
@@ -241,7 +241,7 @@ def test_the_dead_h3_twins_stay_dead() -> None:
             "resurrect" % gone
     # the element-slot seam it registered into died with it: the
     # slots package carries no unclaimed studio element slots
-    seams = os.path.join(REPO, "web", "slots", "src",
+    seams = os.path.join(REPO, "packages", "web-kit", "slots", "src",
                          "cardElementSeams.ts")
     src = open(seams, encoding="utf-8").read()
     assert "export const cardStudioPreviewSlot" not in src, \
@@ -252,13 +252,13 @@ def test_the_dead_h3_twins_stay_dead() -> None:
         "bottom seam owns the strip"
 
 # ANCHOR seam constants (plugin-layout stroke, 2026-09-07)
-ANCHOR = os.path.join(REPO, "web", "ui", "src",
+ANCHOR = os.path.join(REPO, "packages", "web-kit", "ui", "src",
     "viewport-anchor.tsx")
 # promoted to the kit 2026-09-07 (the pattern-violations audit's
 # promotion rule: two consumers, pure content) —
-# web/ui/src/reference-image-badge.tsx, exported from @melite/ui
+# packages/web-kit/ui/src/reference-image-badge.tsx, exported from @melite/ui
 REFERENCE_BADGE = os.path.join(
-    REPO, "web", "ui", "src", "reference-image-badge.tsx")
+    REPO, "packages", "web-kit", "ui", "src", "reference-image-badge.tsx")
 ASSEMBLY_STUDIO = os.path.join(
     REPO, "packages", "engines", "comfyui", "action_cards",
     "3d", "ui", "studios", "assembly.tsx")
@@ -404,7 +404,7 @@ def test_the_mask_canvas_composes_the_primitive() -> None:
 # riding renamed vocabulary).
 
 SHELL_DECL = os.path.join(
-    REPO, "web", "ui", "src", "shellDeclaration.ts")
+    REPO, "packages", "web-kit", "ui", "src", "shellDeclaration.ts")
 
 # the cardStudios tenant glob (packages/web/editor/src/surfaces/flow/
 # cardStudios.ts PLUGIN_TENANT_LOADERS): every studio body claim
@@ -417,7 +417,7 @@ TENANT_GLOB = os.path.join(
 # map stroke — the helpers read the MAP (the SSOT), so this suite
 # and test_ui_map_parity.py agree by construction
 UI_MAP_GENERATED = os.path.join(
-    REPO, "web", "ui", "src", "uiMap.generated.ts")
+    REPO, "packages", "web-kit", "ui", "src", "uiMap.generated.ts")
 
 
 def _union_members(src: str, name: str) -> set[str]:
@@ -541,7 +541,7 @@ def test_union_members_name_real_primitives_only() -> None:
     assert os.path.isfile(os.path.join(
         REPO, "packages", "engines", "comfyui", "action_cards",
         "image", "mask_studio", "ui", "studio", "OutputStrip.tsx"))
-    assert os.path.isdir(os.path.join(REPO, "web", "timeline"))
+    assert os.path.isdir(os.path.join(REPO, "packages", "web-kit", "timeline"))
 
 
 # ── stroke 5 (2026-09-07): ONE verb UX across every card ──────────────
@@ -551,7 +551,7 @@ def test_union_members_name_real_primitives_only() -> None:
 # never a toast). VerbChip (@melite/ui) is the bones; tenants map
 # their phases and notes. This wall refuses the hand-rolled copies.
 
-VERB_CHIP = os.path.join(REPO, "web", "ui", "src", "verbChip.tsx")
+VERB_CHIP = os.path.join(REPO, "packages", "web-kit", "ui", "src", "verbChip.tsx")
 VERB_RIDERS = [
     os.path.join(REPO, "packages", "engines", "comfyui",
                  "action_cards", "3d", "anny", "ui", "studio",
@@ -564,7 +564,7 @@ VERB_RIDERS = [
 
 def test_verbchip_exists_genre_blind() -> None:
     assert os.path.isfile(VERB_CHIP), \
-        "web/ui/src/verbChip.tsx — VerbChip (@melite/ui), the one " \
+        "packages/web-kit/ui/src/verbChip.tsx — VerbChip (@melite/ui), the one " \
         "verb UX primitive (§4)"
     src = open(VERB_CHIP, encoding="utf-8").read()
     code = re.sub(r"/\*.*?\*/", "", src, flags=re.DOTALL)
@@ -602,7 +602,7 @@ def test_the_verb_gestures_ride_the_shared_chip() -> None:
 # positioning ──────────────────────────────────────────────────────
 
 VIEWPORT_OVERLAYS = os.path.join(
-    REPO, "web", "ui", "src", "viewportOverlays.tsx")
+    REPO, "packages", "web-kit", "ui", "src", "viewportOverlays.tsx")
 
 
 def test_overlay_unions_closed_and_renderer_genre_blind() -> None:

@@ -31,6 +31,7 @@
 import type { ReactElement, ReactNode } from "react"
 import { AlertTriangle } from "lucide-react"
 import { StudioRail } from "@melite/slots"
+import { cn } from "./utils"
 
 /** One loud failure row (Stage load errors, lane refusals) — the
  *  tenant derives them; the shell renders them as DOM text, never
@@ -53,6 +54,9 @@ export interface StudioShellProps {
   bottom?: ReactNode
   /** Shell-owned chrome: the loud error line (empty = no line). */
   errors?: StudioShellError[]
+  /** Root override (tenant padding/gap/min-h — the shadcn rule:
+   *  the base stays, className wins conflicts via twMerge). */
+  className?: string
 }
 
 /** The loud error line — shell-owned chrome, exported for a tenant
@@ -89,9 +93,10 @@ export function StudioShell({
   center,
   bottom,
   errors = [],
+  className,
 }: StudioShellProps): ReactElement {
   return (
-    <div className="flex min-h-full flex-1 flex-col">
+    <div className={cn("flex min-h-full flex-1 flex-col", className)}>
       {/* RAIL — what the card acts ON. */}
       <StudioRail>{rail}</StudioRail>
       {/* CENTER — what the card sees THROUGH. */}

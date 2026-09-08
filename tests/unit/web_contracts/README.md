@@ -1,15 +1,15 @@
 # Web Contract Pydantic Tests
 
-Python-side pydantic mirrors of every TypeScript wire type in `web/contracts/src/`.
+Python-side pydantic mirrors of every TypeScript wire type in `packages/web-kit/contracts/src/`.
 These models and tests serve ONLY the test suite — the gateway's own pydantic
 models (in `py/`) remain the runtime authority.
 
 ## Architecture
 
 ```
-web/contracts/src/schema.d.ts   ←  auto-generated from /openapi.json
-web/contracts/src/card.ts       ←  manual TS types
-web/contracts/src/FlowTypes.ts  ←  manual TS types
+packages/web-kit/contracts/src/schema.d.ts   ←  auto-generated from /openapi.json
+packages/web-kit/contracts/src/card.ts       ←  manual TS types
+packages/web-kit/contracts/src/FlowTypes.ts  ←  manual TS types
 ... (13 TypeScript files)
 
 tests/unit/web_contracts/models.py  ←  1:1 pydantic mirrors

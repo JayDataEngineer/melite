@@ -9,7 +9,7 @@ until someone probed by hand.
 This wall extracts both sides from SOURCE (no network, no GPU):
 
   REFERENCED: every quoted /v1/... literal in the production source
-  of the web family (web/catalog, packages/web/editor, packages/web/dsh)
+  of the web family (packages/web-kit/catalog, packages/web/editor, packages/web/dsh)
   - tests, dists, and libs excluded (test fixtures use fake URLs).
 
   SERVED: every /v1 route the py gateway answers (static literals +
