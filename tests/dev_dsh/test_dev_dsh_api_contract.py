@@ -40,7 +40,6 @@ import urllib.error
 import urllib.request
 
 from collections.abc import Iterator
-from typing import NoReturn
 
 import pytest
 
@@ -122,8 +121,8 @@ def _assert_json_envelope(label: str, status: int, body: bytes, route: str) -> N
     """A 200 OR a 4xx/5xx with a JSON body carrying a real error
     message. Bare text = the old swallowed-exception leak (the
     "Internal Server Error" the user saw on form-spec?model=anny).
-    The surfacing fix in python/gateway.py _adapt means a 500 has
-    `{"error": "...", "traceback": "..."}` — the wall pins the
+    The surfacing contract (a 500 carries `{"error": "...",
+    "traceback": "..."}`) lives server-side now — the wall pins the
     shape so a regression to bare text is a red."""
     if status == 200:
         assert body, "%s %s returned 200 with empty body" % (label, route)
@@ -206,56 +205,10 @@ def test_upstream_estate_matches_dev_dsh_for_every_editor_route(dev_dsh_up: bool
 
 
 # ---------------------------------------------------------------------------
-# Focused surfacing contract: when a handler raises, the response is
-# JSON `{"error", "type", "traceback", "route"}` — NEVER the bare
-# "Internal Server Error" text the swallowed exception used to return.
-# The user's dev DSH 500 on form-spec?model=anny hid the cause; this
-# test pins the surfacing so a regression to bare text is a red.
+# RETIRED 2026-09-08 (oracle death — operator order 2026-09-08: "we do
+# not need parity, we need to migrate, not keep the old machinery"):
+# the focused surfacing contract (handler-raise -> JSON 500) drove the
+# py oracle's _adapt in-process; the subject died with the oracle, so
+# the test dies with it. TS-side 500-shape legs live in the walls
+# (flows_validate STATUS legs, queue_refusals S04/S06).
 # ---------------------------------------------------------------------------
-
-def test_gateway_surfaces_uncaught_exceptions_as_json() -> None:
-    """RESILIENCE LAW: a failure documents the exact failure message —
-    the HTTP layer too. A bare "Internal Server Error" 500 is a
-    regression; the wall catches it."""
-    import asyncio
-    import sys
-    sys.path.insert(0, os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "..", "..", "python"))
-    import gateway
-    from starlette.requests import Request
-
-    async def _raise(*a: str | bytes | None, **k: str | bytes | None) -> NoReturn:
-        raise ValueError("wall surfacing probe — the message must be visible")
-
-    async def receive() -> dict[str, str | bytes | bool]:
-        return {"type": "http.request", "body": b"", "more_body": False}
-
-    scope = {
-        "type": "http", "method": "GET",
-        "path": "/v1/form-spec", "query_string": b"model=anny",
-        "headers": [], "scheme": "https",
-        "server": ("h", 3909), "client": ("c", 0),
-        "app": type("A", (), {"state": type("S", (), {"gw": None})()})(),
-    }
-
-    orig = gateway.route
-    gateway.route = _raise
-    try:
-        req = Request(scope, receive)
-        resp = asyncio.run(gateway._adapt(req))
-        assert resp.status_code == 500
-        assert resp.media_type == "application/json", (
-            "a 500 must be application/json (the bare text leak — "
-            "the old 'Internal Server Error' body — is back)")
-        body = resp.body.decode() if hasattr(resp.body, "decode") else resp.body
-        j = json.loads(body)
-        assert j.get("error") == "wall surfacing probe — the message must be visible", (
-            "500 JSON body must carry the real exception message: %r" % j)
-        assert j.get("type") == "ValueError"
-        assert "traceback" in j and "ValueError" in j["traceback"], (
-            "500 JSON body must carry the traceback so the wall and "
-            "the user can see the cause: %r" % j)
-        assert j.get("route") == "GET /v1/form-spec?model=anny", (
-            "500 JSON body must name the route: %r" % j)
-    finally:
-        gateway.route = orig

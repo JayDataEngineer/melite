@@ -203,13 +203,12 @@ def _scan_models(plugins_dir: str) -> list[tuple[dict[str, JsonValue], dict[str,
     return pairs
 
 
-try:
-    # the same class as the gateway's (plugins.py defines the standalone
-    # twin when the gateway import cycle blocks — same trick as editor_forms)
-    from gateway import ValidationError  # noqa: F401
-except Exception:
-    class ValidationError(Exception):
-        """Loud 4xx before any run is registered (QUEUE LANE LAW)."""
+# ORACLE DEATH 2026-09-08: the `from gateway import ValidationError`
+# alias died with the py serving oracle — this standalone class is now
+# the only definition (it always was at runtime: the gateway import
+# cycle blocked the alias, so the fallback carried every caller).
+class ValidationError(Exception):
+    """Loud 4xx before any run is registered (QUEUE LANE LAW)."""
 
 
 def _scan_model_dir(model_dir: str) -> list[tuple[dict[str, JsonValue], dict[str, str | bool | list[str] | None]]]:

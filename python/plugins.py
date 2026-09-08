@@ -60,13 +60,12 @@ PLUGINS_DIR = REPO / "packages"
 _PLUGIN_SCAN_ROOTS = [REPO / "packages" / cat for cat in ("engines", "web")]
 IDENT_RE = re.compile(r"^[a-z_][a-z0-9_-]*$")
 
-try:
-    # same class as the gateway's (gateway imports us lazily, after its
-    # own ValidationError is defined — the alias resolves)
-    from gateway import ValidationError  # noqa: F401
-except Exception:
-    class ValidationError(Exception):
-        """Loud 4xx before any run is registered (QUEUE LANE LAW)."""
+# ORACLE DEATH 2026-09-08: the `from gateway import ValidationError`
+# alias died with the py serving oracle — this standalone class is now
+# the only definition (it always was at runtime: the gateway import
+# cycle blocked the alias, so the fallback carried every caller).
+class ValidationError(Exception):
+    """Loud 4xx before any run is registered (QUEUE LANE LAW)."""
 
 
 # ---------------------------------------------------------------------------

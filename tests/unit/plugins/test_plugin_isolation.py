@@ -47,10 +47,10 @@ IMPORT_SURFACES = [
     # + artifact-ref sweep — gateway imports them; they pin clean.
     "estate_config",           # python/estate_config.py: deployment config row
     "artifact_refs",           # python/artifact_refs.py: dangling-ref finder
-    # 2026-09-06: the SOMA-skin provisioning rail (model-provision
-    # doors, docs/design/model-provision-doors.md) — gateway imports
-    # it; it pins clean.
-    "provision_rail",          # python/provision_rail.py: on-demand provision
+    # ORACLE DEATH 2026-09-08: "provision_rail" dropped from this
+    # list with the module (python/provision_rail.py deleted — the
+    # gateway import that pinned it here is dead; on-demand
+    # provisioning dies with the py serving oracle).
 ]
 
 

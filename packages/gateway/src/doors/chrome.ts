@@ -5,7 +5,9 @@
 //   (tools + ui_slots DERIVED — card classes / ui.yaml claims —
 //   via the catalog rail; the rest are chrome stubs). Each
 // constant holds the EXACT json.dumps(payload, indent=2,
-// default=str) bytes python/gateway.py _adapt sends; ctx.ts serves
+// default=str) bytes the retired py oracle's _adapt sent
+// (frozen at capture — the oracle died 2026-09-08, these
+// bytes are the contract); ctx.ts serves
 // them verbatim (parse+reserialize would drift: ensure_ascii
 // \uXXXX vs raw UTF-8, float 1.0 vs number 1).
 //

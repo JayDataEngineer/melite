@@ -128,7 +128,10 @@ def main() -> None:
     import editor_forms as _ef
     import editor_runs as _er
     import flow as _flow
-    import gateway as _gw
+    # ORACLE DEATH 2026-09-08: the `import gateway` + _family_by_id
+    # dead-door assert died with the py serving oracle (the door it
+    # checked no longer exists; TS serves this file natively). Output
+    # bytes unchanged.
     from melite_models import scan_engine_models
 
     # ── catalog (the served to_json object + the scan order) ──
@@ -208,12 +211,11 @@ def main() -> None:
             "provisions": [_prov_dict(p)
                            for p in (getattr(cls, "provisions", None) or ())],
         }
-    # Families the provision door resolves live (first cls.id match)
-    # but the engine-model scan above keyed once: assert the door's
-    # view matches this table exactly.
-    for fid in provisions:
-        assert _gw._family_by_id(fid) is not None, \
-            "provisions family %r unresolvable by the door" % fid
+    # Families the provision door resolves live (first cls.id match).
+    # (ORACLE DEATH 2026-09-08: the dead-door assert against the py
+    # gateway's _family_by_id view died with the oracle — the
+    # provisions table above is the frozen truth, pinned served by
+    # the discovery wall's TS-vs-golden legs.)
 
     out = {
         "meta": {

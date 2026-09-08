@@ -1,84 +1,83 @@
 // doors/flowsRun.ts — the POST /v1/flows/start, GET
-// /v1/flows/status/<id>, POST /v1/flows/stop/<id> arms (TS port of
-// python/gateway.py _h_flows_start/_h_flows_status/_h_flows_stop over the
-// Gateway.submit/status/stop registry, P4 engine-IO scope).
+// /v1/flows/status/<id>, POST /v1/flows/stop/<id> arms (the serving
+// owner since the oracle death 2026-09-08 — the retired py oracle's
+// start/status/stop behavior, frozen by
+// the walls below).
 //
-// WHAT THIS PORTS (line-cited against python/gateway.py):
-//   - submit envelope order (1179-1270): body-must-be-object
+// SERVED CONTRACT (frozen — the walls pin every row):
+//   - submit envelope order: body-must-be-object
 //     (bad_envelope/body), test-must-be-bool (bad_envelope/test),
 //     CARD BIRTH LAW draft_id required (draft_required) / malformed
 //     (draft_malformed, editor_runs.draft_id_ok: <=96
 //     [A-Za-z0-9_-]) / unknown doc (draft_unknown, drafts/<id>.json
-//     is_file), then resolve_request's _strict_body (248-276:
-//     retired runner knobs + retired pipe-carry keys) + the
-//     flow/flow_inline/model exclusivity refusal (303-307).
+//     is_file), then resolve_request's _strict_body (retired runner
+//     knobs + retired pipe-carry keys) + the flow/flow_inline/model
+//     exclusivity refusal.
 //   - flow_inline structural compile for the SERVED shape
-//     (flow.py flow_from_body 1388+: top keys {id, description,
+//     (keeper flow_from_body: top keys {id, description,
 //     stages}, non-empty stages, STAGE_KEYS extras, FLOW_ID_RE
-//     stage ids) with the py-identical texts for those gates.
-//   - registration: run-<12hex>-<8hex> ids (submit ~1267),
+//     stage ids) with the frozen texts for those gates.
+//   - registration: run-<12hex>-<8hex> ids,
 //     {id,name,index,status:pending,outputs,expected} stage rows
-//     (submit ~1330: engine DEFAULT_OUTPUT fills omitted outputs —
+//     (engine DEFAULT_OUTPUT fills omitted outputs —
 //     "image" for comfyui), skipped_stages [], TEST_OUT_ROOT vs
-//     OUT_ROOT routing on test:true (L3), 202 {run_id, status}
-//     (_h_flows_start 2711-2716).
-//   - the serial worker over the MERGED path (execute 1631-1634 +
-//     _try_merged 1426-1611): stages -> running + merged:true,
-//     engine executeFlow (ONE submit), per-stage url/gallery
-//     (ASSET_URL_PREFIX /v1/assets/runs/<run>/<rel>) +
-//     result_outputs + completed (1581-1611); merged failure ->
+//     OUT_ROOT routing on test:true (L3), 202 {run_id, status}.
+//   - the serial worker over the MERGED path: stages -> running +
+//     merged:true, engine executeFlow (ONE submit), per-stage
+//     url/gallery (ASSET_URL_PREFIX /v1/assets/runs/<run>/<rel>) +
+//     result_outputs + completed; merged failure ->
 //     running stages failed/stopped + error, stop-gated ("stop" in
-//     the lowercased error AND the flag set, 1565-1580); the
-//     worker's terminal mapping (stopped if the flag set else
-//     completed/failed, "<Type>: <msg>" error).
-//   - status body (2954-2981): {run_id, status, stages,
+//     the lowercased error AND the flag set); the worker's terminal
+//     mapping (stopped if the flag set else completed/failed,
+//     "<Type>: <msg>" error).
+//   - status body: {run_id, status, stages,
 //     skipped_stages, artifacts, error, queue_position} (+ log_tail
 //     on ?include_log=1/true/yes), unknown -> 404 {error:
-//     "unknown run_id"}; the log tail synthesis (_run_log_tail
-//     2903-2951) is ported verbatim.
-//   - stop (2040-2057 + _h_flows_stop 2984-2988): unknown ->
-//     400 run_unknown refusal; terminal -> 200 {error: "cannot stop
-//     run in state %s"}; live -> flag + engine interrupt, 200
-//     {run_id, status: "stopping"}. Receipt-timing note: py awaits
-//     engine.stop() before answering; the preview sets the flag,
-//     kicks the interrupt in-flight, and answers immediately (the
-//     dispatcher stays synchronous like every other door — the wall
-//     pins the receipt BODY and the terminal "stopped" convergence,
-//     not the latency).
+//     "unknown run_id"}; the log tail synthesis is ported verbatim.
+//   - stop: unknown -> 400 run_unknown refusal; terminal -> 200
+//     {error: "cannot stop run in state %s"}; live -> flag + engine
+//     interrupt, 200 {run_id, status: "stopping"}. Receipt-timing
+//     note: the retired oracle awaited engine.stop() before
+//     answering; this door sets the flag, kicks the interrupt
+//     in-flight, and answers immediately (the dispatcher stays
+//     synchronous like every other door — the wall pins the receipt
+//     BODY and the terminal "stopped" convergence, not the latency).
 //
 // SERVED SHAPE: single-stage flow_inline runs whose stage engine is
 // "comfyui" with params.workflow (+ optional inject, timeout_s,
 // output_nodes), AND card-model runs ({model:} — the card composer
 // arm in ./flowsCard.ts: resolve -> sweep -> overlay -> in-process
 // compose -> the single stage row -> the same engine layer).
-// Named flows ({flow:}) and multi-stage graphs stay on the py
-// gateway — those doors refuse here with an explicit preview_scope
-// 400 (never a silent accept, QUEUE LANE LAW).
-// DOCUMENTED PREVIEW GAPS (py stays authoritative):
+// Named flows ({flow:}) and multi-stage graphs are UNPORTED —
+// those doors refuse here with an explicit preview_scope 400
+// (never a silent accept, QUEUE LANE LAW; the flows-port lane owns
+// the rails).
+// DOCUMENTED GAPS (oracle retired 2026-09-08 — no py fallback exists):
 //   - flow_inline runs write no sidecar (_request.json/_flow.json)
 //     and no ledger rows: status reads are registry-live; a
-//     restarted TS process reports unknown run_id (py falls back
-//     to sidecar_status). CARD RUNS close this gap: the card arm
-//     writes the verbatim _request.json + the _flow.json sidecar
-//     document (queue.ts sidecarDoc, py sidecar() key order) and
-//     the run.queued ledger row (py submit 1347-1351).
+//     restarted process reports unknown run_id (the retired oracle
+//     fell back to sidecar_status). CARD RUNS close this gap: the
+//     card arm writes the verbatim _request.json + the _flow.json
+//     sidecar document (queue.ts sidecarDoc) and the run.queued
+//     ledger row.
 //   - progress/activity ticks stay tap-less: the engine poll reports
-//     nothing mid-run, so py's _mreport activity frames
-//     (gateway.py 1526-1537) have no TS source — the bus carries the
+//     nothing mid-run, so mid-run activity frames have no TS source
+//     (the retired oracle emitted them) — the bus carries the
 //     running/completed/failed/stopped flips + the terminal run frame
 //     only.
 //   - no engine-boundary unload bookkeeping (single-engine preview).
 //   - no per-stage fallback loop: a row the merge planner refuses
-//     fails the run with the planner's text (py falls back to the
-//     per-stage loop BEFORE any submit — Phase-5 worker scope).
+//     fails the run with the planner's text (the retired oracle fell
+//     back to the per-stage loop before any submit — flows-port
+//     lane scope).
 //   - no resume/reproduce doors (Phase-5+).
-//   - 1.0-style floats serialize as "1" (JSON.stringify) where py
-//     writes "1.0" — the served bodies carry no floats.
+//   - 1.0-style floats serialize as "1" (JSON.stringify) where the
+//     retired oracle wrote "1.0" — the served bodies carry no floats.
 //
 // Engine base URL: engine/comfyui.ts resolveEngineBaseUrl (COMFYUI_URL
 // env > endpoint config; no hardcodes). State root: MELITE_STATE_ROOT
-// env else the file-anchored repo tree's data/runs (py STATE_ROOT,
-// gateway.py:76-77) — live env reads so hermetic walls isolate.
+// env else the file-anchored repo tree's data/runs — live env reads
+// so hermetic walls isolate.
 //
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
@@ -130,10 +129,10 @@ import {
 /** draft_id_ok's old address (owned by the admission gate now). */
 export { draftIdOk };
 
-/** Asset URL prefix — owned by editor_runs (py ASSET_URL_PREFIX). */
+/** Asset URL prefix — owned by editor_runs. */
 export const ASSET_URL_PREFIX: string = "/v1/assets/runs";
 
-/** Stage statuses — the py worker's vocabulary. */
+/** Stage statuses — the run worker's vocabulary (inherited from the retired oracle). */
 export type RunStatus =
   | "queued"
   | "running"
@@ -168,14 +167,14 @@ export interface RunRecord {
   params: Record<string, EngineJson>[];
   outputNodes: Record<string, EngineJson>[];
   /** P6 OUTPUT CONTRACT context: the card whose promise the settle
-   *  gate enforces (py worker run-level arm, gateway.py 1380-1391).
+   *  gate enforces (the retired oracle's worker run-level arm).
    *  Set by the {model:} card arm (the composed card id); absent on
    *  flow_inline rows. The status body builder names explicit keys
    *  and never leaks it. */
   cardId?: string;
 }
 
-/** The preview registry (process-local, like py's Gateway rows). */
+/** The preview registry (process-local run rows). */
 const RUNS: Map<string, RunRecord> = new Map();
 const ORDER: string[] = [];
 let PUMPING: boolean = false;
@@ -191,7 +190,7 @@ export function resetFlowsRunForTests(): void {
 /** Live-registry probe for the P5 queue refusal seam (ctx.ts
  *  refuseResumeDoor/refuseReproduceDoor over queue.ts): the row's
  *  status, or null when this process owns no live row — mirrors
- *  `gw.runs.get(rid)` (py resume 1925 / reproduce 2002). */
+ *  `gw.runs.get(rid)` (the retired resume/reproduce doors). */
 export function liveRunStatus(runId: string): string | null {
   const run: RunRecord | undefined = RUNS.get(runId);
   return run === undefined ? null : run.status;
@@ -225,11 +224,11 @@ function publishBus(runId: string, event: Record<string, unknown>): void {
 
 /** The boot-resurrect registry seam (P5, queue/resurrect.ts): one
  *  rebuilt queued run joins the FIFO. Stages/skipped ride VERBATIM
- *  from the sidecar (py _rebuild 2332-2333: list(doc.get(...) or
- *  [])) so the live status door serves the same rows py's registry
- *  would; error restarts as "" (py never copies the sidecar error).
- *  Dir always routes to the production output root (py _rebuild
- *  never restores out_root either — test-flag routing is a
+ *  from the sidecar (list(doc.get(...) or [])) so the live status
+ *  door serves the same rows the registry would; error restarts as
+ *  "" (the sidecar error is never copied).
+ *  Dir always routes to the production output root (the retired
+ *  oracle never restored out_root either — test-flag routing is a
  *  submit-time shape, not a record shape). The pump is NOT kicked
  *  here (server.ts boots the queue but starts no worker — the next
  *  start door's pump drains the FIFO in order; PREVIEW GAP: the TS
@@ -261,7 +260,7 @@ export function enqueueResurrected(rec: {
   if (!ORDER.includes(rec.runId)) ORDER.push(rec.runId);
 }
 
-/** The queue snapshot (py _h_queue 2893-2898: queued=len(order),
+/** The queue snapshot (queued=len(order),
  *  running=1/0, active=run_id/"", queued_ids=list(order)). The TS
  *  registry holds many running rows at most transiently (serial
  *  pump), so running counts rows and active is the first of them. */
@@ -282,7 +281,7 @@ export function queueSnapshot(): {
   return { queued: ORDER.length, running, active, queued_ids: [...ORDER] };
 }
 
-/** The WS hydrate snapshot (py _ws_starlette 2540-2553: the run
+/** The WS hydrate snapshot (the run
  *  frame for an owned id, plus per-stage patches when the run is
  *  terminal). undefined = unowned (the unknown-run answer). */
 export function hydrateSnapshot(
@@ -293,10 +292,10 @@ export function hydrateSnapshot(
   return { status: run.status, stages: run.stages };
 }
 
-// ── roots (py STATE_ROOT / OUT_ROOT / TEST_OUT_ROOT) ──
+// ── roots (STATE_ROOT / OUT_ROOT / TEST_OUT_ROOT) ──
 
 /** State root — MELITE_STATE_ROOT else <repo>/data/runs. The hop
- *  count is DOORS→src→gateway→plugins→repo (4): the py hop
+ *  count is DOORS→src→gateway→plugins→repo (4): the doors hop
  *  transcription (parent.parent) landed 3 hops at packages/ — caught
  *  LIVE by the flip (walls always set MELITE_STATE_ROOT on scratch
  *  boots, so the default branch was never exercised on the estate). */
@@ -313,7 +312,7 @@ export function resolveOutRoot(testFlag: boolean): string {
   return testFlag ? join(root, "test-output") : join(root, "output");
 }
 
-// ── refusal envelope (py _refusal: error, code, then loc/expected/got) ──
+// ── refusal envelope (error, code, then loc/expected/got) ──
 
 export interface Refusal {
   status: number;
@@ -354,7 +353,7 @@ function pyRepr(v: unknown): string {
   return String(v);
 }
 
-/** The strict-body gate (py _strict_body 248-276) — vocab + key
+/** The strict-body gate — vocab + key
  *  split owned by the admission gate; the pinned prose stays here. */
 function strictBody(body: Record<string, unknown>): Refusal | null {
   const { bad, carry } = checkStrictBody(body);
@@ -477,17 +476,17 @@ function compileFlowInline(
           pyReprStr(sid) +
           " names engine " +
           pyReprStr(engine) +
-          " — the TS preview serves comfyui stages only (other engines stay on the py gateway)",
+          " — this gateway serves comfyui stages only (other engines are unported)",
         "preview_scope",
       );
     }
-    // No branch pruning in the preview: skip_when stays py-owned.
+    // No branch pruning on this gateway: skip_when is unported.
     if (st["skip_when"] !== undefined && st["skip_when"] !== null) {
       return refusal(
         400,
         "flow_inline stage " +
           pyReprStr(sid) +
-          ": skip_when stays on the py gateway in the TS preview",
+          ": skip_when is unported on this gateway",
         "preview_scope",
       );
     }
@@ -496,7 +495,7 @@ function compileFlowInline(
         400,
         "flow_inline stage " +
           pyReprStr(sid) +
-          ": card= stages stay on the py gateway in the TS preview",
+          ": card= stages are unported on this gateway",
         "preview_scope",
       );
     }
@@ -548,7 +547,7 @@ function newRunId(): string {
   return "run-" + rand + "-" + ts;
 }
 
-/** POST /v1/flows/start — mirrors _h_flows_start + submit's
+/** POST /v1/flows/start — submit's
  *  pre-registration chain. Returns the (status, payload) pair; the
  *  dispatcher serializes via serializePy (byte-identical bodies).
  *  Async: the {model:} arm composes in-process (flowsCard.ts). */
@@ -645,7 +644,7 @@ export async function handleFlowsStart(
     if ("flow" in body) {
       return refusal(
         400,
-        "{flow} runs stay on the py gateway in the TS preview — " +
+        "{flow} runs are unported on this gateway — " +
           "serve flow_inline comfyui runs here",
         "preview_scope",
       );
@@ -663,9 +662,9 @@ export async function handleFlowsStart(
   if (compiled.stages.length !== 1) {
     return refusal(
       400,
-      "the TS preview serves single-stage flow_inline runs only (" +
+      "this gateway serves single-stage flow_inline runs only (" +
         compiled.stages.length +
-        " stages) — multi-stage graphs stay on the py gateway",
+        " stages) — multi-stage graphs are unported",
       "preview_scope",
     );
   }
@@ -723,7 +722,7 @@ function cardRefusal(err: CardArmError): Refusal {
   );
 }
 
-/** The card start arm (py submit's {model:} path 1273-1351):
+/** The card start arm (the {model:} path):
  *  phase-1 compose (run_id "") BEFORE registration (a params
  *  refusal names its field, never a zombie slot), mint the run id,
  *  phase-2 compose the SAME overlaid body with the real id, wrap
@@ -846,7 +845,7 @@ async function handleCardStart(
   };
 }
 
-// ── the worker (the merged path, py execute/_try_merged) ──
+// ── the worker (the merged path) ──
 
 function runRel(run: RunRecord, art: string): string {
   if (art === run.dir) return basenameSafe(art);
@@ -894,7 +893,7 @@ async function runOne(run: RunRecord): Promise<void> {
   for (const stage of run.stages) {
     stage["status"] = "running";
     stage["merged"] = true;
-    // P6 live bus (py _try_merged 1557-1560): the running flip rides
+    // P6 live bus (the worker): the running flip rides
     // the run's channel the moment it lands (key order as py).
     publishBus(run.runId, {
       type: "stage",
@@ -925,7 +924,7 @@ async function runOne(run: RunRecord): Promise<void> {
       if (stage["status"] === "running") {
         stage["status"] = "failed";
         stage["error"] = text;
-        // P6 live bus (py merged-failure 1572-1575 shape): the failed
+        // P6 live bus (merged-failure shape): the failed
         // flip rides before the terminal broadcast below.
         publishBus(run.runId, {
           type: "stage",
@@ -938,7 +937,7 @@ async function runOne(run: RunRecord): Promise<void> {
     }
     run.status = "failed";
     run.error = text;
-    // P6 live bus (py worker 1413-1414): every subscriber gets the
+    // P6 live bus (the worker: every subscriber gets the
     // final status exactly once — the terminalFrame shape is inherited
     // from queue.ts; the door closes the socket after delivering it.
     publishBus(run.runId, terminalFrame("failed"));
@@ -948,7 +947,7 @@ async function runOne(run: RunRecord): Promise<void> {
     // the merged-submit activity frame (mergegraph execute_flow's
     // silent({"activity": "merged submit (%d stages, %d nodes)"})
     // via the gateway _report: stamped pre-submit, popped on
-    // completion (gateway.py:1605-1606), LEFT on failure — the
+    // completion is popped on settle, LEFT on failure — the
     // stopped-body agreement depends on this key riding along).
     const nodeCount: number = rows.reduce(
       (n: number, r: MergeRow): number =>
@@ -984,7 +983,7 @@ async function runOne(run: RunRecord): Promise<void> {
       stage["status"] = "completed";
       delete stage["progress"];
       delete stage["activity"];
-      // P6 live bus (py _try_merged 1607-1610): per-stage completed
+      // P6 live bus (the worker): per-stage completed
       // harvest frame, key order as py.
       publishBus(run.runId, {
         type: "stage",
@@ -994,12 +993,12 @@ async function runOne(run: RunRecord): Promise<void> {
       });
     }
     run.status = run.stopFlag ? "stopped" : "completed";
-    // P6 OUTPUT CONTRACT, run-level arm (py worker 1374-1396): a
+    // P6 OUTPUT CONTRACT, run-level arm (the worker): a
     // completed run carrying card context must have delivered what
     // its card promises — the violation flips it to failed with the
     // exact refusal (documented failure, the queue continues). No
-    // per-stage arm here: py's merged path (_try_merged) has none —
-    // the per-stage gate lives in the per-stage loop (py 1821-1832)
+    // per-stage arm here: the merged path has none —
+    // the per-stage gate lives in the per-stage loop the retired oracle ran)
     // this preview worker does not run. cardId rides the {model:}
     // card arm (absent on flow_inline rows, where the gate stays a
     // no-op — the wall exercises applyRunContract directly,
@@ -1013,7 +1012,7 @@ async function runOne(run: RunRecord): Promise<void> {
       run.status = settled.status as RunStatus;
       run.error = settled.error;
     }
-    // P6 live bus (py worker 1413-1414): the terminal broadcast rides
+    // P6 live bus (the worker): the terminal broadcast rides
     // the SETTLED status (post contract-gate above) — then the door
     // closes the socket.
     publishBus(run.runId, terminalFrame(run.status));
@@ -1025,7 +1024,7 @@ async function runOne(run: RunRecord): Promise<void> {
       if (stage["status"] === "running") {
         stage["status"] = stopped ? "stopped" : "failed";
         stage["error"] = text;
-        // P6 live bus (py merged-failure 1572-1575 shape).
+        // P6 live bus (merged-failure shape).
         publishBus(run.runId, {
           type: "stage",
           stage: stage.id,
@@ -1046,7 +1045,7 @@ async function runOne(run: RunRecord): Promise<void> {
   }
 }
 
-// ── the log tail (py _run_log_tail, verbatim logic) ──
+// ── the log tail (verbatim logic) ──
 
 export function runLogTail(obj: {
   status?: unknown;
@@ -1111,9 +1110,8 @@ export function runLogTail(obj: {
 
 // ── the status arm ──
 
-/** GET /v1/flows/status/<id> — mirrors _h_flows_status (live rows
- *  only; restarted processes report unknown — the sidecar fallback
- *  stays py-owned, see the header). */
+/** GET /v1/flows/status/<id> (live rows only; restarted processes
+ *  report unknown — no sidecar fallback exists, see the header). */
 export function handleFlowsStatus(
   runId: string,
   includeLog: boolean,
@@ -1135,7 +1133,7 @@ export function handleFlowsStatus(
   return { status: 200, payload };
 }
 
-/** POST /v1/flows/stop/<id> — mirrors Gateway.stop + _h_flows_stop:
+/** POST /v1/flows/stop/<id>:
  *  unknown -> 400 run_unknown; terminal -> 200 {error}; live ->
  *  flag + engine interrupt (kicked in-flight; the dispatcher
  *  stays synchronous — the wall pins the receipt BODY and the
@@ -1167,7 +1165,7 @@ export function parseIncludeLog(first: string | null): boolean {
   );
 }
 
-/** The flows start door (_h_flows_start) as a self-registering
+/** The flows start door as a self-registering
  *  plugin: registry-live runs over the engine/comfyui.ts client;
  *  start strict-parses under route()'s strict contract. Matches its
  *  own row inside the listener — no central table. */
@@ -1211,7 +1209,7 @@ export const flowsStartDoors: Plugin = {
   },
 };
 
-/** The flows stop door (_h_flows_stop) as a self-registering
+/** The flows stop door as a self-registering
  *  plugin: regex arms ride the match groups. Matches its own row
  *  inside the listener — no central table. */
 export const flowsStopDoors: Plugin = {
