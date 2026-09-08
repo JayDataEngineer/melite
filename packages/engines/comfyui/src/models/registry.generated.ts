@@ -4026,9 +4026,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "form": "form_music",
   "card": "music",
   "unoffered": false,
-  "defaults": {
-   "backend": "cuda"
-  },
+  "defaults": {},
   "source": {
    "type": "huggingface",
    "repo_id": "audio-cpp/MiniMax-Music3-GGUF",
