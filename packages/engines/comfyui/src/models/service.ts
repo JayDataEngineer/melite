@@ -472,10 +472,15 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
   let cardSvc: ReturnType<
     typeof import("../../../comfyui-cordis/src/cardDefs.ts").theService
   > | null = null;
+  let packFate: Record<string, string> | null = null;
   try {
     const cards = await import("../../../comfyui-cordis/src/cardDefs.ts");
     await cards.loadCardDefs();
     cardSvc = cards.theService();
+    // the pack fate table (the consumption gate's boot leg — gate
+    // (d)): same dynamic seam as the card plane, same degrade.
+    const guard = await import("../../../comfyui-cordis/src/mods/guard.ts");
+    packFate = guard.PACK_FATE as Record<string, string>;
     const { fieldDomains } = await import("./validate.ts");
     // built as mutable Maps, read as the CardDomains readonly view
     const table = new Map<string, ReturnType<typeof fieldDomains>>();
@@ -540,6 +545,19 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
         }
       }
     }
+    // (b)-for-verbs: a verb naming a family that never boarded it
+    // is the same undeclared mutation (the verb's families field
+    // is its claim; the DECL is the model's answer — both refuse).
+    for (const verb of cardSvc.verbRegistrations()) {
+      for (const fam of verb.families) {
+        const d = svc.registryModel(fam);
+        if (!(d.mods ?? []).includes(verb.id)) {
+          throw new ModelError(
+            `model ${fam}: verb '${verb.id}' claims it but DECL.mods does not board the verb — an undeclared mutation (the model declares its mods, nothing else)`,
+          );
+        }
+      }
+    }
     const flavorsOf = cardSvc.flavorRegistrations();
     for (const d of decls) {
       for (const entry of d.mods ?? []) {
@@ -553,12 +571,23 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
       // silently never lands (delete the family's mods/<pack>.ts
       // while another family keeps the pack alive — the surface
       // loses the join with no refusal). Drift, refuses.
+      //
+      // the fourth edge (gate (d), the pack fate): a boarded pack
+      // no lane fires or refuses-loud = a surfaced knob with no
+      // lane to carry it (controlnet today — registered, waiting,
+      // unboardable until a lane lands its fate). Verbs skip:
+      // their fate is the family-scoped mount, pinned above.
       for (const entry of d.mods ?? []) {
         if (verbs.has(entry)) continue;
         const mine = flavorsOf.some((f) => f.pack === entry && f.families.includes(d.id));
         if (!mine) {
           throw new ModelError(
             `model ${d.id}: DECL.mods boards '${entry}' but no flavor of that pack registers for it — ship families/${d.genre}/${d.id}/mods/${entry}.ts (a boarding without its flavor is a silent dead mutation)`,
+          );
+        }
+        if (packFate !== null && packFate[entry] === undefined) {
+          throw new ModelError(
+            `model ${d.id}: DECL.mods boards '${entry}' but the pack has no fate in this plane (no lane fires it, no firing gate refuses it) — land the lane or the loud refusal before any atom boards it (a surfaced knob with no lane is a silent skip)`,
           );
         }
       }

@@ -357,6 +357,13 @@ export class ComfyUIService extends Service {
     return [...this.verbs.keys()].sort()
   }
 
+  /** The verb registrations (the boot gate's side of the
+   *  verb↔boarding interlock — a verb naming a family that never
+   *  boarded it is an undeclared mutation). */
+  verbRegistrations(): readonly VerbRegistration[] {
+    return [...this.verbs.values()]
+  }
+
   /** Register one verb. LOUD: the plane law (exactly one engine
    *  arm per engine row) and one registration per verb id (two
    *  classes mounting one id is the py's loud refusal). */

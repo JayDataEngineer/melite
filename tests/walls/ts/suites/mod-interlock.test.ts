@@ -268,3 +268,157 @@ test("THE CONSUMPTION GATE (paper §3.2.2): a smuggled mutation on a non-boardin
   kit.imageT2I(base, facts.models["z-image"], new GraphBuilder({}), "wall");
   kit.imageT2I(base, facts.models["krea-2"], new GraphBuilder({}), "wall");
 });
+
+test("THE CONSUMPTION GATE, qvoice leg: voice_file fires only on boarding atoms", async () => {
+  // the ttsT1 lane wires p.qvoice/p.voice_pca_strengths straight
+  // into AudiocoreTTS — the second z-image-class site (ungated
+  // composition). Counterfactual shape: the qwen row with its
+  // boarding retracted must refuse, naming atom + pack.
+  const kit = await import("../../../../packages/engines/comfyui-cordis/src/kit.ts");
+  const { GraphBuilder } = await import("../../../../packages/engines/comfyui-cordis/src/index.ts");
+  const facts = JSON.parse(
+    readFileSync(new URL("../../../../packages/engines/comfyui-cordis/data/model-facts.json", import.meta.url), "utf8"),
+  ) as { models: Record<string, Record<string, unknown>> };
+  const qwen = facts.models["qwen3-tts"];
+  const base = { text: "hi", voice: "", style_instruction: "", temperature: 0.7, seed: 1, qvoice: "", voice_pca_strengths: "" };
+  assert.throws(
+    () => kit.ttsT1({ ...base, qvoice: "stolen.wav" }, { ...qwen, mods: [] }, new GraphBuilder({}), "wall"),
+    (err: unknown): boolean =>
+      err instanceof Error &&
+      String(err.message).includes("model 'qwen3-tts' does not board the 'qvoice' pack"),
+  );
+  assert.throws(
+    () => kit.ttsT1({ ...base, voice_pca_strengths: "smuggled" }, { ...qwen, mods: [] }, new GraphBuilder({}), "wall"),
+    /does not board the 'qvoice' pack/,
+  );
+  // boarding atom, stated knob → fires into the graph
+  const gb = new GraphBuilder({});
+  kit.ttsT1({ ...base, qvoice: "maria.wav" }, qwen, gb, "wall");
+  assert.ok(JSON.stringify(gb.toJSON()).includes("maria.wav"), "boarding atom must fire voice_file");
+  // blank knobs = no mutation = no gate
+  kit.ttsT1(base, { ...qwen, mods: [] }, new GraphBuilder({}), "wall");
+});
+
+test("THE REFUSED FATE, lanpaint/mask legs: stated knobs refuse LOUD on the image-edit lane", async () => {
+  // lanpaint + mask board qwen-img-edit-2511 but this plane builds
+  // the stock plain-edit graph only — the firing gate refuses
+  // every stated knob instead of silently plain-editing (the
+  // retired MOD FIRING LAW, now wall-pinned: 'refused' is a fate,
+  // not an accident).
+  const kit = await import("../../../../packages/engines/comfyui-cordis/src/kit.ts");
+  // every lanpaint knob off its lane promise refuses field-named
+  for (const [key, val] of [
+    ["lanpaint_enabled", true],
+    ["lanpaint_num_steps", 99],
+    ["lanpaint_step_size", 2.5],
+    ["lanpaint_lambda", 0.1],
+    ["lanpaint_beta", 0.1],
+    ["lanpaint_friction", 0.1],
+    ["lanpaint_prompt_mode", "positive"],
+  ] as Array<[string, unknown]>) {
+    assert.throws(
+      () => kit.refuseImageEditFiring({ [key]: val }),
+      (err: unknown): boolean => err instanceof Error && String(err.message).includes(`'${key}' fires on the image-edit card`),
+    );
+  }
+  // every mask knob off its lane promise refuses field-named
+  for (const [key, val] of [
+    ["mask", "some.png"],
+    ["input_mask", "region.png"],
+    ["mask_mode", "bbox"],
+    ["mask_context_pad", 1],
+    ["mask_grow", 1],
+    ["mask_feather", 1],
+    ["mask_threshold", 1],
+    ["mask_invert", true],
+  ] as Array<[string, unknown]>) {
+    assert.throws(
+      () => kit.refuseImageEditFiring({ [key]: val }),
+      (err: unknown): boolean => err instanceof Error && String(err.message).includes(`'${key}' fires on the image-edit card`),
+    );
+  }
+  // lane promises ride inert (the stock plain-edit run)
+  kit.refuseImageEditFiring({});
+});
+
+test("§3.1 REVERTIBLE, every registration: card/pack/verb disposers retract (no residue)", () => {
+  // paper §3.1: every effect pairs its transformation with its
+  // inverse; the runtime holds the inverse. Every registration
+  // returns its disposer — flavor retraction is pinned above;
+  // card, pack, and verb retraction here (self-cleaning probes on
+  // the live service: register → assert → dispose → assert gone).
+  const retractCard = svc.registerCard({
+    id: "wall-probe-card",
+    skeleton: "wall-probe",
+    boarded: [],
+    schema: z.object({}) as never,
+    compose: (): void => {},
+  } as never);
+  assert.ok(svc.cardIds().includes("wall-probe-card"));
+  retractCard();
+  assert.ok(!svc.cardIds().includes("wall-probe-card"), "card disposal must retract");
+
+  const retractPack = svc.registerPack({ pack: "wall-probe-pack", fields: z.object({}) as never });
+  assert.ok(svc.packNames().includes("wall-probe-pack"));
+  retractPack();
+  assert.ok(!svc.packNames().includes("wall-probe-pack"), "pack disposal must retract");
+
+  const retractVerb = svc.registerVerb({
+    id: "wall-probe-verb",
+    label: "probe",
+    families: ["anny"],
+    engines: [{ id: "probe", local: "wall-probe" }],
+    writes: [],
+    requires: [],
+    fields: z.object({}) as never,
+  });
+  assert.ok(svc.verbIds().includes("wall-probe-verb"));
+  retractVerb();
+  assert.ok(!svc.verbIds().includes("wall-probe-verb"), "verb disposal must retract");
+});
+
+test("gate (d), the pack fate: every boarded pack is fired or refused-loud", async () => {
+  // controlnet is registered but fateless (waiting, unboarded) —
+  // boarding it refuses; the four landed packs pass. Live pin:
+  // every DECL pack entry has a fate (the boot refuses otherwise,
+  // so this wall and the boot read one table).
+  const guard = await import("../../../../packages/engines/comfyui-cordis/src/mods/guard.ts");
+  for (const p of ["loras", "qvoice", "lanpaint", "mask"]) guard.assertPackFate(p);
+  assert.throws(() => guard.assertPackFate("controlnet"), /no fate in this plane/);
+  const { registryIds, registryModel } = await import("../../../../packages/engines/comfyui/src/models/models.ts");
+  const verbs = new Set(svc.verbIds());
+  for (const id of registryIds()) {
+    for (const entry of (registryModel(id).mods ?? []) as readonly string[]) {
+      if (verbs.has(entry)) continue;
+      assert.ok(
+        (guard.PACK_FATE as Record<string, string>)[entry] !== undefined,
+        `model '${id}' boards fateless pack '${entry}' — land the lane or the loud refusal first`,
+      );
+    }
+  }
+});
+
+test("the verb mirror: every mounted verb is boarded by its families' DECLs", async () => {
+  // boot interlock (b)-for-verbs, walled live: a verb claiming a
+  // family that never boarded it is an undeclared mutation. The
+  // boot refuses; this wall pins the agreement on the live table.
+  const { registryModel } = await import("../../../../packages/engines/comfyui/src/models/models.ts");
+  for (const verb of svc.verbRegistrations()) {
+    assert.ok(verb.families.length > 0, `verb '${verb.id}' claims no family`);
+    for (const fam of verb.families) {
+      const mods = (registryModel(fam).mods ?? []) as readonly string[];
+      assert.ok(mods.includes(verb.id), `verb '${verb.id}' claims '${fam}' but its DECL never boarded it`);
+    }
+  }
+  // and the reverse direction is total: every DECL verb entry names
+  // a mounted verb (dead verb boardings refuse at boot gate (a)).
+  const mounted = new Set(svc.verbIds());
+  const { registryIds } = await import("../../../../packages/engines/comfyui/src/models/models.ts");
+  for (const id of registryIds()) {
+    const { registryModel: rm } = await import("../../../../packages/engines/comfyui/src/models/models.ts");
+    for (const entry of (rm(id).mods ?? []) as readonly string[]) {
+      if (svc.packNames().includes(entry)) continue;
+      assert.ok(mounted.has(entry), `model '${id}' boards verb '${entry}' no verb registers`);
+    }
+  }
+});
