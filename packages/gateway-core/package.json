@@ -23,11 +23,13 @@
     "@melite/gateway-doors": "workspace:*",
     "@melite/queue": "workspace:*",
     "@standard-schema/spec": "1.1.0",
+    "js-yaml": "4.3.2",
     "zod": "4.5.4"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "@types/js-yaml": "^4.0.9"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

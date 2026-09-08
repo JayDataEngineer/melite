@@ -3,8 +3,8 @@
 // The gateway IS a Cordis app (CORDIS CORE law,
 // docs/patterns/cordis-core.md): the boot is LOADER-DRIVEN —
 // bootGatewayContext (src/core/context.ts) owns the Loader service
-// and applies the checked-in manifest
-// (packages/gateway/cordis.config.json: errors, the 15 door plugins,
+// and applies the checked-in bundle patch
+// (packages/gateway/cordis.patch.yml: errors, the 15 door plugins,
 // timer, logger-console, the WEB SERVER entry, the gateway lifecycle
 // entry) — and dispatch() is the auth gate + one ctx.serial round
 // (each door module owns its plugin listeners and matches its own

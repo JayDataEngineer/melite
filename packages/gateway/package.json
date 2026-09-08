@@ -22,5 +22,10 @@
     "@types/node": "^22.20.0",
     "typescript": "^5.9.3",
     "@deepseek-ai/cordis": "^4.0.2"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
   }
 }

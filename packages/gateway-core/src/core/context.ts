@@ -2,17 +2,13 @@
 //
 // The boot is LOADER-DRIVEN (PLATFORM TIER law, docs/patterns/
 // cordis-core.md): `new Context()` (the proxy root), then the
-// Loader service owns the plugin tree from the checked-in manifest
-// (`packages/gateway/cordis.config.json` — the boot order SSOT).
-// Local plugins ride the loader as `cordis:` builtins (registered
-// here from their owning modules — the loader cannot address named
-// exports by specifier, so the module hands its plugin object over
-// directly); the vendored platform services (timer, logger-console
-// — `vendor/cordis_plugins/`, wired by
-// `scripts/link-vendored-platform.sh`) are pre-imported by real
-// specifier through the gateway's workspace links and aliased under
-// their entry ids at create time (the loader must never
-// bare-import from a vendored realpath — resolution would walk
+// Loader service owns the plugin tree from the checked-in bundle
+// patch (`packages/gateway/cordis.patch.yml` — the boot row SSOT,
+// dsh-base `- insert:` shape).
+// Loadable plugins (doors, queue arms, vendored platform services)
+// ride REAL specifiers: pre-imported through the workspace links
+// and aliased under their entry ids at create time (the loader must
+// never bare-import from a vendored realpath — resolution would walk
 // upward past the gateway links).
 //
 // Entries are created SEQUENTIALLY in manifest order (one awaited
@@ -44,6 +40,7 @@
 // enums, import type for types, .ts specifiers for relative imports.
 
 import { readFileSync } from "node:fs";
+import { load as yamlLoad } from "js-yaml";
 import { Context } from "@deepseek-ai/cordis";
 import type { Fiber } from "@deepseek-ai/cordis";
 import Loader from "@deepseek-ai/cordis-plugin-loader";
@@ -58,7 +55,7 @@ import { resolveStorageRoot } from "../storage/store.ts";
 import { gatewayPlugin } from "./gateway.ts";
 import type { GatewayConfig } from "./gateway.ts";
 
-/** One manifest entry (cordis.config.json "entries" row). */
+/** One patch row (cordis.patch.yml `- insert:` entry). */
 interface ManifestEntry {
   readonly id: string;
   readonly name: string;
@@ -80,22 +77,31 @@ let runtimeWebServerConfig: Record<string, unknown> = {
   port: 0,
 };
 
-/** The checked-in manifest — the boot order SSOT. Read once. */
+/** The checked-in bundle patch — the boot row SSOT (STAGE 3,
+ *  dsh-base shape: `- insert:` rows; later layers override by id).
+ *  Read once. ORDER IS DISPATCH ORDER. */
 let manifestEntries: readonly ManifestEntry[] | null = null;
 
 function readManifest(): readonly ManifestEntry[] {
   if (manifestEntries !== null) return manifestEntries;
   const url = new URL(
-    "../../../gateway/cordis.config.json",
+    "../../../gateway/cordis.patch.yml",
     import.meta.url,
   );
-  const raw: unknown = JSON.parse(readFileSync(url, "utf8")) as unknown;
+  // js-yaml is a DIRECT dep (exact pin) — the harness ships no YAML
+  // reader in the vendored set (DSH-AS-LANGUAGE audit: loader reads
+  // entries, never files), so the registry copy is the honest rail.
+  const raw: unknown = yamlLoad(readFileSync(url, "utf8")) as unknown;
+  // dsh-base patch shape: the document is a LIST whose item carries
+  // the `insert` rows (later layers override by id).
+  const doc: unknown =
+    Array.isArray(raw) && raw.length === 1 ? raw[0] : raw;
   const rows: unknown =
-    typeof raw === "object" && raw !== null
-      ? (raw as Record<string, unknown>)["entries"]
+    typeof doc === "object" && doc !== null && !Array.isArray(doc)
+      ? (doc as Record<string, unknown>)["insert"]
       : undefined;
   if (!Array.isArray(rows)) {
-    throw new Error("[gateway-ts] cordis.config.json has no entries array");
+    throw new Error("[gateway-ts] cordis.patch.yml has no insert array");
   }
   const entries: ManifestEntry[] = [];
   for (const row of rows) {
@@ -113,7 +119,7 @@ function readManifest(): readonly ManifestEntry[] {
         ...(rec["disabled"] === true ? { disabled: true as boolean } : {}),
       });
     } else {
-      throw new Error("[gateway-ts] cordis.config.json has a malformed entry");
+      throw new Error("[gateway-ts] cordis.patch.yml has a malformed row");
     }
   }
   manifestEntries = entries;
