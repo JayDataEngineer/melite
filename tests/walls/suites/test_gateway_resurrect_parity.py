@@ -101,7 +101,7 @@ from _anchor import REPO, boot_scratch_gateway, reap_gateway
 sys.dont_write_bytecode = True
 
 PASS = FAIL = 0
-TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 TS_QUEUE = REPO / "packages" / "gateway" / "src" / "queue" / "queue.ts"
 
 BOOT_WHY = ("gateway restarted (boot sweep): stale active sidecar "

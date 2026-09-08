@@ -1,0 +1,13 @@
+{
+  "name": "@melite/app-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The gateway PRODUCT ASSEMBLY (DSH shape: apps/ = product, packages/ = capability). Owns the process rim only — boot the loader manifest, the HTTP listener, signal shutdown (harness process-shutdown shape) — every door and service lives in @melite/gateway. Runtime: node --experimental-strip-types (erasable TS, no build).",
+  "scripts": {
+    "start": "node --experimental-strip-types src/main.ts"
+  },
+  "dependencies": {
+    "@melite/gateway": "workspace:*"
+  }
+}

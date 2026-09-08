@@ -61,7 +61,7 @@ from gateway import route as py_route  # noqa: E402
 PASS = FAIL = 0
 
 TOKEN = "uploads-parity-token"
-TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 
 PATH_RE = re.compile(r"^data/input/[A-Za-z0-9_-]{1,48}-[0-9a-f]{8}\.(png|jpg|webp)$")
 

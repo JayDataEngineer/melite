@@ -20,6 +20,7 @@ minimumReleaseAge: 0
 ## pathways — the editor and every engine plugin consume it; no consumer
 ## hosts shared infrastructure in its subtree.
 packages:
+  - 'apps/*'                                # PRODUCT ASSEMBLIES (DSH shape: apps/ = product, packages/ = capability — apps/gateway owns the process rim)
   - 'packages/*'                           # single-package plugins
   - 'vendor/cordis_plugins/*'             # VENDORED platform tier (2026-09-08: harness-vendor discipline — loader/timer/logger-console as workspace members, consumed via workspace:*; pnpm materializes the links, no registry copy can exist)
   - 'packages/engines/*/cordis'            # ROW 6 (2026-09-07): the engine's Cordis compose plane (@comfyui/cordis — Law 0 amendment; TS cards, graph builder, compose door)

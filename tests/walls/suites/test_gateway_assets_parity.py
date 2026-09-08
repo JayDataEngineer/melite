@@ -60,7 +60,7 @@ sys.dont_write_bytecode = True
 PASS = FAIL = 0
 TOKEN = "wall-assets-token-%d" % os.getpid()
 
-TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 TS_ASSETS = REPO / "packages" / "gateway" / "src" / "doors" / "assets.ts"
 CAPTURE = REPO / "packages" / "gateway" / "scripts" / "capture_assets.py"
 INPUT_DIR = REPO / "data" / "input"

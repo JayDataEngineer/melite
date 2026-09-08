@@ -32,15 +32,16 @@
 import { createServer } from "node:http";
 import type { IncomingMessage, Server, ServerResponse } from "node:http";
 import type { Socket } from "node:net";
-import { dispatch } from "./ctx.ts";
-import type { DispatchResult } from "./ctx.ts";
-import { defaultAssetRoots, unquotePy } from "./doors/assets.ts";
-import { handleWsUpgrade } from "./doors/runs.ts";
-import { bootGatewayContext, refusalLine } from "./core/context.ts";
-import { createProcessShutdown } from "./core/processShutdown.ts";
-import { BOOT_ENGINE } from "./core/gateway.ts";
+import { dispatch } from "@melite/gateway";
 
-export { BOOT_ENGINE, bootState } from "./core/gateway.ts";
+import { defaultAssetRoots, unquotePy } from "@melite/gateway";
+import { handleWsUpgrade } from "@melite/gateway";
+import { bootGatewayContext, refusalLine } from "@melite/gateway";
+import { createProcessShutdown } from "@melite/gateway";
+import { BOOT_ENGINE } from "@melite/gateway";
+
+import type { DispatchResult } from "@melite/gateway";
+export { BOOT_ENGINE } from "@melite/gateway";
 
 /** Start the shell. Resolves with the bound server + actual port
  *  (ephemeral by default — pass 0 and read back the kernel pick).
@@ -204,7 +205,7 @@ export async function startServer(port: number = 0): Promise<{
   });
 }
 
-const isMain: boolean = (process.argv[1] ?? "").endsWith("server.ts");
+const isMain: boolean = (process.argv[1] ?? "").endsWith("main.ts");
 
 if (isMain) {
   // P5 lock-first (py main() 4474-4480): the single-writer gate

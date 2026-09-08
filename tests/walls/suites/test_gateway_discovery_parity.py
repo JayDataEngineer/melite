@@ -102,7 +102,7 @@ sys.path.insert(0, str(REPO / "python"))
 PASS = FAIL = 0
 TOKEN = "wall-discovery-token-%d" % os.getpid()
 
-TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 TS_DISCOVERY = REPO / "packages" / "gateway" / "src" / "doors" / "discovery.ts"
 TS_CATALOG = (REPO / "packages" / "gateway" / "data"
               / "discovery-catalog.json")

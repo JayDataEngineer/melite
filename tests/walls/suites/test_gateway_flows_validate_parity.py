@@ -78,7 +78,7 @@ PASS = FAIL = 0
 BYTE_OK = CODE_OK = 0
 
 TOKEN = "flows-validate-parity-token"
-TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 
 
 def check(name: str, ok: bool, note: str = "") -> None:

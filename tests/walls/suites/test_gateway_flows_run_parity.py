@@ -109,7 +109,7 @@ sys.path.insert(0, str(REPO / "packages" / "engines" / "comfyui" / "compose"))
 
 PASS = FAIL = 0
 DID = "wall-flows-draft-1"
-TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 ENGINE_TS = REPO / "packages" / "gateway" / "src" / "engine" / "comfyui.ts"
 WF = {"1": {"class_type": "EmptyLatentImage",
             "inputs": {"width": 64, "height": 64, "batch_size": 1}}}

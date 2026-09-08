@@ -98,7 +98,7 @@ sys.dont_write_bytecode = True
 PASS = FAIL = 0
 DID = "wall-queue-draft-1"
 GONE_DRAFT = "wall-gone-draft-9"
-TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 # Adjudication 2026-09-07: the P5 core is single-module lock-first —
 # the lock helper lives in queue.ts (queue lane); this wall's node
 # harness imports it from there (was queue/lock.ts, deleted).

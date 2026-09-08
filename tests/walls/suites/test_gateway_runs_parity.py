@@ -83,7 +83,7 @@ sys.dont_write_bytecode = True
 PASS = FAIL = 0
 TOKEN = "wall-runs-token-%d" % os.getpid()
 
-TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 
 PARITY_HEADERS = ("content-type", "content-length")
 

@@ -66,7 +66,7 @@ sys.dont_write_bytecode = True
 PASS = FAIL = 0
 TOKEN = "drafts-parity-token-%d" % os.getpid()
 
-TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 
 DRAFT_ID_RE = re.compile(r"^draft-[0-9a-f]+-[0-9a-f]+-[0-9a-f]+$")
 

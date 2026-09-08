@@ -93,7 +93,7 @@ sys.dont_write_bytecode = True
 PASS = FAIL = 0
 
 VENV_PY = REPO / ".venv" / "bin" / "python"
-TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 BRIDGES_TS = REPO / "packages" / "gateway" / "src" / "doors" / "bridges.ts"
 
 TOKEN = "wall-bridges-token-2026-09-07"

@@ -104,7 +104,7 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(REPO / "python"))
 
 PASS = FAIL = 0
-TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 TS_QUEUE = REPO / "packages" / "gateway" / "src" / "queue" / "queue.ts"
 
 WF = {"1": {"class_type": "EmptyLatentImage",

@@ -86,7 +86,7 @@ from _anchor import REPO, boot_scratch_gateway, reap_gateway
 sys.dont_write_bytecode = True
 
 PASS = FAIL = 0
-TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 WF = {"1": {"class_type": "EmptyLatentImage",
             "inputs": {"width": 64, "height": 64, "batch_size": 1}}}
 HISTORY_OK = {"status": {"status_str": "success", "completed": True},

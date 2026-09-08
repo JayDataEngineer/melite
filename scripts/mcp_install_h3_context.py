@@ -28,8 +28,8 @@ TARGET_REGISTRY_ID = "comfyui-h3-motion-context"
 # fallback (this script is a one-off bootstrap demo, never a production rail;
 # the root config owns the path for everything else)
 _REPO = Path(__file__).resolve().parents[1]
-if str(_REPO / "py") not in sys.path:
-    sys.path.insert(0, str(_REPO / "py"))
+if str(_REPO / "python") not in sys.path:
+    sys.path.insert(0, str(_REPO / "python"))
 try:
     import estate_config
     _EP = estate_config.engine_url("comfyui") or ""

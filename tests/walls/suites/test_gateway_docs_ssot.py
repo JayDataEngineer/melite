@@ -63,7 +63,7 @@ sys.dont_write_bytecode = True
 import gateway  # noqa: E402  (path anchored by _anchor)
 import editor_runs  # noqa: E402  (the dead-code precedent lives here)
 
-TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 ROUTES_TS = REPO / "packages" / "gateway" / "src" / "routes.ts"
 DOORS_TS = REPO / "web" / "catalog" / "src" / "generated" / "gatewayDoors.ts"
 

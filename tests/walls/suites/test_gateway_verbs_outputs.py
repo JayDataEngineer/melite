@@ -92,7 +92,7 @@ sys.path.insert(0, str(REPO / "tools"))
 import export_card_decls as declx  # noqa: E402
 
 TS_VERBS = REPO / "packages" / "gateway" / "src" / "schema" / "verbs.ts"
-TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 CARD_DECLS_JSON = (REPO / "packages" / "engines" / "comfyui" / "cordis"
                    / "data" / "card-decls.json")
 VERBS_PY = (REPO / "packages" / "engines" / "comfyui" / "models" / "3d"

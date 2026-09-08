@@ -63,7 +63,7 @@ from gateway import route as py_route  # noqa: E402
 PASS = FAIL = 0
 TOKEN = "planes-parity-token-%d" % os.getpid()
 
-TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 
 PY_GW: gwmod.Gateway | None = None
 

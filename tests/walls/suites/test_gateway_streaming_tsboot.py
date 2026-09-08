@@ -109,7 +109,7 @@ sys.dont_write_bytecode = True
 PASS = FAIL = 0
 DID = "wall-stream-draft-1"
 TOKEN = "wall-stream-token-%d" % os.getpid()
-TS_SERVER = REPO / "packages" / "gateway" / "src" / "server.ts"
+TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 RUNS_TS = REPO / "packages" / "gateway" / "src" / "doors" / "runs.ts"
 WF = {"1": {"class_type": "EmptyLatentImage",
             "inputs": {"width": 64, "height": 64, "batch_size": 1}}}
