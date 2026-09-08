@@ -2,20 +2,19 @@
 # setup.sh — thin POSIX wrapper around the ONE provisioning orchestrator.
 #
 # One path, one truth, every platform: all logic lives in
-# tools/provision.py, driven through the ONE base environment
-# (operator order 2026-09-03: the base env IS the comfyui management
-# plane — comfy-mcp, comfyui-manager, comfy-cli, comfy-script,
-# fastmcp, starlette, pyyaml — the packages, in-process, never
-# shell-scripted; there is no opt-in group).
-#   Linux/macOS: ./setup.sh <command>   (verify | extensions | models | all | …)
-#   Windows:     uv run --project infra/python tools\provision.py <command>
+# packages/engines/comfyui/scripts/provision.ts, run on node
+# --experimental-strip-types (NO-ESTATE-PYTHON cut, 2026-09-08: the
+# management plane is reached through APIs — ComfyUI HTTP + the
+# comfy-mcp MCP server over stdio — never through in-process
+# python packages).
+#   Linux/macOS/Windows: ./setup.sh <command>   (verify | extensions | models | all | …)
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
-command -v uv >/dev/null 2>&1 || {
-  echo "setup: uv is required (the env manager). Install: https://docs.astral.sh/uv/" >&2
+command -v node >/dev/null 2>&1 || {
+  echo "setup: node is required (the provisioner runs on node --experimental-strip-types)." >&2
   exit 1
 }
 
-exec uv run --project "$HERE/infra/python" \
-  python "$HERE/tools/provision.py" "$@"
+exec node --experimental-strip-types --no-warnings \
+  "$HERE/packages/engines/comfyui/scripts/provision.ts" "$@"

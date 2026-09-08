@@ -52,8 +52,9 @@
 //   - media-kind ext sets: <repo>/packages/web/dsh/media-plugin/
 //     media-kinds.json, read at request time (DATA — baking it would
 //     teach a stale vocabulary). Code tables (content types, input
-//     allowlist, mesh/doc exts) come from the GENERATED assetTables
-//     module (capture_assets.py probes py — never hand-copied).
+//     allowlist, mesh/doc exts) come from the HAND-OWNED assetTables
+//     module (frozen at the NO-ESTATE-PYTHON cut — the capture
+//     generator and its py sources are deleted).
 //
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.

@@ -1,9 +1,9 @@
 // doors/chromeDoors.ts — the health/chrome doors (J1-J10) as a
 // self-registering plugin.
 //
-// The BODIES live in the GENERATED chrome.ts (capture_chrome.py —
-// DO NOT EDIT, a regen would wipe hand code), so the plugin lives
-// here, importing the CHROME_BODIES map. A ROUTES hit serves the
+// The BODIES live in the FROZEN chrome.ts (generator retired with
+// the py oracle — DO NOT EDIT the frozen constants), so the plugin
+// lives here, importing the CHROME_BODIES map. A ROUTES hit serves the
 // captured bytes verbatim (200) — parse+reserialize would drift (py
 // ensure_ascii \uXXXX vs JSON.stringify raw UTF-8, py float 1.0 vs
 // JS number 1). Anything else falls through to the asset arms,
