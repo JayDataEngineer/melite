@@ -1,8 +1,8 @@
 // `@melite/gateway` — the gateway HTTP shell + queue.
 //
-// Phase 0 (.scratch/gateway-ts-map.md §5): the ROUTES generated
-// mirror only. Phase 1+ lands the shell here (index boot, ctx +
-// dispatcher normalization, queue registry, sidecar I/O) with one
+// routes.ts is the AUTHORED wire SSOT (generators STEP 2 flip).
+// The shell lands here (index boot, ctx + dispatcher normalization,
+// queue registry, sidecar I/O) with one
 // door module per section under src/doors/ (runs, assets, studios,
 // discovery, models, drafts, manage, bridge, agent, chrome) plus
 // the mcp_door port — every door calls IN to @comfyui/cordis for

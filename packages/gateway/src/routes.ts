@@ -1,15 +1,16 @@
-// GENERATED from python/gateway.py ROUTES (the wire SSOT) by
-// tools/gen_routes_mirror.py — DO NOT EDIT. Regenerate after every
-// route change; tests/walls/suites/test_routes_mirror.py refuses
-// drift (row-count 54 + template-set equality py-vs-ts).
+// The gateway wire table SSOT — AUTHORED, not generated.
 //
-// Phase 0 of the gateway → TypeScript cutover
-// (.scratch/gateway-ts-map.md §5): a GENERATED MIRROR, no behavior.
-// The py gateway stays authoritative until the final flag-flip; this
-// table is the shape the Phase 1+ door ports implement against.
+// packages/gateway/src/routes.ts is hand-edited: one rigid object
+// literal per row, first-match-wins order. The retired python serving
+// stack (python/gateway.py ROUTES) is the CHECKED MIRROR: it must
+// still match this table row-for-row
+// (tests/walls/suites/test_routes_mirror.py parses this file with a
+// stdlib-only string-aware scan and refuses drift).
 // Row order is significant: the dispatcher serves first-match-wins,
-// so the stage-patch arm stays BEFORE the greedy draft :id arm here
-// exactly as in the python table.
+// so the stage-patch arm stays BEFORE the greedy draft :id arm.
+// To change the surface: edit a row here AND the py mirror row
+// together in the same stroke, then regen docs + doors from this
+// table.
 //
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, no namespaces — bodyKind is a string union, query is a
@@ -18,7 +19,7 @@
 /** Request-body discipline, mirroring Route.body in python/gateway.py. */
 export type BodyKind = "none" | "strict" | "lenient" | "raw";
 
-/** One route row — the TS mirror of Route in python/gateway.py. */
+/** One route row — the authored SSOT shape (python/gateway.py Route is the checked mirror). */
 export interface GatewayRoute {
   /** "GET" | "POST" | "DELETE" | "PATCH" | "A|B" multi-arm | "*" any. */
   readonly method: string;

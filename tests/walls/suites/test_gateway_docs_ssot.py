@@ -33,12 +33,15 @@ A. THE DELETE-RUNS DECISION (py cites — read fully, not a preference):
    instead of drifting silent.
 
 B. THE DOCS SSOT (routes.ts as the TS-side authority):
-   gen_api_docs --check (endpoints.md + openapi.yaml vs the table),
-   gen_routes_mirror --check (routes.ts vs the table), and
-   gen_gateway_doors --check (gatewayDoors.ts vs the table) must all
-   be clean; the regen-noop leg re-runs all three generators in
-   write mode and proves `git status` is unchanged AND no
-   GatewayDoorUrl consumer is modified (ZERO caller edits).
+   gen_api_docs --check (endpoints.md + openapi.yaml vs the table)
+   and gen_gateway_doors --check (gatewayDoors.ts vs the table) must
+   both be clean; the routes.ts-vs-table direction is owned by the
+   INVERTED routes-mirror wall (routes.ts AUTHORED SSOT, py mirror
+   row-for-row — tools/gen_routes_mirror.py DELETED in generators
+   STEP 2, so no mirror --check remains here). The regen-noop leg
+   re-runs the surviving generators in write mode and proves `git
+   status` is unchanged AND no GatewayDoorUrl consumer is modified
+   (ZERO caller edits).
 
 Run: pytest tests/walls/suites/test_gateway_docs_ssot.py
 """
@@ -273,13 +276,12 @@ def test_gen_api_docs_check_clean() -> None:
         "stale generated docs — run tools/gen_api_docs.py\n%s" % r.stdout
 
 
-def test_gen_routes_mirror_check_clean() -> None:
-    r = subprocess.run(
-        [sys.executable, str(REPO / "tools" / "gen_routes_mirror.py"),
-         "--check"], capture_output=True, text=True, timeout=60,
-        cwd=str(REPO))
-    assert r.returncode == 0, \
-        "routes.ts drifted from the table — regenerate\n%s" % r.stdout
+# tools/gen_routes_mirror.py was DELETED in generators STEP 2 (SSOT
+# flip): routes.ts is authored, the py table is the checked mirror.
+# The mirror direction is pinned by the inverted
+# tests/walls/suites/test_routes_mirror.py (row-count + template-set
+# + full-row + retired-generator + authored-marker + tsc +
+# ROUTE_COUNT) — no mirror --check remains in this file.
 
 
 def test_route_count_pin() -> None:
@@ -313,7 +315,7 @@ def test_regen_noop_no_caller_diff() -> None:
     byte-noop), and no GatewayDoorUrl consumer outside generated/
     appears in the worktree diff."""
     before = _git("status", "--short")
-    for tool in ("tools/gen_api_docs.py", "tools/gen_routes_mirror.py",
+    for tool in ("tools/gen_api_docs.py",
                  "tools/gen_gateway_doors.py"):
         r = subprocess.run([sys.executable, str(REPO / tool)],
                            capture_output=True, text=True, timeout=120,

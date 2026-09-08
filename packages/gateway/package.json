@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "The gateway HTTP shell + queue (Phase-0: the ROUTES generated mirror only — .scratch/gateway-ts-map.md §5). First-class plugin under the packages/* workspace glob; engine-agnostic, shells multiple engines via @comfyui/cordis (Phase 1+). Runtime is node --experimental-strip-types (erasable-syntax TS); no build step.",
+  "description": "The gateway HTTP shell + queue (routes.ts is the AUTHORED wire SSOT — the retired py table is the checked mirror). First-class plugin under the packages/* workspace glob; engine-agnostic, shells multiple engines via @comfyui/cordis (Phase 1+). Runtime is node --experimental-strip-types (erasable-syntax TS); no build step.",
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
@@ -11,8 +11,6 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "mirror": "python3 ../../tools/gen_routes_mirror.py",
-    "mirror:check": "python3 ../../tools/gen_routes_mirror.py --check",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
