@@ -9,7 +9,7 @@ import { musicT1 } from '../kit.ts'
 
 const schema = z.object({
   prompt: z.string().description(
-    "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, playful female vocal, groovy bassline'"),
+    "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, playful female vocal, groovy bassline'").extra('extra', { required: true }),
   lyrics: z.string().description(
     'Lyrics with structure tags: [verse], [chorus], [bridge]. Empty = instrumental.'),
   duration: z.number().min(5).max(360).default(30.0).description(

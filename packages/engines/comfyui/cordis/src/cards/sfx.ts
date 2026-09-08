@@ -6,7 +6,7 @@ import { sfxT1 } from '../kit.ts'
 
 const schema = z.object({
   prompt: z.string().description(
-    "Describe the SOUND itself, not the scene (e.g. 'sharp metallic clang with long decay')"),
+    "Describe the SOUND itself, not the scene (e.g. 'sharp metallic clang with long decay')").extra('extra', { required: true }),
   guidance_scale: z.number().min(0).max(20).default(5.0).description(
     'Diffusion classifier-free guidance'),
   n_diffusion_steps: z.number().min(1).max(500).default(50).description(

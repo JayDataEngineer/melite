@@ -26,7 +26,7 @@ const schema = z.object({
   // overlay (non-strict object) so the pinned recipe golden keeps
   // composing byte-identical — they are never declared knobs.
   input_image: z.string().role('path').description(
-    'The photo to select from — absolute path or an artifact ref from a previous card.'),
+    'The photo to select from — absolute path or an artifact ref from a previous card.').extra('extra', { required: true }),
   detect_mode: z.union([z.const('body'), z.const('face'), z.const('hands')])
     .default('body').description(
       'What the primary selection targets. body → RT-DETR person boxes; face/hands → MediaPipe landmarks.'),

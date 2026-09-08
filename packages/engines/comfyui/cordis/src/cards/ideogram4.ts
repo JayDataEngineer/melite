@@ -7,7 +7,7 @@ import z from '@deepseek-ai/schemastery'
 import { ideogramLane, finalizeIdeogram } from '../kit.ts'
 
 const schema = z.object({
-  prompt: z.string().description('Prompt'),
+  prompt: z.string().description('Prompt').extra('extra', { required: true }),
   // ride-the-model keys (no schema default — the compose-door
   // cascade overlays model defaults): HINT-ONLY ranges via extra
   // (RANGE RULE 2026-09-08: whoever owns the default owns the floor).

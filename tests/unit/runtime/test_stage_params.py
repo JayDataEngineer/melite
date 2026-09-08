@@ -11,6 +11,12 @@ The wall pins the four properties the lattice promises:
   2. Body gate: a stage with `card=` set has its `params`
      validated against the card's schema at Flow construction.
      A typo'd knob refuses LOUD, named after the field.
+     MONO-ENGINE 2026-09-08: no card carries a schema (all
+     on-disk schema.py retired) — the schema pass no-ops for
+     every live card and the kind contract (3) is the gate. The
+     two legs that pinned the schema refusal (typo-knob,
+     inline-validates-schema) are retired in section 2 with
+     cause.
 
   3. Kind contract: a stage with `card=` set has its effective
      outputs and expected inputs filled from the registry. The
@@ -161,23 +167,16 @@ def test_registry_schema_must_be_frozen_pydantic_model() -> None:
 
 
 # ── 2. body gate: Stage(card=...) validates params ─────────────────
-
-
-def test_card_stage_unknown_knob_refused_at_construction() -> None:
-    """The lever the lattice closes: a typo'd knob name refuses
-    the Flow(...) line, named after the field. The duck-typed
-    era let `durations` render at default duration — silent
-    garbage on the GPU. This is the AI's main failure mode."""
-    with pytest.raises((flow.FlowError, ValidationError)) as exc:
-        Flow(id="typo-knob", stages=(
-            Stage(id="m", engine="comfyui", card="music",
-                  inputs={"prompt": FromInitial(key="prompt")},
-                  params={"prompt": "hi", "durations": 5.0}),
-        ))
-    msg = str(exc.value)
-    assert "durations" in msg, "must name the offending field: %r" % msg
-    assert "music" in msg, "must name the card: %r" % msg
-    assert "Extra inputs" in msg, "must name the failure: %r" % msg
+#
+# RETIRED 2026-09-08 (mono-engine — the schema plane is empty, see
+# the header): test_card_stage_unknown_knob_refused_at_construction
+# (typo'd `durations` on the music card refused "Extra inputs") and
+# test_inline_flow_validates_schema (same refusal via flow_from_body)
+# pinned the py schema-gate refusal. No living carrier pins it now
+# (the TS door stubs card= with 400 unported; compose-time admission
+# is walled by test_cordis_compose + test_card_requires). Deleted,
+# not skipped — re-pin on schema regrowth (python/stage_params
+# _SCHEMA_TARGETS rejoin procedure).
 
 
 def test_card_stage_clean_body_constructs() -> None:
@@ -382,23 +381,8 @@ def test_card_io_explicit_override() -> None:
 # ── 4. inline path: flow_from_body has the same gates ─────────────
 
 
-def test_inline_flow_validates_schema() -> None:
-    """The {flow_inline} JSON path gains the same body gate as
-    the on-disk Flow() literal. An AI constructing a flow with
-    a typo'd knob refuses the compile door (4xx, no GPU)."""
-    body = {
-        "id": "inline-typo",
-        "stages": [
-            {"id": "m", "engine": "comfyui", "card": "music",
-             "inputs": {"prompt": {"initial": "prompt"}},
-             "params": {"prompt": "hi", "durations": 5.0}},
-        ],
-    }
-    with pytest.raises(flow.FlowError) as exc:
-        flow.flow_from_body(body)
-    msg = str(exc.value)
-    assert "durations" in msg
-    assert "music" in msg
+# (test_inline_flow_validates_schema RETIRED 2026-09-08 with the
+# typo-knob leg above — same dead schema-gate carrier.)
 
 
 def test_inline_flow_kind_mismatch_refused() -> None:

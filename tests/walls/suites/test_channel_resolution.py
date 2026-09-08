@@ -181,11 +181,32 @@ class TestTsChannelPin:
 
 
 class TestEstateSweep:
+    # RETIRED ENGINE FLOWS (mono-engine 2026-09-08, quarantine
+    # 47e1c583): flows/music-native names the retired music-native
+    # card on the dead audio_cpp engine — it cannot ship and leaves
+    # the sweep; the living surface is the comfyui music card. Dir
+    # removal belongs to the flow lane (residue). The debt-pin leg
+    # keeps this set honest (KNOWN_DRIFT discipline: the day a
+    # listed flow loads, it rejoins the sweep).
+    RETIRED = frozenset({"music-native"})
+
+    def test_retired_engine_flows_stay_unloadable(self) -> None:
+        for name in sorted(self.RETIRED):
+            try:
+                flow_mod.load_flow(name)
+            except Exception:
+                continue
+            raise AssertionError(
+                "retired flow %s loads again — it rejoins the sweep "
+                "and leaves RETIRED" % name)
+
     def test_every_flow_on_disk_resolves_clean(self) -> None:
         names = sorted(p.parent.name for p in
                        FLOWS_DIR.glob("*/flow.py"))
         assert names, "no flows found — the sweep went blind"
         for name in names:
+            if name in self.RETIRED:
+                continue  # pinned above — not shippable stock
             g = flow_mod.load_flow(name).to_graph()
             bad = g.unresolved_channels()
             assert bad == (), "%s: %s" % (name, bad)

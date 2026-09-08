@@ -129,9 +129,10 @@ SMOKE: dict[str, dict] = {
     # prompt rides explicitly (live-probed 2026-09-06): the card
     # declares no fields but the schema requires prompt — a
     # card/schema gap the audio lane owns.
-    "music-native": {"model": "ace-step-xl", "deadline_s": 900,
-                     "params": {"prompt": "soft piano loop",
-                                "duration": 10, "seed": 7}},
+    # (the music-native smoke RETIRED 2026-09-08 with its engine —
+    # audio-cpp quarantined 47e1c583, card retired mono-engine; the
+    # living music path is the comfyui music card, pinned by
+    # test_music_smoke below)
     "quad-remesh": {"model": "autoremesher", "deadline_s": 600,
                     "params": {"input": CUBE_OBJ, "target_quads": 500}},
     "sfx": {"model": "moss-sfx", "deadline_s": 1200,
@@ -354,8 +355,8 @@ class TestGpuSmoke(unittest.TestCase):
     def test_music_smoke(self) -> None:
         self._smoke("music")
 
-    def test_music_native_smoke(self) -> None:
-        self._smoke("music-native")
+    # (test_music_native_smoke RETIRED 2026-09-08 — engine dead,
+    # see the table note above)
 
     def test_quad_remesh_smoke(self) -> None:
         self._smoke("quad-remesh")

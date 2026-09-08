@@ -51,10 +51,12 @@ REPO = Path(__file__).resolve().parents[3]
 # The isolation pin's list, read structurally (not imported — keep the
 # subprocess suite self-contained; this pin fails loudly if the list
 # moves or renames).
-ISOLATION_FILE = REPO / "tests/unit/packages/test_plugin_isolation.py"
+ISOLATION_FILE = REPO / "tests/unit/plugins/test_plugin_isolation.py"
 
 # python/ modules the gateway may import WITHOUT an isolation pin:
 # document each exemption with its reason or do not add it.
+# (Mechanism of the retired s2 leg below — empty since the oracle
+# death; a re-derived gateway-subject wall revives it.)
 GATEWAY_IMPORT_EXEMPT: set[str] = set()
 
 ENGINE_ABI = {"ENGINE_TYPE", "execute", "stop", "unload",
@@ -122,20 +124,6 @@ def _isolation_surfaces() -> list[str]:
     pytest.fail("IMPORT_SURFACES not found in " + str(ISOLATION_FILE))
 
 
-def _gateway_local_imports() -> set[str]:
-    """python/ sibling modules the gateway imports anywhere (ast-walk,
-    lazy imports included)."""
-    tree = ast.parse((REPO / "python/gateway.py").read_text())
-    found: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            found |= {a.name.split(".")[0] for a in node.names}
-        elif isinstance(node, ast.ImportFrom) and node.module:
-            found.add(node.module.split(".")[0])
-    py_mods = {p.stem for p in (REPO / "python").glob("*.py")}
-    return found & py_mods
-
-
 def _plugin_dirs() -> list[Path]:
     roots = [REPO / "packages" / cat for cat in ("engines", "web")]
     out = []
@@ -157,16 +145,18 @@ def test_s1_isolation_surfaces_exist_on_disk() -> None:
 
 
 def test_s2_gateway_imports_are_pinned() -> None:
-    """R-orphan: every python/ module the gateway imports has a clean-import
-    pin (or a documented exemption)."""
-    pinned = set(_isolation_surfaces())
-    uncovered = _gateway_local_imports() - pinned - GATEWAY_IMPORT_EXEMPT
-    assert not uncovered, (
-        "python/ modules imported by python/gateway.py with NO clean-import "
-        "pin in test_plugin_isolation.py: %s — add them to "
-        "IMPORT_SURFACES (or GATEWAY_IMPORT_EXEMPT with a reason)"
-        % sorted(uncovered)
-    )
+    # RETIRED 2026-09-08 (dead subject — the oracle died 2026-09-08:
+    # python/gateway.py deleted, the TS gateway is the serving
+    # surface; the scanner it audited reads a deleted file's imports
+    # and refused the whole test module at fixture time).
+    # Per-leg residue: section 1 (R-stale, above) still pins every
+    # isolation surface to a real python/ module; the TS serving
+    # surface is walled by test_gateway_chrome_parity (tools parity
+    # with python/editor_runs) + the parity walls (serving bytes
+    # byte-equal across the plane move). Kept as a tombstone marker
+    # so the R-orphan section reads in order — do not extend; a new
+    # gateway-subject wall re-derives from the TS door, not py.
+    pytest.skip("dead subject: python/gateway.py deleted 2026-09-08")
 
 
 def _abi_targets() -> Iterator[tuple[str, Path, set[str]]]:

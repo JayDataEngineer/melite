@@ -30,7 +30,11 @@ REPO = Path(__file__).resolve().parents[3]
 
 
 IMPORT_SURFACES = [
-    "packages",                 # python/plugins.py: the plugin discovery broker
+    "plugins",                  # python/plugins.py: the plugin discovery broker
+                                # (2026-09-08 red-closure: the entry read
+                                # "packages" — no python/packages.py exists;
+                                # the name imported the repo packages/
+                                # namespace dir and pinned nothing.)
     "catalog",                 # python/catalog.py: model catalog scanner
     "lane_disclosure",          # python/lane_disclosure.py: lane listing
     "asset_ledger",            # python/asset_ledger.py: the asset-ledger rung

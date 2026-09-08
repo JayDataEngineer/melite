@@ -49,6 +49,15 @@ import { finalizeH3 } from '../kit.ts'
 // LORA_STACK_GOLD ← loras/h3/minimax_h3_fl2v_lightx2v_v0.1_dareties
 //_v4_step600_comfy_fro + loras/h3/
 // minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.
+declare module '../service.ts' {
+  interface CardDefinition {
+    /** Emitter carrier: when the registered schema is a hand-written
+     * normalizer (this card), the underlying Schemastery object whose
+     * .dict the params_schema emitter walks. */
+    schemaCarrier?: unknown
+  }
+}
+
 const UNET_GOLD = 'minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors'
 const CLIP_GOLD = 'qwen3vl_32b_minimax_h3_int8_convrot.safetensors'
 const VAE_VIDEO_GOLD = 'minimax_h3_video_vae_int8_convrot.safetensors'
@@ -105,7 +114,7 @@ const nullable = <T extends object>(inner: T): unknown => z.union([inner, z.cons
 
 const paramSchema = z.object({
   prompt: z.string().description(
-    'Verb-first motion + the sounds. For keyframes the image already sets the scene — prompt what CHANGES.'),
+    'Verb-first motion + the sounds. For keyframes the image already sets the scene — prompt what CHANGES.').extra('extra', { required: true }),
   image: z.string().role('path').description(
     'Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline.'),
   seed: z.number().min(-1).step(1).default(42).description(
@@ -117,7 +126,7 @@ const paramSchema = z.object({
   steps: z.number().min(4).max(30).default(12).description(
     '12 for draft; 30 standard; 10 with the turbo LoRA'),
   sharpen_enabled: z.boolean().default(false).description(
-    'Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 = natural.'),
+    'Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural.'),
   sharpen_strength: z.number().min(0).max(1).default(0.3).description(
     'RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.'),
   interpolate_enabled: z.boolean().default(false).description(
@@ -498,6 +507,9 @@ export function apply(ctx: Context): void {
       'ComfyUI-SeedVR2_VideoUpscaler', 'ComfyUI-LTXVideo',
     ],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
+    // the emitter carrier (this card's schema is the hand-written
+    // normalizer — params_schema walks the declared object's .dict)
+    schemaCarrier: paramSchema,
     compose(p, _model, g) {
       const guideImage = (p.image ?? p.image_name ?? '') as string
       if (p.variant === 't4r' && !guideImage) {

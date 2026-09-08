@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """extension_lane.py — merge all plugin nodes.yaml declarations into one manifest.
 
-ONE PATTERN: reads every plugins/*/nodes/extensions.yaml and
-plugins/*/models/**/nodes.yaml, merges in plugin-id order, fails
+ONE PATTERN: reads every packages/*/nodes/extensions.yaml and
+packages/*/models/**/nodes.yaml, merges in plugin-id order, fails
 loud on duplicate names. Output is a unified manifest consumed by
-the bootstrap installer.
+the bootstrap installer. (STRUCTURE STAGE 1, 2026-09-05:
+plugins/ -> packages/; the pre-rename plugins/ roots retired
+2026-09-08 — the lane merged empty from the day of the rename.)
 
 Usage:
     python3 extension_lane.py [--repo <path>] [--format yaml|json]
@@ -31,16 +33,17 @@ def warn(msg: str) -> None:
 def find_nodes_yaml(repo: str) -> list[tuple[str, str]]:
     """Find all nodes.yaml files, return (path, owner_id) pairs sorted by owner.
 
-    Plugin layouts (root reorganization, 2026-09-03): flat
-    plugins/<id>/… and engine-scoped plugins/engines/<engine>/… —
-    owner id is the plugin path between plugins/ and the first
+    Plugin layouts (root reorganization, 2026-09-03; packages/
+    rename, STRUCTURE STAGE 1 2026-09-05): flat
+    packages/<id>/… and engine-scoped packages/engines/<engine>/… —
+    owner id is the plugin path between packages/ and the first
     models|nodes segment (e.g. "engines/comfyui").
     """
     patterns = [
-        os.path.join(repo, "plugins", "*", "nodes", "extensions.yaml"),
-        os.path.join(repo, "plugins", "*", "models", "**", "nodes.yaml"),
-        os.path.join(repo, "plugins", "*", "*", "nodes", "extensions.yaml"),
-        os.path.join(repo, "plugins", "*", "*", "models", "**", "nodes.yaml"),
+        os.path.join(repo, "packages", "*", "nodes", "extensions.yaml"),
+        os.path.join(repo, "packages", "*", "models", "**", "nodes.yaml"),
+        os.path.join(repo, "packages", "*", "*", "nodes", "extensions.yaml"),
+        os.path.join(repo, "packages", "*", "*", "models", "**", "nodes.yaml"),
     ]
     results: list[tuple[str, str]] = []
     for pattern in patterns:
@@ -48,7 +51,7 @@ def find_nodes_yaml(repo: str) -> list[tuple[str, str]]:
             rel = Path(path).relative_to(repo)
             parts = list(rel.parts)
             try:
-                idx = parts.index("plugins")
+                idx = parts.index("packages")
                 tail = parts[idx + 1:]
                 cut = next(i for i, p in enumerate(tail)
                            if p in ("models", "nodes"))

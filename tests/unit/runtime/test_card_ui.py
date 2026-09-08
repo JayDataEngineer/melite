@@ -6,20 +6,24 @@ derived from its schema row).
 Pinned:
 
   COVERAGE — every REGISTRY card appears; null params ONLY for
-  the explicit schemaless set (ideogram4); zero resolve errors
+  the explicit schemaless set (the registry's _CARDS_WITHOUT_SCHEMA
+  SSOT — all 19 cards since the mono-engine retirement; the
+  declarations-plane stroke landed 2026-09-08); zero resolve errors
   (the mask-studio H3Params fossil + the fit/skin missing
-  __init__.py holes died for this wall).
+  __init__.py holes died for this wall; the audio-cpp / anycreature
+  / skintokens ghost targets retired mono-engine 2026-09-08).
 
   VERBATIM — engine/kinds/requires_model equal the registry row
   (served, never retyped); the payload json-serializes (the wire).
 
   SUFFICIENCY — params composed SOLELY from the served schema
   (defaults + recursive required-fill) pass validate_stage_params
-  for every card EXCEPT the semantic trio (forge, h3-timeline,
-  input-prep), whose CONTENT gates no shape can satisfy — for
-  those the wall pins the exact semantic refusal (the schema got
-  us all the way to the content gate; any other refusal, or any
-  fourth card failing, is red).
+  for every card with a served schema. MONO-ENGINE 2026-09-08: no
+  live card serves a schema (all schemaless — the loop below skips
+  them), and the last semantic gate (forge, "creature spec is
+  missing") retired with its engine. The test stays as the regrowth
+  guard: a card that regrows schema.py MUST round-trip here, or pin
+  its content gate in SEMANTIC below (any other refusal is red).
 """
 
 import json
@@ -46,8 +50,14 @@ ROWS = {r.card_id: r for r in sp.REGISTRY.rows}
 # the 17th). The wall cross-checks the SERVED /v1/forms view against
 # the registry SSOT — serve and registry can never drift apart.
 from stage_params import _CARDS_WITHOUT_SCHEMA as SCHEMALESS
-SEMANTIC = {                 # content gates, not shapes — the schema
-    "forge": "creature spec is missing",   # gets us TO the gate
+# Content gates, not shapes — a regrown schema whose CONTENT no
+# shape can satisfy pins its exact refusal here (the schema got us
+# all the way to the content gate). MONO-ENGINE 2026-09-08: empty —
+# forge ("creature spec is missing") retired with anycreature;
+# h3-timeline / input-prep moved planes with the schema.py
+# retirement (see below). An empty set is the honest state: every
+# card with a served schema round-trips, and there are none.
+SEMANTIC: dict[str, str] = {
     # h3-timeline ("no calls in card body") and input-prep ("could
     # not detect the source media type") gates MOVED PLANES with the
     # schema.py retirement: the Cordis compose door owns them now

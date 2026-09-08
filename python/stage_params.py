@@ -39,7 +39,10 @@ The gate is two passes (both in python/flow.py):
       `extra="forbid"` is what makes a typo'd knob loud (a name
       not on the card's row refuses the `Flow(...)` line, named
       after the field — same shape as every other pydantic refusal
-      in the estate).
+      in the estate). MONO-ENGINE 2026-09-08: no card carries a
+      schema_class (all on-disk schema.py retired with the render
+      plane / quarantine) — this pass no-ops for every live card
+      and the kind contract (pass 2) is the gate.
 
   (2) Engine load (`validate_engines`): resolves `card_io` from
       the registry when the stage omits it. Runs the typed-edges
@@ -161,35 +164,34 @@ def _import_schema_lazy(modname: str, classname: str) -> Callable[[], Type[BaseM
 #
 # STROKE 4 (2026-09-06): _SCHEMA_TARGETS is the ONE source (module,
 # class) — _SCHEMA_BY_CARD (lazy loaders) derives from it, and the
-# collision-fallback mount in _resolve_schema re-derives from it. A
-# card whose dir basename collides across engines (music: comfyui
-# AND audio-cpp) resolves under its UNIQUE card-id name
-# ("music_native") — never the ambiguous flat dir name.
+# collision-fallback mount in _resolve_schema re-derives from it.
+# (The cross-engine collision procedure it served — music: comfyui
+# AND audio-cpp resolving under the unique "music_native" name —
+# retired MONO-ENGINE 2026-09-08 with the table; the mechanism
+# stays for a regrown schema.py.)
 
 # STAGE 4 (2026-09-07, b324c480 + 852725bb): the comfyui arms'
 # python/schema.py files are RETIRED (render plane) — only the card.py
 # DECLARATIONS were restored (declaration-vs-render is the
-# retirement line). Rows below are the survivors with a live
-# on-disk schema.py: the three native 3d cards, the cpp music
-# card (flat `music` name — the unit walls resolve it there), and
-# music-native (same file, unique-name fallback mount). Every
-# other card joins _CARDS_WITHOUT_SCHEMA (the ideogram4
-# precedent): the body gate no-ops, the static kind contract
-# still gates. A card that regrows schema.py MUST rejoin here
-# AND drop from that set.
+# retirement line).
+#
+# MONO-ENGINE (2026-09-08, quarantine 47e1c583): NO card has a live
+# on-disk schema.py — the last four targets (the cpp music row the
+# unit walls resolved, its music-native unique-name twin, forge,
+# auto-rig) pointed at engines that died in quarantine, and the
+# sixteen comfyui rows were already retired by STAGE 4. The target
+# table is EMPTY: every registry card rides _CARDS_WITHOUT_SCHEMA
+# (the ideogram4 precedent, generalized) — the body gate no-ops,
+# the static kind contract still gates. A card that regrows
+# schema.py MUST rejoin the table below AND drop from that set.
 
 _SCHEMA_TARGETS: Dict[str, tuple] = {
-    "ideogram4":      ("ideogram4.schema", "Ideogram4Params"),
-    "music":          ("music.schema", "MusicParams"),
-    "forge":          ("forge.schema", "ForgeParams"),
-    # (quad-remesh LEFT 2026-09-07 with the cpp→node cutover — its
-    # schema.py retired with the lane; the row lives in
-    # _CARDS_WITHOUT_SCHEMA now, P32.)
-    "auto-rig":       ("auto_rig.schema", "RigParams"),
-    # the cpp music card lives in a dir NAMED "music" (audio-cpp)
-    # — mounted under its unique card id to break the flat-name
-    # collision with the comfyui music card
-    "music-native":   ("music_native.schema", "MusicParams"),
+    # MONO-ENGINE 2026-09-08: empty (see above) — the retired rows
+    # were ideogram4 (shadowed by _CARDS_WITHOUT_SCHEMA), music +
+    # music-native (audio-cpp), forge (anycreature), auto-rig
+    # (skintokens). Kept as the ONE source so a regrown schema.py
+    # rejoins here (module, class) with its _SCHEMA_BY_CARD loader
+    # deriving automatically.
 }
 
 _SCHEMA_BY_CARD: Dict[str, Callable] = {
@@ -212,13 +214,18 @@ _SCHEMA_BY_CARD: Dict[str, Callable] = {
 # STAGE 4 (commit 349d26a9 dropped the 16 rows without updating
 # that wall) — its nulls/sufficiency legs were already red for the
 # 16 siblings; quad is the 17th member of the same class, and that
-# wall's update belongs to the declarations-plane stroke, not here.
+# wall's update belongs to the declarations-plane stroke, which
+# landed 2026-09-08 (the set below is the SSOT the card_ui wall
+# cross-checks).
+# MONO-ENGINE (2026-09-08, quarantine 47e1c583): music joins this
+# set — its schema target was the audio-cpp row (dead engine); the
+# comfyui music card is declarations-only like its 16 siblings.
 _CARDS_WITHOUT_SCHEMA: frozenset = frozenset({
     "ideogram4",
     "image-gen", "image-edit", "upscale-tools", "mask-studio",
     "video-gen", "h3-timeline", "tts", "voice-lock", "sfx",
     "motion", "anny", "img-to-mesh", "fit", "skin", "tagger",
-    "input-prep", "quad-remesh",
+    "input-prep", "quad-remesh", "music",
 })
 
 
@@ -389,6 +396,9 @@ class ParamSchemaRegistry(_Frozen):
 # _SCHEMA_BY_CARD, add a row here. The wall test enumerates the
 # schema.py tree and pins the import list; it also pins this table
 # against the import list (drift in either direction is a failure).
+# MONO-ENGINE 2026-09-08: every row's schema_class is None (no
+# live schema.py anywhere) — the per-row "resolved lazily via ..."
+# notes below are the retired procedure, kept as the rejoin recipe.
 
 REGISTRY = ParamSchemaRegistry(rows=(
     CardSchemaRow(
@@ -480,12 +490,12 @@ REGISTRY = ParamSchemaRegistry(rows=(
     # the ONE-implementation rule: the NVIDIA-package wrap
     # (melite-kimodo-nodes, comfyui lane, card='motion') is THE
     # kimodo; the ggml second implementation died with its tree)
-    # ── STROKE 4 (2026-09-06): the eight rows that closed the
+    # ── STROKE 4 (2026-09-06): the rows that closed the
     # bijection wall. Kind contracts derived from each card's
-    # consuming flow (fit-seat, skin-apply) and the cpp engines'
-    # DEFAULT_OUTPUT rows. requires_model marks the card whose arm
-    # composes against a named model row — today only music-native
-    # (the first production card= lane, flows/music-native).
+    # consuming flow (fit-seat, skin-apply). requires_model marks a
+    # card whose arm composes against a named model row — no live
+    # card needs one today (music-native, the first production
+    # card= lane, retired MONO-ENGINE 2026-09-08 with audio-cpp).
     CardSchemaRow(
         card_id="fit", engine="comfyui",
         kind_inputs={"body": "mesh", "prop": "mesh"},
@@ -507,12 +517,11 @@ REGISTRY = ParamSchemaRegistry(rows=(
         kind_inputs={"source": "text"},
         kind_outputs={"default": "text"}),
     CardSchemaRow(
-        # forge (anycreature): the spec dict is a PARAM not a
-        # channel — no typed wired inputs; output is a mesh
-        card_id="forge", engine="anycreature",
-        kind_inputs={},
-        kind_outputs={"default": "mesh"}),
-    CardSchemaRow(
+        # forge / auto-rig / music-native RETIRED MONO-ENGINE
+        # 2026-09-08 with their engines (quarantine 47e1c583 —
+        # anycreature / skintokens / audio-cpp dead; the kimodo
+        # precedent above). No living card carries a non-comfyui
+        # engine; the registry is comfyui-only like the estate.
         # quad-remesh rides comfyui since the 2026-09-07 cpp→node
         # cutover (ONE-implementation rule — the cpp lane retired
         # with its render arm; the body composes through the Cordis
@@ -520,19 +529,6 @@ REGISTRY = ParamSchemaRegistry(rows=(
         card_id="quad-remesh", engine="comfyui",
         kind_inputs={"input": "mesh"},
         kind_outputs={"default": "mesh"}),
-    CardSchemaRow(
-        card_id="auto-rig", engine="skintokens",
-        kind_inputs={"input": "mesh"},
-        kind_outputs={"default": "mesh"}),
-    CardSchemaRow(
-        # THE first production card= lane (flows/music-native,
-        # stroke 4): prompt/lyrics in, audio out; the doc names
-        # its model row (params.model) — the {model:} door's
-        # flow-stage equivalent, gated at construction
-        card_id="music-native", engine="audio_cpp",
-        requires_model=True,
-        kind_inputs={"prompt": "text", "lyrics": "text"},
-        kind_outputs={"default": "audio"}),
 ))
 
 
@@ -546,13 +542,14 @@ class StageParamError(ValueError):
 
 def _mount_card_fallback(card_id: str, pkg_name: str) -> bool:
     """Loader-owned import mechanics (shape law rung 5): when the
-    flat package name never mounted (the music-native case — its
-    dir is NAMED music, colliding with the comfyui music card, so
-    no bus mounts it as "music_native"), locate the card via the
-    SSOT scan and mount its python/ package under the unique card-id
-    name. Returns True when the package is importable after the
-    call. A failed mount returns False — the caller surfaces the
-    ORIGINAL import error, never a guessed schema."""
+    flat package name never mounted (retired example: the
+    music-native case — its dir was NAMED music, colliding with the
+    comfyui music card, so no bus mounted it as "music_native"),
+    locate the card via the SSOT scan and mount its python/ package
+    under the unique card-id name. Returns True when the package is
+    importable after the call. A failed mount returns False — the
+    caller surfaces the ORIGINAL import error, never a guessed
+    schema."""
     if pkg_name in sys.modules:
         return True
     try:

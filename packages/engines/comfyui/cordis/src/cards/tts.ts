@@ -5,7 +5,7 @@ import z from '@deepseek-ai/schemastery'
 import { ttsT1 } from '../kit.ts'
 
 const schema = z.object({
-  text: z.string().description('The text to synthesize'),
+  text: z.string().description('The text to synthesize').extra('extra', { required: true }),
   // py card.py truth (card-decls.json): voice rides 'ryan', temperature
   // 0.7, seed -1; style_instruction/qvoice/voice_pca are ABSENT/defaultless
   // (bare = optional at parse, ''-absent at compose via ?? '' below).

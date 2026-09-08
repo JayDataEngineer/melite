@@ -16,7 +16,7 @@ import z from '@deepseek-ai/schemastery'
 import { imageT2I, finalizeImageGen } from '../kit.ts'
 
 const schema = z.object({
-  prompt: z.string().description('Prompt'),
+  prompt: z.string().description('Prompt').extra('extra', { required: true }),
   negative_prompt: z.string().description('Negative Prompt'),
   width: z.number().min(256).max(2048).default(1024).description('Width'),
   height: z.number().min(256).max(2048).default(1024).description('Height'),

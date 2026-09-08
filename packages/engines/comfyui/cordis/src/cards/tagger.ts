@@ -29,7 +29,7 @@ const oneOf = (options: string[]) => z.union(options.map((o) => z.const(o)))
 // precedent (optional at parse, refused loud at compose).
 const schema = z.object({
   input_image: z.string().role('path').description(
-    'The image to invert. Absolute mount path or artifact ref.'),
+    'The image to invert. Absolute mount path or artifact ref.').extra('extra', { required: true }),
   checkpoint: z.string().default('wd-v1-4-moat-tagger-v2').description(
     'The WD14 weights name (auto-downloaded on first run).'),
   threshold: z.number().min(0).max(1).default(0.35).description(

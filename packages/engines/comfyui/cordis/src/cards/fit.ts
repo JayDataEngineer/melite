@@ -7,8 +7,8 @@ import z from '@deepseek-ai/schemastery'
 import { fitLane, finalizeFit } from '../kit.ts'
 
 const schema = z.object({
-  body_glb: z.string().role('path').description('Body GLB'),
-  prop_glb: z.string().role('path').description('Prop GLB'),
+  body_glb: z.string().role('path').description('Body GLB').extra('extra', { required: true }),
+  prop_glb: z.string().role('path').description('Prop GLB').extra('extra', { required: true }),
   bone: z.string().default('mixamorig:Head').description('Bone'),
   // the three meld fit laws — a closed vocabulary (the python row
   // refuses anything else with its field name)

@@ -22,7 +22,7 @@ import z from '@deepseek-ai/schemastery'
 import { wanVace, scail2, VIDEO_NEGATIVE_FALLBACK, VIDEO_REQUIRED_PATHS } from '../kit.ts'
 
 const schema = z.object({
-  prompt: z.string().description('Prompt'),
+  prompt: z.string().description('Prompt').extra('extra', { required: true }),
   negative_prompt: z.string().description('Negative Prompt'),
   reference_image: z.string().role('path').description(
     'The anchor frame — identity, subject, scene (wan-vace); the character to animate (scail2).'),

@@ -33,13 +33,13 @@ import z from '@deepseek-ai/schemastery'
 import { imageEdit, refuseImageEditFiring, finalizeImageEdit } from '../kit.ts'
 
 const schema = z.object({
-  prompt: z.string().description('Prompt'),
+  prompt: z.string().description('Prompt').extra('extra', { required: true }),
   negative_prompt: z.string().description('Negative Prompt'),
   // the staged anchor filename — the arm stages uploads/artifacts
   // into the ComfyUI input dir before this doc renders (the wire
   // name is the card-primary image1; input_image/image are retired
   // python aliases, not ported to this plane).
-  image1: z.string().role('path').description('Image 1'),
+  image1: z.string().role('path').description('Image 1').extra('extra', { required: true }),
   // optional reference slots (the lanpaint brick's slots 2-3): bare
   // atoms (py rides them) — a stated slot loads and wires, a blank
   // one stays out of the encode inputs entirely.
@@ -49,7 +49,8 @@ const schema = z.object({
   // silently mapped — list→slot precedence is undocumented python-
   // side, so a non-empty list refuses (see refuseFiring).
   reference_images: z.array(z.string()).default([]).description(
-    'Multi-image picker (up to 3). Used by workflows needing image sets.'),
+    'Multi-image picker (up to 3). Used by workflows needing image sets.').extra(
+      'extra', { serveDefault: true }),
   seed: z.number().min(-1).step(1).default(-1).description('Seed'),
   steps: z.number().min(1).max(50).default(4).description('Steps'),
   cfg: z.number().min(0.1).max(10).default(1.0).description(

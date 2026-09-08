@@ -13,6 +13,13 @@ extensions:
     version: 0.1.0
     required: true
     desc: KimodoLoader + KimodoTextToPose (the NVIDIA-package wrap — THE kimodo implementation) — text to SOMA-77 motion NPZ.
+    # 2026-09-08 (red-closure lane): pip restated identical to the 3d
+    # lane's row — ONE install unit since the 2026-09-07 merge (the
+    # pack's own requirements.txt carries this pin); the pin identity
+    # is the full tuple, so a pip-less restatement forked the pin and
+    # extension_lane refused the whole tree.
+    pip:
+      - "multihmr2 @ git+https://github.com/naver/multi-hmr2.git@f066532d096034700e5ba8b7b1ca655729d3ea6e"
   # 2026-09-06 gap-fix: pin restated in the canonical shape (name +
   # registry + version, the fit/skin/anny rows) — a bare-name row
   # forked the pin and extension_lane refused the whole manifest.

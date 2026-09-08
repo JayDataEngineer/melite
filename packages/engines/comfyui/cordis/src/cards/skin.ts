@@ -24,7 +24,8 @@ const schema = z.object({
   ]).default('keeper').description('Kind'),
   // the Select sends wire strings ("512") — coerced at the closed
   // vocabulary in compose, never silently rescaled
-  map_size: z.union([z.number(), z.string()]).default(512).description('Map size'),
+  map_size: z.union([z.number(), z.string()]).default(512).description('Map size')
+    .extra('extra', { options: [256, 512, 1024, 2048] }),
   // seed sentinel LAW outranks the retired py floor (served min:0 was
   // py-authored; -1=random is the cross-card agent contract — the
   // emitter regenerates served bytes from TS meta, so the floor rides

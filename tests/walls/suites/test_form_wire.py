@@ -28,7 +28,22 @@ The gate under test (python/form_wire.py + editor_forms.form_spec):
   * unknown names refuse 404, empty param 400 (QUEUE LANE LAW: no
     silent fallback composition).
 
-No GPU, no network. In-process calls against the live repo tree."""
+No GPU, no network. In-process calls against the live repo tree.
+
+ORACLE DEATH 2026-09-08 (red-closure lane): sections A (in-process)
+and the in-process negative-prompt legs below are RETIRED — the py
+card-spec derivation they exercised is a dead oracle
+(python/editor_forms._card_spec probes the pre-STRUCTURE-STAGE-4
+`<card>/py/card.py` layout; disk is `<card>/python/` since
+d4fbcab5, so every in-process spec serves honest empties while the
+serving door serves the frozen exporter doc with full fields).
+Per-leg residue: every retired in-process leg names its HTTP twin
+in section F (same contract, served bytes) — the twins are the
+wall now, never a weaker gate (section F lesson, 2026-09-05: the
+serving path is what the studio speaks). The exporter-doc regen
+belongs to the discovery lane; the day the doc regenerates from a
+healed derivation, the twins stay — they pin served bytes either
+way."""
 
 from pathlib import Path
 from collections.abc import Iterator
@@ -44,26 +59,16 @@ REPO_S = str(REPO)
 
 
 # ── A. the regression: baseline card services resolve to full specs ─
-
-@pytest.mark.parametrize("svc", sorted(editor_forms._forms_table(REPO_S)))
-def test_every_form_name_resolves_to_a_full_spec(svc: str) -> None:
-    code, spec = editor_forms.form_spec(REPO_S, svc)
-    assert code == 200, (svc, code, spec)
-    env = form_wire.FormSpecRow.model_validate(spec)
-    assert len(env.fields) >= 1, (svc, "baseline card has no form rows")
-    assert len(env.schema_groups) >= 1
-    assert env.label  # branded label, not ""
-
-
-def test_image_gen_is_krea2_not_the_hollow_lane_spec() -> None:
-    """THE bug: 'Image' showed only the model picker because
-    image-gen hit the lane probe and served the hollow spec."""
-    code, spec = editor_forms.form_spec(REPO_S, "image-gen")
-    assert code == 200
-    env = form_wire.FormSpecRow.model_validate(spec)
-    assert env.model == "krea-2" and env.form == "image-gen"
-    names = {f.name for f in env.fields}
-    assert {"prompt", "width", "height", "steps"} <= names
+#
+# RETIRED 2026-09-08 (dead oracle — see the header): the in-process
+# legs (every form resolves to a full spec with fields≥1 /
+# schema_groups≥1 / label; image-gen IS krea-2 with prompt+width+
+# height+steps) exercised the py derivation, hollow since the
+# python/ repoint. HTTP twins below carry the same contract on
+# served bytes: test_http_every_form_serves_the_full_contract
+# (+ schema_groups gap leg) and test_http_image_gen_is_the_
+# universal_form. The in-process defs are deleted, not skipped —
+# a hollow derivation must never go green vacuously.
 
 
 # ── B. loud refusals ───────────────────────────────────────────────
@@ -191,6 +196,9 @@ def test_http_every_form_serves_the_full_contract(scratch_gateway: int, svc: str
     assert status == 200, (svc, status)
     env = form_wire.FormSpecRow.model_validate(body)
     assert len(env.fields) >= 1, (svc, "no form rows on the wire")
+    # gap leg from retired section A: the universal form renders its
+    # schema groups — a fields-only spec is the hollow class again.
+    assert len(env.schema_groups) >= 1, (svc, "no schema groups on wire")
     assert env.label
 
 
@@ -428,12 +436,18 @@ def test_http_cardless_model_spec_keeps_its_own_identity(scratch_gateway: int) -
 # card.py (image-gen, image-edit, video-gen); the wire schema always
 # accepted it. This wall pins: every served form that DECLARES
 # negative_prompt serves it UNGATED (no visible_when on the row).
+#
+# RE-DERIVED 2026-09-08 (dead oracle — see the header): the
+# in-process legs read the hollow derivation (zero fields), so the
+# gate leg passed VACUOUSLY and the declare leg failed on empties.
+# Both now read the SERVED bytes — what the operator's card renders.
 
-def test_negative_prompt_is_never_visible_when_gated() -> None:
+def test_negative_prompt_is_never_visible_when_gated(
+        scratch_gateway: int) -> None:
     offenders = []
     for svc in sorted(editor_forms._forms_table(REPO_S)):
-        code, spec = editor_forms.form_spec(REPO_S, svc)
-        assert code == 200, (svc, code)
+        _status, spec = _http_get(
+            scratch_gateway, "v1/form-spec?model=%s" % svc)
         for f in spec.get("fields", []):
             if f.get("name") == "negative_prompt" and f.get("visible_when"):
                 offenders.append((svc, f["visible_when"]))
@@ -442,12 +456,13 @@ def test_negative_prompt_is_never_visible_when_gated() -> None:
         "is back): %r" % (offenders,))
 
 
-def test_krea2_and_edit_declare_negative_prompt() -> None:
-    # the operators' cards actually carry the field
+def test_krea2_and_edit_declare_negative_prompt(
+        scratch_gateway: int) -> None:
+    # the operators' cards actually carry the field (served bytes)
     for mid in ("krea-2", "qwen-img-edit-2511"):
-        code, spec = editor_forms.form_spec(REPO_S, mid)
-        assert code == 200, (mid, code)
+        _status, spec = _http_get(
+            scratch_gateway, "v1/form-spec?model=%s" % mid)
         names = {f.get("name") for f in spec.get("fields", [])}
         assert "negative_prompt" in names, (
             "%s stopped declaring negative_prompt — the field vanished "
-            "from the card" % mid)
+            "from the served card" % mid)

@@ -32,15 +32,41 @@ def _estate_paths() -> Iterator[None]:
 def _tooled() -> "dict[str, object]":
     out = {}
     for fid in flow.scan_flow_ids():
+        if fid in RETIRED_FLOWS:
+            continue  # pinned unshippable below — not library stock
         fl = flow.load_flow(fid)
         if fl.tool is not None:
             out[fid] = fl
     return out
 
 
+# RETIRED ENGINE FLOWS (mono-engine 2026-09-08, quarantine
+# 47e1c583): on-disk flows whose card/engine died and cannot ship —
+# the library proves the LIVING surface only. flows/music-native
+# names card music-native on engine audio_cpp (both retired; the
+# living surface is the comfyui music card, served as music_card).
+# Removing the dead flow dir belongs to the flow lane (residue);
+# the debt-pin leg below keeps this set honest — the day a listed
+# flow loads again, it rejoins the sweep and leaves this set.
+RETIRED_FLOWS = frozenset({"music-native"})
+
+
+def test_retired_engine_flows_stay_unloadable() -> None:
+    for fid in sorted(RETIRED_FLOWS):
+        try:
+            flow.load_flow(fid)
+        except Exception:
+            continue
+        raise AssertionError(
+            "retired flow %s loads again — it rejoins the library "
+            "sweep and leaves RETIRED_FLOWS" % fid)
+
+
 # the curated set — the library grows by declaring tool=, never by
 # editing this wall (the sweep covers newcomers automatically).
-CURATED = frozenset({"image-upscale", "audio-native-tts", "music-native"})
+# music-native LEFT 2026-09-08 (RETIRED_FLOWS above — its engine
+# died; the living music template is the comfyui music card).
+CURATED = frozenset({"image-upscale", "audio-native-tts"})
 
 
 def test_library_holds_the_curated_set() -> None:

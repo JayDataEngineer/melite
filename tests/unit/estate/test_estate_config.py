@@ -65,8 +65,18 @@ class TestRootConfigShape:
     def test_comfyui_declared(self) -> None:
         assert "comfyui" in self.engines
 
-    def test_kimodo_declared(self) -> None:
-        assert "kimodo" in self.engines
+    def test_mono_engine_config(self) -> None:
+        # MONO-ENGINE 2026-09-08 (quarantine 47e1c583): the kimodo
+        # engine entry retired with the cpp lane 2026-09-06 (the
+        # test_kimodo_declared leg died that day — this is its
+        # re-derivation). Only comfyui carries live engine fields
+        # (base/url/port); any other entry is a comment-only stub
+        # (the audio-cpp stanza today) — the quarantine wall owns
+        # directory truth, this wall owns config truth.
+        live = {name for name, entry in self.engines.items()
+                if isinstance(entry, dict)
+                and any(entry.get(k) for k in ("base", "url", "port"))}
+        assert live == {"comfyui"}, live
 
     def test_comfyui_url(self) -> None:
         assert self.cu.get("url", "").startswith("http")
@@ -90,9 +100,13 @@ class TestModelPaths:
         p = estate_config.model_paths("comfyui")
         assert p["download_root"].startswith("/mnt/")
 
-    def test_kimodo_base_subdir(self) -> None:
+    def test_retired_engine_falls_back_to_global_root(self) -> None:
+        # MONO-ENGINE: kimodo retired with the cpp lane — lookups
+        # for the retired name fall back to the global root (the
+        # parser refuses nothing; the estate simply has no kimodo
+        # subtree anymore).
         p = estate_config.model_paths("kimodo")
-        assert p["read_root"].endswith("motion/kimodo")
+        assert p["read_root"] == self.cfg()["models"]["read_root"]
 
     def test_no_entry_sits_under_global_root(self) -> None:
         p = estate_config.model_paths("ffmpeg")
@@ -143,7 +157,7 @@ class TestEngineUrl:
         assert u == root
 
     def test_engine_without_url(self) -> None:
-        assert estate_config.engine_url("kimodo") == ""
+        assert estate_config.engine_url("never-configured-engine-xyz") == ""
 
 
 # ── engine_field resolution ────────────────────────────────────────────
@@ -160,13 +174,13 @@ class TestEngineField:
                                         endpoint_override="/override/input")
         assert f == "/override/input"
 
-    def test_kimodo_generator(self) -> None:
-        f = estate_config.engine_field("kimodo", "generator")
-        assert f.endswith("kmd-generate")
-
-    def test_kimodo_exporter(self) -> None:
-        f = estate_config.engine_field("kimodo", "exporter")
-        assert f.endswith("export_glb.py")
+    def test_retired_engine_fields_are_empty(self) -> None:
+        # MONO-ENGINE: the kimodo generator/exporter binaries died
+        # with the cpp lane — no field may resurrect them. (The
+        # parser still accepts a kimodo entry in a scratch config —
+        # GOOD_CFG below — parser generality is live value.)
+        assert estate_config.engine_field("kimodo", "generator") == ""
+        assert estate_config.engine_field("kimodo", "exporter") == ""
 
     def test_missing_field_returns_empty(self) -> None:
         assert estate_config.engine_field("comfyui", "nonexistent_field") == ""
@@ -190,7 +204,7 @@ class TestEnginePort:
                                           endpoint_override="") == root
 
     def test_engine_without_port(self) -> None:
-        assert estate_config.engine_port("kimodo") == 0
+        assert estate_config.engine_port("never-configured-engine-xyz") == 0
 
 
 # ── error paths ────────────────────────────────────────────────────────
