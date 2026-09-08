@@ -68,7 +68,7 @@ import editor_runs  # noqa: E402  (the dead-code precedent lives here)
 
 TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 ROUTES_TS = REPO / "packages" / "gateway" / "src" / "routes.ts"
-DOORS_TS = REPO / "web" / "catalog" / "src" / "generated" / "gatewayDoors.ts"
+DOORS_TS = REPO / "packages" / "web-kit" / "catalog" / "src" / "generated" / "gatewayDoors.ts"
 
 TOKEN = "wall-docs-ssot-token-%d" % os.getpid()
 
@@ -294,12 +294,16 @@ def test_route_count_pin() -> None:
 # ── B. regen-zero-caller-edits proof ────────────────────────────────
 
 def test_gen_gateway_doors_check_clean() -> None:
+    # RE-POINTED 2026-09-08 (generators STEP 3): the doors generator
+    # is TS-native now (reads the authored routes.ts); the wall keeps
+    # its leg and swaps only the reader.
     r = subprocess.run(
-        [sys.executable, str(REPO / "tools" / "gen_gateway_doors.py"),
-         "--check"], capture_output=True, text=True, timeout=60,
-        cwd=str(REPO))
+        ["node", "--experimental-strip-types", "--no-warnings",
+         str(REPO / "packages" / "web-kit" / "catalog" / "scripts"
+             / "gen-gateway-doors.ts"), "--check"],
+        capture_output=True, text=True, timeout=120, cwd=str(REPO))
     assert r.returncode == 0, \
-        "gatewayDoors.ts stale — run tools/gen_gateway_doors.py\n%s" % r.stdout
+        "gatewayDoors.ts stale — run the TS generator --write\n%s" % r.stdout
 
 
 def _git(*args: str) -> str:
@@ -315,16 +319,22 @@ def test_regen_noop_no_caller_diff() -> None:
     byte-noop), and no GatewayDoorUrl consumer outside generated/
     appears in the worktree diff."""
     before = _git("status", "--short")
-    for tool in ("tools/gen_api_docs.py",
-                 "tools/gen_gateway_doors.py"):
-        r = subprocess.run([sys.executable, str(REPO / tool)],
-                           capture_output=True, text=True, timeout=120,
-                           cwd=str(REPO))
-        assert r.returncode == 0, "%s failed\n%s" % (tool, r.stderr[-1000:])
+    for tool in (("python3", "tools/gen_api_docs.py", []),
+                 ("node", "packages/web-kit/catalog/scripts/"
+                  "gen-gateway-doors.ts",
+                  ["--experimental-strip-types", "--no-warnings"])):
+        runner, script, extra = tool
+        if runner == "node":
+            cmd = [runner, *extra, str(REPO / script)]
+        else:
+            cmd = [sys.executable, str(REPO / script)]
+        r = subprocess.run(cmd, capture_output=True, text=True,
+                           timeout=120, cwd=str(REPO))
+        assert r.returncode == 0, "%s failed\n%s" % (script, r.stderr[-1000:])
     assert _git("status", "--short") == before, \
         "regen changed the tree — the check legs above should have caught it"
     consumers = _git("grep", "-l", "GatewayDoorUrl", "--",
-                     "web", "packages").split()
+                     "packages").split()
     generated = {c for c in consumers if "/generated/" in c}
     assert consumers, "no GatewayDoorUrl consumers found — grep scope rotted"
     assert generated, "generated gatewayDoors.ts not in grep hits"

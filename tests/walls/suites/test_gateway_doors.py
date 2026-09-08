@@ -8,7 +8,10 @@ because nothing cross-checked the two sides.
 
 The automation this wall pins:
   1. GENERATION — packages/web-kit/catalog/src/generated/gatewayDoors.ts is
-     generated FROM gateway.ROUTES (tools/gen_gateway_doors.py).
+     generated FROM the authored routes.ts
+     (packages/web-kit/catalog/scripts/gen-gateway-doors.ts —
+     TS-native since generators STEP 3; the py tool's dead
+     web/catalog OUT_PATH died with it).
      A stale generated file fails --check here.
   2. THE COMPILE GATE — apiFetch/apiJson accept ONLY
      FetchUrl = GatewayDoorUrl | ExternalUrl. There is NO unserved
@@ -47,11 +50,14 @@ def _served() -> tuple[set[str], set[str]]:
 
 def test_generated_doors_are_fresh() -> None:
     r = subprocess.run(
-        [sys.executable, str(REPO / "tools" / "gen_gateway_doors.py"),
-         "--check"], capture_output=True, text=True, cwd=str(REPO))
+        ["node", "--experimental-strip-types", "--no-warnings",
+         str(REPO / "packages" / "web-kit" / "catalog" / "scripts"
+             / "gen-gateway-doors.ts"), "--check"],
+        capture_output=True, text=True, cwd=str(REPO))
     assert r.returncode == 0, (
-        "gatewayDoors.ts is stale vs the ROUTES table — run "
-        "tools/gen_gateway_doors.py\n%s" % r.stdout)
+        "gatewayDoors.ts is stale vs routes.ts — run "
+        "node --experimental-strip-types packages/web-kit/catalog/"
+        "scripts/gen-gateway-doors.ts --write\n%s" % r.stdout)
 
 
 def test_the_frontend_compiles_against_the_door_gate() -> None:

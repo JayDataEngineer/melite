@@ -1,5 +1,5 @@
-// GENERATED from python/gateway.py ROUTES (the wire SSOT) by
-// tools/gen_gateway_doors.py — DO NOT EDIT. Regenerate after every
+// GENERATED from packages/gateway/src/routes.ts (the wire SSOT) by
+// packages/web-kit/catalog/scripts/gen-gateway-doors.ts — DO NOT EDIT. Regenerate after every
 // route change; tests/walls/suites/test_gateway_doors.py refuses
 // staleness.
 //
