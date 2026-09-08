@@ -6,7 +6,7 @@
 // submit's phase-2 arm (1273-1305) + the rim wrap (infra/python/plugins.py
 // card_hooks.compose 525-600), with the survey's verdict
 // (docs/design/card-lane-port-survey-2026-09-08.md §0 + §5): import
-// @melite/engine-comfyui IN-PROCESS — no template SSOT, no subprocess, no
+// @comfyui/cordis IN-PROCESS — no template SSOT, no subprocess, no
 // class-tree port. The graph truth already lives in TS
 // (packages/engines/comfyui/src — 19 cards, golden-pinned);
 // this arm only changes the CALL PATH (subprocess shell -> import).
@@ -72,13 +72,13 @@
 
 import { Context, Service } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
-import { bootModels, ComfyUIService, ComposeRefusal, getModel, loadCardDefs, loadFacts, registryIds, registryModel, theService } from "@melite/engine-comfyui";
-import type { CardDefinition, FactsFile, FactsReads } from "@melite/engine-comfyui";
+import { bootModels, ComfyUIService, ComposeRefusal, getModel, loadCardDefs, loadFacts, registryIds, registryModel, theService } from "@comfyui/cordis";
+import type { CardDefinition, FactsFile, FactsReads } from "@comfyui/cordis";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { DOOR_KEYS, FLOW_ID_RE } from "@melite/gateway-core";
-import { pyReprStr, resolveRepoRoot } from "@melite/engine-comfyui";
+import { pyReprStr, resolveRepoRoot } from "@comfyui/cordis";
 
 /** The card-envelope keys (gateway.py:360 CARD_ENVELOPE_KEYS =
  *  DOOR_KEYS + draft/test/service): select the graph, never ride it. */
@@ -164,17 +164,19 @@ export interface CardDeclRow {
 }
 
 function factsPath(): string {
-  // Merged 2026-09-08 (package-boundary extermination): the compose
-  // plane lives in packages/engines/comfyui/src, its facts data in
-  // packages/engines/comfyui/data (until the Decl x Facts unification
-  // derives rows from the registry and deletes the file).
+  // Merged 2026-09-08 (reversed: the models plane folds into the
+  // cordis package): the compose plane lives in
+  // packages/engines/comfyui-cordis/src, its card-owned fact slices
+  // in packages/engines/comfyui-cordis/data (Decl x Facts
+  // unification — loadFacts derives model-owned rows from the
+  // registry at load).
   return join(
-    resolveRepoRoot(), "packages", "engines", "comfyui", "data", "model-facts.json",
+    resolveRepoRoot(), "packages", "engines", "comfyui-cordis", "data", "model-facts.json",
   );
 }
 
 function objectInfoPath(): string {
-  return join(resolveRepoRoot(), "packages", "engines", "comfyui", "data", "object_info.json");
+  return join(resolveRepoRoot(), "packages", "engines", "comfyui-cordis", "data", "object_info.json");
 }
 
 // ── the decl projection (pure: defs + facts in, rows out) ─────────
@@ -1006,7 +1008,7 @@ export interface ComposedCard {
 }
 
 function cordisSrcDir(): string {
-  const entry: string = fileURLToPath(import.meta.resolve("@melite/engine-comfyui"));
+  const entry: string = fileURLToPath(import.meta.resolve("@comfyui/cordis"));
   return dirname(entry);
 }
 

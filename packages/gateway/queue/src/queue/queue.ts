@@ -103,7 +103,7 @@ import {
   closeSync,
 } from "node:fs";
 import { join } from "node:path";
-import { pyReprStr, pyReprStrList } from "@melite/engine-comfyui";
+import { pyReprStr, pyReprStrList } from "@comfyui/cordis";
 import { PyNum } from "@melite/gateway-core";
 
 // ── constants (py cites inline) ──────────────────────────────────

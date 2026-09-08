@@ -22,7 +22,7 @@ import {
   MODELS_SERVICE,
   ModelsService,
   modelsProvider,
-} from "../../../../packages/engines/comfyui/src/models/service.ts";
+} from "../../../../packages/engines/comfyui-cordis/src/models/service.ts";
 
 function freshService(): { ctx: Context; svc: ModelsService } {
   const ctx = new Context();

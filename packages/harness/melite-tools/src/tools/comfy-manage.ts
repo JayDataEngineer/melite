@@ -7,7 +7,7 @@
  * packages/gateway/doors/src/doors/manage.ts (ACTIONS + HANDLERS +
  * LIFECYCLE_GUARDED — python/manage.py is deleted); this tool is its
  * AI door (POST /v1/manage). The manual door is
- * `provision manage <action>` (packages/engines/comfyui/scripts/provision.ts,
+ * `provision manage <action>` (packages/engines/comfyui-cordis/scripts/provision.ts,
  * via ./setup.sh manage …).
  *
  * INFRA UPKEEP, NOT EXECUTION (INFERENCE LAW): no action runs

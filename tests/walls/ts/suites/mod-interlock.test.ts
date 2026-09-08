@@ -27,10 +27,10 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import z from "../../../../packages/engines/comfyui/src/_z.ts"; // re-export of the pinned schemastery (walls cannot import node_modules TS)
-import { loadCardDefs, theService } from "../../../../packages/engines/comfyui/src/index.ts";
-import { loadFacts } from "../../../../packages/engines/comfyui/src/facts.ts";
-import { getModel, registryIds, registryModel } from "../../../../packages/engines/comfyui/src/models/models.ts";
+import z from "../../../../packages/engines/comfyui-cordis/src/_z.ts"; // re-export of the pinned schemastery (walls cannot import node_modules TS)
+import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/index.ts";
+import { loadFacts } from "../../../../packages/engines/comfyui-cordis/src/facts.ts";
+import { getModel, registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 
 /** Registry reads for the derivation (facts.ts renders through injected reads). */
 const reads = { getModel, registryIds, registryModel };
@@ -186,7 +186,7 @@ test("the correction stroke: flavors are family-owned and the boarding is bidire
   // (the boot interlock enforces this loudly; this pin reads the
   // settled state so a silent regression shows as drift)
   const { modelIds, registryIds, getModel } = await import(
-    "../../../../packages/engines/comfyui/src/models/models.ts"
+    "../../../../packages/engines/comfyui-cordis/src/models/models.ts"
   );
   const packs = new Set(svc.packNames());
   const verbs = new Set(svc.verbIds());
@@ -250,10 +250,10 @@ test("THE CONSUMPTION GATE (paper §3.2.2): a smuggled mutation on a non-boardin
   // WHATEVER atom resolved. The gate fires the mutation only
   // where the atom boarded the pack (ModelFacts.mods ≡ DECL.mods,
   // pinned by the flows wall).
-  const kit = await import("../../../../packages/engines/comfyui/src/kit.ts");
-  const { GraphBuilder } = await import("../../../../packages/engines/comfyui/src/index.ts");
+  const kit = await import("../../../../packages/engines/comfyui-cordis/src/kit.ts");
+  const { GraphBuilder } = await import("../../../../packages/engines/comfyui-cordis/src/index.ts");
   const facts = loadFacts(
-    new URL("../../../../packages/engines/comfyui/data/model-facts.json", import.meta.url).pathname,
+    new URL("../../../../packages/engines/comfyui-cordis/data/model-facts.json", import.meta.url).pathname,
     reads,
   );
   const base = { seed: 1, width: 1024, height: 1024, steps: 8, cfg: 4.5, prompt: "x", negative_prompt: "" };
@@ -280,10 +280,10 @@ test("THE CONSUMPTION GATE, qvoice leg: voice_file fires only on boarding atoms"
   // into AudiocoreTTS — the second z-image-class site (ungated
   // composition). Counterfactual shape: the qwen row with its
   // boarding retracted must refuse, naming atom + pack.
-  const kit = await import("../../../../packages/engines/comfyui/src/kit.ts");
-  const { GraphBuilder } = await import("../../../../packages/engines/comfyui/src/index.ts");
+  const kit = await import("../../../../packages/engines/comfyui-cordis/src/kit.ts");
+  const { GraphBuilder } = await import("../../../../packages/engines/comfyui-cordis/src/index.ts");
   const facts = loadFacts(
-    new URL("../../../../packages/engines/comfyui/data/model-facts.json", import.meta.url).pathname,
+    new URL("../../../../packages/engines/comfyui-cordis/data/model-facts.json", import.meta.url).pathname,
     reads,
   );
   const qwen = facts.models["qwen3-tts"];
@@ -312,7 +312,7 @@ test("THE REFUSED FATE, lanpaint/mask legs: stated knobs refuse LOUD on the imag
   // every stated knob instead of silently plain-editing (the
   // retired MOD FIRING LAW, now wall-pinned: 'refused' is a fate,
   // not an accident).
-  const kit = await import("../../../../packages/engines/comfyui/src/kit.ts");
+  const kit = await import("../../../../packages/engines/comfyui-cordis/src/kit.ts");
   // every lanpaint knob off its lane promise refuses field-named
   for (const [key, val] of [
     ["lanpaint_enabled", true],
@@ -389,10 +389,10 @@ test("gate (d), the pack fate: every boarded pack is fired or refused-loud", asy
   // boarding it refuses; the four landed packs pass. Live pin:
   // every DECL pack entry has a fate (the boot refuses otherwise,
   // so this wall and the boot read one table).
-  const guard = await import("../../../../packages/engines/comfyui/src/mods/guard.ts");
+  const guard = await import("../../../../packages/engines/comfyui-cordis/src/mods/guard.ts");
   for (const p of ["loras", "qvoice", "lanpaint", "mask"]) guard.assertPackFate(p);
   assert.throws(() => guard.assertPackFate("controlnet"), /no fate in this plane/);
-  const { registryIds, registryModel } = await import("../../../../packages/engines/comfyui/src/models/models.ts");
+  const { registryIds, registryModel } = await import("../../../../packages/engines/comfyui-cordis/src/models/models.ts");
   const verbs = new Set(svc.verbIds());
   for (const id of registryIds()) {
     for (const entry of (registryModel(id).mods ?? []) as readonly string[]) {
@@ -409,7 +409,7 @@ test("the verb mirror: every mounted verb is boarded by its families' DECLs", as
   // boot interlock (b)-for-verbs, walled live: a verb claiming a
   // family that never boarded it is an undeclared mutation. The
   // boot refuses; this wall pins the agreement on the live table.
-  const { registryModel } = await import("../../../../packages/engines/comfyui/src/models/models.ts");
+  const { registryModel } = await import("../../../../packages/engines/comfyui-cordis/src/models/models.ts");
   for (const verb of svc.verbRegistrations()) {
     assert.ok(verb.families.length > 0, `verb '${verb.id}' claims no family`);
     for (const fam of verb.families) {
@@ -420,9 +420,9 @@ test("the verb mirror: every mounted verb is boarded by its families' DECLs", as
   // and the reverse direction is total: every DECL verb entry names
   // a mounted verb (dead verb boardings refuse at boot gate (a)).
   const mounted = new Set(svc.verbIds());
-  const { registryIds } = await import("../../../../packages/engines/comfyui/src/models/models.ts");
+  const { registryIds } = await import("../../../../packages/engines/comfyui-cordis/src/models/models.ts");
   for (const id of registryIds()) {
-    const { registryModel: rm } = await import("../../../../packages/engines/comfyui/src/models/models.ts");
+    const { registryModel: rm } = await import("../../../../packages/engines/comfyui-cordis/src/models/models.ts");
     for (const entry of (rm(id).mods ?? []) as readonly string[]) {
       if (svc.packNames().includes(entry)) continue;
       assert.ok(mounted.has(entry), `model '${id}' boards verb '${entry}' no verb registers`);
@@ -497,7 +497,7 @@ test("THE RAW FILE: the frozen loras map keys boarding atoms only (z-image never
   const frozen = JSON.parse(
     readFileSync(new URL("../../../../packages/gateway/shell/data/discovery-catalog.json", import.meta.url), "utf8"),
   ) as { loras: Record<string, { loras: unknown[] }> };
-  const { registryIds, registryModel } = await import("../../../../packages/engines/comfyui/src/models/models.ts");
+  const { registryIds, registryModel } = await import("../../../../packages/engines/comfyui-cordis/src/models/models.ts");
   const boarders = new Set<string>();
   for (const rid of registryIds()) {
     const mods = (registryModel(rid).mods ?? []) as readonly string[];

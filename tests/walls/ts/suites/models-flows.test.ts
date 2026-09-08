@@ -22,9 +22,9 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { getModel, modelIds, registryIds, registryModel, resolve } from "../../../../packages/engines/comfyui/src/models/models.ts";
-import { loadFacts } from "../../../../packages/engines/comfyui/src/facts.ts";
-import { loadCardDefs, theService } from "../../../../packages/engines/comfyui/src/cardDefs.ts";
+import { getModel, modelIds, registryIds, registryModel, resolve } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+import { loadFacts } from "../../../../packages/engines/comfyui-cordis/src/facts.ts";
+import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 import { registryFlowNames } from "../../../../packages/gateway/doors/src/doors/flowsRegistry.ts";
 
 /** Facts keys no model serves are ACTION-CARD lanes (pure-tool
@@ -49,7 +49,7 @@ const FACTS_PATH = join(
   "..",
   "packages",
   "engines",
-  "comfyui",
+  "comfyui-cordis",
   "data",
   "model-facts.json",
 );
@@ -137,7 +137,7 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
     // kit gate reads; the DECL is truth. Route-keys (folds) pin
     // against their owning atom; action-card lanes carry no
     // boarding (their mutations, if any, are card-owned).
-    const { registryModel } = await import("../../../../packages/engines/comfyui/src/models/models.ts");
+    const { registryModel } = await import("../../../../packages/engines/comfyui-cordis/src/models/models.ts");
     const actions = await actionCardLanes();
     const ownerOf = new Map<string, string>();
     for (const rid of registryIds()) {

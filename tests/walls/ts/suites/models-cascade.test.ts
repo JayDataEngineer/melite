@@ -28,8 +28,8 @@ import {
   ModelsService,
   resolveCascade,
   modelsService,
-} from "../../../../packages/engines/comfyui/src/models/models.ts";
-import { mergedDefaults } from "../../../../packages/engines/comfyui/src/models/models.ts";
+} from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+import { mergedDefaults } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 
 describe("the defaults cascade is the cordis primitive (A3)", () => {
   it("the models system is a booted Service (the PORT LAW)", (): void => {

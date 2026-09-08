@@ -19,7 +19,7 @@
     "@deepseek-ai/dsh-storage-domain": "0.0.1-rc.1",
     "@deepseek-ai/dsh-storage-json": "0.0.1-rc.1",
     "@deepseek-ai/schemastery": "*",
-    "@melite/engine-comfyui": "workspace:*",
+    "@comfyui/cordis": "workspace:*",
     "@melite/gateway-doors": "workspace:*",
     "@melite/queue": "workspace:*",
     "@standard-schema/spec": "1.1.0",

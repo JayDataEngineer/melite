@@ -29,7 +29,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/gateway/shell
 
-  packages/engines/comfyui:
+  packages/engines/comfyui-cordis:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
@@ -242,9 +242,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/engine-comfyui':
+      '@comfyui/cordis':
         specifier: workspace:*
-        version: link:../../engines/comfyui
+        version: link:../../engines/comfyui-cordis
       '@melite/gateway-doors':
         specifier: workspace:*
         version: link:../doors
@@ -276,9 +276,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/engine-comfyui':
+      '@comfyui/cordis':
         specifier: workspace:*
-        version: link:../../engines/comfyui
+        version: link:../../engines/comfyui-cordis
       '@melite/gateway-core':
         specifier: workspace:*
         version: link:../core
@@ -304,9 +304,9 @@ importers:
       '@deepseek-ai/cordis-plugin-timer':
         specifier: workspace:*
         version: link:../../../vendor/cordis_plugins/timer
-      '@melite/engine-comfyui':
+      '@comfyui/cordis':
         specifier: workspace:*
-        version: link:../../engines/comfyui
+        version: link:../../engines/comfyui-cordis
       '@melite/gateway-core':
         specifier: workspace:*
         version: link:../core
@@ -338,9 +338,9 @@ importers:
       '@deepseek-ai/dsh-host-webserver':
         specifier: workspace:*
         version: link:../../../vendor/cordis_plugins/webserver
-      '@melite/engine-comfyui':
+      '@comfyui/cordis':
         specifier: workspace:*
-        version: link:../../engines/comfyui
+        version: link:../../engines/comfyui-cordis
       '@melite/gateway-core':
         specifier: workspace:*
         version: link:../core

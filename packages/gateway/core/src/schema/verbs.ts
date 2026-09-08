@@ -97,7 +97,7 @@
 // rest of the gateway packages): no enums, `import type` for types,
 // .ts specifiers on relative imports.
 
-import { pyReprStr, pyReprStrList } from "@melite/engine-comfyui";
+import { pyReprStr, pyReprStrList } from "@comfyui/cordis";
 
 /** One verb knob — the dispatch surface of a py Field declaration. */
 export interface VerbKnobDecl {

@@ -208,8 +208,8 @@
   merges `base → intercepts... → head` via the service's
   `Config.merge` when declared, else `Object.assign`. THE cascade
   primitive: family defaults = base, variant = the intercept,
-  cell = head (the estate's models/cascade.ts is the worked
-  example, wall-pinned in tests/walls/ts/suites/models-cascade.test.ts).
+  cell = head (the estate's models/service.ts cascade section is
+  the worked example, wall-pinned in tests/walls/ts/suites/models-cascade.test.ts).
 
 ### Scoped children (context.ts)
 
@@ -256,8 +256,8 @@
   at registration, reads through service members — never a module
   const + free functions.
 - `models.defaults` — ModelDefaultsService
-  (engines/comfyui/src/models/cascade.ts): the intercept/
-  resolveConfig worked example.
+  (engines/comfyui-cordis/src/models/service.ts, the cascade
+  section): the intercept/resolveConfig worked example.
 - Cards are plugins (cards/*.ts export `apply(ctx)` + `inject:
   ['comfyui']`); loadCardDefs boots a Context and auto-loads every
   module — the plugin registry IS the card set.

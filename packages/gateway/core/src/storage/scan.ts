@@ -6,7 +6,7 @@
 // import it from here. resolveRepoRoot is the ENGINE's (the one
 // canonical resolver; the per-file copies died 2026-09-08).
 
-import { resolveRepoRoot } from "@melite/engine-comfyui";
+import { resolveRepoRoot } from "@comfyui/cordis";
 
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, statSync } from "node:fs";

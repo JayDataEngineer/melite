@@ -24,9 +24,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { getModel, modelIds } from "../../../../packages/engines/comfyui/src/models/models.ts";
-import { buildCatalog, isServedFamily } from "../../../../packages/engines/comfyui/src/models/catalogEmission.ts";
-import { CARD_IDENTITY } from "../../../../packages/engines/comfyui/src/models/cardIdentity.generated.ts";
+import { getModel, modelIds } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+import { buildCatalog, isServedFamily } from "../../../../packages/engines/comfyui-cordis/src/models/catalogEmission.ts";
+import { CARD_IDENTITY } from "../../../../packages/engines/comfyui-cordis/src/models/cardIdentity.generated.ts";
 
 const GOLDEN_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -144,7 +144,7 @@ describe("the served catalog vs the tree golden (A1)", () => {
 describe("the identity rung rides the live card defs (phase 2 start)", () => {
   it("every ring card carries identity on its CardDefinition", async (): Promise<void> => {
     const { loadCardDefs } = await import(
-      "../../../../packages/engines/comfyui/src/cardDefs.ts"
+      "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts"
     );
     const defs = await loadCardDefs();
     const ringIds = new Set(CARD_IDENTITY.map((c) => c.id));

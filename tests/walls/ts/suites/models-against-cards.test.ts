@@ -15,19 +15,19 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { loadCardDefs, theService } from "../../../../packages/engines/comfyui/src/cardDefs.ts";
+import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 import {
   ModelError,
   getModel,
   modelIds,
   registryIds,
   registryModel,
-} from "../../../../packages/engines/comfyui/src/models/models.ts";
+} from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 import {
   fieldDomains,
   validateRegistryAgainstCards,
   type CardDomains,
-} from "../../../../packages/engines/comfyui/src/models/validate.ts";
+} from "../../../../packages/engines/comfyui-cordis/src/models/validate.ts";
 
 const here = fileURLToPath(import.meta.url);
 
@@ -182,7 +182,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // OWNER: variants inherit callers through the model boarding.
     // Unoffered/foreign-engine atoms never serve — this wall and
     // the SERVE LAW read one rule.
-    const { buildCatalog } = await import("../../../../packages/engines/comfyui/src/models/catalogEmission.ts");
+    const { buildCatalog } = await import("../../../../packages/engines/comfyui-cordis/src/models/catalogEmission.ts");
     const boarded = await allBoardings();
     const claimed = new Set<string>();
     for (const list of boarded.values()) for (const b of list) claimed.add(b);

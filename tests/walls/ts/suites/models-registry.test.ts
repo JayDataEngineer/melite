@@ -19,7 +19,7 @@ import {
   resolve,
   getModel,
   ModelError,
-} from "../../../../packages/engines/comfyui/src/models/models.ts";
+} from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 
 describe("the resurrected model registry (families/variants/cells/links)", () => {
   it("carries the hierarchy: 48 registry models, 91 serving routes (the fold)", (): void => {

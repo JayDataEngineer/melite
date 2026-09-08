@@ -14,7 +14,7 @@
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/cordis-plugin-timer": "workspace:*",
-    "@melite/engine-comfyui": "workspace:*",
+    "@comfyui/cordis": "workspace:*",
     "@melite/gateway-core": "workspace:*"
   },
   "devDependencies": {

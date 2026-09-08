@@ -15,7 +15,7 @@
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { getModel, modelIds, registryIds } from "../../../../packages/engines/comfyui/src/models/models.ts";
+import { getModel, modelIds, registryIds } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 
 const GOLDEN = JSON.parse(
   readFileSync(new URL("../data/families-golden.json", import.meta.url), "utf8"),

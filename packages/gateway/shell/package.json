@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "The gateway BUNDLE (STAGE 1 of the DSH bundle split, dsh-base shape): composition + cordis.config.json manifest ownership; code lives in @melite/gateway-core, @melite/gateway-doors, @melite/queue, @melite/engine-comfyui. Runtime is node --experimental-strip-types (erasable-syntax TS); no build step.",
+  "description": "The gateway BUNDLE (STAGE 1 of the DSH bundle split, dsh-base shape): composition + cordis.config.json manifest ownership; code lives in @melite/gateway-core, @melite/gateway-doors, @melite/queue, @comfyui/cordis. Runtime is node --experimental-strip-types (erasable-syntax TS); no build step.",
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@melite/engine-comfyui": "workspace:*",
+    "@comfyui/cordis": "workspace:*",
     "@melite/gateway-core": "workspace:*",
     "@melite/gateway-doors": "workspace:*",
     "@melite/queue": "workspace:*",

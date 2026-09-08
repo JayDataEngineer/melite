@@ -98,12 +98,12 @@ import {
   pyReprStrList,
   spliceWorkflow,
   stopForRunDir,
-} from "@melite/engine-comfyui";
+} from "@comfyui/cordis";
 import type {
   ComfyUIHostService,
   EngineJson,
   MergeRow,
-} from "@melite/engine-comfyui";
+} from "@comfyui/cordis";
 import { applyRunContract } from "@melite/gateway-core";
 import {
   appendLedger,

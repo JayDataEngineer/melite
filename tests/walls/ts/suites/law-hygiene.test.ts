@@ -180,7 +180,7 @@ describe("declaration conformance (the z-image verdict, 2026-09-08)", () => {
   // contract.ts header), every DECL is `: ModelDecl` with no cast
   // (tsc is the gate), and this wall pins the file text: no cast,
   // no dead keys, tree-wide across all 48 families.
-  const FAM_ROOT = join(REPO_ROOT, "packages", "engines", "comfyui", "src", "models", "families");
+  const FAM_ROOT = join(REPO_ROOT, "packages", "engines", "comfyui-cordis", "src", "models", "families");
   const DEAD: RegExp[] = [
     /"mods": \[\]/,
     /"provisions": \[\]/,

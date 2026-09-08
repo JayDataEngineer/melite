@@ -7,7 +7,7 @@
 // exporter's card schemas. Post-flip the card's Schemastery schema
 // IS the single declaration — params_schema derives from it at
 // serve time via the engine package's emitter
-// (engines/comfyui params-emit.ts). This module keeps everything
+// (engines/comfyui-cordis params-emit.ts). This module keeps everything
 // ELSE in the frozen doc verbatim (tool names, stage titles,
 // descriptions, non-card tools) and replaces only each
 // card-compose tool's params_schema.
@@ -18,7 +18,7 @@
 // bytes). Serialization: JSON.stringify(doc, null, 2) —
 // the TS-canonical form (raw UTF-8 em-dashes, JS numbers); the py
 // ensure_ascii era is over.
-import { emitParamsSchema } from "@melite/engine-comfyui";
+import { emitParamsSchema } from "@comfyui/cordis";
 import { needCardRegistry } from "./flowsCard.ts";
 import type { CardRegistryService } from "./flowsCard.ts";
 import { TOOLS_JSON } from "./chrome.ts";

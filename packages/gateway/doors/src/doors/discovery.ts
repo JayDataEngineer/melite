@@ -115,8 +115,8 @@
 // enums, import type for types, .ts specifiers for relative imports.
 
 import { closeSync, openSync, readFileSync, readSync, statSync } from "node:fs";
-import { buildCatalog, modelIds, getModel } from "@melite/engine-comfyui";
-import { loadCardDefs, theService } from "@melite/engine-comfyui";
+import { buildCatalog, modelIds, getModel } from "@comfyui/cordis";
+import { loadCardDefs, theService } from "@comfyui/cordis";
 import { join } from "node:path";
 import { contentTypeOf, dumpsPy, parseJson } from "./assets.ts";
 import { resolveRepoRoot } from "./bridges.ts";
@@ -124,7 +124,7 @@ import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
 import { matchRoute } from "@melite/gateway-core";
-import type { ComfyUIService } from "@melite/engine-comfyui";
+import type { ComfyUIService } from "@comfyui/cordis";
 
 /** The settled card-defs service (null until loadCardDefs lands —
  * callers serve the frozen capture meanwhile; the wall pins the
