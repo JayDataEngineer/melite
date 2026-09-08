@@ -164,8 +164,12 @@ export interface CardDeclRow {
 }
 
 function factsPath(): string {
+  // Post-flatten estate layout: packages/<domain>/<pkg> — the
+  // comfyui CORDIS package is packages/engines/comfyui-cordis.
+  // (The pre-flatten 'engines/comfyui/cordis' path died with the
+  // estate flattening; caught LIVE by the A2 flow probe 2026-09-08.)
   return join(
-    resolveRepoRoot(), "packages", "engines", "comfyui", "cordis", "data", "model-facts.json",
+    resolveRepoRoot(), "packages", "engines", "comfyui-cordis", "data", "model-facts.json",
   );
 }
 

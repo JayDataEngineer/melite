@@ -1405,8 +1405,7 @@ function composeViaCli(fam: string, card: string, params: Record<string, unknown
     repo,
     "packages",
     "engines",
-    "comfyui",
-    "cordis",
+    "comfyui-cordis",
     "data",
     "model-facts.json",
   );
