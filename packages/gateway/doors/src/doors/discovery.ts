@@ -115,7 +115,7 @@
 // enums, import type for types, .ts specifiers for relative imports.
 
 import { closeSync, openSync, readFileSync, readSync, statSync } from "node:fs";
-import { buildCatalog } from "@melite/engine-comfyui";
+import { buildCatalog, modelIds, getModel } from "@melite/engine-comfyui";
 import { loadCardDefs, theService } from "@comfyui/cordis";
 import { join } from "node:path";
 import { contentTypeOf, dumpsPy, parseJson } from "./assets.ts";
@@ -269,12 +269,14 @@ class CatalogUnavailable extends Error {
  *  cards/input_vocabulary) from the registry emission — see
  *  loadCatalog's note. JSON-plain (the door serializes). */
 function buildCatalogSections(): Record<string, unknown> {
-  return buildCatalog() as unknown as Record<string, unknown>;
+  // the table read (decls param): the family plugins' sum IS the
+  // catalog input — the registry module is retired
+  return buildCatalog(modelIds().map((id) => getModel(id))) as unknown as Record<string, unknown>;
 }
 
 /** Served model ids in scan order (the _h_model_one known-set). */
 function catalogScanOrder(): string[] {
-  return Object.keys(buildCatalog().models).sort();
+  return Object.keys(buildCatalogSections().models as Record<string, unknown>).sort();
 }
 
 /** The _adapt uncaught-error shape for TS-side throws (the old
