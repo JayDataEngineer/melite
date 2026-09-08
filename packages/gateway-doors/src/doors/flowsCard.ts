@@ -317,77 +317,30 @@ function loadObjectInfo(): Record<string, unknown> | null {
 
 let modelMidsCache: Set<string> | null = null;
 
-function hasPluginMarker(dir: string): boolean {
-  return (
-    existsSync(join(dir, "plugin.py")) ||
-    existsSync(join(dir, "plugin.yaml")) ||
-    existsSync(join(dir, "engines"))
-  );
-}
-
-/** resolve_model's existence half (infra/python/plugins.py:394): a model.py
- *  unit at models/<genre>/<mid>/model.py under any plugin dir from
- *  the scan roots (packages/engines + packages/web — the
- *  flowsValidate.ts mirror, same roots). */
+/** resolve_model's existence half — RE-HOMED 2026-09-08 on the frozen
+ *  discovery catalog (packages/gateway/data/discovery-catalog.json,
+ *  .catalog.models keys; hand-owned since purge S-catalog,
+ *  wall-pinned). It replaces the models/<genre>/<mid>/model.py fs scan
+ *  (estate-python purge deleted every model.py — the scan resolved the
+ *  empty set and every {model:} compose refused). Missing file throws
+ *  LOUD via readFileSync (same as loadModelFacts); a malformed shape
+ *  resolves empty (same as loadModelFacts). */
 function modelMids(): Set<string> {
   if (modelMidsCache !== null) return modelMidsCache;
-  const found: Set<string> = new Set();
-  const repo: string = resolveRepoRoot();
-  for (const root of [join(repo, "packages", "engines"), join(repo, "packages", "web")]) {
-    let cats: string[] = [];
-    try {
-      cats = readdirSync(root);
-    } catch {
-      continue;
-    }
-    for (const cat of [...cats].sort()) {
-      const catDir: string = join(root, cat);
-      try {
-        if (!statSync(catDir).isDirectory()) continue;
-      } catch {
-        continue;
-      }
-      const plugins: string[] = hasPluginMarker(catDir) ? [catDir] : [];
-      if (plugins.length === 0) {
-        let subs: string[] = [];
-        try {
-          subs = readdirSync(catDir);
-        } catch {
-          continue;
-        }
-        for (const sub of [...subs].sort()) {
-          const subDir: string = join(catDir, sub);
-          try {
-            if (statSync(subDir).isDirectory() && hasPluginMarker(subDir)) plugins.push(subDir);
-          } catch {
-            continue;
-          }
-        }
-      }
-      for (const pluginDir of plugins) {
-        let genres: string[] = [];
-        try {
-          genres = readdirSync(join(pluginDir, "models"));
-        } catch {
-          continue;
-        }
-        for (const genre of genres) {
-          const genreDir: string = join(pluginDir, "models", genre);
-          let mids: string[] = [];
-          try {
-            mids = readdirSync(genreDir);
-          } catch {
-            continue;
-          }
-          for (const mid of mids) {
-            if (existsSync(join(genreDir, mid, "model.py"))) found.add(mid);
-          }
-        }
-      }
-    }
-  }
-  modelMidsCache = found;
-  return found;
+  const path: string = join(
+    resolveRepoRoot(), "packages", "gateway", "data", "discovery-catalog.json",
+  );
+  const doc: unknown = JSON.parse(readFileSync(path, "utf8")) as unknown;
+  const models: unknown =
+    typeof doc === "object" && doc !== null
+      ? (doc as { catalog?: { models?: unknown } }).catalog?.models
+      : undefined;
+  modelMidsCache = new Set(
+    typeof models === "object" && models !== null && !Array.isArray(models)
+      ? Object.keys(models as Record<string, unknown>)
+      : [],
+  );
+  return modelMidsCache;
 }
 
 /** The owning family for mid: mid itself, or the facts model whose
@@ -702,8 +655,8 @@ export function prepareCardParams(
   if (!resolves) {
     throw new CardArmError(
       400,
-      "no model unit for model: " + mid + " (no models/<genre>/" + mid +
-        " dir and no family declares route " + mid +
+      "no model unit for model: " + mid + " (no .catalog.models row " + mid +
+        " in the frozen discovery catalog and no family declares route " + mid +
         " in its variants' cells — checked the class tree's _routes map)",
       "invalid_request",
     );

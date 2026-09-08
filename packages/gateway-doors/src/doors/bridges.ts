@@ -544,10 +544,10 @@ export async function dispatchBridges(
 }
 
 /** The bridge doors (_h_manage/_h_poser_bridge) as a
- *  self-registering plugin: the manage subprocess bridge
- *  (strict-parse under route()'s strict contract — the doc AND the
- *  raw bytes both ride, stdin is raw) and the poser forward (raw
- *  target+body, no parse). Pre-serialized/passed through (manage
+ *  self-registering plugin: the manage door (strict-parse under
+ *  route()'s strict contract — the doc AND the raw bytes both ride;
+ *  dispatch is Cordis-native over the MCP rail, ./manage.ts) and the
+ *  poser forward (raw target+body, no parse). Pre-serialized/passed through (manage
  *  envelopes already carry normalize4xx codes; poser byte doors skip
  *  the dict-only rule exactly as py's tuple payloads do). A
  *  non-dict truthy manage doc throws here (py's .get crash → _adapt

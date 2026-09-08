@@ -30,10 +30,10 @@
 //   GET /v1/metrics         _h_metrics 3241-3258 + _pipeline_of 2098 /
 //                            _recent_row 2109-2121.
 //
-// The flow splice (WHY A FROZEN READ): flow LANES are live python
-// declarations — flows/<name>/flow.py constructs a Flow through
-// pydantic validators (flow.py 1104-1135). TS cannot execute that
-// construction, so the declarations ride the authoring-time export
+// The flow splice (WHY A FROZEN READ): flow LANES are TS
+// declarations now (doors/flowsRegistry.ts — the flows/*/flow.py
+// authoring plane died 2026-09-08 under NO-ESTATE-PYTHON). The
+// disclosure rows still ride the authoring-time export
 // packages/gateway/data/discovery-catalog.json ("flows" section,
 // frozen by tools/export_discovery_catalog.py collect_flows — the
 // discovery-lane data-SSOT pattern: the generator dies with py,
@@ -102,6 +102,11 @@ import type {
 import { catalogPath } from "./discovery.ts";
 import { queueSnapshot } from "./flowsRun.ts";
 import { cardDefsSync } from "./flowsCard.ts";
+import {
+  expandRegistryFlow,
+  getRegistryFlow,
+  registrySkillBody,
+} from "./flowsRegistry.ts";
 import {
   DIR_ID_ALIASES,
   baseRowFor,
@@ -913,10 +918,11 @@ function readDoc(
 
 /** Every plugin dir owning action cards (lane_disclosure._engine_dirs
  *  158-176 over plugins.iter_plugin_dirs_under: depth-2 + depth-3
- *  with plugin.py/plugin.yaml/engines/ marker, sorted). */
+ *  with package.json/plugin.yaml/engines/ marker, sorted —
+ *  plugin.py retired 2026-09-08, package.json is the marker). */
 function engineDirs(enginesRoot: string): string[] {
   const marker = (d: string): boolean =>
-    isFile(join(d, "plugin.py")) ||
+    isFile(join(d, "package.json")) ||
     isFile(join(d, "plugin.yaml")) ||
     isDir(join(d, "engines"));
   let tops: string[];
@@ -1217,11 +1223,26 @@ function normKind(kind: string | null): string | null {
 interface FlowRow {
   readonly row: SkillRow;
   readonly bodyPath: string;
+  readonly bodyText: string | null;
+}
+
+/** The registry skill body for one flow id (null when the flow
+ *  has its own SKILL.md or is unknown to the TS registry — the
+ *  caller falls back to the file path). A registry flow whose
+ *  declaration fails to expand is an authoring bug: LOUD, never a
+ *  silent empty body. */
+function registryBody(flowId: string): string | null {
+  const decl = getRegistryFlow(flowId);
+  if (decl === undefined) return null;
+  return registrySkillBody(expandRegistryFlow(decl));
 }
 
 /** LEVEL 4 flow rows (lane_disclosure._flow_rows 364-411): one gated
  *  SkillRow per loadable declaration (load_error -> silent skip);
- *  body = SKILL.md when present (mega-skill mode) else flow.py. */
+ *  body = SKILL.md when present (mega-skill mode) else the TS
+ *  registry render (doors/flowsRegistry.ts — the flow.py authoring
+ *  plane died 2026-09-08; the deleted source is neither servable
+ *  nor wanted, so the declaration renders instead). */
 function flowRows(repo: string): FlowRow[] {
   const out: FlowRow[] = [];
   for (const decl of flowDecls(repo)) {
@@ -1262,6 +1283,7 @@ function flowRows(repo: string): FlowRow[] {
       bodyPath: decl.hasSkillMd
         ? join(repo, "flows", decl.id, "SKILL.md")
         : join(repo, "flows", decl.id, "flow.py"),
+      bodyText: decl.hasSkillMd ? null : registryBody(decl.id),
     });
   }
   return out;
@@ -1829,21 +1851,24 @@ function buildLaneBundle(
 }
 
 /** Skill lookup across flow + model + card rows
- *  (lane_disclosure.skill_read 844-863). */
+ *  (lane_disclosure.skill_read 844-863). Flow rows may carry the
+ *  rendered registry text (bodyText) instead of a file path. */
 function findSkill(
   repo: string,
   sid: string,
-): { row: SkillRow; path: string } | null {
+): { row: SkillRow; path: string; bodyText: string | null } | null {
   for (const fr of flowRows(repo)) {
-    if (fr.row.id === sid) return { row: fr.row, path: fr.bodyPath };
+    if (fr.row.id === sid) {
+      return { row: fr.row, path: fr.bodyPath, bodyText: fr.bodyText };
+    }
   }
   const engines: string[] = engineDirs(join(repo, "packages", "engines"));
   for (const engine of engines) {
     for (const r of modelRows(engine)) {
-      if (r.row.id === sid) return { row: r.row, path: r.path };
+      if (r.row.id === sid) return { row: r.row, path: r.path, bodyText: null };
     }
     for (const r of cardRows(engine).rows) {
-      if (r.row.id === sid) return { row: r.row, path: r.path };
+      if (r.row.id === sid) return { row: r.row, path: r.path, bodyText: null };
     }
   }
   return null;
@@ -1943,20 +1968,25 @@ export function hSkillRead(
   sid: string,
 ): { status: number; payload: unknown } {
   try {
-    const found: { row: SkillRow; path: string } | null = findSkill(repo, sid);
+    const found: { row: SkillRow; path: string; bodyText: string | null } | null =
+      findSkill(repo, sid);
     if (found === null) {
       return { status: 404, payload: { error: fmt("no such skill: %r", sid) } };
     }
     let body: string;
-    try {
-      body = readFileSync(found.path, "utf8");
-    } catch (e) {
-      return {
-        status: 500,
-        payload: {
-          error: "unreadable: " + (e instanceof Error ? e.message : String(e)),
-        },
-      };
+    if (found.bodyText !== null) {
+      body = found.bodyText;
+    } else {
+      try {
+        body = readFileSync(found.path, "utf8");
+      } catch (e) {
+        return {
+          status: 500,
+          payload: {
+            error: "unreadable: " + (e instanceof Error ? e.message : String(e)),
+          },
+        };
+      }
     }
     // SkillDocRow gate (id/name/description/scope/content) —
     // refusal is a code bug (the skill doc refusal).

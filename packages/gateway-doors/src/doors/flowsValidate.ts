@@ -23,11 +23,15 @@
 //   compose arms (the python schema registries — audio_cpp,
 //   anycreature, autoremesher, skintokens — return live graphs py
 //   validates in-process; there is no TS plane for them in this
-//   stroke), loadable
-//   named flows (flows/<id>/flow.py executes model classes), and the
-//   card-requires gate (needs card classes + estate config + vendor
-//   disk — the wall proves it passes for every golden mid, so the
-//   skip is verdict-safe on the pinned estate).
+//   stroke), and the card-requires gate (needs card classes +
+//   estate config + vendor disk — the wall proves it passes for
+//   every golden mid, so the skip is verdict-safe on the pinned
+//   estate).
+//   PORTED 2026-09-08 (the flows-port lane): loadable named flows
+//   ride the TS registry (doors/flowsRegistry.ts — the flow.py
+//   authoring plane, killed the same stroke) through the SAME
+//   flowFromBody/compile/sweep pipeline as inline bodies, with the
+//   compile-time initial gate (photo/glb/dialect) ahead of it.
 //   PORTED NATIVE 2026-09-08 (the AI-ladder probe found the gap):
 //   card= stages validate against the TS single declaration —
 //   cardGate resolves the live card registry (loadCardDefs, the
@@ -90,6 +94,12 @@ import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
 import { matchRoute } from "@melite/gateway-core";
 import { CardArmError, overlayCardParams } from "./flowsCard.ts";
+import {
+  expandRegistryFlow,
+  getRegistryFlow,
+  registryFlowToInline,
+  registryInitialsError,
+} from "./flowsRegistry.ts";
 import {
   checkStrictBody,
   DOOR_KEYS,
@@ -1437,82 +1447,32 @@ function resolveFamily(mid: string): string {
   return mid;
 }
 
-// resolve_model's existence half (infra/python/plugins.py:394): a model.py
-// unit at models/<genre>/<mid>/model.py under any plugin dir from
-// the scan roots (packages/engines + packages/web, depth-2 markers +
-// depth-3 category children — iter_plugin_dirs_under verbatim).
-function hasPluginMarker(dir: string): boolean {
-  return (
-    existsSync(join(dir, "plugin.py")) ||
-    existsSync(join(dir, "plugin.yaml")) ||
-    existsSync(join(dir, "engines"))
-  );
-}
-
 let modelMidsCache: Set<string> | null = null;
 
+// resolve_model's existence half — RE-HOMED 2026-09-08 on the frozen
+// discovery catalog (packages/gateway/data/discovery-catalog.json,
+// .catalog.models keys; hand-owned since purge S-catalog,
+// wall-pinned). It replaces the models/<genre>/<mid>/model.py fs scan
+// (estate-python purge deleted every model.py — the scan resolved the
+// empty set and every {model:} compose refused). Missing file throws
+// LOUD via readFileSync (same as cordisFacts' plane files); a
+// malformed shape resolves empty (same as loadModelFacts).
 function modelMids(): Set<string> {
   if (modelMidsCache !== null) return modelMidsCache;
-  const found: Set<string> = new Set();
-  const repo: string = resolveRepoRoot();
-  for (const root of [join(repo, "packages", "engines"), join(repo, "packages", "web")]) {
-    let cats: string[] = [];
-    try {
-      cats = readdirSync(root);
-    } catch {
-      continue;
-    }
-    for (const cat of [...cats].sort()) {
-      const catDir: string = join(root, cat);
-      let st: ReturnType<typeof statSync> | null = null;
-      try {
-        st = statSync(catDir);
-      } catch {
-        continue;
-      }
-      if (!st.isDirectory()) continue;
-      const plugins: string[] = hasPluginMarker(catDir) ? [catDir] : [];
-      if (plugins.length === 0) {
-        let subs: string[] = [];
-        try {
-          subs = readdirSync(catDir);
-        } catch {
-          continue;
-        }
-        for (const sub of [...subs].sort()) {
-          const subDir: string = join(catDir, sub);
-          try {
-            if (statSync(subDir).isDirectory() && hasPluginMarker(subDir)) plugins.push(subDir);
-          } catch {
-            continue;
-          }
-        }
-      }
-      for (const pluginDir of plugins) {
-        const modelsRoot: string = join(pluginDir, "models");
-        let genres: string[] = [];
-        try {
-          genres = readdirSync(modelsRoot);
-        } catch {
-          continue;
-        }
-        for (const genre of genres) {
-          const genreDir: string = join(modelsRoot, genre);
-          let mids: string[] = [];
-          try {
-            mids = readdirSync(genreDir);
-          } catch {
-            continue;
-          }
-          for (const mid of mids) {
-            if (existsSync(join(genreDir, mid, "model.py"))) found.add(mid);
-          }
-        }
-      }
-    }
-  }
-  modelMidsCache = found;
-  return found;
+  const path: string = join(
+    resolveRepoRoot(), "packages", "gateway", "data", "discovery-catalog.json",
+  );
+  const doc: unknown = JSON.parse(readFileSync(path, "utf8")) as unknown;
+  const models: unknown =
+    typeof doc === "object" && doc !== null
+      ? (doc as { catalog?: { models?: unknown } }).catalog?.models
+      : undefined;
+  modelMidsCache = new Set(
+    typeof models === "object" && models !== null && !Array.isArray(models)
+      ? Object.keys(models as Record<string, unknown>)
+      : [],
+  );
+  return modelMidsCache;
 }
 
 // ── the cordis CLI compose arm ──────────────────────────────────
@@ -1667,9 +1627,9 @@ function modelArm(body: Record<string, unknown>): FlowsValidateAnswer {
         message:
           "no model unit for model: " +
           mid +
-          " (no models/<genre>/" +
+          " (no .catalog.models row " +
           mid +
-          " dir and no family declares route " +
+          " in the frozen discovery catalog and no family declares route " +
           mid +
           " in its variants' cells — checked the class tree's _routes map)",
         code: "invalid_request",
@@ -1734,8 +1694,10 @@ function modelArm(body: Record<string, unknown>): FlowsValidateAnswer {
 }
 
 // ── {flow} arm (gateway.py:2756 — existence + identifier; loadable
-// flows STUB: compiling flows/<id>/flow.py executes model classes,
-// the impure half of the ladder) ─────────────────────────────────
+// flows arm (gateway.py:2756 — existence + identifier; the
+// declarations ride the TS registry (doors/flowsRegistry.ts — the
+// flow.py authoring plane, ported 2026-09-08), compiled through the
+// SAME flowFromBody/compile/sweep pipeline as inline bodies) ──────
 function namedArm(body: Record<string, unknown>): FlowsValidateAnswer {
   const name: string = pyStr(body["flow"]);
   if (!FLOW_ID_RE.test(name)) {
@@ -1744,27 +1706,33 @@ function namedArm(body: Record<string, unknown>): FlowsValidateAnswer {
       payload: { error: "flow name " + pyReprStr(name) + " is not a legal identifier", code: "flow_compile", loc: "flow" },
     };
   }
-  const flowPy: string = join(resolveRepoRoot(), "flows", name, "flow.py");
-  if (!existsSync(flowPy)) {
+  const decl = getRegistryFlow(name);
+  if (decl === undefined) {
+    // Unknown names keep the retired-oracle voice byte-identical
+    // (the wall pins it; the registry is the TS home — the path is
+    // the py address, retained like every other retired voice).
     return {
       status: 400,
       payload: { error: "no flow at flows/" + name + "/flow.py", code: "flow_compile", loc: "flow" },
     };
   }
-  return {
-    status: 400,
-    payload: {
-      error:
-        "flow " +
-        pyReprStr(name) +
-        ": named-flow compile rides the py flow registry in this stroke " +
-        "(flows/" +
-        name +
-        "/flow.py executes model classes the TS plane does not import — unported half)",
-      code: "flow_compile",
-      loc: "flow",
-    },
-  };
+  const expanded = expandRegistryFlow(decl);
+  // THE COMPILE-TIME DOOR (operator order, 2026-09-06): present
+  // initials refuse BEFORE any compile/register — fail-fast, the
+  // artifact-sweep precedent (absent initials ride).
+  const repo: string = resolveRepoRoot();
+  const badInitial: string | null = registryInitialsError(expanded, body, {
+    repoRoot: repo,
+    stateRoot: process.env["MELITE_STATE_ROOT"] ?? join(repo, "data", "runs"),
+    kindsPath: join(repo, "packages", "web", "dsh", "media-plugin", "media-kinds.json"),
+  });
+  if (badInitial !== null) {
+    return {
+      status: 400,
+      payload: { error: badInitial, code: "flow_compile", loc: "flow" },
+    };
+  }
+  return serveSubject(registryFlowToInline(expanded), body);
 }
 
 // ── inline arm (gateway.py:2778 + 2856 + 2827) ──────────────────
@@ -1787,6 +1755,16 @@ function inlineArm(full: unknown): FlowsValidateAnswer {
     typeof full === "object" && full !== null && !Array.isArray(full) && "flow_inline" in fullRec;
   const envelope: unknown = hasInline ? fullRec["flow_inline"] : undefined;
   const subject: unknown = envelope !== undefined && envelope !== null ? envelope : full;
+  return serveSubject(subject, fullRec);
+}
+
+// ── the shared compile-serve tail (flowFromBody -> compile ->
+// pin sweep -> the 200 shape; the inline arm and the named arm
+// both ride it — one validator, never two) ──────────────────────
+function serveSubject(
+  subject: unknown,
+  fullRec: Record<string, unknown>,
+): FlowsValidateAnswer {
   let flow: Flow;
   try {
     flow = flowFromBody(subject);
