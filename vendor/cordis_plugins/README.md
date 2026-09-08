@@ -167,3 +167,22 @@ DIVERGENCES (each with cause, all recorded in-source too):
 
 Rebuild: `packages/gateway/scripts/link-vendored-platform.sh` (lib/
 is per-host build output, never committed).
+
+## dsh-tools (evaluated 2026-09-08, NOT vendored — verdict with receipts)
+
+The import stroke (docs/design/import-dsh-wheels-2026-09-08.md,
+LANDING RECORD) evaluated every `packages/core/tools/src/*.ts` file
+at harness `141eb6f` for the webserver path and DECLINED the member:
+each file peer-needs absent dsh packages (dsh-llm/dsh-session at
+minimum; the ToolRuntime needs eight) or serves executable-tool
+dispatch cards don't have — and the spec's named wheel
+(`presentation.ts` as knob-field metadata) does not exist (it is
+tool-call render intent for chat UI; zero knob fields — verified by
+grep). Stripping the peer-needing companions would leave the
+registry itself (a hollow name); the full peer cascade (dsh-llm 8+
+files + dsh-session 49 files for 3 leaf symbols) is what this
+discipline prevents. The knob contract rides Schemastery direct
+(already imported — atoms.ts retired, same stroke). Full per-file
+receipts live in the audit record, not here. If a future lane grows
+general background tool work (the audit's honest dsh-jobs fraction),
+re-evaluate THEN — against the peers as they exist then.
