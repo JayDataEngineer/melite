@@ -5,36 +5,35 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { fitLane, finalizeFit } from '../kit.ts'
+import { vocabulary } from '../../../comfyui/src/models/vocab.ts'
 
 const schema = z.object({
-  body_glb: z.string().role('path').description('Body GLB').extra('extra', { required: true }),
-  prop_glb: z.string().role('path').description('Prop GLB').extra('extra', { required: true }),
-  bone: z.string().default('mixamorig:Head').description('Bone'),
+  body_glb: z.string().role('path').description("Body GLB").extra('extra', { order: 0, group: "parts", required: true, wtype: 'file', }),
+  prop_glb: z.string().role('path').description("Prop GLB").extra('extra', { order: 1, group: "parts", required: true, wtype: 'file', }),
+  bone: z.string().description("Bone").default("mixamorig:Head").extra('extra', { order: 0, group: "placement" }),
   // the three meld fit laws — a closed vocabulary (the python row
   // refuses anything else with its field name)
-  align: z.union([z.const('socket'), z.const('fit'), z.const('grip')])
-    .default('socket').description(
-      'socket = snap origin to bone; fit = deform prop around bone volume; grip = hold near bone with manual offset'),
-  position: z.string().default('0,0,0').description('Offset'),
-  rotation: z.string().default('0,0,0').description('Rotation'),
-  fit_ratio: z.number().min(0).max(10).default(0.0).description('Fit ratio'),
-  fit_ref_bone: z.string().description('Measure to'),
-  fit_ref_bone2: z.string().description('Measure from'),
-  seat_ratio: z.number().min(0).max(1).default(0.22).description('Seat ratio'),
-  finger_bone: z.string().description('Finger bone'),
-  thumb_bone: z.string().description('Thumb bone'),
-  target_width: z.number().min(0).max(10).default(0.0).description('Target width'),
-  resolution: z.number().min(256).max(2048).default(768).description('View resolution'),
-  framing: z.number().min(1.0).max(3.0).default(1.2).description('Framing'),
-  focal_length: z.number().min(10).max(400).default(50).description('Focal length'),
-  samples: z.number().min(1).max(4096).default(64).description('Samples'),
-  transparent: z.union([z.boolean(), z.string()]).default(true).description('Background'),
+  align: vocabulary(["socket", "fit", "grip"]).description("Law").default("socket").extra('extra', { order: 1, group: "placement", wtype: 'select' }),
+  position: z.string().description("Offset").default("0,0,0").extra('extra', { order: 2, group: "placement" }),
+  rotation: z.string().description("Rotation").default("0,0,0").extra('extra', { order: 3, group: "placement" }),
+  fit_ratio: z.number().description("Fit ratio").min(0).max(10).step(0.01).default(0).extra('extra', { order: 0, group: "fit", wtype: 'number' }),
+  fit_ref_bone: z.string().description("Measure to").extra('extra', { order: 1, group: "fit" }),
+  fit_ref_bone2: z.string().description("Measure from").extra('extra', { order: 2, group: "fit" }),
+  seat_ratio: z.number().description("Seat ratio").min(0).max(1).step(0.01).default(0.22).extra('extra', { order: 3, group: "fit", wtype: 'number' }),
+  finger_bone: z.string().description("Finger bone").extra('extra', { order: 0, group: "grip" }),
+  thumb_bone: z.string().description("Thumb bone").extra('extra', { order: 1, group: "grip" }),
+  target_width: z.number().description("Target width").min(0).max(10).step(0.01).default(0).extra('extra', { order: 2, group: "grip", wtype: 'number' }),
+  resolution: z.number().description("View resolution").min(256).max(2048).step(64).default(768).extra('extra', { order: 0, group: "turnaround" }),
+  framing: z.number().description("Framing").min(1).max(3).step(0.05).default(1.2).extra('extra', { order: 1, group: "turnaround" }),
+  focal_length: z.number().description("Focal length").min(10).max(400).step(1).default(50).extra('extra', { order: 2, group: "turnaround", wtype: 'slider' }),
+  samples: z.number().description("Samples").min(1).max(4096).step(1).default(64).extra('extra', { order: 3, group: "turnaround", wtype: 'number' }),
+  transparent: vocabulary(["true", "false"]).description("Background").default("true").extra('extra', { order: 4, group: "turnaround", wtype: 'select' }),
 })
 
 export const inject = ['comfyui']
 
 export function apply(ctx: Context): void {
-  ctx.comfyui.registerCard({
+  ctx.effect(() => ctx.comfyui.registerCard({
     id: 'fit',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'fit',
@@ -55,5 +54,5 @@ export function apply(ctx: Context): void {
       fitLane(p, g, runId)
     },
     finalize: finalizeFit,
-  })
+  }))
 }

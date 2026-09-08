@@ -25,7 +25,7 @@ export const inject = ['comfyui']
 const LorasFields = z.object({
   loras: z.array(z.object({ name: z.string(), strength: z.number() }))
     .description('LoRAs')
-    .extra('extra', { wtype: 'loras', group: 'loras_controlnet', zone: 'mods', tooltip: 'LoRA stack applied after the checkpoint loads' }),
+    .extra('extra', { wtype: 'loras', group: 'loras_controlnet', zone: 'mods', default: null, order: 0 }),
 })
 
 const ORG = 'https://huggingface.co/Comfy-Org/Krea-2/resolve/main/loras'
@@ -46,19 +46,19 @@ const KREA_ROWS = [
 ]
 
 export function apply(ctx: Context): void {
-  ctx.comfyui.registerMod({
+  ctx.effect(() => ctx.comfyui.registerMod({
     pack: 'loras',
     families: ['krea-2'],
     fields: LorasFields as never,
     rows: KREA_ROWS,
-  })
+  }))
   // qwen's flavor: the RUNTIME CATALOG door — no own rows; the
   // union serves (modRows implements the union law).
-  ctx.comfyui.registerMod({
+  ctx.effect(() => ctx.comfyui.registerMod({
     pack: 'loras',
     families: ['qwen-img-edit-2511'],
     fields: LorasFields as never,
     rows: [],
     runtimeCatalog: true,
-  })
+  }))
 }

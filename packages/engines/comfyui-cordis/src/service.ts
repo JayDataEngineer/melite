@@ -194,12 +194,48 @@ function validateVerb(v: VerbRegistration): void {
   validateFields(`verb ${v.id}`, v.fields)
 }
 
+/** A union-of-consts node's option list (declared order = serve
+ *  order; null when the node is not a closed vocabulary). The
+ *  alternatives live at .list, each const carrying .value; a null
+ *  const is the nullable marker, never an enum option. */
+function unionOptions(node: Record<string, unknown>): readonly string[] | null {
+  const t = String(node.type ?? '')
+  if (t !== 'union') return null
+  const list = node.list
+  if (!Array.isArray(list)) return null
+  const opts: string[] = []
+  for (const sub of list as Array<{ value?: unknown }>) {
+    if (sub?.value !== undefined && sub?.value !== null) opts.push(String(sub.value))
+  }
+  return opts.length > 0 ? opts : null
+}
+
+/** nullable(X) — a union of exactly [X, const(null)] — WIRES as X
+ *  (type/label/bounds/default off the inner row; null stays a legal
+ *  value at the parse level, invisible on the wire row). */
+function unwrapNullable(node: Record<string, unknown>): Record<string, unknown> {
+  if (String(node.type ?? '') !== 'union') return node
+  const list = node.list
+  if (!Array.isArray(list) || list.length !== 2) return node
+  const inner = list.find((s) => !(s && s.type === 'const' && (s as { value?: unknown }).value === null))
+  const nullArm = list.find((s) => s && s.type === 'const' && (s as { value?: unknown }).value === null)
+  if (!inner || !nullArm) return node
+  // the outer's own meta (description/default applied after the
+  // wrap) wins over the inner's
+  const outer = { ...(inner as Record<string, unknown>) }
+  const outerMeta = (node.meta ?? {}) as Record<string, unknown>
+  const innerMeta = (outer.meta ?? {}) as Record<string, unknown>
+  outer.meta = { ...innerMeta, ...outerMeta }
+  return outer
+}
+
 function wireType(node: Record<string, unknown>): string {
   // declared wire type wins (mod contracts carry the py's exact
   // type: image/mask/file/select/number/slider/textarea/loras)
   const extra = ((node.meta as Record<string, unknown> | undefined)?.extra ?? {}) as Record<string, unknown>
   if (typeof extra.wtype === 'string' && extra.wtype !== '') return extra.wtype
   const t = String(node.type ?? 'string')
+  if (t === 'union' && unionOptions(node) !== null) return 'select'
   if (t === 'number') return String((node.meta as Record<string, unknown> | undefined)?.step ?? '') === '1' ? 'seed' : 'slider'
   if (t === 'string') return 'text'
   if (t === 'boolean') return 'boolean'
@@ -222,11 +258,18 @@ export class ComfyUIService extends Service {
     super(ctx, 'comfyui')
   }
 
-  registerCard(def: CardDefinition): void {
+  /** Register one card. REVERTIBLE (the paper's effect shape, Def. 8:
+   *  the mutation RETURNS its inverse — Γ → Γ × (Γ→Γ)). The card's
+   *  plugin wraps this in ctx.effect(() => svc.registerCard(def)):
+   *  the FIBER owns the disposer, unload runs it, the card plane
+   *  reverts to the pre-registration state. LOUD: duplicate ids
+   *  refuse (one card, one plugin). */
+  registerCard(def: CardDefinition): (() => void) {
     if (this.cards.has(def.id)) {
       throw new ComposeRefusal('duplicate-card', `card '${def.id}' registered twice — one card, one plugin`)
     }
     this.cards.set(def.id, def)
+    return () => { this.cards.delete(def.id) }
   }
 
   // ── THE MOD/VERB REGISTRATION (dsl.py port: the Model.mods
@@ -237,7 +280,7 @@ export class ComfyUIService extends Service {
    *  (the py metaclass's import-time validation); a second flavor
    *  of the same pack must agree in shape (same field names — the
    *  py same-pack merge law; divergence is drift, refuses). */
-  registerMod(mod: ModRegistration): void {
+  registerMod(mod: ModRegistration): (() => void) {
     if (mod.families.length === 0) {
       throw new ComposeRefusal('bad-mod', `mod pack '${mod.pack}' declares no families — a mod rides a model`)
     }
@@ -254,12 +297,16 @@ export class ComfyUIService extends Service {
       }
     }
     this.modRegistrations.push(mod)
+    return () => {
+      const i = this.modRegistrations.indexOf(mod)
+      if (i >= 0) this.modRegistrations.splice(i, 1)
+    }
   }
 
   /** Register one verb. LOUD: the plane law (exactly one engine
    *  arm per engine row) and one registration per verb id (two
    *  classes mounting one id is the py's loud refusal). */
-  registerVerb(verb: VerbRegistration): void {
+  registerVerb(verb: VerbRegistration): (() => void) {
     // duplicate id is the LOUDER signal — it fires before the
     // contract gates (a re-mount of a live verb id is an owner
     // bug, not a declaration bug)
@@ -268,6 +315,7 @@ export class ComfyUIService extends Service {
     }
     validateVerb(verb)
     this.verbs.set(verb.id, verb)
+    return () => { this.verbs.delete(verb.id) }
   }
 
   /** THE ABSORPTION (dsl.py _absorb_models, read-side): mod fields
@@ -332,36 +380,56 @@ export class ComfyUIService extends Service {
     const def = this.cards.get(cardId)
     if (def === undefined) return null
     const fields: Record<string, unknown>[] = []
+    // group -> zone (rows wire zone '' — the frozen row shape — but
+    // schema_groups carry the zone; first declaration wins)
+    const groupZones = new Map<string, string>()
     const walk = (schema: unknown, scoped: boolean): void => {
       const carrier = (schema as { dict?: Record<string, Record<string, unknown>> }) ?? {}
       const dict = carrier.dict
       if (dict === undefined) return
-      for (const [name, node] of Object.entries(dict)) {
+      // FROZEN ROW SHAPE (the py emitter's, referee-pinned): every
+      // row carries the SAME 15 keys in the SAME order — absent
+      // values ride as null/''. The order number is the frozen
+      // group-local ordinal (extra.order; group counter as the
+      // fallback) — gaps are referee truth (py declared, spec
+      // filtered). zone is ALWAYS '' on the wire (the py never set
+      // it; zone lives in schema_groups).
+      for (const [name, node0] of Object.entries(dict)) {
+        const node = unwrapNullable(node0 as Record<string, unknown>)
         const meta = (node as { meta?: Record<string, unknown> }).meta ?? {}
         const extra = (meta.extra ?? {}) as Record<string, unknown>
         const fams = extra.families as readonly string[] | undefined
         if (fams !== undefined && !fams.includes(family)) continue
+        const wtype = wireType(node as Record<string, unknown>)
+        const group = (extra.group as string) ?? ''
+        if (!groupZones.has(group)) groupZones.set(group, (extra.zone as string | undefined) ?? 'params')
+        const order = typeof extra.order === 'number' ? extra.order : null
+        // SEED SHAPE (referee-faithful): the seed identity wires
+        // through the TYPE — its step never keys the row (bounds
+        // stay whatever the declaration carries).
+        const step = wtype === 'seed' ? null : (((meta.step ?? extra.step) as number | undefined) ?? null)
+        const noDefault = Array.isArray(meta.default) && (meta.default as unknown[]).length === 0 && extra.default === null
         fields.push({
           name,
-          type: wireType(node as Record<string, unknown>),
+          type: wtype,
           label: (meta.description as string) ?? name,
-          group: (extra.group as string) ?? '',
-          zone: (extra.zone as string) ?? 'params',
-          order: fields.length,
-          ...(meta.min !== undefined ? { min: meta.min } : {}),
-          ...(meta.max !== undefined ? { max: meta.max } : {}),
-          ...(meta.step !== undefined ? { step: meta.step } : {}),
-          ...(meta.default !== undefined && meta.default !== '' ? { default: meta.default } : {}),
-          ...(extra.required === true || meta.required === true ? { required: true } : {}),
-          ...(extra.tooltip !== undefined ? { tooltip: extra.tooltip } : {}),
-          ...(extra.columns !== undefined ? { columns: extra.columns } : {}),
-          ...(extra.width !== undefined ? { width: extra.width } : {}),
-          ...(extra.options !== undefined ? { options: extra.options } : {}),
-          ...(extra.visible_when !== undefined ? { visible_when: extra.visible_when } : {}),
-          ...(scoped ? { families: undefined } : {}),
+          default: noDefault || meta.default === undefined || meta.default === '' ? null : (meta.default as unknown),
+          // options ALWAYS keys the row: declared x-options win,
+          // else the union-of-consts row, else the empty list.
+          options: extra.options ?? unionOptions(node as Record<string, unknown>) ?? [],
+          group,
+          zone: '',
+          order,
+          required: extra.required === true || meta.required === true ? true : null,
+          columns: (extra.columns as number | undefined) ?? null,
+          width: (extra.width as number | undefined) ?? null,
+          min: (meta.min as number | undefined) ?? null,
+          max: (meta.max as number | undefined) ?? null,
+          step,
+          placeholder: (extra.placeholder as string | undefined) ?? '',
+          tooltip: (extra.tooltip as string | undefined) ?? '',
+          visible_when: (extra.visible_when as string | null | undefined) ?? null,
         })
-        const last = fields[fields.length - 1] as Record<string, unknown>
-        if (scoped && last.families === undefined) delete last.families
       }
     }
     walk(def.schemaCarrier ?? def.schema, false)
@@ -370,33 +438,42 @@ export class ComfyUIService extends Service {
       if (!absorbed.families.includes(family)) continue
       walk(absorbed.fields, false)
     }
-    // groups: first-seen order, zone from first member, capitalized
+    // groups: first-seen order, capitalized labels, zone from the
+    // group's first declaration (the frozen schema_groups shape:
+    // {id, label, fields, order, zone}; member rows drop the flat
+    // row's group/zone/options and the null/''-valued keys).
     const groups: string[] = []
     for (const f of fields) {
       const g = (f.group as string) ?? ''
       if (!groups.includes(g)) groups.push(g)
     }
-    const schemaGroups = groups.map((g, k) => {
-      const members = fields.filter((f) => ((f.group as string) ?? '') === g)
-      let zone = ''
-      for (const m of members) {
-        if (m.zone) { zone = m.zone as string; break }
+    // member rows: the frozen member order (name,type,label,order,
+    // width,columns,required,min,max,step,default,visible_when,
+    // tooltip,placeholder) with null/'' values dropped
+    const MEMBER_KEYS = ['name', 'type', 'label', 'order', 'width', 'columns', 'required', 'min', 'max', 'step', 'default', 'visible_when', 'placeholder', 'tooltip', 'options']
+    const memberRow = (f: Record<string, unknown>): Record<string, unknown> => {
+      const out: Record<string, unknown> = {}
+      for (const k of MEMBER_KEYS) {
+        const v = f[k]
+        if (v === null || v === '' || v === undefined) continue
+        // options ride members only when NON-EMPTY (the py emitter's
+        // member shape — closed vocabularies announce, empties drop)
+        if (k === 'options' && Array.isArray(v) && v.length === 0) continue
+        out[k] = v
       }
-      if (!zone) zone = 'params'
-      const memberRows = members.map(({ group: _g, ...rest }) => rest)
-      return {
-        id: g,
-        label: g === '' ? 'Parameters' : (g[0].toUpperCase() + g.slice(1)),
-        order: k,
-        zone,
-        fields: memberRows,
-      }
-    })
-    const flat = fields.map(({ group: _g, ...rest }) => rest)
+      return out
+    }
+    const schemaGroups = groups.map((g, k) => ({
+      id: g,
+      label: g === '' ? 'Parameters' : (g[0].toUpperCase() + g.slice(1)),
+      fields: fields.filter((f) => ((f.group as string) ?? '') === g).map((f) => memberRow(f as Record<string, unknown>)),
+      order: k,
+      zone: groupZones.get(g) ?? 'params',
+    }))
     return {
       form: cardId,
       service: family,
-      fields: flat,
+      fields,
       schema_groups: schemaGroups,
     }
   }

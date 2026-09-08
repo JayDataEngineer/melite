@@ -15,9 +15,9 @@ const LanpaintFields = z.object({
   image1: z.string().role('path').description('Image 1')
     .extra('extra', { wtype: 'image', group: 'input', zone: 'inputs', order: -1, width: 1, columns: 3, required: true }),
   lanpaint_enabled: z.boolean().default(false).description('Force LanPaint')
-    .extra('extra', { wtype: 'boolean', group: 'lanpaint', visible_when: 'image1 != null', order: 1, width: 1 }),
+    .extra('extra', { wtype: 'boolean', group: 'lanpaint', visible_when: 'image1 != null', order: 1 }),
   lanpaint_num_steps: z.number().min(1).max(100).default(20).description('Num Steps')
-    .extra('extra', { wtype: 'number', group: 'lanpaint', visible_when: 'lanpaint_enabled == true', order: 2, width: 1 }),
+    .extra('extra', { wtype: 'number', group: 'lanpaint', visible_when: 'lanpaint_enabled == true', order: 2, width: 1, step: 1 }),
   lanpaint_step_size: z.number().min(0.1).max(2).default(1.0).description('Step Size')
     .extra('extra', { wtype: 'slider', group: 'lanpaint', visible_when: 'lanpaint_enabled == true', order: 3, width: 1, step: 0.1 }),
   lanpaint_lambda: z.number().min(0).max(2).default(0.5).description('Lambda')
@@ -41,9 +41,9 @@ const LanpaintFields = z.object({
 })
 
 export function apply(ctx: Context): void {
-  ctx.comfyui.registerMod({
+  ctx.effect(() => ctx.comfyui.registerMod({
     pack: 'lanpaint',
     families: ['qwen-img-edit-2511'],
     fields: LanpaintFields as never,
-  })
+  }))
 }

@@ -9,39 +9,30 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { skinLane, finalizeSkin } from '../kit.ts'
+import { vocabulary } from '../../../comfyui/src/models/vocab.ts'
 
 const schema = z.object({
-  body_glb: z.string().role('path').description('Body GLB'),
-  kind: z.union([
-    z.const('keeper'), z.const('villager'), z.const('villager_elder'),
-    z.const('ash_nomad'), z.const('caravan_trader'), z.const('arena_factor'),
-    z.const('amf_warden'), z.const('marrow_raider'), z.const('dune_hound'),
-    z.const('sand_skimmer'), z.const('ridge_lizard'), z.const('moss_elk'),
-    z.const('gloom_tortoise'), z.const('emberwing'), z.const('bone_crane'),
-    z.const('husk_stalker'), z.const('ironvein_construct'),
-    z.const('cherusci_scrivener'), z.const('amalgam_horror'),
-    z.const('meld_creature'),
-  ]).default('keeper').description('Kind'),
+  body_glb: z.string().role('path').description("Body GLB").extra('extra', { order: 0, group: "parts", required: true, wtype: 'file', }),
+  kind: vocabulary(["keeper", "villager", "villager_elder", "ash_nomad", "caravan_trader", "arena_factor", "amf_warden", "marrow_raider", "dune_hound", "sand_skimmer", "ridge_lizard", "moss_elk", "gloom_tortoise", "emberwing", "bone_crane", "husk_stalker", "ironvein_construct", "cherusci_scrivener", "amalgam_horror", "meld_creature"]).description("Kind").default("keeper").extra('extra', { order: 0, group: "skin", wtype: 'select' }),
   // the Select sends wire strings ("512") — coerced at the closed
   // vocabulary in compose, never silently rescaled
-  map_size: z.union([z.number(), z.string()]).default(512).description('Map size')
-    .extra('extra', { options: [256, 512, 1024, 2048] }),
+  map_size: vocabulary(['256', '512', '1024', '2048']).description("Map size").default(512).extra('extra', { order: 1, group: "skin", wtype: 'select' }),
   // seed sentinel LAW outranks the retired py floor (served min:0 was
   // py-authored; -1=random is the cross-card agent contract — the
   // emitter regenerates served bytes from TS meta, so the floor rides
   // the law, not the py golden; 20260906 default = deterministic pin)
-  seed: z.number().min(-1).max(2147483647).step(1).default(20260906).description('Seed'),
-  resolution: z.number().min(256).max(2048).default(768).description('View resolution'),
-  framing: z.number().min(1.0).max(3.0).default(1.2).description('Framing'),
-  focal_length: z.number().min(18).max(135).default(50).description('Focal length'),
-  samples: z.number().min(8).max(256).default(64).description('Samples'),
-  transparent: z.union([z.boolean(), z.string()]).default(true).description('Transparent'),
+  seed: z.number().description("Seed").min(0).max(2147483647).step(1).default(20260906).extra('extra', { order: 2, group: "skin", wtype: 'number' }),
+  resolution: z.number().description("View resolution").min(256).max(2048).step(64).default(768).extra('extra', { order: 0, group: "turnaround" }),
+  framing: z.number().description("Framing").min(1).max(3).step(0.05).default(1.2).extra('extra', { order: 1, group: "turnaround" }),
+  focal_length: z.number().description("Focal length").min(18).max(135).step(1).default(50).extra('extra', { order: 2, group: "turnaround", wtype: 'slider' }),
+  samples: z.number().description("Samples").min(8).max(256).step(8).default(64).extra('extra', { order: 3, group: "turnaround" }),
+  transparent: vocabulary(["true", "false"]).description("Transparent").default("true").extra('extra', { order: 4, group: "turnaround", wtype: 'select' }),
 })
 
 export const inject = ['comfyui']
 
 export function apply(ctx: Context): void {
-  ctx.comfyui.registerCard({
+  ctx.effect(() => ctx.comfyui.registerCard({
     id: 'skin',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'skin',
@@ -56,5 +47,5 @@ export function apply(ctx: Context): void {
       skinLane(p, g, runId)
     },
     finalize: finalizeSkin,
-  })
+  }))
 }

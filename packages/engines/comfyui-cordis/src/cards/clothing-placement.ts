@@ -67,7 +67,7 @@ function estateFile(param: string, ref: unknown): void {
 }
 
 export function apply(ctx: Context): void {
-  ctx.comfyui.registerCard({
+  ctx.effect(() => ctx.comfyui.registerCard({
     id: 'clothing-placement',
     skeleton: 'place',
     // no model families — the first pure-tool card (requiresModel:
@@ -113,5 +113,5 @@ export function apply(ctx: Context): void {
         filename_prefix: `${runId}/placement`,
       })
     },
-  })
+  }))
 }

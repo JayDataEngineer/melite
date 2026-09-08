@@ -38,9 +38,9 @@ const MaskFields = z.object({
 })
 
 export function apply(ctx: Context): void {
-  ctx.comfyui.registerMod({
+  ctx.effect(() => ctx.comfyui.registerMod({
     pack: 'mask',
     families: ['qwen-img-edit-2511'],
     fields: MaskFields as never,
-  })
+  }))
 }

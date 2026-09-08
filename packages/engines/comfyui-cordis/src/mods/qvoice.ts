@@ -17,12 +17,12 @@ const QvoiceFields = z.object({
     }),
   voice_pca_strengths: z.string().description('PCA Steering')
     .extra('extra', {
-      wtype: 'textarea', group: 'qvoice', zone: 'mods', order: 1,
+      wtype: 'textarea', order: 1, group: 'qvoice', zone: 'mods',
       tooltip: 'JSON knobs over the embedding\'s principal components, e.g. {"pca_pc1.dir": 0.5} — subtle voice direction without re-designing the persona.',
     }),
 })
 
 export function apply(ctx: Context): void {
-  ctx.comfyui.registerMod({ pack: 'qvoice', families: ['qwen3-tts'], fields: QvoiceFields as never })
-  ctx.comfyui.registerMod({ pack: 'qvoice', families: ['qwen3-tts-base'], fields: QvoiceFields as never })
+  ctx.effect(() => ctx.comfyui.registerMod({ pack: 'qvoice', families: ['qwen3-tts'], fields: QvoiceFields as never }))
+  ctx.effect(() => ctx.comfyui.registerMod({ pack: 'qvoice', families: ['qwen3-tts-base'], fields: QvoiceFields as never }))
 }

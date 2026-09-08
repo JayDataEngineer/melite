@@ -112,30 +112,20 @@ const CHAIN_ONLY_KEYS = [
 const nullable = <T extends object>(inner: T): unknown => z.union([inner, z.const(null)])
 
 const paramSchema = z.object({
-  prompt: z.string().description(
-    'Verb-first motion + the sounds. For keyframes the image already sets the scene — prompt what CHANGES.').extra('extra', { required: true }),
-  image: z.string().role('path').description(
-    'Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline.'),
-  seed: z.number().min(-1).step(1).default(42).description(
-    'Same seed across re-rolls = same world texture'),
-  width: z.number().min(448).max(1344).default(1344).description('Width'),
-  height: z.number().min(448).max(768).default(768).description('Height'),
-  length: z.number().min(21).max(362).default(56).description(
-    '17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s'),
-  steps: z.number().min(4).max(30).default(12).description(
-    '12 for draft; 30 standard; 10 with the turbo LoRA'),
-  sharpen_enabled: z.boolean().default(false).description(
-    'Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural.'),
-  sharpen_strength: z.number().min(0).max(1).default(0.3).description(
-    'RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.'),
-  interpolate_enabled: z.boolean().default(false).description(
-    'Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time.'),
+  prompt: z.string().description("Prompt").extra('extra', { order: null, placeholder: "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out", tooltip: "Verb-first motion + the sounds. For keyframes the image already sets the scene — prompt what CHANGES.", required: true }),
+  image: z.string().role('path').description("First frame (keyframe lanes)").extra('extra', { order: null, tooltip: "Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline." }),
+  seed: z.number().description("Seed").step(1).default(42).extra('extra', { order: null, tooltip: "Same seed across re-rolls = same world texture" }),
+  width: z.number().description("Width").min(448).max(1344).step(64).default(1344).extra('extra', { order: null, wtype: 'number' }),
+  height: z.number().description("Height").min(448).max(768).step(64).default(768).extra('extra', { order: null, wtype: 'number' }),
+  length: z.number().description("Frames").min(21).max(362).step(5).default(56).extra('extra', { order: null, tooltip: "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s", wtype: 'number' }),
+  steps: z.number().description("Steps").min(4).max(30).default(12).extra('extra', { order: null, tooltip: "12 for draft; 30 standard; 10 with the turbo LoRA", wtype: 'number' }),
+  sharpen_enabled: z.boolean().description("FSR Sharpening").default(false).extra('extra', { order: null, tooltip: "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural." }),
+  sharpen_strength: z.number().description("Sharpen Strength").min(0).max(1).step(0.05).default(0.3).extra('extra', { order: null, tooltip: "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.", wtype: 'number' }),
+  interpolate_enabled: z.boolean().description("FILM Interpolation").default("false").extra('extra', { order: null, tooltip: "Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time." }),
   // nullable inner: min/max validate only the number branch — null
   // (the family-literal resolution path) passes untouched.
-  shift_video: nullable(z.number().min(1).max(20)).default(8.0).description(
-    'Timestep shift for video attention. Higher = more coherent motion.'),
-  shift_audio: z.number().min(1).max(10).default(3.0).description(
-    'Timestep shift for audio attention. Lower = more detailed sound.'),
+  shift_video: nullable(z.number().description("Video Shift").min(1).max(20).step(0.5).default(8).extra('extra', { order: null, tooltip: "Timestep shift for video attention. Higher = more coherent motion.", wtype: 'number' })),
+  shift_audio: z.number().description("Audio Shift").min(1).max(10).step(0.5).default(3).extra('extra', { order: null, tooltip: "Timestep shift for audio attention. Lower = more detailed sound.", wtype: 'number' }),
 })
 
 /** Schemastery objects are lenient (unknown/missing keys ride); the
@@ -489,7 +479,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): void {
 export const inject = ['comfyui']
 
 export function apply(ctx: Context): void {
-  ctx.comfyui.registerCard({
+  ctx.effect(() => ctx.comfyui.registerCard({
     id: 'h3-timeline',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'h3-film',
@@ -524,5 +514,5 @@ export function apply(ctx: Context): void {
     },
     // the t4-family strip pass rides the kit (python: `if not is_t4r`).
     finalize: finalizeH3,
-  })
+  }))
 }

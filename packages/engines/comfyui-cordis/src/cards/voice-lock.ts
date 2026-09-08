@@ -5,22 +5,19 @@ import z from '@deepseek-ai/schemastery'
 import { voicelockT1 } from '../kit.ts'
 
 const schema = z.object({
-  voice_name: z.string().description(
-    "Name for the locked persona — becomes the .qvoice filename stem. Reused across every future TTS render."),
-  style_instruction: z.string().description(
-    "The voice description — becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent')."),
-  temperature: z.number().min(0).max(2).default(0.7).description('Temperature'),
-  top_p: z.number().min(0).max(1).default(0.9).description('Top-P'),
-  speed: z.number().min(0.5).max(2).default(1.0).description('Speed'),
-  repetition_penalty: z.number().min(0.8).max(2).default(1.05).description(
-    'Repetition Penalty'),
-  seed: z.number().min(-1).step(1).default(-1).description('Seed'),
+  voice_name: z.string().description("Voice Name").extra('extra', { order: 0, group: "voice", width: 1, tooltip: "Name for the locked persona — becomes the .qvoice filename stem. Reused across every future TTS render.", required: true }),
+  style_instruction: z.string().description("Style Instruction").extra('extra', { order: 1, group: "voice", columns: 1, tooltip: "The voice description — becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent').", required: true, wtype: 'textarea', }),
+  temperature: z.number().description("Temperature").min(0).max(2).step(0.05).default(0.7).extra('extra', { order: 0, group: "sampling", width: 1 }),
+  top_p: z.number().description("Top-P").min(0).max(1).step(0.01).default(0.9).extra('extra', { order: 1, group: "sampling", width: 1 }),
+  speed: z.number().description("Speed").min(0.5).max(2).step(0.1).default(1).extra('extra', { order: 2, group: "sampling", width: 1 }),
+  repetition_penalty: z.number().description("Repetition Penalty").min(0.8).max(2).step(0.01).default(1.05).extra('extra', { order: 3, group: "sampling", width: 1 }),
+  seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: 0, group: "seed", width: 1 }),
 })
 
 export const inject = ['comfyui']
 
 export function apply(ctx: Context): void {
-  ctx.comfyui.registerCard({
+  ctx.effect(() => ctx.comfyui.registerCard({
     id: 'voice-lock',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'voicelock',
@@ -38,5 +35,5 @@ export function apply(ctx: Context): void {
       }
       voicelockT1(p, model, g, runId)
     },
-  })
+  }))
 }

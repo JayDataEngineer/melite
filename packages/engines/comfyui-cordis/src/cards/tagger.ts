@@ -6,6 +6,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { taggerLane, finalizeTagger, TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS } from '../kit.ts'
+import { vocabulary } from '../../../comfyui/src/models/vocab.ts'
 
 declare module '../service.ts' {
   interface CardDefinition {
@@ -28,32 +29,19 @@ const oneOf = (options: string[]) => z.union(options.map((o) => z.const(o)))
 // joycaption→extra_option). Bare z.string() is the image-gen prompt
 // precedent (optional at parse, refused loud at compose).
 const schema = z.object({
-  input_image: z.string().role('path').description(
-    'The image to invert. Absolute mount path or artifact ref.').extra('extra', { required: true }),
-  checkpoint: z.string().default('wd-v1-4-moat-tagger-v2').description(
-    'The WD14 weights name (auto-downloaded on first run).'),
-  threshold: z.number().min(0).max(1).default(0.35).description(
-    'General-tag confidence floor.'),
-  character_threshold: z.number().min(0).max(1).default(0.85).description(
-    'Character-tag confidence floor — keep high.'),
-  exclude_tags: z.string().description(
-    'Comma-separated tags to prune from the output.'),
-  add_tag: z.string().description(
-    'JoyTag: tags force-prepended to the output (comma-separated). Ignored by WD14.'),
-  remove_tag: z.string().description(
-    'JoyTag: tags pruned from the output (comma-separated). Ignored by WD14.'),
-  caption_task: oneOf(TAGGER_CAPTION_TASKS).default('more_detailed_caption').description(
-    'Florence-2: the vision task (live task vocabulary). Ignored by WD14/JoyTag.'),
-  caption_type: oneOf(TAGGER_CAPTION_TYPES).default('Descriptive').description(
-    'JoyCaption: the caption template (live vocabulary). Ignored by WD14/JoyTag/Florence-2.'),
-  caption_length: oneOf(TAGGER_CAPTION_LENGTHS).default('long').description(
-    'JoyCaption: target length (the node also takes word counts 20-260 — bare/API bodies pass through).'),
-  extra_option: oneOf(TAGGER_EXTRA_OPTIONS).description(
-    "JoyCaption: one appended instruction (the full option list rides the served schema's live vocabulary)."),
-  replace_underscore: z.boolean().default(false).description(
-    'Emit "silver hair" instead of "silver_hair".'),
-  trailing_comma: z.boolean().default(false).description(
-    'Terminate the tag list with a comma (prompt-paste shape).'),
+  input_image: z.string().role('path').description("Input image").extra('extra', { order: 0, group: "input", width: 1, tooltip: "The image to invert. Absolute mount path or artifact ref.", required: true, wtype: 'image', }),
+  checkpoint: z.string().description("Checkpoint").default("wd-v1-4-moat-tagger-v2").extra('extra', { order: 0, group: "tagger", width: 1, tooltip: "The WD14 weights name (auto-downloaded on first run)." }),
+  threshold: z.number().description("Threshold").min(0).max(1).step(0.05).default(0.35).extra('extra', { order: 1, group: "tagger", width: 1, tooltip: "General-tag confidence floor." }),
+  character_threshold: z.number().description("Character threshold").min(0).max(1).step(0.05).default(0.85).extra('extra', { order: 2, group: "tagger", width: 1, tooltip: "Character-tag confidence floor — keep high." }),
+  exclude_tags: z.string().description("Exclude tags").extra('extra', { order: 3, group: "tagger", width: 1, tooltip: "Comma-separated tags to prune from the output." }),
+  replace_underscore: z.boolean().description("Replace underscores").default(false).extra('extra', { order: 4, group: "tagger", width: 1, tooltip: "Emit \"silver hair\" instead of \"silver_hair\"." }),
+  trailing_comma: z.boolean().description("Trailing comma").default(false).extra('extra', { order: 5, group: "tagger", width: 1, tooltip: "Terminate the tag list with a comma (prompt-paste shape)." }),
+  add_tag: z.string().description("Add tag").extra('extra', { order: 6, group: "tagger", width: 1, tooltip: "JoyTag: tags force-prepended to the output (comma-separated). Ignored by WD14." }),
+  remove_tag: z.string().description("Remove tag").extra('extra', { order: 7, group: "tagger", width: 1, tooltip: "JoyTag: tags pruned from the output (comma-separated). Ignored by WD14." }),
+  caption_task: vocabulary(["region_caption", "dense_region_caption", "region_proposal", "caption", "detailed_caption", "more_detailed_caption", "caption_to_phrase_grounding", "referring_expression_segmentation", "ocr", "ocr_with_region", "docvqa", "prompt_gen_tags", "prompt_gen_mixed_caption", "prompt_gen_analyze", "prompt_gen_mixed_caption_plus"]).description("Caption task").default("more_detailed_caption").extra('extra', { order: 8, group: "tagger", width: 1, tooltip: "Florence-2: the vision task (live task vocabulary). Ignored by WD14/JoyTag.", wtype: 'select' }),
+  caption_type: vocabulary(["Descriptive", "Descriptive (Casual)", "Straightforward", "Stable Diffusion Prompt", "MidJourney", "Danbooru tag list", "e621 tag list", "Rule34 tag list", "Booru-like tag list", "Art Critic", "Product Listing", "Social Media Post"]).description("Caption style").default("Descriptive").extra('extra', { order: 9, group: "tagger", width: 1, tooltip: "JoyCaption: the caption template (live vocabulary). Ignored by WD14/JoyTag/Florence-2.", wtype: 'select' }),
+  caption_length: vocabulary(["any", "very short", "short", "medium-length", "long", "very long"]).description("Caption length").default("long").extra('extra', { order: 10, group: "tagger", width: 1, tooltip: "JoyCaption: target length (the node also takes word counts 20-260 — bare/API bodies only). Ignored by other families.", wtype: 'select' }),
+  extra_option: vocabulary(["", "Include information about lighting.", "Include information about camera angle.", "Include information about whether there is a watermark or not.", "Include information about whether there are JPEG artifacts or not.", "Do NOT include anything sexual; keep it PG.", "Do NOT mention the image's resolution.", "You MUST include information about the subjective aesthetic quality of the image from low to very high.", "Include information on the image's composition style, such as leading lines, rule of thirds, or symmetry.", "Do NOT mention any text that is in the image.", "Specify the depth of field and whether the background is in focus or blurred.", "Do NOT use any ambiguous language.", "ONLY describe the most important elements of the image.", "Your response will be used by a text-to-image model, so avoid useless meta phrases."]).description("Extra instruction").extra('extra', { order: 11, group: "tagger", width: 1, tooltip: "JoyCaption: one appended instruction (the full 28-option list rides bare/API bodies). Ignored by other families.", wtype: 'select' }),
   // NO filename_prefix (py card: "the run routes outputs by run id
   // (compose stamps `<run>/tags`) — a user knob here was silently
   // overwritten, a dead promise"). Old drafts naming it still parse
@@ -64,7 +52,7 @@ const schema = z.object({
 export const inject = ['comfyui']
 
 export function apply(ctx: Context): void {
-  ctx.comfyui.registerCard({
+  ctx.effect(() => ctx.comfyui.registerCard({
     id: 'tagger',
     // stage-row id the compose emits (purge S-decls verdict: the
     // retired row carried "" — engine truth wins, recorded in
@@ -93,5 +81,5 @@ export function apply(ctx: Context): void {
       taggerLane(p, model, g, runId)
     },
     finalize: finalizeTagger,
-  })
+  }))
 }

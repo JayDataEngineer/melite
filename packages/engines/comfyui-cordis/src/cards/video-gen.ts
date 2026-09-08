@@ -20,41 +20,31 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { wanVace, scail2, VIDEO_NEGATIVE_FALLBACK, VIDEO_REQUIRED_PATHS } from '../kit.ts'
+import { SAMPLERS, SCHEDULERS } from '../../../comfyui/src/models/vocab.ts'
 
 const schema = z.object({
-  prompt: z.string().description('Prompt').extra('extra', { required: true }),
-  negative_prompt: z.string().description('Negative Prompt'),
-  reference_image: z.string().role('path').description(
-    'The anchor frame — identity, subject, scene (wan-vace); the character to animate (scail2).'),
-  pose_video: z.string().role('path').description(
-    'The motion source — SCAIL-2 drives the reference character with this video.').extra(
-      'extra', { families: ['scail2-animate'] }),
-  pose_strength: z.number().min(0.0).max(2.0).default(1.0).description(
-    'How tightly SCAIL-2 follows the driving motion.').extra(
-      'extra', { families: ['scail2-animate'] }),
+  prompt: z.string().description("Prompt").extra('extra', { order: 0, group: "prompt", columns: 2, width: 1, required: true, wtype: 'textarea', }),
+  negative_prompt: z.string().description("Negative Prompt").extra('extra', { order: 1, group: "prompt", width: 1, wtype: 'textarea' }),
   // ride-the-model keys (cascade-owned): HINT-ONLY ranges via extra
   // (RANGE RULE 2026-09-08 — whoever owns the default owns the floor).
-  width: z.number().description('Width').extra('extra', { min: 320, max: 1280 }),
-  height: z.number().description('Height').extra('extra', { min: 320, max: 720 }),
-  length: z.number().description(
-    '4n+1 (Wan latent grid). 49 ≈ 2s, 81 ≈ 3.4s at 24fps.').extra(
-      'extra', { min: 9, max: 121 }),
-  fps: z.number().description('FPS').extra('extra', { min: 8, max: 30 }),
-  steps: z.number().description('Steps').extra('extra', { min: 1, max: 50 }),
-  cfg: z.number().description(
-    'Lightning-distilled lanes run CFG 1 (guidance baked in).').extra(
-      'extra', { min: 1, max: 12 }),
-  sampler: z.string().description(
-    'Sampler — options resolve from the $samplers vocabulary at serve time'),
-  scheduler: z.string().description(
-    'Scheduler — options resolve from the $schedulers vocabulary at serve time'),
-  seed: z.number().min(-1).step(1).default(-1).description('Seed'),
+  width: z.number().description("Width").min(320).max(1280).step(16).extra('extra', { order: 0, group: "resolution", columns: 3, width: 1, min: 320, max: 1280, wtype: 'number' }),
+  height: z.number().description("Height").min(320).max(720).step(16).extra('extra', { order: 1, group: "resolution", width: 1, min: 320, max: 720, wtype: 'number' }),
+  length: z.number().description("Frames").min(9).max(121).step(4).extra('extra', { order: 2, group: "resolution", columns: 3, width: 1, tooltip: "4n+1 (Wan latent grid). 49 ≈ 2s, 81 ≈ 3.4s at 24fps.", wtype: 'number' }),
+  fps: z.number().description("FPS").min(8).max(30).step(1).extra('extra', { order: 3, group: "resolution", width: 1, min: 8, max: 30, wtype: 'number' }),
+  seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: 4, group: "resolution", width: 1 }),
+  steps: z.number().description("Steps").min(1).max(50).step(1).extra('extra', { order: 0, group: "sampling", width: 1, min: 1, max: 50, wtype: 'number' }),
+  cfg: z.number().description("Guidance Scale").min(1).max(12).step(0.1).extra('extra', { order: 1, group: "sampling", width: 1, tooltip: "Lightning-distilled lanes run CFG 1 (guidance baked in)." }),
+  sampler: SAMPLERS.description("Sampler").extra('extra', { order: 2, group: "sampling", width: 1, wtype: 'select' }),
+  scheduler: SCHEDULERS.description("Scheduler").extra('extra', { order: 3, group: "sampling", width: 1, wtype: 'select' }),
+  reference_image: z.string().role('path').description("Reference image").extra('extra', { order: 0, group: "input", width: 1, tooltip: "The anchor frame — identity, subject, scene (wan-vace); the character to animate (scail2-animate).", wtype: 'image' }),
+  pose_video: z.string().role('path').description("Driving video").extra('extra', { order: 1, group: "input", width: 1, tooltip: "The motion source — SCAIL-2 drives the reference character with this video.", wtype: 'video', families: ['scail2-animate'] }),
+  pose_strength: z.number().description("Pose strength").min(0).max(2).step(0.05).default(1).extra('extra', { order: 2, group: "sampling", width: 1, tooltip: "How tightly SCAIL-2 follows the driving motion.", families: ['scail2-animate'] }),
 })
 
 export const inject = ['comfyui']
 
 export function apply(ctx: Context): void {
-  ctx.comfyui.registerCard({
+  ctx.effect(() => ctx.comfyui.registerCard({
     id: 'video-gen',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'generate',
@@ -77,5 +67,5 @@ export function apply(ctx: Context): void {
       if (model.id === 'scail2-animate') scail2(p, negative, model, g, runId)
       else wanVace(p, negative, model, g, runId)
     },
-  })
+  }))
 }

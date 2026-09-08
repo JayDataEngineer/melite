@@ -41,20 +41,13 @@ const schema = z.object({
   // ride HINT-ONLY extra ranges, never validating min/max; the
   // schema-owned defaults keep no floors either (smooth_normal
   // already refuses non-zero by name at compose).
-  input: z.string().description(
-    'OBJ/STL/PLY path or artifact-ref from a previous card'),
-  target_quads: z.number().default(50000).description('Target quad count')
-    .extra('extra', { min: 100, max: 1000000 }),
-  edge_scaling: z.number().default(1.0).description('Edge scaling')
-    .extra('extra', { min: 0.1, max: 10.0 }),
-  sharp_edge: z.number().default(90.0).description('Sharp edge')
-    .extra('extra', { min: 0.0, max: 180.0 }),
-  smooth_normal: z.number().default(0.0).description('Smooth normal')
-    .extra('extra', { min: 0.0, max: 1.0 }),
-  adaptivity: z.number().default(1.0).description('Adaptivity')
-    .extra('extra', { min: 0.1, max: 2.0 }),
-  anisotropy: z.number().default(1.0).description('Anisotropy')
-    .extra('extra', { min: 0.1, max: 2.0 }),
+  input: z.string().description("Input mesh").extra('extra', { order: null, tooltip: "OBJ/STL/PLY path or artifact-ref from a previous card", required: true, wtype: 'textarea', }),
+  target_quads: z.number().description("Target quads").min(100).max(1000000).default(50000).extra('extra', { order: null, tooltip: "Target quad count", min: 100, max: 1000000 }),
+  edge_scaling: z.number().description("Edge scaling").min(0.1).max(10).default(1).extra('extra', { order: null, min: 0.1, max: 10.0 }),
+  sharp_edge: z.number().description("Sharp edge").min(0).max(180).default(90).extra('extra', { order: null, min: 0.0, max: 180.0 }),
+  smooth_normal: z.number().description("Smooth normal").min(0).max(1).default(0).extra('extra', { order: null, min: 0.0, max: 1.0 }),
+  adaptivity: z.number().description("Adaptivity").min(0.1).max(2).default(1).extra('extra', { order: null, min: 0.1, max: 2.0 }),
+  anisotropy: z.number().description("Anisotropy").min(0.1).max(2).default(1).extra('extra', { order: null, min: 0.1, max: 2.0 }),
   // NO preset (the card has no preset field — the node budget class
   // is ALWAYS "" here; explicit knobs rule) and NO filename_prefix
   // (compose stamps `<runId>/remeshed` internally, never a knob).
@@ -63,7 +56,7 @@ const schema = z.object({
 export const inject = ['comfyui']
 
 export function apply(ctx: Context): void {
-  ctx.comfyui.registerCard({
+  ctx.effect(() => ctx.comfyui.registerCard({
     id: 'quad-remesh',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'quad-remesh',
@@ -86,5 +79,5 @@ export function apply(ctx: Context): void {
       }
       quadRemeshLane(p, g, runId)
     },
-  })
+  }))
 }

@@ -15,7 +15,7 @@ export function apply(ctx: Context): void {
   // NOTE: methods are called ON the service (never destructured —
   // a destructured method loses its receiver; cordis loads
   // function-shaped entries by construction, registry.ts:92).
-  ctx.comfyui.registerVerb({
+  ctx.effect(() => ctx.comfyui.registerVerb({
     id: 'hmr-estimate',
     label: 'Estimate body from photo',
     families: ['anny'],
@@ -26,9 +26,9 @@ export function apply(ctx: Context): void {
       person_index: z.number().min(0).step(1).default(0).description('Person')
         .extra('extra', { wtype: 'number', tooltip: 'Which detected person to fit (0 = the most confident detection).' }),
     }) as never,
-  })
+  }))
 
-  ctx.comfyui.registerVerb({
+  ctx.effect(() => ctx.comfyui.registerVerb({
     id: 'preset-save',
     label: 'Save character as preset',
     families: ['anny'],
@@ -39,9 +39,9 @@ export function apply(ctx: Context): void {
       name: z.string().description('Preset name')
         .extra('extra', { wtype: 'text', required: true, tooltip: 'Label for the saved character row.' }),
     }) as never,
-  })
+  }))
 
-  ctx.comfyui.registerVerb({
+  ctx.effect(() => ctx.comfyui.registerVerb({
     id: 'preset-load',
     label: 'Load character preset',
     families: ['anny'],
@@ -52,7 +52,7 @@ export function apply(ctx: Context): void {
       preset_id: z.string().description('Preset')
         .extra('extra', { wtype: 'text', required: true, tooltip: 'Estate archetype id or user row id (user-N).' }),
     }) as never,
-  })
+  }))
   const seatFields = (o: {
     propLabel: string; propTooltip: string; bone: string; align: string
     fingerBone?: string; thumbBone?: string; targetWidth?: number
@@ -86,7 +86,7 @@ export function apply(ctx: Context): void {
       .extra('extra', { wtype: 'number', tooltip: o.targetWidthTooltip }),
   }) as never
 
-  ctx.comfyui.registerVerb({
+  ctx.effect(() => ctx.comfyui.registerVerb({
     id: 'dress',
     label: 'Dress with outfit',
     families: ['anny'],
@@ -102,9 +102,9 @@ export function apply(ctx: Context): void {
       seatRatioTooltip: 'How far down the span the prop seats (hat: 0.22). Grip ignores this.',
       targetWidthTooltip: 'grip law: scale-then-grip width in meters (sword: 0.25). fit forbids non-zero.',
     }),
-  })
+  }))
 
-  ctx.comfyui.registerVerb({
+  ctx.effect(() => ctx.comfyui.registerVerb({
     id: 'prop',
     label: 'Seat prop in hand',
     families: ['anny'],
@@ -123,5 +123,5 @@ export function apply(ctx: Context): void {
       seatRatioTooltip: 'socket/fit seating depth. Grip ignores this.',
       targetWidthTooltip: 'grip law: scale-then-grip width in meters (sword: 0.25).',
     }),
-  })
+  }))
 }

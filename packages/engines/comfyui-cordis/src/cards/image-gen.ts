@@ -14,6 +14,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { imageT2I, finalizeImageGen } from '../kit.ts'
+import { SAMPLERS, SCHEDULERS } from '../../../comfyui/src/models/vocab.ts'
 
 const schema = z.object({
   // CARD-OWNED SURFACE (the 1:1 port, 2026-09-08): declaration
@@ -23,24 +24,21 @@ const schema = z.object({
   // ctx.comfyui.registerMod — the py interlock). The hand-inlined
   // families-scoped field was the defect this port removes;
   // compose still consumes p.loras (kit.ts stackLoras).
-  prompt: z.string().description('Prompt').extra('extra', { required: true, group: 'prompt', zone: 'params' }),
-  negative_prompt: z.string().description('Negative Prompt').extra('extra', { group: 'prompt', zone: 'params' }),
-  width: z.number().min(256).max(2048).default(1024).description('Width').extra('extra', { group: 'resolution', zone: 'params' }),
-  height: z.number().min(256).max(2048).default(1024).description('Height').extra('extra', { group: 'resolution', zone: 'params' }),
-  seed: z.number().min(-1).step(1).default(-1).description('Seed').extra('extra', { group: 'resolution', zone: 'params' }),
-  steps: z.number().min(1).max(100).default(8).description('Steps').extra('extra', { group: 'sampling', zone: 'params' }),
-  cfg: z.number().min(1).max(20).default(4.5).description(
-    'How closely the diffusion follows the prompt. Higher = stricter.').extra('extra', { group: 'sampling', zone: 'params' }),
-  sampler: z.string().description(
-    'Sampler — options resolve from the $samplers vocabulary at serve time').extra('extra', { group: 'sampling', zone: 'params' }),
-  scheduler: z.string().description(
-    'Scheduler — options resolve from the $schedulers vocabulary at serve time').extra('extra', { group: 'sampling', zone: 'params' }),
+  prompt: z.string().description("Prompt").extra('extra', { order: 0, group: "prompt", columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea', }),
+  negative_prompt: z.string().description("Negative Prompt").extra('extra', { order: 1, group: "prompt", width: 1, zone: 'params', wtype: 'textarea' }),
+  width: z.number().description("Width").min(256).max(2048).step(16).default(1024).extra('extra', { order: 0, group: "resolution", columns: 3, width: 1, zone: 'params', wtype: 'number' }),
+  height: z.number().description("Height").min(256).max(2048).step(16).default(1024).extra('extra', { order: 1, group: "resolution", width: 1, zone: 'params', wtype: 'number' }),
+  seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: 4, group: "resolution", width: 1, zone: 'params' }),
+  steps: z.number().description("Steps").min(1).max(100).step(1).default(8).extra('extra', { order: 0, group: "sampling", width: 1, zone: 'params', wtype: 'number' }),
+  cfg: z.number().description("Guidance Scale").min(1).max(20).step(0.1).default(4.5).extra('extra', { order: 1, group: "sampling", width: 1, tooltip: "How closely the diffusion follows the prompt. Higher = stricter.", zone: 'params' }),
+  sampler: SAMPLERS.description("Sampler").extra('extra', { order: 2, group: "sampling", width: 1, zone: 'params', wtype: 'select' }),
+  scheduler: SCHEDULERS.description("Scheduler").extra('extra', { order: 3, group: "sampling", width: 1, zone: 'params', wtype: 'select' }),
 })
 
 export const inject = ['comfyui']
 
 export function apply(ctx: Context): void {
-  ctx.comfyui.registerCard({
+  ctx.effect(() => ctx.comfyui.registerCard({
     id: 'image-gen',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'generate',
@@ -55,5 +53,5 @@ export function apply(ctx: Context): void {
       imageT2I(p, model, g, runId)
     },
     finalize: finalizeImageGen,
-  })
+  }))
 }

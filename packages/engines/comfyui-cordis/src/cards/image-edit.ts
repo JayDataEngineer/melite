@@ -31,6 +31,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { imageEdit, refuseImageEditFiring, finalizeImageEdit } from '../kit.ts'
+import { SAMPLERS, SCHEDULERS } from '../../../comfyui/src/models/vocab.ts'
 
 const schema = z.object({
   // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:1 port): the py
@@ -45,31 +46,24 @@ const schema = z.object({
   // required anchors stays in compose (the gate below), exactly
   // the py split: the mod declares the editor surface, compose
   // owns firing.
-  image2: z.string().role('path').description('Image 2').extra('extra', { group: 'input', zone: 'inputs' }),
-  image3: z.string().role('path').description('Image 3').extra('extra', { group: 'input', zone: 'inputs' }),
-  reference_images: z.array(z.string()).default([]).description(
-    'Multi-image picker (up to 3). Used by workflows needing image sets.').extra(
-      'extra', { serveDefault: true, group: 'input', zone: 'inputs' }),
-  prompt: z.string().description('Prompt').extra('extra', { required: true, group: 'prompt', zone: 'params' }),
-  negative_prompt: z.string().description('Negative Prompt').extra('extra', { group: 'prompt', zone: 'params' }),
-  seed: z.number().min(-1).step(1).default(-1).description('Seed').extra('extra', { group: 'resolution', zone: 'params' }),
-  steps: z.number().min(1).max(50).default(4).description('Steps').extra('extra', { group: 'sampling', zone: 'params' }),
-  cfg: z.number().min(0.1).max(10).default(1.0).description(
-    'Qwen-Image-Edit uses low CFG (flow-matching).').extra('extra', { group: 'sampling', zone: 'params' }),
-  sampler: z.string().description(
-    'Sampler — options resolve from the $samplers vocabulary at serve time').extra('extra', { group: 'sampling', zone: 'params' }),
-  scheduler: z.string().description(
-    'Scheduler — options resolve from the $schedulers vocabulary at serve time').extra('extra', { group: 'sampling', zone: 'params' }),
-  use_stock_nodes: z.boolean().default(false).description(
-    'When true, build_img2img_edit emits the stock graph unmodified.').extra('extra', { group: 'edit_tuning', zone: 'params' }),
-  double_reference: z.boolean().default(false).description(
-    'Encode the input image twice (VAE + vision encoder) — stronger identity retention.').extra('extra', { group: 'edit_tuning', zone: 'params' }),
+  image2: z.string().role('path').description("Image 2").extra('extra', { order: 0, group: "input", width: 1, zone: 'inputs', wtype: 'image' }),
+  image3: z.string().role('path').description("Image 3").extra('extra', { order: 1, group: "input", width: 1, zone: 'inputs', wtype: 'image' }),
+  reference_images: z.array(z.string()).description("Reference Images").default([]).extra('extra', { order: 2, group: "input", tooltip: "Multi-image picker (up to 3). Used by workflows that pass resolved image lists; complements the individual Image 2 / Image 3 slots above.", wtype: 'image_list' }),
+  prompt: z.string().description("Prompt").extra('extra', { order: 0, group: "prompt", columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea', }),
+  negative_prompt: z.string().description("Negative Prompt").extra('extra', { order: 1, group: "prompt", width: 1, zone: 'params', wtype: 'textarea' }),
+  seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: 4, group: "resolution", width: 1, zone: 'params' }),
+  steps: z.number().description("Steps").min(1).max(50).step(1).default(4).extra('extra', { order: 0, group: "sampling", width: 1, zone: 'params', wtype: 'number' }),
+  cfg: z.number().description("Guidance Scale").min(0.1).max(10).step(0.1).default(1).extra('extra', { order: 1, group: "sampling", width: 1, tooltip: "Qwen-Image-Edit uses low CFG (flow-matching).", zone: 'params' }),
+  sampler: SAMPLERS.description("Sampler").extra('extra', { order: 2, group: "sampling", width: 1, zone: 'params', wtype: 'select' }),
+  scheduler: SCHEDULERS.description("Scheduler").extra('extra', { order: 3, group: "sampling", width: 1, zone: 'params', wtype: 'select' }),
+  use_stock_nodes: z.boolean().description("Use Stock Nodes").default(false).extra('extra', { order: 1, group: "edit_tuning", width: 1, tooltip: "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.", zone: 'params' }),
+  double_reference: z.boolean().description("Double Reference").default(false).extra('extra', { order: 2, group: "edit_tuning", width: 1, tooltip: "Encode the input image twice (VAE + vision encoder) for stronger identity preservation. Disable for faster runs where identity drift is acceptable.", zone: 'params' }),
 })
 
 export const inject = ['comfyui']
 
 export function apply(ctx: Context): void {
-  ctx.comfyui.registerCard({
+  ctx.effect(() => ctx.comfyui.registerCard({
     id: 'image-edit',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'edit',
@@ -91,5 +85,5 @@ export function apply(ctx: Context): void {
       imageEdit(p, model, g, runId)
     },
     finalize: finalizeImageEdit,
-  })
+  }))
 }

@@ -12,14 +12,13 @@ const schema = z.object({
   // py card.py declares ONLY source — media_type/crop/scale ride the
   // door's explicit-params overlay (non-strict object) so old drafts
   // keep parsing, but they are never declared knobs.
-  source: z.string().role('path').description(
-    'The file to stage — upload, asset drop, prior-run artifact, or mount path. The arm stages it into the ComfyUI input dir before rendering.'),
+  source: z.string().role('path').description("Source file").extra('extra', { order: 0, group: "input", tooltip: "The file to stage — upload, asset drop, prior-run artifact, or mount path. Image or audio (video is not boarded yet).", required: true, wtype: 'file', }),
 })
 
 export const inject = ['comfyui']
 
 export function apply(ctx: Context): void {
-  ctx.comfyui.registerCard({
+  ctx.effect(() => ctx.comfyui.registerCard({
     id: 'input-prep',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'input_prep',
@@ -38,5 +37,5 @@ export function apply(ctx: Context): void {
       }
       inputPrepLane(p, g, runId)
     },
-  })
+  }))
 }

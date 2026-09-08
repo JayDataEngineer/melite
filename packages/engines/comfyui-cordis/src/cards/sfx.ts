@@ -5,21 +5,17 @@ import z from '@deepseek-ai/schemastery'
 import { sfxT1 } from '../kit.ts'
 
 const schema = z.object({
-  prompt: z.string().description(
-    "Describe the SOUND itself, not the scene (e.g. 'sharp metallic clang with long decay')").extra('extra', { required: true }),
-  guidance_scale: z.number().min(0).max(20).default(5.0).description(
-    'Diffusion classifier-free guidance'),
-  n_diffusion_steps: z.number().min(1).max(500).default(50).description(
-    'More = higher quality, slower'),
-  duration: z.number().min(0.5).max(300).default(10.0).description(
-    'Output length in seconds'),
-  seed: z.number().min(-1).step(1).default(-1).description('Seed'),
+  prompt: z.string().description("Sound Description").extra('extra', { order: null, tooltip: "Describe the SOUND itself, not the scene (e.g. 'sharp metallic clang with long decay')", required: true, wtype: 'textarea', }),
+  guidance_scale: z.number().description("CFG").min(0).max(20).step(0.1).default(5).extra('extra', { order: null, tooltip: "Diffusion classifier-free guidance" }),
+  n_diffusion_steps: z.number().description("Diffusion Steps").min(1).max(500).step(1).default(50).extra('extra', { order: null, tooltip: "More = higher quality, slower", wtype: 'slider' }),
+  duration: z.number().description("Duration (s)").min(0.5).max(300).step(0.5).default(10).extra('extra', { order: null, tooltip: "Output length in seconds" }),
+  seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: null }),
 })
 
 export const inject = ['comfyui']
 
 export function apply(ctx: Context): void {
-  ctx.comfyui.registerCard({
+  ctx.effect(() => ctx.comfyui.registerCard({
     id: 'sfx',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'sfx',
@@ -33,5 +29,5 @@ export function apply(ctx: Context): void {
       }
       sfxT1(p, model, g, runId)
     },
-  })
+  }))
 }

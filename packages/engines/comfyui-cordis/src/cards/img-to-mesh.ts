@@ -35,6 +35,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { trellisArm, pixalArm, transferRigArm, admitMeshLift } from '../kit.ts'
 import type { ModelFacts } from '../facts.ts'
+import { SAMPLERS, SCHEDULERS, vocabulary } from '../../../comfyui/src/models/vocab.ts'
 
 declare module '../service.ts' {
   interface CardDefinition {
@@ -53,109 +54,42 @@ const schema = z.object({
   // lift call never names them and a rig call names both. Bare
   // z.string() is the image-gen prompt precedent (optional at parse,
   // refused loud at compose).
-  input_image: z.string().role('path').description(
-    'One clear object, tight framing. Background removal runs before the lift.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  rigged_glb: z.string().role('path').description(
-    'The SOMA-rigged clean mesh — JOINTS_0/WEIGHTS_0 live here.').extra(
-      'extra', { families: ['transfer_rig'] }),
-  target_glb: z.string().role('path').description(
-    'The clothed mesh — geometry + textures, no rig.').extra(
-      'extra', { families: ['transfer_rig'] }),
-  seed: z.number().min(-1).step(1).default(42).description(
-    'Same seed + image = same mesh take.'),
+  input_image: z.string().role('path').description("Source image").extra('extra', { order: 0, group: "input", columns: 1, tooltip: "One clear object, tight framing. Background is removed automatically (birefnet) unless bg_removal=off.", required: true, families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'],  wtype: 'file', }),
+  rigged_glb: z.string().role('path').description("Rigged source GLB").extra('extra', { order: 0, group: "input", columns: 1, tooltip: "The SOMA-rigged clean mesh — JOINTS_0/WEIGHTS_0 + armature. The rig donor.", families: ['transfer_rig'], wtype: 'file' }),
+  target_glb: z.string().role('path').description("Target GLB").extra('extra', { order: 1, group: "input", columns: 1, tooltip: "The clothed mesh — geometry + textures, no rig. Receives the rig.", families: ['transfer_rig'], wtype: 'file' }),
+  seed: z.number().description("Seed").step(1).default(42).extra('extra', { order: 1, group: "input", width: 1, tooltip: "Same seed + image = same mesh take." }),
   // Select knobs coerce wire strings at compose (the skin map_size
   // precedent) — enum hints ride extra.options, never validation.
-  resolution: z.number().default(1024).description(
-    'Upsample target (official pins 1536). All tiles snap to /64.').extra(
-      'extra', { options: [512, 1024, 1536] }),
-  steps: z.number().min(4).max(60).default(12).description(
-    'STRUCTURE stage steps (the lift). Shape + texture have their own.'),
-  cfg: z.number().min(1).max(15).default(7.5).description(
-    'Structure-stage guidance. 7.5 is the official pin.'),
-  bg_removal: z.union([z.const('auto'), z.const('on'), z.const('off')])
-    .default('auto').description(
-      'auto/on: birefnet cuts the background (recommended for photos).'),
-  camera_fov: z.union([
-    z.const('auto'), z.const('35'), z.const('49.13'),
-  ]).default('auto').description(
-    'Pixal3D only — per-image horizontal FoV fed to MoGe depth.').extra(
-      'extra', { families: ['pixal3d'] }),
-  shape_steps: z.number().min(4).max(60).default(20).description(
-    'Shape-stage steps. 20 is the official template pin.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  shape_cfg: z.number().min(1).max(15).default(7.5).description(
-    'Shape-stage guidance. 7.5 is the official template pin.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  tex1_steps: z.number().min(4).max(60).default(12).description(
-    'First texture pass steps (upsampled latent).').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  tex1_cfg: z.number().min(1).max(15).default(7.5).description(
-    'First texture pass guidance. 7.5 is the official pin.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  tex2_steps: z.number().min(4).max(60).default(12).description(
-    'Second texture pass steps (raw unet — the detail pass).').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  tex2_cfg: z.number().min(1).max(15).default(1.0).description(
-    'Second texture pass guidance. 1.0 is the official pin.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  remesh_resolution: z.number().min(128).max(2048).default(768).description(
-    'UDF remesh voxel resolution. 768 is the official pin.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  decimate_faces: z.number().min(10000).max(2000000).default(700000).description(
-    'Exact face count after decimation (midpoint smooths shading loss).').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  smooth_angle: z.number().min(0).max(180).default(180).description(
-    'Normal-smoothing crease angle, applied before decimation.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  atlas_size: z.number().default(4096).description(
-    'Unwrap + baked color atlas resolution. 4096 is the official pin.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'], options: [2048, 4096] }),
-  ao_size: z.number().default(1024).description(
-    'Ambient-occlusion bake resolution. 1024 is the official pin.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'], options: [512, 1024] }),
-  normal_size: z.number().default(2048).description(
-    'Normal-map bake resolution. 2048 is the official pin.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'], options: [1024, 2048] }),
-  struct_sampler: z.string().default('euler').description(
-    'Structure-stage sampler. euler is the official pin.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  struct_scheduler: z.string().default('normal').description(
-    'Structure-stage scheduler. normal is the official pin.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  shape_sampler: z.string().default('euler').description(
-    'Shape-stage sampler. euler is the official pin.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  shape_scheduler: z.string().default('normal').description(
-    'Shape-stage scheduler. normal is the official pin.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  tex1_sampler: z.string().default('euler').description(
-    'First texture pass sampler. euler is the official pin.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  tex1_scheduler: z.string().default('simple').description(
-    'First texture pass scheduler. simple is the official pin.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  tex2_sampler: z.string().default('euler').description(
-    'Second texture pass sampler. euler is the official pin.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  tex2_scheduler: z.string().default('normal').description(
-    'Second texture pass scheduler. normal is the official pin.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  sd3_shift: z.number().min(1.0).max(10.0).default(5.0).description(
-    'ModelSamplingSD3 shift on the structure arm.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  rescale_struct: z.number().min(0.1).max(1.0).default(0.7).description(
-    'Structure-arm RescaleCFG multiplier. 0.7 is the official pin.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  rescale_shape: z.number().min(0.1).max(1.0).default(0.5).description(
-    'Shape-arm RescaleCFG multiplier (also feeds tex passes).').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  override_struct: z.number().min(0.0).max(1.0).default(0.667).description(
-    'Structure-arm CFGOverride start percent. 0.667 is the official pin.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
-  override_shape: z.number().min(0.0).max(1.0).default(0.769).description(
-    'Shape-arm CFGOverride start percent. 0.769 is the official pin.').extra(
-      'extra', { families: ['trellis2-native', 'pixal3d'] }),
+  resolution: vocabulary(["512", "1024", "1536"]).description("Resolution").default(1024).extra('extra', { order: 0, group: "generation", width: 1, tooltip: "Upsample target (official pins 1536). All tiers run the full official chain — upsample + both texture passes + remesh tail.", wtype: 'select' }),
+  steps: z.number().description("Steps").min(4).max(60).step(1).default(12).extra('extra', { order: 1, group: "generation", width: 1, tooltip: "STRUCTURE stage steps (the lift). Shape + texture stages ride their own knobs in the Stage section.", wtype: 'number' }),
+  cfg: z.number().description("CFG").min(1).max(15).step(0.5).default(7.5).extra('extra', { order: 2, group: "generation", width: 1, tooltip: "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance — blobby trash out of the box). Lower runs looser." }),
+  bg_removal: vocabulary(["auto", "on", "off"]).description("Background removal").default("auto").extra('extra', { order: 3, group: "generation", width: 1, tooltip: "auto/on: birefnet cuts the background (recommended). off: feed a pre-cleaned or alpha-cut image straight to conditioning.", wtype: 'select' }),
+  camera_fov: vocabulary(["auto", "35", "49.13", "60", "75", "90"]).description("Camera FoV").default("auto").extra('extra', { order: 4, group: "generation", width: 1, tooltip: "Pixal3D only — per-image horizontal FoV feeding the camera transform matrix. auto: MoGeInference estimates from the source image (recommended); a literal degree value skips MoGe (operator-vouched camera, e.g. calibrated).", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8'],  wtype: 'select' }),
+  shape_steps: z.number().description("Shape steps").min(4).max(60).step(1).default(20).extra('extra', { order: 0, group: "stage", width: 1, tooltip: "Shape-stage steps. 20 is the official template calibration.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'],  wtype: 'number' }),
+  shape_cfg: z.number().description("Shape CFG").min(1).max(15).step(0.5).default(7.5).extra('extra', { order: 1, group: "stage", width: 1, tooltip: "Shape-stage guidance. 7.5 is the official template calibration.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'] }),
+  tex1_steps: z.number().description("Texture pass 1 steps").min(4).max(60).step(1).default(12).extra('extra', { order: 2, group: "stage", width: 1, tooltip: "First texture pass steps (upsampled latent, simple scheduler). 12 is the official calibration.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'],  wtype: 'number' }),
+  tex1_cfg: z.number().description("Texture pass 1 CFG").min(1).max(15).step(0.5).default(7.5).extra('extra', { order: 3, group: "stage", width: 1, tooltip: "First texture pass guidance. 7.5 is the official calibration.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'] }),
+  tex2_steps: z.number().description("Texture pass 2 steps").min(4).max(60).step(1).default(12).extra('extra', { order: 4, group: "stage", width: 1, tooltip: "Second texture pass steps (raw unet — the detail pass). 12 is the official calibration.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'],  wtype: 'number' }),
+  tex2_cfg: z.number().description("Texture pass 2 CFG").min(1).max(15).step(0.5).default(1).extra('extra', { order: 5, group: "stage", width: 1, tooltip: "Second texture pass guidance. 1.0 is the official calibration (near-verbatim detail sampling).", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'] }),
+  remesh_resolution: z.number().description("Remesh resolution").min(128).max(2048).step(64).default(768).extra('extra', { order: 0, group: "mesh", width: 1, tooltip: "UDF remesh voxel resolution. 768 is the official calibration; lower = lighter mesh, coarser surface.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'],  wtype: 'number' }),
+  decimate_faces: z.number().description("Decimate faces").min(10000).max(2000000).step(10000).default(700000).extra('extra', { order: 1, group: "mesh", width: 1, tooltip: "Exact face count after decimation (midpoint placement). 700000 is the official calibration.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'],  wtype: 'number' }),
+  smooth_angle: z.number().description("Smooth angle").min(0).max(180).step(5).default(180).extra('extra', { order: 2, group: "mesh", width: 1, tooltip: "Normal-smoothing crease angle, applied before unwrap and after texturing. 180 is the official calibration.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'] }),
+  atlas_size: vocabulary(["2048", "4096"]).description("Atlas size").default(4096).extra('extra', { order: 0, group: "bake", width: 1, tooltip: "Unwrap + baked color atlas resolution. 4096 is the official calibration (VRAM-heavy); 2048 is the lighter fallback.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'],  wtype: 'select' }),
+  ao_size: vocabulary(["512", "1024"]).description("AO bake size").default(1024).extra('extra', { order: 1, group: "bake", width: 1, tooltip: "Ambient-occlusion bake resolution. 1024 is the official calibration.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'],  wtype: 'select' }),
+  normal_size: vocabulary(["1024", "2048"]).description("Normal bake size").default(2048).extra('extra', { order: 2, group: "bake", width: 1, tooltip: "Normal-map bake resolution. 2048 is the official calibration.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'],  wtype: 'select' }),
+  struct_sampler: SAMPLERS.description("Structure sampler").default("euler").extra('extra', { order: 0, group: "lab", width: 1, tooltip: "Structure-stage sampler. euler is the official template pick.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'],  wtype: 'select' }),
+  struct_scheduler: SCHEDULERS.description("Structure scheduler").default("normal").extra('extra', { order: 1, group: "lab", width: 1, tooltip: "Structure-stage scheduler. normal is the official pick.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'],  wtype: 'select' }),
+  shape_sampler: SAMPLERS.description("Shape sampler").default("euler").extra('extra', { order: 2, group: "lab", width: 1, tooltip: "Shape-stage sampler. euler is the official pick.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'],  wtype: 'select' }),
+  shape_scheduler: SCHEDULERS.description("Shape scheduler").default("normal").extra('extra', { order: 3, group: "lab", width: 1, tooltip: "Shape-stage scheduler. normal is the official pick.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'],  wtype: 'select' }),
+  tex1_sampler: SAMPLERS.description("Texture pass 1 sampler").default("euler").extra('extra', { order: 4, group: "lab", width: 1, tooltip: "First texture pass sampler. euler is the official pick.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'],  wtype: 'select' }),
+  tex1_scheduler: SCHEDULERS.description("Texture pass 1 scheduler").default("simple").extra('extra', { order: 5, group: "lab", width: 1, tooltip: "First texture pass scheduler. simple is the official pick (the only non-normal scheduler in the template).", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'],  wtype: 'select' }),
+  tex2_sampler: SAMPLERS.description("Texture pass 2 sampler").default("euler").extra('extra', { order: 6, group: "lab", width: 1, tooltip: "Second texture pass sampler. euler is the official pick.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'],  wtype: 'select' }),
+  tex2_scheduler: SCHEDULERS.description("Texture pass 2 scheduler").default("normal").extra('extra', { order: 7, group: "lab", width: 1, tooltip: "Second texture pass scheduler. normal is the official pick.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'],  wtype: 'select' }),
+  sd3_shift: z.number().description("SD3 shift").min(1).max(10).step(0.5).default(5).extra('extra', { order: 8, group: "lab", width: 1, tooltip: "ModelSamplingSD3 shift on the structure arm. 5.0 is the official template calibration.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'],  wtype: 'number' }),
+  rescale_struct: z.number().description("Structure rescale").min(0.1).max(1).step(0.05).default(0.7).extra('extra', { order: 9, group: "lab", width: 1, tooltip: "Structure-arm RescaleCFG multiplier. 0.7 is the official calibration.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'] }),
+  rescale_shape: z.number().description("Shape rescale").min(0.1).max(1).step(0.05).default(0.5).extra('extra', { order: 10, group: "lab", width: 1, tooltip: "Shape-arm RescaleCFG multiplier (also feeds texture pass 1 — one node). 0.5 is the official calibration.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'] }),
+  override_struct: z.number().description("Structure override %").min(0).max(1).step(0.001).default(0.667).extra('extra', { order: 11, group: "lab", width: 1, tooltip: "Structure-arm CFGOverride start percent. 0.667 is the official calibration.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'] }),
+  override_shape: z.number().description("Shape override %").min(0).max(1).step(0.001).default(0.769).extra('extra', { order: 12, group: "lab", width: 1, tooltip: "Shape-arm CFGOverride start percent. 0.769 is the official calibration.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'] }),
   // NO filename_prefix (py card: "the run routes outputs by run id
   // (compose stamps the prefix internally). The schema still admits
   // the key — old drafts keep working" — admission is schemastery's
@@ -167,7 +101,7 @@ const schema = z.object({
 export const inject = ['comfyui']
 
 export function apply(ctx: Context): void {
-  ctx.comfyui.registerCard({
+  ctx.effect(() => ctx.comfyui.registerCard({
     id: 'img-to-mesh',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'img-to-mesh',
@@ -204,5 +138,5 @@ export function apply(ctx: Context): void {
         trellisArm(g, p, model)
       }
     },
-  })
+  }))
 }
