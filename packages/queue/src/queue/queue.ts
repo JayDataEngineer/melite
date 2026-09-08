@@ -112,7 +112,6 @@ import { PyNum } from "@melite/gateway-core";
 export const LOCK_NAME: string = "gateway.lock";
 
 /** Worker poll cadence (worker 1354: asyncio.sleep(0.05)). */
-export const WORKER_POLL_MS: number = 50;
 
 /** Registry bound (MAX_SETTLED_RUNS 2187: settled completed/failed
  *  rows past 500 leave; the sidecar stays SSOT). */
@@ -1626,108 +1625,4 @@ export function bootQueue(
     nowS,
   );
   return { resurrected: live.length, swept: sweptIds.length, live };
-}
-
-// ── worker loop (worker 1353-1371, engine injected) ──────────────
-
-export interface WorkerHooks {
-  /** Claim the head (tryDequeue) — Null when idle. */
-  readonly claim: () => QueueRunRow | null;
-  /** Release the active claim. */
-  readonly release: () => void;
-  /** Execute one claimed run; resolve on success, reject with the
-   *  engine error (the worker maps it to failed "<Type>: <msg>"). */
-  readonly execute: (run: QueueRunRow) => Promise<void>;
-  /** Observe the settlement (sidecar/ledger/broadcast live here —
-   *  the loop never blocks on them failing: RESILIENCE LAW). */
-  readonly onSettled?: (
-    run: QueueRunRow,
-    status: LifecycleState,
-    errorText: string,
-  ) => void;
-  readonly pollMs?: number;
-}
-
-/** The serial loop (1353-1371): poll every 50 ms; while active set
- *  or order empty, idle; else pop the head, run inline, settle
- *  (stopped iff the flag set), release, continue — a failing run
- *  settles and the loop CONTINUES (the gateway never crashes on a
- *  bad run). Returns a stop handle.
- *
- *  TIMER AUDIT (platform-tier stroke): this 50 ms poll is the ONLY
- *  hand-set timer in the gateway (no ledger ticks, queue timeouts,
- *  or reaps exist — resurrect/sweep/ledger are synchronous boot
- *  scans). The cadence mirrors py worker 1353-1360
- *  asyncio.sleep(0.05) via WORKER_POLL_MS and the queue parity wall
- *  drives startWorker(core, hooks) with NO context (Q03) — so the
- *  setInterval fallback below is wall-pinned and stays. Pass a
- *  plugin ctx to ride the Timer plugin instead (ctx.interval —
- *  disposable, fiber-tied; stop() disposes it). */
-export function startWorker(
-  core: QueueCore,
-  hooks: WorkerHooks,
-  ctx?: Context,
-): {
-  stop: () => void;
-} {
-  const pollMs: number = hooks.pollMs ?? WORKER_POLL_MS;
-  let stopped: boolean = false;
-  let pumping: boolean = false;
-  const errText = (exc: unknown): string => {
-    const name: string =
-      exc instanceof Error && exc.name !== "" ? exc.name : "Error";
-    const msg: string = exc instanceof Error ? exc.message : String(exc);
-    return name + ": " + msg;
-  };
-  const tick = (): void => {
-    if (stopped || pumping) return;
-    const run: QueueRunRow | null = hooks.claim();
-    if (run === null) return;
-    pumping = true;
-    void hooks
-      .execute(run)
-      .then(
-        (): void => {
-          core.settleRun(run, null);
-        },
-        (exc: unknown): void => {
-          core.settleRun(run, errText(exc));
-        },
-      )
-      .then((): void => {
-        hooks.release();
-        pumping = false;
-        try {
-          hooks.onSettled?.(run, run.status, run.error);
-        } catch {
-          /* observers never sink the loop */
-        }
-      });
-  };
-  const disposeTimer: () => void = armPoll(tick, pollMs, ctx);
-  return {
-    stop: (): void => {
-      stopped = true;
-      disposeTimer();
-    },
-  };
-}
-
-/** Arm the worker poll: the platform Timer (ctx.interval — the
- *  entry rides the owning fiber and dies with it) when a plugin
- *  context is handed in, else the wall-pinned setInterval shape
- *  (Q03 calls without a context; the cadence mirrors py
- *  asyncio.sleep(0.05) either way). */
-function armPoll(tick: () => void, pollMs: number, ctx?: Context): () => void {
-  if (ctx !== undefined && typeof ctx.interval === "function") {
-    try {
-      return ctx.interval(tick, pollMs);
-    } catch {
-      /* no owning fiber — fall through to the pinned shape */
-    }
-  }
-  const timer = setInterval(tick, pollMs);
-  return (): void => {
-    clearInterval(timer);
-  };
 }
