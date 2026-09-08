@@ -575,11 +575,10 @@
    "id": "moss-sfx",
    "family": "moss-sfx",
    "genre": "audio",
-   "label": "MOSS SFX Native",
-   "description": "sound-effect generation — describe the SOUND not the scene",
+   "label": "MOSS-SFX v2 Standard Native",
+   "description": "MOSS-SFX v2 sound-effect generation — describe the SOUND not the scene",
    "source": {
-    "type": "huggingface",
-    "repo_id": "audio-cpp/audio.cpp-gguf"
+    "type": ""
    },
    "defaults": {},
    "engine": "comfyui",
@@ -2074,7 +2073,7 @@
    "genre": "3d"
   },
   "moss-sfx": {
-   "label": "MOSS SFX Native",
+   "label": "MOSS-SFX v2 Standard Native",
    "genre": "audio"
   },
   "music3": {

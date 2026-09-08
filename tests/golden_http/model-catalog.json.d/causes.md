@@ -20,3 +20,9 @@ The engine rides the variant (comfyui sfx + audio_cpp GGUF), so
 the served set is unchanged at 68 (moss-sfx serves; the GGUF
 three ride frozen). Registry 53→51, routes 92→93. Regolded from
 the live serve; walls 17/17.
+
+## 2026-09-08 — sfx OUT, tts-local IN (operator correction)
+
+Same swap as the families golden: moss = tts/voicegen/tts-local
+(audio_cpp throughout); moss-sfx its own comfyui model. Served
+set unchanged at 68. Walls 17/17.

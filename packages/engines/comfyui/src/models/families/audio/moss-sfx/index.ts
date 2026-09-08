@@ -1,4 +1,4 @@
-// families/audio/moss-tts-local.ts — the moss-tts-local family declaration
+// families/audio/moss-sfx.ts — the moss-sfx family declaration
 // (generated 2026-09-08 from the frozen registry + facts, then
 // hand-owned: this file IS the family's truth — a change here is a
 // family change, nothing else moves).
@@ -10,18 +10,10 @@ import type { Plugin } from "@deepseek-ai/cordis";
 import type { ModelDecl } from "../../../contract.ts";
 
 export const DECL: ModelDecl = {
-  "id": "moss-tts-local",
-  "label": "MOSS-TTS Local v1.5",
-  "description": "MOSS-TTS Local Transformer v1.5",
-  "engine": "audio_cpp",
-  "defaults": {
-    "backend": "cuda"
-  },
-  "source": {
-    "type": "huggingface",
-    "repo_id": "audio-cpp/audio.cpp-gguf",
-    "note": ""
-  },
+  "id": "moss-sfx",
+  "label": "MOSS-SFX v2",
+  "description": "MOSS-SFX v2 sound-effect generation — describe the SOUND not the scene",
+  "engine": "comfyui",
   "base_body": "",
   "genre": "audio",
   "mods": [],
@@ -31,17 +23,14 @@ export const DECL: ModelDecl = {
       "label": "Standard",
       "hint": "",
       "group": "Variant",
-      "route": "moss-tts-local",
+      "route": "moss-sfx",
       "engine": "",
       "resolver_defaults": {},
       "cells": [
         {
-          "source": {
-            "filename": "MOSS-TTS-Local-v1.5-GGUF"
-          },
           "quant": "native",
           "label": "Native",
-          "route": "moss-tts-local",
+          "route": "moss-sfx",
           "engine": "",
           "resolver_defaults": {},
           "hide_from_dropdown": false
@@ -60,17 +49,54 @@ export const DECL: ModelDecl = {
       "wire_defaults": {}
     }
   ],
-  "variant_groups": [],
+  "variant_groups": [
+    {
+      "id": "Variant",
+      "label": "Variant",
+      "tooltip": "",
+      "default": ""
+    },
+    {
+      "id": "Quant",
+      "label": "Quant",
+      "tooltip": "",
+      "default": ""
+    },
+    {
+      "id": "Recipe",
+      "label": "Recipe",
+      "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+      "default": "default"
+    }
+  ],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
-  "has_rubric": false
+  "has_rubric": false,
+  "lane_inputs": {
+    "background_removal": "",
+    "checkpoint": "",
+    "clip_type": null,
+    "clip_vision": "",
+    "family": "moss_sfx_v2",
+    "latent_node": "EmptySD3LatentImage",
+    "model_path": "MOSS-SoundEffect-v2.0-src",
+    "sampling_shift": 0,
+    "text_encoder": "",
+    "texture_vae": "",
+    "unet": null,
+    "unet_quant": "",
+    "unet_unconditional": "",
+    "unet_variant": "",
+    "vae": "",
+    "weightless": false
+  }
 } as unknown as ModelDecl;
 
 export const family: Plugin = {
-  name: "family-moss-tts-local",
+  name: "family-moss-sfx",
   inject: ["models"],
   apply(ctx): void {
     ctx.effect(() => ctx.models.registerFamily(DECL));

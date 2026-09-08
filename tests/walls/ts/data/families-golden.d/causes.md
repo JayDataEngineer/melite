@@ -43,3 +43,11 @@ variant — comfyui sfx + audio_cpp GGUF). Registry 53→51, routes
 frozen). Plus: recipe-row `source` blocks stripped from
 ace-step/moss-tts-local/txt2music (a recipe stamps picks, never
 downloads — ONLY THE QUANT CARRIES THE DOWNLOAD).
+
+## 2026-09-08 — sfx OUT, tts-local IN (operator correction)
+
+MOSS-SFX v2 is a DIFFERENT architecture — never a moss variant.
+Restored as its own model (own lane table, own comfyui engine);
+moss-tts-local folds INTO moss instead (same GGUF home, same
+runtime — tts / voicegen / tts-local). Registry stays 51, routes
+stay 93, served stays 68 — a swap, not a fold.

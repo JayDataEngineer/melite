@@ -1,20 +1,20 @@
 // families/audio/moss.ts — the MOSS family declaration: ONE model,
-// three variants (the meld 2026-09-08 — operator order: combine
-// moss-sfx + moss-tts + moss_voicegenerator; they are one model).
+// three variants (the meld 2026-09-08 — operator order: moss-tts +
+// moss_voicegenerator + moss-tts-local are one model: same
+// architecture, same GGUF home. MOSS-SFX v2 is a DIFFERENT
+// architecture — its own model, never a variant here).
 //
 // THE MUTATION SHAPE (operator orders 2026-09-08): the atom declares
-// its identity ONCE (label 'MOSS', the GGUF repo home shared by the
-// tts/voice pair); variants are delta tokens; cells are QUANT
-// tokens and ONLY THE QUANT CARRIES THE DOWNLOAD. The family spans
-// runtimes — the ENGINE rides the variant (comfyui sfx + audio_cpp
-// GGUF), never the atom.
+// its identity ONCE (label 'MOSS', the GGUF repo + runtime shared by
+// all three); variants are delta tokens; cells are QUANT tokens and
+// ONLY THE QUANT CARRIES THE DOWNLOAD.
 //
 //   variant tts         (Nano 100M)
 //     cell native       → route 'moss-tts'        (TTS Nano GGUF)
 //   variant voicegen    (VoiceGenerator)
 //     cell native       → route 'moss_voicegenerator' (VoiceGenerator GGUF)
-//   variant sfx         (sound effects, the comfyui lane)
-//     cell native       → route 'moss-sfx'
+//   variant tts-local   (Local Transformer v1.5)
+//     cell native       → route 'moss-tts-local'  (Local v1.5 GGUF)
 //
 // The three flat ids survive as cell routes (the
 // addressing-survival law — every runtime address unchanged).
@@ -24,8 +24,11 @@ import type { ModelDecl } from "../../../contract.ts";
 export const DECL: ModelDecl = {
   "id": "moss",
   "label": "MOSS",
-  "description": "MOSS audio — text-to-speech, voice design, and sound effects",
-  "engine": "",
+  "description": "MOSS text-to-speech — Nano, VoiceGenerator, and Local Transformer",
+  "engine": "audio_cpp",
+  "defaults": {
+    "backend": "cuda"
+  },
   "source": {
     "type": "huggingface",
     "repo_id": "audio-cpp/audio.cpp-gguf",
@@ -42,10 +45,8 @@ export const DECL: ModelDecl = {
       "hint": "",
       "group": "Variant",
       "route": "moss-tts",
-      "engine": "audio_cpp",
-      "resolver_defaults": {
-        "backend": "cuda"
-      },
+      "engine": "",
+      "resolver_defaults": {},
       "cells": [
         {
           "source": {
@@ -67,10 +68,8 @@ export const DECL: ModelDecl = {
       "hint": "",
       "group": "Variant",
       "route": "moss_voicegenerator",
-      "engine": "audio_cpp",
-      "resolver_defaults": {
-        "backend": "cuda"
-      },
+      "engine": "",
+      "resolver_defaults": {},
       "cells": [
         {
           "source": {
@@ -86,37 +85,22 @@ export const DECL: ModelDecl = {
       ]
     },
     {
-      "id": "sfx",
-      "label": "SFX",
-      "description": "sound-effect generation — describe the SOUND not the scene",
+      "id": "tts-local",
+      "label": "TTS Local",
+      "description": "the Local Transformer v1.5 checkpoint",
       "hint": "",
       "group": "Variant",
-      "route": "moss-sfx",
-      "engine": "comfyui",
+      "route": "moss-tts-local",
+      "engine": "",
       "resolver_defaults": {},
-      "lane_inputs": {
-        "background_removal": "",
-        "checkpoint": "",
-        "clip_type": null,
-        "clip_vision": "",
-        "family": "moss_sfx_v2",
-        "latent_node": "EmptySD3LatentImage",
-        "model_path": "MOSS-SoundEffect-v2.0-src",
-        "sampling_shift": 0,
-        "text_encoder": "",
-        "texture_vae": "",
-        "unet": null,
-        "unet_quant": "",
-        "unet_unconditional": "",
-        "unet_variant": "",
-        "vae": "",
-        "weightless": false
-      },
       "cells": [
         {
+          "source": {
+            "filename": "MOSS-TTS-Local-v1.5-GGUF"
+          },
           "quant": "native",
           "label": "Native",
-          "route": "moss-sfx",
+          "route": "moss-tts-local",
           "engine": "",
           "resolver_defaults": {},
           "hide_from_dropdown": false

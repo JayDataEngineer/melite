@@ -4900,6 +4900,9 @@
   "label": "MOSS TTS Nano Native",
   "description": "the Nano 100M checkpoint — plain text-to-speech",
   "engine": "audio_cpp",
+  "defaults": {
+   "backend": "cuda"
+  },
   "source": {
    "type": "huggingface",
    "repo_id": "audio-cpp/audio.cpp-gguf",
@@ -4917,10 +4920,8 @@
     "hint": "",
     "group": "Variant",
     "route": "moss-tts",
-    "engine": "audio_cpp",
-    "resolver_defaults": {
-     "backend": "cuda"
-    },
+    "engine": "",
+    "resolver_defaults": {},
     "cells": [
      {
       "source": {
@@ -4942,10 +4943,8 @@
     "hint": "",
     "group": "Variant",
     "route": "moss_voicegenerator",
-    "engine": "audio_cpp",
-    "resolver_defaults": {
-     "backend": "cuda"
-    },
+    "engine": "",
+    "resolver_defaults": {},
     "cells": [
      {
       "source": {
@@ -4961,37 +4960,22 @@
     ]
    },
    {
-    "id": "sfx",
-    "label": "SFX",
-    "description": "sound-effect generation — describe the SOUND not the scene",
+    "id": "tts-local",
+    "label": "TTS Local",
+    "description": "the Local Transformer v1.5 checkpoint",
     "hint": "",
     "group": "Variant",
-    "route": "moss-sfx",
-    "engine": "comfyui",
+    "route": "moss-tts-local",
+    "engine": "",
     "resolver_defaults": {},
-    "lane_inputs": {
-     "background_removal": "",
-     "checkpoint": "",
-     "clip_type": null,
-     "clip_vision": "",
-     "family": "moss_sfx_v2",
-     "latent_node": "EmptySD3LatentImage",
-     "model_path": "MOSS-SoundEffect-v2.0-src",
-     "sampling_shift": 0,
-     "text_encoder": "",
-     "texture_vae": "",
-     "unet": null,
-     "unet_quant": "",
-     "unet_unconditional": "",
-     "unet_variant": "",
-     "vae": "",
-     "weightless": false
-    },
     "cells": [
      {
+      "source": {
+       "filename": "MOSS-TTS-Local-v1.5-GGUF"
+      },
       "quant": "native",
       "label": "Native",
-      "route": "moss-sfx",
+      "route": "moss-tts-local",
       "engine": "",
       "resolver_defaults": {},
       "hide_from_dropdown": false
@@ -5035,102 +5019,25 @@
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
-  "has_rubric": false,
-  "defaults": {
-   "backend": "cuda"
-  }
+  "has_rubric": false
  },
  "moss-sfx": {
   "id": "moss-sfx",
-  "label": "MOSS SFX Native",
-  "description": "sound-effect generation — describe the SOUND not the scene",
+  "label": "MOSS-SFX v2 Standard Native",
+  "description": "MOSS-SFX v2 sound-effect generation — describe the SOUND not the scene",
   "engine": "comfyui",
-  "source": {
-   "type": "huggingface",
-   "repo_id": "audio-cpp/audio.cpp-gguf",
-   "note": ""
-  },
   "base_body": "",
   "genre": "audio",
   "mods": [],
   "variants": [
    {
-    "id": "tts",
-    "label": "TTS Nano",
-    "description": "the Nano 100M checkpoint — plain text-to-speech",
-    "hint": "",
-    "group": "Variant",
-    "route": "moss-tts",
-    "engine": "audio_cpp",
-    "resolver_defaults": {
-     "backend": "cuda"
-    },
-    "cells": [
-     {
-      "source": {
-       "filename": "MOSS-TTS-Nano-100M-GGUF"
-      },
-      "quant": "native",
-      "label": "Native",
-      "route": "moss-tts",
-      "engine": "",
-      "resolver_defaults": {},
-      "hide_from_dropdown": false
-     }
-    ]
-   },
-   {
-    "id": "voicegen",
-    "label": "VoiceGenerator",
-    "description": "voice design",
-    "hint": "",
-    "group": "Variant",
-    "route": "moss_voicegenerator",
-    "engine": "audio_cpp",
-    "resolver_defaults": {
-     "backend": "cuda"
-    },
-    "cells": [
-     {
-      "source": {
-       "filename": "MOSS-VoiceGenerator-GGUF"
-      },
-      "quant": "native",
-      "label": "Native",
-      "route": "moss_voicegenerator",
-      "engine": "",
-      "resolver_defaults": {},
-      "hide_from_dropdown": false
-     }
-    ]
-   },
-   {
-    "id": "sfx",
-    "label": "SFX",
-    "description": "sound-effect generation — describe the SOUND not the scene",
+    "id": "standard",
+    "label": "Standard",
     "hint": "",
     "group": "Variant",
     "route": "moss-sfx",
-    "engine": "comfyui",
+    "engine": "",
     "resolver_defaults": {},
-    "lane_inputs": {
-     "background_removal": "",
-     "checkpoint": "",
-     "clip_type": null,
-     "clip_vision": "",
-     "family": "moss_sfx_v2",
-     "latent_node": "EmptySD3LatentImage",
-     "model_path": "MOSS-SoundEffect-v2.0-src",
-     "sampling_shift": 0,
-     "text_encoder": "",
-     "texture_vae": "",
-     "unet": null,
-     "unet_quant": "",
-     "unet_unconditional": "",
-     "unet_variant": "",
-     "vae": "",
-     "weightless": false
-    },
     "cells": [
      {
       "quant": "native",
@@ -5204,6 +5111,9 @@
   "label": "MOSS TTS Nano Native",
   "description": "the Nano 100M checkpoint — plain text-to-speech",
   "engine": "audio_cpp",
+  "defaults": {
+   "backend": "cuda"
+  },
   "source": {
    "type": "huggingface",
    "repo_id": "audio-cpp/audio.cpp-gguf",
@@ -5221,10 +5131,8 @@
     "hint": "",
     "group": "Variant",
     "route": "moss-tts",
-    "engine": "audio_cpp",
-    "resolver_defaults": {
-     "backend": "cuda"
-    },
+    "engine": "",
+    "resolver_defaults": {},
     "cells": [
      {
       "source": {
@@ -5246,10 +5154,8 @@
     "hint": "",
     "group": "Variant",
     "route": "moss_voicegenerator",
-    "engine": "audio_cpp",
-    "resolver_defaults": {
-     "backend": "cuda"
-    },
+    "engine": "",
+    "resolver_defaults": {},
     "cells": [
      {
       "source": {
@@ -5265,106 +5171,9 @@
     ]
    },
    {
-    "id": "sfx",
-    "label": "SFX",
-    "description": "sound-effect generation — describe the SOUND not the scene",
-    "hint": "",
-    "group": "Variant",
-    "route": "moss-sfx",
-    "engine": "comfyui",
-    "resolver_defaults": {},
-    "lane_inputs": {
-     "background_removal": "",
-     "checkpoint": "",
-     "clip_type": null,
-     "clip_vision": "",
-     "family": "moss_sfx_v2",
-     "latent_node": "EmptySD3LatentImage",
-     "model_path": "MOSS-SoundEffect-v2.0-src",
-     "sampling_shift": 0,
-     "text_encoder": "",
-     "texture_vae": "",
-     "unet": null,
-     "unet_quant": "",
-     "unet_unconditional": "",
-     "unet_variant": "",
-     "vae": "",
-     "weightless": false
-    },
-    "cells": [
-     {
-      "quant": "native",
-      "label": "Native",
-      "route": "moss-sfx",
-      "engine": "",
-      "resolver_defaults": {},
-      "hide_from_dropdown": false
-     }
-    ]
-   },
-   {
-    "id": "default",
-    "label": "Default",
-    "hint": "The family default — no extra stamps; a fresh card lands here.",
-    "group": "Recipe",
-    "route": "",
-    "engine": "",
-    "resolver_defaults": {},
-    "cells": [],
-    "wire_defaults": {}
-   }
-  ],
-  "variant_groups": [
-   {
-    "id": "Variant",
-    "label": "Variant",
-    "tooltip": "",
-    "default": ""
-   },
-   {
-    "id": "Quant",
-    "label": "Quant",
-    "tooltip": "",
-    "default": ""
-   },
-   {
-    "id": "Recipe",
-    "label": "Recipe",
-    "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
-    "default": "default"
-   }
-  ],
-  "provisions": [],
-  "accepts": [],
-  "canvas_default": false,
-  "has_agent": false,
-  "has_inference": false,
-  "has_rubric": false,
-  "defaults": {
-   "backend": "cuda"
-  }
- },
- "moss-tts-local": {
-  "id": "moss-tts-local",
-  "label": "MOSS-TTS Local v1.5 Standard Native",
-  "description": "MOSS-TTS Local Transformer v1.5",
-  "engine": "audio_cpp",
-  "defaults": {
-   "backend": "cuda"
-  },
-  "source": {
-   "type": "huggingface",
-   "repo_id": "audio-cpp/audio.cpp-gguf",
-   "note": "",
-   "filename": "MOSS-TTS-Local-v1.5-GGUF"
-  },
-  "base_body": "",
-  "genre": "audio",
-  "mods": [],
-  "variants": [
-   {
-    "id": "standard",
-    "label": "Standard",
+    "id": "tts-local",
+    "label": "TTS Local",
+    "description": "the Local Transformer v1.5 checkpoint",
     "hint": "",
     "group": "Variant",
     "route": "moss-tts-local",
@@ -5396,7 +5205,26 @@
     "wire_defaults": {}
    }
   ],
-  "variant_groups": [],
+  "variant_groups": [
+   {
+    "id": "Variant",
+    "label": "Variant",
+    "tooltip": "",
+    "default": ""
+   },
+   {
+    "id": "Quant",
+    "label": "Quant",
+    "tooltip": "",
+    "default": ""
+   },
+   {
+    "id": "Recipe",
+    "label": "Recipe",
+    "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+    "default": "default"
+   }
+  ],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -5404,16 +5232,19 @@
   "has_inference": false,
   "has_rubric": false
  },
- "moss_voicegenerator": {
-  "id": "moss_voicegenerator",
-  "label": "MOSS VoiceGenerator Native",
-  "description": "voice design",
+ "moss-tts-local": {
+  "id": "moss-tts-local",
+  "label": "MOSS TTS Local Native",
+  "description": "the Local Transformer v1.5 checkpoint",
   "engine": "audio_cpp",
+  "defaults": {
+   "backend": "cuda"
+  },
   "source": {
    "type": "huggingface",
    "repo_id": "audio-cpp/audio.cpp-gguf",
    "note": "",
-   "filename": "MOSS-VoiceGenerator-GGUF"
+   "filename": "MOSS-TTS-Local-v1.5-GGUF"
   },
   "base_body": "",
   "genre": "audio",
@@ -5426,10 +5257,8 @@
     "hint": "",
     "group": "Variant",
     "route": "moss-tts",
-    "engine": "audio_cpp",
-    "resolver_defaults": {
-     "backend": "cuda"
-    },
+    "engine": "",
+    "resolver_defaults": {},
     "cells": [
      {
       "source": {
@@ -5451,10 +5280,8 @@
     "hint": "",
     "group": "Variant",
     "route": "moss_voicegenerator",
-    "engine": "audio_cpp",
-    "resolver_defaults": {
-     "backend": "cuda"
-    },
+    "engine": "",
+    "resolver_defaults": {},
     "cells": [
      {
       "source": {
@@ -5470,37 +5297,22 @@
     ]
    },
    {
-    "id": "sfx",
-    "label": "SFX",
-    "description": "sound-effect generation — describe the SOUND not the scene",
+    "id": "tts-local",
+    "label": "TTS Local",
+    "description": "the Local Transformer v1.5 checkpoint",
     "hint": "",
     "group": "Variant",
-    "route": "moss-sfx",
-    "engine": "comfyui",
+    "route": "moss-tts-local",
+    "engine": "",
     "resolver_defaults": {},
-    "lane_inputs": {
-     "background_removal": "",
-     "checkpoint": "",
-     "clip_type": null,
-     "clip_vision": "",
-     "family": "moss_sfx_v2",
-     "latent_node": "EmptySD3LatentImage",
-     "model_path": "MOSS-SoundEffect-v2.0-src",
-     "sampling_shift": 0,
-     "text_encoder": "",
-     "texture_vae": "",
-     "unet": null,
-     "unet_quant": "",
-     "unet_unconditional": "",
-     "unet_variant": "",
-     "vae": "",
-     "weightless": false
-    },
     "cells": [
      {
+      "source": {
+       "filename": "MOSS-TTS-Local-v1.5-GGUF"
+      },
       "quant": "native",
       "label": "Native",
-      "route": "moss-sfx",
+      "route": "moss-tts-local",
       "engine": "",
       "resolver_defaults": {},
       "hide_from_dropdown": false
@@ -5544,10 +5356,133 @@
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
-  "has_rubric": false,
+  "has_rubric": false
+ },
+ "moss_voicegenerator": {
+  "id": "moss_voicegenerator",
+  "label": "MOSS VoiceGenerator Native",
+  "description": "voice design",
+  "engine": "audio_cpp",
   "defaults": {
    "backend": "cuda"
-  }
+  },
+  "source": {
+   "type": "huggingface",
+   "repo_id": "audio-cpp/audio.cpp-gguf",
+   "note": "",
+   "filename": "MOSS-VoiceGenerator-GGUF"
+  },
+  "base_body": "",
+  "genre": "audio",
+  "mods": [],
+  "variants": [
+   {
+    "id": "tts",
+    "label": "TTS Nano",
+    "description": "the Nano 100M checkpoint — plain text-to-speech",
+    "hint": "",
+    "group": "Variant",
+    "route": "moss-tts",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [
+     {
+      "source": {
+       "filename": "MOSS-TTS-Nano-100M-GGUF"
+      },
+      "quant": "native",
+      "label": "Native",
+      "route": "moss-tts",
+      "engine": "",
+      "resolver_defaults": {},
+      "hide_from_dropdown": false
+     }
+    ]
+   },
+   {
+    "id": "voicegen",
+    "label": "VoiceGenerator",
+    "description": "voice design",
+    "hint": "",
+    "group": "Variant",
+    "route": "moss_voicegenerator",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [
+     {
+      "source": {
+       "filename": "MOSS-VoiceGenerator-GGUF"
+      },
+      "quant": "native",
+      "label": "Native",
+      "route": "moss_voicegenerator",
+      "engine": "",
+      "resolver_defaults": {},
+      "hide_from_dropdown": false
+     }
+    ]
+   },
+   {
+    "id": "tts-local",
+    "label": "TTS Local",
+    "description": "the Local Transformer v1.5 checkpoint",
+    "hint": "",
+    "group": "Variant",
+    "route": "moss-tts-local",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [
+     {
+      "source": {
+       "filename": "MOSS-TTS-Local-v1.5-GGUF"
+      },
+      "quant": "native",
+      "label": "Native",
+      "route": "moss-tts-local",
+      "engine": "",
+      "resolver_defaults": {},
+      "hide_from_dropdown": false
+     }
+    ]
+   },
+   {
+    "id": "default",
+    "label": "Default",
+    "hint": "The family default — no extra stamps; a fresh card lands here.",
+    "group": "Recipe",
+    "route": "",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [],
+    "wire_defaults": {}
+   }
+  ],
+  "variant_groups": [
+   {
+    "id": "Variant",
+    "label": "Variant",
+    "tooltip": "",
+    "default": ""
+   },
+   {
+    "id": "Quant",
+    "label": "Quant",
+    "tooltip": "",
+    "default": ""
+   },
+   {
+    "id": "Recipe",
+    "label": "Recipe",
+    "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+    "default": "default"
+   }
+  ],
+  "provisions": [],
+  "accepts": [],
+  "canvas_default": false,
+  "has_agent": false,
+  "has_inference": false,
+  "has_rubric": false
  },
  "music3": {
   "id": "music3",

@@ -44,12 +44,12 @@ describe("the family table ≡ golden (the godfile retirement wall)", () => {
   });
 
   it("the compose models carry lane_inputs (the facts splice table)", (): void => {
-    // 30 flat carriers − the folded tts pair − the melded moss
-    // lane table (an sfx-variant stamp now, not a model key) = 28
-    // MODEL declarations; their routes inherit the lane table at
-    // the derived read (the route view carries 54).
+    // 30 flat carriers − the folded tts pair (one model now) = 29
+    // MODEL declarations (MOSS-SFX v2 is its own architecture, its
+    // own model, its own lane table); their routes inherit the lane
+    // table at the derived read (the route view carries 54).
     const withLanes = registryIds().filter((id) => getModel(id).lane_inputs !== undefined);
-    assert.equal(withLanes.length, 28);
+    assert.equal(withLanes.length, 29);
     assert.ok(modelIds().filter((id) => getModel(id).lane_inputs !== undefined).length > withLanes.length,
       "the derived route view inherits lane_inputs (the cascade)");
   });

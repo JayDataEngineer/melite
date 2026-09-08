@@ -21,7 +21,7 @@ import { family as trellis2Native } from "./3d/trellis2-native/index.ts";
 import { family as trellis_native } from "./3d/trellis_native/index.ts";
 import { family as aceStep } from "./audio/ace-step/index.ts";
 import { family as moss } from "./audio/moss/index.ts";
-import { family as mossTtsLocal } from "./audio/moss-tts-local/index.ts";
+import { family as mossSfx } from "./audio/moss-sfx/index.ts";
 import { family as music3 } from "./audio/music3/index.ts";
 import { family as qwen3Tts } from "./audio/qwen3-tts/index.ts";
 import { family as qwen3TtsVoicedesign } from "./audio/qwen3-tts-voicedesign/index.ts";
@@ -74,7 +74,7 @@ export const FAMILY_PLUGINS: Plugin[] = [
   trellis_native,
   aceStep,
   moss,
-  mossTtsLocal,
+  mossSfx,
   music3,
   qwen3Tts,
   qwen3TtsVoicedesign,
