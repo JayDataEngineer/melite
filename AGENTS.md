@@ -111,3 +111,28 @@
   ride their ctx.tools/ctx.extend/system-prompt machinery when the
   estate mounts as plugins; the API-side disclosure ladder remains
   the heterogeneous-consumer surface meanwhile.
+
+## NO-ESTATE-PYTHON LAW (operator order, 2026-09-08, verbatim intent)
+
+> "WE NEVER EVER WRITE ANY PYTHON. EXCEPT FOR VENDORED COMFYUI
+>  EXTENSIONS. COMFYUI AND COMFYUI MANAGER SERVE AS ALL THE [REDACTED 2026-11-05]
+>  PYTHON. THEY OFFER API, THAT WE CONNECT TO. VIA. CORDIS."
+
+- The estate writes ZERO Python. The only Python in the tree is
+  (a) third-party engine/manager packages (ComfyUI, ComfyUI-Manager,
+  comfy-mcp, comfy-cli, torch — the base env, never estate code)
+  and (b) vendored ComfyUI extensions (upstream engine
+  functionality, per LAW 0 — never estate logic in disguise).
+- ComfyUI + ComfyUI-Manager ARE the Python: the estate reaches them
+  exclusively through their APIs (HTTP `/prompt`, MCP tools,
+  manager install rail) via Cordis plugins. No Python shim, no
+  subprocess bridge, no `spawnSync(python ...)` — a TS door that
+  shells to Python is a defect, not a pattern.
+- Consequence (ordered, queued): every estate-authored Python
+  module dies — `infra/python/` libs (`manage`, `flow`,
+  `editor_*`, `plugins`, `melite_*`, `stage_params`,
+  `artifact_refs`, ...), the `action_cards/*/card.py+model.py`
+  authoring plane, and the wall-support imports that reach them.
+  Card graphs become Cordis/TS declarations; orchestration rides
+  the MCP-as-cards rail. Walls pin the new shapes; the old modules
+  are deleted, never ported line-for-line.

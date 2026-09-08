@@ -26,7 +26,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[2]
-VENV_PY = REPO / ".venv" / "bin" / "python"
+VENV_PY = REPO / "infra" / "python" / ".venv" / "bin" / "python"
 
 # Suites that are NOT yet converted to native pytest — they run as
 # subprocesses. Converted suites (test_artifact_routing, test_studio_slots,

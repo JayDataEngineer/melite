@@ -31,7 +31,7 @@ import pytest
 from pydantic import ValidationError
 
 REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "python"))
+sys.path.insert(0, str(REPO / "infra" / "python"))
 
 import plugins  # noqa: E402
 

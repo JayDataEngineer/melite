@@ -153,7 +153,7 @@ export function hQueue(): AssetResult {
   };
 }
 
-// ── C-parity text surgery (python/editor_runs.py 83-334) ───────────────
+// ── C-parity text surgery (infra/python/editor_runs.py 83-334) ───────────────
 
 /** _strtol (editor_runs.py 96-102): optional space, optional sign,
  *  then digits; 0 when no digits lead. */
@@ -321,7 +321,7 @@ function fmtStrPy(v: unknown): string {
   return String(u);
 }
 
-// ── media helpers (python/editor_runs.py 238-270, 335-444) ─────────────
+// ── media helpers (infra/python/editor_runs.py 238-270, 335-444) ─────────────
 
 /** artifact_type (editor_runs.py 272-290): estate media vocab (DATA
  *  sets) first, then json->spec, txt/md/yaml->text, else file. The

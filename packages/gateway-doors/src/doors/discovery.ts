@@ -340,7 +340,7 @@ function joinRoot(root: string, sub: string): string {
   return join(root, s);
 }
 
-/** The model_paths derivation (python/estate_config.py 228-266): the
+/** The model_paths derivation (infra/python/estate_config.py 228-266): the
  *  ROOT config's models roots (ABSOLUTE, required — missing/empty/
  *  relative dies LOUD, QUEUE LANE LAW) joined with the engine base,
  *  engine-endpoint overrides winning when set (and absolute). Reads

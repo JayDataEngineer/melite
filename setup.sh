@@ -8,7 +8,7 @@
 # fastmcp, starlette, pyyaml — the packages, in-process, never
 # shell-scripted; there is no opt-in group).
 #   Linux/macOS: ./setup.sh <command>   (verify | extensions | models | all | …)
-#   Windows:     uv run --project . py tools\provision.py <command>
+#   Windows:     uv run --project infra/python tools\provision.py <command>
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
@@ -17,5 +17,5 @@ command -v uv >/dev/null 2>&1 || {
   exit 1
 }
 
-exec uv run --project "$HERE" \
+exec uv run --project "$HERE/infra/python" \
   python "$HERE/tools/provision.py" "$@"

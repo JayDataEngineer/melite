@@ -49,7 +49,7 @@ from _anchor import REPO, boot_scratch_gateway, reap_gateway
 # Node params are JSON values (annotations only).
 type JsonValue = dict[str, JsonValue] | list[JsonValue] | str | int | float | bool | None
 
-sys.path.insert(0, str(REPO / "python"))
+sys.path.insert(0, str(REPO / "infra" / "python"))
 
 import flow as flow_mod
 import flow_graph

@@ -17,7 +17,7 @@ REPO = Path(__file__).resolve().parent.parent
 # does the same insert on boot). ONE insert, owned here. The tests/
 # dir rides along for the shared bootstrap (tests/_bootstrap.py —
 # fixture audit 2026-09-04).
-for _p in (str(REPO / "python"), str(REPO / "tests"),
+for _p in (str(REPO / "infra" / "python"), str(REPO / "tests"),
            # (2026-09-07) the fit/skin lane-lens inserts (fit_spec/
            # skin_spec in the cards' python/ dirs) died with the python
            # render plane (commit b324c480) — removed, not commented.

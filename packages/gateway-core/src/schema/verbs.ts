@@ -19,7 +19,7 @@
 //   - the mount set: models/3d/anny/model.py:110 (EstimateBody,
 //     SavePreset, LoadPreset, Dress, Prop — RigSomax + ApplySkin are
 //     DECLARED but unmounted; both still dispatch — see below).
-//   - the contract: python/melite_cards/dsl.py SubActionMod 857-869 +
+//   - the contract: infra/python/melite_cards/dsl.py SubActionMod 857-869 +
 //     VerbEngine 822-854 (exactly one of flow | local | refusal per
 //     engine; queue + local engines never mix in one verb).
 //   - the interim renderer copies (proof the verbs are wired as code

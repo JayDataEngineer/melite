@@ -19,7 +19,7 @@ import tempfile
 import unittest
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO / "python"))
+sys.path.insert(0, str(REPO / "infra" / "python"))
 
 from artifact_refs import (  # noqa: E402
     ASSET_RUNS_PREFIX,

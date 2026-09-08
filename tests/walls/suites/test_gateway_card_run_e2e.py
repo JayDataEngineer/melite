@@ -33,7 +33,7 @@ SKIPS (same doctrine as test_e2e_run.py — the data-plane walls pin
 the wire; this wall runs wherever a GPU + comfyui are wired up).
 
 Run: python3 tests/walls/suites/test_gateway_card_run_e2e.py
-  (or .venv/bin/python -m pytest tests/walls/suites/test_gateway_card_run_e2e.py -q)
+  (or infra/python/.venv/bin/python -m pytest tests/walls/suites/test_gateway_card_run_e2e.py -q)
 """
 
 import json

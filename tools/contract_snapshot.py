@@ -32,7 +32,7 @@ import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO / "python"))
+sys.path.insert(0, str(REPO / "infra" / "python"))
 
 from flow import load_flow  # noqa: E402  (path set above)
 

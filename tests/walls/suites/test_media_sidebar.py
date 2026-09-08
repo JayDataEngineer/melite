@@ -53,11 +53,11 @@ def test_kind_vocabulary_shape() -> None:
 
 def test_py_derives_from_ssot() -> None:
     kinds = _kinds()
-    sys.path.insert(0, str(REPO / "python"))
+    sys.path.insert(0, str(REPO / "infra" / "python"))
     try:
         import editor_runs
     finally:
-        sys.path.remove(str(REPO / "python"))
+        sys.path.remove(str(REPO / "infra" / "python"))
     gallery = {e for k in ("video", "image", "audio", "model") for e in kinds[k]["gallery"]}
     assert set(editor_runs._MEDIA_EXTS) == gallery
     assert set(editor_runs._IMG) == set(kinds["image"]["exts"])
@@ -143,11 +143,11 @@ def test_marker_counts_media_candidates_only() -> None:
     # "capped" = noise that hid real cap signals).
     import tempfile
 
-    sys.path.insert(0, str(REPO / "python"))
+    sys.path.insert(0, str(REPO / "infra" / "python"))
     try:
         import editor_runs
     finally:
-        sys.path.remove(str(REPO / "python"))
+        sys.path.remove(str(REPO / "infra" / "python"))
     with tempfile.TemporaryDirectory() as td:
         from pathlib import Path as P
         P(td, "_flow.json").write_text("{}", encoding="utf-8")
@@ -175,11 +175,11 @@ def test_artifacts_descend_one_level() -> None:
     # relpath the asset door serves (`..` refused at serve time).
     import tempfile
 
-    sys.path.insert(0, str(REPO / "python"))
+    sys.path.insert(0, str(REPO / "infra" / "python"))
     try:
         import editor_runs
     finally:
-        sys.path.remove(str(REPO / "python"))
+        sys.path.remove(str(REPO / "infra" / "python"))
     with tempfile.TemporaryDirectory() as td:
         from pathlib import Path as P
         P(td, "_flow.json").write_text("{}", encoding="utf-8")

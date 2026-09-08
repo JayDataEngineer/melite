@@ -2,7 +2,7 @@
 scratch-gateway mechanics (fixture audit 2026-09-04, F6/F7).
 
 Importable from every pytest context: the root conftest
-(tests/conftest.py) puts this directory on sys.path alongside python/.
+(tests/conftest.py) puts this directory on sys.path alongside infra/python/.
 The script-style walls suites reach it through the shim
 tests/walls/suites/_anchor.py, which owns the script world's path
 inserts. Nothing self-rolls a REPO anchor or a gateway boot again.

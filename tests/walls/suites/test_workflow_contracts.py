@@ -29,7 +29,7 @@ import pytest
 
 from _anchor import REPO
 
-sys.path.insert(0, str(REPO / "python"))
+sys.path.insert(0, str(REPO / "infra" / "python"))
 
 from flow import load_flow  # noqa: E402
 

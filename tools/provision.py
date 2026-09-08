@@ -81,8 +81,8 @@ FAILS = []
 
 # the ROOT config's ONE parser (inference.config.json — operator
 # order 2026-09-04: model storage configured from the project root)
-if str(REPO / "python") not in sys.path:
-    sys.path.insert(0, str(REPO / "python"))
+if str(REPO / "infra" / "python") not in sys.path:
+    sys.path.insert(0, str(REPO / "infra" / "python"))
 import estate_config  # noqa: E402
 
 # Honest typing shapes (annotation-only; no runtime behavior).
@@ -199,7 +199,7 @@ def _runtime_python(workspace: Path) -> str:
         py = Path(cb).with_name("python")
         if py.is_file():
             return str(py)
-    return str(workspace / ".venv" / "bin" / "python")
+    return str(workspace / "infra" / "python" / ".venv" / "bin" / "python")
 
 
 def _pip_install(pkgs: list[str], workspace: Path) -> bool:
@@ -853,7 +853,7 @@ def _cell_rows() -> Iterator[tuple[str, str, str, _CellArtifact]]:
     catalog's own scanner. The model.yaml-glob era was a fossil that
     matched nothing after the root reorganization (same class as the
     extension_lane bug; walled by tests)."""
-    sys.path.insert(0, str(REPO / "python"))
+    sys.path.insert(0, str(REPO / "infra" / "python"))
     from melite_models import scan_engine_models
     for mid, (_path, cls) in sorted(scan_engine_models(REPO).items()):
         for variant in getattr(cls, "variants", ()) or ():
@@ -871,7 +871,7 @@ def _provision_rows() -> Iterator[tuple[str, "Provision"]]:
     artifacts only, so Provision rows (trellis2-native's five weights,
     the anny base body) never materialized — this walk closes that
     gap through the SAME download rail."""
-    sys.path.insert(0, str(REPO / "python"))
+    sys.path.insert(0, str(REPO / "infra" / "python"))
     from melite_models import scan_engine_models
     for mid, (_path, cls) in sorted(scan_engine_models(REPO).items()):
         for prov in getattr(cls, "provisions", ()) or ():
@@ -1233,7 +1233,7 @@ def cmd_manage(argv: list[str]) -> int:
         body["nodes"] = [body["nodes"]]
     body.setdefault("wait", True)                    # CLI blocks by default
 
-    _py = str(Path(__file__).resolve().parent.parent / "python")
+    _py = str(Path(__file__).resolve().parent.parent / "infra" / "python")
     if _py not in sys.path:
         sys.path.insert(0, _py)
     import manage as _mg

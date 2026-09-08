@@ -105,7 +105,7 @@ sys.dont_write_bytecode = True
 
 PASS = FAIL = 0
 
-VENV_PY = REPO / ".venv" / "bin" / "python"
+VENV_PY = REPO / "infra" / "python" / ".venv" / "bin" / "python"
 BRIDGES_TS = REPO / "packages" / "gateway-doors" / "src" / "doors" / "bridges.ts"
 
 TOKEN = "wall-bridges-token-2026-09-07"
@@ -581,7 +581,7 @@ def main() -> int:
         probe = (
             "import { resolveManagePython } from %s;"
             "const a = resolveManagePython('/repo-x');"
-            "if (a !== '/repo-x/.venv/bin/python') {"
+            "if (a !== '/repo-x/infra/python/.venv/bin/python') {"
             "  console.error('default ' + a); process.exit(1); }"
             "process.env.MELITE_MANAGE_PYTHON = '/pin/py';"
             "const b = resolveManagePython('/repo-x');"

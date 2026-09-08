@@ -154,7 +154,7 @@ def test_variant_routes_validate_too() -> None:
 # ── E. structure pin: the hollow literal is gone from the route ────
 
 def test_no_bare_minimal_literal_on_the_serving_path() -> None:
-    src = (REPO / "python" / "editor_forms.py").read_text(encoding="utf-8")
+    src = (REPO / "infra" / "python" / "editor_forms.py").read_text(encoding="utf-8")
     assert "dict(_MINIMAL_LANE_SPEC)" not in src
     # the registry resolution precedes the probe CALL inside form_spec
     # (index the call site marker, not the def line)

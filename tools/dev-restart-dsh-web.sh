@@ -22,8 +22,8 @@
 #
 # This is the operator's "rebuild/restart" button. It does NOT
 # touch the gateway (the gateway is a separate process on :33081;
-# restart with: pkill -TERM -f 'gateway.py 33081' && setsid
-# .venv/bin/python python/gateway.py 33081).
+# restart with: systemctl --user restart inference-gateway
+# (unit: infra/inference-gateway.service).
 
 set -euo pipefail
 

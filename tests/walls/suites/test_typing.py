@@ -31,12 +31,12 @@ def check(name: str, ok: bool, detail: str = "") -> None:
 # ── the ratchet: only grows ─────────────────────────────────────────
 TARGETS = [
     # THE graph contract (compose arms ↔ gateway core)
-    "python/flow_graph.py",
+    "infra/python/flow_graph.py",
     # (PURGE S-oracle 2026-09-08: the lane-disclosure wire contract
     # retired with python/lane_wire.py — the disclosure rows are TS
     # now, pinned by tsc + golden bodies, no mypy surface.)
     # THE root config schema (pydantic flip 2026-09-05)
-    "python/estate_config.py",
+    "infra/python/estate_config.py",
     # (2026-09-07, render-plane retirement b324c480) the co_script
     # skeleton + h3 arm targets are deleted with the python render
     # plane; the TS plane is erasable-syntax (no mypy surface).
@@ -48,7 +48,7 @@ TARGETS = [
 ]
 
 # ── config cannot be quietly loosened ───────────────────────────────
-cfg = tomllib.loads((REPO / "pyproject.toml").read_text())
+cfg = tomllib.loads((REPO / "infra" / "python" / "pyproject.toml").read_text())
 my = cfg.get("tool", {}).get("mypy", {})
 check("mypy strict configured", my.get("strict") is True,
       repr(my))

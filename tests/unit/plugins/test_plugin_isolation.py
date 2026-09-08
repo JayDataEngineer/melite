@@ -65,11 +65,11 @@ def test_clean_import(surface: str) -> None:
     """The import must complete, exit 0, produce no stderr, and
     finish quickly (no hanging network calls)."""
     started = time.monotonic()
-    # python/ scripts are importable as TOP-LEVEL modules (asset_ledger,
-    # plugins, catalog, ...) when python/ itself is on sys.path. python/ is
-    # NOT a package (no __init__.py); the gateway does the same on
-    # boot.
-    code = "import sys; sys.path.insert(0, 'python'); import " + surface
+    # infra/python/ scripts are importable as TOP-LEVEL modules
+    # (asset_ledger, plugins, catalog, ...) when infra/python/ itself
+    # is on sys.path. infra/python/ is NOT a package (no __init__.py);
+    # the gateway does the same on boot.
+    code = "import sys; sys.path.insert(0, 'infra/python'); import " + surface
     proc = subprocess.run(
         [sys.executable, "-c", code],
         cwd=REPO, capture_output=True, text=True, timeout=10,
@@ -90,9 +90,9 @@ def test_clean_import(surface: str) -> None:
 
 
 # Triple-quoted with REAL newlines. The Python source the
-# subprocess runs (after sys.path is extended with the python/ dir).
+# subprocess runs (after sys.path is extended with the infra/python/ dir).
 DISCOVERY_CODE = """import sys
-sys.path.insert(0, 'python')
+sys.path.insert(0, 'infra/python')
 from plugins import iter_plugin_dirs_under
 from pathlib import Path
 n = sum(1 for _ in iter_plugin_dirs_under(Path('plugins')))

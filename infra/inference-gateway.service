@@ -1,0 +1,52 @@
+# inference-gateway.service — reference copy of the CANONICAL gateway unit
+#
+# STATUS 2026-09-08 (oracle death — operator order 2026-09-08: "we do
+# not need parity, we need to migrate, not keep the old machinery"):
+# the python orchestrator (python/gateway.py) is DELETED — the gateway
+# is the TS server (apps/gateway/src/main.ts, node
+# --experimental-strip-types; engines + card compose live in the
+# OWNING plugins, infra/python/plugins.py mounts them). This unit
+# supervises :33081 with Restart=always. (Supersedes the STATUS
+# 2026-09-02 python-flip note below, kept as history.)
+#
+# STATUS 2026-09-02 (python flip): the C server (build/inference_cli)
+# is RETIRED — the gateway was the python orchestrator
+# (python/gateway.py, stdlib-only asyncio; engines + card compose
+# lived in the OWNING plugins, infra/python/plugins.py mounted them).
+#
+# BASE ENV (2026-09-06, PROVISIONING LAW — "comfy-mcp needs to be in
+# the [REDACTED 2026-11-05] base. OUR SYSTEM DOES NOT RUN WITHOUT THAT"): the unit's
+# PATH carries the repo's base env (infra/python/.venv, uv-synced
+# from infra/python/pyproject.toml —
+# pydantic, comfy-mcp, comfy-script…), NOT the system python alone. The
+# canonical smoke check (tools/smoke-single-gateway.sh) pins the same
+# interpreter. (The retired py gateway's stdlib-only surface +
+# on-demand provision_rail door died with the oracle 2026-09-08.)
+#
+# PORT LAW: every skill and the dsh melite-card-deck proxy point at
+# http://localhost:33081 — do not move the port.
+#
+# If re-installing from this copy:
+#   cp infra/inference-gateway.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user restart inference-gateway
+#
+# logs: journalctl --user -u inference-gateway -f
+
+[Unit]
+Description=inference.cpp gateway (canonical :33081 — TS server)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Documents/programs/active/inference.cpp
+Environment=PATH=/home/user/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# RETIRED 2026-09-08 (oracle death — python/gateway.py deleted):
+# ExecStart=%h/Documents/programs/active/inference.cpp/infra/python/.venv/bin/python %h/Documents/programs/active/inference.cpp/infra/python/gateway.py 33081
+# FLIP 2026-09-08 (live — the TS server owns :33081):
+Environment=GATEWAY_PORT=33081
+ExecStart=/home/user/.local/bin/node --experimental-strip-types %h/Documents/programs/active/inference.cpp/apps/gateway/src/main.ts
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target

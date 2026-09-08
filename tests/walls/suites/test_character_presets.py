@@ -74,7 +74,7 @@ ROUTES_TS = os.path.join(
     REPO, "packages", "gateway-core", "src", "routes.ts")
 STUDIOS_TS = os.path.join(
     REPO, "packages", "gateway-doors", "src", "doors", "studios.ts")
-PRESETS_PY = os.path.join(REPO, "python", "melite_models", "presets.py")
+PRESETS_PY = os.path.join(REPO, "infra", "python", "melite_models", "presets.py")
 
 
 def _anny() -> type[Model]:

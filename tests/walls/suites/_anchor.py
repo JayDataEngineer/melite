@@ -14,7 +14,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent            # tests/walls/suites/
 
 sys.path.insert(0, str(HERE.parents[1]))          # tests/  -> _bootstrap
-sys.path.insert(0, str(HERE.parents[2] / "python"))   # estate modules
+sys.path.insert(0, str(HERE.parents[2] / "infra" / "python"))   # estate modules
 # (2026-09-07) the fit/skin lane-lens inserts died with the python
 # render plane (commit b324c480) — those python/ dirs no longer exist.
 

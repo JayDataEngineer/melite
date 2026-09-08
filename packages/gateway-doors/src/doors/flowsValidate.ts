@@ -1,6 +1,6 @@
 // The validate door — the _h_flows_validate port (python/gateway.py:2719).
 //
-// P4 EXECUTION STROKE (ladder P4; the pure half of python/flow.py): the
+// P4 EXECUTION STROKE (ladder P4; the pure half of infra/python/flow.py): the
 // compile door with NO engine POST, NO queue slot, NO GPU, NO sidecar.
 // The three arms mirror the py door exactly:
 //
@@ -40,7 +40,7 @@
 // DERIVED TABLES (no hardcodes per QUEUE LANE LAW — each is pinned by
 // the wall against live py, so drift fails LOUD, never silent):
 //   ENGINE_TABLE   — engine -> {plugin, default_output}: probed live
-//     from python/plugins.py scan_engines + DEFAULT_OUTPUT (anycreature/
+//     from infra/python/plugins.py scan_engines + DEFAULT_OUTPUT (anycreature/
 //     mesh, audio_cpp/audio, comfyui/image, sim/text,
 //     skintokens/mesh — autoremesher retired 2026-09-07). The wall
 //     re-derives it per run.
@@ -115,12 +115,12 @@ export interface FlowsValidateAnswer {
 // estate-owned subprocess compute, every card decl-only and never
 // composable) are QUARANTINED to vendor/retired-engines/ pending
 // rebirth as vendored ComfyUI custom nodes. Probed live from
-// python/plugins.py scan_engines(); the wall re-derives per run.
+// infra/python/plugins.py scan_engines(); the wall re-derives per run.
 const ENGINE_TABLE: Record<string, { plugin: string; def: string }> = {
   comfyui: { plugin: "comfyui", def: "image" },
 };
 
-// ── closed vocabularies (python/flow.py Kind / SkipWhen order) ──────
+// ── closed vocabularies (infra/python/flow.py Kind / SkipWhen order) ──────
 const KIND_VOCAB: readonly string[] = [
   "text",
   "image",
@@ -256,7 +256,7 @@ function pySetOfKeys(v: unknown): Set<unknown> {
   throw new TypeError("'" + typeof v + "' object is not iterable");
 }
 
-// ── flow errors (python/flow.py FlowError — the door's 400 language) ─
+// ── flow errors (infra/python/flow.py FlowError — the door's 400 language) ─
 class FlowError extends Error {
   constructor(message: string) {
     super(message);
@@ -709,7 +709,7 @@ function buildStageRow(i: number, st: unknown): StageRow {
   }
 }
 
-// ── Flow construction validators (python/flow.py, pure subset) ─────
+// ── Flow construction validators (infra/python/flow.py, pure subset) ─────
 // _wires_resolve (flow.py:769): illegal flow id, duplicate ids
 // (own loop FIRST), then earlier-stage edges. Plain FlowErrors —
 // flow_from_body digs them out of the ValidationError wrapper, so
@@ -754,7 +754,7 @@ function wiresResolve(flowId: string, stages: StageRow[]): void {
 // ripple through kindsOk's three sync call sites).
 let cardDefs: Map<string, CardDefinition> | null = null;
 
-// cardGate — the CARD-STAGE LATTICE body gate (python/flow.py:793
+// cardGate — the CARD-STAGE LATTICE body gate (infra/python/flow.py:793
 // _card_params_gate -> stage_params.validate_stage_params, PORTED
 // NATIVE 2026-09-08): (1) the model gate stays byte-identical (the
 // wall pins it); (2) the schema pass rides the TS single
@@ -924,7 +924,7 @@ function kindsOk(
 // validateEngines (flow.py:1066): every stage's engine through the
 // bus — here the wall-pinned ENGINE_TABLE (existence + DEFAULT_OUTPUT);
 // then the FULL kind pass. Unknown-engine text mirrors
-// plugins.load_engine verbatim (python/plugins.py:479).
+// plugins.load_engine verbatim (infra/python/plugins.py:479).
 function validateEngines(flow: Flow): Flow {
   const engineDefaults: Record<string, string | null> = {};
   for (const st of flow.stages) {
@@ -1267,7 +1267,7 @@ function sweepWorkflows(body: unknown): Array<Record<string, unknown>> {
   return rows;
 }
 
-// ── artifact-ref sweep (python/artifact_refs.py + gateway.py:617) ───
+// ── artifact-ref sweep (infra/python/artifact_refs.py + gateway.py:617) ───
 const ASSET_RUNS_PREFIX: string = "/v1/assets/runs/";
 
 function stateRoots(): { outRoot: string; testOutRoot: string } {
@@ -1437,7 +1437,7 @@ function resolveFamily(mid: string): string {
   return mid;
 }
 
-// resolve_model's existence half (python/plugins.py:394): a model.py
+// resolve_model's existence half (infra/python/plugins.py:394): a model.py
 // unit at models/<genre>/<mid>/model.py under any plugin dir from
 // the scan roots (packages/engines + packages/web, depth-2 markers +
 // depth-3 category children — iter_plugin_dirs_under verbatim).
@@ -1591,7 +1591,7 @@ function composeViaCli(fam: string, card: string, params: Record<string, unknown
     throw e;
   }
   // rc 0 with graph text on stdout: the rim PARSES it (the py rim's
-  // wrap — python/plugins.py card_compose seam, 2026-09-07: CLI JSON text
+  // wrap — infra/python/plugins.py card_compose seam, 2026-09-07: CLI JSON text
   // -> one stage row carrying the full node map). Validate only
   // needs "composed OK" — the graph itself rides the start path.
   // A non-JSON text throws (py's json.loads raises the same class

@@ -68,7 +68,7 @@ def _ts_source(path: Path) -> str:
 def _py_tree_hits(needle: str) -> list[str]:
     """Relative python/ files whose text contains needle (no caches)."""
     hits: list[str] = []
-    for p in sorted((REPO / "python").rglob("*.py")):
+    for p in sorted((REPO / "infra" / "python").rglob("*.py")):
         if "__pycache__" in p.parts:
             continue
         if needle in p.read_text(encoding="utf-8", errors="replace"):

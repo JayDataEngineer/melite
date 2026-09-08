@@ -19,7 +19,7 @@ hint, it does not go red. No inference door is ever touched (INFERENCE
 LAW): the harness fixtures hydrate the store directly and artifacts ride
 SVG data URLs.
 
-Run: .venv/bin/python -m unittest tests.test_browser_lanes
+Run: infra/python/.venv/bin/python -m unittest tests.test_browser_lanes
 """
 import os
 import signal

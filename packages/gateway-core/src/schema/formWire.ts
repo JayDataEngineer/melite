@@ -1,4 +1,4 @@
-// formWire — the TypeScript runtime-gate twin of python/form_wire.py.
+// formWire — the TypeScript runtime-gate twin of infra/python/form_wire.py.
 //
 // Ladder P1 (editor manifest §1.6 + §5 step 1): FIRST port target — pure
 // types + validator, zero fs. The gateway will own the GET door; this
@@ -6,7 +6,7 @@
 // every 200 body validates here, and malformed card data refuses LOUD
 // with a field-named reason instead of serving a hollow 200.
 //
-// SSOT: python/form_wire.py is authoritative. This file mirrors its six
+// SSOT: infra/python/form_wire.py is authoritative. This file mirrors its six
 // frozen rows (FormFieldRow, SchemaGroupRow, VariantRow,
 // ModifierFeatureRow, FormFeaturesRow, FormSpecRow), the KindGenre
 // vocabulary, and refusal_reason — key sets, required-ness, and

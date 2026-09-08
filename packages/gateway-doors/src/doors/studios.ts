@@ -1086,7 +1086,7 @@ export function validCharacterPreset(
   // bad — the top model still refuses whenever anything failed.
   if (bad || errs.length > 0) return null;
   // _check_origin_coherence (order + texts verbatim from
-  // python/melite_models/presets.py — the dialect-mismatch errors fire
+  // infra/python/melite_models/presets.py — the dialect-mismatch errors fire
   // AFTER the presence errors, and params_ref-before-dialect
   // within each branch).
   if (origin === "file") {
@@ -1246,7 +1246,7 @@ export function canonicalJson(row: ValidRow): string {
 // ---------------------------------------------------------------------------
 
 /** Validate a served params_json through the AnnyBakeParams shape
- *  (python/melite_models/presets.py AnnyBakeParams — the serve-side
+ *  (infra/python/melite_models/presets.py AnnyBakeParams — the serve-side
  *  belt). After-validator failures render with the WIRE STRING as
  *  input_value (probed: the original str, not the parsed doc).
  *  Returns the full "N validation error(s)..." text, or null. */
@@ -1370,7 +1370,7 @@ export function validateBakeParams(s: string): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// Ledger IO (atomic tmp+rename — python/melite_models/presets.py:358-429).
+// Ledger IO (atomic tmp+rename — infra/python/melite_models/presets.py:358-429).
 // ---------------------------------------------------------------------------
 
 /** py _TENANT_RE (presets.py:57) — FULL match with the $ anchor
@@ -1536,7 +1536,7 @@ function deleteUserPreset(
 }
 
 // ---------------------------------------------------------------------------
-// Artifact refs (python/artifact_refs.py:53-103 — the four checked slots
+// Artifact refs (infra/python/artifact_refs.py:53-103 — the four checked slots
 // resolve through this; existence-verified, traversal-loud).
 // ---------------------------------------------------------------------------
 
@@ -1573,7 +1573,7 @@ function isFile(p: string): boolean {
 }
 
 export function resolveArtifactFile(ref: string, outRoot: string): string {
-  // python/artifact_refs.py resolve_artifact_file — all FOUR ref forms,
+  // infra/python/artifact_refs.py resolve_artifact_file — all FOUR ref forms,
   // verbatim messages, NO percent-decoding (ref values ride the
   // JSON body, never the URL path).
   const raw: string = (ref ?? "").trim();

@@ -31,7 +31,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "python"))
+sys.path.insert(0, str(REPO / "infra" / "python"))
 
 # Schema documents are JSON (no future-import here — old-style alias).
 JsonValue = dict[str, "JsonValue"] | list["JsonValue"] | str | int | float | bool | None

@@ -21,7 +21,7 @@ REPO = os.path.normpath(os.path.join(os.path.dirname(
 
 @pytest.fixture(scope="module", autouse=True)
 def _estate_paths() -> Iterator[None]:
-    for p in (os.path.join(REPO, "python"),):
+    for p in (os.path.join(REPO, "infra", "python"),):
         if p not in sys.path:
             sys.path.insert(0, p)
     import flow

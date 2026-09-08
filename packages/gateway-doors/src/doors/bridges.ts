@@ -69,12 +69,12 @@
 //     never wire-visible).
 //   - python resolution (3943): MELITE_MANAGE_PYTHON env (explicit
 //     interpreter wins — the wall pins the wall interpreter through
-//     it) else <repo>/.venv/bin/python (py's exact default, same
-//     join semantics); missing → the byte-identical 503 (3944-3948).
-//   - manage source dir: <repo>/py (py str(REPO/"py"), 3927/3942),
-//     resolved against the same repo root; when MELITE_REPO_ROOT
-//     points at a fixture tree without python/, the file-anchored repo
-//     python/ is appended as fallback (production: identical single dir;
+//     it) else <repo>/infra/python/.venv/bin/python (the base env,
+//     same join semantics); missing → the byte-identical 503 (3944-3948).
+//   - manage source dir: <repo>/infra/python (manage str(REPO/"infra"/"python"),
+//     3927/3942), resolved against the same repo root; when MELITE_REPO_ROOT
+//     points at a fixture tree without infra/python/, the file-anchored repo
+//     infra/python/ is appended as fallback (production: identical single dir;
 //     the manage SOURCE is product code, never a fixture).
 //   - stdin (3950-3952): py feeds json.dumps(body_json) — the parsed
 //     doc re-serialized. This door feeds the RAW request bytes (the
@@ -447,26 +447,25 @@ export async function handlePoserBridge(
 // shape (_h_manage 3935-3959).
 
 /** Upstream interpreter — MELITE_MANAGE_PYTHON wins (env pin for the
- *  wall + deployments that move the base env), else py's exact
- *  default <repo>/.venv/bin/python. No other hardcode. */
+ *  wall + deployments that move the base env), else the base env
+ *  default <repo>/infra/python/.venv/bin/python. No other hardcode. */
 export function resolveManagePython(repoRoot: string): string {
   const override: string = process.env["MELITE_MANAGE_PYTHON"] ?? "";
   if (override !== "") return override;
-  return join(repoRoot, ".venv", "bin", "python");
+  return join(repoRoot, "infra", "python", ".venv", "bin", "python");
 }
 
-/** Manage source dirs for sys.path (py str(REPO/"py"), 3927/3942;
- *  the py tier is python/ since the 2026-09-08 rename — the manage
- *  SOURCE is product code, never a wall fixture): <repo>/python
- *  first when present (the MELITE_REPO_ROOT tree), always backed by
- *  the file-anchored product python/. */
+/** Manage source dirs for sys.path (manage str(REPO/"infra"/"python");
+ *  the manage SOURCE is product code, never a wall fixture):
+ *  <repo>/infra/python first when present (the MELITE_REPO_ROOT tree), always backed by
+ *  the file-anchored product infra/python/. */
 export function managePyDirs(repoRoot: string): string[] {
   const dirs: string[] = [];
-  const overrideDir: string = join(repoRoot, "python");
-  if (overrideDir !== join(anchoredRepoRoot(), "python") && existsSync(overrideDir)) {
+  const overrideDir: string = join(repoRoot, "infra", "python");
+  if (overrideDir !== join(anchoredRepoRoot(), "infra", "python") && existsSync(overrideDir)) {
     dirs.push(overrideDir);
   }
-  dirs.push(join(anchoredRepoRoot(), "python"));
+  dirs.push(join(anchoredRepoRoot(), "infra", "python"));
   return dirs;
 }
 

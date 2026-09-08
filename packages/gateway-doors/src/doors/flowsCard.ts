@@ -3,7 +3,7 @@
 //
 // WHAT THIS PORTS (line-cited against python/gateway.py + the cordis
 // plane): the card-run derivation resolve_card_model (598-682) +
-// submit's phase-2 arm (1273-1305) + the rim wrap (python/plugins.py
+// submit's phase-2 arm (1273-1305) + the rim wrap (infra/python/plugins.py
 // card_hooks.compose 525-600), with the survey's verdict
 // (docs/design/card-lane-port-survey-2026-09-08.md §0 + §5): import
 // @comfyui/cordis IN-PROCESS — no template SSOT, no subprocess, no
@@ -16,9 +16,9 @@
 //      (handleFlowsStart, already ported); this arm starts past it.
 //   2. model-id legality (validate-door voice, flowsValidate.ts
 //      modelArm) + existence (resolve_model's voice: "no model
-//      unit ...", python/plugins.py:394) + the non-cordis arm
+//      unit ...", infra/python/plugins.py:394) + the non-cordis arm
 //      refusal (python schema arm — unported half, code-identical).
-//   3. artifact-ref sweep (py 610-630, python/artifact_refs.py
+//   3. artifact-ref sweep (py 610-630, infra/python/artifact_refs.py
 //      find_dangling_refs semantics — every /v1/assets/... URL must
 //      exist on served mounts BEFORE compose).
 //   4. route-lens stamp overlay (py _route_stamp_overlay 705-751):
@@ -325,7 +325,7 @@ function hasPluginMarker(dir: string): boolean {
   );
 }
 
-/** resolve_model's existence half (python/plugins.py:394): a model.py
+/** resolve_model's existence half (infra/python/plugins.py:394): a model.py
  *  unit at models/<genre>/<mid>/model.py under any plugin dir from
  *  the scan roots (packages/engines + packages/web — the
  *  flowsValidate.ts mirror, same roots). */
@@ -539,7 +539,7 @@ export function liftCardParams(body: Record<string, unknown>): Record<string, un
   return params;
 }
 
-// ── artifact-ref sweep (python/artifact_refs.py find_dangling_refs
+// ── artifact-ref sweep (infra/python/artifact_refs.py find_dangling_refs
 // semantics — the flowsValidate.ts mirror, same roots) ─────────────
 
 const ASSET_RUNS_PREFIX: string = "/v1/assets/runs/";

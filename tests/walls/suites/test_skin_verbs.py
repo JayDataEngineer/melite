@@ -42,7 +42,7 @@ PACKDIR = os.path.join(REPO, "vendor", "comfyui_extensions",
 
 
 def _estate_paths() -> None:
-    for p in (os.path.join(REPO, "python"),
+    for p in (os.path.join(REPO, "infra", "python"),
               os.path.join(REPO, "packages", "engines", "comfyui"),
               os.path.join(REPO, "packages", "engines", "comfyui", "compose")):
         if p not in sys.path:

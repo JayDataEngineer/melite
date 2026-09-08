@@ -16,7 +16,7 @@ import pytest
 
 from _anchor import REPO
 
-PY = os.path.join(str(REPO), "python")
+PY = os.path.join(str(REPO), "infra", "python")
 if PY not in sys.path:
     sys.path.insert(0, PY)
 for _p in (os.path.join(str(REPO), "packages", "engines", "comfyui"),

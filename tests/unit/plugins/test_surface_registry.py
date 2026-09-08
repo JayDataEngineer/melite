@@ -43,7 +43,7 @@ from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "python"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "infra" / "python"))
 import plugins as plugin_broker  # noqa: E402  (python/plugins.py, the broker)
 
 REPO = Path(__file__).resolve().parents[3]
@@ -136,7 +136,7 @@ def test_s1_isolation_surfaces_exist_on_disk() -> None:
     """R-stale: every pinned import surface is a real python/ module."""
     missing = sorted(
         s for s in _isolation_surfaces()
-        if not (REPO / "python" / (s + ".py")).is_file()
+        if not (REPO / "infra" / "python" / (s + ".py")).is_file()
     )
     assert not missing, (
         "IMPORT_SURFACES entries with no python/<name>.py on disk (module "

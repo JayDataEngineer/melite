@@ -1,0 +1,75 @@
+# The estate python — the ComfyUI management plane + wall-support lib.
+# (Estate reorg 2026-09-08: this project moved from the repo root to
+# infra/python/ — the root is a pnpm/DSH estate, not a Python project.
+# The base env lives at infra/python/.venv; the test plane config
+# lives at the root pytest.ini.)
+#
+# ONE FLOW (operator order, 2026-09-03): the BASE env IS the comfyui
+# management plane. There is no opt-in group, no second env — the
+# system does not run without comfy-mcp, so comfy-mcp is base. This
+# env installs ComfyUI (comfy-cli), manages it (comfyui-manager's
+# cm_cli), drives it (comfy-mcp), composes for it (comfy-script) and
+# serves MCP (fastmcp + starlette). uv lock pins; uv sync materializes.
+[project]
+name = "melite-gateway"
+version = "0.1.0"
+description = "inference.cpp estate gateway (python/ + plugin compose)"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.13",
+    # composition engine: upstream comfy-script builds node classes
+    # from the pinned object_info; co_script is our DRY-primitives
+    # layer over it (pin discipline, require_nodes gate, blocks,
+    # renderer registry). (comfy-script under-declares its runtime
+    # imports; nest_asyncio2 / aiohttp / networkx are its real
+    # transitive surface.)
+    "comfy-script>=0.6",
+    "nest_asyncio2>=1.0",
+    "aiohttp>=3.9",
+    "networkx>=3",
+    "pillow>=10",
+    # management plane: comfy-mcp (THE engine boundary — the system
+    # does not run without it), comfyui-manager (v4 package form:
+    # cm_cli, the install rail), comfy-cli (install/routing python),
+    # fastmcp + starlette (MCP serving), pyyaml (manifests).
+    "comfy-mcp>=0.10.0",
+    "comfyui-manager",
+    "comfy-cli",
+    "fastmcp",
+    "starlette",
+    "pyyaml>=6",
+    # agent harness: the python SDK + bundled dsh runtime (the SERVER
+    # mount). Recipe: plugins/harness/dsh/provisioner, materialized
+    # data/runtime/dsh-harness-home. Exact pin — pre-release line;
+    # bumps are deliberate orders (bundled runtime ships in the wheel:
+    # no Node.js, no pnpm needed to serve).
+    "deepseek-harness-sdk==0.1.2a3",
+    "mypy>=1.14",
+]
+
+# ── TYPING WALL (operator order 2026-09-04: "you cannot silently skip
+# out on strongly typed code") ──────────────────────────────────────
+# strict mypy over the typed-contract surface; the target list lives
+# in tests/walls/suites/test_typing.py and only GROWS (a module joins when it is
+# fully annotated; nothing ever leaves). follow_imports=silent keeps
+# not-yet-migrated dependencies from blocking the wall while their
+# imports still resolve.
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+follow_imports = "silent"
+# the compose primitives ride sys.path at runtime (the pattern's lazy
+# loader); mypy resolves the same roots. explicit_package_bases keeps
+# module names anchored to those roots — compose/presets.py is
+# "presets" whether targeted by path or imported by sibling cards
+mypy_path = "plugins/engines/comfyui/compose"
+explicit_package_bases = true
+
+# pydantic plugin discipline (PYTHON SHAPE rung 2): construction is
+# the validation door — no runtime mutation of frozen models
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+warn_untyped_fields = true

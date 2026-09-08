@@ -35,7 +35,7 @@ REPO = Path(__file__).resolve().parents[3]
 # a pydantic row the gateway constructs at runtime.
 def _target_files() -> list[Path]:
     files: list[Path] = []
-    files += (REPO / "python").glob("*.py")
+    files += (REPO / "infra" / "python").glob("*.py")
     files += (REPO / "python/melite_models").glob("*.py")
     files += (REPO / "python/melite_cards").glob("*.py")
     # THE ONE plugin-dir walk (python/plugins.py:iter_plugin_dirs_under —
@@ -43,7 +43,7 @@ def _target_files() -> list[Path]:
     # containers (cpp/<plugin>). The 2026-09-05 audit found the old
     # per-engine globs silently missed ALL 40 files under cpp/ —
     # every cpp plugin's rows were unswept.
-    sys.path.insert(0, str(REPO / "python"))
+    sys.path.insert(0, str(REPO / "infra" / "python"))
     import plugins as _plugins
     for pdir in _plugins.iter_plugin_dirs_under(
             REPO / "packages" / "engines"):
@@ -75,7 +75,7 @@ def _discover_models() -> dict[str, type[BaseModel]]:
 
 
 def _discover_locked() -> dict[str, type[BaseModel]]:
-    sys.path.insert(0, str(REPO / "python"))
+    sys.path.insert(0, str(REPO / "infra" / "python"))
     # compose libraries resolve from the plugin root and the compose
     # package dir (co_script / _coscript) — the same contract
     # python/plugins.py load_engine honors for card py modules

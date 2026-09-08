@@ -71,7 +71,7 @@ for sub in ("anyCreature", "autoremesher", "skin-tokens.cpp"):
 # 3. no live code references the retired engine path shapes.
 bad = []
 shapes = re.compile(r"packages/engines/(cpp|node|sim)/")
-roots = ["packages", "apps", "python", "tools", "scripts"]
+roots = ["packages", "apps", "tools", "scripts", os.path.join("infra", "python")]
 for root in roots:
     for dirpath, dirnames, filenames in os.walk(os.path.join(REPO, root)):
         dirnames[:] = [d for d in dirnames
