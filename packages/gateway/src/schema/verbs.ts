@@ -459,18 +459,19 @@ export interface OutputDecl {
 
 /**
  * Every card's promised outputs (id-sorted; transcribed from the
- * generated card-decls.json outputs[] — the wall re-pins all 22 rows
+ * generated card-decls.json outputs[] — the wall re-pins all rows
  * against that snapshot, which test_card_decls_parity.py byte-pins
- * to py).
+ * to py. MONO-ENGINE 2026-09-08: auto-rig / forge / music-native
+ * rows retired with their engines (quarantine 47e1c583 — the same
+ * verdict class as the card-decls golden 22->19, causes beside it);
+ * unknown/rowless cards pass the settle gate (the None-class skip).
  */
 export const CARD_OUTPUTS: Readonly<Record<string, readonly OutputDecl[]>> = {
   anny: [{ patterns: [".glb"], label: "Rigged body mesh" }],
-  "auto-rig": [{ patterns: [".glb"], label: "Rigged mesh" }],
   fit: [
     { patterns: [".glb"], label: "Fitted prop-in-hand mesh" },
     { patterns: [".json"], label: "Fit record" },
   ],
-  forge: [{ patterns: [".glb"], label: "Forged creature mesh" }],
   "h3-timeline": [{ patterns: [".png"], label: "Timeline frames" }],
   ideogram4: [{ patterns: [".png"], label: "Generated image" }],
   "image-edit": [{ patterns: [".png"], label: "Edited image" }],
@@ -496,7 +497,6 @@ export const CARD_OUTPUTS: Readonly<Record<string, readonly OutputDecl[]>> = {
   music: [
     { patterns: [".mp3", ".flac", ".wav"], label: "Generated audio" },
   ],
-  "music-native": [{ patterns: [".wav"], label: "Generated audio" }],
   "quad-remesh": [{ patterns: [".glb"], label: "Remeshed mesh" }],
   sfx: [{ patterns: [".flac", ".wav"], label: "Generated sound effect" }],
   skin: [

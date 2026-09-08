@@ -42,3 +42,12 @@ No minted ids, clocks, or roots in these bodies — no normalization.
 Regolden only for a deliberate TS chrome-door behavior change,
 with a dated note here. Never regolden to chase a red wall — the
 wall failing against these bytes means the door moved.
+
+## 2026-09-08 — mono-engine retirement (red-closure lane)
+
+tools.json regolded 22->19 tools: auto_rig_card / forge_card /
+music_native_card retired from the served surface with their
+engines (quarantine 47e1c583; card-decls golden 22->19 same day).
+chrome.ts regenerated via its capture script (TOOLS line only —
+other 9 doors byte-identical, 19 survivors byte-identical).
+Deliberate TS chrome-door behavior change per the regolden rule.

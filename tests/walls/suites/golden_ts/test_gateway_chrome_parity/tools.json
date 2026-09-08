@@ -63,42 +63,6 @@
       }
     },
     {
-      "name": "auto_rig_card",
-      "version": 1,
-      "kind": "card-compose",
-      "card": "auto-rig",
-      "model": "skintokens",
-      "stage_title": "Auto Rig",
-      "description": "Static mesh GLB \u2192 generated skeleton + learned skin weights \u2192 rigged GLB (TokenRig on GGML)",
-      "params_schema": {
-        "type": "object",
-        "properties": {
-          "input": {
-            "type": "string",
-            "description": "Static .glb/.t2mesh path or artifact-ref from a previous card (anny bake, trellis lift)"
-          },
-          "device": {
-            "type": "string",
-            "enum": [
-              "cpu",
-              "auto",
-              "vulkan"
-            ],
-            "default": "cpu",
-            "description": "cpu (lane default \u2014 never touches the GPU) / auto / vulkan (contends with ComfyUI)"
-          },
-          "postprocess": {
-            "type": "boolean",
-            "default": false,
-            "description": "Opt-in surface-locality heuristic (upstream demo's own default is off \u2014 raw learned weights)"
-          }
-        },
-        "required": [
-          "input"
-        ]
-      }
-    },
-    {
       "name": "fit_card",
       "version": 1,
       "kind": "card-compose",
@@ -223,60 +187,6 @@
           "body_glb",
           "prop_glb"
         ]
-      }
-    },
-    {
-      "name": "forge_card",
-      "version": 1,
-      "kind": "card-compose",
-      "card": "forge",
-      "model": "anycreature",
-      "stage_title": "Creature Forge",
-      "description": "Breed a creature spec \u2192 validate \u2192 compile to GLB",
-      "params_schema": {
-        "type": "object",
-        "properties": {
-          "smooth_angle": {
-            "type": "number",
-            "minimum": 1,
-            "maximum": 180,
-            "default": 50,
-            "description": "Crease threshold \u2014 higher = smoother"
-          },
-          "build": {
-            "type": "string",
-            "enum": [
-              "default",
-              "rigid"
-            ],
-            "default": "default",
-            "description": "'rigid' for robots/crystals"
-          },
-          "ao": {
-            "type": "string",
-            "enum": [
-              "true",
-              "false"
-            ],
-            "default": "true",
-            "description": "Per-vertex AO bake"
-          },
-          "role": {
-            "type": "string",
-            "enum": [
-              "minion",
-              "npc",
-              "boss"
-            ],
-            "default": "npc",
-            "description": "Budget and threshold presets"
-          },
-          "shading": {
-            "type": "string",
-            "description": "Colour ramp JSON \u2014 {gradient:{top,bottom}, noise:{size,amount}}"
-          }
-        },
-        "required": []
       }
     },
     {
@@ -1417,72 +1327,6 @@
             "type": "integer",
             "default": -1,
             "description": "Seed"
-          }
-        },
-        "required": [
-          "prompt"
-        ]
-      }
-    },
-    {
-      "name": "music_native_card",
-      "version": 1,
-      "kind": "card-compose",
-      "card": "music-native",
-      "model": "ace-step-xl",
-      "stage_title": "Music (audio_cpp)",
-      "description": "audio.cpp music lane \u2014 ACE-Step 1.5 XL / SFT or MiniMax Music 3 text-to-music (the audio_cpp binding layer calls audiocpp_cli with the family + model name from each model row)",
-      "params_schema": {
-        "type": "object",
-        "properties": {
-          "model": {
-            "type": "string",
-            "enum": [
-              "ace-step-xl",
-              "ace-step-sft",
-              "txt2music"
-            ],
-            "description": "The boarded family to run \u2014 the request's top-level `model`. Options: ace-step-xl, ace-step-sft, txt2music.",
-            "default": "ace-step-xl"
-          },
-          "prompt": {
-            "type": "string",
-            "description": "Genre, era, region, 2-3 style anchors, tempo in BPM, key if known"
-          },
-          "lyrics": {
-            "type": "string",
-            "description": "Section tags [verse] [pre-chorus] [chorus] [bridge] [outro]; txt2music honours them, ACE-Step ignores"
-          },
-          "duration": {
-            "type": "number",
-            "minimum": 10,
-            "maximum": 600,
-            "default": 120,
-            "description": "Target length in seconds (audio.cpp caps at 10 minutes)"
-          },
-          "seed": {
-            "type": "integer",
-            "default": -1,
-            "description": "Seed"
-          },
-          "backend": {
-            "type": "string",
-            "enum": [
-              "cuda",
-              "cpu"
-            ],
-            "default": "cuda",
-            "description": "cuda = GPU; cpu = GGUF CPU path (CUDA absent)"
-          },
-          "family": {
-            "type": "string",
-            "enum": [
-              "ace-step-xl",
-              "ace-step-sft",
-              "minimax"
-            ],
-            "default": "ace-step-xl",
-            "description": "audio_cpp family \u2014 the renderer reads lane_inputs.family from the picked model row"
           }
         },
         "required": [

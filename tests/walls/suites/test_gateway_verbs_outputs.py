@@ -45,8 +45,10 @@ Date: 2026-09-08. Status: landed (oracle-death re-derivation).
         in-tree (vendor/comfyui_extensions/<pack>).
   Phase O — outputs enforcement (the TS contract, frozen as goldens):
     O01 the TS CARD_OUTPUTS table == card-decls.json outputs[] for
-        all 22 cards (that snapshot is byte-pinned by
-        test_card_decls_parity.py — the chain of trust, cited here).
+        all 19 cards (that snapshot is byte-pinned by
+        test_card_decls_parity.py — the chain of trust, cited here;
+        mono-engine 2026-09-08: auto-rig / forge / music-native
+        retired with their engines, quarantine 47e1c583).
     O02 golden artifact sets pass the TS side (TS outputViolation):
         mesh + views, multi-row cards, any-of rows,
         case-insensitive suffixes.
@@ -427,7 +429,9 @@ GOLDEN_SETS: list[tuple[str, list]] = [
     ("video-gen", ["run/clip.webm"]),
     ("tagger", ["run/cap.txt"]),
     ("music", ["run/song.flac"]),
-    ("music-native", ["run/take.wav"]),
+    # MONO-ENGINE 2026-09-08: music-native / auto-rig / forge rows
+    # retired with their engines (quarantine 47e1c583); unknown cards
+    # pass the settle gate vacuously, so dead rows here pinned nothing.
     ("sfx", ["run/hit.WAV"]),
     ("voice-lock", ["run/lock.mp3"]),
     ("mask-studio", ["run/mask.png"]),
@@ -435,8 +439,6 @@ GOLDEN_SETS: list[tuple[str, list]] = [
     ("image-edit", ["run/edit.png"]),
     ("ideogram4", ["run/gen.png"]),
     ("img-to-mesh", ["run/MESH.GLB"]),
-    ("auto-rig", ["run/rigged.glb"]),
-    ("forge", ["run/beast.glb"]),
     ("quad-remesh", ["run/remesh.glb"]),
     ("motion", ["run/mv.npz"]),
 ]
