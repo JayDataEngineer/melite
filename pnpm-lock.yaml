@@ -53,6 +53,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
+      '@melite/engine-comfyui':
+        specifier: workspace:*
+        version: link:../comfyui
 
   packages/engines/comfyui/action_cards:
     dependencies:

@@ -53,6 +53,20 @@ export interface CardDefinition {
    *  (stripAutofill / stripEmptyAutofill). Cards whose python
    *  renderer strips must port the table here; parity pins it. */
   finalize?(graph: PromptGraph): PromptGraph
+  /** THE IDENTITY RUNG (card DSL phase 2, 2026-09-08): the py
+   *  card.py identity (label/description/genre/icon/ability) died
+   *  with the authoring plane. The frozen ring
+   *  (engine-comfyui models/cardIdentity.generated.ts — extracted
+   *  by the golden's own builder) attaches here at loadCardDefs
+   *  time: ONE spelling, carried by the def itself. New cards
+   *  declare identity inline; the ring thins as cards absorb
+   *  theirs natively. */
+  identity?: {
+    label: string
+    description: string
+    genre: string
+    icon?: string
+  }
 }
 
 declare module '@deepseek-ai/cordis' {

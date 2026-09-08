@@ -37,6 +37,43 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
       await ctx.plugin(mod)
     }
   }
-  cache = new Map(service.cardIds().map((id) => [id, service.getCardDef(id)!]))
+  // THE IDENTITY RUNG (card DSL phase 2): attach the frozen ring
+  // (the py identity truth — engine-comfyui models/
+  // cardIdentity.generated.ts, byte-equal to the golden) onto every
+  // def that has not declared its own inline. ONE spelling from
+  // here down: consumers read def.identity.
+  const ring = (await import(
+    // deep-import past the package exports (frozen data module):
+    // the identity ring is engine-comfyui-owned, cross-package
+    new URL(
+      '../../comfyui/src/models/cardIdentity.generated.ts',
+      import.meta.url,
+    ).href,
+    { with: { type: 'json' } } as never,
+  )) as unknown as {
+    CARD_IDENTITY: ReadonlyArray<{
+      id: string
+      label: string
+      description: string
+      genre: string
+      icon?: string
+    }>
+  }
+  const byId = new Map<string, { label: string; description: string; genre: string; icon?: string }>(
+    ring.CARD_IDENTITY.map((row) => [row.id, {
+      label: row.label, description: row.description, genre: row.genre,
+      ...(row.icon !== undefined && row.icon !== '' ? { icon: row.icon } : {}),
+    }]),
+  )
+  cache = new Map(service.cardIds().map((id) => {
+    const def = service.getCardDef(id)!
+    if (def.identity === undefined) {
+      const row = byId.get(id)
+      if (row !== undefined) {
+        (def as { identity?: CardDefinition['identity'] }).identity = row
+      }
+    }
+    return [id, def]
+  }))
   return cache
 }

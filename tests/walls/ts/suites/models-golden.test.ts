@@ -26,6 +26,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { MODEL_REGISTRY } from "../../../../packages/engines/comfyui/src/models/models.ts";
 import { buildCatalog, isServedFamily } from "../../../../packages/engines/comfyui/src/models/catalogEmission.ts";
+import { CARD_IDENTITY } from "../../../../packages/engines/comfyui/src/models/cardIdentity.generated.ts";
 
 const GOLDEN_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -134,5 +135,26 @@ describe("the served catalog vs the tree golden (A1)", () => {
 
   it("input_vocabulary is deep-equal to the golden's (the slot SSOT)", (): void => {
     assert.deepEqual(cat.input_vocabulary, golden.input_vocabulary);
+  });
+});
+
+describe("the identity rung rides the live card defs (phase 2 start)", () => {
+  it("every ring card carries identity on its CardDefinition", async (): Promise<void> => {
+    const { loadCardDefs } = await import(
+      "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts"
+    );
+    const defs = await loadCardDefs();
+    const ringIds = new Set(CARD_IDENTITY.map((c) => c.id));
+    let carried = 0;
+    for (const [id, def] of defs) {
+      if (!ringIds.has(id)) continue;
+      assert.ok(def.identity !== undefined, `ring card ${id} carries no identity on its def`);
+      assert.ok(typeof def.identity.label === "string" && def.identity.label !== "", `${id} identity label empty`);
+      carried++;
+    }
+    assert.equal(carried, 19);
+    // the TS-added card (clothing-placement) has no py identity —
+    // the named divergence; it declares its own or carries none
+    assert.equal(defs.size >= 20, true);
   });
 });

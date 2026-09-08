@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "The comfyui engine's Cordis compose plane (Law 0 amendment, 2026-09-07): handle-based graph builder, node blocks, card plugins (knob schemas are Schemastery direct — atoms.ts retired 2026-09-08, import-dsh-wheels stroke), and the compose door the gateway shells. Runtime is node --experimental-strip-types (erasable-syntax TS); no build step.",
+  "description": "The comfyui engine's Cordis compose plane (Law 0 amendment, 2026-09-07): handle-based graph builder, node blocks, card plugins (knob schemas are Schemastery direct \u2014 atoms.ts retired 2026-09-08, import-dsh-wheels stroke), and the compose door the gateway shells. Runtime is node --experimental-strip-types (erasable-syntax TS); no build step.",
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
