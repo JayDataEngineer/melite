@@ -1,10 +1,13 @@
-// mods/anny-verbs.ts — the anny card's SubActionMods (py
-// melite_models anny verbs, 1:1 port): body estimate, preset
-// save/load, dress, prop-seat. Knobs NEVER join the card surface
-// (SubActionMod law); each mounts by verb id on the anny card's
-// boarded families. Declared as a cordis plugin registering
-// through ctx.comfyui.registerVerb (PORT LAW shape).
+// mods/anny-verbs.ts — the anny card's SubActionMods (1:1 port of
+// the py anny verbs): body estimate, preset save/load, dress,
+// prop-seat. Knobs NEVER join the card surface (SubActionMod law);
+// each mounts by verb id on the anny card's boarded families. The
+// Cordis contract shape: every verb's KNOBS are a Schemastery
+// object schema (the tool-contract pattern — the same schema a
+// defineTool parameter contract rides), wire types on
+// .extra('extra', {wtype}).
 import type { Context } from '@deepseek-ai/cordis'
+import z from '@deepseek-ai/schemastery'
 
 export const inject = ['comfyui']
 
@@ -19,9 +22,10 @@ export function apply(ctx: Context): void {
     engines: [{ id: 'commercial', flow: 'anny-hmr-commercial' }],
     writes: ['body_glb'],
     requires: ['melite-kimodo-nodes'],
-    fields: [
-      { name: 'person_index', type: 'number', label: 'Person', tooltip: 'Which detected person to fit (0 = the most confident detection).', min: 0, step: 1, default: 0 },
-    ],
+    fields: z.object({
+      person_index: z.number().min(0).step(1).default(0).description('Person')
+        .extra('extra', { wtype: 'number', tooltip: 'Which detected person to fit (0 = the most confident detection).' }),
+    }) as never,
   })
 
   ctx.comfyui.registerVerb({
@@ -31,9 +35,10 @@ export function apply(ctx: Context): void {
     engines: [{ id: 'save', local: 'save-preset' }],
     writes: [],
     requires: [],
-    fields: [
-      { name: 'name', type: 'text', label: 'Preset name', tooltip: 'Label for the saved character row.', required: true },
-    ],
+    fields: z.object({
+      name: z.string().description('Preset name')
+        .extra('extra', { wtype: 'text', required: true, tooltip: 'Label for the saved character row.' }),
+    }) as never,
   })
 
   ctx.comfyui.registerVerb({
@@ -43,30 +48,43 @@ export function apply(ctx: Context): void {
     engines: [{ id: 'instantiate', flow: 'anny-params' }],
     writes: ['body_glb'],
     requires: ['melite-kimodo-nodes'],
-    fields: [
-      { name: 'preset_id', type: 'text', label: 'Preset', tooltip: 'Estate archetype id or user row id (user-N).', required: true },
-    ],
+    fields: z.object({
+      preset_id: z.string().description('Preset')
+        .extra('extra', { wtype: 'text', required: true, tooltip: 'Estate archetype id or user row id (user-N).' }),
+    }) as never,
   })
-
-  const seatFields = (opts: {
-    propLabel: string; propTooltip: string; bone: string; align: string;
-    fingerBone?: string; thumbBone?: string; targetWidth?: number;
-    fitRatioTooltip: string; seatRatioTooltip: string; targetWidthTooltip: string;
-  }) => [
-    { name: 'prop', type: 'text', label: opts.propLabel, tooltip: opts.propTooltip, required: true },
-    { name: 'model_name', type: 'text', label: 'Prop name', tooltip: "Unity lookup name — the chip fills the outfit filename stem; empty seats as 'prop'." },
-    { name: 'bone', type: 'text', label: 'Bone', tooltip: 'Which bone carries the outfit (coat: Spine, hat: mixamorig:Head).', default: opts.bone },
-    { name: 'align', type: 'select', label: 'Law', tooltip: 'socket: hang (coat); fit: measure + scale (hat); grip: hand-lock (weapon — the prop verb\'s default).', default: opts.align, options: ['socket', 'fit', 'grip'] },
-    { name: 'position', type: 'text', label: 'Offset', tooltip: 'x,y,z meters added after the law (grip forbids non-zero).', default: '0,0,0' },
-    { name: 'rotation', type: 'text', label: 'Rotation', tooltip: 'x,y,z Unity degrees applied pre-seat (grip forbids non-zero).', default: '0,0,0' },
-    { name: 'fit_ratio', type: 'number', label: 'Fit ratio', tooltip: opts.fitRatioTooltip, min: 0, step: 0.01, default: 0 },
-    { name: 'fit_ref_bone', type: 'text', label: 'Measure to', tooltip: 'fit law: the span\'s far bone (required when fit_ratio > 0).' },
-    { name: 'fit_ref_bone2', type: 'text', label: 'Measure from', tooltip: 'fit law: the span\'s near bone (hat: mixamorig:Neck).' },
-    { name: 'seat_ratio', type: 'number', label: 'Seat ratio', tooltip: opts.seatRatioTooltip, min: 0, max: 1, step: 0.01, default: 0.22 },
-    { name: 'finger_bone', type: 'text', label: 'Finger bone', tooltip: 'grip law: the blade-axis finger (weapon: mixamorig:RightHandMiddle1).', ...(opts.fingerBone !== undefined ? { default: opts.fingerBone } : {}) },
-    { name: 'thumb_bone', type: 'text', label: 'Thumb bone', tooltip: 'grip law: the clamp thumb (weapon: mixamorig:RightHandThumb1).', ...(opts.thumbBone !== undefined ? { default: opts.thumbBone } : {}) },
-    { name: 'target_width', type: 'number', label: 'Target width', tooltip: opts.targetWidthTooltip, min: 0, step: 0.01, default: opts.targetWidth ?? 0 },
-  ]
+  const seatFields = (o: {
+    propLabel: string; propTooltip: string; bone: string; align: string
+    fingerBone?: string; thumbBone?: string; targetWidth?: number
+    fitRatioTooltip: string; seatRatioTooltip: string; targetWidthTooltip: string
+  }) => z.object({
+    prop: z.string().description(o.propLabel)
+      .extra('extra', { wtype: 'text', required: true, tooltip: o.propTooltip }),
+    model_name: z.string().description('Prop name')
+      .extra('extra', { wtype: 'text', tooltip: "Unity lookup name — the chip fills the outfit filename stem; empty seats as 'prop'." }),
+    bone: z.string().default(o.bone).description('Bone')
+      .extra('extra', { wtype: 'text', tooltip: 'Which bone carries the outfit (coat: Spine, hat: mixamorig:Head).' }),
+    align: z.union([z.const('socket'), z.const('fit'), z.const('grip')]).default(o.align).description('Law')
+      .extra('extra', { wtype: 'select', options: ['socket', 'fit', 'grip'], tooltip: 'socket: hang (coat); fit: measure + scale (hat); grip: hand-lock (weapon — the prop verb\'s default).' }),
+    position: z.string().default('0,0,0').description('Offset')
+      .extra('extra', { wtype: 'text', tooltip: 'x,y,z meters added after the law (grip forbids non-zero).' }),
+    rotation: z.string().default('0,0,0').description('Rotation')
+      .extra('extra', { wtype: 'text', tooltip: 'x,y,z Unity degrees applied pre-seat (grip forbids non-zero).' }),
+    fit_ratio: z.number().min(0).step(0.01).default(0).description('Fit ratio')
+      .extra('extra', { wtype: 'number', tooltip: o.fitRatioTooltip }),
+    fit_ref_bone: z.string().description('Measure to')
+      .extra('extra', { wtype: 'text', tooltip: 'fit law: the span\'s far bone (required when fit_ratio > 0).' }),
+    fit_ref_bone2: z.string().description('Measure from')
+      .extra('extra', { wtype: 'text', tooltip: 'fit law: the span\'s near bone (hat: mixamorig:Neck).' }),
+    seat_ratio: z.number().min(0).max(1).step(0.01).default(0.22).description('Seat ratio')
+      .extra('extra', { wtype: 'number', tooltip: o.seatRatioTooltip }),
+    finger_bone: z.string().description('Finger bone')
+      .extra('extra', { wtype: 'text', tooltip: 'grip law: the blade-axis finger (weapon: mixamorig:RightHandMiddle1).', ...(o.fingerBone !== undefined ? { default: o.fingerBone } : {}) }),
+    thumb_bone: z.string().description('Thumb bone')
+      .extra('extra', { wtype: 'text', tooltip: 'grip law: the clamp thumb (weapon: mixamorig:RightHandThumb1).', ...(o.thumbBone !== undefined ? { default: o.thumbBone } : {}) }),
+    target_width: z.number().min(0).step(0.01).default(o.targetWidth ?? 0).description('Target width')
+      .extra('extra', { wtype: 'number', tooltip: o.targetWidthTooltip }),
+  }) as never
 
   ctx.comfyui.registerVerb({
     id: 'dress',
@@ -82,7 +100,7 @@ export function apply(ctx: Context): void {
       align: 'socket',
       fitRatioTooltip: 'fit law: prop width as a fraction of the bone span (hat: 1).',
       seatRatioTooltip: 'How far down the span the prop seats (hat: 0.22). Grip ignores this.',
-      targetWidthTooltip: "grip law: scale-then-grip width in meters (sword: 0.25). fit forbids non-zero.",
+      targetWidthTooltip: 'grip law: scale-then-grip width in meters (sword: 0.25). fit forbids non-zero.',
     }),
   })
 

@@ -89,30 +89,15 @@ declare module '@deepseek-ai/cordis' {
 // through this service, validation LOUD at registration (the
 // metaclass's gates), absorption derives at read.
 
-/** One mod field row — the wire fragment's shape (dsl.py Field).
- *  UI declaration rows, NOT validated params: the card's
- *  Schemastery schema owns validation; these own the editor
- *  surface (group/zone/order/visible_when have no schemastery
- *  native — typed rows + the registration gates below). */
-export interface ModField {
-  readonly name: string
-  readonly type: string
-  readonly label: string
-  readonly group?: string
-  readonly zone?: string
-  readonly order?: number
-  readonly width?: number
-  readonly columns?: number
-  readonly min?: number
-  readonly max?: number
-  readonly step?: number
-  readonly default?: string | number | boolean | readonly string[]
-  readonly required?: boolean
-  readonly placeholder?: string
-  readonly tooltip?: string
-  readonly visible_when?: string
-  /** '$samplers' | '$schedulers' | inline options. */
-  readonly options?: string | readonly string[]
+/** A mod's field contract: a Schemastery OBJECT schema (the
+ *  dual-declaration pattern — the same z.object({...}) style the
+ *  cards declare; UI meta rides .extra('extra', {group, zone,
+ *  order, visible_when}) exactly like card fields). ONE meta path
+ *  walks both card and mod surfaces; same-pack flavor merging is
+ *  Schema.intersect semantics (constraints merge per key). */
+export type ModFields = {
+  (v: unknown): Record<string, unknown>
+  dict?: Record<string, Record<string, unknown>>
 }
 
 /** A lora catalog row (grammar.py LoraRow — no link, no row). */
@@ -132,7 +117,7 @@ export interface LoraRowDecl {
 export interface ModRegistration {
   readonly pack: string
   readonly families: readonly string[]
-  readonly fields: readonly ModField[]
+  readonly fields: ModFields
   readonly rows?: readonly LoraRowDecl[]
   /** The RUNTIME CATALOG door (estate qwen loras.py): no own rows —
    *  the union of every family's declared rows serves; family rows
@@ -157,36 +142,42 @@ export interface VerbRegistration {
   readonly engines: readonly VerbEngineRow[]
   readonly writes: readonly string[]
   readonly requires: readonly string[]
-  readonly fields: readonly ModField[]
+  readonly fields: ModFields
 }
 
-/** A field as absorbed onto a card surface (the family scope
- *  attached — the emission filter). */
-export interface AbsorbedField {
-  readonly field: ModField
+/** A mod's absorbed contract (the family scope attached — the
+ *  emission filter). */
+export interface AbsorbedMod {
+  readonly pack: string
+  readonly fields: ModFields
   readonly families: readonly string[]
 }
 
-/** The py's field gates (dsl.py _validate_field) — loud at
- *  registration, never a silent drop. */
-function validateField(where: string, f: ModField): void {
-  if (!/^[a-z_][a-z0-9_]*$/.test(f.name)) {
-    throw new ComposeRefusal('bad-field', `${where}: field name '${f.name}' is not a legal identifier`)
+/** The py's field gates (dsl.py _validate_field), on the
+ *  Schemastery meta — loud at registration, never a silent drop. */
+function validateFields(where: string, fields: ModFields): void {
+  const dict = fields.dict
+  if (dict === undefined) {
+    throw new ComposeRefusal('bad-field', `${where}: fields must be a z.object contract (no .dict to walk)`)
   }
-  if (typeof f.type !== 'string' || f.type === '') {
-    throw new ComposeRefusal('bad-field', `${where}.${f.name}: a field needs a type`)
-  }
-  if (f.min !== undefined && f.max !== undefined && f.min > f.max) {
-    throw new ComposeRefusal('bad-field', `${where}.${f.name}: min ${f.min} > max ${f.max}`)
-  }
-  if (f.step !== undefined && f.step <= 0) {
-    throw new ComposeRefusal('bad-field', `${where}.${f.name}: step ${f.step} <= 0`)
-  }
-  if (
-    f.default !== undefined && typeof f.default === 'number' &&
-    ((f.min !== undefined && f.default < f.min) || (f.max !== undefined && f.default > f.max))
-  ) {
-    throw new ComposeRefusal('bad-field', `${where}.${f.name}: default ${f.default} outside [${f.min ?? '-∞'}, ${f.max ?? '∞'}]`)
+  for (const [name, node] of Object.entries(dict)) {
+    if (!/^[a-z_][a-z0-9_]*$/.test(name)) {
+      throw new ComposeRefusal('bad-field', `${where}: field name '${name}' is not a legal identifier`)
+    }
+    const meta = (node as { meta?: Record<string, unknown> }).meta ?? {}
+    if (meta.min !== undefined && meta.max !== undefined && (meta.min as number) > (meta.max as number)) {
+      throw new ComposeRefusal('bad-field', `${where}.${name}: min ${String(meta.min)} > max ${String(meta.max)}`)
+    }
+    if (meta.step !== undefined && (meta.step as number) <= 0) {
+      throw new ComposeRefusal('bad-field', `${where}.${name}: step ${String(meta.step)} <= 0`)
+    }
+    const dv = meta.default
+    if (
+      typeof dv === 'number' &&
+      ((meta.min !== undefined && dv < (meta.min as number)) || (meta.max !== undefined && dv > (meta.max as number)))
+    ) {
+      throw new ComposeRefusal('bad-field', `${where}.${name}: default ${String(dv)} outside [${String(meta.min ?? '-∞')}, ${String(meta.max ?? '∞')}]`)
+    }
   }
 }
 
@@ -200,10 +191,14 @@ function validateVerb(v: VerbRegistration): void {
       throw new ComposeRefusal('bad-verb', `verb '${v.id}' engine '${e.id}': exactly one of flow/local/refusal (got ${arms.length})`)
     }
   }
-  for (const f of v.fields) validateField(`verb ${v.id}`, f)
+  validateFields(`verb ${v.id}`, v.fields)
 }
 
 function wireType(node: Record<string, unknown>): string {
+  // declared wire type wins (mod contracts carry the py's exact
+  // type: image/mask/file/select/number/slider/textarea/loras)
+  const extra = ((node.meta as Record<string, unknown> | undefined)?.extra ?? {}) as Record<string, unknown>
+  if (typeof extra.wtype === 'string' && extra.wtype !== '') return extra.wtype
   const t = String(node.type ?? 'string')
   if (t === 'number') return String((node.meta as Record<string, unknown> | undefined)?.step ?? '') === '1' ? 'seed' : 'slider'
   if (t === 'string') return 'text'
@@ -246,13 +241,13 @@ export class ComfyUIService extends Service {
     if (mod.families.length === 0) {
       throw new ComposeRefusal('bad-mod', `mod pack '${mod.pack}' declares no families — a mod rides a model`)
     }
-    for (const field of mod.fields) validateField(`mod ${mod.pack} (${mod.families.join(',')})`, field)
+    validateFields(`mod ${mod.pack} (${mod.families.join(',')})`, mod.fields)
     for (const prior of this.modRegistrations) {
       if (prior.pack !== mod.pack) continue
       const overlap = prior.families.filter((fam) => mod.families.includes(fam))
       if (overlap.length === 0) continue
-      const priorNames = prior.fields.map((f) => f.name).sort().join(',')
-      const nowNames = mod.fields.map((f) => f.name).sort().join(',')
+      const priorNames = Object.keys(prior.fields.dict ?? {}).sort().join(',')
+      const nowNames = Object.keys(mod.fields.dict ?? {}).sort().join(',')
       if (priorNames !== nowNames) {
         throw new ComposeRefusal('bad-mod',
           `mod pack '${mod.pack}' has two shapes for [${overlap.join(',')}]: [${priorNames}] vs [${nowNames}] — same-pack flavors must agree`)
@@ -265,10 +260,13 @@ export class ComfyUIService extends Service {
    *  arm per engine row) and one registration per verb id (two
    *  classes mounting one id is the py's loud refusal). */
   registerVerb(verb: VerbRegistration): void {
-    validateVerb(verb)
+    // duplicate id is the LOUDER signal — it fires before the
+    // contract gates (a re-mount of a live verb id is an owner
+    // bug, not a declaration bug)
     if (this.verbs.has(verb.id)) {
       throw new ComposeRefusal('bad-verb', `verb '${verb.id}' registered twice — one class per verb id`)
     }
+    validateVerb(verb)
     this.verbs.set(verb.id, verb)
   }
 
@@ -276,24 +274,23 @@ export class ComfyUIService extends Service {
    *  whose declaring families intersect the card's boarded set
    *  join the card surface, scoped to the intersection (a family
    *  filter the emission applies per served model). */
-  cardModFields(cardId: string): AbsorbedField[] {
+  cardModFields(cardId: string): AbsorbedMod[] {
     const def = this.cards.get(cardId)
     if (def === undefined) return []
-    const out: AbsorbedField[] = []
+    const out: AbsorbedMod[] = []
     for (const mod of this.modRegistrations) {
       const scope = mod.families.filter((fam) => def.boarded.includes(fam))
       if (scope.length === 0) continue
-      for (const field of mod.fields) {
-        const existing = out.find((a) => a.field.name === field.name)
-        if (existing !== undefined) {
-          // same field name from another flavor: the union scope (the
-          // py merged same-shape packs by widening the family set)
-          const widened = [...new Set([...existing.families, ...scope])]
-          out[out.indexOf(existing)] = { field: existing.field, families: widened }
-          continue
-        }
-        out.push({ field, families: scope })
+      const existing = out.find((a) => a.pack === mod.pack)
+      if (existing !== undefined) {
+        // same-pack flavor on another family: the union scope (the
+        // py merged same-shape packs by widening the family set —
+        // Schema.intersect semantics, shapes already validated equal)
+        const widened = [...new Set([...existing.families, ...scope])]
+        out[out.indexOf(existing)] = { pack: existing.pack, fields: existing.fields, families: widened }
+        continue
       }
+      out.push({ pack: mod.pack, fields: mod.fields, families: scope })
     }
     return out
   }
@@ -327,51 +324,51 @@ export class ComfyUIService extends Service {
   /** The wire form fragment for one card + family (serialize.py
    *  field_spec, 1:1): card schema meta fields + absorbed mod
    *  fields, grouped first-seen, zone from members, capitalized
-   *  group labels. Binary types included (NO DROPS — 2026-09-05). */
+   *  group labels. Binary types included (NO DROPS — 2026-09-05).
+   *  ONE meta path walks both planes (cards' schemas and mods'
+   *  contracts are the same Schemastery shape — the dual-decl
+   *  pattern; group/zone/visible_when ride .extra on both). */
   formSpec(cardId: string, family: string): Record<string, unknown> | null {
     const def = this.cards.get(cardId)
     if (def === undefined) return null
-    const schema = def.schemaCarrier ?? def.schema
-    const dict = (schema as { dict?: Record<string, Record<string, unknown>> }).dict
-    if (dict === undefined) return null
     const fields: Record<string, unknown>[] = []
-    for (const [name, node] of Object.entries(dict)) {
-      const meta = (node as { meta?: Record<string, unknown> }).meta ?? {}
-      const extra = (meta.extra ?? {}) as Record<string, unknown>
-      const fams = extra.families as readonly string[] | undefined
-      if (fams !== undefined && !fams.includes(family)) continue
-      fields.push({
-        name,
-        type: wireType(node as Record<string, unknown>),
-        label: (meta.description as string) ?? name,
-        group: (extra.group as string) ?? '',
-        zone: (extra.zone as string) ?? 'params',
-        order: fields.length,
-        ...(meta.min !== undefined ? { min: meta.min } : {}),
-        ...(meta.max !== undefined ? { max: meta.max } : {}),
-        ...(meta.default !== undefined && meta.default !== '' ? { default: meta.default } : {}),
-        ...(extra.required === true ? { required: true } : {}),
-        ...(extra.tooltip !== undefined ? { tooltip: extra.tooltip } : {}),
-      })
+    const walk = (schema: unknown, scoped: boolean): void => {
+      const carrier = (schema as { dict?: Record<string, Record<string, unknown>> }) ?? {}
+      const dict = carrier.dict
+      if (dict === undefined) return
+      for (const [name, node] of Object.entries(dict)) {
+        const meta = (node as { meta?: Record<string, unknown> }).meta ?? {}
+        const extra = (meta.extra ?? {}) as Record<string, unknown>
+        const fams = extra.families as readonly string[] | undefined
+        if (fams !== undefined && !fams.includes(family)) continue
+        fields.push({
+          name,
+          type: wireType(node as Record<string, unknown>),
+          label: (meta.description as string) ?? name,
+          group: (extra.group as string) ?? '',
+          zone: (extra.zone as string) ?? 'params',
+          order: fields.length,
+          ...(meta.min !== undefined ? { min: meta.min } : {}),
+          ...(meta.max !== undefined ? { max: meta.max } : {}),
+          ...(meta.step !== undefined ? { step: meta.step } : {}),
+          ...(meta.default !== undefined && meta.default !== '' ? { default: meta.default } : {}),
+          ...(extra.required === true || meta.required === true ? { required: true } : {}),
+          ...(extra.tooltip !== undefined ? { tooltip: extra.tooltip } : {}),
+          ...(extra.columns !== undefined ? { columns: extra.columns } : {}),
+          ...(extra.width !== undefined ? { width: extra.width } : {}),
+          ...(extra.options !== undefined ? { options: extra.options } : {}),
+          ...(extra.visible_when !== undefined ? { visible_when: extra.visible_when } : {}),
+          ...(scoped ? { families: undefined } : {}),
+        })
+        const last = fields[fields.length - 1] as Record<string, unknown>
+        if (scoped && last.families === undefined) delete last.families
+      }
     }
-    // absorbed mod fields (family-scoped) ride AFTER the card's own
+    walk(def.schemaCarrier ?? def.schema, false)
+    // absorbed mod contracts (family-scoped) ride AFTER the card's own
     for (const absorbed of this.cardModFields(cardId)) {
       if (!absorbed.families.includes(family)) continue
-      const f = absorbed.field
-      fields.push({
-        name: f.name, type: f.type, label: f.label,
-        group: f.group ?? '', zone: f.zone ?? 'params',
-        ...(f.order !== undefined ? { order: f.order } : {}),
-        ...(f.tooltip !== undefined ? { tooltip: f.tooltip } : {}),
-        ...(f.required ? { required: true } : {}),
-        ...(f.min !== undefined ? { min: f.min } : {}),
-        ...(f.max !== undefined ? { max: f.max } : {}),
-        ...(f.step !== undefined ? { step: f.step } : {}),
-        ...(f.default !== undefined && f.default !== '' ? { default: f.default } : {}),
-        ...(f.options !== undefined ? { options: f.options } : {}),
-        ...(f.visible_when !== undefined ? { visible_when: f.visible_when } : {}),
-        families: [...absorbed.families],
-      })
+      walk(absorbed.fields, false)
     }
     // groups: first-seen order, zone from first member, capitalized
     const groups: string[] = []
@@ -403,6 +400,33 @@ export class ComfyUIService extends Service {
       schema_groups: schemaGroups,
     }
   }
+
+  /** The mod's catalog rows for one family (lora picks). THE
+   *  RUNTIME CATALOG LAW: a flavor with runtimeCatalog and no own
+   *  rows serves the UNION of every flavor's declared rows of the
+   *  same pack; family rows always win over the union. */
+  modRows(pack: string, family: string): readonly LoraRowDecl[] {
+    const own = this.modRegistrations.find(
+      (m) => m.pack === pack && m.families.includes(family),
+    )
+    if (own === undefined) return []
+    if ((own.rows ?? []).length > 0 || own.runtimeCatalog !== true) return own.rows ?? []
+    const union = new Map<string, LoraRowDecl>()
+    for (const m of this.modRegistrations) {
+      if (m.pack !== pack) continue
+      for (const row of m.rows ?? []) union.set(row.id, row)
+    }
+    return [...union.values()]
+  }
+
+  /** The verbs mounted on a card (SubActionMods of its boarded
+   *  families — knobs NEVER on the card surface). */
+  cardVerbs(cardId: string): VerbRegistration[] {
+    const def = this.cards.get(cardId)
+    if (def === undefined) return []
+    return [...this.verbs.values()].filter((v) => v.families.some((fam) => def.boarded.includes(fam)))
+  }
+
 
   setFacts(facts: FactsFile): void {
     this.facts = facts

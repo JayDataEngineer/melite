@@ -26,7 +26,12 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import z from "../../../../packages/engines/comfyui-cordis/src/_z.ts"; // re-export of the pinned schemastery (walls cannot import node_modules TS)
 import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/index.ts";
+
+/** field names of a mod contract (the dict is the field table). */
+const names = (a: { fields: { dict?: Record<string, unknown> } }): string[] =>
+  Object.keys(a.fields.dict ?? {});
 
 const frozen = JSON.parse(
   readFileSync(new URL("../../../../packages/gateway/shell/data/discovery-catalog.json", import.meta.url), "utf8"),
@@ -35,17 +40,21 @@ const frozen = JSON.parse(
 await loadCardDefs();
 const svc = theService();
 
-test("mods registered through the service as plugins (PORT LAW)", () => {
+test("mods registered through the service as plugins (PORT LAW: Schemastery contracts)", () => {
   // the absorption is non-empty for all four py families
   const edit = svc.cardModFields("image-edit");
-  const names = new Set(edit.map((a) => a.field.name));
+  const editNames = new Set(edit.flatMap(names));
   for (const n of ["image1", "lanpaint_enabled", "outpaint_overlap", "mask", "mask_mode", "loras"]) {
-    assert.ok(names.has(n), `image-edit absorbed surface misses ${n}`);
+    assert.ok(editNames.has(n), `image-edit absorbed surface misses ${n}`);
+  }
+  // every mod's fields ARE a z.object contract (the dual-decl pattern)
+  for (const a of edit) {
+    assert.ok(a.fields.dict !== undefined, `pack ${a.pack} carries a Schemastery object contract`);
   }
   const gen = svc.cardModFields("image-gen");
-  assert.deepEqual(gen.map((a) => a.field.name), ["loras"], "image-gen absorbs exactly loras");
+  assert.deepEqual(gen.flatMap(names), ["loras"], "image-gen absorbs exactly loras");
   const tts = svc.cardModFields("tts");
-  assert.deepEqual(tts.map((a) => a.field.name).sort(), ["qvoice", "voice_pca_strengths"], "tts absorbs the qvoice pack");
+  assert.deepEqual(tts.flatMap(names).sort(), ["qvoice", "voice_pca_strengths"], "tts absorbs the qvoice pack");
 });
 
 test("absorption parity: image-edit/qwen-img-edit-2511 byte-exact vs the py referee", () => {
@@ -120,35 +129,39 @@ test("the anny card mounts all five py verbs; knobs never join the surface", () 
   assert.equal(byId.get("preset-save")?.engines[0]?.local, "save-preset");
   assert.equal(byId.get("dress")?.engines[0]?.flow, "fit-seat");
   // SubActionMod law: verb fields stay OFF the card surface
-  const surface = svc.cardModFields("anny").map((a) => a.field.name);
+  const surface = svc.cardModFields("anny").flatMap(names);
   for (const knob of ["person_index", "preset_id", "fit_ratio"]) {
     assert.ok(!surface.includes(knob), `verb knob ${knob} leaked onto the card surface`);
+  }
+  // verb knobs are contracts too (the tool-contract pattern)
+  for (const v of verbs) {
+    assert.ok(v.fields.dict !== undefined, `verb ${v.id} knobs are a Schemastery contract`);
   }
 });
 
 test("the loud laws: registration gates refuse", () => {
   assert.throws(() => svc.registerVerb({
     id: "hmr-estimate", label: "dup", families: ["anny"], engines: [{ id: "x", flow: "f" }],
-    writes: [], requires: [], fields: [],
+    writes: [], requires: [], fields: z.object({}) as never,
   }), /registered twice/);
   assert.throws(() => svc.registerVerb({
     id: "two-arms", label: "x", families: ["anny"],
-    engines: [{ id: "e", flow: "f", local: "l" }], writes: [], requires: [], fields: [],
+    engines: [{ id: "e", flow: "f", local: "l" }], writes: [], requires: [], fields: z.object({}) as never,
   }), /exactly one/);
   assert.throws(() => svc.registerMod({
     pack: "loras", families: ["krea-2"],
-    fields: [{ name: "wrong_shape", type: "text", label: "X" }],
+    fields: z.object({ wrong_shape: z.string() }) as never,
   }), /two shapes/);
   assert.throws(() => svc.registerMod({
     pack: "broken", families: ["krea-2"],
-    fields: [{ name: "bad", type: "slider", label: "X", min: 10, max: 1 }],
+    fields: z.object({ bad: z.number().min(10).max(1) }) as never,
   }), /min 10 > max 1/);
   assert.throws(() => svc.registerMod({
     pack: "broken", families: ["krea-2"],
-    fields: [{ name: "bad", type: "slider", label: "X", step: 0 }],
+    fields: z.object({ bad: z.number().step(0) }) as never,
   }), /step 0 <= 0/);
   assert.throws(() => svc.registerMod({
     pack: "broken", families: ["krea-2"],
-    fields: [{ name: "bad", type: "slider", label: "X", min: 0, max: 1, default: 5 }],
+    fields: z.object({ bad: z.number().min(0).max(1).default(5) }) as never,
   }), /outside/);
 });
