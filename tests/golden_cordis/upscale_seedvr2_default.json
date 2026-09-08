@@ -2,27 +2,17 @@
   "LoadImage.0": {
     "class_type": "LoadImage",
     "inputs": {
-      "image": "/mnt/melite_weights/input/samples/koi.png"
-    }
-  },
-  "SaveImage.0": {
-    "class_type": "SaveImage",
-    "inputs": {
-      "filename_prefix": "testrun/gen",
-      "images": [
-        "SeedVR2VideoUpscaler.0",
-        0
-      ]
+      "image": "tests/golden_cordis/fixtures/koi.png"
     }
   },
   "SeedVR2LoadDiTModel.0": {
     "class_type": "SeedVR2LoadDiTModel",
     "inputs": {
+      "device": "cuda:0",
+      "model": "seedvr2_ema_3b_fp16.safetensors",
       "attention_mode": "sdpa",
       "blocks_to_swap": 0,
       "cache_model": false,
-      "device": "cuda:0",
-      "model": "seedvr2_ema_3b_fp16.safetensors",
       "offload_device": "none",
       "swap_io_components": false
     }
@@ -30,15 +20,15 @@
   "SeedVR2LoadVAEModel.0": {
     "class_type": "SeedVR2LoadVAEModel",
     "inputs": {
+      "device": "cuda:0",
+      "model": "ema_vae_fp16.safetensors",
       "cache_model": false,
       "decode_tile_overlap": 128,
       "decode_tile_size": 1024,
       "decode_tiled": false,
-      "device": "cuda:0",
       "encode_tile_overlap": 128,
       "encode_tile_size": 1024,
       "encode_tiled": false,
-      "model": "ema_vae_fp16.safetensors",
       "offload_device": "none",
       "tile_debug": "false"
     }
@@ -48,26 +38,36 @@
     "inputs": {
       "batch_size": 1,
       "color_correction": "lab",
-      "dit": [
-        "SeedVR2LoadDiTModel.0",
-        0
-      ],
+      "max_resolution": 4096,
+      "resolution": 1080,
+      "seed": 42,
+      "uniform_batch_size": true,
       "enable_debug": false,
+      "input_noise_scale": 0,
+      "latent_noise_scale": 0,
+      "offload_device": "cpu",
+      "prepend_frames": 0,
+      "temporal_overlap": 0,
       "image": [
         "LoadImage.0",
         0
       ],
-      "input_noise_scale": 0.0,
-      "latent_noise_scale": 0.0,
-      "max_resolution": 4096,
-      "offload_device": "cpu",
-      "prepend_frames": 0,
-      "resolution": 1080,
-      "seed": 42,
-      "temporal_overlap": 0,
-      "uniform_batch_size": true,
+      "dit": [
+        "SeedVR2LoadDiTModel.0",
+        0
+      ],
       "vae": [
         "SeedVR2LoadVAEModel.0",
+        0
+      ]
+    }
+  },
+  "SaveImage.0": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "testrun/gen",
+      "images": [
+        "SeedVR2VideoUpscaler.0",
         0
       ]
     }

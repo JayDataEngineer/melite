@@ -393,9 +393,7 @@
           "default": "audio"
         },
         "requires_model": false,
-        "params": {
-          "error": "ModuleNotFoundError: No module named 'music'"
-        }
+        "params": null
       },
       "tts": {
         "engine": "comfyui",
@@ -510,17 +508,6 @@
         "requires_model": false,
         "params": null
       },
-      "forge": {
-        "engine": "anycreature",
-        "kind_inputs": {},
-        "kind_outputs": {
-          "default": "mesh"
-        },
-        "requires_model": false,
-        "params": {
-          "error": "ModuleNotFoundError: No module named 'forge'"
-        }
-      },
       "quad-remesh": {
         "engine": "comfyui",
         "kind_inputs": {
@@ -531,33 +518,6 @@
         },
         "requires_model": false,
         "params": null
-      },
-      "auto-rig": {
-        "engine": "skintokens",
-        "kind_inputs": {
-          "input": "mesh"
-        },
-        "kind_outputs": {
-          "default": "mesh"
-        },
-        "requires_model": false,
-        "params": {
-          "error": "ModuleNotFoundError: No module named 'auto_rig'"
-        }
-      },
-      "music-native": {
-        "engine": "audio_cpp",
-        "kind_inputs": {
-          "prompt": "text",
-          "lyrics": "text"
-        },
-        "kind_outputs": {
-          "default": "audio"
-        },
-        "requires_model": true,
-        "params": {
-          "error": "ModuleNotFoundError: No module named 'music_native'"
-        }
       }
     },
     "stage_shape": {

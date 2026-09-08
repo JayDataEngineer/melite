@@ -3,7 +3,7 @@
   "model": "seedvr2_ema",
   "run_id": "testrun",
   "params": {
-    "input_image": "/mnt/melite_weights/input/samples/koi.png",
+    "input_image": "tests/golden_cordis/fixtures/koi.png",
     "seed": 42
   }
 }

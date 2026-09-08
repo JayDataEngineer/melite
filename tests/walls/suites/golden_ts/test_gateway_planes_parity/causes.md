@@ -51,3 +51,18 @@ in these bodies (clocks stripped, see above) — no normalization.
 Regolden only for a deliberate TS planes-door behavior change,
 with a dated note here. Never regolden to chase a red wall — the
 wall failing against these bytes means the door moved.
+
+
+## 2026-09-08 — dead-engine planes re-truthed (music/forge/auto_rig)
+
+The golden pinned the PY death rattle verbatim: the music, forge and
+auto_rig plane rows carried params = {"error": "ModuleNotFoundError:
+No module named 'music'|'forge'|'auto_rig'"} — the py oracle's
+import failure captured as a schema. The TS door serves the honest
+shape for a quarantined engine's plane: params = null (schema
+unloadable, plane listed). Regolded from the live scratch serve with
+pin_modulo_clock's exact strip. FOLLOW-UP (catalog re-freeze): the
+frozen discovery-catalog still carries the three dead plane rows;
+their retirement (catalog re-scan dropping quarantined engines) is
+the exporter stroke — this golden re-cuts to whatever the catalog
+serves next.
