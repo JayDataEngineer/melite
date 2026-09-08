@@ -80,7 +80,7 @@ window.__ModuleLoader__.load({
 		*
 		*   Ray ComfyUI — the ComfyUI MANAGER, NATIVE (2026-09-06): a direct GUI
 		*     on the estate's management plane. Every button is ONE action of
-		*     the py/manage.py SSOT (comfy-mcp + comfyui-manager + comfy-cli
+		*     the python/manage.py SSOT (comfy-mcp + comfyui-manager + comfy-cli
 		*     behind POST /v1/manage — PROVISIONING LAW's "management is python
 		*     packages"), reached same-origin through THIS plugin's own /v1
 		*     gateway proxy. The vocabulary mirrors the comfy_manage agent tool
