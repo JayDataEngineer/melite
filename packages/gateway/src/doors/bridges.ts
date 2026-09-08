@@ -449,17 +449,18 @@ export function resolveManagePython(repoRoot: string): string {
   return join(repoRoot, ".venv", "bin", "python");
 }
 
-/** Manage source dirs for sys.path (py str(REPO/"py"), 3927/3942):
- *  <repo>/py first when present (the MELITE_REPO_ROOT tree), always
- *  backed by the file-anchored product python/ (the manage SOURCE is
- *  product code, never a wall fixture). */
+/** Manage source dirs for sys.path (py str(REPO/"py"), 3927/3942;
+ *  the py tier is python/ since the 2026-09-08 rename — the manage
+ *  SOURCE is product code, never a wall fixture): <repo>/python
+ *  first when present (the MELITE_REPO_ROOT tree), always backed by
+ *  the file-anchored product python/. */
 export function managePyDirs(repoRoot: string): string[] {
   const dirs: string[] = [];
-  const overrideDir: string = join(repoRoot, "py");
-  if (overrideDir !== join(anchoredRepoRoot(), "py") && existsSync(overrideDir)) {
+  const overrideDir: string = join(repoRoot, "python");
+  if (overrideDir !== join(anchoredRepoRoot(), "python") && existsSync(overrideDir)) {
     dirs.push(overrideDir);
   }
-  dirs.push(join(anchoredRepoRoot(), "py"));
+  dirs.push(join(anchoredRepoRoot(), "python"));
   return dirs;
 }
 

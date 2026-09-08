@@ -30,20 +30,16 @@ bytes for the passthrough legs):
     the path; node-as-python → 502 runner-failed; resolveManagePython
     unit probe.
 
-RUNNER CAUSE (2026-09-08, LOUD — these legs pin a bug, not the
-design): the TS manage bridge shells out to the base-env python
-with sys.path inserts from managePyDirs() (bridges.ts), which still
-points at <repo>/py — but the estate modules live in
-<repo>/python/ (the py gateway's own runner inserts REPO/"python").
-The spawn therefore dies with ModuleNotFoundError: No module named
-'manage' and every dispatch leg answers 502 "manage runner failed".
-The pre-conversion wall proved it: py 422/404/200 vs TS 502 on the
-same payloads (6 legs). TS is the contract now, so the legs below
-pin the CURRENT 502 envelope shape (status + keys + action echo +
-detail + the ModuleNotFoundError tail) — a packages/ fix to
-managePyDirs flips these legs to their 422/404/200 shapes, and the
-fix stroke re-pins them THEN (a fix that leaves these pins red is
-the wall doing its job). NEVER soften these pins to status-only.
+RUNNER CAUSE — RESOLVED (2026-09-08): the TS manage bridge's
+managePyDirs() pointed at the dead <repo>/py tier after the python/
+rename; every dispatch leg answered 502 "manage runner failed" and
+the pre-fix pins (Stage A) pinned that broken envelope as current
+bytes. The fix stroke (same day) repointed managePyDirs at
+<repo>/python/ and re-pinned these legs to the REAL 422/404/200
+dispatch shapes (loose on pydantic/live text, strict on envelope:
+action echo + ok + code + data). Phase D still pins the genuine
+plane-unavailable templates (503/502) — those are design, not bug.
+NEVER soften pins to status-only.
 
 Forward/envelope decisions under test (TS cites):
   - poser target = the ONE engines.<name>.url in
@@ -256,8 +252,11 @@ def http(port: int, method: str, target: str,
         raise RuntimeError("transport to :%d%s: %s" % (port, target, e))
 
 
-def runner_shape(doc: bytes | None, action: str) -> bool:
-    """The CURRENT manage-runner envelope pin (see RUNNER CAUSE)."""
+def dispatch_shape(doc: bytes | None, action: str) -> bool:
+    """The REAL manage-dispatch envelope (2026-09-08 path fix): the
+    runner reaches python/manage.py; refusal/shape legs pin action
+    echo + ok:false + code + data:null, never the full pydantic text
+    (allowed-action lists drift with the manage module)."""
     try:
         body = json.loads(doc) if isinstance(doc, bytes) else doc
     except ValueError:
@@ -265,10 +264,10 @@ def runner_shape(doc: bytes | None, action: str) -> bool:
     return (isinstance(body, dict)
             and body.get("action") == action
             and body.get("ok") is False
-            and body.get("detail") == "manage runner failed"
-            and isinstance(body.get("data"), dict)
-            and "No module named 'manage'"
-            in str(body["data"].get("stderr", "")))
+            and body.get("code") == "invalid_request"
+            and body.get("data") is None
+            and isinstance(body.get("detail"), str)
+            and len(body["detail"]) > 0)
 
 
 # ── main ─────────────────────────────────────────────────────────────
@@ -391,29 +390,38 @@ def main() -> int:
               and str(doc.get("error", "")).startswith("bad JSON: "),
               "%r %r" % (s, b[:100]))
 
-        # RUNNER CAUSE pins (2026-09-08): the dispatch plane is
-        # unreachable (stale py-dir in managePyDirs), so these legs
-        # pin the 502 runner envelope — NOT the 422/404/200 dispatch
-        # shapes. The fix stroke re-pins them.
-        for label, payload in (
+        # REAL DISPATCH pins (2026-09-08 path fix, the fix stroke the
+        # RUNNER CAUSE deferred): managePyDirs pointed at the dead py
+        # tier after the python/ rename — Stage A pinned the broken
+        # 502s as current bytes; the fix restores live dispatch, so
+        # these legs pin the REAL 422/404/200 shapes (loose on
+        # pydantic/live text, strict on envelope).
+        for label, payload, detail_part in (
             ("unknown action",
-             {"action": "nope_no_such_action_bridges"}),
-            ("empty body", {}),
+             {"action": "nope_no_such_action_bridges"},
+             "Input should be"),
+            ("empty body",
+             {},
+             "Field required"),
             ("missing arg",
-             {"action": "install_extension"}),
+             {"action": "install_extension"},
+             "install_extension requires: nodes"),
         ):
             raw = json.dumps(payload).encode()
             s, b, _ = post_manage(raw)
             action = payload.get("action", "?")  # type: ignore[union-attr]
-            check("manage runner-shape %s" % label,
-                  s == 502 and runner_shape(b, action),
+            doc = parsed(b)
+            check("manage dispatch %s" % label,
+                  s == 422 and dispatch_shape(b, action)
+                  and detail_part in str(doc.get("detail", "")),
                   "%r %r" % (s, b[:200]))
 
         raw = json.dumps({"action": "provision_model",
                           "model": "no-such-model-xyz-bridges"}).encode()
         s, b, _ = post_manage(raw)
-        check("manage runner-shape unknown-model",
-              s == 502 and runner_shape(b, "provision_model"),
+        check("manage dispatch unknown-model",
+              s == 404 and dispatch_shape(b, "provision_model")
+              and "not found in catalog" in str(parsed(b).get("detail", "")),
               "%r %r" % (s, b[:200]))
 
         s, b, _ = post_manage(b"[1,2]")
@@ -424,9 +432,16 @@ def main() -> int:
               "%r %r" % (s, b[:160]))
 
         s, b, _ = post_manage(json.dumps({"action": "status"}).encode())
-        check("manage runner-shape status",
-              s == 502 and runner_shape(b, "status"),
-              "%r %r" % (s, b[:300]))
+        doc = parsed(b)
+        check("manage dispatch status (live shape, not live values)",
+              s == 200 and isinstance(doc, dict)
+              and doc.get("action") == "status"
+              and doc.get("ok") is True
+              and doc.get("detail") == "server up"
+              and isinstance(doc.get("data"), dict)
+              and isinstance(doc["data"].get("endpoint"), dict)
+              and doc["data"]["endpoint"].get("reachable") is True,
+              "%r %r" % (s, b[:200]))
 
         s, b, _ = http(ts_port, "GET", "/v1/manage")
         check("manage method mismatch 404",
@@ -440,9 +455,8 @@ def main() -> int:
         s2, b2, _ = http(ts_port, "POST", "/v1/manage/", raw,
                          ctype="application/json")
         check("manage trailing-slash normalization",
-              s == s2 == 502
-              and runner_shape(b, "nope_no_such_action_bridges")
-              and runner_shape(b2, "nope_no_such_action_bridges"),
+              s == s2 == 422 and b == b2
+              and dispatch_shape(b, "nope_no_such_action_bridges"),
               "%r/%r %dB/%dB" % (s, s2, len(b), len(b2)))
 
         # ── Phase C: poser config legs ──
