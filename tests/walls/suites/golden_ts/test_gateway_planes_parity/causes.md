@@ -66,3 +66,34 @@ frozen discovery-catalog still carries the three dead plane rows;
 their retirement (catalog re-scan dropping quarantined engines) is
 the exporter stroke — this golden re-cuts to whatever the catalog
 serves next.
+
+
+## 2026-09-08 — PURGE S-snapshots: manifests() goes registry-native
+
+The card-dir tool.json snapshots are deleted; manifests() projects
+from the primed registry over the frozen TOOLS_JSON base, so the
+fixture's plug card dirs (unregistered ids) are silently absent
+from lanes/card-tools/bundles. Re-derived from the live fixture
+serve (this wall's own build_fixture + boot path — a throwaway
+driver dumped the bytes, statuses verified per slug):
+
+- lanes*.json (12): no card rows on the fixture root (the dir-less
+  pure-tool global unions under the registry-owner engine only —
+  live behavior, not fixture). genre/kind filters pin empty;
+  bogus/post-404 mechanics stand.
+- card-tools.json: the empty list (was 5 fixture rows).
+  card-tools-lane-acard.json NEW: the unregistered-lane 404 (was a
+  200). card-tools-lane-{amodel,bcard,ccard,ccarddir}.json DELETED
+  (dead lane mechanics — one 404 pin carries the contract now).
+- bundle-acard.json: 404 (was 200). bundle-amodel/bcard/ccard/
+  ccarddir/acard-kind-card DELETED (dead lane mechanics).
+  bundle-acard-kind-flow-404.json re-derived (same shape, fresh
+  capture). Flow bundles + 400s stand.
+- agent-boot.json: re-derived (embeds the new lanes/card-tools
+  bytes; gateway clock stripped exactly as pin_modulo_clock does).
+- skills/metrics/ledger goldens untouched (no manifest reads).
+
+The fixture's tool.json writes are deleted (dead inputs); one
+corrupt tool.json stays (badjson) as the junk-ignored pin — the
+walk never reads it. The stale goldens above are git-rm'd, not
+left to rot.

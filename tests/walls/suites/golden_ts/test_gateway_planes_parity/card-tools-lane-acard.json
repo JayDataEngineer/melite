@@ -1,22 +1,4 @@
-[
-  {
-    "name": "acard_tool",
-    "version": 1,
-    "kind": "card-compose",
-    "card": "acard",
-    "model": "amodel",
-    "stage_title": "A Card",
-    "description": "Does A things.",
-    "params_schema": {
-      "type": "object",
-      "properties": {
-        "prompt": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "prompt"
-      ]
-    }
-  }
-]
+{
+  "error": "no such lane: 'acard' \u2014 /v1/card-tools?lane= resolves a card dir name (see /v1/lanes) or a model id landing on its card",
+  "code": "invalid_request"
+}

@@ -35,14 +35,15 @@ card/lane (present and future), not just the lane that burned:
   in-process; now the validate door. The semantic row validators
   (GATE B) are unported in TS — see the checklist there.
 
-  GATE 3 (silent served-manifest drift): the card-dir tool.json
-  files are SERVED (/v1/card-tools via lane_disclosure) and FROZEN
-  (the gen_tool_json generator died with card.py, purge S-decls
-  2026-09-08 — re-derivation rides S-snapshots). Four of them once
+  GATE 3 (silent served-manifest drift): PURGE S-snapshots
+  2026-09-08 — the card-dir tool.json snapshots are DELETED and
+  manifests() projects from the primed registry over the frozen
+  TOOLS_JSON base (one projection, two doors). Four snapshots once
   drifted silently because no wall ran the generator's check mode;
-  until re-derivation this suite pins the frozen shape: every
-  snapshot parses, carries card/model rows with params_schema
-  properties, and names a registered card.
+  the drift class dies with the files: this suite pins the
+  deletion, the projection coverage (every registered card has a
+  base row + card dir), and the door agreement (/v1/card-tools ==
+  /v1/tools row-for-row, clothing included).
 
 Native pytest (assert-based) — auto-collected, no registry edit.
 No GPU, no ComfyUI: one scratch-gateway boot for the HTTP proof.
@@ -649,38 +650,86 @@ def test_start_door_400_leaves_queue_empty() -> None:
         reap_gateway(proc)
 
 
-# ── GATE 3: served snapshot frozen shape ─────────────────────────
-# (PURGE S-decls 2026-09-08: the generator read the card classes —
-# both die here; the snapshots are hand-owned frozen data until
-# S-snapshots re-derives them from the registry. This gate pins the
-# frozen shape so a corrupted snapshot fails HERE, not at serve.)
+# ── GATE 3: served manifests are the registry projection ──────
+# (PURGE S-snapshots 2026-09-08: the card-dir tool.json snapshots
+# are deleted; manifests() projects from the primed registry over
+# the frozen TOOLS_JSON base (doors/toolProjection.ts). This gate
+# pins the projection: no snapshots remain, every registered card
+# is covered (base row + card dir, pure-tool excepted), and the two
+# card-tool doors agree row-for-row.)
 
-def test_tool_snapshots_frozen_shape() -> None:
-    cards = _registry_cards()
-    snaps = sorted(
+def test_tool_snapshots_deleted() -> None:
+    strays = sorted(
         (REPO / "packages" / "engines" / "comfyui"
          / "action_cards").rglob("tool.json"))
-    assert snaps, "no tool.json snapshots — the served manifests"
-    bad = []
-    for snap in snaps:
-        try:
-            rows = json.loads(snap.read_text(encoding="utf-8"))
-        except ValueError as e:
-            bad.append("%s: unparseable (%s)" % (snap.name, e))
-            continue
-        if not isinstance(rows, list) or not rows:
-            bad.append("%s: not a non-empty row list" % snap.name)
-            continue
-        for row in rows:
-            if not isinstance(row, dict):
-                bad.append("%s: row not an object" % snap.name)
-                continue
-            cid = row.get("card")
-            if cid not in cards:
-                bad.append("%s: names unregistered card %r"
-                           % (snap.name, cid))
-            props = (row.get("params_schema") or {}).get("properties")
-            if not isinstance(props, dict) or not props:
-                bad.append("%s: %s params_schema has no properties"
-                           % (snap.name, cid))
-    assert not bad, bad
+    assert not strays, \
+        "tool.json snapshots survive: %r" % [str(s) for s in strays]
+
+
+def _projection_facts() -> dict:
+    p = subprocess.run(
+        ["node", "--experimental-strip-types", "--no-warnings",
+         os.path.join(REPO, "tests", "walls", "helpers",
+                       "tool_projection_probe.mjs"),
+         str(REPO)],
+        cwd=str(REPO), capture_output=True, text=True, timeout=180)
+    assert p.returncode == 0, \
+        "projection probe rc=%d %s" % (p.returncode, (p.stderr or "")[-300:])
+    return json.loads(p.stdout.strip().splitlines()[-1])
+
+
+# The py-era dir bridge is closed: exactly these underscore dirs
+# map to registry ids (a fourth refuses LOUD in the walk — add the
+# row or rename the dir).
+FROZEN_DIR_ALIASES = {
+    "img_to_mesh": "img-to-mesh",
+    "input_prep": "input-prep",
+    "mask_studio": "mask-studio",
+}
+
+
+def test_registry_projection_covers_cards() -> None:
+    facts = _projection_facts()
+    reg = {c["id"]: c for c in facts["cards"]}
+    base = set(facts["base"])
+    assert base == set(reg), \
+        "base/registry drift: unbased=%r debased=%r" % (
+            sorted(set(reg) - base), sorted(base - set(reg)))
+    assert facts["aliases"] == FROZEN_DIR_ALIASES, facts["aliases"]
+    walked = set()
+    for _genre, cname in facts["dirs"]:
+        walked.add(facts["aliases"].get(cname, cname))
+    dirless = sorted(
+        cid for cid, c in reg.items()
+        if not c["pure"] and cid not in walked)
+    assert not dirless, \
+        "registered boarding cards with no card dir: %r" % dirless
+    pure_dirless = sorted(
+        cid for cid, c in reg.items() if c["pure"] and cid not in walked)
+    assert pure_dirless, \
+        "no dir-less pure-tool card — the union rule is untested"
+
+
+def _hget(port: int, path: str):
+    req = urllib.request.Request(
+        "http://127.0.0.1:%d%s" % (port, path),
+        headers={"Content-Type": "application/json"}, method="GET")
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return r.status, json.loads(r.read().decode())
+
+
+def test_card_tool_doors_agree(_sg: int) -> None:
+    st1, ct = _hget(_sg, "/v1/card-tools")
+    st2, tools = _hget(_sg, "/v1/tools")
+    assert (st1, st2) == (200, 200), (st1, st2)
+    ctm = {r["card"]: r for r in ct}
+    tom = {t["card"]: t for t in tools["tools"] if t.get("card")}
+    assert set(ctm) == set(tom), \
+        "door card sets differ: %r" % (
+            sorted(set(ctm) ^ set(tom)),)
+    bad = [cid for cid in ctm if ctm[cid] != tom[cid]]
+    assert not bad, "door rows differ: %r" % bad
+    # The S-snapshots behavior change, pinned: the dir-less
+    # pure-tool card discloses on the manifest surface.
+    assert ctm["clothing-placement"]["model"] is None, \
+        ctm["clothing-placement"].get("model")

@@ -163,7 +163,9 @@ SMOKE: dict[str, dict] = {
                               "calm neutral narration"}},
 }
 
-# card -> WHY it has no live probe. Empty today (all 19 boarded);
+# card -> WHY it has no live probe. Empty today (all 19 ComfyUI
+# boarded; clothing-placement rides a Blender MCP session, not the
+# queue — covered by its card wall, never this one);
 # an entry must name the lane reality (unprovisioned checkpoint,
 # remote-money lane, binary without a box build), never "later".
 EXCLUDED: dict[str, str] = {

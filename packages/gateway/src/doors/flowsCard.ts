@@ -216,6 +216,21 @@ export async function primeCardRegistry(): Promise<void> {
   defsCache = await loadCardDefs();
 }
 
+/** Sync read of the primed registry (PURGE S-snapshots: the
+ *  disclosure projection (toolProjection.ts) serves from the
+ *  registry, and the disclosure doors are sync — same prime rule
+ *  as the validate rim: unprimed access throws LOUD). */
+export function cardDefsSync(): Map<string, CardDefinition> {
+  if (defsCache === null) {
+    throw new Error(
+      "[card_registry] unprimed: boot must await primeCardRegistry() " +
+        "before the disclosure rim serves (both main.ts boot sites " +
+        "prime; walls boot through startServer which primes)",
+    );
+  }
+  return defsCache;
+}
+
 function loadCardDecls(): Record<string, CardDeclRow> {
   if (declsCache !== null) return declsCache;
   if (defsCache === null) {

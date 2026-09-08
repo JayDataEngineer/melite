@@ -229,26 +229,15 @@ def test_http_unknown_refuses_404(scratch_gateway: int) -> None:
 # between them. This section is that contract.
 
 def test_card_tools_kinds_exist_in_registry_with_formspec() -> None:
+    # TOMBSTONE (PURGE S-snapshots 2026-09-08): drove the py
+    # oracle's snapshot arm (lane_disclosure.card_tools over the
+    # card-dir tool.json files) — the snapshots are deleted, so the
+    # arm serves []. The live contract (every served manifest's kind
+    # carries formSpec) is pinned by
+    # test_http_card_tools_manifest_kinds_covered below; the oracle
+    # itself retires in S-oracle.
     import lane_disclosure
-    manifests = lane_disclosure.card_tools()
-    assert len(manifests) >= 10
-    # PURGE S-vocab 2026-09-08: card_kinds.py deleted — kind ->
-    # formSpec flags frozen from its TABLE at the cut (same rows the
-    # vocab wall pins field-by-field in table_CARD_KINDS).
-    rows = {"body": False, "card-compose": True, "chain": True,
-            "compound": False, "generation": True, "input": False,
-            "preview": False, "studio-link": False}
-    for m in manifests:
-        kind = m.get("kind")
-        assert kind, ("manifest without a kind", m.get("name"))
-        assert kind in rows, (
-            "manifest kind missing from the kinds registry — the "
-            "editor fail-safes this card to NO form-spec (the "
-            "model-picker-only bug class): %s (card %s)"
-            % (kind, m.get("name")))
-        assert rows[kind], (
-            "a picker-seeded action card must render the universal "
-            "form (formSpec=True): %s (card %s)" % (kind, m.get("name")))
+    assert lane_disclosure.card_tools() == []
 
 
 def test_registry_declares_card_compose() -> None:
@@ -328,8 +317,12 @@ def test_http_krea_2_int8_quant_owns_under_turbo(scratch_gateway: int) -> None:
 def test_wire_every_quant_is_owner_linked_to_a_known_variant(scratch_gateway: int) -> None:
     """The cross-model invariant. Every Quant row on the wire must point
     at a Variant row of the same model — an orphan is a hidden quant."""
-    import lane_disclosure
-    for m in lane_disclosure.card_tools():
+    # (PURGE S-snapshots 2026-09-08: seeded from the live
+    # /v1/card-tools door — the py oracle's snapshot arm served the
+    # seed list before, and serves [] now.)
+    status0, manifests = _http_get(scratch_gateway, "v1/card-tools")
+    assert status0 == 200 and manifests
+    for m in manifests:
         svc = m.get("model")
         if not svc: continue
         try:

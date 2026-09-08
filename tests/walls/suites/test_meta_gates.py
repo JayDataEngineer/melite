@@ -294,6 +294,20 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
     },
     "docs/design/web-registry.md": {
         "ui/studio/component.tsx": "rot",
+        # (2026-09-08 purge S-snapshots — pre-existing generator ref,
+        # accounted as found.)
+        "gen_tool_json.py": "past",
+    },
+    # (2026-09-08 purge S-snapshots — completed records naming the
+    # deleted snapshot generator; historic refs.)
+    "docs/design/card-primitive-extraction.md": {
+        "gen_tool_json.py": "past",
+    },
+    "docs/design/import-dsh-wheels-2026-09-08.md": {
+        "tools/gen_tool_json.py": "past",
+    },
+    "docs/design/row7-card-authoring.md": {
+        "tools/gen_tool_json.py": "past",
     },
     "docs/gateway/endpoints.md": {
         "flow.yaml": "rot",
@@ -438,6 +452,12 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         "python/card_kinds.py": "deleted-in-record",
         "python/slot_kinds.py": "deleted-in-record",
         "python/ui_map.py": "deleted-in-record",
+        # (2026-09-08 purge S-snapshots — the card-dir snapshot
+        # exporter deletion; this doc is the record.)
+        "tools/gen_tool_json.py": "deleted-in-record",
+        "gen_tool_json.py": "deleted-in-record",
+        # (the S-snapshots section names the survey's sidecar ref.)
+        "tool.json.d/causes.md": "past",
     },
     "docs/design/ts-migration-ladder-2026-09-07.md": {
         "card-decls.json": "past",
@@ -471,6 +491,12 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         "python/card_kinds.py": "past",
         "python/slot_kinds.py": "past",
         "python/ui_map.py": "past",
+        # (2026-09-08 purge S-snapshots — the #5 row names the card
+        # snapshot generator as live; completed record, historic
+        # ref. The UPDATE cell names the deleted shape; same.)
+        "tools/gen_tool_json.py": "past",
+        "gen_tool_json.py": "past",
+        "tool.json.d/causes.md": "past",
     },
     "docs/design/cpp-node-cutover-quad-remesh-2026-09-07.md": {
         "card-decls.json": "past",

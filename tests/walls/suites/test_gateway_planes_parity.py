@@ -45,6 +45,17 @@ deleted per the operator order "we do not need parity, we need to
 migrate, not keep the old machinery"; the TS-SSOT golden legs below
 are the wall now.
 
+PURGE S-snapshots 2026-09-08: the card-dir tool.json snapshots are
+deleted — manifests() projects from the primed registry, so the
+fixture's plug card dirs (unregistered ids) are silently absent
+from every manifest-backed door (lanes, card-tools, bundles): the
+fixture surface carries NO card rows (the dir-less pure-tool
+global unions under the registry-owner engine only — live
+behavior, pinned by the live walls, not the fixture). The plug
+lanes below pin the new contract (404s where 200s were); the plug
+doc/model/skill/flow mechanics are untouched, so the
+skills/metrics/ledger legs stand as they were.
+
 Date: 2026-09-08. Status: landed (oracle-death re-derivation).
 
 Run: python3 tests/walls/suites/test_gateway_planes_parity.py
@@ -191,14 +202,12 @@ def build_fixture(root: Path) -> None:
         p.write_text(text, encoding="utf-8")
 
     # ── plug-a: one card + one model family, all doc classes ──
+    # (PURGE S-snapshots: no tool.json — the snapshots are deleted
+    # estate-wide; the registry projection serves the row. plug
+    # cards are unregistered, so this dir is silently absent from
+    # the manifest-backed doors; the docs below still pin the
+    # cardRows/skill mechanics.)
     w("packages/engines/plug-a/plugin.yaml", "name: plug-a\n")
-    w("packages/engines/plug-a/action_cards/photo/acard/tool.json",
-      json.dumps({"name": "acard_tool", "version": 1, "kind": "card-compose",
-                  "card": "acard", "model": "amodel",
-                  "stage_title": "A Card", "description": "Does A things.",
-                  "params_schema": {"type": "object",
-                                    "properties": {"prompt": {"type": "string"}},
-                                    "required": ["prompt"]}}))
     w("packages/engines/plug-a/action_cards/photo/acard/AGENT.md",
       "---\nname: acard agent\ndescription: the acard craft\n---\n"
       "# Acard\nCompose laws.\n")
@@ -224,40 +233,24 @@ def build_fixture(root: Path) -> None:
     w("packages/engines/plug-a/models/photo/amodel/agents/skills/"
       "bare.md", "Just body, no heading.\n")
 
-    # ── plug-b: LIST manifest (two tools, second hidden) + refusals ──
+    # ── plug-b: card docs + the doc-absence refusals ──
+    # (PURGE S-snapshots: the LIST-manifest / refused-manifest /
+    # bad-JSON tool.json mechanics died with the snapshots — the
+    # walk never reads the files. One corrupt tool.json stays (see
+    # badjson below) as the junk-ignored pin.)
     w("packages/engines/plug-b/plugin.yaml", "name: plug-b\n")
-    w("packages/engines/plug-b/action_cards/photo/bcard/tool.json",
-      json.dumps([
-          {"name": "bcard_tool", "version": 2, "kind": "card-compose",
-           "card": "bcard", "model": "amodel",
-           "stage_title": "B Card", "description": "Does B things.",
-           "params_schema": {"type": "object", "properties": {},
-                             "required": []}},
-          {"name": "bcard_hidden_tool", "version": 1,
-           "kind": "card-compose", "card": "bcard", "model": "amodel",
-           "stage_title": "B Hidden", "description": "",
-           "hidden": True,
-           "params_schema": {"type": "object",
-                             "properties": {"prompt": {"type": "string"},
-                                            "seed": {"type": "integer"}},
-                             "required": ["prompt", "seed"]}}]))
     w("packages/engines/plug-b/action_cards/photo/bcard/AGENT.md",
       "# B agent\nB laws.\n")
-    # refused manifest (name + params_schema missing).
-    w("packages/engines/plug-b/action_cards/photo/badcard/tool.json",
-      json.dumps({"version": 1, "kind": "card-compose", "card": "badcard"}))
-    # unreadable manifest (bad JSON) — the card is absent everywhere.
+    # corrupt tool.json beside an unregistered dir: the walk never
+    # reads it — junk is ignored, never a 500.
     w("packages/engines/plug-b/action_cards/photo/badjson/tool.json", "{nope")
 
-    # ── plug-c: declared id != dir name + h3 base chain, no AGENT ──
+    # ── plug-c: h3 base chain models, card dir without AGENT ──
+    # (PURGE S-snapshots: no tool.json (see plug-a). The declared-id
+    # != dir-name mapping died with the snapshots — lane resolution
+    # is registry ids now.)
     w("packages/engines/plug-c/plugin.yaml", "name: plug-c\n")
-    w("packages/engines/plug-c/action_cards/photo/ccarddir/tool.json",
-      json.dumps({"name": "ccard_tool", "version": 1, "kind": "card-compose",
-                  "card": "ccard", "model": "h3-timeline",
-                  "stage_title": "C Card", "description": "Does C things.",
-                  "params_schema": {"type": "object", "properties": {},
-                                    "required": []}}))
-    # No AGENT.md under ccarddir: bundle agent null, no card:ccard skill.
+    # No AGENT.md under ccarddir: no card:ccarddir skill row.
     w("packages/engines/plug-c/models/photo/h3/GUIDE.md",
       "---\nname: h3 guide\ndescription: base guide\n---\n"
       "# H3\nBase rules.\n")
@@ -265,12 +258,9 @@ def build_fixture(root: Path) -> None:
       "---\nname: h3-timeline agent\ndescription: child craft\n---\n"
       "# H3T\nChild craft.\n")
 
-    # ── underscore genre: never on the callable surface ──
-    w("packages/engines/plug-a/action_cards/_hid/hcard/tool.json",
-      json.dumps({"name": "hcard_tool", "version": 1, "kind": "card-compose",
-                  "card": "hcard",
-                  "params_schema": {"type": "object", "properties": {},
-                                    "required": []}}))
+    # ── underscore genre: never on the doc surface ──
+    # (PURGE S-snapshots: no tool.json (see plug-a) — the _hid dir
+    # is doubly absent now.)
     w("packages/engines/plug-a/action_cards/_hid/hcard/AGENT.md",
       "# H agent\nHidden laws.\n")
 
@@ -374,18 +364,15 @@ def main() -> int:
             "lanes method mismatch", method="POST", status=404)
 
         # ── 2. card-tools ──
+        # (PURGE S-snapshots: unfiltered serves the registry
+        # projection — on the fixture root (no comfyui engine) that
+        # is the empty list. Every plug lane 404s: unregistered
+        # dirs are silently absent. The flow-lane mechanics are
+        # untouched — the tflow/flow:/notool/nope/blank legs stand.)
         pin(ts_port, "card-tools", "/v1/card-tools",
-            "card-tools unfiltered")
+            "card-tools unfiltered (projection: empty on fixture)")
         pin(ts_port, "card-tools-lane-acard", "/v1/card-tools?lane=acard",
-            "card-tools lane=card")
-        pin(ts_port, "card-tools-lane-ccarddir",
-            "/v1/card-tools?lane=ccarddir", "card-tools lane=dir")
-        pin(ts_port, "card-tools-lane-ccard", "/v1/card-tools?lane=ccard",
-            "card-tools lane=declared")
-        pin(ts_port, "card-tools-lane-amodel", "/v1/card-tools?lane=amodel",
-            "card-tools lane=model")
-        pin(ts_port, "card-tools-lane-bcard", "/v1/card-tools?lane=bcard",
-            "card-tools list manifests")
+            "card-tools unregistered lane 404", status=404)
         pin(ts_port, "card-tools-lane-tflow", "/v1/card-tools?lane=tflow",
             "card-tools lane=flow (no such card lane)", status=404)
         pin(ts_port, "card-tools-lane-flow-tflow",
@@ -403,23 +390,13 @@ def main() -> int:
             "card-tools blank unfiltered")
 
         # ── 3. bundles ──
+        # (PURGE S-snapshots: plug lanes have no manifests — the
+        # bundle door 404s where it served. Flow bundles stand.)
         pin(ts_port, "bundle-acard", "/v1/cards/acard/bundle",
-            "bundle card")
-        # The encoded wire form serves the same golden bytes.
-        pin(ts_port, "bundle-acard", "/v1/cards/" + enc("acard") + "/bundle",
-            "bundle card encoded")
-        pin(ts_port, "bundle-amodel", "/v1/cards/amodel/bundle",
-            "bundle via model id")
-        pin(ts_port, "bundle-ccarddir", "/v1/cards/ccarddir/bundle",
-            "bundle via dir name")
-        pin(ts_port, "bundle-ccard", "/v1/cards/ccard/bundle",
-            "bundle declared-id + base chain, agent null")
-        pin(ts_port, "bundle-bcard", "/v1/cards/bcard/bundle",
-            "bundle list manifests")
-        pin(ts_port, "bundle-acard-kind-card",
-            "/v1/cards/acard/bundle?kind=card", "bundle kind=card")
+            "bundle unregistered lane 404", status=404)
         pin(ts_port, "bundle-acard-kind-flow-404",
-            "/v1/cards/acard/bundle?kind=flow", "bundle card kind=flow 404",
+            "/v1/cards/acard/bundle?kind=flow",
+            "bundle unregistered lane kind=flow 404",
             status=404)
         pin(ts_port, "bundle-tflow", "/v1/cards/tflow/bundle",
             "bundle flow lane is no card bundle", status=404)

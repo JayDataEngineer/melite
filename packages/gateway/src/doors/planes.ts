@@ -97,6 +97,12 @@ import {
 import type { AssetRoots } from "./assets.ts";
 import { catalogPath } from "./discovery.ts";
 import { queueSnapshot } from "./flowsRun.ts";
+import { cardDefsSync } from "./flowsCard.ts";
+import {
+  DIR_ID_ALIASES,
+  baseRowFor,
+  projectCardRow,
+} from "./toolProjection.ts";
 import { appendLedger } from "../queue/queue.ts";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "../core/errors.ts";
@@ -567,19 +573,28 @@ function frontmatter(text: string): { name: string; description: string } {
 // lane-wire gates (python/lane_wire.py — pydantic v2 lax, move-for-move)
 // ---------------------------------------------------------------------------
 
-interface ManifestRow {
+export interface ManifestRow {
   readonly name: string;
   readonly version: number;
   readonly kind: string;
   readonly card: string;
   readonly flow: string;
-  readonly model: string;
+  // PURGE S-snapshots: null rides (the clothing base row's model is
+  // null — the /v1/tools door serves it verbatim, so the projection
+  // preserves it and the doors agree; "" and null are both
+  // model-less downstream).
+  readonly model: string | null;
   readonly stageTitle: string;
   readonly description: string;
   readonly paramsSchema: {
     readonly type: string;
     readonly properties: Record<string, unknown>;
-    readonly required: string[];
+    // PURGE S-snapshots: the registry projection passes the
+    // emitter's output VERBATIM (the emitter omits an empty
+    // required — the /v1/tools overlay serves the same object, so
+    // the doors agree byte-for-byte; JSON drops undefined).
+    // Gate-built rows always carry the array.
+    readonly required?: string[];
   };
   readonly hidden: boolean | null;
 }
@@ -998,7 +1013,10 @@ function cardRows(engine: string): CardWalk {
     for (const cname of subdirs(join(cardsRoot, genre))) {
       const cdir: string = join(cardsRoot, genre, cname);
       const got: DocRow[] = [];
-      const agent: DocRow | null = readDoc(
+      // Oracle fallback order (lane_disclosure card walk): the
+      // top-level AGENT.md wins, agents/AGENT.md orients when the
+      // card ships no top-level doc (every estate card today).
+      let agent: DocRow | null = readDoc(
         join(cdir, "AGENT.md"),
         "card:" + cname,
         "card",
@@ -1006,6 +1024,16 @@ function cardRows(engine: string): CardWalk {
         cname,
         null,
       );
+      if (agent === null) {
+        agent = readDoc(
+          join(cdir, "agents", "AGENT.md"),
+          "card:" + cname,
+          "card",
+          genre,
+          cname,
+          null,
+        );
+      }
       if (agent !== null) got.push(agent);
       let sks: string[];
       try {
@@ -1040,21 +1068,32 @@ interface ManifestEntry {
   readonly rows: ManifestRow[];
 }
 
-/** Card tool manifests (lane_disclosure._manifests 259-312): raw
- *  readdir order at BOTH glob levels (the star-star-tool.json glob
- *  yields OS order — probed: c/ before b/ before a/ on the same tree
- *  py sorted() would reorder; do NOT sort). Keyed by DECLARED card
- *  id; within-engine duplicates keep the FIRST. */
+/** Card tool manifests (PURGE S-snapshots 2026-09-08: the card-dir
+ *  tool.json snapshots are deleted — rows project from the primed
+ *  registry over the frozen TOOLS_JSON base (toolProjection.ts).
+ *  The walk still scopes dir-backed cards to the disclosure root
+ *  (structure + readdir order preserved at BOTH glob levels);
+ *  unregistered dirs (the planes fixture's plug fakes, stale dirs)
+ *  skip silently; dir-less pure-tool cards (requiresModel false —
+ *  no dir, no models, no docs) union in as root-independent
+ *  globals under the registry-owner engine only (once, not once
+ *  per engine). Keyed by DECLARED card id. */
 function manifests(engine: string): Map<string, ManifestEntry> {
   const out = new Map<string, ManifestEntry>();
+  const defs = cardDefsSync();
+  const resolved = new Set<string>();
   const cardsRoot: string = join(engine, "action_cards");
   let genres: string[];
   try {
     genres = readdirSync(cardsRoot);
   } catch {
-    return out;
+    genres = [];
   }
   for (const genre of genres) {
+    // Dependency + hidden dirs are never cards (a node_modules
+    // tree rides action_cards/ — its packages must neither serve
+    // nor trip the closed dir bridge below).
+    if (genre === "node_modules" || genre.startsWith(".")) continue;
     const gdir: string = join(cardsRoot, genre);
     if (!isDir(gdir)) continue;
     let cards: string[];
@@ -1065,68 +1104,41 @@ function manifests(engine: string): Map<string, ManifestEntry> {
     }
     for (const cname of cards) {
       const cdir: string = join(gdir, cname);
-      const tj: string = join(cdir, "tool.json");
-      if (!isFile(tj)) continue;
-      let raw: string;
-      try {
-        raw = readFileSync(tj, "utf8");
-      } catch (e) {
-        loud(
+      if (!isDir(cdir)) continue;
+      // The dir->id bridge is CLOSED (DIR_ID_ALIASES): a new
+      // underscore dir is a rename waiting to happen — refuse LOUD,
+      // never silently undisclose a card.
+      if (cname.includes("_") && DIR_ID_ALIASES[cname] === undefined) {
+        throw new LaneWireError(
           fmt(
-            "[lane_disclosure] tool.json unreadable (%s): %s",
-            tj,
-            e instanceof Error ? e.message : String(e),
+            "[tool_projection] card dir %r has no registry mapping " +
+              "(underscore dirs bridge via DIR_ID_ALIASES in " +
+              "doors/toolProjection.ts — add the row or rename the dir)",
+            cdir,
           ),
         );
-        continue;
       }
-      let docs: unknown;
-      try {
-        docs = parseJson(raw);
-      } catch {
-        loud(fmt("[lane_disclosure] tool.json unreadable (%s): bad JSON", tj));
-        continue;
-      }
-      const list: unknown[] =
-        docs === null ? [] : Array.isArray(docs) ? docs : [docs];
-      const gated: ManifestRow[] = [];
-      for (const doc of list) {
-        if (doc === null || typeof doc !== "object" || Array.isArray(doc)) {
-          loud(
-            fmt(
-              "[lane_disclosure] tool.json refused (%s): expected an " +
-                "object or a list of objects",
-              tj,
-            ),
-          );
-          continue;
-        }
-        const g: { row: ManifestRow } | { refusal: string } =
-          gateManifest(doc);
-        if ("refusal" in g) {
-          loud(fmt("[lane_disclosure] manifest refused (%s): %s", tj, g.refusal));
-          continue;
-        }
-        gated.push(g.row);
-      }
-      if (gated.length === 0) continue;
-      const cid: string = gated[0]?.card ?? "";
-      if (cid === "") continue;
-      const prev: ManifestEntry | undefined = out.get(cid);
-      if (prev !== undefined) {
-        loud(
-          fmt(
-            "[lane_disclosure] duplicate card %r (%s after %s — " +
-              "first engine in sorted order wins)",
-            cid,
-            tj,
-            join(prev.dir, "tool.json"),
-          ),
-        );
-        continue;
-      }
-      out.set(cid, { genre, dir: cdir, rows: gated });
+      const cid: string = DIR_ID_ALIASES[cname] ?? cname;
+      const def = defs.get(cid);
+      if (def === undefined) continue;
+      resolved.add(cid);
+      out.set(cid, {
+        genre,
+        dir: cdir,
+        rows: [projectCardRow(def, baseRowFor(cid))],
+      });
     }
+  }
+  for (const [cid, def] of defs) {
+    if (resolved.has(cid)) continue;
+    if (def.requiresModel !== false) continue;
+    // Dir-less pure-tool cards are engine-independent globals, but
+    // the manifests() walk is per-engine (callers merge engines) —
+    // union them under the registry's owner engine ONLY, never once
+    // per engine (the registry IS the comfyui card set; factsPath +
+    // cardDefs hardcode the same owner).
+    if ((engine.split("/").pop() ?? "") !== "comfyui") continue;
+    out.set(cid, { genre: "", dir: "", rows: [projectCardRow(def, baseRowFor(cid))] });
   }
   return out;
 }
@@ -1667,7 +1679,12 @@ function buildLaneBundle(
     const tools: ManifestRow[] = entry.rows;
     const families: string[] = [];
     for (const m of tools) {
-      if (m.model !== "" && !families.includes(m.model)) families.push(m.model);
+      if (
+        typeof m.model === "string" &&
+        m.model !== "" &&
+        !families.includes(m.model)
+      )
+        families.push(m.model);
     }
     if (families.length === 0) families.push(cardKey);
     const cards: CardWalk = cardRows(engine);

@@ -1,5 +1,7 @@
 // doors/toolsEmit.ts — the LIVE /v1/tools params_schema arm
-// (2026-09-08, the Phase-2 door flip).
+// (2026-09-08, the Phase-2 door flip; PURGE S-snapshots: the
+// registry read is the primed sync cache, and the carrier line
+// below mirrors toolProjection.ts — one projection, two doors).
 //
 // The frozen TOOLS_JSON doc (chrome.ts) carried the retired py
 // exporter's card schemas. Post-flip the card's Schemastery schema
@@ -15,7 +17,8 @@
 // beside the golden). Serialization: JSON.stringify(doc, null, 2) —
 // the TS-canonical form (raw UTF-8 em-dashes, JS numbers); the py
 // ensure_ascii era is over.
-import { loadCardDefs, emitParamsSchema } from "@comfyui/cordis";
+import { emitParamsSchema } from "@comfyui/cordis";
+import { cardDefsSync } from "./flowsCard.ts";
 import { TOOLS_JSON } from "./chrome.ts";
 
 let cached: string | null = null
@@ -24,7 +27,10 @@ const buildToolsJson = async (): Promise<string> => {
   const doc = JSON.parse(TOOLS_JSON) as {
     tools: Array<Record<string, unknown> & { card?: string }>
   }
-  const defs = await loadCardDefs()
+  // PURGE S-snapshots: the registry is primed at boot (both main.ts
+  // sites) — sync read, same projection the disclosure rim serves
+  // (toolProjection.ts mirrors this carrier line).
+  const defs = cardDefsSync()
   let overlaid = 0
   for (const tool of doc.tools) {
     if (tool.kind !== "card-compose" || typeof tool.card !== "string") continue
