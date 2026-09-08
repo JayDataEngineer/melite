@@ -15,4 +15,4 @@ export { handleWsUpgrade } from "@melite/gateway-doors";
 export { bootGatewayContext, refusalLine } from "@melite/gateway-core";
 export { createProcessShutdown } from "@melite/gateway-core";
 export { BOOT_ENGINE, bootState } from "@melite/gateway-core";
-export { primeCardRegistry } from "@melite/gateway-doors";
+export { CardRegistryService } from "@melite/gateway-doors";
