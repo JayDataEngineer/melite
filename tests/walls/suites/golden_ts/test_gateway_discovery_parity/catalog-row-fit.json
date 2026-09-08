@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"fit\",\n  \"family\": \"fit\",\n  \"genre\": \"3d\",\n  \"label\": \"Fit\",\n  \"description\": \"Seat a static prop onto a SOMAX body (socket/fit/grip placement laws) and render the proof turnaround.\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {},\n  \"engine\": \"comfyui\",\n  \"form\": \"form_3d_fit\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

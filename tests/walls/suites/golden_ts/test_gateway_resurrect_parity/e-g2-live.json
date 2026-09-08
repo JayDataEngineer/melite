@@ -1,0 +1,79 @@
+{
+  "run-g2-skippeddict": {
+    "artifacts": [],
+    "draft_id": "d1",
+    "skipped_stages": [
+      "a"
+    ],
+    "stages": []
+  },
+  "run-g2-skippedints": {
+    "artifacts": [],
+    "draft_id": "d1",
+    "skipped_stages": [
+      1,
+      2
+    ],
+    "stages": []
+  },
+  "run-g2-skippedstr": {
+    "artifacts": [],
+    "draft_id": "d1",
+    "skipped_stages": [
+      "a",
+      "b"
+    ],
+    "stages": []
+  },
+  "run-g2-skipstr": {
+    "artifacts": [],
+    "draft_id": "d1",
+    "skipped_stages": [
+      "h",
+      "i"
+    ],
+    "stages": []
+  },
+  "run-g2-stagedict": {
+    "artifacts": [],
+    "draft_id": "d1",
+    "skipped_stages": [],
+    "stages": [
+      "a",
+      "b"
+    ]
+  },
+  "run-g2-stageints": {
+    "artifacts": [],
+    "draft_id": "d1",
+    "skipped_stages": [],
+    "stages": [
+      1,
+      2
+    ]
+  },
+  "run-g2-stages": {
+    "artifacts": [],
+    "draft_id": "d1",
+    "skipped_stages": [],
+    "stages": [
+      {
+        "id": "w",
+        "index": 0,
+        "status": "pending"
+      },
+      {
+        "id": "x"
+      }
+    ]
+  },
+  "run-g2-stagestr": {
+    "artifacts": [],
+    "draft_id": "d1",
+    "skipped_stages": [],
+    "stages": [
+      "h",
+      "i"
+    ]
+  }
+}

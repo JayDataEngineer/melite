@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"anny\",\n  \"family\": \"anny\",\n  \"genre\": \"3d\",\n  \"label\": \"Anny (character assembly)\",\n  \"description\": \"Assemble a character \\u2014 composite body/hair/outfit GLBs, render the 8-view turnaround, segment a source photo into part sprites.\",\n  \"source\": {\n    \"type\": \"\",\n    \"repo_id\": \"melite-poser-nodes\"\n  },\n  \"defaults\": {\n    \"resolution\": 768,\n    \"framing\": 1.2,\n    \"focal_length\": 50,\n    \"samples\": 64,\n    \"transparent\": true\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_3d_anny\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

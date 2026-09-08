@@ -1,0 +1,5 @@
+{
+ "status": 404,
+ "content_type": "application/json",
+ "body": "{\n  \"error\": \"Unknown family_id 'a/b'\",\n  \"family_id\": \"a/b\",\n  \"code\": \"invalid_request\"\n}"
+}

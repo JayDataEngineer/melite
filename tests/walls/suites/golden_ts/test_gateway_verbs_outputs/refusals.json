@@ -1,0 +1,113 @@
+{
+  "O03": [
+    "output contract violation: card 'anny' promises Rigged body mesh (.glb) but the run delivered none of them; artifacts: (none)",
+    "output contract violation: card 'anny' promises Rigged body mesh (.glb) but the run delivered none of them; artifacts: (none)",
+    "output contract violation: card 'anny' promises Rigged body mesh (.glb) but the run delivered none of them; artifacts: r7/turnaround_00000_.png, r7/turnaround_00001_.png",
+    "output contract violation: card 'fit' promises Fit record (.json) but the run delivered none of them; artifacts: run/prop-seated.glb",
+    "output contract violation: card 'skin' promises Skin-kind sidecar (.json) but the run delivered none of them; artifacts: run/albedo.png",
+    "output contract violation: card 'input-prep' promises Staged media artifact (.png, .jpg, .jpeg, .webp, .gif, .wav, .mp3, .flac) but the run delivered none of them; artifacts: (none)",
+    "output contract violation: card 'tts' promises Spoken audio (.flac, .mp3, .wav) but the run delivered none of them; artifacts: run/cover.png"
+  ],
+  "O03-cases": [
+    [
+      "anny",
+      []
+    ],
+    [
+      "anny",
+      null
+    ],
+    [
+      "anny",
+      [
+        "r7/turnaround_00000_.png",
+        "r7/turnaround_00001_.png"
+      ]
+    ],
+    [
+      "fit",
+      [
+        "run/prop-seated.glb"
+      ]
+    ],
+    [
+      "skin",
+      [
+        "run/albedo.png"
+      ]
+    ],
+    [
+      "input-prep",
+      []
+    ],
+    [
+      "tts",
+      [
+        "run/cover.png"
+      ]
+    ]
+  ],
+  "O04": [
+    "output contract violation: card 'anny' promises Rigged body mesh (.glb) but the run delivered none of them; artifacts: run/clip.mp4, run/notes.txt, run/voice.wav",
+    "output contract violation: card 'anny' promises Rigged body mesh (.glb) but the run delivered none of them; artifacts: run/junk_00.mp4, run/junk_01.mp4, run/junk_02.mp4, run/junk_03.mp4, run/junk_04.mp4, run/junk_05.mp4, run/junk_06.mp4, run/junk_07.mp4",
+    "output contract violation: card 'anny' promises Rigged body mesh (.glb) but the run delivered none of them; artifacts: run/body.png, run/view.jpg",
+    "output contract violation: card 'anny' promises Rigged body mesh (.glb) but the run delivered none of them; artifacts: run/x.mp4",
+    "output contract violation: card 'fit' promises Fitted prop-in-hand mesh (.glb) but the run delivered none of them; artifacts: run/fit.json",
+    "output contract violation: card 'tagger' promises Tags/caption text (.txt) but the run delivered none of them; artifacts: run/cap.png"
+  ],
+  "O04-cases": [
+    [
+      "anny",
+      [
+        "run/clip.mp4",
+        "run/voice.wav",
+        "run/notes.txt"
+      ]
+    ],
+    [
+      "anny",
+      [
+        "run/junk_09.mp4",
+        "run/junk_08.mp4",
+        "run/junk_07.mp4",
+        "run/junk_06.mp4",
+        "run/junk_05.mp4",
+        "run/junk_04.mp4",
+        "run/junk_03.mp4",
+        "run/junk_02.mp4",
+        "run/junk_01.mp4",
+        "run/junk_00.mp4"
+      ]
+    ],
+    [
+      "anny",
+      [
+        "run/BODY.PNG",
+        "run/view.JPG"
+      ]
+    ],
+    [
+      "anny",
+      [
+        "",
+        null,
+        0,
+        false,
+        "run/x.mp4"
+      ]
+    ],
+    [
+      "fit",
+      [
+        "run/fit.json"
+      ]
+    ],
+    [
+      "tagger",
+      [
+        "run/cap.png"
+      ]
+    ]
+  ],
+  "O05-bad": "output contract violation: card 'anny' promises Rigged body mesh (.glb) but the run delivered none of them; artifacts: run/x.mp4"
+}

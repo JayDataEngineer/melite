@@ -1,0 +1,18 @@
+{
+  "error": "stage[0] refuses: 1 validation error for Stage\n  Value error, stage id 'None' is not a legal identifier [type=value_error, input_value={'id': 'None', 'engine': ...: {}, 'skip_when': None}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error",
+  "code": "flow_compile",
+  "loc": "flow",
+  "errors": [
+    {
+      "scope": "flow",
+      "error": "stage[0] refuses: 1 validation error for Stage\n  Value error, stage id 'None' is not a legal identifier [type=value_error, input_value={'id': 'None', 'engine': ...: {}, 'skip_when': None}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error",
+      "code": "flow_compile",
+      "loc": "flow"
+    },
+    {
+      "stage": "None",
+      "error": "stage[0] refuses: 1 validation error for Stage\n  Value error, stage id 'None' is not a legal identifier [type=value_error, input_value={'id': 'None', 'engine': ...: {}, 'skip_when': None}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error",
+      "code": "flow_compile"
+    }
+  ]
+}

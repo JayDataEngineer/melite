@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"title\": \"music3_Params\",\n  \"type\": \"object\",\n  \"additionalProperties\": false,\n  \"properties\": {\n    \"prompt\": {\n      \"type\": \"string\"\n    },\n    \"lyrics\": {\n      \"type\": \"string\",\n      \"default\": \"\"\n    },\n    \"duration\": {\n      \"type\": \"number\",\n      \"default\": 30\n    },\n    \"guidance_scale\": {\n      \"type\": \"number\",\n      \"default\": 1.7\n    },\n    \"n_diffusion_steps\": {\n      \"type\": \"number\",\n      \"default\": 30\n    },\n    \"lm_cfg_scale\": {\n      \"type\": \"number\",\n      \"default\": 1.7\n    },\n    \"seed\": {\n      \"type\": \"number\",\n      \"default\": -1\n    }\n  },\n  \"required\": []\n}"
+}

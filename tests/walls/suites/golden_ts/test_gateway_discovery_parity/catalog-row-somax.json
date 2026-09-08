@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"somax\",\n  \"family\": \"somax\",\n  \"genre\": \"3d\",\n  \"label\": \"SOMAX\",\n  \"description\": \"TRELLIS \\u2192 SOMA weight transfer \\u2014 image to SOMAX rigged GLB with anatomically correct SOMA-77 skeleton weights.\",\n  \"source\": {\n    \"type\": \"\",\n    \"repo_id\": \"nvidia/soma-x\"\n  },\n  \"defaults\": {\n    \"filename_prefix\": \"KimodoAnimated\",\n    \"file_format\": \"glb\",\n    \"decimate_ratio\": 0.2,\n    \"preserve_texture\": true,\n    \"in_place\": true\n  },\n  \"engine\": \"\",\n  \"form\": \"form_3d_somax\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

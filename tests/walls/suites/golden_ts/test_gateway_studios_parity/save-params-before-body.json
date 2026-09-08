@@ -1,0 +1,4 @@
+{
+  "error": "dangling preset ref \u2014 params_ref: artifact not found on disk: '/v1/assets/runs/norun/mesh.glb' (looked up <ROOT>/state/output/norun/mesh.glb) \u2014 the upstream run may have been pruned, or the ref was never an output of run norun",
+  "code": "invalid_request"
+}

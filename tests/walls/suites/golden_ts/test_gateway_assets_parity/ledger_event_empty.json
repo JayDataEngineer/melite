@@ -1,0 +1,34 @@
+{
+  "entries": [
+    {
+      "ts": 1700000001,
+      "event": "run.completed",
+      "data": {
+        "run_id": "run-a1",
+        "score": 1.0,
+        "ratio": 0.5
+      }
+    },
+    {
+      "ts": 1700000002,
+      "event": "note",
+      "data": {
+        "msg": "h\u00e9llo\u2014w\u00f6rld"
+      }
+    },
+    {
+      "ts": 1700000003,
+      "event": "run.completed",
+      "data": {}
+    },
+    {
+      "ts": 1700000004,
+      "event": "other",
+      "data": {
+        "n": 2
+      }
+    }
+  ],
+  "shown": 4,
+  "matched": 5
+}

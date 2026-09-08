@@ -6,13 +6,23 @@ registration, and a remaining FromStage edge into a present-pruned
 stage rewrites to FromInitial (the trigger key — present by
 construction). No new edge kind, no runtime conditional, no silent
 dangle.
+
+ORACLE DEATH 2026-09-08: the TestBranchDoors legs rode the py
+serving oracle in-process — re-derived TS-HTTP (see the class
+note); branch rows/prune/inline units are keeper and untouched.
+
+Date: 2026-09-08. Status: landed (oracle-death re-derivation).
 """
 
 import copy
+import json
+import urllib.error
+import urllib.request
 
 import pytest
 
 from _anchor import REPO  # noqa: F401  (wall-suite import contract)
+from _anchor import boot_scratch_gateway, reap_gateway
 
 import flow as flow_mod
 from flow import (Flow, FlowError, FromInitial, FromStage, Kind, Stage,
@@ -126,6 +136,27 @@ _INLINE_BRANCH = {
 }
 
 
+def _post(port: int, body: object) -> tuple[int, dict]:
+    req = urllib.request.Request(
+        "http://127.0.0.1:%d/v1/flows/validate" % port,
+        data=json.dumps(body).encode(), method="POST",
+        headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return r.status, json.loads(r.read().decode())
+    except urllib.error.HTTPError as e:
+        return e.code, json.loads(e.read().decode())
+
+
+@pytest.fixture(scope="module")
+def ts_port():
+    port, proc = boot_scratch_gateway()
+    try:
+        yield port
+    finally:
+        reap_gateway(proc)
+
+
 class TestInlineBranch:
     def test_skip_shape_parses(self) -> None:
         fl = flow_from_body(copy.deepcopy(_INLINE_BRANCH))
@@ -148,48 +179,46 @@ class TestInlineBranch:
 
 
 class TestBranchDoors:
-    def test_resolve_prunes_and_stamps(self) -> None:
-        from gateway import resolve_request
-        graph = resolve_request({"flow_inline": copy.deepcopy(_INLINE_BRANCH),
-                                 "starter_image": "estate/starter.png"})
-        assert graph.skipped == ("img",)
-        assert [n.node_id for n in graph.nodes] == ["body"]
-        assert graph.nodes[0].input_from == ("__initial__.starter_image",)
+    """ORACLE DEATH 2026-09-08 (operator order verbatim: "we do not
+    need parity, we need to migrate, not keep the old machinery"):
+    the three door legs unit-called the py serving oracle
+    (gateway.resolve_request / _h_flows_validate) in-process. Both
+    died with the oracle; the legs ride the TS validate door now
+    (apps/gateway/src/main.ts via the shared boot_scratch_gateway
+    helper). Probed live 2026-09-08: pruned bodies 200 with
+    skipped + rewritten __initial__ inputs.
 
-    def test_resolve_without_key_runs_both(self) -> None:
-        from gateway import resolve_request
-        graph = resolve_request(
-            {"flow_inline": copy.deepcopy(_INLINE_BRANCH)})
-        assert graph.skipped == ()
-        assert [n.node_id for n in graph.nodes] == ["img", "body"]
+    Date: 2026-09-08. Status: landed (oracle-death re-derivation).
+    """
 
-    def test_validate_reports_skipped(self) -> None:
-        import asyncio
-        import gateway as gw_mod
-
-        class _Ctx:
-            # the door reads ctx.json (the request) and ctx.gw (the
-            # R4.3 cost_preview — added after this stub was written;
-            # a minimal gw whose preview answers "no data" honestly)
-            def __init__(self, j: dict[str, JsonValue]) -> None:
-                self.json = j
-                self.gw = _NoHistoryGw()
-
-        class _NoHistoryGw:
-            @staticmethod
-            def cost_preview(engine_types: "list[str] | None" = None) -> "dict[str, object]":
-                return {}
-
-        code, body = asyncio.run(gw_mod._h_flows_validate(_Ctx({
+    def test_resolve_prunes_and_stamps(self, ts_port: int) -> None:
+        status, body = _post(ts_port, {
             "flow_inline": copy.deepcopy(_INLINE_BRANCH),
-            "starter_image": "estate/starter.png"})))
-        assert code == 200 and body["ok"] is True
-        assert body["skipped"] == ["img"]
+            "starter_image": "estate/starter.png"})
+        assert status == 200, (status, body)
+        assert body["skipped"] == ["img"], body
+        assert [s["id"] for s in body["stages"]] == ["body"]
+        assert body["stages"][0]["inputs"] == [
+            "__initial__.starter_image"], body
+
+    def test_resolve_without_key_runs_both(self, ts_port: int) -> None:
+        status, body = _post(
+            ts_port, {"flow_inline": copy.deepcopy(_INLINE_BRANCH)})
+        assert status == 200, (status, body)
+        assert body["skipped"] == [], body
+        assert [s["id"] for s in body["stages"]] == ["img", "body"]
+
+    def test_validate_reports_skipped(self, ts_port: int) -> None:
+        status, body = _post(ts_port, {
+            "flow_inline": copy.deepcopy(_INLINE_BRANCH),
+            "starter_image": "estate/starter.png"})
+        assert status == 200 and body["ok"] is True, (status, body)
+        assert body["skipped"] == ["img"], body
         assert [s["id"] for s in body["stages"]] == ["body"]
 
-        code, body = asyncio.run(gw_mod._h_flows_validate(_Ctx(
-            copy.deepcopy(_INLINE_BRANCH))))
-        assert code == 200 and body["skipped"] == []
+        status, body = _post(
+            ts_port, {"flow_inline": copy.deepcopy(_INLINE_BRANCH)})
+        assert status == 200 and body["skipped"] == [], (status, body)
 
     def test_branch_survives_estate_load(self) -> None:
         for name in flow_mod.scan_flow_ids():

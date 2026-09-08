@@ -1,0 +1,5 @@
+{
+ "status": 404,
+ "content_type": "application/json",
+ "body": "{\n  \"error\": \"unknown model family 'nope-fam-xyz' \\u2014 provisions resolve through the model scan (see /v1/model-catalog)\",\n  \"code\": \"invalid_request\"\n}"
+}

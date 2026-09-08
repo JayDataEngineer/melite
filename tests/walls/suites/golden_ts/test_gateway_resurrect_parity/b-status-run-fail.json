@@ -1,0 +1,10 @@
+{
+  "run_id": "run-fail",
+  "status": "failed",
+  "pipeline": "anny",
+  "created_at": 1700000002,
+  "error": "boom",
+  "stages": [],
+  "artifacts": [],
+  "queue_position": 0
+}

@@ -1,0 +1,7 @@
+{
+  "id": "model:h3-timeline",
+  "name": "h3-timeline agent",
+  "description": "child craft",
+  "scope": "model",
+  "content": "---\nname: h3-timeline agent\ndescription: child craft\n---\n# H3T\nChild craft.\n"
+}

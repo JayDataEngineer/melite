@@ -1,0 +1,4 @@
+{
+  "error": "card_compose phase 1: card_compose rc=1 (comfyui.comfyui): bad-params: card 'video-gen' refused params: $.width expected number but got 832",
+  "code": "card_compose"
+}

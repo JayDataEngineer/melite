@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"trellis_native\",\n  \"family\": \"trellis_native\",\n  \"genre\": \"3d\",\n  \"label\": \"Trellis (Native)\",\n  \"description\": \"Native trellis.cpp GGML engine \\u2014 image to UV-textured GLB with the reference-parity C++ postprocess (weld, fill, DC remesh, CuMesh QEM, xatlas, trilinear PBR bake). 50s per asset on the 4090; no confetti.\",\n  \"source\": {\n    \"type\": \"\",\n    \"repo_id\": \"ilintar/trellis2-gguf\"\n  },\n  \"defaults\": {\n    \"resolution\": 1024,\n    \"quant\": \"q8\",\n    \"bg_removal\": \"auto\",\n    \"band\": 0,\n    \"texture_size\": 2048,\n    \"webp_quality\": 90,\n    \"filename_prefix\": \"trelliscpp\",\n    \"seed\": 42\n  },\n  \"engine\": \"\",\n  \"form\": \"form_3d_trellis_native\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

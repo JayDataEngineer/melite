@@ -1,0 +1,4 @@
+{
+  "error": "no such route DELETE /v1/studios/3d/anny/presets/user-1/..",
+  "code": "no_such_route"
+}

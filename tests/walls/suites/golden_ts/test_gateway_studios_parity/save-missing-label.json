@@ -1,0 +1,4 @@
+{
+  "error": "bad preset row: 1 validation error for CharacterPreset\nlabel\n  Field required [type=missing, input_value={'id': 'user-pending', 'origin': 'file'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing",
+  "code": "invalid_request"
+}

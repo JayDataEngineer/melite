@@ -1,0 +1,4 @@
+{
+  "error": "bad preset row: 1 validation error for CharacterPreset\n  Value error, base_params preset with params_ref \u2014 authored coefficients ARE the source [type=value_error, input_value={'id': 'user-pending', 'l...ets/runs/run9/mesh.glb'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error",
+  "code": "invalid_request"
+}

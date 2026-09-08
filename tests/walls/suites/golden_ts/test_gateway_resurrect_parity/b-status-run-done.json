@@ -1,0 +1,10 @@
+{
+  "run_id": "run-done",
+  "status": "completed",
+  "pipeline": "anny",
+  "created_at": 1700000001,
+  "stages": [],
+  "artifacts": [],
+  "error": "",
+  "queue_position": 0
+}

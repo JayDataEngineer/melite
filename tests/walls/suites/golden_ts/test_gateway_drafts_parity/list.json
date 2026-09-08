@@ -1,0 +1,60 @@
+{
+  "count": 11,
+  "drafts": [
+    {
+      "draft_id": "x",
+      "model": "m",
+      "name": ""
+    },
+    {
+      "draft_id": "str",
+      "model": "",
+      "name": ""
+    },
+    {
+      "draft_id": "seed-num",
+      "model": "",
+      "name": ""
+    },
+    {
+      "draft_id": "seed-gamma",
+      "model": "",
+      "name": "T1"
+    },
+    {
+      "draft_id": "seed-float",
+      "model": "m",
+      "name": "F"
+    },
+    {
+      "draft_id": "seed-empty",
+      "model": "m",
+      "name": "E"
+    },
+    {
+      "draft_id": "seed-beta",
+      "model": "svc9",
+      "name": "WantX"
+    },
+    {
+      "draft_id": "seed-alpha",
+      "model": "anny",
+      "name": "caf\u00e9 \u2713"
+    },
+    {
+      "draft_id": "num",
+      "model": "",
+      "name": ""
+    },
+    {
+      "draft_id": "corrupt",
+      "model": "",
+      "name": ""
+    },
+    {
+      "draft_id": "arr",
+      "model": "",
+      "name": ""
+    }
+  ]
+}

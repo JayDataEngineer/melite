@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"moss-sfx\",\n  \"family\": \"moss-sfx\",\n  \"genre\": \"audio\",\n  \"label\": \"MOSS-SFX v2\",\n  \"description\": \"MOSS-SFX v2 sound-effect generation \\u2014 describe the SOUND not the scene\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {},\n  \"engine\": \"comfyui\",\n  \"form\": \"form_sound\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

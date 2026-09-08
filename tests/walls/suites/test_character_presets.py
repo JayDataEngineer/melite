@@ -23,6 +23,17 @@ Pins the whole stroke, end to end:
      precedent as the other cross-runtime seams).
 
 No GPU, no network — rows, the ledger in tmp_path, and source text.
+
+ORACLE DEATH 2026-09-08 (operator order verbatim: "we do not need
+parity, we need to migrate, not keep the old machinery"): the tenant
+door leg used to read the retired py serving stack's source text. It
+now reads the TS source of truth — the authored wire table
+(packages/gateway/src/routes.ts, the preset template rows) plus the
+TS door implementation (packages/gateway/src/doors/studios.ts, the
+file→estimated promotion) — following
+tests/walls/suites/test_routes_mirror.py.
+
+Date: 2026-09-08. Status: landed (oracle-death re-derivation).
 """
 
 import json
@@ -59,7 +70,10 @@ PARAMS_FLOW_PY = os.path.join(REPO, "flows", "anny-params", "flow.py")
 BAKE_PY = os.path.join(REPO, "flows", "anny-params", "bake_params.py")
 COMMERCIAL_WORKER_PY = os.path.join(
     REPO, "flows", "anny-hmr-commercial", "worker.py")
-GATEWAY_PY = os.path.join(REPO, "python", "gateway.py")
+ROUTES_TS = os.path.join(
+    REPO, "packages", "gateway", "src", "routes.ts")
+STUDIOS_TS = os.path.join(
+    REPO, "packages", "gateway", "src", "doors", "studios.ts")
 PRESETS_PY = os.path.join(REPO, "python", "melite_models", "presets.py")
 
 
@@ -316,10 +330,11 @@ def test_bake_refuses_unknown_morphs_loud() -> None:
 
 
 def test_gateway_serves_the_tenant_door() -> None:
-    src = open(GATEWAY_PY, encoding="utf-8").read()
-    assert "/v1/studios/{tenant}/presets" in src
-    assert "/v1/studios/{tenant}/presets/{preset_id}" in src
-    assert "_preset_try_promote" in src  # file→estimated promotion
+    routes = open(ROUTES_TS, encoding="utf-8").read()
+    assert "/v1/studios/{tenant}/presets" in routes
+    assert "/v1/studios/{tenant}/presets/{preset_id}" in routes
+    studios = open(STUDIOS_TS, encoding="utf-8").read()
+    assert "tryPromote" in studios  # file→estimated promotion
 
 
 def test_tsx_parity_for_both_preset_verbs() -> None:

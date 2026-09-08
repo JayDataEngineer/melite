@@ -41,7 +41,6 @@ import _bootstrap  # tests/_bootstrap.py — path owned by the root conftest
 JsonValue = str | int | float | bool | None | list["JsonValue"] | dict[str, "JsonValue"]
 
 REPO = Path(__file__).resolve().parents[2]
-PY = REPO / ".venv" / "bin" / "python"
 TERMINAL = {"completed", "failed", "stopped"}
 
 
@@ -151,7 +150,7 @@ def gateway() -> Iterator[QueueDoor]:
     walls parity suite (fixture audit 2026-09-04, F7)."""
     try:
         port, proc = _bootstrap.boot_scratch_gateway(
-            wait_path="/v1/forms", python=str(PY), env=dict(os.environ))
+            wait_path="/v1/forms", env=dict(os.environ))
     except RuntimeError as e:
         pytest.fail(str(e))
     door = QueueDoor(port)

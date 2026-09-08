@@ -96,8 +96,7 @@ def check(name: str, ok: bool, note: str = "") -> None:
 def main() -> int:
     try:
         port, proc = boot_scratch_gateway(
-            wait_path="/v1/queue", python=sys.executable,
-            tries=150, sleep=0.2, env=dict(os.environ))
+            wait_path="/v1/queue",             tries=150, sleep=0.2, env=dict(os.environ))
     except RuntimeError as e:
         print("FATAL: %s" % e)
         return 1
@@ -166,7 +165,11 @@ def main() -> int:
             # (form-spec?model=soma RETIRED 2026-09-06 with the cpp
             # ggml kimodo lane — the ONE-implementation rule)
             ("kinds", "deep"),
-            ("packages", "deep"),
+            # (ORACLE DEATH 2026-09-08: no /v1/packages door on EITHER
+            # gateway — py ROUTES 54 rows and TS routes.ts 54 rows both
+            # lack it; the entry arrived with the plugins/->packages/
+            # restructure naming the DIRECTORY, not a door. Removed,
+            # not pinned: there is no door to pin.)
             ("health", "deep"),
             ("themes", "deep"),
             ("tags", "deep"),

@@ -1,0 +1,7 @@
+{
+  "id": "guide:amodel",
+  "name": "amodel guide",
+  "description": "operating guide",
+  "scope": "guide",
+  "content": "---\nname: amodel guide\ndescription: operating guide\n---\n# Guide\nRules.\n"
+}

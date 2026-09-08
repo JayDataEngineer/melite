@@ -1,0 +1,13 @@
+{
+  "error": "flow id 'Bad!' is not a legal identifier",
+  "code": "flow_compile",
+  "loc": "flow",
+  "errors": [
+    {
+      "scope": "flow",
+      "error": "flow id 'Bad!' is not a legal identifier",
+      "code": "flow_compile",
+      "loc": "flow"
+    }
+  ]
+}

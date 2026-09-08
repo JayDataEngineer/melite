@@ -1,0 +1,4 @@
+{
+  "error": "request body carries retired runner knob(s) ['overrides'] \u2014 the runner never reads these (silent-drop class); remove them",
+  "code": "invalid_request"
+}

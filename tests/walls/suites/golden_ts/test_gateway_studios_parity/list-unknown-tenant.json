@@ -1,0 +1,4 @@
+{
+  "error": "unknown studio tenant 'nope/nope'",
+  "code": "invalid_request"
+}

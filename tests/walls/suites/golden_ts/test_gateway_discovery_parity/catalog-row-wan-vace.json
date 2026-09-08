@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"wan-vace\",\n  \"family\": \"wan-vace\",\n  \"genre\": \"video\",\n  \"label\": \"Wan2.2 VACE\",\n  \"description\": \"Wan2.2 VACE video generation with reference-frame and mask control.\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"width\": 832,\n    \"height\": 480,\n    \"length\": 49,\n    \"fps\": 24,\n    \"steps\": 4,\n    \"cfg\": 1.0,\n    \"sampler\": \"euler\",\n    \"scheduler\": \"simple\",\n    \"seed\": 42\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_video_director\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

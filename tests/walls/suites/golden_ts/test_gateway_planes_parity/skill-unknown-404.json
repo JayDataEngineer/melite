@@ -1,0 +1,4 @@
+{
+  "error": "no such skill: 'nope:x'",
+  "code": "invalid_request"
+}

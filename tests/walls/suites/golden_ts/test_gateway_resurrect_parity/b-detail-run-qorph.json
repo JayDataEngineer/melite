@@ -1,0 +1,12 @@
+{
+  "run_id": "run-qorph",
+  "status": "failed",
+  "state": "failed",
+  "error": "",
+  "created": 1700000013,
+  "durationSec": 0,
+  "restored_from_sidecar": true,
+  "artifacts": [],
+  "stages": [],
+  "draft_id": "gone"
+}

@@ -1,0 +1,93 @@
+{
+  "count": 11,
+  "skills": [
+    {
+      "id": "guide:amodel",
+      "name": "amodel guide",
+      "description": "operating guide",
+      "scope": "guide",
+      "genre": "photo",
+      "model": "amodel"
+    },
+    {
+      "id": "model:amodel",
+      "name": "amodel agent",
+      "description": "model craft",
+      "scope": "model",
+      "genre": "photo",
+      "model": "amodel"
+    },
+    {
+      "id": "model:amodel:bare.md",
+      "name": "bare",
+      "description": "",
+      "scope": "model-skill",
+      "genre": "photo",
+      "model": "amodel"
+    },
+    {
+      "id": "model:amodel:extra.md",
+      "name": "extra",
+      "description": "model extra file skill",
+      "scope": "model-skill",
+      "genre": "photo",
+      "model": "amodel"
+    },
+    {
+      "id": "model:amodel:mstem",
+      "name": "mstem skill",
+      "description": "model skill",
+      "scope": "model-skill",
+      "genre": "photo",
+      "model": "amodel"
+    },
+    {
+      "id": "card:acard",
+      "name": "acard agent",
+      "description": "the acard craft",
+      "scope": "card",
+      "genre": "photo",
+      "card": "acard"
+    },
+    {
+      "id": "card:acard:aflat.md",
+      "name": "A flat skill",
+      "description": "",
+      "scope": "card-skill",
+      "genre": "photo",
+      "card": "acard"
+    },
+    {
+      "id": "card:acard:astem",
+      "name": "A skill",
+      "description": "",
+      "scope": "card-skill",
+      "genre": "photo",
+      "card": "acard"
+    },
+    {
+      "id": "card:bcard",
+      "name": "B agent",
+      "description": "",
+      "scope": "card",
+      "genre": "photo",
+      "card": "bcard"
+    },
+    {
+      "id": "guide:h3",
+      "name": "h3 guide",
+      "description": "base guide",
+      "scope": "guide",
+      "genre": "photo",
+      "model": "h3"
+    },
+    {
+      "id": "model:h3-timeline",
+      "name": "h3-timeline agent",
+      "description": "child craft",
+      "scope": "model",
+      "genre": "photo",
+      "model": "h3-timeline"
+    }
+  ]
+}

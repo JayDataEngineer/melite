@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"stretchy-rig\",\n  \"family\": \"stretchy-rig\",\n  \"genre\": \"other\",\n  \"label\": \"Stretchy Rig\",\n  \"description\": \"Stretchy Studio auto-rig \\u2014 DWPose TensorRT whole-body keypoints for 2D character animation.\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"yolox_precision\": \"fp16\",\n    \"dwpose_precision\": \"fp32\"\n  },\n  \"engine\": \"\",\n  \"form\": \"form_image_stretchy_rig\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

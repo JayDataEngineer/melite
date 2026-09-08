@@ -1,0 +1,13 @@
+{
+  "error": "flow 'w' stage 'b' input 'x': stage 'a' has no output named 'out' (declared outputs: ['default'])",
+  "code": "flow_compile",
+  "loc": "flow",
+  "errors": [
+    {
+      "scope": "flow",
+      "error": "flow 'w' stage 'b' input 'x': stage 'a' has no output named 'out' (declared outputs: ['default'])",
+      "code": "flow_compile",
+      "loc": "flow"
+    }
+  ]
+}

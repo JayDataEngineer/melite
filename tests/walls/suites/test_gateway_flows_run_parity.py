@@ -1,96 +1,115 @@
 #!/usr/bin/env python3
-"""test_gateway_flows_run_parity.py — P4 flows-run TS parity wall.
+"""test_gateway_flows_run_parity.py — P4 flows-run TS-ONLY wall.
 
-Proves the TypeScript engine-IO half (packages/gateway/src/engine/
-comfyui.ts via doors/flowsRun.ts + the ctx.ts seam) answers
-byte-identical to the py gateway (python/gateway.py _h_flows_start /
-_h_flows_status / _h_flows_stop over Gateway.submit/status/stop, and
-the comfyui execute lane packages/engines/comfyui/compose/native.py +
-mergegraph.py):
+Pins the TypeScript engine-IO half (packages/gateway/src/engine/
+comfyui.ts via doors/flowsRun.ts + the ctx.ts seam) against frozen
+literals and frozen TS goldens (golden_ts/
+test_gateway_flows_run_parity/, causes.md there):
 
-  Phase A — door refusal parity (dual-served py vs TS, byte-equal):
-    bad-JSON shape, non-object body, non-bool test flag,
-    draft required / malformed / unknown (CARD BIRTH LAW),
-    retired pipe-carry knob (_strict_body), ambiguous doors,
+  Phase A — door refusals (single-serve TS vs `want` literals):
+    bad-JSON shape (V8 text prefix, shape-only), non-object body,
+    non-bool test flag, draft required / malformed / unknown (CARD
+    BIRTH LAW), retired pipe-carry knob, ambiguous doors,
     flow_inline unknown top key, unknown-run status 404, unknown-run
     stop 400, method-mismatch 404.
-  Phase B — happy-path parity (dual-served, run_id + root
-    normalized): 202 {run_id, status} receipt, the SUBMITTED engine
-    graph (namespaced gen::1 on both — the merged single-graph
-    path), terminal status bodies (stages incl. merged/url/gallery/
-    result_outputs, artifacts, error "", queue_position 0,
-    skipped_stages []), ?include_log=TRUE tail, harvested artifact
-    bytes.
-  Phase C — engine-behavior agreement (py native.execute /
-    mergegraph.execute_flow in-process vs a node harness driving
-    engine/comfyui.ts, same stub): polling cadence/deadline mapping
-    ("ComfyUI run exceeded 2s (interrupt delivered)", byte-equal),
-    stop ("stopped (interrupt delivered)", byte-equal, interrupt +
-    queue-delete witnessed on the stub for BOTH), node_errors text
-    ("ComfyUI validation refused the graph: ...", byte-equal),
-    merged node_errors ("... the merged graph: ...", byte-equal),
-    prompt-400 text ("POST /prompt 400: ...", byte-equal),
-    history error-status text ("ComfyUI run failed: ...",
-    byte-equal).
-  Phase D — stop-door parity (dual-served, never-completing stub):
-    200 {run_id, status: stopping} receipts (normalized
-    byte-equal), terminal "stopped" bodies (normalized byte-equal:
-    stage error "ComfyError: stopped (interrupt delivered)", run
-    error ""), interrupt witnessed per side.
-  Phase E — engine-down parity (stub socket closed): both runs fail;
-    status failed + stage failed + "refused" in the error (shape
-    parity — urllib vs node:http errno prose differs by platform).
+  Phase B — happy-path lifecycle (TS-only, run_id + root
+    normalized): 202 {run_id, status} receipt (shape + golden), the
+    SUBMITTED engine graph (namespaced gen::1 — the merged
+    single-graph path), terminal status body (golden: stages incl.
+    merged/url/gallery/result_outputs, artifacts, error "",
+    queue_position 0, skipped_stages []), ?include_log=TRUE tail
+    (golden), harvested artifact bytes (PNG-BYTES literal).
+  Phase C — engine-behavior pins (a node harness driving
+    engine/comfyui.ts in-process, same stub, vs literal error
+    texts): polling cadence/deadline mapping ("ComfyUI run exceeded
+    2s (interrupt delivered)"), stop ("stopped (interrupt
+    delivered)", interrupt + queue-delete witnessed on the stub),
+    node_errors text ("ComfyUI validation refused the graph: ..."),
+    merged node_errors ("... the merged graph: ..."), prompt-400
+    text ("POST /prompt 400: ..."), history error-status text
+    ("ComfyUI run failed: ...").
+  Phase D — stop-door lifecycle (TS-only, never-completing stub):
+    200 {run_id, status: stopping} receipt (golden), terminal
+    "stopped" body (golden: stage error "ComfyError: stopped
+    (interrupt delivered)", run error ""), interrupt witnessed.
+  Phase E — engine-down shape (stub socket closed): the run fails;
+    status failed + stage failed + "refused" in the error.
 
 The stub is a PYTHON stdlib ThreadingHTTPServer living in THIS
 process (hermetic wall discipline: no live engine in walls, ever):
-scripted /prompt + /history/<id> (per-prompt poll counts, so the py
-and TS runs interleave safely) + /view + /interrupt + /queue
-delete-recording + a 101 /ws tap answer (the TS preview ships no WS
-tap; py's tap must see a handshake-shaped answer and stay harmless).
+scripted /prompt + /history/<id> (per-prompt poll counts) + /view +
+/interrupt + /queue delete-recording + a 101 /ws tap answer (the TS
+preview ships no WS tap; the tap must see a handshake-shaped answer
+and stay harmless).
 
-Py runs as a REAL scratch gateway (boot_scratch_gateway: own
-MELITE_STATE_ROOT, COMFYUI_URL=stub); TS runs as the real server.ts
-boot (own MELITE_STATE_ROOT, same COMFYUI_URL). Draft docs are
-written to both roots under the SAME draft id.
+TS runs as the real server boot (own MELITE_STATE_ROOT, COMFYUI_URL
+= stub) via the shared boot_scratch_gateway (tests/_bootstrap.py).
+Draft docs are written to the TS root under a fixed draft id.
 
-KNOWN divergences (asserted as shape, not bytes):
-  - run_id values are random per side (normalized to <RID>).
-  - absolute artifact paths carry the side's root (normalized).
-  - bad-JSON error TEXT embeds the host parser's message (CPython
-    JSONDecodeError vs V8 SyntaxError) — status + code + prefix.
-  - engine-down error TEXT (urllib "Connection refused" vs
-    node:http ECONNREFUSED) — failed shape + "refused" substring.
-  - float formatting (py 2.0 vs JSON 2) — no served body carries a
-    float.
+ASSERTED SHAPES (not bytes):
+  - run_id values are random per boot (normalized to <RID>).
+  - absolute artifact paths carry the state root (normalized to
+    <ROOT>).
+  - bad-JSON error TEXT embeds the host parser's message (V8
+    SyntaxError) — status + code + prefix only.
+  - engine-down error TEXT (node:http ECONNREFUSED prose) — failed
+    shape + "refused" substring.
+  - method-mismatch body — 404 status only (no wire peer to agree
+    with).
+  - float formatting — no served body carries a float.
 
-Polling/timeout mapping decisions under test (py cites):
-  - cadence 250ms (native.py:378); history GET timeout 30s (383).
+Polling/timeout mapping decisions under test (TS cites):
+  - cadence 250ms + history GET timeout 30s (engine/comfyui.ts
+    pollToTerminal: sleep(250), httpCall timeout 30000).
   - entry-absent + past-deadline -> interrupt + "ComfyUI run
-    exceeded %.0fs (interrupt delivered)" (native 387-393); the
-    %.0f is round-half-even (formatTimeout0f in engine/comfyui.ts).
+    exceeded <n>s (interrupt delivered)" (pollToTerminal via the
+    exceededText closures; the %.0f-equivalent is formatTimeout0f,
+    round-half-even).
   - status_str error -> execution_error message detail else the
-    whole status dict, "ComfyUI run failed: ..." (394-401).
-  - not-completed + past-deadline -> interrupt + exceeded (402-408).
+    whole status dict, "ComfyUI run failed: ..." (mapHistoryEntry +
+    pollToTerminal's failed arm).
+  - not-completed + past-deadline -> interrupt + exceeded (the
+    pending arm).
   - stop flag -> interrupt + "stopped (interrupt delivered)"
-    (380-382); the gateway stop-gates on flag-set AND "stop" in the
-    lowercased error (gateway.py:1774, _try_merged ~1565-1580).
+    (pollToTerminal's shouldStop arm); the gateway stop-gates on
+    flag-set AND "stop" in the lowercased error (doors/flowsRun.ts
+    handleFlowsStop + the merged worker's stopped arm).
   - single-stage pure-comfyui runs take the MERGED path
-    (gateway.py:1631 _try_merged): ONE submit of the namespaced
-    graph, "the merged graph" node_errors text (mergegraph 306),
-    "merged run exceeded" deadline text with floor max(budget,2400)
-    (318-327), per-stage harvest into <run>/<stage>/ with
-    prefix-stripped keys (370-386), terminal stage rows
+    (doors/flowsRun.ts merged worker): ONE submit of the namespaced
+    graph, "the merged graph" node_errors text (submitPrompt merged
+    arm), "merged run exceeded" deadline text with floor
+    max(budget,2400) (executeFlow), per-stage harvest into
+    <run>/<stage>/ with prefix-stripped keys, terminal stage rows
     {id,name,index,status,outputs,expected,merged,url,gallery,
     result_outputs}.
+
+TS door cites (doors/flowsRun.ts): retired pipe-carry refusal
+(checkStrictBody arm), flow_inline top-key + unknown-keys refusals,
+envelope bad_envelope arms (non-object body, non-bool test flag),
+draft_required / draft_malformed / draft_unknown (CARD BIRTH LAW),
+ambiguous-doors refusal, status unknown-run 404
+(handleFlowsStatus), stop unknown-run 400 run_unknown
+(handleFlowsStop), status payload + runLogTail (?include_log tail).
+
+ORACLE DEATH 2026-09-08: this wall was a dual-serve py-vs-TS parity
+comparison (per the operator order "we do not need parity, we need
+to migrate, not keep the old machinery"); re-derived TS-ONLY — the
+py scratch-gateway legs, the py-vs-TS byte-equality legs, and the py
+native/mergegraph in-process legs are deleted; TS behavior pins to
+the `want` literals + frozen goldens below. The keeper engine libs
+(packages/engines/comfyui/compose/native.py, mergegraph.py) are
+engine libs, not the gateway oracle — untouched; the node harness
+legs driving their TS port (engine/comfyui.ts) are the behavior
+pin now.
+
+Date: 2026-09-08. Status: landed (oracle-death re-derivation).
 
 Run: python3 tests/walls/suites/test_gateway_flows_run_parity.py
 """
 
-import asyncio
 import json
 import os
 import shutil
-import socket
 import subprocess
 import sys
 import tempfile
@@ -104,13 +123,12 @@ from pathlib import Path
 from _anchor import REPO, boot_scratch_gateway, reap_gateway
 
 sys.dont_write_bytecode = True
-sys.path.insert(0, str(REPO / "python"))
-sys.path.insert(0, str(REPO / "packages" / "engines" / "comfyui" / "compose"))
 
 PASS = FAIL = 0
 DID = "wall-flows-draft-1"
-TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 ENGINE_TS = REPO / "packages" / "gateway" / "src" / "engine" / "comfyui.ts"
+GOLDEN_DIR = (REPO / "tests" / "walls" / "suites" / "golden_ts" /
+              "test_gateway_flows_run_parity")
 WF = {"1": {"class_type": "EmptyLatentImage",
             "inputs": {"width": 64, "height": 64, "batch_size": 1}}}
 HISTORY_OK = {"status": {"status_str": "success", "completed": True},
@@ -132,11 +150,15 @@ def check(name: str, ok: bool, note: str = "") -> None:
     PASS, FAIL = PASS + (1 if ok else 0), FAIL + (0 if ok else 1)
 
 
+def golden(name: str) -> str:
+    return (GOLDEN_DIR / name).read_text(encoding="utf-8")
+
+
 # ── the stub ComfyUI ─────────────────────────────────────────────
 
 class Stub:
     """Scripted engine: mode switches the scripted shape; every
-    request is recorded under a lock (py + TS interleave)."""
+    request is recorded under a lock."""
 
     def __init__(self) -> None:
         self.mode = "normal"
@@ -224,7 +246,7 @@ class _Handler(BaseHTTPRequestHandler):
             return self._send(None, raw=b"PNG-BYTES",
                               ctype="application/octet-stream")
         if self.path.startswith("/ws"):
-            # a handshake-shaped answer: py's tap must stay harmless.
+            # a handshake-shaped answer: the tap must stay harmless.
             self.send_response(101)
             self.send_header("content-length", "0")
             self.end_headers()
@@ -257,26 +279,6 @@ def http(port: int, path: str, body: bytes | None = None,
         return e.code, e.read()
     except Exception as e:
         return None, ("TRANSPORT " + str(e)).encode()
-
-
-def boot_ts(env: dict) -> tuple[int, "subprocess.Popen[str]"]:
-    node = shutil.which("node")
-    if node is None:
-        raise RuntimeError("node not on PATH")
-    proc = subprocess.Popen(
-        [node, "--experimental-strip-types", str(TS_SERVER)],
-        cwd=str(REPO), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-        text=True, start_new_session=True, env=env)
-    assert proc.stdout is not None
-    deadline = time.time() + 25
-    while time.time() < deadline:
-        line = proc.stdout.readline()
-        if line.startswith("READY "):
-            return int(line.split()[1]), proc
-        if proc.poll() is not None:
-            raise RuntimeError("ts server exited rc=%d" % proc.returncode)
-    proc.terminate()
-    raise RuntimeError("ts server did not print READY")
 
 
 def start_body(draft: str = DID) -> bytes:
@@ -370,36 +372,22 @@ def node_engine(op: str, workdir: str, stub: str) -> dict:
         return {"ok": False, "error": "harness unparsable: %r" % line[-1][:200]}
 
 
-class FakeNode:
-    def __init__(self, params: dict, outputs: dict) -> None:
-        self.params = params
-        self.outputs = outputs
-
-
 # ── the wall ─────────────────────────────────────────────────────
 
 def main() -> int:
     stub_url = boot_stub()
-    py_root = Path(tempfile.mkdtemp(prefix="wall-flows-py-"))
     ts_root = Path(tempfile.mkdtemp(prefix="wall-flows-ts-"))
-    py_proc = ts_proc = None
+    ts_proc = None
     try:
-        for root in (py_root, ts_root):
-            (root / "drafts").mkdir(parents=True)
-            (root / "drafts" / (DID + ".json")).write_text(
-                json.dumps({"draft_id": DID}))
-        py_port, py_proc = boot_scratch_gateway(env=dict(
-            os.environ, MELITE_STATE_ROOT=str(py_root),
-            COMFYUI_URL=stub_url))
-        ts_port, ts_proc = boot_ts(dict(
+        (ts_root / "drafts").mkdir(parents=True)
+        (ts_root / "drafts" / (DID + ".json")).write_text(
+            json.dumps({"draft_id": DID}))
+        ts_port, ts_proc = boot_scratch_gateway(env=dict(
             os.environ, MELITE_STATE_ROOT=str(ts_root),
             COMFYUI_URL=stub_url))
 
-        # ── Phase A: refusal parity (byte-equal) ──
-        ro_a = start_body()
-        ro_b = start_body().replace(b'"width": 64', b'"width": 65')
+        # ── Phase A: refusal pins (TS vs `want` literals) ──
         cases = [
-            ("bad JSON", b"{bad", None),
             ("non-object", b"[1,2]",
              {"error": "request body must be a JSON object",
               "code": "bad_envelope", "loc": "body",
@@ -461,23 +449,16 @@ def main() -> int:
               "code": "invalid_request"}),
         ]
         for name, body, want in cases:
-            a = http(py_port, "/v1/flows/start", body)
-            b = http(ts_port, "/v1/flows/start", body)
-            check("refuse %s status" % name, a[0] == b[0] == 400,
-                  "py=%r ts=%r" % (a[0], b[0]))
-            if want is not None:
-                try:
-                    da = json.loads(a[1].decode() or "{}")
-                except ValueError:
-                    da = {}
-                try:
-                    db = json.loads(b[1].decode() or "{}")
-                except ValueError:
-                    db = {}
-                check("refuse %s body" % name,
-                      a[1] == b[1] and da == want and db == want,
-                      "py=%r ts=%r" % (a[1][:160], b[1][:160]))
-        st, raw = http(py_port, "/v1/flows/start", b"{bad")
+            st, raw = http(ts_port, "/v1/flows/start", body)
+            check("refuse %s status" % name, st == 400,
+                  "ts=%r" % (st,))
+            try:
+                doc = json.loads(raw.decode() or "{}")
+            except ValueError:
+                doc = {}
+            check("refuse %s body" % name, doc == want,
+                  "ts=%r" % (raw[:160],))
+        st, raw = http(ts_port, "/v1/flows/start", b"{bad")
         try:
             d_shape = json.loads(raw.decode() or "{}")
         except ValueError:
@@ -487,16 +468,6 @@ def main() -> int:
               str(d_shape.get("error", "")).startswith("bad JSON: ") and
               d_shape.get("code") == "bad_json",
               raw[:120].decode("utf8", "replace"))
-        st2, raw2 = http(ts_port, "/v1/flows/start", b"{bad")
-        try:
-            d_shape2 = json.loads(raw2.decode() or "{}")
-        except ValueError:
-            d_shape2 = {}
-        check("bad JSON shape ts",
-              st2 == 400 and
-              str(d_shape2.get("error", "")).startswith("bad JSON: ") and
-              d_shape2.get("code") == "bad_json",
-              raw2[:120].decode("utf8", "replace"))
         for path, want_st, want in [
                 ("/v1/flows/status/wall-no-such-run", 404,
                  {"error": "unknown run_id", "code": "invalid_request"}),
@@ -504,259 +475,184 @@ def main() -> int:
                  {"error": "unknown run_id 'wall-no-such-run'",
                   "code": "run_unknown", "loc": "run_id"})]:
             method = "GET" if "/status/" in path else "POST"
-            a = http(py_port, path, b"" if method == "POST" else None,
-                     method=method)
-            b = http(ts_port, path, b"" if method == "POST" else None,
-                     method=method)
+            st, raw = http(ts_port, path, b"" if method == "POST" else None,
+                           method=method)
             try:
-                da = json.loads(a[1].decode() or "{}")
+                doc = json.loads(raw.decode() or "{}")
             except ValueError:
-                da = {}
-            try:
-                db = json.loads(b[1].decode() or "{}")
-            except ValueError:
-                db = {}
+                doc = {}
             check("refuse %s" % path,
-                  a[0] == b[0] == want_st and da == want and db == want,
-                  "py=%r ts=%r" % (a, b))
-        a = http(py_port, "/v1/flows/start", None, method="GET")
-        b = http(ts_port, "/v1/flows/start", None, method="GET")
-        check("method mismatch 404",
-              a[0] == b[0] == 404 and a[1] == b[1],
-              "py=%r ts=%r" % (a, b))
+                  st == want_st and doc == want,
+                  "ts=%r %r" % (st, raw[:160]))
+        st, _raw = http(ts_port, "/v1/flows/start", None, method="GET")
+        check("method mismatch 404", st == 404, "ts=%r" % (st,))
 
-        # ── Phase C: engine-behavior agreement (stub modes) ──
-        import native
-        import mergegraph
-        os.environ["COMFYUI_URL"] = stub_url
-
-        async def py_single(params: dict, workdir: str,
-                            stop_after: float | None = None) -> dict:
-            ev = asyncio.Event()
-            if stop_after is not None:
-                async def _stop() -> None:
-                    await asyncio.sleep(stop_after)
-                    ev.set()
-                asyncio.create_task(_stop())
-            try:
-                res = await native.execute(
-                    FakeNode(params, {"default": "image"}), workdir, {},
-                    ev)
-                return {"ok": True, "result": res}
-            except Exception as e:
-                return {"ok": False,
-                        "error": "%s: %s" % (type(e).__name__, e)}
-
-        async def py_merged(params: dict, workdir: str) -> dict:
-            ev = asyncio.Event()
-            rows = [{"stage_id": "gen", "node_id": "gen", "node_type":
-                     "comfyui", "params": params,
-                     "workflow": params.get("workflow", {}),
-                     "outputs": {"default": "image"},
-                     "output_nodes": {}, "input_names": {}}]
-            try:
-                res = await mergegraph.execute_flow(rows, workdir, ev,
-                                                    None, {})
-                return {"ok": True, "result": res}
-            except Exception as e:
-                return {"ok": False,
-                        "error": "%s: %s" % (type(e).__name__, e)}
-
+        # ── Phase C: engine-behavior pins (node harness vs literals) ──
+        # The harness drives the TS port of the comfyui execute lane
+        # (packages/gateway/src/engine/comfyui.ts: executeSingle /
+        # executeFlow over the stub); the keeper engine libs
+        # (packages/engines/comfyui/compose/native.py, mergegraph.py)
+        # are engine libs, not the gateway oracle — untouched, and no
+        # in-process py comparison remains.
         STUB.mode = "never"
         wdir = tempfile.mkdtemp(prefix="wall-eng-")
-        got_py = asyncio.run(py_single({"workflow": WF, "timeout_s": 2},
-                                       wdir + "/py"))
+        with STUB.lock:
+            base_int, base_del = STUB.interrupts, len(STUB.queue_deletes)
         got_ts = node_engine("single-timeout", wdir + "/ts", stub_url)
         check("deadline text",
-              got_py.get("error") == got_ts.get("error") ==
+              got_ts.get("error") ==
               "ComfyError: ComfyUI run exceeded 2s (interrupt delivered)",
-              "py=%r ts=%r" % (got_py, got_ts))
+              "ts=%r" % (got_ts,))
         with STUB.lock:
-            n_int, n_del = STUB.interrupts, len(STUB.queue_deletes)
-        check("deadline interrupts witnessed", n_int >= 2 and n_del >= 2,
+            n_int = STUB.interrupts - base_int
+            n_del = len(STUB.queue_deletes) - base_del
+        check("deadline interrupts witnessed", n_int >= 1 and n_del >= 1,
               "interrupts=%d deletes=%d" % (n_int, n_del))
 
-        got_py = asyncio.run(py_single({"workflow": WF, "timeout_s": 60},
-                                       wdir + "/py-stop", 0.7))
         got_ts = node_engine("single-stop", wdir + "/ts-stop", stub_url)
         check("stop text",
-              got_py.get("error") == got_ts.get("error") ==
+              got_ts.get("error") ==
               "ComfyError: stopped (interrupt delivered)",
-              "py=%r ts=%r" % (got_py, got_ts))
+              "ts=%r" % (got_ts,))
 
         STUB.mode = "node-errors"
-        got_py = asyncio.run(py_single({"workflow": WF, "timeout_s": 60},
-                                       wdir + "/py-ne"))
         got_ts = node_engine("single-node-errors", wdir + "/ts-ne",
                              stub_url)
         want_ne = ("ComfyError: ComfyUI validation refused the graph: " +
                    json.dumps(NODE_ERRORS))
         check("node_errors text",
-              got_py.get("error") == got_ts.get("error") == want_ne,
-              "py=%r ts=%r" % (got_py, got_ts))
-        got_py = asyncio.run(py_merged({"workflow": WF, "timeout_s": 60},
-                                       wdir + "/py-mne"))
+              got_ts.get("error") == want_ne,
+              "ts=%r" % (got_ts,))
         got_ts = node_engine("flow-merged-node-errors", wdir + "/ts-mne",
                              stub_url)
         want_mne = ("ComfyError: ComfyUI validation refused the merged "
                     "graph: " + json.dumps(NODE_ERRORS))
         check("merged node_errors text",
-              got_py.get("error") == got_ts.get("error") == want_mne,
-              "py=%r ts=%r" % (got_py, got_ts))
+              got_ts.get("error") == want_mne,
+              "ts=%r" % (got_ts,))
 
         STUB.mode = "prompt-400"
-        got_py = asyncio.run(py_single({"workflow": WF, "timeout_s": 60},
-                                       wdir + "/py-p400"))
         got_ts = node_engine("single-prompt400", wdir + "/ts-p400",
                              stub_url)
         want_p400 = ("ComfyError: POST /prompt 400: "
                      "{'error': 'queue full'}")
         check("prompt-400 text",
-              got_py.get("error") == got_ts.get("error") == want_p400,
-              "py=%r ts=%r" % (got_py, got_ts))
+              got_ts.get("error") == want_p400,
+              "ts=%r" % (got_ts,))
 
         STUB.mode = "error-status"
-        got_py = asyncio.run(py_single({"workflow": WF, "timeout_s": 60},
-                                       wdir + "/py-herr"))
         got_ts = node_engine("single-history-error", wdir + "/ts-herr",
                              stub_url)
         want_herr = ("ComfyError: ComfyUI run failed: " +
                      '{"node_id": "1", "exception_message": "boom"}')
         check("history error text",
-              got_py.get("error") == got_ts.get("error") == want_herr,
-              "py=%r ts=%r" % (got_py, got_ts))
+              got_ts.get("error") == want_herr,
+              "ts=%r" % (got_ts,))
 
-        # ── Phase B: happy-path parity (normalized byte-equal) ──
+        # ── Phase B: happy-path lifecycle (TS vs goldens) ──
         STUB.mode = "normal"
         with STUB.lock:
             STUB.prompts.clear()
-        a = http(py_port, "/v1/flows/start", start_body())
-        b = http(ts_port, "/v1/flows/start", start_body())
-        check("start 202", a[0] == b[0] == 202, "py=%r ts=%r" % (a, b))
-        da = json.loads(a[1].decode())
-        db = json.loads(b[1].decode())
+        st, raw = http(ts_port, "/v1/flows/start", start_body())
+        check("start 202", st == 202, "ts=%r" % ((st, raw[:120]),))
+        doc = json.loads(raw.decode())
         check("202 receipt shape",
-              set(da) == set(db) == {"run_id", "status"} and
-              da["status"] == db["status"] == "queued",
-              "py=%r ts=%r" % (da, db))
-        py_run, ts_run = da["run_id"], db["run_id"]
-        roots = [(str(py_root), py_run), (str(ts_root), ts_run)]
-        check("202 receipts agree",
-              normalize(a[1].decode(), roots) ==
-              normalize(b[1].decode(), roots), "%r vs %r" % (a[1], b[1]))
-        sta, doca = wait_status(py_port, py_run)
-        stb, docb = wait_status(ts_port, ts_run)
+              set(doc) == {"run_id", "status"} and
+              doc["status"] == "queued",
+              "ts=%r" % (doc,))
+        ts_run = doc["run_id"]
+        roots = [(str(ts_root), ts_run)]
+        check("202 receipt golden",
+              normalize(raw.decode(), roots) == golden("receipt-202.json"),
+              "%r" % (raw[:160],))
+        st, doc = wait_status(ts_port, ts_run)
         check("terminal completed",
-              sta == stb == 200 and doca.get("status") ==
-              docb.get("status") == "completed",
-              "py=%r ts=%r" % (doca.get("status"), docb.get("status")))
-        na = normalize(json.dumps(doca, sort_keys=True), roots)
-        nb = normalize(json.dumps(docb, sort_keys=True), roots)
-        check("terminal bodies agree", na == nb,
-              "py=%s ts=%s" % (na[:400], nb[:400]))
+              st == 200 and doc.get("status") == "completed",
+              "ts=%r" % (doc.get("status"),))
+        check("terminal body golden",
+              normalize(json.dumps(doc, sort_keys=True), roots) ==
+              golden("terminal-completed.json"),
+              "%s" % (normalize(json.dumps(doc, sort_keys=True),
+                                roots)[:400],))
         with STUB.lock:
             graphs = [p.get("prompt", {}) for p in STUB.prompts]
-        check("one submit each", len(graphs) == 2, repr(len(graphs)))
-        if len(graphs) == 2:
-            ga = json.dumps(graphs[0], sort_keys=True)
-            gb = json.dumps(graphs[1], sort_keys=True)
-            check("submitted graph namespaced+equal",
-                  ga == gb and "gen::1" in graphs[0],
-                  "%r" % (graphs,))
-        la = http(py_port, "/v1/flows/status/" + py_run +
-                  "?include_log=TRUE", None, method="GET")
-        lb = http(ts_port, "/v1/flows/status/" + ts_run +
-                  "?include_log=TRUE", None, method="GET")
-        check("include_log agrees",
-              la[0] == lb[0] == 200 and
-              normalize(la[1].decode(), roots) ==
-              normalize(lb[1].decode(), roots),
-              "%r vs %r" % (la[1][:300], lb[1][:300]))
+        check("one submit", len(graphs) == 1, repr(len(graphs)))
+        if len(graphs) == 1:
+            check("submitted graph namespaced",
+                  "gen::1" in graphs[0], "%r" % (graphs,))
+        st, raw = http(ts_port, "/v1/flows/status/" + ts_run +
+                       "?include_log=TRUE", None, method="GET")
+        check("include_log golden",
+              st == 200 and
+              normalize(raw.decode(), roots) == golden("include-log.json"),
+              "%r" % (raw[:300],))
         rel = "gen/out.png"
-        pa = py_root / "output" / py_run / rel
         pb = ts_root / "output" / ts_run / rel
-        check("harvested bytes agree",
-              pa.is_file() and pb.is_file() and
-              pa.read_bytes() == pb.read_bytes() == b"PNG-BYTES",
-              "%s %s" % (pa.is_file(), pb.is_file()))
+        check("harvested bytes",
+              pb.is_file() and pb.read_bytes() == b"PNG-BYTES",
+              "%s" % (pb.is_file(),))
 
-        # ── Phase D: stop-door parity (never-completing stub) ──
+        # ── Phase D: stop-door lifecycle (TS vs goldens) ──
         STUB.mode = "never"
         with STUB.lock:
             base_int, base_del = STUB.interrupts, len(STUB.queue_deletes)
-        a = http(py_port, "/v1/flows/start", start_body())
-        b = http(ts_port, "/v1/flows/start", start_body())
-        py_run2 = json.loads(a[1].decode())["run_id"]
-        ts_run2 = json.loads(b[1].decode())["run_id"]
-        for port, rid in ((py_port, py_run2), (ts_port, ts_run2)):
-            end = time.time() + 30
-            while time.time() < end:
-                st, raw = http(port, "/v1/flows/status/" + rid)
-                try:
-                    if json.loads(raw.decode()).get("status") == \
-                            "running":
-                        break
-                except ValueError:
-                    pass
-                time.sleep(0.2)
-        sa = http(py_port, "/v1/flows/stop/" + py_run2, b"")
-        sb = http(ts_port, "/v1/flows/stop/" + ts_run2, b"")
-        roots2 = [(str(py_root), py_run2), (str(ts_root), ts_run2)]
-        check("stop receipts agree",
-              sa[0] == sb[0] == 200 and
-              normalize(sa[1].decode(), roots2) ==
-              normalize(sb[1].decode(), roots2),
-              "%r vs %r" % (sa, sb))
-        sta, doca = wait_status(py_port, py_run2, ("stopped",))
-        stb, docb = wait_status(ts_port, ts_run2, ("stopped",))
+        st, raw = http(ts_port, "/v1/flows/start", start_body())
+        ts_run2 = json.loads(raw.decode())["run_id"]
+        end = time.time() + 30
+        while time.time() < end:
+            s2, r2 = http(ts_port, "/v1/flows/status/" + ts_run2)
+            try:
+                if json.loads(r2.decode()).get("status") == "running":
+                    break
+            except ValueError:
+                pass
+            time.sleep(0.2)
+        st, raw = http(ts_port, "/v1/flows/stop/" + ts_run2, b"")
+        roots2 = [(str(ts_root), ts_run2)]
+        check("stop receipt golden",
+              st == 200 and
+              normalize(raw.decode(), roots2) == golden("stop-receipt.json"),
+              "%r %r" % (st, raw[:160]))
+        st, doc = wait_status(ts_port, ts_run2, ("stopped",))
         check("terminal stopped",
-              sta == stb == 200 and doca.get("status") ==
-              docb.get("status") == "stopped",
-              "py=%r ts=%r" % (doca.get("status"), docb.get("status")))
-        na = normalize(json.dumps(doca, sort_keys=True), roots2)
-        nb = normalize(json.dumps(docb, sort_keys=True), roots2)
-        check("stopped bodies agree", na == nb,
-              "py=%s ts=%s" % (na[:500], nb[:500]))
+              st == 200 and doc.get("status") == "stopped",
+              "ts=%r" % (doc.get("status"),))
+        check("stopped body golden",
+              normalize(json.dumps(doc, sort_keys=True), roots2) ==
+              golden("stopped.json"),
+              "%s" % (normalize(json.dumps(doc, sort_keys=True),
+                                roots2)[:500],))
         check("stopped stage error",
-              doca["stages"][0].get("error") ==
-              docb["stages"][0].get("error") ==
+              doc["stages"][0].get("error") ==
               "ComfyError: stopped (interrupt delivered)"
-              and doca.get("error") == docb.get("error") == "",
-              "%r vs %r" % (doca["stages"][0].get("error"),
-                             docb["stages"][0].get("error")))
+              and doc.get("error") == "",
+              "%r" % (doc["stages"][0].get("error"),))
         with STUB.lock:
             grew_int = STUB.interrupts - base_int
             grew_del = len(STUB.queue_deletes) - base_del
         check("stop interrupts witnessed",
-              grew_int >= 2 and grew_del >= 2,
+              grew_int >= 1 and grew_del >= 1,
               "interrupts=%d deletes=%d" % (grew_int, grew_del))
 
-        # ── Phase E: engine-down parity (shape) ──
+        # ── Phase E: engine-down shape (TS-only) ──
         assert STUB.server is not None
         STUB.server.shutdown()
         STUB.server.server_close()
-        a = http(py_port, "/v1/flows/start", start_body())
-        b = http(ts_port, "/v1/flows/start", start_body())
-        py_run3 = json.loads(a[1].decode())["run_id"]
-        ts_run3 = json.loads(b[1].decode())["run_id"]
-        sta, doca = wait_status(py_port, py_run3, ("failed",))
-        stb, docb = wait_status(ts_port, ts_run3, ("failed",))
-        for side, st, doc in (("py", sta, doca), ("ts", stb, docb)):
-            failed = (st == 200 and doc.get("status") == "failed" and
-                      doc["stages"] and
-                      doc["stages"][0].get("status") == "failed" and
-                      "refused" in str(doc["stages"][0].get("error", ""))
-                      .lower())
-            check("engine-down %s failed shape" % side, failed,
-                  "%r" % ({k: doc.get(k) for k in
-                           ("status", "error")},))
+        st, raw = http(ts_port, "/v1/flows/start", start_body())
+        ts_run3 = json.loads(raw.decode())["run_id"]
+        st, doc = wait_status(ts_port, ts_run3, ("failed",))
+        failed = (st == 200 and doc.get("status") == "failed" and
+                  doc["stages"] and
+                  doc["stages"][0].get("status") == "failed" and
+                  "refused" in str(doc["stages"][0].get("error", ""))
+                  .lower())
+        check("engine-down failed shape", failed,
+              "%r" % ({k: doc.get(k) for k in ("status", "error")},))
         print("PASS %d FAIL %d" % (PASS, FAIL))
         return 1 if FAIL else 0
     finally:
-        for proc in (py_proc, ts_proc):
-            if proc is not None:
-                reap_gateway(proc)
-        shutil.rmtree(py_root, ignore_errors=True)
+        if ts_proc is not None:
+            reap_gateway(ts_proc)
         shutil.rmtree(ts_root, ignore_errors=True)
 
 

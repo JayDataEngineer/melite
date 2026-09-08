@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"txt2music\",\n  \"family\": \"txt2music\",\n  \"genre\": \"audio\",\n  \"label\": \"MiniMax Music 3 (txt2music)\",\n  \"description\": \"MiniMax Music 3 text-to-music with lyrics (audio.cpp t2m)\",\n  \"source\": {\n    \"type\": \"huggingface\",\n    \"repo_id\": \"audio-cpp/MiniMax-Music3-GGUF\",\n    \"filename\": \"MiniMax-Music3-GGUF\"\n  },\n  \"defaults\": {\n    \"backend\": \"cuda\",\n    \"duration\": 120,\n    \"sample_rate\": 44100\n  },\n  \"engine\": \"audio_cpp\",\n  \"form\": \"form_music\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

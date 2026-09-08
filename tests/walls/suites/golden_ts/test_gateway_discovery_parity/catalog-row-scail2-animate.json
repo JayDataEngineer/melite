@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"scail2-animate\",\n  \"family\": \"scail2-animate\",\n  \"genre\": \"video\",\n  \"label\": \"SCAIL-2\",\n  \"description\": \"SCAIL-2 character animation \\u2014 drives a reference character from a video and colored mask.\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"width\": 480,\n    \"height\": 480,\n    \"length\": 25,\n    \"fps\": 24,\n    \"steps\": 12,\n    \"cfg\": 5.0,\n    \"pose_strength\": 1.0,\n    \"sampler\": \"euler\",\n    \"scheduler\": \"simple\",\n    \"seed\": 42\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_video_director\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

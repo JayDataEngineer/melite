@@ -1,0 +1,13 @@
+{
+  "error": "stage[0]: [] is not an object",
+  "code": "flow_compile",
+  "loc": "flow",
+  "errors": [
+    {
+      "scope": "flow",
+      "error": "stage[0]: [] is not an object",
+      "code": "flow_compile",
+      "loc": "flow"
+    }
+  ]
+}

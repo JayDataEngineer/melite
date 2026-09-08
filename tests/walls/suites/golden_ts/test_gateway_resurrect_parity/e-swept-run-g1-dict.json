@@ -1,0 +1,12 @@
+{
+  "run_id": "run-g1-dict",
+  "status": "failed",
+  "pipeline": "p",
+  "draft_id": "d1",
+  "created_at": 1700000109,
+  "graph": {
+    "a": 1
+  },
+  "sweep": "gateway restarted before the run started (never executed) \u2014 resubmit",
+  "error": "gateway restarted before the run started (never executed) \u2014 resubmit"
+}

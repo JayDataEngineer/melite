@@ -1,0 +1,7 @@
+{
+  "error": "test flag must be a boolean (got str 'yes')",
+  "code": "bad_envelope",
+  "loc": "test",
+  "expected": "boolean",
+  "got": "str"
+}

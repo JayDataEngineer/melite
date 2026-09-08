@@ -1,0 +1,13 @@
+{
+  "error": "duplicate stage id 'a'",
+  "code": "flow_compile",
+  "loc": "flow",
+  "errors": [
+    {
+      "scope": "flow",
+      "error": "duplicate stage id 'a'",
+      "code": "flow_compile",
+      "loc": "flow"
+    }
+  ]
+}

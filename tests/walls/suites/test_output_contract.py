@@ -5,17 +5,21 @@ the gaps, half state, incomplete state = bad").
 Every REAL card declares >= 1 typed OutputRow in card_outputs; the
 rows are typed instances (the metaclass already refuses str rows at
 boot — this wall pins the COMPLETENESS law the metaclass deliberately
-does not own: probe cards in tests stay legal); the gateway's
+does not own: probe cards in tests stay legal); the TS door's
 violation helper honors suffix matching and refuses clean.
 
 Wall legs:
   1. every-card-declares    — 22/22 real cards, >= 1 row each
   2. typed rows             — rows are OutputRow instances (frozen,
                               extra=forbid, lowercase dot patterns)
-  3. gate behavior          — _output_violation: None on honor, exact
-                              refusal naming card+label+patterns on
-                              violation; no-rows card = None (probe
-                              legality)
+  3. gate behavior          — outputViolation (TS): None on honor,
+                              exact refusal naming card+label+
+                              patterns on violation; unknown card
+                              id = None (probe legality)
+
+ORACLE DEATH 2026-09-08: see gate_helper_behavior.
+
+Date: 2026-09-08. Status: landed (oracle-death re-derivation).
 """
 
 from __future__ import annotations
@@ -68,27 +72,57 @@ def rows_are_typed() -> None:
 
 
 def gate_helper_behavior() -> None:
-    """Leg 3: the violation helper honors and refuses exactly."""
-    from gateway import _output_violation
+    """Leg 3: the violation helper honors and refuses exactly — via
+    the TS door's copy (packages/gateway/src/schema/verbs.ts
+    outputViolation, transcribed 1:1 from the py helper that died
+    with the oracle).
 
-    class _Probe(ActionCard):
-        id = "probe"
+    ORACLE DEATH 2026-09-08 (operator order verbatim: "we do not
+    need parity, we need to migrate, not keep the old machinery"):
+    the py helper import died with the py serving oracle. The TS
+    helper is table-driven by card id (no synthetic probe cards):
+    image-gen promises Generated image (.png); an unknown card id
+    is legal (None-class skip, the probe legality). Probed live
+    2026-09-08 (node --experimental-strip-types); the refusal
+    names card + label + patterns, empty delivery reads
+    "delivered none ... artifacts: (none)".
 
-    # probe card (no rows) is legal — None, never a refusal
-    assert _output_violation(_Probe, []) is None
+    Date: 2026-09-08. Status: landed (oracle-death re-derivation).
+    """
+    import json
+    import subprocess
 
-    class _PngCard(ActionCard):
-        id = "png-probe"
-        card_outputs = (OutputRow(patterns=(".png",), label="Image"),)
+    driver = (
+        "import('./packages/gateway/src/schema/verbs.ts').then(m => {"
+        " const f = m.outputViolation;"
+        " const out = ["
+        "  f('no-such-card', []),"
+        "  f('image-gen', ['out/image.png']),"
+        "  f('image-gen', ['out/image.PNG']),"
+        "  f('image-gen', ['out/clip.mp4']),"
+        "  f('image-gen', []),"
+        "  f('image-gen', null)];"
+        " console.log(JSON.stringify(out)); })"
+    )
+    r = subprocess.run(
+        ["node", "--experimental-strip-types", "--no-warnings",
+         "--input-type=module", "-e", driver],
+        capture_output=True, text=True, timeout=120, cwd=REPO)
+    assert r.returncode == 0, "TS verbs driver failed:\n%s" % r.stderr[-1000:]
+    (unknown, honor, honor_upper, viol_mp4, viol_empty,
+     viol_null) = json.loads(r.stdout)
 
-    assert _output_violation(_PngCard, ["out/image.png"]) is None
-    assert _output_violation(_PngCard, ["out/image.PNG"]) is None  # case-insensitive
-    v = _output_violation(_PngCard, ["out/clip.mp4"])
-    assert v is not None and "png-probe" in v and "Image" in v and ".png" in v, v
-    v = _output_violation(_PngCard, [])
-    assert v is not None and "delivered none" in v, v
+    # unknown/rowless card is legal — None, never a refusal
+    assert unknown is None, unknown
+
+    assert honor is None, honor
+    assert honor_upper is None, honor_upper  # case-insensitive
+    for v in (viol_mp4, viol_empty, viol_null):
+        assert (v is not None and "'image-gen'" in v
+                and "Generated image" in v and ".png" in v), v
+    assert "delivered none" in viol_empty, viol_empty
     # artifacts=None / falsy — same refusal, no crash
-    assert _output_violation(_PngCard, None) is not None
+    assert viol_null is not None, viol_null
 
 
 if __name__ == "__main__":

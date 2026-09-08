@@ -1,0 +1,29 @@
+{
+  "run_id": "run-tricky",
+  "status": "completed",
+  "state": "completed",
+  "error": "",
+  "created": 1700000007,
+  "durationSec": 0,
+  "restored_from_sidecar": true,
+  "artifacts": [
+    {
+      "name": "keep.wav",
+      "path": "./output/run-tricky/keep.wav",
+      "bytes": 19,
+      "url": "/v1/assets/runs/run-tricky/keep.wav",
+      "type": "audio",
+      "size": 19
+    },
+    {
+      "name": "vid.mp4",
+      "path": "./output/run-tricky/sub/vid.mp4",
+      "bytes": 19,
+      "url": "/v1/assets/runs/run-tricky/sub/vid.mp4",
+      "type": "video",
+      "size": 19
+    }
+  ],
+  "stages": [],
+  "draft_id": ""
+}

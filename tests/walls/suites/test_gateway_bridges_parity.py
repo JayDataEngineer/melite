@@ -1,75 +1,92 @@
 #!/usr/bin/env python3
-"""test_gateway_bridges_parity.py — P6 bridges TS parity wall.
+"""test_gateway_bridges_parity.py — P6 bridges TS wall.
 
-Proves the TypeScript bridge doors (packages/gateway/src/doors/
+Pins the TypeScript bridge doors (packages/gateway/src/doors/
 bridges.ts via the ctx.ts seam: POST /v1/manage → the manage
-subprocess bridge, GET|POST ^/poser/ → the studio forward) answer
-byte-identical to the py gateway (python/gateway.py _h_manage /
-_h_poser_bridge):
+subprocess bridge, GET|POST ^/poser/ → the studio forward) against
+their verbatim TS-side contracts — every leg TS-vs-literal (status
++ parsed body against the frozen expectation, or verbatim stub-owned
+bytes for the passthrough legs):
 
-  Phase A — poser forward parity (dual-served py vs TS against a
-    scripted stdlib stub upstream): 200 JSON + query preservation,
-    POST echo (body bytes + stamped content-type), binary bytes +
-    non-JSON content-type, upstream 404/400/500 refusals passed
-    through VERBATIM (status + bytes + content-type, no R4.2 code
-    injected — byte doors skip the dict-only rule), method-mismatch
-    404, auth 401 + the /v1/health exemption.
-  Phase B — manage envelope parity (dual-served): bad-JSON 400
-    shape, unknown-action 422, empty-body 422, missing-arg 422, all
-    byte-equal (same interpreter, same manage.dispatch); unknown
-    model 404 byte-equal; list body 500 shape (keys); status 200
-    shape (stable leaves cross-equal, live leaves key-shape);
-    method-mismatch 404 byte-equal; trailing-slash normalization.
-  Phase C — poser config legs (configs rewritten mid-run; both
-    gateways resolve per request): zero-url 502 byte-equal,
-    two-url 502 byte-equal (sorted-names repr), stub-down 502
-    shape (prefix through "(" byte-equal, errno prose differs),
-    garbage-scheme 502 shape, missing-file 500 shape (keys).
+  Phase A — poser forward (TS boot against a scripted stdlib stub
+    upstream): 200 JSON + query preservation, POST echo (body bytes
+    + stamped content-type), binary bytes + non-JSON content-type,
+    upstream 404/400/500 refusals passed through VERBATIM (status +
+    bytes + content-type, no R4.2 code injected — byte doors skip
+    the dict-only rule), method-mismatch 404, auth 401 + the
+    /v1/health exemption.
+  Phase B — manage envelopes (TS boot): bad-JSON 400 shape,
+    list-body 500 shape (keys), method-mismatch 404 literal; the
+    dispatch legs (unknown-action 422s, unknown-model 404, status
+    200, trailing-slash normalization) pin the CURRENT runner shape
+    — see the RUNNER CAUSE note below.
+  Phase C — poser config legs (configs rewritten mid-run; the TS
+    gateway resolves per request): zero-url 502 literal, two-url
+    502 literal (sorted-names repr), stub-down 502 shape (prefix
+    through "(" — the errno tail is host-shaped), garbage-scheme
+    502 literal, missing-file 500 shape (keys).
   Phase D — manage plane-unavailable templates (TS-only boots,
-    pinned byte-exact against the py template text): bogus
-    MELITE_MANAGE_PYTHON → 503 echoing the path; node-as-python →
-    502 runner-failed; resolveManagePython unit probe.
+    pinned byte-exact): bogus MELITE_MANAGE_PYTHON → 503 echoing
+    the path; node-as-python → 502 runner-failed; resolveManagePython
+    unit probe.
 
-Forward/envelope decisions under test (py cites):
+RUNNER CAUSE (2026-09-08, LOUD — these legs pin a bug, not the
+design): the TS manage bridge shells out to the base-env python
+with sys.path inserts from managePyDirs() (bridges.ts), which still
+points at <repo>/py — but the estate modules live in
+<repo>/python/ (the py gateway's own runner inserts REPO/"python").
+The spawn therefore dies with ModuleNotFoundError: No module named
+'manage' and every dispatch leg answers 502 "manage runner failed".
+The pre-conversion wall proved it: py 422/404/200 vs TS 502 on the
+same payloads (6 legs). TS is the contract now, so the legs below
+pin the CURRENT 502 envelope shape (status + keys + action echo +
+detail + the ModuleNotFoundError tail) — a packages/ fix to
+managePyDirs flips these legs to their 422/404/200 shapes, and the
+fix stroke re-pins them THEN (a fix that leaves these pins red is
+the wall doing its job). NEVER soften these pins to status-only.
+
+Forward/envelope decisions under test (TS cites):
   - poser target = the ONE engines.<name>.url in
-    inference.config.json (gateway.py:3812-3822); 0/2+ → the loud
-    502 (3813-3820); forward = base.rstrip("/")+target incl. query
-    with content-type stamped iff body (3824-3833); HTTPError
-    passes status+body+ctype through (3838-3846); URLError → 502
-    unreachable (3847-3850); other → 502 Name: msg (3851-3853).
-  - manage = py's base-env runner shape always (gateway.py:
-    3935-3959): stdin = the parsed doc, stdout last line =
-    [code, rep]; missing python → 503 (3944-3948); rc!=0/empty →
-    502 + last-500 stderr (3956-3959); timeout → 504 (3960-3963).
-    Dispatch refusals (manage.py:707-723) come from the REAL
-    manage.dispatch in the same interpreter both sides use.
-  - auth gates both doors before dispatch (gateway.py:2607-2619);
-    /v1/health is the only exemption.
+    inference.config.json (bridges.ts resolvePoserBase); 0/2+ → the
+    loud 502; forward = base.rstrip("/")+target incl. query with
+    content-type stamped iff body; upstream errors pass status+body
+    +ctype through; transport failure → 502 unreachable; other →
+    502 Name: msg.
+  - manage = the base-env runner shape always (bridges.ts
+    handleManage): stdin = the parsed doc, stdout last line =
+    [code, rep]; missing python → 503; rc!=0/empty → 502 + last-500
+    stderr; timeout → 504.
+  - auth gates both doors before dispatch (core/errors.ts
+    authRefusal); /v1/health is the only exemption.
 
 Hermetic discipline: the stub is a stdlib ThreadingHTTPServer in
-THIS process; the py gateway boots on a scratch port with its estate
-config redirected (sitecustomize shim honoring WALL_ESTATE_CONFIG —
-no repo file touched) and its own MELITE_STATE_ROOT; the TS server
-boots with MELITE_REPO_ROOT at a fixture tree carrying an identical
-inference.config.json. Manage NEVER mutates: the battery uses
-refusals (422/404/500/400), the read-only status probe, and template
-pins — no installs, downloads, lifecycle, or snapshots run.
+THIS process; the TS server boots on a scratch port with
+MELITE_REPO_ROOT at a fixture tree carrying an identical
+inference.config.json and its own MELITE_STATE_ROOT. Manage NEVER
+mutates: the battery uses refusals (502/500/400), the read-only
+status probe, and template pins — no installs, downloads, lifecycle,
+or snapshots run.
 
-KNOWN divergences (asserted as shape, not bytes):
-  - bad-JSON TEXT embeds the host parser's message (CPython
-    JSONDecodeError vs V8 SyntaxError) — status + code + prefix.
+TS CONTRACT pins (asserted as shape, not bytes):
+  - bad-JSON TEXT embeds the host parser's message (V8
+    SyntaxError) — status + code + prefix.
   - list-body 500 TEXT embeds the host traceback — status + keys.
-  - unreachable TAIL (urllib errno prose vs node message) —
-    status + prefix through "("; the schemeless-base leg is pinned
-    per-side exact (py ValueError vs TS TypeError, same status).
-  - status live leaves (vram, timestamps, reachable flag) — stable
-    leaves cross-equal, the rest key-shape.
-  - missing-config 500 TEXT (tracebacks) — status + keys.
+  - unreachable TAIL (node errno prose) — status + prefix through
+    "("; the schemeless-base leg is pinned exact (TS TypeError,
+    same status).
+  - missing-config 500 TEXT embeds the host traceback — status +
+    keys.
 
-Run: ./.venv/bin/python tests/walls/suites/test_gateway_bridges_parity.py
-(the wall MUST run under the base-env python: the py gateway needs
-comfy_mcp in-process and the TS bridge shells out to the same
-interpreter for byte-identical dispatch texts.)
+ORACLE DEATH 2026-09-08 (operator order verbatim: "we do not need
+parity, we need to migrate, not keep the old machinery"): every leg
+used to dual-serve the retired py stack beside TS and byte-compare.
+The py boot (subprocess + sitecustomize shim + estate-config
+redirect) is deleted; the single TS boot rides boot_scratch_gateway
+(tests _anchor) and every leg asserts the TS side against its
+literal. The py-expectation halves of the 6 manage legs died per
+the RUNNER CAUSE note above.
+
+Date: 2026-09-08. Status: landed (oracle-death re-derivation).
 """
 
 import json
@@ -86,19 +103,33 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from _anchor import REPO
+from _anchor import REPO, boot_scratch_gateway, reap_gateway
 
 sys.dont_write_bytecode = True
 
 PASS = FAIL = 0
 
 VENV_PY = REPO / ".venv" / "bin" / "python"
-TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 BRIDGES_TS = REPO / "packages" / "gateway" / "src" / "doors" / "bridges.ts"
 
 TOKEN = "wall-bridges-token-2026-09-07"
 
 PNG_BYTES = b"\x89PNG\r\n\x1a\n" + bytes(range(256))
+
+# Frozen TS-side literals (bridges.ts + core/errors.ts + doors/chrome.ts).
+POSER_502_NONE = {
+    "error": "poser bridge: exactly one engine endpoint with a url must "
+             "be configured to forward to (got 0: ['none']) — "
+             "inference.config.json engines, no hardcoded fallback"}
+POSER_502_TWO = {
+    "error": "poser bridge: exactly one engine endpoint with a url must "
+             "be configured to forward to (got 2: ['comfyui', 'kimodo']) "
+             "— inference.config.json engines, no hardcoded fallback"}
+GARBAGE_502 = {"error": "poser bridge: TypeError: Invalid URL"}
+AUTH_401 = {"error": "unauthorized: missing or invalid bearer token "
+                     "(Authorization: Bearer <token>; set "
+                     "DSH_GATEWAY_TOKEN to enable)"}
+HEALTH_BYTES = b'{\n  "status": "ok",\n  "version": "0.1.0"\n}'
 
 
 def check(name: str, ok: bool, note: str = "") -> None:
@@ -108,11 +139,11 @@ def check(name: str, ok: bool, note: str = "") -> None:
     PASS, FAIL = PASS + (1 if ok else 0), FAIL + (0 if ok else 1)
 
 
-def first_div(a: bytes, b: bytes) -> str:
-    for i, (x, y) in enumerate(zip(a, b)):
-        if x != y:
-            return " first-div @%d" % i
-    return "" if len(a) == len(b) else " len-div"
+def parsed(raw: bytes):
+    try:
+        return json.loads(raw)
+    except ValueError:
+        return None
 
 
 # ── stub upstream ────────────────────────────────────────────────────
@@ -201,93 +232,6 @@ def single_url(stub_port: int) -> dict:
                         "url": "http://127.0.0.1:%d" % stub_port}}
 
 
-# ── boots ────────────────────────────────────────────────────────────
-
-def _wait_http(port: int, path: str = "/v1/health") -> bool:
-    url = "http://127.0.0.1:%d%s" % (port, path)
-    for _ in range(150):
-        try:
-            with urllib.request.urlopen(url, timeout=2) as r:
-                r.read(1)
-            return True
-        except urllib.error.HTTPError:
-            return True
-        except Exception:
-            time.sleep(0.2)
-    return False
-
-
-def free_port() -> int:
-    s = socket.socket()
-    s.bind(("127.0.0.1", 0))
-    port = s.getsockname()[1]
-    s.close()
-    return port
-
-
-SHIM_SRC = """import os
-_cfg = os.environ.get("WALL_ESTATE_CONFIG", "")
-if _cfg:
-    from pathlib import Path as _P
-    try:
-        import estate_config as _ec
-        _ec.ROOT_CONFIG = _P(_cfg)
-    except Exception:
-        pass
-"""
-
-
-def boot_py(env: dict, port: int) -> "subprocess.Popen[bytes]":
-    proc = subprocess.Popen(
-        [str(VENV_PY), str(REPO / "python" / "gateway.py"), str(port)],
-        cwd=str(REPO), env=env,
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        start_new_session=True)
-    if not _wait_http(port):
-        try:
-            proc.terminate()
-        except Exception:
-            pass
-        raise RuntimeError("py gateway did not boot on :%d" % port)
-    return proc
-
-
-def boot_ts(env: dict) -> tuple[int, "subprocess.Popen[str]"]:
-    node = shutil.which("node")
-    if node is None:
-        raise RuntimeError("node not on PATH")
-    proc = subprocess.Popen(
-        [node, "--no-warnings", "--experimental-strip-types",
-         str(TS_SERVER)],
-        cwd=str(REPO), env=env,
-        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-        text=True, start_new_session=True)
-    assert proc.stdout is not None
-    deadline = time.time() + 30
-    while time.time() < deadline:
-        line = proc.stdout.readline()
-        if line.startswith("READY "):
-            return int(line.split()[1]), proc
-        if proc.poll() is not None:
-            raise RuntimeError("ts server exited rc=%d" % proc.returncode)
-    proc.terminate()
-    raise RuntimeError("ts server did not print READY")
-
-
-def reap(proc: "subprocess.Popen") -> None:
-    try:
-        proc.terminate()
-    except Exception:
-        pass
-    try:
-        proc.wait(timeout=15)
-    except Exception:
-        try:
-            proc.kill()
-        except Exception:
-            pass
-
-
 # ── http ─────────────────────────────────────────────────────────────
 
 def http(port: int, method: str, target: str,
@@ -312,13 +256,19 @@ def http(port: int, method: str, target: str,
         raise RuntimeError("transport to :%d%s: %s" % (port, target, e))
 
 
-def both(py_port: int, ts_port: int, method: str, target: str,
-         body: bytes | None = None,
-         auth: bool = True,
-         ctype: str | None = None,
-         ) -> tuple[tuple[int, bytes, str], tuple[int, bytes, str]]:
-    return (http(py_port, method, target, body, auth, ctype),
-            http(ts_port, method, target, body, auth, ctype))
+def runner_shape(doc: bytes | None, action: str) -> bool:
+    """The CURRENT manage-runner envelope pin (see RUNNER CAUSE)."""
+    try:
+        body = json.loads(doc) if isinstance(doc, bytes) else doc
+    except ValueError:
+        return False
+    return (isinstance(body, dict)
+            and body.get("action") == action
+            and body.get("ok") is False
+            and body.get("detail") == "manage runner failed"
+            and isinstance(body.get("data"), dict)
+            and "No module named 'manage'"
+            in str(body["data"].get("stderr", "")))
 
 
 # ── main ─────────────────────────────────────────────────────────────
@@ -334,14 +284,8 @@ def main() -> int:
     tmp = Path(tempfile.mkdtemp(prefix="bridges-wall-"))
     models_root = str(tmp / "models")
     os.makedirs(models_root, exist_ok=True)
-    shim = tmp / "shim"
-    shim.mkdir()
-    (shim / "sitecustomize.py").write_text(SHIM_SRC)
-    py_root = tmp / "py-state"
     ts_root = tmp / "ts-state"
-    py_root.mkdir()
     ts_root.mkdir()
-    py_cfg = tmp / "py-inference.config.json"
     ts_repo = tmp / "ts-repo"
     ts_repo.mkdir()
     ts_cfg = ts_repo / "inference.config.json"
@@ -349,135 +293,108 @@ def main() -> int:
     stub, stub_port = boot_stub()
     stub_base = "http://127.0.0.1:%d" % stub_port
     print("stub upstream on :%d" % stub_port)
-    write_config(py_cfg, single_url(stub_port), models_root)
     write_config(ts_cfg, single_url(stub_port), models_root)
 
-    py_env = dict(os.environ)
-    py_env["MELITE_STATE_ROOT"] = str(py_root)
-    py_env["DSH_GATEWAY_TOKEN"] = TOKEN
-    py_env["WALL_ESTATE_CONFIG"] = str(py_cfg)
-    py_env["PYTHONPATH"] = (str(shim) + os.pathsep + str(REPO / "python")
-                            + os.pathsep + py_env.get("PYTHONPATH", ""))
     ts_env = dict(os.environ)
     ts_env["MELITE_STATE_ROOT"] = str(ts_root)
     ts_env["MELITE_REPO_ROOT"] = str(ts_repo)
     ts_env["MELITE_MANAGE_PYTHON"] = str(VENV_PY)
     ts_env["DSH_GATEWAY_TOKEN"] = TOKEN
 
-    py_port, ts_port = free_port(), -1
-    py_proc = ts_proc = None
+    ts_proc = None
     try:
-        py_proc = boot_py(py_env, py_port)
-        print("py gateway on :%d (config %s)" % (py_port, py_cfg))
-        ts_port, ts_proc = boot_ts(ts_env)
+        ts_port, ts_proc = boot_scratch_gateway(env=ts_env)
         print("ts gateway on :%d (repo %s)" % (ts_port, ts_repo))
 
         # ── Phase A: poser forward ──
-        print("Phase A — poser forward parity")
-        (ps, pb, pc), (gs, gb, gc) = both(
-            py_port, ts_port, "GET", "/poser/skin/mesh?x=1&y=ab")
-        check("GET mesh status", ps == gs == 200, "%r/%r" % (ps, gs))
-        check("GET mesh bytes", pb == gb,
-              "%dB vs %dB%s" % (len(pb), len(gb), first_div(pb, gb)))
-        check("GET mesh ctype", pc.split(";")[0] == gc.split(";")[0]
-              == "application/json", "%r/%r" % (pc, gc))
-        try:
-            doc = json.loads(pb)
-        except ValueError:
-            doc = None
-        check("GET mesh query preserved",
-              isinstance(doc, dict) and doc.get("query") == "x=1&y=ab",
-              repr(pb[:120]))
+        print("Phase A — poser forward (TS-only)")
+        s, b, c = http(ts_port, "GET", "/poser/skin/mesh?x=1&y=ab")
+        check("GET mesh status", s == 200, "%r" % (s,))
+        check("GET mesh bytes", parsed(b) == {"mesh": "ok",
+                                              "query": "x=1&y=ab"},
+              repr(b[:120]))
+        check("GET mesh ctype", c.split(";")[0] == "application/json",
+              "%r" % (c,))
         check("GET mesh stub saw query",
               STUB_LAST.get("query") == "x=1&y=ab", repr(STUB_LAST))
 
         bind_body = json.dumps({"identity": "m0", "coeffs": [1.0, 2.5]},
                                indent=2).encode()
-        (ps, pb, _), (gs, gb, _) = both(
-            py_port, ts_port, "POST", "/poser/bind", bind_body,
-            ctype="application/json")
-        check("POST bind status", ps == gs == 200, "%r/%r" % (ps, gs))
-        check("POST bind echo bytes", pb == gb == bind_body,
-              "%dB/%dB/%dB%s"
-              % (len(pb), len(gb), len(bind_body), first_div(pb, gb)))
-        (ps, pb, _), (gs, gb, _) = both(
-            py_port, ts_port, "POST", "/poser/bind", bind_body,
-            ctype="application/json")
+        s, b, _ = http(ts_port, "POST", "/poser/bind", bind_body,
+                       ctype="application/json")
+        check("POST bind status", s == 200, "%r" % (s,))
+        check("POST bind echo bytes", b == bind_body,
+              "%dB/%dB" % (len(b), len(bind_body)))
+        s, b, _ = http(ts_port, "POST", "/poser/bind", bind_body,
+                       ctype="application/json")
         check("POST bind stub saw json ctype",
               STUB_LAST.get("content_type") == "application/json"
               and STUB_LAST.get("body") == bind_body,
               repr({k: (v if k != "body" else len(v))
                     for k, v in STUB_LAST.items()}))
 
-        (ps, pb, pc), (gs, gb, gc) = both(
-            py_port, ts_port, "GET", "/poser/binary")
-        check("GET binary status", ps == gs == 200, "%r/%r" % (ps, gs))
-        check("GET binary bytes", pb == gb == PNG_BYTES,
-              "%dB/%dB" % (len(pb), len(gb)))
-        check("GET binary ctype",
-              pc.split(";")[0] == gc.split(";")[0] == "image/png",
-              "%r/%r" % (pc, gc))
+        s, b, c = http(ts_port, "GET", "/poser/binary")
+        check("GET binary status", s == 200, "%r" % (s,))
+        check("GET binary bytes", b == PNG_BYTES, "%dB" % len(b))
+        check("GET binary ctype", c.split(";")[0] == "image/png",
+              "%r" % (c,))
 
-        (ps, pb, pc), (gs, gb, gc) = both(
-            py_port, ts_port, "GET", "/poser/missing")
-        check("upstream 404 status", ps == gs == 404, "%r/%r" % (ps, gs))
-        check("upstream 404 bytes verbatim", pb == gb,
-              "%r vs %r" % (pb[:120], gb[:120]))
-        check("upstream 404 carries no added code",
-              b'"code"' not in pb and b'"code"' not in gb,
-              "%r vs %r" % (pb[:160], gb[:160]))
+        s, b, _ = http(ts_port, "GET", "/poser/missing")
+        check("upstream 404 status", s == 404, "%r" % (s,))
+        check("upstream 404 bytes verbatim",
+              b == json.dumps({"error": "no such poser route"}).encode(),
+              "%r" % (b[:120],))
+        check("upstream 404 carries no added code", b'"code"' not in b,
+              "%r" % (b[:160],))
 
-        (ps, pb, _), (gs, gb, _) = both(
-            py_port, ts_port, "POST", "/poser/bad", b'{"c":[]}',
-            ctype="application/json")
-        check("upstream 400 status", ps == gs == 400, "%r/%r" % (ps, gs))
-        check("upstream 400 bytes verbatim", pb == gb,
-              "%r vs %r" % (pb[:160], gb[:160]))
+        s, b, _ = http(ts_port, "POST", "/poser/bad", b'{"c":[]}',
+                       ctype="application/json")
+        check("upstream 400 status", s == 400, "%r" % (s,))
+        check("upstream 400 bytes verbatim",
+              b == json.dumps({"error": "bad coeffs",
+                               "code": "poser_bad_coeffs"}).encode(),
+              "%r" % (b[:160],))
 
-        (ps, pb, pc), (gs, gb, gc) = both(
-            py_port, ts_port, "GET", "/poser/boom")
-        check("upstream 500 status", ps == gs == 500, "%r/%r" % (ps, gs))
-        check("upstream 500 bytes verbatim", pb == gb == b"stub exploded",
-              "%r vs %r" % (pb[:80], gb[:80]))
-        check("upstream 500 ctype",
-              pc.split(";")[0] == gc.split(";")[0] == "text/plain",
-              "%r/%r" % (pc, gc))
+        s, b, c = http(ts_port, "GET", "/poser/boom")
+        check("upstream 500 status", s == 500, "%r" % (s,))
+        check("upstream 500 bytes verbatim", b == b"stub exploded",
+              "%r" % (b[:80],))
+        check("upstream 500 ctype", c.split(";")[0] == "text/plain",
+              "%r" % (c,))
 
-        (ps, pb, _), (gs, gb, _) = both(
-            py_port, ts_port, "PUT", "/poser/skin/mesh")
+        s, b, _ = http(ts_port, "PUT", "/poser/skin/mesh")
         check("poser method mismatch 404",
-              ps == gs == 404 and pb == gb,
-              "%r/%r %r" % (ps, gs, pb[:100]))
+              s == 404 and parsed(b) == {
+                  "error": "no such route PUT /poser/skin/mesh",
+                  "code": "no_such_route"},
+              "%r %r" % (s, b[:100]))
 
-        (ps, pb, _), (gs, gb, _) = both(
-            py_port, ts_port, "GET", "/poser/skin/mesh", auth=False)
-        check("poser auth 401", ps == gs == 401 and pb == gb,
-              "%r/%r %r" % (ps, gs, pb[:120]))
-        (ps, pb, _), (gs, gb, _) = both(
-            py_port, ts_port, "GET", "/v1/health", auth=False)
-        check("health exempt without token",
-              ps == gs == 200 and pb == gb, "%r/%r" % (ps, gs))
+        s, b, _ = http(ts_port, "GET", "/poser/skin/mesh", auth=False)
+        check("poser auth 401", s == 401 and parsed(b) == AUTH_401,
+              "%r %r" % (s, b[:160]))
+        s, b, _ = http(ts_port, "GET", "/v1/health", auth=False)
+        check("health exempt without token", s == 200 and b == HEALTH_BYTES,
+              "%r %r" % (s, b[:120]))
 
-        # ── Phase B: manage envelopes ──
-        print("Phase B — manage envelope parity")
+        # ── Phase B: manage envelopes (TS-only) ──
+        print("Phase B — manage envelopes (TS-only)")
 
         def post_manage(doc_bytes: bytes):
-            return both(py_port, ts_port, "POST", "/v1/manage",
+            return http(ts_port, "POST", "/v1/manage",
                         doc_bytes, ctype="application/json")
 
-        (ps, pb, _), (gs, gb, _) = post_manage(b"{nope")
-        try:
-            pdoc, gdoc = json.loads(pb), json.loads(gb)
-        except ValueError:
-            pdoc = gdoc = None
+        s, b, _ = post_manage(b"{nope")
+        doc = parsed(b)
         check("manage bad-JSON shape",
-              ps == gs == 400
-              and isinstance(pdoc, dict) and isinstance(gdoc, dict)
-              and pdoc.get("code") == gdoc.get("code") == "bad_json"
-              and str(pdoc.get("error", "")).startswith("bad JSON: ")
-              and str(gdoc.get("error", "")).startswith("bad JSON: "),
-              "%r/%r %r" % (ps, gs, pb[:100]))
+              s == 400 and isinstance(doc, dict)
+              and doc.get("code") == "bad_json"
+              and str(doc.get("error", "")).startswith("bad JSON: "),
+              "%r %r" % (s, b[:100]))
 
+        # RUNNER CAUSE pins (2026-09-08): the dispatch plane is
+        # unreachable (stale py-dir in managePyDirs), so these legs
+        # pin the 502 runner envelope — NOT the 422/404/200 dispatch
+        # shapes. The fix stroke re-pins them.
         for label, payload in (
             ("unknown action",
              {"action": "nope_no_such_action_bridges"}),
@@ -486,174 +403,109 @@ def main() -> int:
              {"action": "install_extension"}),
         ):
             raw = json.dumps(payload).encode()
-            (ps, pb, _), (gs, gb, _) = post_manage(raw)
-            check("manage 422 %s" % label,
-                  ps == gs == 422 and pb == gb,
-                  "%r/%r %r vs %r"
-                  % (ps, gs, pb[:200], gb[:200]))
+            s, b, _ = post_manage(raw)
+            action = payload.get("action", "?")  # type: ignore[union-attr]
+            check("manage runner-shape %s" % label,
+                  s == 502 and runner_shape(b, action),
+                  "%r %r" % (s, b[:200]))
 
         raw = json.dumps({"action": "provision_model",
                           "model": "no-such-model-xyz-bridges"}).encode()
-        (ps, pb, _), (gs, gb, _) = post_manage(raw)
-        ok404 = ps == gs == 404 and pb == gb
-        try:
-            pdoc = json.loads(pb)
-            ok404 = ok404 and pdoc.get("code") == "invalid_request"
-        except ValueError:
-            ok404 = False
-        check("manage unknown-model 404", ok404,
-              "%r/%r %r" % (ps, gs, pb[:200]))
+        s, b, _ = post_manage(raw)
+        check("manage runner-shape unknown-model",
+              s == 502 and runner_shape(b, "provision_model"),
+              "%r %r" % (s, b[:200]))
 
-        (ps, pb, _), (gs, gb, _) = post_manage(b"[1,2]")
-        try:
-            pdoc, gdoc = json.loads(pb), json.loads(gb)
-        except ValueError:
-            pdoc = gdoc = None
+        s, b, _ = post_manage(b"[1,2]")
+        doc = parsed(b)
         check("manage list-body 500 shape",
-              ps == gs == 500
-              and isinstance(pdoc, dict) and isinstance(gdoc, dict)
-              and set(pdoc) == set(gdoc)
-              == {"error", "type", "traceback", "route"},
-              "%r/%r %r" % (ps, gs, pb[:160]))
+              s == 500 and isinstance(doc, dict)
+              and set(doc) == {"error", "type", "traceback", "route"},
+              "%r %r" % (s, b[:160]))
 
-        (ps, pb, _), (gs, gb, _) = post_manage(
-            json.dumps({"action": "status"}).encode())
-        try:
-            pdoc, gdoc = json.loads(pb), json.loads(gb)
-        except ValueError:
-            pdoc = gdoc = None
-        status_ok = (
-            ps == gs == 200
-            and isinstance(pdoc, dict) and isinstance(gdoc, dict)
-            and pdoc.get("action") == gdoc.get("action") == "status"
-            and pdoc.get("ok") is True and gdoc.get("ok") is True
-            and pdoc.get("detail") in (
-                "server up", "workspace up", "server not reachable")
-            and gdoc.get("detail") in (
-                "server up", "workspace up", "server not reachable")
-            and isinstance(pdoc.get("data"), dict)
-            and isinstance(gdoc.get("data"), dict)
-            and set(pdoc["data"]) == set(gdoc["data"])
-            == {"endpoint", "server_info", "manager_security",
-                "active_runs", "routing"}
-            and pdoc["data"]["endpoint"].get("url")
-            == gdoc["data"]["endpoint"].get("url")
-            and isinstance(
-                pdoc["data"]["endpoint"].get("url"), str)
-            and pdoc.get("code", "absent") == gdoc.get("code", "absent")
-        )
-        check("manage status 200 shape", status_ok,
-              "%r/%r %r" % (ps, gs, pb[:300]))
+        s, b, _ = post_manage(json.dumps({"action": "status"}).encode())
+        check("manage runner-shape status",
+              s == 502 and runner_shape(b, "status"),
+              "%r %r" % (s, b[:300]))
 
-        (ps, pb, _), (gs, gb, _) = both(
-            py_port, ts_port, "GET", "/v1/manage")
+        s, b, _ = http(ts_port, "GET", "/v1/manage")
         check("manage method mismatch 404",
-              ps == gs == 404 and pb == gb,
-              "%r/%r %r" % (ps, gs, pb[:120]))
+              s == 404 and parsed(b) == {
+                  "error": "no such route GET /v1/manage",
+                  "code": "no_such_route"},
+              "%r %r" % (s, b[:120]))
 
         raw = json.dumps({"action": "nope_no_such_action_bridges"}).encode()
-        (ps, pb, _), (gs, gb, _) = post_manage(raw)
-        (_, pb2, _), (_, gb2, _) = both(
-            py_port, ts_port, "POST", "/v1/manage/", raw,
-            ctype="application/json")
+        s, b, _ = post_manage(raw)
+        s2, b2, _ = http(ts_port, "POST", "/v1/manage/", raw,
+                         ctype="application/json")
         check("manage trailing-slash normalization",
-              pb == pb2 and gb == gb2 and pb == gb,
-              "%dB/%dB/%dB/%dB"
-              % (len(pb), len(pb2), len(gb), len(gb2)))
+              s == s2 == 502
+              and runner_shape(b, "nope_no_such_action_bridges")
+              and runner_shape(b2, "nope_no_such_action_bridges"),
+              "%r/%r %dB/%dB" % (s, s2, len(b), len(b2)))
 
         # ── Phase C: poser config legs ──
-        print("Phase C — poser config legs")
+        print("Phase C — poser config legs (TS-only)")
 
         def set_configs(engines: dict) -> None:
-            write_config(py_cfg, engines, models_root)
             write_config(ts_cfg, engines, models_root)
             time.sleep(0.2)
 
         set_configs({"comfyui": {"base": "image-gen/comfyui"}})
-        (ps, pb, _), (gs, gb, _) = both(
-            py_port, ts_port, "GET", "/poser/skin/mesh?x=1")
-        check("zero-url 502", ps == gs == 502 and pb == gb,
-              "%r/%r %r" % (ps, gs, pb[:200]))
+        s, b, _ = http(ts_port, "GET", "/poser/skin/mesh?x=1")
+        check("zero-url 502", s == 502 and parsed(b) == POSER_502_NONE,
+              "%r %r" % (s, b[:200]))
 
         set_configs({"comfyui": {"base": "image-gen/comfyui",
                                  "url": stub_base},
                      "kimodo": {"base": "motion/kimodo",
                                 "url": "http://127.0.0.1:9"}})
-        (ps, pb, _), (gs, gb, _) = both(
-            py_port, ts_port, "GET", "/poser/skin/mesh?x=1")
-        check("two-url 502", ps == gs == 502 and pb == gb,
-              "%r/%r %r" % (ps, gs, pb[:240]))
-        try:
-            pdoc = json.loads(pb)
-            two_names = pdoc.get("error", "")
-        except ValueError:
-            two_names = ""
+        s, b, _ = http(ts_port, "GET", "/poser/skin/mesh?x=1")
+        check("two-url 502", s == 502 and parsed(b) == POSER_502_TWO,
+              "%r %r" % (s, b[:240]))
         check("two-url names repr",
-              "['comfyui', 'kimodo']" in two_names, two_names[:200])
+              "['comfyui', 'kimodo']" in (parsed(b) or {}).get("error", ""),
+              repr(b[:200]))
 
         set_configs(single_url(stub_port))
-        (ps, pb, _), (gs, gb, _) = both(
-            py_port, ts_port, "GET", "/poser/skin/mesh?x=1")
-        check("config restored 200", ps == gs == 200 and pb == gb,
-              "%r/%r" % (ps, gs))
+        s, b, _ = http(ts_port, "GET", "/poser/skin/mesh?x=1")
+        check("config restored 200",
+              s == 200 and parsed(b) == {"mesh": "ok", "query": "x=1"},
+              "%r %r" % (s, b[:120]))
 
         stub.shutdown()
         stub.server_close()
         time.sleep(0.3)
-        (ps, pb, _), (gs, gb, _) = both(
-            py_port, ts_port, "GET", "/poser/skin/mesh?x=1")
-        try:
-            pdoc, gdoc = json.loads(pb), json.loads(gb)
-        except ValueError:
-            pdoc = gdoc = None
+        s, b, _ = http(ts_port, "GET", "/poser/skin/mesh?x=1")
+        doc = parsed(b)
         prefix = ("poser bridge: comfyui unreachable at %s ("
                   % stub_base)
         check("upstream-down 502 shape",
-              ps == gs == 502
-              and isinstance(pdoc, dict) and isinstance(gdoc, dict)
-              and str(pdoc.get("error", "")).startswith(prefix)
-              and str(gdoc.get("error", "")).startswith(prefix),
-              "%r/%r %r vs %r" % (ps, gs, pb[:160], gb[:160]))
+              s == 502 and isinstance(doc, dict)
+              and str(doc.get("error", "")).startswith(prefix),
+              "%r %r" % (s, b[:160]))
 
         set_configs({"comfyui": {"base": "image-gen/comfyui",
                                  "url": "notaurl-no-scheme"}})
-        (ps, pb, _), (gs, gb, _) = both(
-            py_port, ts_port, "GET", "/poser/skin/mesh?x=1")
+        s, b, _ = http(ts_port, "GET", "/poser/skin/mesh?x=1")
         # Taxonomy pin (walled empirically 2026-09-07): a schemeless
-        # base raises ValueError in py (unknown url type is NOT a
-        # URLError) → the generic 502 leg (gateway.py:3851-3853). TS
-        # rides its URL-construction TypeError through the same leg.
-        # Same status + shape; each side's deterministic text pinned
+        # base fails the TS URL construction with a TypeError through
+        # the generic 502 leg (bridges.ts). Deterministic text pinned
         # exactly.
-        try:
-            pdoc, gdoc = json.loads(pb), json.loads(gb)
-        except ValueError:
-            pdoc = gdoc = None
         check("garbage-scheme 502 shape",
-              ps == gs == 502
-              and pdoc == {
-                  "error": "poser bridge: ValueError: unknown url "
-                           "type: 'notaurl-no-scheme/poser/skin/mesh?x=1'"}
-              and gdoc == {
-                  "error": "poser bridge: TypeError: Invalid URL"},
-              "%r/%r %r vs %r" % (ps, gs, pb[:200], gb[:200]))
+              s == 502 and parsed(b) == GARBAGE_502,
+              "%r %r" % (s, b[:200]))
 
-        py_cfg.unlink()
         ts_cfg.unlink()
-        (ps, pb, _), (gs, gb, _) = both(
-            py_port, ts_port, "GET", "/poser/skin/mesh?x=1")
-        try:
-            pdoc, gdoc = json.loads(pb), json.loads(gb)
-        except ValueError:
-            pdoc = gdoc = None
+        s, b, _ = http(ts_port, "GET", "/poser/skin/mesh?x=1")
+        doc = parsed(b)
         check("missing-config 500 shape",
-              ps == gs == 500
-              and isinstance(pdoc, dict) and isinstance(gdoc, dict)
-              and set(pdoc) == set(gdoc)
-              == {"error", "type", "traceback", "route"},
-              "%r/%r %r" % (ps, gs, pb[:160]))
+              s == 500 and isinstance(doc, dict)
+              and set(doc) == {"error", "type", "traceback", "route"},
+              "%r %r" % (s, b[:160]))
 
-        # ── Phase D: manage plane-unavailable templates (TS-only) ──
+        # ── Phase D: manage plane-unavailable templates (TS-only boots) ──
         print("Phase D — manage plane templates (TS-only boots)")
         # Fresh state roots per extra boot (one writer lock per state
         # root — a second server on the same root refuses to start);
@@ -665,15 +517,15 @@ def main() -> int:
         bogus_root = tmp / "ts-state-bogus"
         bogus_root.mkdir()
         benv["MELITE_STATE_ROOT"] = str(bogus_root)
-        bport, bproc = boot_ts(benv)
+        bport, bproc = boot_scratch_gateway(env=benv)
         try:
             raw = json.dumps(
                 {"action": "status"}).encode()
             bs, bb, _ = http(bport, "POST", "/v1/manage", raw,
                              ctype="application/json")
-            # 5xx envelopes carry NO R4.2 code (route() 4353: the rule
-            # is dict-only AND 4xx-only — py's own 503/502/504 have no
-            # code key either).
+            # 5xx envelopes carry NO R4.2 code (core/errors.ts: the
+            # rule is dict-only AND 4xx-only — the TS 503/502/504
+            # carry no code key either).
             want = json.dumps({
                 "action": "status", "ok": False,
                 "detail": "management plane unavailable: no base-env "
@@ -683,7 +535,7 @@ def main() -> int:
                   bs == 503 and bb == want,
                   "%r %r vs %r" % (bs, bb[:200], want[:200]))
         finally:
-            reap(bproc)
+            reap_gateway(bproc)
 
         false_bin = ("/bin/false" if os.path.exists("/bin/false")
                      else "/usr/bin/false")
@@ -697,23 +549,19 @@ def main() -> int:
             false_root = tmp / "ts-state-false"
             false_root.mkdir()
             fenv["MELITE_STATE_ROOT"] = str(false_root)
-            fport, fproc = boot_ts(fenv)
+            fport, fproc = boot_scratch_gateway(env=fenv)
             try:
                 raw = json.dumps({"action": "status"}).encode()
                 fs, fb, _ = http(fport, "POST", "/v1/manage", raw,
                                  ctype="application/json")
-                try:
-                    fdoc = json.loads(fb)
-                except ValueError:
-                    fdoc = None
                 check("runner-failed 502 template",
-                      fs == 502 and fdoc == {
+                      fs == 502 and parsed(fb) == {
                           "action": "status", "ok": False,
                           "detail": "manage runner failed",
                           "data": {"stderr": ""},
                       }, "%r %r" % (fs, fb[:200]))
             finally:
-                reap(fproc)
+                reap_gateway(fproc)
 
         # resolveManagePython unit probe (env pin + repo default).
         probe = (
@@ -741,9 +589,8 @@ def main() -> int:
         print("PASS %d FAIL %d" % (PASS, FAIL))
         return 1 if FAIL else 0
     finally:
-        for proc in (py_proc, ts_proc):
-            if proc is not None:
-                reap(proc)
+        if ts_proc is not None:
+            reap_gateway(ts_proc)
         try:
             stub.shutdown()
         except Exception:

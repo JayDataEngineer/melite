@@ -1,0 +1,23 @@
+{
+  "run_id": "run-done",
+  "status": "completed",
+  "error": "",
+  "stages": [
+    {
+      "id": "w",
+      "name": "w",
+      "index": 0,
+      "status": "failed",
+      "outputs": {},
+      "expected": {}
+    }
+  ],
+  "skipped_stages": [],
+  "artifacts": [],
+  "created_at": 100,
+  "test": false,
+  "draft_id": "d1",
+  "pipeline": "wall",
+  "graph": [],
+  "sweep": "gateway restarted (boot sweep): stale active sidecar from a dead process"
+}

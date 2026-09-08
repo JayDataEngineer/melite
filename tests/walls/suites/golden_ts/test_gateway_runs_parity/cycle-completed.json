@@ -1,0 +1,21 @@
+{
+  "run_id": "run-cycle",
+  "status": "completed",
+  "state": "completed",
+  "error": "",
+  "created": 1700000009,
+  "durationSec": 9,
+  "restored_from_sidecar": true,
+  "artifacts": [],
+  "stages": [
+    {
+      "id": "w",
+      "index": 0,
+      "status": "completed",
+      "params": {
+        "seed": 0
+      }
+    }
+  ],
+  "draft_id": ""
+}

@@ -1,78 +1,83 @@
 #!/usr/bin/env python3
-"""test_gateway_runs_parity.py — runs-lane read doors + events-stream parity wall.
+"""test_gateway_runs_parity.py — runs-lane read doors + events-stream wall (TS-ONLY).
 
-Proves the TypeScript port (packages/gateway/src/doors/runs.ts over the
-ROUTES mirror, ctx.ts dispatch arms, server.ts upgrade seam) serves the
-runs read doors + the events-stream door byte-identical to the py gateway:
+Pins the TypeScript gateway (packages/gateway/src/doors/runs.ts over the
+ROUTES mirror, ctx.ts dispatch arms, the queue.ts boot sweep, server.ts
+upgrade seam) serving the runs read doors + the events-stream door:
 
-  GET /v1/queue                      (_h_queue — empty snapshot)
-  GET /v1/flows/runs[?limit=]        (_h_runs_list — sidecar rows)
-  GET /v1/flows/runs/{id}            (_h_run_detail — restore shape)
+  GET /v1/queue                      (hQueue — empty snapshot)
+  GET /v1/flows/runs[?limit=]        (hRunsList — sidecar rows)
+  GET /v1/flows/runs/{id}            (hRunDetail — restore shape)
   GET /v1/flows/status/{id}[?include_log=]
-      (_h_flows_status — live MISS -> sidecarStatus fallback;
-       the live-HIT path is the flows-run lane's 45/0, not this wall)
+      (hFlowsStatus — boot-swept stale files serve their swept bytes;
+       post-boot stale sidecars serve the composed read-time report;
+       the live-HIT path is the flows-run lane's, not this wall)
   GET /v1/flows/events[/{id}][?run_id=]
-      (non-upgrade -> _h_ws_fallback 404; Upgrade -> WS frames)
+      (non-upgrade -> wsFallback404 404; Upgrade -> WS frames)
   WS  /v1/flows/events[/{id}][?run_id=]
       (hello / unknown-run hydrate frames, then hold — no cursor,
        no replay: reconnect === fresh subscribe + fresh hydrate)
 
-Method: build ONE fixture tree at wall runtime, copytree it per server
-(never shared — the py boot SWEEPS stale sidecars at startup and every
-stale read rewrites; the TS shell never writes), boot py via
-boot_scratch_gateway + the TS server (ephemeral port, QUEUE LANE LAW),
-SYNC py's boot-swept stale files onto the TS tree (both sides then
-serve the same swept bytes), then dual-serve every shape:
+Method: build ONE fixture tree at wall runtime, boot ONE TS server on
+it (ephemeral port, QUEUE LANE LAW). The boot sweep owns stale files
+before traffic (packages/gateway/src/queue/queue.ts bootSweep), so no
+sidecar sync is needed — there is no second server. Every shape is
+served once and pinned:
 
   - queue + runs list incl. the ?limit matrix (int/underscore/plus/
     space/garbage/blank/multi-first-wins) with the D7 TIE-AWARE list
-    compare (created==0 non-media ties order nondeterministically on
-    EACH side — stable-sort tie groups by run_id before comparing;
-    non-tie order bugs still surface);
+    compare (created==0 non-media ties order nondeterministically per
+    readdir — stable-sort tie groups by run_id before comparing;
+    non-tie order bugs still surface) against the frozen goldens;
   - detail rows incl. card-wins vs sidecar-span, injection, legacy
     404, underscore-pipeline serve, valid-JSON-non-object 200s;
   - status rows incl. log_tail variants, zombie/never-executed
     boot-swept bytes, legacy/unknown 404s, unparseable envelope;
-  - read-time sweep reports (run-rtR/run-rtQ written to BOTH trees
-    post-boot, read TS-then-py EXACTLY once each — py's read mutates
-    after composing, so order is load-bearing and documented);
+  - read-time sweep reports (run-rtR/run-rtQ written post-boot, read
+    TWICE each — the TS read door composes the report WITHOUT the
+    write, so every read is pristine; both reads pin the same golden
+    and idempotence follows transitively);
   - scripted lifecycle queued->running->completed->failed over the
-    DETAIL door (no sweep, no registry — order-free on both trees);
-  - valid-JSON-non-object STATUS reads 500 on BOTH (py AttributeError
-    vs TS Error — texts differ honestly; the wall pins status 500 +
-    envelope keys + route, never the traceback);
+    DETAIL door (no sweep, no registry — order-free);
+  - valid-JSON-non-object STATUS reads pin 500 + envelope keys +
+    route literally (the 500 texts embed the host stack and differ
+    honestly — never bytes);
   - non-upgrade events 404s (invalid_request, never no_such_route),
     method mismatch (no_such_route), unknown-run detail/status 404s;
-  - WS frame bytes (hello incl. py's own empty-queue hello, unknown
-    hydrate path/query forms, reconnect-identical) + hold-silence;
-  - auth-gate parity with the token ON (401 shapes, wrong token,
-    /v1/health exempt, bearer 200s, WS 403 vs ?token=/header frames).
+  - WS frame bytes (empty-queue hello, unknown hydrate path/query
+    forms, reconnect-identical) + hold-silence;
+  - auth-gate pins with the token ON (401 shapes, wrong token,
+    /v1/health exempt, bearer 200s on every golden leg, WS 403 vs
+    ?token=/header frames, query-token refused on HTTP).
 
-No goldens anywhere: every assertion compares py-vs-ts bytes (or the
-documented envelope-key/tie subsets). D1-D8 divergences from the
-doors/runs.ts header are the contract — fixtures stay inside them
-(valid UTF-8, NaN-free, ASCII limits, distinct created_at except the
-deliberate D7 tie trio run-badjson/run-arr/run-num, the last two
-created post-boot).
+Goldens live in golden_ts/test_gateway_runs_parity/ (causes.md there):
+literals where the expectation is a shape, frozen bytes where it is
+bytes. D1-D8 divergences from the doors/runs.ts header are the
+contract — fixtures stay inside them (valid UTF-8, NaN-free, ASCII
+limits, distinct created_at except the deliberate D7 tie trio
+run-badjson/run-arr/run-num, the last two created post-boot).
 
-Direct-call differential (route() vs runs.ts imports, 51/51 incl. the
-read-time sweep texts and the THREW/AttributeError-vs-Error pair for
-scalar sidecars): /tmp/mk_runs_fixtures.py + /tmp/diff_runs_ts.mjs
-(prep harness, not shipped — the wall below re-proves the HTTP layer).
+ORACLE DEATH 2026-09-08: re-derived TS-ONLY from the dual-serve wall
+per the operator order "we do not need parity, we need to migrate,
+not keep the old machinery". The second-server legs, the boot-swept
+sidecar sync, and the unshipped direct-call differential prep harness
+are retired with this stroke; the HTTP wall below is the contract now.
+TS cites: packages/gateway/src/doors/runs.ts (queue/list/detail/
+status/fallback frames), packages/gateway/src/ctx.ts + core/errors.ts
+(auth gate + envelopes), packages/gateway/src/queue/queue.ts (boot
+sweep notes), apps/gateway/src/main.ts (TS entry).
+
+Date: 2026-09-08. Status: landed (oracle-death re-derivation).
 
 Run: python3 tests/walls/suites/test_gateway_runs_parity.py
 """
 
-import base64
-import hashlib
 import json
 import os
 import shutil
 import socket
-import subprocess
 import sys
 import tempfile
-import time
 import urllib.error
 import urllib.request
 
@@ -83,9 +88,8 @@ sys.dont_write_bytecode = True
 PASS = FAIL = 0
 TOKEN = "wall-runs-token-%d" % os.getpid()
 
-TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
-
-PARITY_HEADERS = ("content-type", "content-length")
+GOLDEN_DIR = (REPO / "tests" / "walls" / "suites" / "golden_ts" /
+              "test_gateway_runs_parity")
 
 PNG = b"\x89PNG\r\n\x1a\n" + bytes(range(32))
 JPG = b"\xff\xd8\xff\xe0" + bytes(range(32))
@@ -219,10 +223,9 @@ def build_fixture(root) -> None:
     (dn / "sub").mkdir()
     (dn / "sub" / "only.png").write_bytes(PNG)
     # NOTE: valid-JSON-non-object sidecars (run-arr "[1,2]", run-num
-    # "5") are NOT built here — py's boot_resurrect doc.get() crashes
-    # on them at startup (a booted py gateway cannot start with one
-    # present; read-time doors handle them fine). The wall creates
-    # them on BOTH trees post-boot, just before their vectors.
+    # "5") are NOT built here — they land post-boot, just before
+    # their vectors, so the wall pins the pre/post transition
+    # explicitly (list count 11 -> 14, detail 200s, STATUS 500s).
 
 
 def http(port: int, path: str, method: str = "GET",
@@ -246,89 +249,107 @@ def auth() -> dict:
     return {"Authorization": "Bearer " + TOKEN}
 
 
-def parity_headers(h: dict) -> dict:
-    return {k: h.get(k) for k in PARITY_HEADERS if h.get(k) is not None}
+def golden(name: str) -> bytes:
+    return (GOLDEN_DIR / name).read_bytes()
 
 
-def dual(py_port: int, ts_port: int, path: str, name: str,
-         method: str = "GET", headers: dict | None = None) -> None:
-    """One dual-served shape: status + body bytes + parity headers."""
+def pin(ts_port: int, path: str, name: str, golden_name: str,
+        expect: int = 200, method: str = "GET",
+        headers: dict | None = None) -> None:
+    """One TS-served shape: status literal + body bytes == golden."""
     hdrs = dict(headers) if headers is not None else auth()
-    ps, pb, ph = http(py_port, path, method, hdrs)
-    ts, tb, th = http(ts_port, path, method, hdrs)
-    if ps is None or ts is None:
-        check(name, False, "transport py=%r ts=%r" % (pb[:80], tb[:80]))
+    st, body, hd = http(ts_port, path, method, hdrs)
+    if st is None:
+        check(name, False, "transport %r" % (body[:80],))
         return
-    ok = ps == ts and pb == tb and parity_headers(ph) == parity_headers(th)
+    want = golden(golden_name)
+    ctype = hd.get("content-type", "")
+    ok = st == expect and body == want and ctype == "application/json"
     note = ""
     if not ok:
-        note = ("status %r/%r py %dB ts %dB ph %r th %r"
-                % (ts, ps, len(pb), len(tb),
-                   parity_headers(ph), parity_headers(th)))
-        for i, (a, b) in enumerate(zip(pb, tb)):
+        note = ("status %r want %r %dB/%dB ctype %r"
+                % (st, expect, len(body), len(want), ctype))
+        for i, (a, b) in enumerate(zip(body, want)):
             if a != b:
-                note += " first-div @%d %r/%r" % (i, pb[max(0, i - 40):i + 40],
-                                                 tb[max(0, i - 40):i + 40])
+                note += " first-div @%d %r/%r" % (i, body[max(0, i - 40):i + 40],
+                                                 want[max(0, i - 40):i + 40])
                 break
         else:
-            if len(pb) != len(tb):
+            if len(body) != len(want):
                 note += " len-div"
     check(name, ok, note)
 
 
-def dual_list(py_port: int, ts_port: int, path: str, name: str) -> None:
-    """Runs-list compare with the D7 tie rule: tie groups (equal
-    (media-segment, created)) order nondeterministically per side, so
-    stable-sort each side by (segment, -created, run_id) first.
+def pin_list(ts_port: int, path: str, name: str,
+             golden_name: str) -> None:
+    """Runs-list pin with the D7 tie rule: tie groups (equal
+    (media-segment, created)) order nondeterministically per readdir,
+    so stable-sort each side by (segment, -created, run_id) first
+    (the golden is stored pre-sorted; sorting is idempotent).
     Non-tie order bugs still surface (unique keys = identity); row
     bytes stay byte-exact."""
-    _, pb, _ = http(py_port, path, headers=auth())
-    _, tb, _ = http(ts_port, path, headers=auth())
+    _, body, _ = http(ts_port, path, headers=auth())
     try:
-        [REDACTED 2026-11-05] = json.loads(pb)
-        td = json.loads(tb)
+        td = json.loads(body)
+        gd = json.loads(golden(golden_name))
     except Exception as e:
         check(name, False, "unparseable list %r" % e)
         return
-    if [REDACTED 2026-11-05].get("count") != td.get("count"):
-        check(name, False, "count %r/%r" % (td.get("count"),
-                                            [REDACTED 2026-11-05].get("count")))
+    if td.get("count") != gd.get("count"):
+        check(name, False, "count %r want %r" % (td.get("count"),
+                                                gd.get("count")))
         return
     key = lambda r: (0 if r["run_id"] in MEDIA_RUNS else 1,
                      -r["created_at"], r["run_id"])
-    pr = sorted([REDACTED 2026-11-05]["runs"], key=key)
     tr = sorted(td["runs"], key=key)
-    if len(pr) != len(tr):
-        check(name, False, "rows %d/%d" % (len(tr), len(pr)))
+    gr = sorted(gd["runs"], key=key)
+    if len(tr) != len(gr):
+        check(name, False, "rows %d want %d" % (len(tr), len(gr)))
         return
-    for i, (a, b) in enumerate(zip(pr, tr)):
+    for i, (a, b) in enumerate(zip(tr, gr)):
         ab = json.dumps(a, indent=2, ensure_ascii=False)
         bb = json.dumps(b, indent=2, ensure_ascii=False)
         if ab != bb:
-            check(name, False, "row %d (%s/%s)" % (i, b.get("run_id"),
-                                                  a.get("run_id")))
+            check(name, False, "row %d (%s want %s)" % (i, a.get("run_id"),
+                                                       b.get("run_id")))
             return
     check(name, True)
 
 
-def dual_500(py_port: int, ts_port: int, path: str, name: str) -> None:
-    """500-class parity (valid-JSON-non-object sidecars): py raises
-    AttributeError, TS throws Error — texts differ honestly. Pin
-    status 500 + envelope keys + the route field, never bytes."""
-    ps, pb, _ = http(py_port, path, headers=auth())
-    ts, tb, _ = http(ts_port, path, headers=auth())
+def pin_500(ts_port: int, path: str, name: str) -> None:
+    """500-class pin (valid-JSON-non-object sidecars): the 500 texts
+    embed the host stack and differ honestly across runtimes. Pin
+    status 500 + envelope keys + the route field, never bytes
+    (packages/gateway/src/core/errors.ts 500 envelope)."""
+    st, body, _ = http(ts_port, path, headers=auth())
     try:
-        [REDACTED 2026-11-05] = json.loads(pb)
-        td = json.loads(tb)
+        td = json.loads(body)
     except Exception as e:
         check(name, False, "unparseable 500 %r" % e)
         return
-    ok = (ps == 500 and ts == 500
-          and set([REDACTED 2026-11-05].keys()) == {"error", "type", "traceback", "route"}
+    ok = (st == 500
           and set(td.keys()) == {"error", "type", "traceback", "route"}
-          and [REDACTED 2026-11-05]["route"] == td["route"] == "GET " + path)
-    check(name, ok, "status %r/%r keys %r/%r" % (
-        ts, ps, sorted(td.keys()), sorted([REDACTED 2026-11-05].keys())))
+          and td["route"] == "GET " + path)
+    check(name, ok, "status %r keys %r" % (st, sorted(td.keys())))
+
+
+def pin_401(ts_port: int, path: str, name: str,
+            headers: dict | None = None) -> None:
+    """Auth-refusal shape pin (packages/gateway/src/core/errors.ts
+    authCheck: the gate answers BEFORE dispatcher normalization, so
+    the 401 carries no code)."""
+    st, body, hd = http(ts_port, path, headers={} if headers is None
+                        else headers)
+    try:
+        td = json.loads(body)
+    except Exception as e:
+        check(name, False, "unparseable 401 %r" % e)
+        return
+    ok = (st == 401
+          and str(td.get("error", "")).startswith("unauthorized:")
+          and "code" not in td
+          and hd.get("www-authenticate") == "Bearer")
+    check(name, ok, "status %r body %r" % (st, body[:100]))
 
 
 WS_KEY = "dGhlIHNhbXBsZSBub25jZQ=="  # RFC 6455 example key
@@ -398,130 +419,91 @@ def ws_close(s: socket.socket) -> None:
         pass
 
 
-def dual_ws(py_port: int, ts_port: int, target: str, name: str,
-            want: bytes, headers: dict | None = None) -> None:
-    """One WS door: 101 both, first-frame bytes equal to `want` on
-    both, then hold-silence (no second frame within the window —
-    the no-heartbeat/no-replay contract)."""
-    for port, side in ((py_port, "python"), (ts_port, "ts")):
-        s = None
-        try:
-            s, status, rest = ws_handshake(port, target, headers)
-            if status != b"HTTP/1.1 101 Switching Protocols":
-                check(name, False, "%s status %r" % (side, status))
-                return
-            frame, _ = ws_read_frame(s, rest)
-            if frame != want:
-                check(name, False, "%s frame %r" % (side, frame[:120]))
-                return
-            try:
-                ws_read_frame(s, b"", timeout=1.0)
-                check(name, False, "%s second frame arrived" % side)
-                return
-            except socket.timeout:
-                pass  # hold-silence: exactly the contract
-        except Exception as e:
-            check(name, False, "%s transport %r" % (side, e))
+def pin_ws(ts_port: int, target: str, name: str, golden_name: str,
+           headers: dict | None = None) -> None:
+    """One WS door: 101, first-frame bytes equal the golden, then
+    hold-silence (no second frame within the window — the
+    no-heartbeat/no-replay contract, packages/gateway/src/doors/
+    runs.ts stream-framing decision)."""
+    s = None
+    try:
+        s, status, rest = ws_handshake(ts_port, target, headers)
+        if status != b"HTTP/1.1 101 Switching Protocols":
+            check(name, False, "status %r" % (status,))
             return
-        finally:
-            if s is not None:
-                ws_close(s)
+        frame, _ = ws_read_frame(s, rest)
+        if frame != golden(golden_name):
+            check(name, False, "frame %r" % (frame[:120],))
+            return
+        try:
+            ws_read_frame(s, b"", timeout=1.0)
+            check(name, False, "second frame arrived")
+            return
+        except socket.timeout:
+            pass  # hold-silence: exactly the contract
+    except Exception as e:
+        check(name, False, "transport %r" % (e,))
+        return
+    finally:
+        if s is not None:
+            ws_close(s)
     check(name, True)
 
 
-def dual_ws_403(py_port: int, ts_port: int, target: str, name: str,
-                headers: dict | None = None) -> None:
-    """Auth-on WS refusal: 403 + empty body on both (uvicorn turns
-    py's pre-accept close into the 403; the TS door writes it)."""
-    for port, side in ((py_port, "python"), (ts_port, "ts")):
-        s = None
+def pin_ws_403(ts_port: int, target: str, name: str,
+               headers: dict | None = None) -> None:
+    """Auth-on WS refusal: 403 + empty body (the TS door writes it)."""
+    s = None
+    try:
+        s, status, rest = ws_handshake(ts_port, target, headers)
+        body = rest
+        s.settimeout(1.0)
         try:
-            s, status, rest = ws_handshake(port, target, headers)
-            body = rest
-            s.settimeout(1.0)
+            while True:
+                chunk = s.recv(4096)
+                if not chunk:
+                    break
+                body += chunk
+        except socket.timeout:
+            pass
+        if status != b"HTTP/1.1 403 Forbidden" or body != b"":
+            check(name, False, "%r body %dB" % (status, len(body)))
+            return
+    except Exception as e:
+        check(name, False, "transport %r" % (e,))
+        return
+    finally:
+        if s is not None:
             try:
-                while True:
-                    chunk = s.recv(4096)
-                    if not chunk:
-                        break
-                    body += chunk
-            except socket.timeout:
+                s.close()
+            except OSError:
                 pass
-            if status != b"HTTP/1.1 403 Forbidden" or body != b"":
-                check(name, False, "%s %r body %dB" % (side, status,
-                                                      len(body)))
-                return
-        except Exception as e:
-            check(name, False, "%s transport %r" % (side, e))
-            return
-        finally:
-            if s is not None:
-                try:
-                    s.close()
-                except OSError:
-                    pass
     check(name, True)
-
-
-def boot_ts(env: dict) -> tuple[int, "subprocess.Popen[str]"]:
-    node = shutil.which("node")
-    if node is None:
-        raise RuntimeError("node not on PATH")
-    proc = subprocess.Popen(
-        [node, "--experimental-strip-types", str(TS_SERVER)],
-        cwd=str(REPO), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-        text=True, start_new_session=True, env=env)
-    assert proc.stdout is not None
-    deadline = time.time() + 25
-    while time.time() < deadline:
-        line = proc.stdout.readline()
-        if line.startswith("READY "):
-            return int(line.split()[1]), proc
-        if proc.poll() is not None:
-            raise RuntimeError("ts server exited rc=%d" % proc.returncode)
-    proc.terminate()
-    raise RuntimeError("ts server did not print READY")
-
-
-def sync_swept(py_root, ts_root, run_id: str) -> None:
-    """Copy py's boot-swept sidecar onto the TS tree: the boot sweep
-    owns stale files before any read, so both servers must serve the
-    SAME swept bytes (the wall compares bytes, never goldens)."""
-    data = (py_root / "output" / run_id / "_flow.json").read_bytes()
-    (ts_root / "output" / run_id / "_flow.json").write_bytes(data)
 
 
 def main() -> int:
     base = None
-    py_proc = ts_proc = None
+    ts_proc = None
     try:
         base = tempfile.mkdtemp(prefix="wall-runs-")
         from pathlib import Path as _P
         base_p = _P(base)
-        seed = base_p / "seed"
-        build_fixture(seed)
-        py_root = base_p / "py-root"
         ts_root = base_p / "ts-root"
-        shutil.copytree(seed, py_root)
-        shutil.copytree(seed, ts_root)
+        build_fixture(ts_root)
 
-        py_env = dict(os.environ, MELITE_STATE_ROOT=str(py_root),
-                      DSH_GATEWAY_TOKEN=TOKEN)
+        # SINGLE TS boot on the one root (apps/gateway/src/main.ts,
+        # node --experimental-strip-types, via the shared helper).
+        # The boot sweep owns stale files before traffic — with no
+        # second server there is nothing to sync.
         ts_env = dict(os.environ, MELITE_STATE_ROOT=str(ts_root),
                       DSH_GATEWAY_TOKEN=TOKEN)
-        py_port, py_proc = boot_scratch_gateway(env=py_env)
-        ts_port, ts_proc = boot_ts(ts_env)
-
-        # Boot sweep owns stale files first: sync py's swept bytes
-        # onto the TS tree before any stale vector runs.
-        sync_swept(py_root, ts_root, "run-staleR")
-        sync_swept(py_root, ts_root, "run-staleQ")
+        ts_port, ts_proc = boot_scratch_gateway(env=ts_env)
 
         # ── queue ──
-        dual(py_port, ts_port, "/v1/queue", "queue")
+        pin(ts_port, "/v1/queue", "queue", "queue.json")
 
         # ── runs list + limit matrix (tie-aware) ──
-        dual_list(py_port, ts_port, "/v1/flows/runs", "runs")
+        pin_list(ts_port, "/v1/flows/runs", "runs", "runs.json")
         for q, n in (("?limit=2", "limit-2"), ("?limit=0", "limit-0"),
                      ("?limit=999", "limit-999"),
                      ("?limit=-5", "limit-neg"),
@@ -530,54 +512,55 @@ def main() -> int:
                      ("?limit=%203%20", "limit-space"),
                      ("?limit=&limit=3", "limit-multiblank"),
                      ("?limit=2&limit=3", "limit-multi-first")):
-            dual_list(py_port, ts_port, "/v1/flows/runs" + q, n)
+            pin_list(ts_port, "/v1/flows/runs" + q, n, n + ".json")
         for q, n in (("?limit=abc", "limit-abc"),
                      ("?limit=12x", "limit-12x"),
                      ("?limit=", "limit-blank")):
-            dual(py_port, ts_port, "/v1/flows/runs" + q, n)
+            pin(ts_port, "/v1/flows/runs" + q, n, n + ".json",
+                expect=200 if n == "limit-blank" else 400)
 
         # ── detail ──
         for rid in ("run-done1", "run-fail2", "run-staleR", "run-underx",
                     "run-legacy", "run-badjson", "run-tricky", "run-nest"):
-            dual(py_port, ts_port, "/v1/flows/runs/" + rid,
-                 "detail-" + rid)
-        dual(py_port, ts_port, "/v1/flows/runs/run-nope",
-             "detail-unknown")
+            pin(ts_port, "/v1/flows/runs/" + rid, "detail-" + rid,
+                "detail-" + rid + ".json",
+                expect=404 if rid == "run-legacy" else 200)
+        pin(ts_port, "/v1/flows/runs/run-nope", "detail-unknown",
+            "detail-run-nope.json", expect=404)
 
-        # ── status (boot-swept stale reads — same bytes both trees) ──
-        dual(py_port, ts_port, "/v1/flows/status/run-done1",
-             "status-done1")
+        # ── status (boot-swept stale reads serve the swept bytes) ──
+        pin(ts_port, "/v1/flows/status/run-done1", "status-done1",
+            "status-run-done1.json")
         for q, n in (("?include_log=1", "log-1"),
                      ("?include_log=true", "log-true"),
                      ("?include_log=YES", "log-YES"),
                      ("?include_log=0", "log-0")):
-            dual(py_port, ts_port, "/v1/flows/status/run-done1" + q,
-                 "status-done1-" + n)
-        dual(py_port, ts_port, "/v1/flows/status/run-fail2",
-             "status-fail2")
-        dual(py_port, ts_port, "/v1/flows/status/run-fail2?include_log=1",
-             "status-fail2-log")
-        dual(py_port, ts_port, "/v1/flows/status/run-staleR",
-             "status-staleR")
-        dual(py_port, ts_port,
-             "/v1/flows/status/run-staleR?include_log=1",
-             "status-staleR-log")
-        dual(py_port, ts_port, "/v1/flows/status/run-staleQ",
-             "status-staleQ")
-        dual(py_port, ts_port,
-             "/v1/flows/status/run-staleQ?include_log=yes",
-             "status-staleQ-log")
-        dual(py_port, ts_port, "/v1/flows/status/run-legacy",
-             "status-legacy")
-        dual(py_port, ts_port, "/v1/flows/status/run-badjson",
-             "status-badjson")
-        dual(py_port, ts_port, "/v1/flows/status/run-nope",
-             "status-unknown")
+            pin(ts_port, "/v1/flows/status/run-done1" + q,
+                "status-done1-" + n, "status-run-done1-" + n + ".json")
+        pin(ts_port, "/v1/flows/status/run-fail2", "status-fail2",
+            "status-run-fail2.json")
+        pin(ts_port, "/v1/flows/status/run-fail2?include_log=1",
+            "status-fail2-log", "status-run-fail2-log-1.json")
+        pin(ts_port, "/v1/flows/status/run-staleR", "status-staleR",
+            "status-run-staleR.json")
+        pin(ts_port, "/v1/flows/status/run-staleR?include_log=1",
+            "status-staleR-log", "status-run-staleR-log-1.json")
+        pin(ts_port, "/v1/flows/status/run-staleQ", "status-staleQ",
+            "status-run-staleQ.json")
+        pin(ts_port, "/v1/flows/status/run-staleQ?include_log=yes",
+            "status-staleQ-log", "status-run-staleQ-log-yes.json")
+        pin(ts_port, "/v1/flows/status/run-legacy", "status-legacy",
+            "status-run-legacy.json", expect=404)
+        pin(ts_port, "/v1/flows/status/run-badjson", "status-badjson",
+            "status-run-badjson.json")
+        pin(ts_port, "/v1/flows/status/run-nope", "status-unknown",
+            "status-run-nope.json", expect=404)
 
-        # ── read-time sweep reports: fresh stale pair on BOTH trees,
-        # read TS-then-py EXACTLY once each. Order is load-bearing:
-        # the TS shell never writes (pristine read), py composes the
-        # same report bytes then mutates (never re-read after).
+        # ── read-time sweep reports: fresh stale pair written post-boot,
+        # read TWICE each. TS-ONLY semantics (packages/gateway/src/doors/
+        # runs.ts D1): the read door composes the report WITHOUT the
+        # write, so every read is pristine — both reads pin the same
+        # golden and idempotence follows transitively (no TS-vs-TS leg).
         for rid, doc in (("run-rtR", {"run_id": "run-rtR",
                                       "status": "running",
                                       "pipeline": "anny",
@@ -586,30 +569,23 @@ def main() -> int:
                          ("run-rtQ", {"run_id": "run-rtQ",
                                       "status": "queued",
                                       "pipeline": "anny"})):
-            for root in (py_root, ts_root):
-                d = root / "output" / rid
-                d.mkdir(exist_ok=True)
-                (d / "_flow.json").write_text(json.dumps(doc))
-            tps, tpb, _ = http(ts_port, "/v1/flows/status/" + rid,
-                               headers=auth())
-            pps, ppb, _ = http(py_port, "/v1/flows/status/" + rid,
-                               headers=auth())
-            check("readtime-" + rid,
-                  tps == pps == 200 and tpb == ppb,
-                  "status %r/%r %dB/%dB" % (tps, pps, len(tpb), len(ppb)))
-            # Remove the pair: py's read MUTATED its copy (swept file)
-            # while the TS copy stays pristine (D1) — leaving them
-            # would poison every later list vector (count + row
-            # bytes), so the pair lives exactly one read each.
-            for root in (py_root, ts_root):
-                shutil.rmtree(root / "output" / rid, ignore_errors=True)
+            d = ts_root / "output" / rid
+            d.mkdir(exist_ok=True)
+            (d / "_flow.json").write_text(json.dumps(doc))
+            pin(ts_port, "/v1/flows/status/" + rid,
+                "readtime-" + rid, "readtime-" + rid + ".json")
+            pin(ts_port, "/v1/flows/status/" + rid,
+                "readtime-" + rid + "-repeat",
+                "readtime-" + rid + ".json")
+            # Remove the pair: leaving it would poison every later list
+            # vector (count + row bytes), so the pair lives exactly two
+            # pristine reads.
+            shutil.rmtree(ts_root / "output" / rid, ignore_errors=True)
 
         # ── scripted lifecycle queued->running->completed->failed
         # over the DETAIL door (no sweep, no registry — order-free).
-        cyc = py_root / "output" / "run-cycle"
-        cyc_ts = ts_root / "output" / "run-cycle"
+        cyc = ts_root / "output" / "run-cycle"
         cyc.mkdir(exist_ok=True)
-        cyc_ts.mkdir(exist_ok=True)
         states = [
             ("queued", {"run_id": "run-cycle", "status": "queued",
                         "pipeline": "anny", "created_at": 1700000009}),
@@ -629,94 +605,89 @@ def main() -> int:
                         "error": "late failure"}),
         ]
         for step, doc in states:
-            text = json.dumps(doc)
-            (cyc / "_flow.json").write_text(text)
-            (cyc_ts / "_flow.json").write_text(text)
-            dual(py_port, ts_port, "/v1/flows/runs/run-cycle",
-                 "cycle-" + step)
+            (cyc / "_flow.json").write_text(json.dumps(doc))
+            pin(ts_port, "/v1/flows/runs/run-cycle", "cycle-" + step,
+                "cycle-" + step + ".json")
 
-        # ── valid-JSON-non-object sidecars, created on BOTH trees
-        # post-boot (boot_resurrect cannot start with them present —
-        # see build_fixture). List/detail serve unknown rows (200);
-        # STATUS 500-classes on both (500 + keys + route, never
-        # bytes). A closing full-list pins their rows + count 15.
+        # ── valid-JSON-non-object sidecars, created post-boot (see
+        # build_fixture). List/detail serve unknown rows (200 vs
+        # goldens); STATUS 500-pins stay shape-only (500 + keys +
+        # route, never bytes). A closing full-list pins their rows +
+        # count 14.
         for rid, text in (("run-arr", "[1,2]"), ("run-num", "5")):
-            for root in (py_root, ts_root):
-                d = root / "output" / rid
-                d.mkdir(exist_ok=True)
-                (d / "_flow.json").write_text(text)
-            dual(py_port, ts_port, "/v1/flows/runs/" + rid,
-                 "detail-" + rid)
-        dual_500(py_port, ts_port, "/v1/flows/status/run-arr",
-                 "status-500-arr")
-        dual_500(py_port, ts_port, "/v1/flows/status/run-num",
-                 "status-500-num")
-        dual_list(py_port, ts_port, "/v1/flows/runs", "runs-with-nonobj")
+            d = ts_root / "output" / rid
+            d.mkdir(exist_ok=True)
+            (d / "_flow.json").write_text(text)
+            pin(ts_port, "/v1/flows/runs/" + rid, "detail-" + rid,
+                "detail-" + rid + ".json")
+        pin_500(ts_port, "/v1/flows/status/run-arr", "status-500-arr")
+        pin_500(ts_port, "/v1/flows/status/run-num", "status-500-num")
+        pin_list(ts_port, "/v1/flows/runs", "runs-with-nonobj",
+                 "runs-with-nonobj.json")
 
         # ── events fallback + mismatch ──
-        dual(py_port, ts_port, "/v1/flows/events", "events-fallback")
-        dual(py_port, ts_port, "/v1/flows/events/run-done1",
-             "events-fallback-id")
-        dual(py_port, ts_port, "/v1/flows/events?run_id=run-done1",
-             "events-fallback-q")
-        dual(py_port, ts_port, "/v1/flows/events", "events-post",
-             method="POST")
-        dual(py_port, ts_port, "/v1/flows/runs", "runs-post",
-             method="POST")
+        pin(ts_port, "/v1/flows/events", "events-fallback",
+            "events-fallback.json", expect=404)
+        pin(ts_port, "/v1/flows/events/run-done1", "events-fallback-id",
+            "events-fallback-id.json", expect=404)
+        pin(ts_port, "/v1/flows/events?run_id=run-done1",
+            "events-fallback-q", "events-fallback-q.json", expect=404)
+        pin(ts_port, "/v1/flows/events", "events-post",
+            "events-post.json", expect=404, method="POST")
+        pin(ts_port, "/v1/flows/runs", "runs-post", "runs-post.json",
+            expect=404, method="POST")
 
         # ── WS frames (token ON: header form here; ?token= below) ──
-        hello = b'{"type":"hello","channel":"*","queue_depth":0,' \
-                b'"queued":[],"active":null}'
-        unknown = b'{"type":"run","status":"unknown"}'
         hdr = {"Authorization": "Bearer " + TOKEN}
-        dual_ws(py_port, ts_port, "/v1/flows/events", "ws-hello", hello,
-                hdr)
-        dual_ws(py_port, ts_port, "/v1/flows/events/run-done1",
-                "ws-unknown-path", unknown, hdr)
-        dual_ws(py_port, ts_port, "/v1/flows/events?run_id=run-done1",
-                "ws-unknown-query", unknown, hdr)
+        pin_ws(ts_port, "/v1/flows/events", "ws-hello", "ws-hello.json",
+               hdr)
+        pin_ws(ts_port, "/v1/flows/events/run-done1", "ws-unknown-path",
+               "ws-unknown.json", hdr)
+        pin_ws(ts_port, "/v1/flows/events?run_id=run-done1",
+               "ws-unknown-query", "ws-unknown.json", hdr)
         # reconnect === fresh subscribe + fresh hydrate (no cursor,
-        # no replay): same bytes twice on each side.
-        dual_ws(py_port, ts_port, "/v1/flows/events", "ws-reconnect",
-                hello, hdr)
-        dual_ws(py_port, ts_port, "/v1/flows/events/run-staleR",
-                "ws-unknown-stale", unknown, hdr)
+        # no replay): same golden twice, each leg vs the golden.
+        pin_ws(ts_port, "/v1/flows/events", "ws-reconnect",
+               "ws-hello.json", hdr)
+        pin_ws(ts_port, "/v1/flows/events/run-staleR", "ws-unknown-stale",
+               "ws-unknown.json", hdr)
         # ?token= form (the browser door — no headers possible).
-        dual_ws(py_port, ts_port, "/v1/flows/events?token=" + TOKEN,
-                "ws-hello-token", hello)
+        pin_ws(ts_port, "/v1/flows/events?token=" + TOKEN,
+               "ws-hello-token", "ws-hello.json")
         # refusal: no token anywhere -> 403 + empty body.
-        dual_ws_403(py_port, ts_port, "/v1/flows/events", "ws-403")
-        dual_ws_403(py_port, ts_port, "/v1/flows/events/run-done1",
-                    "ws-403-id")
-        dual_ws_403(py_port, ts_port, "/v1/flows/events", "ws-403-wrong",
-                    {"Authorization": "Bearer wrong"})
+        pin_ws_403(ts_port, "/v1/flows/events", "ws-403")
+        pin_ws_403(ts_port, "/v1/flows/events/run-done1", "ws-403-id")
+        pin_ws_403(ts_port, "/v1/flows/events", "ws-403-wrong",
+                   {"Authorization": "Bearer wrong"})
 
-        # ── HTTP auth: 401 shapes + exempt health + bearer 200s ──
-        dual(py_port, ts_port, "/v1/queue", "auth-401-queue", headers={})
-        dual(py_port, ts_port, "/v1/flows/runs", "auth-401-runs",
-             headers={})
-        dual(py_port, ts_port, "/v1/flows/status/run-done1",
-             "auth-401-status", headers={})
-        dual(py_port, ts_port, "/v1/flows/runs/run-done1",
-             "auth-401-detail", headers={})
-        dual(py_port, ts_port, "/v1/queue", "auth-401-wrong",
-             headers={"Authorization": "Bearer wrong"})
-        dual(py_port, ts_port, "/v1/health", "auth-health-exempt",
-             headers={})
-        # query token does NOT count on the HTTP path (_adapt passes
-        # "" as query_token — wall pins the refusal).
-        dual(py_port, ts_port, "/v1/queue?token=" + TOKEN,
-             "auth-query-refused", headers={})
+        # ── HTTP auth on the SAME TS-only boot (token ON from boot):
+        # 401 shapes + exempt health + bearer 200s (every golden leg
+        # above already sends the bearer header and pins 200s) ──
+        pin_401(ts_port, "/v1/queue", "auth-401-queue")
+        pin_401(ts_port, "/v1/flows/runs", "auth-401-runs")
+        pin_401(ts_port, "/v1/flows/status/run-done1", "auth-401-status")
+        pin_401(ts_port, "/v1/flows/runs/run-done1", "auth-401-detail")
+        pin_401(ts_port, "/v1/queue", "auth-401-wrong",
+                {"Authorization": "Bearer wrong"})
+        st, body, _ = http(ts_port, "/v1/health", headers={})
+        try:
+            hd = json.loads(body)
+        except Exception:
+            hd = {}
+        check("auth-health-exempt", st == 200 and hd.get("status") == "ok",
+              "status %r body %r" % (st, body[:80]))
+        # query token does NOT count on the HTTP path (ctx.ts authCheck
+        # reads the Authorization header only — wall pins the refusal).
+        pin_401(ts_port, "/v1/queue?token=" + TOKEN, "auth-query-refused")
     finally:
-        for proc in (py_proc, ts_proc):
-            if proc is not None:
-                try:
-                    reap_gateway(proc)
-                except Exception:
-                    pass
+        if ts_proc is not None:
+            try:
+                reap_gateway(ts_proc)
+            except Exception:
+                pass
         if base is not None:
             shutil.rmtree(base, ignore_errors=True)
-    print("runs parity: %d passed, %d failed" % (PASS, FAIL))
+    print("runs parity (TS-only): %d passed, %d failed" % (PASS, FAIL))
     return 1 if FAIL else 0
 
 

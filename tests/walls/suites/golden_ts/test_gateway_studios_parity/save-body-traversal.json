@@ -1,0 +1,4 @@
+{
+  "error": "dangling preset ref \u2014 body_ref: artifact ref refuses traversal: '../x'",
+  "code": "invalid_request"
+}

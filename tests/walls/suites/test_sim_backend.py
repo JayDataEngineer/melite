@@ -67,8 +67,7 @@ def scratch_gateway() -> Iterator[int]:
     from _anchor import boot_scratch_gateway, reap_gateway
     import sys as _sys
     port, proc = boot_scratch_gateway(
-        wait_path="/v1/queue", python=_sys.executable,
-        tries=150, sleep=0.2, env=None)
+        wait_path="/v1/queue",         tries=150, sleep=0.2, env=None)
     yield port
     reap_gateway(proc)
 

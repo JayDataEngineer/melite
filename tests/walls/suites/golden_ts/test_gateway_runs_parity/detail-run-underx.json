@@ -1,0 +1,12 @@
+{
+  "run_id": "run-underx",
+  "status": "completed",
+  "state": "completed",
+  "error": "",
+  "created": 1700000006,
+  "durationSec": 0,
+  "restored_from_sidecar": true,
+  "artifacts": [],
+  "stages": [],
+  "draft_id": ""
+}

@@ -1,0 +1,13 @@
+{
+  "error": "flow body carries unknown keys ['hello'] \u2014 allowed: ['description', 'id', 'stages']",
+  "code": "flow_compile",
+  "loc": "flow",
+  "errors": [
+    {
+      "scope": "flow",
+      "error": "flow body carries unknown keys ['hello'] \u2014 allowed: ['description', 'id', 'stages']",
+      "code": "flow_compile",
+      "loc": "flow"
+    }
+  ]
+}

@@ -1,57 +1,73 @@
 #!/usr/bin/env python3
-"""test_gateway_assets_parity.py — Phase-3 TS asset READ doors parity wall.
+"""test_gateway_assets_parity.py — Phase-3 TS asset READ doors wall, TS-ONLY.
 
-Proves the TypeScript port (packages/gateway/src/doors/assets.ts over
-the ROUTES mirror, static tables from
-packages/gateway/scripts/capture_assets.py) serves the 4 asset READ
-doors byte-identical to the py gateway:
+Pins the TypeScript asset doors (packages/gateway/src/doors/assets.ts:
+hAssetsIndex over the index view, hLedger over the journal tail,
+hAsset as the REAL byte serve + ranges, hAssetInput as the REAL byte
+serve over the uploads allowlist; static code tables from
+packages/gateway/scripts/capture_assets.py probing the keeper libs)
+serving the 4 asset READ doors:
 
-  GET /v1/assets            (_h_assets_index — dynamic JSON)
-  GET /v1/ledger            (_h_ledger — dynamic JSON)
-  GET /v1/assets/runs/*     (_h_asset — REAL byte serve + ranges)
-  GET /v1/assets/inputs/*   (_h_asset_input — REAL byte serve)
+  GET /v1/assets            (hAssetsIndex — dynamic JSON)
+  GET /v1/ledger            (hLedger — dynamic JSON)
+  GET /v1/assets/runs/*     (hAsset — REAL byte serve + ranges)
+  GET /v1/assets/inputs/*   (hAssetInput — REAL byte serve)
 
-Method: build a small FIXTURE tree at wall runtime, copy it to two
-roots (py / ts — never shared: each boot appends server.boot to
-its own journal), boot py via boot_scratch_gateway
-(MELITE_STATE_ROOT=py_root) + the TS server (MELITE_STATE_ROOT=
-ts_root, ephemeral port, QUEUE LANE LAW), then dual-serve every
-shape and assert byte-equality on bodies + header-equality on the
-parity set (content-type/length/range/accept-ranges):
+Method: build a small FIXTURE tree at wall runtime, copy it to one TS
+root (the boot appends server.boot to its journal), boot the TS
+server alone via boot_scratch_gateway (MELITE_STATE_ROOT=ts_root,
+ephemeral port, QUEUE LANE LAW), then pin every shape TS-only:
 
-  - JSON doors verbatim (limit/run/kind/include_test/event query
-    matrix, garbage limits, float 1.0 + ensure_ascii pins);
-  - full GETs byte-equal on every fixture file (incl. nested rels,
-    `_` sidecars served but not indexed, directory -> empty 200);
-  - 14 range shapes (prefix/suffix/open/clamp/oversize-suffix/
-    unsatisfiable/malformed/multi/case/hi<lo/-0/empty/absent +
-    ranges IGNORED on the inputs door);
-  - refusal shapes (404-outside-root, traversal-400 wire string,
-    double-encoded inputs 400s, method mismatch, unknown-kind
-    no-filter);
-  - auth-gate parity with the token OFF (this phase) and ON
-    (reboot both: 401 shapes, wrong token, query token refused,
-    /v1/health exempt, bearer 200s);
-  - the ?include_test=true journal side effect (parsed compare,
-    ts ignored) — ledger byte-checks run BEFORE it lands.
+  - JSON doors byte-exact against the frozen goldens
+    (golden_ts/test_gateway_assets_parity/, causes.md there):
+    limit/run/kind/include_test/event query matrix, garbage limits,
+    trailing slash, method-mismatch + unknown-path 404s, auth 401 +
+    health exemption;
+  - full GETs pinned by status + sha256 + length + parity headers
+    against bytes.json (incl. nested rels, `_` sidecars served but
+    not indexed, directory -> empty 200);
+  - 17 range specs pinned against ranges.json (prefix/suffix/open/
+    clamp/oversize-suffix/unsatisfiable/malformed/multi/case/hi<lo/
+    -0/empty/absent + ranges IGNORED on the inputs door);
+  - shape literals where the expectation is a contract, not bytes:
+    ensure_ascii escapes, float 1.0 verbatim, content-length
+    honesty, 206 shape, unsatisfiable-range TS full-200 (never
+    416), accept-ranges announce / inputs-door absence;
+  - the ?include_test=true journal side effect (parsed receipt pin)
+    — ledger golden legs run BEFORE it lands;
+  - node -e unit pins over doors/assets.ts (parseRange/bytesRepr/
+    dumpsPy/contentTypeOf/unquotePy — the TS contract);
+  - the auth gate with the token OFF (this phase) and ON (reboot
+    the TS server alone: 401 shapes, wrong token, query token
+    refused, /v1/health exempt, bearer 200s + bearer 206).
 
-The inputs fixture lives in the REAL REPO/data/input (py resolves
-the inputs dir from REPO, not MELITE_STATE_ROOT — gateway.py
-serve_input_asset(str(REPO), ...)): unique pid-suffixed names,
-removed in the finally.
+The inputs fixture lives in the REAL REPO/data/input (the inputs
+door resolves its root from REPO, not MELITE_STATE_ROOT): unique
+pid-suffixed names, removed in the finally.
+
+ORACLE DEATH 2026-09-08: re-derived TS-ONLY — the dual-serve
+py-vs-TS legs are deleted per the operator order "we do not need
+parity, we need to migrate, not keep the old machinery"; the
+frozen-golden + shape-literal legs below are the wall now. The
+capture_assets.py --check leg stays: the capture tool probes the
+keeper libs (never the retired oracle). The node -e unit legs stay:
+they exercise the TS door module directly (TS-UNIT, no gateway).
+
+Date: 2026-09-08. Status: landed (oracle-death re-derivation).
 
 Run: python3 tests/walls/suites/test_gateway_assets_parity.py
 """
 
+import hashlib
 import json
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
-import time
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 from _anchor import REPO, boot_scratch_gateway, reap_gateway
 
@@ -60,10 +76,11 @@ sys.dont_write_bytecode = True
 PASS = FAIL = 0
 TOKEN = "wall-assets-token-%d" % os.getpid()
 
-TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 TS_ASSETS = REPO / "packages" / "gateway" / "src" / "doors" / "assets.ts"
 CAPTURE = REPO / "packages" / "gateway" / "scripts" / "capture_assets.py"
 INPUT_DIR = REPO / "data" / "input"
+GOLDEN_DIR = (REPO / "tests" / "walls" / "suites" / "golden_ts" /
+              "test_gateway_assets_parity")
 
 INAME_PNG = "wall-assets-hero-%d.png" % os.getpid()
 INAME_WEBP = "wall-assets-hero-%d.webp" % os.getpid()
@@ -71,12 +88,25 @@ INAME_WEBP = "wall-assets-hero-%d.webp" % os.getpid()
 PARITY_HEADERS = ("content-type", "content-length",
                   "content-range", "accept-ranges")
 
+try:
+    BYTES_MANIFEST = json.loads(
+        (GOLDEN_DIR / "bytes.json").read_text(encoding="utf-8"))
+    RANGES_MANIFEST = json.loads(
+        (GOLDEN_DIR / "ranges.json").read_text(encoding="utf-8"))
+except OSError:
+    BYTES_MANIFEST = {}
+    RANGES_MANIFEST = {}
+
 
 def check(name: str, ok: bool, note: str = "") -> None:
     global PASS, FAIL
     print("  %-4s %s%s" % ("ok" if ok else "FAIL", name,
                            (" — " + note) if (note and not ok) else ""))
     PASS, FAIL = PASS + (1 if ok else 0), FAIL + (0 if ok else 1)
+
+
+def golden(name: str) -> bytes:
+    return (GOLDEN_DIR / name).read_bytes()
 
 
 def http(port: int, path: str, method: str = "GET",
@@ -100,28 +130,70 @@ def parity_headers(h: dict) -> dict:
     return {k: h.get(k) for k in PARITY_HEADERS if h.get(k) is not None}
 
 
-def dual(py_port: int, ts_port: int, path: str, name: str,
-         method: str = "GET", headers: dict | None = None) -> None:
-    """One dual-served shape: status + body bytes + parity headers."""
-    ps, pb, ph = http(py_port, path, method, headers)
-    ts, tb, th = http(ts_port, path, method, headers)
-    if ps is None or ts is None:
-        check(name, False, "transport py=%r ts=%r" % (pb[:80], tb[:80]))
+def ts_golden(port: int, path: str, name: str, golden_file: str,
+              want_status: int, method: str = "GET",
+              headers: dict | None = None) -> None:
+    """One TS-served shape: status + body bytes vs the frozen golden."""
+    st, body, h = http(port, path, method, headers)
+    if st is None:
+        check(name, False, "transport %r" % (body[:80],))
         return
-    ok = ps == ts and pb == tb and parity_headers(ph) == parity_headers(th)
+    try:
+        exp = golden(golden_file)
+    except OSError as e:
+        check(name, False, "golden missing %s: %s" % (golden_file, e))
+        return
+    ok = st == want_status and body == exp
     note = ""
     if not ok:
-        note = ("status %r/%r py %dB ts %dB ph %r th %r"
-                % (ts, ps, len(pb), len(tb),
-                   parity_headers(ph), parity_headers(th)))
-        for i, (a, b) in enumerate(zip(pb, tb)):
+        note = ("status %r (want %r) golden %dB ts %dB"
+                % (st, want_status, len(exp), len(body)))
+        for i, (a, b) in enumerate(zip(exp, body)):
             if a != b:
                 note += " first-div @%d" % i
                 break
         else:
-            if len(pb) != len(tb):
+            if len(exp) != len(body):
                 note += " len-div"
     check(name, ok, note)
+
+
+def ts_bytes(port: int, url_path: str, manifest_key: str,
+             name: str) -> None:
+    """One TS-served byte door: status + sha256 + len + parity headers
+    vs the frozen bytes.json entry (binaries pin by hash, never blobs)."""
+    exp = BYTES_MANIFEST.get(manifest_key)
+    if exp is None:
+        check(name, False, "no bytes.json entry %r" % (manifest_key,))
+        return
+    st, body, h = http(port, url_path)
+    if st is None:
+        check(name, False, "transport %r" % (body[:80],))
+        return
+    got = {"status": st, "sha256": hashlib.sha256(body).hexdigest(),
+           "len": len(body), "headers": parity_headers(h)}
+    want = {"status": exp["status"], "sha256": exp["sha256"],
+            "len": exp["len"], "headers": exp["headers"]}
+    check(name, got == want,
+          "got %r want %r" % (got, want) if got != want else "")
+
+
+def ts_range(port: int, cover: str, spec: str, name: str) -> None:
+    """One TS-served range shape vs the frozen ranges.json entry."""
+    exp = RANGES_MANIFEST.get(spec)
+    if exp is None:
+        check(name, False, "no ranges.json entry %r" % (spec,))
+        return
+    st, body, h = http(port, cover, headers={"Range": spec})
+    if st is None:
+        check(name, False, "transport %r" % (body[:80],))
+        return
+    got = {"status": st, "sha256": hashlib.sha256(body).hexdigest(),
+           "len": len(body), "headers": parity_headers(h)}
+    want = {"status": exp["status"], "sha256": exp["sha256"],
+            "len": exp["len"], "headers": exp["headers"]}
+    check(name, got == want,
+          "got %r want %r" % (got, want) if got != want else "")
 
 
 def build_fixture(root) -> None:
@@ -176,44 +248,140 @@ def write_ledger(root) -> None:
         "\n".join(LEDGER_LINES) + "\n", encoding="utf-8")
 
 
-def boot_ts(env: dict) -> tuple[int, "subprocess.Popen[str]"]:
-    node = shutil.which("node")
-    if node is None:
-        raise RuntimeError("node not on PATH")
-    proc = subprocess.Popen(
-        [node, "--experimental-strip-types", str(TS_SERVER)],
-        cwd=str(REPO), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-        text=True, start_new_session=True, env=env)
-    assert proc.stdout is not None
-    deadline = time.time() + 25
-    while time.time() < deadline:
-        line = proc.stdout.readline()
-        if line.startswith("READY "):
-            return int(line.split()[1]), proc
-        if proc.poll() is not None:
-            raise RuntimeError("ts server exited rc=%d" % proc.returncode)
-    proc.terminate()
-    raise RuntimeError("ts server did not print READY")
+# The JSON-door matrix: (wire path, golden file, frozen status).
+# Ledger legs run BEFORE the include_test legs land (the journal
+# side effect appends — the goldens below were captured before it).
+JSON_MATRIX: tuple = (
+    ("/v1/assets", "assets.json", 200),
+    ("/v1/assets?limit=1", "assets_limit1.json", 200),
+    ("/v1/assets?limit=2", "assets_limit2.json", 200),
+    ("/v1/assets?limit=", "assets_limit_empty.json", 200),
+    ("/v1/assets?limit=abc", "assets_limit_abc.json", 400),
+    ("/v1/assets?run=run-a1", "assets_run_a1.json", 200),
+    ("/v1/assets?run=nope", "assets_run_nope.json", 200),
+    ("/v1/assets?run=", "assets_run_empty.json", 200),
+    ("/v1/assets?kind=image", "assets_kind_image.json", 200),
+    ("/v1/assets?kind=video", "assets_kind_video.json", 200),
+    ("/v1/assets?kind=audio", "assets_kind_audio.json", 200),
+    ("/v1/assets?kind=model", "assets_kind_model.json", 200),
+    ("/v1/assets?kind=document", "assets_kind_document.json", 200),
+    ("/v1/assets?kind=other", "assets_kind_other.json", 200),
+    ("/v1/assets?kind=bogus", "assets_kind_bogus.json", 200),
+    ("/v1/assets?kind=", "assets_kind_empty.json", 200),
+    ("/v1/assets?run=run-a1&kind=image&limit=5",
+     "assets_run_a1_kind_image_limit5.json", 200),
+    ("/v1/assets/", "assets_slash.json", 200),
+    ("/v1/ledger", "ledger.json", 200),
+    ("/v1/ledger?limit=1", "ledger_limit1.json", 200),
+    ("/v1/ledger?limit=0", "ledger_limit0.json", 200),
+    ("/v1/ledger?limit=500", "ledger_limit500.json", 200),
+    ("/v1/ledger?limit=abc", "ledger_limit_abc.json", 200),
+    ("/v1/ledger?limit=2&event=run.completed",
+     "ledger_limit2_event_run_completed.json", 200),
+    ("/v1/ledger?event=run.completed",
+     "ledger_event_run_completed.json", 200),
+    ("/v1/ledger?event=note", "ledger_event_note.json", 200),
+    ("/v1/ledger?event=zzz", "ledger_event_zzz.json", 200),
+    ("/v1/ledger?event=", "ledger_event_empty.json", 200),
+    ("/v1/ledger?event=" + "n" * 70, "ledger_event_long.json", 200),
+)
+
+# include_test legs run LAST (each truthy variant appends one
+# assets.include_test row to the journal — the ledger goldens above
+# were captured BEFORE any of these land).
+INCLUDE_MATRIX: tuple = (
+    ("/v1/assets?include_test=true", "include_test_true.json", 200),
+    ("/v1/assets?include_test=1", "include_test_1.json", 200),
+    ("/v1/assets?include_test=True", "include_test_True.json", 200),
+    ("/v1/assets?include_test=false", "include_test_false.json", 200),
+    ("/v1/assets?include_test=", "include_test_empty.json", 200),
+)
+
+# Full-GET byte doors: (wire path, bytes.json key). The inputs-hero
+# slots ride logical keys — the fixture names carry the wall pid,
+# the bytes do not.
+BYTE_MATRIX: tuple = (
+    ("/v1/assets/runs/run-a1/cover.png",
+     "/v1/assets/runs/run-a1/cover.png"),
+    ("/v1/assets/runs/run-a1/clip.mp4",
+     "/v1/assets/runs/run-a1/clip.mp4"),
+    ("/v1/assets/runs/run-a1/tone.wav",
+     "/v1/assets/runs/run-a1/tone.wav"),
+    ("/v1/assets/runs/run-a1/mesh.glb",
+     "/v1/assets/runs/run-a1/mesh.glb"),
+    ("/v1/assets/runs/run-a1/spec.json",
+     "/v1/assets/runs/run-a1/spec.json"),
+    ("/v1/assets/runs/run-a1/blob.bin",
+     "/v1/assets/runs/run-a1/blob.bin"),
+    ("/v1/assets/runs/run-a1/caf%C3%A9.png",
+     "/v1/assets/runs/run-a1/caf%C3%A9.png"),
+    ("/v1/assets/runs/run-a1/stage1/out.png",
+     "/v1/assets/runs/run-a1/stage1/out.png"),
+    ("/v1/assets/runs/run-a1/_flow.json",
+     "/v1/assets/runs/run-a1/_flow.json"),
+    ("/v1/assets/runs/run-a1/_poster.jpg",
+     "/v1/assets/runs/run-a1/_poster.jpg"),
+    ("/v1/assets/runs/run-c3/_flow.json",
+     "/v1/assets/runs/run-c3/_flow.json"),
+    ("/v1/assets/runs/run-d4/f.txt",
+     "/v1/assets/runs/run-d4/f.txt"),
+    ("/v1/assets/runs/run-a1/stage1",
+     "/v1/assets/runs/run-a1/stage1"),
+    ("/v1/assets/runs/run-a1",
+     "/v1/assets/runs/run-a1"),
+    ("/v1/assets/runs/run-a1/cover.png?x=1",
+     "/v1/assets/runs/run-a1/cover.png?x=1"),
+    ("/v1/assets/runs/run-a1/nope.png",
+     "/v1/assets/runs/run-a1/nope.png"),
+    ("/v1/assets/runs/run-a1/stage1/no/such.bin",
+     "/v1/assets/runs/run-a1/stage1/no/such.bin"),
+    ("/v1/assets/runs/run-a1/../../x",
+     "/v1/assets/runs/run-a1/../../x"),
+    ("/v1/assets/runs/%2e%2e/x",
+     "/v1/assets/runs/%2e%2e/x"),
+    ("/v1/assets/runs/run-a1/%zz.png",
+     "/v1/assets/runs/run-a1/%zz.png"),
+    ("/v1/assets/inputs/nope.png",
+     "/v1/assets/inputs/nope.png"),
+    ("/v1/assets/inputs/x.bin",
+     "/v1/assets/inputs/x.bin"),
+    ("/v1/assets/inputs/a/b.png",
+     "/v1/assets/inputs/a/b.png"),
+    ("/v1/assets/inputs/%2e%2e/%2e%2e/x.png",
+     "/v1/assets/inputs/%2e%2e/%2e%2e/x.png"),
+    ("/v1/assets/inputs/a%2Fb.png",
+     "/v1/assets/inputs/a%2Fb.png"),
+)
+
+# Range specs on cover.png (1024 bytes 0..255 x4), pinned in order.
+RANGE_SPECS: tuple = (
+    "bytes=0-9", "bytes=100-", "bytes=-10",
+    "bytes=1000-9999", "bytes=-99999", "bytes=1023-",
+    "bytes=0-0", "bytes=9999-", "bytes=9999-10000",
+    "bytes=5-3", "bytes=-0", "bytes=", "garbage",
+    "bytes=0-1,3-4", "BYTES=0-9", "bytes = 4-7 ",
+    "items=0-9",
+)
 
 
 def main() -> int:
     base = None
-    py_proc = ts_proc = None
-    py_port = ts_port = 0
+    ts_proc = None
+    ts_port = 0
     try:
+        # Keeper-side freshness pin (the capture tool probes the
+        # keeper libs packages/gateway static tables ride on — it
+        # never touches the retired serving oracle).
         r = subprocess.run(
             [sys.executable, str(CAPTURE), "--check"],
             capture_output=True, text=True, cwd=str(REPO))
         check("capture_assets.py --check fresh",
               r.returncode == 0, (r.stderr or r.stdout)[-200:])
 
-        base = __import__("pathlib").Path(
-            tempfile.mkdtemp(prefix="wall-assets-"))
+        base = Path(tempfile.mkdtemp(prefix="wall-assets-"))
         build_fixture(base)
         write_ledger(base)
-        py_root = base / "py-root"
         ts_root = base / "ts-root"
-        shutil.copytree(str(base / "output"), str(py_root / "output"))
         shutil.copytree(str(base / "output"), str(ts_root / "output"))
 
         INPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -221,134 +389,76 @@ def main() -> int:
         (INPUT_DIR / INAME_WEBP).write_bytes(bytes([(i * 11) % 256
                                                     for i in range(128)]))
 
-        py_env = dict(os.environ)
-        py_env["MELITE_STATE_ROOT"] = str(py_root)
-        py_env.pop("DSH_GATEWAY_TOKEN", None)
-        py_port, py_proc = boot_scratch_gateway(env=py_env)
-        # Both boots append server.boot to their journals (py main()
-        # 4489; the TS P5 boot writes the same row) — rewrite the
-        # deterministic fixture after each boot so the byte legs see
-        # the fixture alone.
-        (py_root / "output" / "_ledger.jsonl").write_text(
-            "\n".join(LEDGER_LINES) + "\n", encoding="utf-8")
         ts_env = dict(os.environ)
         ts_env["MELITE_STATE_ROOT"] = str(ts_root)
         ts_env.pop("DSH_GATEWAY_TOKEN", None)
-        ts_port, ts_proc = boot_ts(ts_env)
+        ts_port, ts_proc = boot_scratch_gateway(env=ts_env)
+        # The boot appends server.boot to the journal — rewrite the
+        # deterministic fixture after the boot so the byte legs see
+        # the fixture alone (ONE TS boot: ONE rewrite).
         (ts_root / "output" / "_ledger.jsonl").write_text(
             "\n".join(LEDGER_LINES) + "\n", encoding="utf-8")
-        print("py :%d vs ts :%d" % (py_port, ts_port))
+        print("ts :%d" % ts_port)
 
-        # ── JSON doors ──
-        for path in ("/v1/assets",
-                     "/v1/assets?limit=1",
-                     "/v1/assets?limit=2",
-                     "/v1/assets?limit=",
-                     "/v1/assets?limit=abc",
-                     "/v1/assets?run=run-a1",
-                     "/v1/assets?run=nope",
-                     "/v1/assets?run=",
-                     "/v1/assets?kind=image",
-                     "/v1/assets?kind=video",
-                     "/v1/assets?kind=audio",
-                     "/v1/assets?kind=model",
-                     "/v1/assets?kind=document",
-                     "/v1/assets?kind=other",
-                     "/v1/assets?kind=bogus",
-                     "/v1/assets?kind=",
-                     "/v1/assets?run=run-a1&kind=image&limit=5",
-                     "/v1/assets/",
-                     "/v1/ledger",
-                     "/v1/ledger?limit=1",
-                     "/v1/ledger?limit=0",
-                     "/v1/ledger?limit=500",
-                     "/v1/ledger?limit=abc",
-                     "/v1/ledger?limit=2&event=run.completed",
-                     "/v1/ledger?event=run.completed",
-                     "/v1/ledger?event=note",
-                     "/v1/ledger?event=zzz",
-                     "/v1/ledger?event=",
-                     "/v1/ledger?event=" + "n" * 70):
-            dual(py_port, ts_port, path, "GET %s" % path)
+        # ── JSON doors (TS vs frozen goldens) ──
+        for path, slug, want in JSON_MATRIX:
+            ts_golden(ts_port, path, "GET %s" % path, slug, want)
 
-        # ensure_ascii actually escaped (not merely equal).
-        _, pb, _ = http(py_port, "/v1/assets")
+        # ensure_ascii actually escaped (not merely golden-equal).
         _, tb, _ = http(ts_port, "/v1/assets")
         check("index ensure_ascii escapes",
-              "caf\\u00e9.png" in pb.decode()
-              and "caf\\u00e9.png" in tb.decode()
-              and "caf\u00e9.png" not in pb.decode()
+              "caf\\u00e9.png" in tb.decode()
               and "caf\u00e9.png" not in tb.decode())
-        _, pb, _ = http(py_port, "/v1/ledger")
-        check("ledger float 1.0 verbatim",
-              b'"score": 1.0' in pb and b'"score": 1.0' in
-              http(ts_port, "/v1/ledger")[1])
+        _, tb, _ = http(ts_port, "/v1/ledger")
+        check("ledger float 1.0 verbatim", b'"score": 1.0' in tb)
         check("ledger ensure_ascii escapes",
-              "h\\u00e9llo\\u2014w\\u00f6rld" in pb.decode())
+              "h\\u00e9llo\\u2014w\\u00f6rld" in tb.decode())
 
-        # ── byte doors: full GETs ──
-        for path in ("/v1/assets/runs/run-a1/cover.png",
-                     "/v1/assets/runs/run-a1/clip.mp4",
-                     "/v1/assets/runs/run-a1/tone.wav",
-                     "/v1/assets/runs/run-a1/mesh.glb",
-                     "/v1/assets/runs/run-a1/spec.json",
-                     "/v1/assets/runs/run-a1/blob.bin",
-                     "/v1/assets/runs/run-a1/caf%C3%A9.png",
-                     "/v1/assets/runs/run-a1/stage1/out.png",
-                     "/v1/assets/runs/run-a1/_flow.json",
-                     "/v1/assets/runs/run-a1/_poster.jpg",
-                     "/v1/assets/runs/run-c3/_flow.json",
-                     "/v1/assets/runs/run-d4/f.txt",
-                     "/v1/assets/runs/run-a1/stage1",
-                     "/v1/assets/runs/run-a1",
-                     "/v1/assets/runs/run-a1/cover.png?x=1",
-                     "/v1/assets/runs/run-a1/nope.png",
-                     "/v1/assets/runs/run-a1/stage1/no/such.bin",
-                     "/v1/assets/runs/run-a1/../../x",
-                     "/v1/assets/runs/%2e%2e/x",
-                     "/v1/assets/runs/run-a1/%zz.png",
-                     "/v1/assets/inputs/" + INAME_PNG,
-                     "/v1/assets/inputs/" + INAME_WEBP,
-                     "/v1/assets/inputs/nope.png",
-                     "/v1/assets/inputs/x.bin",
-                     "/v1/assets/inputs/a/b.png",
-                     "/v1/assets/inputs/%2e%2e/%2e%2e/x.png",
-                     "/v1/assets/inputs/a%2Fb.png"):
-            dual(py_port, ts_port, path, "GET %s" % path)
+        # ── byte doors: full GETs (TS vs golden hashes/bytes) ──
+        for url_path, key in BYTE_MATRIX:
+            ts_bytes(ts_port, url_path, key, "GET %s" % url_path)
+        ts_bytes(ts_port, "/v1/assets/inputs/" + INAME_PNG,
+                 "inputs_hero_png",
+                 "GET /v1/assets/inputs/<hero-png>")
+        ts_bytes(ts_port, "/v1/assets/inputs/" + INAME_WEBP,
+                 "inputs_hero_webp",
+                 "GET /v1/assets/inputs/<hero-webp>")
 
-        # content-length honesty on a byte door.
+        # content-length honesty on a byte door (TS contract literal).
         for path in ("/v1/assets/runs/run-a1/cover.png",
                      "/v1/assets/inputs/" + INAME_PNG):
-            for port, tag in ((py_port, "python"), (ts_port, "ts")):
-                st, body, h = http(port, path)
-                check("%s content-length %s" % (tag, path),
-                      st == 200 and int(h.get("content-length", "-1"))
-                      == len(body))
+            st, body, h = http(ts_port, path)
+            check("ts content-length %s" % path,
+                  st == 200 and int(h.get("content-length", "-1"))
+                  == len(body))
 
         # ── range shapes (cover.png is 1024 bytes 0..255 x4) ──
         cov = "/v1/assets/runs/run-a1/cover.png"
-        for spec in ("bytes=0-9", "bytes=100-", "bytes=-10",
-                     "bytes=1000-9999", "bytes=-99999", "bytes=1023-",
-                     "bytes=0-0", "bytes=9999-", "bytes=9999-10000",
-                     "bytes=5-3", "bytes=-0", "bytes=", "garbage",
-                     "bytes=0-1,3-4", "BYTES=0-9", "bytes = 4-7 ",
-                     "items=0-9"):
-            dual(py_port, ts_port, cov, "range %r" % spec,
-                 headers={"Range": spec})
-        # Ranges are ignored where py ignores them.
-        dual(py_port, ts_port, cov, "range on 404",
-             headers={"Range": "bytes=0-9"})
-        ps, pb, ph = http(py_port, "/v1/assets/runs/run-a1/nope.png",
-                           headers={"Range": "bytes=0-9"})
-        dual(py_port, ts_port, "/v1/assets/inputs/" + INAME_PNG,
-             "range ignored on inputs door",
-             headers={"Range": "bytes=0-9"})
+        for spec in RANGE_SPECS:
+            ts_range(ts_port, cov, spec, "range %r" % spec)
+        # Ranges are ignored on the inputs door (TS contract: always
+        # the full 200 triple, no Accept-Ranges).
+        exp_ignored = RANGES_MANIFEST.get("inputs_ignored")
+        if exp_ignored is None:
+            check("range ignored on inputs door", False,
+                  "no ranges.json entry 'inputs_ignored'")
+        else:
+            st, body, h = http(ts_port,
+                               "/v1/assets/inputs/" + INAME_PNG,
+                               headers={"Range": "bytes=0-9"})
+            got = {"status": st,
+                   "sha256": hashlib.sha256(body).hexdigest(),
+                   "len": len(body), "headers": parity_headers(h)}
+            want = {"status": exp_ignored["status"],
+                    "sha256": exp_ignored["sha256"],
+                    "len": exp_ignored["len"],
+                    "headers": exp_ignored["headers"]}
+            check("range ignored on inputs door", got == want,
+                  "got %r want %r" % (got, want) if got != want else "")
         _, _, th = http(ts_port, "/v1/assets/inputs/" + INAME_PNG,
                         headers={"Range": "bytes=0-9"})
-        _, _, ph = http(py_port, "/v1/assets/inputs/" + INAME_PNG,
-                        headers={"Range": "bytes=0-9"})
         check("inputs door sends no accept-ranges",
-              "accept-ranges" not in th and "accept-ranges" not in ph)
+              "accept-ranges" not in th)
         _, _, rh = http(ts_port, cov)
         check("200 announces accept-ranges",
               rh.get("accept-ranges") == "bytes")
@@ -359,35 +469,32 @@ def main() -> int:
               and int(rh.get("content-length", "-1")) == 4)
         st, body, _ = http(ts_port, cov,
                             headers={"Range": "bytes=9999-10000"})
-        check("unsatisfiable range is py's full-200 (no 416)",
+        check("unsatisfiable range is TS full-200 (no 416)",
               st == 200 and len(body) == 1024)
 
-        # ── method arms + unknown ──
-        dual(py_port, ts_port, "/v1/assets", "POST /v1/assets",
-             method="POST")
-        dual(py_port, ts_port, cov, "POST byte door", method="POST")
-        dual(py_port, ts_port, "/v1/does-not-exist-xyz",
-             "unknown path 404")
+        # ── method arms + unknown (TS vs frozen goldens) ──
+        ts_golden(ts_port, "/v1/assets", "POST /v1/assets",
+                  "post_assets.json", 404, method="POST")
+        ts_golden(ts_port, cov, "POST byte door",
+                  "post_bytes.json", 404, method="POST")
+        ts_golden(ts_port, "/v1/does-not-exist-xyz",
+                  "unknown path 404", "unknown_404.json", 404)
 
-        # ── include_test LAST (it appends to both journals) ──
-        for path in ("/v1/assets?include_test=true",
-                     "/v1/assets?include_test=1",
-                     "/v1/assets?include_test=True",
-                     "/v1/assets?include_test=false",
-                     "/v1/assets?include_test="):
-            dual(py_port, ts_port, path, "GET %s" % path)
-        for port, tag in ((py_port, "python"), (ts_port, "ts")):
-            _, body, _ = http(port, "/v1/ledger?limit=500")
-            try:
-                doc = json.loads(body.decode())
-                last = doc["entries"][-1]
-                ok = (last["event"] == "assets.include_test"
-                      and last["data"] == {"limit": 200})
-            except (ValueError, KeyError, IndexError):
-                ok = False
-            check("%s include_test journal receipt" % tag, ok)
+        # ── include_test LAST (it appends to the journal) ──
+        for path, slug, want in INCLUDE_MATRIX:
+            ts_golden(ts_port, path, "GET %s" % path, slug, want)
+        _, body, _ = http(ts_port, "/v1/ledger?limit=500")
+        try:
+            doc = json.loads(body.decode())
+            last = doc["entries"][-1]
+            ok = (last["event"] == "assets.include_test"
+                  and last["data"] == {"limit": 200})
+        except (ValueError, KeyError, IndexError):
+            ok = False
+        check("ts include_test journal receipt", ok)
 
-        # ── unit pins (node -e over doors/assets.ts) ──
+        # ── unit pins (node -e over doors/assets.ts — TS-UNIT, kept:
+        # they exercise the TS door module directly, never a server) ──
         node = shutil.which("node")
         probe = (
             "import('" + TS_ASSETS.as_uri() + "').then(m=>{"
@@ -439,50 +546,52 @@ def main() -> int:
         check("assets unit vectors", unit_ok,
               (r.stderr or r.stdout)[-400:])
 
-        # ── auth ON (reboot both with the token) ──
-        reap_gateway(py_proc)
-        py_proc = None
-        if ts_proc is not None:
-            ts_proc.terminate()
-            try:
-                ts_proc.wait(timeout=15)
-            except subprocess.TimeoutExpired:
-                ts_proc.kill()
-            ts_proc = None
-        py_env["DSH_GATEWAY_TOKEN"] = TOKEN
+        # ── auth ON (reboot the TS server alone with the token) ──
+        reap_gateway(ts_proc)
+        ts_proc = None
         ts_env["DSH_GATEWAY_TOKEN"] = TOKEN
-        py_port, py_proc = boot_scratch_gateway(env=py_env)
-        (py_root / "output" / "_ledger.jsonl").write_text(
-            "\n".join(LEDGER_LINES) + "\n", encoding="utf-8")
-        ts_port, ts_proc = boot_ts(ts_env)
+        ts_port, ts_proc = boot_scratch_gateway(env=ts_env)
         (ts_root / "output" / "_ledger.jsonl").write_text(
             "\n".join(LEDGER_LINES) + "\n", encoding="utf-8")
-        print("auth-on py :%d vs ts :%d" % (py_port, ts_port))
-        dual(py_port, ts_port, "/v1/assets", "auth off -> 401")
-        dual(py_port, ts_port, cov, "auth off byte -> 401")
-        dual(py_port, ts_port, "/v1/assets?token=" + TOKEN,
-             "query token refused")
-        dual(py_port, ts_port, "/v1/health", "health exempt")
+        print("auth-on ts :%d" % ts_port)
+        ts_golden(ts_port, "/v1/assets", "auth off -> 401",
+                  "auth_401.json", 401)
+        ts_golden(ts_port, cov, "auth off byte -> 401",
+                  "auth_401.json", 401)
+        ts_golden(ts_port, "/v1/assets?token=" + TOKEN,
+                  "query token refused", "auth_401.json", 401)
+        ts_golden(ts_port, "/v1/health", "health exempt",
+                  "auth_health.json", 200)
         bad = {"Authorization": "Bearer wrong"}
-        ps, pb, _ = http(py_port, "/v1/assets", headers=bad)
-        ts, tb, _ = http(ts_port, "/v1/assets", headers=bad)
+        st, body, _ = http(ts_port, "/v1/assets", headers=bad)
+        try:
+            exp401 = golden("auth_401.json")
+        except OSError:
+            exp401 = b""
         check("wrong token 401",
-              ps == ts == 401 and pb == tb)
+              st == 401 and body == exp401)
         good = {"Authorization": "Bearer " + TOKEN}
-        dual(py_port, ts_port, "/v1/assets", "bearer assets",
-             headers=good)
-        dual(py_port, ts_port, cov, "bearer bytes", headers=good)
-        dual(py_port, ts_port, cov, "bearer range",
-             headers={**good, "Range": "bytes=0-3"})
+        ts_golden(ts_port, "/v1/assets", "bearer assets",
+                  "assets.json", 200, headers=good)
+        st, body, h = http(ts_port, cov, headers=good)
+        exp_cov = BYTES_MANIFEST.get(
+            "/v1/assets/runs/run-a1/cover.png", {})
+        check("bearer bytes",
+              st == 200
+              and hashlib.sha256(body).hexdigest() == exp_cov.get("sha256")
+              and len(body) == exp_cov.get("len")
+              and parity_headers(h) == exp_cov.get("headers"),
+              "status %r len %d" % (st, len(body)))
+        st, body, h = http(ts_port, cov,
+                           headers={**good, "Range": "bytes=0-3"})
+        check("bearer range",
+              st == 206 and body == bytes((0, 1, 2, 3))
+              and h.get("content-range") == "bytes 0-3/1024"
+              and int(h.get("content-length", "-1")) == 4,
+              "status %r len %d" % (st, len(body)))
     finally:
-        if py_proc is not None:
-            reap_gateway(py_proc)
         if ts_proc is not None:
-            ts_proc.terminate()
-            try:
-                ts_proc.wait(timeout=15)
-            except subprocess.TimeoutExpired:
-                ts_proc.kill()
+            reap_gateway(ts_proc)
         for name in (INAME_PNG, INAME_WEBP):
             try:
                 (INPUT_DIR / name).unlink()

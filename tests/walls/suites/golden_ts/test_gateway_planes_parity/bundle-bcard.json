@@ -1,0 +1,65 @@
+{
+  "lane": "bcard",
+  "card": "bcard",
+  "kind": "action_card",
+  "agent": {
+    "source": "card:bcard",
+    "name": "B agent",
+    "content": "# B agent\nB laws.\n"
+  },
+  "tools": [
+    {
+      "name": "bcard_tool",
+      "version": 2,
+      "kind": "card-compose",
+      "card": "bcard",
+      "model": "amodel",
+      "stage_title": "B Card",
+      "description": "Does B things.",
+      "params_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    {
+      "name": "bcard_hidden_tool",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "bcard",
+      "model": "amodel",
+      "stage_title": "B Hidden",
+      "description": "",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string"
+          },
+          "seed": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "prompt",
+          "seed"
+        ]
+      },
+      "hidden": true
+    }
+  ],
+  "flows": [],
+  "skills": [
+    {
+      "id": "card:bcard",
+      "name": "B agent",
+      "description": "",
+      "scope": "card",
+      "genre": "photo",
+      "card": "bcard"
+    }
+  ],
+  "read_first": [
+    "card:bcard"
+  ]
+}

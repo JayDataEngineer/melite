@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"rtx-vsr\",\n  \"family\": \"rtx-vsr\",\n  \"genre\": \"video\",\n  \"label\": \"Video Upscale\",\n  \"description\": \">-\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"batch_size\": 5,\n    \"cfg\": 4.0,\n    \"color_match_enabled\": true,\n    \"denoise\": 0.3,\n    \"dit_model\": \"seedvr2_ema_3b_fp16.safetensors\",\n    \"filename_prefix\": \"upscaled_video\",\n    \"fps\": 24,\n    \"seed\": 0,\n    \"steps\": 20,\n    \"upscaler_model\": \"4xNomos2_hq_dat2.pth\",\n    \"vae_model\": \"ema_vae_fp16.safetensors\",\n    \"mode\": \"rtx_vsr\",\n    \"rtx_two_pass\": true,\n    \"rtx_mode\": \"vsr\",\n    \"target_resolution\": 1080,\n    \"rtx_strength\": 0.6\n  },\n  \"engine\": \"\",\n  \"form\": \"form_video_upscale\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

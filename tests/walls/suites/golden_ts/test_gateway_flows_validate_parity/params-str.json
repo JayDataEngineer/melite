@@ -1,0 +1,18 @@
+{
+  "error": "stage[0] refuses: dictionary update sequence element #0 has length 1; 2 is required",
+  "code": "flow_compile",
+  "loc": "flow",
+  "errors": [
+    {
+      "scope": "flow",
+      "error": "stage[0] refuses: dictionary update sequence element #0 has length 1; 2 is required",
+      "code": "flow_compile",
+      "loc": "flow"
+    },
+    {
+      "stage": "a",
+      "error": "stage[0] refuses: dictionary update sequence element #0 has length 1; 2 is required",
+      "code": "flow_compile"
+    }
+  ]
+}

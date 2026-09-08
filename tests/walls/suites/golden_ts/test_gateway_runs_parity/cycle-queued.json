@@ -1,0 +1,12 @@
+{
+  "run_id": "run-cycle",
+  "status": "queued",
+  "state": "queued",
+  "error": "",
+  "created": 1700000009,
+  "durationSec": 0,
+  "restored_from_sidecar": true,
+  "artifacts": [],
+  "stages": [],
+  "draft_id": ""
+}

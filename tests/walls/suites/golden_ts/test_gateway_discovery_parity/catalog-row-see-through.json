@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"see-through\",\n  \"family\": \"see-through\",\n  \"genre\": \"other\",\n  \"label\": \"See-Through\",\n  \"description\": \"See-Through anime layer decomposition \\u2014 splits an image into character, clothing, and background layers.\",\n  \"source\": {\n    \"type\": \"\",\n    \"repo_id\": \"layerdifforg/seethroughv0.0.2_layerdiff3d\"\n  },\n  \"defaults\": {\n    \"resolution\": 1280,\n    \"resolution_depth\": 768,\n    \"inference_steps\": 30,\n    \"tblr_split\": false,\n    \"seed\": 42\n  },\n  \"engine\": \"\",\n  \"form\": \"form_image_seethrough\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

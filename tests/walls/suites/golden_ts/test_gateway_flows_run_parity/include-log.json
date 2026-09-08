@@ -1,0 +1,34 @@
+{
+  "run_id": "<RID>",
+  "status": "completed",
+  "stages": [
+    {
+      "id": "gen",
+      "name": "gen",
+      "index": 0,
+      "status": "completed",
+      "outputs": {
+        "default": "image"
+      },
+      "expected": {},
+      "merged": true,
+      "url": "/v1/assets/runs/<RID>/gen/out.png",
+      "gallery": [
+        {
+          "url": "/v1/assets/runs/<RID>/gen/out.png",
+          "name": "gen/out.png"
+        }
+      ],
+      "result_outputs": {
+        "default": "<ROOT>/output/<RID>/gen/out.png"
+      }
+    }
+  ],
+  "skipped_stages": [],
+  "artifacts": [
+    "<ROOT>/output/<RID>/gen/out.png"
+  ],
+  "error": "",
+  "queue_position": 0,
+  "log_tail": "run: completed\ngen: completed\nartifacts: out.png"
+}

@@ -1,0 +1,4 @@
+{
+  "error": "card_compose phase 1: card_compose rc=1 (comfyui.comfyui): bad-params: card 'motion' refused params: $.seed expected number but got 42",
+  "code": "card_compose"
+}

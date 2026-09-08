@@ -1,0 +1,47 @@
+{
+  "count": 4,
+  "artifacts": 1,
+  "runs": [
+    {
+      "run_id": "run-stray",
+      "name": "",
+      "status": "unknown",
+      "created_at": 0,
+      "test": false,
+      "artifacts": []
+    },
+    {
+      "run_id": "run-d4",
+      "name": "anny",
+      "status": "failed",
+      "created_at": 1699999997,
+      "test": false,
+      "artifacts": []
+    },
+    {
+      "run_id": "run-c3",
+      "name": "krea",
+      "status": "completed",
+      "created_at": 1699999998,
+      "test": false,
+      "artifacts": []
+    },
+    {
+      "run_id": "run-a1",
+      "name": "anny",
+      "status": "completed",
+      "created_at": 1700000000,
+      "test": false,
+      "artifacts": [
+        {
+          "name": "mesh.glb",
+          "run_id": "run-a1",
+          "kind": "model",
+          "bytes": 700,
+          "sha256": "8777bd2d79a792da3fea5d959dc299609232ff0ffe845bd96d8a0c5d413b8738",
+          "url": "/v1/assets/runs/run-a1/mesh.glb"
+        }
+      ]
+    }
+  ]
+}

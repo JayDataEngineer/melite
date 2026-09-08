@@ -1,0 +1,7 @@
+{
+  "id": "model:amodel:mstem",
+  "name": "mstem skill",
+  "description": "model skill",
+  "scope": "model-skill",
+  "content": "---\nname: mstem skill\ndescription: model skill\n---\n# MSkill\nM body.\n"
+}

@@ -5,8 +5,16 @@ mesh wire died at resolve_inputs post-claim. Now: the runner hands
 the stage\u2019s DECLARED output channels to the engine ABI NodeRow,
 and native.py publishes the first unmatched harvested file per
 FILE-kind channel (declaration order). No GPU, no server: pure
-channel mapping + a stub-engine two-stage handoff through the real
-Gateway.execute.
+channel mapping.
+
+ORACLE DEATH 2026-09-08 (operator order verbatim: "we do not need
+parity, we need to migrate, not keep the old machinery"): the
+TestInitialRefAliases legs (py resolve_inputs units) and the
+TestMeshHandoff leg (py Gateway.execute stub harness) died with
+the py serving oracle — retired with cause below. The publish
+mapping legs (compose/native.py, a keeper) stay.
+
+Date: 2026-09-08. Status: landed (oracle-death re-derivation).
 """
 
 from __future__ import annotations
@@ -90,119 +98,18 @@ class TestPublishChannels:
         assert got == {"shot": "/r/FRONT.PNG"}
 
 
-SEEN_ROWS = {}
-SEEN_INPUTS = {}
-
-
-async def _stub_execute(node: NodeRow, run_dir: str, inputs: dict[str, JsonValue],
-                        stop_event: asyncio.Event,
-                        report: Callable[[dict[str, JsonValue]], None] | None = None
-                        ) -> dict[str, dict[str, str] | list[str]]:
-    SEEN_ROWS[node.node_id] = dict(getattr(node, "outputs", None) or {})
-    SEEN_INPUTS[node.node_id] = dict(inputs)
-    if node.node_id == "rig":
-        return {"outputs": {"glb": "/tmp/stub_body.glb"}, "artifacts": []}
-    return {"outputs": {}, "artifacts": []}
-
-
-class TestInitialRefAliases:
-    """A present-prune rewrite (FromStage → FromInitial) must feed the
-    donor's $channels under the RECEIVING name — starter-branch incident
-    2026-09-06 (run-97f432846495): "$photo" rode the anny workflow
-    verbatim into LoadImage because initial refs published only under
-    the initial's own key."""
-
-    def test_initial_ref_publishes_receiving_name(self) -> None:
-        sys.path.insert(0, os.path.join(str(REPO), "python"))
-        import flow_graph
-        import gateway
-
-        node = flow_graph.NodeRow(
-            id="body", type="stub",
-            input_from=("__initial__.starter_image",),
-            input_names={"photo": "__initial__.starter_image"},
-        )
-        out = gateway.resolve_inputs(
-            node, {"starter_image": "/estate/starter.png"})
-        assert out["starter_image"] == "/estate/starter.png"
-        assert out["photo"] == "/estate/starter.png"
-
-    def test_initial_ref_without_alias_keeps_tensor_only(self) -> None:
-        sys.path.insert(0, os.path.join(str(REPO), "python"))
-        import flow_graph
-        import gateway
-
-        node = flow_graph.NodeRow(
-            id="coat", type="stub",
-            input_from=("__initial__.kind",),
-            input_names={"kind": "__initial__.kind"},
-        )
-        out = gateway.resolve_inputs(node, {"kind": "keeper"})
-        assert out["kind"] == "keeper"
-        assert sorted(out) == ["kind"]
-
-
-class TestMeshHandoff:
-    def test_from_stage_mesh_chains(self) -> None:
-        sys.path.insert(0, os.path.join(str(REPO), "python"))
-        import flow_graph
-        import gateway as gw_mod
-        import gateway
-
-        class _Run:
-            def __init__(self) -> None:
-                self.run_id = "wall-handoff"
-                self.status = "running"
-                self.request = {}
-                self.created_at = time.time()
-                self.stop_event = asyncio.Event()
-                self.stages = [
-                    {"id": "rig", "name": "rig", "index": 0,
-                     "status": "pending"},
-                    {"id": "use", "name": "use", "index": 1,
-                     "status": "pending"},
-                ]
-                self.graph = flow_graph.FlowGraph(
-                    name="wall-handoff",
-                    nodes=(flow_graph.NodeRow(
-                        node_id="rig", node_type="stub", params={},
-                        outputs={"glb": "mesh"}),
-                    flow_graph.NodeRow(
-                        node_id="use", node_type="stub", params={},
-                        input_from=("rig.glb",),
-                        input_names={"body": "rig.glb"},
-                        expected={"body": "mesh"}),))
-                self.artifacts = []
-                self.skipped_stages = []
-                self.error = None
-                self.dir = Path(tempfile.mkdtemp())
-                self.draft_id = None
-                self.card_extra_inputs = {}
-
-        run = _Run()
-        gw = gw_mod.Gateway()
-        gw.runs[run.run_id] = run
-        engine = type("M", (), {
-            "execute": staticmethod(_stub_execute)})()
-        import unittest.mock as _mock
-        with _mock.patch.object(gateway, "load_engine",
-                                lambda t: engine):
-            asyncio.run(gw.execute(run))
-        assert run.stages[0]["status"] == "completed"
-        assert run.stages[1]["status"] == "completed"
-        # the ABI row carried the declared channels (runner half)
-        assert SEEN_ROWS["rig"] == {"glb": "mesh"}
-        # the posted channel rode carry into the next stage (carry half:
-        # FromStage values arrive under their ref AND their receiving
-        # name — the 2026-09-06 incident: $channels speak names, so a
-        # chained "$body" rode the workflow verbatim and died).
-        assert SEEN_INPUTS["use"]["rig.glb"] == "/tmp/stub_body.glb"
-        assert SEEN_INPUTS["use"]["body"] == "/tmp/stub_body.glb"
-        # ... and the $channel the receiving workflow actually uses
-        # substitutes end to end (expand_inject over resolved inputs).
-        expanded = gw_mod.expand_inject(
-            {"workflow": {"apply": {"inputs": {
-                "body_glb_path": "$body"}}}},
-            SEEN_INPUTS["use"])
-        assert expanded["workflow"]["apply"]["inputs"][
-            "body_glb_path"] == "/tmp/stub_body.glb"
+# ORACLE DEATH 2026-09-08: TestInitialRefAliases (two py
+# resolve_inputs unit legs) + TestMeshHandoff (the py
+# Gateway.execute stub-engine handoff) + the _stub_execute harness
+# above RETIRED WITH CAUSE — all three drove the py serving
+# oracle's in-process runtime (gateway.resolve_inputs /
+# Gateway.execute / expand_inject), which died with the oracle per
+# the operator order "we do not need parity, we need to migrate,
+# not keep the old machinery". Coverage now:
+#   - the static half (receiving-name $channels resolve when wired)
+#     is pinned TS-HTTP by tests/walls/suites/test_channel_resolution.py
+#     TestTsChannelPin (dangling 400s, resolved 200s);
+#   - the runtime half (stub-engine two-stage handoff end to end)
+#     is pinned TS-ONLY by tests/walls/suites/test_gateway_e2e_tsboot.py
+#     (D-phase terminal golden + S-phase replay).
+# Date: 2026-09-08. Status: landed (oracle-death re-derivation).

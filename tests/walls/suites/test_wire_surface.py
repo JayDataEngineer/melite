@@ -9,18 +9,30 @@ JUNCTION before — the parity suites pin the gateway's own contract, the
 browser lanes pin the DOM. This gate pins the seam:
 
   * every wire route the frontend can emit (editor src + the @melite
-    workspace packages it imports) must match a route arm in the py
-    gateway (literal `path ==` / `startswith(` arms and `re.match(r"^...")`
-    regex arms across python/*.py).
+    workspace packages it imports) must match a route arm in the TS
+    gateway's authored wire table (packages/gateway/src/routes.ts:
+    literal rows, `^...`-prefix regex rows, and `^...$` fullmatch
+    regex rows).
   * frontend template routes (`/v1/flows/drafts/${id}`) match as
     prefixes against gateway regex arms.
+
+ORACLE DEATH 2026-09-08 (operator order verbatim: "we do not need
+parity, we need to migrate, not keep the old machinery"): the gateway
+arms used to be read from the retired py serving stack's ROUTES
+(`import gateway`). They are now parsed back out of the TS SSOT with
+the same rigid-shape string-aware scan as
+tests/walls/suites/test_routes_mirror.py (copied below — the mirror
+owns the shape).
+
+Date: 2026-09-08. Status: landed (oracle-death re-derivation).
 
 Known, REVIEWING-status drift lives in the exemption table below — loudly,
 with a date and a reason, never silently. Everything else fails HERE at
 ladder time, not as a mystery 404 in the user's face at runtime.
 
-Run: python3 tests/walls/suites/test_wire_surface.py   (part of the python gate ladder)
+Run: python3 tests/walls/suites/test_wire_surface.py   (part of the wall ladder)
 """
+import json
 import os
 import re
 import unittest
@@ -37,7 +49,7 @@ FRONTEND_ROOTS = (
     os.path.join(REPO, "packages", "web-kit", "formats", "src"),
     os.path.join(REPO, "packages", "web-kit", "contracts", "src"),
 )
-GATEWAY_ROOT = os.path.join(REPO, "python")
+ROUTES_TS = os.path.join(REPO, "packages", "gateway", "src", "routes.ts")
 
 # ─────────────────────────────────────────────────────────────────────────
 # REVIEWING exemptions — KNOWN drift, live-confirmed 2026-10-02 against the
@@ -75,7 +87,7 @@ REVIEWING_PREFIXES = (
 )
 REVIEWING_EXACT = (
     # C-retirement orphans: doors the deleted C server served, never
-    # ported to the py gateway, still cited by the editorApi route map
+    # ported to the gateway, still cited by the editorApi route map
     # ("audited against server/app.py" — a file that no longer exists).
     # ('/v1/compose' WAS here — its last frontend caller was deleted
     # 2026-09-05; the exemption died in the same stroke, fossil-guard
@@ -83,7 +95,7 @@ REVIEWING_EXACT = (
     # ('/v1/controlnets', '/v1/flow-catalog',
     # '/v1/flows/yaml/export-comfyui' died the same day — callers gone,
     # exemptions deleted in the same stroke.)
-    # ('/v1/loras' WAS here too — the py gateway grew the door
+    # ('/v1/loras' WAS here too — the gateway grew the door
     # (/v1/loras?model=, the declared LorasMod pack) 2026-09-05 and the
     # LIVE process was brought to source parity the same hour; served
     # now, so un-exempted. The query-string-literal caller shape ALSO
@@ -95,7 +107,7 @@ REVIEWING_EXACT = (
     # ('/v1/tools/speech-length' WAS here — the speechLength helper died
     # the same day; exemption deleted in the same stroke.)
     # ('/v1/flows/render_glb', '/v1/flows/render_textured' WAS here —
-    # C-retirement orphans the py gateway never ported; their last
+    # C-retirement orphans the gateway never ported; their last
     # frontend callers (renderGlb/renderTextured) died 2026-09-07;
     # exemptions deleted in the same stroke, fossil-guard order.)
     # ('/health' WAS here — GpuStatus polled it at boot and the gateway
@@ -153,24 +165,108 @@ def frontend_routes() -> set[str]:
     return routes
 
 
+def _strip_comments(text: str) -> str:
+    """Remove // and /* */ comments outside string literals.
+
+    Copied from test_routes_mirror.py — the mirror owns the authored
+    row shape; this wall only reads (path, regex) back. A hand-edit
+    that breaks the rigid literal-per-row shape fails LOUDLY here.
+    """
+    out: list[str] = []
+    i, n = 0, len(text)
+    in_str = False
+    while i < n:
+        c = text[i]
+        if in_str:
+            out.append(c)
+            if c == "\\":
+                if i + 1 < n:
+                    out.append(text[i + 1])
+                    i += 1
+            elif c == '"':
+                in_str = False
+            i += 1
+            continue
+        if c == '"':
+            in_str = True
+            out.append(c)
+            i += 1
+        elif c == "/" and i + 1 < n and text[i + 1] == "/":
+            while i < n and text[i] != "\n":
+                i += 1
+        elif c == "/" and i + 1 < n and text[i + 1] == "*":
+            i += 2
+            while i + 1 < n and not (text[i] == "*" and text[i + 1] == "/"):
+                i += 1
+            i += 2
+        else:
+            out.append(c)
+            i += 1
+    return "".join(out)
+
+
+def _split_top_objects(array_body: str) -> list[str]:
+    """Top-level {...} spans of an array literal (string-aware)."""
+    objs: list[str] = []
+    i, n = 0, len(array_body)
+    while i < n:
+        if array_body[i] != "{":
+            i += 1
+            continue
+        depth = 0
+        in_str = False
+        j = i
+        while j < n:
+            c = array_body[j]
+            if in_str:
+                if c == "\\":
+                    j += 1
+                elif c == '"':
+                    in_str = False
+            elif c == '"':
+                in_str = True
+            elif c == "{":
+                depth += 1
+            elif c == "}":
+                depth -= 1
+                if depth == 0:
+                    objs.append(array_body[i:j + 1])
+                    break
+            j += 1
+        i = j + 1
+    return objs
+
+
+def _str_field(obj: str, name: str) -> str:
+    m = re.search(r"%s\s*:\s*\"((?:[^\"\\]|\\.)*)\"" % re.escape(name), obj)
+    if m is None:
+        raise ValueError("row has no %r string field" % name)
+    return json.loads('"%s"' % m.group(1))
+
+
 def gateway_arms() -> tuple[set[str], set[str], set[str]]:
     """(exact_literals, prefix_arms, regex_patterns) the gateway can answer.
 
-    The route table IS the wire SSOT (2026-09-04 Phase 1 refactor: the
-    if-chain became ROUTES rows in python/gateway.py) — read it directly.
-    Literal rows are exact arms; regex rows anchored both ends are
-    fullmatch patterns; open-ended regex rows (^prefix with no $) are
-    prefix arms (the old path.startswith(...) semantics).
+    The route table IS the wire SSOT (packages/gateway/src/routes.ts,
+    hand-authored) — read it directly with the mirror's string-aware
+    scan, no node needed. Literal rows are exact arms; regex rows
+    anchored both ends are fullmatch patterns; open-ended regex rows
+    (^prefix with no $) are prefix arms.
     """
-    import gateway as _gw
+    with open(ROUTES_TS, encoding="utf-8") as fh:
+        text = fh.read()
+    anchor = text.index("export const ROUTES")
+    body = _strip_comments(text[anchor:])
+    lb, rb = body.index("["), body.rindex("]")
     literals, prefixes, patterns = set(), set(), set()
-    for row in _gw.ROUTES:
-        if not row.regex:
-            literals.add(row.path)
-        elif row.path.endswith("$"):
-            patterns.add(row.path)
+    for obj in _split_top_objects(body[lb:rb]):
+        path = _str_field(obj, "path")
+        if "regex: true" not in obj:
+            literals.add(path)
+        elif path.endswith("$"):
+            patterns.add(path)
         else:
-            prefixes.add(row.path.lstrip("^"))
+            prefixes.add(path.lstrip("^"))
     return literals, prefixes, patterns
 
 
@@ -210,7 +306,7 @@ class WireSurfaceTests(unittest.TestCase):
         )
         self.assertEqual(
             drift, [],
-            "ROUTE DRIFT — the frontend emits these doors but the py gateway "
+            "ROUTE DRIFT — the frontend emits these doors but the TS gateway "
             "has no arm for them (a runtime 'no such route' 404 in the user's "
             "face). Serve them, or delete the caller.",
         )

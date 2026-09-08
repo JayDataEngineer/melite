@@ -1,0 +1,50 @@
+{
+  "run-g1-empty": {
+    "artifacts": [],
+    "draft_id": "d1",
+    "skipped_stages": [],
+    "stages": []
+  },
+  "run-g1-extra": {
+    "artifacts": [],
+    "draft_id": "d1",
+    "skipped_stages": [],
+    "stages": []
+  },
+  "run-g1-false": {
+    "artifacts": [],
+    "draft_id": "d1",
+    "skipped_stages": [],
+    "stages": []
+  },
+  "run-g1-ifempty": {
+    "artifacts": [],
+    "draft_id": "d1",
+    "skipped_stages": [],
+    "stages": []
+  },
+  "run-g1-ifstr": {
+    "artifacts": [],
+    "draft_id": "d1",
+    "skipped_stages": [],
+    "stages": []
+  },
+  "run-g1-missing": {
+    "artifacts": [],
+    "draft_id": "d1",
+    "skipped_stages": [],
+    "stages": []
+  },
+  "run-g1-none": {
+    "artifacts": [],
+    "draft_id": "d1",
+    "skipped_stages": [],
+    "stages": []
+  },
+  "run-g1-nonefields": {
+    "artifacts": [],
+    "draft_id": "d1",
+    "skipped_stages": [],
+    "stages": []
+  }
+}

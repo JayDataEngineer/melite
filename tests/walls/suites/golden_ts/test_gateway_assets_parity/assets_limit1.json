@@ -1,0 +1,14 @@
+{
+  "count": 1,
+  "artifacts": 0,
+  "runs": [
+    {
+      "run_id": "run-stray",
+      "name": "",
+      "status": "unknown",
+      "created_at": 0,
+      "test": false,
+      "artifacts": []
+    }
+  ]
+}

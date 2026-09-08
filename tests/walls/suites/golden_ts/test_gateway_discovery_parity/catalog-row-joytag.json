@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"joytag\",\n  \"family\": \"joytag\",\n  \"genre\": \"image\",\n  \"label\": \"JoyTag\",\n  \"description\": \"Booru keyword tagger (JoyTag lineage) \\u2014 thresholded Danbooru tags with add/remove lists for recreation workflows. Torch lane, node-local checkpoint.\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"threshold\": 0.2,\n    \"add_tag\": \"\",\n    \"remove_tag\": \"\"\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_tagger\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

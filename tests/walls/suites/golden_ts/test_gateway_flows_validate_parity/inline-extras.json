@@ -1,0 +1,18 @@
+{
+  "error": "stage[0] 'a': body carries unknown field(s) ['zzz'] \u2014 the schema declares ['card', 'card_io', 'description', 'engine', 'expected', 'id', 'inputs', 'outputs', 'params', 'retries', 'skip_when', 'timeout_s'] (extra=forbid at the door)",
+  "code": "flow_compile",
+  "loc": "flow",
+  "errors": [
+    {
+      "scope": "flow",
+      "error": "stage[0] 'a': body carries unknown field(s) ['zzz'] \u2014 the schema declares ['card', 'card_io', 'description', 'engine', 'expected', 'id', 'inputs', 'outputs', 'params', 'retries', 'skip_when', 'timeout_s'] (extra=forbid at the door)",
+      "code": "flow_compile",
+      "loc": "flow"
+    },
+    {
+      "stage": "a",
+      "error": "stage[0] 'a': body carries unknown field(s) ['zzz'] \u2014 the schema declares ['card', 'card_io', 'description', 'engine', 'expected', 'id', 'inputs', 'outputs', 'params', 'retries', 'skip_when', 'timeout_s'] (extra=forbid at the door)",
+      "code": "flow_compile"
+    }
+  ]
+}

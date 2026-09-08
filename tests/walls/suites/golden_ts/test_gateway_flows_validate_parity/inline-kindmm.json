@@ -1,0 +1,13 @@
+{
+  "error": "flow 'w' stage 'b' input 'x': expected image, got text from stage 'a' output 'o' \u2014 must be image",
+  "code": "flow_compile",
+  "loc": "flow",
+  "errors": [
+    {
+      "scope": "flow",
+      "error": "flow 'w' stage 'b' input 'x': expected image, got text from stage 'a' output 'o' \u2014 must be image",
+      "code": "flow_compile",
+      "loc": "flow"
+    }
+  ]
+}

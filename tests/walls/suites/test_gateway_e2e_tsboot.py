@@ -1,67 +1,64 @@
 #!/usr/bin/env python3
-"""test_gateway_e2e_tsboot.py — P5 GATE lifecycle e2e wall (TS boot, py STOPPED).
+"""test_gateway_e2e_tsboot.py — P5 GATE lifecycle e2e wall (TS boot, TS-ONLY).
 
-Full lifecycle against the TS boot ALONE (py stopped — the lock
-proves single-writer), wall-first, hermetic (fixture roots only,
-never the production root; the live production py gateway holds
-the default lock — boots here MUST use isolated MELITE_STATE_ROOTs):
+Full lifecycle against the TS boot ALONE (the lock proves
+single-writer), wall-first, hermetic (fixture roots only, never the
+production root; the live production gateway holds the default lock
+— boots here MUST use isolated MELITE_STATE_ROOTs):
 
   submit draft -> validate -> start (stub ComfyUI per the
   flows-run wall pattern) -> poll status -> harvest artifacts
   -> runs list/detail agreement -> events/WS frames
   -> resurrect-after-restart (kill TS, reboot, sidecar restore).
 
-Plus the sim test backend leg (packages/engines/sim/ — the ladder's
-deliberate Law-0 test double, tests/walls/suites/test_sim_backend.py):
-its agreement legs ported to run against TS.
+Plus the sim refusal legs (the sim tier is retired to
+vendor/retired-engines/sim — the TS door refuses sim bodies LOUD,
+validate names the missing engine, start refuses preview_scope).
 
-Every leg dual-pinned against py behavior where py behavior exists
-(captured vectors from a dual-serve phase on SEPARATE fixture roots),
-TS-only where py cannot (boot-where-py-crashes scalar class).
+Every leg pins the TS contract: literals where the expectation is
+a shape, frozen goldens (golden_ts/test_gateway_e2e_tsboot/,
+causes.md there) where it is bytes.
 
 Phases:
-  H — hermetic + lock proof (py STOPPED throughout: no py boot on
-      the e2e root; the lock proves single-writer).
-  D — dual-serve vector capture (py + TS on separate roots, same
-      stub): draft shape, validate bytes, start receipts, terminal
+  H — hermetic + lock proof (no boot on the e2e root but the
+      holder/contender pair; the lock proves single-writer).
+  D — TS vector capture (TS on a fixture root, stub ComfyUI):
+      draft shape, validate bytes, start receipts, terminal
       bodies, harvest bytes, fixture list/detail bytes, WS frames,
-      sim validate/mismatch bytes + sim-start divergence shape.
-  S — TS-alone lifecycle (py STOPPED, fresh TS root): rerun the
-      lifecycle, bytes match the captured D-phase TS vectors
-      (transitive py pin).
+      sim validate/mismatch/start refusal shapes.
+  S — TS-alone lifecycle (fresh TS root): rerun the lifecycle,
+      bytes match the captured D-phase TS vectors (transitive pin).
   R — resurrect-after-restart (TS-alone, kill, reboot): seeded
-      queued sidecar restores (queue/status/WS/list/detail agree
-      with py's boot vectors); TS-started live runs document the
-      no-sidecar preview gap (shape, never bytes); scalar seed
-      boots clean TS-only (py crashes AttributeError — the known
-      gateway.py:2359 class, never ported).
+      queued sidecar restores (queue/status/WS/list/detail);
+      TS-started live runs document the no-sidecar preview gap
+      (shape, never bytes); scalar seed boots clean (the retired
+      py oracle crashed on it — recorded history, never ported).
 
 DOCUMENTED PREVIEW GAPS (pass as shape, never bytes — the wall
 would otherwise greenwash known incomplete scope as bugs):
   G1 no sidecar writes on TS start (doors/flowsRun.ts header):
-     live-run list rows read success/empty/0 (no sidecar fields)
-     vs py completed/wall-run/draft/real-created; live-run detail
-     404s on TS vs 200 on py; reboot loses live runs on TS vs
-     sidecar restore on py.
-  G2 sim start refuses 400 preview_scope on TS (comfyui-only
-     preview) vs 202 on py; sim execution/stop/storm legs stay
-     py-owned (test_sim_backend.py) — this wall pins validate +
-     refusal agreement only.
-  G3 bad-JSON texts embed the host parser's message (CPython vs
-     V8) — status + code + prefix only.
-  G4 run_id / draftId / createdAt differ per side by construction
-     — normalized to <RID>/<DID>/<ROOT> before comparing.
-  G5 float formatting (py 2.0 vs JSON 2) — no served body here
-     carries a float.
+     live-run list rows read success/empty/0 (no sidecar fields);
+     live-run detail 404s; reboot loses live runs (seeded sidecar
+     rows DO restore — the R phase).
+  G2 sim start refuses 400 preview_scope (comfyui-only preview);
+     sim execution died with the retired sim tier — this wall pins
+     validate + refusal shapes only.
+  G3 bad-JSON texts embed the host parser's message (V8) —
+     status + code + prefix only.
+  G4 run_id / draftId differ per boot by construction —
+     normalized to <RID>/<DID>/<ROOT> before comparing.
+  G5 float formatting — no served body here carries a float.
 
-Py cites: submit 1179-1270, worker 1353-1371, _try_merged
-1426-1611, sidecar 2124-2169, boot_resurrect 2338-2375,
-boot_sweep 2378-2409, sidecar_status 2412-2470, status
-2954-2982, runs list 3011-3035, detail editor_runs 656-806,
-WS 2516-2585, lock 4405-4479, sim engine
-packages/engines/sim/engines/sim/engine.py.
+TS cites: doors/flowsDraft.ts (draft compose), doors/flowsValidate.ts
+(validate + artifact-ref gate + sim refusal), doors/flowsRun.ts
+(start preview + receipts), doors/runs.ts (list/detail), engine/
+comfyui.ts (stub run + harvest), queue.ts (sidecarDoc + resurrect),
+doors/events.ts (WS hello/run frames).
 
 Date: 2026-09-07. Status: landed (P5 gate stroke).
+ORACLE DEATH 2026-09-08: Phase D was a dual-serve py-vs-TS capture;
+re-derived TS-ONLY (frozen goldens + shape literals), py legs
+removed, sim legs re-pinned to the mono-engine refusal contract.
 
 Run: python3 tests/walls/suites/test_gateway_e2e_tsboot.py
 """
@@ -81,12 +78,14 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from _anchor import REPO, boot_scratch_gateway, reap_gateway
+from _anchor import REPO
 
 sys.dont_write_bytecode = True
 
 PASS = FAIL = 0
 TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
+GOLDEN_DIR = (REPO / "tests" / "walls" / "suites" / "golden_ts" /
+              "test_gateway_e2e_tsboot")
 WF = {"1": {"class_type": "EmptyLatentImage",
             "inputs": {"width": 64, "height": 64, "batch_size": 1}}}
 HISTORY_OK = {"status": {"status_str": "success", "completed": True},
@@ -344,28 +343,26 @@ def main() -> int:
     stub_url = boot_stub()
     prod_lock = REPO / "data" / "runs" / "gateway.lock"
     base: Path | None = None
-    py_proc = ts_proc = ts2_proc = None
+    ts_proc = ts2_proc = None
     try:
         base = Path(tempfile.mkdtemp(prefix="e2e-tsboot-"))
 
-        # ── Phase H: hermetic + lock proof (py STOPPED) ──
+        # ── Phase H: hermetic + lock proof ──
         import os as _os
-        check("H01 production lock held (live py owns default)",
+        check("H01 production lock held (live gateway owns default)",
               prod_lock.is_file(),
               "no %s — live gateway not running?" % prod_lock)
-        py_root = base / "py-root"
         ts_root = base / "ts-root"
         ts_alone_root = base / "ts-alone"
         h_root = base / "h-root"
-        for d in (py_root, ts_root, ts_alone_root, h_root):
+        for d in (ts_root, ts_alone_root, h_root):
             d.mkdir(parents=True)
         check("H02 fixture roots isolated (never production)",
               str(REPO / "data" / "runs") not in
-              (str(py_root), str(ts_root), str(ts_alone_root),
+              (str(ts_root), str(ts_alone_root),
                str(h_root)))
         # Single-writer proof on the e2e H root: first TS holder
-        # boots, a second TS contender on the SAME root refuses (py
-        # stays stopped throughout — no py boot touches this root).
+        # boots, a second TS contender on the SAME root refuses.
         env_hold = dict(_os.environ, MELITE_STATE_ROOT=str(h_root),
                         COMFYUI_URL=stub_url)
         hold_port, hold_proc = boot_ts(env_hold)
@@ -399,156 +396,129 @@ def main() -> int:
                 except Exception:
                     pass
 
-        # ── Phase D: dual-serve vector capture ──
-        py_port, py_proc = boot_scratch_gateway(
-            env=dict(_os.environ, MELITE_STATE_ROOT=str(py_root),
-                     COMFYUI_URL=stub_url))
+        # ── Phase D: TS vector capture (TS-ONLY) ──
+        # ORACLE DEATH (2026-09-08): this phase was a dual-serve
+        # py-vs-TS comparison; the py oracle is deleted, so the legs
+        # pin the TS vectors against the frozen goldens in
+        # golden_ts/test_gateway_e2e_tsboot/ (causes.md there) —
+        # literals where the expectation is a shape, goldens where
+        # it is bytes. The S phase replays the lifecycle on a fresh
+        # root and agrees with these vectors (transitive pin).
         ts_port, ts_proc = boot_ts(
             dict(_os.environ, MELITE_STATE_ROOT=str(ts_root),
                  COMFYUI_URL=stub_url))
-        roots = [str(py_root), str(ts_root)]
+        roots = [str(ts_root)]
 
-        # D01 draft compose (minted ids differ — shape pin).
-        c1, r1 = http(py_port, "/v1/flows/drafts",
-                      json.dumps(draft_body()).encode())
+        def golden(name: str) -> bytes:
+            return (GOLDEN_DIR / name).read_bytes()
+
+        # D01 draft compose (minted ids differ per boot — shape pin).
         c2, r2 = http(ts_port, "/v1/flows/drafts",
                       json.dumps(draft_body()).encode())
         try:
-            d1, d2 = json.loads(r1), json.loads(r2)
+            d2 = json.loads(r2)
         except Exception:
-            d1 = d2 = {}
-        check("D01 draft compose 200s both",
-              c1 == 200 and c2 == 200, "%r/%r" % (c1, c2))
-        check("D01 draft ids shape-match",
-              bool(DRAFT_ID_RE.match(str(d1.get("draftId", "")))) and
+            d2 = {}
+        check("D01 draft compose 200s",
+              c2 == 200, "%r" % (c2,))
+        check("D01 draft id shape-matches",
               bool(DRAFT_ID_RE.match(str(d2.get("draftId", "")))),
-              "%r %r" % (d1.get("draftId"), d2.get("draftId")))
+              "%r" % (d2.get("draftId"),))
         check("D01 draft stages shape-match",
-              d1.get("stages") == d2.get("stages") ==
+              d2.get("stages") ==
               [{"id": "gen", "inputs": [], "params": {},
                 "provenance": "agent"}],
-              "%r %r" % (d1.get("stages"), d2.get("stages")))
-        py_did, ts_did = str(d1.get("draftId", "")), str(d2.get("draftId", ""))
+              "%r" % (d2.get("stages"),))
+        ts_did = str(d2.get("draftId", ""))
 
-        # D02 validate byte-equal.
+        # D02 validate bytes pin the frozen golden.
         vbody = json.dumps({"flow_inline": draft_body()["flow_inline"]}) \
             .encode()
-        c1, r1 = http(py_port, "/v1/flows/validate", vbody)
         c2, r2 = http(ts_port, "/v1/flows/validate", vbody)
-        check("D02 validate byte-equal",
-              c1 == c2 == 200 and r1 == r2, "%r/%r" % (c1, c2))
+        check("D02 validate 200s + bytes match golden",
+              c2 == 200 and normalize(r2, roots) == golden("validate.json"),
+              "%r %dB" % (c2, len(r2)))
 
-        # D03 start receipts (normalized).
-        c1, r1 = http(py_port, "/v1/flows/start",
-                      json.dumps(start_body(py_did)).encode())
+        # D03 start receipt (normalized shape pin).
         c2, r2 = http(ts_port, "/v1/flows/start",
                       json.dumps(start_body(ts_did)).encode())
-        check("D03 start 202s both", c1 == 202 and c2 == 202,
-              "%r/%r" % (c1, c2))
+        check("D03 start 202s", c2 == 202, "%r" % (c2,))
         try:
-            py_rid = str(json.loads(r1).get("run_id", ""))
             ts_rid = str(json.loads(r2).get("run_id", ""))
         except Exception:
-            py_rid = ts_rid = ""
-        check("D03 run ids shape-match",
-              bool(RUN_ID_RE.match(py_rid)) and bool(RUN_ID_RE.match(ts_rid)),
-              "%r %r" % (py_rid, ts_rid))
+            ts_rid = ""
+        check("D03 run id shape-matches",
+              bool(RUN_ID_RE.match(ts_rid)), "%r" % (ts_rid,))
         try:
-            pr, tr = json.loads(r1), json.loads(r2)
+            tr = json.loads(r2)
         except Exception:
-            pr = tr = {}
-        check("D03 receipts agree modulo run_id",
-              c1 == c2 == 202 and pr.get("status") == "queued" and
-              tr.get("status") == "queued",
-              "%r %r" % (r1[:120], r2[:120]))
+            tr = {}
+        check("D03 receipt reads queued",
+              c2 == 202 and tr.get("status") == "queued",
+              "%r" % (r2[:120],))
 
-        # D04 terminal bodies (normalized run_id + root).
-        _, py_term = wait_terminal(py_port, py_rid)
+        # D04 terminal body (normalized) pins the frozen golden.
         _, ts_term = wait_terminal(ts_port, ts_rid)
-        check("D04 both complete",
-              py_term.get("status") == "completed" and
+        check("D04 completes",
               ts_term.get("status") == "completed",
-              "%r %r" % (py_term.get("status"), ts_term.get("status")))
-        py_n = normalize(json.dumps(py_term, indent=2).encode(), roots)
+              "%r" % (ts_term.get("status"),))
         ts_n = normalize(json.dumps(ts_term, indent=2).encode(), roots)
-        check("D04 terminal bodies agree normalized", py_n == ts_n,
-              "py %dB ts %dB" % (len(py_n), len(ts_n)))
+        check("D04 terminal bytes match golden", ts_n == golden("terminal.json"),
+              "%dB" % (len(ts_n),))
         # Keep normalized TS terminal bytes for the S-phase pin.
         ts_term_bytes = ts_n
 
-        # D05 harvest: HTTP asset door + disk bytes agree.
-        py_url = (py_term.get("stages") or [{}])[0].get("url", "")
+        # D05 harvest: HTTP asset door + disk bytes (stub serves PNG-BYTES).
         ts_url = (ts_term.get("stages") or [{}])[0].get("url", "")
-        check("D05 artifact urls shape-match",
-              str(py_url).startswith("/v1/assets/runs/run-") and
+        check("D05 artifact url shape-matches",
               str(ts_url).startswith("/v1/assets/runs/run-"),
-              "%r %r" % (py_url, ts_url))
-        _, py_ab = http(py_port, str(py_url).replace(
-            py_rid, py_rid) if py_rid else "/nope")
+              "%r" % (ts_url,))
         _, ts_ab = http(ts_port, str(ts_url))
-        check("D05 HTTP harvest bytes agree",
-              py_ab == ts_ab == b"PNG-BYTES", "%r %r" % (py_ab[:20],
-                                                         ts_ab[:20]))
-        py_disk = (py_root / "output" / py_rid / "gen" / "out.png") \
-            .read_bytes() if py_rid else b""
+        check("D05 HTTP harvest bytes",
+              ts_ab == b"PNG-BYTES", "%r" % (ts_ab[:20],))
         ts_disk = (ts_root / "output" / ts_rid / "gen" / "out.png") \
             .read_bytes() if ts_rid else b""
-        check("D05 disk harvest bytes agree",
-              py_disk == ts_disk == b"PNG-BYTES",
-              "%r %r" % (py_disk[:20], ts_disk[:20]))
+        check("D05 disk harvest bytes",
+              ts_disk == b"PNG-BYTES",
+              "%r" % (ts_disk[:20],))
 
-        # D06 fixture list/detail agreement (seeded sidecars — the
-        # runs-doors agreement leg; live runs diverge per G1 below).
+        # D06 fixture list/detail (seeded sidecars — the runs-doors
+        # readback leg; live runs read shape-only per G1 below).
         for rdir in ("run-e2e-a", "run-e2e-b"):
-            for root, did, creat in (
-                    (py_root, "d-e2e", 1700000101),
-                    (ts_root, "d-e2e", 1700000101)):
-                (root / "drafts" / (did + ".json")).write_text("{}")
-                d = root / "output" / rdir
-                d.mkdir(parents=True, exist_ok=True)
-                (d / "_flow.json").write_text(json.dumps(
-                    {"run_id": rdir, "status": "completed",
-                     "pipeline": "wall-e2e", "draft_id": did,
-                     "created_at": creat,
-                     "stages": [{"id": "w", "index": 0,
-                                 "status": "completed"}]}))
-        c1, r1 = http(py_port, "/v1/flows/runs?limit=500")
+            (ts_root / "drafts" / "d-e2e.json").write_text("{}")
+            d = ts_root / "output" / rdir
+            d.mkdir(parents=True, exist_ok=True)
+            (d / "_flow.json").write_text(json.dumps(
+                {"run_id": rdir, "status": "completed",
+                 "pipeline": "wall-e2e", "draft_id": "d-e2e",
+                 "created_at": 1700000101,
+                 "stages": [{"id": "w", "index": 0,
+                             "status": "completed"}]}))
         c2, r2 = http(ts_port, "/v1/flows/runs?limit=500")
         try:
-            l1 = {r["run_id"]: r for r in json.loads(r1)["runs"]
-                  if r["run_id"] in ("run-e2e-a", "run-e2e-b")}
             l2 = {r["run_id"]: r for r in json.loads(r2)["runs"]
                   if r["run_id"] in ("run-e2e-a", "run-e2e-b")}
         except Exception:
-            l1 = l2 = {}
-        check("D06 fixture list rows byte-agree",
-              c1 == c2 == 200 and
-              normalize(json.dumps(l1, sort_keys=True).encode(), roots) ==
-              normalize(json.dumps(l2, sort_keys=True).encode(), roots),
-              "%r %r" % (sorted(l1), sorted(l2)))
-        c1, r1 = http(py_port, "/v1/flows/runs/run-e2e-a")
+            l2 = {}
+        check("D06 fixture list rows match golden",
+              c2 == 200 and
+              normalize(json.dumps(l2, sort_keys=True).encode(), roots) ==
+              golden("fixture-list.json"),
+              "%r %r" % (c2, sorted(l2)))
         c2, r2 = http(ts_port, "/v1/flows/runs/run-e2e-a")
-        check("D06 fixture detail byte-agrees normalized",
-              c1 == c2 == 200 and normalize(r1, roots) == normalize(r2, roots),
-              "%r/%r %dB/%dB" % (c1, c2, len(r1), len(r2)))
+        check("D06 fixture detail matches golden",
+              c2 == 200 and normalize(r2, roots) == golden("fixture-detail.json"),
+              "%r %dB" % (c2, len(r2)))
 
-        # D07 live-run list/detail divergence (G1 — shape, never
-        # bytes: TS writes no sidecar, py does).
-        c1, r1 = http(py_port, "/v1/flows/runs?limit=500")
+        # D07 live-run list/detail (G1 — shape, never bytes: the TS
+        # preview writes no sidecar, so live rows read success/empty/0
+        # and live detail 404s).
         c2, r2 = http(ts_port, "/v1/flows/runs?limit=500")
         try:
-            py_live = next(r for r in json.loads(r1)["runs"]
-                           if r["run_id"] == py_rid)
             ts_live = next(r for r in json.loads(r2)["runs"]
                            if r["run_id"] == ts_rid)
         except Exception:
-            py_live = ts_live = {}
-        check("D07 live list: py completed/wall-run/draft",
-              py_live.get("status") == "completed" and
-              py_live.get("flow") == "wall-run" and
-              py_live.get("draft_id") == py_did,
-              "%r" % ({k: py_live.get(k) for k in
-                       ("status", "flow", "draft_id")},))
+            ts_live = {}
         check("D07 live list: TS success/empty/0 (G1 no-sidecar)",
               ts_live.get("status") == "success" and
               ts_live.get("flow") == "" and
@@ -556,44 +526,50 @@ def main() -> int:
               ts_live.get("created_at") == 0,
               "%r" % ({k: ts_live.get(k) for k in
                        ("status", "flow", "draft_id", "created_at")},))
-        c1, _ = http(py_port, "/v1/flows/runs/" + py_rid)
         c2, _ = http(ts_port, "/v1/flows/runs/" + ts_rid)
-        check("D07 live detail: py 200 vs TS 404 (G1)",
-              c1 == 200 and c2 == 404, "%r/%r" % (c1, c2))
+        check("D07 live detail 404s (G1)",
+              c2 == 404, "%r" % (c2,))
 
-        # D08 events/WS frames (byte-equal).
-        c1, r1 = http(py_port, "/v1/flows/events")
+        # D08 events/WS frames (TS contract pins).
         c2, r2 = http(ts_port, "/v1/flows/events")
-        check("D08 events fallback 404s byte-equal",
-              c1 == c2 == 404 and r1 == r2, "%r/%r" % (c1, c2))
+        check("D08 events fallback 404 matches golden",
+              c2 == 404 and r2 == golden("events-404.json"),
+              "%r %r" % (c2, r2[:80]))
         for target, want_n in (("/v1/flows/events", 1),
                                ("/v1/flows/events/run-no-such-e2e", 1)):
-            s1, f1 = ws_frames(py_port, target)
             s2, f2 = ws_frames(ts_port, target)
-            check("D08 WS %s byte-equal" % target.split("/")[-1],
-                  s1 == s2 == b"HTTP/1.1 101 Switching Protocols" and
-                  f1 == f2, "%r %r" % (f1[:1], f2[:1]))
-        s1, f1 = ws_frames(py_port, "/v1/flows/events/" + py_rid, n=2)
+            try:
+                f2_json = [json.loads(f) for f in f2]
+            except Exception:
+                f2_json = []
+            check("D08 WS %s upgrades + frames parse" % target.split("/")[-1],
+                  s2 == b"HTTP/1.1 101 Switching Protocols" and
+                  len(f2) == want_n and len(f2_json) == want_n,
+                  "%r %r" % (s2, f2[:1]))
         s2, f2 = ws_frames(ts_port, "/v1/flows/events/" + ts_rid, n=2)
-        check("D08 WS owned completed frames byte-equal",
-              f1 == f2 and len(f1) == 2 and
-              json.loads(f1[0]).get("status") == "completed",
-              "%r %r" % (f1[:1], f2[:1]))
+        check("D08 WS owned completed frames",
+              len(f2) == 2 and
+              json.loads(f2[0]).get("status") == "completed",
+              "%r" % (f2[:1],))
 
-        # D09 sim backend legs (validate agrees, start diverges G2).
+        # D09 sim backend legs (G2 — the sim tier is retired, so the
+        # TS door refuses sim bodies LOUD: validate names the missing
+        # engine, start refuses preview_scope).
         sim_body = json.dumps({"flow_inline": SIM_FLOW}).encode()
-        c1, r1 = http(py_port, "/v1/flows/validate", sim_body)
         c2, r2 = http(ts_port, "/v1/flows/validate", sim_body)
-        check("D09 sim validate byte-equal",
-              c1 == c2 == 200 and r1 == r2, "%r/%r" % (c1, c2))
+        check("D09 sim validate 400 matches golden",
+              c2 == 400 and normalize(r2, roots) == golden("sim-validate.json"),
+              "%r %r" % (c2, r2[:80]))
         mis_body = json.dumps({"flow_inline": SIM_MISMATCH}).encode()
-        c1, r1 = http(py_port, "/v1/flows/validate", mis_body)
         c2, r2 = http(ts_port, "/v1/flows/validate", mis_body)
-        check("D09 sim kind-mismatch validate byte-equal",
-              c1 == c2 == 400 and r1 == r2, "%r/%r" % (c1, c2))
-        c1, r1 = http(py_port, "/v1/flows/start",
-                      json.dumps({"flow_inline": SIM_FLOW,
-                                  "draft_id": py_did}).encode())
+        try:
+            mis_err = json.loads(r2)
+        except Exception:
+            mis_err = {}
+        check("D09 sim kind-mismatch validate 400 names expected/got",
+              c2 == 400 and mis_err.get("code") == "flow_compile" and
+              "expected image, got text" in str(mis_err.get("error", "")),
+              "%r %r" % (c2, r2[:120]))
         c2, r2 = http(ts_port, "/v1/flows/start",
                       json.dumps({"flow_inline": SIM_FLOW,
                                   "draft_id": ts_did}).encode())
@@ -601,23 +577,15 @@ def main() -> int:
             ts_err = json.loads(r2)
         except Exception:
             ts_err = {}
-        check("D09 sim start: py 202 vs TS 400 preview_scope (G2)",
-              c1 == 202 and c2 == 400 and
+        check("D09 sim start refuses 400 preview_scope (G2)",
+              c2 == 400 and
               ts_err.get("code") == "preview_scope" and
               "comfyui stages only" in str(ts_err.get("error", "")),
-              "%r/%r %r" % (c1, c2, ts_err.get("code")))
-        # Sim execution agreement stays py-owned: prove the py side
-        # ran the two-stage chain (carry-pool + file handoff seam)
-        # while TS holds no sim registry row.
-        try:
-            sim_rid = str(json.loads(r1).get("run_id", ""))
-        except Exception:
-            sim_rid = ""
-        _, sim_term = wait_terminal(py_port, sim_rid)
-        check("D09 py sim chain completes (carry seam)",
-              sim_term.get("status") == "completed" and
-              len(sim_term.get("artifacts", [])) == 2,
-              "%r" % sim_term.get("status"))
+              "%r %r" % (c2, ts_err.get("code")))
+        # Sim execution died with the retired tier (quarantined to
+        # vendor/retired-engines/sim by the mono-engine stroke — no
+        # gateway serves it; test_sim_backend.py's sim legs fail on
+        # both sides, recorded there).
 
         # Capture D-phase TS vectors for the S-phase transitive pin
         # (re-read the exact bytes served in D02/D04).
@@ -627,10 +595,8 @@ def main() -> int:
         d_ts_vectors["terminal"] = ts_term_bytes
         _, d_ts_vectors["queue"] = http(ts_port, "/v1/queue")
 
-        # Py STOPPED before the TS-alone phases (single-writer gate:
-        # from here on the TS boot is the only writer).
-        reap_gateway(py_proc)
-        py_proc = None
+        # Reboot the D-phase TS boot (single-writer gate: the S
+        # phase runs on its own fresh root below).
         try:
             ts_proc.terminate()
             ts_proc.wait(timeout=15)
@@ -641,7 +607,7 @@ def main() -> int:
                 pass
         ts_proc = None
 
-        # ── Phase S: TS-alone lifecycle (py STOPPED) ──
+        # ── Phase S: TS-alone lifecycle (fresh root) ──
         shutil.rmtree(ts_alone_root, ignore_errors=True)
         ts_alone_root.mkdir(parents=True)
         ts_port2, ts2_proc = boot_ts(
@@ -718,8 +684,9 @@ def main() -> int:
         shutil.rmtree(r_root, ignore_errors=True)
         r_root.mkdir(parents=True)
         seed_queued(r_root)
-        # Scalar seed: valid-JSON-non-object sidecars crash py
-        # (AttributeError gateway.py:2359) — TS boots clean (TS-only).
+        # Scalar seed: a valid-JSON-non-object sidecar (the retired
+        # py oracle crashed on this class — recorded history, never
+        # ported). TS boots clean and serves the row as unknown.
         (r_root / "output" / "run-e2e-arr").mkdir(parents=True)
         (r_root / "output" / "run-e2e-arr" / "_flow.json") \
             .write_text("[1,2]")
@@ -783,9 +750,8 @@ def main() -> int:
                     r_proc.kill()
                 except Exception:
                     pass
-        # Reboot on the same root: sidecar restore survives (py
-        # would too — dual-pinned by shape here since py is stopped;
-        # the D-phase resurrect wall already proves byte agreement).
+        # Reboot on the same root: sidecar restore survives (the R01
+        # shape above re-proved after reboot — R06/R07 below).
         r_port2, r_proc2 = boot_ts(
             dict(_os.environ, MELITE_STATE_ROOT=str(r_root),
                  COMFYUI_URL=stub_url))
@@ -806,16 +772,16 @@ def main() -> int:
             check("R07 reboot keeps resurrected status",
                   c == 200 and st.get("status") == "queued",
                   "%r %r" % (c, raw[:200]))
-            # Scalar TS-only: boot clean where py crashes.
+            # Scalar: boot clean on the non-object sidecar class.
             c, raw = http(r_port2, "/v1/flows/runs/run-e2e-arr")
-            check("R08 scalar detail 200s TS-only (py crashes)",
+            check("R08 scalar detail 200s",
                   c == 200, "%r %r" % (c, raw[:120]))
             c, raw = http(r_port2, "/v1/flows/status/run-e2e-arr")
             try:
                 st = json.loads(raw)
             except Exception:
                 st = {}
-            check("R09 scalar status 500-class TS-only",
+            check("R09 scalar status 500-class",
                   c == 500 and "error" in st, "%r %r" % (c, raw[:200]))
         finally:
             try:
@@ -827,10 +793,11 @@ def main() -> int:
                 except Exception:
                     pass
     finally:
-        for proc in (py_proc, ts_proc, ts2_proc):
+        for proc in (ts_proc, ts2_proc):
             if proc is not None:
                 try:
-                    reap_gateway(proc)
+                    proc.terminate()
+                    proc.wait(timeout=15)
                 except Exception:
                     pass
         if STUB.server is not None:

@@ -11,6 +11,19 @@ THE DOOR: flow-declared pydantic models (Flow.initial_validators)
 validated at the gateway's start/validate doors BEFORE any run
 registers; the presets door serves the CANONICAL dialect string
 (validated through the same model) and the studio posts it VERBATIM.
+
+ORACLE DEATH 2026-09-08: the two oracle legs are removed — the
+resolve_request killer leg and the serve-side source-text pin that
+read the py serving oracle (LAW TEXT HYGIENE: the oracle path is
+not named here). The keeper legs stay: the model, the
+flow-declared validator (fl.validate_initial), the serve-side
+canonical rows, the studio seam. The killer-at-the-door refusal
+re-pins through the TS door when the flows-port lane ports
+named-flow compile (the TS plane refuses named-flow validate
+unported — see test_flow_doors.py §4 — so no TS leg can pin the
+dialect refusal in this stroke; no TS-vs-TS legs, no xfail).
+
+Date: 2026-09-08. Status: landed (oracle-death wean).
 """
 from __future__ import annotations
 
@@ -30,7 +43,6 @@ from melite_models import AnnyBakeParams
 FLOW_PY = REPO / "flows" / "anny-params" / "flow.py"
 COMPONENT = (REPO / "packages" / "engines" / "comfyui" / "action_cards"
              / "3d" / "anny" / "ui" / "studio" / "component.tsx")
-GATEWAY_PY = REPO / "python" / "gateway.py"
 
 GOOD_AUTHORED = json.dumps({
     "dialect": "authored",
@@ -135,13 +147,6 @@ class TestTheFlowDoor:
                                expected={"x": Kind.text}),),
                  initial_validators={"x": "not-a-model"})
 
-    def test_gateway_resolves_through_the_door(self) -> None:
-        from gateway import resolve_request, ValidationError as VErr
-        with pytest.raises(VErr):
-            resolve_request({"flow": "anny-params",
-                             "params_json": KILLER})
-
-
 class TestServeSide:
     def test_every_estate_row_serves_a_valid_canonical(self) -> None:
         """The door serves params_json VALIDATED — a malformed
@@ -175,12 +180,6 @@ class TestStudioSeam:
         assert "const paramsJson = selected.params_json" in src
         # the hand-rolled rebuild is DEAD — the drift class dies with it
         assert 'JSON.stringify({\n      dialect:' not in src
-
-    def test_door_serves_the_canonical_field(self) -> None:
-        src = GATEWAY_PY.read_text()
-        assert 'p.canonical_json() if p.params else None' in src
-        assert "AnnyBakeParams.model_validate" in src, \
-            "serve-side belt: what the door serves must validate"
 
     def test_notes_never_eat_the_card(self) -> None:
         """Operator order 2026-09-06: 'The ERROR MESSAGE takes up room

@@ -1,0 +1,32 @@
+{
+  "count": 3,
+  "lanes": [
+    {
+      "kind": "action_card",
+      "lane": "acard",
+      "genre": "photo",
+      "title": "A Card",
+      "description": "Does A things.",
+      "params": 1,
+      "skills": 3
+    },
+    {
+      "kind": "action_card",
+      "lane": "bcard",
+      "genre": "photo",
+      "title": "B Card",
+      "description": "Does B things.",
+      "params": 2,
+      "skills": 1
+    },
+    {
+      "kind": "action_card",
+      "lane": "ccard",
+      "genre": "photo",
+      "title": "C Card",
+      "description": "Does C things.",
+      "params": 0,
+      "skills": 0
+    }
+  ]
+}

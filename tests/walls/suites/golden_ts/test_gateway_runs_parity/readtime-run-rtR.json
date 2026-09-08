@@ -1,0 +1,15 @@
+{
+  "run_id": "run-rtR",
+  "status": "failed",
+  "pipeline": "anny",
+  "stages": [
+    {
+      "id": "w",
+      "index": 0,
+      "status": "running"
+    }
+  ],
+  "error": "zombie swept at read time",
+  "artifacts": [],
+  "queue_position": 0
+}

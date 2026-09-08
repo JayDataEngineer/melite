@@ -1,56 +1,66 @@
 #!/usr/bin/env python3
-"""test_gateway_drafts_parity.py — P4 draft CRUD doors TS parity wall.
+"""test_gateway_drafts_parity.py — P4 draft CRUD doors TS-ONLY wall.
 
-Proves the TypeScript port (packages/gateway/src/doors/drafts.ts via
-ctx.ts dispatch) answers byte-identical to the py gateway
-(python/gateway.py draft arms 3108-3149; strict bodies 4335-4340; R4.2
-normalization 4353-4355; auth gate _adapt 2607-2619; file semantics
-python/editor_runs.py 818-1204; birth gate python/run_wire.py 151-170):
+Pins the TypeScript port (packages/gateway/src/doors/drafts.ts via
+ctx.ts dispatch):
 
   full create/get/patch/result/list lifecycle, patch-merge semantics
   (shallow params merge, replace-the-rest, atomic tmp+rename), the
   composer-drift 500s (pydantic-exact refusal TEXT — the money pins),
   empty-body/non-dict/bad-JSON refusals, traversal + hostile-name
-  parity, DELETE-is-404 parity (drafts_delete is unwired dead code —
-  editor_runs.py 1065-1071 — so DELETE falls to no-such-route on
-  both), method mismatches, auth-gate parity, and N-parallel creates.
+  handling, DELETE-is-404 (drafts_delete is unwired dead code —
+  python/editor_runs.py 1065-1071 — so DELETE falls to no-such-route),
+  method mismatches, the auth gate, and N-parallel creates.
 
-Dual-serve on fixture roots: ONE fixture drafts/ tree is built, then
-COPIED to a py root and a ts root (never shared — PATCH rewrites
-state on both sides). py boots via boot_scratch_gateway
-(MELITE_STATE_ROOT=py_root); TS boots with MELITE_STATE_ROOT=ts_root
-(the door's only env seam — default resolution is the py-identical
-source-file-relative root). POST creates mint INDEPENDENT ids per
-server, so create pins compare modulo (draft_id, createdAt) while
-every other pin is byte-equal.
+Single TS boot on ONE fixture root (built, then served directly —
+never copied for a twin; minted ids differ per boot by construction,
+so create pins compare shape + field-equality while every stable
+pin is bytes against the frozen goldens in
+golden_ts/test_gateway_drafts_parity/, causes.md there).
 
-KNOWN divergences (asserted as shape, never bytes):
+TS cites: packages/gateway/src/doors/drafts.ts (the door),
+python/editor_runs.py 818-1204 (file semantics),
+python/run_wire.py 151-170 (birth gate).
+
+ORACLE DEATH 2026-09-08: re-derived TS-ONLY from the dual-serve
+py-vs-TS parity wall per the operator order "we do not need parity,
+we need to migrate, not keep the old machinery". The retired py
+serving oracle is deleted, so every py leg is REMOVED (never
+weakened): dual()/dual_shape() died with it; TS-vs-literal legs
+stand alone; py-bytes-vs-ts-bytes legs without literals freeze the
+TS current bytes as goldens (stability: captured twice from fresh
+boots, byte-identical — see causes.md). No leg compares TS against
+TS (tautological) or against the deleted oracle.
+
+KNOWN shape-only pins (asserted as status+code+prefix, never bytes):
   - bad-JSON error TEXT embeds the host JSON parser's message
-    (CPython JSONDecodeError vs V8 SyntaxError) — status 400 +
-    code bad_json + "bad JSON: " prefix must agree.
+    (V8 SyntaxError) — status 400 + code bad_json + "bad JSON: "
+    prefix must hold.
   - corrupt-on-disk GET text embeds the host parser's message —
-    status 500 + "draft corrupt on disk: " prefix must agree (the
-    FIXED "not an object" variant IS byte-equal).
-  - minted draft_ids / createdAt differ per server by construction —
-    shape (regex, int, %1000, recency) + modulo-content must agree.
-  - invalid-UTF-8 bodies: py raises UnicodeDecodeError (500-class);
-    TS decodes lossy. Untested — nobody sends invalid UTF-8.
-  - a directory named <id>.json: py's open-then-read raises into the
-    traceback-500; TS rethrows into the server 500 catch. Both 500,
-    texts differ. Untested.
-  - lone-surrogate strings persist lossy on TS (replacement char)
-    vs py's write-time raise (traceback-500). Untested.
-  - integer-like object keys keep insertion order on py but ascend
-    numerically on JS. Untested (fixtures use string keys).
+    status 500 + "draft corrupt on disk: " prefix must hold (the
+    FIXED "not an object" variant IS byte-pinned via golden).
+  - minted draft_ids / createdAt differ per boot by construction —
+    shape (regex, int, %1000, recency) + field-equality pins.
+  - DELETE / method-mismatch 404 envelopes echo the request path —
+    status + code no_such_route + "no such route" prefix pins.
+  - invalid-UTF-8 bodies: TS decodes lossy. Untested — nobody sends
+    invalid UTF-8.
+  - a directory named <id>.json: TS rethrows into the server 500
+    catch. Untested.
+  - lone-surrogate strings persist lossy on TS (replacement char).
+    Untested.
+  - integer-like object keys ascend numerically on JS. Untested
+    (fixtures use string keys).
 
 Run: python3 tests/walls/suites/test_gateway_drafts_parity.py
+
+Date: 2026-09-08. Status: landed (oracle-death re-derivation).
 """
 
 import json
 import os
 import re
 import shutil
-import subprocess
 import sys
 import tempfile
 import threading
@@ -66,7 +76,8 @@ sys.dont_write_bytecode = True
 PASS = FAIL = 0
 TOKEN = "drafts-parity-token-%d" % os.getpid()
 
-TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
+GOLDEN_DIR = (REPO / "tests" / "walls" / "suites" / "golden_ts" /
+              "test_gateway_drafts_parity")
 
 DRAFT_ID_RE = re.compile(r"^draft-[0-9a-f]+-[0-9a-f]+-[0-9a-f]+$")
 
@@ -76,6 +87,10 @@ def check(name: str, ok: bool, note: str = "") -> None:
     print("  %-4s %s%s" % ("ok" if ok else "FAIL", name,
                            (" — " + note) if (note and not ok) else ""))
     PASS, FAIL = PASS + (1 if ok else 0), FAIL + (0 if ok else 1)
+
+
+def golden(name: str) -> bytes:
+    return (GOLDEN_DIR / name).read_bytes()
 
 
 def http(port: int, path: str, method: str = "GET",
@@ -98,76 +113,53 @@ def http(port: int, path: str, method: str = "GET",
         return (None, b"", {"transport": str(e)})
 
 
-def dual(py_port: int, ts_port: int, path: str, name: str,
-         method: str = "GET", body: bytes = b"",
-         ctype: str = "application/json") -> tuple[bytes, bytes]:
-    """One dual-served shape: status + body bytes + content-type."""
-    ps, pb, ph = http(py_port, path, method, body, None, ctype)
-    ts, tb, th = http(ts_port, path, method, body, None, ctype)
-    if ps is None or ts is None:
-        check(name, False, "transport py=%r ts=%r" % (pb[:80], tb[:80]))
-        return pb, tb
-    ok = (ps == ts and pb == tb
-          and ph.get("content-type", "").split(";")[0]
-          == th.get("content-type", "").split(";")[0])
+def get(port: int, path: str, name: str,
+        method: str = "GET", body: bytes = b"",
+        ctype: str = "application/json") -> tuple[int | None, bytes]:
+    """One TS-served shape: transport-checked (status, body bytes)."""
+    st, bd, _ = http(port, path, method, body, None, ctype)
+    if st is None:
+        check(name, False, "transport %r" % (bd[:80],))
+    return st, bd
+
+
+def check_golden(name: str, actual: bytes, golden_name: str) -> None:
+    """Bytes must equal the frozen TS golden (see causes.md)."""
+    try:
+        want = golden(golden_name)
+    except OSError as e:
+        check(name, False, "golden unreadable: %s" % e)
+        return
+    ok = actual == want
     note = ""
     if not ok:
-        note = ("status %r/%r py %dB ts %dB pct %r/%r"
-                % (ts, ps, len(pb), len(tb),
-                   th.get("content-type"), ph.get("content-type")))
-        for i, (a, b) in enumerate(zip(pb, tb)):
+        note = "got %dB want %dB" % (len(actual), len(want))
+        for i, (a, b) in enumerate(zip(actual, want)):
             if a != b:
-                note += " first-div @%d py=%r ts=%r" % (i, pb[i - 20:i + 40],
-                                                       tb[i - 20:i + 40])
+                note += " first-div @%d got=%r want=%r" % (
+                    i, actual[i - 20:i + 40], want[i - 20:i + 40])
                 break
         else:
-            if len(pb) != len(tb):
+            if len(actual) != len(want):
                 note += " len-div"
     check(name, ok, note)
-    return pb, tb
 
 
-def dual_shape(py_port: int, ts_port: int, path: str, name: str,
-               method: str = "GET", body: bytes = b"",
-               want_status: int = 0,
-               err_prefix: str = "", want_code: str | None = "") -> None:
-    """Shape compare for host-parser-text divergences (bad JSON,
-    corrupt disk): status + code + error prefix must agree. Pass
-    want_code=None when the envelope must carry NO code (500s —
-    normalize4xx is 4xx-only on both)."""
-    ps, pb, _ = http(py_port, path, method, body)
-    ts, tb, _ = http(ts_port, path, method, body)
+def check_shape(name: str, body: bytes, want_status: int,
+                err_prefix: str, want_code: str | None,
+                status: int | None) -> None:
+    """Shape pin for host-parser-text bodies (bad JSON, corrupt disk):
+    status + code + error prefix. Pass want_code=None when the
+    envelope must carry NO code (500s — normalize4xx is 4xx-only)."""
     try:
-        pj, tj = json.loads(pb), json.loads(tb)
+        doc = json.loads(body)
     except ValueError:
-        pj = tj = None
-    ok = (ps == ts == want_status
-          and isinstance(pj, dict) and isinstance(tj, dict)
-          and str(pj.get("error", "")).startswith(err_prefix)
-          and str(tj.get("error", "")).startswith(err_prefix)
-          and pj.get("code") == tj.get("code") == want_code)
-    check(name, ok, "st %r/%r py=%r ts=%r"
-          % (ts, ps, pb[:90], tb[:90]))
-
-
-def boot_ts(env: dict) -> tuple[int, "subprocess.Popen[str]"]:
-    node = shutil.which("node")
-    if node is None:
-        raise RuntimeError("node not on PATH")
-    proc = subprocess.Popen(
-        [node, "--experimental-strip-types", str(TS_SERVER)],
-        cwd=str(REPO), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-        text=True, start_new_session=True, env=env)
-    assert proc.stdout is not None
-    deadline = time.time() + 25
-    while time.time() < deadline:
-        line = proc.stdout.readline()
-        if line.startswith("READY "):
-            return int(line.split()[1]), proc
-        if proc.poll() is not None:
-            raise RuntimeError("ts server exited rc=%d" % proc.returncode)
-    proc.terminate()
-    raise RuntimeError("ts server did not print READY")
+        doc = None
+    ok = (status == want_status
+          and isinstance(doc, dict)
+          and str(doc.get("error", "")).startswith(err_prefix)
+          and doc.get("code") == want_code)
+    check(name, ok, "st %r body=%r" % (status, body[:90]))
 
 
 def sync_mtimes(drafts: Path, base: int = 1700000000) -> None:
@@ -211,8 +203,8 @@ def build_fixture(drafts: Path) -> None:
     for did, doc in docs.items():
         (drafts / (did + ".json")).write_text(
             json.dumps(doc, ensure_ascii=False), encoding="utf-8")
-    # Non-canonical number literals (py normalizes load->dump: 1.00
-    # wires as "1.0", 1e2 as "100.0" — the float-fidelity pins).
+    # Non-canonical number literals (the door normalizes load->dump:
+    # 1.00 wires as "1.0", 1e2 as "100.0" — the float-fidelity pins).
     (drafts / "seed-float.json").write_text(
         '{"draft_id":"seed-float","model":"m","name":"F",'
         '"n":1.00,"e":1e2,"deep":{"x":[2.50,-0.0]},'
@@ -233,95 +225,150 @@ def doc_bytes(doc: object) -> bytes:
     return json.dumps(doc).encode()
 
 
-def py_ts_create(port: int, doc: object,
-                 ctype: str = "application/json") -> tuple[int | None, dict]:
+def ts_create(port: int, doc: object,
+              ctype: str = "application/json") -> tuple[int | None, dict]:
     st, body, _ = http(port, "/v1/flows/drafts", "POST", doc_bytes(doc),
                        None, ctype)
     try:
-        return st, json.loads(body)
+        parsed = json.loads(body)
+        return st, parsed if isinstance(parsed, dict) else {}
     except ValueError:
         return st, {}
 
 
 def main() -> int:
     base = None
-    py_proc = ts_proc = None
+    ts_proc = None
     try:
         base = Path(tempfile.mkdtemp(prefix="wall-drafts-"))
         build_fixture(base / "drafts")
-        py_root = base / "py-root"
         ts_root = base / "ts-root"
-        shutil.copytree(str(base / "drafts"), str(py_root / "drafts"))
         shutil.copytree(str(base / "drafts"), str(ts_root / "drafts"))
 
-        py_env = dict(os.environ)
-        py_env["MELITE_STATE_ROOT"] = str(py_root)
-        py_env.pop("DSH_GATEWAY_TOKEN", None)
-        try:
-            py_port, py_proc = boot_scratch_gateway(env=py_env)
-        except RuntimeError as e:
-            print("FATAL: %s" % e)
-            return 1
         ts_env = dict(os.environ)
         ts_env["MELITE_STATE_ROOT"] = str(ts_root)
         ts_env.pop("DSH_GATEWAY_TOKEN", None)
         try:
-            ts_port, ts_proc = boot_ts(ts_env)
+            ts_port, ts_proc = boot_scratch_gateway(env=ts_env)
         except RuntimeError as e:
             print("FATAL: %s" % e)
             return 1
-        print("py :%d vs ts :%d (root %s)" % (py_port, ts_port, base))
+        print("ts :%d (root %s)" % (ts_port, base))
 
-        # ── 1. GET one: byte-equal incl. unicode + float pins ──
-        pb, tb = dual(py_port, ts_port, "/v1/flows/drafts/seed-alpha",
-                      "GET seed-alpha (unicode/float/bigint pins)")
-        dual(py_port, ts_port, "/v1/flows/drafts/seed-alpha/",
-             "GET trailing slash normalizes")
-        dual(py_port, ts_port, "/v1/flows/drafts/seed-alpha?x=1&y=2",
-             "GET query string ignored")
-        check("wire ensure_ascii escapes",
-              b"caf\\u00e9 \\u2713" in pb and b"caf\\u00e9 \\u2713" in tb
-              and "café".encode() not in pb and "café".encode() not in tb)
-        check("wire float 1.0 verbatim + bigint exact",
-              b'"score": 1.0' in pb and b'"score": 1.0' in tb
-              and b'"big": 9007199254740993' in pb
-              and b'"big": 9007199254740993' in tb)
-        pb, _ = dual(py_port, ts_port, "/v1/flows/drafts/seed-float",
-                     "GET non-canonical literals normalize (1.00/1e2/2.50/-0.0)")
-        check("float normalization content",
-              b'"n": 1.0' in pb and b'"e": 100.0' in pb
-              and b'"x": [\n      2.5,\n      -0.0' in pb)
-        dual(py_port, ts_port, "/v1/flows/drafts/seed-beta",
-             "GET seed-beta")
-        dual(py_port, ts_port, "/v1/flows/drafts/nope",
-             "GET missing 404 shape")
+        # ── 1. GET one: goldens incl. unicode + float pins ──
+        st, bd = get(ts_port, "/v1/flows/drafts/seed-alpha",
+                     "GET seed-alpha transport")
+        if st is not None:
+            check("GET seed-alpha 200", st == 200, "st=%r" % st)
+            check_golden("GET seed-alpha bytes (unicode/float/bigint)",
+                         bd, "get-seed-alpha.json")
+            check("wire ensure_ascii escapes",
+                  b"caf\\u00e9 \\u2713" in bd
+                  and "café".encode() not in bd)
+            check("wire float 1.0 verbatim + bigint exact",
+                  b'"score": 1.0' in bd
+                  and b'"big": 9007199254740993' in bd)
+        st, bd = get(ts_port, "/v1/flows/drafts/seed-alpha/",
+                     "GET trailing slash transport")
+        if st is not None:
+            check("GET trailing slash normalizes (200 + same bytes)",
+                  st == 200 and bd == golden("get-seed-alpha.json"),
+                  "st=%r %dB" % (st, len(bd)))
+        st, bd = get(ts_port, "/v1/flows/drafts/seed-alpha?x=1&y=2",
+                     "GET query transport")
+        if st is not None:
+            check("GET query string ignored (200 + same bytes)",
+                  st == 200 and bd == golden("get-seed-alpha.json"),
+                  "st=%r %dB" % (st, len(bd)))
+        st, bd = get(ts_port, "/v1/flows/drafts/seed-float",
+                     "GET seed-float transport")
+        if st is not None:
+            check("GET seed-float 200", st == 200, "st=%r" % st)
+            check_golden("GET non-canonical literals normalize "
+                         "(1.00/1e2/2.50/-0.0)", bd, "get-seed-float.json")
+            check("float normalization content",
+                  b'"n": 1.0' in bd and b'"e": 100.0' in bd
+                  and b'"x": [\n      2.5,\n      -0.0' in bd)
+        st, bd = get(ts_port, "/v1/flows/drafts/seed-beta",
+                     "GET seed-beta transport")
+        if st is not None:
+            check("GET seed-beta 200", st == 200, "st=%r" % st)
+            check_golden("GET seed-beta bytes", bd, "get-seed-beta.json")
+        st, bd = get(ts_port, "/v1/flows/drafts/nope",
+                     "GET missing transport")
+        if st is not None:
+            try:
+                doc = json.loads(bd)
+            except ValueError:
+                doc = None
+            check("GET missing 404 shape",
+                  st == 404
+                  and doc == {"error": "draft not found",
+                              "code": "invalid_request"},
+                  "st=%r body=%r" % (st, bd[:90]))
 
-        # ── 2. hostile ids: traversal + malformed → 400 both ──
+        # ── 2. hostile ids: traversal + malformed → 400 ──
         for bad in ("../x", "a/b", "..%2f..%2fx", "%2e%2e/x", "a%2Fb",
                     "x" * 97, "a%20b", "caf%C3%A9", "a+b"):
-            dual(py_port, ts_port, "/v1/flows/drafts/%s" % bad,
-                 "GET hostile %r 400" % bad)
-        dual(py_port, ts_port, "/v1/flows/drafts/%2e%2e%2fseed-alpha",
-             "GET encoded traversal 400")
+            st, bd = get(ts_port, "/v1/flows/drafts/%s" % bad,
+                         "GET hostile %r transport" % bad)
+            if st is not None:
+                try:
+                    doc = json.loads(bd)
+                except ValueError:
+                    doc = None
+                check("GET hostile %r 400" % bad,
+                      st == 400
+                      and doc == {"error": "bad id",
+                                  "code": "invalid_request"},
+                      "st=%r body=%r" % (st, bd[:90]))
+        st, bd = get(ts_port, "/v1/flows/drafts/%2e%2e%2fseed-alpha",
+                     "GET encoded traversal transport")
+        if st is not None:
+            try:
+                doc = json.loads(bd)
+            except ValueError:
+                doc = None
+            check("GET encoded traversal 400",
+                  st == 400
+                  and doc == {"error": "bad id",
+                              "code": "invalid_request"},
+                  "st=%r body=%r" % (st, bd[:90]))
 
         # ── 3. corrupt / non-object files ──
-        dual_shape(py_port, ts_port, "/v1/flows/drafts/corrupt",
-                   "GET corrupt 500 (parser text differs — prefix only)",
-                   want_status=500, err_prefix="draft corrupt on disk: ",
-                   want_code=None)
-        # (500s carry no code — normalize4xx is 4xx-only on both.)
-        dual(py_port, ts_port, "/v1/flows/drafts/arr",
-             "GET array doc 500 not-an-object")
-        dual(py_port, ts_port, "/v1/flows/drafts/num",
-             "GET scalar doc 500 not-an-object")
-        dual(py_port, ts_port, "/v1/flows/drafts/str",
-             "GET string doc 500 not-an-object")
+        st, bd = get(ts_port, "/v1/flows/drafts/corrupt",
+                     "GET corrupt transport")
+        if st is not None:
+            check_shape("GET corrupt 500 (parser text differs — "
+                        "prefix only)", bd, 500,
+                        "draft corrupt on disk: ", None, st)
+            # (500s carry no code — normalize4xx is 4xx-only.)
+        for did in ("arr", "num", "str"):
+            st, bd = get(ts_port, "/v1/flows/drafts/%s" % did,
+                         "GET %s transport" % did)
+            if st is not None:
+                check("GET %s doc 500" % did, st == 500, "st=%r" % st)
+                check_golden("GET %s doc 500 not-an-object" % did, bd,
+                             "get-nonobject.json")
 
-        # ── 4. LIST: byte-equal + envelope semantics ──
-        pb, tb = dual(py_port, ts_port, "/v1/flows/drafts", "GET list")
-        dual(py_port, ts_port, "/v1/flows/drafts/", "GET list trailing slash")
-        dual(py_port, ts_port, "/v1/flows/drafts?x=1", "GET list query ignored")
-        env = json.loads(pb)
+        # ── 4. LIST: golden bytes + envelope semantics ──
+        st, bd = get(ts_port, "/v1/flows/drafts", "GET list transport")
+        if st is not None:
+            check("GET list 200", st == 200, "st=%r" % st)
+            check_golden("GET list bytes", bd, "list.json")
+        st2, bd2 = get(ts_port, "/v1/flows/drafts/",
+                       "GET list trailing slash transport")
+        if st2 is not None:
+            check("GET list trailing slash (200 + same bytes)",
+                  st2 == 200 and bd2 == golden("list.json"),
+                  "st=%r %dB" % (st2, len(bd2)))
+        st3, bd3 = get(ts_port, "/v1/flows/drafts?x=1",
+                       "GET list query transport")
+        if st3 is not None:
+            check("GET list query ignored (200 + same bytes)",
+                  st3 == 200 and bd3 == golden("list.json"),
+                  "st=%r %dB" % (st3, len(bd3)))
+        env = json.loads(bd)
         # sync_mtimes stamps sorted-name order, so newest-first is the
         # reverse: x, str, seed-num, seed-gamma, seed-float,
         # seed-empty, seed-beta, seed-alpha, num, corrupt, arr
@@ -345,140 +392,151 @@ def main() -> int:
               and env.get("drafts") == want_rows,
               "count=%r rows=%r" % (env.get("count"), env.get("drafts")))
 
-        # ── 5. CREATE lifecycle (modulo id/createdAt) ──
-        created: list[tuple[str, str]] = []  # (py_id, ts_id)
+        # ── 5. CREATE lifecycle (minted id/createdAt shape) ──
+        created_ids: list[str] = []
         body = {"intent": "hello w\u00f6rld \u2713",
                 "stages": [{"card": "c", "params": {"temp": 1.5}}],
                 "extra": {"n": [1, "x", 2.0]},
                 "status": "HACK", "draft_id": "HACK", "createdAt": 1,
                 "completedAt": 2}
-        pst, pj = py_ts_create(py_port, body)
-        tst, tj = py_ts_create(ts_port, body)
-        id_ok = (pst == tst == 200
-                 and bool(DRAFT_ID_RE.match(pj.get("draftId", "")))
-                 and bool(DRAFT_ID_RE.match(tj.get("draftId", "")))
-                 and pj.get("draftId") != tj.get("draftId"))
-        stages_ok = pj.get("stages") == tj.get("stages") == [
+        tst, tj = ts_create(ts_port, body)
+        id_ok = (tst == 200
+                 and bool(DRAFT_ID_RE.match(tj.get("draftId", ""))))
+        stages_ok = tj.get("stages") == [
             {"id": "s_0", "card": "c", "params": {"temp": 1.5},
              "inputs": [""], "provenance": "agent"}]
         now_ms = int(time.time() * 1000)
         check("POST create 200 + minted-id shape + stages echo",
-              id_ok and stages_ok, "py=%r ts=%r" % (pj, tj)[:200])
+              id_ok and stages_ok, "ts=%r" % (tj,)[:200])
         # createdAt lives on disk (the response carries no createdAt).
-        py_doc = json.loads((py_root / "drafts"
-                             / (pj["draftId"] + ".json")).read_bytes())
         ts_doc = json.loads((ts_root / "drafts"
                              / (tj["draftId"] + ".json")).read_bytes())
         disk_ok = (
-            py_doc.get("draft_id") == pj["draftId"]
-            and ts_doc.get("draft_id") == tj["draftId"]
-            and list(py_doc) == list(ts_doc)
+            ts_doc.get("draft_id") == tj["draftId"]
+            and list(ts_doc)
             == ["draft_id", "intent", "stages", "status",
                 "createdAt", "completedAt", "extra"]
-            and py_doc["status"] == ts_doc["status"] == "ready"
-            and py_doc["completedAt"] is ts_doc["completedAt"] is None
-            and all(isinstance(d["createdAt"], int)
-                    and d["createdAt"] % 1000 == 0
-                    and abs(now_ms - d["createdAt"]) < 120000
-                    for d in (py_doc, ts_doc))
-            and {k: v for k, v in py_doc.items()
-                 if k not in ("draft_id", "createdAt")}
-            == {k: v for k, v in ts_doc.items()
-                if k not in ("draft_id", "createdAt")})
-        check("staged files match modulo id/createdAt (+order, +composer-owned)",
-              disk_ok)
-        raw_py = (py_root / "drafts" / (pj["draftId"] + ".json")).read_bytes()
+            and ts_doc["status"] == "ready"
+            and ts_doc["completedAt"] is None
+            and isinstance(ts_doc["createdAt"], int)
+            and ts_doc["createdAt"] % 1000 == 0
+            and abs(now_ms - ts_doc["createdAt"]) < 120000
+            and ts_doc["intent"] == "hello w\u00f6rld \u2713"
+            and ts_doc["stages"] == [
+                {"id": "s_0", "card": "c", "params": {"temp": 1.5},
+                 "inputs": [""], "provenance": "agent"}]
+            and ts_doc["extra"] == {"n": [1, "x", 2.0]})
+        check("staged file pins order + composer-owned fields "
+              "(status ready, completedAt null, createdAt shape, "
+              "HACK fields refused)", disk_ok)
         raw_ts = (ts_root / "drafts" / (tj["draftId"] + ".json")).read_bytes()
         check("staged bytes compact + raw UTF-8 (ensure_ascii=False)",
-              raw_py.startswith(b'{"draft_id":"')
-              and "w\u00f6rld \u2713".encode() in raw_py
+              raw_ts.startswith(b'{"draft_id":"')
               and "w\u00f6rld \u2713".encode() in raw_ts
-              and b"\n" not in raw_py and b"\n" not in raw_ts
-              and b", " not in raw_py)
-        # Modulo-normalized raw compare (ids + timestamps blanked).
-        norm = (lambda b, did, cat: b.replace(did.encode(), b"ID")
-                .replace(str(cat).encode(), b"TS"))
-        check("staged raw bytes equal modulo id/createdAt",
-              norm(raw_py, pj["draftId"], py_doc["createdAt"])
-              == norm(raw_ts, tj["draftId"], ts_doc["createdAt"]))
-        created.append((pj["draftId"], tj["draftId"]))
-        # GET-back modulo compare.
-        _, pb, _ = http(py_port, "/v1/flows/drafts/" + pj["draftId"])
-        _, tb, _ = http(ts_port, "/v1/flows/drafts/" + tj["draftId"])
-        check("GET-back equal modulo id/createdAt",
-              norm(pb, pj["draftId"], py_doc["createdAt"])
-              == norm(tb, tj["draftId"], ts_doc["createdAt"]))
-        sync_mtimes(py_root / "drafts")
+              and b"\n" not in raw_ts
+              and b", " not in raw_ts)
+        created_ids.append(tj["draftId"])
+        # GET-back pins the served doc field-by-field.
+        st, bd, _ = http(ts_port, "/v1/flows/drafts/" + tj["draftId"])
+        try:
+            back = json.loads(bd)
+        except ValueError:
+            back = None
+        check("GET-back serves the staged doc",
+              st == 200 and isinstance(back, dict)
+              and back.get("draft_id") == tj["draftId"]
+              and back.get("intent") == "hello w\u00f6rld \u2713"
+              and back.get("stages") == ts_doc["stages"]
+              and back.get("createdAt") == ts_doc["createdAt"],
+              "st=%r" % (st,))
         sync_mtimes(ts_root / "drafts")
 
-        # calls-unwrap pins (response stages compare, parsed).
-        for nm, stages in (
-                ("calls string unwraps", [{"calls": "[1,2]", "id": "k"}]),
-                ("bad calls string kept", [{"calls": "nope"}]),
-                ("nested calls unwraps", [{"sub": {"calls": "[3]"}}]),
-                ("calls inside a list untouched",
-                 [{"items": [{"calls": "[3]"}]}]),
-                ("non-dict stages become birth rows", [None, 5, "x"]),
-                ("present-but-empty id kept (drift, see §7)",
-                 [{"id": "", "inputs": [], "provenance": "p"}])):
-            pst, pj = py_ts_create(py_port, {"stages": stages})
-            tst, tj = py_ts_create(ts_port, {"stages": stages})
-            if nm.startswith("present-but-empty"):
-                check(nm + " → 500 drift both",
-                      pst == tst == 500 and pj == tj,
-                      "st %r/%r" % (tst, pst))
-            else:
-                check(nm, pst == tst == 200
-                      and pj.get("stages") == tj.get("stages"),
-                      "st %r/%r py=%r ts=%r"
-                      % (tst, pst, pj.get("stages"), tj.get("stages")))
-        sync_mtimes(py_root / "drafts")
+        # calls-unwrap pins (response stages pinned as literals).
+        unwrap_cases = [
+            ("calls string unwraps", [{"calls": "[1,2]", "id": "k"}],
+             [{"calls": [1, 2], "id": "k",
+               "inputs": [""], "provenance": "agent"}]),
+            ("bad calls string kept", [{"calls": "nope"}],
+             [{"id": "s_0", "calls": "nope",
+               "inputs": [""], "provenance": "agent"}]),
+            ("nested calls unwraps", [{"sub": {"calls": "[3]"}}],
+             [{"id": "s_0", "sub": {"calls": [3]},
+               "inputs": [""], "provenance": "agent"}]),
+            ("calls inside a list untouched",
+             [{"items": [{"calls": "[3]"}]}],
+             [{"id": "s_0", "items": [{"calls": "[3]"}],
+               "inputs": [""], "provenance": "agent"}]),
+            ("non-dict stages become birth rows", [None, 5, "x"],
+             [{"id": "s_0", "inputs": [""],
+               "provenance": "agent"},
+              {"id": "s_1", "inputs": [""],
+               "provenance": "agent"},
+              {"id": "s_2", "inputs": [""],
+               "provenance": "agent"}]),
+        ]
+        for nm, stages, want_stages in unwrap_cases:
+            cst, cj = ts_create(ts_port, {"stages": stages})
+            check(nm, cst == 200 and cj.get("stages") == want_stages,
+                  "st %r stages=%r" % (cst, cj.get("stages")))
+        cst, cj = ts_create(ts_port, {"stages": [{"id": "",
+                                                 "inputs": [],
+                                                 "provenance": "p"}]})
+        cst_body = json.dumps(cj).encode()
+        check("present-but-empty id kept → 500 drift",
+              cst == 500
+              and "draft composer drift" in json.dumps(cj)
+              and "https://errors.pydantic.dev/2.13/" in json.dumps(cj),
+              "st %r" % (cst,))
         sync_mtimes(ts_root / "drafts")
 
         # ── 6. empty / non-dict / bad-JSON create refusals ──
-        # (py truthiness gate: falsy bodies 400, every truthy body —
-        # even non-dict scalars/lists — composes and 200s. Refusals
-        # are byte-equal; creates carry independent ids, so those
-        # compare by status + parsed stages only.)
+        # (the truthiness gate: falsy bodies 400 with the empty-body
+        # literal, every truthy body — even non-dict scalars/lists —
+        # composes and 200s with empty stages.)
+        empty_body = {"error": "empty body", "code": "invalid_request"}
         for doc, wst in (({}, 400), ([1, 2], 200), (5, 200), (0, 400),
                          ("0", 400), ("hi", 400), ("false", 400),
                          ("null", 400)):
             raw = doc_bytes(doc)
-            if wst == 400:
-                dual(py_port, ts_port, "/v1/flows/drafts",
-                     "POST %r → 400" % (doc,), "POST", raw)
-            ps, pb, _ = http(py_port, "/v1/flows/drafts", "POST", raw)
-            ts, tb, _ = http(ts_port, "/v1/flows/drafts", "POST", raw)
-            ok = ps == ts == wst
+            st, bd, _ = http(ts_port, "/v1/flows/drafts", "POST", raw)
+            ok = st == wst
             if ok and wst == 200:
                 try:
-                    ok = (json.loads(pb).get("stages")
-                          == json.loads(tb).get("stages") == [])
+                    ok = json.loads(bd).get("stages") == []
                 except ValueError:
                     ok = False
-            check("POST %r status %d both" % (doc, wst),
-                  ok, "py=%r ts=%r" % (ps, ts))
-        ps, _, _ = http(py_port, "/v1/flows/drafts", "POST", b"")
-        ts, _, _ = http(ts_port, "/v1/flows/drafts", "POST", b"")
-        check("POST empty body 400 both", ps == ts == 400)
-        dual_shape(py_port, ts_port, "/v1/flows/drafts",
-                   "POST bad JSON shape (code, not parser text)",
-                   "POST", b"{nope", 400, "bad JSON: ", "bad_json")
-        # content-type is never consulted (py ignores it too).
-        pst, pj = py_ts_create(py_port, {"intent": "ct"})
-        tst, tj = py_ts_create(ts_port, {"intent": "ct"}, "text/plain")
+            elif ok:
+                try:
+                    ok = json.loads(bd) == empty_body
+                except ValueError:
+                    ok = False
+            check("POST %r status %d + body pin" % (doc, wst),
+                  ok, "st=%r body=%r" % (st, bd[:80]))
+        st, bd, _ = http(ts_port, "/v1/flows/drafts", "POST", b"")
+        try:
+            doc = json.loads(bd)
+        except ValueError:
+            doc = None
+        check("POST empty body 400", st == 400 and doc == empty_body,
+              "st=%r body=%r" % (st, bd[:80]))
+        st, bd = get(ts_port, "/v1/flows/drafts", "POST bad JSON shape",
+                     "POST", b"{nope")
+        if st is not None:
+            check_shape("POST bad JSON shape (code, not parser text)",
+                        bd, 400, "bad JSON: ", "bad_json", st)
+        # content-type is never consulted (ignored, not refused).
+        cst, cj = ts_create(ts_port, {"intent": "ct"}, "text/plain")
         check("wrong content-type still 200 (ignored, not refused)",
-              pst == tst == 200 and tj.get("stages") == [],
-              "st %r/%r" % (tst, pst))
-        sync_mtimes(py_root / "drafts")
+              cst == 200 and cj.get("stages") == [],
+              "st %r" % (cst,))
         sync_mtimes(ts_root / "drafts")
 
-        # ── 7. composer-drift 500s: pydantic-EXACT bytes ──
+        # ── 7. composer-drift 500s: pydantic-EXACT goldens ──
         # (only PRESENT-but-invalid stage values reach the gate —
         # the composer HEALS absent keys/non-dict rows/non-list
-        # stages with birth defaults first, so those 200 on both;
-        # the healed pins compare parsed stages, the drift pins are
-        # byte-equal down to the pydantic text.)
+        # stages with birth defaults first, so those 200; the
+        # healed pins compare parsed stages, the drift pins are
+        # byte-goldens down to the pydantic text.)
         healed = [
             ("empty stage triple heals",
              {"stages": [{}]},
@@ -496,274 +554,460 @@ def main() -> int:
                "provenance": "agent"}]),
         ]
         for nm, doc, want_stages in healed:
-            pst, pj = py_ts_create(py_port, doc)
-            tst, tj = py_ts_create(ts_port, doc)
+            cst, cj = ts_create(ts_port, doc)
             check("POST healed: %s" % nm,
-                  pst == tst == 200
-                  and pj.get("stages") == tj.get("stages") == want_stages,
-                  "st %r/%r" % (tst, pst))
+                  cst == 200 and cj.get("stages") == want_stages,
+                  "st %r" % (cst,))
         drift_docs = [
-            ("empty id", {"stages": [{"id": ""}]}),
-            ("null id", {"stages": [{"id": None}]}),
-            ("int id", {"stages": [{"id": 5}]}),
-            ("empty provenance", {"stages": [{"id": "s_0",
-                                              "inputs": [""],
-                                              "provenance": ""}]}),
-            ("null provenance", {"stages": [{"id": "s_0",
-                                             "inputs": [""],
-                                             "provenance": None}]}),
-            ("inputs string", {"stages": [{"id": "s_0", "inputs": "x",
-                                           "provenance": "agent"}]}),
-            ("inputs null", {"stages": [{"id": "s_0", "inputs": None,
-                                         "provenance": "agent"}]}),
-            ("quoted input_value repr",
+            ("empty id", "drift-empty-id",
+             {"stages": [{"id": ""}]}),
+            ("null id", "drift-null-id",
+             {"stages": [{"id": None}]}),
+            ("int id", "drift-int-id",
+             {"stages": [{"id": 5}]}),
+            ("empty provenance", "drift-empty-provenance",
+             {"stages": [{"id": "s_0", "inputs": [""],
+                          "provenance": ""}]}),
+            ("null provenance", "drift-null-provenance",
+             {"stages": [{"id": "s_0", "inputs": [""],
+                          "provenance": None}]}),
+            ("inputs string", "drift-inputs-string",
+             {"stages": [{"id": "s_0", "inputs": "x",
+                          "provenance": "agent"}]}),
+            ("inputs null", "drift-inputs-null",
+             {"stages": [{"id": "s_0", "inputs": None,
+                          "provenance": "agent"}]}),
+            ("quoted input_value repr", "drift-quoted-input-value",
              {"stages": [{"id": "s_0", "inputs": "x'y",
                           "provenance": "agent"}]}),
-            ("multi item errors",
+            ("multi item errors", "drift-multi-item-errors",
              {"stages": [{"id": "s_0", "inputs": [1, 2],
                           "provenance": "agent"}]}),
-            ("null item", {"stages": [{"id": "s_0", "inputs": [None],
-                                       "provenance": "agent"}]}),
-            ("nested dict item",
+            ("null item", "drift-null-item",
+             {"stages": [{"id": "s_0", "inputs": [None],
+                          "provenance": "agent"}]}),
+            ("nested dict item", "drift-nested-dict-item",
              {"stages": [{"id": "s_0", "inputs": [{"a": 1}],
                           "provenance": "agent"}]}),
-            ("triple failure incl bool/float",
+            ("triple failure incl bool/float", "drift-triple-failure",
              {"stages": [{"id": ["x"], "inputs": {"a": 1},
                           "provenance": 3}]}),
             ("first failing stage reports",
+             "drift-first-failing-stage",
              {"stages": [{"id": "fine", "inputs": ["a"],
                           "provenance": "p"},
                          {"id": 1}]}),
         ]
-        for nm, doc in drift_docs:
-            pb, tb = dual(py_port, ts_port, "/v1/flows/drafts",
-                          "POST drift: %s" % nm, "POST", doc_bytes(doc))
-            if b"2.13" not in pb or b"2.13" not in tb:
-                check("POST drift %s pins pydantic 2.13 URL" % nm, False)
-        check("drift bodies refuse as 500 without a code",
-              json.loads(pb).get("code", "KEEP") == "KEEP")
+        for nm, gold, doc in drift_docs:
+            st, bd, _ = http(ts_port, "/v1/flows/drafts", "POST",
+                             doc_bytes(doc))
+            check("POST drift: %s 500" % nm, st == 500, "st=%r" % st)
+            check_golden("POST drift: %s pydantic-exact bytes" % nm,
+                         bd, gold + ".json")
+            check("POST drift %s pins pydantic 2.13 URL" % nm,
+                  b"https://errors.pydantic.dev/2.13/" in bd)
+            try:
+                derr = json.loads(bd)
+            except ValueError:
+                derr = None
+            check("POST drift %s refuses without a code" % nm,
+                  isinstance(derr, dict) and "code" not in derr,
+                  "body=%r" % (bd[:80],))
 
         # ── 8. PATCH lifecycle on the seeded alpha ──
         patch = {"result": {"y": 2}, "runStatus": "done",
                  "params": {"b": 3}, "inputs": ["i"],
                  "inputOutputs": [["o"]]}
-        pb, tb = dual(py_port, ts_port,
-                      "/v1/flows/drafts/seed-alpha/stages/s_0",
-                      "PATCH full merge", "PATCH", doc_bytes(patch))
+        st, bd, _ = http(ts_port,
+                         "/v1/flows/drafts/seed-alpha/stages/s_0",
+                         "PATCH", doc_bytes(patch))
+        check("PATCH full merge 200", st == 200, "st=%r" % st)
+        check_golden("PATCH full merge bytes", bd, "patch-full.json")
+        try:
+            pdoc = json.loads(bd)
+        except ValueError:
+            pdoc = None
         check("patch delivered:true + sorted patched keys",
-              json.loads(pb).get("patched")
+              isinstance(pdoc, dict)
+              and pdoc.get("patched")
               == ["inputOutputs", "inputs", "params", "result", "runStatus"])
-        py_f = (py_root / "drafts" / "seed-alpha.json").read_bytes()
         ts_f = (ts_root / "drafts" / "seed-alpha.json").read_bytes()
-        check("patched FILES byte-equal (merge + atomic rewrite)",
-              py_f == ts_f, "py %dB ts %dB" % (len(py_f), len(ts_f)))
+        check_golden("patched FILE bytes (merge + atomic rewrite)",
+                     ts_f, "patched-seed-alpha.json")
         check("params merged shallow, result replaced",
-              b'"params":{"a":1,"b":3}' in py_f
-              and b'"result":{"y":2}' in py_f
-              and b'"runStatus":"done"' in py_f)
+              b'"params":{"a":1,"b":3}' in ts_f
+              and b'"result":{"y":2}' in ts_f
+              and b'"runStatus":"done"' in ts_f)
         # GET-result round-trip.
-        dual(py_port, ts_port,
-             "/v1/flows/drafts/seed-alpha/stages/s_0/result",
-             "GET result found:true")
+        st, bd = get(ts_port,
+                     "/v1/flows/drafts/seed-alpha/stages/s_0/result",
+                     "GET result transport")
+        if st is not None:
+            check("GET result found:true 200", st == 200, "st=%r" % st)
+            check_golden("GET result found:true bytes", bd,
+                         "result-found.json")
         # Params-only merge on s_1 (no prior params → fresh object).
-        dual(py_port, ts_port,
-             "/v1/flows/drafts/seed-alpha/stages/s_1",
-             "PATCH params-only", "PATCH",
-             doc_bytes({"params": {"fresh": True}}))
-        py_f = (py_root / "drafts" / "seed-alpha.json").read_bytes()
-        check("params-only merge lands (key appended, files equal)",
-              b'"provenance":"agent","params":{"fresh":true}' in py_f
-              and (ts_root / "drafts" / "seed-alpha.json").read_bytes()
-              == py_f)
+        st, bd, _ = http(ts_port,
+                         "/v1/flows/drafts/seed-alpha/stages/s_1",
+                         "PATCH", doc_bytes({"params": {"fresh": True}}))
+        try:
+            pdoc = json.loads(bd)
+        except ValueError:
+            pdoc = None
+        check("PATCH params-only 200 + delivered",
+              st == 200 and isinstance(pdoc, dict)
+              and pdoc.get("delivered") is True
+              and pdoc.get("patched") == ["params"],
+              "st=%r body=%r" % (st, bd[:120]))
+        ts_f = (ts_root / "drafts" / "seed-alpha.json").read_bytes()
+        check("params-only merge lands (key appended)",
+              b'"provenance":"agent","params":{"fresh":true}' in ts_f)
         # Empty patch: delivered with patched [].
-        dual(py_port, ts_port,
-             "/v1/flows/drafts/seed-alpha/stages/s_1",
-             "PATCH empty object", "PATCH", b"{}")
+        st, bd, _ = http(ts_port,
+                         "/v1/flows/drafts/seed-alpha/stages/s_1",
+                         "PATCH", b"{}")
+        try:
+            pdoc = json.loads(bd)
+        except ValueError:
+            pdoc = None
+        check("PATCH empty object delivers with patched []",
+              st == 200 and isinstance(pdoc, dict)
+              and pdoc == {"draftId": "seed-alpha", "stageId": "s_1",
+                           "delivered": True, "patched": []},
+              "st=%r body=%r" % (st, bd[:120]))
         # result:null refuses (None is not a dict).
-        dual(py_port, ts_port,
-             "/v1/flows/drafts/seed-alpha/stages/s_1",
-             "PATCH result null 400", "PATCH",
-             doc_bytes({"result": None}))
-        sync_mtimes(py_root / "drafts")
+        st, bd, _ = http(ts_port,
+                         "/v1/flows/drafts/seed-alpha/stages/s_1",
+                         "PATCH", doc_bytes({"result": None}))
+        try:
+            pdoc = json.loads(bd)
+        except ValueError:
+            pdoc = None
+        check("PATCH result null 400",
+              st == 400
+              and pdoc == {"error": "stage patch 'result' must be dict",
+                           "code": "invalid_request"},
+              "st=%r body=%r" % (st, bd[:120]))
         sync_mtimes(ts_root / "drafts")
 
-        # ── 9. PATCH refusals (byte-equal) ──
-        for nm, body in (
-                ("unknown keys sorted in text",
-                 {"zzz": 1, "aaa": 2}),
-                ("result must be dict", {"result": [1]}),
-                ("runStatus must be str", {"runStatus": 5}),
-                ("params must be dict", {"params": [1]}),
-                ("inputs must be list", {"inputs": {}}),
-                ("inputOutputs must be list", {"inputOutputs": "s"}),
-                ("non-object body (list)", [1]),
-                ("non-object body (string)", "x"),
-                ("non-object body (scalar)", 5),
-                ("non-object body (null)", None),
-        ):
-            dual(py_port, ts_port,
-                 "/v1/flows/drafts/seed-alpha/stages/s_0",
-                 "PATCH %s" % nm, "PATCH", doc_bytes(body))
-        dual_shape(py_port, ts_port,
-                   "/v1/flows/drafts/seed-alpha/stages/s_0",
-                   "PATCH bad JSON shape", "PATCH", b"{nope",
-                   400, "bad JSON: ", "bad_json")
-        dual(py_port, ts_port, "/v1/flows/drafts/bad%20id/stages/s_0",
-             "PATCH bad draft id 400", "PATCH", doc_bytes({"result": {}}))
-        dual(py_port, ts_port, "/v1/flows/drafts/nope/stages/s_0",
-             "PATCH missing draft reconciles 200", "PATCH",
-             doc_bytes({"result": {}}))
-        dual(py_port, ts_port, "/v1/flows/drafts/seed-alpha/stages/nosuch",
-             "PATCH missing stage reconciles 200", "PATCH",
-             doc_bytes({"result": {}}))
-        dual(py_port, ts_port,
-             "/v1/flows/drafts/seed-alpha/stages/%s" % ("a" * 129),
-             "PATCH overlong stage reconciles 200", "PATCH",
-             doc_bytes({"result": {}}))
-        dual(py_port, ts_port,
-             "/v1/flows/drafts/seed-alpha/stages/..",
-             "PATCH dotdot stage reconciles 200", "PATCH",
-             doc_bytes({"result": {}}))
-        dual(py_port, ts_port,
-             "/v1/flows/drafts/corrupt/stages/s_0",
-             "PATCH corrupt disk 500", "PATCH",
-             doc_bytes({"result": {}}))
-        dual(py_port, ts_port,
-             "/v1/flows/drafts/seed-alpha/stages/a/b",
-             "PATCH slashed stage falls to 404", "PATCH",
-             doc_bytes({"result": {}}))
-        dual(py_port, ts_port,
-             "/v1/flows/drafts/../x/stages/s_0",
-             "PATCH traversal draft id 404-or-400 parity", "PATCH",
-             doc_bytes({"result": {}}))
+        # ── 9. PATCH refusals ──
+        refusal_cases = [
+            ("unknown keys sorted in text",
+             {"zzz": 1, "aaa": 2},
+             {"error": "unknown stage patch key(s): aaa, zzz "
+                       "(want result, runStatus, params, inputs, "
+                       "inputOutputs)",
+              "code": "invalid_request"}),
+            ("result must be dict", {"result": [1]},
+             {"error": "stage patch 'result' must be dict",
+              "code": "invalid_request"}),
+            ("runStatus must be str", {"runStatus": 5},
+             {"error": "stage patch 'runStatus' must be str",
+              "code": "invalid_request"}),
+            ("params must be dict", {"params": [1]},
+             {"error": "stage patch 'params' must be dict",
+              "code": "invalid_request"}),
+            ("inputs must be list", {"inputs": {}},
+             {"error": "stage patch 'inputs' must be list",
+              "code": "invalid_request"}),
+            ("inputOutputs must be list", {"inputOutputs": "s"},
+             {"error": "stage patch 'inputOutputs' must be list",
+              "code": "invalid_request"}),
+            ("non-object body (list)", [1],
+             {"error": "patch body must be an object",
+              "code": "invalid_request"}),
+            ("non-object body (string)", "x",
+             {"error": "patch body must be an object",
+              "code": "invalid_request"}),
+            ("non-object body (scalar)", 5,
+             {"error": "patch body must be an object",
+              "code": "invalid_request"}),
+            ("non-object body (null)", None,
+             {"error": "patch body must be an object",
+              "code": "invalid_request"}),
+        ]
+        for nm, body, want in refusal_cases:
+            st, bd, _ = http(ts_port,
+                             "/v1/flows/drafts/seed-alpha/stages/s_0",
+                             "PATCH", doc_bytes(body))
+            try:
+                pdoc = json.loads(bd)
+            except ValueError:
+                pdoc = None
+            check("PATCH %s" % nm, st == 400 and pdoc == want,
+                  "st=%r body=%r" % (st, bd[:120]))
+        st, bd = get(ts_port, "/v1/flows/drafts/seed-alpha/stages/s_0",
+                     "PATCH bad JSON shape", "PATCH", b"{nope")
+        if st is not None:
+            check_shape("PATCH bad JSON shape", bd, 400, "bad JSON: ",
+                        "bad_json", st)
+        st, bd, _ = http(ts_port, "/v1/flows/drafts/bad%20id/stages/s_0",
+                         "PATCH", doc_bytes({"result": {}}))
+        try:
+            pdoc = json.loads(bd)
+        except ValueError:
+            pdoc = None
+        check("PATCH bad draft id 400",
+              st == 400
+              and pdoc == {"error": "bad id", "code": "invalid_request"},
+              "st=%r body=%r" % (st, bd[:90]))
+        st, bd, _ = http(ts_port, "/v1/flows/drafts/nope/stages/s_0",
+                         "PATCH", doc_bytes({"result": {}}))
+        try:
+            pdoc = json.loads(bd)
+        except ValueError:
+            pdoc = None
+        check("PATCH missing draft reconciles 200",
+              st == 200
+              and pdoc == {"draftId": "nope", "stageId": "s_0",
+                           "delivered": False,
+                           "reason": "draft not found"},
+              "st=%r body=%r" % (st, bd[:120]))
+        st, bd, _ = http(ts_port,
+                         "/v1/flows/drafts/seed-alpha/stages/nosuch",
+                         "PATCH", doc_bytes({"result": {}}))
+        try:
+            pdoc = json.loads(bd)
+        except ValueError:
+            pdoc = None
+        check("PATCH missing stage reconciles 200",
+              st == 200
+              and pdoc == {"draftId": "seed-alpha", "stageId": "nosuch",
+                           "delivered": False,
+                           "reason": "stage not found"},
+              "st=%r body=%r" % (st, bd[:120]))
+        over = "a" * 129
+        st, bd, _ = http(ts_port,
+                         "/v1/flows/drafts/seed-alpha/stages/%s" % over,
+                         "PATCH", doc_bytes({"result": {}}))
+        try:
+            pdoc = json.loads(bd)
+        except ValueError:
+            pdoc = None
+        check("PATCH overlong stage reconciles 200",
+              st == 200
+              and pdoc == {"draftId": "seed-alpha", "stageId": over,
+                           "delivered": False,
+                           "reason": "stage not found"},
+              "st=%r" % (st,))
+        st, bd, _ = http(ts_port,
+                         "/v1/flows/drafts/seed-alpha/stages/..",
+                         "PATCH", doc_bytes({"result": {}}))
+        try:
+            pdoc = json.loads(bd)
+        except ValueError:
+            pdoc = None
+        check("PATCH dotdot stage reconciles 200",
+              st == 200
+              and pdoc == {"draftId": "seed-alpha", "stageId": "..",
+                           "delivered": False,
+                           "reason": "stage not found"},
+              "st=%r body=%r" % (st, bd[:120]))
+        st, bd, _ = http(ts_port, "/v1/flows/drafts/corrupt/stages/s_0",
+                         "PATCH", doc_bytes({"result": {}}))
+        try:
+            pdoc = json.loads(bd)
+        except ValueError:
+            pdoc = None
+        check("PATCH corrupt disk 500",
+              st == 500 and pdoc == {"error": "draft corrupt on disk"},
+              "st=%r body=%r" % (st, bd[:90]))
+        st, bd, _ = http(ts_port,
+                         "/v1/flows/drafts/seed-alpha/stages/a/b",
+                         "PATCH", doc_bytes({"result": {}}))
+        try:
+            pdoc = json.loads(bd)
+        except ValueError:
+            pdoc = None
+        check("PATCH slashed stage falls to 404",
+              st == 404
+              and isinstance(pdoc, dict)
+              and pdoc.get("code") == "no_such_route"
+              and str(pdoc.get("error", "")).startswith("no such route"),
+              "st=%r body=%r" % (st, bd[:120]))
+        st, bd, _ = http(ts_port, "/v1/flows/drafts/../x/stages/s_0",
+                         "PATCH", doc_bytes({"result": {}}))
+        try:
+            pdoc = json.loads(bd)
+        except ValueError:
+            pdoc = None
+        check("PATCH traversal draft id 404",
+              st == 404
+              and isinstance(pdoc, dict)
+              and pdoc.get("code") == "no_such_route"
+              and str(pdoc.get("error", "")).startswith("no such route"),
+              "st=%r body=%r" % (st, bd[:120]))
         check("no .tmp survivors after patches",
-              not [f for f in os.listdir(py_root / "drafts")
-                   if f.endswith(".tmp")]
-              and not [f for f in os.listdir(ts_root / "drafts")
-                       if f.endswith(".tmp")])
+              not [f for f in os.listdir(ts_root / "drafts")
+                   if f.endswith(".tmp")])
 
-        # ── 10. RESULT reads (byte-equal) ──
-        dual(py_port, ts_port,
-             "/v1/flows/drafts/seed-alpha/stages/s_1/result",
-             "GET result missing-result found:false")
-        dual(py_port, ts_port, "/v1/flows/drafts/nope/stages/s_0/result",
-             "GET result missing draft found:false")
-        dual(py_port, ts_port,
-             "/v1/flows/drafts/seed-alpha/stages/nosuch/result",
-             "GET result missing stage found:false")
-        dual(py_port, ts_port, "/v1/flows/drafts/corrupt/stages/s_0/result",
-             "GET result corrupt found:false (NOT the get 500)")
-        dual(py_port, ts_port, "/v1/flows/drafts/arr/stages/s_0/result",
-             "GET result array-doc found:false")
-        dual(py_port, ts_port, "/v1/flows/drafts/bad%20id/stages/s_0/result",
-             "GET result bad id 400")
+        # ── 10. RESULT reads ──
+        st, bd = get(ts_port,
+                     "/v1/flows/drafts/seed-alpha/stages/s_1/result",
+                     "GET result missing transport")
+        if st is not None:
+            check("GET result missing-result 200", st == 200, "st=%r" % st)
+            check_golden("GET result missing-result found:false", bd,
+                         "result-missing.json")
+        for path, nm in (
+                ("/v1/flows/drafts/nope/stages/s_0/result",
+                 "missing draft"),
+                ("/v1/flows/drafts/seed-alpha/stages/nosuch/result",
+                 "missing stage"),
+                ("/v1/flows/drafts/corrupt/stages/s_0/result",
+                 "corrupt (NOT the get 500)"),
+                ("/v1/flows/drafts/arr/stages/s_0/result",
+                 "array-doc")):
+            st, bd = get(ts_port, path, "GET result %s transport" % nm)
+            if st is not None:
+                check("GET result %s found:false" % nm, st == 200,
+                      "st=%r" % st)
+                check_golden("GET result %s bytes" % nm, bd,
+                             "result-missing.json")
+        st, bd = get(ts_port, "/v1/flows/drafts/bad%20id/stages/s_0/result",
+                     "GET result bad id transport")
+        if st is not None:
+            try:
+                doc = json.loads(bd)
+            except ValueError:
+                doc = None
+            check("GET result bad id 400",
+                  st == 400
+                  and doc == {"error": "bad id",
+                              "code": "invalid_request"},
+                  "st=%r body=%r" % (st, bd[:90]))
         # Non-dict persisted result reads found:false.
-        for root in (py_root, ts_root):
-            (root / "drafts" / "nd.json").write_text(
-                json.dumps({"draft_id": "nd",
-                            "stages": [{"id": "s_0", "result": [1]}]}))
-        sync_mtimes(py_root / "drafts")
+        (ts_root / "drafts" / "nd.json").write_text(
+            json.dumps({"draft_id": "nd",
+                        "stages": [{"id": "s_0", "result": [1]}]}))
         sync_mtimes(ts_root / "drafts")
-        dual(py_port, ts_port, "/v1/flows/drafts/nd/stages/s_0/result",
-             "GET result non-dict found:false")
+        st, bd = get(ts_port, "/v1/flows/drafts/nd/stages/s_0/result",
+                     "GET result non-dict transport")
+        if st is not None:
+            check("GET result non-dict 200", st == 200, "st=%r" % st)
+            check_golden("GET result non-dict found:false", bd,
+                         "result-missing.json")
 
-        # ── 11. DELETE + method mismatches (404 parity) ──
-        pid = created[0][0]
-        tid = created[0][1]
-        dual(py_port, ts_port, "/v1/flows/drafts/%s" % pid,
-             "DELETE unwired 404 (py twin id %s)" % tid[:18],
-             "DELETE")
-        # (same path, other id — byte shapes must still agree modulo
-        # the echoed id, so compare parsed envelopes structurally.)
-        ps, pb, _ = http(py_port, "/v1/flows/drafts/%s" % pid, "DELETE")
-        ts, tb, _ = http(ts_port, "/v1/flows/drafts/%s" % tid, "DELETE")
-        pj, tj = json.loads(pb), json.loads(tb)
-        check("DELETE envelopes match modulo id",
-              ps == ts == 404
-              and pj.get("code") == tj.get("code") == "no_such_route"
-              and pj.get("error", "").replace(pid, "ID")
-              == tj.get("error", "").replace(tid, "ID"))
+        # ── 11. DELETE + method mismatches (404s) ──
+        tid = created_ids[0]
+        st, bd, _ = http(ts_port, "/v1/flows/drafts/%s" % tid, "DELETE")
+        try:
+            ddoc = json.loads(bd)
+        except ValueError:
+            ddoc = None
+        check("DELETE unwired 404",
+              st == 404
+              and ddoc == {"error": "no such route DELETE "
+                                    "/v1/flows/drafts/%s" % tid,
+                           "code": "no_such_route"},
+              "st=%r body=%r" % (st, bd[:120]))
         for m, p in (("PUT", "/v1/flows/drafts"),
                      ("PATCH", "/v1/flows/drafts"),
                      ("POST", "/v1/flows/drafts/seed-alpha"),
                      ("POST", "/v1/flows/drafts/seed-alpha/stages/s_0/result"),
-                     ("DELETE", "/v1/flows/drafts"),
-                     ("GET", "/v1/flows/drafts/seed-alpha/stages/s_0")):
-            dual(py_port, ts_port, p, "%s %s 404" % (m, p), m,
-                 doc_bytes({}) if m in ("POST", "PATCH", "PUT") else b"")
+                     ("DELETE", "/v1/flows/drafts")):
+            st, bd, _ = http(ts_port, p, m,
+                             doc_bytes({}) if m in ("POST", "PATCH", "PUT")
+                             else b"")
+            try:
+                mdoc = json.loads(bd)
+            except ValueError:
+                mdoc = None
+            check("%s %s 404" % (m, p),
+                  st == 404
+                  and isinstance(mdoc, dict)
+                  and mdoc.get("code") == "no_such_route"
+                  and str(mdoc.get("error", "")).startswith(
+                      "no such route %s %s" % (m, p)),
+                  "st=%r body=%r" % (st, bd[:120]))
+        # GET on a stage path (no such GET route): the slashed id
+        # fails id validation → 400 bad id, not the router 404.
+        for spath in ("/v1/flows/drafts/seed-alpha/stages/s_0",
+                      "/v1/flows/drafts/seed-alpha/stages/s_1"):
+            st, bd = get(ts_port, spath, "GET stage path transport")
+            if st is not None:
+                try:
+                    doc = json.loads(bd)
+                except ValueError:
+                    doc = None
+                check("GET %s 400 bad id" % spath,
+                      st == 400
+                      and doc == {"error": "bad id",
+                                  "code": "invalid_request"},
+                      "st=%r body=%r" % (st, bd[:90]))
 
-        # ── 12. list after mutations: counts + row multisets ──
-        sync_mtimes(py_root / "drafts")
+        # ── 12. list after mutations: count + row multiset ──
         sync_mtimes(ts_root / "drafts")
-        _, pb, _ = http(py_port, "/v1/flows/drafts")
-        _, tb, _ = http(ts_port, "/v1/flows/drafts")
-        pj, tj = json.loads(pb), json.loads(tb)
+        st, bd, _ = http(ts_port, "/v1/flows/drafts")
+        tj = json.loads(bd)
         strip = (lambda e: sorted((r["model"], r["name"])
-                                 for r in e["drafts"]))
-        check("post-mutation lists agree (count + row multiset)",
-              pj["count"] == tj["count"] and strip(pj) == strip(tj),
-              "counts %r/%r" % (tj.get("count"), pj.get("count")))
+                                  for r in e["drafts"]))
+        # 11 seeded + 13 staged creates (§5 main + 5 unwraps + 3
+        # truthy-body + 4 healed) + nd (§10) = 25 rows; minted rows
+        # without intent read ("", ""), while the list name falls
+        # back to intent (main create + ct).
+        want_multiset = sorted(
+            [("m", ""), ("", ""), ("", ""), ("", "T1"), ("m", "F"),
+             ("m", "E"), ("svc9", "WantX"), ("anny", "café ✓"),
+             ("", ""), ("", ""), ("", "")] + [("", "")] * 12
+            + [("", "hello wörld ✓"), ("", "ct")])
+        check("post-mutation list count + row multiset",
+              st == 200 and tj["count"] == 25
+              and strip(tj) == want_multiset,
+              "st=%r count=%r rows=%r"
+              % (st, tj.get("count"), strip(tj)))
 
         # ── 13. concurrent creates: N parallel 200s, distinct ids ──
-        for port, root, tag in ((py_port, py_root, "python"),
-                               (ts_port, ts_root, "ts")):
-            before = set(os.listdir(root / "drafts"))
-            ids: list[str] = []
-            lock = threading.Lock()
+        before = set(os.listdir(ts_root / "drafts"))
+        pre_count = tj["count"]
+        ids: list[str] = []
+        lock = threading.Lock()
 
-            def one(_: int) -> None:
-                st, doc = py_ts_create(port, {"intent": "race"})
-                with lock:
-                    ids.append(doc.get("draftId", ""))
+        def one(_: int) -> None:
+            cst, cdoc = ts_create(ts_port, {"intent": "race"})
+            with lock:
+                ids.append(cdoc.get("draftId", "") if cst == 200 else "")
 
-            ths = [threading.Thread(target=one, args=(i,)) for i in range(12)]
-            [t.start() for t in ths]
-            [t.join(timeout=60) for t in ths]
-            after = set(os.listdir(root / "drafts"))
-            check("%s 12 parallel creates: 200s + distinct ids + 12 files"
-                  % tag,
-                  len(ids) == 12 and len(set(ids)) == 12
-                  and all(DRAFT_ID_RE.match(i) for i in ids)
-                  and len(after - before) == 12,
-                  "ids=%d files+%d" % (len(set(ids)), len(after - before)))
-        # py create is a PLAIN write (editor_runs.py 988, no
-        # tmp+rename/O_EXCL): safe here only via distinct minted ids —
-        # parity is "both accept", never atomicity py lacks.
-        sync_mtimes(py_root / "drafts")
+        ths = [threading.Thread(target=one, args=(i,)) for i in range(12)]
+        [t.start() for t in ths]
+        [t.join(timeout=60) for t in ths]
+        after = set(os.listdir(ts_root / "drafts"))
+        check("ts 12 parallel creates: 200s + distinct ids + 12 files",
+              len(ids) == 12 and len(set(ids)) == 12
+              and all(DRAFT_ID_RE.match(i) for i in ids)
+              and len(after - before) == 12,
+              "ids=%d files+%d" % (len(set(ids)), len(after - before)))
+        # (create is safe here only via distinct minted ids — parity
+        # was "accept", never atomicity; keeper note python/editor_runs.py
+        # 988: a plain write, no tmp+rename/O_EXCL.)
         sync_mtimes(ts_root / "drafts")
-        _, pb, _ = http(py_port, "/v1/flows/drafts")
-        _, tb, _ = http(ts_port, "/v1/flows/drafts")
-        check("post-race list counts agree",
-              json.loads(pb)["count"] == json.loads(tb)["count"])
+        st, bd, _ = http(ts_port, "/v1/flows/drafts")
+        check("post-race list count grows by 12",
+              st == 200 and json.loads(bd)["count"] == pre_count + 12,
+              "count=%r want=%r" % (json.loads(bd).get("count"),
+                                    pre_count + 12))
 
         # ── 14. nothing staged outside drafts/ ──
-        # (gateway.lock + output/_ledger.jsonl are the scratch py
-        # boot's own artifacts — owned by tests/_bootstrap.py, not
-        # the doors — so they are allowlisted, never flagged.)
+        # (gateway.lock + output/_ledger.jsonl are the scratch boot's
+        # own artifacts — owned by tests/_bootstrap.py, not the
+        # doors — so they are allowlisted, never flagged.)
         escaped = []
-        for root in (py_root, ts_root):
-            for dirpath, _ds, fs in os.walk(root):
-                for f in fs:
-                    rel = os.path.relpath(os.path.join(dirpath, f), root)
-                    if rel.startswith("drafts" + os.sep):
-                        continue
-                    if rel in ("gateway.lock",
-                               "output" + os.sep + "_ledger.jsonl"):
-                        continue
-                    escaped.append(rel)
+        for dirpath, _ds, fs in os.walk(ts_root):
+            for f in fs:
+                rel = os.path.relpath(os.path.join(dirpath, f), ts_root)
+                if rel.startswith("drafts" + os.sep):
+                    continue
+                if rel in ("gateway.lock",
+                           "output" + os.sep + "_ledger.jsonl"):
+                    continue
+                escaped.append(rel)
         check("no file outside drafts/", escaped == [], repr(escaped[:3]))
 
-        # ── 15. auth parity (reboot BOTH with the token) ──
-        reap_gateway(py_proc)
-        ts_proc.terminate()
-        try:
-            ts_proc.wait(timeout=15)
-        except subprocess.TimeoutExpired:
-            ts_proc.kill()
-        py_env["DSH_GATEWAY_TOKEN"] = TOKEN
-        py_port, py_proc = boot_scratch_gateway(env=py_env)
+        # ── 15. auth (reboot TS ONLY with the token) ──
+        reap_gateway(ts_proc)
+        ts_proc = None
         ts_env["DSH_GATEWAY_TOKEN"] = TOKEN
-        ts_port, ts_proc = boot_ts(ts_env)
+        ts_port, ts_proc = boot_scratch_gateway(env=ts_env)
         want_401 = json.dumps({
             "error": "unauthorized: missing or invalid bearer token "
                      "(Authorization: Bearer <token>; set DSH_GATEWAY_TOKEN "
@@ -779,38 +1023,30 @@ def main() -> int:
                              (TOKEN + "-x", "bad token")):
                 hdrs = {} if auth is None else {"Authorization": "Bearer "
                                                               + auth}
-                ps, pb, _ = http(py_port, path, method, body, hdrs)
-                ts, tb, _ = http(ts_port, path, method, body, hdrs)
+                st, bd, _ = http(ts_port, path, method, body, hdrs)
                 check("%s %s %s → 401 shape" % (method, path, nm),
-                      ps == ts == 401 and pb == tb == want_401,
-                      "st %r/%r" % (ts, ps))
-        # Query tokens do NOT count on the HTTP path (_adapt passes ""
-        # as query_token — header-only, both).
-        ps, pb, _ = http(py_port, "/v1/flows/drafts?token=" + TOKEN)
-        ts, tb, _ = http(ts_port, "/v1/flows/drafts?token=" + TOKEN)
-        check("query token refused both",
-              ps == ts == 401 and pb == tb == want_401)
-        ps, _, _ = http(py_port, "/v1/health")
-        ts, _, _ = http(ts_port, "/v1/health")
-        check("health exempt without token", ps == ts == 200)
+                      st == 401 and bd == want_401,
+                      "st %r" % (st,))
+        # Query tokens do NOT count on the HTTP path (header-only).
+        st, bd, _ = http(ts_port, "/v1/flows/drafts?token=" + TOKEN)
+        check("query token refused", st == 401 and bd == want_401)
+        st, _, _ = http(ts_port, "/v1/health")
+        check("health exempt without token", st == 200)
         ok200 = True
         for path in ("/v1/flows/drafts", "/v1/flows/drafts/seed-alpha"):
-            ps, _, _ = http(py_port, path, "GET", b"",
+            st, _, _ = http(ts_port, path, "GET", b"",
                             {"Authorization": "Bearer " + TOKEN})
-            ts, _, _ = http(ts_port, path, "GET", b"",
-                            {"Authorization": "Bearer " + TOKEN})
-            ok200 = ok200 and ps == ts == 200
-        check("bearer 200s both", ok200)
+            ok200 = ok200 and st == 200
+        check("bearer 200s", ok200)
     finally:
-        for proc in (py_proc, ts_proc):
-            if proc is not None:
+        if ts_proc is not None:
+            try:
+                reap_gateway(ts_proc)
+            except Exception:
                 try:
-                    reap_gateway(proc)
+                    ts_proc.terminate()
                 except Exception:
-                    try:
-                        proc.terminate()
-                    except Exception:
-                        pass
+                    pass
         if base is not None:
             shutil.rmtree(base, ignore_errors=True)
 

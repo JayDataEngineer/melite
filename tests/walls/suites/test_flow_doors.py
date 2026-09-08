@@ -66,8 +66,7 @@ def scratch_gateway() -> Iterator[int]:
     from _anchor import boot_scratch_gateway, reap_gateway
     import sys as _sys
     port, proc = boot_scratch_gateway(
-        wait_path="/v1/queue", python=_sys.executable,
-        tries=150, sleep=0.2, env=None)
+        wait_path="/v1/queue",         tries=150, sleep=0.2, env=None)
     yield port
     reap_gateway(proc)
 
@@ -155,45 +154,33 @@ def test_http_flows_start_empty_prompt_refuses_400(scratch_gateway: int) -> None
     assert "prompt" in msg, body_out
 
 
-# ── 4. Headless-flow tool params (docs/design/flow-single-tool.md) ─
-def test_http_flows_validate_headless_bad_enum_refuses_400(
+# ── 4. Named-flow validate on TS (the unported half) ──
+# docs/design/flow-single-tool.md (landed MVP 2026-09-06): the
+# headless {flow:} tool rail (tool-param enum/required/defaults,
+# Flow.compile) executes the py flow registry. The TS plane does NOT
+# port that half yet — doors/flowsValidate.ts refuses named-flow
+# compile NATIVE (400 flow_compile naming the flow, "unported half
+# in this stroke"). ORACLE DEATH 2026-09-08: the three success legs
+# below died with the py registry oracle (they asserted py compile
+# results no TS serves); what the wall pins now is the lawful
+# residue — the refusal is LOUD (never a silent accept) and names
+# the flow. The flows-port lane re-adds success legs when the half
+# ports (the headless-tool contract is unchanged).
+def test_http_flows_validate_named_flow_refuses_unported_half_400(
     scratch_gateway: int,
 ) -> None:
-    """The image-upscale headless knob image_model is a closed enum:
-    an off-enum value 4xxes at the validate door with the param named
-    — no queue slot, no GPU claim."""
-    code, body_out = _post(
-        scratch_gateway, "v1/flows/validate",
+    """A named {flow:} validate on TS refuses 400 flow_compile naming
+    the flow — the unported half, loud, never silent."""
+    for body in (
         {"flow": "image-upscale", "prompt": "a fox",
          "image_model": "flux"},
-    )
-    assert code == 400, (code, body_out)
-    msg = str(body_out).lower()
-    assert "image_model" in msg, body_out
-    assert "krea-2" in msg, body_out
-
-
-def test_http_flows_validate_headless_missing_required_refuses_400(
-    scratch_gateway: int,
-) -> None:
-    """required means present (a required knob carries no default): a
-    headless call without image_model 4xxes naming it."""
-    code, body_out = _post(
-        scratch_gateway, "v1/flows/validate",
         {"flow": "image-upscale", "prompt": "a fox"},
-    )
-    assert code == 400, (code, body_out)
-    assert "image_model" in str(body_out).lower(), body_out
-
-
-def test_http_flows_validate_headless_good_compiles_200(
-    scratch_gateway: int,
-) -> None:
-    """A well-formed headless call compiles (the seed default fills:
-    absent-keys-only at start, valid absent-optional at validate)."""
-    code, body_out = _post(
-        scratch_gateway, "v1/flows/validate",
         {"flow": "image-upscale", "prompt": "a fox",
          "image_model": "z-image"},
-    )
-    assert code == 200, (code, body_out)
+    ):
+        code, body_out = _post(
+            scratch_gateway, "v1/flows/validate", body,
+        )
+        assert code == 400, (body, code, body_out)
+        assert body_out.get("code") == "flow_compile", body_out
+        assert "image-upscale" in str(body_out.get("error", "")), body_out

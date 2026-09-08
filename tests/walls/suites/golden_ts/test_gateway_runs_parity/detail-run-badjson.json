@@ -1,0 +1,12 @@
+{
+  "run_id": "run-badjson",
+  "status": "unknown",
+  "state": "unknown",
+  "error": "",
+  "created": 0,
+  "durationSec": 0,
+  "restored_from_sidecar": true,
+  "artifacts": [],
+  "stages": [],
+  "draft_id": ""
+}

@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"ace-step-base\",\n  \"family\": \"ace-step-base\",\n  \"genre\": \"audio\",\n  \"label\": \"ACE-Step 1.5 Base Q8\",\n  \"description\": \"ACE-Step 1.5 base q8 music generation\",\n  \"source\": {\n    \"type\": \"huggingface\",\n    \"repo_id\": \"audio-cpp/audio.cpp-gguf\",\n    \"filename\": \"ACE-Step1.5-GGUF\"\n  },\n  \"defaults\": {\n    \"backend\": \"cuda\"\n  },\n  \"engine\": \"audio_cpp\",\n  \"form\": \"form_music\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

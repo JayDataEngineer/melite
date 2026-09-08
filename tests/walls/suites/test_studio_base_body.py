@@ -17,6 +17,17 @@ Pins the stroke end to end:
      viewport="none".
 
 No GPU, no network — rows, route registration, and source text.
+
+ORACLE DEATH 2026-09-08 (operator order verbatim: "we do not need
+parity, we need to migrate, not keep the old machinery"): the door
+legs used to read the retired py serving stack's source text. They
+now read the TS source of truth — the authored wire table
+(packages/gateway/src/routes.ts, the template row) plus the TS door
+implementation (packages/gateway/src/doors/studios.ts, the generic
+tenant lookup + loud 404s) — following
+tests/walls/suites/test_routes_mirror.py.
+
+Date: 2026-09-08. Status: landed (oracle-death re-derivation).
 """
 
 import os
@@ -28,7 +39,10 @@ from _anchor import REPO
 ANNY_MODEL_PY = os.path.join(
     REPO, "packages", "engines", "comfyui", "models", "3d", "anny",
     "model.py")
-GATEWAY_PY = os.path.join(REPO, "python", "gateway.py")
+ROUTES_TS = os.path.join(
+    REPO, "packages", "gateway", "src", "routes.ts")
+STUDIOS_TS = os.path.join(
+    REPO, "packages", "gateway", "src", "doors", "studios.ts")
 ANNY_TSX = os.path.join(
     REPO, "packages", "engines", "comfyui", "action_cards", "3d",
     "anny", "ui", "studio", "component.tsx")
@@ -85,20 +99,24 @@ def test_base_body_non_string_refuses() -> None:
 
 # ── 2. door ──────────────────────────────────────────────────────
 
-def _gateway_src() -> str:
-    with open(GATEWAY_PY, encoding="utf-8") as f:
+def _routes_src() -> str:
+    with open(ROUTES_TS, encoding="utf-8") as f:
+        return f.read()
+
+
+def _studios_src() -> str:
+    with open(STUDIOS_TS, encoding="utf-8") as f:
         return f.read()
 
 
 def test_base_body_door_registered() -> None:
-    src = _gateway_src()
-    assert "/v1/studios/{tenant}/base-body" in src
-    assert "Studios" in src
+    assert "/v1/studios/{tenant}/base-body" in _routes_src()
+    assert "dispatchStudios" in _studios_src()
 
 
 def test_base_body_door_is_generic_over_tenants() -> None:
-    src = _gateway_src()
-    assert "_studio_family" in src
+    src = _studios_src()
+    assert "ESTATE_TENANTS" in src
     assert "unknown studio tenant" in src
     assert "declares no base body" in src
     assert "is not provisioned" in src

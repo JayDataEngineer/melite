@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"input\",\n  \"family\": \"input\",\n  \"genre\": \"image\",\n  \"label\": \"Input Prep\",\n  \"description\": \"Source intake: attach an image or audio file (upload, asset drop, prior run) \\u2014 staged, optionally transformed, emitted as a media artifact for downstream cards to wire.\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {},\n  \"engine\": \"comfyui\",\n  \"form\": \"form_input\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

@@ -1,0 +1,4 @@
+{
+  "error": "card_compose phase 1: card_compose rc=1 (comfyui.comfyui): bad-params: card 'tagger' refused params: $.threshold expected number but got 0.35",
+  "code": "card_compose"
+}

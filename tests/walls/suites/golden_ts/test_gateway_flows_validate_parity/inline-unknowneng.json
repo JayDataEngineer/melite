@@ -1,0 +1,18 @@
+{
+  "error": "flow 'w' stage 'a': engine 'nope' \u2014 no engine plugin for type 'nope' (no packages/*/engines/*/engine.py or engine.yaml declares it)",
+  "code": "flow_compile",
+  "loc": "flow",
+  "errors": [
+    {
+      "scope": "flow",
+      "error": "flow 'w' stage 'a': engine 'nope' \u2014 no engine plugin for type 'nope' (no packages/*/engines/*/engine.py or engine.yaml declares it)",
+      "code": "flow_compile",
+      "loc": "flow"
+    },
+    {
+      "stage": "a",
+      "error": "flow 'probe' stage 'a': engine 'nope' \u2014 no engine plugin for type 'nope' (no packages/*/engines/*/engine.py or engine.yaml declares it)",
+      "code": "flow_compile"
+    }
+  ]
+}

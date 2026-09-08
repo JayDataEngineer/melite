@@ -1,0 +1,7 @@
+{
+  "error": "draft_id malformed (96 char cap, [A-Za-z0-9_-] only): 'BAD ID!!'",
+  "code": "draft_malformed",
+  "loc": "draft_id",
+  "expected": "[A-Za-z0-9_-]{1,96}",
+  "got": "BAD ID!!"
+}

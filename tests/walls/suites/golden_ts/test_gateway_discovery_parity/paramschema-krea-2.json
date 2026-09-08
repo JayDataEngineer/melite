@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"title\": \"krea-2_Params\",\n  \"type\": \"object\",\n  \"additionalProperties\": false,\n  \"properties\": {\n    \"prompt\": {\n      \"type\": \"string\"\n    },\n    \"negative_prompt\": {\n      \"type\": \"string\",\n      \"default\": \"\"\n    },\n    \"width\": {\n      \"type\": \"number\",\n      \"default\": 1024\n    },\n    \"height\": {\n      \"type\": \"number\",\n      \"default\": 1024\n    },\n    \"seed\": {\n      \"type\": \"number\",\n      \"default\": -1\n    },\n    \"steps\": {\n      \"type\": \"number\",\n      \"default\": 8\n    },\n    \"cfg\": {\n      \"type\": \"number\",\n      \"default\": 4.5\n    },\n    \"sampler\": {\n      \"type\": \"string\",\n      \"default\": \"\"\n    },\n    \"scheduler\": {\n      \"type\": \"string\",\n      \"default\": \"\"\n    },\n    \"loras\": {}\n  },\n  \"required\": []\n}"
+}

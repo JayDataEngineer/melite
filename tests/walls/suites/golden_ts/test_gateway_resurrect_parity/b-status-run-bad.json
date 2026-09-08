@@ -1,0 +1,8 @@
+{
+  "run_id": "run-bad",
+  "status": "failed",
+  "error": "unparseable sidecar",
+  "stages": [],
+  "artifacts": [],
+  "queue_position": 0
+}

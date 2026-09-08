@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"anima\",\n  \"family\": \"anima\",\n  \"genre\": \"image\",\n  \"label\": \"Anima\",\n  \"description\": \"Anime/illustration text-to-image. Cosmos-Predict2 base with Danbooru-style prompting.\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"width\": 1024,\n    \"height\": 1024,\n    \"steps\": 30,\n    \"sampler\": \"er_sde\",\n    \"scheduler\": \"simple\",\n    \"cfg\": 4.0\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_generate\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

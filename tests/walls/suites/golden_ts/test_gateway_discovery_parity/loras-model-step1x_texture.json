@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"model\": \"step1x_texture\",\n  \"loras\": [],\n  \"note\": null,\n  \"meta\": {}\n}"
+}

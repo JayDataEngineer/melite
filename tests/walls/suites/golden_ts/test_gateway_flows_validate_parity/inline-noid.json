@@ -1,0 +1,13 @@
+{
+  "error": "flow body needs at least id and stages \u2014 got keys ['stages']",
+  "code": "flow_compile",
+  "loc": "flow",
+  "errors": [
+    {
+      "scope": "flow",
+      "error": "flow body needs at least id and stages \u2014 got keys ['stages']",
+      "code": "flow_compile",
+      "loc": "flow"
+    }
+  ]
+}

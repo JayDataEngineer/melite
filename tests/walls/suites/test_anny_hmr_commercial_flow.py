@@ -18,11 +18,21 @@ Pins what the commercial lane promises:
      server_url.
 
 No GPU, no network — the schema is the wall (test_flows.py pattern).
+
+ORACLE DEATH 2026-09-08: the §2 door leg drove the py serving
+oracle in-process (resolve_request on {flow:"anny-hmr-commercial"}
+with a staged photo); the oracle is deleted per the operator order
+"we do not need parity, we need to migrate, not keep the old
+machinery". The TS plane does not port named-flow compile yet
+(doors/flowsValidate.ts refuses it 400 flow_compile — see
+test_flow_doors.py §4 unported-half pin), so no TS leg can pin the
+stageable-photo door in this stroke — the leg is removed and
+re-adds on the flows-port lane. What stays: the flow-declared
+shape (loadable, typed edges, pack chain, no hardcoded endpoint)
+and lane separation — all keeper-side.
+
+Date: 2026-09-08. Status: landed (oracle-death wean).
 """
-
-from pathlib import Path
-
-import pytest
 
 import flow as flow_mod
 from flow import Flow, Stage, FromInitial
@@ -77,19 +87,9 @@ def test_commercial_carries_no_hardcoded_endpoint() -> None:
 
 
 # ── 2. door ──────────────────────────────────────────────────────────
-
-def test_commercial_resolves_through_the_flow_door(
-        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    from gateway import resolve_request
-    target = tmp_path / "data" / "input"
-    target.mkdir(parents=True)
-    (target / "p.png").write_bytes(b"\x89PNG\r\n\x1a\n")
-    monkeypatch.chdir(tmp_path)
-    graph = resolve_request({"flow": "anny-hmr-commercial",
-                             "photo": "data/input/p.png"})
-    (node,) = graph.nodes
-    assert node.node_id == "estimate"
-    assert node.node_type == "comfyui"
+# (ORACLE DEATH 2026-09-08: the resolve_request leg lived here —
+# removed with the oracle; see the header. Re-adds on the
+# flows-port lane as a TS-door leg.)
 
 
 # ── 3. lane separation ───────────────────────────────────────────────

@@ -1,0 +1,7 @@
+{
+  "id": "guide:h3",
+  "name": "h3 guide",
+  "description": "base guide",
+  "scope": "guide",
+  "content": "---\nname: h3 guide\ndescription: base guide\n---\n# H3\nBase rules.\n"
+}

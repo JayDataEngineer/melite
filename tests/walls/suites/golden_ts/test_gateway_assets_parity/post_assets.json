@@ -1,0 +1,4 @@
+{
+  "error": "no such route POST /v1/assets",
+  "code": "no_such_route"
+}

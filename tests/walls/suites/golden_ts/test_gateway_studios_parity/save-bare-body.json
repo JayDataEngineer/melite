@@ -1,0 +1,4 @@
+{
+  "error": "dangling preset ref \u2014 body_ref: artifact ref is a bare 'mesh.glb' \u2014 not an absolute path, an artifact URL (/v1/assets/runs/<run>/<file>), or a runs-relative <run>/<file> (a bare filename lives in the ComfyUI input dir and is the caller's staging concern, never a disk lookup)",
+  "code": "invalid_request"
+}

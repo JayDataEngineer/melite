@@ -1,0 +1,4 @@
+{
+  "error": "uploads: malformed data: URL (no comma)",
+  "code": "invalid_request"
+}

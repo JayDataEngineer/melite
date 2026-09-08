@@ -1,0 +1,47 @@
+{
+  "count": 4,
+  "artifacts": 1,
+  "runs": [
+    {
+      "run_id": "run-stray",
+      "name": "",
+      "status": "unknown",
+      "created_at": 0,
+      "test": false,
+      "artifacts": []
+    },
+    {
+      "run_id": "run-d4",
+      "name": "anny",
+      "status": "failed",
+      "created_at": 1699999997,
+      "test": false,
+      "artifacts": []
+    },
+    {
+      "run_id": "run-c3",
+      "name": "krea",
+      "status": "completed",
+      "created_at": 1699999998,
+      "test": false,
+      "artifacts": []
+    },
+    {
+      "run_id": "run-a1",
+      "name": "anny",
+      "status": "completed",
+      "created_at": 1700000000,
+      "test": false,
+      "artifacts": [
+        {
+          "name": "blob.bin",
+          "run_id": "run-a1",
+          "kind": "other",
+          "bytes": 100,
+          "sha256": "2a1b9357d39f48b66d8f3e2a1b952e646bc69a5e655a6dadb944bbe3ca05fb3c",
+          "url": "/v1/assets/runs/run-a1/blob.bin"
+        }
+      ]
+    }
+  ]
+}

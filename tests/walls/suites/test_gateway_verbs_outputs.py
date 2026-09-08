@@ -8,9 +8,22 @@ chips posting flows / the tenant-local preset action) with ZERO TS
 presence (drift item 5). This wall pins their port as DECL DATA —
 packages/gateway/src/schema/verbs.ts (verb → card/params table, the
 door dispatching table-driven) — and pins the card_outputs settle
-gate in the same module (python/gateway.py _output_violation 473-489),
-wired into the TS serve path (doors/flowsRun.ts runOne, no-op
+gate in the same module (TS outputViolation / applyRunContract,
+wired into the TS serve path: doors/flowsRun.ts runOne, no-op
 without card context).
+
+ORACLE DEATH 2026-09-08 (operator order verbatim: "we do not need
+parity, we need to migrate, not keep the old machinery"): Phases
+O02–O05 used to assert the TS refusal bytes == the retired py
+serving oracle's output-violation text (a lazy `import gateway`).
+They now assert the TS bytes == the frozen TS goldens beside this
+suite (golden_ts/test_gateway_verbs_outputs/refusals.json, causes
+recorded in its causes.md). The V-phase verb-table legs compare the
+TS table against keeper oracles (the verbs.py source module, the
+card-decls.json snapshot, the TSX chips) — those oracles are product
+sources, not the serving oracle, and stay.
+
+Date: 2026-09-08. Status: landed (oracle-death re-derivation).
 
   Phase V — every verb dispatched table-driven:
     V01 the closed 7-verb census, three py witnesses (mounted scan +
@@ -30,36 +43,37 @@ without card context).
     V07 the TS table dispatches only to real targets: every table
         flow loads (flow_mod.load_flow) and every requires pack is
         in-tree (vendor/comfyui_extensions/<pack>).
-  Phase O — outputs enforcement (missing/extra refuse py-identical):
+  Phase O — outputs enforcement (the TS contract, frozen as goldens):
     O01 the TS CARD_OUTPUTS table == card-decls.json outputs[] for
-        all 22 cards (that snapshot is byte-pinned to py by
+        all 22 cards (that snapshot is byte-pinned by
         test_card_decls_parity.py — the chain of trust, cited here).
-    O02 golden artifact sets pass BOTH sides (py _output_violation
-        with real card classes vs TS outputViolation): mesh + views,
-        multi-row cards, any-of rows, case-insensitive suffixes.
-    O03 deficient outputs refuse BYTE-EQUAL (empty, None, views-only,
-        second-row-missing on multi-row cards).
-    O04 surplus outputs refuse BYTE-EQUAL (junk present but the
-        promise missing — the text echoes the surplus: sorted,
-        deduped, first-8, lowercased, falsy-filtered).
-    O05 the run-level settle arm (py worker 1380-1391): completed +
-        violation flips to failed with the py text; every other
-        status, unknown cards, and cardless runs pass through.
+    O02 golden artifact sets pass the TS side (TS outputViolation):
+        mesh + views, multi-row cards, any-of rows,
+        case-insensitive suffixes.
+    O03 deficient outputs refuse with the frozen TS text (empty,
+        None, views-only, second-row-missing on multi-row cards).
+    O04 surplus outputs refuse with the frozen TS text (junk present
+        but the promise missing — the text echoes the surplus:
+        sorted, deduped, first-8, lowercased, falsy-filtered).
+    O05 the run-level settle arm: completed + violation flips to
+        failed with the frozen TS text; every other status, unknown
+        cards, and cardless runs pass through.
     O06 served shape: an engine-down run through the live TS door
         settles failed WITHOUT contract text (the gate only fires on
         completed) and the status body carries no cardId leak.
 
-Py vs TS agreement is byte equality on refusal texts, value equality
+TS-vs-literal agreement is byte equality on refusal texts, value equality
 on tables/dispatch. No GPU, no network (O06 boots the TS door
 against a dead engine port — connection-refused, never inference).
 
-Py cites: verbs packages/engines/comfyui/models/3d/anny/mods/verbs.py
+Keeper cites: verbs packages/engines/comfyui/models/3d/anny/mods/verbs.py
 (EstimateBody 21-33, Dress 36-80, Prop 83-123, RigSomax 126-143,
 ApplySkin 145-179, SavePreset 181-200, LoadPreset 203-221); mount
 models/3d/anny/model.py:110; contract python/melite_cards/dsl.py
 SubActionMod 857-869 + VerbEngine 822-854; outputs gate
-python/gateway.py 473-489 + run-level arm 1374-1396 + per-stage arm
-1821-1832; TSX renderer action_cards/3d/anny/ui/studio/component.tsx
+packages/gateway/src/schema/verbs.ts outputViolation +
+applyRunContract (served via doors/flowsRun.ts runOne); TSX renderer
+action_cards/3d/anny/ui/studio/component.tsx
 ANNY_VERBS 97-134 + ANNY_PRESET_VERBS 447-448.
 
 Run: python3 tests/walls/suites/test_gateway_verbs_outputs.py
@@ -236,26 +250,31 @@ def tsx_verbs() -> dict[str, list[str]]:
             "presets": _tsx_ids(presets.group(1))}
 
 
-_gateway = None
-
-
-def _gw():
-    global _gateway
-    if _gateway is None:
-        sys.path.insert(0, str(REPO / "python"))
-        import gateway as g
-        _gateway = g
-    return _gateway
-
-
 @pytest.fixture(scope="module")
 def py_cards() -> dict:
     return {cid: cls for cid, (_p, cls)
             in scan_engine_cards(REPO).items()}
 
 
-def _py_violation(py_cards: dict, card: str, arts) -> str | None:
-    return _gw()._output_violation(py_cards[card], arts)
+# ── frozen TS refusal goldens (oracle-death: the py comparison ──
+# ── side is gone; the TS bytes are the contract) ────────────────
+
+GOLDEN_DIR = (Path(__file__).resolve().parent / "golden_ts"
+              / "test_gateway_verbs_outputs")
+
+
+@pytest.fixture(scope="module")
+def refusal_goldens() -> dict:
+    doc = json.loads((GOLDEN_DIR / "refusals.json").read_text(
+        encoding="utf-8"))
+    # Golden/case skew guard: the frozen cases must BE the in-file
+    # case lists — editing a case list without regoldening fails
+    # here, never as a mystery mismatch three legs later.
+    assert doc["O03-cases"] == [[c, a] for c, a in DEFICIENT_SETS], \
+        "refusals.json O03-cases skewed vs DEFICIENT_SETS — regolden"
+    assert doc["O04-cases"] == [[c, a] for c, a in SURPLUS_SETS], \
+        "refusals.json O04-cases skewed vs SURPLUS_SETS — regolden"
+    return doc
 
 
 # ── Phase V ──
@@ -423,13 +442,12 @@ GOLDEN_SETS: list[tuple[str, list]] = [
 ]
 
 
-def test_O02_golden_artifact_sets_pass_both_sides(
-        driver: Path, py_cards: dict) -> None:
+def test_O02_golden_artifact_sets_pass_the_ts_side(
+        driver: Path) -> None:
     cases = [{"card": c, "artifacts": a} for c, a in GOLDEN_SETS]
     got = node_run(driver, "violate", {"cases": cases})["results"]
     for (card, arts), res in zip(GOLDEN_SETS, got):
         assert res is None, (card, arts, res)
-        assert _py_violation(py_cards, card, arts) is None, (card, arts)
 
 
 DEFICIENT_SETS: list[tuple[str, object]] = [
@@ -443,13 +461,15 @@ DEFICIENT_SETS: list[tuple[str, object]] = [
 ]
 
 
-def test_O03_deficient_outputs_refuse_byte_equal(
-        driver: Path, py_cards: dict) -> None:
+def test_O03_deficient_outputs_refuse_frozen_ts_text(
+        driver: Path, refusal_goldens: dict) -> None:
     cases = [{"card": c, "artifacts": a} for c, a in DEFICIENT_SETS]
     got = node_run(driver, "violate", {"cases": cases})["results"]
-    for (card, arts), res in zip(DEFICIENT_SETS, got):
-        want = _py_violation(py_cards, card, arts)
-        assert want is not None and res == want, (card, arts, res, want)
+    want = refusal_goldens["O03"]
+    assert len(got) == len(want) == len(DEFICIENT_SETS)
+    for (card, arts), res, frozen in zip(DEFICIENT_SETS, got, want):
+        assert frozen is not None, (card, arts, "golden is None — regolden")
+        assert res == frozen, (card, arts, res, frozen)
 
 
 def _surplus_ten() -> list[str]:
@@ -466,20 +486,23 @@ SURPLUS_SETS: list[tuple[str, object]] = [
 ]
 
 
-def test_O04_surplus_outputs_refuse_byte_equal(
-        driver: Path, py_cards: dict) -> None:
+def test_O04_surplus_outputs_refuse_frozen_ts_text(
+        driver: Path, refusal_goldens: dict) -> None:
     cases = [{"card": c, "artifacts": a} for c, a in SURPLUS_SETS]
     got = node_run(driver, "violate", {"cases": cases})["results"]
-    for (card, arts), res in zip(SURPLUS_SETS, got):
-        want = _py_violation(py_cards, card, arts)
-        assert want is not None and res == want, (card, arts, res, want)
+    want = refusal_goldens["O04"]
+    assert len(got) == len(want) == len(SURPLUS_SETS)
+    for (card, arts), res, frozen in zip(SURPLUS_SETS, got, want):
+        assert frozen is not None, (card, arts, "golden is None — regolden")
+        assert res == frozen, (card, arts, res, frozen)
     ten = got[1]
     assert ten is not None and "run/junk_08.mp4" not in ten, ten
     assert "run/junk_00.mp4" in ten and "run/junk_07.mp4" in ten, ten
 
 
-def test_O05_run_level_settle_arm(driver: Path, py_cards: dict) -> None:
-    bad = _py_violation(py_cards, "anny", ["run/x.mp4"])
+def test_O05_run_level_settle_arm(
+        driver: Path, refusal_goldens: dict) -> None:
+    bad = refusal_goldens["O05-bad"]
     assert bad is not None
     cases = [
         {"status": "completed", "error": "",

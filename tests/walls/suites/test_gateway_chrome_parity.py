@@ -1,49 +1,49 @@
 #!/usr/bin/env python3
-"""test_gateway_chrome_parity.py — Phase-1 TS shell parity wall (J1-J10).
+"""test_gateway_chrome_parity.py — Phase-1 TS shell wall (J1-J10), TS-ONLY.
 
-Proves the TypeScript HTTP shell (apps/gateway/src/main.ts +
+Pins the TypeScript HTTP shell (apps/gateway/src/main.ts +
 ctx.ts over the ROUTES mirror, bodies from
-packages/gateway/src/doors/chrome.ts) serves the 10 chrome/health
-doors byte-identical to the py gateway:
+packages/gateway/src/doors/chrome.ts) serving the 10 chrome/health
+doors:
 
   J1 /v1/health  J2 /v1/themes  J3 /v1/tags  J4 /v1/services
   J5 /v1/right-panes  J6 /v1/ui-slots  J7 /v1/tools
   J8 /v1/shell  J9 /v1/plugins  J10 /v1/models
 
-Expectations are captured FRESH at wall runtime THROUGH the live py
-dispatcher (gateway.route, read-only — chrome handlers never touch
-the queue/sidecars; gw=None suffices because no J-door reads gw),
-serialized exactly as _adapt does (indent=2, default=str). The wall
-boots the TS server on its ephemeral port (no fixed port — QUEUE
-LANE LAW), GETs every door, and asserts status + byte-equality,
-plus the py unknown-path 404 shape and the R4.2 4xx-code
-normalization fallback (pinned at the ctx.ts unit level: no J-door
-returns 4xx over HTTP, so the fallback has no HTTP exercise — the
-unit asserts add/preserve/ignore semantics mirroring
-python/gateway.py:4347-4356).
+Every leg pins the TS contract against frozen goldens
+(golden_ts/test_gateway_chrome_parity/, causes.md there): the wall
+boots the TS server on an ephemeral port via boot_scratch_gateway
+(no fixed port — QUEUE LANE LAW), GETs every door, and asserts
+status + byte-equality with the golden, plus the unknown-path 404
+shape, trailing-slash / query normalization (both serve the base
+door's golden bytes), the method-mismatch 404 golden, and the R4.2
+4xx-code normalization fallback (pinned at the ctx.ts unit level:
+no J-door returns 4xx over HTTP, so the fallback has no HTTP
+exercise — the unit asserts add/preserve/ignore semantics of the
+ctx.ts normalize4xx arm).
+
+ORACLE DEATH 2026-09-08: re-derived TS-ONLY — the py-mirror legs
+(live py dispatcher expectations captured fresh at wall runtime)
+are deleted per the operator order "we do not need parity, we
+need to migrate, not keep the old machinery"; the TS-SSOT golden
+legs below are the wall now.
+
+Date: 2026-09-08. Status: landed (oracle-death re-derivation).
 
 Run: python3 tests/walls/suites/test_gateway_chrome_parity.py
 """
 
-import asyncio
 import json
-import os
 import shutil
 import subprocess
 import sys
-import tempfile
-import time
 import urllib.error
 import urllib.request
+from pathlib import Path
 
-from _anchor import REPO
+from _anchor import REPO, boot_scratch_gateway, reap_gateway
 
 sys.dont_write_bytecode = True
-sys.path.insert(0, str(REPO / "python"))
-
-import catalog  # noqa: F401  (derived-door rail; import proves availability)
-import editor_runs  # noqa: F401  (bodies ride this module; see below)
-from gateway import route as py_route
 
 PASS = FAIL = 0
 
@@ -64,6 +64,8 @@ UNKNOWN = "/v1/does-not-exist-parity-probe-xyz"
 
 TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
 TS_CTX = REPO / "packages" / "gateway" / "src" / "ctx.ts"
+GOLDEN_DIR = (REPO / "tests" / "walls" / "suites" / "golden_ts" /
+              "test_gateway_chrome_parity")
 
 
 def check(name: str, ok: bool, note: str = "") -> None:
@@ -73,10 +75,8 @@ def check(name: str, ok: bool, note: str = "") -> None:
     PASS, FAIL = PASS + (1 if ok else 0), FAIL + (0 if ok else 1)
 
 
-def py_wire(method: str, target: str) -> tuple[int, bytes]:
-    """Fresh py expectation: live route() + _adapt serialization."""
-    status, payload = asyncio.run(py_route(None, method, target, b""))
-    return status, json.dumps(payload, indent=2, default=str).encode()
+def golden(name: str) -> bytes:
+    return (GOLDEN_DIR / name).read_bytes()
 
 
 def ts_get(port: int, path: str,
@@ -93,53 +93,27 @@ def ts_get(port: int, path: str,
         return None, b"", "transport: %s" % e
 
 
-def boot_ts() -> tuple[int, "subprocess.Popen[bytes]"]:
-    node = shutil.which("node")
-    if node is None:
-        raise RuntimeError("node not on PATH")
-    # Hermetic state root: chrome doors are source-anchored reads,
-    # but the TS single-writer lock gate refuses a second writer on
-    # a shared root — never boot the estate root from a wall.
-    env = dict(os.environ)
-    env["MELITE_STATE_ROOT"] = tempfile.mkdtemp(prefix="chrome-parity-")
-    proc = subprocess.Popen(
-        [node, "--experimental-strip-types", str(TS_SERVER)],
-        cwd=str(REPO), env=env, stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        text=True, start_new_session=True)
-    assert proc.stdout is not None
-    deadline = time.time() + 25
-    while time.time() < deadline:
-        line = proc.stdout.readline()
-        if line.startswith("READY "):
-            return int(line.split()[1]), proc
-        if proc.poll() is not None:
-            raise RuntimeError("ts server exited rc=%d" % proc.returncode)
-    proc.terminate()
-    raise RuntimeError("ts server did not print READY")
-
-
 def main() -> int:
     try:
-        port, proc = boot_ts()
+        port, proc = boot_scratch_gateway()
     except RuntimeError as e:
         print("FATAL: %s" % e)
         return 1
     try:
         print("ts shell on :%d" % port)
         for path in DOORS:
-            exp_status, exp_body = py_wire("GET", path)
+            exp_body = golden(path.split("/")[-1] + ".json")
             got_status, got_body, ctype = ts_get(port, path)
             if got_status is None:
                 check("GET %s" % path, False, got_body.decode()[:120])
                 continue
-            ok = (got_status == exp_status == 200
+            ok = (got_status == 200
                   and got_body == exp_body
                   and ctype.split(";")[0] == "application/json")
             note = ""
             if not ok:
-                note = ("status %r/%r ctype %r py %dB ts %dB"
-                        % (got_status, exp_status, ctype,
+                note = ("status %r ctype %r golden %dB ts %dB"
+                        % (got_status, ctype,
                            len(exp_body), len(got_body)))
                 for i, (a, b) in enumerate(zip(exp_body, got_body)):
                     if a != b:
@@ -150,35 +124,35 @@ def main() -> int:
                         note += " len-div"
             check("GET %s (%dB)" % (path, len(exp_body)), ok, note)
 
-        # Unserved paths -> the py unknown-route 404 shape, byte-exact.
-        exp_status, exp_body = py_wire("GET", UNKNOWN)
+        # Unserved paths -> the unknown-route 404 golden, byte-exact.
+        exp_body = golden("unknown-404.json")
         got_status, got_body, _ = ts_get(port, UNKNOWN)
         check("unknown path 404 shape",
-              got_status == exp_status == 404 and got_body == exp_body,
-              "status %r/%r py %dB ts %dB"
-              % (got_status, exp_status, len(exp_body), len(got_body)))
+              got_status == 404 and got_body == exp_body,
+              "status %r golden %dB ts %dB"
+              % (got_status, len(exp_body), len(got_body)))
 
-        # Trailing-slash + query normalization rides the match (py
-        # route() strips both before dispatch).
-        _, exp_plain = py_wire("GET", "/v1/health")
+        # Trailing-slash + query normalization serve the base door's
+        # golden bytes.
         _, got_slash, _ = ts_get(port, "/v1/health/")
         _, got_qs, _ = ts_get(port, "/v1/themes?x=1")
-        _, exp_themes = py_wire("GET", "/v1/themes")
-        check("trailing-slash normalization", got_slash == exp_plain,
-              "%dB vs %dB" % (len(got_slash), len(exp_plain)))
-        check("query-strip normalization", got_qs == exp_themes,
-              "%dB vs %dB" % (len(got_qs), len(exp_themes)))
+        check("trailing-slash normalization",
+              got_slash == golden("health.json"),
+              "%dB vs %dB" % (len(got_slash), len(golden("health.json"))))
+        check("query-strip normalization",
+              got_qs == golden("themes.json"),
+              "%dB vs %dB" % (len(got_qs), len(golden("themes.json"))))
 
         # Method arms: POST on a GET-only chrome door is no such route.
-        exp_status, exp_body = py_wire("POST", "/v1/health")
+        exp_body = golden("health-post-404.json")
         got_status, got_body, _ = ts_get(port, "/v1/health", method="POST")
         check("method mismatch 404",
-              got_status == exp_status == 404 and got_body == exp_body,
-              "status %r/%r" % (got_status, exp_status))
+              got_status == 404 and got_body == exp_body,
+              "status %r" % (got_status,))
 
         # R4.2 4xx-code normalization at the ctx.ts unit level (no
         # J-door returns 4xx over HTTP, so the invalid_request
-        # fallback is pinned here, mirroring gateway.py:4347-4356).
+        # fallback is pinned here, against the ctx.ts arm).
         node = shutil.which("node")
         probe = (
             "import('%s').then(m=>{"
@@ -211,11 +185,7 @@ def main() -> int:
         check("4xx-code normalization unit", unit_ok,
               (r.stderr or r.stdout)[-300:])
     finally:
-        proc.terminate()
-        try:
-            proc.wait(timeout=15)
-        except subprocess.TimeoutExpired:
-            proc.kill()
+        reap_gateway(proc)
 
     print("PASS %d / FAIL %d" % (PASS, FAIL))
     return 1 if FAIL else 0

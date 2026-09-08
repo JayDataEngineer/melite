@@ -1,0 +1,4 @@
+{
+  "error": "dangling artifact ref at '$.input_image': /v1/assets/runs/../x.png (artifact ref refuses traversal: '/v1/assets/runs/../x.png')",
+  "code": "invalid_request"
+}

@@ -1,0 +1,4 @@
+{
+  "error": "bad preset row: 1 validation error for CharacterPreset\nknobs.transparent\n  Input should be a valid boolean, unable to interpret input [type=bool_parsing, input_value='maybe', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/bool_parsing",
+  "code": "invalid_request"
+}

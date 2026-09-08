@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"ace-step-xl\",\n  \"family\": \"ace-step-xl\",\n  \"genre\": \"audio\",\n  \"label\": \"ACE-Step 1.5 XL Turbo\",\n  \"description\": \"ACE-Step 1.5 XL turbo bf16 music generation (the audio.cpp flagship)\",\n  \"source\": {\n    \"type\": \"huggingface\",\n    \"repo_id\": \"audio-cpp/audio.cpp-gguf\",\n    \"filename\": \"ACE-Step1.5-XL-GGUF\"\n  },\n  \"defaults\": {\n    \"backend\": \"cuda\",\n    \"duration\": 120,\n    \"sample_rate\": 44100\n  },\n  \"engine\": \"audio_cpp\",\n  \"form\": \"form_music\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

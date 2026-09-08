@@ -1,0 +1,4 @@
+{
+  "error": "card_compose phase 1: card_compose rc=1 (comfyui.comfyui): required param 'text' missing or empty on the tts card (the words to speak)",
+  "code": "card_compose"
+}

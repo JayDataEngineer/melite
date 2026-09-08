@@ -1,0 +1,18 @@
+{
+  "run_id": "run-r1",
+  "status": "failed",
+  "pipeline": "anny",
+  "created_at": 1700000004,
+  "stages": [
+    {
+      "id": "w",
+      "index": 0,
+      "status": "failed"
+    }
+  ],
+  "sweep": "gateway restarted (boot sweep): stale active sidecar from a dead process",
+  "artifacts": [],
+  "error": "",
+  "queue_position": 0,
+  "log_tail": "run: failed\nw: failed"
+}

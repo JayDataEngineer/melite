@@ -19,10 +19,23 @@ Pins what stroke 1 promises and nothing it defers:
      as source text, the chip has no unit harness).
 
 No GPU, no network — the schema is the wall (test_flows.py pattern).
+
+ORACLE DEATH 2026-09-08: the §2 door legs drove the py serving
+oracle in-process (resolve_request on {flow:"anny-hmr"} — the
+stageable-photo success and the ghost-photo refusal); the oracle
+is deleted per the operator order "we do not need parity, we need
+to migrate, not keep the old machinery". The TS plane does not
+port named-flow compile yet (doors/flowsValidate.ts refuses it 400
+flow_compile — see test_flow_doors.py §4 unported-half pin), so no
+TS leg can pin the photo door in this stroke — both legs are
+removed and re-add on the flows-port lane. What stays: the
+flow-declared shape, the construction-time Kind refusal, and the
+verb contract — all keeper-side.
+
+Date: 2026-09-08. Status: landed (oracle-death wean).
 """
 
 import pytest
-from pathlib import Path
 from pydantic import ValidationError
 
 import flow as flow_mod
@@ -95,32 +108,9 @@ def test_anny_hmr_carries_no_hardcoded_endpoint() -> None:
 
 
 # ── 2. door ──────────────────────────────────────────────────────────
-
-def test_anny_hmr_resolves_through_the_flow_door(
-        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """The door resolves a STAGEABLE photo to a runnable graph — the
-    photo door (EstatePhotoRef) runs first, so the test stages a
-    real file, never a fake name."""
-    from gateway import resolve_request
-    target = tmp_path / "data" / "input"
-    target.mkdir(parents=True)
-    (target / "p.png").write_bytes(b"\x89PNG\r\n\x1a\n")
-    monkeypatch.chdir(tmp_path)
-    graph = resolve_request({"flow": "anny-hmr", "photo": "data/input/p.png"})
-    (node,) = graph.nodes
-    assert node.node_id == "estimate"
-    assert node.node_type == "comfyui"
-
-
-def test_anny_hmr_door_refuses_a_ghost_photo() -> None:
-    """The compile-time promise: a photo with no file on disk never
-    reaches the queue (run-9e8fd6b813a2 died in the engine — now it
-    4xxes at resolve)."""
-    from gateway import resolve_request
-    with pytest.raises(Exception) as e:
-        resolve_request({"flow": "anny-hmr",
-                         "photo": "data/input/ghost.png"})
-    assert "not on disk" in str(e.value)
+# (ORACLE DEATH 2026-09-08: the two resolve_request legs lived here —
+# removed with the oracle; see the header. Re-add on the
+# flows-port lane as TS-door legs.)
 
 
 # ── 3. refusal ───────────────────────────────────────────────────────

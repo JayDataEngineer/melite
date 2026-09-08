@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"ideogram\",\n  \"family\": \"ideogram\",\n  \"genre\": \"image\",\n  \"label\": \"Ideogram\",\n  \"description\": \"Typography-aware text-to-image with clean, legible text rendering.\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"mu\": 0.5,\n    \"std\": 1.75,\n    \"width\": 1024,\n    \"height\": 1024,\n    \"steps\": 20,\n    \"sampler\": \"euler\",\n    \"cfg\": 7.0\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_generate\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

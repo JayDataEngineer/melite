@@ -1,0 +1,31 @@
+{
+  "ok": true,
+  "skipped": [
+    "a"
+  ],
+  "flow": "w",
+  "cost": {
+    "queue_depth": 0,
+    "eta_queue_s": null,
+    "stages": [
+      {
+        "engine": "comfyui",
+        "median_s": null,
+        "samples": 0
+      }
+    ]
+  },
+  "stages": [
+    {
+      "id": "b",
+      "engine": "comfyui",
+      "description": "",
+      "inputs": [
+        "__initial__.k"
+      ],
+      "outputs": {
+        "default": "image"
+      }
+    }
+  ]
+}

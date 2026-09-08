@@ -1,0 +1,7 @@
+{
+  "id": "model:amodel:extra.md",
+  "name": "extra",
+  "description": "model extra file skill",
+  "scope": "model-skill",
+  "content": "---\ndescription: model extra file skill\n---\n# extra\nExtra body.\n"
+}

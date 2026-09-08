@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"concat\",\n  \"family\": \"concat\",\n  \"genre\": \"video\",\n  \"label\": \"Media Merge\",\n  \"description\": \">-\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"operation\": \"concat\",\n    \"output_artifact\": \"video\"\n  },\n  \"engine\": \"\",\n  \"form\": \"form_media_merge\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

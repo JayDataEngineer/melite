@@ -1,0 +1,4 @@
+{
+  "error": "card_compose phase 1: card_compose rc=1 (comfyui.comfyui): required param 'input' missing on the quad-remesh lane \u2014 the remesh needs the dense input mesh (OBJ/STL/PLY path or artifact-ref)",
+  "code": "card_compose"
+}

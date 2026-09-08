@@ -1,0 +1,4 @@
+{
+  "error": "dangling artifact ref at '$.input_image': /v1/assets/runs/nope/x.png (artifact not found on disk: '/v1/assets/runs/nope/x.png' (looked up /home/user/Documents/programs/active/inference.cpp/data/runs/output/nope/x.png) \u2014 the upstream run may have been pruned, or the ref was never an output of run nope)",
+  "code": "invalid_request"
+}

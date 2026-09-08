@@ -8,6 +8,12 @@ The anny bake exports a BARE MESH (no skeleton); the motion studio's
 skin path requires SOMAX (SOMA-Mixamo, 77 joints). The bridge is ONE
 queue flow wrapping the autorig pack's baked standalone-rig mode —
 and the studio posts it behind the scenes on NotSomaxGlbError.
+
+ORACLE DEATH 2026-09-08: the py-runner absolutize leg died with the
+oracle (see the cause note in TestTheLiveBridge); all other legs are
+keeper-impl-agnostic and stay.
+
+Date: 2026-09-08. Status: landed (oracle-death re-derivation).
 """
 
 import os
@@ -162,18 +168,19 @@ class TestTheLiveBridge(unittest.TestCase):
             "blender must resolve at its use sites, never upfront")
         self.assertIn("_blender_bin = _resolve_blender_binary()", src)
 
-    def test_runner_absolutizes_file_kind_refs(self) -> None:
-        """NodeRow.expected carries the receiving half of the typed
-        edges (the runner seam reads it to absolutize the wire's
-        artifact spellings — URL and runs-relative — before the
-        $-substitution deep-walk)."""
-        from gateway import absolutize_artifact_refs
-        out = absolutize_artifact_refs(
-            __import__("flow_graph").NodeRow(
-                node_id="rig", node_type="comfyui",
-                expected={"glb": "mesh"}),
-            {"glb": "/abs/already/engine-space.glb"})
-        self.assertEqual(out["glb"], "/abs/already/engine-space.glb")
+    # ORACLE DEATH 2026-09-08 (operator order verbatim: "we do not
+    # need parity, we need to migrate, not keep the old machinery"):
+    # test_runner_absolutizes_file_kind_refs DELETED WITH CAUSE — the
+    # leg unit-called the py serving oracle's runner seam
+    # (gateway.absolutize_artifact_refs, the NodeRow.expected
+    # absolutize walk). No TS executor equivalent exists as a unit
+    # (the TS door owns the artifact-ref sweep instead:
+    # doors/flowsValidate.ts resolveArtifactFile + findDanglingRefs;
+    # the engine-side upload walk reads compose/artifact.py _EXTS,
+    # pinned by the leg above). The seam died with the py runner;
+    # the bridge surface stays walled by the flow/studio/vendor/verb
+    # legs here. Date: 2026-09-08. Status: landed (oracle-death
+    # re-derivation).
 
 
 

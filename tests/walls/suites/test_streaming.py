@@ -1,31 +1,29 @@
 """test_streaming.py — the streaming restoration gates (2026-09-02).
 
-Three gaps, three batteries (python3 tests/walls/suites/test_streaming.py):
+Kept batteries (python3 tests/walls/suites/test_streaming.py):
   A. native.py — the comfyui engine's own transport: workflow splice,
      upload-walk rewrite, ws frame codec, event fold -> report().
-  B. the gateway report contract — engine report() frames land in the
-     stage dicts (the status poll serves them), the sidecar survives,
-     and the events bus broadcasts with the stage INDEX (the editor's
-     O(1) fold key).
-  C. the ws door — a real RFC 6455 handshake against the live handle()
-     on an ephemeral loopback port: hydrate snapshot, live stage frame,
-     terminal run frame closes the socket.
   D. slot_kinds — the served input_vocabulary covers the editor's
      FALLBACK_SLOTS exactly (the wire replaces the fallback, never
      drifts past it).
+
+ORACLE DEATH 2026-09-08 (operator order verbatim: "we do not need
+parity, we need to migrate, not keep the old machinery"): batteries
+B (the py gateway report contract) and C (the live py WS door) died
+with the py serving oracle — retired with cause at the B section
+below; the TS gateway's streaming surface stays walled TS-ONLY by
+tests/walls/suites/test_gateway_streaming_tsboot.py.
+
+Date: 2026-09-08. Status: landed (oracle-death re-derivation).
 
 Loopback sockets only — no GPU, no network, no ComfyUI.
 """
 
 import asyncio
-import base64
 import json
 import os
-import struct
 import sys
 import tempfile
-import time
-import uuid
 from collections.abc import Callable
 from pathlib import Path
 
@@ -134,246 +132,23 @@ pong = native.__dict__.get("_ws_tap")  # presence of the tap fn
 check("ws tap exists", callable(pong))
 frame = native._ws_frame if hasattr(native, "_ws_frame") else None
 # (server frames are the gateway's job; native only WRITES masked pongs —
-# verified live in battery C via the door)
+# the live server side rides the TS door now, walled by
+# tests/walls/suites/test_gateway_streaming_tsboot.py)
 
 # ══════════════════════════════════════════════════════════════════════
-# B. the gateway report contract
-# ══════════════════════════════════════════════════════════════════════
-
-import gateway  # noqa: E402
-
-REPORTS = []
-_the_run = None
-MIDFLIGHT = {}     # stage-dict snapshot taken INSIDE the fake engine
-
-
-async def fake_engine_execute(
-    node: "flow_graph.NodeRow",
-    run_dir: str,
-    inputs: dict[str, str | int | float | bool],
-    stop_event: asyncio.Event,
-    report: Callable[[dict[str, str | dict[str, str | int]]], None] | None = None,
-) -> dict[str, dict[str, str] | list[str]]:
-    """A compliant engine: reports progress mid-flight, completes."""
-    if report:
-        report({"progress": {"value": 4, "max": 10, "node": "2"}})
-        report({"activity": "sampling 4/10"})
-        # the REPORT CONTRACT's whole point: the frame must already be
-        # in the stage dict the 700ms poll would serve — captured here,
-        # because the terminal flip (correctly) clears it.
-        MIDFLIGHT.update(_the_run.stages[0])
-    REPORTS.append(node.node_id)
-    return {"outputs": {}, "artifacts": []}
-
-
-gw = gateway.Gateway()
-gw.runs["r1"] = type("R", (), {})()  # placeholder replaced below
-
-
-class FakeRun:
-    def __init__(self) -> None:
-        self.run_id = "r1"
-        self.status = "running"
-        self.request = {}
-        self.created_at = time.time()
-        self.stop_event = asyncio.Event()
-        self.stages = [{"id": "s0", "name": "gen", "index": 0,
-                        "status": "running"}]
-        # the typed graph contract (python/flow_graph.py): execute()
-        # reads run.graph.nodes — a raw dict stopped working the day
-        # FlowGraph landed (2026-09-04 repair, flows rework round)
-        import flow_graph
-        self.graph = flow_graph.FlowGraph(
-            name="fake",
-            nodes=(flow_graph.NodeRow(
-                node_id="n0", node_type="fake", params={}),))
-        self.artifacts = []
-        self.error = None
-        self.dir = Path(tempfile.mkdtemp())
-        # sidecar() reads these (CARD LINKAGE, 2026-09-04; the
-        # card-extra pool, 2026-09-05) — absent attrs would kill the
-        # execute() finally-block before the report contract lands
-        self.draft_id = None
-        self.card_extra_inputs = {}
-        # BRANCH SYSTEM (2026-09-06): sidecar() reads the build-time
-        # prune record — a run without it dies at the first stage
-        # transition, before any report lands.
-        self.skipped_stages = []
-
-
-async def run_report_battery() -> tuple[FakeRun, list[dict[str, str | int | dict[str, str | int]]]]:
-    # gateway.py owns its own load_engine (:300) — patch THE GATEWAY's
-    # binding, not plugins'.
-    gateway.load_engine = lambda t: type("M", (), {
-        "execute": staticmethod(fake_engine_execute)})()
-
-    global _the_run
-    run = FakeRun()
-    _the_run = run
-    gw2 = gateway.Gateway()
-    gw2.runs[run.run_id] = run
-    got = []
-    q = gw2.subscribe(run.run_id)  # capture broadcasts
-    try:
-        await gateway.Gateway.execute(gw2, run)
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-    # pull the bus frames the report contract published
-    while not q.empty():
-        got.append(q.get_nowait())
-    return run, got
-
-
-run, got = asyncio.run(asyncio.wait_for(run_report_battery(), 20))
-stage = run.stages[0]
-check("report lands in stage dict (poll path)",
-      MIDFLIGHT.get("progress") == {"value": 4, "max": 10, "node": "2"},
-      json.dumps(MIDFLIGHT))
-check("activity lands in stage dict",
-      MIDFLIGHT.get("activity") == "sampling 4/10")
-check("bus broadcast carries stage index",
-      any(f.get("index") == 0 for f in got), str(got))
-check("bus broadcast carries progress",
-      any(f.get("progress", {}).get("value") == 4 for f in got))
-check("terminal stage cleared progress",
-      stage.get("progress") is None and stage["status"] == "completed",
-      json.dumps(stage))
-
-# ══════════════════════════════════════════════════════════════════════
-# C. the ws door — live RFC 6455 against handle() on loopback
-# ══════════════════════════════════════════════════════════════════════
-
-
-async def ws_door_battery() -> tuple[bytes, str, str, list[dict[str, str | dict[str, str | int]]]]:
-    """(2026-09-05) The door is the REAL one: gateway._ws_starlette on
-    a starlette WebSocketRoute, served by uvicorn — the raw
-    gateway.handle + hand-rolled RFC 6455 server codec retired with
-    the 2026-09-02 transport flip ("starlette/uvicorn handles framing,
-    ping/pong, and close handshakes"). The CLIENT below keeps its own
-    handshake + frame parser on purpose: the accept-key check pins the
-    live server's RFC 6455 conformance against OUR door, not against
-    a test double."""
-    import starlette.applications as _sa
-    from starlette.routing import WebSocketRoute as _WSR
-    import uvicorn
-
-    gw3 = gateway.Gateway()
-    run = FakeRun()
-    run.status = "running"
-    gw3.runs[run.run_id] = run
-
-    app = _sa.Starlette(routes=[
-        _WSR("/v1/flows/events/{run_id:path}", gateway._ws_starlette),
-        _WSR("/v1/flows/events", gateway._ws_starlette),
-    ])
-    app.state.gw = gw3
-
-    server = uvicorn.Server(uvicorn.Config(
-        app, host="127.0.0.1", port=0, log_level="warning"))
-    srv_task = asyncio.ensure_future(server.serve())
-    for _ in range(500):                     # wait for bind (≤10s)
-        if server.started:
-            break
-        await asyncio.sleep(0.02)
-    port = server.servers[0].sockets[0].getsockname()[1]
-
-    async def engine_side() -> None:
-        # fixed-delay publish: waiting for the subscriber here RACES the
-        # door teardown when the test client closes early — 50ms is
-        # comfortably past the handshake + hydrate.
-        await asyncio.sleep(0.05)
-        gw3.publish(run.run_id,
-                    {"type": "stage", "stage": "s0", "index": 0,
-                     "progress": {"value": 8, "max": 10, "node": "2"}})
-        await asyncio.sleep(0.1)
-        run.status = "completed"
-        gw3.publish(run.run_id, {"type": "run", "status": "completed"})
-
-    async def client_side() -> tuple[bytes, str, str, list[dict[str, str | dict[str, str | int]]]]:
-        import hashlib
-        reader, writer = await asyncio.open_connection("127.0.0.1", port)
-        key = base64.b64encode(os.urandom(16)).decode()
-        writer.write((
-            "GET /v1/flows/events/%s HTTP/1.1\r\n"
-            "Host: 127.0.0.1:%d\r\n"
-            "Upgrade: websocket\r\n"
-            "Connection: Upgrade\r\n"
-            "Sec-WebSocket-Key: %s\r\n"
-            "Sec-WebSocket-Version: 13\r\n\r\n"
-            % (run.run_id, port, key)).encode())
-        await writer.drain()
-        # handshake
-        status_line = await reader.readline()
-        accept = ""
-        while True:
-            h = await reader.readline()
-            if h in (b"\r\n", b"\n", b""):
-                break
-            hk, _, hv = h.decode().partition(":")
-            if hk.strip().lower() == "sec-websocket-accept":
-                accept = hv.strip()
-        # the RFC 6455 accept recipe (uvicorn owns it now; the constant
-        # is the spec's, asserted against the live server's answer)
-        want = base64.b64encode(hashlib.sha1(
-            (key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode()
-        ).digest()).decode()
-        frames = []
-        try:
-            while True:
-                b1 = (await reader.readexactly(1))[0]
-                b2 = (await reader.readexactly(1))[0]
-                ln = b2 & 0x7F
-                if ln == 126:
-                    ln = struct.unpack(">H",
-                                       await reader.readexactly(2))[0]
-                elif ln == 127:
-                    ln = struct.unpack(">Q",
-                                       await reader.readexactly(8))[0]
-                payload = await reader.readexactly(ln) if ln else b""
-                if (b1 & 0x0F) != 0x1:
-                    continue
-                frames.append(json.loads(payload.decode()))
-                # break ONLY on the TERMINAL run frame — the hydrate
-                # snapshot is also {type: "run"} with a live status.
-                f = frames[-1]
-                if (f.get("type") == "run" and f.get("status") in
-                        ("completed", "failed", "stopped", "unknown")):
-                    break
-        except asyncio.IncompleteReadError:
-            pass  # server closed after terminal frame — expected
-        finally:
-            writer.close()
-        return status_line, accept, want, frames
-
-    try:
-        eng = asyncio.ensure_future(engine_side())
-        status_line, accept, want, frames = await client_side()
-        await asyncio.wait_for(eng, 2)
-    finally:
-        server.should_exit = True
-        await asyncio.wait_for(srv_task, 5)
-    return status_line, accept, want, frames
-
-
-# 2026-09-05: the batteries ride wait_for(20s) — a missed terminal
-# frame used to block the read loop FOREVER (the historical
-# "test_streaming hangs" drift; the underlying race healed with the
-# flows rework, but a stall must die LOUD as a timeout, never hang).
-status_line, accept, want, frames = asyncio.run(
-    asyncio.wait_for(ws_door_battery(), 20))
-check("door upgrades 101", b"101" in status_line, status_line.decode())
-check("accept key correct", accept == want)
-check("hydrate snapshot present",
-      any(f.get("type") == "run" and f.get("status") == "running"
-          for f in frames), str(frames))
-check("live stage frame delivered",
-      any(f.get("progress", {}).get("value") == 8 for f in frames),
-      str(frames))
-check("terminal run frame closes",
-      frames and frames[-1].get("type") == "run"
-      and frames[-1].get("status") == "completed")
-
+# B. the gateway report contract — RETIRED WITH CAUSE (ORACLE DEATH
+# 2026-09-08; operator order verbatim: "we do not need parity, we
+# need to migrate, not keep the old machinery"): this battery drove
+# the py serving oracle's in-process runtime (Gateway.execute with
+# a fake engine + the py events bus + _ws_starlette on a starlette
+# TestClient/uvicorn door). The report frames, bus broadcasts, and
+# the live WS door (batteries B + C) now live on the TS gateway,
+# walled TS-ONLY by
+# tests/walls/suites/test_gateway_streaming_tsboot.py (WS
+# handshake/event/stream legs vs the TS boot + TS frame-codec
+# vectors). The A-battery keeper units above and the D-battery
+# slot vocabulary below stay — they never touched the oracle.
+# Date: 2026-09-08. Status: landed (oracle-death re-derivation).
 # ══════════════════════════════════════════════════════════════════════
 # D. slot_kinds — the served vocabulary vs the editor fallback
 # ══════════════════════════════════════════════════════════════════════

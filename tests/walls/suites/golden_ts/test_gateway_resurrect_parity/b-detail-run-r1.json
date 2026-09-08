@@ -1,0 +1,21 @@
+{
+  "run_id": "run-r1",
+  "status": "failed",
+  "state": "failed",
+  "error": "",
+  "created": 1700000004,
+  "durationSec": 0,
+  "restored_from_sidecar": true,
+  "artifacts": [],
+  "stages": [
+    {
+      "id": "w",
+      "index": 0,
+      "status": "failed",
+      "params": {
+        "seed": 0
+      }
+    }
+  ],
+  "draft_id": ""
+}

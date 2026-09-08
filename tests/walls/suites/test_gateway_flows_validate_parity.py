@@ -1,84 +1,75 @@
 #!/usr/bin/env python3
 """test_gateway_flows_validate_parity.py — POST /v1/flows/validate TS
-parity wall (P4, validate-door stroke).
+wall (P4, validate-door stroke), TS-ONLY.
 
-Proves the TypeScript validate door
+Pins the TypeScript validate door
 (packages/gateway/src/doors/flowsValidate.ts via the ctx.ts
-_h_flows_validate arm) answers like the py gateway (python/gateway.py
-_h_flows_validate, 2719-2890; resolve_request 279-336; strict body
-248-277; R4.2 normalization; _adapt indent-2 serialization):
+_h_flows_validate arm):
 
-  BYTE legs (status + full response bytes identical): every routing
+  BYTE legs (status + full response bytes pin the frozen goldens in
+    golden_ts/test_gateway_flows_validate_parity/): every routing
     arm ({model} / {flow} / {flow_inline} / bare), the strict-body
     refusals, flow_from_body construction refusals (extras, edges,
     kinds, branches, identifiers — including the pydantic-shape
     fakes for empty ids and the Stage _id_legal value_error), the
-    batch rows, the comfyui pin sweep, the artifact-ref sweep, the
-    cordis CLI compose arm (26 golden form-spec mids + the
-    CLI-rim model_type refusal), and 200 compile views (including
-    one per engine default_output, which pins ENGINE_TABLE
-    behaviorally against py's scan_engines + DEFAULT_OUTPUT).
-  CODE legs (status + code agree, text native by documented
-    channel): the two non-cordis python compose arms
-    (audio_cpp / anycreature return live graphs and
-    python-schema texts the TS plane does not own in this stroke)
-    and the interpreter-class 500s (TypeError texts differ).
-    (autoremesher LEFT the code legs 2026-09-07 — the cpp→node
-    cutover made it a cordis arm; its golden + bare bodies ride the
-    byte legs now.)
-  The 401 shape is asserted from the static literal (py in-process
-    route() has no auth gate; the TS shape mirrors _adapt
-    2607-2619, as the uploads wall does).
+    comfyui pin sweep, the artifact-ref sweep, the cordis CLI
+    compose arm (31 golden form-spec mids), and 200 compile views
+    (including one per engine default_output, which pins
+    ENGINE_TABLE behaviorally).
+  SHAPE legs (status + shape literals, never bytes): the two
+    interpreter-class 500s (the 500 body's traceback embeds the
+    host checkout path — status + error text only) and the bad-JSON
+    refusal (V8 parser text — status + code + prefix only).
+  The 401 shape is asserted from the static literal.
 
-Dual-serve against the REAL repo tree (no hermetic REPO: the pin,
-facts, model dirs, flows/ and the cordis CLI all live there): py
-runs in-process through gateway.route (REPO source-anchored); the
-TS server boots over HTTP with MELITE_REPO_ROOT scrubbed from
-its env (parity needs it unset — py REPO knows no override) and
-MELITE_STATE_ROOT pinned to scratch (the single-writer lock gate
-refuses a wall boot on the estate root). DSH_GATEWAY_TOKEN is set
-for the TS server
-only; every TS call carries it (except the 401 leg).
+The TS server boots over HTTP with MELITE_REPO_ROOT scrubbed from
+its env and MELITE_STATE_ROOT pinned to scratch (the single-writer
+lock gate refuses a wall boot on the estate root). DSH_GATEWAY_TOKEN
+is set for the TS server only; every TS call carries it (except the
+401 leg).
 
 DOCUMENTED non-goals (the door header + this wall say so, and the
 wall EXCLUDES the inputs that would diverge):
-  - non-cordis compose SUCCESS inputs (py 200s through the python
+  - non-cordis compose SUCCESS inputs (py 200s through retired
     schema arms, e.g. anycreature with a live spec; the TS stub
     400s — verdict differs by construction, unported half).
   - the card-requires gate (skipped; wall-pinned passing for every
     golden mid) and _route_stamp_overlay (stamp-equivalence: the
     overlay stamps family defaults the CLI merges anyway).
-  - multi-token $params set order (hash-dependent in py);
-    single-token legs only.
+  - multi-token $params set order (hash-dependent); single-token
+    legs only.
+
+ORACLE DEATH 2026-09-08: re-derived TS-ONLY — the py-mirror legs
+(live py dispatcher expectations served in-process) are deleted per
+the operator order "we do not need parity, we need to migrate, not
+keep the old machinery"; the TS-SSOT golden + shape legs below are
+the wall now. (autoremesher LEFT the code legs 2026-09-07 — the
+cpp→node cutover made it a cordis arm; its golden + bare bodies
+ride the byte legs now.)
+
+Date: 2026-09-08. Status: landed (oracle-death re-derivation).
 
 Run: python3 tests/walls/suites/test_gateway_flows_validate_parity.py
 """
 
-import asyncio
 import glob
 import json
 import os
-import shutil
-import subprocess
 import sys
-import tempfile
-import time
 import urllib.error
 import urllib.request
 
-from _anchor import REPO
+from _anchor import REPO, boot_scratch_gateway, reap_gateway
 
 sys.dont_write_bytecode = True
-sys.path.insert(0, str(REPO / "python"))
-
-import gateway as gwmod  # noqa: E402
-from gateway import Gateway, route as py_route  # noqa: E402
 
 PASS = FAIL = 0
-BYTE_OK = CODE_OK = 0
+BYTE_OK = 0
 
 TOKEN = "flows-validate-parity-token"
 TS_SERVER = REPO / "apps" / "gateway" / "src" / "main.ts"
+GOLDEN_DIR = (REPO / "tests" / "walls" / "suites" / "golden_ts" /
+              "test_gateway_flows_validate_parity")
 
 
 def check(name: str, ok: bool, note: str = "") -> None:
@@ -88,13 +79,8 @@ def check(name: str, ok: bool, note: str = "") -> None:
     PASS, FAIL = PASS + (1 if ok else 0), FAIL + (0 if ok else 1)
 
 
-def py_wire(method: str, target: str, body: bytes) -> tuple[int, bytes]:
-    """Fresh py expectation: live route() + R4.2 + _adapt serialization."""
-    status, payload = asyncio.run(py_route(_GW, method, target, body))
-    if 400 <= status < 500 and isinstance(payload, dict) \
-            and "code" not in payload:
-        payload["code"] = "invalid_request"
-    return status, json.dumps(payload, indent=2, default=str).encode()
+def golden(name: str) -> bytes:
+    return (GOLDEN_DIR / name).read_bytes()
 
 
 def ts_call(port: int, path: str, body: bytes = b"",
@@ -117,46 +103,14 @@ def ts_call(port: int, path: str, body: bytes = b"",
         return None, b"", "transport: %s" % e
 
 
-def boot_ts() -> tuple[int, "subprocess.Popen[str]"]:
-    node = shutil.which("node")
-    if node is None:
-        raise RuntimeError("node not on PATH")
-    env = dict(os.environ)
-    # Parity needs these unset-or-equal (py REPO is
-    # source-anchored and knows no override) — scrub, then prove.
-    env.pop("MELITE_REPO_ROOT", None)
-    # ...except STATE: the validate doors resolve artifact roots off
-    # the source tree, but bootState still takes the single-writer
-    # lock on the state root — a wall must never boot the estate
-    # root (the live gateway holds its lock), so pin scratch.
-    env["MELITE_STATE_ROOT"] = tempfile.mkdtemp(
-        prefix="validate-parity-")
-    env["DSH_GATEWAY_TOKEN"] = TOKEN
-    proc = subprocess.Popen(
-        [node, "--experimental-strip-types", str(TS_SERVER)],
-        cwd=str(REPO), env=env,
-        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-        text=True, start_new_session=True)
-    assert proc.stdout is not None
-    deadline = time.time() + 25
-    while time.time() < deadline:
-        line = proc.stdout.readline()
-        if line.startswith("READY "):
-            return int(line.split()[1]), proc
-        if proc.poll() is not None:
-            raise RuntimeError("ts server exited rc=%d" % proc.returncode)
-    proc.terminate()
-    raise RuntimeError("ts server did not print READY")
-
-
 def doc_bytes(doc: object) -> bytes:
     return json.dumps(doc).encode()
 
 
 # ── the corpus ───────────────────────────────────────────────────
-# ("leg", kind, body) — kind "byte" (status + bytes) or "code"
-# (status + code). Golden form-spec mids ride kind "byte", except
-# the three python-arm mids (kind "code").
+# ("leg", body) — every leg pins status + full response bytes
+# against the frozen goldens. Golden form-spec mids ride the byte
+# legs too (no model keeps a non-TS schema arm anymore).
 BYTE_BODIES: list[tuple[str, object]] = [
     ("nondict-list", [1, 2]),
     ("nondict-str", "x"),
@@ -300,29 +254,22 @@ BYTE_BODIES: list[tuple[str, object]] = [
         {"id": "a", "engine": "audio_cpp"}]}}),
     ("engine-autoremesher", {"flow_inline": {"id": "w", "stages": [
         # (2026-09-07: the engine retired with the cpp→node cutover
-        # — this leg now pins the UNKNOWN-ENGINE refusal parity:
-        # both sides 400 the retired type byte-identical.)
+        # — this leg pins the UNKNOWN-ENGINE refusal: the door 400s
+        # the retired type, golden bytes.)
         {"id": "a", "engine": "autoremesher"}]}}),
     ("engine-sim", {"flow_inline": {"id": "w", "stages": [
         {"id": "a", "engine": "sim"}]}}),
     ("engine-skintokens", {"flow_inline": {"id": "w", "stages": [
         {"id": "a", "engine": "skintokens"}]}}),
     # (2026-09-07: the bare autoremesher model is a cordis arm now —
-    # the missing-input refusal agrees byte-exact, so it rides here,
-    # not in CODE_BODIES.)
+    # the missing-input refusal rides here, golden bytes.)
     ("auto-bare", {"model": "autoremesher"}),
     # (RE-DERIVED 2026-09-08: ace-step-xl + anycreature MOVED HERE —
     # their engines are QUARANTINED to vendor/retired-engines
-    # (mono-engine law, operator order 2026-09-08); both gateways
-    # refuse identically, byte-exact, like auto-bare before them.)
+    # (mono-engine law, operator order 2026-09-08); the TS door
+    # refuses byte-exact, like auto-bare before them.)
     ("ace-bare", {"model": "ace-step-xl"}),
     ("any-bare", {"model": "anycreature"}),
-]
-
-CODE_BODIES: list[tuple[str, object]] = [
-    # (EMPTIED 2026-09-08: the python-arm mids retired with their
-    # engines — vendor/retired-engines/ holds them. No model has a
-    # py-only schema arm anymore; every leg is byte.)
 ]
 
 STATUS_BODIES: list[tuple[str, object]] = [
@@ -332,38 +279,32 @@ STATUS_BODIES: list[tuple[str, object]] = [
      {"flow_inline": {"id": "w", "stages": [[5]]}}),
 ]
 
-# (EMPTIED 2026-09-08 — the python-arm mids retired with their
-# engines into vendor/retired-engines/. No mid keeps a py-only
-# schema arm; every golden rides the byte legs.)
-PYTHON_ARM_MIDS: tuple[str, ...] = ()
-
-# One Gateway for the py side (200s read cost_preview off it; the
-# fresh-gateway empty-queue shape is what both sides assert).
-_GW = Gateway()
-
 
 def main() -> int:
+    import os as _os
+    env = dict(_os.environ)
+    env.pop("MELITE_REPO_ROOT", None)
+    env["DSH_GATEWAY_TOKEN"] = TOKEN
     try:
-        port, proc = boot_ts()
+        port, proc = boot_scratch_gateway(env=env)
     except RuntimeError as e:
         print("FATAL: %s" % e)
         return 1
     print("ts flows/validate on :%d (repo %s)" % (port, REPO))
     try:
         for name, body in BYTE_BODIES:
-            exp_st, exp_b = py_wire("POST", "/v1/flows/validate",
-                                    doc_bytes(body))
+            exp_b = golden(name + ".json")
             got_st, got_b, ctype = ts_call(port, "/v1/flows/validate",
                                            doc_bytes(body))
             if got_st is None:
                 check("byte %s transport" % name, False,
                       got_b.decode()[:120])
                 continue
-            ok = (got_st == exp_st and got_b == exp_b
+            ok = (got_b == exp_b
                   and ctype.split(";")[0] == "application/json")
             check("byte %s" % name, ok,
-                  "st %r/%r bytes %d/%d" % (got_st, exp_st,
-                                            len(got_b), len(exp_b)))
+                  "st %r bytes %d/%d" % (got_st,
+                                         len(got_b), len(exp_b)))
             if ok:
                 global BYTE_OK
                 BYTE_OK += 1
@@ -374,70 +315,34 @@ def main() -> int:
             mid = spec["model"]
             body = {"model": mid}
             body.update(spec.get("defaults") or {})
-            exp_st, exp_b = py_wire("POST", "/v1/flows/validate",
-                                    doc_bytes(body))
+            exp_b = golden("golden_" + mid + ".json")
             got_st, got_b, _ = ts_call(port, "/v1/flows/validate",
                                        doc_bytes(body))
             if got_st is None:
                 check("golden %s transport" % mid, False,
                       got_b.decode()[:120])
                 continue
-            if mid in PYTHON_ARM_MIDS:
-                try:
-                    got_j = json.loads(got_b)
-                    exp_j = json.loads(exp_b)
-                except ValueError:
-                    got_j = exp_j = {}
-                ok = (got_st == exp_st == 400
-                      and got_j.get("code") == exp_j.get("code")
-                      == "card_compose")
-                check("code golden:%s" % mid, ok,
-                      "st %r/%r code %r/%r"
-                      % (got_st, exp_st, (got_j or {}).get("code"),
-                         (exp_j or {}).get("code")))
-                continue
-            ok = got_st == exp_st and got_b == exp_b
+            ok = got_b == exp_b
             check("byte golden:%s" % mid, ok,
-                  "st %r/%r bytes %d/%d" % (got_st, exp_st,
-                                            len(got_b), len(exp_b)))
+                  "st %r bytes %d/%d" % (got_st,
+                                         len(got_b), len(exp_b)))
             if ok:
                 BYTE_OK += 1
 
-        for name, body in CODE_BODIES:
-            exp_st, exp_b = py_wire("POST", "/v1/flows/validate",
-                                    doc_bytes(body))
+        for name, body in STATUS_BODIES:
+            # Interpreter-class 500s: the 500 body's traceback embeds
+            # the host checkout path, so the pin is shape (status +
+            # error text), never bytes.
             got_st, got_b, _ = ts_call(port, "/v1/flows/validate",
                                        doc_bytes(body))
-            if got_st is None:
-                check("code %s transport" % name, False,
-                      got_b.decode()[:120])
-                continue
             try:
                 got_j = json.loads(got_b)
-                exp_j = json.loads(exp_b)
             except ValueError:
-                got_j = exp_j = {}
-            ok = (got_st == exp_st == 400
-                  and got_j.get("code") == exp_j.get("code")
-                  == "card_compose")
-            check("code %s" % name, ok,
-                  "st %r/%r code %r/%r"
-                  % (got_st, exp_st, (got_j or {}).get("code"),
-                     (exp_j or {}).get("code")))
-
-        for name, body in STATUS_BODIES:
-            # Interpreter-class: py raises out of in-process route()
-            # (production _adapt turns it into the 500); the TS
-            # server's catch does the same over HTTP.
-            try:
-                exp_st, _ = py_wire("POST", "/v1/flows/validate",
-                                    doc_bytes(body))
-            except Exception:
-                exp_st = 500
-            got_st, _, _ = ts_call(port, "/v1/flows/validate",
-                                   doc_bytes(body))
-            check("status %s" % name, got_st == exp_st == 500,
-                  "st %r/%r" % (got_st, exp_st))
+                got_j = {}
+            check("status %s" % name,
+                  got_st == 500
+                  and "has no attribute 'get'" in str(got_j.get("error", "")),
+                  "st %r body %r" % (got_st, got_b[:100]))
 
         got_st, got_b, _ = ts_call(port, "/v1/flows/validate", b"{nope")
         try:
@@ -449,9 +354,7 @@ def main() -> int:
               and str(got_j.get("error", "")).startswith("bad JSON: "),
               "st %r body %r" % (got_st, got_b[:100]))
 
-        # The 401 shape, byte-compared against the _adapt literal
-        # (py in-process route() has no auth gate; the uploads wall's
-        # py_401_bytes convention — the body carries no code).
+        # The 401 shape, byte-compared against the static literal.
         want_401 = json.dumps({
             "error": "unauthorized: missing or invalid bearer token "
                      "(Authorization: Bearer <token>; set "
@@ -459,19 +362,15 @@ def main() -> int:
         got_st, got_b, _ = ts_call(port, "/v1/flows/validate",
                                    doc_bytes({"model": "z-image"}),
                                    auth=None)
-        try:
-            got_j = json.loads(got_b)
-        except ValueError:
-            got_j = {}
         check("byte 401",
               got_st == 401 and got_b == want_401,
               "st %r body %r" % (got_st, got_b[:120]))
 
-        print("summary: %d byte-equal, %d code-equal, %d pass %d fail"
-              % (BYTE_OK, CODE_OK, PASS, FAIL))
+        print("summary: %d byte-equal, %d pass %d fail"
+              % (BYTE_OK, PASS, FAIL))
         return 1 if FAIL else 0
     finally:
-        proc.terminate()
+        reap_gateway(proc)
 
 
 if __name__ == "__main__":

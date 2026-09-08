@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"joycaption\",\n  \"family\": \"joycaption\",\n  \"genre\": \"image\",\n  \"label\": \"JoyCaption\",\n  \"description\": \"Stylized natural-language image captioning (JoyCaption beta-one, 8B VLM) \\u2014 descriptive / SD-prompt / MJ / booru-list templates for recreating images in FLUX / Ideogram / image-edit.\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"checkpoint\": \"fancyfeast/llama-joycaption-beta-one-hf-llava\",\n    \"caption_type\": \"Descriptive\",\n    \"caption_length\": \"long\",\n    \"extra_option\": \"\"\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_tagger\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

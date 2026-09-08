@@ -1,0 +1,12 @@
+{
+  "draftId": "seed-alpha",
+  "stageId": "s_0",
+  "delivered": true,
+  "patched": [
+    "inputOutputs",
+    "inputs",
+    "params",
+    "result",
+    "runStatus"
+  ]
+}

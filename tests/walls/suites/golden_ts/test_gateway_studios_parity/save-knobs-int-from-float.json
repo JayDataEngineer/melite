@@ -1,0 +1,4 @@
+{
+  "error": "bad preset row: 1 validation error for CharacterPreset\nknobs.samples\n  Input should be a valid integer, got a number with a fractional part [type=int_from_float, input_value=2.5, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.13/v/int_from_float",
+  "code": "invalid_request"
+}

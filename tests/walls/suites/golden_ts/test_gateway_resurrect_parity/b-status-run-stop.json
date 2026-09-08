@@ -1,0 +1,10 @@
+{
+  "run_id": "run-stop",
+  "status": "stopped",
+  "pipeline": "anny",
+  "created_at": 1700000003,
+  "stages": [],
+  "artifacts": [],
+  "error": "",
+  "queue_position": 0
+}

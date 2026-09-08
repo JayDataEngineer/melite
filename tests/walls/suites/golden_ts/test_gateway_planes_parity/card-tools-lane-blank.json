@@ -1,0 +1,89 @@
+[
+  {
+    "name": "hcard_tool",
+    "version": 1,
+    "kind": "card-compose",
+    "card": "hcard",
+    "model": "",
+    "stage_title": "",
+    "description": "",
+    "params_schema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "acard_tool",
+    "version": 1,
+    "kind": "card-compose",
+    "card": "acard",
+    "model": "amodel",
+    "stage_title": "A Card",
+    "description": "Does A things.",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    }
+  },
+  {
+    "name": "bcard_tool",
+    "version": 2,
+    "kind": "card-compose",
+    "card": "bcard",
+    "model": "amodel",
+    "stage_title": "B Card",
+    "description": "Does B things.",
+    "params_schema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "bcard_hidden_tool",
+    "version": 1,
+    "kind": "card-compose",
+    "card": "bcard",
+    "model": "amodel",
+    "stage_title": "B Hidden",
+    "description": "",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string"
+        },
+        "seed": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "prompt",
+        "seed"
+      ]
+    },
+    "hidden": true
+  },
+  {
+    "name": "ccard_tool",
+    "version": 1,
+    "kind": "card-compose",
+    "card": "ccard",
+    "model": "h3-timeline",
+    "stage_title": "C Card",
+    "description": "Does C things.",
+    "params_schema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  }
+]

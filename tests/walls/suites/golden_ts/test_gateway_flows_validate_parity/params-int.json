@@ -1,0 +1,18 @@
+{
+  "error": "stage[0] refuses: 'int' object is not iterable",
+  "code": "flow_compile",
+  "loc": "flow",
+  "errors": [
+    {
+      "scope": "flow",
+      "error": "stage[0] refuses: 'int' object is not iterable",
+      "code": "flow_compile",
+      "loc": "flow"
+    },
+    {
+      "stage": "a",
+      "error": "stage[0] refuses: 'int' object is not iterable",
+      "code": "flow_compile"
+    }
+  ]
+}

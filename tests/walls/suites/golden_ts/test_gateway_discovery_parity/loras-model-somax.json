@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"model\": \"somax\",\n  \"loras\": [],\n  \"note\": null,\n  \"meta\": {}\n}"
+}

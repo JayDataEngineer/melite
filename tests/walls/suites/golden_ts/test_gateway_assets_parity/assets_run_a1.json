@@ -1,0 +1,71 @@
+{
+  "count": 1,
+  "artifacts": 7,
+  "runs": [
+    {
+      "run_id": "run-a1",
+      "name": "anny",
+      "status": "completed",
+      "created_at": 1700000000,
+      "test": false,
+      "artifacts": [
+        {
+          "name": "blob.bin",
+          "run_id": "run-a1",
+          "kind": "other",
+          "bytes": 100,
+          "sha256": "2a1b9357d39f48b66d8f3e2a1b952e646bc69a5e655a6dadb944bbe3ca05fb3c",
+          "url": "/v1/assets/runs/run-a1/blob.bin"
+        },
+        {
+          "name": "caf\u00e9.png",
+          "run_id": "run-a1",
+          "kind": "image",
+          "bytes": 64,
+          "sha256": "fdeab9acf3710362bd2658cdc9a29e8f9c757fcf9811603a8c447cd1d9151108",
+          "url": "/v1/assets/runs/run-a1/caf\u00e9.png"
+        },
+        {
+          "name": "clip.mp4",
+          "run_id": "run-a1",
+          "kind": "video",
+          "bytes": 3000,
+          "sha256": "e8ca4bf83f56152c01649f88bd7c91b15ae8137d9a709572e04fae55894ea75e",
+          "url": "/v1/assets/runs/run-a1/clip.mp4"
+        },
+        {
+          "name": "cover.png",
+          "run_id": "run-a1",
+          "kind": "image",
+          "bytes": 1024,
+          "sha256": "785b0751fc2c53dc14a4ce3d800e69ef9ce1009eb327ccf458afe09c242c26c9",
+          "url": "/v1/assets/runs/run-a1/cover.png"
+        },
+        {
+          "name": "mesh.glb",
+          "run_id": "run-a1",
+          "kind": "model",
+          "bytes": 700,
+          "sha256": "8777bd2d79a792da3fea5d959dc299609232ff0ffe845bd96d8a0c5d413b8738",
+          "url": "/v1/assets/runs/run-a1/mesh.glb"
+        },
+        {
+          "name": "spec.json",
+          "run_id": "run-a1",
+          "kind": "document",
+          "bytes": 23,
+          "sha256": "32b769982a3a6e2df120530b06dcbaf1e8f75e004ceea92ac3e91bd7a248d728",
+          "url": "/v1/assets/runs/run-a1/spec.json"
+        },
+        {
+          "name": "tone.wav",
+          "run_id": "run-a1",
+          "kind": "audio",
+          "bytes": 500,
+          "sha256": "b8adc40d0260749d2c0a42de6fd109724c347972a792106dff427b890969eed3",
+          "url": "/v1/assets/runs/run-a1/tone.wav"
+        }
+      ]
+    }
+  ]
+}

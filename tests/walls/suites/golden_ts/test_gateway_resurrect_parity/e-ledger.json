@@ -1,0 +1,373 @@
+[
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g1-empty"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g1-extra"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g1-false"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g1-ifempty"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g1-ifstr"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g1-missing"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g1-none"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g1-nonefields"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g2-skippeddict"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g2-skippedints"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g2-skippedstr"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g2-skipstr"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g2-stagedict"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g2-stageints"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g2-stages"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g2-stagestr"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g3-falsy"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g3-j05"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g3-nested"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g4-ok"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g5-empty"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g5-false"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g5-float"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g5-int"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g5-none"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g5-numstr"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g5-spacestr"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g5-true"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "draft_id": "d1",
+      "run_id": "run-g5-zero"
+    },
+    "event": "run.resurrected"
+  },
+  {
+    "data": {
+      "error": "boot sweep",
+      "run_id": "run-g1-badnames",
+      "state": "queued_lost"
+    },
+    "event": "run.swept"
+  },
+  {
+    "data": {
+      "error": "boot sweep",
+      "run_id": "run-g1-badout",
+      "state": "queued_lost"
+    },
+    "event": "run.swept"
+  },
+  {
+    "data": {
+      "error": "boot sweep",
+      "run_id": "run-g1-badparams",
+      "state": "queued_lost"
+    },
+    "event": "run.swept"
+  },
+  {
+    "data": {
+      "error": "boot sweep",
+      "run_id": "run-g1-badref",
+      "state": "queued_lost"
+    },
+    "event": "run.swept"
+  },
+  {
+    "data": {
+      "error": "boot sweep",
+      "run_id": "run-g1-badrefnum",
+      "state": "queued_lost"
+    },
+    "event": "run.swept"
+  },
+  {
+    "data": {
+      "error": "boot sweep",
+      "run_id": "run-g1-dict",
+      "state": "queued_lost"
+    },
+    "event": "run.swept"
+  },
+  {
+    "data": {
+      "error": "boot sweep",
+      "run_id": "run-g1-dup",
+      "state": "queued_lost"
+    },
+    "event": "run.swept"
+  },
+  {
+    "data": {
+      "error": "boot sweep",
+      "run_id": "run-g1-emptyid",
+      "state": "queued_lost"
+    },
+    "event": "run.swept"
+  },
+  {
+    "data": {
+      "error": "boot sweep",
+      "run_id": "run-g1-intid",
+      "state": "queued_lost"
+    },
+    "event": "run.swept"
+  },
+  {
+    "data": {
+      "error": "boot sweep",
+      "run_id": "run-g1-noid",
+      "state": "queued_lost"
+    },
+    "event": "run.swept"
+  },
+  {
+    "data": {
+      "error": "boot sweep",
+      "run_id": "run-g1-notype",
+      "state": "queued_lost"
+    },
+    "event": "run.swept"
+  },
+  {
+    "data": {
+      "error": "boot sweep",
+      "run_id": "run-g1-rowempty",
+      "state": "queued_lost"
+    },
+    "event": "run.swept"
+  },
+  {
+    "data": {
+      "error": "boot sweep",
+      "run_id": "run-g1-str",
+      "state": "queued_lost"
+    },
+    "event": "run.swept"
+  },
+  {
+    "data": {
+      "error": "boot sweep",
+      "run_id": "run-g2-skipint",
+      "state": "queued_lost"
+    },
+    "event": "run.swept"
+  },
+  {
+    "data": {
+      "error": "boot sweep",
+      "run_id": "run-g2-stagebool",
+      "state": "queued_lost"
+    },
+    "event": "run.swept"
+  },
+  {
+    "data": {
+      "error": "boot sweep",
+      "run_id": "run-g2-stageint",
+      "state": "queued_lost"
+    },
+    "event": "run.swept"
+  },
+  {
+    "data": {
+      "error": "boot sweep",
+      "run_id": "run-g4-bool",
+      "state": "queued_lost"
+    },
+    "event": "run.swept"
+  },
+  {
+    "data": {
+      "error": "boot sweep",
+      "run_id": "run-g4-dir",
+      "state": "queued_lost"
+    },
+    "event": "run.swept"
+  },
+  {
+    "data": {
+      "error": "boot sweep",
+      "run_id": "run-g4-empty",
+      "state": "queued_lost"
+    },
+    "event": "run.swept"
+  },
+  {
+    "data": {
+      "error": "boot sweep",
+      "run_id": "run-g4-int",
+      "state": "queued_lost"
+    },
+    "event": "run.swept"
+  },
+  {
+    "data": {
+      "error": "boot sweep",
+      "run_id": "run-g6-float",
+      "state": "failed"
+    },
+    "event": "run.swept"
+  }
+]

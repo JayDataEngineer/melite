@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"z-image\",\n  \"family\": \"z-image\",\n  \"genre\": \"image\",\n  \"label\": \"Z-Image\",\n  \"description\": \"Fast Z-Image / Z-Image Turbo text-to-image generation.\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"scheduler\": \"simple\",\n    \"width\": 1024,\n    \"height\": 1024,\n    \"steps\": 8,\n    \"sampler\": \"res_multistep\",\n    \"cfg\": 1.0,\n    \"negative_prompt\": null\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_generate\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

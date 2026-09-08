@@ -1,0 +1,22 @@
+[
+  {
+    "name": "acard_tool",
+    "version": 1,
+    "kind": "card-compose",
+    "card": "acard",
+    "model": "amodel",
+    "stage_title": "A Card",
+    "description": "Does A things.",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    }
+  }
+]

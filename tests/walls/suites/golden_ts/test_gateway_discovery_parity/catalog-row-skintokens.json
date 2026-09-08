@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"skintokens\",\n  \"family\": \"skintokens\",\n  \"genre\": \"3d\",\n  \"label\": \"SkinTokens\",\n  \"description\": \"Static mesh GLB \\u2192 generated skeleton + learned skin weights \\u2192 rigged GLB (TokenRig on GGML, CPU)\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"device\": \"cpu\",\n    \"postprocess\": false\n  },\n  \"engine\": \"skintokens\",\n  \"form\": \"form_auto_rig\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

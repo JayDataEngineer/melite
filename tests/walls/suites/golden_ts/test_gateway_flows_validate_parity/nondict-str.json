@@ -1,0 +1,13 @@
+{
+  "error": "flow body must be a JSON object",
+  "code": "flow_compile",
+  "loc": "flow",
+  "errors": [
+    {
+      "scope": "flow",
+      "error": "flow body must be a JSON object",
+      "code": "flow_compile",
+      "loc": "flow"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "id": "model:amodel:bare.md",
+  "name": "bare",
+  "description": "",
+  "scope": "model-skill",
+  "content": "Just body, no heading.\n"
+}

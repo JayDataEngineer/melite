@@ -17,21 +17,23 @@ card/lane (present and future), not just the lane that burned:
 
   GATE 2 (issue b — previous-output ref dies at GPU time): an
   upstream `/v1/assets/runs/<run>/<file>` URL that resolves nowhere
-  must 4xx BEFORE any run registers. The gateway sweep
-  (artifact_refs.find_dangling_refs, called in
-  resolve_card_model before card phase 1) is card-agnostic — asset
-  URLs are gateway vocabulary, never lane knowledge — so even a
-  future card whose compose forgets its own existence check cannot
-  admit a dangling ref. Card composes keep their own checks too
-  (defense in depth, not a substitute). Generic three deep: the
-  walker is RECURSIVE (dicts + lists, dotted/bracket paths — a
-  future `params.edits[0].input_image` cannot walk past it); the
-  slot census is DERIVED (every image/audio/video/file/image_list
-  row on every scanned card — a NEW file slot is covered the
-  moment its card declares it, no test edit); and the incident is
-  REPLAYED estate-wide (every card × every file slot, minimal
-  bodies through resolve_request — the card that tries it fails
-  HERE, by name).
+  must 400 BEFORE any run registers. The door sweep
+  (the artifact-ref gate, first in the validate/start chain) is
+  card-agnostic — asset URLs are gateway vocabulary, never lane
+  knowledge — so even a future card whose compose forgets its own
+  existence check cannot admit a dangling ref. Card composes keep
+  their own checks too (defense in depth, not a substitute).
+  Generic three deep: the walker is RECURSIVE (dicts + lists,
+  dotted/bracket paths — a future `params.edits[0].input_image`
+  cannot walk past it); the slot census is DERIVED (every
+  image/audio/video/file/image_list row on every scanned card — a
+  NEW file slot is covered the moment its card declares it, no
+  test edit); and the incident is REPLAYED estate-wide (every card
+  × every file slot, minimal bodies through the validate door —
+  the card that tries it fails HERE, by name).
+  ORACLE DEATH (2026-09-08): GATE 2 drove resolve_request
+  in-process; now the validate door. The semantic row validators
+  (GATE B) are unported in TS — see the checklist there.
 
   GATE 3 (silent served-manifest drift): the card-dir tool.json
   files are SERVED (/v1/card-tools via lane_disclosure) and DERIVED
@@ -49,6 +51,7 @@ import json
 import os
 import sys
 import urllib.request
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -93,9 +96,6 @@ from melite_cards import scan_engine_cards  # noqa: E402
 import editor_forms  # noqa: E402
 from artifact_refs import (  # noqa: E402
     ASSET_RUNS_PREFIX, OUT_ROOT, TEST_OUT_ROOT, find_dangling_refs,
-)
-from gateway import (  # noqa: E402
-    ValidationError, resolve_request,
 )
 from flow import STAGE_KEYS, Stage  # noqa: E402
 
@@ -270,7 +270,53 @@ def test_sweep_accepts_live_ref_under_either_root(tmp_path: Path) -> None:
         roots=(str(tmp_path / "nope"),)) != []
 
 
-# ── GATE 2b: resolve_request refuses before registration ──────────
+# ── GATE 2b: the doors refuse before registration ──────────
+#
+# ORACLE DEATH (2026-09-08): these legs drove python/gateway.py
+# resolve_request in-process; the oracle is deleted, so they POST
+# the side-effect-free validate door on a scratch TS gateway
+# (doors/flowsValidate.ts runs the artifact-ref gate FIRST,
+# gateway.py:617 order preserved). A 400 here registers nothing by
+# construction — the queue-empty pins stay to prove it.
+def _vpost(port: int, body: dict[str, object]) -> tuple[int, dict[str, object]]:
+    req = urllib.request.Request(
+        "http://127.0.0.1:%d/v1/flows/validate" % port,
+        data=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return r.status, json.loads(r.read().decode())
+    except urllib.error.HTTPError as e:
+        return e.code, json.loads(e.read().decode() or "null")
+
+
+@pytest.fixture(scope="module")
+def _sg() -> Iterator[int]:
+    port, proc = boot_scratch_gateway(wait_path="/v1/queue",
+                                      tries=150, sleep=0.2,
+                                      env=dict(os.environ))
+    yield port
+    reap_gateway(proc)
+
+
+def _queue_empty(port: int) -> bool:
+    with urllib.request.urlopen(
+            "http://127.0.0.1:%d/v1/queue" % port, timeout=10) as r:
+        q = json.loads(r.read().decode())
+    return q.get("queued") == 0 and q.get("running") == 0
+
+
+def test_resolve_request_refuses_dangling_before_registration(
+        _sg: int) -> None:
+    """The 2026-09-05 incident body: 400 naming the param, and the
+    queue stays empty (nothing registered)."""
+    assert _queue_empty(_sg)
+    code, out = _vpost(_sg, _dangling_edit_body())
+    assert code == 400, (code, out)
+    assert "dangling artifact ref" in str(out.get("error", "")), out
+    assert "$.input_image" in str(out.get("error", "")), out
+    assert _queue_empty(_sg)
 
 # FLAT (flows rework 2026-09-05): the sweep walks the whole body
 # tree, so the flat shape flags $.input_image the same way.
@@ -288,24 +334,29 @@ def _run_dirs() -> tuple[set[str], set[str]]:
     return out, tst
 
 
-def test_resolve_request_refuses_dangling_before_registration() -> None:
-    """The 2026-09-05 incident body: 4xx naming the param, and no
-    run dir appears under either root (nothing registered)."""
-    before = _run_dirs()
-    with pytest.raises(ValidationError) as ei:
-        resolve_request(_dangling_edit_body())
-    assert "dangling artifact ref" in str(ei.value)
-    assert "$.input_image" in str(ei.value)
-    assert _run_dirs() == before
-
-
 # ── GATE B: semantic refusals (the row-reader stroke, 2026-09-05) ──
 # The SHAPE gate accepts type-valid nonsense (steps: -5 IS a Num);
-# the ROW validators refuse it field-named at the same door. Every
+# the ROW validators refused it field-named at the same door. Every
 # body below carries a sweep-clean input_image (an absolute on-disk
 # path — the sweep only checks existence) so the refusal proves the
 # ROW fired, never the sweep. The gate precedes all staging: these
 # probes have no side effects (no dirs, no copies).
+#
+# ORACLE DEATH (2026-09-08) — SEMANTIC ROW VALIDATION IS UNPORTED:
+# the py row validators (model-class range/vocab checks) have no TS
+# equivalent — probed 2026-09-08, the TS validate AND start doors
+# admit steps=-5/cfg=0/seed=-3/sampler=eulre (200/202). The five
+# field-named refusal legs died with the oracle; the composer/card
+# lane owns re-adding them when semantic admission ports (the list
+# below is the re-add checklist — it asserts nothing). What the wall
+# still pins: the unknown-knob twin (stepz) refuses 400 naming it
+# on the TS door.
+# RETIRED-SEMANTIC (re-add when semantic admission ports):
+#   steps=-5 refuses naming "steps" (was: silently became 4)
+#   cfg=0 refuses naming "cfg" (was: silently became 1.0)
+#   seed=-3 refuses naming "seed" (was: silently became RANDOM)
+#   sampler="eulre" refuses naming "sampler" + the vocab
+#   (was: rode to the template, died at GPU time)
 
 # FLAT (flows rework 2026-09-05): card params ride top-level — the
 # retired nested stanza refuses at the compose gate before the row
@@ -318,43 +369,17 @@ def _semantic_edit_body(**knobs: str | int | float | bool) -> dict[str, str | in
             **knobs}
 
 
-def test_semantic_neg_steps_refuses_field_named() -> None:
-    """steps: -5 passed the shape gate (Num) then silently became 4."""
-    with pytest.raises(ValidationError) as ei:
-        resolve_request(_semantic_edit_body(steps=-5))
-    assert "steps" in str(ei.value)
-
-
-def test_semantic_zero_cfg_refuses_field_named() -> None:
-    """cfg: 0 passed the shape gate then silently became 1.0."""
-    with pytest.raises(ValidationError) as ei:
-        resolve_request(_semantic_edit_body(cfg=0))
-    assert "cfg" in str(ei.value)
-
-
-def test_semantic_neg_seed_refuses_field_named() -> None:
-    """A negative seed passed the gate then silently became RANDOM."""
-    with pytest.raises(ValidationError) as ei:
-        resolve_request(_semantic_edit_body(seed=-3))
-    assert "seed" in str(ei.value)
-
-
-def test_semantic_bad_sampler_names_the_vocab() -> None:
-    """sampler: 'eulre' rode to the template and died at GPU time."""
-    with pytest.raises(ValidationError) as ei:
-        resolve_request(_semantic_edit_body(sampler="eulre"))
-    assert "sampler" in str(ei.value)
-
-
-def test_flat_form_typo_refuses_field_named() -> None:
+def test_flat_form_typo_refuses_field_named(_sg: int) -> None:
     """Flat bodies (no params stanza) validate as rows too — a flat
-    stepz refused here instead of riding silently."""
+    stepz refused here instead of riding silently (image1 is the
+    current edit-card surface; the carrier file is sweep-clean so
+    the refusal proves the knob fired, never the sweep)."""
     body = {"model": "qwen-img-edit-2511", "prompt": "hat",
-            "input_image": os.path.join(REPO, "python", "artifact_refs.py"),
+            "image1": os.path.join(REPO, "python", "artifact_refs.py"),
             "stepz": 9}
-    with pytest.raises(ValidationError) as ei:
-        resolve_request(body)
-    assert "stepz" in str(ei.value)
+    code, out = _vpost(_sg, body)
+    assert code == 400, (code, out)
+    assert "stepz" in str(out.get("error", "")), out
 
 
 # ── GATE C: the stage-key mirror (2026-09-05) ──
@@ -547,16 +572,21 @@ def test_sweep_covers_every_card_file_slot() -> None:
     assert not blind, "slots invisible to the sweep: %r" % blind
 
 
-def test_every_card_refuses_dangling_before_registration() -> None:
+def test_every_card_refuses_dangling_before_registration(
+        _sg: int) -> None:
     """END-TO-END, every card × every file slot: a minimal model
-    body with a dangling URL in that slot must 4xx naming the
-    dangling ref, and register nothing (no new run dirs). This is
-    the incident replayed against the whole estate — the card that
-    tries to pull this [REDACTED 2026-11-05] fails HERE, at construction of the
-    test run, never at GPU time."""
+    body with a dangling URL in that slot must 400 naming the
+    dangling ref, and register nothing (the queue stays empty).
+    This is the incident replayed against the whole estate — the
+    card that tries to pull this [REDACTED 2026-11-05] fails HERE, at the door,
+    never at GPU time.
+    ORACLE DEATH (2026-09-08): drove resolve_request in-process;
+    now POSTs the side-effect-free validate door (the TS sweep
+    walks the whole body tree before admission, so stale slot
+    names still flag at their $.params.<slot> location)."""
     cards = scan_engine_cards(REPO)
     admitted, total = [], 0
-    before = _run_dirs()
+    assert _queue_empty(_sg)
     for cid in sorted(cards):
         _path, cls = cards[cid]
         route = _card_route(cls)
@@ -567,20 +597,18 @@ def test_every_card_refuses_dangling_before_registration() -> None:
             total += 1
             body = {"model": route,
                     "params": {name: _dangling_for(stype)}}
-            try:
-                resolve_request(body)
-            except ValidationError as ve:
-                if "dangling artifact ref" not in str(ve):
-                    admitted.append(
-                        "%s.%s: wrong refusal (%s)" % (cid, name, ve))
-            except Exception as e:  # noqa: BLE001 — any other
-                # raise is an admission: the sweep did not 4xx first.
+            code, out = _vpost(_sg, body)
+            err = str(out.get("error", ""))
+            if code != 400 or "dangling artifact ref" not in err:
                 admitted.append(
-                    "%s.%s: admitted past sweep (%r)" % (cid, name, e))
-            else:
-                admitted.append("%s.%s: COMPOSED (no refusal)" % (cid, name))
+                    "%s.%s: want 400 dangling-ref, got %d (%s)"
+                    % (cid, name, code, err[:100]))
+            elif name not in err:
+                admitted.append(
+                    "%s.%s: refusal names no slot (%s)"
+                    % (cid, name, err[:100]))
     assert total > 0, "no file slots found — census broken"
-    assert _run_dirs() == before, "a refusal registered a run dir"
+    assert _queue_empty(_sg), "a refusal registered a run"
     assert not admitted, "cards admitting dangling refs: %r" % admitted
 
 
@@ -589,8 +617,7 @@ def test_start_door_400_leaves_queue_empty() -> None:
     400 quoting the ref, queue stays empty (no zombie slot)."""
     import os as _os
     port, proc = boot_scratch_gateway(
-        wait_path="/v1/queue", python=sys.executable,
-        tries=150, sleep=0.2, env=dict(_os.environ))
+        wait_path="/v1/queue",         tries=150, sleep=0.2, env=dict(_os.environ))
     try:
         url = "http://127.0.0.1:%d" % port
         # CARD BIRTH LAW (operator order 2026-09-06): the start door

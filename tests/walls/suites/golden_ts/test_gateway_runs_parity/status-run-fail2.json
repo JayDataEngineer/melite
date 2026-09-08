@@ -1,0 +1,20 @@
+{
+  "run_id": "run-fail2",
+  "status": "error",
+  "pipeline": "anny",
+  "prompt": "plain prompt",
+  "seed": 3,
+  "draft_id": "gone",
+  "created_at": 1700000002,
+  "stages": [
+    {
+      "id": "only",
+      "index": 0,
+      "status": "failed",
+      "error": "stage blew up"
+    }
+  ],
+  "error": "boom happened",
+  "artifacts": [],
+  "queue_position": 0
+}

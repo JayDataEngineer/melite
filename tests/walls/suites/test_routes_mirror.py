@@ -1,34 +1,36 @@
 #!/usr/bin/env python3
-"""Routes-mirror wall — the AUTHORED TS table vs its CHECKED py mirror.
+"""Routes wall — the AUTHORED TS table pinned TS-only.
 
 SSOT FLIP (generators STEP 2, 2026-09-08): packages/gateway/src/routes.ts
-is hand-authored (the wire SSOT); tools/gen_routes_mirror.py is DELETED
-and python/gateway.py ROUTES — the retired serving stack, untouched as
-the parity oracle + one-uncomment rollback — is the checked mirror that
-must still match the TS table row-for-row. The mirror direction is
-inverted: a route change edits routes.ts AND the py row together in the
-same stroke, then regens docs + doors from the TS table.
+is hand-authored (the wire SSOT); tools/gen_routes_mirror.py is DELETED.
+
+ORACLE DEATH (2026-09-08): python/gateway.py — the retired serving
+stack that this wall checked as a row-for-row mirror — is DELETED per
+the operator order "we do not need parity, we need to migrate, not
+keep the old machinery". The py-mirror legs (py row count,
+row-count equality, template-set equality, full-row equality) die
+with it; the TS-SSOT legs below are the wall now. A route change
+edits routes.ts in the same stroke, then regens docs + doors from
+the TS table.
 
 Legs:
-  1. ROW COUNT — both sides hold exactly 54 rows.
-  2. TEMPLATE-SET EQUALITY — {(method, template-or-path)} is identical
-     ts-vs-py (a dropped or renamed door fails here, not as a 404).
-  3. FULL-ROW EQUALITY — every other field (group/summary/query/body/
-     regex/ws/attr/handler) matches too, not just the template set.
-  4. RETIRED GENERATOR — tools/gen_routes_mirror.py must NOT exist
+  1. ROW COUNT — the authored table holds exactly 54 rows.
+  2. RETIRED GENERATOR — tools/gen_routes_mirror.py must NOT exist
      (the mirror direction is dead; a resurrection fails here).
-  5. AUTHORED MARKER — routes.ts carries the AUTHORED header and no
+  3. AUTHORED MARKER — routes.ts carries the AUTHORED header and no
      gen_routes_mirror provenance (a regen overwrite fails here).
-  6. TSC — packages/gateway typechecks (routes.ts compiles and every
+  4. TSC — packages/gateway typechecks (routes.ts compiles and every
      doors/decl consumer still resolves its import).
-  7. ROUTE_COUNT — node evaluates the table: ROUTES.length is 54 and
+  5. ROUTE_COUNT — node evaluates the table: ROUTES.length is 54 and
      ROUTE_COUNT agrees (the export is the pin, not a comment).
 
 The TS side is parsed with stdlib only (a string-aware scan — no node
-needed for legs 1-5): the authored table keeps one rigid object
+needed for legs 1-3): the authored table keeps one rigid object
 literal per row, and this wall reads exactly that shape back. A
 hand-edit that breaks the rigid shape fails the parse leg LOUDLY
 (fix = restore the shape, never weaken the reader).
+
+Date: 2026-09-08. Status: landed (oracle-death re-derivation).
 
 Run: python3 tests/walls/suites/test_routes_mirror.py
 """
@@ -42,9 +44,6 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "python"))
-
-import gateway  # noqa: E402  (stdlib only; the mirror imports clean)
 
 MIRROR = REPO / "packages" / "gateway" / "src" / "routes.ts"
 GENERATOR = REPO / "tools" / "gen_routes_mirror.py"
@@ -160,10 +159,6 @@ def _parse_ts_rows() -> list[dict[str, object]]:
     return rows
 
 
-def _py_surface() -> set[tuple[str, str]]:
-    return {(r.method, r.template or r.path) for r in gateway.ROUTES}
-
-
 def _ts_surface(rows: list[dict[str, object]]) -> set[tuple[str, str]]:
     out = set()
     for r in rows:
@@ -175,15 +170,7 @@ def _ts_surface(rows: list[dict[str, object]]) -> set[tuple[str, str]]:
 
 
 def main() -> int:
-    py_rows = list(gateway.ROUTES)
-
-    # 1. row-count legs — the table holds 54 rows, on both sides.
-    if len(py_rows) == EXPECT_ROWS:
-        PASS.append("py_row_count_%d" % EXPECT_ROWS)
-    else:
-        FAIL.append("py_row_count: ROUTES holds %d rows, want %d"
-                    % (len(py_rows), EXPECT_ROWS))
-
+    # 1. row-count leg — the authored table holds 54 rows.
     try:
         ts_rows = _parse_ts_rows()
     except (OSError, ValueError) as e:
@@ -198,71 +185,15 @@ def main() -> int:
             FAIL.append("ts_row_count: routes.ts holds %d rows, want %d "
                         "(edit the table — it is authored, not generated)"
                         % (len(ts_rows), EXPECT_ROWS))
-        if len(ts_rows) == len(py_rows):
-            PASS.append("row_count_equal_%d" % len(py_rows))
-        else:
-            FAIL.append("row_count: ts=%d vs py=%d"
-                        % (len(ts_rows), len(py_rows)))
 
-        # 2. template-set equality — no dropped or renamed doors.
-        py_surface, ts_surface = _py_surface(), _ts_surface(ts_rows)
-        missing = sorted(ts_surface - py_surface)
-        extra = sorted(py_surface - ts_surface)
-        if not missing and not extra:
-            PASS.append("template_set_equal_%d" % len(ts_surface))
-        else:
-            if missing:
-                FAIL.append("template_set: %d routes.ts door(s) missing "
-                            "from the py mirror: %s"
-                            % (len(missing), missing[:6]))
-            if extra:
-                FAIL.append("template_set: %d py row(s) with no routes.ts "
-                            "door: %s" % (len(extra), extra[:6]))
-
-        # 3. full-row equality — every field, not just the surface.
-        if not missing and not extra:
-            py_by_key = {(r.method, r.template or r.path): r
-                         for r in py_rows}
-            ts_by_key = {(str(r["method"]),
-                          str(r["template"] or r["path"])): r
-                         for r in ts_rows}
-            mismatches = []
-            for key in sorted(ts_by_key):
-                pr, tr = py_by_key[key], ts_by_key[key]
-                want = {
-                    "method": pr.method,
-                    "path": pr.path,
-                    "template": pr.template,
-                    "group": pr.group,
-                    "summary": pr.summary,
-                    "query": list(pr.query),
-                    "body": pr.body,
-                    "regex": pr.regex,
-                    "ws": pr.ws,
-                    "attr": pr.attr,
-                    "handler": (pr.handler.__name__
-                                if pr.handler is not None else ""),
-                }
-                for field, w in want.items():
-                    if tr[field] != w:
-                        mismatches.append(
-                            "%s %s field %r: ts=%r py=%r"
-                            % (key[0], key[1], field, tr[field], w))
-            if not mismatches:
-                PASS.append("full_row_equal_%d" % len(ts_by_key))
-            else:
-                FAIL.append("full_row: %d field drift(s) py-vs-ts "
-                            "(edit both sides in the same stroke): %s"
-                            % (len(mismatches), mismatches[:4]))
-
-    # 4. retired generator — the mirror direction is dead.
+    # 2. retired generator — the mirror direction is dead.
     if not GENERATOR.exists():
         PASS.append("generator_retired")
     else:
         FAIL.append("generator_retired: %s exists — the mirror direction "
                     "is deleted, routes.ts is authored" % GENERATOR)
 
-    # 5. authored marker — a regen overwrite fails here, not silently.
+    # 3. authored marker — a regen overwrite fails here, not silently.
     try:
         header = MIRROR.read_text(encoding="utf-8")
     except OSError as e:
@@ -281,7 +212,7 @@ def main() -> int:
         else:
             PASS.append("generator_provenance_gone")
 
-    # 6. tsc — the authored table compiles and its consumers resolve.
+    # 4. tsc — the authored table compiles and its consumers resolve.
     tsc = GATEWAY_PKG / "node_modules" / ".bin" / "tsc"
     if not tsc.exists():
         FAIL.append("tsc: gateway toolchain not installed (%s)" % tsc)
@@ -296,7 +227,7 @@ def main() -> int:
                         "(routes.ts or a consumer broke):\n%s"
                         % ((r.stdout + r.stderr)[-3000:]))
 
-    # 7. ROUTE_COUNT — the export agrees with the table, evaluated.
+    # 5. ROUTE_COUNT — the export agrees with the table, evaluated.
     r = subprocess.run(
         ["node", "--experimental-strip-types", "--no-warnings",
          "--input-type=module", "-e",

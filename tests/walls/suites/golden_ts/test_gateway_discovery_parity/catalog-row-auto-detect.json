@@ -1,0 +1,5 @@
+{
+ "status": 200,
+ "content_type": "application/json",
+ "body": "{\n  \"id\": \"auto-detect\",\n  \"family\": \"auto-detect\",\n  \"genre\": \"image\",\n  \"label\": \"Auto Detect\",\n  \"description\": \"Auto Detect \\u2014 automatically selects the best model and conditioning for a given input.\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"output_mode\": \"segm\",\n    \"detect_mode\": \"face\",\n    \"detection_threshold\": 0.35,\n    \"sam_dilation\": 0,\n    \"sam_threshold\": 0.93\n  },\n  \"engine\": \"\",\n  \"form\": \"form_detect\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
+}

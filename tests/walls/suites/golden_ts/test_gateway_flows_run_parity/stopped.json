@@ -1,0 +1,1 @@
+{"artifacts": [], "error": "", "queue_position": 0, "run_id": "<RID>", "skipped_stages": [], "stages": [{"activity": "merged submit (1 stages, 1 nodes)", "error": "ComfyError: stopped (interrupt delivered)", "expected": {}, "id": "gen", "index": 0, "merged": true, "name": "gen", "outputs": {"default": "image"}, "status": "stopped"}], "status": "stopped"}

@@ -42,15 +42,21 @@ def _serving(port: int, path: str, timeout: float = 2.0) -> bool:
         return False
 
 
-def boot_scratch_gateway(wait_path: str = "/v1/health", python: str | None = None,
+def boot_scratch_gateway(wait_path: str = "/v1/health",
                          tries: int = 150, sleep: float = 0.2,
-                         env: dict[str, str] | None = None) -> tuple[int, subprocess.Popen[bytes]]:
-    """Boot python/gateway.py on a scratch port; poll until wait_path
-    serves. Returns (port, proc).
+                         env: dict[str, str] | None = None) -> tuple[int, subprocess.Popen[str]]:
+    """Boot the TS gateway (apps/gateway/src/main.ts) on a scratch
+    port; poll until wait_path serves. Returns (port, proc).
 
-    CALLER OWNS REAPING — reap_gateway(proc). python defaults to
-    sys.executable (the integration plane passes the repo venv
-    python); env defaults to a copy of os.environ.
+    ORACLE DEATH (2026-09-08): this helper booted python/gateway.py;
+    the py serving oracle is deleted per the operator order "we do
+    not need parity, we need to migrate, not keep the old machinery",
+    so the helper boots the TS gateway — the estate's serving
+    gateway — on an ephemeral port (READY <port> line). The `python`
+    parameter died with the py boot (no interpreter to pick).
+
+    CALLER OWNS REAPING — reap_gateway(proc); env defaults to a copy
+    of os.environ.
 
     2026-09-06 (single-writer lock seam): a scratch gateway ALWAYS
     boots with its OWN state root (MELITE_STATE_ROOT → a fresh tmp
@@ -59,17 +65,38 @@ def boot_scratch_gateway(wait_path: str = "/v1/health", python: str | None = Non
     hermetic suites must never contend with (or write into) the
     live estate's runs/ tree. Scratch roots die with the tmp parent.
     """
-    port = free_port()
+    import shutil
+    import tempfile
+    node = shutil.which("node")
+    if node is None:
+        raise RuntimeError("node not on PATH (TS gateway needs it)")
     boot_env = dict(env if env is not None else os.environ)
     if "MELITE_STATE_ROOT" not in boot_env:
-        import tempfile
         root = Path(tempfile.mkdtemp(prefix="melite-scratch-"))
         boot_env["MELITE_STATE_ROOT"] = str(root)
     proc = subprocess.Popen(
-        [python or sys.executable, str(REPO / "python" / "gateway.py"), str(port)],
+        [node, "--experimental-strip-types",
+         str(REPO / "apps" / "gateway" / "src" / "main.ts")],
         cwd=str(REPO), env=boot_env,
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        start_new_session=True)
+        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        text=True, start_new_session=True)
+    assert proc.stdout is not None
+    port: int | None = None
+    deadline = time.time() + 25
+    while time.time() < deadline:
+        line = proc.stdout.readline()
+        if line.startswith("READY "):
+            port = int(line.split()[1])
+            break
+        if proc.poll() is not None:
+            raise RuntimeError("ts gateway exited rc=%d"
+                               % proc.returncode)
+    if port is None:
+        try:
+            proc.terminate()
+        finally:
+            pass
+        raise RuntimeError("ts gateway did not print READY")
     for _ in range(tries):
         if _serving(port, wait_path):
             return port, proc

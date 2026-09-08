@@ -1,0 +1,13 @@
+{
+  "error": "flow 'w' stage 'a': inputs/expected mismatch (wired but untyped: ['x']) \u2014 every input needs an expected Kind, every expected Kind needs an input",
+  "code": "flow_compile",
+  "loc": "flow",
+  "errors": [
+    {
+      "scope": "flow",
+      "error": "flow 'w' stage 'a': inputs/expected mismatch (wired but untyped: ['x']) \u2014 every input needs an expected Kind, every expected Kind needs an input",
+      "code": "flow_compile",
+      "loc": "flow"
+    }
+  ]
+}

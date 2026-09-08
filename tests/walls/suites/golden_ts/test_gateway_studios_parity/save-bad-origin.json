@@ -1,0 +1,4 @@
+{
+  "error": "bad preset row: 1 validation error for CharacterPreset\norigin\n  Input should be 'base_params', 'estimated' or 'file' [type=enum, input_value='nope', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/enum",
+  "code": "invalid_request"
+}
