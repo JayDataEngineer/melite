@@ -28,18 +28,19 @@ PASS: list[str] = []
 FAIL: list[str] = []
 
 # Graph cases AUTO-DISCOVER from tests/golden_cordis/*.case.json —
-# {"card","model","run_id","params"} beside the matching .json golden.
-# A case lands by dropping two files; no shared-file edit (parallel
-# port substrate).
+# {"card","model","run_id","params"} beside the matching .json golden
+# ("model": null + "object_info": <fixture> for model-less pure-tool
+# cards — the Blender MCP precedent: requiresModel false rides
+# without --model against the MCP engine-pin fixture).
 GRAPH_CASES = []
 for case_file in sorted(GOLDEN.glob("*.case.json")):
     c = json.loads(case_file.read_text())
     GRAPH_CASES.append((case_file.name[:-len(".case.json")],
-                        c["card"], c["model"], c.get("run_id", "testrun"),
-                        c.get("params", {})))
+                        c["card"], c.get("model"), c.get("run_id", "testrun"),
+                        c.get("params", {}), c.get("object_info")))
 GENERIC_CASE = ("image_z-image_default", "image-gen", "z-image", "testrun",
                 {"prompt": "a glowing koi pond at dusk, ripples catching violet light",
-                 "seed": 42})
+                 "seed": 42}, None)
 if not any(name.startswith("image_z-image") for name, *_ in GRAPH_CASES):
     GRAPH_CASES.append(GENERIC_CASE)
 
@@ -58,14 +59,19 @@ REFUSAL_CASES = [
 ]
 
 
-def run_cli(card: str, model: str, run_id: str, params: dict,
-            facts: Path = FACTS) -> subprocess.CompletedProcess:
+def run_cli(card: str, model: str | None, run_id: str, params: dict,
+            facts: Path = FACTS, oi: str | None = None) -> subprocess.CompletedProcess:
+    argv = [shutil.which("node") or "node", "--experimental-strip-types",
+            str(PKG / "src" / "cli.ts"), "compose",
+            "--card", card]
+    if model is not None:
+        argv += ["--model", model]
+    argv += ["--run-id", run_id, "--facts", str(facts)]
+    if oi is not None:
+        argv += ["--object-info", str(REPO / oi)]
+    argv += ["--params", json.dumps(params)]
     return subprocess.run(
-        [shutil.which("node") or "node", "--experimental-strip-types",
-         str(PKG / "src" / "cli.ts"), "compose",
-         "--card", card, "--model", model, "--run-id", run_id,
-         "--facts", str(facts),
-         "--params", json.dumps(params)],
+        argv,
         capture_output=True, text=True, timeout=120,
         env={"PATH": "/usr/bin:/bin:/usr/local/bin",
              "NODE_OPTIONS": "--no-warnings"},
@@ -78,8 +84,8 @@ def main() -> int:
         print("FAIL no node on PATH — the Cordis plane requires node >= 22.6")
         return 1
 
-    for name, card, model, run_id, params in GRAPH_CASES:
-        r = run_cli(card, model, run_id, params)
+    for name, card, model, run_id, params, oi in GRAPH_CASES:
+        r = run_cli(card, model, run_id, params, oi=oi)
         if r.returncode != 0:
             FAIL.append(f"{name}: door exited {r.returncode}: {r.stderr.strip()[:200]}")
             continue

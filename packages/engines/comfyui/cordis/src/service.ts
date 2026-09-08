@@ -25,6 +25,10 @@ export interface CardDefinition {
   skeleton: string
   /** Boarded model ids (the board gate; unboarded models refuse). */
   boarded: readonly string[]
+  /** Pure-tool cards (boarded: [], no model families — the Blender
+   *  card precedent): skip the {model:} demand everywhere (cardGate,
+   *  compose, CLI). Default true — every existing card needs one. */
+  requiresModel?: boolean
   /** Extension packs the card's renderers ride (EXTENSION LAW). */
   requires?: readonly string[]
   /** Per-family extension packs — the py requires_by_family mirror.
@@ -99,9 +103,39 @@ export class ComfyUIService extends Service {
     this.objectInfoNodes = nodes ? new Set(nodes) : null
   }
 
-  compose(cardId: string, modelId: string, params: unknown, runId: string): PromptGraph {
+  compose(cardId: string, modelId: string | null, params: unknown, runId: string): PromptGraph {
     const def = this.cards.get(cardId)
     if (!def) throw new ComposeRefusal('unknown-card', `unknown card '${cardId}' (registered: ${[...this.cards.keys()].sort().join(', ') || 'none'})`)
+    // MODEL-LESS path (requiresModel: false — pure-tool cards with no
+    // families): no board, no facts row, no model defaults. The
+    // schema parse below still runs — the single declaration guards
+    // the params, never a second truth.
+    if (def.requiresModel === false && (modelId === null || modelId === '')) {
+      let merged: Record<string, unknown>
+      try {
+        merged = def.schema(params)
+      } catch (e) {
+        throw new ComposeRefusal('bad-params', `card '${cardId}' refused params: ${(e as Error).message}`)
+      }
+      const packs = def.requires
+      if (packs?.length && this.objectInfoNodes) {
+        const extMap = this.facts?.extension_node_types ?? {}
+        for (const pack of packs) {
+          const expected = extMap[pack] ?? []
+          const found = expected.filter((n) => this.objectInfoNodes!.has(n))
+          if (expected.length > 0 && found.length === 0) {
+            throw new ComposeRefusal('missing-extension', `card '${cardId}' requires '${pack}' (nodes ${expected.join(', ')}) — none live on the engine; install via ComfyUI-Manager`)
+          }
+        }
+      }
+      const g = new GraphBuilder(this.pinDefaults)
+      def.compose(merged, { id: '', card: cardId, defaults: {}, lane_inputs: {}, card_knobs: [], variants: [], variant_groups: [], outputs: [] }, g, runId)
+      const graph = g.toJSON()
+      return def.finalize ? def.finalize(graph) : graph
+    }
+    if (modelId === null || modelId === '') {
+      throw new ComposeRefusal('no-model', `card '${cardId}' requires a model id (the {model:} door) — see GET /v1/models`)
+    }
     if (!def.boarded.includes(modelId)) {
       throw new ComposeRefusal('not-boarded', `model '${modelId}' is not boarded on the ${cardId} card (boarded: ${[...def.boarded].sort().join(', ')})`)
     }

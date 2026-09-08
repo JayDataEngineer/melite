@@ -62,6 +62,99 @@
       }
     },
     {
+      "name": "clothing_placement_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "clothing-placement",
+      "model": null,
+      "stage_title": "Clothing Placement",
+      "description": "Place a garment mesh on a body mesh in a persistent Blender session (MCP) - snap, offset, rotate, scale, mirror; exports the placed scene GLB.",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "description": "Body mesh — absolute GLB/GLTF/FBX/OBJ path, or a $spell naming the wired upstream stage input"
+          },
+          "garment": {
+            "type": "string",
+            "description": "Garment mesh — absolute GLB/GLTF/FBX/OBJ path, or a $spell naming the wired upstream stage input"
+          },
+          "out_path": {
+            "type": "string",
+            "description": "Absolute path the placed scene GLB is written to (caller-staged under the run scratch)"
+          },
+          "position_x": {
+            "type": "number",
+            "default": 0,
+            "description": "Garment offset X from the placement base"
+          },
+          "position_y": {
+            "type": "number",
+            "default": 0,
+            "description": "Garment offset Y from the placement base"
+          },
+          "position_z": {
+            "type": "number",
+            "default": 0,
+            "description": "Garment offset Z from the placement base"
+          },
+          "rotation_x": {
+            "type": "number",
+            "default": 0,
+            "description": "Garment rotation degrees about X"
+          },
+          "rotation_y": {
+            "type": "number",
+            "default": 0,
+            "description": "Garment rotation degrees about Y"
+          },
+          "rotation_z": {
+            "type": "number",
+            "default": 0,
+            "description": "Garment rotation degrees about Z"
+          },
+          "scale": {
+            "type": "number",
+            "default": 1,
+            "minimum": 0.01,
+            "description": "Uniform garment scale"
+          },
+          "snap_to": {
+            "type": "string",
+            "default": "",
+            "description": "Object or armature-bone name to place relative to (default: the body root)"
+          },
+          "mirror_x": {
+            "type": "boolean",
+            "default": false,
+            "description": "Mirror the garment across X (symmetry)"
+          },
+          "mcp_addr": {
+            "type": "string",
+            "default": "",
+            "description": "Session host:port override (default: MELITE_BLENDER_MCP_ADDR, else 127.0.0.1:9876)"
+          },
+          "autoboot": {
+            "type": "boolean",
+            "default": true,
+            "description": "Boot a headless session when none listens (false = human-synced session only)"
+          },
+          "timeout": {
+            "type": "integer",
+            "default": 300,
+            "minimum": 10,
+            "description": "Seconds for the session to answer"
+          }
+        },
+        "required": [
+          "body",
+          "garment",
+          "out_path"
+        ]
+      }
+    },
+    {
       "name": "fit_card",
       "version": 1,
       "kind": "card-compose",

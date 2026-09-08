@@ -1,0 +1,1 @@
+{"card":"clothing-placement","model":null,"object_info":"tests/golden_cordis/fixtures/object_info_mcp.json","params":{"body":"tests/golden_cordis/fixtures/cube.glb","garment":"tests/golden_cordis/fixtures/sphere.glb","out_path":"/tmp/mcp-smoke/from-card.glb","position_z":0.9},"run_id":"testrun"}

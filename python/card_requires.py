@@ -43,6 +43,10 @@ SYSTEM_BINARY_REQUIRES: dict[str, tuple[tuple[str, ...], str]] = {
     # so the gate refuses with the same need the node would name at
     # prompt time, one queue slot earlier).
     "melite-autoremesher-nodes": (("AUTOREMESHER_BIN",), "autoremesher"),
+    # melite-blender-proxy-nodes (LAW 0, 2026-09-08 MCP stroke): the
+    # one-shot runner AND the MCP session autoboot resolve the same
+    # Blender binary env contract as autorig (proxy.resolve_blender_binary).
+    "melite-blender-proxy-nodes": (("SKINTOKEN_BLENDER_BIN", "BLENDER_BIN"), "blender"),
 }
 
 
@@ -148,8 +152,11 @@ EXTENSION_NODE_TYPES: dict[str, set[str]] = {
     "melite-autoremesher-nodes": {"AutoRemesher"},
     # Blender proxy (Law 0, 2026-09-07: graphs drive headless Blender
     # through these nodes; the binary itself is a SYSTEM requirement).
+    # MeliteBlenderMCPCall (2026-09-08 MCP stroke): the persistent-
+    # session macro node (human-synced viewport or headless autoboot).
     "melite-blender-proxy-nodes": {
         "MeliteBlenderRunScript", "MeliteBlenderExport",
+        "MeliteBlenderMCPCall",
     },
 }
 

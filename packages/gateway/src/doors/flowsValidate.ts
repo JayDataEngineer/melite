@@ -761,21 +761,27 @@ let cardDefs: Map<string, CardDefinition> | null = null;
 // declaration — loadCardDefs' Schemastery schema parse, the same
 // validator compose runs, never a second truth.
 function cardGate(flowId: string, st: StageRow): void {
-  const model: unknown = st.params["model"];
-  if (!model || !String(model).trim()) {
-    throw new FlowError(
-      "flow " +
-        pyReprStr(flowId) +
-        " stage " +
-        pyReprStr(st.id) +
-        ": card " +
-        pyReprStr(st.card) +
-        " requires params.model (the model row id the card composes " +
-        "against — see GET /v1/models) — the flow-stage equivalent " +
-        "of the {model:} door",
-    );
-  }
   const def = cardDefs?.get(st.card);
+  // requiresModel: false (pure-tool cards, boarded: []) skips the
+  // {model:} demand — the py row.requires_model parity. Unknown
+  // cards still hit the model gate first (order preserved: the wall
+  // pins the model-gate text verbatim).
+  if (def?.requiresModel !== false) {
+    const model: unknown = st.params["model"];
+    if (!model || !String(model).trim()) {
+      throw new FlowError(
+        "flow " +
+          pyReprStr(flowId) +
+          " stage " +
+          pyReprStr(st.id) +
+          ": card " +
+          pyReprStr(st.card) +
+          " requires params.model (the model row id the card composes " +
+          "against — see GET /v1/models) — the flow-stage equivalent " +
+          "of the {model:} door",
+      );
+    }
+  }
   if (def === undefined) {
     throw new FlowError(
       "flow " +

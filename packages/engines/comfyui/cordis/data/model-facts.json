@@ -92,6 +92,7 @@
     ],
     "melite-blender-proxy-nodes": [
       "MeliteBlenderExport",
+      "MeliteBlenderMCPCall",
       "MeliteBlenderRunScript"
     ],
     "melite-kimodo-nodes": [

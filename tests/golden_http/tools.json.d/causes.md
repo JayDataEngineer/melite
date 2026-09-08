@@ -55,3 +55,12 @@ decision, not drift):
 
 Verified: test_gateway_chrome_parity (15 legs), test_http_parity,
 test_formwire_parity re-pinned to these bytes.
+
+## 2026-09-08: 19 -> 20 tools (clothing-placement, the Blender MCP card)
+
+Pure LAW-0 card: no card.py, no card-decls.json row — the frozen
+TOOLS_JSON base in chrome.ts gains one hand-added generator-shaped
+row (card clothing-placement, model null, stage_title Clothing
+Placement; params_schema placeholder inert — the toolsEmit overlay
+projects the live Schemastery schema at serve: 15 knobs, required
+[body, garment, out_path], no model knob on the empty board).
