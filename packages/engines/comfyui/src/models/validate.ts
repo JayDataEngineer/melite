@@ -85,6 +85,11 @@ export function validateRegistryAgainstCards(
   for (const mid of ids) {
     const decl = MODEL_REGISTRY[mid];
     if (decl === undefined) continue;
+    // LAW 0: only comfyui families validate against the live card
+    // plane — retired-engine rows are frozen data (engine-marked),
+    // their card refs name the cards their OWN engine served
+    // (music-native/auto-rig — deleted with the engine, not drift).
+    if (decl.engine !== undefined && decl.engine !== "" && decl.engine !== "comfyui") continue;
     const cardId: string = decl.card ?? "";
     if (cardId !== "" && !cards.has(cardId)) {
       throw new ModelError(

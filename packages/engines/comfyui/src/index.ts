@@ -5,3 +5,4 @@ export * from "./comfyui.ts";
 
 export * from "./models/models.ts";
 export * from "./models/validate.ts";
+export * from "./models/catalogEmission.ts";

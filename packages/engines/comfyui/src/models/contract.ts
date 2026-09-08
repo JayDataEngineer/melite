@@ -172,8 +172,15 @@ export interface ModelDecl {
   card: string;
   unoffered: boolean;
   defaults?: Record<string, unknown>;
-  source?: { type?: string; repo_id?: string; filename?: string; note?: string } | null;
-  studio?: { tenant: string; owns_params?: boolean; writes?: string } | null;
+  source?: { type?: string; repo_id?: string; filename?: string | null; note?: string } | null;
+  studio?: {
+    tenant: string;
+    owns_params?: boolean;
+    writes?: readonly string[];
+    size?: string;
+    layout?: string;
+    kind?: string;
+  } | null;
   mods: string[];
   variants: VariantRow[];
   variant_groups: VariantGroupRow[];

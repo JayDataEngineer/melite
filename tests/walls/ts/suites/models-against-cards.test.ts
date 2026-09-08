@@ -73,9 +73,12 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     assert.ok(checked.length >= 19, `expected ≥19 checked pairs, got ${checked.length}`);
   });
 
-  it("every non-empty card ref names a REGISTERED card (the amnesty is over)", async (): Promise<void> => {
+  it("every non-empty COMFYUI card ref names a REGISTERED card (the amnesty is over)", async (): Promise<void> => {
     const cards = await cardTable();
     for (const decl of Object.values(MODEL_REGISTRY)) {
+      // LAW 0: retired-engine rows carry their own engines' dead
+      // card refs (music-native, auto-rig) — data, not drift
+      if (decl.engine !== undefined && decl.engine !== "" && decl.engine !== "comfyui") continue;
       const cardId = decl.card ?? "";
       if (cardId === "") continue;
       assert.ok(cards.has(cardId), `dead card ref: '${cardId}'`);

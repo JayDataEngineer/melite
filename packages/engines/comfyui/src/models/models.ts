@@ -13,6 +13,7 @@ import {
   type VariantRow,
 } from "./contract.ts";
 import { MODEL_REGISTRY } from "./registry.generated.ts";
+import { buildCatalog } from "./catalogEmission.ts";
 
 export { MODEL_REGISTRY } from "./registry.generated.ts";
 export * from "./contract.ts";
@@ -94,7 +95,7 @@ export function resolve(
 
 // ── the served row (catalog parity, disk probes frozen at dump) ────
 
-function servedRow(decl: ModelDecl): ModelRow {
+export function servedRow(decl: ModelDecl): ModelRow {
   if (decl.unoffered) {
     throw new ModelError(
       `${decl.id}: unoffered — an unoffered family serves no row`,
@@ -124,14 +125,12 @@ function servedRow(decl: ModelDecl): ModelRow {
   return row;
 }
 
-/** The catalog: every OFFERED family's served row, id-keyed. */
+/**
+ * The catalog: every offered COMFYUI family's served row, id-keyed.
+ * The SERVE LAW lives in one place — catalogEmission.buildCatalog
+ * (LAW 0: retired-engine rows are frozen data, never served; the
+ * servedRow above is the shared row builder, not the gate).
+ */
 export function modelCatalog(): Record<string, ModelRow> {
-  const out: Record<string, ModelRow> = {};
-  for (const id of modelIds()) {
-    const decl: ModelDecl = MODEL_REGISTRY[id];
-    if (!decl.unoffered) {
-      out[id] = servedRow(decl);
-    }
-  }
-  return out;
+  return buildCatalog().models;
 }

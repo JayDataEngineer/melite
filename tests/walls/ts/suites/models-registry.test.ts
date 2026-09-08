@@ -21,8 +21,13 @@ import {
 } from "../../../../packages/engines/comfyui/src/models/models.ts";
 
 describe("the resurrected model registry (families/variants/cells/links)", () => {
-  it("carries all 47 comfyui families from git 034e1f97", (): void => {
-    assert.equal(modelIds().length, 47);
+  it("carries all 59 families (47 comfyui + 12 retired, engine-marked)", (): void => {
+    assert.equal(modelIds().length, 59);
+    const comfy = modelIds().filter((id) => {
+      const e = getModel(id).engine ?? "";
+      return e === "" || e === "comfyui";
+    });
+    assert.equal(comfy.length, 47);
   });
 
   it("serves 43 offered rows; the 4 unoffered families are excluded loud-side", (): void => {
@@ -79,8 +84,9 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     assert.throws(() => mergedDefaults("krea-2", "no-such-variant"), ModelError);
   });
 
-  it("variant matrices ride (116 variants across the estate)", (): void => {
+  it("variant matrices ride (comfyui estate: 116 variants)", (): void => {
     const total = Object.values(MODEL_REGISTRY)
+      .filter((d) => d.engine === undefined || d.engine === "" || d.engine === "comfyui")
       .map((d) => d.variants.length)
       .reduce((a, b) => a + b, 0);
     assert.equal(total, 116);

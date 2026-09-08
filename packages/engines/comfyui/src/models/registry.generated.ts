@@ -1,18 +1,26 @@
 // models/registry.generated.ts — THE FROZEN MODEL REGISTRY.
 //
-// RESURRECTION (2026-09-08): every model.py unit at git 034e1f97
-// (the last living state — 47 comfyui families), imported and dumped
-// by the melite_models metaclasses themselves: every row validated at
-// construction (pydantic twin of the cards DSL). This file is FROZEN
-// DATA (P36 data-stays-data): edits belong in a regeneration, never
-// inline. card_knobs rows are NOT restated: the compose plane's
-// model-facts.json already carries that frozen truth (one copy).
-// The dump tool never lands in the tree (git archaeology,
-// NO-ESTATE-PYTHON); the provenance is this header.
+// CORRECTION STROKE A1 (2026-09-08, operator audit answer): the
+// first dump was corrupt vs the tree's own golden — genre carried
+// python enum reprs ("Genre.IMAGE"), the 12 retired-engine
+// families were missing, 4 of 5 golden sections unported. This
+// re-dump fixes all three: enums serialized as VALUES, ALL 59
+// families (47 comfyui + 12 retired: anycreature/audio_cpp/
+// skintokens — engine-marked, LAW 0: frozen data, never run), and
+// the card identity rides cardIdentity.generated.ts beside it.
+//
+// Provenance: units at 034e1f97 (comfyui) + 034e1f97 (vendor/
+// retired-engines), imported under the metaclasses (every row
+// validated at construction — git archaeology in /tmp, python
+// never enters the tree). AMENDMENTS with receipts: music3's
+// 'backend' default dropped (audio-cpp fossil; the
+// cross-validation wall's catch). card_knobs not restated
+// (model-facts.json owns them). Frozen data (P36): edits belong
+// in a regeneration, never inline.
 
 import type { ModelDecl } from "./contract.ts";
 
-export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
+export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> ={
  "wan-vace": {
   "id": "wan-vace",
   "label": "Wan2.2 VACE",
@@ -33,7 +41,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "seed": 42
   },
   "base_body": "",
-  "genre": "Genre.VIDEO",
+  "genre": "video",
   "mods": [],
   "variants": [
    {
@@ -115,72 +123,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
-  "lane_inputs": {
-   "background_removal": "",
-   "checkpoint": "",
-   "clip_type": "wan",
-   "clip_vision": "",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='Wan2_2_VACE_A14B_HIGH_fp8_e4m3fn_scaled_KJ_merged.safetensors', unet_variant='', unet_quant='', text_encoder='umt5_xxl_fp8_e4m3fn_converted.safetensors', clip_type=<ClipType.WAN: 'wan'>, vae='Wan2_1_VAE_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='Wan2_2_VACE_A14B_HIGH_fp8_e4m3fn_scaled_KJ_merged.safetensors', unet_variant='', unet_quant='', text_encoder='umt5_xxl_fp8_e4m3fn_converted.safetensors', clip_type=<ClipType.WAN: 'wan'>, vae='Wan2_1_VAE_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "family": "",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='Wan2_2_VACE_A14B_HIGH_fp8_e4m3fn_scaled_KJ_merged.safetensors', unet_variant='', unet_quant='', text_encoder='umt5_xxl_fp8_e4m3fn_converted.safetensors', clip_type=<ClipType.WAN: 'wan'>, vae='Wan2_1_VAE_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "latent_node": "EmptySD3LatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='Wan2_2_VACE_A14B_HIGH_fp8_e4m3fn_scaled_KJ_merged.safetensors', unet_variant='', unet_quant='', text_encoder='umt5_xxl_fp8_e4m3fn_converted.safetensors', clip_type=<ClipType.WAN: 'wan'>, vae='Wan2_1_VAE_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='Wan2_2_VACE_A14B_HIGH_fp8_e4m3fn_scaled_KJ_merged.safetensors', unet_variant='', unet_quant='', text_encoder='umt5_xxl_fp8_e4m3fn_converted.safetensors', clip_type=<ClipType.WAN: 'wan'>, vae='Wan2_1_VAE_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='Wan2_2_VACE_A14B_HIGH_fp8_e4m3fn_scaled_KJ_merged.safetensors', unet_variant='', unet_quant='', text_encoder='umt5_xxl_fp8_e4m3fn_converted.safetensors', clip_type=<ClipType.WAN: 'wan'>, vae='Wan2_1_VAE_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'vae', 'clip_type', 'unet', 'text_encoder'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='Wan2_2_VACE_A14B_HIGH_fp8_e4m3fn_scaled_KJ_merged.safetensors', unet_variant='', unet_quant='', text_encoder='umt5_xxl_fp8_e4m3fn_converted.safetensors', clip_type=<ClipType.WAN: 'wan'>, vae='Wan2_1_VAE_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 0.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "umt5_xxl_fp8_e4m3fn_converted.safetensors",
-   "texture_vae": "",
-   "unet": "Wan2_2_VACE_A14B_HIGH_fp8_e4m3fn_scaled_KJ_merged.safetensors",
-   "unet_quant": "",
-   "unet_unconditional": "",
-   "unet_variant": "",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "Wan2_1_VAE_bf16.safetensors",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": false
-  },
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -207,7 +149,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "seed": 42
   },
   "base_body": "",
-  "genre": "Genre.VIDEO",
+  "genre": "video",
   "mods": [],
   "variants": [
    {
@@ -265,72 +207,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
-  "lane_inputs": {
-   "background_removal": "",
-   "checkpoint": "",
-   "clip_type": "wan",
-   "clip_vision": "",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='scail2_14B_fp8_scaled.safetensors', unet_variant='', unet_quant='', text_encoder='umt5_xxl_fp8_e4m3fn_converted.safetensors', clip_type=<ClipType.WAN: 'wan'>, vae='Wan2_1_VAE_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='scail2_14B_fp8_scaled.safetensors', unet_variant='', unet_quant='', text_encoder='umt5_xxl_fp8_e4m3fn_converted.safetensors', clip_type=<ClipType.WAN: 'wan'>, vae='Wan2_1_VAE_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "family": "",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='scail2_14B_fp8_scaled.safetensors', unet_variant='', unet_quant='', text_encoder='umt5_xxl_fp8_e4m3fn_converted.safetensors', clip_type=<ClipType.WAN: 'wan'>, vae='Wan2_1_VAE_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "latent_node": "EmptySD3LatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='scail2_14B_fp8_scaled.safetensors', unet_variant='', unet_quant='', text_encoder='umt5_xxl_fp8_e4m3fn_converted.safetensors', clip_type=<ClipType.WAN: 'wan'>, vae='Wan2_1_VAE_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='scail2_14B_fp8_scaled.safetensors', unet_variant='', unet_quant='', text_encoder='umt5_xxl_fp8_e4m3fn_converted.safetensors', clip_type=<ClipType.WAN: 'wan'>, vae='Wan2_1_VAE_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='scail2_14B_fp8_scaled.safetensors', unet_variant='', unet_quant='', text_encoder='umt5_xxl_fp8_e4m3fn_converted.safetensors', clip_type=<ClipType.WAN: 'wan'>, vae='Wan2_1_VAE_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'vae', 'clip_type', 'unet', 'text_encoder'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='scail2_14B_fp8_scaled.safetensors', unet_variant='', unet_quant='', text_encoder='umt5_xxl_fp8_e4m3fn_converted.safetensors', clip_type=<ClipType.WAN: 'wan'>, vae='Wan2_1_VAE_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 0.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "umt5_xxl_fp8_e4m3fn_converted.safetensors",
-   "texture_vae": "",
-   "unet": "scail2_14B_fp8_scaled.safetensors",
-   "unet_quant": "",
-   "unet_unconditional": "",
-   "unet_variant": "",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "Wan2_1_VAE_bf16.safetensors",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": false
-  },
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -363,7 +239,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "rtx_strength": 0.6
   },
   "base_body": "",
-  "genre": "Genre.VIDEO",
+  "genre": "video",
   "mods": [],
   "variants": [
    {
@@ -420,7 +296,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -483,10 +358,11 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "guide_scale": 3.0,
    "frames": 97,
    "fps": 24,
-   "scheduler": "beta"
+   "scheduler": "beta",
+   "negative_prompt": null
   },
   "base_body": "",
-  "genre": "Genre.VIDEO",
+  "genre": "video",
   "mods": [],
   "variants": [
    {
@@ -557,7 +433,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -582,7 +457,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "seed": 42
   },
   "base_body": "",
-  "genre": "Genre.VIDEO",
+  "genre": "video",
   "mods": [],
   "variants": [
    {
@@ -680,7 +555,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -704,7 +578,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "seed": 42
   },
   "base_body": "",
-  "genre": "Genre.VIDEO",
+  "genre": "video",
   "mods": [],
   "variants": [
    {
@@ -868,7 +742,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    }
   ],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": true,
   "has_inference": false,
@@ -888,10 +761,41 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "studio": {
    "tenant": "video/h3-timeline",
    "owns_params": true,
-   "writes": "('calls', 'keyframes', 'preset', 'fps', 'seed', 'audio_mode', 'continuity', 'shift_video', 'shift_audio', 'sampler', 'scheduler', 'sampling_steps', 'width', 'height', 'h3_attention', 'h3_sage_attention', 'h3_fp16_accumulation', 'h3_torch_compile', 'sharpen_enabled', 'sharpen_strength', 'interpolate_enabled', 'interpolate_multiplier', 'audio_stem', 'lora_name', 'lora_strength', 'seam_carry', 'document')"
+   "writes": [
+    "calls",
+    "keyframes",
+    "preset",
+    "fps",
+    "seed",
+    "audio_mode",
+    "continuity",
+    "shift_video",
+    "shift_audio",
+    "sampler",
+    "scheduler",
+    "sampling_steps",
+    "width",
+    "height",
+    "h3_attention",
+    "h3_sage_attention",
+    "h3_fp16_accumulation",
+    "h3_torch_compile",
+    "sharpen_enabled",
+    "sharpen_strength",
+    "interpolate_enabled",
+    "interpolate_multiplier",
+    "audio_stem",
+    "lora_name",
+    "lora_strength",
+    "seam_carry",
+    "document"
+   ],
+   "kind": "custom",
+   "size": "huge",
+   "layout": "studio"
   },
   "base_body": "",
-  "genre": "Genre.VIDEO",
+  "genre": "video",
   "mods": [],
   "variants": [
    {
@@ -1004,10 +908,9 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    }
   ],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": true,
-  "has_inference": false,
+  "has_inference": true,
   "has_rubric": false
  },
  "h3-keyframe": {
@@ -1025,7 +928,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "steps": 12
   },
   "base_body": "",
-  "genre": "Genre.VIDEO",
+  "genre": "video",
   "mods": [],
   "variants": [
    {
@@ -1082,7 +985,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": true,
   "has_inference": false,
@@ -1101,7 +1003,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "output_artifact": "video"
   },
   "base_body": "",
-  "genre": "Genre.VIDEO",
+  "genre": "video",
   "mods": [],
   "variants": [
    {
@@ -1158,7 +1060,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -1177,7 +1078,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "dwpose_precision": "fp32"
   },
   "base_body": "",
-  "genre": "Genre.OTHER",
+  "genre": "other",
   "mods": [],
   "variants": [
    {
@@ -1234,7 +1135,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -1256,10 +1156,13 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "seed": 42
   },
   "source": {
-   "repo_id": "layerdifforg/seethroughv0.0.2_layerdiff3d"
+   "type": "",
+   "repo_id": "layerdifforg/seethroughv0.0.2_layerdiff3d",
+   "filename": null,
+   "note": ""
   },
   "base_body": "",
-  "genre": "Genre.OTHER",
+  "genre": "other",
   "mods": [],
   "variants": [
    {
@@ -1316,7 +1219,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -1339,7 +1241,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "cfg": 1.0
   },
   "base_body": "",
-  "genre": "Genre.OTHER",
+  "genre": "other",
   "mods": [],
   "variants": [
    {
@@ -1396,7 +1298,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -1419,10 +1320,13 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "cfg": 7.0
   },
   "source": {
-   "repo_id": "nvidia/soma-x"
+   "type": "",
+   "repo_id": "nvidia/soma-x",
+   "filename": null,
+   "note": ""
   },
   "base_body": "",
-  "genre": "Genre.OTHER",
+  "genre": "other",
   "mods": [],
   "variants": [
    {
@@ -1479,7 +1383,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -1502,7 +1405,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "sampler": "euler"
   },
   "base_body": "",
-  "genre": "Genre.OTHER",
+  "genre": "other",
   "mods": [],
   "variants": [
    {
@@ -1559,7 +1462,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -1584,14 +1486,21 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "seed": 42
   },
   "source": {
-   "repo_id": "nvidia/Kimodo-SOMA-RP-v1.1"
+   "type": "",
+   "repo_id": "nvidia/Kimodo-SOMA-RP-v1.1",
+   "filename": null,
+   "note": ""
   },
   "studio": {
    "tenant": "motion/motion-studio",
-   "owns_params": false
+   "owns_params": false,
+   "writes": [],
+   "kind": "custom",
+   "size": "normal",
+   "layout": "studio"
   },
   "base_body": "",
-  "genre": "Genre.MOTION",
+  "genre": "motion",
   "mods": [],
   "variants": [
    {
@@ -1656,71 +1565,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    }
   ],
   "accepts": [],
-  "character_presets": [],
-  "lane_inputs": {
-   "background_removal": "",
-   "checkpoint": "",
-   "clip_vision": "",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='kimodo', model_path='Kimodo-SOMA-RP-v1.1', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='kimodo', model_path='Kimodo-SOMA-RP-v1.1', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "family": "kimodo",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='kimodo', model_path='Kimodo-SOMA-RP-v1.1', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "latent_node": "EmptySD3LatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='kimodo', model_path='Kimodo-SOMA-RP-v1.1', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='kimodo', model_path='Kimodo-SOMA-RP-v1.1', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='kimodo', model_path='Kimodo-SOMA-RP-v1.1', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'model_path', 'family'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "Kimodo-SOMA-RP-v1.1",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='kimodo', model_path='Kimodo-SOMA-RP-v1.1', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 0.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "",
-   "texture_vae": "",
-   "unet": "",
-   "unet_quant": "",
-   "unet_unconditional": "",
-   "unet_variant": "",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": false
-  },
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -1740,10 +1584,11 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "height": 1024,
    "steps": 8,
    "sampler": "res_multistep",
-   "cfg": 1.0
+   "cfg": 1.0,
+   "negative_prompt": null
   },
   "base_body": "",
-  "genre": "Genre.IMAGE",
+  "genre": "image",
   "mods": [],
   "variants": [
    {
@@ -1802,72 +1647,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
-  "lane_inputs": {
-   "background_removal": "",
-   "checkpoint": "",
-   "clip_type": "lumina2",
-   "clip_vision": "",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='z_image_turbo_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='qwen_3_4b.safetensors', clip_type=<ClipType.LUMINA2: 'lumina2'>, vae='ae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=3.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='z_image_turbo_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='qwen_3_4b.safetensors', clip_type=<ClipType.LUMINA2: 'lumina2'>, vae='ae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=3.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "family": "",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='z_image_turbo_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='qwen_3_4b.safetensors', clip_type=<ClipType.LUMINA2: 'lumina2'>, vae='ae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=3.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "latent_node": "EmptySD3LatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='z_image_turbo_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='qwen_3_4b.safetensors', clip_type=<ClipType.LUMINA2: 'lumina2'>, vae='ae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=3.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='z_image_turbo_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='qwen_3_4b.safetensors', clip_type=<ClipType.LUMINA2: 'lumina2'>, vae='ae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=3.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='z_image_turbo_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='qwen_3_4b.safetensors', clip_type=<ClipType.LUMINA2: 'lumina2'>, vae='ae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=3.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'latent_node', 'clip_type', 'vae', 'text_encoder', 'sampling_shift', 'unet'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='z_image_turbo_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='qwen_3_4b.safetensors', clip_type=<ClipType.LUMINA2: 'lumina2'>, vae='ae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=3.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 3.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "qwen_3_4b.safetensors",
-   "texture_vae": "",
-   "unet": "z_image_turbo_int8_convrot.safetensors",
-   "unet_quant": "",
-   "unet_unconditional": "",
-   "unet_variant": "",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "ae.safetensors",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": false
-  },
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -1890,7 +1669,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "trailing_comma": false
   },
   "base_body": "",
-  "genre": "Genre.IMAGE",
+  "genre": "image",
   "mods": [],
   "variants": [
    {
@@ -1948,7 +1727,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -1969,7 +1747,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "seed": 0
   },
   "base_body": "",
-  "genre": "Genre.IMAGE",
+  "genre": "image",
   "mods": [],
   "variants": [
    {
@@ -2040,71 +1818,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
-  "lane_inputs": {
-   "background_removal": "",
-   "checkpoint": "",
-   "clip_vision": "",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='seedvr2_ema_3b_fp16.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='ema_vae_fp16.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='seedvr2_ema_3b_fp16.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='ema_vae_fp16.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "family": "",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='seedvr2_ema_3b_fp16.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='ema_vae_fp16.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "latent_node": "EmptySD3LatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='seedvr2_ema_3b_fp16.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='ema_vae_fp16.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='seedvr2_ema_3b_fp16.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='ema_vae_fp16.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='seedvr2_ema_3b_fp16.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='ema_vae_fp16.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'vae', 'unet'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='seedvr2_ema_3b_fp16.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='ema_vae_fp16.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 0.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "",
-   "texture_vae": "",
-   "unet": "seedvr2_ema_3b_fp16.safetensors",
-   "unet_quant": "",
-   "unet_unconditional": "",
-   "unet_variant": "",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "ema_vae_fp16.safetensors",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": false
-  },
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -2126,9 +1839,21 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "cfg": 1.0,
    "double_reference": false
   },
-  "prompt_guide": null,
+  "prompt_guide": {
+   "title": "Qwen Image Edit Prompting Guide",
+   "sections": [
+    "GuideSection(label='Format",
+    "body='One edit per instruction: target region",
+    "single change",
+    "what stays identical",
+    "list=("
+   ],
+   "label": "CFG",
+   "body": "Flow-matching lane: keep Guidance low (default 1.0; Standard stamps 2.5)",
+   "list": []
+  },
   "base_body": "",
-  "genre": "Genre.IMAGE",
+  "genre": "image",
   "mods": [
    "lanpaint",
    "loras",
@@ -2217,75 +1942,9 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
-  "lane_inputs": {
-   "background_removal": "",
-   "checkpoint": "",
-   "clip_type": "qwen_image",
-   "clip_vision": "",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='qwen_image_edit_2511_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='qwen_2.5_vl_7b_fp8_scaled.safetensors', clip_type=<ClipType.QWEN_IMAGE: 'qwen_image'>, vae='qwen_image_vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='qwen_image_edit_2511_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='qwen_2.5_vl_7b_fp8_scaled.safetensors', clip_type=<ClipType.QWEN_IMAGE: 'qwen_image'>, vae='qwen_image_vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "family": "",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='qwen_image_edit_2511_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='qwen_2.5_vl_7b_fp8_scaled.safetensors', clip_type=<ClipType.QWEN_IMAGE: 'qwen_image'>, vae='qwen_image_vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "latent_node": "EmptySD3LatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='qwen_image_edit_2511_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='qwen_2.5_vl_7b_fp8_scaled.safetensors', clip_type=<ClipType.QWEN_IMAGE: 'qwen_image'>, vae='qwen_image_vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='qwen_image_edit_2511_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='qwen_2.5_vl_7b_fp8_scaled.safetensors', clip_type=<ClipType.QWEN_IMAGE: 'qwen_image'>, vae='qwen_image_vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='qwen_image_edit_2511_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='qwen_2.5_vl_7b_fp8_scaled.safetensors', clip_type=<ClipType.QWEN_IMAGE: 'qwen_image'>, vae='qwen_image_vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'vae', 'clip_type', 'unet', 'text_encoder'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='qwen_image_edit_2511_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='qwen_2.5_vl_7b_fp8_scaled.safetensors', clip_type=<ClipType.QWEN_IMAGE: 'qwen_image'>, vae='qwen_image_vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 0.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
-   "texture_vae": "",
-   "unet": "qwen_image_edit_2511_int8_convrot.safetensors",
-   "unet_quant": "",
-   "unet_unconditional": "",
-   "unet_variant": "",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "qwen_image_vae.safetensors",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": false
-  },
   "canvas_default": false,
   "has_agent": true,
-  "has_inference": false,
+  "has_inference": true,
   "has_rubric": false
  },
  "pixel_upscale": {
@@ -2312,7 +1971,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "mode": "upscale"
   },
   "base_body": "",
-  "genre": "Genre.IMAGE",
+  "genre": "image",
   "mods": [],
   "variants": [
    {
@@ -2370,7 +2029,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -2394,21 +2052,46 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "export_hands": false,
    "export_body": false,
    "export_paint": false,
+   "sam3_prompt": null,
    "export_boxes": true,
    "instance_filter": "all",
    "max_instances": 0,
    "outputs": "[]"
   },
   "source": {
-   "repo_id": "facebook/sam-vit-base"
+   "type": "",
+   "repo_id": "facebook/sam-vit-base",
+   "filename": null,
+   "note": ""
   },
   "studio": {
    "tenant": "image/mask_studio",
    "owns_params": true,
-   "writes": "('input_image', 'detect_mode', 'detection_threshold', 'sam_threshold', 'sam_dilation', 'output_mode', 'sam3_prompt', 'export_boxes', 'export_face', 'export_hands', 'export_body', 'export_paint', 'paint_mask', 'instance_filter', 'max_instances', 'outputs', 'roi')"
+   "writes": [
+    "input_image",
+    "detect_mode",
+    "detection_threshold",
+    "sam_threshold",
+    "sam_dilation",
+    "output_mode",
+    "sam3_prompt",
+    "export_boxes",
+    "export_face",
+    "export_hands",
+    "export_body",
+    "export_paint",
+    "paint_mask",
+    "instance_filter",
+    "max_instances",
+    "outputs",
+    "roi"
+   ],
+   "kind": "custom",
+   "size": "normal",
+   "layout": "studio"
   },
   "base_body": "",
-  "genre": "Genre.IMAGE",
+  "genre": "image",
   "mods": [],
   "variants": [
    {
@@ -2473,71 +2156,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    }
   ],
   "accepts": [],
-  "character_presets": [],
-  "lane_inputs": {
-   "background_removal": "",
-   "checkpoint": "sam3.1_multiplex_fp16.safetensors",
-   "clip_vision": "",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='rt_detr_v4-x-hgnet_fp32.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='sam3.1_multiplex_fp16.safetensors', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='rt_detr_v4-x-hgnet_fp32.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='sam3.1_multiplex_fp16.safetensors', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "family": "",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='rt_detr_v4-x-hgnet_fp32.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='sam3.1_multiplex_fp16.safetensors', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "latent_node": "EmptySD3LatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='rt_detr_v4-x-hgnet_fp32.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='sam3.1_multiplex_fp16.safetensors', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='rt_detr_v4-x-hgnet_fp32.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='sam3.1_multiplex_fp16.safetensors', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='rt_detr_v4-x-hgnet_fp32.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='sam3.1_multiplex_fp16.safetensors', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'unet', 'checkpoint'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='rt_detr_v4-x-hgnet_fp32.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='sam3.1_multiplex_fp16.safetensors', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 0.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "",
-   "texture_vae": "",
-   "unet": "rt_detr_v4-x-hgnet_fp32.safetensors",
-   "unet_quant": "",
-   "unet_unconditional": "",
-   "unet_variant": "",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": false
-  },
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -2559,9 +2177,28 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "sampler": "euler",
    "cfg": 1.0
   },
-  "prompt_guide": null,
+  "prompt_guide": {
+   "title": "Krea 2 Prompting Guide",
+   "sections": [
+    "GuideSection(label='Format",
+    "body='Continuous descriptive prose",
+    "list=("
+   ],
+   "label": "Structure",
+   "body": "",
+   "list": [
+    "Subject identity",
+    "action",
+    "expression",
+    "Environment / setting",
+    "Lighting",
+    "mood",
+    "color",
+    "Camera / composition"
+   ]
+  },
   "base_body": "",
-  "genre": "Genre.IMAGE",
+  "genre": "image",
   "mods": [
    "loras"
   ],
@@ -2682,76 +2319,10 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
-  "lane_inputs": {
-   "background_removal": "",
-   "checkpoint": "",
-   "clip_type": "krea2",
-   "clip_vision": "",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='', unet_variant='turbo', unet_quant='int8', text_encoder='qwen3vl_4b_fp8_scaled.safetensors', clip_type=<ClipType.KREA2: 'krea2'>, vae='qwen_image_vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='', unet_variant='turbo', unet_quant='int8', text_encoder='qwen3vl_4b_fp8_scaled.safetensors', clip_type=<ClipType.KREA2: 'krea2'>, vae='qwen_image_vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "family": "",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='', unet_variant='turbo', unet_quant='int8', text_encoder='qwen3vl_4b_fp8_scaled.safetensors', clip_type=<ClipType.KREA2: 'krea2'>, vae='qwen_image_vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "latent_node": "EmptySD3LatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='', unet_variant='turbo', unet_quant='int8', text_encoder='qwen3vl_4b_fp8_scaled.safetensors', clip_type=<ClipType.KREA2: 'krea2'>, vae='qwen_image_vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='', unet_variant='turbo', unet_quant='int8', text_encoder='qwen3vl_4b_fp8_scaled.safetensors', clip_type=<ClipType.KREA2: 'krea2'>, vae='qwen_image_vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='', unet_variant='turbo', unet_quant='int8', text_encoder='qwen3vl_4b_fp8_scaled.safetensors', clip_type=<ClipType.KREA2: 'krea2'>, vae='qwen_image_vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'unet_variant', 'clip_type', 'vae', 'text_encoder', 'unet_quant'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='', unet_variant='turbo', unet_quant='int8', text_encoder='qwen3vl_4b_fp8_scaled.safetensors', clip_type=<ClipType.KREA2: 'krea2'>, vae='qwen_image_vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 0.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "qwen3vl_4b_fp8_scaled.safetensors",
-   "texture_vae": "",
-   "unet": "",
-   "unet_quant": "int8",
-   "unet_unconditional": "",
-   "unet_variant": "turbo",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "qwen_image_vae.safetensors",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": false
-  },
   "timeout_floor": 300,
   "canvas_default": true,
   "has_agent": true,
-  "has_inference": false,
+  "has_inference": true,
   "has_rubric": false
  },
  "joytag": {
@@ -2768,7 +2339,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "remove_tag": ""
   },
   "base_body": "",
-  "genre": "Genre.IMAGE",
+  "genre": "image",
   "mods": [],
   "variants": [
    {
@@ -2826,7 +2397,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -2847,7 +2417,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "extra_option": ""
   },
   "base_body": "",
-  "genre": "Genre.IMAGE",
+  "genre": "image",
   "mods": [],
   "variants": [
    {
@@ -2905,7 +2475,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -2921,7 +2490,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "unoffered": false,
   "defaults": {},
   "base_body": "",
-  "genre": "Genre.IMAGE",
+  "genre": "image",
   "mods": [],
   "variants": [
    {
@@ -2981,7 +2550,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "image",
    "audio"
   ],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -3006,10 +2574,14 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   },
   "studio": {
    "tenant": "image/canvas-ideogram",
-   "owns_params": false
+   "owns_params": false,
+   "writes": [],
+   "kind": "custom",
+   "size": "normal",
+   "layout": "studio"
   },
   "base_body": "",
-  "genre": "Genre.IMAGE",
+  "genre": "image",
   "mods": [],
   "variants": [
    {
@@ -3058,72 +2630,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
-  "lane_inputs": {
-   "background_removal": "",
-   "checkpoint": "",
-   "clip_type": "ideogram4",
-   "clip_vision": "",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='ideogram4_nvfp4_mixed.safetensors', unet_variant='', unet_quant='', text_encoder='qwen3vl_8b_nvfp4.safetensors', clip_type=<ClipType.IDEOGRAM4: 'ideogram4'>, vae='flux2-vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.FLUX2: 'EmptyFlux2LatentImage'>, unet_unconditional='ideogram4_unconditional_nvfp4_mixed.safetensors', weightless=False)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='ideogram4_nvfp4_mixed.safetensors', unet_variant='', unet_quant='', text_encoder='qwen3vl_8b_nvfp4.safetensors', clip_type=<ClipType.IDEOGRAM4: 'ideogram4'>, vae='flux2-vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.FLUX2: 'EmptyFlux2LatentImage'>, unet_unconditional='ideogram4_unconditional_nvfp4_mixed.safetensors', weightless=False)>",
-   "family": "",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='ideogram4_nvfp4_mixed.safetensors', unet_variant='', unet_quant='', text_encoder='qwen3vl_8b_nvfp4.safetensors', clip_type=<ClipType.IDEOGRAM4: 'ideogram4'>, vae='flux2-vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.FLUX2: 'EmptyFlux2LatentImage'>, unet_unconditional='ideogram4_unconditional_nvfp4_mixed.safetensors', weightless=False)>",
-   "latent_node": "EmptyFlux2LatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='ideogram4_nvfp4_mixed.safetensors', unet_variant='', unet_quant='', text_encoder='qwen3vl_8b_nvfp4.safetensors', clip_type=<ClipType.IDEOGRAM4: 'ideogram4'>, vae='flux2-vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.FLUX2: 'EmptyFlux2LatentImage'>, unet_unconditional='ideogram4_unconditional_nvfp4_mixed.safetensors', weightless=False)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='ideogram4_nvfp4_mixed.safetensors', unet_variant='', unet_quant='', text_encoder='qwen3vl_8b_nvfp4.safetensors', clip_type=<ClipType.IDEOGRAM4: 'ideogram4'>, vae='flux2-vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.FLUX2: 'EmptyFlux2LatentImage'>, unet_unconditional='ideogram4_unconditional_nvfp4_mixed.safetensors', weightless=False)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='ideogram4_nvfp4_mixed.safetensors', unet_variant='', unet_quant='', text_encoder='qwen3vl_8b_nvfp4.safetensors', clip_type=<ClipType.IDEOGRAM4: 'ideogram4'>, vae='flux2-vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.FLUX2: 'EmptyFlux2LatentImage'>, unet_unconditional='ideogram4_unconditional_nvfp4_mixed.safetensors', weightless=False)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'latent_node', 'unet_unconditional', 'clip_type', 'vae', 'text_encoder', 'unet'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='ideogram4_nvfp4_mixed.safetensors', unet_variant='', unet_quant='', text_encoder='qwen3vl_8b_nvfp4.safetensors', clip_type=<ClipType.IDEOGRAM4: 'ideogram4'>, vae='flux2-vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.FLUX2: 'EmptyFlux2LatentImage'>, unet_unconditional='ideogram4_unconditional_nvfp4_mixed.safetensors', weightless=False)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 0.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "qwen3vl_8b_nvfp4.safetensors",
-   "texture_vae": "",
-   "unet": "ideogram4_nvfp4_mixed.safetensors",
-   "unet_quant": "",
-   "unet_unconditional": "ideogram4_unconditional_nvfp4_mixed.safetensors",
-   "unet_variant": "",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "flux2-vae.safetensors",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": false
-  },
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -3161,7 +2667,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "mask_invert": false
   },
   "base_body": "",
-  "genre": "Genre.IMAGE",
+  "genre": "image",
   "mods": [],
   "variants": [
    {
@@ -3210,7 +2716,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -3229,7 +2734,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "caption_task": "more_detailed_caption"
   },
   "base_body": "",
-  "genre": "Genre.IMAGE",
+  "genre": "image",
   "mods": [],
   "variants": [
    {
@@ -3287,7 +2792,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -3306,7 +2810,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "filename_prefix": "scaled"
   },
   "base_body": "",
-  "genre": "Genre.IMAGE",
+  "genre": "image",
   "mods": [],
   "variants": [
    {
@@ -3363,7 +2867,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -3385,7 +2888,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "sam_threshold": 0.93
   },
   "base_body": "",
-  "genre": "Genre.IMAGE",
+  "genre": "image",
   "mods": [],
   "variants": [
    {
@@ -3442,7 +2945,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -3465,7 +2967,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "cfg": 4.0
   },
   "base_body": "",
-  "genre": "Genre.IMAGE",
+  "genre": "image",
   "mods": [],
   "variants": [
    {
@@ -3523,72 +3025,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
-  "lane_inputs": {
-   "background_removal": "",
-   "checkpoint": "",
-   "clip_type": "stable_diffusion",
-   "clip_vision": "",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='anima-base-v1.0.safetensors', unet_variant='', unet_quant='', text_encoder='qwen_3_06b_base.safetensors', clip_type=<ClipType.STABLE_DIFFUSION: 'stable_diffusion'>, vae='qwen_image_vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.PLAIN: 'EmptyLatentImage'>, unet_unconditional='', weightless=False)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='anima-base-v1.0.safetensors', unet_variant='', unet_quant='', text_encoder='qwen_3_06b_base.safetensors', clip_type=<ClipType.STABLE_DIFFUSION: 'stable_diffusion'>, vae='qwen_image_vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.PLAIN: 'EmptyLatentImage'>, unet_unconditional='', weightless=False)>",
-   "family": "",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='anima-base-v1.0.safetensors', unet_variant='', unet_quant='', text_encoder='qwen_3_06b_base.safetensors', clip_type=<ClipType.STABLE_DIFFUSION: 'stable_diffusion'>, vae='qwen_image_vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.PLAIN: 'EmptyLatentImage'>, unet_unconditional='', weightless=False)>",
-   "latent_node": "EmptyLatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='anima-base-v1.0.safetensors', unet_variant='', unet_quant='', text_encoder='qwen_3_06b_base.safetensors', clip_type=<ClipType.STABLE_DIFFUSION: 'stable_diffusion'>, vae='qwen_image_vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.PLAIN: 'EmptyLatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='anima-base-v1.0.safetensors', unet_variant='', unet_quant='', text_encoder='qwen_3_06b_base.safetensors', clip_type=<ClipType.STABLE_DIFFUSION: 'stable_diffusion'>, vae='qwen_image_vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.PLAIN: 'EmptyLatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='anima-base-v1.0.safetensors', unet_variant='', unet_quant='', text_encoder='qwen_3_06b_base.safetensors', clip_type=<ClipType.STABLE_DIFFUSION: 'stable_diffusion'>, vae='qwen_image_vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.PLAIN: 'EmptyLatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'latent_node', 'clip_type', 'vae', 'text_encoder', 'unet'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='anima-base-v1.0.safetensors', unet_variant='', unet_quant='', text_encoder='qwen_3_06b_base.safetensors', clip_type=<ClipType.STABLE_DIFFUSION: 'stable_diffusion'>, vae='qwen_image_vae.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.PLAIN: 'EmptyLatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 0.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "qwen_3_06b_base.safetensors",
-   "texture_vae": "",
-   "unet": "anima-base-v1.0.safetensors",
-   "unet_quant": "",
-   "unet_unconditional": "",
-   "unet_variant": "",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "qwen_image_vae.safetensors",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": false
-  },
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -3607,7 +3043,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "voice": "vivian"
   },
   "base_body": "",
-  "genre": "Genre.AUDIO",
+  "genre": "audio",
   "mods": [
    "qvoice"
   ],
@@ -3666,74 +3102,9 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
-  "lane_inputs": {
-   "background_removal": "",
-   "checkpoint": "",
-   "clip_vision": "",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='qwen3_tts', model_path='Qwen3-TTS-12Hz-0.6B-CustomVoice-merged', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='qwen3_tts', model_path='Qwen3-TTS-12Hz-0.6B-CustomVoice-merged', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "family": "qwen3_tts",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='qwen3_tts', model_path='Qwen3-TTS-12Hz-0.6B-CustomVoice-merged', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "latent_node": "EmptySD3LatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='qwen3_tts', model_path='Qwen3-TTS-12Hz-0.6B-CustomVoice-merged', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='qwen3_tts', model_path='Qwen3-TTS-12Hz-0.6B-CustomVoice-merged', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='qwen3_tts', model_path='Qwen3-TTS-12Hz-0.6B-CustomVoice-merged', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'model_path', 'family'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='qwen3_tts', model_path='Qwen3-TTS-12Hz-0.6B-CustomVoice-merged', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 0.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "",
-   "texture_vae": "",
-   "unet": "",
-   "unet_quant": "",
-   "unet_unconditional": "",
-   "unet_variant": "",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": false
-  },
   "canvas_default": false,
   "has_agent": false,
-  "has_inference": false,
+  "has_inference": true,
   "has_rubric": false
  },
  "qwen3-tts-voicedesign": {
@@ -3749,7 +3120,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "variant": "voicedesign"
   },
   "base_body": "",
-  "genre": "Genre.AUDIO",
+  "genre": "audio",
   "mods": [],
   "variants": [
    {
@@ -3806,71 +3177,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
-  "lane_inputs": {
-   "background_removal": "",
-   "checkpoint": "",
-   "clip_vision": "",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='qwen3_tts', model_path='Qwen3-TTS-12Hz-0.6B-CustomVoice-merged', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='qwen3_tts', model_path='Qwen3-TTS-12Hz-0.6B-CustomVoice-merged', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "family": "qwen3_tts",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='qwen3_tts', model_path='Qwen3-TTS-12Hz-0.6B-CustomVoice-merged', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "latent_node": "EmptySD3LatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='qwen3_tts', model_path='Qwen3-TTS-12Hz-0.6B-CustomVoice-merged', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='qwen3_tts', model_path='Qwen3-TTS-12Hz-0.6B-CustomVoice-merged', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='qwen3_tts', model_path='Qwen3-TTS-12Hz-0.6B-CustomVoice-merged', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'model_path', 'family'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='qwen3_tts', model_path='Qwen3-TTS-12Hz-0.6B-CustomVoice-merged', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 0.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "",
-   "texture_vae": "",
-   "unet": "",
-   "unet_quant": "",
-   "unet_unconditional": "",
-   "unet_variant": "",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": false
-  },
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -3889,7 +3195,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "variant": "base"
   },
   "base_body": "",
-  "genre": "Genre.AUDIO",
+  "genre": "audio",
   "mods": [
    "qvoice"
   ],
@@ -3948,74 +3254,9 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
-  "lane_inputs": {
-   "background_removal": "",
-   "checkpoint": "",
-   "clip_vision": "",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='qwen3_tts', model_path='qwen3-tts', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='qwen3_tts', model_path='qwen3-tts', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "family": "qwen3_tts",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='qwen3_tts', model_path='qwen3-tts', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "latent_node": "EmptySD3LatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='qwen3_tts', model_path='qwen3-tts', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='qwen3_tts', model_path='qwen3-tts', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='qwen3_tts', model_path='qwen3-tts', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'model_path', 'family'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "qwen3-tts",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='qwen3_tts', model_path='qwen3-tts', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 0.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "",
-   "texture_vae": "",
-   "unet": "",
-   "unet_quant": "",
-   "unet_unconditional": "",
-   "unet_variant": "",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": false
-  },
   "canvas_default": false,
   "has_agent": false,
-  "has_inference": false,
+  "has_inference": true,
   "has_rubric": false
  },
  "music3": {
@@ -4030,10 +3271,11 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "source": {
    "type": "huggingface",
    "repo_id": "audio-cpp/MiniMax-Music3-GGUF",
-   "filename": "MiniMax-Music3-GGUF"
+   "filename": "MiniMax-Music3-GGUF",
+   "note": ""
   },
   "base_body": "",
-  "genre": "Genre.AUDIO",
+  "genre": "audio",
   "mods": [],
   "variants": [
    {
@@ -4091,75 +3333,9 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
-  "lane_inputs": {
-   "background_removal": "",
-   "checkpoint": "",
-   "clip_type": "minimax",
-   "clip_vision": "",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='minimax_music3_dit_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='minimax_music3_text_encoder_pruned_int8_convrot.safetensors', clip_type=<ClipType.MINIMAX: 'minimax'>, vae='minimax_music3_dav.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='minimax_music3_dit_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='minimax_music3_text_encoder_pruned_int8_convrot.safetensors', clip_type=<ClipType.MINIMAX: 'minimax'>, vae='minimax_music3_dav.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "family": "",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='minimax_music3_dit_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='minimax_music3_text_encoder_pruned_int8_convrot.safetensors', clip_type=<ClipType.MINIMAX: 'minimax'>, vae='minimax_music3_dav.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "latent_node": "EmptySD3LatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='minimax_music3_dit_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='minimax_music3_text_encoder_pruned_int8_convrot.safetensors', clip_type=<ClipType.MINIMAX: 'minimax'>, vae='minimax_music3_dav.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='minimax_music3_dit_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='minimax_music3_text_encoder_pruned_int8_convrot.safetensors', clip_type=<ClipType.MINIMAX: 'minimax'>, vae='minimax_music3_dav.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='minimax_music3_dit_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='minimax_music3_text_encoder_pruned_int8_convrot.safetensors', clip_type=<ClipType.MINIMAX: 'minimax'>, vae='minimax_music3_dav.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'vae', 'clip_type', 'unet', 'text_encoder'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='minimax_music3_dit_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='minimax_music3_text_encoder_pruned_int8_convrot.safetensors', clip_type=<ClipType.MINIMAX: 'minimax'>, vae='minimax_music3_dav.safetensors', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 0.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "minimax_music3_text_encoder_pruned_int8_convrot.safetensors",
-   "texture_vae": "",
-   "unet": "minimax_music3_dit_int8_convrot.safetensors",
-   "unet_quant": "",
-   "unet_unconditional": "",
-   "unet_variant": "",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "minimax_music3_dav.safetensors",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": false
-  },
   "canvas_default": false,
   "has_agent": false,
-  "has_inference": false,
+  "has_inference": true,
   "has_rubric": false
  },
  "moss-sfx": {
@@ -4171,7 +3347,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "card": "sfx",
   "unoffered": false,
   "base_body": "",
-  "genre": "Genre.AUDIO",
+  "genre": "audio",
   "mods": [],
   "variants": [
    {
@@ -4228,71 +3404,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
-  "lane_inputs": {
-   "background_removal": "",
-   "checkpoint": "",
-   "clip_vision": "",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='moss_sfx_v2', model_path='MOSS-SoundEffect-v2.0-src', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='moss_sfx_v2', model_path='MOSS-SoundEffect-v2.0-src', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "family": "moss_sfx_v2",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='moss_sfx_v2', model_path='MOSS-SoundEffect-v2.0-src', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "latent_node": "EmptySD3LatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='moss_sfx_v2', model_path='MOSS-SoundEffect-v2.0-src', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='moss_sfx_v2', model_path='MOSS-SoundEffect-v2.0-src', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='moss_sfx_v2', model_path='MOSS-SoundEffect-v2.0-src', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'model_path', 'family'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "MOSS-SoundEffect-v2.0-src",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='moss_sfx_v2', model_path='MOSS-SoundEffect-v2.0-src', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 0.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "",
-   "texture_vae": "",
-   "unet": "",
-   "unet_quant": "",
-   "unet_unconditional": "",
-   "unet_variant": "",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": false
-  },
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -4317,10 +3428,13 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "seed": 42
   },
   "source": {
-   "repo_id": "ilintar/trellis2-gguf"
+   "type": "",
+   "repo_id": "ilintar/trellis2-gguf",
+   "filename": null,
+   "note": ""
   },
   "base_body": "",
-  "genre": "Genre.THREED",
+  "genre": "3d",
   "mods": [],
   "variants": [
    {
@@ -4377,7 +3491,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -4426,10 +3539,17 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "studio": {
    "tenant": "3d/img_to_mesh",
    "owns_params": false,
-   "writes": "('input_image', 'rigged_glb', 'target_glb')"
+   "writes": [
+    "input_image",
+    "rigged_glb",
+    "target_glb"
+   ],
+   "kind": "assembly",
+   "size": "normal",
+   "layout": "studio"
   },
   "base_body": "",
-  "genre": "Genre.THREED",
+  "genre": "3d",
   "mods": [],
   "variants": [
    {
@@ -4593,71 +3713,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    }
   ],
   "accepts": [],
-  "character_presets": [],
-  "lane_inputs": {
-   "background_removal": "birefnet.safetensors",
-   "checkpoint": "",
-   "clip_vision": "dino_v3_L_naf_fp32.safetensors",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='trellis_2_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='trellis_2_shape_vae_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='trellis_2_texture_vae_bf16.safetensors', clip_vision='dino_v3_L_naf_fp32.safetensors', background_removal='birefnet.safetensors', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='trellis_2_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='trellis_2_shape_vae_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='trellis_2_texture_vae_bf16.safetensors', clip_vision='dino_v3_L_naf_fp32.safetensors', background_removal='birefnet.safetensors', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "family": "",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='trellis_2_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='trellis_2_shape_vae_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='trellis_2_texture_vae_bf16.safetensors', clip_vision='dino_v3_L_naf_fp32.safetensors', background_removal='birefnet.safetensors', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "latent_node": "EmptySD3LatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='trellis_2_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='trellis_2_shape_vae_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='trellis_2_texture_vae_bf16.safetensors', clip_vision='dino_v3_L_naf_fp32.safetensors', background_removal='birefnet.safetensors', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='trellis_2_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='trellis_2_shape_vae_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='trellis_2_texture_vae_bf16.safetensors', clip_vision='dino_v3_L_naf_fp32.safetensors', background_removal='birefnet.safetensors', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='trellis_2_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='trellis_2_shape_vae_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='trellis_2_texture_vae_bf16.safetensors', clip_vision='dino_v3_L_naf_fp32.safetensors', background_removal='birefnet.safetensors', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'texture_vae', 'vae', 'background_removal', 'unet', 'clip_vision'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='trellis_2_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='trellis_2_shape_vae_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='trellis_2_texture_vae_bf16.safetensors', clip_vision='dino_v3_L_naf_fp32.safetensors', background_removal='birefnet.safetensors', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 0.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "",
-   "texture_vae": "trellis_2_texture_vae_bf16.safetensors",
-   "unet": "trellis_2_int8_convrot.safetensors",
-   "unet_quant": "",
-   "unet_unconditional": "",
-   "unet_variant": "",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "trellis_2_shape_vae_bf16.safetensors",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": false
-  },
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -4672,7 +3727,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "card": "img-to-mesh",
   "unoffered": false,
   "base_body": "",
-  "genre": "Genre.THREED",
+  "genre": "3d",
   "mods": [],
   "variants": [
    {
@@ -4729,71 +3784,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
-  "lane_inputs": {
-   "background_removal": "",
-   "checkpoint": "",
-   "clip_vision": "",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='transfer_rig', model_path='somaskel77/skin_standard.npz', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='transfer_rig', model_path='somaskel77/skin_standard.npz', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "family": "transfer_rig",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='transfer_rig', model_path='somaskel77/skin_standard.npz', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "latent_node": "EmptySD3LatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='transfer_rig', model_path='somaskel77/skin_standard.npz', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='transfer_rig', model_path='somaskel77/skin_standard.npz', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='transfer_rig', model_path='somaskel77/skin_standard.npz', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'model_path', 'family'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "somaskel77/skin_standard.npz",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='transfer_rig', model_path='somaskel77/skin_standard.npz', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 0.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "",
-   "texture_vae": "",
-   "unet": "",
-   "unet_quant": "",
-   "unet_unconditional": "",
-   "unet_variant": "",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": false
-  },
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -4816,7 +3806,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "filename_prefix": "step1x_texture"
   },
   "base_body": "",
-  "genre": "Genre.THREED",
+  "genre": "3d",
   "mods": [],
   "variants": [
    {
@@ -4873,7 +3863,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -4895,14 +3884,21 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "in_place": true
   },
   "source": {
-   "repo_id": "nvidia/soma-x"
+   "type": "",
+   "repo_id": "nvidia/soma-x",
+   "filename": null,
+   "note": ""
   },
   "studio": {
    "tenant": "3d/body",
-   "owns_params": false
+   "owns_params": false,
+   "writes": [],
+   "kind": "custom",
+   "size": "normal",
+   "layout": "studio"
   },
   "base_body": "",
-  "genre": "Genre.THREED",
+  "genre": "3d",
   "mods": [],
   "variants": [
    {
@@ -4959,7 +3955,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -4974,7 +3969,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "card": "skin",
   "unoffered": false,
   "base_body": "",
-  "genre": "Genre.THREED",
+  "genre": "3d",
   "mods": [],
   "variants": [
    {
@@ -5031,71 +4026,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
-  "lane_inputs": {
-   "background_removal": "",
-   "checkpoint": "",
-   "clip_vision": "",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=True)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=True)>",
-   "family": "",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=True)>",
-   "latent_node": "EmptySD3LatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=True)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=True)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=True)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'weightless'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=True)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 0.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "",
-   "texture_vae": "",
-   "unet": "",
-   "unet_quant": "",
-   "unet_unconditional": "",
-   "unet_variant": "",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": true
-  },
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -5145,10 +4075,17 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "studio": {
    "tenant": "3d/img_to_mesh",
    "owns_params": false,
-   "writes": "('input_image', 'rigged_glb', 'target_glb')"
+   "writes": [
+    "input_image",
+    "rigged_glb",
+    "target_glb"
+   ],
+   "kind": "assembly",
+   "size": "normal",
+   "layout": "studio"
   },
   "base_body": "",
-  "genre": "Genre.THREED",
+  "genre": "3d",
   "mods": [],
   "variants": [
    {
@@ -5319,71 +4256,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    }
   ],
   "accepts": [],
-  "character_presets": [],
-  "lane_inputs": {
-   "background_removal": "birefnet.safetensors",
-   "checkpoint": "",
-   "clip_vision": "dino_v3_L_naf_fp32.safetensors",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='pixal3d_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='trellis_2_shape_vae_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='trellis_2_texture_vae_bf16.safetensors', clip_vision='dino_v3_L_naf_fp32.safetensors', background_removal='birefnet.safetensors', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='pixal3d_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='trellis_2_shape_vae_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='trellis_2_texture_vae_bf16.safetensors', clip_vision='dino_v3_L_naf_fp32.safetensors', background_removal='birefnet.safetensors', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "family": "",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='pixal3d_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='trellis_2_shape_vae_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='trellis_2_texture_vae_bf16.safetensors', clip_vision='dino_v3_L_naf_fp32.safetensors', background_removal='birefnet.safetensors', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "latent_node": "EmptySD3LatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='pixal3d_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='trellis_2_shape_vae_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='trellis_2_texture_vae_bf16.safetensors', clip_vision='dino_v3_L_naf_fp32.safetensors', background_removal='birefnet.safetensors', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='pixal3d_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='trellis_2_shape_vae_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='trellis_2_texture_vae_bf16.safetensors', clip_vision='dino_v3_L_naf_fp32.safetensors', background_removal='birefnet.safetensors', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='pixal3d_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='trellis_2_shape_vae_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='trellis_2_texture_vae_bf16.safetensors', clip_vision='dino_v3_L_naf_fp32.safetensors', background_removal='birefnet.safetensors', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'texture_vae', 'vae', 'background_removal', 'unet', 'clip_vision'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='pixal3d_int8_convrot.safetensors', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='trellis_2_shape_vae_bf16.safetensors', family='', model_path='', checkpoint='', texture_vae='trellis_2_texture_vae_bf16.safetensors', clip_vision='dino_v3_L_naf_fp32.safetensors', background_removal='birefnet.safetensors', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 0.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "",
-   "texture_vae": "trellis_2_texture_vae_bf16.safetensors",
-   "unet": "pixal3d_int8_convrot.safetensors",
-   "unet_quant": "",
-   "unet_unconditional": "",
-   "unet_variant": "",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "trellis_2_shape_vae_bf16.safetensors",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": false
-  },
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -5417,7 +4289,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "filename_prefix": "ultrashape_refined"
   },
   "base_body": "",
-  "genre": "Genre.THREED",
+  "genre": "3d",
   "mods": [],
   "variants": [
    {
@@ -5474,7 +4346,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -5489,7 +4360,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "card": "fit",
   "unoffered": false,
   "base_body": "",
-  "genre": "Genre.THREED",
+  "genre": "3d",
   "mods": [],
   "variants": [
    {
@@ -5546,71 +4417,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
-  "lane_inputs": {
-   "background_removal": "",
-   "checkpoint": "",
-   "clip_vision": "",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=True)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=True)>",
-   "family": "",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=True)>",
-   "latent_node": "EmptySD3LatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=True)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=True)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=True)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'weightless'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=True)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 0.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "",
-   "texture_vae": "",
-   "unet": "",
-   "unet_quant": "",
-   "unet_unconditional": "",
-   "unet_variant": "",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": true
-  },
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -5625,7 +4431,7 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "card": "quad-remesh",
   "unoffered": false,
   "base_body": "",
-  "genre": "Genre.THREED",
+  "genre": "3d",
   "mods": [],
   "variants": [
    {
@@ -5682,71 +4488,6 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
   "loras": [],
   "provisions": [],
   "accepts": [],
-  "character_presets": [],
-  "lane_inputs": {
-   "background_removal": "",
-   "checkpoint": "",
-   "clip_vision": "",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=True)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=True)>",
-   "family": "",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=True)>",
-   "latent_node": "EmptySD3LatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=True)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=True)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=True)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'weightless'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='', model_path='', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=True)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 0.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "",
-   "texture_vae": "",
-   "unet": "",
-   "unet_quant": "",
-   "unet_unconditional": "",
-   "unet_variant": "",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": true
-  },
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
@@ -5768,16 +4509,30 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    "transparent": true
   },
   "source": {
+   "type": "",
    "repo_id": "melite-poser-nodes",
+   "filename": null,
    "note": "our own pack (vendor/comfyui_extensions/melite-poser-nodes) — the ray-era poser chain, stopgap arc 2026-09-04"
   },
   "studio": {
    "tenant": "3d/anny",
    "owns_params": false,
-   "writes": "('body_glb', 'source_image', 'sculpt', 'resolution', 'framing', 'focal_length', 'samples', 'transparent')"
+   "writes": [
+    "body_glb",
+    "source_image",
+    "sculpt",
+    "resolution",
+    "framing",
+    "focal_length",
+    "samples",
+    "transparent"
+   ],
+   "kind": "assembly",
+   "size": "normal",
+   "layout": "studio"
   },
   "base_body": "anny-base-body.glb",
-  "genre": "Genre.THREED",
+  "genre": "3d",
   "mods": [
    "EstimateBodyVerb",
    "SavePresetVerb",
@@ -5848,112 +4603,736 @@ export const MODEL_REGISTRY: Readonly<Record<string, ModelDecl>> = {
    }
   ],
   "accepts": [],
-  "character_presets": [
+  "canvas_default": false,
+  "has_agent": false,
+  "has_inference": false,
+  "has_rubric": false
+ },
+ "skintokens": {
+  "id": "skintokens",
+  "label": "SkinTokens",
+  "description": "Static mesh GLB → generated skeleton + learned skin weights → rigged GLB (TokenRig on GGML, CPU)",
+  "engine": "skintokens",
+  "form": "form_auto_rig",
+  "card": "auto-rig",
+  "unoffered": false,
+  "defaults": {
+   "device": "cpu",
+   "postprocess": false
+  },
+  "base_body": "",
+  "genre": "3d",
+  "mods": [],
+  "variants": [
    {
-    "id": "neutral",
-    "label": "Neutral",
-    "description": "Androgynous adult, flat-chested, no gender markers. The DEFAULT — only for non-human or deliberately androgynous characters."
+    "id": "standard",
+    "label": "Standard",
+    "hint": "",
+    "group": "Variant",
+    "route": "skintokens",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [
+     {
+      "quant": "native",
+      "label": "Native",
+      "route": "skintokens",
+      "engine": "",
+      "resolver_defaults": {},
+      "hide_from_dropdown": false
+     }
+    ]
    },
    {
-    "id": "adult_female",
-    "label": "Adult female",
-    "description": "Young adult woman. NOTE: cupsize=0.45 is BELOW neutral — still modest. Bump to 0.55-0.65 for curvy/[REDACTED 2026-11-05]."
-   },
-   {
-    "id": "adult_male",
-    "label": "Adult male",
-    "description": "Adult male, average build, slight muscle."
-   },
-   {
-    "id": "child",
-    "label": "Child",
-    "description": "Young child (~7yr), androgynous, flat chest, large head ratio, short limbs."
-   },
-   {
-    "id": "child_female",
-    "label": "Child (female)",
-    "description": "Young girl (~7yr), same as child but feminine face shape."
-   },
-   {
-    "id": "teen",
-    "label": "Teen",
-    "description": "Androgynous teenager, slim build, minimal secondary [REDACTED 2026-11-05] characteristics."
-   },
-   {
-    "id": "hero",
-    "label": "Hero",
-    "description": "Muscular male hero, broad shoulders, thick chest, tall."
-   },
-   {
-    "id": "elderly",
-    "label": "Elderly",
-    "description": "Elderly person, lower muscle, softer tissue, shorter."
+    "id": "default",
+    "label": "Default",
+    "hint": "The family default — no extra stamps; a fresh card lands here.",
+    "group": "Recipe",
+    "route": "",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [],
+    "wire_defaults": {}
    }
   ],
-  "lane_inputs": {
-   "background_removal": "",
-   "checkpoint": "",
-   "clip_vision": "",
-   "construct": "<bound method BaseModel.construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "copy": "<bound method BaseModel.copy of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='anny', model_path='sam_vit_b_01ec64.pth', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "dict": "<bound method BaseModel.dict of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='anny', model_path='sam_vit_b_01ec64.pth', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "family": "anny",
-   "from_orm": "<bound method BaseModel.from_orm of <class 'melite_models.grammar.LaneInputs'>>",
-   "json": "<bound method BaseModel.json of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='anny', model_path='sam_vit_b_01ec64.pth', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "latent_node": "EmptySD3LatentImage",
-   "model_computed_fields": {},
-   "model_config": {
-    "extra": "forbid",
-    "frozen": true
-   },
-   "model_construct": "<bound method BaseModel.model_construct of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_copy": "<bound method BaseModel.model_copy of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='anny', model_path='sam_vit_b_01ec64.pth', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump": "<bound method BaseModel.model_dump of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='anny', model_path='sam_vit_b_01ec64.pth', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_dump_json": "<bound method BaseModel.model_dump_json of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='anny', model_path='sam_vit_b_01ec64.pth', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_fields": {
-    "unet": "annotation=str required=False default=''",
-    "unet_variant": "annotation=str required=False default=''",
-    "unet_quant": "annotation=str required=False default=''",
-    "text_encoder": "annotation=str required=False default=''",
-    "clip_type": "annotation=Union[ClipType, NoneType] required=False default=None",
-    "vae": "annotation=str required=False default=''",
-    "family": "annotation=str required=False default=''",
-    "model_path": "annotation=str required=False default=''",
-    "checkpoint": "annotation=str required=False default=''",
-    "texture_vae": "annotation=str required=False default=''",
-    "clip_vision": "annotation=str required=False default=''",
-    "background_removal": "annotation=str required=False default=''",
-    "sampling_shift": "annotation=float required=False default=0.0",
-    "latent_node": "annotation=LatentNode required=False default=<LatentNode.SD3: 'EmptySD3LatentImage'>",
-    "unet_unconditional": "annotation=str required=False default=''",
-    "weightless": "annotation=bool required=False default=False"
-   },
-   "model_fields_set": "{'model_path', 'family'}",
-   "model_json_schema": "<bound method BaseModel.model_json_schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_parametrized_name": "<bound method BaseModel.model_parametrized_name of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_path": "sam_vit_b_01ec64.pth",
-   "model_post_init": "<bound method BaseModel.model_post_init of LaneInputs(unet='', unet_variant='', unet_quant='', text_encoder='', clip_type=None, vae='', family='anny', model_path='sam_vit_b_01ec64.pth', checkpoint='', texture_vae='', clip_vision='', background_removal='', sampling_shift=0.0, latent_node=<LatentNode.SD3: 'EmptySD3LatentImage'>, unet_unconditional='', weightless=False)>",
-   "model_rebuild": "<bound method BaseModel.model_rebuild of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate": "<bound method BaseModel.model_validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_json": "<bound method BaseModel.model_validate_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "model_validate_strings": "<bound method BaseModel.model_validate_strings of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_file": "<bound method BaseModel.parse_file of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_obj": "<bound method BaseModel.parse_obj of <class 'melite_models.grammar.LaneInputs'>>",
-   "parse_raw": "<bound method BaseModel.parse_raw of <class 'melite_models.grammar.LaneInputs'>>",
-   "sampling_shift": 0.0,
-   "schema": "<bound method BaseModel.schema of <class 'melite_models.grammar.LaneInputs'>>",
-   "schema_json": "<bound method BaseModel.schema_json of <class 'melite_models.grammar.LaneInputs'>>",
-   "text_encoder": "",
-   "texture_vae": "",
-   "unet": "",
-   "unet_quant": "",
-   "unet_unconditional": "",
-   "unet_variant": "",
-   "update_forward_refs": "<bound method BaseModel.update_forward_refs of <class 'melite_models.grammar.LaneInputs'>>",
-   "vae": "",
-   "validate": "<bound method BaseModel.validate of <class 'melite_models.grammar.LaneInputs'>>",
-   "weightless": false
+  "variant_groups": [],
+  "loras": [],
+  "provisions": [],
+  "accepts": [],
+  "canvas_default": false,
+  "has_agent": false,
+  "has_inference": false,
+  "has_rubric": false
+ },
+ "txt2music": {
+  "id": "txt2music",
+  "label": "MiniMax Music 3 (txt2music)",
+  "description": "MiniMax Music 3 text-to-music with lyrics (audio.cpp t2m)",
+  "engine": "audio_cpp",
+  "form": "form_music",
+  "card": "music-native",
+  "unoffered": false,
+  "defaults": {
+   "backend": "cuda",
+   "duration": 120,
+   "sample_rate": 44100
   },
+  "source": {
+   "type": "huggingface",
+   "repo_id": "audio-cpp/MiniMax-Music3-GGUF",
+   "filename": "MiniMax-Music3-GGUF",
+   "note": ""
+  },
+  "base_body": "",
+  "genre": "audio",
+  "mods": [],
+  "variants": [
+   {
+    "id": "standard",
+    "label": "Standard",
+    "hint": "",
+    "group": "Variant",
+    "route": "txt2music",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [
+     {
+      "quant": "native",
+      "label": "Native",
+      "route": "txt2music",
+      "engine": "",
+      "resolver_defaults": {},
+      "hide_from_dropdown": false
+     }
+    ]
+   },
+   {
+    "id": "default",
+    "label": "Default",
+    "hint": "The family default — no extra stamps; a fresh card lands here.",
+    "group": "Recipe",
+    "route": "",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [],
+    "wire_defaults": {}
+   }
+  ],
+  "variant_groups": [],
+  "loras": [],
+  "provisions": [],
+  "accepts": [],
+  "canvas_default": false,
+  "has_agent": false,
+  "has_inference": false,
+  "has_rubric": false
+ },
+ "moss_voicegenerator": {
+  "id": "moss_voicegenerator",
+  "label": "MOSS VoiceGenerator",
+  "description": "MOSS VoiceGenerator voice design",
+  "engine": "audio_cpp",
+  "form": "form_tts",
+  "card": "",
+  "unoffered": false,
+  "defaults": {
+   "backend": "cuda"
+  },
+  "source": {
+   "type": "huggingface",
+   "repo_id": "audio-cpp/audio.cpp-gguf",
+   "filename": "MOSS-VoiceGenerator-GGUF",
+   "note": ""
+  },
+  "base_body": "",
+  "genre": "audio",
+  "mods": [],
+  "variants": [
+   {
+    "id": "standard",
+    "label": "Standard",
+    "hint": "",
+    "group": "Variant",
+    "route": "moss_voicegenerator",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [
+     {
+      "quant": "native",
+      "label": "Native",
+      "route": "moss_voicegenerator",
+      "engine": "",
+      "resolver_defaults": {},
+      "hide_from_dropdown": false
+     }
+    ]
+   },
+   {
+    "id": "default",
+    "label": "Default",
+    "hint": "The family default — no extra stamps; a fresh card lands here.",
+    "group": "Recipe",
+    "route": "",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [],
+    "wire_defaults": {}
+   }
+  ],
+  "variant_groups": [],
+  "loras": [],
+  "provisions": [],
+  "accepts": [],
+  "canvas_default": false,
+  "has_agent": false,
+  "has_inference": false,
+  "has_rubric": false
+ },
+ "moss-tts": {
+  "id": "moss-tts",
+  "label": "MOSS-TTS Nano 100M",
+  "description": "MOSS-TTS Nano 100M text-to-speech",
+  "engine": "audio_cpp",
+  "form": "form_tts",
+  "card": "",
+  "unoffered": false,
+  "defaults": {
+   "backend": "cuda"
+  },
+  "source": {
+   "type": "huggingface",
+   "repo_id": "audio-cpp/audio.cpp-gguf",
+   "filename": "MOSS-TTS-Nano-100M-GGUF",
+   "note": ""
+  },
+  "base_body": "",
+  "genre": "audio",
+  "mods": [],
+  "variants": [
+   {
+    "id": "standard",
+    "label": "Standard",
+    "hint": "",
+    "group": "Variant",
+    "route": "moss-tts",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [
+     {
+      "quant": "native",
+      "label": "Native",
+      "route": "moss-tts",
+      "engine": "",
+      "resolver_defaults": {},
+      "hide_from_dropdown": false
+     }
+    ]
+   },
+   {
+    "id": "default",
+    "label": "Default",
+    "hint": "The family default — no extra stamps; a fresh card lands here.",
+    "group": "Recipe",
+    "route": "",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [],
+    "wire_defaults": {}
+   }
+  ],
+  "variant_groups": [],
+  "loras": [],
+  "provisions": [],
+  "accepts": [],
+  "canvas_default": false,
+  "has_agent": false,
+  "has_inference": false,
+  "has_rubric": false
+ },
+ "moss-tts-local": {
+  "id": "moss-tts-local",
+  "label": "MOSS-TTS Local v1.5",
+  "description": "MOSS-TTS Local Transformer v1.5",
+  "engine": "audio_cpp",
+  "form": "form_tts",
+  "card": "",
+  "unoffered": false,
+  "defaults": {
+   "backend": "cuda"
+  },
+  "source": {
+   "type": "huggingface",
+   "repo_id": "audio-cpp/audio.cpp-gguf",
+   "filename": "MOSS-TTS-Local-v1.5-GGUF",
+   "note": ""
+  },
+  "base_body": "",
+  "genre": "audio",
+  "mods": [],
+  "variants": [
+   {
+    "id": "standard",
+    "label": "Standard",
+    "hint": "",
+    "group": "Variant",
+    "route": "moss-tts-local",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [
+     {
+      "quant": "native",
+      "label": "Native",
+      "route": "moss-tts-local",
+      "engine": "",
+      "resolver_defaults": {},
+      "hide_from_dropdown": false
+     }
+    ]
+   },
+   {
+    "id": "default",
+    "label": "Default",
+    "hint": "The family default — no extra stamps; a fresh card lands here.",
+    "group": "Recipe",
+    "route": "",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [],
+    "wire_defaults": {}
+   }
+  ],
+  "variant_groups": [],
+  "loras": [],
+  "provisions": [],
+  "accepts": [],
+  "canvas_default": false,
+  "has_agent": false,
+  "has_inference": false,
+  "has_rubric": false
+ },
+ "ace-step": {
+  "id": "ace-step",
+  "label": "ACE-Step 1.5 Turbo Q8",
+  "description": "ACE-Step 1.5 turbo q8 music generation",
+  "engine": "audio_cpp",
+  "form": "form_music",
+  "card": "",
+  "unoffered": false,
+  "defaults": {
+   "backend": "cuda"
+  },
+  "source": {
+   "type": "huggingface",
+   "repo_id": "audio-cpp/audio.cpp-gguf",
+   "filename": "ACE-Step1.5-GGUF",
+   "note": ""
+  },
+  "base_body": "",
+  "genre": "audio",
+  "mods": [],
+  "variants": [
+   {
+    "id": "standard",
+    "label": "Standard",
+    "hint": "",
+    "group": "Variant",
+    "route": "ace-step",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [
+     {
+      "quant": "native",
+      "label": "Native",
+      "route": "ace-step",
+      "engine": "",
+      "resolver_defaults": {},
+      "hide_from_dropdown": false
+     }
+    ]
+   },
+   {
+    "id": "default",
+    "label": "Default",
+    "hint": "The family default — no extra stamps; a fresh card lands here.",
+    "group": "Recipe",
+    "route": "",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [],
+    "wire_defaults": {}
+   }
+  ],
+  "variant_groups": [],
+  "loras": [],
+  "provisions": [],
+  "accepts": [],
+  "canvas_default": false,
+  "has_agent": true,
+  "has_inference": false,
+  "has_rubric": false
+ },
+ "ace-step-xl": {
+  "id": "ace-step-xl",
+  "label": "ACE-Step 1.5 XL Turbo",
+  "description": "ACE-Step 1.5 XL turbo bf16 music generation (the audio.cpp flagship)",
+  "engine": "audio_cpp",
+  "form": "form_music",
+  "card": "music-native",
+  "unoffered": false,
+  "defaults": {
+   "backend": "cuda",
+   "duration": 120,
+   "sample_rate": 44100
+  },
+  "source": {
+   "type": "huggingface",
+   "repo_id": "audio-cpp/audio.cpp-gguf",
+   "filename": "ACE-Step1.5-XL-GGUF",
+   "note": ""
+  },
+  "base_body": "",
+  "genre": "audio",
+  "mods": [],
+  "variants": [
+   {
+    "id": "standard",
+    "label": "Standard",
+    "hint": "",
+    "group": "Variant",
+    "route": "ace-step-xl",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [
+     {
+      "quant": "native",
+      "label": "Native",
+      "route": "ace-step-xl",
+      "engine": "",
+      "resolver_defaults": {},
+      "hide_from_dropdown": false
+     }
+    ]
+   },
+   {
+    "id": "default",
+    "label": "Default",
+    "hint": "The family default — no extra stamps; a fresh card lands here.",
+    "group": "Recipe",
+    "route": "",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [],
+    "wire_defaults": {}
+   }
+  ],
+  "variant_groups": [],
+  "loras": [],
+  "provisions": [],
+  "accepts": [],
+  "canvas_default": false,
+  "has_agent": false,
+  "has_inference": false,
+  "has_rubric": false
+ },
+ "ace-step-sft": {
+  "id": "ace-step-sft",
+  "label": "ACE-Step 1.5 SFT (Q8)",
+  "description": "ACE-Step 1.5 sft q8 music generation (the finetune)",
+  "engine": "audio_cpp",
+  "form": "form_music",
+  "card": "music-native",
+  "unoffered": false,
+  "defaults": {
+   "backend": "cuda",
+   "duration": 120,
+   "sample_rate": 44100
+  },
+  "source": {
+   "type": "huggingface",
+   "repo_id": "audio-cpp/audio.cpp-gguf",
+   "filename": "ACE-Step1.5-SFT-GGUF",
+   "note": ""
+  },
+  "base_body": "",
+  "genre": "audio",
+  "mods": [],
+  "variants": [
+   {
+    "id": "standard",
+    "label": "Standard",
+    "hint": "",
+    "group": "Variant",
+    "route": "ace-step-sft",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [
+     {
+      "quant": "native",
+      "label": "Native",
+      "route": "ace-step-sft",
+      "engine": "",
+      "resolver_defaults": {},
+      "hide_from_dropdown": false
+     }
+    ]
+   },
+   {
+    "id": "default",
+    "label": "Default",
+    "hint": "The family default — no extra stamps; a fresh card lands here.",
+    "group": "Recipe",
+    "route": "",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [],
+    "wire_defaults": {}
+   }
+  ],
+  "variant_groups": [],
+  "loras": [],
+  "provisions": [],
+  "accepts": [],
+  "canvas_default": false,
+  "has_agent": false,
+  "has_inference": false,
+  "has_rubric": false
+ },
+ "ace-step-bf16": {
+  "id": "ace-step-bf16",
+  "label": "ACE-Step 1.5 Turbo BF16",
+  "description": "ACE-Step 1.5 turbo bf16 music generation",
+  "engine": "audio_cpp",
+  "form": "form_music",
+  "card": "",
+  "unoffered": false,
+  "defaults": {
+   "backend": "cuda"
+  },
+  "source": {
+   "type": "huggingface",
+   "repo_id": "audio-cpp/audio.cpp-gguf",
+   "filename": "ACE-Step1.5-GGUF",
+   "note": ""
+  },
+  "base_body": "",
+  "genre": "audio",
+  "mods": [],
+  "variants": [
+   {
+    "id": "standard",
+    "label": "Standard",
+    "hint": "",
+    "group": "Variant",
+    "route": "ace-step-bf16",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [
+     {
+      "quant": "native",
+      "label": "Native",
+      "route": "ace-step-bf16",
+      "engine": "",
+      "resolver_defaults": {},
+      "hide_from_dropdown": false
+     }
+    ]
+   },
+   {
+    "id": "default",
+    "label": "Default",
+    "hint": "The family default — no extra stamps; a fresh card lands here.",
+    "group": "Recipe",
+    "route": "",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [],
+    "wire_defaults": {}
+   }
+  ],
+  "variant_groups": [],
+  "loras": [],
+  "provisions": [],
+  "accepts": [],
+  "canvas_default": false,
+  "has_agent": false,
+  "has_inference": false,
+  "has_rubric": false
+ },
+ "ace-step-base": {
+  "id": "ace-step-base",
+  "label": "ACE-Step 1.5 Base Q8",
+  "description": "ACE-Step 1.5 base q8 music generation",
+  "engine": "audio_cpp",
+  "form": "form_music",
+  "card": "",
+  "unoffered": false,
+  "defaults": {
+   "backend": "cuda"
+  },
+  "source": {
+   "type": "huggingface",
+   "repo_id": "audio-cpp/audio.cpp-gguf",
+   "filename": "ACE-Step1.5-GGUF",
+   "note": ""
+  },
+  "base_body": "",
+  "genre": "audio",
+  "mods": [],
+  "variants": [
+   {
+    "id": "standard",
+    "label": "Standard",
+    "hint": "",
+    "group": "Variant",
+    "route": "ace-step-base",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [
+     {
+      "quant": "native",
+      "label": "Native",
+      "route": "ace-step-base",
+      "engine": "",
+      "resolver_defaults": {},
+      "hide_from_dropdown": false
+     }
+    ]
+   },
+   {
+    "id": "default",
+    "label": "Default",
+    "hint": "The family default — no extra stamps; a fresh card lands here.",
+    "group": "Recipe",
+    "route": "",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [],
+    "wire_defaults": {}
+   }
+  ],
+  "variant_groups": [],
+  "loras": [],
+  "provisions": [],
+  "accepts": [],
+  "canvas_default": false,
+  "has_agent": false,
+  "has_inference": false,
+  "has_rubric": false
+ },
+ "ace-step-base-bf16": {
+  "id": "ace-step-base-bf16",
+  "label": "ACE-Step 1.5 Base BF16",
+  "description": "ACE-Step 1.5 base bf16 music generation",
+  "engine": "audio_cpp",
+  "form": "form_music",
+  "card": "",
+  "unoffered": false,
+  "defaults": {
+   "backend": "cuda"
+  },
+  "source": {
+   "type": "huggingface",
+   "repo_id": "audio-cpp/audio.cpp-gguf",
+   "filename": "ACE-Step1.5-GGUF",
+   "note": ""
+  },
+  "base_body": "",
+  "genre": "audio",
+  "mods": [],
+  "variants": [
+   {
+    "id": "standard",
+    "label": "Standard",
+    "hint": "",
+    "group": "Variant",
+    "route": "ace-step-base-bf16",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [
+     {
+      "quant": "native",
+      "label": "Native",
+      "route": "ace-step-base-bf16",
+      "engine": "",
+      "resolver_defaults": {},
+      "hide_from_dropdown": false
+     }
+    ]
+   },
+   {
+    "id": "default",
+    "label": "Default",
+    "hint": "The family default — no extra stamps; a fresh card lands here.",
+    "group": "Recipe",
+    "route": "",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [],
+    "wire_defaults": {}
+   }
+  ],
+  "variant_groups": [],
+  "loras": [],
+  "provisions": [],
+  "accepts": [],
+  "canvas_default": false,
+  "has_agent": false,
+  "has_inference": false,
+  "has_rubric": false
+ },
+ "anycreature": {
+  "id": "anycreature",
+  "label": "anyCreature",
+  "description": "Text → game-ready 3D creature (JSON spec → skinned GLB)",
+  "engine": "anycreature",
+  "form": "form_forge",
+  "card": "forge",
+  "unoffered": false,
+  "defaults": {
+   "smooth_angle": 50,
+   "build": "default",
+   "ao": true,
+   "role": "npc"
+  },
+  "base_body": "",
+  "genre": "3d",
+  "mods": [],
+  "variants": [
+   {
+    "id": "standard",
+    "label": "Standard",
+    "hint": "",
+    "group": "Variant",
+    "route": "anycreature",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [
+     {
+      "quant": "native",
+      "label": "Native",
+      "route": "anycreature",
+      "engine": "",
+      "resolver_defaults": {},
+      "hide_from_dropdown": false
+     }
+    ]
+   },
+   {
+    "id": "default",
+    "label": "Default",
+    "hint": "The family default — no extra stamps; a fresh card lands here.",
+    "group": "Recipe",
+    "route": "",
+    "engine": "",
+    "resolver_defaults": {},
+    "cells": [],
+    "wire_defaults": {}
+   }
+  ],
+  "variant_groups": [],
+  "loras": [],
+  "provisions": [],
+  "accepts": [],
   "canvas_default": false,
   "has_agent": false,
   "has_inference": false,
