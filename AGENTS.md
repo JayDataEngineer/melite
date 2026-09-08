@@ -76,3 +76,12 @@
 - Enforced by `tests/walls/suites/test_record_shape.py`: every design
   record and audit carries Date + Status; laws that name a wall are
   named BY it (LAW TEXT HYGIENE's mirror).
+
+## SCOPE LAW (operator order, 2026-09-08, verbatim intent)
+
+> "This folder is standalone."
+
+- The agent stays inside the repo root. Files outside it (home-dir
+  launchers, other checkouts, host config) are off-limits unless the
+  operator explicitly sends the agent out. A path outside the root is
+  not read, listed, or quoted — even when it would explain something.
