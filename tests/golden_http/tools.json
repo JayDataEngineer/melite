@@ -1,1981 +1,2009 @@
 {
- "tools": [
-  {
-   "name": "anny_card",
-   "version": 1,
-   "kind": "card-compose",
-   "card": "anny",
-   "model": "anny",
-   "stage_title": "Anny",
-   "description": "Assemble a character — composite body/hair/outfit GLBs, render the 8-view turnaround, segment a source photo into part sprites.",
-   "params_schema": {
-    "type": "object",
-    "properties": {
-     "body_glb": {
-      "type": "string",
-      "format": "path",
-      "description": "The base body — empty autoloads the Model-declared neutral body (anny-base-body.glb, provisioned); or attach a rigged/static character GLB. (Photo→body estimation is the pilot arc; clothing composite moves to its own card later.)"
-     },
-     "source_image": {
-      "type": "string",
-      "format": "path",
-      "description": "Character photo — SAM segments hair/outfit sprites (feeds the estimator arc)."
-     },
-     "resolution": {
-      "type": "number",
-      "minimum": 256,
-      "maximum": 2048,
-      "default": 768,
-      "description": "Pixel size of each turnaround view."
-     },
-     "framing": {
-      "type": "number",
-      "minimum": 1.0,
-      "maximum": 3.0,
-      "default": 1.2,
-      "description": "Camera distance factor — larger frames the whole body looser."
-     },
-     "focal_length": {
-      "type": "number",
-      "minimum": 10,
-      "maximum": 400,
-      "default": 50,
-      "description": "Lens focal length — lower = wider perspective."
-     },
-     "samples": {
-      "type": "number",
-      "minimum": 1,
-      "maximum": 4096,
-      "default": 64,
-      "description": "Render samples per view — more = cleaner but slower."
-     },
-     "transparent": {
-      "type": "string",
-      "enum": [
-       "true",
-       "false"
-      ],
-      "default": "true",
-      "description": "Transparent turnaround background (for compositing into sheets)."
-     }
+  "tools": [
+    {
+      "name": "anny_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "anny",
+      "model": "anny",
+      "stage_title": "Anny",
+      "description": "Assemble a character — composite body/hair/outfit GLBs, render the 8-view turnaround, segment a source photo into part sprites.",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "body_glb": {
+            "type": "string",
+            "format": "path",
+            "description": "The base body — empty autoloads the Model-declared neutral body (anny-quad native)"
+          },
+          "source_image": {
+            "type": "string",
+            "format": "path",
+            "description": "Character photo — SAM segments hair/outfit sprites (feeds the estimator)"
+          },
+          "resolution": {
+            "type": "number",
+            "default": 768,
+            "minimum": 256,
+            "maximum": 2048,
+            "description": "Pixel size of each turnaround view."
+          },
+          "framing": {
+            "type": "number",
+            "default": 1.2,
+            "minimum": 1,
+            "maximum": 3,
+            "description": "Camera distance factor — larger frames the whole body looser."
+          },
+          "focal_length": {
+            "type": "number",
+            "default": 50,
+            "minimum": 10,
+            "maximum": 400,
+            "description": "Lens focal length — lower = wider perspective."
+          },
+          "samples": {
+            "type": "number",
+            "default": 64,
+            "minimum": 1,
+            "maximum": 4096,
+            "description": "Render samples per view — more = cleaner but slower."
+          },
+          "transparent": {
+            "type": "string",
+            "enum": [
+              "true",
+              "false"
+            ],
+            "default": "true",
+            "description": "Transparent turnaround background (for compositing into sheets)."
+          }
+        }
+      }
     },
-    "required": []
-   }
-  },
-  {
-   "name": "fit_card",
-   "version": 1,
-   "kind": "card-compose",
-   "card": "fit",
-   "model": "fit",
-   "stage_title": "Fit",
-   "description": "Seat a static prop onto a SOMAX body under the placement laws.",
-   "params_schema": {
-    "type": "object",
-    "properties": {
-     "body_glb": {
-      "type": "string",
-      "format": "path",
-      "description": "Body GLB"
-     },
-     "prop_glb": {
-      "type": "string",
-      "format": "path",
-      "description": "Prop GLB"
-     },
-     "bone": {
-      "type": "string",
-      "default": "mixamorig:Head",
-      "description": "Bone"
-     },
-     "align": {
-      "type": "string",
-      "enum": [
-       "socket",
-       "fit",
-       "grip"
-      ],
-      "default": "socket",
-      "description": "Law"
-     },
-     "position": {
-      "type": "string",
-      "default": "0,0,0",
-      "description": "Offset"
-     },
-     "rotation": {
-      "type": "string",
-      "default": "0,0,0",
-      "description": "Rotation"
-     },
-     "fit_ratio": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 10,
-      "default": 0,
-      "description": "Fit ratio"
-     },
-     "fit_ref_bone": {
-      "type": "string",
-      "description": "Measure to"
-     },
-     "fit_ref_bone2": {
-      "type": "string",
-      "description": "Measure from"
-     },
-     "seat_ratio": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 1,
-      "default": 0.22,
-      "description": "Seat ratio"
-     },
-     "finger_bone": {
-      "type": "string",
-      "description": "Finger bone"
-     },
-     "thumb_bone": {
-      "type": "string",
-      "description": "Thumb bone"
-     },
-     "target_width": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 10,
-      "default": 0,
-      "description": "Target width"
-     },
-     "resolution": {
-      "type": "number",
-      "minimum": 256,
-      "maximum": 2048,
-      "default": 768,
-      "description": "View resolution"
-     },
-     "framing": {
-      "type": "number",
-      "minimum": 1.0,
-      "maximum": 3.0,
-      "default": 1.2,
-      "description": "Framing"
-     },
-     "focal_length": {
-      "type": "number",
-      "minimum": 10,
-      "maximum": 400,
-      "default": 50,
-      "description": "Focal length"
-     },
-     "samples": {
-      "type": "number",
-      "minimum": 1,
-      "maximum": 4096,
-      "default": 64,
-      "description": "Samples"
-     },
-     "transparent": {
-      "type": "string",
-      "enum": [
-       "true",
-       "false"
-      ],
-      "default": "true",
-      "description": "Background"
-     }
+    {
+      "name": "fit_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "fit",
+      "model": "fit",
+      "stage_title": "Fit",
+      "description": "Seat a static prop onto a SOMAX body under the placement laws.",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "body_glb": {
+            "type": "string",
+            "format": "path",
+            "description": "Body GLB"
+          },
+          "prop_glb": {
+            "type": "string",
+            "format": "path",
+            "description": "Prop GLB"
+          },
+          "bone": {
+            "type": "string",
+            "default": "mixamorig:Head",
+            "description": "Bone"
+          },
+          "align": {
+            "type": "string",
+            "enum": [
+              "socket",
+              "fit",
+              "grip"
+            ],
+            "default": "socket",
+            "description": "socket = snap origin to bone; fit = deform prop around bone volume; grip = hold near bone with manual offset"
+          },
+          "position": {
+            "type": "string",
+            "default": "0,0,0",
+            "description": "Offset"
+          },
+          "rotation": {
+            "type": "string",
+            "default": "0,0,0",
+            "description": "Rotation"
+          },
+          "fit_ratio": {
+            "type": "number",
+            "default": 0,
+            "minimum": 0,
+            "maximum": 10,
+            "description": "Fit ratio"
+          },
+          "fit_ref_bone": {
+            "type": "string",
+            "description": "Measure to"
+          },
+          "fit_ref_bone2": {
+            "type": "string",
+            "description": "Measure from"
+          },
+          "seat_ratio": {
+            "type": "number",
+            "default": 0.22,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Seat ratio"
+          },
+          "finger_bone": {
+            "type": "string",
+            "description": "Finger bone"
+          },
+          "thumb_bone": {
+            "type": "string",
+            "description": "Thumb bone"
+          },
+          "target_width": {
+            "type": "number",
+            "default": 0,
+            "minimum": 0,
+            "maximum": 10,
+            "description": "Target width"
+          },
+          "resolution": {
+            "type": "number",
+            "default": 768,
+            "minimum": 256,
+            "maximum": 2048,
+            "description": "View resolution"
+          },
+          "framing": {
+            "type": "number",
+            "default": 1.2,
+            "minimum": 1,
+            "maximum": 3,
+            "description": "Framing"
+          },
+          "focal_length": {
+            "type": "number",
+            "default": 50,
+            "minimum": 10,
+            "maximum": 400,
+            "description": "Focal length"
+          },
+          "samples": {
+            "type": "number",
+            "default": 64,
+            "minimum": 1,
+            "maximum": 4096,
+            "description": "Samples"
+          },
+          "transparent": {
+            "type": "string",
+            "enum": [
+              "true",
+              "false"
+            ],
+            "default": "true",
+            "description": "Background"
+          }
+        },
+        "required": [
+          "body_glb",
+          "prop_glb"
+        ]
+      }
     },
-    "required": [
-     "body_glb",
-     "prop_glb"
-    ]
-   }
-  },
-  {
-   "name": "h3_timeline_card",
-   "version": 1,
-   "kind": "card-compose",
-   "card": "h3-timeline",
-   "model": "h3-timeline",
-   "stage_title": "H3 Timeline",
-   "description": "THE video interface — multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
-   "params_schema": {
-    "type": "object",
-    "properties": {
-     "model": {
-      "type": "string",
-      "enum": [
-       "h3-timeline",
-       "h3",
-       "h3-keyframe"
-      ],
-      "description": "The boarded family to run — the request's top-level `model`. Options: h3-timeline, h3, h3-keyframe.",
-      "default": "h3-timeline"
-     },
-     "prompt": {
-      "type": "string",
-      "description": "Verb-first motion + the sounds. For keyframes the image already sets the scene — prompt what CHANGES."
-     },
-     "image": {
-      "type": "string",
-      "description": "Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline."
-     },
-     "seed": {
-      "type": "integer",
-      "default": 42,
-      "description": "Same seed across re-rolls = same world texture"
-     },
-     "width": {
-      "type": "number",
-      "minimum": 448,
-      "maximum": 1344,
-      "default": 1344,
-      "description": "Width"
-     },
-     "height": {
-      "type": "number",
-      "minimum": 448,
-      "maximum": 768,
-      "default": 768,
-      "description": "Height"
-     },
-     "length": {
-      "type": "number",
-      "minimum": 21,
-      "maximum": 362,
-      "default": 56,
-      "description": "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s"
-     },
-     "steps": {
-      "type": "number",
-      "minimum": 4,
-      "maximum": 30,
-      "default": 12,
-      "description": "12 for draft; 30 standard; 10 with the turbo LoRA"
-     },
-     "sharpen_enabled": {
-      "type": "boolean",
-      "default": false,
-      "description": "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural."
-     },
-     "sharpen_strength": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 1,
-      "default": 0.3,
-      "description": "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off."
-     },
-     "interpolate_enabled": {
-      "type": "boolean",
-      "default": "false",
-      "description": "Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time."
-     },
-     "shift_video": {
-      "type": "number",
-      "minimum": 1,
-      "maximum": 20,
-      "default": 8.0,
-      "description": "Timestep shift for video attention. Higher = more coherent motion."
-     },
-     "shift_audio": {
-      "type": "number",
-      "minimum": 1,
-      "maximum": 10,
-      "default": 3.0,
-      "description": "Timestep shift for audio attention. Lower = more detailed sound."
-     }
+    {
+      "name": "h3_timeline_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "h3-timeline",
+      "model": "h3-timeline",
+      "stage_title": "H3 Timeline",
+      "description": "THE video interface — multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "h3-timeline",
+              "h3",
+              "h3-keyframe"
+            ],
+            "default": "h3-timeline",
+            "description": "The boarded family to run — the request's top-level `model`. Options: h3-timeline, h3, h3-keyframe."
+          },
+          "prompt": {
+            "type": "string",
+            "description": "Verb-first motion + the sounds. For keyframes the image already sets the scene — prompt what CHANGES."
+          },
+          "image": {
+            "type": "string",
+            "format": "path",
+            "description": "Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline."
+          },
+          "seed": {
+            "type": "integer",
+            "default": 42,
+            "minimum": -1,
+            "description": "Same seed across re-rolls = same world texture"
+          },
+          "width": {
+            "type": "number",
+            "default": 1344,
+            "minimum": 448,
+            "maximum": 1344,
+            "description": "Width"
+          },
+          "height": {
+            "type": "number",
+            "default": 768,
+            "minimum": 448,
+            "maximum": 768,
+            "description": "Height"
+          },
+          "length": {
+            "type": "number",
+            "default": 56,
+            "minimum": 21,
+            "maximum": 362,
+            "description": "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s"
+          },
+          "steps": {
+            "type": "number",
+            "default": 12,
+            "minimum": 4,
+            "maximum": 30,
+            "description": "12 for draft; 30 standard; 10 with the turbo LoRA"
+          },
+          "sharpen_enabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural."
+          },
+          "sharpen_strength": {
+            "type": "number",
+            "default": 0.3,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off."
+          },
+          "interpolate_enabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time."
+          },
+          "shift_video": {
+            "type": "number",
+            "default": 8,
+            "minimum": 1,
+            "maximum": 20,
+            "description": "Timestep shift for video attention. Higher = more coherent motion."
+          },
+          "shift_audio": {
+            "type": "number",
+            "default": 3,
+            "minimum": 1,
+            "maximum": 10,
+            "description": "Timestep shift for audio attention. Lower = more detailed sound."
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      }
     },
-    "required": [
-     "prompt"
-    ]
-   }
-  },
-  {
-   "name": "ideogram4_card",
-   "version": 1,
-   "kind": "card-compose",
-   "card": "ideogram4",
-   "model": "ideogram",
-   "stage_title": "Ideogram",
-   "description": "Typography-aware text-to-image with clean, legible text rendering.",
-   "params_schema": {
-    "type": "object",
-    "properties": {
-     "prompt": {
-      "type": "string",
-      "description": "Prompt"
-     },
-     "width": {
-      "type": "number",
-      "minimum": 256,
-      "maximum": 2048,
-      "description": "Width"
-     },
-     "height": {
-      "type": "number",
-      "minimum": 256,
-      "maximum": 2048,
-      "description": "Height"
-     },
-     "seed": {
-      "type": "integer",
-      "default": -1,
-      "description": "Seed"
-     },
-     "steps": {
-      "type": "number",
-      "minimum": 1,
-      "maximum": 100,
-      "description": "Steps"
-     },
-     "cfg": {
-      "type": "number",
-      "minimum": 1,
-      "maximum": 20,
-      "description": "How closely the diffusion follows the prompt. Higher = stricter."
-     },
-     "mu": {
-      "type": "number",
-      "minimum": -10,
-      "maximum": 10,
-      "description": "Ideogram4 scheduler mean shift — the official Default preset is 0.5."
-     },
-     "std": {
-      "type": "number",
-      "minimum": 0.1,
-      "maximum": 5,
-      "description": "Ideogram4 scheduler spread — the official Default preset is 1.75."
-     },
-     "sampler": {
-      "type": "string",
-      "description": "Sampler — options resolve from the $samplers vocabulary at serve time"
-     }
+    {
+      "name": "ideogram4_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "ideogram4",
+      "model": "ideogram",
+      "stage_title": "Ideogram",
+      "description": "Typography-aware text-to-image with clean, legible text rendering.",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Prompt"
+          },
+          "width": {
+            "type": "number",
+            "minimum": 256,
+            "maximum": 2048,
+            "description": "Width"
+          },
+          "height": {
+            "type": "number",
+            "minimum": 256,
+            "maximum": 2048,
+            "description": "Height"
+          },
+          "steps": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Steps"
+          },
+          "cfg": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 20,
+            "description": "How closely the diffusion follows the prompt. Higher = stricter."
+          },
+          "mu": {
+            "type": "number",
+            "minimum": -10,
+            "maximum": 10,
+            "description": "Ideogram4 scheduler mean shift — the official Default preset is 0.5."
+          },
+          "std": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 5,
+            "description": "Ideogram4 scheduler spread — the official Default preset is 1.75."
+          },
+          "sampler": {
+            "type": "string",
+            "description": "Sampler — options resolve from the $samplers vocabulary at serve time"
+          },
+          "seed": {
+            "type": "integer",
+            "default": -1,
+            "minimum": -1,
+            "description": "Seed"
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      }
     },
-    "required": [
-     "prompt"
-    ]
-   }
-  },
-  {
-   "name": "image_edit_card",
-   "version": 1,
-   "kind": "card-compose",
-   "card": "image-edit",
-   "model": "qwen-img-edit-2511",
-   "stage_title": "Image Edit",
-   "description": "Instruction-driven image editing — the edit_image interface card boarding the Qwen-Image-Edit 2511 lane; the family carries the lightning / standard cascade (variant/quant always shown) plus the lanpaint flavor (required anchor image). The surface scopes itself.",
-   "params_schema": {
-    "type": "object",
-    "properties": {
-     "image2": {
-      "type": "string",
-      "format": "path",
-      "description": "Image 2"
-     },
-     "image3": {
-      "type": "string",
-      "format": "path",
-      "description": "Image 3"
-     },
-     "reference_images": {
-      "type": "array",
-      "default": [],
-      "description": "Multi-image picker (up to 3). Used by workflows that pass resolved image lists; complements the individual Image 2 / Image 3 slots above."
-     },
-     "prompt": {
-      "type": "string",
-      "description": "Prompt"
-     },
-     "negative_prompt": {
-      "type": "string",
-      "description": "Negative Prompt"
-     },
-     "seed": {
-      "type": "integer",
-      "default": -1,
-      "description": "Seed"
-     },
-     "steps": {
-      "type": "number",
-      "minimum": 1,
-      "maximum": 50,
-      "default": 4,
-      "description": "Steps"
-     },
-     "cfg": {
-      "type": "number",
-      "minimum": 0.1,
-      "maximum": 10,
-      "default": 1.0,
-      "description": "Qwen-Image-Edit uses low CFG (flow-matching)."
-     },
-     "sampler": {
-      "type": "string",
-      "description": "Sampler — options resolve from the $samplers vocabulary at serve time"
-     },
-     "scheduler": {
-      "type": "string",
-      "description": "Scheduler — options resolve from the $schedulers vocabulary at serve time"
-     },
-     "use_stock_nodes": {
-      "type": "boolean",
-      "default": false,
-      "description": "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly."
-     },
-     "double_reference": {
-      "type": "boolean",
-      "default": false,
-      "description": "Encode the input image twice (VAE + vision encoder) for stronger identity preservation. Disable for faster runs where identity drift is acceptable."
-     },
-     "image1": {
-      "type": "string",
-      "format": "path",
-      "description": "Image 1"
-     },
-     "lanpaint_enabled": {
-      "type": "boolean",
-      "default": false,
-      "x-visible-when": "image1 != null",
-      "description": "Force LanPaint"
-     },
-     "lanpaint_num_steps": {
-      "type": "number",
-      "minimum": 1,
-      "maximum": 100,
-      "default": 20,
-      "x-visible-when": "lanpaint_enabled == true",
-      "description": "Num Steps"
-     },
-     "lanpaint_step_size": {
-      "type": "number",
-      "minimum": 0.1,
-      "maximum": 2,
-      "default": 1.0,
-      "x-visible-when": "lanpaint_enabled == true",
-      "description": "Step Size"
-     },
-     "lanpaint_lambda": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 2,
-      "default": 0.5,
-      "x-visible-when": "lanpaint_enabled == true",
-      "description": "Lambda"
-     },
-     "lanpaint_beta": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 2,
-      "default": 0.5,
-      "x-visible-when": "lanpaint_enabled == true",
-      "description": "Beta"
-     },
-     "lanpaint_friction": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 2,
-      "default": 0.5,
-      "x-visible-when": "lanpaint_enabled == true",
-      "description": "Friction"
-     },
-     "lanpaint_prompt_mode": {
-      "type": "string",
-      "enum": [
-       "negative",
-       "positive"
-      ],
-      "default": "negative",
-      "x-visible-when": "lanpaint_enabled == true",
-      "description": "Prompt Mode"
-     },
-     "outpaint_top": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 512,
-      "default": 0,
-      "x-visible-when": "image1 != null",
-      "description": "Expand Top"
-     },
-     "outpaint_right": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 512,
-      "default": 0,
-      "x-visible-when": "image1 != null",
-      "description": "Expand Right"
-     },
-     "outpaint_bottom": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 512,
-      "default": 0,
-      "x-visible-when": "image1 != null",
-      "description": "Expand Bottom"
-     },
-     "outpaint_left": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 512,
-      "default": 0,
-      "x-visible-when": "image1 != null",
-      "description": "Expand Left"
-     },
-     "outpaint_overlap": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 64,
-      "default": 16,
-      "x-visible-when": "image1 != null",
-      "description": "Overlap"
-     },
-     "loras": {
-      "type": "array",
-      "description": "LoRAs"
-     },
-     "mask": {
-      "type": "string",
-      "description": "Add the mask mod, then drop an RGBA PNG whose alpha channel marks the region."
-     },
-     "input_mask": {
-      "type": "string",
-      "format": "path",
-      "description": "RGBA PNG whose alpha channel marks the region. Standalone: region semantics for this lane. Alongside lanpaint: the inpaint region — present with image1, the builder switches to the lanpaint sampler."
-     },
-     "mask_mode": {
-      "type": "string",
-      "enum": [
-       "auto",
-       "crop_stitch",
-       "full_frame"
-      ],
-      "default": "auto",
-      "description": "How the mask is honored: auto (the lane's own region ControlNet if its weights are present, else crop+stitch), crop_stitch (crop to the mask + context, work the crop, composite back — pixels outside the mask never change), full_frame (legacy whole-image pass; unmasked regions may drift)."
-     },
-     "mask_context_pad": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 256,
-      "default": 64,
-      "description": "Pixels of surrounding context kept in the crop (crop_stitch mode). More context = more coherence; 64 is the sweet spot."
-     },
-     "mask_grow": {
-      "type": "number",
-      "minimum": -32,
-      "maximum": 32,
-      "default": 8,
-      "description": "Expand (+) or shrink (−) the region by an exact pixel disk before the run. Applied host-side."
-     },
-     "mask_feather": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 32,
-      "default": 8,
-      "description": "Gaussian falloff the composite blends through — kills the pasted-on rectangle edge."
-     },
-     "mask_threshold": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 1,
-      "default": 0,
-      "description": "Re-binarize the feathered mask at this level. 0 = keep the soft falloff."
-     },
-     "mask_invert": {
-      "type": "boolean",
-      "default": false,
-      "description": "Work OUTSIDE the painted region instead."
-     }
+    {
+      "name": "image_edit_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "image-edit",
+      "model": "qwen-img-edit-2511",
+      "stage_title": "Image Edit",
+      "description": "Instruction-driven image editing — the edit_image interface card boarding the Qwen-Image-Edit 2511 lane; the family carries the lightning / standard cascade (variant/quant always shown) plus the lanpaint flavor (required anchor image). The surface scopes itself.",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Prompt"
+          },
+          "negative_prompt": {
+            "type": "string",
+            "description": "Negative Prompt"
+          },
+          "image1": {
+            "type": "string",
+            "format": "path",
+            "description": "Image 1"
+          },
+          "image2": {
+            "type": "string",
+            "format": "path",
+            "description": "Image 2"
+          },
+          "image3": {
+            "type": "string",
+            "format": "path",
+            "description": "Image 3"
+          },
+          "reference_images": {
+            "type": "array",
+            "default": [],
+            "description": "Multi-image picker (up to 3). Used by workflows needing image sets."
+          },
+          "seed": {
+            "type": "integer",
+            "default": -1,
+            "minimum": -1,
+            "description": "Seed"
+          },
+          "steps": {
+            "type": "number",
+            "default": 4,
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Steps"
+          },
+          "cfg": {
+            "type": "number",
+            "default": 1,
+            "minimum": 0.1,
+            "maximum": 10,
+            "description": "Qwen-Image-Edit uses low CFG (flow-matching)."
+          },
+          "sampler": {
+            "type": "string",
+            "description": "Sampler — options resolve from the $samplers vocabulary at serve time"
+          },
+          "scheduler": {
+            "type": "string",
+            "description": "Scheduler — options resolve from the $schedulers vocabulary at serve time"
+          },
+          "loras": {
+            "type": "array",
+            "description": "LoRAs"
+          },
+          "use_stock_nodes": {
+            "type": "boolean",
+            "default": false,
+            "description": "When true, build_img2img_edit emits the stock graph unmodified."
+          },
+          "double_reference": {
+            "type": "boolean",
+            "default": false,
+            "description": "Encode the input image twice (VAE + vision encoder) — stronger identity retention."
+          },
+          "lanpaint_enabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "Force LanPaint",
+            "x-visible-when": "image1 != null"
+          },
+          "lanpaint_num_steps": {
+            "type": "number",
+            "default": 20,
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Num Steps",
+            "x-visible-when": "lanpaint_enabled == true"
+          },
+          "lanpaint_step_size": {
+            "type": "number",
+            "default": 1,
+            "minimum": 0.1,
+            "maximum": 2,
+            "description": "Step Size",
+            "x-visible-when": "lanpaint_enabled == true"
+          },
+          "lanpaint_lambda": {
+            "type": "number",
+            "default": 0.5,
+            "minimum": 0,
+            "maximum": 2,
+            "description": "Lambda",
+            "x-visible-when": "lanpaint_enabled == true"
+          },
+          "lanpaint_beta": {
+            "type": "number",
+            "default": 0.5,
+            "minimum": 0,
+            "maximum": 2,
+            "description": "Beta",
+            "x-visible-when": "lanpaint_enabled == true"
+          },
+          "lanpaint_friction": {
+            "type": "number",
+            "default": 0.5,
+            "minimum": 0,
+            "maximum": 2,
+            "description": "Friction",
+            "x-visible-when": "lanpaint_enabled == true"
+          },
+          "lanpaint_prompt_mode": {
+            "type": "string",
+            "enum": [
+              "negative",
+              "positive"
+            ],
+            "default": "negative",
+            "description": "Prompt Mode",
+            "x-visible-when": "lanpaint_enabled == true"
+          },
+          "outpaint_top": {
+            "type": "number",
+            "default": 0,
+            "minimum": 0,
+            "maximum": 512,
+            "description": "Expand Top",
+            "x-visible-when": "image1 != null"
+          },
+          "outpaint_right": {
+            "type": "number",
+            "default": 0,
+            "minimum": 0,
+            "maximum": 512,
+            "description": "Expand Right",
+            "x-visible-when": "image1 != null"
+          },
+          "outpaint_bottom": {
+            "type": "number",
+            "default": 0,
+            "minimum": 0,
+            "maximum": 512,
+            "description": "Expand Bottom",
+            "x-visible-when": "image1 != null"
+          },
+          "outpaint_left": {
+            "type": "number",
+            "default": 0,
+            "minimum": 0,
+            "maximum": 512,
+            "description": "Expand Left",
+            "x-visible-when": "image1 != null"
+          },
+          "outpaint_overlap": {
+            "type": "number",
+            "default": 16,
+            "minimum": 0,
+            "maximum": 64,
+            "description": "Overlap",
+            "x-visible-when": "image1 != null"
+          },
+          "mask": {
+            "type": "string",
+            "description": "Add the mask mod, then drop an RGBA PNG whose alpha marks the region (editor gesture carrier)."
+          },
+          "input_mask": {
+            "type": "string",
+            "format": "path",
+            "description": "RGBA PNG whose alpha channel marks the region."
+          },
+          "mask_mode": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "crop_stitch",
+              "full_frame"
+            ],
+            "default": "auto",
+            "description": "How the mask is honored: auto (the lane picks), crop_stitch (crop+edit+stitch), full_frame (edit whole image)."
+          },
+          "mask_context_pad": {
+            "type": "number",
+            "default": 64,
+            "minimum": 0,
+            "maximum": 256,
+            "description": "Pixels of surrounding context kept in the crop (crop_stitch)."
+          },
+          "mask_grow": {
+            "type": "number",
+            "default": 8,
+            "minimum": -32,
+            "maximum": 32,
+            "description": "Expand (+) or shrink (−) the region by an exact pixel count before use."
+          },
+          "mask_feather": {
+            "type": "number",
+            "default": 8,
+            "minimum": 0,
+            "maximum": 32,
+            "description": "Gaussian falloff the composite blends through — soft seams."
+          },
+          "mask_threshold": {
+            "type": "number",
+            "default": 0,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Re-binarize the feathered mask at this level. 0 = keep continuous."
+          },
+          "mask_invert": {
+            "type": "boolean",
+            "default": false,
+            "description": "Work OUTSIDE the painted region instead."
+          }
+        },
+        "required": [
+          "prompt",
+          "image1"
+        ]
+      }
     },
-    "required": [
-     "prompt",
-     "image1"
-    ]
-   }
-  },
-  {
-   "name": "image_gen_card",
-   "version": 1,
-   "kind": "card-compose",
-   "card": "image-gen",
-   "model": "krea-2",
-   "stage_title": "Image",
-   "description": "Text-to-image generation — the generate_image interface card boarding krea-2; the family declares its mods (loras) and the surface scopes itself",
-   "params_schema": {
-    "type": "object",
-    "properties": {
-     "model": {
-      "type": "string",
-      "enum": [
-       "krea-2",
-       "z-image",
-       "anima"
-      ],
-      "description": "The boarded family to run — the request's top-level `model`. Options: krea-2, z-image, anima.",
-      "default": "krea-2"
-     },
-     "prompt": {
-      "type": "string",
-      "description": "Prompt"
-     },
-     "negative_prompt": {
-      "type": "string",
-      "description": "Negative Prompt"
-     },
-     "width": {
-      "type": "number",
-      "minimum": 256,
-      "maximum": 2048,
-      "default": 1024,
-      "description": "Width"
-     },
-     "height": {
-      "type": "number",
-      "minimum": 256,
-      "maximum": 2048,
-      "default": 1024,
-      "description": "Height"
-     },
-     "seed": {
-      "type": "integer",
-      "default": -1,
-      "description": "Seed"
-     },
-     "steps": {
-      "type": "number",
-      "minimum": 1,
-      "maximum": 100,
-      "default": 8,
-      "description": "Steps"
-     },
-     "cfg": {
-      "type": "number",
-      "minimum": 1,
-      "maximum": 20,
-      "default": 4.5,
-      "description": "How closely the diffusion follows the prompt. Higher = stricter."
-     },
-     "sampler": {
-      "type": "string",
-      "description": "Sampler — options resolve from the $samplers vocabulary at serve time"
-     },
-     "scheduler": {
-      "type": "string",
-      "description": "Scheduler — options resolve from the $schedulers vocabulary at serve time"
-     },
-     "loras": {
-      "type": "array",
-      "description": "LoRAs",
-      "x-families": [
-       "krea-2"
-      ]
-     }
+    {
+      "name": "image_gen_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "image-gen",
+      "model": "krea-2",
+      "stage_title": "Image",
+      "description": "Text-to-image generation — the generate_image interface card boarding krea-2; the family declares its mods (loras) and the surface scopes itself",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "krea-2",
+              "z-image",
+              "anima"
+            ],
+            "default": "krea-2",
+            "description": "The boarded family to run — the request's top-level `model`. Options: krea-2, z-image, anima."
+          },
+          "prompt": {
+            "type": "string",
+            "description": "Prompt"
+          },
+          "negative_prompt": {
+            "type": "string",
+            "description": "Negative Prompt"
+          },
+          "width": {
+            "type": "number",
+            "default": 1024,
+            "minimum": 256,
+            "maximum": 2048,
+            "description": "Width"
+          },
+          "height": {
+            "type": "number",
+            "default": 1024,
+            "minimum": 256,
+            "maximum": 2048,
+            "description": "Height"
+          },
+          "steps": {
+            "type": "number",
+            "default": 8,
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Steps"
+          },
+          "cfg": {
+            "type": "number",
+            "default": 4.5,
+            "minimum": 1,
+            "maximum": 20,
+            "description": "How closely the diffusion follows the prompt. Higher = stricter."
+          },
+          "sampler": {
+            "type": "string",
+            "description": "Sampler — options resolve from the $samplers vocabulary at serve time"
+          },
+          "scheduler": {
+            "type": "string",
+            "description": "Scheduler — options resolve from the $schedulers vocabulary at serve time"
+          },
+          "seed": {
+            "type": "integer",
+            "default": -1,
+            "minimum": -1,
+            "description": "Seed"
+          },
+          "loras": {
+            "type": "array",
+            "description": "LoRAs",
+            "x-families": [
+              "krea-2"
+            ]
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      }
     },
-    "required": [
-     "prompt"
-    ]
-   }
-  },
-  {
-   "name": "img_to_mesh_card",
-   "version": 1,
-   "kind": "card-compose",
-   "card": "img-to-mesh",
-   "model": "trellis2-native",
-   "stage_title": "Image → 3D",
-   "description": "The 3D lane — lift one image into a textured mesh (.glb) on native TRELLIS.2 (DINOv3 conditioning) or native Pixal3D (pixel-aligned + MoGe camera FOV, hero tier), or copy a rig onto a target GLB (transfer_rig); one surface, one arm per family.",
-   "params_schema": {
-    "type": "object",
-    "properties": {
-     "model": {
-      "type": "string",
-      "enum": [
-       "trellis2-native",
-       "pixal3d",
-       "transfer_rig"
-      ],
-      "description": "The boarded family to run — the request's top-level `model`. Options: trellis2-native, pixal3d, transfer_rig.",
-      "default": "trellis2-native"
-     },
-     "input_image": {
-      "type": "string",
-      "format": "path",
-      "description": "One clear object, tight framing. Background is removed automatically (birefnet) unless bg_removal=off.",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "rigged_glb": {
-      "type": "string",
-      "format": "path",
-      "description": "The SOMA-rigged clean mesh — JOINTS_0/WEIGHTS_0 + armature. The rig donor.",
-      "x-families": [
-       "transfer_rig"
-      ]
-     },
-     "target_glb": {
-      "type": "string",
-      "format": "path",
-      "description": "The clothed mesh — geometry + textures, no rig. Receives the rig.",
-      "x-families": [
-       "transfer_rig"
-      ]
-     },
-     "seed": {
-      "type": "integer",
-      "default": 42,
-      "description": "Same seed + image = same mesh take."
-     },
-     "resolution": {
-      "type": "string",
-      "enum": [
-       "512",
-       "1024",
-       "1536"
-      ],
-      "default": "1024",
-      "description": "Upsample target (official pins 1536). All tiers run the full official chain — upsample + both texture passes + remesh tail."
-     },
-     "steps": {
-      "type": "number",
-      "minimum": 4,
-      "maximum": 60,
-      "default": 12,
-      "description": "STRUCTURE stage steps (the lift). Shape + texture stages ride their own knobs in the Stage section."
-     },
-     "cfg": {
-      "type": "number",
-      "minimum": 1,
-      "maximum": 15,
-      "default": 7.5,
-      "description": "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance — blobby trash out of the box). Lower runs looser."
-     },
-     "bg_removal": {
-      "type": "string",
-      "enum": [
-       "auto",
-       "on",
-       "off"
-      ],
-      "default": "auto",
-      "description": "auto/on: birefnet cuts the background (recommended). off: feed a pre-cleaned or alpha-cut image straight to conditioning."
-     },
-     "camera_fov": {
-      "type": "string",
-      "enum": [
-       "auto",
-       "35",
-       "49.13",
-       "60",
-       "75",
-       "90"
-      ],
-      "default": "auto",
-      "description": "Pixal3D only — per-image horizontal FoV feeding the camera transform matrix. auto: MoGeInference estimates from the source image (recommended); a literal degree value skips MoGe (operator-vouched camera, e.g. calibrated).",
-      "x-families": [
-       "pixal3d"
-      ]
-     },
-     "shape_steps": {
-      "type": "number",
-      "minimum": 4,
-      "maximum": 60,
-      "default": 20,
-      "description": "Shape-stage steps. 20 is the official template calibration.",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "shape_cfg": {
-      "type": "number",
-      "minimum": 1,
-      "maximum": 15,
-      "default": 7.5,
-      "description": "Shape-stage guidance. 7.5 is the official template calibration.",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "tex1_steps": {
-      "type": "number",
-      "minimum": 4,
-      "maximum": 60,
-      "default": 12,
-      "description": "First texture pass steps (upsampled latent, simple scheduler). 12 is the official calibration.",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "tex1_cfg": {
-      "type": "number",
-      "minimum": 1,
-      "maximum": 15,
-      "default": 7.5,
-      "description": "First texture pass guidance. 7.5 is the official calibration.",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "tex2_steps": {
-      "type": "number",
-      "minimum": 4,
-      "maximum": 60,
-      "default": 12,
-      "description": "Second texture pass steps (raw unet — the detail pass). 12 is the official calibration.",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "tex2_cfg": {
-      "type": "number",
-      "minimum": 1,
-      "maximum": 15,
-      "default": 1.0,
-      "description": "Second texture pass guidance. 1.0 is the official calibration (near-verbatim detail sampling).",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "remesh_resolution": {
-      "type": "number",
-      "minimum": 128,
-      "maximum": 2048,
-      "default": 768,
-      "description": "UDF remesh voxel resolution. 768 is the official calibration; lower = lighter mesh, coarser surface.",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "decimate_faces": {
-      "type": "number",
-      "minimum": 10000,
-      "maximum": 2000000,
-      "default": 700000,
-      "description": "Exact face count after decimation (midpoint placement). 700000 is the official calibration.",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "smooth_angle": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 180,
-      "default": 180,
-      "description": "Normal-smoothing crease angle, applied before unwrap and after texturing. 180 is the official calibration.",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "atlas_size": {
-      "type": "string",
-      "enum": [
-       "2048",
-       "4096"
-      ],
-      "default": "4096",
-      "description": "Unwrap + baked color atlas resolution. 4096 is the official calibration (VRAM-heavy); 2048 is the lighter fallback.",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "ao_size": {
-      "type": "string",
-      "enum": [
-       "512",
-       "1024"
-      ],
-      "default": "1024",
-      "description": "Ambient-occlusion bake resolution. 1024 is the official calibration.",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "normal_size": {
-      "type": "string",
-      "enum": [
-       "1024",
-       "2048"
-      ],
-      "default": "2048",
-      "description": "Normal-map bake resolution. 2048 is the official calibration.",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "struct_sampler": {
-      "type": "string",
-      "default": "euler",
-      "description": "Structure-stage sampler. euler is the official template pick. — options resolve from the $samplers vocabulary at serve time",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "struct_scheduler": {
-      "type": "string",
-      "default": "normal",
-      "description": "Structure-stage scheduler. normal is the official pick. — options resolve from the $schedulers vocabulary at serve time",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "shape_sampler": {
-      "type": "string",
-      "default": "euler",
-      "description": "Shape-stage sampler. euler is the official pick. — options resolve from the $samplers vocabulary at serve time",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "shape_scheduler": {
-      "type": "string",
-      "default": "normal",
-      "description": "Shape-stage scheduler. normal is the official pick. — options resolve from the $schedulers vocabulary at serve time",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "tex1_sampler": {
-      "type": "string",
-      "default": "euler",
-      "description": "First texture pass sampler. euler is the official pick. — options resolve from the $samplers vocabulary at serve time",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "tex1_scheduler": {
-      "type": "string",
-      "default": "simple",
-      "description": "First texture pass scheduler. simple is the official pick (the only non-normal scheduler in the template). — options resolve from the $schedulers vocabulary at serve time",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "tex2_sampler": {
-      "type": "string",
-      "default": "euler",
-      "description": "Second texture pass sampler. euler is the official pick. — options resolve from the $samplers vocabulary at serve time",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "tex2_scheduler": {
-      "type": "string",
-      "default": "normal",
-      "description": "Second texture pass scheduler. normal is the official pick. — options resolve from the $schedulers vocabulary at serve time",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "sd3_shift": {
-      "type": "number",
-      "minimum": 1.0,
-      "maximum": 10.0,
-      "default": 5.0,
-      "description": "ModelSamplingSD3 shift on the structure arm. 5.0 is the official template calibration.",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "rescale_struct": {
-      "type": "number",
-      "minimum": 0.1,
-      "maximum": 1.0,
-      "default": 0.7,
-      "description": "Structure-arm RescaleCFG multiplier. 0.7 is the official calibration.",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "rescale_shape": {
-      "type": "number",
-      "minimum": 0.1,
-      "maximum": 1.0,
-      "default": 0.5,
-      "description": "Shape-arm RescaleCFG multiplier (also feeds texture pass 1 — one node). 0.5 is the official calibration.",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "override_struct": {
-      "type": "number",
-      "minimum": 0.0,
-      "maximum": 1.0,
-      "default": 0.667,
-      "description": "Structure-arm CFGOverride start percent. 0.667 is the official calibration.",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     },
-     "override_shape": {
-      "type": "number",
-      "minimum": 0.0,
-      "maximum": 1.0,
-      "default": 0.769,
-      "description": "Shape-arm CFGOverride start percent. 0.769 is the official calibration.",
-      "x-families": [
-       "trellis2-native",
-       "pixal3d"
-      ]
-     }
+    {
+      "name": "img_to_mesh_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "img-to-mesh",
+      "model": "trellis2-native",
+      "stage_title": "Image → 3D",
+      "description": "The 3D lane — lift one image into a textured mesh (.glb) on native TRELLIS.2 (DINOv3 conditioning) or native Pixal3D (pixel-aligned + MoGe camera FOV, hero tier), or copy a rig onto a target GLB (transfer_rig); one surface, one arm per family.",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "trellis2-native",
+              "pixal3d",
+              "transfer_rig"
+            ],
+            "default": "trellis2-native",
+            "description": "The boarded family to run — the request's top-level `model`. Options: trellis2-native, pixal3d, transfer_rig."
+          },
+          "input_image": {
+            "type": "string",
+            "format": "path",
+            "description": "One clear object, tight framing. Background removal runs before the lift.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "rigged_glb": {
+            "type": "string",
+            "format": "path",
+            "description": "The SOMA-rigged clean mesh — JOINTS_0/WEIGHTS_0 live here.",
+            "x-families": [
+              "transfer_rig"
+            ]
+          },
+          "target_glb": {
+            "type": "string",
+            "format": "path",
+            "description": "The clothed mesh — geometry + textures, no rig.",
+            "x-families": [
+              "transfer_rig"
+            ]
+          },
+          "seed": {
+            "type": "integer",
+            "default": 42,
+            "minimum": -1,
+            "description": "Same seed + image = same mesh take."
+          },
+          "resolution": {
+            "type": "string",
+            "enum": [
+              "512",
+              "1024",
+              "1536"
+            ],
+            "default": "1024",
+            "description": "Upsample target (official pins 1536). All tiles snap to /64."
+          },
+          "steps": {
+            "type": "number",
+            "default": 12,
+            "minimum": 4,
+            "maximum": 60,
+            "description": "STRUCTURE stage steps (the lift). Shape + texture have their own."
+          },
+          "cfg": {
+            "type": "number",
+            "default": 7.5,
+            "minimum": 1,
+            "maximum": 15,
+            "description": "Structure-stage guidance. 7.5 is the official pin."
+          },
+          "bg_removal": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "on",
+              "off"
+            ],
+            "default": "auto",
+            "description": "auto/on: birefnet cuts the background (recommended for photos)."
+          },
+          "camera_fov": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "35",
+              "49.13"
+            ],
+            "default": "auto",
+            "description": "Pixal3D only — per-image horizontal FoV fed to MoGe depth.",
+            "x-families": [
+              "pixal3d"
+            ]
+          },
+          "shape_steps": {
+            "type": "number",
+            "default": 20,
+            "minimum": 4,
+            "maximum": 60,
+            "description": "Shape-stage steps. 20 is the official template pin.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "shape_cfg": {
+            "type": "number",
+            "default": 7.5,
+            "minimum": 1,
+            "maximum": 15,
+            "description": "Shape-stage guidance. 7.5 is the official template pin.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "tex1_steps": {
+            "type": "number",
+            "default": 12,
+            "minimum": 4,
+            "maximum": 60,
+            "description": "First texture pass steps (upsampled latent).",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "tex1_cfg": {
+            "type": "number",
+            "default": 7.5,
+            "minimum": 1,
+            "maximum": 15,
+            "description": "First texture pass guidance. 7.5 is the official pin.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "tex2_steps": {
+            "type": "number",
+            "default": 12,
+            "minimum": 4,
+            "maximum": 60,
+            "description": "Second texture pass steps (raw unet — the detail pass).",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "tex2_cfg": {
+            "type": "number",
+            "default": 1,
+            "minimum": 1,
+            "maximum": 15,
+            "description": "Second texture pass guidance. 1.0 is the official pin.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "remesh_resolution": {
+            "type": "number",
+            "default": 768,
+            "minimum": 128,
+            "maximum": 2048,
+            "description": "UDF remesh voxel resolution. 768 is the official pin.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "decimate_faces": {
+            "type": "number",
+            "default": 700000,
+            "minimum": 10000,
+            "maximum": 2000000,
+            "description": "Exact face count after decimation (midpoint smooths shading loss).",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "smooth_angle": {
+            "type": "number",
+            "default": 180,
+            "minimum": 0,
+            "maximum": 180,
+            "description": "Normal-smoothing crease angle, applied before decimation.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "atlas_size": {
+            "type": "string",
+            "enum": [
+              "2048",
+              "4096"
+            ],
+            "default": "4096",
+            "description": "Unwrap + baked color atlas resolution. 4096 is the official pin.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "ao_size": {
+            "type": "string",
+            "enum": [
+              "512",
+              "1024"
+            ],
+            "default": "1024",
+            "description": "Ambient-occlusion bake resolution. 1024 is the official pin.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "normal_size": {
+            "type": "string",
+            "enum": [
+              "1024",
+              "2048"
+            ],
+            "default": "2048",
+            "description": "Normal-map bake resolution. 2048 is the official pin.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "struct_sampler": {
+            "type": "string",
+            "default": "euler",
+            "description": "Structure-stage sampler. euler is the official pin.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "struct_scheduler": {
+            "type": "string",
+            "default": "normal",
+            "description": "Structure-stage scheduler. normal is the official pin.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "shape_sampler": {
+            "type": "string",
+            "default": "euler",
+            "description": "Shape-stage sampler. euler is the official pin.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "shape_scheduler": {
+            "type": "string",
+            "default": "normal",
+            "description": "Shape-stage scheduler. normal is the official pin.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "tex1_sampler": {
+            "type": "string",
+            "default": "euler",
+            "description": "First texture pass sampler. euler is the official pin.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "tex1_scheduler": {
+            "type": "string",
+            "default": "simple",
+            "description": "First texture pass scheduler. simple is the official pin.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "tex2_sampler": {
+            "type": "string",
+            "default": "euler",
+            "description": "Second texture pass sampler. euler is the official pin.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "tex2_scheduler": {
+            "type": "string",
+            "default": "normal",
+            "description": "Second texture pass scheduler. normal is the official pin.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "sd3_shift": {
+            "type": "number",
+            "default": 5,
+            "minimum": 1,
+            "maximum": 10,
+            "description": "ModelSamplingSD3 shift on the structure arm.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "rescale_struct": {
+            "type": "number",
+            "default": 0.7,
+            "minimum": 0.1,
+            "maximum": 1,
+            "description": "Structure-arm RescaleCFG multiplier. 0.7 is the official pin.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "rescale_shape": {
+            "type": "number",
+            "default": 0.5,
+            "minimum": 0.1,
+            "maximum": 1,
+            "description": "Shape-arm RescaleCFG multiplier (also feeds tex passes).",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "override_struct": {
+            "type": "number",
+            "default": 0.667,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Structure-arm CFGOverride start percent. 0.667 is the official pin.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          },
+          "override_shape": {
+            "type": "number",
+            "default": 0.769,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Shape-arm CFGOverride start percent. 0.769 is the official pin.",
+            "x-families": [
+              "trellis2-native",
+              "pixal3d"
+            ]
+          }
+        }
+      }
     },
-    "required": []
-   }
-  },
-  {
-   "name": "input_prep_card",
-   "version": 1,
-   "kind": "card-compose",
-   "card": "input-prep",
-   "model": "input",
-   "stage_title": "Input Prep",
-   "description": "Source intake: attach an image or audio file (upload, asset drop, prior run) — staged, optionally transformed, emitted as a media artifact for downstream cards to wire.",
-   "params_schema": {
-    "type": "object",
-    "properties": {
-     "source": {
-      "type": "string",
-      "format": "path",
-      "description": "The file to stage — upload, asset drop, prior-run artifact, or mount path. Image or audio (video is not boarded yet)."
-     }
+    {
+      "name": "input_prep_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "input-prep",
+      "model": "input",
+      "stage_title": "Input Prep",
+      "description": "Source intake: attach an image or audio file (upload, asset drop, prior run) — staged, optionally transformed, emitted as a media artifact for downstream cards to wire.",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "format": "path",
+            "description": "The file to stage — upload, asset drop, prior-run artifact, or mount path. The arm stages it into the ComfyUI input dir before rendering."
+          }
+        }
+      }
     },
-    "required": [
-     "source"
-    ]
-   }
-  },
-  {
-   "name": "mask_studio_card",
-   "version": 1,
-   "kind": "card-compose",
-   "card": "mask-studio",
-   "model": "mask-studio",
-   "stage_title": "Mask Studio",
-   "description": "Selection-only mask card: detect people/subjects, refine with SAM3, paint corrections → mask artifacts for inpaint flows.",
-   "params_schema": {
-    "type": "object",
-    "properties": {
-     "input_image": {
-      "type": "string",
-      "format": "path",
-      "description": "The photo to select from — absolute path or an artifact ref from a prior run."
-     },
-     "detect_mode": {
-      "type": "string",
-      "enum": [
-       "body",
-       "face",
-       "hands"
-      ],
-      "default": "body",
-      "description": "What the primary selection targets. body → RT-DETR person boxes refined by SAM3; face/hands → SAM3 open-vocabulary text selection."
-     },
-     "detection_threshold": {
-      "type": "number",
-      "minimum": 0.05,
-      "maximum": 0.95,
-      "default": 0.35,
-      "description": "RT-DETR box confidence. Lower catches more instances, noisier boxes."
-     },
-     "sam_threshold": {
-      "type": "number",
-      "minimum": 0.5,
-      "maximum": 1.0,
-      "default": 0.93,
-      "description": "SAM3 mask confidence."
-     },
-     "sam_dilation": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 64,
-      "default": 0,
-      "description": "Grow the final mask N pixels — the inpaint bleed margin."
-     },
-     "output_mode": {
-      "type": "string",
-      "enum": [
-       "segm",
-       "bbox"
-      ],
-      "default": "segm",
-      "description": "segm saves masks; bbox saves the drawn-box manifest preview."
-     },
-     "instance_filter": {
-      "type": "string",
-      "default": "all",
-      "description": "'all' | 'largest' | comma indices '0,2' — which detected instances the primary keeps."
-     },
-     "max_instances": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 100,
-      "default": 0,
-      "description": "Cap detected instances (0 = no cap). Read the manifest first, then filter."
-     },
-     "sam3_prompt": {
-      "type": "string",
-      "description": "Open-vocabulary text selection — e.g. 'the red hat', 'left shoe'. Rides INSTEAD of detect_mode when set."
-     },
-     "export_boxes": {
-      "type": "boolean",
-      "default": true,
-      "description": "Draw RT-DETR boxes on the image — the instance manifest (read it, then set instance_filter)."
-     },
-     "export_face": {
-      "type": "boolean",
-      "default": false,
-      "description": "Export face mask"
-     },
-     "export_hands": {
-      "type": "boolean",
-      "default": false,
-      "description": "Export hands mask"
-     },
-     "export_body": {
-      "type": "boolean",
-      "default": false,
-      "description": "Export body mask"
-     },
-     "export_paint": {
-      "type": "boolean",
-      "default": false,
-      "description": "ON when a brush stroke exists — the painted payload becomes its own mask export."
-     },
-     "paint_mask": {
-      "type": "string",
-      "format": "path",
-      "description": "The painted PNG (alpha channel = strokes). Required when export_paint is true."
-     },
-     "roi": {
-      "type": "string",
-      "description": "[x, y, w, h] fractions — run-global crop of every selection. Recipe filters may carry their own; identical scopes only."
-     },
-     "outputs": {
-      "type": "string",
-      "default": "[]",
-      "description": "THE recipe form: one entry per mask, filter (where) over selection (how). Non-empty ⇒ overrides the flat params. See AGENT.md."
-     }
+    {
+      "name": "mask_studio_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "mask-studio",
+      "model": "mask-studio",
+      "stage_title": "Mask Studio",
+      "description": "Selection-only mask card: detect people/subjects, refine with SAM3, paint corrections → mask artifacts for inpaint flows.",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "input_image": {
+            "type": "string",
+            "format": "path",
+            "description": "The photo to select from — absolute path or an artifact ref from a previous card."
+          },
+          "detect_mode": {
+            "type": "string",
+            "enum": [
+              "body",
+              "face",
+              "hands"
+            ],
+            "default": "body",
+            "description": "What the primary selection targets. body → RT-DETR person boxes; face/hands → MediaPipe landmarks."
+          },
+          "detection_threshold": {
+            "type": "number",
+            "default": 0.35,
+            "minimum": 0.05,
+            "maximum": 0.95,
+            "description": "RT-DETR box confidence. Lower catches more instances, noisier boxes."
+          },
+          "sam_threshold": {
+            "type": "number",
+            "default": 0.93,
+            "minimum": 0.5,
+            "maximum": 1,
+            "description": "SAM3 mask confidence."
+          },
+          "sam_dilation": {
+            "type": "number",
+            "default": 0,
+            "minimum": 0,
+            "maximum": 64,
+            "description": "Grow the final mask N pixels — the inpaint bleed margin."
+          },
+          "output_mode": {
+            "type": "string",
+            "enum": [
+              "segm",
+              "bbox"
+            ],
+            "default": "segm",
+            "description": "segm saves masks; bbox saves the drawn-box manifest preview."
+          },
+          "instance_filter": {
+            "type": "string",
+            "default": "all",
+            "description": "'all' | 'largest' | comma indices '0,2' — which detected instances become masks."
+          },
+          "max_instances": {
+            "type": "number",
+            "default": 0,
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Cap detected instances (0 = no cap). Read the manifest first to see what is there."
+          },
+          "sam3_prompt": {
+            "type": "string",
+            "description": "Open-vocabulary text selection — e.g. 'the red hat', 'left shoe'. Overrides detect_mode when present."
+          },
+          "export_boxes": {
+            "type": "boolean",
+            "default": true,
+            "description": "Draw RT-DETR boxes on the image — the instance manifest (read it back to filter)."
+          },
+          "export_face": {
+            "type": "boolean",
+            "default": false,
+            "description": "Export face mask"
+          },
+          "export_hands": {
+            "type": "boolean",
+            "default": false,
+            "description": "Export hands mask"
+          },
+          "export_body": {
+            "type": "boolean",
+            "default": false,
+            "description": "Export body mask"
+          },
+          "export_paint": {
+            "type": "boolean",
+            "default": false,
+            "description": "ON when a brush stroke exists — the painted payload becomes the mask (everything else is ignored)."
+          },
+          "paint_mask": {
+            "type": "string",
+            "format": "path",
+            "description": "The painted PNG (alpha channel = strokes). Required when export_paint is on."
+          },
+          "roi": {
+            "type": "string",
+            "description": "[x, y, w, h] fractions — run-global crop of every selection."
+          },
+          "outputs": {
+            "type": "string",
+            "default": "[]",
+            "description": "THE recipe form: one entry per mask, filter (where) over selections, per-mask ops. Replaces every export_* toggle when present."
+          }
+        },
+        "required": [
+          "input_image"
+        ]
+      }
     },
-    "required": [
-     "input_image"
-    ]
-   }
-  },
-  {
-   "name": "motion_card",
-   "version": 1,
-   "kind": "card-compose",
-   "card": "motion",
-   "model": "kimodo",
-   "stage_title": "Motion",
-   "description": "Text → 3D human motion (SOMA-77 pose NPZ). Chain segments, constrain joints, skin onto a rigged character GLB.",
-   "params_schema": {
-    "type": "object",
-    "properties": {
-     "prompt": {
-      "type": "string",
-      "description": "What the body DOES — verb-first, one continuous action per segment. Multi-segment: separate with | and pair with motion_prompts."
-     },
-     "seed": {
-      "type": "integer",
-      "default": 42,
-      "description": "Same seed + prompt = same motion take."
-     },
-     "duration_sec": {
-      "type": "number",
-      "minimum": 1,
-      "maximum": 30,
-      "default": 5,
-      "description": "Length of the generated motion segment."
-     },
-     "diffusion_steps": {
-      "type": "number",
-      "minimum": 10,
-      "maximum": 200,
-      "default": 25,
-      "description": "More steps = smoother arcs; 25 is the calibrated default."
-     },
-     "num_samples": {
-      "type": "number",
-      "minimum": 1,
-      "maximum": 4,
-      "default": 1,
-      "description": "Takes per prompt (each becomes its own NPZ)."
-     },
-     "num_transition_frames": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 60,
-      "default": 10,
-      "description": "Blend frames when chaining onto a previous motion (motion_npz)."
-     },
-     "cfg_type": {
-      "type": "string",
-      "enum": [
-       "separated",
-       "regular",
-       "nocfg"
-      ],
-      "default": "separated",
-      "description": "separated = independent text/action guidance (calibrated); nocfg = fastest."
-     },
-     "cfg_weight_a": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 15,
-      "default": 2.5,
-      "description": "Text guidance weight (separated mode)."
-     },
-     "cfg_weight_b": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 15,
-      "default": 5,
-      "description": "Action guidance weight (separated mode)."
-     },
-     "motion_npz": {
-      "type": "string",
-      "description": "Previous motion NPZ to continue — the new prompt takes over after num_transition_frames of blend."
-     },
-     "motion_prompts": {
-      "type": "string",
-      "description": "Segment prompts joined with | — one motion per segment, auto-chained in order."
-     },
-     "motion_constraints": {
-      "type": "string",
-      "description": "Pin joints (e.g. left_foot:ground) — JSON or key:value lines, applied per segment."
-     },
-     "preview_glb": {
-      "type": "string",
-      "format": "path",
-      "description": "SOMAX-rigged character GLB — the motion is skinned onto it (somax bake) as an animated GLB artifact."
-     }
+    {
+      "name": "motion_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "motion",
+      "model": "kimodo",
+      "stage_title": "Motion",
+      "description": "Text → 3D human motion (SOMA-77 pose NPZ). Chain segments, constrain joints, skin onto a rigged character GLB.",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "What the body DOES — verb-first, one continuous action per segment. Multi-segment belongs in motion_prompts."
+          },
+          "motion_prompts": {
+            "type": "string",
+            "description": "Segment prompts joined with | — one motion per segment, auto-chained into one clip."
+          },
+          "motion_constraints": {
+            "type": "string",
+            "description": "Pin joints (e.g. left_foot:ground) — JSON or key:value lines, applied per segment."
+          },
+          "seed": {
+            "type": "integer",
+            "default": 42,
+            "minimum": -1,
+            "description": "Same seed + prompt = same motion take."
+          },
+          "duration_sec": {
+            "type": "number",
+            "default": 5,
+            "minimum": 1,
+            "maximum": 30,
+            "description": "Length of the generated motion segment."
+          },
+          "diffusion_steps": {
+            "type": "number",
+            "default": 25,
+            "minimum": 10,
+            "maximum": 200,
+            "description": "More steps = smoother arcs; 25 is the calibrated default."
+          },
+          "num_samples": {
+            "type": "number",
+            "default": 1,
+            "minimum": 1,
+            "maximum": 4,
+            "description": "Takes per prompt (each becomes its own NPZ)."
+          },
+          "num_transition_frames": {
+            "type": "number",
+            "default": 10,
+            "minimum": 0,
+            "maximum": 60,
+            "description": "Blend frames when chaining onto a previous motion (motion_npz)."
+          },
+          "cfg_type": {
+            "type": "string",
+            "enum": [
+              "separated",
+              "regular",
+              "nocfg"
+            ],
+            "default": "separated",
+            "description": "separated = independent text/action guidance (calibrated); nocfg = fastest."
+          },
+          "cfg_weight_a": {
+            "type": "number",
+            "default": 2.5,
+            "minimum": 0,
+            "maximum": 15,
+            "description": "Text guidance weight (separated mode)."
+          },
+          "cfg_weight_b": {
+            "type": "number",
+            "default": 5,
+            "minimum": 0,
+            "maximum": 15,
+            "description": "Action guidance weight (separated mode)."
+          },
+          "motion_npz": {
+            "type": "string",
+            "description": "Previous motion NPZ to continue — the new prompt takes over after num_transition_frames."
+          },
+          "preview_glb": {
+            "type": "string",
+            "format": "path",
+            "description": "SOMAX-rigged character GLB — the motion is skinned onto it (somax bake preview)."
+          }
+        }
+      }
     },
-    "required": [
-     "prompt"
-    ]
-   }
-  },
-  {
-   "name": "music_card",
-   "version": 1,
-   "kind": "card-compose",
-   "card": "music",
-   "model": "music3",
-   "stage_title": "Music",
-   "description": "Generate music — MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
-   "params_schema": {
-    "type": "object",
-    "properties": {
-     "prompt": {
-      "type": "string",
-      "description": "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, pop, soul, guitar, 105 BPM'."
-     },
-     "lyrics": {
-      "type": "string",
-      "description": "Lyrics with structure tags: [verse], [chorus], [bridge]. Empty = instrumental."
-     },
-     "duration": {
-      "type": "number",
-      "minimum": 5,
-      "maximum": 360,
-      "default": 30,
-      "description": "Target audio length in seconds (5-360)."
-     },
-     "guidance_scale": {
-      "type": "number",
-      "minimum": 0.1,
-      "maximum": 10,
-      "default": 1.7,
-      "description": "Classifier-free guidance (KSampler cfg). 1.7 = lane default."
-     },
-     "n_diffusion_steps": {
-      "type": "number",
-      "minimum": 1,
-      "maximum": 200,
-      "default": 30,
-      "description": "Flow-matching denoising steps. 30 = lane default. Never 0."
-     },
-     "lm_cfg_scale": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 10,
-      "default": 1.7,
-      "description": "Lyric-encoder guidance (MiniMaxMusic3TextEncode cfg_scale). 1.7 = lane default."
-     },
-     "seed": {
-      "type": "integer",
-      "default": -1,
-      "description": "Seed"
-     }
+    {
+      "name": "music_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "music",
+      "model": "music3",
+      "stage_title": "Music",
+      "description": "Generate music — MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, playful female vocal, groovy bassline'"
+          },
+          "lyrics": {
+            "type": "string",
+            "description": "Lyrics with structure tags: [verse], [chorus], [bridge]. Empty = instrumental."
+          },
+          "duration": {
+            "type": "number",
+            "default": 30,
+            "minimum": 5,
+            "maximum": 360,
+            "description": "Target audio length in seconds (5-360)."
+          },
+          "guidance_scale": {
+            "type": "number",
+            "default": 1.7,
+            "minimum": 0.1,
+            "maximum": 10,
+            "description": "Classifier-free guidance (KSampler cfg). 1.7 = lane default."
+          },
+          "n_diffusion_steps": {
+            "type": "number",
+            "default": 30,
+            "minimum": 1,
+            "maximum": 200,
+            "description": "Flow-matching denoising steps. 30 = lane default. Never 0."
+          },
+          "lm_cfg_scale": {
+            "type": "number",
+            "default": 1.7,
+            "minimum": 0,
+            "maximum": 10,
+            "description": "Lyric-encoder guidance (MiniMaxMusic3TextEncode cfg_scale). 1.7 = lane default."
+          },
+          "seed": {
+            "type": "integer",
+            "default": -1,
+            "minimum": -1,
+            "description": "Seed"
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      }
     },
-    "required": [
-     "prompt"
-    ]
-   }
-  },
-  {
-   "name": "quad_remesh_card",
-   "version": 1,
-   "kind": "card-compose",
-   "card": "quad-remesh",
-   "model": "autoremesher",
-   "stage_title": "Quad Remesh",
-   "description": "High-poly mesh → clean quad topology",
-   "params_schema": {
-    "type": "object",
-    "properties": {
-     "input": {
-      "type": "string",
-      "description": "OBJ/STL/PLY path or artifact-ref from a previous card"
-     },
-     "target_quads": {
-      "type": "number",
-      "minimum": 100,
-      "maximum": 1000000,
-      "default": 50000,
-      "description": "Target quad count"
-     },
-     "edge_scaling": {
-      "type": "number",
-      "minimum": 0.1,
-      "maximum": 10.0,
-      "default": 1.0,
-      "description": "Edge scaling"
-     },
-     "sharp_edge": {
-      "type": "number",
-      "minimum": 0.0,
-      "maximum": 180.0,
-      "default": 90.0,
-      "description": "Sharp edge"
-     },
-     "smooth_normal": {
-      "type": "number",
-      "minimum": 0.0,
-      "maximum": 1.0,
-      "default": 0.0,
-      "description": "Smooth normal"
-     },
-     "adaptivity": {
-      "type": "number",
-      "minimum": 0.1,
-      "maximum": 2.0,
-      "default": 1.0,
-      "description": "Adaptivity"
-     },
-     "anisotropy": {
-      "type": "number",
-      "minimum": 0.1,
-      "maximum": 2.0,
-      "default": 1.0,
-      "description": "Anisotropy"
-     }
+    {
+      "name": "quad_remesh_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "quad-remesh",
+      "model": "autoremesher",
+      "stage_title": "Quad Remesh",
+      "description": "High-poly mesh → clean quad topology",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": "string",
+            "description": "OBJ/STL/PLY path or artifact-ref from a previous card"
+          },
+          "target_quads": {
+            "type": "number",
+            "default": 50000,
+            "minimum": 100,
+            "maximum": 1000000,
+            "description": "Target quad count"
+          },
+          "edge_scaling": {
+            "type": "number",
+            "default": 1,
+            "minimum": 0.1,
+            "maximum": 10,
+            "description": "Edge scaling"
+          },
+          "sharp_edge": {
+            "type": "number",
+            "default": 90,
+            "minimum": 0,
+            "maximum": 180,
+            "description": "Sharp edge"
+          },
+          "smooth_normal": {
+            "type": "number",
+            "default": 0,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Smooth normal"
+          },
+          "adaptivity": {
+            "type": "number",
+            "default": 1,
+            "minimum": 0.1,
+            "maximum": 2,
+            "description": "Adaptivity"
+          },
+          "anisotropy": {
+            "type": "number",
+            "default": 1,
+            "minimum": 0.1,
+            "maximum": 2,
+            "description": "Anisotropy"
+          }
+        }
+      }
     },
-    "required": [
-     "input"
-    ]
-   }
-  },
-  {
-   "name": "sfx_card",
-   "version": 1,
-   "kind": "card-compose",
-   "card": "sfx",
-   "model": "moss-sfx",
-   "stage_title": "Sound Effects",
-   "description": "Generate sound effects — MOSS-SFX v2, describe the SOUND not the scene",
-   "params_schema": {
-    "type": "object",
-    "properties": {
-     "prompt": {
-      "type": "string",
-      "description": "Describe the SOUND itself, not the scene (e.g. 'sharp metallic clang with long decay')"
-     },
-     "guidance_scale": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 20,
-      "default": 5.0,
-      "description": "Diffusion classifier-free guidance"
-     },
-     "n_diffusion_steps": {
-      "type": "number",
-      "minimum": 1,
-      "maximum": 500,
-      "default": 50,
-      "description": "More = higher quality, slower"
-     },
-     "duration": {
-      "type": "number",
-      "minimum": 0.5,
-      "maximum": 300,
-      "default": 10.0,
-      "description": "Output length in seconds"
-     },
-     "seed": {
-      "type": "integer",
-      "default": -1,
-      "description": "Seed"
-     }
+    {
+      "name": "sfx_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "sfx",
+      "model": "moss-sfx",
+      "stage_title": "Sound Effects",
+      "description": "Generate sound effects — MOSS-SFX v2, describe the SOUND not the scene",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Describe the SOUND itself, not the scene (e.g. 'sharp metallic clang with long decay')"
+          },
+          "guidance_scale": {
+            "type": "number",
+            "default": 5,
+            "minimum": 0,
+            "maximum": 20,
+            "description": "Diffusion classifier-free guidance"
+          },
+          "n_diffusion_steps": {
+            "type": "number",
+            "default": 50,
+            "minimum": 1,
+            "maximum": 500,
+            "description": "More = higher quality, slower"
+          },
+          "duration": {
+            "type": "number",
+            "default": 10,
+            "minimum": 0.5,
+            "maximum": 300,
+            "description": "Output length in seconds"
+          },
+          "seed": {
+            "type": "integer",
+            "default": -1,
+            "minimum": -1,
+            "description": "Seed"
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      }
     },
-    "required": [
-     "prompt"
-    ]
-   }
-  },
-  {
-   "name": "skin_card",
-   "version": 1,
-   "kind": "card-compose",
-   "card": "skin",
-   "model": "skin",
-   "stage_title": "Skin",
-   "description": "Deterministic skin detail maps onto a SOMAX body (kind sidecar + proof turnaround).",
-   "params_schema": {
-    "type": "object",
-    "properties": {
-     "body_glb": {
-      "type": "string",
-      "format": "path",
-      "description": "Body GLB"
-     },
-     "kind": {
-      "type": "string",
-      "enum": [
-       "keeper",
-       "villager",
-       "villager_elder",
-       "ash_nomad",
-       "caravan_trader",
-       "arena_factor",
-       "amf_warden",
-       "marrow_raider",
-       "dune_hound",
-       "sand_skimmer",
-       "ridge_lizard",
-       "moss_elk",
-       "gloom_tortoise",
-       "emberwing",
-       "bone_crane",
-       "husk_stalker",
-       "ironvein_construct",
-       "cherusci_scrivener",
-       "amalgam_horror",
-       "meld_creature"
-      ],
-      "default": "keeper",
-      "description": "Kind"
-     },
-     "map_size": {
-      "type": "string",
-      "enum": [
-       "256",
-       "512",
-       "1024",
-       "2048"
-      ],
-      "default": "512",
-      "description": "Map size"
-     },
-     "seed": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 2147483647,
-      "default": 20260906,
-      "description": "Seed"
-     },
-     "resolution": {
-      "type": "number",
-      "minimum": 256,
-      "maximum": 2048,
-      "default": 768,
-      "description": "View resolution"
-     },
-     "framing": {
-      "type": "number",
-      "minimum": 1.0,
-      "maximum": 3.0,
-      "default": 1.2,
-      "description": "Framing"
-     },
-     "focal_length": {
-      "type": "number",
-      "minimum": 18,
-      "maximum": 135,
-      "default": 50,
-      "description": "Focal length"
-     },
-     "samples": {
-      "type": "number",
-      "minimum": 8,
-      "maximum": 256,
-      "default": 64,
-      "description": "Samples"
-     },
-     "transparent": {
-      "type": "string",
-      "enum": [
-       "true",
-       "false"
-      ],
-      "default": "true",
-      "description": "Transparent"
-     }
+    {
+      "name": "skin_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "skin",
+      "model": "skin",
+      "stage_title": "Skin",
+      "description": "Deterministic skin detail maps onto a SOMAX body (kind sidecar + proof turnaround).",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "body_glb": {
+            "type": "string",
+            "format": "path",
+            "description": "Body GLB"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "keeper",
+              "villager",
+              "villager_elder",
+              "ash_nomad",
+              "caravan_trader",
+              "arena_factor",
+              "amf_warden",
+              "marrow_raider",
+              "dune_hound",
+              "sand_skimmer",
+              "ridge_lizard",
+              "moss_elk",
+              "gloom_tortoise",
+              "emberwing",
+              "bone_crane",
+              "husk_stalker",
+              "ironvein_construct",
+              "cherusci_scrivener",
+              "amalgam_horror",
+              "meld_creature"
+            ],
+            "default": "keeper",
+            "description": "Kind"
+          },
+          "map_size": {
+            "type": "string",
+            "enum": [
+              "256",
+              "512",
+              "1024",
+              "2048"
+            ],
+            "default": "512",
+            "description": "Map size"
+          },
+          "seed": {
+            "type": "integer",
+            "default": 20260906,
+            "minimum": -1,
+            "maximum": 2147483647,
+            "description": "Seed"
+          },
+          "resolution": {
+            "type": "number",
+            "default": 768,
+            "minimum": 256,
+            "maximum": 2048,
+            "description": "View resolution"
+          },
+          "framing": {
+            "type": "number",
+            "default": 1.2,
+            "minimum": 1,
+            "maximum": 3,
+            "description": "Framing"
+          },
+          "focal_length": {
+            "type": "number",
+            "default": 50,
+            "minimum": 18,
+            "maximum": 135,
+            "description": "Focal length"
+          },
+          "samples": {
+            "type": "number",
+            "default": 64,
+            "minimum": 8,
+            "maximum": 256,
+            "description": "Samples"
+          },
+          "transparent": {
+            "type": "string",
+            "enum": [
+              "true",
+              "false"
+            ],
+            "default": "true",
+            "description": "Transparent"
+          }
+        }
+      }
     },
-    "required": [
-     "body_glb"
-    ]
-   }
-  },
-  {
-   "name": "tagger_card",
-   "version": 1,
-   "kind": "card-compose",
-   "card": "tagger",
-   "model": "wd14",
-   "stage_title": "Tagger",
-   "description": "Image prompt inversion — booru keyword tags (WD14, JoyTag) and natural-language captions (Florence-2, JoyCaption) for recreating images in NovelAI / Pony / FLUX / Ideogram. Tags persist as a tags.txt run artifact.",
-   "params_schema": {
-    "type": "object",
-    "properties": {
-     "model": {
-      "type": "string",
-      "enum": [
-       "wd14",
-       "joytag",
-       "florence2",
-       "joycaption"
-      ],
-      "description": "The boarded family to run — the request's top-level `model`. Options: wd14, joytag, florence2, joycaption.",
-      "default": "wd14"
-     },
-     "input_image": {
-      "type": "string",
-      "format": "path",
-      "description": "The image to invert. Absolute mount path or artifact ref."
-     },
-     "checkpoint": {
-      "type": "string",
-      "default": "wd-v1-4-moat-tagger-v2",
-      "description": "The WD14 weights name (auto-downloaded on first run)."
-     },
-     "threshold": {
-      "type": "number",
-      "minimum": 0.0,
-      "maximum": 1.0,
-      "default": 0.35,
-      "description": "General-tag confidence floor."
-     },
-     "character_threshold": {
-      "type": "number",
-      "minimum": 0.0,
-      "maximum": 1.0,
-      "default": 0.85,
-      "description": "Character-tag confidence floor — keep high."
-     },
-     "exclude_tags": {
-      "type": "string",
-      "description": "Comma-separated tags to prune from the output."
-     },
-     "replace_underscore": {
-      "type": "boolean",
-      "default": false,
-      "description": "Emit \"silver hair\" instead of \"silver_hair\"."
-     },
-     "trailing_comma": {
-      "type": "boolean",
-      "default": false,
-      "description": "Terminate the tag list with a comma (prompt-paste shape)."
-     },
-     "add_tag": {
-      "type": "string",
-      "description": "JoyTag: tags force-prepended to the output (comma-separated). Ignored by WD14."
-     },
-     "remove_tag": {
-      "type": "string",
-      "description": "JoyTag: tags pruned from the output (comma-separated). Ignored by WD14."
-     },
-     "caption_task": {
-      "type": "string",
-      "enum": [
-       "region_caption",
-       "dense_region_caption",
-       "region_proposal",
-       "caption",
-       "detailed_caption",
-       "more_detailed_caption",
-       "caption_to_phrase_grounding",
-       "referring_expression_segmentation",
-       "ocr",
-       "ocr_with_region",
-       "docvqa",
-       "prompt_gen_tags",
-       "prompt_gen_mixed_caption",
-       "prompt_gen_analyze",
-       "prompt_gen_mixed_caption_plus"
-      ],
-      "default": "more_detailed_caption",
-      "description": "Florence-2: the vision task (live task vocabulary). Ignored by WD14/JoyTag."
-     },
-     "caption_type": {
-      "type": "string",
-      "enum": [
-       "Descriptive",
-       "Descriptive (Casual)",
-       "Straightforward",
-       "Stable Diffusion Prompt",
-       "MidJourney",
-       "Danbooru tag list",
-       "e621 tag list",
-       "Rule34 tag list",
-       "Booru-like tag list",
-       "Art Critic",
-       "Product Listing",
-       "Social Media Post"
-      ],
-      "default": "Descriptive",
-      "description": "JoyCaption: the caption template (live vocabulary). Ignored by WD14/JoyTag/Florence-2."
-     },
-     "caption_length": {
-      "type": "string",
-      "enum": [
-       "any",
-       "very short",
-       "short",
-       "medium-length",
-       "long",
-       "very long"
-      ],
-      "default": "long",
-      "description": "JoyCaption: target length (the node also takes word counts 20-260 — bare/API bodies only). Ignored by other families."
-     },
-     "extra_option": {
-      "type": "string",
-      "enum": [
-       "",
-       "Include information about lighting.",
-       "Include information about camera angle.",
-       "Include information about whether there is a watermark or not.",
-       "Include information about whether there are JPEG artifacts or not.",
-       "Do NOT include anything sexual; keep it PG.",
-       "Do NOT mention the image's resolution.",
-       "You MUST include information about the subjective aesthetic quality of the image from low to very high.",
-       "Include information on the image's composition style, such as leading lines, rule of thirds, or symmetry.",
-       "Do NOT mention any text that is in the image.",
-       "Specify the depth of field and whether the background is in focus or blurred.",
-       "Do NOT use any ambiguous language.",
-       "ONLY describe the most important elements of the image.",
-       "Your response will be used by a text-to-image model, so avoid useless meta phrases."
-      ],
-      "description": "JoyCaption: one appended instruction (the full 28-option list rides bare/API bodies). Ignored by other families."
-     }
+    {
+      "name": "tagger_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "tagger",
+      "model": "wd14",
+      "stage_title": "Tagger",
+      "description": "Image prompt inversion — booru keyword tags (WD14, JoyTag) and natural-language captions (Florence-2, JoyCaption) for recreating images in NovelAI / Pony / FLUX / Ideogram. Tags persist as a tags.txt run artifact.",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "wd14",
+              "joytag",
+              "florence2",
+              "joycaption"
+            ],
+            "default": "wd14",
+            "description": "The boarded family to run — the request's top-level `model`. Options: wd14, joytag, florence2, joycaption."
+          },
+          "input_image": {
+            "type": "string",
+            "format": "path",
+            "description": "The image to invert. Absolute mount path or artifact ref."
+          },
+          "checkpoint": {
+            "type": "string",
+            "default": "wd-v1-4-moat-tagger-v2",
+            "description": "The WD14 weights name (auto-downloaded on first run)."
+          },
+          "threshold": {
+            "type": "number",
+            "default": 0.35,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "General-tag confidence floor."
+          },
+          "character_threshold": {
+            "type": "number",
+            "default": 0.85,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Character-tag confidence floor — keep high."
+          },
+          "exclude_tags": {
+            "type": "string",
+            "description": "Comma-separated tags to prune from the output."
+          },
+          "add_tag": {
+            "type": "string",
+            "description": "JoyTag: tags force-prepended to the output (comma-separated). Ignored by WD14."
+          },
+          "remove_tag": {
+            "type": "string",
+            "description": "JoyTag: tags pruned from the output (comma-separated). Ignored by WD14."
+          },
+          "caption_task": {
+            "type": "string",
+            "enum": [
+              "caption",
+              "caption_to_phrase_grounding",
+              "dense_region_caption",
+              "detailed_caption",
+              "docvqa",
+              "more_detailed_caption",
+              "ocr",
+              "ocr_with_region",
+              "prompt_gen_analyze",
+              "prompt_gen_mixed_caption",
+              "prompt_gen_mixed_caption_plus",
+              "prompt_gen_tags",
+              "referring_expression_segmentation",
+              "region_caption",
+              "region_proposal"
+            ],
+            "default": "more_detailed_caption",
+            "description": "Florence-2: the vision task (live task vocabulary). Ignored by WD14/JoyTag."
+          },
+          "caption_type": {
+            "type": "string",
+            "enum": [
+              "Art Critic",
+              "Booru-like tag list",
+              "Danbooru tag list",
+              "Descriptive",
+              "Descriptive (Casual)",
+              "MidJourney",
+              "Product Listing",
+              "Rule34 tag list",
+              "Social Media Post",
+              "Stable Diffusion Prompt",
+              "Straightforward",
+              "e621 tag list"
+            ],
+            "default": "Descriptive",
+            "description": "JoyCaption: the caption template (live vocabulary). Ignored by WD14/JoyTag/Florence-2."
+          },
+          "caption_length": {
+            "type": "string",
+            "enum": [
+              "any",
+              "very short",
+              "short",
+              "medium-length",
+              "long",
+              "very long",
+              "20",
+              "30",
+              "40",
+              "50",
+              "60",
+              "70",
+              "80",
+              "90",
+              "100",
+              "110",
+              "120",
+              "130",
+              "140",
+              "150",
+              "160",
+              "170",
+              "180",
+              "190",
+              "200",
+              "210",
+              "220",
+              "230",
+              "240",
+              "250",
+              "260"
+            ],
+            "default": "long",
+            "description": "JoyCaption: target length (the node also takes word counts 20-260 — bare/API bodies pass through)."
+          },
+          "extra_option": {
+            "type": "string",
+            "enum": [
+              "",
+              "Do NOT include anything sexual; keep it PG.",
+              "Do NOT include information about people/characters that cannot be changed (like ethnicity, gender, etc), but do still include changeable attributes (like hair style).",
+              "Do NOT mention any text that is in the image.",
+              "Do NOT mention the image's resolution.",
+              "Do NOT use any ambiguous language.",
+              "Do NOT use polite euphemisms—lean into blunt, casual phrasing.",
+              "Do not mention the mood/feeling/etc of the image.",
+              "Explicitly specify the vantage height (eye-level, low-angle worm’s-eye, bird’s-eye, drone, rooftop, etc.).",
+              "Identify the image orientation (portrait, landscape, or square) and aspect ratio if obvious.",
+              "If applicable, mention the likely use of artificial or natural lighting sources.",
+              "If it is a photo you MUST include information about what camera was likely used and details such as aperture, shutter speed, ISO, etc.",
+              "If it is a work of art, do not include the artist's name or the title of the work.",
+              "If there is a person/character in the image you must refer to them as {name}.",
+              "If there is a watermark, you must mention it.",
+              "Include information about camera angle.",
+              "Include information about lighting.",
+              "Include information about the ages of any people/characters when applicable.",
+              "Include information about whether there are JPEG artifacts or not.",
+              "Include information about whether there is a watermark or not.",
+              "Include information on the image's composition style, such as leading lines, rule of thirds, or symmetry.",
+              "Include whether the image is sfw, suggestive, or nsfw.",
+              "Mention whether the image depicts an extreme close-up, close-up, medium shot, cowboy shot, medium wide shot, wide shot, or extreme wide shot.",
+              "ONLY describe the most important elements of the image.",
+              "Specify the depth of field and whether the background is in focus or blurred.",
+              "Use vulgar slang and profanity, such as (but not limited to) \"[REDACTED 2026-11-05],\" \"[REDACTED 2026-11-05],\" \"[REDACTED 2026-11-05],\" etc.",
+              "You MUST include information about the subjective aesthetic quality of the image from low to very high.",
+              "Your response will be used by a text-to-image model, so avoid useless meta phrases like “This image shows…”, \"You are looking at...\", etc."
+            ],
+            "description": "JoyCaption: one appended instruction (the full option list rides the served schema's live vocabulary)."
+          },
+          "replace_underscore": {
+            "type": "boolean",
+            "default": false,
+            "description": "Emit \"silver hair\" instead of \"silver_hair\"."
+          },
+          "trailing_comma": {
+            "type": "boolean",
+            "default": false,
+            "description": "Terminate the tag list with a comma (prompt-paste shape)."
+          }
+        },
+        "required": [
+          "input_image"
+        ]
+      }
     },
-    "required": [
-     "input_image"
-    ]
-   }
-  },
-  {
-   "name": "tts_card",
-   "version": 1,
-   "kind": "card-compose",
-   "card": "tts",
-   "model": "qwen3-tts",
-   "stage_title": "TTS",
-   "description": "Text-to-speech — Qwen3-TTS with CustomVoice personas and instruct-text emotion control",
-   "params_schema": {
-    "type": "object",
-    "properties": {
-     "model": {
-      "type": "string",
-      "enum": [
-       "qwen3-tts",
-       "qwen3-tts-base"
-      ],
-      "description": "The boarded family to run — the request's top-level `model`. Options: qwen3-tts, qwen3-tts-base.",
-      "default": "qwen3-tts"
-     },
-     "text": {
-      "type": "string",
-      "description": "The text to synthesize"
-     },
-     "voice": {
-      "type": "string",
-      "enum": [
-       "ryan",
-       "serena",
-       "vivian",
-       "aiden",
-       "eric",
-       "dylan",
-       "sohee",
-       "ono_anna",
-       "uncle_fu"
-      ],
-      "default": "ryan",
-      "description": "Preset speaker persona (CustomVoice) or .qvoice embedding path"
-     },
-     "style_instruction": {
-      "type": "string",
-      "description": "Emotion and delivery control (e.g. 'speak with warm confidence')"
-     },
-     "temperature": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 2,
-      "default": 0.7,
-      "description": "Temperature"
-     },
-     "seed": {
-      "type": "integer",
-      "default": -1,
-      "description": "Seed"
-     },
-     "qvoice": {
-      "type": "string",
-      "format": "path",
-      "description": "Pre-computed speaker embedding (.qvoice/.voice — the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one."
-     },
-     "voice_pca_strengths": {
-      "type": "string",
-      "description": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} — subtle voice direction without re-designing the persona."
-     }
+    {
+      "name": "tts_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "tts",
+      "model": "qwen3-tts",
+      "stage_title": "TTS",
+      "description": "Text-to-speech — Qwen3-TTS with CustomVoice personas and instruct-text emotion control",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "qwen3-tts",
+              "qwen3-tts-base"
+            ],
+            "default": "qwen3-tts",
+            "description": "The boarded family to run — the request's top-level `model`. Options: qwen3-tts, qwen3-tts-base."
+          },
+          "text": {
+            "type": "string",
+            "description": "The text to synthesize"
+          },
+          "voice": {
+            "type": "string",
+            "enum": [
+              "ryan",
+              "serena",
+              "vivian",
+              "aiden",
+              "eric",
+              "dylan",
+              "sohee",
+              "ono_anna",
+              "uncle_fu"
+            ],
+            "default": "ryan",
+            "description": "Preset speaker persona (CustomVoice) or .qvoice embedding path"
+          },
+          "style_instruction": {
+            "type": "string",
+            "description": "Emotion and delivery control (e.g. 'speak with warm confidence')"
+          },
+          "qvoice": {
+            "type": "string",
+            "format": "path",
+            "description": "Pre-computed speaker embedding (.qvoice/.voice — the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one."
+          },
+          "voice_pca_strengths": {
+            "type": "string",
+            "description": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} — subtle voice direction without re-designing the persona."
+          },
+          "temperature": {
+            "type": "number",
+            "default": 0.7,
+            "minimum": 0,
+            "maximum": 2,
+            "description": "Temperature"
+          },
+          "seed": {
+            "type": "integer",
+            "default": -1,
+            "minimum": -1,
+            "description": "Seed"
+          }
+        },
+        "required": [
+          "text"
+        ]
+      }
     },
-    "required": [
-     "text"
-    ]
-   }
-  },
-  {
-   "name": "upscale_tools_card",
-   "version": 1,
-   "kind": "card-compose",
-   "card": "upscale-tools",
-   "model": "seedvr2_ema",
-   "stage_title": "Upscale Tools",
-   "description": "Diffusion upscale (SeedVR2-3B fp16) — the hidden tool card; also home of the consumed tool fragments (resize, pixel-upscale, rtx-vsr, concat, input)",
-   "params_schema": {
-    "type": "object",
-    "properties": {
-     "input_image": {
-      "type": "string",
-      "format": "path",
-      "description": "The frame to restore. Absolute mount path."
-     },
-     "resolution": {
-      "type": "number",
-      "minimum": 256,
-      "maximum": 2160,
-      "description": "1080 = FHD rail. SeedVR2 redraws detail at this size."
-     },
-     "max_resolution": {
-      "type": "number",
-      "minimum": 512,
-      "maximum": 4096,
-      "description": "The hard ceiling — inputs already past it pass through."
-     },
-     "batch_size": {
-      "type": "number",
-      "minimum": 1,
-      "maximum": 16,
-      "description": "Video frames ride batches; images are batch 1."
-     },
-     "seed": {
-      "type": "integer",
-      "default": -1,
-      "description": "Seed"
-     }
+    {
+      "name": "upscale_tools_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "upscale-tools",
+      "model": "seedvr2_ema",
+      "stage_title": "Upscale Tools",
+      "description": "Diffusion upscale (SeedVR2-3B fp16) — the hidden tool card; also home of the consumed tool fragments (resize, pixel-upscale, rtx-vsr, concat, input)",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "input_image": {
+            "type": "string",
+            "format": "path",
+            "description": "The frame to restore. Absolute mount path."
+          },
+          "seed": {
+            "type": "integer",
+            "default": -1,
+            "minimum": -1,
+            "description": "Seed"
+          },
+          "resolution": {
+            "type": "number",
+            "minimum": 256,
+            "maximum": 2160,
+            "description": "1080 = FHD rail. SeedVR2 redraws detail at this size."
+          },
+          "max_resolution": {
+            "type": "number",
+            "minimum": 512,
+            "maximum": 4096,
+            "description": "The hard ceiling — inputs already past it pass through."
+          },
+          "batch_size": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 16,
+            "description": "Video frames ride batches; images are batch 1."
+          }
+        }
+      }
     },
-    "required": [
-     "input_image"
-    ]
-   }
-  },
-  {
-   "name": "video_gen_card",
-   "version": 1,
-   "kind": "card-compose",
-   "card": "video-gen",
-   "model": "wan-vace",
-   "stage_title": "Video",
-   "description": "Text/reference-to-video — the generate_video interface card boarding wan-vace and scail2-animate; one surface, one arm per family",
-   "params_schema": {
-    "type": "object",
-    "properties": {
-     "model": {
-      "type": "string",
-      "enum": [
-       "wan-vace",
-       "scail2-animate"
-      ],
-      "description": "The boarded family to run — the request's top-level `model`. Options: wan-vace, scail2-animate.",
-      "default": "wan-vace"
-     },
-     "prompt": {
-      "type": "string",
-      "description": "Prompt"
-     },
-     "negative_prompt": {
-      "type": "string",
-      "description": "Negative Prompt"
-     },
-     "width": {
-      "type": "number",
-      "minimum": 320,
-      "maximum": 1280,
-      "description": "Width"
-     },
-     "height": {
-      "type": "number",
-      "minimum": 320,
-      "maximum": 720,
-      "description": "Height"
-     },
-     "length": {
-      "type": "number",
-      "minimum": 9,
-      "maximum": 121,
-      "description": "4n+1 (Wan latent grid). 49 ≈ 2s, 81 ≈ 3.4s at 24fps."
-     },
-     "fps": {
-      "type": "number",
-      "minimum": 8,
-      "maximum": 30,
-      "description": "FPS"
-     },
-     "seed": {
-      "type": "integer",
-      "default": -1,
-      "description": "Seed"
-     },
-     "steps": {
-      "type": "number",
-      "minimum": 1,
-      "maximum": 50,
-      "description": "Steps"
-     },
-     "cfg": {
-      "type": "number",
-      "minimum": 1,
-      "maximum": 12,
-      "description": "Lightning-distilled lanes run CFG 1 (guidance baked in)."
-     },
-     "sampler": {
-      "type": "string",
-      "description": "Sampler — options resolve from the $samplers vocabulary at serve time"
-     },
-     "scheduler": {
-      "type": "string",
-      "description": "Scheduler — options resolve from the $schedulers vocabulary at serve time"
-     },
-     "reference_image": {
-      "type": "string",
-      "format": "path",
-      "description": "The anchor frame — identity, subject, scene (wan-vace); the character to animate (scail2-animate)."
-     },
-     "pose_video": {
-      "type": "string",
-      "format": "path",
-      "description": "The motion source — SCAIL-2 drives the reference character with this video.",
-      "x-families": [
-       "scail2-animate"
-      ]
-     },
-     "pose_strength": {
-      "type": "number",
-      "minimum": 0.0,
-      "maximum": 2.0,
-      "default": 1.0,
-      "description": "How tightly SCAIL-2 follows the driving motion.",
-      "x-families": [
-       "scail2-animate"
-      ]
-     }
+    {
+      "name": "video_gen_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "video-gen",
+      "model": "wan-vace",
+      "stage_title": "Video",
+      "description": "Text/reference-to-video — the generate_video interface card boarding wan-vace and scail2-animate; one surface, one arm per family",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "wan-vace",
+              "scail2-animate"
+            ],
+            "default": "wan-vace",
+            "description": "The boarded family to run — the request's top-level `model`. Options: wan-vace, scail2-animate."
+          },
+          "prompt": {
+            "type": "string",
+            "description": "Prompt"
+          },
+          "negative_prompt": {
+            "type": "string",
+            "description": "Negative Prompt"
+          },
+          "reference_image": {
+            "type": "string",
+            "format": "path",
+            "description": "The anchor frame — identity, subject, scene (wan-vace); the character to animate (scail2)."
+          },
+          "pose_video": {
+            "type": "string",
+            "format": "path",
+            "description": "The motion source — SCAIL-2 drives the reference character with this video.",
+            "x-families": [
+              "scail2-animate"
+            ]
+          },
+          "pose_strength": {
+            "type": "number",
+            "default": 1,
+            "minimum": 0,
+            "maximum": 2,
+            "description": "How tightly SCAIL-2 follows the driving motion.",
+            "x-families": [
+              "scail2-animate"
+            ]
+          },
+          "width": {
+            "type": "number",
+            "minimum": 320,
+            "maximum": 1280,
+            "description": "Width"
+          },
+          "height": {
+            "type": "number",
+            "minimum": 320,
+            "maximum": 720,
+            "description": "Height"
+          },
+          "length": {
+            "type": "number",
+            "minimum": 9,
+            "maximum": 121,
+            "description": "4n+1 (Wan latent grid). 49 ≈ 2s, 81 ≈ 3.4s at 24fps."
+          },
+          "fps": {
+            "type": "number",
+            "minimum": 8,
+            "maximum": 30,
+            "description": "FPS"
+          },
+          "steps": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Steps"
+          },
+          "cfg": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 12,
+            "description": "Lightning-distilled lanes run CFG 1 (guidance baked in)."
+          },
+          "sampler": {
+            "type": "string",
+            "description": "Sampler — options resolve from the $samplers vocabulary at serve time"
+          },
+          "scheduler": {
+            "type": "string",
+            "description": "Scheduler — options resolve from the $schedulers vocabulary at serve time"
+          },
+          "seed": {
+            "type": "integer",
+            "default": -1,
+            "minimum": -1,
+            "description": "Seed"
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      }
     },
-    "required": [
-     "prompt"
-    ]
-   }
-  },
-  {
-   "name": "voice_lock_card",
-   "version": 1,
-   "kind": "card-compose",
-   "card": "voice-lock",
-   "model": "qwen3-tts-voicedesign",
-   "stage_title": "Voice Lock",
-   "description": "Lock a voice persona — design, export, and reuse .qvoice embeddings for consistent character voices",
-   "params_schema": {
-    "type": "object",
-    "properties": {
-     "voice_name": {
-      "type": "string",
-      "description": "Name for the locked persona — becomes the .qvoice filename stem. Reused across every future TTS render."
-     },
-     "style_instruction": {
-      "type": "string",
-      "description": "The voice description — becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent')."
-     },
-     "temperature": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 2,
-      "default": 0.7,
-      "description": "Temperature"
-     },
-     "top_p": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 1,
-      "default": 0.9,
-      "description": "Top-P"
-     },
-     "speed": {
-      "type": "number",
-      "minimum": 0.5,
-      "maximum": 2,
-      "default": 1.0,
-      "description": "Speed"
-     },
-     "repetition_penalty": {
-      "type": "number",
-      "minimum": 0.8,
-      "maximum": 2,
-      "default": 1.05,
-      "description": "Repetition Penalty"
-     },
-     "seed": {
-      "type": "integer",
-      "default": -1,
-      "description": "Seed"
-     }
-    },
-    "required": [
-     "voice_name",
-     "style_instruction"
-    ]
-   }
-  }
- ]
+    {
+      "name": "voice_lock_card",
+      "version": 1,
+      "kind": "card-compose",
+      "card": "voice-lock",
+      "model": "qwen3-tts-voicedesign",
+      "stage_title": "Voice Lock",
+      "description": "Lock a voice persona — design, export, and reuse .qvoice embeddings for consistent character voices",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "voice_name": {
+            "type": "string",
+            "description": "Name for the locked persona — becomes the .qvoice filename stem. Reused across every future TTS render."
+          },
+          "style_instruction": {
+            "type": "string",
+            "description": "The voice description — becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent')."
+          },
+          "temperature": {
+            "type": "number",
+            "default": 0.7,
+            "minimum": 0,
+            "maximum": 2,
+            "description": "Temperature"
+          },
+          "top_p": {
+            "type": "number",
+            "default": 0.9,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Top-P"
+          },
+          "speed": {
+            "type": "number",
+            "default": 1,
+            "minimum": 0.5,
+            "maximum": 2,
+            "description": "Speed"
+          },
+          "repetition_penalty": {
+            "type": "number",
+            "default": 1.05,
+            "minimum": 0.8,
+            "maximum": 2,
+            "description": "Repetition Penalty"
+          },
+          "seed": {
+            "type": "integer",
+            "default": -1,
+            "minimum": -1,
+            "description": "Seed"
+          }
+        }
+      }
+    }
+  ]
 }

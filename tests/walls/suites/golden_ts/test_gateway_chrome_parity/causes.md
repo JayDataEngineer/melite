@@ -51,3 +51,36 @@ engines (quarantine 47e1c583; card-decls golden 22->19 same day).
 chrome.ts regenerated via its capture script (TOOLS line only —
 other 9 doors byte-identical, 19 survivors byte-identical).
 Deliberate TS chrome-door behavior change per the regolden rule.
+
+
+## 2026-09-08 — THE DOOR FLIP (Phase-2 completion): params_schema now derives LIVE from the registered Schemastery schemas
+
+The chrome door's /v1/tools arm serves the frozen base doc with every
+card-compose tool's params_schema overlaid at serve time by
+doors/toolsEmit.ts (engine package's params-emit.ts walks schema meta;
+cardDefs.ts boots the card set once and caches). The py exporter's
+card-arm is retired from serving. Regolded from the live scratch
+serve, 19 card tools.
+
+Accepted deltas vs the retired py-exporter bytes (each a documented
+decision, not drift):
+- Canonical TS serialization: JSON.stringify(doc, null, 2) — raw
+  UTF-8 (py escaped \uXXXX), JS numbers (py 8.0). Key order
+  canonicalized (type, format, enum, default, minimum, maximum,
+  description, x-*).
+- seed knobs gain "minimum": -1 — the seed sentinel law's floor,
+  visible to consumers for the first time (py never served it).
+- skin seed minimum 0 -> -1: the seed law outranks the py floor.
+- h3 image gains format "path"; h3 interpolate_enabled default is a
+  BOOLEAN (py served the string "false" — a wart).
+- Coerced Selects (skin map_size, img-to-mesh resolution/atlas/ao/
+  normal, fit/anny/skin transparent): served string enums with
+  stringified defaults, derived from extra.options / union shapes.
+- Descriptions are the TS-authored single-declaration texts (py's
+  longer texts superseded); tagger enums ride kit order (sorted) and
+  extra_option serves the FULL 28-option list (py served 15).
+- multi-family model knobs synthesized from boarded (enum, default
+  boarded[0]); single-family cards serve no model knob (py parity).
+
+Verified: test_gateway_chrome_parity (15 legs), test_http_parity,
+test_formwire_parity re-pinned to these bytes.

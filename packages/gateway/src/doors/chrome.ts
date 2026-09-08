@@ -11,6 +11,15 @@
 // them verbatim (parse+reserialize would drift: ensure_ascii
 // \uXXXX vs raw UTF-8, float 1.0 vs number 1).
 //
+// 2026-09-08 DOOR FLIP (Phase-2): TOOLS_JSON is now the BASE doc
+// only — the chrome door serves /v1/tools through doors/toolsEmit.ts,
+// which overlays every card-compose tool's params_schema LIVE from
+// the registered Schemastery schemas (the single declaration; the
+// py exporter's card-arm no longer serves). The base's embedded
+// params_schema bodies are inert placeholders the overlay replaces;
+// its generator (capture_chrome.py) is retired with the py oracle.
+// The other chrome constants remain verbatim-frozen.
+//
 // Erasable-syntax TS only (node --experimental-strip-types):
 // plain string constants, no enums.
 

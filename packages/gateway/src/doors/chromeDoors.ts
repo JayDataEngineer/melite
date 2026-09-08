@@ -19,15 +19,20 @@ import type { DispatchResult } from "../core/errors.ts";
 import type { GatewayRequest } from "../ctx.ts";
 import { matchRoute } from "../routeUtil.ts";
 import { CHROME_BODIES } from "./chrome.ts";
+import { toolsJsonLive } from "./toolsEmit.ts";
 
 /** The health/chrome doors (J1-J10): a ROUTES hit serves the
- *  captured bytes verbatim (200). Anything else falls through. */
+ *  captured bytes verbatim (200) — except /v1/tools, which serves
+ *  the frozen doc with params_schema overlaid LIVE from the
+ *  registered card schemas (the 2026-09-08 single-declaration
+ *  flip: the Schemastery schema is the one source; toolsEmit.ts).
+ *  Anything else falls through. */
 export const chromeDoors: Plugin = {
   name: "gateway-chrome",
   apply(ctx: Context): void {
     ctx.on(
       "gateway/request",
-      (req: GatewayRequest): DispatchResult | undefined => {
+      async (req: GatewayRequest): Promise<DispatchResult | undefined> => {
         const hit = matchRoute(req.method, req.path);
         if (
           hit === null ||
@@ -35,6 +40,14 @@ export const chromeDoors: Plugin = {
             hit.row.handler !== "_h_chrome")
         ) {
           return undefined;
+        }
+        if (hit.row.path === "/v1/tools" || req.path === "/v1/tools") {
+          return {
+            status: 200,
+            body: await toolsJsonLive(),
+            contentType: "application/json",
+            headers: {},
+          };
         }
         const served: string | undefined =
           CHROME_BODIES[hit.row.path] ?? CHROME_BODIES[req.path];

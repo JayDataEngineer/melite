@@ -72,6 +72,18 @@ export class ComfyUIService extends Service {
     this.facts = facts
   }
 
+  /** Registry read for the serving surfaces (params_schema emitter):
+   * the registered definition by card id. Read-only — registration
+   * still rides registerCard only. */
+  getCardDef(id: string): CardDefinition | undefined {
+    return this.cards.get(id)
+  }
+
+  /** Registered card ids (sorted) — census + refusal text reuse. */
+  cardIds(): string[] {
+    return [...this.cards.keys()].sort()
+  }
+
   setObjectInfo(objectInfo: Record<string, any> | null): void {
     if (!objectInfo) {
       this.objectInfoNodes = null
