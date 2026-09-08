@@ -14,9 +14,11 @@ import type { ComponentType } from "react"
 /** Seat contract table. Owners extend via declaration merging. */
 export interface SlotMap {}
 
-/** Seat cardinality. (Upstream also has 'keyed' | 'chain' — dropped in the
- * adaptation until a consumer needs them; see ATTRIBUTION.md.) */
-export type SlotKind = "single" | "list"
+/** Seat cardinality: single occupant, ordered list, key-dispatched, or
+ * selector-routed chain. ('keyed' + 'chain' re-vendored 2026-09-08, S1 —
+ * see ./ATTRIBUTION.md. Scope/session axes and store seats stay out;
+ * the two-share props cut stands.) */
+export type SlotKind = "single" | "list" | "keyed" | "chain"
 
 /** One SlotMap entry: kind plus the optional owner-supplied props share. */
 export interface SlotEntryDef {
@@ -42,6 +44,26 @@ export type OwnerOf<K extends keyof SlotMap & string> =
 /** Entry label: static string or a thunk resolved at read time. */
 export type SlotLabel = string | (() => string)
 
+/** Chain-entry selector: the routing decision of one chain contribution.
+ * Runs at election time in chain order (ascending `priority`, default 0 —
+ * lower tries first; ties keep registration order); the first non-null
+ * return elects its entry and becomes the caller's `matched` value; `null`
+ * passes to the next entry; all-null falls to the owner's fallback. MUST
+ * be pure — a function of the owner props only, no external mutable reads,
+ * no side effects (upstream ui-slots ChainSelect, adapted to the two-share
+ * cut: the owner share is the whole input). */
+export type ChainSelect<O extends object = Record<string, unknown>, M = unknown> = (
+  owner: O,
+) => M | null
+
+/** Chain election result: the winning entry's view plus its selector's
+ * non-null return (the `matched` prop the renderer injects). Null = every
+ * entry declined — the owner renders its fallback. */
+export interface ChainElection {
+  view: SlotEntryView
+  matched: unknown
+}
+
 /** Resolve a possibly-thunked label at read time. */
 export function resolveSlotLabel(label: SlotLabel | undefined): string | undefined {
   return typeof label === "function" ? label() : label
@@ -59,12 +81,17 @@ export interface RegisterOptions {
   /** Target seat (must be declared — by the a-priori 'root' or a parent
    * registration's children table). */
   name: keyof SlotMap & string
+  /** Keyed-seat cell key (required for keyed seats). */
+  key?: string
   /** List-seat cell id (required for list seats). */
   id?: string
   /** List-seat display order (ascending; ties keep registration order). */
   order?: number
   /** Optional display label (inventory/tooltip). */
   label?: SlotLabel
+  /** Chain-seat routing selector (required for chain seats — the entry's
+   * routing seat; election runs selectors in priority order). */
+  select?: ChainSelect<Record<string, unknown>, unknown>
   /** Shadowing priority: entries sharing one cell coexist at distinct
    * priorities, sorted ascending — the cell's lowest live entry renders. */
   priority?: number
@@ -91,6 +118,7 @@ export interface LiveSlotNode {
   kind: SlotKind | "(collapsed)"
   declaredBy?: string
   occupants: {
+    key?: string
     id?: string
     order?: number
     priority: number
@@ -102,11 +130,14 @@ export interface LiveSlotNode {
 interface StoredEntry {
   component: SlotComponent
   options: {
+    key?: string
     id?: string
     order?: number
     label?: SlotLabel
     priority?: number
   }
+  /** Chain routing selector (present exactly on chain-seat entries). */
+  select?: ChainSelect<Record<string, unknown>, unknown>
   children?: Record<string, { kind: SlotKind }>
   registrant?: string
 }
@@ -130,6 +161,10 @@ interface SlotRecord {
   snapshot: readonly SlotEntryView[] | null
   version: number
   listeners: Set<() => void>
+  /** Declaration-lifetime listeners: fire SYNCHRONOUSLY on declare and
+   * collapse (ordinary entry mutations never notify this set) — the
+   * injectSlot wait seam. */
+  declarationListeners: Set<() => void>
 }
 
 const NO_ENTRIES: readonly StoredEntry[] = Object.freeze([])
@@ -150,6 +185,17 @@ export class SlotCore {
   private records = new Map<string, SlotRecord>()
   private dirty = new Set<SlotRecord>()
   private flushScheduled = false
+  /** Entries retired by an abdicating crash report (reportEntryError):
+   * excluded from entriesOfSlot projections for the rest of their
+   * registration's life, while the registration itself stays on the ledger
+   * (disposal authority remains with the registrant). */
+  private abdicated = new WeakSet<StoredEntry>()
+  /** View → stored-entry link (the staleness probe's identity map;
+   * populated whenever a snapshot builds). */
+  private viewEntries = new WeakMap<SlotEntryView, StoredEntry>()
+  private entryErrorListeners = new Set<
+    (key: string, entry: StoredEntry, error: unknown, info: { abdicated: boolean }) => void
+  >()
 
   constructor() {
     // The a-priori root hole. No markDirty: nothing can observe construction.
@@ -167,12 +213,15 @@ export class SlotCore {
    * re-checks nothing): registering into an undeclared seat throws;
    * declaring an already-declared child key throws (one declarer per seat —
    * the message names the first declarer). Kind constraints: list — missing
-   * `id` throws. Shadowing (single/list): entries sharing one cell
-   * (single — the seat itself; list — same `id`) coexist at distinct
+   * `id` throws; chain — missing `select` throws (the selector is the
+   * entry's routing seat). Shadowing (single/keyed/list): entries sharing
+   * one cell
+   * (single — the seat itself; keyed — same `key`; list — same `id`) coexist at distinct
    * priorities, sorted ascending with ties keeping registration order; the
    * cell's lowest live entry renders. A second registration at an occupied
    * cell's exact priority (default 0) throws naming the occupant, so
    * priority-less composition keeps the one-occupant-per-cell fail-loud.
+   * Chain seats skip shadowing: election consumes every entry.
    *
    * Lifecycle: the disposer removes the contribution AND collapses every
    * declared child seat (child entries clear recursively; their stale
@@ -195,12 +244,24 @@ export class SlotCore {
         if (occupant) throw new Error(`single slot "${options.name}" already has a registration ${occupantHint(occupant)}`)
         break
       }
+      case "keyed": {
+        if (options.key === undefined) throw new Error(`keyed slot "${options.name}" requires options.key`)
+        const occupant = rec.entries.find((e) => e.options.key === options.key && (e.options.priority ?? 0) === priority)
+        if (occupant) {
+          throw new Error(`keyed slot "${options.name}" already has an entry for key "${options.key}" ${occupantHint(occupant)}`)
+        }
+        break
+      }
       case "list": {
         if (options.id === undefined) throw new Error(`list slot "${options.name}" requires options.id`)
         const occupant = rec.entries.find((e) => e.options.id === options.id && (e.options.priority ?? 0) === priority)
         if (occupant) {
           throw new Error(`list slot "${options.name}" already has an entry with id "${options.id}" ${occupantHint(occupant)}`)
         }
+        break
+      }
+      case "chain": {
+        if (options.select === undefined) throw new Error(`chain slot "${options.name}" requires options.select`)
         break
       }
     }
@@ -216,11 +277,13 @@ export class SlotCore {
     const entry: StoredEntry = {
       component,
       options: {
+        ...(options.key !== undefined ? { key: options.key } : {}),
         ...(options.id !== undefined ? { id: options.id } : {}),
         ...(options.order !== undefined ? { order: options.order } : {}),
         ...(options.label !== undefined ? { label: options.label } : {}),
         ...(options.priority !== undefined ? { priority: options.priority } : {}),
       },
+      ...(options.select !== undefined ? { select: options.select } : {}),
       ...(options.children ? { children: options.children as Record<string, { kind: SlotKind }> } : {}),
       ...(options.registrant !== undefined ? { registrant: options.registrant } : {}),
     }
@@ -251,6 +314,9 @@ export class SlotCore {
       // sibling; publish only after the whole children table owns its
       // declarations (markDirty batches the notifications together).
       for (const [, childRec] of declarations) this.markDirty(childRec)
+      // Declaration listeners run AFTER the whole table commits (an
+      // injectSlot waiter may register into a sibling in its callback).
+      for (const [, childRec] of declarations) this.notifyDeclaration(childRec)
     }
 
     let disposed = false
@@ -261,26 +327,69 @@ export class SlotCore {
     }
   }
 
-  /** Live registrations of a seat, ledger order (single: winner first).
-   *  STABLE REFERENCE until the next mutation — this feeds
-   *  useSyncExternalStore, so a fresh array per call would loop React
-   *  forever (rec.snapshot is the contract). */
+  /** Live registrations of a seat, ledger order (single/keyed: winner
+   *  first; chain: election order — every entry, shadowing does not apply).
+   *  Abdicated entries (reportEntryError) are excluded. STABLE REFERENCE
+   *  until the next mutation — this feeds useSyncExternalStore, so a fresh
+   *  array per call would loop React forever (rec.snapshot is the
+   *  contract). */
   entriesOfSlot(name: string): readonly SlotEntryView[] {
     const rec = this.records.get(name)
     if (!rec) return NO_VIEWS
     if (rec.snapshot === null) {
-      rec.snapshot = Object.freeze(rec.entries.map((e) => ({
-          key: e.options.id ?? `#${rec.entries.indexOf(e)}`,
-          ...(e.options.id !== undefined ? { id: e.options.id } : {}),
-          order: e.options.order ?? 0,
-          label: e.options.label,
-          priority: e.options.priority ?? 0,
-          registrant: e.registrant,
-          component: e.component,
-        })),
-      )
+      const live = rec.entries.filter((e) => !this.abdicated.has(e))
+      const views = live.map((e) => this.buildView(rec, e))
+      rec.snapshot = Object.freeze(views)
     }
     return rec.snapshot
+  }
+
+  /** One stored entry's JSON-safe view (links the staleness-probe map). */
+  private buildView(rec: SlotRecord, e: StoredEntry): SlotEntryView {
+    const view: SlotEntryView = {
+      key: e.options.key ?? e.options.id ?? `#${rec.entries.indexOf(e)}`,
+      ...(e.options.id !== undefined ? { id: e.options.id } : {}),
+      order: e.options.order ?? 0,
+      label: e.options.label,
+      priority: e.options.priority ?? 0,
+      registrant: e.registrant,
+      component: e.component,
+    }
+    this.viewEntries.set(view, e)
+    return view
+  }
+
+  /** Run chain election over a seat: selectors run in chain order
+   * (ascending priority, ties keep registration order) over `owner`;
+   * the first non-null return elects its entry and becomes `matched`.
+   * Null = every entry declined — the owner renders its fallback.
+   * Non-chain seats return null (their routing is shadowing, not
+   * election); abdicated entries never elect. Pure + synchronous. */
+  resolveChain(name: string, owner: Record<string, unknown>): ChainElection | null {
+    const rec = this.records.get(name)
+    if (!rec?.spec || rec.spec.kind !== "chain") return null
+    for (const e of rec.entries) {
+      if (this.abdicated.has(e) || e.select === undefined) continue
+      const matched = e.select(owner)
+      if (matched !== null && matched !== undefined) {
+        return { view: this.buildView(rec, e), matched }
+      }
+    }
+    return null
+  }
+
+  /** Whether a previously obtained view is still registered (the
+   * renderer's stale-authorization probe: a retained view whose entry
+   * left the ledger — or abdicated — must not render). Linear scan;
+   * fine at UI-plugin registration counts (upstream documents the same
+   * tradeoff on isLive). */
+  isLive(view: SlotEntryView): boolean {
+    const entry = this.viewEntries.get(view)
+    if (!entry || this.abdicated.has(entry)) return false
+    for (const rec of this.records.values()) {
+      if (rec.entries.includes(entry)) return true
+    }
+    return false
   }
 
   /** Monotonic mutation version of a seat (useSyncExternalStore snapshot). */
@@ -305,6 +414,76 @@ export class SlotCore {
     return () => rec.listeners.delete(listener)
   }
 
+  /** Read a seat's declaration lifetime. Entry additions and removals do
+   * not change it; declaration creation and collapse each advance it
+   * (0 before the first declaration). */
+  declarationEpoch(name: string): number {
+    return this.records.get(name)?.declarationEpoch ?? 0
+  }
+
+  /** Subscribe to a seat's declaration lifetime boundaries. Notifications
+   * are SYNCHRONOUS — declaration teardown finishes before a subsequent
+   * same-tick registration can observe stale resources. Ordinary entry
+   * mutations never notify this surface. A children table commits every
+   * sibling declaration before its first notification. */
+  subscribeDeclaration(name: string, listener: () => void): () => void {
+    const rec = this.record(name)
+    rec.declarationListeners.add(listener)
+    return () => {
+      rec.declarationListeners.delete(listener)
+    }
+  }
+
+  private notifyDeclaration(rec: SlotRecord): void {
+    for (const listener of [...rec.declarationListeners]) listener()
+  }
+
+  /** Renderer crash report from an entry boundary. Always notifies
+   * onEntryError listeners; with `info.abdicate` set it first retires the
+   * entry from its cell, one-shot: the seat's version bumps through the
+   * ordinary mutation channel so outlets re-project onto the cell's next
+   * survivor, and a repeat abdicating report no-ops entirely. The
+   * registration itself stays on the ledger either way — the raw ledger
+   * still lists the entry and its disposer keeps working. (Chain crashes
+   * report with `abdicate: false` — election alternatives resolve at
+   * select time, so the entry keeps its cell and only the notification
+   * fires.) */
+  reportEntryError(
+    name: string,
+    id: string | undefined,
+    error: unknown,
+    info: { abdicate: boolean },
+  ): void {
+    const rec = this.records.get(name)
+    const entry = rec?.entries.find((e) =>
+      rec.spec?.kind === "keyed" ? e.options.key === id : e.options.id === id,
+    ) ?? (id === undefined ? rec?.entries[0] : undefined)
+    // A report naming no live entry is a stale boundary — dropped (the
+    // registration already left the ledger; its disposer owns teardown).
+    if (entry === undefined) return
+    if (info.abdicate) {
+      if (this.abdicated.has(entry)) return
+      this.abdicated.add(entry)
+      if (rec !== undefined) this.markDirty(rec)
+    }
+    for (const listener of [...this.entryErrorListeners]) {
+      listener(name, entry, error, { abdicated: info.abdicate })
+    }
+  }
+
+  /** Observe entry boundary crashes (every render-time entry failure the
+   * boundaries contain, abdicating or not) — the supervision seam for
+   * hosts mirroring contribution health. Fires synchronously per report,
+   * after the registry mutated for abdicating crashes. */
+  onEntryError(
+    listener: (key: string, entry: StoredEntry, error: unknown, info: { abdicated: boolean }) => void,
+  ): () => void {
+    this.entryErrorListeners.add(listener)
+    return () => {
+      this.entryErrorListeners.delete(listener)
+    }
+  }
+
   /** The declaration tree from the a-priori root (inspection / gates). */
   describe(): LiveSlotNode {
     const nodeOf = (name: string): LiveSlotNode => {
@@ -317,6 +496,7 @@ export class SlotCore {
         kind: rec?.spec?.kind ?? "(collapsed)",
         ...(rec?.declaredBy !== undefined ? { declaredBy: rec.declaredBy } : {}),
         occupants: (rec?.entries ?? []).map((e) => ({
+          ...(e.options.key !== undefined ? { key: e.options.key } : {}),
           ...(e.options.id !== undefined ? { id: e.options.id } : {}),
           ...(e.options.order !== undefined ? { order: e.options.order } : {}),
           priority: e.options.priority ?? 0,
@@ -342,6 +522,7 @@ export class SlotCore {
         snapshot: null,
         version: 0,
         listeners: new Set(),
+        declarationListeners: new Set(),
       }
       this.records.set(key, rec)
     }
@@ -393,6 +574,95 @@ export class SlotCore {
       rec.parent = undefined
       rec.declarationEpoch += 1
       this.markDirty(rec)
+      this.notifyDeclaration(rec)
     }
   }
+}
+
+/** One synchronous effect installed while an injected seat declaration is
+ * live: a single disposer, or an iterable of disposers installed
+ * transactionally (setup failure rolls earlier yields back; teardown runs
+ * in reverse order). */
+export type SlotInjectionEffect = (() => void) | Iterable<() => void>
+
+/** Install an effect for each declaration lifetime of a seat — the
+ * ctx-free port of upstream `ctx.slots.inject` (whose controller belongs
+ * to the caller's plugin fiber; here the caller owns the returned master
+ * disposer — bind it to a React-effect return or a fiber teardown, the
+ * way ctx.slots.inject binds it to the caller's ctx.effect).
+ *
+ * The callback runs synchronously when the declaration already exists,
+ * otherwise it waits; collapse disposes the active effect and a later
+ * redeclaration runs the callback again. Master-dispose cancels a pending
+ * wait and removes any active contribution — the unload-cancels
+ * guarantee. A callback setup failure retires the injection permanently
+ * (a delayed failure never retries on a later declaration) and
+ * propagates to the caller. */
+export function injectSlot(
+  core: SlotCore,
+  name: string,
+  callback: () => SlotInjectionEffect,
+): () => void {
+  let active: (() => void) | undefined
+  let activeEpoch: number | undefined
+  let stopped = false
+  let unsubscribe = (): void => {}
+
+  const stop = (): void => {
+    if (stopped) return
+    // Failure callers retire the injection permanently: a delayed setup
+    // failure never retries on a later declaration.
+    stopped = true
+    unsubscribe()
+    const dispose = active
+    active = undefined
+    activeEpoch = undefined
+    dispose?.()
+  }
+
+  const runCallback = (): (() => void) => {
+    const effect = callback()
+    if (typeof effect === "function") return effect
+    const disposers: (() => void)[] = []
+    try {
+      for (const dispose of effect) disposers.push(dispose)
+    } catch (error) {
+      for (let i = disposers.length - 1; i >= 0; i--) disposers[i]?.()
+      throw error
+    }
+    return () => {
+      for (let i = disposers.length - 1; i >= 0; i--) disposers[i]?.()
+    }
+  }
+
+  const reconcile = (): void => {
+    if (stopped) return
+    const epoch = core.declarationEpoch(name)
+    if (active !== undefined && activeEpoch === epoch) return
+    const dispose = active
+    active = undefined
+    activeEpoch = undefined
+    dispose?.()
+    if (!core.isDeclared(name)) return
+    active = runCallback()
+    activeEpoch = epoch
+  }
+
+  const changed = (): void => {
+    try {
+      reconcile()
+    } catch (error) {
+      stop()
+      throw error
+    }
+  }
+
+  unsubscribe = core.subscribeDeclaration(name, changed)
+  try {
+    reconcile()
+  } catch (error) {
+    stop()
+    throw error
+  }
+  return stop
 }

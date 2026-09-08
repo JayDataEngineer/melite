@@ -21,8 +21,9 @@
 // BUILDER categories never conflate; this seam unifies card CHROME, not
 // graph composition).
 //
-// PURE MODULE: imports nothing at runtime (types only) — the dependency
-// root, like flowCardTypes. Kinds arrive via the kinds lane (the
+// PURE-READ MODULE: the only runtime import is the vendored SlotCore
+// (the kinds chain — S1); no React, no app code — the dependency root,
+// like flowCardTypes. Kinds arrive via the kinds lane (the
 // fourth lane): plugins/*/kinds/*.yaml → GET /v1/kinds → pluginKinds'
 // ONE sync (melite-core is the zeroth provider — no code registrations
 // anywhere; the vitest suite seeds the same wire via the meliteCoreKinds
@@ -30,6 +31,40 @@
 // test (src/__tests__/card-seam.gate.test.tsx) pins the served set so
 // silent removal or flag drift fails CI.
 import type { ComponentType } from "react"
+import { SlotCore } from "./vendored/core.ts"
+
+/** The chain seat carrying the kind entries (declared once, at module
+ * scope, by the lane owner's root claim — declaration = render
+ * authorization, one table). */
+declare module "./vendored/core" {
+  interface SlotMap {
+    "card.kinds": { kind: "chain"; owner: CardKindOwner }
+  }
+}
+
+/** Owner share the kind selectors route on: the kind string under test. */
+export interface CardKindOwner {
+  kind: string
+}
+
+/** The kinds lane registry: ONE SlotCore, module-scoped (the kinds lane
+ * is process Singleton by law — the persisted document vocabulary has
+ * one owner per kind, and the lane syncs it from the wire). */
+const kindsCore = new SlotCore()
+
+/** A component value is required by register(); kinds carry data, not UI —
+ * the lane owner's root claim is render-inert by construction. */
+function NullSeat(): null {
+  return null
+}
+
+// The lane owner's root claim: occupies the a-priori root seat and
+// declares the kinds chain. (No other entry may claim this core's root —
+// single-seat occupancy throws loud on a second claim.)
+kindsCore.register(
+  { name: "root", children: { "card.kinds": { kind: "chain" } }, registrant: "cardSeam" },
+  NullSeat,
+)
 
 /** Behavior flags of one card kind — what the kit used to derive from
  * scattered `kind ===` literals. Every flag defaults explicitly; there are
@@ -85,8 +120,9 @@ const _kinds = new Map<string, CardKindDef>()
 // ── Live propagation (shipped WITH the kinds lane, 2026-08-19) ──
 // The registry is a STORE: every mutation bumps a version and pings
 // listeners; useSyncExternalStore (pluginKinds.ts) turns a mid-session
-// lane flip into a re-render. Hand-rolled listeners keep this module
-// free of runtime imports (it stays the dependency root).
+// lane flip into a re-render. The listeners stay a small local set (the
+// seat's own subscribe() fans out per seat; this one version covers the
+// whole kinds table) — the only runtime import is the SlotCore above.
 let _version = 0
 const _listeners = new Set<() => void>()
 
@@ -109,18 +145,31 @@ export function getCardKindsVersion(): number {
 }
 
 /** Register a card kind. Returns the disposer (test/plugin teardown).
- * Duplicate kind strings are LOUD — one definition site per kind. */
+ * Duplicate kind strings are LOUD — one definition site per kind.
+ * The def lands in TWO places on one axis: the sync data map (sync
+ * render-path reads) and a chain entry on the kinds seat (selector-routed
+ * election — the DSH chain-kind primitive, not a hand Map walk). The
+ * disposer removes both; stale disposers no-op. */
 export function registerCardKind(def: CardKindDef): () => void {
   if (_kinds.has(def.kind)) {
     throw new Error(`card kind "${def.kind}" is already registered`)
   }
   _kinds.set(def.kind, def)
+  const disposeEntry = kindsCore.register(
+    {
+      name: "card.kinds",
+      select: (owner) => (owner.kind === def.kind ? def : null),
+      registrant: `cardSeam:${def.kind}`,
+    },
+    NullSeat,
+  )
   notifyCardKinds()
   return () => {
     // Only remove if still THIS registration (a re-register after dispose
     // may have replaced the slot).
     if (_kinds.get(def.kind) === def) {
       _kinds.delete(def.kind)
+      disposeEntry()
       notifyCardKinds()
     }
   }
@@ -156,13 +205,15 @@ export function markCardKindsLaneSettled(): void {
   _kindsLaneSettled = true
 }
 
-/** The kind's flags. Unknown kinds → the fail-safe def + a loud one-time
- * dev log (prod stays quiet — a doc from a newer build must not spam).
+/** The kind's flags. Resolution is chain election (selectors run in
+ * registration order over { kind }; the first non-null match wins) —
+ * unknown kinds → the fail-safe def + a loud one-time dev log (prod
+ * stays quiet — a doc from a newer build must not spam).
  * The log fires only after the kinds lane's first load settled — see
  * _kindsLaneSettled (the boot race logged a false alarm otherwise). */
 export function kindDef(kind: string): CardKindDef {
-  const def = _kinds.get(kind)
-  if (def) return def
+  const election = kindsCore.resolveChain("card.kinds", { kind })
+  if (election !== null) return election.matched as CardKindDef
   if (_kindsLaneSettled && typeof console !== "undefined" && !_warned.has(kind)) {
     _warned.add(kind)
     console.error(

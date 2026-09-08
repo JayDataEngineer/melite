@@ -9,6 +9,42 @@
 
 ## Adaptation ledger
 
+S1 re-vendor (2026-09-08 — docs/design/client-cordis-audit-2026-09-08.md):
+the dropped pieces with a consumer are now BACK, ported onto the
+two-share cut (adapted, not a wholesale upstream swap — the estate's
+RegisterOptions/SlotEntryView shapes and the editor's gate tests stand):
+
+- 'keyed' and 'chain' slot kinds (chain selectors, priority-ordered
+  election via `resolveChain`, chain/keyed dispatch in the outlet) —
+  RE-VENDORED. First consumer: cardSeam kinds-as-chain-entries.
+- Declaration `inject` factories and late-declaration following —
+  RE-VENDORED as `injectSlot(core, name, callback)` (the ctx-free port
+  of `ctx.slots.inject`: wait + collapse-dispose + redeclaration-rerun
+  + caller-owned master disposer; bind it to a React-effect return or a
+  fiber teardown the way the service binds it to ctx.effect).
+- `reportEntryError` / abdication / `onEntryError` — RE-VENDORED
+  (one-shot abdication, notification-first error policy).
+- Declaration epochs + `subscribeDeclaration` (synchronous
+  declare/collapse notifications) — RE-VENDORED (the inject wait seam).
+- `isLive` staleness probe — RE-VENDORED.
+- Renderer installation contract (`StaleAuthorizationError` /
+  `SlotOwnershipError`, retained-view probe, chain/keyed dispatch) —
+  ADOPTED in `./react.tsx`. The FULL ui-renderer machinery stays out:
+  its host face reads the DSH host's sessions/workspaces services,
+  which the standalone editor does not mount (cause recorded in the
+  audit, row 2).
+
+Still dropped (no consumer — add back from upstream when one needs
+them; each is separable):
+
+- Store seats (`defineStore`, store handle types) — Melite surfaces own
+  their zustand stores (CLIENT-IDIOM per the audit; adopt seats only
+  with a fiber-lifecycle cause, none identified).
+- The locale namespace table (`LocaleNamespaceMap`, `Translate`).
+- Session/data scopes (`scope: 'session' | 'session-maybe'`) and the
+  four-share props composition (runtime/session/store/business shares) —
+  this cut composes props from the outlet owner share only.
+
 Kept (semantics preserved; wording of validation messages adapted only
 where the surrounding feature was dropped):
 
@@ -17,8 +53,10 @@ where the surrounding feature was dropped):
   declaring child seats: declaration = render authorization = runtime
   spec, one table.
 - Load-time validation: undeclared seat, already-declared child (message
-  names the first declarer), list `id` requirement, one occupant per cell
-  at a priority (shadowing at distinct priorities; lowest renders).
+  names the first declarer), keyed `key` / list `id` / chain `select`
+  requirements, one occupant per cell at a priority (shadowing at
+  distinct priorities; lowest renders; chain skips shadowing — election
+  consumes every entry).
 - Ledger order: priority ascending; list refines equal priorities by
   `order`; ties keep registration order.
 - Lifecycle: the disposer removes the contribution AND collapses every
@@ -29,23 +67,22 @@ where the surrounding feature was dropped):
 - The a-priori seeded 'root' seat.
 - A JSON-safe `describe()` inspection tree (kept from upstream LiveSlotNode).
 
-Dropped in this cut (add back from upstream when a consumer needs them —
-each is separable):
+Still dropped as of S1 — see the ledger head for what came back and why
+the remainder stays out (each is separable; the renderer note below stands):
 
-- 'keyed' and 'chain' slot kinds (chain selectors, `renderSlotChain`).
 - Store seats (`defineStore`, store handle types) — Melite surfaces own
   their zustand stores today.
 - The locale namespace table (`LocaleNamespaceMap`, `Translate`).
 - Session/data scopes (`scope: 'session' | 'session-maybe'`) and the
   four-share props composition (runtime/session/store/business shares) —
   this cut composes props from the outlet owner share only.
-- Declaration `inject` factories and `ctx.slots.inject()` late-declaration
-  following.
-- `reportEntryError` / abdication (renderer error policy).
 
-The renderer side is NOT vendored: upstream ui-renderer binds Cordis; this
-repo's `./react.tsx` is the thin React 19 binding (`useSyncExternalStore`
-over the core's version counters), written for Melite.
+The full ui-renderer side is NOT vendored: upstream ui-renderer binds
+Cordis host services (sessions/workspaces) the standalone editor does
+not mount; this repo's `./react.tsx` is the contract-shaped React 19
+binding (`useSyncExternalStore` over the core's version counters, plus
+the adopted `StaleAuthorizationError` / `SlotOwnershipError` /
+staleness-probe / chain/keyed dispatch contract), written for Melite.
 
 ## MIT License (upstream notice)
 
