@@ -1,16 +1,14 @@
 // doors/bridges.ts — the P6 TS port of the two bridge doors: the
 // studio poser forward (GET|POST ^/poser/, _h_poser_bridge) and the
-// management-plane subprocess bridge (POST /v1/manage, _h_manage).
+// manage door (POST /v1/manage, _h_manage).
 //
-// LADDER P6 (docs/design/ts-migration-ladder-2026-09-07.md: "manage/
-// poser stay proxy/forward, envelope shapes only" + the non-targets
-// verdict "comfy-mcp rail behind manage.dispatch — TS keeps a proxy
-// envelope, never reimplements"): NEITHER door reimplements its plane.
-// The poser door forwards method+path+query+body bytes to the engine
-// endpoint and passes the upstream answer through verbatim; the
-// manage door forwards the request bytes over stdio to the real
-// manage.dispatch in a base-env python and passes [code, rep] back.
-// This module maps envelope shapes and refusal texts only.
+// NO-ESTATE-PYTHON LAW: the manage door is Cordis-native (./manage.ts
+// dispatches the SSOT vocabulary over the MCP rail ./mcp.ts to the
+// VENDOR comfy-mcp server + the vendor cm_cli module). No estate
+// Python is spawned, read, or imported on this path. The poser door
+// forwards method+path+query+body bytes to the engine endpoint and
+// passes the upstream answer through verbatim. This module maps
+// envelope shapes and refusal texts only.
 //
 // WHAT EACH ARM MIRRORS (line-cited against python/gateway.py):
 //   POSER (_h_poser_bridge, 3801-3853):
@@ -59,42 +57,24 @@
 //   direct routes with no redirects or gzip, so no served shape hits
 //   it — a redirecting upstream would surface its 3xx here instead
 //   of the followed body.
-//   MANAGE (_h_manage, 3924-3963):
-//   - The TS process cannot run manage.dispatch in-process, so it
-//     ALWAYS takes py's base-env runner shape (3935-3959): spawn the
-//     base-env python with a -c runner that inserts the manage dir,
-//     runs manage.dispatch over stdin JSON, and prints [code, rep].
-//     The runner BEHAVIOR is identical (same function, same stdio
-//     contract); only the quoting differs (JSON string literals,
-//     never wire-visible).
-//   - python resolution (3943): MELITE_MANAGE_PYTHON env (explicit
-//     interpreter wins — the wall pins the wall interpreter through
-//     it) else <repo>/infra/python/.venv/bin/python (the base env,
-//     same join semantics); missing → the byte-identical 503 (3944-3948).
-//   - manage source dir: <repo>/infra/python (manage str(REPO/"infra"/"python"),
-//     3927/3942), resolved against the same repo root; when MELITE_REPO_ROOT
-//     points at a fixture tree without infra/python/, the file-anchored repo
-//     infra/python/ is appended as fallback (production: identical single dir;
-//     the manage SOURCE is product code, never a fixture).
-//   - stdin (3950-3952): py feeds json.dumps(body_json) — the parsed
-//     doc re-serialized. This door feeds the RAW request bytes (the
-//     dispatcher already strict-parsed them, so they are valid JSON;
-//     empty bodies feed b"{}" per `or "{}"`): json.loads sees the
-//     identical doc while huge int literals never cross a float64
-//     round-trip. Non-dict truthy docs (py: (body or {}) then .get
-//     crashes with AttributeError → _adapt 500) THROW here before
-//     spawning (→ server.ts 500, same keys); falsy non-dicts ride
-//     the runner exactly as py's `or {}` does.
-//   - stdout (3953-3955): last line → [code, rep]; int(code)
-//     mirrored. rc!=0 / empty stdout → the byte-identical 502
-//     runner-failed envelope incl. data.stderr = last 500 chars
-//     (3956-3959). Timeout → the 504 envelope (3960-3963, no data
-//     key); the deadline mirrors py's 900s.
+//   MANAGE (_h_manage): Cordis-native dispatch (./manage.ts — the
+//   SSOT vocabulary over the MCP rail to the vendor comfy-mcp server
+//   + the vendor cm_cli module). The wire contract is unchanged:
+//   strict doc in, [code, rep] out (503 vendor-unavailable /
+//   [code, rep] passthrough / 502 rail-failed / 504 timeout).
+//   - vendor server resolution: MELITE_COMFY_MCP_BIN env (explicit
+//     binary wins) else <anchor>/infra/python/.venv/bin/comfy-mcp
+//     (the base env's vendor server); missing → the 503 below.
+//   - stdin: the dispatcher already strict-parsed the raw bytes, so
+//     they are valid JSON; empty bodies feed {} per `or "{}"`.
+//     Non-dict truthy docs THROW before dispatching (→ server.ts 500,
+//     same keys); falsy non-dicts ride as {}.
+//   - rail failure → the 502 runner-failed envelope incl.
+//     data.stderr = last 500 chars. Timeout → the 504 envelope (no
+//     data key); the deadline mirrors the old 900s.
 //   - dispatch refusals (422 bad request / named-arg 422 / catalog
-//     404 / plane 503 / crash 500, manage.py 707-723) are computed
-//     by the REAL manage.dispatch in the SAME interpreter the wall's
-//     py gateway uses — byte-identical by construction, incl. the
-//     pydantic envelope texts.
+//     404 / plane 503 / crash 500) are computed by ./manage.ts with
+//     byte-kept refusal texts.
 //   - response bytes ride dumpsPy over the parseJson value (the
 //     assets.ts number machinery: float 1.0 stays "1.0", big ints
 //     exact) with the local normalize4xx alias (R4.2 — manage 422/
@@ -106,7 +86,6 @@
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
 
-import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { request as httpRequest } from "node:http";
 import type { RequestOptions } from "node:http";
@@ -117,9 +96,7 @@ import {
   dumpsPy,
   parseJson,
 } from "./assets.ts";
-import {
-  PyNum,
-} from "@melite/gateway-core";
+import { dispatchManage } from "./manage.ts";
 import { isRecord, parseStrictJson } from "@melite/gateway-core";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
@@ -441,61 +418,24 @@ export async function handlePoserBridge(
   }
 }
 
-// ── manage bridge ───────────────────────────────────────────────────
-// stdio/subprocess rail to the real manage.dispatch (never
-// reimplemented): the TS process always takes py's base-env runner
-// shape (_h_manage 3935-3959).
+// ── manage door ─────────────────────────────────────────────────────
+// Cordis-native dispatch (./manage.ts over the MCP rail ./mcp.ts).
+// The TS process never spawns estate Python; the only Python process
+// on this path is the VENDOR comfy-mcp server binary.
 
-/** Upstream interpreter — MELITE_MANAGE_PYTHON wins (env pin for the
- *  wall + deployments that move the base env), else the base env
- *  default <repo>/infra/python/.venv/bin/python. No other hardcode. */
-export function resolveManagePython(repoRoot: string): string {
-  const override: string = process.env["MELITE_MANAGE_PYTHON"] ?? "";
+/** Vendor server binary — MELITE_COMFY_MCP_BIN wins (env pin for
+ *  deployments that move the base env), else the base env default
+ *  <anchor>/infra/python/.venv/bin/comfy-mcp. No other hardcode. */
+export function resolveComfyMcpBin(): string {
+  const override: string = process.env["MELITE_COMFY_MCP_BIN"] ?? "";
   if (override !== "") return override;
-  return join(repoRoot, "infra", "python", ".venv", "bin", "python");
+  return join(anchoredRepoRoot(), "infra", "python", ".venv", "bin", "comfy-mcp");
 }
 
-/** Manage source dirs for sys.path (manage str(REPO/"infra"/"python");
- *  the manage SOURCE is product code, never a wall fixture):
- *  <repo>/infra/python first when present (the MELITE_REPO_ROOT tree), always backed by
- *  the file-anchored product infra/python/. */
-export function managePyDirs(repoRoot: string): string[] {
-  const dirs: string[] = [];
-  const overrideDir: string = join(repoRoot, "infra", "python");
-  if (overrideDir !== join(anchoredRepoRoot(), "infra", "python") && existsSync(overrideDir)) {
-    dirs.push(overrideDir);
-  }
-  dirs.push(join(anchoredRepoRoot(), "infra", "python"));
-  return dirs;
-}
-
-/** The -c runner — behavior-identical to py's (3936-3942): insert
- *  the manage dirs, run manage.dispatch over stdin JSON, print
- *  [code, rep]. Quoting differs (JSON string literals — never
- *  wire-visible), semantics don't. First-listed dir wins position 0
- *  (inserts applied in reverse). */
-export function manageRunner(pyDirs: string[]): string {
-  const inserts: string = pyDirs
-    .slice()
-    .reverse()
-    .map((d: string): string => "sys.path.insert(0, " + JSON.stringify(d) + ");")
-    .join("");
-  return (
-    "import sys, json;" +
-    inserts +
-    "import manage;" +
-    "c, r = manage.dispatch(json.loads(sys.stdin.read()));" +
-    "print(json.dumps([c, r]))"
-  );
-}
-
-/** Peek the action for the plane-unavailable envelopes — mirrors
- *  body_json.get("action", "?") (3945/3956/3961). THROWS on truthy
- *  non-dict docs: py's (body or {}).get crashes there with
- *  AttributeError → _adapt 500, so the 500 leg (same keys via the
- *  server.ts catch) is the faithful shape, not a 502/503 envelope.
- *  Falsy non-dicts ([], "", 0, false, null) ride the runner exactly
- *  as py's `or {}` does. */
+/** Peek the action for the plane-unavailable envelopes. THROWS on
+ *  truthy non-dict docs (the old .get-crash 500 leg — same keys via
+ *  the server.ts catch). Falsy non-dicts ([], "", 0, false, null)
+ *  ride as {} exactly as the old `or {}` did. */
 export function manageActionName(doc: unknown): unknown {
   // The dict leg rides the admission gate's object check (identical
   // on the pure-JSON wire domain); the falsy-or-{} ride + the
@@ -513,24 +453,22 @@ export function manageActionName(doc: unknown): unknown {
   );
 }
 
-const MANAGE_TIMEOUT_MS: number = 900 * 1000;
-
-/** The manage door: strict doc in, [code, rep] out — mirrors
- *  _h_manage 3924-3963 outcome for outcome (503 unavailable /
- *  [code, rep] passthrough / 502 runner-failed + last-500 stderr /
- *  504 timeout). rawBody is the dispatcher's raw request bytes
- *  (already strict-accepted); empty feeds b"{}" per `or "{}"`. */
-export function handleManage(
+/** The manage door: strict doc in, [code, rep] out — the wire rim
+ *  is unchanged (503 vendor-unavailable / [code, rep] passthrough /
+ *  502 rail-failed + last-500 stderr). rawBody is the dispatcher's raw
+ *  request bytes (already strict-accepted); empty feeds b"{}" per
+ *  `or "{}"`. Async: dispatch rides the MCP rail (./manage.ts) to the
+ *  vendor server — no estate Python anywhere. */
+export async function handleManage(
   doc: unknown,
   rawBody: Uint8Array,
   repoRoot: string = resolveRepoRoot(),
-): BridgeResult {
+): Promise<BridgeResult> {
   // The .get crash leg first (see manageActionName): a truthy
-  // non-dict never reaches the plane on either side.
+  // non-dict never reaches the plane.
   const action: unknown = manageActionName(doc);
-  const python: string = resolveManagePython(repoRoot);
-  if (!existsSync(python)) {
-    // 3944-3948, byte-identical (str(_py) == this join on posix).
+  const serverBin: string = resolveComfyMcpBin();
+  if (!existsSync(serverBin)) {
     return {
       status: 503,
       body: dumpsPy(
@@ -538,65 +476,30 @@ export function handleManage(
           action,
           ok: false,
           detail:
-            "management plane unavailable: no base-env python at " +
-            python +
-            " (uv sync)",
+            "management plane unavailable: no vendor comfy-mcp at " +
+            serverBin +
+            " (provision sync)",
         }),
       ),
       contentType: JSON_CT,
       headers: {},
     };
   }
-  const stdin: Uint8Array =
-    rawBody.length === 0 ? Buffer.from("{}") : Buffer.from(rawBody);
-  let status: number | null;
-  let stdout: string;
-  let stderr: string;
+  let stdinDoc: unknown;
   try {
-    const out = spawnSync(python, ["-c", manageRunner(managePyDirs(repoRoot))], {
-      input: stdin,
-      timeout: MANAGE_TIMEOUT_MS,
-      maxBuffer: 16 * 1024 * 1024,
-      encoding: "utf8",
-    });
-    if (out.error !== undefined) {
-      const code: string = (out.error as NodeJS.ErrnoException).code ?? "";
-      if (code === "ETIMEDOUT") {
-        // 3960-3963, byte-identical (no data key).
-        return {
-          status: 504,
-          body: dumpsPy(
-            normalize4xx(504, {
-              action,
-              ok: false,
-              detail: "manage action timed out (900s)",
-            }),
-          ),
-          contentType: JSON_CT,
-          headers: {},
-        };
-      }
-      // Spawn-level failure (vanished interpreter, signal): the
-      // plane is unavailable — the 503 template names the path.
-      return {
-        status: 503,
-        body: dumpsPy(
-          normalize4xx(503, {
-            action,
-            ok: false,
-            detail:
-              "management plane unavailable: no base-env python at " +
-              python +
-              " (uv sync)",
-          }),
-        ),
-        contentType: JSON_CT,
-        headers: {},
-      };
-    }
-    status = out.status;
-    stdout = typeof out.stdout === "string" ? out.stdout : String(out.stdout ?? "");
-    stderr = typeof out.stderr === "string" ? out.stderr : String(out.stderr ?? "");
+    stdinDoc =
+      rawBody.length === 0 ? {} : parseJson(Buffer.from(rawBody).toString("utf8"));
+  } catch {
+    stdinDoc = {};
+  }
+  try {
+    const [code, rep] = await dispatchManage(stdinDoc, { repoRoot, serverBin });
+    return {
+      status: code,
+      body: dumpsPy(normalize4xx(code, rep)),
+      contentType: JSON_CT,
+      headers: {},
+    };
   } catch (exc) {
     const msg: string = exc instanceof Error ? exc.message : String(exc);
     return {
@@ -613,57 +516,6 @@ export function handleManage(
       headers: {},
     };
   }
-  if (status === 0 && stdout.trim() !== "") {
-    // 3953-3955: the last line is [code, rep]. parseJson keeps
-    // number literals verbatim (dumpsPy re-emits 1.0/big ints
-    // exactly — _adapt's json.dumps would too).
-    try {
-      const pair: unknown = parseJson(stdout.trim().split("\n").pop() as string);
-      // parseJson keeps number LITERALS as PyNum (dumpsPy re-emits
-      // them verbatim below) — unwrap the code for the int() mirror.
-      const rawCode: unknown =
-        Array.isArray(pair) ? (pair as unknown[])[0] : undefined;
-      const code: number =
-        typeof rawCode === "number"
-          ? rawCode
-          : rawCode instanceof PyNum
-            ? Number((rawCode as PyNum).literal)
-            : NaN;
-      if (
-        Array.isArray(pair) &&
-        (pair as unknown[]).length === 2 &&
-        Number.isFinite(code) &&
-        typeof (pair as unknown[])[1] === "object" &&
-        (pair as unknown[])[1] !== null &&
-        !Array.isArray((pair as unknown[])[1])
-      ) {
-        const httpCode: number = Math.trunc(code);
-        const rep: unknown = (pair as [unknown, unknown])[1];
-        return {
-          status: httpCode,
-          body: dumpsPy(normalize4xx(httpCode, rep)),
-          contentType: JSON_CT,
-          headers: {},
-        };
-      }
-    } catch {
-      // Falls through to runner-failed below.
-    }
-  }
-  // 3956-3959, byte-identical (stderr tail = last 500 chars).
-  return {
-    status: 502,
-    body: dumpsPy(
-      normalize4xx(502, {
-        action,
-        ok: false,
-        detail: "manage runner failed",
-        data: { stderr: stderr.slice(-500) },
-      }),
-    ),
-    contentType: JSON_CT,
-    headers: {},
-  };
 }
 
 // ── dispatcher entry ────────────────────────────────────────────────
@@ -671,10 +523,9 @@ export function handleManage(
 // dispatchDrafts pattern); the manage arm needs route()'s strict doc
 // AND the raw bytes (stdin rides raw — see handleManage).
 
-/** Dispatch bridge rows by py handler name. Async: the poser arm
- *  forwards over the network; the manage arm is sync-subprocess
- *  (spawnSync blocks the loop exactly as py's _sp.run blocks its
- *  own — the subprocess rail is inherent to the proxy design). */
+/** Dispatch bridge rows by handler name. Async: the poser arm
+ *  forwards over the network; the manage arm dispatches Cordis-native
+ *  over the MCP rail (./manage.ts). */
 export async function dispatchBridges(
   handler: string,
   method: string,

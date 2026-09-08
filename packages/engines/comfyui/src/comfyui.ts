@@ -60,7 +60,8 @@
 //     order; mesh/image/video/audio ext tables (430-435).
 //   - ACTIVE registry (run_dir -> {promptId, clientId, server}) for
 //     the stop door (native 332-333, 366-367, 417-419); stopForRunDir
-//     mirrors native.stop (537-565).
+//     mirrors native.stop (537-565); unloadModels mirrors
+//     native.unload (545-565, POST /free).
 //
 // DOCUMENTED DIVERGENCES (preview scope, not drift):
 //   - NO websocket tap (_ws_tap, native 131-201). The tap is
@@ -565,6 +566,30 @@ export async function stopForRunDir(runDir: string): Promise<void> {
   const rec: ActivePrompt | undefined = ACTIVE.get(String(runDir));
   if (rec === undefined) return;
   await interrupt(rec.server, rec.promptId);
+}
+
+/** ENGINE TRANSITION (native.unload port, native 545-565): drop every
+ *  cached model + the execution cache from VRAM — POST /free
+ *  {"unload_models": true, "free_memory": true}. Raises ComfyError on
+ *  a non-2xx so the caller can DOCUMENT a failed unload (RESILIENCE
+ *  LAW) and continue — never silently resident. Unwired (single-engine
+ *  preview — flowsRun.ts owns the boundary call when it lands). */
+export async function unloadModels(serverOverride: string = ""): Promise<void> {
+  const server: string =
+    serverOverride !== "" ? serverOverride : resolveEngineBaseUrl();
+  const { status } = await httpCall(
+    "POST",
+    server + "/free",
+    Buffer.from(
+      JSON.stringify({ unload_models: true, free_memory: true }),
+      "utf8",
+    ),
+  );
+  if (status >= 300) {
+    throw new ComfyError(
+      "ComfyUI /free status " + status + " (models may still be resident)",
+    );
+  }
 }
 
 // ── harvest (native 459-522) ──

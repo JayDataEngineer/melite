@@ -27,7 +27,8 @@
     "@deepseek-ai/cordis": "^4.0.2",
     "@melite/engine-comfyui": "workspace:*",
     "@melite/gateway-core": "workspace:*",
-    "@melite/queue": "workspace:*"
+    "@melite/queue": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.30.0"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",
