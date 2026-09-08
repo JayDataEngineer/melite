@@ -115,6 +115,7 @@
 // enums, import type for types, .ts specifiers for relative imports.
 
 import { closeSync, openSync, readFileSync, readSync, statSync } from "node:fs";
+import { buildCatalog } from "@melite/engine-comfyui";
 import { join } from "node:path";
 import { contentTypeOf, dumpsPy, parseJson } from "./assets.ts";
 import { resolveRepoRoot } from "./bridges.ts";
@@ -212,7 +213,20 @@ function loadCatalog(repoRoot: string): Record<string, unknown> {
     if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
       throw new Error("top-level JSON value is not an object");
     }
-    return doc as Record<string, unknown>;
+    // THE CATALOG SECTION RIDES THE LIVE REGISTRY EMISSION
+    // (correction A1 follow-up, 2026-09-08): the frozen export was
+    // captured at the py era's PEAK — 55 served models including
+    // the 12 retired-engine families and 3 since-deleted cards.
+    // The registry emission (buildCatalog — golden-anchored, wall-
+    // pinned in tests/walls/ts/suites/models-golden.test.ts) is
+    // the fresh truth: 43 served comfyui rows, 19 cards/caps. The
+    // frozen sections that have no native owner yet (forms/kinds/
+    // loras/family schemas/schema/flows/provisions/meta) stay
+    // frozen until their owners land.
+    const record = doc as Record<string, unknown>;
+    record["catalog"] = buildCatalogSections();
+    record["scan_order"] = catalogScanOrder();
+    return record;
   } catch (exc) {
     if (exc instanceof CatalogUnavailable) throw exc;
     throw new CatalogUnavailable(
@@ -233,6 +247,18 @@ class CatalogUnavailable extends Error {
     super(message);
     this.name = "CatalogUnavailable";
   }
+}
+
+/** The live 5-section catalog (models/families/capabilities/
+ *  cards/input_vocabulary) from the registry emission — see
+ *  loadCatalog's note. JSON-plain (the door serializes). */
+function buildCatalogSections(): Record<string, unknown> {
+  return buildCatalog() as unknown as Record<string, unknown>;
+}
+
+/** Served model ids in scan order (the _h_model_one known-set). */
+function catalogScanOrder(): string[] {
+  return Object.keys(buildCatalog().models).sort();
 }
 
 /** The _adapt uncaught-error shape for TS-side throws (the old
