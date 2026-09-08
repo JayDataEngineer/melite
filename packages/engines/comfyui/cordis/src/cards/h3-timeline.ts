@@ -104,18 +104,30 @@ const CHAIN_ONLY_KEYS = [
 const nullable = <T extends object>(inner: T): unknown => z.union([inner, z.const(null)])
 
 const paramSchema = z.object({
-  prompt: z.string(),
-  image: z.string(),
-  seed: z.number().min(-1).default(42),
-  width: z.number().default(1344),
-  height: z.number().default(768),
-  length: z.number().default(56),
-  steps: z.number().default(12),
-  sharpen_enabled: z.boolean().default(false),
-  sharpen_strength: z.number().default(0.3),
-  interpolate_enabled: z.boolean().default(false),
-  shift_video: nullable(z.number()).default(8.0),
-  shift_audio: z.number().default(3.0),
+  prompt: z.string().description(
+    'Verb-first motion + the sounds. For keyframes the image already sets the scene — prompt what CHANGES.'),
+  image: z.string().role('path').description(
+    'Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline.'),
+  seed: z.number().min(-1).step(1).default(42).description(
+    'Same seed across re-rolls = same world texture'),
+  width: z.number().min(448).max(1344).default(1344).description('Width'),
+  height: z.number().min(448).max(768).default(768).description('Height'),
+  length: z.number().min(21).max(362).default(56).description(
+    '17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s'),
+  steps: z.number().min(4).max(30).default(12).description(
+    '12 for draft; 30 standard; 10 with the turbo LoRA'),
+  sharpen_enabled: z.boolean().default(false).description(
+    'Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 = natural.'),
+  sharpen_strength: z.number().min(0).max(1).default(0.3).description(
+    'RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.'),
+  interpolate_enabled: z.boolean().default(false).description(
+    'Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time.'),
+  // nullable inner: min/max validate only the number branch — null
+  // (the family-literal resolution path) passes untouched.
+  shift_video: nullable(z.number().min(1).max(20)).default(8.0).description(
+    'Timestep shift for video attention. Higher = more coherent motion.'),
+  shift_audio: z.number().min(1).max(10).default(3.0).description(
+    'Timestep shift for audio attention. Lower = more detailed sound.'),
 })
 
 /** Schemastery objects are lenient (unknown/missing keys ride); the

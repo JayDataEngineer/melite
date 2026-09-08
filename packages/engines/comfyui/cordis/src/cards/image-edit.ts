@@ -33,69 +33,97 @@ import z from '@deepseek-ai/schemastery'
 import { imageEdit, refuseImageEditFiring, finalizeImageEdit } from '../kit.ts'
 
 const schema = z.object({
-  prompt: z.string(),
-  negative_prompt: z.string(),
+  prompt: z.string().description('Prompt'),
+  negative_prompt: z.string().description('Negative Prompt'),
   // the staged anchor filename — the arm stages uploads/artifacts
   // into the ComfyUI input dir before this doc renders (the wire
   // name is the card-primary image1; input_image/image are retired
   // python aliases, not ported to this plane).
-  image1: z.string(),
+  image1: z.string().role('path').description('Image 1'),
   // optional reference slots (the lanpaint brick's slots 2-3): bare
   // atoms (py rides them) — a stated slot loads and wires, a blank
   // one stays out of the encode inputs entirely.
-  image2: z.string(),
-  image3: z.string(),
+  image2: z.string().role('path').description('Image 2'),
+  image3: z.string().role('path').description('Image 3'),
   // the list-form twin of the brick (py default []): admitted, never
   // silently mapped — list→slot precedence is undocumented python-
   // side, so a non-empty list refuses (see refuseFiring).
-  reference_images: z.array(z.string()).default([]),
-  seed: z.number().min(-1).default(-1),
-  steps: z.number().default(4),
-  cfg: z.number().default(1.0),
-  sampler: z.string(),
-  scheduler: z.string(),
+  reference_images: z.array(z.string()).default([]).description(
+    'Multi-image picker (up to 3). Used by workflows needing image sets.'),
+  seed: z.number().min(-1).step(1).default(-1).description('Seed'),
+  steps: z.number().min(1).max(50).default(4).description('Steps'),
+  cfg: z.number().min(0.1).max(10).default(1.0).description(
+    'Qwen-Image-Edit uses low CFG (flow-matching).'),
+  sampler: z.string().description(
+    'Sampler — options resolve from the $samplers vocabulary at serve time'),
+  scheduler: z.string().description(
+    'Scheduler — options resolve from the $schedulers vocabulary at serve time'),
   // picks arrive RESOLVED (filename-shaped): the python road
   // resolves catalog ids through the runtime-catalog door before
   // the step doc; this plane has no catalog, so name IS the lora
   // filename wired to lora_name (the image-gen TS convention).
-  loras: z.array(z.object({ name: z.string(), strength: z.number() })),
+  loras: z.array(z.object({ name: z.string(), strength: z.number() })).description('LoRAs'),
   // edit tuning (qwen-scoped — single family, no families= filter):
   // the stock-graph flag rides inert (this plane IS stock-only, see
   // the registerCard verdict); the second encode refuses (below).
-  use_stock_nodes: z.boolean().default(false),
-  double_reference: z.boolean().default(false),
+  use_stock_nodes: z.boolean().default(false).description(
+    'When true, build_img2img_edit emits the stock graph unmodified.'),
+  double_reference: z.boolean().default(false).description(
+    'Encode the input image twice (VAE + vision encoder) — stronger identity retention.'),
   // lanpaint flavor (py LanpaintMod absorption): the force flag plus
   // the sampler knobs. Defaults are the py lane promises verbatim;
   // any firing value refuses — the lanpaint sampler nodes are not in
   // this plane's block vocabulary, and this stroke invents no wiring.
-  lanpaint_enabled: z.boolean().default(false),
-  lanpaint_num_steps: z.number().default(20),
-  lanpaint_step_size: z.number().default(1.0),
-  lanpaint_lambda: z.number().default(0.5),
-  lanpaint_beta: z.number().default(0.5),
-  lanpaint_friction: z.number().default(0.5),
-  lanpaint_prompt_mode: z.string().default('negative'),
+  lanpaint_enabled: z.boolean().default(false).description('Force LanPaint')
+    .extra('extra', { visibleWhen: 'image1 != null' }),
+  lanpaint_num_steps: z.number().min(1).max(100).default(20).description('Num Steps')
+    .extra('extra', { visibleWhen: 'lanpaint_enabled == true' }),
+  lanpaint_step_size: z.number().min(0.1).max(2).default(1.0).description('Step Size')
+    .extra('extra', { visibleWhen: 'lanpaint_enabled == true' }),
+  lanpaint_lambda: z.number().min(0).max(2).default(0.5).description('Lambda')
+    .extra('extra', { visibleWhen: 'lanpaint_enabled == true' }),
+  lanpaint_beta: z.number().min(0).max(2).default(0.5).description('Beta')
+    .extra('extra', { visibleWhen: 'lanpaint_enabled == true' }),
+  lanpaint_friction: z.number().min(0).max(2).default(0.5).description('Friction')
+    .extra('extra', { visibleWhen: 'lanpaint_enabled == true' }),
+  lanpaint_prompt_mode: z.union([z.const('negative'), z.const('positive')])
+    .default('negative').description('Prompt Mode')
+    .extra('extra', { visibleWhen: 'lanpaint_enabled == true' }),
   // outpaint pads (canvas expansion is part of the inpaint flow):
   // any nonzero pad (or off-promise overlap) refuses — the pad chain
   // nodes are not in this plane's block vocabulary.
-  outpaint_top: z.number().default(0),
-  outpaint_right: z.number().default(0),
-  outpaint_bottom: z.number().default(0),
-  outpaint_left: z.number().default(0),
-  outpaint_overlap: z.number().default(16),
+  outpaint_top: z.number().min(0).max(512).default(0).description('Expand Top')
+    .extra('extra', { visibleWhen: 'image1 != null' }),
+  outpaint_right: z.number().min(0).max(512).default(0).description('Expand Right')
+    .extra('extra', { visibleWhen: 'image1 != null' }),
+  outpaint_bottom: z.number().min(0).max(512).default(0).description('Expand Bottom')
+    .extra('extra', { visibleWhen: 'image1 != null' }),
+  outpaint_left: z.number().min(0).max(512).default(0).description('Expand Left')
+    .extra('extra', { visibleWhen: 'image1 != null' }),
+  outpaint_overlap: z.number().min(0).max(64).default(16).description('Overlap')
+    .extra('extra', { visibleWhen: 'image1 != null' }),
   // mask flow (py MaskMod absorption): the mod bag (any stated bag
   // refuses — z.any so the door admits the tile shape instead of
   // refusing it as a type error), the attached region slot (bare —
   // py rides it), and the honor + host-side prep knobs. Defaults are
   // the py lane promises verbatim; any firing value refuses.
-  mask: z.any(),
-  input_mask: z.string(),
-  mask_mode: z.string().default('auto'),
-  mask_context_pad: z.number().default(64),
-  mask_grow: z.number().default(8),
-  mask_feather: z.number().default(8),
-  mask_threshold: z.number().default(0),
-  mask_invert: z.boolean().default(false),
+  mask: z.any().description(
+    'Add the mask mod, then drop an RGBA PNG whose alpha marks the region (editor gesture carrier).'),
+  input_mask: z.string().role('path').description(
+    'RGBA PNG whose alpha channel marks the region.'),
+  mask_mode: z.union([z.const('auto'), z.const('crop_stitch'), z.const('full_frame')])
+    .default('auto').description(
+      'How the mask is honored: auto (the lane picks), crop_stitch (crop+edit+stitch), full_frame (edit whole image).'),
+  mask_context_pad: z.number().min(0).max(256).default(64).description(
+    'Pixels of surrounding context kept in the crop (crop_stitch).'),
+  mask_grow: z.number().min(-32).max(32).default(8).description(
+    'Expand (+) or shrink (−) the region by an exact pixel count before use.'),
+  mask_feather: z.number().min(0).max(32).default(8).description(
+    'Gaussian falloff the composite blends through — soft seams.'),
+  mask_threshold: z.number().min(0).max(1).default(0).description(
+    'Re-binarize the feathered mask at this level. 0 = keep continuous.'),
+  mask_invert: z.boolean().default(false).description(
+    'Work OUTSIDE the painted region instead.'),
 })
 
 export const inject = ['comfyui']

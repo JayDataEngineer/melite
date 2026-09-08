@@ -25,25 +25,40 @@ const schema = z.object({
   // primary_via_rtdetr/is_paint) ride the door's explicit-params
   // overlay (non-strict object) so the pinned recipe golden keeps
   // composing byte-identical — they are never declared knobs.
-  input_image: z.string(),
-  detect_mode: z.string().default('body'),
-  detection_threshold: z.number().default(0.35),
-  sam_threshold: z.number().default(0.93),
-  sam_dilation: z.number().default(0),
-  output_mode: z.string().default('segm'),
-  instance_filter: z.string().default('all'),
-  max_instances: z.number().default(0),
+  input_image: z.string().role('path').description(
+    'The photo to select from — absolute path or an artifact ref from a previous card.'),
+  detect_mode: z.union([z.const('body'), z.const('face'), z.const('hands')])
+    .default('body').description(
+      'What the primary selection targets. body → RT-DETR person boxes; face/hands → MediaPipe landmarks.'),
+  detection_threshold: z.number().min(0.05).max(0.95).default(0.35).description(
+    'RT-DETR box confidence. Lower catches more instances, noisier boxes.'),
+  sam_threshold: z.number().min(0.5).max(1.0).default(0.93).description(
+    'SAM3 mask confidence.'),
+  sam_dilation: z.number().min(0).max(64).default(0).description(
+    'Grow the final mask N pixels — the inpaint bleed margin.'),
+  output_mode: z.union([z.const('segm'), z.const('bbox')]).default('segm').description(
+    'segm saves masks; bbox saves the drawn-box manifest preview.'),
+  instance_filter: z.string().default('all').description(
+    "'all' | 'largest' | comma indices '0,2' — which detected instances become masks."),
+  max_instances: z.number().min(0).max(100).default(0).description(
+    'Cap detected instances (0 = no cap). Read the manifest first to see what is there.'),
   // ABSENT/defaultless optionals (bare = optional at parse,
   // ''-absent at compose via ?? '' — the image-gen precedent).
-  sam3_prompt: z.string(),
-  export_boxes: z.boolean().default(true),
-  export_face: z.boolean().default(false),
-  export_hands: z.boolean().default(false),
-  export_body: z.boolean().default(false),
-  export_paint: z.boolean().default(false),
-  paint_mask: z.string(),
-  roi: z.string(),
-  outputs: z.string().default('[]'),
+  sam3_prompt: z.string().description(
+    "Open-vocabulary text selection — e.g. 'the red hat', 'left shoe'. Overrides detect_mode when present."),
+  export_boxes: z.boolean().default(true).description(
+    'Draw RT-DETR boxes on the image — the instance manifest (read it back to filter).'),
+  export_face: z.boolean().default(false).description('Export face mask'),
+  export_hands: z.boolean().default(false).description('Export hands mask'),
+  export_body: z.boolean().default(false).description('Export body mask'),
+  export_paint: z.boolean().default(false).description(
+    'ON when a brush stroke exists — the painted payload becomes the mask (everything else is ignored).'),
+  paint_mask: z.string().role('path').description(
+    'The painted PNG (alpha channel = strokes). Required when export_paint is on.'),
+  roi: z.string().description(
+    '[x, y, w, h] fractions — run-global crop of every selection.'),
+  outputs: z.string().default('[]').description(
+    'THE recipe form: one entry per mask, filter (where) over selections, per-mask ops. Replaces every export_* toggle when present.'),
 })
 
 export const inject = ['comfyui']
