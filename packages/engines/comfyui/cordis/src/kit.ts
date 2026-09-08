@@ -15,8 +15,10 @@
 //   per-card param wiring from the contract.
 //
 // A card file is then: contract-derived decl (id/skeleton/boarded/
-// requires/schema — parsed VERBATIM by the drift wall
-// test_decl_schema_parity.py, so decls NEVER move here) + admission
+// requires/schema — the decl-parity mirror wall is RETIRED (import
+// stroke 2026-09-08: one contract, TS owns the knob vocabulary on
+// Schemastery direct); decls are pinned by the compose goldens +
+// the cli admission gate instead, so decls NEVER move here) + admission
 // guards (the card's loud voice) + one recipe call. h3-timeline and
 // img-to-mesh keep their bespoke multi-family bodies in-card and ride
 // the kit for arms/strips/shared chains.
