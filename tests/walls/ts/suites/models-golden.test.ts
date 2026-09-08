@@ -24,7 +24,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { MODEL_REGISTRY } from "../../../../packages/engines/comfyui/src/models/models.ts";
+import { getModel, modelIds } from "../../../../packages/engines/comfyui/src/models/models.ts";
 import { buildCatalog, isServedFamily } from "../../../../packages/engines/comfyui/src/models/catalogEmission.ts";
 import { CARD_IDENTITY } from "../../../../packages/engines/comfyui/src/models/cardIdentity.generated.ts";
 
@@ -89,19 +89,20 @@ describe("the served catalog vs the tree golden (A1)", () => {
     for (const row of Object.values(cat.models)) {
       assert.match(row.genre, /^[a-z0-9]+$/, `genre "${row.genre}" is an enum-repr fossil`);
     }
-    for (const decl of Object.values(MODEL_REGISTRY)) {
+    for (const id of modelIds()) {
+      const decl = getModel(id);
       assert.match(decl.genre, /^[a-z0-9]+$/, `registry genre "${decl.genre}" corrupt`);
     }
   });
 
   it("the registry CARRIES the 12 retired families as engine-marked frozen data", (): void => {
     for (const id of RETIRED_IN_GOLDEN) {
-      const decl = MODEL_REGISTRY[id];
+      const decl = getModel(id);
       assert.ok(decl !== undefined, `retired family ${id} missing from the registry`);
       assert.ok(decl.engine !== "comfyui" && decl.engine !== "", `${id} must carry its retired engine marker (got '${decl.engine}')`);
       assert.equal(isServedFamily(decl), false, `${id} must never serve (LAW 0)`);
     }
-    assert.equal(Object.keys(MODEL_REGISTRY).length, 59);
+    assert.equal(modelIds().length, 59);
   });
 
   it("families section matches the golden on all served ids", (): void => {

@@ -11,7 +11,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
-  MODEL_REGISTRY,
   modelCatalog,
   modelIds,
   mergedDefaults,
@@ -85,7 +84,7 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
   });
 
   it("variant matrices ride (comfyui estate: 116 variants)", (): void => {
-    const total = Object.values(MODEL_REGISTRY)
+    const total = modelIds().map((id) => getModel(id))
       .filter((d) => d.engine === undefined || d.engine === "" || d.engine === "comfyui")
       .map((d) => d.variants.length)
       .reduce((a, b) => a + b, 0);

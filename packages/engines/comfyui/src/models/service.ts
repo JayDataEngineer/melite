@@ -41,7 +41,6 @@ import {
   type ModelDecl,
   type VariantRow,
 } from "./contract.ts";
-import { MODEL_REGISTRY } from "./registry.generated.ts";
 import { buildCatalog } from "./catalogEmission.ts";
 
 export const MODELS_SERVICE = "models";
@@ -88,25 +87,38 @@ export class ModelsService extends Service {
     super(ctx, MODELS_SERVICE);
   }
 
-  /** Register one model row. LOUD: duplicate ids refuse (the py
+  /** Register one family. LOUD: duplicate ids refuse (the py
    *  scan's one-owner-per-id law), invalid rows refuse at the gate
-   *  (the metaclass's import-time validation, at registration). */
-  registerModel(decl: ModelDecl): void {
+   *  (the metaclass's import-time validation, at registration).
+   *  REVERTIBLE (the discharge stroke): returns the disposer —
+   *  ctx.effect-wrapped at the plugin seam, the fiber owns the
+   *  row's lifetime; dispose and the family is gone from the
+   *  table (a dynamic re-port can retire a family mid-flight). */
+  registerFamily(decl: ModelDecl): () => void {
     validateDecl(decl);
+    if (decl.lane_inputs !== undefined && (typeof decl.lane_inputs !== "object" || decl.lane_inputs === null || Array.isArray(decl.lane_inputs))) {
+      throw new ModelError(`${decl.id}: lane_inputs must be a plain object (the compose splice table)`);
+    }
     if (this.table.has(decl.id)) {
       throw new ModelError(
         `model '${decl.id}' registered twice — one owner per model id (the interlock)`,
       );
     }
     this.table.set(decl.id, decl);
+    return (): void => {
+      this.table.delete(decl.id);
+    };
   }
 
-  /** Register the frozen registry through the service (boot path —
-   *  the DATA is frozen; the SYSTEM is this registration). */
-  registerFrozenRegistry(): void {
-    for (const decl of Object.values(MODEL_REGISTRY)) {
-      this.registerModel(decl);
-    }
+  /** Every registered declaration, id-sorted (the table read that
+   *  replaced registry.generated iteration). */
+  allDecls(): ModelDecl[] {
+    return [...this.table.values()].sort((a, b) => (a.id < b.id ? -1 : 1));
+  }
+
+  /** The table size (census + the transaction wall). */
+  familyCount(): number {
+    return this.table.size;
   }
 
   /** Registered ids, scan order. */
@@ -215,7 +227,7 @@ export class ModelsService extends Service {
    *  one place: catalogEmission's buildCatalog over the SAME
    *  registration set). */
   servedModels(): Record<string, ModelRow> {
-    return buildCatalog().models;
+    return buildCatalog(this.allDecls()).models;
   }
 
   // ── the artifact-reader half (merged from catalog.ts, the same
@@ -232,7 +244,7 @@ export class ModelsService extends Service {
   catalogModels(repoRoot: string = resolveRepoRoot()): CatalogModel[] {
     const hit = this.rows.get(repoRoot);
     if (hit !== undefined) return hit;
-    const parsed = loadCatalogModels(repoRoot);
+    const parsed = loadCatalogModels(this.allDecls(), repoRoot);
     this.rows.set(repoRoot, parsed);
     return parsed;
   }
@@ -296,28 +308,98 @@ declare module "@deepseek-ai/cordis" {
 
 let booted: ModelsService | null = null;
 
-/** Boot the models system once: one Context, the service, every
- *  frozen row registered THROUGH it (boot-loud validation). The
- *  awaited fiber settles once loading finished (registry.ts:185)
- * — apply has run, the service is live on ctx. */
+/** BOOT-LOUD CONTRACTS (the discharge stroke): after the family
+ *  fibers settle, the table cross-validates against BOTH planes
+ *  it must agree with — the CARD plane (validate_against_cards:
+ *  dead card refs, out-of-domain defaults, enum misses refuse)
+ *  and the FACTS plane (the compose contract: facts.models[id]
+ *  .card ≡ decl.card). A refusal here is a BOOT refusal — the
+ *  table never half-serves (the transactional law).
+ *
+ * SEAM (no static cross-package dep): the card/facts plane is
+ *  comfyui-cordis — loaded through a DYNAMIC import (relative
+ *  source path, sibling engine package); a bare-comfyui boot
+ *  (no cards around) skips the card check loudly-noted, the
+ *  facts file still gates. */
+async function validateBootContracts(svc: ModelsService): Promise<void> {
+  const decls = svc.allDecls();
+  let domains: import("./validate.ts").CardDomains | null = null;
+  let factsModels: Record<string, { card?: string }> | null = null;
+  try {
+    const cards = await import("../../../comfyui-cordis/src/cardDefs.ts");
+    await cards.loadCardDefs();
+    const cardSvc = cards.theService();
+    const { fieldDomains } = await import("./validate.ts");
+    const table: import("./validate.ts").CardDomains = new Map();
+    for (const id of cardSvc.cardIds()) {
+      const def = cardSvc.getCardDef(id);
+      const dict = ((def?.schemaCarrier ?? def?.schema) as { dict?: Record<string, unknown> } | undefined)?.dict;
+      if (dict !== undefined) table.set(id, fieldDomains(dict as never));
+    }
+    domains = table;
+    const { readFileSync } = await import("node:fs");
+    const raw = JSON.parse(readFileSync(new URL("../../../comfyui-cordis/data/model-facts.json", import.meta.url), "utf8")) as { models?: Record<string, { card?: string }> };
+    factsModels = raw.models ?? null;
+  } catch (err) {
+    // the card plane is a sibling that may not ship with every
+    // consumer — the boot continues, the check degrades to a
+    // logged skip (walls pin the full path)
+    console.warn("[models] card-plane cross-validation skipped:", (err as Error).message);
+  }
+  if (domains !== null) {
+    const { validateRegistryAgainstCards } = await import("./validate.ts");
+    validateRegistryAgainstCards(decls, domains, ["mode", "variant"]);
+  }
+  if (factsModels !== null) {
+    for (const d of decls) {
+      const f = factsModels[d.id];
+      if (f === undefined) continue;
+      if (typeof f.card === "string" && f.card !== (d.card ?? "")) {
+        throw new ModelError(`model ${d.id}: facts card '${f.card}' ≠ registered card '${d.card ?? ""}' (the compose contract)`);
+      }
+    }
+  }
+}
+
+/** Boot the models system once — TRANSACTIONAL (the discharge
+ *  stroke): one Context, the service, then every family plugin
+ *  through ctx.plugin (each fiber registers through
+ *  ctx.effect(() => ctx.models.registerFamily(DECL)) — the
+ *  declaration is a REVERTIBLE effect). ANY family refusing
+ *  (validation, duplicate, bad shape) DISPOSES the whole context:
+ *  the table is empty, the boot throws — all-or-nothing, a broken
+ *  family never half-serves. The contracts then cross-validate
+ *  boot-loud (above) before the singleton owns the table. */
 export async function bootModels(): Promise<ModelsService> {
   if (booted !== null) return booted;
   const ctx = new Context();
-  await ctx.plugin({
-    apply(c: Context): void {
-      const s = new ModelsService(c);
-      s.registerFrozenRegistry();
-    },
-  });
-  // Service registration is immediate (service.ts:11) but start
-  // settles on a fiber tick — one tick, then the sync facade owns
-  // a fully-live service forever after.
-  await new Promise((r) => setTimeout(r, 0));
-  booted = (ctx as unknown as Record<string, ModelsService>)[MODELS_SERVICE];
-  if (booted === undefined) {
-    throw new ModelError("models service failed to register at boot");
+  try {
+    await ctx.plugin(modelsProvider);
+    const { FAMILY_PLUGINS } = await import("./families/index.ts");
+    for (const family of FAMILY_PLUGINS) {
+      await ctx.plugin(family);
+    }
+    // Service registration is immediate (service.ts:11) but start
+    // settles on a fiber tick — one tick, then every family's
+    // effect has run and the table is whole.
+    await new Promise((r) => setTimeout(r, 0));
+    const svc = (ctx as unknown as Record<string, ModelsService>)[MODELS_SERVICE];
+    if (svc === undefined) {
+      throw new ModelError("models service failed to register at boot");
+    }
+    if (svc.familyCount() !== FAMILY_PLUGINS.length) {
+      throw new ModelError(
+        `boot registered ${svc.familyCount()} families but ${FAMILY_PLUGINS.length} plugins loaded — a family registered nothing (the transactional gate)`,
+      );
+    }
+    await validateBootContracts(svc);
+    booted = svc;
+    return booted;
+  } catch (err) {
+    await ctx.fiber.dispose();
+    booted = null;
+    throw err;
   }
-  return booted;
 }
 
 /** The booted service (throws if bootModels has not settled). */

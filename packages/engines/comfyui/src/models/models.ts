@@ -14,7 +14,6 @@ import type { ModelRow } from "./contract.ts";
 import type { CellRow, ModelDecl, VariantRow } from "./contract.ts";
 import { bootModels, modelsService, resolveCascade } from "./service.ts";
 
-export { MODEL_REGISTRY } from "./registry.generated.ts";
 export * from "./contract.ts";
 export { bootModels, modelsService, resolveCascade, MODELS_SERVICE, ModelsService, modelsProvider, needModels } from "./service.ts";
 

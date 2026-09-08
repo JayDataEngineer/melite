@@ -18,7 +18,6 @@ import {
   ModelRow,
   type ModelDecl,
 } from "./contract.ts";
-import { MODEL_REGISTRY } from "./registry.generated.ts";
 import {
   CARD_IDENTITY,
   CAPABILITIES,
@@ -68,12 +67,14 @@ function servedRow(decl: ModelDecl): ModelRow {
   return row;
 }
 
-/** The full catalog — all five sections, deterministic key order. */
-export function buildCatalog(): CatalogSections {
+/** The full catalog — all five sections, deterministic key order.
+ *  Reads the REGISTERED table (the service's allDecls — the
+ *  registry.generated module is retired; the table is the truth). */
+export function buildCatalog(decls: readonly ModelDecl[]): CatalogSections {
   const models: Record<string, ModelRow> = {};
   const families: Record<string, { label: string; genre: string; studio?: unknown; accepts?: readonly string[] }> = {};
-  for (const id of Object.keys(MODEL_REGISTRY).sort()) {
-    const decl: ModelDecl = MODEL_REGISTRY[id];
+  for (const decl of decls) {
+    const id = decl.id;
     if (!isServedFamily(decl)) continue;
     models[id] = servedRow(decl);
     families[id] = { label: decl.label, genre: decl.genre };

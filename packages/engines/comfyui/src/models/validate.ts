@@ -11,7 +11,7 @@
 // schemastery's schema.dict is the source ({name → field schema},
 // meta.min/meta.max, union-of-consts = options).
 
-import { ModelError, MODEL_REGISTRY } from "./models.ts";
+import { ModelError, type ModelDecl } from "./contract.ts";
 
 /** One card field's domain — the projection the pure core sees. */
 export interface FieldDomain {
@@ -23,14 +23,13 @@ export interface FieldDomain {
 /** card id → (field name → domain). */
 export type CardDomains = ReadonlyMap<string, ReadonlyMap<string, FieldDomain>>;
 
-/** Schemastery field schema (structural — no package dep). */
+/** Schemastery field schema (structural — no package dep). The
+ *  union's alternatives live at .list (NODE level, not
+ *  .meta.list) and each const carries .value. */
 interface FieldSchema {
   readonly type: string;
-  readonly meta?: {
-    readonly min?: number;
-    readonly max?: number;
-    readonly list?: readonly { readonly meta?: { readonly const?: unknown } }[];
-  };
+  readonly meta?: { readonly min?: number; readonly max?: number };
+  readonly list?: readonly { readonly value?: unknown }[];
 }
 
 /** Extract one card's domains from a schemastery object's .dict. */
@@ -46,10 +45,10 @@ export function fieldDomains(
     } = {};
     if (field.meta?.min !== undefined) domain.min = field.meta.min;
     if (field.meta?.max !== undefined) domain.max = field.meta.max;
-    if (field.type === "union" && Array.isArray(field.meta?.list)) {
+    if (field.type === "union" && Array.isArray(field.list)) {
       const opts: string[] = [];
-      for (const sub of field.meta?.list ?? []) {
-        if (sub.meta?.const !== undefined) opts.push(String(sub.meta.const));
+      for (const sub of field.list) {
+        if (sub?.value !== undefined && sub.value !== null) opts.push(String(sub.value));
       }
       if (opts.length > 0) domain.options = opts;
     }
@@ -76,15 +75,14 @@ export function fieldDomains(
  * Returns the checked (model, card) pairs for the caller's log.
  */
 export function validateRegistryAgainstCards(
+  decls: readonly ModelDecl[],
   cards: CardDomains,
   engineTruth: readonly string[] = [],
 ): Array<[string, string]> {
   const truth = new Set(engineTruth);
   const checked: Array<[string, string]> = [];
-  const ids = Object.keys(MODEL_REGISTRY).sort();
-  for (const mid of ids) {
-    const decl = MODEL_REGISTRY[mid];
-    if (decl === undefined) continue;
+  for (const decl of decls) {
+    const mid = decl.id;
     // LAW 0: only comfyui families validate against the live card
     // plane — retired-engine rows are frozen data (engine-marked),
     // their card refs name the cards their OWN engine served

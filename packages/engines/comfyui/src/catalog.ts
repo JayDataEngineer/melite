@@ -61,7 +61,7 @@ import {
   loadEndpointConfig,
   resolveRepoRoot,
 } from "./comfyui.ts";
-import { type ModelDecl, MODEL_REGISTRY } from "./models/models.ts";
+import { type ModelDecl } from "./models/contract.ts";
 
 /** One downloadable row — the manage door's download contract. */
 export interface CatalogArtifactRow {
@@ -155,10 +155,11 @@ let CACHE: CatalogModel[] | null = null;
  *  ignored: the registry is compiled-in, root-independent.
  */
 export function loadCatalogModels(
+  decls: readonly ModelDecl[],
   _repoRoot: string = resolveRepoRoot(),
 ): CatalogModel[] {
   if (CACHE !== null) return CACHE;
-  CACHE = Object.values(MODEL_REGISTRY).map(
+  CACHE = decls.map(
     (d: ModelDecl): CatalogModel => ({
       id: d.id,
       genre: d.genre,
@@ -219,12 +220,13 @@ function provisionDest(folder: string): string {
  * core below, service-owned cache). Documented split, never two truths.
  */
 export function resolveCatalogArtifact(
+  decls: readonly ModelDecl[],
   mid: string,
   variant = "",
   quant = "",
   repoRoot: string = resolveRepoRoot(),
 ): CatalogArtifactRow[] {
-  return resolveArtifactRows(loadCatalogModels(repoRoot), mid, variant, quant);
+  return resolveArtifactRows(loadCatalogModels(decls, repoRoot), mid, variant, quant);
 }
 
 /** The pure resolution core (no I/O, no cache): the model table in,

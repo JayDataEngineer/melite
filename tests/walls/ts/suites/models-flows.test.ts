@@ -21,7 +21,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { MODEL_REGISTRY, resolve } from "../../../../packages/engines/comfyui/src/models/models.ts";
+import { getModel, modelIds, resolve } from "../../../../packages/engines/comfyui/src/models/models.ts";
 import { registryFlowNames } from "../../../../packages/gateway/doors/src/doors/flowsRegistry.ts";
 
 const FACTS_PATH = join(
@@ -49,14 +49,14 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
     const factIds = Object.keys(facts.models).sort();
     assert.ok(factIds.length >= 30, `expected ≥30 fact families, got ${factIds.length}`);
     for (const id of factIds) {
-      assert.ok(MODEL_REGISTRY[id] !== undefined, `model-facts family '${id}' missing from the registry`);
+      assert.ok(modelIds().includes(id), `model-facts family '${id}' missing from the registry`);
     }
   });
 
   it("variant matrices AGREE between registry and model-facts (two spellings refuse)", (): void => {
     let checked = 0;
     for (const [id, fam] of Object.entries(facts.models)) {
-      const decl = MODEL_REGISTRY[id];
+      const decl = getModel(id);
       if (decl === undefined) continue;
       const regVariants = new Map(decl.variants.map((v) => [v.id, v]));
       for (const fv of fam.variants) {

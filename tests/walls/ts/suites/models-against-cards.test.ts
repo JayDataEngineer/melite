@@ -18,7 +18,8 @@ import { fileURLToPath } from "node:url";
 import { loadCardDefs } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 import {
   ModelError,
-  MODEL_REGISTRY,
+  getModel,
+  modelIds,
 } from "../../../../packages/engines/comfyui/src/models/models.ts";
 import {
   fieldDomains,
@@ -27,6 +28,12 @@ import {
 } from "../../../../packages/engines/comfyui/src/models/validate.ts";
 
 const here = fileURLToPath(import.meta.url);
+
+/** The registered table as decls (the family plugins' sum — the
+ *  validateRegistryAgainstCards input since the godfile retired). */
+function allDecls() {
+  return modelIds().map((id) => getModel(id));
+}
 
 /** comfyui compose's engine truth (ENGINE_TRUTH_KEYS @ 034e1f97,
  *  compose/__init__.py line 76 — "the audio lanes' default mode
@@ -68,14 +75,15 @@ async function tableWith(
 describe("models against cards (the cross-validation, resurrected)", () => {
   it("every model default lives inside its owning card's field domains", async (): Promise<void> => {
     const cards = await cardTable();
-    const checked = validateRegistryAgainstCards(cards, ENGINE_TRUTH);
+    const checked = validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH);
     // every family with a card ref is checked (19 card refs in the registry)
     assert.ok(checked.length >= 19, `expected ≥19 checked pairs, got ${checked.length}`);
   });
 
   it("every non-empty COMFYUI card ref names a REGISTERED card (the amnesty is over)", async (): Promise<void> => {
     const cards = await cardTable();
-    for (const decl of Object.values(MODEL_REGISTRY)) {
+    for (const id of modelIds()) {
+      const decl = getModel(id);
       // LAW 0: retired-engine rows carry their own engines' dead
       // card refs (music-native, auto-rig) — data, not drift
       if (decl.engine !== undefined && decl.engine !== "" && decl.engine !== "comfyui") continue;
@@ -88,7 +96,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
   it("a default naming no card field refuses LOUD", async (): Promise<void> => {
     const cards = await tableWith("image-gen", new Map([["steps", { min: 1, max: 150 }]]));
     assert.throws(
-      () => validateRegistryAgainstCards(cards, ENGINE_TRUTH),
+      () => validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH),
       (err: unknown): boolean =>
         err instanceof ModelError &&
         String(err.message).includes("names no field on card"),
@@ -99,7 +107,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // poisoned bounds — the semantics probe, never real data drift
     const cards = await tableWith("image-gen", new Map([["steps", { min: 1000, max: 2000 }], ["width", { min: 1 }, ], ["height", { min: 1 }], ["cfg", { min: 0 }], ["sampler", {}], ["scheduler", {}], ["model", {}], ["seed", {}]]));
     assert.throws(
-      () => validateRegistryAgainstCards(cards, ENGINE_TRUTH),
+      () => validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH),
       (err: unknown): boolean =>
         err instanceof ModelError &&
         String(err.message).includes("outside card image-gen field bounds"),
@@ -109,7 +117,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
   it("an enum miss refuses LOUD", async (): Promise<void> => {
     const cards = await tableWith("image-gen", new Map([["steps", {}], ["width", {}], ["height", {}], ["cfg", {}], ["sampler", { options: ["euler_ancestral"] }], ["scheduler", {}], ["model", {}], ["seed", {}]]));
     assert.throws(
-      () => validateRegistryAgainstCards(cards, ENGINE_TRUTH),
+      () => validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH),
       (err: unknown): boolean =>
         err instanceof ModelError &&
         String(err.message).includes("not in card image-gen options"),
@@ -120,7 +128,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     const cards: CardDomains = new Map([["some-other-card", new Map()]]);
     // anny's ref is 'anny' — absent from this table
     assert.throws(
-      () => validateRegistryAgainstCards(cards),
+      () => validateRegistryAgainstCards(allDecls(), cards),
       (err: unknown): boolean =>
         err instanceof ModelError &&
         String(err.message).includes("the migration amnesty is over"),
@@ -134,20 +142,23 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // refusal fires; with them the full estate validates CLEAN.
     const cards = await cardTable();
     assert.throws(
-      () => validateRegistryAgainstCards(cards),
+      () => validateRegistryAgainstCards(allDecls(), cards),
       (err: unknown): boolean =>
         err instanceof ModelError && String(err.message).includes("qwen3-tts: default 'mode'"),
     );
-    const checked = validateRegistryAgainstCards(cards, ENGINE_TRUTH);
+    const checked = validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH);
     assert.ok(checked.length >= 30, `expected 30 checked pairs, got ${checked.length}`);
   });
 
   it("fieldDomains extracts schemastery min/max/options", (): void => {
+    // schemastery truth (probed 2026-09-08): the union's
+    // alternatives live at .list (NODE level), each const carries
+    // .value — .meta.list/.meta.const was the pre-probe fiction
     const domains = fieldDomains({
       steps: { type: "number", meta: { min: 1, max: 150, default: 30 } },
       pick: {
         type: "union",
-        meta: { list: [{ meta: { const: "a" } }, { meta: { const: "b" } }] },
+        list: [{ value: "a" }, { value: "b" }, null],
       },
       plain: { type: "string" },
     } as never);

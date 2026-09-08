@@ -39,16 +39,16 @@ describe("the defaults cascade is the cordis primitive (A3)", () => {
     assert.equal(svc.modelIds().length, 59, "every frozen row registered through the service at boot");
   });
 
-  it("registerModel refuses duplicates LOUD (one owner per id)", (): void => {
+  it("registerFamily refuses duplicates LOUD (one owner per id)", (): void => {
     const svc = modelsService();
     const decl = svc.getModel("z-image");
-    assert.throws(() => svc.registerModel(decl), /registered twice/, "duplicate registration must refuse");
+    assert.throws(() => svc.registerFamily(decl), /registered twice/, "duplicate registration must refuse");
   });
 
-  it("registerModel refuses corrupt rows at the gate (the metaclass's import-time validation)", (): void => {
+  it("registerFamily refuses corrupt rows at the gate (the metaclass's import-time validation)", (): void => {
     const svc = modelsService();
     assert.throws(
-      () => svc.registerModel({ ...svc.getModel("z-image"), id: "Bad-Id", genre: "Genre.IMAGE" } as never),
+      () => svc.registerFamily({ ...svc.getModel("z-image"), id: "Bad-Id", genre: "Genre.IMAGE" } as never),
       /lowercase|genre/,
       "enum-repr corruption refuses at registration",
     );
