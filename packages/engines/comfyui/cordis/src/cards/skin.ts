@@ -16,7 +16,7 @@ const schema = z.object({
   // the Select sends wire strings ("512") — coerced at the closed
   // vocabulary in compose, never silently rescaled
   map_size: z.union([z.number(), z.string()]).default(512),
-  seed: z.number().default(20260906),
+  seed: z.number().min(-1).default(20260906),
   resolution: z.number().default(768),
   framing: z.number().default(1.2),
   focal_length: z.number().default(50),

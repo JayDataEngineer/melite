@@ -10,7 +10,7 @@ const schema = z.object({
   prompt: z.string(),
   motion_prompts: z.string(),
   motion_constraints: z.string(),
-  seed: z.number().default(42),
+  seed: z.number().min(-1).default(42),
   duration_sec: z.number().default(5.0),
   diffusion_steps: z.number().default(25),
   num_samples: z.number().default(1),

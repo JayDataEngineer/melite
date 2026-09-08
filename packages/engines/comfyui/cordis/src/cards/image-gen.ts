@@ -14,7 +14,7 @@ const schema = z.object({
   cfg: z.number().default(4.5),
   sampler: z.string(),
   scheduler: z.string(),
-  seed: z.number().default(-1),
+  seed: z.number().min(-1).default(-1),
   loras: z.array(z.object({ name: z.string(), strength: z.number() })),
 })
 

@@ -11,7 +11,7 @@ const schema = z.object({
   top_p: z.number().default(0.9),
   speed: z.number().default(1.0),
   repetition_penalty: z.number().default(1.05),
-  seed: z.number().default(-1),
+  seed: z.number().min(-1).default(-1),
 })
 
 export const inject = ['comfyui']

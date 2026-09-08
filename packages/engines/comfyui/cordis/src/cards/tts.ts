@@ -17,7 +17,7 @@ const schema = z.object({
   qvoice: z.string(),
   voice_pca_strengths: z.string(),
   temperature: z.number().default(0.7),
-  seed: z.number().default(-1),
+  seed: z.number().min(-1).default(-1),
 })
 
 export const inject = ['comfyui']

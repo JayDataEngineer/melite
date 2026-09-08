@@ -59,7 +59,7 @@ const schema = z.object({
   input_image: z.string(),
   rigged_glb: z.string(),
   target_glb: z.string(),
-  seed: z.number().default(42),
+  seed: z.number().min(-1).default(42),
   resolution: z.number().default(1024),
   steps: z.number().default(12),
   cfg: z.number().default(7.5),

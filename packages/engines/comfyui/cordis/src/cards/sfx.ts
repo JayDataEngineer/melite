@@ -9,7 +9,7 @@ const schema = z.object({
   guidance_scale: z.number().default(5.0),
   n_diffusion_steps: z.number().default(50),
   duration: z.number().default(10.0),
-  seed: z.number().default(-1),
+  seed: z.number().min(-1).default(-1),
 })
 
 export const inject = ['comfyui']

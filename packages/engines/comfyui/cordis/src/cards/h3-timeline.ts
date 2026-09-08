@@ -106,7 +106,7 @@ const nullable = <T extends object>(inner: T): unknown => z.union([inner, z.cons
 const paramSchema = z.object({
   prompt: z.string(),
   image: z.string(),
-  seed: z.number().default(42),
+  seed: z.number().min(-1).default(42),
   width: z.number().default(1344),
   height: z.number().default(768),
   length: z.number().default(56),

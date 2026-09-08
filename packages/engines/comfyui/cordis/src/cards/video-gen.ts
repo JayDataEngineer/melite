@@ -35,7 +35,7 @@ const schema = z.object({
   cfg: z.number(),
   sampler: z.string(),
   scheduler: z.string(),
-  seed: z.number().default(-1),
+  seed: z.number().min(-1).default(-1),
 })
 
 export const inject = ['comfyui']

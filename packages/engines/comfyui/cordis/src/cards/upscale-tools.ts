@@ -13,7 +13,7 @@ const schema = z.object({
   // params): resolution/max_resolution/batch_size ride the seedvr2_ema
   // model row (1080/4096/1); seed rides py -1 (model row carries 0,
   // explicit wins — the golden pins explicit 42).
-  seed: z.number().default(-1),
+  seed: z.number().min(-1).default(-1),
   resolution: z.number(),
   max_resolution: z.number(),
   batch_size: z.number(),

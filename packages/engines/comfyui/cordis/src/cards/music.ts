@@ -14,7 +14,7 @@ const schema = z.object({
   guidance_scale: z.number().default(1.7),
   n_diffusion_steps: z.number().default(30),
   lm_cfg_scale: z.number().default(1.7),
-  seed: z.number().default(-1),
+  seed: z.number().min(-1).default(-1),
 })
 
 export const inject = ['comfyui']

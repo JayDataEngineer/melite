@@ -395,115 +395,57 @@ def test_stage_keys_mirror_stage_fields() -> None:
                                 sorted(set(Stage.model_fields) - STAGE_KEYS)))
 
 
-# ── GATE S: the seed-sentinel contract (2026-09-05) ──
+# ── GATE S: the seed-sentinel contract (2026-09-05; carrier moved
+# 2026-09-08) ──
 # The Seed widget sends -1 for RANDOM (untouched/cleared seeds) —
-# every card row with a seed field MUST admit -1 (the compose mints
-# in the dice button's space). Rows converted by this stroke refuse
-# below -1. Exemptions, named: h3-timeline (emitter-owned seed
-# architecture, Optional ints end to end) and the cpp lanes (their
-# owners' rows; unaudited by this stroke) — neither refused -1
-# before this stroke, so the widget contract holds there by
-# admission without validators.
-
-# h3-timeline carries no Seed widget and mints nothing: -1 would ride
-# raw into RandomNoise (min 0) and die at execution, so the door refuses
-# ALL negatives there (see _wire_int's name gate) — the admit-1 contract
-# below exempts it, loudly. Every other seed row admits -1.
-_SEED_ADMIT_EXEMPT = frozenset({"video/h3-timeline"})
-
-
-def _seed_rows() -> list[tuple[str, str, type[object]]]:
-    import importlib.util
-    for extra in (os.path.join(REPO, "python"),
-                  os.path.join(REPO, "packages", "engines", "comfyui",
-                               "compose")):
-        if extra not in sys.path:
-            sys.path.insert(0, extra)
-    out = []
-    # (label-prefix, cards-root): comfyui lanes plus every cpp
-    # plugin's action_cards — one walk, no lane hides.
-    roots = [("", os.path.join(REPO, "packages", "engines", "comfyui",
-                                "action_cards"))]
-    cpp_plugin = os.path.join(REPO, "packages", "engines", "cpp")
-    if os.path.isdir(cpp_plugin):
-        for plugin in sorted(os.listdir(cpp_plugin)):
-            cands = os.path.join(cpp_plugin, plugin, "action_cards")
-            if os.path.isdir(cands):
-                roots.append(("cpp/", cands))
-    for prefix, cards_root in roots:
-        for genre in sorted(os.listdir(cards_root)):
-            gd = os.path.join(cards_root, genre)
-            if not os.path.isdir(gd):
-                continue
-            for card in sorted(os.listdir(gd)):
-                sp = os.path.join(gd, card, "python", "schema.py")
-                if not os.path.isfile(sp):
-                    continue
-                lane = prefix + genre + "/" + card
-                mod_name = ("seedsentinel_" + lane.replace("/", "_")
-                            .replace("-", "_"))
-                spec = importlib.util.spec_from_file_location(mod_name, sp)
-                mod = importlib.util.module_from_spec(spec)
-                sys.modules[mod_name] = mod
-                spec.loader.exec_module(mod)
-                for row_name in sorted(vars(mod)):
-                    row = vars(mod)[row_name]
-                    if isinstance(row, type) \
-                            and hasattr(row, "model_fields") \
-                            and "seed" in getattr(row, "model_fields", {}):
-                        out.append((lane, row_name, row))
-    return out
+# every card with a seed knob MUST admit -1 and refuse below -1
+# ("seed is -1 (random) or a non-negative integer" — the deleted
+# py schema.py rows' law, verbatim from their docstring).
+#
+# CARRIER MOVE (2026-09-08): the pydantic rows in
+# action_cards/*/*/python/schema.py died with the render machinery
+# (b324c480) and took the validators with them — between that
+# stroke and this one, seed=-2 flowed silently into RandomNoise.
+# The law's new home is the TS card contract: every seed knob
+# carries z.number().min(-1) (cards/*.ts), and this wall proves it
+# behaviorally via tests/walls/helpers/seed_probe.mjs — a node
+# probe that stubs ctx.comfyui.registerCard to capture each card's
+# registered schema, then evaluates seed=-1/-2 and classifies by
+# whether the refusal names seed (missing-sibling refusals never
+# mask the verdict). h3-timeline needs no admit exemption anymore:
+# its hand-written normalizer now wraps paramSchema's min(-1).
+# NOTE: float seeds (0.5) remain admitted — pre-existing unpinned
+# behavior, deliberately not changed by the carrier move.
 
 
-def _seed_error_fields(e: Exception) -> set[str] | None:
-    """Seed-attributed error fields, or None for non-pydantic
-    refusals (h3's CardRefusal carries the field in prose)."""
-    from pydantic import ValidationError as _VE
-    if isinstance(e, _VE):
-        return {str(er["loc"][0]) for er in e.errors() if er["loc"]}
-    return None
-
-
-def _seed_kwargs(row: type[object], seed: int) -> dict[str, int | str]:
-    """Isolate the SEED verdict: fill required siblings (cpp rows
-    require prompt) so a missing-prompt refusal never masks the
-    seed answer in either direction."""
-    kw = {"seed": seed}
-    if "prompt" in getattr(row, "model_fields", {}):
-        kw["prompt"] = "gate"
-    return kw
+def _seed_probe_rows() -> list[dict]:
+    import subprocess
+    helpers = os.path.join(os.path.dirname(__file__), "..", "helpers")
+    out = subprocess.run(
+        ["node", "--experimental-strip-types",
+         os.path.join(helpers, "seed_probe.mjs")],
+        capture_output=True, text=True, timeout=120, cwd=REPO)
+    assert out.returncode == 0, "seed probe crashed:\n" + out.stderr[-400:]
+    lines = [ln for ln in out.stdout.splitlines() if ln.startswith("[")]
+    assert lines, "seed probe printed no JSON row"
+    return json.loads(lines[-1])
 
 
 def test_every_seed_row_admits_minus_one() -> None:
     """-1 is the widget's RANDOM: refusing it 4xxs untouched runs."""
-    probed = []
-    for lane, row_name, row in _seed_rows():
-        if lane in _SEED_ADMIT_EXEMPT:
-            continue
-        try:
-            row(**_seed_kwargs(row, -1))
-        except Exception as e:
-            fields = _seed_error_fields(e)
-            if fields is not None and "seed" not in fields:
-                continue
-            raise AssertionError(
-                "%s/%s refuses seed=-1: %s" % (lane, row_name, e))
-        probed.append("%s/%s" % (lane, row_name))
-    assert len(probed) >= 10, (
-        "seed-row census collapsed (%d) — the walk broke" % len(probed))
+    rows = [r for r in _seed_probe_rows() if r["hasSeed"]]
+    assert len(rows) >= 10, (
+        "seed-card census collapsed (%d) — the probe walk broke" % len(rows))
+    bad = [r["id"] for r in rows if not r["admitMinus1"]]
+    assert not bad, "refuses seed=-1: %s" % bad
 
 
 def test_seed_rows_refuse_below_minus_one() -> None:
     """Below the sentinel is exactness-claiming nonsense: refuse —
-    no exemptions (h3's name gate and the cpp sentinels closed the
-    last two)."""
-    for lane, row_name, row in _seed_rows():
-        try:
-            row(**_seed_kwargs(row, -2))
-        except Exception:
-            continue
-        raise AssertionError(
-            "%s/%s admits seed=-2 (below the -1 sentinel)" % (lane, row_name))
+    no exemptions (the TS min(-1) sweep covers all 13 seed cards)."""
+    rows = [r for r in _seed_probe_rows() if r["hasSeed"]]
+    bad = [r["id"] for r in rows if not r["refuseMinus2"]]
+    assert not bad, "admits seed=-2 (below the -1 sentinel): %s" % bad
 
 
 FILE_SLOT_TYPES = frozenset(

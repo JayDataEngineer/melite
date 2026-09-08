@@ -15,7 +15,7 @@ const schema = z.object({
   mu: z.number(),
   std: z.number(),
   sampler: z.string(),
-  seed: z.number().default(-1),
+  seed: z.number().min(-1).default(-1),
 })
 
 export const inject = ['comfyui']

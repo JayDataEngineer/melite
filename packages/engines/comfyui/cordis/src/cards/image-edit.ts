@@ -49,7 +49,7 @@ const schema = z.object({
   // silently mapped — list→slot precedence is undocumented python-
   // side, so a non-empty list refuses (see refuseFiring).
   reference_images: z.array(z.string()).default([]),
-  seed: z.number().default(-1),
+  seed: z.number().min(-1).default(-1),
   steps: z.number().default(4),
   cfg: z.number().default(1.0),
   sampler: z.string(),
