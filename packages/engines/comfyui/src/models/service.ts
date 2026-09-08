@@ -330,7 +330,8 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
     await cards.loadCardDefs();
     const cardSvc = cards.theService();
     const { fieldDomains } = await import("./validate.ts");
-    const table: import("./validate.ts").CardDomains = new Map();
+    // built as mutable Maps, read as the CardDomains readonly view
+    const table = new Map<string, ReturnType<typeof fieldDomains>>();
     for (const id of cardSvc.cardIds()) {
       const def = cardSvc.getCardDef(id);
       const dict = ((def?.schemaCarrier ?? def?.schema) as { dict?: Record<string, unknown> } | undefined)?.dict;
