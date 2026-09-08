@@ -7,26 +7,28 @@ import z from '@deepseek-ai/schemastery'
 import { fitLane, finalizeFit } from '../kit.ts'
 
 const schema = z.object({
-  body_glb: z.string(),
-  prop_glb: z.string(),
-  bone: z.string().default('mixamorig:Head'),
+  body_glb: z.string().role('path').description('Body GLB'),
+  prop_glb: z.string().role('path').description('Prop GLB'),
+  bone: z.string().default('mixamorig:Head').description('Bone'),
   // the three meld fit laws — a closed vocabulary (the python row
   // refuses anything else with its field name)
-  align: z.union([z.const('socket'), z.const('fit'), z.const('grip')]).default('socket'),
-  position: z.string().default('0,0,0'),
-  rotation: z.string().default('0,0,0'),
-  fit_ratio: z.number().default(0.0),
-  fit_ref_bone: z.string(),
-  fit_ref_bone2: z.string(),
-  seat_ratio: z.number().default(0.22),
-  finger_bone: z.string(),
-  thumb_bone: z.string(),
-  target_width: z.number().default(0.0),
-  resolution: z.number().default(768),
-  framing: z.number().default(1.2),
-  focal_length: z.number().default(50),
-  samples: z.number().default(64),
-  transparent: z.union([z.boolean(), z.string()]).default(true),
+  align: z.union([z.const('socket'), z.const('fit'), z.const('grip')])
+    .default('socket').description(
+      'socket = snap origin to bone; fit = deform prop around bone volume; grip = hold near bone with manual offset'),
+  position: z.string().default('0,0,0').description('Offset'),
+  rotation: z.string().default('0,0,0').description('Rotation'),
+  fit_ratio: z.number().min(0).max(10).default(0.0).description('Fit ratio'),
+  fit_ref_bone: z.string().description('Measure to'),
+  fit_ref_bone2: z.string().description('Measure from'),
+  seat_ratio: z.number().min(0).max(1).default(0.22).description('Seat ratio'),
+  finger_bone: z.string().description('Finger bone'),
+  thumb_bone: z.string().description('Thumb bone'),
+  target_width: z.number().min(0).max(10).default(0.0).description('Target width'),
+  resolution: z.number().min(256).max(2048).default(768).description('View resolution'),
+  framing: z.number().min(1.0).max(3.0).default(1.2).description('Framing'),
+  focal_length: z.number().min(10).max(400).default(50).description('Focal length'),
+  samples: z.number().min(1).max(4096).default(64).description('Samples'),
+  transparent: z.union([z.boolean(), z.string()]).default(true).description('Background'),
 })
 
 export const inject = ['comfyui']

@@ -22,20 +22,33 @@ import z from '@deepseek-ai/schemastery'
 import { wanVace, scail2, VIDEO_NEGATIVE_FALLBACK, VIDEO_REQUIRED_PATHS } from '../kit.ts'
 
 const schema = z.object({
-  prompt: z.string(),
-  negative_prompt: z.string(),
-  reference_image: z.string(),
-  pose_video: z.string(),
-  pose_strength: z.number().default(1.0),
-  width: z.number(),
-  height: z.number(),
-  length: z.number(),
-  fps: z.number(),
-  steps: z.number(),
-  cfg: z.number(),
-  sampler: z.string(),
-  scheduler: z.string(),
-  seed: z.number().min(-1).default(-1),
+  prompt: z.string().description('Prompt'),
+  negative_prompt: z.string().description('Negative Prompt'),
+  reference_image: z.string().role('path').description(
+    'The anchor frame — identity, subject, scene (wan-vace); the character to animate (scail2).'),
+  pose_video: z.string().role('path').description(
+    'The motion source — SCAIL-2 drives the reference character with this video.').extra(
+      'extra', { families: ['scail2-animate'] }),
+  pose_strength: z.number().min(0.0).max(2.0).default(1.0).description(
+    'How tightly SCAIL-2 follows the driving motion.').extra(
+      'extra', { families: ['scail2-animate'] }),
+  // ride-the-model keys (cascade-owned): HINT-ONLY ranges via extra
+  // (RANGE RULE 2026-09-08 — whoever owns the default owns the floor).
+  width: z.number().description('Width').extra('extra', { min: 320, max: 1280 }),
+  height: z.number().description('Height').extra('extra', { min: 320, max: 720 }),
+  length: z.number().description(
+    '4n+1 (Wan latent grid). 49 ≈ 2s, 81 ≈ 3.4s at 24fps.').extra(
+      'extra', { min: 9, max: 121 }),
+  fps: z.number().description('FPS').extra('extra', { min: 8, max: 30 }),
+  steps: z.number().description('Steps').extra('extra', { min: 1, max: 50 }),
+  cfg: z.number().description(
+    'Lightning-distilled lanes run CFG 1 (guidance baked in).').extra(
+      'extra', { min: 1, max: 12 }),
+  sampler: z.string().description(
+    'Sampler — options resolve from the $samplers vocabulary at serve time'),
+  scheduler: z.string().description(
+    'Scheduler — options resolve from the $schedulers vocabulary at serve time'),
+  seed: z.number().min(-1).step(1).default(-1).description('Seed'),
 })
 
 export const inject = ['comfyui']

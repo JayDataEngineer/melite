@@ -28,19 +28,32 @@ const oneOf = (options: string[]) => z.union(options.map((o) => z.const(o)))
 // joycaption→extra_option). Bare z.string() is the image-gen prompt
 // precedent (optional at parse, refused loud at compose).
 const schema = z.object({
-  input_image: z.string(),
-  checkpoint: z.string().default('wd-v1-4-moat-tagger-v2'),
-  threshold: z.number().min(0).max(1).default(0.35),
-  character_threshold: z.number().min(0).max(1).default(0.85),
-  exclude_tags: z.string(),
-  add_tag: z.string(),
-  remove_tag: z.string(),
-  caption_task: oneOf(TAGGER_CAPTION_TASKS).default('more_detailed_caption'),
-  caption_type: oneOf(TAGGER_CAPTION_TYPES).default('Descriptive'),
-  caption_length: oneOf(TAGGER_CAPTION_LENGTHS).default('long'),
-  extra_option: oneOf(TAGGER_EXTRA_OPTIONS),
-  replace_underscore: z.boolean().default(false),
-  trailing_comma: z.boolean().default(false),
+  input_image: z.string().role('path').description(
+    'The image to invert. Absolute mount path or artifact ref.'),
+  checkpoint: z.string().default('wd-v1-4-moat-tagger-v2').description(
+    'The WD14 weights name (auto-downloaded on first run).'),
+  threshold: z.number().min(0).max(1).default(0.35).description(
+    'General-tag confidence floor.'),
+  character_threshold: z.number().min(0).max(1).default(0.85).description(
+    'Character-tag confidence floor — keep high.'),
+  exclude_tags: z.string().description(
+    'Comma-separated tags to prune from the output.'),
+  add_tag: z.string().description(
+    'JoyTag: tags force-prepended to the output (comma-separated). Ignored by WD14.'),
+  remove_tag: z.string().description(
+    'JoyTag: tags pruned from the output (comma-separated). Ignored by WD14.'),
+  caption_task: oneOf(TAGGER_CAPTION_TASKS).default('more_detailed_caption').description(
+    'Florence-2: the vision task (live task vocabulary). Ignored by WD14/JoyTag.'),
+  caption_type: oneOf(TAGGER_CAPTION_TYPES).default('Descriptive').description(
+    'JoyCaption: the caption template (live vocabulary). Ignored by WD14/JoyTag/Florence-2.'),
+  caption_length: oneOf(TAGGER_CAPTION_LENGTHS).default('long').description(
+    'JoyCaption: target length (the node also takes word counts 20-260 — bare/API bodies pass through).'),
+  extra_option: oneOf(TAGGER_EXTRA_OPTIONS).description(
+    "JoyCaption: one appended instruction (the full option list rides the served schema's live vocabulary)."),
+  replace_underscore: z.boolean().default(false).description(
+    'Emit "silver hair" instead of "silver_hair".'),
+  trailing_comma: z.boolean().default(false).description(
+    'Terminate the tag list with a comma (prompt-paste shape).'),
   // NO filename_prefix (py card: "the run routes outputs by run id
   // (compose stamps `<run>/tags`) — a user knob here was silently
   // overwritten, a dead promise"). Old drafts naming it still parse

@@ -11,17 +11,30 @@ import z from '@deepseek-ai/schemastery'
 import { skinLane, finalizeSkin } from '../kit.ts'
 
 const schema = z.object({
-  body_glb: z.string(),
-  kind: z.string().default('keeper'),
+  body_glb: z.string().role('path').description('Body GLB'),
+  kind: z.union([
+    z.const('keeper'), z.const('villager'), z.const('villager_elder'),
+    z.const('ash_nomad'), z.const('caravan_trader'), z.const('arena_factor'),
+    z.const('amf_warden'), z.const('marrow_raider'), z.const('dune_hound'),
+    z.const('sand_skimmer'), z.const('ridge_lizard'), z.const('moss_elk'),
+    z.const('gloom_tortoise'), z.const('emberwing'), z.const('bone_crane'),
+    z.const('husk_stalker'), z.const('ironvein_construct'),
+    z.const('cherusci_scrivener'), z.const('amalgam_horror'),
+    z.const('meld_creature'),
+  ]).default('keeper').description('Kind'),
   // the Select sends wire strings ("512") — coerced at the closed
   // vocabulary in compose, never silently rescaled
-  map_size: z.union([z.number(), z.string()]).default(512),
-  seed: z.number().min(-1).default(20260906),
-  resolution: z.number().default(768),
-  framing: z.number().default(1.2),
-  focal_length: z.number().default(50),
-  samples: z.number().default(64),
-  transparent: z.union([z.boolean(), z.string()]).default(true),
+  map_size: z.union([z.number(), z.string()]).default(512).description('Map size'),
+  // seed sentinel LAW outranks the retired py floor (served min:0 was
+  // py-authored; -1=random is the cross-card agent contract — the
+  // emitter regenerates served bytes from TS meta, so the floor rides
+  // the law, not the py golden; 20260906 default = deterministic pin)
+  seed: z.number().min(-1).max(2147483647).step(1).default(20260906).description('Seed'),
+  resolution: z.number().min(256).max(2048).default(768).description('View resolution'),
+  framing: z.number().min(1.0).max(3.0).default(1.2).description('Framing'),
+  focal_length: z.number().min(18).max(135).default(50).description('Focal length'),
+  samples: z.number().min(8).max(256).default(64).description('Samples'),
+  transparent: z.union([z.boolean(), z.string()]).default(true).description('Transparent'),
 })
 
 export const inject = ['comfyui']
