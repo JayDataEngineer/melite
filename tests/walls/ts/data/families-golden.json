@@ -52,7 +52,6 @@
    }
   ],
   "variant_groups": [],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -113,7 +112,6 @@
    }
   ],
   "variant_groups": [],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -174,7 +172,6 @@
    }
   ],
   "variant_groups": [],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -235,7 +232,6 @@
    }
   ],
   "variant_groups": [],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -298,7 +294,6 @@
    }
   ],
   "variant_groups": [],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -361,7 +356,6 @@
    }
   ],
   "variant_groups": [],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -441,7 +435,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -508,11 +501,11 @@
   "base_body": "anny-base-body.glb",
   "genre": "3d",
   "mods": [
-   "EstimateBodyVerb",
-   "SavePresetVerb",
-   "LoadPresetVerb",
-   "DressVerb",
-   "PropVerb"
+   "hmr-estimate",
+   "preset-save",
+   "preset-load",
+   "dress",
+   "prop"
   ],
   "variants": [
    {
@@ -566,7 +559,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [
    {
     "name": "anny-base-body.glb",
@@ -650,7 +642,6 @@
    }
   ],
   "variant_groups": [],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -728,7 +719,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -799,7 +789,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -892,7 +881,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -967,7 +955,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -1046,7 +1033,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -1117,7 +1103,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -1211,7 +1196,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -1298,7 +1282,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -1383,7 +1366,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -1521,7 +1503,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [
    {
     "name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
@@ -1648,7 +1629,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -1760,7 +1740,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [
    {
     "name": "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",
@@ -1896,7 +1875,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -1986,7 +1964,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [
    "image",
@@ -2068,7 +2045,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -2146,7 +2122,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -2242,7 +2217,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [
    {
     "name": "skin_standard.npz",
@@ -2431,7 +2405,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "timeout_floor": 300,
@@ -2529,7 +2502,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -2651,7 +2623,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -2788,7 +2759,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -2908,7 +2878,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [
    {
     "name": "rt_detr_v4-x-hgnet_fp32.safetensors",
@@ -3023,7 +2992,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -3094,7 +3062,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -3173,7 +3140,6 @@
    }
   ],
   "variant_groups": [],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -3234,7 +3200,6 @@
    }
   ],
   "variant_groups": [],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -3295,7 +3260,6 @@
    }
   ],
   "variant_groups": [],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -3374,7 +3338,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -3579,7 +3542,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [
    {
     "name": "pixal3d_int8_convrot.safetensors",
@@ -3727,7 +3689,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -3851,7 +3812,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -3946,7 +3906,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -4041,7 +4000,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -4134,7 +4092,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -4241,7 +4198,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -4325,7 +4281,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -4427,7 +4382,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -4518,7 +4472,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -4607,7 +4560,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -4681,7 +4633,6 @@
    }
   ],
   "variant_groups": [],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -4773,7 +4724,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -4852,7 +4802,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -4927,7 +4876,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -4998,7 +4946,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -5202,7 +5149,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [
    {
     "name": "trellis_2_int8_convrot.safetensors",
@@ -5343,7 +5289,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -5406,7 +5351,6 @@
    }
   ],
   "variant_groups": [],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -5513,7 +5457,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -5611,7 +5554,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,
@@ -5694,7 +5636,6 @@
     "default": "default"
    }
   ],
-  "loras": [],
   "provisions": [],
   "accepts": [],
   "canvas_default": false,

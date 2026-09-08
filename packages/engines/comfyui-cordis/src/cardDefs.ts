@@ -47,14 +47,51 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
       await ctx.plugin(mod)
     }
   }
-  // THE MOD/VERB PLUGINS (dsl.py port, 2026-09-08): every module
-  // under src/mods registers through ctx.comfyui.registerMod/
-  // registerVerb — the py Model.mods/verb declarations, PORT LAW
-  // shape. The service validates LOUD at registration (the
-  // metaclass's gates): a broken mod never serves.
+  // THE MOD PACKS (the distinct category taxonomy — the py Mod
+  // parents): src/mods/packs.ts registers every pack contract
+  // (loras, controlnet, lanpaint, mask, qvoice); the service
+  // validates LOUD at registration. PACKS FIRST — a flavor for an
+  // unregistered pack refuses (the category lands before the
+  // boardings).
   const modsDir = join(dirname(new URL(import.meta.url).pathname), 'mods')
   for (const f of readdirSync(modsDir).filter((x) => x.endsWith('.ts')).sort()) {
     const mod = (await import(pathToFileURL(join(modsDir, f)).href)) as unknown as Plugin
+    if (typeof (mod as { apply?: unknown }).apply === 'function') {
+      await ctx.plugin(mod)
+    }
+  }
+  // THE FAMILY FLAVORS (the correction stroke 2026-09-08): every
+  // module under the FAMILIES' own mods/ dirs (the py
+  // models/<family>/mods/*.py layout, cross-package deep-import —
+  // the identity-ring seam precedent) registers through
+  // ctx.comfyui.registerFlavor/registerVerb — FAMILY-OWNED data:
+  // rows, runtime doors, bare boardings, SubActionMod verbs. The
+  // py truth: the mod's catalog data lives HERE, in the family's
+  // own mods package — never crammed into the family DECL, never
+  // centralized in the cards plane. The boot-loud flavor↔DECL.mods
+  // interlock runs on the models side (validateBootContracts).
+  const familiesRoot = join(
+    dirname(new URL(import.meta.url).pathname),
+    '../../comfyui/src/models/families',
+  )
+  const flavorFiles: string[] = []
+  for (const genre of readdirSync(familiesRoot, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {
+    if (!genre.isDirectory()) continue // the barrel is a file
+    const genreDir = join(familiesRoot, genre.name)
+    for (const id of readdirSync(genreDir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {
+      if (!id.isDirectory()) continue
+      const modsDirOf = join(genreDir, id.name, 'mods')
+      let entries: string[] = []
+      try {
+        entries = readdirSync(modsDirOf).filter((x) => x.endsWith('.ts'))
+      } catch {
+        continue // no mods dir — the family boards nothing
+      }
+      for (const f of entries.sort()) flavorFiles.push(join(modsDirOf, f))
+    }
+  }
+  for (const file of flavorFiles.sort()) {
+    const mod = (await import(pathToFileURL(file).href)) as unknown as Plugin
     if (typeof (mod as { apply?: unknown }).apply === 'function') {
       await ctx.plugin(mod)
     }

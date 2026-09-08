@@ -110,14 +110,34 @@ export interface LoraRowDecl {
   readonly default_strength?: number
 }
 
-/** A mod registration — one pack flavor declared by ONE family
- *  (the py Model.mods tuple entry; same-pack flavors from
- *  different families merge onto the card surface with their
- *  declaring families as the scope). */
-export interface ModRegistration {
+// ── THE MOD MUTATION SYSTEM (corrected 2026-09-08, operator
+// order): mods are a DISTINCT CATEGORY — packs (loras, controlnets,
+// lan-inpaint, mask, qvoice in that vein). The PACK is the category
+// contract (its field schema, the py Mod parent — engine-owned,
+// melite_cards role); the FLAVOR is a family's boarding of the pack
+// (the py Model.mods tuple entry + the family's mods/<pack>.py
+// subclass — FAMILY-owned data: rows, runtime door, or a bare
+// boarding). Fields live ONLY on the pack; a flavor never re-declares
+// them (inheritance — py subclassing). Scope comes from the
+// DECLARATION SITE: the flavor's families, cross-gated boot-loud
+// against the model's own DECL.mods (the paper's satisfaction law).
+
+/** A pack contract — the CATEGORY (the py Mod parent: LorasMod,
+ *  ControlNetMod, LanPaintMod, MaskMod, the qvoice pack). Fields
+ *  are the pack's knob block, inherited by every boarding family. */
+export interface PackContract {
+  readonly pack: string
+  readonly fields: ModFields
+}
+
+/** A flavor registration — ONE family's boarding of a pack (the py
+ *  Model.mods tuple entry): bare (fields-only boarding), row-bearing
+ *  (the family's catalog rows), or the runtime-catalog door. The
+ *  file lives in the family's own mods/ dir — the scope below IS
+ *  the owning declaration, gated ≡ the model's DECL.mods at boot. */
+export interface FlavorRegistration {
   readonly pack: string
   readonly families: readonly string[]
-  readonly fields: ModFields
   readonly rows?: readonly LoraRowDecl[]
   /** The RUNTIME CATALOG door (estate qwen loras.py): no own rows —
    *  the union of every family's declared rows serves; family rows
@@ -245,7 +265,8 @@ function wireType(node: Record<string, unknown>): string {
 
 export class ComfyUIService extends Service {
   private readonly cards = new Map<string, CardDefinition>()
-  private readonly modRegistrations: ModRegistration[] = []
+  private readonly packs = new Map<string, PackContract>()
+  private readonly flavors: FlavorRegistration[] = []
   private readonly verbs = new Map<string, VerbRegistration>()
   private facts: FactsFile | null = null
   /** Live object_info node names — set before compose to arm the gate. */
@@ -276,31 +297,64 @@ export class ComfyUIService extends Service {
   //  interlock — fields absorb onto the OWNING CARD's surface
   //  scoped to the declaring families; verbs mount by id) ──
 
-  /** Register one mod flavor. LOUD: field gates at registration
-   *  (the py metaclass's import-time validation); a second flavor
-   *  of the same pack must agree in shape (same field names — the
-   *  py same-pack merge law; divergence is drift, refuses). */
-  registerMod(mod: ModRegistration): (() => void) {
-    if (mod.families.length === 0) {
-      throw new ComposeRefusal('bad-mod', `mod pack '${mod.pack}' declares no families — a mod rides a model`)
-    }
-    validateFields(`mod ${mod.pack} (${mod.families.join(',')})`, mod.fields)
-    for (const prior of this.modRegistrations) {
-      if (prior.pack !== mod.pack) continue
-      const overlap = prior.families.filter((fam) => mod.families.includes(fam))
-      if (overlap.length === 0) continue
+  /** Register one PACK CONTRACT — the category (the py Mod parent).
+   *  LOUD: field gates at registration (the py metaclass's
+   *  import-time validation); ONE SHAPE per pack name (a second
+   *  contract for the same pack with different fields is drift —
+   *  py: one declaration per name means one shape per name). */
+  registerPack(contract: PackContract): (() => void) {
+    validateFields(`pack ${contract.pack}`, contract.fields)
+    const prior = this.packs.get(contract.pack)
+    if (prior !== undefined) {
       const priorNames = Object.keys(prior.fields.dict ?? {}).sort().join(',')
-      const nowNames = Object.keys(mod.fields.dict ?? {}).sort().join(',')
+      const nowNames = Object.keys(contract.fields.dict ?? {}).sort().join(',')
       if (priorNames !== nowNames) {
         throw new ComposeRefusal('bad-mod',
-          `mod pack '${mod.pack}' has two shapes for [${overlap.join(',')}]: [${priorNames}] vs [${nowNames}] — same-pack flavors must agree`)
+          `pack '${contract.pack}' has two shapes: [${priorNames}] vs [${nowNames}] — one pack name means one shape`)
       }
     }
-    this.modRegistrations.push(mod)
-    return () => {
-      const i = this.modRegistrations.indexOf(mod)
-      if (i >= 0) this.modRegistrations.splice(i, 1)
+    this.packs.set(contract.pack, contract)
+    return () => { this.packs.delete(contract.pack) }
+  }
+
+  /** Register one FLAVOR — a family's boarding of a pack (the py
+   *  Model.mods tuple entry; the family's own mods/<pack>.ts file).
+   *  Fields are INHERITED from the pack contract — a flavor never
+   *  carries fields. LOUD: the pack must exist (a flavor for an
+   *  unknown pack is drift); every family id non-empty. The
+   *  flavor↔DECL.mods interlock runs boot-loud on the models side
+   *  (validateBootContracts). */
+  registerFlavor(flavor: FlavorRegistration): (() => void) {
+    if (!this.packs.has(flavor.pack)) {
+      throw new ComposeRefusal('bad-mod',
+        `flavor for pack '${flavor.pack}' — no such pack registered (the category contract lands first; a flavor for an unknown pack is drift)`)
     }
+    if (flavor.families.length === 0) {
+      throw new ComposeRefusal('bad-mod', `flavor of '${flavor.pack}' declares no families — a flavor rides a model`)
+    }
+    this.flavors.push(flavor)
+    return () => {
+      const i = this.flavors.indexOf(flavor)
+      if (i >= 0) this.flavors.splice(i, 1)
+    }
+  }
+
+  /** The registered pack names (the category taxonomy — the boot
+   *  gate reads this to refuse dead DECL.mods refs). */
+  packNames(): string[] {
+    return [...this.packs.keys()].sort()
+  }
+
+  /** The flavor registrations (the boot gate's side of the
+   *  flavor↔boarding interlock). */
+  flavorRegistrations(): readonly FlavorRegistration[] {
+    return this.flavors
+  }
+
+  /** The registered verb ids (SubActionMods — the anny plane; the
+   *  boot gate reads this to satisfy DECL.mods verb entries). */
+  verbIds(): string[] {
+    return [...this.verbs.keys()].sort()
   }
 
   /** Register one verb. LOUD: the plane law (exactly one engine
@@ -318,27 +372,26 @@ export class ComfyUIService extends Service {
     return () => { this.verbs.delete(verb.id) }
   }
 
-  /** THE ABSORPTION (dsl.py _absorb_models, read-side): mod fields
-   *  whose declaring families intersect the card's boarded set
-   *  join the card surface, scoped to the intersection (a family
-   *  filter the emission applies per served model). */
+  /** THE ABSORPTION (dsl.py _absorb_models, read-side): for every
+   *  PACK, the fields (the category contract — inherited by every
+   *  boarding) join the card surface scoped to the families whose
+   *  FLAVORS intersect the card's boarded set — THE MODEL-LEVEL
+   *  MUTATION: one join per family, inherited by every variant and
+   *  quant of that family (the cascade rides below this surface). */
   cardModFields(cardId: string): AbsorbedMod[] {
     const def = this.cards.get(cardId)
     if (def === undefined) return []
     const out: AbsorbedMod[] = []
-    for (const mod of this.modRegistrations) {
-      const scope = mod.families.filter((fam) => def.boarded.includes(fam))
-      if (scope.length === 0) continue
-      const existing = out.find((a) => a.pack === mod.pack)
-      if (existing !== undefined) {
-        // same-pack flavor on another family: the union scope (the
-        // py merged same-shape packs by widening the family set —
-        // Schema.intersect semantics, shapes already validated equal)
-        const widened = [...new Set([...existing.families, ...scope])]
-        out[out.indexOf(existing)] = { pack: existing.pack, fields: existing.fields, families: widened }
-        continue
+    for (const [pack, contract] of [...this.packs.entries()].sort(([a], [b]) => (a < b ? -1 : 1))) {
+      const scope = new Set<string>()
+      for (const flavor of this.flavors) {
+        if (flavor.pack !== pack) continue
+        for (const fam of flavor.families) {
+          if (def.boarded.includes(fam)) scope.add(fam)
+        }
       }
-      out.push({ pack: mod.pack, fields: mod.fields, families: scope })
+      if (scope.size === 0) continue
+      out.push({ pack, fields: contract.fields, families: [...scope].sort() })
     }
     return out
   }
@@ -348,13 +401,13 @@ export class ComfyUIService extends Service {
    *  rows serves the UNION of every flavor's declared rows of the
    *  same pack; family rows always win over the union. */
   modRows(pack: string, family: string): readonly LoraRowDecl[] {
-    const own = this.modRegistrations.find(
+    const own = this.flavors.find(
       (m) => m.pack === pack && m.families.includes(family),
     )
     if (own === undefined) return []
     if ((own.rows ?? []).length > 0 || own.runtimeCatalog !== true) return own.rows ?? []
     const union = new Map<string, LoraRowDecl>()
-    for (const m of this.modRegistrations) {
+    for (const m of this.flavors) {
       if (m.pack !== pack) continue
       for (const row of m.rows ?? []) union.set(row.id, row)
     }

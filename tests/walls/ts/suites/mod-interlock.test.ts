@@ -4,7 +4,8 @@
 //
 // Pins (the py melite_cards interlock, dsl.py @ 034e1f97):
 //   - REGISTRATION: mods and verbs register through the
-//     ComfyUIService (registerMod/registerVerb) as cordis plugins
+//     ComfyUIService (registerPack/registerFlavor/registerVerb —
+//     the pack/flavor split, the correction stroke 2026-09-08)
 //     under src/mods/ — the py Model.mods declarations as code,
 //     PORT LAW shape (never frozen JSON + walkers);
 //   - ABSORPTION PARITY: the absorbed surface matches the frozen
@@ -148,20 +149,79 @@ test("the loud laws: registration gates refuse", () => {
     id: "two-arms", label: "x", families: ["anny"],
     engines: [{ id: "e", flow: "f", local: "l" }], writes: [], requires: [], fields: z.object({}) as never,
   }), /exactly one/);
-  assert.throws(() => svc.registerMod({
-    pack: "loras", families: ["krea-2"],
+  // PACK gates: one shape per pack name (the category contract)
+  assert.throws(() => svc.registerPack({
+    pack: "loras",
     fields: z.object({ wrong_shape: z.string() }) as never,
   }), /two shapes/);
-  assert.throws(() => svc.registerMod({
-    pack: "broken", families: ["krea-2"],
+  assert.throws(() => svc.registerPack({
+    pack: "broken",
     fields: z.object({ bad: z.number().min(10).max(1) }) as never,
   }), /min 10 > max 1/);
-  assert.throws(() => svc.registerMod({
-    pack: "broken", families: ["krea-2"],
+  assert.throws(() => svc.registerPack({
+    pack: "broken",
     fields: z.object({ bad: z.number().step(0) }) as never,
   }), /step 0 <= 0/);
-  assert.throws(() => svc.registerMod({
-    pack: "broken", families: ["krea-2"],
+  assert.throws(() => svc.registerPack({
+    pack: "broken",
     fields: z.object({ bad: z.number().min(0).max(1).default(5) }) as never,
   }), /outside/);
+  // FLAVOR gates: the category lands first (unknown pack = drift);
+  // a flavor rides a model (no empty families)
+  assert.throws(() => svc.registerFlavor({
+    pack: "no-such-pack", families: ["krea-2"],
+  }), /no such pack/);
+  assert.throws(() => svc.registerFlavor({
+    pack: "loras", families: [],
+  }), /no families/);
+});
+
+test("the correction stroke: flavors are family-owned and the boarding is bidirectional", async () => {
+  // the flavor set ≡ the DECL.mods boardings, both planes read
+  // (the boot interlock enforces this loudly; this pin reads the
+  // settled state so a silent regression shows as drift)
+  const { modelIds, getModel } = await import(
+    "../../../../packages/engines/comfyui/src/models/models.ts"
+  );
+  const packs = new Set(svc.packNames());
+  const verbs = new Set(svc.verbIds());
+  // every DECL.mods entry is a live pack or verb id
+  for (const id of modelIds()) {
+    for (const entry of getModel(id).mods ?? []) {
+      assert.ok(packs.has(entry) || verbs.has(entry),
+        `${id} boards '${entry}' — dead boarding (the amnesty is over)`);
+    }
+  }
+  // every flavor's family boards its pack (undeclared mutation)
+  for (const flavor of svc.flavorRegistrations()) {
+    for (const fam of flavor.families) {
+      assert.ok((getModel(fam).mods ?? []).includes(flavor.pack),
+        `${fam} carries a '${flavor.pack}' flavor its DECL does not board`);
+    }
+  }
+  // the pack taxonomy is the distinct category (controlnet rides
+  // registered-but-unboarded — the py truth, it waits for a
+  // truthful boarder)
+  assert.deepEqual(svc.packNames(), ["controlnet", "lanpaint", "loras", "mask", "qvoice"]);
+  const boarded = new Set(svc.flavorRegistrations().flatMap((f) => [f.pack]));
+  assert.ok(!boarded.has("controlnet"), "controlnet serves nothing until a family truthfully boards it");
+  // krea-2's rows are FAMILY-OWNED (the flavor file, not the DECL)
+  const krea = getModel("krea-2") as unknown as Record<string, unknown>;
+  assert.ok(!("loras" in krea), "the DECL carries no loras data — rows live in the family's mods/ file");
+  assert.equal(svc.modRows("loras", "krea-2").length, 12);
+});
+
+test("the correction stroke: a flavor disposal retracts the mutation", async () => {
+  const before = svc.cardModFields("image-gen");
+  assert.ok(before.some((a) => a.pack === "loras"));
+  // the registration returns the inverse disposer (revertible
+  // effects, paper §3.1): calling it retracts the flavor — the
+  // fiber-coupled form is the same law (an effect on the family's
+  // fiber dies with it)
+  const retract = svc.registerFlavor({ pack: "mask", families: ["krea-2"] });
+  assert.ok(svc.flavorRegistrations().some((f) => f.pack === "mask" && f.families.includes("krea-2")));
+  retract();
+  const after = svc.flavorRegistrations().filter((f) => f.pack === "mask" && f.families.includes("krea-2"));
+  assert.equal(after.length, 0, "fiber dispose retracts its flavor");
+  assert.ok(svc.cardModFields("image-gen").some((a) => a.pack === "loras"));
 });

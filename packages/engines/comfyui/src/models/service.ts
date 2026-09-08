@@ -325,10 +325,13 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
   const decls = svc.allDecls();
   let domains: import("./validate.ts").CardDomains | null = null;
   let factsModels: Record<string, { card?: string }> | null = null;
+  let cardSvc: ReturnType<
+    typeof import("../../../comfyui-cordis/src/cardDefs.ts").theService
+  > | null = null;
   try {
     const cards = await import("../../../comfyui-cordis/src/cardDefs.ts");
     await cards.loadCardDefs();
-    const cardSvc = cards.theService();
+    cardSvc = cards.theService();
     const { fieldDomains } = await import("./validate.ts");
     // built as mutable Maps, read as the CardDomains readonly view
     const table = new Map<string, ReturnType<typeof fieldDomains>>();
@@ -350,6 +353,38 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
   if (domains !== null) {
     const { validateRegistryAgainstCards } = await import("./validate.ts");
     validateRegistryAgainstCards(decls, domains, ["mode", "variant"]);
+  }
+  // ── THE MOD INTERLOCK (the correction stroke 2026-09-08): the
+  // flavor↔DECL.mods satisfaction gate — the paper's §3.2.2 law, a
+  // component ACTIVATES ONLY AT A SATISFYING STATE. Both directions
+  // refuse boot-loud:
+  //   (a) DECL.mods entry naming neither a registered pack nor a
+  //       registered verb = a DEAD BOARDING (drift, the amnesty is
+  //       over);
+  //   (b) a flavor/verb registration whose family does not board
+  //       that pack = an UNDECLARED MUTATION (the flavor claims a
+  //       model that never declared it).
+  if (cardSvc !== null) {
+    const packs = new Set(cardSvc.packNames());
+    const verbs = new Set(cardSvc.verbIds());
+    for (const flavor of cardSvc.flavorRegistrations()) {
+      for (const fam of flavor.families) {
+        const d = svc.getModel(fam);
+        if (!(d.mods ?? []).includes(flavor.pack)) {
+          throw new ModelError(
+            `model ${fam}: a '${flavor.pack}' flavor is registered for it but DECL.mods does not board the pack — an undeclared mutation (the model declares its mods, nothing else)`,
+          );
+        }
+      }
+    }
+    for (const d of decls) {
+      for (const entry of d.mods ?? []) {
+        if (packs.has(entry) || verbs.has(entry)) continue;
+        throw new ModelError(
+          `model ${d.id}: DECL.mods '${entry}' names no registered pack or verb — a dead boarding is drift, not a skip (the amnesty is over)`,
+        );
+      }
+    }
   }
   if (factsModels !== null) {
     for (const d of decls) {

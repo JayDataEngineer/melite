@@ -184,7 +184,6 @@ export interface ModelDecl {
   mods: string[];
   variants: VariantRow[];
   variant_groups: VariantGroupRow[];
-  loras: LoraRow[];
   provisions: ProvisionRow[];
   prompt_guide?: Record<string, unknown> | null;
   base_body: string;
