@@ -21,6 +21,7 @@ minimumReleaseAge: 0
 ## hosts shared infrastructure in its subtree.
 packages:
   - 'plugins/*'                           # single-package plugins
+  - 'vendor/cordis_plugins/*'             # VENDORED platform tier (2026-09-08: harness-vendor discipline — loader/timer/logger-console as workspace members, consumed via workspace:*; pnpm materializes the links, no registry copy can exist)
   - 'plugins/engines/*/cordis'            # ROW 6 (2026-09-07): the engine's Cordis compose plane (@comfyui/cordis — Law 0 amendment; TS cards, graph builder, compose door)
   - 'plugins/harness/dsh/*'               # the DSH harness family (agent tools, presets, provisioner)
   - 'plugins/web/dsh/*'                   # the DSH web family (chat/sidebar panels — embeds the editor)

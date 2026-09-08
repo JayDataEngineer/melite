@@ -1,0 +1,24 @@
+{
+  "_comment": "Vendored boundary config (mirrors harness vendor/timer/tsconfig.json relaxations; layout adapted — no harness tsconfig.base.json here). FULL EMIT into gitignored lib/ (lib/*.js + lib/types/*.d.ts, the harness lib/ layout): the gateway program consumes the declarations via tsconfig paths and never typechecks these sources; the runtime loads the emitted JS. Rebuild: plugins/gateway/scripts/link-vendored-platform.sh",
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false,
+    "noImplicitOverride": false,
+    "noFallthroughCasesInSwitch": true,
+    "types": ["node"],
+    "rootDir": "src",
+    "outDir": "lib",
+    "declaration": true,
+    "declarationMap": true,
+    "declarationDir": "lib/types"
+  },
+  "include": ["src"]
+}
