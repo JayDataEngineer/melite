@@ -2,7 +2,7 @@
 // Decl (contract-derived: id/skeleton/boarded/schema) + admission +
 // one kit recipe call — the lane body lives in src/kit.ts.
 import type { Context } from '@deepseek-ai/cordis'
-import { z } from '../atoms.ts'
+import z from '@deepseek-ai/schemastery'
 import { imageT2I, finalizeImageGen } from '../kit.ts'
 
 const schema = z.object({

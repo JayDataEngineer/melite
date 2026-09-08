@@ -30,7 +30,7 @@
 // strips nothing; the i2v dead-branch node marks the t4r family in
 // the serialized graph).
 import type { Context } from '@deepseek-ai/cordis'
-import { z } from '../atoms.ts'
+import z from '@deepseek-ai/schemastery'
 import { GraphBuilder, OutputHandle } from '../graph.ts'
 import { finalizeH3 } from '../kit.ts'
 

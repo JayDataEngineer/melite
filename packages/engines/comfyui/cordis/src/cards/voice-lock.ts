@@ -1,7 +1,7 @@
 // Tier 3 — the voice-lock card (the voicelock_t1 renderer port).
 // Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
 import type { Context } from '@deepseek-ai/cordis'
-import { z } from '../atoms.ts'
+import z from '@deepseek-ai/schemastery'
 import { voicelockT1 } from '../kit.ts'
 
 const schema = z.object({

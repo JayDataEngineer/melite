@@ -7,7 +7,7 @@
 // The SIDECAR is derived, never wire: kind/map_size/seed are the
 // card knobs (the Model's card_knobs rows).
 import type { Context } from '@deepseek-ai/cordis'
-import { z } from '../atoms.ts'
+import z from '@deepseek-ai/schemastery'
 import { skinLane, finalizeSkin } from '../kit.ts'
 
 const schema = z.object({

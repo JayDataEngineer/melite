@@ -18,7 +18,7 @@
 // are byte-stable with comfy-script's api_format — verified by the
 // golden ritual, pinned by the wall.
 import type { Context } from '@deepseek-ai/cordis'
-import { z } from '../atoms.ts'
+import z from '@deepseek-ai/schemastery'
 import { wanVace, scail2, VIDEO_NEGATIVE_FALLBACK, VIDEO_REQUIRED_PATHS } from '../kit.ts'
 
 const schema = z.object({

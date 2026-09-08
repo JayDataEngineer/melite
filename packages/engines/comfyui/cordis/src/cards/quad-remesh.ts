@@ -26,7 +26,7 @@
 // what can never run (empty input) and what can never apply
 // (smooth_normal != 0.0).
 import type { Context } from '@deepseek-ai/cordis'
-import { z } from '../atoms.ts'
+import z from '@deepseek-ai/schemastery'
 import { quadRemeshLane } from '../kit.ts'
 
 const schema = z.object({

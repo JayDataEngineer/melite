@@ -4,7 +4,7 @@
 // an absent ref). Stock-only: the MiniMax nodes ride upstream core;
 // no extension to declare (python card.py carries no requires).
 import type { Context } from '@deepseek-ai/cordis'
-import { z } from '../atoms.ts'
+import z from '@deepseek-ai/schemastery'
 import { musicT1 } from '../kit.ts'
 
 const schema = z.object({

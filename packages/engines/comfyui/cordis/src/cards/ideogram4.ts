@@ -3,7 +3,7 @@
 // (conditional + CFGOverride-trimmed unconditional) sampling.
 // Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
 import type { Context } from '@deepseek-ai/cordis'
-import { z } from '../atoms.ts'
+import z from '@deepseek-ai/schemastery'
 import { ideogramLane, finalizeIdeogram } from '../kit.ts'
 
 const schema = z.object({

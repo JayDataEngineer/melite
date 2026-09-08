@@ -4,7 +4,7 @@
 // src/kit.ts (TAGGER_ARMS); the lane is weightless, every wire value
 // comes from params.
 import type { Context } from '@deepseek-ai/cordis'
-import { z } from '../atoms.ts'
+import z from '@deepseek-ai/schemastery'
 import { taggerLane, finalizeTagger, TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS } from '../kit.ts'
 
 declare module '../service.ts' {

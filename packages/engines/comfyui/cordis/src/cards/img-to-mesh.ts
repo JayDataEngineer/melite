@@ -35,7 +35,7 @@
 // requires_by_family[model]); gating on the union alone over-claims
 // (a trellis run must never demand the autorig pack).
 import type { Context } from '@deepseek-ai/cordis'
-import { z } from '../atoms.ts'
+import z from '@deepseek-ai/schemastery'
 import { trellisArm, pixalArm, transferRigArm, admitMeshLift } from '../kit.ts'
 import type { ModelFacts } from '../facts.ts'
 

@@ -29,7 +29,7 @@
 // plain-editing (the retired python MOD FIRING LAW, ported 1:1 —
 // admission is the surface, firing is compose's call).
 import type { Context } from '@deepseek-ai/cordis'
-import { z } from '../atoms.ts'
+import z from '@deepseek-ai/schemastery'
 import { imageEdit, refuseImageEditFiring, finalizeImageEdit } from '../kit.ts'
 
 const schema = z.object({

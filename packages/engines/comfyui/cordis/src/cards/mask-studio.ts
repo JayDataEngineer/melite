@@ -15,7 +15,7 @@
 // lazy: creation rides first use, and a loader with no consumer never
 // lands. Per-class instance order still mirrors the python source.
 import type { Context } from '@deepseek-ai/cordis'
-import { z } from '../atoms.ts'
+import z from '@deepseek-ai/schemastery'
 import { maskT1 } from '../kit.ts'
 
 const schema = z.object({

@@ -3,7 +3,7 @@
 // stopgap).
 // Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
 import type { Context } from '@deepseek-ai/cordis'
-import { z } from '../atoms.ts'
+import z from '@deepseek-ai/schemastery'
 import { motionLane, finalizeMotion } from '../kit.ts'
 
 const schema = z.object({

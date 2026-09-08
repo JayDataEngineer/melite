@@ -3,7 +3,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { existsSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { z } from '../atoms.ts'
+import z from '@deepseek-ai/schemastery'
 import { upscaleLane } from '../kit.ts'
 
 const schema = z.object({
