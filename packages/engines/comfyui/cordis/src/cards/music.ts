@@ -8,13 +8,19 @@ import z from '@deepseek-ai/schemastery'
 import { musicT1 } from '../kit.ts'
 
 const schema = z.object({
-  prompt: z.string(),
-  lyrics: z.string(),
-  duration: z.number().default(30.0),
-  guidance_scale: z.number().default(1.7),
-  n_diffusion_steps: z.number().default(30),
-  lm_cfg_scale: z.number().default(1.7),
-  seed: z.number().min(-1).default(-1),
+  prompt: z.string().description(
+    "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, playful female vocal, groovy bassline'"),
+  lyrics: z.string().description(
+    'Lyrics with structure tags: [verse], [chorus], [bridge]. Empty = instrumental.'),
+  duration: z.number().min(5).max(360).default(30.0).description(
+    'Target audio length in seconds (5-360).'),
+  guidance_scale: z.number().min(0.1).max(10).default(1.7).description(
+    'Classifier-free guidance (KSampler cfg). 1.7 = lane default.'),
+  n_diffusion_steps: z.number().min(1).max(200).default(30).description(
+    'Flow-matching denoising steps. 30 = lane default. Never 0.'),
+  lm_cfg_scale: z.number().min(0).max(10).default(1.7).description(
+    'Lyric-encoder guidance (MiniMaxMusic3TextEncode cfg_scale). 1.7 = lane default.'),
+  seed: z.number().min(-1).step(1).default(-1).description('Seed'),
 })
 
 export const inject = ['comfyui']

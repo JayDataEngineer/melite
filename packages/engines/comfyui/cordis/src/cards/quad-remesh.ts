@@ -35,13 +35,26 @@ const schema = z.object({
   // z.string() is the image-gen prompt precedent — optional at
   // parse, refused loud at compose). The six numeric defaults are
   // the py card Slider defaults verbatim (drift wall leg (d)).
-  input: z.string(),
-  target_quads: z.number().default(50000),
-  edge_scaling: z.number().default(1.0),
-  sharp_edge: z.number().default(90.0),
-  smooth_normal: z.number().default(0.0),
-  adaptivity: z.number().default(1.0),
-  anisotropy: z.number().default(1.0),
+  // RANGE RULE (2026-09-08 Phase-2): the header above says the
+  // retired pydantic floors were deliberately NOT ported (the node's
+  // own loud laws own enforcement) — so the served editor floors
+  // ride HINT-ONLY extra ranges, never validating min/max; the
+  // schema-owned defaults keep no floors either (smooth_normal
+  // already refuses non-zero by name at compose).
+  input: z.string().description(
+    'OBJ/STL/PLY path or artifact-ref from a previous card'),
+  target_quads: z.number().default(50000).description('Target quad count')
+    .extra('extra', { min: 100, max: 1000000 }),
+  edge_scaling: z.number().default(1.0).description('Edge scaling')
+    .extra('extra', { min: 0.1, max: 10.0 }),
+  sharp_edge: z.number().default(90.0).description('Sharp edge')
+    .extra('extra', { min: 0.0, max: 180.0 }),
+  smooth_normal: z.number().default(0.0).description('Smooth normal')
+    .extra('extra', { min: 0.0, max: 1.0 }),
+  adaptivity: z.number().default(1.0).description('Adaptivity')
+    .extra('extra', { min: 0.1, max: 2.0 }),
+  anisotropy: z.number().default(1.0).description('Anisotropy')
+    .extra('extra', { min: 0.1, max: 2.0 }),
   // NO preset (the card has no preset field — the node budget class
   // is ALWAYS "" here; explicit knobs rule) and NO filename_prefix
   // (compose stamps `<runId>/remeshed` internally, never a knob).

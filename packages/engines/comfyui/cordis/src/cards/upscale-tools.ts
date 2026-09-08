@@ -13,15 +13,21 @@ const schema = z.object({
   // compose-door cascade overlays model defaults, then explicit
   // params): resolution/max_resolution/batch_size ride the seedvr2_ema
   // model row (1080/4096/1); seed rides py -1 (model row carries 0,
-  // explicit wins — the golden pins explicit 42). Ranges/labels ride
-  // schema meta (2026-09-08 Phase-2 sweep); defaults stay cascade-owned.
+  // explicit wins — the golden pins explicit 42). RANGE RULE
+  // (2026-09-08 Phase-2): whoever owns the default owns the floor —
+  // ride-keys carry HINT-ONLY ranges via extra (the served editor
+  // floors) so the cascade stays authoritative; only schema-defaulted
+  // knobs (seed) get validating min/max.
   seed: z.number().min(-1).step(1).default(-1).description('Seed'),
-  resolution: z.number().min(256).max(2160).description(
-    '1080 = FHD rail. SeedVR2 redraws detail at this size.'),
-  max_resolution: z.number().min(512).max(4096).description(
-    'The hard ceiling — inputs already past it pass through.'),
-  batch_size: z.number().min(1).max(16).description(
-    'Video frames ride batches; images are batch 1.'),
+  resolution: z.number().description(
+    '1080 = FHD rail. SeedVR2 redraws detail at this size.').extra(
+      'extra', { min: 256, max: 2160 }),
+  max_resolution: z.number().description(
+    'The hard ceiling — inputs already past it pass through.').extra(
+      'extra', { min: 512, max: 4096 }),
+  batch_size: z.number().description(
+    'Video frames ride batches; images are batch 1.').extra(
+      'extra', { min: 1, max: 16 }),
   // NO dit_model/vae_model (py card declares no such knobs — the
   // weights ride lane_inputs.unet/vae; old drafts naming them still
   // parse via the door's non-strict overlay but compose never reads

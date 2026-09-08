@@ -12,7 +12,8 @@ const schema = z.object({
   // py card.py declares ONLY source — media_type/crop/scale ride the
   // door's explicit-params overlay (non-strict object) so old drafts
   // keep parsing, but they are never declared knobs.
-  source: z.string(),
+  source: z.string().role('path').description(
+    'The file to stage — upload, asset drop, prior-run artifact, or mount path. The arm stages it into the ComfyUI input dir before rendering.'),
 })
 
 export const inject = ['comfyui']
