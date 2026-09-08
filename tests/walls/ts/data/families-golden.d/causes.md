@@ -61,3 +61,17 @@ unsets the inherited persona default at the derived merge).
 txt2music DELETED — the retired-GGUF dupe of the native comfyui
 music3 (same weights, no callers). Registry 51→50→49, routes 93→92,
 served 68 throughout.
+
+## 2026-09-08 — mask-studio phantom DELETED (operator order)
+
+"Why is this a [REDACTED 2026-11-05] model, this is an action card" — right:
+the mask-studio model row was a pin table in a weights costume
+(fake F32 quant, null filename, studio block). The card is now a
+pure action card (boarded: [], requiresModel: false — the
+clothing-placement precedent) owning its TWO pins (sam3.1
+checkpoint + rt_detr unet) as card-level consts; maskT1 takes pins,
+not the model row. Registry 49→48, routes 92→91, served 68→67.
+The flows wall learns ACTION-CARD lanes from the live card plane
+(facts row still truly describes the lane). Trade, stated loud:
+the rt_detr provision row dies with the phantom — no catalog
+install rail for it; the weights must be on disk.

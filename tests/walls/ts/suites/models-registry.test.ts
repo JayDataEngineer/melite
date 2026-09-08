@@ -22,24 +22,24 @@ import {
 } from "../../../../packages/engines/comfyui/src/models/models.ts";
 
 describe("the resurrected model registry (families/variants/cells/links)", () => {
-  it("carries the hierarchy: 49 registry models, 92 serving routes (the fold)", (): void => {
-    assert.equal(registryIds().length, 49);
-    assert.equal(modelIds().length, 92);
+  it("carries the hierarchy: 48 registry models, 91 serving routes (the fold)", (): void => {
+    assert.equal(registryIds().length, 48);
+    assert.equal(modelIds().length, 91);
     const comfy = modelIds().filter((id) => {
       const e = getModel(id).engine ?? "";
       return e === "" || e === "comfyui";
     });
-    assert.equal(comfy.length, 80);
+    assert.equal(comfy.length, 79);
     const rcomfy = registryIds().filter((id) => {
       const e = registryModel(id).engine ?? "";
       return e === "" || e === "comfyui";
     });
-    assert.equal(rcomfy.length, 45);
+    assert.equal(rcomfy.length, 44);
   });
 
   it("serves 68 offered routes; the unoffered are excluded loud-side", (): void => {
     const cat = modelCatalog();
-    assert.equal(Object.keys(cat).length, 68);
+    assert.equal(Object.keys(cat).length, 67);
     for (const id of ["basic_resize", "ltx-2-3", "ltx-director-distilled", "pixel_upscale"]) {
       assert.equal(cat[id], undefined, `${id} must not serve (unoffered)`);
     }
@@ -96,7 +96,7 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     assert.throws(() => mergedDefaults("krea-2", "no-such-variant"), ModelError);
   });
 
-  it("variant matrices ride (the hierarchy: 57 serving variants, 67 quant cells)", (): void => {
+  it("variant matrices ride (the hierarchy: 46 serving variants, 54 quant cells, composed comfyui)", (): void => {
     // registry plane: serving variants (cells > 0) and quant cells;
     // recipe rows are routing recipes, not serving variants
     // the engine rides the variant (the moss meld) — a variant
@@ -113,7 +113,7 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
         cells += v.cells.length;
       }
     }
-    assert.equal(variants, 47);
-    assert.equal(cells, 55);
+    assert.equal(variants, 46);
+    assert.equal(cells, 54);
   });
 });

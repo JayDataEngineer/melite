@@ -22,7 +22,22 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getModel, modelIds, registryIds, resolve } from "../../../../packages/engines/comfyui/src/models/models.ts";
+import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 import { registryFlowNames } from "../../../../packages/gateway/doors/src/doors/flowsRegistry.ts";
+
+/** Facts keys no model serves are ACTION-CARD lanes (pure-tool
+ *  cards boarding nothing — mask-studio: the card owns its pins,
+ *  the facts row still truly describes the lane it composes).
+ *  Derived from the live card plane — never a hardcoded skip. */
+async function actionCardLanes(): Promise<Set<string>> {
+  await loadCardDefs();
+  const svc = theService();
+  const out = new Set<string>();
+  for (const id of svc.cardIds()) {
+    if ((svc.getCardDef(id)?.boarded ?? []).length === 0) out.add(id);
+  }
+  return out;
+}
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -45,17 +60,21 @@ const facts = JSON.parse(readFileSync(FACTS_PATH, "utf8")) as {
 };
 
 describe("the models plane feeds the compose/flows plane (A2)", () => {
-  it("every compose-plane family exists in the registry", (): void => {
+  it("every compose-plane family exists in the registry", async (): Promise<void> => {
     const factIds = Object.keys(facts.models).sort();
     assert.ok(factIds.length >= 30, `expected ≥30 fact families, got ${factIds.length}`);
+    const actions = await actionCardLanes();
     for (const id of factIds) {
+      if (actions.has(id)) continue;
       assert.ok(modelIds().includes(id), `model-facts family '${id}' missing from the registry`);
     }
   });
 
-  it("variant matrices AGREE between registry and model-facts (two spellings refuse)", (): void => {
+  it("variant matrices AGREE between registry and model-facts (two spellings refuse)", async (): Promise<void> => {
     let checked = 0;
+    const actions = await actionCardLanes();
     for (const [id, fam] of Object.entries(facts.models)) {
+      if (actions.has(id)) continue;
       // the hierarchy fold: a facts key that is a ROUTE (not a
       // registry model) is pinned by the route-survival law
       // (families-golden holds every route byte-equal); its matrix
@@ -89,8 +108,10 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
     assert.ok(checked >= 38, `expected ≥38 checked cells, got ${checked}`);
   });
 
-  it("resolve() rides for every compose family (the R1 contract)", (): void => {
+  it("resolve() rides for every compose family (the R1 contract)", async (): Promise<void> => {
+    const actions = await actionCardLanes();
     for (const id of Object.keys(facts.models)) {
+      if (actions.has(id)) continue;
       const r = resolve(id);
       assert.ok(typeof r.route === "string", `${id}: resolve gave no route`);
     }

@@ -717,8 +717,8 @@ type BboxDict = { x: number; y: number; width: number; height: number }
 /** The mask_t1 block — the selection lane (detect → refine → save),
  *  moved verbatim from the mask-studio card; the input_image
  *  admission stays on the card. */
-export function maskT1(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
-  const li = model.lane_inputs          // the model as DATA (typed rows)
+export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; unet: string }, g: GraphBuilder, runId: string): void {
+  const li = pins          // the ACTION CARD owns its pins (no model row — mask-studio is a tool, not weights)
   const prefix = `${runId}/mask`        // the arm's "%s/mask" % run_id
   const samThreshold = p.sam_threshold as number
   // undeclared legacy renderer keys ride the door's explicit-params

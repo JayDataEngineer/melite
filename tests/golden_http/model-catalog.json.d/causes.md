@@ -32,3 +32,7 @@ set unchanged at 68. Walls 17/17.
 Same: qwen3-tts gains the VoiceDesign variant (the voice-lock
 card boards the surviving route); the txt2music dupe dies, the
 native music3 stands alone. Served 68. Walls 17/17.
+
+## 2026-09-08 — mask-studio phantom DELETED (operator order)
+
+Action card, not a model. Served 67. Walls 17/17.

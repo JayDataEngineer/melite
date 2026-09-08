@@ -28,7 +28,7 @@ describe("the family table ≡ golden (the godfile retirement wall)", () => {
     // variants × native/bf16 quants; qwen3-tts ONE model with the
     // base variant) + the derived route view (every flat id the
     // runtime addresses). The golden pins the full derived view.
-    assert.equal(registryIds().length, 49);
+    assert.equal(registryIds().length, 48);
     assert.equal(Object.keys(GOLDEN).length, modelIds().length);
   });
 
@@ -45,12 +45,12 @@ describe("the family table ≡ golden (the godfile retirement wall)", () => {
 
   it("the compose models carry lane_inputs (the facts splice table)", (): void => {
     // 30 flat carriers − the folded tts pair − the melded
-    // voicedesign lane table (an intercept stamp now, inherited
-    // from the qwen3-tts model) = 28 MODEL declarations; their
+    // voicedesign lane table − the mask-studio phantom (an action
+    // card now, its pins card-owned) = 27 MODEL declarations; their
     // routes inherit the lane table at the derived read (the route
     // view carries 54).
     const withLanes = registryIds().filter((id) => getModel(id).lane_inputs !== undefined);
-    assert.equal(withLanes.length, 28);
+    assert.equal(withLanes.length, 27);
     assert.ok(modelIds().filter((id) => getModel(id).lane_inputs !== undefined).length > withLanes.length,
       "the derived route view inherits lane_inputs (the cascade)");
   });

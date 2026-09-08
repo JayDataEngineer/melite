@@ -509,35 +509,6 @@
    "has_inference": false,
    "has_rubric": false
   },
-  "mask-studio": {
-   "id": "mask-studio",
-   "family": "mask-studio",
-   "genre": "image",
-   "label": "Mask Standard F32",
-   "description": "Selection-only mask card: RT-DETR proposes, SAM3 refines → named class masks for inpaint flows.",
-   "source": {
-    "type": "",
-    "repo_id": "facebook/sam-vit-base"
-   },
-   "defaults": {
-    "output_mode": "segm",
-    "detect_mode": "body",
-    "detection_threshold": 0.35,
-    "sam_threshold": 0.93,
-    "sam_dilation": 0,
-    "export_face": false,
-    "export_hands": false,
-    "export_body": false,
-    "export_paint": false,
-    "export_boxes": true,
-    "instance_filter": "all",
-    "max_instances": 0,
-    "outputs": "[]"
-   },
-   "engine": "comfyui",
-   "has_inference": false,
-   "has_rubric": false
-  },
   "mesh_refine": {
    "id": "mesh_refine",
    "family": "mesh_refine",
@@ -2035,35 +2006,6 @@
   "latentsync": {
    "label": "LatentSync Standard Native (weightless)",
    "genre": "other"
-  },
-  "mask-studio": {
-   "label": "Mask Standard F32",
-   "genre": "image",
-   "studio": {
-    "tenant": "image/mask_studio",
-    "owns_params": true,
-    "writes": [
-     "input_image",
-     "detect_mode",
-     "detection_threshold",
-     "sam_threshold",
-     "sam_dilation",
-     "output_mode",
-     "sam3_prompt",
-     "export_boxes",
-     "export_face",
-     "export_hands",
-     "export_body",
-     "export_paint",
-     "paint_mask",
-     "instance_filter",
-     "max_instances",
-     "outputs",
-     "roi"
-    ],
-    "size": "normal",
-    "layout": "studio"
-   }
   },
   "mesh_refine": {
    "label": "UltraShape Mesh Refine Standard Native",

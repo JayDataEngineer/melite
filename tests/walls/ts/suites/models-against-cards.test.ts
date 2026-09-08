@@ -98,7 +98,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     const cards = await cardTable();
     const checked = validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH, await allBoardings(), new Set(modelIds()), allRouteViews());
     // every caller-owned pair is checked (29 boardings across the card set)
-    assert.ok(checked.length >= 29, `expected ≥29 checked pairs, got ${checked.length}`);
+    assert.ok(checked.length >= 28, `expected ≥28 checked pairs, got ${checked.length}`);
   });
 
   it("every non-empty COMFYUI card ref names a REGISTERED card (the amnesty is over)", async (): Promise<void> => {
@@ -172,7 +172,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
         err instanceof ModelError && String(err.message).includes("qwen3-tts: default 'mode'"),
     );
     const checked = validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH, boarded, served, allRouteViews());
-    assert.ok(checked.length >= 29, `expected 29 checked pairs, got ${checked.length}`);
+    assert.ok(checked.length >= 28, `expected 28 checked pairs, got ${checked.length}`);
   });
 
   it("fieldDomains extracts schemastery min/max/options", (): void => {

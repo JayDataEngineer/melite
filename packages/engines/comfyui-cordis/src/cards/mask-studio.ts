@@ -49,6 +49,14 @@ const schema = z.object({
 
 export const inject = ['comfyui']
 
+// THE ACTION CARD OWNS ITS PINS (no model row — mask-studio is a
+// tool, not weights: RT-DETR proposes, SAM3 refines; stock nodes
+// only, the clothing-placement precedent).
+const PINS = {
+  checkpoint: 'sam3.1_multiplex_fp16.safetensors',
+  unet: 'rt_detr_v4-x-hgnet_fp32.safetensors',
+}
+
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'mask-studio',
@@ -57,17 +65,18 @@ export function apply(ctx: Context): void {
     // stock-only card (card.py declares no requires — the DSL default
     // ()): SAM3_Detect/RTDETR_detect ride comfy_extras core; no
     // extension pack to declare.
-    boarded: ['mask-studio'],
+    boarded: [],
+    requiresModel: false,
     // ADMISSION EXTRAS (the py class-attr half verbatim: the
     // retired row's admits minus the boarded families' studio
     // writes, which the projection unions from the facts file).
     admits: ['export_kind', 'exports', 'primary_class', 'primary_is_paint', 'primary_via_rtdetr', 'refine_iterations', 'scope_bbox', 'union_paint_into_combined'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
-    compose(p, model, g, runId) {
+    compose(p, _model, g, runId) {
       if (typeof p.input_image !== 'string' || !p.input_image.trim()) {
         throw new Error("required param 'input_image' missing on the mask-studio card — the mask lane selects FROM an image")
       }
-      maskT1(p, model, g, runId)
+      maskT1(p, PINS, g, runId)
     },
   }))
 }

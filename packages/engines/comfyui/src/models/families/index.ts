@@ -34,7 +34,6 @@ import { family as input } from "./image/input/index.ts";
 import { family as joycaption } from "./image/joycaption/index.ts";
 import { family as joytag } from "./image/joytag/index.ts";
 import { family as krea2 } from "./image/krea-2/index.ts";
-import { family as maskStudio } from "./image/mask-studio/index.ts";
 import { family as pixel_upscale } from "./image/pixel_upscale/index.ts";
 import { family as qwenImgEdit2511 } from "./image/qwen-img-edit-2511/index.ts";
 import { family as seedvr2_ema } from "./image/seedvr2_ema/index.ts";
@@ -85,7 +84,6 @@ export const FAMILY_PLUGINS: Plugin[] = [
   joycaption,
   joytag,
   krea2,
-  maskStudio,
   pixel_upscale,
   qwenImgEdit2511,
   seedvr2_ema,
