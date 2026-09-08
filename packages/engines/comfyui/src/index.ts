@@ -2,3 +2,5 @@
 
 export * from "./catalog.ts";
 export * from "./comfyui.ts";
+
+export * from "./models/models.ts";
