@@ -1,5 +1,7 @@
 /**
- * uiSlotSeam — THE UI slot kernel (2026-08-19, the overrides doctrine).
+ * uiSlotSeam — THE UI slot kernel face (2026-08-19, the overrides doctrine;
+ * 2026-09-08 S1b: the backing is now the vendored SlotCore — one kernel,
+ * not two).
  * Every render cell in this app is a SLOT: a card body, a card's preview
  * cell, its icon, its run affordance, the sidebar, the chat input. A slot
  * is a place a provider CLAIMS; whoever claims loudest (highest
@@ -23,8 +25,27 @@
  * Kinds stay SEPARATE (cardSeam): they are the persisted document
  * vocabulary — data, one owner per kind, no shadowing. Everything that
  * RENDERS is a slot (chrome, many claimants, precedence decides).
+ *
+ * BACKING (S1b — the row-10 correction): each UiSlot is a `chain` seat
+ * on this module's SlotCore (`ui.<name>`). A claim is a chain entry
+ * whose selector IS the claim's resolve-or-decline (election = the
+ * walk: highest precedence first, first non-null wins); precedence maps
+ * to shadowing priority NEGATED (the core sorts ascending, lowest
+ * renders — so the loudest claim carries the lowest priority); the
+ * claim id rides `registrant` (dup + tier checks read the ledger, and
+ * `registered()` projects it back as `precedence:id`). The ledger —
+ * order, election, disposal authority — is the core's; the claim
+ * PAYLOADS never enter it (the core stores components; walks return the
+ * election's `matched` value, which IS the claim's resolve return).
+ * Seat identity is the slot name (declaration-merging semantics:
+ * re-creating a name re-opens the same seat). The STORE organs
+ * (version + listeners) stay adapter-owned and SYNCHRONOUS — the core
+ * batches subscriber notifications per microtask, and the face pins
+ * sync delivery (the gate asserts listener counts immediately after
+ * register/dispose).
  */
 import { useSyncExternalStore } from "react"
+import { SlotCore, type ChildrenDecl } from "./vendored/core.ts"
 
 /** One claim on a slot: a provider at a precedence tier. */
 export interface UiSlotClaim<C, I> {
@@ -56,12 +77,52 @@ export interface UiSlot<C, I> {
   useVersion(): number
 }
 
+/** The ui lane registry: ONE SlotCore, module-scoped. Seats are
+ * `ui.<slot-name>` chain seats, declared lazily by root declarers
+ * (the a-priori root accepts distinct-priority occupants; each declarer
+ * owns one seat and is never disposed). */
+const uiCore = new SlotCore()
+
+/** A component value is required by register(); ui claims carry DATA
+ * (payloads ride the election's `matched`, not the component) — the
+ * holder is render-inert by construction. */
+function ClaimHolder(): null {
+  return null
+}
+
+let rootPriority = 1
+
+/** The chain seat for a slot name, declared on first touch. */
+function seatFor(name: string): string {
+  const seat = `ui.${name}`
+  if (!uiCore.isDeclared(seat)) {
+    uiCore.register(
+      {
+        name: "root",
+        priority: rootPriority++,
+        registrant: `uiSlotSeam:${name}`,
+        children: { [seat]: { kind: "chain" } } as ChildrenDecl,
+      },
+      ClaimHolder,
+    )
+  }
+  return seat
+}
+
+/** Shadowing priority for a claim: the core sorts ascending with the
+ * lowest rendering, so the loudest (highest-precedence) claim carries
+ * the lowest priority. */
+function priorityFor(precedence: number): number {
+  return -precedence
+}
+
 /** Create a slot. C = the claim payload a provider hands the host;
  *  I = the input the host offers on every walk. */
 export function createUiSlot<C, I>(name: string): UiSlot<C, I> {
-  const claims: UiSlotClaim<C, I>[] = []
-  const listeners = new Set<() => void>()
+  const seat = seatFor(name)
+  const seatName = seat as Parameters<SlotCore["register"]>[0]["name"]
   let version = 0
+  const listeners = new Set<() => void>()
 
   const notify = (): void => {
     version++
@@ -76,44 +137,52 @@ export function createUiSlot<C, I>(name: string): UiSlot<C, I> {
   }
 
   const register = (claim: UiSlotClaim<C, I>): (() => void) => {
-    const dup = claims.find((p) => p.id === claim.id)
+    const priority = priorityFor(claim.precedence)
+    const ledger = uiCore.entriesOfSlot(seatName)
+    const dup = ledger.find((v) => v.registrant === claim.id)
     if (dup) {
       throw new Error(
         `ui slot "${name}": provider "${claim.id}" is already registered`,
       )
     }
-    const tier = claims.find((p) => p.precedence === claim.precedence)
+    const tier = ledger.find((v) => v.priority === priority)
     if (tier) {
       throw new Error(
-        `ui slot "${name}": precedence ${claim.precedence} is taken by "${tier.id}" — ` +
+        `ui slot "${name}": precedence ${claim.precedence} is taken by "${tier.registrant}" — ` +
           `register at a different precedence to shadow it`,
       )
     }
-    claims.push(claim)
-    claims.sort((a, b) => b.precedence - a.precedence)
+    const disposeCore = uiCore.register(
+      {
+        name: seatName,
+        priority,
+        registrant: claim.id,
+        select: (owner) => claim.resolve((owner as { input: I }).input),
+      },
+      ClaimHolder,
+    )
     notify()
+    let disposed = false
     return () => {
-      const i = claims.indexOf(claim)
-      if (i !== -1) {
-        claims.splice(i, 1)
-        notify()
-      }
+      if (disposed) return
+      disposed = true
+      disposeCore()
+      notify()
     }
   }
 
   const resolve = (input: I): C | null => {
-    for (const c of claims) {
-      const claimed = c.resolve(input)
-      if (claimed) return claimed
-    }
-    return null
+    const election = uiCore.resolveChain(seatName, { input } as Record<string, unknown>)
+    if (!election) return null
+    return election.matched as C
   }
 
   return {
     name,
     register,
     resolve,
-    registered: () => claims.map((c) => `${c.precedence}:${c.id}`),
+    registered: () =>
+      uiCore.entriesOfSlot(seatName).map((v) => `${-v.priority}:${v.registrant}`),
     getVersion: () => version,
     subscribe,
     useVersion: () => useSyncExternalStore(subscribe, () => version),

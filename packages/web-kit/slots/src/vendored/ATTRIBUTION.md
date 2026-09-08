@@ -9,6 +9,22 @@
 
 ## Adaptation ledger
 
+S1b consolidation (2026-09-08 — the audit's row-10 correction):
+`createUiSlot` is no longer a parallel hand kernel. Each UiSlot is a
+`chain` seat (`ui.<name>`) on `uiSlotSeam.ts`'s module SlotCore — the
+claim's resolve-or-decline IS the chain selector (election = the walk),
+precedence maps to priority negated (core sorts ascending, lowest
+renders), the claim id rides `registrant` (dup + tier checks read the
+ledger; `registered()` projects `precedence:id`). Walks return the
+election's `matched` payload (components never enter the ledger — one
+render-inert holder stands in). Seat identity is the slot name
+(declaration-merging semantics). The STORE organs (version +
+listeners) stay adapter-owned and synchronous — the core batches
+subscriber notifications per microtask and the face pins sync
+delivery. Faces unchanged: every consumer (cardBodySeam,
+cardElementSeams, regionSeams, viewerSeams, pluginUi, shell surfaces)
+rides the same UiSlot API on the same SlotCore backing.
+
 S1 re-vendor (2026-09-08 — docs/design/client-cordis-audit-2026-09-08.md):
 the dropped pieces with a consumer are now BACK, ported onto the
 two-share cut (adapted, not a wholesale upstream swap — the estate's
