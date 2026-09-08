@@ -1,4 +1,0 @@
-# RETIRED 2026-09-08: the sidecar witness drove the py serving oracle's in-process runtime (Gateway.execute with a stub engine, asserting the compiled graph + resolved input pools ride _flow.json) — operator order 2026-09-08: "we do not need parity, we need to migrate, not keep the old machinery". The TS preview writes no sidecar for flow_inline runs (DOCUMENTED PREVIEW GAP G1, doors/flowsRun.ts header + tests/walls/suites/test_gateway_e2e_tsboot.py); the card arm's sidecar document lives on in queue.ts sidecarDoc, and seeded-sidecar restore stays walled by the e2e R phase.
-# ORACLE DEATH 2026-09-08: subject dies with the oracle, nothing covers it in this lane — tombstoned, not deleted.
-# Kept as a tombstone (not deleted) so wall-name ledgers and history stay intact; do not extend.
-# Date: 2026-09-08. Status: RETIRED (oracle-death re-derivation).

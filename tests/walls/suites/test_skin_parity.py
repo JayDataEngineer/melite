@@ -1,3 +1,0 @@
-# RETIRED 2026-09-08: fit/skin authoring tools retired (generators STEP 5 — operator order 2026-09-08: "we do not need parity, we need to migrate, not keep the old machinery"; the fit_spec/skin_spec modules they need were deleted by the render-retirement stroke, so restore is not migration) — tools/skin_pack.py DELETED, and this wall imported it directly (from skin_pack import generate_detail_maps), failing red at collection since the render retirement (pre-broken P6).
-# The ComfyUI-side twin (skin_surgery) lives on under vendor/comfyui_extensions; the card-verb surface stays walled by tests/walls/suites/test_skin_verbs.py.
-# Kept as a tombstone (not deleted) so wall-name ledgers and history stay intact; do not extend.

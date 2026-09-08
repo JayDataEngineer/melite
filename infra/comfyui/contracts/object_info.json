@@ -34,7 +34,7 @@
     "glb_path"
    ],
    "output_node": true,
-   "python_module": "custom_nodes.melite-anny-estimator-nodes",
+   "python_module": "custom_nodes.melite-kimodo-nodes.nodes_anny",
    "search_aliases": []
   },
   "AnnyParamsToGlb": {
@@ -71,7 +71,7 @@
     "glb_path"
    ],
    "output_node": true,
-   "python_module": "custom_nodes.melite-anny-estimator-nodes",
+   "python_module": "custom_nodes.melite-kimodo-nodes.nodes_anny",
    "search_aliases": []
   },
   "AnnySelectPerson": {
@@ -118,7 +118,7 @@
     "glb_path"
    ],
    "output_node": false,
-   "python_module": "custom_nodes.melite-anny-estimator-nodes",
+   "python_module": "custom_nodes.melite-kimodo-nodes.nodes_anny",
    "search_aliases": []
   },
   "ApplyTextureToMesh": {
@@ -2548,7 +2548,7 @@
     "mesh_paths"
    ],
    "output_node": true,
-   "python_module": "custom_nodes.melite-anny-estimator-nodes",
+   "python_module": "custom_nodes.melite-kimodo-nodes.nodes_anny",
    "search_aliases": []
   },
   "Pixal3DConditioning": {
@@ -3064,7 +3064,7 @@
     "anny_params_path"
    ],
    "output_node": true,
-   "python_module": "custom_nodes.melite-anny-estimator-nodes",
+   "python_module": "custom_nodes.melite-kimodo-nodes.nodes_anny",
    "search_aliases": []
   },
   "Save3DAdvanced": {
