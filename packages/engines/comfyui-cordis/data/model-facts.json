@@ -255,6 +255,7 @@
     },
     "anny": {
       "card": "anny",
+      "mods": ["hmr-estimate", "preset-save", "preset-load", "dress", "prop"],
       "card_knobs": [
         {
           "card": "body_glb",
@@ -2182,6 +2183,7 @@
     },
     "krea-2": {
       "card": "image-gen",
+      "mods": ["loras"],
       "card_knobs": [
         {
           "card": "prompt",
@@ -3139,6 +3141,7 @@
     },
     "qwen-img-edit-2511": {
       "card": "image-edit",
+      "mods": ["lanpaint", "loras", "mask"],
       "card_knobs": [
         {
           "card": "image1",
@@ -3290,6 +3293,7 @@
     },
     "qwen3-tts": {
       "card": "tts",
+      "mods": ["qvoice"],
       "card_knobs": [
         {
           "card": "text",
@@ -3422,6 +3426,7 @@
     },
     "qwen3-tts-base": {
       "card": "tts",
+      "mods": ["qvoice"],
       "card_knobs": [
         {
           "card": "text",
@@ -3554,6 +3559,7 @@
     },
     "qwen3-tts-voicedesign": {
       "card": "voice-lock",
+      "mods": ["qvoice"],
       "card_knobs": [
         {
           "card": "voice_name",

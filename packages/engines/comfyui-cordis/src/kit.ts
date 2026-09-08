@@ -31,6 +31,7 @@ import { GraphBuilder, OutputHandle, stripAutofill, stripEmptyAutofill } from '.
 import type { NodeInputs, NodeRef, PromptGraph, StripTable } from './graph.ts'
 import type { ModelFacts } from './facts.ts'
 import { loadTextPair, decodeSave, stackLoras } from './blocks/render-kit.ts'
+import { fireLoras } from './mods/guard.ts'
 import {
   AUDIACORE_TTS_AUTOFILL,
   AUDIACORE_STUDIO_AUTOFILL,
@@ -79,7 +80,7 @@ export function imageT2I(p: Record<string, unknown>, model: ModelFacts, g: Graph
   if (li.sampling_shift) {
     unet = g.node('ModelSamplingAuraFlow', { model: unet, shift: li.sampling_shift }).out()
   }
-  unet = stackLoras(g, unet, (p.loras ?? []) as Array<{ name: string; strength: number }>)
+  unet = stackLoras(g, unet, fireLoras(model, p))
   const { clip, vae } = loadTextPair(g, li)
   const pos = g.node('CLIPTextEncode', { clip, text: p.prompt })
   const neg = g.node('CLIPTextEncode', { clip, text: p.negative_prompt ?? '' })
@@ -154,7 +155,7 @@ export function refuseImageEditFiring(p: Record<string, unknown>): void {
 export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
   const li = model.lane_inputs
   let unet: OutputHandle = g.node('UNETLoader', { unet_name: li.unet, weight_dtype: 'default' }).out()
-  unet = stackLoras(g, unet, (p.loras ?? []) as Array<{ name: string; strength: number }>)
+  unet = stackLoras(g, unet, fireLoras(model, p))
   const { clip, vae } = loadTextPair(g, li)
   const image = g.node('LoadImage', { image: p.image1, upload: 'image' }).out(0)
   // optional reference slots (the stock node's native image2/image3):

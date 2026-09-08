@@ -238,3 +238,33 @@ test("the correction stroke: a flavor disposal retracts the mutation", async () 
   assert.equal(after.length, 0, "fiber dispose retracts its flavor");
   assert.ok(svc.cardModFields("image-gen").some((a) => a.pack === "loras"));
 });
+
+test("THE CONSUMPTION GATE (paper §3.2.2): a smuggled mutation on a non-boarding atom refuses LOUD", async () => {
+  // the z-image violation: absorption is family-scoped (no loras
+  // knob — walled above) but compose stacked p.loras onto
+  // WHATEVER atom resolved. The gate fires the mutation only
+  // where the atom boarded the pack (ModelFacts.mods ≡ DECL.mods,
+  // pinned by the flows wall).
+  const kit = await import("../../../../packages/engines/comfyui-cordis/src/kit.ts");
+  const { GraphBuilder } = await import("../../../../packages/engines/comfyui-cordis/src/index.ts");
+  const facts = JSON.parse(
+    readFileSync(new URL("../../../../packages/engines/comfyui-cordis/data/model-facts.json", import.meta.url), "utf8"),
+  ) as { models: Record<string, Record<string, unknown>> };
+  const base = { seed: 1, width: 1024, height: 1024, steps: 8, cfg: 4.5, prompt: "x", negative_prompt: "" };
+  const smuggled = { ...base, loras: [{ name: "foo.safetensors", strength: 0.8 }] };
+
+  // z-image boards NOTHING — smuggled loras refuse, naming atom + pack
+  assert.throws(
+    () => kit.imageT2I(smuggled, facts.models["z-image"], new GraphBuilder({}), "wall"),
+    (err: unknown): boolean =>
+      err instanceof Error &&
+      String(err.message).includes("model 'z-image' does not board the 'loras' pack"),
+  );
+  // krea-2 boards loras — the mutation fires (LoraLoader in graph)
+  const gb = new GraphBuilder({});
+  kit.imageT2I(smuggled, facts.models["krea-2"], gb, "wall");
+  assert.ok(JSON.stringify(gb.toJSON()).includes("LoraLoaderModelOnly"), "boarding atom must fire the mutation");
+  // empty picks = no mutation = no gate (both planes pass through)
+  kit.imageT2I(base, facts.models["z-image"], new GraphBuilder({}), "wall");
+  kit.imageT2I(base, facts.models["krea-2"], new GraphBuilder({}), "wall");
+});

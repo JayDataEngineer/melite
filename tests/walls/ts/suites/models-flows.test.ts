@@ -125,3 +125,30 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
     }
   });
 });
+
+  it("facts.mods ≡ DECL.mods (the boarding rides to consumption — one spelling is truth, the other is walled)", async (): Promise<void> => {
+    // THE CONSUMPTION GATE's data leg: ModelFacts.mods is what the
+    // kit gate reads; the DECL is truth. Route-keys (folds) pin
+    // against their owning atom; action-card lanes carry no
+    // boarding (their mutations, if any, are card-owned).
+    const { registryModel } = await import("../../../../packages/engines/comfyui/src/models/models.ts");
+    const actions = await actionCardLanes();
+    const ownerOf = new Map<string, string>();
+    for (const rid of registryIds()) {
+      const decl = registryModel(rid);
+      for (const v of decl.variants) {
+        if (v.route !== "") ownerOf.set(v.route, rid);
+        for (const c of v.cells) {
+          if (c.route !== "") ownerOf.set(c.route, rid);
+        }
+      }
+    }
+    for (const [id, row] of Object.entries(facts.models)) {
+      if (actions.has(id)) continue;
+      const owner = registryIds().includes(id) ? id : ownerOf.get(id);
+      assert.ok(owner !== undefined, `facts family '${id}' is neither registry, route, nor action lane`);
+      const truth = (registryModel(owner).mods ?? []) as readonly string[];
+      const riding = ((row as { mods?: readonly string[] }).mods ?? []) as readonly string[];
+      assert.deepEqual([...riding].sort(), [...truth].sort(), `${id}: facts.mods ≠ DECL.mods of ${owner}`);
+    }
+  });

@@ -33,6 +33,11 @@ export interface ModelFacts {
   /** Owning card's per-family extension gates — present only where
    *  the card declares requires_by_family. */
   requires_by_family?: Record<string, string[]>
+  /** The atom's mutation boarding (≡ the model's DECL.mods, pinned
+   *  by the flows wall) — the CONSUMPTION GATE reads this: a pack
+   *  mutation fires only where the boarding names it. Absent = no
+   *  mutations boarded. */
+  mods?: string[]
 }
 
 /** One card-knob declaration (KnobRow card/inject/kind). */
