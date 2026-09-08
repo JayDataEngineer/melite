@@ -2,7 +2,7 @@
 
 Laws codified: secrets stay ignored, study clones stay ignored, no
 packages glob in pnpm-workspace, no derived artifact at web root,
-gen_registry.py dry-run reports zero drift, pnpm parses.
+gen-registry.ts --check reports zero drift, pnpm parses.
 
 STRUCTURE: every test takes the root `repo` fixture (tests/conftest.py)
 explicitly -- no hidden state, no local second derivation (fixture

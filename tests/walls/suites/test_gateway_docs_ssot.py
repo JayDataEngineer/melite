@@ -269,11 +269,16 @@ def test_delete_runs_live_parity() -> None:
 # ── B. docs-check green ─────────────────────────────────────────────
 
 def test_gen_api_docs_check_clean() -> None:
+    # RE-POINTED 2026-09-08 (generators STEP 4): the docs generator
+    # is TS-native now (reads the authored routes.ts); the wall keeps
+    # its leg and swaps only the reader.
     r = subprocess.run(
-        [sys.executable, str(REPO / "tools" / "gen_api_docs.py"), "--check"],
-        capture_output=True, text=True, timeout=60, cwd=str(REPO))
+        ["node", "--experimental-strip-types", "--no-warnings",
+         str(REPO / "packages" / "gateway" / "scripts" / "gen-api-docs.ts"),
+         "--check"],
+        capture_output=True, text=True, timeout=120, cwd=str(REPO))
     assert r.returncode == 0, \
-        "stale generated docs — run tools/gen_api_docs.py\n%s" % r.stdout
+        "stale generated docs — run the TS generator\n%s" % r.stdout
 
 
 # tools/gen_routes_mirror.py was DELETED in generators STEP 2 (SSOT
@@ -319,15 +324,10 @@ def test_regen_noop_no_caller_diff() -> None:
     byte-noop), and no GatewayDoorUrl consumer outside generated/
     appears in the worktree diff."""
     before = _git("status", "--short")
-    for tool in (("python3", "tools/gen_api_docs.py", []),
-                 ("node", "packages/web-kit/catalog/scripts/"
-                  "gen-gateway-doors.ts",
-                  ["--experimental-strip-types", "--no-warnings"])):
-        runner, script, extra = tool
-        if runner == "node":
-            cmd = [runner, *extra, str(REPO / script)]
-        else:
-            cmd = [sys.executable, str(REPO / script)]
+    for script in ("packages/gateway/scripts/gen-api-docs.ts",
+                   "packages/web-kit/catalog/scripts/gen-gateway-doors.ts"):
+        cmd = ["node", "--experimental-strip-types", "--no-warnings",
+               str(REPO / script)]
         r = subprocess.run(cmd, capture_output=True, text=True,
                            timeout=120, cwd=str(REPO))
         assert r.returncode == 0, "%s failed\n%s" % (script, r.stderr[-1000:])
