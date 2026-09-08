@@ -43,15 +43,20 @@
 //     synchronous like every other door — the wall pins the receipt
 //     BODY and the terminal "stopped" convergence, not the latency).
 //
-// SERVED SHAPE: single-stage flow_inline runs whose stage engine is
+// SERVED SHAPE: single-stage runs whose stage engine is
 // "comfyui" with params.workflow (+ optional inject, timeout_s,
-// output_nodes), AND card-model runs ({model:} — the card composer
+// output_nodes) — posted EITHER as flow_inline OR as a registry
+// named flow ({flow:} — doors/flowsRegistry.ts expands the
+// declaration and shims it onto this same path, so {flow:}
+// single-stage runs register EXACTLY like their flow_inline
+// twins), AND card-model runs ({model:} — the card composer
 // arm in ./flowsCard.ts: resolve -> sweep -> overlay -> in-process
 // compose -> the single stage row -> the same engine layer).
-// Named flows ({flow:}) and multi-stage graphs are UNPORTED —
-// those doors refuse here with an explicit preview_scope 400
-// (never a silent accept, QUEUE LANE LAW; the flows-port lane owns
-// the rails).
+// Multi-stage graphs, card= stages, skip_when rows, and non-comfyui
+// engines are UNPORTED — those refuse here with an explicit
+// preview_scope 400 (never a silent accept, QUEUE LANE LAW); the
+// validate door still compiles them (branch/prune/sweep), so the
+// refusal always names the exact missing rail.
 // DOCUMENTED GAPS (oracle retired 2026-09-08 — no py fallback exists):
 //   - flow_inline runs write no sidecar (_request.json/_flow.json)
 //     and no ledger rows: status reads are registry-live; a
@@ -124,8 +129,16 @@ import {
   FLOW_INLINE_TOP_VOICE,
   INLINE_TOP_KEYS,
   parseStrictJson,
+  pyStr,
   STAGE_KEYS,
 } from "@melite/gateway-core";
+import {
+  expandRegistryFlow,
+  getRegistryFlow,
+  registryFlowToInline,
+  registryInitialsError,
+} from "./flowsRegistry.ts";
+import { resolveRepoRoot } from "./studios.ts";
 
 /** draft_id_ok's old address (owned by the admission gate now). */
 export { draftIdOk };
@@ -557,6 +570,48 @@ function newRunId(): string {
  *  pre-registration chain. Returns the (status, payload) pair; the
  *  dispatcher serializes via serializePy (byte-identical bodies).
  *  Async: the {model:} arm composes in-process (flowsCard.ts). */
+// ── named-flow shim ({flow:} -> flow_inline, the flows-port lane) ──
+// A registry flow rides the EXISTING inline pipeline below: the
+// declaration expands (from_flow links resolved live) and lands as
+// the flow_inline doc; every gate after this point — structural
+// compile, single-stage policy, registration, the merged worker —
+// runs untouched. Beyond-single-stage-comfyui shapes (multi-stage,
+// card=, skip_when, non-comfyui engines) refuse at those EXISTING
+// gates with their explicit preview_scope voices (never silent).
+function shimNamedFlow(body: Record<string, unknown>): Record<string, unknown> | Refusal {
+  const name: string = pyStr(body["flow"]);
+  const decl = getRegistryFlow(name);
+  if (decl === undefined) {
+    // Native seam (the retired oracle is gone): unknown names refuse
+    // with the retired address — the validate door's voice, whose
+    // code this door renders as invalid_request (the start-door
+    // envelope norm for bad requests).
+    return refusal(
+      400,
+      "no flow at flows/" + name + "/flow.py",
+      "invalid_request",
+    );
+  }
+  const expanded = expandRegistryFlow(decl);
+  // THE COMPILE-TIME DOOR (operator order, 2026-09-06): present
+  // initials refuse BEFORE any run registers — the validate door
+  // runs the same gate, so start can never queue what validate
+  // refuses.
+  const repo: string = resolveRepoRoot();
+  const badInitial: string | null = registryInitialsError(expanded, body, {
+    repoRoot: repo,
+    stateRoot: resolveStateRoot(),
+    kindsPath: join(repo, "packages", "web", "dsh", "media-plugin", "media-kinds.json"),
+  });
+  if (badInitial !== null) {
+    return refusal(400, badInitial, "invalid_request");
+  }
+  const shim: Record<string, unknown> = { ...body };
+  delete shim["flow"];
+  shim["flow_inline"] = registryFlowToInline(expanded);
+  return shim;
+}
+
 export async function handleFlowsStart(
   doc: unknown,
 ): Promise<Refusal & { runId?: string }> {
@@ -647,24 +702,37 @@ export async function handleFlowsStart(
     return handleCardStart(body, testFlag, draftId);
   }
   if (!("flow_inline" in body)) {
-    if ("flow" in body) {
+    if (!("flow" in body)) {
       return refusal(
         400,
-        "{flow} runs are unported on this gateway — " +
-          "serve flow_inline comfyui runs here",
-        "preview_scope",
+        "no flow selected: provide flow, flow_inline or model",
+        "invalid_request",
       );
     }
-    return refusal(
-      400,
-      "no flow selected: provide flow, flow_inline or model",
-      "invalid_request",
+    const shim: Record<string, unknown> | Refusal = shimNamedFlow(body);
+    if (!("flow_inline" in shim)) return shim as Refusal;
+    const compiled: { stages: CompiledStage[] } | Refusal = compileFlowInline(
+      (shim as Record<string, unknown>)["flow_inline"],
     );
+    if (!("stages" in compiled)) return compiled;
+    return registerCompiled(compiled, testFlag, draftId);
   }
   const compiled: { stages: CompiledStage[] } | Refusal = compileFlowInline(
     body["flow_inline"],
   );
   if (!("stages" in compiled)) return compiled;
+  return registerCompiled(compiled, testFlag, draftId);
+}
+
+// ── registration (the shared single-stage tail: the existing
+// policy + mint + register + pump — the named-flow shim lands
+// here too, so {flow:} single-stage runs register EXACTLY like
+// their flow_inline twins) ───────────────────────────────────────
+function registerCompiled(
+  compiled: { stages: CompiledStage[] },
+  testFlag: boolean,
+  draftId: string,
+): Refusal & { runId?: string } {
   if (compiled.stages.length !== 1) {
     return refusal(
       400,
