@@ -210,6 +210,9 @@ importers:
       '@deepseek-ai/cordis-plugin-timer':
         specifier: workspace:*
         version: link:../../vendor/cordis_plugins/timer
+      '@deepseek-ai/dsh-host-webserver':
+        specifier: workspace:*
+        version: link:../../vendor/cordis_plugins/webserver
       '@deepseek-ai/dsh-storage':
         specifier: 0.0.1-rc.1
         version: 0.0.1-rc.1(@deepseek-ai/cordis@4.0.2(@deepseek-ai/cordis-plugin-loader@vendor+cordis_plugins+loader))(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2(@deepseek-ai/cordis-plugin-loader@vendor+cordis_plugins+loader)))
@@ -919,6 +922,19 @@ importers:
       '@deepseek-ai/cosmokit':
         specifier: ^1.8.1
         version: 1.8.3
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+
+  vendor/cordis_plugins/webserver:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: ^3.18.1
+        version: 3.18.2
     devDependencies:
       '@types/node':
         specifier: ^22.20.0

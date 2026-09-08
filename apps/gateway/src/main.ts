@@ -5,33 +5,42 @@
 // bootGatewayContext (src/core/context.ts) owns the Loader service
 // and applies the checked-in manifest
 // (packages/gateway/cordis.config.json: errors, the 15 door plugins,
-// timer, logger-console, the gateway lifecycle entry) — and
-// dispatch() is the auth gate + one ctx.serial round (each door
-// module owns its plugin listeners and matches its own rows inside;
-// door BODIES are untouched). This module keeps ONLY the transport
-// rim (no framework server exists): body concat, uvicorn-parity URL
-// decode, header copy, content-length stamping, the WS upgrade seam.
+// timer, logger-console, the WEB SERVER entry, the gateway lifecycle
+// entry) — and dispatch() is the auth gate + one ctx.serial round
+// (each door module owns its plugin listeners and matches its own
+// rows inside; door BODIES are untouched).
 //
-// Serves the health/chrome doors (captured bytes) with the py _adapt
-// wire contract: indent=2 JSON envelopes, 404s in the py route()
-// shape. The queue boot (lock-first single-writer gate, resurrect
-// queued work, sweep stale sidecars, ledger server.boot — py main()
+// WEBSERVER STROKE (2026-09-08): the transport rim rides the
+// vendored harness plugin @deepseek-ai/dsh-host-webserver
+// (vendor/cordis_plugins/webserver — their web carrier, "knows no
+// harness concepts"): the plugin owns createServer/listen/close+
+// closeAllConnections/disposal; this module owns ONLY the request
+// BODY — the fallback seat (one owner, the composition law) carries
+// the whole dispatch loop: uvicorn-contract URL decode (golden-
+// pinned until the oracle death; contract origin after), header
+// copy, body concat, dispatch, content-length stamping, the 500
+// belt. Upgrades ride registerUpgrade: the runs events door serves
+// the bare form exactly and the path form /v1/flows/events/<run_id>
+// as a prefix route (the estate divergence on the vendored copy —
+// arbitrary run ids cannot ride an exact table). Unmatched upgrades
+// are closed by the plugin (their law).
+//
+// The queue boot (lock-first single-writer gate, resurrect queued
+// work, sweep stale sidecars, ledger server.boot — py main()
 // 4474-4489) runs inside the gateway plugin's apply, BEFORE the
 // server accepts traffic.
 //
-// QUEUE LANE LAW: no fixed port — the server listens on an EPHEMERAL
-// port (port 0, kernel-assigned) unless GATEWAY_PORT pins one (tests
-// never pin). Direct run prints `READY <port>` on stdout so the
-// parity wall can discover the port:
+// QUEUE LANE LAW: no fixed port — the webserver listens on an
+// EPHEMERAL port (port 0, kernel-assigned) unless GATEWAY_PORT pins
+// one (tests never pin). Direct run prints `READY <port>` on stdout
+// so the parity wall can discover the port:
 //
-//   node --experimental-strip-types packages/gateway/src/server.ts
+//   node --experimental-strip-types apps/gateway/src/main.ts
 //
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
 
-import { createServer } from "node:http";
-import type { IncomingMessage, Server, ServerResponse } from "node:http";
-import type { Socket } from "node:net";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { dispatch } from "@melite/gateway";
 
 import { defaultAssetRoots, unquotePy } from "@melite/gateway";
@@ -41,16 +50,18 @@ import { createProcessShutdown } from "@melite/gateway";
 import { BOOT_ENGINE } from "@melite/gateway";
 
 import type { DispatchResult } from "@melite/gateway";
+import type { WebServer } from "@deepseek-ai/dsh-host-webserver";
 export { BOOT_ENGINE } from "@melite/gateway";
 
-/** Start the shell. Resolves with the bound server + actual port
- *  (ephemeral by default — pass 0 and read back the kernel pick).
- *  The queue boot runs first (registry start — the gateway plugin's
- *  apply: lock gate only when the process main claimed it, then
- *  resurrect, then sweep, then serve); a library caller never
- *  self-refuses on its own held lock. */
+/** Start the shell. Resolves with the actual port (ephemeral by
+ *  default — pass 0 and read back the kernel pick). The queue boot
+ *  runs first (registry start — the gateway plugin's apply: lock
+ *  gate only when the process main claimed it, then resurrect, then
+ *  sweep, then serve); a library caller never self-refuses on its
+ *  own held lock. The listener itself is the vendored webserver
+ *  plugin's (ctx.webServer) — disposal is theirs (close +
+ *  closeAllConnections + upgraded-socket teardown). */
 export async function startServer(port: number = 0): Promise<{
-  server: Server;
   port: number;
 }> {
   const roots = defaultAssetRoots();
@@ -62,13 +73,20 @@ export async function startServer(port: number = 0): Promise<{
     engine: BOOT_ENGINE,
     claimLock: false,
   });
-  const server: Server = createServer(
+  const ws: WebServer = ctx.webServer;
+  // The fallback seat = the dispatch loop. No named HTTP routes:
+  // every path (health, chrome bytes, /v1 doors, the 404 voice)
+  // shapes through dispatch — the door rows own their own paths,
+  // the rim owns none.
+  ws.registerFallback(
     (req: IncomingMessage, res: ServerResponse): void => {
       const method: string = req.method ?? "GET";
       // Uvicorn decodes request.url.path BEFORE _adapt runs (probed:
       // %2e/%2F/%C3%A9 all arrive decoded, %zz stays literal, %ff
       // becomes U+FFFD) — decode the path part here so dispatch,
       // the rel slice, and the inputs unquote all see py's shape.
+      // CONTRACT ORIGIN (oracle death pending): golden-pinned wire
+      // behavior, not live-server mirroring.
       // The query string stays raw (route() parses + decodes it).
       const raw: string = req.url ?? "/";
       const qi: number = raw.indexOf("?");
@@ -134,75 +152,55 @@ export async function startServer(port: number = 0): Promise<{
     },
   );
   // WS upgrade seam (runs lane): py serves /v1/flows/events* over
-  // starlette WebSockets and 404s anything else at upgrade. Only
-  // the events doors upgrade — every other upgrade path is refused
-  // (socket destroyed; py answers 404 there, and no wall pins the
-  // bytes). The raw target rides (the door splits + decodes it
-  // itself, exactly like _ws_starlette sees uvicorn's form); a
-  // carried head buffer is unshifted so no client byte is lost.
-  server.on(
-    "upgrade",
-    (req: IncomingMessage, socket: Socket, head: Buffer): void => {
-      const raw: string = req.url ?? "/";
-      const qi: number = raw.indexOf("?");
-      const bare: string = qi < 0 ? raw : raw.slice(0, qi);
-      let decoded = "";
+  // starlette WebSockets and 404s anything else at upgrade. The bare
+  // door rides an exact route; the path form /v1/flows/events/<id>
+  // rides a prefix route (arbitrary run ids — the vendored-copy
+  // divergence). The plugin closes every unmatched upgrade (their
+  // law; py destroyed those sockets too). The raw target rides (the
+  // door splits + decodes it itself, exactly like _ws_starlette
+  // sees uvicorn's form); a carried head buffer is unshifted so no
+  // client byte is lost.
+  const upgradeBody = (
+    req: IncomingMessage,
+    socket: import("node:stream").Duplex,
+    head: Buffer,
+  ): void => {
+    const raw: string = req.url ?? "/";
+    if (head.length > 0) socket.unshift(head);
+    const headers: Record<string, string> = {};
+    for (const [k, v] of Object.entries(req.headers)) {
+      if (typeof v === "string") headers[k.toLowerCase()] = v;
+      else if (Array.isArray(v) && typeof v[0] === "string") {
+        headers[k.toLowerCase()] = v[0] as string;
+      }
+    }
+    try {
+      handleWsUpgrade({
+        roots,
+        authToken: process.env["DSH_GATEWAY_TOKEN"] ?? "",
+        target: raw,
+        headers,
+        socket: socket as import("node:net").Socket,
+      });
+    } catch {
       try {
-        decoded = decodeURIComponent(bare.replace(/\+/g, " "));
+        socket.destroy();
       } catch {
-        decoded = bare;
+        /* gone */
       }
-      const normed: string = decoded.replace(/\/+$/, "") || "/";
-      // Exactly py's two WSRoute rows (path form + bare door; the
-      // query form rides the bare door and the door itself parses
-      // ?run_id=). A ?run_id= on any OTHER path upgrades nowhere.
-      const isEvents: boolean =
-        normed === "/v1/flows/events" ||
-        normed.startsWith("/v1/flows/events/");
-      if (!isEvents) {
-        try {
-          socket.destroy();
-        } catch {
-          /* gone */
-        }
-        return;
-      }
-      if (head.length > 0) socket.unshift(head);
-      const headers: Record<string, string> = {};
-      for (const [k, v] of Object.entries(req.headers)) {
-        if (typeof v === "string") headers[k.toLowerCase()] = v;
-        else if (Array.isArray(v) && typeof v[0] === "string") {
-          headers[k.toLowerCase()] = v[0] as string;
-        }
-      }
-      try {
-        handleWsUpgrade({
-          roots,
-          authToken: process.env["DSH_GATEWAY_TOKEN"] ?? "",
-          target: raw,
-          headers,
-          socket,
-        });
-      } catch {
-        try {
-          socket.destroy();
-        } catch {
-          /* gone */
-        }
-      }
-    },
-  );
-  return new Promise((resolve, reject) => {
-    server.on("error", reject);
-    server.listen(port, "127.0.0.1", (): void => {
-      const addr: unknown = server.address();
-      const bound: number =
-        typeof addr === "object" && addr !== null
-          ? (addr as { port: number }).port
-          : port;
-      resolve({ server, port: bound });
-    });
+    }
+  };
+  ws.registerUpgrade({
+    kind: "exact",
+    path: "/v1/flows/events",
+    handler: upgradeBody,
   });
+  ws.registerUpgrade({
+    kind: "prefix",
+    path: "/v1/flows/events/",
+    handler: upgradeBody,
+  });
+  return { port: ws.port };
 }
 
 const isMain: boolean = (process.argv[1] ?? "").endsWith("main.ts");
@@ -242,21 +240,11 @@ if (isMain) {
     process.on("SIGTERM", (): void => interrupt(0));
     process.on("SIGINT", (): void => interrupt(130));
     try {
-      const { server, port: bound } = await startServer(port);
-      // The listener rides the fiber registry now (the ctx.effect
-      // conversion — the framework runs the disposer on root
-      // dispose, before process exit): no hand-rolled close at the
-      // rim. Disposal pairs close() with closeAllConnections() —
-      // the harness webserver law (packages/host/webserver): a
-      // handler may hold its response open (our WS seam is exactly
-      // that class) and such connections never end on their own;
-      // without the force-close teardown would hang.
-      ctx.effect((): (() => void) => {
-        return (): void => {
-          server.close((): void => {});
-          server.closeAllConnections?.();
-        };
-      });
+      const { port: bound } = await startServer(port);
+      // No close shim here: the vendored webserver plugin owns
+      // listener disposal (close + closeAllConnections + tracked
+      // upgraded sockets — the harness webserver law) through its
+      // fiber teardown, which the root dispose above cascades.
       // Wall-pinned handshake (e2e_tsboot parses stdout for exactly
       // this line): stays on console.log, never ctx.logger — the
       // logger-console sink re-shapes every record it touches.

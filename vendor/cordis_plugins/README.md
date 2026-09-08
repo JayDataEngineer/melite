@@ -138,3 +138,32 @@ separately).
 ## Local-modification log
 
 - 2026-09-08 (landed): initial vendor @ harness `141eb6f` + O1/O2/O3 as above. No `src/` patch.
+
+## host-webserver (added 2026-09-08, webserver stroke)
+
+Provenance: same harness commit `141eb6f` (dsh-0.1.0-rc.8 tree,
+`packages/host/webserver`, version 0.1.0-rc.8). Consumed as the
+gateway's transport rim — the WEBSERVER STROKE
+(docs/patterns/cordis-core.md): the plugin owns
+createServer/listen/close+closeAllConnections/upgraded-socket
+teardown/disposal; the rim (apps/gateway/src/main.ts) owns only the
+fallback seat (the dispatch loop) and the two upgrade routes.
+
+DIVERGENCES (each with cause, all recorded in-source too):
+1. **`/invariant` companion stripped** (src/invariant.ts deleted,
+   exports/files/peer entries removed). Cause: the companion
+   peer-needs `@deepseek-ai/dsh-invariants` (the harness's
+   runtime-diagnostics framework) and only loads when an `invariants`
+   service exists — we vendor neither; a dead companion broke the
+   lib build. Restore together if the invariants framework ever
+   lands here.
+2. **`WebUpgradeRoute.kind?: 'exact' | 'prefix'`** (default exact;
+   match = exact over the whole table, then longest prefix — the
+   HTTP order law mirrored). Cause: the estate's runs events door
+   serves `/v1/flows/events/<run_id>` with arbitrary path ids — a
+   golden-carried contract an exact table cannot express. No decode,
+   no normalization added: handlers own pathname semantics, exactly
+   like upstream.
+
+Rebuild: `packages/gateway/scripts/link-vendored-platform.sh` (lib/
+is per-host build output, never committed).

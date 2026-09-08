@@ -20,6 +20,7 @@
     "@deepseek-ai/cordis-plugin-loader": "workspace:*",
     "@deepseek-ai/cordis-plugin-timer": "workspace:*",
     "@deepseek-ai/cordis-plugin-logger-console": "workspace:*",
+    "@deepseek-ai/dsh-host-webserver": "workspace:*",
     "@deepseek-ai/dsh-storage": "0.0.1-rc.1",
     "@deepseek-ai/dsh-storage-json": "0.0.1-rc.1",
     "@deepseek-ai/dsh-storage-domain": "0.0.1-rc.1",

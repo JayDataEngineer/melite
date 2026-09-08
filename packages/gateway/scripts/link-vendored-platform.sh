@@ -26,14 +26,14 @@ FAIL=0
 say()  { printf '%s\n' "$*"; }
 fail() { printf 'VIOLATION: %s\n' "$*"; FAIL=1; }
 
-for pkg in loader timer logger-console; do
+for pkg in loader timer logger-console webserver; do
   [ -d "$VP/$pkg" ] || { say "missing $VP/$pkg"; exit 1; }
 done
 
 if [ "$CHECK" = "1" ]; then
   # 1. manifests harness-pristine except O1/O2 (lib/ entry points,
   #    private:true, workspace:^ refloored — see vendor README).
-  for pkg in loader timer logger-console; do
+  for pkg in loader timer logger-console webserver; do
     main="$(node -p "require('$VP/$pkg/package.json').main")"
     priv="$(node -p "require('$VP/$pkg/package.json').private === true ? 'yes' : 'no'")"
     [ "$main" = "lib/index.js" ] || fail "$pkg main is $main (expected lib/index.js)"
@@ -42,7 +42,7 @@ if [ "$CHECK" = "1" ]; then
     [ -f "$VP/$pkg/lib/types/index.d.ts" ] || fail "$pkg lib/types/index.d.ts missing (re-run without --check to build)"
   done
   # 2. node resolution lands in vendor/ (never a registry copy).
-  for name in cordis-plugin-loader cordis-plugin-timer cordis-plugin-logger-console; do
+  for name in cordis-plugin-loader cordis-plugin-timer cordis-plugin-logger-console host-webserver; do
     real="$(node -p "require.resolve('@deepseek-ai/$name/package.json', { paths: ['$GW/src'] })" 2>/dev/null || true)"
     case "$real" in
       "$VP"/*) : ;;
@@ -70,7 +70,7 @@ if [ "$CHECK" = "1" ]; then
   # 4. lockfile shows link: for the gateway importer (workspace:*
   #    by construction; this catches a registry-pin regression).
   gwblock="$(sed -n '/^  plugins\/gateway:/,/^  [A-Za-z0-9_.\/-]*:$/p' "$REPO/pnpm-lock.yaml")"
-  for pkg in loader timer logger-console; do
+  for pkg in loader timer logger-console webserver; do
     if ! printf '%s' "$gwblock" | grep -q "link:../../vendor/cordis_plugins/$pkg"; then
       fail "pnpm-lock.yaml gateway importer lacks link: for $pkg"
     fi
@@ -81,7 +81,7 @@ fi
 
 TSC="$GW/node_modules/.bin/tsc"
 [ -x "$TSC" ] || { say "missing $TSC (run root pnpm install first)"; exit 1; }
-for pkg in loader timer logger-console; do
+for pkg in loader timer logger-console webserver; do
   "$TSC" -p "$VP/$pkg" || exit 1
 done
-say "vendored-links: vendor lib/ built (loader + timer + logger-console)."
+say "vendored-links: vendor lib/ built (loader + timer + logger-console + host-webserver)."

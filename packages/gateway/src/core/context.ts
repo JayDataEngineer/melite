@@ -82,6 +82,17 @@ interface ManifestEntry {
 /** The gateway lifecycle entry id (runtime config — never manifest). */
 const GATEWAY_ENTRY_ID: string = "gateway";
 
+/** The webserver entry's $runtime config (host/port ride the boot
+ *  caller — never the manifest, same law as the gateway entry; the
+ *  vendored plugin owns listen/close/disposal). Set by
+ *  bootGatewayContext BEFORE the door context caches: the first boot
+ *  of a process owns it (prod passes one port to both its boots;
+ *  every wall process is single-boot). */
+let runtimeWebServerConfig: Record<string, unknown> = {
+  host: "127.0.0.1",
+  port: 0,
+};
+
 /** The checked-in manifest — the boot order SSOT. Read once. */
 let manifestEntries: readonly ManifestEntry[] | null = null;
 
@@ -206,6 +217,8 @@ async function createEntry(ctx: Context, entry: ManifestEntry): Promise<void> {
       ...base,
       config: { backend: "json" } as unknown as Record<string, unknown>,
     };
+  } else if (entry.config === "$runtime" && entry.id === "webserver") {
+    options = { ...base, config: runtimeWebServerConfig };
   } else if (entry.config !== undefined && entry.config !== "$runtime") {
     options = {
       ...base,
@@ -274,6 +287,12 @@ export async function bootGatewayContext(config: GatewayConfig): Promise<{
   ctx: Context;
   gate: Fiber & PromiseLike<Fiber>;
 }> {
+  // The webserver entry is created inside ensureDoorContext (manifest
+  // order) — publish its runtime config BEFORE the context caches.
+  runtimeWebServerConfig = {
+    host: "127.0.0.1",
+    port: config.port,
+  };
   const ctx: Context = await ensureDoorContext();
   if (gatewayFiber === null) {
     const gwOptions: EntryOptions = {
