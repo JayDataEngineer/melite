@@ -116,6 +116,7 @@
 
 import { closeSync, openSync, readFileSync, readSync, statSync } from "node:fs";
 import { buildCatalog } from "@melite/engine-comfyui";
+import { loadCardDefs, theService } from "@comfyui/cordis";
 import { join } from "node:path";
 import { contentTypeOf, dumpsPy, parseJson } from "./assets.ts";
 import { resolveRepoRoot } from "./bridges.ts";
@@ -123,6 +124,21 @@ import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
 import { matchRoute } from "@melite/gateway-core";
+import type { ComfyUIService } from "@comfyui/cordis";
+
+/** The settled card-defs service (null until loadCardDefs lands —
+ * callers serve the frozen capture meanwhile; the wall pins the
+ * live fragments once warm). */
+let specService: ComfyUIService | null = null;
+function warmSpecService(): ComfyUIService | null {
+  if (specService !== null) return specService;
+  try {
+    specService = theService();
+  } catch {
+    specService = null;
+  }
+  return specService;
+}
 
 /** Dispatcher answer — structurally identical to ctx.ts
  *  DispatchResult (defined here so doors/ never imports ctx.ts). */
@@ -712,6 +728,18 @@ export function handleDiscovery(
       // gateway.py 3064-3067 + editor_forms.form_spec: empty model
       // 400s; the frozen flat map holds every servable key's own
       // (status, body); anything else 404s exactly as py does.
+      //
+      // THE PORT OVERLAY (2026-09-08, the 1:1 cordis port): for a
+      // key whose FAMILY is boarded on a TS card, fields and
+      // schema_groups emit LIVE through the ComfyUIService's
+      // formSpec (the mod/verb interlock — registration through
+      // ctx.comfyui.registerMod, absorption derived at read). The
+      // frozen row keeps label/features/genre (the runtime catalog
+      // plane — a different door's truth). Families not yet boarded
+      // on the TS plane serve the frozen capture whole (the
+      // deprecation ladder: live-owned keys only grow; the wall
+      // pins the two hardest keys byte-equal on the interlock
+      // fragments).
       const model: string = modelParam(target);
       if (model === "") {
         return jsonArm(400, { error: "missing model param" });
@@ -724,7 +752,24 @@ export function handleDiscovery(
         >;
         const status: number =
           typeof hit["status"] === "number" ? (hit["status"] as number) : 200;
-        return jsonArm(status, hit["body"]);
+        const body = { ...((hit["body"] as Record<string, unknown>) ?? {}) };
+        const family: string = typeof body["service"] === "string" ? (body["service"] as string) : "";
+        const form: string = typeof body["form"] === "string" ? (body["form"] as string) : "";
+        if (family !== "" && form !== "") {
+          void loadCardDefs().then((): void => {
+            // fire-and-forget warm; the sync read below uses the
+            // settled cache or falls through to the frozen row.
+          });
+          const svc = warmSpecService();
+          if (svc !== null) {
+            const live = svc.formSpec(form, family);
+            if (live !== null) {
+              body["fields"] = live["fields"];
+              body["schema_groups"] = live["schema_groups"];
+            }
+          }
+        }
+        return jsonArm(status, body);
       }
       return jsonArm(404, { error: "model not found" });
     }

@@ -16,21 +16,25 @@ import z from '@deepseek-ai/schemastery'
 import { imageT2I, finalizeImageGen } from '../kit.ts'
 
 const schema = z.object({
-  prompt: z.string().description('Prompt').extra('extra', { required: true }),
-  negative_prompt: z.string().description('Negative Prompt'),
-  width: z.number().min(256).max(2048).default(1024).description('Width'),
-  height: z.number().min(256).max(2048).default(1024).description('Height'),
-  steps: z.number().min(1).max(100).default(8).description('Steps'),
+  // CARD-OWNED SURFACE (the 1:1 port, 2026-09-08): declaration
+  // order = the py field order (frozen form_spec krea-2 referee).
+  // loras is NOT here — the krea-2 LoRA knob rides the MOD
+  // absorption (mods/loras.ts registers it through
+  // ctx.comfyui.registerMod — the py interlock). The hand-inlined
+  // families-scoped field was the defect this port removes;
+  // compose still consumes p.loras (kit.ts stackLoras).
+  prompt: z.string().description('Prompt').extra('extra', { required: true, group: 'prompt', zone: 'params' }),
+  negative_prompt: z.string().description('Negative Prompt').extra('extra', { group: 'prompt', zone: 'params' }),
+  width: z.number().min(256).max(2048).default(1024).description('Width').extra('extra', { group: 'resolution', zone: 'params' }),
+  height: z.number().min(256).max(2048).default(1024).description('Height').extra('extra', { group: 'resolution', zone: 'params' }),
+  seed: z.number().min(-1).step(1).default(-1).description('Seed').extra('extra', { group: 'resolution', zone: 'params' }),
+  steps: z.number().min(1).max(100).default(8).description('Steps').extra('extra', { group: 'sampling', zone: 'params' }),
   cfg: z.number().min(1).max(20).default(4.5).description(
-    'How closely the diffusion follows the prompt. Higher = stricter.'),
+    'How closely the diffusion follows the prompt. Higher = stricter.').extra('extra', { group: 'sampling', zone: 'params' }),
   sampler: z.string().description(
-    'Sampler — options resolve from the $samplers vocabulary at serve time'),
+    'Sampler — options resolve from the $samplers vocabulary at serve time').extra('extra', { group: 'sampling', zone: 'params' }),
   scheduler: z.string().description(
-    'Scheduler — options resolve from the $schedulers vocabulary at serve time'),
-  seed: z.number().min(-1).step(1).default(-1).description('Seed'),
-  loras: z.array(z.object({ name: z.string(), strength: z.number() }))
-    .description('LoRAs')
-    .extra('extra', { families: ['krea-2'] }),
+    'Scheduler — options resolve from the $schedulers vocabulary at serve time').extra('extra', { group: 'sampling', zone: 'params' }),
 })
 
 export const inject = ['comfyui']

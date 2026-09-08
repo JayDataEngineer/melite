@@ -21,6 +21,16 @@ import { ComfyUIService } from './service.ts'
 import type { CardDefinition } from './service.ts'
 
 let cache: Map<string, CardDefinition> | null = null
+let bootedService: ComfyUIService | null = null
+
+/** The booted ComfyUIService (the card set + mods + verbs ride
+ *  it). Throws if loadCardDefs has not settled. */
+export const theService = (): ComfyUIService => {
+  if (bootedService === null) {
+    throw new Error('card defs not booted — await loadCardDefs() first')
+  }
+  return bootedService
+}
 
 /** Boot the card set once and return id → CardDefinition.
  * Deterministic across calls in one process. */
@@ -33,6 +43,18 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
   const cardsDir = join(dirname(new URL(import.meta.url).pathname), 'cards')
   for (const f of readdirSync(cardsDir).filter((x) => x.endsWith('.ts')).sort()) {
     const mod = (await import(pathToFileURL(join(cardsDir, f)).href)) as unknown as Plugin
+    if (typeof (mod as { apply?: unknown }).apply === 'function') {
+      await ctx.plugin(mod)
+    }
+  }
+  // THE MOD/VERB PLUGINS (dsl.py port, 2026-09-08): every module
+  // under src/mods registers through ctx.comfyui.registerMod/
+  // registerVerb — the py Model.mods/verb declarations, PORT LAW
+  // shape. The service validates LOUD at registration (the
+  // metaclass's gates): a broken mod never serves.
+  const modsDir = join(dirname(new URL(import.meta.url).pathname), 'mods')
+  for (const f of readdirSync(modsDir).filter((x) => x.endsWith('.ts')).sort()) {
+    const mod = (await import(pathToFileURL(join(modsDir, f)).href)) as unknown as Plugin
     if (typeof (mod as { apply?: unknown }).apply === 'function') {
       await ctx.plugin(mod)
     }
@@ -65,6 +87,7 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
       ...(row.icon !== undefined && row.icon !== '' ? { icon: row.icon } : {}),
     }]),
   )
+  bootedService = service
   cache = new Map(service.cardIds().map((id) => {
     const def = service.getCardDef(id)!
     if (def.identity === undefined) {
