@@ -31,7 +31,7 @@
 //     imports estate-wide) — adopting it would make the gateway the
 //     first consumer of a dead vocabulary AND a new dependency.
 //   - @deepseek-ai/schemastery is the compose plane's vocabulary
-//     (@comfyui/cordis atoms) — graph knobs, not wire gates; its error
+//     (the card-plane Schemastery schemas) — graph knobs, not wire gates; its error
 //     taxonomy cannot reproduce the refusal_reason shape the wall pins.
 // No new dependency was added for this port.
 //

@@ -1,8 +1,9 @@
 // core/params.ts — the gateway-plane admission gate.
 //
 // CORDIS CORE law (docs/patterns/cordis-core.md §4): the card plane
-// admits params through schemastery (cordis/src/atoms.ts — the knob
-// vocabulary; cli.ts's admission-contract gate refuses unknown keys
+// admits params through schemastery (the card plane's Schemastery
+// schemas, direct — the knob vocabulary; cli.ts's admission-contract
+// gate refuses unknown keys
 // LOUD). The gateway plane admits request bodies through THIS module:
 // schemastery owns STRUCTURE (which keys, which types), the doors
 // keep the pinned VOICE (py-shaped refusal bytes), and the refusal
