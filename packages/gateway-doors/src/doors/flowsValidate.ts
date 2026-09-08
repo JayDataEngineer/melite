@@ -55,8 +55,8 @@
 //   (plugin dir name + engine type, as scan_engines reports them).
 //
 // STAMP OVERLAY (gateway.py _route_stamp_overlay 702-751, shared
-// via doors/flowsCard.ts overlayCardParams — the SAME helper the
-// start door's phase-1 runs, so validate+start compose identical
+// via ctx.cardRegistry.overlayCardParams — the SAME service method
+// the start door's phase-1 runs, so validate+start compose identical
 // params): family defaults + the selected variant's
 // resolver_defaults, absent-keys-only, filtered to the card field
 // surface; R1 variant/quant keys consumed. Missing-required
@@ -88,12 +88,13 @@ import {
 } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadCardDefs, type CardDefinition } from "@comfyui/cordis";
+import type { CardDefinition } from "@comfyui/cordis";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
 import { matchRoute } from "@melite/gateway-core";
-import { CardArmError, overlayCardParams } from "./flowsCard.ts";
+import { CardArmError, needCardRegistry } from "./flowsCard.ts";
+import type { CardRegistryService, ModelFactsRow } from "./flowsCard.ts";
 import {
   expandRegistryFlow,
   getRegistryFlow,
@@ -164,9 +165,9 @@ const STAGE_KEYS_SORTED: readonly string[] = [
 // ── strict-body vocab (python/gateway.py:230-245) ───────────────────
 // Owned by the admission gate (src/core/params.ts — the SSOT shared
 // with the start door); the envelope lift the modelArm used to own
-// here moved to doors/flowsCard.ts (overlayCardParams — the SAME
-// lift the start door runs, so validate+start compose identical
-// params). The id REs below stay here (flow-construction semantics,
+// here moved to CardRegistryService.overlayCardParams (doors/
+// flowsCard.ts — the SAME lift the start door runs, so
+// validate+start compose identical params). The id REs below stay here (flow-construction semantics,
 // not envelope admission).
 
 const FLOW_ID_RE: RegExp = /^[a-z_][a-z0-9_-]*$/;
@@ -759,19 +760,24 @@ function wiresResolve(flowId: string, stages: StageRow[]): void {
 }
 
 // cardDefs — the live card registry for the card-stage lattice,
-// resolved ONCE at plugin apply (before any request handler runs —
-// the closure hands the sync validators a ready map; no async
-// ripple through kindsOk's three sync call sites).
-let cardDefs: Map<string, CardDefinition> | null = null;
-
 // cardGate — the CARD-STAGE LATTICE body gate (infra/python/flow.py:793
 // _card_params_gate -> stage_params.validate_stage_params, PORTED
 // NATIVE 2026-09-08): (1) the model gate stays byte-identical (the
 // wall pins it); (2) the schema pass rides the TS single
-// declaration — loadCardDefs' Schemastery schema parse, the same
+// declaration — the registry's Schemastery schema parse, the same
 // validator compose runs, never a second truth.
-function cardGate(flowId: string, st: StageRow): void {
-  const def = cardDefs?.get(st.card);
+// (Stroke 2a: the defs map rides the service — the old module cache
+// resolved ONCE at plugin apply is gone; the loader gates this
+// door on the card-registry provider, so defsSync() is primed here.
+// The registry arg is optional only for pre-service callers —
+// card stages without it throw LOUD.)
+function cardGate(
+  flowId: string,
+  st: StageRow,
+  cards?: CardRegistryService | null,
+): void {
+  const defs: Map<string, CardDefinition> = needCardRegistry(cards, "cardGate").defsSync();
+  const def = defs.get(st.card);
   // requiresModel: false (pure-tool cards, boarded: []) skips the
   // {model:} demand — the py row.requires_model parity. Unknown
   // cards still hit the model gate first (order preserved: the wall
@@ -827,11 +833,12 @@ function kindsOk(
   flowId: string,
   stages: StageRow[],
   engineDefaults: Record<string, string | null>,
+  cards?: CardRegistryService | null,
 ): void {
   // The lattice gate is its own pass BEFORE kinds (flow.py:793
   // docstring: "Runs BEFORE _validate_kinds").
   for (const st of stages) {
-    if (st.card) cardGate(flowId, st);
+    if (st.card) cardGate(flowId, st, cards);
   }
   const outputsByStage: Map<string, Map<string, string>> = new Map();
   for (const st of stages) {
@@ -935,7 +942,7 @@ function kindsOk(
 // bus — here the wall-pinned ENGINE_TABLE (existence + DEFAULT_OUTPUT);
 // then the FULL kind pass. Unknown-engine text mirrors
 // plugins.load_engine verbatim (infra/python/plugins.py:479).
-function validateEngines(flow: Flow): Flow {
+function validateEngines(flow: Flow, cards?: CardRegistryService | null): Flow {
   const engineDefaults: Record<string, string | null> = {};
   for (const st of flow.stages) {
     const row: { plugin: string; def: string } | undefined = ENGINE_TABLE[st.engine];
@@ -954,12 +961,12 @@ function validateEngines(flow: Flow): Flow {
     }
     engineDefaults[st.engine] = row.def;
   }
-  kindsOk(flow.id, flow.stages, engineDefaults);
+  kindsOk(flow.id, flow.stages, engineDefaults, cards);
   return flow;
 }
 
 // flowFromBody (flow.py:1388): JSON body -> validated Flow.
-function flowFromBody(body: unknown): Flow {
+function flowFromBody(body: unknown, cards?: CardRegistryService | null): Flow {
   if (typeof body !== "object" || body === null || Array.isArray(body)) {
     throw new FlowError("flow body must be a JSON object");
   }
@@ -995,13 +1002,13 @@ function flowFromBody(body: unknown): Flow {
     throw new FlowError(minLengthRefusal("Flow", "id"));
   }
   wiresResolve(flowId, rows);
-  kindsOk(flowId, rows, {});
+  kindsOk(flowId, rows, {}, cards);
   const flow: Flow = { id: flowId, description: pyStr(rec["description"] ?? ""), stages: rows };
-  return validateEngines(flow);
+  return validateEngines(flow, cards);
 }
 
 // ── branch prune (flow.py:659 pruned_for — verbatim) ────────────
-function prunedFor(flow: Flow, body: Record<string, unknown>): { flow: Flow; pruned: string[] } {
+function prunedFor(flow: Flow, body: Record<string, unknown>, cards?: CardRegistryService | null): { flow: Flow; pruned: string[] } {
   if (!flow.stages.some((st) => st.skipWhen !== null)) return { flow, pruned: [] };
   const pruned: Map<string, StageSkip> = new Map();
   const kept: StageRow[] = [];
@@ -1062,7 +1069,7 @@ function prunedFor(flow: Flow, body: Record<string, unknown>): { flow: Flow; pru
   // RECONSTRUCTED — every construction validator re-runs (TS scope:
   // wires + deferred kinds; card/tool/validators are no-ops here).
   wiresResolve(flow.id, merged);
-  kindsOk(flow.id, merged, {});
+  kindsOk(flow.id, merged, {}, cards);
   return { flow: { id: flow.id, description: flow.description, stages: merged }, pruned: [...pruned.keys()] };
 }
 
@@ -1124,8 +1131,9 @@ function dollarTokens(params: unknown): string[] {
 function compileFlow(
   flow: Flow,
   body: Record<string, unknown>,
+  cards?: CardRegistryService | null,
 ): { nodes: GraphNode[]; skipped: string[] } {
-  const { flow: built, pruned } = prunedFor(flow, body);
+  const { flow: built, pruned } = prunedFor(flow, body, cards);
   const nodes: GraphNode[] = toGraph(built);
   const bad: string[] = [];
   for (const node of nodes) {
@@ -1156,7 +1164,7 @@ function compileFlow(
 }
 
 // ── batch rows (python/gateway.py:2856 _validate_batch_rows) ────────
-function batchRows(body: unknown, firstError: string): Array<Record<string, unknown>> {
+function batchRows(body: unknown, firstError: string, cards?: CardRegistryService | null): Array<Record<string, unknown>> {
   const rows: Array<Record<string, unknown>> = [
     { scope: "flow", error: firstError, code: "flow_compile", loc: "flow" },
   ];
@@ -1179,7 +1187,7 @@ function batchRows(body: unknown, firstError: string): Array<Record<string, unkn
         if (k !== "inputs" && k !== "expected") stripped[k] = v;
       }
       try {
-        flowFromBody({ id: "probe", stages: [stripped] });
+        flowFromBody({ id: "probe", stages: [stripped] }, cards);
       } catch (e) {
         if (e instanceof FlowError) {
           rows.push({ stage: label, error: e.message, code: "flow_compile" });
@@ -1393,87 +1401,10 @@ function findDanglingRefs(body: Record<string, unknown>): Array<[string, string,
 }
 
 // ── model facts + model-dir scan (resolve_model's TS mirror) ────
-interface CardFacts {
-  card: string;
-  variants: Array<{
-    route?: string;
-    resolver_defaults?: Record<string, unknown>;
-    cells?: Array<{ route?: string }>;
-  }>;
-}
-
-let factsCache: Record<string, CardFacts> | null = null;
-
-function cordisFacts(): Record<string, CardFacts> {
-  if (factsCache !== null) return factsCache;
-  const factsPath: string = join(
-    resolveRepoRoot(),
-    "packages",
-    "engines",
-    "comfyui",
-    "cordis",
-    "data",
-    "model-facts.json",
-  );
-  // Resolution degrades to the model-dir scan when the facts file is
-  // absent (composeViaCli still refuses LOUD when it would compose).
-  try {
-    const doc: unknown = JSON.parse(readFileSync(factsPath, "utf8"));
-    const models: unknown = (doc as Record<string, unknown>)["models"];
-    factsCache =
-      typeof models === "object" && models !== null
-        ? (models as Record<string, CardFacts>)
-        : {};
-  } catch {
-    factsCache = {};
-  }
-  return factsCache;
-}
-
-// The owning family for mid: mid itself, or the facts model whose
-// variant/cell route owns mid (mirrors _route_family over the
-// exported facts variant tables).
-function resolveFamily(mid: string): string {
-  const facts: Record<string, CardFacts> = cordisFacts();
-  if (mid in facts) return mid;
-  for (const [fam, row] of Object.entries(facts)) {
-    for (const v of row.variants ?? []) {
-      if (v.route === mid) return fam;
-      for (const c of v.cells ?? []) {
-        if (c.route === mid) return fam;
-      }
-    }
-  }
-  return mid;
-}
-
-let modelMidsCache: Set<string> | null = null;
-
-// resolve_model's existence half — RE-HOMED 2026-09-08 on the frozen
-// discovery catalog (packages/gateway/data/discovery-catalog.json,
-// .catalog.models keys; hand-owned since purge S-catalog,
-// wall-pinned). It replaces the models/<genre>/<mid>/model.py fs scan
-// (estate-python purge deleted every model.py — the scan resolved the
-// empty set and every {model:} compose refused). Missing file throws
-// LOUD via readFileSync (same as cordisFacts' plane files); a
-// malformed shape resolves empty (same as loadModelFacts).
-function modelMids(): Set<string> {
-  if (modelMidsCache !== null) return modelMidsCache;
-  const path: string = join(
-    resolveRepoRoot(), "packages", "gateway", "data", "discovery-catalog.json",
-  );
-  const doc: unknown = JSON.parse(readFileSync(path, "utf8")) as unknown;
-  const models: unknown =
-    typeof doc === "object" && doc !== null
-      ? (doc as { catalog?: { models?: unknown } }).catalog?.models
-      : undefined;
-  modelMidsCache = new Set(
-    typeof models === "object" && models !== null && !Array.isArray(models)
-      ? Object.keys(models as Record<string, unknown>)
-      : [],
-  );
-  return modelMidsCache;
-}
+// (Stroke 2a: the facts/route/mids caches that lived here are
+// CardRegistryService state now — this door reads them through its
+// injected service. The absent-facts degrade survives at the
+// modelArm call site, which catches the service's strict read.)
 
 // ── the cordis CLI compose arm ──────────────────────────────────
 // packages/engines/comfyui/compose/__init__.py:110 — same argv, same
@@ -1562,7 +1493,7 @@ function composeViaCli(fam: string, card: string, params: Record<string, unknown
 }
 
 // ── {model} arm (gateway.py:595 resolve_card_model, ported subset) ─
-function modelArm(body: Record<string, unknown>): FlowsValidateAnswer {
+function modelArm(body: Record<string, unknown>, cards?: CardRegistryService | null): FlowsValidateAnswer {
   const mid: string = pyStr(body["model"]);
   try {
     strictBody(body);
@@ -1618,8 +1549,19 @@ function modelArm(body: Record<string, unknown>): FlowsValidateAnswer {
       }),
     };
   }
-  const facts: Record<string, CardFacts> = cordisFacts();
-  const resolves: boolean = mid in facts || resolveFamily(mid) in facts || modelMids().has(mid);
+  const svc: CardRegistryService = needCardRegistry(cards, "modelArm");
+  // Resolution degrades to {} when the facts file is absent (the old
+  // cordisFacts degrade — the resolves check below then answers from
+  // the catalog alone; the strict overlay further down still throws
+  // LOUD, exactly as the old overlayCardParams did).
+  let facts: Record<string, ModelFactsRow>;
+  try {
+    facts = svc.modelFacts();
+  } catch {
+    facts = {};
+  }
+  const resolves: boolean =
+    mid in facts || svc.resolveCardFamily(mid, facts) in facts || svc.modelMids().has(mid);
   if (!resolves) {
     return {
       status: 400,
@@ -1636,8 +1578,8 @@ function modelArm(body: Record<string, unknown>): FlowsValidateAnswer {
       }),
     };
   }
-  const fam: string = resolveFamily(mid);
-  const famRow: CardFacts | undefined = facts[fam];
+  const fam: string = svc.resolveCardFamily(mid, facts);
+  const famRow: ModelFactsRow | undefined = facts[fam];
   if (famRow === undefined) {
     // Non-cordis compose arm (python schema registry — unported
     // half): verdict + code parity, native text.
@@ -1664,7 +1606,7 @@ function modelArm(body: Record<string, unknown>): FlowsValidateAnswer {
   // variant routes (krea-2-raw's steps=52).
   let overlaid: { fam: string; card: string; params: Record<string, unknown> };
   try {
-    overlaid = overlayCardParams(body, mid);
+    overlaid = svc.overlayCardParams(body, mid);
   } catch (e) {
     if (e instanceof CardArmError) {
       return {
@@ -1698,7 +1640,7 @@ function modelArm(body: Record<string, unknown>): FlowsValidateAnswer {
 // declarations ride the TS registry (doors/flowsRegistry.ts — the
 // flow.py authoring plane, ported 2026-09-08), compiled through the
 // SAME flowFromBody/compile/sweep pipeline as inline bodies) ──────
-function namedArm(body: Record<string, unknown>): FlowsValidateAnswer {
+function namedArm(body: Record<string, unknown>, cards?: CardRegistryService | null): FlowsValidateAnswer {
   const name: string = pyStr(body["flow"]);
   if (!FLOW_ID_RE.test(name)) {
     return {
@@ -1732,7 +1674,7 @@ function namedArm(body: Record<string, unknown>): FlowsValidateAnswer {
       payload: { error: badInitial, code: "flow_compile", loc: "flow" },
     };
   }
-  return serveSubject(registryFlowToInline(expanded), body);
+  return serveSubject(registryFlowToInline(expanded), body, cards);
 }
 
 // ── inline arm (gateway.py:2778 + 2856 + 2827) ──────────────────
@@ -1746,7 +1688,7 @@ function costPreview(engineTypes: string[]): Record<string, unknown> {
   };
 }
 
-function inlineArm(full: unknown): FlowsValidateAnswer {
+function inlineArm(full: unknown, cards?: CardRegistryService | null): FlowsValidateAnswer {
   const fullRec: Record<string, unknown> =
     typeof full === "object" && full !== null && !Array.isArray(full)
       ? (full as Record<string, unknown>)
@@ -1755,7 +1697,7 @@ function inlineArm(full: unknown): FlowsValidateAnswer {
     typeof full === "object" && full !== null && !Array.isArray(full) && "flow_inline" in fullRec;
   const envelope: unknown = hasInline ? fullRec["flow_inline"] : undefined;
   const subject: unknown = envelope !== undefined && envelope !== null ? envelope : full;
-  return serveSubject(subject, fullRec);
+  return serveSubject(subject, fullRec, cards);
 }
 
 // ── the shared compile-serve tail (flowFromBody -> compile ->
@@ -1764,10 +1706,11 @@ function inlineArm(full: unknown): FlowsValidateAnswer {
 function serveSubject(
   subject: unknown,
   fullRec: Record<string, unknown>,
+  cards?: CardRegistryService | null,
 ): FlowsValidateAnswer {
   let flow: Flow;
   try {
-    flow = flowFromBody(subject);
+    flow = flowFromBody(subject, cards);
   } catch (e) {
     if (e instanceof FlowError) {
       return {
@@ -1776,7 +1719,7 @@ function serveSubject(
           error: e.message,
           code: "flow_compile",
           loc: "flow",
-          errors: batchRows(subject, e.message),
+          errors: batchRows(subject, e.message, cards),
         },
       };
     }
@@ -1784,7 +1727,7 @@ function serveSubject(
   }
   let compiled: { nodes: GraphNode[]; skipped: string[] };
   try {
-    compiled = compileFlow(flow, fullRec);
+    compiled = compileFlow(flow, fullRec, cards);
   } catch (e) {
     if (e instanceof FlowError) {
       return {
@@ -1793,7 +1736,7 @@ function serveSubject(
           error: e.message,
           code: "flow_compile",
           loc: "flow",
-          errors: batchRows(subject, e.message),
+          errors: batchRows(subject, e.message, cards),
         },
       };
     }
@@ -1831,33 +1774,36 @@ function serveSubject(
 }
 
 // ── the door ────────────────────────────────────────────────────
-export function handleFlowsValidate(doc: unknown): FlowsValidateAnswer {
+export function handleFlowsValidate(doc: unknown, cards?: CardRegistryService | null): FlowsValidateAnswer {
   if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
     // Non-dict bodies skip every guard and hit flow_from_body's
     // "flow body must be a JSON object" (gateway.py:2786).
-    return inlineArm(doc);
+    return inlineArm(doc, cards);
   }
   const body: Record<string, unknown> = doc as Record<string, unknown>;
   // _h_flows_validate arm order: {model} first (gateway.py:2740).
-  if ("model" in body) return modelArm(body);
+  if ("model" in body) return modelArm(body, cards);
   // Named-flow condition verbatim (gateway.py:2756): a body carrying
   // BOTH a flow name and inline shape is an inline body whose
   // unknown-keys refusal names the offender.
   if ("flow" in body && !("flow_inline" in body) && !("model" in body) && !("stages" in body)) {
-    return namedArm(body);
+    return namedArm(body, cards);
   }
-  return inlineArm(body);
+  return inlineArm(body, cards);
 }
 
 /** The flows validate door (_h_flows_validate) as a self-registering
  *  plugin: strict-parse under route()'s strict contract, every 4xx
  *  envelope rides normalize4xx, byte-identical to route()+_adapt.
- *  Matches its own row inside the listener — no central table. */
+ *  Matches its own row inside the listener — no central table.
+ *  Reads the card registry through ctx.cardRegistry (the loader
+ *  gates this door on the card-registry provider, so the sync
+ *  validators always see a primed registry — no apply-time preload,
+ *  no module cache). */
 export const validateDoors: Plugin = {
   name: "gateway-validate",
-  inject: ["gatewayError"],
-  async apply(ctx: Context): Promise<void> {
-    cardDefs = await loadCardDefs();
+  inject: ["gatewayError", "cardRegistry"],
+  apply(ctx: Context): void {
     ctx.on(
       "gateway/request",
       (req: GatewayRequest): DispatchResult | undefined => {
@@ -1881,7 +1827,7 @@ export const validateDoors: Plugin = {
         const answered: {
           status: number;
           payload: Record<string, unknown>;
-        } = handleFlowsValidate(parsed.doc);
+        } = handleFlowsValidate(parsed.doc, ctx.cardRegistry);
         errors.normalize4xx(answered.status, answered.payload);
         return {
           status: answered.status,

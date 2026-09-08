@@ -101,7 +101,9 @@ import type {
 } from "@melite/gateway-core";
 import { catalogPath } from "./discovery.ts";
 import { queueSnapshot } from "./flowsRun.ts";
-import { cardDefsSync } from "./flowsCard.ts";
+import type { RunsService } from "./flowsRun.ts";
+import { needCardRegistry } from "./flowsCard.ts";
+import type { CardRegistryService } from "./flowsCard.ts";
 import {
   expandRegistryFlow,
   getRegistryFlow,
@@ -1088,9 +1090,9 @@ interface ManifestEntry {
  *  no dir, no models, no docs) union in as root-independent
  *  globals under the registry-owner engine only (once, not once
  *  per engine). Keyed by DECLARED card id. */
-function manifests(engine: string): Map<string, ManifestEntry> {
+function manifests(engine: string, cards?: CardRegistryService | null): Map<string, ManifestEntry> {
   const out = new Map<string, ManifestEntry>();
-  const defs = cardDefsSync();
+  const defs = needCardRegistry(cards, "manifests").defsSync();
   const resolved = new Set<string>();
   const cardsRoot: string = join(engine, "action_cards");
   let genres: string[];
@@ -1430,6 +1432,7 @@ function buildPeek(
   repo: string,
   kind: string | null,
   genre: string | null,
+  cards?: CardRegistryService | null,
 ): Record<string, unknown> {
   let k: string | null;
   try {
@@ -1447,8 +1450,8 @@ function buildPeek(
   const rows: PeekRow[] = [];
   try {
     for (const engine of engines) {
-      const mans: Map<string, ManifestEntry> = manifests(engine);
-      const cards: CardWalk = cardRows(engine);
+      const mans: Map<string, ManifestEntry> = manifests(engine, cards);
+      const walk: CardWalk = cardRows(engine);
       for (const [cid, entry] of mans) {
         const gg: string | null =
           entry.genre !== "" ? entry.genre.toLowerCase() : null;
@@ -1457,7 +1460,7 @@ function buildPeek(
         // declared card id (peek 527-530).
         const dname: string = entry.dir.split("/").pop() ?? "";
         let skills = 0;
-        for (const r of cards.rows) {
+        for (const r of walk.rows) {
           if (r.row.card === dname) skills++;
         }
         let params = 0;
@@ -1580,13 +1583,14 @@ function resolveCardDir(
 function buildCardTools(
   repo: string,
   lane: string | null,
+  cards?: CardRegistryService | null,
 ): Record<string, unknown>[] {
   const l: string = (lane ?? "").trim();
   const engines: string[] = engineDirs(join(repo, "packages", "engines"));
   const out: Record<string, unknown>[] = [];
   if (l !== "") {
     for (const engine of engines) {
-      const mans: Map<string, ManifestEntry> = manifests(engine);
+      const mans: Map<string, ManifestEntry> = manifests(engine, cards);
       const cid: string | null = resolveCardDir(mans, l);
       if (cid !== null) {
         for (const m of (mans.get(cid) as ManifestEntry).rows) {
@@ -1630,7 +1634,7 @@ function buildCardTools(
     );
   }
   for (const engine of engines) {
-    for (const entry of manifests(engine).values()) {
+    for (const entry of manifests(engine, cards).values()) {
       for (const m of entry.rows) out.push(wireManifest(m));
     }
   }
@@ -1683,6 +1687,7 @@ function buildLaneBundle(
   repo: string,
   lane: string,
   kind: string | null,
+  cards?: CardRegistryService | null,
 ): Record<string, unknown> {
   let k: string | null;
   try {
@@ -1695,7 +1700,7 @@ function buildLaneBundle(
   const engines: string[] = engineDirs(join(repo, "packages", "engines"));
   // Card branch (one engine owns the lane; lane=card=DECLARED id).
   for (const engine of engines) {
-    const mans: Map<string, ManifestEntry> = manifests(engine);
+    const mans: Map<string, ManifestEntry> = manifests(engine, cards);
     const cardKey: string | null = resolveCardDir(mans, l);
     if (cardKey === null) continue;
     if (k === "flow") continue;
@@ -1713,10 +1718,10 @@ function buildLaneBundle(
         families.push(m.model);
     }
     if (families.length === 0) families.push(cardKey);
-    const cards: CardWalk = cardRows(engine);
+    const walk: CardWalk = cardRows(engine);
     const dname: string = entry.dir.split("/").pop() ?? "";
     const bucket: { dir: string; rows: DocRow[] } | undefined =
-      cards.buckets.get(dname);
+      walk.buckets.get(dname);
     const bucketRows: DocRow[] = bucket?.rows ?? [];
     let agentRow: DocRow | null = null;
     for (const r of bucketRows) {
@@ -1886,9 +1891,10 @@ export function hLanes(
   repo: string,
   kind: string | null,
   genre: string | null,
+  cards?: CardRegistryService | null,
 ): { status: number; payload: unknown } {
   try {
-    return { status: 200, payload: buildPeek(repo, kind, genre) };
+    return { status: 200, payload: buildPeek(repo, kind, genre, cards) };
   } catch (e) {
     if (e instanceof LaneWireError) {
       return {
@@ -1903,9 +1909,10 @@ export function hLanes(
 export function hCardTools(
   repo: string,
   lane: string | null,
+  cards?: CardRegistryService | null,
 ): { status: number; payload: unknown } {
   try {
-    return { status: 200, payload: buildCardTools(repo, lane) };
+    return { status: 200, payload: buildCardTools(repo, lane, cards) };
   } catch (e) {
     if (e instanceof Door404) return door404(e);
     if (e instanceof LaneWireError) {
@@ -1938,9 +1945,10 @@ export function hLaneBundle(
   repo: string,
   lane: string,
   kind: string | null,
+  cards?: CardRegistryService | null,
 ): { status: number; payload: unknown } {
   try {
-    return { status: 200, payload: buildLaneBundle(repo, lane, kind) };
+    return { status: 200, payload: buildLaneBundle(repo, lane, kind, cards) };
   } catch (e) {
     if (e instanceof Door404) return door404(e);
     if (e instanceof Door400) {
@@ -2025,13 +2033,15 @@ export function hSkillRead(
  *  from process boot; active null on fresh boot (D9: created/
  *  started stamps unretained); subscribers/recent fresh empties
  *  (no WS bus / worker feed in the preview — D9). */
-export function hMetrics(): { status: number; payload: unknown } {
+export function hMetrics(
+  svc?: RunsService | null,
+): { status: number; payload: unknown } {
   const snap: {
     queued: number;
     running: number;
     active: string;
     queued_ids: string[];
-  } = queueSnapshot();
+  } = queueSnapshot(svc ?? undefined);
   const counts: Record<string, number> = {};
   if (snap.queued > 0) counts["queued"] = snap.queued;
   if (snap.running > 0) counts["running"] = snap.running;
@@ -2071,6 +2081,8 @@ function section(fn: () => unknown): unknown {
 export function hAgentBoot(
   repo: string,
   stateRoot: string,
+  svc?: RunsService | null,
+  cards?: CardRegistryService | null,
 ): { status: number; payload: unknown } {
   const now: number = Date.now() / 1000;
   const snap: {
@@ -2078,7 +2090,7 @@ export function hAgentBoot(
     running: number;
     active: string;
     queued_ids: string[];
-  } = queueSnapshot();
+  } = queueSnapshot(svc ?? undefined);
   const counts: Record<string, number> = {};
   if (snap.queued > 0) counts["queued"] = snap.queued;
   if (snap.running > 0) counts["running"] = snap.running;
@@ -2096,8 +2108,8 @@ export function hAgentBoot(
       active: snap.active !== "" ? snap.active : null,
       runs_by_status: counts,
     },
-    lanes: section(() => buildPeek(repo, null, null)),
-    card_tools: section(() => buildCardTools(repo, null)),
+    lanes: section(() => buildPeek(repo, null, null, cards)),
+    card_tools: section(() => buildCardTools(repo, null, cards)),
     skills: section(() => buildSkillIndex(repo)),
     // The frozen sections already hold the PARSED payloads (py serves
     // the json.loads of to_json / schema_snapshot — the same objects
@@ -2172,6 +2184,8 @@ export function dispatchPlanes(
   m: RegExpExecArray | null,
   target: string,
   roots: AssetRoots,
+  svc?: RunsService | null,
+  cards?: CardRegistryService | null,
 ): PlaneResult | null {
   const repo: string = disclosureRoot();
   const qs: Record<string, string[]> = parseTargetQuery(target);
@@ -2181,6 +2195,7 @@ export function dispatchPlanes(
         repo,
         qFirst(qs, "kind"),
         qFirst(qs, "genre"),
+        cards,
       );
       return answer(r.status, r.payload);
     }
@@ -2188,6 +2203,7 @@ export function dispatchPlanes(
       const r: { status: number; payload: unknown } = hCardTools(
         repo,
         qFirst(qs, "lane"),
+        cards,
       );
       return answer(r.status, r.payload);
     }
@@ -2198,6 +2214,7 @@ export function dispatchPlanes(
         repo,
         lane,
         qFirst(qs, "kind"),
+        cards,
       );
       return answer(r.status, r.payload);
     }
@@ -2220,11 +2237,13 @@ export function dispatchPlanes(
       const r: { status: number; payload: unknown } = hAgentBoot(
         repo,
         roots.stateRoot,
+        svc,
+        cards,
       );
       return answer(r.status, r.payload);
     }
     case "_h_metrics": {
-      const r: { status: number; payload: unknown } = hMetrics();
+      const r: { status: number; payload: unknown } = hMetrics(svc);
       return answer(r.status, r.payload);
     }
     default:
@@ -2235,13 +2254,16 @@ export function dispatchPlanes(
 /** The lane-discovery + agent-plane doors as a self-registering
  *  plugin: lanes, card-tools, lane bundles, skills, skill bodies,
  *  agent boot, metrics — native decl/file-derived reads over the
- *  disclosure root, dumpsPy + normalize4xx at the door. Matches its
- *  own rows inside the listener (dispatchPlanes answers plane rows
- *  and returns null for every other handler — gating on its answer
- *  alone preserves the old fall-through exactly). No services
- *  injected — the door reads nothing through the context. */
+ *  disclosure root, dumpsPy + normalize4xx at the door. The queue
+ *  terms (metrics, agent boot) read through ctx.runs; the card
+ *  terms (lanes, card-tools, agent boot) read through
+ *  ctx.cardRegistry. Matches its own
+ *  rows inside the listener (dispatchPlanes answers plane rows and
+ *  returns null for every other handler — gating on its answer alone
+ *  preserves the old fall-through exactly). */
 export const planesDoors: Plugin = {
   name: "gateway-planes",
+  inject: ["runs", "cardRegistry"],
   apply(ctx: Context): void {
     ctx.on(
       "gateway/request",
@@ -2253,6 +2275,8 @@ export const planesDoors: Plugin = {
           hit.m,
           req.target,
           req.roots,
+          ctx.runs,
+          ctx.cardRegistry,
         );
         if (planes !== null) return planes;
         return undefined;

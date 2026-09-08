@@ -46,7 +46,6 @@ import { dispatch } from "@melite/gateway";
 import { defaultAssetRoots, unquotePy } from "@melite/gateway";
 import { handleWsUpgrade } from "@melite/gateway";
 import { bootGatewayContext, refusalLine } from "@melite/gateway";
-import { primeCardRegistry } from "@melite/gateway";
 import { createProcessShutdown } from "@melite/gateway";
 import { BOOT_ENGINE } from "@melite/gateway";
 
@@ -74,10 +73,22 @@ export async function startServer(port: number = 0): Promise<{
     engine: BOOT_ENGINE,
     claimLock: false,
   });
-  // PURGE S-decls: the registry loads async but the validate rim is
-  // sync — prime once per boot (both boot sites); request paths
-  // project synchronously from the primed set.
-  await primeCardRegistry();
+  // The card registry loads async but the validate/disclosure rims
+  // are sync — prime once per boot (both boot sites; the manifest's
+  // gateway-card-registry row primes at load and this re-prime is
+  // belt-and-braces, mirroring the old double prime). Boot scope is
+  // not a plugin and cannot declare inject, so the service resolves
+  // through ctx.get('cardRegistry') (the task's rule-4 shape) —
+  // undefined means the leaf miswired the provider row: LOUD, never
+  // a fallback.
+  const cards = ctx.get("cardRegistry");
+  if (cards === undefined) {
+    throw new Error(
+      "[card_registry] unprimed: no CardRegistryService on the boot " +
+        "context — the manifest's gateway-card-registry row is missing",
+    );
+  }
+  await cards.prime();
   const ws: WebServer = ctx.webServer;
   // The fallback seat = the dispatch loop. No named HTTP routes:
   // every path (health, chrome bytes, /v1 doors, the 404 voice)
@@ -229,7 +240,17 @@ if (isMain) {
       engine: BOOT_ENGINE,
       claimLock: true,
     });
-    await primeCardRegistry();
+    // Same rule-4 prime as startServer below (boot scope cannot
+    // inject — ctx.get, LOUD on miswire). The provider row primes at
+    // load; both explicit primes are belt-and-braces.
+    const bootCards = ctx.get("cardRegistry");
+    if (bootCards === undefined) {
+      throw new Error(
+        "[card_registry] unprimed: no CardRegistryService on the boot " +
+          "context — the manifest's gateway-card-registry row is missing",
+      );
+    }
+    await bootCards.prime();
     // Clean shutdown rides the harness's process-shutdown shape
     // (core/processShutdown.ts — copied verbatim @ 141ebf6): signals
     // dispose the ROOT context fiber, which cascades every plugin

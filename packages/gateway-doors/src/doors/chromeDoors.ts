@@ -8,8 +8,9 @@
 // ensure_ascii \uXXXX vs JSON.stringify raw UTF-8, py float 1.0 vs
 // JS number 1). Anything else falls through to the asset arms,
 // exactly as the old arm did. Matches its own rows inside the
-// listener (routeUtil.matchRoute) — no central table owns it. No
-// services injected — the door reads nothing through the context.
+// listener (routeUtil.matchRoute) — no central table owns it. The
+// door injects cardRegistry for the LIVE /v1/tools overlay only —
+// every other chrome row serves frozen bytes with no context read.
 //
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
@@ -29,6 +30,7 @@ import { toolsJsonLive } from "./toolsEmit.ts";
  *  Anything else falls through. */
 export const chromeDoors: Plugin = {
   name: "gateway-chrome",
+  inject: ["cardRegistry"],
   apply(ctx: Context): void {
     ctx.on(
       "gateway/request",
@@ -44,7 +46,7 @@ export const chromeDoors: Plugin = {
         if (hit.row.path === "/v1/tools" || req.path === "/v1/tools") {
           return {
             status: 200,
-            body: await toolsJsonLive(),
+            body: await toolsJsonLive(ctx.cardRegistry),
             contentType: "application/json",
             headers: {},
           };

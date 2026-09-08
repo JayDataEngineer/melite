@@ -42,12 +42,12 @@ export interface ToolBaseRow {
   readonly description: string;
 }
 
-let baseCache: Map<string, ToolBaseRow> | null = null;
-
 /** The frozen base table: card id -> authored row (TOOLS_JSON is the
- *  single source — parsed once, never transcribed). */
+ *  single source — parsed per call, never transcribed, never
+ *  cached at module scope (stroke 2a: no module-level mutable
+ *  singleton; the doc is small and the parse is cheap beside the
+ *  schema emission each row already pays). */
 export function toolBaseRows(): Map<string, ToolBaseRow> {
-  if (baseCache !== null) return baseCache;
   const doc = JSON.parse(TOOLS_JSON) as { tools: Array<Record<string, unknown>> };
   const out = new Map<string, ToolBaseRow>();
   for (const t of doc.tools) {
@@ -62,7 +62,6 @@ export function toolBaseRows(): Map<string, ToolBaseRow> {
       description: (t["description"] as string) ?? "",
     });
   }
-  baseCache = out;
   return out;
 }
 

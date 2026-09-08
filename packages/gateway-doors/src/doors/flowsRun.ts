@@ -109,13 +109,13 @@ import {
 import type { GraphRow } from "@melite/queue";
 import {
   CardArmError,
-  phase1Card,
-  phase2Card,
+  needCardRegistry,
   pyStrMid,
 } from "./flowsCard.ts";
-import type { Phase1Card } from "./flowsCard.ts";
+import type { CardRegistryService, Phase1Card } from "./flowsCard.ts";
 import { terminalFrame } from "@melite/queue";
 import { registerRunStatusProbe } from "@melite/queue";
+import { Service } from "@deepseek-ai/cordis";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
@@ -188,60 +188,205 @@ export interface RunRecord {
   cardId?: string;
 }
 
-/** The preview registry (process-local run rows). */
-const RUNS: Map<string, RunRecord> = new Map();
-const ORDER: string[] = [];
-let PUMPING: boolean = false;
-
-/** Test seam: drop all registry state (the wall boots fresh
- *  processes, so this is belt-and-braces for in-process reuse). */
-export function resetFlowsRunForTests(): void {
-  RUNS.clear();
-  ORDER.length = 0;
-  PUMPING = false;
-}
-
-/** Live-registry probe for the P5 queue refusal seam (ctx.ts
- *  refuseResumeDoor/refuseReproduceDoor over queue.ts): the row's
- *  status, or null when this process owns no live row — mirrors
- *  `gw.runs.get(rid)` (the retired resume/reproduce doors). */
-export function liveRunStatus(runId: string): string | null {
-  const run: RunRecord | undefined = RUNS.get(runId);
-  return run === undefined ? null : run.status;
-}
-
-// Queue seam (STAGE 1 split): the reproduce/resume arms read live
-// status through the queue's probe slot — registered in the start
-// door's apply (fiber-owned: unload unregisters; a disabled start
-// door degrades the arms to registry reads, never a stale probe).
-// Import-time registration is banned (concurrent loader import
-// cycles hit the slot's TDZ — include stroke 2026-09-08).
-
 /** The P6 live-bus publisher seam (runs.ts owns the sockets): the
  *  worker publishes stage flips + the terminal run frame here; the
- *  bus door (handleWsUpgrade) registers its deliver fn at import, so
- *  flowsRun never imports the WS framing (no import cycle — the
- *  framing + subscriber sets live in runs.ts). Null until the door
- *  registers (unit callers of runOne see a no-op publish). The bus
- *  never takes the worker down (publish is guarded). */
+ *  bus door registers its deliver fn through the service (flowsRun
+ *  never imports the WS framing — no import cycle, the framing +
+ *  subscriber sets live in runs.ts). Null until the door registers
+ *  (unit callers of runOne see a no-op publish). The bus never takes
+ *  the worker down (publish is guarded). */
 export type BusPublisher = (
   runId: string,
   event: Record<string, unknown>,
 ) => void;
 
-let BUS: BusPublisher | null = null;
+// ── RunsService (stroke 2b, DSH-AS-LANGUAGE LAW) ────────────────────
+// SERVICE NAME: 'runs' (ctx.runs). The 'runsRegistry' long form was
+// considered and declined: the short name matches the runs-plane lane
+// and the ctx.gatewayError precedent (short camelCase service key,
+// kebab-case provider plugin below). Documented here per the task.
+//
+// LOCATION: defined where the RUNS registry lives today (this file,
+// the flowsRun side) — NOT in runs.ts. runs.ts already imports this
+// module; defining the service there would force flowsRun.ts to import
+// runs.ts and cycle. Import direction stays runs.ts -> flowsRun.ts ->
+// queue/core (leaves depend downward).
+//
+// OWNS: the RUNS Map, the ORDER FIFO, the PUMPING flag, the bus
+// publisher slot, and the live-status probe registration (via the
+// provider below). Queue's registerRunStatusProbe slot STAYS
+// queue-side (queue must not import doors); this service routes the
+// doors side: provider apply registers the probe, dispose unregisters.
+// Every door with registry reads/writes injects 'runs' and uses
+// ctx.runs (never the module handle).
+export class RunsService extends Service {
+  /** The preview registry (process-local run rows). */
+  readonly runs: Map<string, RunRecord> = new Map();
+  /** The serial-pump FIFO (run ids in submit order). */
+  readonly order: string[] = [];
+  /** The pump reentrancy guard. */
+  pumping: boolean = false;
+  /** The live-bus publisher (runs.ts deliver fn, null until set). */
+  bus: BusPublisher | null = null;
 
-export function setBusPublisher(fn: BusPublisher | null): void {
-  BUS = fn;
-}
+  constructor(ctx: Context) {
+    super(ctx, "runs");
+  }
 
-function publishBus(runId: string, event: Record<string, unknown>): void {
-  try {
-    BUS?.(runId, event);
-  } catch {
-    /* the bus never takes the worker down */
+  /** Test seam: drop all registry state (the wall boots fresh
+   *  processes, so this is belt-and-braces for in-process reuse). */
+  resetForTests(): void {
+    this.runs.clear();
+    this.order.length = 0;
+    this.pumping = false;
+  }
+
+  /** Live-registry probe for the P5 queue refusal seam: the row's
+   *  status, or null when this process owns no live row — mirrors
+   *  `gw.runs.get(rid)` (the retired resume/reproduce doors). */
+  liveStatus(runId: string): string | null {
+    const run: RunRecord | undefined = this.runs.get(runId);
+    return run === undefined ? null : run.status;
+  }
+
+  /** The bus publisher slot (runs.ts owns the sockets). */
+  setBusPublisher(fn: BusPublisher | null): void {
+    this.bus = fn;
+  }
+
+  /** The worker publish (guarded — the bus never takes the worker down). */
+  publishBus(runId: string, event: Record<string, unknown>): void {
+    try {
+      this.bus?.(runId, event);
+    } catch {
+      /* the bus never takes the worker down */
+    }
+  }
+
+  /** The queue snapshot (queued=len(order), running=1/0,
+   *  active=run_id/"", queued_ids=list(order)). The TS registry holds
+   *  many running rows at most transiently (serial pump), so running
+   *  counts rows and active is the first of them. */
+  snapshot(): {
+    queued: number;
+    running: number;
+    active: string;
+    queued_ids: string[];
+  } {
+    let running = 0;
+    let active = "";
+    for (const run of this.runs.values()) {
+      if (run.status === "running") {
+        running++;
+        if (active === "") active = run.runId;
+      }
+    }
+    return {
+      queued: this.order.length,
+      running,
+      active,
+      queued_ids: [...this.order],
+    };
+  }
+
+  /** The WS hydrate snapshot (the run frame for an owned id, plus
+   *  per-stage patches when the run is terminal). undefined = unowned
+   *  (the unknown-run answer). */
+  hydrate(
+    runId: string,
+  ): { status: string; stages: StageRow[] } | undefined {
+    const run: RunRecord | undefined = this.runs.get(runId);
+    if (run === undefined) return undefined;
+    return { status: run.status, stages: run.stages };
   }
 }
+
+declare module "@deepseek-ai/cordis" {
+  interface Context {
+    runs: RunsService;
+  }
+}
+
+// DOCUMENTED module-level handle (the task-allowed exception):
+// library/upgrade paths without a Context (bootState's resurrect
+// callback, the WS upgrade hydrate, planes pure helpers called without
+// a service arg) resolve the active service through ACTIVE. Door
+// listeners MUST use ctx.runs directly — never ACTIVE — so the fiber
+// lifetime stays explicit. ACTIVE is set by the provider's apply and
+// cleared by its disposer (fiber-owned, like the probe registration).
+// Import-time registration is banned (concurrent loader import cycles
+// hit the slot's TDZ — include stroke 2026-09-08).
+let ACTIVE: RunsService | null = null;
+
+/** Resolve the service for module-level wrappers: an explicit svc arg
+ *  wins (door listeners pass ctx.runs); otherwise ACTIVE. Null = no
+ *  provider in this fiber yet. */
+function pick(svc?: RunsService | null): RunsService | null {
+  if (svc !== undefined && svc !== null) return svc;
+  return ACTIVE;
+}
+
+/** Test seam: drop all registry state (the wall boots fresh
+ *  processes, so this is belt-and-braces for in-process reuse).
+ *  Stable name; optional svc keeps pre-service unit callers working
+ *  (no-op when no provider yet — the registry is empty anyway). */
+export function resetFlowsRunForTests(svc?: RunsService | null): void {
+  const s: RunsService | null = pick(svc);
+  if (s === null) return;
+  s.resetForTests();
+}
+
+/** Live-registry probe for the P5 queue refusal seam (ctx.ts
+ *  refuseResumeDoor/refuseReproduceDoor over queue.ts): the row's
+ *  status, or null when this process owns no live row — mirrors
+ *  `gw.runs.get(rid)` (the retired resume/reproduce doors).
+ *  Stable name; reads through the service when present, null when
+ *  no provider yet (exactly the empty-registry answer). */
+export function liveRunStatus(
+  runId: string,
+  svc?: RunsService | null,
+): string | null {
+  const s: RunsService | null = pick(svc);
+  if (s === null) return null;
+  return s.liveStatus(runId);
+}
+
+/** The bus publisher slot (service-owned). Stable name; door
+ *  listeners should prefer ctx.runs.setBusPublisher. The wrapper
+ *  throws when no provider is loaded (a write without a registry is
+ *  a bug — reads degrade to empty, writes do not). */
+export function setBusPublisher(
+  fn: BusPublisher | null,
+  svc?: RunsService | null,
+): void {
+  const s: RunsService | null = pick(svc);
+  if (s === null) {
+    throw new Error(
+      "[runs] no RunsService in this fiber — provider gateway-runs-registry not loaded",
+    );
+  }
+  s.setBusPublisher(fn);
+}
+
+/** The provider plugin (fiber-owned): owns the RunsService lifetime,
+ *  registers the queue live-status probe on start, unregisters on
+ *  dispose. Manifest row gateway-runs-registry rides BEFORE every
+ *  consumer (flows-start/status/stop, runs, planes); consumers inject
+ *  'runs' so the loader gates them on this provider. */
+export const runsRegistry = {
+  name: "gateway-runs-registry",
+  apply(ctx: Context): () => void {
+    const svc = new RunsService(ctx);
+    ACTIVE = svc;
+    registerRunStatusProbe((runId: string): string | null =>
+      svc.liveStatus(runId),
+    );
+    return (): void => {
+      registerRunStatusProbe(null);
+      if (ACTIVE === svc) ACTIVE = null;
+    };
+  },
+};
 
 /** The boot-resurrect registry seam (P5, queue/resurrect.ts): one
  *  rebuilt queued run joins the FIFO. Stages/skipped ride VERBATIM
@@ -256,13 +401,22 @@ function publishBus(runId: string, event: Record<string, unknown>): void {
  *  worker serves preview-scope graphs only, a resurrected foreign
  *  graph fails at the splice with the planner's text instead of
  *  executing per-stage like py). */
-export function enqueueResurrected(rec: {
-  readonly runId: string;
-  readonly draftId: string;
-  readonly stages: unknown[];
-  readonly skippedStages: unknown[];
-  readonly artifacts: string[];
-}): void {
+export function enqueueResurrected(
+  rec: {
+    readonly runId: string;
+    readonly draftId: string;
+    readonly stages: unknown[];
+    readonly skippedStages: unknown[];
+    readonly artifacts: string[];
+  },
+  svc?: RunsService | null,
+): void {
+  const s: RunsService | null = pick(svc);
+  if (s === null) {
+    throw new Error(
+      "[runs] no RunsService in this fiber — provider gateway-runs-registry not loaded",
+    );
+  }
   const run: RunRecord = {
     runId: rec.runId,
     status: "queued",
@@ -277,40 +431,39 @@ export function enqueueResurrected(rec: {
     params: [],
     outputNodes: [],
   };
-  RUNS.set(rec.runId, run);
-  if (!ORDER.includes(rec.runId)) ORDER.push(rec.runId);
+  s.runs.set(rec.runId, run);
+  if (!s.order.includes(rec.runId)) s.order.push(rec.runId);
 }
 
 /** The queue snapshot (queued=len(order),
  *  running=1/0, active=run_id/"", queued_ids=list(order)). The TS
  *  registry holds many running rows at most transiently (serial
- *  pump), so running counts rows and active is the first of them. */
-export function queueSnapshot(): {
+ *  pump), so running counts rows and active is the first of them.
+ *  Stable name; door listeners pass ctx.runs, library paths fall back
+ *  to ACTIVE (empty when no provider yet — the empty-registry bytes). */
+export function queueSnapshot(svc?: RunsService | null): {
   queued: number;
   running: number;
   active: string;
   queued_ids: string[];
 } {
-  let running = 0;
-  let active = "";
-  for (const run of RUNS.values()) {
-    if (run.status === "running") {
-      running++;
-      if (active === "") active = run.runId;
-    }
-  }
-  return { queued: ORDER.length, running, active, queued_ids: [...ORDER] };
+  const s: RunsService | null = pick(svc);
+  if (s === null) return { queued: 0, running: 0, active: "", queued_ids: [] };
+  return s.snapshot();
 }
 
 /** The WS hydrate snapshot (the run
  *  frame for an owned id, plus per-stage patches when the run is
- *  terminal). undefined = unowned (the unknown-run answer). */
+ *  terminal). undefined = unowned (the unknown-run answer).
+ *  Stable name; door listeners pass ctx.runs, the WS upgrade path
+ *  (no Context) falls back to ACTIVE. */
 export function hydrateSnapshot(
   runId: string,
+  svc?: RunsService | null,
 ): { status: string; stages: StageRow[] } | undefined {
-  const run: RunRecord | undefined = RUNS.get(runId);
-  if (run === undefined) return undefined;
-  return { status: run.status, stages: run.stages };
+  const s: RunsService | null = pick(svc);
+  if (s === null) return undefined;
+  return s.hydrate(runId);
 }
 
 // ── roots (STATE_ROOT / OUT_ROOT / TEST_OUT_ROOT) ──
@@ -616,6 +769,8 @@ function shimNamedFlow(body: Record<string, unknown>): Record<string, unknown> |
 
 export async function handleFlowsStart(
   doc: unknown,
+  svc?: RunsService | null,
+  cards?: CardRegistryService | null,
 ): Promise<Refusal & { runId?: string }> {
   // Envelope structure rides the admission gate (schemastery);
   // every refusal below keeps its pinned text, in the original
@@ -701,7 +856,7 @@ export async function handleFlowsStart(
     );
   }
   if ("model" in body) {
-    return handleCardStart(body, testFlag, draftId);
+    return handleCardStart(body, testFlag, draftId, svc, cards);
   }
   if (!("flow_inline" in body)) {
     if (!("flow" in body)) {
@@ -717,13 +872,13 @@ export async function handleFlowsStart(
       (shim as Record<string, unknown>)["flow_inline"],
     );
     if (!("stages" in compiled)) return compiled;
-    return registerCompiled(compiled, testFlag, draftId);
+    return registerCompiled(compiled, testFlag, draftId, svc);
   }
   const compiled: { stages: CompiledStage[] } | Refusal = compileFlowInline(
     body["flow_inline"],
   );
   if (!("stages" in compiled)) return compiled;
-  return registerCompiled(compiled, testFlag, draftId);
+  return registerCompiled(compiled, testFlag, draftId, svc);
 }
 
 // ── registration (the shared single-stage tail: the existing
@@ -734,6 +889,7 @@ function registerCompiled(
   compiled: { stages: CompiledStage[] },
   testFlag: boolean,
   draftId: string,
+  svc?: RunsService | null,
 ): Refusal & { runId?: string } {
   if (compiled.stages.length !== 1) {
     return refusal(
@@ -773,9 +929,15 @@ function registerCompiled(
   };
   (run as { inputNames?: Record<string, Record<string, string>> }).inputNames =
     { [st.id]: st.inputNames };
-  RUNS.set(runId, run);
-  ORDER.push(runId);
-  void pump();
+  const s: RunsService | null = pick(svc);
+  if (s === null) {
+    throw new Error(
+      "[runs] no RunsService in this fiber — provider gateway-runs-registry not loaded",
+    );
+  }
+  s.runs.set(runId, run);
+  s.order.push(runId);
+  void pump(s);
   return {
     status: 202,
     payload: { run_id: runId, status: "queued" },
@@ -810,11 +972,14 @@ async function handleCardStart(
   body: Record<string, unknown>,
   testFlag: boolean,
   draftId: string,
+  svc?: RunsService | null,
+  cards?: CardRegistryService | null,
 ): Promise<Refusal & { runId?: string }> {
   const mid: string = pyStrMid(body["model"]);
+  const registry: CardRegistryService = needCardRegistry(cards, "handleCardStart");
   let p1: Phase1Card;
   try {
-    p1 = await phase1Card(body, mid);
+    p1 = await registry.phase1Card(body, mid);
   } catch (e) {
     if (e instanceof CardArmError) return cardRefusal(e);
     throw e;
@@ -822,7 +987,7 @@ async function handleCardStart(
   const runId: string = newRunId();
   let graph: Record<string, unknown>;
   try {
-    graph = (await phase2Card(p1, runId)).graph;
+    graph = (await registry.phase2Card(p1, runId)).graph;
   } catch (e) {
     if (e instanceof CardArmError) return cardRefusal(e);
     throw e;
@@ -870,8 +1035,14 @@ async function handleCardStart(
       params: { workflow: graph },
     },
   ];
-  RUNS.set(runId, run);
-  ORDER.push(runId);
+  const s: RunsService | null = pick(svc);
+  if (s === null) {
+    throw new Error(
+      "[runs] no RunsService in this fiber — provider gateway-runs-registry not loaded",
+    );
+  }
+  s.runs.set(runId, run);
+  s.order.push(runId);
   // R3 durable queue (submit 1322 + 1347-1351): the verbatim request
   // rides _request.json, the compiled document rides _flow.json, and
   // run.queued in the ledger is what a restart reconciles against.
@@ -913,7 +1084,7 @@ async function handleCardStart(
     draft_id: draftId,
     pipeline: pipelineOf(body),
   });
-  void pump();
+  void pump(s);
   return {
     status: 202,
     payload: { run_id: runId, status: "queued" },
@@ -948,30 +1119,30 @@ function errText(err: unknown): string {
   return errName(err) + ": " + msg;
 }
 
-async function pump(): Promise<void> {
-  if (PUMPING) return;
-  PUMPING = true;
+async function pump(svc: RunsService): Promise<void> {
+  if (svc.pumping) return;
+  svc.pumping = true;
   try {
     for (;;) {
-      const next: string | undefined = ORDER.shift();
+      const next: string | undefined = svc.order.shift();
       if (next === undefined) return;
-      const run: RunRecord | undefined = RUNS.get(next);
+      const run: RunRecord | undefined = svc.runs.get(next);
       if (run === undefined) continue;
-      await runOne(run);
+      await runOne(run, svc);
     }
   } finally {
-    PUMPING = false;
+    svc.pumping = false;
   }
 }
 
-async function runOne(run: RunRecord): Promise<void> {
+async function runOne(run: RunRecord, svc: RunsService): Promise<void> {
   run.status = "running";
   for (const stage of run.stages) {
     stage["status"] = "running";
     stage["merged"] = true;
     // P6 live bus (the worker): the running flip rides
     // the run's channel the moment it lands (key order as py).
-    publishBus(run.runId, {
+    svc.publishBus(run.runId, {
       type: "stage",
       stage: stage.id,
       index: stage.index,
@@ -1002,7 +1173,7 @@ async function runOne(run: RunRecord): Promise<void> {
         stage["error"] = text;
         // P6 live bus (merged-failure shape): the failed
         // flip rides before the terminal broadcast below.
-        publishBus(run.runId, {
+        svc.publishBus(run.runId, {
           type: "stage",
           stage: stage.id,
           index: stage.index,
@@ -1016,7 +1187,7 @@ async function runOne(run: RunRecord): Promise<void> {
     // P6 live bus (the worker: every subscriber gets the
     // final status exactly once — the terminalFrame shape is inherited
     // from queue.ts; the door closes the socket after delivering it.
-    publishBus(run.runId, terminalFrame("failed"));
+    svc.publishBus(run.runId, terminalFrame("failed"));
     return;
   }
   try {
@@ -1061,7 +1232,7 @@ async function runOne(run: RunRecord): Promise<void> {
       delete stage["activity"];
       // P6 live bus (the worker): per-stage completed
       // harvest frame, key order as py.
-      publishBus(run.runId, {
+      svc.publishBus(run.runId, {
         type: "stage",
         stage: stage.id,
         index: stage.index,
@@ -1091,7 +1262,7 @@ async function runOne(run: RunRecord): Promise<void> {
     // P6 live bus (the worker): the terminal broadcast rides
     // the SETTLED status (post contract-gate above) — then the door
     // closes the socket.
-    publishBus(run.runId, terminalFrame(run.status));
+    svc.publishBus(run.runId, terminalFrame(run.status));
   } catch (exc: unknown) {
     const text: string = errText(exc);
     const stopped: boolean =
@@ -1101,7 +1272,7 @@ async function runOne(run: RunRecord): Promise<void> {
         stage["status"] = stopped ? "stopped" : "failed";
         stage["error"] = text;
         // P6 live bus (merged-failure shape).
-        publishBus(run.runId, {
+        svc.publishBus(run.runId, {
           type: "stage",
           stage: stage.id,
           index: stage.index,
@@ -1112,12 +1283,12 @@ async function runOne(run: RunRecord): Promise<void> {
     }
     if (stopped) {
       run.status = "stopped";
-      publishBus(run.runId, terminalFrame("stopped"));
+      svc.publishBus(run.runId, terminalFrame("stopped"));
       return;
     }
     run.status = "failed";
     run.error = text;
-    publishBus(run.runId, terminalFrame("failed"));
+    svc.publishBus(run.runId, terminalFrame("failed"));
   }
 }
 
@@ -1187,12 +1358,19 @@ export function runLogTail(obj: {
 // ── the status arm ──
 
 /** GET /v1/flows/status/<id> (live rows only; restarted processes
- *  report unknown — no sidecar fallback exists, see the header). */
+ *  report unknown — no sidecar fallback exists, see the header).
+ *  Stable name; door listeners pass ctx.runs, library paths fall back
+ *  to ACTIVE (404 when no provider yet — the empty-registry answer). */
 export function handleFlowsStatus(
   runId: string,
   includeLog: boolean,
+  svc?: RunsService | null,
 ): Refusal {
-  const run: RunRecord | undefined = RUNS.get(runId);
+  const s: RunsService | null = pick(svc);
+  if (s === null) {
+    return refusal(404, "unknown run_id", "invalid_request");
+  }
+  const run: RunRecord | undefined = s.runs.get(runId);
   if (run === undefined) {
     return refusal(404, "unknown run_id", "invalid_request");
   }
@@ -1203,7 +1381,9 @@ export function handleFlowsStatus(
     skipped_stages: [...run.skippedStages],
     artifacts: [...run.artifacts],
     error: run.error,
-    queue_position: ORDER.includes(run.runId) ? ORDER.indexOf(run.runId) : 0,
+    queue_position: s.order.includes(run.runId)
+      ? s.order.indexOf(run.runId)
+      : 0,
   };
   if (includeLog) payload["log_tail"] = runLogTail(payload as never);
   return { status: 200, payload };
@@ -1213,9 +1393,17 @@ export function handleFlowsStatus(
  *  unknown -> 400 run_unknown; terminal -> 200 {error}; live ->
  *  flag + engine interrupt (kicked in-flight; the dispatcher
  *  stays synchronous — the wall pins the receipt BODY and the
- *  terminal "stopped" convergence, not the latency). */
-export function handleFlowsStop(runId: string): Refusal {
-  const run: RunRecord | undefined = RUNS.get(runId);
+ *  terminal "stopped" convergence, not the latency).
+ *  Stable name; door listeners pass ctx.runs. */
+export function handleFlowsStop(
+  runId: string,
+  svc?: RunsService | null,
+): Refusal {
+  const s: RunsService | null = pick(svc);
+  if (s === null) {
+    return refusal(400, "unknown run_id " + pyReprStr(runId), "run_unknown", "run_id");
+  }
+  const run: RunRecord | undefined = s.runs.get(runId);
   if (run === undefined) {
     return refusal(400, "unknown run_id " + pyReprStr(runId), "run_unknown", "run_id");
   }
@@ -1244,12 +1432,14 @@ export function parseIncludeLog(first: string | null): boolean {
 /** The flows start door as a self-registering
  *  plugin: registry-live runs over the engine/comfyui.ts client;
  *  start strict-parses under route()'s strict contract. Matches its
- *  own row inside the listener — no central table. */
+ *  own row inside the listener — no central table. Reads/writes the
+ *  registry through ctx.runs (the probe registration lives in the
+ *  runsRegistry provider — stroke 2b) and composes cards through
+ *  ctx.cardRegistry (the card-registry provider — stroke 2a). */
 export const flowsStartDoors: Plugin = {
   name: "gateway-flows-start",
-  inject: ["gatewayError"],
-  apply(ctx: Context): () => void {
-    registerRunStatusProbe(liveRunStatus);
+  inject: ["gatewayError", "runs", "cardRegistry"],
+  apply(ctx: Context): void {
     ctx.on(
       "gateway/request",
       async (req: GatewayRequest): Promise<DispatchResult | undefined> => {
@@ -1273,7 +1463,7 @@ export const flowsStartDoors: Plugin = {
         const answered: {
           status: number;
           payload: Record<string, unknown>;
-        } = await handleFlowsStart(parsed.doc);
+        } = await handleFlowsStart(parsed.doc, ctx.runs, ctx.cardRegistry);
         errors.normalize4xx(answered.status, answered.payload);
         return {
           status: answered.status,
@@ -1283,18 +1473,16 @@ export const flowsStartDoors: Plugin = {
         };
       },
     );
-    return (): void => {
-      registerRunStatusProbe(null);
-    };
   },
 };
 
 /** The flows stop door as a self-registering
  *  plugin: regex arms ride the match groups. Matches its own row
- *  inside the listener — no central table. */
+ *  inside the listener — no central table. Reads/writes the registry
+ *  through ctx.runs. */
 export const flowsStopDoors: Plugin = {
   name: "gateway-flows-stop",
-  inject: ["gatewayError"],
+  inject: ["gatewayError", "runs"],
   apply(ctx: Context): void {
     ctx.on(
       "gateway/request",
@@ -1311,7 +1499,7 @@ export const flowsStopDoors: Plugin = {
         const answered: {
           status: number;
           payload: Record<string, unknown>;
-        } = handleFlowsStop(runId);
+        } = handleFlowsStop(runId, ctx.runs);
         errors.normalize4xx(answered.status, answered.payload);
         return {
           status: answered.status,

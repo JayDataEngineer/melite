@@ -12,25 +12,27 @@
 // descriptions, non-card tools) and replaces only each
 // card-compose tool's params_schema.
 //
-// Bytes: computed once (lazy) and cached — deterministic per boot;
-// the chrome wall's golden is regolded from these bytes (causes
-// beside the golden). Serialization: JSON.stringify(doc, null, 2) —
+// Bytes: computed per request from the injected registry (stroke 2a
+// — the old module `cached` singleton is gone; the projection is
+// deterministic per primed registry, so recompute serves identical
+// bytes). Serialization: JSON.stringify(doc, null, 2) —
 // the TS-canonical form (raw UTF-8 em-dashes, JS numbers); the py
 // ensure_ascii era is over.
 import { emitParamsSchema } from "@comfyui/cordis";
-import { cardDefsSync } from "./flowsCard.ts";
+import { needCardRegistry } from "./flowsCard.ts";
+import type { CardRegistryService } from "./flowsCard.ts";
 import { TOOLS_JSON } from "./chrome.ts";
 
-let cached: string | null = null
-
-const buildToolsJson = async (): Promise<string> => {
+const buildToolsJson = async (cards?: CardRegistryService | null): Promise<string> => {
   const doc = JSON.parse(TOOLS_JSON) as {
     tools: Array<Record<string, unknown> & { card?: string }>
   }
-  // PURGE S-snapshots: the registry is primed at boot (both main.ts
-  // sites) — sync read, same projection the disclosure rim serves
-  // (toolProjection.ts mirrors this carrier line).
-  const defs = cardDefsSync()
+  // PURGE S-snapshots: the registry is primed at boot (the
+  // manifest's card-registry row) — sync read, same projection the
+  // disclosure rim serves (toolProjection.ts mirrors this carrier
+  // line). The registry arg is optional only for pre-service
+  // callers — serving without it throws LOUD.
+  const defs = needCardRegistry(cards, "toolsJsonLive").defsSync()
   let overlaid = 0
   for (const tool of doc.tools) {
     if (tool.kind !== "card-compose" || typeof tool.card !== "string") continue
@@ -51,7 +53,6 @@ const buildToolsJson = async (): Promise<string> => {
 }
 
 /** The served /v1/tools body: frozen base + live params_schema. */
-export const toolsJsonLive = async (): Promise<string> => {
-  if (cached === null) cached = await buildToolsJson()
-  return cached
+export const toolsJsonLive = async (cards?: CardRegistryService | null): Promise<string> => {
+  return buildToolsJson(cards)
 }

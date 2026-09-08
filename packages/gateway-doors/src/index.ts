@@ -10,7 +10,13 @@ export { bridgesDoors } from "./doors/bridges.ts";
 export { chromeDoors } from "./doors/chromeDoors.ts";
 export { discoveryDoors } from "./doors/discovery.ts";
 export { draftsDoors } from "./doors/drafts.ts";
-export { flowsStartDoors, flowsStopDoors } from "./doors/flowsRun.ts";
+export {
+  flowsStartDoors,
+  flowsStopDoors,
+  runsRegistry,
+  RunsService,
+} from "./doors/flowsRun.ts";
+export type { BusPublisher } from "./doors/flowsRun.ts";
 export { validateDoors } from "./doors/flowsValidate.ts";
 export { planesDoors } from "./doors/planes.ts";
 export { flowsStatusDoors, runsDoors } from "./doors/runs.ts";
@@ -35,10 +41,24 @@ export {
   hydrateSnapshot,
   setBusPublisher,
   handleFlowsStatus,
+  handleFlowsStop,
+  handleFlowsStart,
   parseIncludeLog,
+  resetFlowsRunForTests,
 } from "./doors/flowsRun.ts";
 export { handleWsUpgrade } from "./doors/runs.ts";
-export { primeCardRegistry } from "./doors/flowsCard.ts";
+export {
+  CardRegistryService,
+  cardRegistryProvider,
+  needCardRegistry,
+} from "./doors/flowsCard.ts";
+export type {
+  CardDeclRow,
+  ModelFactsRow,
+  OverlaidCard,
+  Phase1Card,
+  PreparedCard,
+} from "./doors/flowsCard.ts";
 export { resolveInputDir } from "./doors/uploads.ts";
 export { toolBaseRows, DIR_ID_ALIASES } from "./doors/toolProjection.ts";
 export type { ToolBaseRow } from "./doors/toolProjection.ts";

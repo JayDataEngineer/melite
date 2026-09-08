@@ -13,6 +13,8 @@
     "./flows-start": "./src/entries/flows-start.ts",
     "./flows-stop": "./src/entries/flows-stop.ts",
     "./flows-status": "./src/entries/flows-status.ts",
+    "./runs-registry": "./src/entries/runs-registry.ts",
+    "./card-registry": "./src/entries/card-registry.ts",
     "./bridges": "./src/entries/bridges.ts",
     "./discovery": "./src/entries/discovery.ts",
     "./runs": "./src/entries/runs.ts",

@@ -29,8 +29,12 @@
     config: !!js gatewayRuntime.storageDomain
   - id: gateway-uploads
     name: '@melite/gateway-doors/uploads'
+  - id: gateway-card-registry
+    name: '@melite/gateway-doors/card-registry'
   - id: gateway-validate
     name: '@melite/gateway-doors/validate'
+  - id: gateway-runs-registry
+    name: '@melite/gateway-doors/runs-registry'
   - id: gateway-flows-start
     name: '@melite/gateway-doors/flows-start'
   - id: gateway-flows-status

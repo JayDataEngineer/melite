@@ -120,12 +120,11 @@ import type { AssetResult } from "./assets.ts";
 import type { AssetRoots } from "@melite/gateway-core";
 import { queueSnapshot } from "./flowsRun.ts";
 import { hydrateSnapshot } from "./flowsRun.ts";
-import { setBusPublisher } from "./flowsRun.ts";
 import {
   handleFlowsStatus,
-  liveRunStatus,
   parseIncludeLog,
 } from "./flowsRun.ts";
+import type { RunsService } from "./flowsRun.ts";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
@@ -138,8 +137,8 @@ import { matchRoute, parseQuery } from "@melite/gateway-core";
 // starts) — an empty registry serves the same empty bytes as before.
 // Key order as py.
 
-export function hQueue(): AssetResult {
-  const snap = queueSnapshot();
+export function hQueue(svc?: RunsService | null): AssetResult {
+  const snap = queueSnapshot(svc ?? undefined);
   return {
     status: 200,
     body: dumpsPy({
@@ -1159,8 +1158,9 @@ export function dispatchRuns(
   m: RegExpExecArray | null,
   qs: Record<string, string[]>,
   roots: AssetRoots,
+  svc?: RunsService | null,
 ): AssetResult | null {
-  if (handler === "_h_queue") return hQueue();
+  if (handler === "_h_queue") return hQueue(svc);
   if (handler === "_h_flows_status") {
     return hFlowsStatus(m !== null && m[1] !== undefined ? m[1] : "", qs, roots);
   }
@@ -1396,8 +1396,9 @@ function wsSend(socket: Socket, data: Uint8Array): void {
 
 // ── the live event bus (P6; py Gateway.subscribe/publish 1096-1177) ─
 // run_id -> subscribed sockets. The worker (flowsRun runOne) publishes
-// stage flips + the terminal run frame through the setBusPublisher
-// seam; deliver() fans each frame to the run's sockets AND, stamped
+// stage flips + the terminal run frame through the RunsService bus
+// slot (ctx.runs.publishBus; this door registers deliverBusFrame into
+// it); deliver() fans each frame to the run's sockets AND, stamped
 // with the run id, to the ALL_RUNS ("*") estate feed (py 1164-1177:
 // dict(event, run=run_id), the "run" key last). A terminal run frame
 // closes every socket that received it (py's shared event loop
@@ -1440,9 +1441,9 @@ function wsCloseSub(
   if (set.size === 0) wsSubs.delete(key);
 }
 
-/** The worker-path deliver fn (registered into flowsRun via
- *  setBusPublisher below): one live frame to its run's sockets plus
- *  the stamped mirror to the estate feed, then the terminal close. */
+/** The worker-path deliver fn (registered into the RunsService bus
+ *  slot in runsDoors.apply below): one live frame to its run's sockets
+ *  plus the stamped mirror to the estate feed, then the terminal close. */
 export function deliverBusFrame(
   runId: string,
   event: Record<string, unknown>,
@@ -1579,6 +1580,10 @@ export function handleWsUpgrade(opts: WsUpgradeOpts): void {
   socket.on("close", (): void => {
     wsUnsubscribe(subId, socket);
   });
+  // Registry reads on the upgrade path resolve via the documented
+  // ACTIVE handle (no Context reaches the socket upgrade — main.ts
+  // calls this directly). Door listeners on the ctx bus pass ctx.runs
+  // explicitly instead.
   if (runId === "*") {
     // The ALL_RUNS hello (2530-2536) carries the LIVE queue —
     // resurrected queued ids ride here after a P5 boot.
@@ -1759,10 +1764,11 @@ export function handleWsUpgrade(opts: WsUpgradeOpts): void {
  *  sidecar miss returns the 404 unknown-run shape. Lives here (not
  *  flowsRun.ts) because the sidecar read is runs-owned and runs.ts
  *  already imports the flows side — the reverse edge would cycle.
- *  Matches its own row inside the listener — no central table. */
+ *  The live read rides ctx.runs. Matches its own row inside the
+ *  listener — no central table. */
 export const flowsStatusDoors: Plugin = {
   name: "gateway-flows-status",
-  inject: ["gatewayError"],
+  inject: ["gatewayError", "runs"],
   apply(ctx: Context): void {
     ctx.on(
       "gateway/request",
@@ -1788,7 +1794,7 @@ export const flowsStatusDoors: Plugin = {
         const live: {
           status: number;
           payload: Record<string, unknown>;
-        } = handleFlowsStatus(runId, includeLog);
+        } = handleFlowsStatus(runId, includeLog, ctx.runs);
         if (live.status !== 404) {
           errors.normalize4xx(live.status, live.payload);
           return {
@@ -1831,19 +1837,23 @@ export const flowsStatusDoors: Plugin = {
 /** The runs-lane read doors (queue snapshot, run history, one run,
  *  and the non-upgrade WS fallback) as a self-registering plugin:
  *  AssetResult bodies ride pre-serialized (dumpsPy at the door, 4xx
- *  codes inline) — passed through untouched. Matches its own rows
+ *  codes inline) — passed through untouched. The queue snapshot reads
+ *  through ctx.runs; the live-bus deliver fn registers into the
+ *  service (fiber-owned: unload unregisters). Matches its own rows
  *  inside the listener — no central table. */
 export const runsDoors: Plugin = {
   name: "gateway-runs",
+  inject: ["runs"],
   apply(ctx: Context): () => void {
-    setBusPublisher(deliverBusFrame);
+    const svc: RunsService = ctx.runs;
+    svc.setBusPublisher(deliverBusFrame);
     ctx.on(
       "gateway/request",
       (req: GatewayRequest): DispatchResult | undefined => {
         const hit = matchRoute(req.method, req.path);
         if (hit === null) return undefined;
         if (hit.row.handler === "_h_queue") {
-          return hQueue();
+          return hQueue(ctx.runs);
         }
         if (hit.row.handler === "_h_runs_list") {
           return hRunsList(parseQuery(req.target), req.roots);
@@ -1862,7 +1872,7 @@ export const runsDoors: Plugin = {
       },
     );
     return (): void => {
-      setBusPublisher(null);
+      svc.setBusPublisher(null);
     };
   },
 };

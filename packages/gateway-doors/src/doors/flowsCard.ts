@@ -70,7 +70,7 @@
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
 
-import { Context } from "@deepseek-ai/cordis";
+import { Context, Service } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
 import { ComfyUIService, ComposeRefusal, loadCardDefs, loadFacts } from "@comfyui/cordis";
 import type { CardDefinition, FactsFile } from "@comfyui/cordis";
@@ -136,7 +136,11 @@ function resolveRepoRoot(): string {
   return resolve(here, "..", "..", "..", "..");
 }
 
-// ── frozen data loaders (facts + decls + pin snapshot) ─────────────
+// ── frozen data paths (facts + pin snapshot) ───────────────────────
+// (Stroke 2a, DSH-AS-LANGUAGE LAW: the module-level caches that used
+// to live here — factsCache/declsCache/defsCache/oiCache/oiPathCache/
+// modelMidsCache — are CardRegistryService instance state below. No
+// module-level mutable singleton remains in this file.)
 
 export interface VariantCellRow {
   readonly quant: string;
@@ -168,12 +172,6 @@ export interface CardDeclRow {
   readonly spells: readonly string[];
 }
 
-let factsCache: Record<string, ModelFactsRow> | null = null;
-let declsCache: Record<string, CardDeclRow> | null = null;
-let defsCache: Map<string, CardDefinition> | null = null;
-let oiCache: { mtimeMs: number; doc: Record<string, unknown> } | null = null;
-let oiPathCache: string | null = null;
-
 function factsPath(): string {
   return join(
     resolveRepoRoot(), "packages", "engines", "comfyui", "cordis", "data", "model-facts.json",
@@ -184,65 +182,14 @@ function objectInfoPath(): string {
   return join(resolveRepoRoot(), "packages", "engines", "comfyui", "data", "object_info.json");
 }
 
-/** Test seam: drop the frozen-data caches (walls boot fresh
- *  processes; belt-and-braces for in-process reuse). */
-export function resetCardCachesForTests(): void {
-  factsCache = null;
-  declsCache = null;
-  defsCache = null;
-  oiCache = null;
-  oiPathCache = null;
-  modelMidsCache = null;
-}
-
-function loadModelFacts(): Record<string, ModelFactsRow> {
-  if (factsCache !== null) return factsCache;
-  const doc: unknown = JSON.parse(readFileSync(factsPath(), "utf8"));
-  const models: unknown = (doc as Record<string, unknown>)["models"];
-  factsCache =
-    typeof models === "object" && models !== null
-      ? (models as Record<string, ModelFactsRow>)
-      : {};
-  return factsCache;
-}
-
-/** Prime the card registry (PURGE S-decls): the registry loads
- *  async (dynamic card-module imports) but the validate rim is sync
- *  (handleFlowsValidate → modelArm → overlayCardParams), so every
- *  gateway boot primes once and the request path projects
- *  synchronously. Called at both main.ts boot sites; unprimed sync
- *  access throws LOUD (never a fallback). */
-export async function primeCardRegistry(): Promise<void> {
-  defsCache = await loadCardDefs();
-}
-
-/** Sync read of the primed registry (PURGE S-snapshots: the
- *  disclosure projection (toolProjection.ts) serves from the
- *  registry, and the disclosure doors are sync — same prime rule
- *  as the validate rim: unprimed access throws LOUD). */
-export function cardDefsSync(): Map<string, CardDefinition> {
-  if (defsCache === null) {
-    throw new Error(
-      "[card_registry] unprimed: boot must await primeCardRegistry() " +
-        "before the disclosure rim serves (both main.ts boot sites " +
-        "prime; walls boot through startServer which primes)",
-    );
-  }
-  return defsCache;
-}
-
-function loadCardDecls(): Record<string, CardDeclRow> {
-  if (declsCache !== null) return declsCache;
-  if (defsCache === null) {
-    throw new Error(
-      "[card_registry] unprimed: boot must await primeCardRegistry() " +
-        "before the validate/compose rim serves (both main.ts boot " +
-        "sites prime; walls boot through startServer which primes)",
-    );
-  }
-  const facts: Record<string, ModelFactsRow> = loadModelFacts();
+// ── the decl projection (pure: defs + facts in, rows out) ─────────
+// (Was loadCardDecls' body; the cache it fed is service state now.)
+function deriveDecls(
+  defs: Map<string, CardDefinition>,
+  facts: Record<string, ModelFactsRow>,
+): Record<string, CardDeclRow> {
   const out: Record<string, CardDeclRow> = {};
-  for (const [id, def] of defsCache) {
+  for (const [id, def] of defs) {
     // The emitter's carrier line (toolsEmit.ts mirror): normal cards
     // carry the Schemastery object as .schema; wrapped cards (h3)
     // project .schemaCarrier. schemaNames = the knob surface.
@@ -282,82 +229,470 @@ function loadCardDecls(): Record<string, CardDeclRow> {
       spells: [...(def.spells ?? [])],
     };
   }
-  declsCache = out;
-  return declsCache;
+  return out;
 }
 
-/** The pin snapshot (R3 — mtime-keyed: a re-pin must never serve a
- *  stale autofill map). null = absent on disk. */
-function loadObjectInfo(): Record<string, unknown> | null {
-  const path: string = objectInfoPath();
-  let mtimeMs = 0;
-  try {
-    mtimeMs = statSync(path).mtimeMs;
-  } catch {
-    oiCache = null;
-    oiPathCache = path;
-    return null;
+// ── the CardRegistry as a Cordis Service (stroke 2a,
+ // DSH-AS-LANGUAGE LAW) ────────────────────────────────────────────
+ // SERVICE NAME: 'cardRegistry' (ctx.cardRegistry) — the short
+ // camelCase service key per the ctx.gatewayError precedent and the
+ // sibling stroke 2b ('runs'). Defined where the registry lives
+ // (this file, the cards side) for the same cycle reason 2b records:
+ // doors import this module; defining the service anywhere doorside
+ // would force this file to import it back.
+ //
+ // OWNS: the primed defs map, the facts/decls projections, the
+ // mtime-keyed object_info pin snapshot, the catalog mids set, and
+ // every registry-derived operation (resolve/prepare/overlay/
+ // phase-1/phase-2). The pure helpers below (select/stamp/lift/
+ // sweep/pyStrMid) stay module functions — they take explicit args
+ // and hold no state. Every door with registry reads injects
+ // 'cardRegistry' and uses ctx.cardRegistry; request-path helpers
+ // take an explicit service param (no module handle, no ACTIVE
+ // fallback — nothing reaches the cards plane without a Context
+ // except the boot sites, which route through
+ // ctx.get('cardRegistry') — see main.ts).
+export class CardRegistryService extends Service {
+  /** The primed card definitions (null until prime()). */
+  private defs: Map<string, CardDefinition> | null = null;
+  /** The frozen model facts (lazy — strict load, throws LOUD). */
+  private facts: Record<string, ModelFactsRow> | null = null;
+  /** The decl projection (lazy — derived from defs + facts). */
+  private decls: Record<string, CardDeclRow> | null = null;
+  /** The pin snapshot (mtime-keyed). */
+  private oi: { mtimeMs: number; doc: Record<string, unknown> } | null = null;
+  private oiPath: string | null = null;
+  /** The catalog existence set (lazy — strict load, throws LOUD). */
+  private mids: Set<string> | null = null;
+
+  constructor(ctx: Context) {
+    super(ctx, "cardRegistry");
   }
-  if (oiCache !== null && oiPathCache === path && oiCache.mtimeMs === mtimeMs) {
-    return oiCache.doc;
+
+  /** Prime the registry (service init — replaces the retired
+   *  primeCardRegistry()): the registry loads async (dynamic
+   *  card-module imports) but the validate/disclosure rims are sync,
+   *  so every boot primes and the request path projects
+   *  synchronously. Safe to call multiple times (unconditional
+   *  reload — mirrors the old both-boot-sites prime); re-prime
+   *  drops the defs-derived decls (facts/mids are disk-derived and
+   *  stay). The provider's apply primes, and both main.ts boot
+   *  sites re-prime belt-and-braces. */
+  async prime(): Promise<void> {
+    this.defs = await loadCardDefs();
+    this.decls = null;
   }
-  try {
-    const doc: unknown = JSON.parse(readFileSync(path, "utf8"));
-    if (typeof doc !== "object" || doc === null || Array.isArray(doc)) return null;
-    oiCache = { mtimeMs, doc: doc as Record<string, unknown> };
-    oiPathCache = path;
-    return oiCache.doc;
-  } catch {
-    return null;
+
+  /** Test seam: drop all registry state (walls boot fresh processes;
+   *  belt-and-braces for in-process reuse — the RunsService parity). */
+  resetForTests(): void {
+    this.defs = null;
+    this.facts = null;
+    this.decls = null;
+    this.oi = null;
+    this.oiPath = null;
+    this.mids = null;
   }
-}
 
-// ── model resolution (resolve_model's existence half +
-// _route_family over the facts variant tables) ─────────────────────
+  /** Sync read of the primed registry (the disclosure projection
+   *  serves from the registry, and the disclosure doors are sync —
+   *  unprimed access throws LOUD, never a fallback). */
+  defsSync(): Map<string, CardDefinition> {
+    if (this.defs === null) {
+      throw new Error(
+        "[card_registry] unprimed: boot must await the gateway-card-registry " +
+          "provider (or ctx.cardRegistry.prime()) before the " +
+          "disclosure rim serves (the manifest's gateway-card-registry row " +
+          "primes; both main.ts boot sites re-prime; walls boot " +
+          "through startServer which primes)",
+      );
+    }
+    return this.defs;
+  }
 
-let modelMidsCache: Set<string> | null = null;
+  /** The frozen model facts (strict — a missing file throws LOUD;
+   *  the validate door keeps its absent-file degrade by catching
+   *  this at its own call site). */
+  modelFacts(): Record<string, ModelFactsRow> {
+    if (this.facts !== null) return this.facts;
+    const doc: unknown = JSON.parse(readFileSync(factsPath(), "utf8"));
+    const models: unknown = (doc as Record<string, unknown>)["models"];
+    this.facts =
+      typeof models === "object" && models !== null
+        ? (models as Record<string, ModelFactsRow>)
+        : {};
+    return this.facts;
+  }
 
-/** resolve_model's existence half — RE-HOMED 2026-09-08 on the frozen
- *  discovery catalog (packages/gateway/data/discovery-catalog.json,
- *  .catalog.models keys; hand-owned since purge S-catalog,
- *  wall-pinned). It replaces the models/<genre>/<mid>/model.py fs scan
- *  (estate-python purge deleted every model.py — the scan resolved the
- *  empty set and every {model:} compose refused). Missing file throws
- *  LOUD via readFileSync (same as loadModelFacts); a malformed shape
- *  resolves empty (same as loadModelFacts). */
-function modelMids(): Set<string> {
-  if (modelMidsCache !== null) return modelMidsCache;
-  const path: string = join(
-    resolveRepoRoot(), "packages", "gateway", "data", "discovery-catalog.json",
-  );
-  const doc: unknown = JSON.parse(readFileSync(path, "utf8")) as unknown;
-  const models: unknown =
-    typeof doc === "object" && doc !== null
-      ? (doc as { catalog?: { models?: unknown } }).catalog?.models
-      : undefined;
-  modelMidsCache = new Set(
-    typeof models === "object" && models !== null && !Array.isArray(models)
-      ? Object.keys(models as Record<string, unknown>)
-      : [],
-  );
-  return modelMidsCache;
-}
+  /** The decl projection — derived from defs + the strict facts, or
+   *  from defs + caller-supplied facts (the validate door's
+   *  degraded read; derived fresh, never cached over foreign facts). */
+  cardDecls(facts?: Record<string, ModelFactsRow>): Record<string, CardDeclRow> {
+    if (facts !== undefined) return deriveDecls(this.defsSync(), facts);
+    if (this.decls !== null) return this.decls;
+    const derived: Record<string, CardDeclRow> = deriveDecls(
+      this.defsSync(),
+      this.modelFacts(),
+    );
+    this.decls = derived;
+    return this.decls;
+  }
 
-/** The owning family for mid: mid itself, or the facts model whose
- *  variant/cell route owns mid (mirrors _route_family; route-id-as-
- *  model is preserved — the graph is addressed by the family). */
-export function resolveCardFamily(mid: string): string {
-  const facts: Record<string, ModelFactsRow> = loadModelFacts();
-  if (mid in facts) return mid;
-  for (const [fam, row] of Object.entries(facts)) {
-    for (const v of row.variants ?? []) {
-      if (v.route === mid) return fam;
-      for (const c of v.cells ?? []) {
-        if (c.route === mid) return fam;
-      }
+  /** The pin snapshot (R3 — mtime-keyed: a re-pin must never serve a
+   *  stale autofill map). null = absent on disk. */
+  objectInfo(): Record<string, unknown> | null {
+    const path: string = objectInfoPath();
+    let mtimeMs = 0;
+    try {
+      mtimeMs = statSync(path).mtimeMs;
+    } catch {
+      this.oi = null;
+      this.oiPath = path;
+      return null;
+    }
+    if (this.oi !== null && this.oiPath === path && this.oi.mtimeMs === mtimeMs) {
+      return this.oi.doc;
+    }
+    try {
+      const doc: unknown = JSON.parse(readFileSync(path, "utf8"));
+      if (typeof doc !== "object" || doc === null || Array.isArray(doc)) return null;
+      this.oi = { mtimeMs, doc: doc as Record<string, unknown> };
+      this.oiPath = path;
+      return this.oi.doc;
+    } catch {
+      return null;
     }
   }
-  return mid;
+
+  /** resolve_model's existence half — RE-HOMED 2026-09-08 on the
+   *  frozen discovery catalog (packages/gateway/data/
+   *  discovery-catalog.json, .catalog.models keys; hand-owned since
+   *  purge S-catalog, wall-pinned). It replaces the
+   *  models/<genre>/<mid>/model.py fs scan (estate-python purge
+   *  deleted every model.py — the scan resolved the empty set and
+   *  every {model:} compose refused). Missing file throws LOUD via
+   *  readFileSync (same as modelFacts); a malformed shape resolves
+   *  empty (same as modelFacts). */
+  modelMids(): Set<string> {
+    if (this.mids !== null) return this.mids;
+    const path: string = join(
+      resolveRepoRoot(), "packages", "gateway", "data", "discovery-catalog.json",
+    );
+    const doc: unknown = JSON.parse(readFileSync(path, "utf8")) as unknown;
+    const models: unknown =
+      typeof doc === "object" && doc !== null
+        ? (doc as { catalog?: { models?: unknown } }).catalog?.models
+        : undefined;
+    this.mids = new Set(
+      typeof models === "object" && models !== null && !Array.isArray(models)
+        ? Object.keys(models as Record<string, unknown>)
+        : [],
+    );
+    return this.mids;
+  }
+
+  /** The owning family for mid: mid itself, or the facts model whose
+   *  variant/cell route owns mid (mirrors _route_family;
+   *  route-id-as-model is preserved — the graph is addressed by the
+   *  family). Reads the strict facts unless the caller passes its
+   *  own (the validate door's degraded read). */
+  resolveCardFamily(mid: string, facts?: Record<string, ModelFactsRow>): string {
+    const table: Record<string, ModelFactsRow> = facts ?? this.modelFacts();
+    if (mid in table) return mid;
+    for (const [fam, row] of Object.entries(table)) {
+      for (const v of row.variants ?? []) {
+        if (v.route === mid) return fam;
+        for (const c of v.cells ?? []) {
+          if (c.route === mid) return fam;
+        }
+      }
+    }
+    return mid;
+  }
+
+  /** Resolve + sweep + select + overlay + lift (steps 2-6):
+   *  everything before compose. Throws CardArmError (the door maps
+   *  it to the refusal envelope). `phase` stamps the phase-N voice
+   *  on R1 selection refusals ("1" for validate/phase-1). Order
+   *  mirrors resolve_card_model + the validate modelArm: artifact
+   *  sweep FIRST (fail fast — a sloppy compose never runs), then
+   *  legality, existence, the non-cordis arm check, selection,
+   *  overlay, lift. */
+  prepareCardParams(
+    body: Record<string, unknown>,
+    mid: string,
+    phase: string,
+  ): PreparedCard {
+    const dangling = findCardDangling(body);
+    if (dangling !== null) {
+      const [location, ref, why] = dangling;
+      throw new CardArmError(
+        400,
+        "dangling artifact ref at " + pyReprStr(location) + ": " + ref + " (" + why + ")",
+        "invalid_request",
+      );
+    }
+    if (!FLOW_ID_RE.test(mid)) {
+      throw new CardArmError(
+        400,
+        "model id " + pyReprStr(mid) + " is not a legal identifier",
+        "invalid_request",
+      );
+    }
+    const facts: Record<string, ModelFactsRow> = this.modelFacts();
+    const resolves: boolean =
+      mid in facts || this.resolveCardFamily(mid, facts) in facts || this.modelMids().has(mid);
+    if (!resolves) {
+      throw new CardArmError(
+        400,
+        "no model unit for model: " + mid + " (no .catalog.models row " + mid +
+          " in the frozen discovery catalog and no family declares route " + mid +
+          " in its variants' cells — checked the class tree's _routes map)",
+        "invalid_request",
+      );
+    }
+    const fam: string = this.resolveCardFamily(mid, facts);
+    const famRow: ModelFactsRow | undefined = facts[fam];
+    if (famRow === undefined) {
+      throw new CardArmError(
+        400,
+        "card_compose phase " + phase + ": model " + pyReprStr(mid) +
+          " composes outside the cordis plane (python schema arm — unported half in this stroke)",
+        "card_compose",
+      );
+    }
+    const decls: Record<string, CardDeclRow> = this.cardDecls(facts);
+    const decl: CardDeclRow | undefined = decls[famRow.card];
+    if (decl === undefined) {
+      throw new CardArmError(
+        400,
+        "card_compose phase " + phase + ": unknown card " + pyReprStr(famRow.card) +
+          " (no registered card definition for the card model " + pyReprStr(mid) + " names)",
+        "card_compose",
+      );
+    }
+    const sel: VariantSelection = selectCardVariant(mid, famRow, body, phase);
+    const stamped: Record<string, unknown> = stampCardOverlay(body, famRow, decl, sel);
+    return {
+      mid,
+      fam,
+      card: famRow.card,
+      skeleton: decl.skeleton !== "" ? decl.skeleton : mid,
+      decl,
+      params: liftCardParams(stamped),
+    };
+  }
+
+  /** The validate-door overlay (the SAME overlay, phase-1 voice) —
+   *  R1 selection + the route-lens stamp overlay + lift, so
+   *  start+validate compose the identical params (phase-1 with
+   *  run_id "" on both). Precondition: mid is legal and resolves to
+   *  a cordis family (the caller's own checks refuse first, same
+   *  voices). Throws CardArmError on unknown variant/quant or an
+   *  unregistered card. */
+  overlayCardParams(
+    body: Record<string, unknown>,
+    mid: string,
+  ): OverlaidCard {
+    const facts: Record<string, ModelFactsRow> = this.modelFacts();
+    const fam: string = this.resolveCardFamily(mid, facts);
+    const famRow: ModelFactsRow | undefined = facts[fam];
+    if (famRow === undefined) {
+      throw new CardArmError(
+        400,
+        "card_compose phase 1: model " + pyReprStr(mid) +
+          " composes outside the cordis plane (python schema arm — unported half in this stroke)",
+        "card_compose",
+      );
+    }
+    const decl: CardDeclRow | undefined = this.cardDecls(facts)[famRow.card];
+    if (decl === undefined) {
+      throw new CardArmError(
+        400,
+        "card_compose phase 1: unknown card " + pyReprStr(famRow.card) +
+          " (no registered card definition for the card model " + pyReprStr(mid) + " names)",
+        "card_compose",
+      );
+    }
+    const sel: VariantSelection = selectCardVariant(mid, famRow, body, "1");
+    const stamped: Record<string, unknown> = stampCardOverlay(body, famRow, decl, sel);
+    return { fam, card: famRow.card, params: liftCardParams(stamped) };
+  }
+
+  /** The facts document loader — the plane's own loader (facts.ts),
+   *  so the in-process arm reads exactly what the CLI door reads. */
+  cardFactsFile(): FactsFile {
+    return loadFacts(factsPath());
+  }
+
+  /** In-process compose (the core: steps 7-9) — per-call throwaway
+   *  Context + ComfyUIService (owned by the call, never shared). */
+  private async composeOnce(
+    card: string,
+    fam: string,
+    params: Record<string, unknown>,
+    runId: string,
+    phase: string,
+  ): Promise<Record<string, unknown>> {
+    const oi: Record<string, unknown> | null = this.objectInfo();
+    if (oi === null) {
+      throw phaseRefusal(
+        phase,
+        "comfyui object_info snapshot absent (" +
+          objectInfoPath() +
+          ") — refusing closed (EXTENSION LAW: never compose unauthenticated)",
+      );
+    }
+    const ctx = new Context();
+    await ctx.plugin({
+      apply(c: Context): void {
+        new ComfyUIService(c);
+      },
+    });
+    const cardsDir: string = join(cordisSrcDir(), "cards");
+    for (const f of readdirSync(cardsDir).filter((x) => x.endsWith(".ts"))) {
+      // the cli.ts:59-63 auto-load loop, in-process: the WHOLE module
+      // namespace rides (cards declare `export const inject =
+      // ['comfyui']` at module level — passing only { apply } drops
+      // the inject declaration and compose dies with "cannot get
+      // property comfyui without inject"). A card lands by dropping
+      // its file; no shared-file edit.
+      const mod = (await import(pathToFileURL(join(cardsDir, f)).href)) as unknown as Plugin;
+      if (typeof (mod as { apply?: unknown }).apply === "function") {
+        await ctx.plugin(mod);
+      }
+    }
+    ctx.comfyui.setFacts(loadFacts(factsPath()));
+    ctx.comfyui.setObjectInfo(oi);
+    // THE NESTED STANZA UNWRAP (cli.ts:82-91): a `params` dict key in
+    // the incoming params IS the stanza; siblings merge over it.
+    let lifted: Record<string, unknown> = params;
+    {
+      const inner: unknown = lifted["params"];
+      if (
+        typeof inner === "object" && inner !== null && !Array.isArray(inner)
+      ) {
+        lifted = {
+          ...(inner as Record<string, unknown>),
+          ...Object.fromEntries(Object.entries(lifted).filter(([k]) => k !== "params")),
+        };
+      }
+    }
+    // THE ADMISSION CONTRACT GATE (cli.ts admission verbatim voice):
+    // every param key must be a declared knob or ride the admits row.
+    const decls: Record<string, CardDeclRow> = this.cardDecls();
+    const decl: CardDeclRow | undefined = decls[card];
+    if (decl !== undefined) {
+      const knobs: Set<string> = new Set(decl.schemaNames);
+      const admits: readonly string[] = decl.admits;
+      const admitted = (key: string): boolean =>
+        knobs.has(key) ||
+        admits.some((a) => a === key || (a.endsWith("*") && key.startsWith(a.slice(0, -1))));
+      const unknown: string[] = Object.keys(lifted).filter((k) => !admitted(k)).sort();
+      if (unknown.length > 0) {
+        throw phaseRefusal(
+          phase,
+          "compose-door: unknown param(s) on the " + card + " card: " + unknown.join(", ") +
+            " (admission is the declared surface — knobs + contract admits; see the card's TS definition)",
+        );
+      }
+    }
+    try {
+      return ctx.comfyui.compose(card, fam, lifted, runId) as Record<string, unknown>;
+    } catch (e) {
+      if (e instanceof ComposeRefusal) {
+        throw phaseRefusal(phase, e.code + ": " + e.message);
+      }
+      throw phaseRefusal(phase, e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  /** Phase 1 (run_id ""): validates shape/admission/boarding before
+   *  registration. The $spell branch composes NO graph (the pool
+   *  passes — the two-card-flow handoff). */
+  async phase1Card(
+    body: Record<string, unknown>,
+    mid: string,
+  ): Promise<Phase1Card> {
+    const prep: PreparedCard = this.prepareCardParams(body, mid, "1");
+    const spells: readonly string[] = prep.decl.spells ?? [];
+    const pool: Record<string, unknown> = {};
+    for (const k of spells) {
+      const v: unknown = prep.params[k];
+      if (k in prep.params && typeof v === "string" && v.startsWith("$")) pool[k] = v;
+    }
+    if (Object.keys(pool).length > 0) {
+      return { ...prep, spell: { skeleton: prep.skeleton, inputs: pool } };
+    }
+    await this.composeOnce(prep.card, prep.fam, prep.params, "", "1");
+    return { ...prep, spell: null };
+  }
+
+  /** Phase 2 (the real run id): composes the SAME overlaid body phase
+   *  1 validated (py submit 1294-1301 — idempotent, absent-keys-only;
+   *  the editor's seeded stamps pass through byte-identical).
+   *  A $spell body composes VERBATIM here (run context — the $spell
+   *  wires into the Load* file slot; the merged path refuses a
+   *  link-in-file-slot LOUDLY, test_two_card_flow). */
+  async phase2Card(p1: Phase1Card, runId: string): Promise<ComposedCard> {
+    const graph: Record<string, unknown> = await this.composeOnce(
+      p1.card,
+      p1.fam,
+      p1.params,
+      runId,
+      "2",
+    );
+    if (typeof graph !== "object" || graph === null || Array.isArray(graph)) {
+      throw new CardArmError(
+        400,
+        "card_compose produced an empty graph for " + p1.mid,
+        "invalid_request",
+      );
+    }
+    return { graph, skeleton: p1.skeleton, spell: p1.spell };
+  }
+}
+
+declare module "@deepseek-ai/cordis" {
+  interface Context {
+    cardRegistry: CardRegistryService;
+  }
+}
+
+/** The provider plugin (fiber-owned): owns the CardRegistryService
+ *  lifetime and primes it at load, so inject-gated consumers apply
+ *  only after the registry is primed. Manifest row
+ *  gateway-card-registry rides BEFORE every consumer (validate,
+ *  flows-start, chrome, planes — the stroke-2b row placement rule).
+ *  Loadable entry: packages/gateway-doors/src/entries/
+ *  card-registry.ts (the DSH leaf discipline — addressed code
+ *  loads by address, never as a `cordis:` builtin). */
+export const cardRegistryProvider = {
+  name: "gateway-card-registry",
+  async apply(ctx: Context): Promise<void> {
+    const svc = new CardRegistryService(ctx);
+    await svc.prime();
+  },
+};
+
+/** Resolve the service for request-path helpers that take it as an
+ *  optional trailing param (the stroke-2b shape): an explicit arg
+ *  wins. Null = the caller forgot to thread ctx.cardRegistry — a
+ *  bug, so reads throw LOUD (a registry read without a registry is
+ *  never an empty answer). Door listeners MUST pass
+ *  ctx.cardRegistry (their inject declares it). */
+export function needCardRegistry(
+  cards: CardRegistryService | null | undefined,
+  where: string,
+): CardRegistryService {
+  if (cards === null || cards === undefined) {
+    throw new Error(
+      "[card_registry] no CardRegistryService for " + where +
+        " — doors inject 'cardRegistry' and pass ctx.cardRegistry " +
+        "(the manifest's gateway-card-registry row primes at boot)",
+    );
+  }
+  return cards;
 }
 
 // ── R1 variant/quant selection + route-lens stamp overlay ──────────
@@ -598,6 +933,9 @@ export function findCardDangling(
 }
 
 // ── resolution front half (shared by start phase-1 + validate) ────
+// (Lives on the service now — prepareCardParams is
+// CardRegistryService.prepareCardParams; the module keeps only the
+// result shapes below.)
 
 export interface PreparedCard {
   readonly mid: string;
@@ -621,86 +959,9 @@ export function pyStrMid(v: unknown): string {
   return JSON.stringify(v) ?? String(v);
 }
 
-/** Resolve + sweep + select + overlay + lift (steps 2-6): everything
- *  before compose. Throws CardArmError (the door maps it to the
- *  refusal envelope). `phase` stamps the phase-N voice on R1
- *  selection refusals ("1" for validate/phase-1). Order mirrors
- *  resolve_card_model + the validate modelArm: artifact sweep FIRST
- *  (fail fast — a sloppy compose never runs), then legality,
- *  existence, the non-cordis arm check, selection, overlay, lift. */
-export function prepareCardParams(
-  body: Record<string, unknown>,
-  mid: string,
-  phase: string,
-): PreparedCard {
-  const dangling = findCardDangling(body);
-  if (dangling !== null) {
-    const [location, ref, why] = dangling;
-    throw new CardArmError(
-      400,
-      "dangling artifact ref at " + pyReprStr(location) + ": " + ref + " (" + why + ")",
-      "invalid_request",
-    );
-  }
-  if (!FLOW_ID_RE.test(mid)) {
-    throw new CardArmError(
-      400,
-      "model id " + pyReprStr(mid) + " is not a legal identifier",
-      "invalid_request",
-    );
-  }
-  const facts: Record<string, ModelFactsRow> = loadModelFacts();
-  const resolves: boolean =
-    mid in facts || resolveCardFamily(mid) in facts || modelMids().has(mid);
-  if (!resolves) {
-    throw new CardArmError(
-      400,
-      "no model unit for model: " + mid + " (no .catalog.models row " + mid +
-        " in the frozen discovery catalog and no family declares route " + mid +
-        " in its variants' cells — checked the class tree's _routes map)",
-      "invalid_request",
-    );
-  }
-  const fam: string = resolveCardFamily(mid);
-  const famRow: ModelFactsRow | undefined = facts[fam];
-  if (famRow === undefined) {
-    throw new CardArmError(
-      400,
-      "card_compose phase " + phase + ": model " + pyReprStr(mid) +
-        " composes outside the cordis plane (python schema arm — unported half in this stroke)",
-      "card_compose",
-    );
-  }
-  const decls: Record<string, CardDeclRow> = loadCardDecls();
-  const decl: CardDeclRow | undefined = decls[famRow.card];
-  if (decl === undefined) {
-    throw new CardArmError(
-      400,
-      "card_compose phase " + phase + ": unknown card " + pyReprStr(famRow.card) +
-        " (no registered card definition for the card model " + pyReprStr(mid) + " names)",
-      "card_compose",
-    );
-  }
-  const sel: VariantSelection = selectCardVariant(mid, famRow, body, phase);
-  const stamped: Record<string, unknown> = stampCardOverlay(body, famRow, decl, sel);
-  return {
-    mid,
-    fam,
-    card: famRow.card,
-    skeleton: decl.skeleton !== "" ? decl.skeleton : mid,
-    decl,
-    params: liftCardParams(stamped),
-  };
-}
-
 // ── validate-door entry (the SAME overlay, phase-1 voice) ─────────
-// The validate modelArm owns legality/existence/sweep/CLI itself
-// (wall-pinned); it calls here ONLY for R1 selection + the
-// route-lens stamp overlay + lift, so start+validate compose the
-// identical params (phase-1 with run_id "" on both). Precondition:
-// mid is legal and resolves to a cordis family (the caller's own
-// checks refuse first, same voices). Throws CardArmError on unknown
-// variant/quant or an unregistered card.
+// (Lives on the service now — overlayCardParams is
+// CardRegistryService.overlayCardParams.)
 
 export interface OverlaidCard {
   readonly fam: string;
@@ -708,36 +969,10 @@ export interface OverlaidCard {
   readonly params: Record<string, unknown>;
 }
 
-export function overlayCardParams(
-  body: Record<string, unknown>,
-  mid: string,
-): OverlaidCard {
-  const facts: Record<string, ModelFactsRow> = loadModelFacts();
-  const fam: string = resolveCardFamily(mid);
-  const famRow: ModelFactsRow | undefined = facts[fam];
-  if (famRow === undefined) {
-    throw new CardArmError(
-      400,
-      "card_compose phase 1: model " + pyReprStr(mid) +
-        " composes outside the cordis plane (python schema arm — unported half in this stroke)",
-      "card_compose",
-    );
-  }
-  const decl: CardDeclRow | undefined = loadCardDecls()[famRow.card];
-  if (decl === undefined) {
-    throw new CardArmError(
-      400,
-      "card_compose phase 1: unknown card " + pyReprStr(famRow.card) +
-        " (no registered card definition for the card model " + pyReprStr(mid) + " names)",
-      "card_compose",
-    );
-  }
-  const sel: VariantSelection = selectCardVariant(mid, famRow, body, "1");
-  const stamped: Record<string, unknown> = stampCardOverlay(body, famRow, decl, sel);
-  return { fam, card: famRow.card, params: liftCardParams(stamped) };
-}
-
 // ── in-process compose (the core: steps 7-9) ───────────────────────
+// (Lives on the service now — composeOnce is a private
+// CardRegistryService method, cardFactsFile/phase1Card/phase2Card
+// are public methods.)
 
 export interface ComposedCard {
   readonly graph: Record<string, unknown>;
@@ -750,141 +985,10 @@ function cordisSrcDir(): string {
   return dirname(entry);
 }
 
-async function composeOnce(
-  card: string,
-  fam: string,
-  params: Record<string, unknown>,
-  runId: string,
-  phase: string,
-): Promise<Record<string, unknown>> {
-  const oi: Record<string, unknown> | null = loadObjectInfo();
-  if (oi === null) {
-    throw phaseRefusal(
-      phase,
-      "comfyui object_info snapshot absent (" +
-        objectInfoPath() +
-        ") — refusing closed (EXTENSION LAW: never compose unauthenticated)",
-    );
-  }
-  const ctx = new Context();
-  await ctx.plugin({
-    apply(c: Context): void {
-      new ComfyUIService(c);
-    },
-  });
-  const cardsDir: string = join(cordisSrcDir(), "cards");
-  for (const f of readdirSync(cardsDir).filter((x) => x.endsWith(".ts"))) {
-    // the cli.ts:59-63 auto-load loop, in-process: the WHOLE module
-    // namespace rides (cards declare `export const inject =
-    // ['comfyui']` at module level — passing only { apply } drops
-    // the inject declaration and compose dies with "cannot get
-    // property comfyui without inject"). A card lands by dropping
-    // its file; no shared-file edit.
-    const mod = (await import(pathToFileURL(join(cardsDir, f)).href)) as unknown as Plugin;
-    if (typeof (mod as { apply?: unknown }).apply === "function") {
-      await ctx.plugin(mod);
-    }
-  }
-  ctx.comfyui.setFacts(loadFacts(factsPath()));
-  ctx.comfyui.setObjectInfo(oi);
-  // THE NESTED STANZA UNWRAP (cli.ts:82-91): a `params` dict key in
-  // the incoming params IS the stanza; siblings merge over it.
-  let lifted: Record<string, unknown> = params;
-  {
-    const inner: unknown = lifted["params"];
-    if (
-      typeof inner === "object" && inner !== null && !Array.isArray(inner)
-    ) {
-      lifted = {
-        ...(inner as Record<string, unknown>),
-        ...Object.fromEntries(Object.entries(lifted).filter(([k]) => k !== "params")),
-      };
-    }
-  }
-  // THE ADMISSION CONTRACT GATE (cli.ts admission verbatim voice):
-  // every param key must be a declared knob or ride the admits row.
-  const decls: Record<string, CardDeclRow> = loadCardDecls();
-  const decl: CardDeclRow | undefined = decls[card];
-  if (decl !== undefined) {
-    const knobs: Set<string> = new Set(decl.schemaNames);
-    const admits: readonly string[] = decl.admits;
-    const admitted = (key: string): boolean =>
-      knobs.has(key) ||
-      admits.some((a) => a === key || (a.endsWith("*") && key.startsWith(a.slice(0, -1))));
-    const unknown: string[] = Object.keys(lifted).filter((k) => !admitted(k)).sort();
-    if (unknown.length > 0) {
-      throw phaseRefusal(
-        phase,
-        "compose-door: unknown param(s) on the " + card + " card: " + unknown.join(", ") +
-          " (admission is the declared surface — knobs + contract admits; see the card's TS definition)",
-      );
-    }
-  }
-  try {
-    return ctx.comfyui.compose(card, fam, lifted, runId) as Record<string, unknown>;
-  } catch (e) {
-    if (e instanceof ComposeRefusal) {
-      throw phaseRefusal(phase, e.code + ": " + e.message);
-    }
-    throw phaseRefusal(phase, e instanceof Error ? e.message : String(e));
-  }
-}
-
-/** The facts document loader — the plane's own loader (facts.ts),
- *  so the in-process arm reads exactly what the CLI door reads. */
-export function cardFactsFile(): FactsFile {
-  return loadFacts(factsPath());
-}
-
 // ── the two phases (steps 7 + 9, shared by start; phase-1 shared
 // by validate's in-process future — today validate shells the CLI
 // with the same prepared params) ───────────────────────────────────
 
 export interface Phase1Card extends PreparedCard {
   readonly spell: { skeleton: string; inputs: Record<string, unknown> } | null;
-}
-
-/** Phase 1 (run_id ""): validates shape/admission/boarding before
- *  registration. The $spell branch composes NO graph (the pool
- *  passes — the two-card-flow handoff). */
-export async function phase1Card(
-  body: Record<string, unknown>,
-  mid: string,
-): Promise<Phase1Card> {
-  const prep: PreparedCard = prepareCardParams(body, mid, "1");
-  const spells: readonly string[] = prep.decl.spells ?? [];
-  const pool: Record<string, unknown> = {};
-  for (const k of spells) {
-    const v: unknown = prep.params[k];
-    if (k in prep.params && typeof v === "string" && v.startsWith("$")) pool[k] = v;
-  }
-  if (Object.keys(pool).length > 0) {
-    return { ...prep, spell: { skeleton: prep.skeleton, inputs: pool } };
-  }
-  await composeOnce(prep.card, prep.fam, prep.params, "", "1");
-  return { ...prep, spell: null };
-}
-
-/** Phase 2 (the real run id): composes the SAME overlaid body phase
- *  1 validated (py submit 1294-1301 — idempotent, absent-keys-only;
- *  the editor's seeded stamps pass through byte-identical).
- *  A $spell body composes VERBATIM here (run context — the $spell
- *  wires into the Load* file slot; the merged path refuses a
- *  link-in-file-slot LOUDLY, test_two_card_flow). */
-export async function phase2Card(p1: Phase1Card, runId: string): Promise<ComposedCard> {
-  const graph: Record<string, unknown> = await composeOnce(
-    p1.card,
-    p1.fam,
-    p1.params,
-    runId,
-    "2",
-  );
-  if (typeof graph !== "object" || graph === null || Array.isArray(graph)) {
-    throw new CardArmError(
-      400,
-      "card_compose produced an empty graph for " + p1.mid,
-      "invalid_request",
-    );
-  }
-  return { graph, skeleton: p1.skeleton, spell: p1.spell };
 }
