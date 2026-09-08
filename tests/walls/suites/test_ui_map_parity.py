@@ -36,9 +36,9 @@ from ui_map import (  # noqa: E402
     ValidationError,
 )
 
-GENERATED = REPO / "web" / "ui" / "src" / "uiMap.generated.ts"
+GENERATED = REPO / "packages" / "web-kit" / "ui" / "src" / "uiMap.generated.ts"
 GEN_TOOL = REPO / "tools" / "gen_ui_map.py"
-UI_SRC = REPO / "web" / "ui" / "src"
+UI_SRC = REPO / "packages" / "web-kit" / "ui" / "src"
 
 # THE seam unions — the only vocabulary the map owns. A union
 # name here may be declared ONLY in the generated face. (Kit

@@ -35,7 +35,7 @@ def main() -> int:
         # python/ subfolder; the tool.json SNAPSHOT is derived data and
         # sits at the CARD ROOT (beside tool.json's serving-era home)
         snap_dir = os.path.dirname(path)
-        if os.path.basename(snap_dir) == "py":
+        if os.path.basename(snap_dir) == "python":
             snap_dir = os.path.dirname(snap_dir)
         snap = os.path.join(snap_dir, "tool.json")
         manifests = tool_manifests(cls)
