@@ -1,0 +1,79 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "exclude": [
+    "duplicates"
+  ],
+  "ignore": [
+    "data/**",
+    "references/**",
+    "packages/harness/infer-daisy-studio/src/infer_daisy_studio/assets/*",
+    "packages/engines/comfyui-cordis/src/generated/vocab.ts",
+    "packages/harness/melite-tools/lib/**",
+    "packages/web-kit/scripts/gen-registry.ts"
+  ],
+  "ignoreWorkspaces": [
+    "vendor/*"
+  ],
+  "ignoreBinaries": [
+    "python3",
+    "comfy"
+  ],
+  "workspaces": {
+    ".": {
+      "entry": [
+        "apps/*/src/*.ts",
+        "tools/*.mjs",
+        "tests/walls/ts/suites/*.test.ts",
+        "tests/walls/helpers/*.mjs",
+        "tools/arch-lint.ts",
+        "tests/walls/ts/fixtures/mcp-stub.mjs"
+      ]
+    },
+    "packages/gateway/shell": {
+      "entry": [
+        "src/index.ts",
+        "scripts/*.ts"
+      ]
+    },
+    "packages/gateway/core": {
+      "entry": [
+        "src/index.ts"
+      ]
+    },
+    "packages/gateway/doors": {
+      "entry": [
+        "src/index.ts",
+        "src/entries/*.ts"
+      ]
+    },
+    "packages/gateway/queue": {
+      "entry": [
+        "src/index.ts"
+      ]
+    },
+    "packages/engines/comfyui": {
+      "entry": [
+        "src/index.ts",
+        "src/entries/*.ts",
+        "scripts/*.ts"
+      ]
+    },
+    "packages/engines/comfyui-cordis": {
+      "entry": [
+        "src/index.ts",
+        "src/cards/*.ts",
+        "src/dump-registry.ts"
+      ]
+    },
+    "packages/web-kit/catalog": {
+      "entry": [
+        "scripts/gen-gateway-doors.ts"
+      ]
+    },
+    "packages/web-kit": {
+      "entry": [
+        "scripts/gen-registry.ts"
+      ]
+    }
+  }
+}

@@ -72,19 +72,14 @@ function readyPort(proc: ChildProcess, deadlineMs: number): Promise<number> {
 export async function bootSandbox(opts: {
   mcpBin: string;
   token: string;
-  /** Copy the product catalog data into the fixture repo so catalog
-   *  legs hit the designed path (the fixture would otherwise ENOENT —
-   *  a sandbox artifact, never the served shape). Read-only fixture
-   *  use, exactly like the identical inference.config.json. */
+  /** KEPT FOR SIGNATURE COMPATIBILITY, now a no-op: the catalog is
+   *  the compiled-in frozen registry (models/registry.generated.ts)
+   *  — root-independent, no DATA file to seed (the provisions.json
+   *  convergence, 2026-09-08). */
   seedCatalog?: boolean;
 }): Promise<Sandbox> {
   const repoRoot: string = writeFixtureRepo();
-  if (opts.seedCatalog === true) {
-    const rel = "packages/engines/comfyui/models/provisions.json";
-    const dst: string = join(repoRoot, rel);
-    mkdirSync(join(repoRoot, "packages", "engines", "comfyui", "models"), { recursive: true });
-    copyFileSync(join(REPO_ROOT, rel), dst);
-  }
+  // seedCatalog: retired no-op (compiled-in registry — see opts doc).
   const stateRoot: string = mkdtempSync(join(tmpdir(), "wall-ts-state-"));
   const env: Record<string, string> = {};
   for (const [k, v] of Object.entries(process.env)) {

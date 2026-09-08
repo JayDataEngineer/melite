@@ -10,9 +10,9 @@
 //   bad-JSON 400 shape, method-mismatch 404 literal, list-body 500
 //   keys, plane-unavailable 503 template (bogus MELITE_COMFY_MCP_BIN),
 //   dispatch 422s (unknown action / empty body / missing arg),
-//   catalog-miss 404 (the stub boot seeds the product provisions.json
-//   into the fixture repo — without it the leg would ENOENT on the
-//   missing fixture file, a sandbox artifact, never the served shape),
+//   catalog-miss 404 (the compiled-in frozen registry answers —
+//   root-independent, no fixture seeding since the 2026-09-08
+//   provisions.json convergence),
 //   live status 200 (stub vendor rail), trailing-slash normalization,
 //   auth 401 + the /v1/health exemption, and the resolveComfyMcpBin
 //   unit probe.

@@ -1,0 +1,12 @@
+# Editor-side declaration of the repo's text conventions (DSH shape).
+# Pairs with git's own filters: git produces LF checkouts; this pins
+# what EDITORS write to disk — the one path git cannot reach.
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+
+[*.{ts,tsx,mjs,json,yml,yaml}]
+indent_style = space
+indent_size = 2

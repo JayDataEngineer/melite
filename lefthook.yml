@@ -1,0 +1,21 @@
+# Git hooks (lefthook, DSH shape). Local checkpoints stay FAST; the
+# walls + CI own the full gate matrix. Install: `pnpm exec lefthook
+# install` (or `pnpm install` once a postinstall lands).
+
+pre-commit:
+  jobs:
+    # THE WALLS ARE THE GATE: any staged change that can move a wall
+    # (estate TS or the walls themselves) re-runs the TS wall battery.
+    - name: walls (staged TS/walls)
+      glob: '*.{ts,tsx,mjs}'
+      run: node tests/walls/ts/run.mjs
+
+    - name: final-newline (staged text)
+      run: node tools/hook-final-newline.mjs {staged_files}
+
+pre-push:
+  jobs:
+    # The full local battery on push: tsc per package (the CI
+    # matrix's local mirror) + walls again (cheap).
+    - name: tsc x5 + walls (full)
+      run: node tools/hook-full-battery.mjs

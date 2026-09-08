@@ -1,5 +1,9 @@
 {
 	"dependencies": {
 		"lightningcss": "^1.33.0"
+	},
+	"devDependencies": {
+		"knip": "^6.34.0",
+		"lefthook": "^2.1.12"
 	}
 }

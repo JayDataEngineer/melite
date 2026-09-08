@@ -17,7 +17,6 @@
     "./cardBirth": "./src/cardBirth.ts",
     "./comfyEvents": "./src/comfyEvents.ts",
     "./enhance": "./src/enhance.ts",
-    "./enhancement": "./src/enhancement.ts",
     "./familyParamContract": "./src/familyParamContract.ts",
     "./familyProvenance": "./src/familyProvenance.ts",
     "./inputSlots": "./src/inputSlots.ts",

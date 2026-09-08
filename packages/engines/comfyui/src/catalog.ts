@@ -1,6 +1,7 @@
 // engine/catalog.ts — the TS-native model catalog (NO-ESTATE-PYTHON
 // LAW: the 47 packages/engines/comfyui/models/*/model.py files are
-// dead; this module + models/provisions.json are the catalog now).
+// dead; this module over the FROZEN REGISTRY (models/registry.
+// generated.ts, dumped from the 034e1f97 units) is the catalog now).
 //
 // Two entry points mirror the two halves of the condemned
 // infra/python/manage.py provision_model path (spec reference,
@@ -50,7 +51,7 @@
 //     port): an endpoint without model_base_path skips the mount
 //     leg — see FOLLOWUPS in the stroke record.
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { Context, Service } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
@@ -60,6 +61,7 @@ import {
   loadEndpointConfig,
   resolveRepoRoot,
 } from "./comfyui.ts";
+import { type ModelDecl, MODEL_REGISTRY } from "./models/models.ts";
 
 /** One downloadable row — the manage door's download contract. */
 export interface CatalogArtifactRow {
@@ -68,32 +70,32 @@ export interface CatalogArtifactRow {
   readonly relative_path: string;
 }
 
-/** A provision declaration row (models/provisions.json DATA). */
+/** A provision declaration row (registry projection). */
 export interface CatalogProvision {
   readonly name: string;
   readonly url: string;
   readonly folder: string;
 }
 
-/** A matrix cell's downloadable body (models/provisions.json DATA). */
+/** A matrix cell's downloadable body (registry projection). */
 export interface CatalogCellArtifact {
   readonly source_url: string;
   readonly dest_sub: string;
 }
 
-/** One (variant x quant) matrix place (models/provisions.json DATA). */
+/** One (variant x quant) matrix place (registry projection). */
 export interface CatalogCell {
   readonly quant: string;
   readonly artifact?: CatalogCellArtifact;
 }
 
-/** One variant row (models/provisions.json DATA). */
+/** One variant row (registry projection). */
 export interface CatalogVariant {
   readonly id: string;
   readonly cells: CatalogCell[];
 }
 
-/** One model row (models/provisions.json DATA). */
+/** One model row (registry projection). */
 export interface CatalogModel {
   readonly id: string;
   readonly genre: string;
@@ -125,106 +127,71 @@ function isRecord(v: EngineJson | unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
-/** Parse + shape-check the DATA file (loud on a malformed tree —
- *  a half-written catalog refuses, never serves partial rows). */
-function parseCatalog(text: string, path: string): CatalogModel[] {
-  let doc: unknown;
-  try {
-    doc = JSON.parse(text) as unknown;
-  } catch (exc: unknown) {
-    const msg: string = exc instanceof Error ? exc.message : String(exc);
-    throw new Error(
-      "model catalog " + path + " exists but will not parse (" + msg + ")",
-    );
-  }
-  if (!isRecord(doc) || !Array.isArray(doc["models"])) {
-    throw new Error(
-      "model catalog " + path + " has no models[] array — fix the file",
-    );
-  }
-  const out: CatalogModel[] = [];
-  for (const entry of doc["models"] as unknown[]) {
-    if (!isRecord(entry) || typeof entry["id"] !== "string") {
-      throw new Error(
-        "model catalog " + path + " holds a row without a string id",
-      );
-    }
-    const provisions: CatalogProvision[] = [];
-    if (Array.isArray(entry["provisions"])) {
-      for (const p of entry["provisions"] as unknown[]) {
-        if (!isRecord(p)) continue;
-        provisions.push({
-          name: typeof p["name"] === "string" ? (p["name"] as string) : "",
-          url: typeof p["url"] === "string" ? (p["url"] as string) : "",
-          folder:
-            typeof p["folder"] === "string" ? (p["folder"] as string) : "",
-        });
-      }
-    }
-    const variants: CatalogVariant[] = [];
-    if (Array.isArray(entry["variants"])) {
-      for (const v of entry["variants"] as unknown[]) {
-        if (!isRecord(v) || typeof v["id"] !== "string") continue;
-        const cells: CatalogCell[] = [];
-        if (Array.isArray(v["cells"])) {
-          for (const c of v["cells"] as unknown[]) {
-            if (!isRecord(c) || typeof c["quant"] !== "string") continue;
-            const cell: CatalogCell = { quant: c["quant"] as string };
-            if (isRecord(c["artifact"])) {
-              const art = c["artifact"] as Record<string, unknown>;
-              if (
-                typeof art["source_url"] === "string" &&
-                typeof art["dest_sub"] === "string"
-              ) {
-                (cell as { artifact?: CatalogCellArtifact }).artifact = {
-                  source_url: art["source_url"] as string,
-                  dest_sub: art["dest_sub"] as string,
-                };
-              }
-            }
-            cells.push(cell);
-          }
-        }
-        variants.push({ id: v["id"] as string, cells });
-      }
-    }
-    out.push({
-      id: entry["id"] as string,
-      genre: typeof entry["genre"] === "string" ? (entry["genre"] as string) : "",
-      provisions,
-      variants,
-    });
-  }
-  return out;
-}
-
 let CACHE: CatalogModel[] | null = null;
 
-/** The catalog rows (cached per process — DATA file, live-read).
+/** The catalog rows (cached per process) — MAPPED FROM THE FROZEN
+ *  REGISTRY (convergence 2026-09-08: the P37 class killed —
+ *  provisions.json was a second frozen compile of the same registry
+ *  the units declared; models/registry.generated.ts, dumped from
+ *  the 034e1f97 units by the metaclasses themselves, is the ONE
+ *  truth now, compiled-in — no DATA file read, no ENOENT seam,
+ *  fixtures need no seeding). The CatalogModel projection keeps the
+ *  manage rail's row shape; resolveArtifactRows below is UNCHANGED
+ *  (the legacy texts ARE the wire).
+ *
+ *  Provenance receipt: h3's audio-vae provision URL differs from
+ *  the dead provisions.json (deAPI-ai mirror -> Comfy-Org) — the
+ *  unit at 034e1f97 carries Comfy-Org with the SAME sha256 (a
+ *  mirror swap the compile predated); the registry is the fresher
+ *  authoring truth (models/video/h3/model.py line 56).
  *
  *  NON-PLUGIN callers only (walls/probes/unit — no Context). Plugin
  *  paths (the manage door) thread ctx.models and read through
  *  ModelsService.models() — the service owns its own per-fiber
  *  cache below, so the door never touches this module handle
  *  (DSH-AS-LANGUAGE LAW: the seam is the service, never the import).
- *  Both caches parse through parseCatalog — one parser, never two. */
+ *
+ *  The repoRoot parameter is kept for signature compatibility and
+ *  ignored: the registry is compiled-in, root-independent.
+ */
 export function loadCatalogModels(
-  repoRoot: string = resolveRepoRoot(),
+  _repoRoot: string = resolveRepoRoot(),
 ): CatalogModel[] {
   if (CACHE !== null) return CACHE;
-  const path: string = join(
-    repoRoot,
-    "packages",
-    "engines",
-    "comfyui",
-    "models",
-    "provisions.json",
+  CACHE = Object.values(MODEL_REGISTRY).map(
+    (d: ModelDecl): CatalogModel => ({
+      id: d.id,
+      genre: d.genre,
+      provisions: (d.provisions ?? []).map(
+        (p): CatalogProvision => ({
+          name: p.name,
+          url: p.url,
+          folder: p.folder,
+        }),
+      ),
+      variants: d.variants.map(
+        (v): CatalogVariant => ({
+          id: v.id,
+          cells: v.cells.map((c): CatalogCell => {
+            const cell: CatalogCell = { quant: c.quant };
+            if (c.artifact !== undefined && c.artifact !== null) {
+              (cell as { artifact?: CatalogCellArtifact }).artifact = {
+                source_url: c.artifact.source_url,
+                dest_sub: c.artifact.dest_sub,
+              };
+            }
+            return cell;
+          }),
+        }),
+      ),
+    }),
   );
-  CACHE = parseCatalog(readFileSync(path, "utf8"), path);
   return CACHE;
 }
 
-/** Drop the process cache (walls that rewrite the DATA file). */
+/** Drop the process cache (kept for API compatibility — the
+ *  registry is compiled-in; nothing rewrites it, but walls reset
+ *  anyway). */
 export function resetCatalogCache(): void {
   CACHE = null;
 }
@@ -411,22 +378,25 @@ export function findModelPresent(
 // considered and declined: the short name matches the models-plane
 // lane. Documented here per the task.
 //
-// OWNS: the per-fiber provisions.json row cache (keyed by repoRoot —
-// the manage door serves fixture roots under MELITE_REPO_ROOT in
-// walls, so the key is the caller's root, never the boot root) and
-// every catalog-derived operation (resolve/check). The DATA file
-// (models/provisions.json) stays frozen data — untouched. The pure
-// cores above (resolveArtifactRows/findModelPresent/parseCatalog)
-// stay module functions — they take explicit args and hold no
-// state. The module-level CACHE + loadCatalogModels stay for
-// NON-PLUGIN callers (walls/probes/unit — no Context); every door
-// with catalog reads injects 'models' and uses ctx.models (never
-// the module handle, never a dynamic import — the manage door's old
-// catalogModule() non-literal-specifier dodge is deleted: a missing
-// provider fails the door LOUD at inject, the framework's answer).
+// OWNS: the per-fiber registry row cache (keyed by repoRoot for
+// signature continuity — the registry is compiled-in and
+// root-INDEPENDENT now, so all keys map to the same table) and
+// every catalog-derived operation (resolve/check). The frozen
+// registry (models/registry.generated.ts) stays frozen data —
+// untouched. The pure cores above
+// (resolveArtifactRows/findModelPresent/loadCatalogModels) stay
+// module functions — they take explicit args and hold no state.
+// The module-level CACHE + loadCatalogModels stay for NON-PLUGIN
+// callers (walls/probes/unit — no Context); every door with
+// catalog reads injects 'models' and uses ctx.models (never the
+// module handle, never a dynamic import — the manage door's old
+// catalogModule() non-literal-specifier dodge is deleted: a
+// missing provider fails the door LOUD at inject, the framework's
+// answer).
 export class ModelsService extends Service {
-  /** provisions.json rows by repo root (the retired module CACHE,
-   *  fiber-owned now — stroke-2a defect class). */
+  /** registry rows by repo root (root-independent values — the
+   *  retired module CACHE shape, fiber-owned now — stroke-2a
+   *  defect class). */
   private rows: Map<string, CatalogModel[]> = new Map();
 
   constructor(ctx: Context) {
@@ -439,21 +409,13 @@ export class ModelsService extends Service {
     this.rows.clear();
   }
 
-  /** The catalog rows for one repo root (strict — a missing or
-   *  malformed DATA file throws LOUD via readFileSync/parseCatalog,
-   *  never a silent empty catalog). */
+  /** The catalog rows for one repo root (the compiled-in registry —
+   *  never a silent empty catalog; malformed rows died at the
+   *  metaclass dump, which is the only place a refusal belongs). */
   catalogModels(repoRoot: string = resolveRepoRoot()): CatalogModel[] {
     const hit: CatalogModel[] | undefined = this.rows.get(repoRoot);
     if (hit !== undefined) return hit;
-    const path: string = join(
-      repoRoot,
-      "packages",
-      "engines",
-      "comfyui",
-      "models",
-      "provisions.json",
-    );
-    const parsed: CatalogModel[] = parseCatalog(readFileSync(path, "utf8"), path);
+    const parsed: CatalogModel[] = loadCatalogModels(repoRoot);
     this.rows.set(repoRoot, parsed);
     return parsed;
   }
