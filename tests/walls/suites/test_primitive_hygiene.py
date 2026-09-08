@@ -16,9 +16,10 @@ Two gap classes this stroke paid for, pinned here so they cannot recur:
    inherited the failure (form_wire green isolated, red in suite).
    Bare setattr on an estate module is now a review event: EITHER
    use monkeypatch (auto-restored) OR carry a pinned allowlist
-   entry naming the restore. The RUNTIME guard (tests/conftest.py
-   _no_leaked_disclosure_doubles) catches an actual leak at the
-   leaking test; this static pin catches the next unreviewed site.
+   entry naming the restore. (PURGE S-oracle 2026-09-08: the
+   conftest RUNTIME guard retired with lane_disclosure.py — no
+   in-process doors left to leak; this static pin is the whole
+   guard now.)
 """
 
 import ast
@@ -37,12 +38,11 @@ def _py_top_levels() -> set[str]:
 # (file, target-object, reason): bare-estate-setattr sites reviewed
 # and carrying a PROVEN restore. A new site fails until it either
 # converts to monkeypatch or lands here with its restore proof.
+# (PURGE S-oracle 2026-09-08: the sole entry — the LaneWireError
+# doubles on lane_disclosure — retired with the module. The file it
+# named is already deleted; the leak class dies with the in-process
+# doors. An empty allowlist still refuses new bare-setattr sites.)
 _SETATTR_ALLOWLIST = {
-    # the LaneWireError doubles: setup lambdas plant them, the test
-    # body restores the original in a finally (runtime guard
-    # _no_leaked_disclosure_doubles proves no leak escapes).
-    ("tests/unit/runtime/test_gateway_strictness.py", "ld",
-     "raising doubles, finally-restored in-test"),
 }
 
 

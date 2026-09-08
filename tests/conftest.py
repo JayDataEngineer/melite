@@ -45,30 +45,13 @@ def repo() -> Path:
     return REPO
 
 
-# The disclosure doors every test shares in-process (peek/card_tools/
-# skill_read). A test that setattr-doubles one of these and leaks it
-# poisons every LATER test in the process (the 2026-09-05 "boom":
-# strictness's raising doubles, no teardown, form_wire red in suite
-# but green isolated). This autouse guard snapshots the three door
-# identities per test and fails THE LEAKING TEST — never a
-# downstream victim. Properly restored doubles (monkeypatch,
-# try/finally) pass through untouched. Import cost ~0.05s, once per
-# process (sys.modules-cached); the static pin for new setattr sites
-# lives in suites/test_primitive_hygiene.py.
-_DISCLOSURE_DOORS = ("peek", "card_tools", "skill_read")
-
-
-@pytest.fixture(autouse=True)
-def _no_leaked_disclosure_doubles() -> Iterator[None]:
-    import lane_disclosure as _ld
-    before = {n: id(getattr(_ld, n)) for n in _DISCLOSURE_DOORS}
-    yield
-    leaked = [n for n in _DISCLOSURE_DOORS
-              if id(getattr(_ld, n)) != before[n]]
-    assert not leaked, (
-        "test leaked doubles onto lane_disclosure: %s — restore "
-        "them (monkeypatch or try/finally) so later tests see the "
-        "real doors" % leaked)
+# (PURGE S-oracle 2026-09-08: the in-process disclosure doors are
+# gone with lane_disclosure.py — no test can setattr-double them
+# anymore, so the per-test identity guard retires with the module.
+# History: the 2026-09-05 "boom" (strictness's raising doubles, no
+# teardown, form_wire red in suite but green isolated). The static
+# pin for new setattr sites lives in
+# suites/test_primitive_hygiene.py.)
 
 
 # Script-style suites that call sys.exit() at import time.

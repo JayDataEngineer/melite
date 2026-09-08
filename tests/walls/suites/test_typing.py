@@ -32,9 +32,9 @@ def check(name: str, ok: bool, detail: str = "") -> None:
 TARGETS = [
     # THE graph contract (compose arms ↔ gateway core)
     "python/flow_graph.py",
-    # the lane-disclosure wire contract (frozen rows, fully annotated
-    # at birth, 2026-09-05)
-    "python/lane_wire.py",
+    # (PURGE S-oracle 2026-09-08: the lane-disclosure wire contract
+    # retired with python/lane_wire.py — the disclosure rows are TS
+    # now, pinned by tsc + golden bodies, no mypy surface.)
     # THE root config schema (pydantic flip 2026-09-05)
     "python/estate_config.py",
     # (2026-09-07, render-plane retirement b324c480) the co_script
@@ -53,7 +53,9 @@ my = cfg.get("tool", {}).get("mypy", {})
 check("mypy strict configured", my.get("strict") is True,
       repr(my))
 check("pydantic plugin rides (construction is the gate)",
-      "pydantic.mypy" in my.get("packages", []), repr(my.get("plugins")))
+      # (2026-09-08 S-oracle drive-by: read the "plugins" key —
+      # "packages" never existed, the leg was red since birth.)
+      "pydantic.mypy" in my.get("plugins", []), repr(my.get("plugins")))
 check("unmigrated deps stay silent (ratchet, not roadblock)",
       my.get("follow_imports") == "silent", repr(my.get("follow_imports")))
 

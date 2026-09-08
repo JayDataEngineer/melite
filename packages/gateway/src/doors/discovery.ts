@@ -220,7 +220,8 @@ function loadCatalog(repoRoot: string): Record<string, unknown> {
         path +
         " (" +
         (exc instanceof Error ? exc.message : String(exc)) +
-        ") — regenerate: python3 tools/export_discovery_catalog.py",
+        ") — the file is hand-owned frozen data; restore it from " +
+        "git, do not regenerate",
     );
   }
 }

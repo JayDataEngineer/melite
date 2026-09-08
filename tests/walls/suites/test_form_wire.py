@@ -228,17 +228,10 @@ def test_http_unknown_refuses_404(scratch_gateway: int) -> None:
 # the client never asked for it. Two server tables, zero contract
 # between them. This section is that contract.
 
-def test_card_tools_kinds_exist_in_registry_with_formspec() -> None:
-    # TOMBSTONE (PURGE S-snapshots 2026-09-08): drove the py
-    # oracle's snapshot arm (lane_disclosure.card_tools over the
-    # card-dir tool.json files) — the snapshots are deleted, so the
-    # arm serves []. The live contract (every served manifest's kind
-    # carries formSpec) is pinned by
-    # test_http_card_tools_manifest_kinds_covered below; the oracle
-    # itself retires in S-oracle.
-    import lane_disclosure
-    assert lane_disclosure.card_tools() == []
-
+# (PURGE S-oracle 2026-09-08: the oracle-tombstone leg lived here —
+# lane_disclosure.py is deleted, so the import itself is the pin
+# now: resurrecting the module fails collection. The live contract
+# rides test_http_card_tools_manifest_kinds_covered below.)
 
 def test_registry_declares_card_compose() -> None:
     rows = {"body": False, "card-compose": True, "chain": True,

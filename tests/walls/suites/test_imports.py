@@ -28,12 +28,13 @@ GATEWAY_MODULES = (
     "form_wire",
     "flow",
     "run_wire",
-    "lane_wire",
     "editor_forms",
     "editor_runs",
-    "lane_disclosure",
     "packages",
 )
+# (PURGE S-oracle 2026-09-08: "lane_wire" + "lane_disclosure"
+# dropped with the modules — the disclosure doors are TS-native;
+# nothing boots them anymore.)
 
 
 @pytest.mark.parametrize("modname", GATEWAY_MODULES)

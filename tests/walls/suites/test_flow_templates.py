@@ -142,11 +142,15 @@ def test_stamped_flow_compiles() -> None:
 
 
 def test_manifest_emits() -> None:
-    sys.path.insert(0, os.path.join(REPO, "python"))
-    import lane_disclosure
+    # (PURGE S-oracle 2026-09-08: the manifest builder rode the
+    # retired lane_disclosure module — it lives on Flow now
+    # (tool_manifest, plain wire dicts, no pydantic rows).)
     for fid, fl in sorted(_tooled().items()):
-        row = lane_disclosure._flow_tool_manifest(fl)
-        assert row is not None, (
+        wire = fl.tool_manifest()
+        assert wire is not None, (
             "flow %s declares tool= but emits no manifest" % fid)
-        wire = row.wire()
-        assert wire, "flow %s manifest wires empty" % fid
+        assert wire.get("kind") == "flow-tool" \
+            and wire.get("flow") == fid \
+            and wire.get("name") \
+            and (wire.get("params_schema") or {}).get("properties"), (
+            "flow %s manifest wires empty" % fid)

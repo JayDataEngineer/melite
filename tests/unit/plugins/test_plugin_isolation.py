@@ -35,8 +35,10 @@ IMPORT_SURFACES = [
                                 # "packages" — no python/packages.py exists;
                                 # the name imported the repo packages/
                                 # namespace dir and pinned nothing.)
-    "catalog",                 # python/catalog.py: model catalog scanner
-    "lane_disclosure",          # python/lane_disclosure.py: lane listing
+    # (2026-09-08 S-oracle drive-by: python/catalog.py died in
+    # S-catalog — the roster kept naming it, red since. Dropped.)
+    # (PURGE S-oracle 2026-09-08: lane_disclosure dropped with the
+    # module — the disclosure doors are TS-native.)
     "asset_ledger",            # python/asset_ledger.py: the asset-ledger rung
     # 2026-09-04: the surface-registry meta-test (test_surface_registry.py)
     # caught these five gateway-imported modules running unpinned —

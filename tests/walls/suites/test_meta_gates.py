@@ -458,6 +458,10 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         "gen_tool_json.py": "deleted-in-record",
         # (the S-snapshots section names the survey's sidecar ref.)
         "tool.json.d/causes.md": "past",
+        # (2026-09-08 purge S-oracle — the disclosure oracle
+        # deletion; this doc is the record.)
+        "python/lane_disclosure.py": "deleted-in-record",
+        "python/lane_wire.py": "deleted-in-record",
     },
     "docs/design/ts-migration-ladder-2026-09-07.md": {
         "card-decls.json": "past",
@@ -531,6 +535,22 @@ DOC_GHOSTS: dict[str, dict[str, str]] = {
         "py/card_kinds.py": "past",
         "py/slot_kinds.py": "past",
         "py/ui_map.py": "past",
+        # (2026-09-08 purge S-oracle — the retired disclosure
+        # oracle; thinking-record refs, historic.)
+        "py/lane_disclosure.py": "past",
+        "py/lane_wire.py": "past",
+    },
+    # (2026-09-08 purge S-oracle — completed/landed records naming
+    # the retired disclosure oracle; historic refs.)
+    "docs/design/card-birth-law.md": {
+        "py/lane_disclosure.py": "past",
+    },
+    "docs/design/flow-single-tool.md": {
+        "py/lane_wire.py": "past",
+        "tests/unit/lanes/test_lane_wire.py": "past",
+    },
+    "docs/design/row4-template-library.md": {
+        "py/lane_disclosure.py": "past",
     },
     "docs/design/image-edit-optional-slots-mask-mod.md": {
         "py/catalog.py": "past",

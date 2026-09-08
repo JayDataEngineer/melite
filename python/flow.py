@@ -582,6 +582,46 @@ class Flow(BaseModel):
                 out[name] = prop.default
         return out
 
+    def tool_manifest(self) -> dict[str, JsonValue] | None:
+        """This flow's headless tool declaration -> its mountable
+        manifest row (kind flow-tool), or None when the flow declares
+        no tool. (PURGE S-oracle 2026-09-08: ported from the retired
+        lane_disclosure._flow_tool_manifest — the params_schema VALUE
+        rows are tool vocabulary, open as JSON like card property
+        rows. Construction already validated, so this is a pure
+        projection, never a refusal site.)"""
+        if self.tool is None:
+            return None
+        tool = self.tool
+        properties: dict[str, JsonValue] = {}
+        for pname, prop in tool.properties.items():
+            cell: dict[str, JsonValue] = {
+                "type": prop.ptype.value,
+                "description": prop.description or "",
+            }
+            if prop.enum:
+                cell["enum"] = list(prop.enum)
+            if prop.default is not None:
+                cell["default"] = prop.default
+            if prop.minimum is not None:
+                cell["minimum"] = prop.minimum
+            if prop.maximum is not None:
+                cell["maximum"] = prop.maximum
+            properties[pname] = cell
+        return {
+            "name": tool.name,
+            "version": tool.version,
+            "kind": "flow-tool",
+            "flow": self.id,
+            "stage_title": "%s (flow)" % self.id,
+            "description": str(tool.description or ""),
+            "params_schema": {
+                "type": "object",
+                "properties": properties,
+                "required": list(tool.required),
+            },
+        }
+
     def with_tool_params(self, body: dict[str, JsonValue]) -> "Flow":
         if self.tool is None or not self.tool.overlays:
             return self
