@@ -1,4 +1,11 @@
 import { createRequire } from "node:module";
+import { buildMusicTool } from "@melite/audio-music/tool";
+import { buildTtsTool } from "@melite/audio-tts/tool";
+import { buildVoiceLockTool } from "@melite/audio-voice-lock/tool";
+import { buildImageEditTool } from "@melite/image-image-edit/tool";
+import { buildMotionTool } from "@melite/motion-motion/tool";
+import { buildH3TimelineTool } from "@melite/video-h3-timeline/tool";
+import { GENERIC_ENHANCE_RECIPE } from "@melite/gateway-core/prompt-guide";
 //#region \0rolldown/runtime.js
 var __require = /* #__PURE__ */ (() => createRequire(import.meta.url))();
 //#endregion
@@ -78,237 +85,6 @@ function fuseSignals(...signals) {
 	};
 	for (const signal of signals) signal.addEventListener("abort", onAbort, { once: true });
 	return controller.signal;
-}
-//#endregion
-//#region src/tools/card-tools.ts
-/**
-* card-tools.ts — the PLUGIN SYSTEM registrar (2026-08-30).
-*
-* Complex cards OWN their tools: packages/<owner>/cards/<card>/tool.json
-* (beside the card's form) declares name/description/model + the params
-* schema + a small constraint vocabulary. This module fetches
-* GET /v1/card-tools and registers ONE DSH tool per manifest — the
-* executor validates against the DECLARED schema/constraints and lands
-* a draft via the drafts door. Adding a complex card = adding its dir
-* + tool.json; the model receives the tool with ZERO DSH-side code.
-* No godfile: the timeline tool lives where the timeline is defined.
-*/
-const MANIFEST_TIMEOUT_MS = 15e3;
-const DRAFT_TIMEOUT_MS$1 = 15e3;
-async function gwJson(gatewayUrl, method, path, body, signal, timeoutMs) {
-	const ctl = new AbortController();
-	const t = setTimeout(() => ctl.abort(), timeoutMs);
-	if (signal) signal.addEventListener("abort", () => ctl.abort(), { once: true });
-	const sessionHdr = { "content-type": "application/json" };
-	if (process.env.INF_AGENT_SESSION) sessionHdr["x-agent-session"] = process.env.INF_AGENT_SESSION;
-	try {
-		const r = await fetch(gatewayUrl.replace(/\/$/, "") + path, {
-			method,
-			headers: sessionHdr,
-			body: body === void 0 ? void 0 : JSON.stringify(body),
-			signal: ctl.signal
-		});
-		const text = await r.text();
-		if (!r.ok) throw new Error("gateway " + String(r.status) + ": " + text.slice(0, 300));
-		return JSON.parse(text);
-	} finally {
-		clearTimeout(t);
-	}
-}
-function fail(tool, msg) {
-	throw new Error(tool + ": " + msg);
-}
-/** Enforce the DECLARED constraint vocabulary. Machinery, not prompts. */
-function validateCardArgs(m, args) {
-	const name = m.name;
-	const sch = m.params_schema ?? {};
-	const props = sch.properties ?? {};
-	const req = sch.required ?? [];
-	for (const k of req) if (args[k] === void 0) fail(name, "\"" + k + "\" is required");
-	if (sch.additional_properties === false) {
-		for (const k of Object.keys(args)) if (!(k in props)) fail(name, "unknown field \"" + k + "\" (allowed: " + Object.keys(props).join(", ") + ")");
-	}
-	const out = {};
-	for (const [k, def] of Object.entries(props)) {
-		const v = args[k] === void 0 ? def.default : args[k];
-		if (v === void 0) continue;
-		const t = def.type;
-		if (t === "integer" && !(typeof v === "number" && Number.isInteger(v))) fail(name, k + " must be an integer");
-		if (t === "number" && typeof v !== "number") fail(name, k + " must be a number");
-		if (t === "string" && typeof v !== "string") fail(name, k + " must be a string");
-		if (t === "boolean" && typeof v !== "boolean") fail(name, k + " must be a boolean");
-		if (typeof v === "number" && def.min !== void 0 && v < def.min) fail(name, k + " must be >= " + String(def.min));
-		if (typeof v === "number" && def.max !== void 0 && v > def.max) fail(name, k + " must be <= " + String(def.max));
-		if (def.artifact_name === true && typeof v === "string" && (/^https?:\/\//.test(v) || v.includes("/"))) fail(name, k + " must be an artifact NAME (no URLs, no paths)");
-		out[k] = v;
-	}
-	const cons = m.constraints ?? {};
-	const callsProp = props.calls;
-	if (callsProp === void 0) return {
-		params: out,
-		calls: null,
-		fps: 0
-	};
-	const calls = Array.isArray(args.calls) ? args.calls : fail(name, "calls[] is required");
-	if (callsProp?.min_items !== void 0 && calls.length < callsProp.min_items) fail(name, "calls needs at least " + String(callsProp.min_items) + " entry");
-	if (callsProp?.max_items !== void 0 && calls.length > callsProp.max_items) fail(name, "calls exceeds " + String(callsProp.max_items) + " entries");
-	const itemProps = callsProp?.items?.properties ?? {};
-	const itemReq = callsProp?.items?.required ?? [];
-	if (cons.xor_fields) for (const group of cons.xor_fields) {
-		group.filter((f2) => args.calls?.some?.((c2) => c2[f2] !== void 0));
-		for (let i = 0; i < calls.length; i++) {
-			const got = group.filter((f2) => calls[i][f2] !== void 0);
-			if (got.length === 0) fail(name, "calls[" + String(i) + "] needs one of: " + group.join(" / "));
-			if (got.length > 1) fail(name, "calls[" + String(i) + "] has both " + got.join(" + ") + " — exactly one");
-		}
-	}
-	for (let i = 0; i < calls.length; i++) {
-		const c2 = calls[i];
-		if (typeof c2 !== "object" || c2 === null) fail(name, "calls[" + String(i) + "] must be an object");
-		for (const k of itemReq) if (c2[k] === void 0) fail(name, "calls[" + String(i) + "]." + k + " is required");
-		if (callsProp?.items?.additional_properties === false) {
-			for (const k of Object.keys(c2)) if (!(k in itemProps)) fail(name, "calls[" + String(i) + "] unknown field \"" + k + "\"");
-		}
-		for (const [k, def] of Object.entries(itemProps)) {
-			const v = c2[k];
-			if (v === void 0) continue;
-			if (def.type === "integer" && !(typeof v === "number" && Number.isInteger(v))) fail(name, "calls[" + String(i) + "]." + k + " must be an integer");
-			if (def.type === "number" && typeof v !== "number") fail(name, "calls[" + String(i) + "]." + k + " must be a number");
-			if (typeof v === "number" && def.min !== void 0 && v < def.min) fail(name, "calls[" + String(i) + "]." + k + " must be >= " + String(def.min));
-			if (typeof v === "number" && def.max !== void 0 && v > def.max) fail(name, "calls[" + String(i) + "]." + k + " must be <= " + String(def.max));
-			if (def.artifact_name === true && typeof v === "string" && (/^https?:\/\//.test(v) || v.includes("/"))) fail(name, "calls[" + String(i) + "]." + k + " must be an artifact NAME");
-		}
-		if (cons.first_item_forbidden && i === 0) {
-			for (const k of cons.first_item_forbidden) if (c2[k] !== void 0) fail(name, "calls[0] must NOT set " + k + " — there is no previous window");
-		}
-	}
-	if (cons.tile) {
-		const t2 = cons.tile;
-		if (t2.from_zero && calls[0][t2.start] !== 0) fail(name, "calls[0]." + String(t2.start) + " must be 0 (the timeline starts at 0)");
-		for (let i = 1; i < calls.length; i++) if (calls[i][t2.start] !== calls[i - 1][t2.end]) fail(name, "calls[" + String(i) + "].start_frame " + String(calls[i][t2.start]) + " does not tile: previous ends at " + String(calls[i - 1][t2.end]));
-	}
-	if (cons.span) {
-		const s2 = cons.span;
-		for (let i = 0; i < calls.length; i++) {
-			const span = calls[i].end_frame - calls[i].start_frame;
-			if (span < s2.min) fail(name, "calls[" + String(i) + "] span " + String(span) + "f under the " + String(s2.min) + "f floor");
-			if (span > s2.max) fail(name, "calls[" + String(i) + "] span " + String(span) + "f exceeds one window (" + String(s2.max) + "f) — split the shot");
-		}
-	}
-	return {
-		params: out,
-		calls,
-		fps: typeof out.fps === "number" ? out.fps : 24
-	};
-}
-/** Fetch manifests + build one DSH tool per card. */
-async function cardTools(gatewayUrl, signal, lane) {
-	const manifests = await gwJson(gatewayUrl, "GET", lane ? "/v1/card-tools?lane=" + encodeURIComponent(lane) : "/v1/card-tools", void 0, signal, MANIFEST_TIMEOUT_MS);
-	if (!Array.isArray(manifests) || manifests.length === 0) {
-		if (lane) throw new Error("card-tools: lane \"" + lane + "\" has no manifest on the gateway");
-		return [];
-	}
-	if (lane && manifests.length !== 1) throw new Error("card-tools: lane \"" + lane + "\" resolved " + String(manifests.length) + " manifests (must be exactly 1)");
-	const ALLOWED_CARDS = /* @__PURE__ */ new Set([
-		"h3_timeline_card",
-		"voice_lock_card",
-		"tts_card",
-		"music_card",
-		"image_card",
-		"image_edit_card",
-		"motion_card"
-	]);
-	const tools = [];
-	for (const m of manifests) {
-		if (typeof m?.name !== "string" || !m.name || typeof m.model !== "string" || !m.model) continue;
-		if (!ALLOWED_CARDS.has(m.name)) continue;
-		const toolName = m.name;
-		const model = m.model;
-		const stageTitle = typeof m.stage_title === "string" && m.stage_title ? m.stage_title : model;
-		tools.push({
-			name: toolName,
-			description: String(m.description ?? toolName),
-			parameters: m.params_schema,
-			output: {
-				schema: {
-					type: "object",
-					additionalProperties: true,
-					properties: {
-						card: { type: "string" },
-						draftId: { type: "string" }
-					},
-					required: ["card", "draftId"]
-				},
-				render: (_a, v) => [{
-					type: "text",
-					text: "card " + String(v?.draftId ?? "?") + " (" + model + ") — " + (Array.isArray(v?.stages) && v.stages.length > 0 ? String(v.stages.length) + " stage" : String(v?.shots ?? 1) + " shot") + ", 1 run"
-				}]
-			},
-			async execute(args, exec) {
-				const a = args ?? {};
-				const { params, calls, fps } = validateCardArgs(m, a);
-				const intent = typeof a.intent === "string" && a.intent ? a.intent : fail(toolName, "intent is required");
-				let doc;
-				if (calls === null) {
-					doc = {};
-					for (const [k, v] of Object.entries(params)) if (k !== "intent") doc[k] = v;
-				} else {
-					doc = {
-						calls: JSON.stringify(calls),
-						fps,
-						intent
-					};
-					for (const [k, v] of Object.entries(params)) if (k !== "calls" && k !== "intent") doc[k] = v;
-				}
-				const draft = await gwJson(gatewayUrl, "POST", "/v1/flows/drafts", {
-					intent,
-					stages: [{
-						title: stageTitle,
-						kind: "generation",
-						service: model,
-						params: doc
-					}]
-				}, exec?.signal, DRAFT_TIMEOUT_MS$1);
-				if (typeof draft.draftId !== "string" || draft.draftId === "") fail(toolName, "gateway draft POST returned no draftId");
-				const clean = (x) => {
-					if (Array.isArray(x)) return x.map(clean);
-					if (x && typeof x === "object") {
-						const o = {};
-						for (const [k, v] of Object.entries(x)) {
-							const c4 = clean(v);
-							if (c4 !== void 0) o[k] = c4;
-						}
-						return o;
-					}
-					if (typeof x === "function" || x === void 0) return void 0;
-					return x;
-				};
-				if (calls === null) return clean({
-					card: "draft",
-					draftId: draft.draftId,
-					model,
-					title: stageTitle,
-					runs: 1,
-					stages: Array.isArray(draft.stages) ? draft.stages : []
-				});
-				const totalFrames = calls[calls.length - 1].end_frame;
-				const seams = calls.filter((c3) => c3.first_frame_prev_sec !== void 0).length;
-				return clean({
-					card: "draft",
-					draftId: draft.draftId,
-					model,
-					shots: calls.length,
-					totalFrames,
-					durationSec: Math.round(totalFrames / fps * 100) / 100,
-					motionSeams: seams,
-					hardCuts: calls.length - 1 - seams,
-					runs: 1,
-					stages: Array.isArray(draft.stages) ? draft.stages : []
-				});
-			}
-		});
-	}
-	return tools;
 }
 //#endregion
 //#region src/json-clean.ts
@@ -755,7 +531,7 @@ function runStatus(gatewayUrl) {
 }
 //#endregion
 //#region src/tools/build-flow.ts
-const CATALOG_TIMEOUT_MS$1 = 15e3;
+const CATALOG_TIMEOUT_MS$2 = 15e3;
 const DRAFT_TIMEOUT_MS = 15e3;
 const VALIDATE_TIMEOUT_MS = 15e3;
 /** Fold flat connects into per-stage typed edges. LOUD on shapes the
@@ -938,13 +714,13 @@ async function composeMulti(gatewayUrl, flowArg, signal) {
 async function composeSingle(gatewayUrl, a, signal) {
 	if (typeof a.model !== "string" || a.model.length === 0) throw new Error("build_flow: \"model\" is required (a catalog model id string)");
 	if (typeof a.prompt !== "string" || a.prompt.length === 0) throw new Error("build_flow: \"prompt\" is required (what to put on the card)");
-	const tools = await gatewayRequest(gatewayUrl, "GET", "/v1/card-tools", void 0, signal, CATALOG_TIMEOUT_MS$1);
+	const tools = await gatewayRequest(gatewayUrl, "GET", "/v1/card-tools", void 0, signal, CATALOG_TIMEOUT_MS$2);
 	const manifest = Array.isArray(tools) ? tools.find((t) => t.model === a.model) : void 0;
 	if (manifest === void 0) {
 		const allowed = (Array.isArray(tools) ? tools : []).map((t) => String(t.model)).filter((s) => s !== "").join(", ");
 		throw new Error("build_flow: model \"" + a.model + "\" has no card tool. Live card tools: " + allowed);
 	}
-	const cat = await gatewayRequest(gatewayUrl, "GET", "/v1/model-catalog", void 0, signal, CATALOG_TIMEOUT_MS$1);
+	const cat = await gatewayRequest(gatewayUrl, "GET", "/v1/model-catalog", void 0, signal, CATALOG_TIMEOUT_MS$2);
 	const entry = (cat.models ?? {})[a.model];
 	const familyId = entry !== void 0 && typeof entry.family === "string" ? entry.family : a.model;
 	const famLabel = cat.families?.[familyId]?.label;
@@ -1156,274 +932,26 @@ function comfyManage(gatewayUrl) {
 	};
 }
 //#endregion
-//#region src/llm-complete.ts
-/** "provider/model" — the only spelling a route is ever named by. */
-function routeName(r) {
-	return r.provider + "/" + r.model;
-}
-/** End-to-end deadline for one auxiliary completion (observed live: ~60s). */
-const ENHANCE_DEADLINE_MS = 18e4;
-/**
-* Resolve the harness model routes with ZERO configuration: every
-* registered provider route × its advertised models — INTERLEAVED
-* round-robin across providers (2026-09-05 fix: registration order
-* let ONE keyless provider with many advertised models eat the entire
-* attempt budget — observed live: six deepseek-official routes burned
-* before the credentialed xiaomi/zai/openrouter providers were ever
-* tried). The FIRST healthy route serves; a dead one (quota, auth) is
-* stepped past — "no model" cannot happen while any route breathes.
-* There is no explicit config knob to misconfigure.
-*/
-const MAX_ROUTE_ATTEMPTS = 12;
-async function resolveHarnessRoutes(llm) {
-	const providers = llm.listProviders();
-	if (providers.length === 0) throw new Error("enhance: no LLM adapter is registered in the harness host");
-	const perProvider = [];
-	for (const p of providers) try {
-		const models = await llm.listModels(p.id);
-		if (models.length > 0) perProvider.push(models.map((m) => ({
-			provider: p.id,
-			model: m.id
-		})));
-	} catch {}
-	const routes = [];
-	for (let i = 0; i < MAX_ROUTE_ATTEMPTS; i++) for (const list of perProvider) if (list[i]) routes.push(list[i]);
-	if (routes.length === 0) throw new Error("enhance: no registered harness provider advertises any model");
-	return routes.slice(0, MAX_ROUTE_ATTEMPTS);
-}
-/**
-* One streaming completion on ONE exact route, assembled to text. Terminal
-* finish reasons other than 'stop' become thrown errors carrying the
-* provider failure message + code — never swallowed.
-*/
-async function harnessCompleteOnRoute(llm, route, req) {
-	const timeout = AbortSignal.timeout(ENHANCE_DEADLINE_MS);
-	const signal = req.signal ? AbortSignal.any([req.signal, timeout]) : timeout;
-	const options = {
-		provider: route.provider,
-		model: route.model,
-		messages: [{
-			role: "user",
-			content: [{
-				type: "text",
-				text: req.prompt
-			}],
-			source: {
-				kind: "plugin",
-				plugin: "@melite-plugin/dsh-tools"
-			}
-		}],
-		system: req.system + OUTPUT_CONTRACT,
-		...req.temperature !== void 0 && Number.isFinite(req.temperature) ? { temperature: req.temperature } : {},
-		signal
-	};
-	let text = "";
-	let finish = null;
-	for await (const chunk of llm.stream(options)) if (chunk.type === "text-delta" && typeof chunk.text === "string") text += chunk.text;
-	else if (chunk.type === "finish") {
-		const r = chunk.reason;
-		finish = {
-			kind: typeof r?.kind === "string" ? r.kind : JSON.stringify(r ?? null),
-			failure: r?.failure
-		};
-	}
-	if (finish === null) throw new Error("enhance: the harness model stream ended without a terminal finish");
-	if (finish.kind !== "stop") {
-		const detail = finish.failure ? finish.failure.message + " [" + (finish.failure.code ?? "?") + "]" : finish.kind;
-		throw new Error("enhance: " + routeName(route) + " failed — " + detail);
-	}
-	return text;
-}
-/**
-* The door's WIRE CONTRACT, appended to EVERY recipe (2026-09-06,
-* live-caught 1:1: the image model's form-spec recipe is pure
-* structure rules — no output-format word in it — so the model
-* answered "**Prompt:** …" prose and the JSON parse 502'd). The
-* {positive, negative} JSON shape is THIS door's requirement, so
-* THIS door guarantees it, whatever the per-model recipe says.
-*/
-const OUTPUT_CONTRACT = "\n\nOutput contract: reply with ONLY a JSON object {\"positive\": \"<the rewritten prompt>\", \"negative\": \"<what to avoid, or empty string>\"} — no prose, no markdown, nothing outside the JSON.";
-/**
-* Match a caller-named route against the live list. Exact
-* "provider/model" wins; a bare "model" must be unambiguous (two
-* providers advertising it is a 400 naming both — guessing between
-* providers is how silent-DeepSeek happens). Unknown → throw with
-* the live list (the route turns it into a 400, never a walk).
-*
-* Version-tail tolerance (2026-09-06, live-caught): the settings
-* default names glm-5.3 while the provider advertises glm-4.7 —
-* a newer default than the live provider list carries. The named
-* model is RESOLVED, never walked: same provider, its NEWEST
-* advertised model below the named one in the family line. If the
-* provider itself is absent, or nothing matches, the failure stays
-* loud with the live list. This is resolution of the user's own
-* default, not a fallback to a DIFFERENT provider's model.
-*/
-function matchHarnessRoute(routes, want) {
-	const exact = routes.find((r) => routeName(r) === want);
-	if (exact) return exact;
-	const bare = routes.filter((r) => r.model === want);
-	if (bare.length === 1) return bare[0];
-	if (bare.length > 1) throw new Error("enhance: ambiguous llm \"" + want + "\" — advertised by " + bare.map(routeName).join(", ") + "; name provider/model");
-	const provider = want.split("/")[0];
-	const stem = (want.split("/")[1] ?? "").replace(/[-.][0-9]+.*$/, "").toLowerCase();
-	if (stem !== "") {
-		const familyRoutes = routes.filter((r) => r.provider === provider).filter((r) => r.model.toLowerCase() === stem || r.model.toLowerCase().startsWith(stem + "-") || r.model.toLowerCase().startsWith(stem + "."));
-		if (familyRoutes.length > 0) {
-			const ver = (m) => {
-				const t = /[-.]v?([0-9]+(?:[._][0-9]+)*)/.exec(m);
-				return t ? Number.parseFloat(t[1].replace("_", ".")) : 0;
-			};
-			return familyRoutes.reduce((best, r) => ver(r.model) > ver(best.model) ? r : best);
-		}
-	}
-	const live = routes.map(routeName).join(", ");
-	throw new Error("enhance: unknown llm route \"" + want + "\" — live routes: " + live);
-}
-/**
-* Recipe + prompt in, {positive, negative, via} out. THE one enhance
-* call. NO WALK, NO FALLBACKS (queue lane law, operator 2026-09-06:
-* "No fallbacks. Ever." — the first-breathing walk is what served
-* DeepSeek/minimax by luck of registration order and provider
-* health):
-*
-*   - explicit req.llm names the route, else defaultLlm (the
-*     agentDefaultModel service's live selection — the user's own
-*     default) names it. Explicit wins; NEITHER walks.
-*   - unresolvable name → throw naming the live routes (the route
-*     maps explicit→400, stale default→502).
-*   - the ONE route completes; its failure is the honest error
-*     (502 naming route + cause) — never a silent other model.
-*
-* `via` echoes the serving route. This is the keystore era's shape
-* (one configured model, loud otherwise) with the model resolved
-* from the host default instead of the retired keystore.
-*/
-async function harnessEnhance(llm, req, defaultLlm) {
-	const routes = await resolveHarnessRoutes(llm);
-	const want = typeof req.llm === "string" && req.llm.length > 0 ? req.llm : typeof defaultLlm === "string" && defaultLlm.length > 0 ? defaultLlm : void 0;
-	if (want === void 0) throw new Error("enhance: no llm named and no host default configured — name llm (\"provider/model\") or set the host default model");
-	const route = matchHarnessRoute(routes, want);
+//#region src/tools/flow-catalog.ts
+const CATALOG_TIMEOUT_MS$1 = 15e3;
+function flowCatalog(gatewayUrl) {
 	return {
-		...parseEnhanceJson(await harnessCompleteOnRoute(llm, route, req)),
-		via: routeName(route)
-	};
-}
-/**
-* Parse the recipe's STRICT JSON reply ({positive, negative}) out of model
-* text: direct parse, then fenced, then first-brace slice. All fail → throw
-* with the raw head (honest failure, never a silent whole-text positive).
-*/
-function parseEnhanceJson(text) {
-	const attempts = [
-		text,
-		text.replace(/^```(?:json)?\s*|\s*```$/g, ""),
-		text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1)
-	];
-	for (const attempt of attempts) try {
-		const obj = JSON.parse(attempt);
-		if (obj !== null && typeof obj === "object" && typeof obj.positive === "string") return {
-			positive: obj.positive,
-			negative: typeof obj.negative === "string" ? obj.negative : ""
-		};
-	} catch {}
-	throw new Error("enhance: the model reply was not the recipe JSON — head: " + text.slice(0, 160));
-}
-//#endregion
-//#region src/enhance-agent.ts
-/**
-* The AGENT-side enhance orchestration — shared by the chat tool and the
-* /melite-tools/enhance route's sweep mode. ONE implementation, two doors.
-*
-* The recipes are SSOT in the gateway form-spec (per-model
-* prompt-enhance* SKILL.md files surfaced as enhance_prompt | enhance_prompts).
-* Every field completion rides the harness model via llm-complete.ts —
-* no keystore, no "no model".
-*/
-const FORMSPEC_TIMEOUT_MS = 15e3;
-/** Read the model's declared recipes straight off the form-spec SSOT. */
-async function fetchDeclaredFields(gatewayUrl, model, signal) {
-	const spec = await gatewayRequest(gatewayUrl, "GET", "/v1/form-spec?model=" + encodeURIComponent(model), void 0, signal, FORMSPEC_TIMEOUT_MS);
-	let fields = {};
-	if (spec.enhance_prompts !== null && typeof spec.enhance_prompts === "object" && !Array.isArray(spec.enhance_prompts)) {
-		for (const [k, v] of Object.entries(spec.enhance_prompts)) if (typeof v === "string" && v.length > 0) fields[k] = v;
-	} else if (typeof spec.enhance_prompt === "string" && spec.enhance_prompt.length > 0) fields = { prompt: spec.enhance_prompt };
-	return {
-		fields,
-		names: Object.keys(fields)
-	};
-}
-/** One field's enhancement through the harness model. */
-function enhanceOneField(llm, recipe, prompt, temperature, signal, llmWant, defaultLlm) {
-	return harnessEnhance(llm, {
-		system: recipe,
-		prompt,
-		temperature,
-		signal,
-		...llmWant !== void 0 && llmWant.length > 0 ? { llm: llmWant } : {}
-	}, defaultLlm);
-}
-/**
-* GENERIC FALLBACK RECIPE — the shared core (2026-09-01): most models
-* declare no per-model enhance recipe; throwing made enhance_prompt AND
-* the sweep door both useless for them. One recipe, used by every door.
-*/
-const GENERIC_ENHANCE_RECIPE = "You rewrite rough generation prompts into model-optimal ones. Expand terse descriptions into concrete visual/audio language: subject, action, setting, lighting, composition, style, medium, detail level. Reply with ONLY a JSON object {\"positive\": \"<the rewritten prompt>\", \"negative\": \"<what to avoid, or empty string>\"} — no prose outside the JSON.";
-/**
-* THE SWEEP — every declared field, one press. The route's model-form uses
-* this: the CALLER orchestrates (a button, not a conversational agent), so
-* unlike the chat tool there is no listing round-trip — all declared fields
-* are enhanced sequentially and returned together. A model with NO declared
-* fields sweeps ONE generic 'prompt' field (the shared fallback recipe).
-*/
-async function agenticSweep(gatewayUrl, llm, opts) {
-	const { fields } = await fetchDeclaredFields(gatewayUrl, opts.model, opts.signal);
-	let names = Object.keys(fields);
-	if (names.length === 0) names = ["prompt"];
-	if (names.length === 1 && fields[names[0]] === void 0) fields[names[0]] = GENERIC_ENHANCE_RECIPE;
-	const results = {};
-	for (const name of names) results[name] = await enhanceOneField(llm, fields[name], opts.prompt, opts.temperature, opts.signal, opts.llmWant, opts.defaultLlm);
-	return {
-		model: opts.model,
-		results
-	};
-}
-//#endregion
-//#region src/tools/enhance-prompt.ts
-function enhancePrompt(gatewayUrl, llm, getDefaultLlm) {
-	return {
-		name: "enhance_prompt",
-		description: "Rewrite a rough generation prompt into a model-optimal one using the model's OWN declared recipe (per-model expert system prompts), completed by the DeepSeek harness model itself. Args: model (a catalog id) + prompt (the user's rough words). Most models are SIMPLE: one call returns the enhanced text. Multi-field models (music3: caption + lyrics) are AGENTIC: the first call returns the field list — then call ONCE PER FIELD with field set, handing back every enhanced piece. Never invent fields; only the declared ones exist.",
+		name: "flow_catalog",
+		description: "Search the named multi-stage flows (the PREFERRED composition): name + title + one-line description per flow. ALWAYS search flows FIRST for a multi-step task (image and upscale, speak this with that voice); when a flow fits, drive it with flow_run. Only when NO flow fits, fall back to card_catalog and compose cards directly. Takes an optional search phrase (empty = list all).",
 		parameters: {
 			type: "object",
-			properties: {
-				model: {
-					type: "string",
-					description: "Catalog model id (discover with model_catalog), e.g. \"z-image\", \"music3\"."
-				},
-				prompt: {
-					type: "string",
-					description: "The user's rough words for THIS field."
-				},
-				field: {
-					type: "string",
-					description: "Which declared enhance field to rewrite (\"prompt\", \"lyrics\", …). Omit on the FIRST call: single-field models enhance immediately; multi-field models return their field list for per-field follow-ups."
-				},
-				temperature: {
-					type: "number",
-					description: "Optional sampling temperature override."
-				}
-			},
-			required: ["model", "prompt"]
+			properties: { q: {
+				type: "string",
+				description: "Search phrase over flow name/title/description (e.g. \"image upscale\"). Empty = list all."
+			} },
+			required: []
 		},
 		presentCall(args) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			const head = String(a.prompt ?? "").slice(0, 120);
+			const q = args?.q;
 			return {
 				card: "generic",
-				title: `Enhance prompt (${String(a.model ?? "?")}${a.field ? `:${String(a.field)}` : ""})`,
-				kind: "other",
-				rawInput: head
+				title: "Flow catalog" + (typeof q === "string" && q !== "" ? ": " + q : ""),
+				kind: "search"
 			};
 		},
 		output: {
@@ -1431,68 +959,32 @@ function enhancePrompt(gatewayUrl, llm, getDefaultLlm) {
 				type: "object",
 				additionalProperties: true,
 				properties: {
-					model: { type: "string" },
-					field: {
-						type: "string",
-						description: "The enhanced field (\"prompt\", \"lyrics\", …); absent on a field-listing response."
+					count: {
+						type: "number",
+						description: "Flows found."
 					},
-					positive: {
-						type: "string",
-						description: "The enhanced prompt text."
-					},
-					negative: {
-						type: "string",
-						description: "Enhanced negative prompt when the model uses negatives, else \"\"."
-					},
-					via: {
-						type: "string",
-						description: "The harness route that served (\"provider/model\")."
-					},
-					fields: {
+					flows: {
 						type: "array",
-						items: { type: "string" },
-						description: "Declared enhance fields — present ONLY on the multi-field listing response (call again once per field)."
+						description: "Flow summaries: name/title/description/stages/skillRefs."
 					}
 				},
-				required: ["model", "positive"]
+				required: ["count", "flows"]
 			},
 			render: (_args, value) => {
-				const v = value;
-				if (Array.isArray(v.fields) && v.fields.length > 0) return [{
-					type: "text",
-					text: "enhance fields for " + String(v.model ?? "?") + ": " + v.fields.join(", ") + " — call enhance_prompt once per field with field set"
-				}];
-				const n = typeof v.positive === "string" ? v.positive.length : 0;
 				return [{
 					type: "text",
-					text: "enhanced " + String(v.model ?? "?") + (v.field ? "." + v.field : "") + " → " + n + " chars · paste onto the card"
+					text: "flow_catalog: " + String(value.count ?? 0) + " flows (drive one with flow_run, or fall back to card_catalog)"
 				}];
 			}
 		},
 		async execute(args, exec) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			if (typeof a.model !== "string" || a.model.length === 0) throw new Error("enhance_prompt: \"model\" is required (a catalog model id string)");
-			if (typeof a.prompt !== "string") throw new Error("enhance_prompt: \"prompt\" is required (the user's rough words)");
-			if (a.field !== void 0 && typeof a.field !== "string") throw new Error("enhance_prompt: \"field\" must be a string when given");
-			const { fields, names } = await fetchDeclaredFields(gatewayUrl, a.model, exec.signal);
-			const wantsField = typeof a.field === "string" && a.field.length > 0 ? a.field : null;
-			if (!wantsField && names.length > 1) return jsonClean({
-				model: a.model,
-				positive: "",
-				fields: names
-			});
-			const fieldName = wantsField ?? names[0] ?? "";
-			const recipe = fieldName !== "" && fields[fieldName] !== void 0 ? fields[fieldName] : GENERIC_ENHANCE_RECIPE;
-			const usedFallback = fieldName === "" || fields[fieldName] === void 0;
-			const result = await enhanceOneField(llm, recipe, a.prompt, typeof a.temperature === "number" ? a.temperature : void 0, exec.signal, void 0, getDefaultLlm?.());
-			return jsonClean({
-				model: a.model,
-				field: fieldName === "" ? "prompt" : fieldName,
-				recipe: usedFallback ? "generic" : "model-declared",
-				positive: result.positive,
-				negative: result.negative,
-				via: result.via
-			});
+			const q = typeof args.q === "string" ? args.q : "";
+			const res = await gatewayRequest(gatewayUrl, "GET", "/v1/flows/catalog?action=search&q=" + encodeURIComponent(q), void 0, exec.signal, CATALOG_TIMEOUT_MS$1);
+			const rows = Array.isArray(res.flows) ? res.flows : [];
+			return {
+				count: rows.length,
+				flows: rows
+			};
 		}
 	};
 }
@@ -1722,38 +1214,41 @@ function laneBundleLoad(gatewayUrl) {
 	};
 }
 //#endregion
-//#region src/tools/model-catalog.ts
-const CATALOG_TIMEOUT_MS = 2e4;
-const DEFAULT_LIMIT = 50;
-function modelCatalog(gatewayUrl) {
+//#region src/tools/card-catalog.ts
+const CATALOG_TIMEOUT_MS = 15e3;
+function cardCatalog(gatewayUrl) {
 	return {
-		name: "model_catalog",
-		description: "List Melite's model catalog (GET /v1/model-catalog), compacted: model ids with label/family/form/engines/variant ids/preset keys, plus the capability → default-family map. Filter with query (substring over id, label and family); detail=true adds per-model defaults, presets, variants and the provision source. Use an exact id from here for flow_start / compose.",
+		name: "card_catalog",
+		description: "Search cards by their declared tags + load the skill bundle (the FALLBACK composition - flow_catalog first, always; cards only when NO flow fits). search: phrase over id/label/description/tags plus an optional comma-separated tags filter - returns clamped summaries, never bodies. load_skills: exact card ids (comma-separated) - returns per card (a) the tool signature (params_schema), (b) the action card skills, (c) the model-level hints (prompt guidance rides here, ambient). Models are data for the card - there is no model picker, only bundles.",
 		parameters: {
 			type: "object",
 			properties: {
-				query: {
+				action: {
 					type: "string",
-					description: "Substring filter over model id, label and family (case-insensitive). Omit for everything."
+					description: "search (summaries) or load_skills (the bundle for exact ids).",
+					enum: ["search", "load_skills"]
 				},
-				limit: {
-					type: "integer",
-					description: `Max models returned (${DEFAULT_LIMIT} default; the summary counts the total regardless).`
+				q: {
+					type: "string",
+					description: "search: phrase over id/label/description/tags (e.g. \"image upscale\")."
 				},
-				detail: {
-					type: "boolean",
-					description: "Include defaults, full presets, variants and the source declaration per matched model."
+				tags: {
+					type: "string",
+					description: "search: comma-separated tag filter - every tag must be declared by the card (e.g. \"image,upscale\")."
+				},
+				ids: {
+					type: "string",
+					description: "load_skills: comma-separated exact card ids (e.g. \"image-gen,upscale-tools\")."
 				}
-			}
+			},
+			required: ["action"]
 		},
 		presentCall(args) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			const q = typeof a.query === "string" && a.query.length > 0 ? a.query : void 0;
+			const a = args ?? {};
 			return {
 				card: "generic",
-				title: q ? `Catalog search: ${q}` : "Model catalog",
-				kind: q ? "search" : "read",
-				rawInput: q ?? "(full scan)"
+				title: "Card catalog" + (a.action === "load_skills" && typeof a.ids === "string" && a.ids !== "" ? ": " + a.ids : typeof a.q === "string" && a.q !== "" ? ": " + a.q : typeof a.tags === "string" && a.tags !== "" ? ": " + a.tags : ""),
+				kind: "search"
 			};
 		},
 		output: {
@@ -1761,94 +1256,47 @@ function modelCatalog(gatewayUrl) {
 				type: "object",
 				additionalProperties: true,
 				properties: {
-					model_count: { type: "integer" },
-					returned: { type: "integer" },
-					models: {
-						type: "object",
-						additionalProperties: true
+					count: {
+						type: "number",
+						description: "Cards (search) or bundles (load_skills) found."
 					},
-					capabilities: {
-						type: "object",
-						additionalProperties: true
+					cards: {
+						type: "array",
+						description: "search: card summaries (id/label/description/genre/tags)."
 					},
-					families: {
-						type: "object",
-						additionalProperties: true
+					bundles: {
+						type: "array",
+						description: "load_skills: per-card bundles (id/tool/skills/model_hints)."
 					}
 				},
-				required: [
-					"model_count",
-					"returned",
-					"models"
-				]
+				required: ["count"]
 			},
 			render: (_args, value) => {
-				const v = value;
-				const lines = [`melite catalog: ${v.returned}/${v.model_count} models`];
-				for (const [id, m] of Object.entries(v.models)) lines.push(`  ${id} — ${m.label ?? id} (family=${m.family ?? "?"} form=${m.form ?? "?"})`);
 				return [{
 					type: "text",
-					text: lines.join("\n")
+					text: "card_catalog: " + String(value.count ?? 0) + " results (load_skills the exact ids you will drive)"
 				}];
 			}
 		},
 		async execute(args, exec) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			const catalog = await gatewayRequest(gatewayUrl, "GET", "/v1/model-catalog", void 0, exec.signal, CATALOG_TIMEOUT_MS);
-			const models = catalog.models ?? {};
-			const q = typeof a.query === "string" ? a.query.toLowerCase() : "";
-			const matched = Object.entries(models).filter(([id, m]) => {
-				if (!q) return true;
-				return id.toLowerCase().includes(q) || String(m.label ?? "").toLowerCase().includes(q) || String(m.family ?? "").toLowerCase().includes(q);
-			});
-			const limit = Math.min(Math.max(Number(a.limit ?? DEFAULT_LIMIT) || DEFAULT_LIMIT, 1), 500);
-			const detail = a.detail === true;
-			const compactModels = {};
-			for (const [id, m] of matched.slice(0, limit)) {
-				const variantIds = Array.isArray(m.variants) ? m.variants.map((v) => v?.id).filter((x) => typeof x === "string") : [];
-				const presetKeys = m.presets && typeof m.presets === "object" ? Object.keys(m.presets) : [];
-				const base = {
-					label: m.label,
-					family: m.family,
-					form: m.form,
-					...m.capability !== void 0 ? { capability: m.capability } : {},
-					...typeof m.engine === "string" ? { engine: m.engine } : {},
-					variants: variantIds,
-					presets: presetKeys
+			const a = args;
+			if (a.action === "load_skills") {
+				const ids = typeof a.ids === "string" ? a.ids : "";
+				const res = await gatewayRequest(gatewayUrl, "GET", "/v1/cards/catalog?action=load_skills&ids=" + encodeURIComponent(ids), void 0, exec.signal, CATALOG_TIMEOUT_MS);
+				const rows = Array.isArray(res.bundles) ? res.bundles : [];
+				return {
+					count: rows.length,
+					bundles: rows
 				};
-				if (detail) {
-					base.defaults = m.defaults ?? {};
-					base.presets = m.presets ?? {};
-					base.variants = m.variants ?? [];
-					base.source = m.source ?? null;
-				}
-				compactModels[id] = base;
 			}
-			const compactCapabilities = {};
-			for (const [id, c] of Object.entries(catalog.capabilities ?? {})) compactCapabilities[id] = {
-				label: c.label,
-				description: c.description,
-				default_family: c.default_family,
-				families: c.families
+			const q = typeof a.q === "string" ? a.q : "";
+			const tags = typeof a.tags === "string" ? a.tags : "";
+			const res = await gatewayRequest(gatewayUrl, "GET", "/v1/cards/catalog?action=search&q=" + encodeURIComponent(q) + "&tags=" + encodeURIComponent(tags), void 0, exec.signal, CATALOG_TIMEOUT_MS);
+			const rows = Array.isArray(res.cards) ? res.cards : [];
+			return {
+				count: rows.length,
+				cards: rows
 			};
-			const compactFamilies = {};
-			for (const [id, f] of Object.entries(catalog.families ?? {})) {
-				const entry = f;
-				compactFamilies[id] = {
-					label: entry.label,
-					genre: entry.genre
-				};
-			}
-			return jsonClean({
-				model_count: Object.keys(models).length,
-				returned: Object.keys(compactModels).length,
-				truncated: matched.length > limit,
-				engine_order: catalog.engine_order ?? [],
-				quant_order: catalog.quant_order ?? [],
-				models: compactModels,
-				capabilities: compactCapabilities,
-				families: compactFamilies
-			});
 		}
 	};
 }
@@ -2167,6 +1615,240 @@ function ledgerTail(gatewayUrl) {
 	};
 }
 //#endregion
+//#region src/llm-complete.ts
+/** "provider/model" — the only spelling a route is ever named by. */
+function routeName(r) {
+	return r.provider + "/" + r.model;
+}
+/** End-to-end deadline for one auxiliary completion (observed live: ~60s). */
+const ENHANCE_DEADLINE_MS = 18e4;
+/**
+* Resolve the harness model routes with ZERO configuration: every
+* registered provider route × its advertised models — INTERLEAVED
+* round-robin across providers (2026-09-05 fix: registration order
+* let ONE keyless provider with many advertised models eat the entire
+* attempt budget — observed live: six deepseek-official routes burned
+* before the credentialed xiaomi/zai/openrouter providers were ever
+* tried). The FIRST healthy route serves; a dead one (quota, auth) is
+* stepped past — "no model" cannot happen while any route breathes.
+* There is no explicit config knob to misconfigure.
+*/
+const MAX_ROUTE_ATTEMPTS = 12;
+async function resolveHarnessRoutes(llm) {
+	const providers = llm.listProviders();
+	if (providers.length === 0) throw new Error("enhance: no LLM adapter is registered in the harness host");
+	const perProvider = [];
+	for (const p of providers) try {
+		const models = await llm.listModels(p.id);
+		if (models.length > 0) perProvider.push(models.map((m) => ({
+			provider: p.id,
+			model: m.id
+		})));
+	} catch {}
+	const routes = [];
+	for (let i = 0; i < MAX_ROUTE_ATTEMPTS; i++) for (const list of perProvider) if (list[i]) routes.push(list[i]);
+	if (routes.length === 0) throw new Error("enhance: no registered harness provider advertises any model");
+	return routes.slice(0, MAX_ROUTE_ATTEMPTS);
+}
+/**
+* One streaming completion on ONE exact route, assembled to text. Terminal
+* finish reasons other than 'stop' become thrown errors carrying the
+* provider failure message + code — never swallowed.
+*/
+async function harnessCompleteOnRoute(llm, route, req) {
+	const timeout = AbortSignal.timeout(ENHANCE_DEADLINE_MS);
+	const signal = req.signal ? AbortSignal.any([req.signal, timeout]) : timeout;
+	const options = {
+		provider: route.provider,
+		model: route.model,
+		messages: [{
+			role: "user",
+			content: [{
+				type: "text",
+				text: req.prompt
+			}],
+			source: {
+				kind: "plugin",
+				plugin: "@melite-plugin/dsh-tools"
+			}
+		}],
+		system: req.system + OUTPUT_CONTRACT,
+		...req.temperature !== void 0 && Number.isFinite(req.temperature) ? { temperature: req.temperature } : {},
+		signal
+	};
+	let text = "";
+	let finish = null;
+	for await (const chunk of llm.stream(options)) if (chunk.type === "text-delta" && typeof chunk.text === "string") text += chunk.text;
+	else if (chunk.type === "finish") {
+		const r = chunk.reason;
+		finish = {
+			kind: typeof r?.kind === "string" ? r.kind : JSON.stringify(r ?? null),
+			failure: r?.failure
+		};
+	}
+	if (finish === null) throw new Error("enhance: the harness model stream ended without a terminal finish");
+	if (finish.kind !== "stop") {
+		const detail = finish.failure ? finish.failure.message + " [" + (finish.failure.code ?? "?") + "]" : finish.kind;
+		throw new Error("enhance: " + routeName(route) + " failed — " + detail);
+	}
+	return text;
+}
+/**
+* The door's WIRE CONTRACT, appended to EVERY recipe (2026-09-06,
+* live-caught 1:1: the image model's form-spec recipe is pure
+* structure rules — no output-format word in it — so the model
+* answered "**Prompt:** …" prose and the JSON parse 502'd). The
+* {positive, negative} JSON shape is THIS door's requirement, so
+* THIS door guarantees it, whatever the per-model recipe says.
+*/
+const OUTPUT_CONTRACT = "\n\nOutput contract: reply with ONLY a JSON object {\"positive\": \"<the rewritten prompt>\", \"negative\": \"<what to avoid, or empty string>\"} — no prose, no markdown, nothing outside the JSON.";
+/**
+* Match a caller-named route against the live list. Exact
+* "provider/model" wins; a bare "model" must be unambiguous (two
+* providers advertising it is a 400 naming both — guessing between
+* providers is how silent-DeepSeek happens). Unknown → throw with
+* the live list (the route turns it into a 400, never a walk).
+*
+* Version-tail tolerance (2026-09-06, live-caught): the settings
+* default names glm-5.3 while the provider advertises glm-4.7 —
+* a newer default than the live provider list carries. The named
+* model is RESOLVED, never walked: same provider, its NEWEST
+* advertised model below the named one in the family line. If the
+* provider itself is absent, or nothing matches, the failure stays
+* loud with the live list. This is resolution of the user's own
+* default, not a fallback to a DIFFERENT provider's model.
+*/
+function matchHarnessRoute(routes, want) {
+	const exact = routes.find((r) => routeName(r) === want);
+	if (exact) return exact;
+	const bare = routes.filter((r) => r.model === want);
+	if (bare.length === 1) return bare[0];
+	if (bare.length > 1) throw new Error("enhance: ambiguous llm \"" + want + "\" — advertised by " + bare.map(routeName).join(", ") + "; name provider/model");
+	const provider = want.split("/")[0];
+	const stem = (want.split("/")[1] ?? "").replace(/[-.][0-9]+.*$/, "").toLowerCase();
+	if (stem !== "") {
+		const familyRoutes = routes.filter((r) => r.provider === provider).filter((r) => r.model.toLowerCase() === stem || r.model.toLowerCase().startsWith(stem + "-") || r.model.toLowerCase().startsWith(stem + "."));
+		if (familyRoutes.length > 0) {
+			const ver = (m) => {
+				const t = /[-.]v?([0-9]+(?:[._][0-9]+)*)/.exec(m);
+				return t ? Number.parseFloat(t[1].replace("_", ".")) : 0;
+			};
+			return familyRoutes.reduce((best, r) => ver(r.model) > ver(best.model) ? r : best);
+		}
+	}
+	const live = routes.map(routeName).join(", ");
+	throw new Error("enhance: unknown llm route \"" + want + "\" — live routes: " + live);
+}
+/**
+* Recipe + prompt in, {positive, negative, via} out. THE one enhance
+* call. NO WALK, NO FALLBACKS (queue lane law, operator 2026-09-06:
+* "No fallbacks. Ever." — the first-breathing walk is what served
+* DeepSeek/minimax by luck of registration order and provider
+* health):
+*
+*   - explicit req.llm names the route, else defaultLlm (the
+*     agentDefaultModel service's live selection — the user's own
+*     default) names it. Explicit wins; NEITHER walks.
+*   - unresolvable name → throw naming the live routes (the route
+*     maps explicit→400, stale default→502).
+*   - the ONE route completes; its failure is the honest error
+*     (502 naming route + cause) — never a silent other model.
+*
+* `via` echoes the serving route. This is the keystore era's shape
+* (one configured model, loud otherwise) with the model resolved
+* from the host default instead of the retired keystore.
+*/
+async function harnessEnhance(llm, req, defaultLlm) {
+	const routes = await resolveHarnessRoutes(llm);
+	const want = typeof req.llm === "string" && req.llm.length > 0 ? req.llm : typeof defaultLlm === "string" && defaultLlm.length > 0 ? defaultLlm : void 0;
+	if (want === void 0) throw new Error("enhance: no llm named and no host default configured — name llm (\"provider/model\") or set the host default model");
+	const route = matchHarnessRoute(routes, want);
+	return {
+		...parseEnhanceJson(await harnessCompleteOnRoute(llm, route, req)),
+		via: routeName(route)
+	};
+}
+/**
+* Parse the recipe's STRICT JSON reply ({positive, negative}) out of model
+* text: direct parse, then fenced, then first-brace slice. All fail → throw
+* with the raw head (honest failure, never a silent whole-text positive).
+*/
+function parseEnhanceJson(text) {
+	const attempts = [
+		text,
+		text.replace(/^```(?:json)?\s*|\s*```$/g, ""),
+		text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1)
+	];
+	for (const attempt of attempts) try {
+		const obj = JSON.parse(attempt);
+		if (obj !== null && typeof obj === "object" && typeof obj.positive === "string") return {
+			positive: obj.positive,
+			negative: typeof obj.negative === "string" ? obj.negative : ""
+		};
+	} catch {}
+	throw new Error("enhance: the model reply was not the recipe JSON — head: " + text.slice(0, 160));
+}
+//#endregion
+//#region src/enhance-agent.ts
+/**
+* The AGENT-side enhance orchestration — shared by the chat tool and the
+* /melite-tools/enhance route's sweep mode. ONE implementation, two doors.
+*
+* The recipes are SSOT in the gateway form-spec (per-model
+* prompt-enhance* SKILL.md files surfaced as enhance_prompt | enhance_prompts).
+* Every field completion rides the harness model via llm-complete.ts —
+* no keystore, no "no model".
+*/
+/**
+* GENERIC FALLBACK RECIPE — MOVED to @melite/gateway-core
+* (schema/promptGuide.ts, the disclosure stroke): most models declare
+* no per-model enhance recipe; the kernel owns the one spelling, the
+* ✦ sweep door and the disclosure bundle both consume it. Re-exported
+* here so existing importers never chase the move.
+*/
+const FORMSPEC_TIMEOUT_MS = 15e3;
+/** Read the model's declared recipes straight off the form-spec SSOT. */
+async function fetchDeclaredFields(gatewayUrl, model, signal) {
+	const spec = await gatewayRequest(gatewayUrl, "GET", "/v1/form-spec?model=" + encodeURIComponent(model), void 0, signal, FORMSPEC_TIMEOUT_MS);
+	let fields = {};
+	if (spec.enhance_prompts !== null && typeof spec.enhance_prompts === "object" && !Array.isArray(spec.enhance_prompts)) {
+		for (const [k, v] of Object.entries(spec.enhance_prompts)) if (typeof v === "string" && v.length > 0) fields[k] = v;
+	} else if (typeof spec.enhance_prompt === "string" && spec.enhance_prompt.length > 0) fields = { prompt: spec.enhance_prompt };
+	return {
+		fields,
+		names: Object.keys(fields)
+	};
+}
+/** One field's enhancement through the harness model. */
+function enhanceOneField(llm, recipe, prompt, temperature, signal, llmWant, defaultLlm) {
+	return harnessEnhance(llm, {
+		system: recipe,
+		prompt,
+		temperature,
+		signal,
+		...llmWant !== void 0 && llmWant.length > 0 ? { llm: llmWant } : {}
+	}, defaultLlm);
+}
+/**
+* THE SWEEP — every declared field, one press. The route's model-form uses
+* this: the CALLER orchestrates (a button, not a conversational agent), so
+* unlike the chat tool there is no listing round-trip — all declared fields
+* are enhanced sequentially and returned together. A model with NO declared
+* fields sweeps ONE generic 'prompt' field (the shared fallback recipe).
+*/
+async function agenticSweep(gatewayUrl, llm, opts) {
+	const { fields } = await fetchDeclaredFields(gatewayUrl, opts.model, opts.signal);
+	let names = Object.keys(fields);
+	if (names.length === 0) names = ["prompt"];
+	if (names.length === 1 && fields[names[0]] === void 0) fields[names[0]] = GENERIC_ENHANCE_RECIPE;
+	const results = {};
+	for (const name of names) results[name] = await enhanceOneField(llm, fields[name], opts.prompt, opts.temperature, opts.signal, opts.llmWant, opts.defaultLlm);
+	return {
+		model: opts.model,
+		results
+	};
+}
+//#endregion
 //#region src/index.ts
 /** Cordis plugin name used by loader diagnostics. */
 const name = "melite-tools";
@@ -2182,7 +1864,8 @@ const inject = [
 ];
 /** BASE tool names — both interfaces (discovery, compose, management, audit). */
 const BASE_TOOL_NAMES = [
-	"model_catalog",
+	"flow_catalog",
+	"card_catalog",
 	"lane_bundle_peek",
 	"lane_bundle_load",
 	"build_flow",
@@ -2198,8 +1881,10 @@ const HEADLESS_TOOL_NAMES = [
 	"flow_run",
 	"run_status"
 ];
-/** AD HOC names (MELITE_ADHOC) — never in a base toolset. */
-const ADHOC_TOOL_NAMES = ["enhance_prompt"];
+/** AD HOC names (MELITE_ADHOC) — never in a base toolset.
+*  (empty since the disclosure stroke: enhance_prompt died as a tool —
+*  the editor ✦ door below keeps the user surface via harnessEnhance.) */
+const ADHOC_TOOL_NAMES = [];
 /** Every tool name this plugin can own (registration log + smoke filter). */
 const MELITE_TOOL_NAMES = [
 	...BASE_TOOL_NAMES,
@@ -2215,7 +1900,8 @@ async function apply(ctx, config = {}) {
 	const adhocCfg = Array.isArray(config.adhocTools) ? config.adhocTools.map((s) => s.trim()).filter(Boolean) : typeof config.adhocTools === "string" ? config.adhocTools.split(",").map((s) => s.trim()).filter(Boolean) : [];
 	const adhoc = adhocEnv.length ? adhocEnv : adhocCfg;
 	c.logger.info("melite-tools: %s interface — %d base + %d headless run door(s) + %d ad hoc, gateway %s", headless ? "HEADLESS" : "BROWSER", BASE_TOOL_NAMES.length, headless ? HEADLESS_TOOL_NAMES.length : 0, adhoc.length, gatewayUrl);
-	c.tools.register(modelCatalog(gatewayUrl));
+	c.tools.register(flowCatalog(gatewayUrl));
+	c.tools.register(cardCatalog(gatewayUrl));
 	c.tools.register(laneBundlePeek(gatewayUrl));
 	c.tools.register(laneBundleLoad(gatewayUrl));
 	c.tools.register(buildFlow(gatewayUrl));
@@ -2235,14 +1921,12 @@ async function apply(ctx, config = {}) {
 			if (typeof sel?.provider === "string" && typeof sel?.model === "string") return sel.provider + "/" + sel.model;
 		} catch {}
 	};
-	if (adhoc.includes("enhance_prompt")) c.tools.register(enhancePrompt(gatewayUrl, c.llm, readDefaultLlm));
-	try {
-		const cardToolList = await cardTools(gatewayUrl);
-		for (const t of cardToolList) c.tools.register(t);
-		c.logger.info("melite-tools: %d card tool(s) from /v1/card-tools", cardToolList.length);
-	} catch (e) {
-		c.logger.warn("melite-tools: card-tools manifest fetch skipped: %s", e instanceof Error ? e.message : e);
-	}
+	c.tools.register(buildMusicTool(gatewayUrl));
+	c.tools.register(buildTtsTool(gatewayUrl));
+	c.tools.register(buildVoiceLockTool(gatewayUrl));
+	c.tools.register(buildImageEditTool(gatewayUrl));
+	c.tools.register(buildMotionTool(gatewayUrl));
+	c.tools.register(buildH3TimelineTool(gatewayUrl));
 	const readBody = (req) => new Promise((resolve, reject) => {
 		const chunks = [];
 		req.on("data", (d) => {
@@ -2328,4 +2012,4 @@ async function apply(ctx, config = {}) {
 	}), "melite-tools: enhance route");
 }
 //#endregion
-export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, DEFAULT_GATEWAY_URL, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, RayGatewayError, apply, buildFlow, cardRun, cardTools, comfyManage, enhancePrompt, flowRun, harnessEnhance, inject, laneBundleLoad, laneBundlePeek, ledgerTail, matchHarnessRoute, modelCatalog, name, normalizeGatewayUrl, refineDraft, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };
+export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, DEFAULT_GATEWAY_URL, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, RayGatewayError, apply, buildFlow, cardCatalog, cardRun, comfyManage, flowCatalog, flowRun, harnessEnhance, inject, laneBundleLoad, laneBundlePeek, ledgerTail, matchHarnessRoute, name, normalizeGatewayUrl, refineDraft, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };

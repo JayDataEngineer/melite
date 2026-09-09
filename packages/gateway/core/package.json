@@ -7,6 +7,7 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./prompt-guide": "./src/schema/promptGuide.ts",
     "./package.json": "./package.json"
   },
   "dependencies": {

@@ -12,6 +12,7 @@ export * from "./core/pyValue.ts";
 export * from "./core/assetTables.ts";
 export * from "./schema/verbs.ts";
 export * from "./schema/formWire.ts";
+export * from "./schema/promptGuide.ts";
 export * from "./storage/store.ts";
 export * from "./storage/hub.ts";
 export * from "./storage/plugins.ts";

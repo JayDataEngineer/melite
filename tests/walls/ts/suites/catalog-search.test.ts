@@ -6,6 +6,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { searchCards, searchFlows, resolveCardPackageDir } from "../../../../packages/gateway/doors/src/doors/catalogs.ts";
+import { GENERIC_ENHANCE_RECIPE } from "../../../../packages/gateway/core/src/schema/promptGuide.ts";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -70,10 +71,16 @@ describe("card package resolution (repo-tree truth, never node_modules)", () => 
 
 describe("load_skills bundle (a/b/c, models as data)", () => {
   it("bundle keys are exactly id/tool/skills/model_hints (models never addressable)", async () => {
-    const mod = await import("../../../../packages/gateway/doors/src/doors/catalogs.ts");
+    const mod = await import("../../../../packages/gateway/doors/src/doors/catalogs.ts") as {
+      loadBundle: (repo: string, dataRoot: string, cards: unknown, models: unknown, id: string) => Record<string, unknown>;
+    };
+    // The fake def wears a REAL card id (image-gen): the bundle walks
+    // end to end over fakes — pinning the SHAPE (the a/b/c contract),
+    // not the emitter's leniency over a non-Schemastery schema.
+    const REPO: string = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
     const fakeCards = {
       defsSync: () => new Map([
-        ["img-gen", {
+        ["image-gen", {
           boarded: ["krea-2"],
           schema: (v: unknown) => v as Record<string, unknown>,
           identity: { label: "Image Gen", description: "generate", genre: "image" },
@@ -82,10 +89,34 @@ describe("load_skills bundle (a/b/c, models as data)", () => {
       ]),
     };
     const fakeModels = { allDecls: () => [{ id: "krea-2", label: "Krea 2", description: "image model" }] };
-    // toolBaseRows needs the engine emitter over a real-shaped def —
-    // the fake schema is NOT Schemastery: expect the LOUD emitter
-    // refusal (the projection never silently degrades).
-    assert.throws(() => (mod as { loadBundle: Function }).loadBundle("/repo", fakeCards, fakeModels, "img-gen"));
-    assert.throws(() => (mod as { loadBundle: Function }).loadBundle("/repo", fakeCards, fakeModels, "nope"), /unknown card/);
+    const bundle: Record<string, unknown> = mod.loadBundle(REPO, "/data", fakeCards, fakeModels, "image-gen");
+    assert.deepEqual(Object.keys(bundle).sort(), ["id", "model_hints", "skills", "tool"]);
+    const hints = bundle["model_hints"] as Array<Record<string, unknown>>;
+    assert.equal(hints.length, 1);
+    assert.deepEqual(Object.keys(hints[0]).sort(), ["description", "enhance", "id", "label"]);
+    assert.deepEqual(hints[0]["enhance"], { prompt: GENERIC_ENHANCE_RECIPE }); // the fallback IS the kernel const — one spelling
+    assert.throws(() => mod.loadBundle(REPO, "/data", fakeCards, fakeModels, "nope"), /unknown card/);
+  });
+});
+
+describe("enhance recipes (the migrated toll)", () => {
+  it("declared recipes surface verbatim; the rest fall back to the kernel generic", async () => {
+    const mod = await import("../../../../packages/gateway/doors/src/doors/catalogs.ts") as {
+      enhanceMap: (dataRoot: string) => Map<string, Record<string, string>>;
+    };
+    const { mkdtempSync, mkdirSync, writeFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const root: string = mkdtempSync(join(tmpdir(), "catalog-enhance-"));
+    mkdirSync(join(root, "packages", "gateway", "shell", "data"), { recursive: true });
+    writeFileSync(join(root, "packages", "gateway", "shell", "data", "discovery-catalog.json"), JSON.stringify({
+      form_specs: {
+        "krea-2": { body: { enhance_prompts: { prompt: "krea recipe" } } },
+        "dead": { body: { enhance_prompt: "None", enhance_prompts: "None" } },
+      },
+    }));
+    const map: Map<string, Record<string, string>> = mod.enhanceMap(root);
+    assert.deepEqual(map.get("krea-2"), { prompt: "krea recipe" });
+    assert.equal(map.has("dead"), false);
+    assert.equal(map.has("undec"), false); // the door serves GENERIC for these — one spelling in promptGuide
   });
 });

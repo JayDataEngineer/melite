@@ -34,6 +34,9 @@ import { needModels } from "@melite/comfyui-cordis/models-service";
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import { toolBaseRows } from "./toolProjection.ts";
 import { doorMatch, mountDoorRoutes } from "../routeMount.ts";
+import { disclosureRoot } from "./planes.ts";
+import { catalogPath } from "./discovery.ts";
+import { GENERIC_ENHANCE_RECIPE } from "@melite/gateway-core/prompt-guide";
 
 /** Code root (the REPO TREE the doors read packages/ + flows/
  *  from): file-anchored, 5 up from doors/src/doors/ — NEVER the
@@ -226,11 +229,56 @@ function toolRowFor(
   };
 }
 
+/** The bundle's (c): the effective enhance recipe per family —
+ *  the enhance_prompt toll, migrated to ambient knowledge (the
+ *  disclosure stroke, 2026-09-09). Declared recipes ride the frozen
+ *  form-spec capture (10/115 spec keys — enhance_prompt string or
+ *  enhance_prompts field map, verbatim, never parsed); anything else
+ *  falls back to the kernel's GENERIC_ENHANCE_RECIPE (one spelling —
+ *  the ✦ sweep door spends the LLM call on the same text, the agent
+ *  spends nothing and writes the prompt itself). The frozen file is
+ *  1.5MB of DATA-root capture: cached module-level (frozen =
+ *  truthful), best-effort (fixture roots lack it → all-generic,
+ *  never a refusal). */
+let enhanceCache: Map<string, Map<string, Record<string, string>>> = new Map();
+
+export function enhanceMap(dataRoot: string): Map<string, Record<string, string>> {
+  const hit: Map<string, Record<string, string>> | undefined = enhanceCache.get(dataRoot);
+  if (hit !== undefined) return hit;
+  const out = new Map<string, Record<string, string>>();
+  try {
+    const doc = JSON.parse(readFileSync(catalogPath(dataRoot), "utf8")) as {
+      form_specs?: Record<string, { body?: { enhance_prompt?: unknown; enhance_prompts?: unknown } }>;
+    };
+    for (const [key, spec] of Object.entries(doc.form_specs ?? {})) {
+      const body = spec.body ?? {};
+      const one: unknown = body.enhance_prompt;
+      if (typeof one === "string" && one !== "" && one !== "None") {
+        out.set(key, { prompt: one });
+        continue;
+      }
+      const many: unknown = body.enhance_prompts;
+      if (typeof many === "object" && many !== null && !Array.isArray(many)) {
+        const fields: Record<string, string> = {};
+        for (const [f, r] of Object.entries(many as Record<string, unknown>)) {
+          if (typeof r === "string" && r !== "") fields[f] = r;
+        }
+        if (Object.keys(fields).length > 0) out.set(key, fields);
+      }
+    }
+  } catch {
+    // no frozen capture (the sandbox fixture) — all-generic below
+  }
+  enhanceCache.set(dataRoot, out);
+  return out;
+}
+
 /** The load_skills bundle for one card id (a/b/c). Throws LOUD on
  *  unknown ids (the door maps to 404); unreadable skill docs skip
  *  (the bundle degrades, never refuses). */
 export function loadBundle(
   repo: string,
+  dataRoot: string,
   cards: CardRegistryService,
   models: ModelsService,
   cardId: string,
@@ -241,11 +289,12 @@ export function loadBundle(
   const rows = toolBaseRows(defs);
   const pkgDir: string = resolveCardPackageDir(repo, cardId);
   const decls = new Map(models.allDecls().map((d): [string, { id: string; label: string; description: string }] => [d.id, { id: d.id, label: d.label, description: d.description ?? "" }]));
+  const recipes: Map<string, Record<string, string>> = enhanceMap(dataRoot);
   const hints: Array<Record<string, unknown>> = [];
   for (const fam of def.boarded) {
     const d = decls.get(fam);
     if (d === undefined) continue; // unboarded/retired family — the board gate owns that refusal
-    hints.push({ id: d.id, label: d.label, description: d.description });
+    hints.push({ id: d.id, label: d.label, description: d.description, enhance: recipes.get(fam) ?? { prompt: GENERIC_ENHANCE_RECIPE } });
   }
   return {
     id: cardId,
@@ -303,6 +352,7 @@ export const catalogsDoors: Plugin = {
       const qs: Record<string, string[]> = parseQuery(req.target);
       const action: string = qFirst(qs, "action") ?? "search";
       const repo: string = codeRoot();
+      const dataRoot: string = disclosureRoot();
       if (req.path === "/v1/flows/catalog") {
         if (action !== "search") {
           return { status: 400, body: JSON.stringify({ error: `unknown action '${action}' (flows/catalog serves search)` }), contentType: "application/json", headers: {} };
@@ -329,7 +379,7 @@ export const catalogsDoors: Plugin = {
           const out: Array<Record<string, unknown>> = [];
           for (const id of ids) {
             try {
-              out.push(loadBundle(repo, cards, models, id));
+              out.push(loadBundle(repo, dataRoot, cards, models, id));
             } catch (e) {
               return { status: 404, body: JSON.stringify({ error: (e as Error).message }), contentType: "application/json", headers: {} };
             }

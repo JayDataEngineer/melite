@@ -51,10 +51,10 @@ import { flowRun } from './tools/flow-run.ts'
 import { runStatus } from './tools/run-status.ts'
 import { buildFlow } from './tools/build-flow.ts'
 import { comfyManage } from './tools/comfy-manage.ts'
-import { enhancePrompt } from './tools/enhance-prompt.ts'
+import { flowCatalog } from './tools/flow-catalog.ts'
 import { laneBundlePeek } from './tools/lane-bundle-peek.ts'
 import { laneBundleLoad } from './tools/lane-bundle-load.ts'
-import { modelCatalog } from './tools/model-catalog.ts'
+import { cardCatalog } from './tools/card-catalog.ts'
 import { refineDraft } from './tools/refine-draft.ts'
 import { skillIndex } from './tools/skill-index.ts'
 import { skillRead } from './tools/skill-read.ts'
@@ -76,11 +76,11 @@ export { flowRun } from './tools/flow-run.ts'
 export { runStatus } from './tools/run-status.ts'
 export { laneBundlePeek } from './tools/lane-bundle-peek.ts'
 export { laneBundleLoad } from './tools/lane-bundle-load.ts'
-export { modelCatalog } from './tools/model-catalog.ts'
+export { flowCatalog } from './tools/flow-catalog.ts'
 export { buildFlow } from './tools/build-flow.ts'
 export { refineDraft } from './tools/refine-draft.ts'
 export { comfyManage } from './tools/comfy-manage.ts'
-export { enhancePrompt } from './tools/enhance-prompt.ts'
+export { cardCatalog } from './tools/card-catalog.ts'
 export { skillIndex } from './tools/skill-index.ts'
 export { skillRead } from './tools/skill-read.ts'
 export { ledgerTail } from './tools/ledger-tail.ts'
@@ -122,7 +122,7 @@ export interface Config {
 
 /** BASE tool names — both interfaces (discovery, compose, management, audit). */
 export const BASE_TOOL_NAMES = [
-  'model_catalog', 'lane_bundle_peek', 'lane_bundle_load',
+  'flow_catalog', 'card_catalog', 'lane_bundle_peek', 'lane_bundle_load',
   'build_flow', 'refine_draft', 'comfy_manage',
   'skill_index', 'skill_read', 'ledger_tail',
 ] as const
@@ -132,8 +132,10 @@ export const HEADLESS_TOOL_NAMES = [
   'card_run', 'flow_run', 'run_status',
 ] as const
 
-/** AD HOC names (MELITE_ADHOC) — never in a base toolset. */
-export const ADHOC_TOOL_NAMES = ['enhance_prompt'] as const
+/** AD HOC names (MELITE_ADHOC) — never in a base toolset.
+ *  (empty since the disclosure stroke: enhance_prompt died as a tool —
+ *  the editor ✦ door below keeps the user surface via harnessEnhance.) */
+export const ADHOC_TOOL_NAMES = [] as const
 
 /** Every tool name this plugin can own (registration log + smoke filter). */
 export const MELITE_TOOL_NAMES = [
@@ -185,8 +187,10 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     headless ? HEADLESS_TOOL_NAMES.length : 0, adhoc.length, gatewayUrl,
   )
 
-  // BASE (both interfaces): discovery, compose, management, audit.
-  c.tools.register(modelCatalog(gatewayUrl))
+  // BASE (both interfaces): disclosure (flow preferred, card
+  // fallback), discovery, compose, management, audit.
+  c.tools.register(flowCatalog(gatewayUrl))
+  c.tools.register(cardCatalog(gatewayUrl))
   c.tools.register(laneBundlePeek(gatewayUrl))
   c.tools.register(laneBundleLoad(gatewayUrl))
   c.tools.register(buildFlow(gatewayUrl))
@@ -222,11 +226,6 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       }
     } catch { /* no default service — loud refusal downstream, never a walk */ }
     return undefined
-  }
-
-  // AD HOC — named per session, never in a base toolset.
-  if (adhoc.includes('enhance_prompt')) {
-    c.tools.register(enhancePrompt(gatewayUrl, c.llm, readDefaultLlm))
   }
 
   // THE CARD PACKAGE TOOL FACES — direct composition, one builder per

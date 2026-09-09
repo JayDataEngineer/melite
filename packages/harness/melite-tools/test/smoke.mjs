@@ -49,7 +49,9 @@ const main = async () => {
 
   // --- the 9 melite tools, in registration order ---
   const tools = [
-    ['model_catalog', lib.modelCatalog(GW), {}, {}],
+    ['flow_catalog', lib.flowCatalog(GW), { q: 'image upscale' }, {}],
+    ['card_catalog(search)', lib.cardCatalog(GW), { action: 'search', tags: 'image,upscale' }, {}],
+    ['card_catalog(load_skills)', lib.cardCatalog(GW), { action: 'load_skills', ids: 'upscale-tools' }, {}],
     ['lane_bundle_peek', lib.laneBundlePeek(GW), {}, {}],
     ['lane_bundle_peek(templates)', lib.laneBundlePeek(GW), { kind: 'template' }, {}],
     ['lane_bundle_load(action_card image-gen)', lib.laneBundleLoad(GW), { kind: 'action_card', name: 'image-gen' }, {}],
@@ -118,8 +120,13 @@ const main = async () => {
         continue
       }
       const r = await runTool(tool, args, label)
-      if (label === 'model_catalog') {
-        note(label, Object.keys(r.value?.models ?? {}).length > 0, Object.keys(r.value.models).length + ' models')
+      if (label === 'flow_catalog') {
+        note(label, (r.value?.flows?.length ?? 0) > 0, (r.value.flows.length) + ' flows')
+      } else if (label === 'card_catalog(search)') {
+        note(label, (r.value?.cards?.length ?? 0) > 0 && r.value.cards.some((c) => c.id === 'upscale-tools'), 'upscale-tools retrieved by tags')
+      } else if (label === 'card_catalog(load_skills)') {
+        const b = r.value?.bundles?.[0] ?? {}
+        note(label, Object.keys(b).join() === 'id,tool,skills,model_hints' && b.id === 'upscale-tools', 'the a/b/c bundle')
       } else if (label === 'build_flow') {
         draftId = r.value?.draftId ?? ''
         // THE CHAT PARSER CONTRACT: token after the FIRST 'card ' must be

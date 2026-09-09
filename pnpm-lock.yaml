@@ -875,6 +875,9 @@ importers:
       '@melite/audio-voice-lock':
         specifier: workspace:*
         version: link:../../audio/voice-lock
+      '@melite/gateway-core':
+        specifier: workspace:*
+        version: link:../../gateway/core
       '@melite/image-image-edit':
         specifier: workspace:*
         version: link:../../image/image-edit

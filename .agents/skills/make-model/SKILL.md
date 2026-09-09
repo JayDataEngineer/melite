@@ -57,6 +57,13 @@ export const family: Plugin = {
   refuse; the models-flows wall).
 - `resolve()` — returns the DOWNLOAD ARTIFACT (url + sha256 + size),
   never a bare boolean.
+- enhance recipes — NO authoring path yet (known gap, 2026-09-09):
+  the disclosure bundle serves per-family enhance guidance from the
+  FROZEN form-spec capture (10/115 spec keys declare
+  enhance_prompt(s)); new families fall back to the kernel
+  `GENERIC_ENHANCE_RECIPE` (gateway-core schema/promptGuide.ts).
+  Do NOT invent a DECL field for recipes — the capture is the truth
+  until the gap is worked.
 
 ## 2. The barrel row (the load order)
 
