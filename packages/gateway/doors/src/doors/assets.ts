@@ -99,11 +99,13 @@ export function defaultAssetRoots(): AssetRoots {
     testRunsRoot: join(state, "test-output"),
     inputsRoot: join(repo, "data", "input"),
     ledgerPath: join(runs, "_ledger.jsonl"),
+    // the media plugin's kind vocabulary (packages/web/media-plugin —
+    // the plugins/ tree died with the restructure; the path follows
+    // the package)
     mediaKindsPath: join(
       repo,
       "packages",
       "web",
-      "dsh",
       "media-plugin",
       "media-kinds.json",
     ),
