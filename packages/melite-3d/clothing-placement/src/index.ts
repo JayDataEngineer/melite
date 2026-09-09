@@ -1,5 +1,16 @@
-// Tier 3 — the clothing-placement card (the Blender MCP card):
-// garment-on-body placement through a PERSISTENT Blender session.
+// @melite/melite-3d-clothing-placement — the clothing-placement
+// card (the Blender MCP card): garment-on-body placement through
+// a PERSISTENT Blender session.
+//
+// PACKAGE HOME (M2′ stroke 1, 2026-09-09, P48.1): a card IS a
+// plugin — its own package (receipt: references/deepseek-harness
+// packages/shell/tool-bash), self-registering via named exports
+// name/inject/apply (Harness-Packages law: function plugins
+// named-export; no default export, no mixed forms). Content moved
+// VERBATIM from
+// comfyui-cordis/src/cards/3d/clothing-placement/card.ts (git mv).
+// The glob walk in loadCardDefs never sees it again; composition
+// is the explicit package list.
 //
 // PURE LAW-0 CARD (2026-09-08 purge-complaint ruling): TS-native from
 // birth — no model→family resolution (requiresModel: false; the
@@ -52,6 +63,7 @@ const schema = z.object({
     'Seconds for the session to answer'),
 })
 
+export const name = 'clothing-placement'
 export const inject = ['comfyui']
 
 function estateFile(param: string, ref: unknown): void {

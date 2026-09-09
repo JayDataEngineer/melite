@@ -71,6 +71,9 @@ importers:
       '@melite/formats':
         specifier: workspace:*
         version: link:../../web-kit/formats
+      '@melite/melite-3d-clothing-placement':
+        specifier: workspace:*
+        version: link:../../melite-3d/clothing-placement
       '@melite/ui':
         specifier: workspace:*
         version: link:../../web-kit/ui
@@ -473,6 +476,25 @@ importers:
         specifier: ^4.1.11
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(happy-dom@20.13.1)(jsdom@29.1.1)(vite@8.2.2(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0))
 
+  packages/melite-3d/clothing-placement:
+    dependencies:
+      '@comfyui/cordis':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
   packages/web-kit/catalog:
     dependencies:
       '@melite/contracts':
@@ -869,6 +891,8 @@ importers:
       vitest:
         specifier: ^4.1.8
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(happy-dom@20.13.1)(jsdom@29.1.1)(vite@8.2.2(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0))
+
+  packages/web/editor-shell: {}
 
   packages/web/infer-gallery:
     devDependencies:

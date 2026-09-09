@@ -19,6 +19,15 @@ import { Context } from '@deepseek-ai/cordis'
 import type { Plugin } from '@deepseek-ai/cordis'
 import { ComfyUIService } from './service.ts'
 import type { CardDefinition } from './service.ts'
+// COMPOSITION LIST (M2′ stroke 1, 2026-09-09, P48.1): card
+// PACKAGES compose explicitly — the receipt is
+// references/deepseek-harness packages/shell/tool-bash (a tool is
+// its own package; DSH composes packages, never discovers nested
+// plugins by glob). Each stroke moves a card out of src/cards into
+// packages/<genre>/<card>/ and adds its import here; when all 20
+// are packages, the readdir glob below is DELETED and this list is
+// the only composition.
+import * as melite3dClothingPlacement from '@melite/melite-3d-clothing-placement'
 
 let cache: Map<string, CardDefinition> | null = null
 let bootedService: ComfyUIService | null = null
@@ -38,6 +47,11 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
   if (cache !== null) return cache
   const ctx = new Context()
   const service = new ComfyUIService(ctx)
+  // Card packages (the composition list above) compose FIRST —
+  // explicit, ordered, no discovery.
+  await ctx.plugin(melite3dClothingPlacement as unknown as Plugin)
+  // TRANSITIONAL GLOB (named bridge, P48.1 — death date: the
+  // 20-card sweep): the remaining src/cards modules.
   // the cli.ts:59-63 auto-load loop (in-process): every card module
   // under src/cards. One layout — the doc-derived shape (card-folder
   // design record, 2026-09-08): one card one folder,
