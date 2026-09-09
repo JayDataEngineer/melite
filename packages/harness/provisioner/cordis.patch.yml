@@ -6,12 +6,11 @@
 #
 #   infer-tools          the tool registry, TWO interfaces (profile
 #                        config / MELITE_HEADLESS selects): BASE = discovery
-#                        (model_catalog, lane_bundle_peek/load), compose
-#                        (build_flow, refine_draft + ONE TOOL PER CARD
-#                        MANIFEST), management (comfy_manage), craft
-#                        (skill_index, skill_read), audit (ledger_tail);
-#                        HEADLESS adds the run doors card_run /
-#                        flow_run / run_status (queue-native).
+#                        (melite_discover, melite_load, lane_bundle_peek/load),
+#                        compose (ONE TOOL PER CARD MANIFEST), management
+#                        (comfy_manage), craft (skill_index, skill_read),
+#                        audit (ledger_tail); HEADLESS adds the run doors
+#                        melite_flow / run_status (queue-native).
 #                        enhance_prompt is AD HOC (MELITE_ADHOC), never base.
 #   infer-card-view-*    editable action cards rendered in the
 #                        conversation (host row serves the editor bundle

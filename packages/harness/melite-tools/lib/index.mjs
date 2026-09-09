@@ -383,6 +383,7 @@ async function runSingle(gatewayUrl, a, signal) {
 		mode: "card",
 		target: card !== "" ? card : model,
 		model,
+		draft_id: draftId,
 		...started
 	};
 }
@@ -418,15 +419,17 @@ async function runTemplate(gatewayUrl, a, signal) {
 			error: e instanceof Error ? e.message : String(e)
 		};
 	}
+	const started = await startRun(gatewayUrl, {
+		...overrides,
+		flow,
+		test: a.test === true,
+		draft_id: draftId
+	}, signal);
 	return {
 		mode: "flow",
 		target: flow,
-		...await startRun(gatewayUrl, {
-			...overrides,
-			flow,
-			test: a.test === true,
-			draft_id: draftId
-		}, signal)
+		draft_id: draftId,
+		...started
 	};
 }
 /** AD-HOC (the old build_flow MULTI path): COMPILE FIRST at
@@ -493,20 +496,22 @@ async function runAdHoc(gatewayUrl, a, signal) {
 			error: e instanceof Error ? e.message : String(e)
 		};
 	}
+	const started = await startRun(gatewayUrl, {
+		flow_inline: flowBody,
+		test: a.test === true,
+		draft_id: draftId
+	}, signal);
 	return {
 		mode: "adhoc",
 		target: flowId,
-		...await startRun(gatewayUrl, {
-			flow_inline: flowBody,
-			test: a.test === true,
-			draft_id: draftId
-		}, signal)
+		draft_id: draftId,
+		...started
 	};
 }
 function meliteFlow(gatewayUrl) {
 	return {
 		name: "melite_flow",
-		description: "Execute through the serial GPU queue — the ONE execution verb (a card or a flow tool call; nothing else executes). Exactly one per call: card (a card id + model — single generation) | flow (a NAMED template from melite_load) | stages (cards drafted on the fly: [{id, engine, params?, outputs?}] + optional connects — compiled at validate BEFORE any GPU is spent, then run as one typed flow). Drafts are minted inside (CARD BIRTH LAW) and never surface. Returns {run_id}; poll with run_status. One active run machine-wide.",
+		description: "Execute through the serial GPU queue — the ONE execution verb (a card or a flow tool call; nothing else executes). Exactly one per call: card (a card id + model — single generation) | flow (a NAMED template from melite_load) | stages (cards drafted on the fly: [{id, engine, params?, outputs?}] + optional connects — compiled at validate BEFORE any GPU is spent, then run as one typed flow). Drafts are minted inside (CARD BIRTH LAW) — the minted draft_id rides the value as the chat tile handle (the card surface hydrates from it via ?meliteCards=), but the agent never passes it anywhere. Returns {run_id, draft_id}; poll with run_status. One active run machine-wide.",
 		parameters: {
 			type: "object",
 			properties: {
@@ -578,6 +583,10 @@ function meliteFlow(gatewayUrl) {
 						type: "string",
 						description: "The queue run id — poll with run_status(run_id)."
 					},
+					draft_id: {
+						type: "string",
+						description: "The minted card draft id — the chat tile handle (?meliteCards=)."
+					},
 					status: {
 						type: "string",
 						description: "Registration status (queued/running)."
@@ -593,6 +602,7 @@ function meliteFlow(gatewayUrl) {
 				},
 				required: [
 					"run_id",
+					"draft_id",
 					"mode",
 					"target"
 				]
@@ -605,7 +615,7 @@ function meliteFlow(gatewayUrl) {
 				}];
 				return [{
 					type: "text",
-					text: "flow " + String(v.target ?? "?") + " → " + String(v.run_id ?? "?") + " [" + String(v.status ?? "queued") + "] — poll with run_status"
+					text: "card " + String(v.draft_id ?? "?") + " · flow " + String(v.target ?? "?") + " → " + String(v.run_id ?? "?") + " [" + String(v.status ?? "queued") + "] — poll with run_status"
 				}];
 			}
 		},

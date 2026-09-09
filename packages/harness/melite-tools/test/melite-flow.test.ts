@@ -276,3 +276,50 @@ describe('melite_flow L4 — the test flag rides every mode', () => {
     expect(body.draft_id).toBe('d2')
   })
 })
+
+describe('melite_flow tile contract — the chat hydrates from the render', () => {
+  // FlowCards parseCardsBlock (packages/web/melite-card-view): the token
+  // after the FIRST 'card ' is the draft id iff it starts with draft-
+  // or p_. The render leads with the token so the first hit IS the
+  // handle — this describe pins that from the tool side (the parser is
+  // client-bundle code; the rule is restated here verbatim).
+  function parseTileToken(text: string): string | null {
+    const atCard = text.indexOf('card ')
+    const atIdx = atCard >= 0 ? atCard : text.indexOf('draft ')
+    if (atIdx < 0) return null
+    const rest = text.slice(atIdx + (atCard >= 0 ? 5 : 6))
+    const end = rest.indexOf(' ')
+    const tok = end < 0 ? rest : rest.slice(0, end)
+    return (tok.startsWith('draft-') || tok.startsWith('p_')) && tok.length > 2 ? tok : null
+  }
+
+  test('template success: value carries draft_id; render token parses to it', async () => {
+    mockFetch([okDraftThenStart('draft-tile-1', 'r7')])
+    const tool = meliteFlow('http://g')
+    const out = await tool.execute({ flow: 'foo' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    expect(out.draft_id).toBe('draft-tile-1')
+    const parts = tool.output.render({ flow: 'foo' }, out as never) as Array<{ text?: string }>
+    const text = parts.map((p) => p?.text ?? '').join('\n')
+    expect(parseTileToken(text)).toBe('draft-tile-1')
+  })
+
+  test('adhoc success: render token parses to the minted draft', async () => {
+    mockFetch([okValidate, okDraftThenStart('draft-tile-2', 'r8')])
+    const tool = meliteFlow('http://g')
+    const out = await tool.execute({ ...FLOW }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    expect(out.draft_id).toBe('draft-tile-2')
+    const parts = tool.output.render({ ...FLOW }, out as never) as Array<{ text?: string }>
+    const text = parts.map((p) => p?.text ?? '').join('\n')
+    expect(parseTileToken(text)).toBe('draft-tile-2')
+  })
+
+  test('refusals carry no token (nothing to hydrate — the legacy branch stays dark)', async () => {
+    const tool = meliteFlow('http://g')
+    const out = await tool.execute({}, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    expect(typeof out.error).toBe('string')
+    const parts = tool.output.render({}, out as never) as Array<{ text?: string }>
+    const text = parts.map((p) => p?.text ?? '').join('\n')
+    expect(parseTileToken(text)).toBeNull()
+    expect(text).toContain('REFUSED')
+  })
+})

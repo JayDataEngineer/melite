@@ -14,8 +14,10 @@
 //   - {stages, connects?} — cards drafted on the fly (the old
 //     build_flow MULTI path: COMPILE FIRST at validate — no GPU on
 //     a bad wire — then draft + {flow_inline} start).
-// Returns {run_id}; poll with run_status. One active run
-// machine-wide. L4 test flag rides every mode.
+// Returns {run_id, draft_id}; poll with run_status. One active run
+// machine-wide. L4 test flag rides every mode. The draft_id rides
+// the value AND the render's leading `card <draftId>` token — the
+// chat tile handle (FlowCards parseCardsBlock), never an agent arg.
 import type { ToolDefinition } from '../types.ts'
 import { gatewayRequest, RayGatewayError } from '../gateway.ts'
 import { jsonClean } from '../json-clean.ts'
@@ -260,7 +262,7 @@ async function runSingle(
   }
   const started = await startRun(gatewayUrl, { ...params, model, test: a.test === true, draft_id: draftId }, signal)
   if (typeof started["error"] === 'string') return { mode: 'card', target: card !== '' ? card : model, ...started }
-  return { mode: 'card', target: card !== '' ? card : model, model, ...started }
+  return { mode: 'card', target: card !== '' ? card : model, model, draft_id: draftId, ...started }
 }
 
 /** TEMPLATE (the old flow_run path): drafts {flow,...} + start. */
@@ -287,7 +289,7 @@ async function runTemplate(
     return { mode: 'flow', target: flow, error: e instanceof Error ? e.message : String(e) }
   }
   const started = await startRun(gatewayUrl, { ...overrides, flow, test: a.test === true, draft_id: draftId }, signal)
-  return { mode: 'flow', target: flow, ...started }
+  return { mode: 'flow', target: flow, draft_id: draftId, ...started }
 }
 
 /** AD-HOC (the old build_flow MULTI path): COMPILE FIRST at
@@ -351,7 +353,7 @@ async function runAdHoc(
     return { mode: 'adhoc', target: flowId, error: e instanceof Error ? e.message : String(e) }
   }
   const started = await startRun(gatewayUrl, { flow_inline: flowBody, test: a.test === true, draft_id: draftId }, signal)
-  return { mode: 'adhoc', target: flowId, ...started }
+  return { mode: 'adhoc', target: flowId, draft_id: draftId, ...started }
 }
 
 export function meliteFlow(gatewayUrl: string): ToolDefinition {
@@ -362,8 +364,9 @@ export function meliteFlow(gatewayUrl: string): ToolDefinition {
       + 'executes). Exactly one per call: card (a card id + model — single generation) | flow (a NAMED template '
       + 'from melite_load) | stages (cards drafted on the fly: [{id, engine, params?, outputs?}] + optional '
       + 'connects — compiled at validate BEFORE any GPU is spent, then run as one typed flow). Drafts are minted '
-      + 'inside (CARD BIRTH LAW) and never surface. Returns {run_id}; poll with run_status. One active run '
-      + 'machine-wide.',
+      + 'inside (CARD BIRTH LAW) — the minted draft_id rides the value as the chat tile handle (the card surface '
+      + 'hydrates from it via ?meliteCards=), but the agent never passes it anywhere. Returns {run_id, draft_id}; '
+      + 'poll with run_status. One active run machine-wide.',
     parameters: {
       type: 'object',
       properties: {
@@ -425,19 +428,23 @@ export function meliteFlow(gatewayUrl: string): ToolDefinition {
         additionalProperties: true,
         properties: {
           run_id: { type: 'string', description: 'The queue run id — poll with run_status(run_id).' },
+          draft_id: { type: 'string', description: 'The minted card draft id — the chat tile handle (?meliteCards=).' },
           status: { type: 'string', description: 'Registration status (queued/running).' },
           mode: { type: 'string', description: 'Which composition ran: card | flow | adhoc.' },
           target: { type: 'string', description: 'The card id, flow name, or ad-hoc pipeline name.' },
         },
-        required: ['run_id', 'mode', 'target'],
+        required: ['run_id', 'draft_id', 'mode', 'target'],
       },
       render: (_args, value) => {
-        const v = value as { run_id?: string; mode?: string; target?: string; status?: string; error?: string }
+        const v = value as { run_id?: string; draft_id?: string; mode?: string; target?: string; status?: string; error?: string }
         if (v && typeof v.error === 'string') return [{ type: 'text', text: 'melite_flow REFUSED: ' + v.error }]
+        // TOKEN-FIRST (the chat tile contract, FlowCards parseCardsBlock):
+        // the token after 'card ' is the draft id — the card surface
+        // hydrates from it. Same token format build_flow spoke.
         return [{
           type: 'text',
-          text: 'flow ' + String(v.target ?? '?') + ' → ' + String(v.run_id ?? '?')
-            + ' [' + String(v.status ?? 'queued') + '] — poll with run_status',
+          text: 'card ' + String(v.draft_id ?? '?') + ' · flow ' + String(v.target ?? '?')
+            + ' → ' + String(v.run_id ?? '?') + ' [' + String(v.status ?? 'queued') + '] — poll with run_status',
         }]
       },
     },

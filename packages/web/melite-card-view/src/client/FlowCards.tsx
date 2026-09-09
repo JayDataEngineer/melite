@@ -1,14 +1,16 @@
 /**
- * The build_flow toolview — THE ACTION CARDS, the real surface.
+ * The melite_flow toolview — THE ACTION CARDS, the real surface.
  *
  * Keyed into the shipped `tool.call.toolview` seat for the wire tool name
- * `build_flow`. NOT a form, NOT a summary row: an iframe mounting the
- * editor's AgentCardsEmbed (/editor/?meliteCards=<draftId>) — InlineFlowCards,
- * the SAME FlowTileGrid the Library canvas renders (ONE card design,
- * 1:1). The user reviews the tiles, edits in the zoom drilldown, and
- * presses Run ON THE CARD — the run door is executeStage inside the
- * embedded surface, a user gesture. The model composed the draft; it
- * cannot run anything.
+ * `melite_flow` (succession: the build_flow seat — same iframe, same
+ * parse rule, the render just speaks the unified verb now). NOT a form,
+ * NOT a summary row: an iframe mounting the editor's AgentCardsEmbed
+ * (/editor/?meliteCards=<draftId>) — InlineFlowCards, the SAME
+ * FlowTileGrid the Library canvas renders (ONE card design, 1:1). The
+ * user reviews the tiles, edits in the zoom drilldown, and presses Run
+ * ON THE CARD — the run door is executeStage inside the embedded
+ * surface, a user gesture. The model executed the queue run; the card
+ * is the review surface for the draft it rode in on.
  *
  * SEAMLESS IN CHAT (2026-08-22 operator verdict "window in window"):
  *   (a) THEME — startEmbedBridge (the card-deck plugin's ONE bridge, same
@@ -45,7 +47,7 @@ export interface FlowCardsProps {
   block: ToolCallBlockView
 }
 
-/** Parse the build_flow call: the draft id (from the settled result's
+/** Parse the melite_flow call: the draft id (from the settled result's
  * rendered content) + the model (from the call args, header while loading). */
 export function parseCardsBlock(block: ToolCallBlockView): {
   draftId: string | null
@@ -70,10 +72,13 @@ export function parseCardsBlock(block: ToolCallBlockView): {
       if (part === null || typeof part !== 'object') continue
       const text = (part as { text?: unknown }).text
       if (typeof text !== 'string') continue
-      // render line (wire contract, h3_timeline_card): "card <draftId>
-      // (model) — N shots, 1 run" — the gateway mints draft-<time>-<tid>-<seq>
-      // ids. Older ray-era renders said "cards draft <p_id> — …". Accept BOTH:
-      // the token after 'card ' or after 'draft ' is the draft id either way.
+      // render line (wire contract, melite_flow success): "card <draftId>
+      // · flow <target> → <run_id> [status] — …" — the token leads so
+      // the FIRST 'card ' hit is the handle. The gateway mints
+      // draft-<time>-<tid>-<seq> ids. Older renders said "card <draftId>
+      // (model) — N shots, 1 run" (build_flow) or "cards draft <p_id> —
+      // …" (ray-era). Accept ALL: the token after 'card ' or after
+      // 'draft ' is the draft id either way.
       const atCard = text.indexOf('card ')
       const atIdx = atCard >= 0 ? atCard : text.indexOf('draft ')
       if (atIdx < 0) continue
@@ -124,7 +129,7 @@ function useSeamlessFrame(draftId: string | null): React.RefObject<HTMLIFrameEle
   return frameRef
 }
 
-/** One build_flow call as the REAL action cards (embedded editor surface). */
+/** One melite_flow call as the REAL action cards (embedded editor surface). */
 export function FlowCards({ block }: FlowCardsProps) {
   const parsed = useMemo(() => parseCardsBlock(block), [block])
   const [frameUp, setFrameUp] = useState(false)

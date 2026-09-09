@@ -3,9 +3,10 @@
  *
  * One keyed slot contribution into the shipped composition (verified against
  * the installed CLI's dsh-client-ui-tool bundle): the `tool.call.toolview`
- * seat, keyed to the wire tool name `flow_start` — the Melite run door
- * registered by @melite-plugin/dsh-tools. Unclaimed keys fall back to the generic
- * tool row, so this registration is additive for our own tool.
+ * seat, keyed to the wire tool names in CARD_TOOLS — the Melite draft
+ * producers registered by @melite-plugin/dsh-tools. Unclaimed keys fall
+ * back to the generic tool row, so this registration is additive for our
+ * own tools.
  *
  * Registration waits for the seat declaration via ctx.slots.inject (the
  * declaration ledger's wait seam); unload cancels a pending wait and cascades
@@ -35,10 +36,10 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 
 /** Every card tool that produces a draft — the card tile renders for ALL of them. */
 export const CARD_TOOLS = [
-  'build_flow',
+  'melite_flow',
   'image_card', 'tts_card', 'video_card', 'music_card', 'sfx_card',
   'three_d_card', 'motion_card', 'body_card', 'image_edit_card',
-  'h3_timeline_card', 'refine_draft',
+  'h3_timeline_card',
   'creature_flow', 'humanoid_flow', 'non_humanoid_flow', 'prop_flow',
   'sprite_sheet',
 ]
