@@ -5,7 +5,7 @@
 // throw). Runs under happy-dom (the DSH client caller reads
 // window.location at call time for the same-origin base).
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { probeRunStatus } from "@melite/catalog/WireStatus";
+import { probeRunStatus, reconcilePhantomRun } from "@melite/catalog/WireStatus";
 
 const realFetch = globalThis.fetch;
 afterEach(() => {
@@ -62,5 +62,24 @@ describe("probeRunStatus (Connection transport seam)", () => {
       throw new TypeError("network refused");
     }) as unknown as typeof fetch;
     expect(await probeRunStatus("run-4")).toBeNull();
+  });
+});
+
+describe("reconcilePhantomRun (pure verdict mapping)", () => {
+  it("maps running/queued rows to live", () => {
+    expect(reconcilePhantomRun({ known: true, status: "running" })).toBe("live");
+    expect(reconcilePhantomRun({ known: true, status: "queued" })).toBe("live");
+  });
+
+  it("maps unknown runs and terminal statuses to gone", () => {
+    expect(reconcilePhantomRun({ known: false, status: null })).toBe("gone");
+    expect(reconcilePhantomRun({ known: true, status: "completed" })).toBe("gone");
+    expect(reconcilePhantomRun({ known: true, status: "failed" })).toBe("gone");
+    expect(reconcilePhantomRun({ known: true, status: "stopped" })).toBe("gone");
+  });
+
+  it("maps absent/surprising rows to unknown (never a claim)", () => {
+    expect(reconcilePhantomRun(null)).toBe("unknown");
+    expect(reconcilePhantomRun({ known: true, status: null })).toBe("unknown");
   });
 });

@@ -8,6 +8,7 @@ import type { StoreApi } from "zustand"
 import type { FlowState } from "./flowStoreTypes"
 import { editorClient } from "@/rpc/editorClient"
 import { pollFlowRun, streamFlowEvents } from "@melite/catalog"
+import { probeRunStatus, reconcilePhantomRun } from "@melite/catalog/WireStatus"
 import { useToastStore } from "@melite/ui"
 import { useMediaVersion } from "../library/mediaVersion"
 import { useHiddenRuns } from "../library/hiddenRuns"
@@ -621,6 +622,9 @@ export const createExecuteSlice = (
  }
  // Swap the store to the target thread's snapshot. null thread = a fresh
  // chat: NO resurrection — the store clears.
+ // WIRE ADOPTION P3 consumer (ledger): runIds of the phantom-coerced
+ // stages, for the post-set server-side truth check below.
+ let phantomRunIds: string[] = []
  const next =
  tid === null
  ? null
@@ -640,6 +644,13 @@ export const createExecuteSlice = (
        // finish", not "in flight".
        const phantom = parsed.stages?.some((s) => s.status === "running")
        if (phantom) {
+         // WIRE ADOPTION P3: collect the stranded runIds BEFORE the
+         // flip (the spread below preserves runId, but the pre-flip
+         // list is the honest "was in flight" set for the truth check
+         // after set()).
+         phantomRunIds = (parsed.stages ?? [])
+           .filter((s) => s.status === "running" && typeof s.runId === "string" && (s.runId as string) !== "")
+           .map((s) => s.runId as string)
          console.warn(
            "[flowStore] rehydrated doc has stuck 'running' stage(s) with no live run — marked pending",
          )
@@ -668,6 +679,27 @@ export const createExecuteSlice = (
  // every thread change including the MOVE above (the doc follows the
  // thread; the pointer follows the doc).
  writeLastCanvasThread(tid)
+ // WIRE ADOPTION P3 consumer (ledger): the pending flip above stands
+ // (gates must unlock synchronously — no await here), but a stranded
+ // runId earns a server-side truth check. A known+live row means the
+ // run SURVIVED the reload (long render still on the GPU) — the
+ // operator gets the truth as a toast, not silence. Fallback law:
+ // unknown (no /api) or gone rows change nothing; the toast fires
+ // only when this thread is still current (stale probes stay silent).
+ if (phantomRunIds.length > 0 && tid !== null) {
+   const atTid = tid
+   const stranded = phantomRunIds
+   void (async () => {
+     const rows = await Promise.all(stranded.map((runId) => probeRunStatus(runId)))
+     if (get().threadId !== atTid) return
+     const live = stranded.filter((_, i) => reconcilePhantomRun(rows[i]) === "live")
+     if (live.length === 0) return
+     useToastStore.getState().addToast(
+       "info",
+       `Run ${live[0]} is still live on the gateway — stages were marked pending because the reload killed tracking. Re-run to re-attach.`,
+     )
+   })()
+ }
  },
 
 })

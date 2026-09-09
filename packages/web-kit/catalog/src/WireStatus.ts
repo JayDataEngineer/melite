@@ -56,6 +56,26 @@ function readWireRow(body: unknown, sentRpcId: string): WireRunStatus | null {
   return { known, status };
 }
 
+/** Phantom-reconciliation verdict for one probed run.
+ * - `live`: the gateway still holds the run as running/queued —
+ *   server-side truth that beats the reload-phantom pending flip.
+ * - `gone`: unknown run, or a terminal status — the pending flip stands.
+ * - `unknown`: the channel didn't answer (fallback law) or the row was
+ *   contract-surprising — say nothing, change nothing. */
+export type PhantomVerdict = "live" | "gone" | "unknown"
+
+/** Pure mapping from a probe row to the phantom verdict (no I/O —
+ * fully unit-testable). The live set is exactly the statuses a reload
+ * can strand mid-flight: running/queued. known:true with a null or
+ * foreign status is contract-surprising → unknown, never a claim. */
+export function reconcilePhantomRun(row: WireRunStatus | null): PhantomVerdict {
+  if (row === null) return "unknown"
+  if (!row.known) return "gone"
+  if (row.status === "running" || row.status === "queued") return "live"
+  if (row.status === null) return "unknown"
+  return "gone"
+}
+
 /** Probe `runs/status` over the Connection transport (same-origin
  * POST /api/runs/status, the frame pair the wall pins).
  *
