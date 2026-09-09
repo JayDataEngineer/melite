@@ -141,39 +141,48 @@ class StubToolsService extends Service {
 }
 
 describe("the optional tools service (the host contribution)", () => {
-  it("registers its tool where the host provides tools; dispose retracts (HMR)", async () => {
+  // The documented test idiom: services mount as plugins (tutorial
+  // ch.3 — a Service subclass is itself a plugin; ctx.plugin attaches
+  // the fiber lifecycle ctx.get's strict default requires), and
+  // teardown disposes the root fiber.
+  const boot = async (withTools: boolean) => {
     const ctx = new Context();
-    new ComfyUIService(ctx);
-    // The documented mount for a Service subclass (tutorial ch.3):
-    // ctx.plugin(GreeterService) — the registration is an effect.
-    const stubFiber = await ctx.plugin(StubToolsService);
-    const stub = ctx.get("tools") as StubToolsService;
+    await ctx.plugin(ComfyUIService);
+    let stub: StubToolsService | undefined;
+    if (withTools) {
+      await ctx.plugin(StubToolsService);
+      stub = ctx.get("tools") as StubToolsService;
+    }
+    return { ctx, stub };
+  };
+
+  it("registers its tool where the host provides tools; dispose retracts (HMR)", async () => {
+    const { ctx, stub } = await boot(true);
     const fiber = await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { gateway: baseUrl });
-    assert.equal(stub.registered.length, 1, "one tool contribution");
-    assert.equal(stub.registered[0]!.name, WIRE);
+    assert.equal(stub!.registered.length, 1, "one tool contribution");
+    assert.equal(stub!.registered[0]!.name, WIRE);
     await fiber.dispose();
-    assert.equal(stub.registered.length, 0, "fiber dispose retracts the tool");
-    await stubFiber.dispose();
+    assert.equal(stub!.registered.length, 0, "fiber dispose retracts the tool");
+    await ctx.fiber.dispose();
   });
 
   it("the registered tool works end-to-end through the stub door", async () => {
-    const ctx = new Context();
-    new ComfyUIService(ctx);
-    await ctx.plugin(StubToolsService);
-    const stub = ctx.get("tools") as StubToolsService;
+    const { ctx, stub } = await boot(true);
     await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { gateway: baseUrl });
     calls.length = 0;
     draftsStatus = 200; draftsBody = { draftId: "d_e2e" };
     startBody = { run_id: "r_e2e", status: "queued" };
-    const value = await stub.registered[0]!.execute({ body: "/tmp/b.glb", garment: "/tmp/g.glb" }, exec);
+    const value = await stub!.registered[0]!.execute({ body: "/tmp/b.glb", garment: "/tmp/g.glb" }, exec);
     assert.equal(value.run_id, "r_e2e");
     assert.equal(calls[0]!.body.flow, "clothing-placement");
+    await ctx.fiber.dispose();
   });
 
   it("no tools service (the gateway process): the card still registers, no tool", async () => {
-    const ctx = new Context();
-    const svc = new ComfyUIService(ctx);
+    const { ctx } = await boot(false);
     await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { gateway: baseUrl });
-    assert.ok(svc.cardIds().includes("clothing-placement"), "card contribution stands");
+    const comfy = ctx.get("comfyui") as { cardIds(): string[] };
+    assert.ok(comfy.cardIds().includes("clothing-placement"), "card contribution stands");
+    await ctx.fiber.dispose();
   });
 });
