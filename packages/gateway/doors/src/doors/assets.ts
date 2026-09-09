@@ -89,7 +89,7 @@ export const ERR_JSON: string = "application/json";
  *  REPO/data/runs, REPO file-anchored (gateway.py 63, 76-78). */
 export function defaultAssetRoots(): AssetRoots {
   const here: string = dirname(fileURLToPath(import.meta.url));
-  const repo: string = resolve(here, "..", "..", "..", "..");
+  const repo: string = resolve(here, "..", "..", "..", "..", "..");
   const state: string =
     process.env["MELITE_STATE_ROOT"] ?? join(repo, "data", "runs");
   const runs: string = join(state, "output");

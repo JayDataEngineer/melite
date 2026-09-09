@@ -67,12 +67,11 @@ describe("the shot laws (the card gate — py schema.py port)", () => {
 
   // the py _wire_value_laws port — each arm, isolated.
   //
-  // PRE-EXISTING CARD QUIRK (not this stroke's): paramSchema declares
-  // interpolate_enabled with the py-parity literal default "false"
-  // (a STRING) — the Schemastery walk rejects it when the doc omits
-  // the key, so every gate-driving doc supplies it explicitly (the
-  // studio does; the compose door meets the same law).
-  const BASE = { prompt: "x", interpolate_enabled: false };
+  // The interpolate_enabled quirk is FIXED: the gate pre-fills the
+  // boolean when the doc omits the key (the served wire default stays
+  // the py-parity literal "false" — byte-frozen in the goldens).
+  // Docs exercise the gate WITHOUT the key now.
+  const BASE = { prompt: "x" };
   const SHOT = { text: "the courier pushes off", start_frame: 0, end_frame: 56 };
 
   it("a calls doc derives the variant (single text shot → t4_open)", () => {
@@ -101,6 +100,11 @@ describe("the shot laws (the card gate — py schema.py port)", () => {
       () => schema({ ...BASE, calls: [{ text: "x", start_frame: 60, end_frame: 56 }] }),
       /end_frame 60 <= start_frame 60|end_frame 56 <= start_frame 60|reversed or empty span/,
     );
+  });
+
+  it("a doc omitting interpolate_enabled passes the gate (the fixed quirk)", () => {
+    const out = schema({ prompt: "x", variant: "t4_open" }) as Record<string, unknown>;
+    assert.equal(out.interpolate_enabled, false);
   });
 
   it("seam_carry 0 is a hard cut; out-of-range carry refuses", () => {

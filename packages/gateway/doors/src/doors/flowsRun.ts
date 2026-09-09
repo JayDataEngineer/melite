@@ -482,7 +482,7 @@ export function resolveStateRoot(): string {
   const override: string = process.env["MELITE_STATE_ROOT"] ?? "";
   if (override !== "") return override;
   const here: string = dirname(fileURLToPath(import.meta.url));
-  return resolve(here, "..", "..", "..", "..", "data", "runs");
+  return resolve(here, "..", "..", "..", "..", "..", "data", "runs");
 }
 
 /** Output root — test runs route to the sibling root (L3). */

@@ -146,8 +146,19 @@ const paramSchema = z.object({
  *  them and the compose door overlays explicit params last (the
  *  img-to-mesh filename_prefix precedent). */
 export function schema(v: unknown): Record<string, unknown> {
-  const out: Record<string, unknown> = paramSchema(v ?? {})
   const raw = (v ?? {}) as Record<string, unknown>
+  // interpolate_enabled: the SERVED wire default is the py-parity
+  // literal "false" (a string — byte-frozen in the goldens, the
+  // form-spec referee, and the catalog); the RUNTIME default is the
+  // boolean (the py card's `bool = False`). Pre-fill the key so the
+  // Schemastery walk never materializes the string default as a
+  // value — a doc omitting the key used to throw at the gate, so
+  // every caller had to supply it explicitly. The normalizer owns
+  // it now, as it owns variant derivation.
+  const walkInput = 'interpolate_enabled' in raw
+    ? raw
+    : { ...raw, interpolate_enabled: false }
+  const out: Record<string, unknown> = paramSchema(walkInput)
   let variant = typeof raw.variant === 'string' ? raw.variant : undefined
   // variant DERIVATION (retired timeline/laws.py, b324c480^ —
   // opener_family/chain_family): the studio calls shape carries no

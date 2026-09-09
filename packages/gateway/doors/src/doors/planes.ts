@@ -318,7 +318,10 @@ function disclosureRoot(): string {
   const override: string = process.env["MELITE_REPO_ROOT"] ?? "";
   if (override !== "") return override;
   const here: string = dirname(fileURLToPath(import.meta.url));
-  return resolve(here, "..", "..", "..", "..");
+  // 5 up from doors/src/doors/ (the leaf split 2dcb2568 deepened the
+  // tree; the anchor was off by one until 2026-09-09 — lanes,
+  // card-tools, skills, and bundles all starved on a phantom root).
+  return resolve(here, "..", "..", "..", "..", "..");
 }
 
 /** Process boot seconds (Gateway.boot_at 1074: construction time;
@@ -1131,6 +1134,11 @@ function cardRows(engine: string, repo: string): CardWalk {
 
 interface ManifestEntry {
   readonly genre: string;
+  /** The CARD UNIT name (the cardRows bucket key = the declared id).
+   *  Explicit since the package sweep: a package card's dir ends in
+   *  /src, so dir-pop never yields the unit — the contract is this
+   *  field, never path parsing. */
+  readonly unit: string;
   readonly dir: string;
   readonly rows: ManifestRow[];
 }
@@ -1162,6 +1170,7 @@ function manifests(engine: string, repo: string, cards?: CardRegistryService | n
       resolved.add(cid);
       out.set(cid, {
         genre,
+        unit: cid,
         dir: cdir,
         rows: [projectCardRow(def, baseRowFor(defs, cid))],
       });
@@ -1176,7 +1185,7 @@ function manifests(engine: string, repo: string, cards?: CardRegistryService | n
     // per engine (the registry IS the comfyui card set; factsPath +
     // cardDefs hardcode the same owner).
     if ((engine.split("/").pop() ?? "") !== "comfyui") continue;
-    out.set(cid, { genre: "", dir: "", rows: [projectCardRow(def, baseRowFor(defs, cid))] });
+    out.set(cid, { genre: "", unit: cid, dir: "", rows: [projectCardRow(def, baseRowFor(defs, cid))] });
   }
   return out;
 }
@@ -1484,7 +1493,7 @@ function buildPeek(
         if (g !== null && gg !== g) continue;
         // Skill rows bucket by the card DIR — match on it, not the
         // declared card id (peek 527-530).
-        const dname: string = entry.dir.split("/").pop() ?? "";
+        const dname: string = entry.unit;
         let skills = 0;
         for (const r of walk.rows) {
           if (r.row.card === dname) skills++;
@@ -1595,7 +1604,7 @@ function resolveCardDir(
 ): string | null {
   if (mans.has(lane)) return lane;
   for (const [cid, entry] of mans) {
-    if ((entry.dir.split("/").pop() ?? "") === lane) return cid;
+    if (entry.unit === lane) return cid;
   }
   for (const [cid, entry] of mans) {
     for (const m of entry.rows) {
@@ -1745,7 +1754,7 @@ function buildLaneBundle(
     }
     if (families.length === 0) families.push(cardKey);
     const walk: CardWalk = cardRows(engine, repo);
-    const dname: string = entry.dir.split("/").pop() ?? "";
+    const dname: string = entry.unit;
     const bucket: { dir: string; rows: DocRow[] } | undefined =
       walk.buckets.get(dname);
     const bucketRows: DocRow[] = bucket?.rows ?? [];

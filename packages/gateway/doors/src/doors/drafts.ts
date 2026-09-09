@@ -142,7 +142,7 @@ export function defaultDraftRoots(): {
   readonly draftsDir: string;
 } {
   const here: string = dirname(fileURLToPath(import.meta.url));
-  const repo: string = resolve(here, "..", "..", "..", "..");
+  const repo: string = resolve(here, "..", "..", "..", "..", "..");
   const state: string =
     process.env["MELITE_STATE_ROOT"] ?? join(repo, "data", "runs");
   return { stateRoot: state, draftsDir: join(state, "drafts") };
