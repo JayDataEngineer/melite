@@ -126,7 +126,7 @@ const main = async () => {
         note(label, (r.value?.cards?.length ?? 0) > 0 && r.value.cards.some((c) => c.id === 'upscale-tools'), 'upscale-tools retrieved by tags')
       } else if (label === 'card_catalog(load_skills)') {
         const b = r.value?.bundles?.[0] ?? {}
-        note(label, Object.keys(b).join() === 'id,tool,skills,model_hints' && b.id === 'upscale-tools', 'the a/b/c bundle')
+        note(label, Object.keys(b).join() === 'id,tool,skills,model_hints,digest' && b.id === 'upscale-tools', 'the a/b/c bundle')
       } else if (label === 'build_flow') {
         draftId = r.value?.draftId ?? ''
         // THE CHAT PARSER CONTRACT: token after the FIRST 'card ' must be

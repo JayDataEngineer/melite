@@ -33,7 +33,8 @@ export function cardCatalog(gatewayUrl: string): ToolDefinition {
       + 'first, always; cards only when NO flow fits). search: phrase over id/label/description/tags plus an '
       + 'optional comma-separated tags filter - returns clamped summaries, never bodies. load_skills: exact '
       + 'card ids (comma-separated) - returns per card (a) the tool signature (params_schema), (b) the action '
-      + 'card skills, (c) the model-level hints (prompt guidance rides here, ambient). Models are data for '
+      + 'card skills, (c) the model-level hints (prompt guidance rides here, ambient) plus a stable bundle digest. '
+      + 'Quote the digests you hold and skip reload on a match (the bundle is content-stable). Models are data for '
       + 'the card - there is no model picker, only bundles.',
     parameters: {
       type: 'object',

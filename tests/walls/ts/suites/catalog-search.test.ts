@@ -90,7 +90,7 @@ describe("load_skills bundle (a/b/c, models as data)", () => {
     };
     const fakeModels = { allDecls: () => [{ id: "krea-2", label: "Krea 2", description: "image model" }] };
     const bundle: Record<string, unknown> = mod.loadBundle(REPO, "/data", fakeCards, fakeModels, "image-gen");
-    assert.deepEqual(Object.keys(bundle).sort(), ["id", "model_hints", "skills", "tool"]);
+    assert.deepEqual(Object.keys(bundle).sort(), ["digest", "id", "model_hints", "skills", "tool"]);
     const hints = bundle["model_hints"] as Array<Record<string, unknown>>;
     assert.equal(hints.length, 1);
     assert.deepEqual(Object.keys(hints[0]).sort(), ["description", "enhance", "id", "label"]);
@@ -118,5 +118,18 @@ describe("enhance recipes (the migrated toll)", () => {
     assert.deepEqual(map.get("krea-2"), { prompt: "krea recipe" });
     assert.equal(map.has("dead"), false);
     assert.equal(map.has("undec"), false); // the door serves GENERIC for these — one spelling in promptGuide
+  });
+});
+
+describe("bundle digest (agent-side dedupe)", () => {
+  it("same bytes, same digest — stable across loads", async () => {
+    const mod = await import("../../../../packages/gateway/doors/src/doors/catalogs.ts") as {
+      bundleDigest: (b: Record<string, unknown>) => string;
+    };
+    const a: Record<string, unknown> = { id: "x", tool: {}, skills: [], model_hints: [] };
+    const b: Record<string, unknown> = { id: "x", tool: {}, skills: [], model_hints: [] };
+    assert.equal(mod.bundleDigest(a), mod.bundleDigest(b));
+    assert.match(mod.bundleDigest(a), /^[0-9a-f]{16}$/);
+    assert.notEqual(mod.bundleDigest({ ...a, id: "y" }), mod.bundleDigest(a));
   });
 });

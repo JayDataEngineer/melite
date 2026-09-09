@@ -21,6 +21,7 @@
 // enums, import type for types, .ts specifiers for relative imports.
 
 import type { Context, Plugin } from "@deepseek-ai/cordis";
+import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -273,9 +274,19 @@ export function enhanceMap(dataRoot: string): Map<string, Record<string, string>
   return out;
 }
 
-/** The load_skills bundle for one card id (a/b/c). Throws LOUD on
- *  unknown ids (the door maps to 404); unreadable skill docs skip
- *  (the bundle degrades, never refuses). */
+/** The bundle digest (the DSH session-catalog half we CAN own:
+ *  their catalog is digest-diffed "stable, never duplicated" — we
+ *  don't own the loop so we can't clear the agent's context, but a
+ *  stable content hash lets the agent dedupe its own reloads: quote
+ *  the digests you hold, skip load_skills on a match). sha16 of the
+ *  canonical bundle JSON (the asset pipeline's sha16 convention). */
+export function bundleDigest(bundle: Record<string, unknown>): string {
+  return createHash("sha256").update(JSON.stringify(bundle)).digest("hex").slice(0, 16);
+}
+
+/** The load_skills bundle for one card id (a/b/c + digest). Throws
+ *  LOUD on unknown ids (the door maps to 404); unreadable skill
+ *  docs skip (the bundle degrades, never refuses). */
 export function loadBundle(
   repo: string,
   dataRoot: string,
@@ -296,12 +307,14 @@ export function loadBundle(
     if (d === undefined) continue; // unboarded/retired family — the board gate owns that refusal
     hints.push({ id: d.id, label: d.label, description: d.description, enhance: recipes.get(fam) ?? { prompt: GENERIC_ENHANCE_RECIPE } });
   }
-  return {
+  const bundle: Record<string, unknown> = {
     id: cardId,
     tool: toolRowFor(cardId, def as { schemaCarrier?: unknown; schema: unknown; boarded: readonly string[] }, rows),
     skills: cardSkillDocs(pkgDir),
     model_hints: hints,
   };
+  bundle["digest"] = bundleDigest(bundle);
+  return bundle;
 }
 
 /** First-non-blank query value (the planes qFirst shape). */
