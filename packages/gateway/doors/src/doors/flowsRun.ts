@@ -124,7 +124,7 @@ import { Service } from "@deepseek-ai/cordis";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
-import { matchRoute } from "@melite/gateway-core";
+import { doorMatch, mountDoorRoutes } from "../routeMount.ts";
 import {
   checkFlowInlineTop,
   checkFlowsStartEnvelope,
@@ -1541,53 +1541,51 @@ export function parseIncludeLog(first: string | null): boolean {
 /** The flows start door as a self-registering
  *  plugin: registry-live runs over the injected engine service
  *  (ctx.comfyui — the engine-comfyui provider row, stroke 4b);
- *  start strict-parses under route()'s strict contract. Matches its
- *  own row inside the listener — no central table. Reads/writes the
- *  registry through ctx.runs (the probe registration lives in the
- *  runsRegistry provider — stroke 2b) and composes cards through
+ *  start strict-parses under route()'s strict contract. ROUTING 1:1
+ *  (2026-09-09): the door mounts its authored row as a NAMED
+ *  webServer route (routeMount — the DSH contract); the listener
+ *  body below is the same match-and-answer the gateway/request
+ *  event carried, unchanged. Reads/writes the registry through
+ *  ctx.runs (the probe registration lives in the runsRegistry
+ *  provider — stroke 2b) and composes cards through
  *  ctx.cardRegistry (the card-registry provider — stroke 2a). */
 export const flowsStartDoors: Plugin = {
   name: "gateway-flows-start",
-  inject: ["gatewayError", "runs", "cardRegistry", "comfyui"],
+  inject: ["gatewayError", "runs", "cardRegistry", "comfyui", "webServer"],
   apply(ctx: Context): void {
-    ctx.on(
-      "gateway/request",
-      async (req: GatewayRequest): Promise<DispatchResult | undefined> => {
-        const hit = matchRoute(req.method, req.path);
-        if (hit === null || hit.row.handler !== "_h_flows_start") {
-          return undefined;
-        }
-        const errors = ctx.gatewayError;
-        const parsed: { doc: unknown } | {
-          status: number;
-          payload: Record<string, unknown>;
-        } = parseStrictJson(req.body);
-        if (!("doc" in parsed)) {
-          return {
-            status: parsed.status,
-            body: errors.serializePy(parsed.payload),
-            contentType: "application/json",
-            headers: {},
-          };
-        }
-        const answered: {
-          status: number;
-          payload: Record<string, unknown>;
-        } = await handleFlowsStart(
-          parsed.doc,
-          ctx.runs,
-          ctx.cardRegistry,
-          needComfyUI(ctx, "flows-start door"),
-        );
-        errors.normalize4xx(answered.status, answered.payload);
+    mountDoorRoutes(ctx, ctx.webServer, ["_h_flows_start"], async (req) => {
+      const hit = doorMatch(req, ["_h_flows_start"]);
+      if (hit === null) return undefined;
+      const errors = ctx.gatewayError;
+      const parsed: { doc: unknown } | {
+        status: number;
+        payload: Record<string, unknown>;
+      } = parseStrictJson(req.body);
+      if (!("doc" in parsed)) {
         return {
-          status: answered.status,
-          body: errors.serializePy(answered.payload),
+          status: parsed.status,
+          body: errors.serializePy(parsed.payload),
           contentType: "application/json",
           headers: {},
         };
-      },
-    );
+      }
+      const answered: {
+        status: number;
+        payload: Record<string, unknown>;
+      } = await handleFlowsStart(
+        parsed.doc,
+        ctx.runs,
+        ctx.cardRegistry,
+        needComfyUI(ctx, "flows-start door"),
+      );
+      errors.normalize4xx(answered.status, answered.payload);
+      return {
+        status: answered.status,
+        body: errors.serializePy(answered.payload),
+        contentType: "application/json",
+        headers: {},
+      };
+    });
   },
 };
 
@@ -1598,13 +1596,11 @@ export const flowsStartDoors: Plugin = {
  *  4b — the engine-comfyui provider row). */
 export const flowsStopDoors: Plugin = {
   name: "gateway-flows-stop",
-  inject: ["gatewayError", "runs", "comfyui"],
+  inject: ["gatewayError", "runs", "comfyui", "webServer"],
   apply(ctx: Context): void {
-    ctx.on(
-      "gateway/request",
-      (req: GatewayRequest): DispatchResult | undefined => {
-        const hit = matchRoute(req.method, req.path);
-        if (hit === null || hit.row.handler !== "_h_flows_stop") {
+    mountDoorRoutes(ctx, ctx.webServer, ["_h_flows_stop"], (req) => {
+        const hit = doorMatch(req, ["_h_flows_stop"]);
+        if (hit === null) {
           return undefined;
         }
         const errors = ctx.gatewayError;
@@ -1627,7 +1623,6 @@ export const flowsStopDoors: Plugin = {
           contentType: "application/json",
           headers: {},
         };
-      },
-    );
+    });
   },
 };
