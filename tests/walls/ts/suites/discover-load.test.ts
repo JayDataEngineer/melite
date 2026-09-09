@@ -77,9 +77,8 @@ describe("load(flow) — the prebuilt signature + stages + lines", () => {
 describe("load(card) — agents md + signature + lines + hints", () => {
   it("image-gen opens whole over fakes (shape, not the emitter)", async () => {
     const mod = await import("../../../../packages/gateway/doors/src/doors/disclose.ts") as {
-      loadCard: (repo: string, dataRoot: string, cards: unknown, models: unknown, id: string) => Record<string, unknown>;
+      loadCard: (repo: string, cards: unknown, models: unknown, id: string) => Record<string, unknown>;
     };
-    const { GENERIC_ENHANCE_RECIPE } = await import("../../../../packages/gateway/core/src/schema/promptGuide.ts") as { GENERIC_ENHANCE_RECIPE: string };
     const fakeCards = {
       defsSync: () => new Map([
         ["image-gen", {
@@ -91,37 +90,20 @@ describe("load(card) — agents md + signature + lines + hints", () => {
       ]),
     };
     const fakeModels = { allDecls: () => [{ id: "krea-2", label: "Krea 2", description: "image model" }] };
-    const b: Record<string, unknown> = mod.loadCard(REPO, "/data", fakeCards, fakeModels, "image-gen");
+    const b: Record<string, unknown> = mod.loadCard(REPO, fakeCards, fakeModels, "image-gen");
     assert.deepEqual(Object.keys(b).sort(), ["agents", "digest", "kind", "model_hints", "name", "signature", "skills"]);
     assert.equal(b["kind"], "card");
+    // model_hints = DECL identity ONLY (models as card data, never
+    // agent-addressed). NO enhance member — the agent holds the skill
+    // lines and writes the prompt itself; LLM-powered enhance is the
+    // user's ✦ door. The absence is the law, pinned.
     const hints = b["model_hints"] as Array<Record<string, unknown>>;
     assert.equal(hints.length, 1);
-    assert.deepEqual(hints[0]["enhance"], { prompt: GENERIC_ENHANCE_RECIPE });
+    assert.deepEqual(Object.keys(hints[0]).sort(), ["description", "id", "label"]);
+    assert.deepEqual(hints[0], { id: "krea-2", label: "Krea 2", description: "image model" });
     const lines = b["skills"] as Array<Record<string, unknown>>;
     assert.ok(lines.every((l): boolean => l["scope"] === "card-skill"));
-    assert.throws(() => mod.loadCard(REPO, "/data", fakeCards, fakeModels, "nope"), /unknown card/);
-  });
-});
-
-describe("enhance recipes (the migrated toll, riding model_hints)", () => {
-  it("declared recipes surface verbatim; the rest fall back to the kernel generic", async () => {
-    const mod = await import("../../../../packages/gateway/doors/src/doors/disclose.ts") as {
-      enhanceMap: (dataRoot: string) => Map<string, Record<string, string>>;
-    };
-    const { mkdtempSync, mkdirSync, writeFileSync } = await import("node:fs");
-    const { tmpdir } = await import("node:os");
-    const root: string = mkdtempSync(join(tmpdir(), "disclose-enhance-"));
-    mkdirSync(join(root, "packages", "gateway", "shell", "data"), { recursive: true });
-    writeFileSync(join(root, "packages", "gateway", "shell", "data", "discovery-catalog.json"), JSON.stringify({
-      form_specs: {
-        "krea-2": { body: { enhance_prompts: { prompt: "krea recipe" } } },
-        "dead": { body: { enhance_prompt: "None", enhance_prompts: "None" } },
-      },
-    }));
-    const map: Map<string, Record<string, string>> = mod.enhanceMap(root);
-    assert.deepEqual(map.get("krea-2"), { prompt: "krea recipe" });
-    assert.equal(map.has("dead"), false);
-    assert.equal(map.has("undec"), false); // the door serves GENERIC for these — one spelling in promptGuide
+    assert.throws(() => mod.loadCard(REPO, fakeCards, fakeModels, "nope"), /unknown card/);
   });
 });
 

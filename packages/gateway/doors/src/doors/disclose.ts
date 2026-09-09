@@ -5,10 +5,16 @@
 // (agents md + tool-call signature + tier-1 skill lines; bodies
 // stay behind skill_read).
 //
-// Reuse, not re-walk: summaries + the card bundle pures live in
-// catalogs.ts (they die with it in P3 — this file imports, never
-// copies); tier-1 lines are planes.ts wireSkill rows over its
-// cardRows buckets / findSkill registry (the skill_index truth).
+// Division of enhance (operator law, 2026-09-09): the AGENT needs
+// nothing special — it holds the skill lines, reads bodies via
+// skill_read, and writes the prompt itself; LLM-powered enhance is
+// the USER's ✦ door (/melite-tools/enhance, ctx.llm inside). No
+// recipe channel rides this file.
+//
+// Reuse, not re-walk: the card bundle pures live here (moved from
+// catalogs.ts when it died in P3); tier-1 lines are planes.ts
+// wireSkill rows over its cardRows buckets / findSkill registry
+// (the skill_index truth).
 
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, existsSync } from "node:fs";
@@ -17,7 +23,6 @@ import { fileURLToPath } from "node:url";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
-import { GENERIC_ENHANCE_RECIPE } from "@melite/gateway-core/prompt-guide";
 import { emitParamsSchema, cardPackages } from "@melite/comfyui-cordis";
 import { needCardRegistry } from "./flowsCard.ts";
 import type { CardRegistryService } from "./flowsCard.ts";
@@ -25,10 +30,7 @@ import { needModels, modelsService } from "@melite/comfyui-cordis/models-service
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import { registryFlowNames, getRegistryFlow } from "./flowsRegistry.ts";
 import { toolBaseRows } from "./toolProjection.ts";
-import { catalogPath } from "./discovery.ts";
-import {
-  disclosureRoot, engineDirs, cardRows, findSkill, wireSkill,
-} from "./planes.ts";
+import { engineDirs, cardRows, findSkill, wireSkill } from "./planes.ts";
 import { doorMatch, mountDoorRoutes } from "../routeMount.ts";
 
 // ── moved pures (catalogs.ts died in P3 — one disclosure file) ──
@@ -224,50 +226,6 @@ export function toolRowFor(
   };
 }
 
-/** The effective enhance recipe per family (model_hints) —
- *  the enhance_prompt toll, migrated to ambient knowledge (the
- *  disclosure stroke, 2026-09-09). Declared recipes ride the frozen
- *  form-spec capture (10/115 spec keys — enhance_prompt string or
- *  enhance_prompts field map, verbatim, never parsed); anything else
- *  falls back to the kernel's GENERIC_ENHANCE_RECIPE (one spelling —
- *  the ✦ sweep door spends the LLM call on the same text, the agent
- *  spends nothing and writes the prompt itself). The frozen file is
- *  1.5MB of DATA-root capture: cached module-level (frozen =
- *  truthful), best-effort (fixture roots lack it → all-generic,
- *  never a refusal). */
-let enhanceCache: Map<string, Map<string, Record<string, string>>> = new Map();
-
-export function enhanceMap(dataRoot: string): Map<string, Record<string, string>> {
-  const hit: Map<string, Record<string, string>> | undefined = enhanceCache.get(dataRoot);
-  if (hit !== undefined) return hit;
-  const out = new Map<string, Record<string, string>>();
-  try {
-    const doc = JSON.parse(readFileSync(catalogPath(dataRoot), "utf8")) as {
-      form_specs?: Record<string, { body?: { enhance_prompt?: unknown; enhance_prompts?: unknown } }>;
-    };
-    for (const [key, spec] of Object.entries(doc.form_specs ?? {})) {
-      const body = spec.body ?? {};
-      const one: unknown = body.enhance_prompt;
-      if (typeof one === "string" && one !== "" && one !== "None") {
-        out.set(key, { prompt: one });
-        continue;
-      }
-      const many: unknown = body.enhance_prompts;
-      if (typeof many === "object" && many !== null && !Array.isArray(many)) {
-        const fields: Record<string, string> = {};
-        for (const [f, r] of Object.entries(many as Record<string, unknown>)) {
-          if (typeof r === "string" && r !== "") fields[f] = r;
-        }
-        if (Object.keys(fields).length > 0) out.set(key, fields);
-      }
-    }
-  } catch {
-    // no frozen capture (the sandbox fixture) — all-generic below
-  }
-  enhanceCache.set(dataRoot, out);
-  return out;
-}
-
 /** The bundle digest (the DSH session-catalog half we CAN own:
  *  their catalog is digest-diffed "stable, never duplicated" — we
  *  don't own the loop so we can't clear the agent's context, but a
@@ -375,12 +333,13 @@ export function skillLineForRef(repo: string, ref: string): Record<string, unkno
 }
 
 /** Melite load for a CARD: agents md + tool-call signature +
- *  tier-1 skill lines + model hints (the migrated enhance
- *  knowledge stays — ambient, spent nothing). Throws LOUD on
- *  unknown ids (the door maps to 404). */
+ *  tier-1 skill lines + model hints (the boarded families' DECL
+ *  identity — models as card DATA, never agent-addressed; prompt
+ *  craft is the agent's own via the skill lines, and LLM-powered
+ *  enhance is the user's ✦ door, never served here). Throws LOUD
+ *  on unknown ids (the door maps to 404). */
 export function loadCard(
   repo: string,
-  dataRoot: string,
   cards: CardRegistryService,
   models: ModelsService,
   cardId: string,
@@ -391,12 +350,11 @@ export function loadCard(
   const rows = toolBaseRows(defs);
   const pkgDir: string = resolveCardPackageDir(repo, cardId);
   const decls = new Map(models.allDecls().map((d): [string, { id: string; label: string; description: string }] => [d.id, { id: d.id, label: d.label, description: d.description ?? "" }]));
-  const recipes: Map<string, Record<string, string>> = enhanceMap(dataRoot);
   const hints: Array<Record<string, unknown>> = [];
   for (const fam of (def as { boarded: readonly string[] }).boarded) {
     const d = decls.get(fam);
     if (d === undefined) continue;
-    hints.push({ id: d.id, label: d.label, description: d.description, enhance: recipes.get(fam) ?? { prompt: GENERIC_ENHANCE_RECIPE } });
+    hints.push({ id: d.id, label: d.label, description: d.description });
   }
   const bundle: Record<string, unknown> = {
     name: cardId,
@@ -516,7 +474,6 @@ export const discloseDoors: Plugin = {
       if (hit === null) return undefined;
       const qs: Record<string, string[]> = parseQuery(req.target);
       const repo: string = codeRoot();
-      const dataRoot: string = disclosureRoot();
       if (req.path === "/v1/discover") {
         const lookup: string = qFirst(qs, "lookup") ?? "all";
         if (lookup !== "all" && lookup !== "cards" && lookup !== "flows") {
@@ -555,7 +512,7 @@ export const discloseDoors: Plugin = {
           const cards: CardRegistryService = needCardRegistry(ctx.cardRegistry, "disclose");
           void needModels(ctx.models, "disclose");
           const models: ModelsService = modelsService();
-          return { status: 200, body: JSON.stringify({ bundle: loadCard(repo, dataRoot, cards, models, name) }, null, 2), contentType: "application/json", headers: {} };
+          return { status: 200, body: JSON.stringify({ bundle: loadCard(repo, cards, models, name) }, null, 2), contentType: "application/json", headers: {} };
         } catch (e) {
           return { status: 404, body: JSON.stringify({ error: (e as Error).message }), contentType: "application/json", headers: {} };
         }

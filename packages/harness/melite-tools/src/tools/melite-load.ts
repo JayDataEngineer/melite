@@ -1,7 +1,9 @@
 // melite_load — Melite load (the rework, 2026-09-09): open ONE
 // card or flow discovered via melite_discover. Returns the bundle:
 // agents md + tool-call signature + tier-1 skill lines (+ model
-// hints on cards — the migrated enhance knowledge, ambient).
+// hints on cards — the boarded families' DECL identity, data FOR
+// the card; prompt craft is the agent's own via skill_read, and
+// LLM-powered enhance is the user's ✦ door, never this bundle).
 // Bodies stay behind skill_read; quote the bundle digest you hold
 // and skip reload on a match. Thin door wrapper (gatewayRequest).
 import type { ToolDefinition } from '../types.ts'
@@ -17,8 +19,9 @@ export function meliteLoad(gatewayUrl: string): ToolDefinition {
       'Open ONE card or flow (discover it first with melite_discover). Args: name (the card id or flow name) + '
       + 'inference_type (card | flow — a card or a flow tool call; nothing else executes). Returns the bundle: '
       + 'agents md, the tool-call signature (params_schema for cards; the prebuilt simplified signature for flows), '
-      + 'tier-1 skill lines for the underlying skills (bodies load via skill_read), model hints on cards '
-      + '(prompt guidance rides here, ambient), and a stable bundle digest — quote it and skip reload on a match.',
+      + 'tier-1 skill lines for the underlying skills (bodies load via skill_read — write the prompts yourself from '
+      + 'the craft you read), model hints on cards (the boarded families\' DECL identity — id/label/description), '
+      + 'and a stable bundle digest — quote it and skip reload on a match.',
     parameters: {
       type: 'object',
       properties: {
