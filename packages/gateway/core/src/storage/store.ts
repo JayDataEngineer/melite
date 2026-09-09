@@ -56,6 +56,7 @@ import type {
   DraftsDomainSpec,
   PresetRecord,
   PresetsDomainSpec,
+  RegistryRow,
   RunRow,
   UploadFile,
   UploadsDomainSpec,
@@ -482,4 +483,14 @@ export async function getPresetsDomain(
 ): Promise<Domain<PresetsDomainSpec>> {
   const handles: StorageHandles = await getHandles(ctx, resolveStorageRoot());
   return handles.presets;
+}
+
+/** The runs-list door's handle onto the assets domain (its registry
+ *  table; the runs/artifacts reconcilers share the handle, never the
+ *  table). */
+export async function getAssetsDomain(
+  ctx: Context,
+): Promise<Domain<AssetsDomainSpec>> {
+  const handles: StorageHandles = await getHandles(ctx, resolveStorageRoot());
+  return handles.assets;
 }

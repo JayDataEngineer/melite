@@ -95,6 +95,19 @@ export type RunRow = z.infer<typeof RunRowSchema>;
 export type ArtifactRow = z.infer<typeof ArtifactRowSchema>;
 export type UploadFile = z.infer<typeof UploadFileSchema>;
 
+/** One served run card — the hRunsList row dict VERBATIM (the door
+ *  builds it with its own byte-scan law; the table stores what the
+ *  door built, keyed by run_id). `media` + `created` ride alongside
+ *  as the sort keys so the serve path never re-reads disk. */
+const RegistryRowSchema = z.object({
+  run_id: z.string(),
+  media: z.boolean(),
+  created: z.number().int(),
+  card: z.looseObject({ run_id: z.string() }).passthrough(),
+});
+
+export type RegistryRow = z.infer<typeof RegistryRowSchema>;
+
 /** The assets index domain (unit dir `assets/`, version 1). Per-record
  *  layout: rows are large, sparse, and individually disposable — one bad
  *  or stale record file reads as absent and never bricks the unit; a
@@ -108,6 +121,11 @@ export const assetsDomainSpec = defineDomain({
   tables: {
     runs: domainTable<string, RunRow>(RunRowSchema),
     artifacts: domainTable<string, ArtifactRow>(ArtifactRowSchema),
+    // The runs registry (the ALL stroke's third cutover, 2026-09-09):
+    // the runs-list door's served cards, converged-then-served per
+    // request. Owned EXCLUSIVELY by that door — the runs/artifacts
+    // reconcilers never touch this table (no shared rows, no clobber).
+    registry: domainTable<string, RegistryRow>(RegistryRowSchema),
   },
 });
 

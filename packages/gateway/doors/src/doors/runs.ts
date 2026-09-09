@@ -109,6 +109,7 @@ import { join } from "node:path";
 import type { Socket } from "node:net";
 import {
   ASSET_URL_PREFIX,
+  getAssetsDomain,
   getDraftsDomain,
   mediaVocab,
   PyNum,
@@ -119,7 +120,12 @@ import {
   pyReprString,
 } from "./assets.ts";
 import type { AssetResult } from "./assets.ts";
-import type { AssetRoots } from "@melite/gateway-core";
+import type {
+  AssetRoots,
+  AssetsDomainSpec,
+  Domain,
+  RegistryRow,
+} from "@melite/gateway-core";
 import { queueSnapshot } from "./flowsRun.ts";
 import { hydrateSnapshot } from "./flowsRun.ts";
 import {
@@ -639,14 +645,110 @@ export function firstQuery(
   return dflt;
 }
 
-export function hRunsList(
+/** Deterministic JSON for drift-compare (sorted keys, recursive —
+ *  the served bytes still ride dumpsPy; this only decides put/skip). */
+function canonRuns(v: unknown): string {
+  if (Array.isArray(v)) return "[" + v.map(canonRuns).join(",") + "]";
+  if (typeof v === "object" && v !== null) {
+    const rec = v as Record<string, unknown>;
+    return (
+      "{" +
+      Object.keys(rec)
+        .sort()
+        .map((k): string => JSON.stringify(k) + ":" + canonRuns(rec[k]))
+        .join(",") +
+      "}"
+    );
+  }
+  const s: string | undefined = JSON.stringify(v);
+  return s === undefined ? "null" : s;
+}
+
+interface RunsEnt {
+  readonly dir: string;
+  readonly created: number;
+  readonly media: boolean;
+}
+
+/** The per-run card build (the file-era row law, intact): sidecar
+ *  byte-scan → zombie override → user-surface skip → orphan-draft
+ *  clearing → runRowOrNull. Null = skipped (never stored, never
+ *  served — the count still counts the dir). */
+function buildRunCard(
+  outputRoot: string,
+  mediaKindsPath: string,
+  ent: RunsEnt,
+  hasDraft: (draftId: string) => boolean,
+): Record<string, unknown> | null {
+  const runDir: string = join(outputRoot, ent.dir);
+  let buf: string | null = null;
+  try {
+    buf = readFileSync(join(runDir, "_flow.json"), "utf8").slice(0, 8191);
+  } catch {
+    buf = null;
+  }
+  let status = "success";
+  let pipeline = "";
+  let prompt = "";
+  let draft = "";
+  let seed = -1;
+  let created: number = ent.created;
+  const rawBytes: Uint8Array = buf === null ? Buffer.alloc(0) : Buffer.from(buf, "utf8");
+  if (buf !== null) {
+    // found-ness matters (editor_runs.py 566-567): absent key ->
+    // "unknown" (served); present-but-empty -> "" (gate-skipped).
+    const [foundStatus, rawStatus]: [boolean, string] = sidecarStrFound(
+      rawBytes,
+      "status",
+      16,
+    );
+    if (foundStatus) {
+      status = rawStatus === "error" ? "failed" : rawStatus;
+      // read-time zombie override (sweep=False: report only, D1).
+      if (status === "running") status = "failed";
+    } else {
+      status = "unknown";
+    }
+    pipeline = sidecarStr(rawBytes, "pipeline", 64);
+    prompt = sidecarStr(rawBytes, "prompt", 2048);
+    draft = sidecarStr(rawBytes, "draft_id", 96);
+    seed = sidecarNum(buf, "seed", -1);
+    const at: number = buf.indexOf('"created_at":');
+    if (at >= 0) created = strtolPy(buf.slice(at + 13));
+  }
+  if (pipeline.startsWith("_")) return null; // user-surface law
+  if (draft && !hasDraft(draft)) {
+    draft = "";
+  }
+  const literal: string = "./output/" + ent.dir;
+  const row = runRowOrNull({
+    run_id: ent.dir,
+    name: pipeline,
+    flow: pipeline,
+    status,
+    created_at: created,
+    prompt,
+    seed,
+    thumbnail: runThumbnail(runDir, ent.dir, mediaKindsPath),
+    artifacts: runArtifacts(runDir, literal, mediaKindsPath),
+    params: { seed },
+    draft_id: draft,
+  });
+  return row; // null = RESILIENCE LAW loud skip
+}
+
+export async function hRunsList(
   qs: Record<string, string[]>,
   roots: AssetRoots,
   /** Draft birth-certificate probe (the drafts DOMAIN — the legacy
    *  drafts/<id>.json stat died with the drafts-door migration;
    *  orphans lose their draft link, never the row). */
   hasDraft: (draftId: string) => boolean,
-): AssetResult {
+  /** The opened assets domain (the runs registry). Null/omitted =
+   *  scan-serve (identical bytes — the storage seam never throws,
+   *  and served bytes never wait on it). */
+  assets?: Domain<AssetsDomainSpec> | null,
+): Promise<AssetResult> {
   const raw: string = firstQuery(qs, "limit", "") || "200";
   const parsed: number | null = parseIntPy(raw);
   if (parsed === null) {
@@ -670,12 +772,7 @@ export function hRunsList(
   } catch {
     names = [];
   }
-  interface Ent {
-    readonly dir: string;
-    readonly created: number;
-    readonly media: boolean;
-  }
-  const ents: Ent[] = [];
+  const ents: RunsEnt[] = [];
   for (const name of names) {
     if (ents.length >= 8192) break; // the C's 8192 collected cap
     if (!name.startsWith("run-")) continue;
@@ -700,68 +797,78 @@ export function hRunsList(
     });
   }
   const count: number = ents.length;
-  ents.sort((a: Ent, b: Ent): number => {
+  ents.sort((a: RunsEnt, b: RunsEnt): number => {
     const am: number = a.media ? 0 : 1;
     const bm: number = b.media ? 0 : 1;
     if (am !== bm) return am - bm;
     return b.created - a.created; // newest-first; stable (C parity)
   });
-  const rows: Record<string, unknown>[] = [];
-  for (const ent of ents.slice(0, limit)) {
-    const runDir: string = join(outputRoot, ent.dir);
-    let buf: string | null = null;
+  const sliced: RunsEnt[] = ents.slice(0, limit);
+  // The runs registry (the ALL stroke's third cutover): converge the
+  // sliced cards into the domain, then serve FROM the domain. The
+  // scan above stays the convergence source — a served row is always
+  // put-if-changed first, so storage can never stale the bytes; any
+  // storage failure falls back to the built cards (identical bytes).
+  if (assets !== undefined && assets !== null) {
     try {
-      buf = readFileSync(join(runDir, "_flow.json"), "utf8").slice(0, 8191);
-    } catch {
-      buf = null;
-    }
-    let status = "success";
-    let pipeline = "";
-    let prompt = "";
-    let draft = "";
-    let seed = -1;
-    let created: number = ent.created;
-    const rawBytes: Uint8Array = buf === null ? Buffer.alloc(0) : Buffer.from(buf, "utf8");
-    if (buf !== null) {
-      // found-ness matters (editor_runs.py 566-567): absent key ->
-      // "unknown" (served); present-but-empty -> "" (gate-skipped).
-      const [foundStatus, rawStatus]: [boolean, string] = sidecarStrFound(
-        rawBytes,
-        "status",
-        16,
-      );
-      if (foundStatus) {
-        status = rawStatus === "error" ? "failed" : rawStatus;
-        // read-time zombie override (sweep=False: report only, D1).
-        if (status === "running") status = "failed";
-      } else {
-        status = "unknown";
+      const table = assets.table("registry");
+      // Ghost-delete scopes over the FULL ent list (pre-slice) — the
+      // sliced set would eat every row past the limit.
+      const live = new Set<string>(ents.map((e): string => e.dir));
+      const served: Record<string, unknown>[] = [];
+      for (const ent of sliced) {
+        const built: Record<string, unknown> | null = buildRunCard(
+          outputRoot,
+          roots.mediaKindsPath,
+          ent,
+          hasDraft,
+        );
+        if (built === null) continue;
+        const want = {
+          run_id: ent.dir,
+          media: ent.media,
+          created: ent.created,
+          card: built,
+        };
+        const have = table.get(ent.dir);
+        if (have === undefined || canonRuns(have) !== canonRuns(want)) {
+          await table.put(ent.dir, {
+            run_id: ent.dir,
+            media: ent.media,
+            created: ent.created,
+            card: built as unknown as RegistryRow["card"],
+          });
+          served.push(built);
+        } else {
+          served.push(
+            have.card as unknown as Record<string, unknown>,
+          );
+        }
       }
-      pipeline = sidecarStr(rawBytes, "pipeline", 64);
-      prompt = sidecarStr(rawBytes, "prompt", 2048);
-      draft = sidecarStr(rawBytes, "draft_id", 96);
-      seed = sidecarNum(buf, "seed", -1);
-      const at: number = buf.indexOf('"created_at":');
-      if (at >= 0) created = strtolPy(buf.slice(at + 13));
+      for (const key of [...table.keys()]) {
+        if (!live.has(key)) {
+          const rec = table.get(key);
+          if (rec !== undefined) await table.delete(key);
+        }
+      }
+      return {
+        status: 200,
+        body: dumpsPy({ count, runs: served }),
+        contentType: "application/json",
+        headers: {},
+      };
+    } catch {
+      /* storage fell over — scan-serve below, same bytes */
     }
-    if (pipeline.startsWith("_")) continue; // user-surface law
-    if (draft && !hasDraft(draft)) {
-      draft = "";
-    }
-    const literal: string = "./output/" + ent.dir;
-    const row = runRowOrNull({
-      run_id: ent.dir,
-      name: pipeline,
-      flow: pipeline,
-      status,
-      created_at: created,
-      prompt,
-      seed,
-      thumbnail: runThumbnail(runDir, ent.dir, roots.mediaKindsPath),
-      artifacts: runArtifacts(runDir, literal, roots.mediaKindsPath),
-      params: { seed },
-      draft_id: draft,
-    });
+  }
+  const rows: Record<string, unknown>[] = [];
+  for (const ent of sliced) {
+    const row = buildRunCard(
+      outputRoot,
+      roots.mediaKindsPath,
+      ent,
+      hasDraft,
+    );
     if (row === null) continue; // RESILIENCE LAW: loud skip (below)
     rows.push(row);
   }
@@ -1161,7 +1268,8 @@ export function dispatchRuns(
   roots: AssetRoots,
   svc?: RunsService | null,
   hasDraft?: (draftId: string) => boolean,
-): AssetResult | null {
+  assets?: Domain<AssetsDomainSpec> | null,
+): AssetResult | Promise<AssetResult> | null {
   if (handler === "_h_queue") return hQueue(svc);
   if (handler === "_h_flows_status") {
     return hFlowsStatus(m !== null && m[1] !== undefined ? m[1] : "", qs, roots);
@@ -1172,7 +1280,10 @@ export function dispatchRuns(
         "[gateway-ts] dispatchRuns needs the caller's hasDraft probe (drafts domain)",
       );
     }
-    return hRunsList(qs, roots, hasDraft);
+    // The runs registry (the open handle rides the caller — the door
+    // mounts through ctx.storageDomain; direct callers omit it and
+    // get the scan-serve, identical bytes).
+    return hRunsList(qs, roots, hasDraft, assets ?? null);
   }
   if (handler === "_h_run_detail") {
     return hRunDetail(m !== null && m[1] !== undefined ? m[1] : "", roots);
@@ -1862,8 +1973,16 @@ export const runsDoors: Plugin = {
         if (hit.row.handler === "_h_runs_list") {
           // The drafts-domain probe (sync reads off the opened unit).
           const drafts = await getDraftsDomain(ctx);
+          // The runs registry handle (null on any storage failure —
+          // the list scan-serves, identical bytes, never 500s).
+          let registry: Domain<AssetsDomainSpec> | null = null;
+          try {
+            registry = await getAssetsDomain(ctx);
+          } catch {
+            registry = null;
+          }
           return hRunsList(parseQuery(req.target), req.roots, (draftId: string): boolean =>
-            drafts.table("docs").get(draftId) !== undefined);
+            drafts.table("docs").get(draftId) !== undefined, registry);
         }
         if (hit.row.handler === "_h_run_detail") {
           const runId: string =
