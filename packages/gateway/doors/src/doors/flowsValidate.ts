@@ -80,7 +80,6 @@
 // Erasable-syntax TS only (estate convention): no enums, import
 // type for types, .ts specifiers for relative imports.
 import { resolveRepoRoot } from "@melite/comfyui";
-import { execFileSync } from "node:child_process";
 import {
   existsSync,
   readdirSync,
@@ -1392,93 +1391,8 @@ function findDanglingRefs(body: Record<string, unknown>): Array<[string, string,
 // injected service. The absent-facts degrade survives at the
 // modelArm call site, which catches the service's strict read.)
 
-// ── the cordis CLI compose arm ──────────────────────────────────
-// packages/engines/comfyui/compose/__init__.py:110 — same argv, same
-// cwd (repo root), same facts file. rc!=0 -> the plugins.compose
-// ValidationError text verbatim; rc==0 -> the FlowGraph rim refusal
-// (the rim model_validates the stdout STRING — always a model_type
-// refusal — faked byte-exact under PYDANTIC_PIN).
-function composeViaCli(fam: string, card: string, params: Record<string, unknown>): Refusal | null {
-  const repo: string = resolveRepoRoot();
-  const cli: string = join(repo, "packages", "engines", "comfyui-cordis", "src", "cli.ts");
-  const facts: string = join(
-    repo,
-    "packages",
-    "engines",
-    "comfyui-cordis",
-    "data",
-    "model-facts.json",
-  );
-  if (!existsSync(cli) || !existsSync(facts)) {
-    throw new FlowError(
-      "cordis compose plane incomplete: cli.ts=" +
-        String(existsSync(cli)) +
-        " facts=" +
-        String(existsSync(facts)),
-    );
-  }
-  const argv: string[] = [
-    "--experimental-strip-types",
-    "--no-warnings",
-    cli,
-    "compose",
-    "--card",
-    card,
-    "--model",
-    fam,
-    "--facts",
-    facts,
-    "--params",
-    JSON.stringify(params),
-  ];
-  // run_id "" (phase 1) carries no --run-id flag (compose:155).
-  let stdout: string;
-  try {
-    stdout = execFileSync(process.execPath, argv, {
-      cwd: repo,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-      maxBuffer: 16 * 1024 * 1024,
-    }) as string;
-  } catch (e) {
-    const status: unknown = (e as { status?: unknown }).status;
-    const stderr: string = String((e as { stderr?: unknown }).stderr ?? "");
-    if (typeof status === "number") {
-      const lines: string[] = stderr
-        .split("\n")
-        .map((l) => l.trim())
-        .filter((l) => l !== "");
-      const detail: string = lines.length > 0 ? (lines[lines.length - 1] as string) : "no detail (rc=" + status + ")";
-      const row: { plugin: string; def: string } = ENGINE_TABLE["comfyui"] as {
-        plugin: string;
-        def: string;
-      };
-      return {
-        message:
-          "card_compose phase 1: card_compose rc=" +
-          status +
-          " (" +
-          row.plugin +
-          ".comfyui): " +
-          detail,
-        code: "card_compose",
-      };
-    }
-    throw e;
-  }
-  // rc 0 with graph text on stdout: the rim PARSES it (the py rim's
-  // wrap — infra/python/plugins.py card_compose seam, 2026-09-07: CLI JSON text
-  // -> one stage row carrying the full node map). Validate only
-  // needs "composed OK" — the graph itself rides the start path.
-  // A non-JSON text throws (py's json.loads raises the same class
-  // of uncaught decode error — parity by construction).
-  const text: string = typeof stdout === "string" ? stdout : String(stdout ?? "");
-  JSON.parse(text);
-  return null satisfies Refusal | null;
-}
-
 // ── {model} arm (gateway.py:595 resolve_card_model, ported subset) ─
-function modelArm(body: Record<string, unknown>, cards?: CardRegistryService | null): FlowsValidateAnswer {
+async function modelArm(body: Record<string, unknown>, cards?: CardRegistryService | null): Promise<FlowsValidateAnswer> {
   const mid: string = pyStr(body["model"]);
   try {
     strictBody(body);
@@ -1602,7 +1516,14 @@ function modelArm(body: Record<string, unknown>, cards?: CardRegistryService | n
     throw e;
   }
   const params: Record<string, unknown> = overlaid.params;
-  const refused: Refusal | null = composeViaCli(overlaid.fam, overlaid.card, params);
+  // IN-PROCESS COMPOSE (2026-09-09): the CLI subprocess is retired —
+  // the SAME CardRegistryService compose pipeline the start door
+  // rides composes for validate too (one plane, both doors).
+  const refused: Refusal | null = await svc.composeValidateCard(
+    overlaid.card,
+    overlaid.fam,
+    params,
+  );
   if (refused !== null) {
     return { status: 400, payload: refusalEnvelope(refused) };
   }
@@ -1759,7 +1680,7 @@ function serveSubject(
 }
 
 // ── the door ────────────────────────────────────────────────────
-export function handleFlowsValidate(doc: unknown, cards?: CardRegistryService | null): FlowsValidateAnswer {
+export async function handleFlowsValidate(doc: unknown, cards?: CardRegistryService | null): Promise<FlowsValidateAnswer> {
   if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
     // Non-dict bodies skip every guard and hit flow_from_body's
     // "flow body must be a JSON object" (gateway.py:2786).
@@ -1767,7 +1688,7 @@ export function handleFlowsValidate(doc: unknown, cards?: CardRegistryService | 
   }
   const body: Record<string, unknown> = doc as Record<string, unknown>;
   // _h_flows_validate arm order: {model} first (gateway.py:2740).
-  if ("model" in body) return modelArm(body, cards);
+  if ("model" in body) return await modelArm(body, cards);
   // Named-flow condition verbatim (gateway.py:2756): a body carrying
   // BOTH a flow name and inline shape is an inline body whose
   // unknown-keys refusal names the offender.
@@ -1789,7 +1710,7 @@ export const validateDoors: Plugin = {
   name: "gateway-validate",
   inject: ["gatewayError", "cardRegistry", "webServer"],
   apply(ctx: Context): void {
-    mountDoorRoutes(ctx, ctx.webServer, ["_h_flows_validate"], (req: GatewayRequest): DispatchResult | undefined => {
+    mountDoorRoutes(ctx, ctx.webServer, ["_h_flows_validate"], async (req: GatewayRequest): Promise<DispatchResult | undefined> => {
         const hit = doorMatch(req, ["_h_flows_validate"]);
         if (hit === null) {
           return undefined;
@@ -1810,7 +1731,7 @@ export const validateDoors: Plugin = {
         const answered: {
           status: number;
           payload: Record<string, unknown>;
-        } = handleFlowsValidate(parsed.doc, ctx.cardRegistry);
+        } = await handleFlowsValidate(parsed.doc, ctx.cardRegistry);
         errors.normalize4xx(answered.status, answered.payload);
         return {
           status: answered.status,

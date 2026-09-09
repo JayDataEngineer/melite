@@ -54,12 +54,12 @@
 //      flow_inline runs (L3 routing, upload walk, harvest,
 //      interrupt, timeout all reused untouched).
 //
-// REFUSAL VOICES: every card-lane failure carries the py shape
-// `card_compose phase <N>: card_compose rc=1 (comfyui.comfyui):
-// <detail>` (_compose_refusal 191-210 over the rim's
-// `card_compose rc=%d (%s.%s)` 546-551), where <detail> is the
-// CLI-stderr-line shape (`<code>: <msg>` for ComposeRefusal — the
-// cli.ts catch; `compose-door: ...` for the admission die). The
+// REFUSAL VOICES: every card-lane failure carries
+// `card_compose phase <N>: <detail>` (the py phase framing; the
+// subprocess-era `rc=%d (%s.%s)` mimicry retired 2026-09-09 with
+// the execFileSync itself), where <detail> is the CLI-line shape
+// (`<code>: <msg>` for ComposeRefusal; `compose-door: ...` for the
+// admission die). The
 // (comfyui.comfyui) prefix rides the ENGINE_TABLE derivation
 // (plugin dir name + engine type, as scan_engines reports them —
 // the flowsValidate.ts header pins the same table). Pre-compose
@@ -116,12 +116,12 @@ export class CardArmError extends Error {
 }
 
 /** Phase-N compose failure (py _compose_refusal 191-210 over the rim
- *  546-551): `card_compose phase <N>: card_compose rc=1
+ *  546-551, the subprocess framing retired 2026-09-09): `card_compose phase <N>
  *  (comfyui.comfyui): <detail>`. */
 function phaseRefusal(phase: string, detail: string): CardArmError {
   return new CardArmError(
     400,
-    "card_compose phase " + phase + ": card_compose rc=1 (comfyui.comfyui): " + detail,
+    "card_compose phase " + phase + ": " + detail,
     "card_compose",
   );
 }
@@ -624,6 +624,30 @@ export class CardRegistryService extends Service {
         throw phaseRefusal(phase, e.code + ": " + e.message);
       }
       throw phaseRefusal(phase, e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  /** In-process validate compose (the CLI subprocess retired,
+   *  2026-09-09): the SAME composeOnce pipeline the start path
+   *  rides — facts + pin snapshot + stanza unwrap + admission gate
+   *  + ctx.comfyui.compose — surfaced as the validate door's
+   *  Refusal shape (null = composed OK; validate needs no graph).
+   *  One plane composes for both doors (start + validate); the
+   *  per-request execFileSync subprocess (one node boot per
+   *  validate call) is dead. */
+  async composeValidateCard(
+    card: string,
+    fam: string,
+    params: Record<string, unknown>,
+  ): Promise<{ message: string; code: string } | null> {
+    try {
+      await this.composeOnce(card, fam, params, "", "1");
+      return null;
+    } catch (e) {
+      if (e instanceof CardArmError) {
+        return { message: e.message, code: e.code };
+      }
+      throw e;
     }
   }
 
