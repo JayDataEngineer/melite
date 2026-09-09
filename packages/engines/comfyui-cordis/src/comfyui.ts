@@ -95,6 +95,10 @@ import { fileURLToPath } from "node:url";
 import Schema from "@deepseek-ai/schemastery";
 import { Context, Service } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
+import {
+  EngineSupervisor,
+  isTransportDownError,
+} from "./supervisor.ts";
 
 /** LOUD transport failure (never a silent fallback — native.py:67). */
 export class ComfyError extends Error {
@@ -1438,6 +1442,10 @@ export class ComfyUIHostService extends Service {
   private readonly configured: string | null;
   /** Lazily resolved server (once per fiber — see resetForTests). */
   private resolved: string | null = null;
+  /** Reachability supervisor (the MCP connection pattern, lazy with
+   *  the server — fixture boots carry no endpoint, so provide time
+   *  must never resolve OR probe). */
+  private supervisor: EngineSupervisor | null = null;
   /** Live prompts (run_dir -> handle — the retired module ACTIVE
    *  handle's fiber-owned successor). */
   private readonly prompts: Map<string, ActivePrompt> = new Map();
@@ -1455,24 +1463,95 @@ export class ComfyUIHostService extends Service {
     }
   }
 
-  /** Test seam: drop the resolved server + all live-prompt handles
-   *  (walls boot fresh processes; belt-and-braces for in-process
-   *  reuse — the RunsService parity). */
+  /** Test seam: drop the resolved server + supervisor + all
+   *  live-prompt handles (walls boot fresh processes; belt-and-
+   *  braces for in-process reuse — the RunsService parity). */
   resetForTests(): void {
     this.resolved = null;
+    if (this.supervisor !== null) {
+      const sup: EngineSupervisor = this.supervisor;
+      this.supervisor = null;
+      void sup.dispose();
+    }
     this.prompts.clear();
   }
 
   /** The engine base URL (lazy once-per-fiber): Config pin >
    *  COMFYUI_URL env (wall-pinned) > endpoint file (estate truth).
    *  Absent everywhere = the LOUD ComfyError (native 82-84 — NO
-   *  default, NO hardcoded host/port). */
+   *  default, NO hardcoded host/port). First resolution also starts
+   *  the reachability supervisor (fire-and-forget probe — boot and
+   *  fixtures never block on the engine). */
   baseUrl(): string {
     if (this.resolved !== null) return this.resolved;
     const server: string =
       this.configured !== null ? this.configured : resolveEngineBaseUrl();
     this.resolved = server;
+    this.startSupervisor(server);
     return server;
+  }
+
+  /** The fiber's supervisor (baseUrl first — a face without a
+   *  server is a wiring bug, LOUD like needComfyUI). */
+  private sup(): EngineSupervisor {
+    if (this.supervisor === null) {
+      throw new Error(
+        "[comfyui] no supervisor — faces call baseUrl() first " +
+          "(lazy with the server; provide time never probes)",
+      );
+    }
+    return this.supervisor;
+  }
+
+  private startSupervisor(server: string): void {
+    if (this.supervisor !== null) return;
+    // Scoped-logger voice (gateway.ts rides ctx.logger the same
+    // way — %s-param shape, the message carries engine error text).
+    const log = this.ctx.logger("comfyui");
+    const sup: EngineSupervisor = new EngineSupervisor({
+      probe: (): Promise<void> => {
+        return httpCall(
+          "GET",
+          server + "/system_stats",
+          null,
+          "application/json",
+          5000,
+        ).then((): void => undefined);
+      },
+      label: "comfyui",
+      log: {
+        info: (m: string): void => {
+          log.info("%s", m);
+        },
+        warn: (m: string): void => {
+          log.warn("%s", m);
+        },
+        error: (m: string): void => {
+          log.error("%s", m);
+        },
+      },
+    });
+    this.supervisor = sup;
+    sup.start();
+  }
+
+  /** Supervised face: fail FAST when the engine is known-down
+   *  (the recorded error, no timeout burn); report traffic
+   *  liveness back (transport-dead only — timeouts and HTTP
+   *  statuses prove the engine alive and stay neutral). */
+  private async supervised<T>(
+    work: () => Promise<T>,
+  ): Promise<T> {
+    const sup: EngineSupervisor = this.sup();
+    await sup.ensureUp();
+    try {
+      const result: T = await work();
+      sup.noteSuccess();
+      return result;
+    } catch (error: unknown) {
+      if (isTransportDownError(error)) sup.noteFailure(error);
+      throw error;
+    }
   }
 
   /** Per-stage submit + poll + fetch (the plugin face of
@@ -1483,13 +1562,16 @@ export class ComfyUIHostService extends Service {
     nodeOutputs: Record<string, EngineJson>,
     opts: ExecuteOpts = {},
   ): Promise<ExecuteResult> {
-    return executeSingleInner(
-      runDir,
-      nodeParams,
-      nodeOutputs,
-      opts,
-      this.baseUrl(),
-      this.prompts,
+    const server: string = this.baseUrl();
+    return this.supervised(() =>
+      executeSingleInner(
+        runDir,
+        nodeParams,
+        nodeOutputs,
+        opts,
+        server,
+        this.prompts,
+      )
     );
   }
 
@@ -1503,14 +1585,17 @@ export class ComfyUIHostService extends Service {
     initials: Record<string, EngineJson>,
     opts: ExecuteOpts = {},
   ): Promise<FlowResult> {
-    return executeFlowInner(
-      rows,
-      runDir,
-      inputNames,
-      initials,
-      opts,
-      this.baseUrl(),
-      this.prompts,
+    const server: string = this.baseUrl();
+    return this.supervised(() =>
+      executeFlowInner(
+        rows,
+        runDir,
+        inputNames,
+        initials,
+        opts,
+        server,
+        this.prompts,
+      )
     );
   }
 

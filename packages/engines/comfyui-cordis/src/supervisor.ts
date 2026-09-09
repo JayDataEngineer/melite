@@ -29,6 +29,42 @@
 // flight) proceeds; down throws the RECORDED error fast (same LOUD
 // failure class as today, minus the timeout burn).
 
+/** Transport-dead signals: the engine's TCP stack is unreachable
+ *  (refused/reset/unroutable/unresolvable). Timeouts, socket
+ *  hang-ups, and HTTP statuses are EXCLUDED — a slow or sick engine
+ *  is still a LIVE engine, and marking down on them would fail
+ *  healthy-but-busy submits fast. Only the codes below may drive
+ *  noteFailure (caller discipline, pinned by wall). */
+const TRANSPORT_DEAD_CODES: ReadonlySet<string> = new Set([
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "ENOTFOUND",
+  "EAI_AGAIN",
+  "EHOSTUNREACH",
+  "EHOSTDOWN",
+  "ENETUNREACH",
+  "ENETDOWN",
+  "EPIPE",
+]);
+
+export function isTransportDownError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const code: unknown = (error as { code?: unknown }).code;
+  if (typeof code === "string" && TRANSPORT_DEAD_CODES.has(code)) {
+    return true;
+  }
+  const message: unknown = (error as { message?: unknown }).message;
+  if (typeof message !== "string") return false;
+  return (
+    message.includes("ECONNREFUSED") ||
+    message.includes("ECONNRESET") ||
+    message.includes("ENOTFOUND") ||
+    message.includes("EHOSTUNREACH") ||
+    message.includes("ENETUNREACH") ||
+    message.includes("EPIPE")
+  );
+}
+
 /** Reconnect policy — same shape + defaults as the MCP supervisor. */
 export interface SupervisorPolicy {
   /** Background re-probe after a failed probe (default true). */

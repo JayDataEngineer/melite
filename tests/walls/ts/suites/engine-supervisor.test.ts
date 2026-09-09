@@ -22,6 +22,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   EngineSupervisor,
+  isTransportDownError,
   resolveSupervisorPolicy,
 } from "../../../../packages/engines/comfyui-cordis/src/supervisor.ts";
 
@@ -105,6 +106,48 @@ describe("resolveSupervisorPolicy fails loud", () => {
     assert.equal(p.maxDelayMs, 30_000);
     assert.equal(p.maxAttempts, 10);
     assert.equal(p.enabled, true);
+  });
+});
+
+describe("isTransportDownError classification", () => {
+  it("dead transports report (refused/reset/unreachable/DNS/pipe)", () => {
+    for (const code of [
+      "ECONNREFUSED",
+      "ECONNRESET",
+      "ENOTFOUND",
+      "EAI_AGAIN",
+      "EHOSTUNREACH",
+      "ENETUNREACH",
+      "EPIPE",
+    ]) {
+      const err = new Error("connect " + code + " 127.0.0.1:18466") as Error & {
+        code: string;
+      };
+      err.code = code;
+      assert.equal(isTransportDownError(err), true, code);
+    }
+    // Message-only shape (no .code — errno prose in the text).
+    assert.equal(
+      isTransportDownError(new Error("connect ECONNREFUSED 127.0.0.1:18466")),
+      true,
+    );
+  });
+
+  it("slow/sick/alive stays neutral (never fail-fast on these)", () => {
+    assert.equal(
+      isTransportDownError(new Error("request timed out after 30000ms")),
+      false,
+    );
+    const hangup = new Error("socket hang up") as Error & { code: string };
+    hangup.code = "ECONNABORTED";
+    assert.equal(isTransportDownError(hangup), false);
+    assert.equal(
+      isTransportDownError(new Error("POST /prompt 400: validation failed")),
+      false,
+    );
+    assert.equal(isTransportDownError(new Error("boom")), false);
+    assert.equal(isTransportDownError(null), false);
+    assert.equal(isTransportDownError("ECONNREFUSED"), false);
   });
 });
 
