@@ -56,14 +56,10 @@
 //     float() kills the whole boot on garbage — non-ported by
 //     design, the core boots where py cannot); _request.json needs
 //     only to parse (Run is a plain dataclass).
-//   - toPlainJson for live-serve registry records (PyNum ->
-//     number, recursive): files keep literals in memory via
-//     parseJson; every live serve unwraps first (audited: no
-//     current path routes PyNum through serializePy). STAGE 2:
-//     PyNum.toJSON subsumes the unwrap for every JSON.stringify
-//     path (dumpsJson/dumpsLedgerData/serializePy all normalize
-//     now) — toPlainJson stays as the explicit pre-stringify
-//     guard, retirement is a later micro-stage.
+//   - live-serve normalization: files keep literals in memory via
+//     parseJson; PyNum.toJSON normalizes at every JSON.stringify
+//     path (ROW 29 STAGE 2 — toPlainJson retired 2026-09-10, zero
+//     callers, subsumed).
 //   - the queue snapshot key order (queued/running/active/
 //     queued_ids, _h_queue 2893-2900) + queue_position (index or 0,
 //     _h_flows_status 2973-2975).
@@ -108,7 +104,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { pyReprStr, pyReprStrList } from "@melite/comfyui-cordis";
-import { asciiEscape, PyNum } from "@melite/gateway-core";
+import { asciiEscape } from "@melite/gateway-core";
 
 // ── constants (py cites inline) ──────────────────────────────────
 
@@ -1361,28 +1357,6 @@ export function coerceCreatedAt(value: unknown): number {
     return 0;
   }
   return 0;
-}
-
-/** Plain-JSON view of a live-serve registry record: parseJson
- *  PyNum literals (doors/assets.ts) become real numbers,
- *  recursively. STAGE 2: PyNum.toJSON now normalizes for every
- *  JSON.stringify path (dumpsJson/dumpsLedgerData/serializePy),
- *  so this helper is belt-and-braces — explicit pre-stringify
- *  unwrap at the live-serve seam. Audited 2026-09-07: no serve
- *  path routes RAW PyNum through serializePy (sidecar/ledger/
- *  restore serve dumpsJson; live + refusal payloads are plain). */
-export function toPlainJson(value: unknown): unknown {
-  if (value instanceof PyNum) return Number(value.literal);
-  if (Array.isArray(value)) {
-    return value.map((e: unknown): unknown => toPlainJson(e));
-  }
-  if (typeof value === "object" && value !== null) {
-    const rec = value as Record<string, unknown>;
-    const out: Record<string, unknown> = {};
-    for (const k of Object.keys(rec)) out[k] = toPlainJson(rec[k]);
-    return out;
-  }
-  return value;
 }
 
 /** The durable-record check (_rebuild_run_from_record 2294-2336):
