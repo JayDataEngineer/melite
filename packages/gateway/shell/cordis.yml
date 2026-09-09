@@ -57,6 +57,8 @@
     name: '@melite/gateway-doors/runs'
   - id: gateway-chrome
     name: '@melite/gateway-doors/chrome'
+  - id: gateway-catalogs
+    name: '@melite/gateway-doors/catalogs'
   - id: gateway-assets
     name: '@melite/gateway-doors/assets'
   - id: gateway-drafts

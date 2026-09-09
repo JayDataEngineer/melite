@@ -313,8 +313,10 @@ function stem(name: string): string {
 // ---------------------------------------------------------------------------
 
 /** Disclosure root (the REPO the doors read): MELITE_REPO_ROOT else
- *  file-anchored (the uploads-door pattern, gateway.py 63). */
-function disclosureRoot(): string {
+ *  file-anchored (the uploads-door pattern, gateway.py 63).
+ *  Exported — the catalogs door anchors the same root (one root
+ *  function, never duplicated). */
+export function disclosureRoot(): string {
   const override: string = process.env["MELITE_REPO_ROOT"] ?? "";
   if (override !== "") return override;
   const here: string = dirname(fileURLToPath(import.meta.url));

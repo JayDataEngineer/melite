@@ -766,7 +766,34 @@ export const ROUTES: readonly GatewayRoute[] = [
     attr: "models",
     handler: "_h_chrome",
   },
+  // ── Flow-first disclosure (the disclosure stroke, 2026-09-09) ──
+  {
+    method: "GET",
+    path: "/v1/flows/catalog",
+    template: "",
+    group: "Disclosure",
+    summary: "Flow summaries (search tier; ?action=search ?q=) — the preferred composition",
+    query: ["action", "q"],
+    body: "none",
+    regex: false,
+    ws: false,
+    attr: "",
+    handler: "_h_catalogs",
+  },
+  {
+    method: "GET",
+    path: "/v1/cards/catalog",
+    template: "",
+    group: "Disclosure",
+    summary: "Card summaries + skill bundles (?action=search ?q= ?tags= / ?action=load_skills ?ids=) — the fallback composition",
+    query: ["action", "q", "tags", "ids"],
+    body: "none",
+    regex: false,
+    ws: false,
+    attr: "",
+    handler: "_h_catalogs",
+  },
 ];
 
-/** Row count pin — the table holds 54 rows (see the wall). */
+/** Row count pin — the table holds 56 rows (54 + the two disclosure rows). */
 export const ROUTE_COUNT: number = ROUTES.length;
