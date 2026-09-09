@@ -14,37 +14,50 @@
 // 2026-09-09): card.ts owns the card face (data + registerCard —
 // the engine registry); tool.ts owns the DSH tool face
 // (registerTool — the harness tools service); this entry only
-// wires them. inject declares the card's required seam; the tools
-// service is probed at the use site — the tutorial's
-// optional-dependency receipt ("skip inject and probe at the use
-// site"; the object inject form is name→intercept-config in the
-// vendored cordis, not optionality).
+// wires them. BOTH services are probed at the use site (the
+// tutorial's optional-dependency receipt — "skip inject and probe
+// at the use site"; the object inject form is name→intercept-config
+// in the vendored cordis, not optionality).
 //
 // The card RUNS via the flow path (card stages → cardGate →
 // ctx.comfyui.compose), never the {model:}/draft path; the tool
 // face rides the same law through the gateway's flow doors.
 import type { Context } from '@deepseek-ai/cordis'
-import z from '@deepseek-ai/schemastery'
+import Schema from '@deepseek-ai/schemastery'
+import { ComfyUIService } from '@comfyui/cordis/service'
 import { registerCard } from './card.ts'
 import { registerTool } from './tool.ts'
 import type { ToolRuntime } from '@deepseek-ai/dsh-tools'
 
 export const name = 'clothing-placement'
-export const inject = ['comfyui']
+/** The documented Config idiom (tutorial ch.5): the interface is
+ *  the type, the const is the runtime schema, one name. The env var
+ *  resolves INSIDE the schema default — a schema-side .default()
+ *  would otherwise mask it at every use site. */
+export interface Config {
+  gateway: string
+}
 
-export const Config = z.object({
-  gateway: z.string().default('http://localhost:33081').description(
-    'The Melite gateway base URL (the flow doors the tool face calls)'),
+export const Config: Schema<Config> = Schema.object({
+  gateway: Schema.string()
+    .default(process.env.MELITE_GATEWAY_URL || 'http://localhost:33081')
+    .description('The Melite gateway base URL (the flow doors the tool face calls)'),
 })
 
-export function apply(ctx: Context, config: ReturnType<typeof Config>): void {
-  registerCard(ctx)
-  // Optional dependency (tutorial ch.3): probe at the use site —
-  // undefined when the composing host provides no tools service
-  // (the gateway process), so there only the card face lands.
+// BOTH faces are optional dependencies (tutorial ch.3: skip inject,
+// probe at the use site). inject = ['comfyui'] would be a hard gate:
+// in a standalone dsh agent host — no ComfyUI service in-process,
+// the tool face talks to the gateway over HTTP — apply would sit
+// PENDING forever and the tool would never register. The gateway
+// process provides comfyui but no tools; the agent host provides
+// tools but no comfyui; each composition takes the faces it can.
+export const inject: string[] = []
+
+export function apply(ctx: Context, config: Config): void {
+  const comfy = ctx.get('comfyui') as ComfyUIService | undefined
+  if (comfy !== undefined) registerCard(ctx, comfy)
   const tools = ctx.get('tools') as ToolRuntime | undefined
   if (tools !== undefined) {
-    const gatewayUrl = (config?.gateway ?? '').trim() || process.env.MELITE_GATEWAY_URL || 'http://localhost:33081'
-    registerTool(ctx, tools, gatewayUrl)
+    registerTool(ctx, tools, (config?.gateway ?? '').trim() || 'http://localhost:33081')
   }
 }

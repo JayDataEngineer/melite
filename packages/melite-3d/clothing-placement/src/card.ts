@@ -4,6 +4,7 @@
 // derive from THIS module — never a second spelling.
 import z from '@deepseek-ai/schemastery'
 import type { Context } from '@deepseek-ai/cordis'
+import type { ComfyUIService } from '@comfyui/cordis/service'
 import { existsSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 
@@ -66,8 +67,11 @@ function estateFile(param: string, ref: unknown): void {
 /** Register the card face into the engine registry (ctx.comfyui).
  *  Lives with the card's data; index.ts only wires. Verbatim from
  *  the package's founding apply (M2′ stroke 1). */
-export function registerCard(ctx: Context): void {
-  ctx.effect(() => ctx.comfyui.registerCard({
+/** Register the card face into the engine registry. The service
+ *  arrives as a parameter (index.ts probed it — comfyui is an
+ *  optional dependency, not an injected one). */
+export function registerCard(ctx: Context, comfy: ComfyUIService): void {
+  ctx.effect(() => comfy.registerCard({
     id: 'clothing-placement',
     skeleton: 'place',
     // no model families — the first pure-tool card (requiresModel:

@@ -177,9 +177,9 @@ describe("the optional tools service (the host contribution)", () => {
   // ch.3 — a Service subclass is itself a plugin; ctx.plugin attaches
   // the fiber lifecycle ctx.get's strict default requires), and
   // teardown disposes the root fiber.
-  const boot = async (withTools: boolean) => {
+  const boot = async (withTools: boolean, withComfy = true) => {
     const ctx = new Context();
-    await ctx.plugin(ComfyUIService);
+    if (withComfy) await ctx.plugin(ComfyUIService);
     let stub: StubToolsService | undefined;
     if (withTools) {
       await ctx.plugin(StubToolsService);
@@ -215,6 +215,18 @@ describe("the optional tools service (the host contribution)", () => {
     await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { gateway: baseUrl });
     const comfy = ctx.get("comfyui") as { cardIds(): string[] };
     assert.ok(comfy.cardIds().includes("clothing-placement"), "card contribution stands");
+    await ctx.fiber.dispose();
+  });
+
+  it("SCENARIO B — a standalone agent host (tools, NO comfyui): apply runs, the tool registers, no card", async () => {
+    // The hard-gate trap this pins: inject = ['comfyui'] would hold
+    // the plugin PENDING forever in this host — no card, and CRITICALLY
+    // no tool. Both faces optional: each composition takes what it can.
+    const { ctx, stub } = await boot(true, false);
+    await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { gateway: baseUrl });
+    assert.ok(ctx.get("comfyui") === undefined, "no engine service in this host");
+    assert.equal(stub!.registered.length, 1, "the tool face stands alone");
+    assert.equal(stub!.registered[0]!.name, TOOL_NAME);
     await ctx.fiber.dispose();
   });
 });

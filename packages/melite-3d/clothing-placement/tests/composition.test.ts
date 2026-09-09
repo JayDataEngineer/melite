@@ -41,7 +41,10 @@ describe("real composition (the production path)", () => {
 describe("plugin shape (Harness-Packages law)", () => {
   it("named exports only: name/inject/apply; no default export", async () => {
     assert.equal(pkg.name, "clothing-placement");
-    assert.deepEqual(pkg.inject, ["comfyui"]);
+    // Both faces optional (Scenario B): an empty inject — a hard
+    // comfyui gate would hold the plugin PENDING in a standalone
+    // agent host and the tool would never register.
+    assert.deepEqual(pkg.inject, []);
     assert.equal(typeof pkg.apply, "function");
     const mod = pkg as unknown as { default?: unknown };
     assert.equal(mod.default, undefined, "function plugins carry no default export");
