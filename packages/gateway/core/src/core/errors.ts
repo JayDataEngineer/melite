@@ -23,6 +23,54 @@ export const AUTH_TOKEN_ENV: string = "DSH_GATEWAY_TOKEN";
 /** Health probe stays reachable with auth on (py AUTH_EXEMPT_PATHS). */
 export const AUTH_EXEMPT_PATHS: readonly string[] = ["/v1/health"];
 
+/** THE one bearer comparison (row 26, ledger § THE WIRE ADOPTION F3):
+ *  the HTTP adapter's authCheck and the WS upgrade's wsAuthOk used to
+ *  each spell `headers["authorization"] === "Bearer " + token` — two
+ *  voices for one trust fact (G-17). Every bearer read now funnels
+ *  through here; the WS ?token= query arm stays in wsAuthOk (browsers
+ *  cannot set WS headers — documented py parity, gateway.py
+ *  2189-2240 — not a second comparison). Empty token passes
+ *  everything (mirrors _adapt/_auth_ok). */
+export function bearerOk(
+  headers: Record<string, string>,
+  authToken: string,
+): boolean {
+  if (authToken === "") return true;
+  return headers["authorization"] === "Bearer " + authToken;
+}
+
+/** WS auth (gateway.py 2189-2240): token empty passes everything;
+ *  token set demands the header Bearer OR ?token= (browsers cannot
+ *  set WS headers). _adapt passes "" as the query token for HTTP —
+ *  the query arm is WS-only. Lives here (not runs.ts) so the one
+ *  bearer comparison has one address: the Bearer arm IS bearerOk. */
+export function wsAuthOk(
+  headers: Record<string, string>,
+  target: string,
+  authToken: string,
+): boolean {
+  if (!authToken) return true;
+  if (bearerOk(headers, authToken)) return true;
+  const q: string = target.includes("?")
+    ? (target.split("?")[1] as string)
+    : "";
+  for (const pair of q.split("&")) {
+    if (!pair) continue;
+    const eq: number = pair.indexOf("=");
+    const k: string = eq < 0 ? pair : pair.slice(0, eq);
+    if (k !== "token") continue;
+    const v: string = eq < 0 ? "" : pair.slice(eq + 1);
+    let dv: string;
+    try {
+      dv = decodeURIComponent(v.replace(/\+/g, " "));
+    } catch {
+      dv = v;
+    }
+    if (dv !== "" && dv === authToken) return true;
+  }
+  return false;
+}
+
 /** Dispatcher answer: status + exact bytes + content type (+ extra
  *  headers, e.g. WWW-Authenticate on 401, Content-Range on 206).
  *  body is a UTF-8 string for JSON/text doors, raw bytes for the
@@ -101,7 +149,7 @@ export class GatewayErrorService extends Service {
   ): DispatchResult | null {
     if (authToken === "") return null;
     if ((AUTH_EXEMPT_PATHS as readonly string[]).includes(path)) return null;
-    if (headers["authorization"] === "Bearer " + authToken) return null;
+    if (bearerOk(headers, authToken)) return null;
     return {
       status: 401,
       body: this.serializePy({

@@ -122,6 +122,7 @@ import {
   getDraftsDomain,
   mediaVocab,
   PyNum,
+  wsAuthOk,
 } from "@melite/gateway-core";
 import {
   dumpsPy,
@@ -1486,37 +1487,10 @@ export function wsRunId(target: string, path: string): string | null {
   return null;
 }
 
-/** WS auth (gateway.py 2189-2240): token empty passes everything;
- *  token set demands the header Bearer OR ?token= (browsers cannot
- *  set WS headers). _adapt passes "" as the query token for HTTP —
- *  the query arm is WS-only. */
-export function wsAuthOk(
-  headers: Record<string, string>,
-  target: string,
-  authToken: string,
-): boolean {
-  if (!authToken) return true;
-  const auth: string = headers["authorization"] ?? "";
-  if (auth === "Bearer " + authToken) return true;
-  const q: string = target.includes("?")
-    ? (target.split("?")[1] as string)
-    : "";
-  for (const pair of q.split("&")) {
-    if (!pair) continue;
-    const eq: number = pair.indexOf("=");
-    const k: string = eq < 0 ? pair : pair.slice(0, eq);
-    if (k !== "token") continue;
-    const v: string = eq < 0 ? "" : pair.slice(eq + 1);
-    let dv: string;
-    try {
-      dv = decodeURIComponent(v.replace(/\+/g, " "));
-    } catch {
-      dv = v;
-    }
-    if (dv !== "" && dv === authToken) return true;
-  }
-  return false;
-}
+/** WS auth lives in @melite/gateway-core (next to authCheck — row 26:
+ *  one bearer comparison, one address). Re-exported here so the
+ *  historical `runs.ts` address keeps working. */
+export { wsAuthOk } from "@melite/gateway-core";
 
 function wsSend(socket: Socket, data: Uint8Array): void {
   try {
