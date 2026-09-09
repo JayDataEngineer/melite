@@ -103,7 +103,7 @@ import type { ModelsService } from "@melite/comfyui";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
-import { matchRoute } from "@melite/gateway-core";
+import { doorMatch, mountDoorRoutes } from "../routeMount.ts";
 
 /** Dispatcher answer — structural twin of ctx.DispatchResult (kept
  *  local so this door module stays importable without the
@@ -569,17 +569,11 @@ export async function dispatchBridges(
  *  Matches its own rows inside the listener — no central table. */
 export const bridgesDoors: Plugin = {
   name: "gateway-bridges",
-  inject: ["gatewayError", "models"],
+  inject: ["gatewayError", "models", "webServer"],
   apply(ctx: Context): void {
-    ctx.on(
-      "gateway/request",
-      async (req: GatewayRequest): Promise<DispatchResult | undefined> => {
-        const hit = matchRoute(req.method, req.path);
-        if (
-          hit === null ||
-          (hit.row.handler !== "_h_manage" &&
-            hit.row.handler !== "_h_poser_bridge")
-        ) {
+    mountDoorRoutes(ctx, ctx.webServer, ["_h_manage", "_h_poser_bridge"], async (req: GatewayRequest): Promise<DispatchResult | undefined> => {
+        const hit = doorMatch(req, ["_h_manage", "_h_poser_bridge"]);
+        if (hit === null) {
           return undefined;
         }
         const errors = ctx.gatewayError;
@@ -609,7 +603,6 @@ export const bridgesDoors: Plugin = {
         );
         if (bridged !== null) return bridged;
         return undefined;
-      },
-    );
+    });
   },
 };

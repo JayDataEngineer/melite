@@ -103,6 +103,7 @@
 // enums, import type for types, .ts specifiers for relative imports.
 
 import { createHash } from "node:crypto";
+import { doorMatch, mountDoorRoutes } from "../routeMount.ts";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { Socket } from "node:net";
@@ -1768,13 +1769,11 @@ export function handleWsUpgrade(opts: WsUpgradeOpts): void {
  *  listener — no central table. */
 export const flowsStatusDoors: Plugin = {
   name: "gateway-flows-status",
-  inject: ["gatewayError", "runs"],
+  inject: ["gatewayError", "runs", "webServer"],
   apply(ctx: Context): void {
-    ctx.on(
-      "gateway/request",
-      (req: GatewayRequest): DispatchResult | undefined => {
-        const hit = matchRoute(req.method, req.path);
-        if (hit === null || hit.row.handler !== "_h_flows_status") {
+    mountDoorRoutes(ctx, ctx.webServer, ["_h_flows_status"], (req: GatewayRequest): DispatchResult | undefined => {
+        const hit = doorMatch(req, ["_h_flows_status"]);
+        if (hit === null) {
           return undefined;
         }
         const errors = ctx.gatewayError;
@@ -1829,8 +1828,7 @@ export const flowsStatusDoors: Plugin = {
           contentType: "application/json",
           headers: {},
         };
-      },
-    );
+    });
   },
 };
 
@@ -1843,14 +1841,12 @@ export const flowsStatusDoors: Plugin = {
  *  inside the listener — no central table. */
 export const runsDoors: Plugin = {
   name: "gateway-runs",
-  inject: ["runs"],
+  inject: ["gatewayError", "runs", "webServer"],
   apply(ctx: Context): () => void {
     const svc: RunsService = ctx.runs;
     svc.setBusPublisher(deliverBusFrame);
-    ctx.on(
-      "gateway/request",
-      (req: GatewayRequest): DispatchResult | undefined => {
-        const hit = matchRoute(req.method, req.path);
+    mountDoorRoutes(ctx, ctx.webServer, ["_h_queue", "_h_runs_list", "_h_run_detail", "_h_ws_fallback"], (req: GatewayRequest): DispatchResult | undefined => {
+        const hit = doorMatch(req, ["_h_queue", "_h_runs_list", "_h_run_detail", "_h_ws_fallback"]);
         if (hit === null) return undefined;
         if (hit.row.handler === "_h_queue") {
           return hQueue(ctx.runs);
@@ -1869,8 +1865,7 @@ export const runsDoors: Plugin = {
           return wsFallback404(req.method, req.path);
         }
         return undefined;
-      },
-    );
+    });
     return (): void => {
       svc.setBusPublisher(null);
     };

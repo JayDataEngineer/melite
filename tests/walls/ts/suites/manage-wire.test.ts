@@ -161,7 +161,14 @@ describe("manage wire (sandbox boot, stub vendor rail)", () => {
     assert.deepEqual((data as Record<string, unknown>)["active_runs"], []);
   });
 
-  it("trailing-slash normalization (byte-equal dispatch)", async (): Promise<void> => {
+  it("NO trailing-slash normalization (the framework law, 2026-09-09)", async (): Promise<void> => {
+    // ROUTING 1:1: the webServer contract matches pathnames
+    // VERBATIM ("no decoding, no normalization — handlers own
+    // their pathname semantics"). The retired uvicorn rim
+    // normalized /v1/manage/ ≡ /v1/manage — a py quirk that died
+    // with the shadow router. The pin now guards the DEATH: the
+    // slashed form matches no exact row and answers 404, never a
+    // byte-equal replay of the canonical route.
     const raw: string = JSON.stringify({ action: "nope_no_such_action_ts" });
     const a: HttpOut = await postManage(port(), raw);
     const b: HttpOut = await http(port(), "POST", "/v1/manage/", {
@@ -169,9 +176,8 @@ describe("manage wire (sandbox boot, stub vendor rail)", () => {
       token: TOKEN,
       contentType: "application/json",
     });
-    assert.equal(a.status, 422);
-    assert.equal(b.status, a.status);
-    assert.ok(b.bytes.equals(a.bytes), "trailing-slash body differs: " + b.bytes.subarray(0, 120));
+    assert.equal(a.status, 422, "canonical route must still answer 422");
+    assert.equal(b.status, 404, "slashed form must NOT normalize onto the route");
   });
 
   it("auth 401 without token; /v1/health exempt", async (): Promise<void> => {

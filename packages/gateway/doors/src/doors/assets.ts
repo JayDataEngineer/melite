@@ -60,6 +60,7 @@
 // enums, import type for types, .ts specifiers for relative imports.
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
+import { doorMatch, mountDoorRoutes } from "../routeMount.ts";
 import { mkdirSync, appendFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -839,12 +840,10 @@ export function dispatchAssets(
  *  their truth; the ledger journal stays file-owned this stroke). */
 export const assetsDoors: Plugin = {
   name: "gateway-assets",
-  inject: ["storageDomain"],
+  inject: ["gatewayError", "storageDomain", "webServer"],
   apply(ctx: Context): void {
-    ctx.on(
-      "gateway/request",
-      async (req: GatewayRequest): Promise<DispatchResult | undefined> => {
-        const hit = matchRoute(req.method, req.path);
+    mountDoorRoutes(ctx, ctx.webServer, ["_h_assets_index", "_h_ledger", "_h_asset", "_h_asset_input"], async (req: GatewayRequest): Promise<DispatchResult | undefined> => {
+        const hit = doorMatch(req, ["_h_assets_index", "_h_ledger", "_h_asset", "_h_asset_input"]);
         if (hit === null) return undefined;
         const asset: DispatchResult | null = dispatchAssets(
           hit.row.handler,
@@ -860,7 +859,6 @@ export const assetsDoors: Plugin = {
           return asset;
         }
         return undefined;
-      },
-    );
+    });
   },
 };

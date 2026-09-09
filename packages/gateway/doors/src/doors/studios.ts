@@ -112,7 +112,7 @@ import { pyFloatRepr } from "./drafts.ts";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
-import { matchRoute } from "@melite/gateway-core";
+import { doorMatch, mountDoorRoutes } from "../routeMount.ts";
 
 // ---------------------------------------------------------------------------
 // Roots + estate snapshot.
@@ -2301,11 +2301,10 @@ export function dispatchStudios(
  *  nothing through the context. */
 export const studiosDoors: Plugin = {
   name: "gateway-studios",
+  inject: ["gatewayError", "webServer"],
   apply(ctx: Context): void {
-    ctx.on(
-      "gateway/request",
-      (req: GatewayRequest): DispatchResult | undefined => {
-        const hit = matchRoute(req.method, req.path);
+    mountDoorRoutes(ctx, ctx.webServer, ["_h_presets_list", "_h_presets_save", "_h_presets_delete", "_h_base_body"], (req: GatewayRequest): DispatchResult | undefined => {
+        const hit = doorMatch(req, ["_h_presets_list", "_h_presets_save", "_h_presets_delete", "_h_base_body"]);
         if (hit === null) return undefined;
         const studio: DispatchResult | null = dispatchStudios(
           hit.row.handler,
@@ -2315,7 +2314,6 @@ export const studiosDoors: Plugin = {
         );
         if (studio !== null) return studio;
         return undefined;
-      },
-    );
+    });
   },
 };

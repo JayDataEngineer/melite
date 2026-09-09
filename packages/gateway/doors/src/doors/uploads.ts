@@ -46,7 +46,7 @@ import { fileURLToPath } from "node:url";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
-import { matchRoute } from "@melite/gateway-core";
+import { doorMatch, mountDoorRoutes } from "../routeMount.ts";
 import { noteUploadStaged } from "@melite/gateway-core";
 import {
   checkUploadsStructure,
@@ -232,13 +232,11 @@ export function handleUploads(doc: unknown): {
  *  registration order is preserved). */
 export const uploadsDoors: Plugin = {
   name: "gateway-uploads",
-  inject: ["gatewayError", "storageDomain"],
+  inject: ["gatewayError", "storageDomain", "webServer"],
   apply(ctx: Context): void {
-    ctx.on(
-      "gateway/request",
-      async (req: GatewayRequest): Promise<DispatchResult | undefined> => {
-        const hit = matchRoute(req.method, req.path);
-        if (hit === null || hit.row.handler !== "_h_uploads") {
+    mountDoorRoutes(ctx, ctx.webServer, ["_h_uploads"], async (req: GatewayRequest): Promise<DispatchResult | undefined> => {
+        const hit = doorMatch(req, ["_h_uploads"]);
+        if (hit === null) {
           return undefined;
         }
         const errors = ctx.gatewayError;
@@ -268,8 +266,7 @@ export const uploadsDoors: Plugin = {
           contentType: "application/json",
           headers: {},
         };
-      },
-    );
+    });
   },
 };
 

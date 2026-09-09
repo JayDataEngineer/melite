@@ -92,7 +92,7 @@ import type { CardDefinition } from "@melite/comfyui";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
-import { matchRoute } from "@melite/gateway-core";
+import { doorMatch, mountDoorRoutes } from "../routeMount.ts";
 import { CardArmError, needCardRegistry } from "./flowsCard.ts";
 import type { CardRegistryService, ModelFactsRow } from "./flowsCard.ts";
 import {
@@ -1787,13 +1787,11 @@ export function handleFlowsValidate(doc: unknown, cards?: CardRegistryService | 
  *  no module cache). */
 export const validateDoors: Plugin = {
   name: "gateway-validate",
-  inject: ["gatewayError", "cardRegistry"],
+  inject: ["gatewayError", "cardRegistry", "webServer"],
   apply(ctx: Context): void {
-    ctx.on(
-      "gateway/request",
-      (req: GatewayRequest): DispatchResult | undefined => {
-        const hit = matchRoute(req.method, req.path);
-        if (hit === null || hit.row.handler !== "_h_flows_validate") {
+    mountDoorRoutes(ctx, ctx.webServer, ["_h_flows_validate"], (req: GatewayRequest): DispatchResult | undefined => {
+        const hit = doorMatch(req, ["_h_flows_validate"]);
+        if (hit === null) {
           return undefined;
         }
         const errors = ctx.gatewayError;
@@ -1820,7 +1818,6 @@ export const validateDoors: Plugin = {
           contentType: "application/json",
           headers: {},
         };
-      },
-    );
+    });
   },
 };

@@ -118,7 +118,7 @@ import { appendLedger } from "@melite/queue";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
-import { matchRoute } from "@melite/gateway-core";
+import { doorMatch, mountDoorRoutes } from "../routeMount.ts";
 import { ROUTES } from "@melite/gateway-core";
 
 /** The dispatcher answer for plane doors (ctx.ts DispatchResult
@@ -2298,12 +2298,10 @@ export function dispatchPlanes(
  *  preserves the old fall-through exactly). */
 export const planesDoors: Plugin = {
   name: "gateway-planes",
-  inject: ["runs", "cardRegistry"],
+  inject: ["gatewayError", "runs", "cardRegistry", "webServer"],
   apply(ctx: Context): void {
-    ctx.on(
-      "gateway/request",
-      (req: GatewayRequest): DispatchResult | undefined => {
-        const hit = matchRoute(req.method, req.path);
+    mountDoorRoutes(ctx, ctx.webServer, ["_h_lanes", "_h_card_tools", "_h_lane_bundle", "_h_skills", "_h_skill_read", "_h_agent_boot", "_h_metrics"], (req: GatewayRequest): DispatchResult | undefined => {
+        const hit = doorMatch(req, ["_h_lanes", "_h_card_tools", "_h_lane_bundle", "_h_skills", "_h_skill_read", "_h_agent_boot", "_h_metrics"]);
         if (hit === null) return undefined;
         const planes: DispatchResult | null = dispatchPlanes(
           hit.row.handler,
@@ -2315,7 +2313,6 @@ export const planesDoors: Plugin = {
         );
         if (planes !== null) return planes;
         return undefined;
-      },
-    );
+    });
   },
 };

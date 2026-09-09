@@ -114,7 +114,7 @@ import {
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
-import { matchRoute } from "@melite/gateway-core";
+import { doorMatch, mountDoorRoutes } from "../routeMount.ts";
 import {
   checkDraftPatch,
   decodeStrictBody,
@@ -1087,11 +1087,10 @@ export function dispatchDrafts(
  *  the context. */
 export const draftsDoors: Plugin = {
   name: "gateway-drafts",
+  inject: ["gatewayError", "webServer"],
   apply(ctx: Context): void {
-    ctx.on(
-      "gateway/request",
-      (req: GatewayRequest): DispatchResult | undefined => {
-        const hit = matchRoute(req.method, req.path);
+    mountDoorRoutes(ctx, ctx.webServer, ["_h_drafts_list", "_h_drafts_save", "_h_drafts_get", "_h_draft_stage_patch", "_h_draft_stage_result"], (req: GatewayRequest): DispatchResult | undefined => {
+        const hit = doorMatch(req, ["_h_drafts_list", "_h_drafts_save", "_h_drafts_get", "_h_draft_stage_patch", "_h_draft_stage_result"]);
         if (hit === null) return undefined;
         const draft: DispatchResult | null = dispatchDrafts(
           hit.row.handler,
@@ -1101,7 +1100,6 @@ export const draftsDoors: Plugin = {
         );
         if (draft !== null) return draft;
         return undefined;
-      },
-    );
+    });
   },
 };

@@ -18,7 +18,7 @@
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
-import { matchRoute } from "@melite/gateway-core";
+import { doorMatch, mountDoorRoutes } from "../routeMount.ts";
 import { CHROME_BODIES } from "./chrome.ts";
 import { toolsJsonLive } from "./toolsEmit.ts";
 
@@ -30,17 +30,11 @@ import { toolsJsonLive } from "./toolsEmit.ts";
  *  Anything else falls through. */
 export const chromeDoors: Plugin = {
   name: "gateway-chrome",
-  inject: ["cardRegistry"],
+  inject: ["gatewayError", "cardRegistry", "webServer"],
   apply(ctx: Context): void {
-    ctx.on(
-      "gateway/request",
-      async (req: GatewayRequest): Promise<DispatchResult | undefined> => {
-        const hit = matchRoute(req.method, req.path);
-        if (
-          hit === null ||
-          (hit.row.handler !== "_h_health" &&
-            hit.row.handler !== "_h_chrome")
-        ) {
+    mountDoorRoutes(ctx, ctx.webServer, ["_h_health", "_h_chrome"], async (req: GatewayRequest): Promise<DispatchResult | undefined> => {
+        const hit = doorMatch(req, ["_h_health", "_h_chrome"]);
+        if (hit === null) {
           return undefined;
         }
         if (hit.row.path === "/v1/tools" || req.path === "/v1/tools") {
@@ -62,7 +56,6 @@ export const chromeDoors: Plugin = {
           };
         }
         return undefined;
-      },
-    );
+    });
   },
 };

@@ -123,7 +123,7 @@ import { resolveRepoRoot } from "./bridges.ts";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
-import { matchRoute } from "@melite/gateway-core";
+import { doorMatch, mountDoorRoutes } from "../routeMount.ts";
 import type { ComfyUIService } from "@melite/comfyui";
 
 /** The settled card-defs service (null until loadCardDefs lands —
@@ -903,14 +903,13 @@ export function dispatchDiscovery(
  *  injected — the door reads nothing through the context. */
 export const discoveryDoors: Plugin = {
   name: "gateway-discovery",
+  inject: ["gatewayError", "webServer"],
   apply(ctx: Context): void {
     // dispatchDiscovery answers discovery rows and returns null for
     // every other handler (its internal handler table) — gating on
     // its answer alone preserves the old arm's fall-through exactly.
-    ctx.on(
-      "gateway/request",
-      (req: GatewayRequest): DispatchResult | undefined => {
-        const hit = matchRoute(req.method, req.path);
+    mountDoorRoutes(ctx, ctx.webServer, DISCOVERY_HANDLERS, (req: GatewayRequest): DispatchResult | undefined => {
+        const hit = doorMatch(req, DISCOVERY_HANDLERS);
         if (hit === null) return undefined;
         const discovered: DispatchResult | null = dispatchDiscovery(
           hit.row.handler,
@@ -924,7 +923,6 @@ export const discoveryDoors: Plugin = {
         // answer alone preserves the old arm's fall-through exactly.
         if (discovered !== null) return discovered;
         return undefined;
-      },
-    );
+    });
   },
 };
