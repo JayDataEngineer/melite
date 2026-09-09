@@ -25,9 +25,7 @@ import * as pkg from "../src/index.ts";
 import { buildImageGenTool, TOOL_NAME } from "../src/tool.ts";
 import { parameterSchemaSpecToJsonSchema } from "@deepseek-ai/dsh-tools";
 import type { ToolDefinition } from "@deepseek-ai/dsh-tools";
-import { identity, schema } from "../src/card.ts";
-
-const BOARDED = ["krea-2", "z-image", "anima"];
+import { identity, schema, BOARDED } from "../src/card.ts";
 
 // ── stub gateway (the external service, mocked) ────────────────────
 let server: Server;
@@ -96,7 +94,7 @@ describe("single spelling (the emission derives from the card)", () => {
     assert.deepEqual(tool.parameters, compiled);
     // The model input, spelled once: enum from the boarded array.
     const props = compiled.properties as Record<string, { enum?: string[] }>;
-    assert.deepEqual(props.model!.enum, BOARDED);
+    assert.deepEqual(props.model!.enum, [...BOARDED]);
     assert.deepEqual(props.recipe!.enum, ["standard", "fast_draft", "cinematic"]);
   });
 

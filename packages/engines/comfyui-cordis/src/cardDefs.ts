@@ -123,6 +123,16 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
       await ctx.plugin(mod)
     }
   }
+  // THE PACKAGED FAMILIES' FLAVORS (the model-package stroke): a
+  // family promoted to its model plugin package
+  // (packages/melite-models/<id>) CARRIES its mods — the flavor
+  // module ships inside the package and composes HERE, same phase
+  // as the walk above (packs first, flavors after; the boot-loud
+  // flavor↔DECL.mods interlock is unchanged on the models side).
+  const kreaLoras = (await import('@melite/melite-models-krea-2/mods/loras')) as unknown as Plugin
+  if (typeof (kreaLoras as { apply?: unknown }).apply === 'function') {
+    await ctx.plugin(kreaLoras)
+  }
   // THE IDENTITY RUNG (card DSL phase 2): attach the frozen ring
   // (the py identity truth — engine-comfyui models/
   // cardIdentity.generated.ts, byte-equal to the golden) onto every

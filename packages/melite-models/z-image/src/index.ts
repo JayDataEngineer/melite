@@ -1,4 +1,4 @@
-// families/image/z-image.ts — the z-image family declaration
+// @melite/melite-models-z-image/src — the z-image family declaration
 // (generated 2026-09-08 from the frozen registry + facts, then
 // hand-owned: this file IS the family's truth — a change here is a
 // family change, nothing else moves).
@@ -7,7 +7,10 @@
 // declaring itself through ctx.models.registerFamily inside
 // ctx.effect — fiber-owned, revertible, transactional at boot.
 import type { Plugin } from "@deepseek-ai/cordis";
-import type { ModelDecl } from "../../contract.ts";
+// the ctx.models augmentation rides the models service module
+// (same seam as ctx.comfyui through ./service):
+import type { ModelsService } from "@comfyui/cordis/models-service";
+import type { ModelDecl } from "@comfyui/cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "z-image",

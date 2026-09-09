@@ -6,6 +6,10 @@ two optional faces, one spelling of everything.
 ## The card
 
 - `src/card.ts` — schema + identity + `registerCard(ctx, comfy)`.
+  `BOARDED` derives from the model plugin DECLs
+  (`@melite/melite-models-{krea-2,z-image,anima}`) — the card gets
+  its models from the MODEL plugins (distinct domain from card
+  plugins); the id is spelled once, in the model.
   The schema is the 1:1 port (frozen field order) PLUS the recipe
   knob, declared last. Compose calls the card-kit recipe
   (`imageT2I`); `finalizeImageGen` strips. LoRAs ride the MOD

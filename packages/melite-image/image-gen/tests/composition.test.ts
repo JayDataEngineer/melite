@@ -12,6 +12,9 @@ import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import { ComfyUIService, loadCardDefs } from "@comfyui/cordis";
 import * as pkg from "../src/index.ts";
+import { DECL as krea2Decl } from "@melite/melite-models-krea-2";
+import { DECL as zImageDecl } from "@melite/melite-models-z-image";
+import { DECL as animaDecl } from "@melite/melite-models-anima";
 import { toolBaseRows } from "../../../../packages/gateway/doors/src/doors/toolProjection.ts";
 
 describe("real composition (the production path)", () => {
@@ -25,6 +28,11 @@ describe("real composition (the production path)", () => {
     assert.ok(def, "the composed package registers its card");
     assert.ok(def.requiresModel !== false, "a MODEL card rides the {model:} demand");
     assert.deepEqual([...def.boarded], ["krea-2", "z-image", "anima"]);
+    // THE CARD GETS ITS MODELS FROM THE MODEL PLUGINS: boarded ids
+    // ARE the DECL ids of packages/melite-models/* (the model
+    // plugins — distinct domain from card plugins — each carrying
+    // variants, quants, HF links, mods; never a restated string).
+    assert.deepEqual([...def.boarded], [krea2Decl.id, zImageDecl.id, animaDecl.id]);
     assert.equal(def.identity?.label, "Image");
   });
 

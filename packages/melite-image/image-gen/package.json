@@ -9,11 +9,14 @@
     "test": "node --experimental-strip-types --test tests/"
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.2",
-    "@deepseek-ai/schemastery": "*",
-    "@deepseek-ai/dsh-tools": "0.1.5-alpha.1",
+    "@comfyui/card-kit": "workspace:*",
     "@comfyui/cordis": "workspace:*",
-    "@comfyui/card-kit": "workspace:*"
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/dsh-tools": "0.1.5-alpha.1",
+    "@deepseek-ai/schemastery": "*",
+    "@melite/melite-models-anima": "workspace:*",
+    "@melite/melite-models-krea-2": "workspace:*",
+    "@melite/melite-models-z-image": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "*"

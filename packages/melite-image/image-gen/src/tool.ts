@@ -23,14 +23,14 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition, ParameterSchemaSpec } from '@deepseek-ai/dsh-tools'
 import { emitParamsSpec } from '@comfyui/cordis/params-emit'
-import { schema, identity } from './card.ts'
+import { schema, identity, BOARDED } from './card.ts'
 
 export const TOOL_NAME = 'image_gen'
 const FLOW = 'image-gen'
 /** The unstated-model resolution (boarded[0] — the same law the
  *  tool row's model field and the walk's synthesized default
  *  ride; one spelling). */
-const DEFAULT_MODEL = 'krea-2'
+const DEFAULT_MODEL: string = BOARDED[0]
 const TIMEOUT_MS = 15e3
 
 /** A gateway JSON error (non-2xx): status + the named body. */
@@ -104,7 +104,7 @@ export const buildImageGenTool = (gatewayUrl: string): ToolDefinition =>
   defineTool({
     name: TOOL_NAME,
     description: identity.description,
-    parameters: emitParamsSpec(schema as never, ['krea-2', 'z-image', 'anima']) as ParameterSchemaSpec,
+    parameters: emitParamsSpec(schema as never, BOARDED) as ParameterSchemaSpec,
     presentCall(args: unknown) {
       const a = (args ?? {}) as Record<string, unknown>
       return {

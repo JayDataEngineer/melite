@@ -77,6 +77,15 @@ importers:
       '@melite/melite-image-image-gen':
         specifier: workspace:*
         version: link:../../melite-image/image-gen
+      '@melite/melite-models-anima':
+        specifier: workspace:*
+        version: link:../../melite-models/anima
+      '@melite/melite-models-krea-2':
+        specifier: workspace:*
+        version: link:../../melite-models/krea-2
+      '@melite/melite-models-z-image':
+        specifier: workspace:*
+        version: link:../../melite-models/z-image
       '@melite/ui':
         specifier: workspace:*
         version: link:../../web-kit/ui
@@ -518,6 +527,54 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
+      '@melite/melite-models-anima':
+        specifier: workspace:*
+        version: link:../../melite-models/anima
+      '@melite/melite-models-krea-2':
+        specifier: workspace:*
+        version: link:../../melite-models/krea-2
+      '@melite/melite-models-z-image':
+        specifier: workspace:*
+        version: link:../../melite-models/z-image
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/anima:
+    dependencies:
+      '@comfyui/cordis':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/krea-2:
+    dependencies:
+      '@comfyui/cordis':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/z-image:
+    dependencies:
+      '@comfyui/cordis':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
     devDependencies:
       '@types/node':
         specifier: '*'

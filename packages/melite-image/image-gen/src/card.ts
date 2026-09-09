@@ -11,7 +11,19 @@ import z from '@deepseek-ai/schemastery'
 import { imageT2I, finalizeImageGen } from '@comfyui/card-kit'
 import { SAMPLERS, SCHEDULERS } from '@comfyui/card-kit/vocab'
 import type { ComfyUIService } from '@comfyui/cordis/service'
+import { DECL as krea2Decl } from '@melite/melite-models-krea-2'
+import { DECL as zImageDecl } from '@melite/melite-models-z-image'
+import { DECL as animaDecl } from '@melite/melite-models-anima'
 import { RECIPES, RECIPE_KEYS, DEFAULT_RECIPE } from './recipes.ts'
+
+/** The card's boarding — where the card gets its models: THE AI
+ *  MODELS' own plugin declarations (packages/melite-models/*), each
+ *  carrying its whole truth — variants, quant cells, HF artifact
+ *  links, mods, lane inputs. The id is spelled once, in the model
+ *  plugin; a rename breaks at tsc, never silently at the
+ *  not-boarded refusal. The model-knob enum, the tool default, and
+ *  the registry row all derive from this array. */
+export const BOARDED = [krea2Decl.id, zImageDecl.id, animaDecl.id] as const
 
 export const schema = z.object({
   // CARD-OWNED SURFACE (the 1:1 port, 2026-09-08): declaration
@@ -49,7 +61,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
   ctx.effect(() => comfy.registerCard({
     id: 'image-gen',
     skeleton: 'generate',
-    boarded: ['krea-2', 'z-image', 'anima'],
+    boarded: [...BOARDED],
     recipes: RECIPES,
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g, runId) {

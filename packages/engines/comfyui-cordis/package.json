@@ -13,7 +13,9 @@
     "./cli": "./src/cli.ts",
     "./catalog-registry": "./src/entries/catalog-registry.ts",
     "./comfyui-host": "./src/entries/comfyui-host.ts",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./model-contract": "./src/models/families/contract.ts",
+    "./models-service": "./src/models/service.ts"
   },
   "scripts": {
     "compose": "node --experimental-strip-types src/cli.ts",
@@ -30,6 +32,9 @@
     "@melite/formats": "workspace:*",
     "@melite/melite-3d-clothing-placement": "workspace:*",
     "@melite/melite-image-image-gen": "workspace:*",
+    "@melite/melite-models-anima": "workspace:*",
+    "@melite/melite-models-krea-2": "workspace:*",
+    "@melite/melite-models-z-image": "workspace:*",
     "@melite/ui": "workspace:*",
     "lucide-react": "*",
     "react": "*"

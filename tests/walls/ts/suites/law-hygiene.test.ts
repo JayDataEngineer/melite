@@ -33,7 +33,7 @@
 // (or the whole plane: node tests/walls/ts/run.mjs)
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { REPO_ROOT } from "../helpers/boot.ts";
 import { stripComments } from "../helpers/scan.ts";
@@ -181,6 +181,10 @@ describe("declaration conformance (the z-image verdict, 2026-09-08)", () => {
   // (tsc is the gate), and this wall pins the file text: no cast,
   // no dead keys, tree-wide across all 48 families.
   const FAM_ROOT = join(REPO_ROOT, "packages", "engines", "comfyui-cordis", "src", "models", "families");
+  // THE MODEL PLUGIN PACKAGES (the model-package stroke): families
+  // promoted to packages/melite-models/<id> carry their DECL there —
+  // the annotation is the membership test, the domain is not.
+  const MODEL_PKG_ROOT = join(REPO_ROOT, "packages", "melite-models");
   const DEAD: RegExp[] = [
     /"mods": \[\]/,
     /"provisions": \[\]/,
@@ -218,7 +222,13 @@ describe("declaration conformance (the z-image verdict, 2026-09-08)", () => {
     // the families/index.ts barrel declares no DECL — every
     // DECL file is `: ModelDecl`-annotated (tsc-gated), so the
     // annotation itself is the membership test, not the path.
-    const files = famFiles(FAM_ROOT).filter((f) => /export const DECL: ModelDecl/.test(readFileSync(f, "utf-8")));
+    let files = famFiles(FAM_ROOT).filter((f) => /export const DECL: ModelDecl/.test(readFileSync(f, "utf-8")));
+    if (existsSync(MODEL_PKG_ROOT)) {
+      for (const pkg of readdirSync(MODEL_PKG_ROOT)) {
+        const pkgSrc = join(MODEL_PKG_ROOT, pkg, "src");
+        if (existsSync(pkgSrc)) files = files.concat(famFiles(pkgSrc));
+      }
+    }
     assert.ok(files.length === 48, `expected 48 family declarations, got ${files.length}`);
     for (const file of files) {
       const text: string = readFileSync(file, "utf-8");
