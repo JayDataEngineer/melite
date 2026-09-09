@@ -1,47 +1,61 @@
 /**
- * The melite_flow toolview — THE ACTION CARDS, the real surface.
+ * The melite_flow toolview — THE ACTION CARDS, rendered NATIVE in the
+ * DSH React tree (2026-09-10 Phase 1: the iframe died).
  *
- * Keyed into the shipped `tool.call.toolview` seat for the wire tool name
- * `melite_flow` (succession: the build_flow seat — same iframe, same
- * parse rule, the render just speaks the unified verb now). NOT a form,
- * NOT a summary row: an iframe mounting the editor's AgentCardsEmbed
- * (/editor/?meliteCards=<draftId>) — InlineFlowCards, the SAME
- * FlowTileGrid the Library canvas renders (ONE card design, 1:1). The
- * user reviews the tiles, edits in the zoom drilldown, and presses Run
- * ON THE CARD — the run door is executeStage inside the embedded
- * surface, a user gesture. The model executed the queue run; the card
- * is the review surface for the draft it rode in on.
+ * Keyed into the shipped `tool.call.toolview` seat for the wire tool
+ * name `melite_flow`. NOT an iframe, NOT a bridge: the cards are React
+ * components IN the host document —
+ *   (a) THEME — inherited. The cards sit in DSH's tree, so every
+ *       --dsw-alias-* token applies directly; the embed-bridge token
+ *       copy is gone with the frame (the deck canvas keeps its own
+ *       until Phase 2).
+ *   (b) HEIGHT — gone as a problem. In-tree flow lays out natively;
+ *       no polling, no scrollHeight reads.
+ *   (c) DRILLDOWN — the ui-primitives Modal (body portal, Escape/
+ *       mask close, aria-modal): the split detail — params left,
+ *       outputs right — per the operator's directive 2026-09-10
+ *       ("our cards go inside the dsh modal for the split drill
+ *       down and drill up"). No zoom-promotion machine; DSH's own
+ *       overlay machinery is the only layer.
  *
- * SEAMLESS IN CHAT (2026-08-22 operator verdict "window in window"):
- *   (a) THEME — startEmbedBridge (the card-deck plugin's ONE bridge, same
- *       source the Library canvas uses) copies DSH's --dsw-alias-* tokens
- *       into the frame. No custom colors anywhere; Skin Center re-skins
- *       both surfaces live.
- *   (b) AUTO-HEIGHT — the frame fits its content (polled), borderless,
- *       scrollbars off: the cards read as LISTED IN THE CHAT, Run all on
- *       top, not a boxed window.
- *   (c) FULLSCREEN DRILLDOWN — when the card zoom overlay mounts inside
- *       the frame ([data-card-zoom-overlay]), the frame itself is
- *       promoted to a fixed full-viewport overlay for its lifetime, so
- *       the drilldown is a REAL fullscreen modal, not a modal trapped in
- *       the tool output box.
+ * The wire is the editor's wire, same-origin via the card-deck host's
+ * /v1 proxy (draft.ts owns every fetch). The user reviews the rows,
+ * edits params in the drilldown, and presses Run ON THE CARD — the run
+ * door (POST /v1/flows/start) is a user gesture, never the model's.
+ *
+ * WATERFALL LEDGER (operator law 2026-09-10: ride DSH 1:1 → minimize
+ * our code → DOCUMENT what can't be ridden; each entry is for review):
+ *   (a-1) RIDEN 1:1 — Button, Input, Pill, StateDot, Modal from the
+ *         INSTALLED @deepseek-ai/dsh-client-ui-primitives rc.8 (Pill
+ *         replaced hand-rolled capsule badges; Modal replaced the zoom
+ *         machine). The css module is LAYOUT ONLY, every color an
+ *         inherited --dsw-alias-* token — the ui-model-selection idiom.
+ *   (c-4) rc.8 SURFACE GAP: the reference catalog also ships Tag and
+ *         Switch; installed rc.8 does NOT. Pill is the shipped capsule
+ *         for both (static span, no onClick = read-only badge; with
+ *         onClick = the boolean toggle). REVIEW at the next rc bump:
+ *         swap to Tag/Switch when installed.
+ *   (c-1) NO ATOM: the card ROW (a list row that opens a Modal).
+ *         DisclosureRow is inline expansion — a different interaction;
+ *         no shipped atom covers row→modal. Hand-rolled, layout-only.
+ *   (c-2) NO HOOK: the run-status POLL loop (useDraft). No shipped
+ *         interval/poll hook exists in client/*; useEffect +
+ *         clearInterval, terminal-state stop, refresh-on-finish.
+ *   (c-3) NO CLIENT: the draft/run door layer (draft.ts). No DSH
+ *         package serves the melite gateway's flows doors; fetch-
+ *         injected thin client over the editor's own wire shapes.
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import css from './card.module.css'
-import { createZoomPromotion, PREVIEW_DIALOG_SELECTOR, ZOOM_OVERLAY_SELECTOR } from './zoomPromotion.ts'
+import { Button, Input, Modal, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ToolCallBlockView } from './types.ts'
-// ONE bridge, ONE theme map — the card-deck plugin's embed-bridge source
-// (dependency-free; tsdown bundles it here). The Library sidebar canvas
-// and this chat toolview re-skin from the SAME code.
-import { startEmbedBridge, type EmbedHandle } from '../../../melite-card-deck/src/client/embed-bridge.ts'
+import {
+  cardRows, coerceEdit, editPatch, fetchDraft, paramFields, patchStageParams, runFinished, runStatus, startDraft,
+} from './draft.ts'
+import type { CardRow, DraftDoc, EditMap, ParamField, RunStatusDoc } from './draft.ts'
 
-/** Same-origin editor mount (the deck's host half serves the built dist + proxies /v1). */
-const EDITOR_CARDS = '/editor/?meliteCards='
-
-/** Height-fit poll: results loading, toasts, cards added — all change the
- * document height without resizing the frame. Cheap (one scrollHeight
- * read), same-origin. */
-const FIT_INTERVAL_MS = 500
+/** Run-status poll cadence (the editor's door, cheap gateway-local read). */
+const POLL_MS = 1500
 
 export interface FlowCardsProps {
   block: ToolCallBlockView
@@ -99,49 +113,165 @@ export function parseCardsBlock(block: ToolCallBlockView): {
   return { draftId, model, settled, isError: block.isError === true }
 }
 
-/** Wire the mounted frame: theme bridge + auto-height + fullscreen zoom. */
-function useSeamlessFrame(draftId: string | null): React.RefObject<HTMLIFrameElement> {
-  const frameRef = useRef<HTMLIFrameElement>(null)
-  useEffect(() => {
-    const frame = frameRef.current
-    if (frame === null || draftId === null) return
-    let bridge: EmbedHandle | null = null
+/** Draft doc + live run status, fetched and polled (all doors in draft.ts). */
+function useDraft(draftId: string | null): {
+  doc: DraftDoc | null
+  live: RunStatusDoc | null
+  error: string | null
+  refresh: () => void
+} {
+  const [doc, setDoc] = useState<DraftDoc | null>(null)
+  const [live, setLive] = useState<RunStatusDoc | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [tick, setTick] = useState(0)
+  const pollRef = useRef<number | null>(null)
 
-    // Fit + ZOOM PROMOTION live in zoomPromotion.ts — a PURE state machine
-    // with injected timers/observer, unit-tested against every shipped
-    // failure mode (stuck slab after a document swap or a reload; dead
-    // detection). This effect keeps only the DSH-specific wiring: the theme
-    // bridge hook and the cleanup.
-    const promotion = createZoomPromotion(frame, {
-      intervalMs: FIT_INTERVAL_MS,
-      setInterval: (fn, ms) => window.setInterval(fn, ms),
-      clearInterval: (id) => window.clearInterval(id),
-      MutationObserverCtor: window.MutationObserver,
-      // BOTH app-global layers promote: the drilldown overlay (the shipped
-      // contract) and the asset lightbox — a future path opening the
-      // lightbox WITHOUT the zoom must not strand it in the tool-output
-      // box with the DSH chrome lit around it (the deck's 2026-08-25 bug,
-      // pre-empted here).
-      overlaySelectors: [ZOOM_OVERLAY_SELECTOR, PREVIEW_DIALOG_SELECTOR],
-      onDocReady: () => {
-        bridge?.stop()
-        bridge = startEmbedBridge(frame)
-      },
-    })
-    promotion.attach()
-    return () => {
-      promotion.detach()
-      bridge?.stop()
+  const refresh = useCallback(() => { setTick((t) => t + 1) }, [])
+
+  // Hydrate the doc (one GET per draftId or manual refresh; never a storm).
+  useEffect(() => {
+    if (draftId === null) return
+    let alive = true
+    setDoc(null)
+    setLive(null)
+    setError(null)
+    fetchDraft(fetch, draftId)
+      .then((d) => { if (alive) setDoc(d) })
+      .catch((e: unknown) => { if (alive) setError(e instanceof Error ? e.message : 'draft hydration failed') })
+    return () => { alive = false }
+  }, [draftId, tick])
+
+  // Poll the live run while one is unfinished (startDraft arms runId).
+  const runId = live?.run_id ?? null
+  useEffect(() => {
+    if (runId === null) return
+    let alive = true
+    const step = (): void => {
+      runStatus(fetch, runId)
+        .then((s) => {
+          if (!alive) return
+          setLive(s)
+          if (runFinished(s.status)) {
+            if (pollRef.current !== null) window.clearInterval(pollRef.current)
+            pollRef.current = null
+            // the gateway stamps a fresh createdAt on write-back; refetch
+            setTick((t) => t + 1)
+          }
+        })
+        .catch(() => { /* transient poll failure: keep the interval */ })
     }
-  }, [draftId])
-  return frameRef
+    step()
+    pollRef.current = window.setInterval(step, POLL_MS)
+    return () => {
+      alive = false
+      if (pollRef.current !== null) window.clearInterval(pollRef.current)
+      pollRef.current = null
+    }
+  }, [runId])
+
+  return { doc, live, error, refresh }
 }
 
-/** One melite_flow call as the REAL action cards (embedded editor surface). */
+/** The chat-listed card row: kind tag, title, service, status dot, prompt. */
+function CardRowLine({ row, onOpen }: { row: CardRow; onOpen: () => void }) {
+  // installed StateDot union: done | warning | ongoing | error — a
+  // READY card (never run) shows no dot at all, not a fake state.
+  const dot: Record<CardRow['status'], 'done' | 'ongoing' | 'error' | 'warning' | null> = {
+    queued: 'warning', running: 'ongoing', done: 'done', failed: 'error', ready: null,
+  }
+  return (
+    <button type="button" className={css.row} onClick={onOpen} data-stage={row.stageId} data-status={row.status}>
+      {row.thumbUrl !== null
+        ? <img className={css.thumb} src={row.thumbUrl} alt={row.title} loading="lazy" />
+        : <Pill>{row.kind}</Pill>}
+      <span className={css.rowTitle}>{row.title}</span>
+      {row.service !== null && <Pill>{row.service}</Pill>}
+      {dot[row.status] !== null && <StateDot state={dot[row.status] as 'done' | 'ongoing' | 'error' | 'warning'} />}
+      {row.prompt !== null && <span className={css.prompt}>{row.prompt}</span>}
+    </button>
+  )
+}
+
+/** The drilldown — DSH's Modal, split: params (left) / outputs + Run (right). */
+function CardDrilldown({ draftId, row, stage, onClose }: {
+  draftId: string
+  row: CardRow
+  stage: ParamField[]
+  onClose: () => void
+}) {
+  const [edits, setEdits] = useState<EditMap>(new Map())
+  const [running, setRunning] = useState(false)
+  const [runError, setRunError] = useState<string | null>(null)
+  // The row's own live thumb (the parent polls; the modal reads it fresh).
+  const patch = useMemo(() => editPatch(stage, edits), [stage, edits])
+
+  const run = useCallback(async () => {
+    setRunning(true)
+    setRunError(null)
+    try {
+      // Param edits first (the editor's door), then the run — the card
+      // runs what the user SEES. A patch failure names itself and stops
+      // the run from firing on stale params.
+      if (patch !== null) await patchStageParams(fetch, draftId, row.stageId, patch)
+      await startDraft(fetch, draftId)
+      onClose()
+    } catch (e) {
+      setRunError(e instanceof Error ? e.message : 'run failed')
+      setRunning(false)
+    }
+  }, [draftId, patch, row, onClose])
+
+  return (
+    <Modal open onClose={onClose} title={'Card ' + row.title} closeLabel="Close card" className={css.drill}>
+      <div className={css.split}>
+        <div className={css.params}>
+          {stage.map((f) => (
+            <label key={f.key} className={css.field}>
+              <span className={css.fieldKey}>{f.key}</span>
+              {f.atom === 'switch'
+                ? (
+                  <Pill
+                    active={typeof f.value === 'boolean' ? ((edits.get(f.key) ?? f.value) as boolean) : false}
+                    onClick={() => {
+                      const current = typeof f.value === 'boolean' ? ((edits.get(f.key) ?? f.value) as boolean) : false
+                      setEdits((m) => new Map(m).set(f.key, !current))
+                    }}
+                  >
+                    {typeof f.value === 'boolean' ? ((edits.get(f.key) ?? f.value) as boolean) ? 'on' : 'off' : '?'}
+                  </Pill>
+                )
+                : (
+                  <Input
+                    value={String(edits.get(f.key) ?? f.value)}
+                    onChange={(e) => {
+                      // RAW string while typing (decimal dots survive);
+                      // editPatch coerces once, at patch time.
+                      setEdits((m) => new Map(m).set(f.key, (e.target as HTMLInputElement).value))
+                    }}
+                  />
+                )}
+            </label>
+          ))}
+        </div>
+        <div className={css.outputs}>
+          {row.thumbUrl !== null && <img className={css.outputImg} src={row.thumbUrl} alt={row.title} />}
+          <div className={css.runRow}>
+            {runError !== null && <span className={css.runError}>{runError}</span>}
+            <Button variant="primary" disabled={running} onClick={() => { void run() }}>
+              {running ? 'running…' : 'Run'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+/** One melite_flow call as the REAL action cards (native React, in-tree). */
 export function FlowCards({ block }: FlowCardsProps) {
   const parsed = useMemo(() => parseCardsBlock(block), [block])
-  const [frameUp, setFrameUp] = useState(false)
-  const frameRef = useSeamlessFrame(parsed.draftId)
+  const { doc, live, error, refresh } = useDraft(parsed.draftId)
+  const [openStage, setOpenStage] = useState<string | null>(null)
 
   // A settled, successful call whose result predates the draft contract
   // (render text without a draft token) is a LEGACY block — it can never
@@ -152,7 +282,7 @@ export function FlowCards({ block }: FlowCardsProps) {
     return (
       <div className={css.card} data-dsh-part="melite-flow-card" data-legacy="1">
         <div className={css.head}>
-          <span className={css.badge}>melite</span>
+          <Pill>melite</Pill>
           <span className={css.model}>{parsed.model ?? 'flow'}</span>
           <span className={css.state} data-state="legacy">cards · earlier draft</span>
         </div>
@@ -160,23 +290,37 @@ export function FlowCards({ block }: FlowCardsProps) {
     )
   }
 
+  if (parsed.draftId === null) {
+    return (
+      <div className={css.card} data-dsh-part="melite-flow-card">
+        <div className={css.load}>{parsed.isError ? 'draft failed' : 'composing…'}</div>
+      </div>
+    )
+  }
+
+  const rows = doc !== null ? cardRows(doc, live) : []
+  const openRow = rows.find((r) => r.stageId === openStage) ?? null
+  const openParams = doc?.stages.find((s) => s.id === openStage)?.params ?? {}
+
   return (
-    <div className={css.card} data-dsh-part="melite-flow-card" data-draft-id={parsed.draftId ?? ''}>
-      {parsed.draftId !== null
-        ? (
-          <>
-            {frameUp ? null : <div className={css.load}>cards…</div>}
-            <iframe
-              ref={frameRef}
-              className={css.frame}
-              src={EDITOR_CARDS + encodeURIComponent(parsed.draftId)}
-              title={'Melite action cards ' + parsed.draftId}
-              scrolling="no"
-              onLoad={() => { setFrameUp(true) }}
-            />
-          </>
-        )
-        : <div className={css.load}>{parsed.isError ? 'draft failed' : 'composing…'}</div>}
+    <div className={css.card} data-dsh-part="melite-flow-card" data-draft-id={parsed.draftId}>
+      <div className={css.head}>
+        <span className={css.badge}>melite</span>
+        <span className={css.model}>{doc?.intent ?? parsed.model ?? 'flow'}</span>
+        {error !== null && <span className={css.state} data-state="error" role="button" tabIndex={0} onClick={refresh} onKeyDown={refresh}>{error} · retry</span>}
+      </div>
+      {doc === null && error === null && <div className={css.load}>cards…</div>}
+      {rows.map((row) => (
+        <CardRowLine key={row.stageId} row={row} onOpen={() => { setOpenStage(row.stageId) }} />
+      ))}
+      {openRow !== null && (
+        <CardDrilldown
+          draftId={parsed.draftId}
+          row={openRow}
+          stage={paramFields(openParams)}
+          onClose={() => { setOpenStage(null); refresh() }}
+        />
+      )}
     </div>
   )
 }
