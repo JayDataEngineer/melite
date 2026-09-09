@@ -38,9 +38,14 @@
  *   (c-1) NO ATOM: the card ROW (a list row that opens a Modal).
  *         DisclosureRow is inline expansion — a different interaction;
  *         no shipped atom covers row→modal. Hand-rolled, layout-only.
- *   (c-2) NO HOOK: the run-status POLL loop (useDraft). No shipped
- *         interval/poll hook exists in client/*; useEffect +
- *         clearInterval, terminal-state stop, refresh-on-finish.
+ *   (a-2) RIDEN 1:1 — the run-status STREAM: @melite/catalog's
+ *         streamFlowEvents (the gateway's /v1/flows/events WS door,
+ *         query form — the proxy-exact path, live bug 2026-09-04) folds
+ *         idempotent stage frames positionally by INDEX (the estate
+ *         mapping law); the poll stays TERMINAL AUTHORITY and the
+ *         stream silently degrades to it — the FlowEvents contract,
+ *         verbatim. (Supersedes the poll-only c-2 entry: the operator
+ *         flagged it 2026-09-10 — "they do webhooks for us.")
  *   (c-3) NO CLIENT: the draft/run door layer (draft.ts). No DSH
  *         package serves the melite gateway's flows doors; fetch-
  *         injected thin client over the editor's own wire shapes.
@@ -49,8 +54,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import css from './card.module.css'
 import { Button, Input, Modal, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ToolCallBlockView } from './types.ts'
+import { streamFlowEvents } from '@melite/catalog/FlowEvents'
 import {
-  cardRows, coerceEdit, editPatch, fetchDraft, paramFields, patchStageParams, runFinished, runStatus, startDraft,
+  cardRows, coerceEdit, editPatch, fetchDraft, foldFrame, paramFields, patchStageParams, runFinished, runStatus, startDraft,
 } from './draft.ts'
 import type { CardRow, DraftDoc, EditMap, ParamField, RunStatusDoc } from './draft.ts'
 
@@ -141,8 +147,24 @@ function useDraft(draftId: string | null): {
     return () => { alive = false }
   }, [draftId, tick])
 
-  // Poll the live run while one is unfinished (startDraft arms runId).
+  // THE LIVE RUN — the estate contract (@melite/catalog FlowEvents.ts
+  // 2026-09-02): the WS door carries intra-tick frames the moment they
+  // happen; the poll below stays the TERMINAL AUTHORITY (a dropped
+  // socket never loses a run — the stream silently degrades, exactly
+  // as the editor's fold does).
   const runId = live?.run_id ?? null
+  useEffect(() => {
+    if (runId === null) return
+    const ac = new AbortController()
+    const handle = streamFlowEvents(runId, (frame) => {
+      setLive((prev) => foldFrame(prev, runId, frame))
+    }, { signal: ac.signal })
+    return () => { handle.close(); ac.abort() }
+  }, [runId])
+
+  // The poll — terminal authority, stops on a terminal status (stream
+  // or poll, whichever sees it first), then refreshes the draft doc
+  // (the gateway stamps a fresh createdAt on write-back).
   useEffect(() => {
     if (runId === null) return
     let alive = true

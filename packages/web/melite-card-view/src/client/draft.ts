@@ -50,6 +50,10 @@ export interface RunStatusDoc {
   stages?: RunStageStatus[]
 }
 
+/** The events-bus frame — @melite/catalog's FlowEventFrame, verbatim. */
+import type { FlowEventFrame } from '@melite/catalog/FlowEvents'
+export type { FlowEventFrame }
+
 /** The fetch shape the component injects (window.fetch compatible). */
 export type DraftFetch = (path: string, init?: RequestInit) => Promise<Response>
 
@@ -111,9 +115,11 @@ export async function runStatus(fetchImpl: DraftFetch, runId: string): Promise<R
   return doc as unknown as RunStatusDoc
 }
 
-/** The terminal states (polling stops; the tile settles). */
+/** The terminal set — @melite/catalog FlowEvents' TERMINAL, verbatim
+ * (the poll's stop condition must match the stream's, or a dropped
+ * socket polls forever / an unknown run stops early). */
 export function runFinished(status: string): boolean {
-  return status === 'completed' || status === 'failed' || status === 'error' || status === 'stopped'
+  return status === 'completed' || status === 'failed' || status === 'stopped' || status === 'unknown'
 }
 
 /** One card row in the chat tile: the stage distilled for listing. */
@@ -138,10 +144,13 @@ function rowStatus(live: string | undefined, doc: string | undefined): CardRow['
 
 /** Distill the draft (+ optional live run status) into card rows. */
 export function cardRows(doc: DraftDoc, live?: RunStatusDoc | null): CardRow[] {
-  const liveStages = new Map<string, RunStageStatus>()
-  if (live?.stages) for (const s of live.stages) liveStages.set(s.id, s)
-  return doc.stages.map((stage) => {
-    const runStage = liveStages.get(stage.id)
+  // POSITIONAL match (the estate law, flowExecuteSlice: "a stage frame
+  // patches onto the stage whose INDEX matches") — the bus and the
+  // status door both carry flow order, and run stage ids never equal
+  // draft stage ids ('generate' vs 's_0').
+  const liveStages = live?.stages ?? []
+  return doc.stages.map((stage, index) => {
+    const runStage = liveStages[index]
     const params = stage.params ?? {}
     const prompt = typeof params['prompt'] === 'string' && params['prompt'] !== ''
       ? (params['prompt'] as string).slice(0, 96)
@@ -156,6 +165,26 @@ export function cardRows(doc: DraftDoc, live?: RunStatusDoc | null): CardRow[] {
       thumbUrl: typeof runStage?.url === 'string' && runStage.url !== '' ? runStage.url : null,
     }
   })
+}
+
+/** Fold one events-bus frame onto the live status doc — the idempotent
+ *  patch (FlowEvents.ts contract: "every frame is an idempotent patch
+ *  onto the same store the poll writes"). Stage frames patch
+ *  positionally by index; terminal run frames set the run status. */
+export function foldFrame(prev: RunStatusDoc | null, runId: string, frame: FlowEventFrame): RunStatusDoc {
+  if (frame.type === 'stage') {
+    const i = typeof frame.index === 'number' ? frame.index : -1
+    if (i < 0) return prev ?? { run_id: runId, status: 'running', stages: [] }
+    const stages = [...(prev?.stages ?? [])]
+    const cur = stages[i] ?? { id: String(i), status: 'running' }
+    stages[i] = {
+      id: cur.id,
+      status: typeof frame.status === 'string' && frame.status !== '' ? frame.status : cur.status,
+      url: cur.url,
+    }
+    return { run_id: runId, status: prev?.status ?? 'running', stages }
+  }
+  return { run_id: runId, status: String(frame.status), stages: prev?.stages ?? [] }
 }
 
 /** One editable param field (the form model — v1 atoms bind these). */

@@ -18,6 +18,7 @@
     "./comfyEvents": "./src/comfyEvents.ts",
     "./enhance": "./src/enhance.ts",
     "./familyParamContract": "./src/familyParamContract.ts",
+    "./FlowEvents": "./src/FlowEvents.ts",
     "./familyProvenance": "./src/familyProvenance.ts",
     "./inputSlots": "./src/inputSlots.ts",
     "./modelCatalog": "./src/modelCatalog.ts",

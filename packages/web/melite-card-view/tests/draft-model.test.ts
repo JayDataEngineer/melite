@@ -6,7 +6,7 @@
 // (named refusal propagation, malformed-doc refusal).
 import { describe, expect, test } from "bun:test";
 import {
-  cardRows, coerceEdit, editPatch, fetchDraft, paramFields, runFinished,
+  cardRows, coerceEdit, editPatch, fetchDraft, foldFrame, paramFields, runFinished,
 } from "../src/client/draft.ts";
 import type { DraftDoc, RunStatusDoc } from "../src/client/draft.ts";
 
@@ -34,14 +34,14 @@ describe("cardRows — status precedence and distillation", () => {
     expect(rows[0].service).toBe("krea-2");
   });
 
-  test("live run wins per stage; thumb rides the artifact url", () => {
+  test("live run wins POSITIONALLY (run ids never equal draft ids)", () => {
     const live: RunStatusDoc = {
       run_id: "r1", status: "running",
-      stages: [{ id: "s_0", status: "completed", url: "/v1/assets/runs/r1/s_0/out.png" }],
+      stages: [{ id: "generate", status: "completed", url: "/v1/assets/runs/r1/generate/out.png" }],
     };
     const rows = cardRows(DOC, live);
     expect(rows[0].status).toBe("done");
-    expect(rows[0].thumbUrl).toBe("/v1/assets/runs/r1/s_0/out.png");
+    expect(rows[0].thumbUrl).toBe("/v1/assets/runs/r1/generate/out.png");
     expect(rows[1].status).toBe("done"); // draft status holds when run has no row yet
   });
 
@@ -74,6 +74,26 @@ describe("paramFields + editPatch — the form model", () => {
   });
 });
 
+describe("foldFrame — the events-bus idempotent patch", () => {
+  test("stage frames patch positionally by index, never by id", () => {
+    const first = foldFrame(null, "r1", { type: "stage", stage: "generate", index: 0, status: "running" });
+    expect(first.stages[0]).toEqual({ id: "0", status: "running", url: undefined });
+    const second = foldFrame(first, "r1", { type: "stage", stage: "generate", index: 0, status: "completed" });
+    expect(second.stages[0].status).toBe("completed");
+    // a frame WITHOUT status keeps the current one (idempotent patch)
+    const third = foldFrame(second, "r1", { type: "stage", stage: "generate", index: 0 });
+    expect(third.stages[0].status).toBe("completed");
+  });
+
+  test("frame without index patches nothing; run frames set the run status", () => {
+    const base = foldFrame(null, "r1", { type: "stage", stage: "x", status: "running" });
+    expect(base.stages).toEqual([]);
+    const run = foldFrame(base, "r1", { type: "run", status: "completed" });
+    expect(run.status).toBe("completed");
+    expect(run.stages).toEqual([]);
+  });
+});
+
 describe("door narrowing — named refusals, malformed docs", () => {
   test("fetchDraft propagates the door's named error", async () => {
     const stub = async () => res(400, { error: "no_such_draft" });
@@ -85,8 +105,8 @@ describe("door narrowing — named refusals, malformed docs", () => {
     expect((await fetchDraft(stub, "d").catch((e: Error) => e.message))).toBe("draft GET: not a draft doc");
   });
 
-  test("runFinished pins the terminal set", () => {
-    for (const s of ["completed", "failed", "error", "stopped"]) expect(runFinished(s)).toBe(true);
-    for (const s of ["running", "queued"]) expect(runFinished(s)).toBe(false);
+  test("runFinished pins the estate TERMINAL set (FlowEvents, verbatim)", () => {
+    for (const s of ["completed", "failed", "stopped", "unknown"]) expect(runFinished(s)).toBe(true);
+    for (const s of ["running", "queued", "error"]) expect(runFinished(s)).toBe(false);
   });
 });

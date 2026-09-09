@@ -51,6 +51,87 @@ window.__ModuleLoader__.load({
 			"thumb": "vYZV7a_thumb"
 		};
 		//#endregion
+		//#region ../../web-kit/catalog/src/FlowEvents.ts
+		const TERMINAL = /* @__PURE__ */ new Set([
+			"completed",
+			"failed",
+			"stopped",
+			"unknown"
+		]);
+		const BACKOFF_BASE_MS = 500;
+		const BACKOFF_CAP_MS = 5e3;
+		/**
+		* Open the events stream for one run. Returns immediately; frames land
+		* in `onEvent`. Auto-reconnects with capped backoff until a terminal
+		* `run` frame, an explicit close, or `signal` aborts.
+		*/
+		function streamFlowEvents(runId, onEvent, opts = {}) {
+			let ws = null;
+			let terminal = false;
+			let closed = false;
+			let attempt = 0;
+			let timer = null;
+			const cleanup = () => {
+				if (timer) clearTimeout(timer);
+				timer = null;
+				if (ws) {
+					ws.onmessage = null;
+					ws.onclose = null;
+					ws.onerror = null;
+					try {
+						ws.close();
+					} catch {}
+					ws = null;
+				}
+			};
+			const finish = () => {
+				terminal = true;
+				cleanup();
+			};
+			const connect = () => {
+				if (closed || terminal) return;
+				if (typeof WebSocket === "undefined") return;
+				const proto = typeof location !== "undefined" && location.protocol === "https:" ? "wss" : "ws";
+				const host = typeof location !== "undefined" ? location.host : "";
+				try {
+					ws = new WebSocket(`${proto}://${host}/v1/flows/events?run_id=${encodeURIComponent(runId)}`);
+				} catch {
+					return;
+				}
+				ws.onmessage = (ev) => {
+					if (closed || terminal) return;
+					attempt = 0;
+					let frame = null;
+					try {
+						frame = JSON.parse(String(ev.data));
+					} catch {
+						return;
+					}
+					if (!frame || typeof frame !== "object" || typeof frame.type !== "string") return;
+					onEvent(frame);
+					if (frame.type === "run" && TERMINAL.has(String(frame.status))) finish();
+				};
+				ws.onclose = () => {
+					if (closed || terminal) return;
+					const wait = Math.min(BACKOFF_CAP_MS, BACKOFF_BASE_MS * 2 ** attempt++);
+					timer = setTimeout(connect, wait);
+				};
+				ws.onerror = () => {};
+			};
+			connect();
+			if (opts.signal) opts.signal.addEventListener("abort", () => {
+				closed = true;
+				cleanup();
+			}, { once: true });
+			return {
+				close: () => {
+					closed = true;
+					cleanup();
+				},
+				done: () => terminal
+			};
+		}
+		//#endregion
 		//#region src/client/draft.ts
 		function jsonBody(res, what) {
 			return res.json().catch(() => {
@@ -101,9 +182,11 @@ window.__ModuleLoader__.load({
 			if (!res.ok || typeof doc["status"] !== "string") throw new Error(`run status failed: HTTP ${res.status}`);
 			return doc;
 		}
-		/** The terminal states (polling stops; the tile settles). */
+		/** The terminal set — @melite/catalog FlowEvents' TERMINAL, verbatim
+		* (the poll's stop condition must match the stream's, or a dropped
+		* socket polls forever / an unknown run stops early). */
 		function runFinished(status) {
-			return status === "completed" || status === "failed" || status === "error" || status === "stopped";
+			return status === "completed" || status === "failed" || status === "stopped" || status === "unknown";
 		}
 		function rowStatus(live, doc) {
 			const s = live ?? doc ?? "ready";
@@ -114,10 +197,9 @@ window.__ModuleLoader__.load({
 		}
 		/** Distill the draft (+ optional live run status) into card rows. */
 		function cardRows(doc, live) {
-			const liveStages = /* @__PURE__ */ new Map();
-			if (live?.stages) for (const s of live.stages) liveStages.set(s.id, s);
-			return doc.stages.map((stage) => {
-				const runStage = liveStages.get(stage.id);
+			const liveStages = live?.stages ?? [];
+			return doc.stages.map((stage, index) => {
+				const runStage = liveStages[index];
 				const params = stage.params ?? {};
 				const prompt = typeof params["prompt"] === "string" && params["prompt"] !== "" ? params["prompt"].slice(0, 96) : null;
 				return {
@@ -130,6 +212,40 @@ window.__ModuleLoader__.load({
 					thumbUrl: typeof runStage?.url === "string" && runStage.url !== "" ? runStage.url : null
 				};
 			});
+		}
+		/** Fold one events-bus frame onto the live status doc — the idempotent
+		*  patch (FlowEvents.ts contract: "every frame is an idempotent patch
+		*  onto the same store the poll writes"). Stage frames patch
+		*  positionally by index; terminal run frames set the run status. */
+		function foldFrame(prev, runId, frame) {
+			if (frame.type === "stage") {
+				const i = typeof frame.index === "number" ? frame.index : -1;
+				if (i < 0) return prev ?? {
+					run_id: runId,
+					status: "running",
+					stages: []
+				};
+				const stages = [...prev?.stages ?? []];
+				const cur = stages[i] ?? {
+					id: String(i),
+					status: "running"
+				};
+				stages[i] = {
+					id: cur.id,
+					status: typeof frame.status === "string" && frame.status !== "" ? frame.status : cur.status,
+					url: cur.url
+				};
+				return {
+					run_id: runId,
+					status: prev?.status ?? "running",
+					stages
+				};
+			}
+			return {
+				run_id: runId,
+				status: String(frame.status),
+				stages: prev?.stages ?? []
+			};
 		}
 		/** Project a stage's params into editable fields (in key order). */
 		function paramFields(params) {
@@ -217,9 +333,14 @@ window.__ModuleLoader__.load({
 		*   (c-1) NO ATOM: the card ROW (a list row that opens a Modal).
 		*         DisclosureRow is inline expansion — a different interaction;
 		*         no shipped atom covers row→modal. Hand-rolled, layout-only.
-		*   (c-2) NO HOOK: the run-status POLL loop (useDraft). No shipped
-		*         interval/poll hook exists in client/*; useEffect +
-		*         clearInterval, terminal-state stop, refresh-on-finish.
+		*   (a-2) RIDEN 1:1 — the run-status STREAM: @melite/catalog's
+		*         streamFlowEvents (the gateway's /v1/flows/events WS door,
+		*         query form — the proxy-exact path, live bug 2026-09-04) folds
+		*         idempotent stage frames positionally by INDEX (the estate
+		*         mapping law); the poll stays TERMINAL AUTHORITY and the
+		*         stream silently degrades to it — the FlowEvents contract,
+		*         verbatim. (Supersedes the poll-only c-2 entry: the operator
+		*         flagged it 2026-09-10 — "they do webhooks for us.")
 		*   (c-3) NO CLIENT: the draft/run door layer (draft.ts). No DSH
 		*         package serves the melite gateway's flows doors; fetch-
 		*         injected thin client over the editor's own wire shapes.
@@ -297,6 +418,17 @@ window.__ModuleLoader__.load({
 				};
 			}, [draftId, tick]);
 			const runId = live?.run_id ?? null;
+			(0, react.useEffect)(() => {
+				if (runId === null) return;
+				const ac = new AbortController();
+				const handle = streamFlowEvents(runId, (frame) => {
+					setLive((prev) => foldFrame(prev, runId, frame));
+				}, { signal: ac.signal });
+				return () => {
+					handle.close();
+					ac.abort();
+				};
+			}, [runId]);
 			(0, react.useEffect)(() => {
 				if (runId === null) return;
 				let alive = true;

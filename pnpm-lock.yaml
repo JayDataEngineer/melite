@@ -2458,6 +2458,9 @@ importers:
       '@deepseek-ai/dsh-host-webserver':
         specifier: ^0.1.0-rc.7
         version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))
+      '@melite/catalog':
+        specifier: workspace:*
+        version: link:../../web-kit/catalog
       '@types/node':
         specifier: ^22.20.0
         version: 22.20.1
