@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./wire": "./src/wire.ts",
+    "./package.json": "./package.json"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test tests/"

@@ -24,8 +24,8 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition, ParameterSchemaSpec } from '@deepseek-ai/dsh-tools'
 import { emitParamsSpec } from '@comfyui/cordis/params-emit'
 import { schema, identity, BOARDED } from './card.ts'
+import { TOOL_NAME } from './wire.ts'
 
-export const TOOL_NAME = 'image_gen'
 const FLOW = 'image-gen'
 /** The unstated-model resolution (boarded[0] — the same law the
  *  tool row's model field and the walk's synthesized default
@@ -140,6 +140,41 @@ export const buildImageGenTool = (gatewayUrl: string): ToolDefinition =>
           text: `${TOOL_NAME} [${String(v.model ?? '?')}] \u2192 ${String(v.run_id ?? '?')} \u2014 poll with run_status`,
         }]
       },
+      // presentationMeta: the tool-private payload persisted verbatim on
+      // tool/result — the facts presenters and client renderers narrow
+      // (model + run ids, or the named refusal). Pure: called on live
+      // streaming AND session-log replay.
+      presentationMeta: (_args, value) => {
+        const v = (value ?? {}) as Record<string, unknown>
+        return {
+          flow: String(v.flow ?? FLOW),
+          model: String(v.model ?? '?'),
+          ...typeof v.run_id === 'string' && v.run_id !== '' ? { run_id: v.run_id } : {},
+          ...typeof v.draft_id === 'string' && v.draft_id !== '' ? { draft_id: v.draft_id } : {},
+          ...typeof v.status === 'string' && v.status !== '' ? { status: v.status } : {},
+          ...typeof v.error === 'string' && v.error !== '' ? { error: v.error } : {},
+        }
+      },
+    },
+    // presentResult: the COMPLETED card's render intent — title only; the
+    // raw result content (render above) already carries the body line, and
+    // omitting `content` lets capable UIs render it (contract: "Omit a
+    // field to keep the pending title and render the raw result
+    // content"). Reads result.meta (the projection), never re-derives.
+    presentResult(_args: unknown, result: { content?: unknown; isError?: boolean; meta?: unknown }) {
+      // Absent projection (nested call, or a projector that ran before this
+      // presenter existed): no completed intent — the pending title stands
+      // and the raw content renders (the contract's undefined arm).
+      if (result?.meta == null) return undefined
+      const m = result.meta as Record<string, unknown>
+      const model = typeof m.model === 'string' && m.model !== '' ? m.model : '?'
+      if (typeof m.error === 'string' && m.error !== '') {
+        // The named refusal is a domain outcome; the reason rides the raw
+        // content line, the title states the arm.
+        return { card: 'generic', title: `${identity.label} [${model}] — REFUSED` }
+      }
+      const runId = typeof m.run_id === 'string' && m.run_id !== '' ? m.run_id : '?'
+      return { card: 'generic', title: `${identity.label} [${model}] \u2192 ${runId}` }
     },
     async execute(args, exec): Promise<CardResult> {
       const a = (args ?? {}) as Record<string, unknown>

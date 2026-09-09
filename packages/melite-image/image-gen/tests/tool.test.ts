@@ -22,7 +22,8 @@ import { Context, Service } from "@deepseek-ai/cordis";
 import { ComfyUIService } from "@comfyui/cordis/service";
 import { emitParamsSpec } from "@comfyui/cordis/params-emit";
 import * as pkg from "../src/index.ts";
-import { buildImageGenTool, TOOL_NAME } from "../src/tool.ts";
+import { buildImageGenTool } from "../src/tool.ts";
+import { TOOL_NAME } from "../src/wire.ts";
 import { parameterSchemaSpecToJsonSchema } from "@deepseek-ai/dsh-tools";
 import type { ToolDefinition } from "@deepseek-ai/dsh-tools";
 import { identity, schema, BOARDED } from "../src/card.ts";
@@ -106,6 +107,57 @@ describe("single spelling (the emission derives from the card)", () => {
     assert.equal(card.kind, "execute");
     assert.ok(String(card.rawInput).includes("krea-2"), "model rides the summary");
     assert.ok(String(card.rawInput).includes("cinematic"), "recipe rides the summary");
+  });
+});
+
+describe("the completed card (P0: presentationMeta + presentResult)", () => {
+  const tool = buildImageGenTool("http://irrelevant");
+
+  it("presentationMeta projects the settled facts (run arm), omitting empty keys", () => {
+    const meta = tool.output.presentationMeta?.(FULL_ARGS, {
+      flow: "image-gen", model: "krea-2", draft_id: "d_77", run_id: "r_9", status: "queued",
+    });
+    assert.deepEqual(meta, {
+      flow: "image-gen", model: "krea-2", draft_id: "d_77", run_id: "r_9", status: "queued",
+    });
+  });
+
+  it("presentationMeta carries the named refusal as a domain outcome", () => {
+    const meta = tool.output.presentationMeta?.(FULL_ARGS, {
+      flow: "image-gen", model: "krea-2", error: "model 'bogus' is not boarded on the image-gen card",
+    }) as Record<string, unknown>;
+    assert.equal(meta.error, "model 'bogus' is not boarded on the image-gen card");
+    assert.ok(!("run_id" in meta), "no run id on a refusal");
+  });
+
+  it("presentResult titles the run arm from result.meta — content omitted, the raw render rides", () => {
+    const view = tool.presentResult?.(FULL_ARGS, {
+      content: [], isError: false,
+      meta: tool.output.presentationMeta?.(FULL_ARGS, {
+        flow: "image-gen", model: "krea-2", run_id: "r_9", status: "queued",
+      }),
+    });
+    assert.ok(view && view.card === "generic");
+    assert.equal(view.title, `${identity.label} [krea-2] \u2192 r_9`);
+    assert.equal(view.content, undefined, "the raw result content renders; presentResult never re-encodes it");
+  });
+
+  it("presentResult titles the refusal arm — the reason rides the raw content", () => {
+    const view = tool.presentResult?.(FULL_ARGS, {
+      content: [], isError: false,
+      meta: tool.output.presentationMeta?.(FULL_ARGS, {
+        flow: "image-gen", model: "krea-2", error: "not boarded",
+      }),
+    });
+    assert.ok(view && view.card === "generic");
+    assert.equal(view.title, `${identity.label} [krea-2] \u2014 REFUSED`);
+  });
+
+  it("meta-less replay (nested or projected-out call) keeps the pending title: presentResult returns undefined", () => {
+    // The contract: absent projector output → no completed intent; the
+    // pending title stands and the raw content renders.
+    const view = tool.presentResult?.(FULL_ARGS, { content: [], isError: false, meta: undefined });
+    assert.equal(view, undefined);
   });
 });
 

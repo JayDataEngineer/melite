@@ -9,6 +9,11 @@
 // over HTTP — so the tool would never register. The gateway
 // process provides comfyui but no tools; the agent host provides
 // tools but no comfyui; each composition takes the faces it can.
+//
+// THE VIEW IS NOT HERE: this card is all defaults — @melite/viewer's
+// composition claims the image_gen toolview with the shared run-card
+// row (@melite/viewer-base). A card ships a client half only to
+// OVERRIDE its view (the takeover arm of the keyed slot).
 import type { Context } from '@deepseek-ai/cordis'
 import Schema from '@deepseek-ai/schemastery'
 import { ComfyUIService } from '@comfyui/cordis/service'
