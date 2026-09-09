@@ -109,6 +109,7 @@ import { join } from "node:path";
 import type { Socket } from "node:net";
 import {
   ASSET_URL_PREFIX,
+  getDraftsDomain,
   mediaVocab,
   PyNum,
 } from "@melite/gateway-core";
@@ -641,6 +642,10 @@ export function firstQuery(
 export function hRunsList(
   qs: Record<string, string[]>,
   roots: AssetRoots,
+  /** Draft birth-certificate probe (the drafts DOMAIN — the legacy
+   *  drafts/<id>.json stat died with the drafts-door migration;
+   *  orphans lose their draft link, never the row). */
+  hasDraft: (draftId: string) => boolean,
 ): AssetResult {
   const raw: string = firstQuery(qs, "limit", "") || "200";
   const parsed: number | null = parseIntPy(raw);
@@ -659,7 +664,6 @@ export function hRunsList(
   }
   const limit: number = Math.max(1, Math.min(500, parsed));
   const outputRoot: string = roots.runsRoot;
-  const draftsRoot: string = join(roots.stateRoot, "drafts");
   let names: string[];
   try {
     names = readdirSync(outputRoot);
@@ -741,12 +745,8 @@ export function hRunsList(
       if (at >= 0) created = strtolPy(buf.slice(at + 13));
     }
     if (pipeline.startsWith("_")) continue; // user-surface law
-    if (draft) {
-      try {
-        statSync(join(draftsRoot, draft + ".json"));
-      } catch {
-        draft = "";
-      }
+    if (draft && !hasDraft(draft)) {
+      draft = "";
     }
     const literal: string = "./output/" + ent.dir;
     const row = runRowOrNull({
@@ -1160,12 +1160,20 @@ export function dispatchRuns(
   qs: Record<string, string[]>,
   roots: AssetRoots,
   svc?: RunsService | null,
+  hasDraft?: (draftId: string) => boolean,
 ): AssetResult | null {
   if (handler === "_h_queue") return hQueue(svc);
   if (handler === "_h_flows_status") {
     return hFlowsStatus(m !== null && m[1] !== undefined ? m[1] : "", qs, roots);
   }
-  if (handler === "_h_runs_list") return hRunsList(qs, roots);
+  if (handler === "_h_runs_list") {
+    if (hasDraft === undefined) {
+      throw new Error(
+        "[gateway-ts] dispatchRuns needs the caller's hasDraft probe (drafts domain)",
+      );
+    }
+    return hRunsList(qs, roots, hasDraft);
+  }
   if (handler === "_h_run_detail") {
     return hRunDetail(m !== null && m[1] !== undefined ? m[1] : "", roots);
   }
@@ -1841,18 +1849,21 @@ export const flowsStatusDoors: Plugin = {
  *  inside the listener — no central table. */
 export const runsDoors: Plugin = {
   name: "gateway-runs",
-  inject: ["gatewayError", "runs", "webServer"],
+  inject: ["gatewayError", "runs", "storageDomain", "webServer"],
   apply(ctx: Context): () => void {
     const svc: RunsService = ctx.runs;
     svc.setBusPublisher(deliverBusFrame);
-    mountDoorRoutes(ctx, ctx.webServer, ["_h_queue", "_h_runs_list", "_h_run_detail", "_h_ws_fallback"], (req: GatewayRequest): DispatchResult | undefined => {
+    mountDoorRoutes(ctx, ctx.webServer, ["_h_queue", "_h_runs_list", "_h_run_detail", "_h_ws_fallback"], async (req: GatewayRequest): Promise<DispatchResult | undefined> => {
         const hit = doorMatch(req, ["_h_queue", "_h_runs_list", "_h_run_detail", "_h_ws_fallback"]);
         if (hit === null) return undefined;
         if (hit.row.handler === "_h_queue") {
           return hQueue(ctx.runs);
         }
         if (hit.row.handler === "_h_runs_list") {
-          return hRunsList(parseQuery(req.target), req.roots);
+          // The drafts-domain probe (sync reads off the opened unit).
+          const drafts = await getDraftsDomain(ctx);
+          return hRunsList(parseQuery(req.target), req.roots, (draftId: string): boolean =>
+            drafts.table("docs").get(draftId) !== undefined);
         }
         if (hit.row.handler === "_h_run_detail") {
           const runId: string =

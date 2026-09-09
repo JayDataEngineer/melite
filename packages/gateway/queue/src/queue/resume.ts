@@ -42,10 +42,11 @@
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
 
-import { readFileSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
+import { getDraftsDomain } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
 import { doorMatch, mountDoorRoutes } from "@melite/gateway-doors/route-mount";
 import { runStatus } from "./runStatus.ts";
@@ -54,15 +55,7 @@ import { qRefusal } from "./refusals.ts";
 import type { QueueAnswer } from "./refusals.ts";
 import { durableRecordUsable } from "./queue.ts";
 
-/** Draft-doc existence (CARD BIRTH LAW — the doc is the birth
- *  certificate; py _rebuild 2299-2336 checks the same file). */
-function draftDocExists(stateRoot: string, draftId: string): boolean {
-  try {
-    return statSync(join(stateRoot, "drafts", draftId + ".json")).isFile();
-  } catch {
-    return false;
-  }
-}
+
 
 /** POST /v1/flows/resume/<id> refusal gates. liveStatus is the
  *  registry row's status or null when this process owns no live row
@@ -73,6 +66,9 @@ export function handleFlowsResume(
   liveStatus: string | null,
   stateRoot: string,
   runsRoot: string,
+  /** Draft birth-certificate probe (the drafts DOMAIN — the legacy
+   *  drafts/<id>.json stat died with the drafts-door migration). */
+  hasDraft: (draftId: string) => boolean,
 ): QueueAnswer {
   if (liveStatus === "queued" || liveStatus === "running") {
     return qRefusal(
@@ -146,7 +142,7 @@ export function handleFlowsResume(
     sidecar,
     requestText,
     typeof draftId === "string" && draftId !== ""
-      ? draftDocExists(stateRoot, draftId)
+      ? hasDraft(draftId)
       : false,
   );
   if (!usable) {
@@ -171,9 +167,9 @@ export function handleFlowsResume(
  *  table. */
 export const flowsResumeDoors: Plugin = {
   name: "gateway-flows-resume",
-  inject: ["webServer", "gatewayError"],
+  inject: ["webServer", "gatewayError", "storageDomain"],
   apply(ctx: Context): void {
-    mountDoorRoutes(ctx, ctx.webServer, ["_h_flows_resume"], (req: GatewayRequest): DispatchResult | undefined => {
+    mountDoorRoutes(ctx, ctx.webServer, ["_h_flows_resume"], async (req: GatewayRequest): Promise<DispatchResult | undefined> => {
         const hit = doorMatch(req, ["_h_flows_resume"]);
         if (hit === null) {
           return undefined;
@@ -183,6 +179,8 @@ export const flowsResumeDoors: Plugin = {
           hit.m !== null && hit.m[1] !== undefined
             ? String(hit.m[1])
             : "";
+        // The drafts-domain probe (sync reads off the opened unit).
+        const drafts = await getDraftsDomain(ctx);
         const answered: {
           status: number;
           payload: Record<string, unknown>;
@@ -191,6 +189,8 @@ export const flowsResumeDoors: Plugin = {
           runStatus(runId),
           req.roots.stateRoot,
           req.roots.runsRoot,
+          (draftId: string): boolean =>
+            drafts.table("docs").get(draftId) !== undefined,
         );
         errors.normalize4xx(answered.status, answered.payload);
         return {

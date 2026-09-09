@@ -93,7 +93,7 @@ import {
   appendFileSync,
   mkdirSync,
   openSync,
-  statSync,
+
   readFileSync,
   readdirSync,
   renameSync,
@@ -1467,15 +1467,14 @@ export function planResurrect(
       return null;
     }
   },
-  draftExists: (draftId: string) => boolean = (draftId: string): boolean => {
-    // is_file (py 2299-2301): a directory named <id>.json is NOT a
-    // birth certificate — a read probe would agree on files but the
-    // shapes differ, so stat it exactly.
-    try {
-      return statSync(join(stateRoot, "drafts", draftId + ".json")).isFile();
-    } catch {
-      return false;
-    }
+  draftExists: (draftId: string) => boolean = (): boolean => {
+    // LOUD default (the drafts-door migration, 2026-09-09): the
+    // legacy drafts/<id>.json probe is dead — the drafts domain
+    // owns existence now. Callers pass their domain probe (the
+    // queue lane fails loud, never silently drops to no drafts).
+    throw new Error(
+      "[gateway-ts] planResurrect needs the caller's draftExists probe (drafts domain)",
+    );
   },
 ): ResurrectPlan {
   const outRoot: string = join(stateRoot, "output");

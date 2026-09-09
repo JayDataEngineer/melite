@@ -88,7 +88,7 @@
 // enums, import type for types, .ts specifiers for relative imports.
 
 import { randomBytes } from "node:crypto";
-import { existsSync, mkdirSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -104,7 +104,7 @@ import type {
   EngineJson,
   MergeRow,
 } from "@melite/comfyui-cordis";
-import { applyRunContract } from "@melite/gateway-core";
+import { applyRunContract, getDraftsDomain } from "@melite/gateway-core";
 import {
   appendLedger,
   atomicWriteJson,
@@ -786,10 +786,14 @@ export async function handleFlowsStart(
   svc?: RunsService | null,
   cards?: CardRegistryService | null,
   comfy?: ComfyUIHostService | null,
+  /** Draft birth-certificate probe (the drafts DOMAIN — the legacy
+   *  drafts/<id>.json probe died with the drafts-door migration;
+   *  the caller owns the open, this arm stays sync-readable). */
+  hasDraft?: (draftId: string) => boolean,
 ): Promise<Refusal & { runId?: string }> {
   // Envelope structure rides the admission gate (schemastery);
   // every refusal below keeps its pinned text, in the original
-  // order. The on-disk draft lookup stays here (domain, not type).
+  // order. The draft lookup rides the caller's domain probe.
   const envelope = checkFlowsStartEnvelope(doc);
   if (envelope.kind === "not-object") {
     return refusal(
@@ -842,7 +846,12 @@ export async function handleFlowsStart(
   const body: Record<string, unknown> = envelope.body;
   const testFlag: boolean = envelope.testFlag;
   const draftId: string = body["draft_id"] as string;
-  if (!existsSync(join(resolveStateRoot(), "drafts", draftId + ".json"))) {
+  if (hasDraft === undefined) {
+    throw new Error(
+      "[gateway-ts] handleFlowsStart needs the caller's hasDraft probe (drafts domain)",
+    );
+  }
+  if (!hasDraft(draftId)) {
     return refusal(
       400,
       "unknown draft_id " +
@@ -1551,7 +1560,7 @@ export function parseIncludeLog(first: string | null): boolean {
  *  ctx.cardRegistry (the card-registry provider — stroke 2a). */
 export const flowsStartDoors: Plugin = {
   name: "gateway-flows-start",
-  inject: ["gatewayError", "runs", "cardRegistry", "comfyui", "webServer"],
+  inject: ["gatewayError", "runs", "cardRegistry", "comfyui", "storageDomain", "webServer"],
   apply(ctx: Context): void {
     mountDoorRoutes(ctx, ctx.webServer, ["_h_flows_start"], async (req) => {
       const hit = doorMatch(req, ["_h_flows_start"]);
@@ -1569,6 +1578,9 @@ export const flowsStartDoors: Plugin = {
           headers: {},
         };
       }
+      // The drafts-domain probe (sync reads off the opened unit —
+      // the birth-certificate check never touches the legacy dir).
+      const drafts = await getDraftsDomain(ctx);
       const answered: {
         status: number;
         payload: Record<string, unknown>;
@@ -1577,6 +1589,8 @@ export const flowsStartDoors: Plugin = {
         ctx.runs,
         ctx.cardRegistry,
         needComfyUI(ctx, "flows-start door"),
+        (draftId: string): boolean =>
+          drafts.table("docs").get(draftId) !== undefined,
       );
       errors.normalize4xx(answered.status, answered.payload);
       return {

@@ -92,8 +92,6 @@
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
 
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { PyNum, getDraftsDomain } from "@melite/gateway-core";
 import type {
   Domain,
@@ -127,20 +125,6 @@ export interface DraftResult {
 }
 
 const JSON_CT: string = "application/json";
-
-/** Mirror py's root resolution: MELITE_STATE_ROOT env else
- *  REPO/data/runs, REPO file-anchored (gateway.py 63, 76-77). The
- *  drafts arms serve STATE_ROOT/"drafts" (gateway.py 3108-3148). */
-export function defaultDraftRoots(): {
-  readonly stateRoot: string;
-  readonly draftsDir: string;
-} {
-  const here: string = dirname(fileURLToPath(import.meta.url));
-  const repo: string = resolve(here, "..", "..", "..", "..", "..");
-  const state: string =
-    process.env["MELITE_STATE_ROOT"] ?? join(repo, "data", "runs");
-  return { stateRoot: state, draftsDir: join(state, "drafts") };
-}
 
 /** R4.2 dispatcher normalization — local alias over the ctx.ts twin
  *  (same rule: every 4xx object body leaves with a code). */
