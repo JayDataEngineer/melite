@@ -1086,9 +1086,10 @@ interface ManifestEntry {
   readonly rows: ManifestRow[];
 }
 
-/** Card tool manifests (PURGE S-snapshots 2026-09-08: the card-dir
- *  tool.json snapshots are deleted — rows project from the primed
- *  registry over the frozen TOOLS_JSON base (toolProjection.ts).
+/** Card tool manifests (M1, 2026-09-09: the card emits the tool —
+ *  rows project ENTIRELY from the primed registry; the card-dir
+ *  tool.json snapshots (2026-09-08) and the frozen TOOLS_JSON
+ *  base are both dead (toolProjection.ts derives every field).
  *  The walk still scopes dir-backed cards to the disclosure root
  *  (structure + readdir order preserved at BOTH glob levels);
  *  unregistered dirs (the planes fixture's plug fakes, stale dirs)
@@ -1149,7 +1150,7 @@ function manifests(engine: string, cards?: CardRegistryService | null): Map<stri
         out.set(cid, {
           genre,
           dir: cdir,
-          rows: [projectCardRow(def, baseRowFor(cid))],
+          rows: [projectCardRow(def, baseRowFor(defs, cid))],
         });
       }
     }
@@ -1163,7 +1164,7 @@ function manifests(engine: string, cards?: CardRegistryService | null): Map<stri
     // per engine (the registry IS the comfyui card set; factsPath +
     // cardDefs hardcode the same owner).
     if ((engine.split("/").pop() ?? "") !== "comfyui") continue;
-    out.set(cid, { genre: "", dir: "", rows: [projectCardRow(def, baseRowFor(cid))] });
+    out.set(cid, { genre: "", dir: "", rows: [projectCardRow(def, baseRowFor(defs, cid))] });
   }
   return out;
 }

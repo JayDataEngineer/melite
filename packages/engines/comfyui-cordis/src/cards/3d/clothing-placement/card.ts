@@ -74,6 +74,16 @@ export function apply(ctx: Context): void {
     // false skips the {model:} demand in cardGate, compose, CLI).
     boarded: [],
     requiresModel: false,
+    // AUTHORED PROSE, declared inline (M1, 2026-09-09: the card
+    // emits the tool — the ring never carried this TS-added card;
+    // the old TOOLS_JSON prose moves home. The identity rung's
+    // named-divergence row dies with the second spelling.)
+    identity: {
+      label: 'Clothing Placement',
+      description:
+        'Place a garment mesh on a body mesh in a persistent Blender session (MCP) - snap, offset, rotate, scale, mirror; exports the placed scene GLB.',
+      genre: '3d',
+    },
     requires: ['melite-blender-proxy-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, _model, g, runId) {
