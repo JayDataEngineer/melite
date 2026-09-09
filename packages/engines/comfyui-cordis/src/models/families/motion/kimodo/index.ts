@@ -31,7 +31,7 @@ export const DECL: ModelDecl = {
     "note": ""
   },
   "studio": {
-    "tenant": "motion/motion-studio",
+    "tenant": "motion/motion",
     "owns_params": false,
     "writes": [],
     "kind": "custom",

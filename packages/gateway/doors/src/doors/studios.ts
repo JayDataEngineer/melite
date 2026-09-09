@@ -149,7 +149,7 @@ const ESTATE_TENANTS: Record<string, StudioFamily> = {
   "3d/img-to-mesh": { id: "pixal3d", engine: "comfyui", baseBody: "", baseBodyFolder: "" },
   "image/ideogram4": { id: "ideogram", engine: "comfyui", baseBody: "", baseBodyFolder: "" },
   "image/mask-studio": { id: "mask-studio", engine: "comfyui", baseBody: "", baseBodyFolder: "" },
-  "motion/motion-studio": { id: "kimodo", engine: "comfyui", baseBody: "", baseBodyFolder: "" },
+  "motion/motion": { id: "kimodo", engine: "comfyui", baseBody: "", baseBodyFolder: "" },
   "video/h3-timeline": { id: "h3-timeline", engine: "comfyui", baseBody: "", baseBodyFolder: "" },
 };
 const ESTATE_ROWS: Record<string, Record<string, unknown>[] > = {
@@ -171,7 +171,7 @@ const ESTATE_ROWS: Record<string, Record<string, unknown>[] > = {
   ],
   "image/mask-studio": [
   ],
-  "motion/motion-studio": [
+  "motion/motion": [
   ],
   "video/h3-timeline": [
   ],

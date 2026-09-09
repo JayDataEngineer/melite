@@ -37,7 +37,7 @@ import { trellisArm, pixalArm, transferRigArm, admitMeshLift } from '@comfyui/ca
 import type { ModelFacts } from '@comfyui/card-kit/facts'
 import { SAMPLERS, SCHEDULERS, vocabulary } from '@comfyui/card-kit/vocab'
 
-declare module '../service.ts' {
+declare module '@comfyui/cordis/service' {
   interface CardDefinition {
     /** Per-family extension packs — the py requires_by_family mirror.
      *  The compose door gates the active family's slice, never the

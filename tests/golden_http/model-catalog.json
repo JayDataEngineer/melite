@@ -1624,7 +1624,7 @@
    "label": "Kimodo (text → motion) Standard Native",
    "genre": "motion",
    "studio": {
-    "tenant": "motion/motion-studio",
+    "tenant": "motion/motion",
     "owns_params": false,
     "writes": [],
     "size": "normal",

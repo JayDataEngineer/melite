@@ -59,6 +59,9 @@ importers:
       '@melite-plugin/3d':
         specifier: workspace:*
         version: link:../comfyui/action_cards/3d/ui
+      '@melite-plugin/motion':
+        specifier: workspace:*
+        version: link:../comfyui/action_cards/motion/ui
       '@melite-plugin/timeline':
         specifier: workspace:*
         version: link:../../web-kit/timeline

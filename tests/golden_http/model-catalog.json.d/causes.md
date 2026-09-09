@@ -61,3 +61,11 @@ realign with the folder spellings already landed — mask-studio
 (card 1) and img-to-mesh (card 13) keys flip here too; the
 discovery-catalog.json pin stays (frozen py artifact, generator
 deleted). Walls 17/17.
+
+## 2026-09-08 — motion merges; the tenant joins the card-id spelling
+
+Card 15 (motion-studio → cards/motion/motion/ui; the motion card
+gains its studio half): the kimodo claim flips to motion/motion
+(1 pin here, 1 in families-golden); the estate door key flips
+with it. The two nested cards' CardDefinition augmentations go
+name-form (declare module '@comfyui/cordis/service'). Walls 17/17.
