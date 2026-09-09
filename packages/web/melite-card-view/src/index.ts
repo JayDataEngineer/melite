@@ -9,16 +9,14 @@
  * start payload the gateway's own 400.
  *
  * The package also has a client half (`src/client/`, served from
- * `lib/client.js` via the `dsh.client` declaration in package.json). Deploy
- * shape is two overlay rows pointing at ONE package:
- *
- * - host row   — `name:` = absolute path of `lib/index.mjs` (the Melite deploy
- *                convention: no profile install). This fiber owns the route.
- * - client row — `name:` = the package name itself; exists so the host's
- *                client-module scanner picks up the browser bundle. Its fiber
- *                must set `clientRowOnly: true`, because both rows import the
- *                same module and a second route registration would throw
- *                (`webserver: duplicate prefix route`).
+ * `lib/client.js` via the `dsh.client` declaration in package.json).
+ * Since the CHANNEL LAW unification (2026-09-10, operator order:
+ * everything 1:1 dsh) the package rides as a PROFILE BUNDLE: its own
+ * dsh.bundle.patch inserts the row, the dsh.client mechanism loads
+ * the browser half, and the apply config defaults to {} (a configless
+ * bundle row must boot — the bundle world passes no config object).
+ * The legacy two-row clientRowOnly shape (provisioner era) still
+ * works but is retired.
  */
 import type { Context } from '@deepseek-ai/cordis'
 // Type-only: pulls the webServer service declaration onto Context.
@@ -47,7 +45,7 @@ async function readBody(req: import('node:http').IncomingMessage): Promise<Buffe
   return Buffer.concat(chunks)
 }
 
-export function apply(ctx: Context, config: Config): void {
+export function apply(ctx: Context, config: Config = {}): void {
   if (config.clientRowOnly === true) {
     ctx.logger.info('melite-card-view client row mounted (bundle-table contribution only)')
     return

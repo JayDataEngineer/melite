@@ -9,6 +9,15 @@
 # node half (exports ".") serves the /infer-media/* host routes;
 # the `dsh.client` declaration in package.json makes the browser
 # half (exports "./client", the Media sidebar tab) load in the GUI.
+#
+# The row carries the gateway list INLINE: Config.gateways is
+# REQUIRED by the queue lane law (no default endpoint — missing
+# config fails loudly), so the existence row supplies the canonical
+# default and profiles override by id (2026-09-10 configless-bundle
+# boot law).
 - insert:
     - id: infer-media
       name: '@infer-media/dsh-media'
+      config:
+        gateways:
+          - http://localhost:33081

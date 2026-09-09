@@ -1,0 +1,20 @@
+# dsh-card-view bundle patch: inserts the host plugin row into a web
+# profile roster. Applied as a profile bundle layer (the
+# `dsh.bundle.patch` manifest field); activate with
+# `dsh plugin --profile <name> add <path-to-melite-card-view>`.
+#
+# CHANNEL LAW (2026-09-09, the unification): every web plugin owns
+# its existence row in ITS OWN package (this patch); the PROFILE
+# layer configures by id (a plain `- id:` row, no insert). The
+# node half (exports ".") serves the card editor bundle + draft
+# hydration routes; the `dsh.client` declaration in package.json
+# makes the browser half (exports "./client", the chat card tiles)
+# load in the web GUI.
+#
+# This retires the provisioner's two-row mount (infer-card-view-host
+# + infer-card-view-client with clientRowOnly) — the dsh.client
+# mechanism loads the browser half natively; no split rows, no
+# bespoke flags (operator law, 2026-09-10: everything 1:1 dsh).
+- insert:
+    - id: infer-card-view
+      name: '@melite-plugin/dsh-card-view'

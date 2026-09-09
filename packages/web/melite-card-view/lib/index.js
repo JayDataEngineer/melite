@@ -8,7 +8,7 @@ async function readBody(req) {
 	for await (const chunk of req) chunks.push(chunk);
 	return Buffer.concat(chunks);
 }
-function apply(ctx, config) {
+function apply(ctx, config = {}) {
 	if (config.clientRowOnly === true) {
 		ctx.logger.info("melite-card-view client row mounted (bundle-table contribution only)");
 		return;

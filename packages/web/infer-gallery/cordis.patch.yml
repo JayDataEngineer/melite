@@ -1,0 +1,17 @@
+# dsh-gallery bundle patch: inserts the host plugin row into a web
+# profile roster. Applied as a profile bundle layer (the
+# `dsh.bundle.patch` manifest field); activate with
+# `dsh plugin --profile <name> add <path-to-infer-gallery>`.
+#
+# CHANNEL LAW (2026-09-09, the unification): every web plugin owns
+# its existence row in ITS OWN package (this patch); the PROFILE
+# layer configures by id. The node half (exports ".") serves the
+# runs gallery host routes against the gateway; the `dsh.client`
+# declaration in package.json makes the browser half (exports
+# "./client", the gallery surface) load in the web GUI.
+#
+# Retires the provisioner's infer-gallery-host row (operator law,
+# 2026-09-10: everything 1:1 dsh, upstream primitives only).
+- insert:
+    - id: infer-gallery
+      name: '@infer-media/dsh-gallery'

@@ -20,7 +20,7 @@ function proxyAssetUrl(path) {
 	if (typeof path !== "string" || path === "") return "";
 	return `/infer-gallery/artifact?path=${encodeURIComponent(path)}`;
 }
-function apply(ctx, config) {
+function apply(ctx, config = {}) {
 	const gatewayUrl = (config.gatewayUrl ?? DEFAULT_GATEWAY_URL).replace(/\/+$/, "");
 	const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 	const flowDir = config.flowDir ?? DEFAULT_FLOW_DIR;

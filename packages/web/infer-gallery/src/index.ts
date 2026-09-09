@@ -51,7 +51,7 @@ function proxyAssetUrl(path: unknown): string {
   return `/infer-gallery/artifact?path=${encodeURIComponent(path)}`
 }
 
-export function apply(ctx: Context, config: Config): void {
+export function apply(ctx: Context, config: Config = {}): void {
   const gatewayUrl = (config.gatewayUrl ?? DEFAULT_GATEWAY_URL).replace(/\/+$/, '')
   const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const flowDir = config.flowDir ?? DEFAULT_FLOW_DIR
