@@ -26,24 +26,26 @@
  *
  * BASE toolset (both interfaces): model_catalog, lane_bundle_peek,
  * lane_bundle_load, build_flow, refine_draft, comfy_manage,
- * skill_index, skill_read, ledger_tail. Dynamic card tools ride the
- * per-lane manifests (/v1/card-tools) in both interfaces.
+ * skill_index, skill_read, ledger_tail. Card tools compose from
+ * their card packages (named imports above — the fetch registrar
+ * retired with its last row).
  *
  * @module @melite-plugin/dsh-tools
  */
 import type { Context } from '@deepseek-ai/cordis'
 import { DEFAULT_GATEWAY_URL } from './gateway.ts'
-import { cardTools } from './tools/card-tools.ts'
 // THE CARD PACKAGES' TOOL FACES (M2′ + the registrar retirement,
 // 2026-09-09): a card tool is IMPORTED from its package — the
 // DSH law (packages/shell/tool-bash: a tool is its own package;
-// hosts compose packages, never fetch registries). The registrar
-// below shrinks with every landing; it dies at the last row.
+// hosts compose packages, never fetch registries). The fetch
+// registrar (tools/card-tools.ts) died with its last row — every
+// card tool composes through its package now.
 import { buildMusicTool } from '@melite/melite-audio-music/tool'
 import { buildTtsTool } from '@melite/melite-audio-tts/tool'
 import { buildVoiceLockTool } from '@melite/melite-audio-voice-lock/tool'
 import { buildImageEditTool } from '@melite/melite-image-image-edit/tool'
 import { buildMotionTool } from '@melite/melite-motion-motion/tool'
+import { buildH3TimelineTool } from '@melite/melite-video-h3-timeline/tool'
 import { cardRun } from './tools/card-run.ts'
 import { flowRun } from './tools/flow-run.ts'
 import { runStatus } from './tools/run-status.ts'
@@ -69,7 +71,6 @@ export { DEFAULT_GATEWAY_URL, RayGatewayError, normalizeGatewayUrl } from './gat
 
 // Tool factories — re-exported for the smoke harness (test/smoke.mjs)
 // and any embedder that mounts tools without the full plugin apply().
-export { cardTools } from './tools/card-tools.ts'
 export { cardRun } from './tools/card-run.ts'
 export { flowRun } from './tools/flow-run.ts'
 export { runStatus } from './tools/run-status.ts'
@@ -236,18 +237,9 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   c.tools.register(buildVoiceLockTool(gatewayUrl) as unknown as ToolDefinition)
   c.tools.register(buildImageEditTool(gatewayUrl) as unknown as ToolDefinition)
   c.tools.register(buildMotionTool(gatewayUrl) as unknown as ToolDefinition)
+  c.tools.register(buildH3TimelineTool(gatewayUrl) as unknown as ToolDefinition)
 
-  // THE REGISTRAR REMAINDER (per-lane manifest fetch): h3_timeline_card
-  // until its calls machinery lands in the h3-timeline package — then
-  // cardTools dies with its last row (tolerant if the gateway hasn't
-  // built the route yet)
-  try {
-    const cardToolList = await cardTools(gatewayUrl)
-    for (const t of cardToolList) c.tools.register(t as unknown as ToolDefinition)
-    c.logger.info('melite-tools: %d card tool(s) from /v1/card-tools', cardToolList.length)
-  } catch (e) {
-    c.logger.warn('melite-tools: card-tools manifest fetch skipped: %s', e instanceof Error ? e.message : e)
-  }
+  
 
   // ── HOST ROUTES (restored 2026-09-05) ─────────────────────────────
   // The editor's ✦ Enhance door: POST /melite-tools/enhance on THIS

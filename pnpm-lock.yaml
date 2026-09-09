@@ -627,6 +627,9 @@ importers:
       '@melite/melite-motion-motion':
         specifier: workspace:*
         version: link:../../melite-motion/motion
+      '@melite/melite-video-h3-timeline':
+        specifier: workspace:*
+        version: link:../../melite-video/h3-timeline
       unrun:
         specifier: ^0.3.1
         version: 0.3.1
@@ -1792,6 +1795,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/dsh-tools':
+        specifier: 0.1.5-alpha.1
+        version: 0.1.5-alpha.1(c99a84f9f9b5ed24862430e477a90715)
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2

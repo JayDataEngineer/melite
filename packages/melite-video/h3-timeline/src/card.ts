@@ -127,6 +127,13 @@ const paramSchema = z.object({
   // (the family-literal resolution path) passes untouched.
   shift_video: nullable(z.number().description("Video Shift").min(1).max(20).step(0.5).default(8).extra('extra', { order: null, tooltip: "Timestep shift for video attention. Higher = more coherent motion.", wtype: 'number' })),
   shift_audio: z.number().description("Audio Shift").min(1).max(10).step(0.5).default(3).extra('extra', { order: null, tooltip: "Timestep shift for audio attention. Lower = more detailed sound.", wtype: 'number' }),
+  // NOTE: the calls[] SHOTS surface is deliberately NOT a carrier
+  // knob — the carrier feeds the studio's frozen form-spec (the
+  // studio owns its own shots editor, ui/studio/docModel) and the
+  // served manifests. The AGENT plane declares calls in the tool
+  // face (src/tool.ts); the SHOT LAWS are the card gate's (schema()
+  // below — the py model_validator port), so every composer —
+  // agent tool, studio, any future caller — meets the same gate.
 })
 
 /** Schemastery objects are lenient (unknown/missing keys ride); the
@@ -138,7 +145,7 @@ const paramSchema = z.object({
  *  declared knobs — old drafts keep working because the schema admits
  *  them and the compose door overlays explicit params last (the
  *  img-to-mesh filename_prefix precedent). */
-function schema(v: unknown): Record<string, unknown> {
+export function schema(v: unknown): Record<string, unknown> {
   const out: Record<string, unknown> = paramSchema(v ?? {})
   const raw = (v ?? {}) as Record<string, unknown>
   let variant = typeof raw.variant === 'string' ? raw.variant : undefined
@@ -152,6 +159,30 @@ function schema(v: unknown): Record<string, unknown> {
     const calls = Array.isArray(raw.calls) ? raw.calls : []
     if (calls.length === 0) {
       throw new Error('h3-timeline: no calls to compose')
+    }
+    // THE SHOT LAWS (py schema.py _wire_value_laws port — the ranges
+    // are the card gate's, never a silent re-default: the py era
+    // quietly re-defaulted an out-of-range seam and rendered a
+    // reversed span as 56 frames; both banned there, banned here).
+    // CARRY_MIN/CARRY_MAX: timeline/laws.py lane physics.
+    const CARRY_MIN = 1, CARRY_MAX = 64
+    for (let i = 0; i < calls.length; i++) {
+      const c = (calls[i] ?? {}) as Record<string, unknown>
+      if (c.seam_carry !== undefined && c.seam_carry !== null) {
+        const sc = c.seam_carry as number
+        if (sc !== 0 && !(Number.isInteger(sc) && CARRY_MIN <= sc && sc <= CARRY_MAX)) {
+          throw new Error(`calls[${i}]: seam_carry ${sc} outside [${CARRY_MIN}, ${CARRY_MAX}] — 0 is a hard cut, otherwise carry is bounded lane physics`)
+        }
+      }
+      for (const name of ['start_frame', 'end_frame'] as const) {
+        const v = c[name]
+        if (v === undefined || v === null || typeof v !== 'number' || !Number.isInteger(v)) {
+          throw new Error(`calls[${i}]: ${name} is required (int frames — text alone is not a shot)`)
+        }
+      }
+      if ((c.end_frame as number) <= (c.start_frame as number)) {
+        throw new Error(`calls[${i}]: end_frame ${c.end_frame} <= start_frame ${c.start_frame} — a reversed or empty span is not a shot`)
+      }
     }
     const hasGuide = calls.some((c) => {
       const cc = (c ?? {}) as Record<string, unknown>
@@ -179,6 +210,19 @@ function schema(v: unknown): Record<string, unknown> {
     if (b.length) throw new Error(`h3_window(${variant}): unsanctioned inject keys: ${b.join(', ')}`)
   }
   return out
+}
+
+// THE TOOL-FACE EXPORTS: the carrier (paramSchema — the same object
+// the registry's schemaCarrier hands the served-manifest projection;
+// ONE spelling, two doors) + the identity rung (the ring's label/
+// description prose, stated once).
+export const carrier = paramSchema
+
+export const BOARDED: string[] = ['h3-timeline', 'h3', 'h3-keyframe']
+
+export const identity = {
+  label: 'H3 Timeline',
+  description: 'THE video interface — multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.',
 }
 
 // ── the renderer body — node order IS the python's serialized id order ────
@@ -477,17 +521,15 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): void {
   })
 }
 
-export const inject = ['comfyui']
-
-export function apply(ctx: Context): void {
-  ctx.effect(() => ctx.comfyui.registerCard({
+export function registerCard(ctx: Context, comfy: ComfyUIService): void {
+  ctx.effect(() => comfy.registerCard({
     id: 'h3-timeline',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'h3-film',
     // BOARDING (resolved zero-regold 2026-09-07): the card boards
     // all three families, so this triple boards green with the frozen golden
     // video_h3_open-cascade composing model 'h3' through this card.
-    boarded: ['h3-timeline', 'h3', 'h3-keyframe'],
+    boarded: [...BOARDED],
     // ADMISSION EXTRAS (the py class-attr half verbatim: the
     // retired row's admits minus the boarded families' studio
     // writes, which the projection unions from the facts file —
