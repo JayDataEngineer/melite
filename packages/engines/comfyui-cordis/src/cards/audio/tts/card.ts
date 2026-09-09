@@ -2,8 +2,8 @@
 // Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { ttsT1 } from '../kit.ts'
-import { vocabulary } from '../models/vocab.ts'
+import { ttsT1 } from '../../../kit.ts'
+import { vocabulary } from '../../../models/vocab.ts'
 
 const schema = z.object({
   text: z.string().description("Text").extra('extra', { order: null, placeholder: "The words to speak", tooltip: "The text to synthesize", required: true, wtype: 'textarea', }),

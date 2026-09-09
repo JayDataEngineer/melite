@@ -4,8 +4,8 @@
 // Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { motionLane, finalizeMotion } from '../kit.ts'
-import { vocabulary } from '../models/vocab.ts'
+import { motionLane, finalizeMotion } from '../../../kit.ts'
+import { vocabulary } from '../../../models/vocab.ts'
 
 const schema = z.object({
   prompt: z.string().description("Prompt").extra('extra', { order: 0, group: "prompt", columns: 1, tooltip: "What the body DOES — verb-first, one continuous action per segment. Multi-segment: separate with | and pair with motion_prompts.", required: true, wtype: 'textarea', }),

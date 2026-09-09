@@ -19,10 +19,10 @@
 // golden ritual, pinned by the wall.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import type { ModelFacts } from '../facts.ts'
-import type { GraphBuilder } from '../graph.ts'
-import { wanVace, scail2, VIDEO_NEGATIVE_FALLBACK, VIDEO_REQUIRED_PATHS } from '../kit.ts'
-import { SAMPLERS, SCHEDULERS } from '../models/vocab.ts'
+import type { ModelFacts } from '../../../facts.ts'
+import type { GraphBuilder } from '../../../graph.ts'
+import { wanVace, scail2, VIDEO_NEGATIVE_FALLBACK, VIDEO_REQUIRED_PATHS } from '../../../kit.ts'
+import { SAMPLERS, SCHEDULERS } from '../../../models/vocab.ts'
 
 const schema = z.object({
   prompt: z.string().description("Prompt").extra('extra', { order: 0, group: "prompt", columns: 2, width: 1, required: true, wtype: 'textarea', }),
