@@ -682,10 +682,21 @@ export const createExecuteSlice = (
  // WIRE ADOPTION P3 consumer (ledger): the pending flip above stands
  // (gates must unlock synchronously — no await here), but a stranded
  // runId earns a server-side truth check. A known+live row means the
- // run SURVIVED the reload (long render still on the GPU) — the
- // operator gets the truth as a toast, not silence. Fallback law:
+ // run SURVIVED the reload (long render still on the GPU) — tracking
+ // re-attaches to the first live run (poll-only; completion rides
+ // _finishChainRun). Fallback law:
  // unknown (no /api) or gone rows change nothing; the toast fires
  // only when this thread is still current (stale probes stay silent).
+ // WIRE ADOPTION P3 second consumer (ledger): POLL RE-ATTACH on a
+ // live verdict. The toast-only first consumer proved the seam; a
+ // known+live row now resumes tracking instead of asking for a
+ // re-run. FIRST LIVE RUN ONLY — concurrent re-attaches would race
+ // polls over the shared stage rows; stages carrying any other
+ // runId stay pending (their truth was gone/unknown, or a second
+ // live run the operator can re-run). POLL-ONLY, no events stream:
+ // the 700ms poll is the terminal authority by design and
+ // streamFlowEvents degrades to poll-only — the supported degraded
+ // mode, not a second-class path (so no single/chain fold question).
  if (phantomRunIds.length > 0 && tid !== null) {
    const atTid = tid
    const stranded = phantomRunIds
@@ -694,10 +705,97 @@ export const createExecuteSlice = (
      if (get().threadId !== atTid) return
      const live = stranded.filter((_, i) => reconcilePhantomRun(rows[i]) === "live")
      if (live.length === 0) return
+     const runId = live[0]
+     if (!runId) return
+     if (get()._abort || get().runningStageId) {
+       // A run started while the probe was in flight — never steal
+       // it. Fall back to the toast-only truth.
+       useToastStore.getState().addToast(
+         "info",
+         `Run ${runId} is still live on the gateway — a newer run is already tracked, so it was left alone.`,
+       )
+       return
+     }
+     // Mirror the run's own start: stages carrying the live runId go
+     // back to running (PROXY — the server says live), an AbortController
+     // registers as _abort (Stop/Cancel keep working; a newer
+     // executeStage overwrites it and the tick guard below yields),
+     // runningStageId takes the first re-attached stage (one-GPU-run
+     // mutual exclusion holds while we track).
+     const abort = new AbortController()
+     const firstStage = get().flow?.stages.find((s) => s.runId === runId)
+     set({
+       _abort: abort,
+       runningStageId: firstStage?.id ?? null,
+       flow: get().flow ? {
+         ...get().flow!,
+         stages: get().flow!.stages.map((s) =>
+           s.runId === runId
+             ? { ...s, status: "running" as FlowStageStatus, error: null }
+             : s,
+         ),
+       } : get().flow,
+     })
      useToastStore.getState().addToast(
        "info",
-       `Run ${live[0]} is still live on the gateway — stages were marked pending because the reload killed tracking. Re-run to re-attach.`,
+       `Run ${runId} survived the reload — still live on the gateway. Live tracking re-attached.`,
      )
+     const onTick = (status: FlowRunStatus) => {
+       // Yield to anything newer (a user-started run overwrote
+       // _abort) or a thread switch — self-abort so pollFlowRun
+       // rejects and the catch below stays silent.
+       if (get().threadId !== atTid || get()._abort !== abort) {
+         abort.abort()
+         return
+       }
+       chainTick(get, set)(status)
+     }
+     try {
+       const finalStatus = await pollFlowRun(runId, abort.signal, { intervalMs: 700, onTick })
+       if (get().threadId !== atTid || get()._abort !== abort) return
+       await get()._finishChainRun(finalStatus, runId, "Flow")
+     } catch (e) {
+       if (get().threadId !== atTid || get()._abort !== abort) return
+       // AbortError = our Stop/Cancel (or the tick guard's yield) —
+       // mirror executeStage's arm, scoped to the re-attached stages.
+       if (e instanceof DOMException && e.name === "AbortError") {
+         const p = get().flow
+         if (!p) return
+         set({
+           flow: {
+             ...p,
+             stages: p.stages.map((s) =>
+               s.runId === runId
+                 ? { ...s, status: "pending" as FlowStageStatus }
+                 : s,
+             ),
+           },
+           _abort: null,
+           runningStageId: null,
+         })
+         return
+       }
+       // Anything else is server truth (run vanished mid-re-attach,
+       // contract violation) — fail the re-attached stages VISIBLY,
+       // never a silent fake "running".
+       const msg = e instanceof Error ? e.message : String(e)
+       const p = get().flow
+       if (!p) return
+       set({
+         flow: {
+           ...p,
+           stages: p.stages.map((s) =>
+             s.runId === runId
+               ? { ...s, status: "error" as FlowStageStatus, error: msg }
+               : s,
+           ),
+           status: "failed",
+         },
+         _abort: null,
+         runningStageId: null,
+       })
+       useToastStore.getState().addToast("error", `Re-attached run ${runId} failed: ${msg}`)
+     }
    })()
  }
  },
