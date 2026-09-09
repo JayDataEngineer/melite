@@ -35,6 +35,7 @@ import {
   releaseLock,
 } from "@melite/gateway-queue";
 import { enqueueResurrected } from "@melite/gateway-doors";
+import { getDraftsDomain } from "../storage/store.ts";
 
 /** The P5 boot engine tag for the server.boot ledger row (py writes
  *  "python-orchestrator"; the TS shell is the preview runtime). */
@@ -85,6 +86,15 @@ export function bootState(
       /* stderr gone — boot anyway */
     }
   },
+  /** Drafts-domain existence probe (the resurrect usability gate).
+   * Production always passes it (the plugin apply opens the domain
+   * before the queue boots); a missing probe keeps planResurrect's
+   * LOUD default throw — silence there would orphan reviveable runs
+   * (the 2026-09-09 drafts migration briefly left exactly that
+   * hole: any boot with a queued candidate died at the default
+   * throw and "boot queue skipped" zeroed resurrect AND sweep — a
+   * QUEUE LANE LAW violation, caught by the wire wall's drift pin). */
+  draftExists: (draftId: string) => boolean,
 ): { resurrected: number; swept: number; live: string[] } {
   try {
     const roots: QueueRoots = { stateRoot, runsRoot, ledgerPath };
@@ -95,6 +105,8 @@ export function bootState(
       },
       port,
       BOOT_ENGINE,
+      Math.floor(Date.now() / 1000),
+      draftExists,
     );
   } catch (exc: unknown) {
     const msg: string = exc instanceof Error ? exc.message : String(exc);
@@ -117,8 +129,13 @@ export const gatewayPlugin: Plugin<GatewayConfig> = {
     any,
     GatewayConfig
   >,
-  inject: ["gatewayError"],
-  apply(ctx: Context, config: GatewayConfig): () => void {
+  inject: ["gatewayError", "storageDomain"],
+  // Async apply: the resurrect usability gate needs the drafts
+  // domain's existence probe, and opening the domain is async (the
+  // storage hub's open path). Cordis awaits the returned promise as
+  // part of the fiber — READY still prints only after the queue boot
+  // has settled (resurrect + sweep + the server.boot ledger row).
+  async apply(ctx: Context, config: GatewayConfig): Promise<() => void> {
     // Lock-first (py main() 4474-4480): the single-writer gate runs
     // BEFORE any boot side effect. A second writer on the same state
     // root refuses LOUD here, having touched nothing.
@@ -128,6 +145,14 @@ export const gatewayPlugin: Plugin<GatewayConfig> = {
         throw new Error(refuseStartLine(gate.note));
       }
     }
+    // The drafts-domain probe (resurrect's usability gate): opened
+    // BEFORE the queue boots so reviveable runs are judged against
+    // the live domain, exactly as the save/get doors see it (the
+    // storage hub resolves the same root the config carries —
+    // resolveStorageRoot rides the same env pin the boot used).
+    const drafts = await getDraftsDomain(ctx);
+    const draftExists = (draftId: string): boolean =>
+      drafts.table("docs").get(draftId) !== undefined;
     // Resurrect, then sweep, then serve (py main() 4485-4486). The
     // boot port for the server.boot row is the requested port (0 =
     // ephemeral, exactly what the caller asked for); the bound port
@@ -144,6 +169,7 @@ export const gatewayPlugin: Plugin<GatewayConfig> = {
       (msg: string): void => {
         log.warn("%s", msg);
       },
+      draftExists,
     );
     // Teardown (py shutdown(), reason signal): a retiring process
     // frees only its OWN lock, never the live holder's — and only

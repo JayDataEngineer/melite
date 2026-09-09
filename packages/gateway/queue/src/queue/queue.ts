@@ -1593,9 +1593,15 @@ export function buildRebuiltRun(
 export function resurrectRuns(
   stateRoot: string,
   enqueue: (run: RebuiltRun) => void,
+  draftExists: (draftId: string) => boolean,
   nowS: number = Math.floor(Date.now() / 1000),
 ): string[] {
-  const plan: ResurrectPlan = planResurrect(stateRoot);
+  const plan: ResurrectPlan = planResurrect(
+    stateRoot,
+    undefined,
+    undefined,
+    draftExists,
+  );
   const revived: string[] = [];
   for (const runId of plan.order) {
     try {
@@ -1629,8 +1635,15 @@ export function bootQueue(
   port: number,
   engine: string,
   nowS: number = Math.floor(Date.now() / 1000),
+  draftExists: (draftId: string) => boolean = (): boolean => {
+    // LOUD default (see planResurrect): callers without a domain
+    // probe must fail loud, never silently orphan reviveable runs.
+    throw new Error(
+      "[gateway-ts] bootQueue needs the caller's draftExists probe (drafts domain)",
+    );
+  },
 ): { resurrected: number; swept: number; live: string[] } {
-  const live: string[] = resurrectRuns(roots.stateRoot, enqueue, nowS);
+  const live: string[] = resurrectRuns(roots.stateRoot, enqueue, draftExists, nowS);
   const sweptIds: string[] = bootSweep(roots.stateRoot, live, nowS);
   appendLedger(
     roots.stateRoot,

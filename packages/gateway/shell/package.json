@@ -13,16 +13,20 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@deepseek-ai/cordis-plugin-group": "workspace:*",
+    "@deepseek-ai/cordis-plugin-include": "workspace:*",
+    "@deepseek-ai/cordis-plugin-loader": "workspace:*",
+    "@deepseek-ai/cordis-plugin-logger-console": "workspace:*",
+    "@deepseek-ai/cordis-plugin-timer": "workspace:*",
+    "@deepseek-ai/dsh-api-gateway": "0.1.0-rc.8",
+    "@deepseek-ai/dsh-client-connection": "0.1.0-rc.8",
+    "@deepseek-ai/dsh-host-webserver": "workspace:*",
+    "@deepseek-ai/dsh-typert-registry": "0.1.0-rc.8",
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/gateway-core": "workspace:*",
     "@melite/gateway-doors": "workspace:*",
     "@melite/gateway-queue": "workspace:*",
-    "@deepseek-ai/cordis-plugin-include": "workspace:*",
-    "@deepseek-ai/cordis-plugin-group": "workspace:*",
-    "@deepseek-ai/cordis-plugin-loader": "workspace:*",
-    "@deepseek-ai/cordis-plugin-logger-console": "workspace:*",
-    "@deepseek-ai/cordis-plugin-timer": "workspace:*",
-    "@deepseek-ai/dsh-host-webserver": "workspace:*"
+    "@melite/gateway-wire": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",

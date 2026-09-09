@@ -20,12 +20,15 @@ export type { QueueRoots, RebuiltRun };
 
 /** Resurrect half: usable QUEUED records re-queue FIFO (same ids) +
  *  run.resurrected rows. Returns revived ids (spreadable, .length —
- *  the sweep's live shield). */
+ *  the sweep's live shield). draftExists is the caller's domain
+ *  probe (required since the 2026-09-10 wiring fix — see queue.ts
+ *  planResurrect's LOUD default for the reasoning). */
 export function bootResurrect(
   roots: QueueRoots,
   enqueue: (run: RebuiltRun) => void,
+  draftExists: (draftId: string) => boolean,
 ): string[] {
-  return resurrectRuns(roots.stateRoot, enqueue);
+  return resurrectRuns(roots.stateRoot, enqueue, draftExists);
 }
 
 /** Sweep half: stale running/queued sidecars settle failed (+ boot

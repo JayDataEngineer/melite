@@ -19,6 +19,21 @@
   - id: webserver
     name: '@deepseek-ai/dsh-host-webserver'
     config: !!js gatewayRuntime.webserver
+  # THE WIRE ADOPTION (operator decision 2026-09-10, ledger §
+  # "THE WIRE ADOPTION"): the DSH Connection transport + Typert
+  # RPC over the same vendored webserver. Row shape = the bundle
+  # base rows (registry → gateway → connection; typertGateway
+  # claims /api endpoints via connection.rpc.intercept, and the
+  # connection plugin mounts the /api prefix route + trust fence
+  # on ctx.webServer). No webRuntime service exists on this host
+  # — trustedHosts stays default (loopback fence; authorities
+  # join via operator patch when the TEST lane needs them).
+  - id: typert
+    name: '@deepseek-ai/dsh-typert-registry'
+  - id: typert-gateway
+    name: '@deepseek-ai/dsh-api-gateway'
+  - id: connection
+    name: '@deepseek-ai/dsh-client-connection'
   - id: storage-hub
     name: cordis:storage-hub
   - id: storage-json
@@ -67,3 +82,8 @@
     name: '@melite/gateway-doors/studios'
   - id: gateway-planes
     name: '@melite/gateway-doors/planes'
+  # Wire-plane Remote services (THE WIRE ADOPTION P1): last row —
+  # the runs registry provider (gateway-runs-registry) is long
+  # live by now; the Remote resolves ctx.runs per call anyway.
+  - id: gateway-wire
+    name: '@melite/gateway-wire'
