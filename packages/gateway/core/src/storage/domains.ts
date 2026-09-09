@@ -28,16 +28,18 @@
 // remains the estate's door/card schema tool (src/core/params.ts,
 // card-decls); it does not cross this seam.
 //
-// INVALID-RECORD POLICY (rc-tier surprise, named for the canon): neither
-// 0.0.1-rc.1 nor the estate-pinned 0.1.0-rc.8 facility offers an
-// invalidRecords knob — `DomainFacility.open` fails LOUD with
-// `invalid-record` (or the backend's `malformed-medium`) on any stored
-// record that misses its schema. The estate-side policy (derived data →
-// backup-and-skip) lives in src/storage/store.ts: on those two codes the
-// unit file is quarantined aside (`<unit>.json.bak-<epochMs>`) and the
-// domain re-opens empty for backfill. `version-mismatch` is NEVER
-// auto-wiped (a version bump needs a conscious migration) — the tier
-// degrades to disk-only and the second stroke owns the migration.
+// INVALID-RECORD POLICY (alpha-native since 0.1.5-alpha.2): both specs
+// declare `invalidRecords: 'backup-and-skip'` over the per-record layout —
+// the facility backs a schema-failing record's document aside
+// (`<key>.json.bak.<stamp>`, the backend's own backupRecord), logs the
+// cause, and the open continues with that record absent; a record file
+// stamped outside the accepted versions reads as absent with no backup.
+// Derived replicas backfill from the disk scan, so an absent record is
+// the correct recovery. The rc-era estate-side quarantine wrapper in
+// store.ts is deleted — the facility owns this now. `version-mismatch`
+// no longer has a unit-file trigger under per-record layout (version is
+// scoped per record); anything else the facility throws propagates and
+// the tier degrades to disk-only.
 //
 // THE SIDEBAR'S FUTURE SUBSCRIPTION SEAM (no web/* changes this stroke):
 // every durable write emits `domain/changed` on the gateway context
@@ -93,20 +95,29 @@ export type RunRow = z.infer<typeof RunRowSchema>;
 export type ArtifactRow = z.infer<typeof ArtifactRowSchema>;
 export type UploadFile = z.infer<typeof UploadFileSchema>;
 
-/** The assets index domain (unit file `assets.json`, version 1). */
+/** The assets index domain (unit dir `assets/`, version 1). Per-record
+ *  layout: rows are large, sparse, and individually disposable — one bad
+ *  or stale record file reads as absent and never bricks the unit; a
+ *  schema-failing record is backed up and skipped (the facility's
+ *  invalidRecords path, native since 0.1.5-alpha). */
 export const assetsDomainSpec = defineDomain({
   name: "assets",
   version: 1,
+  layout: "per-record",
+  invalidRecords: "backup-and-skip",
   tables: {
     runs: domainTable<string, RunRow>(RunRowSchema),
     artifacts: domainTable<string, ArtifactRow>(ArtifactRowSchema),
   },
 });
 
-/** The staged-upload index domain (unit file `uploads.json`, version 1). */
+/** The staged-upload index domain (unit dir `uploads/`, version 1). Same
+ *  per-record + backup-and-skip shape as assets. */
 export const uploadsDomainSpec = defineDomain({
   name: "uploads",
   version: 1,
+  layout: "per-record",
+  invalidRecords: "backup-and-skip",
   tables: {
     files: domainTable<string, UploadFile>(UploadFileSchema),
   },

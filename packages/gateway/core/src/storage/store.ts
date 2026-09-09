@@ -28,7 +28,7 @@
 // enums, import type for types, .ts specifiers for relative imports.
 
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
-import { readdirSync, renameSync, statSync } from "node:fs";
+import { readdirSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Context } from "@deepseek-ai/cordis";
@@ -82,53 +82,6 @@ interface CacheEntry {
 
 let cached: CacheEntry | null = null;
 
-/** Stable-contract code of a thrown error (DomainError/StorageError
- *  carry `code` as their switchable contract — structural read, never
- *  instanceof, so a second package copy cannot fool the switch). */
-function errorCode(exc: unknown): string {
-  if (
-    typeof exc === "object" &&
-    exc !== null &&
-    "code" in exc &&
-    typeof (exc as { code: unknown }).code === "string"
-  ) {
-    return (exc as { code: string }).code;
-  }
-  return "";
-}
-
-/** Quarantine a poisoned unit file aside (derived data → backup-and-skip:
- *  the domain re-opens empty and backfills; the .bak file keeps the
- *  evidence). Never throws. */
-function quarantineUnitFile(root: string, unit: string): void {
-  try {
-    renameSync(
-      join(root, unit + ".json"),
-      join(root, unit + ".json.bak-" + Date.now()),
-    );
-  } catch {
-    /* absent or locked — the reopen decides */
-  }
-}
-
-/** Open one domain, quarantining poisoned units (invalid-record /
- *  malformed-medium) for backfill. version-mismatch and anything else
- *  propagate — the caller degrades to disk-only. */
-async function openDomain<S extends AssetsDomainSpec | UploadsDomainSpec>(
-  facility: DomainFacility,
-  root: string,
-  spec: S,
-): Promise<Domain<S>> {
-  try {
-    return await facility.open(spec);
-  } catch (exc: unknown) {
-    const code: string = errorCode(exc);
-    if (code !== "invalid-record" && code !== "malformed-medium") throw exc;
-    quarantineUnitFile(root, spec.name);
-    return await facility.open(spec);
-  }
-}
-
 /** Canonical JSON (sorted keys) — immune to key-order drift between
  *  scan-built rows and domain round-trips, so steady state writes
  *  nothing. */
@@ -150,8 +103,19 @@ function stableStringify(value: unknown): string {
   );
 }
 
+/** base64url of a natural key — the path-safe domain key for keys that
+ *  carry filename/path characters (per-record layout keys become path
+ *  segments; the backend's SAFE_KEY_RE admits [a-zA-Z0-9_-] only).
+ *  Applied per TABLE as a uniform policy (never per-key branching, so
+ *  a table's key map stays injective): runs keys are path-safe hex and
+ *  ride identity; artifact keys `<run>/<name>` and upload filename keys
+ *  always encode. */
+const b64uKey = (key: string): string =>
+  Buffer.from(key, "utf8").toString("base64url");
+
 /** Converge one table to its scanned rows (put-if-changed,
- *  delete-if-absent). Sequential awaits ride the domain write chain. */
+ *  delete-if-absent). Sequential awaits ride the domain write chain.
+ *  `encode` maps natural keys to domain keys (see b64uKey). */
 async function convergeTable<V>(
   table: {
     get(key: string): V | undefined;
@@ -160,14 +124,18 @@ async function convergeTable<V>(
     delete(key: string): Promise<boolean>;
   },
   scanned: ReadonlyMap<string, V>,
+  encode: (key: string) => string = (k: string): string => k,
 ): Promise<void> {
+  const scannedKeys = new Set<string>();
   for (const [key, value] of scanned) {
-    if (stableStringify(table.get(key)) !== stableStringify(value)) {
-      await table.put(key, value);
+    const domainKey = encode(key);
+    scannedKeys.add(domainKey);
+    if (stableStringify(table.get(domainKey)) !== stableStringify(value)) {
+      await table.put(domainKey, value);
     }
   }
-  for (const key of [...table.keys()]) {
-    if (!scanned.has(key)) await table.delete(key);
+  for (const domainKey of [...table.keys()]) {
+    if (!scannedKeys.has(domainKey)) await table.delete(domainKey);
   }
 }
 
@@ -242,7 +210,7 @@ async function backfillUploadsIfEmpty(
           : lower.endsWith(".webp")
             ? "image/webp"
             : "application/octet-stream";
-      await files.put(name, {
+      await files.put(b64uKey(name), {
         name,
         path: "data/input/" + name,
         bytes: st.size,
@@ -299,8 +267,8 @@ async function getHandles(
     );
   }
   const ready: Promise<StorageHandles> = (async (): Promise<StorageHandles> => {
-    const assets = await openDomain(facility, root, assetsDomainSpec);
-    const uploads = await openDomain(facility, root, uploadsDomainSpec);
+    const assets = await facility.open(assetsDomainSpec);
+    const uploads = await facility.open(uploadsDomainSpec);
     await backfillUploadsIfEmpty(uploads);
     return { assets, uploads };
   })();
@@ -330,6 +298,7 @@ export async function reconcileAssetsTier(
     await convergeTable(
       handles.assets.table("artifacts"),
       scanned.artifacts,
+      b64uKey,
     );
   } catch {
     /* the scan remains the truth; the domain converges on a later pass */
@@ -347,7 +316,7 @@ export async function noteUploadStaged(
       ctx,
       resolveStorageRoot(),
     );
-    await handles.uploads.table("files").put(rec.name, rec);
+    await handles.uploads.table("files").put(b64uKey(rec.name), rec);
   } catch {
     /* the staged file is the truth; the index catches up on backfill */
   }
