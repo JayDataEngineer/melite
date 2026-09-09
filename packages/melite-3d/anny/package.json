@@ -7,7 +7,9 @@
   "exports": {
     ".": "./src/card.ts",
     "./ui/*": "./src/ui/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./ui/studio/component": "./src/ui/studio/component.tsx",
+    "./ui/studio/shape": "./src/ui/studio/shape.tsx"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test tests/"

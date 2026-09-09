@@ -523,6 +523,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/dsh-host-webserver':
+        specifier: workspace:*
+        version: link:../../../vendor/cordis_plugins/webserver
       '@melite/comfyui':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
@@ -551,12 +554,18 @@ importers:
       '@deepseek-ai/cordis-plugin-timer':
         specifier: workspace:*
         version: link:../../../vendor/cordis_plugins/timer
+      '@deepseek-ai/dsh-host-webserver':
+        specifier: workspace:*
+        version: link:../../../vendor/cordis_plugins/webserver
       '@melite/comfyui':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
       '@melite/gateway-core':
         specifier: workspace:*
         version: link:../core
+      '@melite/gateway-doors':
+        specifier: workspace:*
+        version: link:../doors
     devDependencies:
       '@types/node':
         specifier: ^22.20.0
@@ -608,10 +617,14 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/harness/melite-preset: {}
-
   packages/harness/melite-tools:
     dependencies:
+      '@deepseek-ai/dsh-llm':
+        specifier: 0.1.0-rc.8
+        version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-attachment@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-brand@0.1.5-alpha.1(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)))(@deepseek-ai/dsh-brand@0.1.5-alpha.1(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-timeout@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)))
+      '@deepseek-ai/dsh-tools':
+        specifier: 0.1.1-rc.2
+        version: 0.1.1-rc.2(c99a84f9f9b5ed24862430e477a90715)
       '@melite/melite-audio-music':
         specifier: workspace:*
         version: link:../../melite-audio/music
@@ -664,36 +677,6 @@ importers:
       '@melite-plugin/dsh-tools':
         specifier: link:../melite-tools
         version: link:../melite-tools
-
-  packages/harness/testkit:
-    devDependencies:
-      '@testing-library/dom':
-        specifier: ^10.4.1
-        version: 10.4.1
-      '@testing-library/react':
-        specifier: ^16.3.3
-        version: 16.3.3(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@types/react':
-        specifier: ~18.3.31
-        version: 18.3.31
-      '@types/react-dom':
-        specifier: ~18.3.7
-        version: 18.3.7(@types/react@18.3.31)
-      '@vitejs/plugin-react':
-        specifier: ^6.1.1
-        version: 6.1.1(vite@8.2.2(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0))
-      happy-dom:
-        specifier: ^20.12.0
-        version: 20.13.1
-      react:
-        specifier: ^19.2.6
-        version: 19.2.8
-      react-dom:
-        specifier: ^19.2.6
-        version: 19.2.8(react@19.2.8)
-      vitest:
-        specifier: ^4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(happy-dom@20.13.1)(jsdom@29.1.1)(vite@8.2.2(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0))
 
   packages/melite-3d/anny:
     dependencies:
@@ -2401,8 +2384,8 @@ importers:
         specifier: ~5.7.2
         version: 5.7.3
       vitest:
-        specifier: ^5.0.0
-        version: 5.0.0(@opentelemetry/api@1.9.1)(@types/node@22.20.1)(happy-dom@20.13.1)(jsdom@29.1.1)(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0))
+        specifier: ^4.1.11
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.20.1)(happy-dom@20.13.1)(jsdom@29.1.1)(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0))
 
   packages/web/melite-card-deck:
     devDependencies:
@@ -3748,6 +3731,19 @@ packages:
       '@deepseek-ai/dsh-session': ^0.1.0-rc.8
       '@deepseek-ai/dsh-system-prompt': ^0.1.0-rc.8
       '@deepseek-ai/dsh-user-approval': ^0.1.0-rc.8
+
+  '@deepseek-ai/dsh-tools@0.1.1-rc.2':
+    resolution: {integrity: sha512-0GGL4D55MwYDepzZMOI3L0ycu5b2qr96GL0Y7snwhAnpK2Di61rbX3fJE+PB3ZrovGX0csIRdt9n3iJZDVtDrw==}
+    peerDependencies:
+      '@deepseek-ai/cordis': ^4.0.1
+      '@deepseek-ai/dsh-agent': ^0.1.1-rc.2
+      '@deepseek-ai/dsh-code-runtime': ^0.1.1-rc.2
+      '@deepseek-ai/dsh-invariants': ^0.1.1-rc.2
+      '@deepseek-ai/dsh-llm': ^0.1.1-rc.2
+      '@deepseek-ai/dsh-scope': ^0.1.1-rc.2
+      '@deepseek-ai/dsh-session': ^0.1.1-rc.2
+      '@deepseek-ai/dsh-system-prompt': ^0.1.1-rc.2
+      '@deepseek-ai/dsh-user-approval': ^0.1.1-rc.2
 
   '@deepseek-ai/dsh-tools@0.1.5-alpha.1':
     resolution: {integrity: sha512-TYvlnJlFZtenuoqe/SvTSrscfo6Y8NgwwV2zgaF+1rsOZBBiGPZNsUn0WG53JMs8M8wpkq7HIzIUUs2TOdThMw==}
@@ -5604,17 +5600,6 @@ packages:
       vite:
         optional: true
 
-  '@vitest/mocker@5.0.0':
-    resolution: {integrity: sha512-66PGTMIiVJP3t4a5yxU9qPtf7MdTBs8jmToMvy+HVflB3Yy13WJZTtPePdvU+wjRV02SKK5doLbSA6o9pwOmiA==}
-    peerDependencies:
-      msw: ^2.4.9
-      vite: ^6.0.0 || ^7.0.0 || ^8.0.0
-    peerDependenciesMeta:
-      msw:
-        optional: true
-      vite:
-        optional: true
-
   '@vitest/pretty-format@4.1.11':
     resolution: {integrity: sha512-yiZzPbGTS9Sr/JpFl8zHrcIkAofNbFV6k21vIgQN/cY/oxZeXhJv5sc/MBJ5jFKWmWs+oJHw0UXLZjmf931+Vw==}
 
@@ -5626,9 +5611,6 @@ packages:
 
   '@vitest/spy@4.1.11':
     resolution: {integrity: sha512-apNa/prQy2qCeywhnixOHPRCgGNhvg7T4Dapfl1GahLp/R+uhBm5cPyFoNVyqsNd2h1nJxL6BqqdIjiABL60YA==}
-
-  '@vitest/spy@5.0.0':
-    resolution: {integrity: sha512-uy+luWBAPw9XfthoHi5AkfHUnuPYEESjl0p/r+meoBnU8bxg5GDQ3Ey8MjcJ6sqahkL4PFyrvfMJJBw7LbU06g==}
 
   '@vitest/utils@4.1.11':
     resolution: {integrity: sha512-zTCVGpyFsGWBhllOyKlTw/vnr6D9qxsfSDyfbyZmTyjHw5N/VuvzHpHoQjm2ZJzn4RJgx5w4r7V0er69CmLgPQ==}
@@ -7359,9 +7341,6 @@ packages:
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
 
-  magic-string@1.2.3:
-    resolution: {integrity: sha512-Bpb0W2TbLKOZ7vJnOUnVRGq3WL2p+ISV29M6hYPL1AFCpyKZpdr5ytiXoTSSxRVhg8YW7f65+6gbG8WG6PCa/g==}
-
   markdown-table@3.0.4:
     resolution: {integrity: sha512-wiYz4+JrLyb/DqW2hkFJxP7Vd7JuTDm77fvbM8VfEQdmSMqcImWeeRbHwZjBjIFki/VaMK2BhFi7oUUZeM5bqw==}
 
@@ -8431,10 +8410,6 @@ packages:
   tinybench@2.9.0:
     resolution: {integrity: sha512-0+DUvqWMValLmha6lr4kD8iAMK1HzV0/aKnCtWb9v9641TnP/MFb7Pc2bxoxQjTXAErryXVgUOfv2YqNllqGeg==}
 
-  tinybench@6.1.4:
-    resolution: {integrity: sha512-9APumHG7r4yOk4X4WlkmE71aZcv1gvin1czO3OQ1U9iJcFA5Ja/ygyb0vPOVHTthFozUYs8CLoLUlM8grb2lTQ==}
-    engines: {node: '>=20.0.0'}
-
   tinyexec@1.3.0:
     resolution: {integrity: sha512-QKAl9m8gWWGHV8jZcPeym6j+XULi6tOf1mT83WYJ4Lk2ytW/uwAWkrP0uFsdoYMdueVJ0qs26wZ+23xeB4ibNQ==}
     engines: {node: '>=18'}
@@ -8813,47 +8788,6 @@ packages:
       happy-dom: '*'
       jsdom: '*'
       vite: ^6.0.0 || ^7.0.0 || ^8.0.0
-    peerDependenciesMeta:
-      '@edge-runtime/vm':
-        optional: true
-      '@opentelemetry/api':
-        optional: true
-      '@types/node':
-        optional: true
-      '@vitest/browser-playwright':
-        optional: true
-      '@vitest/browser-preview':
-        optional: true
-      '@vitest/browser-webdriverio':
-        optional: true
-      '@vitest/coverage-istanbul':
-        optional: true
-      '@vitest/coverage-v8':
-        optional: true
-      '@vitest/ui':
-        optional: true
-      happy-dom:
-        optional: true
-      jsdom:
-        optional: true
-
-  vitest@5.0.0:
-    resolution: {integrity: sha512-gpsMNoRhMjMktVxPtstOH4/PJuPyovVaMDr4oDilXaGH1EcqM2OE96SoHT2VIQ6fTGtTjqmHDrEu2X9RQiXf8Q==}
-    engines: {node: ^22.12.0 || ^24.0.0 || >=26.0.0}
-    hasBin: true
-    peerDependencies:
-      '@edge-runtime/vm': '*'
-      '@opentelemetry/api': ^1.9.0
-      '@types/node': ^22.0.0 || >=24.0.0
-      '@vitest/browser-playwright': 5.0.0
-      '@vitest/browser-preview': 5.0.0
-      '@vitest/browser-webdriverio': ^5.0.0-beta.5 || >=5.0.0
-      '@vitest/coverage-istanbul': 5.0.0
-      '@vitest/coverage-v8': 5.0.0
-      '@vitest/ui': 5.0.0
-      happy-dom: '*'
-      jsdom: '*'
-      vite: ^6.4.0 || ^7.0.0 || ^8.0.0
     peerDependenciesMeta:
       '@edge-runtime/vm':
         optional: true
@@ -10397,6 +10331,19 @@ snapshots:
       zod: 4.5.4
 
   '@deepseek-ai/dsh-tools@0.1.0-rc.8(c99a84f9f9b5ed24862430e477a90715)':
+    dependencies:
+      '@deepseek-ai/cordis': 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/dsh-agent': 0.1.0-rc.8(e7d0a24c112d5e6e30f46c0b9c70733a)
+      '@deepseek-ai/dsh-code-runtime': 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))
+      '@deepseek-ai/dsh-invariants': 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)
+      '@deepseek-ai/dsh-llm': 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-attachment@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-brand@0.1.5-alpha.1(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)))(@deepseek-ai/dsh-brand@0.1.5-alpha.1(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-timeout@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)))
+      '@deepseek-ai/dsh-scope': 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))
+      '@deepseek-ai/dsh-session': 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-brand@0.1.5-alpha.1(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-llm@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-attachment@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-brand@0.1.5-alpha.1(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)))(@deepseek-ai/dsh-brand@0.1.5-alpha.1(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-timeout@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))))(@deepseek-ai/dsh-scope@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)))(@deepseek-ai/dsh-typert-protocol@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)))
+      '@deepseek-ai/dsh-system-prompt': 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-llm@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-attachment@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-brand@0.1.5-alpha.1(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)))(@deepseek-ai/dsh-brand@0.1.5-alpha.1(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-timeout@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))))(@deepseek-ai/dsh-scope@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)))
+      '@deepseek-ai/dsh-user-approval': 0.1.0-rc.8(c94f596f3140779453603697c15c0dd2)
+      '@deepseek-ai/schemastery': 3.18.2
+
+  '@deepseek-ai/dsh-tools@0.1.1-rc.2(c99a84f9f9b5ed24862430e477a90715)':
     dependencies:
       '@deepseek-ai/cordis': 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
       '@deepseek-ai/dsh-agent': 0.1.0-rc.8(e7d0a24c112d5e6e30f46c0b9c70733a)
@@ -12290,15 +12237,6 @@ snapshots:
     optionalDependencies:
       vite: 8.2.2(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0)
 
-  '@vitest/mocker@5.0.0(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0))':
-    dependencies:
-      '@jridgewell/trace-mapping': 0.3.31
-      '@vitest/spy': 5.0.0
-      estree-walker: 3.0.3
-      magic-string: 1.2.3
-    optionalDependencies:
-      vite: 8.2.2(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0)
-
   '@vitest/pretty-format@4.1.11':
     dependencies:
       tinyrainbow: 3.1.1
@@ -12316,8 +12254,6 @@ snapshots:
       pathe: 2.0.3
 
   '@vitest/spy@4.1.11': {}
-
-  '@vitest/spy@5.0.0': {}
 
   '@vitest/utils@4.1.11':
     dependencies:
@@ -13947,10 +13883,6 @@ snapshots:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.6.0
 
-  magic-string@1.2.3:
-    dependencies:
-      '@jridgewell/sourcemap-codec': 1.6.0
-
   markdown-table@3.0.4: {}
 
   marked@16.4.2: {}
@@ -15438,8 +15370,6 @@ snapshots:
 
   tinybench@2.9.0: {}
 
-  tinybench@6.1.4: {}
-
   tinyexec@1.3.0: {}
 
   tinyglobby@0.2.17:
@@ -15831,30 +15761,6 @@ snapshots:
     optionalDependencies:
       '@opentelemetry/api': 1.9.1
       '@types/node': 24.13.3
-      happy-dom: 20.13.1
-      jsdom: 29.1.1
-    transitivePeerDependencies:
-      - msw
-
-  vitest@5.0.0(@opentelemetry/api@1.9.1)(@types/node@22.20.1)(happy-dom@20.13.1)(jsdom@29.1.1)(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0)):
-    dependencies:
-      '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.0(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0))
-      chai: 6.2.2
-      es-module-lexer: 2.3.2
-      expect-type: 1.4.0
-      magic-string: 1.2.3
-      obug: 2.1.4
-      picomatch: 4.0.7
-      std-env: 4.2.0
-      tinybench: 6.1.4
-      tinyexec: 1.3.0
-      tinyglobby: 0.2.17
-      vite: 8.2.2(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0)
-      why-is-node-running: 2.3.0
-    optionalDependencies:
-      '@opentelemetry/api': 1.9.1
-      '@types/node': 22.20.1
       happy-dom: 20.13.1
       jsdom: 29.1.1
     transitivePeerDependencies:

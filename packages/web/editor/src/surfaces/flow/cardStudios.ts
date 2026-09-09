@@ -103,8 +103,13 @@ const CARD_PACKAGE_TENANT_LOADERS = import.meta.glob<{
   default: ComponentType<StudioTenantProps>
 }>("../../../../../../packages/melite-*/*/src/ui/studio/component.tsx")
 
+// ANCHOR LAW (the same one the engines regexes follow): vite
+// normalizes glob keys — the leading ../.. runs collapse, so the
+// literal "packages/" prefix DISAPPEARS from every key (verified
+// 2026-09-09: keys arrive as ../../melite-motion/motion/src/...).
+// Anchor on the /melite-<genre>/ segment, which survives everywhere.
 const CARD_PACKAGE_BODY =
-  /^\/packages\/melite-([^/]+)\/([^/]+)\/src\/ui\/studio\/component\.tsx$/
+  /\/melite-([^/]+)\/([^/]+)\/src\/ui\/studio\/component\.tsx$/
 
 function pluginTenantId(path: string): string | null {
   const i = path.indexOf("/action_cards/")
@@ -117,7 +122,7 @@ function pluginTenantId(path: string): string | null {
     const m = CARD_UNIT_BODY.exec(path.slice(j))
     return m ? `${m[1]}/${m[2]}` : null
   }
-  const k = path.indexOf("/packages/melite-")
+  const k = path.indexOf("/melite-")
   if (k >= 0) {
     const m = CARD_PACKAGE_BODY.exec(path.slice(k))
     return m ? `${m[1]}/${m[2]}` : null

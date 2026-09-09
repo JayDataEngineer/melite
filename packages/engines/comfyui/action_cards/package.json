@@ -28,6 +28,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./3d/*": "./3d/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./3d/body/ui/studio/bodyStudio": "./3d/body/ui/studio/bodyStudio.ts",
+    "./3d/body/ui/studio/BodyShapePanel": "./3d/body/ui/studio/BodyShapePanel.tsx",
+    "./3d/body/ui/studio/MeshPreviewCanvas": "./3d/body/ui/studio/MeshPreviewCanvas.tsx"
   }
 }

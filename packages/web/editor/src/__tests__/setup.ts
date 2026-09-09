@@ -1,5 +1,16 @@
-import '@testing-library/jest-dom/vitest'
-import { beforeEach, afterEach } from 'vitest'
+// jest-dom matchers via the /matchers entry + our OWN expect import —
+// NOT '@testing-library/jest-dom/vitest' (2026-09-09): that entry does
+// `import { expect } from 'vitest'` from JEST-DOM'S module context, which
+// resolves to a SECOND vitest module record in this worker; extending
+// that copy splits the runner's assertion state (snapshot state went
+// missing — 'SnapshotClient.setup()' — and rejects.toThrow(regex)
+// broke) whenever a second vitest copy (a ^5 pin in a sibling package)
+// drifted the resolution. /matchers imports no vitest at all; the
+// expect below is the same record the tests use.
+import * as jestDomMatchers from '@testing-library/jest-dom/matchers'
+import { expect, beforeEach, afterEach } from 'vitest'
+
+expect.extend(jestDomMatchers)
 
 // Kinds lane seed (the fourth lane): the wire's first-party table
 // (packages/melite-core/kinds/*.yaml) as a fixture — the jsdom suite has no
