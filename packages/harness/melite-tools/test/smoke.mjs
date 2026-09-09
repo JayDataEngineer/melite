@@ -44,7 +44,6 @@ async function runTool(tool, args, label) {
 }
 
 const main = async () => {
-  let draftId = ''
   let skillId = ''
 
   // --- the 9 melite tools, in registration order ---
@@ -55,29 +54,27 @@ const main = async () => {
     ['lane_bundle_peek', lib.laneBundlePeek(GW), {}, {}],
     ['lane_bundle_peek(templates)', lib.laneBundlePeek(GW), { kind: 'template' }, {}],
     ['lane_bundle_load(action_card image-gen)', lib.laneBundleLoad(GW), { kind: 'action_card', name: 'image-gen' }, {}],
-    ['build_flow', lib.buildFlow(GW),
-      { model: 'krea-2', prompt: 'smoke test card — a red cube on white', params: { seed: 7 } }, {}],
-    ['refine_draft', lib.refineDraft(GW), null, {}], // args filled after build
+    // melite_flow rows are refusal-surface proofs (no GPU burn): the
+    // named 4xx / pre-HTTP refusal rides the value — never a throw.
+    ['melite_flow(card loud-fail: no card tool)', lib.meliteFlow(GW),
+      { card: 'image-gen', model: '__smoke_no_such__' }, {}],
+    ['melite_flow(flow loud-fail: no such template)', lib.meliteFlow(GW),
+      { flow: '__smoke_no_such__' }, {}],
+    ['melite_flow(adhoc loud-fail: bad stage)', lib.meliteFlow(GW),
+      { stages: [{ id: 'x' }] }, {}],
+    ['melite_flow(empty: no composition)', lib.meliteFlow(GW), {}, {}],
     ['comfy_manage(status)', lib.comfyManage(GW), { action: 'status' }, {}],
     ['comfy_manage(provision loud-fail)', lib.comfyManage(GW), { action: 'provision_model', model: '__smoke_no_such_model__' }, {}],
     ['skill_index', lib.skillIndex(GW), {}, {}],
     ['skill_read', lib.skillRead(GW), null, {}], // id filled from index
     ['ledger_tail', lib.ledgerTail(GW), { limit: 3 }, {}],
     // --- the HEADLESS run doors (MELITE_HEADLESS=1 registration) —
-    // refusal-surface proofs: no GPU burn, the named 4xx rides the value.
-    ['card_run(loud-fail: no such draft)', lib.cardRun(GW), { draftId: 'draft-__smoke_no_such__' }, {}],
-    ['flow_run(loud-fail: no such template)', lib.flowRun(GW), { template: '__smoke_no_such__' }, {}],
+    // run_status refusal proof: unknown run = named 404 riding the value.
     ['run_status(unknown run)', lib.runStatus(GW), { runId: 'run-__smoke_none__' }, {}],
   ]
 
   for (const [label, tool, args, _] of tools) {
     try {
-      if (label === 'refine_draft') {
-        if (draftId === '') throw new Error('no draft from build_flow to refine')
-        const r = await runTool(tool, { draftId, params: { seed: 9 } }, label)
-        note(label, r.value?.card === 'draft' && r.value?.draftId === draftId, 'merged in place')
-        continue
-      }
       if (label === 'skill_read') {
         if (skillId === '') throw new Error('no skill id from skill_index')
         const r = await runTool(tool, { id: skillId }, label)
@@ -90,18 +87,14 @@ const main = async () => {
              String(r.value?.detail ?? ''))
         continue
       }
-      if (label.startsWith('card_run(')) {
-        // CONTRACT: a named refusal rides the value (draft not found) — never a throw.
+      if (label.startsWith('melite_flow(')) {
+        // CONTRACT: the unified verb refuses LOUD on every bad
+        // composition — the named refusal rides the value, never a
+        // throw; the render names the refusal for the chat parser.
         const r = await runTool(tool, args, label)
-        note(label, r.value?.error === 'draft not found' && r.text.includes('REFUSED'),
-             'refused: ' + String(r.value?.error ?? ''))
-        continue
-      }
-      if (label.startsWith('flow_run(')) {
-        // CONTRACT: QUEUE LANE LAW — unknown template = named 4xx BEFORE registration.
-        const r = await runTool(tool, args, label)
-        note(label, String(r.value?.error ?? '').includes('__smoke_no_such__') && r.text.includes('REFUSED'),
-             'refused: ' + String(r.value?.error ?? '').slice(0, 70))
+        const ok = typeof r.value?.error === 'string' && r.value.error.length > 0
+          && r.text.includes('REFUSED')
+        note(label, ok, 'refused: ' + String(r.value?.error ?? '').slice(0, 70))
         continue
       }
       if (label.startsWith('run_status(')) {
@@ -129,16 +122,6 @@ const main = async () => {
         const b = r.value?.bundle ?? {}
         const sig = b.signature ?? {}
         note(label, b.name === 'image-upscale' && sig.name === 'image_upscale' && (b.stages?.length ?? 0) === 2, 'the prebuilt signature + stages')
-      } else if (label === 'build_flow') {
-        draftId = r.value?.draftId ?? ''
-        // THE CHAT PARSER CONTRACT: token after the FIRST 'card ' must be
-        // the draft id (this exact check caught the "cards · earlier draft"
-        // regression — keep it forever).
-        const at = r.text.indexOf('card ')
-        const tok = at >= 0 ? r.text.slice(at + 5).split(' ')[0] : ''
-        const parses = tok.startsWith('draft-') || tok.startsWith('p_')
-        note(label, draftId.startsWith('draft-') && parses,
-          'draftId ' + draftId + ' | render "' + r.text.slice(0, 60) + '…" parses: ' + parses)
       } else if (label === 'lane_bundle_peek') {
         note(label, (r.value?.lanes?.length ?? 0) > 0, (r.value?.lanes?.length ?? 0) + ' lanes')
       } else if (label === 'lane_bundle_peek(templates)') {

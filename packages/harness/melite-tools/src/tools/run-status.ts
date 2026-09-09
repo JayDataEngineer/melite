@@ -24,14 +24,14 @@ export function runStatus(gatewayUrl: string): ToolDefinition {
     description:
       'Poll a queue run: status (queued|running|completed|error|stopped|failed), per-stage '
       + 'progress, artifacts (landed bytes with paths) and the EXACT error string on failure. '
-      + 'Args: runId (from card_run / flow_run). Includes queue_position while waiting on '
+      + 'Args: runId (from melite_flow). Includes queue_position while waiting on '
       + 'the serial GPU lane. Read-only — the stop door is operator-ordered.',
     parameters: {
       type: 'object',
       properties: {
         runId: {
           type: 'string',
-          description: 'The run id returned by card_run / flow_run.',
+          description: 'The run id returned by melite_flow.',
         },
       },
       required: ['runId'],

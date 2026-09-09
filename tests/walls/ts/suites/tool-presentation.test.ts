@@ -4,9 +4,9 @@
 // salient rawInput) instead of the generic fallback (title = tool name,
 // raw args dump).
 //
-// Pinned: all 13 tools expose presentCall (the rework kept the
-// count: flow_catalog + card_catalog died, melite_discover +
-// melite_load joined); cards are 'generic' with a
+// Pinned: all 10 tools expose presentCall (the rework unified
+// card_run + flow_run + build_flow + refine_draft into melite_flow);
+// cards are 'generic' with a
 // non-empty title; kinds come from the ToolCallKind vocabulary; salient
 // ids ride the title/rawInput; junk args (null/undefined/garbage) never
 // throw (the registry may call presenters during streaming AND replay).
@@ -18,16 +18,16 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import type { ToolDefinition } from "../../../../packages/harness/melite-tools/src/types.ts";
-import { buildFlow } from "../../../../packages/harness/melite-tools/src/tools/build-flow.ts";
-import { cardRun } from "../../../../packages/harness/melite-tools/src/tools/card-run.ts";
+import { meliteFlow } from "../../../../packages/harness/melite-tools/src/tools/melite-flow.ts";
+
 import { comfyManage } from "../../../../packages/harness/melite-tools/src/tools/comfy-manage.ts";
 import { meliteDiscover } from "../../../../packages/harness/melite-tools/src/tools/melite-discover.ts";
-import { flowRun } from "../../../../packages/harness/melite-tools/src/tools/flow-run.ts";
+
 import { laneBundleLoad } from "../../../../packages/harness/melite-tools/src/tools/lane-bundle-load.ts";
 import { laneBundlePeek } from "../../../../packages/harness/melite-tools/src/tools/lane-bundle-peek.ts";
 import { ledgerTail } from "../../../../packages/harness/melite-tools/src/tools/ledger-tail.ts";
 import { meliteLoad } from "../../../../packages/harness/melite-tools/src/tools/melite-load.ts";
-import { refineDraft } from "../../../../packages/harness/melite-tools/src/tools/refine-draft.ts";
+
 import { runStatus } from "../../../../packages/harness/melite-tools/src/tools/run-status.ts";
 import { skillIndex } from "../../../../packages/harness/melite-tools/src/tools/skill-index.ts";
 import { skillRead } from "../../../../packages/harness/melite-tools/src/tools/skill-read.ts";
@@ -36,16 +36,13 @@ const GW = "http://127.0.0.1:9"; // never dialed — construction + presentCall 
 const STUB_LLM = { complete: async () => ({ text: "stub" }) };
 
 const ALL: Array<[string, ToolDefinition]> = [
-  ["build_flow", buildFlow(GW)],
-  ["card_run", cardRun(GW)],
   ["comfy_manage", comfyManage(GW)],
   ["melite_discover", meliteDiscover(GW)],
-  ["flow_run", flowRun(GW)],
+  ["melite_flow", meliteFlow(GW)],
   ["lane_bundle_load", laneBundleLoad(GW)],
   ["lane_bundle_peek", laneBundlePeek(GW)],
   ["ledger_tail", ledgerTail(GW)],
   ["melite_load", meliteLoad(GW)],
-  ["refine_draft", refineDraft(GW)],
   ["run_status", runStatus(GW)],
   ["skill_index", skillIndex(GW)],
   ["skill_read", skillRead(GW)],
@@ -63,8 +60,8 @@ const KINDS = new Set([
 ]);
 
 describe("presentCall disclosure composition", () => {
-  it("all 13 tools declare presentCall; presentResult stays omitted", () => {
-    assert.equal(ALL.length, 13);
+  it("all 10 tools declare presentCall; presentResult stays omitted", () => {
+    assert.equal(ALL.length, 10);
     for (const [name, def] of ALL) {
       assert.equal(typeof def.presentCall, "function", `${name} needs presentCall`);
       assert.equal(def.presentResult, undefined, `${name} must not implement presentResult`);
@@ -82,18 +79,17 @@ describe("presentCall disclosure composition", () => {
 
   it("salient ids ride the title", () => {
     const byName = new Map(ALL);
-    assert.match(byName.get("card_run")!.presentCall!({ draftId: "d123" })!.title, /d123/);
-    assert.match(byName.get("flow_run")!.presentCall!({ template: "t9" })!.title, /t9/);
+    assert.match(byName.get("melite_flow")!.presentCall!({ card: "c9", model: "m9" })!.title, /c9/);
+    assert.match(byName.get("melite_flow")!.presentCall!({ flow: "f9" })!.title, /f9/);
+    assert.match(
+      byName.get("melite_flow")!.presentCall!({ stages: [{}, {}, {}] })!.title,
+      /adhoc \(3 stages\)/,
+    );
     assert.match(byName.get("run_status")!.presentCall!({ runId: "r42" })!.title, /r42/);
-    assert.match(byName.get("refine_draft")!.presentCall!({ draftId: "d7", params: {} })!.title, /d7/);
     assert.match(byName.get("skill_read")!.presentCall!({ id: "s1" })!.title, /s1/);
     assert.match(
       byName.get("lane_bundle_load")!.presentCall!({ kind: "card", name: "c1" })!.title,
       /c1/,
-    );
-    assert.match(
-      byName.get("build_flow")!.presentCall!({ flow: { stages: [{}, {}] } })!.title,
-      /2 stages/,
     );
     assert.match(
       byName.get("melite_discover")!.presentCall!({ lookup: "cards", tags: "image,upscale" })!.title,

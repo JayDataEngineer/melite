@@ -1264,12 +1264,6 @@ declare const DEFAULT_GATEWAY_URL = "http://localhost:33081";
 /** Strip one trailing slash so path joins stay single-slash. */
 declare function normalizeGatewayUrl(gatewayUrl: string): string;
 //#endregion
-//#region src/tools/card-run.d.ts
-declare function cardRun(gatewayUrl: string): ToolDefinition;
-//#endregion
-//#region src/tools/flow-run.d.ts
-declare function flowRun(gatewayUrl: string): ToolDefinition;
-//#endregion
 //#region src/tools/run-status.d.ts
 declare function runStatus(gatewayUrl: string): ToolDefinition;
 //#endregion
@@ -1282,11 +1276,8 @@ declare function laneBundleLoad(gatewayUrl: string): ToolDefinition;
 //#region src/tools/melite-discover.d.ts
 declare function meliteDiscover(gatewayUrl: string): ToolDefinition;
 //#endregion
-//#region src/tools/build-flow.d.ts
-declare function buildFlow(gatewayUrl: string): ToolDefinition;
-//#endregion
-//#region src/tools/refine-draft.d.ts
-declare function refineDraft(gatewayUrl: string): ToolDefinition;
+//#region src/tools/melite-flow.d.ts
+declare function meliteFlow(gatewayUrl: string): ToolDefinition;
 //#endregion
 //#region src/tools/comfy-manage.d.ts
 declare function comfyManage(gatewayUrl: string): ToolDefinition;
@@ -1321,7 +1312,7 @@ declare const inject: string[];
 interface Config {
   /** Melite gateway base URL. Default http://localhost:33081. */
   gatewayUrl?: string;
-  /** HEADLESS interface: register the run doors (card_run, flow_run,
+  /** HEADLESS interface: register the run doors (melite_flow,
    *  run_status) — the delegated operator. Default false (browser law:
    *  the model composes, the USER presses Run). */
   headless?: boolean;
@@ -1330,16 +1321,16 @@ interface Config {
   adhocTools?: string | string[];
 }
 /** BASE tool names — both interfaces (discovery, compose, management, audit). */
-declare const BASE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "lane_bundle_peek", "lane_bundle_load", "build_flow", "refine_draft", "comfy_manage", "skill_index", "skill_read", "ledger_tail"];
+declare const BASE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "lane_bundle_peek", "lane_bundle_load", "comfy_manage", "skill_index", "skill_read", "ledger_tail"];
 /** HEADLESS-only run doors (MELITE_HEADLESS=1) — the delegated operator. */
-declare const HEADLESS_TOOL_NAMES: readonly ["card_run", "flow_run", "run_status"];
+declare const HEADLESS_TOOL_NAMES: readonly ["melite_flow", "run_status"];
 /** AD HOC names (MELITE_ADHOC) — never in a base toolset.
  *  (empty since the disclosure stroke: enhance_prompt died as a tool —
  *  the editor ✦ door below keeps the user surface via harnessEnhance.) */
 declare const ADHOC_TOOL_NAMES: readonly [];
 /** Every tool name this plugin can own (registration log + smoke filter). */
-declare const MELITE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "lane_bundle_peek", "lane_bundle_load", "build_flow", "refine_draft", "comfy_manage", "skill_index", "skill_read", "ledger_tail", "card_run", "flow_run", "run_status"];
+declare const MELITE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "lane_bundle_peek", "lane_bundle_load", "comfy_manage", "skill_index", "skill_read", "ledger_tail", "melite_flow", "run_status"];
 /** Register the Melite tools against the live estate gateway. */
 declare function apply(ctx: Context, config?: Config): Promise<void>;
 //#endregion
-export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, Config, DEFAULT_GATEWAY_URL, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, RayGatewayError, apply, buildFlow, cardRun, comfyManage, flowRun, harnessEnhance, inject, laneBundleLoad, laneBundlePeek, ledgerTail, matchHarnessRoute, meliteDiscover, meliteLoad, name, normalizeGatewayUrl, refineDraft, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };
+export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, Config, DEFAULT_GATEWAY_URL, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, RayGatewayError, apply, comfyManage, harnessEnhance, inject, laneBundleLoad, laneBundlePeek, ledgerTail, matchHarnessRoute, meliteDiscover, meliteFlow, meliteLoad, name, normalizeGatewayUrl, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };

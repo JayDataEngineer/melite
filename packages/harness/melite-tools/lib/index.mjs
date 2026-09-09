@@ -128,317 +128,17 @@ function clean(value, seen) {
 	return null;
 }
 //#endregion
-//#region src/tools/card-run.ts
-const TIMEOUT_MS$7 = 2e4;
-/** Pull the gateway's named {error} out of a non-2xx body (fallback:
-* the raw body — still loud, still named). */
-function _namedError(body, fallback) {
-	try {
-		const parsed = JSON.parse(body);
-		if (parsed && typeof parsed.error === "string" && parsed.error) return parsed.error;
-	} catch {}
-	return body || fallback;
-}
-function cardRun(gatewayUrl) {
-	return {
-		name: "card_run",
-		description: "Run a composed ACTION CARD through the serial GPU queue (headless run door). Args: draftId (from build_flow / the lane's card tool). The draft's single stage is submitted as {model, ...params} to the queue start door — the same composition path as the editor's Run button. Returns {run_id}; poll it with run_status. Multi-stage drafts are refused (use flow_run with a named template). One active run machine-wide — submissions queue in order.",
-		parameters: {
-			type: "object",
-			properties: {
-				draftId: {
-					type: "string",
-					description: "The draft id returned by build_flow / the card tool, e.g. \"draft-6a998b0f-...-0\"."
-				},
-				test: {
-					type: "boolean",
-					description: "L4 barrier: when true, the run is routed to the test-output root and hidden from the production /v1/assets view. Use for scratch submissions. Default false (production).",
-					default: false
-				}
-			},
-			required: ["draftId"]
-		},
-		presentCall(args) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			return {
-				card: "generic",
-				title: `Run card ${String(a.draftId ?? "?")}`,
-				kind: "execute",
-				rawInput: String(a.draftId ?? "?")
-			};
-		},
-		output: {
-			schema: {
-				type: "object",
-				additionalProperties: true,
-				properties: {
-					run_id: {
-						type: "string",
-						description: "The queue run id — poll with run_status(run_id)."
-					},
-					status: {
-						type: "string",
-						description: "Registration status (queued/running)."
-					},
-					model: {
-						type: "string",
-						description: "The explicitly-named model that was submitted."
-					},
-					draft: {
-						type: "string",
-						description: "The source draft id."
-					}
-				},
-				required: [
-					"run_id",
-					"model",
-					"draft"
-				]
-			},
-			render: (args, value) => {
-				const v = value;
-				if (v && v.error) return [{
-					type: "text",
-					text: "card_run REFUSED: " + v.error
-				}];
-				return [{
-					type: "text",
-					text: "card_run " + String(v.model ?? "?") + " → " + String(v.run_id ?? "?") + " [" + String(v.status ?? "queued") + "] — poll with run_status"
-				}];
-			}
-		},
-		async execute(args, exec) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			const draftId = typeof a.draftId === "string" ? a.draftId : "";
-			if (!draftId) return jsonClean({ error: "draftId is required" });
-			let docRes;
-			try {
-				docRes = await gatewayRequest(gatewayUrl, "GET", "/v1/flows/drafts/" + encodeURIComponent(draftId), void 0, exec.signal, TIMEOUT_MS$7);
-			} catch (e) {
-				if (e instanceof RayGatewayError) return jsonClean({
-					draft: draftId,
-					error: _namedError(e.body, "draft fetch failed")
-				});
-				throw e;
-			}
-			let doc = {};
-			if (typeof docRes === "string") try {
-				doc = JSON.parse(docRes);
-			} catch {
-				doc = { error: "draft is not JSON" };
-			}
-			else if (docRes && typeof docRes === "object") doc = docRes;
-			if (doc && typeof doc.error === "string") return jsonClean({
-				draft: draftId,
-				error: doc.error
-			});
-			const stages = Array.isArray(doc.stages) ? doc.stages : [];
-			if (stages.length === 0) return jsonClean({
-				draft: draftId,
-				error: "draft has no stages — compose it with build_flow first"
-			});
-			if (stages.length > 1) return jsonClean({
-				draft: draftId,
-				error: "draft has " + stages.length + " stages — multi-step flows run via flow_run with a NAMED template, never a hand-assembled card"
-			});
-			const stage = stages[0];
-			const model = typeof stage.service === "string" && stage.service ? stage.service : "";
-			if (!model) return jsonClean({
-				draft: draftId,
-				error: "draft stage carries no service (model) — recompose the card"
-			});
-			const params = stage.params && typeof stage.params === "object" ? { ...stage.params } : {};
-			const paramsModel = typeof params.model === "string" ? params.model : "";
-			if (paramsModel && paramsModel !== model) return jsonClean({
-				draft: draftId,
-				error: "stage.service says " + JSON.stringify(model) + " but params.model says " + JSON.stringify(paramsModel) + " — the draft is inconsistent; recompose it"
-			});
-			const testFlag = a.test === true;
-			const startBody = {
-				...params,
-				model,
-				test: testFlag,
-				draft_id: draftId
-			};
-			let res;
-			try {
-				res = await gatewayRequest(gatewayUrl, "POST", "/v1/flows/start", startBody, exec.signal, TIMEOUT_MS$7);
-			} catch (e) {
-				if (e instanceof RayGatewayError) return jsonClean({
-					draft: draftId,
-					model,
-					error: _namedError(e.body, "queue refused the card")
-				});
-				throw e;
-			}
-			if (res && typeof res.error === "string") return jsonClean({
-				draft: draftId,
-				model,
-				error: res.error
-			});
-			return jsonClean({
-				run_id: res && typeof res.run_id === "string" ? res.run_id : "",
-				status: res && typeof res.status === "string" ? res.status : "queued",
-				model,
-				draft: draftId
-			});
-		}
-	};
-}
-//#endregion
-//#region src/tools/flow-run.ts
-const TIMEOUT_MS$6 = 2e4;
-function flowRun(gatewayUrl) {
-	return {
-		name: "flow_run",
-		description: "Run a NAMED TEMPLATE (multi-step flow) through the serial GPU queue (headless run door). Args: template (a lane from lane_bundle_peek kind=template — creature-flow, humanoid-flow, audio-native-tts...) + optional params (merged over the template's declared inputs). Unknown names are refused loudly BEFORE any run registers. Returns {run_id}; poll with run_status. One active run machine-wide.",
-		parameters: {
-			type: "object",
-			properties: {
-				template: {
-					type: "string",
-					description: "The template name exactly as peeked — the flows/<name>/flow.py module name (the module IS the name)."
-				},
-				params: {
-					type: "object",
-					description: "Optional overrides merged over the template defaults (seed, prompts, knobs).",
-					additionalProperties: true
-				},
-				test: {
-					type: "boolean",
-					description: "L4 barrier: when true, the run is routed to the test-output root and hidden from the production /v1/assets view. Use for scratch submissions (the agent probing a flow, the user pre-flighting a card, etc.). Default false (production).",
-					default: false
-				}
-			},
-			required: ["template"]
-		},
-		presentCall(args) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			return {
-				card: "generic",
-				title: `Run flow ${String(a.template ?? "?")}`,
-				kind: "execute",
-				rawInput: String(a.template ?? "?")
-			};
-		},
-		output: {
-			schema: {
-				type: "object",
-				additionalProperties: true,
-				properties: {
-					run_id: {
-						type: "string",
-						description: "The queue run id — poll with run_status(run_id)."
-					},
-					status: {
-						type: "string",
-						description: "Registration status (queued/running)."
-					},
-					template: {
-						type: "string",
-						description: "The named template that was submitted."
-					}
-				},
-				required: ["run_id", "template"]
-			},
-			render: (args, value) => {
-				const v = value;
-				if (v && v.error) return [{
-					type: "text",
-					text: "flow_run REFUSED: " + v.error
-				}];
-				return [{
-					type: "text",
-					text: "flow_run " + String(v.template ?? "?") + " → " + String(v.run_id ?? "?") + " [" + String(v.status ?? "queued") + "] — poll with run_status"
-				}];
-			}
-		},
-		async execute(args, exec) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			const template = typeof a.template === "string" ? a.template : "";
-			if (!template) return jsonClean({ error: "template is required" });
-			const overrides = a.params && typeof a.params === "object" && !Array.isArray(a.params) ? a.params : {};
-			const testFlag = a.test === true;
-			const composeBody = {
-				...overrides,
-				flow: template
-			};
-			let draftId = "";
-			try {
-				const composed = await gatewayRequest(gatewayUrl, "POST", "/v1/flows/drafts", composeBody, exec.signal, TIMEOUT_MS$6);
-				if (composed && typeof composed.error === "string" && composed.error) return jsonClean({
-					template,
-					error: composed.error
-				});
-				const minted = composed && (composed.draftId ?? composed.draft_id);
-				if (typeof minted !== "string" || !minted) return jsonClean({
-					template,
-					error: "card compose returned no draftId"
-				});
-				draftId = minted;
-			} catch (e) {
-				if (e instanceof RayGatewayError) {
-					let named = "";
-					try {
-						named = String(JSON.parse(e.body).error ?? "");
-					} catch {
-						named = "";
-					}
-					return jsonClean({
-						template,
-						error: named || e.body || "card compose refused the template"
-					});
-				}
-				throw e;
-			}
-			const startBody = {
-				...overrides,
-				flow: template,
-				test: testFlag,
-				draft_id: draftId
-			};
-			let res;
-			try {
-				res = await gatewayRequest(gatewayUrl, "POST", "/v1/flows/start", startBody, exec.signal, TIMEOUT_MS$6);
-			} catch (e) {
-				if (e instanceof RayGatewayError) {
-					let named = "";
-					try {
-						named = String(JSON.parse(e.body).error ?? "");
-					} catch {
-						named = "";
-					}
-					return jsonClean({
-						template,
-						error: named || e.body || "queue refused the template"
-					});
-				}
-				throw e;
-			}
-			if (res && typeof res.error === "string") return jsonClean({
-				template,
-				error: res.error
-			});
-			return jsonClean({
-				run_id: res && typeof res.run_id === "string" ? res.run_id : "",
-				status: res && typeof res.status === "string" ? res.status : "queued",
-				template
-			});
-		}
-	};
-}
-//#endregion
 //#region src/tools/run-status.ts
 const TIMEOUT_MS$5 = 15e3;
 function runStatus(gatewayUrl) {
 	return {
 		name: "run_status",
-		description: "Poll a queue run: status (queued|running|completed|error|stopped|failed), per-stage progress, artifacts (landed bytes with paths) and the EXACT error string on failure. Args: runId (from card_run / flow_run). Includes queue_position while waiting on the serial GPU lane. Read-only — the stop door is operator-ordered.",
+		description: "Poll a queue run: status (queued|running|completed|error|stopped|failed), per-stage progress, artifacts (landed bytes with paths) and the EXACT error string on failure. Args: runId (from melite_flow). Includes queue_position while waiting on the serial GPU lane. Read-only — the stop door is operator-ordered.",
 		parameters: {
 			type: "object",
 			properties: { runId: {
 				type: "string",
-				description: "The run id returned by card_run / flow_run."
+				description: "The run id returned by melite_flow."
 			} },
 			required: ["runId"]
 		},
@@ -530,10 +230,7 @@ function runStatus(gatewayUrl) {
 	};
 }
 //#endregion
-//#region src/tools/build-flow.ts
-const CATALOG_TIMEOUT_MS = 15e3;
-const DRAFT_TIMEOUT_MS = 15e3;
-const VALIDATE_TIMEOUT_MS = 15e3;
+//#region src/tools/melite-flow.ts
 /** Fold flat connects into per-stage typed edges. LOUD on shapes the
 * gateway would only bounce later — the agent reads the refusal HERE,
 * before any HTTP round trip. Kind resolution: the connect's `kind`
@@ -590,96 +287,164 @@ function foldConnects(flowId, stages, connects) {
 	}
 	return folded;
 }
-function buildFlow(gatewayUrl) {
-	return {
-		name: "build_flow",
-		description: "Compose a flow the user reviews and runs. TWO modes. SINGLE: model (any model with a live card tool — discover with card_tools; e.g. h3-timeline, music3, krea-2) + prompt (+ optional params). MULTI-STEP: flow = {id, description?, stages: [{id, engine, description?, params?, outputs?: {name: kind}}], connects: [{from: \"stage[.output]\"| \"initial.key\", to: \"stage.input\", kind?}]} — a typed pipeline. The flow is COMPILED FIRST at /v1/flows/validate: a bad wire (wrong kind, forward wire, typo) returns the verbatim compile error naming stage/input and both kinds — iterate until it compiles, no GPU spent. kinds: text image video audio mesh num lora seg; initial wires state kind explicitly. Creates a flow draft; the conversation renders editable card tiles (one per stage). The user's Run posts the whole flow as ONE typed run — edits on the tiles ride it. This tool never executes anything — there is no run tool; ONLY the user starts runs, from the cards.",
-		parameters: {
-			type: "object",
-			properties: {
-				model: {
-					type: "string",
-					description: "SINGLE mode: catalog model id (discover with card_tools / model_catalog)."
-				},
-				prompt: {
-					type: "string",
-					description: "SINGLE mode: generation prompt. The card carries it; the user can refine it before running."
-				},
-				params: {
-					type: "object",
-					additionalProperties: true,
-					description: "SINGLE mode: extra card params over the model defaults (e.g. {\"seed\":7}). An explicit prompt argument wins over params.prompt."
-				},
-				flow: {
-					type: "object",
-					additionalProperties: true,
-					description: "MULTI-STEP mode: the typed pipeline body. {id, description?, stages[], connects[]}. Exclusive with model/prompt. Compiled at /v1/flows/validate before any draft exists."
-				}
+const TIMEOUT_MS$4 = 3e4;
+const DRAFT_TIMEOUT_MS = 15e3;
+const VALIDATE_TIMEOUT_MS = 15e3;
+const CATALOG_TIMEOUT_MS = 15e3;
+/** POST /v1/flows/start — the verbatim-error pattern (the agent
+*  reads the gateway's refusal text, not a transport code). */
+async function startRun(gatewayUrl, body, signal) {
+	let res;
+	try {
+		res = await gatewayRequest(gatewayUrl, "POST", "/v1/flows/start", body, signal, TIMEOUT_MS$4);
+	} catch (e) {
+		if (e instanceof RayGatewayError) {
+			let named = "";
+			try {
+				named = String(JSON.parse(e.body).error ?? "");
+			} catch {
+				named = "";
 			}
-		},
-		presentCall(args) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			const stages = Array.isArray(a.flow?.stages) ? a.flow.stages.length : 0;
-			return {
-				card: "generic",
-				title: stages > 0 ? `Build flow (${stages} stages)` : `Build flow: ${String(a.model ?? "?")}`,
-				kind: "execute",
-				rawInput: stages > 0 ? { stages } : { model: String(a.model ?? "?") }
-			};
-		},
-		output: {
-			schema: {
-				type: "object",
-				additionalProperties: true,
-				properties: {
-					card: {
-						type: "string",
-						description: "Always \"draft\" — editable cards, never a run."
-					},
-					draftId: {
-						type: "string",
-						description: "The backend draft id the card surface hydrates."
-					},
-					stages: {
-						type: "array",
-						items: {
-							type: "object",
-							additionalProperties: true
-						},
-						description: "Slim stage rows (id/title/kind/service) — one per action card."
-					}
-				},
-				required: [
-					"card",
-					"draftId",
-					"stages"
-				]
-			},
-			render: (_args, value) => {
-				const v = value;
-				const n = Array.isArray(v.stages) ? v.stages.length : 0;
-				return [{
-					type: "text",
-					text: "card " + String(v.draftId ?? "?") + " (" + String(v.model ?? "?") + ") — " + n + " stage" + (n === 1 ? "" : "s") + " · the user presses Run on the card"
-				}];
-			}
-		},
-		async execute(args, exec) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			if (a.flow !== void 0) return composeMulti(gatewayUrl, a.flow, exec.signal);
-			return composeSingle(gatewayUrl, a, exec.signal);
+			return { error: named || e.body || "queue refused the start" };
 		}
+		throw e;
+	}
+	if (res && typeof res.error === "string") return { error: res.error };
+	return {
+		run_id: typeof res.run_id === "string" ? res.run_id : "",
+		status: typeof res.status === "string" ? res.status : "queued"
 	};
 }
-async function composeMulti(gatewayUrl, flowArg, signal) {
-	const flowId = typeof flowArg.id === "string" ? flowArg.id : "";
-	if (flowId === "") throw new Error("build_flow: flow.id is required (the pipeline name, [a-z_][a-z0-9_-]*)");
-	const rawStages = flowArg.stages;
-	if (!Array.isArray(rawStages) || rawStages.length === 0) throw new Error("build_flow: flow.stages must be a non-empty array of {id, engine, ...} rows");
-	const folded = foldConnects(flowId, rawStages, Array.isArray(flowArg.connects) ? flowArg.connects : []);
+/** Mint a draft doc (CARD BIRTH LAW — every start below rides one). */
+async function mintDraft(gatewayUrl, body, signal) {
+	const draft = await gatewayRequest(gatewayUrl, "POST", "/v1/flows/drafts", body, signal, DRAFT_TIMEOUT_MS);
+	if (draft && typeof draft.error === "string" && draft.error) throw new Error(draft.error);
+	const id = draft && draft.draftId;
+	if (typeof id !== "string" || id === "") throw new Error("draft POST returned no draftId");
+	return id;
+}
+/** SINGLE (the old card_run path, composed inside): manifest gate
+*  + runnability gate + defaults merge, then draft + {model}. */
+async function runSingle(gatewayUrl, a, signal) {
+	const card = a.card ?? "";
+	const model = a.model ?? "";
+	if (!model) return { error: "model is required (name the family explicitly — QUEUE LANE LAW)" };
+	const tools = await gatewayRequest(gatewayUrl, "GET", "/v1/card-tools", void 0, signal, CATALOG_TIMEOUT_MS);
+	const manifest = (Array.isArray(tools) ? tools : []).find((t) => t.model === model);
+	if (manifest === void 0) return { error: `model "${model}" has no card tool. Live card tools: ${(Array.isArray(tools) ? tools : []).map((t) => String(t.model)).filter((s) => s !== "").join(", ")}` };
+	try {
+		const v = await gatewayRequest(gatewayUrl, "GET", "/v1/card-tools/validate?model=" + encodeURIComponent(model), void 0, signal, 1e4);
+		if (v.runnable !== true) return { error: v.error || `model "${model}" cannot run` };
+	} catch (e) {
+		if (e instanceof Error && /cannot run/.test(e.message)) return { error: e.message };
+	}
+	const entry = ((await gatewayRequest(gatewayUrl, "GET", "/v1/model-catalog", void 0, signal, CATALOG_TIMEOUT_MS)).models ?? {})[model];
+	const defaults = entry !== void 0 && entry.defaults !== null && typeof entry.defaults === "object" && !Array.isArray(entry.defaults) ? entry.defaults : {};
+	const cardDefaults = {};
+	{
+		const props = (manifest.params_schema !== null && typeof manifest.params_schema === "object" && manifest.params_schema.properties) ?? {};
+		for (const [k, spec] of Object.entries(props)) if (spec.default !== void 0) cardDefaults[k] = spec.default;
+	}
+	const bag = a.params ?? {};
+	const params = {
+		...cardDefaults,
+		...defaults,
+		...bag
+	};
+	if (typeof a.prompt === "string" && a.prompt !== "") params["prompt"] = a.prompt;
+	const intentSrc = typeof params["prompt"] === "string" ? params["prompt"] : card;
+	const intent = intentSrc.length > 80 ? intentSrc.slice(0, 77) + "…" : intentSrc;
+	let draftId;
+	try {
+		draftId = await mintDraft(gatewayUrl, {
+			intent,
+			stages: [{
+				title: card !== "" ? card : model,
+				kind: "generation",
+				service: model,
+				params
+			}]
+		}, signal);
+	} catch (e) {
+		return { error: e instanceof Error ? e.message : String(e) };
+	}
+	const started = await startRun(gatewayUrl, {
+		...params,
+		model,
+		test: a.test === true,
+		draft_id: draftId
+	}, signal);
+	if (typeof started["error"] === "string") return {
+		mode: "card",
+		target: card !== "" ? card : model,
+		...started
+	};
+	return {
+		mode: "card",
+		target: card !== "" ? card : model,
+		model,
+		...started
+	};
+}
+/** TEMPLATE (the old flow_run path): drafts {flow,...} + start. */
+async function runTemplate(gatewayUrl, a, signal) {
+	const flow = a.flow ?? "";
+	if (!flow) return { error: "flow is required (a discovered flow name)" };
+	const overrides = a.params ?? {};
+	const composeBody = {
+		...overrides,
+		flow
+	};
+	let draftId;
+	try {
+		draftId = await mintDraft(gatewayUrl, composeBody, signal);
+	} catch (e) {
+		if (e instanceof RayGatewayError) {
+			let named = "";
+			try {
+				named = String(JSON.parse(e.body).error ?? "");
+			} catch {
+				named = "";
+			}
+			return {
+				mode: "flow",
+				target: flow,
+				error: named || e.body || "card compose refused the template"
+			};
+		}
+		return {
+			mode: "flow",
+			target: flow,
+			error: e instanceof Error ? e.message : String(e)
+		};
+	}
+	return {
+		mode: "flow",
+		target: flow,
+		...await startRun(gatewayUrl, {
+			...overrides,
+			flow,
+			test: a.test === true,
+			draft_id: draftId
+		}, signal)
+	};
+}
+/** AD-HOC (the old build_flow MULTI path): COMPILE FIRST at
+*  validate (no GPU on a bad wire), then draft + {flow_inline}. */
+async function runAdHoc(gatewayUrl, a, signal) {
+	const rawStages = a.stages;
+	if (!Array.isArray(rawStages) || rawStages.length === 0) return { error: "stages must be a non-empty array of {id, engine, params?, outputs?} rows" };
+	const flowId = typeof a.id === "string" && a.id !== "" ? a.id : "adhoc";
+	const connects = Array.isArray(a.connects) ? a.connects : [];
+	let folded;
+	try {
+		folded = foldConnects(flowId, rawStages, connects);
+	} catch (e) {
+		return { error: e instanceof Error ? e.message : String(e) };
+	}
 	const flowBody = {
 		id: flowId,
-		description: typeof flowArg.description === "string" ? flowArg.description : "",
+		description: typeof a.description === "string" ? a.description : "",
 		stages: folded.map((s) => ({
 			id: s.id,
 			engine: s.engine,
@@ -690,78 +455,207 @@ async function composeMulti(gatewayUrl, flowArg, signal) {
 			...Object.keys(s.outputs).length > 0 ? { outputs: s.outputs } : {}
 		}))
 	};
-	await gatewayRequest(gatewayUrl, "POST", "/v1/flows/validate", flowBody, signal, VALIDATE_TIMEOUT_MS);
-	const draft = await gatewayRequest(gatewayUrl, "POST", "/v1/flows/drafts", {
-		intent: flowId,
-		flow: flowBody,
-		stages: folded.map((s) => ({
-			id: s.id,
-			title: s.description !== "" ? s.description : s.id,
-			kind: "generation",
-			service: s.engine,
-			params: s.params
-		}))
-	}, signal, DRAFT_TIMEOUT_MS);
-	if (typeof draft.draftId !== "string" || draft.draftId === "") throw new Error("build_flow: gateway draft POST returned no draftId");
-	return jsonClean({
-		card: "draft",
-		draftId: draft.draftId,
-		model: flowId,
-		title: flowId,
-		stages: Array.isArray(draft.stages) ? draft.stages : []
-	});
-}
-async function composeSingle(gatewayUrl, a, signal) {
-	if (typeof a.model !== "string" || a.model.length === 0) throw new Error("build_flow: \"model\" is required (a catalog model id string)");
-	if (typeof a.prompt !== "string" || a.prompt.length === 0) throw new Error("build_flow: \"prompt\" is required (what to put on the card)");
-	const tools = await gatewayRequest(gatewayUrl, "GET", "/v1/card-tools", void 0, signal, CATALOG_TIMEOUT_MS);
-	const manifest = Array.isArray(tools) ? tools.find((t) => t.model === a.model) : void 0;
-	if (manifest === void 0) {
-		const allowed = (Array.isArray(tools) ? tools : []).map((t) => String(t.model)).filter((s) => s !== "").join(", ");
-		throw new Error("build_flow: model \"" + a.model + "\" has no card tool. Live card tools: " + allowed);
-	}
-	const cat = await gatewayRequest(gatewayUrl, "GET", "/v1/model-catalog", void 0, signal, CATALOG_TIMEOUT_MS);
-	const entry = (cat.models ?? {})[a.model];
-	const familyId = entry !== void 0 && typeof entry.family === "string" ? entry.family : a.model;
-	const famLabel = cat.families?.[familyId]?.label;
-	let title = typeof famLabel === "string" && famLabel.length > 0 ? famLabel : a.model;
-	const cardDefaults = {};
-	{
-		const props = (manifest.params_schema !== null && typeof manifest.params_schema === "object" && manifest.params_schema.properties) ?? {};
-		for (const [k, spec] of Object.entries(props)) if (spec.default !== void 0) cardDefaults[k] = spec.default;
-		if (typeof manifest.stage_title === "string" && manifest.stage_title.length > 0) title = manifest.stage_title;
-	}
 	try {
-		const v = await gatewayRequest(gatewayUrl, "GET", "/v1/card-tools/validate?model=" + encodeURIComponent(a.model), void 0, signal, 1e4);
-		if (v.runnable !== true) throw new Error("build_flow: " + (v.error || "model \"" + a.model + "\" cannot run"));
+		await gatewayRequest(gatewayUrl, "POST", "/v1/flows/validate", flowBody, signal, VALIDATE_TIMEOUT_MS);
 	} catch (e) {
-		if (e instanceof Error && /cannot run/.test(e.message)) throw e;
+		if (e instanceof RayGatewayError) {
+			let named = "";
+			try {
+				named = String(JSON.parse(e.body).error ?? "");
+			} catch {
+				named = "";
+			}
+			return {
+				mode: "adhoc",
+				target: flowId,
+				error: named || e.body || "flow does not compile"
+			};
+		}
+		throw e;
 	}
-	const defaults = entry !== void 0 && entry.defaults !== null && typeof entry.defaults === "object" && !Array.isArray(entry.defaults) ? entry.defaults : {};
-	const bag = a.params !== null && typeof a.params === "object" && !Array.isArray(a.params) ? a.params : {};
-	const params = {
-		...cardDefaults,
-		...defaults,
-		...bag,
-		prompt: a.prompt
+	let draftId;
+	try {
+		draftId = await mintDraft(gatewayUrl, {
+			intent: flowId,
+			flow: flowBody,
+			stages: folded.map((s) => ({
+				id: s.id,
+				title: s.description !== "" ? s.description : s.id,
+				kind: "generation",
+				service: s.engine,
+				params: s.params
+			}))
+		}, signal);
+	} catch (e) {
+		return {
+			mode: "adhoc",
+			target: flowId,
+			error: e instanceof Error ? e.message : String(e)
+		};
+	}
+	return {
+		mode: "adhoc",
+		target: flowId,
+		...await startRun(gatewayUrl, {
+			flow_inline: flowBody,
+			test: a.test === true,
+			draft_id: draftId
+		}, signal)
 	};
-	const draft = await gatewayRequest(gatewayUrl, "POST", "/v1/flows/drafts", {
-		intent: a.prompt.length > 80 ? a.prompt.slice(0, 77) + "…" : a.prompt,
-		stages: [{
-			title,
-			kind: "generation",
-			service: a.model,
-			params
-		}]
-	}, signal, DRAFT_TIMEOUT_MS);
-	if (typeof draft.draftId !== "string" || draft.draftId === "") throw new Error("build_flow: gateway draft POST returned no draftId");
-	return jsonClean({
-		card: "draft",
-		draftId: draft.draftId,
-		model: a.model,
-		title,
-		stages: Array.isArray(draft.stages) ? draft.stages : []
-	});
+}
+function meliteFlow(gatewayUrl) {
+	return {
+		name: "melite_flow",
+		description: "Execute through the serial GPU queue — the ONE execution verb (a card or a flow tool call; nothing else executes). Exactly one per call: card (a card id + model — single generation) | flow (a NAMED template from melite_load) | stages (cards drafted on the fly: [{id, engine, params?, outputs?}] + optional connects — compiled at validate BEFORE any GPU is spent, then run as one typed flow). Drafts are minted inside (CARD BIRTH LAW) and never surface. Returns {run_id}; poll with run_status. One active run machine-wide.",
+		parameters: {
+			type: "object",
+			properties: {
+				card: {
+					type: "string",
+					description: "SINGLE mode: the card id (discovered). Requires model alongside."
+				},
+				model: {
+					type: "string",
+					description: "SINGLE mode: the family id, named explicitly (must own a card tool)."
+				},
+				flow: {
+					type: "string",
+					description: "TEMPLATE mode: the flow name exactly as loaded."
+				},
+				stages: {
+					type: "array",
+					items: {
+						type: "object",
+						additionalProperties: true
+					},
+					description: "AD-HOC mode: [{id, engine, description?, params?, outputs?: {name: kind}}]. Exclusive with card/flow."
+				},
+				connects: {
+					type: "array",
+					items: {
+						type: "object",
+						additionalProperties: true
+					},
+					description: "AD-HOC mode: [{from: \"stage[.output]\" | \"initial.key\", to: \"stage.input\", kind?}]."
+				},
+				prompt: {
+					type: "string",
+					description: "SINGLE mode: the generation prompt (wins over params.prompt)."
+				},
+				params: {
+					type: "object",
+					additionalProperties: true,
+					description: "Overrides merged over the mode defaults (seed, knobs)."
+				},
+				id: {
+					type: "string",
+					description: "AD-HOC mode: the pipeline name for the compiled flow."
+				},
+				description: {
+					type: "string",
+					description: "AD-HOC mode: what the pipeline produces."
+				},
+				test: {
+					type: "boolean",
+					description: "L4 barrier: true routes the run to test-output, hidden from production assets. Default false."
+				}
+			}
+		},
+		presentCall(args) {
+			const a = args ?? {};
+			return {
+				card: "generic",
+				title: `Run ${typeof a.card === "string" && a.card !== "" ? a.card : typeof a.flow === "string" && a.flow !== "" ? a.flow : Array.isArray(a.stages) ? `adhoc (${a.stages.length} stages)` : "?"}`,
+				kind: "execute"
+			};
+		},
+		output: {
+			schema: {
+				type: "object",
+				additionalProperties: true,
+				properties: {
+					run_id: {
+						type: "string",
+						description: "The queue run id — poll with run_status(run_id)."
+					},
+					status: {
+						type: "string",
+						description: "Registration status (queued/running)."
+					},
+					mode: {
+						type: "string",
+						description: "Which composition ran: card | flow | adhoc."
+					},
+					target: {
+						type: "string",
+						description: "The card id, flow name, or ad-hoc pipeline name."
+					}
+				},
+				required: [
+					"run_id",
+					"mode",
+					"target"
+				]
+			},
+			render: (_args, value) => {
+				const v = value;
+				if (v && typeof v.error === "string") return [{
+					type: "text",
+					text: "melite_flow REFUSED: " + v.error
+				}];
+				return [{
+					type: "text",
+					text: "flow " + String(v.target ?? "?") + " → " + String(v.run_id ?? "?") + " [" + String(v.status ?? "queued") + "] — poll with run_status"
+				}];
+			}
+		},
+		async execute(args, exec) {
+			const a = args ?? {};
+			const bag = a.params && typeof a.params === "object" && !Array.isArray(a.params) ? a.params : {};
+			const test = a.test === true;
+			const hasCard = typeof a.card === "string" && a.card !== "";
+			const hasFlow = typeof a.flow === "string" && a.flow !== "";
+			const modes = [
+				hasCard,
+				hasFlow,
+				a.stages !== void 0
+			].filter(Boolean).length;
+			if (modes === 0) return jsonClean({ error: "one composition is required: card (+model) | flow | stages (cards drafted on the fly)" });
+			if (modes > 1) return jsonClean({ error: "exactly one composition per call: card | flow | stages — never combined" });
+			try {
+				if (hasFlow) return jsonClean(await runTemplate(gatewayUrl, {
+					flow: a.flow,
+					params: bag,
+					test
+				}, exec.signal));
+				if (hasCard) return jsonClean(await runSingle(gatewayUrl, {
+					card: a.card,
+					model: typeof a.model === "string" ? a.model : "",
+					prompt: typeof a.prompt === "string" ? a.prompt : void 0,
+					params: bag,
+					test
+				}, exec.signal));
+				return jsonClean(await runAdHoc(gatewayUrl, {
+					stages: a.stages,
+					connects: a.connects,
+					id: a.id,
+					description: typeof a.description === "string" ? a.description : void 0,
+					test
+				}, exec.signal));
+			} catch (e) {
+				if (e instanceof RayGatewayError) {
+					let named = "";
+					try {
+						named = String(JSON.parse(e.body).error ?? "");
+					} catch {
+						named = "";
+					}
+					return jsonClean({ error: named || e.body || "gateway refused" });
+				}
+				throw e;
+			}
+		}
+	};
 }
 //#endregion
 //#region src/tools/comfy-manage.ts
@@ -933,7 +827,7 @@ function comfyManage(gatewayUrl) {
 }
 //#endregion
 //#region src/tools/melite-discover.ts
-const TIMEOUT_MS$4 = 15e3;
+const TIMEOUT_MS$3 = 15e3;
 function meliteDiscover(gatewayUrl) {
 	return {
 		name: "melite_discover",
@@ -1010,7 +904,7 @@ function meliteDiscover(gatewayUrl) {
 			if (typeof a.q === "string" && a.q !== "") params.set("q", a.q);
 			if (typeof a.tags === "string" && a.tags !== "") params.set("tags", a.tags);
 			try {
-				return jsonClean(await gatewayRequest(gatewayUrl, "GET", "/v1/discover?" + params.toString(), void 0, exec.signal, TIMEOUT_MS$4));
+				return jsonClean(await gatewayRequest(gatewayUrl, "GET", "/v1/discover?" + params.toString(), void 0, exec.signal, TIMEOUT_MS$3));
 			} catch (e) {
 				const err = e;
 				return jsonClean({ error: typeof err.body === "string" && err.body !== "" ? err.body : err.message ?? "discover failed" });
@@ -1020,7 +914,7 @@ function meliteDiscover(gatewayUrl) {
 }
 //#endregion
 //#region src/tools/lane-bundle-peek.ts
-const TIMEOUT_MS$3 = 15e3;
+const TIMEOUT_MS$2 = 15e3;
 function laneBundlePeek(gatewayUrl) {
 	return {
 		name: "lane_bundle_peek",
@@ -1081,7 +975,7 @@ function laneBundlePeek(gatewayUrl) {
 			if (typeof a.kind === "string" && a.kind.length > 0) q.push("kind=" + encodeURIComponent(a.kind));
 			if (typeof a.genre === "string" && a.genre.length > 0) q.push("genre=" + encodeURIComponent(a.genre));
 			if (q.length > 0) path += "?" + q.join("&");
-			const res = await gatewayRequest(gatewayUrl, "GET", path, void 0, exec.signal, TIMEOUT_MS$3);
+			const res = await gatewayRequest(gatewayUrl, "GET", path, void 0, exec.signal, TIMEOUT_MS$2);
 			if (res && typeof res.error === "string") return jsonClean({
 				count: 0,
 				lanes: [],
@@ -1097,7 +991,7 @@ function laneBundlePeek(gatewayUrl) {
 }
 //#endregion
 //#region src/tools/lane-bundle-load.ts
-const TIMEOUT_MS$2 = 15e3;
+const TIMEOUT_MS$1 = 15e3;
 function laneBundleLoad(gatewayUrl) {
 	return {
 		name: "lane_bundle_load",
@@ -1182,7 +1076,7 @@ function laneBundleLoad(gatewayUrl) {
 			const a = typeof args === "object" && args !== null ? args : {};
 			const kind = typeof a.kind === "string" ? a.kind : "";
 			const name = typeof a.name === "string" ? a.name : "";
-			const res = await gatewayRequest(gatewayUrl, "GET", "/v1/cards/" + encodeURIComponent(name) + "/bundle?kind=" + encodeURIComponent(kind), void 0, exec.signal, TIMEOUT_MS$2);
+			const res = await gatewayRequest(gatewayUrl, "GET", "/v1/cards/" + encodeURIComponent(name) + "/bundle?kind=" + encodeURIComponent(kind), void 0, exec.signal, TIMEOUT_MS$1);
 			if (res && typeof res.error === "string") return jsonClean({
 				lane: name,
 				kind,
@@ -1245,7 +1139,7 @@ function laneBundleLoad(gatewayUrl) {
 }
 //#endregion
 //#region src/tools/melite-load.ts
-const TIMEOUT_MS$1 = 2e4;
+const TIMEOUT_MS = 2e4;
 function meliteLoad(gatewayUrl) {
 	return {
 		name: "melite_load",
@@ -1308,123 +1202,11 @@ function meliteLoad(gatewayUrl) {
 				inference_type: inferenceType
 			});
 			try {
-				return jsonClean(await gatewayRequest(gatewayUrl, "GET", "/v1/load?" + params.toString(), void 0, exec.signal, TIMEOUT_MS$1));
+				return jsonClean(await gatewayRequest(gatewayUrl, "GET", "/v1/load?" + params.toString(), void 0, exec.signal, TIMEOUT_MS));
 			} catch (e) {
 				const err = e;
 				return jsonClean({ error: typeof err.body === "string" && err.body !== "" ? err.body : err.message ?? "load failed" });
 			}
-		}
-	};
-}
-//#endregion
-//#region src/tools/refine-draft.ts
-const TIMEOUT_MS = 15e3;
-function refineDraft(gatewayUrl) {
-	return {
-		name: "refine_draft",
-		description: "EDIT an existing action card in place: key-wise MERGE params onto the draft's stage (the same PATCH channel the card editor's Save uses — the SAME card tile updates, nothing re-stacks). Use after build_flow when the user tweaks an existing card (\"seed 42\", \"make it snow\", \"drop the music layer\"). For a NEW generation or a different model, build_flow again instead. Args: draftId (from build_flow), params (the keys to merge — e.g. {\"seed\":42,\"prompt\":\"...\"}), optional stage id (default: the draft's first stage).",
-		parameters: {
-			type: "object",
-			properties: {
-				draftId: {
-					type: "string",
-					description: "The draft id from build_flow (e.g. \"draft-6a96...-1\")."
-				},
-				params: {
-					type: "object",
-					additionalProperties: true,
-					description: "The param keys to merge onto the card (e.g. {\"seed\":42} or {\"prompt\":\"a red fox in snow\"}). Unmentioned keys are left untouched."
-				},
-				stage: {
-					type: "string",
-					description: "Optional stage id within the draft. Omit to target the first stage (the normal one-card case)."
-				}
-			},
-			required: ["draftId", "params"]
-		},
-		presentCall(args) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			return {
-				card: "generic",
-				title: `Refine draft ${String(a.draftId ?? "?")}`,
-				kind: "edit",
-				rawInput: {
-					draftId: String(a.draftId ?? "?"),
-					stage: String(a.stage ?? "first")
-				}
-			};
-		},
-		output: {
-			schema: {
-				type: "object",
-				additionalProperties: true,
-				properties: {
-					card: {
-						type: "string",
-						description: "Always \"draft\" — still a card, never a run."
-					},
-					draftId: { type: "string" },
-					stage: {
-						type: "string",
-						description: "The stage id that was patched."
-					},
-					params: {
-						type: "object",
-						description: "The stage's full merged params after the patch."
-					}
-				},
-				required: [
-					"card",
-					"draftId",
-					"stage",
-					"params"
-				]
-			},
-			render: (_args, value) => {
-				const v = value;
-				return [{
-					type: "text",
-					text: "refine_draft " + String(v.draftId ?? "?") + " (stage " + String(v.stage ?? "?") + ") — card updated in place, the user presses Run when ready"
-				}];
-			}
-		},
-		async execute(args, exec) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			if (typeof a.draftId !== "string" || a.draftId.length === 0) throw new Error("refine_draft: \"draftId\" is required (the draft id from build_flow)");
-			if (a.params === null || typeof a.params !== "object" || Array.isArray(a.params)) throw new Error("refine_draft: \"params\" is required (an object of keys to merge, e.g. {\"seed\":42})");
-			const raw = await gatewayRequest(gatewayUrl, "GET", "/v1/flows/drafts/" + encodeURIComponent(a.draftId), void 0, exec.signal, TIMEOUT_MS);
-			const doc = typeof raw === "string" ? JSON.parse(raw) : raw;
-			const docStages = Array.isArray(doc.stages) ? doc.stages : [];
-			if (docStages.length === 0) throw new Error("refine_draft: draft \"" + a.draftId + "\" has no stages to patch");
-			let sid = typeof a.stage === "string" && a.stage.length > 0 ? a.stage : "";
-			if (!sid) {
-				const first = docStages[0];
-				sid = typeof first.id === "string" && first.id.length > 0 ? first.id : "s_0";
-			}
-			const mergeParams = {};
-			for (const [k, v] of Object.entries(a.params)) mergeParams[k] = k === "calls" && Array.isArray(v) ? JSON.stringify(v) : v;
-			const target = docStages.find((s) => {
-				return (typeof s.id === "string" ? s.id : "") === sid;
-			}) ?? docStages[0];
-			target.params = {
-				...target.params ?? {},
-				...mergeParams
-			};
-			const postRaw = await gatewayRequest(gatewayUrl, "POST", "/v1/flows/drafts", {
-				...doc,
-				stages: docStages
-			}, exec.signal, TIMEOUT_MS);
-			const updated = typeof postRaw === "string" ? JSON.parse(postRaw) : postRaw;
-			const updatedStages = Array.isArray(updated.stages) ? updated.stages : [];
-			const patched = updatedStages.find((s) => s.id === sid) ?? updatedStages[0] ?? {};
-			const params = patched.params !== null && typeof patched.params === "object" ? patched.params : {};
-			return jsonClean({
-				card: "draft",
-				draftId: updated.draft_id ?? a.draftId,
-				stage: sid,
-				intent: updated.intent ?? null,
-				params
-			});
 		}
 	};
 }
@@ -1884,19 +1666,13 @@ const BASE_TOOL_NAMES = [
 	"melite_load",
 	"lane_bundle_peek",
 	"lane_bundle_load",
-	"build_flow",
-	"refine_draft",
 	"comfy_manage",
 	"skill_index",
 	"skill_read",
 	"ledger_tail"
 ];
 /** HEADLESS-only run doors (MELITE_HEADLESS=1) — the delegated operator. */
-const HEADLESS_TOOL_NAMES = [
-	"card_run",
-	"flow_run",
-	"run_status"
-];
+const HEADLESS_TOOL_NAMES = ["melite_flow", "run_status"];
 /** AD HOC names (MELITE_ADHOC) — never in a base toolset.
 *  (empty since the disclosure stroke: enhance_prompt died as a tool —
 *  the editor ✦ door below keeps the user surface via harnessEnhance.) */
@@ -1920,15 +1696,12 @@ async function apply(ctx, config = {}) {
 	c.tools.register(meliteLoad(gatewayUrl));
 	c.tools.register(laneBundlePeek(gatewayUrl));
 	c.tools.register(laneBundleLoad(gatewayUrl));
-	c.tools.register(buildFlow(gatewayUrl));
-	c.tools.register(refineDraft(gatewayUrl));
 	c.tools.register(comfyManage(gatewayUrl));
 	c.tools.register(skillIndex(gatewayUrl));
 	c.tools.register(skillRead(gatewayUrl));
 	c.tools.register(ledgerTail(gatewayUrl));
 	if (headless) {
-		c.tools.register(cardRun(gatewayUrl));
-		c.tools.register(flowRun(gatewayUrl));
+		c.tools.register(meliteFlow(gatewayUrl));
 		c.tools.register(runStatus(gatewayUrl));
 	}
 	const readDefaultLlm = () => {
@@ -2028,4 +1801,4 @@ async function apply(ctx, config = {}) {
 	}), "melite-tools: enhance route");
 }
 //#endregion
-export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, DEFAULT_GATEWAY_URL, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, RayGatewayError, apply, buildFlow, cardRun, comfyManage, flowRun, harnessEnhance, inject, laneBundleLoad, laneBundlePeek, ledgerTail, matchHarnessRoute, meliteDiscover, meliteLoad, name, normalizeGatewayUrl, refineDraft, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };
+export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, DEFAULT_GATEWAY_URL, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, RayGatewayError, apply, comfyManage, harnessEnhance, inject, laneBundleLoad, laneBundlePeek, ledgerTail, matchHarnessRoute, meliteDiscover, meliteFlow, meliteLoad, name, normalizeGatewayUrl, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };

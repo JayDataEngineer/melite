@@ -19,7 +19,8 @@
  * skills (or skill_read directly).
  *
  * The flow this anchors: lane_bundle_peek → THIS → skill_read for the
- * deep craft → build_flow / the dedicated card tool.
+ * deep craft → melite_flow (stages drafted on the fly) / the dedicated
+ * card tool.
  */
 import type { ToolDefinition } from '../types.ts'
 import { gatewayRequest } from '../gateway.ts'

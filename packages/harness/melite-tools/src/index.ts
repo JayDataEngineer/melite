@@ -4,19 +4,18 @@
  * TWO INTERFACES, ONE PLUGIN (the interface law):
  *
  *   BROWSER (default — no env): compose-only. The agent discovers,
- *   loads lanes, reads skills, composes cards (build_flow /
- *   dedicated card tools) and NEVER executes — the run door is the
+ *   loads lanes, reads skills, composes cards (dedicated card
+ *   tools) and NEVER executes — the run door is the
  *   USER's Run press (editor -> /melite-proxy/v1/flows/start).
  *   This keeps the old contract (agent/prompts/BASE_PROMPT.md): "It
  *   composes; it never executes."
  *
  *   HEADLESS (MELITE_HEADLESS=1 — the one-shot/agent mounts): the
- *   DELEGATED OPERATOR. Same queue, same doors, plus the run pair:
- *   card_run (a card is a 1-length flow — draft {model,...params}
- *   through the queue start door) and flow_run (a NAMED template
- *   through {flow:name}), with run_status as the monitor. All three
- *   ride the queue's registration door — never a bypass, never a
- *   hand-assembled graph (QUEUE LANE LAW).
+ *   DELEGATED OPERATOR. Same queue, same doors, plus the ONE
+ *   execution verb melite_flow (a card or a flow tool call — single,
+ *   template, or stages drafted on the fly), with run_status as the
+ *   monitor. Both ride the queue's registration door — never a
+ *   bypass, never a hand-assembled graph (QUEUE LANE LAW).
  *
  * AD HOC TOOLS (MELITE_ADHOC="enhance_prompt,..."): registered ONLY
  * when a session names them. enhance_prompt — the langchain-era
@@ -25,10 +24,10 @@
  * in a base toolset, only called ad hoc.
  *
  * BASE toolset (both interfaces): melite_discover, melite_load,
- * lane_bundle_peek, lane_bundle_load, build_flow, refine_draft,
- * comfy_manage, skill_index, skill_read, ledger_tail. Card tools
- * compose from their card packages (named imports above — the fetch
- * registrar retired with its last row).
+ * lane_bundle_peek, lane_bundle_load, comfy_manage, skill_index,
+ * skill_read, ledger_tail (+ melite_flow + run_status headless).
+ * Card tools compose from their card packages (named imports above
+ * — the fetch registrar retired with its last row).
  *
  * @module @melite-plugin/dsh-tools
  */
@@ -46,16 +45,13 @@ import { buildVoiceLockTool } from '@melite/audio-voice-lock/tool'
 import { buildImageEditTool } from '@melite/image-image-edit/tool'
 import { buildMotionTool } from '@melite/motion-motion/tool'
 import { buildH3TimelineTool } from '@melite/video-h3-timeline/tool'
-import { cardRun } from './tools/card-run.ts'
-import { flowRun } from './tools/flow-run.ts'
 import { runStatus } from './tools/run-status.ts'
-import { buildFlow } from './tools/build-flow.ts'
+import { meliteFlow } from './tools/melite-flow.ts'
 import { comfyManage } from './tools/comfy-manage.ts'
 import { meliteDiscover } from './tools/melite-discover.ts'
 import { laneBundlePeek } from './tools/lane-bundle-peek.ts'
 import { laneBundleLoad } from './tools/lane-bundle-load.ts'
 import { meliteLoad } from './tools/melite-load.ts'
-import { refineDraft } from './tools/refine-draft.ts'
 import { skillIndex } from './tools/skill-index.ts'
 import { skillRead } from './tools/skill-read.ts'
 import { ledgerTail } from './tools/ledger-tail.ts'
@@ -71,14 +67,11 @@ export { DEFAULT_GATEWAY_URL, RayGatewayError, normalizeGatewayUrl } from './gat
 
 // Tool factories — re-exported for the smoke harness (test/smoke.mjs)
 // and any embedder that mounts tools without the full plugin apply().
-export { cardRun } from './tools/card-run.ts'
-export { flowRun } from './tools/flow-run.ts'
 export { runStatus } from './tools/run-status.ts'
 export { laneBundlePeek } from './tools/lane-bundle-peek.ts'
 export { laneBundleLoad } from './tools/lane-bundle-load.ts'
 export { meliteDiscover } from './tools/melite-discover.ts'
-export { buildFlow } from './tools/build-flow.ts'
-export { refineDraft } from './tools/refine-draft.ts'
+export { meliteFlow } from './tools/melite-flow.ts'
 export { comfyManage } from './tools/comfy-manage.ts'
 export { meliteLoad } from './tools/melite-load.ts'
 export { skillIndex } from './tools/skill-index.ts'
@@ -111,7 +104,7 @@ export const inject = ['tools', 'webServer', 'llm']
 export interface Config {
   /** Melite gateway base URL. Default http://localhost:33081. */
   gatewayUrl?: string
-  /** HEADLESS interface: register the run doors (card_run, flow_run,
+  /** HEADLESS interface: register the run doors (melite_flow,
    *  run_status) — the delegated operator. Default false (browser law:
    *  the model composes, the USER presses Run). */
   headless?: boolean
@@ -123,13 +116,12 @@ export interface Config {
 /** BASE tool names — both interfaces (discovery, compose, management, audit). */
 export const BASE_TOOL_NAMES = [
   'melite_discover', 'melite_load', 'lane_bundle_peek', 'lane_bundle_load',
-  'build_flow', 'refine_draft', 'comfy_manage',
-  'skill_index', 'skill_read', 'ledger_tail',
+  'comfy_manage', 'skill_index', 'skill_read', 'ledger_tail',
 ] as const
 
 /** HEADLESS-only run doors (MELITE_HEADLESS=1) — the delegated operator. */
 export const HEADLESS_TOOL_NAMES = [
-  'card_run', 'flow_run', 'run_status',
+  'melite_flow', 'run_status',
 ] as const
 
 /** AD HOC names (MELITE_ADHOC) — never in a base toolset.
@@ -193,8 +185,6 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   c.tools.register(meliteLoad(gatewayUrl))
   c.tools.register(laneBundlePeek(gatewayUrl))
   c.tools.register(laneBundleLoad(gatewayUrl))
-  c.tools.register(buildFlow(gatewayUrl))
-  c.tools.register(refineDraft(gatewayUrl))
   c.tools.register(comfyManage(gatewayUrl))
   c.tools.register(skillIndex(gatewayUrl))
   c.tools.register(skillRead(gatewayUrl))
@@ -204,8 +194,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // queue's own registration door, models named explicitly, never a
   // hand-assembled graph).
   if (headless) {
-    c.tools.register(cardRun(gatewayUrl))
-    c.tools.register(flowRun(gatewayUrl))
+    c.tools.register(meliteFlow(gatewayUrl))
     c.tools.register(runStatus(gatewayUrl))
   }
 
