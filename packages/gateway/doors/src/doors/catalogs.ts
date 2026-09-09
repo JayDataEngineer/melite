@@ -31,7 +31,7 @@ import { emitParamsSchema, cardPackages } from "@melite/comfyui-cordis";
 import { registryFlowNames, getRegistryFlow } from "./flowsRegistry.ts";
 import { needCardRegistry } from "./flowsCard.ts";
 import type { CardRegistryService } from "./flowsCard.ts";
-import { needModels } from "@melite/comfyui-cordis/models-service";
+import { needModels, modelsService } from "@melite/comfyui-cordis/models-service";
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import { toolBaseRows } from "./toolProjection.ts";
 import { doorMatch, mountDoorRoutes } from "../routeMount.ts";
@@ -388,7 +388,15 @@ export const catalogsDoors: Plugin = {
           if (ids.length === 0) {
             return { status: 400, body: JSON.stringify({ error: "load_skills needs ids (comma-separated card ids)" }), contentType: "application/json", headers: {} };
           }
-          const models: ModelsService = needModels(ctx.models, "catalogs");
+          // The BOOTED singleton, not ctx.models: the provider news a
+          // fiber-owned (empty) table per gateway Context — the family
+          // fibers settle in bootModels()' own context (the registry
+          // prime awaits it at boot). Request-path model reads ride
+          // the singleton everywhere (flowsCard reads) — boot-loud
+          // when unprimed, never an empty table. needModels stays as
+          // the threading guard (an unthreaded caller is a bug).
+          void needModels(ctx.models, "catalogs");
+          const models: ModelsService = modelsService();
           const out: Array<Record<string, unknown>> = [];
           for (const id of ids) {
             try {
