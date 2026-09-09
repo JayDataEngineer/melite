@@ -48,7 +48,7 @@ export const DECL: ModelDecl = {
     "camera_fov": "auto"
   },
   "studio": {
-    "tenant": "3d/img_to_mesh",
+    "tenant": "3d/img-to-mesh",
     "owns_params": false,
     "writes": [
       "input_image",

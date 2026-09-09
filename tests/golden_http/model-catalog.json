@@ -1651,7 +1651,7 @@
    "label": "Pixal3D 1024 BF16",
    "genre": "3d",
    "studio": {
-    "tenant": "3d/img_to_mesh",
+    "tenant": "3d/img-to-mesh",
     "owns_params": false,
     "writes": [
      "input_image",
@@ -1666,7 +1666,7 @@
    "label": "Pixal3D 1536 BF16",
    "genre": "3d",
    "studio": {
-    "tenant": "3d/img_to_mesh",
+    "tenant": "3d/img-to-mesh",
     "owns_params": false,
     "writes": [
      "input_image",
@@ -1681,7 +1681,7 @@
    "label": "Pixal3D 1536 BF16",
    "genre": "3d",
    "studio": {
-    "tenant": "3d/img_to_mesh",
+    "tenant": "3d/img-to-mesh",
     "owns_params": false,
     "writes": [
      "input_image",
@@ -1696,7 +1696,7 @@
    "label": "Pixal3D 1536 INT8 ConvRot",
    "genre": "3d",
    "studio": {
-    "tenant": "3d/img_to_mesh",
+    "tenant": "3d/img-to-mesh",
     "owns_params": false,
     "writes": [
      "input_image",
@@ -1711,7 +1711,7 @@
    "label": "Pixal3D 512 BF16",
    "genre": "3d",
    "studio": {
-    "tenant": "3d/img_to_mesh",
+    "tenant": "3d/img-to-mesh",
     "owns_params": false,
     "writes": [
      "input_image",
@@ -1726,7 +1726,7 @@
    "label": "Pixal3D 512 BF16",
    "genre": "3d",
    "studio": {
-    "tenant": "3d/img_to_mesh",
+    "tenant": "3d/img-to-mesh",
     "owns_params": false,
     "writes": [
      "input_image",
@@ -1741,7 +1741,7 @@
    "label": "Pixal3D 512 INT8 ConvRot",
    "genre": "3d",
    "studio": {
-    "tenant": "3d/img_to_mesh",
+    "tenant": "3d/img-to-mesh",
     "owns_params": false,
     "writes": [
      "input_image",
@@ -1756,7 +1756,7 @@
    "label": "Pixal3D 1024 BF16",
    "genre": "3d",
    "studio": {
-    "tenant": "3d/img_to_mesh",
+    "tenant": "3d/img-to-mesh",
     "owns_params": false,
     "writes": [
      "input_image",
@@ -1771,7 +1771,7 @@
    "label": "Pixal3D 1024 INT8 ConvRot",
    "genre": "3d",
    "studio": {
-    "tenant": "3d/img_to_mesh",
+    "tenant": "3d/img-to-mesh",
     "owns_params": false,
     "writes": [
      "input_image",
@@ -1834,7 +1834,7 @@
    "label": "TRELLIS.2 Native 1024 BF16",
    "genre": "3d",
    "studio": {
-    "tenant": "3d/img_to_mesh",
+    "tenant": "3d/img-to-mesh",
     "owns_params": false,
     "writes": [
      "input_image",
@@ -1849,7 +1849,7 @@
    "label": "TRELLIS.2 Native 1536 BF16",
    "genre": "3d",
    "studio": {
-    "tenant": "3d/img_to_mesh",
+    "tenant": "3d/img-to-mesh",
     "owns_params": false,
     "writes": [
      "input_image",
@@ -1864,7 +1864,7 @@
    "label": "TRELLIS.2 Native 1536 BF16",
    "genre": "3d",
    "studio": {
-    "tenant": "3d/img_to_mesh",
+    "tenant": "3d/img-to-mesh",
     "owns_params": false,
     "writes": [
      "input_image",
@@ -1879,7 +1879,7 @@
    "label": "TRELLIS.2 Native 1536 INT8 ConvRot",
    "genre": "3d",
    "studio": {
-    "tenant": "3d/img_to_mesh",
+    "tenant": "3d/img-to-mesh",
     "owns_params": false,
     "writes": [
      "input_image",
@@ -1894,7 +1894,7 @@
    "label": "TRELLIS.2 Native 512 BF16",
    "genre": "3d",
    "studio": {
-    "tenant": "3d/img_to_mesh",
+    "tenant": "3d/img-to-mesh",
     "owns_params": false,
     "writes": [
      "input_image",
@@ -1909,7 +1909,7 @@
    "label": "TRELLIS.2 Native 512 BF16",
    "genre": "3d",
    "studio": {
-    "tenant": "3d/img_to_mesh",
+    "tenant": "3d/img-to-mesh",
     "owns_params": false,
     "writes": [
      "input_image",
@@ -1924,7 +1924,7 @@
    "label": "TRELLIS.2 Native 512 INT8 ConvRot",
    "genre": "3d",
    "studio": {
-    "tenant": "3d/img_to_mesh",
+    "tenant": "3d/img-to-mesh",
     "owns_params": false,
     "writes": [
      "input_image",
@@ -1939,7 +1939,7 @@
    "label": "TRELLIS.2 Native 1024 BF16",
    "genre": "3d",
    "studio": {
-    "tenant": "3d/img_to_mesh",
+    "tenant": "3d/img-to-mesh",
     "owns_params": false,
     "writes": [
      "input_image",
@@ -1954,7 +1954,7 @@
    "label": "TRELLIS.2 Native 1024 INT8 ConvRot",
    "genre": "3d",
    "studio": {
-    "tenant": "3d/img_to_mesh",
+    "tenant": "3d/img-to-mesh",
     "owns_params": false,
     "writes": [
      "input_image",

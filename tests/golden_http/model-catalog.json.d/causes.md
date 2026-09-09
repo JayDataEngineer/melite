@@ -42,3 +42,12 @@ Action card, not a model. Served 67. Walls 17/17.
 Served 67→53 (13 owners + the flux-fill-onereward variant
 route, which rides its owner out). New wall: every served
 owner is claimed (against-cards). Walls 17/17.
+
+## 2026-09-08 — the img-to-mesh tenant flips to the card-id spelling
+
+Card 13 of the card-folder migration: the img_to_mesh card unit
+lands at cards/3d/img-to-mesh/ and the served studio claims
+(trellis2-native, pixal3d) join the new tenant id — the folder
+spelling IS the claim spelling (the join key). 18 pins, one key
+per family/variant block; nothing else moved (golden-suite diff
+was exactly the tenant key). Walls 17/17 after.

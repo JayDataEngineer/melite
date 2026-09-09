@@ -19,7 +19,7 @@
  */
 import { estateInputUrl } from "@melite/catalog"
 import { defineShellDeclaration } from "@melite/ui"
-import { AssemblyStudio, type AssemblySlot, type AssemblyStudioProps } from "../../../ui/studios/assembly"
+import { AssemblyStudio, type AssemblySlot, type AssemblyStudioProps } from "@melite-plugin/3d/ui/studios/assembly"
 
 export const TRELLIS_SLOTS: AssemblySlot[] = [
   { key: "input_image", label: "Source image", required: true, accept: "image", glyph: "photo" },
