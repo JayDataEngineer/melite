@@ -1,4 +1,0 @@
-{
-  "error": "bad preset row: 2 validation errors for CharacterPreset\nparams.function-after[_check_dims(), AuthoredParams]\n  Input should be a valid dictionary or instance of AuthoredParams [type=model_type, input_value=5, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/model_type\nparams.function-after[_check_dims(), EstimatedParams]\n  Input should be a valid dictionary or instance of EstimatedParams [type=model_type, input_value=5, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/model_type",
-  "code": "invalid_request"
-}

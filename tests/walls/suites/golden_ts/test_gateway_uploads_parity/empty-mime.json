@@ -1,4 +1,0 @@
-{
-  "error": "uploads: image type '' refused (want png/jpeg/webp)",
-  "code": "invalid_request"
-}

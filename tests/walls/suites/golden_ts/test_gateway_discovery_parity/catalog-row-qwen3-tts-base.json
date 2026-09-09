@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"id\": \"qwen3-tts-base\",\n  \"family\": \"qwen3-tts-base\",\n  \"genre\": \"audio\",\n  \"label\": \"Qwen3-TTS Base 0.6B\",\n  \"description\": \"Qwen3-TTS 12Hz Base 0.6B \\u2014 plain text-to-speech, no persona\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"mode\": \"tts\",\n    \"variant\": \"base\"\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_tts\",\n  \"has_inference\": true,\n  \"has_rubric\": false\n}"
-}

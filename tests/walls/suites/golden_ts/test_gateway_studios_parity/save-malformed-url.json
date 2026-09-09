@@ -1,4 +1,0 @@
-{
-  "error": "dangling preset ref \u2014 body_ref: malformed artifact URL (want /v1/assets/runs/<run_id>/<file>): '/v1/assets/runs/run9'",
-  "code": "invalid_request"
-}

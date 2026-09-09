@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"id\": \"florence2\",\n  \"family\": \"florence2\",\n  \"genre\": \"image\",\n  \"label\": \"Florence-2\",\n  \"description\": \"Natural-language image captioning (Florence-2 large, PromptGen-tuned) \\u2014 dense descriptive prompts for recreating images in FLUX / Ideogram / image-edit.\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"checkpoint\": \"MiaoshouAI/Florence-2-large-PromptGen-v2.0\",\n    \"caption_task\": \"more_detailed_caption\"\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_tagger\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
-}

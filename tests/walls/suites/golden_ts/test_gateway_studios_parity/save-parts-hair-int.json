@@ -1,4 +1,0 @@
-{
-  "error": "bad preset row: 1 validation error for CharacterPreset\nparts.hair\n  Input should be a valid string [type=string_type, input_value=42, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type",
-  "code": "invalid_request"
-}

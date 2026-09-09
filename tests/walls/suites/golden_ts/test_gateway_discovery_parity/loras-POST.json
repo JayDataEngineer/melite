@@ -1,5 +1,0 @@
-{
- "status": 404,
- "content_type": "application/json",
- "body": "{\n  \"error\": \"no such route POST /v1/loras\",\n  \"code\": \"no_such_route\"\n}"
-}

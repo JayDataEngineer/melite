@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"id\": \"anycreature\",\n  \"family\": \"anycreature\",\n  \"genre\": \"3d\",\n  \"label\": \"anyCreature\",\n  \"description\": \"Text \\u2192 game-ready 3D creature (JSON spec \\u2192 skinned GLB)\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"smooth_angle\": 50,\n    \"build\": \"default\",\n    \"ao\": true,\n    \"role\": \"npc\"\n  },\n  \"engine\": \"anycreature\",\n  \"form\": \"form_forge\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
-}

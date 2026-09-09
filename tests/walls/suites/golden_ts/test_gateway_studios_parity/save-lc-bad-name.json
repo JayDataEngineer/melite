@@ -1,4 +1,0 @@
-{
-  "error": "bad preset row: 3 validation errors for CharacterPreset\nparams.function-after[_check_dims(), AuthoredParams].local_changes.0.name\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_too_short\nparams.function-after[_check_dims(), EstimatedParams].scale\n  Field required [type=missing, input_value={'phenotype': [0.5, 0.5, ...me': '', 'value': 0.5}]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nparams.function-after[_check_dims(), EstimatedParams].local_changes\n  Extra inputs are not permitted [type=extra_forbidden, input_value=[{'name': '', 'value': 0.5}], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden",
-  "code": "invalid_request"
-}

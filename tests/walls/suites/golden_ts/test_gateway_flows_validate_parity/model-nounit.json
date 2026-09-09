@@ -1,4 +1,0 @@
-{
-  "error": "no model unit for model: probe (no models/<genre>/probe dir and no family declares route probe in its variants' cells \u2014 checked the class tree's _routes map)",
-  "code": "invalid_request"
-}

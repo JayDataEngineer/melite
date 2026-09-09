@@ -1,4 +1,0 @@
-{
-  "error": "bad preset row: 2 validation errors for CharacterPreset\nparams.function-after[_check_dims(), AuthoredParams]\n  Value error, authored phenotype wants 11 dims, got 10 [type=value_error, input_value={'phenotype': [0.5, 0.5, ....5, 0.5, 0.5, 0.5, 0.5]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error\nparams.function-after[_check_dims(), EstimatedParams].scale\n  Field required [type=missing, input_value={'phenotype': [0.5, 0.5, ....5, 0.5, 0.5, 0.5, 0.5]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing",
-  "code": "invalid_request"
-}

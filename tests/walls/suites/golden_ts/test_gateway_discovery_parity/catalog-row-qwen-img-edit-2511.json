@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"id\": \"qwen-img-edit-2511\",\n  \"family\": \"qwen-img-edit-2511\",\n  \"genre\": \"image\",\n  \"label\": \"Image Edit\",\n  \"description\": \"Instruction-driven image editing and manipulation \\u2014 the Qwen-Image-Edit 2511 lane (the image-edit card arms this family; the pre-flip img-edit head is retired, same physical lane, its assets merged here 2026-09-05).\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"use_stock_nodes\": false,\n    \"steps\": 4,\n    \"sampler\": \"euler\",\n    \"scheduler\": \"simple\",\n    \"cfg\": 1.0,\n    \"double_reference\": false\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_edit\",\n  \"has_agent\": true,\n  \"has_inference\": true,\n  \"has_rubric\": false\n}"
-}

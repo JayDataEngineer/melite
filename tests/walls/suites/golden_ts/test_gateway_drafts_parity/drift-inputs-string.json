@@ -1,3 +1,0 @@
-{
-  "error": "draft composer drift: 1 validation error for DraftBirthStage\ninputs\n  Input should be a valid list [type=list_type, input_value='x', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/list_type"
-}

@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"id\": \"autoremesher\",\n  \"family\": \"autoremesher\",\n  \"genre\": \"3d\",\n  \"label\": \"AutoRemesher\",\n  \"description\": \"AI triangle soup \\u2192 clean quad topology (explicit budget, no silent defaults).\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {},\n  \"engine\": \"comfyui\",\n  \"form\": \"form_quad_remesh\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
-}

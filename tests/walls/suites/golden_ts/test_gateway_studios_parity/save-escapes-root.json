@@ -1,4 +1,0 @@
-{
-  "error": "dangling preset ref \u2014 body_ref: artifact ref escapes the output root: '/v1/assets/runs//etc/passwd'",
-  "code": "invalid_request"
-}

@@ -1,5 +1,0 @@
-[
-  "{\"ts\":#,\"event\":\"run.swept\",\"data\":{\"run_id\": \"run-done\", \"state\": \"failed\", \"error\": \"boot sweep\"}}",
-  "{\"ts\":#,\"event\":\"run.swept\",\"data\":{\"run_id\": \"run-stale1\", \"state\": \"failed\", \"error\": \"boot sweep\"}}",
-  "{\"ts\":#,\"event\":\"run.swept\",\"data\":{\"run_id\": \"run-stale2\", \"state\": \"queued_lost\", \"error\": \"boot sweep\"}}"
-]

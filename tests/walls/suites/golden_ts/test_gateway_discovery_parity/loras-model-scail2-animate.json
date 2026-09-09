@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"model\": \"scail2-animate\",\n  \"loras\": [],\n  \"note\": null,\n  \"meta\": {}\n}"
-}

@@ -1,4 +1,0 @@
-{
-  "error": "card_compose phase 1: card_compose rc=1 (comfyui.comfyui): required param(s) body_glb, prop_glb missing on the fit lane",
-  "code": "card_compose"
-}

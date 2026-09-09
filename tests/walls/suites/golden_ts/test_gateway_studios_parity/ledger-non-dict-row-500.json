@@ -1,3 +1,0 @@
-{
-  "error": "preset ledger: preset ledger <ROOT>/tsroot/data/tenants/3d/anny/presets.json row 0 invalid (1 validation error for CharacterPreset\n  Input should be a valid dictionary or instance of CharacterPreset [type=model_type, input_value='hello', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/model_type)"
-}

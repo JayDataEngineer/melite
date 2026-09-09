@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"id\": \"h3-timeline\",\n  \"family\": \"h3-timeline\",\n  \"genre\": \"video\",\n  \"label\": \"H3 Timeline (multi-window)\",\n  \"description\": \">-\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"seed\": 42\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_video_director\",\n  \"has_agent\": true,\n  \"has_inference\": true,\n  \"has_rubric\": false\n}"
-}

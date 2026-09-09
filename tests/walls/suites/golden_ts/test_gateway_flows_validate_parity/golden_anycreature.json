@@ -1,4 +1,0 @@
-{
-  "error": "no model unit for model: anycreature (no models/<genre>/anycreature dir and no family declares route anycreature in its variants' cells \u2014 checked the class tree's _routes map)",
-  "code": "invalid_request"
-}

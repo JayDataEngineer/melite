@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"model\": \"trellis2-native\",\n  \"loras\": [],\n  \"note\": null,\n  \"meta\": {}\n}"
-}

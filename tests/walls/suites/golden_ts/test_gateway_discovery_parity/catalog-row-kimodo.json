@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"id\": \"kimodo\",\n  \"family\": \"kimodo\",\n  \"genre\": \"motion\",\n  \"label\": \"Kimodo (text \\u2192 motion)\",\n  \"description\": \"Kinematic motion diffusion (NVIDIA Kimodo-SOMA): text \\u2192 SOMA-77 pose NPZ, chainable, skinnable onto rigged GLBs.\",\n  \"source\": {\n    \"type\": \"\",\n    \"repo_id\": \"nvidia/Kimodo-SOMA-RP-v1.1\"\n  },\n  \"defaults\": {\n    \"cfg_type\": \"separated\",\n    \"cfg_weight_a\": 2.5,\n    \"cfg_weight_b\": 5.0,\n    \"duration_sec\": 5.0,\n    \"diffusion_steps\": 25,\n    \"num_samples\": 1,\n    \"num_transition_frames\": 10,\n    \"seed\": 42\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_motion_kimodo\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
-}

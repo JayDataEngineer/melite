@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"id\": \"qwen3-tts\",\n  \"family\": \"qwen3-tts\",\n  \"genre\": \"audio\",\n  \"label\": \"Qwen3-TTS CustomVoice 0.6B\",\n  \"description\": \"Qwen3-TTS 12Hz CustomVoice 0.6B \\u2014 preset personas and instruct-text emotion control\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"mode\": \"tts\",\n    \"voice\": \"vivian\"\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_tts\",\n  \"has_inference\": true,\n  \"has_rubric\": false\n}"
-}

@@ -1,5 +1,0 @@
-{
- "status": 404,
- "content_type": "application/json",
- "body": "{\n  \"error\": \"no such route DELETE /v1/form-spec\",\n  \"code\": \"no_such_route\"\n}"
-}

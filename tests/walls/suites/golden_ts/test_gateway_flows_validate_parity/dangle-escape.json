@@ -1,4 +1,0 @@
-{
-  "error": "card_compose phase 1: card_compose rc=1 (comfyui.comfyui): compose-door: unknown param(s) on the image-gen card: input_image (admission is the declared surface \u2014 knobs + contract admits; see the card's TS definition)",
-  "code": "card_compose"
-}

@@ -1,4 +1,0 @@
-{
-  "error": "card_compose phase 1: card_compose rc=1 (comfyui.comfyui): required param(s) 'rigged_glb', 'target_glb' missing on the transfer_rig lane \u2014 the rig copy needs the donor rig AND the clothed target",
-  "code": "card_compose"
-}

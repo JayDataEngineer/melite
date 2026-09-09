@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"title\": \"wan-vace_Params\",\n  \"type\": \"object\",\n  \"additionalProperties\": false,\n  \"properties\": {\n    \"prompt\": {\n      \"type\": \"string\"\n    },\n    \"negative_prompt\": {\n      \"type\": \"string\",\n      \"default\": \"\"\n    },\n    \"width\": {\n      \"type\": \"number\"\n    },\n    \"height\": {\n      \"type\": \"number\"\n    },\n    \"length\": {\n      \"type\": \"number\"\n    },\n    \"fps\": {\n      \"type\": \"number\"\n    },\n    \"seed\": {\n      \"type\": \"number\",\n      \"default\": -1\n    },\n    \"steps\": {\n      \"type\": \"number\"\n    },\n    \"cfg\": {\n      \"type\": \"number\"\n    },\n    \"sampler\": {\n      \"type\": \"string\",\n      \"default\": \"\"\n    },\n    \"scheduler\": {\n      \"type\": \"string\",\n      \"default\": \"\"\n    },\n    \"reference_image\": {\n      \"type\": \"string\"\n    },\n    \"pose_video\": {\n      \"type\": \"string\"\n    },\n    \"pose_strength\": {\n      \"type\": \"number\",\n      \"default\": 1.0\n    }\n  },\n  \"required\": []\n}"
-}

@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"id\": \"gem_soma\",\n  \"family\": \"gem_soma\",\n  \"genre\": \"other\",\n  \"label\": \"SOMA\",\n  \"description\": \"GEM-X SOMA pose estimation and retargeting.\",\n  \"source\": {\n    \"type\": \"\",\n    \"repo_id\": \"nvidia/soma-x\"\n  },\n  \"defaults\": {\n    \"scheduler\": \"simple\",\n    \"width\": 1024,\n    \"height\": 1024,\n    \"steps\": 25,\n    \"sampler\": \"euler\",\n    \"cfg\": 7.0\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_edit\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
-}

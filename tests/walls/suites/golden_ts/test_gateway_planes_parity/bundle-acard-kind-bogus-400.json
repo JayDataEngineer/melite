@@ -1,4 +1,0 @@
-{
-  "error": "unknown kind 'bogus' \u2014 the lane table is the CALLABLE surface (action_card | template); models are not lanes: parameter detail via model_catalog, craft docs via skill_read",
-  "code": "invalid_request"
-}

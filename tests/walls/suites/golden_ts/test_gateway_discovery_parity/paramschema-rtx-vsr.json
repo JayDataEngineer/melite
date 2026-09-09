@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"title\": \"rtx-vsr_Params\",\n  \"type\": \"object\",\n  \"additionalProperties\": false,\n  \"properties\": {},\n  \"required\": []\n}"
-}

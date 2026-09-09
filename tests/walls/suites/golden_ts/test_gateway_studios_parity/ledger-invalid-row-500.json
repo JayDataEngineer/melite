@@ -1,3 +1,0 @@
-{
-  "error": "preset ledger: preset ledger <ROOT>/tsroot/data/tenants/3d/anny/presets.json row 1 invalid (1 validation error for CharacterPreset\nlabel\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_too_short)"
-}

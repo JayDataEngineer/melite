@@ -1,7 +1,0 @@
-{
-  "id": "model:amodel",
-  "name": "amodel agent",
-  "description": "model craft",
-  "scope": "model",
-  "content": "---\nname: amodel agent\ndescription: model craft\n---\n# Model\nCraft.\n"
-}

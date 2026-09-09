@@ -1,7 +1,0 @@
-{
-  "id": "card:acard",
-  "name": "acard agent",
-  "description": "the acard craft",
-  "scope": "card",
-  "content": "---\nname: acard agent\ndescription: the acard craft\n---\n# Acard\nCompose laws.\n"
-}

@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"id\": \"h3-keyframe\",\n  \"family\": \"h3-keyframe\",\n  \"genre\": \"video\",\n  \"label\": \"MiniMax H3 keyframe-to-video\",\n  \"description\": \"\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"width\": 768,\n    \"height\": 448,\n    \"length\": 56,\n    \"steps\": 12\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_video_director\",\n  \"has_agent\": true,\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
-}

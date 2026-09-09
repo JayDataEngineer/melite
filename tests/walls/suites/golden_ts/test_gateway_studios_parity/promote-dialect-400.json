@@ -1,4 +1,0 @@
-{
-  "error": "preset ledger: run delivered anny_preset.json with dialect 'authored' (want estimated)",
-  "code": "invalid_request"
-}

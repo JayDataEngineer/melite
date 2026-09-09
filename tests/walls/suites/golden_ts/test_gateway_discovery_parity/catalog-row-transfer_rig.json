@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"id\": \"transfer_rig\",\n  \"family\": \"transfer_rig\",\n  \"genre\": \"3d\",\n  \"label\": \"Transfer Rig\",\n  \"description\": \"Copy rig from source GLB onto target GLB via GPU KNN.\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {},\n  \"engine\": \"comfyui\",\n  \"form\": \"form_img_to_mesh\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
-}

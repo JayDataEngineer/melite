@@ -1,5 +1,0 @@
-{
- "status": 404,
- "content_type": "application/json",
- "body": "{\n  \"error\": \"model not found\",\n  \"code\": \"invalid_request\"\n}"
-}

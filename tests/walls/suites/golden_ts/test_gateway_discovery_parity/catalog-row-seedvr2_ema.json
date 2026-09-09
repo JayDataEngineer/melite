@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"id\": \"seedvr2_ema\",\n  \"family\": \"seedvr2_ema\",\n  \"genre\": \"image\",\n  \"label\": \"SeedVR2 Upscaler\",\n  \"description\": \"SeedVR2 diffusion-based super-resolution (3B EMA FP16 default, 7B EMA FP8\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"batch_size\": 1,\n    \"max_resolution\": 4096,\n    \"resolution\": 1080,\n    \"seed\": 0\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_upscale\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
-}

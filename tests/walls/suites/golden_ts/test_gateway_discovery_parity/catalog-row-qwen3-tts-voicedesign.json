@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"id\": \"qwen3-tts-voicedesign\",\n  \"family\": \"qwen3-tts-voicedesign\",\n  \"genre\": \"audio\",\n  \"label\": \"Qwen3-TTS VoiceDesign 1.7B\",\n  \"description\": \"Qwen3-TTS 12Hz VoiceDesign 1.7B \\u2014 instruction-following voice design; the voice-lock lane\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"mode\": \"design\",\n    \"variant\": \"voicedesign\"\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_tts\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
-}

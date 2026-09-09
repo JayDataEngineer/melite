@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"title\": \"h3_Params\",\n  \"type\": \"object\",\n  \"additionalProperties\": false,\n  \"properties\": {\n    \"prompt\": {\n      \"type\": \"string\"\n    },\n    \"image\": {\n      \"type\": \"string\"\n    },\n    \"seed\": {\n      \"type\": \"number\",\n      \"default\": 42\n    },\n    \"width\": {\n      \"type\": \"number\",\n      \"default\": 1344\n    },\n    \"height\": {\n      \"type\": \"number\",\n      \"default\": 768\n    },\n    \"length\": {\n      \"type\": \"number\",\n      \"default\": 56\n    },\n    \"steps\": {\n      \"type\": \"number\",\n      \"default\": 12\n    },\n    \"sharpen_enabled\": {\n      \"type\": \"boolean\",\n      \"default\": false\n    },\n    \"sharpen_strength\": {\n      \"type\": \"number\",\n      \"default\": 0.3\n    },\n    \"interpolate_enabled\": {\n      \"type\": \"boolean\",\n      \"default\": \"false\"\n    },\n    \"shift_video\": {\n      \"type\": \"number\",\n      \"default\": 8.0\n    },\n    \"shift_audio\": {\n      \"type\": \"number\",\n      \"default\": 3.0\n    }\n  },\n  \"required\": []\n}"
-}

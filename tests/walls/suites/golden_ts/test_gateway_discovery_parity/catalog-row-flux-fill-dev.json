@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"id\": \"flux-fill-dev\",\n  \"family\": \"flux-fill-dev\",\n  \"genre\": \"image\",\n  \"label\": \"Inpaint\",\n  \"description\": \"Dual-engine masked region inpainting \\u2014 FLUX.1-Fill (dedicated fill arch) or LanPaint on any base model.\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"inpaint_context_pad\": 64,\n    \"inpaint_detail\": \"crop+stitch\",\n    \"inpaint_edge_extend\": 0,\n    \"inpaint_target_size\": 1024,\n    \"outpaint_bottom\": 0,\n    \"outpaint_left\": 0,\n    \"outpaint_overlap\": 16,\n    \"outpaint_right\": 0,\n    \"outpaint_top\": 0,\n    \"refine_denoise\": 0.4,\n    \"mode\": \"replace\",\n    \"steps\": 20,\n    \"cfg\": 1.0,\n    \"guidance\": 30.0,\n    \"sampler\": \"euler\",\n    \"scheduler\": \"normal\",\n    \"seed\": 42,\n    \"mask_grow\": 8,\n    \"mask_feather\": 8,\n    \"mask_threshold\": 0.0,\n    \"mask_invert\": false\n  },\n  \"engine\": \"\",\n  \"form\": \"form_inpaint\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
-}

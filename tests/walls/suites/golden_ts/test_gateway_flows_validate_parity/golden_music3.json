@@ -1,4 +1,0 @@
-{
-  "error": "card_compose phase 1: card_compose rc=1 (comfyui.comfyui): required param 'prompt' missing or empty on the music card (the music caption \u2014 what the song IS)",
-  "code": "card_compose"
-}

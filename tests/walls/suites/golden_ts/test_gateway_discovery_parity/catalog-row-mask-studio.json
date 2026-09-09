@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"id\": \"mask-studio\",\n  \"family\": \"mask-studio\",\n  \"genre\": \"image\",\n  \"label\": \"Mask\",\n  \"description\": \"Selection-only mask card: RT-DETR proposes, SAM3 refines \\u2192 named class masks for inpaint flows.\",\n  \"source\": {\n    \"type\": \"\",\n    \"repo_id\": \"facebook/sam-vit-base\"\n  },\n  \"defaults\": {\n    \"output_mode\": \"segm\",\n    \"detect_mode\": \"body\",\n    \"detection_threshold\": 0.35,\n    \"sam_threshold\": 0.93,\n    \"sam_dilation\": 0,\n    \"export_face\": false,\n    \"export_hands\": false,\n    \"export_body\": false,\n    \"export_paint\": false,\n    \"sam3_prompt\": null,\n    \"export_boxes\": true,\n    \"instance_filter\": \"all\",\n    \"max_instances\": 0,\n    \"outputs\": \"[]\"\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_mask_studio\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
-}

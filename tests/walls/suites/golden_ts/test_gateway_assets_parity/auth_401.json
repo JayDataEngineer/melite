@@ -1,3 +1,0 @@
-{
-  "error": "unauthorized: missing or invalid bearer token (Authorization: Bearer <token>; set DSH_GATEWAY_TOKEN to enable)"
-}

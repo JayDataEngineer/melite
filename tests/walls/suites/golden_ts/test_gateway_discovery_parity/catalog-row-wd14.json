@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"id\": \"wd14\",\n  \"family\": \"wd14\",\n  \"genre\": \"image\",\n  \"label\": \"WD14 Tagger\",\n  \"description\": \"Booru keyword tagger (WaifuDiffusion v3 lineage) \\u2014 comma-separated Danbooru tags for NovelAI / Pony / Illustrious recreation. Light ONNX lane, first run downloads weights.\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"checkpoint\": \"wd-v1-4-moat-tagger-v2\",\n    \"threshold\": 0.35,\n    \"character_threshold\": 0.85,\n    \"exclude_tags\": \"\",\n    \"replace_underscore\": false,\n    \"trailing_comma\": false\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_tagger\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
-}

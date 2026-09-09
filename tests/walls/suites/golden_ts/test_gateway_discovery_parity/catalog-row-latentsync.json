@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"id\": \"latentsync\",\n  \"family\": \"latentsync\",\n  \"genre\": \"other\",\n  \"label\": \"LatentSync\",\n  \"description\": \"LatentSync \\u2014 local-only lip-sync that aligns mouth shapes to audio in a video.\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"scheduler\": \"simple\",\n    \"width\": 1024,\n    \"height\": 1024,\n    \"steps\": 25,\n    \"sampler\": \"euler\",\n    \"cfg\": 1.0\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_edit\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
-}

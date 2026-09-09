@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"id\": \"h3\",\n  \"family\": \"h3\",\n  \"genre\": \"video\",\n  \"label\": \"MiniMax H3\",\n  \"description\": \"MiniMax H3 joint video + audio generation. Native AV output \\u2014 describe both motion and\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"width\": 1344,\n    \"height\": 768,\n    \"length\": 124,\n    \"steps\": 30,\n    \"shift_video\": 12.0,\n    \"shift_audio\": 3.0,\n    \"seed\": 42\n  },\n  \"engine\": \"comfyui\",\n  \"form\": \"form_video_director\",\n  \"has_agent\": true,\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
-}

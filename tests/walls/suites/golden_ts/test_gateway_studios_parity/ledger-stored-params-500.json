@@ -1,3 +1,0 @@
-{
-  "error": "preset ledger: preset ledger <ROOT>/tsroot/data/tenants/3d/anny/presets.json row 0 invalid (1 validation error for CharacterPreset\nparams_json\n  Extra inputs are not permitted [type=extra_forbidden, input_value='{bad', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden)"
-}

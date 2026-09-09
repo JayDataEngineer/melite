@@ -1,4 +1,0 @@
-{
-  "error": "card_compose phase 1: card_compose rc=1 (comfyui.comfyui): required param 'source' missing on the input-prep card (the staged source \u2014 upload, asset drop, prior-run artifact, or input-dir filename)",
-  "code": "card_compose"
-}

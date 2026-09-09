@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"title\": \"seedvr2_ema_Params\",\n  \"type\": \"object\",\n  \"additionalProperties\": false,\n  \"properties\": {\n    \"input_image\": {\n      \"type\": \"string\"\n    },\n    \"resolution\": {\n      \"type\": \"number\"\n    },\n    \"max_resolution\": {\n      \"type\": \"number\"\n    },\n    \"batch_size\": {\n      \"type\": \"number\"\n    },\n    \"seed\": {\n      \"type\": \"number\",\n      \"default\": -1\n    }\n  },\n  \"required\": []\n}"
-}

@@ -1,4 +1,0 @@
-{
-  "error": "uploads: body must be a JSON object {filename, data}",
-  "code": "invalid_request"
-}

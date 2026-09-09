@@ -1,4 +1,0 @@
-{
-  "error": "no such route GET /v1/does-not-exist-parity-probe-xyz",
-  "code": "no_such_route"
-}

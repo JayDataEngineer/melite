@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"id\": \"skin\",\n  \"family\": \"skin\",\n  \"genre\": \"3d\",\n  \"label\": \"Skin\",\n  \"description\": \"Deterministic skin detail maps onto a SOMAX body (albedo + normal + kind sidecar) and the proof turnaround.\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {},\n  \"engine\": \"comfyui\",\n  \"form\": \"form_3d_skin\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
-}

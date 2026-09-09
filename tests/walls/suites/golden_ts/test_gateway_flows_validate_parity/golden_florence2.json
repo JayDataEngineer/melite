@@ -1,4 +1,0 @@
-{
-  "error": "card_compose phase 1: card_compose rc=1 (comfyui.comfyui): required param 'input_image' missing or blank on the tagger card (the tagger inverts an image; nothing to tag is a refusal)",
-  "code": "card_compose"
-}

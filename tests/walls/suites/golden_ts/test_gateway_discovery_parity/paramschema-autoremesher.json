@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"title\": \"autoremesher_Params\",\n  \"type\": \"object\",\n  \"additionalProperties\": false,\n  \"properties\": {\n    \"input\": {\n      \"type\": \"string\"\n    },\n    \"target_quads\": {\n      \"type\": \"number\",\n      \"default\": 50000\n    },\n    \"edge_scaling\": {\n      \"type\": \"number\",\n      \"default\": 1.0\n    },\n    \"sharp_edge\": {\n      \"type\": \"number\",\n      \"default\": 90.0\n    },\n    \"smooth_normal\": {\n      \"type\": \"number\",\n      \"default\": 0.0\n    },\n    \"adaptivity\": {\n      \"type\": \"number\",\n      \"default\": 1.0\n    },\n    \"anisotropy\": {\n      \"type\": \"number\",\n      \"default\": 1.0\n    }\n  },\n  \"required\": []\n}"
-}

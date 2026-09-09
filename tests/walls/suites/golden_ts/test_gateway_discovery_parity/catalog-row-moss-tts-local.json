@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"id\": \"moss-tts-local\",\n  \"family\": \"moss-tts-local\",\n  \"genre\": \"audio\",\n  \"label\": \"MOSS-TTS Local v1.5\",\n  \"description\": \"MOSS-TTS Local Transformer v1.5\",\n  \"source\": {\n    \"type\": \"huggingface\",\n    \"repo_id\": \"audio-cpp/audio.cpp-gguf\",\n    \"filename\": \"MOSS-TTS-Local-v1.5-GGUF\"\n  },\n  \"defaults\": {\n    \"backend\": \"cuda\"\n  },\n  \"engine\": \"audio_cpp\",\n  \"form\": \"form_tts\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
-}

@@ -1,4 +1,0 @@
-{
-  "error": "bad preset row: 1 validation error for CharacterPreset\nknobs.resolution\n  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='x', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/int_parsing",
-  "code": "invalid_request"
-}

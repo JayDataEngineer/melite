@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"id\": \"step1x_texture\",\n  \"family\": \"step1x_texture\",\n  \"genre\": \"3d\",\n  \"label\": \"Step1X-3D Texture\",\n  \"description\": \"Diffusion-based 3D texture synthesis \\u2014 1 reference image \\u2192 6 multi-view images via SDXL ig2mv flow \\u2192 baked onto UV atlas. Fills ALL surfaces (no coverage gaps unlike camera projection). 3.5B model, ~15s on 4090.\",\n  \"source\": {\n    \"type\": \"\"\n  },\n  \"defaults\": {\n    \"preset\": \"standard\",\n    \"texture_size\": 2048,\n    \"render_size\": 2048,\n    \"remove_bg\": false,\n    \"seed\": 2025,\n    \"filename_prefix\": \"step1x_texture\"\n  },\n  \"engine\": \"\",\n  \"form\": \"form_3d_step1x_texture\",\n  \"has_inference\": false,\n  \"has_rubric\": false\n}"
-}

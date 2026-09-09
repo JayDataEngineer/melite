@@ -1,4 +1,0 @@
-{
-  "error": "bad preset row: 2 validation errors for CharacterPreset\nparams.function-after[_check_dims(), AuthoredParams].scale\n  Extra inputs are not permitted [type=extra_forbidden, input_value=[0.2, 0.2, 0.2, 0.2, 0.2], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden\nparams.function-after[_check_dims(), EstimatedParams]\n  Value error, estimated scale wants 139 entries, got 5 [type=value_error, input_value={'phenotype': [0.1, 0.2, ....2, 0.2, 0.2, 0.2, 0.2]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error",
-  "code": "invalid_request"
-}

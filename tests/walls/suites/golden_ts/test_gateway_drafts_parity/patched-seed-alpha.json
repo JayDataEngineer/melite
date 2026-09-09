@@ -1,1 +1,0 @@
-{"draft_id":"seed-alpha","model":"anny","name":"café ✓","score":1.0,"big":9007199254740993,"stages":[{"id":"s_0","inputs":["i"],"provenance":"agent","params":{"a":1,"b":3},"result":{"y":2},"runStatus":"done","inputOutputs":[["o"]]},{"id":"s_1","inputs":[""],"provenance":"agent"}]}

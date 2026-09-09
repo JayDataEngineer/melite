@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"title\": \"qwen3-tts-voicedesign_Params\",\n  \"type\": \"object\",\n  \"additionalProperties\": false,\n  \"properties\": {\n    \"voice_name\": {\n      \"type\": \"string\"\n    },\n    \"style_instruction\": {\n      \"type\": \"string\"\n    },\n    \"temperature\": {\n      \"type\": \"number\",\n      \"default\": 0.7\n    },\n    \"top_p\": {\n      \"type\": \"number\",\n      \"default\": 0.9\n    },\n    \"speed\": {\n      \"type\": \"number\",\n      \"default\": 1.0\n    },\n    \"repetition_penalty\": {\n      \"type\": \"number\",\n      \"default\": 1.05\n    },\n    \"seed\": {\n      \"type\": \"number\",\n      \"default\": -1\n    }\n  },\n  \"required\": []\n}"
-}

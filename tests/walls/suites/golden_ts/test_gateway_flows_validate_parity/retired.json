@@ -1,4 +1,0 @@
-{
-  "error": "request body carries retired pipe-carry key(s) ['pipe'] \u2014 the 2026-08-10 stowaway wire: no gateway ever stashed it (flow_doc was never emitted). The revive rail is the draft (draft_id) + the run registry; card bodies carry params only",
-  "code": "invalid_request"
-}

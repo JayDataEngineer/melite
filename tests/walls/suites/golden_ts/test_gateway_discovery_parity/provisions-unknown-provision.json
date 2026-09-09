@@ -1,5 +1,0 @@
-{
- "status": 404,
- "content_type": "application/json",
- "body": "{\n  \"error\": \"family 'anny' declares no provision 'nope-xyz' (declared: anny-base-body.glb)\",\n  \"code\": \"invalid_request\"\n}"
-}

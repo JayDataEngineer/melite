@@ -1,5 +1,0 @@
-{
- "status": 200,
- "content_type": "application/json",
- "body": "{\n  \"model\": \"qwen-img-edit-2511\",\n  \"loras\": [],\n  \"note\": null,\n  \"meta\": {}\n}"
-}
