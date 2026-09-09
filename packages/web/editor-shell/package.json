@@ -1,0 +1,22 @@
+{
+  "name": "@melite-plugin/dsh-editor-shell",
+  "version": "0.1.0",
+  "description": "Melite editor shell as a DSH web plugin: claims a right-sidebar tab on the dsh-better-sidebar registry — the first rail of the editor-lane 1:1 conversion (S4b, docs/design/editor-on-dsh-client-2026-09-08.md).",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [],
+      "platform": "web"
+    }
+  },
+  "license": "MIT"
+}
