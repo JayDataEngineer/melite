@@ -19,5 +19,6 @@
       "@deepseek-ai/cordis": ["./node_modules/@deepseek-ai/cordis/lib/types/index.d.ts"]
     }
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/cards/*/ui/**", "src/cards/*/*/ui/**"]
 }

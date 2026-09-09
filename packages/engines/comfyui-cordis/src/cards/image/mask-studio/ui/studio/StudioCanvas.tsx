@@ -17,7 +17,7 @@ import { ViewportAnchor } from "@melite/ui"
 // The 2D viewport PRIMITIVE (row 5 stroke 3): the wrapper/canvas/
 // transform/triage live THERE; this module keeps the dock, the
 // options bar, and the mask overlays (verbatim) that fill its slots.
-import { PaintCanvas2D } from "../../../ui/PaintCanvas2D"
+import { PaintCanvas2D } from "../PaintCanvas2D"
 import { ZOOM_MAX, ZOOM_MIN } from "./constants"
 import type { BoxEntry, SelectionRect, ToolId } from "./constants"
 import { DockBtn } from "./DockBtn"

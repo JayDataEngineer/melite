@@ -66,6 +66,15 @@ const PLUGIN_TENANT_LOADERS = import.meta.glob<{
   default: ComponentType<StudioTenantProps>
 }>("../../../../../../packages/engines/*/action_cards/*/*/ui/studio/component.tsx")
 
+// The nested card units (card-folder-shape design record, 2026-09-08):
+// packages/engines/<engine>/src/cards/<genre>/<card>/ui/studio/component.tsx
+// — the doc-derived one-card-one-folder home (card.ts + ui/ + agents/
+// in one unit). Both globs live while the migration empties
+// action_cards; the action_cards glob dies with its last folder.
+const CARD_UNIT_TENANT_LOADERS = import.meta.glob<{
+  default: ComponentType<StudioTenantProps>
+}>("../../../../../../packages/engines/*/src/cards/*/*/ui/studio/component.tsx")
+
 // Card-body studios claim action_cards/<genre>/<card>/ui/studio/component.tsx
 // (THE ui/studio claim = the authoring-surface override). Other ui/<claim>/
 // dirs are SLOT claims owned by shell/pluginUi.ts — the two seams are
@@ -78,25 +87,41 @@ const PLUGIN_TENANT_LOADERS = import.meta.glob<{
 const ACTION_CARD_BODY =
   /^\/action_cards\/([^/]+)\/([^/]+)\/ui\/studio\/component\.tsx$/
 
+// Same anchoring rule for the nested card units: the segment after
+// /src/cards/ is <genre>/<card> — the tenant id keeps its genre/card
+// spelling (the join key the served body claims declare).
+const CARD_UNIT_BODY =
+  /^\/src\/cards\/([^/]+)\/([^/]+)\/ui\/studio\/component\.tsx$/
+
 function pluginTenantId(path: string): string | null {
   const i = path.indexOf("/action_cards/")
-  if (i < 0) return null
-  const m = ACTION_CARD_BODY.exec(path.slice(i))
-  return m ? `${m[1]}/${m[2]}` : null
+  if (i >= 0) {
+    const m = ACTION_CARD_BODY.exec(path.slice(i))
+    return m ? `${m[1]}/${m[2]}` : null
+  }
+  const j = path.indexOf("/src/cards/")
+  if (j >= 0) {
+    const m = CARD_UNIT_BODY.exec(path.slice(j))
+    return m ? `${m[1]}/${m[2]}` : null
+  }
+  return null
 }
 
-/** Every plugin tenant id the glob resolves (boundary test introspection). */
+/** Every plugin tenant id the globs resolve (boundary test introspection). */
 export function pluginTenantIds(): string[] {
-  return Object.keys(PLUGIN_TENANT_LOADERS)
+  return [...Object.keys(PLUGIN_TENANT_LOADERS), ...Object.keys(CARD_UNIT_TENANT_LOADERS)]
     .map(pluginTenantId)
     .filter((x): x is string => x !== null)
     .sort()
 }
 
 /** Lazy-mount a plugin tenant behind a Suspense boundary (code-split). */
-function lazyPluginTenant(path: string): ComponentType<StudioTenantProps> {
+function lazyPluginTenant(
+  loaders: Record<string, () => Promise<{ default: ComponentType<StudioTenantProps> }>>,
+  path: string,
+): ComponentType<StudioTenantProps> {
   const Lazy = lazy(async () => {
-    const mod = await PLUGIN_TENANT_LOADERS[path]!()
+    const mod = await loaders[path]()
     return { default: mod.default }
   })
   const Wrapped: ComponentType<StudioTenantProps> = (props) =>
@@ -111,7 +136,11 @@ function lazyPluginTenant(path: string): ComponentType<StudioTenantProps> {
 const PLUGIN_TENANTS: Record<string, ComponentType<StudioTenantProps>> = {}
 for (const path of Object.keys(PLUGIN_TENANT_LOADERS)) {
   const id = pluginTenantId(path)
-  if (id) PLUGIN_TENANTS[id] = lazyPluginTenant(path)
+  if (id) PLUGIN_TENANTS[id] = lazyPluginTenant(PLUGIN_TENANT_LOADERS, path)
+}
+for (const path of Object.keys(CARD_UNIT_TENANT_LOADERS)) {
+  const id = pluginTenantId(path)
+  if (id) PLUGIN_TENANTS[id] = lazyPluginTenant(CARD_UNIT_TENANT_LOADERS, path)
 }
 
 /** Resolve a tenant id → component across BOTH surfaces (first-party

@@ -12,7 +12,7 @@
 // ['comfyui']` at module level — passing only { apply } drops the
 // inject declaration and the service dies with "cannot get property
 // comfyui without inject").
-import { readdirSync } from 'node:fs'
+import { existsSync, readdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
@@ -39,10 +39,26 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
   const ctx = new Context()
   const service = new ComfyUIService(ctx)
   // the cli.ts:59-63 auto-load loop (in-process): every card module
-  // under src/cards, full namespace, in readdirSync order
+  // under src/cards, full namespace, in readdirSync order. TWO
+  // layouts during the card-folder migration (card-folder-shape
+  // design record, 2026-09-08): the flat legacy files and the
+  // nested card units cards/<genre>/<card>/card.ts (the doc-derived
+  // shape — one card one folder: card.ts + ui/ + agents/). The flat
+  // leg dies when the last card has its folder.
   const cardsDir = join(dirname(new URL(import.meta.url).pathname), 'cards')
-  for (const f of readdirSync(cardsDir).filter((x) => x.endsWith('.ts')).sort()) {
-    const mod = (await import(pathToFileURL(join(cardsDir, f)).href)) as unknown as Plugin
+  const cardFiles: string[] = readdirSync(cardsDir).filter((x) => x.endsWith('.ts')).map((x) => join(cardsDir, x)).sort()
+  for (const genre of readdirSync(cardsDir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {
+    if (!genre.isDirectory()) continue
+    const genreDir = join(cardsDir, genre.name)
+    for (const card of readdirSync(genreDir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {
+      if (!card.isDirectory()) continue
+      const cardTs = join(genreDir, card.name, 'card.ts')
+      if (existsSync(cardTs)) cardFiles.push(cardTs)
+    }
+  }
+  cardFiles.sort()
+  for (const f of cardFiles) {
+    const mod = (await import(pathToFileURL(f).href)) as unknown as Plugin
     if (typeof (mod as { apply?: unknown }).apply === 'function') {
       await ctx.plugin(mod)
     }

@@ -1014,61 +1014,67 @@ interface CardWalk {
 
 /** LEVEL 2 card docs (lane_disclosure._card_rows 178-257): AGENT.md
  *  + agents/skills/* per card dir, bucketed by DIR NAME ("_" genres
- *  skipped). */
+ *  skipped). TWO roots while the card-folder migration empties
+ *  action_cards (card-folder-shape design record, 2026-09-08): the
+ *  legacy tenant package and the nested card units
+ *  src/cards/<genre>/<card>/ (the doc-derived one-card-one-folder
+ *  home — card.ts + ui/ + agents/ in one unit). */
 function cardRows(engine: string): CardWalk {
   const rows: DocRow[] = [];
   const buckets = new Map<string, { dir: string; rows: DocRow[] }>();
-  const cardsRoot: string = join(engine, "action_cards");
-  if (!isDir(cardsRoot)) return { rows, buckets };
-  for (const genre of subdirs(cardsRoot)) {
-    if (genre.startsWith("_")) continue;
-    for (const cname of subdirs(join(cardsRoot, genre))) {
-      const cdir: string = join(cardsRoot, genre, cname);
-      const got: DocRow[] = [];
-      // Oracle fallback order (lane_disclosure card walk): the
-      // top-level AGENT.md wins, agents/AGENT.md orients when the
-      // card ships no top-level doc (every estate card today).
-      let agent: DocRow | null = readDoc(
-        join(cdir, "AGENT.md"),
-        "card:" + cname,
-        "card",
-        genre,
-        cname,
-        null,
-      );
-      if (agent === null) {
-        agent = readDoc(
-          join(cdir, "agents", "AGENT.md"),
+  const cardsRoots: string[] = [join(engine, "action_cards"), join(engine, "src", "cards")];
+  for (const cardsRoot of cardsRoots) {
+    if (!isDir(cardsRoot)) continue;
+    for (const genre of subdirs(cardsRoot)) {
+      if (genre.startsWith("_")) continue;
+      for (const cname of subdirs(join(cardsRoot, genre))) {
+        const cdir: string = join(cardsRoot, genre, cname);
+        const got: DocRow[] = [];
+        // Oracle fallback order (lane_disclosure card walk): the
+        // top-level AGENT.md wins, agents/AGENT.md orients when the
+        // card ships no top-level doc (every estate card today).
+        let agent: DocRow | null = readDoc(
+          join(cdir, "AGENT.md"),
           "card:" + cname,
           "card",
           genre,
           cname,
           null,
         );
+        if (agent === null) {
+          agent = readDoc(
+            join(cdir, "agents", "AGENT.md"),
+            "card:" + cname,
+            "card",
+            genre,
+            cname,
+            null,
+          );
+        }
+        if (agent !== null) got.push(agent);
+        let sks: string[];
+        try {
+          sks = readdirSync(join(cdir, "agents", "skills")).sort();
+        } catch {
+          sks = [];
+        }
+        for (const sk of sks) {
+          const skp: string = join(cdir, "agents", "skills", sk);
+          const doc: string = isDir(skp) ? join(skp, "SKILL.md") : skp;
+          if (!isDir(skp) && !doc.endsWith(".md")) continue;
+          const r: DocRow | null = readDoc(
+            doc,
+            "card:" + cname + ":" + sk,
+            "card-skill",
+            genre,
+            cname,
+            null,
+          );
+          if (r !== null) got.push(r);
+        }
+        for (const g of got) rows.push(g);
+        buckets.set(cname, { dir: cdir, rows: got });
       }
-      if (agent !== null) got.push(agent);
-      let sks: string[];
-      try {
-        sks = readdirSync(join(cdir, "agents", "skills")).sort();
-      } catch {
-        sks = [];
-      }
-      for (const sk of sks) {
-        const skp: string = join(cdir, "agents", "skills", sk);
-        const doc: string = isDir(skp) ? join(skp, "SKILL.md") : skp;
-        if (!isDir(skp) && !doc.endsWith(".md")) continue;
-        const r: DocRow | null = readDoc(
-          doc,
-          "card:" + cname + ":" + sk,
-          "card-skill",
-          genre,
-          cname,
-          null,
-        );
-        if (r !== null) got.push(r);
-      }
-      for (const g of got) rows.push(g);
-      buckets.set(cname, { dir: cdir, rows: got });
     }
   }
   return { rows, buckets };
@@ -1094,51 +1100,58 @@ function manifests(engine: string, cards?: CardRegistryService | null): Map<stri
   const out = new Map<string, ManifestEntry>();
   const defs = needCardRegistry(cards, "manifests").defsSync();
   const resolved = new Set<string>();
-  const cardsRoot: string = join(engine, "action_cards");
-  let genres: string[];
-  try {
-    genres = readdirSync(cardsRoot);
-  } catch {
-    genres = [];
-  }
-  for (const genre of genres) {
-    // Dependency + hidden dirs are never cards (a node_modules
-    // tree rides action_cards/ — its packages must neither serve
-    // nor trip the closed dir bridge below).
-    if (genre === "node_modules" || genre.startsWith(".")) continue;
-    const gdir: string = join(cardsRoot, genre);
-    if (!isDir(gdir)) continue;
-    let cards: string[];
+  // TWO roots while the card-folder migration empties action_cards
+  // (card-folder-shape design record, 2026-09-08): the legacy tenant
+  // package and the nested card units src/cards/<genre>/<card>/.
+  // Nested card dirs are dash-named registry ids already — the
+  // DIR_ID_ALIASES bridge stays an action_cards concern.
+  const cardsRoots: string[] = [join(engine, "action_cards"), join(engine, "src", "cards")];
+  for (const cardsRoot of cardsRoots) {
+    let genres: string[];
     try {
-      cards = readdirSync(gdir);
+      genres = readdirSync(cardsRoot);
     } catch {
       continue;
     }
-    for (const cname of cards) {
-      const cdir: string = join(gdir, cname);
-      if (!isDir(cdir)) continue;
-      // The dir->id bridge is CLOSED (DIR_ID_ALIASES): a new
-      // underscore dir is a rename waiting to happen — refuse LOUD,
-      // never silently undisclose a card.
-      if (cname.includes("_") && DIR_ID_ALIASES[cname] === undefined) {
-        throw new LaneWireError(
-          fmt(
-            "[tool_projection] card dir %r has no registry mapping " +
-              "(underscore dirs bridge via DIR_ID_ALIASES in " +
-              "doors/toolProjection.ts — add the row or rename the dir)",
-            cdir,
-          ),
-        );
+    for (const genre of genres) {
+      // Dependency + hidden dirs are never cards (a node_modules
+      // tree rides action_cards/ — its packages must neither serve
+      // nor trip the closed dir bridge below).
+      if (genre === "node_modules" || genre.startsWith(".")) continue;
+      const gdir: string = join(cardsRoot, genre);
+      if (!isDir(gdir)) continue;
+      let cards: string[];
+      try {
+        cards = readdirSync(gdir);
+      } catch {
+        continue;
       }
-      const cid: string = DIR_ID_ALIASES[cname] ?? cname;
-      const def = defs.get(cid);
-      if (def === undefined) continue;
-      resolved.add(cid);
-      out.set(cid, {
-        genre,
-        dir: cdir,
-        rows: [projectCardRow(def, baseRowFor(cid))],
-      });
+      for (const cname of cards) {
+        const cdir: string = join(gdir, cname);
+        if (!isDir(cdir)) continue;
+        // The dir->id bridge is CLOSED (DIR_ID_ALIASES): a new
+        // underscore dir is a rename waiting to happen — refuse LOUD,
+        // never silently undisclose a card.
+        if (cname.includes("_") && DIR_ID_ALIASES[cname] === undefined) {
+          throw new LaneWireError(
+            fmt(
+              "[tool_projection] card dir %r has no registry mapping " +
+                "(underscore dirs bridge via DIR_ID_ALIASES in " +
+                "doors/toolProjection.ts — add the row or rename the dir)",
+              cdir,
+            ),
+          );
+        }
+        const cid: string = DIR_ID_ALIASES[cname] ?? cname;
+        const def = defs.get(cid);
+        if (def === undefined) continue;
+        resolved.add(cid);
+        out.set(cid, {
+          genre,
+          dir: cdir,
+          rows: [projectCardRow(def, baseRowFor(cid))],
+        });
+      }
     }
   }
   for (const [cid, def] of defs) {

@@ -37,6 +37,21 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../web-kit/contracts
+      '@melite/formats':
+        specifier: workspace:*
+        version: link:../../web-kit/formats
+      '@melite/ui':
+        specifier: workspace:*
+        version: link:../../web-kit/ui
+      lucide-react:
+        specifier: '*'
+        version: 1.39.0(react@19.2.8)
+      react:
+        specifier: ^19.2.6
+        version: 19.2.8
     devDependencies:
       '@types/node':
         specifier: ^22.20.0
@@ -209,6 +224,9 @@ importers:
 
   packages/gateway/core:
     dependencies:
+      '@comfyui/cordis':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@vendor+cordis_plugins+include)(@deepseek-ai/cordis-plugin-loader@vendor+cordis_plugins+loader)
@@ -242,9 +260,6 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@comfyui/cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/gateway-doors':
         specifier: workspace:*
         version: link:../doors
@@ -273,12 +288,12 @@ importers:
 
   packages/gateway/doors:
     dependencies:
-      '@deepseek-ai/cordis':
-        specifier: ^4.0.2
-        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
       '@comfyui/cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
       '@melite/gateway-core':
         specifier: workspace:*
         version: link:../core
@@ -298,15 +313,15 @@ importers:
 
   packages/gateway/queue:
     dependencies:
+      '@comfyui/cordis':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
       '@deepseek-ai/cordis-plugin-timer':
         specifier: workspace:*
         version: link:../../../vendor/cordis_plugins/timer
-      '@comfyui/cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/gateway-core':
         specifier: workspace:*
         version: link:../core
@@ -320,6 +335,9 @@ importers:
 
   packages/gateway/shell:
     dependencies:
+      '@comfyui/cordis':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
       '@deepseek-ai/cordis-plugin-group':
         specifier: workspace:*
         version: link:../../../vendor/cordis_plugins/group
@@ -338,9 +356,6 @@ importers:
       '@deepseek-ai/dsh-host-webserver':
         specifier: workspace:*
         version: link:../../../vendor/cordis_plugins/webserver
-      '@comfyui/cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/gateway-core':
         specifier: workspace:*
         version: link:../core

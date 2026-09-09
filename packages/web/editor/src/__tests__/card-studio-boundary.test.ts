@@ -186,26 +186,34 @@ describe("plugin studio tenant boundary (§6 props gate)", () => {
   function pluginComponents(): { id: string; file: string; src: string; pkgDir: string }[] {
     const out: { id: string; file: string; src: string; pkgDir: string }[] = []
     for (const engine of readdirSync(ENGINES_DIR)) {
-      const cards = resolve(ENGINES_DIR, engine, "action_cards")
-      let ownerDirs: string[] = []
-      try {
-        ownerDirs = readdirSync(cards, { withFileTypes: true })
-          .filter((d) => d.isDirectory() && !d.name.startsWith(".")
-            && d.name !== "ui" && d.name !== "node_modules")
-          .map((d) => d.name)
-      } catch {
-        continue // engine without action_cards/ — fine
-      }
-      for (const owner of ownerDirs) {
-        for (const card of readdirSync(resolve(cards, owner), { withFileTypes: true }).filter((d) => d.isDirectory() && d.name !== "ui").map((d) => d.name)) {
-          const file = resolve(cards, owner, card, "ui", "studio", "component.tsx")
-          let src: string
-          try {
-            src = readFileSync(file, "utf8")
-          } catch {
-            continue // a card dir without a component — schema-form card
+      // BOTH homes while the card-folder migration empties action_cards
+      // (card-folder-shape design record, 2026-09-08): the legacy
+      // tenant package and the nested card units src/cards/.
+      const cardsRoots = [
+        resolve(ENGINES_DIR, engine, "action_cards"),
+        resolve(ENGINES_DIR, engine, "src", "cards"),
+      ]
+      for (const cards of cardsRoots) {
+        let ownerDirs: string[] = []
+        try {
+          ownerDirs = readdirSync(cards, { withFileTypes: true })
+            .filter((d) => d.isDirectory() && !d.name.startsWith(".")
+              && d.name !== "ui" && d.name !== "node_modules")
+            .map((d) => d.name)
+        } catch {
+          continue // engine without this cards root — fine
+        }
+        for (const owner of ownerDirs) {
+          for (const card of readdirSync(resolve(cards, owner), { withFileTypes: true }).filter((d) => d.isDirectory() && d.name !== "ui").map((d) => d.name)) {
+            const file = resolve(cards, owner, card, "ui", "studio", "component.tsx")
+            let src: string
+            try {
+              src = readFileSync(file, "utf8")
+            } catch {
+              continue // a card dir without a component — schema-form card
+            }
+            out.push({ id: `${owner}/${card}`, file, src, pkgDir: cards })
           }
-          out.push({ id: `${owner}/${card}`, file, src, pkgDir: cards })
         }
       }
     }
@@ -233,7 +241,10 @@ describe("plugin studio tenant boundary (§6 props gate)", () => {
     // The glob surface and the filesystem must agree — a component the glob
     // can't see would bypass this gate entirely.
     const registered = pluginTenantIds()
-    expect(registered, "pluginTenantIds() must match the packages/ tree").toEqual(comps.map((c) => c.id))
+    // Set equality: the fs scan walks the two card roots in sequence
+    // while pluginTenantIds() returns sorted — with cards split across
+    // the migration's two homes, iteration order is not a contract.
+    expect([...registered].sort(), "pluginTenantIds() must match the packages/ tree").toEqual([...comps.map((c) => c.id)].sort())
 
     // The cut-5 flip (2026-08-19): first-party studios ARE plugin tenants.
     // Runtime deps: react + lucide + three + every @melite package (the same
@@ -324,22 +335,32 @@ describe("plugin ui tenant boundary (§16 E-TENANTS)", () => {
   }
 
   /** The BODY tenant files (cardStudios' glob: ui/studio/component.tsx
-   *  and its co-located studio modules) — same shape as pluginUiFiles. */
+   *  and its co-located studio modules) — same shape as pluginUiFiles.
+   *  BOTH homes while the card-folder migration empties action_cards
+   *  (card-folder-shape design record, 2026-09-08): the legacy tenant
+   *  package and the nested card units
+   *  engines/comfyui-cordis/src/cards/<genre>/<card>/. */
   function studioTenants(): { id: string; src: string; pkgDir: string }[] {
     const out: { id: string; src: string; pkgDir: string }[] = []
-    const acRoot = resolve(REPO_ROOT, "packages", "engines", "comfyui", "action_cards")
-    for (const genre of readdirSync(acRoot, { withFileTypes: true })) {
-      if (!genre.isDirectory()) continue
-      for (const card of readdirSync(resolve(acRoot, genre.name), { withFileTypes: true })) {
-        if (!card.isDirectory()) continue
-        const studio = resolve(acRoot, genre.name, card.name, "ui", "studio")
-        if (!existsSync(studio)) continue // the genre ui package itself
-        for (const file of walkTs(studio)) {
-          out.push({
-            id: `${genre.name}/${card.name}/ui/studio${file.slice(studio.length)}`,
-            src: readFileSync(file, "utf8"),
-            pkgDir: studio,
-          })
+    const acRoots = [
+      resolve(REPO_ROOT, "packages", "engines", "comfyui", "action_cards"),
+      resolve(REPO_ROOT, "packages", "engines", "comfyui-cordis", "src", "cards"),
+    ]
+    for (const acRoot of acRoots) {
+      if (!existsSync(acRoot)) continue
+      for (const genre of readdirSync(acRoot, { withFileTypes: true })) {
+        if (!genre.isDirectory()) continue
+        for (const card of readdirSync(resolve(acRoot, genre.name), { withFileTypes: true })) {
+          if (!card.isDirectory()) continue
+          const studio = resolve(acRoot, genre.name, card.name, "ui", "studio")
+          if (!existsSync(studio)) continue // the genre ui package itself
+          for (const file of walkTs(studio)) {
+            out.push({
+              id: `${genre.name}/${card.name}/ui/studio${file.slice(studio.length)}`,
+              src: readFileSync(file, "utf8"),
+              pkgDir: studio,
+            })
+          }
         }
       }
     }
