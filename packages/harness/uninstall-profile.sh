@@ -12,8 +12,3 @@ else
   echo "nothing to remove ($DST_DIR not found)"
 fi
 
-PRESET_DIR="${DSH_HOME:-$HOME/.dsh}/.agent-presets/inference-studio"
-if [ -d "$PRESET_DIR" ]; then
-  rm -rf "$PRESET_DIR"
-  echo "removed $PRESET_DIR"
-fi

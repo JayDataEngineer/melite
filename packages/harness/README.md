@@ -6,11 +6,14 @@ calls, presets the operator picks, provisioning that mounts everything.
 | member | what it is |
 |---|---|
 | `dsh/melite-tools/` | the tool registry, TWO interfaces — BASE: `model_catalog`, `lane_bundle_peek`/`load`, `build_flow`, `refine_draft`, `comfy_manage`, `skill_index`/`skill_read`, `ledger_tail` + dynamic card tools; HEADLESS adds `card_run`/`flow_run`/`run_status` (the queue run doors); `enhance_prompt` is AD HOC |
-| `dsh/melite-preset/` | the "Melite — Media Studio" persona preset |
-| `dsh/inference-studio/` | the "Inference Studio" preset (persona + installer) |
 | `dsh/provisioner/` | **the integrator** — mounts the whole media stack into a vanilla DSH (links BOTH families by package name) |
 | `dsh/install-profile.sh` | thin shim over the provisioner renderer (`infer-provision all`) |
-| `dsh/testkit/` | the family test runner — one vitest for BOTH sides: `cd packages/harness/dsh/testkit && pnpm test` |
+
+Retired 2026-09-09 (the dead-weight cut, 0 external refs each):
+`dsh/melite-preset/` (persona preset), `dsh/inference-studio/` (the
+preset installer), `dsh/testkit/` (the walls under `tests/walls/`
+are the estate's tests), and `infer-daisy-studio/` (the pre-cordis
+PYTHON app — the whole py UI died with the render plane).
 
 Retired 2026-09-03 (the cruft cut): the `infer.yml`/`melite.yml`
 machine-local overlays (superseded by profiles + the provisioner; the

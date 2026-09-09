@@ -1,7 +1,0 @@
-{
-  "name": "@melite-plugin/dsh-preset",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "Melite media-studio agent preset (persona + tool filter)"
-}
