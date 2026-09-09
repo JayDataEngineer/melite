@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "joycaption",
+  "form": "form_tagger",
   "label": "JoyCaption",
   "description": "Stylized natural-language image captioning (JoyCaption beta-one, 8B VLM) — descriptive / SD-prompt / MJ / booru-list templates for recreating images in FLUX / Ideogram / image-edit.",
   "engine": "comfyui",

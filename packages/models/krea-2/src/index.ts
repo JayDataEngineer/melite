@@ -14,6 +14,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "krea-2",
+  "form": "form_generate",
   "label": "Krea 2",
   "description": "High-quality general text-to-image generation.",
   "engine": "comfyui",

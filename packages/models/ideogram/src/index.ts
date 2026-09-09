@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "ideogram",
+  "form": "form_generate",
   "label": "Ideogram",
   "description": "Typography-aware text-to-image with clean, legible text rendering.",
   "engine": "comfyui",

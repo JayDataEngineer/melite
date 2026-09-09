@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "fit",
+  "form": "form_3d_fit",
   "label": "Fit",
   "description": "Seat a static prop onto a SOMAX body (socket/fit/grip placement laws) and render the proof turnaround.",
   "engine": "comfyui",

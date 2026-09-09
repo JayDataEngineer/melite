@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "joytag",
+  "form": "form_tagger",
   "label": "JoyTag",
   "description": "Booru keyword tagger (JoyTag lineage) — thresholded Danbooru tags with add/remove lists for recreation workflows. Torch lane, node-local checkpoint.",
   "engine": "comfyui",

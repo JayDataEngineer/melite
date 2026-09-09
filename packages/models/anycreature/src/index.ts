@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "anycreature",
+  "form": "form_forge",
   "label": "anyCreature",
   "description": "Text → game-ready 3D creature (JSON spec → skinned GLB)",
   "engine": "anycreature",

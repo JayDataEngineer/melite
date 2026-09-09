@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "flux-fill-dev",
+  "form": "form_inpaint",
   "label": "Inpaint",
   "description": "Dual-engine masked region inpainting — FLUX.1-Fill (dedicated fill arch) or LanPaint on any base model.",
   "unoffered": true,

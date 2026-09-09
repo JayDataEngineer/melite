@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "autoremesher",
+  "form": "form_quad_remesh",
   "label": "AutoRemesher",
   "description": "AI triangle soup → clean quad topology (explicit budget, no silent defaults).",
   "engine": "comfyui",

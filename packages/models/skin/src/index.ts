@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "skin",
+  "form": "form_3d_skin",
   "label": "Skin",
   "description": "Deterministic skin detail maps onto a SOMAX body (albedo + normal + kind sidecar) and the proof turnaround.",
   "engine": "comfyui",

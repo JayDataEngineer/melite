@@ -18,6 +18,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "qwen3-tts",
+  "form": "form_tts",
   "label": "Qwen3-TTS 0.6B",
   "description": "Qwen3-TTS 12Hz 0.6B — text-to-speech",
   "engine": "comfyui",

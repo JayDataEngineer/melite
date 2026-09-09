@@ -210,6 +210,14 @@ export interface ModelDecl {
   /** Present-only-when-true: an unoffered model registers but
    *  serves no surface. The DEFAULT is offered — no key. */
   unoffered?: boolean;
+  /** The FORM TAG this family's models route through (the py wire
+   *  vocabulary: form_generate, form_video_director, …). REQUIRED
+   *  for served families — a model without a form cannot resolve
+   *  its form-spec and degrades every dropdown at once (the
+   *  2026-08-11 catalog contract; restored 2026-09-10 after the
+   *  TS-flip emission dropped it and shipped 53 formless rows past
+   *  a regolded golden — only the frontend validator caught it). */
+  form?: string;
   defaults?: Record<string, unknown>;
   source?: { type?: string; repo_id?: string; filename?: string | null; note?: string } | null;
   studio?: {
@@ -247,6 +255,9 @@ export interface ModelRow {
   genre: string;
   label: string;
   description: string;
+  /** The form tag (py wire vocabulary) — REQUIRED non-empty on
+   *  every SERVED row (the 2026-08-11 contract; see ModelDecl.form). */
+  form: string;
   source: SourceRow;
   defaults: Record<string, unknown>;
   engine: string;
@@ -261,6 +272,7 @@ export const ModelRow: z<ModelRow> = z.object({
   genre: z.string(),
   label: z.string().default(""),
   description: z.string().default(""),
+  form: z.string(),
   source: SourceRow.default({ type: "" }),
   defaults: z.dict(z.any()).default({}),
   engine: z.string().default(""),

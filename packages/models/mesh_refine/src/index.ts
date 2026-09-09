@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "mesh_refine",
+  "form": "form_3d_mesh_refine",
   "label": "UltraShape Mesh Refine",
   "description": "Image-guided coarse-mesh refinement (UltraShape 1.0 DiT) — carves sharp limb separation + hard-surface edges into blobby TRELLIS output using the SAME guide image the mesh was generated from. The pre-rig cleanup step: run BEFORE SOMAX so proximity-based weight transfer can't glue arm vertices to torso bones.",
   "unoffered": true,

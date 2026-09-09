@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "trellis_native",
+  "form": "form_3d_trellis_native",
   "label": "Trellis (Native)",
   "description": "Native trellis.cpp GGML engine — image to UV-textured GLB with the reference-parity C++ postprocess (weld, fill, DC remesh, CuMesh QEM, xatlas, trilinear PBR bake). 50s per asset on the 4090; no confetti.",
   "unoffered": true,

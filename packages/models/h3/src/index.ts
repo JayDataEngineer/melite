@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "h3",
+  "form": "form_video_director",
   "label": "MiniMax H3",
   "description": "MiniMax H3 joint video + audio generation. Native AV output — describe both motion and",
   "engine": "comfyui",

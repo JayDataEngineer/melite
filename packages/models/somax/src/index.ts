@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "somax",
+  "form": "form_3d_somax",
   "label": "SOMAX",
   "description": "TRELLIS → SOMA weight transfer — image to SOMAX rigged GLB with anatomically correct SOMA-77 skeleton weights.",
   "unoffered": true,

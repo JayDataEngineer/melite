@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "rtx-vsr",
+  "form": "form_video_upscale",
   "label": "Video Upscale",
   "description": ">-",
   "unoffered": true,

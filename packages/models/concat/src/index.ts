@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "concat",
+  "form": "form_media_merge",
   "label": "Media Merge",
   "description": ">-",
   "unoffered": true,

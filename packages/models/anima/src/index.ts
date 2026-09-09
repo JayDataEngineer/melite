@@ -14,6 +14,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "anima",
+  "form": "form_generate",
   "label": "Anima",
   "description": "Anime/illustration text-to-image. Cosmos-Predict2 base with Danbooru-style prompting.",
   "engine": "comfyui",

@@ -1,6 +1,7 @@
 {
  "ace-step": {
   "id": "ace-step",
+  "form": "form_music",
   "label": "ACE-Step 1.5 Turbo Q8",
   "description": "the turbo distill — fast defaults",
   "engine": "audio_cpp",
@@ -119,6 +120,7 @@
  },
  "ace-step-base": {
   "id": "ace-step-base",
+  "form": "form_music",
   "label": "ACE-Step 1.5 Base Q8",
   "description": "the base checkpoint — no turbo distill",
   "engine": "audio_cpp",
@@ -237,6 +239,7 @@
  },
  "ace-step-base-bf16": {
   "id": "ace-step-base-bf16",
+  "form": "form_music",
   "label": "ACE-Step 1.5 Base BF16",
   "description": "the base checkpoint — no turbo distill",
   "engine": "audio_cpp",
@@ -355,6 +358,7 @@
  },
  "ace-step-bf16": {
   "id": "ace-step-bf16",
+  "form": "form_music",
   "label": "ACE-Step 1.5 Turbo BF16",
   "description": "the turbo distill — fast defaults",
   "engine": "audio_cpp",
@@ -473,6 +477,7 @@
  },
  "ace-step-sft": {
   "id": "ace-step-sft",
+  "form": "form_music",
   "label": "ACE-Step 1.5 SFT Q8",
   "description": "the finetune",
   "engine": "audio_cpp",
@@ -593,6 +598,7 @@
  },
  "ace-step-xl": {
   "id": "ace-step-xl",
+  "form": "form_music",
   "label": "ACE-Step 1.5 XL Turbo BF16",
   "description": "the audio.cpp flagship",
   "engine": "audio_cpp",
@@ -713,6 +719,7 @@
  },
  "anima": {
   "id": "anima",
+  "form": "form_generate",
   "label": "Anima Standard F32",
   "description": "Anime/illustration text-to-image. Cosmos-Predict2 base with Danbooru-style prompting.",
   "engine": "comfyui",
@@ -785,6 +792,7 @@
  },
  "anny": {
   "id": "anny",
+  "form": "form_3d_anny",
   "label": "Anny (character assembly) Standard Native",
   "description": "Assemble a character — composite body/hair/outfit GLBs, render the 8-view turnaround, segment a source photo into part sprites.",
   "engine": "comfyui",
@@ -895,6 +903,7 @@
  },
  "anycreature": {
   "id": "anycreature",
+  "form": "form_forge",
   "label": "anyCreature Standard Native",
   "description": "Text → game-ready 3D creature (JSON spec → skinned GLB)",
   "engine": "anycreature",
@@ -930,6 +939,7 @@
  },
  "auto-detect": {
   "id": "auto-detect",
+  "form": "form_detect",
   "label": "Auto Detect Standard Native (weightless)",
   "description": "Auto Detect — automatically selects the best model and conditioning for a given input.",
   "unoffered": true,
@@ -982,6 +992,7 @@
  },
  "autoremesher": {
   "id": "autoremesher",
+  "form": "form_quad_remesh",
   "label": "AutoRemesher Standard Native",
   "description": "AI triangle soup → clean quad topology (explicit budget, no silent defaults).",
   "engine": "comfyui",
@@ -1095,6 +1106,7 @@
  },
  "concat": {
   "id": "concat",
+  "form": "form_media_merge",
   "label": "Media Merge Standard Native (weightless)",
   "description": ">-",
   "unoffered": true,
@@ -1144,6 +1156,7 @@
  },
  "dwpose": {
   "id": "dwpose",
+  "form": "form_edit",
   "label": "DWPose Standard Native (weightless)",
   "description": "DWPose whole-body pose detection (preprocessor for pose-guided generation).",
   "engine": "comfyui",
@@ -1198,6 +1211,7 @@
  },
  "fit": {
   "id": "fit",
+  "form": "form_3d_fit",
   "label": "Fit Standard Native",
   "description": "Seat a static prop onto a SOMAX body (socket/fit/grip placement laws) and render the proof turnaround.",
   "engine": "comfyui",
@@ -1261,6 +1275,7 @@
  },
  "florence2": {
   "id": "florence2",
+  "form": "form_tagger",
   "label": "Florence-2 Standard F32",
   "description": "Natural-language image captioning (Florence-2 large, PromptGen-tuned) — dense descriptive prompts for recreating images in FLUX / Ideogram / image-edit.",
   "engine": "comfyui",
@@ -1311,6 +1326,7 @@
  },
  "flux-fill-dev": {
   "id": "flux-fill-dev",
+  "form": "form_inpaint",
   "label": "Inpaint OneReward",
   "description": "Dual-engine masked region inpainting — FLUX.1-Fill (dedicated fill arch) or LanPaint on any base model.",
   "unoffered": true,
@@ -1375,6 +1391,7 @@
  },
  "flux-fill-onereward": {
   "id": "flux-fill-onereward",
+  "form": "form_inpaint",
   "label": "Inpaint OneReward",
   "description": "Dual-engine masked region inpainting — FLUX.1-Fill (dedicated fill arch) or LanPaint on any base model.",
   "unoffered": true,
@@ -1439,6 +1456,7 @@
  },
  "gem_soma": {
   "id": "gem_soma",
+  "form": "form_edit",
   "label": "SOMA Standard Native (weightless)",
   "description": "GEM-X SOMA pose estimation and retargeting.",
   "engine": "comfyui",
@@ -1499,6 +1517,7 @@
  },
  "h3": {
   "id": "h3",
+  "form": "form_video_director",
   "label": "MiniMax H3 FL2VA ⚡ Turbo",
   "description": "MiniMax H3 joint video + audio generation. Native AV output — describe both motion and",
   "engine": "comfyui",
@@ -1654,6 +1673,7 @@
  },
  "h3-keyframe": {
   "id": "h3-keyframe",
+  "form": "form_video_director",
   "label": "MiniMax H3 keyframe-to-video Standard Native",
   "engine": "comfyui",
   "defaults": {
@@ -1705,6 +1725,7 @@
  },
  "h3-ref2va": {
   "id": "h3-ref2va",
+  "form": "form_video_director",
   "label": "MiniMax H3 Ref2VA",
   "description": "MiniMax H3 joint video + audio generation. Native AV output — describe both motion and",
   "engine": "comfyui",
@@ -1860,6 +1881,7 @@
  },
  "h3-timeline": {
   "id": "h3-timeline",
+  "form": "form_video_director",
   "label": "H3 Timeline (multi-window) Standard INT8 ConvRot",
   "description": ">-",
   "engine": "comfyui",
@@ -2003,6 +2025,7 @@
  },
  "h3-timeline-ref": {
   "id": "h3-timeline-ref",
+  "form": "form_video_director",
   "label": "MiniMax H3 Timeline Ref2VA (Legacy)",
   "description": "MiniMax H3 joint video + audio generation. Native AV output — describe both motion and",
   "engine": "comfyui",
@@ -2158,6 +2181,7 @@
  },
  "ideogram": {
   "id": "ideogram",
+  "form": "form_generate",
   "label": "Ideogram NF4",
   "description": "Typography-aware text-to-image with clean, legible text rendering.",
   "engine": "comfyui",
@@ -2234,6 +2258,7 @@
  },
  "input": {
   "id": "input",
+  "form": "form_input",
   "label": "Input Prep Standard Native (weightless)",
   "description": "Source intake: attach an image or audio file (upload, asset drop, prior run) — staged, optionally transformed, emitted as a media artifact for downstream cards to wire.",
   "engine": "comfyui",
@@ -2283,6 +2308,7 @@
  },
  "joycaption": {
   "id": "joycaption",
+  "form": "form_tagger",
   "label": "JoyCaption Standard F32",
   "description": "Stylized natural-language image captioning (JoyCaption beta-one, 8B VLM) — descriptive / SD-prompt / MJ / booru-list templates for recreating images in FLUX / Ideogram / image-edit.",
   "engine": "comfyui",
@@ -2335,6 +2361,7 @@
  },
  "joytag": {
   "id": "joytag",
+  "form": "form_tagger",
   "label": "JoyTag Standard F32",
   "description": "Booru keyword tagger (JoyTag lineage) — thresholded Danbooru tags with add/remove lists for recreation workflows. Torch lane, node-local checkpoint.",
   "engine": "comfyui",
@@ -2386,6 +2413,7 @@
  },
  "kimodo": {
   "id": "kimodo",
+  "form": "form_motion_kimodo",
   "label": "Kimodo (text → motion) Standard Native",
   "description": "Kinematic motion diffusion (NVIDIA Kimodo-SOMA): text → SOMA-77 pose NPZ, chainable, skinnable onto rigged GLBs.",
   "engine": "comfyui",
@@ -2482,6 +2510,7 @@
  },
  "krea-2": {
   "id": "krea-2",
+  "form": "form_generate",
   "label": "Krea 2 Turbo INT8 ConvRot",
   "description": "High-quality general text-to-image generation.",
   "engine": "comfyui",
@@ -2640,6 +2669,7 @@
  },
  "krea-2-raw": {
   "id": "krea-2-raw",
+  "form": "form_generate",
   "label": "Krea 2 Raw INT8 ConvRot",
   "description": "High-quality general text-to-image generation.",
   "engine": "comfyui",
@@ -2798,6 +2828,7 @@
  },
  "latentsync": {
   "id": "latentsync",
+  "form": "form_edit",
   "label": "LatentSync Standard Native (weightless)",
   "description": "LatentSync — local-only lip-sync that aligns mouth shapes to audio in a video.",
   "engine": "comfyui",
@@ -3620,6 +3651,7 @@
  },
  "mesh_refine": {
   "id": "mesh_refine",
+  "form": "form_3d_mesh_refine",
   "label": "UltraShape Mesh Refine Standard Native",
   "description": "Image-guided coarse-mesh refinement (UltraShape 1.0 DiT) — carves sharp limb separation + hard-surface edges into blobby TRELLIS output using the SAME guide image the mesh was generated from. The pre-rig cleanup step: run BEFORE SOMAX so proximity-based weight transfer can't glue arm vertices to torso bones.",
   "unoffered": true,
@@ -3776,6 +3808,7 @@
  },
  "moss-sfx": {
   "id": "moss-sfx",
+  "form": "form_sound",
   "label": "MOSS-SFX v2 Standard Native",
   "description": "MOSS-SFX v2 sound-effect generation — describe the SOUND not the scene",
   "engine": "comfyui",
@@ -4115,6 +4148,7 @@
  },
  "music3": {
   "id": "music3",
+  "form": "form_music",
   "label": "MiniMax Music 3 Standard INT8 ConvRot",
   "description": "MiniMax Music 3 text-to-music with lyrics",
   "engine": "comfyui",
@@ -4189,6 +4223,7 @@
  },
  "pixal3d": {
   "id": "pixal3d",
+  "form": "form_img_to_mesh",
   "label": "Pixal3D 1024 BF16",
   "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
   "engine": "comfyui",
@@ -4394,6 +4429,7 @@
  },
  "pixal3d-1536": {
   "id": "pixal3d-1536",
+  "form": "form_img_to_mesh",
   "label": "Pixal3D 1536 BF16",
   "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
   "engine": "comfyui",
@@ -4599,6 +4635,7 @@
  },
  "pixal3d-1536-bf16": {
   "id": "pixal3d-1536-bf16",
+  "form": "form_img_to_mesh",
   "label": "Pixal3D 1536 BF16",
   "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
   "engine": "comfyui",
@@ -4804,6 +4841,7 @@
  },
  "pixal3d-1536-int8": {
   "id": "pixal3d-1536-int8",
+  "form": "form_img_to_mesh",
   "label": "Pixal3D 1536 INT8 ConvRot",
   "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
   "engine": "comfyui",
@@ -5009,6 +5047,7 @@
  },
  "pixal3d-512": {
   "id": "pixal3d-512",
+  "form": "form_img_to_mesh",
   "label": "Pixal3D 512 BF16",
   "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
   "engine": "comfyui",
@@ -5214,6 +5253,7 @@
  },
  "pixal3d-512-bf16": {
   "id": "pixal3d-512-bf16",
+  "form": "form_img_to_mesh",
   "label": "Pixal3D 512 BF16",
   "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
   "engine": "comfyui",
@@ -5419,6 +5459,7 @@
  },
  "pixal3d-512-int8": {
   "id": "pixal3d-512-int8",
+  "form": "form_img_to_mesh",
   "label": "Pixal3D 512 INT8 ConvRot",
   "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
   "engine": "comfyui",
@@ -5624,6 +5665,7 @@
  },
  "pixal3d-bf16": {
   "id": "pixal3d-bf16",
+  "form": "form_img_to_mesh",
   "label": "Pixal3D 1024 BF16",
   "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
   "engine": "comfyui",
@@ -5829,6 +5871,7 @@
  },
  "pixal3d-int8": {
   "id": "pixal3d-int8",
+  "form": "form_img_to_mesh",
   "label": "Pixal3D 1024 INT8 ConvRot",
   "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
   "engine": "comfyui",
@@ -6220,6 +6263,7 @@
  },
  "qwen-img-edit-2511": {
   "id": "qwen-img-edit-2511",
+  "form": "form_edit",
   "label": "Image Edit Standard INT8 ConvRot",
   "description": "Instruction-driven image editing and manipulation — the Qwen-Image-Edit 2511 lane (the image-edit card arms this family; the pre-flip img-edit head is retired, same physical lane, its assets merged here 2026-09-05).",
   "engine": "comfyui",
@@ -6339,6 +6383,7 @@
  },
  "qwen-img-edit-2511-int8": {
   "id": "qwen-img-edit-2511-int8",
+  "form": "form_edit",
   "label": "Image Edit Standard INT8 ConvRot",
   "description": "Instruction-driven image editing and manipulation — the Qwen-Image-Edit 2511 lane (the image-edit card arms this family; the pre-flip img-edit head is retired, same physical lane, its assets merged here 2026-09-05).",
   "engine": "comfyui",
@@ -6458,6 +6503,7 @@
  },
  "qwen-img-edit-2511-lightning4": {
   "id": "qwen-img-edit-2511-lightning4",
+  "form": "form_edit",
   "label": "Image Edit Lightning FP8 Lightning",
   "description": "Instruction-driven image editing and manipulation — the Qwen-Image-Edit 2511 lane (the image-edit card arms this family; the pre-flip img-edit head is retired, same physical lane, its assets merged here 2026-09-05).",
   "engine": "comfyui",
@@ -6577,6 +6623,7 @@
  },
  "qwen3-tts": {
   "id": "qwen3-tts",
+  "form": "form_tts",
   "label": "Qwen3-TTS 0.6B CustomVoice Native",
   "description": "preset personas and instruct-text emotion control",
   "engine": "comfyui",
@@ -6688,6 +6735,7 @@
  },
  "qwen3-tts-base": {
   "id": "qwen3-tts-base",
+  "form": "form_tts",
   "label": "Qwen3-TTS 0.6B Base Native",
   "description": "plain text-to-speech, no persona",
   "engine": "comfyui",
@@ -6800,6 +6848,7 @@
  },
  "qwen3-tts-voicedesign": {
   "id": "qwen3-tts-voicedesign",
+  "form": "form_tts",
   "label": "Qwen3-TTS 0.6B VoiceDesign Native",
   "description": "instruction-following voice design; the voice-lock lane",
   "engine": "comfyui",
@@ -6911,6 +6960,7 @@
  },
  "rtx-vsr": {
   "id": "rtx-vsr",
+  "form": "form_video_upscale",
   "label": "Video Upscale Standard Native",
   "description": ">-",
   "unoffered": true,
@@ -6974,6 +7024,7 @@
  },
  "scail2-animate": {
   "id": "scail2-animate",
+  "form": "form_video_director",
   "label": "SCAIL-2 Standard FP8",
   "description": "SCAIL-2 character animation — drives a reference character from a video and colored mask.",
   "engine": "comfyui",
@@ -7050,6 +7101,7 @@
  },
  "see-through": {
   "id": "see-through",
+  "form": "form_image_seethrough",
   "label": "See-Through Standard Native (weightless)",
   "description": "See-Through anime layer decomposition — splits an image into character, clothing, and background layers.",
   "unoffered": true,
@@ -7108,6 +7160,7 @@
  },
  "seedvr2_ema": {
   "id": "seedvr2_ema",
+  "form": "form_upscale",
   "label": "SeedVR2 Upscaler 3B FP16",
   "description": "SeedVR2 diffusion-based super-resolution (3B EMA FP16 default, 7B EMA FP8",
   "engine": "comfyui",
@@ -7191,6 +7244,7 @@
  },
  "seedvr2_ema_7b": {
   "id": "seedvr2_ema_7b",
+  "form": "form_upscale",
   "label": "SeedVR2 Upscaler 7B FP8",
   "description": "SeedVR2 diffusion-based super-resolution (3B EMA FP16 default, 7B EMA FP8",
   "engine": "comfyui",
@@ -7274,6 +7328,7 @@
  },
  "seedvr2_ema_vae_fp16": {
   "id": "seedvr2_ema_vae_fp16",
+  "form": "form_upscale",
   "label": "SeedVR2 Upscaler VAE FP16",
   "description": "SeedVR2 diffusion-based super-resolution (3B EMA FP16 default, 7B EMA FP8",
   "engine": "comfyui",
@@ -7357,6 +7412,7 @@
  },
  "skin": {
   "id": "skin",
+  "form": "form_3d_skin",
   "label": "Skin Standard Native",
   "description": "Deterministic skin detail maps onto a SOMAX body (albedo + normal + kind sidecar) and the proof turnaround.",
   "engine": "comfyui",
@@ -7420,6 +7476,7 @@
  },
  "skintokens": {
   "id": "skintokens",
+  "form": "form_auto_rig",
   "label": "SkinTokens Standard Native",
   "description": "Static mesh GLB → generated skeleton + learned skin weights → rigged GLB (TokenRig on GGML, CPU)",
   "engine": "skintokens",
@@ -7453,6 +7510,7 @@
  },
  "somax": {
   "id": "somax",
+  "form": "form_3d_somax",
   "label": "SOMAX Standard Native",
   "description": "TRELLIS → SOMA weight transfer — image to SOMAX rigged GLB with anatomically correct SOMA-77 skeleton weights.",
   "unoffered": true,
@@ -7519,6 +7577,7 @@
  },
  "step1x_texture": {
   "id": "step1x_texture",
+  "form": "form_3d_step1x_texture",
   "label": "Step1X-3D Texture Standard Native",
   "description": "Diffusion-based 3D texture synthesis — 1 reference image → 6 multi-view images via SDXL ig2mv flow → baked onto UV atlas. Fills ALL surfaces (no coverage gaps unlike camera projection). 3.5B model, ~15s on 4090.",
   "unoffered": true,
@@ -7572,6 +7631,7 @@
  },
  "stretchy-rig": {
   "id": "stretchy-rig",
+  "form": "form_image_stretchy_rig",
   "label": "Stretchy Rig Standard Native (weightless)",
   "description": "Stretchy Studio auto-rig — DWPose TensorRT whole-body keypoints for 2D character animation.",
   "unoffered": true,
@@ -7621,6 +7681,7 @@
  },
  "transfer_rig": {
   "id": "transfer_rig",
+  "form": "form_img_to_mesh",
   "label": "Transfer Rig Standard Native",
   "description": "Copy rig from source GLB onto target GLB via GPU KNN.",
   "engine": "comfyui",
@@ -7684,6 +7745,7 @@
  },
  "trellis2-native": {
   "id": "trellis2-native",
+  "form": "form_img_to_mesh",
   "label": "TRELLIS.2 Native 1024 BF16",
   "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
   "engine": "comfyui",
@@ -7881,6 +7943,7 @@
  },
  "trellis2-native-1536": {
   "id": "trellis2-native-1536",
+  "form": "form_img_to_mesh",
   "label": "TRELLIS.2 Native 1536 BF16",
   "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
   "engine": "comfyui",
@@ -8078,6 +8141,7 @@
  },
  "trellis2-native-1536-bf16": {
   "id": "trellis2-native-1536-bf16",
+  "form": "form_img_to_mesh",
   "label": "TRELLIS.2 Native 1536 BF16",
   "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
   "engine": "comfyui",
@@ -8275,6 +8339,7 @@
  },
  "trellis2-native-1536-int8": {
   "id": "trellis2-native-1536-int8",
+  "form": "form_img_to_mesh",
   "label": "TRELLIS.2 Native 1536 INT8 ConvRot",
   "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
   "engine": "comfyui",
@@ -8472,6 +8537,7 @@
  },
  "trellis2-native-512": {
   "id": "trellis2-native-512",
+  "form": "form_img_to_mesh",
   "label": "TRELLIS.2 Native 512 BF16",
   "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
   "engine": "comfyui",
@@ -8669,6 +8735,7 @@
  },
  "trellis2-native-512-bf16": {
   "id": "trellis2-native-512-bf16",
+  "form": "form_img_to_mesh",
   "label": "TRELLIS.2 Native 512 BF16",
   "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
   "engine": "comfyui",
@@ -8866,6 +8933,7 @@
  },
  "trellis2-native-512-int8": {
   "id": "trellis2-native-512-int8",
+  "form": "form_img_to_mesh",
   "label": "TRELLIS.2 Native 512 INT8 ConvRot",
   "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
   "engine": "comfyui",
@@ -9063,6 +9131,7 @@
  },
  "trellis2-native-bf16": {
   "id": "trellis2-native-bf16",
+  "form": "form_img_to_mesh",
   "label": "TRELLIS.2 Native 1024 BF16",
   "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
   "engine": "comfyui",
@@ -9260,6 +9329,7 @@
  },
  "trellis2-native-int8": {
   "id": "trellis2-native-int8",
+  "form": "form_img_to_mesh",
   "label": "TRELLIS.2 Native 1024 INT8 ConvRot",
   "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
   "engine": "comfyui",
@@ -9457,6 +9527,7 @@
  },
  "trellis_native": {
   "id": "trellis_native",
+  "form": "form_3d_trellis_native",
   "label": "Trellis (Native) Standard Native",
   "description": "Native trellis.cpp GGML engine — image to UV-textured GLB with the reference-parity C++ postprocess (weld, fill, DC remesh, CuMesh QEM, xatlas, trilinear PBR bake). 50s per asset on the 4090; no confetti.",
   "unoffered": true,
@@ -9518,6 +9589,7 @@
  },
  "wan-vace": {
   "id": "wan-vace",
+  "form": "form_video_director",
   "label": "Wan2.2 VACE Lightning",
   "description": "Wan2.2 VACE video generation with reference-frame and mask control.",
   "engine": "comfyui",
@@ -9615,6 +9687,7 @@
  },
  "wd14": {
   "id": "wd14",
+  "form": "form_tagger",
   "label": "WD14 Tagger Standard F32",
   "description": "Booru keyword tagger (WaifuDiffusion v3 lineage) — comma-separated Danbooru tags for NovelAI / Pony / Illustrious recreation. Light ONNX lane, first run downloads weights.",
   "engine": "comfyui",
@@ -9669,6 +9742,7 @@
  },
  "z-image": {
   "id": "z-image",
+  "form": "form_generate",
   "label": "Z-Image Turbo INT8 ConvRot",
   "description": "Fast Z-Image / Z-Image Turbo text-to-image generation.",
   "engine": "comfyui",
@@ -9743,6 +9817,7 @@
  },
  "z-image-int8": {
   "id": "z-image-int8",
+  "form": "form_generate",
   "label": "Z-Image Turbo INT8 ConvRot",
   "description": "Fast Z-Image / Z-Image Turbo text-to-image generation.",
   "engine": "comfyui",

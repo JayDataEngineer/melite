@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "transfer_rig",
+  "form": "form_img_to_mesh",
   "label": "Transfer Rig",
   "description": "Copy rig from source GLB onto target GLB via GPU KNN.",
   "engine": "comfyui",

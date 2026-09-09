@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "auto-detect",
+  "form": "form_detect",
   "label": "Auto Detect",
   "description": "Auto Detect — automatically selects the best model and conditioning for a given input.",
   "unoffered": true,

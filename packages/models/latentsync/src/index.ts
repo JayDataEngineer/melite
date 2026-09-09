@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "latentsync",
+  "form": "form_edit",
   "label": "LatentSync",
   "description": "LatentSync — local-only lip-sync that aligns mouth shapes to audio in a video.",
   "engine": "comfyui",

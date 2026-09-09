@@ -14,6 +14,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "z-image",
+  "form": "form_generate",
   "label": "Z-Image",
   "description": "Fast Z-Image / Z-Image Turbo text-to-image generation.",
   "engine": "comfyui",

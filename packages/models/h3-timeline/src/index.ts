@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "h3-timeline",
+  "form": "form_video_director",
   "label": "H3 Timeline (multi-window)",
   "description": ">-",
   "engine": "comfyui",

@@ -32,6 +32,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "ace-step",
+  "form": "form_music",
   "label": "ACE-Step 1.5",
   "description": "ACE-Step 1.5 music generation",
   "engine": "audio_cpp",

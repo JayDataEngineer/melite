@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "wan-vace",
+  "form": "form_video_director",
   "label": "Wan2.2 VACE",
   "description": "Wan2.2 VACE video generation with reference-frame and mask control.",
   "engine": "comfyui",

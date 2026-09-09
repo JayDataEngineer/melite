@@ -69,3 +69,21 @@ gains its studio half): the kimodo claim flips to motion/motion
 (1 pin here, 1 in families-golden); the estate door key flips
 with it. The two nested cards' CardDefinition augmentations go
 name-form (declare module '@melite/comfyui/service'). Walls 17/17.
+
+## 2026-09-10 — form restored to every served row (the TS-flip omission)
+
+The 2026-09-08 live-emission swap (loadCatalog replacing the frozen
+catalog section with buildCatalogSections) silently dropped
+`form` from all 53 rows: servedRow never read it, the TS ModelRow
+schema never required it (the py refusal died with the purge), and
+the 2026-09-07 golden regold had already pinned the formless shape
+— so the models-golden wall defended the bug and only the frontend
+catalog contract caught it (operator report: "Catalog contract
+violation — anima: missing required key(s) form").
+
+Restored through every layer: ModelDecl.form + ModelRow.form
+(schema-required, servedRow REFUSES LOUD on empty — QUEUE LANE
+LAW), 43 family DECLs carry the py wire-vocabulary tags verbatim
+(form_generate … — from the frozen discovery-catalog capture, the
+py exporter's own values), golden regolded from the live serve
+(53/53 rows with form). Walls must stay green.

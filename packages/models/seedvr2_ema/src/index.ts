@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "seedvr2_ema",
+  "form": "form_upscale",
   "label": "SeedVR2 Upscaler",
   "description": "SeedVR2 diffusion-based super-resolution (3B EMA FP16 default, 7B EMA FP8",
   "engine": "comfyui",

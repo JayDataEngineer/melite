@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "stretchy-rig",
+  "form": "form_image_stretchy_rig",
   "label": "Stretchy Rig",
   "description": "Stretchy Studio auto-rig — DWPose TensorRT whole-body keypoints for 2D character animation.",
   "unoffered": true,

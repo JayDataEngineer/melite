@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "see-through",
+  "form": "form_image_seethrough",
   "label": "See-Through",
   "description": "See-Through anime layer decomposition — splits an image into character, clothing, and background layers.",
   "unoffered": true,

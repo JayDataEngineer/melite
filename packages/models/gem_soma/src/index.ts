@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "gem_soma",
+  "form": "form_edit",
   "label": "SOMA",
   "description": "GEM-X SOMA pose estimation and retargeting.",
   "engine": "comfyui",

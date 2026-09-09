@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "dwpose",
+  "form": "form_edit",
   "label": "DWPose",
   "description": "DWPose whole-body pose detection (preprocessor for pose-guided generation).",
   "engine": "comfyui",

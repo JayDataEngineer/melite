@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "h3-keyframe",
+  "form": "form_video_director",
   "label": "MiniMax H3 keyframe-to-video",
   "engine": "comfyui",
   "defaults": {

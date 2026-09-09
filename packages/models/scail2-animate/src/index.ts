@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "scail2-animate",
+  "form": "form_video_director",
   "label": "SCAIL-2",
   "description": "SCAIL-2 character animation — drives a reference character from a video and colored mask.",
   "engine": "comfyui",

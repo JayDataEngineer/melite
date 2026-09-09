@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "music3",
+  "form": "form_music",
   "label": "MiniMax Music 3",
   "description": "MiniMax Music 3 text-to-music with lyrics",
   "engine": "comfyui",

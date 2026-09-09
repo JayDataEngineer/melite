@@ -12,6 +12,7 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "moss-sfx",
+  "form": "form_sound",
   "label": "MOSS-SFX v2",
   "description": "MOSS-SFX v2 sound-effect generation — describe the SOUND not the scene",
   "engine": "comfyui",

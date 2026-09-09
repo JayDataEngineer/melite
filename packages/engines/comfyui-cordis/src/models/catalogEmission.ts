@@ -40,12 +40,27 @@ export function isServedFamily(decl: ModelDecl): boolean {
 }
 
 function servedRow(decl: ModelDecl): ModelRow {
+  // FORM LAW (restored 2026-09-10): every served row carries a
+  // non-empty form tag. The py emission (melite_models grammar
+  // model_row) always set it; the TS flip dropped it silently and
+  // the regolded golden pinned the loss — the frontend catalog
+  // contract caught what the walls no longer did. Refuse LOUD here
+  // (QUEUE LANE LAW): a formless row must fail the boot/emission,
+  // never the GUI.
+  const form = (decl.form ?? "").trim();
+  if (form === "") {
+    throw new ModelError(
+      `family ${decl.id} is served but declares no form — a model without ` +
+      "a form cannot route or render (set form: '<tag>' in the DECL)",
+    );
+  }
   const row: ModelRow = {
     id: decl.id,
     family: decl.id,
     genre: decl.genre,
     label: decl.label,
     description: decl.description ?? "",
+    form,
     source: {
       type: decl.source?.type ?? "",
       ...(decl.source?.repo_id ? { repo_id: decl.source.repo_id } : {}),
