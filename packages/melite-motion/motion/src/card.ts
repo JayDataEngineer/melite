@@ -8,7 +8,7 @@ import { motionLane, finalizeMotion } from '@melite/card-kit'
 import type { ComfyUIService } from '@melite/comfyui/service'
 import { vocabulary } from '@melite/card-kit/vocab'
 
-const schema = z.object({
+export const schema = z.object({
   prompt: z.string().description("Prompt").extra('extra', { order: 0, group: "prompt", columns: 1, tooltip: "What the body DOES — verb-first, one continuous action per segment. Multi-segment: separate with | and pair with motion_prompts.", required: true, wtype: 'textarea', }),
   seed: z.number().description("Seed").step(1).default(42).extra('extra', { order: 1, group: "prompt", width: 1, tooltip: "Same seed + prompt = same motion take." }),
   duration_sec: z.number().description("Duration (s)").min(1).max(30).step(0.5).default(5).extra('extra', { order: 0, group: "generation", width: 1, tooltip: "Length of the generated motion segment." }),
@@ -27,10 +27,17 @@ const schema = z.object({
   preview_glb: z.string().role('path').description("Preview character GLB").extra('extra', { order: 0, group: "output", tooltip: "SOMAX-rigged character GLB — the motion is skinned onto it (somax bake) as an animated GLB artifact.", wtype: 'file' }),
 })
 
-export const inject = ['comfyui']
+export const BOARDED: string[] = ['kimodo']
 
-export function apply(ctx: Context): void {
-  ctx.effect(() => ctx.comfyui.registerCard({
+/** The identity rung (label/description — the authored prose the
+ *  emitted tool row carries; the ring's spelling, stated once). */
+export const identity = {
+  label: 'Motion',
+  description: 'Text → 3D human motion (SOMA-77 pose NPZ). Chain segments, constrain joints, skin onto a rigged character GLB.',
+}
+
+export function registerCard(ctx: Context, comfy: ComfyUIService): void {
+  ctx.effect(() => comfy.registerCard({
     id: 'motion',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'motion',

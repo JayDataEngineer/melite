@@ -5,7 +5,7 @@ import z from '@deepseek-ai/schemastery'
 import { voicelockT1 } from '@melite/card-kit'
 import type { ComfyUIService } from '@melite/comfyui/service'
 
-const schema = z.object({
+export const schema = z.object({
   voice_name: z.string().description("Voice Name").extra('extra', { order: 0, group: "voice", width: 1, tooltip: "Name for the locked persona — becomes the .qvoice filename stem. Reused across every future TTS render.", required: true }),
   style_instruction: z.string().description("Style Instruction").extra('extra', { order: 1, group: "voice", columns: 1, tooltip: "The voice description — becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent').", required: true, wtype: 'textarea', }),
   temperature: z.number().description("Temperature").min(0).max(2).step(0.05).default(0.7).extra('extra', { order: 0, group: "sampling", width: 1 }),
@@ -15,10 +15,17 @@ const schema = z.object({
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: 0, group: "seed", width: 1 }),
 })
 
-export const inject = ['comfyui']
+export const BOARDED: string[] = ['qwen3-tts-voicedesign']
 
-export function apply(ctx: Context): void {
-  ctx.effect(() => ctx.comfyui.registerCard({
+/** The identity rung (label/description — the authored prose the
+ *  emitted tool row carries; the ring's spelling, stated once). */
+export const identity = {
+  label: 'Voice Lock',
+  description: 'Lock a voice persona — design, export, and reuse .qvoice embeddings for consistent character voices',
+}
+
+export function registerCard(ctx: Context, comfy: ComfyUIService): void {
+  ctx.effect(() => comfy.registerCard({
     id: 'voice-lock',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'voicelock',

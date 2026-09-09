@@ -34,6 +34,16 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { DEFAULT_GATEWAY_URL } from './gateway.ts'
 import { cardTools } from './tools/card-tools.ts'
+// THE CARD PACKAGES' TOOL FACES (M2′ + the registrar retirement,
+// 2026-09-09): a card tool is IMPORTED from its package — the
+// DSH law (packages/shell/tool-bash: a tool is its own package;
+// hosts compose packages, never fetch registries). The registrar
+// below shrinks with every landing; it dies at the last row.
+import { buildMusicTool } from '@melite/melite-audio-music/tool'
+import { buildTtsTool } from '@melite/melite-audio-tts/tool'
+import { buildVoiceLockTool } from '@melite/melite-audio-voice-lock/tool'
+import { buildImageEditTool } from '@melite/melite-image-image-edit/tool'
+import { buildMotionTool } from '@melite/melite-motion-motion/tool'
 import { cardRun } from './tools/card-run.ts'
 import { flowRun } from './tools/flow-run.ts'
 import { runStatus } from './tools/run-status.ts'
@@ -218,8 +228,19 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     c.tools.register(enhancePrompt(gatewayUrl, c.llm, readDefaultLlm))
   }
 
-  // DYNAMIC CARD TOOLS (per-lane manifest fetch — the load-phase of the
-  // capability binding; tolerant if the gateway hasn't built the route yet)
+  // THE CARD PACKAGE TOOL FACES — direct composition, one builder per
+  // card package (the same Config.gateway spelling every tool face
+  // takes). No fetch, no allowlist: ownership is the import graph.
+  c.tools.register(buildMusicTool(gatewayUrl) as unknown as ToolDefinition)
+  c.tools.register(buildTtsTool(gatewayUrl) as unknown as ToolDefinition)
+  c.tools.register(buildVoiceLockTool(gatewayUrl) as unknown as ToolDefinition)
+  c.tools.register(buildImageEditTool(gatewayUrl) as unknown as ToolDefinition)
+  c.tools.register(buildMotionTool(gatewayUrl) as unknown as ToolDefinition)
+
+  // THE REGISTRAR REMAINDER (per-lane manifest fetch): h3_timeline_card
+  // until its calls machinery lands in the h3-timeline package — then
+  // cardTools dies with its last row (tolerant if the gateway hasn't
+  // built the route yet)
   try {
     const cardToolList = await cardTools(gatewayUrl)
     for (const t of cardToolList) c.tools.register(t as unknown as ToolDefinition)

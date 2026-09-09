@@ -34,7 +34,7 @@ import { imageEdit, refuseImageEditFiring, finalizeImageEdit } from '@melite/car
 import type { ComfyUIService } from '@melite/comfyui/service'
 import { SAMPLERS, SCHEDULERS } from '@melite/card-kit/vocab'
 
-const schema = z.object({
+export const schema = z.object({
   // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:1 port): the py
   // referee (frozen form_spec qwen-img-edit-2511) names exactly
   // these as the card's own — declaration order = the py field
@@ -61,10 +61,17 @@ const schema = z.object({
   double_reference: z.boolean().description("Double Reference").default(false).extra('extra', { order: 2, group: "edit_tuning", width: 1, tooltip: "Encode the input image twice (VAE + vision encoder) for stronger identity preservation. Disable for faster runs where identity drift is acceptable.", zone: 'params' }),
 })
 
-export const inject = ['comfyui']
+export const BOARDED: string[] = ['qwen-img-edit-2511']
 
-export function apply(ctx: Context): void {
-  ctx.effect(() => ctx.comfyui.registerCard({
+/** The identity rung (label/description — the authored prose the
+ *  emitted tool row carries; the ring's spelling, stated once). */
+export const identity = {
+  label: 'Image Edit',
+  description: 'Instruction-driven image editing — the edit_image interface card boarding the Qwen-Image-Edit 2511 lane; the family carries the lightning / standard cascade (variant/quant always shown) plus the lanpaint flavor (required anchor image). The surface scopes itself.',
+}
+
+export function registerCard(ctx: Context, comfy: ComfyUIService): void {
+  ctx.effect(() => comfy.registerCard({
     id: 'image-edit',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'edit',

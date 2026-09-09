@@ -8,7 +8,7 @@ import z from '@deepseek-ai/schemastery'
 import { musicT1 } from '@melite/card-kit'
 import type { ComfyUIService } from '@melite/comfyui/service'
 
-const schema = z.object({
+export const schema = z.object({
   prompt: z.string().description("Tags / Description").extra('extra', { order: 0, group: "prompt", columns: 1, tooltip: "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, pop, soul, guitar, 105 BPM'.", required: true, wtype: 'textarea', }),
   lyrics: z.string().description("Lyrics").extra('extra', { order: 1, group: "prompt", tooltip: "Lyrics with structure tags: [verse], [chorus], [bridge]. Empty = instrumental.", wtype: 'textarea' }),
   duration: z.number().description("Duration (s)").min(5).max(360).step(1).default(30).extra('extra', { order: 0, group: "generation", width: 1, tooltip: "Target audio length in seconds (5-360).", wtype: 'slider' }),
@@ -18,10 +18,17 @@ const schema = z.object({
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: 0, group: "seed", width: 1 }),
 })
 
-export const inject = ['comfyui']
+export const BOARDED: string[] = ['music3']
 
-export function apply(ctx: Context): void {
-  ctx.effect(() => ctx.comfyui.registerCard({
+/** The identity rung (label/description — the authored prose the
+ *  emitted tool row carries; the ring's spelling, stated once). */
+export const identity = {
+  label: 'Music',
+  description: 'Generate music — MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics',
+}
+
+export function registerCard(ctx: Context, comfy: ComfyUIService): void {
+  ctx.effect(() => comfy.registerCard({
     id: 'music',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'music',

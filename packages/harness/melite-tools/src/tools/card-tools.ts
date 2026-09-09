@@ -155,11 +155,12 @@ function validateCardArgs(m: CardManifest, args: Record<string, any>): { params:
 /**
  * Fetch manifests + build one DSH tool per card.
  *
- * OWNERSHIP TRANSFER (M2′, 2026-09-09): card packages now emit
- * their own tools where the composing host provides a tools service
- * (clothing-placement first). This registrar only serves MODEL
- * cards (rows with model null are filtered below) and dies when the
- * remaining 7 model-card packages land.
+ * OWNERSHIP TRANSFER (M2′, 2026-09-09 — the registrar retirement,
+ * 2026-09-09): card packages emit their own tools where the
+ * composing host provides a tools service; the host composes the
+ * builders directly (index.ts). This registrar's allowlist is down
+ * to ONE row — h3_timeline_card, whose calls/tile/span machinery
+ * still lives here pending its package port. It dies with it.
  */
 export async function cardTools(gatewayUrl: string, signal?: AbortSignal, lane?: string): Promise<Tool[]> {
 	// lane mode: the gateway serves EXACTLY the lane's manifest. A lane
@@ -180,11 +181,6 @@ export async function cardTools(gatewayUrl: string, signal?: AbortSignal, lane?:
 	// (ONE-implementation rule; the wrap won).
 	const ALLOWED_CARDS = new Set([
 		'h3_timeline_card',
-		'voice_lock_card',
-		'tts_card',
-		'music_card',
-		'image_edit_card',
-		'motion_card',
 	])
 
 	const tools: Tool[] = []

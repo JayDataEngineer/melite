@@ -6,7 +6,7 @@ import { ttsT1 } from '@melite/card-kit'
 import type { ComfyUIService } from '@melite/comfyui/service'
 import { vocabulary } from '@melite/card-kit/vocab'
 
-const schema = z.object({
+export const schema = z.object({
   text: z.string().description("Text").extra('extra', { order: null, placeholder: "The words to speak", tooltip: "The text to synthesize", required: true, wtype: 'textarea', }),
   // ported voice surface (purge S-decls: the py card is deleted —
   // 0.7, seed -1; style_instruction/qvoice/voice_pca are ABSENT/defaultless
@@ -20,10 +20,17 @@ const schema = z.object({
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: null }),
 })
 
-export const inject = ['comfyui']
+export const BOARDED: string[] = ['qwen3-tts']
 
-export function apply(ctx: Context): void {
-  ctx.effect(() => ctx.comfyui.registerCard({
+/** The identity rung (label/description — the authored prose the
+ *  emitted tool row carries; the ring's spelling, stated once). */
+export const identity = {
+  label: 'TTS',
+  description: 'Text-to-speech — Qwen3-TTS with CustomVoice personas and instruct-text emotion control',
+}
+
+export function registerCard(ctx: Context, comfy: ComfyUIService): void {
+  ctx.effect(() => comfy.registerCard({
     id: 'tts',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'tts',

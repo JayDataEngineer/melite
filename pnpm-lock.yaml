@@ -612,6 +612,21 @@ importers:
 
   packages/harness/melite-tools:
     dependencies:
+      '@melite/melite-audio-music':
+        specifier: workspace:*
+        version: link:../../melite-audio/music
+      '@melite/melite-audio-tts':
+        specifier: workspace:*
+        version: link:../../melite-audio/tts
+      '@melite/melite-audio-voice-lock':
+        specifier: workspace:*
+        version: link:../../melite-audio/voice-lock
+      '@melite/melite-image-image-edit':
+        specifier: workspace:*
+        version: link:../../melite-image/image-edit
+      '@melite/melite-motion-motion':
+        specifier: workspace:*
+        version: link:../../melite-motion/motion
       unrun:
         specifier: ^0.3.1
         version: 0.3.1
@@ -838,6 +853,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/dsh-tools':
+        specifier: 0.1.5-alpha.1
+        version: 0.1.5-alpha.1(c99a84f9f9b5ed24862430e477a90715)
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
@@ -876,6 +894,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/dsh-tools':
+        specifier: 0.1.5-alpha.1
+        version: 0.1.5-alpha.1(c99a84f9f9b5ed24862430e477a90715)
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
@@ -895,6 +916,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/dsh-tools':
+        specifier: 0.1.5-alpha.1
+        version: 0.1.5-alpha.1(c99a84f9f9b5ed24862430e477a90715)
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
@@ -942,6 +966,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/dsh-tools':
+        specifier: 0.1.5-alpha.1
+        version: 0.1.5-alpha.1(c99a84f9f9b5ed24862430e477a90715)
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
@@ -1716,6 +1743,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/dsh-tools':
+        specifier: 0.1.5-alpha.1
+        version: 0.1.5-alpha.1(c99a84f9f9b5ed24862430e477a90715)
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
