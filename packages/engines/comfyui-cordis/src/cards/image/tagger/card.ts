@@ -8,7 +8,7 @@ import z from '@deepseek-ai/schemastery'
 import { taggerLane, finalizeTagger, TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS } from '@comfyui/card-kit'
 import { vocabulary } from '@comfyui/card-kit/vocab'
 
-declare module '../service.ts' {
+declare module '@comfyui/cordis/service' {
   interface CardDefinition {
     /** Per-family extension packs — the py requires_by_family mirror.
      *  The compose door gates the active family's slice, never the
